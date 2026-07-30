@@ -7,7 +7,8 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon } from './marlon.js';
+import { Marlon, Lila } from './marlon.js';
+import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const RENDER_RADIUS = IS_TOUCH ? 4 : 5; // chunks in each direction (smaller on mobile GPUs)
@@ -59,6 +60,7 @@ world.loadEdits();
 const player = new Player(camera, world);
 const creatureManager = new CreatureManager(scene, world, player);
 let marlon = null; // spawned after the spawn point is known
+let lila = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -168,7 +170,9 @@ function updateChunks() {
     for (let dx = -1; dx <= 1; dx++) meshChunk(pcx + dx, pcz + dz);
   }
   rebuildQueue();
-  marlon = new Marlon(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
+  const say = (msg, color) => creatureManager.toast(msg, color);
+  marlon = new Marlon(scene, world, player, say);
+  lila = new Lila(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -246,6 +250,7 @@ document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
+    if (edu.quizActive) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
     if (!locked) overlayTitle.textContent = 'Paused';
   }
@@ -476,12 +481,30 @@ function toggleDex() {
 document.getElementById('dex-btn').addEventListener('click', toggleDex);
 document.getElementById('dex-close').addEventListener('click', toggleDex);
 
+// --- educational mode ---------------------------------------------------------
+
+const edu = new EducationMode({
+  onPause: () => {
+    running = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+    overlay.style.display = 'none';
+  },
+  onResume: () => startGame(),
+  toast: (msg, color) => creatureManager.toast(msg, color),
+});
+
 const creatureLabel = document.getElementById('creature-label');
 
 function updateCreatureLabel() {
   if (running && marlon && marlon.isTargeted()) {
     creatureLabel.style.display = 'block';
     creatureLabel.textContent = 'Marlon — ton compagnon !';
+    creatureLabel.style.color = '#fff';
+    return;
+  }
+  if (running && lila && lila.isTargeted()) {
+    creatureLabel.style.display = 'block';
+    creatureLabel.textContent = 'Professeure Lila — experte en créatures !';
     creatureLabel.style.color = '#fff';
     return;
   }
@@ -580,7 +603,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, get marlon() { return marlon; } };
+window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get lila() { return lila; } };
 
 let lastTime = performance.now();
 
@@ -592,6 +615,7 @@ function frame(now) {
     player.update(dt);
     creatureManager.update(dt);
     if (marlon) marlon.update(dt);
+    if (lila) lila.update(dt);
   } else {
     player.syncCamera();
   }
@@ -600,6 +624,7 @@ function frame(now) {
   updateSky(dt);
   updateHud(dt);
   updateCreatureLabel();
+  edu.update(dt, running);
 
   const hit = running ? getTarget() : null;
   highlight.visible = !!hit;
