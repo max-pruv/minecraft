@@ -73,65 +73,99 @@ export function generateSpecies() {
 
 // --- creature mesh -----------------------------------------------------------
 
+// High-fidelity creature meshes: smooth spheres and cones with dynamic
+// lighting, glossy eyes and two-tone bellies — cuddly toys, not cubes.
 function buildCreatureMesh(sp) {
   const g = new THREE.Group();
-  const main = new THREE.MeshBasicMaterial({ color: TYPES[sp.type].color });
-  const dark = new THREE.MeshBasicMaterial({ color: TYPES[sp.type].dark });
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  const baseColor = new THREE.Color(TYPES[sp.type].color);
+  const darkColor = new THREE.Color(TYPES[sp.type].dark);
+  const bellyColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4);
+  const main = new THREE.MeshLambertMaterial({ color: baseColor });
+  const dark = new THREE.MeshLambertMaterial({ color: darkColor });
+  const belly = new THREE.MeshLambertMaterial({ color: bellyColor });
   const s = sp.size;
-  const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-
   const legH = s * 0.3;
-  const body = box(s, s * 0.55, s * 1.15, main);
-  body.position.y = legH + s * 0.28;
+
+  const sphere = (r, mat, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.max(8, seg / 2)), mat);
+  const cone = (r, h, mat) => new THREE.Mesh(new THREE.ConeGeometry(r, h, 16), mat);
+
+  // rounded body with a lighter belly
+  const body = sphere(s * 0.56, main);
+  body.scale.set(1, 0.82, 1.15);
+  body.position.y = legH + s * 0.45;
   g.add(body);
+  const bellyMesh = sphere(s * 0.45, belly);
+  bellyMesh.scale.set(0.85, 0.62, 0.9);
+  bellyMesh.position.set(0, legH + s * 0.32, -s * 0.12);
+  g.add(bellyMesh);
 
-  const head = box(s * 0.7, s * 0.6, s * 0.6, main);
-  head.position.set(0, legH + s * 0.62, -s * 0.75);
+  // head with a tiny snout
+  const head = sphere(s * 0.42, main);
+  head.position.set(0, legH + s * 0.85, -s * 0.62);
   g.add(head);
+  const snout = sphere(s * 0.14, belly, 16);
+  snout.scale.set(1.2, 0.8, 1);
+  snout.position.set(0, legH + s * 0.76, -s * 0.98);
+  g.add(snout);
 
+  // glossy eyes: white, pupil, and a light glint
   for (const sx of [-1, 1]) {
-    const eye = box(s * 0.1, s * 0.12, s * 0.05, eyeMat);
-    eye.position.set(sx * s * 0.2, legH + s * 0.68, -s * 1.06);
-    g.add(eye);
+    const white = sphere(s * 0.11, new THREE.MeshLambertMaterial({ color: 0xffffff }), 16);
+    white.position.set(sx * s * 0.18, legH + s * 0.92, -s * 0.94);
+    g.add(white);
+    const pupil = sphere(s * 0.055, new THREE.MeshBasicMaterial({ color: 0x141418 }), 12);
+    pupil.position.set(sx * s * 0.18, legH + s * 0.92, -s * 1.03);
+    g.add(pupil);
+    const glint = sphere(s * 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff }), 8);
+    glint.position.set(sx * s * 0.16, legH + s * 0.95, -s * 1.07);
+    g.add(glint);
   }
 
-  if (sp.earStyle === 1) {
+  if (sp.earStyle === 1) { // pointy ears
     for (const sx of [-1, 1]) {
-      const ear = box(s * 0.12, s * 0.4, s * 0.12, dark);
-      ear.position.set(sx * s * 0.24, legH + s * 1.05, -s * 0.75);
+      const ear = cone(s * 0.12, s * 0.4, dark);
+      ear.position.set(sx * s * 0.22, legH + s * 1.28, -s * 0.6);
+      ear.rotation.z = -sx * 0.25;
       g.add(ear);
     }
-  } else if (sp.earStyle === 2) {
+  } else if (sp.earStyle === 2) { // round ears
     for (const sx of [-1, 1]) {
-      const ear = box(s * 0.3, s * 0.2, s * 0.1, dark);
-      ear.position.set(sx * s * 0.38, legH + s * 0.95, -s * 0.75);
+      const ear = sphere(s * 0.16, dark, 16);
+      ear.scale.set(1, 1, 0.5);
+      ear.position.set(sx * s * 0.34, legH + s * 1.18, -s * 0.6);
       g.add(ear);
     }
   }
 
   if (sp.horn) {
-    const horn = box(s * 0.1, s * 0.3, s * 0.1, 0xe8e0c8);
-    horn.position.set(0, legH + s * 1.0, -s * 0.85);
+    const horn = cone(s * 0.08, s * 0.32, new THREE.MeshLambertMaterial({ color: 0xf0ead2 }));
+    horn.position.set(0, legH + s * 1.28, -s * 0.7);
     g.add(horn);
   }
 
   if (sp.tail) {
-    const tail = box(s * 0.15, s * 0.15, s * 0.5, dark);
-    tail.position.set(0, legH + s * 0.45, s * 0.75);
-    tail.rotation.x = -0.5;
+    const tail = cone(s * 0.12, s * 0.55, dark);
+    tail.position.set(0, legH + s * 0.55, s * 0.75);
+    tail.rotation.x = 2.2;
     g.add(tail);
   }
 
+  // legs: little capsule-like cylinders, pivot at the hip for the walk swing
   const legs = [];
   const legPositions = sp.legs === 2
     ? [[-0.25, 0.2], [0.25, 0.2]]
-    : [[-0.28, -0.4], [0.28, -0.4], [-0.28, 0.4], [0.28, 0.4]];
+    : [[-0.28, -0.35], [0.28, -0.35], [-0.28, 0.35], [0.28, 0.35]];
   for (const [lx, lz] of legPositions) {
-    const leg = box(s * 0.16, legH, s * 0.16, dark);
-    leg.position.set(lx * s, legH / 2, lz * s);
-    g.add(leg);
-    legs.push(leg);
+    const pivot = new THREE.Group();
+    const limb = new THREE.Mesh(new THREE.CylinderGeometry(s * 0.09, s * 0.11, legH, 12), dark);
+    limb.position.y = -legH / 2;
+    const foot = sphere(s * 0.11, dark, 12);
+    foot.scale.set(1, 0.6, 1.2);
+    foot.position.y = -legH;
+    pivot.add(limb, foot);
+    pivot.position.set(lx * s, legH, lz * s);
+    g.add(pivot);
+    legs.push(pivot);
   }
 
   g.userData.legs = legs;
@@ -472,10 +506,12 @@ export class CreatureManager {
     this._toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2600);
   }
 
-  release(id) {
+  async release(id) {
     const entry = this.collection.find((e) => e.id === id);
     if (!entry) return;
-    if (!window.confirm(`Relâcher un ${entry.name} dans la nature ?`)) return;
+    const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
+    const ok = await ask(`Relâcher un ${entry.name} dans la nature ?`);
+    if (!ok) return;
     entry.count--;
     if (entry.count <= 0) this.collection = this.collection.filter((e) => e !== entry);
     this.saveCollection();
