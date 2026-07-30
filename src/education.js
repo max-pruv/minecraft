@@ -618,10 +618,10 @@ const DISCOVERY_GENS = [
 ];
 
 const CATEGORIES = [
-  { name: 'Math', gens: MATH_GENS, maxLevel: 5, defaultLevel: 2 },
-  { name: 'English', gens: ENGLISH_GENS, maxLevel: 3, defaultLevel: 1 },
-  { name: 'Français', gens: FRENCH_GENS, maxLevel: 3, defaultLevel: 1 },
-  { name: 'Découverte', gens: DISCOVERY_GENS, maxLevel: 3, defaultLevel: 1 },
+  { name: 'Math', gens: MATH_GENS, maxLevel: 5, defaultLevel: 3 },
+  { name: 'English', gens: ENGLISH_GENS, maxLevel: 3, defaultLevel: 2 },
+  { name: 'Français', gens: FRENCH_GENS, maxLevel: 3, defaultLevel: 2 },
+  { name: 'Découverte', gens: DISCOVERY_GENS, maxLevel: 3, defaultLevel: 2 },
 ];
 
 // Friendly skill names for the parent summary.
@@ -652,10 +652,23 @@ export class EducationMode {
     this.enabled = true; // always on — there is no way to turn it off
     this.recent = new Set(this.data.recent || []);
     this.skills = this.data.skills || {}; // skill -> { level, hist: [] }
-    this.remaining = 0;
-    // Every fresh page load owes a quiz: answering questions is how the
-    // game starts, and it also makes refreshing pointless as an escape.
-    this.quizDue = true;
+    // One-time recalibration: the bank proved globally too easy, so every
+    // already-known skill jumps a level (adaptive demotion catches any
+    // skill that was actually at the right level).
+    if (!this.data.boost1) {
+      for (const [skill, s] of Object.entries(this.skills)) {
+        const meta = SKILL_META[skill];
+        if (meta) { s.level = Math.min(s.level + 1, meta.maxLevel); s.hist = []; }
+      }
+      this.data.boost1 = 1;
+    }
+    // Resume the unspent play time from the last session: closing or
+    // restarting the game must not burn minutes that were already earned.
+    // With no time left over (or a refresh mid-quiz), a quiz is owed —
+    // so refreshing is never an escape from answering questions.
+    const carried = Math.min(this.data.remaining || 0, SESSION_SECONDS);
+    this.quizDue = carried < 15;
+    this.remaining = this.quizDue ? 0 : carried;
     this.quizActive = false;
     this.hardStopActive = false;
     this.marathon = false;  // 20-question unlock quiz after the daily limit
@@ -711,6 +724,10 @@ export class EducationMode {
   save() {
     this.data.recent = [...this.recent].slice(-RECENT_CAP);
     this.data.skills = this.skills;
+    // remaining play time survives restarts; a quiz in progress saves 0 so
+    // reloading mid-quiz restarts the quiz instead of skipping it
+    this.data.remaining = this.quizActive || this.quizDue
+      ? 0 : Math.max(0, Math.round(this.remaining));
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); } catch { /* ignore */ }
   }
 
@@ -879,7 +896,7 @@ export class EducationMode {
       const meta = SKILL_META[skill];
       if (!meta) continue;
       const total = (s.right || 0) + (s.wrong || 0);
-      if (total >= 10 && (s.right || 0) / total >= 0.85 && s.level < meta.maxLevel) {
+      if (total >= 8 && (s.right || 0) / total >= 0.8 && s.level < meta.maxLevel) {
         s.level++;
         s.hist = [];
         s.right = Math.floor((s.right || 0) * 0.5);
