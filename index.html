@@ -4,6 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Web Minecraft</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#87ceeb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Minecraft" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none; }
@@ -214,6 +222,10 @@
     .quiz-opt.bad { background: #7a3030; border-color: #e06e6e; }
     .quiz-opt.disabled { pointer-events: none; }
     .quiz-continue { grid-column: 1 / -1; background: #2d6a2d; border-color: #58b04c; font-size: 20px; }
+    .quiz-freeze {
+      grid-column: 1 / -1; background: #5a2a2a; border: 2px solid #e06e6e;
+      border-radius: 10px; padding: 18px 12px; font-size: 16px; line-height: 1.7;
+    }
     #quiz-stars { font-size: 26px; margin-top: 16px; letter-spacing: 6px; }
     .star-pop { display: inline-block; animation: starpop 0.7s ease; }
     @keyframes starpop { 0% { transform: scale(0.2); } 60% { transform: scale(1.8) rotate(20deg); } 100% { transform: scale(1); } }
@@ -318,5 +330,12 @@
     { "imports": { "three": "./vendor/three.module.min.js" } }
   </script>
   <script type="module" src="./src/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => { /* offline install is best-effort */ });
+      });
+    }
+  </script>
 </body>
 </html>
