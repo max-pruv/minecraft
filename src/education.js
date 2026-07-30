@@ -32,6 +32,24 @@ function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Inline SVG of a shape, shown with geometry questions.
+function shapeSVG(name) {
+  const attrs = 'fill="#4a90d9" stroke="#fff" stroke-width="3" stroke-linejoin="round"';
+  let inner;
+  if (name === 'square') inner = `<rect x="30" y="30" width="60" height="60" ${attrs}/>`;
+  else if (name === 'rectangle') inner = `<rect x="15" y="40" width="90" height="45" ${attrs}/>`;
+  else {
+    const sides = { triangle: 3, pentagon: 5, hexagon: 6, octagon: 8 }[name] || 3;
+    const pts = [];
+    for (let i = 0; i < sides; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / sides;
+      pts.push(`${(60 + 42 * Math.cos(a)).toFixed(1)},${(62 + 42 * Math.sin(a)).toFixed(1)}`);
+    }
+    inner = `<polygon points="${pts.join(' ')}" ${attrs}/>`;
+  }
+  return `<svg viewBox="0 0 120 120" width="104" height="104">${inner}</svg>`;
+}
+
 // ============================ QUESTION BANK =================================
 // Generators take a difficulty level (1..3) and return
 // { key, prompt, correct, wrongs }. Language generators treat 2 and 3 alike.
@@ -162,13 +180,25 @@ const MATH_GENS = [
       ['hexagon', 'un hexagone', 6], ['octagon', 'un octogone', 8],
     ];
     const [en, frName, sides] = pick(shapes);
-    const corners = level >= 2 && rnd(2);
+    const nameQ = rnd(2); // half the time: "what is this shape called?"
+    const corners = !nameQ && level >= 2 && rnd(2);
     const fr = rnd(2);
+    if (nameQ) {
+      const correct = fr ? frName.replace(/^une? /, '') : en;
+      const others = shapes.filter((s) => s[2] !== sides || s[0] === en).filter((s) => s[0] !== en);
+      const wrongs = shuffle(others).slice(0, 3).map((s) => (fr ? s[1].replace(/^une? /, '') : s[0]));
+      return {
+        key: `shapename-${en}-${fr}`,
+        prompt: fr ? 'Comment s\'appelle cette forme ?' : 'What is this shape called?',
+        shape: en, correct, wrongs,
+      };
+    }
     return {
       key: `shape-${en}-${fr}-${corners ? 'c' : 's'}`,
       prompt: corners
-        ? (fr ? `Combien de sommets a ${frName} ?` : `How many corners does a ${en} have?`)
-        : (fr ? `Combien de côtés a ${frName} ?` : `How many sides does a ${en} have?`),
+        ? (fr ? `Combien de sommets a cette forme ?` : `How many corners does this shape have?`)
+        : (fr ? `Combien de côtés a cette forme ?` : `How many sides does this shape have?`),
+      shape: en,
       correct: String(sides),
       wrongs: [...new Set([sides + 1, Math.max(1, sides - 1), sides + 2])].map(String),
     };
@@ -410,11 +440,110 @@ const FRENCH_GENS = [
   } },
 ];
 
+// -- Découverte : géographie, civisme, science (France & USA, 7 ans) ---------
+
+const DISCOVERY_SETS = {
+  geoFR: {
+    1: [
+      ['Quelle est la capitale de la France ?', 'Paris', ['Lyon', 'Marseille', 'Nice']],
+      ['Dans quel pays se trouve la tour Eiffel ?', 'en France', ['aux États-Unis', 'en Italie', 'en Espagne']],
+      ['De quelles couleurs est le drapeau français ?', 'bleu, blanc, rouge', ['rouge, jaune, vert', 'bleu, jaune, rouge', 'vert, blanc, rouge']],
+      ['Sur quel continent est la France ?', "l'Europe", ["l'Afrique", "l'Asie", "l'Amérique"]],
+      ['Comment s\'appellent les habitants de la France ?', 'les Français', ['les Anglais', 'les Belges', 'les Suisses']],
+      ['Quelle mer borde le sud de la France ?', 'la Méditerranée', ["l'Atlantique", 'la Manche', 'la mer du Nord']],
+    ],
+    2: [
+      ['Quel est le plus long fleuve de France ?', 'la Loire', ['la Seine', 'le Rhône', 'la Garonne']],
+      ['Quelle rivière traverse Paris ?', 'la Seine', ['la Loire', 'le Rhin', 'la Garonne']],
+      ['Quelle est la plus haute montagne de France ?', 'le Mont Blanc', ['le Puy de Dôme', 'le Mont Ventoux', 'le Pic du Midi']],
+      ['La devise de la France : Liberté, Égalité… ?', 'Fraternité', ['Solidarité', 'Amitié', 'Sécurité']],
+      ['Quel monument parisien est une grande arche ?', "l'Arc de Triomphe", ['le Louvre', 'Notre-Dame', 'le Panthéon']],
+    ],
+  },
+  geoUSA: {
+    1: [
+      ['Quelle est la capitale des États-Unis ?', 'Washington D.C.', ['New York', 'Los Angeles', 'Chicago']],
+      ['Dans quelle ville est la statue de la Liberté ?', 'New York', ['Miami', 'Boston', 'Dallas']],
+      ['Quel océan sépare la France et les USA ?', "l'Atlantique", ['le Pacifique', "l'océan Indien", "l'Arctique"]],
+      ['De quelles couleurs est le drapeau américain ?', 'rouge, blanc, bleu', ['vert, blanc, rouge', 'bleu, jaune, noir', 'rouge, jaune, bleu']],
+      ['Le grand pont rouge de San Francisco s\'appelle… ?', 'le Golden Gate', ['le Brooklyn Bridge', 'le Bay Bridge', 'le London Bridge']],
+    ],
+    2: [
+      ["Combien y a-t-il d'états aux États-Unis ?", '50', ['48', '52', '13']],
+      ['Où habite le président des États-Unis ?', 'à la Maison Blanche', ['au Capitole', 'à Central Park', 'au Pentagone']],
+      ['Quel est le plus grand état des USA ?', "l'Alaska", ['le Texas', 'la Californie', 'la Floride']],
+      ['Dans quel état est San Francisco ?', 'en Californie', ['au Texas', 'en Floride', 'au Nevada']],
+      ["Combien d'étoiles sur le drapeau américain ?", '50', ['13', '52', '100']],
+    ],
+  },
+  civics: {
+    1: [
+      ['Que dit-on quand on reçoit un cadeau ?', 'merci', ['pardon', 'bonjour', 'au revoir']],
+      ['Avant de traverser la rue, on… ?', 'regarde des deux côtés', ['court très vite', 'ferme les yeux', 'saute à pieds joints']],
+      ['Qui éteint les incendies ?', 'les pompiers', ['les boulangers', 'les facteurs', 'les dentistes']],
+      ['Où jette-t-on une bouteille en plastique ?', 'au recyclage', ['par terre', 'dans la rivière', 'sous le lit']],
+      ['Qui soigne les malades ?', 'les médecins', ['les pilotes', 'les peintres', 'les chanteurs']],
+    ],
+    2: [
+      ["À l'école, pour parler, on… ?", 'lève la main', ['crie très fort', 'tape du pied', 'se lève de sa chaise']],
+      ['Au feu rouge, les piétons… ?', 'attendent', ['traversent', 'reculent', 'klaxonnent']],
+      ['Partager ses jouets, c\'est… ?', 'gentil', ['interdit', 'impossible', 'dangereux']],
+      ['Qui vote pour choisir le président ?', 'les adultes', ['les bébés', 'les chats', 'les robots']],
+      ['Trier ses déchets, ça aide… ?', 'la planète', ['personne', 'les martiens', 'les jeux vidéo']],
+    ],
+  },
+  science: {
+    1: [
+      ['Combien de pattes a un insecte ?', '6', ['4', '8', '10']],
+      ['Combien de saisons y a-t-il ?', '4', ['2', '3', '6']],
+      ['Quel animal pond des œufs ?', 'la poule', ['le chat', 'le chien', 'la vache']],
+      ['Pour pousser, une plante a besoin… ?', "d'eau et de lumière", ['de bonbons', 'de musique', 'de jouets']],
+      ['La nuit, on voit dans le ciel… ?', 'la lune et les étoiles', ['le soleil', 'des arcs-en-ciel', 'des ballons']],
+    ],
+    2: [
+      ["À quelle température l'eau gèle-t-elle ?", '0 °C', ['10 °C', '100 °C', '50 °C']],
+      ['Quelle planète est la plus proche du Soleil ?', 'Mercure', ['la Terre', 'Mars', 'Jupiter']],
+      ["L'eau qui bout devient de la… ?", 'vapeur', ['glace', 'neige', 'boue']],
+      ['Le soleil se lève à… ?', "l'est", ["l'ouest", 'au nord', 'au sud']],
+      ['Combien de planètes dans le système solaire ?', '8', ['7', '9', '12']],
+      ['Un aimant attire… ?', 'le fer', ['le bois', 'le plastique', 'le papier']],
+    ],
+  },
+};
+
+function discoveryGen(skill) {
+  return { skill, gen(level) {
+    const set = DISCOVERY_SETS[skill][tier(level)];
+    const i = rnd(set.length);
+    const [prompt, correct, wrongs] = set[i];
+    return { key: `disc-${skill}-${tier(level)}-${i}`, prompt, correct, wrongs };
+  } };
+}
+
+const DISCOVERY_GENS = [
+  discoveryGen('geoFR'), discoveryGen('geoUSA'),
+  discoveryGen('civics'), discoveryGen('science'),
+];
+
 const CATEGORIES = [
   { name: 'Math', gens: MATH_GENS, maxLevel: 3, defaultLevel: 2 },
   { name: 'English', gens: ENGLISH_GENS, maxLevel: 2, defaultLevel: 1 },
   { name: 'Français', gens: FRENCH_GENS, maxLevel: 2, defaultLevel: 1 },
+  { name: 'Découverte', gens: DISCOVERY_GENS, maxLevel: 2, defaultLevel: 1 },
 ];
+
+// Friendly skill names for the parent summary.
+const SKILL_LABELS = {
+  add: 'additions', sub: 'soustractions', missing: 'nombres cachés', compare: 'comparaisons',
+  skip: 'suites de nombres', wordEN: 'problèmes (anglais)', wordFR: 'problèmes (français)',
+  shapes: 'géométrie', double: 'doubles et moitiés', place: 'dizaines et centaines',
+  frnum: 'nombres en lettres',
+  enPlural: 'pluriels anglais', enOpposite: 'contraires (anglais)', enRhyme: 'rimes anglaises',
+  enFill: 'phrases à trous (anglais)', enSpell: 'orthographe anglaise', enCategory: 'vocabulaire anglais',
+  frOrtho: 'orthographe française', frConjug: 'conjugaison', frArticle: 'articles (le/la/les)',
+  frPlural: 'pluriels français', frTrad: 'traduction', frAdj: 'accords', frCalendar: 'jours et mois',
+  geoFR: 'géographie France', geoUSA: 'géographie USA', civics: 'civisme', science: 'sciences',
+};
 
 const SKILL_META = {};
 for (const cat of CATEGORIES) {
@@ -518,11 +647,35 @@ export class EducationMode {
     const s = this.skillState(skill);
     s.hist.push(ok ? 1 : 0);
     if (s.hist.length > 8) s.hist.shift();
-    if (s.hist.length >= 4) {
+    const max = SKILL_META[skill].maxLevel;
+    const last3 = s.hist.slice(-3);
+    const last2 = s.hist.slice(-2);
+    // fast track: 3 in a row right -> harder now (no lingering on easy wins)
+    if (ok && last3.length === 3 && last3.every((v) => v) && s.level < max) {
+      s.level++; s.hist = [];
+    // struggling: 2 in a row wrong -> gently step back down
+    } else if (!ok && last2.length === 2 && last2.every((v) => !v) && s.level > 1) {
+      s.level--; s.hist = [];
+    } else if (s.hist.length >= 4) {
       const rate = s.hist.reduce((a, b) => a + b, 0) / s.hist.length;
-      const max = SKILL_META[skill].maxLevel;
       if (rate >= 0.8 && s.level < max) { s.level++; s.hist = []; }
       else if (rate <= 0.4 && s.level > 1) { s.level--; s.hist = []; }
+    }
+    this.save();
+  }
+
+  logQuestion(ok) {
+    const t = this.today();
+    if (!t.qs) t.qs = [];
+    t.qs.push({
+      c: this.current.category, s: this.current.skill,
+      q: this.current.prompt, a: this.current.correct,
+      ok, t: Date.now(),
+    });
+    if (ok) {
+      t.correct.push({ c: this.current.category, q: this.current.prompt, a: this.current.correct, t: Date.now() });
+    } else {
+      t.wrong++;
     }
     this.save();
   }
@@ -622,6 +775,8 @@ export class EducationMode {
     this.neededExtra = 0;
     this.suspicion = 0;
     this.frozen = false;
+    this.streak = 0;
+    this.setStats = {}; // per-category correct counts, for the victory title
     this.hooks.onPause();
     this.el.quiz.style.display = 'flex';
     this.renderStars();
@@ -650,6 +805,7 @@ export class EducationMode {
   nextQuestion() {
     this.locked = false;
     this.frozen = false;
+    this.attempted = 0;
     this.current = this.pickQuestion();
     this.questionCount++;
     this.shownAt = performance.now();
@@ -658,7 +814,16 @@ export class EducationMode {
     this.el.category.textContent = `${this.current.category} · N${this.current.level}`;
     this.el.category.dataset.cat = this.current.category;
     this.el.question.textContent = this.current.prompt;
+    this.el.question.className = '';
     this.el.count.textContent = `Question ${this.questionCount}`;
+    // geometry questions show the actual shape — fair and helpful
+    const visual = document.getElementById('quiz-visual');
+    if (this.current.shape) {
+      visual.innerHTML = shapeSVG(this.current.shape);
+      visual.style.display = 'block';
+    } else {
+      visual.style.display = 'none';
+    }
     this.el.options.innerHTML = '';
     this.current.options.forEach((opt, i) => {
       const btn = document.createElement('button');
@@ -674,52 +839,72 @@ export class EducationMode {
     const elapsed = (performance.now() - this.shownAt) / 1000;
     if (elapsed < MIN_ANSWER_DELAY) return; // too fast to even have read it
 
-    this.locked = true;
     const correct = i === this.current.answerIndex;
     const buttons = [...this.el.options.children];
-    buttons.forEach((b) => b.classList.add('disabled'));
 
     if (correct) {
+      this.locked = true;
+      buttons.forEach((b) => b.classList.add('disabled'));
       this.suspicion = Math.max(0, this.suspicion - 1);
       btn.classList.add('good');
       this.correctCount++;
+      this.streak++;
+      this.setStats[this.current.category] = (this.setStats[this.current.category] || 0) + 1;
       this.el.feedback.textContent = pick(['Bravo ! 🎉', 'Super ! ⭐', 'Génial ! 🌟', 'Excellent ! 🏆', 'Oui ! 💪']);
       this.el.feedback.className = 'good';
+      if (this.streak >= 2) this.showCombo();
       this.recordOutcome(this.current.skill, true);
-      this.today().correct.push({
-        c: this.current.category,
-        q: this.current.prompt,
-        a: this.current.correct,
-        t: Date.now(),
-      });
-      this.save();
+      this.logQuestion(true);
       this.renderStars(true);
       setTimeout(() => {
         if (this.correctCount >= this.needed()) this.celebrate();
         else this.nextQuestion();
       }, 1400);
-    } else {
-      btn.classList.add('bad');
-      buttons[this.current.answerIndex].classList.add('good');
-      this.el.feedback.textContent = `La bonne réponse était : ${this.current.correct}`;
-      this.el.feedback.className = 'bad';
-      this.recordOutcome(this.current.skill, false);
-      this.today().wrong++;
-      this.save();
-
-      // random-clicking detection: wrong AND answered suspiciously fast
-      if (elapsed < FAST_WRONG_DELAY) {
-        this.suspicion++;
-        if (this.suspicion === 2) {
-          this.el.feedback.textContent = 'Hé ! Tu cliques trop vite sans lire 🧐 Prends ton temps !';
-        }
-        if (this.suspicion >= 3) {
-          setTimeout(() => this.freeze(), 1200);
-          return;
-        }
-      }
-      setTimeout(() => this.nextQuestion(), 2300);
+      return;
     }
+
+    // wrong answer
+    this.streak = 0;
+    btn.classList.add('bad', 'disabled');
+
+    // random-clicking detection: wrong AND answered suspiciously fast
+    let willFreeze = false;
+    if (elapsed < FAST_WRONG_DELAY) {
+      this.suspicion++;
+      if (this.suspicion >= 3) willFreeze = true;
+    }
+
+    // second chance: one retry on the remaining options
+    if (!willFreeze && this.attempted === 0) {
+      this.attempted = 1;
+      this.el.feedback.textContent = this.suspicion === 2
+        ? 'Tu cliques trop vite sans lire 🧐 Réfléchis et essaie encore !'
+        : pick(['Presque ! Essaie encore 🤔', 'Pas celle-là… tu as une 2e chance !', 'Regarde bien, retente ta chance !']);
+      this.el.feedback.className = 'retry';
+      return;
+    }
+
+    this.locked = true;
+    buttons.forEach((b) => b.classList.add('disabled'));
+    buttons[this.current.answerIndex].classList.add('good');
+    this.el.feedback.textContent = `La bonne réponse était : ${this.current.correct}`;
+    this.el.feedback.className = 'bad';
+    this.recordOutcome(this.current.skill, false);
+    this.logQuestion(false);
+
+    if (willFreeze) {
+      setTimeout(() => this.freeze(), 1200);
+      return;
+    }
+    setTimeout(() => this.nextQuestion(), 2300);
+  }
+
+  showCombo() {
+    const combo = document.getElementById('quiz-combo');
+    combo.textContent = `🔥 COMBO ×${this.streak} !`;
+    combo.className = 'combo-pop';
+    clearTimeout(this._comboTimer);
+    this._comboTimer = setTimeout(() => { combo.className = 'combo-hidden'; }, 1300);
   }
 
   freeze() {
@@ -766,18 +951,45 @@ export class EducationMode {
     }
   }
 
+  victoryTitle() {
+    const TITLES = {
+      Math: ['MATH GÉNIE ! 🧮', 'ROI DES NOMBRES ! 🔢'],
+      English: ['WORD WIZARD ! 📚', 'ENGLISH STAR ! ⭐'],
+      'Français': ['AS DU FRANÇAIS ! 🥖', 'ORTHO-HÉROS ! ✍️'],
+      'Découverte': ['GÉO MASTER ! 🌍', 'PETIT SAVANT ! 🔬'],
+    };
+    let best = 'Math', bestN = -1;
+    for (const [cat, n] of Object.entries(this.setStats || {})) {
+      if (n > bestN) { best = cat; bestN = n; }
+    }
+    return pick(TITLES[best] || TITLES.Math);
+  }
+
   celebrate() {
     this.confetti();
-    if (this.marathon) {
-      this.grantExtraBlock();
-      this.el.question.textContent = '+45 minutes de jeu débloquées ! 🎮';
-    } else {
-      this.el.question.textContent = `+${SESSION_SECONDS / 60} minutes de jeu ! 🎮`;
-    }
+    this.emojiBurst();
+    document.getElementById('quiz-visual').style.display = 'none';
+    const heroPraise = pick([
+      'Capitaine Éclair : « Tu es un vrai héros ! ⚡ »',
+      'Super Nova : « Boum ! Une étoile est née ! ✨ »',
+      'Prof. Cornichon : « Extraordinaire, jeune génie ! 🥒 »',
+      'Marlon : « Trop fort !! On retourne jouer ! 🎉 »',
+      'Léo le Bâtisseur : « Solide comme une brique ! 🧱 »',
+    ]);
+    const reward = this.hooks.reward ? this.hooks.reward() : null;
+    const rewardLine = reward
+      ? `<br>🎁 Tu gagnes une créature : <b>${reward.name}</b> (${reward.type}) — elle est dans ton Dex !`
+      : '';
+
+    this.el.question.textContent = this.victoryTitle();
+    this.el.question.className = 'mega-title';
     this.el.category.textContent = '🏆';
     this.el.count.textContent = '';
-    this.el.feedback.textContent = `${this.needed()} bonnes réponses — champion !`;
+    this.el.feedback.innerHTML =
+      `${this.marathon ? '+45 minutes débloquées !' : `+${SESSION_SECONDS / 60} minutes de jeu !`} 🎮` +
+      `<br>${heroPraise}${rewardLine}`;
     this.el.feedback.className = 'good';
+    if (this.marathon) this.grantExtraBlock();
     // pointer lock needs a real click, so resuming goes through a button
     this.el.options.innerHTML = '';
     const btn = document.createElement('button');
@@ -795,6 +1007,21 @@ export class EducationMode {
       this.hooks.onResume();
     });
     this.el.options.appendChild(btn);
+  }
+
+  emojiBurst() {
+    const container = document.getElementById('confetti');
+    const emojis = ['⭐', '🏆', '🔥', '🎉', '💎', '🚀', '🌟', '💪'];
+    for (let i = 0; i < 22; i++) {
+      const p = document.createElement('span');
+      p.className = 'emoji-burst';
+      p.textContent = emojis[rnd(emojis.length)];
+      p.style.left = 10 + Math.random() * 80 + 'vw';
+      p.style.animationDelay = Math.random() * 0.8 + 's';
+      p.style.fontSize = 22 + Math.random() * 26 + 'px';
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 3000);
+    }
   }
 
   confetti() {
@@ -840,11 +1067,49 @@ export class EducationMode {
       `<div><b>Aujourd'hui</b></div>` +
       `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b></div>` +
       `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
-      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/3 · English <b>${this.categoryLevel('English')}</b>/2 · Français <b>${this.categoryLevel('Français')}</b>/2</div>` +
+      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/3 · English <b>${this.categoryLevel('English')}</b>/2 · Français <b>${this.categoryLevel('Français')}</b>/2 · Découverte <b>${this.categoryLevel('Découverte')}</b>/2</div>` +
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
 
-    if (t.correct.length > 0) {
+    // Parent digest: what works well / what needs practice, from today's log.
+    const qs = t.qs || [];
+    if (qs.length >= 2) {
+      const bySkill = {};
+      for (const item of qs) {
+        if (!bySkill[item.s]) bySkill[item.s] = { ok: 0, total: 0 };
+        bySkill[item.s].total++;
+        if (item.ok) bySkill[item.s].ok++;
+      }
+      const strong = [], weak = [];
+      for (const [skill, st] of Object.entries(bySkill)) {
+        if (st.total < 2) continue;
+        const label = SKILL_LABELS[skill] || skill;
+        if (st.ok / st.total >= 0.75) strong.push(`${label} (${st.ok}/${st.total})`);
+        else if (st.ok / st.total <= 0.5) weak.push(`${label} (${st.ok}/${st.total})`);
+      }
+      const digest = document.createElement('div');
+      digest.className = 'edu-summary';
+      digest.innerHTML = `<div><b>📋 Bilan du jour</b></div>` +
+        (strong.length ? `<div class="edu-strong">🟢 Ça marche bien : ${strong.join(' · ')}</div>` : '') +
+        (weak.length ? `<div class="edu-weak">🔴 À travailler : ${weak.join(' · ')}</div>` : '') +
+        (!strong.length && !weak.length ? '<div>Encore un peu de données nécessaires…</div>' : '');
+      body.appendChild(digest);
+    }
+
+    if (qs.length > 0) {
+      const h = document.createElement('div');
+      h.className = 'edu-heading';
+      h.textContent = "Toutes les questions d'aujourd'hui :";
+      body.appendChild(h);
+      for (const item of [...qs].reverse()) {
+        const row = document.createElement('div');
+        row.className = 'edu-row';
+        const time = new Date(item.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const mark = item.ok ? '<span class="mark ok">✓</span>' : '<span class="mark ko">✗</span>';
+        row.innerHTML = `${mark} <span class="edu-cat" data-cat="${item.c}">${item.c}</span> ${item.q} → <b>${item.a}</b> <span class="edu-time">${time}</span>`;
+        body.appendChild(row);
+      }
+    } else if (t.correct.length > 0) { // older data without the full log
       const h = document.createElement('div');
       h.className = 'edu-heading';
       h.textContent = "Ses bonnes réponses d'aujourd'hui :";

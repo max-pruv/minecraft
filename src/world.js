@@ -38,6 +38,69 @@ function fbm(x, z, seed, octaves = 4) {
   return sum / norm; // 0..1
 }
 
+// --- landmarks --------------------------------------------------------------
+// Famous-city-inspired monuments stamped into the terrain at fixed coords
+// near spawn: an Eiffel-style tower, a stepped Manhattan skyscraper, and a
+// red suspension bridge. set(dx, dy, dz, id) is relative to the anchor base.
+
+function buildEiffelTower(set) {
+  const ring = (r, y) => {
+    for (let d = -r; d <= r; d++) {
+      set(d, y, -r, BLOCK.COBBLE); set(d, y, r, BLOCK.COBBLE);
+      set(-r, y, d, BLOCK.COBBLE); set(r, y, d, BLOCK.COBBLE);
+    }
+  };
+  for (let y = 0; y < 8; y++) for (const sx of [-3, 3]) for (const sz of [-3, 3]) set(sx, y, sz, BLOCK.COBBLE);
+  ring(3, 8);
+  for (let y = 9; y < 16; y++) for (const sx of [-2, 2]) for (const sz of [-2, 2]) set(sx, y, sz, BLOCK.COBBLE);
+  ring(2, 16);
+  for (let y = 17; y < 24; y++) for (const sx of [-1, 1]) for (const sz of [-1, 1]) set(sx, y, sz, BLOCK.COBBLE);
+  ring(1, 24);
+  for (let y = 25; y < 31; y++) set(0, y, 0, BLOCK.COBBLE);
+  set(0, 31, 0, BLOCK.GLASS); // the beacon
+}
+
+function buildSkyscraper(set) {
+  const levels = [[5, 0, 12], [4, 12, 22], [3, 22, 30], [2, 30, 36]];
+  for (const [r, from, to] of levels) {
+    for (let y = from; y < to; y++) {
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dz = -r; dz <= r; dz++) {
+          if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue; // walls only
+          const glassRow = y % 3 === 1;
+          set(dx, y, dz, glassRow ? BLOCK.GLASS : BLOCK.BRICK);
+        }
+      }
+    }
+  }
+  for (let y = 36; y < 42; y++) set(0, y, 0, BLOCK.BRICK); // spire
+  set(0, 42, 0, BLOCK.GLASS);
+}
+
+function buildSuspensionBridge(set) {
+  for (const tx of [-15, 15]) { // the two towers
+    for (let y = 0; y < 18; y++) {
+      for (const dx of [0, 1]) for (const dz of [-1, 2]) set(tx + dx, y, dz, BLOCK.BRICK);
+    }
+    for (const yy of [10, 17]) for (const dz of [0, 1]) set(tx, yy, dz, BLOCK.BRICK);
+  }
+  for (let dx = -20; dx <= 21; dx++) { // deck
+    for (let dz = 0; dz <= 1; dz++) set(dx, 8, dz, BLOCK.PLANK);
+  }
+  for (let dx = -14; dx <= 15; dx++) { // catenary-ish cables
+    const t = Math.min(Math.abs(dx - 0.5) / 15, 1);
+    const cy = 17 - Math.round((1 - t * t) * 8);
+    set(dx, cy, -1, BLOCK.BRICK);
+    set(dx, cy, 2, BLOCK.BRICK);
+  }
+}
+
+const LANDMARKS = [
+  { name: 'Tour Eiffel', x: 45, z: 45, box: 4, build: buildEiffelTower },
+  { name: 'Empire State', x: -55, z: -15, box: 6, build: buildSkyscraper },
+  { name: 'Golden Gate', x: 25, z: -60, box: 22, build: buildSuspensionBridge },
+];
+
 // --- world ----------------------------------------------------------------
 
 export class World {
@@ -125,6 +188,19 @@ export class World {
         // trunk
         for (let y = h + 1; y <= topY; y++) put(tx, y, tz, BLOCK.LOG, false);
       }
+    }
+
+    // Landmarks (fixed world positions, deterministic base height).
+    for (const lm of LANDMARKS) {
+      if (lm.x + lm.box < baseX || lm.x - lm.box >= baseX + CHUNK ||
+          lm.z + lm.box < baseZ || lm.z - lm.box >= baseZ + CHUNK) continue;
+      const baseY = this.terrainHeight(lm.x, lm.z);
+      lm.build((dx, dy, dz, id) => {
+        const lx = lm.x + dx - baseX, lz = lm.z + dz - baseZ;
+        const wy = baseY + dy;
+        if (lx < 0 || lx >= CHUNK || lz < 0 || lz >= CHUNK || wy < 0 || wy >= HEIGHT) return;
+        data[World.index(lx, wy, lz)] = id;
+      });
     }
 
     // Re-apply player edits inside this chunk.

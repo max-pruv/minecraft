@@ -62,9 +62,17 @@ function buildKidMesh(look) {
   head.position.y = 1.26;
   g.add(head);
 
-  const hairTop = box(0.4, 0.1, 0.4, look.hair);
-  hairTop.position.y = 1.47;
-  g.add(hairTop);
+  if (look.hat) { // construction hard hat
+    const hatTop = box(0.42, 0.14, 0.42, look.hat);
+    hatTop.position.y = 1.5;
+    const brim = box(0.5, 0.05, 0.5, look.hat);
+    brim.position.y = 1.44;
+    g.add(hatTop, brim);
+  } else {
+    const hairTop = box(0.4, 0.1, 0.4, look.hair);
+    hairTop.position.y = 1.47;
+    g.add(hairTop);
+  }
   const fringe = box(0.4, 0.12, 0.04, look.hair);
   fringe.position.set(0, 1.38, -0.19);
   g.add(fringe);
@@ -393,4 +401,56 @@ export function createHeroes(scene, world, player, toast, cx, cz) {
   }, cx + 11, cz - 6);
 
   return [eclair, nova];
+}
+
+// Blocky builder minifigures in hard hats and safety vests.
+export function createBuilders(scene, world, player, toast, cx, cz) {
+  const VEST = 0xe8892c, STRIPE = 0xe8c53c;
+  const leo = new Wanderer(scene, world, player, toast, {
+    name: 'Léo le Bâtisseur',
+    label: 'Léo le Bâtisseur — champion de la construction !',
+    walkSpeed: 2.0,
+    firstSpeech: 24,
+    look: {
+      skin: 0xe8bd93, hair: 0x3a2a1a,
+      torsoSlabs: [VEST, STRIPE, VEST, STRIPE, VEST],
+      sleeveSegs: [VEST, VEST, VEST],
+      pants: 0x4a5a6a, shoes: 0x5a3a20,
+      hairstyle: 'short', glasses: false,
+      hat: 0xe8c53c,
+    },
+    phrases: [
+      'Un bloc après l\'autre !',
+      'On construit une tour ensemble ?',
+      'As-tu vu la Tour Eiffel là-bas ?',
+      'Les briques rouges, y a que ça de vrai.',
+      'Mon casque ? Sécurité d\'abord !',
+      'Le grand pont rouge, c\'est moi qui l\'ai fini !',
+    ],
+  }, cx - 12, cz - 9);
+
+  const mia = new Wanderer(scene, world, player, toast, {
+    name: 'Mia la Bâtisseuse',
+    label: 'Mia la Bâtisseuse — architecte des monuments !',
+    walkSpeed: 2.0,
+    firstSpeech: 30,
+    look: {
+      skin: 0xc98a5e, hair: 0x1c1c1c,
+      torsoSlabs: [VEST, STRIPE, VEST, STRIPE, VEST],
+      sleeveSegs: [VEST, VEST, VEST],
+      pants: 0x4a5a6a, shoes: 0x5a3a20,
+      hairstyle: 'bun', glasses: false,
+      hat: 0xd83a3a,
+    },
+    phrases: [
+      'C\'est moi qui ai dessiné le gratte-ciel !',
+      'Pose tes blocs bien droits !',
+      'Un jour, on construira jusqu\'aux nuages.',
+      'La géométrie, ça sert à construire !',
+      'Va voir le grand pont, il est magnifique.',
+      'Les architectes adorent les maths !',
+    ],
+  }, cx + 8, cz + 13);
+
+  return [leo, mia];
 }
