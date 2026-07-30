@@ -111,6 +111,42 @@
       color: #fff; font-size: 18px;
     }
 
+    /* creature catching */
+    #creature-label {
+      display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
+      font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
+      z-index: 5; pointer-events: none; white-space: nowrap;
+    }
+    #toast {
+      position: fixed; left: 50%; top: 10%; transform: translateX(-50%);
+      font-size: 17px; font-weight: bold; text-shadow: 1px 1px 0 #000;
+      opacity: 0; transition: opacity 0.5s; z-index: 8; pointer-events: none; white-space: nowrap;
+    }
+    #ball-btn { right: 176px; bottom: 110px; font-size: 26px; }
+    #dex-btn {
+      position: fixed; top: 8px; right: 56px; z-index: 7;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px; cursor: pointer;
+    }
+    #dex-panel {
+      display: none; position: fixed; top: 56px; right: 8px; z-index: 9;
+      width: min(320px, 90vw); max-height: 70vh; overflow-y: auto;
+      background: rgba(10, 14, 20, 0.92); border: 2px solid #555; border-radius: 8px;
+      color: #eee; padding: 12px; font-size: 13px;
+    }
+    #dex-title { font-weight: bold; margin-bottom: 8px; padding-right: 24px; }
+    #dex-close {
+      position: absolute; top: 6px; right: 8px; background: none; border: none;
+      color: #aaa; font-size: 16px; cursor: pointer;
+    }
+    .dex-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .dex-row.unknown { color: #777; }
+    .type-chip {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      color: #111; font-size: 10px; font-weight: bold; vertical-align: middle;
+    }
+
     @media (max-width: 700px) {
       .slot { width: 34px; height: 34px; border-width: 2px; }
       .slot canvas { width: 26px; height: 26px; }
@@ -127,7 +163,16 @@
   <div id="debug"></div>
   <div id="block-name"></div>
   <div id="hotbar"></div>
+  <div id="creature-label"></div>
+  <div id="toast"></div>
   <button id="pause-btn">⏸</button>
+  <button id="dex-btn" title="Creature Dex (B)">◓</button>
+
+  <div id="dex-panel">
+    <div id="dex-title"></div>
+    <button id="dex-close">✕</button>
+    <div id="dex-list"></div>
+  </div>
 
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
@@ -135,6 +180,7 @@
     <button class="tbtn" id="mode-btn">⛏️</button>
     <button class="tbtn" id="fly-btn">✈️</button>
     <button class="tbtn" id="down-btn">▼</button>
+    <button class="tbtn" id="ball-btn">◓</button>
   </div>
 
   <div id="overlay">
@@ -152,6 +198,8 @@
       <div><b>Shift</b> — sprint</div>
       <div><b>1–9 / wheel</b> — select block</div>
       <div><b>F</b> — toggle fly (Space/C up/down)</div>
+      <div><b>Q / ◓</b> — throw catch-ball at creatures</div>
+      <div><b>B / ◓ top button</b> — creature dex</div>
       <div><b>Esc</b> — pause</div>
       <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
       <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>

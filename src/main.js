@@ -6,6 +6,7 @@ import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures
 import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
+import { CreatureManager, TYPES } from './creatures.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const RENDER_RADIUS = IS_TOUCH ? 4 : 5; // chunks in each direction (smaller on mobile GPUs)
@@ -55,6 +56,7 @@ const world = new World();
 world.loadEdits();
 
 const player = new Player(camera, world);
+const creatureManager = new CreatureManager(scene, world, player);
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -260,6 +262,8 @@ document.addEventListener('keydown', (e) => {
   if (!running) return;
   player.keys.add(e.code);
   if (e.code === 'KeyF') player.toggleFly();
+  if (e.code === 'KeyQ') creatureManager.throwBall();
+  if (e.code === 'KeyB') toggleDex();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
     if (n >= 1 && n <= HOTBAR_BLOCKS.length) selectSlot(n - 1);
@@ -447,6 +451,39 @@ document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   document.getElementById('down-btn').style.display = player.flying ? 'flex' : 'none';
 }, { passive: false });
 
+document.getElementById('ball-btn').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  creatureManager.throwBall();
+}, { passive: false });
+
+// --- creature dex panel -----------------------------------------------------------
+
+const dexPanel = document.getElementById('dex-panel');
+
+function toggleDex() {
+  const open = dexPanel.style.display === 'block';
+  if (open) {
+    dexPanel.style.display = 'none';
+  } else {
+    creatureManager.renderDex();
+    dexPanel.style.display = 'block';
+  }
+}
+
+document.getElementById('dex-btn').addEventListener('click', toggleDex);
+document.getElementById('dex-close').addEventListener('click', toggleDex);
+
+const creatureLabel = document.getElementById('creature-label');
+
+function updateCreatureLabel() {
+  const c = running ? creatureManager.targeted() : null;
+  if (!c) { creatureLabel.style.display = 'none'; return; }
+  creatureLabel.style.display = 'block';
+  creatureLabel.textContent =
+    `Wild ${c.sp.name} · ${c.sp.type} · Lv ${c.level} — ${IS_TOUCH ? 'tap ◓' : 'press Q'} to throw!`;
+  creatureLabel.style.color = '#' + new THREE.Color(TYPES[c.sp.type].color).getHexString();
+}
+
 // --- hotbar HUD ------------------------------------------------------------------
 
 let selectedSlot = 0;
@@ -533,18 +570,26 @@ function updateHud(dt) {
 
 // --- main loop -------------------------------------------------------------------------
 
+// console/debug handle
+window.__game = { world, player, creatureManager };
+
 let lastTime = performance.now();
 
 function frame(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
 
-  if (running) player.update(dt);
-  else player.syncCamera();
+  if (running) {
+    player.update(dt);
+    creatureManager.update(dt);
+  } else {
+    player.syncCamera();
+  }
 
   updateChunks();
   updateSky(dt);
   updateHud(dt);
+  updateCreatureLabel();
 
   const hit = running ? getTarget() : null;
   highlight.visible = !!hit;
