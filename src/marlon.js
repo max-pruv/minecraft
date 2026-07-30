@@ -11,7 +11,8 @@ function box(w, h, d, color) {
   return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
 }
 
-// look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle, glasses }
+// look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle,
+//         glasses, cape, mask } — cape/mask take a color, for superheroes
 function buildKidMesh(look) {
   const g = new THREE.Group(); // faces -z, feet at y=0
 
@@ -50,6 +51,13 @@ function buildKidMesh(look) {
     arms.push(arm);
   }
 
+  if (look.cape) {
+    const cape = box(0.44, 0.6, 0.05, look.cape);
+    cape.position.set(0, 0.78, 0.17);
+    cape.rotation.x = 0.12;
+    g.add(cape);
+  }
+
   const head = box(0.36, 0.36, 0.36, look.skin);
   head.position.y = 1.26;
   g.add(head);
@@ -77,9 +85,14 @@ function buildKidMesh(look) {
     g.add(side);
   }
 
+  if (look.mask) {
+    const band = box(0.4, 0.13, 0.02, look.mask);
+    band.position.set(0, 1.28, -0.19);
+    g.add(band);
+  }
   for (const sx of [-1, 1]) {
-    const eye = box(0.06, 0.07, 0.02, 0x3d2f23);
-    eye.position.set(sx * 0.09, 1.28, -0.185);
+    const eye = box(0.06, 0.07, 0.02, look.mask ? 0xffffff : 0x3d2f23);
+    eye.position.set(sx * 0.09, 1.28, look.mask ? -0.2 : -0.185);
     g.add(eye);
     if (look.glasses) {
       const rim = box(0.12, 0.11, 0.015, 0x222222);
@@ -112,6 +125,7 @@ class BaseNPC {
     this.player = player;
     this.toast = toast;
     this.name = opts.name;
+    this.label = opts.label || opts.name;
     this.phrases = opts.phrases;
     this.walkSpeed = opts.walkSpeed;
     this.pos = new THREE.Vector3();
@@ -222,6 +236,7 @@ export class Marlon extends BaseNPC {
   constructor(scene, world, player, toast) {
     super(scene, world, player, toast, {
       name: 'Marlon',
+      label: 'Marlon — ton compagnon !',
       walkSpeed: 4.0,
       firstSpeech: 4,
       look: {
@@ -263,30 +278,10 @@ export class Marlon extends BaseNPC {
   }
 }
 
-export class Cornichon extends BaseNPC {
-  constructor(scene, world, player, toast, homeX, homeZ) {
-    super(scene, world, player, toast, {
-      name: 'Prof. Cornichon',
-      walkSpeed: 1.6,
-      firstSpeech: 10,
-      look: {
-        skin: 0xdfae85, hair: 0x7a8a3a, // pickle-green hair, obviously
-        torsoSlabs: [WHITE, WHITE, WHITE, WHITE, WHITE], // lab coat
-        sleeveSegs: [WHITE, WHITE, WHITE],
-        pants: 0x3f5a3a, shoes: 0x4a3526,
-        hairstyle: 'short', glasses: true,
-      },
-      phrases: [
-        'Bonjour, jeune dresseur !',
-        'Je suis le Professeur Cornichon !',
-        'Les créatures rares adorent la neige et le sable !',
-        'As-tu rempli ton Dex ?',
-        'Réponds bien à mon quiz pour jouer plus longtemps !',
-        'Les créatures SPOOKY sont très difficiles à attraper.',
-        'Un cornichon par jour, en pleine forme toujours !',
-        'Reviens me voir quand tu auras tout attrapé !',
-      ],
-    });
+// Wanders around a home point; faces the player when approached.
+export class Wanderer extends BaseNPC {
+  constructor(scene, world, player, toast, opts, homeX, homeZ) {
+    super(scene, world, player, toast, opts);
     this.home = new THREE.Vector2(homeX, homeZ);
     this.state = 'idle';
     this.stateTime = 2;
@@ -319,4 +314,83 @@ export class Cornichon extends BaseNPC {
       yaw: this.state === 'walk' ? this.wanderYaw : this.yaw,
     };
   }
+}
+
+export class Cornichon extends Wanderer {
+  constructor(scene, world, player, toast, homeX, homeZ) {
+    super(scene, world, player, toast, {
+      name: 'Prof. Cornichon',
+      label: 'Professeur Cornichon — expert en créatures !',
+      walkSpeed: 1.6,
+      firstSpeech: 10,
+      look: {
+        skin: 0xdfae85, hair: 0x7a8a3a, // pickle-green hair, obviously
+        torsoSlabs: [WHITE, WHITE, WHITE, WHITE, WHITE], // lab coat
+        sleeveSegs: [WHITE, WHITE, WHITE],
+        pants: 0x3f5a3a, shoes: 0x4a3526,
+        hairstyle: 'short', glasses: true,
+      },
+      phrases: [
+        'Bonjour, jeune dresseur !',
+        'Je suis le Professeur Cornichon !',
+        'Les créatures rares adorent la neige et le sable !',
+        'As-tu rempli ton Dex ?',
+        'Réponds bien à mon quiz pour jouer plus longtemps !',
+        'Les créatures SPOOKY sont très difficiles à attraper.',
+        'Un cornichon par jour, en pleine forme toujours !',
+        'Reviens me voir quand tu auras tout attrapé !',
+      ],
+    }, homeX, homeZ);
+  }
+}
+
+// Original caped superheroes who patrol the world.
+export function createHeroes(scene, world, player, toast, cx, cz) {
+  const eclair = new Wanderer(scene, world, player, toast, {
+    name: 'Capitaine Éclair',
+    label: 'Capitaine Éclair — super-héros !',
+    walkSpeed: 2.6,
+    firstSpeech: 14,
+    look: {
+      skin: 0xe8bd93, hair: 0x2c2416,
+      torsoSlabs: [0x2b4fd9, 0x2b4fd9, 0xe8c53c, 0x2b4fd9, 0x2b4fd9],
+      sleeveSegs: [0x2b4fd9, 0x2b4fd9, 0x2b4fd9],
+      pants: 0x24398f, shoes: 0xe8c53c,
+      hairstyle: 'short', glasses: false,
+      cape: 0xd83a3a, mask: 0xd83a3a,
+    },
+    phrases: [
+      "Plus rapide que l'éclair ! ⚡",
+      'Justice et blocs pour tous !',
+      'Un héros protège toujours ses amis !',
+      'J\'ai vu une créature rare près de la montagne !',
+      'Entraîne-toi bien au quiz, petit héros !',
+      'Mon costume ? Cousu par ma grand-mère.',
+    ],
+  }, cx - 9, cz + 7);
+
+  const nova = new Wanderer(scene, world, player, toast, {
+    name: 'Super Nova',
+    label: 'Super Nova — super-héroïne !',
+    walkSpeed: 2.2,
+    firstSpeech: 20,
+    look: {
+      skin: 0xc98a5e, hair: 0x3a2a5e,
+      torsoSlabs: [0x7a3ae8, 0x7a3ae8, 0xe8c53c, 0x7a3ae8, 0x7a3ae8],
+      sleeveSegs: [0x7a3ae8, 0x7a3ae8, 0x7a3ae8],
+      pants: 0x5a2ab8, shoes: 0xe8c53c,
+      hairstyle: 'bun', glasses: false,
+      cape: 0xe8c53c, mask: 0x2a1a4e,
+    },
+    phrases: [
+      'Je veille sur ce monde depuis les étoiles ! ✨',
+      'Boum ! Supernova !',
+      'Les vrais héros lisent bien avant de répondre !',
+      'Ensemble, on est plus forts !',
+      'Attrape-les tous, jeune héros !',
+      'Ma cape brille même la nuit.',
+    ],
+  }, cx + 11, cz - 6);
+
+  return [eclair, nova];
 }

@@ -7,7 +7,7 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon, Cornichon } from './marlon.js';
+import { Marlon, Cornichon, createHeroes } from './marlon.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -61,6 +61,7 @@ const player = new Player(camera, world);
 const creatureManager = new CreatureManager(scene, world, player);
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
+let npcs = [];
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -173,6 +174,7 @@ function updateChunks() {
   const say = (msg, color) => creatureManager.toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
+  npcs = [marlon, cornichon, ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z)];
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -496,17 +498,15 @@ const edu = new EducationMode({
 const creatureLabel = document.getElementById('creature-label');
 
 function updateCreatureLabel() {
-  if (running && marlon && marlon.isTargeted()) {
-    creatureLabel.style.display = 'block';
-    creatureLabel.textContent = 'Marlon — ton compagnon !';
-    creatureLabel.style.color = '#fff';
-    return;
-  }
-  if (running && cornichon && cornichon.isTargeted()) {
-    creatureLabel.style.display = 'block';
-    creatureLabel.textContent = 'Professeur Cornichon — expert en créatures !';
-    creatureLabel.style.color = '#fff';
-    return;
+  if (running) {
+    for (const npc of npcs) {
+      if (npc.isTargeted()) {
+        creatureLabel.style.display = 'block';
+        creatureLabel.textContent = npc.label;
+        creatureLabel.style.color = '#fff';
+        return;
+      }
+    }
   }
   const c = running ? creatureManager.targeted() : null;
   if (!c) { creatureLabel.style.display = 'none'; return; }
@@ -603,7 +603,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; } };
+window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
 
 let lastTime = performance.now();
 
@@ -614,8 +614,7 @@ function frame(now) {
   if (running) {
     player.update(dt);
     creatureManager.update(dt);
-    if (marlon) marlon.update(dt);
-    if (cornichon) cornichon.update(dt);
+    for (const npc of npcs) npc.update(dt);
   } else {
     player.syncCamera();
   }

@@ -46,8 +46,8 @@ export function generateSpecies() {
   const species = [];
   const names = new Set();
   const typeKeys = Object.keys(TYPES);
-  for (let i = 0; i < 32; i++) {
-    const type = typeKeys[i % typeKeys.length]; // four of each type
+  for (let i = 0; i < 48; i++) {
+    const type = typeKeys[i % typeKeys.length]; // six of each type
     let name = makeName(rng);
     while (names.has(name)) name = makeName(rng);
     names.add(name);
