@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web Minecraft</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    body { font-family: 'Courier New', monospace; user-select: none; }
+    #game { display: block; width: 100%; height: 100%; }
+
+    /* crosshair */
+    #crosshair {
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 20px; height: 20px; pointer-events: none; z-index: 5;
+    }
+    #crosshair::before, #crosshair::after {
+      content: ''; position: absolute; background: rgba(255,255,255,0.85);
+      mix-blend-mode: difference;
+    }
+    #crosshair::before { left: 9px; top: 0; width: 2px; height: 20px; }
+    #crosshair::after  { left: 0; top: 9px; width: 20px; height: 2px; }
+
+    /* hotbar */
+    #hotbar {
+      position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
+      display: flex; gap: 4px; z-index: 5;
+    }
+    .slot {
+      width: 48px; height: 48px; border: 3px solid #555;
+      background: rgba(0,0,0,0.45); position: relative; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .slot.selected { border-color: #fff; }
+    .slot canvas { width: 36px; height: 36px; image-rendering: pixelated; }
+    .slot .num {
+      position: absolute; top: 1px; left: 3px; font-size: 10px;
+      color: #ddd; text-shadow: 1px 1px 0 #000;
+    }
+    #block-name {
+      position: fixed; left: 50%; bottom: 68px; transform: translateX(-50%);
+      color: #fff; text-shadow: 1px 1px 0 #000; font-size: 14px; z-index: 5;
+    }
+
+    /* debug line */
+    #debug {
+      position: fixed; top: 8px; left: 8px; color: #fff; font-size: 12px;
+      text-shadow: 1px 1px 0 #000; z-index: 5;
+    }
+
+    /* underwater tint */
+    #water-tint {
+      display: none; position: fixed; inset: 0; pointer-events: none;
+      background: rgba(20, 60, 160, 0.35); z-index: 4;
+    }
+
+    /* start / pause overlay */
+    #overlay {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(10, 14, 20, 0.82); color: #eee; text-align: center;
+    }
+    #overlay h1 {
+      font-size: 42px; margin-bottom: 8px; letter-spacing: 2px;
+      color: #fff; text-shadow: 3px 3px 0 #3a3a3a;
+    }
+    #overlay .subtitle { color: #9c9; margin-bottom: 24px; }
+    #overlay button {
+      font-family: inherit; font-size: 18px; padding: 12px 40px; margin: 6px;
+      cursor: pointer; color: #fff; background: #6a6a6a;
+      border: 2px solid; border-color: #a8a8a8 #4a4a4a #4a4a4a #a8a8a8;
+    }
+    #overlay button:hover { background: #7d7d9d; }
+    #overlay button.danger { background: #7a4a4a; }
+    #overlay .controls {
+      margin-top: 26px; font-size: 13px; line-height: 1.9; color: #bbb;
+      column-count: 2; column-gap: 48px; text-align: left;
+    }
+    #overlay .controls b { color: #fff; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="water-tint"></div>
+  <div id="crosshair"></div>
+  <div id="debug"></div>
+  <div id="block-name"></div>
+  <div id="hotbar"></div>
+
+  <div id="overlay">
+    <h1 id="overlay-title">WEB MINECRAFT</h1>
+    <div class="subtitle">A browser voxel world — your edits are saved locally</div>
+    <button id="play-btn">Play</button>
+    <button id="reset-btn" class="danger">Reset World</button>
+    <div class="controls">
+      <div><b>W A S D</b> — move</div>
+      <div><b>Mouse</b> — look around</div>
+      <div><b>Left click</b> — break block</div>
+      <div><b>Right click</b> — place block</div>
+      <div><b>Middle click</b> — pick block</div>
+      <div><b>Space</b> — jump / swim up</div>
+      <div><b>Shift</b> — sprint</div>
+      <div><b>1–9 / wheel</b> — select block</div>
+      <div><b>F</b> — toggle fly (Space/C up/down)</div>
+      <div><b>Esc</b> — pause</div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
