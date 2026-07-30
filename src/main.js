@@ -7,6 +7,7 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
+import { Marlon } from './marlon.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const RENDER_RADIUS = IS_TOUCH ? 4 : 5; // chunks in each direction (smaller on mobile GPUs)
@@ -57,6 +58,7 @@ world.loadEdits();
 
 const player = new Player(camera, world);
 const creatureManager = new CreatureManager(scene, world, player);
+let marlon = null; // spawned after the spawn point is known
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -166,6 +168,7 @@ function updateChunks() {
     for (let dx = -1; dx <= 1; dx++) meshChunk(pcx + dx, pcz + dz);
   }
   rebuildQueue();
+  marlon = new Marlon(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -476,6 +479,12 @@ document.getElementById('dex-close').addEventListener('click', toggleDex);
 const creatureLabel = document.getElementById('creature-label');
 
 function updateCreatureLabel() {
+  if (running && marlon && marlon.isTargeted()) {
+    creatureLabel.style.display = 'block';
+    creatureLabel.textContent = 'Marlon — ton compagnon !';
+    creatureLabel.style.color = '#fff';
+    return;
+  }
   const c = running ? creatureManager.targeted() : null;
   if (!c) { creatureLabel.style.display = 'none'; return; }
   creatureLabel.style.display = 'block';
@@ -571,7 +580,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager };
+window.__game = { world, player, creatureManager, get marlon() { return marlon; } };
 
 let lastTime = performance.now();
 
@@ -582,6 +591,7 @@ function frame(now) {
   if (running) {
     player.update(dt);
     creatureManager.update(dt);
+    if (marlon) marlon.update(dt);
   } else {
     player.syncCamera();
   }
