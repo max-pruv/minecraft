@@ -1,5 +1,5 @@
 // Educational timer mode for a French-American first grader.
-// Every 5 minutes of play, Professeure Lila asks quiz questions (math,
+// Every 5 minutes of play, Professeur Cornichon asks quiz questions (math,
 // English, French). 4 correct answers extend play time by 5 more minutes.
 // Play time and every correct answer are saved to localStorage.
 
@@ -412,7 +412,13 @@ export class EducationMode {
     this.data = this.load();
     this.enabled = this.data.enabled !== false; // default ON
     this.recent = new Set(this.data.recent || []);
-    this.remaining = SESSION_SECONDS;
+    // Restore the timer across reloads so refreshing can't skip the quiz.
+    const saved = this.data.state || {};
+    this.remaining = Math.min(
+      typeof saved.remaining === 'number' ? saved.remaining : SESSION_SECONDS,
+      SESSION_SECONDS
+    );
+    this.quizDue = !!saved.quizDue || this.remaining <= 0;
     this.quizActive = false;
     this.correctCount = 0;
     this.questionCount = 0;
@@ -437,10 +443,19 @@ export class EducationMode {
       toggle: document.getElementById('edu-toggle'),
     };
 
+    // Parental lock: an adult-level multiplication guards the toggle.
     this.el.toggle.addEventListener('click', () => {
+      const a = 6 + rnd(4), b = 6 + rnd(4);
+      const reply = window.prompt(`Contrôle parental — combien font ${a} × ${b} ?`);
+      if (reply === null) return;
+      if (parseInt(reply.trim(), 10) !== a * b) {
+        window.alert('Réponse incorrecte — demande à un parent !');
+        return;
+      }
       this.enabled = !this.enabled;
       this.data.enabled = this.enabled;
       this.remaining = SESSION_SECONDS;
+      this.quizDue = false;
       this.save();
       this.renderToggle();
     });
@@ -448,6 +463,12 @@ export class EducationMode {
 
     document.getElementById('edu-btn').addEventListener('click', () => this.togglePanel());
     document.getElementById('edu-panel-close').addEventListener('click', () => this.togglePanel());
+
+    // Persist the timer state on tab close/refresh.
+    window.addEventListener('beforeunload', () => this.save());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.save();
+    });
   }
 
   // ---------- persistence ----------
@@ -459,6 +480,7 @@ export class EducationMode {
 
   save() {
     this.data.recent = [...this.recent].slice(-RECENT_CAP);
+    this.data.state = { remaining: this.remaining, quizDue: this.quizDue || this.quizActive };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); } catch { /* ignore */ }
   }
 
@@ -482,10 +504,12 @@ export class EducationMode {
     this.el.timer.style.display = 'block';
 
     if (running && !this.quizActive) {
+      // a quiz owed from a previous session (e.g. after a refresh) reopens now
+      if (this.quizDue) { this.startQuiz(); return; }
       this.remaining -= dt;
       if (this.remaining <= 60 && !this.warned60) {
         this.warned60 = true;
-        this.hooks.toast('⏱ Quiz de Prof. Lila dans 1 minute !', 0xffd75e);
+        this.hooks.toast('⏱ Quiz du Prof. Cornichon dans 1 minute !', 0xffd75e);
       }
       if (this.remaining <= 10 && !this.warned10) {
         this.warned10 = true;
@@ -504,6 +528,9 @@ export class EducationMode {
 
   startQuiz() {
     this.quizActive = true;
+    this.quizDue = true;
+    this.remaining = 0;
+    this.save(); // a refresh from here reopens the quiz, it never skips it
     this.correctCount = 0;
     this.questionCount = 0;
     this.hooks.onPause();
@@ -609,9 +636,11 @@ export class EducationMode {
     btn.addEventListener('click', () => {
       this.el.quiz.style.display = 'none';
       this.quizActive = false;
+      this.quizDue = false;
       this.remaining = SESSION_SECONDS;
       this.warned60 = false;
       this.warned10 = false;
+      this.save();
       this.hooks.onResume();
     });
     this.el.options.appendChild(btn);

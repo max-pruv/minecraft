@@ -28,9 +28,9 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 - **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
   ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
 - **Friendly NPCs** — Marlon, a kid in a striped sailor shirt who follows you
-  around and chats in French, and Professeure Lila, the creature expert.
+  around and chats in French, and Professeur Cornichon, the creature expert.
 - **Educational mode** (toggle on the start screen, ON by default) — every
-  5 minutes of play, Professeure Lila pops a quiz: US first-grade math,
+  5 minutes of play, Professeur Cornichon pops a quiz: US first-grade math,
   English, and French questions (fill-in-the-blank, spelling, word problems,
   translations…). 4 correct answers earn 5 more minutes of play, with star
   progress, confetti celebrations, and questions that avoid repeating. The 🎓
@@ -88,7 +88,7 @@ src/world.js      noise, terrain/tree generation, chunk storage, edits + saving
 src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
 src/creatures.js  creature species/AI/meshes, catch-balls, collection
-src/marlon.js     friendly NPCs (Marlon the companion, Professeure Lila)
+src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/education.js  educational timer mode: quiz bank, stats, persistence
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas

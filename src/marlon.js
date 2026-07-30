@@ -1,5 +1,5 @@
 // Friendly NPCs: Marlon (a kid in a striped sailor shirt who follows the
-// player) and Professeure Lila (the creature expert who hosts the quiz).
+// player) and Professeur Cornichon (the creature expert who hosts the quiz).
 
 import * as THREE from 'three';
 
@@ -263,26 +263,27 @@ export class Marlon extends BaseNPC {
   }
 }
 
-export class Lila extends BaseNPC {
+export class Cornichon extends BaseNPC {
   constructor(scene, world, player, toast, homeX, homeZ) {
     super(scene, world, player, toast, {
-      name: 'Prof. Lila',
+      name: 'Prof. Cornichon',
       walkSpeed: 1.6,
       firstSpeech: 10,
       look: {
-        skin: 0xdfae85, hair: 0x4c3620,
+        skin: 0xdfae85, hair: 0x7a8a3a, // pickle-green hair, obviously
         torsoSlabs: [WHITE, WHITE, WHITE, WHITE, WHITE], // lab coat
         sleeveSegs: [WHITE, WHITE, WHITE],
-        pants: 0x6b6f78, shoes: 0x4a3526,
-        hairstyle: 'bun', glasses: true,
+        pants: 0x3f5a3a, shoes: 0x4a3526,
+        hairstyle: 'short', glasses: true,
       },
       phrases: [
         'Bonjour, jeune dresseur !',
-        'Je suis la Professeure Lila.',
+        'Je suis le Professeur Cornichon !',
         'Les créatures rares adorent la neige et le sable !',
         'As-tu rempli ton Dex ?',
         'Réponds bien à mon quiz pour jouer plus longtemps !',
         'Les créatures SPOOKY sont très difficiles à attraper.',
+        'Un cornichon par jour, en pleine forme toujours !',
         'Reviens me voir quand tu auras tout attrapé !',
       ],
     });
