@@ -7,7 +7,7 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon, Lila } from './marlon.js';
+import { Marlon, Cornichon } from './marlon.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -60,7 +60,7 @@ world.loadEdits();
 const player = new Player(camera, world);
 const creatureManager = new CreatureManager(scene, world, player);
 let marlon = null; // spawned after the spawn point is known
-let lila = null;
+let cornichon = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -172,7 +172,7 @@ function updateChunks() {
   rebuildQueue();
   const say = (msg, color) => creatureManager.toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
-  lila = new Lila(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
+  cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -502,9 +502,9 @@ function updateCreatureLabel() {
     creatureLabel.style.color = '#fff';
     return;
   }
-  if (running && lila && lila.isTargeted()) {
+  if (running && cornichon && cornichon.isTargeted()) {
     creatureLabel.style.display = 'block';
-    creatureLabel.textContent = 'Professeure Lila — experte en créatures !';
+    creatureLabel.textContent = 'Professeur Cornichon — expert en créatures !';
     creatureLabel.style.color = '#fff';
     return;
   }
@@ -603,7 +603,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get lila() { return lila; } };
+window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; } };
 
 let lastTime = performance.now();
 
@@ -615,7 +615,7 @@ function frame(now) {
     player.update(dt);
     creatureManager.update(dt);
     if (marlon) marlon.update(dt);
-    if (lila) lila.update(dt);
+    if (cornichon) cornichon.update(dt);
   } else {
     player.syncCamera();
   }
