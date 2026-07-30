@@ -314,6 +314,12 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => player.keys.delete(e.code));
 
 function breakBlock() {
+  // attacking an animal in reach takes priority over mining the block behind it
+  const animal = animalManager.targeted();
+  if (animal && animal.pos.distanceTo(player.pos) < 4.5) {
+    animalManager.attack(animal);
+    return;
+  }
   const hit = getTarget();
   if (!hit) return;
   world.setBlock(hit.x, hit.y, hit.z, BLOCK.AIR);
@@ -504,6 +510,125 @@ document.getElementById('ball-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   creatureManager.throwBall();
 }, { passive: false });
+
+// --- settings & gyroscope look ----------------------------------------------------
+
+const SETTINGS_KEY = 'web-minecraft-settings-v1';
+let settings = { gyro: true };
+try { settings = { ...settings, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; }
+catch { /* defaults */ }
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* ignore */ }
+}
+
+const settingsPanel = document.getElementById('settings-panel');
+const gyroToggle = document.getElementById('gyro-toggle');
+function renderSettings() { gyroToggle.classList.toggle('on', !!settings.gyro); }
+renderSettings();
+
+// iOS only delivers orientation events after an explicit permission request,
+// and the request must come from a user gesture.
+let gyroPermissionAsked = false;
+function requestGyroPermission() {
+  const DOE = window.DeviceOrientationEvent;
+  if (!gyroPermissionAsked && DOE && typeof DOE.requestPermission === 'function') {
+    gyroPermissionAsked = true;
+    DOE.requestPermission().catch(() => {});
+  }
+}
+document.getElementById('play-btn').addEventListener('click', () => {
+  if (settings.gyro && IS_TOUCH) requestGyroPermission();
+});
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+  settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
+});
+document.getElementById('settings-close').addEventListener('click', () => {
+  settingsPanel.style.display = 'none';
+});
+document.getElementById('gyro-row').addEventListener('click', () => {
+  settings.gyro = !settings.gyro;
+  if (settings.gyro) requestGyroPermission();
+  renderSettings();
+  saveSettings();
+  creatureManager.toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
+});
+
+// Applies the CHANGE in device angles to the camera, so gyro aiming and
+// touch-drag aiming compose naturally.
+const DEG2PX = (Math.PI / 180) / 0.0024; // 1° of device rotation = 1° in game
+let lastOrient = null;
+window.addEventListener('deviceorientation', (e) => {
+  if (!settings.gyro || !running || e.alpha === null || e.alpha === undefined) {
+    lastOrient = null;
+    return;
+  }
+  if (lastOrient) {
+    let dAlpha = e.alpha - lastOrient.alpha;
+    if (dAlpha > 180) dAlpha -= 360; else if (dAlpha < -180) dAlpha += 360;
+    const dBeta = e.beta - lastOrient.beta;
+    const dGamma = e.gamma - lastOrient.gamma;
+    const angle = (screen.orientation ? screen.orientation.angle : window.orientation) || 0;
+    let dyDeg; // positive = look down, per screen orientation
+    if (angle === 90) dyDeg = dGamma;
+    else if (angle === -90 || angle === 270) dyDeg = -dGamma;
+    else if (angle === 180) dyDeg = dBeta;
+    else dyDeg = -dBeta;
+    // ignore sensor jumps and gimbal flips
+    if (Math.abs(dAlpha) < 15 && Math.abs(dyDeg) < 15) {
+      player.onMouseMove(-dAlpha * DEG2PX, dyDeg * DEG2PX);
+    }
+  }
+  lastOrient = { alpha: e.alpha, beta: e.beta, gamma: e.gamma };
+});
+
+// --- meat harvest -----------------------------------------------------------------
+
+const MEAT_KEY = 'web-minecraft-meat-v1';
+let meatCount = 0;
+try { meatCount = Number(localStorage.getItem(MEAT_KEY)) || 0; } catch { meatCount = 0; }
+const meatCounter = document.getElementById('meat-counter');
+function renderMeat() {
+  meatCounter.style.display = meatCount > 0 ? 'block' : 'none';
+  meatCounter.textContent = `🍖 × ${meatCount}`;
+}
+renderMeat();
+
+function emojiBurst(emojis, n = 18) {
+  const container = document.getElementById('confetti');
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'emoji-burst2';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = 20 + Math.random() * 60 + 'vw';
+    s.style.animationDelay = Math.random() * 0.5 + 's';
+    s.style.fontSize = 20 + Math.random() * 26 + 'px';
+    container.appendChild(s);
+    setTimeout(() => s.remove(), 2400);
+  }
+}
+
+animalManager.onHarvest = (def) => {
+  meatCount++;
+  try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
+  renderMeat();
+  creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
+  emojiBurst([def.meat.split(' ')[0], '✨'], 10);
+};
+
+// --- catch celebration ------------------------------------------------------------
+
+const catchBanner = document.getElementById('catch-banner');
+creatureManager.onCatch = (sp, level) => {
+  document.getElementById('catch-title').textContent = '⭐ ATTRAPÉ ! ⭐';
+  document.getElementById('catch-sub').textContent = `${sp.name} · ${sp.type} · Niveau ${level} rejoint ton Dex !`;
+  catchBanner.classList.remove('show');
+  void catchBanner.offsetWidth; // restart the pop animation
+  catchBanner.classList.add('show');
+  clearTimeout(catchBanner._t);
+  catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 2600);
+  emojiBurst(['⭐', '✨', '🎉', '◓'], 22);
+};
 
 // --- creature dex panel -----------------------------------------------------------
 

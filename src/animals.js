@@ -105,12 +105,12 @@ const BUILDERS = {
 };
 
 const SPECIES = [
-  { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7 },
-  { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6 },
-  { key: 'sheep', name: 'Mouton', cry: 'Bêêê !', emoji: '🐑', speed: 0.9, height: 1.0, width: 0.65 },
-  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7 },
-  { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4 },
-  { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true },
+  { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7, meat: '🥩 Steak' },
+  { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6, meat: '🍖 Côtelette' },
+  { key: 'sheep', name: 'Mouton', cry: 'Bêêê !', emoji: '🐑', speed: 0.9, height: 1.0, width: 0.65, meat: '🍖 Gigot' },
+  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, meat: '🍖 Viande' },
+  { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4, meat: '🍗 Poulet' },
+  { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true, meat: '🍗 Lapin' },
 ];
 
 const MAX_ANIMALS = 12;
@@ -128,18 +128,53 @@ class Animal {
     this.onGround = false;
     this.animTime = 0;
     this.cryTimer = 6 + Math.random() * 20;
+    this.hp = baby ? 2 : 3;
+    this.fleeTime = 0;
+    this.dying = 0;
     this.mesh = BUILDERS[def.key]();
     this.mesh.scale.setScalar(this.scale);
   }
 
+  // A hit from the player: flash red, flee away, and eventually drop meat.
+  hurt(player) {
+    if (this.dying > 0) return false;
+    this.hp--;
+    this.fleeTime = 2.5;
+    this.yaw = Math.atan2(this.pos.x - player.pos.x, this.pos.z - player.pos.z);
+    this.state = 'walk';
+    this.stateTime = Math.max(this.stateTime, 2.5);
+    this.mesh.traverse((o) => {
+      if (o.isMesh && o.material && o.material.color) {
+        if (o.userData.baseColor === undefined) o.userData.baseColor = o.material.color.getHex();
+        o.material.color.setHex(0xff6655);
+      }
+    });
+    setTimeout(() => {
+      this.mesh.traverse((o) => {
+        if (o.isMesh && o.userData.baseColor !== undefined) o.material.color.setHex(o.userData.baseColor);
+      });
+    }, 160);
+    if (this.hp <= 0) { this.dying = 0.5; return true; }
+    return false;
+  }
+
   update(dt, world, player, toast) {
+    if (this.dying > 0) { // gentle poof: squash down and fade out
+      this.dying -= dt;
+      const t = Math.max(0.02, this.dying / 0.5);
+      this.mesh.scale.set(this.scale * (2 - t), this.scale * t, this.scale * (2 - t));
+      this.mesh.position.copy(this.pos);
+      return;
+    }
+    this.fleeTime -= dt;
     this.stateTime -= dt;
     if (this.stateTime <= 0) {
       this.state = this.state === 'idle' ? 'walk' : 'idle';
       this.stateTime = this.state === 'idle' ? 1.5 + Math.random() * 3 : 1.5 + Math.random() * 2.5;
       if (this.state === 'walk') this.yaw = Math.random() * Math.PI * 2;
     }
-    const speed = this.state === 'walk' ? this.def.speed * this.scale : 0;
+    const panic = this.fleeTime > 0 ? 2.2 : 1;
+    const speed = this.state === 'walk' ? this.def.speed * this.scale * panic : 0;
 
     this.vel.x = Math.sin(this.yaw) * speed;
     this.vel.z = Math.cos(this.yaw) * speed;
@@ -212,6 +247,14 @@ export class AnimalManager {
     this.toast = toast;
     this.animals = [];
     this.spawnTimer = 1;
+    this.onHarvest = null; // hook(def) — set by main.js to award the meat
+  }
+
+  // Player attacks the animal in the crosshair (within melee reach).
+  attack(a) {
+    if (!a || a.dying > 0) return;
+    const dead = a.hurt(this.player);
+    if (!dead) this.toast(`${a.def.emoji} Aïe ! (${a.hp} ❤️)`, 0xffb1a1);
   }
 
   trySpawn() {
@@ -239,6 +282,15 @@ export class AnimalManager {
       this.trySpawn();
     }
     for (const a of [...this.animals]) {
+      if (a.dying > 0) {
+        a.update(dt, this.world, this.player, this.toast);
+        if (a.dying <= 0) { // poof finished: award the meat
+          this.scene.remove(a.mesh);
+          this.animals = this.animals.filter((o) => o !== a);
+          if (this.onHarvest) this.onHarvest(a.def);
+        }
+        continue;
+      }
       if (a.pos.distanceTo(this.player.pos) > 70) {
         this.scene.remove(a.mesh);
         this.animals = this.animals.filter((o) => o !== a);
@@ -255,6 +307,7 @@ export class AnimalManager {
     const eye = this.player.eyePosition();
     let best = null, bestDot = 0.93;
     for (const a of this.animals) {
+      if (a.dying > 0) continue;
       const to = a.pos.clone();
       to.y += a.def.height * a.scale * 0.6;
       to.sub(eye);
