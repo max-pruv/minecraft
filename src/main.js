@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS } from './blocks.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -256,7 +256,7 @@ document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
-    if (edu.quizActive) { overlay.style.display = 'none'; return; }
+    if (edu.quizActive || invOpen) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
     if (!locked) overlayTitle.textContent = 'Paused';
   }
@@ -278,6 +278,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyF') player.toggleFly();
   if (e.code === 'KeyQ') creatureManager.throwBall();
   if (e.code === 'KeyB') toggleDex();
+  if (e.code === 'KeyE') openInventory();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
     if (n >= 1 && n <= HOTBAR_BLOCKS.length) selectSlot(n - 1);
@@ -310,15 +311,22 @@ function placeBlock() {
   const current = world.getBlock(x, y, z);
   if (current !== BLOCK.AIR && current !== BLOCK.WATER) return;
   if (player.intersectsBlock(x, y, z)) return; // don't build inside yourself
-  world.setBlock(x, y, z, HOTBAR_BLOCKS[selectedSlot]);
+  world.setBlock(x, y, z, hotbarBlocks[selectedSlot]);
   scheduleSave();
 }
 
 function pickBlock() {
   const hit = getTarget();
   if (!hit) return;
-  const idx = HOTBAR_BLOCKS.indexOf(hit.id);
-  if (idx >= 0) selectSlot(idx);
+  const idx = hotbarBlocks.indexOf(hit.id);
+  if (idx >= 0) {
+    selectSlot(idx);
+  } else { // not in the hotbar: assign it to the current slot, Minecraft-style
+    hotbarBlocks[selectedSlot] = hit.id;
+    buildHotbar();
+    selectSlot(selectedSlot);
+    saveHotbar();
+  }
 }
 
 let mouseRepeat = null;
@@ -525,21 +533,40 @@ function updateCreatureLabel() {
 
 let selectedSlot = 0;
 const hotbarEl = document.getElementById('hotbar');
+const HOTBAR_KEY = 'web-minecraft-hotbar-v1';
+
+let hotbarBlocks = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HOTBAR_KEY));
+    if (Array.isArray(saved) && saved.length === 9 && saved.every((id) => BLOCK_INFO[id])) return saved;
+  } catch { /* fall through */ }
+  return [...HOTBAR_BLOCKS];
+})();
+
+function blockThumb(id, size) {
+  const thumb = document.createElement('canvas');
+  thumb.width = size; thumb.height = size;
+  const ctx = thumb.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const info = BLOCK_INFO[id];
+  const tile = info.tiles[1]; // side texture reads best
+  const sx = (tile % ATLAS_COLS) * TILE_PX;
+  const sy = Math.floor(tile / ATLAS_COLS) * TILE_PX;
+  if (info.slab) { // draw slabs as half blocks
+    ctx.drawImage(atlasCanvas, sx, sy + TILE_PX / 2, TILE_PX, TILE_PX / 2, 0, size / 2, size, size / 2);
+  } else {
+    ctx.drawImage(atlasCanvas, sx, sy, TILE_PX, TILE_PX, 0, 0, size, size);
+  }
+  return thumb;
+}
 
 function buildHotbar() {
-  HOTBAR_BLOCKS.forEach((id, i) => {
+  hotbarEl.innerHTML = '';
+  hotbarBlocks.forEach((id, i) => {
     const slot = document.createElement('div');
     slot.className = 'slot';
     slot.title = BLOCK_INFO[id].name;
-    const thumb = document.createElement('canvas');
-    thumb.width = 32; thumb.height = 32;
-    const ctx = thumb.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    const tile = BLOCK_INFO[id].tiles[1]; // side texture reads best
-    const sx = (tile % ATLAS_COLS) * TILE_PX;
-    const sy = Math.floor(tile / ATLAS_COLS) * TILE_PX;
-    ctx.drawImage(atlasCanvas, sx, sy, TILE_PX, TILE_PX, 0, 0, 32, 32);
-    slot.appendChild(thumb);
+    slot.appendChild(blockThumb(id, 32));
     const num = document.createElement('span');
     num.className = 'num';
     num.textContent = i + 1;
@@ -552,16 +579,64 @@ function buildHotbar() {
 function selectSlot(i) {
   selectedSlot = i;
   [...hotbarEl.children].forEach((el, j) => el.classList.toggle('selected', j === i));
-  document.getElementById('block-name').textContent = BLOCK_INFO[HOTBAR_BLOCKS[i]].name;
+  document.getElementById('block-name').textContent = BLOCK_INFO[hotbarBlocks[i]].name;
+}
+
+function saveHotbar() {
+  try { localStorage.setItem(HOTBAR_KEY, JSON.stringify(hotbarBlocks)); } catch { /* ignore */ }
 }
 
 buildHotbar();
 selectSlot(0);
 
+// --- inventory: pick any block into the current hotbar slot -----------------
+
+const invPanel = document.getElementById('inv-panel');
+let invOpen = false;
+
+function buildInventory() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  for (const id of PLACEABLE_BLOCKS) {
+    const cell = document.createElement('button');
+    cell.className = 'inv-cell';
+    cell.title = BLOCK_INFO[id].name;
+    cell.appendChild(blockThumb(id, 36));
+    cell.addEventListener('click', () => {
+      hotbarBlocks[selectedSlot] = id;
+      buildHotbar();
+      selectSlot(selectedSlot);
+      saveHotbar();
+      closeInventory(true);
+    });
+    grid.appendChild(cell);
+  }
+}
+buildInventory();
+
+function openInventory() {
+  if (edu.quizActive || edu.hardStopActive) return;
+  invOpen = true;
+  invPanel.style.display = 'flex';
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+
+function closeInventory(resume) {
+  invOpen = false;
+  invPanel.style.display = 'none';
+  if (resume && !IS_TOUCH && !dragLook) startGame(); // the click is our user gesture
+}
+
+document.getElementById('inv-close').addEventListener('click', () => closeInventory(true));
+document.getElementById('inv-btn').addEventListener('click', () => {
+  if (invOpen) closeInventory(true);
+  else openInventory();
+});
+
 document.addEventListener('wheel', (e) => {
   if (!running) return;
   const dir = e.deltaY > 0 ? 1 : -1;
-  selectSlot((selectedSlot + dir + HOTBAR_BLOCKS.length) % HOTBAR_BLOCKS.length);
+  selectSlot((selectedSlot + dir + hotbarBlocks.length) % hotbarBlocks.length);
 });
 
 // --- day/night cycle ----------------------------------------------------------------

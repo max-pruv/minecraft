@@ -2,7 +2,7 @@
 // Only faces adjacent to air or transparent blocks are emitted.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, isTransparent } from './blocks.js';
+import { BLOCK, BLOCK_INFO, isTransparent, isSlab } from './blocks.js';
 import { tileUV } from './textures.js';
 import { CHUNK, HEIGHT } from './world.js';
 
@@ -39,6 +39,7 @@ const WATER_SURFACE_Y = 0.875; // water sits slightly below the block top
 function shouldRenderFace(id, neighbor) {
   if (neighbor === id) return false;          // no faces between identical blocks
   if (neighbor === BLOCK.AIR) return true;
+  if (isSlab(neighbor)) return true;          // slabs only cover their lower half
   return isTransparent(neighbor);             // draw against water/glass, not opaque
 }
 
@@ -103,12 +104,18 @@ export function buildChunkGeometry(world, cx, cz) {
 
         const info = BLOCK_INFO[id];
         const isWater = id === BLOCK.WATER;
+        const slab = isSlab(id);
         const buffer = isWater ? water : solid;
         const above = localGet(x, y + 1, z);
-        const yTop = isWater && above !== BLOCK.WATER ? WATER_SURFACE_Y : 1;
+        const yTop = isWater && above !== BLOCK.WATER ? WATER_SURFACE_Y : slab ? 0.5 : 1;
 
         for (const face of FACES) {
           const neighbor = localGet(x + face.dir[0], y + face.dir[1], z + face.dir[2]);
+          // a slab's top sits at half height, so it is always exposed
+          if (slab && face.dir[1] === 1) {
+            buffer.addFace(face, x, y, z, info.tiles[face.slot], yTop);
+            continue;
+          }
           if (!shouldRenderFace(id, neighbor)) continue;
           if (isWater && neighbor !== BLOCK.AIR && neighbor !== BLOCK.GLASS) continue;
           buffer.addFace(face, x, y, z, info.tiles[face.slot], yTop);

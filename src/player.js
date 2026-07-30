@@ -2,7 +2,7 @@
 // gravity/jumping, swimming, and a toggleable fly mode.
 
 import * as THREE from 'three';
-import { BLOCK } from './blocks.js';
+import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 const PLAYER_HEIGHT = 1.8;
@@ -137,14 +137,18 @@ export class Player {
     for (let by = minY; by <= maxY; by++) {
       for (let bz = minZ; bz <= maxZ; bz++) {
         for (let bx = minX; bx <= maxX; bx++) {
-          if (!this.world.isSolid(bx, by, bz)) continue;
+          const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
+          if (!blockIsSolid(id)) continue;
+          const topY = by + (isSlab(id) ? 0.5 : 1); // slabs only fill their lower half
+          // above the block's top: no side collision, and no landing yet while falling
+          if (p.y >= topY - eps && (axis !== 1 || delta < 0)) continue;
           if (axis === 0) {
             p.x = delta > 0 ? bx - half - eps : bx + 1 + half + eps;
           } else if (axis === 1) {
             if (delta > 0) {
               p.y = by - PLAYER_HEIGHT - eps;
             } else {
-              p.y = by + 1 + eps;
+              p.y = topY + eps;
               this.onGround = true;
             }
           } else {
