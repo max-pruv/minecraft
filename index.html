@@ -331,9 +331,28 @@
   </script>
   <script type="module" src="./src/main.js"></script>
   <script>
+    // Auto-update: when a new version of the game activates shortly after
+    // launch, reload once so it applies immediately (instead of requiring a
+    // second launch). Later activations wait for the next launch so we never
+    // reload mid-game.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => { /* offline install is best-effort */ });
+      const startedAt = Date.now();
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing && Date.now() - startedAt < 15000) {
+          refreshing = true;
+          location.reload();
+        }
+      });
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./sw.js');
+          // iPads keep the app suspended: re-check for updates whenever it
+          // comes back to the foreground.
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reg.update().catch(() => {});
+          });
+        } catch { /* offline install is best-effort */ }
       });
     }
   </script>
