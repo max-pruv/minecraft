@@ -132,6 +132,15 @@ const BUILDERS = {
   },
 };
 
+// Upscale factor per prop type — furniture at ~1 block felt dollhouse-sized
+// next to the 1.8-block player, so everything grows (origin stays on the floor).
+const SCALE = {
+  tree: 1.8, pine: 1.8, bush: 1.5,
+  sofa: 1.55, armchair: 1.5, table: 1.5, chair: 1.45, bed: 1.55,
+  lamp: 1.5, tv: 1.5, rug: 1.6, stool: 1.4,
+  flowerpot: 1.3, cake: 1.3,
+};
+
 const templates = new Map(); // prop id -> Group template
 
 export function buildPropMesh(id) {
@@ -140,6 +149,7 @@ export function buildPropMesh(id) {
     const item = PROP_ITEMS[id - PROP_START];
     if (!item) return null;
     template = BUILDERS[item.type](rgbToHex(item.rgb));
+    template.scale.setScalar(SCALE[item.type] || 1.5);
     templates.set(id, template);
   }
   return template.clone();
