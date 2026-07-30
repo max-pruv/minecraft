@@ -6,6 +6,9 @@
 
 const SESSION_SECONDS = 4 * 60;
 const NEEDED_CORRECT = 5;
+const DAILY_LIMIT_SECONDS = 45 * 60; // hard stop after this much play per day
+const PARENT_CODE = '135246';
+const MARATHON_CORRECT = 20;         // answering these unlocks another block
 const STORAGE_KEY = 'web-minecraft-edu-v1';
 const RECENT_CAP = 80;          // question keys remembered to avoid repeats
 const MIN_ANSWER_DELAY = 0.8;   // clicks faster than this are ignored (s)
@@ -433,6 +436,8 @@ export class EducationMode {
     // game starts, and it also makes refreshing pointless as an escape.
     this.quizDue = true;
     this.quizActive = false;
+    this.hardStopActive = false;
+    this.marathon = false;  // 20-question unlock quiz after the daily limit
     this.correctCount = 0;
     this.questionCount = 0;
     this.neededExtra = 0;   // penalty questions from detected random clicking
@@ -462,6 +467,13 @@ export class EducationMode {
     document.getElementById('edu-btn').addEventListener('click', () => this.togglePanel());
     document.getElementById('edu-panel-close').addEventListener('click', () => this.togglePanel());
 
+    document.getElementById('hardstop-marathon').addEventListener('click', () => this.startMarathon());
+    document.getElementById('hardstop-unlock').addEventListener('click', () => this.tryParentCode());
+    document.getElementById('hardstop-code').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.tryParentCode();
+      e.stopPropagation(); // don't let game key handlers see the code
+    });
+
     window.addEventListener('beforeunload', () => this.save());
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') this.save();
@@ -484,8 +496,13 @@ export class EducationMode {
   today() {
     if (!this.data.days) this.data.days = {};
     const key = todayKey();
-    if (!this.data.days[key]) this.data.days[key] = { play: 0, correct: [], wrong: 0 };
+    if (!this.data.days[key]) this.data.days[key] = { play: 0, correct: [], wrong: 0, unlocks: 0 };
     return this.data.days[key];
+  }
+
+  // Daily allowance grows by one block per parental/marathon unlock.
+  allowance() {
+    return DAILY_LIMIT_SECONDS * (1 + (this.today().unlocks || 0));
   }
 
   // ---------- adaptive difficulty ----------
@@ -527,7 +544,8 @@ export class EducationMode {
 
     this.el.timer.style.display = 'block';
 
-    if (running && !this.quizActive) {
+    if (running && !this.quizActive && !this.hardStopActive) {
+      if (this.today().play >= this.allowance()) { this.startHardStop(); return; }
       if (this.quizDue) { this.startQuiz(); return; }
       this.remaining -= dt;
       if (this.remaining <= 60 && !this.warned60) {
@@ -543,15 +561,58 @@ export class EducationMode {
 
     const t = Math.max(0, this.remaining);
     const m = Math.floor(t / 60), s = Math.floor(t % 60);
-    this.el.timer.textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+    let text = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+    const dailyLeft = this.allowance() - this.today().play;
+    if (dailyLeft <= 600) text += ` · ⏰ ${Math.max(0, Math.ceil(dailyLeft / 60))} min`;
+    this.el.timer.textContent = text;
     this.el.timer.classList.toggle('urgent', t <= 60);
   }
 
-  needed() { return NEEDED_CORRECT + this.neededExtra; }
+  needed() {
+    return (this.marathon ? MARATHON_CORRECT : NEEDED_CORRECT) + this.neededExtra;
+  }
+
+  // ---------- daily hard stop ----------
+
+  startHardStop() {
+    this.hardStopActive = true;
+    this.hooks.onPause();
+    const box = document.getElementById('hardstop');
+    box.style.display = 'flex';
+    document.getElementById('hardstop-played').textContent =
+      `Tu as joué ${this.formatDuration(this.today().play)} aujourd'hui. Bien joué !`;
+    document.getElementById('hardstop-feedback').textContent = '';
+    document.getElementById('hardstop-code').value = '';
+  }
+
+  grantExtraBlock() {
+    this.today().unlocks = (this.today().unlocks || 0) + 1;
+    this.save();
+    this.hardStopActive = false;
+    document.getElementById('hardstop').style.display = 'none';
+  }
+
+  tryParentCode() {
+    const input = document.getElementById('hardstop-code');
+    if (input.value.trim() === PARENT_CODE) {
+      this.grantExtraBlock();
+      this.hooks.toast('🔑 +45 minutes débloquées !', 0x6ee06e);
+      this.hooks.onResume();
+    } else {
+      input.value = '';
+      document.getElementById('hardstop-feedback').textContent = 'Code incorrect !';
+    }
+  }
+
+  startMarathon() {
+    document.getElementById('hardstop').style.display = 'none';
+    this.startQuiz(true);
+  }
 
   // ---------- quiz ----------
 
-  startQuiz() {
+  startQuiz(marathon = false) {
+    this.marathon = marathon;
     this.quizActive = true;
     this.quizDue = true;
     this.remaining = 0;
@@ -690,6 +751,13 @@ export class EducationMode {
 
   renderStars(pop = false) {
     this.el.stars.innerHTML = '';
+    if (this.needed() > 8) { // marathon: a counter reads better than 20 stars
+      const counter = document.createElement('span');
+      counter.textContent = `${this.correctCount} / ${this.needed()} ⭐`;
+      if (pop) counter.className = 'star-pop';
+      this.el.stars.appendChild(counter);
+      return;
+    }
     for (let i = 0; i < this.needed(); i++) {
       const star = document.createElement('span');
       star.textContent = i < this.correctCount ? '⭐' : '☆';
@@ -700,7 +768,12 @@ export class EducationMode {
 
   celebrate() {
     this.confetti();
-    this.el.question.textContent = `+${SESSION_SECONDS / 60} minutes de jeu ! 🎮`;
+    if (this.marathon) {
+      this.grantExtraBlock();
+      this.el.question.textContent = '+45 minutes de jeu débloquées ! 🎮';
+    } else {
+      this.el.question.textContent = `+${SESSION_SECONDS / 60} minutes de jeu ! 🎮`;
+    }
     this.el.category.textContent = '🏆';
     this.el.count.textContent = '';
     this.el.feedback.textContent = `${this.needed()} bonnes réponses — champion !`;
@@ -714,6 +787,7 @@ export class EducationMode {
       this.el.quiz.style.display = 'none';
       this.quizActive = false;
       this.quizDue = false;
+      this.marathon = false;
       this.remaining = SESSION_SECONDS;
       this.warned60 = false;
       this.warned10 = false;
@@ -766,7 +840,8 @@ export class EducationMode {
       `<div><b>Aujourd'hui</b></div>` +
       `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b></div>` +
       `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
-      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/3 · English <b>${this.categoryLevel('English')}</b>/2 · Français <b>${this.categoryLevel('Français')}</b>/2</div>`;
+      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/3 · English <b>${this.categoryLevel('English')}</b>/2 · Français <b>${this.categoryLevel('Français')}</b>/2</div>` +
+      `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
 
     if (t.correct.length > 0) {

@@ -46,6 +46,10 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 - **Random-clicking protection** — instant clicks are ignored, and a pattern
   of fast wrong answers triggers a warning, then a 10-second freeze that adds
   an extra required correct answer.
+- **Daily hard stop** — after 45 minutes of cumulative play in a day, the game
+  locks. Unlocking another 45-minute block takes either the parental code or
+  a 20-correct-answer marathon quiz. Repeatable; survives refreshes since play
+  time is persisted.
 - **Fully offline** — the game is an installable PWA: open it once online,
   add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
   runs entirely offline afterwards. When releasing changes, bump

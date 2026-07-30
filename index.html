@@ -233,6 +233,29 @@
     #quiz-feedback.good { color: #6ee06e; }
     #quiz-feedback.bad { color: #e06e6e; }
 
+    /* daily hard stop */
+    #hardstop {
+      display: none; position: fixed; inset: 0; z-index: 22;
+      flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(12, 18, 32, 0.96); padding: 16px;
+    }
+    .hardstop-card {
+      display: flex; flex-direction: column; gap: 12px;
+      width: min(560px, 94vw); background: #1c2438; border: 3px solid #3a4a6b;
+      border-radius: 16px; padding: 22px; text-align: center; color: #fff;
+    }
+    .hardstop-title { font-size: 22px; font-weight: bold; }
+    .hardstop-btn { background: #2d6a2d; border-color: #58b04c; font-size: 18px; }
+    .hardstop-text { font-size: 16px; color: #cdd7ee; }
+    .hardstop-or { color: #8894b0; font-size: 13px; }
+    .hardstop-code-row { display: flex; gap: 8px; justify-content: center; }
+    #hardstop-code {
+      font-family: inherit; font-size: 18px; padding: 10px; width: 180px;
+      background: #131a2c; color: #fff; border: 2px solid #46587e; border-radius: 10px;
+      text-align: center; letter-spacing: 4px;
+    }
+    #hardstop-feedback { min-height: 22px; color: #e06e6e; font-weight: bold; }
+
     #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden; }
     .confetti-piece {
       position: absolute; top: -12px; width: 10px; height: 14px;
@@ -270,6 +293,20 @@
   <div id="edu-panel">
     <button id="edu-panel-close">✕</button>
     <div id="edu-panel-body"></div>
+  </div>
+
+  <div id="hardstop">
+    <div class="hardstop-card">
+      <div class="hardstop-title">⏰ Temps de jeu terminé !</div>
+      <div id="hardstop-played" class="hardstop-text"></div>
+      <button class="quiz-opt hardstop-btn" id="hardstop-marathon">🎓 Répondre à 20 questions = +45 min</button>
+      <div class="hardstop-or">— ou —</div>
+      <div class="hardstop-code-row">
+        <input id="hardstop-code" type="password" inputmode="numeric" maxlength="8" placeholder="Code parental" autocomplete="off" />
+        <button class="quiz-opt" id="hardstop-unlock">🔑 Débloquer</button>
+      </div>
+      <div id="hardstop-feedback"></div>
+    </div>
   </div>
 
   <div id="quiz">
