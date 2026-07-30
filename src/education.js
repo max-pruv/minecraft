@@ -5,7 +5,7 @@
 // frozen for 10 seconds, and penalized with extra required answers.
 
 const SESSION_SECONDS = 4 * 60;
-const NEEDED_CORRECT = 4;
+const NEEDED_CORRECT = 5;
 const STORAGE_KEY = 'web-minecraft-edu-v1';
 const RECENT_CAP = 80;          // question keys remembered to avoid repeats
 const MIN_ANSWER_DELAY = 0.8;   // clicks faster than this are ignored (s)
