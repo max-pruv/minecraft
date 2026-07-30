@@ -124,13 +124,13 @@
     }
     #ball-btn { right: 176px; bottom: 110px; font-size: 26px; }
     #dex-btn {
-      position: fixed; top: 8px; right: 56px; z-index: 7;
+      position: fixed; top: 8px; right: 56px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
       border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
       color: #fff; font-size: 18px; cursor: pointer;
     }
     #dex-panel {
-      display: none; position: fixed; top: 56px; right: 8px; z-index: 9;
+      display: none; position: fixed; top: 56px; right: 8px; z-index: 12;
       width: min(320px, 90vw); max-height: 70vh; overflow-y: auto;
       background: rgba(10, 14, 20, 0.92); border: 2px solid #555; border-radius: 8px;
       color: #eee; padding: 12px; font-size: 13px;
@@ -147,12 +147,97 @@
       color: #111; font-size: 10px; font-weight: bold; vertical-align: middle;
     }
 
+    /* educational mode */
+    #edu-timer {
+      display: none; position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 16px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.35); padding: 4px 12px; border-radius: 8px; z-index: 6;
+    }
+    #edu-timer.urgent { color: #ff6b5e; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.55; } }
+    #edu-btn {
+      position: fixed; top: 34px; left: 8px; z-index: 11;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px; cursor: pointer;
+    }
+    #edu-panel {
+      display: none; position: fixed; top: 80px; left: 8px; z-index: 12;
+      width: min(400px, 92vw); max-height: 70vh; overflow-y: auto;
+      background: rgba(10, 14, 20, 0.94); border: 2px solid #555; border-radius: 8px;
+      color: #eee; padding: 12px; font-size: 13px;
+    }
+    #edu-panel-close {
+      position: absolute; top: 6px; right: 8px; background: none; border: none;
+      color: #aaa; font-size: 16px; cursor: pointer;
+    }
+    .edu-summary { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 8px; margin-bottom: 8px; line-height: 1.7; }
+    .edu-heading { font-weight: bold; margin: 10px 0 4px; color: #9c9; }
+    .edu-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); line-height: 1.5; }
+    .edu-time { color: #888; font-size: 11px; }
+    .edu-cat, #quiz-category {
+      display: inline-block; padding: 1px 8px; border-radius: 10px;
+      color: #111; font-size: 11px; font-weight: bold;
+    }
+    .edu-cat[data-cat="Math"], #quiz-category[data-cat="Math"] { background: #e8c53c; }
+    .edu-cat[data-cat="English"], #quiz-category[data-cat="English"] { background: #4a90d9; }
+    .edu-cat[data-cat="Français"], #quiz-category[data-cat="Français"] { background: #58b04c; }
+    #edu-toggle {
+      font-family: inherit; font-size: 14px; padding: 8px 20px; margin-top: 10px;
+      cursor: pointer; color: #ddd; background: #444; border: 2px solid #666; border-radius: 6px;
+    }
+    #edu-toggle.edu-on { background: #2d6a2d; border-color: #58b04c; color: #fff; }
+
+    /* quiz overlay */
+    #quiz {
+      display: none; position: fixed; inset: 0; z-index: 20;
+      flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(12, 18, 32, 0.93); padding: 16px;
+    }
+    #quiz-card {
+      width: min(560px, 94vw); background: #1c2438; border: 3px solid #3a4a6b;
+      border-radius: 16px; padding: 22px; text-align: center; color: #fff;
+    }
+    #quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    #quiz-prof { font-size: 15px; color: #cdd7ee; }
+    #quiz-count { color: #8894b0; font-size: 12px; }
+    #quiz-category { font-size: 12px; }
+    #quiz-question { font-size: 21px; line-height: 1.45; margin: 16px 4px 20px; min-height: 60px; }
+    #quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quiz-opt {
+      font-family: inherit; font-size: 18px; padding: 14px 8px; cursor: pointer;
+      background: #2c3a58; color: #fff;
+      border: 2px solid #46587e; border-radius: 10px;
+    }
+    .quiz-opt:hover { background: #38486b; }
+    .quiz-opt.good { background: #2d6a2d; border-color: #6ee06e; }
+    .quiz-opt.bad { background: #7a3030; border-color: #e06e6e; }
+    .quiz-opt.disabled { pointer-events: none; }
+    .quiz-continue { grid-column: 1 / -1; background: #2d6a2d; border-color: #58b04c; font-size: 20px; }
+    #quiz-stars { font-size: 26px; margin-top: 16px; letter-spacing: 6px; }
+    .star-pop { display: inline-block; animation: starpop 0.7s ease; }
+    @keyframes starpop { 0% { transform: scale(0.2); } 60% { transform: scale(1.8) rotate(20deg); } 100% { transform: scale(1); } }
+    #quiz-feedback { min-height: 26px; margin-top: 10px; font-size: 16px; font-weight: bold; }
+    #quiz-feedback.good { color: #6ee06e; }
+    #quiz-feedback.bad { color: #e06e6e; }
+
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; top: -12px; width: 10px; height: 14px;
+      animation: confettifall linear forwards;
+    }
+    @keyframes confettifall {
+      to { transform: translateY(105vh) rotate(720deg); }
+    }
+
     @media (max-width: 700px) {
       .slot { width: 34px; height: 34px; border-width: 2px; }
       .slot canvas { width: 26px; height: 26px; }
       #overlay h1 { font-size: 28px; }
       #overlay .controls { column-count: 1; font-size: 12px; }
-      #debug { font-size: 10px; max-width: 70vw; }
+      #debug { font-size: 10px; max-width: 60vw; }
+      #quiz-question { font-size: 18px; }
+      #quiz-options { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -167,6 +252,28 @@
   <div id="toast"></div>
   <button id="pause-btn">⏸</button>
   <button id="dex-btn" title="Creature Dex (B)">◓</button>
+  <button id="edu-btn" title="Progrès et temps de jeu">🎓</button>
+  <div id="edu-timer"></div>
+
+  <div id="edu-panel">
+    <button id="edu-panel-close">✕</button>
+    <div id="edu-panel-body"></div>
+  </div>
+
+  <div id="quiz">
+    <div id="quiz-card">
+      <div id="quiz-header">
+        <span id="quiz-prof">👩‍🔬 Professeure Lila demande…</span>
+        <span id="quiz-category"></span>
+        <span id="quiz-count"></span>
+      </div>
+      <div id="quiz-question"></div>
+      <div id="quiz-options"></div>
+      <div id="quiz-stars"></div>
+      <div id="quiz-feedback"></div>
+    </div>
+  </div>
+  <div id="confetti"></div>
 
   <div id="dex-panel">
     <div id="dex-title"></div>
@@ -188,6 +295,7 @@
     <div class="subtitle">A browser voxel world — your edits are saved locally</div>
     <button id="play-btn">Play</button>
     <button id="reset-btn" class="danger">Reset World</button>
+    <div><button id="edu-toggle"></button></div>
     <div class="controls">
       <div><b>W A S D</b> — move</div>
       <div><b>Mouse</b> — look around</div>

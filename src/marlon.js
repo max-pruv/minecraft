@@ -1,56 +1,26 @@
-// Marlon — a friendly companion NPC. A blocky kid with light brown hair and
-// a navy-striped shirt who follows the player around and chats in French.
+// Friendly NPCs: Marlon (a kid in a striped sailor shirt who follows the
+// player) and Professeure Lila (the creature expert who hosts the quiz).
 
 import * as THREE from 'three';
-
-const SKIN = 0xe8bd93;
-const HAIR = 0x9a7b4f;
-const WHITE = 0xf4f4f0;
-const NAVY = 0x2b3a67;
-const PANTS = 0x46536b;
-const SHOES = 0x2c2c2c;
 
 const GRAVITY = 24;
 const WIDTH = 0.5;
 const NPC_HEIGHT = 1.5;
-const WALK_SPEED = 4.0;
-const FOLLOW_DIST = 3.2;    // stops this close to the player
-const TELEPORT_DIST = 26;   // catches up instantly if left far behind
-
-const PHRASES = [
-  'Salut !',
-  'Attends-moi !',
-  'Trop stylé ce monde !',
-  'On construit une maison ?',
-  'Regarde, une créature là-bas !',
-  'Lance une ball, vite !',
-  'On va voir la montagne ?',
-  "J'adore les arbres ici.",
-  'Tu as attrapé combien de créatures ?',
-  'On fait la course ?',
-];
 
 function box(w, h, d, color) {
   return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
 }
 
-// A limb group whose pivot sits at the top so it swings from the joint.
-function limb(parts) {
-  const g = new THREE.Group();
-  for (const p of parts) g.add(p);
-  return g;
-}
-
-function buildMarlonMesh() {
+// look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle, glasses }
+function buildKidMesh(look) {
   const g = new THREE.Group(); // faces -z, feet at y=0
 
-  // legs (pivot at hip, y=0.53)
   const legs = [];
   for (const sx of [-1, 1]) {
-    const leg = limb([]);
-    const pant = box(0.15, 0.45, 0.17, PANTS);
+    const leg = new THREE.Group();
+    const pant = box(0.15, 0.45, 0.17, look.pants);
     pant.position.y = -0.225;
-    const shoe = box(0.16, 0.09, 0.2, SHOES);
+    const shoe = box(0.16, 0.09, 0.2, look.shoes);
     shoe.position.set(0, -0.475, -0.02);
     leg.add(pant, shoe);
     leg.position.set(sx * 0.1, 0.53, 0);
@@ -58,25 +28,21 @@ function buildMarlonMesh() {
     legs.push(leg);
   }
 
-  // torso: horizontal slabs = the striped sailor shirt
-  const stripes = [WHITE, NAVY, WHITE, NAVY, WHITE];
-  stripes.forEach((color, i) => {
+  look.torsoSlabs.forEach((color, i) => {
     const slab = box(0.46, 0.1, 0.25, color);
     slab.position.y = 0.58 + i * 0.1;
     g.add(slab);
   });
 
-  // arms (pivot at shoulder, y=1.03): striped sleeve + skin hand
   const arms = [];
   for (const sx of [-1, 1]) {
-    const arm = limb([]);
-    const sleeveColors = [WHITE, NAVY, WHITE];
-    sleeveColors.forEach((color, i) => {
+    const arm = new THREE.Group();
+    look.sleeveSegs.forEach((color, i) => {
       const seg = box(0.13, 0.12, 0.14, color);
       seg.position.y = -0.06 - i * 0.12;
       arm.add(seg);
     });
-    const hand = box(0.12, 0.14, 0.13, SKIN);
+    const hand = box(0.12, 0.14, 0.13, look.skin);
     hand.position.y = -0.43;
     arm.add(hand);
     arm.position.set(sx * 0.3, 1.03, 0);
@@ -84,30 +50,52 @@ function buildMarlonMesh() {
     arms.push(arm);
   }
 
-  // head
-  const head = box(0.36, 0.36, 0.36, SKIN);
+  const head = box(0.36, 0.36, 0.36, look.skin);
   head.position.y = 1.26;
   g.add(head);
 
-  // hair: cap on top, fringe over the forehead, sides and back
-  const hairTop = box(0.4, 0.1, 0.4, HAIR);
+  const hairTop = box(0.4, 0.1, 0.4, look.hair);
   hairTop.position.y = 1.47;
-  const fringe = box(0.4, 0.12, 0.04, HAIR);
+  g.add(hairTop);
+  const fringe = box(0.4, 0.12, 0.04, look.hair);
   fringe.position.set(0, 1.38, -0.19);
-  const back = box(0.4, 0.22, 0.04, HAIR);
-  back.position.set(0, 1.33, 0.19);
-  g.add(hairTop, fringe, back);
+  g.add(fringe);
+  if (look.hairstyle === 'bun') {
+    const back = box(0.4, 0.3, 0.06, look.hair);
+    back.position.set(0, 1.3, 0.2);
+    const bun = box(0.16, 0.16, 0.14, look.hair);
+    bun.position.set(0, 1.5, 0.24);
+    g.add(back, bun);
+  } else {
+    const back = box(0.4, 0.22, 0.04, look.hair);
+    back.position.set(0, 1.33, 0.19);
+    g.add(back);
+  }
   for (const sx of [-1, 1]) {
-    const side = box(0.04, 0.16, 0.4, HAIR);
+    const side = box(0.04, 0.16, 0.4, look.hair);
     side.position.set(sx * 0.19, 1.36, 0);
     g.add(side);
   }
 
-  // face: eyes + mouth
   for (const sx of [-1, 1]) {
     const eye = box(0.06, 0.07, 0.02, 0x3d2f23);
     eye.position.set(sx * 0.09, 1.28, -0.185);
     g.add(eye);
+    if (look.glasses) {
+      const rim = box(0.12, 0.11, 0.015, 0x222222);
+      rim.position.set(sx * 0.09, 1.28, -0.19);
+      const lens = box(0.09, 0.08, 0.02, 0xbcd8e8);
+      lens.position.set(sx * 0.09, 1.28, -0.195);
+      g.add(rim, lens);
+      const eye2 = box(0.05, 0.06, 0.02, 0x3d2f23);
+      eye2.position.set(sx * 0.09, 1.28, -0.2);
+      g.add(eye2);
+    }
+  }
+  if (look.glasses) {
+    const bridge = box(0.06, 0.03, 0.015, 0x222222);
+    bridge.position.set(0, 1.29, -0.19);
+    g.add(bridge);
   }
   const mouth = box(0.1, 0.03, 0.02, 0xc98a6d);
   mouth.position.set(0, 1.16, -0.185);
@@ -118,20 +106,22 @@ function buildMarlonMesh() {
   return g;
 }
 
-export class Marlon {
-  constructor(scene, world, player, toast) {
+class BaseNPC {
+  constructor(scene, world, player, toast, opts) {
     this.world = world;
     this.player = player;
     this.toast = toast;
+    this.name = opts.name;
+    this.phrases = opts.phrases;
+    this.walkSpeed = opts.walkSpeed;
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.yaw = 0;
     this.onGround = false;
     this.animTime = 0;
-    this.speechTimer = 4; // says hi shortly after the game starts
-    this.mesh = buildMarlonMesh();
+    this.speechTimer = opts.firstSpeech ?? 6;
+    this.mesh = buildKidMesh(opts.look);
     scene.add(this.mesh);
-    this.teleportNearPlayer();
   }
 
   surfaceY(x, z) {
@@ -141,31 +131,18 @@ export class Marlon {
     return null;
   }
 
-  teleportNearPlayer() {
-    const p = this.player.pos;
-    const angle = Math.random() * Math.PI * 2;
-    const x = p.x + Math.sin(angle) * 2.5;
-    const z = p.z + Math.cos(angle) * 2.5;
+  placeAt(x, z, fallbackY) {
     const y = this.surfaceY(x, z);
-    this.pos.set(x, (y !== null ? y : p.y) + 0.1, z);
+    this.pos.set(x, (y !== null ? y : fallbackY) + 0.1, z);
     this.vel.set(0, 0, 0);
   }
 
+  // subclasses return { speed, yaw }
+  think() { return { speed: 0, yaw: this.yaw }; }
+
   update(dt) {
-    const toPlayer = this.player.pos.clone().sub(this.pos);
-    toPlayer.y = 0;
-    const dist = toPlayer.length();
-
-    if (dist > TELEPORT_DIST) this.teleportNearPlayer();
-
-    let speed = 0;
-    if (dist > FOLLOW_DIST) {
-      speed = WALK_SPEED;
-      this.yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
-    } else {
-      // idle: turn to face the player
-      this.yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
-    }
+    const { speed, yaw } = this.think(dt);
+    this.yaw = yaw;
 
     this.vel.x = -Math.sin(this.yaw) * speed;
     this.vel.z = -Math.cos(this.yaw) * speed;
@@ -175,9 +152,8 @@ export class Marlon {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0) this.vel.y = 7.5; // hop up ledges
+    if ((blockedX || blockedZ) && this.onGround && speed > 0) this.vel.y = 7.5;
 
-    // animate limbs
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;
     const { legs, arms } = this.mesh.userData;
@@ -189,13 +165,13 @@ export class Marlon {
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw;
 
-    // chatter when nearby
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {
       this.speechTimer = 18 + Math.random() * 22;
+      const dist = this.player.pos.distanceTo(this.pos);
       if (dist < 9) {
-        const msg = PHRASES[(Math.random() * PHRASES.length) | 0];
-        this.toast(`Marlon : ${msg}`, 0xffffff);
+        const msg = this.phrases[(Math.random() * this.phrases.length) | 0];
+        this.toast(`${this.name} : ${msg}`, 0xffffff);
       }
     }
   }
@@ -228,7 +204,6 @@ export class Marlon {
     return false;
   }
 
-  // Is the player roughly looking at Marlon? (for the HUD label)
   isTargeted() {
     const dir = new THREE.Vector3();
     this.player.camera.getWorldDirection(dir);
@@ -238,5 +213,109 @@ export class Marlon {
     const d = to.length();
     if (d > 14) return false;
     return to.normalize().dot(dir) > 0.93;
+  }
+}
+
+const NAVY = 0x2b3a67, WHITE = 0xf4f4f0;
+
+export class Marlon extends BaseNPC {
+  constructor(scene, world, player, toast) {
+    super(scene, world, player, toast, {
+      name: 'Marlon',
+      walkSpeed: 4.0,
+      firstSpeech: 4,
+      look: {
+        skin: 0xe8bd93, hair: 0x9a7b4f,
+        torsoSlabs: [WHITE, NAVY, WHITE, NAVY, WHITE],
+        sleeveSegs: [WHITE, NAVY, WHITE],
+        pants: 0x46536b, shoes: 0x2c2c2c,
+        hairstyle: 'short', glasses: false,
+      },
+      phrases: [
+        'Salut !',
+        'Attends-moi !',
+        'Trop stylé ce monde !',
+        'On construit une maison ?',
+        'Regarde, une créature là-bas !',
+        'Lance une ball, vite !',
+        'On va voir la montagne ?',
+        "J'adore les arbres ici.",
+        'Tu as attrapé combien de créatures ?',
+        'On fait la course ?',
+      ],
+    });
+    this.placeNearPlayer();
+  }
+
+  placeNearPlayer() {
+    const p = this.player.pos;
+    const angle = Math.random() * Math.PI * 2;
+    this.placeAt(p.x + Math.sin(angle) * 2.5, p.z + Math.cos(angle) * 2.5, p.y);
+  }
+
+  think() {
+    const toPlayer = this.player.pos.clone().sub(this.pos);
+    toPlayer.y = 0;
+    const dist = toPlayer.length();
+    if (dist > 26) this.placeNearPlayer();
+    const yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
+    return { speed: dist > 3.2 ? this.walkSpeed : 0, yaw };
+  }
+}
+
+export class Lila extends BaseNPC {
+  constructor(scene, world, player, toast, homeX, homeZ) {
+    super(scene, world, player, toast, {
+      name: 'Prof. Lila',
+      walkSpeed: 1.6,
+      firstSpeech: 10,
+      look: {
+        skin: 0xdfae85, hair: 0x4c3620,
+        torsoSlabs: [WHITE, WHITE, WHITE, WHITE, WHITE], // lab coat
+        sleeveSegs: [WHITE, WHITE, WHITE],
+        pants: 0x6b6f78, shoes: 0x4a3526,
+        hairstyle: 'bun', glasses: true,
+      },
+      phrases: [
+        'Bonjour, jeune dresseur !',
+        'Je suis la Professeure Lila.',
+        'Les créatures rares adorent la neige et le sable !',
+        'As-tu rempli ton Dex ?',
+        'Réponds bien à mon quiz pour jouer plus longtemps !',
+        'Les créatures SPOOKY sont très difficiles à attraper.',
+        'Reviens me voir quand tu auras tout attrapé !',
+      ],
+    });
+    this.home = new THREE.Vector2(homeX, homeZ);
+    this.state = 'idle';
+    this.stateTime = 2;
+    this.placeAt(homeX, homeZ, player.pos.y);
+  }
+
+  think(dt) {
+    const toPlayer = this.player.pos.clone().sub(this.pos);
+    toPlayer.y = 0;
+    const playerDist = toPlayer.length();
+
+    // face the player when they come close
+    if (playerDist < 5) {
+      return { speed: 0, yaw: Math.atan2(toPlayer.x, toPlayer.z) + Math.PI };
+    }
+
+    this.stateTime -= dt;
+    if (this.stateTime <= 0) {
+      this.state = this.state === 'idle' ? 'walk' : 'idle';
+      this.stateTime = this.state === 'idle' ? 2 + Math.random() * 3 : 1.5 + Math.random() * 2;
+      if (this.state === 'walk') {
+        const fromHome = Math.hypot(this.pos.x - this.home.x, this.pos.z - this.home.y);
+        this.wanderYaw = fromHome > 8
+          ? Math.atan2(this.home.x - this.pos.x, this.home.y - this.pos.z) + Math.PI
+          : Math.random() * Math.PI * 2;
+      }
+    }
+    return {
+      speed: this.state === 'walk' ? this.walkSpeed : 0,
+      yaw: this.state === 'walk' ? this.wanderYaw : this.yaw,
+    };
   }
 }
