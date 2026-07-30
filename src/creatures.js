@@ -472,6 +472,17 @@ export class CreatureManager {
     this._toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2600);
   }
 
+  release(id) {
+    const entry = this.collection.find((e) => e.id === id);
+    if (!entry) return;
+    if (!window.confirm(`Relâcher un ${entry.name} dans la nature ?`)) return;
+    entry.count--;
+    if (entry.count <= 0) this.collection = this.collection.filter((e) => e !== entry);
+    this.saveCollection();
+    this.toast(`🕊️ ${entry.name} est libre ! Au revoir !`, 0x9fd8e8);
+    this.renderDex();
+  }
+
   renderDex() {
     const list = document.getElementById('dex-list');
     const caught = this.collection.reduce((a, e) => a + e.count, 0);
@@ -491,6 +502,14 @@ export class CreatureManager {
         ? ` ${sp.name} · best Lv ${entry.bestLevel} · ×${entry.count}`
         : ` ??? (${['common', 'uncommon', 'rare'][sp.rarity]})`;
       row.append(chip, label);
+      if (entry) {
+        const rel = document.createElement('button');
+        rel.className = 'dex-release';
+        rel.textContent = '🕊️';
+        rel.title = 'Relâcher une créature';
+        rel.addEventListener('click', () => this.release(sp.id));
+        row.appendChild(rel);
+      }
       list.appendChild(row);
     }
   }
