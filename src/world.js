@@ -1,6 +1,6 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
-import { BLOCK, isSolid as blockIsSolid } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, isSolid as blockIsSolid } from './blocks.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -44,54 +44,89 @@ function fbm(x, z, seed, octaves = 4) {
 // red suspension bridge. set(dx, dy, dz, id) is relative to the anchor base.
 
 function buildEiffelTower(set) {
+  const IRON = BLOCK.DARKBRICK;
   const ring = (r, y) => {
     for (let d = -r; d <= r; d++) {
-      set(d, y, -r, BLOCK.COBBLE); set(d, y, r, BLOCK.COBBLE);
-      set(-r, y, d, BLOCK.COBBLE); set(r, y, d, BLOCK.COBBLE);
+      set(d, y, -r, IRON); set(d, y, r, IRON);
+      set(-r, y, d, IRON); set(r, y, d, IRON);
     }
   };
-  for (let y = 0; y < 8; y++) for (const sx of [-3, 3]) for (const sz of [-3, 3]) set(sx, y, sz, BLOCK.COBBLE);
-  ring(3, 8);
-  for (let y = 9; y < 16; y++) for (const sx of [-2, 2]) for (const sz of [-2, 2]) set(sx, y, sz, BLOCK.COBBLE);
-  ring(2, 16);
-  for (let y = 17; y < 24; y++) for (const sx of [-1, 1]) for (const sz of [-1, 1]) set(sx, y, sz, BLOCK.COBBLE);
-  ring(1, 24);
-  for (let y = 25; y < 31; y++) set(0, y, 0, BLOCK.COBBLE);
-  set(0, 31, 0, BLOCK.GLASS); // the beacon
+  for (let dx = -6; dx <= 6; dx++) for (let dz = -6; dz <= 6; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK); // parvis
+  for (let y = 0; y < 10; y++) { // four splayed legs
+    const off = y < 5 ? 4 : 3;
+    for (const sx of [-off, off]) for (const sz of [-off, off]) set(sx, y, sz, IRON);
+  }
+  ring(4, 10); ring(3, 11); // first platform
+  for (let y = 12; y < 20; y++) for (const sx of [-2, 2]) for (const sz of [-2, 2]) set(sx, y, sz, IRON);
+  ring(2, 20); // second platform
+  for (let y = 21; y < 30; y++) for (const sx of [-1, 1]) for (const sz of [-1, 1]) set(sx, y, sz, IRON);
+  ring(1, 30); // third platform
+  for (let y = 31; y < 40; y++) set(0, y, 0, IRON); // mast
+  set(0, 40, 0, BLOCK.GOLD);
+  set(0, 41, 0, BLOCK.GLASS); // the beacon
 }
 
-function buildSkyscraper(set) {
-  const levels = [[5, 0, 12], [4, 12, 22], [3, 22, 30], [2, 30, 36]];
+function buildSkyscraper(set) { // Empire State: limestone tiers + steel spire
+  const levels = [[5, 0, 16], [4, 16, 28], [3, 28, 38], [2, 38, 46]];
   for (const [r, from, to] of levels) {
     for (let y = from; y < to; y++) {
       for (let dx = -r; dx <= r; dx++) {
         for (let dz = -r; dz <= r; dz++) {
           if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue; // walls only
-          const glassRow = y % 3 === 1;
-          set(dx, y, dz, glassRow ? BLOCK.GLASS : BLOCK.BRICK);
+          const glassRow = y % 3 !== 2;
+          set(dx, y, dz, glassRow && (dx + dz) % 2 === 0 ? CITY_BLOCK.CURTAIN : CITY_BLOCK.GRANITE);
         }
       }
     }
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) set(dx, to, dz, CITY_BLOCK.GRANITE);
   }
-  for (let y = 36; y < 42; y++) set(0, y, 0, BLOCK.BRICK); // spire
-  set(0, 42, 0, BLOCK.GLASS);
+  for (let y = 46; y < 53; y++) set(0, y, 0, CITY_BLOCK.GRANITE); // spire
+  set(0, 53, 0, BLOCK.GOLD);
 }
 
-function buildSuspensionBridge(set) {
-  for (const tx of [-15, 15]) { // the two towers
-    for (let y = 0; y < 18; y++) {
-      for (const dx of [0, 1]) for (const dz of [-1, 2]) set(tx + dx, y, dz, BLOCK.BRICK);
+function buildStatue(set) { // Lady Liberty: granite pedestal, copper body, gold torch
+  const C = CITY_BLOCK.COPPER;
+  for (let y = 0; y < 5; y++) { // pedestal
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) set(dx, y, dz, CITY_BLOCK.GRANITE);
+  }
+  for (let y = 5; y < 12; y++) { // robe
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(dx, y, dz, C);
+  }
+  set(0, 12, 0, C); set(0, 13, 0, C); // head
+  for (const [dx, dz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) set(dx, 14, dz, C); // crown spikes
+  set(2, 11, 0, C); set(2, 12, 0, C); set(2, 13, 0, C); // raised arm
+  set(2, 14, 0, BLOCK.GOLD); // the torch
+  set(-2, 10, 0, C); // tablet arm
+}
+
+function buildSuspensionBridge(set) { // Golden Gate, international orange
+  const R = BLOCK.WOOL_RED;
+  for (const tx of [-18, 18]) { // the two towers
+    for (let y = 0; y < 26; y++) {
+      for (const dz of [-2, 3]) { set(tx, y, dz, R); set(tx + 1, y, dz, R); }
     }
-    for (const yy of [10, 17]) for (const dz of [0, 1]) set(tx, yy, dz, BLOCK.BRICK);
+    for (const yy of [13, 19, 25]) { // crossbeams
+      for (let dz = -2; dz <= 3; dz++) { set(tx, yy, dz, R); set(tx + 1, yy, dz, R); }
+    }
   }
-  for (let dx = -20; dx <= 21; dx++) { // deck
-    for (let dz = 0; dz <= 1; dz++) set(dx, 8, dz, BLOCK.PLANK);
+  for (let dx = -30; dx <= 31; dx++) { // deck + side rails
+    for (let dz = 0; dz <= 1; dz++) set(dx, 10, dz, CITY_BLOCK.ASPHALT);
+    set(dx, 11, -1, R); set(dx, 11, 2, R);
   }
-  for (let dx = -14; dx <= 15; dx++) { // catenary-ish cables
-    const t = Math.min(Math.abs(dx - 0.5) / 15, 1);
-    const cy = 17 - Math.round((1 - t * t) * 8);
-    set(dx, cy, -1, BLOCK.BRICK);
-    set(dx, cy, 2, BLOCK.BRICK);
+  for (let dx = -17; dx <= 18; dx++) { // main catenary between towers
+    const t = Math.min(Math.abs(dx - 0.5) / 17.5, 1);
+    const cy = 25 - Math.round((1 - t * t) * 13);
+    set(dx, cy, -2, R); set(dx, cy, 3, R);
+    if ((dx + 30) % 4 === 0) { // hangers
+      for (let y = 12; y < cy; y++) { set(dx, y, -2, R); set(dx, y, 3, R); }
+    }
+  }
+  for (const side of [-1, 1]) { // back spans to the shores
+    for (let i = 0; i <= 11; i++) {
+      const dx = side * (19 + i);
+      const cy = 25 - i;
+      if (cy > 11) { set(dx, cy, -2, R); set(dx, cy, 3, R); }
+    }
   }
 }
 
@@ -122,17 +157,23 @@ function buildLighthouse(set) { // rayé rouge et blanc
 }
 
 function buildArch(set) { // l'Arc de Triomphe
-  for (let y = 0; y < 6; y++) {
-    for (const sx of [-3, -2, 2, 3]) {
-      set(sx, y, 0, BLOCK.SANDSTONE); set(sx, y, 1, BLOCK.SANDSTONE);
+  const S = CITY_BLOCK.HAUSSMANN;
+  for (let dx = -5; dx <= 5; dx++) for (let dz = -2; dz <= 3; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK);
+  for (let y = 0; y < 8; y++) {
+    for (const sx of [-4, -3, 3, 4]) {
+      for (let dz = 0; dz <= 2; dz++) set(sx, y, dz, S);
     }
   }
-  for (let y = 6; y < 9; y++) {
-    for (let dx = -3; dx <= 3; dx++) {
-      set(dx, y, 0, BLOCK.SANDSTONE); set(dx, y, 1, BLOCK.SANDSTONE);
+  for (let y = 8; y < 12; y++) { // attic over the arch
+    for (let dx = -4; dx <= 4; dx++) {
+      for (let dz = 0; dz <= 2; dz++) set(dx, y, dz, S);
     }
   }
-  for (let dx = -3; dx <= 3; dx++) { set(dx, 9, 0, BLOCK.SLAB_STONE); set(dx, 9, 1, BLOCK.SLAB_STONE); }
+  for (let dx = -2; dx <= 2; dx++) { // vault curve carved out
+    set(dx, 8, 1, BLOCK.AIR);
+    if (Math.abs(dx) <= 1) set(dx, 9, 1, BLOCK.AIR);
+  }
+  for (let dx = -4; dx <= 4; dx++) { set(dx, 12, 0, BLOCK.SLAB_STONE); set(dx, 12, 1, BLOCK.SLAB_STONE); set(dx, 12, 2, BLOCK.SLAB_STONE); }
 }
 
 function buildCastle(set) { // petit château fort
@@ -163,20 +204,36 @@ function buildCastle(set) { // petit château fort
   }
 }
 
+// Each landmark lives inside its own themed city district.
+// waterBase: the base rises to water level so piers/bridges sit above the sea.
 const LANDMARKS = [
-  { name: 'Tour Eiffel', x: 45, z: 45, box: 4, build: buildEiffelTower },
-  { name: 'Empire State', x: -55, z: -15, box: 6, build: buildSkyscraper },
-  { name: 'Golden Gate', x: 25, z: -60, box: 22, build: buildSuspensionBridge },
-  { name: 'Pyramide du Louvre', x: -15, z: 65, box: 6, build: buildGlassPyramid },
-  { name: 'Phare', x: 65, z: -15, box: 3, build: buildLighthouse },
-  { name: 'Arc de Triomphe', x: -65, z: 25, box: 5, build: buildArch },
+  // Paris
+  { name: 'Tour Eiffel', x: -85, z: 44, box: 8, build: buildEiffelTower },
+  { name: 'Arc de Triomphe', x: -108, z: 70, box: 7, build: buildArch },
+  { name: 'Pyramide du Louvre', x: -62, z: 92, box: 7, build: buildGlassPyramid },
+  // New York
+  { name: 'Empire State', x: 105, z: -40, box: 7, build: buildSkyscraper },
+  { name: 'Statue de la Liberté', x: 128, z: -84, box: 4, waterBase: true, build: buildStatue },
+  // San Francisco
+  { name: 'Golden Gate', x: 0, z: -168, box: 34, waterBase: true, build: buildSuspensionBridge },
+  { name: 'Phare', x: -38, z: -148, box: 3, waterBase: true, build: buildLighthouse },
+  // Countryside
   { name: 'Château fort', x: 40, z: 75, box: 6, build: buildCastle },
 ];
 
 // --- world ----------------------------------------------------------------
 
-// The city district: flattened terrain, a street grid, procedural buildings.
-export const CITY = { x: -70, z: 60, r: 45, cell: 12, base: 34 };
+// Three themed city districts, each with its own architecture, street
+// pattern and landmarks: Haussmann Paris, skyscraper New York, and
+// pastel-hilled San Francisco.
+export const CITIES = [
+  { key: 'paris', name: 'Paris', x: -85, z: 70, r: 55, cell: 12, base: 34, street: 3 },
+  { key: 'ny', name: 'New York', x: 105, z: -40, r: 58, cell: 14, base: 33, street: 4 },
+  { key: 'sf', name: 'San Francisco', x: 0, z: -115, r: 50, cell: 11, base: 33, street: 3 },
+];
+
+// SF painted-lady facades reuse the plain decor blocks (Uni pattern).
+const SF_PASTELS = [15, 9, 29, 28, 16, 3, 4, 7].map((ci) => DECOR_START + ci * 10);
 
 export class World {
   constructor() {
@@ -204,18 +261,30 @@ export class World {
     const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
     if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
 
-    // the city sits on a flat plateau
-    const cd = Math.hypot(x - CITY.x, z - CITY.z);
-    if (cd < CITY.r) {
-      const m = Math.min(1, (CITY.r - cd) / 18);
-      h = h * (1 - m) + CITY.base * m;
+    // city districts: Paris and New York are flat plateaus; San Francisco
+    // keeps its rolling hills so its streets climb like the real thing
+    for (const c of CITIES) {
+      const cd = Math.hypot(x - c.x, z - c.z);
+      if (cd < c.r) {
+        const m = Math.min(1, (c.r - cd) / 16);
+        const target = c.key === 'sf' ? c.base + hills * 10 : c.base;
+        h = h * (1 - m) + target * m;
+        break;
+      }
     }
 
     return Math.max(2, Math.min(HEIGHT - 16, Math.floor(h)));
   }
 
+  cityAt(x, z) {
+    for (const c of CITIES) {
+      if (Math.hypot(x - c.x, z - c.z) < c.r) return c;
+    }
+    return null;
+  }
+
   treeAt(x, z) {
-    if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.r - 2) return null; // no trees downtown
+    if (this.cityAt(x, z)) return null; // no wild trees downtown
     // forests are dense, plains nearly bare
     const forest = fbm(x * 0.008, z * 0.008, SEED + 701);
     const density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
@@ -252,12 +321,30 @@ export class World {
           data[World.index(x, y, z)] = BLOCK.WATER;
         }
 
-        // city streets: a stone grid through the district
-        const cd = Math.hypot(wx - CITY.x, wz - CITY.z);
-        if (cd < CITY.r - 4 && h > WATER_LEVEL) {
-          const mx = ((wx % CITY.cell) + CITY.cell) % CITY.cell;
-          const mz = ((wz % CITY.cell) + CITY.cell) % CITY.cell;
-          if (mx < 2 || mz < 2) data[World.index(x, h, z)] = BLOCK.STONE;
+        // city streets: asphalt with sidewalks, dashed center lines and
+        // crosswalks at intersections
+        const city = this.cityAt(wx, wz);
+        if (city && Math.hypot(wx - city.x, wz - city.z) < city.r - 4 && h > WATER_LEVEL) {
+          const w = city.street;
+          const mid = Math.floor(w / 2);
+          const mx = ((wx % city.cell) + city.cell) % city.cell;
+          const mz = ((wz % city.cell) + city.cell) % city.cell;
+          const inX = mx < w, inZ = mz < w;
+          if (inX || inZ) {
+            let id = CITY_BLOCK.ASPHALT;
+            if (inX && inZ) {
+              id = (mx + mz) % 2 === 0 ? CITY_BLOCK.CROSSWALK : CITY_BLOCK.ASPHALT;
+            } else if (inX && (mx === 0 || mx === w - 1)) {
+              id = CITY_BLOCK.SIDEWALK;
+            } else if (inZ && (mz === 0 || mz === w - 1)) {
+              id = CITY_BLOCK.SIDEWALK;
+            } else if (inX && mx === mid && ((wz & 7) < 4)) {
+              id = CITY_BLOCK.ROADLINE;
+            } else if (inZ && mz === mid && ((wx & 7) < 4)) {
+              id = CITY_BLOCK.ROADLINE;
+            }
+            data[World.index(x, h, z)] = id;
+          }
         }
       }
     }
@@ -302,36 +389,152 @@ export class World {
       if (lx < 0 || lx >= CHUNK || lz < 0 || lz >= CHUNK || wy < 0 || wy >= HEIGHT) return;
       data[World.index(lx, wy, lz)] = id;
     };
-    const CELL = CITY.cell;
-    const BUILDING_MATS = [BLOCK.BRICK, BLOCK.STONEBRICK, BLOCK.WHITEBRICK, BLOCK.TERRACOTTA, BLOCK.BLUEBRICK, BLOCK.SANDSTONE];
-    const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
-    const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);
-    for (let gz = minGZ; gz <= maxGZ; gz++) {
-      for (let gx = minGX; gx <= maxGX; gx++) {
-        const lotX = gx * CELL, lotZ = gz * CELL;
-        const ccx = lotX + CELL / 2, ccz = lotZ + CELL / 2;
-        if (Math.hypot(ccx - CITY.x, ccz - CITY.z) > CITY.r - 10) continue;
-        if (hash2i(gx, gz, SEED + 801) > 0.8) continue; // a little park
-        const bh = 5 + Math.floor(hash2i(gx, gz, SEED + 802) * 11);
-        const mat = BUILDING_MATS[Math.floor(hash2i(gx, gz, SEED + 803) * BUILDING_MATS.length)];
-        const by = this.terrainHeight(Math.floor(ccx), Math.floor(ccz)) + 1;
-        const x0 = lotX + 3, x1 = lotX + CELL - 2, z0 = lotZ + 3, z1 = lotZ + CELL - 2;
-        for (let y = 0; y < bh; y++) {
-          for (let wx = x0; wx <= x1; wx++) {
-            for (let wz = z0; wz <= z1; wz++) {
-              const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
-              if (!wall) { if (y === 0) stamp(wx, by - 1, wz, mat); continue; }
-              const window = y % 3 !== 0 && ((wx + wz) % 2 === 0);
-              stamp(wx, by + y, wz, window ? BLOCK.GLASS : mat);
+    // Landmarks get an open plaza — no buildings on top of them.
+    const nearLandmark = (ccx, ccz) =>
+      LANDMARKS.some((lm) => Math.abs(ccx - lm.x) < lm.box + 7 && Math.abs(ccz - lm.z) < lm.box + 7);
+
+    // Fill from the build level down to the terrain so hillside houses
+    // never float (essential on San Francisco's slopes).
+    const foundation = (wx, wz, by, id) => {
+      const th = this.terrainHeight(wx, wz);
+      for (let y = by - 1; y > th; y--) stamp(wx, y, wz, id);
+    };
+
+    for (const city of CITIES) {
+      const CELL = city.cell;
+      const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
+      const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);
+      for (let gz = minGZ; gz <= maxGZ; gz++) {
+        for (let gx = minGX; gx <= maxGX; gx++) {
+          const lotX = gx * CELL, lotZ = gz * CELL;
+          const ccx = lotX + CELL / 2, ccz = lotZ + CELL / 2;
+          if (Math.hypot(ccx - city.x, ccz - city.z) > city.r - 10) continue;
+          if (nearLandmark(ccx, ccz)) continue;
+          if (hash2i(gx, gz, SEED + 801) > 0.85) continue; // pocket park
+          const by = this.terrainHeight(Math.floor(ccx), Math.floor(ccz)) + 1;
+          const x0 = lotX + city.street, x1 = lotX + CELL - 2;
+          const z0 = lotZ + city.street, z1 = lotZ + CELL - 2;
+          const doorX = Math.floor((x0 + x1) / 2);
+
+          if (city.key === 'paris') {
+            // Haussmann: uniform cream stone, tall window bays, zinc mansard
+            const bh = 6 + Math.floor(hash2i(gx, gz, SEED + 802) * 2);
+            for (let y = 0; y < bh; y++) {
+              for (let wx = x0; wx <= x1; wx++) {
+                for (let wz = z0; wz <= z1; wz++) {
+                  const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+                  if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.PLANK); continue; }
+                  if (y === 0) foundation(wx, wz, by, CITY_BLOCK.HAUSSMANN);
+                  const u = (wx === x0 || wx === x1) ? wz : wx;
+                  const win = y > 0 && y % 3 !== 0 && u % 2 === 1;
+                  stamp(wx, by + y, wz, win ? BLOCK.GLASS : CITY_BLOCK.HAUSSMANN);
+                }
+              }
             }
+            for (let wx = x0; wx <= x1; wx++) {
+              for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, CITY_BLOCK.ZINC);
+            }
+            for (let wx = x0 + 1; wx <= x1 - 1; wx++) {
+              for (let wz = z0 + 1; wz <= z1 - 1; wz++) stamp(wx, by + bh + 1, wz, CITY_BLOCK.ZINC);
+            }
+            for (let wx = x0 + 2; wx <= x1 - 2; wx++) {
+              for (let wz = z0 + 2; wz <= z1 - 2; wz++) stamp(wx, by + bh + 2, wz, BLOCK.SLAB_STONE);
+            }
+            stamp(doorX, by, z0, BLOCK.AIR);
+            stamp(doorX, by + 1, z0, BLOCK.AIR);
+
+          } else if (city.key === 'ny') {
+            const kind = hash2i(gx, gz, SEED + 810);
+            if (kind < 0.4) {
+              // brownstone row house with a stoop
+              const bh = 5 + Math.floor(hash2i(gx, gz, SEED + 802) * 3);
+              for (let y = 0; y < bh; y++) {
+                for (let wx = x0; wx <= x1; wx++) {
+                  for (let wz = z0; wz <= z1; wz++) {
+                    const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+                    if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.PLANK); continue; }
+                    if (y === 0) foundation(wx, wz, by, CITY_BLOCK.BROWNSTONE);
+                    const u = (wx === x0 || wx === x1) ? wz : wx;
+                    const win = y > 0 && y % 3 !== 0 && u % 2 === 1;
+                    stamp(wx, by + y, wz, win ? BLOCK.GLASS : CITY_BLOCK.BROWNSTONE);
+                  }
+                }
+              }
+              for (let wx = x0; wx <= x1; wx++) {
+                for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, CITY_BLOCK.BROWNSTONE);
+              }
+              stamp(doorX, by, z0, BLOCK.AIR);
+              stamp(doorX, by + 1, z0, BLOCK.AIR);
+              stamp(doorX, by - 1, z0 - 1, BLOCK.SLAB_STONE); // the stoop
+            } else {
+              // skyscraper with Manhattan-style setbacks
+              const mat = kind > 0.72 ? CITY_BLOCK.CURTAIN : CITY_BLOCK.GRANITE;
+              const t1 = 10 + Math.floor(hash2i(gx, gz, SEED + 811) * 10);
+              const t2 = t1 + 6 + Math.floor(hash2i(gx, gz, SEED + 812) * 6);
+              const t3 = t2 + 5;
+              const tiers = [[0, 0, t1], [1, t1, t2], [2, t2, t3]];
+              for (const [inset, from, to] of tiers) {
+                const ax0 = x0 + inset, ax1 = x1 - inset, az0 = z0 + inset, az1 = z1 - inset;
+                for (let y = from; y < to; y++) {
+                  for (let wx = ax0; wx <= ax1; wx++) {
+                    for (let wz = az0; wz <= az1; wz++) {
+                      const wall = wx === ax0 || wx === ax1 || wz === az0 || wz === az1;
+                      if (!wall) continue;
+                      if (y === 0) foundation(wx, wz, by, CITY_BLOCK.GRANITE);
+                      const corner = (wx === ax0 || wx === ax1) && (wz === az0 || wz === az1);
+                      let id = mat;
+                      if (corner) id = CITY_BLOCK.GRANITE;
+                      else if (mat === CITY_BLOCK.GRANITE) {
+                        const u = (wx === ax0 || wx === ax1) ? wz : wx;
+                        if (y % 3 !== 0 && u % 2 === 1) id = BLOCK.GLASS;
+                      }
+                      stamp(wx, by + y, wz, id);
+                    }
+                  }
+                }
+                for (let wx = ax0; wx <= ax1; wx++) {
+                  for (let wz = az0; wz <= az1; wz++) stamp(wx, by + to, wz, CITY_BLOCK.GRANITE);
+                }
+              }
+              if (hash2i(gx, gz, SEED + 813) > 0.8) { // a few spires on the skyline
+                for (let y = t3 + 1; y < t3 + 5; y++) stamp(doorX, by + y, Math.floor((z0 + z1) / 2), CITY_BLOCK.GRANITE);
+                stamp(doorX, by + t3 + 5, Math.floor((z0 + z1) / 2), BLOCK.GOLD);
+              }
+              stamp(doorX, by, z0, BLOCK.AIR);
+              stamp(doorX, by + 1, z0, BLOCK.AIR);
+            }
+
+          } else {
+            // San Francisco: pastel painted ladies with white trim and bay windows
+            const mat = SF_PASTELS[Math.floor(hash2i(gx, gz, SEED + 820) * SF_PASTELS.length)];
+            const bh = 4 + Math.floor(hash2i(gx, gz, SEED + 802) * 2);
+            for (let y = 0; y < bh; y++) {
+              for (let wx = x0; wx <= x1; wx++) {
+                for (let wz = z0; wz <= z1; wz++) {
+                  const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+                  if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.PLANK); continue; }
+                  if (y === 0) foundation(wx, wz, by, mat);
+                  const corner = (wx === x0 || wx === x1) && (wz === z0 || wz === z1);
+                  const u = (wx === x0 || wx === x1) ? wz : wx;
+                  const win = y > 0 && y % 3 !== 0 && u % 2 === 1;
+                  stamp(wx, by + y, wz, corner ? BLOCK.WHITEBRICK : win ? BLOCK.GLASS : mat);
+                }
+              }
+            }
+            for (let y = 1; y < bh; y++) { // street-side bay window
+              stamp(doorX, by + y, z0 - 1, y % 2 === 1 ? BLOCK.GLASS : mat);
+            }
+            foundation(doorX, z0 - 1, by + 1, mat);
+            for (let wx = x0; wx <= x1; wx++) { // white cornice roof
+              for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, BLOCK.WHITEBRICK);
+            }
+            for (let wx = x0 + 1; wx <= x1 - 1; wx++) {
+              for (let wz = z0 + 1; wz <= z1 - 1; wz++) stamp(wx, by + bh + 1, wz, BLOCK.SLAB_STONE);
+            }
+            stamp(x0 + 1, by, z0, BLOCK.AIR); // SF doors sit to the side
+            stamp(x0 + 1, by + 1, z0, BLOCK.AIR);
           }
         }
-        for (let wx = x0; wx <= x1; wx++) { // flat roof
-          for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, mat);
-        }
-        const doorX = Math.floor((x0 + x1) / 2); // doorway on the south face
-        stamp(doorX, by, z0, BLOCK.AIR);
-        stamp(doorX, by + 1, z0, BLOCK.AIR);
       }
     }
 
@@ -339,7 +542,8 @@ export class World {
     for (const lm of LANDMARKS) {
       if (lm.x + lm.box < baseX || lm.x - lm.box >= baseX + CHUNK ||
           lm.z + lm.box < baseZ || lm.z - lm.box >= baseZ + CHUNK) continue;
-      const baseY = this.terrainHeight(lm.x, lm.z);
+      let baseY = this.terrainHeight(lm.x, lm.z);
+      if (lm.waterBase) baseY = Math.max(baseY, WATER_LEVEL - 1);
       lm.build((dx, dy, dz, id) => {
         const lx = lm.x + dx - baseX, lz = lm.z + dz - baseZ;
         const wy = baseY + dy;

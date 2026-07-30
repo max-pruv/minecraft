@@ -1,11 +1,11 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, CITY_BLOCK } from './blocks.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
@@ -761,6 +761,11 @@ const MAP_COLORS = {
   [BLOCK.SLAB_COBBLE]: [120, 120, 120], [BLOCK.SLAB_BRICK]: [148, 68, 58],
   [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
   [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
+  [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
+  [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
+  [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
+  [CITY_BLOCK.GRANITE]: [168, 166, 160], [CITY_BLOCK.CURTAIN]: [78, 118, 164],
+  [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [120, 120, 120],
 };
 
 const minimapCanvas = document.getElementById('minimap');
@@ -821,6 +826,22 @@ function drawMap(mapCanvas, radius) {
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
 
+  // city names — clamped to the edge so they double as direction signs
+  if (radius >= 60) {
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    for (const c of CITIES) {
+      let [mx, my] = toMap(c.x, c.z);
+      mx = Math.max(30, Math.min(size - 30, mx));
+      my = Math.max(12, Math.min(size - 6, my));
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.strokeText(c.name, mx, my);
+      ctx.fillStyle = '#ffe9a8';
+      ctx.fillText(c.name, mx, my);
+    }
+  }
+
   // player arrow, pointing where the camera looks
   ctx.save();
   ctx.translate(size / 2, size / 2);
@@ -841,7 +862,7 @@ document.getElementById('map-btn').addEventListener('click', () => {
 });
 minimapCanvas.addEventListener('click', () => {
   mapModal.style.display = 'flex';
-  drawMap(mapModalCanvas, 120);
+  drawMap(mapModalCanvas, 160); // wide enough to show all three cities
 });
 document.getElementById('map-modal-close').addEventListener('click', () => {
   mapModal.style.display = 'none';
