@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp } from './blocks.js';
 import { buildPropMesh } from './props.js';
+import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -60,6 +61,7 @@ world.loadEdits();
 
 const player = new Player(camera, world);
 const creatureManager = new CreatureManager(scene, world, player);
+const animalManager = new AnimalManager(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -537,6 +539,14 @@ function updateCreatureLabel() {
         return;
       }
     }
+    const animal = animalManager.targeted();
+    if (animal) {
+      creatureLabel.style.display = 'block';
+      creatureLabel.textContent =
+        `${animal.def.emoji} ${animal.def.name}${animal.baby ? ' (bébé)' : ''} · ${animal.def.cry}`;
+      creatureLabel.style.color = '#fff';
+      return;
+    }
   }
   const c = running ? creatureManager.targeted() : null;
   if (!c) { creatureLabel.style.display = 'none'; return; }
@@ -770,6 +780,12 @@ function drawMap(mapCanvas, radius) {
     if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
+  ctx.fillStyle = '#ffd75e'; // farm animals
+  for (const a of animalManager.animals) {
+    const [mx, my] = toMap(a.pos.x, a.pos.z);
+    if (mx < 0 || mx > size || my < 0 || my > size) continue;
+    ctx.fillRect(mx - 2, my - 2, 4, 4);
+  }
 
   // player arrow, pointing where the camera looks
   ctx.save();
@@ -844,7 +860,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
+window.__game = { world, player, creatureManager, animalManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
 
 let lastTime = performance.now();
 
@@ -855,6 +871,7 @@ function frame(now) {
   if (running) {
     player.update(dt);
     creatureManager.update(dt);
+    animalManager.update(dt);
     for (const npc of npcs) npc.update(dt);
   } else {
     player.syncCamera();
