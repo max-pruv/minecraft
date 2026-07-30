@@ -296,6 +296,41 @@
       0% { transform: translateY(0) rotate(0deg); opacity: 1; }
       100% { transform: translateY(-105vh) rotate(40deg); opacity: 0; }
     }
+    /* minimap */
+    #map-btn {
+      position: fixed; top: calc(60px + var(--safe-top)); left: 8px; z-index: 11;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px; cursor: pointer;
+    }
+    #minimap {
+      display: none; position: fixed; top: calc(106px + var(--safe-top)); left: 8px; z-index: 6;
+      width: 160px; height: 160px; border: 2px solid rgba(255,255,255,0.6);
+      border-radius: 10px; cursor: pointer; image-rendering: pixelated;
+    }
+    #map-modal {
+      display: none; position: fixed; inset: 0; z-index: 14;
+      align-items: center; justify-content: center; background: rgba(12, 18, 32, 0.88);
+    }
+    #map-modal-card {
+      position: relative; background: #1c2438; border: 3px solid #3a4a6b;
+      border-radius: 16px; padding: 16px; text-align: center;
+    }
+    #map-modal-canvas {
+      width: min(480px, 86vw); height: min(480px, 86vw);
+      border-radius: 8px; image-rendering: pixelated;
+    }
+    #map-modal-close {
+      position: absolute; top: 8px; right: 10px; background: none; border: none;
+      color: #aaa; font-size: 18px; cursor: pointer; z-index: 1;
+    }
+    #map-legend { color: #cdd7ee; font-size: 12px; margin-top: 8px; }
+
+    .slot-more {
+      color: #fff; font-size: 24px; font-weight: bold; cursor: pointer;
+      background: rgba(45, 106, 45, 0.6); border-color: #58b04c;
+    }
+
     .mark { font-weight: bold; }
     .mark.ok { color: #6ee06e; }
     .mark.ko { color: #e06e6e; }
@@ -342,6 +377,8 @@
       #debug { display: none; } /* frees the top bar on phones */
       #edu-btn { top: calc(8px + var(--safe-top)); }
       #edu-panel { top: calc(56px + var(--safe-top)); }
+      #map-btn { top: calc(56px + var(--safe-top)); }
+      #minimap { top: calc(104px + var(--safe-top)); width: 120px; height: 120px; }
       #quiz-card { padding: 16px 14px; max-height: 88vh; overflow-y: auto; }
       #quiz-prof { font-size: 12px; }
       #quiz-question { font-size: 17px; margin: 12px 2px 14px; min-height: 44px; }
@@ -369,6 +406,16 @@
   <button id="dex-btn" title="Creature Dex (B)">◓</button>
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <button id="edu-btn" title="Progrès et temps de jeu">🎓</button>
+  <button id="map-btn" title="Mini-carte">🗺️</button>
+  <canvas id="minimap" width="160" height="160"></canvas>
+
+  <div id="map-modal">
+    <div id="map-modal-card">
+      <button id="map-modal-close">✕</button>
+      <canvas id="map-modal-canvas" width="480" height="480"></canvas>
+      <div id="map-legend">🔺 toi · ⬜ personnages · 🟪 créatures</div>
+    </div>
+  </div>
 
   <div id="inv-panel">
     <div id="inv-card">

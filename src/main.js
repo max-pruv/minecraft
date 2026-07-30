@@ -3,11 +3,11 @@
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS } from './blocks.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon, Cornichon, createHeroes, createBuilders } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers } from './marlon.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -178,6 +178,7 @@ function updateChunks() {
     marlon, cornichon,
     ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z),
     ...createBuilders(scene, world, player, say, player.pos.x, player.pos.z),
+    ...createVillagers(scene, world, player, say, player.pos.x, player.pos.z),
   ];
 })();
 
@@ -574,6 +575,13 @@ function buildHotbar() {
     slot.addEventListener('click', () => selectSlot(i));
     hotbarEl.appendChild(slot);
   });
+  // "+" slot: opens the full block inventory — the discoverable way in
+  const more = document.createElement('div');
+  more.className = 'slot slot-more';
+  more.title = 'Tous les blocs (E)';
+  more.textContent = '+';
+  more.addEventListener('click', () => openInventory());
+  hotbarEl.appendChild(more);
 }
 
 function selectSlot(i) {
@@ -637,6 +645,105 @@ document.addEventListener('wheel', (e) => {
   if (!running) return;
   const dir = e.deltaY > 0 ? 1 : -1;
   selectSlot((selectedSlot + dir + hotbarBlocks.length) % hotbarBlocks.length);
+});
+
+// --- minimap ---------------------------------------------------------------------
+
+const MAP_COLORS = {
+  [BLOCK.GRASS]: [88, 176, 76], [BLOCK.DIRT]: [138, 96, 67], [BLOCK.STONE]: [125, 125, 125],
+  [BLOCK.SAND]: [219, 207, 163], [BLOCK.LOG]: [103, 82, 49], [BLOCK.LEAVES]: [54, 116, 38],
+  [BLOCK.WATER]: [64, 120, 210], [BLOCK.PLANK]: [162, 130, 78], [BLOCK.COBBLE]: [120, 120, 120],
+  [BLOCK.GLASS]: [200, 230, 245], [BLOCK.BRICK]: [148, 68, 58], [BLOCK.SNOW]: [242, 250, 250],
+  [BLOCK.SANDSTONE]: [216, 200, 155], [BLOCK.GRAVEL]: [136, 130, 126], [BLOCK.MOSSY]: [98, 122, 82],
+  [BLOCK.BIRCH]: [214, 200, 165], [BLOCK.DARKPLANK]: [92, 66, 42], [BLOCK.ICE]: [160, 210, 240],
+  [BLOCK.GOLD]: [238, 202, 66], [BLOCK.DIAMOND]: [96, 219, 213], [BLOCK.OBSIDIAN]: [28, 22, 44],
+  [BLOCK.BOOKSHELF]: [162, 130, 78], [BLOCK.WOOL_RED]: [200, 62, 56], [BLOCK.WOOL_BLUE]: [64, 100, 190],
+  [BLOCK.WOOL_YELLOW]: [228, 200, 60], [BLOCK.WOOL_GREEN]: [88, 160, 70], [BLOCK.WOOL_PURPLE]: [140, 84, 190],
+  [BLOCK.WOOL_BLACK]: [42, 42, 46], [BLOCK.SLAB_STONE]: [125, 125, 125], [BLOCK.SLAB_PLANK]: [162, 130, 78],
+  [BLOCK.SLAB_COBBLE]: [120, 120, 120], [BLOCK.SLAB_BRICK]: [148, 68, 58],
+  [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
+  [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
+};
+
+const minimapCanvas = document.getElementById('minimap');
+const mapModal = document.getElementById('map-modal');
+const mapModalCanvas = document.getElementById('map-modal-canvas');
+let minimapVisible = false;
+let minimapTimer = 0;
+
+function drawMap(mapCanvas, radius) {
+  const ctx = mapCanvas.getContext('2d');
+  const size = mapCanvas.width;
+  const scale = size / (radius * 2 + 1);
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  const img = ctx.createImageData(size, size);
+
+  for (let py = 0; py < size; py++) {
+    const wz = pcz + Math.floor(py / scale) - radius;
+    for (let pxx = 0; pxx < size; pxx++) {
+      const wx = pcx + Math.floor(pxx / scale) - radius;
+      let color = [20, 26, 40], h = 0;
+      for (let y = HEIGHT - 1; y >= 0; y--) {
+        const id = world.getBlock(wx, y, wz);
+        if (id !== BLOCK.AIR) {
+          color = MAP_COLORS[id] || [150, 150, 150];
+          h = y;
+          break;
+        }
+      }
+      const shade = 0.65 + (h / HEIGHT) * 0.6; // higher terrain reads brighter
+      const o = (py * size + pxx) * 4;
+      img.data[o] = Math.min(255, color[0] * shade);
+      img.data[o + 1] = Math.min(255, color[1] * shade);
+      img.data[o + 2] = Math.min(255, color[2] * shade);
+      img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const toMap = (x, z) => [((x - pcx + radius) / (radius * 2 + 1)) * size, ((z - pcz + radius) / (radius * 2 + 1)) * size];
+
+  // NPCs (white) and wild creatures (violet)
+  for (const npc of npcs) {
+    const [mx, my] = toMap(npc.pos.x, npc.pos.z);
+    if (mx < 0 || mx > size || my < 0 || my > size) continue;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(mx - 2, my - 2, 4, 4);
+  }
+  ctx.fillStyle = '#c86ee0';
+  for (const c of creatureManager.creatures) {
+    const [mx, my] = toMap(c.pos.x, c.pos.z);
+    if (mx < 0 || mx > size || my < 0 || my > size) continue;
+    ctx.fillRect(mx - 2, my - 2, 4, 4);
+  }
+
+  // player arrow, pointing where the camera looks
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(Math.atan2(-Math.cos(player.yaw), -Math.sin(player.yaw)));
+  ctx.fillStyle = '#ff4444';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(8, 0); ctx.lineTo(-5, -5); ctx.lineTo(-5, 5); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+document.getElementById('map-btn').addEventListener('click', () => {
+  minimapVisible = !minimapVisible;
+  minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
+  if (minimapVisible) drawMap(minimapCanvas, 32);
+});
+minimapCanvas.addEventListener('click', () => {
+  mapModal.style.display = 'flex';
+  drawMap(mapModalCanvas, 80);
+});
+document.getElementById('map-modal-close').addEventListener('click', () => {
+  mapModal.style.display = 'none';
+});
+mapModal.addEventListener('click', (e) => {
+  if (e.target === mapModal) mapModal.style.display = 'none';
 });
 
 // --- day/night cycle ----------------------------------------------------------------
@@ -704,6 +811,14 @@ function frame(now) {
   updateHud(dt);
   updateCreatureLabel();
   edu.update(dt, running);
+
+  if (minimapVisible) {
+    minimapTimer -= dt;
+    if (minimapTimer <= 0) {
+      minimapTimer = 1;
+      drawMap(minimapCanvas, 32);
+    }
+  }
 
   const hit = running ? getTarget() : null;
   highlight.visible = !!hit;
