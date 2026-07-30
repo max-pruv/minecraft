@@ -46,8 +46,8 @@ export function generateSpecies() {
   const species = [];
   const names = new Set();
   const typeKeys = Object.keys(TYPES);
-  for (let i = 0; i < 16; i++) {
-    const type = typeKeys[i % typeKeys.length]; // two of each type
+  for (let i = 0; i < 32; i++) {
+    const type = typeKeys[i % typeKeys.length]; // four of each type
     let name = makeName(rng);
     while (names.has(name)) name = makeName(rng);
     names.add(name);
@@ -64,6 +64,8 @@ export function generateSpecies() {
       tail: rng() < 0.7,
       hopper: rng() < 0.3,         // hops instead of walking
       speed: 1.2 + rng() * 1.4,
+      // separate rng stream: keeps ids/names of existing saved collections stable
+      horn: mulberry32(9000 + i)() < 0.3,
     });
   }
   return species;
@@ -106,6 +108,12 @@ function buildCreatureMesh(sp) {
       ear.position.set(sx * s * 0.38, legH + s * 0.95, -s * 0.75);
       g.add(ear);
     }
+  }
+
+  if (sp.horn) {
+    const horn = box(s * 0.1, s * 0.3, s * 0.1, 0xe8e0c8);
+    horn.position.set(0, legH + s * 1.0, -s * 0.85);
+    g.add(horn);
   }
 
   if (sp.tail) {
@@ -246,8 +254,8 @@ function buildBallMesh() {
 
 // --- manager -----------------------------------------------------------------
 
-const MAX_WILD = 10;
-const SPAWN_MIN = 20, SPAWN_MAX = 44, DESPAWN_DIST = 70;
+const MAX_WILD = 16;
+const SPAWN_MIN = 10, SPAWN_MAX = 34, DESPAWN_DIST = 70;
 const STORAGE_KEY = 'web-minecraft-dex-v1';
 
 export class CreatureManager {
@@ -286,7 +294,7 @@ export class CreatureManager {
     });
     const candidates = pool.length ? pool : this.species;
     // rarity-weighted pick
-    const weights = candidates.map((sp) => [8, 3, 1][sp.rarity]);
+    const weights = candidates.map((sp) => [7, 4, 2][sp.rarity]);
     let total = weights.reduce((a, b) => a + b, 0);
     let roll = Math.random() * total;
     for (let i = 0; i < candidates.length; i++) {
@@ -421,7 +429,7 @@ export class CreatureManager {
   update(dt) {
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
-      this.spawnTimer = 2;
+      this.spawnTimer = 1.2;
       this.trySpawn();
     }
     for (const c of [...this.creatures]) {

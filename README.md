@@ -21,7 +21,7 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 - **Procedural pixel-art textures** — the whole texture atlas is painted onto a
   canvas at startup; the repo ships zero image files.
 - **Day/night cycle** with sky, fog and light level transitions.
-- **Creature catching** — 16 procedurally generated original species with
+- **Creature catching** — 32 procedurally generated original species with
   elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn
   in matching biomes. Throw catch-balls (Q or the ◓ button) at them, watch the
   ball shake, and fill your Creature Dex (B). Rarer species are harder to catch.
@@ -31,9 +31,9 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   around and chats in French, and Professeur Cornichon, the creature expert.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
   Cornichon's quiz starts every play session, and pops up again after each
-  5 minutes of play: US first-grade math, English, and French questions
+  4 minutes of play: US first-grade math, English, and French questions
   (fill-in-the-blank, spelling, word problems, translations…). 4 correct
-  answers earn 5 minutes of play, with star progress, confetti celebrations,
+  answers earn 4 minutes of play, with star progress, confetti celebrations,
   and questions that avoid repeating. Refreshing the page doesn't skip the
   quiz — it just brings it right back. The 🎓 button shows today's play time,
   every correct answer, and past days — all saved in the browser
