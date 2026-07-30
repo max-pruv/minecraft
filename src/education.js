@@ -4,7 +4,7 @@
 // per skill from the child's history; random fast-clicking is detected,
 // frozen for 10 seconds, and penalized with extra required answers.
 
-const SESSION_SECONDS = 5 * 60;
+const SESSION_SECONDS = 4 * 60;
 const NEEDED_CORRECT = 4;
 const STORAGE_KEY = 'web-minecraft-edu-v1';
 const RECENT_CAP = 80;          // question keys remembered to avoid repeats
@@ -700,7 +700,7 @@ export class EducationMode {
 
   celebrate() {
     this.confetti();
-    this.el.question.textContent = '+5 minutes de jeu ! 🎮';
+    this.el.question.textContent = `+${SESSION_SECONDS / 60} minutes de jeu ! 🎮`;
     this.el.category.textContent = '🏆';
     this.el.count.textContent = '';
     this.el.feedback.textContent = `${this.needed()} bonnes réponses — champion !`;
