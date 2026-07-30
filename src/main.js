@@ -22,8 +22,8 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 // --- renderer / scene -------------------------------------------------------
 
 const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_TOUCH ? 1.5 : 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
@@ -33,6 +33,14 @@ scene.background = DAY_SKY.clone();
 scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK * 0.55, RENDER_RADIUS * CHUNK - 4);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 600);
+
+// Lights only affect Lambert materials (the high-fidelity creatures);
+// blocks keep their baked flat look via MeshBasic + vertex AO.
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.0);
+scene.add(hemiLight);
+const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
+sunLight.position.set(0.6, 1, 0.4);
+scene.add(sunLight);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -638,8 +646,7 @@ selectSlot(0);
 const invPanel = document.getElementById('inv-panel');
 let invOpen = false;
 let invTab = 'blocks';
-let invPage = 0;
-const DECOR_PER_PAGE = 60;
+let invBuildToken = 0;
 
 function invCell(id) {
   const cell = document.createElement('button');
@@ -663,28 +670,36 @@ function buildInventory() {
   document.querySelectorAll('#inv-tabs button').forEach((b) =>
     b.classList.toggle('active', b.dataset.tab === invTab));
 
+  pager.style.display = 'none';
   if (invTab === 'blocks') {
-    pager.style.display = 'none';
     for (const id of PLACEABLE_BLOCKS) grid.appendChild(invCell(id));
     return;
   }
-  // decor & furniture tabs: paginated
+  // decor & furniture tabs: every item, appended in rAF batches so opening
+  // stays instant and the list just scrolls forever
   const items = invTab === 'props' ? PROP_ITEMS : DECOR_ITEMS;
-  const pages = Math.ceil(items.length / DECOR_PER_PAGE);
-  invPage = Math.max(0, Math.min(invPage, pages - 1));
-  pager.style.display = 'flex';
-  document.getElementById('inv-page').textContent = `Page ${invPage + 1} / ${pages}`;
-  for (const item of items.slice(invPage * DECOR_PER_PAGE, (invPage + 1) * DECOR_PER_PAGE)) {
-    grid.appendChild(invCell(item.id));
-  }
+  const myToken = ++invBuildToken;
+  let index = 0;
+  const appendBatch = () => {
+    if (myToken !== invBuildToken) return; // tab changed mid-build
+    const frag = document.createDocumentFragment();
+    for (let n = 0; n < 60 && index < items.length; n++, index++) {
+      frag.appendChild(invCell(items[index].id));
+    }
+    grid.appendChild(frag);
+    if (index < items.length) requestAnimationFrame(appendBatch);
+  };
+  appendBatch();
 }
 buildInventory();
 
 document.querySelectorAll('#inv-tabs button').forEach((b) => {
-  b.addEventListener('click', () => { invTab = b.dataset.tab; invPage = 0; buildInventory(); });
+  b.addEventListener('click', () => {
+    invTab = b.dataset.tab;
+    document.getElementById('inv-card').scrollTop = 0;
+    buildInventory();
+  });
 });
-document.getElementById('inv-prev').addEventListener('click', () => { invPage--; buildInventory(); });
-document.getElementById('inv-next').addEventListener('click', () => { invPage++; buildInventory(); });
 
 function openInventory() {
   if (edu.quizActive || edu.hardStopActive) return;
@@ -700,6 +715,25 @@ function closeInventory(resume) {
 }
 
 document.getElementById('inv-close').addEventListener('click', () => closeInventory(true));
+
+// Styled confirmation modal (replaces the browser's default confirm()).
+window.gameConfirm = (msg) => new Promise((resolve) => {
+  const modal = document.getElementById('confirm-modal');
+  document.getElementById('confirm-msg').textContent = msg;
+  modal.style.display = 'flex';
+  const okBtn = document.getElementById('confirm-ok');
+  const cancelBtn = document.getElementById('confirm-cancel');
+  const done = (val) => {
+    modal.style.display = 'none';
+    okBtn.removeEventListener('click', onOk);
+    cancelBtn.removeEventListener('click', onCancel);
+    resolve(val);
+  };
+  const onOk = () => done(true);
+  const onCancel = () => done(false);
+  okBtn.addEventListener('click', onOk);
+  cancelBtn.addEventListener('click', onCancel);
+});
 document.getElementById('inv-btn').addEventListener('click', () => {
   if (invOpen) closeInventory(true);
   else openInventory();
@@ -836,6 +870,8 @@ function updateSky(dt) {
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
   solidMaterial.color.copy(lightColor);
   waterMaterial.color.copy(lightColor);
+  hemiLight.intensity = 0.3 + 0.8 * daylight;
+  sunLight.intensity = 0.15 + 0.75 * daylight;
 }
 
 // --- underwater tint / debug -----------------------------------------------------------

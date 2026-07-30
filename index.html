@@ -317,6 +317,26 @@
       0% { transform: translateY(0) rotate(0deg); opacity: 1; }
       100% { transform: translateY(-105vh) rotate(40deg); opacity: 0; }
     }
+    /* confirmation modal */
+    #confirm-modal {
+      display: none; position: fixed; inset: 0; z-index: 30;
+      align-items: center; justify-content: center; background: rgba(12, 18, 32, 0.8);
+    }
+    #confirm-card {
+      width: min(360px, 90vw); background: #1c2438; border: 3px solid #3a4a6b;
+      border-radius: 16px; padding: 24px; text-align: center; color: #fff;
+      animation: titlein 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+    }
+    #confirm-icon { font-size: 40px; margin-bottom: 10px; }
+    #confirm-msg { font-size: 16px; line-height: 1.5; margin-bottom: 18px; }
+    #confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    #confirm-actions button {
+      font-family: inherit; font-size: 15px; padding: 10px 18px; cursor: pointer;
+      border-radius: 10px; color: #fff;
+    }
+    #confirm-cancel { background: #2c3a58; border: 2px solid #46587e; }
+    #confirm-ok { background: #2d6a2d; border: 2px solid #58b04c; }
+
     /* minimap */
     #map-btn {
       position: fixed; top: calc(82px + var(--safe-top)); left: 8px; z-index: 11;
@@ -431,6 +451,17 @@
   <button id="map-btn" title="Mini-carte">🗺️</button>
   <canvas id="minimap" width="160" height="160"></canvas>
 
+  <div id="confirm-modal">
+    <div id="confirm-card">
+      <div id="confirm-icon">🕊️</div>
+      <div id="confirm-msg"></div>
+      <div id="confirm-actions">
+        <button id="confirm-cancel">Annuler</button>
+        <button id="confirm-ok">Relâcher 🕊️</button>
+      </div>
+    </div>
+  </div>
+
   <div id="map-modal">
     <div id="map-modal-card">
       <button id="map-modal-close">✕</button>
@@ -449,11 +480,7 @@
         <button data-tab="props">🪑 Meubles</button>
       </div>
       <div id="inv-grid"></div>
-      <div id="inv-pager">
-        <button id="inv-prev">◀</button>
-        <span id="inv-page"></span>
-        <button id="inv-next">▶</button>
-      </div>
+      <div id="inv-pager"></div>
     </div>
   </div>
   <div id="edu-timer"></div>
