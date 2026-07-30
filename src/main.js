@@ -7,7 +7,8 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 
-const RENDER_RADIUS = 5;             // chunks in each direction
+const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const RENDER_RADIUS = IS_TOUCH ? 4 : 5; // chunks in each direction (smaller on mobile GPUs)
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 const MESHES_PER_FRAME = 2;
 const REACH = 5.5;                   // block interaction distance
@@ -17,7 +18,7 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_TOUCH ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
@@ -184,7 +185,11 @@ function getTarget() {
 
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
-let locked = false;
+const touchUI = document.getElementById('touch-ui');
+const pauseBtn = document.getElementById('pause-btn');
+let locked = false;   // pointer lock held (desktop)
+let dragLook = false; // desktop fallback when pointer lock is unavailable
+let running = false;  // game accepts input and simulates
 let saveTimer = null;
 
 function scheduleSave() {
@@ -192,9 +197,38 @@ function scheduleSave() {
   saveTimer = setTimeout(() => world.saveEdits(), 800);
 }
 
-document.getElementById('play-btn').addEventListener('click', () => {
-  canvas.requestPointerLock();
-});
+function startGame() {
+  if (IS_TOUCH) {
+    running = true;
+    overlay.style.display = 'none';
+    touchUI.style.display = 'block';
+    pauseBtn.style.display = 'block';
+    return;
+  }
+  if (!canvas.requestPointerLock) return enableDragFallback();
+  try {
+    const p = canvas.requestPointerLock();
+    if (p && p.catch) p.catch(() => enableDragFallback());
+  } catch {
+    enableDragFallback();
+  }
+}
+
+function enableDragFallback() {
+  dragLook = true;
+  running = true;
+  overlay.style.display = 'none';
+  pauseBtn.style.display = 'block';
+}
+
+function pauseGame() {
+  running = false;
+  overlay.style.display = 'flex';
+  overlayTitle.textContent = 'Paused';
+}
+
+document.getElementById('play-btn').addEventListener('click', startGame);
+pauseBtn.addEventListener('click', pauseGame);
 
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('Reset the world? All your block edits will be lost.')) {
@@ -205,16 +239,25 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
-  overlay.style.display = locked ? 'none' : 'flex';
-  if (!locked) overlayTitle.textContent = 'Paused';
+  if (!IS_TOUCH && !dragLook) {
+    running = locked;
+    overlay.style.display = locked ? 'none' : 'flex';
+    if (!locked) overlayTitle.textContent = 'Paused';
+  }
 });
+document.addEventListener('pointerlockerror', () => enableDragFallback());
 
 document.addEventListener('mousemove', (e) => {
   if (locked) player.onMouseMove(e.movementX, e.movementY);
+  else if (dragLook && running && dragState.active) {
+    player.onMouseMove(e.clientX - dragState.x, e.clientY - dragState.y);
+    dragState.moved += Math.abs(e.clientX - dragState.x) + Math.abs(e.clientY - dragState.y);
+    dragState.x = e.clientX; dragState.y = e.clientY;
+  }
 });
 
 document.addEventListener('keydown', (e) => {
-  if (!locked) return;
+  if (!running) return;
   player.keys.add(e.code);
   if (e.code === 'KeyF') player.toggleFly();
   if (e.code.startsWith('Digit')) {
@@ -261,18 +304,148 @@ function pickBlock() {
 }
 
 let mouseRepeat = null;
+const dragState = { active: false, x: 0, y: 0, moved: 0, button: 0 };
+
 document.addEventListener('mousedown', (e) => {
-  if (!locked) return;
+  if (!running || IS_TOUCH) return;
   e.preventDefault();
-  const action = e.button === 0 ? breakBlock : e.button === 2 ? placeBlock : pickBlock;
-  action();
-  if (e.button === 0 || e.button === 2) {
-    clearInterval(mouseRepeat);
-    mouseRepeat = setInterval(action, 240);
+  if (locked) {
+    const action = e.button === 0 ? breakBlock : e.button === 2 ? placeBlock : pickBlock;
+    action();
+    if (e.button === 0 || e.button === 2) {
+      clearInterval(mouseRepeat);
+      mouseRepeat = setInterval(action, 240);
+    }
+  } else if (dragLook) {
+    dragState.active = true;
+    dragState.x = e.clientX; dragState.y = e.clientY;
+    dragState.moved = 0;
+    dragState.button = e.button;
   }
 });
-document.addEventListener('mouseup', () => clearInterval(mouseRepeat));
+document.addEventListener('mouseup', () => {
+  clearInterval(mouseRepeat);
+  if (dragLook && dragState.active) {
+    // a click without dragging acts on the targeted block
+    if (dragState.moved < 6) {
+      (dragState.button === 0 ? breakBlock : dragState.button === 2 ? placeBlock : pickBlock)();
+    }
+    dragState.active = false;
+  }
+});
 document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// --- touch controls --------------------------------------------------------------
+
+const joyBase = document.getElementById('joy-base');
+const joyKnob = document.getElementById('joy-knob');
+const JOY_RADIUS = 50;
+let breakMode = true;
+
+const touch = {
+  joyId: null, joyX: 0, joyY: 0,
+  lookId: null, lastX: 0, lastY: 0, moved: 0, startTime: 0,
+  holdTimer: null, repeatTimer: null,
+};
+
+function touchAction() {
+  (breakMode ? breakBlock : placeBlock)();
+}
+
+function stopHold() {
+  clearTimeout(touch.holdTimer);
+  clearInterval(touch.repeatTimer);
+  touch.holdTimer = null;
+  touch.repeatTimer = null;
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  if (!running) return;
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    const leftZone = t.clientX < window.innerWidth * 0.45 && t.clientY > window.innerHeight * 0.4;
+    if (touch.joyId === null && leftZone) {
+      touch.joyId = t.identifier;
+      touch.joyX = t.clientX; touch.joyY = t.clientY;
+      joyBase.style.display = 'block';
+      joyBase.style.left = (t.clientX - 60) + 'px';
+      joyBase.style.top = (t.clientY - 60) + 'px';
+      joyKnob.style.transform = 'translate(0px, 0px)';
+    } else if (touch.lookId === null) {
+      touch.lookId = t.identifier;
+      touch.lastX = t.clientX; touch.lastY = t.clientY;
+      touch.moved = 0;
+      touch.startTime = performance.now();
+      // press-and-hold repeats the action (mine a row of blocks)
+      touch.holdTimer = setTimeout(() => {
+        touchAction();
+        touch.repeatTimer = setInterval(touchAction, 280);
+      }, 450);
+    }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!running) return;
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === touch.joyId) {
+      let dx = t.clientX - touch.joyX, dy = t.clientY - touch.joyY;
+      const d = Math.hypot(dx, dy);
+      if (d > JOY_RADIUS) { dx *= JOY_RADIUS / d; dy *= JOY_RADIUS / d; }
+      joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      player.touchMove.f = -dy / JOY_RADIUS;
+      player.touchMove.s = dx / JOY_RADIUS;
+    } else if (t.identifier === touch.lookId) {
+      const dx = t.clientX - touch.lastX, dy = t.clientY - touch.lastY;
+      touch.moved += Math.abs(dx) + Math.abs(dy);
+      if (touch.moved > 12) stopHold();
+      player.onMouseMove(dx * 2.2, dy * 2.2);
+      touch.lastX = t.clientX; touch.lastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+function endTouch(e) {
+  for (const t of e.changedTouches) {
+    if (t.identifier === touch.joyId) {
+      touch.joyId = null;
+      player.touchMove.f = 0;
+      player.touchMove.s = 0;
+      joyBase.style.display = 'none';
+    } else if (t.identifier === touch.lookId) {
+      const quickTap = performance.now() - touch.startTime < 300 && touch.moved < 12;
+      const repeating = touch.repeatTimer !== null;
+      stopHold();
+      touch.lookId = null;
+      if (quickTap && !repeating) touchAction();
+    }
+  }
+}
+canvas.addEventListener('touchend', endTouch);
+canvas.addEventListener('touchcancel', endTouch);
+
+// touch buttons: hold-style buttons map to key codes the player already understands
+function bindHoldButton(id, code) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); player.keys.add(code); }, { passive: false });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); player.keys.delete(code); });
+  el.addEventListener('touchcancel', () => player.keys.delete(code));
+}
+bindHoldButton('jump-btn', 'Space');
+bindHoldButton('down-btn', 'KeyC');
+
+document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  breakMode = !breakMode;
+  e.target.textContent = breakMode ? '⛏️' : '🧱';
+}, { passive: false });
+
+document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  player.toggleFly();
+  document.getElementById('down-btn').style.display = player.flying ? 'flex' : 'none';
+}, { passive: false });
 
 // --- hotbar HUD ------------------------------------------------------------------
 
@@ -312,7 +485,7 @@ buildHotbar();
 selectSlot(0);
 
 document.addEventListener('wheel', (e) => {
-  if (!locked) return;
+  if (!running) return;
   const dir = e.deltaY > 0 ? 1 : -1;
   selectSlot((selectedSlot + dir + HOTBAR_BLOCKS.length) % HOTBAR_BLOCKS.length);
 });
@@ -366,14 +539,14 @@ function frame(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
 
-  if (locked) player.update(dt);
+  if (running) player.update(dt);
   else player.syncCamera();
 
   updateChunks();
   updateSky(dt);
   updateHud(dt);
 
-  const hit = locked ? getTarget() : null;
+  const hit = running ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

@@ -27,6 +27,7 @@ export class Player {
     this.flying = false;
     this.inWater = false;
     this.keys = new Set();
+    this.touchMove = { f: 0, s: 0 }; // analog stick input, -1..1
   }
 
   setSpawn(x, y, z) {
@@ -63,8 +64,8 @@ export class Player {
 
   update(dt) {
     const k = this.keys;
-    const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0);
-    const strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
+    const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0) + this.touchMove.f;
+    const strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0) + this.touchMove.s;
 
     const bodyBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + 0.4), Math.floor(this.pos.z));
     const headBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + EYE_HEIGHT), Math.floor(this.pos.z));
@@ -75,7 +76,7 @@ export class Player {
     let dx = (-sin * forward + cos * strafe);
     let dz = (-cos * forward - sin * strafe);
     const len = Math.hypot(dx, dz);
-    if (len > 0) { dx /= len; dz /= len; }
+    if (len > 1) { dx /= len; dz /= len; } // keep analog magnitudes below 1
 
     let speed = k.has('ShiftLeft') || k.has('ShiftRight') ? SPRINT_SPEED : WALK_SPEED;
     if (this.flying) speed = FLY_SPEED;
