@@ -398,21 +398,42 @@ export class CreatureManager {
       entry.count++;
       entry.bestLevel = Math.max(entry.bestLevel, c.level);
       this.saveCollection();
+      if (this.onCatch) this.onCatch(c.sp, c.level); // the WOW celebration
       this.toast(`Caught ${c.sp.name}! (${c.sp.type} · Lv ${c.level})`, TYPES[c.sp.type].color);
     } else {
       c.state = 'flee';
       c.stateTime = 4;
       c.mesh.visible = true;
-      this.toast(`${c.sp.name} broke free!`, 0xcccccc);
+      c.mesh.scale.setScalar(1);
+      this.toast(`Oh non, ${c.sp.name} s'est échappé !`, 0xcccccc);
       setTimeout(() => { if (this.creatures.includes(c)) this.removeCreature(c); }, 4000);
     }
   }
 
   updateBalls(dt) {
     for (const ball of [...this.balls]) {
+      if (ball.state === 'sucking') {
+        // the creature spins and shrinks into the ball
+        ball.suckTime -= dt;
+        const c = ball.target;
+        const t = Math.max(0, ball.suckTime / 0.6); // 1 → 0
+        c.mesh.scale.setScalar(Math.max(0.02, t));
+        c.mesh.rotation.y += dt * 16;
+        c.mesh.position.lerpVectors(ball.pos, c.pos, t * t);
+        if (ball.suckTime <= 0) {
+          c.mesh.visible = false;
+          c.mesh.scale.setScalar(1);
+          c.mesh.rotation.y = 0;
+          ball.state = 'shaking';
+          ball.shakeTime = 2.4; // three suspenseful wobbles
+        }
+        continue;
+      }
       if (ball.state === 'shaking') {
         ball.shakeTime -= dt;
-        ball.mesh.rotation.z = Math.sin(ball.shakeTime * 20) * 0.45;
+        // wobble in three pulses with pauses in between, like a real catch
+        const pulse = Math.pow(Math.sin(ball.shakeTime * Math.PI / 0.8), 2);
+        ball.mesh.rotation.z = Math.sin(ball.shakeTime * 22) * 0.5 * pulse;
         if (ball.shakeTime <= 0) this.resolveCatch(ball);
         continue;
       }
@@ -428,16 +449,15 @@ export class CreatureManager {
         if (c.state === 'pending') continue;
         const center = c.pos.clone(); center.y += c.sp.size * 0.5;
         if (ball.pos.distanceTo(center) < c.sp.size * 0.7 + 0.2) {
-          ball.state = 'shaking';
-          ball.shakeTime = 1.6;
+          ball.state = 'sucking'; // the creature spirals into the ball first
+          ball.suckTime = 0.6;
           ball.vel.set(0, 0, 0);
           ball.target = c;
           c.state = 'pending';
-          c.mesh.visible = false;
           break;
         }
       }
-      if (ball.state === 'shaking') continue;
+      if (ball.state === 'sucking') continue;
 
       // hit terrain?
       if (this.world.isSolid(Math.floor(ball.pos.x), Math.floor(ball.pos.y), Math.floor(ball.pos.z))) {
