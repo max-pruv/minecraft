@@ -55,7 +55,8 @@ function shapeSVG(name) {
 // { key, prompt, correct, wrongs }. Language generators treat 2 and 3 alike.
 
 function numWrongs(answer, level, count = 3) {
-  const deltaPool = level >= 3 ? [100, 10, 200, 110] : level === 2 ? [10, 1, 20, 11] : [1, 2, 3];
+  const deltaPool = level >= 4 ? [1, 10, 100, 90, 110, 11]
+    : level === 3 ? [100, 10, 200, 110] : level === 2 ? [10, 1, 20, 11] : [1, 2, 3];
   const set = new Set();
   let guard = 0;
   while (set.size < count && guard++ < 60) {
@@ -75,7 +76,8 @@ const EN_NAMES = ['Sam', 'Mia', 'Leo', 'Ava'];
 const FR_NAMES = ['Léa', 'Tom', 'Emma', 'Hugo'];
 
 function addOperands(level) {
-  if (level >= 3) return [round10(100 + rnd(400)), round10(100 + rnd(300))];
+  if (level >= 4) return [100 + rnd(800), 100 + rnd(800)];      // carries everywhere
+  if (level === 3) return [round10(100 + rnd(400)), round10(100 + rnd(300))];
   if (level === 2) return rnd(2) ? [10 + rnd(80), round10(10 + rnd(40))] : [round10(10 + rnd(60)), 10 + rnd(30)];
   return [1 + rnd(10), 1 + rnd(10)];
 }
@@ -145,7 +147,7 @@ const MATH_GENS = [
   } },
   { skill: 'wordEN', gen(level) {
     const name = pick(EN_NAMES);
-    const [base, delta] = addOperands(Math.min(level, 2));
+    const [base, delta] = addOperands(Math.min(level, 3));
     const add = rnd(2);
     const item = pick(['apples', 'marbles', 'stickers', 'blocks']);
     const answer = add ? base + delta : base;
@@ -160,7 +162,7 @@ const MATH_GENS = [
   } },
   { skill: 'wordFR', gen(level) {
     const name = pick(FR_NAMES);
-    const [base, delta] = addOperands(Math.min(level, 2));
+    const [base, delta] = addOperands(Math.min(level, 3));
     const add = rnd(2);
     const item = pick(['billes', 'bonbons', 'images', 'crayons']);
     const answer = add ? base + delta : base;
@@ -232,6 +234,23 @@ const MATH_GENS = [
       wrongs: shuffle([...new Set(String(n).split('').map(Number))].filter((d) => String(d) !== String(Number(answer))).concat([9, 0, 5, 3]).map(String)).slice(0, 3),
     };
   } },
+  { skill: 'mult', requires: ['add', 3], gen(level) {
+    // multiplication unlocks once additions are mastered
+    const t = Math.min(level, 3);
+    let a, b;
+    if (t >= 3) { a = 11 + rnd(14); b = 2 + rnd(4); }        // 12 × 4
+    else if (t === 2) { a = 3 + rnd(7); b = 3 + rnd(7); }    // full tables
+    else { a = 2 + rnd(9); b = pick([2, 5, 10]); }           // ×2 ×5 ×10
+    const answer = a * b;
+    const fr = rnd(2);
+    const wrongs = [...new Set([answer + b, Math.max(1, answer - b), answer + a, answer + 1])]
+      .filter((w) => w !== answer).slice(0, 3).map(String);
+    return {
+      key: `mult-${a}-${b}-${fr}`,
+      prompt: fr ? `Combien font ${a} × ${b} ?` : `What is ${a} × ${b}?`,
+      correct: String(answer), wrongs,
+    };
+  } },
   { skill: 'frnum', gen(level) {
     const tiers = {
       1: [[1, 'un'], [2, 'deux'], [3, 'trois'], [4, 'quatre'], [5, 'cinq'], [6, 'six'], [7, 'sept'], [8, 'huit'], [9, 'neuf'], [10, 'dix'], [11, 'onze'], [12, 'douze']],
@@ -265,11 +284,17 @@ const EN_PLURALS = {
     ['man', 'men', ['mans', 'mens']], ['woman', 'women', ['womans', 'womens']],
     ['leaf', 'leaves', ['leafs', 'leafes']], ['sheep', 'sheep', ['sheeps', 'sheepes']],
   ],
+  3: [
+    ['knife', 'knives', ['knifes', 'knive']], ['wolf', 'wolves', ['wolfs', 'wolfes']],
+    ['city', 'cities', ['citys', 'cityes']], ['half', 'halves', ['halfs', 'halfes']],
+    ['hero', 'heroes', ['heros', 'heroses']], ['deer', 'deer', ['deers', 'deeres']],
+  ],
 };
 
 const EN_OPPOSITES = {
   1: [['hot', 'cold'], ['big', 'small'], ['up', 'down'], ['fast', 'slow'], ['happy', 'sad'], ['day', 'night'], ['open', 'closed'], ['full', 'empty']],
   2: [['begin', 'end'], ['early', 'late'], ['loud', 'quiet'], ['wide', 'narrow'], ['heavy', 'light'], ['always', 'never'], ['remember', 'forget'], ['above', 'below']],
+  3: [['whisper', 'shout'], ['appear', 'disappear'], ['huge', 'tiny'], ['brave', 'scared'], ['smooth', 'rough'], ['float', 'sink'], ['ancient', 'modern'], ['victory', 'defeat']],
 };
 
 const EN_RHYMES = {
@@ -294,22 +319,32 @@ const EN_FILLS = {
     ['He ___ his homework already.', 'did', ['done', 'doed', 'do']],
     ['We ___ a sandcastle last summer.', 'built', ['builded', 'build', 'builds']],
   ],
+  3: [
+    ["I ___ like broccoli at all.", "don't", ["doesn't", "didn't", 'not']],
+    ["She ___ finished her drawing yet.", "hasn't", ["haven't", "isn't", "aren't"]],
+    ['This tower is ___ than mine.', 'taller', ['tallest', 'more tall', 'tall']],
+    ["It's the ___ dog in the whole town.", 'biggest', ['bigger', 'most big', 'big']],
+    ['Tomorrow we ___ go to the pool.', 'will', ['wills', 'going', 'are']],
+    ['My cousin ___ in Paris for two years.', 'has lived', ['have lived', 'living', 'lives since']],
+  ],
 };
 
 const EN_SPELLS = {
   1: [['friend', ['frend', 'freind']], ['school', ['scool', 'skool']], ['house', ['hause', 'howse']], ['water', ['watter', 'woter']], ['little', ['littel', 'litle']], ['because', ['becuse', 'becoz']]],
   2: [['through', ['thru', 'throught']], ['Wednesday', ['Wensday', 'Wednsday']], ['beautiful', ['beutiful', 'beautifull']], ['together', ['togather', 'togeter']], ['different', ['diferent', 'differant']], ['favorite', ['favorit', 'favourrite']]],
+  3: [['tomorrow', ['tommorow', 'tomorow']], ['sandwich', ['sandwitch', 'sanwich']], ['birthday', ['birfday', 'bithday']], ['chocolate', ['choclate', 'chocolat']], ['grandmother', ['granmother', 'grandmuther']], ['minute', ['minit', 'minnute']]],
 };
 
-const tier = (level) => (level >= 2 ? 2 : 1);
+// clamp a skill level onto the tiers a word bank actually has
+const tier = (level, max = 2) => Math.min(Math.max(level, 1), max);
 
 const ENGLISH_GENS = [
   { skill: 'enPlural', gen(level) {
-    const [word, correct, wrongs] = pick(EN_PLURALS[tier(level)]);
+    const [word, correct, wrongs] = pick(EN_PLURALS[tier(level, 3)]);
     return { key: `plural-${word}`, prompt: `What is the plural of "${word}"?`, correct, wrongs };
   } },
   { skill: 'enOpposite', gen(level) {
-    const pairs = EN_OPPOSITES[tier(level)];
+    const pairs = EN_OPPOSITES[tier(level, 3)];
     const i = rnd(pairs.length);
     const [word, correct] = pairs[i];
     const wrongs = shuffle(pairs.filter((_, j) => j !== i).map((p) => p[1])).slice(0, 3);
@@ -320,11 +355,11 @@ const ENGLISH_GENS = [
     return { key: `rhyme-${word}`, prompt: `Which word rhymes with "${word}"?`, correct, wrongs };
   } },
   { skill: 'enFill', gen(level) {
-    const [sentence, correct, wrongs] = pick(EN_FILLS[tier(level)]);
+    const [sentence, correct, wrongs] = pick(EN_FILLS[tier(level, 3)]);
     return { key: `fillen-${correct}-${sentence.length}`, prompt: `Fill in the blank: "${sentence}"`, correct, wrongs };
   } },
   { skill: 'enSpell', gen(level) {
-    const [correct, wrongs] = pick(EN_SPELLS[tier(level)]);
+    const [correct, wrongs] = pick(EN_SPELLS[tier(level, 3)]);
     return { key: `spell-${correct}`, prompt: 'Which word is spelled correctly?', correct, wrongs };
   } },
   { skill: 'enCategory', gen() {
@@ -346,6 +381,7 @@ const ENGLISH_GENS = [
 const FR_ORTHO = {
   1: [['oiseau', '🐦', ['oiso', 'oizo']], ['maison', '🏠', ['mèzon', 'maizon']], ['école', '🏫', ['écol', 'ékole']], ['garçon', '👦', ['garson', 'garcon']], ['chapeau', '🎩', ['chapo', 'chapau']], ['souris', '🐭', ['sourie', 'souri']], ['gâteau', '🎂', ['gato', 'gâto']], ['soleil', '☀️', ['solei', 'soleille']]],
   2: [['papillon', '🦋', ['papiyon', 'papillion']], ['écureuil', '🐿️', ['écureil', 'écurueil']], ['grenouille', '🐸', ['grenouye', 'grenouile']], ['montagne', '⛰️', ['montagn', 'montangne']], ['citrouille', '🎃', ['citrouye', 'citrouile']], ['baleine', '🐋', ['balène', 'balaine']], ['éléphant', '🐘', ['éléfant', 'élephan']], ['bibliothèque', '📚', ['biblioteque', 'bibliotèque']]],
+  3: [["aujourd'hui", '📅', ['aujourdui', "aujourd'huit"]], ['beaucoup', '➕', ['bocoup', 'beaucou']], ['monsieur', '🎩', ['messieur', 'monsieu']], ['toujours', '♾️', ['toujour', 'tout-jour']], ['pharmacie', '💊', ['farmacie', 'pharmacit']], ['ciseaux', '✂️', ['sizo', 'ciseau']]],
 };
 
 const FR_FILLS = {
@@ -365,7 +401,28 @@ const FR_FILLS = {
     ['Demain, nous ___ à la plage.', 'irons', ['allons', 'irez', 'vont']],
     ['Elle ___ tombée dans la cour.', 'est', ['a', 'ai', 'ont']],
   ],
+  3: [
+    ['Demain, je ___ chez mamie.', 'irai', ['irais', 'iré', 'vais aller']],
+    ["Quand j'étais petit, je ___ au parc.", 'jouais', ['joué', 'jouer', 'joue']],
+    ["L'année prochaine, nous ___ en CE2.", 'serons', ['sommes', 'serions', 'étions']],
+    ['Hier soir, ils ___ la télé.', 'regardaient', ['regardent', 'regarderont', 'regardés']],
+    ['Bientôt, tu ___ lire tout seul.', 'sauras', ['sais', 'saura', 'savais']],
+    ['Avant, elle ___ peur du noir.', 'avait', ['a', 'aura', 'ayant']],
+  ],
 };
+
+const FR_HOMOPHONES = [
+  ['Il ___ un gros chien. (a / à)', 'a', ['à', 'as', 'ah']],
+  ["Je vais ___ l'école. (a / à)", 'à', ['a', 'as', 'ah']],
+  ['Mon frère ___ très gentil. (et / est)', 'est', ['et', 'es', 'ai']],
+  ['Un chat ___ un chien. (et / est)', 'et', ['est', 'es', 'ai']],
+  ['___ va au parc ! (on / ont)', 'On', ['Ont', 'Ons', 'Aux']],
+  ['Ils ___ deux vélos. (on / ont)', 'ont', ['on', 'onts', 'ons']],
+  ['___ maison est grande. (sa / ça)', 'Sa', ['Ça', 'Sà', 'Ca']],
+  ['___ me fait rire ! (sa / ça)', 'Ça', ['Sa', 'Sà', 'Ca']],
+  ['Ils mangent ___ gâteaux. (ses / ces)', 'ces', ['ses', 'çes', "c'est"]],
+  ['Il range ___ jouets à lui. (ses / ces)', 'ses', ['ces', 'çes', "c'est"]],
+];
 
 const FR_ARTICLES = {
   1: { options: ['le', 'la', 'les'], words: [['pomme', 'la'], ['chien', 'le'], ['maison', 'la'], ['ballon', 'le'], ['voiture', 'la'], ['livre', 'le'], ['fleurs', 'les'], ['soleil', 'le'], ['lune', 'la'], ['jouets', 'les']] },
@@ -380,6 +437,7 @@ const FR_PLURALS = {
 const FR_TRADS = {
   1: [['dog', 'chien', ['chat', 'cheval', 'lapin']], ['cat', 'chat', ['chien', 'oiseau', 'souris']], ['apple', 'pomme', ['poire', 'banane', 'fraise']], ['red', 'rouge', ['bleu', 'vert', 'jaune']], ['water', 'eau', ['lait', 'jus', 'pain']], ['sun', 'soleil', ['lune', 'étoile', 'nuage']]],
   2: [['butterfly', 'papillon', ['oiseau', 'abeille', 'libellule']], ['squirrel', 'écureuil', ['hérisson', 'renard', 'lapin']], ['rainbow', 'arc-en-ciel', ['orage', 'nuage', 'éclair']], ['winter', 'hiver', ['été', 'automne', 'printemps']], ['moon', 'lune', ['étoile', 'soleil', 'ciel']], ['strawberry', 'fraise', ['framboise', 'cerise', 'prune']]],
+  3: [['lighthouse', 'phare', ['port', 'bateau', 'plage']], ['castle', 'château', ['palais', 'tour', 'pont']], ['knight', 'chevalier', ['roi', 'soldat', 'prince']], ['whale', 'baleine', ['requin', 'dauphin', 'phoque']], ['owl', 'hibou', ['aigle', 'corbeau', 'faucon']], ['thunderstorm', 'orage', ['pluie', 'vent', 'brouillard']]],
 };
 
 const FR_ADJS = {
@@ -400,12 +458,16 @@ const FR_ADJS = {
 
 const FRENCH_GENS = [
   { skill: 'frOrtho', gen(level) {
-    const [correct, emoji, wrongs] = pick(FR_ORTHO[tier(level)]);
+    const [correct, emoji, wrongs] = pick(FR_ORTHO[tier(level, 3)]);
     return { key: `ortho-${correct}`, prompt: `Comment s'écrit le mot pour ${emoji} ?`, correct, wrongs };
   } },
   { skill: 'frConjug', gen(level) {
-    const [sentence, correct, wrongs] = pick(FR_FILLS[tier(level)]);
+    const [sentence, correct, wrongs] = pick(FR_FILLS[tier(level, 3)]);
     return { key: `fillfr-${correct}-${sentence.length}`, prompt: `Complète la phrase : « ${sentence} »`, correct, wrongs };
+  } },
+  { skill: 'frHomo', requires: ['frConjug', 2], gen() {
+    const [sentence, correct, wrongs] = pick(FR_HOMOPHONES);
+    return { key: `homo-${correct}-${sentence.length}`, prompt: `Choisis le bon mot : « ${sentence} »`, correct, wrongs };
   } },
   { skill: 'frArticle', gen(level) {
     const { options, words } = FR_ARTICLES[tier(level)];
@@ -417,7 +479,7 @@ const FRENCH_GENS = [
     return { key: `plurfr-${single}`, prompt: `${single} → ${correct.split(' ')[0]} … ?`, correct, wrongs };
   } },
   { skill: 'frTrad', gen(level) {
-    const [en, correct, wrongs] = pick(FR_TRADS[tier(level)]);
+    const [en, correct, wrongs] = pick(FR_TRADS[tier(level, 3)]);
     return { key: `trad-${en}`, prompt: `Comment dit-on « ${en} » en français ?`, correct, wrongs };
   } },
   { skill: 'frAdj', gen(level) {
@@ -459,6 +521,13 @@ const DISCOVERY_SETS = {
       ['La devise de la France : Liberté, Égalité… ?', 'Fraternité', ['Solidarité', 'Amitié', 'Sécurité']],
       ['Quel monument parisien est une grande arche ?', "l'Arc de Triomphe", ['le Louvre', 'Notre-Dame', 'le Panthéon']],
     ],
+    3: [
+      ["Quelle est la capitale de l'Italie ?", 'Rome', ['Venise', 'Milan', 'Naples']],
+      ["Quelle est la capitale de l'Angleterre ?", 'Londres', ['Manchester', 'Liverpool', 'Dublin']],
+      ["Quelle est la capitale de l'Espagne ?", 'Madrid', ['Barcelone', 'Séville', 'Lisbonne']],
+      ["Quel océan borde l'ouest de la France ?", "l'Atlantique", ['le Pacifique', 'la Méditerranée', 'la mer Noire']],
+      ['Dans quelle ville est la cathédrale Notre-Dame ?', 'Paris', ['Lyon', 'Reims', 'Marseille']],
+    ],
   },
   geoUSA: {
     1: [
@@ -475,6 +544,13 @@ const DISCOVERY_SETS = {
       ['Dans quel état est San Francisco ?', 'en Californie', ['au Texas', 'en Floride', 'au Nevada']],
       ["Combien d'étoiles sur le drapeau américain ?", '50', ['13', '52', '100']],
     ],
+    3: [
+      ['Quelle ville est surnommée « The Big Apple » ?', 'New York', ['Chicago', 'Boston', 'Miami']],
+      ['Dans quel état est Hollywood ?', 'en Californie', ['au Texas', 'en Floride', 'à New York']],
+      ['Quel fleuve a creusé le Grand Canyon ?', 'le Colorado', ['le Mississippi', 'le Missouri', 'le Rio Grande']],
+      ['Le mont Rushmore montre des visages de… ?', 'présidents', ['acteurs', 'rois', 'chanteurs']],
+      ['Quelle est la plus grande ville des USA ?', 'New York', ['Los Angeles', 'Washington', 'Houston']],
+    ],
   },
   civics: {
     1: [
@@ -490,6 +566,13 @@ const DISCOVERY_SETS = {
       ['Partager ses jouets, c\'est… ?', 'gentil', ['interdit', 'impossible', 'dangereux']],
       ['Qui vote pour choisir le président ?', 'les adultes', ['les bébés', 'les chats', 'les robots']],
       ['Trier ses déchets, ça aide… ?', 'la planète', ['personne', 'les martiens', 'les jeux vidéo']],
+    ],
+    3: [
+      ["Combien d'étoiles sur le drapeau européen ?", '12', ['27', '50', '10']],
+      ['Qui dirige une ville ?', 'le maire', ['le président', 'le directeur', 'le capitaine']],
+      ['En France, on peut voter à partir de… ?', '18 ans', ['16 ans', '21 ans', '15 ans']],
+      ['Que fait un vétérinaire ?', 'il soigne les animaux', ['il coupe les arbres', 'il conduit les trains', 'il fait le pain']],
+      ['En France, on paie en… ?', 'euros', ['dollars', 'francs', 'livres']],
     ],
   },
   science: {
@@ -508,15 +591,24 @@ const DISCOVERY_SETS = {
       ['Combien de planètes dans le système solaire ?', '8', ['7', '9', '12']],
       ['Un aimant attire… ?', 'le fer', ['le bois', 'le plastique', 'le papier']],
     ],
+    3: [
+      ['Quel organe pompe le sang ?', 'le cœur', ['le cerveau', 'les poumons', "l'estomac"]],
+      ['La Terre tourne autour… ?', 'du Soleil', ['de la Lune', 'de Mars', "d'elle-même seulement"]],
+      ['Quel gaz respirons-nous pour vivre ?', "l'oxygène", ['le carbone', "l'hélium", 'la vapeur']],
+      ['Glace, eau, vapeur : ce sont trois… ?', "états de l'eau", ['couleurs', 'planètes', 'saisons']],
+      ['Quelle planète est surnommée la planète rouge ?', 'Mars', ['Vénus', 'Jupiter', 'Saturne']],
+      ['Combien de dents de lait a un enfant ?', '20', ['32', '12', '28']],
+    ],
   },
 };
 
 function discoveryGen(skill) {
   return { skill, gen(level) {
-    const set = DISCOVERY_SETS[skill][tier(level)];
+    const t = tier(level, DISCOVERY_SETS[skill][3] ? 3 : 2);
+    const set = DISCOVERY_SETS[skill][t];
     const i = rnd(set.length);
     const [prompt, correct, wrongs] = set[i];
-    return { key: `disc-${skill}-${tier(level)}-${i}`, prompt, correct, wrongs };
+    return { key: `disc-${skill}-${t}-${i}`, prompt, correct, wrongs };
   } };
 }
 
@@ -526,10 +618,10 @@ const DISCOVERY_GENS = [
 ];
 
 const CATEGORIES = [
-  { name: 'Math', gens: MATH_GENS, maxLevel: 3, defaultLevel: 2 },
-  { name: 'English', gens: ENGLISH_GENS, maxLevel: 2, defaultLevel: 1 },
-  { name: 'Français', gens: FRENCH_GENS, maxLevel: 2, defaultLevel: 1 },
-  { name: 'Découverte', gens: DISCOVERY_GENS, maxLevel: 2, defaultLevel: 1 },
+  { name: 'Math', gens: MATH_GENS, maxLevel: 5, defaultLevel: 2 },
+  { name: 'English', gens: ENGLISH_GENS, maxLevel: 3, defaultLevel: 1 },
+  { name: 'Français', gens: FRENCH_GENS, maxLevel: 3, defaultLevel: 1 },
+  { name: 'Découverte', gens: DISCOVERY_GENS, maxLevel: 3, defaultLevel: 1 },
 ];
 
 // Friendly skill names for the parent summary.
@@ -537,7 +629,7 @@ const SKILL_LABELS = {
   add: 'additions', sub: 'soustractions', missing: 'nombres cachés', compare: 'comparaisons',
   skip: 'suites de nombres', wordEN: 'problèmes (anglais)', wordFR: 'problèmes (français)',
   shapes: 'géométrie', double: 'doubles et moitiés', place: 'dizaines et centaines',
-  frnum: 'nombres en lettres',
+  frnum: 'nombres en lettres', mult: 'multiplications', frHomo: 'homophones (a/à, et/est…)',
   enPlural: 'pluriels anglais', enOpposite: 'contraires (anglais)', enRhyme: 'rimes anglaises',
   enFill: 'phrases à trous (anglais)', enSpell: 'orthographe anglaise', enCategory: 'vocabulaire anglais',
   frOrtho: 'orthographe française', frConjug: 'conjugaison', frArticle: 'articles (le/la/les)',
@@ -643,15 +735,20 @@ export class EducationMode {
     return this.skills[skill];
   }
 
-  recordOutcome(skill, ok) {
+  recordOutcome(skill, ok, fluent = false) {
     const s = this.skillState(skill);
     s.hist.push(ok ? 1 : 0);
     if (s.hist.length > 8) s.hist.shift();
+    // fluency detector: quick, first-try correct answers mean it's too easy
+    s.fastStreak = ok && fluent ? (s.fastStreak || 0) + 1 : 0;
     const max = SKILL_META[skill].maxLevel;
     const last3 = s.hist.slice(-3);
     const last2 = s.hist.slice(-2);
-    // fast track: 3 in a row right -> harder now (no lingering on easy wins)
-    if (ok && last3.length === 3 && last3.every((v) => v) && s.level < max) {
+    // 2 fluent answers in a row -> the level is validated, move up right away
+    if (ok && s.fastStreak >= 2 && s.level < max) {
+      s.level++; s.hist = []; s.fastStreak = 0;
+    // 3 in a row right -> harder now (no lingering on easy wins)
+    } else if (ok && last3.length === 3 && last3.every((v) => v) && s.level < max) {
       s.level++; s.hist = [];
     // struggling: 2 in a row wrong -> gently step back down
     } else if (!ok && last2.length === 2 && last2.every((v) => !v) && s.level > 1) {
@@ -788,6 +885,8 @@ export class EducationMode {
     const category = this.categoryQueue.pop();
     for (let attempt = 0; attempt < 30; attempt++) {
       const def = pick(category.gens);
+      // some skills unlock only once a prerequisite is mastered
+      if (def.requires && this.skillState(def.requires[0]).level < def.requires[1]) continue;
       const level = this.skillState(def.skill).level;
       const q = def.gen(level);
       if (!q) continue;
@@ -853,7 +952,8 @@ export class EducationMode {
       this.el.feedback.textContent = pick(['Bravo ! 🎉', 'Super ! ⭐', 'Génial ! 🌟', 'Excellent ! 🏆', 'Oui ! 💪']);
       this.el.feedback.className = 'good';
       if (this.streak >= 2) this.showCombo();
-      this.recordOutcome(this.current.skill, true);
+      // "fluent" = right on the first try, in under 4.5 seconds
+      this.recordOutcome(this.current.skill, true, this.attempted === 0 && elapsed < 4.5);
       this.logQuestion(true);
       this.renderStars(true);
       setTimeout(() => {
@@ -1067,7 +1167,7 @@ export class EducationMode {
       `<div><b>Aujourd'hui</b></div>` +
       `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b></div>` +
       `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
-      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/3 · English <b>${this.categoryLevel('English')}</b>/2 · Français <b>${this.categoryLevel('Français')}</b>/2 · Découverte <b>${this.categoryLevel('Découverte')}</b>/2</div>` +
+      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/5 · English <b>${this.categoryLevel('English')}</b>/3 · Français <b>${this.categoryLevel('Français')}</b>/3 · Découverte <b>${this.categoryLevel('Découverte')}</b>/3</div>` +
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
 
