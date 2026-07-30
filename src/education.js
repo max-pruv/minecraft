@@ -4,7 +4,7 @@
 // per skill from the child's history; random fast-clicking is detected,
 // frozen for 10 seconds, and penalized with extra required answers.
 
-const SESSION_SECONDS = 4 * 60;
+const SESSION_SECONDS = 6 * 60;
 const NEEDED_CORRECT = 5;
 const DAILY_LIMIT_SECONDS = 45 * 60; // hard stop after this much play per day
 const PARENT_CODE = '135246';

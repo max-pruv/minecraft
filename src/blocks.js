@@ -125,8 +125,53 @@ export function isSlab(id) {
   return id >= BLOCK.SLAB_STONE && id <= BLOCK.SLAB_BRICK;
 }
 
-// Everything the player can place from the inventory.
-export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number).filter((id) => id !== BLOCK.WATER);
+// --- decorative objects: 10 patterns x 30 colors = 300 generated blocks -----
+
+export const DECOR_START = 40;      // first decor block id
+export const DECOR_TILE_START = 35; // first decor tile index
+
+export const DECOR_PATTERNS = [
+  'Uni', 'Briques', 'Planches', 'Damier', 'Pois',
+  'Rayures', 'Lignes', 'Zigzag', 'Cadre', 'Losange',
+];
+
+export const DECOR_COLORS = [
+  ['Rouge', [200, 62, 56]], ['Orange', [232, 137, 44]], ['Jaune', [228, 200, 60]],
+  ['Citron', [200, 220, 70]], ['Vert clair', [140, 200, 90]], ['Vert', [88, 160, 70]],
+  ['Émeraude', [40, 150, 110]], ['Turquoise', [50, 170, 170]], ['Cyan', [70, 190, 220]],
+  ['Ciel', [110, 170, 230]], ['Bleu', [64, 100, 190]], ['Indigo', [70, 70, 170]],
+  ['Violet', [120, 80, 190]], ['Pourpre', [160, 60, 160]], ['Magenta', [200, 70, 160]],
+  ['Rose', [235, 130, 180]], ['Saumon', [240, 150, 130]], ['Marron', [130, 90, 60]],
+  ['Chocolat', [95, 60, 40]], ['Beige', [215, 195, 160]], ['Sable', [225, 210, 170]],
+  ['Olive', [130, 130, 60]], ['Kaki', [150, 140, 100]], ['Gris clair', [190, 190, 190]],
+  ['Gris', [130, 130, 130]], ['Anthracite', [70, 74, 80]], ['Noir', [35, 35, 38]],
+  ['Blanc', [242, 242, 240]], ['Crème', [240, 232, 210]], ['Menthe', [170, 225, 195]],
+];
+
+// [{ id, tile, pattern, colorName, rgb }]
+export const DECOR_ITEMS = [];
+DECOR_COLORS.forEach(([colorName, rgb], ci) => {
+  DECOR_PATTERNS.forEach((pattern, pi) => {
+    const i = ci * DECOR_PATTERNS.length + pi;
+    const id = DECOR_START + i;
+    const tile = DECOR_TILE_START + i;
+    DECOR_ITEMS.push({ id, tile, pattern, colorName, rgb });
+    BLOCK_INFO[id] = {
+      name: `${pattern} ${colorName.toLowerCase()}`,
+      tiles: [tile, tile, tile],
+      solid: true, transparent: false,
+    };
+  });
+});
+
+export function decorMapColor(id) {
+  const item = DECOR_ITEMS[id - DECOR_START];
+  return item ? item.rgb : null;
+}
+
+// Curated blocks shown in the inventory's first tab (decor has its own tab).
+export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
+  .filter((id) => id !== BLOCK.WATER && id < DECOR_START);
 
 export function isSolid(id) {
   return id !== BLOCK.AIR && id !== BLOCK.WATER;

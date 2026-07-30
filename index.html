@@ -188,6 +188,20 @@
       position: absolute; top: 8px; right: 10px; background: none; border: none;
       color: #aaa; font-size: 18px; cursor: pointer;
     }
+    #inv-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    #inv-tabs button {
+      font-family: inherit; flex: 1; padding: 8px; font-size: 14px; cursor: pointer;
+      background: #2c3a58; color: #cdd7ee; border: 2px solid #46587e; border-radius: 8px;
+    }
+    #inv-tabs button.active { background: #2d6a2d; border-color: #58b04c; color: #fff; }
+    #inv-pager {
+      display: none; align-items: center; justify-content: center; gap: 14px; margin-top: 12px;
+    }
+    #inv-pager button {
+      font-family: inherit; font-size: 16px; padding: 6px 16px; cursor: pointer;
+      background: #2c3a58; color: #fff; border: 2px solid #46587e; border-radius: 8px;
+    }
+    #inv-page { color: #cdd7ee; font-size: 13px; }
     #inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
     .inv-cell {
       background: rgba(0,0,0,0.4); border: 2px solid #46587e; border-radius: 8px;
@@ -379,6 +393,8 @@
       #edu-panel { top: calc(56px + var(--safe-top)); }
       #map-btn { top: calc(56px + var(--safe-top)); }
       #minimap { top: calc(104px + var(--safe-top)); width: 120px; height: 120px; }
+      /* the timer moves to its own row so it never overlaps the buttons */
+      #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 10px; }
       #quiz-card { padding: 16px 14px; max-height: 88vh; overflow-y: auto; }
       #quiz-prof { font-size: 12px; }
       #quiz-question { font-size: 17px; margin: 12px 2px 14px; min-height: 44px; }
@@ -421,7 +437,16 @@
     <div id="inv-card">
       <div id="inv-title">🎒 Choisis un bloc pour la case sélectionnée</div>
       <button id="inv-close">✕</button>
+      <div id="inv-tabs">
+        <button data-tab="blocks" class="active">🧱 Blocs</button>
+        <button data-tab="decor">🎨 Objets déco</button>
+      </div>
       <div id="inv-grid"></div>
+      <div id="inv-pager">
+        <button id="inv-prev">◀</button>
+        <span id="inv-page"></span>
+        <button id="inv-next">▶</button>
+      </div>
     </div>
   </div>
   <div id="edu-timer"></div>

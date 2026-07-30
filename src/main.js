@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor } from './blocks.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -601,26 +601,53 @@ selectSlot(0);
 
 const invPanel = document.getElementById('inv-panel');
 let invOpen = false;
+let invTab = 'blocks';
+let invPage = 0;
+const DECOR_PER_PAGE = 60;
+
+function invCell(id) {
+  const cell = document.createElement('button');
+  cell.className = 'inv-cell';
+  cell.title = BLOCK_INFO[id].name;
+  cell.appendChild(blockThumb(id, 36));
+  cell.addEventListener('click', () => {
+    hotbarBlocks[selectedSlot] = id;
+    buildHotbar();
+    selectSlot(selectedSlot);
+    saveHotbar();
+    closeInventory(true);
+  });
+  return cell;
+}
 
 function buildInventory() {
   const grid = document.getElementById('inv-grid');
+  const pager = document.getElementById('inv-pager');
   grid.innerHTML = '';
-  for (const id of PLACEABLE_BLOCKS) {
-    const cell = document.createElement('button');
-    cell.className = 'inv-cell';
-    cell.title = BLOCK_INFO[id].name;
-    cell.appendChild(blockThumb(id, 36));
-    cell.addEventListener('click', () => {
-      hotbarBlocks[selectedSlot] = id;
-      buildHotbar();
-      selectSlot(selectedSlot);
-      saveHotbar();
-      closeInventory(true);
-    });
-    grid.appendChild(cell);
+  document.querySelectorAll('#inv-tabs button').forEach((b) =>
+    b.classList.toggle('active', b.dataset.tab === invTab));
+
+  if (invTab === 'blocks') {
+    pager.style.display = 'none';
+    for (const id of PLACEABLE_BLOCKS) grid.appendChild(invCell(id));
+    return;
+  }
+  // decor tab: 300 objects, paginated
+  const pages = Math.ceil(DECOR_ITEMS.length / DECOR_PER_PAGE);
+  invPage = Math.max(0, Math.min(invPage, pages - 1));
+  pager.style.display = 'flex';
+  document.getElementById('inv-page').textContent = `Page ${invPage + 1} / ${pages}`;
+  for (const item of DECOR_ITEMS.slice(invPage * DECOR_PER_PAGE, (invPage + 1) * DECOR_PER_PAGE)) {
+    grid.appendChild(invCell(item.id));
   }
 }
 buildInventory();
+
+document.querySelectorAll('#inv-tabs button').forEach((b) => {
+  b.addEventListener('click', () => { invTab = b.dataset.tab; invPage = 0; buildInventory(); });
+});
+document.getElementById('inv-prev').addEventListener('click', () => { invPage--; buildInventory(); });
+document.getElementById('inv-next').addEventListener('click', () => { invPage++; buildInventory(); });
 
 function openInventory() {
   if (edu.quizActive || edu.hardStopActive) return;
@@ -686,7 +713,7 @@ function drawMap(mapCanvas, radius) {
       for (let y = HEIGHT - 1; y >= 0; y--) {
         const id = world.getBlock(wx, y, wz);
         if (id !== BLOCK.AIR) {
-          color = MAP_COLORS[id] || [150, 150, 150];
+          color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
           h = y;
           break;
         }

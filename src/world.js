@@ -227,7 +227,8 @@ export class World {
   }
 
   generateChunk(cx, cz) {
-    const data = new Uint8Array(CHUNK * CHUNK * HEIGHT);
+    // 16-bit: block ids go beyond 255 with the decorative set
+    const data = new Uint16Array(CHUNK * CHUNK * HEIGHT);
     const baseX = cx * CHUNK, baseZ = cz * CHUNK;
 
     for (let z = 0; z < CHUNK; z++) {
