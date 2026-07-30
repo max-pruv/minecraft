@@ -21,8 +21,15 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 - **Procedural pixel-art textures** — the whole texture atlas is painted onto a
   canvas at startup; the repo ships zero image files.
 - **Day/night cycle** with sky, fog and light level transitions.
-- **Persistence** — your block edits are saved to `localStorage` and restored on
-  reload (terrain is deterministic, so only the diff is stored).
+- **Creature catching** — 16 procedurally generated original species with
+  elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn
+  in matching biomes. Throw catch-balls (Q or the ◓ button) at them, watch the
+  ball shake, and fill your Creature Dex (B). Rarer species are harder to catch.
+- **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
+  ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
+- **Persistence** — your block edits and creature collection are saved to
+  `localStorage` and restored on reload (terrain is deterministic, so only the
+  diff is stored).
 
 ## Run it
 
@@ -55,7 +62,13 @@ It also works out of the box on **GitHub Pages**: enable Pages for this repo
 | Shift | Sprint |
 | 1–9 or mouse wheel | Select hotbar slot |
 | F | Toggle fly mode (Space up, C down) |
+| Q | Throw a catch-ball at a wild creature |
+| B | Open the Creature Dex |
 | Esc | Pause |
+
+On touch devices: left thumb summons a joystick, right thumb looks around,
+tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
+handle jumping, flying, and throwing catch-balls.
 
 ## Code layout
 
@@ -65,6 +78,7 @@ src/main.js       scene setup, chunk streaming, input, HUD, game loop
 src/world.js      noise, terrain/tree generation, chunk storage, edits + saving
 src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
+src/creatures.js  creature species/AI/meshes, catch-balls, collection
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
 vendor/           three.js (r160, MIT — see THREE_LICENSE)
