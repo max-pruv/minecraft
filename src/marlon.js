@@ -2,6 +2,7 @@
 // player) and Professeur Cornichon (the creature expert who hosts the quiz).
 
 import * as THREE from 'three';
+import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 
 const GRAVITY = 24;
 const WIDTH = 0.5;
@@ -211,11 +212,14 @@ class BaseNPC {
     for (let by = minY; by <= maxY; by++) {
       for (let bz = minZ; bz <= maxZ; bz++) {
         for (let bx = minX; bx <= maxX; bx++) {
-          if (!this.world.isSolid(bx, by, bz)) continue;
+          const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
+          if (!blockIsSolid(id)) continue;
+          const topY = by + (isSlab(id) ? 0.5 : 1);
+          if (this.pos.y >= topY - eps && (axis !== 1 || delta < 0)) continue;
           if (axis === 0) this.pos.x = delta > 0 ? bx - half - eps : bx + 1 + half + eps;
           else if (axis === 1) {
             if (delta > 0) this.pos.y = by - NPC_HEIGHT - eps;
-            else { this.pos.y = by + 1 + eps; this.onGround = true; }
+            else { this.pos.y = topY + eps; this.onGround = true; }
           } else this.pos.z = delta > 0 ? bz - half - eps : bz + 1 + half + eps;
           this.vel[key] = 0;
           return true;

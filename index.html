@@ -163,6 +163,35 @@
     }
     #edu-timer.urgent { color: #ff6b5e; animation: pulse 1s infinite; }
     @keyframes pulse { 50% { opacity: 0.55; } }
+    #inv-btn {
+      position: fixed; top: 8px; right: 104px; z-index: 11;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px; cursor: pointer;
+    }
+    #inv-panel {
+      display: none; position: fixed; inset: 0; z-index: 13;
+      align-items: center; justify-content: center;
+      background: rgba(12, 18, 32, 0.85);
+    }
+    #inv-card {
+      position: relative; width: min(480px, 94vw); max-height: 80vh; overflow-y: auto;
+      background: #1c2438; border: 3px solid #3a4a6b; border-radius: 16px;
+      padding: 18px; color: #fff;
+    }
+    #inv-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; padding-right: 26px; }
+    #inv-close {
+      position: absolute; top: 8px; right: 10px; background: none; border: none;
+      color: #aaa; font-size: 18px; cursor: pointer;
+    }
+    #inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
+    .inv-cell {
+      background: rgba(0,0,0,0.4); border: 2px solid #46587e; border-radius: 8px;
+      padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .inv-cell:hover { border-color: #fff; }
+    .inv-cell canvas { width: 36px; height: 36px; image-rendering: pixelated; }
+
     #edu-btn {
       position: fixed; top: 34px; left: 8px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
@@ -323,7 +352,16 @@
   <div id="toast"></div>
   <button id="pause-btn">⏸</button>
   <button id="dex-btn" title="Creature Dex (B)">◓</button>
+  <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <button id="edu-btn" title="Progrès et temps de jeu">🎓</button>
+
+  <div id="inv-panel">
+    <div id="inv-card">
+      <div id="inv-title">🎒 Choisis un bloc pour la case sélectionnée</div>
+      <button id="inv-close">✕</button>
+      <div id="inv-grid"></div>
+    </div>
+  </div>
   <div id="edu-timer"></div>
 
   <div id="edu-panel">
@@ -395,6 +433,7 @@
       <div><b>F</b> — toggle fly (Space/C up/down)</div>
       <div><b>Q / ◓</b> — throw catch-ball at creatures</div>
       <div><b>B / ◓ top button</b> — creature dex</div>
+      <div><b>E / 🎒</b> — inventaire : tous les blocs !</div>
       <div><b>Esc</b> — pause</div>
       <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
       <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>

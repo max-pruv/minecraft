@@ -11,9 +11,11 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   snowy peaks, generated from deterministic fractal value noise and streamed in
   16×96×16 chunks as you walk.
 - **Trees** with trunks and canopies that correctly span chunk borders.
-- **Break & place blocks** with a 9-slot hotbar (grass, dirt, stone, cobblestone,
-  planks, logs, leaves, glass, bricks), block picking with middle click, and a
-  target outline.
+- **Break & place blocks** — 31 block types: terrain blocks, sandstone, gravel,
+  mossy cobble, three wood tones, ice, gold, diamond, obsidian, bookshelf, six
+  wool colors, and four half-slabs (with true half-height physics — perfect for
+  stairs and terraces). A customizable 9-slot hotbar plus an inventory (E or 🎒)
+  to pick any block; middle click grabs the targeted block.
 - **First-person controls** — pointer-lock mouse look, WASD, sprint, jumping,
   gravity, swimming with buoyancy, and a fly mode for building.
 - **Voxel physics** — AABB collision against the world, tunnel-proof substepping,
