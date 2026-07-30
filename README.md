@@ -32,7 +32,7 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 - **Educational mode** (always on — it cannot be disabled) — Professeur
   Cornichon's quiz starts every play session, and pops up again after each
   4 minutes of play: US first-grade math, English, and French questions
-  (fill-in-the-blank, spelling, word problems, translations…). 4 correct
+  (fill-in-the-blank, spelling, word problems, translations…). 5 correct
   answers earn 4 minutes of play, with star progress, confetti celebrations,
   and questions that avoid repeating. Refreshing the page doesn't skip the
   quiz — it just brings it right back. The 🎓 button shows today's play time,
