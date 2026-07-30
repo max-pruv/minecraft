@@ -1,7 +1,8 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp } from './blocks.js';
+import { buildPropMesh } from './props.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -104,6 +105,8 @@ function disposeChunkMesh(entry) {
     scene.remove(mesh);
     mesh.geometry.dispose();
   }
+  // prop groups share template geometry — just detach them
+  if (entry.props) scene.remove(entry.props);
 }
 
 function meshChunk(cx, cz) {
@@ -111,8 +114,8 @@ function meshChunk(cx, cz) {
   const old = chunkMeshes.get(key);
   if (old) disposeChunkMesh(old);
 
-  const { solid, water } = buildChunkGeometry(world, cx, cz);
-  const entry = { solid: null, water: null };
+  const { solid, water, props } = buildChunkGeometry(world, cx, cz);
+  const entry = { solid: null, water: null, props: null };
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -122,6 +125,17 @@ function meshChunk(cx, cz) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
     scene.add(entry.water);
+  }
+  if (props.length > 0) {
+    const group = new THREE.Group();
+    for (const p of props) {
+      const mesh = buildPropMesh(p.id);
+      if (!mesh) continue;
+      mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
+      group.add(mesh);
+    }
+    entry.props = group;
+    scene.add(group);
   }
   chunkMeshes.set(key, entry);
 }
@@ -311,8 +325,10 @@ function placeBlock() {
   const z = hit.z + hit.normal[2];
   const current = world.getBlock(x, y, z);
   if (current !== BLOCK.AIR && current !== BLOCK.WATER) return;
-  if (player.intersectsBlock(x, y, z)) return; // don't build inside yourself
-  world.setBlock(x, y, z, hotbarBlocks[selectedSlot]);
+  const placing = hotbarBlocks[selectedSlot];
+  // props are walk-through, so placing one at your feet is fine
+  if (!isProp(placing) && player.intersectsBlock(x, y, z)) return;
+  world.setBlock(x, y, z, placing);
   scheduleSave();
 }
 
@@ -550,6 +566,16 @@ function blockThumb(id, size) {
   const ctx = thumb.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const info = BLOCK_INFO[id];
+  if (info.prop) { // furniture: colored background + type emoji
+    const item = PROP_ITEMS[id - PROP_START];
+    ctx.fillStyle = `rgb(${item.rgb[0]},${item.rgb[1]},${item.rgb[2]})`;
+    ctx.fillRect(0, 0, size, size);
+    ctx.font = `${Math.floor(size * 0.62)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.emoji, size / 2, size / 2 + 1);
+    return thumb;
+  }
   const tile = info.tiles[1]; // side texture reads best
   const sx = (tile % ATLAS_COLS) * TILE_PX;
   const sy = Math.floor(tile / ATLAS_COLS) * TILE_PX;
@@ -632,12 +658,13 @@ function buildInventory() {
     for (const id of PLACEABLE_BLOCKS) grid.appendChild(invCell(id));
     return;
   }
-  // decor tab: 300 objects, paginated
-  const pages = Math.ceil(DECOR_ITEMS.length / DECOR_PER_PAGE);
+  // decor & furniture tabs: paginated
+  const items = invTab === 'props' ? PROP_ITEMS : DECOR_ITEMS;
+  const pages = Math.ceil(items.length / DECOR_PER_PAGE);
   invPage = Math.max(0, Math.min(invPage, pages - 1));
   pager.style.display = 'flex';
   document.getElementById('inv-page').textContent = `Page ${invPage + 1} / ${pages}`;
-  for (const item of DECOR_ITEMS.slice(invPage * DECOR_PER_PAGE, (invPage + 1) * DECOR_PER_PAGE)) {
+  for (const item of items.slice(invPage * DECOR_PER_PAGE, (invPage + 1) * DECOR_PER_PAGE)) {
     grid.appendChild(invCell(item.id));
   }
 }
