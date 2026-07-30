@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Web Minecraft</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
-    body { font-family: 'Courier New', monospace; user-select: none; }
-    #game { display: block; width: 100%; height: 100%; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none; }
+    body { font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    #game { display: block; width: 100%; height: 100%; touch-action: none; }
 
     /* crosshair */
     #crosshair {
@@ -60,7 +60,11 @@
       position: fixed; inset: 0; z-index: 10;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: rgba(10, 14, 20, 0.82); color: #eee; text-align: center;
+      overflow-y: auto; padding: 20px 12px;
     }
+    /* keep top content reachable when it overflows a small screen */
+    #overlay > :first-child { margin-top: auto; }
+    #overlay > :last-child { margin-bottom: auto; }
     #overlay h1 {
       font-size: 42px; margin-bottom: 8px; letter-spacing: 2px;
       color: #fff; text-shadow: 3px 3px 0 #3a3a3a;
@@ -78,6 +82,42 @@
       column-count: 2; column-gap: 48px; text-align: left;
     }
     #overlay .controls b { color: #fff; }
+
+    /* touch controls */
+    #touch-ui { display: none; }
+    #joy-base {
+      display: none; position: fixed; width: 120px; height: 120px;
+      border-radius: 50%; border: 2px solid rgba(255,255,255,0.4);
+      background: rgba(0,0,0,0.2); z-index: 6; pointer-events: none;
+    }
+    #joy-knob {
+      position: absolute; left: 35px; top: 35px; width: 50px; height: 50px;
+      border-radius: 50%; background: rgba(255,255,255,0.5);
+    }
+    .tbtn {
+      position: fixed; z-index: 7; width: 60px; height: 60px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 24px; display: flex; align-items: center; justify-content: center;
+      touch-action: none;
+    }
+    #jump-btn { right: 24px; bottom: 110px; }
+    #mode-btn { right: 100px; bottom: 130px; }
+    #fly-btn  { right: 24px; bottom: 190px; font-size: 20px; }
+    #down-btn { right: 100px; bottom: 210px; display: none; }
+    #pause-btn {
+      display: none; position: fixed; top: 8px; right: 8px; z-index: 7;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px;
+    }
+
+    @media (max-width: 700px) {
+      .slot { width: 34px; height: 34px; border-width: 2px; }
+      .slot canvas { width: 26px; height: 26px; }
+      #overlay h1 { font-size: 28px; }
+      #overlay .controls { column-count: 1; font-size: 12px; }
+      #debug { font-size: 10px; max-width: 70vw; }
+    }
   </style>
 </head>
 <body>
@@ -87,6 +127,15 @@
   <div id="debug"></div>
   <div id="block-name"></div>
   <div id="hotbar"></div>
+  <button id="pause-btn">⏸</button>
+
+  <div id="touch-ui">
+    <div id="joy-base"><div id="joy-knob"></div></div>
+    <button class="tbtn" id="jump-btn">⤒</button>
+    <button class="tbtn" id="mode-btn">⛏️</button>
+    <button class="tbtn" id="fly-btn">✈️</button>
+    <button class="tbtn" id="down-btn">▼</button>
+  </div>
 
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
@@ -104,6 +153,8 @@
       <div><b>1–9 / wheel</b> — select block</div>
       <div><b>F</b> — toggle fly (Space/C up/down)</div>
       <div><b>Esc</b> — pause</div>
+      <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
+      <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>
     </div>
   </div>
 
