@@ -29,13 +29,15 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
 - **Friendly NPCs** — Marlon, a kid in a striped sailor shirt who follows you
   around and chats in French, and Professeur Cornichon, the creature expert.
-- **Educational mode** (toggle on the start screen, ON by default) — every
-  5 minutes of play, Professeur Cornichon pops a quiz: US first-grade math,
-  English, and French questions (fill-in-the-blank, spelling, word problems,
-  translations…). 4 correct answers earn 5 more minutes of play, with star
-  progress, confetti celebrations, and questions that avoid repeating. The 🎓
-  button shows today's play time, every correct answer, and past days — all
-  saved in the browser (localStorage).
+- **Educational mode** (always on — it cannot be disabled) — Professeur
+  Cornichon's quiz starts every play session, and pops up again after each
+  5 minutes of play: US first-grade math, English, and French questions
+  (fill-in-the-blank, spelling, word problems, translations…). 4 correct
+  answers earn 5 minutes of play, with star progress, confetti celebrations,
+  and questions that avoid repeating. Refreshing the page doesn't skip the
+  quiz — it just brings it right back. The 🎓 button shows today's play time,
+  every correct answer, and past days — all saved in the browser
+  (localStorage).
 - **Persistence** — your block edits and creature collection are saved to
   `localStorage` and restored on reload (terrain is deterministic, so only the
   diff is stored).

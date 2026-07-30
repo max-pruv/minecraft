@@ -182,11 +182,11 @@
     .edu-cat[data-cat="Math"], #quiz-category[data-cat="Math"] { background: #e8c53c; }
     .edu-cat[data-cat="English"], #quiz-category[data-cat="English"] { background: #4a90d9; }
     .edu-cat[data-cat="Français"], #quiz-category[data-cat="Français"] { background: #58b04c; }
-    #edu-toggle {
-      font-family: inherit; font-size: 14px; padding: 8px 20px; margin-top: 10px;
-      cursor: pointer; color: #ddd; background: #444; border: 2px solid #666; border-radius: 6px;
+    .edu-note {
+      margin-top: 12px; font-size: 13px; color: #9c9;
+      background: rgba(45, 106, 45, 0.3); border: 1px solid #58b04c;
+      border-radius: 6px; padding: 6px 14px;
     }
-    #edu-toggle.edu-on { background: #2d6a2d; border-color: #58b04c; color: #fff; }
 
     /* quiz overlay */
     #quiz {
@@ -295,7 +295,7 @@
     <div class="subtitle">A browser voxel world — your edits are saved locally</div>
     <button id="play-btn">Play</button>
     <button id="reset-btn" class="danger">Reset World</button>
-    <div><button id="edu-toggle"></button></div>
+    <div class="edu-note">🎓 Mode éducatif toujours actif — le quiz du Prof. Cornichon lance la partie&nbsp;!</div>
     <div class="controls">
       <div><b>W A S D</b> — move</div>
       <div><b>Mouse</b> — look around</div>
