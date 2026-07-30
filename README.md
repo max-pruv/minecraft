@@ -38,6 +38,18 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   quiz — it just brings it right back. The 🎓 button shows today's play time,
   every correct answer, and past days — all saved in the browser
   (localStorage).
+- **Adaptive difficulty** — every skill (additions, spelling, conjugaison…)
+  tracks its own success history: 80%+ right levels it up, 40%- levels it
+  down. Math starts at level 2 (two-digit numbers) and climbs to hundreds;
+  English and French unlock harder word banks. Current levels show in the
+  🎓 panel.
+- **Random-clicking protection** — instant clicks are ignored, and a pattern
+  of fast wrong answers triggers a warning, then a 10-second freeze that adds
+  an extra required correct answer.
+- **Fully offline** — the game is an installable PWA: open it once online,
+  add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
+  runs entirely offline afterwards. When releasing changes, bump
+  `CACHE_VERSION` in `sw.js` so installed clients update.
 - **Persistence** — your block edits and creature collection are saved to
   `localStorage` and restored on reload (terrain is deterministic, so only the
   diff is stored).
