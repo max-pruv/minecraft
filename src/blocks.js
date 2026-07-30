@@ -34,6 +34,11 @@ export const BLOCK = {
   SLAB_PLANK: 30,
   SLAB_COBBLE: 31,
   SLAB_BRICK: 32,
+  STONEBRICK: 33,
+  DARKBRICK: 34,
+  WHITEBRICK: 35,
+  TERRACOTTA: 36,
+  BLUEBRICK: 37,
 };
 
 // Tile indices into the texture atlas (see textures.js).
@@ -68,6 +73,11 @@ export const TILE = {
   WOOL_GREEN: 27,
   WOOL_PURPLE: 28,
   WOOL_BLACK: 29,
+  STONEBRICK: 30,
+  DARKBRICK: 31,
+  WHITEBRICK: 32,
+  TERRACOTTA: 33,
+  BLUEBRICK: 34,
 };
 
 // tiles: [top, side, bottom]
@@ -104,6 +114,11 @@ export const BLOCK_INFO = {
   [BLOCK.SLAB_PLANK]:  { name: 'Plank Slab',  tiles: [TILE.PLANK, TILE.PLANK, TILE.PLANK],    solid: true, transparent: false, slab: true },
   [BLOCK.SLAB_COBBLE]: { name: 'Cobble Slab', tiles: [TILE.COBBLE, TILE.COBBLE, TILE.COBBLE], solid: true, transparent: false, slab: true },
   [BLOCK.SLAB_BRICK]:  { name: 'Brick Slab',  tiles: [TILE.BRICK, TILE.BRICK, TILE.BRICK],    solid: true, transparent: false, slab: true },
+  [BLOCK.STONEBRICK]: { name: 'Stone Bricks', tiles: [TILE.STONEBRICK, TILE.STONEBRICK, TILE.STONEBRICK], solid: true, transparent: false },
+  [BLOCK.DARKBRICK]:  { name: 'Dark Bricks',  tiles: [TILE.DARKBRICK, TILE.DARKBRICK, TILE.DARKBRICK],    solid: true, transparent: false },
+  [BLOCK.WHITEBRICK]: { name: 'Quartz Bricks', tiles: [TILE.WHITEBRICK, TILE.WHITEBRICK, TILE.WHITEBRICK], solid: true, transparent: false },
+  [BLOCK.TERRACOTTA]: { name: 'Terracotta',   tiles: [TILE.TERRACOTTA, TILE.TERRACOTTA, TILE.TERRACOTTA], solid: true, transparent: false },
+  [BLOCK.BLUEBRICK]:  { name: 'Blue Bricks',  tiles: [TILE.BLUEBRICK, TILE.BLUEBRICK, TILE.BLUEBRICK],    solid: true, transparent: false },
 };
 
 export function isSlab(id) {

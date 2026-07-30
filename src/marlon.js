@@ -458,3 +458,53 @@ export function createBuilders(scene, world, player, toast, cx, cz) {
 
   return [leo, mia];
 }
+
+// A dozen villager kids with varied looks who live around spawn.
+export function createVillagers(scene, world, player, toast, cx, cz) {
+  const NAMES = ['Lucas', 'Chloé', 'Nathan', 'Zoé', 'Louis', 'Jade', 'Gabin', 'Lina', 'Noah', 'Rose', 'Adam', 'Léna'];
+  const SKINS = [0xe8bd93, 0xc98a5e, 0xa56b42, 0xf0c8a0];
+  const HAIRS = [0x2c2416, 0x9a7b4f, 0x1c1c1c, 0x704214, 0xb5651d, 0x4c3620];
+  const SHIRTS = [0xd83a3a, 0x4a90d9, 0x58b04c, 0xe8c53c, 0x8a6ad0, 0xff7eb6, 0x2b8a8a, 0xe8892c];
+  const PANTS = [0x46536b, 0x3a4a3a, 0x5a3a20, 0x333333];
+  const PHRASES = [
+    'Bonjour !',
+    'Belle journée pour construire !',
+    'Tu as vu les monuments ?',
+    "J'adore ce village.",
+    'Les créatures ne sont pas méchantes, tu sais.',
+    'Un jour je serai dresseur, comme toi !',
+    'Le château fort est par là-bas !',
+    'La pyramide de verre brille au soleil.',
+    'Prof. Cornichon connaît tout sur tout.',
+    'On dit que le phare guide les bateaux.',
+  ];
+  const villagers = [];
+  for (let i = 0; i < NAMES.length; i++) {
+    const angle = (i / NAMES.length) * Math.PI * 2 + 0.4;
+    const dist = 14 + (i % 4) * 9;
+    const shirt = SHIRTS[i % SHIRTS.length];
+    const shirt2 = SHIRTS[(i + 3) % SHIRTS.length];
+    const striped = i % 3 === 0;
+    villagers.push(new Wanderer(scene, world, player, toast, {
+      name: NAMES[i],
+      label: `${NAMES[i]} — habitant${i % 2 ? 'e' : ''} du village !`,
+      walkSpeed: 1.4 + (i % 3) * 0.4,
+      firstSpeech: 15 + i * 7,
+      look: {
+        skin: SKINS[i % SKINS.length],
+        hair: HAIRS[i % HAIRS.length],
+        torsoSlabs: striped
+          ? [shirt, shirt2, shirt, shirt2, shirt]
+          : [shirt, shirt, shirt, shirt, shirt],
+        sleeveSegs: [shirt, shirt, shirt],
+        pants: PANTS[i % PANTS.length],
+        shoes: 0x2c2c2c,
+        hairstyle: i % 2 ? 'bun' : 'short',
+        glasses: i === 7,
+        hat: i === 4 ? 0x58b04c : null,
+      },
+      phrases: PHRASES,
+    }, cx + Math.sin(angle) * dist, cz + Math.cos(angle) * dist));
+  }
+  return villagers;
+}

@@ -5,7 +5,7 @@ import { TILE } from './blocks.js';
 
 const TILE_PX = 16;
 export const ATLAS_COLS = 8;
-export const ATLAS_ROWS = 4;
+export const ATLAS_ROWS = 5;
 
 // Deterministic RNG so textures look identical every load.
 function mulberry32(seed) {
@@ -268,6 +268,30 @@ const painters = {
     }
   },
 };
+
+// Brick-style tiles share one painter: base color + mortar grid pattern.
+const BRICK_STYLES = {
+  [TILE.STONEBRICK]: { base: [130, 130, 132], mortar: [95, 95, 98], seed: 140, big: true },
+  [TILE.DARKBRICK]: { base: [92, 42, 40], mortar: [60, 46, 44], seed: 141, big: false },
+  [TILE.WHITEBRICK]: { base: [232, 230, 222], mortar: [196, 192, 182], seed: 142, big: true },
+  [TILE.TERRACOTTA]: { base: [190, 108, 62], mortar: [150, 82, 48], seed: 143, big: false },
+  [TILE.BLUEBRICK]: { base: [66, 96, 160], mortar: [44, 64, 112], seed: 144, big: false },
+};
+for (const [tile, style] of Object.entries(BRICK_STYLES)) {
+  painters[tile] = (ctx, ox, oy) => {
+    const rng = mulberry32(style.seed);
+    noisyFill(ctx, ox, oy, style.base, 9, rng);
+    const rowH = style.big ? 8 : 4;
+    const brickW = style.big ? 8 : 8;
+    for (let y = 0; y < TILE_PX; y += rowH) {
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, ...style.mortar);
+      const off = (y / rowH) % 2 === 0 ? 0 : brickW / 2;
+      for (let x = off; x < TILE_PX; x += brickW) {
+        for (let dy = 0; dy < rowH; dy++) px(ctx, ox, oy, x, y + dy, ...style.mortar);
+      }
+    }
+  };
+}
 
 const WOOL_COLORS = {
   [TILE.WOOL_RED]: [200, 62, 56],
