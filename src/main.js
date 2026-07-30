@@ -7,7 +7,7 @@ import { World, CHUNK, WATER_LEVEL } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon, Cornichon, createHeroes } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders } from './marlon.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -174,7 +174,11 @@ function updateChunks() {
   const say = (msg, color) => creatureManager.toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
-  npcs = [marlon, cornichon, ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z)];
+  npcs = [
+    marlon, cornichon,
+    ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z),
+    ...createBuilders(scene, world, player, say, player.pos.x, player.pos.z),
+  ];
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -493,6 +497,7 @@ const edu = new EducationMode({
   },
   onResume: () => startGame(),
   toast: (msg, color) => creatureManager.toast(msg, color),
+  reward: () => creatureManager.awardRandom(),
 });
 
 const creatureLabel = document.getElementById('creature-label');

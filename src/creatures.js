@@ -439,6 +439,27 @@ export class CreatureManager {
     this.updateBalls(dt);
   }
 
+  // Quiz reward: add a random species to the collection without catching it.
+  awardRandom() {
+    const weights = this.species.map((sp) => [7, 4, 2][sp.rarity]);
+    const total = weights.reduce((a, b) => a + b, 0);
+    let roll = Math.random() * total;
+    let sp = this.species[0];
+    for (let i = 0; i < this.species.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) { sp = this.species[i]; break; }
+    }
+    let entry = this.collection.find((e) => e.id === sp.id);
+    if (!entry) {
+      entry = { id: sp.id, name: sp.name, type: sp.type, count: 0, bestLevel: 0 };
+      this.collection.push(entry);
+    }
+    entry.count++;
+    entry.bestLevel = Math.max(entry.bestLevel, 2 + ((Math.random() * 10) | 0));
+    this.saveCollection();
+    return { name: sp.name, type: sp.type };
+  }
+
   toast(msg, color = 0xffffff) {
     const el = document.getElementById('toast');
     el.textContent = msg;
