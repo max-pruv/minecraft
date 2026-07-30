@@ -166,7 +166,47 @@ DECOR_COLORS.forEach(([colorName, rgb], ci) => {
 
 export function decorMapColor(id) {
   const item = DECOR_ITEMS[id - DECOR_START];
-  return item ? item.rgb : null;
+  if (item) return item.rgb;
+  const prop = PROP_ITEMS[id - PROP_START];
+  return prop ? prop.rgb : null;
+}
+
+// --- furniture & object props: real 3D shapes placed on a block cell --------
+
+export const PROP_START = 340;
+
+export const PROP_TYPES = [
+  { key: 'tree', name: 'Arbre', emoji: '🌳' },
+  { key: 'pine', name: 'Sapin', emoji: '🌲' },
+  { key: 'flowerpot', name: 'Pot de fleurs', emoji: '🪴' },
+  { key: 'bush', name: 'Buisson', emoji: '🌿' },
+  { key: 'sofa', name: 'Canapé', emoji: '🛋️' },
+  { key: 'armchair', name: 'Fauteuil', emoji: '💺' },
+  { key: 'table', name: 'Table', emoji: '🍽️' },
+  { key: 'chair', name: 'Chaise', emoji: '🪑' },
+  { key: 'bed', name: 'Lit', emoji: '🛏️' },
+  { key: 'lamp', name: 'Lampe', emoji: '💡' },
+  { key: 'tv', name: 'Télé', emoji: '📺' },
+  { key: 'rug', name: 'Tapis', emoji: '🧶' },
+  { key: 'cake', name: 'Gâteau', emoji: '🍰' },
+  { key: 'stool', name: 'Tabouret', emoji: '🦶' },
+];
+
+// 200 props: 14 types cycling through the 30-color palette.
+export const PROP_ITEMS = [];
+for (let i = 0; i < 200; i++) {
+  const type = PROP_TYPES[i % PROP_TYPES.length];
+  const [colorName, rgb] = DECOR_COLORS[Math.floor(i / PROP_TYPES.length) % DECOR_COLORS.length];
+  const id = PROP_START + i;
+  PROP_ITEMS.push({ id, type: type.key, emoji: type.emoji, colorName, rgb });
+  BLOCK_INFO[id] = {
+    name: `${type.name} ${colorName.toLowerCase()}`,
+    prop: true, solid: false, transparent: true, tiles: null,
+  };
+}
+
+export function isProp(id) {
+  return id >= PROP_START && id < PROP_START + PROP_ITEMS.length;
 }
 
 // Curated blocks shown in the inventory's first tab (decor has its own tab).
@@ -174,11 +214,11 @@ export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
   .filter((id) => id !== BLOCK.WATER && id < DECOR_START);
 
 export function isSolid(id) {
-  return id !== BLOCK.AIR && id !== BLOCK.WATER;
+  return id !== BLOCK.AIR && id !== BLOCK.WATER && !(id >= PROP_START);
 }
 
 export function isTransparent(id) {
-  return id === BLOCK.AIR || id === BLOCK.WATER || id === BLOCK.GLASS;
+  return id === BLOCK.AIR || id === BLOCK.WATER || id === BLOCK.GLASS || id >= PROP_START;
 }
 
 // Default hotbar layout (customizable through the inventory).

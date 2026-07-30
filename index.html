@@ -59,11 +59,8 @@
       color: #fff; text-shadow: 1px 1px 0 #000; font-size: 14px; z-index: 5;
     }
 
-    /* debug line */
-    #debug {
-      position: fixed; top: calc(8px + var(--safe-top)); left: 8px; color: #fff; font-size: 12px;
-      text-shadow: 1px 1px 0 #000; z-index: 5;
-    }
+    /* debug line (hidden: fps/position/chunks are developer info) */
+    #debug { display: none; }
 
     /* underwater tint */
     #water-tint {
@@ -398,7 +395,6 @@
       .slot canvas { width: 26px; height: 26px; }
       #overlay h1 { font-size: 28px; }
       #overlay .controls { column-count: 1; font-size: 12px; }
-      #debug { display: none; } /* frees the top bar on phones */
       #edu-btn { top: calc(8px + var(--safe-top)); }
       #edu-panel { top: calc(56px + var(--safe-top)); }
       #map-btn { top: calc(56px + var(--safe-top)); }
@@ -449,7 +445,8 @@
       <button id="inv-close">✕</button>
       <div id="inv-tabs">
         <button data-tab="blocks" class="active">🧱 Blocs</button>
-        <button data-tab="decor">🎨 Objets déco</button>
+        <button data-tab="decor">🎨 Déco</button>
+        <button data-tab="props">🪑 Meubles</button>
       </div>
       <div id="inv-grid"></div>
       <div id="inv-pager">

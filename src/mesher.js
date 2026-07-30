@@ -2,7 +2,7 @@
 // Only faces adjacent to air or transparent blocks are emitted.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, isTransparent, isSlab } from './blocks.js';
+import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp } from './blocks.js';
 import { tileUV } from './textures.js';
 import { CHUNK, HEIGHT } from './world.js';
 
@@ -80,11 +80,12 @@ class GeomBuffer {
   }
 }
 
-// Returns { solid, water } BufferGeometries (either may be null).
-// Positions are local to the chunk origin.
+// Returns { solid, water, props } — geometries plus the prop cells found in
+// this chunk (props render as separate 3D meshes, not cube faces).
 export function buildChunkGeometry(world, cx, cz) {
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
+  const props = [];
   const baseX = cx * CHUNK, baseZ = cz * CHUNK;
   const data = world.ensureChunk(cx, cz);
 
@@ -101,6 +102,7 @@ export function buildChunkGeometry(world, cx, cz) {
       for (let x = 0; x < CHUNK; x++) {
         const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
         if (id === BLOCK.AIR) continue;
+        if (isProp(id)) { props.push({ x, y, z, id }); continue; }
 
         const info = BLOCK_INFO[id];
         const isWater = id === BLOCK.WATER;
@@ -124,5 +126,5 @@ export function buildChunkGeometry(world, cx, cz) {
     }
   }
 
-  return { solid: solid.toGeometry(), water: water.toGeometry() };
+  return { solid: solid.toGeometry(), water: water.toGeometry(), props };
 }
