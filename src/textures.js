@@ -1,11 +1,11 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE, DECOR_ITEMS } from './blocks.js';
+import { TILE, DECOR_ITEMS, CITY_TILE_START } from './blocks.js';
 
 const TILE_PX = 16;
 export const ATLAS_COLS = 20;
-export const ATLAS_ROWS = 17; // 35 base tiles + 300 decor tiles
+export const ATLAS_ROWS = 18; // 35 base tiles + 300 decor tiles + 10 city tiles
 
 // Deterministic RNG so textures look identical every load.
 function mulberry32(seed) {
@@ -292,6 +292,116 @@ for (const [tile, style] of Object.entries(BRICK_STYLES)) {
     }
   };
 }
+
+// City material tiles (Paris / New York / San Francisco districts).
+const CT = CITY_TILE_START;
+
+painters[CT + 0] = (ctx, ox, oy) => { // pierre haussmannienne: creamy carved limestone
+  const rng = mulberry32(160);
+  noisyFill(ctx, ox, oy, [229, 219, 194], 6, rng);
+  for (const y of [0, 5, 10, 15]) {
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 204, 192, 162);
+  }
+  for (const [jx, jy] of [[5, 1], [12, 6], [3, 11]]) {
+    for (let dy = 0; dy < 4; dy++) px(ctx, ox, oy, jx, jy + dy, 208, 197, 168);
+  }
+};
+
+painters[CT + 1] = (ctx, ox, oy) => { // toit de zinc: blue-grey standing seams
+  const rng = mulberry32(161);
+  noisyFill(ctx, ox, oy, [112, 122, 136], 7, rng);
+  for (let x = 2; x < TILE_PX; x += 5) {
+    for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 90, 99, 112);
+  }
+  for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 0, 134, 144, 158);
+};
+
+painters[CT + 2] = (ctx, ox, oy) => { // asphalte
+  const rng = mulberry32(162);
+  noisyFill(ctx, ox, oy, [57, 58, 62], 6, rng);
+  for (let i = 0; i < 14; i++) {
+    const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+    const s = rng() > 0.5 ? 74 : 45;
+    px(ctx, ox, oy, x, y, s, s, s + 2);
+  }
+};
+
+painters[CT + 3] = (ctx, ox, oy) => { // route marquée: asphalt + yellow dashes
+  painters[CT + 2](ctx, ox, oy);
+  for (const y0 of [1, 9]) {
+    for (let y = y0; y < y0 + 5; y++) {
+      px(ctx, ox, oy, 7, y, 230, 190, 60);
+      px(ctx, ox, oy, 8, y, 230, 190, 60);
+    }
+  }
+};
+
+painters[CT + 4] = (ctx, ox, oy) => { // trottoir: light concrete slabs
+  const rng = mulberry32(164);
+  noisyFill(ctx, ox, oy, [178, 178, 172], 6, rng);
+  for (const c of [0, 8]) {
+    for (let i = 0; i < TILE_PX; i++) {
+      px(ctx, ox, oy, i, c, 152, 152, 146);
+      px(ctx, ox, oy, c, i, 152, 152, 146);
+    }
+  }
+};
+
+painters[CT + 5] = (ctx, ox, oy) => { // brownstone: NY red-brown with lintels
+  const rng = mulberry32(165);
+  noisyFill(ctx, ox, oy, [126, 76, 56], 8, rng);
+  for (let y = 0; y < TILE_PX; y += 4) {
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 98, 58, 42);
+    const off = (y / 4) % 2 === 0 ? 0 : 4;
+    for (let x = off; x < TILE_PX; x += 8) {
+      for (let dy = 0; dy < 4; dy++) px(ctx, ox, oy, x, y + dy, 98, 58, 42);
+    }
+  }
+};
+
+painters[CT + 6] = (ctx, ox, oy) => { // granit: pale speckled stone
+  const rng = mulberry32(166);
+  noisyFill(ctx, ox, oy, [168, 166, 160], 7, rng);
+  for (let i = 0; i < 20; i++) {
+    const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+    const s = rng() > 0.5 ? 190 : 138;
+    px(ctx, ox, oy, x, y, s, s - 2, s - 4);
+  }
+  for (const y of [0, 8]) {
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 140, 138, 132);
+  }
+};
+
+painters[CT + 7] = (ctx, ox, oy) => { // mur de verre bleu: curtain-wall grid
+  const rng = mulberry32(167);
+  noisyFill(ctx, ox, oy, [78, 118, 164], 8, rng);
+  for (let i = 2; i < 8; i++) px(ctx, ox, oy, i, 9 - i, 150, 190, 225);
+  for (let i = 6; i < 13; i++) px(ctx, ox, oy, i, 19 - i, 120, 160, 205);
+  for (let c = 0; c < TILE_PX; c += 4) {
+    for (let i = 0; i < TILE_PX; i++) {
+      px(ctx, ox, oy, i, c, 46, 66, 96);
+      px(ctx, ox, oy, c, i, 46, 66, 96);
+    }
+  }
+};
+
+painters[CT + 8] = (ctx, ox, oy) => { // cuivre patiné: Lady-Liberty green
+  const rng = mulberry32(168);
+  noisyFill(ctx, ox, oy, [98, 168, 142], 10, rng);
+  for (let i = 0; i < 10; i++) {
+    const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+    px(ctx, ox, oy, x, y, 76, 140, 118);
+  }
+};
+
+painters[CT + 9] = (ctx, ox, oy) => { // passage piéton: zebra stripes on asphalt
+  painters[CT + 2](ctx, ox, oy);
+  for (let y0 = 1; y0 < TILE_PX; y0 += 4) {
+    for (let y = y0; y < y0 + 2; y++) {
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 225, 225, 222);
+    }
+  }
+};
 
 const WOOL_COLORS = {
   [TILE.WOOL_RED]: [200, 62, 56],

@@ -209,16 +209,35 @@ export function isProp(id) {
   return id >= PROP_START && id < PROP_START + PROP_ITEMS.length;
 }
 
+// --- city blocks: realistic materials for the three themed districts --------
+
+export const CITY_START = 560; // ids after the prop range (340..539)
+export const CITY_TILE_START = 335;
+
+export const CITY_BLOCK = {
+  HAUSSMANN: 560, ZINC: 561, ASPHALT: 562, ROADLINE: 563, SIDEWALK: 564,
+  BROWNSTONE: 565, GRANITE: 566, CURTAIN: 567, COPPER: 568, CROSSWALK: 569,
+};
+
+const CITY_NAMES = [
+  'Pierre haussmannienne', 'Toit de zinc', 'Asphalte', 'Route marquée', 'Trottoir',
+  'Brownstone', 'Granit', 'Mur de verre bleu', 'Cuivre patiné', 'Passage piéton',
+];
+CITY_NAMES.forEach((name, i) => {
+  const id = CITY_START + i, tile = CITY_TILE_START + i;
+  BLOCK_INFO[id] = { name, tiles: [tile, tile, tile], solid: true, transparent: false };
+});
+
 // Curated blocks shown in the inventory's first tab (decor has its own tab).
 export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
-  .filter((id) => id !== BLOCK.WATER && id < DECOR_START);
+  .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START));
 
 export function isSolid(id) {
-  return id !== BLOCK.AIR && id !== BLOCK.WATER && !(id >= PROP_START);
+  return id !== BLOCK.AIR && id !== BLOCK.WATER && !isProp(id);
 }
 
 export function isTransparent(id) {
-  return id === BLOCK.AIR || id === BLOCK.WATER || id === BLOCK.GLASS || id >= PROP_START;
+  return id === BLOCK.AIR || id === BLOCK.WATER || id === BLOCK.GLASS || isProp(id);
 }
 
 // Default hotbar layout (customizable through the inventory).
