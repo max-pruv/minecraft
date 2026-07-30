@@ -175,6 +175,9 @@ const LANDMARKS = [
 
 // --- world ----------------------------------------------------------------
 
+// The city district: flattened terrain, a street grid, procedural buildings.
+export const CITY = { x: -70, z: 60, r: 45, cell: 12, base: 34 };
+
 export class World {
   constructor() {
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
@@ -189,12 +192,34 @@ export class World {
   terrainHeight(x, z) {
     const mountains = fbm(x * 0.0035, z * 0.0035, SEED + 9001);
     const hills = fbm(x * 0.016, z * 0.016, SEED);
-    const h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
+    let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
+
+    // seas: low continentalness sinks the land, but never near spawn
+    const distO = Math.hypot(x, z);
+    const oceanFactor = Math.min(1, Math.max(0, (distO - 90) / 60));
+    const continent = fbm(x * 0.005, z * 0.005, SEED + 501);
+    if (continent < 0.45) h -= (0.45 - continent) * 130 * oceanFactor;
+
+    // lakes: small pockets carved below water level
+    const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
+    if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
+
+    // the city sits on a flat plateau
+    const cd = Math.hypot(x - CITY.x, z - CITY.z);
+    if (cd < CITY.r) {
+      const m = Math.min(1, (CITY.r - cd) / 18);
+      h = h * (1 - m) + CITY.base * m;
+    }
+
     return Math.max(2, Math.min(HEIGHT - 16, Math.floor(h)));
   }
 
   treeAt(x, z) {
-    if (hash2i(x, z, SEED + 777) >= 0.012) return null;
+    if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.r - 2) return null; // no trees downtown
+    // forests are dense, plains nearly bare
+    const forest = fbm(x * 0.008, z * 0.008, SEED + 701);
+    const density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
+    if (hash2i(x, z, SEED + 777) >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
     const trunk = 4 + Math.floor(hash2i(x, z, SEED + 778) * 3); // 4..6
@@ -224,6 +249,14 @@ export class World {
         }
         for (let y = h + 1; y <= WATER_LEVEL; y++) {
           data[World.index(x, y, z)] = BLOCK.WATER;
+        }
+
+        // city streets: a stone grid through the district
+        const cd = Math.hypot(wx - CITY.x, wz - CITY.z);
+        if (cd < CITY.r - 4 && h > WATER_LEVEL) {
+          const mx = ((wx % CITY.cell) + CITY.cell) % CITY.cell;
+          const mz = ((wz % CITY.cell) + CITY.cell) % CITY.cell;
+          if (mx < 2 || mz < 2) data[World.index(x, h, z)] = BLOCK.STONE;
         }
       }
     }
@@ -259,6 +292,45 @@ export class World {
         put(tx, topY + 2, tz, BLOCK.LEAVES, true);
         // trunk
         for (let y = h + 1; y <= topY; y++) put(tx, y, tz, BLOCK.LOG, false);
+      }
+    }
+
+    // City buildings: one lot per grid cell, deterministic per cell.
+    const stamp = (wx, wy, wz, id) => {
+      const lx = wx - baseX, lz = wz - baseZ;
+      if (lx < 0 || lx >= CHUNK || lz < 0 || lz >= CHUNK || wy < 0 || wy >= HEIGHT) return;
+      data[World.index(lx, wy, lz)] = id;
+    };
+    const CELL = CITY.cell;
+    const BUILDING_MATS = [BLOCK.BRICK, BLOCK.STONEBRICK, BLOCK.WHITEBRICK, BLOCK.TERRACOTTA, BLOCK.BLUEBRICK, BLOCK.SANDSTONE];
+    const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
+    const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);
+    for (let gz = minGZ; gz <= maxGZ; gz++) {
+      for (let gx = minGX; gx <= maxGX; gx++) {
+        const lotX = gx * CELL, lotZ = gz * CELL;
+        const ccx = lotX + CELL / 2, ccz = lotZ + CELL / 2;
+        if (Math.hypot(ccx - CITY.x, ccz - CITY.z) > CITY.r - 10) continue;
+        if (hash2i(gx, gz, SEED + 801) > 0.8) continue; // a little park
+        const bh = 5 + Math.floor(hash2i(gx, gz, SEED + 802) * 11);
+        const mat = BUILDING_MATS[Math.floor(hash2i(gx, gz, SEED + 803) * BUILDING_MATS.length)];
+        const by = this.terrainHeight(Math.floor(ccx), Math.floor(ccz)) + 1;
+        const x0 = lotX + 3, x1 = lotX + CELL - 2, z0 = lotZ + 3, z1 = lotZ + CELL - 2;
+        for (let y = 0; y < bh; y++) {
+          for (let wx = x0; wx <= x1; wx++) {
+            for (let wz = z0; wz <= z1; wz++) {
+              const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+              if (!wall) { if (y === 0) stamp(wx, by - 1, wz, mat); continue; }
+              const window = y % 3 !== 0 && ((wx + wz) % 2 === 0);
+              stamp(wx, by + y, wz, window ? BLOCK.GLASS : mat);
+            }
+          }
+        }
+        for (let wx = x0; wx <= x1; wx++) { // flat roof
+          for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, mat);
+        }
+        const doorX = Math.floor((x0 + x1) / 2); // doorway on the south face
+        stamp(doorX, by, z0, BLOCK.AIR);
+        stamp(doorX, by + 1, z0, BLOCK.AIR);
       }
     }
 
