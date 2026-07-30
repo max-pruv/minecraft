@@ -410,15 +410,12 @@ export class EducationMode {
   constructor(hooks) {
     this.hooks = hooks;
     this.data = this.load();
-    this.enabled = this.data.enabled !== false; // default ON
+    this.enabled = true; // always on — there is no way to turn it off
     this.recent = new Set(this.data.recent || []);
-    // Restore the timer across reloads so refreshing can't skip the quiz.
-    const saved = this.data.state || {};
-    this.remaining = Math.min(
-      typeof saved.remaining === 'number' ? saved.remaining : SESSION_SECONDS,
-      SESSION_SECONDS
-    );
-    this.quizDue = !!saved.quizDue || this.remaining <= 0;
+    this.remaining = 0;
+    // Every fresh page load owes a quiz: answering questions is how the
+    // game starts, and it also makes refreshing pointless as an escape.
+    this.quizDue = true;
     this.quizActive = false;
     this.correctCount = 0;
     this.questionCount = 0;
@@ -440,26 +437,7 @@ export class EducationMode {
       count: document.getElementById('quiz-count'),
       panel: document.getElementById('edu-panel'),
       panelBody: document.getElementById('edu-panel-body'),
-      toggle: document.getElementById('edu-toggle'),
     };
-
-    // Parental lock: an adult-level multiplication guards the toggle.
-    this.el.toggle.addEventListener('click', () => {
-      const a = 6 + rnd(4), b = 6 + rnd(4);
-      const reply = window.prompt(`Contrôle parental — combien font ${a} × ${b} ?`);
-      if (reply === null) return;
-      if (parseInt(reply.trim(), 10) !== a * b) {
-        window.alert('Réponse incorrecte — demande à un parent !');
-        return;
-      }
-      this.enabled = !this.enabled;
-      this.data.enabled = this.enabled;
-      this.remaining = SESSION_SECONDS;
-      this.quizDue = false;
-      this.save();
-      this.renderToggle();
-    });
-    this.renderToggle();
 
     document.getElementById('edu-btn').addEventListener('click', () => this.togglePanel());
     document.getElementById('edu-panel-close').addEventListener('click', () => this.togglePanel());
@@ -480,7 +458,6 @@ export class EducationMode {
 
   save() {
     this.data.recent = [...this.recent].slice(-RECENT_CAP);
-    this.data.state = { remaining: this.remaining, quizDue: this.quizDue || this.quizActive };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); } catch { /* ignore */ }
   }
 
@@ -500,7 +477,6 @@ export class EducationMode {
       if (this.saveTimer <= 0) { this.saveTimer = 10; this.save(); }
     }
 
-    if (!this.enabled) { this.el.timer.style.display = 'none'; return; }
     this.el.timer.style.display = 'block';
 
     if (running && !this.quizActive) {
@@ -663,13 +639,6 @@ export class EducationMode {
   }
 
   // ---------- stats panel ----------
-
-  renderToggle() {
-    this.el.toggle.textContent = this.enabled
-      ? '🎓 Mode éducatif : ACTIVÉ'
-      : '🎓 Mode éducatif : désactivé';
-    this.el.toggle.classList.toggle('edu-on', this.enabled);
-  }
 
   formatDuration(seconds) {
     const m = Math.round(seconds / 60);
