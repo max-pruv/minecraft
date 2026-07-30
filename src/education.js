@@ -730,13 +730,23 @@ export class EducationMode {
 
   skillState(skill) {
     if (!this.skills[skill]) {
-      this.skills[skill] = { level: SKILL_META[skill].defaultLevel, hist: [] };
+      const meta = SKILL_META[skill];
+      // a brand-new skill starts near the level the child has already
+      // proven in that category across all previous sessions
+      const catLevel = Math.floor(this.categoryLevel(meta.cat));
+      this.skills[skill] = {
+        level: Math.min(Math.max(meta.defaultLevel, catLevel), meta.maxLevel),
+        hist: [],
+      };
     }
     return this.skills[skill];
   }
 
   recordOutcome(skill, ok, fluent = false) {
     const s = this.skillState(skill);
+    // lifetime tallies — the long-term memory behind level drift
+    if (ok) s.right = (s.right || 0) + 1;
+    else s.wrong = (s.wrong || 0) + 1;
     s.hist.push(ok ? 1 : 0);
     if (s.hist.length > 8) s.hist.shift();
     // fluency detector: quick, first-try correct answers mean it's too easy
@@ -861,7 +871,26 @@ export class EducationMode {
 
   // ---------- quiz ----------
 
+  // Long-term drift: a skill whose ALL-TIME success rate is high should not
+  // sit at its level — every quiz start, promote proven skills. Tallies decay
+  // after a promotion so the next one needs fresh evidence.
+  applyLifetimeDrift() {
+    for (const [skill, s] of Object.entries(this.skills)) {
+      const meta = SKILL_META[skill];
+      if (!meta) continue;
+      const total = (s.right || 0) + (s.wrong || 0);
+      if (total >= 10 && (s.right || 0) / total >= 0.85 && s.level < meta.maxLevel) {
+        s.level++;
+        s.hist = [];
+        s.right = Math.floor((s.right || 0) * 0.5);
+        s.wrong = Math.floor((s.wrong || 0) * 0.5);
+      }
+    }
+    this.save();
+  }
+
   startQuiz(marathon = false) {
+    this.applyLifetimeDrift();
     this.marathon = marathon;
     this.quizActive = true;
     this.quizDue = true;

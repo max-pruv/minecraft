@@ -11,9 +11,9 @@ import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers } from
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const RENDER_RADIUS = IS_TOUCH ? 4 : 5; // chunks in each direction (smaller on mobile GPUs)
+const RENDER_RADIUS = IS_TOUCH ? 6 : 8; // chunks in each direction (smaller on mobile GPUs)
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
-const MESHES_PER_FRAME = 2;
+const MESHES_PER_FRAME = 3;
 const REACH = 5.5;                   // block interaction distance
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
@@ -733,11 +733,11 @@ function drawMap(mapCanvas, radius) {
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  if (minimapVisible) drawMap(minimapCanvas, 32);
+  if (minimapVisible) drawMap(minimapCanvas, 48);
 });
 minimapCanvas.addEventListener('click', () => {
   mapModal.style.display = 'flex';
-  drawMap(mapModalCanvas, 80);
+  drawMap(mapModalCanvas, 120);
 });
 document.getElementById('map-modal-close').addEventListener('click', () => {
   mapModal.style.display = 'none';
@@ -816,7 +816,7 @@ function frame(now) {
     minimapTimer -= dt;
     if (minimapTimer <= 0) {
       minimapTimer = 1;
-      drawMap(minimapCanvas, 32);
+      drawMap(minimapCanvas, 48);
     }
   }
 
