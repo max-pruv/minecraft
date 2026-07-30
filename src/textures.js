@@ -1,11 +1,11 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE } from './blocks.js';
+import { TILE, DECOR_ITEMS } from './blocks.js';
 
 const TILE_PX = 16;
-export const ATLAS_COLS = 8;
-export const ATLAS_ROWS = 5;
+export const ATLAS_COLS = 20;
+export const ATLAS_ROWS = 17; // 35 base tiles + 300 decor tiles
 
 // Deterministic RNG so textures look identical every load.
 function mulberry32(seed) {
@@ -308,6 +308,97 @@ for (const [tile, base] of Object.entries(WOOL_COLORS)) {
   };
 }
 
+// Decor patterns: painted from a base color and a darker accent.
+const DECOR_PAINTERS = {
+  Uni(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 8, rng);
+  },
+  Briques(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 8, rng);
+    for (let y = 0; y < TILE_PX; y += 4) {
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, ...dark);
+      const off = (y / 4) % 2 === 0 ? 0 : 4;
+      for (let x = off; x < TILE_PX; x += 8) {
+        for (let dy = 0; dy < 4; dy++) px(ctx, ox, oy, x, y + dy, ...dark);
+      }
+    }
+  },
+  Planches(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 7, rng);
+    for (let y = 3; y < TILE_PX; y += 4) {
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, ...dark);
+    }
+    px(ctx, ox, oy, 4, 1, ...dark); px(ctx, ox, oy, 11, 6, ...dark); px(ctx, ox, oy, 7, 13, ...dark);
+  },
+  Damier(ctx, ox, oy, base, dark, rng) {
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const alt = (Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 1;
+        const d = (rng() * 2 - 1) * 6;
+        const c = alt ? dark : base;
+        px(ctx, ox, oy, x, y, c[0] + d, c[1] + d, c[2] + d);
+      }
+    }
+  },
+  Pois(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 6, rng);
+    for (let cy = 2; cy < TILE_PX; cy += 6) {
+      for (let cx = 2 + ((cy / 6) % 2) * 3; cx < TILE_PX - 1; cx += 6) {
+        px(ctx, ox, oy, cx, cy, ...dark); px(ctx, ox, oy, cx + 1, cy, ...dark);
+        px(ctx, ox, oy, cx, cy + 1, ...dark); px(ctx, ox, oy, cx + 1, cy + 1, ...dark);
+      }
+    }
+  },
+  Rayures(ctx, ox, oy, base, dark, rng) {
+    for (let y = 0; y < TILE_PX; y++) {
+      const c = Math.floor(y / 4) % 2 === 0 ? base : dark;
+      for (let x = 0; x < TILE_PX; x++) {
+        const d = (rng() * 2 - 1) * 6;
+        px(ctx, ox, oy, x, y, c[0] + d, c[1] + d, c[2] + d);
+      }
+    }
+  },
+  Lignes(ctx, ox, oy, base, dark, rng) {
+    for (let x = 0; x < TILE_PX; x++) {
+      const c = Math.floor(x / 4) % 2 === 0 ? base : dark;
+      for (let y = 0; y < TILE_PX; y++) {
+        const d = (rng() * 2 - 1) * 6;
+        px(ctx, ox, oy, x, y, c[0] + d, c[1] + d, c[2] + d);
+      }
+    }
+  },
+  Zigzag(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 6, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      const period = x % 8;
+      const zig = period < 4 ? period : 8 - period;
+      for (const row of [2, 10]) {
+        px(ctx, ox, oy, x, row + zig, ...dark);
+        px(ctx, ox, oy, x, row + zig + 1, ...dark);
+      }
+    }
+  },
+  Cadre(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 6, rng);
+    for (let i = 0; i < TILE_PX; i++) {
+      for (const b of [0, 1, TILE_PX - 2, TILE_PX - 1]) {
+        px(ctx, ox, oy, i, b, ...dark);
+        px(ctx, ox, oy, b, i, ...dark);
+      }
+    }
+  },
+  Losange(ctx, ox, oy, base, dark, rng) {
+    noisyFill(ctx, ox, oy, base, 6, rng);
+    const c = TILE_PX / 2;
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const d = Math.abs(x - c + 0.5) + Math.abs(y - c + 0.5);
+        if (d > 5.5 && d < 7.5) px(ctx, ox, oy, x, y, ...dark);
+      }
+    }
+  },
+};
+
 export function createAtlas() {
   const canvas = document.createElement('canvas');
   canvas.width = ATLAS_COLS * TILE_PX;
@@ -321,6 +412,15 @@ export function createAtlas() {
     const ox = (i % ATLAS_COLS) * TILE_PX;
     const oy = Math.floor(i / ATLAS_COLS) * TILE_PX;
     paint(ctx, ox, oy);
+  }
+
+  // decor tiles: pattern painter + color pair, deterministic per tile
+  for (const item of DECOR_ITEMS) {
+    const ox = (item.tile % ATLAS_COLS) * TILE_PX;
+    const oy = Math.floor(item.tile / ATLAS_COLS) * TILE_PX;
+    const dark = item.rgb.map((v) => Math.max(0, Math.round(v * 0.62)));
+    const rng = mulberry32(5000 + item.tile);
+    DECOR_PAINTERS[item.pattern](ctx, ox, oy, item.rgb, dark, rng);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
