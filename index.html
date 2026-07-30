@@ -18,6 +18,10 @@
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
+    /* installed app: the status bar overlays the page, keep a minimum offset */
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      :root { --safe-top: max(env(safe-area-inset-top, 0px), 24px); }
+    }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none; }
     body { font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     #game { display: block; width: 100%; height: 100%; touch-action: none; }
@@ -152,7 +156,13 @@
       position: absolute; top: 6px; right: 8px; background: none; border: none;
       color: #aaa; font-size: 16px; cursor: pointer;
     }
-    .dex-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .dex-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 6px; }
+    .dex-row > span:nth-child(2) { flex: 1; }
+    .dex-release {
+      background: rgba(0,0,0,0.4); border: 1px solid #46587e; border-radius: 6px;
+      color: #fff; font-size: 14px; padding: 2px 8px; cursor: pointer; flex-shrink: 0;
+    }
+    .dex-release:hover { border-color: #9fd8e8; }
     .dex-row.unknown { color: #777; }
     .type-chip {
       display: inline-block; padding: 1px 6px; border-radius: 4px;
@@ -312,13 +322,13 @@
     }
     /* minimap */
     #map-btn {
-      position: fixed; top: calc(60px + var(--safe-top)); left: 8px; z-index: 11;
+      position: fixed; top: calc(82px + var(--safe-top)); left: 8px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
       border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
       color: #fff; font-size: 18px; cursor: pointer;
     }
     #minimap {
-      display: none; position: fixed; top: calc(106px + var(--safe-top)); left: 8px; z-index: 6;
+      display: none; position: fixed; top: calc(130px + var(--safe-top)); left: 8px; z-index: 6;
       width: 160px; height: 160px; border: 2px solid rgba(255,255,255,0.6);
       border-radius: 10px; cursor: pointer; image-rendering: pixelated;
     }
