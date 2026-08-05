@@ -853,6 +853,9 @@ NET_CHARACTERS.forEach((c, i) => {
 function showOnlineUI() {
   updatePlayersBtn();
   micBtn.style.display = 'block';
+  camBtn.style.display = 'block';
+  net.onRemoteVideo = (id, stream) => addRemoteTile(id, stream);
+  net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
 }
 
 // home button: teleport back to the spawn point
@@ -914,6 +917,60 @@ micBtn.addEventListener('click', async () => {
   const on = await net.toggleMic();
   micBtn.textContent = on ? '🎤' : '🔇';
   micBtn.classList.toggle('on', on);
+});
+
+// --- mini FaceTime -----------------------------------------------------------------
+
+const camBtn = document.getElementById('cam-btn');
+const videoWrap = document.getElementById('video-wrap');
+const remoteTiles = new Map(); // peerId -> { video, label }
+let localTile = null;
+
+function addLocalTile(stream) {
+  if (localTile) return;
+  localTile = document.createElement('video');
+  localTile.className = 'local';
+  localTile.muted = true;
+  localTile.autoplay = true;
+  localTile.setAttribute('playsinline', '');
+  localTile.srcObject = stream;
+  videoWrap.appendChild(localTile);
+  localTile.play().catch(() => {});
+}
+
+function removeLocalTile() {
+  if (localTile) { localTile.remove(); localTile = null; }
+}
+
+function addRemoteTile(id, stream) {
+  removeRemoteTile(id);
+  const video = document.createElement('video');
+  video.className = 'remote';
+  video.autoplay = true;
+  video.setAttribute('playsinline', '');
+  video.srcObject = stream;
+  const label = document.createElement('div');
+  label.className = 'video-name';
+  const entry = net && net.conns.get(id);
+  label.textContent = entry ? entry.name : '';
+  videoWrap.prepend(label);
+  videoWrap.prepend(video);
+  remoteTiles.set(id, { video, label });
+  video.play().catch(() => {});
+}
+
+function removeRemoteTile(id) {
+  const t = remoteTiles.get(id);
+  if (t) { t.video.remove(); t.label.remove(); remoteTiles.delete(id); }
+}
+
+camBtn.addEventListener('click', async () => {
+  if (!net) return;
+  const on = await net.toggleCam();
+  camBtn.textContent = on ? '🎥' : '📷';
+  camBtn.classList.toggle('on', on);
+  if (on) addLocalTile(net.videoStream);
+  else removeLocalTile();
 });
 
 // --- catch celebration ------------------------------------------------------------
