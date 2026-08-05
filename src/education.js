@@ -17,6 +17,20 @@ const FREEZE_SECONDS = 10;
 const MAX_EXTRA = 4;            // penalty cap: at most 4+4 correct required
 
 const rnd = (n) => Math.floor(Math.random() * n);
+
+// Language preference for questions: 'fr', 'en', or 'both' (mix).
+export const EDU_PREFS = { lang: 'both' };
+const langRoll = () => (EDU_PREFS.lang === 'fr' ? 1 : EDU_PREFS.lang === 'en' ? 0 : rnd(2));
+
+// School grades, French system with the US equivalent. The index maps to
+// starting difficulty; the adaptive engine takes over from there.
+export const GRADES = [
+  ['GS', 'Kindergarten'], ['CP', '1st Grade'], ['CE1', '2nd Grade'], ['CE2', '3rd Grade'],
+  ['CM1', '4th Grade'], ['CM2', '5th Grade'], ['6e', '6th Grade'], ['5e', '7th Grade'],
+  ['4e', '8th Grade'], ['3e', '9th Grade'], ['2nde', '10th Grade'],
+];
+const MATH_BY_GRADE = [2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5];  // Math maxes at 5
+const OTHER_BY_GRADE = [1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3]; // others max at 3
 const pick = (arr) => arr[rnd(arr.length)];
 function shuffle(arr) {
   const a = [...arr];
@@ -85,7 +99,7 @@ function addOperands(level) {
 const MATH_GENS = [
   { skill: 'add', gen(level) {
     const [a, b] = addOperands(level);
-    const fr = rnd(2);
+    const fr = langRoll();
     return {
       key: `add-${a}-${b}-${fr}`,
       prompt: fr ? `Combien font ${a} + ${b} ?` : `What is ${a} + ${b}?`,
@@ -96,7 +110,7 @@ const MATH_GENS = [
     // build a = answer + b so the result is always clean and positive
     const [answer, b] = addOperands(level);
     const a = answer + b;
-    const fr = rnd(2);
+    const fr = langRoll();
     return {
       key: `sub-${a}-${b}-${fr}`,
       prompt: fr ? `Combien font ${a} − ${b} ?` : `What is ${a} − ${b}?`,
@@ -106,7 +120,7 @@ const MATH_GENS = [
   { skill: 'missing', gen(level) {
     const [a, miss] = addOperands(level);
     const c = a + miss;
-    const fr = rnd(2);
+    const fr = langRoll();
     return {
       key: `miss-${a}-${c}-${fr}`,
       prompt: fr ? `${a} + ❓ = ${c}. Quel est le nombre caché ?` : `${a} + ❓ = ${c}. What is the missing number?`,
@@ -122,7 +136,7 @@ const MATH_GENS = [
     const answer = big ? Math.max(...nums) : Math.min(...nums);
     return {
       key: `cmp-${nums.join('-')}-${big}`,
-      prompt: rnd(2)
+      prompt: langRoll()
         ? (big ? 'Quel est le plus GRAND nombre ?' : 'Quel est le plus PETIT nombre ?')
         : (big ? 'Which number is the BIGGEST?' : 'Which number is the SMALLEST?'),
       correct: String(answer),
@@ -138,14 +152,14 @@ const MATH_GENS = [
     const answer = start + dir * 3 * step;
     return {
       key: `skip-${step}-${start}-${dir}`,
-      prompt: rnd(2)
+      prompt: langRoll()
         ? `Quel nombre vient après : ${seq.join(', ')}, … ?`
         : `What number comes next: ${seq.join(', ')}, …?`,
       correct: String(answer),
       wrongs: [String(answer + dir * step), String(answer - dir * step), String(answer + (level >= 2 ? 10 : 1))],
     };
   } },
-  { skill: 'wordEN', gen(level) {
+  { skill: 'wordEN', lang: 'en', gen(level) {
     const name = pick(EN_NAMES);
     const [base, delta] = addOperands(Math.min(level, 3));
     const add = rnd(2);
@@ -160,7 +174,7 @@ const MATH_GENS = [
       correct: String(answer), wrongs: numWrongs(answer, level),
     };
   } },
-  { skill: 'wordFR', gen(level) {
+  { skill: 'wordFR', lang: 'fr', gen(level) {
     const name = pick(FR_NAMES);
     const [base, delta] = addOperands(Math.min(level, 3));
     const add = rnd(2);
@@ -184,7 +198,7 @@ const MATH_GENS = [
     const [en, frName, sides] = pick(shapes);
     const nameQ = rnd(2); // half the time: "what is this shape called?"
     const corners = !nameQ && level >= 2 && rnd(2);
-    const fr = rnd(2);
+    const fr = langRoll();
     if (nameQ) {
       const correct = fr ? frName.replace(/^une? /, '') : en;
       const others = shapes.filter((s) => s[2] !== sides || s[0] === en).filter((s) => s[0] !== en);
@@ -208,7 +222,7 @@ const MATH_GENS = [
   { skill: 'double', gen(level) {
     const a = level >= 3 ? round10(100 + rnd(300)) : level === 2 ? round10(20 + rnd(50)) : 2 + rnd(9);
     const half = rnd(2);
-    const fr = rnd(2);
+    const fr = langRoll();
     const answer = half ? a : a * 2;
     return {
       key: `dbl-${a}-${half}-${fr}`,
@@ -224,7 +238,7 @@ const MATH_GENS = [
     const enDigits = level >= 2 ? ['hundreds', 'tens', 'ones'] : ['tens', 'ones'];
     const di = rnd(digits.length);
     const answer = String(n).padStart(3, '0')[3 - digits.length + di];
-    const fr = rnd(2);
+    const fr = langRoll();
     return {
       key: `place-${n}-${di}-${fr}`,
       prompt: fr
@@ -242,7 +256,7 @@ const MATH_GENS = [
     else if (t === 2) { a = 3 + rnd(7); b = 3 + rnd(7); }    // full tables
     else { a = 2 + rnd(9); b = pick([2, 5, 10]); }           // ×2 ×5 ×10
     const answer = a * b;
-    const fr = rnd(2);
+    const fr = langRoll();
     const wrongs = [...new Set([answer + b, Math.max(1, answer - b), answer + a, answer + 1])]
       .filter((w) => w !== answer).slice(0, 3).map(String);
     return {
@@ -251,7 +265,7 @@ const MATH_GENS = [
       correct: String(answer), wrongs,
     };
   } },
-  { skill: 'frnum', gen(level) {
+  { skill: 'frnum', lang: 'fr', gen(level) {
     const tiers = {
       1: [[1, 'un'], [2, 'deux'], [3, 'trois'], [4, 'quatre'], [5, 'cinq'], [6, 'six'], [7, 'sept'], [8, 'huit'], [9, 'neuf'], [10, 'dix'], [11, 'onze'], [12, 'douze']],
       2: [[13, 'treize'], [14, 'quatorze'], [15, 'quinze'], [16, 'seize'], [17, 'dix-sept'], [18, 'dix-huit'], [20, 'vingt'], [30, 'trente']],
@@ -745,14 +759,40 @@ export class EducationMode {
 
   // ---------- adaptive difficulty ----------
 
+  // Starting difficulty for a category, from the child's school grade.
+  gradeBase(cat) {
+    const g = this.data.grade;
+    if (g === undefined || g === null) return null;
+    return cat === 'Math' ? MATH_BY_GRADE[g] : OTHER_BY_GRADE[g];
+  }
+
+  // Called at boot and whenever the parent changes language/grade on the
+  // home screen. A grade change re-seats every skill at that grade's level;
+  // the adaptive engine fine-tunes from there.
+  setPrefs(lang, grade) {
+    EDU_PREFS.lang = lang || 'both';
+    this.categoryQueue = []; // rebuilt with the new language filter
+    if (grade !== undefined && grade !== null && grade !== this.data.grade) {
+      this.data.grade = grade;
+      for (const [skill, s] of Object.entries(this.skills)) {
+        const meta = SKILL_META[skill];
+        if (!meta) continue;
+        s.level = Math.min(Math.max(this.gradeBase(meta.cat), 1), meta.maxLevel);
+        s.hist = [];
+      }
+      this.save();
+    }
+  }
+
   skillState(skill) {
     if (!this.skills[skill]) {
       const meta = SKILL_META[skill];
       // a brand-new skill starts near the level the child has already
       // proven in that category across all previous sessions
       const catLevel = Math.floor(this.categoryLevel(meta.cat));
+      const base = this.gradeBase(meta.cat) || meta.defaultLevel;
       this.skills[skill] = {
-        level: Math.min(Math.max(meta.defaultLevel, catLevel), meta.maxLevel),
+        level: Math.min(Math.max(base, catLevel), meta.maxLevel),
         hist: [],
       };
     }
@@ -927,10 +967,17 @@ export class EducationMode {
   }
 
   pickQuestion() {
-    if (this.categoryQueue.length === 0) this.categoryQueue = shuffle(CATEGORIES);
+    if (this.categoryQueue.length === 0) {
+      // a language preference removes the whole other-language category
+      this.categoryQueue = shuffle(CATEGORIES.filter((c) =>
+        (EDU_PREFS.lang !== 'fr' || c.name !== 'English') &&
+        (EDU_PREFS.lang !== 'en' || c.name !== 'Français')));
+    }
     const category = this.categoryQueue.pop();
     for (let attempt = 0; attempt < 30; attempt++) {
       const def = pick(category.gens);
+      // language-specific skills are skipped when the other language is chosen
+      if (def.lang && EDU_PREFS.lang !== 'both' && def.lang !== EDU_PREFS.lang) continue;
       // some skills unlock only once a prerequisite is mastered
       if (def.requires && this.skillState(def.requires[0]).level < def.requires[1]) continue;
       const level = this.skillState(def.skill).level;

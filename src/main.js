@@ -12,7 +12,7 @@ import { CreatureManager, TYPES } from './creatures.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
-import { EducationMode } from './education.js';
+import { EducationMode, GRADES } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const RENDER_RADIUS = IS_TOUCH ? 6 : 8; // chunks in each direction (smaller on mobile GPUs)
@@ -1085,6 +1085,85 @@ const edu = new EducationMode({
   toast: (msg, color) => creatureManager.toast(msg, color),
   reward: () => creatureManager.awardRandom(),
 });
+
+// --- home-screen profile: name, quiz language, school grade ------------------------
+
+const homeName = document.getElementById('home-name');
+homeName.value = playerProfile.name;
+homeName.addEventListener('input', () => {
+  playerProfile.name = homeName.value.trim().slice(0, 12);
+  nameInput.value = homeName.value;
+  saveProfile();
+});
+homeName.addEventListener('keydown', (e) => e.stopPropagation());
+nameInput.addEventListener('input', () => { homeName.value = nameInput.value; });
+
+const gradeSelect = document.getElementById('grade-select');
+GRADES.forEach(([fr, us], i) => {
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = `${fr} (France) · ${us} (USA)`;
+  gradeSelect.appendChild(opt);
+});
+if (playerProfile.lang === undefined) playerProfile.lang = 'both';
+if (playerProfile.grade === undefined) playerProfile.grade = 1; // CP · 1st Grade
+gradeSelect.value = String(playerProfile.grade);
+
+function renderLangRow() {
+  document.querySelectorAll('.pb-toggle').forEach((b) =>
+    b.classList.toggle('active', b.dataset.lang === playerProfile.lang));
+}
+renderLangRow();
+document.querySelectorAll('.pb-toggle').forEach((b) => {
+  b.addEventListener('click', () => {
+    playerProfile.lang = b.dataset.lang;
+    renderLangRow();
+    saveProfile();
+    edu.setPrefs(playerProfile.lang, playerProfile.grade);
+  });
+});
+gradeSelect.addEventListener('change', () => {
+  playerProfile.grade = Number(gradeSelect.value);
+  saveProfile();
+  edu.setPrefs(playerProfile.lang, playerProfile.grade);
+  creatureManager.toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
+});
+edu.setPrefs(playerProfile.lang, playerProfile.grade);
+
+// --- draggable video tiles ---------------------------------------------------------
+
+(function makeVideoDraggable() {
+  const POS_KEY = 'web-minecraft-videopos-v1';
+  try {
+    const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+    if (p) { videoWrap.style.left = p.x + 'px'; videoWrap.style.top = p.y + 'px'; videoWrap.style.right = 'auto'; }
+  } catch { /* default position */ }
+  let drag = null;
+  videoWrap.addEventListener('pointerdown', (e) => {
+    const r = videoWrap.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    try { videoWrap.setPointerCapture(e.pointerId); } catch { /* synthetic events */ }
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  videoWrap.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const x = Math.max(4, Math.min(e.clientX - drag.dx, window.innerWidth - videoWrap.offsetWidth - 4));
+    const y = Math.max(4, Math.min(e.clientY - drag.dy, window.innerHeight - videoWrap.offsetHeight - 4));
+    videoWrap.style.left = x + 'px';
+    videoWrap.style.top = y + 'px';
+    videoWrap.style.right = 'auto';
+    e.preventDefault();
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    drag = null;
+    const r = videoWrap.getBoundingClientRect();
+    try { localStorage.setItem(POS_KEY, JSON.stringify({ x: r.left, y: r.top })); } catch { /* ignore */ }
+  };
+  videoWrap.addEventListener('pointerup', endDrag);
+  videoWrap.addEventListener('pointercancel', endDrag);
+})();
 
 const creatureLabel = document.getElementById('creature-label');
 
