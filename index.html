@@ -15,6 +15,33 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { overflow-x: hidden; }
+
+    /* boot / update loader */
+    #boot-loader {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; background: #0a0e14; color: #eee;
+      transition: opacity 0.4s;
+    }
+    #boot-loader.hidden { opacity: 0; pointer-events: none; }
+    .boot-cube { font-size: 52px; animation: bootbounce 1s ease-in-out infinite; }
+    @keyframes bootbounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-16px) scale(1.08); }
+    }
+    #boot-text { font-size: 15px; color: #9fd8e8; font-weight: bold; text-align: center; padding: 0 20px; }
+    .boot-bar {
+      width: min(240px, 70vw); height: 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.12); overflow: hidden;
+    }
+    .boot-bar-fill {
+      width: 40%; height: 100%; border-radius: 4px; background: #58b04c;
+      animation: bootslide 1.1s ease-in-out infinite;
+    }
+    @keyframes bootslide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(260%); }
+    }
     :root {
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -736,6 +763,11 @@
   </style>
 </head>
 <body>
+  <div id="boot-loader">
+    <div class="boot-cube">🧱</div>
+    <div id="boot-text">Chargement du monde…</div>
+    <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+  </div>
   <canvas id="game"></canvas>
   <div id="water-tint"></div>
   <div id="crosshair"></div>
@@ -999,15 +1031,38 @@
     if ('serviceWorker' in navigator) {
       const startedAt = Date.now();
       let refreshing = false;
+      const loader = document.getElementById('boot-loader');
+      const showLoader = (text) => {
+        document.getElementById('boot-text').textContent = text;
+        loader.classList.remove('hidden');
+      };
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing && Date.now() - startedAt < 15000) {
           refreshing = true;
+          showLoader('✨ Nouvelle version installée — redémarrage…');
           location.reload();
         }
       });
       window.addEventListener('load', async () => {
         try {
           const reg = await navigator.serviceWorker.register('./sw.js');
+          // a new version is downloading: tell the player instead of leaving
+          // a silent pause before the auto-restart
+          const watchInstall = (worker) => {
+            if (!worker) return;
+            // only for real updates (an old version is already controlling)
+            if (navigator.serviceWorker.controller && Date.now() - startedAt < 15000) {
+              showLoader('📦 Téléchargement de la mise à jour…');
+            }
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'activated' && !refreshing && Date.now() - startedAt >= 15000) {
+                // update arrived mid-game: it will apply at the next launch
+                loader.classList.add('hidden');
+              }
+            });
+          };
+          watchInstall(reg.installing);
+          reg.addEventListener('updatefound', () => watchInstall(reg.installing));
           // iPads keep the app suspended: re-check for updates whenever it
           // comes back to the foreground.
           document.addEventListener('visibilitychange', () => {
