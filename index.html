@@ -99,28 +99,39 @@
     }
     #overlay .controls b { color: #fff; }
 
-    /* "Qui joue ?" local profiles */
-    #who-box { margin-bottom: 10px; }
-    #who-label { font-size: 13px; color: #9fd8e8; font-weight: bold; margin-bottom: 6px; }
-    #who-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-    .who-chip { display: flex; align-items: stretch; }
-    .who-btn {
-      font-family: inherit; font-size: 14px; padding: 8px 14px !important; margin: 0 !important;
-      background: #2c3a58 !important; border: 2px solid #46587e !important;
-      border-radius: 10px; cursor: pointer; color: #fff;
+    /* Netflix-style "Qui joue ?" launch screen */
+    #who-screen {
+      display: none; flex-direction: column; align-items: center; gap: 14px;
+      margin: 8px 0; padding: 18px; width: min(440px, 92vw); max-width: 100%;
+      background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 16px;
     }
-    .who-chip.removable .who-btn { border-radius: 10px 0 0 10px; border-right: none !important; }
-    .who-btn.active { background: #2d6a2d !important; border-color: #58b04c !important; }
+    #who-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .who-card {
+      position: relative; width: 112px;
+      font-family: inherit; padding: 10px 6px !important; margin: 0 !important;
+      background: #2c3a58 !important; border: 2px solid #46587e !important; border-radius: 14px;
+      cursor: pointer; color: #fff;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .who-card.active { background: #2d6a2d !important; border-color: #58b04c !important; }
+    .who-card img { width: 62px; height: 84px; }
+    .who-card .who-name {
+      display: block; width: 100%; font-size: 13px; line-height: 1.2;
+      overflow: hidden; word-break: break-word;
+    }
     .who-del {
-      font-family: inherit; font-size: 13px; padding: 8px 8px !important; margin: 0 !important;
-      background: #4a2c2c !important; border: 2px solid #8a4a4a !important;
-      border-radius: 0 10px 10px 0; cursor: pointer; color: #f0b0b0;
+      position: absolute; top: -8px; right: -8px; width: 24px; height: 24px;
+      font-family: inherit; font-size: 12px; padding: 0 !important; margin: 0 !important;
+      background: #7a3a3a !important; border: 2px solid #a86a6a !important;
+      border-radius: 50%; cursor: pointer; color: #fff; line-height: 1;
     }
     .who-add {
-      font-family: inherit; font-size: 16px; padding: 8px 12px !important; margin: 0 !important;
-      background: #3a4a2c !important; border: 2px solid #6b8a4a !important;
-      border-radius: 10px; cursor: pointer; color: #fff;
+      width: 112px; min-height: 140px;
+      font-family: inherit; font-size: 14px; padding: 10px 6px !important; margin: 0 !important;
+      background: #3a4a2c !important; border: 2px dashed #6b8a4a !important;
+      border-radius: 14px; cursor: pointer; color: #fff;
     }
+    #switch-player-btn { font-size: 14px !important; padding: 8px 18px !important; background: #3a3a4a !important; }
 
     /* "Mon personnage" dedicated menu */
     #profile-menu {
@@ -869,14 +880,15 @@
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
     <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
-    <div id="who-box">
-      <div id="who-label">👥 Qui joue ?</div>
+    <div id="who-screen">
+      <div class="online-title">👥 Qui joue ?</div>
       <div id="who-row"></div>
     </div>
     <div id="mode-row">
       <button id="profile-btn">🧑‍🚀 Mon personnage</button>
       <button id="play-btn">🏠 Jouer en local</button>
       <button id="online-btn">🌐 Jouer en ligne</button>
+      <button id="switch-player-btn">🔄 Changer de joueur</button>
     </div>
     <div id="profile-menu">
       <div class="menu-head">
