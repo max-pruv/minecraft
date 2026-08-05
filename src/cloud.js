@@ -19,8 +19,8 @@
 // The anon key is designed to be public in client apps. If both constants
 // are empty the game silently runs without cloud saves (pure P2P sync).
 
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'https://rtwutlmzwxgljtvfchsj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_o9J7dculBThdKCQLbdvHng_Zm-QuMQU';
 
 const PUSH_INTERVAL = 15000;
 
