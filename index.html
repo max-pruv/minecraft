@@ -121,6 +121,17 @@
       text-align: center; letter-spacing: 4px; text-transform: uppercase;
       background: #131a2c; color: #fff; border: 2px solid #46587e; border-radius: 10px;
     }
+    #player-name {
+      font-family: inherit; font-size: 16px; width: min(240px, 70vw); padding: 9px;
+      text-align: center; background: #131a2c; color: #fff;
+      border: 2px solid #46587e; border-radius: 10px;
+    }
+    #recent-worlds { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .world-btn {
+      font-family: inherit; font-size: 14px; padding: 8px 14px !important; margin: 0 !important;
+      background: #3a4a2c !important; border: 2px solid #6b8a4a !important; border-radius: 10px;
+      cursor: pointer; color: #fff;
+    }
     #online-status { min-height: 20px; font-size: 14px; color: #ffd75e; }
     #room-code-box { display: none; flex-direction: column; align-items: center; gap: 8px; }
     #room-code {
@@ -690,14 +701,17 @@
     </div>
     <div id="online-menu">
       <div class="online-title">🌐 Multijoueur</div>
+      <div class="online-label">Ton prénom :</div>
+      <input id="player-name" maxlength="12" placeholder="Marlon, Alice…" autocomplete="off">
       <div class="online-label">Choisis ton personnage :</div>
       <div id="char-row"></div>
+      <div id="recent-worlds"></div>
       <div id="online-actions">
-        <button id="host-btn">✨ Créer une partie</button>
-        <div class="online-or">— ou —</div>
+        <button id="host-btn">✨ Créer un nouveau monde</button>
+        <div class="online-or">— ou ouvre un monde avec son code —</div>
         <div class="join-row">
           <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters">
-          <button id="join-btn">Rejoindre ➜</button>
+          <button id="join-btn">Ouvrir ➜</button>
         </div>
       </div>
       <div id="online-status"></div>
