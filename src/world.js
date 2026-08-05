@@ -240,6 +240,8 @@ export class World {
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
+    this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
+    this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
   }
 
   static key(cx, cz) { return cx + ',' + cz; }
@@ -580,19 +582,48 @@ export class World {
     return data[World.index(x - cx * CHUNK, y, z - cz * CHUNK)];
   }
 
-  setBlock(x, y, z, id) {
+  setBlock(x, y, z, id, ts, remote = false) {
     if (y < 0 || y >= HEIGHT) return;
     const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
     const data = this.ensureChunk(cx, cz);
     const lx = x - cx * CHUNK, lz = z - cz * CHUNK;
     data[World.index(lx, y, lz)] = id;
-    this.edits.set(`${x},${y},${z}`, id);
+    const k = `${x},${y},${z}`;
+    const t = ts !== undefined ? ts : Date.now();
+    this.edits.set(k, id);
+    this.editTimes.set(k, t);
+    if (!remote && this.onOp) this.onOp(k, id, t);
 
     this.dirty.add(World.key(cx, cz));
     if (lx === 0) this.dirty.add(World.key(cx - 1, cz));
     if (lx === CHUNK - 1) this.dirty.add(World.key(cx + 1, cz));
     if (lz === 0) this.dirty.add(World.key(cx, cz - 1));
     if (lz === CHUNK - 1) this.dirty.add(World.key(cx, cz + 1));
+  }
+
+  // --- multiplayer sync: last-writer-wins merge of timestamped edit logs ----
+
+  exportEdits() {
+    const out = {};
+    for (const [k, id] of this.edits) out[k] = [id, this.editTimes.get(k) || 0];
+    return out;
+  }
+
+  // Applies every entry that is newer than what we have (ties broken by
+  // block id so both sides converge on identical worlds). Returns the
+  // number of blocks that changed.
+  mergeEdits(blocks) {
+    let applied = 0;
+    for (const [k, entry] of Object.entries(blocks || {})) {
+      const [id, t] = entry;
+      const localT = this.editTimes.has(k) ? this.editTimes.get(k) : -1;
+      const localId = this.edits.get(k);
+      if (t < localT || (t === localT && (localId === id || localId > id))) continue;
+      const [x, y, z] = k.split(',').map(Number);
+      this.setBlock(x, y, z, id, t, true);
+      applied++;
+    }
+    return applied;
   }
 
   isSolid(x, y, z) {
@@ -603,24 +634,44 @@ export class World {
 
   // --- persistence (player edits only; terrain is deterministic) ----------
 
-  static STORAGE_KEY = 'web-minecraft-edits-v1';
+  static STORAGE_KEY = 'web-minecraft-edits-v2';
+  static STORAGE_KEY_V1 = 'web-minecraft-edits-v1';
 
   loadEdits() {
     try {
       const raw = localStorage.getItem(World.STORAGE_KEY);
-      if (!raw) return;
-      const obj = JSON.parse(raw);
-      for (const [k, v] of Object.entries(obj)) this.edits.set(k, v);
+      if (raw) {
+        const obj = JSON.parse(raw);
+        for (const [k, [id, t]] of Object.entries(obj)) {
+          this.edits.set(k, id);
+          this.editTimes.set(k, t);
+        }
+        return;
+      }
+      // migrate the old un-timestamped format
+      const rawV1 = localStorage.getItem(World.STORAGE_KEY_V1);
+      if (rawV1) {
+        const obj = JSON.parse(rawV1);
+        for (const [k, id] of Object.entries(obj)) {
+          this.edits.set(k, id);
+          this.editTimes.set(k, 0);
+        }
+      }
     } catch { /* corrupted save — start fresh */ }
   }
 
   saveEdits() {
     try {
-      localStorage.setItem(World.STORAGE_KEY, JSON.stringify(Object.fromEntries(this.edits)));
+      const out = {};
+      for (const [k, id] of this.edits) out[k] = [id, this.editTimes.get(k) || 0];
+      localStorage.setItem(World.STORAGE_KEY, JSON.stringify(out));
     } catch { /* storage full or unavailable — play on without saving */ }
   }
 
   static clearSave() {
-    try { localStorage.removeItem(World.STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(World.STORAGE_KEY);
+      localStorage.removeItem(World.STORAGE_KEY_V1);
+    } catch { /* ignore */ }
   }
 }

@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v22';
+const CACHE_VERSION = 'web-minecraft-v23';
 
 const ASSETS = [
   './',
@@ -22,7 +22,9 @@ const ASSETS = [
   './src/props.js',
   './src/animals.js',
   './src/education.js',
+  './src/net.js',
   './vendor/three.module.min.js',
+  './vendor/peerjs.min.js',
 ];
 
 self.addEventListener('install', (event) => {

@@ -9,7 +9,8 @@ import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
-import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
+import { NetSession, randomCode } from './net.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -231,6 +232,12 @@ let locked = false;   // pointer lock held (desktop)
 let dragLook = false; // desktop fallback when pointer lock is unavailable
 let running = false;  // game accepts input and simulates
 let saveTimer = null;
+
+// never lose edits on a sudden close (tab killed, app switched away)
+window.addEventListener('beforeunload', () => world.saveEdits());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') world.saveEdits();
+});
 
 function scheduleSave() {
   clearTimeout(saveTimer);
@@ -615,6 +622,196 @@ animalManager.onHarvest = (def) => {
   creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
 };
+
+// --- catch celebration ------------------------------------------------------------
+
+// --- multiplayer ------------------------------------------------------------------
+
+const NET_CHARACTERS = [
+  { name: 'Marin', emoji: '⚓', look: {
+    skin: 0xf2c9a4, hair: 0x2c1f14, pants: 0x2f4468, shoes: 0x333333,
+    torsoSlabs: [0xf2f2f2, 0x3a5aa8, 0xf2f2f2, 0x3a5aa8, 0xf2f2f2],
+    sleeveSegs: [0xf2f2f2, 0x3a5aa8, 0xf2f2f2],
+  } },
+  { name: 'Super-héroïne', emoji: '🦸', look: {
+    skin: 0xdca77e, hair: 0x18110c, pants: 0x222a6a, shoes: 0xd8b23a,
+    torsoSlabs: [0xd83a3a, 0xd83a3a, 0xd8b23a, 0xd83a3a, 0xd83a3a],
+    sleeveSegs: [0xd83a3a, 0xd83a3a, 0xd83a3a],
+    cape: 0xd83a3a, mask: 0x222a6a,
+  } },
+  { name: 'Exploratrice', emoji: '🧭', look: {
+    skin: 0xc98e5a, hair: 0x3a2412, pants: 0x8a7a52, shoes: 0x5a4632, hairstyle: 'bun',
+    torsoSlabs: [0x5a7a3a, 0x5a7a3a, 0xd8c48a, 0x5a7a3a, 0x5a7a3a],
+    sleeveSegs: [0x5a7a3a, 0xd8c48a, 0x5a7a3a],
+  } },
+  { name: 'Savant', emoji: '🔬', look: {
+    skin: 0xf2c9a4, hair: 0x6a6a72, pants: 0x3a3a44, shoes: 0x222222, glasses: true,
+    torsoSlabs: [0xf2f2f0, 0xf2f2f0, 0x9fd8e8, 0xf2f2f0, 0xf2f2f0],
+    sleeveSegs: [0xf2f2f0, 0xf2f2f0, 0xf2f2f0],
+  } },
+];
+
+let net = null;
+let selectedChar = 0;
+const remotePlayers = new Map(); // peerId -> { mesh, target, yaw, moving, animTime }
+const netStatus = document.getElementById('net-status');
+const micBtn = document.getElementById('mic-btn');
+
+function nameSprite(text) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 64;
+  const ctx = cv.getContext('2d');
+  ctx.font = 'bold 34px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.strokeText(text, 128, 42);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, 128, 42);
+  const tex = new THREE.CanvasTexture(cv);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  sprite.scale.set(1.6, 0.4, 1);
+  sprite.position.y = 2.05;
+  return sprite;
+}
+
+function syncRemotePlayers(list) {
+  const seen = new Set();
+  for (const p of list) {
+    seen.add(p.id);
+    let rp = remotePlayers.get(p.id);
+    if (!rp) {
+      const look = (NET_CHARACTERS[p.lookIdx] || NET_CHARACTERS[0]).look;
+      const mesh = buildKidMesh(look);
+      mesh.add(nameSprite(p.name));
+      scene.add(mesh);
+      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name };
+      remotePlayers.set(p.id, rp);
+      if (p.pos) mesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+    }
+    if (p.pos) rp.target = p.pos;
+    rp.yaw = p.yaw || 0;
+    rp.moving = p.moving;
+  }
+  for (const [id, rp] of remotePlayers) {
+    if (!seen.has(id)) {
+      scene.remove(rp.mesh);
+      remotePlayers.delete(id);
+    }
+  }
+}
+
+function updateRemotePlayers(dt) {
+  for (const rp of remotePlayers.values()) {
+    if (rp.target) {
+      const t = Math.min(1, dt * 10);
+      rp.mesh.position.x += (rp.target.x - rp.mesh.position.x) * t;
+      rp.mesh.position.y += (rp.target.y - rp.mesh.position.y) * t;
+      rp.mesh.position.z += (rp.target.z - rp.mesh.position.z) * t;
+    }
+    let dy = rp.yaw + Math.PI - rp.mesh.rotation.y;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    rp.mesh.rotation.y += dy * Math.min(1, dt * 10);
+    rp.animTime += dt;
+    const swing = rp.moving ? Math.sin(rp.animTime * 9) * 0.6 : 0;
+    rp.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
+    rp.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = i % 2 ? swing * 0.7 : -swing * 0.7; });
+  }
+}
+
+function startNetSession(code, isHost) {
+  net = new NetSession({
+    world,
+    toast: (msg, color) => creatureManager.toast(msg, color),
+    onPlayers: syncRemotePlayers,
+    onState: (text) => { netStatus.textContent = text; },
+  });
+  net.getPos = () => ({
+    x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
+    moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
+  });
+  world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
+  return net.start(code, isHost, { name: NET_CHARACTERS[selectedChar].name, lookIdx: selectedChar });
+}
+
+// online menu wiring
+const onlineMenu = document.getElementById('online-menu');
+const onlineStatus = document.getElementById('online-status');
+const roomCodeBox = document.getElementById('room-code-box');
+const charRow = document.getElementById('char-row');
+NET_CHARACTERS.forEach((c, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'char-btn' + (i === 0 ? ' active' : '');
+  btn.innerHTML = `<span class="char-emoji">${c.emoji}</span>${c.name}`;
+  btn.addEventListener('click', () => {
+    selectedChar = i;
+    [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === i));
+  });
+  charRow.appendChild(btn);
+});
+
+function showOnlineUI() {
+  netStatus.style.display = 'block';
+  micBtn.style.display = 'block';
+}
+
+document.getElementById('online-btn').addEventListener('click', () => {
+  onlineMenu.style.display = 'flex';
+  document.getElementById('mode-row').style.display = 'none';
+});
+document.getElementById('online-back').addEventListener('click', () => {
+  if (net) { net.stop(); net = null; }
+  onlineMenu.style.display = 'none';
+  roomCodeBox.style.display = 'none';
+  document.getElementById('online-actions').style.display = 'flex';
+  document.getElementById('mode-row').style.display = 'flex';
+  onlineStatus.textContent = '';
+});
+document.getElementById('host-btn').addEventListener('click', async () => {
+  onlineStatus.textContent = 'Création de la partie…';
+  try {
+    const code = await startNetSession(randomCode(), true);
+    onlineStatus.textContent = '';
+    document.getElementById('online-actions').style.display = 'none';
+    document.getElementById('room-code').textContent = code;
+    roomCodeBox.style.display = 'flex';
+  } catch (err) {
+    onlineStatus.textContent = '❌ ' + err.message;
+    if (net) { net.stop(); net = null; }
+  }
+});
+document.getElementById('online-play-btn').addEventListener('click', () => {
+  onlineMenu.style.display = 'none';
+  showOnlineUI();
+  startGame();
+});
+document.getElementById('join-btn').addEventListener('click', async () => {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length < 4) { onlineStatus.textContent = 'Écris le code de la partie !'; return; }
+  onlineStatus.textContent = 'Connexion…';
+  try {
+    await startNetSession(code, false);
+    onlineStatus.textContent = '';
+    onlineMenu.style.display = 'none';
+    showOnlineUI();
+    startGame();
+  } catch (err) {
+    onlineStatus.textContent = '❌ ' + err.message;
+    if (net) { net.stop(); net = null; }
+  }
+});
+document.getElementById('join-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('join-btn').click();
+  e.stopPropagation();
+});
+
+micBtn.addEventListener('click', async () => {
+  if (!net) return;
+  const on = await net.toggleMic();
+  micBtn.textContent = on ? '🎤' : '🔇';
+  micBtn.classList.toggle('on', on);
+});
 
 // --- catch celebration ------------------------------------------------------------
 
@@ -1042,7 +1239,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
+window.__game = { world, player, creatureManager, animalManager, edu, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
 
 let lastTime = performance.now();
 
@@ -1063,6 +1260,7 @@ function frame(now) {
   updateSky(dt);
   updateHud(dt);
   updateCreatureLabel();
+  updateRemotePlayers(dt);
   edu.update(dt, running);
 
   if (minimapVisible) {
