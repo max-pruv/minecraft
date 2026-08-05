@@ -234,10 +234,49 @@ let dragLook = false; // desktop fallback when pointer lock is unavailable
 let running = false;  // game accepts input and simulates
 let saveTimer = null;
 
-// never lose edits on a sudden close (tab killed, app switched away)
-window.addEventListener('beforeunload', () => world.saveEdits());
+// --- player position persistence: come back exactly where you left off ------------
+// One saved position per context ('local' or a world code), per profile.
+
+const POS_KEY = 'web-minecraft-pos-v1';
+let posCtx = 'local';
+const posRestored = new Set();
+
+function loadPositions() {
+  try { return JSON.parse(localStorage.getItem(POS_KEY)) || {}; } catch { return {}; }
+}
+
+function savePosition() {
+  if (!running) return;
+  const all = loadPositions();
+  all[posCtx] = {
+    x: player.pos.x, y: player.pos.y, z: player.pos.z,
+    yaw: player.yaw, pitch: player.pitch, t: Date.now(),
+  };
+  try { localStorage.setItem(POS_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+
+// On the first entry into a context this session, teleport back to the
+// last saved spot (collision uses world data, which generates on demand,
+// so restoring anywhere is safe).
+function restorePosition() {
+  if (posRestored.has(posCtx)) return;
+  posRestored.add(posCtx);
+  const p = loadPositions()[posCtx];
+  if (!p) return;
+  player.pos.set(p.x, p.y, p.z);
+  player.vel.set(0, 0, 0);
+  player.yaw = p.yaw || 0;
+  player.pitch = p.pitch || 0;
+  player.syncCamera();
+}
+
+setInterval(savePosition, 3000); // continuous, cheap
+
+// never lose edits or position on a sudden close (tab killed, app hidden)
+window.addEventListener('beforeunload', () => { world.saveEdits(); savePosition(); });
+window.addEventListener('pagehide', () => { world.saveEdits(); savePosition(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') world.saveEdits();
+  if (document.visibilityState === 'hidden') { world.saveEdits(); savePosition(); }
 });
 
 function scheduleSave() {
@@ -275,7 +314,11 @@ function pauseGame() {
   overlayTitle.textContent = 'Paused';
 }
 
-document.getElementById('play-btn').addEventListener('click', startGame);
+document.getElementById('play-btn').addEventListener('click', () => {
+  posCtx = 'local';
+  restorePosition();
+  startGame();
+});
 pauseBtn.addEventListener('click', pauseGame);
 
 document.getElementById('reset-btn').addEventListener('click', () => {
@@ -1016,6 +1059,8 @@ async function openWorld(code) {
   onlineStatus.textContent = '';
   onlineMenu.style.display = 'none';
   showOnlineUI();
+  posCtx = code;
+  restorePosition();
   startGame();
 }
 
@@ -1071,6 +1116,7 @@ function showOnlineUI() {
 // you can pick local or multiplayer again
 document.getElementById('home-btn').addEventListener('click', () => {
   if (edu.quizActive || edu.hardStopActive) return;
+  savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
   cloud.detach();
   syncRemotePlayers([]); // remove remote avatars
@@ -1143,6 +1189,8 @@ document.getElementById('online-play-btn').addEventListener('click', () => {
   cloud.attach(net.code);
   onlineMenu.style.display = 'none';
   showOnlineUI();
+  posCtx = net.code;
+  restorePosition();
   startGame();
 });
 document.getElementById('join-btn').addEventListener('click', () => {
