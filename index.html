@@ -141,15 +141,32 @@
       width: 100%; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch;
     }
     .char-btn {
-      flex: 0 0 auto; width: 96px;
-      font-family: inherit; font-size: 12px; padding: 8px 4px !important; margin: 0 !important;
+      flex: 0 0 auto; width: 104px; overflow: hidden;
+      font-family: inherit; padding: 8px 4px !important; margin: 0 !important;
       background: #2c3a58 !important; border: 2px solid #46587e !important; border-radius: 12px;
       cursor: pointer; color: #fff;
       display: flex; flex-direction: column; align-items: center; gap: 4px;
     }
     .char-btn.active { background: #2d6a2d !important; border-color: #58b04c !important; }
     .char-btn img { width: 68px; height: 92px; }
-    .char-btn .char-emoji { font-size: 15px; }
+    .char-btn span {
+      display: block; width: 100%; font-size: 11px !important; line-height: 1.25;
+      overflow: hidden; word-break: break-word;
+    }
+    #offline-note {
+      display: none; font-size: 14px; color: #ffd75e; margin-top: 8px;
+      background: rgba(0,0,0,0.35); padding: 8px 14px; border-radius: 10px;
+    }
+    #online-btn.offline { opacity: 0.45; }
+    #settings-card #reset-btn {
+      font-family: inherit; font-size: 13px; padding: 8px 14px; cursor: pointer;
+      background: #7a4a4a; color: #fff; border: 2px solid #a86a6a; border-radius: 8px;
+      flex-shrink: 0;
+    }
+    /* the game is mostly played on touch devices — desktop shortcuts are noise there */
+    @media (pointer: coarse) {
+      #overlay .controls { display: none; }
+    }
     #online-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .online-or { color: #8894b0; font-size: 12px; }
     .join-row { display: flex; gap: 6px; align-items: center; }
@@ -707,6 +724,12 @@
         </div>
         <div class="toggle" id="gyro-toggle"></div>
       </div>
+      <div class="setting-row" style="cursor: default;">
+        <div class="setting-label">🗑️ Monde local
+          <div class="setting-hint">Efface toutes les constructions sauvegardées sur cet appareil.</div>
+        </div>
+        <button id="reset-btn">Réinitialiser</button>
+      </div>
     </div>
   </div>
 
@@ -802,7 +825,7 @@
 
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
-    <div class="subtitle">A browser voxel world — your edits are saved locally</div>
+    <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
     <div id="profile-bar">
       <div class="pb-row">
         <span class="pb-label">👤 Prénom :</span>
@@ -849,7 +872,7 @@
       </div>
       <button id="online-back">← Retour</button>
     </div>
-    <button id="reset-btn" class="danger">Reset World</button>
+    <div id="offline-note">🌐 Le mode en ligne a besoin d'une connexion internet.</div>
     <div class="edu-note">🎓 Mode éducatif toujours actif — le quiz du Prof. Cornichon lance la partie&nbsp;!</div>
     <div class="controls">
       <div><b>W A S D</b> — move</div>
