@@ -715,7 +715,116 @@ try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PRO
 catch { /* defaults */ }
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+  // keep the profile registry's display name in sync
+  const reg = loadRegistry();
+  const entry = reg.list.find((p) => p.id === reg.current);
+  if (entry && playerProfile.name && entry.name !== playerProfile.name) {
+    entry.name = playerProfile.name;
+    saveRegistry(reg);
+    renderProfiles();
+  }
 }
+
+// --- local profiles ("Qui joue ?") -------------------------------------------------
+// The storage shim in index.html suffixes all progress keys with the active
+// profile id, so each player on this device has a fully separate save.
+
+const REG_KEY = 'web-minecraft-profiles-v1';
+const raw = window.__rawStorage;
+
+function loadRegistry() {
+  try {
+    const reg = JSON.parse(raw.get(REG_KEY));
+    if (reg && reg.list && reg.list.length) return reg;
+  } catch { /* first run */ }
+  // migration: existing device data becomes player 1
+  const reg = { current: 1, nextId: 2, list: [{ id: 1, name: playerProfile.name || 'Joueur 1' }] };
+  raw.set(REG_KEY, JSON.stringify(reg));
+  return reg;
+}
+
+function saveRegistry(reg) {
+  try { raw.set(REG_KEY, JSON.stringify(reg)); } catch { /* ignore */ }
+}
+
+function switchProfile(id) {
+  const reg = loadRegistry();
+  if (id === reg.current) return;
+  world.saveEdits();
+  edu.save();
+  reg.current = id;
+  saveRegistry(reg);
+  location.reload(); // clean re-init on the new profile's save space
+}
+
+function deleteProfileData(id) {
+  for (const k of raw.perProfileKeys) {
+    raw.remove(id === 1 ? k : `${k}::p${id}`);
+  }
+}
+
+function renderProfiles() {
+  const reg = loadRegistry();
+  const row = document.getElementById('who-row');
+  row.innerHTML = '';
+  for (const p of reg.list) {
+    const chip = document.createElement('div');
+    chip.className = 'who-chip' + (reg.list.length > 1 ? ' removable' : '');
+    const btn = document.createElement('button');
+    btn.className = 'who-btn' + (p.id === reg.current ? ' active' : '');
+    btn.textContent = `${p.id === reg.current ? '✅ ' : ''}${p.name}`;
+    btn.addEventListener('click', () => switchProfile(p.id));
+    chip.appendChild(btn);
+    if (reg.list.length > 1) {
+      const del = document.createElement('button');
+      del.className = 'who-del';
+      del.textContent = '✕';
+      del.title = 'Supprimer ce joueur (code parental)';
+      del.addEventListener('click', async () => {
+        const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
+        if (!(await ask(`Supprimer le joueur ${p.name} et TOUTE sa progression ?`, '⚠️', 'Supprimer'))) return;
+        const code = window.prompt('Code parental :');
+        if (code !== '135246') {
+          if (code !== null) window.alert('Code incorrect !');
+          return;
+        }
+        const r2 = loadRegistry();
+        r2.list = r2.list.filter((o) => o.id !== p.id);
+        deleteProfileData(p.id);
+        if (r2.current === p.id) {
+          r2.current = r2.list[0].id;
+          saveRegistry(r2);
+          location.reload();
+          return;
+        }
+        saveRegistry(r2);
+        renderProfiles();
+      });
+      chip.appendChild(del);
+    }
+    row.appendChild(chip);
+  }
+  const add = document.createElement('button');
+  add.className = 'who-add';
+  add.textContent = '➕ Nouveau joueur';
+  add.addEventListener('click', () => {
+    const name = (window.prompt('Prénom du nouveau joueur :') || '').trim().slice(0, 12);
+    if (!name) return;
+    const reg2 = loadRegistry();
+    const id = reg2.nextId || (Math.max(...reg2.list.map((p) => p.id)) + 1);
+    reg2.nextId = id + 1;
+    reg2.list.push({ id, name });
+    reg2.current = id;
+    saveRegistry(reg2);
+    // seed the new profile's name before reloading into it
+    raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify({ name }));
+    world.saveEdits();
+    edu.save();
+    location.reload();
+  });
+  row.appendChild(add);
+}
+renderProfiles();
 function myName() {
   return playerProfile.name || NET_CHARACTERS[selectedChar].name;
 }
