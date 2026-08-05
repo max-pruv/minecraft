@@ -713,16 +713,9 @@ const PROFILE_KEY = 'web-minecraft-profile-v1';
 let playerProfile = { name: '' };
 try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') }; }
 catch { /* defaults */ }
-const nameInput = document.getElementById('player-name');
-nameInput.value = playerProfile.name;
-nameInput.addEventListener('input', () => {
-  playerProfile.name = nameInput.value.trim().slice(0, 12);
-  saveProfile();
-});
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
 }
-nameInput.addEventListener('keydown', (e) => e.stopPropagation());
 function myName() {
   return playerProfile.name || NET_CHARACTERS[selectedChar].name;
 }
@@ -749,11 +742,25 @@ function renderRecentWorlds() {
     return;
   }
   for (const w of worlds) {
+    const chip = document.createElement('div');
+    chip.className = 'world-chip';
     const btn = document.createElement('button');
     btn.className = 'world-btn';
     btn.textContent = `🌍 Monde ${w.code}`;
     btn.addEventListener('click', () => openWorld(w.code));
-    row.appendChild(btn);
+    const del = document.createElement('button');
+    del.className = 'world-del';
+    del.textContent = '✕';
+    del.title = 'Retirer ce monde de la liste';
+    del.addEventListener('click', async () => {
+      const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
+      if (!(await ask(`Retirer le monde ${w.code} de ta liste ?`, '🗑️', 'Retirer ✕'))) return;
+      const rest = loadWorlds().filter((o) => o.code !== w.code);
+      try { localStorage.setItem(WORLDS_KEY, JSON.stringify(rest)); } catch { /* ignore */ }
+      renderRecentWorlds();
+    });
+    chip.append(btn, del);
+    row.appendChild(chip);
   }
 }
 
@@ -931,6 +938,7 @@ document.getElementById('home-btn').addEventListener('click', () => {
   camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
   playersBtn.style.display = 'none';
   world.saveEdits();
+  if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
   // restore the full main menu, not the pause screen
   document.getElementById('overlay-title').textContent = 'WEB MINECRAFT';
@@ -1116,11 +1124,20 @@ const homeName = document.getElementById('home-name');
 homeName.value = playerProfile.name;
 homeName.addEventListener('input', () => {
   playerProfile.name = homeName.value.trim().slice(0, 12);
-  nameInput.value = homeName.value;
   saveProfile();
 });
 homeName.addEventListener('keydown', (e) => e.stopPropagation());
-nameInput.addEventListener('input', () => { homeName.value = nameInput.value; });
+
+// "Mon personnage" dedicated page with its own back button
+const profileMenu = document.getElementById('profile-menu');
+document.getElementById('profile-btn').addEventListener('click', () => {
+  profileMenu.style.display = 'flex';
+  document.getElementById('mode-row').style.display = 'none';
+});
+document.getElementById('profile-back').addEventListener('click', () => {
+  profileMenu.style.display = 'none';
+  document.getElementById('mode-row').style.display = 'flex';
+});
 
 const gradeSelect = document.getElementById('grade-select');
 GRADES.forEach(([fr, us], i) => {
@@ -1371,9 +1388,11 @@ function closeInventory(resume) {
 document.getElementById('inv-close').addEventListener('click', () => closeInventory(true));
 
 // Styled confirmation modal (replaces the browser's default confirm()).
-window.gameConfirm = (msg) => new Promise((resolve) => {
+window.gameConfirm = (msg, icon = '🕊️', okLabel = 'Relâcher 🕊️') => new Promise((resolve) => {
   const modal = document.getElementById('confirm-modal');
   document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-icon').textContent = icon;
+  document.getElementById('confirm-ok').textContent = okLabel;
   modal.style.display = 'flex';
   const okBtn = document.getElementById('confirm-ok');
   const cancelBtn = document.getElementById('confirm-cancel');

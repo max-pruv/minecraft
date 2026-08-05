@@ -98,12 +98,13 @@
     }
     #overlay .controls b { color: #fff; }
 
-    /* player profile on the home screen */
-    #profile-bar {
-      display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;
-      background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 14px;
-      padding: 12px 14px; width: min(440px, 92vw);
+    /* "Mon personnage" dedicated menu */
+    #profile-menu {
+      display: none; flex-direction: column; gap: 10px; margin: 8px 0;
+      background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 16px;
+      padding: 18px; width: min(440px, 92vw);
     }
+    #profile-back { background: #2d6a2d !important; border-color: #58b04c !important; }
     .pb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .pb-label { font-size: 13px; color: #9fd8e8; font-weight: bold; white-space: nowrap; }
     #home-name {
@@ -181,10 +182,17 @@
       border: 2px solid #46587e; border-radius: 10px;
     }
     #recent-worlds { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .world-chip { display: flex; align-items: stretch; }
     .world-btn {
       font-family: inherit; font-size: 14px; padding: 8px 14px !important; margin: 0 !important;
-      background: #3a4a2c !important; border: 2px solid #6b8a4a !important; border-radius: 10px;
+      background: #3a4a2c !important; border: 2px solid #6b8a4a !important;
+      border-radius: 10px 0 0 10px; border-right: none !important;
       cursor: pointer; color: #fff;
+    }
+    .world-del {
+      font-family: inherit; font-size: 13px; padding: 8px 10px !important; margin: 0 !important;
+      background: #4a2c2c !important; border: 2px solid #8a4a4a !important;
+      border-radius: 0 10px 10px 0; cursor: pointer; color: #f0b0b0;
     }
     #online-status { min-height: 20px; font-size: 14px; color: #ffd75e; }
     #room-code-box { display: none; flex-direction: column; align-items: center; gap: 8px; }
@@ -826,11 +834,19 @@
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
     <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
-    <div id="profile-bar">
+    <div id="mode-row">
+      <button id="profile-btn">🧑‍🚀 Mon personnage</button>
+      <button id="play-btn">🏠 Jouer en local</button>
+      <button id="online-btn">🌐 Jouer en ligne</button>
+    </div>
+    <div id="profile-menu">
+      <div class="online-title">🧑‍🚀 Mon personnage</div>
       <div class="pb-row">
         <span class="pb-label">👤 Prénom :</span>
         <input id="home-name" maxlength="12" placeholder="Marlon, Alice…" autocomplete="off">
       </div>
+      <div class="online-section">🧑 Mon look — fais défiler pour choisir :</div>
+      <div id="char-row"></div>
       <div class="pb-row">
         <span class="pb-label">🗣️ Langue des questions :</span>
         <div id="lang-row">
@@ -843,17 +859,10 @@
         <span class="pb-label">🎓 Niveau scolaire :</span>
         <select id="grade-select"></select>
       </div>
-    </div>
-    <div id="mode-row">
-      <button id="play-btn">🏠 Jouer en local</button>
-      <button id="online-btn">🌐 Jouer en ligne</button>
+      <button id="profile-back">✅ C'est prêt — retour au menu</button>
     </div>
     <div id="online-menu">
       <div class="online-title">🌐 Multijoueur</div>
-      <div class="online-label">Ton prénom :</div>
-      <input id="player-name" maxlength="12" placeholder="Marlon, Alice…" autocomplete="off">
-      <div class="online-section">🧑 Ton personnage — fais défiler pour choisir son look :</div>
-      <div id="char-row"></div>
       <div class="online-section">🌍 Mes mondes — un tap pour y retourner :</div>
       <div id="recent-worlds"></div>
       <div id="online-actions">
