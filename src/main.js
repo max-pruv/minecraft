@@ -1775,3 +1775,9 @@ function frame(now) {
 }
 
 requestAnimationFrame(frame);
+
+// the game is ready: fade out the boot loader (the SW update script may
+// bring it back if a new version starts downloading)
+requestAnimationFrame(() => {
+  document.getElementById('boot-loader').classList.add('hidden');
+});
