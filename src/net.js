@@ -30,6 +30,12 @@ export class NetSession {
     this.profile = null;      // { name, lookIdx }
     this.localStream = null;
     this.micOn = false;
+    this.videoStream = null;
+    this.camOn = false;
+    this.videoCalls = new Map();   // peerId -> outbound video MediaConnection
+    this.inboundVideo = new Map(); // peerId -> inbound video MediaConnection
+    this.onRemoteVideo = null;     // hook(peerId, stream) — main shows the tile
+    this.onRemoteVideoClosed = null;
     this.posTimer = null;
     this.getPos = null;       // set by main: () => ({x,y,z,yaw,moving})
     this.active = false;
@@ -95,8 +101,13 @@ export class NetSession {
       });
 
       this.peer.on('call', (call) => {
-        call.answer(this.localStream || undefined);
-        this.attachCall(call);
+        if (call.metadata && call.metadata.kind === 'video') {
+          call.answer(undefined); // video flows one-way per call; we place our own
+          this.attachVideoCall(call, true);
+        } else {
+          call.answer(this.localStream || undefined);
+          this.attachCall(call);
+        }
       });
 
       this.peer.on('error', (err) => {
@@ -139,6 +150,11 @@ export class NetSession {
     if (call) { call.close(); this.calls.delete(id); }
     const audio = this.audios.get(id);
     if (audio) { audio.remove(); this.audios.delete(id); }
+    const vOut = this.videoCalls.get(id);
+    if (vOut) { vOut.close(); this.videoCalls.delete(id); }
+    const vIn = this.inboundVideo.get(id);
+    if (vIn) { vIn.close(); this.inboundVideo.delete(id); }
+    if (this.onRemoteVideoClosed) this.onRemoteVideoClosed(id);
     this.playersChanged();
   }
 
@@ -157,7 +173,8 @@ export class NetSession {
         this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
-        if (this.micOn) this.callPeer(conn.peer); // start voice with newcomers
+        if (this.micOn) this.callPeer(conn.peer);      // start voice with newcomers
+        if (this.camOn) this.videoCallPeer(conn.peer); // and video too
         break;
       case 'sync': {
         const applied = this.hooks.world.mergeEdits(msg.blocks);
@@ -258,6 +275,56 @@ export class NetSession {
     if (call) this.attachCall(call);
   }
 
+  // ---- video chat (mini FaceTime with the front camera) ---------------------
+
+  async toggleCam() {
+    if (!this.camOn) {
+      if (!this.videoStream) {
+        try {
+          this.videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } },
+          });
+        } catch {
+          this.hooks.toast('📷 Caméra refusée — autorise-la dans les réglages Safari', 0xff9d5e);
+          return false;
+        }
+      }
+      this.videoStream.getVideoTracks().forEach((t) => { t.enabled = true; });
+      this.camOn = true;
+      for (const id of this.conns.keys()) this.videoCallPeer(id);
+      this.hooks.toast('🎥 Caméra activée — coucou !', 0x6ee06e);
+    } else {
+      this.camOn = false;
+      for (const call of this.videoCalls.values()) call.close();
+      this.videoCalls.clear();
+      if (this.videoStream) {
+        this.videoStream.getTracks().forEach((t) => t.stop());
+        this.videoStream = null;
+      }
+      this.hooks.toast('📷 Caméra coupée', 0xcccccc);
+    }
+    return this.camOn;
+  }
+
+  videoCallPeer(id) {
+    if (this.videoCalls.has(id) || !this.videoStream) return;
+    const entry = this.conns.get(id);
+    if (!entry || !entry.conn) return;
+    const call = this.peer.call(id, this.videoStream, { metadata: { kind: 'video' } });
+    if (call) this.videoCalls.set(id, call);
+  }
+
+  attachVideoCall(call, inbound) {
+    if (inbound) this.inboundVideo.set(call.peer, call);
+    call.on('stream', (remote) => {
+      if (this.onRemoteVideo) this.onRemoteVideo(call.peer, remote);
+    });
+    call.on('close', () => {
+      this.inboundVideo.delete(call.peer);
+      if (this.onRemoteVideoClosed) this.onRemoteVideoClosed(call.peer);
+    });
+  }
+
   attachCall(call) {
     this.calls.set(call.peer, call);
     call.on('stream', (remote) => {
@@ -280,10 +347,13 @@ export class NetSession {
     this.posTimer = null;
     for (const a of this.audios.values()) a.remove();
     if (this.localStream) this.localStream.getTracks().forEach((t) => t.stop());
+    if (this.videoStream) this.videoStream.getTracks().forEach((t) => t.stop());
     if (this.peer) this.peer.destroy();
     this.conns.clear();
     this.calls.clear();
     this.audios.clear();
+    this.videoCalls.clear();
+    this.inboundVideo.clear();
     this.active = false;
   }
 }
