@@ -839,6 +839,10 @@ function startNetSession(code, isHost) {
 // host and plays solo if the world is empty. Either way the cloud copy is
 // pulled first so nothing is ever lost.
 async function openWorld(code) {
+  if (!navigator.onLine) {
+    onlineStatus.textContent = '❌ Pas de connexion internet — le mode en ligne en a besoin.';
+    return;
+  }
   onlineStatus.textContent = `Ouverture du monde ${code}…`;
   try {
     await startNetSession(code, false);
@@ -937,7 +941,23 @@ document.getElementById('home-btn').addEventListener('click', () => {
   onlineStatus.textContent = '';
 });
 
+// Local play is fully offline (PWA); online play needs a live connection.
+const offlineNote = document.getElementById('offline-note');
+function updateOnlineAvailability() {
+  const online = navigator.onLine;
+  document.getElementById('online-btn').classList.toggle('offline', !online);
+  offlineNote.style.display = online ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineAvailability);
+window.addEventListener('offline', updateOnlineAvailability);
+updateOnlineAvailability();
+
 document.getElementById('online-btn').addEventListener('click', () => {
+  if (!navigator.onLine) {
+    offlineNote.textContent = '🌐 Pas de connexion internet — joue en local en attendant !';
+    offlineNote.style.display = 'block';
+    return;
+  }
   renderRecentWorlds();
   onlineMenu.style.display = 'flex';
   document.getElementById('mode-row').style.display = 'none';
@@ -952,6 +972,10 @@ document.getElementById('online-back').addEventListener('click', () => {
   onlineStatus.textContent = '';
 });
 document.getElementById('host-btn').addEventListener('click', async () => {
+  if (!navigator.onLine) {
+    onlineStatus.textContent = '❌ Pas de connexion internet — le mode en ligne en a besoin.';
+    return;
+  }
   onlineStatus.textContent = 'Création de la partie…';
   try {
     const code = await startNetSession(randomCode(), true);
