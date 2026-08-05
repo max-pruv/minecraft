@@ -105,6 +105,9 @@ export class CloudSave {
       if (document.visibilityState === 'hidden') this.push(true).catch(() => {});
     };
     document.addEventListener('visibilitychange', this._onHide);
+    // pagehide fires more reliably than beforeunload on iOS home-screen apps
+    this._onPageHide = () => { this.push(true).catch(() => {}); };
+    window.addEventListener('pagehide', this._onPageHide);
     return true;
   }
 
@@ -112,6 +115,7 @@ export class CloudSave {
     clearInterval(this.timer);
     this.timer = null;
     if (this._onHide) document.removeEventListener('visibilitychange', this._onHide);
+    if (this._onPageHide) window.removeEventListener('pagehide', this._onPageHide);
     this.code = null;
   }
 }
