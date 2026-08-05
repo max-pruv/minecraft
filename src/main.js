@@ -1243,10 +1243,12 @@ document.getElementById('profile-btn').addEventListener('click', () => {
   profileMenu.style.display = 'flex';
   document.getElementById('mode-row').style.display = 'none';
 });
-document.getElementById('profile-back').addEventListener('click', () => {
+function closeProfileMenu() {
   profileMenu.style.display = 'none';
   document.getElementById('mode-row').style.display = 'flex';
-});
+}
+document.getElementById('profile-back').addEventListener('click', closeProfileMenu);
+document.getElementById('profile-back-top').addEventListener('click', closeProfileMenu);
 
 const gradeSelect = document.getElementById('grade-select');
 GRADES.forEach(([fr, us], i) => {
