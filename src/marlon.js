@@ -14,7 +14,7 @@ function box(w, h, d, color) {
 
 // look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle,
 //         glasses, cape, mask } — cape/mask take a color, for superheroes
-function buildKidMesh(look) {
+export function buildKidMesh(look) {
   const g = new THREE.Group(); // faces -z, feet at y=0
 
   const legs = [];
