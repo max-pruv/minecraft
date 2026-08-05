@@ -98,6 +98,29 @@
     }
     #overlay .controls b { color: #fff; }
 
+    /* "Qui joue ?" local profiles */
+    #who-box { margin-bottom: 10px; }
+    #who-label { font-size: 13px; color: #9fd8e8; font-weight: bold; margin-bottom: 6px; }
+    #who-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .who-chip { display: flex; align-items: stretch; }
+    .who-btn {
+      font-family: inherit; font-size: 14px; padding: 8px 14px !important; margin: 0 !important;
+      background: #2c3a58 !important; border: 2px solid #46587e !important;
+      border-radius: 10px; cursor: pointer; color: #fff;
+    }
+    .who-chip.removable .who-btn { border-radius: 10px 0 0 10px; border-right: none !important; }
+    .who-btn.active { background: #2d6a2d !important; border-color: #58b04c !important; }
+    .who-del {
+      font-family: inherit; font-size: 13px; padding: 8px 8px !important; margin: 0 !important;
+      background: #4a2c2c !important; border: 2px solid #8a4a4a !important;
+      border-radius: 0 10px 10px 0; cursor: pointer; color: #f0b0b0;
+    }
+    .who-add {
+      font-family: inherit; font-size: 16px; padding: 8px 12px !important; margin: 0 !important;
+      background: #3a4a2c !important; border: 2px solid #6b8a4a !important;
+      border-radius: 10px; cursor: pointer; color: #fff;
+    }
+
     /* "Mon personnage" dedicated menu */
     #profile-menu {
       display: none; flex-direction: column; gap: 10px; margin: 8px 0;
@@ -834,6 +857,10 @@
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
     <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
+    <div id="who-box">
+      <div id="who-label">👥 Qui joue ?</div>
+      <div id="who-row"></div>
+    </div>
     <div id="mode-row">
       <button id="profile-btn">🧑‍🚀 Mon personnage</button>
       <button id="play-btn">🏠 Jouer en local</button>
@@ -902,6 +929,35 @@
     </div>
   </div>
 
+  <script>
+    // Netflix-style local profiles: each player on this device gets their own
+    // complete save space. Storage keys for progress/world/collection are
+    // transparently suffixed with the active profile id; profile 1 keeps the
+    // legacy unsuffixed keys so existing saves become "player 1" seamlessly.
+    (function () {
+      const PER_PROFILE = [
+        'web-minecraft-edu-v1', 'web-minecraft-edits-v2', 'web-minecraft-edits-v1',
+        'web-minecraft-dex-v1', 'web-minecraft-meat-v1', 'web-minecraft-profile-v1',
+        'web-minecraft-worlds-v1', 'web-minecraft-hotbar-v1',
+      ];
+      let reg = null;
+      try { reg = JSON.parse(localStorage.getItem('web-minecraft-profiles-v1')); } catch { /* fresh */ }
+      window.__activeProfile = reg && reg.current ? reg.current : 1;
+      const map = (k) => (PER_PROFILE.includes(k) && window.__activeProfile !== 1)
+        ? k + '::p' + window.__activeProfile : k;
+      const S = Storage.prototype;
+      const g = S.getItem, s = S.setItem, r = S.removeItem;
+      window.__rawStorage = {
+        get: (k) => g.call(localStorage, k),
+        set: (k, v) => s.call(localStorage, k, v),
+        remove: (k) => r.call(localStorage, k),
+        perProfileKeys: PER_PROFILE,
+      };
+      S.getItem = function (k) { return g.call(this, map(k)); };
+      S.setItem = function (k, v) { return s.call(this, map(k), v); };
+      S.removeItem = function (k) { return r.call(this, map(k)); };
+    })();
+  </script>
   <script src="./vendor/peerjs.min.js"></script>
   <script type="importmap">
     { "imports": { "three": "./vendor/three.module.min.js" } }
