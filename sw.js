@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v23';
+const CACHE_VERSION = 'web-minecraft-v24';
 
 const ASSETS = [
   './',
@@ -23,6 +23,7 @@ const ASSETS = [
   './src/animals.js',
   './src/education.js',
   './src/net.js',
+  './src/cloud.js',
   './vendor/three.module.min.js',
   './vendor/peerjs.min.js',
 ];

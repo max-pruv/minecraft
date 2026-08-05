@@ -11,6 +11,7 @@ import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
+import { CloudSave } from './cloud.js';
 import { EducationMode } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -656,6 +657,45 @@ let selectedChar = 0;
 const remotePlayers = new Map(); // peerId -> { mesh, target, yaw, moving, animTime }
 const netStatus = document.getElementById('net-status');
 const micBtn = document.getElementById('mic-btn');
+const cloud = new CloudSave(world, (msg, color) => creatureManager.toast(msg, color));
+
+// player profile: each device types its own character name (Marlon, Alice…)
+const PROFILE_KEY = 'web-minecraft-profile-v1';
+let playerProfile = { name: '' };
+try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') }; }
+catch { /* defaults */ }
+const nameInput = document.getElementById('player-name');
+nameInput.value = playerProfile.name;
+nameInput.addEventListener('input', () => {
+  playerProfile.name = nameInput.value.trim().slice(0, 12);
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+});
+nameInput.addEventListener('keydown', (e) => e.stopPropagation());
+function myName() {
+  return playerProfile.name || NET_CHARACTERS[selectedChar].name;
+}
+
+// worlds the device has already played in, for one-tap reopening
+const WORLDS_KEY = 'web-minecraft-worlds-v1';
+function loadWorlds() {
+  try { return JSON.parse(localStorage.getItem(WORLDS_KEY) || '[]'); } catch { return []; }
+}
+function rememberWorld(code) {
+  const worlds = loadWorlds().filter((w) => w.code !== code);
+  worlds.unshift({ code, t: Date.now() });
+  try { localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds.slice(0, 5))); } catch { /* ignore */ }
+}
+function renderRecentWorlds() {
+  const row = document.getElementById('recent-worlds');
+  row.innerHTML = '';
+  for (const w of loadWorlds()) {
+    const btn = document.createElement('button');
+    btn.className = 'world-btn';
+    btn.textContent = `🌍 ${w.code}`;
+    btn.addEventListener('click', () => openWorld(w.code));
+    row.appendChild(btn);
+  }
+}
 
 function nameSprite(text) {
   const cv = document.createElement('canvas');
@@ -732,7 +772,38 @@ function startNetSession(code, isHost) {
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
   });
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
-  return net.start(code, isHost, { name: NET_CHARACTERS[selectedChar].name, lookIdx: selectedChar });
+  return net.start(code, isHost, { name: myName(), lookIdx: selectedChar });
+}
+
+// Opens a world by code: joins whoever is already there, or becomes the
+// host and plays solo if the world is empty. Either way the cloud copy is
+// pulled first so nothing is ever lost.
+async function openWorld(code) {
+  onlineStatus.textContent = `Ouverture du monde ${code}…`;
+  try {
+    await startNetSession(code, false);
+  } catch (err) {
+    if (net) { net.stop(); net = null; }
+    if (/introuvable/i.test(err.message)) {
+      // nobody is online in this world — become its host
+      try {
+        await startNetSession(code, true);
+      } catch (err2) {
+        onlineStatus.textContent = '❌ ' + err2.message;
+        if (net) { net.stop(); net = null; }
+        return;
+      }
+    } else {
+      onlineStatus.textContent = '❌ ' + err.message;
+      return;
+    }
+  }
+  rememberWorld(code);
+  cloud.attach(code);
+  onlineStatus.textContent = '';
+  onlineMenu.style.display = 'none';
+  showOnlineUI();
+  startGame();
 }
 
 // online menu wiring
@@ -757,11 +828,13 @@ function showOnlineUI() {
 }
 
 document.getElementById('online-btn').addEventListener('click', () => {
+  renderRecentWorlds();
   onlineMenu.style.display = 'flex';
   document.getElementById('mode-row').style.display = 'none';
 });
 document.getElementById('online-back').addEventListener('click', () => {
   if (net) { net.stop(); net = null; }
+  cloud.detach();
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
   document.getElementById('online-actions').style.display = 'flex';
@@ -782,24 +855,16 @@ document.getElementById('host-btn').addEventListener('click', async () => {
   }
 });
 document.getElementById('online-play-btn').addEventListener('click', () => {
+  rememberWorld(net.code);
+  cloud.attach(net.code);
   onlineMenu.style.display = 'none';
   showOnlineUI();
   startGame();
 });
-document.getElementById('join-btn').addEventListener('click', async () => {
+document.getElementById('join-btn').addEventListener('click', () => {
   const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (code.length < 4) { onlineStatus.textContent = 'Écris le code de la partie !'; return; }
-  onlineStatus.textContent = 'Connexion…';
-  try {
-    await startNetSession(code, false);
-    onlineStatus.textContent = '';
-    onlineMenu.style.display = 'none';
-    showOnlineUI();
-    startGame();
-  } catch (err) {
-    onlineStatus.textContent = '❌ ' + err.message;
-    if (net) { net.stop(); net = null; }
-  }
+  if (code.length < 4) { onlineStatus.textContent = 'Écris le code du monde !'; return; }
+  openWorld(code);
 });
 document.getElementById('join-code').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('join-btn').click();
@@ -1239,7 +1304,7 @@ function updateHud(dt) {
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; } };
 
 let lastTime = performance.now();
 
