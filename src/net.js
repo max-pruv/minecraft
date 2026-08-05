@@ -13,10 +13,8 @@
 const ID_PREFIX = 'wmc-marlon-';
 
 export function randomCode() {
-  const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no confusable 0/O/1/I/L
-  let code = '';
-  for (let i = 0; i < 6; i++) code += letters[Math.floor(Math.random() * letters.length)];
-  return code;
+  // 5 digits: easy for kids to read out loud and type on a phone keypad
+  return String(10000 + Math.floor(Math.random() * 90000));
 }
 
 export class NetSession {

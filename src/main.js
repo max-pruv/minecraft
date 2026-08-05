@@ -655,8 +655,36 @@ const NET_CHARACTERS = [
 let net = null;
 let selectedChar = 0;
 const remotePlayers = new Map(); // peerId -> { mesh, target, yaw, moving, animTime }
-const netStatus = document.getElementById('net-status');
+const playersBtn = document.getElementById('players-btn');
 const micBtn = document.getElementById('mic-btn');
+
+function updatePlayersBtn() {
+  if (!net || !net.active) { playersBtn.style.display = 'none'; return; }
+  playersBtn.style.display = 'block';
+  playersBtn.textContent = `🌐 ${net.playerCount()} ▾`;
+}
+
+function openPlayersPanel() {
+  if (!net || !net.active) return;
+  document.getElementById('pp-code').textContent = net.code;
+  const list = document.getElementById('pp-list');
+  list.innerHTML = '';
+  const row = (emoji, name, extra) => {
+    const div = document.createElement('div');
+    div.className = 'pp-row';
+    div.innerHTML = `<span class="pp-emoji">${emoji}</span><span>${name}</span><span style="color:#8894b0">${extra}</span>`;
+    list.appendChild(div);
+  };
+  row(NET_CHARACTERS[selectedChar].emoji, myName(), '(toi)');
+  for (const c of net.conns.values()) {
+    row((NET_CHARACTERS[c.lookIdx] || NET_CHARACTERS[0]).emoji, c.name, 'en ligne');
+  }
+  document.getElementById('players-panel').style.display = 'flex';
+}
+playersBtn.addEventListener('click', openPlayersPanel);
+document.getElementById('players-close').addEventListener('click', () => {
+  document.getElementById('players-panel').style.display = 'none';
+});
 const cloud = new CloudSave(world, (msg, color) => creatureManager.toast(msg, color));
 
 // player profile: each device types its own character name (Marlon, Alice…)
@@ -764,8 +792,8 @@ function startNetSession(code, isHost) {
   net = new NetSession({
     world,
     toast: (msg, color) => creatureManager.toast(msg, color),
-    onPlayers: syncRemotePlayers,
-    onState: (text) => { netStatus.textContent = text; },
+    onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
+    onState: () => updatePlayersBtn(),
   });
   net.getPos = () => ({
     x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
@@ -823,9 +851,19 @@ NET_CHARACTERS.forEach((c, i) => {
 });
 
 function showOnlineUI() {
-  netStatus.style.display = 'block';
+  updatePlayersBtn();
   micBtn.style.display = 'block';
 }
+
+// home button: teleport back to the spawn point
+document.getElementById('home-btn').addEventListener('click', () => {
+  if (edu.quizActive || edu.hardStopActive) return;
+  let y = HEIGHT - 1;
+  while (y > 1 && !world.isSolid(0, y, 0)) y--;
+  player.pos.set(0.5, y + 1.1, 0.5);
+  player.vel.set(0, 0, 0);
+  creatureManager.toast('🏠 Retour à la maison !', 0x9fd8e8);
+});
 
 document.getElementById('online-btn').addEventListener('click', () => {
   renderRecentWorlds();

@@ -70,10 +70,12 @@
 
     /* start / pause overlay */
     #overlay {
-      position: fixed; inset: 0; z-index: 10;
+      /* above every HUD button so the menu is never covered mid-screen */
+      position: fixed; inset: 0; z-index: 16;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: rgba(10, 14, 20, 0.82); color: #eee; text-align: center;
-      overflow-y: auto; padding: 20px 12px;
+      background: rgba(10, 14, 20, 0.92); color: #eee; text-align: center;
+      overflow-y: auto;
+      padding: calc(24px + var(--safe-top)) 12px calc(20px + var(--safe-bottom));
     }
     /* keep top content reachable when it overflows a small screen */
     #overlay > :first-child { margin-top: auto; }
@@ -141,12 +143,39 @@
     }
     #online-play-btn { background: #2d6a2d !important; border-color: #58b04c !important; }
     #online-back { font-size: 14px !important; padding: 6px 16px !important; background: #3a3a4a !important; }
-    #net-status {
-      display: none; position: fixed; top: calc(34px + var(--safe-top)); left: 50%; transform: translateX(-50%);
-      font-size: 13px; font-weight: bold; color: #9fd8e8; text-shadow: 1px 1px 0 #000;
-      background: rgba(0,0,0,0.35); padding: 3px 10px; border-radius: 8px; z-index: 6;
-      pointer-events: none; white-space: nowrap;
+    #players-btn {
+      display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 152px; z-index: 11;
+      height: 40px; padding: 0 12px; border-radius: 8px;
+      border: 2px solid rgba(159, 216, 232, 0.7); background: rgba(0,0,0,0.45);
+      color: #9fd8e8; font-family: inherit; font-size: 15px; font-weight: bold; cursor: pointer;
+      white-space: nowrap;
     }
+    #players-panel {
+      display: none; position: fixed; inset: 0; z-index: 15;
+      align-items: center; justify-content: center; background: rgba(12, 18, 32, 0.85);
+    }
+    #players-card {
+      position: relative; width: min(380px, 92vw);
+      background: #1c2438; border: 3px solid #3a4a6b; border-radius: 16px;
+      padding: 20px; color: #fff; text-align: center;
+    }
+    #players-close {
+      position: absolute; top: 8px; right: 10px; background: none; border: none;
+      color: #aaa; font-size: 18px; cursor: pointer;
+    }
+    #players-title { font-size: 17px; font-weight: bold; margin-bottom: 12px; }
+    #pp-code {
+      font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #ffd75e;
+      background: rgba(0,0,0,0.4); border: 2px dashed #ffd75e; border-radius: 12px;
+      padding: 8px 16px; margin: 4px 0 12px; display: inline-block;
+    }
+    #pp-hint { font-size: 12px; color: #8894b0; margin-bottom: 12px; }
+    #pp-list { text-align: left; }
+    .pp-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 15px;
+    }
+    .pp-row .pp-emoji { font-size: 20px; }
     #mic-btn {
       display: none; position: fixed; top: calc(104px + var(--safe-top)); right: 8px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
@@ -154,6 +183,12 @@
       color: #fff; font-size: 18px; cursor: pointer;
     }
     #mic-btn.on { background: rgba(45, 106, 45, 0.8); border-color: #58b04c; }
+    #home-btn {
+      position: fixed; top: calc(152px + var(--safe-top)); right: 8px; z-index: 11;
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
+      color: #fff; font-size: 18px; cursor: pointer;
+    }
 
     /* touch controls */
     #touch-ui { display: none; }
@@ -466,7 +501,7 @@
 
     /* meat counter */
     #meat-counter {
-      display: none; position: fixed; top: calc(152px + var(--safe-top)); right: 8px; z-index: 6;
+      display: none; position: fixed; top: calc(200px + var(--safe-top)); right: 8px; z-index: 6;
       font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
       background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px; pointer-events: none;
     }
@@ -585,9 +620,20 @@
   <button id="map-btn" title="Mini-carte">🗺️</button>
   <button id="settings-btn" title="Réglages">⚙️</button>
   <button id="mic-btn" title="Micro (chat vocal)">🔇</button>
+  <button id="home-btn" title="Retour à la maison">🏠</button>
   <canvas id="minimap" width="160" height="160"></canvas>
   <div id="meat-counter"></div>
-  <div id="net-status"></div>
+  <button id="players-btn" title="Joueurs et code du monde"></button>
+
+  <div id="players-panel">
+    <div id="players-card">
+      <button id="players-close">✕</button>
+      <div id="players-title">🌐 Ton monde en ligne</div>
+      <div id="pp-code"></div>
+      <div id="pp-hint">Partage ce code : avec lui, on peut rejoindre ce monde à tout moment.</div>
+      <div id="pp-list"></div>
+    </div>
+  </div>
 
   <div id="settings-panel">
     <div id="settings-card">
@@ -710,7 +756,7 @@
         <button id="host-btn">✨ Créer un nouveau monde</button>
         <div class="online-or">— ou ouvre un monde avec son code —</div>
         <div class="join-row">
-          <input id="join-code" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters">
+          <input id="join-code" maxlength="6" placeholder="12345" inputmode="numeric" autocomplete="off" autocapitalize="characters">
           <button id="join-btn">Ouvrir ➜</button>
         </div>
       </div>
