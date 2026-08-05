@@ -107,14 +107,24 @@
     }
     .online-title { font-size: 20px; font-weight: bold; }
     .online-label { font-size: 14px; color: #cdd7ee; }
-    #char-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .online-section {
+      width: 100%; text-align: left; font-size: 13px; color: #9fd8e8; font-weight: bold;
+      border-top: 1px solid rgba(255,255,255,0.12); padding-top: 10px; margin-top: 2px;
+    }
+    #char-row {
+      display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; max-width: 100%;
+      width: 100%; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch;
+    }
     .char-btn {
-      font-family: inherit; font-size: 13px; padding: 8px 10px !important; margin: 0 !important;
-      background: #2c3a58 !important; border: 2px solid #46587e !important; border-radius: 10px;
+      flex: 0 0 auto; width: 96px;
+      font-family: inherit; font-size: 12px; padding: 8px 4px !important; margin: 0 !important;
+      background: #2c3a58 !important; border: 2px solid #46587e !important; border-radius: 12px;
       cursor: pointer; color: #fff;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
     }
     .char-btn.active { background: #2d6a2d !important; border-color: #58b04c !important; }
-    .char-btn .char-emoji { font-size: 22px; display: block; }
+    .char-btn img { width: 68px; height: 92px; }
+    .char-btn .char-emoji { font-size: 15px; }
     #online-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .online-or { color: #8894b0; font-size: 12px; }
     .join-row { display: flex; gap: 6px; align-items: center; }
@@ -775,15 +785,16 @@
       <div class="online-title">🌐 Multijoueur</div>
       <div class="online-label">Ton prénom :</div>
       <input id="player-name" maxlength="12" placeholder="Marlon, Alice…" autocomplete="off">
-      <div class="online-label">Choisis ton personnage :</div>
+      <div class="online-section">🧑 Ton personnage — fais défiler pour choisir son look :</div>
       <div id="char-row"></div>
+      <div class="online-section">🌍 Mes mondes — un tap pour y retourner :</div>
       <div id="recent-worlds"></div>
       <div id="online-actions">
-        <button id="host-btn">✨ Créer un nouveau monde</button>
-        <div class="online-or">— ou ouvre un monde avec son code —</div>
+        <button id="host-btn">➕ Créer un nouveau monde</button>
+        <div class="online-section">🔑 Rejoindre un monde existant — tape son code :</div>
         <div class="join-row">
           <input id="join-code" maxlength="6" placeholder="12345" inputmode="numeric" autocomplete="off" autocapitalize="characters">
-          <button id="join-btn">Ouvrir ➜</button>
+          <button id="join-btn">Rejoindre ➜</button>
         </div>
       </div>
       <div id="online-status"></div>

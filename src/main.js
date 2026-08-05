@@ -650,6 +650,27 @@ const NET_CHARACTERS = [
     torsoSlabs: [0xf2f2f0, 0xf2f2f0, 0x9fd8e8, 0xf2f2f0, 0xf2f2f0],
     sleeveSegs: [0xf2f2f0, 0xf2f2f0, 0xf2f2f0],
   } },
+  { name: 'Footballeur', emoji: '⚽', look: {
+    skin: 0x9c6b46, hair: 0x18110c, pants: 0x2a4a8a, shoes: 0xf2f2f0,
+    torsoSlabs: [0x3a8a4a, 0xf2f2f0, 0x3a8a4a, 0xf2f2f0, 0x3a8a4a],
+    sleeveSegs: [0x3a8a4a, 0xf2f2f0, 0x3a8a4a],
+  } },
+  { name: 'Pirate', emoji: '🏴‍☠️', look: {
+    skin: 0xe8b98a, hair: 0x2c1f14, pants: 0x3a2a1a, shoes: 0x1a1a1a, hat: 0xc03030,
+    torsoSlabs: [0x22222a, 0xf2f2f0, 0x22222a, 0xf2f2f0, 0x22222a],
+    sleeveSegs: [0x22222a, 0xf2f2f0, 0x22222a],
+  } },
+  { name: 'Astronaute', emoji: '🚀', look: {
+    skin: 0xf2c9a4, hair: 0x3a2412, pants: 0xe8e8ea, shoes: 0x8a8a92, hat: 0xf2f2f4,
+    torsoSlabs: [0xe8e8ea, 0xe8e8ea, 0xd85a2a, 0xe8e8ea, 0xe8e8ea],
+    sleeveSegs: [0xe8e8ea, 0xd85a2a, 0xe8e8ea],
+  } },
+  { name: 'Chevalière', emoji: '🛡️', look: {
+    skin: 0xdca77e, hair: 0x6a4a2a, pants: 0x5a5a64, shoes: 0x3a3a42, hairstyle: 'bun',
+    torsoSlabs: [0x9a9aa4, 0x9a9aa4, 0xd8b23a, 0x9a9aa4, 0x9a9aa4],
+    sleeveSegs: [0x9a9aa4, 0x9a9aa4, 0x9a9aa4],
+    cape: 0x6a3a8a,
+  } },
 ];
 
 let net = null;
@@ -696,8 +717,11 @@ const nameInput = document.getElementById('player-name');
 nameInput.value = playerProfile.name;
 nameInput.addEventListener('input', () => {
   playerProfile.name = nameInput.value.trim().slice(0, 12);
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+  saveProfile();
 });
+function saveProfile() {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+}
 nameInput.addEventListener('keydown', (e) => e.stopPropagation());
 function myName() {
   return playerProfile.name || NET_CHARACTERS[selectedChar].name;
@@ -716,10 +740,18 @@ function rememberWorld(code) {
 function renderRecentWorlds() {
   const row = document.getElementById('recent-worlds');
   row.innerHTML = '';
-  for (const w of loadWorlds()) {
+  const worlds = loadWorlds();
+  if (worlds.length === 0) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:13px;color:#8894b0;';
+    hint.textContent = 'Aucun monde pour l\'instant — crée-en un juste en dessous !';
+    row.appendChild(hint);
+    return;
+  }
+  for (const w of worlds) {
     const btn = document.createElement('button');
     btn.className = 'world-btn';
-    btn.textContent = `🌍 ${w.code}`;
+    btn.textContent = `🌍 Monde ${w.code}`;
     btn.addEventListener('click', () => openWorld(w.code));
     row.appendChild(btn);
   }
@@ -839,12 +871,36 @@ const onlineMenu = document.getElementById('online-menu');
 const onlineStatus = document.getElementById('online-status');
 const roomCodeBox = document.getElementById('room-code-box');
 const charRow = document.getElementById('char-row');
+selectedChar = Math.min(Math.max(playerProfile.charIdx || 0, 0), NET_CHARACTERS.length - 1);
+
+// Render each character look to a little 3D portrait for the picker.
+function makeCharPortraits() {
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.setSize(96, 128);
+  const cam2 = new THREE.PerspectiveCamera(38, 96 / 128, 0.1, 10);
+  cam2.position.set(0.55, 1.35, -2.3);
+  cam2.lookAt(0, 0.85, 0);
+  const urls = NET_CHARACTERS.map((c) => {
+    const sc = new THREE.Scene();
+    const mesh = buildKidMesh(c.look);
+    mesh.rotation.y = -0.35; // three-quarter pose
+    sc.add(mesh);
+    r.render(sc, cam2);
+    return r.domElement.toDataURL();
+  });
+  r.dispose();
+  return urls;
+}
+
+const charPortraits = makeCharPortraits();
 NET_CHARACTERS.forEach((c, i) => {
   const btn = document.createElement('button');
-  btn.className = 'char-btn' + (i === 0 ? ' active' : '');
-  btn.innerHTML = `<span class="char-emoji">${c.emoji}</span>${c.name}`;
+  btn.className = 'char-btn' + (i === selectedChar ? ' active' : '');
+  btn.innerHTML = `<img src="${charPortraits[i]}" alt="${c.name}"><span>${c.emoji} ${c.name}</span>`;
   btn.addEventListener('click', () => {
     selectedChar = i;
+    playerProfile.charIdx = i;
+    saveProfile();
     [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === i));
   });
   charRow.appendChild(btn);
@@ -858,14 +914,27 @@ function showOnlineUI() {
   net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
 }
 
-// home button: teleport back to the spawn point
+// home button: leave the current game and go back to the main menu, where
+// you can pick local or multiplayer again
 document.getElementById('home-btn').addEventListener('click', () => {
   if (edu.quizActive || edu.hardStopActive) return;
-  let y = HEIGHT - 1;
-  while (y > 1 && !world.isSolid(0, y, 0)) y--;
-  player.pos.set(0.5, y + 1.1, 0.5);
-  player.vel.set(0, 0, 0);
-  creatureManager.toast('🏠 Retour à la maison !', 0x9fd8e8);
+  if (net) { net.stop(); net = null; }
+  cloud.detach();
+  syncRemotePlayers([]); // remove remote avatars
+  for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
+  removeLocalTile();
+  micBtn.style.display = 'none'; micBtn.textContent = '🔇'; micBtn.classList.remove('on');
+  camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
+  playersBtn.style.display = 'none';
+  world.saveEdits();
+  pauseGame();
+  // restore the full main menu, not the pause screen
+  document.getElementById('overlay-title').textContent = 'WEB MINECRAFT';
+  onlineMenu.style.display = 'none';
+  roomCodeBox.style.display = 'none';
+  document.getElementById('online-actions').style.display = 'flex';
+  document.getElementById('mode-row').style.display = 'flex';
+  onlineStatus.textContent = '';
 });
 
 document.getElementById('online-btn').addEventListener('click', () => {
