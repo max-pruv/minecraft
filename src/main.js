@@ -715,11 +715,12 @@ try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PRO
 catch { /* defaults */ }
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
-  // keep the profile registry's display name in sync
+  // keep the profile registry's display name and look in sync
   const reg = loadRegistry();
   const entry = reg.list.find((p) => p.id === reg.current);
-  if (entry && playerProfile.name && entry.name !== playerProfile.name) {
-    entry.name = playerProfile.name;
+  if (entry && ((playerProfile.name && entry.name !== playerProfile.name) || entry.charIdx !== selectedChar)) {
+    if (playerProfile.name) entry.name = playerProfile.name;
+    entry.charIdx = selectedChar;
     saveRegistry(reg);
     renderProfiles();
   }
@@ -754,6 +755,7 @@ function switchProfile(id) {
   edu.save();
   reg.current = id;
   saveRegistry(reg);
+  try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
   location.reload(); // clean re-init on the new profile's save space
 }
 
@@ -768,19 +770,26 @@ function renderProfiles() {
   const row = document.getElementById('who-row');
   row.innerHTML = '';
   for (const p of reg.list) {
-    const chip = document.createElement('div');
-    chip.className = 'who-chip' + (reg.list.length > 1 ? ' removable' : '');
-    const btn = document.createElement('button');
-    btn.className = 'who-btn' + (p.id === reg.current ? ' active' : '');
-    btn.textContent = `${p.id === reg.current ? '✅ ' : ''}${p.name}`;
-    btn.addEventListener('click', () => switchProfile(p.id));
-    chip.appendChild(btn);
+    const card = document.createElement('button');
+    card.className = 'who-card' + (p.id === reg.current ? ' active' : '');
+    const img = document.createElement('img');
+    img.src = charPortraits[Math.min(Math.max(p.charIdx || 0, 0), charPortraits.length - 1)];
+    img.alt = '';
+    const name = document.createElement('span');
+    name.className = 'who-name';
+    name.textContent = p.name;
+    card.append(img, name);
+    card.addEventListener('click', () => {
+      if (p.id === reg.current) closeWhoScreen();
+      else switchProfile(p.id);
+    });
     if (reg.list.length > 1) {
       const del = document.createElement('button');
       del.className = 'who-del';
       del.textContent = '✕';
       del.title = 'Supprimer ce joueur (code parental)';
-      del.addEventListener('click', async () => {
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
         if (!(await ask(`Supprimer le joueur ${p.name} et TOUTE sa progression ?`, '⚠️', 'Supprimer'))) return;
         const code = window.prompt('Code parental :');
@@ -800,9 +809,9 @@ function renderProfiles() {
         saveRegistry(r2);
         renderProfiles();
       });
-      chip.appendChild(del);
+      card.appendChild(del);
     }
-    row.appendChild(chip);
+    row.appendChild(card);
   }
   const add = document.createElement('button');
   add.className = 'who-add';
@@ -813,18 +822,42 @@ function renderProfiles() {
     const reg2 = loadRegistry();
     const id = reg2.nextId || (Math.max(...reg2.list.map((p) => p.id)) + 1);
     reg2.nextId = id + 1;
-    reg2.list.push({ id, name });
+    reg2.list.push({ id, name, charIdx: 0 });
     reg2.current = id;
     saveRegistry(reg2);
     // seed the new profile's name before reloading into it
     raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify({ name }));
     world.saveEdits();
     edu.save();
+    try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
     location.reload();
   });
   row.appendChild(add);
 }
-renderProfiles();
+
+// Netflix-style flow: pick who's playing first, then reach the main menu.
+const whoScreen = document.getElementById('who-screen');
+function showWhoScreen() {
+  renderProfiles();
+  whoScreen.style.display = 'flex';
+  document.getElementById('mode-row').style.display = 'none';
+  onlineMenu.style.display = 'none';
+  profileMenu.style.display = 'none';
+}
+function closeWhoScreen() {
+  try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
+  whoScreen.style.display = 'none';
+  document.getElementById('mode-row').style.display = 'flex';
+}
+document.getElementById('switch-player-btn').addEventListener('click', showWhoScreen);
+// deferred: runs after the whole module evaluates, once charPortraits and
+// the menu elements below are all initialized
+queueMicrotask(() => {
+  let whoDone = false;
+  try { whoDone = !!sessionStorage.getItem('wm-who-done'); } catch { /* ignore */ }
+  if (whoDone) renderProfiles();
+  else showWhoScreen();
+});
 function myName() {
   return playerProfile.name || NET_CHARACTERS[selectedChar].name;
 }
