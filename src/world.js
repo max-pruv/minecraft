@@ -1,6 +1,6 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, isSolid as blockIsSolid } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -226,6 +226,23 @@ function buildBelfry(set) { // le beffroi de Lille, en brique avec son horloge
 // carousel, a circular roller-coaster and candy-striped circus tents.
 export const PARK = { name: "Parc d'attractions", x: 150, z: -60, r: 34 };
 
+// Special biome zones stamped over the base terrain.
+export const DESERT = { name: 'Désert', x: 60, z: -190, r: 70 };
+export const VOLCANO = { name: 'Volcan', x: -140, z: 420, r: 45 };
+export const ISLAND = { name: 'Île tropicale', x: 620, z: 80, r: 38 };
+
+// Lava & cactus reuse the generated decor palette (Uni pattern).
+const LAVA = DECOR_START + 1 * 10;   // Uni orange
+const LAVA_HOT = DECOR_START + 0 * 10; // Uni rouge
+const CACTUS = DECOR_START + 5 * 10; // Uni vert
+
+// Named places shown on the maps with tap-to-travel (besides the cities).
+export const PLACES = [
+  PARK, DESERT, VOLCANO, ISLAND,
+  { name: 'Musée', x: -34, z: 40, r: 20 },
+  { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
+];
+
 function buildFunPark(set) {
   const R = 24;
   // walkway grid across the park grounds
@@ -309,6 +326,81 @@ function buildFunPark(set) {
   tent(-6, -14, BLOCK.WOOL_BLUE);
 }
 
+function buildPyramid(set) { // grande pyramide de grès du désert
+  const B = 11;
+  for (let level = 0; level <= B; level++) {
+    const r = B - level;
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue; // hollow shell
+        set(dx, level, dz, BLOCK.SANDSTONE);
+      }
+    }
+  }
+  for (let y = 0; y < 3; y++) { set(0, y, -B, BLOCK.AIR); if (y < 2) set(1, y, -B, BLOCK.AIR); } // entrance
+  set(0, B + 1, 0, BLOCK.GOLD); // golden capstone
+  // little sister pyramid
+  for (let level = 0; level <= 4; level++) {
+    const r = 4 - level;
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) set(16 + dx, level, 10 + dz, BLOCK.SANDSTONE);
+    }
+  }
+  // a few cactuses around
+  for (const [cx2, cz2] of [[-15, 4], [-10, -12], [12, -8], [8, 16]]) {
+    for (let y = 0; y < 3; y++) set(cx2, y, cz2, CACTUS);
+    set(cx2 - 1, 1, cz2, CACTUS); set(cx2 + 1, 2, cz2, CACTUS); // arms
+  }
+}
+
+function buildCottages(set) { // le quartier des enfants : deux maisons meublées
+  const cottage = (ox, roof, bedProp) => {
+    for (let dx = 0; dx <= 5; dx++) {
+      for (let dz = 0; dz <= 5; dz++) {
+        set(ox + dx, -1, dz, BLOCK.PLANK); // floor
+        for (let y = 0; y < 3; y++) {
+          const wall = dx === 0 || dx === 5 || dz === 0 || dz === 5;
+          if (!wall) continue;
+          const win = y === 1 && (dx === 0 || dx === 5) && (dz === 2 || dz === 3);
+          set(ox + dx, y, dz, win ? BLOCK.GLASS : BLOCK.PLANK);
+        }
+        set(ox + dx, 3, dz, roof); // flat colored roof
+      }
+    }
+    for (let dx = 1; dx <= 4; dx++) for (let dz = 1; dz <= 4; dz++) set(ox + dx, 4, dz, roof);
+    set(ox + 2, 0, 0, BLOCK.AIR); set(ox + 2, 1, 0, BLOCK.AIR); // door
+    set(ox + 4, 0, 4, bedProp);         // a bed
+    set(ox + 1, 0, 4, PROP_START + 6);  // a table
+    set(ox + 1, 0, 3, PROP_START + 9);  // a lamp
+  };
+  cottage(0, BLOCK.WOOL_RED, PROP_START + 8);        // Marlon's red cottage
+  cottage(9, BLOCK.WOOL_BLUE, PROP_START + 8 + 14);  // Alice's blue one
+  for (let dz = -3; dz < 0; dz++) { set(2, -1, dz, BLOCK.SANDSTONE); set(11, -1, dz, BLOCK.SANDSTONE); } // paths
+}
+
+function buildMuseum(set) { // le musée des champions : statues des créatures attrapées
+  const W = 8, D = 6; // half sizes
+  for (let dx = -W; dx <= W; dx++) {
+    for (let dz = -D; dz <= D; dz++) {
+      set(dx, -1, dz, BLOCK.WHITEBRICK); // marble floor
+      for (let y = 0; y < 5; y++) {
+        const wall = dx === -W || dx === W || dz === -D || dz === D;
+        if (!wall) continue;
+        const win = y >= 1 && y <= 3 && ((dx + 100) % 3 === 0 || (dz + 100) % 3 === 0);
+        set(dx, y, dz, win ? BLOCK.GLASS : BLOCK.WHITEBRICK);
+      }
+      set(dx, 5, dz, BLOCK.SLAB_STONE); // roof
+    }
+  }
+  for (let dx = -1; dx <= 1; dx++) { set(dx, 0, -D, BLOCK.AIR); set(dx, 1, -D, BLOCK.AIR); set(dx, 2, -D, BLOCK.AIR); } // grand entrance
+  for (const sx of [-2, 2]) { for (let y = 0; y < 3; y++) set(sx, y, -D - 1, BLOCK.WHITEBRICK); set(sx, 3, -D - 1, BLOCK.GOLD); } // columns
+  // pedestals for the statues (filled in by the game as creatures are caught)
+  for (let i = 0; i < 6; i++) {
+    set(-W + 2 + i * 2.4 | 0, 0, D - 2, BLOCK.STONEBRICK);
+    set(-W + 2 + i * 2.4 | 0, 0, -D + 2, BLOCK.STONEBRICK);
+  }
+}
+
 const LANDMARKS = [
   // Paris
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
@@ -325,6 +417,9 @@ const LANDMARKS = [
   // Countryside
   { name: 'Château fort', x: 112, z: 210, box: 6, build: buildCastle },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
+  { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
+  { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
+  { name: 'Musée', x: -34, z: 40, box: 10, build: buildMuseum },
 ];
 
 // --- world ----------------------------------------------------------------
@@ -393,6 +488,29 @@ export class World {
       h = h * (1 - m) + 33 * m;
     }
 
+    // the desert: gentle sandy dunes
+    const dd = Math.hypot(x - DESERT.x, z - DESERT.z);
+    if (dd < DESERT.r) {
+      const m = Math.min(1, (DESERT.r - dd) / 20);
+      h = h * (1 - m) + (33 + hills * 4) * m;
+    }
+
+    // the tropical island rises out of the open sea
+    const id2 = Math.hypot(x - ISLAND.x, z - ISLAND.z);
+    if (id2 < ISLAND.r) {
+      const m = Math.min(1, (ISLAND.r - id2) / 12);
+      h = h * (1 - m) + (32 + Math.max(0, (ISLAND.r - 8 - id2) / 6)) * m;
+    }
+
+    // the volcano: a tall cone with a lava crater at the top
+    const vd = Math.hypot(x - VOLCANO.x, z - VOLCANO.z);
+    if (vd < VOLCANO.r) {
+      const m = Math.min(1, (VOLCANO.r - vd) / 10);
+      let cone = 34 + (1 - vd / VOLCANO.r) * 34;
+      if (vd < 7) cone = 34 + (1 - 7 / VOLCANO.r) * 34 - (7 - vd) - 2; // crater bowl
+      h = h * (1 - m) + cone * m;
+    }
+
     return Math.max(2, Math.min(HEIGHT - 16, Math.floor(h)));
   }
 
@@ -406,6 +524,16 @@ export class World {
   treeAt(x, z) {
     if (this.cityAt(x, z)) return null; // no wild trees downtown
     if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
+    if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
+    if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
+    // the tropical island grows palm trees instead
+    const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
+    if (di < ISLAND.r) {
+      if (di > ISLAND.r - 14 || hash2i(x, z, SEED + 785) >= 0.05) return null;
+      const hi = this.terrainHeight(x, z);
+      if (hi <= WATER_LEVEL) return null;
+      return { h: hi, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
+    }
     // forests are dense, plains nearly bare
     const forest = fbm(x * 0.008, z * 0.008, SEED + 701);
     const density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
@@ -434,11 +562,37 @@ export class World {
         if (h <= WATER_LEVEL + 1) { top = BLOCK.SAND; filler = BLOCK.SAND; }
         else if (h >= 58) { top = BLOCK.SNOW; filler = BLOCK.STONE; }
 
+        // biome overrides: sandy desert, rocky volcano with a lava crater
+        const dd = Math.hypot(wx - DESERT.x, wz - DESERT.z);
+        if (dd < DESERT.r - 2) { top = BLOCK.SAND; filler = BLOCK.SAND; }
+        const vd = Math.hypot(wx - VOLCANO.x, wz - VOLCANO.z);
+        if (vd < VOLCANO.r - 2 && h > 36) {
+          filler = BLOCK.STONE;
+          top = hash2i(wx, wz, SEED + 891) < 0.18 ? BLOCK.OBSIDIAN : BLOCK.STONE;
+          if (vd < 5.5) top = hash2i(wx, wz, SEED + 892) < 0.3 ? LAVA_HOT : LAVA; // the lava lake
+        }
+
+        // winding caves under the surface, with glittering ore pockets
+        const caveTunnel = Math.abs(fbm(wx * 0.02, wz * 0.02, SEED + 882) - 0.5);
+        const caveY = 8 + fbm(wx * 0.01, wz * 0.01, SEED + 881) * 18;
+        const city = this.cityAt(wx, wz);
+        // rare open shafts let explorers climb in from the surface
+        const entrance = !city && caveTunnel < 0.015 && h > WATER_LEVEL + 2 && h < 50 && caveY > h - 12;
+
         for (let y = 0; y <= h; y++) {
           let id;
           if (y === h) id = top;
           else if (y >= h - 3) id = filler;
           else id = BLOCK.STONE;
+          if (caveTunnel < 0.05 && y > 3 && (id === BLOCK.STONE || entrance)) {
+            const dy = Math.abs(y - caveY);
+            if (dy < 2.2 || (entrance && y > caveY && y <= h)) id = BLOCK.AIR;
+            else if (dy < 3.4) {
+              const o = hash2i(wx + y * 977, wz - y * 331, SEED + 883);
+              if (o < 0.05) id = BLOCK.GOLD;
+              else if (o < 0.08) id = BLOCK.DIAMOND;
+            }
+          }
           data[World.index(x, y, z)] = id;
         }
         for (let y = h + 1; y <= WATER_LEVEL; y++) {
@@ -447,7 +601,6 @@ export class World {
 
         // city streets: asphalt with sidewalks, dashed center lines and
         // crosswalks at intersections
-        const city = this.cityAt(wx, wz);
         if (city && Math.hypot(wx - city.x, wz - city.z) < city.r - 4 && h > WATER_LEVEL) {
           const w = city.street;
           const mid = Math.floor(w / 2);
@@ -489,7 +642,15 @@ export class World {
           data[i] = id;
         };
 
-        if (kind === 1) {
+        if (kind === 3) {
+          // palm: a star of drooping fronds at the very top
+          for (const [fx, fz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+            put(tx + fx, topY, tz + fz, BLOCK.LEAVES, true);
+            put(tx + fx * 2, topY, tz + fz * 2, BLOCK.LEAVES, true);
+            put(tx + fx * 3, topY - 1, tz + fz * 3, BLOCK.LEAVES, true);
+          }
+          put(tx, topY + 1, tz, BLOCK.LEAVES, true);
+        } else if (kind === 1) {
           // pine: stacked shrinking rings of needles
           const layers = [[topY - 2, 2], [topY - 1, 2], [topY, 1], [topY + 1, 1], [topY + 2, 0]];
           for (const [y, r] of layers) {
