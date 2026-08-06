@@ -1077,6 +1077,55 @@
       S.removeItem = function (k) { return r.call(this, map(k)); };
     })();
   </script>
+  <script>
+    // Déménagement : l'hébergement historique (GitHub Pages) est remplacé par
+    // minecraft-fam.vercel.app. Quand cette page se charge encore depuis
+    // l'ancienne adresse, elle emporte d'abord la valise — tout le progrès de
+    // tous les profils locaux part au cloud via rescue.js — puis nettoie le
+    // service worker et redirige. Hors-ligne, on ne bouge pas : le jeu local
+    // reste jouable, le déménagement attendra une connexion.
+    (function () {
+      const qs = new URLSearchParams(location.search);
+      const testMode = qs.has('migrate-test');
+      if (location.hostname !== 'max-pruv.github.io' && !testMode) return;
+      if (qs.has('stay')) return;       // porte de secours pour déboguer
+      if (!navigator.onLine) return;
+      window.__migrating = true;        // le boot ne réinstalle pas le SW
+      const TARGET = 'https://minecraft-fam.vercel.app/';
+
+      const overlay = document.createElement('div');
+      overlay.id = 'migrate-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99998;background:#101830;color:#fff;'
+        + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;'
+        + 'font:20px/1.5 sans-serif;text-align:center;padding:24px';
+      overlay.innerHTML = '<div style="font-size:56px">🚚</div>'
+        + '<b>On déménage à la nouvelle adresse !</b>'
+        + '<div style="opacity:.8">J\'emporte toutes tes affaires… ☁️</div>';
+      document.body.appendChild(overlay);
+
+      let leaving = false;
+      const leave = async () => {
+        if (leaving) return;
+        leaving = true;
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+        } catch { /* pas de SW */ }
+        try {
+          for (const k of await caches.keys()) await caches.delete(k);
+        } catch { /* pas de cache */ }
+        if (testMode) { window.__migrated = true; return; } // le test observe sans partir
+        location.replace(TARGET + '?from=github');
+      };
+
+      const s = document.createElement('script');
+      s.src = './rescue.js';
+      const safety = setTimeout(leave, 45000); // on part quand même si la valise traîne
+      window.addEventListener('rescue-done', () => { clearTimeout(safety); leave(); }, { once: true });
+      s.onerror = () => { clearTimeout(safety); leave(); };
+      document.body.appendChild(s);
+    })();
+  </script>
   <script src="./vendor/peerjs.min.js"></script>
   <script type="importmap">
     { "imports": { "three": "./vendor/three.module.min.js" } }
@@ -1104,6 +1153,7 @@
       });
       window.addEventListener('load', async () => {
         try {
+          if (window.__migrating) return; // départ en cours : ne pas se réinstaller
           const reg = await navigator.serviceWorker.register('./sw.js');
           // a new version is downloading: tell the player instead of leaving
           // a silent pause before the auto-restart

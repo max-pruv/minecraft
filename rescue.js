@@ -157,6 +157,11 @@
     box.querySelector('#rescue-log').appendChild(d);
   };
 
+  // La page de déménagement attend ce signal avant de rediriger — émis dans
+  // tous les cas, succès comme échec, pour ne jamais la bloquer.
+  let okCount = 0;
+  const finish = () => window.dispatchEvent(new CustomEvent('rescue-done', { detail: { ok: okCount } }));
+
   (async () => {
     let reg = null;
     try { reg = JSON.parse(rawGet('web-minecraft-profiles-v1')); } catch { /* absent */ }
@@ -169,7 +174,6 @@
     }
     if (!profiles.length) { log('❌ Aucun profil trouvé sur cet appareil.'); return; }
 
-    let okCount = 0;
     for (const p of profiles) {
       if (!p || !p.name) continue;
       const state = { _t: Date.now() };
@@ -203,5 +207,5 @@
     }
     log(okCount ? '🎉 Terminé ! Ouvre le jeu sur la nouvelle adresse avec le même prénom.'
       : '😕 Rien n\'a pu être envoyé — vérifie la connexion et réessaie.');
-  })();
+  })().catch((e) => log('❌ Erreur inattendue : ' + e.message)).finally(finish);
 })();

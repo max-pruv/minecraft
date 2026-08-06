@@ -224,10 +224,30 @@ export class Identity {
 
   async detect(video) {
     const f = await loadFaceApi();
-    const res = await f
-      .detectSingleFace(video, new f.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+    // On iOS Safari the GPU backend's first inference can hang forever (the
+    // original iPad "presque prêt" freeze — removing the warm-up only moved
+    // it here). So every detection races a watchdog; on the first hang or
+    // error we switch tf to the CPU backend — slower, but it always answers —
+    // and retry. A smaller input keeps CPU mode tolerable.
+    const run = () => f
+      .detectSingleFace(video, new f.TinyFaceDetectorOptions({
+        inputSize: this._cpuMode ? 256 : 320, scoreThreshold: 0.4,
+      }))
       .withFaceLandmarks()
       .withFaceDescriptor();
+    const withTimeout = (p, ms) => Promise.race([
+      p, new Promise((_, rej) => setTimeout(() => rej(new Error('détection trop lente')), ms)),
+    ]);
+    let res;
+    try {
+      res = await withTimeout(run(), this._cpuMode ? 30000 : 12000);
+    } catch (e) {
+      if (this._cpuMode) throw e;
+      this._cpuMode = true;
+      this.say?.('🐢 Mon scanner rapide ne répond pas — je passe en mode tortue…');
+      try { await f.tf.setBackend('cpu'); await f.tf.ready(); } catch { /* cpu is always there */ }
+      res = await withTimeout(run(), 30000); // a real failure here surfaces to the caller
+    }
     if (!res) return null;
     return {
       // 4 decimals keeps the vector accurate but small enough to sync cheaply
@@ -553,7 +573,12 @@ export class Identity {
       this.say(first
         ? '⏳ Je me réveille… (quelques secondes la première fois)'
         : `Cliché ${sigs.length + 1}/3 — place ton visage dans le rond 😊`);
-      const shot = await this.detect(this.el.video);
+      let shot = null;
+      try {
+        shot = await this.detect(this.el.video);
+      } catch {
+        break; // scanner really down on this device — the code path takes over
+      }
       first = false;
       if (shot) {
         sigs.push(shot.sig);
@@ -689,7 +714,17 @@ export class Identity {
       this.say(firstPass
         ? '⏳ Je me réveille… (quelques secondes la première fois)'
         : 'Ne bouge pas… 🔍');
-      const sig = await this.snapshot(this.el.video);
+      let sig = null;
+      try {
+        sig = await this.snapshot(this.el.video);
+      } catch {
+        // scanner really down on this device — go straight to the code
+        this.stopCamera(this._stream);
+        this._stream = null;
+        this.say('Mon scanner est en panne ici 😕 — ton code secret !', 'err');
+        setTimeout(() => this.pinLogin(names, onMatch), 1400);
+        return;
+      }
       firstPass = false;
       if (sig) {
         const who = this.match(sig, names);
