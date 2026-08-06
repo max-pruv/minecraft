@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PARK } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
@@ -1790,7 +1790,7 @@ function drawMap(mapCanvas, radius) {
   if (radius >= 60) {
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    for (const c of [...CITIES, PARK]) {
+    for (const c of [...CITIES, ...PLACES]) {
       let [mx, my] = toMap(c.x, c.z);
       mx = Math.max(30, Math.min(size - 30, mx));
       my = Math.max(12, Math.min(size - 6, my));
@@ -1854,7 +1854,7 @@ function drawOverviewMap(mapCanvas, radius) {
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2)) * size, ((z - pcz + radius) / (radius * 2)) * size];
   ctx.font = 'bold 13px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  for (const c of [...CITIES, PARK]) {
+  for (const c of [...CITIES, ...PLACES]) {
     let [mx, my] = toMap(c.x, c.z);
     mx = Math.max(34, Math.min(size - 34, mx));
     my = Math.max(14, Math.min(size - 8, my));
@@ -1890,7 +1890,7 @@ mapModalCanvas.addEventListener('click', (e) => {
   const size = mapModalCanvas.width;
   const wx = overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2;
   const wz = overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2;
-  for (const c of [...CITIES, PARK]) {
+  for (const c of [...CITIES, ...PLACES]) {
     if (Math.hypot(wx - c.x, wz - c.z) < Math.max(60, c.r)) {
       const tx = c.x + 1.5, tz = c.z + 1.5; // on the street grid, not in a house
       let y = HEIGHT - 1;
@@ -1990,6 +1990,52 @@ function updateWeather(dt) {
     pos.needsUpdate = true;
     rainPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
   }
+}
+
+// --- seasons: the real-world calendar dresses the world ---------------------------
+// Winter snowflakes, spring petals, autumn leaves, summer fireflies.
+
+const SEASON = (() => {
+  const m = new Date().getMonth(); // 0..11
+  if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
+  if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
+  if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
+  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3 };
+})();
+
+const SEASON_COUNT = 160;
+const seasonGeo = new THREE.BufferGeometry();
+{
+  const pts = new Float32Array(SEASON_COUNT * 3);
+  for (let i = 0; i < SEASON_COUNT; i++) {
+    pts[i * 3] = (Math.random() - 0.5) * 60;
+    pts[i * 3 + 1] = Math.random() * 26 - 3;
+    pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
+  }
+  seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+}
+const seasonPoints = new THREE.Points(seasonGeo, new THREE.PointsMaterial({
+  color: SEASON.color, size: 0.24, transparent: true, opacity: 0.75, sizeAttenuation: true,
+}));
+scene.add(seasonPoints);
+let seasonTime = 0, seasonToastShown = false;
+
+function updateSeasons(dt) {
+  if (!seasonToastShown && running) {
+    seasonToastShown = true;
+    creatureManager.toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
+  }
+  seasonTime += dt;
+  const pos = seasonGeo.attributes.position;
+  for (let i = 0; i < SEASON_COUNT; i++) {
+    let y = pos.getY(i) - SEASON.fall * dt;
+    if (y < -3) y += 26;
+    if (y > 23) y -= 26;
+    pos.setY(i, y);
+    pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
+  }
+  pos.needsUpdate = true;
+  seasonPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
 }
 
 const clouds = [];
@@ -2137,6 +2183,7 @@ function frame(now) {
   updateClouds(dt);
   updateBirds(dt);
   updatePlane(dt);
+  updateSeasons(dt);
   updateHud(dt);
   updateCreatureLabel();
   updateRemotePlayers(dt);
