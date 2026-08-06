@@ -887,9 +887,14 @@ function switchProfile(id) {
   location.reload(); // clean re-init on the new profile's save space
 }
 
+// Même règle que le shim de stockage dans index.html : le profil 1 garde les
+// clés nues (c'est la partie qui existait avant les profils), les suivants
+// sont suffixés. Écrire à côté rend la donnée invisible au jeu.
+const profileKey = (key, id) => (id === 1 ? key : `${key}::p${id}`);
+
 function deleteProfileData(id) {
   for (const k of raw.perProfileKeys) {
-    raw.remove(id === 1 ? k : `${k}::p${id}`);
+    raw.remove(profileKey(k, id));
   }
 }
 
@@ -951,7 +956,7 @@ function addLocalProfile(name, { grade, enroll = false } = {}) {
   saveRegistry(reg);
   const seed = { name };
   if (grade !== undefined) seed.grade = grade;
-  raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify(seed));
+  raw.set(profileKey(PROFILE_KEY, id), JSON.stringify(seed));
   world.saveEdits();
   edu.save();
   profileSync.push(true).catch(() => {}); // don't lose the outgoing child's state
@@ -1737,10 +1742,31 @@ homeName.addEventListener('keydown', (e) => e.stopPropagation());
 
 // "Mon personnage" dedicated page with its own back button
 const profileMenu = document.getElementById('profile-menu');
+const refaceHint = document.getElementById('reface-hint');
+function refreshSecurityRow() {
+  const name = playerProfile.name;
+  const e = name ? identity.entry(name) : null;
+  const nFaces = e ? (e.faces || []).length : 0;
+  const hasPin = !!(e && e.pinHash);
+  refaceHint.textContent = !name ? ''
+    : nFaces || hasPin
+      ? `🔒 Compte sécurisé — ${nFaces ? `${nFaces} empreinte(s) de visage` : 'pas de visage'}${hasPin ? ' + un code' : ', pas de code'}. `
+        + 'Refais tes photos de temps en temps : tu changes en grandissant !'
+      : "Ton compte n'est pas encore protégé — ajoute ton visage ou un code pour que personne d'autre n'y joue.";
+}
 document.getElementById('profile-btn').addEventListener('click', () => {
   profileMenu.style.display = 'flex';
   document.getElementById('mode-row').style.display = 'none';
+  refreshSecurityRow();
 });
+for (const [id, kind] of [['reface-btn', 'face'], ['repin-btn', 'pin']]) {
+  document.getElementById(id).addEventListener('click', () => {
+    identity.secureChange(playerProfile.name, kind, () => {
+      renderProfiles();        // le badge 🔒 peut apparaître
+      refreshSecurityRow();
+    });
+  });
+}
 function closeProfileMenu() {
   profileMenu.style.display = 'none';
   document.getElementById('mode-row').style.display = 'flex';
