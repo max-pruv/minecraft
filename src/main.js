@@ -801,6 +801,9 @@ function pushPrefsToCloud() {
   prefsPushTimer = setTimeout(() => {
     cloud.prefsPush(playerProfile.name, {
       lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
+      // the adaptive quiz engine's per-skill levels & recent-question memory
+      // follow the child too, so switching devices mid-progress is seamless
+      skills: edu.skills, recent: [...edu.recent],
     }).catch(() => {});
   }, 1200);
 }
@@ -1474,7 +1477,7 @@ function pushPlayTime(keepalive = false) {
   const t = edu.today();
   cloud.timePush(playerProfile.name, deviceId, todayKey(), {
     play: Math.round(t.play), quiz: Math.round(t.quiz || 0),
-    correct: t.correct.length, wrong: t.wrong,
+    correct: t.correct.length, wrong: t.wrong, qs: t.qs || [],
   }, keepalive).catch(() => {});
 }
 
@@ -1486,22 +1489,24 @@ function applyCrossDeviceDays() {
     // this device's own rows are redundant with (and staler than) local
     // data for any day local already covers — skip to avoid double-counting
     if (r.device_id === deviceId && localDays[r.day]) continue;
-    const m = merged[r.day] || (merged[r.day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0 });
+    const m = merged[r.day] || (merged[r.day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0, qs: [] });
     m.play += r.play || 0;
     m.quiz += r.quiz || 0;
     m.wrong += r.wrong || 0;
     m.correctCount += r.correct || 0;
+    if (Array.isArray(r.qs)) m.qs.push(...r.qs); // another device's own questions
   }
   for (const [day, d] of Object.entries(localDays)) {
-    const m = merged[day] || (merged[day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0 });
+    const m = merged[day] || (merged[day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0, qs: [] });
     m.play += d.play;
     m.quiz += d.quiz || 0;
     m.wrong += d.wrong;
     m.correctCount += d.correct.length;
-    m.qs = d.qs; // full per-question log stays local-device-only
+    if (d.qs) m.qs.push(...d.qs); // this device's own questions
   }
   const days = {};
   for (const [day, m] of Object.entries(merged)) {
+    m.qs.sort((a, b) => a.t - b.t);
     days[day] = { play: m.play, quiz: m.quiz, wrong: m.wrong, correct: new Array(m.correctCount), qs: m.qs };
   }
   const tKey = todayKey();
@@ -1518,7 +1523,7 @@ async function pullPlayTime() {
 }
 
 pullPlayTime();
-setInterval(pushPlayTime, 15000);
+setInterval(() => { pushPlayTime(); pushPrefsToCloud(); }, 15000);
 setInterval(pullPlayTime, 60000);
 window.addEventListener('pagehide', () => pushPlayTime(true));
 document.addEventListener('visibilitychange', () => {
@@ -1609,7 +1614,24 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
     edu.setPrefs(playerProfile.lang, playerProfile.grade);
     gradeSelect.value = String(playerProfile.grade);
     renderLangRow();
-    creatureManager.toast('☁️ Tes réglages ont été retrouvés sur le serveur !', 0x9fd8e8);
+  }
+  // Adaptive quiz progress follows the child too: per-skill difficulty
+  // never regresses from a sync (only a higher remote level wins), so
+  // catching up from another device can only help, never undo progress.
+  let skillsChanged = false;
+  if (prefs.skills && typeof prefs.skills === 'object') {
+    const merged = { ...edu.skills };
+    for (const [skill, r] of Object.entries(prefs.skills)) {
+      const l = merged[skill];
+      if (r && (!l || (r.level || 0) > (l.level || 0))) { merged[skill] = r; skillsChanged = true; }
+    }
+    if (skillsChanged) {
+      const recentUnion = new Set([...edu.recent, ...(Array.isArray(prefs.recent) ? prefs.recent : [])]);
+      edu.setRemoteSkills(merged, [...recentUnion].slice(-80));
+    }
+  }
+  if (changed || skillsChanged) {
+    creatureManager.toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
   }
 })();
 

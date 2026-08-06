@@ -1266,6 +1266,14 @@ export class EducationMode {
     this.el.panel.style.display = 'block';
   }
 
+  // Adopt a merged skills/recent-questions state pulled from the cloud
+  // (main.js does the actual cross-device merge; this just applies it).
+  setRemoteSkills(skills, recentKeys) {
+    this.skills = skills;
+    if (recentKeys) this.recent = new Set(recentKeys);
+    this.save();
+  }
+
   // Cross-device totals arrive asynchronously from main.js (Supabase pull).
   // Setting them re-renders the panel live if it's currently open.
   setCrossDeviceDays(days, otherDevicesPlaySeconds) {
@@ -1289,7 +1297,7 @@ export class EducationMode {
       `<div><b>Aujourd'hui</b>${this.crossDeviceDays ? ' <span style="color:#8894b0;font-size:12px">(tous appareils)</span>' : ''}</div>` +
       `<div>🕐 Temps de jeu : <b>${this.formatDuration(td.play)}</b>` +
       (td.quiz > 5 ? ` · 📝 Temps de quiz : <b>${this.formatDuration(td.quiz)}</b>` : '') + `</div>` +
-      `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
+      `<div>✅ Bonnes réponses : <b>${td.correct.length}</b> · ❌ Erreurs : <b>${td.wrong}</b></div>` +
       `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/5 · English <b>${this.categoryLevel('English')}</b>/3 · Français <b>${this.categoryLevel('Français')}</b>/3 · Découverte <b>${this.categoryLevel('Découverte')}</b>/3</div>` +
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
@@ -1411,8 +1419,9 @@ export class EducationMode {
       renderDayDetail(keys14[i]);
     });
 
-    // Parent digest: what works well / what needs practice, from today's log.
-    const qs = t.qs || [];
+    // Parent digest: what works well / what needs practice, from today's log
+    // — merged across every device the child played on today, when known.
+    const qs = (this.crossDeviceDays && td.qs) || t.qs || [];
     if (qs.length >= 2) {
       const bySkill = {};
       for (const item of qs) {
@@ -1439,7 +1448,9 @@ export class EducationMode {
     if (qs.length > 0) {
       const h = document.createElement('div');
       h.className = 'edu-heading';
-      h.textContent = "Toutes les questions d'aujourd'hui :";
+      h.textContent = this.crossDeviceDays
+        ? "Toutes les questions d'aujourd'hui (tous appareils) :"
+        : "Toutes les questions d'aujourd'hui :";
       body.appendChild(h);
       for (const item of [...qs].reverse()) {
         const row = document.createElement('div');

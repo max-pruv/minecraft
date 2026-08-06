@@ -155,7 +155,7 @@ export class CloudSave {
   async timePull(name) {
     if (!this.configured || !name) return [];
     const res = await fetch(
-      `${this.url}/rest/v1/play_time?name=eq.${encodeURIComponent(name)}&select=device_id,day,play,quiz,correct,wrong`,
+      `${this.url}/rest/v1/play_time?name=eq.${encodeURIComponent(name)}&select=device_id,day,play,quiz,correct,wrong,qs`,
       { headers: this.headers() }
     );
     if (!res.ok) return [];
