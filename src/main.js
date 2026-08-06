@@ -312,7 +312,15 @@ setInterval(savePosition, 3000); // continuous, cheap
 
 // never lose edits or position on a sudden close (tab killed, app hidden)
 window.addEventListener('beforeunload', () => { world.saveEdits(); savePosition(); });
-window.addEventListener('pagehide', () => { world.saveEdits(); savePosition(); });
+window.addEventListener('pagehide', () => {
+  world.saveEdits();
+  savePosition();
+  // On prévient les autres joueurs avant de disparaître. Sans ça, la
+  // connexion mourait sans un mot et il fallait attendre que le réseau s'en
+  // aperçoive : le compagnon restait planté là, puis s'évanouissait sans
+  // qu'on comprenne quand ni pourquoi.
+  if (net) { try { net.stop(); } catch { /* déjà parti */ } net = null; }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { world.saveEdits(); savePosition(); }
 });
@@ -1190,6 +1198,95 @@ function nameSprite(text) {
   return sprite;
 }
 
+// --- arrivées et départs en multijoueur -------------------------------------
+// Un joueur qui apparaît ou disparaît d'un coup passe inaperçu, surtout quand
+// on regarde ailleurs. Une gerbe de lumière à l'arrivée et une disparition en
+// spirale au départ rendent l'événement lisible depuis l'autre bout du monde.
+const netFx = [];       // { mesh, vels, life, max, kind, spin }
+const leaving = [];     // { mesh, life, max } — corps qui s'efface avant retrait
+
+function fxParticles(pos, { color, count, up, spread }) {
+  const geo = new THREE.BufferGeometry();
+  const vels = [];
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.random() * spread;
+    vels.push(new THREE.Vector3(Math.cos(a) * r, up * (0.4 + Math.random()), Math.sin(a) * r));
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+  const mesh = new THREE.Points(geo, new THREE.PointsMaterial({
+    color, size: 0.28, transparent: true, opacity: 1, depthWrite: false,
+  }));
+  mesh.position.copy(pos);
+  scene.add(mesh);
+  return { mesh, vels };
+}
+
+function joinEffect(pos, name) {
+  const p = fxParticles(pos, { color: 0x9fe8ff, count: 60, up: 5, spread: 3.2 });
+  netFx.push({ ...p, life: 1.4, max: 1.4, kind: 'up' });
+  // onde au sol, comme une téléportation qui se pose
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.3, 0.5, 28),
+    new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(pos.x, pos.y - 0.9, pos.z);
+  scene.add(ring);
+  netFx.push({ mesh: ring, life: 1, max: 1, kind: 'ring' });
+  // pas de message ici : net.js annonce déjà l'arrivée et le départ, deux
+  // bulles pour le même événement se marcheraient dessus
+}
+
+function leaveEffect(mesh, name) {
+  const pos = mesh.position.clone();
+  const p = fxParticles(pos, { color: 0xffd27f, count: 40, up: 3, spread: 1.6 });
+  netFx.push({ ...p, life: 1.1, max: 1.1, kind: 'up' });
+  leaving.push({ mesh, life: 0.7, max: 0.7 });
+}
+
+function updateNetFx(dt) {
+  for (const f of [...netFx]) {
+    f.life -= dt;
+    const k = Math.max(0, f.life / f.max);
+    if (f.life <= 0) {
+      scene.remove(f.mesh);
+      f.mesh.geometry.dispose();
+      f.mesh.material.dispose();
+      netFx.splice(netFx.indexOf(f), 1);
+      continue;
+    }
+    f.mesh.material.opacity = k;
+    if (f.kind === 'ring') {
+      const s = 1 + (1 - k) * 9;
+      f.mesh.scale.set(s, s, 1);
+    } else {
+      const arr = f.mesh.geometry.attributes.position;
+      for (let i = 0; i < f.vels.length; i++) {
+        const v = f.vels[i];
+        arr.array[i * 3] += v.x * dt;
+        arr.array[i * 3 + 1] += v.y * dt;
+        arr.array[i * 3 + 2] += v.z * dt;
+        v.y -= 6 * dt; // retombée
+      }
+      arr.needsUpdate = true;
+    }
+  }
+  // le corps rétrécit en tournant avant d'être retiré pour de bon
+  for (const l of [...leaving]) {
+    l.life -= dt;
+    if (l.life <= 0) {
+      scene.remove(l.mesh);
+      leaving.splice(leaving.indexOf(l), 1);
+      continue;
+    }
+    const k = l.life / l.max;
+    l.mesh.scale.setScalar(Math.max(0.01, k));
+    l.mesh.rotation.y += dt * 12;
+    l.mesh.position.y += dt * 1.5;
+  }
+}
+
 function syncRemotePlayers(list) {
   const seen = new Set();
   for (const p of list) {
@@ -1202,9 +1299,11 @@ function syncRemotePlayers(list) {
       const mesh = buildKidMesh(withOwnLook(base, p.look || {}));
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
-      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name };
+      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5 };
       remotePlayers.set(p.id, rp);
       if (p.pos) mesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+      mesh.scale.setScalar(0.01); // grandit depuis rien, cf. updateRemotePlayers
+      joinEffect(mesh.position, p.name || 'Un ami');
     }
     if (p.pos) rp.target = p.pos;
     rp.yaw = p.yaw || 0;
@@ -1212,14 +1311,24 @@ function syncRemotePlayers(list) {
   }
   for (const [id, rp] of remotePlayers) {
     if (!seen.has(id)) {
-      scene.remove(rp.mesh);
+      // on ne retire pas tout de suite : leaveEffect fait disparaître le corps
+      leaveEffect(rp.mesh, rp.name || 'Un ami');
       remotePlayers.delete(id);
     }
   }
 }
 
 function updateRemotePlayers(dt) {
+  updateNetFx(dt);
   for (const rp of remotePlayers.values()) {
+    // apparition : le personnage grandit jusqu'à sa taille normale, avec un
+    // léger dépassement pour que l'arrivée ait du ressort
+    if (rp.pop > 0) {
+      rp.pop = Math.max(0, rp.pop - dt);
+      const k = 1 - rp.pop / 0.5;
+      rp.mesh.scale.setScalar(Math.max(0.01, k < 1 ? k * (1.25 - 0.25 * k) : 1));
+      if (rp.pop === 0) rp.mesh.scale.setScalar(1);
+    }
     if (rp.target) {
       const t = Math.min(1, dt * 10);
       rp.mesh.position.x += (rp.target.x - rp.mesh.position.x) * t;
@@ -2643,7 +2752,8 @@ const fun = initFun({
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
