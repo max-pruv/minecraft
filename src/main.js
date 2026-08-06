@@ -860,8 +860,13 @@ function loadRegistry() {
     const reg = JSON.parse(raw.get(REG_KEY));
     if (reg && reg.list && reg.list.length) return reg;
   } catch { /* first run */ }
-  // migration: existing device data becomes player 1
-  const reg = { current: 1, nextId: 2, list: [{ id: 1, name: playerProfile.name || 'Joueur 1' }] };
+  // Un appareil qui a déjà servi garde sa partie : elle devient le joueur 1.
+  // Un appareil neuf, lui, ne reçoit aucun profil — l'écran « Qui joue ? »
+  // propose de créer un compte ou de se connecter, plutôt qu'un « Joueur 1 »
+  // fantôme que personne n'a demandé et dans lequel les enfants atterrissaient.
+  const reg = playerProfile.name
+    ? { current: 1, nextId: 2, list: [{ id: 1, name: playerProfile.name }] }
+    : { current: 0, nextId: 1, list: [] };
   raw.set(REG_KEY, JSON.stringify(reg));
   return reg;
 }
@@ -977,7 +982,7 @@ function renderProfiles() {
       card.appendChild(lock);
     }
     card.addEventListener('click', () => enterProfile(p, reg));
-    if (reg.list.length > 1) {
+    { // toujours supprimable, y compris le dernier : plus de profil obligatoire
       const del = document.createElement('button');
       del.className = 'who-del';
       del.textContent = '✕';
@@ -995,7 +1000,8 @@ function renderProfiles() {
         r2.list = r2.list.filter((o) => o.id !== p.id);
         deleteProfileData(p.id);
         if (r2.current === p.id) {
-          r2.current = r2.list[0].id;
+          // plus personne : on repart sur un écran « Qui joue ? » vierge
+          r2.current = r2.list.length ? r2.list[0].id : 0;
           saveRegistry(r2);
           location.reload();
           return;

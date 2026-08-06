@@ -39,10 +39,56 @@ let faceapiPromise = null;
 // Loads the library and its models on first use only, so installing the game
 // never pays for 8 MB the child may never need. Cached by the service worker
 // afterwards, so it also works offline from then on.
-function loadFaceApi(onProgress) {
+// Le scanner pèse ~8 Mo : sur une connexion mobile, l'attente se compte en
+// dizaines de secondes. On les télécharge donc nous-mêmes, en comptant les
+// octets, pour montrer une vraie progression — sinon l'enfant fixe un écran
+// figé sans savoir si ça avance. La lecture remplit le cache HTTP, si bien
+// que le loadFromUri qui suit est instantané.
+const ASSETS = [
+  ['vendor/face-api.js', 1333943],
+  ['vendor/face-models/tiny_face_detector_model-weights_manifest.json', 3000],
+  ['vendor/face-models/tiny_face_detector_model.bin', 193321],
+  ['vendor/face-models/face_landmark_68_model-weights_manifest.json', 8000],
+  ['vendor/face-models/face_landmark_68_model.bin', 356840],
+  ['vendor/face-models/face_recognition_model-weights_manifest.json', 19000],
+  ['vendor/face-models/face_recognition_model.bin', 6444032],
+];
+const TOTAL_BYTES = ASSETS.reduce((a, [, n]) => a + n, 0);
+const CACHED_FLAG = 'web-minecraft-scanner-cached';
+
+// Déjà téléchargé une fois sur cet appareil : on saute la barre, tout vient
+// du cache et l'attente se compte en millisecondes.
+function scannerCached() {
+  try { return localStorage.getItem(CACHED_FLAG) === '1'; } catch { return false; }
+}
+
+async function prefetchAssets(onProgress) {
+  let done = 0;
+  for (const [path, size] of ASSETS) {
+    try {
+      const res = await fetch(`./${path}`);
+      if (!res.ok || !res.body) { done += size; onProgress?.(done / TOTAL_BYTES); continue; }
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done: end, value } = await reader.read();
+        if (end) break;
+        done += value.length;
+        onProgress?.(Math.min(done / TOTAL_BYTES, 0.99));
+      }
+    } catch {
+      done += size; // hors-ligne ou bloqué : loadFromUri retentera et parlera
+      onProgress?.(done / TOTAL_BYTES);
+    }
+  }
+  onProgress?.(1);
+}
+
+function loadFaceApi(onProgress, onPercent) {
   if (faceapiPromise) return faceapiPromise;
   faceapiPromise = (async () => {
-    onProgress?.('Préparation du scanner…');
+    const cached = scannerCached();
+    onProgress?.(cached ? 'Préparation du scanner…' : 'Je télécharge mon scanner…');
+    if (!cached) await prefetchAssets(onPercent);
     if (!window.faceapi) {
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
@@ -53,10 +99,11 @@ function loadFaceApi(onProgress) {
       });
     }
     const f = window.faceapi;
-    onProgress?.('Chargement du scanner… (une seule fois)');
+    onProgress?.('Installation du scanner…');
     await f.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
     await f.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
     await f.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    try { localStorage.setItem(CACHED_FLAG, '1'); } catch { /* mode privé */ }
     // NB: no blank-canvas warm-up here. It hung on iPad (a canvas with no
     // backing store never came back), leaving the child stuck on "presque
     // prêt". The first real detection pays the kernel-compilation cost
@@ -386,6 +433,12 @@ export class Identity {
         color:#7f90b0; border:1px solid transparent; }
       #id-steps span.on { background:rgba(58,106,208,.25); color:#cfe0ff; border-color:#3a6ad0; }
       #id-steps span.done { background:rgba(90,200,140,.18); color:#a8e6c1; }
+      /* téléchargement du scanner : ~8 Mo, il faut le montrer */
+      #id-load { display:none; margin:10px 0 4px; }
+      #id-load-bar { height:10px; border-radius:999px; background:rgba(255,255,255,.1); overflow:hidden; }
+      #id-load-fill { height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,#3a6ad0,#6fa8ff);
+        transition:width .25s ease; }
+      #id-load-txt { font-size:12px; color:#9fb0d0; margin-top:6px; }
       #id-sub { color:#9fb0d0; font-size:15px; line-height:1.5; margin-bottom:14px; }
       #id-stage { position:relative; width:230px; height:230px; margin:0 auto 14px;
         border-radius:50%; overflow:hidden; background:#0a0e18;
@@ -424,6 +477,7 @@ export class Identity {
       <div id="id-steps"></div>
       <h2 id="id-title"></h2>
       <div id="id-sub"></div>
+      <div id="id-load"><div id="id-load-bar"><div id="id-load-fill"></div></div><div id="id-load-txt"></div></div>
       <div id="id-stage"><video id="id-video" playsinline muted></video></div>
       <div id="id-shots"></div>
       <div id="id-pin">
@@ -438,6 +492,9 @@ export class Identity {
     this.el = {
       modal: box,
       steps: box.querySelector('#id-steps'),
+      load: box.querySelector('#id-load'),
+      loadFill: box.querySelector('#id-load-fill'),
+      loadTxt: box.querySelector('#id-load-txt'),
       title: box.querySelector('#id-title'),
       sub: box.querySelector('#id-sub'),
       stage: box.querySelector('#id-stage'),
@@ -459,7 +516,19 @@ export class Identity {
     }
   }
 
+  // Barre de téléchargement du scanner. `null` la range.
+  setLoad(pct) {
+    if (pct === null) { this.el.load.style.display = 'none'; return; }
+    const n = Math.round(Math.max(0, Math.min(1, pct)) * 100);
+    this.el.load.style.display = 'block';
+    this.el.loadFill.style.width = n + '%';
+    this.el.loadTxt.textContent = n < 100
+      ? `${n}% — je ne le téléchargerai qu'une seule fois 😊`
+      : 'Presque prêt…';
+  }
+
   show(title, sub) {
+    this.el.load.style.display = 'none';
     this.el.steps.style.display = 'none'; // réaffiché par setSteps sur l'inscription
     this.el.title.textContent = title;
     this.el.sub.textContent = sub || '';
@@ -580,8 +649,10 @@ export class Identity {
       return;
     }
     try {
-      await loadFaceApi((m) => this.say(m));
+      await loadFaceApi((m) => this.say(m), (p) => this.setLoad(p));
+      this.setLoad(null);
     } catch {
+      this.setLoad(null);
       this.say('Scanner indisponible — on fait un code secret.', 'err');
       setTimeout(() => this.enrollPin(name, onDone), 1600);
       return;
@@ -728,8 +799,10 @@ export class Identity {
       return;
     }
     try {
-      await loadFaceApi((m) => this.say(m));
+      await loadFaceApi((m) => this.say(m), (p) => this.setLoad(p));
+      this.setLoad(null);
     } catch {
+      this.setLoad(null);
       this.say('Scanner indisponible.', 'err');
       setTimeout(() => this.pinLogin(names, onMatch), 1500);
       return;
