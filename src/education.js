@@ -1268,6 +1268,58 @@ export class EducationMode {
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
 
+    // 📊 bar chart: minutes of play per day over the last two weeks
+    const chartBox = document.createElement('div');
+    chartBox.className = 'edu-summary';
+    chartBox.innerHTML = '<div><b>📊 Temps de jeu par jour (minutes)</b></div>';
+    const cv = document.createElement('canvas');
+    cv.width = 640; cv.height = 220;
+    cv.style.width = '100%';
+    cv.style.height = 'auto';
+    chartBox.appendChild(cv);
+    body.appendChild(chartBox);
+    {
+      const g = cv.getContext('2d');
+      const keys14 = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        keys14.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+      }
+      const mins = keys14.map((k) => (days[k] ? Math.round(days[k].play / 60) : 0));
+      const max = Math.max(10, ...mins);
+      const PADL = 34, PADB = 30, PADT = 18;
+      const W = cv.width - PADL - 8, H = cv.height - PADB - PADT;
+      const step = max <= 20 ? 5 : max <= 60 ? 15 : 30; // y-axis gridlines
+      g.strokeStyle = 'rgba(255,255,255,0.12)';
+      g.fillStyle = 'rgba(255,255,255,0.45)';
+      g.font = '15px system-ui, sans-serif';
+      g.textAlign = 'right';
+      for (let v = 0; v <= max; v += step) {
+        const y = PADT + H - (v / max) * H;
+        g.beginPath(); g.moveTo(PADL, y); g.lineTo(PADL + W, y); g.stroke();
+        g.fillText(String(v), PADL - 5, y + 5);
+      }
+      const bw = W / keys14.length;
+      keys14.forEach((k, i) => {
+        const h2 = (mins[i] / max) * H;
+        const x = PADL + i * bw + bw * 0.15;
+        g.fillStyle = k === todayKey() ? '#ffd75e' : '#5ab46e'; // today pops in gold
+        g.fillRect(x, PADT + H - h2, bw * 0.7, h2);
+        g.textAlign = 'center';
+        if (mins[i] > 0) {
+          g.fillStyle = '#fff';
+          g.font = 'bold 14px system-ui, sans-serif';
+          g.fillText(String(mins[i]), x + bw * 0.35, PADT + H - h2 - 5);
+        }
+        if (i % 2 === 1) { // every other date label, always including today
+          g.fillStyle = 'rgba(255,255,255,0.55)';
+          g.font = '12px system-ui, sans-serif';
+          g.fillText(`${k.slice(8, 10)}/${k.slice(5, 7)}`, x + bw * 0.35, PADT + H + 18);
+        }
+      });
+    }
+
     // Parent digest: what works well / what needs practice, from today's log.
     const qs = t.qs || [];
     if (qs.length >= 2) {
