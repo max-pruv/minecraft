@@ -113,6 +113,30 @@ export class CloudSave {
 
   signSend(sign) { return this.chatSend('__sign', JSON.stringify(sign)); }
 
+  // ---- player preferences: language, grade & character follow the name -----
+  // Keyed by the child's first name, so their settings travel between
+  // devices — Alice on the iPad and Alice on a laptop share one profile.
+
+  async prefsPull(name) {
+    if (!this.configured || !name) return null;
+    const res = await fetch(
+      `${this.url}/rest/v1/player_prefs?name=eq.${encodeURIComponent(name)}&select=prefs`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? rows[0].prefs : null;
+  }
+
+  async prefsPush(name, prefs) {
+    if (!this.configured || !name) return;
+    await fetch(`${this.url}/rest/v1/player_prefs`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ name, prefs, updated_at: new Date().toISOString() }]),
+    });
+  }
+
   async chatSend(name, msg) {
     if (!this.configured || !this.code) return;
     await fetch(`${this.url}/rest/v1/world_chat`, {
