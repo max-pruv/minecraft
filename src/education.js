@@ -751,7 +751,8 @@ export class EducationMode {
   today() {
     if (!this.data.days) this.data.days = {};
     const key = todayKey();
-    if (!this.data.days[key]) this.data.days[key] = { play: 0, correct: [], wrong: 0, unlocks: 0 };
+    if (!this.data.days[key]) this.data.days[key] = { play: 0, quiz: 0, correct: [], wrong: 0, unlocks: 0 };
+    if (this.data.days[key].quiz === undefined) this.data.days[key].quiz = 0; // older saves
     return this.data.days[key];
   }
 
@@ -859,6 +860,13 @@ export class EducationMode {
   update(dt, running) {
     if (running) {
       this.today().play += dt;
+      this.saveTimer -= dt;
+      if (this.saveTimer <= 0) { this.saveTimer = 10; this.save(); }
+    } else if (this.quizActive || this.hardStopActive) {
+      // answering quiz questions (or waiting out a hard stop) is real
+      // engagement too — tracked apart from "play" so the daily chart
+      // never looks like time went missing
+      this.today().quiz += dt;
       this.saveTimer -= dt;
       if (this.saveTimer <= 0) { this.saveTimer = 10; this.save(); }
     }
@@ -1262,34 +1270,56 @@ export class EducationMode {
     summary.className = 'edu-summary';
     summary.innerHTML =
       `<div><b>Aujourd'hui</b></div>` +
-      `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b></div>` +
+      `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b>` +
+      (t.quiz > 5 ? ` · 📝 Temps de quiz : <b>${this.formatDuration(t.quiz)}</b>` : '') + `</div>` +
       `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
       `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/5 · English <b>${this.categoryLevel('English')}</b>/3 · Français <b>${this.categoryLevel('Français')}</b>/3 · Découverte <b>${this.categoryLevel('Découverte')}</b>/3</div>` +
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
     body.appendChild(summary);
 
-    // 📊 bar chart: minutes of play per day over the last two weeks
+    // 📊 stacked bar chart: minutes of play (+ quiz time) per day, 2 weeks.
+    // The quiz segment exists so the chart never looks like time "went
+    // missing" — answering quiz questions or waiting out a hard stop isn't
+    // counted as "jeu", so it's shown separately instead of just vanishing.
     const chartBox = document.createElement('div');
     chartBox.className = 'edu-summary';
-    chartBox.innerHTML = '<div><b>📊 Temps de jeu par jour (minutes)</b></div>';
+    chartBox.innerHTML = '<div><b>📊 Temps par jour (minutes)</b> — touche une barre pour le détail</div>' +
+      '<div style="font-size:12px;color:#8894b0;margin-top:2px">' +
+      '<span style="color:#ffd75e">■</span> jeu (aujourd\'hui) &nbsp; ' +
+      '<span style="color:#5ab46e">■</span> jeu &nbsp; ' +
+      '<span style="color:#4a90d9">■</span> quiz</div>';
     const cv = document.createElement('canvas');
-    cv.width = 640; cv.height = 220;
+    cv.width = 900; cv.height = 240;
     cv.style.width = '100%';
     cv.style.height = 'auto';
+    cv.style.cursor = 'pointer';
     chartBox.appendChild(cv);
     body.appendChild(chartBox);
-    {
+
+    const dayDetail = document.createElement('div');
+    dayDetail.id = 'edu-day-detail';
+    dayDetail.className = 'edu-summary';
+    dayDetail.style.display = 'none';
+    body.appendChild(dayDetail);
+
+    const keys14 = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      keys14.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+    const playMins = keys14.map((k) => (days[k] ? Math.round(days[k].play / 60) : 0));
+    const quizMins = keys14.map((k) => (days[k] ? Math.round((days[k].quiz || 0) / 60) : 0));
+    const totalMins = keys14.map((i2, i) => playMins[i] + quizMins[i]);
+    const max = Math.max(10, ...totalMins);
+    const PADL = 34, PADB = 34, PADT = 18;
+    const W = cv.width - PADL - 8, H = cv.height - PADB - PADT;
+    const bw = W / keys14.length;
+    let selectedKey = null;
+
+    const draw = () => {
       const g = cv.getContext('2d');
-      const keys14 = [];
-      for (let i = 13; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        keys14.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-      }
-      const mins = keys14.map((k) => (days[k] ? Math.round(days[k].play / 60) : 0));
-      const max = Math.max(10, ...mins);
-      const PADL = 34, PADB = 30, PADT = 18;
-      const W = cv.width - PADL - 8, H = cv.height - PADB - PADT;
+      g.clearRect(0, 0, cv.width, cv.height);
       const step = max <= 20 ? 5 : max <= 60 ? 15 : 30; // y-axis gridlines
       g.strokeStyle = 'rgba(255,255,255,0.12)';
       g.fillStyle = 'rgba(255,255,255,0.45)';
@@ -1300,25 +1330,69 @@ export class EducationMode {
         g.beginPath(); g.moveTo(PADL, y); g.lineTo(PADL + W, y); g.stroke();
         g.fillText(String(v), PADL - 5, y + 5);
       }
-      const bw = W / keys14.length;
       keys14.forEach((k, i) => {
-        const h2 = (mins[i] / max) * H;
-        const x = PADL + i * bw + bw * 0.15;
+        const x = PADL + i * bw + bw * 0.12;
+        const bwPlot = bw * 0.76;
+        const playH = (playMins[i] / max) * H;
+        const quizH = (quizMins[i] / max) * H;
+        if (k === selectedKey) { // highlight the selected column
+          g.fillStyle = 'rgba(255,255,255,0.08)';
+          g.fillRect(PADL + i * bw, PADT, bw, H);
+        }
         g.fillStyle = k === todayKey() ? '#ffd75e' : '#5ab46e'; // today pops in gold
-        g.fillRect(x, PADT + H - h2, bw * 0.7, h2);
+        g.fillRect(x, PADT + H - playH, bwPlot, playH);
+        if (quizH > 0) {
+          g.fillStyle = '#4a90d9';
+          g.fillRect(x, PADT + H - playH - quizH, bwPlot, quizH);
+        }
         g.textAlign = 'center';
-        if (mins[i] > 0) {
+        if (totalMins[i] > 0) {
           g.fillStyle = '#fff';
-          g.font = 'bold 14px system-ui, sans-serif';
-          g.fillText(String(mins[i]), x + bw * 0.35, PADT + H - h2 - 5);
+          g.font = 'bold 13px system-ui, sans-serif';
+          g.fillText(String(totalMins[i]), x + bwPlot / 2, PADT + H - playH - quizH - 5);
         }
-        if (i % 2 === 1) { // every other date label, always including today
-          g.fillStyle = 'rgba(255,255,255,0.55)';
-          g.font = '12px system-ui, sans-serif';
-          g.fillText(`${k.slice(8, 10)}/${k.slice(5, 7)}`, x + bw * 0.35, PADT + H + 18);
-        }
+        g.fillStyle = k === selectedKey ? '#fff' : 'rgba(255,255,255,0.55)';
+        g.font = '11px system-ui, sans-serif';
+        g.fillText(`${k.slice(8, 10)}/${k.slice(5, 7)}`, x + bwPlot / 2, PADT + H + 17);
       });
-    }
+    };
+    draw();
+
+    const renderDayDetail = (key) => {
+      if (selectedKey === key) { selectedKey = null; dayDetail.style.display = 'none'; draw(); return; }
+      selectedKey = key;
+      draw();
+      const d = days[key] || { play: 0, quiz: 0, correct: [], wrong: 0, qs: [] };
+      const [y2, m2, day2] = key.split('-');
+      dayDetail.style.display = 'block';
+      let html = `<div><b>${day2}/${m2}/${y2}</b>` + (key === todayKey() ? " (aujourd'hui)" : '') + '</div>' +
+        `<div>🕐 Jeu : <b>${this.formatDuration(d.play)}</b>` +
+        (d.quiz > 5 ? ` · 📝 Quiz : <b>${this.formatDuration(d.quiz)}</b>` : '') + '</div>' +
+        `<div>✅ <b>${d.correct.length}</b> bonnes réponses · ❌ <b>${d.wrong}</b> erreurs</div>`;
+      const qs = d.qs || [];
+      if (qs.length) {
+        html += '<div style="margin-top:6px;max-height:220px;overflow-y:auto">';
+        for (const item of [...qs].reverse()) {
+          const time = new Date(item.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          const mark = item.ok ? '<span class="mark ok">✓</span>' : '<span class="mark ko">✗</span>';
+          html += `<div class="edu-row">${mark} <span class="edu-cat" data-cat="${item.c}">${item.c}</span> ${item.q} → <b>${item.a}</b> <span class="edu-time">${time}</span></div>`;
+        }
+        html += '</div>';
+      } else if (totalMins[keys14.indexOf(key)] === 0) {
+        html += '<div style="color:#8894b0">Aucune activité ce jour-là.</div>';
+      }
+      dayDetail.innerHTML = html;
+      dayDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    cv.addEventListener('click', (e) => {
+      const rect = cv.getBoundingClientRect();
+      const scale = cv.width / rect.width;
+      const px = (e.clientX - rect.left) * scale;
+      if (px < PADL || px > PADL + W) return;
+      const i = Math.min(keys14.length - 1, Math.max(0, Math.floor((px - PADL) / bw)));
+      renderDayDetail(keys14[i]);
+    });
 
     // Parent digest: what works well / what needs practice, from today's log.
     const qs = t.qs || [];
@@ -1382,16 +1456,23 @@ export class EducationMode {
         const d = days[key];
         const row = document.createElement('div');
         row.className = 'edu-row';
-        row.innerHTML = `<b>${key}</b> — 🕐 ${this.formatDuration(d.play)} · ✅ ${d.correct.length} · ❌ ${d.wrong}`;
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<b>${key}</b> — 🕐 ${this.formatDuration(d.play)}` +
+          (d.quiz > 5 ? ` · 📝 ${this.formatDuration(d.quiz)}` : '') +
+          ` · ✅ ${d.correct.length} · ❌ ${d.wrong}`;
+        row.addEventListener('click', () => renderDayDetail(key));
         body.appendChild(row);
       }
     }
 
     const total = Object.values(days).reduce((a, d) => a + d.play, 0);
+    const totalQuiz = Object.values(days).reduce((a, d) => a + (d.quiz || 0), 0);
     const totalCorrect = Object.values(days).reduce((a, d) => a + d.correct.length, 0);
     const footer = document.createElement('div');
     footer.className = 'edu-summary';
-    footer.innerHTML = `<div><b>Total</b> : 🕐 ${this.formatDuration(total)} · ✅ ${totalCorrect} bonnes réponses</div>`;
+    footer.innerHTML = `<div><b>Total</b> : 🕐 ${this.formatDuration(total)}` +
+      (totalQuiz > 5 ? ` (+ 📝 ${this.formatDuration(totalQuiz)} de quiz)` : '') +
+      ` · ✅ ${totalCorrect} bonnes réponses</div>`;
     body.appendChild(footer);
   }
 }
