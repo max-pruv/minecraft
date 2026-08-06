@@ -10,6 +10,7 @@ import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
+import { Identity } from './identity.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
@@ -862,6 +863,20 @@ function deleteProfileData(id) {
   }
 }
 
+// Playful password-free identification (face + 6-digit backup code).
+const identity = new Identity(cloud, raw);
+identity.syncFromCloud();
+
+// Picking a profile that has never been secured runs the little sign-up
+// flow first — this is how the profiles that existed before the feature
+// get onboarded. Skipping it keeps the old behaviour exactly.
+function enterProfile(p, reg) {
+  const go = () => { if (p.id === reg.current) closeWhoScreen(); else switchProfile(p.id); };
+  if (p.name && !identity.isEnrolled(p.name)) {
+    identity.enroll(p.name, { onDone: () => { renderProfiles(); go(); } }); // 🔒 badge refresh
+  } else go();
+}
+
 function renderProfiles() {
   const reg = loadRegistry();
   const row = document.getElementById('who-row');
@@ -876,10 +891,14 @@ function renderProfiles() {
     name.className = 'who-name';
     name.textContent = p.name;
     card.append(img, name);
-    card.addEventListener('click', () => {
-      if (p.id === reg.current) closeWhoScreen();
-      else switchProfile(p.id);
-    });
+    if (p.name && identity.isEnrolled(p.name)) {
+      const lock = document.createElement('span');
+      lock.className = 'who-locked';
+      lock.textContent = '🔒';
+      lock.title = 'Compte sécurisé';
+      card.appendChild(lock);
+    }
+    card.addEventListener('click', () => enterProfile(p, reg));
     if (reg.list.length > 1) {
       const del = document.createElement('button');
       del.className = 'who-del';
@@ -927,7 +946,8 @@ function renderProfiles() {
     world.saveEdits();
     edu.save();
     try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
-    location.reload();
+    // secure the brand-new account before entering it (skippable)
+    identity.enroll(name, { onDone: () => location.reload() });
   });
   row.appendChild(add);
 }
@@ -947,6 +967,22 @@ function closeWhoScreen() {
   document.getElementById('mode-row').style.display = 'flex';
 }
 document.getElementById('switch-player-btn').addEventListener('click', showWhoScreen);
+
+// "Reconnais-moi !": look at the camera, land straight in your own profile —
+// works even on a device this child has never used, because the signatures
+// travel with the name. Tapping a card by hand always stays available.
+document.getElementById('face-login-btn').addEventListener('click', () => {
+  const reg = loadRegistry();
+  const named = reg.list.filter((p) => p.name);
+  identity.recognize(named.map((p) => p.name), {
+    onMatch: (who) => {
+      const p = named.find((o) => o.name === who);
+      if (!p) return;
+      if (p.id === reg.current) closeWhoScreen();
+      else switchProfile(p.id);
+    },
+  });
+});
 // deferred: runs after the whole module evaluates, once charPortraits and
 // the menu elements below are all initialized
 queueMicrotask(() => {
@@ -2368,7 +2404,7 @@ const fun = initFun({
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 

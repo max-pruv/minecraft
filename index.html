@@ -133,6 +133,12 @@
       background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 16px;
     }
     #who-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    #face-login-btn {
+      font-size: 15px !important; padding: 11px 22px !important;
+      background: #3a6ad0 !important; border: none !important; border-radius: 13px;
+      color: #fff;
+    }
+    .who-locked { position: absolute; top: 4px; left: 6px; font-size: 13px; opacity: .85; }
     .who-card {
       position: relative; width: 112px;
       font-family: inherit; padding: 10px 6px !important; margin: 0 !important;
@@ -958,6 +964,7 @@
     <div id="who-screen">
       <div class="online-title">👥 Qui joue ?</div>
       <div id="who-row"></div>
+      <button id="face-login-btn">📸 Reconnais-moi !</button>
     </div>
     <div id="mode-row">
       <button id="profile-btn">🧑‍🚀 Mon personnage</button>
