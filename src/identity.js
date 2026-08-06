@@ -921,12 +921,49 @@ export class Identity {
   // Un compte pas encore sécurisé n'a rien à prouver : on l'inscrit.
   secureChange(name, kind, onDone) {
     if (!name) return;
+    if (!this.isEnrolled(name)) return this.enroll(name, { onDone });
+
+    // Changer le code exige le code actuel, pas le visage. Se laisser
+    // reconnaître prouve seulement qu'on est bien devant l'appareil ; ça ne
+    // prouve pas qu'on connaît le secret qu'on s'apprête à remplacer.
+    if (kind === 'pin' && this.entry(name).pinHash) {
+      return this.askCurrentPin(name, () => this.enrollPin(name, onDone), () => onDone?.(false));
+    }
     const go = () => {
       if (kind === 'pin') this.enrollPin(name, onDone);
       else this.enrollFace(name, onDone, true);
     };
-    if (!this.isEnrolled(name)) return this.enroll(name, { onDone });
     this.verify(name, { onOk: go, onCancel: () => onDone?.(false) });
+  }
+
+  // Demande le code en cours avant d'en choisir un autre. Les erreurs
+  // comptent comme partout ailleurs : on ne devine pas un code ici non plus.
+  askCurrentPin(name, onOk, onCancel) {
+    if (this.guardLocked(() => this.askCurrentPin(name, onOk, onCancel))) return;
+    this.show('🔐 Ton code actuel', `D'abord ton code d'aujourd'hui, ${name} — après on en choisira un nouveau.`);
+    this.askPin(async (value) => {
+      if (await this.checkPin(name, value)) {
+        this.registerSuccess(name);
+        this.say('👍 C\'est bien toi !', 'ok');
+        setTimeout(onOk, 900);
+        return;
+      }
+      this.clearPin();
+      this.registerFailure();
+      if (this.guardLocked(() => this.askCurrentPin(name, onOk, onCancel))) return;
+      const left = MAX_FAILS - this.lockState().fails;
+      this.say(`Ce n'est pas ton code 🤔 (encore ${left} essai${left > 1 ? 's' : ''})`, 'err');
+    });
+    // Un enfant oublie son code : sans cette porte il ne pourrait plus jamais
+    // en changer, et le message « demande à un parent » serait une impasse.
+    this.button('J\'ai oublié mon code', 'id-secondary', () => {
+      const code = window.prompt('Un parent doit taper son code pour remettre le code de l\'enfant à zéro :');
+      if (code === null) return;
+      if (code !== PARENT_CODE) { window.alert('Code incorrect !'); return; }
+      this.clearLock();
+      onOk();
+    });
+    this.button('Annuler', 'id-secondary', () => { this.hide(); onCancel?.(); });
   }
 
   // "Me connecter à mon compte": a device that has never seen this child.
