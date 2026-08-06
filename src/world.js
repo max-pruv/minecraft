@@ -222,6 +222,93 @@ function buildBelfry(set) { // le beffroi de Lille, en brique avec son horloge
   set(0, 29, 0, BLOCK.GOLD);
 }
 
+// The amusement park: an open flattened area with a Ferris wheel, a
+// carousel, a circular roller-coaster and candy-striped circus tents.
+export const PARK = { name: "Parc d'attractions", x: 150, z: -60, r: 34 };
+
+function buildFunPark(set) {
+  const R = 24;
+  // walkway grid across the park grounds
+  for (let dx = -R; dx <= R; dx++) {
+    for (let dz = -R; dz <= R; dz++) {
+      if (Math.hypot(dx, dz) > R) continue;
+      if (dx % 8 === 0 || dz % 8 === 0) set(dx, -1, dz, BLOCK.SANDSTONE);
+    }
+  }
+  // entrance arch on the south side
+  for (let y = 0; y < 5; y++) { set(-2, y, -R, BLOCK.GOLD); set(2, y, -R, BLOCK.GOLD); }
+  for (let dx = -2; dx <= 2; dx++) set(dx, 5, -R, BLOCK.WOOL_YELLOW);
+  set(0, 6, -R, BLOCK.WOOL_RED); // flag
+
+  // la grande roue — a tall Ferris wheel with rainbow gondolas
+  const FX = -10, FZ = 8, CY = 12, FR = 9;
+  const GONDOLAS = [BLOCK.WOOL_RED, BLOCK.WOOL_YELLOW, BLOCK.WOOL_GREEN, BLOCK.WOOL_BLUE,
+    BLOCK.WOOL_PURPLE, BLOCK.WOOL_RED, BLOCK.WOOL_YELLOW, BLOCK.WOOL_GREEN];
+  for (let i = 0; i < 64; i++) {
+    const a = (i / 64) * Math.PI * 2;
+    set(FX + Math.round(Math.cos(a) * FR), CY + Math.round(Math.sin(a) * FR), FZ, BLOCK.WHITEBRICK);
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    set(FX + Math.round(Math.cos(a) * (FR - 2)), CY + Math.round(Math.sin(a) * (FR - 2)), FZ, GONDOLAS[i]);
+  }
+  for (let r = 1; r < FR - 1; r++) { // spokes
+    set(FX + r, CY, FZ, BLOCK.WHITEBRICK); set(FX - r, CY, FZ, BLOCK.WHITEBRICK);
+    set(FX, CY + r, FZ, BLOCK.WHITEBRICK); set(FX, CY - r, FZ, BLOCK.WHITEBRICK);
+  }
+  set(FX, CY, FZ, BLOCK.GOLD); // hub
+  for (let y = 0; y < CY; y++) { set(FX, y, FZ - 1, BLOCK.DARKBRICK); set(FX, y, FZ + 1, BLOCK.DARKBRICK); }
+
+  // le carrousel — striped cone roof over golden poles
+  const KX = 10, KZ = -8;
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dz = -4; dz <= 4; dz++) {
+      if (Math.hypot(dx, dz) > 4.3) continue;
+      set(KX + dx, 0, KZ + dz, BLOCK.SLAB_PLANK);
+    }
+  }
+  for (const [px, pz] of [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2]]) {
+    set(KX + px, 1, KZ + pz, BLOCK.GOLD); set(KX + px, 2, KZ + pz, BLOCK.GOLD);
+  }
+  for (let y = 1; y <= 3; y++) set(KX, y, KZ, BLOCK.LOG); // center mast
+  for (let dx = -5; dx <= 5; dx++) {
+    for (let dz = -5; dz <= 5; dz++) {
+      const d = Math.hypot(dx, dz);
+      if (d <= 5.3) set(KX + dx, 4, KZ + dz, Math.round(d) % 2 === 0 ? BLOCK.WOOL_RED : BLOCK.SNOW);
+      if (d <= 3.3) set(KX + dx, 5, KZ + dz, Math.round(d) % 2 === 0 ? BLOCK.WOOL_RED : BLOCK.SNOW);
+    }
+  }
+  set(KX, 6, KZ, BLOCK.GOLD);
+
+  // les montagnes russes — a wavy circular roller-coaster around everything
+  const TR = 18;
+  for (let i = 0; i < 128; i++) {
+    const a = (i / 128) * Math.PI * 2;
+    const tx = Math.round(Math.cos(a) * TR), tz = Math.round(Math.sin(a) * TR);
+    const ty = 2 + Math.round(3 + 3 * Math.sin(a * 3));
+    set(tx, ty, tz, BLOCK.WOOL_PURPLE);
+    if (i % 8 === 0) for (let y = 0; y < ty; y++) set(tx, y, tz, BLOCK.DARKBRICK);
+  }
+
+  // candy-striped circus tents near the entrance
+  const tent = (tx, tz, col) => {
+    for (let y = 0; y < 3; y++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        for (let dz = -2; dz <= 2; dz++) {
+          if (Math.abs(dx) !== 2 && Math.abs(dz) !== 2) continue;
+          set(tx + dx, y, tz + dz, (dx + dz + y) % 2 === 0 ? col : BLOCK.SNOW);
+        }
+      }
+    }
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) set(tx + dx, 3, tz + dz, col);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(tx + dx, 4, tz + dz, col);
+    set(tx, 5, tz, BLOCK.GOLD);
+    set(tx, 0, tz - 2, BLOCK.AIR); set(tx, 1, tz - 2, BLOCK.AIR); // doorway
+  };
+  tent(6, -14, BLOCK.WOOL_RED);
+  tent(-6, -14, BLOCK.WOOL_BLUE);
+}
+
 const LANDMARKS = [
   // Paris
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
@@ -237,6 +324,7 @@ const LANDMARKS = [
   { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
   // Countryside
   { name: 'Château fort', x: 112, z: 210, box: 6, build: buildCastle },
+  { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
 ];
 
 // --- world ----------------------------------------------------------------
@@ -298,6 +386,13 @@ export class World {
       }
     }
 
+    // the amusement park sits on its own flat esplanade
+    const pd = Math.hypot(x - PARK.x, z - PARK.z);
+    if (pd < PARK.r) {
+      const m = Math.min(1, (PARK.r - pd) / 14);
+      h = h * (1 - m) + 33 * m;
+    }
+
     return Math.max(2, Math.min(HEIGHT - 16, Math.floor(h)));
   }
 
@@ -310,6 +405,7 @@ export class World {
 
   treeAt(x, z) {
     if (this.cityAt(x, z)) return null; // no wild trees downtown
+    if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
     // forests are dense, plains nearly bare
     const forest = fbm(x * 0.008, z * 0.008, SEED + 701);
     const density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
@@ -317,7 +413,10 @@ export class World {
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
     const trunk = 4 + Math.floor(hash2i(x, z, SEED + 778) * 3); // 4..6
-    return { h, trunk };
+    // three silhouettes: oak, pine, birch
+    const roll = hash2i(x, z, SEED + 779);
+    const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
+    return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
 
   generateChunk(cx, cz) {
@@ -379,7 +478,7 @@ export class World {
       for (let tx = baseX - 3; tx < baseX + CHUNK + 3; tx++) {
         const tree = this.treeAt(tx, tz);
         if (!tree) continue;
-        const { h, trunk } = tree;
+        const { h, trunk, kind } = tree;
         const topY = h + trunk;
 
         const put = (wx, wy, wz, id, replaceOnlyAir) => {
@@ -390,21 +489,49 @@ export class World {
           data[i] = id;
         };
 
-        // canopy
-        for (let dy = -2; dy <= 1; dy++) {
-          const y = topY + dy;
-          const r = dy < 0 ? 2 : 1;
-          for (let dx = -r; dx <= r; dx++) {
-            for (let dz = -r; dz <= r; dz++) {
-              if (Math.abs(dx) === r && Math.abs(dz) === r && dy >= 0) continue;
-              if (dx === 0 && dz === 0 && dy < 0) continue; // trunk passes through
-              put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
+        if (kind === 1) {
+          // pine: stacked shrinking rings of needles
+          const layers = [[topY - 2, 2], [topY - 1, 2], [topY, 1], [topY + 1, 1], [topY + 2, 0]];
+          for (const [y, r] of layers) {
+            for (let dx = -r; dx <= r; dx++) {
+              for (let dz = -r; dz <= r; dz++) {
+                if (Math.abs(dx) === r && Math.abs(dz) === r && r > 1) continue;
+                if (dx === 0 && dz === 0 && y <= topY) continue;
+                put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
+              }
             }
           }
+        } else if (kind === 2) {
+          // birch: tall pale trunk, small round crown
+          for (let dy = -1; dy <= 1; dy++) {
+            const r = dy === 0 ? 1 : 1;
+            for (let dx = -r; dx <= r; dx++) {
+              for (let dz = -r; dz <= r; dz++) {
+                if (Math.abs(dx) === r && Math.abs(dz) === r && dy !== 0) continue;
+                if (dx === 0 && dz === 0 && dy < 0) continue;
+                put(tx + dx, topY + dy, tz + dz, BLOCK.LEAVES, true);
+              }
+            }
+          }
+          put(tx, topY + 2, tz, BLOCK.LEAVES, true);
+        } else {
+          // oak: the classic broad canopy
+          for (let dy = -2; dy <= 1; dy++) {
+            const y = topY + dy;
+            const r = dy < 0 ? 2 : 1;
+            for (let dx = -r; dx <= r; dx++) {
+              for (let dz = -r; dz <= r; dz++) {
+                if (Math.abs(dx) === r && Math.abs(dz) === r && dy >= 0) continue;
+                if (dx === 0 && dz === 0 && dy < 0) continue; // trunk passes through
+                put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
+              }
+            }
+          }
+          put(tx, topY + 2, tz, BLOCK.LEAVES, true);
         }
-        put(tx, topY + 2, tz, BLOCK.LEAVES, true);
         // trunk
-        for (let y = h + 1; y <= topY; y++) put(tx, y, tz, BLOCK.LOG, false);
+        const trunkBlock = kind === 2 ? BLOCK.BIRCH : BLOCK.LOG;
+        for (let y = h + 1; y <= topY; y++) put(tx, y, tz, trunkBlock, false);
       }
     }
 

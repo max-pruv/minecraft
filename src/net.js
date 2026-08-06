@@ -167,14 +167,36 @@ export class NetSession {
     const entry = this.conns.get(conn.peer);
     if (!entry || !msg || typeof msg !== 'object') return;
     switch (msg.t) {
-      case 'hello':
-        entry.name = String(msg.name || 'Joueur').slice(0, 16);
+      case 'hello': {
+        const wanted = String(msg.name || 'Joueur').slice(0, 16);
+        // one session per player name: the host refuses a duplicate so the
+        // same account can't be online from two devices at once
+        if (this.isHost) {
+          const taken = wanted === this.profile.name ||
+            [...this.conns.values()].some((c) => c !== entry && c.name === wanted);
+          if (taken) {
+            conn.send({ t: 'duplicate', name: wanted });
+            setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
+            this.conns.delete(conn.peer);
+            this.playersChanged();
+            break;
+          }
+        }
+        entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;
         this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
         if (this.micOn) this.callPeer(conn.peer);      // start voice with newcomers
         if (this.camOn) this.videoCallPeer(conn.peer); // and video too
+        break;
+      }
+      case 'duplicate':
+        if (this.onDuplicate) this.onDuplicate(msg.name);
+        break;
+      case 'chat':
+        if (this.onChat) this.onChat(String(msg.name || '').slice(0, 16), String(msg.msg || '').slice(0, 120));
+        if (this.isHost) this.relay(conn.peer, msg);
         break;
       case 'sync': {
         const applied = this.hooks.world.mergeEdits(msg.blocks);
@@ -231,6 +253,10 @@ export class NetSession {
 
   sendOp(k, id, ts) {
     for (const c of this.conns.values()) if (c.conn) c.conn.send({ t: 'op', k, id, ts });
+  }
+
+  sendChat(name, msg) {
+    for (const c of this.conns.values()) if (c.conn) c.conn.send({ t: 'chat', name, msg });
   }
 
   startPosLoop() {

@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PARK } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
@@ -1127,14 +1127,24 @@ function showOnlineUI() {
   updatePlayersBtn();
   micBtn.style.display = 'block';
   camBtn.style.display = 'block';
+  chatBtn.style.display = 'block';
   net.onRemoteVideo = (id, stream) => addRemoteTile(id, stream);
   net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
+  net.onChat = (name, msg) => {
+    addChatMsg(name, msg, false);
+    if (chatPanel.style.display !== 'block') {
+      creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
+    }
+  };
+  net.onDuplicate = (name) => {
+    leaveToMainMenu();
+    window.alert(`⚠️ ${name} joue déjà dans ce monde depuis un autre appareil !\nChaque joueur ne peut être connecté qu'à un seul endroit à la fois.`);
+  };
 }
 
-// home button: leave the current game and go back to the main menu, where
-// you can pick local or multiplayer again
-document.getElementById('home-btn').addEventListener('click', () => {
-  if (edu.quizActive || edu.hardStopActive) return;
+// Leaves any session (local or online) and restores the full main menu.
+// Used by the home button and by the duplicate-player guard.
+function leaveToMainMenu() {
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
   cloud.detach();
@@ -1144,6 +1154,8 @@ document.getElementById('home-btn').addEventListener('click', () => {
   micBtn.style.display = 'none'; micBtn.textContent = '🔇'; micBtn.classList.remove('on');
   camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
   playersBtn.style.display = 'none';
+  chatBtn.style.display = 'none';
+  chatPanel.style.display = 'none';
   world.saveEdits();
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
@@ -1154,6 +1166,11 @@ document.getElementById('home-btn').addEventListener('click', () => {
   document.getElementById('online-actions').style.display = 'flex';
   document.getElementById('mode-row').style.display = 'flex';
   onlineStatus.textContent = '';
+}
+
+document.getElementById('home-btn').addEventListener('click', () => {
+  if (edu.quizActive || edu.hardStopActive) return;
+  leaveToMainMenu();
 });
 
 // Local play is fully offline (PWA); online play needs a live connection.
@@ -1220,6 +1237,59 @@ document.getElementById('join-btn').addEventListener('click', () => {
 document.getElementById('join-code').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('join-btn').click();
   e.stopPropagation();
+});
+
+// --- world chat: minimalist panel, messages persist in the database ----------------
+
+const chatBtn = document.getElementById('chat-btn');
+const chatPanel = document.getElementById('chat-panel');
+const chatMsgs = document.getElementById('chat-msgs');
+const chatInput = document.getElementById('chat-input');
+
+function addChatMsg(name, msg, mine) {
+  chatMsgs.querySelector('[data-info]')?.remove(); // drop the placeholder
+  const div = document.createElement('div');
+  div.className = 'chat-msg' + (mine ? ' mine' : '');
+  const b = document.createElement('b');
+  b.textContent = `${name} : `;
+  div.append(b, document.createTextNode(msg));
+  chatMsgs.appendChild(div);
+  while (chatMsgs.children.length > 80) chatMsgs.firstChild.remove();
+  chatMsgs.scrollTop = chatMsgs.scrollHeight;
+}
+
+async function openChat() {
+  chatPanel.style.display = 'block';
+  chatMsgs.innerHTML = '<div class="chat-msg" data-info="1" style="color:#667">Chargement…</div>';
+  try {
+    const hist = await cloud.chatHistory();
+    chatMsgs.innerHTML = '';
+    for (const m of hist) addChatMsg(m.name, m.msg, m.name === myName());
+    if (hist.length === 0) {
+      chatMsgs.innerHTML = '<div class="chat-msg" data-info="1" style="color:#667">Aucun message — écris le premier !</div>';
+    }
+  } catch {
+    chatMsgs.innerHTML = '<div class="chat-msg" data-info="1" style="color:#667">Messages indisponibles pour le moment</div>';
+  }
+}
+
+chatBtn.addEventListener('click', () => {
+  if (chatPanel.style.display === 'block') { chatPanel.style.display = 'none'; return; }
+  openChat();
+});
+
+function sendChatMsg() {
+  const msg = chatInput.value.trim().slice(0, 120);
+  if (!msg || !net || !net.active) return;
+  chatInput.value = '';
+  addChatMsg(myName(), msg, true);
+  net.sendChat(myName(), msg);
+  cloud.chatSend(myName(), msg).catch(() => {});
+}
+document.getElementById('chat-send').addEventListener('click', sendChatMsg);
+chatInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') sendChatMsg();
 });
 
 micBtn.addEventListener('click', async () => {
@@ -1720,7 +1790,7 @@ function drawMap(mapCanvas, radius) {
   if (radius >= 60) {
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    for (const c of CITIES) {
+    for (const c of [...CITIES, PARK]) {
       let [mx, my] = toMap(c.x, c.z);
       mx = Math.max(30, Math.min(size - 30, mx));
       my = Math.max(12, Math.min(size - 6, my));
@@ -1784,7 +1854,7 @@ function drawOverviewMap(mapCanvas, radius) {
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2)) * size, ((z - pcz + radius) / (radius * 2)) * size];
   ctx.font = 'bold 13px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  for (const c of CITIES) {
+  for (const c of [...CITIES, PARK]) {
     let [mx, my] = toMap(c.x, c.z);
     mx = Math.max(34, Math.min(size - 34, mx));
     my = Math.max(14, Math.min(size - 8, my));
@@ -1820,7 +1890,7 @@ mapModalCanvas.addEventListener('click', (e) => {
   const size = mapModalCanvas.width;
   const wx = overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2;
   const wz = overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2;
-  for (const c of CITIES) {
+  for (const c of [...CITIES, PARK]) {
     if (Math.hypot(wx - c.x, wz - c.z) < Math.max(60, c.r)) {
       const tx = c.x + 1.5, tz = c.z + 1.5; // on the street grid, not in a house
       let y = HEIGHT - 1;
@@ -1863,15 +1933,163 @@ function updateSky(dt) {
   const daylight = THREE.MathUtils.clamp(Math.sin(angle) * 1.6 + 0.5, 0.08, 1);
 
   skyColor.lerpColors(NIGHT_SKY, DAY_SKY, daylight);
+  // warm sunrise/sunset glow around the day/night transitions
+  const horizon = Math.exp(-((daylight - 0.35) ** 2) / (2 * 0.12 * 0.12));
+  skyColor.lerp(SUNSET_SKY, horizon * 0.55);
+  if (weather === 'rain') skyColor.multiplyScalar(0.62); // grey rainy skies
   scene.background.copy(skyColor);
   scene.fog.color.copy(skyColor);
 
-  const level = 0.25 + 0.75 * daylight;
+  const wDim = weather === 'rain' ? 0.8 : 1;
+  const level = (0.25 + 0.75 * daylight) * wDim;
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
   solidMaterial.color.copy(lightColor);
   waterMaterial.color.copy(lightColor);
-  hemiLight.intensity = 0.3 + 0.8 * daylight;
-  sunLight.intensity = 0.15 + 0.75 * daylight;
+  hemiLight.intensity = (0.3 + 0.8 * daylight) * wDim;
+  sunLight.intensity = 0.15 + 0.75 * daylight * wDim;
+}
+const SUNSET_SKY = new THREE.Color(0xff8a4a);
+
+// --- living sky: weather, drifting clouds, birds and the occasional plane ---------
+
+let weather = 'clear';
+let weatherTimer = 90;
+
+const RAIN_COUNT = 700;
+const rainGeo = new THREE.BufferGeometry();
+{
+  const pts = new Float32Array(RAIN_COUNT * 3);
+  for (let i = 0; i < RAIN_COUNT; i++) {
+    pts[i * 3] = (Math.random() - 0.5) * 70;
+    pts[i * 3 + 1] = Math.random() * 40 - 5;
+    pts[i * 3 + 2] = (Math.random() - 0.5) * 70;
+  }
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+}
+const rainPoints = new THREE.Points(rainGeo, new THREE.PointsMaterial({
+  color: 0x9ab8e8, size: 0.16, transparent: true, opacity: 0.7, sizeAttenuation: true,
+}));
+rainPoints.visible = false;
+scene.add(rainPoints);
+
+function updateWeather(dt) {
+  weatherTimer -= dt;
+  if (weatherTimer <= 0) {
+    weather = weather === 'clear' ? 'rain' : 'clear';
+    weatherTimer = weather === 'rain' ? 50 + Math.random() * 70 : 140 + Math.random() * 160;
+    rainPoints.visible = weather === 'rain';
+    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+  }
+  if (weather === 'rain') {
+    const pos = rainGeo.attributes.position;
+    for (let i = 0; i < RAIN_COUNT; i++) {
+      let y = pos.getY(i) - dt * 24;
+      if (y < -5) y += 40;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+    rainPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
+  }
+}
+
+const clouds = [];
+{
+  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.82 });
+  for (let i = 0; i < 10; i++) {
+    const c = new THREE.Group();
+    const n = 3 + (i % 3);
+    for (let j = 0; j < n; j++) {
+      const puff = new THREE.Mesh(new THREE.BoxGeometry(6 + Math.random() * 8, 2.2, 5 + Math.random() * 6), cloudMat);
+      puff.position.set(j * 5 - n * 2.5, Math.random() - 0.5, Math.random() * 4 - 2);
+      c.add(puff);
+    }
+    c.position.set((Math.random() - 0.5) * 700, 76 + Math.random() * 14, (Math.random() - 0.5) * 700);
+    c.userData.speed = 0.6 + Math.random() * 1.2;
+    scene.add(c);
+    clouds.push(c);
+  }
+}
+function updateClouds(dt) {
+  for (const c of clouds) {
+    c.position.x += c.userData.speed * dt;
+    if (c.position.x - player.pos.x > 380) c.position.x = player.pos.x - 380;
+    if (Math.abs(c.position.z - player.pos.z) > 380) {
+      c.position.z = player.pos.z + (Math.random() - 0.5) * 700;
+    }
+  }
+}
+
+const flocks = [];
+{
+  const birdMat = new THREE.MeshBasicMaterial({ color: 0x2a2a2e, side: THREE.DoubleSide });
+  for (let f = 0; f < 3; f++) {
+    const g = new THREE.Group();
+    for (let b = 0; b < 5; b++) {
+      const bird = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.6, 3), birdMat);
+      bird.rotation.x = Math.PI / 2;
+      bird.position.set((b - 2) * 2.2, 0, Math.abs(b - 2) * 1.8); // V formation
+      g.add(bird);
+    }
+    g.position.set((Math.random() - 0.5) * 400, 58 + f * 5, (Math.random() - 0.5) * 400);
+    g.userData = { dir: Math.random() * Math.PI * 2, speed: 6 + f * 2, flap: 0 };
+    scene.add(g);
+    flocks.push(g);
+  }
+}
+function updateBirds(dt) {
+  for (const g of flocks) {
+    const u = g.userData;
+    u.flap += dt * 6;
+    g.position.x -= Math.sin(u.dir) * u.speed * dt;
+    g.position.z -= Math.cos(u.dir) * u.speed * dt;
+    g.rotation.y = u.dir;
+    g.scale.y = 0.7 + Math.sin(u.flap) * 0.3; // wing-flap illusion
+    if (Math.hypot(g.position.x - player.pos.x, g.position.z - player.pos.z) > 320) {
+      u.dir = Math.random() * Math.PI * 2;
+      g.position.set(
+        player.pos.x + (Math.random() - 0.5) * 300,
+        56 + Math.random() * 12,
+        player.pos.z + (Math.random() - 0.5) * 300
+      );
+    }
+  }
+}
+
+let plane = null;
+let planeTimer = 40;
+function makePlane() {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: 0xf2f2f4 });
+  const accent = new THREE.MeshBasicMaterial({ color: 0xd83a3a });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.5, 7, 10), mat);
+  body.rotation.z = Math.PI / 2; // along x, the travel axis
+  g.add(body);
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 10), mat);
+  g.add(wing);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 0.2), accent);
+  fin.position.set(-3, 1, 0);
+  g.add(fin);
+  return g;
+}
+function updatePlane(dt) {
+  if (!plane) {
+    planeTimer -= dt;
+    if (planeTimer <= 0) {
+      plane = makePlane();
+      const side = Math.random() < 0.5 ? -1 : 1;
+      plane.position.set(player.pos.x - side * 380, 88, player.pos.z + (Math.random() - 0.5) * 200);
+      plane.userData.vx = side * 18;
+      if (side < 0) plane.rotation.y = Math.PI;
+      scene.add(plane);
+    }
+    return;
+  }
+  plane.position.x += plane.userData.vx * dt;
+  if (Math.abs(plane.position.x - player.pos.x) > 420) {
+    scene.remove(plane);
+    plane = null;
+    planeTimer = 50 + Math.random() * 100;
+  }
 }
 
 // --- underwater tint / debug -----------------------------------------------------------
@@ -1915,6 +2133,10 @@ function frame(now) {
 
   updateChunks();
   updateSky(dt);
+  updateWeather(dt);
+  updateClouds(dt);
+  updateBirds(dt);
+  updatePlane(dt);
   updateHud(dt);
   updateCreatureLabel();
   updateRemotePlayers(dt);

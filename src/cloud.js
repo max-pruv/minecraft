@@ -83,6 +83,27 @@ export class CloudSave {
     this.lastPushed = body;
   }
 
+  // ---- world chat: messages persist in the database per world code --------
+
+  async chatHistory(limit = 60) {
+    if (!this.configured || !this.code) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/world_chat?code=eq.${encodeURIComponent(this.code)}&select=name,msg,created_at&order=id.desc&limit=${limit}`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) throw new Error(`chat pull ${res.status}`);
+    return (await res.json()).reverse(); // oldest first
+  }
+
+  async chatSend(name, msg) {
+    if (!this.configured || !this.code) return;
+    await fetch(`${this.url}/rest/v1/world_chat`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'return=minimal' }),
+      body: JSON.stringify([{ code: this.code, name, msg }]),
+    });
+  }
+
   // Joins a world: pull the cloud copy, merge it in, push the merged log
   // back, then keep pushing changes in the background.
   async attach(code) {
