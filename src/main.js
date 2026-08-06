@@ -10,7 +10,7 @@ import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
-import { Identity } from './identity.js';
+import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
@@ -901,6 +901,9 @@ function deleteProfileData(id) {
 // Playful password-free identification (face + 6-digit backup code).
 const identity = new Identity(cloud, raw);
 identity.syncFromCloud();
+// Le scanner se charge pendant que l'enfant lit l'accueil, pour qu'il n'ait
+// plus à l'attendre au moment où il veut se faire reconnaître.
+prefetchScanner();
 
 // Sampled from the enrolment photo: the child's character gets their skin
 // and hair colour. Stored with the profile and synced, so it follows them.
@@ -1742,6 +1745,28 @@ homeName.addEventListener('keydown', (e) => e.stopPropagation());
 
 // "Mon personnage" dedicated page with its own back button
 const profileMenu = document.getElementById('profile-menu');
+// Numéro de version sur l'accueil : on le demande au service worker, seule
+// source de vérité, plutôt que de le recopier ici où il finirait décalé. Sans
+// service worker (première ouverture, navigation privée), on lit le fichier.
+(async function showVersion() {
+  const el = document.getElementById('app-version');
+  if (!el) return;
+  const label = (v) => { el.textContent = v ? `version ${v.replace('web-minecraft-', '')}` : ''; };
+  try {
+    if (navigator.serviceWorker?.controller) {
+      const got = await new Promise((resolve) => {
+        const chan = new MessageChannel();
+        chan.port1.onmessage = (e) => resolve(e.data?.version);
+        navigator.serviceWorker.controller.postMessage({ type: 'version' }, [chan.port2]);
+        setTimeout(() => resolve(null), 1500);
+      });
+      if (got) return label(got);
+    }
+    const txt = await (await fetch('./sw.js', { cache: 'no-store' })).text();
+    label((txt.match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1]);
+  } catch { /* pas grave : l'accueil s'affiche sans numéro */ }
+})();
+
 const refaceHint = document.getElementById('reface-hint');
 function refreshSecurityRow() {
   const name = playerProfile.name;

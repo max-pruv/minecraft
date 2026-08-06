@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v55';
+const CACHE_VERSION = 'web-minecraft-v56';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -54,6 +54,17 @@ self.addEventListener('activate', (event) => {
         .map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// La page affiche le numéro de version : elle le demande ici plutôt que de le
+// dupliquer dans son propre code, où les deux finiraient par diverger.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'version') {
+    const reply = { type: 'version', version: CACHE_VERSION };
+    // la page répond sur un canal dédié quand elle en fournit un
+    if (event.ports && event.ports[0]) event.ports[0].postMessage(reply);
+    else event.source?.postMessage(reply);
+  }
 });
 
 // Stale-while-revalidate: serve from cache instantly (works offline),
