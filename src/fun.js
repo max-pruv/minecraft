@@ -1079,7 +1079,14 @@ export function initFun(ctx) {
   function update(dt) {
     updateFireworks(dt);
     updateEmotes(dt);
-    if (!isRunning()) return;
+    if (!isRunning()) {
+      // paused (or back at a menu without a full leaveToMainMenu): the
+      // floating buttons must not float on top of the menu underneath
+      for (const b of [atelierBtn, fwBtn, photoBtn, recordsBtn]) b.style.display = 'none';
+      emoteRow.style.display = 'none';
+      targetRow.style.display = 'none';
+      return;
+    }
     const ctxKey = getPosCtx();
     if (ctxKey !== lastCtxKey) {
       lastCtxKey = ctxKey;
