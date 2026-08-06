@@ -900,6 +900,27 @@ function deleteProfileData(id) {
 
 // Playful password-free identification (face + 6-digit backup code).
 const identity = new Identity(cloud, raw);
+
+// Porte de secours parentale : ouvrir l'adresse avec ?unlock=<code parental>
+// lève la pause « trop d'essais » dès le démarrage. Le bouton dans l'écran de
+// pause suffit d'habitude, mais il faut encore l'atteindre — un lien qu'on
+// envoie par message débloque un enfant coincé sans rien lui faire chercher.
+(function parentUnlock() {
+  const asked = new URLSearchParams(location.search).get('unlock');
+  if (!asked) return;
+  if (asked !== '135246') { creatureManager.toast('Code parental incorrect', 0xff6b6b); return; }
+  identity.saveLock({ fails: 0, strikes: 0, until: 0 });
+  creatureManager.toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
+  // On retire le code de la barre d'adresse — il n'a pas à rester dans
+  // l'historique ni à repartir dans un lien partagé — sans toucher au reste
+  // des paramètres, qui configurent le jeu.
+  try {
+    const q = new URLSearchParams(location.search);
+    q.delete('unlock');
+    const s = q.toString();
+    history.replaceState(null, '', location.pathname + (s ? `?${s}` : ''));
+  } catch { /* ignore */ }
+})();
 identity.syncFromCloud();
 // Le scanner se charge pendant que l'enfant lit l'accueil, pour qu'il n'ait
 // plus à l'attendre au moment où il veut se faire reconnaître.
