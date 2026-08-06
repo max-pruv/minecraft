@@ -151,6 +151,20 @@ function loadFaceApi(onProgress, onPercent) {
   return faceapiPromise;
 }
 
+// Lance le chargement du scanner en tâche de fond, pendant que l'enfant est
+// encore sur l'accueil : quand il touchera « Reconnais-moi », tout sera prêt.
+// On s'abstient hors-ligne, en mode économie de données, et sur une connexion
+// lente ou facturée — 8 Mo à l'insu du parent ne sont pas un cadeau.
+export function prefetchScanner() {
+  if (faceapiPromise || scannerCached()) return;
+  if (!navigator.onLine) return;
+  const c = navigator.connection;
+  if (c && (c.saveData || /^(slow-)?2g$/.test(c.effectiveType || ''))) return;
+  const start = () => { loadFaceApi().catch(() => {}); };
+  if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 8000 });
+  else setTimeout(start, 3000);
+}
+
 function distance(a, b) {
   let sum = 0;
   for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; sum += d * d; }
@@ -496,6 +510,14 @@ export class Identity {
       #id-load-fill { height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,#3a6ad0,#6fa8ff);
         transition:width .25s ease; }
       #id-load-txt { font-size:12px; color:#9fb0d0; margin-top:6px; }
+      /* Le temps d'analyse est incompressible : ce halo qui tourne autour du
+         rond dit « ça travaille » quand aucun pourcentage ne peut le dire. */
+      #id-stage.busy::after { content:''; position:absolute; inset:-4px; border-radius:50%;
+        border:4px solid transparent; border-top-color:#6fa8ff; border-right-color:#6fa8ff;
+        animation:id-spin 1s linear infinite; }
+      @keyframes id-spin { to { transform:rotate(360deg); } }
+      #id-msg.busy::after { content:''; animation:id-dots 1.2s steps(4,end) infinite; }
+      @keyframes id-dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
       #id-sub { color:#9fb0d0; font-size:15px; line-height:1.5; margin-bottom:14px; }
       #id-stage { position:relative; width:230px; height:230px; margin:0 auto 14px;
         border-radius:50%; overflow:hidden; background:#0a0e18;
@@ -584,7 +606,15 @@ export class Identity {
       : 'Presque prêt…';
   }
 
+  // Halo tournant autour du rond : la seule façon de dire « ça travaille »
+  // quand la durée n'est pas mesurable et qu'aucun pourcentage n'existe.
+  busy(on) {
+    this.el.stage.classList.toggle('busy', !!on);
+    if (!on) this.el.msg.classList.remove('busy');
+  }
+
   show(title, sub) {
+    this.busy(false);
     this.el.load.style.display = 'none';
     this.el.steps.style.display = 'none'; // réaffiché par setSteps sur l'inscription
     this.el.title.textContent = title;
@@ -729,10 +759,10 @@ export class Identity {
     this.el.stage.className = 'scan';
     while (sigs.length < 3 && Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
-      // the very first detection compiles the models — say so, it is slow
       this.say(first
-        ? '⏳ Je me réveille… (quelques secondes la première fois)'
-        : `Cliché ${sigs.length + 1}/3 — place ton visage dans le rond 😊`);
+        ? '⏳ Je regarde bien ton visage'
+        : `Cliché ${sigs.length + 1}/3 — place ton visage dans le rond 😊`, first ? 'busy' : '');
+      this.busy(true); // une analyse dure : montrer que ça tourne
       let shot = null;
       try {
         shot = await this.detect(this.el.video);
@@ -740,6 +770,7 @@ export class Identity {
         break; // scanner really down on this device — the code path takes over
       }
       first = false;
+      this.busy(false);
       if (shot) {
         sigs.push(shot.sig);
         if (!look) look = this.sampleLook(this.el.video, shot.res); // for the avatar
@@ -902,9 +933,8 @@ export class Identity {
     const deadline = Date.now() + 40000;
     while (Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
-      this.say(firstPass
-        ? '⏳ Je me réveille… (quelques secondes la première fois)'
-        : 'Ne bouge pas… 🔍');
+      this.say(firstPass ? '⏳ Je regarde qui tu es' : 'Ne bouge pas… 🔍', firstPass ? 'busy' : '');
+      this.busy(true);
       let sig = null;
       try {
         sig = await this.snapshot(this.el.video);
@@ -912,11 +942,13 @@ export class Identity {
         // scanner really down on this device — go straight to the code
         this.stopCamera(this._stream);
         this._stream = null;
+        this.busy(false);
         this.say('Mon scanner est en panne ici 😕 — ton code secret !', 'err');
         setTimeout(() => this.pinLogin(names, onMatch), 1400);
         return;
       }
       firstPass = false;
+      this.busy(false);
       if (sig) {
         const who = this.match(sig, names);
         if (who) {
