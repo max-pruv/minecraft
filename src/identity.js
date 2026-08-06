@@ -10,7 +10,20 @@
 // your own card, which never goes away.
 
 const LOCAL_KEY = 'web-minecraft-identity-v1'; // device-wide, NOT per profile
+const TRUST_KEY = 'web-minecraft-trust-v1';
+const LOCK_KEY = 'web-minecraft-lockout-v1';
 const MODEL_URL = './vendor/face-models';
+
+// Once a device has proved who a child is, it stays trusted for a month —
+// they are not asked again every single time they sit down to play.
+const TRUST_DAYS = 30;
+
+// Brute-force brake: 3 misses freezes identification for an hour, and each
+// further round of misses doubles it. Tapping your own card still works —
+// this only slows down someone poking at other people's accounts.
+const MAX_FAILS = 3;
+const LOCK_BASE_MS = 60 * 60 * 1000;
+const LOCK_MAX_MS = 24 * 60 * 60 * 1000;
 
 // face-api's usual "same person" threshold is 0.6, but on the sample photos
 // two *different* people measured as close as 0.52, so that would risk
@@ -44,16 +57,10 @@ function loadFaceApi(onProgress) {
     await f.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
     await f.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
     await f.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-    // The very first detection pays for compiling the models' GPU kernels —
-    // several seconds on a slow device. Spend it here, behind the loading
-    // message, so the child never waits on a frozen "ne bouge pas".
-    onProgress?.('Presque prêt…');
-    try {
-      const warm = document.createElement('canvas');
-      warm.width = 320; warm.height = 320;
-      await f.detectSingleFace(warm, new f.TinyFaceDetectorOptions({ inputSize: 320 }))
-        .withFaceLandmarks().withFaceDescriptor();
-    } catch { /* warm-up is best effort */ }
+    // NB: no blank-canvas warm-up here. It hung on iPad (a canvas with no
+    // backing store never came back), leaving the child stuck on "presque
+    // prêt". The first real detection pays the kernel-compilation cost
+    // instead, and the capture loop says so while it happens.
     return f;
   })().catch((e) => { faceapiPromise = null; throw e; });
   return faceapiPromise;
@@ -106,6 +113,72 @@ export class Identity {
     return e.faces.length > 0 || !!e.pinHash;
   }
 
+  // Skin/hair sampled at enrolment, if this device captured it.
+  lookFor(name) {
+    return (this.local[name] || {}).look || null;
+  }
+
+  // ---- trusted device -------------------------------------------------------
+
+  trustMap() {
+    try { return JSON.parse(this.raw.get(TRUST_KEY)) || {}; } catch { return {}; }
+  }
+
+  isTrusted(name) {
+    return (this.trustMap()[name] || 0) > Date.now();
+  }
+
+  trust(name) {
+    const m = this.trustMap();
+    m[name] = Date.now() + TRUST_DAYS * 86400000;
+    try { this.raw.set(TRUST_KEY, JSON.stringify(m)); } catch { /* ignore */ }
+  }
+
+  // ---- lockout after repeated failures ---------------------------------------
+
+  lockState() {
+    try { return JSON.parse(this.raw.get(LOCK_KEY)) || { fails: 0, strikes: 0, until: 0 }; }
+    catch { return { fails: 0, strikes: 0, until: 0 }; }
+  }
+
+  saveLock(s) {
+    try { this.raw.set(LOCK_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+  }
+
+  lockedFor() {
+    const s = this.lockState();
+    return Math.max(0, s.until - Date.now());
+  }
+
+  registerFailure() {
+    const s = this.lockState();
+    s.fails = (s.fails || 0) + 1;
+    if (s.fails >= MAX_FAILS) {
+      s.strikes = (s.strikes || 0) + 1;
+      s.fails = 0;
+      s.until = Date.now() + Math.min(LOCK_BASE_MS * 2 ** (s.strikes - 1), LOCK_MAX_MS);
+    }
+    this.saveLock(s);
+    return s;
+  }
+
+  registerSuccess(name) {
+    this.saveLock({ fails: 0, strikes: 0, until: 0 });
+    if (name) this.trust(name);
+  }
+
+  // Shows the "come back later" screen when frozen. Returns true if locked.
+  guardLocked() {
+    const ms = this.lockedFor();
+    if (ms <= 0) return false;
+    const mins = Math.ceil(ms / 60000);
+    const txt = mins >= 60 ? `${Math.ceil(mins / 60)} h` : `${mins} min`;
+    this.show('⏳ Trop d\'essais', `Pour protéger les comptes, la reconnaissance est en pause. Réessaie dans ${txt}.`);
+    this.say('Tu peux toujours toucher ta carte pour jouer 🙂');
+    this.button('OK', 'id-secondary', () => this.hide());
+    return true;
+  }
+
   // Pull every known child's signatures so a brand-new device can recognise
   // them straight away. Safe to call repeatedly; silent when offline.
   async syncFromCloud() {
@@ -145,14 +218,83 @@ export class Identity {
 
   // One face signature from the live video, or null if no face is visible.
   async snapshot(video) {
+    const res = await this.detect(video);
+    return res ? res.sig : null;
+  }
+
+  async detect(video) {
     const f = await loadFaceApi();
     const res = await f
       .detectSingleFace(video, new f.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
       .withFaceLandmarks()
       .withFaceDescriptor();
     if (!res) return null;
-    // 4 decimals keeps the vector accurate but small enough to sync cheaply
-    return [...res.descriptor].map((v) => Math.round(v * 10000) / 10000);
+    return {
+      // 4 decimals keeps the vector accurate but small enough to sync cheaply
+      sig: [...res.descriptor].map((v) => Math.round(v * 10000) / 10000),
+      res,
+    };
+  }
+
+  // Reads skin and hair colour off the same frame, so the child's character
+  // can be made to look like them. Only two colours are kept — still no
+  // photo, and the child can always change them in the character menu.
+  sampleLook(video, res) {
+    try {
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) return null;
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(video, 0, 0, w, h);
+      const g = c.getContext('2d');
+      const pts = res.landmarks.positions;
+      const box = res.detection.box;
+
+      const patch = (x, y) => {
+        x = Math.round(x); y = Math.round(y);
+        if (x < 2 || y < 2 || x > w - 3 || y > h - 3) return null;
+        const d = g.getImageData(x - 2, y - 2, 5, 5).data;
+        let r = 0, gg = 0, b = 0;
+        for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; }
+        const n = d.length / 4;
+        return [r / n, gg / n, b / n];
+      };
+      const median = (list) => {
+        const ok = list.filter(Boolean);
+        if (!ok.length) return null;
+        return [0, 1, 2].map((i) => {
+          const vals = ok.map((p) => p[i]).sort((a, b) => a - b);
+          return Math.round(vals[Math.floor(vals.length / 2)]);
+        });
+      };
+      const hex = (p) => (p[0] << 16) | (p[1] << 8) | p[2];
+
+      // cheeks: between the jaw line and the nose, well clear of eyes/mouth
+      const nose = pts[30];
+      const skin = median([
+        patch((pts[2].x + nose.x) / 2, (pts[2].y + nose.y) / 2),
+        patch((pts[14].x + nose.x) / 2, (pts[14].y + nose.y) / 2),
+        patch(nose.x, nose.y - box.height * 0.05),
+      ]);
+      // hair: a band above the eyebrows, roughly where the hairline sits
+      const browY = Math.min(pts[19].y, pts[24].y);
+      const up = box.height * 0.3;
+      const hair = median([
+        patch(pts[19].x, browY - up),
+        patch(pts[24].x, browY - up),
+        patch((pts[19].x + pts[24].x) / 2, browY - up * 1.15),
+      ]);
+      if (!skin) return null;
+      const look = { skin: hex(skin) };
+      // if the "hair" sample came back as skin (high forehead) or as a blown
+      // out background, keep a sensible default rather than a silly colour
+      if (hair) {
+        const diff = Math.abs(hair[0] - skin[0]) + Math.abs(hair[1] - skin[1]) + Math.abs(hair[2] - skin[2]);
+        const bright = (hair[0] + hair[1] + hair[2]) / 3;
+        if (diff > 40 && bright < 235) look.hair = hex(hair);
+      }
+      return look;
+    } catch { return null; }
   }
 
   // Best matching child for a signature, or null when nothing is close enough.
@@ -237,6 +379,8 @@ export class Identity {
         background:rgba(255,255,255,.1); color:#fff; }
       #id-pad button:active { background:#3a6ad0; }
       #id-actions { display:flex; flex-direction:column; gap:9px; margin-top:16px; }
+      #id-actions.grid { display:grid; grid-template-columns:repeat(2,1fr); }
+      #id-actions.grid button { padding:11px 4px; font-size:15px; }
       #id-actions button { padding:13px; font-size:16px; border-radius:13px; border:none; }
       .id-primary { background:#3a9a4a; color:#fff; }
       .id-secondary { background:rgba(255,255,255,.12); color:#cdd; }
@@ -288,6 +432,7 @@ export class Identity {
   show(title, sub) {
     this.el.title.textContent = title;
     this.el.sub.textContent = sub || '';
+    this.el.actions.classList.remove('grid');
     this.el.msg.textContent = '';
     this.el.msg.className = '';
     this.el.stage.style.display = 'none';
@@ -354,7 +499,10 @@ export class Identity {
   // Sign-up for a child who has no face/code yet — including the profiles
   // that already existed before this feature arrived. Skippable at every
   // step: a child who skips everything keeps playing exactly as before.
-  async enroll(name, { onDone } = {}) {
+  async enroll(name, { onDone, direct = false } = {}) {
+    // a brand-new account has just been through name + grade, so it goes
+    // straight to the scan; the code is still one tap away from there
+    if (direct) return this.enrollFace(name, onDone);
     this.show(`Salut ${name} ! 🔒`, "On sécurise ton compte pour que personne d'autre ne joue à ta place. C'est rapide et rigolo !");
     this.button('📸 Scanner mon visage', 'id-primary', () => this.enrollFace(name, onDone));
     this.button('🔢 Juste un code secret', 'id-secondary', () => this.enrollPin(name, onDone));
@@ -362,13 +510,18 @@ export class Identity {
   }
 
   async enrollFace(name, onDone) {
-    this.show(`📸 Regarde la caméra, ${name} !`, 'Reste bien en face, on prend 3 photos… (aucune photo n\'est gardée, juste une empreinte secrète)');
+    this.show(`📸 Regarde la caméra, ${name} !`,
+      "Les 3 photos se prennent toutes seules dès que je vois ton visage — reste bien en face ! (aucune photo n'est gardée, juste une empreinte secrète)");
     this.el.stage.style.display = 'block';
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div');
       d.className = 'id-dot';
       this.el.shots.appendChild(d);
     }
+    this.button('🔢 Plutôt un code secret', 'id-secondary', () => {
+      this.stopCamera(this._stream); this._stream = null;
+      this.enrollPin(name, onDone);
+    });
     this.button('Annuler', 'id-secondary', () => { this.hide(); onDone?.(false); });
 
     try {
@@ -386,19 +539,30 @@ export class Identity {
       return;
     }
 
-    // time budget rather than a fixed number of tries, so a slow tablet
-    // isn't cut off mid-scan and a fast one isn't kept waiting
+    // Shots are taken automatically as soon as a face is visible, but the
+    // button makes that obvious — the first version gave no clue whether
+    // anything was happening.
     const sigs = [];
-    const deadline = Date.now() + 25000;
+    let look = null;
+    let first = true;
+    const deadline = Date.now() + 60000;
     this.el.stage.className = 'scan';
     while (sigs.length < 3 && Date.now() < deadline) {
-      this.say(`Cliché ${sigs.length + 1}/3… souris ! 😊`);
-      const sig = await this.snapshot(this.el.video);
-      if (sig) {
-        sigs.push(sig);
+      if (this.el.modal.style.display === 'none') return; // cancelled
+      // the very first detection compiles the models — say so, it is slow
+      this.say(first
+        ? '⏳ Je me réveille… (quelques secondes la première fois)'
+        : `Cliché ${sigs.length + 1}/3 — place ton visage dans le rond 😊`);
+      const shot = await this.detect(this.el.video);
+      first = false;
+      if (shot) {
+        sigs.push(shot.sig);
+        if (!look) look = this.sampleLook(this.el.video, shot.res); // for the avatar
         this.el.shots.children[sigs.length - 1].classList.add('on');
+        this.say(`📸 Cliché ${sigs.length}/3 pris !`, 'ok');
         await new Promise((r) => setTimeout(r, 700)); // slight pose change
       } else {
+        this.say('🔍 Je ne vois pas encore ton visage — approche-toi un peu !');
         await new Promise((r) => setTimeout(r, 250));
       }
     }
@@ -412,8 +576,14 @@ export class Identity {
     }
     const e = this.local[name] || (this.local[name] = {});
     e.faces = sigs.slice(-KEEP_SIGNATURES);
+    // kept against the name, not the active profile: a brand-new account
+    // enrols before the game has switched into it, and this survives the
+    // reload so their character still ends up looking like them
+    if (look) e.look = look;
     this.saveLocal();
     this.pushToCloud(name);
+    this.registerSuccess(name); // this device now knows them
+    if (look) this.onLook?.(name, look);
     this.el.stage.className = 'ok';
     this.say(`✨ C'est toi, ${name} ! Je te reconnaîtrai partout.`, 'ok');
     setTimeout(() => this.enrollPin(name, onDone, true), 1700);
@@ -444,14 +614,55 @@ export class Identity {
     this.button('Plus tard', 'id-secondary', () => { this.hide(); onDone?.(!!afterFace); });
   }
 
+  // Proves a specific child is really the one sitting there. Used when a
+  // secured profile is picked on a device that hasn't seen them for a while;
+  // a trusted device skips this entirely for 30 days.
+  async verify(name, { onOk, onCancel } = {}) {
+    if (this.guardLocked()) return;
+    // a child who only set a code shouldn't have the camera opened at them
+    if (!this.entry(name).faces.length) {
+      this.pinLogin([name], () => onOk?.());
+      return;
+    }
+    await this.recognize([name], {
+      onMatch: () => onOk?.(),
+      onCancel,
+      title: `👋 C'est bien toi, ${name} ?`,
+    });
+  }
+
+  // "Me connecter à mon compte": a device that has never seen this child.
+  // Their signature lives in the cloud under their first name, so the camera
+  // (or their code) is enough to find the account and bring it onto this
+  // device — nothing to type, no password anywhere.
+  async loginToAccount({ onMatch } = {}) {
+    if (this.guardLocked()) return;
+    this.show('🔑 Me connecter à mon compte', 'Je regarde qui tu es et je retrouve ton compte…');
+    if (!navigator.onLine) {
+      this.say("Pas de connexion internet — il en faut une la première fois sur un nouvel appareil.", 'err');
+      this.button('OK', 'id-secondary', () => this.hide());
+      return;
+    }
+    this.say('Recherche des comptes…');
+    await this.syncFromCloud();
+    const accounts = Object.keys(this.remote).filter((n) => this.entry(n).faces.length || this.entry(n).pinHash);
+    if (!accounts.length) {
+      this.say("Aucun compte trouvé — crée-en un, c'est juste en dessous !", 'err');
+      this.button('OK', 'id-secondary', () => this.hide());
+      return;
+    }
+    await this.recognize(accounts, { onMatch, title: '🔑 Regarde la caméra !' });
+  }
+
   // "Reconnais-moi !" from the who-screen: look at the camera, get switched
   // to your own profile. Falls back to the code, then to tapping a card.
-  async recognize(names, { onMatch } = {}) {
-    this.show('📸 Regarde la caméra !', 'Je cherche qui tu es…');
+  async recognize(names, { onMatch, onCancel, title } = {}) {
+    if (this.guardLocked()) return;
+    this.show(title || '📸 Regarde la caméra !', 'Je cherche qui tu es…');
     this.el.stage.style.display = 'block';
     this.el.stage.className = 'scan';
     this.button('🔢 Utiliser mon code', 'id-secondary', () => this.pinLogin(names, onMatch));
-    this.button('Annuler', 'id-secondary', () => this.hide());
+    this.button('Annuler', 'id-secondary', () => { this.hide(); onCancel?.(); });
 
     this.syncFromCloud(); // in the background: signatures from other devices
 
@@ -471,15 +682,20 @@ export class Identity {
     }
     await this.syncFromCloud();
 
-    this.say('Ne bouge pas… 🔍');
-    const deadline = Date.now() + 20000;
+    let firstPass = true;
+    const deadline = Date.now() + 40000;
     while (Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
+      this.say(firstPass
+        ? '⏳ Je me réveille… (quelques secondes la première fois)'
+        : 'Ne bouge pas… 🔍');
       const sig = await this.snapshot(this.el.video);
+      firstPass = false;
       if (sig) {
         const who = this.match(sig, names);
         if (who) {
           this.learn(who, sig); // stays accurate as they grow
+          this.registerSuccess(who);
           this.el.stage.className = 'ok';
           this.say(`🎉 Merci ${who}, je t'ai reconnu !`, 'ok');
           this.stopCamera(this._stream);
@@ -492,6 +708,8 @@ export class Identity {
     }
     this.stopCamera(this._stream);
     this._stream = null;
+    this.registerFailure();
+    if (this.guardLocked()) return;
     this.say("Je ne te reconnais pas 🤔 — essaie ton code secret.", 'err');
     setTimeout(() => this.pinLogin(names, onMatch), 1600);
   }
@@ -499,17 +717,54 @@ export class Identity {
   pinLogin(names, onMatch) {
     this.stopCamera(this._stream);
     this._stream = null;
+    if (this.guardLocked()) return;
     this.show('🔢 Ton code secret', 'Tape tes 6 chiffres.');
     this.askPin(async (value) => {
       const who = await this.whoHasPin(value, names);
       if (who) {
+        this.registerSuccess(who);
         this.say(`🎉 Bonjour ${who} !`, 'ok');
         setTimeout(() => { this.hide(); onMatch?.(who); }, 1100);
       } else {
         this.clearPin();
-        this.say('Ce code ne marche pas 🤔', 'err');
+        this.registerFailure();
+        if (this.guardLocked()) return;
+        const left = MAX_FAILS - this.lockState().fails;
+        this.say(`Ce code ne marche pas 🤔 (encore ${left} essai${left > 1 ? 's' : ''})`, 'err');
       }
     });
     this.button('Annuler', 'id-secondary', () => this.hide());
+  }
+
+  // ---- new account: name, school grade, then the security steps -------------
+
+  createAccount({ grades, onDone } = {}) {
+    this.show('✨ Nouveau joueur', 'Comment tu t\'appelles ?');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 12;
+    input.placeholder = 'Ton prénom';
+    input.style.cssText = 'width:100%;padding:12px;font-size:16px;border-radius:12px;border:1px solid #46587e;background:#0e1420;color:#fff;text-align:center;';
+    this.el.actions.appendChild(input);
+    input.focus();
+    const next = () => {
+      const name = input.value.trim().slice(0, 12);
+      if (!name) { this.say('Écris ton prénom 🙂', 'err'); return; }
+      this.askGrade(name, grades, onDone);
+    };
+    input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') next(); });
+    this.button('Continuer ➜', 'id-primary', next);
+    this.button('Annuler', 'id-secondary', () => this.hide());
+  }
+
+  // The school grade sets the starting difficulty of the quizzes, so it is
+  // asked up front rather than left at a default the child never revisits.
+  askGrade(name, grades, onDone) {
+    this.show(`🎓 Salut ${name} !`, "Tu es dans quelle classe ? Ça règle la difficulté des quiz (ça s'ajuste tout seul ensuite).");
+    this.el.actions.classList.add('grid');
+    grades.forEach(([fr, us], i) => {
+      this.button(`${fr} · ${us}`, 'id-secondary',
+        () => { this.el.actions.classList.remove('grid'); this.hide(); onDone?.({ name, grade: i }); });
+    });
   }
 }
