@@ -1,6 +1,6 @@
-// Passive farm animals, Minecraft-style: cows, pigs, sheep, chickens,
-// horses and rabbits wander the grasslands. Some spawn as babies. They are
-// ambience — catch-balls ignore them.
+// Passive animals, Minecraft-style: farm animals wander the grasslands,
+// beach animals live on the sand, penguins waddle on the snowy peaks.
+// Some spawn as babies. They are ambience — catch-balls ignore them.
 
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
@@ -102,8 +102,129 @@ const BUILDERS = {
     g.userData.legs = legs;
     return g;
   },
+  goat: () => quadruped({
+    bodyColor: 0xd8d4cc, headColor: 0xd8d4cc,
+    extras(g, { legH, bodyH, bodyL }) {
+      for (const sx of [-1, 1]) g.add(box(0.06, 0.14, 0.06, 0x8a7a5a, sx * 0.12, legH + bodyH + 0.3, -bodyL / 2 + 0.02)); // horns
+      g.add(box(0.08, 0.12, 0.06, 0xbab4a8, 0, legH + bodyH - 0.08, -bodyL / 2 - 0.18)); // little beard
+    },
+  }),
+  deer: () => quadruped({
+    bodyColor: 0x9a6b3f, headColor: 0x9a6b3f, bodyH: 0.42, bodyL: 0.9, legH: 0.5,
+    extras(g, { legH, bodyH, bodyL }) {
+      for (const sx of [-1, 1]) { // antlers
+        g.add(box(0.05, 0.26, 0.05, 0x6a4a26, sx * 0.12, legH + bodyH + 0.36, -bodyL / 2 - 0.02));
+        g.add(box(0.16, 0.05, 0.05, 0x6a4a26, sx * 0.16, legH + bodyH + 0.46, -bodyL / 2 - 0.02));
+      }
+      g.add(box(0.12, 0.12, 0.06, 0xf2ede2, 0, legH + bodyH - 0.02, bodyL / 2 + 0.03)); // white tail
+    },
+  }),
+  fox: () => quadruped({
+    bodyColor: 0xe07a3a, headColor: 0xe07a3a, bodyW: 0.42, bodyH: 0.36, bodyL: 0.7, legH: 0.3,
+    extras(g, { legH, bodyH, bodyL }) {
+      for (const sx of [-1, 1]) g.add(box(0.08, 0.12, 0.04, 0xe07a3a, sx * 0.11, legH + bodyH + 0.26, -bodyL / 2 - 0.02)); // pointy ears
+      g.add(box(0.12, 0.1, 0.08, 0xf2ede2, 0, legH + bodyH - 0.02, -bodyL / 2 - 0.22)); // white muzzle
+      g.add(box(0.15, 0.15, 0.34, 0xe07a3a, 0, legH + bodyH / 2 + 0.05, bodyL / 2 + 0.18)); // bushy tail…
+      g.add(box(0.13, 0.13, 0.1, 0xf2ede2, 0, legH + bodyH / 2 + 0.05, bodyL / 2 + 0.38));  // …with a white tip
+    },
+  }),
+  wolf: () => quadruped({
+    bodyColor: 0x9a9aa2, headColor: 0x9a9aa2, bodyH: 0.42, bodyL: 0.85, legH: 0.4,
+    extras(g, { legH, bodyH, bodyL }) {
+      for (const sx of [-1, 1]) g.add(box(0.08, 0.12, 0.05, 0x7a7a82, sx * 0.11, legH + bodyH + 0.26, -bodyL / 2 - 0.02)); // ears
+      g.add(box(0.12, 0.12, 0.3, 0x7a7a82, 0, legH + bodyH / 2 + 0.08, bodyL / 2 + 0.15)); // tail
+      g.add(box(0.14, 0.1, 0.1, 0xc6c6cc, 0, legH + bodyH - 0.04, -bodyL / 2 - 0.2)); // muzzle
+    },
+  }),
+  duck: () => {
+    const g = new THREE.Group();
+    const legs = [];
+    for (const sx of [-0.07, 0.07]) {
+      const leg = box(0.05, 0.16, 0.05, 0xe8963c, sx, 0.08, 0);
+      g.add(leg);
+      legs.push(leg);
+    }
+    g.add(box(0.32, 0.26, 0.44, 0x9a8a6a, 0, 0.3, 0));       // brown body
+    g.add(box(0.18, 0.2, 0.18, 0x2a7a3a, 0, 0.56, -0.24));   // green mallard head
+    g.add(box(0.1, 0.05, 0.12, 0xe8c53c, 0, 0.52, -0.38));   // flat yellow bill
+    for (const sx of [-1, 1]) g.add(box(0.04, 0.14, 0.3, 0x8a7a5a, sx * 0.19, 0.34, 0)); // wings
+    for (const sx of [-1, 1]) g.add(box(0.04, 0.04, 0.02, 0x1a1a1a, sx * 0.06, 0.6, -0.32));
+    g.userData.legs = legs;
+    return g;
+  },
+  turtle: () => {
+    const g = new THREE.Group();
+    const legs = [];
+    for (const [lx, lz] of [[-0.2, -0.15], [0.2, -0.15], [-0.2, 0.18], [0.2, 0.18]]) {
+      const leg = box(0.1, 0.1, 0.12, 0x8aa04a, lx, 0.05, lz);
+      g.add(leg);
+      legs.push(leg);
+    }
+    g.add(box(0.4, 0.12, 0.5, 0x8aa04a, 0, 0.14, 0));        // body
+    g.add(box(0.44, 0.14, 0.52, 0x4a7a3a, 0, 0.27, 0));      // shell
+    g.add(box(0.3, 0.08, 0.38, 0x3a6a2e, 0, 0.38, 0));       // shell top
+    g.add(box(0.16, 0.14, 0.14, 0x8aa04a, 0, 0.2, -0.32));   // head
+    for (const sx of [-1, 1]) g.add(box(0.03, 0.04, 0.02, 0x1a1a1a, sx * 0.05, 0.24, -0.4));
+    g.userData.legs = legs;
+    return g;
+  },
+  crab: () => {
+    const g = new THREE.Group();
+    const legs = [];
+    for (const [lx, lz] of [[-0.28, -0.08], [0.28, -0.08], [-0.28, 0.12], [0.28, 0.12]]) {
+      const leg = box(0.06, 0.12, 0.06, 0xb83a2e, lx, 0.06, lz);
+      g.add(leg);
+      legs.push(leg);
+    }
+    g.add(box(0.5, 0.18, 0.36, 0xd84a3a, 0, 0.22, 0));       // flat body
+    for (const sx of [-1, 1]) {
+      g.add(box(0.12, 0.12, 0.14, 0xe86a5a, sx * 0.24, 0.24, -0.24)); // claws
+      g.add(box(0.04, 0.1, 0.04, 0xd84a3a, sx * 0.08, 0.38, -0.1));   // eye stalks
+      g.add(box(0.05, 0.05, 0.05, 0x1a1a1a, sx * 0.08, 0.45, -0.1));
+    }
+    g.userData.legs = legs;
+    return g;
+  },
+  penguin: () => {
+    const g = new THREE.Group();
+    const legs = [];
+    for (const sx of [-0.08, 0.08]) {
+      const leg = box(0.08, 0.08, 0.12, 0xe8963c, sx, 0.04, 0);
+      g.add(leg);
+      legs.push(leg);
+    }
+    g.add(box(0.34, 0.5, 0.3, 0x2a2a34, 0, 0.33, 0));        // body
+    g.add(box(0.24, 0.38, 0.05, 0xf2f2ee, 0, 0.3, -0.15));   // white belly
+    g.add(box(0.26, 0.22, 0.26, 0x2a2a34, 0, 0.68, 0));      // head
+    g.add(box(0.07, 0.05, 0.12, 0xe8963c, 0, 0.66, -0.18));  // beak
+    for (const sx of [-1, 1]) {
+      g.add(box(0.05, 0.3, 0.16, 0x2a2a34, sx * 0.2, 0.4, 0)); // flippers
+      g.add(box(0.04, 0.05, 0.02, 0x1a1a1a, sx * 0.07, 0.72, -0.14));
+    }
+    g.userData.legs = legs;
+    return g;
+  },
+  squirrel: () => {
+    const g = new THREE.Group();
+    const legs = [];
+    for (const [lx, lz] of [[-0.07, -0.08], [0.07, -0.08], [-0.07, 0.1], [0.07, 0.1]]) {
+      const leg = box(0.05, 0.1, 0.05, 0x8a5430, lx, 0.05, lz);
+      g.add(leg);
+      legs.push(leg);
+    }
+    g.add(box(0.2, 0.18, 0.32, 0xa4643a, 0, 0.2, 0));        // body
+    g.add(box(0.16, 0.15, 0.15, 0xa4643a, 0, 0.36, -0.2));   // head
+    for (const sx of [-1, 1]) {
+      g.add(box(0.04, 0.07, 0.03, 0xa4643a, sx * 0.05, 0.48, -0.2)); // little ears
+      g.add(box(0.03, 0.04, 0.02, 0x1a1a1a, sx * 0.04, 0.38, -0.29));
+    }
+    g.add(box(0.14, 0.4, 0.14, 0xb87848, 0, 0.34, 0.22));    // big fluffy tail, raised
+    g.userData.legs = legs;
+    return g;
+  },
 };
 
+// habitat: 'grass' (default) for meadows, 'sand' for beaches, 'snow' for peaks
 const SPECIES = [
   { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7, meat: '🥩 Steak' },
   { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6, meat: '🍖 Côtelette' },
@@ -111,9 +232,18 @@ const SPECIES = [
   { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, meat: '🍖 Viande' },
   { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4, meat: '🍗 Poulet' },
   { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true, meat: '🍗 Lapin' },
+  { key: 'goat', name: 'Chèvre', cry: 'Bêêêh !', emoji: '🐐', speed: 1.2, height: 1.0, width: 0.6, meat: '🍖 Gigot' },
+  { key: 'deer', name: 'Cerf', cry: '…brame !', emoji: '🦌', speed: 1.9, height: 1.3, width: 0.65, meat: '🍖 Viande' },
+  { key: 'fox', name: 'Renard', cry: 'Glapit !', emoji: '🦊', speed: 1.7, height: 0.7, width: 0.5, meat: '🍓 Baies' },
+  { key: 'wolf', name: 'Loup', cry: 'Aouuuh !', emoji: '🐺', speed: 1.6, height: 0.9, width: 0.6, meat: '🍖 Viande' },
+  { key: 'squirrel', name: 'Écureuil', cry: '…scrat scrat', emoji: '🐿️', speed: 1.5, height: 0.5, width: 0.35, hopper: true, meat: '🌰 Noisette' },
+  { key: 'duck', name: 'Canard', cry: 'Coin coin !', emoji: '🦆', speed: 0.9, height: 0.7, width: 0.4, habitat: 'sand', meat: '🍗 Canard' },
+  { key: 'turtle', name: 'Tortue', cry: '…', emoji: '🐢', speed: 0.4, height: 0.5, width: 0.55, habitat: 'sand', meat: '🥚 Œuf' },
+  { key: 'crab', name: 'Crabe', cry: 'Clac clac !', emoji: '🦀', speed: 1.0, height: 0.5, width: 0.6, habitat: 'sand', meat: '🦀 Pince de crabe' },
+  { key: 'penguin', name: 'Manchot', cry: 'Groink !', emoji: '🐧', speed: 0.9, height: 0.9, width: 0.45, habitat: 'snow', meat: '🐟 Poisson' },
 ];
 
-const MAX_ANIMALS = 12;
+const MAX_ANIMALS = 16;
 
 class Animal {
   constructor(def, x, y, z, baby) {
@@ -266,9 +396,15 @@ export class AnimalManager {
     let y = HEIGHT - 1;
     while (y > 0 && !this.world.isSolid(x, y, z)) y--;
     const surface = y + 1;
-    if (surface <= WATER_LEVEL + 1 || surface >= 58) return;
-    if (this.world.getBlock(x, y, z) !== BLOCK.GRASS) return; // farm animals like grass
-    const def = SPECIES[Math.floor(Math.random() * SPECIES.length)];
+    if (surface <= WATER_LEVEL) return; // never in the water
+    // the ground block decides who lives here: meadow, beach or snowy peak
+    const ground = this.world.getBlock(x, y, z);
+    const habitat = ground === BLOCK.GRASS ? 'grass'
+      : ground === BLOCK.SAND ? 'sand'
+      : ground === BLOCK.SNOW ? 'snow' : null;
+    if (!habitat) return;
+    const pool = SPECIES.filter((s) => (s.habitat || 'grass') === habitat);
+    const def = pool[Math.floor(Math.random() * pool.length)];
     const baby = Math.random() < 0.2;
     const animal = new Animal(def, x + 0.5, surface + 0.1, z + 0.5, baby);
     this.animals.push(animal);
