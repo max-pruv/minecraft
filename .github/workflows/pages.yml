@@ -1,0 +1,51 @@
+# Publishes the site through the modern GitHub Actions Pages pipeline.
+#
+# The repository previously relied on the legacy "deploy from a branch"
+# pipeline, whose deployments got stuck in GitHub's queue: the build and
+# artifact upload finished in seconds, then the deploy step sat in
+# `deployment_queued` until it timed out, five times in a row. That path
+# cannot be unstuck from the API, so this takes a different one.
+#
+# It also skips Jekyll entirely, which this site never needed — it is plain
+# static files.
+
+name: Deploy site to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let a stuck run block the next release.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # enablement: true switches the Pages build type to "workflow", so the
+      # legacy branch pipeline stops taking over.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 900000
