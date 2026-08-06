@@ -16,6 +16,7 @@ export const TYPES = {
   ICE:      { color: 0x9fd8e8, dark: 0x5d97ad, biomes: [BLOCK.SNOW] },
   BUG:      { color: 0xa8c04c, dark: 0x6d8028, biomes: [BLOCK.GRASS] },
   SPOOKY:   { color: 0x8a6ad0, dark: 0x54388f, biomes: [BLOCK.GRASS, BLOCK.SAND, BLOCK.SNOW] },
+  FELIN:    { color: 0xd8a13c, dark: 0x8a5f1e, biomes: [BLOCK.GRASS, BLOCK.SAND] },
 };
 
 // --- deterministic species generation ---------------------------------------
@@ -45,7 +46,9 @@ export function generateSpecies() {
   const rng = mulberry32(424242);
   const species = [];
   const names = new Set();
-  const typeKeys = Object.keys(TYPES);
+  // FELIN is excluded from the cycle so the 48 original species keep their
+  // exact ids, names and types (saved collections stay valid)
+  const typeKeys = Object.keys(TYPES).filter((t) => t !== 'FELIN');
   for (let i = 0; i < 48; i++) {
     const type = typeKeys[i % typeKeys.length]; // six of each type
     let name = makeName(rng);
@@ -68,6 +71,13 @@ export function generateSpecies() {
       horn: mulberry32(9000 + i)() < 0.3,
     });
   }
+  // adoptable felines: lions, panthers and cats roam the plains like the
+  // other creatures — throw a ball to adopt them into the Dex
+  species.push(
+    { id: 48, name: 'Lion', type: 'FELIN', rarity: 2, catchRate: 0.35, size: 0.95, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 2.0, horn: false, color: 0xd8a13c, dark: 0x8a5f1e, mane: true },
+    { id: 49, name: 'Panthère', type: 'FELIN', rarity: 1, catchRate: 0.55, size: 0.8, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 2.4, horn: false, color: 0x2e2e38, dark: 0x14141a },
+    { id: 50, name: 'Chat', type: 'FELIN', rarity: 0, catchRate: 0.8, size: 0.45, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 1.8, horn: false, color: 0x9a9aa4, dark: 0x5a5a64 },
+  );
   return species;
 }
 
@@ -77,8 +87,9 @@ export function generateSpecies() {
 // lighting, glossy eyes and two-tone bellies — cuddly toys, not cubes.
 function buildCreatureMesh(sp) {
   const g = new THREE.Group();
-  const baseColor = new THREE.Color(TYPES[sp.type].color);
-  const darkColor = new THREE.Color(TYPES[sp.type].dark);
+  // felines carry their own fur colors; everyone else wears their type's
+  const baseColor = new THREE.Color(sp.color !== undefined ? sp.color : TYPES[sp.type].color);
+  const darkColor = new THREE.Color(sp.dark !== undefined ? sp.dark : TYPES[sp.type].dark);
   const bellyColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4);
   const main = new THREE.MeshLambertMaterial({ color: baseColor });
   const dark = new THREE.MeshLambertMaterial({ color: darkColor });
@@ -103,6 +114,12 @@ function buildCreatureMesh(sp) {
   const head = sphere(s * 0.42, main);
   head.position.set(0, legH + s * 0.85, -s * 0.62);
   g.add(head);
+  if (sp.mane) { // the lion's proud dark halo
+    const mane = sphere(s * 0.52, dark, 20);
+    mane.scale.set(1.2, 1.2, 0.55);
+    mane.position.set(0, legH + s * 0.85, -s * 0.48);
+    g.add(mane);
+  }
   const snout = sphere(s * 0.14, belly, 16);
   snout.scale.set(1.2, 0.8, 1);
   snout.position.set(0, legH + s * 0.76, -s * 0.98);

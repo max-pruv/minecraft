@@ -206,19 +206,37 @@ function buildCastle(set) { // petit château fort
 
 // Each landmark lives inside its own themed city district.
 // waterBase: the base rises to water level so piers/bridges sit above the sea.
+function buildBelfry(set) { // le beffroi de Lille, en brique avec son horloge
+  for (let y = 0; y < 24; y++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        if (Math.abs(dx) !== 2 && Math.abs(dz) !== 2) continue; // walls only
+        const window = y % 4 === 2 && (dx === 0 || dz === 0);
+        set(dx, y, dz, window ? BLOCK.GLASS : BLOCK.BRICK);
+      }
+    }
+  }
+  for (const [dx, dz] of [[0, -2], [0, 2], [-2, 0], [2, 0]]) set(dx, 19, dz, BLOCK.GOLD); // clocks
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) set(dx, 24, dz, BLOCK.SLAB_BRICK);
+  for (let y = 25; y < 29; y++) set(0, y, 0, BLOCK.BRICK); // spire
+  set(0, 29, 0, BLOCK.GOLD);
+}
+
 const LANDMARKS = [
   // Paris
-  { name: 'Tour Eiffel', x: -85, z: 44, box: 8, build: buildEiffelTower },
-  { name: 'Arc de Triomphe', x: -108, z: 70, box: 7, build: buildArch },
-  { name: 'Pyramide du Louvre', x: -62, z: 92, box: 7, build: buildGlassPyramid },
+  { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
+  { name: 'Arc de Triomphe', x: -263, z: 200, box: 7, build: buildArch },
+  { name: 'Pyramide du Louvre', x: -217, z: 222, box: 7, build: buildGlassPyramid },
   // New York
-  { name: 'Empire State', x: 105, z: -40, box: 7, build: buildSkyscraper },
-  { name: 'Statue de la Liberté', x: 128, z: -84, box: 4, waterBase: true, build: buildStatue },
+  { name: 'Empire State', x: 295, z: -110, box: 7, build: buildSkyscraper },
+  { name: 'Statue de la Liberté', x: 318, z: -154, box: 4, waterBase: true, build: buildStatue },
   // San Francisco
-  { name: 'Golden Gate', x: 0, z: -168, box: 34, waterBase: true, build: buildSuspensionBridge },
-  { name: 'Phare', x: -38, z: -148, box: 3, waterBase: true, build: buildLighthouse },
+  { name: 'Golden Gate', x: 0, z: -373, box: 34, waterBase: true, build: buildSuspensionBridge },
+  { name: 'Phare', x: -38, z: -353, box: 3, waterBase: true, build: buildLighthouse },
+  // Lille
+  { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
   // Countryside
-  { name: 'Château fort', x: 40, z: 75, box: 6, build: buildCastle },
+  { name: 'Château fort', x: 112, z: 210, box: 6, build: buildCastle },
 ];
 
 // --- world ----------------------------------------------------------------
@@ -227,13 +245,17 @@ const LANDMARKS = [
 // pattern and landmarks: Haussmann Paris, skyscraper New York, and
 // pastel-hilled San Francisco.
 export const CITIES = [
-  { key: 'paris', name: 'Paris', x: -85, z: 70, r: 55, cell: 12, base: 34, street: 3 },
-  { key: 'ny', name: 'New York', x: 105, z: -40, r: 58, cell: 14, base: 33, street: 4 },
-  { key: 'sf', name: 'San Francisco', x: 0, z: -115, r: 50, cell: 11, base: 33, street: 3 },
+  { key: 'paris', name: 'Paris', x: -240, z: 200, r: 55, cell: 12, base: 34, street: 3 },
+  { key: 'ny', name: 'New York', x: 295, z: -110, r: 58, cell: 14, base: 33, street: 4 },
+  { key: 'sf', name: 'San Francisco', x: 0, z: -320, r: 50, cell: 11, base: 33, street: 3 },
+  { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
+  { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
 const SF_PASTELS = [15, 9, 29, 28, 16, 3, 4, 7].map((ci) => DECOR_START + ci * 10);
+// Nice: warm Mediterranean facades (ochre, orange, rose, cream, sand).
+const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 
 export class World {
   constructor() {
@@ -254,8 +276,9 @@ export class World {
     let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
 
     // seas: low continentalness sinks the land, but never near spawn
+    // (pushed far out so the playable continent is ~8x larger)
     const distO = Math.hypot(x, z);
-    const oceanFactor = Math.min(1, Math.max(0, (distO - 90) / 60));
+    const oceanFactor = Math.min(1, Math.max(0, (distO - 260) / 120));
     const continent = fbm(x * 0.005, z * 0.005, SEED + 501);
     if (continent < 0.45) h -= (0.45 - continent) * 130 * oceanFactor;
 
@@ -505,6 +528,58 @@ export class World {
               stamp(doorX, by, z0, BLOCK.AIR);
               stamp(doorX, by + 1, z0, BLOCK.AIR);
             }
+
+          } else if (city.key === 'nice') {
+            // Nice: warm Mediterranean facades with terracotta roofs
+            const mat = NICE_WARM[Math.floor(hash2i(gx, gz, SEED + 830) * NICE_WARM.length)];
+            const bh = 4 + Math.floor(hash2i(gx, gz, SEED + 802) * 2);
+            for (let y = 0; y < bh; y++) {
+              for (let wx = x0; wx <= x1; wx++) {
+                for (let wz = z0; wz <= z1; wz++) {
+                  const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+                  if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.SANDSTONE); continue; }
+                  if (y === 0) foundation(wx, wz, by, mat);
+                  const u = (wx === x0 || wx === x1) ? wz : wx;
+                  const win = y > 0 && y % 3 !== 0 && u % 2 === 1;
+                  stamp(wx, by + y, wz, win ? BLOCK.GLASS : mat);
+                }
+              }
+            }
+            for (let wx = x0; wx <= x1; wx++) { // terracotta tiled roof
+              for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, BLOCK.TERRACOTTA);
+            }
+            for (let wx = x0 + 1; wx <= x1 - 1; wx++) {
+              for (let wz = z0 + 1; wz <= z1 - 1; wz++) stamp(wx, by + bh + 1, wz, BLOCK.SLAB_BRICK);
+            }
+            stamp(doorX, by, z0, BLOCK.AIR);
+            stamp(doorX, by + 1, z0, BLOCK.AIR);
+
+          } else if (city.key === 'lille') {
+            // Lille: Flemish red-brick row houses with stepped gables
+            const mat = hash2i(gx, gz, SEED + 840) > 0.5 ? BLOCK.BRICK : BLOCK.DARKBRICK;
+            const bh = 5 + Math.floor(hash2i(gx, gz, SEED + 802) * 2);
+            for (let y = 0; y < bh; y++) {
+              for (let wx = x0; wx <= x1; wx++) {
+                for (let wz = z0; wz <= z1; wz++) {
+                  const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
+                  if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.PLANK); continue; }
+                  if (y === 0) foundation(wx, wz, by, mat);
+                  const u = (wx === x0 || wx === x1) ? wz : wx;
+                  // white stone lintel bands between floors, Flemish style
+                  if (y > 0 && y % 3 === 0) { stamp(wx, by + y, wz, BLOCK.WHITEBRICK); continue; }
+                  const win = y > 0 && u % 2 === 1;
+                  stamp(wx, by + y, wz, win ? BLOCK.GLASS : mat);
+                }
+              }
+            }
+            // stepped gable roof: brick rows shrinking toward the ridge
+            for (let s = 0; s < 3; s++) {
+              for (let wx = x0 + s; wx <= x1 - s; wx++) {
+                for (let wz = z0 + s; wz <= z1 - s; wz++) stamp(wx, by + bh + s, wz, s === 2 ? BLOCK.SLAB_BRICK : mat);
+              }
+            }
+            stamp(doorX, by, z0, BLOCK.AIR);
+            stamp(doorX, by + 1, z0, BLOCK.AIR);
 
           } else {
             // San Francisco: pastel painted ladies with white trim and bay windows
