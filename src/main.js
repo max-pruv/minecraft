@@ -257,20 +257,54 @@ function savePosition() {
   try { localStorage.setItem(POS_KEY, JSON.stringify(all)); } catch { /* ignore */ }
 }
 
+// Highest solid block at a column (generates the chunk on demand).
+function surfaceAt(x, z) {
+  let y = HEIGHT - 1;
+  while (y > 1 && !world.isSolid(Math.floor(x), y, Math.floor(z))) y--;
+  return y + 1;
+}
+
 // On the first entry into a context this session, teleport back to the
-// last saved spot (collision uses world data, which generates on demand,
-// so restoring anywhere is safe).
+// last saved spot — but validate it first: terrain can change between
+// versions (new biomes) and kids can fly off into the sky, so a saved
+// position may now be buried, floating in the void or lost at sea.
 function restorePosition() {
   if (posRestored.has(posCtx)) return;
   posRestored.add(posCtx);
   const p = loadPositions()[posCtx];
   if (!p) return;
-  player.pos.set(p.x, p.y, p.z);
+  let { x, y, z } = p;
+  if (world.terrainHeight(Math.floor(x), Math.floor(z)) <= WATER_LEVEL - 2) {
+    x = 0.5; z = 0.5; // lost far out at sea: come home to spawn
+  }
+  // buried in solid blocks (terrain rose under the save) or no floor at all
+  // within 30 blocks below (stranded in the sky)? land safely on the surface.
+  const bx = Math.floor(x), bz = Math.floor(z);
+  const buried = world.isSolid(bx, Math.floor(y + 0.3), bz) && world.isSolid(bx, Math.floor(y + 1.3), bz);
+  let support = false;
+  for (let yy = Math.floor(y); yy > Math.floor(y) - 30 && yy > 0; yy--) {
+    if (world.isSolid(bx, yy, bz)) { support = true; break; }
+  }
+  if (buried || !support || y >= HEIGHT) y = surfaceAt(x, z) + 0.2;
+  player.pos.set(x, y, z);
   player.vel.set(0, 0, 0);
   player.yaw = p.yaw || 0;
   player.pitch = p.pitch || 0;
   player.syncCamera();
 }
+
+// Live rescue: if a player somehow ends far above the world (runaway
+// flying, bad save), float them gently back to the ground.
+setInterval(() => {
+  if (!running) return;
+  if (player.pos.y > HEIGHT + 40 || player.pos.y < -12) {
+    const gy = surfaceAt(player.pos.x, player.pos.z);
+    player.pos.y = gy + 0.2;
+    player.vel.set(0, 0, 0);
+    player.flying = false;
+    creatureManager.toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
+  }
+}, 4000);
 
 setInterval(savePosition, 3000); // continuous, cheap
 
@@ -761,8 +795,19 @@ const PROFILE_KEY = 'web-minecraft-profile-v1';
 let playerProfile = { name: '' };
 try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') }; }
 catch { /* defaults */ }
+let prefsPushTimer = null;
+function pushPrefsToCloud() {
+  clearTimeout(prefsPushTimer);
+  prefsPushTimer = setTimeout(() => {
+    cloud.prefsPush(playerProfile.name, {
+      lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
+    }).catch(() => {});
+  }, 1200);
+}
+
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+  pushPrefsToCloud(); // settings follow the first name across devices
   // keep the profile registry's display name and look in sync
   const reg = loadRegistry();
   const entry = reg.list.find((p) => p.id === reg.current);
@@ -1458,6 +1503,39 @@ gradeSelect.addEventListener('change', () => {
   creatureManager.toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
 });
 edu.setPrefs(playerProfile.lang, playerProfile.grade);
+
+// Server-side preferences: on launch, pull the settings saved under this
+// first name (language, school grade, character look) and apply them, so a
+// child finds their own setup on any device. Local changes push back up.
+(async () => {
+  if (!playerProfile.name || !navigator.onLine) return;
+  let prefs = null;
+  try { prefs = await cloud.prefsPull(playerProfile.name); } catch { return; }
+  if (!prefs) { pushPrefsToCloud(); return; } // first time: seed the server
+  let changed = false;
+  if (typeof prefs.lang === 'string' && prefs.lang !== playerProfile.lang) {
+    playerProfile.lang = prefs.lang;
+    changed = true;
+  }
+  if (Number.isInteger(prefs.grade) && prefs.grade !== playerProfile.grade) {
+    playerProfile.grade = prefs.grade;
+    changed = true;
+  }
+  if (Number.isInteger(prefs.charIdx) && prefs.charIdx !== selectedChar &&
+      prefs.charIdx >= 0 && prefs.charIdx < NET_CHARACTERS.length) {
+    selectedChar = prefs.charIdx;
+    playerProfile.charIdx = prefs.charIdx;
+    [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === selectedChar));
+    changed = true;
+  }
+  if (changed) {
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+    edu.setPrefs(playerProfile.lang, playerProfile.grade);
+    gradeSelect.value = String(playerProfile.grade);
+    renderLangRow();
+    creatureManager.toast('☁️ Tes réglages ont été retrouvés sur le serveur !', 0x9fd8e8);
+  }
+})();
 
 // --- draggable video tiles ---------------------------------------------------------
 
