@@ -137,6 +137,32 @@ export class CloudSave {
     });
   }
 
+  // ---- whole-profile state, keyed by first name --------------------------
+  // Everything a child collects (dex, bag, records, worlds, buildings…) so
+  // it follows them to any device. localStorage stays the working copy —
+  // this is the durable one — so the game is unaffected when offline.
+
+  async statePull(name) {
+    if (!this.configured || !name) return null;
+    const res = await fetch(
+      `${this.url}/rest/v1/player_state?name=eq.${encodeURIComponent(name)}&select=state`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? rows[0].state : null;
+  }
+
+  async statePush(name, state, keepalive = false) {
+    if (!this.configured || !name) return;
+    await fetch(`${this.url}/rest/v1/player_state`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ name, state, updated_at: new Date().toISOString() }]),
+      keepalive,
+    });
+  }
+
   // ---- identity: face signatures & backup PIN, keyed by first name -------
   // Only a 128-number face "signature" is ever stored — never a photo. The
   // PIN is stored hashed. Both travel with the name so a child is

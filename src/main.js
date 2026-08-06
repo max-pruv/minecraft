@@ -11,6 +11,7 @@ import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity } from './identity.js';
+import { ProfileSync } from './sync.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
@@ -796,6 +797,14 @@ const PROFILE_KEY = 'web-minecraft-profile-v1';
 let playerProfile = { name: '' };
 try { playerProfile = { ...playerProfile, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') }; }
 catch { /* defaults */ }
+// Whole-profile portability (declared here so the profile-switching helpers
+// below can flush state before they reload). See the sync section further on.
+const profileSync = new ProfileSync(cloud, () => playerProfile.name);
+profileSync.onTrim = (dropped) => {
+  creatureManager.toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
+};
+profileSync.start();
+
 let prefsPushTimer = null;
 function pushPrefsToCloud() {
   clearTimeout(prefsPushTimer);
@@ -852,6 +861,7 @@ function switchProfile(id) {
   if (id === reg.current) return;
   world.saveEdits();
   edu.save();
+  profileSync.push(true).catch(() => {}); // this child's state before we swap away
   reg.current = id;
   saveRegistry(reg);
   try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
@@ -925,6 +935,7 @@ function addLocalProfile(name, { grade, enroll = false } = {}) {
   raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify(seed));
   world.saveEdits();
   edu.save();
+  profileSync.push(true).catch(() => {}); // don't lose the outgoing child's state
   try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
   if (enroll) identity.enroll(name, { direct: true, onDone: () => location.reload() });
   else location.reload();
@@ -1324,6 +1335,8 @@ function leaveToMainMenu() {
   chatBtn.style.display = 'none';
   chatPanel.style.display = 'none';
   world.saveEdits();
+  savePosition();
+  profileSync.push().catch(() => {});
   fun.onLeave();
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
@@ -1643,6 +1656,36 @@ async function pullPlayTime() {
   try { crossDeviceRows = await cloud.timePull(playerProfile.name); } catch { return; }
   applyCrossDeviceDays();
 }
+
+// --- whole-profile portability -----------------------------------------------
+// The child's collection, buildings, records and settings live in the cloud
+// under their name, with localStorage as the working copy so everything keeps
+// working offline. On launch we merge what other devices did; if that brings
+// anything new down, reload once so the already-constructed game modules pick
+// it up (they read their state at construction, like a profile switch does).
+
+(async () => {
+  if (!playerProfile.name) return;
+  const flag = `wm-sync-${playerProfile.name}`;
+  let already = false;
+  try { already = !!sessionStorage.getItem(flag); } catch { /* ignore */ }
+  const { changed, state } = await profileSync.pull();
+  // Blocks go into the live world rather than only into storage: the world
+  // was built before this pull finished, and its own save-on-unload would
+  // otherwise write that older copy straight back over the merged one.
+  if (state && state.edits) {
+    const applied = world.mergeEdits(state.edits);
+    if (applied > 0) {
+      world.saveEdits();
+      creatureManager.toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
+    }
+  }
+  if (changed && !already) {
+    try { sessionStorage.setItem(flag, '1'); } catch { /* ignore */ }
+    try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
+    location.reload(); // once per session: bring the restored state into play
+  }
+})();
 
 pullPlayTime();
 setInterval(() => { pushPlayTime(); pushPrefsToCloud(); }, 15000);
@@ -2495,7 +2538,7 @@ const fun = initFun({
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
