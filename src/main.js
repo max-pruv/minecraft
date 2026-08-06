@@ -803,6 +803,20 @@ const profileSync = new ProfileSync(cloud, () => playerProfile.name);
 profileSync.onTrim = (dropped) => {
   creatureManager.toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
 };
+// The world in memory is the truth; localStorage only catches up on a
+// debounced save, so a push that read storage alone could ship a copy that
+// is a few seconds behind what the child just built.
+profileSync.liveEdits = () => world.exportEdits();
+// A background merge can bring down blocks another device placed. They go
+// straight into the live world so they appear without waiting for a reload.
+profileSync.onMerged = (state) => {
+  if (!state || !state.edits) return;
+  const applied = world.mergeEdits(state.edits);
+  if (applied > 0) {
+    world.saveEdits();
+    creatureManager.toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
+  }
+};
 profileSync.start();
 
 let prefsPushTimer = null;
@@ -1683,6 +1697,16 @@ async function pullPlayTime() {
   if (changed && !already) {
     try { sessionStorage.setItem(flag, '1'); } catch { /* ignore */ }
     try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
+    // Reloading before the service worker has taken control leaves the new
+    // page permanently uncontrolled — clients.claim() only runs once, at
+    // activation — which would cost this session its offline support. Wait
+    // for it (briefly) so the reload lands on a controlled page.
+    if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
+      await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((r) => setTimeout(r, 5000)),
+      ]);
+    }
     location.reload(); // once per session: bring the restored state into play
   }
 })();
