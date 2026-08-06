@@ -19,12 +19,27 @@ const MODEL_URL = './vendor/face-models';
 // they are not asked again every single time they sit down to play.
 const TRUST_DAYS = 30;
 
-// Brute-force brake: 3 misses freezes identification for an hour, and each
-// further round of misses doubles it. Tapping your own card still works —
-// this only slows down someone poking at other people's accounts.
+// Frein anti-tâtonnement. Il ne s'agit que d'empêcher un frère ou une sœur de
+// tester des codes au hasard, pas de punir : une pause d'une heure a bloqué
+// un enfant tout un après-midi pour des bugs qui n'étaient pas les siens.
+//
+// Trente secondes suffisent largement. Un code à six chiffres compte un
+// million de combinaisons ; à trois essais par demi-minute, en épuiser ne
+// serait-ce qu'un dixième demanderait plus de mille heures d'acharnement.
+// Le plafond de cinq minutes garde donc toute son efficacité tout en restant
+// à l'échelle de la patience d'un enfant.
 const MAX_FAILS = 3;
-const LOCK_BASE_MS = 60 * 60 * 1000;
-const LOCK_MAX_MS = 24 * 60 * 60 * 1000;
+const LOCK_BASE_MS = 30 * 1000;
+const LOCK_MAX_MS = 5 * 60 * 1000;
+
+// Version du format de verrou. Ceux d'avant ont été posés par le code qui
+// enfermait dehors des enfants parfaitement légitimes : on les efface au lieu
+// de les faire purger leur peine.
+const LOCK_VERSION = 2;
+
+// Sans faute pendant ce délai, on repart de zéro : les sanctions ne
+// s'accumulent pas d'un jour sur l'autre.
+const STRIKE_FORGET_MS = 15 * 60 * 1000;
 
 // face-api's usual "same person" threshold is 0.6, but on the sample photos
 // two *different* people measured as close as 0.52, so that would risk
@@ -248,12 +263,23 @@ export class Identity {
   // ---- lockout after repeated failures ---------------------------------------
 
   lockState() {
-    try { return JSON.parse(this.raw.get(LOCK_KEY)) || { fails: 0, strikes: 0, until: 0 }; }
-    catch { return { fails: 0, strikes: 0, until: 0 }; }
+    const fresh = () => ({ fails: 0, strikes: 0, until: 0, v: LOCK_VERSION, last: 0 });
+    let s;
+    try { s = JSON.parse(this.raw.get(LOCK_KEY)); } catch { return fresh(); }
+    if (!s) return fresh();
+    // verrou hérité de l'ancienne règle : on l'efface plutôt que de le purger
+    if (s.v !== LOCK_VERSION) { const f = fresh(); this.saveLock(f); return f; }
+    // plus aucune faute depuis un moment : l'ardoise est effacée
+    if (s.last && Date.now() - s.last > STRIKE_FORGET_MS && !(s.until > Date.now())) return fresh();
+    return s;
   }
 
   saveLock(s) {
     try { this.raw.set(LOCK_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+  }
+
+  clearLock() {
+    this.saveLock({ fails: 0, strikes: 0, until: 0, v: LOCK_VERSION, last: 0 });
   }
 
   lockedFor() {
@@ -264,6 +290,7 @@ export class Identity {
   registerFailure() {
     const s = this.lockState();
     s.fails = (s.fails || 0) + 1;
+    s.last = Date.now();
     if (s.fails >= MAX_FAILS) {
       s.strikes = (s.strikes || 0) + 1;
       s.fails = 0;
@@ -274,7 +301,7 @@ export class Identity {
   }
 
   registerSuccess(name) {
-    this.saveLock({ fails: 0, strikes: 0, until: 0 });
+    this.saveLock({ fails: 0, strikes: 0, until: 0, v: LOCK_VERSION, last: 0 });
     if (name) this.trust(name);
   }
 
@@ -284,15 +311,15 @@ export class Identity {
   guardLocked(retry) {
     const ms = this.lockedFor();
     if (ms <= 0) return false;
-    const mins = Math.ceil(ms / 60000);
-    const txt = mins >= 60 ? `${Math.ceil(mins / 60)} h` : `${mins} min`;
-    this.show('⏳ Trop d\'essais', `Pour protéger les comptes, la reconnaissance est en pause. Réessaie dans ${txt}.`);
+    const secs = Math.ceil(ms / 1000);
+    const txt = secs < 60 ? `${secs} secondes` : `${Math.ceil(secs / 60)} min`;
+    this.show('⏳ Petite pause', `Pour protéger les comptes, la reconnaissance se repose un instant. Réessaie dans ${txt}.`);
     this.say('Tu peux toujours toucher ta carte pour jouer 🙂');
     this.button('👨‍👩‍👧 Un parent débloque', 'id-secondary', () => {
       const code = window.prompt('Code parental :');
       if (code === null) return;
       if (code !== PARENT_CODE) { window.alert('Code incorrect !'); return; }
-      this.saveLock({ fails: 0, strikes: 0, until: 0 });
+      this.saveLock({ fails: 0, strikes: 0, until: 0, v: LOCK_VERSION, last: 0 });
       this.hide();
       if (retry) retry(); else this.say('Débloqué ✅');
     });
