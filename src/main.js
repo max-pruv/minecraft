@@ -1059,7 +1059,10 @@ document.getElementById('face-login-btn').addEventListener('click', () => {
   identity.recognize(named.map((p) => p.name), {
     onMatch: (who) => {
       const p = named.find((o) => o.name === who);
-      if (!p) return;
+      // Reconnu mais inconnu de cet appareil : c'est un enfant qui arrive
+      // depuis un autre appareil, on installe son profil et on va chercher
+      // son contenu. Avant, on ne faisait rien du tout et l'écran restait figé.
+      if (!p) return addLocalProfile(who);
       if (p.id === reg.current) closeWhoScreen();
       else switchProfile(p.id);
     },

@@ -12,6 +12,7 @@
 const LOCAL_KEY = 'web-minecraft-identity-v1'; // device-wide, NOT per profile
 const TRUST_KEY = 'web-minecraft-trust-v1';
 const LOCK_KEY = 'web-minecraft-lockout-v1';
+const PARENT_CODE = '135246'; // même code que la suppression d'un joueur
 const MODEL_URL = './vendor/face-models';
 
 // Once a device has proved who a child is, it stays trusted for a month —
@@ -207,6 +208,17 @@ export class Identity {
     };
   }
 
+  // Tous les comptes contre lesquels on peut légitimement tenter une
+  // reconnaissance : ceux de l'appareil, plus ceux du cloud. Un enfant qui
+  // arrive sur un appareil neuf n'a rien en local — c'est justement le cas où
+  // il a le plus besoin d'être reconnu.
+  candidates(names = []) {
+    const all = new Set(names.filter(Boolean));
+    for (const n of Object.keys(this.local)) if (this.isEnrolled(n)) all.add(n);
+    for (const n of Object.keys(this.remote)) if (this.isEnrolled(n)) all.add(n);
+    return [...all];
+  }
+
   isEnrolled(name) {
     const e = this.entry(name);
     return e.faces.length > 0 || !!e.pinHash;
@@ -267,13 +279,23 @@ export class Identity {
   }
 
   // Shows the "come back later" screen when frozen. Returns true if locked.
-  guardLocked() {
+  // Un parent peut toujours lever la pause : sans cette porte, un enfant que
+  // le jeu a bloqué à tort reste dehors une heure entière sans recours.
+  guardLocked(retry) {
     const ms = this.lockedFor();
     if (ms <= 0) return false;
     const mins = Math.ceil(ms / 60000);
     const txt = mins >= 60 ? `${Math.ceil(mins / 60)} h` : `${mins} min`;
     this.show('⏳ Trop d\'essais', `Pour protéger les comptes, la reconnaissance est en pause. Réessaie dans ${txt}.`);
     this.say('Tu peux toujours toucher ta carte pour jouer 🙂');
+    this.button('👨‍👩‍👧 Un parent débloque', 'id-secondary', () => {
+      const code = window.prompt('Code parental :');
+      if (code === null) return;
+      if (code !== PARENT_CODE) { window.alert('Code incorrect !'); return; }
+      this.saveLock({ fails: 0, strikes: 0, until: 0 });
+      this.hide();
+      if (retry) retry(); else this.say('Débloqué ✅');
+    });
     this.button('OK', 'id-secondary', () => this.hide());
     return true;
   }
@@ -326,7 +348,7 @@ export class Identity {
   // l'enfant voit — et le réseau reçoit toujours la même taille d'image.
   frame(video) {
     const w = video.videoWidth, h = video.videoHeight;
-    if (!w || !h) return video; // pas encore de flux : on laisse passer tel quel
+    if (!w || !h) return null; // le flux n'a pas encore de dimensions
     if (!this._canvas) {
       this._canvas = document.createElement('canvas');
       this._canvas.width = DETECT_SIZE;
@@ -346,6 +368,10 @@ export class Identity {
     // error we switch tf to the CPU backend — slower, but it always answers —
     // and retry.
     const input = this.frame(video);
+    // Caméra pas encore prête : ce n'est pas une panne du scanner. Sans ce
+    // garde, la toute première détection levait une erreur et faisait basculer
+    // la session entière en mode tortue, plus lent, pour rien.
+    if (!input) return null;
     const run = () => f
       .detectSingleFace(input, new f.TinyFaceDetectorOptions({
         inputSize: DETECT_SIZE, scoreThreshold: 0.4,
@@ -902,20 +928,24 @@ export class Identity {
   // "Reconnais-moi !" from the who-screen: look at the camera, get switched
   // to your own profile. Falls back to the code, then to tapping a card.
   async recognize(names, { onMatch, onCancel, title } = {}) {
-    if (this.guardLocked()) return;
+    if (this.guardLocked(() => this.recognize(names, { onMatch, onCancel, title }))) return;
     this.show(title || '📸 Regarde la caméra !', 'Je cherche qui tu es…');
     this.el.stage.style.display = 'block';
     this.el.stage.className = 'scan';
-    this.button('🔢 Utiliser mon code', 'id-secondary', () => this.pinLogin(names, onMatch));
+    // Les noms passés ici ne sont qu'une préférence : la liste réelle inclut
+    // toujours les comptes du cloud. Sans ça, un appareil neuf — qui n'a plus
+    // aucun profil local — cherchait dans une liste vide : ni le visage ni le
+    // code ne pouvaient aboutir, et chaque essai comptait vers le verrouillage.
+    this.button('🔢 Utiliser mon code', 'id-secondary', () => this.pinLogin(this.candidates(names), onMatch));
     this.button('Annuler', 'id-secondary', () => { this.hide(); onCancel?.(); });
 
-    this.syncFromCloud(); // in the background: signatures from other devices
+    await this.syncFromCloud(); // signatures et codes des autres appareils
 
     try {
       this._stream = await this.openCamera(this.el.video);
     } catch {
       this.say("Pas d'accès à la caméra 😕", 'err');
-      setTimeout(() => this.pinLogin(names, onMatch), 1500);
+      setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1500);
       return;
     }
     try {
@@ -924,10 +954,11 @@ export class Identity {
     } catch {
       this.setLoad(null);
       this.say('Scanner indisponible.', 'err');
-      setTimeout(() => this.pinLogin(names, onMatch), 1500);
+      setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1500);
       return;
     }
     await this.syncFromCloud();
+    const pool = this.candidates(names);
 
     let firstPass = true;
     const deadline = Date.now() + 40000;
@@ -944,13 +975,13 @@ export class Identity {
         this._stream = null;
         this.busy(false);
         this.say('Mon scanner est en panne ici 😕 — ton code secret !', 'err');
-        setTimeout(() => this.pinLogin(names, onMatch), 1400);
+        setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1400);
         return;
       }
       firstPass = false;
       this.busy(false);
       if (sig) {
-        const who = this.match(sig, names);
+        const who = this.match(sig, pool);
         if (who) {
           this.learn(who, sig); // stays accurate as they grow
           this.registerSuccess(who);
@@ -966,19 +997,28 @@ export class Identity {
     }
     this.stopCamera(this._stream);
     this._stream = null;
-    this.registerFailure();
+    // Un échec ne compte que s'il y avait vraiment quelqu'un à reconnaître :
+    // sinon le jeu punissait l'enfant pour sa propre incapacité à chercher.
+    if (pool.length) this.registerFailure();
     if (this.guardLocked()) return;
-    this.say("Je ne te reconnais pas 🤔 — essaie ton code secret.", 'err');
-    setTimeout(() => this.pinLogin(names, onMatch), 1600);
+    this.say(pool.length
+      ? "Je ne te reconnais pas 🤔 — essaie ton code secret."
+      : "Je n'ai encore aucun compte à reconnaître — tape ton code 🔢", 'err');
+    setTimeout(() => this.pinLogin(pool, onMatch), 1600);
   }
 
   pinLogin(names, onMatch) {
     this.stopCamera(this._stream);
     this._stream = null;
-    if (this.guardLocked()) return;
+    if (this.guardLocked(() => this.pinLogin(names, onMatch))) return;
     this.show('🔢 Ton code secret', 'Tape tes 6 chiffres.');
+    // Le cloud peut ne pas avoir encore été lu (appareil neuf, réseau lent) :
+    // on le relit ici, sinon un code parfaitement valide serait refusé faute
+    // de savoir à qui le comparer.
+    const ready = this.syncFromCloud().catch(() => {});
     this.askPin(async (value) => {
-      const who = await this.whoHasPin(value, names);
+      await ready;
+      const who = await this.whoHasPin(value, this.candidates(names));
       if (who) {
         this.registerSuccess(who);
         this.say(`🎉 Bonjour ${who} !`, 'ok');
