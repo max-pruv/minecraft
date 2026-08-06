@@ -378,6 +378,14 @@ export class Identity {
         background:#121826; border:1px solid rgba(255,255,255,.2); border-radius:18px;
         padding:20px 18px; color:#eef; }
       #id-box h2 { margin:0 0 6px; font-size:21px; }
+      /* fil d'Ariane de l'inscription : l'enfant voit toujours où il en est
+         et combien il en reste — deux étapes, jamais une de plus */
+      #id-steps { display:none; justify-content:center; gap:8px; margin-bottom:12px; }
+      #id-steps span { display:flex; align-items:center; gap:5px; font-size:12px;
+        padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.07);
+        color:#7f90b0; border:1px solid transparent; }
+      #id-steps span.on { background:rgba(58,106,208,.25); color:#cfe0ff; border-color:#3a6ad0; }
+      #id-steps span.done { background:rgba(90,200,140,.18); color:#a8e6c1; }
       #id-sub { color:#9fb0d0; font-size:15px; line-height:1.5; margin-bottom:14px; }
       #id-stage { position:relative; width:230px; height:230px; margin:0 auto 14px;
         border-radius:50%; overflow:hidden; background:#0a0e18;
@@ -413,6 +421,7 @@ export class Identity {
     const box = document.createElement('div');
     box.id = 'id-modal';
     box.innerHTML = `<div id="id-box">
+      <div id="id-steps"></div>
       <h2 id="id-title"></h2>
       <div id="id-sub"></div>
       <div id="id-stage"><video id="id-video" playsinline muted></video></div>
@@ -428,6 +437,7 @@ export class Identity {
 
     this.el = {
       modal: box,
+      steps: box.querySelector('#id-steps'),
       title: box.querySelector('#id-title'),
       sub: box.querySelector('#id-sub'),
       stage: box.querySelector('#id-stage'),
@@ -450,6 +460,7 @@ export class Identity {
   }
 
   show(title, sub) {
+    this.el.steps.style.display = 'none'; // réaffiché par setSteps sur l'inscription
     this.el.title.textContent = title;
     this.el.sub.textContent = sub || '';
     this.el.actions.classList.remove('grid');
@@ -461,6 +472,22 @@ export class Identity {
     this.el.pin.style.display = 'none';
     this.el.actions.innerHTML = '';
     this.el.modal.style.display = 'flex';
+  }
+
+  // Inscription en deux temps : la photo, puis le code de secours. L'enfant
+  // voit les deux dès le départ, donc il sait qu'il reste quelque chose après
+  // le scan — avant, le code arrivait par surprise et se faisait sauter.
+  setSteps(current) {
+    const labels = [['1', '📸 Ta photo'], ['2', '🔢 Ton code']];
+    this.el.steps.innerHTML = '';
+    for (const [n, label] of labels) {
+      const s = document.createElement('span');
+      const num = Number(n);
+      s.className = num === current ? 'on' : (num < current ? 'done' : '');
+      s.textContent = (num < current ? '✓ ' : `${n}. `) + label;
+      this.el.steps.appendChild(s);
+    }
+    this.el.steps.style.display = 'flex';
   }
 
   hide() {
@@ -532,6 +559,7 @@ export class Identity {
   async enrollFace(name, onDone) {
     this.show(`📸 Regarde la caméra, ${name} !`,
       "Les 3 photos se prennent toutes seules dès que je vois ton visage — reste bien en face ! (aucune photo n'est gardée, juste une empreinte secrète)");
+    this.setSteps(1);
     this.el.stage.style.display = 'block';
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div');
@@ -610,14 +638,15 @@ export class Identity {
     this.registerSuccess(name); // this device now knows them
     if (look) this.onLook?.(name, look);
     this.el.stage.className = 'ok';
-    this.say(`✨ C'est toi, ${name} ! Je te reconnaîtrai partout.`, 'ok');
+    this.say(`✨ C'est toi, ${name} ! Étape 1 terminée — on passe au code 🔢`, 'ok');
     setTimeout(() => this.enrollPin(name, onDone, true), 1700);
   }
 
   enrollPin(name, onDone, afterFace = false) {
     this.show('🔢 Ton code secret',
-      afterFace ? 'Choisis 6 chiffres, au cas où la photo ne marche pas un jour.'
+      afterFace ? "Dernière étape ! Choisis 6 chiffres — c'est ta clé de secours si la photo ne marche pas un jour."
                 : 'Choisis 6 chiffres que tu retiendras bien.');
+    this.setSteps(2);
     let first = null;
     this.askPin(async (value) => {
       if (!first) {
