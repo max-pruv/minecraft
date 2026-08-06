@@ -48,4 +48,6 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
         with:
-          timeout: 900000
+          # 600000 ms is the action's hard maximum; asking for more is
+          # silently capped and only produces a warning.
+          timeout: 600000
