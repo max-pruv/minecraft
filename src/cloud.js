@@ -137,6 +137,44 @@ export class CloudSave {
     });
   }
 
+  // ---- identity: face signatures & backup PIN, keyed by first name -------
+  // Only a 128-number face "signature" is ever stored — never a photo. The
+  // PIN is stored hashed. Both travel with the name so a child is
+  // recognised on a device they have never used before.
+
+  async identityPull(name) {
+    if (!this.configured || !name) return null;
+    const res = await fetch(
+      `${this.url}/rest/v1/player_identity?name=eq.${encodeURIComponent(name)}&select=faces,pin_hash`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? rows[0] : null;
+  }
+
+  async identityPullAll() {
+    if (!this.configured) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/player_identity?select=name,faces,pin_hash`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return [];
+    return res.json();
+  }
+
+  async identityPush(name, { faces, pinHash }) {
+    if (!this.configured || !name) return;
+    const row = { name, updated_at: new Date().toISOString() };
+    if (faces !== undefined) row.faces = faces;
+    if (pinHash !== undefined) row.pin_hash = pinHash;
+    await fetch(`${this.url}/rest/v1/player_identity`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([row]),
+    });
+  }
+
   // ---- play time: cross-device totals per child --------------------------
   // Each device pushes its OWN per-day tally under its own device id; the
   // client sums every device's rows to get the true total for that child,

@@ -2,7 +2,16 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v46';
+const CACHE_VERSION = 'web-minecraft-v47';
+
+// The face scanner (library + models, ~8 MB) lives in its own cache that
+// survives version bumps: those files are pinned and never change, so a
+// game update must not make a family re-download them. They are also NOT
+// precached — they download only the first time a child actually uses the
+// scanner, and work offline from then on.
+const STATIC_CACHE = 'web-minecraft-static-v1';
+const isStaticAsset = (url) =>
+  url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/');
 
 const ASSETS = [
   './',
@@ -25,6 +34,7 @@ const ASSETS = [
   './src/net.js',
   './src/cloud.js',
   './src/fun.js',
+  './src/identity.js',
   './vendor/three.module.min.js',
   './vendor/peerjs.min.js',
 ];
@@ -38,7 +48,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys
+        .filter((k) => k !== CACHE_VERSION && k !== STATIC_CACHE)
+        .map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -48,6 +60,20 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) return;
+
+  // pinned, immutable and big: cache-first, kept across game updates
+  if (isStaticAsset(request.url)) {
+    event.respondWith(
+      caches.open(STATIC_CACHE).then(async (cache) => {
+        const hit = await cache.match(request);
+        if (hit) return hit;
+        const response = await fetch(request);
+        if (response && response.ok) cache.put(request, response.clone());
+        return response;
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.open(CACHE_VERSION).then(async (cache) => {
