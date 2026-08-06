@@ -88,12 +88,30 @@ export class CloudSave {
   async chatHistory(limit = 60) {
     if (!this.configured || !this.code) return [];
     const res = await fetch(
-      `${this.url}/rest/v1/world_chat?code=eq.${encodeURIComponent(this.code)}&select=name,msg,created_at&order=id.desc&limit=${limit}`,
+      `${this.url}/rest/v1/world_chat?code=eq.${encodeURIComponent(this.code)}&select=name,msg,created_at&order=id.desc&limit=${limit + 40}`,
       { headers: this.headers() }
     );
     if (!res.ok) throw new Error(`chat pull ${res.status}`);
-    return (await res.json()).reverse(); // oldest first
+    // system rows (signs…) live in the same table under names starting with __
+    return (await res.json()).filter((m) => !String(m.name).startsWith('__')).slice(0, limit).reverse();
   }
+
+  // signs planted in the world persist as special rows of the chat table
+  async signHistory() {
+    if (!this.configured || !this.code) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/world_chat?code=eq.${encodeURIComponent(this.code)}&name=eq.__sign&select=msg&order=id.desc&limit=80`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return [];
+    const signs = [];
+    for (const row of await res.json()) {
+      try { signs.push(JSON.parse(row.msg)); } catch { /* skip bad rows */ }
+    }
+    return signs;
+  }
+
+  signSend(sign) { return this.chatSend('__sign', JSON.stringify(sign)); }
 
   async chatSend(name, msg) {
     if (!this.configured || !this.code) return;

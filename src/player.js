@@ -81,6 +81,7 @@ export class Player {
     let speed = k.has('ShiftLeft') || k.has('ShiftRight') ? SPRINT_SPEED : WALK_SPEED;
     if (this.flying) speed = FLY_SPEED;
     else if (this.inWater) speed = SWIM_SPEED;
+    if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
     this.vel.x = dx * speed;
     this.vel.z = dz * speed;

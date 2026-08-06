@@ -9,6 +9,7 @@ import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
+import { initFun } from './fun.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
@@ -397,6 +398,7 @@ function placeBlock() {
   // props are walk-through, so placing one at your feet is fine
   if (!isProp(placing) && player.intersectsBlock(x, y, z)) return;
   world.setBlock(x, y, z, placing);
+  fun.onBlockPlaced();
   scheduleSave();
 }
 
@@ -666,6 +668,7 @@ animalManager.onHarvest = (def) => {
   renderMeat();
   creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
+  fun.onHarvest(def); // the item also goes into the bag (crafting, quests, chest)
 };
 
 // --- catch celebration ------------------------------------------------------------
@@ -744,6 +747,7 @@ function openPlayersPanel() {
   for (const c of net.conns.values()) {
     row((NET_CHARACTERS[c.lookIdx] || NET_CHARACTERS[0]).emoji, c.name, 'en ligne');
   }
+  fun.decoratePlayersPanel(list); // friendly duels & hide-and-seek
   document.getElementById('players-panel').style.display = 'flex';
 }
 playersBtn.addEventListener('click', openPlayersPanel);
@@ -1140,6 +1144,7 @@ function showOnlineUI() {
     leaveToMainMenu();
     window.alert(`⚠️ ${name} joue déjà dans ce monde depuis un autre appareil !\nChaque joueur ne peut être connecté qu'à un seul endroit à la fois.`);
   };
+  fun.attachNet(net); // duels, emotes, signs and the shared chest
 }
 
 // Leaves any session (local or online) and restores the full main menu.
@@ -1157,6 +1162,7 @@ function leaveToMainMenu() {
   chatBtn.style.display = 'none';
   chatPanel.style.display = 'none';
   world.saveEdits();
+  fun.onLeave();
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
   // restore the full main menu, not the pause screen
@@ -1365,6 +1371,7 @@ creatureManager.onCatch = (sp, level) => {
   clearTimeout(catchBanner._t);
   catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 2600);
   emojiBurst(['⭐', '✨', '🎉', '◓'], 22);
+  fun.onCatch(sp);
 };
 
 // --- creature dex panel -----------------------------------------------------------
@@ -2157,6 +2164,31 @@ function updateHud(dt) {
     ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
 }
 
+// --- fun & social systems (breeding, riding, duels, quests, records…) -------------
+
+const fun = initFun({
+  scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
+  renderNow: () => renderer.render(scene, camera),
+  emojiBurst,
+  toast: (m, c) => creatureManager.toast(m, c),
+  myName,
+  getNet: () => net,
+  remotePlayers: () => remotePlayers,
+  isRunning: () => running,
+  isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
+  getWeather: () => weather,
+  getPosCtx: () => posCtx,
+  getProfiles: () => loadRegistry().list.map((p) => ({ id: p.id, name: p.name })),
+  getMeat: () => meatCount,
+  takeMeat: (n) => {
+    if (meatCount < n) return false;
+    meatCount -= n;
+    try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
+    renderMeat();
+    return true;
+  },
+});
+
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
@@ -2188,6 +2220,7 @@ function frame(now) {
   updateCreatureLabel();
   updateRemotePlayers(dt);
   edu.update(dt, running);
+  fun.update(dt);
 
   if (minimapVisible) {
     minimapTimer -= dt;

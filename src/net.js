@@ -198,6 +198,22 @@ export class NetSession {
         if (this.onChat) this.onChat(String(msg.name || '').slice(0, 16), String(msg.msg || '').slice(0, 120));
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      case 'duel': // friendly creature show-off between two players
+        if (this.onDuel) this.onDuel(msg);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
+      case 'emote': // a dance/wave played on the sender's avatar
+        if (this.onEmote) this.onEmote(msg.from || conn.peer, String(msg.k || '👋'), String(msg.name || ''));
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
+      case 'sign': // a text sign planted in the world
+        if (this.onSign) this.onSign(msg.sign);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
+      case 'chest': // the shared world chest changed
+        if (this.onChest) this.onChest(msg.items);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
       case 'sync': {
         const applied = this.hooks.world.mergeEdits(msg.blocks);
         if (applied > 0) {
@@ -257,6 +273,10 @@ export class NetSession {
 
   sendChat(name, msg) {
     for (const c of this.conns.values()) if (c.conn) c.conn.send({ t: 'chat', name, msg });
+  }
+
+  broadcast(msg) { // generic fan-out for duels, emotes, signs and the chest
+    for (const c of this.conns.values()) if (c.conn) c.conn.send(msg);
   }
 
   startPosLoop() {
