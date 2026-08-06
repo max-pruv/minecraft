@@ -1683,6 +1683,16 @@ async function pullPlayTime() {
   if (changed && !already) {
     try { sessionStorage.setItem(flag, '1'); } catch { /* ignore */ }
     try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
+    // Reloading before the service worker has taken control leaves the new
+    // page permanently uncontrolled — clients.claim() only runs once, at
+    // activation — which would cost this session its offline support. Wait
+    // for it (briefly) so the reload lands on a controlled page.
+    if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
+      await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((r) => setTimeout(r, 5000)),
+      ]);
+    }
     location.reload(); // once per session: bring the restored state into play
   }
 })();
