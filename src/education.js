@@ -41,7 +41,7 @@ function shuffle(arr) {
   return a;
 }
 
-function todayKey() {
+export function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -698,6 +698,10 @@ export class EducationMode {
     this.warned10 = false;
     this.saveTimer = 0;
     this.categoryQueue = [];
+    // cross-device totals (filled in by main.js from the cloud; local-only
+    // until then, so everything works fully offline too)
+    this.crossDeviceDays = null;
+    this.otherDevicesPlaySeconds = 0;
 
     this.el = {
       timer: document.getElementById('edu-timer'),
@@ -874,7 +878,9 @@ export class EducationMode {
     this.el.timer.style.display = 'block';
 
     if (running && !this.quizActive && !this.hardStopActive) {
-      if (this.today().play >= this.allowance()) { this.startHardStop(); return; }
+      // the daily limit is per child, not per device — playing 30 min on
+      // an iPad then switching to a phone doesn't reset the clock
+      if (this.today().play + this.otherDevicesPlaySeconds >= this.allowance()) { this.startHardStop(); return; }
       if (this.quizDue) { this.startQuiz(); return; }
       this.remaining -= dt;
       if (this.remaining <= 60 && !this.warned60) {
@@ -909,7 +915,7 @@ export class EducationMode {
     const box = document.getElementById('hardstop');
     box.style.display = 'flex';
     document.getElementById('hardstop-played').textContent =
-      `Tu as joué ${this.formatDuration(this.today().play)} aujourd'hui. Bien joué !`;
+      `Tu as joué ${this.formatDuration(this.today().play + this.otherDevicesPlaySeconds)} aujourd'hui. Bien joué !`;
     document.getElementById('hardstop-feedback').textContent = '';
     document.getElementById('hardstop-code').value = '';
   }
@@ -1260,18 +1266,29 @@ export class EducationMode {
     this.el.panel.style.display = 'block';
   }
 
+  // Cross-device totals arrive asynchronously from main.js (Supabase pull).
+  // Setting them re-renders the panel live if it's currently open.
+  setCrossDeviceDays(days, otherDevicesPlaySeconds) {
+    this.crossDeviceDays = days;
+    this.otherDevicesPlaySeconds = otherDevicesPlaySeconds || 0;
+    if (this.el.panel.style.display === 'block') this.renderPanel();
+  }
+
   renderPanel() {
     const body = this.el.panelBody;
     body.innerHTML = '';
     const t = this.today();
-    const days = this.data.days || {};
+    const days = this.crossDeviceDays || this.data.days || {};
+    // "aujourd'hui" combines this device's live count with every other
+    // device's last known push, so the number is the child's true total
+    const td = days[todayKey()] || t;
 
     const summary = document.createElement('div');
     summary.className = 'edu-summary';
     summary.innerHTML =
-      `<div><b>Aujourd'hui</b></div>` +
-      `<div>🕐 Temps de jeu : <b>${this.formatDuration(t.play)}</b>` +
-      (t.quiz > 5 ? ` · 📝 Temps de quiz : <b>${this.formatDuration(t.quiz)}</b>` : '') + `</div>` +
+      `<div><b>Aujourd'hui</b>${this.crossDeviceDays ? ' <span style="color:#8894b0;font-size:12px">(tous appareils)</span>' : ''}</div>` +
+      `<div>🕐 Temps de jeu : <b>${this.formatDuration(td.play)}</b>` +
+      (td.quiz > 5 ? ` · 📝 Temps de quiz : <b>${this.formatDuration(td.quiz)}</b>` : '') + `</div>` +
       `<div>✅ Bonnes réponses : <b>${t.correct.length}</b> · ❌ Erreurs : <b>${t.wrong}</b></div>` +
       `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/5 · English <b>${this.categoryLevel('English')}</b>/3 · Français <b>${this.categoryLevel('Français')}</b>/3 · Découverte <b>${this.categoryLevel('Découverte')}</b>/3</div>` +
       `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;

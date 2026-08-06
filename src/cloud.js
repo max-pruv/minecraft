@@ -137,6 +137,31 @@ export class CloudSave {
     });
   }
 
+  // ---- play time: cross-device totals per child --------------------------
+  // Each device pushes its OWN per-day tally under its own device id; the
+  // client sums every device's rows to get the true total for that child,
+  // so switching between an iPad and a phone never loses (or resets) time.
+
+  async timePush(name, deviceId, day, stats, keepalive = false) {
+    if (!this.configured || !name) return;
+    await fetch(`${this.url}/rest/v1/play_time`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ name, device_id: deviceId, day, ...stats, updated_at: new Date().toISOString() }]),
+      keepalive,
+    });
+  }
+
+  async timePull(name) {
+    if (!this.configured || !name) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/play_time?name=eq.${encodeURIComponent(name)}&select=device_id,day,play,quiz,correct,wrong`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return [];
+    return res.json();
+  }
+
   async chatSend(name, msg) {
     if (!this.configured || !this.code) return;
     await fetch(`${this.url}/rest/v1/world_chat`, {

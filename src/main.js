@@ -13,7 +13,7 @@ import { initFun } from './fun.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
-import { EducationMode, GRADES } from './education.js';
+import { EducationMode, GRADES, todayKey } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 // doubled view distance; ?rr= overrides (perf tuning and tests)
@@ -808,6 +808,7 @@ function pushPrefsToCloud() {
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
   pushPrefsToCloud(); // settings follow the first name across devices
+  pullPlayTime(); // and so does this device's view of the child's total play time
   // keep the profile registry's display name and look in sync
   const reg = loadRegistry();
   const entry = reg.list.find((p) => p.id === reg.current);
@@ -1009,10 +1010,12 @@ function renderRecentWorlds() {
 document.getElementById('edu-menu-btn').addEventListener('click', () => {
   edu.renderPanel();
   document.getElementById('edu-panel').style.display = 'block';
+  pullPlayTime(); // refresh cross-device totals right away; re-renders if still open
 });
 function refreshEduMenuBtn() {
+  const todayPlay = edu.today().play + (edu.otherDevicesPlaySeconds || 0);
   document.getElementById('edu-menu-btn').textContent =
-    `📚 Éducation · ${edu.formatDuration(edu.today().play)} aujourd'hui`;
+    `📚 Éducation · ${edu.formatDuration(todayPlay)} aujourd'hui`;
 }
 setInterval(refreshEduMenuBtn, 10000);
 queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
@@ -1447,6 +1450,79 @@ const edu = new EducationMode({
   onResume: () => startGame(),
   toast: (msg, color) => creatureManager.toast(msg, color),
   reward: () => creatureManager.awardRandom(),
+});
+
+// --- cross-device play time: a child's total is per-name, not per-device ----------
+// Each device pushes its own daily tally under a stable random device id;
+// the totals shown to the child/parent sum every device's rows, so playing
+// on the iPad and then a phone never resets — and the daily limit can't be
+// dodged by switching devices either (see EducationMode.update).
+
+const DEVICE_ID_KEY = 'web-minecraft-device-id-v1'; // intentionally NOT per-profile
+const deviceId = (() => {
+  let id = window.__rawStorage ? window.__rawStorage.get(DEVICE_ID_KEY) : localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    if (window.__rawStorage) window.__rawStorage.set(DEVICE_ID_KEY, id);
+    else localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+})();
+
+function pushPlayTime(keepalive = false) {
+  if (!playerProfile.name || !cloud.configured) return;
+  const t = edu.today();
+  cloud.timePush(playerProfile.name, deviceId, todayKey(), {
+    play: Math.round(t.play), quiz: Math.round(t.quiz || 0),
+    correct: t.correct.length, wrong: t.wrong,
+  }, keepalive).catch(() => {});
+}
+
+let crossDeviceRows = [];
+function applyCrossDeviceDays() {
+  const localDays = edu.data.days || {};
+  const merged = {};
+  for (const r of crossDeviceRows) {
+    // this device's own rows are redundant with (and staler than) local
+    // data for any day local already covers — skip to avoid double-counting
+    if (r.device_id === deviceId && localDays[r.day]) continue;
+    const m = merged[r.day] || (merged[r.day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0 });
+    m.play += r.play || 0;
+    m.quiz += r.quiz || 0;
+    m.wrong += r.wrong || 0;
+    m.correctCount += r.correct || 0;
+  }
+  for (const [day, d] of Object.entries(localDays)) {
+    const m = merged[day] || (merged[day] = { play: 0, quiz: 0, wrong: 0, correctCount: 0 });
+    m.play += d.play;
+    m.quiz += d.quiz || 0;
+    m.wrong += d.wrong;
+    m.correctCount += d.correct.length;
+    m.qs = d.qs; // full per-question log stays local-device-only
+  }
+  const days = {};
+  for (const [day, m] of Object.entries(merged)) {
+    days[day] = { play: m.play, quiz: m.quiz, wrong: m.wrong, correct: new Array(m.correctCount), qs: m.qs };
+  }
+  const tKey = todayKey();
+  const otherToday = crossDeviceRows
+    .filter((r) => r.day === tKey && r.device_id !== deviceId)
+    .reduce((a, r) => a + (r.play || 0), 0);
+  edu.setCrossDeviceDays(days, otherToday);
+}
+
+async function pullPlayTime() {
+  if (!playerProfile.name || !cloud.configured || !navigator.onLine) return;
+  try { crossDeviceRows = await cloud.timePull(playerProfile.name); } catch { return; }
+  applyCrossDeviceDays();
+}
+
+pullPlayTime();
+setInterval(pushPlayTime, 15000);
+setInterval(pullPlayTime, 60000);
+window.addEventListener('pagehide', () => pushPlayTime(true));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') pushPlayTime(true);
 });
 
 // --- home-screen profile: name, quiz language, school grade ------------------------
@@ -2270,7 +2346,7 @@ const fun = initFun({
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, deviceId, pushPlayTime, pullPlayTime, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
