@@ -78,6 +78,12 @@ export function generateSpecies() {
     { id: 49, name: 'Panthère', type: 'FELIN', rarity: 1, catchRate: 0.55, size: 0.8, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 2.4, horn: false, color: 0x2e2e38, dark: 0x14141a },
     { id: 50, name: 'Chat', type: 'FELIN', rarity: 0, catchRate: 0.8, size: 0.45, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 1.8, horn: false, color: 0x9a9aa4, dark: 0x5a5a64 },
   );
+  // ultra-rare legendaries: they only show themselves at night or in the rain
+  species.push(
+    { id: 51, name: 'Lunétoile', type: 'SPOOKY', rarity: 2, catchRate: 0.22, size: 1.1, legs: 2, earStyle: 2, tail: true, hopper: true, speed: 2.6, horn: true, color: 0xb8c8ff, dark: 0x5a6ad0, legendary: true },
+    { id: 52, name: 'Tonnerrex', type: 'ELECTRIC', rarity: 2, catchRate: 0.22, size: 1.2, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 2.8, horn: true, color: 0xf2e04a, dark: 0xa8861e, legendary: true },
+    { id: 53, name: 'Aurorion', type: 'ICE', rarity: 2, catchRate: 0.22, size: 1.15, legs: 4, earStyle: 2, tail: true, hopper: false, speed: 2.2, horn: true, color: 0xa8f2e0, dark: 0x4a90d9, legendary: true },
+  );
   return species;
 }
 
@@ -85,7 +91,8 @@ export function generateSpecies() {
 
 // High-fidelity creature meshes: smooth spheres and cones with dynamic
 // lighting, glossy eyes and two-tone bellies — cuddly toys, not cubes.
-function buildCreatureMesh(sp) {
+// (Exported: also used for companions, museum statues and duel portraits.)
+export function buildCreatureMesh(sp) {
   const g = new THREE.Group();
   // felines carry their own fur colors; everyone else wears their type's
   const baseColor = new THREE.Color(sp.color !== undefined ? sp.color : TYPES[sp.type].color);
@@ -341,7 +348,10 @@ export class CreatureManager {
   }
 
   speciesForBiome(topBlock, nearWater) {
+    // legendaries only come out at night or under the rain
+    const legendaryOk = this.legendaryOk ? this.legendaryOk() : false;
     const pool = this.species.filter((sp) => {
+      if (sp.legendary && !legendaryOk) return false;
       const biomes = TYPES[sp.type].biomes;
       if (nearWater && biomes.includes('water')) return true;
       return biomes.includes(topBlock);
@@ -373,6 +383,7 @@ export class CreatureManager {
     const c = new Creature(sp, x + 0.5, y + 0.1, z + 0.5);
     this.creatures.push(c);
     this.scene.add(c.mesh);
+    if (sp.legendary) this.toast(`🌟 ${sp.name}, une créature LÉGENDAIRE, est apparue tout près !`, 0xfff1b8);
   }
 
   removeCreature(c) {

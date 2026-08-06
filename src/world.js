@@ -324,6 +324,21 @@ function buildFunPark(set) {
   };
   tent(6, -14, BLOCK.WOOL_RED);
   tent(-6, -14, BLOCK.WOOL_BLUE);
+
+  // parkour: floating steps climbing to a golden podium (east side)
+  const steps = [
+    [12, 1, 2], [14, 2, 4], [16, 3, 6], [14, 4, 8], [12, 5, 10],
+    [10, 6, 12], [12, 7, 14], [14, 8, 16], [16, 9, 18],
+  ];
+  for (const [sx, sy, sz2] of steps) set(sx, sy, sz2, BLOCK.SLAB_STONE);
+  for (let dx = 15; dx <= 17; dx++) for (let dz = 19; dz <= 21; dz++) set(dx, 9, dz, BLOCK.GOLD); // podium
+  set(16, 10, 20, BLOCK.WOOL_YELLOW); // victory beacon
+
+  // race track posts: start (green) near the entrance, finish (checkered) north
+  for (let y = 0; y < 4; y++) set(-16, y, -18, BLOCK.LOG);
+  set(-16, 4, -18, BLOCK.WOOL_GREEN);
+  for (let y = 0; y < 4; y++) set(-16, y, 20, BLOCK.LOG);
+  set(-16, 4, 20, BLOCK.WOOL_BLACK); set(-16, 5, 20, BLOCK.SNOW);
 }
 
 function buildPyramid(set) { // grande pyramide de grès du désert

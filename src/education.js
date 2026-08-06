@@ -841,6 +841,7 @@ export class EducationMode {
     });
     if (ok) {
       t.correct.push({ c: this.current.category, q: this.current.prompt, a: this.current.correct, t: Date.now() });
+      if (this.onCorrect) this.onCorrect(); // hook: hat unlocks & records
     } else {
       t.wrong++;
     }
