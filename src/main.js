@@ -802,6 +802,7 @@ function pushPrefsToCloud() {
   prefsPushTimer = setTimeout(() => {
     cloud.prefsPush(playerProfile.name, {
       lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
+      look: playerProfile.look, // their character's own skin/hair colours
       // the adaptive quiz engine's per-skill levels & recent-question memory
       // follow the child too, so switching devices mid-progress is seamless
       skills: edu.skills, recent: [...edu.recent],
@@ -867,14 +868,66 @@ function deleteProfileData(id) {
 const identity = new Identity(cloud, raw);
 identity.syncFromCloud();
 
-// Picking a profile that has never been secured runs the little sign-up
-// flow first — this is how the profiles that existed before the feature
-// get onboarded. Skipping it keeps the old behaviour exactly.
+// Sampled from the enrolment photo: the child's character gets their skin
+// and hair colour. Stored with the profile and synced, so it follows them.
+identity.onLook = (name, look) => {
+  if (name !== playerProfile.name) return; // a new account applies it after its reload
+  playerProfile.look = look;
+  saveProfile();
+  refreshCharPortraits();
+  creatureManager.toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
+};
+
+// A face enrolled just before this profile was entered (typically a
+// brand-new account) left its colours against the name — adopt them now.
+if (playerProfile.name && !playerProfile.look) {
+  const seeded = identity.lookFor(playerProfile.name);
+  if (seeded) {
+    playerProfile.look = seeded;
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+  }
+}
+
+// Picking a profile runs the right flow:
+//  - never secured  -> the little sign-up (this is how pre-existing profiles
+//    get onboarded); skipping it keeps the old behaviour exactly
+//  - secured, and this device proved who they are in the last 30 days -> straight in
+//  - secured but not trusted here yet -> a quick face/code check first
 function enterProfile(p, reg) {
   const go = () => { if (p.id === reg.current) closeWhoScreen(); else switchProfile(p.id); };
-  if (p.name && !identity.isEnrolled(p.name)) {
+  if (!p.name) { go(); return; }
+  if (!identity.isEnrolled(p.name)) {
     identity.enroll(p.name, { onDone: () => { renderProfiles(); go(); } }); // 🔒 badge refresh
-  } else go();
+  } else if (identity.isTrusted(p.name)) {
+    go();
+  } else {
+    identity.verify(p.name, { onOk: go });
+  }
+}
+
+// Creates the local profile for a child and enters it. Used both by "new
+// player" and by "connect to my account" on a device that has never seen
+// them — in the latter case their progress then syncs down by first name.
+function addLocalProfile(name, { grade, enroll = false } = {}) {
+  const reg = loadRegistry();
+  const existing = reg.list.find((p) => p.name === name);
+  if (existing) { // already here: just switch to it
+    if (existing.id === reg.current) closeWhoScreen(); else switchProfile(existing.id);
+    return;
+  }
+  const id = reg.nextId || (Math.max(...reg.list.map((p) => p.id)) + 1);
+  reg.nextId = id + 1;
+  reg.list.push({ id, name, charIdx: 0 });
+  reg.current = id;
+  saveRegistry(reg);
+  const seed = { name };
+  if (grade !== undefined) seed.grade = grade;
+  raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify(seed));
+  world.saveEdits();
+  edu.save();
+  try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
+  if (enroll) identity.enroll(name, { direct: true, onDone: () => location.reload() });
+  else location.reload();
 }
 
 function renderProfiles() {
@@ -933,21 +986,11 @@ function renderProfiles() {
   add.className = 'who-add';
   add.textContent = '➕ Nouveau joueur';
   add.addEventListener('click', () => {
-    const name = (window.prompt('Prénom du nouveau joueur :') || '').trim().slice(0, 12);
-    if (!name) return;
-    const reg2 = loadRegistry();
-    const id = reg2.nextId || (Math.max(...reg2.list.map((p) => p.id)) + 1);
-    reg2.nextId = id + 1;
-    reg2.list.push({ id, name, charIdx: 0 });
-    reg2.current = id;
-    saveRegistry(reg2);
-    // seed the new profile's name before reloading into it
-    raw.set(`${PROFILE_KEY}::p${id}`, JSON.stringify({ name }));
-    world.saveEdits();
-    edu.save();
-    try { sessionStorage.setItem('wm-who-done', '1'); } catch { /* ignore */ }
-    // secure the brand-new account before entering it (skippable)
-    identity.enroll(name, { onDone: () => location.reload() });
+    // name -> school grade -> face & code, then into the game
+    identity.createAccount({
+      grades: GRADES,
+      onDone: ({ name, grade }) => addLocalProfile(name, { grade, enroll: true }),
+    });
   });
   row.appendChild(add);
 }
@@ -982,6 +1025,13 @@ document.getElementById('face-login-btn').addEventListener('click', () => {
       else switchProfile(p.id);
     },
   });
+});
+
+// "Me connecter à mon compte": for a device that has never seen this child.
+// Their signature and code live in the cloud under their first name, so the
+// camera alone is enough to find the account and bring it onto this device.
+document.getElementById('account-login-btn').addEventListener('click', () => {
+  identity.loginToAccount({ onMatch: (who) => addLocalProfile(who) });
 });
 // deferred: runs after the whole module evaluates, once charPortraits and
 // the menu elements below are all initialized
@@ -1083,8 +1133,10 @@ function syncRemotePlayers(list) {
     seen.add(p.id);
     let rp = remotePlayers.get(p.id);
     if (!rp) {
-      const look = (NET_CHARACTERS[p.lookIdx] || NET_CHARACTERS[0]).look;
-      const mesh = buildKidMesh(look);
+      const base = (NET_CHARACTERS[p.lookIdx] || NET_CHARACTERS[0]).look;
+      // p.look carries the other player's own skin/hair, so they look like
+      // themselves on our screen too
+      const mesh = buildKidMesh(withOwnLook(base, p.look || {}));
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
       rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name };
@@ -1134,7 +1186,7 @@ function startNetSession(code, isHost) {
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
   });
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
-  return net.start(code, isHost, { name: myName(), lookIdx: selectedChar });
+  return net.start(code, isHost, { name: myName(), lookIdx: selectedChar, look: playerProfile.look });
 }
 
 // Opens a world by code: joins whoever is already there, or becomes the
@@ -1181,6 +1233,18 @@ const roomCodeBox = document.getElementById('room-code-box');
 const charRow = document.getElementById('char-row');
 selectedChar = Math.min(Math.max(playerProfile.charIdx || 0, 0), NET_CHARACTERS.length - 1);
 
+// The skin/hair sampled from a child's enrolment photo is layered over
+// whichever character they picked, so it looks like them without taking
+// away the choice of outfit.
+function withOwnLook(base, override) {
+  const o = override || playerProfile.look;
+  if (!o) return base;
+  const out = { ...base };
+  if (o.skin !== undefined) out.skin = o.skin;
+  if (o.hair !== undefined) out.hair = o.hair;
+  return out;
+}
+
 // Render each character look to a little 3D portrait for the picker.
 function makeCharPortraits() {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -1190,7 +1254,7 @@ function makeCharPortraits() {
   cam2.lookAt(0, 0.85, 0);
   const urls = NET_CHARACTERS.map((c) => {
     const sc = new THREE.Scene();
-    const mesh = buildKidMesh(c.look);
+    const mesh = buildKidMesh(withOwnLook(c.look));
     mesh.rotation.y = -0.35; // three-quarter pose
     sc.add(mesh);
     r.render(sc, cam2);
@@ -1200,7 +1264,18 @@ function makeCharPortraits() {
   return urls;
 }
 
-const charPortraits = makeCharPortraits();
+let charPortraits = makeCharPortraits();
+
+// Re-renders the portraits after the avatar takes on the child's colours.
+function refreshCharPortraits() {
+  charPortraits = makeCharPortraits();
+  [...charRow.children].forEach((btn, i) => {
+    const img = btn.querySelector('img');
+    if (img && charPortraits[i]) img.src = charPortraits[i];
+  });
+  renderProfiles();
+}
+
 NET_CHARACTERS.forEach((c, i) => {
   const btn = document.createElement('button');
   btn.className = 'char-btn' + (i === selectedChar ? ' active' : '');
@@ -1438,12 +1513,23 @@ function removeRemoteTile(id) {
 }
 
 camBtn.addEventListener('click', async () => {
-  if (!net) return;
+  if (!net || !net.active) {
+    // the button used to do nothing at all here, which just looks broken
+    creatureManager.toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
+    return;
+  }
   const on = await net.toggleCam();
   camBtn.textContent = on ? '🎥' : '📷';
   camBtn.classList.toggle('on', on);
-  if (on) addLocalTile(net.videoStream);
-  else removeLocalTile();
+  if (on) {
+    addLocalTile(net.videoStream);
+    // seeing each other without hearing each other is never what's wanted
+    if (!net.micOn) {
+      const micOn = await net.toggleMic();
+      micBtn.textContent = micOn ? '🎤' : '🔇';
+      micBtn.classList.toggle('on', micOn);
+    }
+  } else removeLocalTile();
 });
 
 // --- catch celebration ------------------------------------------------------------
@@ -1645,11 +1731,16 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
     [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === selectedChar));
     changed = true;
   }
+  if (prefs.look && typeof prefs.look === 'object' && !playerProfile.look) {
+    playerProfile.look = prefs.look; // their avatar follows them here too
+    changed = true;
+  }
   if (changed) {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
     edu.setPrefs(playerProfile.lang, playerProfile.grade);
     gradeSelect.value = String(playerProfile.grade);
     renderLangRow();
+    refreshCharPortraits();
   }
   // Adaptive quiz progress follows the child too: per-skill difficulty
   // never regresses from a sync (only a higher remote level wins), so

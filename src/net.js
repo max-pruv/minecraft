@@ -48,7 +48,7 @@ export class NetSession {
   playersChanged() {
     if (this.hooks.onPlayers) {
       this.hooks.onPlayers([...this.conns.entries()].map(([id, c]) => ({
-        id, name: c.name, lookIdx: c.lookIdx, pos: c.pos, yaw: c.yaw, moving: c.moving,
+        id, name: c.name, lookIdx: c.lookIdx, look: c.look, pos: c.pos, yaw: c.yaw, moving: c.moving,
       })));
     }
   }
@@ -132,7 +132,7 @@ export class NetSession {
 
   greet(conn) {
     // handshake: who we are + everything we know about the world
-    conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx });
+    conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
     conn.send({ t: 'sync', blocks: this.hooks.world.exportEdits() });
     this.startPosLoop();
   }
@@ -184,6 +184,7 @@ export class NetSession {
         }
         entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;
+        entry.look = msg.look && typeof msg.look === 'object' ? msg.look : null;
         this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
@@ -234,7 +235,7 @@ export class NetSession {
         entry.moving = !!msg.m;
         this.playersChanged();
         if (this.isHost) {
-          this.relay(conn.peer, { ...msg, from: conn.peer, name: entry.name, lookIdx: entry.lookIdx });
+          this.relay(conn.peer, { ...msg, from: conn.peer, name: entry.name, lookIdx: entry.lookIdx, look: entry.look });
         }
         break;
       case 'bye':
@@ -244,7 +245,7 @@ export class NetSession {
       case 'rpos': { // relayed position of another guest (host-mediated)
         // treat the origin guest as a virtual peer entry
         if (!this.conns.has(msg.from) && msg.from !== this.peer.id) {
-          this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', lookIdx: msg.lookIdx || 0, pos: null, yaw: 0, moving: false });
+          this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', lookIdx: msg.lookIdx || 0, look: msg.look || null, pos: null, yaw: 0, moving: false });
         }
         const e2 = this.conns.get(msg.from);
         if (e2) { e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m; }
