@@ -139,6 +139,10 @@ export class ProfileSync {
     this.getName = getName;
     this.lastPushed = '';
     this.timer = null;
+    // Set by the game so a push reflects the live world rather than its
+    // localStorage projection, which only catches up on a debounced save.
+    this.liveEdits = null;   // () => ({ "x,y,z": [id, t] })
+    this.onMerged = null;    // (state) => void, after a background merge
   }
 
   // Reads the working copy out of localStorage.
@@ -147,6 +151,12 @@ export class ProfileSync {
     for (const [key, field] of FIELDS) {
       const v = readJson(key);
       if (v !== undefined) state[field] = v;
+    }
+    if (this.liveEdits) {
+      try {
+        const live = this.liveEdits();
+        if (live) state.edits = mergeEdits(live, state.edits);
+      } catch { /* fall back to the stored copy */ }
     }
     return state;
   }
@@ -221,10 +231,32 @@ export class ProfileSync {
     return { changed, state };
   }
 
+  // A push replaces the whole cloud document, so it must never be built from
+  // this device alone: two children playing at the same time would each erase
+  // the other's last few minutes, whoever pushed last. Re-reading and merging
+  // first makes the write additive instead — the same merge rules as the
+  // launch pull, so a block another device placed survives this one's save.
+  //
+  // Skipped when the page is going away (keepalive): there is no time for a
+  // round trip then, and the next device to open the game merges anyway.
   async push(keepalive = false) {
     const name = this.getName();
     if (!name || !this.cloud.configured) return;
-    const { state, dropped } = this.trim(this.snapshot());
+    let local = this.snapshot();
+    if (!keepalive && navigator.onLine) {
+      try {
+        const remote = await this.cloud.statePull(name);
+        if (remote) {
+          const { state: merged, changed } = this.merge(local, remote);
+          local = merged;
+          if (changed) {
+            this.apply(merged);
+            if (this.onMerged) this.onMerged(merged);
+          }
+        }
+      } catch { /* offline or unreachable — push the local copy as-is */ }
+    }
+    const { state, dropped } = this.trim(local);
     const body = JSON.stringify({ ...state, [STATE_TS]: 0 }); // ignore the clock when diffing
     if (body === this.lastPushed) return; // nothing actually changed
     try {
