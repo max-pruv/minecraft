@@ -56,6 +56,13 @@ const ASSETS = [
 const TOTAL_BYTES = ASSETS.reduce((a, [, n]) => a + n, 0);
 const CACHED_FLAG = 'web-minecraft-scanner-cached';
 
+// Taille unique de toutes les images analysées. Deux raisons, et la seconde
+// est la plus importante : une caméra de téléphone sort du 1280×720 ou plus,
+// qu'il est inutile d'analyser en entier pour un visage qui remplit le cadre ;
+// et surtout, le réseau recompile ses calculs dès que la taille de l'image
+// change. En figeant la taille, la compilation n'a lieu qu'une fois.
+const DETECT_SIZE = 320;
+
 // Déjà téléchargé une fois sur cet appareil : on saute la barre, tout vient
 // du cache et l'attente se compte en millisecondes.
 function scannerCached() {
@@ -104,6 +111,37 @@ function loadFaceApi(onProgress, onPercent) {
     await f.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
     await f.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     try { localStorage.setItem(CACHED_FLAG, '1'); } catch { /* mode privé */ }
+
+    // Le premier passage compile les calculs du réseau sur le processeur
+    // graphique : c'est LUI, pas le téléchargement, qui faisait patienter
+    // l'enfant devant « Je me réveille… ». On le paie ici, pendant que la
+    // barre est encore à l'écran et qu'attendre est normal, sur une image
+    // fabriquée de la taille exacte utilisée ensuite.
+    //
+    // L'ancien préchauffage plantait sur iPad parce qu'il utilisait un canvas
+    // vierge, sans surface de dessin. Celui-ci en a une, il est vraiment
+    // peint, et surtout il est protégé par le même garde-fou de temps que les
+    // détections : s'il ne répond pas, on passe à la suite sans bloquer.
+    onProgress?.('Je prépare mon cerveau… 🧠');
+    try {
+      const warm = document.createElement('canvas');
+      warm.width = DETECT_SIZE;
+      warm.height = DETECT_SIZE;
+      const g = warm.getContext('2d');
+      g.fillStyle = '#808080';
+      g.fillRect(0, 0, DETECT_SIZE, DETECT_SIZE);
+      // un peu de contraste : un aplat uniforme peut court-circuiter des
+      // branches de calcul, et donc ne pas compiler ce qui servira vraiment
+      for (let i = 0; i < 60; i++) {
+        g.fillStyle = `hsl(${i * 6},60%,${30 + (i % 5) * 8}%)`;
+        g.fillRect((i * 37) % DETECT_SIZE, (i * 53) % DETECT_SIZE, 24, 24);
+      }
+      await Promise.race([
+        f.detectSingleFace(warm, new f.TinyFaceDetectorOptions({ inputSize: DETECT_SIZE, scoreThreshold: 0.4 }))
+          .withFaceLandmarks().withFaceDescriptor(),
+        new Promise((r) => setTimeout(r, 20000)),
+      ]);
+    } catch { /* le premier vrai passage le refera, en le disant */ }
     // NB: no blank-canvas warm-up here. It hung on iPad (a canvas with no
     // backing store never came back), leaving the child stuck on "presque
     // prêt". The first real detection pays the kernel-compilation cost
@@ -269,16 +307,34 @@ export class Identity {
     return res ? res.sig : null;
   }
 
+  // Recadre le carré central de la vidéo dans un canvas de taille fixe. Le
+  // rond de l'interface montre déjà ce carré-là, donc on n'analyse que ce que
+  // l'enfant voit — et le réseau reçoit toujours la même taille d'image.
+  frame(video) {
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w || !h) return video; // pas encore de flux : on laisse passer tel quel
+    if (!this._canvas) {
+      this._canvas = document.createElement('canvas');
+      this._canvas.width = DETECT_SIZE;
+      this._canvas.height = DETECT_SIZE;
+      this._ctx = this._canvas.getContext('2d', { willReadFrequently: true });
+    }
+    const side = Math.min(w, h);
+    this._ctx.drawImage(video, (w - side) / 2, (h - side) / 2, side, side, 0, 0, DETECT_SIZE, DETECT_SIZE);
+    return this._canvas;
+  }
+
   async detect(video) {
     const f = await loadFaceApi();
     // On iOS Safari the GPU backend's first inference can hang forever (the
     // original iPad "presque prêt" freeze — removing the warm-up only moved
     // it here). So every detection races a watchdog; on the first hang or
     // error we switch tf to the CPU backend — slower, but it always answers —
-    // and retry. A smaller input keeps CPU mode tolerable.
+    // and retry.
+    const input = this.frame(video);
     const run = () => f
-      .detectSingleFace(video, new f.TinyFaceDetectorOptions({
-        inputSize: this._cpuMode ? 256 : 320, scoreThreshold: 0.4,
+      .detectSingleFace(input, new f.TinyFaceDetectorOptions({
+        inputSize: DETECT_SIZE, scoreThreshold: 0.4,
       }))
       .withFaceLandmarks()
       .withFaceDescriptor();
@@ -308,12 +364,13 @@ export class Identity {
   // photo, and the child can always change them in the character menu.
   sampleLook(video, res) {
     try {
-      const w = video.videoWidth, h = video.videoHeight;
-      if (!w || !h) return null;
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(video, 0, 0, w, h);
-      const g = c.getContext('2d');
+      // On lit les couleurs sur l'image même qui a servi à la détection : les
+      // repères du visage sont exprimés dans SES coordonnées, pas dans celles
+      // de la vidéo d'origine (recadrée et redimensionnée avant analyse).
+      const c = this._canvas;
+      if (!c) return null;
+      const w = c.width, h = c.height;
+      const g = this._ctx;
       const pts = res.landmarks.positions;
       const box = res.detection.box;
 

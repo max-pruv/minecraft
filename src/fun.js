@@ -59,6 +59,9 @@ export function initFun(ctx) {
   // ---- styles & panels ------------------------------------------------------
   const style = document.createElement('style');
   style.textContent = `
+    /* La colonne démarre sous le bouton carte, encoche comprise : sans
+       var(--safe-top) les deux se superposaient sur les iPhone à Dynamic
+       Island, où la barre d'état pousse tout de ~59 px vers le bas. */
     .fun-btn { position:fixed; left:10px; width:44px; height:44px; border-radius:12px;
       background:rgba(20,26,40,.72); border:1px solid rgba(255,255,255,.18); color:#fff;
       font-size:22px; z-index:30; display:none; align-items:center; justify-content:center;
@@ -121,13 +124,14 @@ export function initFun(ctx) {
   };
 
   const mkBtn = (emoji, top, title) => {
-    const b = el(`<button class="fun-btn" style="top:${top}px" title="${title}">${emoji}</button>`);
+    const b = el(`<button class="fun-btn" style="top:calc(${top}px + var(--safe-top))" title="${title}">${emoji}</button>`);
     return b;
   };
-  const atelierBtn = mkBtn('🛠️', 96, 'Atelier');
-  const fwBtn = mkBtn('🎆', 148, "Feu d'artifice");
-  const photoBtn = mkBtn('📸', 200, 'Photo');
-  const recordsBtn = mkBtn('🏆', 252, 'Records');
+  // le bouton carte tient de 34 à 74 px (sous la zone sûre) : on part à 84
+  const atelierBtn = mkBtn('🛠️', 84, 'Atelier');
+  const fwBtn = mkBtn('🎆', 136, "Feu d'artifice");
+  const photoBtn = mkBtn('📸', 188, 'Photo');
+  const recordsBtn = mkBtn('🏆', 240, 'Records');
 
   const emoteRow = el(`<div class="emote-row" id="emote-row">
     <button data-k="👋">👋</button><button data-k="💃">💃</button><button data-k="❤️">❤️</button>
