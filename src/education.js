@@ -712,7 +712,10 @@ export class EducationMode {
       panelBody: document.getElementById('edu-panel-body'),
     };
 
-    document.getElementById('edu-btn').addEventListener('click', () => this.togglePanel());
+    // the in-game academy button is gone — the recap lives on the main menu;
+    // the guard keeps older cached HTML working during an update
+    const eduBtn = document.getElementById('edu-btn');
+    if (eduBtn) eduBtn.addEventListener('click', () => this.togglePanel());
     document.getElementById('edu-panel-close').addEventListener('click', () => this.togglePanel());
 
     document.getElementById('hardstop-marathon').addEventListener('click', () => this.startMarathon());

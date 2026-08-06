@@ -15,9 +15,10 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES } from './education.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const RENDER_RADIUS = IS_TOUCH ? 6 : 8; // chunks in each direction (smaller on mobile GPUs)
+// doubled view distance; ?rr= overrides (perf tuning and tests)
+const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
-const MESHES_PER_FRAME = 3;
+const MESHES_PER_FRAME = 5;
 const REACH = 5.5;                   // block interaction distance
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
@@ -34,7 +35,7 @@ const NIGHT_SKY = new THREE.Color(0x0b1026);
 scene.background = DAY_SKY.clone();
 scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK * 0.55, RENDER_RADIUS * CHUNK - 4);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 600);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
 
 // Lights only affect Lambert materials (the high-fidelity creatures);
 // blocks keep their baked flat look via MeshBasic + vertex AO.
@@ -933,6 +934,11 @@ function renderRecentWorlds() {
     btn.className = 'world-btn';
     btn.textContent = `🌍 Monde ${w.code}`;
     btn.addEventListener('click', () => openWorld(w.code));
+    const open = document.createElement('button');
+    open.className = 'world-open';
+    open.textContent = 'Jouer ➜';
+    open.title = 'Entrer dans ce monde';
+    open.addEventListener('click', () => openWorld(w.code));
     const del = document.createElement('button');
     del.className = 'world-del';
     del.textContent = '✕';
@@ -944,10 +950,23 @@ function renderRecentWorlds() {
       try { localStorage.setItem(WORLDS_KEY, JSON.stringify(rest)); } catch { /* ignore */ }
       renderRecentWorlds();
     });
-    chip.append(btn, del);
+    chip.append(btn, open, del);
     row.appendChild(chip);
   }
 }
+
+// education recap straight from the main menu, with today's play time on
+// the button itself
+document.getElementById('edu-menu-btn').addEventListener('click', () => {
+  edu.renderPanel();
+  document.getElementById('edu-panel').style.display = 'block';
+});
+function refreshEduMenuBtn() {
+  document.getElementById('edu-menu-btn').textContent =
+    `📚 Éducation · ${edu.formatDuration(edu.today().play)} aujourd'hui`;
+}
+setInterval(refreshEduMenuBtn, 10000);
+queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
 
 function nameSprite(text) {
   const cv = document.createElement('canvas');
@@ -1690,6 +1709,12 @@ function drawMap(mapCanvas, radius) {
     if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
+  ctx.fillStyle = '#4ac9ff'; // the other players, bright blue
+  for (const rp of remotePlayers.values()) {
+    const [mx, my] = toMap(rp.mesh.position.x, rp.mesh.position.z);
+    if (mx < 0 || mx > size || my < 0 || my > size) continue;
+    ctx.fillRect(mx - 3, my - 3, 6, 6);
+  }
 
   // city names — clamped to the edge so they double as direction signs
   if (radius >= 60) {
@@ -1720,14 +1745,103 @@ function drawMap(mapCanvas, radius) {
   ctx.restore();
 }
 
+// Fast whole-continent overview: colors come from the terrain function
+// directly (no chunk generation), so a 1000-block-wide map renders in
+// a fraction of a second. Tapping a city name teleports there.
+let overviewView = null; // { pcx, pcz, radius } of the last render
+function drawOverviewMap(mapCanvas, radius) {
+  const ctx = mapCanvas.getContext('2d');
+  const size = mapCanvas.width;
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  overviewView = { pcx, pcz, radius };
+  const img = ctx.createImageData(size, size);
+  const STEP = 2; // sample every other pixel — plenty for an overview
+  for (let py = 0; py < size; py += STEP) {
+    const wz = pcz + Math.round((py / size - 0.5) * radius * 2);
+    for (let pxx = 0; pxx < size; pxx += STEP) {
+      const wx = pcx + Math.round((pxx / size - 0.5) * radius * 2);
+      const h = world.terrainHeight(wx, wz);
+      let color;
+      if (h <= WATER_LEVEL) color = h < WATER_LEVEL - 8 ? [26, 60, 150] : [64, 120, 210];
+      else if (world.cityAt(wx, wz)) color = [158, 158, 160];
+      else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
+      else if (h >= 58) color = [242, 250, 250];
+      else color = [88, 176, 76];
+      const shade = 0.7 + (h / HEIGHT) * 0.5;
+      for (let dy = 0; dy < STEP; dy++) {
+        for (let dx2 = 0; dx2 < STEP; dx2++) {
+          const o = ((py + dy) * size + pxx + dx2) * 4;
+          img.data[o] = Math.min(255, color[0] * shade);
+          img.data[o + 1] = Math.min(255, color[1] * shade);
+          img.data[o + 2] = Math.min(255, color[2] * shade);
+          img.data[o + 3] = 255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const toMap = (x, z) => [((x - pcx + radius) / (radius * 2)) * size, ((z - pcz + radius) / (radius * 2)) * size];
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  for (const c of CITIES) {
+    let [mx, my] = toMap(c.x, c.z);
+    mx = Math.max(34, Math.min(size - 34, mx));
+    my = Math.max(14, Math.min(size - 8, my));
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    ctx.strokeText(c.name, mx, my);
+    ctx.fillStyle = '#ffe9a8';
+    ctx.fillText(c.name, mx, my);
+  }
+  ctx.fillStyle = '#4ac9ff'; // the other players
+  for (const rp of remotePlayers.values()) {
+    const [rx, ry] = toMap(rp.mesh.position.x, rp.mesh.position.z);
+    if (rx >= 0 && rx <= size && ry >= 0 && ry <= size) ctx.fillRect(rx - 3, ry - 3, 6, 6);
+  }
+  // player arrow
+  const [px2, py2] = toMap(player.pos.x, player.pos.z);
+  ctx.save();
+  ctx.translate(px2, py2);
+  ctx.rotate(Math.atan2(-Math.cos(player.yaw), -Math.sin(player.yaw)));
+  ctx.fillStyle = '#ff4444';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(8, 0); ctx.lineTo(-5, -5); ctx.lineTo(-5, 5); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// tap a city on the overview to travel there
+mapModalCanvas.addEventListener('click', (e) => {
+  if (!overviewView) return;
+  const rect = mapModalCanvas.getBoundingClientRect();
+  const size = mapModalCanvas.width;
+  const wx = overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2;
+  const wz = overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2;
+  for (const c of CITIES) {
+    if (Math.hypot(wx - c.x, wz - c.z) < Math.max(60, c.r)) {
+      const tx = c.x + 1.5, tz = c.z + 1.5; // on the street grid, not in a house
+      let y = HEIGHT - 1;
+      while (y > 1 && !world.isSolid(Math.floor(tx), y, Math.floor(tz))) y--;
+      player.pos.set(tx, y + 1.2, tz);
+      player.vel.set(0, 0, 0);
+      mapModal.style.display = 'none';
+      creatureManager.toast(`🧳 Voyage vers ${c.name} !`, 0xffd75e);
+      return;
+    }
+  }
+});
+
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  if (minimapVisible) drawMap(minimapCanvas, 48);
+  if (minimapVisible) drawMap(minimapCanvas, 96);
 });
 minimapCanvas.addEventListener('click', () => {
   mapModal.style.display = 'flex';
-  drawMap(mapModalCanvas, 160); // wide enough to show all three cities
+  drawOverviewMap(mapModalCanvas, 520); // the whole 8x continent, all five cities
 });
 document.getElementById('map-modal-close').addEventListener('click', () => {
   mapModal.style.display = 'none';
@@ -1810,7 +1924,7 @@ function frame(now) {
     minimapTimer -= dt;
     if (minimapTimer <= 0) {
       minimapTimer = 1;
-      drawMap(minimapCanvas, 48);
+      drawMap(minimapCanvas, 96);
     }
   }
 
