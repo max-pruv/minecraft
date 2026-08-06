@@ -196,6 +196,7 @@
       border: 2px solid #46587e; border-radius: 10px;
     }
     #lang-row { display: flex; gap: 6px; }
+    #reface-hint { font-size: 12px; color: #9fb0d0; line-height: 1.45; margin-top: -2px; }
     .pb-toggle {
       font-family: inherit; font-size: 12px; padding: 7px 10px !important; margin: 0 !important;
       background: #2c3a58 !important; border: 2px solid #46587e !important; border-radius: 8px;
@@ -1003,6 +1004,12 @@
         <span class="pb-label">🎓 Niveau scolaire :</span>
         <select id="grade-select"></select>
       </div>
+      <div class="pb-row">
+        <span class="pb-label">🔒 Ma sécurité :</span>
+        <button id="reface-btn" class="pb-toggle">📸 Refaire mes photos</button>
+        <button id="repin-btn" class="pb-toggle">🔢 Changer mon code</button>
+      </div>
+      <div id="reface-hint"></div>
       <button id="profile-back">💾 Sauvegarder</button>
     </div>
     <div id="online-menu">

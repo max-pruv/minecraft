@@ -625,10 +625,14 @@ export class Identity {
     this.button('Plus tard', 'id-secondary', () => { this.hide(); onDone?.(false); });
   }
 
-  async enrollFace(name, onDone) {
+  async enrollFace(name, onDone, refresh = false) {
     this.show(`📸 Regarde la caméra, ${name} !`,
-      "Les 3 photos se prennent toutes seules dès que je vois ton visage — reste bien en face ! (aucune photo n'est gardée, juste une empreinte secrète)");
-    this.setSteps(1);
+      refresh
+        ? "Je prends 3 nouvelles photos pour te reconnaître encore mieux — tu changes en grandissant ! (aucune photo n'est gardée, juste une empreinte secrète)"
+        : "Les 3 photos se prennent toutes seules dès que je vois ton visage — reste bien en face ! (aucune photo n'est gardée, juste une empreinte secrète)");
+    // le fil d'Ariane n'a de sens qu'à l'inscription : une mise à jour de
+    // photos est une action isolée, pas la première étape de quelque chose
+    if (!refresh) this.setSteps(1);
     this.el.stage.style.display = 'block';
     for (let i = 0; i < 3; i++) {
       const d = document.createElement('div');
@@ -694,12 +698,21 @@ export class Identity {
     this._stream = null;
 
     if (sigs.length === 0) {
+      if (refresh) { // ses anciennes photos restent valables, rien n'est perdu
+        this.say("Je n'ai pas réussi à te voir 😕 — tes photos d'avant marchent toujours.", 'err');
+        setTimeout(() => { this.hide(); onDone?.(false); }, 2200);
+        return;
+      }
       this.say("Je n'ai pas réussi à te voir 😕 — on fait un code secret.", 'err');
       setTimeout(() => this.enrollPin(name, onDone), 1800);
       return;
     }
     const e = this.local[name] || (this.local[name] = {});
-    e.faces = sigs.slice(-KEEP_SIGNATURES);
+    // On complète au lieu de remplacer : si les nouvelles photos sont ratées
+    // (contre-jour, grimace), les anciennes le reconnaissent encore. La
+    // fenêtre glissante fait que les plus vieilles finissent par sortir, donc
+    // l'empreinte suit l'enfant qui grandit sans jamais l'enfermer dehors.
+    e.faces = [...(e.faces || []), ...sigs].slice(-KEEP_SIGNATURES);
     // kept against the name, not the active profile: a brand-new account
     // enrols before the game has switched into it, and this survives the
     // reload so their character still ends up looking like them
@@ -709,6 +722,11 @@ export class Identity {
     this.registerSuccess(name); // this device now knows them
     if (look) this.onLook?.(name, look);
     this.el.stage.className = 'ok';
+    if (refresh) {
+      this.say(`✨ C'est bon ${name} — je te reconnaîtrai encore mieux !`, 'ok');
+      setTimeout(() => { this.hide(); onDone?.(true); }, 1800);
+      return;
+    }
     this.say(`✨ C'est toi, ${name} ! Étape 1 terminée — on passe au code 🔢`, 'ok');
     setTimeout(() => this.enrollPin(name, onDone, true), 1700);
   }
@@ -754,6 +772,20 @@ export class Identity {
       onCancel,
       title: `👋 C'est bien toi, ${name} ?`,
     });
+  }
+
+  // Depuis « Mon personnage » : rafraîchir ses photos (un enfant change vite)
+  // ou changer son code. On redemande d'abord de prouver qui on est, sinon
+  // n'importe qui trouvant l'appareil ouvert pourrait s'approprier le compte.
+  // Un compte pas encore sécurisé n'a rien à prouver : on l'inscrit.
+  secureChange(name, kind, onDone) {
+    if (!name) return;
+    const go = () => {
+      if (kind === 'pin') this.enrollPin(name, onDone);
+      else this.enrollFace(name, onDone, true);
+    };
+    if (!this.isEnrolled(name)) return this.enroll(name, { onDone });
+    this.verify(name, { onOk: go, onCancel: () => onDone?.(false) });
   }
 
   // "Me connecter à mon compte": a device that has never seen this child.
