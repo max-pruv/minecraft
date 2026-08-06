@@ -909,7 +909,7 @@ const identity = new Identity(cloud, raw);
   const asked = new URLSearchParams(location.search).get('unlock');
   if (!asked) return;
   if (asked !== '135246') { creatureManager.toast('Code parental incorrect', 0xff6b6b); return; }
-  identity.saveLock({ fails: 0, strikes: 0, until: 0 });
+  identity.clearLock();
   creatureManager.toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
   // On retire le code de la barre d'adresse — il n'a pas à rester dans
   // l'historique ni à repartir dans un lien partagé — sans toucher au reste
