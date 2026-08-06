@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v38';
+const CACHE_VERSION = 'web-minecraft-v39';
 
 const ASSETS = [
   './',
