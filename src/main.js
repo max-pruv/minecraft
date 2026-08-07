@@ -1,11 +1,11 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, CITY_BLOCK } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, CITY_BLOCK, VILLANDRY_BLOCK, MEUBLE_ITEMS, MEUBLE_START, isMeuble } from './blocks.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -2602,7 +2602,8 @@ function blockThumb(id, size) {
   ctx.imageSmoothingEnabled = false;
   const info = BLOCK_INFO[id];
   if (info.prop) { // furniture: colored background + type emoji
-    const item = PROP_ITEMS[id - PROP_START];
+    // le mobilier Renaissance vit dans sa propre plage, après les 200 objets
+    const item = isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
     ctx.fillStyle = `rgb(${item.rgb[0]},${item.rgb[1]},${item.rgb[2]})`;
     ctx.fillRect(0, 0, size, size);
     ctx.font = `${Math.floor(size * 0.62)}px sans-serif`;
@@ -2781,6 +2782,9 @@ const MAP_COLORS = {
   [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
   [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
   [BLOCK.MARS_SOL]: [176, 96, 62], [BLOCK.MARS_ROCHE]: [116, 62, 48],
+  [VILLANDRY_BLOCK.TUFFEAU]: [230, 224, 206], [VILLANDRY_BLOCK.TUFFEAU_TAILLE]: [226, 219, 200],
+  [VILLANDRY_BLOCK.ARDOISE]: [76, 86, 102], [VILLANDRY_BLOCK.BUIS]: [46, 86, 44],
+  [VILLANDRY_BLOCK.ALLEE]: [208, 196, 168],
   [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
   [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
   [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
@@ -2903,6 +2907,7 @@ function drawOverviewMap(mapCanvas, radius) {
       // colore d'après la hauteur du terrain, elle ne lit pas les blocs — sans
       // cette règle, le plateau martien ressortait vert comme une prairie.
       else if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) color = [176, 96, 62];
+      else if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) color = [176, 186, 138];
       else if (world.cityAt(wx, wz)) color = [158, 158, 160];
       else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
       else if (h >= 58) color = [242, 250, 250];

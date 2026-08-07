@@ -2,7 +2,7 @@
 // Group built from boxes; chunks clone the template (geometry is shared).
 
 import * as THREE from 'three';
-import { PROP_ITEMS, PROP_START } from './blocks.js';
+import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble } from './blocks.js';
 
 const WOOD = 0x6b4a2a, DARKWOOD = 0x4a3218, TRUNK = 0x67513a, LEG = 0x2c2c2c;
 const WHITE = 0xf2f2f0, DARK = 0x222226, GLOW = 0xffe9a0;
@@ -134,11 +134,104 @@ const BUILDERS = {
 
 // Upscale factor per prop type — furniture at ~1 block felt dollhouse-sized
 // next to the 1.8-block player, so everything grows (origin stays on the floor).
+// --- mobilier Renaissance (Villandry) ---------------------------------------
+// Ces meubles-là ont une silhouette précise : c'est elle qu'on reconnaît en
+// entrant dans une pièce, plus que le détail.
+const PIERRE = 0xe2dccc, OR = 0xd4b05c, CHENE = 0x4e341e;
+
+Object.assign(BUILDERS, {
+  lit_baldaquin(c) {
+    const g = new THREE.Group();
+    for (const sx of [-0.42, 0.42]) for (const sz of [-0.42, 0.42]) {
+      g.add(box(0.09, 1.5, 0.09, CHENE, sx, 0.75, sz)); // les quatre colonnes
+    }
+    g.add(box(1.0, 0.1, 1.0, CHENE, 0, 1.52, 0));       // le ciel de lit
+    g.add(box(1.02, 0.2, 0.1, c, 0, 1.4, -0.46));       // le lambrequin
+    g.add(box(0.9, 0.22, 0.9, CHENE, 0, 0.28, 0));      // le châlit
+    g.add(box(0.86, 0.14, 0.86, 0xf0eade, 0, 0.45, 0)); // le matelas
+    g.add(box(0.86, 0.06, 0.5, c, 0, 0.53, 0.18));      // la courtepointe
+    g.add(box(0.4, 0.1, 0.22, 0xffffff, 0, 0.55, -0.3));// l'oreiller
+    return g;
+  },
+  cheminee() {
+    const g = new THREE.Group();
+    g.add(box(1.0, 1.15, 0.34, PIERRE, 0, 0.58, -0.32)); // le manteau
+    g.add(box(1.16, 0.14, 0.44, PIERRE, 0, 1.22, -0.28)); // la tablette
+    g.add(box(0.62, 0.72, 0.2, 0x2a2320, 0, 0.36, -0.2)); // l'âtre
+    g.add(box(0.5, 0.16, 0.16, 0x8a3a1c, 0, 0.12, -0.2)); // les braises
+    for (const sx of [-0.42, 0.42]) g.add(box(0.16, 1.15, 0.36, 0xd6cfbb, sx, 0.58, -0.32));
+    return g;
+  },
+  lustre(c) {
+    const g = new THREE.Group();
+    g.add(box(0.05, 0.7, 0.05, c, 0, 1.6, 0));           // la tige
+    g.add(box(0.34, 0.1, 0.34, c, 0, 1.22, 0));          // la couronne
+    for (const [dx, dz] of [[0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]]) {
+      g.add(box(0.3, 0.05, 0.05, c, dx / 2, 1.24, dz / 2));
+      g.add(box(0.07, 0.2, 0.07, 0xf6f0dc, dx, 1.36, dz)); // les bougies
+      g.add(box(0.05, 0.08, 0.05, GLOW, dx, 1.5, dz));
+    }
+    return g;
+  },
+  tapisserie(c) {
+    const g = new THREE.Group();
+    g.add(box(1.3, 1.0, 0.06, c, 0, 1.1, -0.45));
+    g.add(box(1.3, 0.08, 0.08, OR, 0, 1.62, -0.44));     // la tringle
+    g.add(box(0.8, 0.5, 0.02, 0xb9a86a, 0, 1.12, -0.41)); // le motif central
+    return g;
+  },
+  buffet(c) {
+    const g = new THREE.Group();
+    g.add(box(1.15, 0.75, 0.45, c, 0, 0.38, -0.2));
+    g.add(box(1.2, 0.08, 0.5, 0x6a4a2a, 0, 0.79, -0.2)); // le plateau
+    for (const sx of [-0.28, 0.28]) {
+      g.add(box(0.44, 0.5, 0.03, 0x3a2614, sx, 0.4, -0.43)); // les portes
+      g.add(box(0.07, 0.07, 0.05, OR, sx, 0.4, -0.46));      // les boutons
+    }
+    return g;
+  },
+  table_banquet(c) {
+    const g = new THREE.Group();
+    g.add(box(1.9, 0.1, 0.85, c, 0, 0.74, 0));
+    for (const sx of [-0.78, 0.78]) {
+      g.add(box(0.16, 0.72, 0.16, 0x3a2614, sx, 0.36, -0.3));
+      g.add(box(0.16, 0.72, 0.16, 0x3a2614, sx, 0.36, 0.3));
+    }
+    g.add(box(1.5, 0.05, 0.06, 0x3a2614, 0, 0.2, 0));   // l'entretoise
+    g.add(box(1.6, 0.03, 0.6, 0xf2ece0, 0, 0.8, 0));    // la nappe
+    return g;
+  },
+  fauteuil_renaissance(c) {
+    const g = new THREE.Group();
+    g.add(box(0.62, 0.1, 0.6, CHENE, 0, 0.46, 0));
+    g.add(box(0.56, 0.09, 0.54, c, 0, 0.53, 0));        // l'assise
+    g.add(box(0.62, 0.85, 0.1, CHENE, 0, 0.85, -0.28)); // le dossier haut
+    g.add(box(0.5, 0.5, 0.03, c, 0, 0.85, -0.22));
+    for (const sx of [-0.3, 0.3]) {
+      g.add(box(0.08, 0.46, 0.08, CHENE, sx, 0.23, -0.24));
+      g.add(box(0.08, 0.46, 0.08, CHENE, sx, 0.23, 0.24));
+      g.add(box(0.07, 0.07, 0.5, CHENE, sx, 0.72, -0.02)); // les accotoirs
+    }
+    return g;
+  },
+  vasque(c) {
+    const g = new THREE.Group();
+    g.add(box(0.8, 0.16, 0.8, c, 0, 0.08, 0));          // la margelle
+    g.add(box(0.18, 0.4, 0.18, c, 0, 0.32, 0));         // le pied
+    g.add(box(0.72, 0.14, 0.72, c, 0, 0.58, 0));        // la coupe
+    g.add(box(0.6, 0.06, 0.6, 0x5aa8d8, 0, 0.64, 0));   // l'eau
+    return g;
+  },
+});
+
 const SCALE = {
   tree: 1.8, pine: 1.8, bush: 1.5,
   sofa: 1.55, armchair: 1.5, table: 1.5, chair: 1.45, bed: 1.55,
   lamp: 1.5, tv: 1.5, rug: 1.6, stool: 1.4,
   flowerpot: 1.3, cake: 1.3,
+  // le mobilier Renaissance est déjà dessiné à l'échelle du bloc
+  lit_baldaquin: 1.0, cheminee: 1.0, lustre: 1.0, tapisserie: 1.0,
+  buffet: 1.0, table_banquet: 1.0, fauteuil_renaissance: 1.0, vasque: 1.0,
 };
 
 const templates = new Map(); // prop id -> Group template
@@ -146,8 +239,8 @@ const templates = new Map(); // prop id -> Group template
 export function buildPropMesh(id) {
   let template = templates.get(id);
   if (!template) {
-    const item = PROP_ITEMS[id - PROP_START];
-    if (!item) return null;
+    const item = isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
+    if (!item || !BUILDERS[item.type]) return null;
     template = BUILDERS[item.type](rgbToHex(item.rgb));
     template.scale.setScalar(SCALE[item.type] || 1.5);
     templates.set(id, template);
