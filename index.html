@@ -441,6 +441,20 @@
       background: rgba(10, 14, 20, 0.9); border: 2px solid #3a4a6b; border-radius: 12px;
       padding: 8px;
     }
+    /* On fermait le chat en retapant le bouton 💬 du bord de l'écran, ce que
+       rien n'indiquait : une croix dans le panneau se voit et se comprend. */
+    #chat-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+      padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    #chat-head .titre { flex: 1; font-size: 13px; color: #9fd8e8; font-weight: bold; }
+    #chat-close {
+      font-family: inherit; width: 30px; height: 30px; flex-shrink: 0; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; cursor: pointer; color: #fff;
+      background: #3a3a4a; border: 2px solid #5a5a6e; border-radius: 8px;
+    }
+    #chat-close:active { background: #4a4a5e; }
     #chat-msgs {
       max-height: 180px; overflow-y: auto; font-size: 13px; color: #eee;
       display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
@@ -1040,6 +1054,10 @@
   <div id="video-wrap"></div>
 
   <div id="chat-panel">
+    <div id="chat-head">
+      <span class="titre">💬 Chat du monde</span>
+      <button id="chat-close" aria-label="Fermer le chat">✕</button>
+    </div>
     <div id="chat-msgs"></div>
     <div id="chat-row">
       <input id="chat-input" maxlength="120" placeholder="Écris un message…" autocomplete="off">
