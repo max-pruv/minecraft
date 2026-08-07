@@ -556,4 +556,55 @@ export function tileUV(tile) {
   return [u0, v0, u1, v1];
 }
 
+// Même rectangle que tileUV, exprimé en origine + taille : c'est la forme dont
+// le shader a besoin pour ramener un UV fusionné dans sa tuile. On garde la
+// marge d'un demi-texel, ce qui donne exactement le même rendu qu'avant sur
+// une face isolée — et comme fract() reste strictement inférieur à 1, une face
+// fusionnée ne peut pas déborder sur la tuile voisine non plus.
+export function tileRect(tile) {
+  const [u0, v0, u1, v1] = tileUV(tile);
+  return [u0, v0, u1 - u0, v1 - v0];
+}
+
+// Une face fusionnée couvre plusieurs blocs : ses UV vont de 0 à la largeur du
+// rectangle, et c'est le shader qui les ramène dans la tuile. Sans cela, un
+// atlas interdit purement et simplement la répétition.
+//
+// `onde` ajoute au passage le clapot de la surface de l'eau — les deux
+// modifications partagent le même point d'accroche, qui est unique par matériau.
+export function activerTuilage(material, { onde = false } = {}) {
+  if (onde) material.userData.temps = { value: 0 };
+  material.onBeforeCompile = (shader) => {
+    if (onde) shader.uniforms.temps = material.userData.temps;
+    // `highp` explicite : une face fusionnée porte des UV allant jusqu'à 16, et
+    // en mediump — la précision par défaut des varyings sur plusieurs GPU
+    // mobiles — la partie fractionnaire n'aurait plus qu'un quart de texel de
+    // résolution, ce qui ferait onduler la texture au loin sur l'iPad.
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute vec4 tuile;
+        varying vec4 vTuile;
+        varying highp vec2 vUvTuile;
+        ${onde ? 'uniform float temps;' : ''}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        vTuile = tuile;
+        vUvTuile = uv;
+        ${onde ? `
+        // seule la surface bouge : les faces immergées restent en place
+        if (normal.y > 0.5) {
+          float houle = sin(position.x * 0.9 + temps * 1.7) * 0.5
+                      + sin(position.z * 1.3 + temps * 2.3) * 0.5;
+          transformed.y += houle * 0.055;
+        }` : ''}`);
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec4 vTuile;
+        varying highp vec2 vUvTuile;`)
+      .replace('#include <map_fragment>', `
+        diffuseColor *= texture2D(map, vTuile.xy + fract(vUvTuile) * vTuile.zw);`);
+  };
+  material.needsUpdate = true;
+}
+
 export { TILE_PX };
