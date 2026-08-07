@@ -881,22 +881,33 @@ export class EducationMode {
       // the daily limit is per child, not per device — playing 30 min on
       // an iPad then switching to a phone doesn't reset the clock
       if (this.today().play + this.otherDevicesPlaySeconds >= this.allowance()) { this.startHardStop(); return; }
-      if (this.quizDue) { this.startQuiz(); return; }
-      this.remaining -= dt;
-      if (this.remaining <= 60 && !this.warned60) {
-        this.warned60 = true;
-        this.hooks.toast('⏱ Quiz du Prof. Cornichon dans 1 minute !', 0xffd75e);
+      if (this.quizFree()) {
+        // Le compte à rebours est gelé et repart à neuf à la fin du répit :
+        // sinon un quiz tomberait à la seconde même où il se termine.
+        this.remaining = SESSION_SECONDS;
+        this.warned60 = false;
+        this.warned10 = false;
+        this.quizDue = false;
+      } else {
+        if (this.quizDue) { this.startQuiz(); return; }
+        this.remaining -= dt;
+        if (this.remaining <= 60 && !this.warned60) {
+          this.warned60 = true;
+          this.hooks.toast('⏱ Quiz du Prof. Cornichon dans 1 minute !', 0xffd75e);
+        }
+        if (this.remaining <= 10 && !this.warned10) {
+          this.warned10 = true;
+          this.hooks.toast('⏱ Prépare-toi... le quiz arrive !', 0xff9d5e);
+        }
+        if (this.remaining <= 0) this.startQuiz();
       }
-      if (this.remaining <= 10 && !this.warned10) {
-        this.warned10 = true;
-        this.hooks.toast('⏱ Prépare-toi... le quiz arrive !', 0xff9d5e);
-      }
-      if (this.remaining <= 0) this.startQuiz();
     }
 
     const t = Math.max(0, this.remaining);
     const m = Math.floor(t / 60), s = Math.floor(t % 60);
-    let text = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+    let text = this.quizFree()
+      ? `🔑 ${Math.max(0, Math.ceil((this.today().libreJusqua - this.today().play) / 60))} min sans quiz`
+      : `⏱ ${m}:${String(s).padStart(2, '0')}`;
     const dailyLeft = this.allowance() - this.today().play;
     if (dailyLeft <= 600) text += ` · ⏰ ${Math.max(0, Math.ceil(dailyLeft / 60))} min`;
     this.el.timer.textContent = text;
@@ -920,18 +931,31 @@ export class EducationMode {
     document.getElementById('hardstop-code').value = '';
   }
 
-  grantExtraBlock() {
-    this.today().unlocks = (this.today().unlocks || 0) + 1;
+  // `sansQuiz` : le temps accordé par un parent est aussi un temps sans
+  // questions. C'est tout l'objet du code — un parent qui déverrouille pour
+  // finir une construction ou jouer avec un cousin ne veut pas voir le Prof.
+  // Cornichon revenir toutes les six minutes. Le répit dure exactement le
+  // bloc débloqué : après, le rythme habituel reprend.
+  grantExtraBlock(sansQuiz = false) {
+    const t = this.today();
+    t.unlocks = (t.unlocks || 0) + 1;
+    if (sansQuiz) t.libreJusqua = t.play + DAILY_LIMIT_SECONDS;
     this.save();
     this.hardStopActive = false;
     document.getElementById('hardstop').style.display = 'none';
   }
 
+  // Répit en cours ? Mesuré en temps de jeu, pas en heure de la journée :
+  // une pause pour le goûter ne doit pas consommer le bloc offert.
+  quizFree() {
+    return this.today().play < (this.today().libreJusqua || 0);
+  }
+
   tryParentCode() {
     const input = document.getElementById('hardstop-code');
     if (input.value.trim() === PARENT_CODE) {
-      this.grantExtraBlock();
-      this.hooks.toast('🔑 +45 minutes débloquées !', 0x6ee06e);
+      this.grantExtraBlock(true);
+      this.hooks.toast('🔑 +45 minutes débloquées, sans quiz !', 0x6ee06e);
       this.hooks.onResume();
     } else {
       input.value = '';
