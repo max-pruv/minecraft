@@ -13,74 +13,116 @@ const ADMIN_NAME = 'Max';
 const PARENT_CODE = '135246';
 
 const CSS = `
+:root { --adm-fond: #0a0e14; --adm-carte: #121821; --adm-trait: #1e2733; --adm-doux: #7d8899; }
 #adm-overlay {
   position: fixed; inset: 0; z-index: 120; display: none;
-  background: #0d1117; color: #e6edf3; overflow: auto;
+  background: var(--adm-fond); color: #e8eef6; overflow: auto;
   font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; -webkit-overflow-scrolling: touch;
 }
 #adm-overlay.on { display: block; }
 /* Sur un iPhone, l'heure et la batterie flottent au-dessus de la page :
    sans cette marge, le titre et les boutons passaient dessous. */
 #adm-wrap {
-  max-width: 1040px; margin: 0 auto;
-  padding: calc(18px + var(--safe-top, 0px)) 16px calc(40px + var(--safe-bottom, 0px));
+  max-width: 1180px; margin: 0 auto;
+  padding: calc(16px + var(--safe-top, 0px)) 14px calc(36px + var(--safe-bottom, 0px));
 }
-#adm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-#adm-head h2 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -.2px; }
-#adm-head .grow { flex: 1; }
-#adm-sub { color: #8b949e; font-size: 12.5px; margin-bottom: 16px; }
+
+/* La barre du haut s'enroule au lieu de pousser « Fermer » hors de l'écran. */
+#adm-head {
+  display: flex; align-items: baseline; gap: 10px 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+#adm-head h2 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -.3px; }
+#adm-head .grow { flex: 1 1 auto; }
+#adm-sub { color: var(--adm-doux); font-size: 12.5px; }
 .adm-btn {
-  font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 7px; cursor: pointer;
-  background: #21262d; color: #e6edf3; border: 1px solid #30363d;
+  font: inherit; font-size: 13px; padding: 7px 13px; border-radius: 9px; cursor: pointer;
+  background: #1a2230; color: #e8eef6; border: 1px solid var(--adm-trait);
+  transition: background .12s, border-color .12s;
 }
-.adm-btn:hover { background: #30363d; }
-.adm-btn.danger { background: #3d1d1d; border-color: #6b2b2b; color: #ffb3ab; }
+.adm-btn:hover { background: #232e3f; border-color: #2c3a4d; }
+.adm-btn:active { transform: translateY(1px); }
+.adm-btn.danger { background: #2a1618; border-color: #4d2427; color: #ff9d95; }
+.adm-btn.danger:hover { background: #3a1d20; }
 .adm-btn:disabled { opacity: .3; cursor: default; }
-.adm-btn:disabled:hover { background: #21262d; }
-.adm-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
-.adm-card { background: #161b22; border: 1px solid #21262d; border-radius: 9px; padding: 10px 12px; }
-.adm-card b { display: block; font-size: 21px; font-weight: 600; letter-spacing: -.5px; }
-.adm-card span { color: #8b949e; font-size: 12px; }
-table.adm { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.adm th {
-  text-align: left; font-weight: 500; color: #8b949e; font-size: 11.5px;
-  text-transform: uppercase; letter-spacing: .5px; padding: 0 10px 7px; white-space: nowrap;
+
+/* Bandeau de chiffres : il défile lui aussi, plutôt que d'empiler cinq
+   pavés sur toute la hauteur d'un téléphone. */
+.adm-cards {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(132px, 1fr);
+  gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: thin;
 }
-table.adm td { padding: 9px 10px; border-top: 1px solid #21262d; vertical-align: top; }
-table.adm tr:hover td { background: #11161d; }
-.adm-name { font-weight: 600; }
-/* la ligne du dessous compte des choses : la couper en deux la rend illisible */
-table.adm td:nth-child(1) .adm-dim { white-space: nowrap; }
-.adm-me { color: #7ee787; font-size: 11px; margin-left: 5px; }
-.adm-live { display: inline-flex; align-items: center; gap: 5px; color: #7ee787; font-weight: 500; }
+.adm-card {
+  background: var(--adm-carte); border: 1px solid var(--adm-trait);
+  border-radius: 11px; padding: 10px 12px;
+  /* même hauteur pour tous : une étiquette sur deux lignes ne doit pas
+     décaler la carte d'à côté */
+  display: flex; flex-direction: column; justify-content: center; min-height: 66px;
+}
+.adm-card b { display: block; font-size: 20px; font-weight: 650; letter-spacing: -.5px; }
+.adm-card span { color: var(--adm-doux); font-size: 11.5px; }
+
+/* Un vrai tableau, qui défile horizontalement. La colonne des prénoms reste
+   collée à gauche : sans elle, on fait glisser deux colonnes et on ne sait
+   plus de qui on parle. */
+.adm-scroll {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--adm-trait); border-radius: 12px; background: var(--adm-carte);
+}
+table.adm { width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+table.adm th {
+  position: sticky; top: 0; z-index: 2;
+  text-align: left; font-weight: 500; color: var(--adm-doux); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .6px; white-space: nowrap;
+  padding: 10px 12px; background: #161d27; border-bottom: 1px solid var(--adm-trait);
+}
+table.adm td {
+  padding: 11px 12px; border-top: 1px solid var(--adm-trait); vertical-align: middle;
+  white-space: nowrap;
+}
+table.adm tbody tr:first-child td { border-top: 0; }
+table.adm tbody tr:hover td { background: #161d27; }
+table.adm th:first-child, table.adm td:first-child {
+  position: sticky; left: 0; z-index: 3; background: var(--adm-carte);
+  box-shadow: 1px 0 0 var(--adm-trait);
+}
+table.adm th:first-child { z-index: 4; background: #161d27; }
+table.adm tbody tr:hover td:first-child { background: #161d27; }
+.adm-hint {
+  display: none; color: var(--adm-doux); font-size: 11.5px; margin: 7px 2px 0;
+}
+@media (max-width: 940px) { .adm-hint { display: block; } }
+
+.adm-name { font-weight: 650; font-size: 14px; }
+.adm-me { color: #7ee787; font-size: 10.5px; margin-left: 5px; font-weight: 500; }
+.adm-dim { color: var(--adm-doux); font-size: 12px; }
+/* Les lignes de détail ont le droit de passer à la ligne — sauf sous le
+   prénom, que couper en deux rend illisible. */
+table.adm td .adm-dim { white-space: normal; }
+table.adm td:first-child .adm-dim { white-space: nowrap; }
+.adm-live { display: inline-flex; align-items: center; gap: 6px; color: #7ee787; font-weight: 500; }
 .adm-dot {
   display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3fb950;
-  box-shadow: 0 0 0 3px rgba(63,185,80,.18); animation: admPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(63,185,80,.16); animation: admPulse 2s ease-in-out infinite;
 }
-@keyframes admPulse { 50% { opacity: .35; } }
-.adm-live.pause { color: #d0b070; }
-.adm-live.pause .adm-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210,153,34,.16); }
-.adm-dim { color: #8b949e; }
-/* En-têtes de colonne repris dans chaque fiche : sur téléphone, les colonnes
-   disparaissent et « 0 s / 0 s au total » ne dirait plus de quoi il parle. */
-.adm-lbl { display: none; }
+@keyframes admPulse { 50% { opacity: .3; } }
+.adm-live.pause { color: #d6b775; }
+.adm-live.pause .adm-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210,153,34,.14); }
 .adm-tag {
-  display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px;
-  border: 1px solid #30363d; background: #161b22; margin-right: 4px; white-space: nowrap;
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  border: 1px solid var(--adm-trait); background: #161d27; margin-right: 4px; white-space: nowrap;
 }
-.adm-tag.warn { color: #ffd08a; border-color: #6b551f; background: #2a2213; }
-.adm-tag.ok { color: #7ee787; border-color: #245b32; background: #10231a; }
-.adm-actions { white-space: nowrap; }
+.adm-tag.warn { color: #ffd08a; border-color: #5d4a1c; background: #241d10; }
+.adm-tag.ok { color: #7ee787; border-color: #1f5030; background: #0f2018; }
 .adm-actions .adm-btn + .adm-btn { margin-left: 6px; }
-/* Un réglage se manipule, il ne se lit pas : une petite molette de minutes
-   plutôt qu'un chiffre figé. */
-.adm-rythme { display: inline-flex; align-items: center; gap: 6px; }
 .adm-rythme select {
-  font: inherit; font-size: 12.5px; padding: 3px 6px; border-radius: 6px;
-  background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+  font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 8px;
+  background: #0d131c; color: #e8eef6; border: 1px solid var(--adm-trait);
 }
-.adm-note { color: #8b949e; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+.adm-note { color: var(--adm-doux); font-size: 11.5px; margin-top: 18px; line-height: 1.6; }
+#adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 10px 2px 0; }
+#adm-msg.err { color: #ff9d95; }
 
 /* Fenêtre maison plutôt que les boîtes du navigateur : celles-ci sont
    moches, coupées sur iOS, et donnent au code parental l'air d'un bug. */
@@ -105,29 +147,14 @@ table.adm td:nth-child(1) .adm-dim { white-space: nowrap; }
 #adm-modal-actions { display: flex; gap: 8px; margin-top: 12px; }
 #adm-modal-actions .adm-btn { flex: 1; padding: 9px 12px; }
 #adm-modal-actions .adm-btn.go { background: #21482e; border-color: #2d6a3f; color: #b7f0c8; }
-#adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 8px 0 0; }
-#adm-msg.err { color: #ff9d95; }
-/* Sur un téléphone, six colonnes dans 390 px donnent des mots coupés en
-   trois. Chaque joueur devient une fiche empilée : la même information, lue
-   de haut en bas au lieu d'être compressée de gauche à droite. */
+/* Sur un téléphone on ne compresse plus : on fait défiler. Les fiches
+   empilées demandaient un écran entier par enfant et interdisaient toute
+   comparaison — or comparer est justement ce qu'on vient faire ici. */
 @media (max-width: 620px) {
   #adm-wrap { padding: calc(14px + var(--safe-top, 0px)) 12px calc(32px + var(--safe-bottom, 0px)); }
-  table.adm thead { display: none; }
-  table.adm, table.adm tbody, table.adm tr, table.adm td { display: block; width: 100%; }
-  table.adm tr { border-top: 1px solid #21262d; padding: 12px 0 14px; }
-  table.adm tr:hover td { background: transparent; }
-  table.adm td { border: 0; padding: 3px 0; }
-  table.adm td { padding: 6px 0 0; }
-  table.adm td:nth-child(1) { font-size: 15px; margin-bottom: 3px; padding-top: 0; }
-  table.adm td:last-child { margin-top: 9px; }
-  .adm-lbl {
-    display: block; color: #6e7681; font-size: 10.5px;
-    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1px;
-  }
-  .adm-actions { display: flex; gap: 8px; white-space: normal; }
-  .adm-actions .adm-btn { flex: 1; padding: 9px 12px; }
-  .adm-actions .adm-btn + .adm-btn { margin-left: 0; }
-  .adm-cards { grid-template-columns: repeat(2, 1fr); }
+  #adm-head h2 { font-size: 18px; }
+  .adm-cards { grid-auto-columns: minmax(118px, 1fr); }
+  table.adm td, table.adm th { padding-left: 10px; padding-right: 10px; }
 }
 `;
 
@@ -141,13 +168,16 @@ const HTML = `
   </div>
   <div id="adm-sub"></div>
   <div class="adm-cards" id="adm-cards"></div>
-  <table class="adm">
-    <thead><tr>
-      <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
-      <th>Quiz tous les</th><th>Mondes</th><th>Compte</th><th></th>
-    </tr></thead>
-    <tbody id="adm-rows"></tbody>
-  </table>
+  <div class="adm-scroll">
+    <table class="adm">
+      <thead><tr>
+        <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
+        <th>Quiz tous les</th><th>Mondes</th><th>Compte</th><th></th>
+      </tr></thead>
+      <tbody id="adm-rows"></tbody>
+    </table>
+  </div>
+  <div class="adm-hint">← fais glisser le tableau pour voir le reste →</div>
   <div id="adm-msg"></div>
   <p class="adm-note">
     Les empreintes de visage sont des suites de nombres : aucune photo n'est
@@ -478,17 +508,18 @@ export class AdminPanel {
       return `<tr>
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
             <div class="adm-dim">${l.dex} créature${l.dex > 1 ? 's' : ''} · ${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
-        <td><span class="adm-lbl">En ce moment</span>${presence(l)}</td>
-        <td><span class="adm-lbl">Aujourd'hui</span>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
-        <td><span class="adm-lbl">Quiz tous les</span>
-          <span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
+        <td>${presence(l)}</td>
+        <td>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
+        <td><span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
             RYTHMES.map((m) => `<option value="${m}"${m === l.rythme ? ' selected' : ''}>${m} min</option>`).join('')
           }</select></span></td>
-        <td><span class="adm-lbl">Mondes</span>${mondes}</td>
-        <td><span class="adm-lbl">Compte</span>${secu}<div class="adm-dim">${reponses(l)}</div></td>
+        <td>${mondes}</td>
+        <td>${secu}<div class="adm-dim">${reponses(l)}</div></td>
         <td class="adm-actions">
-          <button class="adm-btn" data-reset="${esc(l.nom)}">${l.code ? 'Réinitialiser le code' : 'Créer un code'}</button>
-          <button class="adm-btn danger" data-suppr="${esc(l.nom)}">Supprimer</button>
+          <button class="adm-btn" data-reset="${esc(l.nom)}"
+            title="${l.code ? 'Effacer son code et lui en faire choisir un nouveau' : 'Lui demander de choisir un code'}"
+            >🔑 ${l.code ? 'Réinitialiser' : 'Créer'}</button>
+          <button class="adm-btn danger" data-suppr="${esc(l.nom)}" title="Supprimer ce compte">🗑️ Supprimer</button>
         </td>
       </tr>`;
     }).join('');
