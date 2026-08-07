@@ -5,10 +5,11 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
+import { createSiege } from './siege.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -106,6 +107,7 @@ const animalManager = new AnimalManager(scene, world, player, (msg, color) => cr
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
+let siege = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -269,6 +271,10 @@ function updateChunks() {
     // les astronautes vivent sur Mars, pas là où l'enfant apparaît
     ...createAstronautes(scene, world, player, say, MARS.x, MARS.z),
   ];
+  // la garnison du château et ses assaillants : ils rejoignent la troupe des
+  // personnages, c'est la boucle principale qui les anime
+  siege = createSiege({ scene, world, player, toast: say, emojiBurst, clang: () => cliquetis() });
+  npcs.push(...siege.npcs);
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -1865,6 +1871,8 @@ function bruitBloc(f0, f1, duree, type, volume) {
 }
 const bruitCasse = () => bruitBloc(190, 70, 0.13, 'triangle', 0.08);
 const bruitPose = () => bruitBloc(420, 700, 0.07, 'square', 0.05);
+// le choc des épées, pendant l'assaut du château
+const cliquetis = () => { bruitBloc(1400, 620, 0.09, 'square', 0.05); bruitBloc(900, 380, 0.14, 'triangle', 0.04); };
 
 // Messages non lus. La bulle passe et disparaît ; s'il regardait ailleurs,
 // l'enfant ne saura jamais qu'on lui a écrit. La pastille, elle, reste.
@@ -3267,6 +3275,7 @@ window.__fx = effects;
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__vueCarte = () => overviewView;
+window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
@@ -3283,7 +3292,14 @@ function frame(now) {
     player.update(dt);
     creatureManager.update(dt);
     animalManager.update(dt);
-    for (const npc of npcs) npc.update(dt);
+    // Les personnages lointains — la garnison du château, les astronautes de
+    // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur
+    // collision forcerait à garder en mémoire des chunks à l'autre bout de la
+    // carte.
+    for (const npc of npcs) {
+      if (npc.pos.distanceToSquared(player.pos) < 140 * 140) npc.update(dt);
+    }
+    siege?.update(dt);
   } else {
     player.syncCamera();
   }

@@ -268,8 +268,10 @@ function buildCastle(set) {
     set(cx, h + 4, cz, BLOCK.LOG);
     set(cx, h + 5, cz, BLOCK.WOOL_BLUE); // l'oriflamme
   };
-  for (const cx of [-R_MUR, R_MUR]) for (const cz of [-R_MUR, R_MUR]) tour(cx, cz, 13);
-  tour(-5, -R_MUR, 11); tour(5, -R_MUR, 11); // les deux tours du châtelet
+  // Une tour à chaque coin, plus hautes que la courtine pour qu'on les voie de
+  // loin et que la garnison ait de quoi surveiller la campagne.
+  for (const cx of [-R_MUR, R_MUR]) for (const cz of [-R_MUR, R_MUR]) tour(cx, cz, 16);
+  tour(-5, -R_MUR, 12); tour(5, -R_MUR, 12); // les deux tours du châtelet
 
   // --- le donjon ----------------------------------------------------------
   // Carré, massif, avec un vrai intérieur : escalier, étage et chemin de
