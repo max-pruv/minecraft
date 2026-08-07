@@ -506,6 +506,38 @@ export class Identity {
     return first.name;
   }
 
+  // Un prénom qui change ne doit pas laisser le visage derrière lui.
+  //
+  // Sans cela, changer de prénom coupe l'enfant en deux : le jeu l'appelle par
+  // son nouveau prénom et sauvegarde sa partie dessous, tandis que ses
+  // empreintes dorment sous l'ancien. Au « Reconnais-moi » suivant, le
+  // scanner le salue sous son ancien nom — et lui ouvre l'ancien compte, vide.
+  //
+  // On emporte donc les empreintes et le code, puis on vide l'ancien compte :
+  // deux comptes pour un même visage, c'est le hasard des empreintes qui
+  // décide lequel gagne.
+  async rename(ancien, nouveau) {
+    if (!ancien || !nouveau || ancien === nouveau) return false;
+    const src = this.entry(ancien);
+    if (!src.faces.length && !src.pinHash) return false;
+    const cible = this.local[nouveau] || (this.local[nouveau] = {});
+    // les empreintes du compte d'arrivée en dernier : ce sont les plus
+    // récentes, et ce sont elles que la fenêtre glissante doit garder
+    cible.faces = [...src.faces, ...(cible.faces || [])].slice(-KEEP_SIGNATURES);
+    cible.pinHash = cible.pinHash || src.pinHash;
+    if (!cible.look && this.local[ancien] && this.local[ancien].look) {
+      cible.look = this.local[ancien].look;
+    }
+    delete this.local[ancien];
+    this.saveLocal();
+    await this.pushToCloud(nouveau);
+    try {
+      await this.cloud.identityPush(ancien, { faces: [], pinHash: null });
+      delete this.remote[ancien];
+    } catch { /* hors-ligne : l'ancien compte reste, sans conséquence locale */ }
+    return true;
+  }
+
   // Keeps the signature fresh as a child grows, using the photo already taken
   // for the successful match — the child is never asked to re-enrol.
   learn(name, sig) {
@@ -848,6 +880,30 @@ export class Identity {
       setTimeout(() => this.enrollPin(name, onDone), 1800);
       return;
     }
+    // Ce visage appartient-il déjà à quelqu'un ?
+    //
+    // Un même enfant sous deux prénoms, et c'est le hasard des empreintes qui
+    // décide lequel le jeu salue au « Reconnais-moi » — celui qui en a le plus,
+    // ou la mieux réussie, l'emporte. Le doublon ne se voit pas au moment où
+    // il se crée : il se paie des jours plus tard, quand le jeu appelle
+    // l'enfant par un prénom qu'il n'utilise plus et lui ouvre un compte vide.
+    // Alors on pose la question tout de suite, tant qu'elle est simple.
+    const autres = this.candidates().filter((n) => n !== name);
+    const connu = autres.length ? sigs.map((s) => this.match(s, autres)).find(Boolean) : null;
+    if (connu) {
+      const choix = await new Promise((resolve) => {
+        this.show('😊 Je te reconnais !', `Ce visage, c'est déjà celui de ${connu}. C'est bien toi ?`);
+        this.button(`✅ Oui — je m'appelle ${name} maintenant`, 'id-primary', () => resolve('fusion'));
+        this.button('🙅 Non, on est deux personnes', 'id-secondary', () => resolve('separe'));
+      });
+      if (choix === 'fusion') {
+        this.say('🧳 Je rassemble tes affaires…', 'busy');
+        await this.rename(connu, name);
+        try { await this.onRenamed?.(connu, name); } catch { /* la partie suit quand même */ }
+      }
+      this.el.stage.style.display = 'block';
+    }
+
     const e = this.local[name] || (this.local[name] = {});
     // On complète au lieu de remplacer : si les nouvelles photos sont ratées
     // (contre-jour, grimace), les anciennes le reconnaissent encore. La
@@ -901,16 +957,21 @@ export class Identity {
   // Proves a specific child is really the one sitting there. Used when a
   // secured profile is picked on a device that hasn't seen them for a while;
   // a trusted device skips this entirely for 30 days.
+  // `strict` : ici on ne cherche pas « qui es-tu ? » mais « es-tu bien lui ? ».
+  // Sans ça, la reconnaissance comparait au passage tous les comptes connus,
+  // et le frère reconnu à la place de la sœur ouvrait quand même la porte —
+  // de quoi changer le code secret de quelqu'un d'autre.
   async verify(name, { onOk, onCancel } = {}) {
     if (this.guardLocked()) return;
     // a child who only set a code shouldn't have the camera opened at them
     if (!this.entry(name).faces.length) {
-      this.pinLogin([name], () => onOk?.());
+      this.pinLogin([name], () => onOk?.(), true);
       return;
     }
     await this.recognize([name], {
-      onMatch: () => onOk?.(),
+      onMatch: (who) => { if (who === name) onOk?.(); else onCancel?.(); },
       onCancel,
+      strict: true,
       title: `👋 C'est bien toi, ${name} ?`,
     });
   }
@@ -991,8 +1052,8 @@ export class Identity {
 
   // "Reconnais-moi !" from the who-screen: look at the camera, get switched
   // to your own profile. Falls back to the code, then to tapping a card.
-  async recognize(names, { onMatch, onCancel, title } = {}) {
-    if (this.guardLocked(() => this.recognize(names, { onMatch, onCancel, title }))) return;
+  async recognize(names, { onMatch, onCancel, title, strict = false } = {}) {
+    if (this.guardLocked(() => this.recognize(names, { onMatch, onCancel, title, strict }))) return;
     this.show(title || '📸 Regarde la caméra !', 'Je cherche qui tu es…');
     this.el.stage.style.display = 'block';
     this.el.stage.className = 'scan';
@@ -1000,7 +1061,11 @@ export class Identity {
     // toujours les comptes du cloud. Sans ça, un appareil neuf — qui n'a plus
     // aucun profil local — cherchait dans une liste vide : ni le visage ni le
     // code ne pouvaient aboutir, et chaque essai comptait vers le verrouillage.
-    this.button('🔢 Utiliser mon code', 'id-secondary', () => this.pinLogin(this.candidates(names), onMatch));
+    // Sauf en mode strict, où la question n'est plus « qui es-tu ? » mais
+    // « es-tu bien celui-là ? » : élargir reviendrait à laisser le frère
+    // valider à la place de la sœur.
+    const pinPool = () => (strict ? names : this.candidates(names));
+    this.button('🔢 Utiliser mon code', 'id-secondary', () => this.pinLogin(pinPool(), onMatch, strict));
     this.button('Annuler', 'id-secondary', () => { this.hide(); onCancel?.(); });
 
     await this.syncFromCloud(); // signatures et codes des autres appareils
@@ -1009,7 +1074,7 @@ export class Identity {
       this._stream = await this.openCamera(this.el.video);
     } catch {
       this.say("Pas d'accès à la caméra 😕", 'err');
-      setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1500);
+      setTimeout(() => this.pinLogin(pinPool(), onMatch, strict), 1500);
       return;
     }
     try {
@@ -1018,11 +1083,11 @@ export class Identity {
     } catch {
       this.setLoad(null);
       this.say('Scanner indisponible.', 'err');
-      setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1500);
+      setTimeout(() => this.pinLogin(pinPool(), onMatch, strict), 1500);
       return;
     }
     await this.syncFromCloud();
-    const pool = this.candidates(names);
+    const pool = strict ? names.filter((n) => this.isEnrolled(n)) : this.candidates(names);
 
     let firstPass = true;
     const deadline = Date.now() + 40000;
@@ -1039,7 +1104,7 @@ export class Identity {
         this._stream = null;
         this.busy(false);
         this.say('Mon scanner est en panne ici 😕 — ton code secret !', 'err');
-        setTimeout(() => this.pinLogin(this.candidates(names), onMatch), 1400);
+        setTimeout(() => this.pinLogin(pinPool(), onMatch, strict), 1400);
         return;
       }
       firstPass = false;
@@ -1068,13 +1133,13 @@ export class Identity {
     this.say(pool.length
       ? "Je ne te reconnais pas 🤔 — essaie ton code secret."
       : "Je n'ai encore aucun compte à reconnaître — tape ton code 🔢", 'err');
-    setTimeout(() => this.pinLogin(pool, onMatch), 1600);
+    setTimeout(() => this.pinLogin(strict ? names : pool, onMatch, strict), 1600);
   }
 
-  pinLogin(names, onMatch) {
+  pinLogin(names, onMatch, strict = false) {
     this.stopCamera(this._stream);
     this._stream = null;
-    if (this.guardLocked(() => this.pinLogin(names, onMatch))) return;
+    if (this.guardLocked(() => this.pinLogin(names, onMatch, strict))) return;
     this.show('🔢 Ton code secret', 'Tape tes 6 chiffres.');
     // Le cloud peut ne pas avoir encore été lu (appareil neuf, réseau lent) :
     // on le relit ici, sinon un code parfaitement valide serait refusé faute
@@ -1082,7 +1147,7 @@ export class Identity {
     const ready = this.syncFromCloud().catch(() => {});
     this.askPin(async (value) => {
       await ready;
-      const who = await this.whoHasPin(value, this.candidates(names));
+      const who = await this.whoHasPin(value, strict ? names : this.candidates(names));
       if (who) {
         this.registerSuccess(who);
         this.say(`🎉 Bonjour ${who} !`, 'ok');
@@ -1095,6 +1160,20 @@ export class Identity {
         this.say(`Ce code ne marche pas 🤔 (encore ${left} essai${left > 1 ? 's' : ''})`, 'err');
       }
     });
+    // En mode strict la porte est étroite — un seul compte accepté. Si son
+    // visage a mal été enregistré et qu'il n'a pas mis de code, l'enfant
+    // n'aurait plus aucun moyen de toucher à son propre compte : un parent
+    // peut alors ouvrir.
+    if (strict) {
+      this.button('Demander à un parent', 'id-secondary', () => {
+        const code = window.prompt('Un parent doit taper son code :');
+        if (code === null) return;
+        if (code !== PARENT_CODE) { window.alert('Code incorrect !'); return; }
+        this.clearLock();
+        this.hide();
+        onMatch?.(names[0]);
+      });
+    }
     this.button('Annuler', 'id-secondary', () => this.hide());
   }
 
