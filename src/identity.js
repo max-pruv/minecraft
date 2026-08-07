@@ -192,6 +192,20 @@ const CONSEILS = [
   [22, '🙂 Reste bien immobile deux secondes'],
 ];
 
+// Trois clichés pris coup sur coup se ressemblent comme deux gouttes d'eau,
+// et une empreinte apprise sur une seule pose ne reconnaît plus l'enfant dès
+// qu'il penche la tête. On demande donc explicitement trois angles — et on
+// vérifie que la photo a bien changé, plutôt que de se contenter de le
+// demander poliment.
+const POSES = [
+  { avant: 'regarde bien en face 🙂', apres: 'Super ! Tourne un peu la tête à gauche ⬅️' },
+  { avant: 'la tête un peu tournée à gauche ⬅️', apres: 'Parfait ! Et maintenant à droite ➡️' },
+  { avant: 'et maintenant un peu à droite ➡️', apres: null },
+];
+const POSE_MIN_DIST = 0.12; // en dessous, c'est deux fois la même photo
+const POSE_MAX_REJETS = 5;  // après quoi on accepte : mieux vaut ça que bloquer
+const POSE_PAUSE_MS = 1800; // le temps de bouger, sans que l'attente pèse
+
 function conseil(secondes) {
   let txt = CONSEILS[0][1];
   for (const [t, m] of CONSEILS) if (secondes >= t) txt = m;
@@ -883,16 +897,22 @@ export class Identity {
     let look = null;
     let first = true;
     const debut = Date.now();
-    const deadline = debut + 60000;
+    // Trois poses différentes prennent plus de temps qu'une rafale : le délai
+    // suit, sinon on abandonnerait un enfant en plein milieu.
+    const deadline = debut + 90000;
     // les secondes ne comptent que depuis la dernière photo réussie : après un
     // cliché, on repart des conseils simples plutôt que de continuer à
     // haranguer un enfant qui s'en sort très bien
     let depuisCliche = debut;
     this.el.stage.className = 'scan';
+    let rejets = 0;
     while (sigs.length < 3 && Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
-      this.say(`Cliché ${sigs.length + 1}/3 — ${conseil((Date.now() - depuisCliche) / 1000)}`,
-        first ? 'busy' : '');
+      const pose = POSES[sigs.length];
+      const attendu = (Date.now() - depuisCliche) / 1000 > 5
+        ? conseil((Date.now() - depuisCliche) / 1000)
+        : pose.avant;
+      this.say(`Cliché ${sigs.length + 1}/3 — ${attendu}`, first ? 'busy' : '');
       this.busy(true); // une analyse dure : montrer que ça tourne
       let shot = null;
       try {
@@ -903,12 +923,28 @@ export class Identity {
       first = false;
       this.busy(false);
       if (shot) {
+        // Trop proche d'un cliché déjà pris : la pose n'a pas changé, on
+        // redemande. Borné, pour qu'un enfant qui bouge peu ne reste pas
+        // coincé devant sa caméra.
+        const deja = sigs.length && Math.min(...sigs.map((f) => distance(shot.sig, f)));
+        if (sigs.length && deja < POSE_MIN_DIST && rejets < POSE_MAX_REJETS) {
+          rejets++;
+          this.say('🙂 Tourne un peu plus la tête — c\'est la même photo !');
+          await new Promise((r) => setTimeout(r, 900));
+          continue;
+        }
         sigs.push(shot.sig);
         if (!look) look = this.sampleLook(this.el.video, shot.res); // for the avatar
         this.el.shots.children[sigs.length - 1].classList.add('on');
         depuisCliche = Date.now();
-        this.say(`📸 Cliché ${sigs.length}/3 pris !`, 'ok');
-        await new Promise((r) => setTimeout(r, 700)); // slight pose change
+        rejets = 0;
+        this.el.stage.className = 'ok';
+        this.say(pose.apres || `📸 Cliché ${sigs.length}/3 pris !`, 'ok');
+        // La pause laisse le temps de changer d'angle : à sept cents
+        // millisecondes, les trois photos se prenaient avant même que
+        // l'enfant ait fini de lire la consigne.
+        await new Promise((r) => setTimeout(r, POSE_PAUSE_MS));
+        this.el.stage.className = 'scan';
       } else {
         this.say('🔍 Je ne vois pas encore ton visage — approche-toi un peu !');
         await new Promise((r) => setTimeout(r, 250));
