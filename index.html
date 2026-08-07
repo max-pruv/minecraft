@@ -1191,6 +1191,22 @@
           for (const k of await caches.keys()) await caches.delete(k);
         } catch { /* pas de cache */ }
         if (testMode) { window.__migrated = true; return; } // le test observe sans partir
+        // Icône installée sur l'écran d'accueil : rediriger la ferait sortir
+        // de l'application, et l'icône continuerait de pointer sur l'ancienne
+        // adresse à chaque ouverture. On demande donc d'installer la nouvelle.
+        const installee = window.navigator.standalone
+          || window.matchMedia('(display-mode: standalone)').matches;
+        if (installee) {
+          overlay.innerHTML = '<div style="font-size:56px">📲</div>'
+            + '<b>Le jeu a une nouvelle adresse !</b>'
+            + '<div style="opacity:.85;max-width:460px">Tes affaires sont bien sauvegardées ☁️<br>'
+            + 'Demande à un parent de remplacer l\'icône :</div>'
+            + '<div style="font-size:15px;background:rgba(255,255,255,.1);padding:10px 14px;'
+            + 'border-radius:10px;word-break:break-all">minecraft-fam.vercel.app</div>'
+            + '<div style="opacity:.7;font-size:15px;max-width:460px">Ouvre cette adresse dans Safari, '
+            + 'puis « Partager » → « Sur l\'écran d\'accueil ».</div>';
+          return;
+        }
         location.replace(TARGET + '?from=github');
       };
 
