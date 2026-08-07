@@ -430,7 +430,93 @@ export class Identity {
     return this._canvas;
   }
 
+  // --- scanner en fil séparé -------------------------------------------------
+  // Le calcul du réseau dure plusieurs centaines de millisecondes et la boucle
+  // de reconnaissance en lance un toutes les 200 ms : sur le fil principal,
+  // l'écran « Qui joue ? » saccadait en permanence. On tente donc le fil
+  // séparé, et on retombe définitivement sur le calcul direct au premier
+  // ennui — certains navigateurs n'y donnent pas accès au processeur
+  // graphique, et il n'est pas question de perdre la connexion des enfants
+  // pour un gain de confort.
+  worker() {
+    if (this._worker !== undefined) return this._worker;
+    this._worker = null;
+    try {
+      const w = new Worker(new URL('./face-worker.js', import.meta.url));
+      this._workerAttente = new Map();
+      this._workerId = 0;
+      w.onmessage = (e) => {
+        const attente = this._workerAttente.get(e.data.id);
+        if (!attente) return;
+        this._workerAttente.delete(e.data.id);
+        if (e.data.type === 'erreur') attente.rej(new Error(e.data.message));
+        else attente.res(e.data.res !== undefined ? e.data.res : null);
+      };
+      w.onerror = () => this.abandonnerWorker();
+      this._worker = w;
+    } catch { this._worker = null; }
+    return this._worker;
+  }
+
+  abandonnerWorker() {
+    const w = this._worker;
+    this._worker = null;
+    try { w?.terminate(); } catch { /* déjà mort */ }
+    for (const attente of this._workerAttente?.values() || []) attente.rej(new Error('fil abandonné'));
+    this._workerAttente?.clear();
+  }
+
+  // Renvoie le résultat du fil séparé, ou undefined s'il faut se rabattre sur
+  // le calcul direct. Ne lève jamais : un scanner qui tombe en panne dans le
+  // fil ne doit pas ressembler à un scanner en panne tout court.
+  async detectDansLeFil(input) {
+    const w = this.worker();
+    if (!w) return undefined;
+    try {
+      const ctx = input.getContext('2d', { willReadFrequently: true });
+      const image = ctx.getImageData(0, 0, input.width, input.height);
+      const id = ++this._workerId;
+      const pixels = image.data.buffer.slice(0); // copie : le tampon est transféré
+      const reponse = new Promise((res, rej) => {
+        this._workerAttente.set(id, { res, rej });
+        w.postMessage({
+          // absolue : dans le fil, une adresse relative se résoudrait par
+          // rapport à /src/ et non à la racine du site
+          id, type: 'detect', modelUrl: new URL(MODEL_URL, location.href).href,
+          largeur: image.width, hauteur: image.height, pixels,
+          taille: DETECT_SIZE, seuil: 0.4,
+        }, [pixels]);
+      });
+      // Le tout premier appel charge les modèles dans le fil : il a droit à
+      // beaucoup plus de temps que les suivants.
+      const delai = this._workerChaud ? 12000 : 45000;
+      const res = await Promise.race([
+        reponse,
+        new Promise((_, rej) => setTimeout(() => rej(new Error('fil trop lent')), delai)),
+      ]);
+      this._workerChaud = true;
+      return res;
+    } catch {
+      this.abandonnerWorker();
+      return undefined; // repli définitif sur le fil principal
+    }
+  }
+
   async detect(video) {
+    const image = this.frame(video);
+    if (!image) return null;
+    const viaFil = await this.detectDansLeFil(image);
+    if (viaFil !== undefined) {
+      if (!viaFil) return null;
+      return {
+        sig: viaFil.descriptor.map((v) => Math.round(v * 10000) / 10000),
+        res: viaFil,
+      };
+    }
+    return this.detectSurLeFilPrincipal(video);
+  }
+
+  async detectSurLeFilPrincipal(video) {
     const f = await loadFaceApi();
     // On iOS Safari the GPU backend's first inference can hang forever (the
     // original iPad "presque prêt" freeze — removing the warm-up only moved

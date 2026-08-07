@@ -4,10 +4,11 @@ import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, CITY_BLOCK } from './blocks.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
-import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
+import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
+import { createSky } from './sky.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -74,6 +75,12 @@ const waterMaterial = new THREE.MeshBasicMaterial({
   depthWrite: false, side: THREE.DoubleSide,
 });
 
+// Les faces du terrain sont fusionnées : une seule d'entre elles peut couvrir
+// seize blocs, ses UV vont donc au-delà de 1 et c'est le shader qui les ramène
+// dans la bonne tuile de l'atlas. L'eau y ajoute son clapot.
+activerTuilage(solidMaterial);
+activerTuilage(waterMaterial, { onde: true });
+
 // --- world & player ----------------------------------------------------------
 
 // L'ancienne sauvegarde ne connaissait qu'un monde : on la reprend avant de
@@ -93,6 +100,7 @@ world.loadEdits();
 
 const player = new Player(camera, world);
 const effects = createEffects({ scene, world, atlasCanvas });
+const sky = createSky({ scene, camera, sunLight });
 const creatureManager = new CreatureManager(scene, world, player);
 const animalManager = new AnimalManager(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
 let marlon = null; // spawned after the spawn point is known
@@ -2948,9 +2956,13 @@ function updateSky(dt) {
   const daylight = THREE.MathUtils.clamp(Math.sin(angle) * 1.6 + 0.5, 0.08, 1);
 
   skyColor.lerpColors(NIGHT_SKY, DAY_SKY, daylight);
-  // warm sunrise/sunset glow around the day/night transitions
-  const horizon = Math.exp(-((daylight - 0.35) ** 2) / (2 * 0.12 * 0.12));
-  skyColor.lerp(SUNSET_SKY, horizon * 0.55);
+  // Lueur chaude du lever et du coucher. Elle se règle sur la hauteur du
+  // soleil, pas sur la luminosité : c'est le même repère que celui du disque
+  // et de son halo, donc le ciel s'embrase exactement quand l'astre rase
+  // l'horizon, au lieu de virer à l'orange pendant que le ciel est encore bleu.
+  const hauteurSoleil = Math.sin(angle);
+  const rasant = Math.exp(-((hauteurSoleil / 0.22) ** 2));
+  skyColor.lerp(SUNSET_SKY, rasant * 0.72);
   if (weather === 'rain') skyColor.multiplyScalar(0.62); // grey rainy skies
   scene.background.copy(skyColor);
   scene.fog.color.copy(skyColor);
@@ -2962,7 +2974,16 @@ function updateSky(dt) {
   waterMaterial.color.copy(lightColor);
   hemiLight.intensity = (0.3 + 0.8 * daylight) * wDim;
   sunLight.intensity = 0.15 + 0.75 * daylight * wDim;
+
+  // le soleil, la lune et les étoiles suivent le même cycle
+  sky.update(angle, daylight, camera.position);
+
+  // L'eau avance sur son propre compteur : dayTime revient à zéro toutes les
+  // dix minutes, ce qui ferait sauter les vagues d'un coup.
+  tempsEau += dt;
+  waterMaterial.userData.temps.value = tempsEau;
 }
+let tempsEau = 0;
 const SUNSET_SKY = new THREE.Color(0xff8a4a);
 
 // --- living sky: weather, drifting clouds, birds and the occasional plane ---------
@@ -3203,12 +3224,19 @@ const fun = initFun({
 window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
 window.__admin = admin;
 window.__fx = effects;
+// permet aux captures automatisées de figer l'heure du jour
+window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
+window.__eau = () => waterMaterial.userData.temps.value;
 window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
 function frame(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  // L'horodatage fourni par requestAnimationFrame est celui du DÉBUT de la
+  // frame, qui peut précéder le moment où lastTime a été posé : le tout premier
+  // dt ressortait négatif, et repartait à l'envers dans la physique, les
+  // animaux et le compteur de temps de jeu. Le plancher à zéro le neutralise.
+  const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
   lastTime = now;
 
   if (running) {
