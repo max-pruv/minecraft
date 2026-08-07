@@ -198,9 +198,19 @@ function conseil(secondes) {
   return txt;
 }
 
+const SIG_LEN = 128; // taille d'une empreinte produite par le réseau
+
+// Une empreinte tronquée ou abîmée doit être écartée, pas comparée. Sans ce
+// garde, la boucle ne parcourait que la longueur du premier vecteur : une
+// entrée de deux nombres donnait une distance minuscule, donc une
+// reconnaissance certaine — et c'est le pire échec possible ici, ouvrir le
+// compte de quelqu'un d'autre.
+const validSig = (v) => Array.isArray(v) && v.length === SIG_LEN;
+
 function distance(a, b) {
+  if (!validSig(a) || !validSig(b)) return Infinity;
   let sum = 0;
-  for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; sum += d * d; }
+  for (let i = 0; i < SIG_LEN; i++) { const d = a[i] - b[i]; sum += d * d; }
   return Math.sqrt(sum);
 }
 
@@ -509,9 +519,10 @@ export class Identity {
   match(sig, names) {
     const scored = [];
     for (const name of names) {
-      const faces = this.entry(name).faces;
+      const faces = this.entry(name).faces.filter(validSig);
       if (!faces.length) continue;
       const best = Math.min(...faces.map((f) => distance(sig, f)));
+      if (!isFinite(best)) continue;
       scored.push({ name, d: best });
     }
     if (!scored.length) return null;
