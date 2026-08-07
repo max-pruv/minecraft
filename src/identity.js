@@ -228,7 +228,9 @@ function distance(a, b) {
   return Math.sqrt(sum);
 }
 
-async function hashPin(name, pin) {
+// Exporté pour l'espace parent : un code défini depuis là doit être haché
+// exactement comme celui que l'enfant choisit, sinon il ne marcherait pas.
+export async function hashPin(name, pin) {
   const data = new TextEncoder().encode(`web-minecraft:${name}:${pin}`);
   const buf = await crypto.subtle.digest('SHA-256', data);
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');

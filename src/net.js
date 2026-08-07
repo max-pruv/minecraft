@@ -267,7 +267,8 @@ export class NetSession {
     if (this.isHost) { // tell the other guests this player is gone
       for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
     }
-    this.hooks.toast(`👋 ${c.name} est parti·e`, 0xcccccc);
+    if (this.onLeave) this.onLeave(c.name);
+    else this.hooks.toast(`👋 ${c.name} est parti·e`, 0xcccccc);
     this.state(this.statusText());
     const call = this.calls.get(id);
     if (call) { call.close(); this.calls.delete(id); }
@@ -314,11 +315,14 @@ export class NetSession {
         entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;
         entry.look = msg.look && typeof msg.look === 'object' ? msg.look : null;
-        this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
+        // La page décide comment l'annoncer : une arrivée dans un monde
+        // partagé mérite mieux qu'un message qui passe en trois secondes.
+        if (this.onJoin) this.onJoin(entry.name);
+        else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
-        if (this.micOn) this.callPeer(conn.peer);      // start voice with newcomers
-        if (this.camOn) this.videoCallPeer(conn.peer); // and video too
+        // un seul appel : il porte l'image ET le son
+        if (this.camOn) this.videoCallPeer(conn.peer);
         break;
       }
       case 'duplicate':
@@ -330,6 +334,10 @@ export class NetSession {
         break;
       case 'duel': // friendly creature show-off between two players
         if (this.onDuel) this.onDuel(msg);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
+      case 'annonce': // une phrase de jeu qui passe et s'efface, pas un message
+        if (this.onAnnonce) this.onAnnonce(String(msg.txt || '').slice(0, 120));
         if (this.isHost) this.relay(conn.peer, msg);
         break;
       case 'emote': // a dance/wave played on the sender's avatar
@@ -421,25 +429,18 @@ export class NetSession {
 
   // ---- voice chat -----------------------------------------------------------
 
+  // Le micro n'a plus de flux à lui : c'est la piste audio de la caméra qu'on
+  // rend muette. Il n'y a plus de bouton dédié dans le jeu, mais couper le son
+  // sans couper l'image reste utile — et le reste du code peut le demander.
   async toggleMic() {
-    if (!this.micOn) {
-      if (!this.localStream) {
-        try {
-          this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch {
-          this.hooks.toast('🎤 Micro refusé — autorise-le dans les réglages Safari', 0xff9d5e);
-          return false;
-        }
-      }
-      this.localStream.getAudioTracks().forEach((t) => { t.enabled = true; });
-      this.micOn = true;
-      for (const id of this.conns.keys()) this.callPeer(id);
-      this.hooks.toast('🎤 Micro activé — parlez-vous !', 0x6ee06e);
-    } else {
-      this.localStream.getAudioTracks().forEach((t) => { t.enabled = false; });
-      this.micOn = false;
-      this.hooks.toast('🔇 Micro coupé', 0xcccccc);
+    const pistes = this.videoStream ? this.videoStream.getAudioTracks() : [];
+    if (!pistes.length) {
+      this.hooks.toast('🎤 Allume la caméra : elle porte aussi le son', 0xff9d5e);
+      return false;
     }
+    this.micOn = !this.micOn;
+    pistes.forEach((t) => { t.enabled = this.micOn; });
+    this.hooks.toast(this.micOn ? '🎤 Micro activé — parlez-vous !' : '🔇 Micro coupé', this.micOn ? 0x6ee06e : 0xcccccc);
     return this.micOn;
   }
 
@@ -456,28 +457,44 @@ export class NetSession {
   async toggleCam() {
     if (!this.camOn) {
       if (!this.videoStream) {
+        // UN SEUL getUserMedia pour l'image ET le son.
+        //
+        // Le micro était demandé dans un second appel, juste après la caméra.
+        // Sur iOS, cette deuxième demande interrompt la capture en cours :
+        // l'image partait, la voix non — exactement le symptôme constaté.
+        // Un flux unique règle le problème, et il n'y a plus qu'un seul appel
+        // à établir entre deux joueurs au lieu de deux.
+        const VIDEO = { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } };
         try {
-          this.videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } },
-          });
+          this.videoStream = await navigator.mediaDevices.getUserMedia({ video: VIDEO, audio: true });
         } catch {
-          this.hooks.toast('📷 Caméra refusée — autorise-la dans les réglages Safari', 0xff9d5e);
-          return false;
+          // Micro refusé mais caméra acceptée : se voir sans s'entendre vaut
+          // mieux que rien du tout.
+          try {
+            this.videoStream = await navigator.mediaDevices.getUserMedia({ video: VIDEO });
+          } catch {
+            this.hooks.toast('📷 Caméra refusée — autorise-la dans les réglages Safari', 0xff9d5e);
+            return false;
+          }
         }
       }
-      this.videoStream.getVideoTracks().forEach((t) => { t.enabled = true; });
+      this.videoStream.getTracks().forEach((t) => { t.enabled = true; });
+      this.micOn = this.videoStream.getAudioTracks().length > 0;
       this.camOn = true;
       for (const id of this.conns.keys()) this.videoCallPeer(id);
-      this.hooks.toast('🎥 Caméra activée — coucou !', 0x6ee06e);
+      this.hooks.toast(this.micOn
+        ? '🎥 Caméra et micro activés — coucou !'
+        : '🎥 Caméra activée (sans micro)', 0x6ee06e);
     } else {
       this.camOn = false;
+      this.micOn = false;
       for (const call of this.videoCalls.values()) call.close();
       this.videoCalls.clear();
       if (this.videoStream) {
         this.videoStream.getTracks().forEach((t) => t.stop());
         this.videoStream = null;
       }
-      this.hooks.toast('📷 Caméra coupée', 0xcccccc);
+      this.hooks.toast('📷 Caméra et micro coupés', 0xcccccc);
     }
     return this.camOn;
   }
