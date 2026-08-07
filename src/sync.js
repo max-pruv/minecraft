@@ -284,6 +284,13 @@ export class ProfileSync {
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
+    // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
+    // stockage de l'appareil. Sans prévenir la partie en cours, les blocs et
+    // la position qu'on vient de descendre ne vivent que dans le stockage —
+    // et la première sauvegarde du monde, encore périmé en mémoire, les
+    // écrase. C'est ainsi qu'une construction faite sur un autre appareil
+    // pouvait disparaître.
+    if (changed && this.onMerged) this.onMerged(state);
     return { changed, state };
   }
 
