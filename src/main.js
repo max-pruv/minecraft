@@ -12,6 +12,7 @@ import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
+import { AdminPanel, isAdminName } from './admin.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
@@ -955,6 +956,14 @@ function saveProfile() {
     saveRegistry(reg);
     renderProfiles();
   }
+  refreshAdminBtn();
+}
+
+// Déclarée à part et sans dépendance : saveProfile peut l'appeler avant que
+// le panneau parent n'existe.
+function refreshAdminBtn() {
+  const b = document.getElementById('admin-btn');
+  if (b) b.style.display = isAdminName(playerProfile.name) ? 'flex' : 'none';
 }
 
 // --- local profiles ("Qui joue ?") -------------------------------------------------
@@ -2082,6 +2091,16 @@ const profileMenu = document.getElementById('profile-menu');
     }
   } catch { /* l'accueil s'affiche très bien sans */ }
 })();
+
+// Espace parent : le bouton n'existe que pour un compte, et l'ouvrir demande
+// encore le code parent. Rien ici n'est un vrai rempart — la clé du cloud est
+// publique par nature — mais un enfant qui trouve l'iPad ouvert ne tombe pas
+// dessus par hasard.
+const admin = new AdminPanel(cloud, identity, () => playerProfile.name);
+const adminBtn = document.getElementById('admin-btn');
+
+adminBtn.addEventListener('click', () => admin.open());
+refreshAdminBtn();
 
 const refaceHint = document.getElementById('reface-hint');
 function refreshSecurityRow() {
