@@ -20,7 +20,12 @@ const CSS = `
   -webkit-font-smoothing: antialiased;
 }
 #adm-overlay.on { display: block; }
-#adm-wrap { max-width: 1040px; margin: 0 auto; padding: 18px 16px 40px; }
+/* Sur un iPhone, l'heure et la batterie flottent au-dessus de la page :
+   sans cette marge, le titre et les boutons passaient dessous. */
+#adm-wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding: calc(18px + var(--safe-top, 0px)) 16px calc(40px + var(--safe-bottom, 0px));
+}
 #adm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 #adm-head h2 { font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -.2px; }
 #adm-head .grow { flex: 1; }
@@ -55,6 +60,9 @@ table.adm tr:hover td { background: #11161d; }
 .adm-live.pause { color: #d0b070; }
 .adm-live.pause .adm-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210,153,34,.16); }
 .adm-dim { color: #8b949e; }
+/* En-têtes de colonne repris dans chaque fiche : sur téléphone, les colonnes
+   disparaissent et « 0 s / 0 s au total » ne dirait plus de quoi il parle. */
+.adm-lbl { display: none; }
 .adm-tag {
   display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px;
   border: 1px solid #30363d; background: #161b22; margin-right: 4px; white-space: nowrap;
@@ -64,9 +72,25 @@ table.adm tr:hover td { background: #11161d; }
 .adm-note { color: #8b949e; font-size: 12px; margin-top: 20px; line-height: 1.6; }
 #adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 8px 0 0; }
 #adm-msg.err { color: #ff9d95; }
+/* Sur un téléphone, six colonnes dans 390 px donnent des mots coupés en
+   trois. Chaque joueur devient une fiche empilée : la même information, lue
+   de haut en bas au lieu d'être compressée de gauche à droite. */
 @media (max-width: 620px) {
-  table.adm th:nth-child(4), table.adm td:nth-child(4) { display: none; }
-  #adm-wrap { padding: 14px 10px 32px; }
+  #adm-wrap { padding: calc(14px + var(--safe-top, 0px)) 12px calc(32px + var(--safe-bottom, 0px)); }
+  table.adm thead { display: none; }
+  table.adm, table.adm tbody, table.adm tr, table.adm td { display: block; width: 100%; }
+  table.adm tr { border-top: 1px solid #21262d; padding: 12px 0 14px; }
+  table.adm tr:hover td { background: transparent; }
+  table.adm td { border: 0; padding: 3px 0; }
+  table.adm td { padding: 6px 0 0; }
+  table.adm td:nth-child(1) { font-size: 15px; margin-bottom: 3px; padding-top: 0; }
+  table.adm td:last-child { margin-top: 9px; }
+  .adm-lbl {
+    display: block; color: #6e7681; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1px;
+  }
+  table.adm td:last-child .adm-btn { width: 100%; padding: 9px 12px; }
+  .adm-cards { grid-template-columns: repeat(2, 1fr); }
 }
 `;
 
@@ -131,6 +155,19 @@ function depuis(iso) {
 }
 
 const recent = (...dates) => dates.filter(Boolean).sort().pop() || null;
+
+// Le taux de réussite se calcule sur des réponses, pas sur du temps.
+//
+// `quiz` compte les SECONDES passées en quiz, pas les questions posées :
+// diviser les bonnes réponses par ce nombre-là donnait des « 11 % justes »
+// aussi alarmants qu'imaginaires : 208 bonnes réponses sur 246 questions,
+// c'est 85 %.
+function reponses(l) {
+  const total = l.justes + l.faux;
+  const temps = l.quiz > 5 ? ` · ${duree(l.quiz)} de quiz` : '';
+  if (!total) return `aucune question${temps}`;
+  return `${total} question${total > 1 ? 's' : ''} · ${Math.round((l.justes / total) * 100)} % justes${temps}`;
+}
 
 // « En ce moment » : connecté ou non, et si oui, où. Un enfant sur l'écran
 // d'accueil est connecté sans jouer — la nuance compte quand on se demande
@@ -237,7 +274,7 @@ export class AdminPanel {
         par.set(nom, {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
-          quiz: 0, justes: 0, appareils: new Set(), live: null, majPrefs: null,
+          quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
         });
       }
       return par.get(nom);
@@ -278,8 +315,9 @@ export class AdminPanel {
       e.majTemps = recent(e.majTemps, r.updated_at);
       e.total += r.play || 0;
       if (r.day === aujourd) e.aujourdhui += r.play || 0;
-      e.quiz += r.quiz || 0;
-      e.justes += r.correct || 0;
+      e.quiz += r.quiz || 0;      // secondes passées en quiz
+      e.justes += r.correct || 0; // bonnes réponses
+      e.faux += r.wrong || 0;
       if (r.device_id) e.appareils.add(r.device_id);
     }
 
@@ -323,10 +361,10 @@ export class AdminPanel {
       return `<tr>
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
             <div class="adm-dim">${l.dex} créatures · ${l.blocs} blocs</div></td>
-        <td>${presence(l)}</td>
-        <td>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
-        <td>${mondes}</td>
-        <td>${secu}<div class="adm-dim">${l.quiz} quiz · ${l.quiz ? Math.round((l.justes / l.quiz) * 100) : 0} % justes</div></td>
+        <td><span class="adm-lbl">En ce moment</span>${presence(l)}</td>
+        <td><span class="adm-lbl">Aujourd'hui</span>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
+        <td><span class="adm-lbl">Mondes</span>${mondes}</td>
+        <td><span class="adm-lbl">Compte</span>${secu}<div class="adm-dim">${reponses(l)}</div></td>
         <td><button class="adm-btn danger" data-reset="${esc(l.nom)}" ${l.code ? '' : 'disabled'}>Effacer le code</button></td>
       </tr>`;
     }).join('');
