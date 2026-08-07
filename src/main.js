@@ -70,6 +70,18 @@ const waterMaterial = new THREE.MeshBasicMaterial({
 
 // --- world & player ----------------------------------------------------------
 
+// L'ancienne sauvegarde ne connaissait qu'un monde : on la reprend avant de
+// rien charger, en la donnant à la fois au monde local et au dernier monde en
+// ligne visité — c'est la même carte qui servait aux deux.
+(function migrerMondes() {
+  let dernier = null;
+  try {
+    const w = JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]');
+    if (Array.isArray(w) && w.length && w[0] && w[0].code) dernier = String(w[0].code);
+  } catch { /* pas de liste de mondes */ }
+  World.migrate(dernier);
+})();
+
 const world = new World();
 world.loadEdits();
 
@@ -179,6 +191,13 @@ function updateChunks() {
   for (let i = 0; i < MESHES_PER_FRAME && meshQueue.length > 0; i++) {
     const { cx, cz } = meshQueue.pop();
     meshChunk(cx, cz);
+  }
+
+  // Changement de monde : le terrain en mémoire porte encore les blocs de
+  // l'ancien, tous les maillages sont à refaire.
+  if (world.allDirty) {
+    world.allDirty = false;
+    for (const key of chunkMeshes.keys()) world.dirty.add(key);
   }
 
   // Remesh chunks whose blocks changed.
@@ -361,6 +380,7 @@ function pauseGame() {
 }
 
 document.getElementById('play-btn').addEventListener('click', () => {
+  world.switchContext('local');
   posCtx = 'local';
   restorePosition();
   startGame();
@@ -368,8 +388,8 @@ document.getElementById('play-btn').addEventListener('click', () => {
 pauseBtn.addEventListener('click', pauseGame);
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Reset the world? All your block edits will be lost.')) {
-    World.clearSave();
+  if (confirm('Réinitialiser ce monde ? Toutes tes constructions ici seront perdues.')) {
+    world.clearSave(); // ce monde-ci seulement : les autres ne sont pas touchés
     location.reload();
   }
 });
@@ -813,12 +833,12 @@ profileSync.onTrim = (dropped) => {
 // The world in memory is the truth; localStorage only catches up on a
 // debounced save, so a push that read storage alone could ship a copy that
 // is a few seconds behind what the child just built.
-profileSync.liveEdits = () => world.exportEdits();
+profileSync.liveEdits = () => ({ [world.ctx]: world.exportEdits() });
 // A background merge can bring down blocks another device placed. They go
 // straight into the live world so they appear without waiting for a reload.
 profileSync.onMerged = (state) => {
   if (!state || !state.edits) return;
-  const applied = world.mergeEdits(state.edits);
+  const applied = world.mergeEdits(state.edits[world.ctx]);
   if (applied > 0) {
     world.saveEdits();
     creatureManager.toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
@@ -1359,6 +1379,10 @@ function startNetSession(code, isHost) {
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
   });
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
+  // Avant même la première poignée de main : à la connexion, les deux côtés
+  // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
+  // la maison locale de l'hôte qui partait dans le monde partagé.
+  world.switchContext(code.toUpperCase());
   return net.start(code, isHost, { name: myName(), lookIdx: selectedChar, look: playerProfile.look });
 }
 
@@ -1382,10 +1406,12 @@ async function openWorld(code) {
       } catch (err2) {
         onlineStatus.textContent = '❌ ' + err2.message;
         if (net) { net.stop(); net = null; }
+        world.switchContext('local');
         return;
       }
     } else {
       onlineStatus.textContent = '❌ ' + err.message;
+      world.switchContext('local');
       return;
     }
   }
@@ -1499,6 +1525,7 @@ function leaveToMainMenu() {
   setUnread(0); // en quittant le monde, la pastille n'a plus lieu d'être
   world.saveEdits();
   savePosition();
+  world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
   if (document.exitPointerLock) document.exitPointerLock();
@@ -1878,7 +1905,7 @@ async function pullPlayTime() {
   // was built before this pull finished, and its own save-on-unload would
   // otherwise write that older copy straight back over the merged one.
   if (state && state.edits) {
-    const applied = world.mergeEdits(state.edits);
+    const applied = world.mergeEdits((state.edits || {})[world.ctx]);
     if (applied > 0) {
       world.saveEdits();
       creatureManager.toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
