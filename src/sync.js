@@ -139,6 +139,12 @@ export class ProfileSync {
     this.getName = getName;
     this.lastPushed = '';
     this.timer = null;
+    // Tant que le cloud n'a pas été lu au moins une fois, ce que contient
+    // localStorage ne représente PAS l'enfant : sur un appareil neuf, c'est
+    // le vide. Envoyer ce vide remplacerait sa partie par rien. Un enfant a
+    // perdu ses mondes exactement comme ça — le temps que la première lecture
+    // revienne, l'iPad est passé en arrière-plan et a sauvegardé le néant.
+    this.hydrated = false;
     // Set by the game so a push reflects the live world rather than its
     // localStorage projection, which only catches up on a debounced save.
     this.liveEdits = null;   // () => ({ "x,y,z": [id, t] })
@@ -225,6 +231,10 @@ export class ProfileSync {
     if (!name || !this.cloud.configured || !navigator.onLine) return { changed: false };
     let remote = null;
     try { remote = await this.cloud.statePull(name); } catch { return { changed: false }; }
+    // Lecture réussie : on sait désormais ce que le cloud contient, donc ce
+    // qu'on écrira ensuite aura du sens. En cas d'échec on reste sur la
+    // réserve et la boucle réessaiera de lire.
+    this.hydrated = true;
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
@@ -242,6 +252,7 @@ export class ProfileSync {
   async push(keepalive = false) {
     const name = this.getName();
     if (!name || !this.cloud.configured) return;
+    if (!this.hydrated) return; // on n'écrase pas ce qu'on n'a pas encore lu
     let local = this.snapshot();
     if (!keepalive && navigator.onLine) {
       try {
@@ -268,7 +279,12 @@ export class ProfileSync {
 
   start(intervalMs = 45000) {
     clearInterval(this.timer);
-    this.timer = setInterval(() => { this.push().catch(() => {}); }, intervalMs);
+    this.timer = setInterval(() => {
+      // Première lecture ratée (hors-ligne, réseau capricieux) : on réessaie
+      // de lire avant d'écrire, sinon l'appareil resterait muet pour toujours.
+      if (!this.hydrated) this.pull().catch(() => {});
+      else this.push().catch(() => {});
+    }, intervalMs);
     this._onHide = () => {
       if (document.visibilityState === 'hidden') this.push(true).catch(() => {});
     };
