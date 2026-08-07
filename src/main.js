@@ -1472,6 +1472,7 @@ function showOnlineUI() {
     addChatMsg(name, msg, false);
     if (chatPanel.style.display !== 'block') {
       creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
+      setUnread(unread + 1);
     }
   };
   net.onDuplicate = (name) => {
@@ -1495,6 +1496,7 @@ function leaveToMainMenu() {
   playersBtn.style.display = 'none';
   chatBtn.style.display = 'none';
   chatPanel.style.display = 'none';
+  setUnread(0); // en quittant le monde, la pastille n'a plus lieu d'être
   world.saveEdits();
   savePosition();
   profileSync.push().catch(() => {});
@@ -1587,6 +1589,23 @@ const chatBtn = document.getElementById('chat-btn');
 const chatPanel = document.getElementById('chat-panel');
 const chatMsgs = document.getElementById('chat-msgs');
 const chatInput = document.getElementById('chat-input');
+const chatBadge = document.getElementById('chat-badge');
+
+// Messages non lus. La bulle passe et disparaît ; s'il regardait ailleurs,
+// l'enfant ne saura jamais qu'on lui a écrit. La pastille, elle, reste.
+let unread = 0;
+function setUnread(n) {
+  unread = Math.max(0, n);
+  const show = unread > 0 && chatBtn.style.display === 'block';
+  chatBadge.style.display = show ? 'block' : 'none';
+  chatBadge.textContent = unread > 9 ? '9+' : String(unread);
+  chatBtn.classList.toggle('unread', show);
+  if (show) { // relance l'apparition pour que chaque message se remarque
+    chatBadge.style.animation = 'none';
+    void chatBadge.offsetWidth;
+    chatBadge.style.animation = '';
+  }
+}
 
 function addChatMsg(name, msg, mine) {
   chatMsgs.querySelector('[data-info]')?.remove(); // drop the placeholder
@@ -1602,6 +1621,7 @@ function addChatMsg(name, msg, mine) {
 
 async function openChat() {
   chatPanel.style.display = 'block';
+  setUnread(0); // lus, puisqu'il les a sous les yeux
   chatMsgs.innerHTML = '<div class="chat-msg" data-info="1" style="color:#667">Chargement…</div>';
   try {
     const hist = await cloud.chatHistory();

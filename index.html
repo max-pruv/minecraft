@@ -353,6 +353,25 @@
       border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
       color: #fff; font-size: 18px; cursor: pointer;
     }
+    /* Messages non lus : la pastille dit combien, et le bouton se balance
+       pour attraper le regard d'un enfant occupé à construire ailleurs. */
+    #chat-btn.unread { animation: chat-wiggle 1.4s ease-in-out infinite; border-color: #ffd75e; }
+    @keyframes chat-wiggle {
+      0%, 60%, 100% { transform: rotate(0) scale(1); }
+      70% { transform: rotate(-12deg) scale(1.12); }
+      80% { transform: rotate(10deg) scale(1.12); }
+      90% { transform: rotate(-6deg) scale(1.06); }
+    }
+    #chat-badge {
+      display: none; position: fixed; z-index: 12;
+      top: calc(241px + var(--safe-top)); right: 2px;
+      min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
+      border-radius: 999px; background: #e5484d; color: #fff;
+      font-family: inherit; font-size: 11px; line-height: 20px; text-align: center;
+      border: 2px solid #12161f; pointer-events: none;
+      animation: chat-pop .35s ease-out;
+    }
+    @keyframes chat-pop { from { transform: scale(0); } 60% { transform: scale(1.3); } to { transform: scale(1); } }
     #chat-panel {
       display: none; position: fixed; left: 8px; bottom: calc(120px + var(--safe-bottom));
       width: min(300px, 78vw); z-index: 12;
@@ -833,6 +852,7 @@
   <button id="cam-btn" title="Caméra (mini visio)">📷</button>
   <button id="home-btn" title="Retour à la maison">🏠</button>
   <button id="chat-btn" title="Messages du monde">💬</button>
+  <div id="chat-badge" aria-live="polite"></div>
   <div id="video-wrap"></div>
 
   <div id="chat-panel">
