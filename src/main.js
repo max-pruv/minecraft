@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -15,7 +15,7 @@ import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
-import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, createAstronautes, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
@@ -266,6 +266,8 @@ function updateChunks() {
     ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z),
     ...createBuilders(scene, world, player, say, player.pos.x, player.pos.z),
     ...createVillagers(scene, world, player, say, player.pos.x, player.pos.z),
+    // les astronautes vivent sur Mars, pas là où l'enfant apparaît
+    ...createAstronautes(scene, world, player, say, MARS.x, MARS.z),
   ];
 })();
 
@@ -2738,6 +2740,7 @@ const MAP_COLORS = {
   [BLOCK.SLAB_COBBLE]: [120, 120, 120], [BLOCK.SLAB_BRICK]: [148, 68, 58],
   [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
   [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
+  [BLOCK.MARS_SOL]: [176, 96, 62], [BLOCK.MARS_ROCHE]: [116, 62, 48],
   [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
   [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
   [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
@@ -2963,7 +2966,15 @@ function updateSky(dt) {
   const hauteurSoleil = Math.sin(angle);
   const rasant = Math.exp(-((hauteurSoleil / 0.22) ** 2));
   skyColor.lerp(SUNSET_SKY, rasant * 0.72);
-  if (weather === 'rain') skyColor.multiplyScalar(0.62); // grey rainy skies
+  // Sur Mars, le ciel est saumon : la poussière de fer en suspension diffuse
+  // le rouge au lieu du bleu. C'est ce qui fait vraiment croire à la planète —
+  // sans ça, une plaine rouge sous un ciel bleu reste un désert terrestre.
+  const distMars = Math.hypot(player.pos.x - MARS.x, player.pos.z - MARS.z);
+  const surMars = THREE.MathUtils.clamp((MARS.r + 10 - distMars) / 26, 0, 1);
+  dansMars = surMars > 0.5;
+  if (surMars > 0) skyColor.lerp(MARS_SKY, surMars * (0.35 + 0.55 * daylight));
+
+  if (weather === 'rain' && surMars < 0.5) skyColor.multiplyScalar(0.62); // grey rainy skies
   scene.background.copy(skyColor);
   scene.fog.color.copy(skyColor);
 
@@ -2985,6 +2996,9 @@ function updateSky(dt) {
 }
 let tempsEau = 0;
 const SUNSET_SKY = new THREE.Color(0xff8a4a);
+const MARS_SKY = new THREE.Color(0xd9a184);
+// Mis à jour par updateSky : sert aussi à faire taire la faune terrestre.
+let dansMars = false;
 
 // --- living sky: weather, drifting clouds, birds and the occasional plane ---------
 
@@ -3119,6 +3133,9 @@ const flocks = [];
   }
 }
 function updateBirds(dt) {
+  // Pas d'oiseaux ni d'avion de ligne sur Mars : ils cassaient tout l'effet.
+  for (const g of flocks) g.visible = !dansMars;
+  if (dansMars) return;
   for (const g of flocks) {
     const u = g.userData;
     u.flap += dt * 6;
@@ -3154,6 +3171,8 @@ function makePlane() {
   return g;
 }
 function updatePlane(dt) {
+  if (dansMars) { if (plane) plane.visible = false; return; }
+  if (plane) plane.visible = true;
   if (!plane) {
     planeTimer -= dt;
     if (planeTimer <= 0) {

@@ -35,6 +35,32 @@ function noisyFill(ctx, ox, oy, base, vary, rng) {
 }
 
 const painters = {
+  // --- Mars ---------------------------------------------------------------
+  // Régolithe : une poussière rouille très fine, semée de petits cailloux plus
+  // sombres. C'est la couleur qui doit porter le dépaysement, pas le motif.
+  [TILE.MARS_SOL](ctx, ox, oy) {
+    const rng = mulberry32(4501);
+    noisyFill(ctx, ox, oy, [176, 96, 62], 13, rng);
+    for (let i = 0; i < 22; i++) {
+      const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      const d = -28 - rng() * 22;
+      px(ctx, ox, oy, x, y, 176 + d, 96 + d * 0.7, 62 + d * 0.5);
+    }
+  },
+
+  // Roche martienne : basalte rouge sombre, veiné d'oxyde plus clair.
+  [TILE.MARS_ROCHE](ctx, ox, oy) {
+    const rng = mulberry32(4502);
+    noisyFill(ctx, ox, oy, [116, 62, 48], 12, rng);
+    for (let i = 0; i < 5; i++) {
+      let x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      for (let k = 0; k < 7; k++) {
+        px(ctx, ox, oy, (x + TILE_PX) % TILE_PX, (y + TILE_PX) % TILE_PX, 156, 92, 66);
+        x += (rng() * 3 | 0) - 1; y += (rng() * 3 | 0) - 1;
+      }
+    }
+  },
+
   [TILE.GRASS_TOP](ctx, ox, oy) {
     const rng = mulberry32(101);
     noisyFill(ctx, ox, oy, [104, 168, 62], 14, rng);
