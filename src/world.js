@@ -176,32 +176,160 @@ function buildArch(set) { // l'Arc de Triomphe
   for (let dx = -4; dx <= 4; dx++) { set(dx, 12, 0, BLOCK.SLAB_STONE); set(dx, 12, 1, BLOCK.SLAB_STONE); set(dx, 12, 2, BLOCK.SLAB_STONE); }
 }
 
-function buildCastle(set) { // petit château fort
-  const R = 5;
-  for (let y = 0; y < 5; y++) {
-    for (let d = -R; d <= R; d++) {
-      if (y < 3 && d >= -1 && d <= 1) { set(d, y, -R, BLOCK.AIR); } // gate
-      else set(d, y, -R, BLOCK.COBBLE);
-      set(d, y, R, BLOCK.COBBLE);
-      set(-R, y, d, BLOCK.COBBLE); set(R, y, d, BLOCK.COBBLE);
+// Le château médiéval : douves en eau, pont-levis, courtines à créneaux,
+// tours d'angle, donjon habitable et jardins à la française. Il tient dans
+// une emprise de 30 blocs de rayon, posée sur l'esplanade plate que la
+// génération de terrain lui réserve — une douve creusée à flanc de colline
+// se viderait d'un côté et déborderait de l'autre.
+//
+// Il est unique et à coordonnées fixes : le terrain étant déterministe, il
+// apparaît au même endroit dans tous les mondes, celui de chaque enfant
+// comme les mondes partagés.
+function buildCastle(set) {
+  const MUR = BLOCK.STONEBRICK;
+  const TOUR = BLOCK.COBBLE;
+  const TOIT = BLOCK.WOOL_RED;
+  const SOL = BLOCK.MOSSY;
+
+  const carre = (r, y, id, plein = false) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        if (!plein && Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+        set(dx, y, dz, id);
+      }
+    }
+  };
+
+  // --- l'esplanade et la douve -------------------------------------------
+  // Un anneau creusé et rempli d'eau, avec ses berges en pierre : c'est ce
+  // qu'on voit en premier en arrivant, et ce qui donne l'échelle.
+  const R_EXT = 26, DOUVE_INT = 19, DOUVE_EXT = 24;
+  for (let dx = -R_EXT; dx <= R_EXT; dx++) {
+    for (let dz = -R_EXT; dz <= R_EXT; dz++) {
+      const d = Math.max(Math.abs(dx), Math.abs(dz)); // douve carrée, comme les vraies
+      if (d > R_EXT) continue;
+      if (d >= DOUVE_INT && d <= DOUVE_EXT) {
+        for (let y = -4; y <= 0; y++) set(dx, y, dz, y === -4 ? BLOCK.GRAVEL : BLOCK.WATER);
+        set(dx, 1, dz, BLOCK.AIR);
+      } else if (d > DOUVE_EXT) {
+        set(dx, 0, dz, BLOCK.GRASS); // la campagne autour
+      } else {
+        set(dx, 0, dz, d >= DOUVE_INT - 2 ? BLOCK.COBBLE : SOL); // berge puis cour
+      }
     }
   }
-  for (let d = -R; d <= R; d += 2) { // crenellations
-    set(d, 5, -R, BLOCK.COBBLE); set(d, 5, R, BLOCK.COBBLE);
-    set(-R, 5, d, BLOCK.COBBLE); set(R, 5, d, BLOCK.COBBLE);
+
+  // --- le pont-levis ------------------------------------------------------
+  // Tablier de planches au ras de l'eau, chaînes tendues vers la herse, et
+  // les deux montants qui le relèveraient.
+  for (let dz = -DOUVE_EXT - 1; dz <= -DOUVE_INT + 1; dz++) {
+    for (let dx = -2; dx <= 2; dx++) set(dx, 1, dz, BLOCK.PLANK);
+    set(-3, 1, dz, BLOCK.LOG); set(3, 1, dz, BLOCK.LOG); // garde-corps
   }
-  for (const sx of [-R, R]) { // corner towers
-    for (const sz of [-R, R]) {
-      for (let y = 0; y < 8; y++) {
-        for (let dx = 0; dx <= 1; dx++) {
-          for (let dz = 0; dz <= 1; dz++) {
-            set(sx + (sx > 0 ? -dx : dx), y, sz + (sz > 0 ? -dz : dz), BLOCK.STONEBRICK);
-          }
+  for (let y = 2; y <= 6; y++) { set(-3, y, -DOUVE_INT + 1, BLOCK.LOG); set(3, y, -DOUVE_INT + 1, BLOCK.LOG); }
+  for (let dx = -3; dx <= 3; dx++) set(dx, 7, -DOUVE_INT + 1, BLOCK.LOG); // linteau
+  for (let i = 0; i <= 4; i++) { // les chaînes
+    set(-3, 6 - i, -DOUVE_INT - i, BLOCK.DARKBRICK);
+    set(3, 6 - i, -DOUVE_INT - i, BLOCK.DARKBRICK);
+  }
+
+  // --- la courtine --------------------------------------------------------
+  const R_MUR = 16, H_MUR = 8;
+  for (let y = 1; y <= H_MUR; y++) carre(R_MUR, y, MUR);
+  for (let y = 1; y <= H_MUR; y++) carre(R_MUR - 1, y, MUR); // épaisseur : on peut marcher dessus
+  for (let d = -R_MUR; d <= R_MUR; d++) { // créneaux
+    if (((d + R_MUR) % 2) !== 0) continue;
+    for (const [a, b] of [[d, -R_MUR], [d, R_MUR], [-R_MUR, d], [R_MUR, d]]) set(a, H_MUR + 1, b, MUR);
+  }
+  // la porte, sous le châtelet
+  for (let y = 1; y <= 4; y++) for (let dx = -2; dx <= 2; dx++) {
+    set(dx, y, -R_MUR, BLOCK.AIR); set(dx, y, -R_MUR + 1, BLOCK.AIR);
+  }
+  for (let dx = -2; dx <= 2; dx++) set(dx, 5, -R_MUR, BLOCK.DARKBRICK); // la herse relevée
+  for (let dz = -R_MUR; dz <= -DOUVE_INT + 1; dz++) for (let dx = -2; dx <= 2; dx++) set(dx, 1, dz, BLOCK.PLANK);
+
+  // --- les tours d'angle ---------------------------------------------------
+  const tour = (cx, cz, h) => {
+    for (let y = 1; y <= h; y++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        for (let dz = -2; dz <= 2; dz++) {
+          if (dx * dx + dz * dz > 6) continue; // ronde, à peu près
+          const bord = dx * dx + dz * dz > 2;
+          if (!bord && y < h) continue; // creuse à l'intérieur
+          const meurtriere = bord && y > 3 && y % 3 === 0 && (dx === 0 || dz === 0);
+          set(cx + dx, y, cz + dz, meurtriere ? BLOCK.AIR : TOUR);
         }
       }
-      set(sx, 8, sz, BLOCK.WOOL_RED); // little flags
+    }
+    for (let i = 0; i <= 2; i++) { // toit conique
+      const r = 2 - i;
+      for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) set(cx + dx, h + 1 + i, cz + dz, TOIT);
+    }
+    set(cx, h + 4, cz, BLOCK.LOG);
+    set(cx, h + 5, cz, BLOCK.WOOL_BLUE); // l'oriflamme
+  };
+  for (const cx of [-R_MUR, R_MUR]) for (const cz of [-R_MUR, R_MUR]) tour(cx, cz, 13);
+  tour(-5, -R_MUR, 11); tour(5, -R_MUR, 11); // les deux tours du châtelet
+
+  // --- le donjon ----------------------------------------------------------
+  // Carré, massif, avec un vrai intérieur : escalier, étage et chemin de
+  // ronde. C'est le seul endroit du monde où l'on monte à quinze blocs.
+  const D = 5, H_DON = 20;
+  for (let y = 1; y <= H_DON; y++) {
+    for (let dx = -D; dx <= D; dx++) {
+      for (let dz = -D; dz <= D; dz++) {
+        const mur = Math.abs(dx) === D || Math.abs(dz) === D;
+        if (!mur) { if (y === 9) set(dx, y, dz, BLOCK.PLANK); continue; } // plancher d'étage
+        const fenetre = (y === 5 || y === 13) && ((Math.abs(dx) === D && Math.abs(dz) <= 1) || (Math.abs(dz) === D && Math.abs(dx) <= 1));
+        set(dx, y, dz, fenetre ? BLOCK.GLASS : MUR);
+      }
     }
   }
+  for (let y = 1; y <= 3; y++) { set(0, y, -D, BLOCK.AIR); set(-1, y, -D, BLOCK.AIR); } // la porte
+  for (let i = 0; i < 8; i++) set(D - 1 - Math.floor(i / 2), 1 + i, -D + 1 + (i % 2), BLOCK.SLAB_COBBLE); // escalier
+  for (let d = -D; d <= D; d++) { // créneaux du donjon
+    if (((d + D) % 2) !== 0) continue;
+    for (const [a, b] of [[d, -D], [d, D], [-D, d], [D, d]]) set(a, H_DON + 1, b, MUR);
+  }
+  set(0, H_DON + 2, 0, BLOCK.LOG); set(0, H_DON + 3, 0, BLOCK.LOG);
+  set(0, H_DON + 4, 0, BLOCK.GOLD); // la girouette dorée
+
+  // --- les jardins ---------------------------------------------------------
+  // Quatre parterres à la française de part et d'autre de l'allée d'honneur,
+  // bordés de buis, avec une fontaine au milieu de la cour.
+  const FLEURS = [BLOCK.WOOL_RED, BLOCK.WOOL_YELLOW, BLOCK.WOOL_PURPLE, BLOCK.WOOL_BLUE];
+  const parterre = (ox, oz, teinte) => {
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dz = -3; dz <= 3; dz++) {
+        const bord = Math.abs(dx) === 3 || Math.abs(dz) === 3;
+        if (bord) { set(ox + dx, 1, oz + dz, BLOCK.LEAVES); continue; } // le buis taillé
+        set(ox + dx, 1, oz + dz, (dx + dz) % 2 === 0 ? FLEURS[teinte] : BLOCK.GRASS);
+      }
+    }
+  };
+  parterre(-9, 8, 0); parterre(9, 8, 1);
+  parterre(-9, -6, 2); parterre(9, -6, 3);
+  for (let dz = -R_MUR + 2; dz <= D; dz++) for (let dx = -2; dx <= 2; dx++) set(dx, 1, dz, BLOCK.WHITEBRICK); // allée d'honneur
+
+  // la fontaine, entre la porte et le donjon
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dz = -2; dz <= 2; dz++) {
+      const bord = Math.abs(dx) === 2 || Math.abs(dz) === 2;
+      set(dx, 1, -10 + dz, bord ? BLOCK.WHITEBRICK : BLOCK.WATER);
+    }
+  }
+  set(0, 2, -10, BLOCK.WHITEBRICK); set(0, 3, -10, BLOCK.WATER);
+
+  // quelques arbres et un puits, pour que la cour vive
+  for (const [ax, az] of [[-12, 0], [12, 0], [-12, 13], [12, 13]]) {
+    for (let y = 1; y <= 3; y++) set(ax, y, az, BLOCK.LOG);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(ax + dx, 4, az + dz, BLOCK.LEAVES);
+    set(ax, 5, az, BLOCK.LEAVES);
+  }
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+    set(7 + dx, 1, -13 + dz, Math.abs(dx) + Math.abs(dz) === 0 ? BLOCK.WATER : BLOCK.COBBLE); // le puits
+  }
+  set(6, 2, -13, BLOCK.LOG); set(8, 2, -13, BLOCK.LOG); set(7, 3, -13, BLOCK.PLANK);
 }
 
 // Each landmark lives inside its own themed city district.
@@ -229,6 +357,10 @@ export const PARK = { name: "Parc d'attractions", x: 150, z: -60, r: 34 };
 // Special biome zones stamped over the base terrain.
 export const DESERT = { name: 'Désert', x: 60, z: -190, r: 70 };
 export const VOLCANO = { name: 'Volcan', x: -140, z: 420, r: 45 };
+// Le château médiéval : douves, pont-levis, donjon et jardins. Il lui faut
+// une esplanade plate — une douve creusée dans une colline se viderait d'un
+// côté et déborderait de l'autre.
+export const CASTLE = { name: 'Château médiéval', x: 112, z: 210, r: 40 };
 export const ISLAND = { name: 'Île tropicale', x: 620, z: 80, r: 38 };
 
 // Lava & cactus reuse the generated decor palette (Uni pattern).
@@ -238,7 +370,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -430,7 +562,7 @@ const LANDMARKS = [
   // Lille
   { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
   // Countryside
-  { name: 'Château fort', x: 112, z: 210, box: 6, build: buildCastle },
+  { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -503,6 +635,13 @@ export class World {
     if (pd < PARK.r) {
       const m = Math.min(1, (PARK.r - pd) / 14);
       h = h * (1 - m) + 33 * m;
+    }
+
+    // le château : terrain plat, sinon la douve se vide d'un côté
+    const kd = Math.hypot(x - CASTLE.x, z - CASTLE.z);
+    if (kd < CASTLE.r) {
+      const m = Math.min(1, (CASTLE.r - kd) / 14);
+      h = h * (1 - m) + 34 * m;
     }
 
     // the desert: gentle sandy dunes

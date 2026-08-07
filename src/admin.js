@@ -9,6 +9,8 @@
 // Le style tranche volontairement avec le reste du jeu : ici on lit un
 // tableau, on ne joue pas. Police système, lignes denses, pas de pixel art.
 
+import { hashPin } from './identity.js';
+
 const ADMIN_NAME = 'Max';
 const PARENT_CODE = '135246';
 
@@ -144,6 +146,9 @@ table.adm td:first-child .adm-dim { white-space: nowrap; }
 }
 #adm-modal-input.code { font-size: 22px; letter-spacing: 8px; }
 #adm-modal-err { color: #ff9d95; font-size: 12.5px; min-height: 17px; margin-top: 7px; }
+#adm-modal-choix { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+#adm-modal-choix .adm-btn { text-align: left; padding: 11px 13px; line-height: 1.35; }
+#adm-modal-choix .adm-btn small { display: block; color: var(--adm-doux); font-size: 12px; margin-top: 2px; }
 #adm-modal-actions { display: flex; gap: 8px; margin-top: 12px; }
 #adm-modal-actions .adm-btn { flex: 1; padding: 9px 12px; }
 #adm-modal-actions .adm-btn.go { background: #21482e; border-color: #2d6a3f; color: #b7f0c8; }
@@ -195,6 +200,7 @@ const MODAL_HTML = `
   <div id="adm-modal-title"></div>
   <div id="adm-modal-sub"></div>
   <input id="adm-modal-input" autocomplete="off" />
+  <div id="adm-modal-choix"></div>
   <div id="adm-modal-err"></div>
   <div id="adm-modal-actions">
     <button class="adm-btn" id="adm-modal-no">Annuler</button>
@@ -312,11 +318,12 @@ export class AdminPanel {
 
   // Boîte de saisie maison. Résout avec le texte saisi, ou null si on annule.
   // `attendu` : on refuse sur place au lieu de refermer et de faire recommencer.
-  ask({ titre, sous, valider, type = 'text', ok = 'Valider', code = false }) {
+  ask({ titre, sous, valider, type = 'text', ok = 'Valider', code = false, choix = null }) {
     this.mount();
     const m = this.modal;
     const champ = m.querySelector('#adm-modal-input');
     const err = m.querySelector('#adm-modal-err');
+    const boite = m.querySelector('#adm-modal-choix');
     m.querySelector('#adm-modal-title').textContent = titre;
     m.querySelector('#adm-modal-sub').textContent = sous || '';
     m.querySelector('#adm-modal-yes').textContent = ok;
@@ -325,8 +332,12 @@ export class AdminPanel {
     champ.className = code ? 'code' : '';
     if (code) { champ.inputMode = 'numeric'; champ.maxLength = 8; } else { champ.removeAttribute('inputmode'); champ.removeAttribute('maxlength'); }
     err.textContent = '';
+    // Mode « choix » : pas de champ, une liste de boutons expliqués.
+    boite.innerHTML = '';
+    champ.style.display = choix ? 'none' : 'block';
+    m.querySelector('#adm-modal-yes').style.display = choix ? 'none' : 'block';
     m.classList.add('on');
-    setTimeout(() => champ.focus(), 30);
+    if (!choix) setTimeout(() => champ.focus(), 30);
 
     return new Promise((resolve) => {
       const fermer = (valeur) => {
@@ -353,6 +364,13 @@ export class AdminPanel {
       oui.addEventListener('click', surOui);
       non.addEventListener('click', surNon);
       champ.addEventListener('keydown', surTouche);
+      for (const c of choix || []) {
+        const b = document.createElement('button');
+        b.className = 'adm-btn';
+        b.innerHTML = `${c.label}<small>${c.detail}</small>`;
+        b.addEventListener('click', () => fermer(c.valeur));
+        boite.appendChild(b);
+      }
     });
   }
 
@@ -540,30 +558,65 @@ export class AdminPanel {
   // aucun — et c'est de toute façon tout ce qu'il peut faire, les codes étant
   // stockés hachés.
   async resetPin(nom) {
-    const reponse = await this.ask({
-      titre: `Nouveau code pour ${nom} ?`,
-      sous: "Son ancien code cesse de marcher tout de suite, et le jeu lui en demandera "
-        + "un nouveau à sa prochaine ouverture. Son visage reste enregistré. "
-        + "Tape le code parental pour confirmer.",
-      type: 'password', code: true, ok: 'Réinitialiser',
+    const code = await this.ask({
+      titre: `Code de ${nom}`,
+      sous: 'Tape le code parental pour continuer.',
+      type: 'password', code: true, ok: 'Continuer',
       valider: (v) => (v === PARENT_CODE ? null : 'Code incorrect.'),
     });
-    if (reponse === null) return;
+    if (code === null) return;
+
+    // Deux façons de faire, et la question se posait vraiment : la
+    // réinitialisation silencieuse laissait un parent devant un écran qui ne
+    // demandait aucun nouveau code, sans lui dire que c'est l'enfant qui le
+    // choisira.
+    const quoi = await this.ask({
+      titre: `Nouveau code pour ${nom}`,
+      sous: 'Son ancien code cesse de marcher tout de suite. Son visage reste enregistré.',
+      choix: [
+        { valeur: 'enfant', label: "Laisser {nom} en choisir un".replace('{nom}', nom),
+          detail: 'Le jeu le lui demandera à sa prochaine ouverture. Personne d\'autre ne le connaîtra.' },
+        { valeur: 'parent', label: 'Choisir un code maintenant',
+          detail: 'Tu tapes six chiffres et tu les lui donnes.' },
+      ],
+    });
+    if (quoi === null) return;
+
+    let nouveau = null;
+    if (quoi === 'parent') {
+      nouveau = await this.ask({
+        titre: `Le nouveau code de ${nom}`,
+        sous: 'Six chiffres. Note-les : ils sont stockés hachés, personne ne pourra les relire.',
+        type: 'tel', code: true, ok: 'Enregistrer',
+        valider: (v) => (/^\d{6}$/.test(v) ? null : 'Il faut exactement six chiffres.'),
+      });
+      if (nouveau === null) return;
+    }
+
     try {
       const ligne = await this.cloud.identityPull(nom);
-      await this.cloud.identityPush(nom, { faces: (ligne && ligne.faces) || [], pinHash: null });
+      const faces = (ligne && ligne.faces) || [];
+      const hash = nouveau ? await hashPin(nom, nouveau) : null;
+      await this.cloud.identityPush(nom, { faces, pinHash: hash });
       // et sur cet appareil, sinon la copie locale le remettrait en place
       if (this.identity.local[nom]) {
-        delete this.identity.local[nom].pinHash;
+        if (hash) this.identity.local[nom].pinHash = hash;
+        else delete this.identity.local[nom].pinHash;
         this.identity.saveLocal();
       }
       // La consigne voyage avec les réglages : le jeu la lit au lancement.
       const prefs = (await this.cloud.prefsPull(nom)) || {};
-      await this.cloud.prefsPush(nom, { ...prefs, codeADefinir: true });
-      this.message(`${nom} choisira un nouveau code à sa prochaine ouverture.`);
+      const { codeADefinir, ...reste } = prefs;
+      await this.cloud.prefsPush(nom, nouveau ? reste : { ...reste, codeADefinir: true });
+      // Cet appareil doit voir ce qu'il vient d'écrire : sans relecture, sa
+      // copie du compte reste celle d'avant.
+      await this.identity.syncFromCloud();
+      this.message(nouveau
+        ? `Code de ${nom} changé — donne-lui ${nouveau}.`
+        : `${nom} choisira un nouveau code à sa prochaine ouverture.`);
       this.load();
     } catch {
-      this.message(`Impossible de réinitialiser le code de ${nom} — réessaie.`, true);
+      this.message(`Impossible de changer le code de ${nom} — réessaie.`, true);
     }
   }
 
@@ -608,6 +661,7 @@ export class AdminPanel {
       }
       delete this.identity.local[nom];
       this.identity.saveLocal();
+      await this.identity.syncFromCloud();
       this.message(`Compte de ${nom} supprimé.`);
       this.load();
     } catch {

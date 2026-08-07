@@ -1647,6 +1647,9 @@ function showOnlineUI() {
       setUnread(unread + 1);
     }
   };
+  net.onAnnonce = (txt) => creatureManager.toast(txt, 0x9fd8e8);
+  net.onJoin = (nom) => annonceArrivee(nom);
+  net.onLeave = (nom) => creatureManager.toast(`👋 ${nom} est parti·e`, 0xcccccc);
   net.onDuplicate = (name) => {
     leaveToMainMenu();
     window.alert(`⚠️ ${name} joue déjà dans ce monde depuis un autre appareil !\nChaque joueur ne peut être connecté qu'à un seul endroit à la fois.`);
@@ -1770,14 +1773,14 @@ const chatBadge = document.getElementById('chat-badge');
 // premier besoin — les navigateurs mobiles refusent le son tant que l'enfant
 // n'a rien touché, et il a forcément touché l'écran pour jouer.
 let audioCtx = null;
-function chatDing() {
+function carillon(notes = [880, 1320]) {
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     audioCtx = audioCtx || new AC();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const t0 = audioCtx.currentTime;
-    for (const [i, freq] of [880, 1320].entries()) {
+    for (const [i, freq] of notes.entries()) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -1792,6 +1795,7 @@ function chatDing() {
     }
   } catch { /* pas de son : la pastille suffit à prévenir */ }
 }
+const chatDing = () => carillon([880, 1320]);
 
 // Messages non lus. La bulle passe et disparaît ; s'il regardait ailleurs,
 // l'enfant ne saura jamais qu'on lui a écrit. La pastille, elle, reste.
@@ -1911,17 +1915,55 @@ camBtn.addEventListener('click', async () => {
   camBtn.textContent = on ? '🎥' : '📷';
   camBtn.classList.toggle('on', on);
   if (on) {
-    // La caméra porte aussi le son : se voir sans s'entendre n'a pas de sens,
-    // et c'est ce qui permet de se passer d'un bouton micro séparé.
+    // La caméra porte aussi le son, dans le même flux : se voir sans
+    // s'entendre n'a pas de sens, et c'est ce qui permet de se passer d'un
+    // bouton micro séparé.
     addLocalTile(net.videoStream);
-    if (!net.micOn) await net.toggleMic();
   } else {
+    // toggleCam a déjà arrêté le flux — donc l'image et le son ensemble.
     removeLocalTile();
-    // Couper l'image doit couper le micro : sans bouton dédié, il resterait
-    // ouvert sans que personne puisse le fermer.
-    if (net.micOn) await net.toggleMic();
   }
 });
+
+// Quelqu'un arrive dans le monde partagé. Une bulle de trois secondes se rate
+// facilement quand on est occupé à construire : on annonce en grand, avec un
+// son, et — si l'application est en arrière-plan — par une vraie notification
+// du système, puisque c'est justement là qu'on ne regarde pas l'écran.
+let notifDemandee = false;
+function annonceArrivee(nom) {
+  const titre = document.getElementById('catch-title');
+  const sous = document.getElementById('catch-sub');
+  if (titre && sous) {
+    titre.textContent = '👋 UN JOUEUR ARRIVE !';
+    sous.textContent = `${nom} vient de rejoindre ton monde !`;
+    catchBanner.classList.remove('show');
+    void catchBanner.offsetWidth; // relance l'animation
+    catchBanner.classList.add('show');
+    clearTimeout(catchBanner._t);
+    catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 3200);
+  }
+  carillon([660, 990, 1320]); // trois notes qui montent : quelqu'un entre
+  emojiBurst(['👋', '🎉', '✨'], 14);
+
+  try {
+    if (!('Notification' in window)) return;
+    // On ne demande la permission qu'au premier joueur croisé : la réclamer
+    // au lancement, avant que le mot « multijoueur » ait un sens, se solde
+    // par un refus définitif.
+    if (Notification.permission === 'default' && !notifDemandee) {
+      notifDemandee = true;
+      Notification.requestPermission().catch(() => {});
+      return;
+    }
+    if (Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible') return; // il est déjà là, il a vu
+    const n = new Notification(`${nom} a rejoint ton monde !`, {
+      body: net && net.code ? `Monde ${net.code} · ${net.playerCount()} joueurs` : 'Viens jouer !',
+      tag: 'wm-arrivee', // une seule notification, remplacée à chaque arrivée
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch { /* notifications refusées ou indisponibles : le bandeau reste */ }
+}
 
 // --- catch celebration ------------------------------------------------------------
 

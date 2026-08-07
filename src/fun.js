@@ -466,9 +466,9 @@ export function initFun(ctx) {
     const hsB = document.createElement('button');
     hsB.textContent = 'Lancer';
     hsB.addEventListener('click', () => {
-      const m = `🙈 ${myName()} lance un cache-cache ! Comptez jusqu'à 20 puis cherchez !`;
-      net.sendChat(myName(), m);
-      cloud.chatSend(myName(), m).catch(() => {});
+      // Annonce, pas message : cette phrase toute faite encombrait le chat
+      // et y restait pour toujours, alors qu'elle ne vaut que sur l'instant.
+      net.broadcast({ t: 'annonce', txt: `🙈 ${myName()} lance un cache-cache ! Comptez jusqu'à 20 puis cherchez !` });
       toast('🙈 Va vite te cacher ! Les autres comptent jusqu\'à 20…', 0x9fd8e8);
     });
     hs.appendChild(hsB);
