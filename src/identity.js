@@ -181,9 +181,36 @@ export function prefetchScanner() {
   else setTimeout(start, 3000);
 }
 
+// Conseils qui montent en précision quand ça traîne. Sur un iPad tenu à bout
+// de bras, le visage occupe le quart du cadre et le détecteur ne trouve rien —
+// sans un mot pour le dire, l'enfant fixe l'écran et conclut que c'est cassé.
+const CONSEILS = [
+  [0, '⏳ Regarde bien la caméra'],
+  [4, '📏 Approche-toi : ton visage doit remplir le rond'],
+  [9, '💡 Mets la lumière devant toi, pas derrière'],
+  [15, "🧢 Enlève casquette ou lunettes, et tiens l'appareil à hauteur des yeux"],
+  [22, '🙂 Reste bien immobile deux secondes'],
+];
+
+function conseil(secondes) {
+  let txt = CONSEILS[0][1];
+  for (const [t, m] of CONSEILS) if (secondes >= t) txt = m;
+  return txt;
+}
+
+const SIG_LEN = 128; // taille d'une empreinte produite par le réseau
+
+// Une empreinte tronquée ou abîmée doit être écartée, pas comparée. Sans ce
+// garde, la boucle ne parcourait que la longueur du premier vecteur : une
+// entrée de deux nombres donnait une distance minuscule, donc une
+// reconnaissance certaine — et c'est le pire échec possible ici, ouvrir le
+// compte de quelqu'un d'autre.
+const validSig = (v) => Array.isArray(v) && v.length === SIG_LEN;
+
 function distance(a, b) {
+  if (!validSig(a) || !validSig(b)) return Infinity;
   let sum = 0;
-  for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; sum += d * d; }
+  for (let i = 0; i < SIG_LEN; i++) { const d = a[i] - b[i]; sum += d * d; }
   return Math.sqrt(sum);
 }
 
@@ -492,9 +519,10 @@ export class Identity {
   match(sig, names) {
     const scored = [];
     for (const name of names) {
-      const faces = this.entry(name).faces;
+      const faces = this.entry(name).faces.filter(validSig);
       if (!faces.length) continue;
       const best = Math.min(...faces.map((f) => distance(sig, f)));
+      if (!isFinite(best)) continue;
       scored.push({ name, d: best });
     }
     if (!scored.length) return null;
@@ -612,6 +640,18 @@ export class Identity {
       @keyframes idpulse { 0%,100%{ box-shadow:0 0 0 0 rgba(255,215,94,.5) }
         50%{ box-shadow:0 0 0 14px rgba(255,215,94,0) } }
       #id-video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+      /* Un gabarit au centre du cercle : la caméra voit large, l'analyse veut
+         un visage qui remplit le cadre. Sans repère, l'enfant se place à un
+         mètre et le scanner ne trouve rien. */
+      #id-guide {
+        position:absolute; inset:0; pointer-events:none; display:none;
+      }
+      #id-stage.scan #id-guide { display:block; }
+      #id-guide::before {
+        content:''; position:absolute; left:50%; top:46%; transform:translate(-50%,-50%);
+        width:56%; height:70%; border:3px dashed rgba(255,255,255,.55);
+        border-radius:50% 50% 46% 46%;
+      }
       #id-shots { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
       .id-dot { width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,.18); }
       .id-dot.on { background:#5ab46e; }
@@ -642,7 +682,7 @@ export class Identity {
       <h2 id="id-title"></h2>
       <div id="id-sub"></div>
       <div id="id-load"><div id="id-load-bar"><div id="id-load-fill"></div></div><div id="id-load-txt"></div></div>
-      <div id="id-stage"><video id="id-video" playsinline muted></video></div>
+      <div id="id-stage"><video id="id-video" playsinline muted></video><div id="id-guide"></div></div>
       <div id="id-shots"></div>
       <div id="id-pin">
         <div id="id-pin-dots"></div>
@@ -799,9 +839,11 @@ export class Identity {
 
   async enrollFace(name, onDone, refresh = false) {
     this.show(`📸 Regarde la caméra, ${name} !`,
-      refresh
-        ? "Je prends 3 nouvelles photos pour te reconnaître encore mieux — tu changes en grandissant ! (aucune photo n'est gardée, juste une empreinte secrète)"
-        : "Les 3 photos se prennent toutes seules dès que je vois ton visage — reste bien en face ! (aucune photo n'est gardée, juste une empreinte secrète)");
+      (refresh
+        ? 'Je prends 3 nouvelles photos pour te reconnaître encore mieux — tu changes en grandissant !'
+        : 'Les 3 photos se prennent toutes seules dès que je vois ton visage.')
+      + " Approche-toi jusqu'à remplir le rond en pointillés, bien en face."
+      + " (aucune photo n'est gardée, juste une empreinte secrète)");
     // le fil d'Ariane n'a de sens qu'à l'inscription : une mise à jour de
     // photos est une action isolée, pas la première étape de quelque chose
     if (!refresh) this.setSteps(1);
@@ -840,13 +882,17 @@ export class Identity {
     const sigs = [];
     let look = null;
     let first = true;
-    const deadline = Date.now() + 60000;
+    const debut = Date.now();
+    const deadline = debut + 60000;
+    // les secondes ne comptent que depuis la dernière photo réussie : après un
+    // cliché, on repart des conseils simples plutôt que de continuer à
+    // haranguer un enfant qui s'en sort très bien
+    let depuisCliche = debut;
     this.el.stage.className = 'scan';
     while (sigs.length < 3 && Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
-      this.say(first
-        ? '⏳ Je regarde bien ton visage'
-        : `Cliché ${sigs.length + 1}/3 — place ton visage dans le rond 😊`, first ? 'busy' : '');
+      this.say(`Cliché ${sigs.length + 1}/3 — ${conseil((Date.now() - depuisCliche) / 1000)}`,
+        first ? 'busy' : '');
       this.busy(true); // une analyse dure : montrer que ça tourne
       let shot = null;
       try {
@@ -860,6 +906,7 @@ export class Identity {
         sigs.push(shot.sig);
         if (!look) look = this.sampleLook(this.el.video, shot.res); // for the avatar
         this.el.shots.children[sigs.length - 1].classList.add('on');
+        depuisCliche = Date.now();
         this.say(`📸 Cliché ${sigs.length}/3 pris !`, 'ok');
         await new Promise((r) => setTimeout(r, 700)); // slight pose change
       } else {
@@ -1054,7 +1101,8 @@ export class Identity {
   // to your own profile. Falls back to the code, then to tapping a card.
   async recognize(names, { onMatch, onCancel, title, strict = false } = {}) {
     if (this.guardLocked(() => this.recognize(names, { onMatch, onCancel, title, strict }))) return;
-    this.show(title || '📸 Regarde la caméra !', 'Je cherche qui tu es…');
+    this.show(title || '📸 Regarde la caméra !',
+      'Approche ton visage jusqu\'à remplir le rond en pointillés, bien en face.');
     this.el.stage.style.display = 'block';
     this.el.stage.className = 'scan';
     // Les noms passés ici ne sont qu'une préférence : la liste réelle inclut
@@ -1090,10 +1138,11 @@ export class Identity {
     const pool = strict ? names.filter((n) => this.isEnrolled(n)) : this.candidates(names);
 
     let firstPass = true;
-    const deadline = Date.now() + 40000;
+    const debut = Date.now();
+    const deadline = debut + 40000;
     while (Date.now() < deadline) {
       if (this.el.modal.style.display === 'none') return; // cancelled
-      this.say(firstPass ? '⏳ Je regarde qui tu es' : 'Ne bouge pas… 🔍', firstPass ? 'busy' : '');
+      this.say(conseil((Date.now() - debut) / 1000), firstPass ? 'busy' : '');
       this.busy(true);
       let sig = null;
       try {
