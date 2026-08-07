@@ -59,10 +59,9 @@ export function initFun(ctx) {
   // ---- styles & panels ------------------------------------------------------
   const style = document.createElement('style');
   style.textContent = `
-    /* La colonne démarre sous le bouton carte, encoche comprise : sans
-       var(--safe-top) les deux se superposaient sur les iPhone à Dynamic
-       Island, où la barre d'état pousse tout de ~59 px vers le bas. */
-    .fun-btn { position:fixed; left:10px; width:44px; height:44px; border-radius:12px;
+    /* dans la colonne de gauche : plus de position propre, c'est le rail qui
+       place, donc aucun risque de recouvrir un voisin */
+    .fun-btn { position:static; flex:none; width:var(--rail-btn); height:var(--rail-btn); border-radius:12px;
       background:rgba(20,26,40,.72); border:1px solid rgba(255,255,255,.18); color:#fff;
       font-size:22px; z-index:30; display:none; align-items:center; justify-content:center;
       -webkit-tap-highlight-color:transparent; }
@@ -87,9 +86,8 @@ export function initFun(ctx) {
       display:none; gap:8px; z-index:30; }
     .fun-target button { padding:9px 14px; border-radius:12px; border:none; font-size:15px;
       background:rgba(20,26,40,.85); color:#fff; border:1px solid rgba(255,255,255,.25); }
-    .emote-row { position:fixed; left:10px; bottom:150px; display:none; flex-direction:column;
-      gap:8px; z-index:30; }
-    .emote-row button { width:44px; height:44px; border-radius:12px; font-size:22px;
+    .emote-row { position:static; display:none; flex-direction:column; gap:8px; }
+    .emote-row button { width:var(--rail-btn); height:var(--rail-btn); border-radius:12px; font-size:22px;
       background:rgba(20,26,40,.72); border:1px solid rgba(255,255,255,.18); }
     #duel-overlay { position:fixed; inset:0; background:rgba(8,10,18,.88); z-index:80;
       display:none; align-items:center; justify-content:center; flex-direction:column;
@@ -115,27 +113,28 @@ export function initFun(ctx) {
   `;
   document.head.appendChild(style);
 
-  const el = (html) => {
+  const el = (html, parent) => {
     const d = document.createElement('div');
     d.innerHTML = html;
     const node = d.firstElementChild;
-    document.body.appendChild(node);
+    (parent || document.body).appendChild(node);
     return node;
   };
 
-  const mkBtn = (emoji, top, title) => {
-    const b = el(`<button class="fun-btn" style="top:calc(${top}px + var(--safe-top))" title="${title}">${emoji}</button>`);
-    return b;
-  };
-  // le bouton carte tient de 34 à 74 px (sous la zone sûre) : on part à 84
-  const atelierBtn = mkBtn('🛠️', 84, 'Atelier');
-  const fwBtn = mkBtn('🎆', 136, "Feu d'artifice");
-  const photoBtn = mkBtn('📸', 188, 'Photo');
-  const recordsBtn = mkBtn('🏆', 240, 'Records');
+  // Les boutons rejoignent la colonne de gauche déclarée dans index.html : ils
+  // n'ont plus de position propre, donc ils ne peuvent plus tomber sur un
+  // voisin, et un bouton de plus se rangera tout seul à la suite.
+  const rail = document.getElementById('left-rail') || document.body;
+  const railBottom = document.getElementById('left-rail-bottom') || document.body;
+  const mkBtn = (emoji, title) => el(`<button class="fun-btn" title="${title}">${emoji}</button>`, rail);
+  const atelierBtn = mkBtn('🛠️', 'Atelier');
+  const fwBtn = mkBtn('🎆', "Feu d'artifice");
+  const photoBtn = mkBtn('📸', 'Photo');
+  const recordsBtn = mkBtn('🏆', 'Records');
 
   const emoteRow = el(`<div class="emote-row" id="emote-row">
     <button data-k="👋">👋</button><button data-k="💃">💃</button><button data-k="❤️">❤️</button>
-  </div>`);
+  </div>`, railBottom);
 
   const targetRow = el(`<div class="fun-target" id="fun-target">
     <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button>
