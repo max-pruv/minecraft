@@ -123,11 +123,38 @@
       font-size: 22px; color: #fff; text-shadow: 2px 2px 0 #2a2a2a;
     }
     #player-hello .qui { color: #9fe8a8; }
+    /* Pied de page : on ne consulte un numéro de version que lorsqu'on le
+       cherche, il n'a rien à faire au milieu de ce qu'on vient faire. */
     #app-version {
-      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px;
-      font-size: 11px; letter-spacing: .3px; padding: 2px 8px; border-radius: 999px;
-      background: transparent; border: 1px solid rgba(255,255,255,.14); color: #7f8ca6;
-      cursor: pointer; opacity: .75;
+      display: inline-flex; align-items: center; gap: 5px;
+      margin: 22px 0 0; font-size: 11px; letter-spacing: .3px;
+      padding: 2px 8px; border-radius: 999px;
+      background: transparent; border: 1px solid rgba(255,255,255,.12); color: #6d7a92;
+      cursor: pointer; opacity: .7;
+    }
+    /* Fête de mise à jour : une mise à jour réussie est un non-événement pour
+       la machine, mais pour un enfant c'est la promesse que les nouveautés
+       demandées sont arrivées. Autant le dire joyeusement. */
+    #maj-fete {
+      display: none; position: fixed; inset: 0; z-index: 60;
+      pointer-events: none; overflow: hidden;
+    }
+    #maj-fete.on { display: block; }
+    #maj-mot {
+      position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+      background: rgba(20, 60, 35, .92); border: 2px solid #58b04c; color: #eaffea;
+      padding: 12px 20px; border-radius: 14px; font-size: 17px; text-align: center;
+      line-height: 1.4; max-width: min(420px, 88vw); box-shadow: 0 12px 40px rgba(0,0,0,.5);
+      animation: maj-pop .5s cubic-bezier(.2,1.4,.5,1);
+    }
+    #maj-mot small { display: block; opacity: .8; font-size: 13px; margin-top: 3px; }
+    @keyframes maj-pop { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
+    .maj-conf {
+      position: absolute; width: 9px; height: 14px; top: -20px; border-radius: 2px;
+      animation: maj-chute linear forwards;
+    }
+    @keyframes maj-chute {
+      to { transform: translateY(105vh) rotate(720deg); opacity: .15; }
     }
     #app-version.ok { color: #7fae91; border-color: rgba(90,200,140,.3); }
     #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
@@ -1106,7 +1133,6 @@
     <h1 id="overlay-title">WEB MINECRAFT</h1>
     <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
     <div id="player-hello"></div>
-    <div id="app-version" title="Version installée sur cet appareil"></div>
     <div id="who-screen">
       <div class="online-title">👥 Qui joue ?</div>
       <div id="who-row"></div>
@@ -1192,7 +1218,10 @@
       <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
       <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>
     </div>
+    <div id="app-version" title="Version installée sur cet appareil"></div>
   </div>
+
+  <div id="maj-fete"><div id="maj-mot"></div></div>
 
   <script>
     // Netflix-style local profiles: each player on this device gets their own
@@ -1363,9 +1392,38 @@
       const reloadOnce = (raison) => {
         if (refreshing) return;
         refreshing = true;
+        // La fête se joue APRÈS le rechargement : c'est là que la nouvelle
+        // version est réellement à l'écran, et donc là que l'annonce est vraie.
+        try { sessionStorage.setItem('wm-maj-fete', '1'); } catch { /* mode privé */ }
         showLoader(raison);
         location.reload();
       };
+
+      // Confettis maison : une centaine de rectangles qui tombent, purement
+      // décoratifs (pointer-events: none) et qui se retirent tout seuls.
+      const feteMiseAJour = (version) => {
+        const fete = document.getElementById('maj-fete');
+        const mot = document.getElementById('maj-mot');
+        if (!fete || !mot) return;
+        mot.innerHTML = '🎉 Le jeu vient d\'être mis à jour !'
+          + `<small>version ${String(version || '').replace('web-minecraft-', '') || 'la plus récente'}</small>`;
+        const couleurs = ['#ffd75e', '#58b04c', '#6fa8ff', '#ff7ba8', '#ffffff', '#ff9d5e'];
+        for (let i = 0; i < 90; i++) {
+          const c = document.createElement('i');
+          c.className = 'maj-conf';
+          c.style.left = `${Math.random() * 100}%`;
+          c.style.background = couleurs[i % couleurs.length];
+          c.style.animationDuration = `${2 + Math.random() * 2.2}s`;
+          c.style.animationDelay = `${Math.random() * 0.9}s`;
+          c.style.transform = `rotate(${Math.random() * 360}deg)`;
+          fete.appendChild(c);
+        }
+        fete.classList.add('on');
+        // Assez long pour être vu : la page finit de fabriquer son monde
+        // pendant ce temps, et l'enfant regarde souvent ailleurs au démarrage.
+        setTimeout(() => { fete.classList.remove('on'); fete.querySelectorAll('.maj-conf').forEach((e) => e.remove()); }, 8000);
+      };
+
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (sessionStorage.getItem('wm-updating') === '1') {
           sessionStorage.removeItem('wm-updating');
@@ -1386,6 +1444,13 @@
         c.postMessage({ type: 'version' }, [chan.port2]);
         setTimeout(() => resolve(null), 2000);
       });
+
+      // Déclarée après versionActive, dont elle a besoin pour annoncer le
+      // bon numéro.
+      if (sessionStorage.getItem('wm-maj-fete') === '1') {
+        sessionStorage.removeItem('wm-maj-fete');
+        versionActive().then(feteMiseAJour).catch(() => feteMiseAJour(null));
+      }
 
       window.addEventListener('load', async () => {
         if (window.__migrating) return; // déménagement en cours
