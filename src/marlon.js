@@ -150,12 +150,29 @@ export function buildKidMesh(look) {
   mouth.position.set(0, 1.16, -0.185);
   g.add(mouth);
 
+  // Épée au bras droit, bouclier au bras gauche : ils suivent le balancement
+  // des bras puisqu'ils sont accrochés aux mêmes groupes.
+  if (look.epee) {
+    const lame = box(0.05, 0.62, 0.09, look.epee);
+    lame.position.set(0, -0.72, -0.04);
+    const garde = box(0.2, 0.06, 0.1, 0x6a5a3a);
+    garde.position.set(0, -0.44, -0.04);
+    arms[1].add(lame, garde);
+  }
+  if (look.bouclier) {
+    const ecu = box(0.06, 0.44, 0.36, look.bouclier);
+    ecu.position.set(-0.1, -0.4, 0);
+    const boss = box(0.04, 0.12, 0.12, 0xd8d8e0);
+    boss.position.set(-0.15, -0.4, 0);
+    arms[0].add(ecu, boss);
+  }
+
   g.userData.legs = legs;
   g.userData.arms = arms;
   return g;
 }
 
-class BaseNPC {
+export class BaseNPC {
   constructor(scene, world, player, toast, opts) {
     this.world = world;
     this.player = player;
