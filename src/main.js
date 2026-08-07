@@ -1922,23 +1922,43 @@ const profileMenu = document.getElementById('profile-menu');
 // Numéro de version sur l'accueil : on le demande au service worker, seule
 // source de vérité, plutôt que de le recopier ici où il finirait décalé. Sans
 // service worker (première ouverture, navigation privée), on lit le fichier.
+// Numéro de version sur l'accueil, avec l'état de mise à jour — c'est la
+// vraie question qu'on se pose en le lisant. La version qui tourne est
+// demandée au service worker, seule source de vérité ; celle attendue est
+// lue sur le serveur. Hors-ligne on affiche le numéro sans se prononcer.
 (async function showVersion() {
   const el = document.getElementById('app-version');
   if (!el) return;
-  const label = (v) => { el.textContent = v ? `version ${v.replace('web-minecraft-', '')}` : ''; };
+  const court = (v) => (v || '').replace('web-minecraft-', '');
+  const active = async () => {
+    if (!navigator.serviceWorker?.controller) return null;
+    return new Promise((resolve) => {
+      const chan = new MessageChannel();
+      chan.port1.onmessage = (e) => resolve(e.data?.version);
+      navigator.serviceWorker.controller.postMessage({ type: 'version' }, [chan.port2]);
+      setTimeout(() => resolve(null), 1500);
+    });
+  };
+  const serveur = async () => {
+    const t = await (await fetch('./sw.js', { cache: 'no-store' })).text();
+    return (t.match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1] || null;
+  };
   try {
-    if (navigator.serviceWorker?.controller) {
-      const got = await new Promise((resolve) => {
-        const chan = new MessageChannel();
-        chan.port1.onmessage = (e) => resolve(e.data?.version);
-        navigator.serviceWorker.controller.postMessage({ type: 'version' }, [chan.port2]);
-        setTimeout(() => resolve(null), 1500);
-      });
-      if (got) return label(got);
+    const v = await active();
+    if (!navigator.onLine) { el.textContent = `version ${court(v) || '?'}`; return; }
+    const attendue = await serveur();
+    const label = court(v || attendue);
+    if (!label) return;
+    if (v && attendue && v === attendue) {
+      el.textContent = `version ${label} · à jour`;
+      el.classList.add('ok');
+    } else if (v && attendue) {
+      el.textContent = `version ${label} · mise à jour dispo`;
+      el.classList.add('old');
+    } else {
+      el.textContent = `version ${label}`;
     }
-    const txt = await (await fetch('./sw.js', { cache: 'no-store' })).text();
-    label((txt.match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1]);
-  } catch { /* pas grave : l'accueil s'affiche sans numéro */ }
+  } catch { /* l'accueil s'affiche très bien sans */ }
 })();
 
 const refaceHint = document.getElementById('reface-hint');
