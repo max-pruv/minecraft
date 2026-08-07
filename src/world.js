@@ -590,6 +590,7 @@ const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 export class World {
   constructor() {
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
+    this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -1094,6 +1095,23 @@ export class World {
     return data;
   }
 
+  // Le terrain n'occupe qu'une fraction des 96 niveaux : au-dessus, c'est de
+  // l'air pur qu'il est inutile de parcourir. On mémorise la hauteur du bloc le
+  // plus haut de chaque chunk pour que le mailleur s'arrête là.
+  // Les blocs sont rangés par y croissant, donc un balayage arrière du tableau
+  // sort dès le premier bloc plein rencontré.
+  chunkTop(cx, cz) {
+    const key = World.key(cx, cz);
+    const connu = this.tops.get(key);
+    if (connu !== undefined) return connu;
+    const data = this.ensureChunk(cx, cz);
+    let i = data.length - 1;
+    while (i >= 0 && data[i] === BLOCK.AIR) i--;
+    const top = i < 0 ? -1 : Math.floor(i / (CHUNK * CHUNK));
+    this.tops.set(key, top);
+    return top;
+  }
+
   getBlock(x, y, z) {
     if (y < 0 || y >= HEIGHT) return BLOCK.AIR;
     const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
@@ -1112,6 +1130,15 @@ export class World {
     this.edits.set(k, id);
     this.editTimes.set(k, t);
     if (!remote && this.onOp) this.onOp(k, id, t);
+
+    // maintien du plafond de maillage : on le relève tout de suite quand on
+    // pose plus haut, on l'oublie (recalcul paresseux) quand on creuse au sommet
+    const ck = World.key(cx, cz);
+    const top = this.tops.get(ck);
+    if (top !== undefined) {
+      if (id !== BLOCK.AIR) { if (y > top) this.tops.set(ck, y); }
+      else if (y >= top) this.tops.delete(ck);
+    }
 
     this.dirty.add(World.key(cx, cz));
     if (lx === 0) this.dirty.add(World.key(cx - 1, cz));
@@ -1226,6 +1253,7 @@ export class World {
     this.saveEdits();
     this.ctx = ctx;
     this.chunks.clear(); // le terrain est déterministe : il se régénère à l'identique
+    this.tops.clear();
     this.edits.clear();
     this.editTimes.clear();
     this.loadEdits();
@@ -1241,6 +1269,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.chunks.clear();
+    this.tops.clear();
     this.allDirty = true;
   }
 }
