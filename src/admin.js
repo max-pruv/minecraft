@@ -46,6 +46,14 @@ table.adm td { padding: 9px 10px; border-top: 1px solid #21262d; vertical-align:
 table.adm tr:hover td { background: #11161d; }
 .adm-name { font-weight: 600; }
 .adm-me { color: #7ee787; font-size: 11px; margin-left: 5px; }
+.adm-live { display: inline-flex; align-items: center; gap: 5px; color: #7ee787; font-weight: 500; }
+.adm-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3fb950;
+  box-shadow: 0 0 0 3px rgba(63,185,80,.18); animation: admPulse 2s ease-in-out infinite;
+}
+@keyframes admPulse { 50% { opacity: .35; } }
+.adm-live.pause { color: #d0b070; }
+.adm-live.pause .adm-dot { background: #d29922; box-shadow: 0 0 0 3px rgba(210,153,34,.16); }
 .adm-dim { color: #8b949e; }
 .adm-tag {
   display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px;
@@ -74,7 +82,7 @@ const HTML = `
   <div class="adm-cards" id="adm-cards"></div>
   <table class="adm">
     <thead><tr>
-      <th>Joueur</th><th>Dernière activité</th><th>Aujourd'hui</th>
+      <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
       <th>Mondes</th><th>Compte</th><th></th>
     </tr></thead>
     <tbody id="adm-rows"></tbody>
@@ -95,6 +103,10 @@ const HTML = `
 // même d'avoir construit le panneau.
 export const isAdminName = (name) =>
   (name || '').trim().toLowerCase() === ADMIN_NAME.toLowerCase();
+
+// Le jeu envoie un signe de vie toutes les 20 s : au-delà de trois battements
+// manqués, on ne prétend plus que l'enfant est là.
+const PRESENCE_MS = 70000;
 
 const jour = () => new Date().toISOString().slice(0, 10);
 
@@ -119,6 +131,31 @@ function depuis(iso) {
 }
 
 const recent = (...dates) => dates.filter(Boolean).sort().pop() || null;
+
+// « En ce moment » : connecté ou non, et si oui, où. Un enfant sur l'écran
+// d'accueil est connecté sans jouer — la nuance compte quand on se demande
+// s'il faut l'appeler pour le dîner.
+function presence(l) {
+  const secondaire = `${l.appareils.size || 0} appareil${l.appareils.size > 1 ? 's' : ''}`;
+  if (!l.live) {
+    return `<span class="adm-dim">hors ligne</span><div class="adm-dim">vu ${depuis(l.vu)} · ${secondaire}</div>`;
+  }
+  const { monde, joue, joueurs } = l.live;
+  // Être dans un monde et être aux commandes sont deux choses : un quiz ou
+  // l'écran de pause met le jeu en attente sans faire quitter le monde.
+  const ou = monde
+    ? `monde ${monde}${joueurs > 1 ? ` · ${joueurs} joueurs` : ' · seul'}`
+    : 'son monde local';
+  let etat;
+  if (monde) {
+    etat = `<span class="adm-live${joue ? '' : ' pause'}"><i class="adm-dot"></i>${ou}${joue ? '' : ' · en pause'}</span>`;
+  } else if (joue) {
+    etat = '<span class="adm-live"><i class="adm-dot"></i>joue — son monde local</span>';
+  } else {
+    etat = '<span class="adm-live pause"><i class="adm-dot"></i>connecté, au menu</span>';
+  }
+  return `${etat}<div class="adm-dim">${secondaire}</div>`;
+}
 
 export class AdminPanel {
   constructor(cloud, identity, getName) {
@@ -155,9 +192,19 @@ export class AdminPanel {
     this.mount();
     this.el.classList.add('on');
     this.load();
+    // La présence n'a de sens que fraîche : on relit tant que la vue est
+    // ouverte, et seulement tant qu'elle l'est.
+    clearInterval(this._tick);
+    this._tick = setInterval(() => {
+      if (this.el && this.el.classList.contains('on')) this.load();
+      else clearInterval(this._tick);
+    }, 20000);
   }
 
-  hide() { if (this.el) this.el.classList.remove('on'); }
+  hide() {
+    clearInterval(this._tick);
+    if (this.el) this.el.classList.remove('on');
+  }
 
   message(txt, err = false) {
     const m = this.el.querySelector('#adm-msg');
@@ -171,12 +218,13 @@ export class AdminPanel {
       this.el.querySelector('#adm-sub').textContent = 'Pas de cloud configuré sur cet appareil.';
       return;
     }
-    let identites = [], etats = [], temps = [];
+    let identites = [], etats = [], temps = [], reglages = [];
     try {
-      [identites, etats, temps] = await Promise.all([
+      [identites, etats, temps, reglages] = await Promise.all([
         this.cloud.selectAll('player_identity', 'select=name,faces,pin_hash,updated_at'),
         this.cloud.selectAll('player_state', 'select=name,state,updated_at'),
         this.cloud.selectAll('play_time', 'select=name,device_id,day,play,quiz,correct,wrong,updated_at'),
+        this.cloud.selectAll('player_prefs', 'select=name,prefs,updated_at'),
       ]);
     } catch {
       this.el.querySelector('#adm-sub').textContent = 'Cloud injoignable — réessaie plus tard.';
@@ -189,7 +237,7 @@ export class AdminPanel {
         par.set(nom, {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
-          quiz: 0, justes: 0, appareils: new Set(),
+          quiz: 0, justes: 0, appareils: new Set(), live: null, majPrefs: null,
         });
       }
       return par.get(nom);
@@ -215,6 +263,15 @@ export class AdminPanel {
         if (ctx !== 'local' && !e.mondes.includes(ctx)) e.mondes.push(ctx);
       }
     }
+    for (const r of reglages) {
+      const e = entree(r.name);
+      e.majPrefs = r.updated_at;
+      const l = (r.prefs || {}).live;
+      // Passé ce délai, le battement s'est arrêté : l'appareil est en veille,
+      // le jeu fermé, ou le réseau coupé. Dans tous les cas l'enfant n'est
+      // plus là, et il vaut mieux ne rien dire que dire une chose fausse.
+      if (l && Date.now() - (l.at || 0) < PRESENCE_MS) e.live = l;
+    }
     const aujourd = jour();
     for (const r of temps) {
       const e = entree(r.name);
@@ -227,8 +284,10 @@ export class AdminPanel {
     }
 
     const lignes = [...par.values()]
-      .map((e) => ({ ...e, vu: recent(e.majId, e.majEtat, e.majTemps) }))
-      .sort((a, b) => String(b.vu || '').localeCompare(String(a.vu || '')));
+      .map((e) => ({ ...e, vu: recent(e.majId, e.majEtat, e.majTemps, e.majPrefs) }))
+      // les connectés d'abord : c'est ce qu'on vient regarder
+      .sort((a, b) => (b.live ? 1 : 0) - (a.live ? 1 : 0)
+        || String(b.vu || '').localeCompare(String(a.vu || '')));
 
     this.render(lignes);
   }
@@ -236,6 +295,7 @@ export class AdminPanel {
   render(lignes) {
     const moi = (this.getName() || '').toLowerCase();
     const actifs = lignes.filter((l) => l.aujourdhui > 0).length;
+    const enLigne = lignes.filter((l) => l.live).length;
     const tempsJour = lignes.reduce((a, l) => a + l.aujourdhui, 0);
     const sansCode = lignes.filter((l) => !l.code && l.faces === 0).length;
 
@@ -245,6 +305,7 @@ export class AdminPanel {
     const carte = (v, t) => `<div class="adm-card"><b>${v}</b><span>${t}</span></div>`;
     this.el.querySelector('#adm-cards').innerHTML = [
       carte(lignes.length, 'comptes'),
+      carte(enLigne, 'connectés maintenant'),
       carte(actifs, "actifs aujourd'hui"),
       carte(duree(tempsJour), "jeu aujourd'hui"),
       carte(sansCode, 'comptes non protégés'),
@@ -262,7 +323,7 @@ export class AdminPanel {
       return `<tr>
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
             <div class="adm-dim">${l.dex} créatures · ${l.blocs} blocs</div></td>
-        <td>${depuis(l.vu)}<div class="adm-dim">${l.appareils.size || 0} appareil${l.appareils.size > 1 ? 's' : ''}</div></td>
+        <td>${presence(l)}</td>
         <td>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
         <td>${mondes}</td>
         <td>${secu}<div class="adm-dim">${l.quiz} quiz · ${l.quiz ? Math.round((l.justes / l.quiz) * 100) : 0} % justes</div></td>

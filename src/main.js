@@ -929,19 +929,45 @@ profileSync.onSaveState = (etat) => {
   }
 };
 
+// Signe de vie, pour l'espace parent : savoir si un enfant joue en ce moment,
+// et où. Rangé dans les réglages plutôt que dans une table à part — la lecture
+// des réglages ignore les clés qu'elle ne connaît pas, et une table de plus
+// demanderait un accès à la base que le jeu n'a pas.
+function presenceNow() {
+  return {
+    at: Date.now(),
+    device: deviceId,
+    monde: net && net.active ? net.code : null,   // null = monde local
+    joue: !!running,
+    joueurs: net && net.active ? net.playerCount() : 0,
+  };
+}
+
+function prefsPayload() {
+  return {
+    lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
+    look: playerProfile.look, // their character's own skin/hair colours
+    // the adaptive quiz engine's per-skill levels & recent-question memory
+    // follow the child too, so switching devices mid-progress is seamless
+    skills: edu.skills, recent: [...edu.recent],
+    live: presenceNow(),
+  };
+}
+
 let prefsPushTimer = null;
 function pushPrefsToCloud() {
   clearTimeout(prefsPushTimer);
   prefsPushTimer = setTimeout(() => {
-    cloud.prefsPush(playerProfile.name, {
-      lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
-      look: playerProfile.look, // their character's own skin/hair colours
-      // the adaptive quiz engine's per-skill levels & recent-question memory
-      // follow the child too, so switching devices mid-progress is seamless
-      skills: edu.skills, recent: [...edu.recent],
-    }).catch(() => {});
+    cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
   }, 1200);
 }
+
+// Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
+// réglage récemment », ce qui n'est pas la même chose.
+setInterval(() => {
+  if (!playerProfile.name || !cloud.configured || !navigator.onLine) return;
+  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+}, 20000);
 
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
@@ -957,6 +983,7 @@ function saveProfile() {
     renderProfiles();
   }
   refreshAdminBtn();
+  refreshHello();
 }
 
 // Déclarée à part et sans dépendance : saveProfile peut l'appeler avant que
@@ -964,6 +991,23 @@ function saveProfile() {
 function refreshAdminBtn() {
   const b = document.getElementById('admin-btn');
   if (b) b.style.display = isAdminName(playerProfile.name) ? 'flex' : 'none';
+}
+
+// Le prénom sur l'accueil : en allumant le jeu, la première question est
+// « suis-je bien sur mon compte ? ». Elle se répondait jusqu'ici en ouvrant
+// « Mon personnage ».
+function refreshHello() {
+  const el = document.getElementById('player-hello');
+  if (!el) return;
+  const nom = (playerProfile.name || '').trim();
+  if (!nom) { el.style.display = 'none'; return; }
+  el.innerHTML = '';
+  el.append('👋 Salut ');
+  const qui = document.createElement('span');
+  qui.className = 'qui';
+  qui.textContent = nom;
+  el.append(qui, ' !');
+  el.style.display = 'flex';
 }
 
 // --- local profiles ("Qui joue ?") -------------------------------------------------
@@ -2101,6 +2145,7 @@ const adminBtn = document.getElementById('admin-btn');
 
 adminBtn.addEventListener('click', () => admin.open());
 refreshAdminBtn();
+refreshHello();
 
 const refaceHint = document.getElementById('reface-hint');
 function refreshSecurityRow() {
@@ -2997,7 +3042,8 @@ const fun = initFun({
 
 // console/debug handle
 window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__admin = admin;
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 

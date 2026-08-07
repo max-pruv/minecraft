@@ -115,14 +115,22 @@
     #overlay .subtitle { color: #9c9; margin-bottom: 8px; }
     /* Un numéro de version ne sert que s'il se lit : la première tentative
        était en 12 px gris sombre, invisible sur un téléphone en plein jour. */
-    #app-version {
-      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;
-      font-size: 14px; letter-spacing: .3px; padding: 5px 12px; border-radius: 999px;
-      background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16); color: #cfe0ff;
-      cursor: pointer;
+    /* Le prénom d'abord : c'est la première chose qu'on vérifie en allumant
+       le jeu — « est-ce que c'est bien mon compte ? ». Le numéro de version,
+       lui, ne sert qu'en cas de doute : il passe derrière, en petit. */
+    #player-hello {
+      display: none; align-items: center; gap: 8px; margin-bottom: 6px;
+      font-size: 22px; color: #fff; text-shadow: 2px 2px 0 #2a2a2a;
     }
-    #app-version.ok { background: rgba(90,200,140,.16); border-color: rgba(90,200,140,.45); color: #a8e6c1; }
-    #app-version.old { background: rgba(255,190,90,.16); border-color: rgba(255,190,90,.5); color: #ffd08a; }
+    #player-hello .qui { color: #9fe8a8; }
+    #app-version {
+      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px;
+      font-size: 11px; letter-spacing: .3px; padding: 2px 8px; border-radius: 999px;
+      background: transparent; border: 1px solid rgba(255,255,255,.14); color: #7f8ca6;
+      cursor: pointer; opacity: .75;
+    }
+    #app-version.ok { color: #7fae91; border-color: rgba(90,200,140,.3); }
+    #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
     #overlay button {
       font-family: inherit; font-size: 18px; padding: 12px 40px; margin: 6px;
       cursor: pointer; color: #fff; background: #6a6a6a;
@@ -1096,6 +1104,7 @@
   <div id="overlay">
     <h1 id="overlay-title">WEB MINECRAFT</h1>
     <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
+    <div id="player-hello"></div>
     <div id="app-version" title="Version installée sur cet appareil"></div>
     <div id="who-screen">
       <div class="online-title">👥 Qui joue ?</div>
