@@ -2082,6 +2082,47 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') pushPlayTime(true);
 });
 
+// Un parent a demandé un nouveau code : l'ancien ne marche déjà plus côté
+// cloud, on fait choisir le nouveau tout de suite plutôt que de laisser
+// l'enfant découvrir seul que son code est refusé.
+function demanderNouveauCode(prefs) {
+  const nom = playerProfile.name;
+  if (identity.local[nom]) {
+    delete identity.local[nom].pinHash;
+    identity.saveLocal();
+  }
+  identity.enrollPin(nom, (fait) => {
+    if (!fait) return; // « Plus tard » : on redemandera au prochain lancement
+    const { codeADefinir, ...reste } = prefs;
+    cloud.prefsPush(nom, { ...reste, live: presenceNow() }).catch(() => {});
+  });
+  // enrollPin écrit son propre sous-titre : on le remplace, sinon l'enfant ne
+  // saurait pas pourquoi on lui redemande un code.
+  identity.el.sub.textContent =
+    `Un parent a remis ton code à zéro, ${nom}. Choisis-en un nouveau — six chiffres que tu retiendras bien.`;
+}
+
+// Le compte a été supprimé depuis l'espace parent, éventuellement sur un autre
+// appareil. On ne laisse pas cette copie-ci continuer à vivre — ni à repousser
+// dans le cloud ce qu'on vient d'y effacer.
+function demanderSuppression() {
+  const nom = playerProfile.name;
+  profileSync.stop();
+  delete identity.local[nom];
+  identity.saveLocal();
+  identity.show('👋 Compte supprimé', `Le compte de ${nom} a été supprimé par un parent sur cet appareil ou un autre.`);
+  identity.button('OK', 'id-primary', () => {
+    try {
+      const reg = loadRegistry();
+      reg.list = reg.list.filter((p) => p.name !== nom);
+      reg.current = 0;
+      saveRegistry(reg);
+    } catch { /* on recharge quand même */ }
+    try { sessionStorage.removeItem('wm-who-done'); } catch { /* ignore */ }
+    location.reload();
+  });
+}
+
 // --- home-screen profile: name, quiz language, school grade ------------------------
 
 const homeName = document.getElementById('home-name');
@@ -2261,6 +2302,13 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
   let prefs = null;
   try { prefs = await cloud.prefsPull(playerProfile.name); } catch { return; }
   if (!prefs) { pushPrefsToCloud(); return; } // first time: seed the server
+
+  // Consignes venues de l'espace parent. Elles voyagent avec les réglages
+  // parce que le jeu n'a pas d'autre canal : il ne peut qu'écrire dans les
+  // tables qu'il lit déjà.
+  if (prefs.supprime) return demanderSuppression();
+  if (prefs.codeADefinir) return demanderNouveauCode(prefs);
+
   let changed = false;
   if (typeof prefs.lang === 'string' && prefs.lang !== playerProfile.lang) {
     playerProfile.lang = prefs.lang;
