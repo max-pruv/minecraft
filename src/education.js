@@ -1338,6 +1338,12 @@ export class EducationMode {
     // device's last known push, so the number is the child's true total
     const td = days[todayKey()] || t;
 
+    const dateEl = document.getElementById('edu-panel-date');
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleDateString('fr-FR',
+        { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
     const summary = document.createElement('div');
     summary.className = 'edu-summary';
     // Un tableau de bord se lit d'un coup d'œil : un grand chiffre par tuile,
@@ -1345,23 +1351,34 @@ export class EducationMode {
     // phrases à émojis, illisibles dès qu'il y avait un peu de contenu.
     const tuile = (valeur, etiquette, cls = '') =>
       `<div class="edu-stat ${cls}"><b>${valeur}</b><span>${etiquette}</span></div>`;
-    const niveau = (nom, sur) =>
-      `<div class="edu-level">${nom} <b>${this.categoryLevel(nom)}</b>/${sur}</div>`;
+    // Une barre par matière : on veut voir où en est l'enfant, pas seulement
+    // lire un chiffre sur cinq.
+    const niveau = (nom, sur) => {
+      const n = this.categoryLevel(nom);
+      return `<div class="edu-level"><span class="nom">${nom}</span>`
+        + `<span class="val"><b>${n}</b>/${sur}</span>`
+        + `<span class="barre"><i style="width:${Math.round((n / sur) * 100)}%"></i></span></div>`;
+    };
     const unlocks = t.unlocks || 0;
     summary.innerHTML =
       `<div class="edu-title">Aujourd'hui${this.crossDeviceDays ? ' <span>tous appareils</span>' : ''}</div>` +
       '<div class="edu-stats">' +
         tuile(this.formatDuration(td.play), 'de jeu') +
-        (td.quiz > 5 ? tuile(this.formatDuration(td.quiz), 'de quiz') : '') +
+        (td.quiz > 5 ? tuile(this.formatDuration(td.quiz), 'de quiz', 'quiz') : '') +
         tuile(td.correct.length, 'bonnes réponses', 'ok') +
         tuile(td.wrong, td.wrong > 1 ? 'erreurs' : 'erreur', td.wrong ? 'ko' : '') +
         tuile(this.formatDuration(this.allowance()),
-          unlocks ? `de limite · ${unlocks} déblocage${unlocks > 1 ? 's' : ''}` : 'de limite') +
-      '</div>' +
+          unlocks ? `de limite · ${unlocks} déblocage${unlocks > 1 ? 's' : ''}` : 'de limite', 'lim') +
+      '</div>';
+    body.appendChild(summary);
+
+    const niveaux = document.createElement('div');
+    niveaux.className = 'edu-summary';
+    niveaux.innerHTML = '<div class="edu-title">Niveaux <span>par matière</span></div>' +
       '<div class="edu-levels">' +
         niveau('Math', 5) + niveau('English', 3) + niveau('Français', 3) + niveau('Découverte', 3) +
       '</div>';
-    body.appendChild(summary);
+    body.appendChild(niveaux);
 
     // 📊 stacked bar chart: minutes of play (+ quiz time) per day, 2 weeks.
     // The quiz segment exists so the chart never looks like time "went
@@ -1369,11 +1386,10 @@ export class EducationMode {
     // counted as "jeu", so it's shown separately instead of just vanishing.
     const chartBox = document.createElement('div');
     chartBox.className = 'edu-summary';
-    chartBox.innerHTML = '<div class="edu-title">Temps par jour <span>en minutes · touche une barre</span></div>' +
-      '<div style="font-size:12px;color:#8894b0;margin-top:2px">' +
-      '<span style="color:#ffd75e">■</span> jeu (aujourd\'hui) &nbsp; ' +
-      '<span style="color:#5ab46e">■</span> jeu &nbsp; ' +
-      '<span style="color:#4a90d9">■</span> quiz</div>';
+    chartBox.innerHTML = '<div class="edu-title">Temps par jour <span>14 derniers jours · touche une barre</span></div>' +
+      '<div style="font-size:12.5px;color:#8e8e93;margin:-8px 0 6px">' +
+      '<span style="color:#ff9f0a">●</span> jeu &nbsp;·&nbsp; ' +
+      '<span style="color:#0a84ff">●</span> quiz</div>';
     const cv = document.createElement('canvas');
     cv.width = 900; cv.height = 240;
     cv.style.width = '100%';
@@ -1398,23 +1414,39 @@ export class EducationMode {
     const quizMins = keys14.map((k) => (days[k] ? Math.round((days[k].quiz || 0) / 60) : 0));
     const totalMins = keys14.map((i2, i) => playMins[i] + quizMins[i]);
     const max = Math.max(10, ...totalMins);
-    const PADL = 34, PADB = 34, PADT = 18;
+    const PADL = 30, PADB = 32, PADT = 22;
     const W = cv.width - PADL - 8, H = cv.height - PADB - PADT;
     const bw = W / keys14.length;
     let selectedKey = null;
+
+    // Rectangle à coins arrondis : roundRect n'existe pas partout, on le
+    // dessine à la main plutôt que de renoncer aux angles doux.
+    const barre = (g, x, y, w, h, r) => {
+      const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+      g.beginPath();
+      g.moveTo(x + rr, y);
+      g.lineTo(x + w - rr, y);
+      g.quadraticCurveTo(x + w, y, x + w, y + rr);
+      g.lineTo(x + w, y + h);
+      g.lineTo(x, y + h);
+      g.lineTo(x, y + rr);
+      g.quadraticCurveTo(x, y, x + rr, y);
+      g.closePath();
+      g.fill();
+    };
 
     const draw = () => {
       const g = cv.getContext('2d');
       g.clearRect(0, 0, cv.width, cv.height);
       const step = max <= 20 ? 5 : max <= 60 ? 15 : 30; // y-axis gridlines
-      g.strokeStyle = 'rgba(255,255,255,0.12)';
-      g.fillStyle = 'rgba(255,255,255,0.45)';
-      g.font = '15px system-ui, sans-serif';
+      g.strokeStyle = 'rgba(255,255,255,0.08)';
+      g.fillStyle = '#8e8e93';
+      g.font = '14px -apple-system, system-ui, sans-serif';
       g.textAlign = 'right';
       for (let v = 0; v <= max; v += step) {
         const y = PADT + H - (v / max) * H;
         g.beginPath(); g.moveTo(PADL, y); g.lineTo(PADL + W, y); g.stroke();
-        g.fillText(String(v), PADL - 5, y + 5);
+        g.fillText(String(v), PADL - 6, y + 5);
       }
       keys14.forEach((k, i) => {
         const x = PADL + i * bw + bw * 0.12;
@@ -1422,24 +1454,31 @@ export class EducationMode {
         const playH = (playMins[i] / max) * H;
         const quizH = (quizMins[i] / max) * H;
         if (k === selectedKey) { // highlight the selected column
-          g.fillStyle = 'rgba(255,255,255,0.08)';
-          g.fillRect(PADL + i * bw, PADT, bw, H);
+          g.fillStyle = 'rgba(255,255,255,0.06)';
+          barre(g, PADL + i * bw, PADT - 6, bw, H + 12, 8);
         }
-        g.fillStyle = k === todayKey() ? '#ffd75e' : '#5ab46e'; // today pops in gold
-        g.fillRect(x, PADT + H - playH, bwPlot, playH);
-        if (quizH > 0) {
-          g.fillStyle = '#4a90d9';
-          g.fillRect(x, PADT + H - playH - quizH, bwPlot, quizH);
+        // Barres à bouts arrondis, empilées : la partie quiz coiffe la
+        // partie jeu, et seul le sommet de la pile est arrondi.
+        const total = playH + quizH;
+        const r = Math.min(bwPlot / 2, 5);
+        if (total > 0) {
+          g.fillStyle = '#ff9f0a'; // jeu
+          barre(g, x, PADT + H - total, bwPlot, total, r);
+          if (quizH > 0) {
+            g.fillStyle = '#0a84ff'; // quiz, au sommet
+            barre(g, x, PADT + H - total, bwPlot, quizH + r, r);
+          }
         }
         g.textAlign = 'center';
         if (totalMins[i] > 0) {
           g.fillStyle = '#fff';
-          g.font = 'bold 13px system-ui, sans-serif';
-          g.fillText(String(totalMins[i]), x + bwPlot / 2, PADT + H - playH - quizH - 5);
+          g.font = '600 13px -apple-system, system-ui, sans-serif';
+          g.fillText(String(totalMins[i]), x + bwPlot / 2, PADT + H - total - 7);
         }
-        g.fillStyle = k === selectedKey ? '#fff' : 'rgba(255,255,255,0.55)';
-        g.font = '11px system-ui, sans-serif';
-        g.fillText(`${k.slice(8, 10)}/${k.slice(5, 7)}`, x + bwPlot / 2, PADT + H + 17);
+        g.fillStyle = k === selectedKey ? '#fff' : '#8e8e93';
+        g.font = `${k === todayKey() ? '600 ' : ''}12px -apple-system, system-ui, sans-serif`;
+        g.fillText(k === todayKey() ? "auj." : `${k.slice(8, 10)}/${k.slice(5, 7)}`,
+          x + bwPlot / 2, PADT + H + 18);
       });
     };
     draw();
