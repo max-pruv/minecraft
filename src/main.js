@@ -1975,9 +1975,51 @@ function refreshSecurityRow() {
         + 'Refais tes photos de temps en temps : tu changes en grandissant !'
       : "Ton compte n'est pas encore protégé — ajoute ton visage ou un code pour que personne d'autre n'y joue.";
 }
+// Changer de prénom, c'est déménager un compte entier : les empreintes du
+// visage, la partie sauvegardée dans le cloud et le code secret sont tous
+// rangés sous le prénom. Sans déménagement, l'enfant se retrouve coupé en
+// deux — le jeu sauvegarde sous le nouveau prénom pendant que le scanner
+// garde son visage sous l'ancien, et le « Reconnais-moi » suivant le salue
+// sous un prénom qu'il n'utilise plus, devant un compte vide.
+async function migrerCompte(ancien, nouveau, { identite = true } = {}) {
+  if (!ancien || !nouveau || ancien === nouveau) return;
+  if (identite) await identity.rename(ancien, nouveau);
+  if (!cloud.configured || !navigator.onLine) return;
+  try {
+    const distant = await cloud.statePull(ancien);
+    if (distant) {
+      const { state } = profileSync.merge(profileSync.snapshot(), distant);
+      profileSync.apply(state);
+      profileSync.hydrated = true; // on vient de lire le cloud pour ce compte
+      await cloud.statePush(nouveau, state);
+    }
+  } catch { /* réseau capricieux : la partie locale n'a pas bougé */ }
+  renderProfiles();
+  refreshSecurityRow();
+}
+// La fusion décidée pendant un scan (« oui, je m'appelle Max maintenant »)
+// déménage la partie elle aussi : l'identité, elle, est déjà déplacée.
+identity.onRenamed = (ancien, nouveau) => migrerCompte(ancien, nouveau, { identite: false });
+
+let nomAvantMenu = '';
+// `change` plutôt que `input` : on déménage quand le prénom est arrêté, pas à
+// chaque lettre tapée.
+homeName.addEventListener('change', () => {
+  const nouveau = playerProfile.name;
+  if (!nomAvantMenu || !nouveau || nouveau === nomAvantMenu) return;
+  const ancien = nomAvantMenu;
+  nomAvantMenu = nouveau;
+  if (!identity.isEnrolled(ancien)) return; // rien à déménager
+  refaceHint.textContent = `🧳 Je déménage le compte de ${ancien} vers ${nouveau}…`;
+  migrerCompte(ancien, nouveau).then(() => {
+    refaceHint.textContent = `✅ C'est fait : ton visage, ton code et ta partie sont maintenant sous « ${nouveau} ».`;
+  });
+});
+
 document.getElementById('profile-btn').addEventListener('click', () => {
   profileMenu.style.display = 'flex';
   document.getElementById('mode-row').style.display = 'none';
+  nomAvantMenu = playerProfile.name;
   refreshSecurityRow();
 });
 for (const [id, kind] of [['reface-btn', 'face'], ['repin-btn', 'pin']]) {
