@@ -1208,52 +1208,87 @@
   </script>
   <script type="module" src="./src/main.js"></script>
   <script>
-    // Auto-update: when a new version of the game activates shortly after
-    // launch, reload once so it applies immediately (instead of requiring a
-    // second launch). Later activations wait for the next launch so we never
-    // reload mid-game.
+    // Mise à jour obligatoire au lancement.
+    //
+    // Avant, une nouvelle version ne s'imposait que si elle arrivait dans les
+    // quinze premières secondes ; passé ce délai l'enfant jouait sur
+    // l'ancienne jusqu'au lancement suivant. Un correctif pouvait donc rester
+    // sans effet pendant des jours.
+    //
+    // Désormais on compare, au démarrage, la version que le serveur annonce à
+    // celle qui tourne. Si elles diffèrent, on installe avant de laisser
+    // jouer, écran d'attente à l'appui.
+    //
+    // Trois garde-fous, parce qu'un enfant bloqué devant un écran d'attente
+    // est pire qu'un enfant sur une version un peu ancienne : hors-ligne on
+    // ne bloque pas (c'est tout l'intérêt d'une application installée), une
+    // vérification impossible laisse passer, et au bout de vingt secondes on
+    // laisse jouer quoi qu'il arrive.
     if ('serviceWorker' in navigator) {
-      const startedAt = Date.now();
-      let refreshing = false;
       const loader = document.getElementById('boot-loader');
       const showLoader = (text) => {
         document.getElementById('boot-text').textContent = text;
         loader.classList.remove('hidden');
       };
+      let refreshing = false;
+      const reloadOnce = (raison) => {
+        if (refreshing) return;
+        refreshing = true;
+        showLoader(raison);
+        location.reload();
+      };
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing && Date.now() - startedAt < 15000) {
-          refreshing = true;
-          showLoader('✨ Nouvelle version installée — redémarrage…');
-          location.reload();
+        if (sessionStorage.getItem('wm-updating') === '1') {
+          sessionStorage.removeItem('wm-updating');
+          reloadOnce('✨ Mise à jour installée — on démarre !');
         }
       });
+
+      // version annoncée par le serveur / version réellement en train de tourner
+      const versionServeur = async () => {
+        const t = await (await fetch('./sw.js', { cache: 'no-store' })).text();
+        return (t.match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1] || null;
+      };
+      const versionActive = () => new Promise((resolve) => {
+        const c = navigator.serviceWorker.controller;
+        if (!c) return resolve(null);
+        const chan = new MessageChannel();
+        chan.port1.onmessage = (e) => resolve(e.data && e.data.version);
+        c.postMessage({ type: 'version' }, [chan.port2]);
+        setTimeout(() => resolve(null), 2000);
+      });
+
       window.addEventListener('load', async () => {
+        if (window.__migrating) return; // déménagement en cours
+        let reg;
+        try { reg = await navigator.serviceWorker.register('./sw.js'); } catch { return; }
+
+        // iPads gardent l'application en veille : on revérifie au retour.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+
+        if (!navigator.onLine) return; // hors-ligne : on joue avec ce qu'on a
+        let attendue = null, courante = null;
         try {
-          if (window.__migrating) return; // départ en cours : ne pas se réinstaller
-          const reg = await navigator.serviceWorker.register('./sw.js');
-          // a new version is downloading: tell the player instead of leaving
-          // a silent pause before the auto-restart
-          const watchInstall = (worker) => {
-            if (!worker) return;
-            // only for real updates (an old version is already controlling)
-            if (navigator.serviceWorker.controller && Date.now() - startedAt < 15000) {
-              showLoader('📦 Téléchargement de la mise à jour…');
-            }
-            worker.addEventListener('statechange', () => {
-              if (worker.state === 'activated' && !refreshing && Date.now() - startedAt >= 15000) {
-                // update arrived mid-game: it will apply at the next launch
-                loader.classList.add('hidden');
-              }
-            });
-          };
-          watchInstall(reg.installing);
-          reg.addEventListener('updatefound', () => watchInstall(reg.installing));
-          // iPads keep the app suspended: re-check for updates whenever it
-          // comes back to the foreground.
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') reg.update().catch(() => {});
-          });
-        } catch { /* offline install is best-effort */ }
+          [attendue, courante] = await Promise.all([versionServeur(), versionActive()]);
+        } catch { return; } // serveur injoignable : on laisse jouer
+        if (!attendue) return;
+        // Pas encore de service worker actif : la toute première visite
+        // installe en tâche de fond, inutile de bloquer.
+        if (!courante || courante === attendue) return;
+
+        showLoader('📦 Mise à jour du jeu… il faut la dernière version pour jouer');
+        sessionStorage.setItem('wm-updating', '1');
+        try { await reg.update(); } catch { /* on tente quand même */ }
+        // filet : si l'installation traîne, on laisse jouer plutôt que de
+        // retenir un enfant devant un écran fixe
+        setTimeout(() => {
+          if (!refreshing) {
+            sessionStorage.removeItem('wm-updating');
+            loader.classList.add('hidden');
+          }
+        }, 20000);
       });
     }
   </script>
