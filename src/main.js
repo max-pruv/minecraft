@@ -2859,6 +2859,10 @@ function drawOverviewMap(mapCanvas, radius) {
       const h = world.terrainHeight(wx, wz);
       let color;
       if (h <= WATER_LEVEL) color = h < WATER_LEVEL - 8 ? [26, 60, 150] : [64, 120, 210];
+      // Mars se reconnaît à sa couleur, comme les villes : la vue générale
+      // colore d'après la hauteur du terrain, elle ne lit pas les blocs — sans
+      // cette règle, le plateau martien ressortait vert comme une prairie.
+      else if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) color = [176, 96, 62];
       else if (world.cityAt(wx, wz)) color = [158, 158, 160];
       else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
       else if (h >= 58) color = [242, 250, 250];
@@ -2935,9 +2939,25 @@ document.getElementById('map-btn').addEventListener('click', () => {
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
   if (minimapVisible) drawMap(minimapCanvas, 96);
 });
+// Rayon de la carte générale. Elle est centrée sur le joueur : un rayon fixe
+// faisait sortir les destinations lointaines — Mars la première — dès qu'on
+// s'éloignait du point de départ, et comme le clic est converti en coordonnées
+// du monde, un nom repoussé sur le bord n'était plus cliquable. On l'élargit
+// donc juste assez pour que TOUTE destination reste sur la carte, d'où qu'on
+// ouvre celle-ci.
+function rayonCarte() {
+  const pcx = player.pos.x, pcz = player.pos.z;
+  let besoin = 520; // le continent et ses cinq villes, comme avant
+  for (const c of [...CITIES, ...PLACES]) {
+    const marge = (c.r || 0) + 60;
+    besoin = Math.max(besoin, Math.abs(c.x - pcx) + marge, Math.abs(c.z - pcz) + marge);
+  }
+  return Math.ceil(besoin);
+}
+
 minimapCanvas.addEventListener('click', () => {
   mapModal.style.display = 'flex';
-  drawOverviewMap(mapModalCanvas, 520); // the whole 8x continent, all five cities
+  drawOverviewMap(mapModalCanvas, rayonCarte());
 });
 document.getElementById('map-modal-close').addEventListener('click', () => {
   mapModal.style.display = 'none';
@@ -3246,6 +3266,7 @@ window.__fx = effects;
 // permet aux captures automatisées de figer l'heure du jour
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
+window.__vueCarte = () => overviewView;
 window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
