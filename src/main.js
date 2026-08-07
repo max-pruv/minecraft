@@ -12,6 +12,7 @@ import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
+import { AdminPanel, isAdminName } from './admin.js';
 import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
@@ -69,6 +70,18 @@ const waterMaterial = new THREE.MeshBasicMaterial({
 });
 
 // --- world & player ----------------------------------------------------------
+
+// L'ancienne sauvegarde ne connaissait qu'un monde : on la reprend avant de
+// rien charger, en la donnant à la fois au monde local et au dernier monde en
+// ligne visité — c'est la même carte qui servait aux deux.
+(function migrerMondes() {
+  let dernier = null;
+  try {
+    const w = JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]');
+    if (Array.isArray(w) && w.length && w[0] && w[0].code) dernier = String(w[0].code);
+  } catch { /* pas de liste de mondes */ }
+  World.migrate(dernier);
+})();
 
 const world = new World();
 world.loadEdits();
@@ -179,6 +192,13 @@ function updateChunks() {
   for (let i = 0; i < MESHES_PER_FRAME && meshQueue.length > 0; i++) {
     const { cx, cz } = meshQueue.pop();
     meshChunk(cx, cz);
+  }
+
+  // Changement de monde : le terrain en mémoire porte encore les blocs de
+  // l'ancien, tous les maillages sont à refaire.
+  if (world.allDirty) {
+    world.allDirty = false;
+    for (const key of chunkMeshes.keys()) world.dirty.add(key);
   }
 
   // Remesh chunks whose blocks changed.
@@ -361,6 +381,7 @@ function pauseGame() {
 }
 
 document.getElementById('play-btn').addEventListener('click', () => {
+  world.switchContext('local');
   posCtx = 'local';
   restorePosition();
   startGame();
@@ -368,8 +389,8 @@ document.getElementById('play-btn').addEventListener('click', () => {
 pauseBtn.addEventListener('click', pauseGame);
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Reset the world? All your block edits will be lost.')) {
-    World.clearSave();
+  if (confirm('Réinitialiser ce monde ? Toutes tes constructions ici seront perdues.')) {
+    world.clearSave(); // ce monde-ci seulement : les autres ne sont pas touchés
     location.reload();
   }
 });
@@ -813,18 +834,100 @@ profileSync.onTrim = (dropped) => {
 // The world in memory is the truth; localStorage only catches up on a
 // debounced save, so a push that read storage alone could ship a copy that
 // is a few seconds behind what the child just built.
-profileSync.liveEdits = () => world.exportEdits();
+profileSync.liveEdits = () => ({ [world.ctx]: world.exportEdits() });
 // A background merge can bring down blocks another device placed. They go
 // straight into the live world so they appear without waiting for a reload.
 profileSync.onMerged = (state) => {
   if (!state || !state.edits) return;
-  const applied = world.mergeEdits(state.edits);
+  const applied = world.mergeEdits(state.edits[world.ctx]);
   if (applied > 0) {
     world.saveEdits();
     creatureManager.toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
   }
 };
 profileSync.start();
+
+// --- bandeau d'état : réseau et sauvegardes ---------------------------------
+//
+// Jusqu'ici, une sauvegarde qui échouait ou un monde en ligne qui décrochait
+// ne se voyaient nulle part : l'enfant continuait à construire, persuadé que
+// tout allait bien, et découvrait la perte au lancement suivant. Le bandeau
+// dit ce qui se passe, en une ligne, sans jamais l'empêcher de jouer — un
+// écran bloquant priverait aussi du mode hors-ligne, qui lui fonctionne.
+//
+// Deux messages au plus, les plus graves d'abord. Un seul cachait le reste :
+// un monde qui décroche pendant que la sauvegarde échoue, ce sont deux
+// informations différentes, et celle qu'on masque est justement celle qui
+// explique ce qu'on voit à l'écran.
+const linkBanner = document.getElementById('link-banner');
+const ALERTES = {
+  'hors-ligne': { rang: 3, cls: 'grave', txt: '📴 Pas d\'internet — tu peux jouer, la sauvegarde repartira toute seule' },
+  'sauvegarde-ko': { rang: 4, cls: 'grave', txt: '⚠️ Sauvegarde en ligne impossible — préviens un parent' },
+  'monde-perdu': { rang: 5, cls: 'grave', txt: '🔌 Monde en ligne perdu' },
+  'monde-reco': { rang: 2, cls: '', txt: '🔄 Reconnexion au monde…' },
+  'signal': { rang: 1, cls: '', txt: '📡 Reconnexion au serveur de jeu…' },
+};
+const alertes = new Map(); // clé -> texte affiché
+// La place réservée est mesurée sur le bandeau lui-même : un texte long passe
+// à la ligne sur un téléphone, et une hauteur écrite en dur laisserait la
+// minicarte remonter dessus.
+function montrerBandeau(texte, cls) {
+  linkBanner.textContent = texte;
+  linkBanner.className = cls;
+  linkBanner.style.display = 'block';
+  document.documentElement.classList.add('a-bandeau');
+  const h = Math.ceil(linkBanner.getBoundingClientRect().height) + 6;
+  document.documentElement.style.setProperty('--banner-h', `${h}px`);
+}
+
+function cacherBandeau() {
+  linkBanner.style.display = 'none';
+  document.documentElement.classList.remove('a-bandeau');
+  document.documentElement.style.removeProperty('--banner-h');
+}
+
+function refreshBanner() {
+  const actifs = [...alertes]
+    .filter(([k]) => ALERTES[k])
+    // hors-ligne explique déjà l'échec de sauvegarde : le répéter n'apprend rien
+    .filter(([k]) => !(k === 'sauvegarde-ko' && alertes.has('hors-ligne')))
+    .sort((a, b) => ALERTES[b[0]].rang - ALERTES[a[0]].rang);
+  if (!actifs.length) { cacherBandeau(); return; }
+  const garde = actifs.slice(0, 2);
+  montrerBandeau(
+    garde.map(([k, txt]) => txt || ALERTES[k].txt).join('  ·  '),
+    garde.some(([k]) => ALERTES[k].cls === 'grave') ? 'grave' : '',
+  );
+}
+function alerte(cle, actif, texte) {
+  if (actif) alertes.set(cle, texte || '');
+  else if (!alertes.has(cle)) return;
+  else alertes.delete(cle);
+  refreshBanner();
+}
+// Un retour à la normale mérite d'être dit, brièvement, sinon on ne sait pas
+// si le problème est réglé ou seulement passé sous silence.
+function bonneNouvelle(texte) {
+  montrerBandeau(texte, 'ok');
+  clearTimeout(linkBanner._t);
+  linkBanner._t = setTimeout(refreshBanner, 2600);
+}
+
+alerte('hors-ligne', !navigator.onLine);
+window.addEventListener('offline', () => alerte('hors-ligne', true));
+window.addEventListener('online', () => {
+  alerte('hors-ligne', false);
+  profileSync.pull().catch(() => {});
+});
+
+profileSync.onSaveState = (etat) => {
+  if (etat === 'ko') alerte('sauvegarde-ko', true);
+  else if (etat === 'ok') {
+    const avait = alertes.has('sauvegarde-ko');
+    alerte('sauvegarde-ko', false);
+    if (avait) bonneNouvelle('☁️ Sauvegarde en ligne rétablie');
+  }
+};
 
 let prefsPushTimer = null;
 function pushPrefsToCloud() {
@@ -853,6 +956,14 @@ function saveProfile() {
     saveRegistry(reg);
     renderProfiles();
   }
+  refreshAdminBtn();
+}
+
+// Déclarée à part et sans dépendance : saveProfile peut l'appeler avant que
+// le panneau parent n'existe.
+function refreshAdminBtn() {
+  const b = document.getElementById('admin-btn');
+  if (b) b.style.display = isAdminName(playerProfile.name) ? 'flex' : 'none';
 }
 
 // --- local profiles ("Qui joue ?") -------------------------------------------------
@@ -1359,6 +1470,19 @@ function startNetSession(code, isHost) {
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
   });
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
+  // Le réseau raconte ce qui lui arrive ; le bandeau le montre.
+  net.onLink = (etat, detail) => {
+    const CLES = ['monde-reco', 'signal', 'monde-perdu'];
+    const revenait = CLES.some((k) => alertes.has(k));
+    alerte('monde-reco', etat === 'reconnexion', detail);
+    alerte('signal', etat === 'signal', detail);
+    alerte('monde-perdu', etat === 'perdu', detail);
+    if (etat === 'ok' && revenait) bonneNouvelle('✅ Reconnecté au monde !');
+  };
+  // Avant même la première poignée de main : à la connexion, les deux côtés
+  // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
+  // la maison locale de l'hôte qui partait dans le monde partagé.
+  world.switchContext(code.toUpperCase());
   return net.start(code, isHost, { name: myName(), lookIdx: selectedChar, look: playerProfile.look });
 }
 
@@ -1382,10 +1506,12 @@ async function openWorld(code) {
       } catch (err2) {
         onlineStatus.textContent = '❌ ' + err2.message;
         if (net) { net.stop(); net = null; }
+        world.switchContext('local');
         return;
       }
     } else {
       onlineStatus.textContent = '❌ ' + err.message;
+      world.switchContext('local');
       return;
     }
   }
@@ -1488,6 +1614,7 @@ function showOnlineUI() {
 function leaveToMainMenu() {
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
+  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
   cloud.detach();
   syncRemotePlayers([]); // remove remote avatars
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
@@ -1499,6 +1626,7 @@ function leaveToMainMenu() {
   setUnread(0); // en quittant le monde, la pastille n'a plus lieu d'être
   world.saveEdits();
   savePosition();
+  world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
   if (document.exitPointerLock) document.exitPointerLock();
@@ -1540,6 +1668,7 @@ document.getElementById('online-btn').addEventListener('click', () => {
 });
 document.getElementById('online-back').addEventListener('click', () => {
   if (net) { net.stop(); net = null; }
+  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
   cloud.detach();
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
@@ -1878,7 +2007,7 @@ async function pullPlayTime() {
   // was built before this pull finished, and its own save-on-unload would
   // otherwise write that older copy straight back over the merged one.
   if (state && state.edits) {
-    const applied = world.mergeEdits(state.edits);
+    const applied = world.mergeEdits((state.edits || {})[world.ctx]);
     if (applied > 0) {
       world.saveEdits();
       creatureManager.toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
@@ -1962,6 +2091,16 @@ const profileMenu = document.getElementById('profile-menu');
     }
   } catch { /* l'accueil s'affiche très bien sans */ }
 })();
+
+// Espace parent : le bouton n'existe que pour un compte, et l'ouvrir demande
+// encore le code parent. Rien ici n'est un vrai rempart — la clé du cloud est
+// publique par nature — mais un enfant qui trouve l'iPad ouvert ne tombe pas
+// dessus par hasard.
+const admin = new AdminPanel(cloud, identity, () => playerProfile.name);
+const adminBtn = document.getElementById('admin-btn');
+
+adminBtn.addEventListener('click', () => admin.open());
+refreshAdminBtn();
 
 const refaceHint = document.getElementById('reface-hint');
 function refreshSecurityRow() {
@@ -2858,7 +2997,7 @@ const fun = initFun({
 
 // console/debug handle
 window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 

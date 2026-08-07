@@ -201,6 +201,15 @@ export class CloudSave {
     });
   }
 
+  // Lecture libre d'une table, pour la vue parent. Volontairement générique :
+  // elle ne sert qu'à regarder, jamais à écrire.
+  async selectAll(table, query = 'select=*') {
+    if (!this.configured) return [];
+    const res = await fetch(`${this.url}/rest/v1/${table}?${query}`, { headers: this.headers() });
+    if (!res.ok) return [];
+    return res.json();
+  }
+
   // ---- play time: cross-device totals per child --------------------------
   // Each device pushes its OWN per-day tally under its own device id; the
   // client sums every device's rows to get the true total for that child,

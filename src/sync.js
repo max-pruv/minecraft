@@ -25,7 +25,7 @@ const FIELDS = [
   ['web-minecraft-worlds-v1', 'worlds'],
   ['web-minecraft-pos-v1', 'pos'],
   ['web-minecraft-photos-v1', 'photos'],
-  ['web-minecraft-edits-v2', 'edits'],
+  ['web-minecraft-edits-v3', 'edits'],
 ];
 
 const MAX_PHOTOS = 8;
@@ -133,6 +133,35 @@ function mergeEdits(a = {}, b = {}) {
   return out;
 }
 
+// Les blocs sont rangés par monde : { local: {...}, "30953": {...} }. Un
+// appareil resté sur l'ancienne version envoie encore une carte unique — on
+// la reconnaît à ses valeurs, des couples [id, date], et on la range dans le
+// monde local plutôt que de la jeter.
+//
+// Un document peut être mixte : un appareil resté sur l'ancienne version
+// republie sa carte plate par-dessus la nouvelle arborescence. On trie donc
+// clé par clé plutôt que de juger sur la première.
+function normalizeEdits(e) {
+  if (!e || typeof e !== 'object') return {};
+  const out = {};
+  let plat = null;
+  for (const [k, v] of Object.entries(e)) {
+    if (Array.isArray(v)) (plat || (plat = {}))[k] = v;      // "x,y,z": [id, t]
+    else if (v && typeof v === 'object') out[k] = v;         // monde: { ... }
+  }
+  if (plat) out.local = mergeEdits(plat, out.local);
+  return out;
+}
+
+function mergeAllEdits(a, b) {
+  const A = normalizeEdits(a), B = normalizeEdits(b);
+  const out = {};
+  for (const ctx of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    out[ctx] = mergeEdits(A[ctx], B[ctx]);
+  }
+  return out;
+}
+
 export class ProfileSync {
   constructor(cloud, getName) {
     this.cloud = cloud;
@@ -147,8 +176,13 @@ export class ProfileSync {
     this.hydrated = false;
     // Set by the game so a push reflects the live world rather than its
     // localStorage projection, which only catches up on a debounced save.
-    this.liveEdits = null;   // () => ({ "x,y,z": [id, t] })
+    this.liveEdits = null;   // () => ({ [monde]: { "x,y,z": [id, t] } })
     this.onMerged = null;    // (state) => void, after a background merge
+    // Une sauvegarde qui échoue en silence, c'est un enfant qui construit
+    // pendant une heure pour rien. On compte les échecs d'affilée et on le
+    // dit — pas dès le premier, un réseau a le droit de hoqueter.
+    this.onSaveState = null; // ('ok' | 'retard' | 'ko') => void
+    this.failures = 0;
   }
 
   // Reads the working copy out of localStorage.
@@ -161,7 +195,7 @@ export class ProfileSync {
     if (this.liveEdits) {
       try {
         const live = this.liveEdits();
-        if (live) state.edits = mergeEdits(live, state.edits);
+        if (live) state.edits = mergeAllEdits(live, state.edits);
       } catch { /* fall back to the stored copy */ }
     }
     return state;
@@ -180,7 +214,7 @@ export class ProfileSync {
     out.quest = mergeQuest(local.quest, remote.quest);
     out.worlds = mergeWorlds(local.worlds, remote.worlds);
     out.pos = mergePos(local.pos, remote.pos);
-    out.edits = mergeEdits(local.edits, remote.edits);
+    out.edits = mergeAllEdits(local.edits, remote.edits);
     out.photos = [...new Set([...(local.photos || []), ...(remote.photos || [])])].slice(0, MAX_PHOTOS);
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');
@@ -218,9 +252,16 @@ export class ProfileSync {
       body = JSON.stringify(out);
     }
     if (body.length > MAX_BYTES && out.edits) {
-      // keep the most recently edited blocks
-      const entries = Object.entries(out.edits).sort((a, b) => num(b[1][1]) - num(a[1][1]));
-      out.edits = Object.fromEntries(entries.slice(0, 4000));
+      // On garde les blocs les plus récents, tous mondes confondus : sur un
+      // seul monde, tailler par monde en sacrifierait un entier.
+      const tous = [];
+      for (const [ctx, map] of Object.entries(normalizeEdits(out.edits))) {
+        for (const [k, entry] of Object.entries(map || {})) tous.push([ctx, k, entry]);
+      }
+      tous.sort((a, b) => num(b[2][1]) - num(a[2][1]));
+      const garde = {};
+      for (const [ctx, k, entry] of tous.slice(0, 4000)) (garde[ctx] || (garde[ctx] = {}))[k] = entry;
+      out.edits = garde;
       dropped.push('anciens blocs');
     }
     return { state: out, dropped };
@@ -230,7 +271,12 @@ export class ProfileSync {
     const name = this.getName();
     if (!name || !this.cloud.configured || !navigator.onLine) return { changed: false };
     let remote = null;
-    try { remote = await this.cloud.statePull(name); } catch { return { changed: false }; }
+    try {
+      remote = await this.cloud.statePull(name);
+    } catch {
+      this.noteFailure();
+      return { changed: false };
+    }
     // Lecture réussie : on sait désormais ce que le cloud contient, donc ce
     // qu'on écrira ensuite aura du sens. En cas d'échec on reste sur la
     // réserve et la boucle réessaiera de lire.
@@ -273,8 +319,22 @@ export class ProfileSync {
     try {
       await this.cloud.statePush(name, state, keepalive);
       this.lastPushed = body;
+      this.noteSuccess();
       if (dropped.length && this.onTrim) this.onTrim(dropped);
-    } catch { /* retried on the next tick */ }
+    } catch {
+      this.noteFailure(); // réessayé au tour suivant, mais plus en silence
+    }
+  }
+
+  noteSuccess() {
+    const avant = this.failures;
+    this.failures = 0;
+    if (avant && this.onSaveState) this.onSaveState('ok');
+  }
+
+  noteFailure() {
+    this.failures++;
+    if (this.onSaveState) this.onSaveState(this.failures >= 2 ? 'ko' : 'retard');
   }
 
   start(intervalMs = 45000) {

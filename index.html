@@ -716,11 +716,30 @@
       --rail-w: calc(var(--rail-x) + var(--rail-btn) + 10px);
       /* les panneaux ouverts à gauche démarrent sous la barre du haut, où
          vivent le chronomètre et les compteurs centrés */
-      --rail-panel-top: calc(56px + var(--safe-top));
+      --panel-base: calc(56px + var(--safe-top));
+      /* le bandeau d'état s'installe sur cette ligne et pousse tout ce qui
+         s'ouvre en dessous : une seule variable, donc rien ne se recouvre */
+      --banner-h: 0px;
+      --rail-panel-top: calc(var(--panel-base) + var(--banner-h));
       /* hauteur à laquelle le chat s'arrête : au-dessus des commandes
          tactiles, qui occupent le bas de l'écran sur téléphone */
       --chat-bottom: calc(120px + var(--safe-bottom));
     }
+    /* sur :root et non sur body : --rail-panel-top est calculé au niveau de
+       :root, une variable posée plus bas n'y remonterait pas */
+    :root.a-bandeau { --banner-h: 42px; }
+    /* Bandeau d'état du réseau et des sauvegardes. Un enfant ne doit pas
+       continuer à construire pendant qu'on perd ce qu'il fait. */
+    #link-banner {
+      display: none; position: fixed; z-index: 20;
+      top: var(--panel-base); left: var(--rail-w); right: 56px;
+      padding: 7px 12px; border-radius: 10px; font-size: 13px; line-height: 1.25;
+      color: #fff; text-align: center; pointer-events: none;
+      background: rgba(180, 120, 40, 0.92); border: 1px solid rgba(255, 220, 150, 0.5);
+    }
+    #link-banner.grave { background: rgba(170, 60, 55, 0.94); border-color: rgba(255, 170, 160, 0.55); }
+    #link-banner.ok { background: rgba(45, 120, 70, 0.92); border-color: rgba(150, 230, 180, 0.5); }
+
     #left-rail, #left-rail-bottom {
       position: fixed; left: var(--rail-x); z-index: 11;
       display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
@@ -887,7 +906,7 @@
          panneaux ouverts à gauche passent donc sous cette ligne-là, sinon la
          minicarte vient mordre dessus. Une seule variable les commande tous. */
       :root {
-        --rail-panel-top: calc(92px + var(--safe-top));
+        --panel-base: calc(92px + var(--safe-top));
         /* Les commandes tactiles montent jusqu'à 250 px du bas (le bouton
            vol est le plus haut) : le chat s'arrête au-dessus plutôt que de
            recouvrir de quoi jouer. */
@@ -1020,6 +1039,7 @@
       <div id="inv-pager"></div>
     </div>
   </div>
+  <div id="link-banner"></div>
   <div id="edu-timer"></div>
 
   <div id="edu-panel">
@@ -1088,6 +1108,7 @@
       <button id="play-btn">🏠 Jouer en local</button>
       <button id="online-btn">🌐 Jouer en ligne</button>
       <button id="edu-menu-btn">📚 Éducation<span id="edu-today"></span></button>
+      <button id="admin-btn" style="display: none;">🛠️ Espace parent</button>
       <button id="switch-player-btn">🔄 Changer de joueur</button>
     </div>
     <div id="profile-menu">
@@ -1170,7 +1191,8 @@
     // legacy unsuffixed keys so existing saves become "player 1" seamlessly.
     (function () {
       const PER_PROFILE = [
-        'web-minecraft-edu-v1', 'web-minecraft-edits-v2', 'web-minecraft-edits-v1',
+        'web-minecraft-edu-v1', 'web-minecraft-edits-v3',
+        'web-minecraft-edits-v2', 'web-minecraft-edits-v1',
         'web-minecraft-dex-v1', 'web-minecraft-meat-v1', 'web-minecraft-profile-v1',
         'web-minecraft-worlds-v1', 'web-minecraft-hotbar-v1', 'web-minecraft-pos-v1',
         'web-minecraft-bag-v1', 'web-minecraft-records-v1', 'web-minecraft-photos-v1',

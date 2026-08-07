@@ -462,6 +462,8 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
+    this.ctx = 'local';           // monde courant : 'local' ou le code du monde en ligne
+    this.allDirty = false;        // tout remailler (changement de monde)
   }
 
   static key(cx, cz) { return cx + ',' + cz; }
@@ -1012,44 +1014,94 @@ export class World {
 
   // --- persistence (player edits only; terrain is deterministic) ----------
 
-  static STORAGE_KEY = 'web-minecraft-edits-v2';
+  // Un enregistrement par monde : { "local": {...}, "30953": {...} }.
+  //
+  // Avant, tous les mondes partageaient une seule carte de blocs. Rejoindre
+  // un monde en ligne versait donc ses blocs dans la maison qu'on venait de
+  // construire tout seul, et le retour au monde local rapportait ceux des
+  // copains. Il n'existait en réalité qu'un seul monde, quel que soit le
+  // code tapé — et un enfant qui revenait sur « son » monde en ligne ne
+  // retrouvait pas ce qu'il y avait laissé.
+  static STORAGE_KEY = 'web-minecraft-edits-v3';
+  static STORAGE_KEY_V2 = 'web-minecraft-edits-v2';
   static STORAGE_KEY_V1 = 'web-minecraft-edits-v1';
 
-  loadEdits() {
+  static loadAll() {
     try {
       const raw = localStorage.getItem(World.STORAGE_KEY);
-      if (raw) {
-        const obj = JSON.parse(raw);
-        for (const [k, [id, t]] of Object.entries(obj)) {
-          this.edits.set(k, id);
-          this.editTimes.set(k, t);
+      if (raw) return JSON.parse(raw) || {};
+    } catch { /* sauvegarde abîmée — on repart du terrain nu */ }
+    return {};
+  }
+
+  static saveAll(all) {
+    try { localStorage.setItem(World.STORAGE_KEY, JSON.stringify(all)); }
+    catch { /* stockage plein : on joue quand même, le cloud a une copie */ }
+  }
+
+  // Reprend l'ancienne carte unique. Elle est réclamée à la fois par le monde
+  // local et par le dernier monde en ligne visité : c'est la même carte qui
+  // servait aux deux, et personne ne doit voir ses constructions disparaître
+  // le jour de la mise à jour. Les deux mondes divergeront ensuite.
+  static migrate(dernierMondeEnLigne) {
+    try {
+      if (localStorage.getItem(World.STORAGE_KEY)) return false;
+      let plat = null;
+      const v2 = localStorage.getItem(World.STORAGE_KEY_V2);
+      if (v2) plat = JSON.parse(v2);
+      else {
+        const v1 = localStorage.getItem(World.STORAGE_KEY_V1);
+        if (v1) {
+          plat = {};
+          for (const [k, id] of Object.entries(JSON.parse(v1) || {})) plat[k] = [id, 0];
         }
-        return;
       }
-      // migrate the old un-timestamped format
-      const rawV1 = localStorage.getItem(World.STORAGE_KEY_V1);
-      if (rawV1) {
-        const obj = JSON.parse(rawV1);
-        for (const [k, id] of Object.entries(obj)) {
-          this.edits.set(k, id);
-          this.editTimes.set(k, 0);
-        }
-      }
-    } catch { /* corrupted save — start fresh */ }
+      if (!plat || !Object.keys(plat).length) return false;
+      const all = { local: plat };
+      if (dernierMondeEnLigne) all[dernierMondeEnLigne] = plat;
+      World.saveAll(all);
+      return true;
+    } catch { return false; }
+  }
+
+  loadEdits() {
+    const map = World.loadAll()[this.ctx] || {};
+    for (const [k, entry] of Object.entries(map)) {
+      if (!Array.isArray(entry)) continue;
+      this.edits.set(k, entry[0]);
+      this.editTimes.set(k, entry[1] || 0);
+    }
   }
 
   saveEdits() {
-    try {
-      const out = {};
-      for (const [k, id] of this.edits) out[k] = [id, this.editTimes.get(k) || 0];
-      localStorage.setItem(World.STORAGE_KEY, JSON.stringify(out));
-    } catch { /* storage full or unavailable — play on without saving */ }
+    const all = World.loadAll();
+    all[this.ctx] = this.exportEdits();
+    World.saveAll(all);
   }
 
-  static clearSave() {
-    try {
-      localStorage.removeItem(World.STORAGE_KEY);
-      localStorage.removeItem(World.STORAGE_KEY_V1);
-    } catch { /* ignore */ }
+  // Changer de monde : on range celui qu'on quitte, on oublie les morceaux de
+  // terrain déjà fabriqués — ils portent les blocs de l'ancien monde — puis on
+  // charge l'autre. `allDirty` dit à l'affichage de tout refaire.
+  switchContext(ctx) {
+    if (ctx === this.ctx) return;
+    this.saveEdits();
+    this.ctx = ctx;
+    this.chunks.clear(); // le terrain est déterministe : il se régénère à l'identique
+    this.edits.clear();
+    this.editTimes.clear();
+    this.loadEdits();
+    this.allDirty = true;
+  }
+
+  // Efface le monde en cours seulement : réinitialiser sa maison ne doit pas
+  // faire disparaître le monde en ligne où l'on construit avec les copains.
+  clearSave() {
+    const all = World.loadAll();
+    delete all[this.ctx];
+    World.saveAll(all);
+    this.edits.clear();
+    this.editTimes.clear();
+    this.chunks.clear();
+    this.allDirty = true;
   }
 }
