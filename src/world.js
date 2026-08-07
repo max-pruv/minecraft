@@ -1,6 +1,7 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
+import { buildVillandry } from './villandry.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -370,6 +371,12 @@ export const ISLAND = { name: 'Île tropicale', x: 620, z: 80, r: 38 };
 // ce qui rend le voyage intéressant.
 export const MARS = { name: 'Planète Mars', x: -520, z: -480, r: 90 };
 
+// Le château de Villandry, planté juste à l'est du château médiéval : on passe
+// de la forteresse à la Renaissance en marchant. Le domaine est vaste — six
+// jardins sur trois terrasses — et demande un terrain parfaitement plat, comme
+// le vrai site aménagé au-dessus du Cher.
+export const VILLANDRY = { name: 'Château de Villandry', x: 250, z: 205, r: 92 };
+
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
 // plat : c'est ce liseré surélevé qui les rend reconnaissables de loin.
 function cratere(d, rayon) {
@@ -386,7 +393,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -687,6 +694,7 @@ const LANDMARKS = [
   // Countryside
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
+  { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -769,6 +777,14 @@ export class World {
       h = h * (1 - m) + 34 * m;
     }
 
+    // Villandry : le domaine est terrassé, donc parfaitement plat. Les trois
+    // niveaux sont bâtis en blocs par le constructeur, pas creusés dans le sol.
+    const vd2 = Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z);
+    if (vd2 < VILLANDRY.r) {
+      const m = Math.min(1, (VILLANDRY.r - vd2) / 16);
+      h = h * (1 - m) + 34 * m;
+    }
+
     // the desert: gentle sandy dunes
     const dd = Math.hypot(x - DESERT.x, z - DESERT.z);
     if (dd < DESERT.r) {
@@ -831,6 +847,7 @@ export class World {
     if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
+    if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
     if (di < ISLAND.r) {

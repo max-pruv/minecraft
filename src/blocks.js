@@ -215,6 +215,7 @@ for (let i = 0; i < 200; i++) {
 }
 
 export function isProp(id) {
+  if (id >= MEUBLE_START && id < MEUBLE_START + MEUBLE_ITEMS.length) return true;
   return id >= PROP_START && id < PROP_START + PROP_ITEMS.length;
 }
 
@@ -238,6 +239,63 @@ CITY_NAMES.forEach((name, i) => {
 });
 
 // Curated blocks shown in the inventory's first tab (decor has its own tab).
+// --- Villandry : les matériaux de la Renaissance ligérienne ----------------
+// Une plage à part, après les blocs de ville : ajouter des identifiants sous
+// DECOR_START est impossible, ils sont tous pris.
+
+export const VILLANDRY_START = 580;
+export const VILLANDRY_TILE_START = 347; // après les tuiles martiennes
+
+export const VILLANDRY_BLOCK = {
+  TUFFEAU: 580,        // le calcaire blanc crème de la vallée de la Loire
+  TUFFEAU_TAILLE: 581, // pierre de taille appareillée : chaînages et encadrements
+  ARDOISE: 582,        // les toitures bleu-gris d'Anjou
+  BUIS: 583,           // le buis taillé des parterres
+  ALLEE: 584,          // le gravier clair des allées
+};
+
+export const VILLANDRY_TILE = {
+  TUFFEAU: 347,
+  TUFFEAU_TAILLE: 348,
+  ARDOISE: 349,
+  BUIS: 350,
+  ALLEE: 351,
+};
+
+for (const [nom, id] of Object.entries(VILLANDRY_BLOCK)) {
+  const tile = VILLANDRY_TILE[nom];
+  BLOCK_INFO[id] = {
+    name: { TUFFEAU: 'Tuffeau', TUFFEAU_TAILLE: 'Pierre de taille', ARDOISE: 'Ardoise', BUIS: 'Buis taillé', ALLEE: 'Allée de gravier' }[nom],
+    tiles: [tile, tile, tile], solid: true, transparent: false,
+  };
+}
+
+// --- mobilier Renaissance : une plage à part, elle aussi -------------------
+// Les 200 objets existants sont attribués par « type[i % nombre de types] » :
+// toucher à cette liste changerait le meuble derrière chaque identifiant déjà
+// posé par un enfant. On ouvre donc une plage neuve.
+
+export const MEUBLE_START = 600;
+
+export const MEUBLE_ITEMS = [
+  { type: 'lit_baldaquin', name: 'Lit à baldaquin', emoji: '🛏️', rgb: [122, 38, 44] },
+  { type: 'cheminee', name: 'Cheminée de pierre', emoji: '🔥', rgb: [226, 220, 204] },
+  { type: 'lustre', name: 'Lustre', emoji: '🕯️', rgb: [212, 176, 92] },
+  { type: 'tapisserie', name: 'Tapisserie', emoji: '🧵', rgb: [96, 78, 122] },
+  { type: 'buffet', name: 'Buffet sculpté', emoji: '🗄️', rgb: [78, 52, 30] },
+  { type: 'table_banquet', name: 'Table de banquet', emoji: '🍽️', rgb: [92, 62, 36] },
+  { type: 'fauteuil_renaissance', name: 'Fauteuil Renaissance', emoji: '💺', rgb: [140, 46, 52] },
+  { type: 'vasque', name: 'Vasque de marbre', emoji: '⛲', rgb: [232, 196, 196] },
+].map((m, i) => ({ ...m, id: MEUBLE_START + i }));
+
+for (const m of MEUBLE_ITEMS) {
+  BLOCK_INFO[m.id] = { name: m.name, prop: true, solid: false, transparent: true, tiles: null };
+}
+
+export function isMeuble(id) {
+  return id >= MEUBLE_START && id < MEUBLE_START + MEUBLE_ITEMS.length;
+}
+
 export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
   .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START));
 

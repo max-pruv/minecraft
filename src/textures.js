@@ -1,7 +1,7 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE, DECOR_ITEMS, CITY_TILE_START } from './blocks.js';
+import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE } from './blocks.js';
 
 const TILE_PX = 16;
 export const ATLAS_COLS = 20;
@@ -35,6 +35,68 @@ function noisyFill(ctx, ox, oy, base, vary, rng) {
 }
 
 const painters = {
+  // --- Villandry ----------------------------------------------------------
+  // Le tuffeau : un calcaire blanc crème, très clair, à peine grenu. C'est lui
+  // qui donne aux châteaux de la Loire leur lumière particulière.
+  [VILLANDRY_TILE.TUFFEAU](ctx, ox, oy) {
+    const rng = mulberry32(6001);
+    noisyFill(ctx, ox, oy, [230, 224, 206], 7, rng);
+    for (let i = 0; i < 14; i++) {
+      const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      px(ctx, ox, oy, x, y, 216, 209, 190);
+    }
+  },
+
+  // Pierre de taille : le même calcaire, mais appareillé — les joints fins des
+  // chaînages d'angle et des encadrements de fenêtres.
+  [VILLANDRY_TILE.TUFFEAU_TAILLE](ctx, ox, oy) {
+    const rng = mulberry32(6002);
+    noisyFill(ctx, ox, oy, [226, 219, 200], 6, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      px(ctx, ox, oy, x, 0, 198, 190, 172);
+      px(ctx, ox, oy, x, 8, 198, 190, 172);
+    }
+    for (let y = 1; y < 8; y++) px(ctx, ox, oy, 7, y, 198, 190, 172);
+    for (let y = 9; y < TILE_PX; y++) px(ctx, ox, oy, 14, y, 198, 190, 172);
+  },
+
+  // L'ardoise d'Anjou : bleu-gris sombre, posée en écailles régulières.
+  [VILLANDRY_TILE.ARDOISE](ctx, ox, oy) {
+    const rng = mulberry32(6003);
+    noisyFill(ctx, ox, oy, [76, 86, 102], 9, rng);
+    for (let rangee = 0; rangee < 4; rangee++) {
+      const y = rangee * 4;
+      const decal = (rangee % 2) * 4;
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 58, 66, 80);
+      for (let k = 0; k < 2; k++) {
+        const cx = (decal + k * 8) % TILE_PX;
+        for (let dy = 1; dy < 4; dy++) px(ctx, ox, oy, cx, y + dy, 58, 66, 80);
+      }
+    }
+  },
+
+  // Le buis taillé : un vert sombre et dense, sans éclat, qui dessine les
+  // parterres. C'est presque une matière de maçonnerie, pas de feuillage.
+  [VILLANDRY_TILE.BUIS](ctx, ox, oy) {
+    const rng = mulberry32(6004);
+    noisyFill(ctx, ox, oy, [46, 86, 44], 12, rng);
+    for (let i = 0; i < 30; i++) {
+      const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      const clair = rng() < 0.5;
+      px(ctx, ox, oy, x, y, clair ? 62 : 34, clair ? 106 : 66, clair ? 56 : 32);
+    }
+  },
+
+  // Les allées : un gravier beige clair, ratissé, qui fait ressortir le buis.
+  [VILLANDRY_TILE.ALLEE](ctx, ox, oy) {
+    const rng = mulberry32(6005);
+    noisyFill(ctx, ox, oy, [208, 196, 168], 10, rng);
+    for (let i = 0; i < 26; i++) {
+      const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      px(ctx, ox, oy, x, y, 186, 174, 148);
+    }
+  },
+
   // --- Mars ---------------------------------------------------------------
   // Régolithe : une poussière rouille très fine, semée de petits cailloux plus
   // sombres. C'est la couleur qui doit porter le dépaysement, pas le motif.
