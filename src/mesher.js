@@ -135,7 +135,11 @@ export function buildChunkGeometry(world, cx, cz) {
     return world.getBlock(baseX + x, y, baseZ + z);
   };
 
-  for (let y = 0; y < HEIGHT; y++) {
+  // inutile de monter plus haut que le bloc le plus haut du chunk :
+  // au-dessus, c'est de l'air, qui n'émet aucune face
+  const topY = Math.min(world.chunkTop(cx, cz), HEIGHT - 1);
+
+  for (let y = 0; y <= topY; y++) {
     for (let z = 0; z < CHUNK; z++) {
       for (let x = 0; x < CHUNK; x++) {
         const id = data[x + z * CHUNK + y * CHUNK * CHUNK];

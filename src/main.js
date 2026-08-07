@@ -7,6 +7,7 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
+import { createEffects } from './effects.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -22,7 +23,11 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
-const MESHES_PER_FRAME = 5;
+// Millisecondes maximum consacrées par frame à construire des chunks. À 60 fps
+// une frame dure 16,7 ms : en laisser 6 au terrain garde de la marge pour le
+// reste du jeu et rend les gels structurellement impossibles.
+const MESH_BUDGET_MS = 6;
+const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
@@ -87,6 +92,7 @@ const world = new World();
 world.loadEdits();
 
 const player = new Player(camera, world);
+const effects = createEffects({ scene, world, atlasCanvas });
 const creatureManager = new CreatureManager(scene, world, player);
 const animalManager = new AnimalManager(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
 let marlon = null; // spawned after the spawn point is known
@@ -116,13 +122,19 @@ let meshQueue = [];
 function rebuildQueue() {
   const pcx = Math.floor(player.pos.x / CHUNK);
   const pcz = Math.floor(player.pos.z / CHUNK);
+  // direction du regard : on sert d'abord le paysage qu'on a devant les yeux,
+  // ce qui est dans le dos peut attendre quelques frames sans que ça se voie
+  const visX = -Math.sin(player.yaw), visZ = -Math.cos(player.yaw);
   meshQueue = [];
   for (let dz = -RENDER_RADIUS; dz <= RENDER_RADIUS; dz++) {
     for (let dx = -RENDER_RADIUS; dx <= RENDER_RADIUS; dx++) {
       const cx = pcx + dx, cz = pcz + dz;
-      if (!chunkMeshes.has(World.key(cx, cz))) {
-        meshQueue.push({ cx, cz, d: dx * dx + dz * dz });
-      }
+      if (chunkMeshes.has(World.key(cx, cz))) continue;
+      const d2 = dx * dx + dz * dz;
+      const len = Math.sqrt(d2);
+      // produit scalaire : 1 pile devant, -1 dans le dos
+      const devant = len < 1.5 ? 1 : (dx / len) * visX + (dz / len) * visZ;
+      meshQueue.push({ cx, cz, d: d2 * (devant > 0.15 ? 1 : 2.5) });
     }
   }
   meshQueue.sort((a, b) => b.d - a.d); // pop() takes the nearest
@@ -189,10 +201,15 @@ function updateChunks() {
     }
   }
 
-  for (let i = 0; i < MESHES_PER_FRAME && meshQueue.length > 0; i++) {
-    const { cx, cz } = meshQueue.pop();
-    meshChunk(cx, cz);
-  }
+  // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
+  // (château, forêt dense) ne peut plus geler la frame à lui tout seul. Au pire
+  // le paysage lointain arrive une frame plus tard, derrière le brouillard.
+  const debut = performance.now();
+  do {
+    const suivant = meshQueue.pop();
+    if (!suivant) break;
+    meshChunk(suivant.cx, suivant.cz);
+  } while (performance.now() - debut < MESH_BUDGET_MS);
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
@@ -201,15 +218,27 @@ function updateChunks() {
     for (const key of chunkMeshes.keys()) world.dirty.add(key);
   }
 
-  // Remesh chunks whose blocks changed.
+  // Remesh chunks whose blocks changed. Poser un bloc n'en salit qu'un ou deux,
+  // mais un changement de monde en salit plusieurs centaines : on les traite du
+  // plus proche au plus loin, et on rend la main dès que le budget est dépassé.
   if (world.dirty.size > 0) {
+    const attente = [];
     for (const key of world.dirty) {
-      if (chunkMeshes.has(key)) {
-        const [cx, cz] = key.split(',').map(Number);
-        meshChunk(cx, cz);
-      }
+      if (!chunkMeshes.has(key)) continue;
+      const [cx, cz] = key.split(',').map(Number);
+      attente.push({ key, cx, cz, d: (cx - pcx) ** 2 + (cz - pcz) ** 2 });
     }
     world.dirty.clear();
+    attente.sort((a, b) => a.d - b.d);
+    const t0 = performance.now();
+    for (let i = 0; i < attente.length; i++) {
+      // le premier passe toujours : poser un bloc doit se voir immédiatement
+      if (i > 0 && performance.now() - t0 > REMESH_BUDGET_MS) {
+        for (let j = i; j < attente.length; j++) world.dirty.add(attente[j].key);
+        break;
+      }
+      meshChunk(attente[i].cx, attente[i].cz);
+    }
   }
 }
 
@@ -440,6 +469,8 @@ function breakBlock() {
   }
   const hit = getTarget();
   if (!hit) return;
+  effects.casse(hit.x, hit.y, hit.z, hit.id); // les éclats prennent la couleur du bloc cassé
+  bruitCasse();
   world.setBlock(hit.x, hit.y, hit.z, BLOCK.AIR);
   // Let adjacent water flow into the gap (cheap approximation of fluid).
   for (const [dx, dy, dz] of [[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],[0,1,0]]) {
@@ -463,6 +494,8 @@ function placeBlock() {
   // props are walk-through, so placing one at your feet is fine
   if (!isProp(placing) && player.intersectsBlock(x, y, z)) return;
   world.setBlock(x, y, z, placing);
+  effects.pose(x, y, z);
+  bruitPose();
   fun.onBlockPlaced();
   scheduleSave();
 }
@@ -1796,6 +1829,32 @@ function carillon(notes = [880, 1320]) {
   } catch { /* pas de son : la pastille suffit à prévenir */ }
 }
 const chatDing = () => carillon([880, 1320]);
+
+// Casser et poser sont les gestes les plus répétés de la partie : leur son doit
+// être court, discret et jamais fatigant. Un coup mat qui descend pour la
+// casse, un petit clic qui monte pour la pose.
+function bruitBloc(f0, f1, duree, type, volume) {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = audioCtx || new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t0);
+    osc.frequency.exponentialRampToValueAtTime(f1, t0 + duree);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duree + 0.02);
+  } catch { /* pas de son : les éclats suffisent au retour */ }
+}
+const bruitCasse = () => bruitBloc(190, 70, 0.13, 'triangle', 0.08);
+const bruitPose = () => bruitBloc(420, 700, 0.07, 'square', 0.05);
 
 // Messages non lus. La bulle passe et disparaît ; s'il regardait ailleurs,
 // l'enfant ne saura jamais qu'on lui a écrit. La pastille, elle, reste.
@@ -3143,6 +3202,7 @@ const fun = initFun({
 // console/debug handle
 window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
 window.__admin = admin;
+window.__fx = effects;
 window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
@@ -3172,6 +3232,7 @@ function frame(now) {
   updateRemotePlayers(dt);
   edu.update(dt, running);
   fun.update(dt);
+  effects.update(dt);
 
   if (minimapVisible) {
     minimapTimer -= dt;
