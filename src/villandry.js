@@ -145,15 +145,23 @@ function batirChateau(set, o) {
         set(cx - 1, y, z + sens * dz, TAILLE); set(cx + 1, y, z + sens * dz, TAILLE);
       }
     }
-    // le fronton : deux rampants d'ardoise et un fleuron
+    // Le fronton sculpté, et les pinacles qui l'encadrent. Vues de près, les
+    // lucarnes de Villandry sont de véritables morceaux d'architecture :
+    // encadrement à pilastres, fronton à médaillon, et deux flèches de pierre
+    // effilées de part et d'autre. C'est ce qui les distingue d'une simple
+    // fenêtre de toit.
     for (let k = 0; k <= 1; k++) {
-      for (let dx = -1 + k; dx <= 1 - k; dx++) set(cx + dx, base + 5 + k, z, ARD);
+      for (let dx = -1 + k; dx <= 1 - k; dx++) set(cx + dx, base + 5 + k, z, TAILLE);
       for (let dz = 1; dz <= 2; dz++) {
         set(cx - 1 + k, base + 5 + k, z + sens * dz, ARD);
         set(cx + 1 - k, base + 5 + k, z + sens * dz, ARD);
       }
     }
-    set(cx, base + 7, z, TAILLE);                // le fleuron
+    set(cx, base + 7, z, TAILLE);                // le médaillon du fronton
+    for (const sx of [-2, 2]) {                  // les deux pinacles
+      for (let y = base + 3; y <= base + 6; y++) set(cx + sx, y, z, TAILLE);
+      set(cx + sx, base + 7, z, TAILLE);
+    }
   };
 
   // corps de logis principal, face au sud sur les jardins
@@ -213,12 +221,77 @@ function batirChateau(set, o) {
     for (let dx = -1; dx <= 2; dx++) for (let dz = -1; dz <= 2; dz++) set(cx + dx, SOL + H + 11, cz + dz, TAILLE);
   }
 
-  // la cour d'honneur, ouverte au nord, et son perron
-  o.dalle(-15, 15, -43, -27, SOL, V.ALLEE);
+  // La cour d'honneur est PAVÉE, pas gravillonnée : de gros pavés irréguliers
+  // qui montent jusqu'au perron. C'est la première chose qu'on foule en
+  // arrivant, et ça change complètement l'impression d'ensemble.
+  o.dalle(-15, 15, -43, -27, SOL, BLOCK.COBBLE);
   o.dalle(-4, 4, -27, -26, SOL, V.TUFFEAU_TAILLE);
+
+  // --- le corps d'entrée et son porche en plein cintre ---------------------
+  // En arrivant du village, on ne découvre pas une cour ouverte : on fait face
+  // à un long bâtiment bas, percé en son milieu d'un porche voûté par lequel
+  // on passe. La cour ne se révèle qu'ensuite.
+  const HE = 9;
+  corps(-26, 26, -52, -44, HE);
+  fenetres(-22, 22, -52, 7);
+  fenetres(-22, 22, -44, 7);
+  // les lucarnes du corps d'entrée, en rang serré comme sur la photo d'arrivée
+  for (let x = -21; x <= 21; x += 7) { lucarne(x, -53, -1); }
+
+  // le porche : une voûte en plein cintre, traversante
+  for (let z = -52; z <= -44; z++) {
+    for (let y = SOL + 1; y <= SOL + 5; y++) for (let x = -2; x <= 2; x++) set(x, y, z, BLOCK.AIR);
+    set(-3, SOL + 6, z, TAILLE); set(3, SOL + 6, z, TAILLE);
+    for (let x = -2; x <= 2; x++) set(x, SOL + 6, z, Math.abs(x) === 2 ? TAILLE : BLOCK.AIR);
+    for (let x = -1; x <= 1; x++) set(x, SOL + 7, z, TAILLE); // la clef de voûte
+    o.dalle(-2, 2, z, z, SOL, BLOCK.COBBLE);
+  }
+  for (let y = SOL + 1; y <= SOL + 7; y++) { set(-3, y, -44, TAILLE); set(3, y, -44, TAILLE); }
+
+  // L'allée pavée qui mène au porche, bordée de clôtures à croisillons.
+  for (let z = -80; z <= -53; z++) {
+    for (let x = -7; x <= 7; x++) set(x, SOL, z, BLOCK.COBBLE);
+    if ((z + 80) % 5 < 4) {
+      set(-9, SOL + 1, z, TREILLAGE); set(9, SOL + 1, z, TREILLAGE);
+    }
+  }
+
+  // Les deux orangers en caisse de Versailles qui encadrent l'entrée.
+  for (const sx of [-6, 6]) {
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      set(sx + dx, SOL + 1, -55 + dz, BLOCK.WHITEBRICK);
+    }
+    set(sx, SOL + 2, -55, BLOCK.LOG);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      set(sx + dx, SOL + 3, -55 + dz, BLOCK.LEAVES);
+    }
+    set(sx, SOL + 4, -55, BLOCK.LEAVES);
+  }
+
+  // Le panneau bleu « Sites et Monuments Historiques » planté à l'entrée.
+  for (let y = SOL + 1; y <= SOL + 2; y++) set(-11, y, -66, V.TUFFEAU_TAILLE);
+  for (let dx = 0; dx <= 2; dx++) {
+    set(-12 + dx, SOL + 3, -66, BLOCK.BLUEBRICK);
+    set(-12 + dx, SOL + 4, -66, BLOCK.WHITEBRICK);
+    set(-12 + dx, SOL + 5, -66, BLOCK.BLUEBRICK);
+  }
   // la porte du corps de logis
   for (let y = SOL + 1; y <= SOL + 4; y++) for (let x = -2; x <= 2; x++) set(x, y, -26, BLOCK.AIR);
   for (let x = -3; x <= 3; x++) set(x, SOL + 5, -26, TAILLE);
+
+  // --- la galerie à arcades, au pied de la façade sur les jardins ----------
+  // Vue depuis le canal, la façade sud repose sur une enfilade d'arcades en
+  // plein cintre : une galerie couverte où l'on marche à l'abri, entre le
+  // bâtiment et la terrasse.
+  for (let x = -22; x <= 22; x += 4) {
+    for (let y = SOL + 1; y <= SOL + 3; y++) { set(x, y, -15, TAILLE); set(x, y, -13, TAILLE); }
+    set(x, SOL + 4, -15, TAILLE); set(x, SOL + 4, -13, TAILLE);
+  }
+  for (let x = -22; x <= 22; x++) {
+    set(x, SOL + 4, -14, TAILLE);
+    set(x, SOL + 5, -15, TAILLE); set(x, SOL + 5, -14, TAILLE); set(x, SOL + 5, -13, TAILLE);
+    o.dalle(x, x, -15, -13, SOL, V.TUFFEAU_TAILLE);
+  }
 
   amenagerInterieur(set, o, SOL);
 }
@@ -551,10 +624,13 @@ function jardinSimples(set, o) {
 // la première vue qu'on a du château en venant du village.
 function alleeTilleuls(set) {
   const y = T_ORNEMENT;
-  for (let z = -70; z <= -44; z++) {
-    for (let x = -6; x <= 6; x++) set(x, y, z, V.ALLEE);
+  // L'allée d'honneur est pavée jusqu'au porche, et s'arrête avant le corps
+  // d'entrée : elle repassait par-dessus les pavés posés plus tôt, et l'arrivée
+  // se retrouvait en gravier alors que la photo montre de gros pavés.
+  for (let z = -80; z <= -53; z++) {
+    for (let x = -7; x <= 7; x++) set(x, y, z, BLOCK.COBBLE);
   }
-  for (let z = -68; z <= -46; z += 4) {
+  for (let z = -78; z <= -56; z += 4) {
     for (const tx of [-8, 8]) {
       for (let h = 1; h <= 5; h++) set(tx, y + h, z, BLOCK.LOG);
       for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
