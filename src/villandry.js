@@ -83,6 +83,8 @@ export function buildVillandry(set) {
   jardinEau(set, { dalle, contour });
   labyrinthe(set, { dalle });
   jardinSimples(set, { dalle, contour });
+  jardinSoleil(set, { dalle, contour });
+  jardinCroix(set, { dalle, contour });
   alleeTilleuls(set);
 }
 
@@ -279,18 +281,20 @@ function batirChateau(set, o) {
   for (let y = SOL + 1; y <= SOL + 4; y++) for (let x = -2; x <= 2; x++) set(x, y, -26, BLOCK.AIR);
   for (let x = -3; x <= 3; x++) set(x, SOL + 5, -26, TAILLE);
 
-  // --- la galerie à arcades, au pied de la façade sur les jardins ----------
-  // Vue depuis le canal, la façade sud repose sur une enfilade d'arcades en
-  // plein cintre : une galerie couverte où l'on marche à l'abri, entre le
-  // bâtiment et la terrasse.
-  for (let x = -22; x <= 22; x += 4) {
-    for (let y = SOL + 1; y <= SOL + 3; y++) { set(x, y, -15, TAILLE); set(x, y, -13, TAILLE); }
-    set(x, SOL + 4, -15, TAILLE); set(x, SOL + 4, -13, TAILLE);
-  }
-  for (let x = -22; x <= 22; x++) {
-    set(x, SOL + 4, -14, TAILLE);
-    set(x, SOL + 5, -15, TAILLE); set(x, SOL + 5, -14, TAILLE); set(x, SOL + 5, -13, TAILLE);
-    o.dalle(x, x, -15, -13, SOL, V.TUFFEAU_TAILLE);
+  // --- les galeries à arcades de la cour d'honneur -------------------------
+  // Ce sont les galeries de la COUR, pas de la façade sur les jardins : des
+  // arcades « en anse de panier » qui courent au pied des ailes, sous les
+  // grandes croisées encadrées de pilastres.
+  for (const cote of [-1, 1]) {
+    const xm = cote * 15;                       // devant chaque aile
+    for (let z = -42; z <= -28; z += 3) {
+      for (let y = SOL + 1; y <= SOL + 3; y++) { set(xm, y, z, TAILLE); }
+      set(xm, SOL + 4, z, TAILLE);
+    }
+    for (let z = -42; z <= -28; z++) {
+      set(xm, SOL + 5, z, TAILLE);              // le bandeau au-dessus des arcs
+      o.dalle(xm, xm + cote, z, z, SOL, V.TUFFEAU_TAILLE);
+    }
   }
 
   amenagerInterieur(set, o, SOL);
@@ -313,14 +317,23 @@ function amenagerInterieur(set, o, SOL) {
   for (let z = -22; z <= -20; z++) set(-1, SOL + 6, z, BLOCK.AIR); // la trémie de l'escalier
   for (let k = 0; k <= 5; k++) set(-1, SOL + k, -20 + k > -17 ? -17 : -20 + k, BLOCK.SLAB_PLANK);
 
-  // --- salle à manger, à l'ouest : la vasque de marbre rose y coule vraiment
-  set(-19, SOL + 1, -21, VASQUE);
-  set(-15, SOL + 1, -21, TABLE);
+  // --- La salle à manger du marquis de Castellane, à l'ouest.
+  // Trois traits la caractérisent, et je les avais tous manqués : ses boiseries
+  // SAUMON éclatantes, qui rappellent ses origines provençales ; sa fontaine
+  // intérieure, curiosité méditerranéenne au milieu d'une salle à manger ; et
+  // son sol de MARBRE — le parquet, lui, était réservé aux pièces privées.
+  const SAUMON = uni(16);
+  o.dalle(-22, -11, -24, -18, SOL, BLOCK.WHITEBRICK);       // le marbre
+  for (let y = SOL + 1; y <= SOL + 2; y++) {                 // les boiseries saumon
+    for (let x = -22; x <= -11; x++) { set(x, y, -24, SAUMON); set(x, y, -18, SAUMON); }
+    for (let z = -24; z <= -18; z++) set(-22, y, z, SAUMON);
+  }
+  set(-19, SOL + 1, -21, VASQUE);                            // la fontaine
+  set(-15, SOL + 1, -21, TABLE);                             // la table fixe
   for (const dz of [-23, -19]) { set(-16, SOL + 1, dz, FAUTEUIL); set(-14, SOL + 1, dz, FAUTEUIL); }
-  set(-22, SOL + 1, -24, CHEMINEE);
+  set(-21, SOL + 1, -23, CHEMINEE);
   set(-15, SOL + 5, -21, LUSTRE);
-  set(-12, SOL + 1, -24, BUFFET);
-  o.dalle(-22, -11, -24, -18, SOL, BLOCK.TERRACOTTA); // tomettes de terre cuite
+  set(-12, SOL + 1, -23, BUFFET);
 
   // --- le grand salon, au centre : tapisseries et cheminée monumentale
   set(0, SOL + 1, -24, CHEMINEE);
@@ -330,6 +343,26 @@ function amenagerInterieur(set, o, SOL) {
   set(0, SOL + 1, -19, TABLE);
   set(0, SOL + 5, -21, LUSTRE);
   o.dalle(-8, 8, -24, -18, SOL, BLOCK.PLANK);
+
+  // --- Le salon oriental, à l'étage. C'est la curiosité du château : un
+  // plafond mudéjar du XVe siècle rapporté du palais des ducs de Maqueda à
+  // Tolède, démonté en 1905, et remonté ici — trois mille six cents pièces de
+  // bois polychrome et doré, mêlant entrelacs, coquilles Saint-Jacques et
+  // inscriptions arabes. Quatre tableaux d'une « porte ottomane » l'entourent,
+  // souvenirs de l'ambassade du marquis auprès du sultan.
+  const ETAGE = SOL + 6;
+  o.vider(-8, 8, -24, -18, ETAGE + 1, ETAGE + 4);
+  o.dalle(-8, 8, -24, -18, ETAGE, BLOCK.PLANK);
+  for (let x = -8; x <= 8; x++) for (let z = -24; z <= -18; z++) {
+    // le plafond : de l'or et du bois sombre en entrelacs
+    const entrelacs = (x + z + 40) % 3 === 0 || (x - z + 40) % 4 === 0;
+    set(x, ETAGE + 5, z, entrelacs ? BLOCK.GOLD : BLOCK.DARKPLANK);
+  }
+  for (const x of [-6, -2, 2, 6]) set(x, ETAGE + 1, -24, TAPISSERIE); // les quatre tableaux
+  set(0, ETAGE + 1, -20, TABLE);
+  set(-4, ETAGE + 1, -20, FAUTEUIL); set(4, ETAGE + 1, -20, FAUTEUIL);
+  set(0, ETAGE + 4, -21, LUSTRE);
+  for (let x = -7; x <= 7; x += 7) set(x, ETAGE + 2, -18, BLOCK.GLASS);
 
   // --- la chambre, à l'est : lit à baldaquin, coffre et tapisserie
   set(16, SOL + 1, -22, LIT);
@@ -615,6 +648,131 @@ function jardinSimples(set, o) {
         set(cx + dx, y, cz + dz, bord ? V.BUIS : HERBES[n % HERBES.length]);
       }
       n++;
+    }
+  }
+}
+
+// --- le jardin du soleil --------------------------------------------------------
+// Le plus récent des jardins : dessiné en 2008 par Louis Benech d'après une
+// esquisse de Joachim Carvallo de 1924. Trois « chambres » successives, en
+// triangle, fleuries de mai à octobre — et rien à voir avec la géométrie stricte
+// du reste : ici les allées serpentent dans l'herbe.
+function jardinSoleil(set, o) {
+  const y = T_ORNEMENT;
+  const B = V.BUIS;
+  // sa terrasse à lui, à l'ouest, sous le jardin d'eau
+  o.dalle(-66, -32, 16, 54, y, BLOCK.GRASS);
+
+  // --- la chambre des nuages : bleus et mauves, allées d'herbe sinueuses
+  o.contour(-64, -50, 18, 34, y, B);
+  for (let x = -63; x <= -51; x++) {
+    for (let z = 19; z <= 33; z++) {
+      // le serpentement : deux vagues d'arbustes séparées par l'herbe
+      const onde = Math.sin((x + 63) * 0.55) * 2.6;
+      const d = Math.abs(z - 26 - onde);
+      if (d < 1.2) continue;                            // l'allée d'herbe
+      set(x, y, z, d < 3.4 ? uni(11) : uni(27));        // indigo, puis blanc
+    }
+  }
+
+  // --- la chambre du soleil : oranges et jaunes autour d'un bassin en étoile
+  o.contour(-48, -34, 18, 34, y, B);
+  const cx = -41, cz = 26;
+  for (let x = -47; x <= -35; x++) {
+    for (let z = 19; z <= 33; z++) {
+      const dx = x - cx, dz = z - cz;
+      const r = Math.hypot(dx, dz);
+      // une étoile à huit branches : le rayon admissible ondule avec l'angle
+      const branche = 3.2 + 2.6 * Math.abs(Math.cos(4 * Math.atan2(dz, dx)));
+      if (r <= branche) { set(x, y, z, BLOCK.WATER); continue; }
+      if (r <= branche + 1) { set(x, y, z, V.TUFFEAU_TAILLE); continue; }
+      set(x, y, z, r < 7.5 ? uni(2) : uni(1));          // jaune près du bassin, orange autour
+    }
+  }
+
+  // --- la chambre des enfants : une pelouse ouverte, des pommiers, des jeux
+  o.contour(-64, -34, 38, 52, y, B);
+  for (let x = -62; x <= -36; x += 6) {
+    for (let z = 41; z <= 49; z += 8) {
+      for (let h = 1; h <= 3; h++) set(x, y + h, z, BLOCK.LOG);
+      for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+        if (Math.abs(dx) + Math.abs(dz) <= 3) set(x + dx, y + 4, z + dz, BLOCK.LEAVES);
+      }
+      set(x, y + 5, z, uni(0)); // les pommes
+    }
+  }
+  // le muret bas où l'on s'assoit, au centre de la chambre
+  for (let x = -54; x <= -44; x++) set(x, y + 1, 45, V.TUFFEAU_TAILLE);
+}
+
+// --- le jardin des croix et le salon de musique ---------------------------------
+// Le jardin d'ornement compte en réalité deux salons, et je n'en avais fait
+// qu'un. Le second réunit les trois croix — de Malte, du Languedoc et basque —
+// et le salon de musique, dont les buis dessinent lyres et chandeliers.
+function jardinCroix(set, o) {
+  const y = T_ORNEMENT;
+  const B = V.BUIS;
+  o.dalle(30, 64, -30, -6, y, V.ALLEE);
+
+  const motif = (cx, cz, fleur, lignes) => {
+    lignes.forEach((ligne, i) => {
+      [...ligne].forEach((c, j) => {
+        set(cx + j - 5, y, cz + i - 5, c === '#' ? B : c === 'o' ? fleur : V.ALLEE);
+      });
+    });
+    o.contour(cx - 6, cx + 6, cz - 6, cz + 6, y, B);
+  };
+
+  // la croix de Malte : quatre pointes en pointe de flèche
+  motif(37, -22, uni(0), [
+    '..#.....#..',
+    '..##...##..',
+    '...##.##...',
+    '....###....',
+    '#####o#####',
+    '...ooooo...',
+    '#####o#####',
+    '....###....',
+    '...##.##...',
+    '..##...##..',
+    '..#.....#..',
+  ]);
+
+  // la croix du Languedoc : les douze boules au bout des branches
+  motif(51, -22, uni(2), [
+    '....#.#....',
+    '...#o.o#...',
+    '....#.#....',
+    '#..#####..#',
+    '.##ooooo##.',
+    '..#ooooo#..',
+    '.##ooooo##.',
+    '#..#####..#',
+    '....#.#....',
+    '...#o.o#...',
+    '....#.#....',
+  ]);
+
+  // le salon de musique : les cordes de la lyre et les branches du chandelier
+  motif(44, -10, uni(15), [
+    '..#.....#..',
+    '.#.#...#.#.',
+    '#..#.#.#..#',
+    '#..#.#.#..#',
+    '#..#.#.#..#',
+    '#o#######o#',
+    '.#.#####.#.',
+    '..#######..',
+    '....###....',
+    '...#####...',
+    '..#######..',
+  ]);
+
+  // les ifs en cône, comme dans l'autre salon
+  for (const [ix, iz] of [[32, -28], [62, -28], [32, -8], [62, -8], [47, -28]]) {
+    for (let h = 1; h <= 4; h++) {
+      const r = h <= 2 ? 1 : 0;
+      for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) set(ix + dx, y + h, iz + dz, B);
     }
   }
 }
