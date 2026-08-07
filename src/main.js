@@ -768,7 +768,6 @@ let net = null;
 let selectedChar = 0;
 const remotePlayers = new Map(); // peerId -> { mesh, target, yaw, moving, animTime }
 const playersBtn = document.getElementById('players-btn');
-const micBtn = document.getElementById('mic-btn');
 
 function updatePlayersBtn() {
   if (!net || !net.active) { playersBtn.style.display = 'none'; return; }
@@ -1463,13 +1462,13 @@ NET_CHARACTERS.forEach((c, i) => {
 
 function showOnlineUI() {
   updatePlayersBtn();
-  micBtn.style.display = 'block';
   camBtn.style.display = 'block';
   chatBtn.style.display = 'block';
   net.onRemoteVideo = (id, stream) => addRemoteTile(id, stream);
   net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
   net.onChat = (name, msg) => {
     addChatMsg(name, msg, false);
+    chatDing();
     if (chatPanel.style.display !== 'block') {
       creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
       setUnread(unread + 1);
@@ -1491,7 +1490,6 @@ function leaveToMainMenu() {
   syncRemotePlayers([]); // remove remote avatars
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
   removeLocalTile();
-  micBtn.style.display = 'none'; micBtn.textContent = '🔇'; micBtn.classList.remove('on');
   camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
   playersBtn.style.display = 'none';
   chatBtn.style.display = 'none';
@@ -1591,6 +1589,34 @@ const chatMsgs = document.getElementById('chat-msgs');
 const chatInput = document.getElementById('chat-input');
 const chatBadge = document.getElementById('chat-badge');
 
+// Petit « ding » à l'arrivée d'un message : deux notes synthétisées à la
+// volée plutôt qu'un fichier à télécharger. Le contexte audio se crée au
+// premier besoin — les navigateurs mobiles refusent le son tant que l'enfant
+// n'a rien touché, et il a forcément touché l'écran pour jouer.
+let audioCtx = null;
+function chatDing() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = audioCtx || new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime;
+    for (const [i, freq] of [880, 1320].entries()) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = t0 + i * 0.09;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.14, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + 0.24);
+    }
+  } catch { /* pas de son : la pastille suffit à prévenir */ }
+}
+
 // Messages non lus. La bulle passe et disparaît ; s'il regardait ailleurs,
 // l'enfant ne saura jamais qu'on lui a écrit. La pastille, elle, reste.
 let unread = 0;
@@ -1654,13 +1680,6 @@ chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendChatMsg();
 });
 
-micBtn.addEventListener('click', async () => {
-  if (!net) return;
-  const on = await net.toggleMic();
-  micBtn.textContent = on ? '🎤' : '🔇';
-  micBtn.classList.toggle('on', on);
-});
-
 // --- mini FaceTime -----------------------------------------------------------------
 
 const camBtn = document.getElementById('cam-btn');
@@ -1716,14 +1735,16 @@ camBtn.addEventListener('click', async () => {
   camBtn.textContent = on ? '🎥' : '📷';
   camBtn.classList.toggle('on', on);
   if (on) {
+    // La caméra porte aussi le son : se voir sans s'entendre n'a pas de sens,
+    // et c'est ce qui permet de se passer d'un bouton micro séparé.
     addLocalTile(net.videoStream);
-    // seeing each other without hearing each other is never what's wanted
-    if (!net.micOn) {
-      const micOn = await net.toggleMic();
-      micBtn.textContent = micOn ? '🎤' : '🔇';
-      micBtn.classList.toggle('on', micOn);
-    }
-  } else removeLocalTile();
+    if (!net.micOn) await net.toggleMic();
+  } else {
+    removeLocalTile();
+    // Couper l'image doit couper le micro : sans bouton dédié, il resterait
+    // ouvert sans que personne puisse le fermer.
+    if (net.micOn) await net.toggleMic();
+  }
 });
 
 // --- catch celebration ------------------------------------------------------------

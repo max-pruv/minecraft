@@ -130,7 +130,6 @@ export function initFun(ctx) {
   const atelierBtn = mkBtn('🛠️', 'Atelier');
   const fwBtn = mkBtn('🎆', "Feu d'artifice");
   const photoBtn = mkBtn('📸', 'Photo');
-  const recordsBtn = mkBtn('🏆', 'Records');
 
   const emoteRow = el(`<div class="emote-row" id="emote-row">
     <button data-k="👋">👋</button><button data-k="💃">💃</button><button data-k="❤️">❤️</button>
@@ -147,19 +146,17 @@ export function initFun(ctx) {
       <button class="fun-tab" data-t="chest">📦 Coffre</button>
       <button class="fun-tab" data-t="quest">📜 Quête</button>
       <button class="fun-tab" data-t="sign">🪧 Panneau</button>
+      <button class="fun-tab" data-t="records">🏆 Records</button>
+      <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
+      <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
     </div>
     <div id="fun-tab-body"></div>
   </div>`);
 
-  const recordsPanel = el(`<div class="fun-panel" id="fun-records-panel">
-    <button class="fun-close">✕</button>
-    <div class="fun-tabs">
-      <button class="fun-tab on" data-t="records">🏆 Records</button>
-      <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
-      <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
-    </div>
-    <div id="fun-records-body"></div>
-  </div>`);
+  // Le tableau des scores avait son propre bouton flottant : minuscule et
+  // inexploitable en jeu. Records, chapeaux et souvenirs sont désormais des
+  // onglets de l'atelier — un bouton de moins à l'écran, rien de perdu.
+  const recordsPanel = panel;
 
   const duelOverlay = el(`<div id="duel-overlay">
     <h2>⚔️ Défi amical !</h2>
@@ -176,9 +173,7 @@ export function initFun(ctx) {
   </div>`);
   const flash = el(`<div id="photo-flash"></div>`);
 
-  for (const p of [panel, recordsPanel]) {
-    p.querySelector('.fun-close').addEventListener('click', () => { p.style.display = 'none'; });
-  }
+  panel.querySelector('.fun-close').addEventListener('click', () => { panel.style.display = 'none'; });
 
   // ---- companion ------------------------------------------------------------
   let pet = loadJson(PET_KEY, null);
@@ -632,13 +627,17 @@ export function initFun(ctx) {
   }
 
   // ---- atelier panel rendering ----------------------------------------------
+  // Sept onglets, un seul corps : les trois derniers (records, chapeaux,
+  // souvenirs) viennent du panneau séparé qu'on a supprimé.
+  const REC_TABS = ['records', 'hats', 'photos'];
   let currentTab = 'craft';
   const tabBody = panel.querySelector('#fun-tab-body');
   panel.querySelectorAll('.fun-tab').forEach((t) => {
     t.addEventListener('click', () => {
       currentTab = t.dataset.t;
       panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o === t));
-      renderTab();
+      if (REC_TABS.includes(currentTab)) { recTab = currentTab; renderRecords(); }
+      else renderTab();
     });
   });
 
@@ -745,14 +744,7 @@ export function initFun(ctx) {
 
   // ---- records, hats & photos ----------------------------------------------
   let recTab = 'records';
-  const recBody = recordsPanel.querySelector('#fun-records-body');
-  recordsPanel.querySelectorAll('.fun-tab').forEach((t) => {
-    t.addEventListener('click', () => {
-      recTab = t.dataset.t;
-      recordsPanel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o === t));
-      renderRecords();
-    });
-  });
+  const recBody = tabBody;
 
   const REC_LABELS = [
     ['blocks', '🧱 Blocs posés'], ['quizCorrect', '✅ Bonnes réponses'], ['treasures', '💰 Trésors trouvés'],
@@ -825,11 +817,6 @@ export function initFun(ctx) {
     }
   }
 
-  recordsBtn.addEventListener('click', () => {
-    if (recordsPanel.style.display === 'block') { recordsPanel.style.display = 'none'; return; }
-    recordsPanel.style.display = 'block';
-    renderRecords();
-  });
 
   edu.onCorrect = () => {
     records.quizCorrect++;
@@ -1085,7 +1072,7 @@ export function initFun(ctx) {
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
-      for (const b of [atelierBtn, fwBtn, photoBtn, recordsBtn]) b.style.display = 'none';
+      for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
       emoteRow.style.display = 'none';
       targetRow.style.display = 'none';
       return;
@@ -1107,13 +1094,13 @@ export function initFun(ctx) {
       if (Math.random() < 0.55) showMathPop();
     }
     // buttons only make sense in-game
-    for (const b of [atelierBtn, fwBtn, photoBtn, recordsBtn]) b.style.display = 'flex';
+    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'flex';
     const net = getNet();
     emoteRow.style.display = net && net.active ? 'flex' : 'none';
   }
 
   function onLeave() {
-    for (const b of [atelierBtn, fwBtn, photoBtn, recordsBtn]) b.style.display = 'none';
+    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';

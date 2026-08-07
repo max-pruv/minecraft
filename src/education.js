@@ -1293,13 +1293,27 @@ export class EducationMode {
 
     const summary = document.createElement('div');
     summary.className = 'edu-summary';
+    // Un tableau de bord se lit d'un coup d'œil : un grand chiffre par tuile,
+    // une petite étiquette dessous. L'ancienne version enfilait tout dans des
+    // phrases à émojis, illisibles dès qu'il y avait un peu de contenu.
+    const tuile = (valeur, etiquette, cls = '') =>
+      `<div class="edu-stat ${cls}"><b>${valeur}</b><span>${etiquette}</span></div>`;
+    const niveau = (nom, sur) =>
+      `<div class="edu-level">${nom} <b>${this.categoryLevel(nom)}</b>/${sur}</div>`;
+    const unlocks = t.unlocks || 0;
     summary.innerHTML =
-      `<div><b>Aujourd'hui</b>${this.crossDeviceDays ? ' <span style="color:#8894b0;font-size:12px">(tous appareils)</span>' : ''}</div>` +
-      `<div>🕐 Temps de jeu : <b>${this.formatDuration(td.play)}</b>` +
-      (td.quiz > 5 ? ` · 📝 Temps de quiz : <b>${this.formatDuration(td.quiz)}</b>` : '') + `</div>` +
-      `<div>✅ Bonnes réponses : <b>${td.correct.length}</b> · ❌ Erreurs : <b>${td.wrong}</b></div>` +
-      `<div>📈 Niveaux : Math <b>${this.categoryLevel('Math')}</b>/5 · English <b>${this.categoryLevel('English')}</b>/3 · Français <b>${this.categoryLevel('Français')}</b>/3 · Découverte <b>${this.categoryLevel('Découverte')}</b>/3</div>` +
-      `<div>⏰ Limite du jour : <b>${this.formatDuration(this.allowance())}</b> (${t.unlocks || 0} déblocage${(t.unlocks || 0) > 1 ? 's' : ''})</div>`;
+      `<div class="edu-title">Aujourd'hui${this.crossDeviceDays ? ' <span>tous appareils</span>' : ''}</div>` +
+      '<div class="edu-stats">' +
+        tuile(this.formatDuration(td.play), 'de jeu') +
+        (td.quiz > 5 ? tuile(this.formatDuration(td.quiz), 'de quiz') : '') +
+        tuile(td.correct.length, 'bonnes réponses', 'ok') +
+        tuile(td.wrong, td.wrong > 1 ? 'erreurs' : 'erreur', td.wrong ? 'ko' : '') +
+        tuile(this.formatDuration(this.allowance()),
+          unlocks ? `de limite · ${unlocks} déblocage${unlocks > 1 ? 's' : ''}` : 'de limite') +
+      '</div>' +
+      '<div class="edu-levels">' +
+        niveau('Math', 5) + niveau('English', 3) + niveau('Français', 3) + niveau('Découverte', 3) +
+      '</div>';
     body.appendChild(summary);
 
     // 📊 stacked bar chart: minutes of play (+ quiz time) per day, 2 weeks.
@@ -1308,7 +1322,7 @@ export class EducationMode {
     // counted as "jeu", so it's shown separately instead of just vanishing.
     const chartBox = document.createElement('div');
     chartBox.className = 'edu-summary';
-    chartBox.innerHTML = '<div><b>📊 Temps par jour (minutes)</b> — touche une barre pour le détail</div>' +
+    chartBox.innerHTML = '<div class="edu-title">Temps par jour <span>en minutes · touche une barre</span></div>' +
       '<div style="font-size:12px;color:#8894b0;margin-top:2px">' +
       '<span style="color:#ffd75e">■</span> jeu (aujourd\'hui) &nbsp; ' +
       '<span style="color:#5ab46e">■</span> jeu &nbsp; ' +
