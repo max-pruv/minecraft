@@ -69,6 +69,8 @@ table.adm tr:hover td { background: #11161d; }
 }
 .adm-tag.warn { color: #ffd08a; border-color: #6b551f; background: #2a2213; }
 .adm-tag.ok { color: #7ee787; border-color: #245b32; background: #10231a; }
+.adm-actions { white-space: nowrap; }
+.adm-actions .adm-btn + .adm-btn { margin-left: 6px; }
 .adm-note { color: #8b949e; font-size: 12px; margin-top: 20px; line-height: 1.6; }
 #adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 8px 0 0; }
 #adm-msg.err { color: #ff9d95; }
@@ -89,7 +91,9 @@ table.adm tr:hover td { background: #11161d; }
     display: block; color: #6e7681; font-size: 10.5px;
     text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1px;
   }
-  table.adm td:last-child .adm-btn { width: 100%; padding: 9px 12px; }
+  .adm-actions { display: flex; gap: 8px; white-space: normal; }
+  .adm-actions .adm-btn { flex: 1; padding: 9px 12px; }
+  .adm-actions .adm-btn + .adm-btn { margin-left: 0; }
   .adm-cards { grid-template-columns: repeat(2, 1fr); }
 }
 `;
@@ -275,6 +279,7 @@ export class AdminPanel {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
           quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
+          supprime: false,
         });
       }
       return par.get(nom);
@@ -303,6 +308,7 @@ export class AdminPanel {
     for (const r of reglages) {
       const e = entree(r.name);
       e.majPrefs = r.updated_at;
+      if ((r.prefs || {}).supprime) e.supprime = true;
       const l = (r.prefs || {}).live;
       // Passé ce délai, le battement s'est arrêté : l'appareil est en veille,
       // le jeu fermé, ou le réseau coupé. Dans tous les cas l'enfant n'est
@@ -322,6 +328,9 @@ export class AdminPanel {
     }
 
     const lignes = [...par.values()]
+      // un compte supprimé garde une ligne vide dans la base : on ne la montre
+      // pas, elle ne représente plus personne
+      .filter((e) => !e.supprime)
       .map((e) => ({ ...e, vu: recent(e.majId, e.majEtat, e.majTemps, e.majPrefs) }))
       // les connectés d'abord : c'est ce qu'on vient regarder
       .sort((a, b) => (b.live ? 1 : 0) - (a.live ? 1 : 0)
@@ -365,19 +374,30 @@ export class AdminPanel {
         <td><span class="adm-lbl">Aujourd'hui</span>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
         <td><span class="adm-lbl">Mondes</span>${mondes}</td>
         <td><span class="adm-lbl">Compte</span>${secu}<div class="adm-dim">${reponses(l)}</div></td>
-        <td><button class="adm-btn danger" data-reset="${esc(l.nom)}" ${l.code ? '' : 'disabled'}>Effacer le code</button></td>
+        <td class="adm-actions">
+          <button class="adm-btn" data-reset="${esc(l.nom)}">${l.code ? 'Réinitialiser le code' : 'Créer un code'}</button>
+          <button class="adm-btn danger" data-suppr="${esc(l.nom)}">Supprimer</button>
+        </td>
       </tr>`;
     }).join('');
 
     for (const b of this.el.querySelectorAll('[data-reset]')) {
       b.addEventListener('click', () => this.resetPin(b.getAttribute('data-reset')));
     }
+    for (const b of this.el.querySelectorAll('[data-suppr]')) {
+      b.addEventListener('click', () => this.supprimer(b.getAttribute('data-suppr')));
+    }
   }
 
-  // On efface le code plutôt que d'en imposer un : l'enfant en choisit un
-  // nouveau lui-même, et le parent n'a jamais eu à en connaître un seul.
+  // On n'impose jamais un code : on efface l'ancien et on demande au jeu de
+  // réclamer un nouveau code à l'enfant. Le parent n'a donc à en connaître
+  // aucun — et c'est de toute façon tout ce qu'il peut faire, les codes étant
+  // stockés hachés.
   async resetPin(nom) {
-    if (!window.confirm(`Effacer le code secret de ${nom} ?\nIl pourra en choisir un nouveau à sa prochaine connexion. Son visage reste enregistré.`)) return;
+    const message = `Demander à ${nom} de choisir un nouveau code ?\n`
+      + 'Son ancien code cesse de fonctionner tout de suite, et le jeu lui en '
+      + 'demandera un nouveau à sa prochaine ouverture. Son visage reste enregistré.';
+    if (!window.confirm(message)) return;
     try {
       const ligne = await this.cloud.identityPull(nom);
       await this.cloud.identityPush(nom, { faces: (ligne && ligne.faces) || [], pinHash: null });
@@ -386,10 +406,49 @@ export class AdminPanel {
         delete this.identity.local[nom].pinHash;
         this.identity.saveLocal();
       }
-      this.message(`Code de ${nom} effacé.`);
+      // La consigne voyage avec les réglages : le jeu la lit au lancement.
+      const prefs = (await this.cloud.prefsPull(nom)) || {};
+      await this.cloud.prefsPush(nom, { ...prefs, codeADefinir: true });
+      this.message(`${nom} choisira un nouveau code à sa prochaine ouverture.`);
       this.load();
     } catch {
-      this.message(`Impossible d'effacer le code de ${nom} — réessaie.`, true);
+      this.message(`Impossible de réinitialiser le code de ${nom} — réessaie.`, true);
+    }
+  }
+
+  // Supprimer, avec une limite qu'il faut dire : la clé publique du jeu peut
+  // vider une ligne, pas la retirer de la base. On efface donc tout ce qu'elle
+  // contient — visage, code, partie, temps de jeu — et le compte disparaît du
+  // jeu comme de cette liste. La ligne vide, elle, ne s'enlève que depuis le
+  // tableau de bord Supabase.
+  async supprimer(nom) {
+    const message = `Supprimer le compte de ${nom} ?\n\n`
+      + 'Son visage, son code, ses mondes, ses créatures et son temps de jeu '
+      + "seront effacés. C'est définitif : il n'y a pas de corbeille.\n\n"
+      + `Écris « ${nom} » pour confirmer.`;
+    const saisi = window.prompt(message);
+    if (saisi === null) return;
+    if (saisi.trim().toLowerCase() !== nom.toLowerCase()) {
+      this.message('Nom non confirmé — rien n\'a été supprimé.', true);
+      return;
+    }
+    try {
+      await this.cloud.identityPush(nom, { faces: [], pinHash: null });
+      await this.cloud.statePush(nom, {});
+      await this.cloud.prefsPush(nom, { supprime: true });
+      // le temps de jeu vit sur une ligne par appareil et par jour
+      const jours = await this.cloud.selectAll(
+        'play_time', `name=eq.${encodeURIComponent(nom)}&select=device_id,day`);
+      for (const r of jours) {
+        await this.cloud.timePush(nom, r.device_id, r.day,
+          { play: 0, quiz: 0, correct: 0, wrong: 0, qs: [] });
+      }
+      delete this.identity.local[nom];
+      this.identity.saveLocal();
+      this.message(`Compte de ${nom} supprimé.`);
+      this.load();
+    } catch {
+      this.message(`Impossible de supprimer ${nom} — réessaie.`, true);
     }
   }
 }
