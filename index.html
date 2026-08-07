@@ -119,6 +119,7 @@
       display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;
       font-size: 14px; letter-spacing: .3px; padding: 5px 12px; border-radius: 999px;
       background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16); color: #cfe0ff;
+      cursor: pointer;
     }
     #app-version.ok { background: rgba(90,200,140,.16); border-color: rgba(90,200,140,.45); color: #a8e6c1; }
     #app-version.old { background: rgba(255,190,90,.16); border-color: rgba(255,190,90,.5); color: #ffd08a; }
@@ -256,6 +257,11 @@
     #settings-card #reset-btn {
       font-family: inherit; font-size: 13px; padding: 8px 14px; cursor: pointer;
       background: #7a4a4a; color: #fff; border: 2px solid #a86a6a; border-radius: 8px;
+      flex-shrink: 0;
+    }
+    #settings-card #update-btn {
+      font-family: inherit; font-size: 13px; padding: 8px 14px; cursor: pointer;
+      background: #3c5a86; color: #fff; border: 2px solid #5a80b4; border-radius: 8px;
       flex-shrink: 0;
     }
     /* the game is mostly played on touch devices — desktop shortcuts are noise there */
@@ -947,6 +953,12 @@
         </div>
         <button id="reset-btn">Réinitialiser</button>
       </div>
+      <div class="setting-row" style="cursor: default;">
+        <div class="setting-label">🔄 Forcer la mise à jour
+          <div class="setting-hint">Si le jeu reste sur une vieille version : vide le cache et recharge. Tes parties sont dans le nuage, rien n'est perdu.</div>
+        </div>
+        <button id="update-btn">Mettre à jour</button>
+      </div>
     </div>
   </div>
 
@@ -1254,6 +1266,46 @@
         document.getElementById('boot-text').textContent = text;
         loader.classList.remove('hidden');
       };
+
+      // Filet de secours manuel. La vérification automatique ci-dessous
+      // suppose qu'un service worker sain répond ; quand ce n'est plus le cas
+      // — une application installée depuis des semaines, un cache abîmé — il
+      // n'existait aucun moyen de s'en sortir sans supprimer l'icône. Ce
+      // bouton repart de zéro : plus de service worker, plus de cache, et une
+      // adresse unique pour que même le cache HTTP soit contourné.
+      //
+      // Les modèles du scanner de visage (8 Mo, immuables) sont épargnés, et
+      // localStorage n'est pas touché : les parties restent là où elles sont.
+      const forcerMaj = async () => {
+        showLoader('🔄 On va chercher la dernière version…');
+        try {
+          for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+        } catch { /* pas de service worker : tant mieux */ }
+        try {
+          for (const k of await caches.keys()) {
+            if (k !== 'web-minecraft-static-v1') await caches.delete(k);
+          }
+        } catch { /* pas de cache */ }
+        const u = new URL(location.href);
+        u.searchParams.set('maj', Date.now().toString(36));
+        location.replace(u.toString());
+      };
+      window.__forceUpdate = forcerMaj;
+      document.getElementById('update-btn')?.addEventListener('click', forcerMaj);
+      // Le badge de version est le premier endroit où l'on regarde quand on
+      // doute d'être à jour : autant qu'il soit aussi le bouton.
+      const badge = document.getElementById('app-version');
+      if (badge) {
+        badge.title = 'Toucher pour forcer la mise à jour';
+        badge.addEventListener('click', forcerMaj);
+      }
+      // L'adresse anti-cache a fait son travail au chargement : on l'efface
+      // pour ne pas la voir traîner ni la partager par erreur.
+      if (new URL(location.href).searchParams.has('maj')) {
+        const u = new URL(location.href);
+        u.searchParams.delete('maj');
+        history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+      }
       let refreshing = false;
       const reloadOnce = (raison) => {
         if (refreshing) return;
@@ -1308,10 +1360,20 @@
         // filet : si l'installation traîne, on laisse jouer plutôt que de
         // retenir un enfant devant un écran fixe
         setTimeout(() => {
-          if (!refreshing) {
-            sessionStorage.removeItem('wm-updating');
-            loader.classList.add('hidden');
+          if (refreshing) return;
+          sessionStorage.removeItem('wm-updating');
+          // Rien n'est en train de s'installer alors que le serveur annonce
+          // autre chose : le service worker est bloqué, pas lent. C'est ce cas
+          // qui laissait un iPad plusieurs versions en retard sans que
+          // personne ne puisse rien y faire. On repart alors de zéro — une
+          // seule fois par session, sinon on tournerait en rond.
+          const bloque = !reg.installing && !reg.waiting;
+          if (bloque && sessionStorage.getItem('wm-maj-forcee') !== '1') {
+            sessionStorage.setItem('wm-maj-forcee', '1');
+            forcerMaj();
+            return;
           }
+          loader.classList.add('hidden');
         }, 20000);
       });
     }
