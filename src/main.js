@@ -309,6 +309,8 @@ let saveTimer = null;
 const POS_KEY = 'web-minecraft-pos-v1';
 let posCtx = 'local';
 const posRestored = new Set();
+const posAppliquee = new Map(); // contexte -> horodatage de la position posée
+let posEntree = 0;              // instant d'entrée dans le contexte courant
 
 function loadPositions() {
   try { return JSON.parse(localStorage.getItem(POS_KEY)) || {}; } catch { return {}; }
@@ -335,11 +337,7 @@ function surfaceAt(x, z) {
 // last saved spot — but validate it first: terrain can change between
 // versions (new biomes) and kids can fly off into the sky, so a saved
 // position may now be buried, floating in the void or lost at sea.
-function restorePosition() {
-  if (posRestored.has(posCtx)) return;
-  posRestored.add(posCtx);
-  const p = loadPositions()[posCtx];
-  if (!p) return;
+function placerA(p) {
   let { x, y, z } = p;
   if (world.terrainHeight(Math.floor(x), Math.floor(z)) <= WATER_LEVEL - 2) {
     x = 0.5; z = 0.5; // lost far out at sea: come home to spawn
@@ -358,6 +356,39 @@ function restorePosition() {
   player.yaw = p.yaw || 0;
   player.pitch = p.pitch || 0;
   player.syncCamera();
+}
+
+function restorePosition() {
+  if (posRestored.has(posCtx)) return;
+  posRestored.add(posCtx);
+  posEntree = Date.now();
+  const p = loadPositions()[posCtx];
+  // Aucune position locale : l'appareil vient d'être réinstallé, ou l'enfant
+  // joue ici pour la première fois. On note zéro pour que la réponse du cloud,
+  // quelle que soit son heure d'arrivée, soit acceptée sans discussion.
+  posAppliquee.set(posCtx, p && p.t ? p.t : 0);
+  if (!p) return;
+  placerA(p);
+}
+
+// Le cloud répond APRÈS que l'enfant a appuyé sur « Jouer » : la position lue
+// au démarrage vient forcément du stockage de cet appareil-ci. Sur un appareil
+// réinstallé, ou après une partie sur l'iPad, elle est vide ou périmée — et
+// l'enfant repartait alors du point d'apparition, à des centaines de blocs de
+// là où il s'était arrêté. Quand la réponse arrive et qu'elle est plus
+// récente, on le remet au bon endroit.
+function positionDuCloud(state) {
+  const p = state && state.pos && state.pos[posCtx];
+  if (!p || !posRestored.has(posCtx)) return;
+  const connue = posAppliquee.get(posCtx) || 0;
+  if (!(p.t > connue)) return;
+  // On ne téléporte pas un enfant déjà lancé dans sa partie. La correction ne
+  // vaut que pendant les premières secondes — sauf s'il n'avait aucune
+  // position ici, auquel cas il n'y a rien à perturber.
+  if (connue > 0 && Date.now() - posEntree > 40000) return;
+  posAppliquee.set(posCtx, p.t);
+  placerA(p);
+  creatureManager.toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
 }
 
 // Live rescue: if a player somehow ends far above the world (runaway
@@ -887,6 +918,7 @@ profileSync.liveEdits = () => ({ [world.ctx]: world.exportEdits() });
 // A background merge can bring down blocks another device placed. They go
 // straight into the live world so they appear without waiting for a reload.
 profileSync.onMerged = (state) => {
+  positionDuCloud(state);
   if (!state || !state.edits) return;
   const applied = world.mergeEdits(state.edits[world.ctx]);
   if (applied > 0) {
