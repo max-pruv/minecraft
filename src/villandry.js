@@ -15,12 +15,20 @@ import { BLOCK, DECOR_START, VILLANDRY_BLOCK as V, MEUBLE_START } from './blocks
 // Un aplat de couleur de la palette décorative : `Uni` est le motif 0.
 const uni = (couleur) => DECOR_START + couleur * 10;
 
+// Le treillage blanc des tonnelles et des clôtures du potager : le motif
+// « Losange » de la palette décorative, en blanc, rend exactement le
+// croisillon des panneaux de bois qu'on voit sur place.
+const TREILLAGE = DECOR_START + 27 * 10 + 9;
+
 // Les légumes du potager. Villandry alterne réellement des dominantes de bleu
 // (poireaux, choux), de rouge (betteraves, choux rouges), de vert (salades) et
 // d'orange (carottes, courges).
-const POIREAU = uni(10), CHOU_BLEU = uni(9), BETTERAVE = uni(0), CHOU_ROUGE = uni(13),
+// Sur les photos prises du donjon, le potager n'est pas un arc-en-ciel : les
+// verts et les bleu-vert dominent largement — poireaux, choux, salades — et la
+// couleur chaude ne vient que par touches, betteraves et fleurs de bordure.
+const POIREAU = uni(6), CHOU_BLEU = uni(7), BETTERAVE = uni(13), CHOU_ROUGE = uni(14),
       SALADE = uni(4), BLETTE = uni(5), CAROTTE = uni(1), COURGE = uni(2),
-      AUBERGINE = uni(12), OSEILLE = uni(6), TOMATE = uni(0), CELERI = uni(3);
+      AUBERGINE = uni(12), OSEILLE = uni(3), TOMATE = uni(0), CELERI = uni(29);
 
 // Les meubles, dans l'ordre où ils sont déclarés.
 const LIT = MEUBLE_START, CHEMINEE = MEUBLE_START + 1, LUSTRE = MEUBLE_START + 2,
@@ -124,27 +132,85 @@ function batirChateau(set, o) {
     }
   };
 
+  // Les lucarnes. C'est LE trait qui fait lire « château de la Loire » : une
+  // rangée de fenêtres à fronton qui percent le comble d'ardoise, encadrées de
+  // pierre de taille et coiffées de leur propre petit toit.
+  const lucarne = (cx, z, sens) => {
+    const base = SOL + H + 2;                    // au ras de l'égout du toit
+    for (let y = base; y <= base + 4; y++) {
+      for (let dx = -1; dx <= 1; dx++) set(cx + dx, y, z, TAILLE);
+      set(cx, y, z, y <= base + 3 ? BLOCK.GLASS : TAILLE);
+      // les joues, qui referment la lucarne sur le rampant
+      for (let dz = 1; dz <= 2; dz++) {
+        set(cx - 1, y, z + sens * dz, TAILLE); set(cx + 1, y, z + sens * dz, TAILLE);
+      }
+    }
+    // le fronton : deux rampants d'ardoise et un fleuron
+    for (let k = 0; k <= 1; k++) {
+      for (let dx = -1 + k; dx <= 1 - k; dx++) set(cx + dx, base + 5 + k, z, ARD);
+      for (let dz = 1; dz <= 2; dz++) {
+        set(cx - 1 + k, base + 5 + k, z + sens * dz, ARD);
+        set(cx + 1 - k, base + 5 + k, z + sens * dz, ARD);
+      }
+    }
+    set(cx, base + 7, z, TAILLE);                // le fleuron
+  };
+
   // corps de logis principal, face au sud sur les jardins
   corps(-24, 24, -26, -16, H);
   fenetres(-20, 20, -16, 8);
   fenetres(-20, 20, -26, 8);
+  for (let x = -18; x <= 18; x += 9) { lucarne(x, -17, 1); lucarne(x, -25, -1); }
+
   // les deux ailes en retour vers le nord
   corps(-24, -16, -44, -26, H);
   corps(16, 24, -44, -26, H);
   fenetres(-22, -18, -44, 6);
   fenetres(18, 22, -44, 6);
+  for (const z of [-40, -32]) { lucarne(-20, z, 1); lucarne(20, z, 1); }
 
-  // le donjon carré, seul vestige de la forteresse médiévale
+  // Le donjon, seul vestige de la forteresse médiévale : couronné de
+  // créneaux sur mâchicoulis, et coiffé d'une flèche d'ardoise très aiguë.
   corps(-24, -14, -16, -6, 17);
   for (let y = SOL + 3; y <= SOL + 15; y += 6) {
     set(-19, y, -6, BLOCK.GLASS); set(-24, y, -11, BLOCK.GLASS);
   }
+  const sommet = SOL + 19;
+  for (let dx = -25; dx <= -13; dx++) for (let dz = -17; dz <= -5; dz++) {
+    const bord = dx === -25 || dx === -13 || dz === -17 || dz === -5;
+    if (bord) set(dx, sommet, dz, TAILLE);       // la saillie des mâchicoulis
+  }
+  for (let dx = -25; dx <= -13; dx++) {          // les créneaux
+    if ((dx + 25) % 2) continue;
+    set(dx, sommet + 1, -17, TAILLE); set(dx, sommet + 1, -5, TAILLE);
+  }
+  for (let dz = -17; dz <= -5; dz++) {
+    if ((dz + 17) % 2) continue;
+    set(-25, sommet + 1, dz, TAILLE); set(-13, sommet + 1, dz, TAILLE);
+  }
+  for (let k = 0; k <= 5; k++) {                 // la flèche
+    const r = 4 - Math.floor(k * 0.8);
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) === r || k === 5) set(-19 + dx, sommet + 2 + k, -11 + dz, ARD);
+    }
+  }
+  set(-19, sommet + 8, -11, TAILLE);
 
-  // hautes cheminées de tuffeau, très visibles sur les toits de la Loire
-  for (const [cx, cz] of [[-14, -21], [14, -21], [-20, -34], [20, -34]]) {
-    for (let y = SOL + H + 2; y <= SOL + H + 9; y++) {
+  // Le pavillon d'angle et son toit en poivrière, à l'autre extrémité.
+  corps(20, 28, -16, -8, 14);
+  for (let k = 0; k <= 4; k++) {
+    const r = 4 - k;
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) === r || k === 4) set(24 + dx, SOL + 18 + k, -12 + dz, ARD);
+    }
+  }
+
+  // Les cheminées montent entre les lucarnes, comme sur place.
+  for (const [cx, cz] of [[-9, -21], [9, -21], [-20, -36], [20, -36]]) {
+    for (let y = SOL + H + 2; y <= SOL + H + 10; y++) {
       for (let dx = 0; dx <= 1; dx++) for (let dz = 0; dz <= 1; dz++) set(cx + dx, y, cz + dz, TAILLE);
     }
+    for (let dx = -1; dx <= 2; dx++) for (let dz = -1; dz <= 2; dz++) set(cx + dx, SOL + H + 11, cz + dz, TAILLE);
   }
 
   // la cour d'honneur, ouverte au nord, et son perron
@@ -203,144 +269,184 @@ function amenagerInterieur(set, o, SOL) {
 
 // --- le jardin d'ornement ------------------------------------------------------
 // Les « jardins d'amour » : quatre carrés de buis taillé, chacun racontant un
-// amour — tendre, passionné, volage, tragique. Les cœurs, les masques de bal
-// et les lames de poignard s'y lisent d'en haut.
+// amour — tendre, passionné, volage, tragique.
+//
+// Le dessin est du BUIS SUR GRAVIER, pas un aplat de couleur : sur place, le
+// sol clair domine, le buis trace des lignes fines, et la couleur ne vient que
+// des massifs de fleurs enfermés dans les compartiments. Des ifs en cône et en
+// boule ponctuent régulièrement les bordures.
 function jardinOrnement(set, o) {
   const y = T_ORNEMENT;
   const B = V.BUIS;
   o.dalle(-26, 26, -4, 26, y, V.ALLEE);
 
-  // Chaque carré : une bordure de buis, un remplissage de fleurs, et un motif
-  // de buis au centre. Le motif est ce qui distingue les quatre amours.
-  const carre = (cx, cz, fleur, motif) => {
-    const R = 5;
-    for (let dx = -R - 1; dx <= R + 1; dx++) for (let dz = -R - 1; dz <= R + 1; dz++) {
-      const bord = Math.abs(dx) > R || Math.abs(dz) > R;
-      set(cx + dx, y, cz + dz, bord ? B : fleur);
-    }
-    for (const [dx, dz] of motif) set(cx + dx, y, cz + dz, B);
-  };
-
-  // Les quatre amours, dessinés explicitement. Une équation de cœur donnait un
-  // anneau illisible à cette taille : à onze cases de côté, chaque bloc compte,
-  // et un motif se vérifie mieux à l'œil qu'il ne se calcule.
-  const motif = (lignes) => {
-    const pts = [];
+  // Un motif se lit en onze cases de côté : '#' le buis, une lettre le massif
+  // fleuri, le point le gravier. À cette échelle, un dessin se vérifie mieux à
+  // l'œil qu'il ne se calcule — une équation de cœur ne donnait qu'un anneau.
+  const carre = (cx, cz, fleur, lignes) => {
     lignes.forEach((ligne, i) => {
-      [...ligne].forEach((c, j) => { if (c === '#') pts.push([j - 5, i - 5]); });
+      [...ligne].forEach((c, j) => {
+        const dx = j - 5, dz = i - 5;
+        set(cx + dx, y, cz + dz, c === '#' ? B : c === 'o' ? fleur : V.ALLEE);
+      });
     });
-    return pts;
+    // la bordure de buis qui enferme le compartiment
+    o.contour(cx - 6, cx + 6, cz - 6, cz + 6, y, B);
+    // les ifs en boule aux quatre angles, comme sur les photos
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      for (let h = 1; h <= 2; h++) set(cx + sx * 6, y + h, cz + sz * 6, B);
+    }
   };
 
-  // AMOUR TENDRE : deux cœurs unis par le milieu, et les flammes de l'amour
-  carre(-14, 5, uni(15), motif([
+  // AMOUR TENDRE : les cœurs, séparés par les flammes de l'amour
+  carre(-14, 5, uni(15), [
     '..##...##..',
-    '.####.####.',
-    '###########',
-    '###########',
-    '.#########.',
-    '..#######..',
-    '...#####...',
-    '....###....',
-    '.....#.....',
+    '.#oo#.#oo#.',
+    '#oooo#oooo#',
+    '#oooooooo o',
+    '.#oooooo#..',
+    '..#oooo#...',
+    '...#oo#....',
+    '....##.....',
     '...........',
+    '..#.#.#.#..',
     '...........',
-  ]));
+  ]);
 
-  // AMOUR PASSIONNÉ : les cœurs brisés, séparés par la ligne de fracture
-  carre(14, 5, uni(0), motif([
-    '..###.###..',
-    '.#####.###.',
-    '#####...###',
-    '####.....##',
-    '.###...###.',
-    '..##..###..',
-    '...#.###...',
-    '....###....',
-    '...##......',
+  // AMOUR PASSIONNÉ : les cœurs brisés, et la ligne de fracture
+  carre(14, 5, uni(0), [
+    '..##.:##...',
+    '.#oo#:#oo#.',
+    '#ooo#::#oo#',
+    '#ooo#::#oo#',
+    '.#oo#:#oo#.',
+    '..#o#:#o#..',
+    '...##:##...',
+    '....#:#....',
+    '.....:.....',
+    '..#..:..#..',
     '...........',
-    '...........',
-  ]));
+  ].map((l) => l.replace(/:/g, '.')));
 
   // AMOUR VOLAGE : les éventails de la légèreté et les cornes du papillon
-  carre(-14, 19, uni(2), motif([
+  carre(-14, 19, uni(2), [
     '...........',
     '.#.......#.',
-    '.##.....##.',
-    '.###...###.',
-    '.####.####.',
+    '.#o#...#o#.',
+    '.#oo#.#oo#.',
+    '.#ooo#ooo#.',
     '.#########.',
-    '..#.....#..',
-    '..#.....#..',
+    '..#ooooo#..',
+    '..#o###o#..',
     '..#######..',
     '...........',
     '...........',
-  ]));
+  ]);
 
   // AMOUR TRAGIQUE : les lames de poignard qui se croisent
-  carre(14, 19, uni(24), motif([
-    '#.........#',
-    '.#.......#.',
-    '..#.....#..',
-    '...#...#...',
-    '....#.#....',
+  carre(14, 19, uni(24), [
+    '#.o.....o.#',
+    '.#o.....o#.',
+    '..#o...o#..',
+    'o..#o.o#..o',
+    '....#o#....',
     '.....#.....',
-    '....#.#....',
-    '...#...#...',
-    '..#.....#..',
-    '.#.......#.',
-    '#.........#',
-  ]));
+    '....#o#....',
+    'o..#o.o#..o',
+    '..#o...o#..',
+    '.#o.....o#.',
+    '#.o.....o.#',
+  ]);
 
-  // les ifs taillés en cône qui ponctuent les angles
-  for (const [cx, cz] of [[-24, -2], [24, -2], [-24, 24], [24, 24], [0, -2], [0, 24]]) {
-    for (let h = 1; h <= 4; h++) {
-      const r = h < 3 ? 1 : 0;
+  // Les ifs taillés en cône qui rythment les allées, très visibles de la
+  // terrasse : ce sont eux qui donnent l'échelle au jardin.
+  for (const [cx, cz] of [[-24, -2], [24, -2], [-24, 24], [24, 24], [0, -2], [0, 24], [0, 12], [-24, 12], [24, 12]]) {
+    for (let h = 1; h <= 5; h++) {
+      const r = h <= 2 ? 1 : 0;
       for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) set(cx + dx, y + h, cz + dz, B);
     }
   }
+
+  // La balustrade de pierre ajourée qui borde la terrasse au-dessus du
+  // potager : on s'y accoude pour regarder les neuf carrés d'en haut.
+  for (let x = -34; x <= 34; x++) {
+    set(x, y + 1, 26, V.TUFFEAU_TAILLE);
+    if ((x + 34) % 3 !== 0) set(x, y + 2, 26, V.TUFFEAU_TAILLE); // les ajours
+    set(x, y + 3, 26, V.TUFFEAU_TAILLE);                          // la main courante
+  }
+  for (let x = -4; x <= 4; x++) for (let h = 1; h <= 3; h++) set(x, y + h, 26, BLOCK.AIR); // le passage
 }
 
 // --- le potager décoratif -------------------------------------------------------
-// Neuf carrés de même taille, chacun avec son dessin de légumes : c'est la
-// pièce maîtresse de Villandry, et le seul potager au monde traité comme un
-// parterre de broderie. Chaque carré porte une rosace de rosiers aux angles.
+// Neuf carrés de même taille, seul potager au monde traité comme un parterre de
+// broderie.
+//
+// Vu d'en haut depuis le donjon, chaque carré n'est pas d'un seul tenant : il
+// est lui-même divisé en petits carreaux séparés d'allées étroites, chacun
+// planté d'un légume différent et cerné de buis. Ce sont ces subdivisions qui
+// donnent au potager sa texture de tapisserie — un aplat de deux couleurs ne
+// rendait pas du tout la même chose.
 function potager(set, o) {
   const y = T_POTAGER;
   o.dalle(-34, 34, 28, 76, y, V.ALLEE);
 
-  const LEGUMES = [
-    [POIREAU, CHOU_BLEU], [BETTERAVE, CHOU_ROUGE], [SALADE, BLETTE],
-    [CAROTTE, COURGE], [AUBERGINE, CHOU_BLEU], [OSEILLE, SALADE],
-    [TOMATE, BETTERAVE], [CELERI, POIREAU], [COURGE, CAROTTE],
+  // Neuf carrés, chacun avec sa palette de quatre légumes et son découpage.
+  const CARRES = [
+    { legumes: [POIREAU, CHOU_BLEU, SALADE, BETTERAVE], decoupe: 'croix' },
+    { legumes: [BETTERAVE, CHOU_ROUGE, OSEILLE, CAROTTE], decoupe: 'bandes' },
+    { legumes: [SALADE, BLETTE, CELERI, COURGE], decoupe: 'damier' },
+    { legumes: [CAROTTE, COURGE, POIREAU, AUBERGINE], decoupe: 'damier' },
+    { legumes: [AUBERGINE, CHOU_BLEU, TOMATE, SALADE], decoupe: 'croix' },
+    { legumes: [OSEILLE, SALADE, BLETTE, POIREAU], decoupe: 'bandes' },
+    { legumes: [TOMATE, BETTERAVE, CAROTTE, CHOU_ROUGE], decoupe: 'bandes' },
+    { legumes: [CELERI, POIREAU, CHOU_BLEU, OSEILLE], decoupe: 'damier' },
+    { legumes: [COURGE, CAROTTE, BLETTE, TOMATE], decoupe: 'croix' },
   ];
 
-  let n = 0;
-  for (let li = 0; li < 3; li++) {
-    for (let co = 0; co < 3; co++) {
-      const cx = -20 + co * 20, cz = 38 + li * 14;
-      const [a, b] = LEGUMES[n];
-      const dessin = n % 3; // trois dessins alternés, comme sur place
-      for (let dx = -8; dx <= 8; dx++) {
-        for (let dz = -5; dz <= 5; dz++) {
-          const bord = Math.abs(dx) === 8 || Math.abs(dz) === 5;
-          if (bord) { set(cx + dx, y, cz + dz, V.BUIS); continue; }
-          let choix;
-          if (dessin === 0) choix = (Math.abs(dx) + Math.abs(dz)) % 4 < 2 ? a : b;      // damier en losange
-          else if (dessin === 1) choix = Math.abs(dx) * 2 < Math.abs(dz) * 5 ? a : b;    // croix diagonale
-          else choix = (Math.floor((dx + 8) / 3) + Math.floor((dz + 5) / 3)) % 2 ? a : b; // damier large
-          set(cx + dx, y, cz + dz, choix);
-        }
-      }
-      // les rosiers sur tige aux quatre angles, et leur tonnelle
-      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        const rx = cx + sx * 7, rz = cz + sz * 4;
-        set(rx, y + 1, rz, BLOCK.LOG);
-        set(rx, y + 2, rz, BLOCK.LOG);
-        set(rx, y + 3, rz, uni(15)); // la rose
-      }
-      n++;
+  // Un carreau : le légume au centre, une bordure de buis tout autour.
+  const carreau = (x0, x1, z0, z1, legume) => {
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
+      const bord = x === x0 || x === x1 || z === z0 || z === z1;
+      set(x, y, z, bord ? V.BUIS : legume);
     }
+  };
+
+  CARRES.forEach((carre, n) => {
+    const li = Math.floor(n / 3), co = n % 3;
+    const cx = -20 + co * 20, cz = 38 + li * 14;
+    const x0 = cx - 8, x1 = cx + 8, z0 = cz - 5, z1 = cz + 5;
+
+    if (carre.decoupe === 'croix') {
+      // quatre carreaux autour d'une allée en croix
+      carreau(x0, cx - 1, z0, cz - 1, carre.legumes[0]);
+      carreau(cx + 1, x1, z0, cz - 1, carre.legumes[1]);
+      carreau(x0, cx - 1, cz + 1, z1, carre.legumes[2]);
+      carreau(cx + 1, x1, cz + 1, z1, carre.legumes[3]);
+    } else if (carre.decoupe === 'bandes') {
+      // quatre bandes parallèles, comme les rangs de poireaux
+      for (let k = 0; k < 4; k++) {
+        carreau(x0 + k * 4, x0 + k * 4 + 3, z0, z1, carre.legumes[k]);
+      }
+    } else {
+      // six carreaux en damier
+      for (let k = 0; k < 3; k++) {
+        carreau(x0 + k * 6, x0 + k * 6 + 5, z0, cz - 1, carre.legumes[k % 4]);
+        carreau(x0 + k * 6, x0 + k * 6 + 5, cz + 1, z1, carre.legumes[(k + 2) % 4]);
+      }
+    }
+
+    // Les rosiers sur tige aux quatre angles, sous leur tonnelle de treillage
+    // blanc : ils marquent chaque carré et se voient de loin.
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const rx = cx + sx * 9, rz = cz + sz * 6;
+      for (let h = 1; h <= 3; h++) set(rx, y + h, rz, TREILLAGE);
+      set(rx, y + 4, rz, uni(15));  // la rose
+    }
+  });
+
+  // Les panneaux de treillage blanc qui ferment le potager sur ses côtés.
+  for (let x = -34; x <= 34; x += 1) {
+    if ((x + 34) % 8 < 6) { set(x, y + 1, 76, TREILLAGE); set(x, y + 2, 76, TREILLAGE); }
   }
 
   // la fontaine centrale et son bassin, au croisement des allées
@@ -350,6 +456,17 @@ function potager(set, o) {
     set(dx, y, 52 + dz, d > 2.4 ? V.TUFFEAU_TAILLE : BLOCK.WATER);
   }
   set(0, y + 1, 52, VASQUE);
+
+  // Les poiriers en cordon le long de l'allée centrale, taillés en fuseau.
+  for (const z of [31, 73]) {
+    for (let x = -28; x <= 28; x += 7) {
+      for (let h = 1; h <= 3; h++) set(x, y + h, z, BLOCK.LOG);
+      for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+        set(x + dx, y + 4, z + dz, BLOCK.LEAVES);
+      }
+      set(x, y + 5, z, BLOCK.LEAVES);
+    }
+  }
 }
 
 // --- le jardin d'eau ------------------------------------------------------------
