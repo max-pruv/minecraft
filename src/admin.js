@@ -50,6 +50,8 @@ table.adm th {
 table.adm td { padding: 9px 10px; border-top: 1px solid #21262d; vertical-align: top; }
 table.adm tr:hover td { background: #11161d; }
 .adm-name { font-weight: 600; }
+/* la ligne du dessous compte des choses : la couper en deux la rend illisible */
+table.adm td:nth-child(1) .adm-dim { white-space: nowrap; }
 .adm-me { color: #7ee787; font-size: 11px; margin-left: 5px; }
 .adm-live { display: inline-flex; align-items: center; gap: 5px; color: #7ee787; font-weight: 500; }
 .adm-dot {
@@ -71,7 +73,38 @@ table.adm tr:hover td { background: #11161d; }
 .adm-tag.ok { color: #7ee787; border-color: #245b32; background: #10231a; }
 .adm-actions { white-space: nowrap; }
 .adm-actions .adm-btn + .adm-btn { margin-left: 6px; }
+/* Un réglage se manipule, il ne se lit pas : une petite molette de minutes
+   plutôt qu'un chiffre figé. */
+.adm-rythme { display: inline-flex; align-items: center; gap: 6px; }
+.adm-rythme select {
+  font: inherit; font-size: 12.5px; padding: 3px 6px; border-radius: 6px;
+  background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+}
 .adm-note { color: #8b949e; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+
+/* Fenêtre maison plutôt que les boîtes du navigateur : celles-ci sont
+   moches, coupées sur iOS, et donnent au code parental l'air d'un bug. */
+#adm-modal {
+  position: fixed; inset: 0; z-index: 130; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(2, 5, 10, .72); backdrop-filter: blur(3px);
+}
+#adm-modal.on { display: flex; }
+#adm-modal-card {
+  width: min(360px, 100%); background: #161b22; border: 1px solid #30363d;
+  border-radius: 14px; padding: 20px; box-shadow: 0 18px 50px rgba(0,0,0,.55);
+}
+#adm-modal-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+#adm-modal-sub { color: #8b949e; font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+#adm-modal-input {
+  font: inherit; width: 100%; padding: 11px 12px; border-radius: 9px;
+  background: #0d1117; color: #e6edf3; border: 1px solid #30363d; text-align: center;
+}
+#adm-modal-input.code { font-size: 22px; letter-spacing: 8px; }
+#adm-modal-err { color: #ff9d95; font-size: 12.5px; min-height: 17px; margin-top: 7px; }
+#adm-modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+#adm-modal-actions .adm-btn { flex: 1; padding: 9px 12px; }
+#adm-modal-actions .adm-btn.go { background: #21482e; border-color: #2d6a3f; color: #b7f0c8; }
 #adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 8px 0 0; }
 #adm-msg.err { color: #ff9d95; }
 /* Sur un téléphone, six colonnes dans 390 px donnent des mots coupés en
@@ -111,7 +144,7 @@ const HTML = `
   <table class="adm">
     <thead><tr>
       <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
-      <th>Mondes</th><th>Compte</th><th></th>
+      <th>Quiz tous les</th><th>Mondes</th><th>Compte</th><th></th>
     </tr></thead>
     <tbody id="adm-rows"></tbody>
   </table>
@@ -127,6 +160,19 @@ const HTML = `
 </div>
 `;
 
+const MODAL_HTML = `
+<div id="adm-modal-card">
+  <div id="adm-modal-title"></div>
+  <div id="adm-modal-sub"></div>
+  <input id="adm-modal-input" autocomplete="off" />
+  <div id="adm-modal-err"></div>
+  <div id="adm-modal-actions">
+    <button class="adm-btn" id="adm-modal-no">Annuler</button>
+    <button class="adm-btn go" id="adm-modal-yes">Valider</button>
+  </div>
+</div>
+`;
+
 // Exporté à part : la page doit pouvoir décider d'afficher le bouton avant
 // même d'avoir construit le panneau.
 export const isAdminName = (name) =>
@@ -135,6 +181,10 @@ export const isAdminName = (name) =>
 // Le jeu envoie un signe de vie toutes les 20 s : au-delà de trois battements
 // manqués, on ne prétend plus que l'enfant est là.
 const PRESENCE_MS = 70000;
+
+// Intervalle entre deux séries de questions. Les bornes sont celles du jeu :
+// en deçà on harcèle, au-delà le mode éducatif devient décoratif.
+const RYTHMES = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
 
 const jour = () => new Date().toISOString().slice(0, 10);
 
@@ -222,15 +272,71 @@ export class AdminPanel {
     this.el = div;
     div.querySelector('#adm-close').addEventListener('click', () => this.hide());
     div.querySelector('#adm-refresh').addEventListener('click', () => this.load());
+
+    const modal = document.createElement('div');
+    modal.id = 'adm-modal';
+    modal.innerHTML = MODAL_HTML;
+    document.body.appendChild(modal);
+    this.modal = modal;
   }
 
-  open() {
+  // Boîte de saisie maison. Résout avec le texte saisi, ou null si on annule.
+  // `attendu` : on refuse sur place au lieu de refermer et de faire recommencer.
+  ask({ titre, sous, valider, type = 'text', ok = 'Valider', code = false }) {
+    this.mount();
+    const m = this.modal;
+    const champ = m.querySelector('#adm-modal-input');
+    const err = m.querySelector('#adm-modal-err');
+    m.querySelector('#adm-modal-title').textContent = titre;
+    m.querySelector('#adm-modal-sub').textContent = sous || '';
+    m.querySelector('#adm-modal-yes').textContent = ok;
+    champ.type = type;
+    champ.value = '';
+    champ.className = code ? 'code' : '';
+    if (code) { champ.inputMode = 'numeric'; champ.maxLength = 8; } else { champ.removeAttribute('inputmode'); champ.removeAttribute('maxlength'); }
+    err.textContent = '';
+    m.classList.add('on');
+    setTimeout(() => champ.focus(), 30);
+
+    return new Promise((resolve) => {
+      const fermer = (valeur) => {
+        m.classList.remove('on');
+        champ.removeEventListener('keydown', surTouche);
+        oui.removeEventListener('click', surOui);
+        non.removeEventListener('click', surNon);
+        resolve(valeur);
+      };
+      const surOui = () => {
+        const v = champ.value.trim();
+        const souci = valider ? valider(v) : null;
+        if (souci) { err.textContent = souci; champ.value = ''; champ.focus(); return; }
+        fermer(v);
+      };
+      const surNon = () => fermer(null);
+      const surTouche = (e) => {
+        e.stopPropagation(); // le jeu écoute aussi le clavier
+        if (e.key === 'Enter') surOui();
+        if (e.key === 'Escape') surNon();
+      };
+      const oui = m.querySelector('#adm-modal-yes');
+      const non = m.querySelector('#adm-modal-no');
+      oui.addEventListener('click', surOui);
+      non.addEventListener('click', surNon);
+      champ.addEventListener('keydown', surTouche);
+    });
+  }
+
+  async open() {
     // Deuxième verrou : le prénom seul ne prouve rien, l'appareil peut être
     // resté ouvert sur ce profil.
-    const code = window.prompt('Code parent :');
-    if (code === null) return;
-    if (code !== PARENT_CODE) { window.alert('Code incorrect.'); return; }
     this.mount();
+    const code = await this.ask({
+      titre: '🔒 Espace parent',
+      sous: 'Tape le code parental pour ouvrir.',
+      type: 'password', code: true, ok: 'Ouvrir',
+      valider: (v) => (v === PARENT_CODE ? null : 'Code incorrect.'),
+    });
+    if (code === null) return;
     this.el.classList.add('on');
     this.load();
     // La présence n'a de sens que fraîche : on relit tant que la vue est
@@ -279,7 +385,7 @@ export class AdminPanel {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
           quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
-          supprime: false,
+          supprime: false, rythme: 6,
         });
       }
       return par.get(nom);
@@ -309,6 +415,8 @@ export class AdminPanel {
       const e = entree(r.name);
       e.majPrefs = r.updated_at;
       if ((r.prefs || {}).supprime) e.supprime = true;
+      const min = Number((r.prefs || {}).sessionMin);
+      if (isFinite(min) && min > 0) e.rythme = Math.round(min);
       const l = (r.prefs || {}).live;
       // Passé ce délai, le battement s'est arrêté : l'appareil est en veille,
       // le jeu fermé, ou le réseau coupé. Dans tous les cas l'enfant n'est
@@ -369,9 +477,13 @@ export class AdminPanel {
         : '<span class="adm-dim">—</span>';
       return `<tr>
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
-            <div class="adm-dim">${l.dex} créatures · ${l.blocs} blocs</div></td>
+            <div class="adm-dim">${l.dex} créature${l.dex > 1 ? 's' : ''} · ${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
         <td><span class="adm-lbl">En ce moment</span>${presence(l)}</td>
         <td><span class="adm-lbl">Aujourd'hui</span>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
+        <td><span class="adm-lbl">Quiz tous les</span>
+          <span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
+            RYTHMES.map((m) => `<option value="${m}"${m === l.rythme ? ' selected' : ''}>${m} min</option>`).join('')
+          }</select></span></td>
         <td><span class="adm-lbl">Mondes</span>${mondes}</td>
         <td><span class="adm-lbl">Compte</span>${secu}<div class="adm-dim">${reponses(l)}</div></td>
         <td class="adm-actions">
@@ -387,6 +499,9 @@ export class AdminPanel {
     for (const b of this.el.querySelectorAll('[data-suppr]')) {
       b.addEventListener('click', () => this.supprimer(b.getAttribute('data-suppr')));
     }
+    for (const sel of this.el.querySelectorAll('[data-rythme]')) {
+      sel.addEventListener('change', () => this.setRythme(sel.getAttribute('data-rythme'), Number(sel.value)));
+    }
   }
 
   // On n'impose jamais un code : on efface l'ancien et on demande au jeu de
@@ -394,10 +509,15 @@ export class AdminPanel {
   // aucun — et c'est de toute façon tout ce qu'il peut faire, les codes étant
   // stockés hachés.
   async resetPin(nom) {
-    const message = `Demander à ${nom} de choisir un nouveau code ?\n`
-      + 'Son ancien code cesse de fonctionner tout de suite, et le jeu lui en '
-      + 'demandera un nouveau à sa prochaine ouverture. Son visage reste enregistré.';
-    if (!window.confirm(message)) return;
+    const reponse = await this.ask({
+      titre: `Nouveau code pour ${nom} ?`,
+      sous: "Son ancien code cesse de marcher tout de suite, et le jeu lui en demandera "
+        + "un nouveau à sa prochaine ouverture. Son visage reste enregistré. "
+        + "Tape le code parental pour confirmer.",
+      type: 'password', code: true, ok: 'Réinitialiser',
+      valider: (v) => (v === PARENT_CODE ? null : 'Code incorrect.'),
+    });
+    if (reponse === null) return;
     try {
       const ligne = await this.cloud.identityPull(nom);
       await this.cloud.identityPush(nom, { faces: (ligne && ligne.faces) || [], pinHash: null });
@@ -416,22 +536,34 @@ export class AdminPanel {
     }
   }
 
+  // Le réglage part dans les réglages du joueur, d'où le jeu le relit au
+  // lancement suivant — sur n'importe lequel de ses appareils.
+  async setRythme(nom, minutes) {
+    try {
+      const prefs = (await this.cloud.prefsPull(nom)) || {};
+      await this.cloud.prefsPush(nom, { ...prefs, sessionMin: minutes });
+      this.message(`${nom} : quiz toutes les ${minutes} minutes.`);
+    } catch {
+      this.message(`Impossible de changer le rythme de ${nom} — réessaie.`, true);
+      this.load();
+    }
+  }
+
   // Supprimer, avec une limite qu'il faut dire : la clé publique du jeu peut
   // vider une ligne, pas la retirer de la base. On efface donc tout ce qu'elle
   // contient — visage, code, partie, temps de jeu — et le compte disparaît du
   // jeu comme de cette liste. La ligne vide, elle, ne s'enlève que depuis le
   // tableau de bord Supabase.
   async supprimer(nom) {
-    const message = `Supprimer le compte de ${nom} ?\n\n`
-      + 'Son visage, son code, ses mondes, ses créatures et son temps de jeu '
-      + "seront effacés. C'est définitif : il n'y a pas de corbeille.\n\n"
-      + `Écris « ${nom} » pour confirmer.`;
-    const saisi = window.prompt(message);
+    const saisi = await this.ask({
+      titre: `Supprimer ${nom} ?`,
+      sous: 'Son visage, son code, ses mondes, ses créatures et son temps de jeu seront '
+        + "effacés. C'est définitif : il n'y a pas de corbeille. "
+        + `Écris « ${nom} » pour confirmer.`,
+      ok: 'Supprimer',
+      valider: (v) => (v.toLowerCase() === nom.toLowerCase() ? null : 'Ce n\'est pas le bon prénom.'),
+    });
     if (saisi === null) return;
-    if (saisi.trim().toLowerCase() !== nom.toLowerCase()) {
-      this.message('Nom non confirmé — rien n\'a été supprimé.', true);
-      return;
-    }
     try {
       await this.cloud.identityPush(nom, { faces: [], pinHash: null });
       await this.cloud.statePush(nom, {});

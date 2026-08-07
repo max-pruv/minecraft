@@ -950,6 +950,7 @@ function prefsPayload() {
     // the adaptive quiz engine's per-skill levels & recent-question memory
     // follow the child too, so switching devices mid-progress is seamless
     skills: edu.skills, recent: [...edu.recent],
+    sessionMin: edu.sessionMinutes(),
     live: presenceNow(),
   };
 }
@@ -2314,6 +2315,9 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
     playerProfile.lang = prefs.lang;
     changed = true;
   }
+  // Rythme des questions, décidé depuis l'espace parent : il suit l'enfant
+  // d'un appareil à l'autre, comme sa langue ou son niveau.
+  if (prefs.sessionMin !== undefined) edu.setSessionMinutes(prefs.sessionMin);
   if (Number.isInteger(prefs.grade) && prefs.grade !== playerProfile.grade) {
     playerProfile.grade = prefs.grade;
     changed = true;

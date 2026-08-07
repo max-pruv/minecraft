@@ -4,7 +4,8 @@
 // per skill from the child's history; random fast-clicking is detected,
 // frozen for 10 seconds, and penalized with extra required answers.
 
-const SESSION_SECONDS = 6 * 60;
+const SESSION_SECONDS = 6 * 60;      // valeur d'usine, réglable par enfant
+const SESSION_MIN_BOUNDS = [3, 30];  // garde-fou : ni harcèlement, ni oubli
 const NEEDED_CORRECT = 5;
 const DAILY_LIMIT_SECONDS = 45 * 60; // hard stop after this much play per day
 const PARENT_CODE = '135246';
@@ -676,11 +677,16 @@ export class EducationMode {
       }
       this.data.boost1 = 1;
     }
+    // Intervalle entre deux séries de questions, réglable par enfant depuis
+    // l'espace parent : un CP de six ans et un CM1 n'ont pas le même seuil
+    // d'agacement, et un long trajet en voiture non plus.
+    this.sessionSeconds = SESSION_SECONDS;
+
     // Resume the unspent play time from the last session: closing or
     // restarting the game must not burn minutes that were already earned.
     // With no time left over (or a refresh mid-quiz), a quiz is owed —
     // so refreshing is never an escape from answering questions.
-    const carried = Math.min(this.data.remaining || 0, SESSION_SECONDS);
+    const carried = Math.min(this.data.remaining || 0, this.sessionSeconds);
     this.quizDue = carried < 15;
     this.remaining = this.quizDue ? 0 : carried;
     this.quizActive = false;
@@ -759,6 +765,23 @@ export class EducationMode {
     if (this.data.days[key].quiz === undefined) this.data.days[key].quiz = 0; // older saves
     return this.data.days[key];
   }
+
+  // Réglé depuis l'espace parent, borné pour qu'aucune valeur saugrenue —
+  // saisie par erreur ou venue d'un vieux document — ne rende le jeu
+  // insupportable ou le mode éducatif décoratif.
+  setSessionMinutes(min) {
+    const n = Number(min);
+    if (!isFinite(n)) return false;
+    const [bas, haut] = SESSION_MIN_BOUNDS;
+    const borne = Math.min(haut, Math.max(bas, Math.round(n)));
+    if (borne * 60 === this.sessionSeconds) return false;
+    this.sessionSeconds = borne * 60;
+    // le compte à rebours en cours suit, sans jamais dépasser le nouveau seuil
+    this.remaining = Math.min(this.remaining, this.sessionSeconds);
+    return true;
+  }
+
+  sessionMinutes() { return Math.round(this.sessionSeconds / 60); }
 
   // Daily allowance grows by one block per parental/marathon unlock.
   allowance() {
@@ -884,7 +907,7 @@ export class EducationMode {
       if (this.quizFree()) {
         // Le compte à rebours est gelé et repart à neuf à la fin du répit :
         // sinon un quiz tomberait à la seconde même où il se termine.
-        this.remaining = SESSION_SECONDS;
+        this.remaining = this.sessionSeconds;
         this.warned60 = false;
         this.warned10 = false;
         this.quizDue = false;
@@ -1221,7 +1244,7 @@ export class EducationMode {
     this.el.category.textContent = '🏆';
     this.el.count.textContent = '';
     this.el.feedback.innerHTML =
-      `${this.marathon ? '+45 minutes débloquées !' : `+${SESSION_SECONDS / 60} minutes de jeu !`} 🎮` +
+      `${this.marathon ? '+45 minutes débloquées !' : `+${Math.round(this.sessionSeconds / 60)} minutes de jeu !`} 🎮` +
       `<br>${heroPraise}${rewardLine}`;
     this.el.feedback.className = 'good';
     if (this.marathon) this.grantExtraBlock();
@@ -1235,7 +1258,7 @@ export class EducationMode {
       this.quizActive = false;
       this.quizDue = false;
       this.marathon = false;
-      this.remaining = SESSION_SECONDS;
+      this.remaining = this.sessionSeconds;
       this.warned60 = false;
       this.warned10 = false;
       this.save();
