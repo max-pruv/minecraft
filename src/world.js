@@ -363,6 +363,20 @@ export const VOLCANO = { name: 'Volcan', x: -140, z: 420, r: 45 };
 export const CASTLE = { name: 'Château médiéval', x: 112, z: 210, r: 40 };
 export const ISLAND = { name: 'Île tropicale', x: 620, z: 80, r: 38 };
 
+// La planète Mars : un plateau de régolithe rouge criblé de cratères, très
+// loin de tout, avec sa base spatiale. Les martiens n'y vivent que là — c'est
+// ce qui rend le voyage intéressant.
+export const MARS = { name: 'Planète Mars', x: -520, z: -480, r: 90 };
+
+// Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
+// plat : c'est ce liseré surélevé qui les rend reconnaissables de loin.
+function cratere(d, rayon) {
+  if (d > rayon) return 0;
+  const t = d / rayon;
+  if (t > 0.82) return 1.6 * Math.sin((1 - t) / 0.18 * Math.PI); // le bourrelet
+  return -5.5 * Math.cos(t / 0.82 * Math.PI * 0.5);
+}
+
 // Lava & cactus reuse the generated decor palette (Uni pattern).
 const LAVA = DECOR_START + 1 * 10;   // Uni orange
 const LAVA_HOT = DECOR_START + 0 * 10; // Uni rouge
@@ -370,7 +384,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -548,6 +562,113 @@ function buildMuseum(set) { // le musée des champions : statues des créatures 
   }
 }
 
+// La base martienne : une fusée posée sur son pas de tir, un dôme
+// d'habitation vitré, des panneaux solaires et un drapeau. C'est le seul
+// endroit habité de la planète, et le point d'arrivée du voyage.
+function buildBaseMartienne(set) {
+  const QUARTZ = BLOCK.WHITEBRICK, METAL = BLOCK.STONEBRICK;
+
+  // esplanade circulaire, avec un liseré clair qui la détache du régolithe
+  for (let dx = -22; dx <= 22; dx++) {
+    for (let dz = -22; dz <= 22; dz++) {
+      const d = Math.hypot(dx, dz);
+      if (d > 22) continue;
+      set(dx, 0, dz, d > 20.5 ? QUARTZ : BLOCK.GRAVEL);
+    }
+  }
+
+  // --- la fusée, posée à l'ouest de l'esplanade ---------------------------
+  const FX = -11, FZ = 0, R = 3, H = 26;
+  const disque = (y, rayon, id) => {
+    for (let dx = -rayon; dx <= rayon; dx++) {
+      for (let dz = -rayon; dz <= rayon; dz++) {
+        if (Math.hypot(dx, dz) <= rayon + 0.2) set(FX + dx, y, FZ + dz, id);
+      }
+    }
+  };
+  const anneau = (y, rayon, id) => {
+    for (let dx = -rayon; dx <= rayon; dx++) {
+      for (let dz = -rayon; dz <= rayon; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (d <= rayon + 0.2 && d > rayon - 1) set(FX + dx, y, FZ + dz, id);
+      }
+    }
+  };
+  // pas de tir surélevé
+  disque(0, R + 3, METAL);
+  disque(1, R + 3, BLOCK.DARKBRICK);
+  // corps blanc, cerclé de rouge tous les six niveaux
+  for (let y = 2; y < H - 6; y++) {
+    anneau(y, R, (y - 2) % 6 === 0 ? BLOCK.WOOL_RED : QUARTZ);
+  }
+  // hublots
+  for (const [dx, dz] of [[R, 0], [-R, 0], [0, R], [0, -R]]) {
+    set(FX + dx, 10, FZ + dz, BLOCK.GLASS);
+    set(FX + dx, 16, FZ + dz, BLOCK.GLASS);
+  }
+  // coiffe conique
+  for (let k = 0; k < 6; k++) anneau(H - 6 + k, Math.max(0, R - Math.floor(k * 0.6)), QUARTZ);
+  disque(H, 0, BLOCK.WOOL_RED);
+  // ailerons
+  for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (let y = 2; y < 8; y++) {
+      const ext = Math.max(1, 4 - Math.floor((y - 2) / 1.6));
+      for (let e = R; e <= R + ext; e++) set(FX + ax * e, y, FZ + az * e, BLOCK.WOOL_RED);
+    }
+  }
+  // passerelle d'accès depuis l'esplanade
+  for (let dx = R + 1; dx <= 7; dx++) set(FX + dx, 5, FZ, BLOCK.SLAB_STONE);
+  for (let y = 2; y <= 5; y++) set(FX + 7, y, FZ, METAL);
+
+  // --- le dôme d'habitation, à l'est --------------------------------------
+  const DX = 10, DZ = 0, DR = 8;
+  for (let y = 0; y <= DR; y++) {
+    const rayon = Math.sqrt(Math.max(0, DR * DR - y * y));
+    for (let dx = -DR; dx <= DR; dx++) {
+      for (let dz = -DR; dz <= DR; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (d > rayon + 0.2 || d <= rayon - 1) continue;
+        // les deux premiers niveaux sont pleins, au-dessus c'est vitré : on
+        // voit l'intérieur sans que la coupole paraisse fragile
+        set(DX + dx, y + 1, DZ + dz, y < 2 ? QUARTZ : BLOCK.GLASS);
+      }
+    }
+  }
+  for (let dx = -DR + 1; dx <= DR - 1; dx++) {
+    for (let dz = -DR + 1; dz <= DR - 1; dz++) {
+      if (Math.hypot(dx, dz) < DR - 0.5) set(DX + dx, 0, DZ + dz, BLOCK.WHITEBRICK);
+    }
+  }
+  // sas d'entrée face à la fusée
+  for (let y = 1; y <= 3; y++) { set(DX - DR, y, DZ, BLOCK.AIR); set(DX - DR, y, DZ + 1, BLOCK.AIR); }
+  for (let dx = -DR - 3; dx <= -DR; dx++) {
+    set(DX + dx, 0, DZ, BLOCK.SLAB_STONE);
+    set(DX + dx, 0, DZ + 1, BLOCK.SLAB_STONE);
+  }
+  // un peu de mobilier sous la coupole
+  set(DX, 1, DZ, BLOCK.BOOKSHELF);
+  set(DX + 3, 1, DZ - 3, BLOCK.WOOL_BLUE);
+  set(DX - 3, 1, DZ + 3, BLOCK.WOOL_YELLOW);
+
+  // --- panneaux solaires, au nord -----------------------------------------
+  for (let p = 0; p < 3; p++) {
+    const px2 = -6 + p * 7, pz2 = -16;
+    for (let y = 1; y <= 2; y++) { set(px2, y, pz2, METAL); set(px2 + 4, y, pz2, METAL); }
+    for (let dx = 0; dx <= 4; dx++) {
+      for (let dz = -2; dz <= 2; dz++) set(px2 + dx, 3, pz2 + dz, BLOCK.BLUEBRICK);
+    }
+  }
+
+  // --- drapeau et balises -------------------------------------------------
+  for (let y = 1; y <= 7; y++) set(0, y, 14, METAL);
+  for (let dz = 11; dz <= 13; dz++) for (let y = 5; y <= 7; y++) set(0, y, dz, BLOCK.WOOL_RED);
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * Math.PI * 2;
+    const bx = Math.round(Math.cos(ang) * 19), bz = Math.round(Math.sin(ang) * 19);
+    set(bx, 1, bz, BLOCK.GOLD);
+  }
+}
+
 const LANDMARKS = [
   // Paris
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
@@ -563,6 +684,7 @@ const LANDMARKS = [
   { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
   // Countryside
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
+  { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -659,6 +781,29 @@ export class World {
       h = h * (1 - m) + (32 + Math.max(0, (ISLAND.r - 8 - id2) / 6)) * m;
     }
 
+    // Mars : un plateau élevé, sec, criblé de cratères. Une grille régulière
+    // dont chaque case porte au plus un cratère décalé au hasard suffit à
+    // donner un relief crédible sans jamais rien mémoriser.
+    const md = Math.hypot(x - MARS.x, z - MARS.z);
+    if (md < MARS.r) {
+      const m = Math.min(1, (MARS.r - md) / 24);
+      let sol = 40 + fbm(x * 0.02, z * 0.02, SEED + 991) * 6;
+      const CASE = 38;
+      const gx = Math.floor(x / CASE), gz = Math.floor(z / CASE);
+      for (let ax = -1; ax <= 1; ax++) {
+        for (let az = -1; az <= 1; az++) {
+          const cx2 = (gx + ax) * CASE + hash2i(gx + ax, gz + az, SEED + 992) * CASE;
+          const cz2 = (gz + az) * CASE + hash2i(gx + ax, gz + az, SEED + 993) * CASE;
+          const r2 = 7 + hash2i(gx + ax, gz + az, SEED + 994) * 12;
+          sol += cratere(Math.hypot(x - cx2, z - cz2), r2);
+        }
+      }
+      // l'esplanade de la base reste plate : une fusée sur un cratère penche
+      const bd = Math.hypot(x - MARS.x, z - MARS.z);
+      if (bd < 30) sol = sol * (bd / 30) + 41 * (1 - bd / 30);
+      h = h * (1 - m) + sol * m;
+    }
+
     // the volcano: a tall cone with a lava crater at the top
     const vd = Math.hypot(x - VOLCANO.x, z - VOLCANO.z);
     if (vd < VOLCANO.r) {
@@ -683,6 +828,7 @@ export class World {
     if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
     if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
+    if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
     if (di < ISLAND.r) {
@@ -722,6 +868,9 @@ export class World {
         // biome overrides: sandy desert, rocky volcano with a lava crater
         const dd = Math.hypot(wx - DESERT.x, wz - DESERT.z);
         if (dd < DESERT.r - 2) { top = BLOCK.SAND; filler = BLOCK.SAND; }
+        if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) {
+          top = BLOCK.MARS_SOL; filler = BLOCK.MARS_ROCHE;
+        }
         const vd = Math.hypot(wx - VOLCANO.x, wz - VOLCANO.z);
         if (vd < VOLCANO.r - 2 && h > 36) {
           filler = BLOCK.STONE;

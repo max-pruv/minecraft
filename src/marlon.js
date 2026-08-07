@@ -14,6 +14,7 @@ function box(w, h, d, color) {
 
 // look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle,
 //         glasses, cape, mask } — cape/mask take a color, for superheroes
+//         casque : bulle vitrée + sac à dos, pour les astronautes
 export function buildKidMesh(look) {
   const g = new THREE.Group(); // faces -z, feet at y=0
 
@@ -63,21 +64,45 @@ export function buildKidMesh(look) {
   head.position.y = 1.26;
   g.add(head);
 
+  if (look.casque) {
+    // Bulle vitrée : une sphère translucide plutôt qu'un cube, sinon la tête
+    // ressemble à un carton. Le liseré doré reprend les visières réelles.
+    const bulle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.31, 18, 14),
+      new THREE.MeshBasicMaterial({ color: 0xcfeaff, transparent: true, opacity: 0.44, depthWrite: false })
+    );
+    bulle.position.y = 1.28;
+    const visiere = box(0.34, 0.13, 0.03, 0xe8c53c);
+    visiere.position.set(0, 1.29, -0.28);
+    const col = box(0.36, 0.07, 0.36, 0xd8d8e0);
+    col.position.y = 1.05;
+    // sac à dos : c'est lui qui fait vraiment lire « astronaute » de dos
+    const sac = box(0.34, 0.42, 0.18, 0xe8e8ee);
+    sac.position.set(0, 0.82, 0.21);
+    const tuyau = box(0.06, 0.3, 0.06, 0x9aa0aa);
+    tuyau.position.set(0.13, 1.02, 0.16);
+    g.add(bulle, visiere, col, sac, tuyau);
+  }
+
   if (look.hat) { // construction hard hat
     const hatTop = box(0.42, 0.14, 0.42, look.hat);
     hatTop.position.y = 1.5;
     const brim = box(0.5, 0.05, 0.5, look.hat);
     brim.position.y = 1.44;
     g.add(hatTop, brim);
-  } else {
+  } else if (!look.casque) {
     const hairTop = box(0.4, 0.1, 0.4, look.hair);
     hairTop.position.y = 1.47;
     g.add(hairTop);
   }
-  const fringe = box(0.4, 0.12, 0.04, look.hair);
-  fringe.position.set(0, 1.38, -0.19);
+  // Sous un casque, la chevelure est plaquée : on ne garde qu'une mèche sur le
+  // front, sinon les cheveux traversent la bulle et le casque ne se lit plus.
+  const fringe = box(look.casque ? 0.3 : 0.4, look.casque ? 0.07 : 0.12, 0.04, look.hair);
+  fringe.position.set(0, look.casque ? 1.4 : 1.38, -0.17);
   g.add(fringe);
-  if (look.hairstyle === 'bun') {
+  if (look.casque) {
+    // rien d'autre : ni natte, ni mèches latérales
+  } else if (look.hairstyle === 'bun') {
     const back = box(0.4, 0.3, 0.06, look.hair);
     back.position.set(0, 1.3, 0.2);
     const bun = box(0.16, 0.16, 0.14, look.hair);
@@ -88,10 +113,12 @@ export function buildKidMesh(look) {
     back.position.set(0, 1.33, 0.19);
     g.add(back);
   }
-  for (const sx of [-1, 1]) {
-    const side = box(0.04, 0.16, 0.4, look.hair);
-    side.position.set(sx * 0.19, 1.36, 0);
-    g.add(side);
+  if (!look.casque) {
+    for (const sx of [-1, 1]) {
+      const side = box(0.04, 0.16, 0.4, look.hair);
+      side.position.set(sx * 0.19, 1.36, 0);
+      g.add(side);
+    }
   }
 
   if (look.mask) {
@@ -460,6 +487,70 @@ export function createBuilders(scene, world, player, toast, cx, cz) {
 }
 
 // A dozen villager kids with varied looks who live around spawn.
+// Les astronautes de la base martienne. Ils ne bougent pas de leur planète :
+// leurs coordonnées de départ sont celles de la base, pas celles du joueur.
+export function createAstronautes(scene, world, player, toast, cx, cz) {
+  const COMBI = 0xf0f0f4, LISERE = 0xd8d8e0;
+  const commun = (accent) => ({
+    skin: 0xe8bd93, hair: 0x2c2416,
+    torsoSlabs: [COMBI, accent, COMBI, LISERE, COMBI],
+    sleeveSegs: [COMBI, LISERE, COMBI],
+    pants: COMBI, shoes: 0x9aa0aa,
+    hairstyle: 'short', glasses: false,
+    casque: true,
+  });
+
+  const nadia = new Wanderer(scene, world, player, toast, {
+    name: 'Nadia',
+    label: 'Nadia — commandante de la base martienne !',
+    walkSpeed: 1.3,
+    firstSpeech: 12,
+    look: commun(0xd83a3a),
+    phrases: [
+      'Bienvenue sur Mars ! Tu es loin de chez toi.',
+      'Ici une année dure presque deux années terrestres.',
+      'La gravité est trois fois plus faible qu\'à la maison.',
+      'Le ciel est rose au coucher du soleil, ici.',
+      'Ne va pas trop près des cratères !',
+      'Les martiens sont curieux, pas méchants.',
+    ],
+  }, cx + 6, cz - 7);
+
+  const samir = new Wanderer(scene, world, player, toast, {
+    name: 'Samir',
+    label: 'Samir — ingénieur de la fusée !',
+    walkSpeed: 1.5,
+    firstSpeech: 20,
+    look: commun(0x4a90d9),
+    phrases: [
+      'La fusée est prête à repartir quand tu veux.',
+      'Les panneaux solaires alimentent tout le dôme.',
+      'Mars est rouge à cause du fer rouillé dans son sol.',
+      'Il n\'y a presque pas d\'air ici — d\'où le casque !',
+      'Cette planète a le plus grand volcan du système solaire.',
+      'Tu as vu les deux lunes ? Phobos et Déimos.',
+    ],
+  }, cx - 8, cz + 5);
+
+  const lise = new Wanderer(scene, world, player, toast, {
+    name: 'Lise',
+    label: 'Lise — biologiste, elle étudie les martiens !',
+    walkSpeed: 1.4,
+    firstSpeech: 28,
+    look: commun(0x58b04c),
+    phrases: [
+      'J\'en ai compté trois espèces différentes !',
+      'Lance-leur une balle, ils adorent ça.',
+      'Le Grand Ancien est très rare, ouvre l\'œil.',
+      'Leurs antennes s\'allument quand ils sont contents.',
+      'Ils communiquent par petits sifflements.',
+      'Aucun martien n\'a jamais fait de mal à personne.',
+    ],
+  }, cx + 11, cz + 9);
+
+  return [nadia, samir, lise];
+}
+
 export function createVillagers(scene, world, player, toast, cx, cz) {
   const NAMES = ['Lucas', 'Chloé', 'Nathan', 'Zoé', 'Louis', 'Jade', 'Gabin', 'Lina', 'Noah', 'Rose', 'Adam', 'Léna'];
   const SKINS = [0xe8bd93, 0xc98a5e, 0xa56b42, 0xf0c8a0];

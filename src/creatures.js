@@ -17,6 +17,9 @@ export const TYPES = {
   BUG:      { color: 0xa8c04c, dark: 0x6d8028, biomes: [BLOCK.GRASS] },
   SPOOKY:   { color: 0x8a6ad0, dark: 0x54388f, biomes: [BLOCK.GRASS, BLOCK.SAND, BLOCK.SNOW] },
   FELIN:    { color: 0xd8a13c, dark: 0x8a5f1e, biomes: [BLOCK.GRASS, BLOCK.SAND] },
+  // Les martiens ne vivent que sur le régolithe rouge : il faut faire le
+  // voyage jusqu'à Mars pour espérer en attraper un.
+  MARTIEN:  { color: 0x7ad86a, dark: 0x3f8a3a, biomes: [BLOCK.MARS_SOL, BLOCK.MARS_ROCHE] },
 };
 
 // --- deterministic species generation ---------------------------------------
@@ -46,9 +49,10 @@ export function generateSpecies() {
   const rng = mulberry32(424242);
   const species = [];
   const names = new Set();
-  // FELIN is excluded from the cycle so the 48 original species keep their
-  // exact ids, names and types (saved collections stay valid)
-  const typeKeys = Object.keys(TYPES).filter((t) => t !== 'FELIN');
+  // FELIN et MARTIEN sont exclus du cycle pour que les 48 espèces générées
+  // gardent exactement leurs identifiants, noms et types — les collections
+  // déjà enregistrées resteraient sinon associées aux mauvaises créatures.
+  const typeKeys = Object.keys(TYPES).filter((t) => t !== 'FELIN' && t !== 'MARTIEN');
   for (let i = 0; i < 48; i++) {
     const type = typeKeys[i % typeKeys.length]; // six of each type
     let name = makeName(rng);
@@ -83,6 +87,13 @@ export function generateSpecies() {
     { id: 51, name: 'Lunétoile', type: 'SPOOKY', rarity: 2, catchRate: 0.22, size: 1.1, legs: 2, earStyle: 2, tail: true, hopper: true, speed: 2.6, horn: true, color: 0xb8c8ff, dark: 0x5a6ad0, legendary: true },
     { id: 52, name: 'Tonnerrex', type: 'ELECTRIC', rarity: 2, catchRate: 0.22, size: 1.2, legs: 4, earStyle: 1, tail: true, hopper: false, speed: 2.8, horn: true, color: 0xf2e04a, dark: 0xa8861e, legendary: true },
     { id: 53, name: 'Aurorion', type: 'ICE', rarity: 2, catchRate: 0.22, size: 1.15, legs: 4, earStyle: 2, tail: true, hopper: false, speed: 2.2, horn: true, color: 0xa8f2e0, dark: 0x4a90d9, legendary: true },
+  );
+  // Les martiens : trois espèces qui n'existent que sur Mars. Antennes à
+  // boule, grands yeux noirs et une troisième pupille au milieu du front.
+  species.push(
+    { id: 54, name: 'Zorblik', type: 'MARTIEN', rarity: 0, catchRate: 0.75, size: 0.55, legs: 2, earStyle: 0, tail: false, hopper: true, speed: 2.2, horn: false, martien: true },
+    { id: 55, name: 'Xénopode', type: 'MARTIEN', rarity: 1, catchRate: 0.5, size: 0.8, legs: 4, earStyle: 0, tail: true, hopper: false, speed: 1.8, horn: false, martien: true, color: 0x6ad8c8, dark: 0x2f8a80 },
+    { id: 56, name: 'Grand Ancien', type: 'MARTIEN', rarity: 2, catchRate: 0.28, size: 1.25, legs: 2, earStyle: 0, tail: false, hopper: false, speed: 2.4, horn: false, martien: true, color: 0xc86ad8, dark: 0x7a2f8a },
   );
   return species;
 }
@@ -165,6 +176,24 @@ export function buildCreatureMesh(sp) {
     const horn = cone(s * 0.08, s * 0.32, new THREE.MeshLambertMaterial({ color: 0xf0ead2 }));
     horn.position.set(0, legH + s * 1.28, -s * 0.7);
     g.add(horn);
+  }
+
+  // Les martiens portent deux antennes à boule lumineuse et un troisième œil
+  // au milieu du front : de quoi les reconnaître d'un coup d'œil dans le Dex.
+  if (sp.martien) {
+    for (const sx of [-1, 1]) {
+      const tige = new THREE.Mesh(new THREE.CylinderGeometry(s * 0.025, s * 0.03, s * 0.42, 8), dark);
+      tige.position.set(sx * s * 0.2, legH + s * 1.36, -s * 0.5);
+      tige.rotation.z = -sx * 0.3;
+      const boule = sphere(s * 0.075, new THREE.MeshBasicMaterial({ color: 0xfff36a }), 12);
+      boule.position.set(sx * s * 0.32, legH + s * 1.56, -s * 0.5);
+      g.add(tige, boule);
+    }
+    const front = sphere(s * 0.085, new THREE.MeshLambertMaterial({ color: 0xffffff }), 16);
+    front.position.set(0, legH + s * 1.1, -s * 0.86);
+    const pupille = sphere(s * 0.042, new THREE.MeshBasicMaterial({ color: 0x141418 }), 12);
+    pupille.position.set(0, legH + s * 1.1, -s * 0.94);
+    g.add(front, pupille);
   }
 
   if (sp.tail) {

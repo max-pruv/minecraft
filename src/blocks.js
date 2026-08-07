@@ -39,6 +39,9 @@ export const BLOCK = {
   WHITEBRICK: 35,
   TERRACOTTA: 36,
   BLUEBRICK: 37,
+  // Mars : les deux derniers identifiants libres avant la plage décorative
+  MARS_SOL: 38,
+  MARS_ROCHE: 39,
 };
 
 // Tile indices into the texture atlas (see textures.js).
@@ -78,6 +81,10 @@ export const TILE = {
   WHITEBRICK: 32,
   TERRACOTTA: 33,
   BLUEBRICK: 34,
+  // Tuiles martiennes : après les tuiles de ville (335..344), dans l'espace
+  // encore libre de l'atlas
+  MARS_SOL: 345,
+  MARS_ROCHE: 346,
 };
 
 // tiles: [top, side, bottom]
@@ -119,6 +126,8 @@ export const BLOCK_INFO = {
   [BLOCK.WHITEBRICK]: { name: 'Quartz Bricks', tiles: [TILE.WHITEBRICK, TILE.WHITEBRICK, TILE.WHITEBRICK], solid: true, transparent: false },
   [BLOCK.TERRACOTTA]: { name: 'Terracotta',   tiles: [TILE.TERRACOTTA, TILE.TERRACOTTA, TILE.TERRACOTTA], solid: true, transparent: false },
   [BLOCK.BLUEBRICK]:  { name: 'Blue Bricks',  tiles: [TILE.BLUEBRICK, TILE.BLUEBRICK, TILE.BLUEBRICK],    solid: true, transparent: false },
+  [BLOCK.MARS_SOL]:   { name: 'Sol de Mars',  tiles: [TILE.MARS_SOL, TILE.MARS_SOL, TILE.MARS_SOL],       solid: true, transparent: false },
+  [BLOCK.MARS_ROCHE]: { name: 'Roche de Mars', tiles: [TILE.MARS_ROCHE, TILE.MARS_ROCHE, TILE.MARS_ROCHE], solid: true, transparent: false },
 };
 
 export function isSlab(id) {
