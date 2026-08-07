@@ -132,19 +132,29 @@ table.adm td:first-child .adm-dim { white-space: nowrap; }
   position: fixed; inset: 0; z-index: 130; display: none;
   align-items: center; justify-content: center; padding: 20px;
   background: rgba(2, 5, 10, .72); backdrop-filter: blur(3px);
+  /* La fenêtre est posée sur <body>, dont la police est la chasse fixe du
+     jeu : sans cette ligne elle héritait du Courier et de ses couleurs
+     ternes, alors qu'elle appartient à l'espace parent. */
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #e8eef6;
 }
 #adm-modal.on { display: flex; }
 #adm-modal-card {
   width: min(360px, 100%); background: #161b22; border: 1px solid #30363d;
   border-radius: 14px; padding: 20px; box-shadow: 0 18px 50px rgba(0,0,0,.55);
 }
-#adm-modal-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-#adm-modal-sub { color: #8b949e; font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+#adm-modal-title { font-size: 17px; font-weight: 650; margin-bottom: 6px; color: #fff; }
+#adm-modal-sub { color: #9aa5b4; font-size: 13.5px; line-height: 1.5; margin-bottom: 14px; }
 #adm-modal-input {
-  font: inherit; width: 100%; padding: 11px 12px; border-radius: 9px;
-  background: #0d1117; color: #e6edf3; border: 1px solid #30363d; text-align: center;
+  font: inherit; width: 100%; padding: 13px 12px; border-radius: 10px;
+  background: #0d131c; color: #fff; border: 1.5px solid #2f3d4f; text-align: center;
 }
-#adm-modal-input.code { font-size: 22px; letter-spacing: 8px; }
+#adm-modal-input:focus { outline: none; border-color: #3f6ea8; background: #101825; }
+/* Chiffres masqués sans type="password" : iOS refuse le pavé numérique sur
+   un champ mot de passe et sort le clavier complet pour six chiffres. */
+#adm-modal-input.code {
+  font-size: 24px; letter-spacing: 10px; -webkit-text-security: disc; text-security: disc;
+}
 #adm-modal-err { color: #ff9d95; font-size: 12.5px; min-height: 17px; margin-top: 7px; }
 #adm-modal-choix { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 #adm-modal-choix .adm-btn { text-align: left; padding: 11px 13px; line-height: 1.35; }
@@ -327,7 +337,10 @@ export class AdminPanel {
     m.querySelector('#adm-modal-title').textContent = titre;
     m.querySelector('#adm-modal-sub').textContent = sous || '';
     m.querySelector('#adm-modal-yes').textContent = ok;
-    champ.type = type;
+    // Un champ « password » sort le clavier complet sur iOS : on masque en CSS
+    // et on demande un pavé numérique, ce qui est exactement ce qu'il faut
+    // pour six chiffres.
+    champ.type = code ? 'tel' : (type === 'password' ? 'text' : type);
     champ.value = '';
     champ.className = code ? 'code' : '';
     if (code) { champ.inputMode = 'numeric'; champ.maxLength = 8; } else { champ.removeAttribute('inputmode'); champ.removeAttribute('maxlength'); }
@@ -337,7 +350,10 @@ export class AdminPanel {
     champ.style.display = choix ? 'none' : 'block';
     m.querySelector('#adm-modal-yes').style.display = choix ? 'none' : 'block';
     m.classList.add('on');
-    if (!choix) setTimeout(() => champ.focus(), 30);
+    // Le clavier ne se lève sur iOS que si le focus arrive dans le geste qui
+    // a ouvert la fenêtre : un setTimeout, même court, le disqualifie. On
+    // garde un second essai différé pour les navigateurs plus lents.
+    if (!choix) { champ.focus(); setTimeout(() => champ.focus(), 60); }
 
     return new Promise((resolve) => {
       const fermer = (valeur) => {

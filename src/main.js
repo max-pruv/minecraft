@@ -1842,9 +1842,15 @@ async function openChat() {
 }
 
 chatBtn.addEventListener('click', () => {
-  if (chatPanel.style.display === 'block') { chatPanel.style.display = 'none'; return; }
+  if (chatPanel.style.display === 'block') { fermerChat(); return; }
   openChat();
 });
+
+function fermerChat() {
+  chatPanel.style.display = 'none';
+  chatInput.blur(); // sinon le clavier reste ouvert par-dessus le jeu
+}
+document.getElementById('chat-close').addEventListener('click', fermerChat);
 
 function sendChatMsg() {
   const msg = chatInput.value.trim().slice(0, 120);
