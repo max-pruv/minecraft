@@ -113,7 +113,15 @@
       color: #fff; text-shadow: 3px 3px 0 #3a3a3a;
     }
     #overlay .subtitle { color: #9c9; margin-bottom: 8px; }
-    #app-version { color: #5f7a5f; font-size: 12px; margin-bottom: 20px; letter-spacing: .5px; }
+    /* Un numéro de version ne sert que s'il se lit : la première tentative
+       était en 12 px gris sombre, invisible sur un téléphone en plein jour. */
+    #app-version {
+      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;
+      font-size: 14px; letter-spacing: .3px; padding: 5px 12px; border-radius: 999px;
+      background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16); color: #cfe0ff;
+    }
+    #app-version.ok { background: rgba(90,200,140,.16); border-color: rgba(90,200,140,.45); color: #a8e6c1; }
+    #app-version.old { background: rgba(255,190,90,.16); border-color: rgba(255,190,90,.5); color: #ffd08a; }
     #overlay button {
       font-family: inherit; font-size: 18px; padding: 12px 40px; margin: 6px;
       cursor: pointer; color: #fff; background: #6a6a6a;
