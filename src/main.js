@@ -1171,10 +1171,12 @@ document.getElementById('edu-menu-btn').addEventListener('click', () => {
   document.getElementById('edu-panel').style.display = 'block';
   pullPlayTime(); // refresh cross-device totals right away; re-renders if still open
 });
+// Le temps du jour vit dans son propre élément : mis dans le libellé, il
+// faisait enfler le bouton et rompait l'alignement du menu.
 function refreshEduMenuBtn() {
   const todayPlay = edu.today().play + (edu.otherDevicesPlaySeconds || 0);
-  document.getElementById('edu-menu-btn').textContent =
-    `📚 Éducation · ${edu.formatDuration(todayPlay)} aujourd'hui`;
+  const el = document.getElementById('edu-today');
+  if (el) el.textContent = `· ${edu.formatDuration(todayPlay)}`;
 }
 setInterval(refreshEduMenuBtn, 10000);
 queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
