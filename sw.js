@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v66';
+const CACHE_VERSION = 'web-minecraft-v67';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -84,6 +84,35 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
     );
+    return;
+  }
+
+  // La page elle-même passe par le réseau d'abord, avec repli sur le cache.
+  //
+  // En servant la copie en cache, on lançait l'ancien index.html — donc
+  // l'ancienne logique de mise à jour — et la nouvelle version n'arrivait
+  // qu'au démarrage suivant. Une application installée pouvait ainsi rester
+  // en retard indéfiniment : c'est ce qui faisait qu'un correctif publié
+  // n'atteignait pas l'iPad.
+  //
+  // Le repli garde le mode hors-ligne intact, et le délai court évite qu'un
+  // réseau capricieux ne retarde le lancement.
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_VERSION);
+      try {
+        const response = await Promise.race([
+          fetch(request),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), 3000)),
+        ]);
+        if (response && response.ok) cache.put(request, response.clone());
+        return response;
+      } catch {
+        return (await cache.match(request, { ignoreSearch: true }))
+          || (await cache.match('./index.html'))
+          || Response.error();
+      }
+    })());
     return;
   }
 
