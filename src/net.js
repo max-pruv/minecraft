@@ -12,6 +12,31 @@
 
 const ID_PREFIX = 'wmc-marlon-';
 
+// Sans relais, deux appareils derrière le même partage de connexion mobile ne
+// se joignent pas : l'opérateur place tout le monde derrière une traduction
+// d'adresses qui change de port à chaque destination, et les candidats
+// directs ne mènent nulle part. Le trafic passe alors par le relais, plus
+// lent mais qui, lui, aboutit toujours. C'est ce qui manquait le jour où
+// Alice et Marlon étaient dans le même monde sans se voir.
+const ICE_SERVERS = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+];
+
+// Un lien mort ne se signale pas tout seul : le navigateur peut mettre une
+// minute à s'en apercevoir, et pendant ce temps l'enfant construit dans le
+// vide. On envoie donc un battement régulier et on coupe ce qui ne répond plus.
+const HEARTBEAT_MS = 5000;
+const STALE_MS = 20000;
+
 export function randomCode() {
   // 5 digits: easy for kids to read out loud and type on a phone keypad
   return String(10000 + Math.floor(Math.random() * 90000));
@@ -61,7 +86,7 @@ export class NetSession {
     this.state(isHost ? 'Création de la partie…' : 'Connexion à la partie…');
 
     return new Promise((resolve, reject) => {
-      const peerOpts = { debug: 1 };
+      const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
       // tests can point signaling at a local server via ?peerhost=host:port
       const m = location.search.match(/[?&]peerhost=([^&]+)/);
       if (m) {
@@ -72,24 +97,17 @@ export class NetSession {
       let settled = false;
 
       this.peer.on('open', () => {
+        this._reconnectTries = 0;
+        this.link('ok');
         if (isHost) {
           this.state(`En attente d'un joueur… code : ${this.code}`);
           settled = true;
           resolve(this.code);
         } else {
-          const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
-          this.registerConn(conn); // handlers BEFORE open — no missed messages
-          const fail = setTimeout(() => {
-            if (!settled) { settled = true; reject(new Error('Partie introuvable — vérifie le code !')); }
-          }, 12000);
-          conn.on('open', () => {
-            clearTimeout(fail);
-            this.greet(conn);
-            if (!settled) { settled = true; resolve(this.code); }
-          });
-          conn.on('error', () => {
-            clearTimeout(fail);
-            if (!settled) { settled = true; reject(new Error('Connexion impossible')); }
+          this.connectToHost((err) => {
+            if (settled) return;
+            settled = true;
+            if (err) reject(err); else resolve(this.code);
           });
         }
       });
@@ -110,6 +128,16 @@ export class NetSession {
         }
       });
 
+      // L'iPad qui s'endort perd le serveur de rendez-vous. Sans reconnexion,
+      // la partie continue avec ceux déjà là mais plus personne ne peut
+      // rejoindre — et personne n'en est averti.
+      this.peer.on('disconnected', () => {
+        if (!this.active) return;
+        this.link('signal', 'Reconnexion au serveur de jeu…');
+        this.scheduleReconnect();
+      });
+      this.peer.on('close', () => { if (this.active) this.link('perdu', 'Connexion au serveur de jeu perdue'); });
+
       this.peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
           if (!settled) { settled = true; reject(new Error('Ce code est déjà utilisé — réessaie !')); }
@@ -118,16 +146,108 @@ export class NetSession {
         } else if (!settled && (err.type === 'network' || err.type === 'server-error')) {
           settled = true;
           reject(new Error('Pas de connexion internet au serveur de jeu'));
+        } else if (err.type === 'network' || err.type === 'server-error') {
+          this.link('signal', 'Serveur de jeu injoignable — je réessaie…');
+          this.scheduleReconnect();
         }
       });
     });
   }
 
+  // État du lien, pour que la page puisse le montrer. Un enfant ne doit pas
+  // continuer à construire en croyant que tout va bien.
+  link(state, detail) {
+    if (this.linkState === state && !detail) return;
+    this.linkState = state;
+    if (this.onLink) this.onLink(state, detail || '');
+  }
+
+  // Un invité rejoint toujours par le même chemin — au démarrage comme après
+  // une coupure. `done` n'est appelé qu'à la première tentative.
+  connectToHost(done) {
+    const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
+    if (!conn) { done?.(new Error('Connexion impossible')); return; }
+    this.registerConn(conn); // handlers BEFORE open — no missed messages
+    let fini = false;
+    const rate = (err) => {
+      if (fini) return;
+      fini = true;
+      clearTimeout(minuteur);
+      done?.(err);
+    };
+    // Le pair existe (sinon PeerJS aurait dit « introuvable ») mais le canal
+    // ne s'ouvre pas : c'est le réseau qui bloque, pas le code qui est faux.
+    // Le dire franchement évite de chercher une faute de frappe pendant que
+    // le vrai coupable est le Wi-Fi de l'école.
+    const minuteur = setTimeout(
+      () => rate(new Error('Le monde existe mais le réseau bloque la connexion — essaie un autre Wi-Fi ou le partage de connexion')),
+      12000,
+    );
+    conn.on('open', () => {
+      clearTimeout(minuteur);
+      this._rejoining = false;
+      this.greet(conn);
+      this.link('ok');
+      if (!fini) { fini = true; done?.(null); }
+    });
+    conn.on('error', () => rate(new Error('Connexion impossible')));
+  }
+
+  // L'hôte a disparu ou la connexion a sauté : on retente, en le disant.
+  // Sans cela, l'invité restait seul dans un monde qui semblait normal.
+  rejoinHost() {
+    if (this.isHost || !this.active || this._rejoining) return;
+    this._rejoining = true;
+    let essai = 0;
+    const tenter = () => {
+      if (!this.active || !this._rejoining || !this.peer || this.peer.destroyed) return;
+      if (essai >= 6) {
+        this._rejoining = false;
+        this.link('perdu', 'Le monde en ligne ne répond plus — reviens au menu et retente');
+        return;
+      }
+      essai++;
+      this.link('reconnexion', `Reconnexion au monde ${this.code}… (${essai}/6)`);
+      if (this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+      this.connectToHost(null);
+      this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, 3000 + essai * 2000);
+    };
+    tenter();
+  }
+
+  scheduleReconnect() {
+    if (!this.active || this._reconnectTimer) return;
+    const essai = Math.min(this._reconnectTries || 0, 5);
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      if (!this.active || !this.peer || this.peer.destroyed) return;
+      this._reconnectTries = (this._reconnectTries || 0) + 1;
+      try { this.peer.reconnect(); } catch { /* on repasse par ici */ }
+      if (this.peer.disconnected) this.scheduleReconnect();
+    }, 1000 * 2 ** essai);
+  }
+
+  // Battement de cœur : on prouve régulièrement que le lien vit, et on coupe
+  // ce qui ne répond plus. Un pair fantôme laissait sinon un avatar figé au
+  // milieu du monde et faussait le compte des joueurs.
+  startHeartbeat() {
+    if (this._hb) return;
+    this._hb = setInterval(() => {
+      const now = Date.now();
+      for (const [id, c] of [...this.conns]) {
+        if (!c.conn) continue;
+        if (c.seen && now - c.seen > STALE_MS) { this.dropPeer(id); continue; }
+        try { c.conn.send({ t: 'ping' }); } catch { this.dropPeer(id); }
+      }
+    }, HEARTBEAT_MS);
+  }
+
   registerConn(conn) {
-    this.conns.set(conn.peer, { conn, name: '…', lookIdx: 0, pos: null, yaw: 0, moving: false });
+    this.conns.set(conn.peer, { conn, name: '…', lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
     conn.on('data', (msg) => this.onMessage(conn, msg));
     conn.on('close', () => this.dropPeer(conn.peer));
     conn.on('error', () => this.dropPeer(conn.peer));
+    this.startHeartbeat();
   }
 
   greet(conn) {
@@ -141,6 +261,9 @@ export class NetSession {
     const c = this.conns.get(id);
     if (!c) return;
     this.conns.delete(id);
+    // Pour un invité, perdre ce lien-là, c'est perdre le monde entier :
+    // tout passe par l'hôte.
+    if (!this.isHost && this.active && id === ID_PREFIX + this.code) this.rejoinHost();
     if (this.isHost) { // tell the other guests this player is gone
       for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
     }
@@ -166,7 +289,13 @@ export class NetSession {
   onMessage(conn, msg) {
     const entry = this.conns.get(conn.peer);
     if (!entry || !msg || typeof msg !== 'object') return;
+    entry.seen = Date.now(); // tout message vaut preuve de vie
     switch (msg.t) {
+      case 'ping':
+        try { conn.send({ t: 'pong' }); } catch { /* le lien se ferme, on le verra */ }
+        break;
+      case 'pong':
+        break;
       case 'hello': {
         const wanted = String(msg.name || 'Joueur').slice(0, 16);
         // one session per player name: the host refuses a duplicate so the
@@ -392,6 +521,13 @@ export class NetSession {
   stop() {
     clearInterval(this.posTimer);
     this.posTimer = null;
+    clearInterval(this._hb);
+    this._hb = null;
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = null;
+    clearTimeout(this._rejoinTimer);
+    this._rejoining = false;
+    this.link('arret');
     for (const a of this.audios.values()) a.remove();
     if (this.localStream) this.localStream.getTracks().forEach((t) => t.stop());
     if (this.videoStream) this.videoStream.getTracks().forEach((t) => t.stop());

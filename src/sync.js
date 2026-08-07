@@ -135,8 +135,9 @@ function mergeEdits(a = {}, b = {}) {
 
 // Les blocs sont rangés par monde : { local: {...}, "30953": {...} }. Un
 // appareil resté sur l'ancienne version envoie encore une carte unique — on
-// la reconnaît à ses valeurs, qui sont des couples [id, date], et on la range
-// dans le monde local plutôt que de la jeter.
+// la reconnaît à ses valeurs, des couples [id, date], et on la range dans le
+// monde local plutôt que de la jeter.
+//
 // Un document peut être mixte : un appareil resté sur l'ancienne version
 // republie sa carte plate par-dessus la nouvelle arborescence. On trie donc
 // clé par clé plutôt que de juger sur la première.
@@ -177,6 +178,11 @@ export class ProfileSync {
     // localStorage projection, which only catches up on a debounced save.
     this.liveEdits = null;   // () => ({ [monde]: { "x,y,z": [id, t] } })
     this.onMerged = null;    // (state) => void, after a background merge
+    // Une sauvegarde qui échoue en silence, c'est un enfant qui construit
+    // pendant une heure pour rien. On compte les échecs d'affilée et on le
+    // dit — pas dès le premier, un réseau a le droit de hoqueter.
+    this.onSaveState = null; // ('ok' | 'retard' | 'ko') => void
+    this.failures = 0;
   }
 
   // Reads the working copy out of localStorage.
@@ -265,7 +271,12 @@ export class ProfileSync {
     const name = this.getName();
     if (!name || !this.cloud.configured || !navigator.onLine) return { changed: false };
     let remote = null;
-    try { remote = await this.cloud.statePull(name); } catch { return { changed: false }; }
+    try {
+      remote = await this.cloud.statePull(name);
+    } catch {
+      this.noteFailure();
+      return { changed: false };
+    }
     // Lecture réussie : on sait désormais ce que le cloud contient, donc ce
     // qu'on écrira ensuite aura du sens. En cas d'échec on reste sur la
     // réserve et la boucle réessaiera de lire.
@@ -308,8 +319,22 @@ export class ProfileSync {
     try {
       await this.cloud.statePush(name, state, keepalive);
       this.lastPushed = body;
+      this.noteSuccess();
       if (dropped.length && this.onTrim) this.onTrim(dropped);
-    } catch { /* retried on the next tick */ }
+    } catch {
+      this.noteFailure(); // réessayé au tour suivant, mais plus en silence
+    }
+  }
+
+  noteSuccess() {
+    const avant = this.failures;
+    this.failures = 0;
+    if (avant && this.onSaveState) this.onSaveState('ok');
+  }
+
+  noteFailure() {
+    this.failures++;
+    if (this.onSaveState) this.onSaveState(this.failures >= 2 ? 'ko' : 'retard');
   }
 
   start(intervalMs = 45000) {

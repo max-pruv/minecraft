@@ -846,6 +846,88 @@ profileSync.onMerged = (state) => {
 };
 profileSync.start();
 
+// --- bandeau d'état : réseau et sauvegardes ---------------------------------
+//
+// Jusqu'ici, une sauvegarde qui échouait ou un monde en ligne qui décrochait
+// ne se voyaient nulle part : l'enfant continuait à construire, persuadé que
+// tout allait bien, et découvrait la perte au lancement suivant. Le bandeau
+// dit ce qui se passe, en une ligne, sans jamais l'empêcher de jouer — un
+// écran bloquant priverait aussi du mode hors-ligne, qui lui fonctionne.
+//
+// Deux messages au plus, les plus graves d'abord. Un seul cachait le reste :
+// un monde qui décroche pendant que la sauvegarde échoue, ce sont deux
+// informations différentes, et celle qu'on masque est justement celle qui
+// explique ce qu'on voit à l'écran.
+const linkBanner = document.getElementById('link-banner');
+const ALERTES = {
+  'hors-ligne': { rang: 3, cls: 'grave', txt: '📴 Pas d\'internet — tu peux jouer, la sauvegarde repartira toute seule' },
+  'sauvegarde-ko': { rang: 4, cls: 'grave', txt: '⚠️ Sauvegarde en ligne impossible — préviens un parent' },
+  'monde-perdu': { rang: 5, cls: 'grave', txt: '🔌 Monde en ligne perdu' },
+  'monde-reco': { rang: 2, cls: '', txt: '🔄 Reconnexion au monde…' },
+  'signal': { rang: 1, cls: '', txt: '📡 Reconnexion au serveur de jeu…' },
+};
+const alertes = new Map(); // clé -> texte affiché
+// La place réservée est mesurée sur le bandeau lui-même : un texte long passe
+// à la ligne sur un téléphone, et une hauteur écrite en dur laisserait la
+// minicarte remonter dessus.
+function montrerBandeau(texte, cls) {
+  linkBanner.textContent = texte;
+  linkBanner.className = cls;
+  linkBanner.style.display = 'block';
+  document.documentElement.classList.add('a-bandeau');
+  const h = Math.ceil(linkBanner.getBoundingClientRect().height) + 6;
+  document.documentElement.style.setProperty('--banner-h', `${h}px`);
+}
+
+function cacherBandeau() {
+  linkBanner.style.display = 'none';
+  document.documentElement.classList.remove('a-bandeau');
+  document.documentElement.style.removeProperty('--banner-h');
+}
+
+function refreshBanner() {
+  const actifs = [...alertes]
+    .filter(([k]) => ALERTES[k])
+    // hors-ligne explique déjà l'échec de sauvegarde : le répéter n'apprend rien
+    .filter(([k]) => !(k === 'sauvegarde-ko' && alertes.has('hors-ligne')))
+    .sort((a, b) => ALERTES[b[0]].rang - ALERTES[a[0]].rang);
+  if (!actifs.length) { cacherBandeau(); return; }
+  const garde = actifs.slice(0, 2);
+  montrerBandeau(
+    garde.map(([k, txt]) => txt || ALERTES[k].txt).join('  ·  '),
+    garde.some(([k]) => ALERTES[k].cls === 'grave') ? 'grave' : '',
+  );
+}
+function alerte(cle, actif, texte) {
+  if (actif) alertes.set(cle, texte || '');
+  else if (!alertes.has(cle)) return;
+  else alertes.delete(cle);
+  refreshBanner();
+}
+// Un retour à la normale mérite d'être dit, brièvement, sinon on ne sait pas
+// si le problème est réglé ou seulement passé sous silence.
+function bonneNouvelle(texte) {
+  montrerBandeau(texte, 'ok');
+  clearTimeout(linkBanner._t);
+  linkBanner._t = setTimeout(refreshBanner, 2600);
+}
+
+alerte('hors-ligne', !navigator.onLine);
+window.addEventListener('offline', () => alerte('hors-ligne', true));
+window.addEventListener('online', () => {
+  alerte('hors-ligne', false);
+  profileSync.pull().catch(() => {});
+});
+
+profileSync.onSaveState = (etat) => {
+  if (etat === 'ko') alerte('sauvegarde-ko', true);
+  else if (etat === 'ok') {
+    const avait = alertes.has('sauvegarde-ko');
+    alerte('sauvegarde-ko', false);
+    if (avait) bonneNouvelle('☁️ Sauvegarde en ligne rétablie');
+  }
+};
+
 let prefsPushTimer = null;
 function pushPrefsToCloud() {
   clearTimeout(prefsPushTimer);
@@ -1379,6 +1461,15 @@ function startNetSession(code, isHost) {
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
   });
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
+  // Le réseau raconte ce qui lui arrive ; le bandeau le montre.
+  net.onLink = (etat, detail) => {
+    const CLES = ['monde-reco', 'signal', 'monde-perdu'];
+    const revenait = CLES.some((k) => alertes.has(k));
+    alerte('monde-reco', etat === 'reconnexion', detail);
+    alerte('signal', etat === 'signal', detail);
+    alerte('monde-perdu', etat === 'perdu', detail);
+    if (etat === 'ok' && revenait) bonneNouvelle('✅ Reconnecté au monde !');
+  };
   // Avant même la première poignée de main : à la connexion, les deux côtés
   // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
   // la maison locale de l'hôte qui partait dans le monde partagé.
@@ -1514,6 +1605,7 @@ function showOnlineUI() {
 function leaveToMainMenu() {
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
+  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
   cloud.detach();
   syncRemotePlayers([]); // remove remote avatars
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
@@ -1567,6 +1659,7 @@ document.getElementById('online-btn').addEventListener('click', () => {
 });
 document.getElementById('online-back').addEventListener('click', () => {
   if (net) { net.stop(); net = null; }
+  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
   cloud.detach();
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
@@ -2885,7 +2978,7 @@ const fun = initFun({
 
 // console/debug handle
 window.__syncRemotePlayers = syncRemotePlayers; // pour les tests d'animation
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
