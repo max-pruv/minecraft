@@ -2171,6 +2171,100 @@ document.getElementById('notif-toggle')?.addEventListener('click', async () => {
 document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
 majLigneNotif();
 
+// --- la proposition spontanée ------------------------------------------------
+//
+// Attendre que l'enfant aille de lui-même dans ⚙️ Réglages pour activer les
+// alertes, c'est attendre longtemps : il n'y a aucune raison qu'il y pense.
+// On propose donc de nous-mêmes — mais on ne peut pas demander l'autorisation
+// tout seul pour autant. Safari, donc l'iPad, n'accepte requestPermission()
+// que depuis un vrai appui ; lancée par un minuteur, la demande est ignorée
+// sans un mot. La carte ci-dessous est ce vrai appui : elle s'affiche d'elle-
+// même, et c'est le bouton « Oui » qui déclenche la demande.
+//
+// Et on n'insiste pas. Un enfant à qui l'on repose la même question à chaque
+// partie finit par appuyer sur « Plus tard » sans lire : trois propositions au
+// total, espacées de trois jours, puis on se tait pour de bon.
+const NOTIF_MEMO = 'wm-notif-propose';
+const NOTIF_MAX = 3;
+const NOTIF_REPOS = 3 * 24 * 3600 * 1000;
+
+function notifMemo() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_MEMO)) || { n: 0, t: 0 }; }
+  catch { return { n: 0, t: 0 }; }
+}
+function notifMemoEcrire(m) {
+  try { localStorage.setItem(NOTIF_MEMO, JSON.stringify(m)); } catch { /* mode privé */ }
+}
+
+const notifCarte = document.getElementById('notif-carte');
+
+function fermerCarteNotif(compter = true) {
+  if (!notifCarte) return;
+  notifCarte.classList.remove('on');
+  clearTimeout(notifCarte._t);
+  if (compter) {
+    const m = notifMemo();
+    notifMemoEcrire({ n: m.n + 1, t: Date.now() });
+  }
+}
+
+// Faut-il proposer ? Trois cas où l'on se tait : déjà répondu (accordé ou
+// refusé), quota épuisé, ou proposition trop récente.
+function proposerNotifs(raison) {
+  if (!notifCarte || notifCarte.classList.contains('on')) return;
+  if (notifsDispo() && Notification.permission !== 'default') return;
+  const m = notifMemo();
+  if (m.n >= NOTIF_MAX || Date.now() - m.t < NOTIF_REPOS) return;
+
+  const titre = document.getElementById('notif-carte-titre');
+  const texte = document.getElementById('notif-carte-texte');
+  const oui = document.getElementById('notif-oui');
+  const tard = document.getElementById('notif-plus-tard');
+
+  if (!notifsDispo()) {
+    // Sur un onglet Safari ordinaire, l'API n'existe pas : aucun bouton ne peut
+    // rien y changer. On explique une fois ce qu'il faut faire, et on ne
+    // repropose plus jamais — d'où le quota consommé d'un coup.
+    titre.textContent = '🔔 Pour recevoir les alertes';
+    texte.textContent = 'Ajoute le jeu à ton écran d\'accueil : Partager ▸ Sur l\'écran d\'accueil. Demande à un grand si besoin !';
+    oui.textContent = 'Compris !';
+    tard.style.display = 'none';
+    oui.onclick = () => { notifMemoEcrire({ n: NOTIF_MAX, t: Date.now() }); fermerCarteNotif(false); };
+  } else {
+    titre.textContent = raison === 'ami'
+      ? '🔔 Être prévenu la prochaine fois ?'
+      : '🔔 Être prévenu quand un ami arrive ?';
+    texte.textContent = 'Tu seras averti même si le jeu n\'est pas à l\'écran.';
+    oui.textContent = 'Oui, préviens-moi !';
+    tard.style.display = '';
+    // Ici, et seulement ici, on est dans un vrai geste de l'enfant.
+    oui.onclick = async () => {
+      fermerCarteNotif(false);
+      try { await Notification.requestPermission(); } catch { /* refusé */ }
+      majLigneNotif();
+      notifMemoEcrire({ n: NOTIF_MAX, t: Date.now() });   // question réglée
+      creatureManager.toast(
+        Notification.permission === 'granted'
+          ? '🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.'
+          : '🔕 Pas de souci — tu pourras l\'activer dans ⚙️ Réglages.',
+        Notification.permission === 'granted' ? 0x58b04c : 0x9fd8e8
+      );
+    };
+  }
+  tard.onclick = () => fermerCarteNotif();
+  document.getElementById('notif-carte-close').onclick = () => fermerCarteNotif();
+
+  notifCarte.classList.add('on');
+  // Sans réponse au bout d'une demi-minute, elle s'efface toute seule : une
+  // carte qui reste en travers de l'écran devient un obstacle, pas une offre.
+  clearTimeout(notifCarte._t);
+  notifCarte._t = setTimeout(() => fermerCarteNotif(), 30000);
+}
+
+// La première proposition arrive une fois l'enfant installé dans sa partie,
+// pas pendant qu'il découvre l'écran.
+setTimeout(() => proposerNotifs('spontane'), 75000);
+
 // Le grand bandeau du milieu de l'écran, celui des captures. Il sert aussi
 // aux arrivées de joueurs et aux moments forts du siège.
 function grandBandeau(titre, sous, duree = 3200) {
@@ -2191,15 +2285,13 @@ function annonceArrivee(nom) {
   carillon([660, 990, 1320]); // trois notes qui montent : quelqu'un entre
   emojiBurst(['👋', '🎉', '✨'], 14);
 
-  // Au premier ami croisé, si l'alerte système n'est pas encore autorisée, on
-  // se contente de dire où l'activer. Demander la permission d'ici ne marche
-  // pas sur iPad, et le bandeau à l'écran a de toute façon déjà fait le travail.
-  if (notifsDispo() && Notification.permission === 'default' && !notifProposee) {
+  // C'est le meilleur moment pour proposer les alertes : il vient précisément
+  // de se passer la chose dont elles préviennent. On laisse d'abord la fête
+  // d'arrivée se terminer, puis la carte s'affiche — et c'est son bouton, un
+  // vrai appui, qui demandera l'autorisation.
+  if (!notifProposee) {
     notifProposee = true;
-    setTimeout(() => creatureManager.toast(
-      '🔔 Astuce : dans ⚙️ Réglages, active les alertes pour être prévenu même hors du jeu.',
-      0x9fd8e8
-    ), 3600);
+    setTimeout(() => proposerNotifs('ami'), 4200);
   }
 
   try {
@@ -3525,6 +3617,8 @@ window.__vueCarte = () => overviewView;
 window.__alerte = (k, v, t) => alerte(k, v, t);
 window.__vehicules = { etat: () => vehicules?.etat() };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
+// pour les tests : déclencher la proposition d'alertes sans attendre la minute
+window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
