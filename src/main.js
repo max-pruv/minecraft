@@ -275,7 +275,13 @@ function updateChunks() {
   ];
   // la garnison du château et ses assaillants : ils rejoignent la troupe des
   // personnages, c'est la boucle principale qui les anime
-  siege = createSiege({ scene, world, player, toast: say, emojiBurst, clang: () => cliquetis() });
+  siege = createSiege({
+    scene, world, player, toast: say, emojiBurst, clang: () => cliquetis(),
+    // Le bandeau plein écran et le cor : un simple message en bas d'écran
+    // passait inaperçu au milieu d'une construction.
+    annonce: (titre, sous) => grandBandeau(titre, sous, 3400),
+    cor: () => carillon([220, 165, 220, 294]),
+  });
   npcs.push(...siege.npcs);
   // Le petit peuple des deux châteaux : artisans, gens de maison, jardiniers,
   // et toute la basse-cour. Chaque site dort tant que l'enfant n'y est pas.
@@ -947,8 +953,13 @@ profileSync.start();
 // informations différentes, et celle qu'on masque est justement celle qui
 // explique ce qu'on voit à l'écran.
 const linkBanner = document.getElementById('link-banner');
+//
+// « Pas d'internet » ne figure plus ici. Une phrase qui occupe une ligne en
+// permanence finit par ne plus rien dire ; le bouton « Jouer en ligne » se
+// barre d'un trait rouge, ce qui se comprend d'un coup d'œil et ne prend pas
+// de place. La clé reste posée dans la table des alertes : c'est elle qui
+// évite de répéter l'échec de sauvegarde qu'elle explique déjà.
 const ALERTES = {
-  'hors-ligne': { rang: 3, cls: 'grave', txt: '📴 Pas d\'internet — tu peux jouer, la sauvegarde repartira toute seule' },
   'sauvegarde-ko': { rang: 4, cls: 'grave', txt: '⚠️ Sauvegarde en ligne impossible — préviens un parent' },
   'monde-perdu': { rang: 5, cls: 'grave', txt: '🔌 Monde en ligne perdu' },
   'monde-reco': { rang: 2, cls: '', txt: '🔄 Reconnexion au monde…' },
@@ -958,8 +969,13 @@ const alertes = new Map(); // clé -> texte affiché
 // La place réservée est mesurée sur le bandeau lui-même : un texte long passe
 // à la ligne sur un téléphone, et une hauteur écrite en dur laisserait la
 // minicarte remonter dessus.
+// Les messages qu'on a fermés, retenus par leur contenu : tant que c'est le
+// même, on ne le remontre pas ; un message nouveau, lui, s'affiche.
+let bandeauFerme = null;
+
 function montrerBandeau(texte, cls) {
-  linkBanner.textContent = texte;
+  if (texte === bandeauFerme) { cacherBandeau(); return; }
+  document.getElementById('link-banner-txt').textContent = texte;
   linkBanner.className = cls;
   linkBanner.style.display = 'block';
   document.documentElement.classList.add('a-bandeau');
@@ -1000,12 +1016,44 @@ function bonneNouvelle(texte) {
   linkBanner._t = setTimeout(refreshBanner, 2600);
 }
 
+// Le bouton « Jouer en ligne » porte l'état de la connexion.
+function majBoutonEnLigne() {
+  document.getElementById('online-btn')?.classList.toggle('offline', !navigator.onLine);
+}
+
 alerte('hors-ligne', !navigator.onLine);
-window.addEventListener('offline', () => alerte('hors-ligne', true));
+majBoutonEnLigne();
+window.addEventListener('offline', () => { alerte('hors-ligne', true); majBoutonEnLigne(); });
 window.addEventListener('online', () => {
   alerte('hors-ligne', false);
+  majBoutonEnLigne();
   profileSync.pull().catch(() => {});
 });
+
+// Fermer le bandeau : d'un doigt n'importe où dessus, ou par la croix.
+linkBanner.addEventListener('click', () => {
+  bandeauFerme = document.getElementById('link-banner-txt').textContent;
+  cacherBandeau();
+});
+
+// Le toast se referme d'une pression : inutile d'attendre qu'il s'efface.
+document.getElementById('toast')?.addEventListener('click', (e) => {
+  e.currentTarget.style.opacity = '0';
+});
+
+// --- la pastille du siège ----------------------------------------------------
+// Elle ne s'allume que pendant l'approche et l'assaut, et seulement si l'enfant
+// est à portée : c'est le rappel qui manquait pour qu'il pense à aller voir.
+const siegeChip = document.getElementById('siege-chip');
+let siegeAllume = false;
+function majPastilleSiege() {
+  const actif = !!siege?.enCours();
+  if (actif === siegeAllume) return;
+  siegeAllume = actif;
+  siegeChip.style.display = actif ? 'block' : 'none';
+  siegeChip.textContent = siege?.phase() === 'approche'
+    ? '🐎 Des assaillants approchent !' : '⚔️ Assaut au château !';
+}
 
 profileSync.onSaveState = (etat) => {
   if (etat === 'ko') alerte('sauvegarde-ko', true);
@@ -2111,18 +2159,23 @@ document.getElementById('notif-toggle')?.addEventListener('click', async () => {
 document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
 majLigneNotif();
 
+// Le grand bandeau du milieu de l'écran, celui des captures. Il sert aussi
+// aux arrivées de joueurs et aux moments forts du siège.
+function grandBandeau(titre, sous, duree = 3200) {
+  const t = document.getElementById('catch-title');
+  const s2 = document.getElementById('catch-sub');
+  if (!t || !s2) return;
+  t.textContent = titre;
+  s2.textContent = sous;
+  catchBanner.classList.remove('show');
+  void catchBanner.offsetWidth; // relance l'animation
+  catchBanner.classList.add('show');
+  clearTimeout(catchBanner._t);
+  catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), duree);
+}
+
 function annonceArrivee(nom) {
-  const titre = document.getElementById('catch-title');
-  const sous = document.getElementById('catch-sub');
-  if (titre && sous) {
-    titre.textContent = '👋 UN JOUEUR ARRIVE !';
-    sous.textContent = `${nom} vient de rejoindre ton monde !`;
-    catchBanner.classList.remove('show');
-    void catchBanner.offsetWidth; // relance l'animation
-    catchBanner.classList.add('show');
-    clearTimeout(catchBanner._t);
-    catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 3200);
-  }
+  grandBandeau('👋 UN JOUEUR ARRIVE !', `${nom} vient de rejoindre ton monde !`);
   carillon([660, 990, 1320]); // trois notes qui montent : quelqu'un entre
   emojiBurst(['👋', '🎉', '✨'], 14);
 
@@ -3453,6 +3506,7 @@ window.__fx = effects;
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__vueCarte = () => overviewView;
+window.__alerte = (k, v, t) => alerte(k, v, t);
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
@@ -3481,6 +3535,7 @@ function frame(now) {
     }
     siege?.update(dt);
     vie?.update(dt);
+    majPastilleSiege();
   } else {
     player.syncCamera();
   }

@@ -159,6 +159,17 @@ export function buildKidMesh(look) {
     garde.position.set(0, -0.44, -0.04);
     arms[1].add(lame, garde);
   }
+  // Une torche brandie : c'est la flamme, bien plus que la silhouette, qui
+  // signale de loin une troupe qui approche du château à la nuit tombante.
+  if (look.torche) {
+    const manche = box(0.06, 0.34, 0.06, 0x5a3a1c);
+    manche.position.set(0, -0.58, 0);
+    const flamme = box(0.15, 0.2, 0.15, 0xe8a028);
+    flamme.position.set(0, -0.82, 0);
+    const coeur = box(0.09, 0.12, 0.09, 0xf8e070);
+    coeur.position.set(0, -0.85, 0);
+    arms[1].add(manche, flamme, coeur);
+  }
   if (look.bouclier) {
     const ecu = box(0.06, 0.44, 0.36, look.bouclier);
     ecu.position.set(-0.1, -0.4, 0);

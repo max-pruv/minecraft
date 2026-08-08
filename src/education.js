@@ -1263,6 +1263,14 @@ export class EducationMode {
     }
 
     this.el.timer.style.display = 'block';
+    if (!this.timerFermeBranche) {
+      this.timerFermeBranche = true;
+      document.getElementById('edu-timer-close')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.timerMasque = document.getElementById('edu-timer-txt').textContent;
+        this.el.timer.style.visibility = 'hidden';
+      });
+    }
 
     if (running && !this.quizActive && !this.hardStopActive) {
       // the daily limit is per child, not per device — playing 30 min on
@@ -1297,8 +1305,16 @@ export class EducationMode {
       : `⏱ ${m}:${String(s).padStart(2, '0')}`;
     const dailyLeft = this.allowance() - this.today().play;
     if (dailyLeft <= 600) text += ` · ⏰ ${Math.max(0, Math.ceil(dailyLeft / 60))} min`;
-    this.el.timer.textContent = text;
-    this.el.timer.classList.toggle('urgent', t <= 60);
+    // Le compte à rebours se referme d'une croix : une fois qu'on sait qu'on a
+    // quarante-cinq minutes devant soi, la pastille n'apprend plus rien. Elle
+    // revient d'elle-même quand la dernière minute commence, ou quand le texte
+    // change vraiment — sinon on la masquerait pour de bon sans s'en rendre
+    // compte, et le quiz tomberait sans prévenir.
+    const urgent = t <= 60;
+    if (this.timerMasque && (urgent || text !== this.timerMasque)) this.timerMasque = null;
+    document.getElementById('edu-timer-txt').textContent = text;
+    this.el.timer.classList.toggle('urgent', urgent);
+    this.el.timer.style.visibility = this.timerMasque ? 'hidden' : 'visible';
   }
 
   needed() {
