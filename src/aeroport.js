@@ -297,6 +297,50 @@ export function buildAeroport(poser) {
     for (const s of [-1, 1]) set(cx - 2 * sens, y0 - 1, cz + s * 2, GOUDRON);
   }
 
+  // Le Concorde : nez pointu et fin, aile delta gothique qui court presque tout
+  // le long du fuselage, dérive haute, quatre réacteurs accolés deux à deux
+  // sous l'aile. Sa silhouette n'a rien de commun avec celle d'un avion de
+  // ligne ordinaire, et c'est précisément ce qui le rend reconnaissable.
+  function concorde(cx, cz, sens) {
+    const L = 34, demi = Math.round(L / 2), y0 = 1;
+    // fuselage : long, mince, et qui s'affine en pointe vers l'avant
+    for (let i = -demi; i <= demi; i++) {
+      const t = (i * sens) / demi;             // -1 arrière, +1 avant
+      const larg = t > 0.82 ? 0 : t > 0.62 ? 1 : 1;
+      const haut = t > 0.72 ? 0 : 1;
+      for (let dz = -larg; dz <= larg; dz++) {
+        for (let dy = 0; dy <= haut; dy++) set(cx + i, y0 + dy, cz + dz, BLANC);
+      }
+    }
+    // le nez basculé, qui plonge vers la piste
+    for (let k = 1; k <= 3; k++) set(cx + (demi + k) * sens, y0 - Math.floor(k / 2), cz, BLANC);
+    set(cx + (demi - 2) * sens, y0 + 1, cz, VERRE);
+    // aile delta : elle s'élargit régulièrement de l'avant vers l'arrière
+    for (let i = -demi + 1; i <= demi - 8; i++) {
+      const t = (i * sens + demi) / L;         // 0 à l'arrière, 1 à l'avant
+      const envergure = Math.round((1 - t) * 11);
+      for (let dz = 1; dz <= envergure; dz++) {
+        set(cx + i, y0, cz + dz, BLANC); set(cx + i, y0, cz - dz, BLANC);
+      }
+    }
+    // quatre réacteurs, accolés deux par deux
+    for (const s of [-1, 1]) {
+      for (const dz of [4, 6]) {
+        for (let k = 0; k <= 4; k++) set(cx + (-demi + 4 + k) * sens, y0 - 1, cz + s * dz, GRIS);
+        set(cx + (-demi + 4) * sens, y0 - 1, cz + s * dz, GOUDRON);
+      }
+    }
+    // dérive haute et effilée
+    for (let y = y0 + 2; y <= y0 + 8; y++) {
+      const av = Math.round((y - y0 - 2) * 0.7);
+      set(cx + (-demi + 1 + av) * sens, y, cz, y >= y0 + 6 ? BLEU : BLANC);
+    }
+    set(cx + (-demi + 5) * sens, y0 + 7, cz, ROUGE);
+    // train : le Concorde se cambre haut sur ses jambes
+    set(cx + (demi - 6) * sens, y0 - 1, cz, GOUDRON);
+    for (const s of [-1, 1]) set(cx - 3 * sens, y0 - 1, cz + s * 3, GOUDRON);
+  }
+
   // Une passerelle télescopique : le couloir qui relie la porte à l'avion.
   function passerelle(x0, z0, x1, z1) {
     const n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
@@ -319,6 +363,13 @@ export function buildAeroport(poser) {
   avion(-14, -STAND, 1, 20);
   // et un gros porteur qui roule vers la piste nord
   avion(0, -TAXI_B, 1, 30);
+  // Un très gros porteur à deux ponts, au large : c'est le plus grand de la
+  // flotte, et il se voit de toute la plate-forme.
+  avion(-14, STAND, -1, 34);
+  // Le Concorde, seul sur la voie de circulation sud, bien dégagé : c'est la
+  // silhouette la plus reconnaissable de la plate-forme, autant la laisser
+  // respirer plutôt que de la coincer contre le parking.
+  concorde(-6, TAXI_B, -1);
 
   // --- abords ---------------------------------------------------------------
   // parking étagé, à l'ouest de l'aérogare 1

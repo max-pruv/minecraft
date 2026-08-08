@@ -12,12 +12,26 @@ import { BaseNPC } from './marlon.js';
 import { CASTLE } from './world.js';
 
 const R_MUR = 16;                 // demi-côté de la courtine, comme dans le bâti
-const PORTE = { x: CASTLE.x, z: CASTLE.z - R_MUR - 6 };   // devant la herse
-const CAMP = { x: CASTLE.x, z: CASTLE.z - 44 };           // le camp, hors de portée d'arc
+const PORTE = { x: CASTLE.x, z: CASTLE.z - R_MUR - 6 };   // au milieu du pont-levis
+// La douve occupe z = CASTLE.z − 24 à − 20, et le pont-levis ne fait que trois
+// blocs de large. Les deux camps se rangeaient jusqu'ici de part et d'autre de
+// la PORTE, c'est-à-dire les pieds dans l'eau pour quatre combattants sur dix —
+// ils tombaient dans la douve et y pataugeaient. Chaque camp a désormais sa
+// rive : les assaillants massés devant, la garnison juste derrière la herse.
+const RIVE_ASSAUT = CASTLE.z - 26;    // berge extérieure, terre ferme
+const RIVE_GARDE = CASTLE.z - 13;     // dans la cour, derrière la porte
+// Le camp était à quarante-quatre blocs : de la cour, les assaillants n'étaient
+// que cinq silhouettes minuscules, et l'enfant ne les remarquait pas. On les
+// rapproche assez pour qu'on les distingue depuis les remparts.
+const CAMP = { x: CASTLE.x, z: CASTLE.z - 34 };
 const VISIBLE = 110;              // au-delà, la scène est en pause
 
 // Durées du cycle, en secondes.
-const CALME = 105, APPROCHE = 26, ASSAUT = 34, RETRAITE = 20;
+//
+// Cent cinq secondes de calme, c'était près de deux minutes où il ne se passait
+// rien : un enfant qui passait cinq minutes au château pouvait n'assister à
+// aucun assaut. Le cycle complet tient maintenant en deux minutes.
+const CALME = 38, APPROCHE = 22, ASSAUT = 32, RETRAITE = 18;
 
 const ACIER = 0xb8bcc4, CUIR = 0x6a4a2a;
 
@@ -55,7 +69,7 @@ class Combattant extends BaseNPC {
   }
 }
 
-export function createSiege({ scene, world, player, toast, emojiBurst, clang }) {
+export function createSiege({ scene, world, player, toast, emojiBurst, clang, annonce, cor }) {
   const gardes = [];
   const NOMS_GARDES = ['Gontran', 'Berthe', 'Anselme', 'Aliénor', 'Godefroy', 'Mahaut'];
   POSTES.forEach((p, i) => {
@@ -102,6 +116,9 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang }) 
         pants: 0x3a2a1a, shoes: 0x2a1a10,
         hairstyle: 'short', hat: 0x4a3a2a,
         epee: 0x8a8f98, bouclier: 0x3a2a1a,
+        // une torche par assaillant : de la cour, c'est la flamme qu'on
+        // distingue en premier dans la file qui approche
+        torche: i % 2 === 0,
       },
       phrases: ['À l\'assaut !', 'Le château sera à nous !', 'En avant !'],
     }, x, z);
@@ -111,7 +128,7 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang }) 
   });
 
   let phase = 'calme';
-  let reste = 45;                  // la première attaque ne se fait pas attendre
+  let reste = 14;                  // la première attaque ne se fait pas attendre
   let etincelles = 0;
 
   const proche = () => Math.hypot(player.pos.x - CASTLE.x, player.pos.z - CASTLE.z) < VISIBLE;
@@ -121,18 +138,29 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang }) 
     if (phase === 'approche') {
       reste = APPROCHE;
       // les assaillants convergent vers le pont-levis, en ligne
-      assaillants.forEach((a, i) => { a.cible = { x: PORTE.x - 6 + i * 3, z: PORTE.z - 10 }; });
-      if (proche()) toast('🐎 Des assaillants approchent du château !', 0xe8892c);
+      assaillants.forEach((a, i) => { a.cible = { x: PORTE.x - 6 + i * 3, z: RIVE_ASSAUT - 6 }; });
+      if (proche()) {
+        toast('🐎 Des assaillants approchent du château !', 0xe8892c);
+        annonce?.('🐎 ILS ARRIVENT !', 'Une bande approche du château — va voir !');
+        cor?.();
+      }
     } else if (phase === 'assaut') {
       reste = ASSAUT;
-      assaillants.forEach((a, i) => { a.cible = { x: PORTE.x - 4 + i * 2, z: PORTE.z - 1 }; });
+      assaillants.forEach((a, i) => { a.cible = { x: PORTE.x - 6 + i * 3, z: RIVE_ASSAUT }; });
       // toute la garnison converge vers la porte : les tours se vident
-      gardes.forEach((g, i) => { g.cible = { x: PORTE.x - 5 + i * 2, z: PORTE.z + 2 }; });
-      if (proche()) toast('⚔️ L\'assaut commence — les gardes tiennent la porte !', 0xd83a3a);
+      gardes.forEach((g, i) => { g.cible = { x: PORTE.x - 5 + i * 2, z: RIVE_GARDE }; });
+      if (proche()) {
+        toast('⚔️ L\'assaut commence — les gardes tiennent la porte !', 0xd83a3a);
+        annonce?.('⚔️ L\'ASSAUT !', 'Les gardes tiennent la porte — cours les aider !');
+        cor?.();
+      }
     } else if (phase === 'retraite') {
       reste = RETRAITE;
       assaillants.forEach((a) => { a.cible = { ...a.attache }; });
-      if (proche()) toast('🛡️ Les assaillants battent en retraite ! Le château tient bon.', 0x58b04c);
+      if (proche()) {
+        toast('🛡️ Les assaillants battent en retraite ! Le château tient bon.', 0x58b04c);
+        annonce?.('🛡️ VICTOIRE !', 'Les assaillants battent en retraite. Le château tient bon.');
+      }
     } else {
       reste = CALME;
       gardes.forEach((g) => { g.cible = { ...g.attache }; });
@@ -172,6 +200,9 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang }) 
     update,
     // pour les tests : l'état de la scène, sans avoir à l'attendre
     phase: () => phase,
+    // vrai quand quelque chose se passe et que l'enfant est à portée : la
+    // boucle principale s'en sert pour afficher une pastille à l'écran.
+    enCours: () => (phase === 'approche' || phase === 'assaut') && proche(),
     forcer: (p) => passerA(p),
   };
 }

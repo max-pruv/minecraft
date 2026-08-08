@@ -284,6 +284,196 @@ const TENUES = {
     a.sphere(guimpe, { p: [0, H.tete + 0.03, 0.14], e: [0.29, 0.32, 0.24], seg: 12 });
   },
 
+  // Le Gaulois : braies rayées serrées aux chevilles, tunique courte, large
+  // ceinture, et le casque ailé des guerriers. La moustache tombante fait le
+  // reste — c'est elle qu'on reconnaît avant tout le costume.
+  gaulois(a, p) {
+    const { drap = 0x4a7a4a, braies = 0x8a5a3a, raie = 0xd8c48a, casque = false, ailes = 0xf0ece0 } = p;
+    torse(a, p, drap);
+    jambes(a, p, { bas: braies, chaussure: CUIR_SOMBRE });
+    bras(a, p, { manche: drap, main: p.teint });
+    a.membre('tronc');
+    a.sphere(drap, { p: [0, H.poitrine, 0], e: [0.44, 0.36, 0.3], seg: 14 });
+    jupe(a, drap, { haut: H.taille, bas: H.genou + 0.14, rHaut: 0.2, rBas: 0.28 });
+    // les rayures des braies, à la gauloise
+    for (const s of [-1, 1]) {
+      a.membre(s < 0 ? 'jambeG' : 'jambeD', [s * ECART_JAMBE, H.hanche, 0]);
+      for (let k = 0; k < 3; k++) {
+        a.tore(raie, {
+          p: [s * ECART_JAMBE, H.genou + 0.24 - k * 0.18, 0], r: [Math.PI / 2, 0, 0],
+          tube: 0.11, e: [0.19 - k * 0.008, 0.19, 0.19], seg: 8,
+        });
+      }
+    }
+    a.membre('tronc');
+    ceinture(a, CUIR, H.taille - 0.02, 0xd8b44a);
+    if (casque) {
+      // calotte de bronze et deux ailes dressées
+      a.demiSphere(0xb08a3a, { p: [0, H.tete + 0.04, 0.01], e: [0.31, 0.3, 0.31], seg: 14 });
+      a.tore(0x8a6a2a, { p: [0, H.tete + 0.06, 0.01], r: [Math.PI / 2, 0, 0], tube: 0.1, e: [0.33, 0.33, 0.33], seg: 14 });
+      // Les ailes partent du bord du casque et se relèvent : détachées et trop
+      // hautes, elles flottaient à côté de la tête comme deux assiettes.
+      for (const s of [-1, 1]) {
+        a.sphere(ailes, { p: [s * 0.16, H.tete + 0.15, 0.02], r: [0, 0, s * 0.75], e: [0.07, 0.3, 0.2], seg: 8 });
+        a.sphere(ailes, { p: [s * 0.22, H.tete + 0.24, 0.02], r: [0, 0, s * 0.6], e: [0.06, 0.22, 0.15], seg: 8 });
+      }
+    }
+  },
+
+  // Le druide : longue robe blanche, ceinture de corde, grande barbe.
+  druide(a, p) {
+    const { drap = 0xf0ece0 } = p;
+    torse(a, p, drap);
+    jambes(a, p, { bas: drap, chaussure: 0x3a2a1c });
+    bras(a, p, { manche: drap, main: p.teint });
+    jupe(a, drap, { haut: H.poitrine, bas: 0.04, rHaut: 0.26, rBas: 0.38, seg: 18 });
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.cylindre(drap, {
+        p: [s * (ECART_BRAS + 0.02), H.epaule - 0.24, 0], e: [0.23, 0.42, 0.23],
+        haut: 0.42, bas: 0.5, seg: 10,
+      });
+    }
+    a.membre('tronc');
+    a.cylindre(CORDE, { p: [0, H.taille - 0.02, 0], e: [0.32, 0.04, 0.25], haut: 0.5, bas: 0.5, seg: 12 });
+    a.tore(0xd8b44a, { p: [0, H.cou - 0.06, -0.02], r: [Math.PI / 2, 0, 0], tube: 0.09, e: [0.3, 0.3, 0.3], seg: 12 });
+  },
+
+  // Le légionnaire : tunique rouge, cuirasse à lames d'acier, casque à cimier.
+  romain(a, p) {
+    const { tunique = 0xb03830, cimier = 0xb03830, transverse = false } = p;
+    torse(a, p, tunique);
+    jambes(a, p, { bas: p.teint, chaussure: CUIR });
+    bras(a, p, { manche: tunique, main: p.teint });
+    jupe(a, tunique, { haut: H.taille, bas: H.genou + 0.2, rHaut: 0.2, rBas: 0.27 });
+    a.membre('tronc');
+    // la lorica : trois cerclages d'acier bien visibles
+    for (let k = 0; k < 3; k++) {
+      a.cylindre(ACIER, {
+        p: [0, H.poitrine + 0.1 - k * 0.13, 0], e: [0.44 - k * 0.01, 0.11, 0.33],
+        haut: 0.5, bas: 0.5, seg: 14,
+      });
+    }
+    a.sphere(ACIER, { p: [0, H.taille + 0.02, 0], e: [0.38, 0.16, 0.3], seg: 12 });
+    // les lambrequins de cuir qui pendent de la ceinture
+    for (let k = 0; k < 7; k++) {
+      const ang = (k / 7) * Math.PI - Math.PI / 2;
+      a.boite(CUIR, { p: [Math.sin(ang) * 0.19, H.taille - 0.2, -Math.cos(ang) * 0.16], e: [0.06, 0.24, 0.04] });
+    }
+    // épaulières
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.demiSphere(ACIER, { p: [s * (ECART_BRAS + 0.01), H.epaule - 0.02, 0], e: [0.26, 0.18, 0.28], seg: 12 });
+    }
+    // casque : bombe, couvre-nuque, et le cimier — transverse pour le centurion
+    a.membre('tronc');
+    a.sphere(0xc8a83a, { p: [0, H.tete + 0.05, 0.03], e: [0.31, 0.32, 0.3], seg: 14 });
+    a.boite(0xc8a83a, { p: [0, H.tete - 0.03, 0.17], r: [0.5, 0, 0], e: [0.3, 0.16, 0.04] });
+    for (const s of [-1, 1]) {   // les couvre-joues
+      a.boite(0xc8a83a, { p: [s * 0.15, H.tete - 0.03, -0.02], r: [0, 0, s * 0.12], e: [0.05, 0.2, 0.2] });
+    }
+    if (transverse) {
+      for (let k = -3; k <= 3; k++) {
+        a.sphere(cimier, { p: [k * 0.05, H.tete + 0.28 - Math.abs(k) * 0.015, 0.02], e: [0.05, 0.14, 0.09], seg: 6 });
+      }
+    } else {
+      for (let k = -3; k <= 3; k++) {
+        a.sphere(cimier, { p: [0, H.tete + 0.28 - Math.abs(k) * 0.015, 0.02 + k * 0.05], e: [0.08, 0.14, 0.05], seg: 6 });
+      }
+    }
+  },
+
+  // Le pilote d'astronef : combinaison orange, harnais croisé sur la poitrine,
+  // caisson de survie au ventre, casque blanc à visière.
+  pilote(a, p) {
+    const { drap = 0xe07a20 } = p;
+    torse(a, p, drap);
+    jambes(a, p, { bas: drap, chaussure: 0x2a2a30 });
+    bras(a, p, { manche: drap, main: 0x2a2a30 });
+    a.membre('tronc');
+    a.sphere(drap, { p: [0, H.poitrine, 0], e: [0.44, 0.38, 0.31], seg: 14 });
+    for (const s of [-1, 1]) {   // le harnais en croix
+      a.boite(0xf0ece0, { p: [0, H.poitrine, -0.16], r: [0, 0, s * 0.7], e: [0.06, 0.5, 0.03] });
+    }
+    a.boite(0x3a3a44, { p: [0, H.taille - 0.04, -0.16], e: [0.24, 0.16, 0.08] });
+    for (const s of [-1, 1]) a.sphere(0x3a3a44, { p: [s * 0.17, H.hanche - 0.06, -0.02], e: [0.12, 0.2, 0.16], seg: 8 });
+    // casque : calotte blanche, visière sombre, bloc respiratoire
+    a.sphere(0xf0ece0, { p: [0, H.tete + 0.04, 0.02], e: [0.33, 0.34, 0.33], seg: 14 });
+    a.boite(0x20242c, { p: [0, H.tete + 0.03, -0.155], e: [0.26, 0.13, 0.05] });
+    a.boite(0x9aa0aa, { p: [0, H.tete - 0.11, -0.13], e: [0.14, 0.09, 0.09] });
+    a.boite(0xd83a2a, { p: [0, H.tete + 0.2, -0.1], e: [0.05, 0.1, 0.16] });
+  },
+
+  // Le soldat en armure blanche : coque articulée, casque à masque sombre.
+  soldat(a, p) {
+    const CO = 0xf2f2ee;
+    torse(a, p, CO);
+    jambes(a, p, { bas: CO, chaussure: 0x20242c });
+    bras(a, p, { manche: CO, main: 0x20242c });
+    a.membre('tronc');
+    a.sphere(CO, { p: [0, H.poitrine, 0], e: [0.46, 0.4, 0.33], seg: 14 });
+    a.boite(0x20242c, { p: [0, H.poitrine - 0.06, -0.18], e: [0.2, 0.1, 0.04] });
+    a.sphere(CO, { p: [0, H.taille, 0], e: [0.38, 0.2, 0.3], seg: 12 });
+    a.cylindre(0x20242c, { p: [0, H.taille - 0.1, 0], e: [0.36, 0.07, 0.28], haut: 0.5, bas: 0.5, seg: 12 });
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.demiSphere(CO, { p: [s * (ECART_BRAS + 0.01), H.epaule - 0.02, 0], e: [0.27, 0.19, 0.29], seg: 12 });
+    }
+    a.membre('tronc');
+    a.sphere(CO, { p: [0, H.tete + 0.03, 0.02], e: [0.34, 0.35, 0.33], seg: 14 });
+    a.boite(0x20242c, { p: [0, H.tete + 0.03, -0.16], e: [0.2, 0.12, 0.05] });
+    a.boite(0x20242c, { p: [0, H.tete - 0.09, -0.15], e: [0.09, 0.12, 0.05] });
+    for (const s of [-1, 1]) a.boite(0x20242c, { p: [s * 0.12, H.tete + 0.06, -0.13], e: [0.05, 0.2, 0.06] });
+  },
+
+  // Le chevalier de l'ordre : longue robe à capuche, ceinture large.
+  chevalierEspace(a, p) {
+    const { drap = 0x6a5340, capuche = 0x4a3c2c } = p;
+    torse(a, p, drap);
+    jambes(a, p, { bas: 0x3a3028, chaussure: 0x2a2018 });
+    bras(a, p, { manche: drap, main: p.teint });
+    jupe(a, capuche, { haut: H.poitrine, bas: 0.03, rHaut: 0.27, rBas: 0.4, seg: 18 });
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.cylindre(capuche, {
+        p: [s * (ECART_BRAS + 0.02), H.epaule - 0.26, 0], e: [0.24, 0.46, 0.24],
+        haut: 0.4, bas: 0.5, seg: 10,
+      });
+    }
+    a.membre('tronc');
+    a.sphere(drap, { p: [0, H.poitrine, 0], e: [0.42, 0.38, 0.31], seg: 14 });
+    ceinture(a, 0x3a2a1c, H.taille - 0.02, 0xb0b4bc);
+    // la capuche, rabattue sur la tête, le visage dans l'ombre
+    a.sphere(capuche, { p: [0, H.tete + 0.06, 0.06], e: [0.36, 0.37, 0.36], seg: 14 });
+    a.sphere(capuche, { p: [0, H.cou - 0.04, 0.1], e: [0.4, 0.2, 0.3], seg: 12 });
+  },
+
+  // Le droïde de protocole : entièrement métallique, articulations apparentes.
+  droide(a, p) {
+    const M = p.metal || 0xd8b43c, J = 0x6a5a2a;
+    torse(a, p, M);
+    jambes(a, p, { bas: M, chaussure: J });
+    bras(a, p, { manche: M, main: M });
+    a.membre('tronc');
+    a.sphere(M, { p: [0, H.poitrine, 0], e: [0.4, 0.36, 0.28], seg: 14 });
+    a.cylindre(J, { p: [0, H.taille - 0.02, 0], e: [0.3, 0.1, 0.24], haut: 0.5, bas: 0.5, seg: 12 });
+    for (let k = 0; k < 3; k++) {
+      a.sphere(0x2a2a30, { p: [-0.08 + k * 0.08, H.poitrine + 0.02, -0.15], e: [0.05, 0.05, 0.03], seg: 6 });
+    }
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.tore(J, { p: [s * (ECART_BRAS + 0.02), H.epaule - 0.32, 0.01], r: [Math.PI / 2, 0, 0], tube: 0.2, e: [0.15, 0.15, 0.15], seg: 8 });
+    }
+    // la tête : un casque lisse, deux optiques rondes qui luisent
+    a.membre('tronc');
+    a.sphere(M, { p: [0, H.tete + 0.02, 0.01], e: [0.3, 0.33, 0.3], seg: 14 });
+    for (const s of [-1, 1]) {
+      a.sphere(0x2a2a30, { p: [s * 0.08, H.tete + 0.05, -0.14], e: [0.09, 0.09, 0.04], seg: 8 });
+      a.sphere(0xf0e070, { p: [s * 0.08, H.tete + 0.05, -0.155], e: [0.055, 0.055, 0.03], seg: 8 });
+    }
+    a.boite(J, { p: [0, H.tete - 0.1, -0.13], e: [0.14, 0.05, 0.05] });
+  },
+
   // Robe à vertugadin : la silhouette Renaissance, cône ample et corsage rigide.
   robeRen(a, p) {
     const { drap = 0x6a2f5a, drap2 = 0xd8c48a } = p;
@@ -563,6 +753,77 @@ const OBJETS = {
     a.cylindre(0x5a3a1c, { p: [x, y + 0.16, z], e: [0.05, 0.5, 0.05], haut: 0.5, bas: 0.6, seg: 8 });
     a.cone(0xe8a028, { p: [x, y + 0.5, z], e: [0.14, 0.3, 0.14], seg: 10 });
     a.cone(0xf8e070, { p: [x, y + 0.46, z], e: [0.08, 0.18, 0.08], seg: 8 });
+  },
+  // La serpe d'or du druide, celle qui coupe le gui.
+  serpe(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.cylindre(0x6a4a28, { p: [x, y - 0.1, z], e: [0.04, 0.24, 0.04], haut: 0.5, bas: 0.5, seg: 6 });
+    for (let k = 0; k < 6; k++) {
+      const ang = -0.3 + k * 0.45;
+      a.boite(OR, { p: [x + Math.sin(ang) * 0.16, y - 0.24 - Math.cos(ang) * 0.16, z], r: [0, 0, -ang], e: [0.05, 0.09, 0.03] });
+    }
+  },
+  // La harpe du barde, celle qu'on préfère ne pas entendre.
+  harpe(a) {
+    a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);
+    const x = -(ECART_BRAS + 0.04), y = H.epaule - 0.34, z = -0.14;
+    a.cylindre(0x9a6a38, { p: [x, y, z + 0.12], e: [0.07, 0.6, 0.07], haut: 0.5, bas: 0.5, seg: 8 });
+    for (let k = 0; k < 7; k++) {
+      const t = k / 6;
+      a.cylindre(0x9a6a38, { p: [x, y + 0.3 - t * 0.16, z + 0.12 - t * 0.1], r: [0.9, 0, 0], e: [0.05, 0.1, 0.05], haut: 0.5, bas: 0.5, seg: 6 });
+      a.cylindre(0xe8e0cc, { p: [x, y - 0.02 - t * 0.04, z + 0.06 - t * 0.02], e: [0.012, 0.4 - t * 0.16, 0.012], haut: 0.5, bas: 0.5, seg: 4 });
+    }
+  },
+  // Un menhir sur le dos. Rien ne dit mieux qui l'on est.
+  menhir(a, p) {
+    a.membre('tronc');
+    a.boite(0x8a8a86, { p: [0, H.poitrine - 0.02, 0.52], e: [0.5, 1.15, 0.42] });
+    a.boite(0x9a9a96, { p: [0, H.poitrine + 0.62, 0.52], e: [0.36, 0.2, 0.32] });
+    for (const [nom, s] of [['brasG', -1], ['brasD', 1]]) {
+      a.membre(nom, [s * ECART_BRAS, H.epaule, 0]);
+      a.membreGalbe(p.teint, {
+        de: [s * ECART_BRAS, H.epaule, 0], a: [s * (ECART_BRAS + 0.06), H.epaule + 0.06, 0.28], r1: 0.085, r2: 0.06, seg: 8,
+      });
+    }
+  },
+  // Un poisson, brandi bien haut : le début de toutes les bagarres.
+  poisson(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.sphere(0x8aa8c8, { p: [x, y - 0.16, z - 0.06], e: [0.13, 0.22, 0.42], seg: 10 });
+    a.cone(0x7a98b8, { p: [x, y - 0.16, z + 0.22], r: [-Math.PI / 2, 0, 0], e: [0.04, 0.16, 0.24], seg: 6 });
+    a.sphere(0x1a1410, { p: [x + 0.05, y - 0.1, z - 0.22], e: [0.04, 0.04, 0.03], seg: 6 });
+  },
+  // Le scutum : le grand bouclier rectangulaire et bombé du légionnaire.
+  scutum(a, p) {
+    a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);
+    const x = -(ECART_BRAS + 0.16), y = H.epaule - 0.34, z = -0.05;
+    a.demiSphere(p.ecu || 0xa8302a, { p: [x, y, z], r: [-Math.PI / 2, 0, 0], e: [0.46, 0.14, 0.76], seg: 12 });
+    a.sphere(0xc8a83a, { p: [x, y, z - 0.06], e: [0.13, 0.13, 0.1], seg: 10 });
+    for (const s of [-1, 1]) {
+      a.boite(0xe8dcb0, { p: [x, y + s * 0.2, z - 0.05], e: [0.3, 0.04, 0.03] });
+      a.boite(0xe8dcb0, { p: [x + s * 0.15, y, z - 0.05], e: [0.04, 0.5, 0.03] });
+    }
+  },
+  // Le sabre de lumière : poignée métallique, lame translucide qui rayonne.
+  sabre(a, p) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.cylindre(0xb0b4bc, { p: [x, y - 0.02, z], e: [0.06, 0.26, 0.06], haut: 0.5, bas: 0.5, seg: 8 });
+    a.cylindre(0x3a3a44, { p: [x, y - 0.12, z], e: [0.07, 0.06, 0.07], haut: 0.5, bas: 0.5, seg: 8 });
+    const teinte = p.lame || 0x4ad8ff;
+    a.cylindre(teinte, { p: [x, y + 0.62, z], e: [0.055, 1.1, 0.055], haut: 0.4, bas: 0.5, seg: 8 });
+    a.cylindre(0xf4fbff, { p: [x, y + 0.62, z], e: [0.025, 1.08, 0.025], haut: 0.4, bas: 0.5, seg: 6 });
+  },
+  // Le blaster : canon court, crosse repliée, viseur.
+  blaster(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.boite(0x2a2a30, { p: [x, y - 0.06, z - 0.16], e: [0.07, 0.1, 0.36] });
+    a.cylindre(0x3a3a44, { p: [x, y - 0.06, z - 0.4], r: [Math.PI / 2, 0, 0], e: [0.05, 0.18, 0.05], haut: 0.5, bas: 0.5, seg: 8 });
+    a.boite(0x1a1a20, { p: [x, y - 0.2, z - 0.02], e: [0.05, 0.16, 0.07] });
+    a.boite(0x9aa0aa, { p: [x, y + 0.02, z - 0.2], e: [0.03, 0.05, 0.12] });
   },
   bouclier(a, p) {
     a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);
