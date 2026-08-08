@@ -146,6 +146,9 @@
       padding: 12px 20px; border-radius: 14px; font-size: 17px; text-align: center;
       line-height: 1.4; max-width: min(420px, 88vw); box-shadow: 0 12px 40px rgba(0,0,0,.5);
       animation: maj-pop .5s cubic-bezier(.2,1.4,.5,1);
+      /* Le calque des confettis laisse passer les doigts ; le mot, lui, doit
+         les recevoir pour qu'on puisse le refermer d'une pression. */
+      pointer-events: auto; cursor: pointer; padding-right: 34px;
     }
     #maj-mot small { display: block; opacity: .8; font-size: 13px; margin-top: 3px; }
     @keyframes maj-pop { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
@@ -1336,7 +1339,7 @@
     <div id="app-version" title="Version installée sur cet appareil"></div>
   </div>
 
-  <div id="maj-fete"><div id="maj-mot"></div></div>
+  <div id="maj-fete"><div id="maj-mot"><span id="maj-texte"></span><button class="fermer-msg" id="maj-close" aria-label="Fermer">✕</button></div></div>
 
   <script>
     // Netflix-style local profiles: each player on this device gets their own
@@ -1520,7 +1523,7 @@
         const fete = document.getElementById('maj-fete');
         const mot = document.getElementById('maj-mot');
         if (!fete || !mot) return;
-        mot.innerHTML = '🎉 Le jeu vient d\'être mis à jour !'
+        document.getElementById('maj-texte').innerHTML = '🎉 Le jeu vient d\'être mis à jour !'
           + `<small>version ${String(version || '').replace('web-minecraft-', '') || 'la plus récente'}</small>`;
         const couleurs = ['#ffd75e', '#58b04c', '#6fa8ff', '#ff7ba8', '#ffffff', '#ff9d5e'];
         for (let i = 0; i < 90; i++) {
@@ -1536,7 +1539,16 @@
         fete.classList.add('on');
         // Assez long pour être vu : la page finit de fabriquer son monde
         // pendant ce temps, et l'enfant regarde souvent ailleurs au démarrage.
-        setTimeout(() => { fete.classList.remove('on'); fete.querySelectorAll('.maj-conf').forEach((e) => e.remove()); }, 8000);
+        // Une fois qu'on a lu la nouvelle, la garder à l'écran n'apprend plus
+        // rien : une pression sur le mot — ou sur sa croix — la referme, et le
+        // délai de huit secondes ne sert plus que de filet.
+        const fermer = () => {
+          clearTimeout(fete._t);
+          fete.classList.remove('on');
+          fete.querySelectorAll('.maj-conf').forEach((e) => e.remove());
+        };
+        mot.onclick = fermer;
+        fete._t = setTimeout(fermer, 8000);
       };
 
       navigator.serviceWorker.addEventListener('controllerchange', () => {
