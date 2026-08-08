@@ -13,8 +13,8 @@
 
 import * as THREE from 'three';
 import { BaseNPC } from './marlon.js';
-import { CASTLE, VILLANDRY } from './world.js';
-import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
+import { CASTLE, VILLANDRY, GAULOIS, ESPACE } from './world.js';
+import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
 import { construireBete, BETES } from './betes.js';
 
@@ -377,6 +377,205 @@ const VILLANDRY_GENS = [
   },
 ];
 
+// --- le village gaulois et le camp romain ------------------------------------
+//
+// Les décalages sont ceux du bâti : le village est centré sur (−22, 0), le
+// camp romain sur (+30, 0), la route droite entre les deux.
+const GAULOIS_GENS = [
+  {
+    nom: 'Astucix', role: 'guerrier du village', dx: -22, dz: 4, rayon: 6,
+    profil: { tenue: 'gaulois', casque: true, moustache: true, barbe: 0xe8c53c, coupe: 'long',
+      cheveux: 0xe8c53c, drap: 0x3a6a9a, objets: ['epee'], taille: 0.88 },
+    mots: ['Ils sont fous, ces Romains !', 'Une goutte de potion et hop !',
+      'Le village ne se rendra jamais.', 'Tu veux voir le menhir de mon ami ?',
+      'Attention, la patrouille romaine arrive.'],
+  },
+  {
+    nom: 'Costaudix', role: 'livreur de menhirs', dx: -14, dz: 6, rayon: 5, metier: 'porte',
+    profil: { tenue: 'gaulois', drap: 0x2a7a3a, braies: 0x3a5a8a, moustache: true,
+      cheveux: 0xe8952c, coupe: 'nattes', objets: ['menhir'], taille: 1.14 },
+    mots: ['Il est lourd, mon menhir !', 'Je n\'ai PAS besoin de potion.',
+      'On mange du sanglier ce soir ?', 'Livraison en Armorique et alentours.'],
+  },
+  {
+    nom: 'Herborix', role: 'druide du village', dx: -31, dz: -12, rayon: 4, metier: 'lit',
+    profil: { tenue: 'druide', cheveux: 0xf0ece0, barbe: 0xf0ece0, coupe: 'long', objets: ['serpe'] },
+    mots: ['La potion n\'est pas encore prête.', 'Le gui se coupe à la serpe d\'or.',
+      'Non, tu es tombé dedans quand tu étais petit.',
+      'Un peu de fer, du gui, et un secret que je garde.'],
+  },
+  {
+    nom: 'Grandchefix', role: 'chef du village', dx: -22, dz: -7, rayon: 3, metier: 'garde',
+    profil: { tenue: 'gaulois', drap: 0x9a2a4a, braies: 0x2a4a7a, moustache: true, barbe: 0x8a2a2a,
+      cheveux: 0x8a2a2a, casque: true, ailes: 0xd8c48a, objets: ['epee'] },
+    mots: ['Je ne crains qu\'une chose : que le ciel me tombe sur la tête.',
+      'Portez-moi sur le pavois !', 'Ce village est le dernier à résister.',
+      'Que le banquet commence !'],
+  },
+  {
+    nom: 'Faussenotix', role: 'barde du village', dx: -28, dz: 10, rayon: 4, metier: 'musique',
+    profil: { tenue: 'gaulois', drap: 0xb09030, braies: 0x7a5a3a, coupe: 'long',
+      cheveux: 0xe8b83c, objets: ['harpe'] },
+    mots: ['Je vais vous chanter quelque chose !', 'Personne ne comprend mon art.',
+      'La ré mi fa sol… enfin, à peu près.', 'On m\'a encore attaché au banquet.'],
+  },
+  {
+    nom: 'Poissonnix', role: 'poissonnier du village', dx: -34, dz: 10, rayon: 3, metier: 'porte',
+    profil: { tenue: 'gaulois', drap: 0x3a8a8a, braies: 0x5a4a3a, moustache: true, objets: ['poisson'] },
+    mots: ['Mes poissons sont frais !', 'Qui a dit qu\'ils sentaient ?',
+      'Ils arrivent tout droit de Lutèce.', 'Ne touche pas à mon étal !'],
+  },
+  {
+    nom: 'Forgeronix', role: 'forgeron du village', dx: -9, dz: 9, rayon: 3, metier: 'forge',
+    profil: { tenue: 'tablier', barbe: 0x2a2018, coiffe: 'bandeau', objets: ['marteau', 'tenailles'] },
+    mots: ['Le fer chauffe, écarte-toi !', 'Non, ses poissons ne sont pas frais.',
+      'Je referre tout le village.', 'Une épée neuve ? Reviens demain.'],
+  },
+  {
+    nom: 'Bonnemine', role: 'femme du chef', dx: -18, dz: -8, rayon: 4,
+    profil: { tenue: 'dame', drap: 0x6a3a7a, coupe: 'chignon', guimpe: 0xf0ece0, objets: ['panier'] },
+    mots: ['Range un peu cette hutte !', 'Le banquet, c\'est encore moi qui le prépare.',
+      'Nos huttes sont les plus belles d\'Armorique.'],
+  },
+  {
+    nom: 'Agecanonix', role: 'doyen du village', dx: -26, dz: -3, rayon: 4,
+    profil: { tenue: 'gaulois', drap: 0x7a6a5a, braies: 0x5a5a5a, cheveux: 0xf0ece0,
+      barbe: 0xf0ece0, moustache: true, taille: 0.9, objets: ['epee'] },
+    mots: ['De mon temps, on résistait mieux !', 'J\'ai connu la bataille de Gergovie.',
+      'Laissez-moi y aller, je suis encore vaillant !'],
+  },
+  // --- le camp romain ---
+  {
+    nom: 'Marcus Sestertius', role: 'centurion du camp', dx: 30, dz: 8, rayon: 4, metier: 'garde',
+    profil: { tenue: 'romain', transverse: true, cimier: 0x2a2a2a, objets: ['epee', 'scutum'] },
+    mots: ['Par Jupiter, encore eux !', 'Legio, en formation !',
+      'Ce village finira bien par tomber.', 'Personne ne sort du camp ce soir.'],
+  },
+  {
+    nom: 'Lucius Bavardus', role: 'légionnaire du camp', dx: 22, dz: -6, rayon: 6, metier: 'garde',
+    profil: { tenue: 'romain', objets: ['epee', 'scutum'] },
+    mots: ['J\'aurais dû rester à Rome.', 'On monte la garde, encore…',
+      'Tu n\'aurais pas vu passer un gros Gaulois ?'],
+  },
+  {
+    nom: 'Quintus Grognus', role: 'légionnaire du camp', dx: 38, dz: -8, rayon: 6, metier: 'garde',
+    profil: { tenue: 'romain', tunique: 0x9a3028, objets: ['epee', 'scutum'] },
+    mots: ['Encore une patrouille pour rien.', 'La soupe est froide.',
+      'Je préférerais garder un pont.'],
+  },
+  {
+    nom: 'Julius Optimus', role: 'général du camp', dx: 30, dz: -8, rayon: 3,
+    profil: { tenue: 'romain', tunique: 0x8a2a6a, cimier: 0xd8c44a, transverse: true, objets: ['epee'] },
+    mots: ['Rome finira par l\'emporter.', 'Apportez-moi une carte de la Gaule !',
+      'Ce petit village m\'agace prodigieusement.'],
+  },
+  {
+    nom: 'Caius Pilus', role: 'légionnaire de garde', dx: 30, dz: 17, rayon: 3, metier: 'garde',
+    profil: { tenue: 'romain', objets: ['hallebarde', 'scutum'] },
+    mots: ['Halte ! Qui va là ?', 'On ne passe pas.', 'Le camp est fermé.'],
+  },
+];
+
+const GAULOIS_BETES = [
+  ['chien', 2, -22, 2, 12, 'vive'],          // le petit chien du village
+  ['cochon', 3, -30, 14, 5, 'paisible'],
+  ['porcelet', 2, -30, 14, 4, 'vive'],
+  ['poule', 3, -14, -4, 6, 'vive'],
+  ['poule_rousse', 2, -14, -4, 6, 'vive'],
+  ['coq', 1, -14, -4, 5, 'vive'],
+  ['oie', 2, -34, 4, 5, 'vive'],
+  ['mouton', 2, -40, -14, 6, 'paisible'],
+  ['chat', 1, -20, 8, 8, 'paisible'],
+  ['ane', 1, -8, -10, 4, 'paisible'],
+  // les chevaux de la cavalerie romaine
+  ['cheval', 2, 30, -20, 5, 'paisible'],
+  ['cheval_noir', 1, 34, -18, 5, 'paisible'],
+];
+
+// --- la base spatiale --------------------------------------------------------
+const ESPACE_GENS = [
+  {
+    nom: 'Commandante Vela', role: 'chef de la base', dx: -6, dz: -24, rayon: 4, metier: 'garde',
+    profil: { tenue: 'pilote', drap: 0xd86a1c, objets: ['blaster'] },
+    mots: ['Bienvenue à la base, pilote.', 'Les deux soleils se couchent tard, ici.',
+      'Ne t\'approche pas du croiseur sans autorisation.', 'Tous les appareils sont prêts au décollage.'],
+  },
+  {
+    nom: 'Rix Solane', role: 'pilote de chasseur', dx: -18, dz: -4, rayon: 5,
+    profil: { tenue: 'pilote', objets: ['blaster'] },
+    mots: ['Mon chasseur a quatre ailerons en croix.', 'On file plus vite que la lumière.',
+      'Tu veux voir la cabine ?', 'Le sable, ça encrasse tout.'],
+  },
+  {
+    nom: 'Nima Sarr', role: 'pilote de chasseur', dx: -18, dz: 20, rayon: 5,
+    profil: { tenue: 'pilote', drap: 0xe89a30, coupe: 'nattes', objets: ['blaster'] },
+    mots: ['Je pilote le chasseur du fond.', 'Trois soleils levants, trois sorties.',
+      'La cantina sert la meilleure soupe du secteur.'],
+  },
+  {
+    nom: 'Maître Orin', role: 'chevalier de l\'ordre', dx: 8, dz: 10, rayon: 5,
+    profil: { tenue: 'chevalierEspace', barbe: 0x9a9a94, cheveux: 0x9a9a94, objets: ['sabre'] },
+    mots: ['La patience est une arme.', 'Ce sabre m\'a été confié, pas donné.',
+      'Écoute avant de frapper.', 'L\'ordre veille sur ce secteur.'],
+  },
+  {
+    nom: 'Kaelis', role: 'chevalière de l\'ordre', dx: 14, dz: 4, rayon: 5,
+    profil: { tenue: 'chevalierEspace', drap: 0x5a6a7a, capuche: 0x3a4a5a, coupe: 'nattes',
+      lame: 0x6ae87a, objets: ['sabre'] },
+    mots: ['Ma lame est verte, celle de mon maître est bleue.',
+      'On s\'entraîne à l\'aube, avant la chaleur.', 'Tu tiendrais un sabre, toi ?'],
+  },
+  {
+    nom: 'L\'Ombre', role: 'chevalier noir', dx: -26, dz: -22, rayon: 6, metier: 'garde',
+    profil: { tenue: 'chevalierEspace', drap: 0x1a1a20, capuche: 0x121216,
+      lame: 0xd83a2a, objets: ['sabre'] },
+    mots: ['…', 'Tu n\'aurais pas dû venir ici.', 'Le croiseur est à moi.',
+      'Ta présence m\'est connue.'],
+  },
+  {
+    nom: 'TX-9', role: 'droïde de protocole', dx: 2, dz: 16, rayon: 5, metier: 'porte',
+    profil: { tenue: 'droide' },
+    mots: ['Je maîtrise six millions de formes de communication.',
+      'Les probabilités ne nous sont pas favorables.', 'Oh, mon circuit !',
+      'Puis-je vous être utile ?'],
+  },
+  {
+    nom: 'V2-BO', role: 'droïde mécanicien', dx: -14, dz: 12, rayon: 6, metier: 'forge',
+    profil: { tenue: 'droide', metal: 0xbcbcc4, objets: ['marteau'] },
+    mots: ['Bip bip.', 'Le réacteur trois fuit encore.', 'Bzzt… réparation en cours.'],
+  },
+  {
+    nom: 'Soldat TK-40', role: 'garde de la base', dx: 22, dz: -12, rayon: 5, metier: 'garde',
+    profil: { tenue: 'soldat', objets: ['blaster'] },
+    mots: ['Circulez.', 'Zone sous surveillance.', 'Vos papiers de vol ?'],
+  },
+  {
+    nom: 'Soldat TK-52', role: 'garde de la base', dx: 30, dz: -20, rayon: 5, metier: 'garde',
+    profil: { tenue: 'soldat', objets: ['blaster'] },
+    mots: ['Rien à signaler.', 'On a perdu deux droïdes dans le désert.',
+      'Ce casque tient chaud, tu n\'imagines pas.'],
+  },
+  {
+    nom: 'Zib le Tenancier', role: 'patron de la cantina', dx: 30, dz: 22, rayon: 3, metier: 'porte',
+    profil: { tenue: 'tablier', coiffe: 'toque', barbe: 0x3a2a1a, objets: ['panier'] },
+    mots: ['Pas de droïdes au comptoir !', 'Une boisson bleue ? C\'est la maison qui régale.',
+      'Ici, on ne pose pas de questions.', 'La musique commence dans un instant.'],
+  },
+  {
+    nom: 'Sana Vex', role: 'mécanicienne du port', dx: 16, dz: -18, rayon: 6, metier: 'forge',
+    profil: { tenue: 'tablier', coupe: 'chignon', tabColor: 0x4a4a54, objets: ['marteau', 'tenailles'] },
+    mots: ['Le cargo à disque est increvable.', 'Trois passages de sable par jour, tu parles.',
+      'Ne touche pas au réacteur, il est chaud.'],
+  },
+];
+
+const ESPACE_BETES = [
+  ['chien', 2, 24, 26, 10, 'vive'],
+  ['chat_roux', 1, 30, 28, 8, 'paisible'],
+  ['poule', 2, 34, 34, 5, 'vive'],
+  ['ane', 1, -34, 24, 5, 'paisible'],
+];
+
 // espèce, effectif, position de l'enclos (relative au château), rayon, humeur
 const FORTERESSE_BETES = [
   // Le bourg est au nord, au-delà de la douve : c'est là que vit la basse-cour.
@@ -428,6 +627,8 @@ const SOLS = new Set([
   BLOCK.SANDSTONE, BLOCK.MOSSY, BLOCK.PLANK, BLOCK.STONEBRICK, BLOCK.SLAB_STONE,
   BLOCK.SLAB_COBBLE, BLOCK.SLAB_PLANK,
   580, 581, 584,   // tuffeau, tuffeau taillé et allées de Villandry
+  DECOR_START + 19 * 10, DECOR_START + 23 * 10, DECOR_START + 24 * 10,  // roche, dalles et métal de la base spatiale
+  DECOR_START + 18 * 10,   // les sols de terre battue du village gaulois
 ]);
 
 function hauteurSol(world, x, z) {
@@ -532,6 +733,8 @@ export function createVie({ scene, world, player, toast }) {
   const sites = [
     creerSite(scene, world, player, toast, CASTLE, FORTERESSE, FORTERESSE_BETES, 0),
     creerSite(scene, world, player, toast, VILLANDRY, VILLANDRY_GENS, VILLANDRY_BETES, 2),
+    creerSite(scene, world, player, toast, GAULOIS, GAULOIS_GENS, GAULOIS_BETES, 4),
+    creerSite(scene, world, player, toast, ESPACE, ESPACE_GENS, ESPACE_BETES, 1),
   ];
 
   // Les habitants rejoignent la troupe animée par la boucle principale ; les

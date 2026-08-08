@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT, GAULOIS, ESPACE } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -1088,6 +1088,7 @@ function prefsPayload() {
     // Les questions déjà acquises voyagent avec l'enfant : sans cela, changer
     // d'appareil lui rendrait tout ce qu'il avait fini par savoir.
     acquis: Object.fromEntries([...edu.acquis]),
+    acquisNiveau: Object.fromEntries([...edu.acquisNiveau]),
     sessionMin: edu.sessionMinutes(),
     live: presenceNow(),
   };
@@ -2633,7 +2634,8 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
     const acquisDistant = prefs.acquis && typeof prefs.acquis === 'object' ? prefs.acquis : null;
     if (skillsChanged || acquisDistant) {
       const recentUnion = new Set([...edu.recent, ...(Array.isArray(prefs.recent) ? prefs.recent : [])]);
-      edu.setRemoteSkills(merged, [...recentUnion].slice(-80), acquisDistant);
+      edu.setRemoteSkills(merged, [...recentUnion].slice(-80), acquisDistant,
+        prefs.acquisNiveau && typeof prefs.acquisNiveau === 'object' ? prefs.acquisNiveau : null);
       skillsChanged = skillsChanged || !!acquisDistant;
     }
   }
@@ -3035,6 +3037,8 @@ function drawOverviewMap(mapCanvas, radius) {
       else if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) color = [176, 186, 138];
       // l'aéroport se repère à son gris de béton, comme les villes
       else if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) color = [108, 112, 118];
+      else if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) color = [214, 190, 140];
+      else if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) color = [126, 158, 84];
       else if (world.cityAt(wx, wz)) color = [158, 158, 160];
       else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
       else if (h >= 58) color = [242, 250, 250];

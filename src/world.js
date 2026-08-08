@@ -3,6 +3,8 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { buildAeroport } from './aeroport.js';
+import { buildGaulois } from './gaulois.js';
+import { buildEspace } from './espace.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -383,6 +385,14 @@ export const VILLANDRY = { name: 'Château de Villandry', x: 250, z: 205, r: 92 
 // toute la carte, et il lui faut de la place, deux doublets de pistes obligent.
 export const AEROPORT = { name: 'Aéroport Charles-de-Gaulle', x: -140, z: 80, r: 92 };
 
+// Le village gaulois et, à portée de vue, le camp romain qui le surveille.
+// Posés sur la côte ouest, comme en Armorique.
+export const GAULOIS = { name: 'Village gaulois', x: -420, z: 300, r: 76 };
+
+// La base spatiale, sur une planète de sable à l'autre bout de la carte : un
+// astroport, sa flotte au sol et sa cantina.
+export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
+
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
 // plat : c'est ce liseré surélevé qui les rend reconnaissables de loin.
 function cratere(d, rayon) {
@@ -399,7 +409,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -702,6 +712,8 @@ const LANDMARKS = [
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
   { name: 'Aéroport Charles-de-Gaulle', x: AEROPORT.x, z: AEROPORT.z, box: 70, build: buildAeroport },
+  { name: 'Village gaulois', x: GAULOIS.x, z: GAULOIS.z, box: 62, build: buildGaulois },
+  { name: 'Base spatiale', x: ESPACE.x, z: ESPACE.z, box: 64, build: buildEspace },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -805,6 +817,23 @@ export class World {
       h = h * (1 - m) + 35 * m;
     }
 
+    // Le village gaulois et le camp romain : une clairière plate au bord de la
+    // mer. Le raccord se fait sur vingt-cinq blocs, assez pour que la côte
+    // reste une côte au lieu d'une falaise.
+    const gd = Math.hypot(x - GAULOIS.x, z - GAULOIS.z);
+    if (gd < GAULOIS.r) {
+      const m = Math.min(1, (GAULOIS.r - gd) / 25);
+      h = h * (1 - m) + 34 * m;
+    }
+
+    // La base spatiale : une plaine de sable rigoureusement plate, comme
+    // l'aéroport — on y fait décoller des vaisseaux.
+    const ed = Math.hypot(x - ESPACE.x, z - ESPACE.z);
+    if (ed < ESPACE.r) {
+      const m = Math.min(1, (ESPACE.r - ed) / 18);
+      h = h * (1 - m) + 36 * m;
+    }
+
     // the desert: gentle sandy dunes
     const dd = Math.hypot(x - DESERT.x, z - DESERT.z);
     if (dd < DESERT.r) {
@@ -869,6 +898,9 @@ export class World {
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
     if (Math.hypot(x - AEROPORT.x, z - AEROPORT.z) < AEROPORT.r) return null;     // pas d'arbre au milieu des pistes
+    // au village, les arbres sont plantés par le constructeur, pas au hasard
+    if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;
+    if (Math.hypot(x - ESPACE.x, z - ESPACE.z) < ESPACE.r) return null;   // rien ne pousse ici
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
     if (di < ISLAND.r) {
