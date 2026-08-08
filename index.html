@@ -843,6 +843,37 @@
     }
     .fermer-msg:hover { background: rgba(255,255,255,0.3); }
 
+    /* La carte qui propose les alertes.
+       Elle existe parce qu'on ne PEUT pas demander l'autorisation tout seul :
+       Safari — donc l'iPad — n'accepte requestPermission() que depuis un vrai
+       appui. Une demande lancée par un minuteur est ignorée en silence. Cette
+       carte est donc le geste : c'est le bouton « Oui » qui déclenche la
+       demande, et rien d'autre. */
+    #notif-carte {
+      display: none; position: fixed; z-index: 22;
+      left: 50%; transform: translateX(-50%);
+      bottom: calc(118px + var(--safe-bottom));
+      /* Étroite à dessein : plus large, elle venait chevaucher les boutons
+         ronds de droite et le rail de gauche, et l'enfant appuyait à côté. */
+      width: min(300px, calc(100vw - 150px));
+      padding: 12px 14px 12px; border-radius: 14px;
+      background: rgba(28, 42, 66, 0.96); border: 1px solid rgba(160, 210, 255, 0.45);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4); color: #eaf3ff;
+      font-size: 14px; line-height: 1.35; text-align: center; pointer-events: auto;
+    }
+    #notif-carte.on { display: block; }
+    /* la croix au coin, pas à mi-hauteur comme sur les bandeaux d'une ligne */
+    #notif-carte .fermer-msg { top: 7px; right: 7px; transform: none; }
+    /* le titre s'arrête avant la croix, sinon la dernière lettre passe dessous */
+    #notif-carte b { display: block; font-size: 15px; margin-bottom: 4px; padding: 0 22px; }
+    #notif-carte .notif-boutons { display: flex; gap: 8px; margin-top: 11px; }
+    #notif-carte button.notif-b {
+      flex: 1; padding: 9px 8px; border-radius: 10px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    #notif-oui { background: #3f9b52; color: #fff; }
+    #notif-plus-tard { background: rgba(255, 255, 255, 0.14); color: #cfe0f4; }
+
     /* Le bouton en ligne, barré quand il n'y a pas de connexion : une icône
        vaut mieux qu'une phrase qui occupe une ligne en permanence. */
     #online-btn.offline { opacity: 0.5; position: relative; }
@@ -1186,6 +1217,15 @@
   </div>
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
+  <div id="notif-carte">
+    <button class="fermer-msg" id="notif-carte-close" aria-label="Fermer">✕</button>
+    <b id="notif-carte-titre">🔔 Être prévenu quand un ami arrive ?</b>
+    <span id="notif-carte-texte">Ton iPad t'avertira même si le jeu n'est pas à l'écran.</span>
+    <div class="notif-boutons">
+      <button class="notif-b" id="notif-plus-tard">Plus tard</button>
+      <button class="notif-b" id="notif-oui">Oui, préviens-moi !</button>
+    </div>
+  </div>
   <div id="siege-chip">⚔️ Assaut au château !</div>
 
   <div id="edu-panel">
