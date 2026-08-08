@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { BaseNPC } from './marlon.js';
-import { CASTLE, VILLANDRY, GAULOIS, ESPACE } from './world.js';
+import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE } from './world.js';
 import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
 import { construireBete, BETES } from './betes.js';
@@ -96,6 +96,16 @@ class Habitant extends BaseNPC {
     } else if (this.metier === 'lit') {
       arms[0].rotation.x = -1.1;
       arms[1].rotation.x = -0.3;
+    } else if (this.metier === 'lance') {          // la lance tenue à deux mains
+      arms[1].rotation.x = -1.15 + Math.sin(this.phaseGeste * 0.9) * 0.12;
+      arms[0].rotation.x = -0.95;
+      this.mesh.rotation.y = this.yaw + Math.sin(this.phaseGeste * 0.5) * 0.35;
+    } else if (this.metier === 'talkie') {         // la radio portée à la bouche
+      arms[1].rotation.x = -2.35;
+      arms[0].rotation.x = -0.2;
+    } else if (this.metier === 'signale') {        // il règle la circulation
+      arms[0].rotation.x = -2.0;
+      arms[1].rotation.x = -0.4 + Math.sin(this.phaseGeste * 1.3) * 0.5;
     }
   }
 }
@@ -576,6 +586,210 @@ const ESPACE_BETES = [
   ['ane', 1, -34, 24, 5, 'paisible'],
 ];
 
+// La place des secours, au cœur de Paris : la caserne à l'ouest, le
+// commissariat à l'est. Ce que ces trente-là racontent est le seul contenu du
+// jeu qui puisse servir un jour pour de vrai — les numéros d'urgence, ce qu'on
+// dit au téléphone, ce qu'on fait quand ça sent la fumée. C'est pour cela
+// qu'ils sont si nombreux à en parler : on ne retient pas ce qu'on entend une
+// fois, on retient ce qu'on croise dix fois.
+//
+// Repère : la caserne est centrée sur (-17, -8), le commissariat sur (17, -8).
+const VILLE_GENS = [
+  // ----- la caserne : quinze sapeurs-pompiers -----
+  {
+    nom: 'Capitaine Roussel', role: 'chef de la caserne', dx: -17, dz: 6, rayon: 3, metier: 'garde',
+    profil: { tenue: 'pompier', objets: ['talkie'], moustache: true },
+    mots: ['En cas de feu, on appelle le 18 !', 'Le 112 marche partout en Europe.',
+      'On sort en moins de deux minutes, jour et nuit.',
+      'Le plus important, c\'est de sortir du bâtiment. Les objets, on s\'en fiche.'],
+  },
+  {
+    nom: 'Lieutenant Vasseur', role: 'officier de garde', dx: -11, dz: 5, rayon: 3, metier: 'talkie',
+    profil: { tenue: 'pompier', objets: ['talkie'] },
+    mots: ['Au téléphone, on donne l\'adresse d\'abord.', 'Puis ce qu\'on voit, puis son prénom.',
+      'On ne raccroche jamais le premier.', 'Quatre-vingts pour cent de nos sorties : du secours à personne.'],
+  },
+  {
+    nom: 'Sergent Amiot', role: 'chef d\'agrès', dx: -23, dz: 5, rayon: 3, metier: 'garde',
+    profil: { tenue: 'pompier', barbe: 0x3a2a1a, objets: ['hache'] },
+    mots: ['Cette hache ouvre une porte en trois coups.', 'On coupe le courant avant d\'arroser.',
+      'Le camion pèse quinze tonnes en charge.'],
+  },
+  {
+    nom: 'Caporal Berthier', role: 'porte-lance', dx: -27, dz: 1, rayon: 4, metier: 'lance',
+    profil: { tenue: 'pompier', ari: true, objets: ['lanceEau'] },
+    mots: ['La lance envoie cinq cents litres à la minute !',
+      'À deux mains, sinon elle part toute seule.', 'On attaque le feu par en dessous, jamais par le haut.'],
+  },
+  {
+    nom: 'Caporal Nadaud', role: 'porte-lance', dx: -12, dz: 1, rayon: 4, metier: 'lance',
+    profil: { tenue: 'pompier', ari: true, objets: ['lanceEau'] },
+    mots: ['La fumée monte : au sol, l\'air reste respirable.',
+      'On rampe pour sortir, la tête basse.', 'Ma bouteille d\'air tient trente minutes.'],
+  },
+  {
+    nom: 'Sapeur Lemoine', role: 'conducteur de la grande échelle', dx: -25, dz: -7, rayon: 3, metier: 'porte',
+    profil: { tenue: 'pompier', objets: ['extincteur'] },
+    mots: ['Mon échelle monte à trente mètres.', 'C\'est dix étages, si tu préfères.',
+      'Je cale le camion sur quatre béquilles avant de la déplier.'],
+  },
+  {
+    nom: 'Sapeur Guerrin', role: 'conducteur du fourgon', dx: -9, dz: -7, rayon: 3, metier: 'porte',
+    profil: { tenue: 'pompier', objets: ['extincteur'] },
+    mots: ['La citerne contient trois mille litres.', 'Ça vide en six minutes de lance !',
+      'Ensuite on se branche sur une bouche d\'incendie.'],
+  },
+  {
+    nom: 'Sapeur Delaunay', role: 'sapeur de garde', dx: -20, dz: -15, rayon: 3, metier: 'garde',
+    profil: { tenue: 'pompier', objets: ['hache'] },
+    mots: ['On dort ici, en tenue.', 'Le signal sonne, on est debout en dix secondes.',
+      'La perche du hangar, c\'est plus rapide que l\'escalier.'],
+  },
+  {
+    nom: 'Sapeuse Ancelin', role: 'sapeuse de garde', dx: -12, dz: -15, rayon: 3, metier: 'garde',
+    profil: { tenue: 'pompier', coupe: 'chignon', objets: ['talkie'] },
+    mots: ['Il y a des femmes pompiers depuis longtemps.',
+      'On passe le même test physique que les garçons.', 'Ma tenue pèse vingt-cinq kilos avec la bouteille.'],
+  },
+  {
+    nom: 'Infirmière Beaulieu', role: 'infirmière de la caserne', dx: -5, dz: 3, rayon: 4, metier: 'porte',
+    profil: { tenue: 'pompier', drap: 0x2a3a58, coupe: 'chignon', objets: ['panier'] },
+    mots: ['Un brûlé, on le passe sous l\'eau froide vingt minutes.',
+      'De l\'eau tiède, en fait — jamais glacée.', 'Et on n\'enlève pas ce qui colle à la peau.'],
+  },
+  {
+    nom: 'Sapeur Coudert', role: 'sapeur plongeur', dx: -29, dz: 4, rayon: 4, metier: 'porte',
+    profil: { tenue: 'pompier', drap: 0x1a3a52, ari: true, objets: ['extincteur'] },
+    mots: ['Je plonge dans le fleuve quand il faut.', 'On ne se baigne jamais seul, jamais.',
+      'Même bon nageur : l\'eau froide coupe les jambes.'],
+  },
+  {
+    nom: 'Sapeur Vialard', role: 'sapeur cordiste', dx: -4, dz: -12, rayon: 3, metier: 'garde',
+    profil: { tenue: 'pompier', objets: ['hache'] },
+    mots: ['Je descends en rappel de la tour.',
+      'La tour sert à faire sécher les tuyaux, pas à s\'entraîner.',
+      'Cent mètres de tuyau, ça met deux jours à sécher.'],
+  },
+  {
+    nom: 'Sapeuse Fombeur', role: 'sapeuse de garde', dx: -20, dz: 9, rayon: 4, metier: 'signale',
+    profil: { tenue: 'pompier', coupe: 'nattes', objets: ['talkie'] },
+    mots: ['Écarte-toi, le camion sort !', 'Quand tu entends la sirène, tu te ranges.',
+      'Deux tons : c\'est nous. Trois tons : la police.'],
+  },
+  {
+    nom: 'Sapeur Ollivier', role: 'sapeur de garde', dx: -14, dz: 10, rayon: 4, metier: 'porte',
+    profil: { tenue: 'pompier', objets: ['extincteur'] },
+    mots: ['Un détecteur de fumée par étage, c\'est la loi.',
+      'Teste le tien une fois par mois, avec un grand.', 'Une pile par an, et il te réveille la nuit.'],
+  },
+  {
+    nom: 'Vétérinaire Sarlat', role: 'vétérinaire des secours', dx: -31, dz: 9, rayon: 4, metier: 'lit',
+    profil: { tenue: 'pompier', drap: 0x2a4a3a, coupe: 'chignon', objets: ['livre'] },
+    mots: ['On sort aussi les chats des arbres, oui.',
+      'Et les chiens tombés dans un trou.', 'Un animal affolé mord : on l\'approche doucement.'],
+  },
+
+  // ----- le commissariat : quinze policiers -----
+  {
+    nom: 'Commissaire Aubertin', role: 'chef du commissariat', dx: 17, dz: 6, rayon: 3, metier: 'garde',
+    profil: { tenue: 'policier', coiffe: 'kepi', moustache: true, objets: ['talkie'] },
+    mots: ['La police, c\'est le 17.', 'Perdu ? Va voir un policier, ou un commerçant.',
+      'On n\'arrête personne sans preuve.', 'Mon commissariat est ouvert jour et nuit.'],
+  },
+  {
+    nom: 'Brigadier Naveau', role: 'chef de brigade', dx: 12, dz: 6, rayon: 3, metier: 'garde',
+    profil: { tenue: 'policier', objets: ['matraque'] },
+    mots: ['On patrouille toujours à deux.', 'Un policier seul, ça n\'existe pas.',
+      'Le gyrophare bleu, c\'est nous.'],
+  },
+  {
+    nom: 'Gardienne Perrot', role: 'gardienne de la paix', dx: 22, dz: 6, rayon: 3, metier: 'talkie',
+    profil: { tenue: 'policier', coupe: 'chignon', objets: ['talkie'] },
+    mots: ['Si tu es perdu, tu restes sur place.', 'Bouger, c\'est ce qui complique tout.',
+      'Apprends le prénom entier de tes parents, ça aide.'],
+  },
+  {
+    nom: 'Gardien Chaumette', role: 'agent de la circulation', dx: 9, dz: -1, rayon: 4, metier: 'signale',
+    profil: { tenue: 'policier', objets: ['matraque'] },
+    mots: ['On traverse sur le passage piéton.', 'On regarde à gauche, à droite, encore à gauche.',
+      'Le feu vert pour les voitures, c\'est le rouge pour toi.'],
+  },
+  {
+    nom: 'Gardienne Vaudrey', role: 'agente de la circulation', dx: 25, dz: -1, rayon: 4, metier: 'signale',
+    profil: { tenue: 'policier', coupe: 'nattes', objets: ['talkie'] },
+    mots: ['Un vélo, ça roule à droite, comme les voitures.',
+      'Le casque n\'est pas une option avant douze ans.', 'On tend le bras avant de tourner.'],
+  },
+  {
+    nom: 'Lieutenant Sorel', role: 'officier de police judiciaire', dx: 10, dz: -7, rayon: 3, metier: 'lit',
+    profil: { tenue: 'policier', coiffe: 'nu', objets: ['livre'] },
+    mots: ['J\'écris le procès-verbal, mot pour mot.',
+      'Une enquête, c\'est surtout de la paperasse.', 'On croit toujours la victime, on vérifie ensuite.'],
+  },
+  {
+    nom: 'Brigadière Alard', role: 'chef de poste', dx: 24, dz: -7, rayon: 3, metier: 'porte',
+    profil: { tenue: 'policier', coupe: 'chignon', objets: ['talkie'] },
+    mots: ['Je tiens le registre des appels.', 'Chaque appel est noté, même les fausses alertes.',
+      'Un appel pour rien, ça bloque la ligne d\'un vrai.'],
+  },
+  {
+    nom: 'Gardien Fressard', role: 'gardien des cellules', dx: 14, dz: -15, rayon: 3, metier: 'garde',
+    profil: { tenue: 'policier', barbe: 0x2a2018, objets: ['matraque'] },
+    mots: ['La garde à vue dure vingt-quatre heures.',
+      'Ensuite c\'est le juge qui décide, pas nous.', 'On a le droit à un avocat, tout de suite.'],
+  },
+  {
+    nom: 'Gardien Malbec', role: 'maître-chien', dx: 20, dz: -15, rayon: 4, metier: 'porte',
+    profil: { tenue: 'policier', objets: ['talkie'] },
+    mots: ['Mon chien sent mille fois mieux que moi.',
+      'On ne caresse pas un chien de service en travail.', 'Il retrouve une personne perdue en forêt.'],
+  },
+  {
+    nom: 'Gardienne Terrasse', role: 'agente d\'accueil', dx: 17, dz: 9, rayon: 3, metier: 'porte',
+    profil: { tenue: 'policier', coupe: 'nattes', coiffe: 'nu', objets: ['livre'] },
+    mots: ['Ici, on peut déposer plainte.', 'On peut aussi juste demander son chemin.',
+      'Un objet trouvé ? Apporte-le, on le rend.'],
+  },
+  {
+    nom: 'Gardien Estève', role: 'motocycliste', dx: 5, dz: 4, rayon: 4, metier: 'garde',
+    profil: { tenue: 'policier', drap: 0x1a2038, objets: ['matraque'] },
+    mots: ['En ville, c\'est cinquante kilomètres-heure.',
+      'Trente devant les écoles.', 'La moto passe où la voiture reste coincée.'],
+  },
+  {
+    nom: 'Gardienne Ronsard', role: 'gardienne de la paix', dx: 29, dz: 4, rayon: 4, metier: 'garde',
+    profil: { tenue: 'policier', coupe: 'chignon', objets: ['matraque'] },
+    mots: ['On porte un gilet, il pèse cinq kilos.',
+      'Ce n\'est pas confortable, mais c\'est comme ça.', 'La journée fait douze heures.'],
+  },
+  {
+    nom: 'Adjudant Cabanel', role: 'gendarme en renfort', dx: 3, dz: 8, rayon: 4, metier: 'garde',
+    profil: { tenue: 'policier', coiffe: 'kepi', drap: 0x1e2440, objets: ['talkie'] },
+    mots: ['La gendarmerie s\'occupe des campagnes.',
+      'La police, des villes. On se relaie.', 'Le numéro reste le 17 dans les deux cas.'],
+  },
+  {
+    nom: 'Gardien Ferrière', role: 'agent de police scientifique', dx: 31, dz: 8, rayon: 4, metier: 'lit',
+    profil: { tenue: 'policier', coiffe: 'nu', drap: 0x2c3550, objets: ['livre'] },
+    mots: ['Chaque doigt laisse un dessin unique.',
+      'Même les vrais jumeaux ont des empreintes différentes.', 'On relève, on compare, on conclut.'],
+  },
+  {
+    nom: 'Gardien Bourdet', role: 'gardien de la paix', dx: 26, dz: -12, rayon: 3, metier: 'talkie',
+    profil: { tenue: 'policier', objets: ['talkie'] },
+    mots: ['La radio, c\'est notre fil avec le poste.',
+      'On annonce où on est avant chaque intervention.', 'Bien reçu, terminé !'],
+  },
+];
+
+const VILLE_BETES = [
+  ['chien', 2, -17, -6, 5, 'vive'],       // les chiens de la caserne
+  ['chien', 2, 20, -12, 5, 'vive'],       // les chiens du commissariat
+  ['cheval_noir', 2, 30, 6, 4, 'paisible'],  // la brigade équestre
+  ['chat', 1, -28, 6, 6, 'paisible'],
+  ['colombe', 6, 0, 4, 10, 'vive'],
+];
+
 // espèce, effectif, position de l'enclos (relative au château), rayon, humeur
 const FORTERESSE_BETES = [
   // Le bourg est au nord, au-delà de la douve : c'est là que vit la basse-cour.
@@ -629,6 +843,7 @@ const SOLS = new Set([
   580, 581, 584,   // tuffeau, tuffeau taillé et allées de Villandry
   DECOR_START + 19 * 10, DECOR_START + 23 * 10, DECOR_START + 24 * 10,  // roche, dalles et métal de la base spatiale
   DECOR_START + 18 * 10,   // les sols de terre battue du village gaulois
+  DECOR_START + 25 * 10, DECOR_START + 27 * 10,  // le sol des halles et le perron du commissariat
 ]);
 
 function hauteurSol(world, x, z) {
@@ -735,6 +950,7 @@ export function createVie({ scene, world, player, toast }) {
     creerSite(scene, world, player, toast, VILLANDRY, VILLANDRY_GENS, VILLANDRY_BETES, 2),
     creerSite(scene, world, player, toast, GAULOIS, GAULOIS_GENS, GAULOIS_BETES, 4),
     creerSite(scene, world, player, toast, ESPACE, ESPACE_GENS, ESPACE_BETES, 1),
+    creerSite(scene, world, player, toast, VILLE, VILLE_GENS, VILLE_BETES, 3),
   ];
 
   // Les habitants rejoignent la troupe animée par la boucle principale ; les

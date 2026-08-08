@@ -5,6 +5,8 @@ import { buildVillandry } from './villandry.js';
 import { buildAeroport } from './aeroport.js';
 import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
+import { buildVille } from './ville.js';
+import { buildCircuit } from './circuit.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -393,6 +395,15 @@ export const GAULOIS = { name: 'Village gaulois', x: -420, z: 300, r: 76 };
 // astroport, sa flotte au sol et sa cantina.
 export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
 
+// Les services de la ville et le métro aérien : ils sont posés SUR Paris, dont
+// la base plate porte l'anneau. Le circuit, lui, a besoin d'un grand terrain
+// nu — il est donc à l'écart, au sud-est.
+// Les coordonnées de Paris sont recopiées ici parce que CITIES est déclaré
+// plus bas dans le fichier ; le test de cohérence les compare à chaque
+// démarrage, elles ne peuvent donc pas se mettre à diverger en silence.
+export const VILLE = { name: 'Caserne & Commissariat', x: -240, z: 200, r: 50 };
+export const CIRCUIT = { name: 'Circuit de F1', x: 400, z: 110, r: 88 };
+
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
 // plat : c'est ce liseré surélevé qui les rend reconnaissables de loin.
 function cratere(d, rayon) {
@@ -409,7 +420,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -714,6 +725,8 @@ const LANDMARKS = [
   { name: 'Aéroport Charles-de-Gaulle', x: AEROPORT.x, z: AEROPORT.z, box: 70, build: buildAeroport },
   { name: 'Village gaulois', x: GAULOIS.x, z: GAULOIS.z, box: 62, build: buildGaulois },
   { name: 'Base spatiale', x: ESPACE.x, z: ESPACE.z, box: 64, build: buildEspace },
+  { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z, box: 46, build: buildVille },
+  { name: 'Circuit de F1', x: CIRCUIT.x, z: CIRCUIT.z, box: 80, build: buildCircuit },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -834,6 +847,14 @@ export class World {
       h = h * (1 - m) + 36 * m;
     }
 
+    // Le circuit : une piste qui ondule n'est plus une piste. Terrain plat
+    // jusqu'au rayon 70, raccord sur les dix-huit derniers blocs.
+    const cd = Math.hypot(x - CIRCUIT.x, z - CIRCUIT.z);
+    if (cd < CIRCUIT.r) {
+      const m = Math.min(1, (CIRCUIT.r - cd) / 18);
+      h = h * (1 - m) + 35 * m;
+    }
+
     // the desert: gentle sandy dunes
     const dd = Math.hypot(x - DESERT.x, z - DESERT.z);
     if (dd < DESERT.r) {
@@ -901,6 +922,7 @@ export class World {
     // au village, les arbres sont plantés par le constructeur, pas au hasard
     if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;
     if (Math.hypot(x - ESPACE.x, z - ESPACE.z) < ESPACE.r) return null;   // rien ne pousse ici
+    if (Math.hypot(x - CIRCUIT.x, z - CIRCUIT.z) < CIRCUIT.r - 6) return null;  // pas d'arbre sur la piste
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
     if (di < ISLAND.r) {
