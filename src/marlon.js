@@ -187,7 +187,13 @@ export class BaseNPC {
     this.onGround = false;
     this.animTime = 0;
     this.speechTimer = opts.firstSpeech ?? 6;
-    this.mesh = buildKidMesh(opts.look);
+    // Les gens des châteaux arrivent avec leur propre modèle, sculpté par
+    // l'atelier de personnages.js. Les enfants du village gardent le leur.
+    this.mesh = opts.build ? opts.build() : buildKidMesh(opts.look);
+    // Un adulte est plus haut qu'un enfant : sa boîte de collision suit, sinon
+    // il traverse les linteaux et flotte au-dessus des marches.
+    this.largeur = opts.largeur ?? WIDTH;
+    this.hauteur = opts.hauteur ?? NPC_HEIGHT;
     scene.add(this.mesh);
   }
 
@@ -232,6 +238,10 @@ export class BaseNPC {
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw;
 
+    // Après le balancement de la marche, l'artisan peut plaquer son propre
+    // geste — frapper l'enclume, ratisser — par-dessus les mêmes bras.
+    if (this.geste) this.geste(dt, speed);
+
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {
       this.speechTimer = 18 + Math.random() * 22;
@@ -248,10 +258,10 @@ export class BaseNPC {
     const keys = ['x', 'y', 'z'];
     const key = keys[axis];
     this.pos[key] += delta;
-    const half = WIDTH / 2;
+    const half = this.largeur / 2;
     const eps = 1e-4;
     const minX = Math.floor(this.pos.x - half + eps), maxX = Math.floor(this.pos.x + half - eps);
-    const minY = Math.floor(this.pos.y + eps), maxY = Math.floor(this.pos.y + NPC_HEIGHT - eps);
+    const minY = Math.floor(this.pos.y + eps), maxY = Math.floor(this.pos.y + this.hauteur - eps);
     const minZ = Math.floor(this.pos.z - half + eps), maxZ = Math.floor(this.pos.z + half - eps);
     for (let by = minY; by <= maxY; by++) {
       for (let bz = minZ; bz <= maxZ; bz++) {
@@ -262,7 +272,7 @@ export class BaseNPC {
           if (this.pos.y >= topY - eps && (axis !== 1 || delta < 0)) continue;
           if (axis === 0) this.pos.x = delta > 0 ? bx - half - eps : bx + 1 + half + eps;
           else if (axis === 1) {
-            if (delta > 0) this.pos.y = by - NPC_HEIGHT - eps;
+            if (delta > 0) this.pos.y = by - this.hauteur - eps;
             else { this.pos.y = topY + eps; this.onGround = true; }
           } else this.pos.z = delta > 0 ? bz - half - eps : bz + 1 + half + eps;
           this.vel[key] = 0;
@@ -278,7 +288,7 @@ export class BaseNPC {
     const dir = new THREE.Vector3();
     this.player.camera.getWorldDirection(dir);
     const eye = this.player.eyePosition();
-    const to = this.pos.clone(); to.y += NPC_HEIGHT * 0.7;
+    const to = this.pos.clone(); to.y += this.hauteur * 0.7;
     to.sub(eye);
     const d = to.length();
     if (d > 14) return false;

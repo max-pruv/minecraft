@@ -10,6 +10,7 @@ import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
+import { createVie } from './vie.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -108,6 +109,7 @@ let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
 let siege = null;
+let vie = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -275,6 +277,10 @@ function updateChunks() {
   // personnages, c'est la boucle principale qui les anime
   siege = createSiege({ scene, world, player, toast: say, emojiBurst, clang: () => cliquetis() });
   npcs.push(...siege.npcs);
+  // Le petit peuple des deux châteaux : artisans, gens de maison, jardiniers,
+  // et toute la basse-cour. Chaque site dort tant que l'enfant n'y est pas.
+  vie = createVie({ scene, world, player, toast: say });
+  npcs.push(...vie.npcs);
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -3312,8 +3318,9 @@ window.__fx = effects;
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__vueCarte = () => overviewView;
+window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
@@ -3334,9 +3341,11 @@ function frame(now) {
     // collision forcerait à garder en mémoire des chunks à l'autre bout de la
     // carte.
     for (const npc of npcs) {
+      if (!npc.mesh.visible) continue;
       if (npc.pos.distanceToSquared(player.pos) < 140 * 140) npc.update(dt);
     }
     siege?.update(dt);
+    vie?.update(dt);
   } else {
     player.syncCamera();
   }
