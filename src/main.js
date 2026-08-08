@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -1037,6 +1037,9 @@ function prefsPayload() {
     // the adaptive quiz engine's per-skill levels & recent-question memory
     // follow the child too, so switching devices mid-progress is seamless
     skills: edu.skills, recent: [...edu.recent],
+    // Les questions déjà acquises voyagent avec l'enfant : sans cela, changer
+    // d'appareil lui rendrait tout ce qu'il avait fini par savoir.
+    acquis: Object.fromEntries([...edu.acquis]),
     sessionMin: edu.sessionMinutes(),
     live: presenceNow(),
   };
@@ -2050,7 +2053,64 @@ camBtn.addEventListener('click', async () => {
 // facilement quand on est occupé à construire : on annonce en grand, avec un
 // son, et — si l'application est en arrière-plan — par une vraie notification
 // du système, puisque c'est justement là qu'on ne regarde pas l'écran.
-let notifDemandee = false;
+// L'autorisation ne peut pas être réclamée depuis l'arrivée d'un joueur.
+//
+// C'était le défaut de la première version : requestPermission() y était appelé
+// depuis une réponse du réseau, donc hors de tout geste de l'enfant. Safari —
+// c'est-à-dire l'iPad de Marlon — exige une action directe et ignore purement
+// la demande sinon. Résultat : la permission n'était jamais accordée là où elle
+// comptait le plus. Elle se demande maintenant depuis un interrupteur des
+// Réglages, sur lequel on appuie vraiment.
+//
+// Second point, propre à iOS : l'API Notification n'existe que si le jeu a été
+// « ajouté à l'écran d'accueil ». Dans un onglet Safari, elle est absente, et
+// il faut le dire plutôt que de laisser un interrupteur mort.
+let notifProposee = false;
+const notifsDispo = () => 'Notification' in window;
+const notifsAutorisees = () => notifsDispo() && Notification.permission === 'granted';
+
+function majLigneNotif() {
+  const bouton = document.getElementById('notif-toggle');
+  const aide = document.getElementById('notif-hint');
+  if (!bouton || !aide) return;
+  if (!notifsDispo()) {
+    bouton.classList.remove('on');
+    bouton.style.opacity = '0.35';
+    aide.textContent = 'Sur iPhone et iPad, il faut d\'abord ajouter le jeu à l\'écran d\'accueil (Partager ▸ Sur l\'écran d\'accueil).';
+    return;
+  }
+  bouton.style.opacity = '1';
+  bouton.classList.toggle('on', Notification.permission === 'granted');
+  aide.textContent = Notification.permission === 'granted'
+    ? 'Activé ! Tu seras prévenu même si le jeu n\'est pas à l\'écran.'
+    : Notification.permission === 'denied'
+      ? 'Refusé. Pour changer d\'avis, va dans les réglages de ton navigateur.'
+      : 'Reçois une alerte même si le jeu n\'est pas à l\'écran.';
+}
+
+document.getElementById('notif-toggle')?.addEventListener('click', async () => {
+  if (!notifsDispo()) {
+    creatureManager.toast('📱 Ajoute d\'abord le jeu à ton écran d\'accueil !', 0x9fd8e8);
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    creatureManager.toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    creatureManager.toast('🔕 Ton navigateur a bloqué les alertes. Change-le dans ses réglages.', 0xff9a9a);
+    return;
+  }
+  // Ici, et seulement ici, on est dans un vrai geste de l'utilisateur.
+  try { await Notification.requestPermission(); } catch { /* refusé */ }
+  majLigneNotif();
+  if (Notification.permission === 'granted') {
+    creatureManager.toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
+  }
+});
+document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
+majLigneNotif();
+
 function annonceArrivee(nom) {
   const titre = document.getElementById('catch-title');
   const sous = document.getElementById('catch-sub');
@@ -2066,17 +2126,19 @@ function annonceArrivee(nom) {
   carillon([660, 990, 1320]); // trois notes qui montent : quelqu'un entre
   emojiBurst(['👋', '🎉', '✨'], 14);
 
+  // Au premier ami croisé, si l'alerte système n'est pas encore autorisée, on
+  // se contente de dire où l'activer. Demander la permission d'ici ne marche
+  // pas sur iPad, et le bandeau à l'écran a de toute façon déjà fait le travail.
+  if (notifsDispo() && Notification.permission === 'default' && !notifProposee) {
+    notifProposee = true;
+    setTimeout(() => creatureManager.toast(
+      '🔔 Astuce : dans ⚙️ Réglages, active les alertes pour être prévenu même hors du jeu.',
+      0x9fd8e8
+    ), 3600);
+  }
+
   try {
-    if (!('Notification' in window)) return;
-    // On ne demande la permission qu'au premier joueur croisé : la réclamer
-    // au lancement, avant que le mot « multijoueur » ait un sens, se solde
-    // par un refus définitif.
-    if (Notification.permission === 'default' && !notifDemandee) {
-      notifDemandee = true;
-      Notification.requestPermission().catch(() => {});
-      return;
-    }
-    if (Notification.permission !== 'granted') return;
+    if (!notifsAutorisees()) return;
     if (document.visibilityState === 'visible') return; // il est déjà là, il a vu
     const n = new Notification(`${nom} a rejoint ton monde !`, {
       body: net && net.code ? `Monde ${net.code} · ${net.playerCount()} joueurs` : 'Viens jouer !',
@@ -2513,9 +2575,13 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
       const l = merged[skill];
       if (r && (!l || (r.level || 0) > (l.level || 0))) { merged[skill] = r; skillsChanged = true; }
     }
-    if (skillsChanged) {
+    // Les questions acquises se recollent même quand aucun niveau n'a bougé :
+    // c'est le cas courant d'un enfant qui a simplement révisé ailleurs.
+    const acquisDistant = prefs.acquis && typeof prefs.acquis === 'object' ? prefs.acquis : null;
+    if (skillsChanged || acquisDistant) {
       const recentUnion = new Set([...edu.recent, ...(Array.isArray(prefs.recent) ? prefs.recent : [])]);
-      edu.setRemoteSkills(merged, [...recentUnion].slice(-80));
+      edu.setRemoteSkills(merged, [...recentUnion].slice(-80), acquisDistant);
+      skillsChanged = skillsChanged || !!acquisDistant;
     }
   }
   if (changed || skillsChanged) {
@@ -2914,6 +2980,8 @@ function drawOverviewMap(mapCanvas, radius) {
       // cette règle, le plateau martien ressortait vert comme une prairie.
       else if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) color = [176, 96, 62];
       else if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) color = [176, 186, 138];
+      // l'aéroport se repère à son gris de béton, comme les villes
+      else if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) color = [108, 112, 118];
       else if (world.cityAt(wx, wz)) color = [158, 158, 160];
       else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
       else if (h >= 58) color = [242, 250, 250];
@@ -2964,20 +3032,87 @@ function drawOverviewMap(mapCanvas, radius) {
   ctx.restore();
 }
 
+// Coordonnées du monde sous le doigt, à partir d'un événement de pointeur.
+function pointDeCarte(e) {
+  const rect = mapModalCanvas.getBoundingClientRect();
+  return {
+    x: overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2,
+    z: overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2,
+  };
+}
+
+// Pose le joueur au sol à cet endroit du monde. Le terrain lointain n'est pas
+// forcément en mémoire : on demande donc sa hauteur au générateur, qui la
+// connaît partout, plutôt que de sonder des blocs qui n'existent pas encore.
+function deposerA(wx, wz) {
+  const bx = Math.floor(wx), bz = Math.floor(wz);
+  let y = HEIGHT - 1;
+  while (y > 1 && !world.isSolid(bx, y, bz)) y--;
+  let sol = y + 1;
+  if (sol <= 2) sol = world.terrainHeight(bx, bz) + 1;   // chunk pas encore généré
+  const dansEau = sol <= WATER_LEVEL;
+  const cible = dansEau ? WATER_LEVEL + 1 : sol;
+  player.pos.set(bx + 0.5, cible + 0.2, bz + 0.5);
+  player.vel.set(0, 0, 0);
+  return { dansEau, y: cible };
+}
+
+// --- voyager depuis la carte -------------------------------------------------
+//
+// Un appui bref sur un lieu nommé y emmène, comme avant. Un appui long
+// n'importe où — y compris en pleine campagne — dépose le joueur sur place :
+// la carte est trop grande pour qu'on ne puisse rejoindre que six adresses.
+const cibleCarte = document.getElementById('map-cible');
+let appuiLong = null;         // minuterie en cours
+let voyageFait = false;       // pour que le clic qui suit ne rejoue pas le voyage
+
+function annulerAppui() {
+  clearTimeout(appuiLong);
+  appuiLong = null;
+  cibleCarte.classList.remove('arme');
+  cibleCarte.style.display = 'none';
+}
+
+mapModalCanvas.addEventListener('pointerdown', (e) => {
+  if (!overviewView) return;
+  voyageFait = false;
+  const carte = mapModalCanvas.getBoundingClientRect();
+  const carteParent = mapModalCanvas.offsetParent.getBoundingClientRect();
+  cibleCarte.style.left = `${e.clientX - carteParent.left}px`;
+  cibleCarte.style.top = `${e.clientY - carteParent.top}px`;
+  cibleCarte.style.display = 'block';
+  void cibleCarte.offsetWidth;
+  cibleCarte.classList.add('arme');
+  const depart = { x: e.clientX, y: e.clientY };
+  const p = pointDeCarte(e);
+  mapModalCanvas._depart = depart;
+  appuiLong = setTimeout(() => {
+    annulerAppui();
+    voyageFait = true;
+    const { dansEau } = deposerA(p.x, p.z);
+    mapModal.style.display = 'none';
+    creatureManager.toast(
+      dansEau ? '🌊 Téléporté en pleine mer — nage jusqu\'à la terre !' : '✨ Téléporté ! Bon voyage.',
+      dansEau ? 0x6ec8ff : 0xffd75e
+    );
+  }, 550);
+});
+mapModalCanvas.addEventListener('pointermove', (e) => {
+  const d = mapModalCanvas._depart;
+  if (appuiLong && d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12) annulerAppui();
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+  mapModalCanvas.addEventListener(ev, annulerAppui);
+}
+
 // tap a city on the overview to travel there
 mapModalCanvas.addEventListener('click', (e) => {
   if (!overviewView) return;
-  const rect = mapModalCanvas.getBoundingClientRect();
-  const size = mapModalCanvas.width;
-  const wx = overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2;
-  const wz = overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2;
+  if (voyageFait) { voyageFait = false; return; }   // l'appui long a déjà voyagé
+  const { x: wx, z: wz } = pointDeCarte(e);
   for (const c of [...CITIES, ...PLACES]) {
     if (Math.hypot(wx - c.x, wz - c.z) < Math.max(60, c.r)) {
-      const tx = c.x + 1.5, tz = c.z + 1.5; // on the street grid, not in a house
-      let y = HEIGHT - 1;
-      while (y > 1 && !world.isSolid(Math.floor(tx), y, Math.floor(tz))) y--;
-      player.pos.set(tx, y + 1.2, tz);
-      player.vel.set(0, 0, 0);
+      deposerA(c.x + 1.5, c.z + 1.5);   // on the street grid, not in a house
       mapModal.style.display = 'none';
       creatureManager.toast(`🧳 Voyage vers ${c.name} !`, 0xffd75e);
       return;

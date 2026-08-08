@@ -2,6 +2,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
+import { buildAeroport } from './aeroport.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -377,6 +378,11 @@ export const MARS = { name: 'Planète Mars', x: -520, z: -480, r: 90 };
 // le vrai site aménagé au-dessus du Cher.
 export const VILLANDRY = { name: 'Château de Villandry', x: 250, z: 205, r: 92 };
 
+// L'aéroport Charles-de-Gaulle, au nord-est de Paris — comme le vrai Roissy.
+// Un aérodrome exige une planéité absolue : c'est le terrain le plus aplani de
+// toute la carte, et il lui faut de la place, deux doublets de pistes obligent.
+export const AEROPORT = { name: 'Aéroport Charles-de-Gaulle', x: -140, z: 80, r: 92 };
+
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
 // plat : c'est ce liseré surélevé qui les rend reconnaissables de loin.
 function cratere(d, rayon) {
@@ -393,7 +399,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT,
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -695,6 +701,7 @@ const LANDMARKS = [
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
+  { name: 'Aéroport Charles-de-Gaulle', x: AEROPORT.x, z: AEROPORT.z, box: 70, build: buildAeroport },
   { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
@@ -785,6 +792,19 @@ export class World {
       h = h * (1 - m) + 34 * m;
     }
 
+    // L'aéroport : plat jusqu'au dernier bloc, et sur un large rayon. Une piste
+    // qui ondule n'est pas une piste ; le raccord au terrain naturel se fait
+    // donc sur une trentaine de blocs, bien plus doucement qu'ailleurs.
+    // Le raccord au terrain naturel se fait sur les vingt derniers blocs
+    // seulement : tout l'intérieur, jusqu'au rayon 72, est rigoureusement plat.
+    // Avec un raccord plus long, les bouts de piste retombaient dans la pente
+    // et le tarmac flottait au-dessus du vide.
+    const ad = Math.hypot(x - AEROPORT.x, z - AEROPORT.z);
+    if (ad < AEROPORT.r) {
+      const m = Math.min(1, (AEROPORT.r - ad) / 20);
+      h = h * (1 - m) + 35 * m;
+    }
+
     // the desert: gentle sandy dunes
     const dd = Math.hypot(x - DESERT.x, z - DESERT.z);
     if (dd < DESERT.r) {
@@ -848,6 +868,7 @@ export class World {
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
+    if (Math.hypot(x - AEROPORT.x, z - AEROPORT.z) < AEROPORT.r) return null;     // pas d'arbre au milieu des pistes
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
     if (di < ISLAND.r) {
