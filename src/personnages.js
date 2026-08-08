@@ -607,6 +607,87 @@ const TENUES = {
     a.sphere(p.fichu || 0xc85a5a, { p: [0, H.tete + 0.06, 0.048], e: [0.3, 0.31, 0.29], seg: 12 });
     a.sphere(p.fichu || 0xc85a5a, { p: [0, H.tete - 0.02, 0.16], e: [0.16, 0.14, 0.14], seg: 8 });
   },
+
+  // Le sapeur-pompier français : veste bleu marine à bandes rétroréfléchissantes
+  // argent et jaune, casque F1 doré à bavolet de nuque et visière relevée.
+  // C'est le casque qui fait qu'on le reconnaît de loin, alors il est marqué.
+  pompier(a, p) {
+    const VESTE = p.drap || 0x1e2c48, BANDE = 0xd8dee4, FLUO = 0xd8e030;
+    torse(a, p, VESTE);
+    jambes(a, p, { bas: VESTE, chaussure: 0x1a1a20, hauteurBotte: H.genou });
+    bras(a, p, { manche: VESTE, main: 0x2a2a30 });
+    a.membre('tronc');
+    a.sphere(VESTE, { p: [0, H.poitrine, 0], e: [0.45, 0.4, 0.32], seg: 14 });
+    a.cylindre(VESTE, { p: [0, H.taille - 0.02, 0], e: [0.36, 0.22, 0.28], haut: 0.5, bas: 0.58, seg: 12 });
+    // les bandes rétroréfléchissantes : une au thorax, une à l'ourlet
+    for (const [y, r] of [[H.poitrine - 0.11, 0.455], [H.hanche + 0.04, 0.4]]) {
+      a.cylindre(BANDE, { p: [0, y, 0], e: [r, 0.055, r * 0.72], haut: 0.5, bas: 0.5, seg: 14 });
+      a.cylindre(FLUO, { p: [0, y - 0.06, 0], e: [r, 0.045, r * 0.72], haut: 0.5, bas: 0.5, seg: 14 });
+    }
+    // les bandes de manche
+    for (const s of [-1, 1]) {
+      a.membre(s < 0 ? 'brasG' : 'brasD', [s * ECART_BRAS, H.epaule, 0]);
+      a.cylindre(BANDE, {
+        p: [s * (ECART_BRAS + 0.045), H.epaule - 0.44, 0.01], e: [0.135, 0.05, 0.135],
+        haut: 0.5, bas: 0.5, seg: 8,
+      });
+    }
+    a.membre('tronc');
+    ceinture(a, 0x2a2a30, H.taille - 0.06, 0xc8ccd4);
+    // le bloc respiratoire dans le dos, pour ceux qui entrent dans le feu
+    if (p.ari) {
+      a.cylindre(0xd8b02a, { p: [0, H.poitrine - 0.02, 0.26], e: [0.16, 0.6, 0.16], haut: 0.5, bas: 0.5, seg: 10 });
+      a.sphere(0x3a3a44, { p: [0, H.poitrine + 0.3, 0.24], e: [0.14, 0.1, 0.14], seg: 8 });
+    }
+    // le casque F1 : coque dorée, bavolet articulé, visière relevée sur le front
+    a.sphere(0xd8b43c, { p: [0, H.tete + 0.05, 0.02], e: [0.335, 0.33, 0.35], seg: 14 });
+    a.cylindre(0xd8b43c, { p: [0, H.tete - 0.06, 0.06], e: [0.36, 0.09, 0.38], haut: 0.5, bas: 0.5, seg: 14 });
+    a.boite(0x2a2a30, { p: [0, H.tete + 0.13, -0.13], e: [0.26, 0.09, 0.07] });     // visière relevée
+    a.demiSphere(0x1e2c48, { p: [0, H.cou + 0.04, 0.13], r: [Math.PI, 0, 0], e: [0.36, 0.3, 0.26], seg: 12 });
+    // la crête du casque et l'écusson
+    for (let k = -2; k <= 2; k++) {
+      a.sphere(0xc8a02a, { p: [0, H.tete + 0.2 - Math.abs(k) * 0.012, 0.02 + k * 0.055], e: [0.06, 0.09, 0.07], seg: 6 });
+    }
+    a.sphere(0xc02a2a, { p: [0, H.tete + 0.07, -0.17], e: [0.1, 0.11, 0.03], seg: 8 });
+  },
+
+  // Le policier : chemise et pantalon bleu nuit, gilet tactique avec l'écusson,
+  // ceinturon d'intervention. Casquette pour la police, képi pour la gendarmerie.
+  policier(a, p) {
+    const TENUE = p.drap || 0x232b46, GILET = p.gilet || 0x1a2038;
+    torse(a, p, TENUE);
+    jambes(a, p, { bas: TENUE, chaussure: 0x18181e });
+    bras(a, p, { manche: TENUE, main: p.teint });
+    a.membre('tronc');
+    a.sphere(TENUE, { p: [0, H.poitrine, 0], e: [0.43, 0.38, 0.3], seg: 14 });
+    // le gilet, plus épais que la chemise : c'est lui qui donne la carrure
+    a.sphere(GILET, { p: [0, H.poitrine - 0.02, 0], e: [0.48, 0.42, 0.35], seg: 14 });
+    a.boite(0xe8ecf2, { p: [0, H.poitrine + 0.06, -0.175], e: [0.24, 0.05, 0.03] });   // le mot POLICE
+    for (const s of [-1, 1]) {   // les poches de chargeurs
+      a.boite(0x2c3550, { p: [s * 0.17, H.poitrine - 0.18, -0.16], e: [0.11, 0.14, 0.05] });
+    }
+    ceinture(a, 0x18181e, H.taille - 0.03, 0xb8bcc4);
+    for (const s of [-1, 1]) {   // l'étui et les menottes au ceinturon
+      a.boite(0x18181e, { p: [s * 0.19, H.taille - 0.16, 0.02], e: [0.08, 0.2, 0.11] });
+    }
+    // l'écusson d'épaule
+    a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);
+    a.sphere(0xd8dce4, { p: [-(ECART_BRAS + 0.075), H.epaule - 0.16, -0.02], e: [0.09, 0.11, 0.06], seg: 8 });
+    a.membre('tronc');
+    // la coiffure : casquette à visière, ou képi à fond plat
+    if (p.coiffe === 'kepi') {
+      a.cylindre(0x1a2038, { p: [0, H.tete + 0.16, 0.01], e: [0.29, 0.2, 0.29], haut: 0.56, bas: 0.5, seg: 14 });
+      a.cylindre(0x14182c, { p: [0, H.tete + 0.26, 0.01], e: [0.33, 0.035, 0.33], haut: 0.5, bas: 0.5, seg: 14 });
+      a.cylindre(0xc8a83c, { p: [0, H.tete + 0.075, 0.01], e: [0.3, 0.035, 0.3], haut: 0.5, bas: 0.5, seg: 14 });
+    } else if (p.coiffe !== 'nu') {
+      a.demiSphere(0x1a2038, { p: [0, H.tete + 0.05, 0.02], e: [0.31, 0.24, 0.32], seg: 14 });
+      a.cylindre(0x1a2038, { p: [0, H.tete + 0.06, 0.02], e: [0.31, 0.07, 0.32], haut: 0.5, bas: 0.5, seg: 14 });
+      a.boite(0x14182c, { p: [0, H.tete + 0.045, -0.19], r: [0.25, 0, 0], e: [0.26, 0.03, 0.14] });
+    }
+    if (p.coiffe !== 'nu') {
+      a.sphere(0xd8dce4, { p: [0, H.tete + 0.13, -0.15], e: [0.08, 0.07, 0.04], seg: 8 });
+    }
+  },
 };
 
 // --- ce qu'ils portent dans les mains ----------------------------------------
@@ -824,6 +905,51 @@ const OBJETS = {
     a.cylindre(0x3a3a44, { p: [x, y - 0.06, z - 0.4], r: [Math.PI / 2, 0, 0], e: [0.05, 0.18, 0.05], haut: 0.5, bas: 0.5, seg: 8 });
     a.boite(0x1a1a20, { p: [x, y - 0.2, z - 0.02], e: [0.05, 0.16, 0.07] });
     a.boite(0x9aa0aa, { p: [x, y + 0.02, z - 0.2], e: [0.03, 0.05, 0.12] });
+  },
+  // La lance à incendie : le tuyau part de la main, fait une boucle au sol et
+  // remonte — sans cette boucle, on ne voyait qu'un bâton tenu de travers.
+  lanceEau(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.cylindre(0xc8ccd4, { p: [x, y + 0.02, z - 0.28], r: [Math.PI / 2, 0, 0], e: [0.075, 0.5, 0.075], haut: 0.5, bas: 0.5, seg: 8 });
+    a.cone(0xb03030, { p: [x, y + 0.02, z - 0.6], r: [-Math.PI / 2, 0, 0], e: [0.09, 0.18, 0.09], seg: 8 });
+    a.tore(0xd8b02a, { p: [x, y + 0.02, z - 0.22], r: [Math.PI / 2, 0, 0], tube: 0.22, e: [0.11, 0.11, 0.11], seg: 8 });
+    // le tuyau, en trois tronçons qui descendent vers le sol
+    const pts = [[x, y - 0.02, z - 0.06], [x + 0.1, y - 0.42, z + 0.16], [x + 0.02, 0.09, z + 0.34], [x - 0.3, 0.07, z + 0.5]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      a.membreGalbe(0xd8d0c0, { de: pts[i], a: pts[i + 1], r1: 0.045, seg: 6 });
+    }
+  },
+  hache(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.cylindre(0x8a5a2a, { p: [x, y - 0.24, z], e: [0.045, 0.62, 0.045], haut: 0.5, bas: 0.5, seg: 8 });
+    a.boite(0xc8ccd4, { p: [x, y - 0.56, z - 0.06], e: [0.05, 0.16, 0.2] });
+    a.cone(0xc8ccd4, { p: [x, y - 0.56, z - 0.19], r: [-Math.PI / 2, 0, 0], e: [0.05, 0.12, 0.16], seg: 6 });
+    a.cone(0xc8ccd4, { p: [x, y - 0.56, z + 0.08], r: [Math.PI / 2, 0, 0], e: [0.05, 0.12, 0.06], seg: 6 });
+  },
+  extincteur(a) {
+    a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);
+    const x = -(ECART_BRAS + 0.1), y = H.epaule - 0.62, z = 0.02;
+    a.cylindre(0xc02a2a, { p: [x, y - 0.2, z], e: [0.15, 0.42, 0.15], haut: 0.48, bas: 0.48, seg: 10 });
+    a.demiSphere(0xc02a2a, { p: [x, y + 0.01, z], e: [0.15, 0.09, 0.15], seg: 10 });
+    a.cylindre(0x2a2a30, { p: [x, y + 0.08, z], e: [0.05, 0.1, 0.05], haut: 0.5, bas: 0.5, seg: 6 });
+    a.boite(0x2a2a30, { p: [x, y + 0.13, z - 0.05], e: [0.04, 0.03, 0.12] });
+    a.cylindre(0x1a1a20, { p: [x - 0.02, y - 0.08, z - 0.14], r: [0.5, 0, 0.3], e: [0.03, 0.3, 0.03], haut: 0.5, bas: 0.5, seg: 6 });
+    a.cylindre(0xe8e4d8, { p: [x, y - 0.34, z], e: [0.16, 0.06, 0.16], haut: 0.5, bas: 0.5, seg: 10 });
+  },
+  matraque(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.cylindre(0x1e1e26, { p: [x, y - 0.2, z], e: [0.038, 0.46, 0.038], haut: 0.5, bas: 0.42, seg: 8 });
+    a.cylindre(0x3a3a44, { p: [x, y + 0.02, z], e: [0.05, 0.1, 0.05], haut: 0.5, bas: 0.5, seg: 8 });
+  },
+  talkie(a) {
+    a.membre('brasD', [ECART_BRAS, H.epaule, 0]);
+    const [x, y, z] = MAIN_D;
+    a.boite(0x1e1e26, { p: [x, y + 0.03, z - 0.05], e: [0.07, 0.18, 0.05] });
+    a.cylindre(0x1e1e26, { p: [x, y + 0.19, z - 0.05], e: [0.018, 0.18, 0.018], haut: 0.5, bas: 0.5, seg: 6 });
+    a.boite(0x6ad8a0, { p: [x, y + 0.08, z - 0.08], e: [0.04, 0.03, 0.02] });
   },
   bouclier(a, p) {
     a.membre('brasG', [-ECART_BRAS, H.epaule, 0]);

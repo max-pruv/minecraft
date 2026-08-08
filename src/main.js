@@ -5,12 +5,15 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT, GAULOIS, ESPACE } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT, GAULOIS, ESPACE, VILLE, CIRCUIT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
+import { createVehicules } from './vehicules.js';
+import { traceAnneau } from './ville.js';
+import { traceCourse } from './circuit.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -110,6 +113,7 @@ let cornichon = null;
 let npcs = [];
 let siege = null;
 let vie = null;
+let vehicules = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -287,6 +291,13 @@ function updateChunks() {
   // et toute la basse-cour. Chaque site dort tant que l'enfant n'y est pas.
   vie = createVie({ scene, world, player, toast: say });
   npcs.push(...vie.npcs);
+
+  // Ce qui roule tout seul : les rames du métro aérien autour de la ville, et
+  // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
+  // eux-mêmes, si bien qu'un train ne peut pas rouler à côté de sa voie.
+  vehicules = createVehicules({ scene, player });
+  vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
+  vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
 })();
 
 // --- block highlight -----------------------------------------------------------
@@ -3039,6 +3050,7 @@ function drawOverviewMap(mapCanvas, radius) {
       else if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) color = [108, 112, 118];
       else if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) color = [214, 190, 140];
       else if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) color = [126, 158, 84];
+      else if (Math.hypot(wx - CIRCUIT.x, wz - CIRCUIT.z) < CIRCUIT.r - 10) color = [96, 108, 96];
       else if (world.cityAt(wx, wz)) color = [158, 158, 160];
       else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
       else if (h >= 58) color = [242, 250, 250];
@@ -3511,6 +3523,7 @@ window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__vueCarte = () => overviewView;
 window.__alerte = (k, v, t) => alerte(k, v, t);
+window.__vehicules = { etat: () => vehicules?.etat() };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
@@ -3539,6 +3552,7 @@ function frame(now) {
     }
     siege?.update(dt);
     vie?.update(dt);
+    vehicules?.update(dt);
     majPastilleSiege();
   } else {
     player.syncCamera();
