@@ -12,6 +12,14 @@ const PARENT_CODE = '135246';
 const MARATHON_CORRECT = 20;         // answering these unlocks another block
 const STORAGE_KEY = 'web-minecraft-edu-v1';
 const RECENT_CAP = 80;          // question keys remembered to avoid repeats
+// Une question réussie MAITRISE fois d'affilée du premier coup est acquise :
+// on cesse de la proposer et on va en chercher une neuve. Une erreur, ou une
+// bonne réponse qui n'arrive qu'à la seconde tentative, remet le compteur à
+// zéro — c'est bien « sans hésiter » qu'on mesure, pas « fini par trouver ».
+const MAITRISE = 3;
+const ACQUIS_CAP = 900;         // les générateurs de maths produisent des clés
+                                // presque toutes différentes : sans plafond, la
+                                // table enflerait sans fin dans le stockage.
 const MIN_ANSWER_DELAY = 0.8;   // clicks faster than this are ignored (s)
 const FAST_WRONG_DELAY = 2.5;   // a wrong answer faster than this is suspicious
 const FREEZE_SECONDS = 10;
@@ -246,7 +254,11 @@ const MATH_GENS = [
         ? `Dans le nombre ${n}, quel est le chiffre des ${digits[di]} ?`
         : `In the number ${n}, what is the ${enDigits[di]} digit?`,
       correct: String(Number(answer)),
-      wrongs: shuffle([...new Set(String(n).split('').map(Number))].filter((d) => String(d) !== String(Number(answer))).concat([9, 0, 5, 3]).map(String)).slice(0, 3),
+      // Le filtre doit venir APRÈS le complément : appliqué avant, les chiffres
+      // de secours 9, 0, 5 et 3 remettaient la bonne réponse parmi les fausses,
+      // et l'enfant se voyait refuser un bouton qui portait le bon chiffre.
+      wrongs: shuffle([...new Set([...String(n).split('').map(Number), 9, 0, 5, 3, 7, 2])]
+        .map(String).filter((d) => d !== String(Number(answer)))).slice(0, 3),
     };
   } },
   { skill: 'mult', requires: ['add', 3], gen(level) {
@@ -292,29 +304,77 @@ const EN_PLURALS = {
     ['box', 'boxes', ['boxs', 'boxies']], ['bus', 'buses', ['buss', 'busies']],
     ['baby', 'babies', ['babys', 'babyes']], ['fox', 'foxes', ['foxs', 'foxies']],
     ['wish', 'wishes', ['wishs', 'wishies']], ['story', 'stories', ['storys', 'storyes']],
+    ['bird', 'birds', ['birdes', 'birdies']], ['glass', 'glasses', ['glasss', 'glassies']],
+    ['brush', 'brushes', ['brushs', 'brushies']], ['church', 'churches', ['churchs', 'churchies']],
+    ['candy', 'candies', ['candys', 'candyes']], ['key', 'keys', ['keies', 'keyes']],
+    ['penny', 'pennies', ['pennys', 'pennyes']], ['dish', 'dishes', ['dishs', 'dishies']],
+    ['watch', 'watches', ['watchs', 'watchies']], ['toy', 'toys', ['toies', 'toyes']],
   ],
   2: [
     ['child', 'children', ['childs', 'childrens']], ['mouse', 'mice', ['mouses', 'mices']],
     ['foot', 'feet', ['foots', 'feets']], ['tooth', 'teeth', ['tooths', 'teeths']],
     ['man', 'men', ['mans', 'mens']], ['woman', 'women', ['womans', 'womens']],
     ['leaf', 'leaves', ['leafs', 'leafes']], ['sheep', 'sheep', ['sheeps', 'sheepes']],
+    ['goose', 'geese', ['gooses', 'geeses']], ['person', 'people', ['persons', 'peoples']],
+    ['fish', 'fish', ['fishs', 'fishies']], ['loaf', 'loaves', ['loafs', 'loafes']],
+    ['shelf', 'shelves', ['shelfs', 'shelfes']], ['life', 'lives', ['lifes', 'lifves']],
+    ['ox', 'oxen', ['oxes', 'oxs']], ['goose egg', 'goose eggs', ['geese egg', 'goose egges']],
   ],
   3: [
     ['knife', 'knives', ['knifes', 'knive']], ['wolf', 'wolves', ['wolfs', 'wolfes']],
     ['city', 'cities', ['citys', 'cityes']], ['half', 'halves', ['halfs', 'halfes']],
     ['hero', 'heroes', ['heros', 'heroses']], ['deer', 'deer', ['deers', 'deeres']],
+    ['thief', 'thieves', ['thiefs', 'thiefes']], ['potato', 'potatoes', ['potatos', 'potatoies']],
+    ['tomato', 'tomatoes', ['tomatos', 'tomatoies']], ['echo', 'echoes', ['echos', 'echoies']],
+    ['piano', 'pianos', ['pianoes', 'pianies']], ['roof', 'roofs', ['rooves', 'roofes']],
+    ['country', 'countries', ['countrys', 'countryes']], ['volcano', 'volcanoes', ['volcanos', 'volcanies']],
+    ['scarf', 'scarves', ['scarfs', 'scarfes']], ['fly', 'flies', ['flys', 'flyes']],
   ],
 };
 
 const EN_OPPOSITES = {
-  1: [['hot', 'cold'], ['big', 'small'], ['up', 'down'], ['fast', 'slow'], ['happy', 'sad'], ['day', 'night'], ['open', 'closed'], ['full', 'empty']],
-  2: [['begin', 'end'], ['early', 'late'], ['loud', 'quiet'], ['wide', 'narrow'], ['heavy', 'light'], ['always', 'never'], ['remember', 'forget'], ['above', 'below']],
-  3: [['whisper', 'shout'], ['appear', 'disappear'], ['huge', 'tiny'], ['brave', 'scared'], ['smooth', 'rough'], ['float', 'sink'], ['ancient', 'modern'], ['victory', 'defeat']],
+  1: [['hot', 'cold'], ['big', 'small'], ['up', 'down'], ['fast', 'slow'], ['happy', 'sad'], ['day', 'night'], ['open', 'closed'], ['full', 'empty'],
+    ['in', 'out'], ['old', 'new'], ['long', 'short'], ['wet', 'dry'], ['hard', 'soft'], ['clean', 'dirty'],
+    ['first', 'last'], ['push', 'pull'], ['young', 'old'], ['near', 'far'], ['high', 'low'], ['left', 'right']],
+  2: [['begin', 'end'], ['early', 'late'], ['loud', 'quiet'], ['wide', 'narrow'], ['heavy', 'light'], ['always', 'never'], ['remember', 'forget'], ['above', 'below'],
+    ['strong', 'weak'], ['rich', 'poor'], ['difficult', 'easy'], ['buy', 'sell'], ['arrive', 'leave'],
+    ['front', 'back'], ['tight', 'loose'], ['sweet', 'sour'], ['asleep', 'awake'], ['inside', 'outside'],
+    ['question', 'answer'], ['success', 'failure']],
+  3: [['whisper', 'shout'], ['appear', 'disappear'], ['huge', 'tiny'], ['brave', 'scared'], ['smooth', 'rough'], ['float', 'sink'], ['ancient', 'modern'], ['victory', 'defeat'],
+    ['generous', 'selfish'], ['expand', 'shrink'], ['polite', 'rude'], ['guilty', 'innocent'],
+    ['temporary', 'permanent'], ['include', 'exclude'], ['artificial', 'natural'], ['accept', 'refuse'],
+    ['increase', 'decrease'], ['freedom', 'prison'], ['courage', 'fear'], ['wisdom', 'foolishness']],
 };
 
 const EN_RHYMES = {
-  1: [['cat', 'hat', ['dog', 'cup', 'pen']], ['tree', 'bee', ['car', 'sun', 'map']], ['cake', 'lake', ['fish', 'bird', 'door']], ['star', 'car', ['moon', 'book', 'hand']], ['ball', 'tall', ['ring', 'nose', 'milk']]],
-  2: [['night', 'bright', ['nose', 'nest', 'noon']], ['rain', 'train', ['road', 'ring', 'rock']], ['sound', 'ground', ['sand', 'song', 'seed']], ['chair', 'bear', ['chin', 'coat', 'corn']], ['snow', 'grow', ['snap', 'green', 'gate']]],
+  1: [
+    ['cat', 'hat', ['dog', 'cup', 'pen']], ['tree', 'bee', ['car', 'sun', 'map']],
+    ['cake', 'lake', ['fish', 'bird', 'door']], ['star', 'car', ['moon', 'book', 'hand']],
+    ['ball', 'tall', ['ring', 'nose', 'milk']], ['sun', 'fun', ['dog', 'ship', 'leaf']],
+    ['boat', 'coat', ['bird', 'desk', 'lamp']], ['red', 'bed', ['blue', 'tree', 'hand']],
+    ['pig', 'big', ['cow', 'duck', 'farm']], ['moon', 'spoon', ['star', 'cloud', 'grass']],
+    ['play', 'day', ['run', 'week', 'game']], ['sock', 'rock', ['shoe', 'foot', 'sand']],
+    ['bell', 'shell', ['ring', 'sea', 'bird']], ['mouse', 'house', ['rat', 'door', 'cheese']],
+  ],
+  2: [
+    ['night', 'bright', ['nose', 'nest', 'noon']], ['rain', 'train', ['road', 'ring', 'rock']],
+    ['sound', 'ground', ['sand', 'song', 'seed']], ['chair', 'bear', ['chin', 'coat', 'corn']],
+    ['snow', 'grow', ['snap', 'green', 'gate']], ['flower', 'tower', ['river', 'forest', 'garden']],
+    ['dream', 'cream', ['sleep', 'night', 'pillow']], ['school', 'pool', ['class', 'teacher', 'book']],
+    ['clown', 'crown', ['circus', 'laugh', 'tent']], ['brave', 'wave', ['hero', 'ocean', 'sand']],
+    ['spring', 'king', ['season', 'flower', 'warm']], ['stone', 'bone', ['rock', 'dog', 'hard']],
+    ['cloud', 'loud', ['sky', 'noise', 'storm']], ['whale', 'tail', ['ocean', 'fish', 'swim']],
+  ],
+  3: [
+    ['thought', 'bought', ['through', 'though', 'tough']],
+    ['weather', 'feather', ['water', 'wither', 'wealth']],
+    ['delight', 'tonight', ['delete', 'daylight', 'delicate']],
+    ['measure', 'treasure', ['mister', 'mixture', 'master']],
+    ['nation', 'station', ['native', 'notion', 'nature']],
+    ['believe', 'relieve', ['belong', 'behave', 'belief']],
+    ['tough', 'rough', ['though', 'thought', 'through']],
+    ['ocean', 'motion', ['open', 'often', 'orange']],
+  ],
 };
 
 const EN_FILLS = {
@@ -325,6 +385,14 @@ const EN_FILLS = {
     ['The dog ___ very fast.', 'runs', ['run', 'running', 'runned']],
     ['They ___ playing outside.', 'are', ['is', 'am', 'be']],
     ['He ___ two brothers.', 'has', ['have', 'haves', 'is']],
+    ['The cats ___ sleeping.', 'are', ['is', 'am', 'be']],
+    ['I ___ my teeth every morning.', 'brush', ['brushes', 'brushing', 'brushed']],
+    ['My mom ___ a blue car.', 'drives', ['drive', 'driving', 'droved']],
+    ['You ___ my best friend.', 'are', ['is', 'am', 'be']],
+    ['There ___ three apples on the table.', 'are', ['is', 'am', 'be']],
+    ['This ___ my favorite book.', 'is', ['are', 'am', 'be']],
+    ['The sun ___ in the morning.', 'rises', ['rise', 'rising', 'rose']],
+    ['We ___ our homework every day.', 'do', ['does', 'doing', 'did']],
   ],
   2: [
     ['Yesterday we ___ to the park.', 'went', ['goed', 'go', 'gone']],
@@ -333,6 +401,14 @@ const EN_FILLS = {
     ['The kids ___ at the beach yesterday.', 'were', ['was', 'are', 'is']],
     ['He ___ his homework already.', 'did', ['done', 'doed', 'do']],
     ['We ___ a sandcastle last summer.', 'built', ['builded', 'build', 'builds']],
+    ['She ___ her keys yesterday.', 'lost', ['losed', 'loses', 'losing']],
+    ['We ___ pizza last night.', 'ate', ['eated', 'eat', 'eaten']],
+    ['They ___ home an hour ago.', 'came', ['comed', 'come', 'comes']],
+    ['I ___ a letter to grandma.', 'wrote', ['writed', 'written', 'writes']],
+    ['He ___ the ball very far.', 'threw', ['throwed', 'thrown', 'throws']],
+    ['The bird ___ away this morning.', 'flew', ['flied', 'flown', 'flies']],
+    ['My sister ___ a song at school.', 'sang', ['singed', 'sung', 'sings']],
+    ['I ___ my bike to the shop.', 'rode', ['rided', 'ridden', 'rides']],
   ],
   3: [
     ["I ___ like broccoli at all.", "don't", ["doesn't", "didn't", 'not']],
@@ -341,13 +417,32 @@ const EN_FILLS = {
     ["It's the ___ dog in the whole town.", 'biggest', ['bigger', 'most big', 'big']],
     ['Tomorrow we ___ go to the pool.', 'will', ['wills', 'going', 'are']],
     ['My cousin ___ in Paris for two years.', 'has lived', ['have lived', 'living', 'lives since']],
+    ['If it rains, we ___ stay inside.', 'will', ['would', 'are', 'do']],
+    ['She has ___ finished her book.', 'already', ['yet', 'still', 'ever']],
+    ['I have been waiting ___ an hour.', 'for', ['since', 'during', 'from']],
+    ['This is the boy ___ won the race.', 'who', ['which', 'whose', 'whom']],
+    ['The cake was ___ by my sister.', 'baked', ['bake', 'baking', 'bakes']],
+    ['She speaks English ___ than me.', 'better', ['gooder', 'best', 'more good']],
+    ['There is ___ milk left in the bottle.', 'little', ['few', 'many', 'much of']],
+    ['He asked me ___ I was tired.', 'if', ['that', 'what', 'so']],
   ],
 };
 
 const EN_SPELLS = {
-  1: [['friend', ['frend', 'freind']], ['school', ['scool', 'skool']], ['house', ['hause', 'howse']], ['water', ['watter', 'woter']], ['little', ['littel', 'litle']], ['because', ['becuse', 'becoz']]],
-  2: [['through', ['thru', 'throught']], ['Wednesday', ['Wensday', 'Wednsday']], ['beautiful', ['beutiful', 'beautifull']], ['together', ['togather', 'togeter']], ['different', ['diferent', 'differant']], ['favorite', ['favorit', 'favourrite']]],
-  3: [['tomorrow', ['tommorow', 'tomorow']], ['sandwich', ['sandwitch', 'sanwich']], ['birthday', ['birfday', 'bithday']], ['chocolate', ['choclate', 'chocolat']], ['grandmother', ['granmother', 'grandmuther']], ['minute', ['minit', 'minnute']]],
+  1: [['friend', ['frend', 'freind']], ['school', ['scool', 'skool']], ['house', ['hause', 'howse']], ['water', ['watter', 'woter']], ['little', ['littel', 'litle']], ['because', ['becuse', 'becoz']],
+    ['people', ['peple', 'peaple']], ['again', ['agian', 'agen']], ['before', ['befor', 'befour']],
+    ['every', ['evry', 'everey']], ['said', ['sed', 'sayd']], ['many', ['meny', 'manny']],
+    ['about', ['abowt', 'aboute']], ['under', ['unnder', 'undder']]],
+  2: [['through', ['thru', 'throught']], ['Wednesday', ['Wensday', 'Wednsday']], ['beautiful', ['beutiful', 'beautifull']], ['together', ['togather', 'togeter']], ['different', ['diferent', 'differant']], ['favorite', ['favorit', 'favourrite']],
+    ['believe', ['beleive', 'belive']], ['probably', ['probly', 'probablly']],
+    ['surprise', ['suprise', 'surprize']], ['restaurant', ['restarant', 'restaurent']],
+    ['exercise', ['excercise', 'exersize']], ['important', ['importent', 'inportant']],
+    ['animal', ['aminal', 'animel']], ['question', ['qwestion', 'questoin']]],
+  3: [['tomorrow', ['tommorow', 'tomorow']], ['sandwich', ['sandwitch', 'sanwich']], ['birthday', ['birfday', 'bithday']], ['chocolate', ['choclate', 'chocolat']], ['grandmother', ['granmother', 'grandmuther']], ['minute', ['minit', 'minnute']],
+    ['rhythm', ['rythm', 'rhythem']], ['February', ['Febuary', 'Febrary']],
+    ['separate', ['seperate', 'seperete']], ['definitely', ['definately', 'defenitely']],
+    ['knowledge', ['knowlege', 'knoledge']], ['necessary', ['neccessary', 'necesary']],
+    ['island', ['iland', 'islend']], ['science', ['sience', 'sciance']]],
 };
 
 // clamp a skill level onto the tiers a word bank actually has
@@ -366,7 +461,7 @@ const ENGLISH_GENS = [
     return { key: `opp-${word}`, prompt: `What is the opposite of "${word}"?`, correct, wrongs };
   } },
   { skill: 'enRhyme', gen(level) {
-    const [word, correct, wrongs] = pick(EN_RHYMES[tier(level)]);
+    const [word, correct, wrongs] = pick(EN_RHYMES[tier(level, 3)]);
     return { key: `rhyme-${word}`, prompt: `Which word rhymes with "${word}"?`, correct, wrongs };
   } },
   { skill: 'enFill', gen(level) {
@@ -379,12 +474,20 @@ const ENGLISH_GENS = [
   } },
   { skill: 'enCategory', gen() {
     const cats = [
-      ['a fruit', ['apple', 'banana', 'pear', 'grape']],
-      ['an animal', ['rabbit', 'horse', 'duck', 'fish']],
-      ['a color', ['blue', 'green', 'pink', 'purple']],
-      ['something you wear', ['shoes', 'hat', 'shirt', 'socks']],
+      ['a fruit', ['apple', 'banana', 'pear', 'grape', 'peach', 'cherry', 'lemon']],
+      ['an animal', ['rabbit', 'horse', 'duck', 'fish', 'tiger', 'camel', 'frog']],
+      ['a color', ['blue', 'green', 'pink', 'purple', 'orange', 'brown', 'grey']],
+      ['something you wear', ['shoes', 'hat', 'shirt', 'socks', 'coat', 'scarf', 'gloves']],
+      ['a vegetable', ['carrot', 'potato', 'onion', 'pea', 'bean', 'cabbage']],
+      ['a body part', ['elbow', 'knee', 'shoulder', 'ankle', 'wrist', 'chin']],
+      ['a musical instrument', ['piano', 'guitar', 'violin', 'drum', 'flute', 'trumpet']],
+      ['a job', ['baker', 'doctor', 'pilot', 'farmer', 'teacher', 'plumber']],
+      ['a means of transport', ['train', 'plane', 'boat', 'bicycle', 'tram']],
+      ['a shape', ['circle', 'square', 'triangle', 'diamond', 'oval']],
+      ['weather', ['fog', 'snow', 'wind', 'storm', 'hail']],
     ];
-    const others = ['chair', 'table', 'spoon', 'book', 'rain', 'cloud', 'road', 'song'];
+    const others = ['chair', 'table', 'book', 'road', 'song', 'window', 'pencil',
+      'mirror', 'ladder', 'basket', 'wallet', 'carpet', 'poster', 'envelope', 'staircase'];
     const [label, members] = pick(cats);
     const correct = pick(members);
     return { key: `cat-${label}-${correct}`, prompt: `Which one is ${label}?`, correct, wrongs: shuffle(others).slice(0, 3) };
@@ -394,9 +497,24 @@ const ENGLISH_GENS = [
 // -- French ------------------------------------------------------------------
 
 const FR_ORTHO = {
-  1: [['oiseau', '🐦', ['oiso', 'oizo']], ['maison', '🏠', ['mèzon', 'maizon']], ['école', '🏫', ['écol', 'ékole']], ['garçon', '👦', ['garson', 'garcon']], ['chapeau', '🎩', ['chapo', 'chapau']], ['souris', '🐭', ['sourie', 'souri']], ['gâteau', '🎂', ['gato', 'gâto']], ['soleil', '☀️', ['solei', 'soleille']]],
-  2: [['papillon', '🦋', ['papiyon', 'papillion']], ['écureuil', '🐿️', ['écureil', 'écurueil']], ['grenouille', '🐸', ['grenouye', 'grenouile']], ['montagne', '⛰️', ['montagn', 'montangne']], ['citrouille', '🎃', ['citrouye', 'citrouile']], ['baleine', '🐋', ['balène', 'balaine']], ['éléphant', '🐘', ['éléfant', 'élephan']], ['bibliothèque', '📚', ['biblioteque', 'bibliotèque']]],
-  3: [["aujourd'hui", '📅', ['aujourdui', "aujourd'huit"]], ['beaucoup', '➕', ['bocoup', 'beaucou']], ['monsieur', '🎩', ['messieur', 'monsieu']], ['toujours', '♾️', ['toujour', 'tout-jour']], ['pharmacie', '💊', ['farmacie', 'pharmacit']], ['ciseaux', '✂️', ['sizo', 'ciseau']]],
+  1: [['oiseau', '🐦', ['oiso', 'oizo']], ['maison', '🏠', ['mèzon', 'maizon']], ['école', '🏫', ['écol', 'ékole']], ['garçon', '👦', ['garson', 'garcon']], ['chapeau', '🎩', ['chapo', 'chapau']], ['souris', '🐭', ['sourie', 'souri']], ['gâteau', '🎂', ['gato', 'gâto']], ['soleil', '☀️', ['solei', 'soleille']],
+    ['bateau', '⛵', ['bato', 'batau']], ['étoile', '⭐', ['étoil', 'étoille']],
+    ['fleur', '🌸', ['fleure', 'flleur']], ['cheval', '🐴', ['chevale', 'chevalle']],
+    ['pomme', '🍎', ['pome', 'pommme']], ['chien', '🐕', ['chiin', 'chian']],
+    ['arbre', '🌳', ['arbr', 'harbre']], ['nuage', '☁️', ['nuaje', 'nouage']],
+    ['lapin', '🐰', ['lapein', 'lappin']], ['voiture', '🚗', ['voitur', 'voitture']],
+    ['poisson', '🐟', ['poison', 'poissson']], ['banane', '🍌', ['bananne', 'banan']]],
+  2: [['papillon', '🦋', ['papiyon', 'papillion']], ['écureuil', '🐿️', ['écureil', 'écurueil']], ['grenouille', '🐸', ['grenouye', 'grenouile']], ['montagne', '⛰️', ['montagn', 'montangne']], ['citrouille', '🎃', ['citrouye', 'citrouile']], ['baleine', '🐋', ['balène', 'balaine']], ['éléphant', '🐘', ['éléfant', 'élephan']], ['bibliothèque', '📚', ['biblioteque', 'bibliotèque']],
+    ['ordinateur', '💻', ['ordinateure', 'ordinatteur']], ['dinosaure', '🦕', ['dinosore', 'dinausore']],
+    ['parapluie', '☂️', ['paraplui', 'parapluit']], ['chocolat', '🍫', ['chocola', 'chocolate']],
+    ['bicyclette', '🚲', ['bicyclete', 'bissiclette']], ['hérisson', '🦔', ['érisson', 'herrisson']],
+    ['tortue', '🐢', ['torture', 'tortu']], ['couronne', '👑', ['courone', 'couronnne']],
+    ['chaussure', '👟', ['chausure', 'chaussurre']], ['abeille', '🐝', ['abeye', 'abeile']]],
+  3: [["aujourd'hui", '📅', ['aujourdui', "aujourd'huit"]], ['beaucoup', '➕', ['bocoup', 'beaucou']], ['monsieur', '🎩', ['messieur', 'monsieu']], ['toujours', '♾️', ['toujour', 'tout-jour']], ['pharmacie', '💊', ['farmacie', 'pharmacit']], ['ciseaux', '✂️', ['sizo', 'ciseau']],
+    ['aquarium', '🐠', ['akwarium', 'aquarion']], ['orchestre', '🎻', ['orkestre', 'orchestr']],
+    ['rhinocéros', '🦏', ['rinocéros', 'rhinocéro']], ['équilibre', '⚖️', ['équilibr', 'ékilibre']],
+    ['thermomètre', '🌡️', ['termomètre', 'thermomètr']], ['télescope', '🔭', ['téléscope', 'telescope']],
+    ['hélicoptère', '🚁', ['élicoptère', 'hélicoptaire']], ['escalier', '🪜', ['escallier', 'éscalier']]],
 };
 
 const FR_FILLS = {
@@ -407,6 +525,14 @@ const FR_FILLS = {
     ['Tu ___ un gâteau.', 'manges', ['mange', 'mangent', 'manger']],
     ['Ils ___ au football.', 'jouent', ['joue', 'joues', 'jouer']],
     ['Elle ___ une pomme.', 'mange', ['manges', 'mangent', 'manger']],
+    ['Je ___ un beau dessin.', 'fais', ['fait', 'font', 'faire']],
+    ['Vous ___ dans le jardin.', 'jouez', ['jouer', 'jouent', 'joues']],
+    ['Le chien ___ très fort.', 'aboie', ['aboies', 'aboient', 'aboyer']],
+    ['Nous ___ un livre.', 'lisons', ['lisez', 'lisent', 'lire']],
+    ['Tu ___ à la maison.', 'restes', ['reste', 'restent', 'rester']],
+    ['Les oiseaux ___ dans le ciel.', 'volent', ['vole', 'voles', 'voler']],
+    ['Je ___ six ans.', 'ai', ['as', 'a', 'ont']],
+    ['Elles ___ à la piscine.', 'vont', ['va', 'vas', 'allez']],
   ],
   2: [
     ["Hier, j'___ mangé une pomme.", 'ai', ['a', 'ont', 'est']],
@@ -415,6 +541,14 @@ const FR_FILLS = {
     ['Vous ___ arrivés en retard.', 'êtes', ['est', 'sommes', 'sont']],
     ['Demain, nous ___ à la plage.', 'irons', ['allons', 'irez', 'vont']],
     ['Elle ___ tombée dans la cour.', 'est', ['a', 'ai', 'ont']],
+    ["J'___ fini mes devoirs.", 'ai', ['as', 'a', 'suis']],
+    ['Tu ___ parti trop vite.', 'es', ['as', 'est', 'ai']],
+    ['Ils ___ venus hier soir.', 'sont', ['ont', 'est', 'sommes']],
+    ['Nous ___ pris le train.', 'avons', ['sommes', 'avez', 'ont']],
+    ['Demain, il ___ beau.', 'fera', ['fait', 'ferait', 'faisait']],
+    ['La semaine prochaine, vous ___ en vacances.', 'serez', ['êtes', 'seriez', 'étiez']],
+    ["Elle ___ rentrée à l'heure.", 'est', ['a', 'as', 'ont']],
+    ['Nous ___ dormi chez mamie.', 'avons', ['sommes', 'avez', 'ont']],
   ],
   3: [
     ['Demain, je ___ chez mamie.', 'irai', ['irais', 'iré', 'vais aller']],
@@ -423,6 +557,14 @@ const FR_FILLS = {
     ['Hier soir, ils ___ la télé.', 'regardaient', ['regardent', 'regarderont', 'regardés']],
     ['Bientôt, tu ___ lire tout seul.', 'sauras', ['sais', 'saura', 'savais']],
     ['Avant, elle ___ peur du noir.', 'avait', ['a', 'aura', 'ayant']],
+    ["Si j'avais le temps, je ___ un château.", 'construirais', ['construirai', 'construis', 'construisais']],
+    ['Il faut que tu ___ prudent.', 'sois', ['es', 'seras', 'étais']],
+    ['Pendant que je lisais, il ___ la vaisselle.', 'faisait', ['fait', 'fera', 'ferait']],
+    ["Nous ___ ce livre l'an dernier.", 'avons lu', ['avons lit', 'sommes lus', 'avions lisant']],
+    ['Elles ___ leurs valises avant de partir.', 'avaient préparé', ['ont préparent', 'avaient préparés', 'sont préparées']],
+    ["Dès qu'il ___ , nous sortirons.", 'arrivera', ['arrive', 'arriverait', 'arrivait']],
+    ["J'aimerais que vous ___ avec nous.", 'veniez', ['venez', 'viendrez', 'veniiez']],
+    ['Autrefois, on ___ à la bougie.', "s'éclairait", ["s'éclaire", "s'éclairera", "s'éclairant"]],
   ],
 };
 
@@ -437,22 +579,70 @@ const FR_HOMOPHONES = [
   ['___ me fait rire ! (sa / ça)', 'Ça', ['Sa', 'Sà', 'Ca']],
   ['Ils mangent ___ gâteaux. (ses / ces)', 'ces', ['ses', 'çes', "c'est"]],
   ['Il range ___ jouets à lui. (ses / ces)', 'ses', ['ces', 'çes', "c'est"]],
+  ['Les enfants ___ dans le jardin. (son / sont)', 'sont', ['son', 'sons', 'sonts']],
+  ['Il a perdu ___ cartable. (son / sont)', 'son', ['sont', 'sons', 'sonds']],
+  ['___ est ma maison ? (ou / où)', 'Où', ['Ou', 'Oû', 'Aou']],
+  ['Tu veux du lait ___ du jus ? (ou / où)', 'ou', ['où', 'oû', 'aou']],
+  ['___ chien est très gentil. (ce / se)', 'Ce', ['Se', 'Ceu', 'Seu']],
+  ['Il ___ lave les mains. (ce / se)', 'se', ['ce', 'ceu', 'seu']],
+  ['___ voiture est rouge. (la / là)', 'La', ['Là', 'Lâ', 'Laa']],
+  ['Viens ici, pas ___ ! (la / là)', 'là', ['la', 'lâ', 'laa']],
+  ['Ce sont ___ crayons. (mes / mais)', 'mes', ['mais', 'mès', 'met']],
+  ["J'aimerais venir ___ je ne peux pas. (mes / mais)", 'mais', ['mes', 'mès', 'met']],
+  ['Il reste ___ de gâteau. (peu / peut)', 'peu', ['peut', 'peux', 'peus']],
+  ['Elle ___ venir demain. (peu / peut)', 'peut', ['peu', 'peux', 'peus']],
+  ['___ viendras-tu ? (quand / quant)', 'Quand', ['Quant', "Qu'en", 'Kand']],
+  ['___ à moi, je reste ici. (quand / quant)', 'Quant', ['Quand', "Qu'en", 'Kant']],
+  ['Prends ___ manteau. (cet / cette)', 'cet', ['cette', 'cettes', 'ces']],
+  ['Regarde ___ étoile. (cet / cette)', 'cette', ['cet', 'cets', 'ces']],
+  ["___ le monde est arrivé. (tout / tous)", 'Tout', ['Tous', 'Touts', 'Toux']],
+  ['Ils sont ___ partis. (tout / tous)', 'tous', ['tout', 'touts', 'toux']],
+  ['Les élèves rangent ___ affaires. (leur / leurs)', 'leurs', ['leur', 'leures', 'leur\u2019s']],
+  ['Je lui rends ___ livre. (leur / leurs)', 'leur', ['leurs', 'leures', 'leur\u2019s']],
 ];
 
 const FR_ARTICLES = {
-  1: { options: ['le', 'la', 'les'], words: [['pomme', 'la'], ['chien', 'le'], ['maison', 'la'], ['ballon', 'le'], ['voiture', 'la'], ['livre', 'le'], ['fleurs', 'les'], ['soleil', 'le'], ['lune', 'la'], ['jouets', 'les']] },
-  2: { options: ['un', 'une', 'des'], words: [['orange', 'une'], ['arbre', 'un'], ['étoiles', 'des'], ['histoire', 'une'], ['oiseau', 'un'], ['chaussures', 'des'], ['île', 'une'], ['escargot', 'un']] },
+  1: { options: ['le', 'la', 'les'], words: [['pomme', 'la'], ['chien', 'le'], ['maison', 'la'], ['ballon', 'le'], ['voiture', 'la'], ['livre', 'le'], ['fleurs', 'les'], ['soleil', 'le'], ['lune', 'la'], ['jouets', 'les'],
+    ['table', 'la'], ['cheval', 'le'], ['chaise', 'la'], ['bateau', 'le'], ['montagne', 'la'], ['jardin', 'le'],
+    ['enfants', 'les'], ['fenêtre', 'la'], ['tableau', 'le'], ['clés', 'les'], ['forêt', 'la'], ['chemin', 'le']] },
+  2: { options: ['un', 'une', 'des'], words: [['orange', 'une'], ['arbre', 'un'], ['étoiles', 'des'], ['histoire', 'une'], ['oiseau', 'un'], ['chaussures', 'des'], ['île', 'une'], ['escargot', 'un'],
+    ['abeille', 'une'], ['château', 'un'], ['montagnes', 'des'], ['écharpe', 'une'], ['éléphant', 'un'],
+    ['idée', 'une'], ['nuages', 'des'], ['hôpital', 'un'], ['armoire', 'une'], ['ours', 'un']] },
+  3: { options: ['du', 'de la', 'des'], words: [['pain', 'du'], ['eau', 'de la'], ['fruits', 'des'], ['confiture', 'de la'], ['fromage', 'du'], ['légumes', 'des'], ['soupe', 'de la'], ['chocolat', 'du'], ['crayons', 'des'], ['farine', 'de la'], ['sucre', 'du'], ['livres', 'des']] },
 };
 
 const FR_PLURALS = {
-  1: [['un chat', 'des chats', ['des chat', 'des chates']], ['un jeu', 'des jeux', ['des jeus', 'des jeues']], ['un bateau', 'des bateaux', ['des bateaus', 'des bateauz']], ['un oiseau', 'des oiseaux', ['des oiseaus', 'des oiseauz']], ['un nez', 'des nez', ['des nezs', 'des nezes']]],
-  2: [['un cheval', 'des chevaux', ['des chevals', 'des chevaus']], ['un animal', 'des animaux', ['des animals', 'des animaus']], ['un journal', 'des journaux', ['des journals', 'des journaus']], ['un travail', 'des travaux', ['des travails', 'des travaus']], ['un œil', 'des yeux', ['des œils', 'des yeuxs']]],
+  1: [['un chat', 'des chats', ['des chat', 'des chates']], ['un jeu', 'des jeux', ['des jeus', 'des jeues']], ['un bateau', 'des bateaux', ['des bateaus', 'des bateauz']], ['un oiseau', 'des oiseaux', ['des oiseaus', 'des oiseauz']], ['un nez', 'des nez', ['des nezs', 'des nezes']],
+    ['un gâteau', 'des gâteaux', ['des gâteaus', 'des gâteauz']], ['une souris', 'des souris', ['des sourises', 'des souriss']],
+    ['un feu', 'des feux', ['des feus', 'des feues']], ['un prix', 'des prix', ['des prixs', 'des prixes']],
+    ['un chapeau', 'des chapeaux', ['des chapeaus', 'des chapeauz']], ['une voix', 'des voix', ['des voixs', 'des voixes']],
+    ['un cheveu', 'des cheveux', ['des cheveus', 'des cheveues']], ['un tableau', 'des tableaux', ['des tableaus', 'des tableauz']]],
+  2: [['un cheval', 'des chevaux', ['des chevals', 'des chevaus']], ['un animal', 'des animaux', ['des animals', 'des animaus']], ['un journal', 'des journaux', ['des journals', 'des journaus']], ['un travail', 'des travaux', ['des travails', 'des travaus']], ['un œil', 'des yeux', ['des œils', 'des yeuxs']],
+    ['un hôpital', 'des hôpitaux', ['des hôpitals', 'des hôpitaus']], ['un vitrail', 'des vitraux', ['des vitrails', 'des vitraus']],
+    ['un genou', 'des genoux', ['des genous', 'des genoues']], ['un caillou', 'des cailloux', ['des caillous', 'des cailloues']],
+    ['un bijou', 'des bijoux', ['des bijous', 'des bijoues']], ['un corail', 'des coraux', ['des corails', 'des coraus']]],
+  3: [['un pneu', 'des pneus', ['des pneux', 'des pneues']], ['un festival', 'des festivals', ['des festivaux', 'des festivales']],
+    ['un bal', 'des bals', ['des baux', 'des bales']], ['un landau', 'des landaus', ['des landaux', 'des landeaux']],
+    ['un ciel', 'des cieux', ['des ciels', 'des cieuxs']], ['madame', 'mesdames', ['madames', 'mesdame']],
+    ['un monsieur', 'des messieurs', ['des monsieurs', 'des messieur']], ['un travail', 'des travaux', ['des travails', 'des travaus']]],
 };
 
 const FR_TRADS = {
-  1: [['dog', 'chien', ['chat', 'cheval', 'lapin']], ['cat', 'chat', ['chien', 'oiseau', 'souris']], ['apple', 'pomme', ['poire', 'banane', 'fraise']], ['red', 'rouge', ['bleu', 'vert', 'jaune']], ['water', 'eau', ['lait', 'jus', 'pain']], ['sun', 'soleil', ['lune', 'étoile', 'nuage']]],
-  2: [['butterfly', 'papillon', ['oiseau', 'abeille', 'libellule']], ['squirrel', 'écureuil', ['hérisson', 'renard', 'lapin']], ['rainbow', 'arc-en-ciel', ['orage', 'nuage', 'éclair']], ['winter', 'hiver', ['été', 'automne', 'printemps']], ['moon', 'lune', ['étoile', 'soleil', 'ciel']], ['strawberry', 'fraise', ['framboise', 'cerise', 'prune']]],
-  3: [['lighthouse', 'phare', ['port', 'bateau', 'plage']], ['castle', 'château', ['palais', 'tour', 'pont']], ['knight', 'chevalier', ['roi', 'soldat', 'prince']], ['whale', 'baleine', ['requin', 'dauphin', 'phoque']], ['owl', 'hibou', ['aigle', 'corbeau', 'faucon']], ['thunderstorm', 'orage', ['pluie', 'vent', 'brouillard']]],
+  1: [['dog', 'chien', ['chat', 'cheval', 'lapin']], ['cat', 'chat', ['chien', 'oiseau', 'souris']], ['apple', 'pomme', ['poire', 'banane', 'fraise']], ['red', 'rouge', ['bleu', 'vert', 'jaune']], ['water', 'eau', ['lait', 'jus', 'pain']], ['sun', 'soleil', ['lune', 'étoile', 'nuage']],
+    ['book', 'livre', ['cahier', 'crayon', 'papier']], ['house', 'maison', ['jardin', 'porte', 'toit']],
+    ['bread', 'pain', ['beurre', 'lait', 'gâteau']], ['tree', 'arbre', ['fleur', 'herbe', 'feuille']],
+    ['bird', 'oiseau', ['poisson', 'papillon', 'abeille']], ['green', 'vert', ['rouge', 'noir', 'blanc']],
+    ['school', 'école', ['maison', 'ville', 'classe']], ['friend', 'ami', ['frère', 'voisin', 'cousin']]],
+  2: [['butterfly', 'papillon', ['oiseau', 'abeille', 'libellule']], ['squirrel', 'écureuil', ['hérisson', 'renard', 'lapin']], ['rainbow', 'arc-en-ciel', ['orage', 'nuage', 'éclair']], ['winter', 'hiver', ['été', 'automne', 'printemps']], ['moon', 'lune', ['étoile', 'soleil', 'ciel']], ['strawberry', 'fraise', ['framboise', 'cerise', 'prune']],
+    ['hedgehog', 'hérisson', ['écureuil', 'taupe', 'blaireau']], ['mushroom', 'champignon', ['fougère', 'mousse', 'racine']],
+    ['thunder', 'tonnerre', ['éclair', 'pluie', 'vent']], ['bridge', 'pont', ['tunnel', 'route', 'mur']],
+    ['kitchen', 'cuisine', ['chambre', 'salon', 'grenier']], ['spoon', 'cuillère', ['fourchette', 'couteau', 'assiette']],
+    ['mountain', 'montagne', ['colline', 'vallée', 'falaise']], ['shoulder', 'épaule', ['coude', 'genou', 'poignet']]],
+  3: [['lighthouse', 'phare', ['port', 'bateau', 'plage']], ['castle', 'château', ['palais', 'tour', 'pont']], ['knight', 'chevalier', ['roi', 'soldat', 'prince']], ['whale', 'baleine', ['requin', 'dauphin', 'phoque']], ['owl', 'hibou', ['aigle', 'corbeau', 'faucon']], ['thunderstorm', 'orage', ['pluie', 'vent', 'brouillard']],
+    ['blacksmith', 'forgeron', ['charpentier', 'meunier', 'tailleur']], ['harvest', 'récolte', ['semaille', 'labour', 'moisson']],
+    ['stained glass', 'vitrail', ['fresque', 'mosaïque', 'tapisserie']], ['drawbridge', 'pont-levis', ['herse', 'douve', 'rempart']],
+    ['beehive', 'ruche', ['nid', 'terrier', 'fourmilière']], ['anchor', 'ancre', ['voile', 'rame', 'gouvernail']],
+    ['shepherd', 'berger', ['fermier', 'chasseur', 'pêcheur']], ['telescope', 'télescope', ['microscope', 'boussole', 'longue-vue']]],
 };
 
 const FR_ADJS = {
@@ -468,6 +658,20 @@ const FR_ADJS = {
     ['Ma sœur est ___ (happy).', 'heureuse', ['heureux', 'heureuses']],
     ['Mon frère est ___ (happy).', 'heureux', ['heureuse', 'heureuxs']],
     ['Les fleurs sont ___ (pretty).', 'jolies', ['jolie', 'jolis']],
+    ['Les garçons sont ___ (tall).', 'grands', ['grand', 'grandes']],
+    ['La tour est ___ (tall).', 'grande', ['grand', 'grandes']],
+    ['Mes chaussures sont ___ (new).', 'neuves', ['neuf', 'neufs']],
+    ['Ce livre est ___ (new).', 'neuf', ['neuve', 'neufs']],
+  ],
+  3: [
+    ['Cette histoire est ___ (long).', 'longue', ['long', 'longues']],
+    ['Les cheveux sont ___ (long).', 'longs', ['longues', 'long']],
+    ['Une réponse ___ (false).', 'fausse', ['faux', 'fausses']],
+    ['Des calculs ___ (false).', 'faux', ['fausses', 'fausse']],
+    ['Une eau ___ (fresh).', 'fraîche', ['frais', 'fraîches']],
+    ['Des fruits ___ (fresh).', 'frais', ['fraîches', 'fraîche']],
+    ['Une règle ___ (gentle).', 'douce', ['doux', 'douces']],
+    ['Des mots ___ (gentle).', 'doux', ['douces', 'douce']],
   ],
 };
 
@@ -485,12 +689,12 @@ const FRENCH_GENS = [
     return { key: `homo-${correct}-${sentence.length}`, prompt: `Choisis le bon mot : « ${sentence} »`, correct, wrongs };
   } },
   { skill: 'frArticle', gen(level) {
-    const { options, words } = FR_ARTICLES[tier(level)];
+    const { options, words } = FR_ARTICLES[tier(level, 3)];
     const [word, correct] = pick(words);
     return { key: `art-${word}`, prompt: `Quel mot manque ? « ___ ${word} »`, correct, wrongs: options.filter((a) => a !== correct) };
   } },
   { skill: 'frPlural', gen(level) {
-    const [single, correct, wrongs] = pick(FR_PLURALS[tier(level)]);
+    const [single, correct, wrongs] = pick(FR_PLURALS[tier(level, 3)]);
     return { key: `plurfr-${single}`, prompt: `${single} → ${correct.split(' ')[0]} … ?`, correct, wrongs };
   } },
   { skill: 'frTrad', gen(level) {
@@ -498,7 +702,7 @@ const FRENCH_GENS = [
     return { key: `trad-${en}`, prompt: `Comment dit-on « ${en} » en français ?`, correct, wrongs };
   } },
   { skill: 'frAdj', gen(level) {
-    const [sentence, correct, wrongs] = pick(FR_ADJS[tier(level)]);
+    const [sentence, correct, wrongs] = pick(FR_ADJS[tier(level, 3)]);
     return { key: `adj-${correct}-${sentence.length}`, prompt: `Complète : « ${sentence} »`, correct, wrongs };
   } },
   { skill: 'frCalendar', gen(level) {
@@ -528,6 +732,11 @@ const DISCOVERY_SETS = {
       ['Sur quel continent est la France ?', "l'Europe", ["l'Afrique", "l'Asie", "l'Amérique"]],
       ['Comment s\'appellent les habitants de la France ?', 'les Français', ['les Anglais', 'les Belges', 'les Suisses']],
       ['Quelle mer borde le sud de la France ?', 'la Méditerranée', ["l'Atlantique", 'la Manche', 'la mer du Nord']],
+      ['Quel animal est sur le maillot de l\'équipe de France ?', 'le coq', ['le lion', "l'aigle", "l'ours"]],
+      ['Quelle grande ville est au bord de la Méditerranée ?', 'Marseille', ['Lille', 'Strasbourg', 'Nantes']],
+      ['Comment appelle-t-on la fête nationale française ?', 'le 14 Juillet', ['Noël', 'le 1er Mai', 'Pâques']],
+      ['Quel pain long mange-t-on en France ?', 'la baguette', ['le bagel', 'la tortilla', 'le pita']],
+      ['Quelle est la forme de la France sur une carte ?', 'un hexagone', ['un carré', 'un cercle', 'un triangle']],
     ],
     2: [
       ['Quel est le plus long fleuve de France ?', 'la Loire', ['la Seine', 'le Rhône', 'la Garonne']],
@@ -535,6 +744,12 @@ const DISCOVERY_SETS = {
       ['Quelle est la plus haute montagne de France ?', 'le Mont Blanc', ['le Puy de Dôme', 'le Mont Ventoux', 'le Pic du Midi']],
       ['La devise de la France : Liberté, Égalité… ?', 'Fraternité', ['Solidarité', 'Amitié', 'Sécurité']],
       ['Quel monument parisien est une grande arche ?', "l'Arc de Triomphe", ['le Louvre', 'Notre-Dame', 'le Panthéon']],
+      ['Dans quelle région se trouvent les châteaux de la Loire ?', 'le Centre-Val de Loire', ['la Bretagne', "l'Alsace", 'la Provence']],
+      ['Quel massif sépare la France et l\'Espagne ?', 'les Pyrénées', ['les Alpes', 'le Jura', 'les Vosges']],
+      ['Quelle île française est en Méditerranée ?', 'la Corse', ["l'Islande", 'la Sicile', 'la Sardaigne']],
+      ['Quelle ville est connue pour sa cathédrale et ses bulles ?', 'Reims', ['Toulouse', 'Rennes', 'Grenoble']],
+      ['Quel fleuve se jette dans la Manche au Havre ?', 'la Seine', ['la Loire', 'le Rhône', 'la Garonne']],
+      ['Comment s\'appelle le tunnel sous la Manche ?', 'le tunnel sous la Manche', ['le tunnel du Mont-Blanc', 'le tunnel de Fréjus', 'le tunnel du Gothard']],
     ],
     3: [
       ["Quelle est la capitale de l'Italie ?", 'Rome', ['Venise', 'Milan', 'Naples']],
@@ -542,6 +757,12 @@ const DISCOVERY_SETS = {
       ["Quelle est la capitale de l'Espagne ?", 'Madrid', ['Barcelone', 'Séville', 'Lisbonne']],
       ["Quel océan borde l'ouest de la France ?", "l'Atlantique", ['le Pacifique', 'la Méditerranée', 'la mer Noire']],
       ['Dans quelle ville est la cathédrale Notre-Dame ?', 'Paris', ['Lyon', 'Reims', 'Marseille']],
+      ["Quelle est la capitale de l'Allemagne ?", 'Berlin', ['Munich', 'Hambourg', 'Francfort']],
+      ['Quelle est la capitale de la Belgique ?', 'Bruxelles', ['Anvers', 'Bruges', 'Liège']],
+      ['Quelle est la capitale du Portugal ?', 'Lisbonne', ['Porto', 'Madrid', 'Séville']],
+      ['Quel pays a la forme d\'une botte ?', "l'Italie", ["l'Espagne", 'la Grèce', 'la Norvège']],
+      ['Quelle monnaie utilise-t-on dans la plupart de l\'Europe ?', "l'euro", ['le dollar', 'la livre', 'le franc']],
+      ['Quel est le plus haut sommet des Alpes ?', 'le Mont Blanc', ['le Cervin', "l'Everest", 'le Mont Rose']],
     ],
   },
   geoUSA: {
@@ -551,6 +772,11 @@ const DISCOVERY_SETS = {
       ['Quel océan sépare la France et les USA ?', "l'Atlantique", ['le Pacifique', "l'océan Indien", "l'Arctique"]],
       ['De quelles couleurs est le drapeau américain ?', 'rouge, blanc, bleu', ['vert, blanc, rouge', 'bleu, jaune, noir', 'rouge, jaune, bleu']],
       ['Le grand pont rouge de San Francisco s\'appelle… ?', 'le Golden Gate', ['le Brooklyn Bridge', 'le Bay Bridge', 'le London Bridge']],
+      ['Quel animal est le symbole des États-Unis ?', "l'aigle", ['le coq', "l'ours", 'le bison']],
+      ['Quelle langue parle-t-on surtout aux États-Unis ?', "l'anglais", ['le français', "l'espagnol", "l'allemand"]],
+      ['Comment dit-on « merci » en anglais ?', 'thank you', ['please', 'sorry', 'hello']],
+      ['Quelle ville a de très grands gratte-ciel et Central Park ?', 'New York', ['Denver', 'Seattle', 'Atlanta']],
+      ['Quel pays est juste au nord des États-Unis ?', 'le Canada', ['le Mexique', 'le Brésil', 'Cuba']],
     ],
     2: [
       ["Combien y a-t-il d'états aux États-Unis ?", '50', ['48', '52', '13']],
@@ -558,6 +784,11 @@ const DISCOVERY_SETS = {
       ['Quel est le plus grand état des USA ?', "l'Alaska", ['le Texas', 'la Californie', 'la Floride']],
       ['Dans quel état est San Francisco ?', 'en Californie', ['au Texas', 'en Floride', 'au Nevada']],
       ["Combien d'étoiles sur le drapeau américain ?", '50', ['13', '52', '100']],
+      ['Quel pays est juste au sud des États-Unis ?', 'le Mexique', ['le Canada', 'le Guatemala', 'la Colombie']],
+      ['Que représentent les 13 bandes du drapeau américain ?', 'les 13 premières colonies', ['les 13 présidents', 'les 13 fleuves', 'les 13 montagnes']],
+      ['Dans quel état est Miami ?', 'en Floride', ['en Géorgie', 'au Texas', 'en Louisiane']],
+      ['Quelle fête américaine se fête le 4 juillet ?', "la fête de l'Indépendance", ['Thanksgiving', 'Halloween', 'Noël']],
+      ['Quel océan borde la Californie ?', 'le Pacifique', ["l'Atlantique", "l'océan Indien", "l'Arctique"]],
     ],
     3: [
       ['Quelle ville est surnommée « The Big Apple » ?', 'New York', ['Chicago', 'Boston', 'Miami']],
@@ -565,6 +796,11 @@ const DISCOVERY_SETS = {
       ['Quel fleuve a creusé le Grand Canyon ?', 'le Colorado', ['le Mississippi', 'le Missouri', 'le Rio Grande']],
       ['Le mont Rushmore montre des visages de… ?', 'présidents', ['acteurs', 'rois', 'chanteurs']],
       ['Quelle est la plus grande ville des USA ?', 'New York', ['Los Angeles', 'Washington', 'Houston']],
+      ['Qui fut le premier président des États-Unis ?', 'George Washington', ['Abraham Lincoln', 'Thomas Jefferson', 'John Adams']],
+      ['Quel pays a offert la statue de la Liberté aux USA ?', 'la France', ["l'Angleterre", "l'Espagne", "l'Italie"]],
+      ['Quel est le plus long fleuve des États-Unis ?', 'le Missouri', ['le Colorado', "l'Hudson", 'le Rio Grande']],
+      ['Dans quel état est la Silicon Valley ?', 'en Californie', ['dans le Washington', 'au Texas', 'à New York']],
+      ['Quels grands lacs sont entre les USA et le Canada ?', 'les Grands Lacs', ['les lacs Salés', 'les lacs Bleus', 'les lacs Rouges']],
     ],
   },
   civics: {
@@ -574,6 +810,12 @@ const DISCOVERY_SETS = {
       ['Qui éteint les incendies ?', 'les pompiers', ['les boulangers', 'les facteurs', 'les dentistes']],
       ['Où jette-t-on une bouteille en plastique ?', 'au recyclage', ['par terre', 'dans la rivière', 'sous le lit']],
       ['Qui soigne les malades ?', 'les médecins', ['les pilotes', 'les peintres', 'les chanteurs']],
+      ['Quand on bouscule quelqu\'un, on dit… ?', 'pardon', ['merci', 'bravo', 'salut']],
+      ['À vélo, sur la tête, on met… ?', 'un casque', ['un chapeau', 'une casquette', 'rien']],
+      ['Qui distribue le courrier ?', 'le facteur', ['le boucher', 'le jardinier', 'le libraire']],
+      ['Quel numéro appelle-t-on en cas d\'urgence en France ?', 'le 15 ou le 112', ['le 42', 'le 100', 'le 7']],
+      ['Dans le bus, on laisse sa place… ?', 'aux personnes âgées', ['à personne', 'à son cartable', 'au chien']],
+      ['Économiser l\'eau, c\'est… ?', 'bon pour la planète', ['inutile', 'interdit', 'impossible']],
     ],
     2: [
       ["À l'école, pour parler, on… ?", 'lève la main', ['crie très fort', 'tape du pied', 'se lève de sa chaise']],
@@ -581,6 +823,12 @@ const DISCOVERY_SETS = {
       ['Partager ses jouets, c\'est… ?', 'gentil', ['interdit', 'impossible', 'dangereux']],
       ['Qui vote pour choisir le président ?', 'les adultes', ['les bébés', 'les chats', 'les robots']],
       ['Trier ses déchets, ça aide… ?', 'la planète', ['personne', 'les martiens', 'les jeux vidéo']],
+      ['Se moquer d\'un camarade, c\'est… ?', 'blessant', ['drôle', 'poli', 'courageux']],
+      ['Qui écrit les lois en France ?', 'les députés', ['les juges', 'les maires', 'les policiers']],
+      ['Un piéton marche sur… ?', 'le trottoir', ['la route', 'la piste cyclable', 'les rails']],
+      ['Le drapeau européen est de quelle couleur ?', 'bleu avec des étoiles jaunes', ['rouge et blanc', 'vert et noir', 'blanc et or']],
+      ['Un secret qui fait du mal, il faut… ?', 'en parler à un adulte', ['le garder', "l'oublier", 'le raconter à tous']],
+      ['Que fait la Croix-Rouge ?', 'elle aide les gens en difficulté', ['elle vend des voitures', 'elle construit des routes', 'elle fait des films']],
     ],
     3: [
       ["Combien d'étoiles sur le drapeau européen ?", '12', ['27', '50', '10']],
@@ -588,6 +836,67 @@ const DISCOVERY_SETS = {
       ['En France, on peut voter à partir de… ?', '18 ans', ['16 ans', '21 ans', '15 ans']],
       ['Que fait un vétérinaire ?', 'il soigne les animaux', ['il coupe les arbres', 'il conduit les trains', 'il fait le pain']],
       ['En France, on paie en… ?', 'euros', ['dollars', 'francs', 'livres']],
+      ['Combien de temps dure un mandat de président en France ?', '5 ans', ['3 ans', '7 ans', '10 ans']],
+      ['Que veut dire « égalité » dans la devise française ?', 'les mêmes droits pour tous', ['tout le monde pareil', 'personne ne travaille', 'tout est gratuit']],
+      ['Qui fait respecter la loi dans la rue ?', 'la police', ['les professeurs', 'les pompiers', 'les médecins']],
+      ['La laïcité, c\'est… ?', 'chacun croit ce qu\'il veut', ['personne ne croit', 'tout le monde croit pareil', "c'est interdit d'en parler"]],
+      ['Où siègent les députés français ?', "à l'Assemblée nationale", ['au Louvre', "à l'Élysée", 'à la Sorbonne']],
+      ['Un handicap, ça veut dire qu\'une personne… ?', "a besoin d'aménagements", ['ne peut rien faire', "n'existe pas", 'est méchante']],
+    ],
+  },
+  histoire: {
+    1: [
+      ['Où habitaient les chevaliers ?', 'dans un château', ['dans un immeuble', 'dans une grotte', 'dans un bateau']],
+      ['Qui a construit les pyramides ?', 'les Égyptiens', ['les Romains', 'les Vikings', 'les Gaulois']],
+      ['Avec quoi écrivait-on avant le stylo ?', 'une plume', ['un clavier', 'un pinceau à eau', 'un crayon de couleur']],
+      ['Les dinosaures ont vécu… ?', 'il y a très très longtemps', ["l'année dernière", 'au Moyen Âge', 'en 1900']],
+      ['Comment se déplaçait-on avant la voiture ?', 'à cheval', ['en avion', 'en métro', 'en fusée']],
+      ['Un château fort servait à… ?', 'se défendre', ['faire du sport', 'garder les trains', 'cultiver le blé']],
+      ['Qui était Vercingétorix ?', 'un chef gaulois', ['un roi anglais', 'un pharaon', 'un empereur chinois']],
+    ],
+    2: [
+      ['En quelle année a eu lieu la Révolution française ?', '1789', ['1515', '1900', '1650']],
+      ['Quel roi a fait construire le château de Versailles ?', 'Louis XIV', ['Napoléon', 'Charlemagne', 'François Ier']],
+      ['Qui a inventé l\'imprimerie en Europe ?', 'Gutenberg', ['Newton', 'Galilée', 'Molière']],
+      ['Comment appelle-t-on la période des chevaliers ?', 'le Moyen Âge', ["l'Antiquité", 'la Préhistoire', 'les Temps modernes']],
+      ['Quel empereur français a été couronné en 1804 ?', 'Napoléon', ['Louis XVI', 'Charlemagne', 'Henri IV']],
+      ['Que célèbre-t-on le 14 juillet ?', 'la prise de la Bastille', ["la fin de l'école", 'la naissance du roi', 'la récolte']],
+      ['Les hommes préhistoriques peignaient… ?', 'sur les parois des grottes', ['sur du papier', 'sur des murs de brique', 'sur des écrans']],
+    ],
+    3: [
+      ['Quel roi a fait bâtir Villandry en 1536 ?', 'un ministre de François Ier', ['Louis XIV', 'Napoléon', 'Charlemagne']],
+      ['Qui était Jeanne d\'Arc ?', 'une jeune fille qui a défendu la France', ['une reine anglaise', 'une navigatrice', 'une peintre']],
+      ['La Renaissance nous est venue surtout de… ?', "l'Italie", ["l'Angleterre", 'la Chine', "l'Égypte"]],
+      ['Qui a découvert l\'Amérique en 1492 ?', 'Christophe Colomb', ['Magellan', 'Marco Polo', 'Vasco de Gama']],
+      ['Que sont les vitraux des cathédrales ?', 'des verres colorés qui racontent des histoires', ['des tableaux', 'des tapisseries', 'des sculptures']],
+      ['La Première Guerre mondiale a commencé en… ?', '1914', ['1939', '1870', '1945']],
+      ['Charlemagne est connu pour avoir… ?', "développé l'école", ['inventé la roue', 'découvert le feu', 'construit la tour Eiffel']],
+    ],
+  },
+  arts: {
+    1: [
+      ['Combien de couleurs a un arc-en-ciel ?', '7', ['3', '5', '10']],
+      ['Bleu + jaune donne… ?', 'du vert', ['du rouge', 'du violet', 'du marron']],
+      ['Rouge + jaune donne… ?', "de l'orange", ['du vert', 'du bleu', 'du gris']],
+      ['Avec quoi joue-t-on du piano ?', 'les doigts', ['les pieds', 'un archet', 'une baguette']],
+      ['Qui peint des tableaux ?', 'un peintre', ['un plombier', 'un pilote', 'un boulanger']],
+      ['Un tambour, on en joue… ?', 'en tapant dessus', ['en soufflant', 'en pinçant', 'en frottant']],
+    ],
+    2: [
+      ['Qui a peint la Joconde ?', 'Léonard de Vinci', ['Picasso', 'Monet', 'Van Gogh']],
+      ['Dans quel musée parisien est la Joconde ?', 'le Louvre', ["le musée d'Orsay", 'le Centre Pompidou', 'le Grand Palais']],
+      ['Combien de cordes a un violon ?', '4', ['6', '3', '8']],
+      ['Rouge + bleu donne… ?', 'du violet', ['du vert', "de l'orange", 'du jaune']],
+      ['Comment appelle-t-on un groupe de musiciens ?', 'un orchestre', ['une équipe', 'une troupe', 'un chœur']],
+      ['Qui écrit les pièces de théâtre ?', 'un auteur', ['un acteur', 'un décorateur', 'un spectateur']],
+    ],
+    3: [
+      ['Quel peintre a peint « La Nuit étoilée » ?', 'Van Gogh', ['Monet', 'Renoir', 'Cézanne']],
+      ['Quel mouvement Monet a-t-il lancé ?', "l'impressionnisme", ['le cubisme', 'le romantisme', 'le surréalisme']],
+      ['Qui a sculpté « Le Penseur » ?', 'Rodin', ['Michel-Ange', 'Camille Claudel', 'Giacometti']],
+      ['Combien de touches a un piano ?', '88', ['61', '100', '76']],
+      ['Quel instrument a des touches noires et blanches et des tuyaux ?', "l'orgue", ['la harpe', 'la guitare', 'le hautbois']],
+      ['Le solfège sert à… ?', 'lire la musique', ['accorder les instruments', 'chanter fort', 'danser en rythme']],
     ],
   },
   science: {
@@ -597,6 +906,12 @@ const DISCOVERY_SETS = {
       ['Quel animal pond des œufs ?', 'la poule', ['le chat', 'le chien', 'la vache']],
       ['Pour pousser, une plante a besoin… ?', "d'eau et de lumière", ['de bonbons', 'de musique', 'de jouets']],
       ['La nuit, on voit dans le ciel… ?', 'la lune et les étoiles', ['le soleil', 'des arcs-en-ciel', 'des ballons']],
+      ['Combien de pattes a une araignée ?', '8', ['6', '4', '10']],
+      ['Quel animal vit dans une ruche ?', "l'abeille", ['la fourmi', 'le papillon', 'la coccinelle']],
+      ['Que devient une chenille ?', 'un papillon', ['une abeille', 'un escargot', 'une mouche']],
+      ['Quel animal porte sa maison sur le dos ?', "l'escargot", ['le lapin', 'la souris', 'le hérisson']],
+      ['De quelle couleur devient le ciel quand il pleut ?', 'gris', ['rose', 'orange', 'violet']],
+      ['Où vivent les poissons ?', "dans l'eau", ["dans l'air", 'sous terre', 'dans le feu']],
     ],
     2: [
       ["À quelle température l'eau gèle-t-elle ?", '0 °C', ['10 °C', '100 °C', '50 °C']],
@@ -605,6 +920,12 @@ const DISCOVERY_SETS = {
       ['Le soleil se lève à… ?', "l'est", ["l'ouest", 'au nord', 'au sud']],
       ['Combien de planètes dans le système solaire ?', '8', ['7', '9', '12']],
       ['Un aimant attire… ?', 'le fer', ['le bois', 'le plastique', 'le papier']],
+      ["À quelle température l'eau bout-elle ?", '100 °C', ['0 °C', '50 °C', '200 °C']],
+      ['Quel est le plus grand animal du monde ?', 'la baleine bleue', ["l'éléphant", 'la girafe', 'le requin']],
+      ['Combien de temps met la Terre à tourner sur elle-même ?', '24 heures', ['1 heure', '1 mois', '1 an']],
+      ['Quel animal est un mammifère ?', 'la chauve-souris', ['le serpent', 'la grenouille', 'le crocodile']],
+      ['Que produit une plante grâce à la lumière ?', 'de la nourriture', ['de la pluie', 'du vent', 'du sable']],
+      ['Quelle est la source de presque toute l\'énergie sur Terre ?', 'le Soleil', ['la Lune', 'le vent', 'les volcans']],
     ],
     3: [
       ['Quel organe pompe le sang ?', 'le cœur', ['le cerveau', 'les poumons', "l'estomac"]],
@@ -613,25 +934,44 @@ const DISCOVERY_SETS = {
       ['Glace, eau, vapeur : ce sont trois… ?', "états de l'eau", ['couleurs', 'planètes', 'saisons']],
       ['Quelle planète est surnommée la planète rouge ?', 'Mars', ['Vénus', 'Jupiter', 'Saturne']],
       ['Combien de dents de lait a un enfant ?', '20', ['32', '12', '28']],
+      ['Quelle planète a de grands anneaux ?', 'Saturne', ['Mars', 'Vénus', 'Mercure']],
+      ['Combien de temps met la lumière du Soleil pour nous atteindre ?', '8 minutes', ['1 seconde', '1 heure', '1 jour']],
+      ['Quel os protège le cerveau ?', 'le crâne', ['la côte', 'le fémur', 'la clavicule']],
+      ['Qu\'est-ce qui fait tomber les objets ?', 'la gravité', ['le vent', 'la lumière', 'le magnétisme']],
+      ['Comment appelle-t-on un animal qui ne mange que des plantes ?', 'un herbivore', ['un carnivore', 'un omnivore', 'un insectivore']],
+      ['Le cycle de l\'eau : évaporation, condensation, puis… ?', 'précipitation', ['congélation', 'combustion', 'germination']],
+      ['Combien y a-t-il d\'os dans le corps d\'un adulte ?', '206', ['106', '306', '406']],
     ],
   },
 };
+
+// Empreinte courte et stable d'un énoncé : elle sert de clé, de sorte qu'on
+// puisse réordonner ou compléter les listes sans que l'historique de l'enfant
+// change de sens.
+function empreinte(texte) {
+  let h = 5381;
+  for (let i = 0; i < texte.length; i++) h = ((h * 33) ^ texte.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
 
 function discoveryGen(skill) {
   return { skill, gen(level) {
     const t = tier(level, DISCOVERY_SETS[skill][3] ? 3 : 2);
     const set = DISCOVERY_SETS[skill][t];
-    const i = rnd(set.length);
-    const [prompt, correct, wrongs] = set[i];
-    return { key: `disc-${skill}-${t}-${i}`, prompt, correct, wrongs };
+    const [prompt, correct, wrongs] = set[rnd(set.length)];
+    return { key: `disc-${skill}-${empreinte(prompt)}`, prompt, correct, wrongs };
   } };
 }
 
 const DISCOVERY_GENS = [
   discoveryGen('geoFR'), discoveryGen('geoUSA'),
   discoveryGen('civics'), discoveryGen('science'),
+  discoveryGen('histoire'), discoveryGen('arts'),
 ];
 
+// Exposé pour l'audit de la banque : compter les questions réellement
+// distinctes, et repérer une proposition fausse qui serait aussi juste.
+export const __CATEGORIES_REF = () => CATEGORIES;
 const CATEGORIES = [
   { name: 'Math', gens: MATH_GENS, maxLevel: 5, defaultLevel: 3 },
   { name: 'English', gens: ENGLISH_GENS, maxLevel: 3, defaultLevel: 2 },
@@ -650,6 +990,7 @@ const SKILL_LABELS = {
   frOrtho: 'orthographe française', frConjug: 'conjugaison', frArticle: 'articles (le/la/les)',
   frPlural: 'pluriels français', frTrad: 'traduction', frAdj: 'accords', frCalendar: 'jours et mois',
   geoFR: 'géographie France', geoUSA: 'géographie USA', civics: 'civisme', science: 'sciences',
+  histoire: 'histoire', arts: 'arts et musique',
 };
 
 const SKILL_META = {};
@@ -666,6 +1007,7 @@ export class EducationMode {
     this.data = this.load();
     this.enabled = true; // always on — there is no way to turn it off
     this.recent = new Set(this.data.recent || []);
+    this.acquis = new Map(Object.entries(this.data.acquis || {}));
     this.skills = this.data.skills || {}; // skill -> { level, hist: [] }
     // One-time recalibration: the bank proved globally too easy, so every
     // already-known skill jumps a level (adaptive demotion catches any
@@ -750,6 +1092,7 @@ export class EducationMode {
 
   save() {
     this.data.recent = [...this.recent].slice(-RECENT_CAP);
+    this.data.acquis = Object.fromEntries([...this.acquis].slice(-ACQUIS_CAP));
     this.data.skills = this.skills;
     // remaining play time survives restarts; a quiz in progress saves 0 so
     // reloading mid-quiz restarts the quiz instead of skipping it
@@ -828,6 +1171,27 @@ export class EducationMode {
       };
     }
     return this.skills[skill];
+  }
+
+  // Met à jour le compteur de maîtrise d'une question précise.
+  // propre = juste du premier coup. Tout le reste remet à zéro.
+  noterMaitrise(cle, propre) {
+    if (!cle) return;
+    const n = propre ? (this.acquis.get(cle) || 0) + 1 : 0;
+    this.acquis.delete(cle);      // réinsérer en fin de Map = « vue récemment »,
+    this.acquis.set(cle, n);      // c'est ce qui décide qui saute au plafond
+    if (this.acquis.size > ACQUIS_CAP) {
+      const trop = this.acquis.size - ACQUIS_CAP;
+      let i = 0;
+      for (const k of [...this.acquis.keys()]) { if (i++ >= trop) break; this.acquis.delete(k); }
+    }
+  }
+
+  // Combien de questions l'enfant a déjà acquises — affiché au parent.
+  nombreAcquises() {
+    let n = 0;
+    for (const v of this.acquis.values()) if (v >= MAITRISE) n++;
+    return n;
   }
 
   recordOutcome(skill, ok, fluent = false) {
@@ -1039,7 +1403,11 @@ export class EducationMode {
         (EDU_PREFS.lang !== 'en' || c.name !== 'Français')));
     }
     const category = this.categoryQueue.pop();
-    for (let attempt = 0; attempt < 30; attempt++) {
+    // On garde sous le coude la candidate la moins bien sue rencontrée : si
+    // tout ce que la catégorie sait produire se trouve acquis, c'est elle qu'on
+    // reproposera plutôt que de laisser le quiz sans question.
+    let repli = null;
+    for (let attempt = 0; attempt < 40; attempt++) {
       const def = pick(category.gens);
       // language-specific skills are skipped when the other language is chosen
       if (def.lang && EDU_PREFS.lang !== 'both' && def.lang !== EDU_PREFS.lang) continue;
@@ -1048,15 +1416,25 @@ export class EducationMode {
       const level = this.skillState(def.skill).level;
       const q = def.gen(level);
       if (!q) continue;
-      if (this.recent.has(q.key) && attempt < 25) continue;
-      this.recent.add(q.key);
-      if (this.recent.size > RECENT_CAP) {
-        this.recent = new Set([...this.recent].slice(-RECENT_CAP));
-      }
-      const options = shuffle([q.correct, ...q.wrongs.slice(0, 3)]);
-      return { ...q, category: category.name, skill: def.skill, level, options, answerIndex: options.indexOf(q.correct) };
+      const su = this.acquis.get(q.key) || 0;
+      if (!repli || su < repli.su) repli = { q, def, level, su };
+      // acquise : on n'en veut plus, on va chercher de la nouveauté
+      if (su >= MAITRISE) continue;
+      // les premiers essais exigent du franchement neuf : jamais vue du tout
+      if (attempt < 16 && (this.acquis.has(q.key) || this.recent.has(q.key))) continue;
+      if (this.recent.has(q.key) && attempt < 34) continue;
+      return this.servir(q, def, category, level);
     }
-    return null;
+    return repli ? this.servir(repli.q, repli.def, category, repli.level) : null;
+  }
+
+  servir(q, def, category, level) {
+    this.recent.add(q.key);
+    if (this.recent.size > RECENT_CAP) {
+      this.recent = new Set([...this.recent].slice(-RECENT_CAP));
+    }
+    const options = shuffle([q.correct, ...q.wrongs.slice(0, 3)]);
+    return { ...q, category: category.name, skill: def.skill, level, options, answerIndex: options.indexOf(q.correct) };
   }
 
   nextQuestion() {
@@ -1112,6 +1490,7 @@ export class EducationMode {
       if (this.streak >= 2) this.showCombo();
       // "fluent" = right on the first try, in under 4.5 seconds
       this.recordOutcome(this.current.skill, true, this.attempted === 0 && elapsed < 4.5);
+      this.noterMaitrise(this.current.key, this.attempted === 0);
       this.logQuestion(true);
       this.renderStars(true);
       setTimeout(() => {
@@ -1135,6 +1514,7 @@ export class EducationMode {
     // second chance: one retry on the remaining options
     if (!willFreeze && this.attempted === 0) {
       this.attempted = 1;
+      this.noterMaitrise(this.current.key, false);
       this.el.feedback.textContent = this.suspicion === 2
         ? 'Tu cliques trop vite sans lire 🧐 Réfléchis et essaie encore !'
         : pick(['Presque ! Essaie encore 🤔', 'Pas celle-là… tu as une 2e chance !', 'Regarde bien, retente ta chance !']);
@@ -1148,6 +1528,7 @@ export class EducationMode {
     this.el.feedback.textContent = `La bonne réponse était : ${this.current.correct}`;
     this.el.feedback.className = 'bad';
     this.recordOutcome(this.current.skill, false);
+    this.noterMaitrise(this.current.key, false);
     this.logQuestion(false);
 
     if (willFreeze) {
@@ -1315,9 +1696,16 @@ export class EducationMode {
 
   // Adopt a merged skills/recent-questions state pulled from the cloud
   // (main.js does the actual cross-device merge; this just applies it).
-  setRemoteSkills(skills, recentKeys) {
+  setRemoteSkills(skills, recentKeys, acquisDistant) {
     this.skills = skills;
     if (recentKeys) this.recent = new Set(recentKeys);
+    // Une question travaillée sur l'iPad doit compter aussi sur l'ordinateur :
+    // on retient le plus avancé des deux compteurs, jamais le plus bas.
+    if (acquisDistant) {
+      for (const [cle, n] of Object.entries(acquisDistant)) {
+        this.acquis.set(cle, Math.max(this.acquis.get(cle) || 0, n));
+      }
+    }
     this.save();
   }
 
