@@ -240,4 +240,6 @@ const reveiller = (p) => p.evaluate(() => {
   document.dispatchEvent(new Event('visibilitychange'));
 });
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua };
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua,
+  // réutilisés par les autres suites, qui montent leur propre décor
+  servirLeJeuPour: servirLeJeu, trouverChromium };
