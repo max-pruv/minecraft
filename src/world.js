@@ -7,6 +7,7 @@ import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
 import { buildVille } from './ville.js';
 import { buildCircuit } from './circuit.js';
+import { POLE, buildPole } from './pole.js';
 import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
   MONUMENTS, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC, buildGrandCentral,
@@ -753,6 +754,10 @@ const LANDMARKS = [
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
   { name: 'Musée', x: -34, z: 40, box: 10, build: buildMuseum },
+  // Le pôle Nord. Il ne figure ni dans les villes ni dans les lieux : aucun
+  // panneau n'y mène, aucun nom ne l'annonce. Il faut voler droit vers le nord
+  // jusqu'à ce que la mer gèle.
+  { name: 'Pôle Nord', x: POLE.x, z: POLE.z, box: 62, build: buildPole },
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -829,6 +834,15 @@ export class World {
     // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
     // creusé autant que nivelé.
     h = hauteurManhattan(x, z, h);
+
+    // Le pôle Nord : une banquise plate posée sur l'océan, tout au nord. On n'y
+    // arrive qu'en volant longtemps — c'est un trésor caché, il n'est annoncé
+    // nulle part.
+    const pd2 = Math.hypot(x - POLE.x, z - POLE.z);
+    if (pd2 < POLE.r) {
+      const m = Math.min(1, (POLE.r - pd2) / 12);
+      h = h * (1 - m) + 32 * m;
+    }
 
     // the amusement park sits on its own flat esplanade
     const pd = Math.hypot(x - PARK.x, z - PARK.z);
@@ -962,6 +976,7 @@ export class World {
   }
 
   treeAt(x, z) {
+    if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
     // ville où la forêt a le droit de repousser.
     if (dansCentralPark(x, z)) {

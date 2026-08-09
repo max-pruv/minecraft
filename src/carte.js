@@ -19,6 +19,7 @@ import {
   MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
 import { couleurCarteManhattan } from './manhattan.js';
+import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
 // Couleur de chaque bloc vu du dessus. Sert à la vignette comme à la carte.
@@ -215,6 +216,10 @@ export class Carte {
     if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) return [214, 190, 140];
     if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) return [126, 158, 84];
     if (Math.hypot(wx - CIRCUIT.x, wz - CIRCUIT.z) < CIRCUIT.r - 10) return [96, 108, 96];
+    // La banquise du pôle. Elle apparaît sur la carte — une tache blanche tout
+    // au nord, sans nom ni étiquette. C'est exactement ce qu'il faut : de quoi
+    // se demander ce que c'est, pas de quoi le savoir.
+    if (Math.hypot(wx - POLE.x, wz - POLE.z) < POLE.r - 4) return [236, 244, 250];
 
     if (h <= WATER_LEVEL) {
       const p = Math.min(1, (WATER_LEVEL - h) / 16);
