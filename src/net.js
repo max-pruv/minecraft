@@ -36,6 +36,11 @@ const ICE_SERVERS = [
 // vide. On envoie donc un battement régulier et on coupe ce qui ne répond plus.
 const HEARTBEAT_MS = 5000;
 const STALE_MS = 20000;
+// Un pair qui s'est annoncé endormi est épargné par le silence — mais pas
+// indéfiniment : au-delà, l'application a été fermée pour de bon.
+const SOMMEIL_MAX_MS = 300000;
+// Après un réveil, on laisse au lien le temps de se rétablir avant de juger.
+const GRACE_REVEIL_MS = 15000;
 // On garde la trace des appareils écartés, cf. le cas 'hello'. Le plafond n'est
 // qu'un garde-fou : on n'écarte quelqu'un qu'en cas de prénom déjà pris.
 const EVINCES_MAX = 50;
@@ -216,22 +221,30 @@ export class NetSession {
 
   // L'hôte a disparu ou la connexion a sauté : on retente, en le disant.
   // Sans cela, l'invité restait seul dans un monde qui semblait normal.
+  // On ne renonce pas.
+  //
+  // L'ancienne version abandonnait après six essais, en une trentaine de
+  // secondes, sur un « reviens au menu et retente » qui est un cul-de-sac pour
+  // un enfant de sept ans — d'autant que la cause la plus banale, l'autre iPad
+  // qu'on repose deux minutes, se résout toute seule si l'on patiente. On
+  // continue donc d'essayer tant que le monde est ouvert, en espaçant les
+  // tentatives pour ne pas chauffer la tablette, et en disant simplement où
+  // l'on en est. C'est l'enfant qui décide d'arrêter, pas le minuteur.
   rejoinHost() {
     if (this.isHost || !this.active || this._rejoining) return;
     this._rejoining = true;
     let essai = 0;
     const tenter = () => {
       if (!this.active || !this._rejoining || !this.peer || this.peer.destroyed) return;
-      if (essai >= 6) {
-        this._rejoining = false;
-        this.link('perdu', 'Le monde en ligne ne répond plus — reviens au menu et retente');
-        return;
-      }
       essai++;
-      this.link('reconnexion', `Reconnexion au monde ${this.code}… (${essai}/6)`);
+      this.link('reconnexion', essai <= 6
+        ? `Reconnexion au monde ${this.code}…`
+        : `Le monde ${this.code} ne répond pas — on continue d'essayer`);
       if (this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
       this.connectToHost(null);
-      this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, 3000 + essai * 2000);
+      // 3 s, 5 s, 7 s… jusqu'à un essai toutes les vingt secondes
+      const attente = Math.min(3000 + essai * 2000, 20000);
+      this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, attente);
     };
     tenter();
   }
@@ -251,18 +264,81 @@ export class NetSession {
   // Battement de cœur : on prouve régulièrement que le lien vit, et on coupe
   // ce qui ne répond plus. Un pair fantôme laissait sinon un avatar figé au
   // milieu du monde et faussait le compte des joueurs.
+  // --- veille et retour ------------------------------------------------------
+  //
+  // La panne la plus fréquente n'était pas le réseau, c'était le système.
+  // Quand l'enfant passe à une autre application, iOS gèle les minuteurs de la
+  // page : plus un battement ne part. Vingt secondes plus tard, l'autre iPad
+  // conclut à un lien mort et coupe — alors que le lien était intact et que
+  // l'enfant revenait dix secondes après.
+  //
+  // On se prévient donc mutuellement : « je m'endors », « je reviens ». Un pair
+  // endormi n'est plus jugé sur son silence, et à son réveil il annonce son
+  // retour et prouve immédiatement qu'il est là, sans attendre le battement
+  // suivant. C'est ce qui supprime les coupures intempestives.
+  ecouterVeille() {
+    if (this._veille) return;
+    this._veille = () => {
+      if (!this.active) return;
+      if (document.visibilityState === 'hidden') {
+        this.diffusionBrute({ t: 'dodo' });
+      } else {
+        this._reveilA = Date.now();
+        for (const c of this.conns.values()) c.seen = Date.now();
+        this.diffusionBrute({ t: 'coucou' });
+        // le réseau a pu changer pendant l'absence : on vérifie tout de suite
+        if (this.peer && this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+        if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
+      }
+    };
+    this._auRetourDuReseau = () => {
+      if (!this.active) return;
+      this._reveilA = Date.now();
+      if (this.peer && this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+      if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
+    };
+    document.addEventListener('visibilitychange', this._veille);
+    window.addEventListener('online', this._auRetourDuReseau);
+  }
+
+  // Le seul endroit d'où l'on parle.
+  //
+  // Un lien inscrit n'est pas encore un lien ouvert : pendant une reconnexion,
+  // la boucle des positions continuait d'émettre sur un canal en cours
+  // d'établissement. PeerJS refusait chaque message avec une erreur, huit fois
+  // par seconde, et surtout : on croyait avoir parlé. On vérifie donc, une fois
+  // pour toutes et au même endroit, que le canal est réellement ouvert.
+  envoyer(c, msg) {
+    if (!c || !c.conn || !c.conn.open) return false;
+    try { c.conn.send(msg); return true; } catch { return false; }
+  }
+
+  diffusionBrute(msg) {
+    for (const c of this.conns.values()) this.envoyer(c, msg);
+  }
+
   startHeartbeat() {
     if (this._hb) return;
+    this.ecouterVeille();
     this._hb = setInterval(() => {
       const now = Date.now();
+      // Nous-mêmes en arrière-plan : nos minuteurs sont bridés, le temps qui
+      // passe ne prouve rien. On ne juge personne dans cet état, ni pendant les
+      // quelques secondes qui suivent le réveil.
+      if (document.visibilityState === 'hidden') return;
+      if (this._reveilA && now - this._reveilA < GRACE_REVEIL_MS) return;
       for (const [id, c] of [...this.conns]) {
+        if (c.dodo) {
+          if (now - c.dodo > SOMMEIL_MAX_MS) this.dropPeer(id);
+          continue;
+        }
         // Un pair relayé n'a pas de lien direct à sonder, mais l'hôte nous
         // renvoie sa position dix fois par seconde : son silence prolongé
         // prouve son départ aussi sûrement qu'un lien coupé. Sans cela, un
         // « au revoir » perdu laissait son avatar planté là pour toujours.
         if (c.seen && now - c.seen > STALE_MS) { this.dropPeer(id); continue; }
         if (!c.conn) continue;
-        try { c.conn.send({ t: 'ping' }); } catch { this.dropPeer(id); }
+        if (!this.envoyer(c, { t: 'ping' }) && c.pret) this.dropPeer(id);
       }
     }, HEARTBEAT_MS);
   }
@@ -292,7 +368,7 @@ export class NetSession {
     // tout passe par l'hôte.
     if (!this.isHost && this.active && id === ID_PREFIX + this.code) this.rejoinHost();
     if (this.isHost && c.pret) { // tell the other guests this player is gone
-      for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
+      for (const o of this.conns.values()) this.envoyer(o, { t: 'bye', from: id });
     }
     // On n'annonce le départ que de quelqu'un dont on connaissait le nom : une
     // tentative de connexion avortée n'est pas un ami qui s'en va.
@@ -328,6 +404,26 @@ export class NetSession {
         break;
       case 'pong':
         break;
+      // « Je passe en arrière-plan » : on cesse de compter son silence contre
+      // lui. Il reste affiché — l'enfant est parti dix secondes, pas parti.
+      case 'dodo':
+        entry.dodo = Date.now();
+        if (this.isHost) this.relay(conn.peer, { t: 'dodo_de', from: conn.peer });
+        break;
+      case 'coucou':
+        entry.dodo = 0;
+        if (this.isHost) this.relay(conn.peer, { t: 'coucou_de', from: conn.peer });
+        break;
+      case 'dodo_de': {
+        const e = this.conns.get(msg.from);
+        if (e) e.dodo = Date.now();
+        break;
+      }
+      case 'coucou_de': {
+        const e = this.conns.get(msg.from);
+        if (e) { e.dodo = 0; e.seen = Date.now(); }
+        break;
+      }
       case 'hello': {
         const wanted = String(msg.name || 'Joueur').slice(0, 16);
         // Un seul Alice à la fois dans le monde — mais c'est le NOUVEAU qui
@@ -373,7 +469,7 @@ export class NetSession {
           for (const [id, c] of [...this.conns]) {
             if (c === entry || c.name !== wanted) continue;
             if (c.conn) {
-              try { c.conn.send({ t: 'remplace', name: wanted }); } catch { /* déjà mort */ }
+              this.envoyer(c, { t: 'remplace', name: wanted });
               setTimeout(() => { try { c.conn.close(); } catch { /* déjà fermée */ } }, 400);
             }
             this.conns.delete(id);
@@ -382,7 +478,7 @@ export class NetSession {
             if (this._evinces.size > EVINCES_MAX) {
               this._evinces.delete(this._evinces.values().next().value);
             }
-            for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
+            for (const o of this.conns.values()) this.envoyer(o, { t: 'bye', from: id });
           }
         }
         entry.pret = true;
@@ -478,7 +574,7 @@ export class NetSession {
   relay(fromId, msg) {
     for (const [id, c] of this.conns) {
       if (id !== fromId && c.conn) {
-        c.conn.send(msg.t === 'pos' ? { ...msg, t: 'rpos' } : msg);
+        this.envoyer(c, msg.t === 'pos' ? { ...msg, t: 'rpos' } : msg);
       }
     }
   }
@@ -489,15 +585,15 @@ export class NetSession {
   }
 
   sendOp(k, id, ts) {
-    for (const c of this.conns.values()) if (c.conn) c.conn.send({ t: 'op', k, id, ts });
+    for (const c of this.conns.values()) this.envoyer(c, { t: 'op', k, id, ts });
   }
 
   sendChat(name, msg) {
-    for (const c of this.conns.values()) if (c.conn) c.conn.send({ t: 'chat', name, msg });
+    for (const c of this.conns.values()) this.envoyer(c, { t: 'chat', name, msg });
   }
 
   broadcast(msg) { // generic fan-out for duels, emotes, signs and the chest
-    for (const c of this.conns.values()) if (c.conn) c.conn.send(msg);
+    this.diffusionBrute(msg);
   }
 
   startPosLoop() {
@@ -506,7 +602,7 @@ export class NetSession {
       if (!this.getPos || this.conns.size === 0) return;
       const p = this.getPos();
       const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
-      for (const c of this.conns.values()) if (c.conn) c.conn.send(msg);
+      for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }
 
@@ -624,6 +720,13 @@ export class NetSession {
     // connexions dans une session morte — d'où des avatars qui revenaient
     // hanter un monde qu'on venait de quitter.
     this.active = false;
+    if (this._veille) {
+      document.removeEventListener('visibilitychange', this._veille);
+      window.removeEventListener('online', this._auRetourDuReseau);
+      this._veille = null;
+      this._auRetourDuReseau = null;
+    }
+    this._reveilA = 0;
     clearInterval(this.posTimer);
     this.posTimer = null;
     clearInterval(this._hb);
