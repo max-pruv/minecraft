@@ -7,9 +7,10 @@ jouer par de vrais navigateurs.
 ```sh
 cd tests
 npm install
-npm test          # les deux suites
+npm test          # les trois suites
 npm run reseau    # le monde partagé
 npm run reglages  # les réglages, enfant et parent
+npm run carte     # la carte : glisser, zoomer, voyager
 ```
 
 Compter environ deux minutes. C'est normal et voulu : les attentes doivent
@@ -50,6 +51,8 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | un serveur de rendez-vous muet finit par le dire | le menu restait sur « Ouverture du monde… » indéfiniment |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
+| l'invité voit le même temps et la même heure que l'hôte | chacun tirait sa météo au sort : l'un sous la pluie en pleine nuit, l'autre au soleil de midi |
+| et il le reste · un invité ne change pas le temps tout seul | mesuré : hôte 0,86 sous la pluie, invité 0,32 au sec |
 
 ## Les réglages (`npm run reglages`)
 
@@ -70,10 +73,31 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | et la tablette suit le panneau | elle réimposait sa version périmée |
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
+| la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
 regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
 montre.
+
+## La carte (`npm run carte`)
+
+Deux joueurs : une tablette — contexte tactile, vrais contacts multiples envoyés
+par le protocole du navigateur — et un ordinateur à la souris. C'est la
+différence entre les deux qui a mis au jour le défaut le plus grave.
+
+| Scénario | La panne d'origine |
+|---|---|
+| la carte s'ouvre sur le joueur | — |
+| le menu du jeu ne recouvre pas la carte | à la souris, ouvrir la carte relâchait le pointeur, ce que le jeu prenait pour une pause : son menu se posait dessus et plus rien ne répondait |
+| glisser promène la carte | il n'y avait ni déplacement ni zoom |
+| écarter deux doigts rapproche, les rapprocher éloigne | idem |
+| zoomer sur une ville n'y emmène pas | le second doigt levé était pris pour un appui bref, et le zoom finissait en téléportation |
+| toutes les grandes destinations restent repérables | deux domaines voisins tombaient sur le même pixel, l'un s'effaçait — et devenait injoignable |
+| aucun nom ne déborde de la carte | « Base spatia », coupé par le bord, illisible et intouchable |
+| toucher un lieu emmène en voyage · un appui long dépose n'importe où | ce qui marchait avant, et qui devait continuer |
+| en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
+| ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
+| on ne peut ni zoomer à l'infini ni sortir du monde | — |
 
 ## Si Chromium n'est pas trouvé
 

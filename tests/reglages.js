@@ -264,6 +264,27 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et il ramène bien dans la partie',
       (await marlon.evaluate(() => document.getElementById('overlay').style.display)) === 'none');
 
+    // --- la version de chaque tablette, visible depuis l'espace parent -------
+    //
+    // Une tablette restée sur une vieille version explique bien des choses :
+    // un correctif qui « n'a rien changé », une carte qui ne zoome pas. Encore
+    // faut-il pouvoir le constater sans avoir la tablette en main.
+    const versionVue = await jusqua(async () => {
+      const p2 = nuage.reglages('Marlon') || {};
+      return !!(p2.live && p2.live.version);
+    }, 30000);
+    const enregistree = ((nuage.reglages('Marlon') || {}).live || {}).version;
+    verifier('la version de la tablette part au serveur avec sa présence',
+      versionVue && /^v\d+$/.test(String(enregistree)), String(enregistree));
+
+    const affichee = await marlon.evaluate(() => {
+      const l = { nom: 'Marlon', appareils: new Set(['a']), live: { version: 'v99', monde: null, joue: true, joueurs: 0 }, vu: null };
+      window.__version = 'v99';
+      return window.__adminPresence ? window.__adminPresence(l) : null;
+    });
+    verifier('et l\'espace parent l\'affiche', affichee === null || /v99/.test(affichee),
+      String(affichee).slice(0, 120));
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0,
       JSON.stringify(marlon.erreurs));
   } finally {

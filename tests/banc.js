@@ -134,8 +134,14 @@ class Banc {
 
   // Un enfant devant sa tablette : contexte isolé, profil déjà rempli, pas de
   // proposition d'alertes qui viendrait masquer l'écran pendant le test.
-  async joueur(prenom) {
-    const ctx = await this.navigateur.newContext({ viewport: { width: 420, height: 760 } });
+  async joueur(prenom, opts = {}) {
+    // `tactile` reproduit une tablette : c'est ce que la famille a réellement
+    // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
+    const ctx = await this.navigateur.newContext({
+      viewport: opts.viewport || { width: 420, height: 760 },
+      hasTouch: !!opts.tactile,
+      isMobile: !!opts.tactile,
+    });
     const p = await ctx.newPage();
     p.prenom = prenom;
     p.erreurs = [];
@@ -183,6 +189,32 @@ class Banc {
     const vrai = this.portPairs;
     this.portPairs = portPairs;
     try { return await this.joueur(prenom); } finally { this.portPairs = vrai; }
+  }
+
+  // Une partie solo, celle qu'un enfant lance le plus souvent. Le répit de
+  // quiz est ouvert par la donnée qui le gouverne — pas en remplaçant une
+  // méthode : un test qui débranche le code qu'il traverse ne prouve rien.
+  async jouerSeul(prenom, opts = {}) {
+    const p = await this.joueur(prenom, opts);
+    await p.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById('play-btn').click();
+    });
+    await p.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    await dormir(3500);   // le temps que les morceaux du monde autour arrivent
+    return p;
+  }
+
+  // Ouvrir la carte comme l'enfant : le bouton, puis la vignette.
+  async ouvrirLaCarte(p) {
+    await p.evaluate(() => {
+      if (document.getElementById('minimap').style.display !== 'block') {
+        document.getElementById('map-btn').click();
+      }
+      document.getElementById('minimap').click();
+    });
+    await p.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 10000 });
+    await dormir(600);
   }
 
   async creerMonde(prenom) {
@@ -311,6 +343,24 @@ const reveiller = (p) => p.evaluate(() => {
   document.dispatchEvent(new Event('visibilitychange'));
 });
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd,
+// Deux doigts qui s'écartent sur l'écran. Playwright ne sait taper qu'à un
+// doigt : le multi-touch passe par le protocole du navigateur.
+async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
+  const cdp = await p.context().newCDPSession(p);
+  const points = (d) => [
+    { x: centre.x - d / 2, y: centre.y, id: 1 },
+    { x: centre.x + d / 2, y: centre.y, id: 2 },
+  ];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: points(deDistance) });
+  for (let i = 1; i <= pas; i++) {
+    const d = deDistance + ((aDistance - deDistance) * i) / pas;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(d) });
+    if (attente) await dormir(attente);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await dormir(200);
+}
+
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer,
   // réutilisés par les autres suites, qui montent leur propre décor
   servirLeJeuPour: servirLeJeu, trouverChromium };

@@ -923,15 +923,42 @@
       border-radius: 16px; padding: 16px; text-align: center;
     }
     #map-modal-canvas {
-      width: min(480px, 86vw); height: min(480px, 86vw);
-      border-radius: 8px; image-rendering: pixelated;
+      /* La carte prend toute la place qu'on peut lui donner : c'est un atlas,
+         pas une vignette. Le lissage est volontaire — le fond est calculé à
+         demi-résolution et agrandi, comme sur une carte routière. */
+      width: min(560px, 88vw); height: min(560px, 88vw);
+      max-height: 74vh; border-radius: 10px; touch-action: none; cursor: grab;
+      background: #16203a;
     }
+    #map-modal-canvas:active { cursor: grabbing; }
+    /* La carte et ses commandes forment un bloc : les boutons se placent par
+       rapport à l'image, jamais par rapport à la fiche — sinon la hauteur des
+       légendes les fait glisser hors du cadre. */
+    #map-zone { position: relative; display: inline-block; line-height: 0; }
+    /* Les commandes sont SOUS la carte, pas posées dessus. Posées dessus,
+       elles finissaient toujours par recouvrir un lieu — et un lieu caché
+       derrière un bouton est un lieu qu'on ne peut plus rejoindre. */
+    #map-outils {
+      display: flex; justify-content: center; gap: 8px; margin-top: 8px;
+    }
+    #map-outils button {
+      min-width: 44px; height: 38px; border-radius: 10px; font-size: 15px; line-height: 1;
+      border: 1px solid rgba(255,255,255,0.28); background: rgba(255, 255, 255, 0.09);
+      color: #fff; cursor: pointer; padding: 0 10px;
+    }
+    #map-outils button:active { background: rgba(58, 74, 107, 0.95); }
     #map-modal-close {
       position: absolute; top: 8px; right: 10px; background: none; border: none;
       color: #aaa; font-size: 18px; cursor: pointer; z-index: 1;
     }
-    #map-legend { color: #cdd7ee; font-size: 12px; margin-top: 8px; }
-    #map-astuce { color: #ffd75e; font-size: 12px; margin-top: 5px; }
+    #map-legend {
+      color: #cdd7ee; font-size: 12px; margin-top: 8px;
+      max-width: min(560px, 88vw); line-height: 1.5;
+    }
+    #map-astuce {
+      color: #ffd75e; font-size: 12px; margin-top: 5px;
+      max-width: min(560px, 88vw); line-height: 1.5;
+    }
     #map-astuce b { color: #fff; }
     /* La cible qui grandit sous le doigt pendant l'appui long : sans elle,
        l'enfant ne sait pas que quelque chose est en train de se passer. */
@@ -1195,10 +1222,18 @@
   <div id="map-modal">
     <div id="map-modal-card">
       <button id="map-modal-close">✕</button>
-      <canvas id="map-modal-canvas" width="480" height="480"></canvas>
-      <div id="map-cible"></div>
+      <div id="map-zone">
+        <canvas id="map-modal-canvas" width="560" height="560"></canvas>
+        <div id="map-cible"></div>
+      </div>
+      <div id="map-outils">
+        <button id="map-moins" title="Dézoomer">−</button>
+        <button id="map-plus" title="Zoomer">＋</button>
+        <button id="map-moi" title="Me retrouver">🔺 moi</button>
+        <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
+      </div>
       <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux · 🟪 créatures</div>
-      <div id="map-astuce">👆 Touche un lieu pour y aller · ✋ appui long <b>n'importe où</b> pour t'y téléporter</div>
+      <div id="map-astuce">🤏 Écarte deux doigts pour zoomer · ✋ glisse pour te promener · 👆 touche un nom pour y aller · ✊ appui long <b>n'importe où</b> pour t'y téléporter</div>
     </div>
   </div>
 

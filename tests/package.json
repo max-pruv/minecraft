@@ -5,9 +5,10 @@
   "description": "Tests de bout en bout du monde partagé : plusieurs navigateurs réels qui jouent ensemble.",
   "type": "commonjs",
   "scripts": {
-    "test": "node reseau.js && node reglages.js",
+    "test": "node reseau.js && node reglages.js && node carte.js",
     "reseau": "node reseau.js",
-    "reglages": "node reglages.js"
+    "reglages": "node reglages.js",
+    "carte": "node carte.js"
   },
   "devDependencies": {
     "express": "^4.19.2",

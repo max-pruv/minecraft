@@ -7,6 +7,17 @@ import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
 import { buildVille } from './ville.js';
 import { buildCircuit } from './circuit.js';
+import { POLE, buildPole } from './pole.js';
+import {
+  PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
+  buildNotreDame, buildSacreCoeur,
+} from './paris.js';
+import {
+  NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
+  MONUMENTS, LIBERTE, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC,
+  buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
+  WALL,
+} from './manhattan.js';
 
 export const CHUNK = 16;
 export const HEIGHT = 96;
@@ -421,6 +432,17 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
   PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
+  // La caserne et le commissariat sont bâtis au cœur de Paris, mais ils
+  // n'étaient pas des destinations : on ne pouvait y aller qu'en tombant
+  // dessus par hasard, au milieu d'une ville de cent dix blocs de large. Le
+  // point d'arrivée est la place, entre les deux — de là on voit les deux
+  // façades, les camions rouges et les voitures de patrouille.
+  { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z + 14, r: 34 },
+  // Manhattan a ses propres destinations : sans elles, on arrivait sur l'île
+  // par son seul nom, à un endroit quelconque de neuf kilomètres de long.
+  { name: 'Central Park', x: NY.x - 8, z: NY.z + 18, r: 34 },
+  { name: 'Times Square', x: NY.x - 11, z: NY.z + 64, r: 12 },
+  { name: 'Wall Street', x: NY.x, z: NY.z + WALL.v - 3, r: 12 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -705,14 +727,31 @@ function buildBaseMartienne(set) {
   }
 }
 
+// Les repères bâtis à la main. La carte s'en sert pour nommer ce qu'on voit
+// dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
 const LANDMARKS = [
   // Paris
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
   { name: 'Arc de Triomphe', x: -263, z: 200, box: 7, build: buildArch },
   { name: 'Pyramide du Louvre', x: -217, z: 222, box: 7, build: buildGlassPyramid },
-  // New York
-  { name: 'Empire State', x: 295, z: -110, box: 7, build: buildSkyscraper },
-  { name: 'Statue de la Liberté', x: 318, z: -154, box: 4, waterBase: true, build: buildStatue },
+  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 13, build: buildNotreDame },
+  { name: 'Sacré-Cœur', x: PARIS.x + BUTTE.u, z: PARIS.z + BUTTE.v, box: 12, build: buildSacreCoeur },
+  // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
+  // La Statue de la Liberté était plantée en pleine ville, sur ce qui est
+  // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.
+  { name: 'Empire State', x: NY.x + MONUMENTS[0].u, z: NY.z + MONUMENTS[0].v, box: MONUMENTS[0].box, build: buildEmpireState },
+  { name: 'Chrysler Building', x: NY.x + MONUMENTS[1].u, z: NY.z + MONUMENTS[1].v, box: MONUMENTS[1].box, build: buildChrysler },
+  { name: 'Grand Central', x: NY.x + MONUMENTS[2].u, z: NY.z + MONUMENTS[2].v, box: MONUMENTS[2].box, build: buildGrandCentral },
+  { name: 'Flatiron', x: NY.x + MONUMENTS[3].u, z: NY.z + MONUMENTS[3].v, box: MONUMENTS[3].box, build: buildFlatiron },
+  { name: 'Rockefeller Center', x: NY.x + MONUMENTS[4].u, z: NY.z + MONUMENTS[4].v, box: MONUMENTS[4].box, build: buildGrandCentral },
+  { name: 'One World Trade Center', x: NY.x + MONUMENTS[5].u, z: NY.z + MONUMENTS[5].v, box: MONUMENTS[5].box, build: buildOneWTC },
+  { name: 'Times Square', x: NY.x + MONUMENTS[6].u, z: NY.z + MONUMENTS[6].v, box: MONUMENTS[6].box, build: buildTimesSquare },
+  { name: 'Bourse de New York', x: NY.x + MONUMENTS[7].u, z: NY.z + MONUMENTS[7].v, box: MONUMENTS[7].box, build: buildBourse },
+  { name: 'Trinity Church', x: NY.x + MONUMENTS[8].u, z: NY.z + MONUMENTS[8].v, box: MONUMENTS[8].box, build: buildTrinity },
+  // Le pont de Brooklyn part de la rive est, juste au nord de Wall Street.
+  { name: 'Pont de Brooklyn', x: NY.x + 30, z: NY.z + WALL.v - 6, box: 30, waterBase: true, build: buildBrooklyn },
+  // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
+  { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
   // San Francisco
   { name: 'Golden Gate', x: 0, z: -373, box: 34, waterBase: true, build: buildSuspensionBridge },
   { name: 'Phare', x: -38, z: -353, box: 3, waterBase: true, build: buildLighthouse },
@@ -731,7 +770,14 @@ const LANDMARKS = [
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
   { name: 'Musée', x: -34, z: 40, box: 10, build: buildMuseum },
+  // Le pôle Nord. Il ne figure ni dans les villes ni dans les lieux : aucun
+  // panneau n'y mène, aucun nom ne l'annonce. Il faut voler droit vers le nord
+  // jusqu'à ce que la mer gèle.
+  { name: 'Pôle Nord', x: POLE.x, z: POLE.z, box: 62, build: buildPole },
 ];
+
+// La même liste, sans les constructeurs : ce que la carte a le droit de lire.
+export const REPERES = LANDMARKS.map(({ name, x, z, box }) => ({ name, x, z, box }));
 
 // --- world ----------------------------------------------------------------
 
@@ -740,7 +786,11 @@ const LANDMARKS = [
 // pastel-hilled San Francisco.
 export const CITIES = [
   { key: 'paris', name: 'Paris', x: -240, z: 200, r: 55, cell: 12, base: 34, street: 3 },
-  { key: 'ny', name: 'New York', x: 295, z: -110, r: 58, cell: 14, base: 33, street: 4 },
+  // New York n'est plus un disque : c'est l'île de Manhattan, longue et
+  // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
+  // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
+  // par zoneManhattan().
+  { key: 'ny', name: 'New York', x: 295, z: -110, r: 132, cell: 12, base: 33, street: 3 },
   { key: 'sf', name: 'San Francisco', x: 0, z: -320, r: 50, cell: 11, base: 33, street: 3 },
   { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
   { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },
@@ -786,6 +836,7 @@ export class World {
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
+      if (c.key === 'ny') continue;   // Manhattan est une île : cf. plus bas
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
@@ -793,6 +844,29 @@ export class World {
         h = h * (1 - m) + target * m;
         break;
       }
+    }
+
+    // Paris : la Seine se creuse dans la base plate, et la butte Montmartre s'y
+    // relève. Une ville née autour d'un fleuve ne pouvait pas rester une table.
+    h = hauteurParis(x, z, h, 34);
+
+    // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
+    // Sans lui, la statue se dresserait sur la mer.
+    const ld = Math.hypot(x - (NY.x + LIBERTE.u), z - (NY.z + LIBERTE.v));
+    if (ld < LIBERTE.r) h = Math.max(h, WATER_LEVEL + 1 - Math.floor(ld / 3));
+
+    // Manhattan ne se pose pas sur le continent : elle en est détachée par
+    // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
+    // creusé autant que nivelé.
+    h = hauteurManhattan(x, z, h);
+
+    // Le pôle Nord : une banquise plate posée sur l'océan, tout au nord. On n'y
+    // arrive qu'en volant longtemps — c'est un trésor caché, il n'est annoncé
+    // nulle part.
+    const pd2 = Math.hypot(x - POLE.x, z - POLE.z);
+    if (pd2 < POLE.r) {
+      const m = Math.min(1, (POLE.r - pd2) / 12);
+      h = h * (1 - m) + 32 * m;
     }
 
     // the amusement park sits on its own flat esplanade
@@ -906,12 +980,38 @@ export class World {
 
   cityAt(x, z) {
     for (const c of CITIES) {
-      if (Math.hypot(x - c.x, z - c.z) < c.r) return c;
+      if (Math.hypot(x - c.x, z - c.z) >= c.r) continue;
+      // Manhattan tient dans ce cercle mais n'en occupe qu'une bande : hors de
+      // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
+      if (c.key === 'ny' && !surTerre(x, z)) continue;
+      return c;
     }
     return null;
   }
 
+  // Densité de forêt en un point, entre 0 et 1. C'est le même bruit qui décide
+  // où treeAt plantera des arbres — la carte peut donc dessiner les bois
+  // partout, y compris là où pas un seul morceau de monde n'a été fabriqué.
+  foret(x, z) {
+    if (this.cityAt(x, z)) return 0;
+    // La rampe suit les seuils de treeAt : rien avant 0,52, forêt pleine à
+    // 0,70. La carte doit dire la même chose que le monde — sinon la limite du
+    // terrain chargé se voit comme un carré plus clair au milieu de l'image.
+    return Math.max(0, Math.min(1, (fbm(x * 0.008, z * 0.008, SEED + 701) - 0.52) / 0.18));
+  }
+
   treeAt(x, z) {
+    if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
+    if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
+    // Central Park compte vingt mille arbres : c'est le seul endroit d'une
+    // ville où la forêt a le droit de repousser.
+    if (dansCentralPark(x, z)) {
+      if (hash2i(x, z, SEED + 777) >= 0.05) return null;
+      const hp = this.terrainHeight(x, z);
+      if (hp <= WATER_LEVEL + 1) return null;
+      const roll = hash2i(x, z, SEED + 779);
+      return { h: hp, trunk: 4 + Math.floor(hash2i(x, z, SEED + 778) * 3), kind: roll < 0.7 ? 0 : 1 };
+    }
     if (this.cityAt(x, z)) return null; // no wild trees downtown
     if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
     if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
@@ -997,6 +1097,30 @@ export class World {
         }
         for (let y = h + 1; y <= WATER_LEVEL; y++) {
           data[World.index(x, y, z)] = BLOCK.WATER;
+        }
+
+        // Manhattan a son propre dessin de sol : avenues numérotées, rues tous
+        // les cinq blocs, Broadway en diagonale, Central Park et ses pièces
+        // d'eau. Une colonne, une décision — comme pour les autres villes.
+        if (city && city.key === 'ny') {
+          if (h > WATER_LEVEL) {
+            const sol = solManhattan(wx, wz);
+            if (sol !== null) data[World.index(x, h, z)] = sol;
+            else {
+              batirColonne(wx, wz, (dy, id) => {
+                const wy = h + dy;
+                if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+              }, true);   // le sol a déjà répondu « rien à poser ici »
+            }
+          }
+          continue;   // la trame générique ne s'applique pas ici
+        }
+
+        // Paris : le fleuve, ses quais, ses ponts, l'Étoile et les
+        // Champs-Élysées passent avant la trame ordinaire des rues.
+        if (city && city.key === 'paris') {
+          const sp = solParis(wx, wz);
+          if (sp !== null) { data[World.index(x, h, z)] = sp; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and
@@ -1114,6 +1238,7 @@ export class World {
     };
 
     for (const city of CITIES) {
+      if (city.key === 'ny') continue;   // Manhattan se bâtit colonne par colonne
       const CELL = city.cell;
       const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
       const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);
@@ -1128,6 +1253,13 @@ export class World {
           const x0 = lotX + city.street, x1 = lotX + CELL - 2;
           const z0 = lotZ + city.street, z1 = lotZ + CELL - 2;
           const doorX = Math.floor((x0 + x1) / 2);
+
+          // La Seine et les percées d'Haussmann ne se contentent pas d'écarter
+          // le centre du lot : un pâté fait douze blocs de large, et le fleuve
+          // dix. Tester le seul centre laissait des immeubles les pieds dans
+          // l'eau — on éprouve donc les quatre coins.
+          if (city.key === 'paris' && [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [ccx, ccz]]
+            .some(([ax, az]) => !lotParisLibre(ax, az))) continue;
 
           if (city.key === 'paris') {
             // Haussmann: uniform cream stone, tall window bays, zinc mansard
@@ -1155,67 +1287,6 @@ export class World {
             }
             stamp(doorX, by, z0, BLOCK.AIR);
             stamp(doorX, by + 1, z0, BLOCK.AIR);
-
-          } else if (city.key === 'ny') {
-            const kind = hash2i(gx, gz, SEED + 810);
-            if (kind < 0.4) {
-              // brownstone row house with a stoop
-              const bh = 5 + Math.floor(hash2i(gx, gz, SEED + 802) * 3);
-              for (let y = 0; y < bh; y++) {
-                for (let wx = x0; wx <= x1; wx++) {
-                  for (let wz = z0; wz <= z1; wz++) {
-                    const wall = wx === x0 || wx === x1 || wz === z0 || wz === z1;
-                    if (!wall) { if (y === 0) stamp(wx, by - 1, wz, BLOCK.PLANK); continue; }
-                    if (y === 0) foundation(wx, wz, by, CITY_BLOCK.BROWNSTONE);
-                    const u = (wx === x0 || wx === x1) ? wz : wx;
-                    const win = y > 0 && y % 3 !== 0 && u % 2 === 1;
-                    stamp(wx, by + y, wz, win ? BLOCK.GLASS : CITY_BLOCK.BROWNSTONE);
-                  }
-                }
-              }
-              for (let wx = x0; wx <= x1; wx++) {
-                for (let wz = z0; wz <= z1; wz++) stamp(wx, by + bh, wz, CITY_BLOCK.BROWNSTONE);
-              }
-              stamp(doorX, by, z0, BLOCK.AIR);
-              stamp(doorX, by + 1, z0, BLOCK.AIR);
-              stamp(doorX, by - 1, z0 - 1, BLOCK.SLAB_STONE); // the stoop
-            } else {
-              // skyscraper with Manhattan-style setbacks
-              const mat = kind > 0.72 ? CITY_BLOCK.CURTAIN : CITY_BLOCK.GRANITE;
-              const t1 = 10 + Math.floor(hash2i(gx, gz, SEED + 811) * 10);
-              const t2 = t1 + 6 + Math.floor(hash2i(gx, gz, SEED + 812) * 6);
-              const t3 = t2 + 5;
-              const tiers = [[0, 0, t1], [1, t1, t2], [2, t2, t3]];
-              for (const [inset, from, to] of tiers) {
-                const ax0 = x0 + inset, ax1 = x1 - inset, az0 = z0 + inset, az1 = z1 - inset;
-                for (let y = from; y < to; y++) {
-                  for (let wx = ax0; wx <= ax1; wx++) {
-                    for (let wz = az0; wz <= az1; wz++) {
-                      const wall = wx === ax0 || wx === ax1 || wz === az0 || wz === az1;
-                      if (!wall) continue;
-                      if (y === 0) foundation(wx, wz, by, CITY_BLOCK.GRANITE);
-                      const corner = (wx === ax0 || wx === ax1) && (wz === az0 || wz === az1);
-                      let id = mat;
-                      if (corner) id = CITY_BLOCK.GRANITE;
-                      else if (mat === CITY_BLOCK.GRANITE) {
-                        const u = (wx === ax0 || wx === ax1) ? wz : wx;
-                        if (y % 3 !== 0 && u % 2 === 1) id = BLOCK.GLASS;
-                      }
-                      stamp(wx, by + y, wz, id);
-                    }
-                  }
-                }
-                for (let wx = ax0; wx <= ax1; wx++) {
-                  for (let wz = az0; wz <= az1; wz++) stamp(wx, by + to, wz, CITY_BLOCK.GRANITE);
-                }
-              }
-              if (hash2i(gx, gz, SEED + 813) > 0.8) { // a few spires on the skyline
-                for (let y = t3 + 1; y < t3 + 5; y++) stamp(doorX, by + y, Math.floor((z0 + z1) / 2), CITY_BLOCK.GRANITE);
-                stamp(doorX, by + t3 + 5, Math.floor((z0 + z1) / 2), BLOCK.GOLD);
-              }
-              stamp(doorX, by, z0, BLOCK.AIR);
-              stamp(doorX, by + 1, z0, BLOCK.AIR);
-            }
 
           } else if (city.key === 'nice') {
             // Nice: warm Mediterranean facades with terracotta roofs

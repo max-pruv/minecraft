@@ -545,6 +545,9 @@ export class NetSession {
         else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
+        // On lui donne l'heure tout de suite, sans attendre le prochain
+        // battement : sinon il débarque un instant dans une autre journée.
+        if (this.isHost && this.donnerCiel) this.envoyer(entry, { t: 'ciel', ...this.donnerCiel() });
         // un seul appel : il porte l'image ET le son
         if (this.camOn) this.videoCallPeer(conn.peer);
         break;
@@ -581,6 +584,13 @@ export class NetSession {
       case 'chest': // the shared world chest changed
         if (this.onChest) this.onChest(msg.items);
         if (this.isHost) this.relay(conn.peer, msg);
+        break;
+      // L'heure et le temps qu'il fait. Chaque appareil les tirait au sort de
+      // son côté : deux enfants côte à côte pouvaient être l'un sous la pluie
+      // en pleine nuit, l'autre au soleil de midi. C'est l'hôte qui décide, et
+      // lui seul — on ignore donc ce message s'il vient d'un invité.
+      case 'ciel':
+        if (!this.isHost && this.onCiel) this.onCiel(msg);
         break;
       case 'sync': {
         const applied = this.hooks.world.mergeEdits(msg.blocks);
@@ -648,6 +658,14 @@ export class NetSession {
 
   broadcast(msg) { // generic fan-out for duels, emotes, signs and the chest
     this.diffusionBrute(msg);
+  }
+
+  // L'hôte annonce l'heure et la météo. Envoyé à chaque changement de temps et
+  // à intervalle régulier : un invité qui arrive en cours de partie, ou dont la
+  // tablette s'est endormie, se remet à l'heure sans avoir rien à demander.
+  diffuserCiel(ciel) {
+    if (!this.isHost) return;
+    for (const c of this.conns.values()) this.envoyer(c, { t: 'ciel', ...ciel });
   }
 
   startPosLoop() {
