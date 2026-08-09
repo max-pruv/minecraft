@@ -130,6 +130,14 @@ class Banc {
     return p;
   }
 
+  // Un joueur dont le serveur de rendez-vous n'est pas celui du banc : on s'en
+  // sert pour éprouver ce qui se passe quand il ne répond pas.
+  async joueurVers(prenom, portPairs) {
+    const vrai = this.portPairs;
+    this.portPairs = portPairs;
+    try { return await this.joueur(prenom); } finally { this.portPairs = vrai; }
+  }
+
   async creerMonde(prenom) {
     const p = await this.joueur(prenom);
     await p.evaluate(() => document.getElementById('online-btn').click());

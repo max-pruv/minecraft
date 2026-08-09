@@ -41,6 +41,12 @@ const STALE_MS = 20000;
 const SOMMEIL_MAX_MS = 300000;
 // Après un réveil, on laisse au lien le temps de se rétablir avant de juger.
 const GRACE_REVEIL_MS = 15000;
+// Au-delà, on renonce à ouvrir la session et on le dit. Sans cette limite, un
+// serveur de rendez-vous qui accepte la connexion sans jamais répondre — ce que
+// font les réseaux captifs et certains partages de connexion — laissait la
+// promesse d'ouverture en suspens pour toujours : l'enfant restait devant
+// « Ouverture du monde… » sans erreur, sans monde, et sans rien à faire.
+const OUVERTURE_MS = 9000;
 // On garde la trace des appareils écartés, cf. le cas 'hello'. Le plafond n'est
 // qu'un garde-fou : on n'écarte quelqu'un qu'en cas de prénom déjà pris.
 const EVINCES_MAX = 50;
@@ -114,8 +120,19 @@ export class NetSession {
       }
       this.peer = isHost ? new Peer(ID_PREFIX + this.code, peerOpts) : new Peer(peerOpts);
       let settled = false;
+      const abandon = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        this.active = false;
+        try { this.peer.destroy(); } catch { /* déjà en morceaux */ }
+        reject(new Error('Le serveur de jeu ne répond pas — réessaie dans un moment'));
+      }, OUVERTURE_MS);
+      // À partir d'ici, le pair vit : les délais suivants sont ceux de
+      // connectToHost, qui a sa propre limite.
+      const ouvert = () => clearTimeout(abandon);
 
       this.peer.on('open', () => {
+        ouvert();
         this._reconnectTries = 0;
         // Pour un invité, ceci ne prouve rien : notre propre pair est ouvert,
         // mais nous n'avons encore joint personne. Annoncer « ok » ici, c'était
@@ -165,7 +182,7 @@ export class NetSession {
 
       this.peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          if (!settled) { settled = true; reject(new Error('Ce code est déjà utilisé — réessaie !')); }
+          if (!settled) { settled = true; ouvert(); reject(new Error('Ce code est déjà utilisé — réessaie !')); }
           else if (this.isHost && this.active) {
             // Notre identifiant nous a été pris pendant qu'on était coupé du
             // serveur de rendez-vous — typiquement l'iPad qui s'endort assez
@@ -183,10 +200,17 @@ export class NetSession {
             if (this.onCodePris) this.onCodePris(this.code);
           }
         } else if (err.type === 'peer-unavailable') {
-          if (!settled) { settled = true; reject(new Error('Partie introuvable — vérifie le code !')); }
+          if (!settled) { settled = true; ouvert(); reject(new Error('Partie introuvable — vérifie le code !')); }
         } else if (!settled && (err.type === 'network' || err.type === 'server-error')) {
           settled = true;
+          ouvert();
           reject(new Error('Pas de connexion internet au serveur de jeu'));
+        } else if (!settled) {
+          // Tous les autres cas — navigateur incompatible, socket refusée,
+          // certificat… Les ignorer laissait l'ouverture en suspens sans un mot.
+          settled = true;
+          ouvert();
+          reject(new Error(`Connexion au serveur de jeu impossible (${err.type || 'inconnu'})`));
         } else if (err.type === 'network' || err.type === 'server-error') {
           this.link('signal', 'Serveur de jeu injoignable — je réessaie…');
           this.scheduleReconnect();
