@@ -117,7 +117,12 @@ export class NetSession {
 
       this.peer.on('open', () => {
         this._reconnectTries = 0;
-        this.link('ok');
+        // Pour un invité, ceci ne prouve rien : notre propre pair est ouvert,
+        // mais nous n'avons encore joint personne. Annoncer « ok » ici, c'était
+        // afficher un lien sain avant même d'avoir touché le monde d'en face —
+        // exactement l'impression trompeuse que l'on cherche à supprimer. Le
+        // « ok » de l'invité vient de connectToHost, quand le canal s'ouvre.
+        if (isHost) this.link('ok');
         if (isHost) {
           this.state(`En attente d'un joueur… code : ${this.code}`);
           settled = true;
@@ -161,6 +166,22 @@ export class NetSession {
       this.peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
           if (!settled) { settled = true; reject(new Error('Ce code est déjà utilisé — réessaie !')); }
+          else if (this.isHost && this.active) {
+            // Notre identifiant nous a été pris pendant qu'on était coupé du
+            // serveur de rendez-vous — typiquement l'iPad qui s'endort assez
+            // longtemps pour que le serveur libère le code, et l'autre enfant
+            // qui, ne trouvant plus personne, ouvre le monde à son tour.
+            //
+            // Sans réaction, on restait seul dans sa bulle en croyant héberger,
+            // pendant que l'autre était seul dans la sienne : deux mondes
+            // portant le même code, chacun persuadé que tout allait bien. On
+            // rend donc la main, et la page rejoint le monde qui existe.
+            this._rendreLaMain = true;
+            clearTimeout(this._reconnectTimer);
+            this._reconnectTimer = null;
+            this.link('reconnexion', 'Quelqu\'un a repris ce monde — on le rejoint…');
+            if (this.onCodePris) this.onCodePris(this.code);
+          }
         } else if (err.type === 'peer-unavailable') {
           if (!settled) { settled = true; reject(new Error('Partie introuvable — vérifie le code !')); }
         } else if (!settled && (err.type === 'network' || err.type === 'server-error')) {
@@ -250,7 +271,7 @@ export class NetSession {
   }
 
   scheduleReconnect() {
-    if (!this.active || this._reconnectTimer) return;
+    if (!this.active || this._reconnectTimer || this._rendreLaMain) return;
     const essai = Math.min(this._reconnectTries || 0, 5);
     this._reconnectTimer = setTimeout(() => {
       this._reconnectTimer = null;
@@ -310,6 +331,11 @@ export class NetSession {
   // pour toutes et au même endroit, que le canal est réellement ouvert.
   envoyer(c, msg) {
     if (!c || !c.conn || !c.conn.open) return false;
+    // On interroge le canal lui-même plutôt que la comptabilité de PeerJS :
+    // `open` reste vrai un court instant après que le transport s'est refermé,
+    // et c'est dans cet intervalle qu'un envoi partait dans le vide.
+    const canal = c.conn.dataChannel;
+    if (canal && canal.readyState !== 'open') return false;
     try { c.conn.send(msg); return true; } catch { return false; }
   }
 
