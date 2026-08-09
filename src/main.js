@@ -450,6 +450,9 @@ function scheduleSave() {
 }
 
 function startGame() {
+  // L'avertissement « tu es seul·e » attend d'être dans le monde pour se
+  // montrer : c'est ici qu'on le lui redemande.
+  setTimeout(updatePlayersBtn, 0);
   if (IS_TOUCH) {
     running = true;
     overlay.style.display = 'none';
@@ -894,9 +897,26 @@ const remotePlayers = new Map(); // peerId -> { mesh, target, yaw, moving, animT
 const playersBtn = document.getElementById('players-btn');
 
 function updatePlayersBtn() {
-  if (!net || !net.active) { playersBtn.style.display = 'none'; return; }
+  if (!net || !net.active) {
+    playersBtn.style.display = 'none';
+    alerte('monde-seul', false);
+    return;
+  }
   playersBtn.style.display = 'block';
-  playersBtn.textContent = `🌐 ${net.playerCount()} ▾`;
+  const n = net.playerCount();
+  playersBtn.textContent = `🌐 ${n} ▾`;
+  // Le bandeau porte le code : c'est ce qu'il faut dicter à l'autre pour qu'il
+  // arrive, et c'est justement l'information qu'on cherche à ce moment-là.
+  //
+  // Il n'apparaît qu'une fois dans le monde. Affiché depuis le menu, il venait
+  // se poser en travers des boutons pour annoncer une solitude que l'enfant
+  // n'avait pas encore eu l'occasion de constater.
+  // « Dans le monde » se lit à l'écran d'accueil replié, pas au drapeau
+  // `running` : celui-ci attend encore le verrouillage du pointeur sur un
+  // ordinateur, alors que l'enfant, lui, joue déjà.
+  const dansLeMonde = overlay.style.display === 'none';
+  alerte('monde-seul', dansLeMonde && n === 1,
+    `🕐 Seul·e dans le monde ${net.code} — donne ce code à ton ami·e`);
 }
 
 function openPlayersPanel() {
@@ -975,6 +995,10 @@ const ALERTES = {
   'monde-perdu': { rang: 5, cls: 'grave', txt: '🔌 Monde en ligne perdu' },
   'monde-reco': { rang: 2, cls: '', txt: '🔄 Reconnexion au monde…' },
   'signal': { rang: 1, cls: '', txt: '📡 Reconnexion au serveur de jeu…' },
+  // Seul dans un monde en ligne : ce n'est pas une panne, mais il faut le dire.
+  // Un compteur « 🌐 1 » sur un petit bouton ne se lit pas quand on a sept ans,
+  // et c'est ainsi qu'un enfant jouait dix minutes en croyant être avec l'autre.
+  'monde-seul': { rang: 0, cls: '', txt: '🕐 Tu es seul·e dans ce monde' },
 };
 const alertes = new Map(); // clé -> texte affiché
 // La place réservée est mesurée sur le bandeau lui-même : un texte long passe
@@ -1681,6 +1705,24 @@ function startNetSession(code, isHost) {
   return net.start(code, isHost, { name: myName(), lookIdx: selectedChar, look: playerProfile.look });
 }
 
+// Reprendre pied dans un monde dont on vient de perdre la main, sans quitter
+// la partie ni rien redemander à l'enfant : on rejoint celui qui l'héberge
+// maintenant. Si personne ne le tient au bout de quelques essais, c'est qu'il
+// est de nouveau libre — on le rouvre nous-mêmes.
+async function reprendreLeMonde(code, essai = 0) {
+  if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
+  syncRemotePlayers([]);
+  try {
+    await startNetSession(code, essai >= 3);
+    alerte('monde-reco', false);
+    bonneNouvelle(essai >= 3 ? '✅ Monde rouvert !' : '✅ Monde rejoint !');
+  } catch {
+    if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
+    alerte('monde-reco', true, `Reconnexion au monde ${code}…`);
+    setTimeout(() => reprendreLeMonde(code, essai + 1), 4000);
+  }
+}
+
 // Opens a world by code: joins whoever is already there, or becomes the
 // host and plays solo if the world is empty. Either way the cloud copy is
 // pulled first so nothing is ever lost.
@@ -1690,25 +1732,51 @@ async function openWorld(code) {
     return;
   }
   onlineStatus.textContent = `Ouverture du monde ${code}…`;
+  let ouvertVide = false;
   try {
     await startNetSession(code, false);
   } catch (err) {
     if (net) { net.stop(); net = null; }
     if (/introuvable/i.test(err.message)) {
-      // nobody is online in this world — become its host
+      // Personne ne répond. Avant d'en conclure quoi que ce soit, on réessaie
+      // une fois : quand l'iPad de l'autre sort de veille, il lui faut une
+      // poignée de secondes pour se réinscrire au serveur de rendez-vous, et
+      // pendant ce court instant son monde paraît vide. Basculer tout de suite
+      // en hôte, c'était couper le monde en deux pour une seconde d'écart.
+      onlineStatus.textContent = `Personne ne répond… on réessaie (${code})`;
+      await new Promise((r) => setTimeout(r, 2500));
       try {
-        await startNetSession(code, true);
+        await startNetSession(code, false);
       } catch (err2) {
-        onlineStatus.textContent = '❌ ' + err2.message;
         if (net) { net.stop(); net = null; }
-        world.switchContext('local');
-        return;
+        if (!/introuvable/i.test(err2.message)) {
+          onlineStatus.textContent = '❌ ' + err2.message;
+          world.switchContext('local');
+          return;
+        }
+        // Cette fois c'est sûr : le monde est vide. On l'ouvre — mais on le
+        // DIT. C'était le vrai défaut : l'enfant appuyait sur « Rejoindre »,
+        // tout se passait sans une erreur, et il se retrouvait seul en croyant
+        // avoir retrouvé l'autre. Un monde vide et un monde partagé doivent se
+        // distinguer au premier coup d'œil.
+        try {
+          await startNetSession(code, true);
+          ouvertVide = true;
+        } catch (err3) {
+          onlineStatus.textContent = '❌ ' + err3.message;
+          if (net) { net.stop(); net = null; }
+          world.switchContext('local');
+          return;
+        }
       }
     } else {
       onlineStatus.textContent = '❌ ' + err.message;
       world.switchContext('local');
       return;
     }
+  }
+  if (ouvertVide) {
+    grandBandeau('🚪 MONDE OUVERT !', `Personne n'est encore là. Donne le code ${code} à ton ami·e !`, 5200);
   }
   rememberWorld(code);
   cloud.attach(code);
@@ -1811,6 +1879,10 @@ function showOnlineUI() {
     leaveToMainMenu();
     creatureManager.toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
   };
+  // On hébergeait, et le code nous a été repris pendant une coupure : l'autre
+  // enfant tient désormais le monde. On le rejoint au lieu de rester chacun
+  // dans sa bulle — sans quoi les deux jouent seuls sous le même code.
+  net.onCodePris = (c) => { reprendreLeMonde(c); };
   fun.attachNet(net); // duels, emotes, signs and the shared chest
 }
 
@@ -1819,7 +1891,7 @@ function showOnlineUI() {
 function leaveToMainMenu() {
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
-  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
+  for (const k of ['monde-reco', 'signal', 'monde-perdu', 'monde-seul']) alerte(k, false);
   cloud.detach();
   syncRemotePlayers([]); // remove remote avatars
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
@@ -1873,7 +1945,7 @@ document.getElementById('online-btn').addEventListener('click', () => {
 });
 document.getElementById('online-back').addEventListener('click', () => {
   if (net) { net.stop(); net = null; }
-  for (const k of ['monde-reco', 'signal', 'monde-perdu']) alerte(k, false);
+  for (const k of ['monde-reco', 'signal', 'monde-perdu', 'monde-seul']) alerte(k, false);
   cloud.detach();
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';

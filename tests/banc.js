@@ -185,10 +185,32 @@ const vu = (p) => p.evaluate(() => {
       x: Math.round(r.mesh.position.x), z: Math.round(r.mesh.position.z),
     })),
     bouton: document.getElementById('players-btn')?.textContent || '',
+    // ce que le bandeau raconte : c'est souvent la seule chose qu'un enfant lit
+    bandeau: document.getElementById('link-banner')?.style.display === 'none'
+      ? '' : (document.getElementById('link-banner-txt')?.textContent || ''),
+    hote: !!(n && n.isHost),
   };
 });
 
 const nomsVus = async (p) => (await vu(p)).avatars.map((a) => a.nom).sort();
+
+// Attendre qu'une chose devienne vraie, plutôt que d'attendre longtemps et
+// d'espérer. Un « dors trois secondes » suffit d'ordinaire et rate le jour où
+// la machine est chargée : le test devient capricieux, et un test capricieux
+// est pire qu'absent — on finit par ne plus le croire quand il a raison. La
+// limite reste stricte : si la chose n'arrive jamais, on échoue quand même.
+//
+// À n'employer que pour ce qui DOIT devenir vrai. Quand on vérifie au contraire
+// que rien ne bouge — un joueur endormi qui ne doit pas être éjecté —, il faut
+// bel et bien laisser le temps s'écouler.
+async function jusqua(condition, limiteMs = 20000, pasMs = 500) {
+  const fin = Date.now() + limiteMs;
+  for (;;) {
+    if (await condition()) return true;
+    if (Date.now() > fin) return false;
+    await dormir(pasMs);
+  }
+}
 
 // L'onglet qu'iOS suspend quand l'enfant passe à autre chose.
 //
@@ -218,4 +240,4 @@ const reveiller = (p) => p.evaluate(() => {
   document.dispatchEvent(new Event('visibilitychange'));
 });
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir };
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua };
