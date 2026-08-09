@@ -942,9 +942,16 @@
       display: flex; justify-content: center; gap: 8px; margin-top: 8px;
     }
     #map-outils button {
-      min-width: 44px; height: 38px; border-radius: 10px; font-size: 15px; line-height: 1;
+      min-width: 44px; height: 40px; border-radius: 10px; font-size: 15px; line-height: 1;
       border: 1px solid rgba(255,255,255,0.28); background: rgba(255, 255, 255, 0.09);
       color: #fff; cursor: pointer; padding: 0 10px;
+    }
+    /* Le moins et le plus se voient de loin : ce sont eux qu'on cherche en
+       premier, et un enfant qui ne devine pas le geste à deux doigts doit
+       pouvoir zoomer sans qu'on le lui explique. */
+    #map-outils button.zoom {
+      min-width: 54px; font-size: 26px; font-weight: 700; padding: 0;
+      background: rgba(255, 255, 255, 0.16);
     }
     #map-outils button:active { background: rgba(58, 74, 107, 0.95); }
     #map-modal-close {
@@ -1227,13 +1234,13 @@
         <div id="map-cible"></div>
       </div>
       <div id="map-outils">
-        <button id="map-moins" title="Dézoomer">−</button>
-        <button id="map-plus" title="Zoomer">＋</button>
+        <button id="map-moins" class="zoom" title="Dézoomer">−</button>
+        <button id="map-plus" class="zoom" title="Zoomer">+</button>
         <button id="map-moi" title="Me retrouver">🔺 moi</button>
         <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
       </div>
       <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux · 🟪 créatures</div>
-      <div id="map-astuce">🤏 Écarte deux doigts pour zoomer · ✋ glisse pour te promener · 👆 touche un nom pour y aller · ✊ appui long <b>n'importe où</b> pour t'y téléporter</div>
+      <div id="map-astuce">✊ Appui long <b>n'importe où</b> pour t'y téléporter</div>
     </div>
   </div>
 
