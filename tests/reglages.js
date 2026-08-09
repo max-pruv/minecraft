@@ -178,15 +178,14 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       const a = window.__game.admin;
       await a.setProfil('Marlon', { lang: 'fr' }, 'langue : Français');
       await a.setProfil('Marlon', { grade: 2 }, 'niveau : CE1');
-      await a.setArret('Marlon', '30');
-      await a.setRythme('Marlon', 12);
+      await a.setQuiz('Marlon', 'p30');
       return true;
     });
     verifier('le panneau parent écrit sans lever d\'erreur', parLePanneau === true);
     const viaPanneau = await jusqua(async () => {
       const parent = nuage.reglages('Marlon~parent') || {};
       return parent.lang === 'fr' && parent.grade === 2
-        && parent.quizStopMin === 30 && parent.sessionMin === 12;
+        && parent.quizStopMin === 30 && parent.sessionMin === 10;
     });
     // Tout ce que pose le parent va dans SON document. C'est ce qui le met hors
     // de portée de la tablette, qui réécrit le sien toutes les quinze secondes.
@@ -209,10 +208,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // douter du réglage et donner un second tour de menu.
     const debut = Date.now();
     await marlon.evaluate(async () => {
-      await window.__game.admin.setRythme('Marlon', 8);
+      await window.__game.admin.setQuiz('Marlon', '5');
     });
     const vite = await jusqua(
-      async () => (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 8, 15000, 200);
+      async () => (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 5, 15000, 200);
     const delai = Date.now() - debut;
     verifier('une décision du parent prend effet en quelques secondes',
       vite && delai < 6000, `${(delai / 1000).toFixed(1)} s`);
