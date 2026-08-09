@@ -1312,6 +1312,7 @@ export class EducationMode {
     // l'espace parent : un CP de six ans et un CM1 n'ont pas le même seuil
     // d'agacement, et un long trajet en voiture non plus.
     this.sessionSeconds = SESSION_SECONDS;
+    this.arretApresSecondes = null;   // cf. setArretApres, réglé par un parent
 
     // Resume the unspent play time from the last session: closing or
     // restarting the game must not burn minutes that were already earned.
@@ -1415,6 +1416,32 @@ export class EducationMode {
   }
 
   sessionMinutes() { return Math.round(this.sessionSeconds / 60); }
+
+  // Pour les tests : la langue effectivement en vigueur. Elle vit dans un objet
+  // de module partagé par les générateurs, hors de portée d'une page de test.
+  __prefs() { return EDU_PREFS; }
+
+  // Arrêter les questions au bout d'un certain temps de jeu dans la journée.
+  //
+  // Décidé par un parent, et par lui seul : l'enfant n'a aucun moyen d'y
+  // toucher, le mode éducatif reste ce qu'il a toujours été de son point de
+  // vue. Ce que cela permet, c'est de dire « une demi-heure de quiz, puis on
+  // le laisse construire tranquille » pour un enfant plus jeune ou un jour de
+  // fatigue, sans avoir à couper le mode éducatif pour toute la famille.
+  //
+  // 0 signifie aucune question du tout ; undefined, le comportement d'avant.
+  setArretApres(min) {
+    const n = Number(min);
+    this.arretApresSecondes = (min === undefined || min === null || !isFinite(n) || n < 0)
+      ? null : Math.min(600, n) * 60;
+  }
+
+  // Le temps de jeu compté ici est celui de l'enfant, tous appareils confondus :
+  // la limite ne se contourne pas en changeant de tablette.
+  quizArrete() {
+    if (this.arretApresSecondes === null || this.arretApresSecondes === undefined) return false;
+    return this.today().play + this.otherDevicesPlaySeconds >= this.arretApresSecondes;
+  }
 
   // Daily allowance grows by one block per parental/marathon unlock.
   allowance() {
@@ -1583,7 +1610,7 @@ export class EducationMode {
       // the daily limit is per child, not per device — playing 30 min on
       // an iPad then switching to a phone doesn't reset the clock
       if (this.today().play + this.otherDevicesPlaySeconds >= this.allowance()) { this.startHardStop(); return; }
-      if (this.quizFree()) {
+      if (this.quizFree() || this.quizArrete()) {
         // Le compte à rebours est gelé et repart à neuf à la fin du répit :
         // sinon un quiz tomberait à la seconde même où il se termine.
         this.remaining = this.sessionSeconds;
@@ -1607,9 +1634,11 @@ export class EducationMode {
 
     const t = Math.max(0, this.remaining);
     const m = Math.floor(t / 60), s = Math.floor(t % 60);
-    let text = this.quizFree()
-      ? `🔑 ${Math.max(0, Math.ceil((this.today().libreJusqua - this.today().play) / 60))} min sans quiz`
-      : `⏱ ${m}:${String(s).padStart(2, '0')}`;
+    let text = this.quizArrete()
+      ? '🎨 Temps libre'
+      : this.quizFree()
+        ? `🔑 ${Math.max(0, Math.ceil((this.today().libreJusqua - this.today().play) / 60))} min sans quiz`
+        : `⏱ ${m}:${String(s).padStart(2, '0')}`;
     const dailyLeft = this.allowance() - this.today().play;
     if (dailyLeft <= 600) text += ` · ⏰ ${Math.max(0, Math.ceil(dailyLeft / 60))} min`;
     // Le compte à rebours se referme d'une croix : une fois qu'on sait qu'on a

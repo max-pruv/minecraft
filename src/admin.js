@@ -187,7 +187,7 @@ const HTML = `
     <table class="adm">
       <thead><tr>
         <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
-        <th>Quiz tous les</th><th>Mondes</th><th>Compte</th><th></th>
+        <th>Quiz tous les</th><th>Quiz jusqu'à</th><th>Mondes</th><th>Compte</th><th></th>
       </tr></thead>
       <tbody id="adm-rows"></tbody>
     </table>
@@ -231,6 +231,12 @@ const PRESENCE_MS = 70000;
 // Intervalle entre deux séries de questions. Les bornes sont celles du jeu :
 // en deçà on harcèle, au-delà le mode éducatif devient décoratif.
 const RYTHMES = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
+// Au bout de combien de minutes de jeu on cesse de poser des questions.
+// « toujours » garde le comportement d'origine ; « aucune » n'en pose jamais.
+const ARRETS = [
+  ['', 'toujours'], [0, 'aucune'], [10, 'après 10 min'], [15, 'après 15 min'],
+  [20, 'après 20 min'], [30, 'après 30 min'], [45, 'après 45 min'], [60, 'après 1 h'],
+];
 
 const jour = () => new Date().toISOString().slice(0, 10);
 
@@ -479,6 +485,8 @@ export class AdminPanel {
       const e = entree(r.name);
       e.majPrefs = r.updated_at;
       if ((r.prefs || {}).supprime) e.supprime = true;
+      const arret = (r.prefs || {}).quizStopMin;
+      if (arret !== undefined) e.arret = arret;
       const min = Number((r.prefs || {}).sessionMin);
       if (isFinite(min) && min > 0) e.rythme = Math.round(min);
       const l = (r.prefs || {}).live;
@@ -547,6 +555,10 @@ export class AdminPanel {
         <td><span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
             RYTHMES.map((m) => `<option value="${m}"${m === l.rythme ? ' selected' : ''}>${m} min</option>`).join('')
           }</select></span></td>
+        <td><span class="adm-rythme"><select data-arret="${esc(l.nom)}">${
+            ARRETS.map(([v, txt]) => `<option value="${v}"${
+              String(v) === String(l.arret ?? '') ? ' selected' : ''}>${txt}</option>`).join('')
+          }</select></span></td>
         <td>${mondes}</td>
         <td>${secu}<div class="adm-dim">${reponses(l)}</div></td>
         <td class="adm-actions">
@@ -563,6 +575,9 @@ export class AdminPanel {
     }
     for (const b of this.el.querySelectorAll('[data-suppr]')) {
       b.addEventListener('click', () => this.supprimer(b.getAttribute('data-suppr')));
+    }
+    for (const sel of this.el.querySelectorAll('[data-arret]')) {
+      sel.addEventListener('change', () => this.setArret(sel.getAttribute('data-arret'), sel.value));
     }
     for (const sel of this.el.querySelectorAll('[data-rythme]')) {
       sel.addEventListener('change', () => this.setRythme(sel.getAttribute('data-rythme'), Number(sel.value)));
@@ -645,6 +660,31 @@ export class AdminPanel {
       this.message(`${nom} : quiz toutes les ${minutes} minutes.`);
     } catch {
       this.message(`Impossible de changer le rythme de ${nom} — réessaie.`, true);
+      this.load();
+    }
+  }
+
+  // Jusqu'à quand poser des questions à cet enfant.
+  //
+  // C'est un réglage de parent, et de parent seul : rien dans le jeu ne permet
+  // à l'enfant d'y toucher. Il sert à dire « une demi-heure de quiz, puis on le
+  // laisse construire », pour un plus jeune ou un jour de fatigue, sans avoir à
+  // désactiver le mode éducatif pour toute la famille.
+  async setArret(nom, valeur) {
+    const minutes = valeur === '' ? undefined : Number(valeur);
+    try {
+      const prefs = (await this.cloud.prefsPull(nom)) || {};
+      const suite = { ...prefs };
+      if (minutes === undefined) delete suite.quizStopMin;
+      else suite.quizStopMin = minutes;
+      await this.cloud.prefsPush(nom, suite);
+      this.message(minutes === undefined
+        ? `${nom} : des questions pendant tout le temps de jeu.`
+        : minutes === 0
+          ? `${nom} : plus aucune question.`
+          : `${nom} : plus de questions après ${minutes} min de jeu.`);
+    } catch {
+      this.message(`Impossible de changer les questions de ${nom} — réessaie.`, true);
       this.load();
     }
   }

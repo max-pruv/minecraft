@@ -476,11 +476,31 @@ function enableDragFallback() {
   pauseBtn.style.display = 'block';
 }
 
+// Une partie mise en pause doit pouvoir reprendre là où elle était.
+//
+// L'écran de pause n'offrait que « Jouer en local » et « Jouer en ligne » :
+// depuis un monde partagé, le premier basculait vers l'autre monde et le
+// second renvoyait au menu des codes. Autrement dit, une pause en ligne était
+// sans retour — il fallait tout refaire pour retrouver ses amis.
+const resumeBtn = document.getElementById('resume-btn');
+let partieEnCours = false;
+
+function montrerReprise(oui) {
+  partieEnCours = oui;
+  resumeBtn.style.display = oui ? 'block' : 'none';
+}
+
 function pauseGame() {
   running = false;
   overlay.style.display = 'flex';
-  overlayTitle.textContent = 'Paused';
+  overlayTitle.textContent = 'Pause';
+  montrerReprise(true);
 }
+
+resumeBtn.addEventListener('click', () => {
+  overlayTitle.textContent = 'WEB MINECRAFT';
+  startGame();
+});
 
 document.getElementById('play-btn').addEventListener('click', () => {
   world.switchContext('local');
@@ -503,7 +523,7 @@ document.addEventListener('pointerlockchange', () => {
     running = locked;
     if (edu.quizActive || invOpen) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
-    if (!locked) overlayTitle.textContent = 'Paused';
+    if (!locked) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
   }
 });
 document.addEventListener('pointerlockerror', () => enableDragFallback());
@@ -1113,8 +1133,39 @@ function presenceNow() {
   };
 }
 
+// Les consignes décidées depuis l'espace parent.
+//
+// Elles vivent dans le même document que les réglages de l'enfant, et c'est ce
+// qui les faisait disparaître : l'appareil de l'enfant réécrit ce document
+// entier toutes les quinze secondes, avec SA valeur. Un parent qui changeait le
+// rythme des quiz le voyait donc revenir en arrière dans le quart de minute qui
+// suivait — le réglage n'était pas « mal enregistré », il était consciencieusement
+// écrasé.
+//
+// La règle est maintenant nette : ces clés-là, l'enfant les lit et les recopie
+// telles quelles, il n'en fabrique jamais la valeur. Un seul auteur, plus de
+// course.
+const CLES_PARENT = ['sessionMin', 'quizStopMin'];
+let consignesParents = {};
+
+function retenirConsignes(prefs) {
+  for (const k of CLES_PARENT) {
+    if (prefs && prefs[k] !== undefined) consignesParents[k] = prefs[k];
+  }
+}
+
+function appliquerConsignes() {
+  if (consignesParents.sessionMin !== undefined) edu.setSessionMinutes(consignesParents.sessionMin);
+  edu.setArretApres(consignesParents.quizStopMin);
+}
+
 function prefsPayload() {
   return {
+    ...consignesParents,     // recopiées, jamais recalculées : voir CLES_PARENT
+    // Quand ces réglages-ci ont été choisis. Deux tablettes de la maison
+    // peuvent être allumées en même temps : sans cette date, celle qui n'a rien
+    // changé réécrivait sa version périmée par-dessus le choix de l'autre.
+    majProfil: playerProfile.majProfil || 0,
     lang: playerProfile.lang, grade: playerProfile.grade, charIdx: selectedChar,
     look: playerProfile.look, // their character's own skin/hair colours
     // the adaptive quiz engine's per-skill levels & recent-question memory
@@ -1124,17 +1175,44 @@ function prefsPayload() {
     // d'appareil lui rendrait tout ce qu'il avait fini par savoir.
     acquis: Object.fromEntries([...edu.acquis]),
     acquisNiveau: Object.fromEntries([...edu.acquisNiveau]),
-    sessionMin: edu.sessionMinutes(),
     live: presenceNow(),
   };
 }
 
+// On relit avant d'écrire.
+//
+// Le document de réglages a deux auteurs : la tablette de l'enfant et l'espace
+// parent. Écrire sans relire, c'est écraser ce que l'autre vient de décider —
+// et comme la tablette écrit toutes les quinze secondes, c'est toujours elle
+// qui gagnait. Un parent voyait donc son réglage revenir en arrière presque
+// aussitôt : il n'était pas mal enregistré, il était effacé.
+//
+// Relire d'abord règle les deux moitiés du problème d'un coup : on n'efface
+// plus la consigne du parent, et on l'adopte au passage sans attendre que
+// l'enfant relance le jeu.
 let prefsPushTimer = null;
 function pushPrefsToCloud() {
   clearTimeout(prefsPushTimer);
-  prefsPushTimer = setTimeout(() => {
-    cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
-  }, 1200);
+  prefsPushTimer = setTimeout(() => envoyerPrefs(), 1200);
+}
+
+async function envoyerPrefs() {
+  if (!playerProfile.name) return;
+  try {
+    const distant = await cloud.prefsPull(playerProfile.name);
+    if (distant) {
+      const avant = JSON.stringify(consignesParents);
+      retenirConsignes(distant);
+      if (JSON.stringify(consignesParents) !== avant) {
+        appliquerConsignes();
+        creatureManager.toast('⚙️ Un parent a modifié tes réglages.', 0x9fd8e8);
+      }
+      // Une autre tablette de la maison a peut-être un choix plus récent que le
+      // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
+      adopterProfilDistant(distant);
+    }
+  } catch { /* hors ligne : on écrit quand même ce qu'on a */ }
+  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
 }
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
@@ -1906,6 +1984,7 @@ function leaveToMainMenu() {
   world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
+  montrerReprise(false);   // il n'y a plus de partie où revenir
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
   // restore the full main menu, not the pause screen
@@ -2542,6 +2621,7 @@ async function pullPlayTime() {
 
 pullPlayTime();
 setInterval(() => { pushPlayTime(); pushPrefsToCloud(); }, 15000);
+
 setInterval(pullPlayTime, 60000);
 window.addEventListener('pagehide', () => pushPlayTime(true));
 document.addEventListener('visibilitychange', () => {
@@ -2744,21 +2824,81 @@ function renderLangRow() {
     b.classList.toggle('active', b.dataset.lang === playerProfile.lang));
 }
 renderLangRow();
+// La langue et le niveau montent au serveur sans attendre.
+//
+// L'envoi périodique les emportait déjà, mais jusqu'à quinze secondes plus
+// tard : un enfant qui règle sa langue puis referme l'application perdait son
+// choix. C'est un envoi immédiat, pas le correctif du défaut principal — celui-
+// là est daté, voir adopterProfilDistant.
 document.querySelectorAll('.pb-toggle').forEach((b) => {
   b.addEventListener('click', () => {
     playerProfile.lang = b.dataset.lang;
+    playerProfile.majProfil = Date.now();
     renderLangRow();
     saveProfile();
     edu.setPrefs(playerProfile.lang, playerProfile.grade);
+    pushPrefsToCloud();
   });
 });
 gradeSelect.addEventListener('change', () => {
   playerProfile.grade = Number(gradeSelect.value);
+  playerProfile.majProfil = Date.now();
   saveProfile();
   edu.setPrefs(playerProfile.lang, playerProfile.grade);
+  pushPrefsToCloud();
   creatureManager.toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
 });
 edu.setPrefs(playerProfile.lang, playerProfile.grade);
+
+// Recopier ici les réglages venus du serveur : langue, niveau scolaire,
+// personnage. Extraite parce qu'elle sert deux fois — au lancement, et chaque
+// fois qu'une autre tablette de la maison s'avère avoir un choix plus récent
+// que le nôtre. C'est le même code qui doit s'appliquer dans les deux cas, sans
+// quoi les deux chemins finiraient par diverger.
+function adopterProfilDistant(prefs) {
+  // On ne défait pas un choix plus récent que celui qu'on nous propose.
+  //
+  // C'était le vrai défaut de la langue : la lecture des réglages du serveur
+  // arrive une fraction de seconde après l'ouverture, et si l'enfant a touché
+  // au bouton entre-temps, elle remettait tranquillement l'ancienne valeur.
+  // Mesuré : trois cents millisecondes suffisaient — et sur un réseau lent,
+  // c'est plusieurs secondes. Le choix partait bien au serveur ; c'est le
+  // serveur qui le reprenait aussitôt.
+  //
+  // La date du dernier choix tranche, ici comme entre deux tablettes de la
+  // maison allumées en même temps : le plus récent gagne, et lui seul.
+  if ((prefs.majProfil || 0) < (playerProfile.majProfil || 0)) return false;
+  let change = false;
+  if (typeof prefs.lang === 'string' && prefs.lang !== playerProfile.lang) {
+    playerProfile.lang = prefs.lang;
+    change = true;
+  }
+  if (Number.isInteger(prefs.grade) && prefs.grade !== playerProfile.grade) {
+    playerProfile.grade = prefs.grade;
+    change = true;
+  }
+  if (Number.isInteger(prefs.charIdx) && prefs.charIdx !== selectedChar &&
+      prefs.charIdx >= 0 && prefs.charIdx < NET_CHARACTERS.length) {
+    selectedChar = prefs.charIdx;
+    playerProfile.charIdx = prefs.charIdx;
+    [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === selectedChar));
+    change = true;
+  }
+  if (prefs.look && typeof prefs.look === 'object' && !playerProfile.look) {
+    playerProfile.look = prefs.look; // their avatar follows them here too
+    change = true;
+  }
+  if (!change) return false;
+  // On reprend la date de l'autre appareil, sinon on se croirait plus récent
+  // que lui et l'on repartirait aussitôt à contre-courant.
+  if (prefs.majProfil) playerProfile.majProfil = prefs.majProfil;
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
+  edu.setPrefs(playerProfile.lang, playerProfile.grade);
+  gradeSelect.value = String(playerProfile.grade);
+  renderLangRow();
+  refreshCharPortraits();
+  return true;
+}
 
 // Server-side preferences: on launch, pull the settings saved under this
 // first name (language, school grade, character look) and apply them, so a
@@ -2775,36 +2915,11 @@ edu.setPrefs(playerProfile.lang, playerProfile.grade);
   if (prefs.supprime) return demanderSuppression();
   if (prefs.codeADefinir) return demanderNouveauCode(prefs);
 
-  let changed = false;
-  if (typeof prefs.lang === 'string' && prefs.lang !== playerProfile.lang) {
-    playerProfile.lang = prefs.lang;
-    changed = true;
-  }
-  // Rythme des questions, décidé depuis l'espace parent : il suit l'enfant
-  // d'un appareil à l'autre, comme sa langue ou son niveau.
-  if (prefs.sessionMin !== undefined) edu.setSessionMinutes(prefs.sessionMin);
-  if (Number.isInteger(prefs.grade) && prefs.grade !== playerProfile.grade) {
-    playerProfile.grade = prefs.grade;
-    changed = true;
-  }
-  if (Number.isInteger(prefs.charIdx) && prefs.charIdx !== selectedChar &&
-      prefs.charIdx >= 0 && prefs.charIdx < NET_CHARACTERS.length) {
-    selectedChar = prefs.charIdx;
-    playerProfile.charIdx = prefs.charIdx;
-    [...charRow.children].forEach((b, j) => b.classList.toggle('active', j === selectedChar));
-    changed = true;
-  }
-  if (prefs.look && typeof prefs.look === 'object' && !playerProfile.look) {
-    playerProfile.look = prefs.look; // their avatar follows them here too
-    changed = true;
-  }
-  if (changed) {
-    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
-    edu.setPrefs(playerProfile.lang, playerProfile.grade);
-    gradeSelect.value = String(playerProfile.grade);
-    renderLangRow();
-    refreshCharPortraits();
-  }
+  // Rythme des questions et arrêt des quiz, décidés depuis l'espace parent :
+  // ils suivent l'enfant d'un appareil à l'autre, comme sa langue ou son niveau.
+  retenirConsignes(prefs);
+  appliquerConsignes();
+  const changed = adopterProfilDistant(prefs);
   // Adaptive quiz progress follows the child too: per-skill difficulty
   // never regresses from a sync (only a higher remote level wins), so
   // catching up from another device can only help, never undo progress.
@@ -3703,7 +3818,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => cloud.prefsPush(playerProfile.name, prefsPayload()), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 

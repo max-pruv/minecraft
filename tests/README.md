@@ -7,7 +7,9 @@ jouer par de vrais navigateurs.
 ```sh
 cd tests
 npm install
-npm test
+npm test          # les deux suites
+npm run reseau    # le monde partagé
+npm run reglages  # les réglages, enfant et parent
 ```
 
 Compter environ deux minutes. C'est normal et voulu : les attentes doivent
@@ -45,6 +47,26 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | Alice retrouve son monde après une veille | « tu joues déjà depuis un autre appareil », et elle restait dehors |
 | la reprise tient dans la durée | l'ancien appareil la rechassait dix secondes plus tard |
 | seule après le départ de l'hôte | le compteur affichait encore deux joueurs |
+
+## Les réglages (`npm run reglages`)
+
+Ceux de l'enfant et ceux du parent vivent dans le même document, écrit par deux
+mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
+
+| Scénario | La panne d'origine |
+|---|---|
+| la tablette n'écrase plus le réglage du parent | la tablette réécrit tout toutes les 15 s, avec sa valeur |
+| l'enfant l'adopte sans relancer le jeu | il fallait fermer et rouvrir le jeu |
+| la langue choisie part au serveur | jusqu'à 15 s de retard, perdues si l'on refermait |
+| en français, plus aucune question d'anglais | ce que l'enfant constate vraiment |
+| et il survit au redémarrage | la lecture de démarrage reprenait l'ancienne valeur 300 ms après le clic |
+| l'autre tablette ne le défait pas | un second appareil allumé réécrivait sa version périmée |
+| arrêter les questions après N minutes | nouvelle consigne parentale |
+| en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
+
+Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
+regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
+montre.
 
 ## Si Chromium n'est pas trouvé
 
