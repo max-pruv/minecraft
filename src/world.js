@@ -9,6 +9,10 @@ import { buildVille } from './ville.js';
 import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import {
+  PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
+  buildNotreDame, buildSacreCoeur,
+} from './paris.js';
+import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
   MONUMENTS, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC, buildGrandCentral,
 } from './manhattan.js';
@@ -727,6 +731,8 @@ const LANDMARKS = [
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
   { name: 'Arc de Triomphe', x: -263, z: 200, box: 7, build: buildArch },
   { name: 'Pyramide du Louvre', x: -217, z: 222, box: 7, build: buildGlassPyramid },
+  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 13, build: buildNotreDame },
+  { name: 'Sacré-Cœur', x: PARIS.x + BUTTE.u, z: PARIS.z + BUTTE.v, box: 12, build: buildSacreCoeur },
   // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
   // La Statue de la Liberté était plantée en pleine ville, sur ce qui est
   // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.
@@ -829,6 +835,10 @@ export class World {
         break;
       }
     }
+
+    // Paris : la Seine se creuse dans la base plate, et la butte Montmartre s'y
+    // relève. Une ville née autour d'un fleuve ne pouvait pas rester une table.
+    h = hauteurParis(x, z, h, 34);
 
     // Manhattan ne se pose pas sur le continent : elle en est détachée par
     // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
@@ -977,6 +987,7 @@ export class World {
 
   treeAt(x, z) {
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
+    if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
     // ville où la forêt a le droit de repousser.
     if (dansCentralPark(x, z)) {
@@ -1088,6 +1099,13 @@ export class World {
             }
           }
           continue;   // la trame générique ne s'applique pas ici
+        }
+
+        // Paris : le fleuve, ses quais, ses ponts, l'Étoile et les
+        // Champs-Élysées passent avant la trame ordinaire des rues.
+        if (city && city.key === 'paris') {
+          const sp = solParis(wx, wz);
+          if (sp !== null) { data[World.index(x, h, z)] = sp; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and
@@ -1220,6 +1238,13 @@ export class World {
           const x0 = lotX + city.street, x1 = lotX + CELL - 2;
           const z0 = lotZ + city.street, z1 = lotZ + CELL - 2;
           const doorX = Math.floor((x0 + x1) / 2);
+
+          // La Seine et les percées d'Haussmann ne se contentent pas d'écarter
+          // le centre du lot : un pâté fait douze blocs de large, et le fleuve
+          // dix. Tester le seul centre laissait des immeubles les pieds dans
+          // l'eau — on éprouve donc les quatre coins.
+          if (city.key === 'paris' && [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [ccx, ccz]]
+            .some(([ax, az]) => !lotParisLibre(ax, az))) continue;
 
           if (city.key === 'paris') {
             // Haussmann: uniform cream stone, tall window bays, zinc mansard
