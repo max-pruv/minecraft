@@ -36,6 +36,9 @@ const ICE_SERVERS = [
 // vide. On envoie donc un battement régulier et on coupe ce qui ne répond plus.
 const HEARTBEAT_MS = 5000;
 const STALE_MS = 20000;
+// On garde la trace des appareils écartés, cf. le cas 'hello'. Le plafond n'est
+// qu'un garde-fou : on n'écarte quelqu'un qu'en cas de prénom déjà pris.
+const EVINCES_MAX = 50;
 
 export function randomCode() {
   // 5 digits: easy for kids to read out loud and type on a phone keypad
@@ -66,13 +69,24 @@ export class NetSession {
     this.active = false;
   }
 
-  playerCount() { return this.conns.size + 1; }
+  // Un lien qui existe n'est pas un joueur.
+  //
+  // Une connexion est inscrite dès qu'elle est créée — il le faut, sinon on
+  // raterait les premiers messages —, mais tant qu'elle n'a pas dit qui elle
+  // est, elle ne compte pas et ne s'affiche pas. Sans cette distinction, une
+  // tentative de reconnexion qui n'aboutit pas se voyait comptée comme un
+  // joueur et dessinée dans le monde sous la forme d'un bonhomme nommé « … »,
+  // planté à l'origine de la carte. C'est ce qui faisait dire « il y a deux
+  // joueurs » à un enfant qui était seul.
+  presents() { return [...this.conns.entries()].filter(([, c]) => c.pret); }
+
+  playerCount() { return this.presents().length + 1; }
 
   state(text) { if (this.hooks.onState) this.hooks.onState(text); }
 
   playersChanged() {
     if (this.hooks.onPlayers) {
-      this.hooks.onPlayers([...this.conns.entries()].map(([id, c]) => ({
+      this.hooks.onPlayers(this.presents().map(([id, c]) => ({
         id, name: c.name, lookIdx: c.lookIdx, look: c.look, pos: c.pos, yaw: c.yaw, moving: c.moving,
       })));
     }
@@ -119,6 +133,7 @@ export class NetSession {
       });
 
       this.peer.on('call', (call) => {
+        if (!this.active) { try { call.close(); } catch { /* déjà fermé */ } return; }
         if (call.metadata && call.metadata.kind === 'video') {
           call.answer(undefined); // video flows one-way per call; we place our own
           this.attachVideoCall(call, true);
@@ -180,7 +195,13 @@ export class NetSession {
     // Le dire franchement évite de chercher une faute de frappe pendant que
     // le vrai coupable est le Wi-Fi de l'école.
     const minuteur = setTimeout(
-      () => rate(new Error('Le monde existe mais le réseau bloque la connexion — essaie un autre Wi-Fi ou le partage de connexion')),
+      () => {
+        // La tentative morte ne doit rien laisser derrière elle : inscrite mais
+        // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
+        const c = this.conns.get(conn.peer);
+        if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
+        rate(new Error('Le monde existe mais le réseau bloque la connexion — essaie un autre Wi-Fi ou le partage de connexion'));
+      },
       12000,
     );
     conn.on('open', () => {
@@ -235,15 +256,21 @@ export class NetSession {
     this._hb = setInterval(() => {
       const now = Date.now();
       for (const [id, c] of [...this.conns]) {
-        if (!c.conn) continue;
+        // Un pair relayé n'a pas de lien direct à sonder, mais l'hôte nous
+        // renvoie sa position dix fois par seconde : son silence prolongé
+        // prouve son départ aussi sûrement qu'un lien coupé. Sans cela, un
+        // « au revoir » perdu laissait son avatar planté là pour toujours.
         if (c.seen && now - c.seen > STALE_MS) { this.dropPeer(id); continue; }
+        if (!c.conn) continue;
         try { c.conn.send({ t: 'ping' }); } catch { this.dropPeer(id); }
       }
     }, HEARTBEAT_MS);
   }
 
   registerConn(conn) {
-    this.conns.set(conn.peer, { conn, name: '…', lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
+    if (!this.active) { try { conn.close(); } catch { /* déjà fermée */ } return; }
+    // `pret` reste faux jusqu'à la présentation : voir presents().
+    this.conns.set(conn.peer, { conn, name: '…', pret: false, lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
     conn.on('data', (msg) => this.onMessage(conn, msg));
     conn.on('close', () => this.dropPeer(conn.peer));
     conn.on('error', () => this.dropPeer(conn.peer));
@@ -264,11 +291,15 @@ export class NetSession {
     // Pour un invité, perdre ce lien-là, c'est perdre le monde entier :
     // tout passe par l'hôte.
     if (!this.isHost && this.active && id === ID_PREFIX + this.code) this.rejoinHost();
-    if (this.isHost) { // tell the other guests this player is gone
+    if (this.isHost && c.pret) { // tell the other guests this player is gone
       for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
     }
-    if (this.onLeave) this.onLeave(c.name);
-    else this.hooks.toast(`👋 ${c.name} est parti·e`, 0xcccccc);
+    // On n'annonce le départ que de quelqu'un dont on connaissait le nom : une
+    // tentative de connexion avortée n'est pas un ami qui s'en va.
+    if (c.pret) {
+      if (this.onLeave) this.onLeave(c.name);
+      else this.hooks.toast(`👋 ${c.name} est parti·e`, 0xcccccc);
+    }
     this.state(this.statusText());
     const call = this.calls.get(id);
     if (call) { call.close(); this.calls.delete(id); }
@@ -299,19 +330,62 @@ export class NetSession {
         break;
       case 'hello': {
         const wanted = String(msg.name || 'Joueur').slice(0, 16);
-        // one session per player name: the host refuses a duplicate so the
-        // same account can't be online from two devices at once
+        // Un seul Alice à la fois dans le monde — mais c'est le NOUVEAU qui
+        // gagne, pas l'ancien.
+        //
+        // L'ancienne règle refusait l'arrivant. C'était le mauvais arbitrage :
+        // quand l'iPad se met en veille ou que le Wi-Fi cligne, l'hôte garde le
+        // lien mort pendant vingt secondes, et l'enfant qui revient dans son
+        // propre monde se faisait jeter avec un « tu joues déjà ailleurs »
+        // parfaitement incompréhensible — puis restait seul. Or entre deux
+        // connexions au même prénom, la plus récente est forcément la vivante :
+        // l'autre est un cadavre. On expulse donc le cadavre et on accueille
+        // l'enfant. La garantie « un seul appareil par joueur » tient toujours,
+        // et le vrai doublon (deux appareils réellement allumés) reçoit un
+        // message clair au lieu d'un refus.
         if (this.isHost) {
-          const taken = wanted === this.profile.name ||
-            [...this.conns.values()].some((c) => c !== entry && c.name === wanted);
-          if (taken) {
+          if (wanted === this.profile.name) {
+            // Celui-là, on ne peut pas l'expulser : c'est nous.
             conn.send({ t: 'duplicate', name: wanted });
             setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
             this.conns.delete(conn.peer);
             this.playersChanged();
             break;
           }
+          // Un appareil qu'on vient d'écarter se rebranche tout seul : sa boucle
+          // de reconnexion était déjà lancée quand on l'a fermé. S'il pouvait se
+          // représenter, il éjecterait à son tour celui qui l'a remplacé, et les
+          // deux se chasseraient sans fin — mesuré : la reprise tenait dix
+          // secondes, puis l'enfant revenu se faisait sortir à son tour.
+          //
+          // Un écart temporaire ne suffisait pas : le mourant retentait en
+          // boucle et finissait par gagner à l'expiration. Écarté, il l'est donc
+          // pour toute la partie. C'est sans risque : l'identifiant de pair est
+          // retiré au sort à chaque chargement de page, si bien qu'un vrai
+          // retour de l'enfant se présente toujours sous un identifiant neuf.
+          if (this._evinces && this._evinces.has(conn.peer)) {
+            conn.send({ t: 'remplace', name: wanted });
+            setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
+            this.conns.delete(conn.peer);
+            this.playersChanged();
+            break;
+          }
+          for (const [id, c] of [...this.conns]) {
+            if (c === entry || c.name !== wanted) continue;
+            if (c.conn) {
+              try { c.conn.send({ t: 'remplace', name: wanted }); } catch { /* déjà mort */ }
+              setTimeout(() => { try { c.conn.close(); } catch { /* déjà fermée */ } }, 400);
+            }
+            this.conns.delete(id);
+            if (!this._evinces) this._evinces = new Set();
+            this._evinces.add(id);
+            if (this._evinces.size > EVINCES_MAX) {
+              this._evinces.delete(this._evinces.values().next().value);
+            }
+            for (const o of this.conns.values()) if (o.conn) o.conn.send({ t: 'bye', from: id });
+          }
         }
+        entry.pret = true;
         entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;
         entry.look = msg.look && typeof msg.look === 'object' ? msg.look : null;
@@ -327,6 +401,12 @@ export class NetSession {
       }
       case 'duplicate':
         if (this.onDuplicate) this.onDuplicate(msg.name);
+        break;
+      // Cet appareil-ci vient d'être remplacé par un autre portant le même
+      // prénom. Ce n'est pas une erreur de l'enfant : on le dit autrement.
+      case 'remplace':
+        if (this.onRemplace) this.onRemplace(msg.name);
+        else if (this.onDuplicate) this.onDuplicate(msg.name);
         break;
       case 'chat':
         if (this.onChat) this.onChat(String(msg.name || '').slice(0, 16), String(msg.msg || '').slice(0, 120));
@@ -382,10 +462,13 @@ export class NetSession {
       case 'rpos': { // relayed position of another guest (host-mediated)
         // treat the origin guest as a virtual peer entry
         if (!this.conns.has(msg.from) && msg.from !== this.peer.id) {
-          this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', lookIdx: msg.lookIdx || 0, look: msg.look || null, pos: null, yaw: 0, moving: false });
+          this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', pret: true, lookIdx: msg.lookIdx || 0, look: msg.look || null, pos: null, yaw: 0, moving: false });
         }
         const e2 = this.conns.get(msg.from);
-        if (e2) { e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m; }
+        if (e2) {
+          e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
+          e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
+        }
         this.playersChanged();
         break;
       }
@@ -536,6 +619,11 @@ export class NetSession {
   }
 
   stop() {
+    // On se déclare éteint AVANT de tout démonter : PeerJS livre encore
+    // quelques événements après destroy(), et ceux-là ré-inscrivaient des
+    // connexions dans une session morte — d'où des avatars qui revenaient
+    // hanter un monde qu'on venait de quitter.
+    this.active = false;
     clearInterval(this.posTimer);
     this.posTimer = null;
     clearInterval(this._hb);
@@ -554,6 +642,5 @@ export class NetSession {
     this.audios.clear();
     this.videoCalls.clear();
     this.inboundVideo.clear();
-    this.active = false;
   }
 }

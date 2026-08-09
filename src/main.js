@@ -1804,6 +1804,13 @@ function showOnlineUI() {
     leaveToMainMenu();
     window.alert(`⚠️ ${name} joue déjà dans ce monde depuis un autre appareil !\nChaque joueur ne peut être connecté qu'à un seul endroit à la fois.`);
   };
+  // Cet appareil vient de céder la place à un autre au même prénom — le plus
+  // souvent le sien, revenu après une coupure. Ce n'est pas une faute : on le
+  // dit d'un ton neutre, sans la boîte d'alerte qui fait peur.
+  net.onRemplace = (name) => {
+    leaveToMainMenu();
+    creatureManager.toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
+  };
   fun.attachNet(net); // duels, emotes, signs and the shared chest
 }
 
@@ -1892,6 +1899,10 @@ document.getElementById('host-btn').addEventListener('click', async () => {
   }
 });
 document.getElementById('online-play-btn').addEventListener('click', () => {
+  // Le bouton reste dans la page même quand le monde n'est pas ouvert : sans
+  // ce garde-fou, un appui de trop levait une exception et laissait l'enfant
+  // devant un menu qui ne répondait plus.
+  if (!net || !net.active) return;
   rememberWorld(net.code);
   cloud.attach(net.code);
   onlineMenu.style.display = 'none';
