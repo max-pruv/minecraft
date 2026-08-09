@@ -78,6 +78,22 @@ It also works out of the box on **GitHub Pages**: enable Pages for this repo
 (Settings → Pages → deploy from the `main` branch, root folder) and play at
 `https://<user>.github.io/minecraft/`.
 
+## Tests
+
+The shared-world code is exercised by real browsers playing together, against a
+local signalling server — no build step, no external service:
+
+```bash
+cd tests
+npm install
+npm test
+```
+
+It takes about two minutes on purpose: the waits have to outlast the game's own
+thresholds (twenty seconds of silence before a link is cut) or they would prove
+nothing. See `tests/README.md` for what each scenario reproduces — every one of
+them is a failure that actually happened to the children playing.
+
 ## Controls
 
 | Input | Action |
