@@ -1989,8 +1989,15 @@ function showOnlineUI() {
       creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
       setUnread(unread + 1);
     }
+    // Un message qui arrive pendant qu'on est ailleurs mérite le système : le
+    // bandeau du jeu, personne ne le voit quand le jeu n'est pas à l'écran.
+    if (document.visibilityState !== 'visible') {
+      notifierSysteme(`💬 ${name}`, msg, 'wm-chat');
+    }
   };
   net.onAnnonce = (txt) => creatureManager.toast(txt, 0x9fd8e8);
+  net.onCiel = (c) => adopterCiel(c);
+  net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
   net.onLeave = (nom) => creatureManager.toast(`👋 ${nom} est parti·e`, 0xcccccc);
   net.onDuplicate = (name) => {
@@ -2338,6 +2345,52 @@ let notifProposee = false;
 const notifsDispo = () => 'Notification' in window;
 const notifsAutorisees = () => notifsDispo() && Notification.permission === 'granted';
 
+// Une vraie notification du système : celle qui s'affiche sur l'écran
+// verrouillé de l'iPad, pas un bandeau dans la page.
+//
+// Il faut passer par le service worker. `new Notification(...)`, la façon
+// évidente, ne fonctionne tout simplement pas sur iPhone ni iPad : Safari ne
+// connaît le constructeur que sur macOS. C'est pourquoi les alertes n'ont
+// jamais quitté le jeu sur les tablettes de la maison — le code marchait, mais
+// seulement là où personne ne joue. showNotification(), lui, est la voie
+// officielle depuis iOS 16.4 pour une application ajoutée à l'écran d'accueil,
+// et c'est la même sur Android.
+//
+// Le constructeur reste en second recours pour les ordinateurs, où le service
+// worker peut être absent (ouverture par fichier, mode privé).
+async function notifierSysteme(titre, corps, tag) {
+  if (!notifsAutorisees()) return false;
+  const options = {
+    body: corps,
+    tag,                       // une seule alerte par sujet, remplacée à chaque fois
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    renotify: true,
+    data: { url: './' },
+  };
+  try {
+    if (navigator.serviceWorker) {
+      // On ne s'accroche pas à `ready` : sur un premier lancement il peut ne
+      // jamais se résoudre, et une alerte n'est pas une raison de bloquer.
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((ok) => setTimeout(() => ok(null), 1500)),
+      ]);
+      if (reg && reg.showNotification) {
+        await reg.showNotification(titre, options);
+        return true;
+      }
+    }
+    const n = new Notification(titre, options);
+    n.onclick = () => { window.focus(); n.close(); };
+    return true;
+  } catch {
+    return false;   // refusées, indisponibles : les bandeaux du jeu restent
+  }
+}
+// Les tests regardent ce qui part vraiment au système.
+window.__notifierSysteme = notifierSysteme;
+
 function majLigneNotif() {
   const bouton = document.getElementById('notif-toggle');
   const aide = document.getElementById('notif-hint');
@@ -2503,15 +2556,14 @@ function annonceArrivee(nom) {
     setTimeout(() => proposerNotifs('ami'), 4200);
   }
 
-  try {
-    if (!notifsAutorisees()) return;
-    if (document.visibilityState === 'visible') return; // il est déjà là, il a vu
-    const n = new Notification(`${nom} a rejoint ton monde !`, {
-      body: net && net.code ? `Monde ${net.code} · ${net.playerCount()} joueurs` : 'Viens jouer !',
-      tag: 'wm-arrivee', // une seule notification, remplacée à chaque arrivée
-    });
-    n.onclick = () => { window.focus(); n.close(); };
-  } catch { /* notifications refusées ou indisponibles : le bandeau reste */ }
+  // Hors écran, c'est le système qui prévient : c'est tout l'intérêt.
+  if (document.visibilityState !== 'visible') {
+    notifierSysteme(
+      `👋 ${nom} a rejoint ton monde !`,
+      net && net.code ? `Monde ${net.code} · ${net.playerCount()} joueurs` : 'Viens jouer !',
+      'wm-arrivee',
+    );
+  }
 }
 
 // --- catch celebration ------------------------------------------------------------
@@ -3508,24 +3560,72 @@ const rainPoints = new THREE.Points(rainGeo, new THREE.PointsMaterial({
 rainPoints.visible = false;
 scene.add(rainPoints);
 
+// --- un seul ciel pour tout le monde ----------------------------------------
+//
+// L'heure et la météo étaient tirées au sort par chaque appareil. Deux enfants
+// dans le même monde pouvaient donc être l'un sous la pluie en pleine nuit,
+// l'autre au soleil de midi — ils décrivaient le même endroit sans se
+// comprendre. Désormais l'hôte tient l'horloge et le baromètre ; les invités
+// les suivent.
+//
+// Entre deux annonces, l'invité continue d'avancer sa propre horloge : le
+// soleil ne se met pas à sauter d'un quart d'heure toutes les cinq secondes.
+// Il ne décide simplement plus rien.
+const invite = () => !!(net && net.active && !net.isHost);
+const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
+
+// Trois secondes entre deux annonces : le message est minuscule, et c'est le
+// délai maximum pendant lequel une tablette peut afficher autre chose que ce
+// que voit l'enfant d'à côté.
+const CIEL_MS = 3;
+let annonceCiel = 0;   // compte à rebours de l'hôte, en secondes
+
+function adopterCiel({ temps, meteo }) {
+  if (typeof temps === 'number' && isFinite(temps)) {
+    // On glisse vers l'heure de l'hôte quand l'écart est petit, on saute quand
+    // il est grand : un invité qui se réveille ne doit pas voir le soleil
+    // traverser le ciel au ralenti pendant une minute.
+    const ecart = ((temps - dayTime) % DAY_LENGTH + DAY_LENGTH * 1.5) % DAY_LENGTH - DAY_LENGTH / 2;
+    dayTime = Math.abs(ecart) > DAY_LENGTH * 0.02 ? temps : (dayTime + ecart * 0.25 + DAY_LENGTH) % DAY_LENGTH;
+  }
+  if ((meteo === 'clear' || meteo === 'rain') && meteo !== weather) {
+    weather = meteo;
+    rainPoints.visible = weather === 'rain';
+    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+  }
+}
+
 function updateWeather(dt) {
+  // L'invité ne décide pas du temps qu'il fait : il attend qu'on le lui dise.
+  if (invite()) {
+    if (weather === 'rain') animerPluie(dt);
+    return;
+  }
+  if (net && net.active && net.isHost) {
+    annonceCiel -= dt;
+    if (annonceCiel <= 0) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
+  }
   weatherTimer -= dt;
   if (weatherTimer <= 0) {
     weather = weather === 'clear' ? 'rain' : 'clear';
     weatherTimer = weather === 'rain' ? 50 + Math.random() * 70 : 140 + Math.random() * 160;
     rainPoints.visible = weather === 'rain';
     if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+    // le changement part tout de suite : c'est ce qui se voit le plus
+    if (net && net.active && net.isHost) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
   }
-  if (weather === 'rain') {
-    const pos = rainGeo.attributes.position;
-    for (let i = 0; i < RAIN_COUNT; i++) {
-      let y = pos.getY(i) - dt * 24;
-      if (y < -5) y += 40;
-      pos.setY(i, y);
-    }
-    pos.needsUpdate = true;
-    rainPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
+  if (weather === 'rain') animerPluie(dt);
+}
+
+function animerPluie(dt) {
+  const pos = rainGeo.attributes.position;
+  for (let i = 0; i < RAIN_COUNT; i++) {
+    let y = pos.getY(i) - dt * 24;
+    if (y < -5) y += 40;
+    pos.setY(i, y);
   }
+  pos.needsUpdate = true;
+  rainPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
 }
 
 // --- seasons: the real-world calendar dresses the world ---------------------------
@@ -3731,6 +3831,14 @@ window.__admin = admin;
 window.__fx = effects;
 // permet aux captures automatisées de figer l'heure du jour
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
+// Le ciel du moment, tel que le joueur le voit : c'est ce que les tests
+// comparent entre deux tablettes du même monde.
+window.__ciel = () => ({ h: dayTime / DAY_LENGTH, meteo: weather });
+window.__setMeteo = (m) => {
+  weather = m;
+  rainPoints.visible = weather === 'rain';
+  weatherTimer = 999;   // on éprouve la synchronisation, pas le hasard
+};
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__carte = carte;   // les tests regardent la vue et la pilotent
 window.__alerte = (k, v, t) => alerte(k, v, t);
@@ -3743,6 +3851,15 @@ window.__game = { renderer, world, player, creatureManager, animalManager, edu, 
 
 let lastTime = performance.now();
 
+// Le vol prend son élan au bout de quelques secondes. Sans un mot, l'enfant
+// croit à un bug ; avec ce mot, il comprend qu'il vient de gagner quelque chose.
+let elanAnnonce = false;
+function signalerElanDeVol() {
+  const lance = player.volLance();
+  if (lance && !elanAnnonce) creatureManager.toast('🚀 Vol rapide — tu vas deux fois plus vite !', 0x6ec8ff);
+  elanAnnonce = lance;
+}
+
 function frame(now) {
   // L'horodatage fourni par requestAnimationFrame est celui du DÉBUT de la
   // frame, qui peut précéder le moment où lastTime a été posé : le tout premier
@@ -3753,6 +3870,7 @@ function frame(now) {
 
   if (running) {
     player.update(dt);
+    signalerElanDeVol();
     creatureManager.update(dt);
     animalManager.update(dt);
     // Les personnages lointains — la garnison du château, les astronautes de

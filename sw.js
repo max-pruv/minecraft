@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v111';
+const CACHE_VERSION = 'web-minecraft-v112';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -82,6 +82,21 @@ self.addEventListener('message', (event) => {
     if (event.ports && event.ports[0]) event.ports[0].postMessage(reply);
     else event.source?.postMessage(reply);
   }
+});
+
+// Une notification touchée doit ramener dans le jeu, pas ouvrir un second
+// onglet par-dessus la partie en cours. On cherche d'abord une fenêtre déjà
+// ouverte ; on n'en ouvre une que s'il n'y en a aucune.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of clients) {
+      if ('focus' in c) return c.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+    return null;
+  })());
 });
 
 // Stale-while-revalidate: serve from cache instantly (works offline),

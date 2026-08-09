@@ -12,6 +12,11 @@ const JUMP_SPEED = 8.6;
 const WALK_SPEED = 4.3;
 const SPRINT_SPEED = 6.8;
 const FLY_SPEED = 11;
+// Voler longtemps, c'est vouloir aller loin. Passé trois secondes en l'air,
+// on double l'allure : les allers-retours entre Paris et Mars deviennent
+// supportables, et un petit saut de toit en toit reste précis.
+const FLY_ELAN_APRES = 3;   // secondes de vol continu
+const FLY_ELAN = 2;         // multiplicateur
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
 
@@ -25,6 +30,7 @@ export class Player {
     this.pitch = 0;
     this.onGround = false;
     this.flying = false;
+    this.volDepuis = 0;       // secondes de vol continu, cf. FLY_ELAN_APRES
     this.inWater = false;
     this.keys = new Set();
     this.touchMove = { f: 0, s: 0 }; // analog stick input, -1..1
@@ -45,7 +51,18 @@ export class Player {
 
   toggleFly() {
     this.flying = !this.flying;
+    this.volDepuis = 0;   // on repart au pas : l'élan se mérite
     this.vel.y = 0;
+  }
+
+  // Vitesse de vol du moment. Elle double après quelques secondes en l'air.
+  vitesseVol() {
+    return FLY_SPEED * (this.volDepuis >= FLY_ELAN_APRES ? FLY_ELAN : 1);
+  }
+
+  // Vrai quand l'élan est pris — le jeu s'en sert pour le dire à l'enfant.
+  volLance() {
+    return this.flying && this.volDepuis >= FLY_ELAN_APRES;
   }
 
   eyePosition() {
@@ -78,8 +95,10 @@ export class Player {
     const len = Math.hypot(dx, dz);
     if (len > 1) { dx /= len; dz /= len; } // keep analog magnitudes below 1
 
+    if (this.flying) this.volDepuis += dt; else this.volDepuis = 0;
+
     let speed = k.has('ShiftLeft') || k.has('ShiftRight') ? SPRINT_SPEED : WALK_SPEED;
-    if (this.flying) speed = FLY_SPEED;
+    if (this.flying) speed = this.vitesseVol();
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
@@ -87,9 +106,10 @@ export class Player {
     this.vel.z = dz * speed;
 
     if (this.flying) {
+      const v = this.vitesseVol();
       this.vel.y = 0;
-      if (k.has('Space')) this.vel.y = FLY_SPEED;
-      if (k.has('KeyC')) this.vel.y = -FLY_SPEED;
+      if (k.has('Space')) this.vel.y = v;
+      if (k.has('KeyC')) this.vel.y = -v;
     } else if (this.inWater) {
       this.vel.y -= GRAVITY * 0.25 * dt;
       this.vel.y *= Math.pow(0.02, dt); // heavy drag

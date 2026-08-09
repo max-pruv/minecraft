@@ -421,6 +421,12 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
   PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
+  // La caserne et le commissariat sont bâtis au cœur de Paris, mais ils
+  // n'étaient pas des destinations : on ne pouvait y aller qu'en tombant
+  // dessus par hasard, au milieu d'une ville de cent dix blocs de large. Le
+  // point d'arrivée est la place, entre les deux — de là on voit les deux
+  // façades, les camions rouges et les voitures de patrouille.
+  { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z + 14, r: 34 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];

@@ -63,6 +63,37 @@ function verifier(nom, ok, detail = '') {
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
 
+    // --- un seul ciel pour tout le monde --------------------------------------
+    //
+    // Chaque tablette tirait son heure et sa météo au sort. Deux enfants dans le
+    // même monde pouvaient donc décrire le même endroit sans se comprendre :
+    // l'un sous la pluie en pleine nuit, l'autre au soleil de midi.
+    const ciel = (p) => p.evaluate(() => window.__ciel());
+    // On pousse l'horloge de l'hôte à l'autre bout de la journée et on force la
+    // pluie : ce sont les deux choses que l'invité doit adopter.
+    await hote.evaluate(() => { window.__setDayTime(0.85); window.__setMeteo('rain'); });
+    const alignes = await jusqua(async () => {
+      const a = await ciel(hote), b = await ciel(alice);
+      return b.meteo === a.meteo && Math.abs(a.h - b.h) < 0.03;
+    }, 20000);
+    const ch = await ciel(hote), ca = await ciel(alice);
+    verifier('l\'invité voit le même temps et la même heure que l\'hôte', alignes,
+      `hôte ${ch.meteo} ${ch.h.toFixed(2)} · invité ${ca.meteo} ${ca.h.toFixed(2)}`);
+
+    // Et il ne repart pas dans sa propre journée dès qu'on a le dos tourné.
+    await dormir(12000);
+    const ch2 = await ciel(hote), ca2 = await ciel(alice);
+    verifier('et il le reste', ca2.meteo === ch2.meteo && Math.abs(ch2.h - ca2.h) < 0.03,
+      `hôte ${ch2.meteo} ${ch2.h.toFixed(2)} · invité ${ca2.meteo} ${ca2.h.toFixed(2)}`);
+
+    // L'invité ne décide de rien : même si sa propre minuterie de météo arrive à
+    // échéance, c'est l'hôte qui tranche.
+    await alice.evaluate(() => window.__setMeteo('clear'));
+    const repris = await jusqua(async () =>
+      (await ciel(alice)).meteo === (await ciel(hote)).meteo, 20000);
+    verifier('un invité ne change pas le temps pour lui tout seul', repris,
+      `hôte ${(await ciel(hote)).meteo} · invité ${(await ciel(alice)).meteo}`);
+
     // --- un départ propre disparaît des deux côtés ----------------------------
     await nina.close();
     await jusqua(async () => (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2);
