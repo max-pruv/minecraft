@@ -41,6 +41,7 @@ const TROTTOIR = CITY_BLOCK.SIDEWALK;
 const LIGNE = CITY_BLOCK.ROADLINE;
 const PASSAGE = CITY_BLOCK.CROSSWALK;
 const JAUNE_TAXI = uni(2);
+const ARDOISE = uni(23);
 
 // Le centre de l'île, qui reste celui de l'ancienne ville : les mondes déjà
 // sauvegardés gardent ainsi leurs constructions au même endroit.
@@ -186,6 +187,13 @@ export const demiLargeur = (v) => (bordEst(v) - bordOuest(v)) / 2;
 // Roosevelt Island : le long ruban posé dans l'East River, de la 46e à la 86e.
 // Deux blocs de large, et pourtant personne ne confond un plan de Manhattan
 // avec ou sans lui.
+// Wall Street, Battery Park et Liberty Island : le bas de l'île, celui dont on
+// connaît les noms avant d'y être allé.
+export const WALL = { v: 100, u0: -8, u1: 10 };
+export const BATTERY = { v: 106 };
+export const LIBERTE = { u: -22, v: 122, r: 7 };
+export const PAVE_SOMBRE = CITY_BLOCK.GRANITE;
+
 export const ROOSEVELT = { u: 27, v0: vDeRue(86), v1: vDeRue(46), l: 1.6 };
 export const surRoosevelt = (x, z) => {
   const u = x - NY.x, v = z - NY.z;
@@ -282,9 +290,11 @@ export function solManhattan(x, z) {
     return (v & 7) < 4 ? LIGNE : BITUME;
   }
 
-  // Les rues. Sous la 1re Rue, la vieille ville n'a pas de grille : ses ruelles
-  // sont tracées à part.
-  if (v <= vDeRue(1)) {
+  // Les rues. La grille de 1811 s'arrête à la 14e : au sud, les rues suivent
+  // encore les chemins hollandais et les anciennes limites de fermes. Le
+  // premier jet plaçait cette frontière à la 1re Rue — soit un bloc — et tout
+  // le bas de l'île se retrouvait quadrillé au cordeau, ce qu'il n'est pas.
+  if (v <= vDeRue(14)) {
     if (estRue(v)) return (u & 7) < 4 ? LIGNE : BITUME;
     if (LARGES.has(v - 1) || LARGES.has(v + 1)) return BITUME;  // les quinze rues élargies
     return null;   // le pâté de maisons
@@ -297,13 +307,19 @@ export function solManhattan(x, z) {
 // chemins hollandais. On les tire d'un bruit régulier plutôt que du hasard :
 // il faut qu'elles soient les mêmes à chaque visite.
 function solVieilleVille(u, v) {
+  // Battery Park : la pointe verte de l'île, d'où partent les bateaux.
+  if (v > BATTERY.v) return Math.abs(Math.sin(u * 0.5 + v * 0.3)) < 0.15 ? PIERRE_CLAIRE : BLOCK.GRASS;
+
+  // Wall Street. Elle porte le nom du mur que les Hollandais avaient dressé
+  // là, à la limite nord de leur ville : une saignée droite d'un fleuve à
+  // l'autre, étroite, au milieu des tours.
+  if (Math.abs(v - WALL.v) <= 0.5 && u > WALL.u0 && u < WALL.u1) return PAVE_SOMBRE;
+
   const a = Math.sin(u * 0.31 + v * 0.11) + Math.sin(v * 0.27 - u * 0.07);
   const b = Math.sin(u * 0.09 - v * 0.33) + Math.sin(v * 0.19 + u * 0.23);
   const rue = Math.min(Math.abs(a), Math.abs(b));
   if (rue < 0.18) return BITUME;
   if (rue < 0.30) return TROTTOIR;
-  // Wall Street : une saignée droite d'un fleuve à l'autre, à sa vraie place.
-  if (Math.abs(v - vDeRue(-36)) <= 1) return BITUME;
   return null;
 }
 
@@ -524,6 +540,9 @@ export const MONUMENTS = [
   { nom: 'Flatiron Building', u: 1, v: vDeRue(23), box: 4 },       // 23e, Broadway et la 5e
   { nom: 'Rockefeller Center', u: -4, v: vDeRue(50), box: 4 },     // entre la 5e et la 6e
   { nom: 'One World Trade Center', u: -7, v: vDeRue(9), box: 5 },  // Financial District
+  { nom: 'Times Square', u: -11, v: vDeRue(42), box: 11 },        // la place et ses écrans
+  { nom: 'Bourse de New York', u: 3, v: WALL.v + 3, box: 7 },     // Wall Street et Broad
+  { nom: 'Trinity Church', u: -6, v: WALL.v + 4, box: 7 },        // au bout de Wall Street
 ];
 
 const dansMonument = (u, v) =>
@@ -653,4 +672,163 @@ export function buildGrandCentral(poser) {
   }
   set(0, 7, 4, JAUNE_TAXI);   // l'horloge
   for (const dx of [-5, 0, 5]) for (let k = 1; k <= 2; k++) set(dx, 8 + k, 0, PIERRE_CLAIRE);
+}
+
+// --- les lieux dont on connaît le nom avant d'y être allé ---------------------
+//
+// Une carte juste ne suffit pas. Un enfant qui arrive à New York cherche des
+// choses précises : la Statue de la Liberté, Times Square et ses écrans, Wall
+// Street et sa bourse, le pont de Brooklyn. Tant qu'ils ne sont pas là, l'île
+// n'est qu'une belle grille.
+
+// La Bourse de New York : le temple grec au coin de Wall Street et Broad, sa
+// colonnade, son fronton et le grand drapeau qui le couvre.
+export function buildBourse(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  for (let dx = -6; dx <= 6; dx++) {
+    for (let dz = -5; dz <= 5; dz++) {
+      const bord = Math.abs(dx) === 6 || Math.abs(dz) === 5;
+      for (let y = 0; y <= 11; y++) if (bord) set(dx, y, dz, PIERRE_CLAIRE);
+      set(dx, 12, dz, PIERRE_CLAIRE);
+    }
+  }
+  // les six colonnes de la façade sud, et le fronton au-dessus
+  for (let dx = -5; dx <= 5; dx += 2) {
+    for (let y = 0; y <= 10; y++) set(dx, y, 6, PIERRE_CLAIRE);
+  }
+  for (let k = 0; k <= 3; k++) {
+    for (let dx = -5 + k; dx <= 5 - k; dx++) set(dx, 11 + k, 6, PIERRE_CLAIRE);
+  }
+  // le drapeau, tendu sur toute la colonnade
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let y = 7; y <= 10; y++) set(dx, y, 7, dx < -1 ? VERRE_BLEU : ((y + dx) & 1 ? BRIQUE_ROUGE : PIERRE_CLAIRE));
+  }
+}
+
+// Trinity Church : la flèche noire au bout de Wall Street. Pendant cinquante
+// ans, c'était le plus haut point de New York — d'où le fait qu'elle regarde
+// encore la rue dans l'axe.
+export function buildTrinity(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  for (let dx = -3; dx <= 3; dx++) {
+    for (let dz = -6; dz <= 6; dz++) {
+      const bord = Math.abs(dx) === 3 || Math.abs(dz) === 6;
+      for (let y = 0; y <= 8; y++) if (bord) set(dx, y, dz, GRANIT);
+      set(dx, 9, dz, ARDOISE);
+    }
+  }
+  for (let dz = -5; dz <= 5; dz += 2) { set(-3, 5, dz, VERRE); set(3, 5, dz, VERRE); }
+  // le clocher, au sud
+  for (let y = 0; y <= 20; y++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = 4; dz <= 8; dz++) {
+        if (Math.abs(dx) === 2 || dz === 4 || dz === 8) set(dx, y, dz, GRANIT);
+      }
+    }
+  }
+  for (let k = 0; k <= 5; k++) {
+    const r = 2 - Math.floor(k / 2);
+    for (let dx = -r; dx <= r; dx++) for (let dz = 6 - r; dz <= 6 + r; dz++) set(dx, 21 + k, dz, ARDOISE);
+  }
+  for (let y = 14; y <= 17; y++) { set(0, y, 4, VERRE); set(0, y, 8, VERRE); }
+  set(0, 27, 6, BLOCK.GOLD);   // la croix
+}
+
+// Times Square : le carrefour le plus éclairé du monde. Ce qu'on en retient,
+// ce ne sont pas les immeubles mais leurs façades d'écrans, du sol au toit —
+// alors c'est cela qu'on bâtit, en bandes de couleurs vives.
+export function buildTimesSquare(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  const ECRANS = [BRIQUE_ROUGE, JAUNE_TAXI, VERRE_BLEU, uni(6), uni(10), uni(2)];
+  // quatre tours d'affichage autour de la place
+  const tours = [[-7, -6, 22], [7, -6, 18], [-7, 7, 16], [7, 7, 20]];
+  for (const [cx, cz, h] of tours) {
+    for (let y = 0; y < h; y++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        for (let dz = -3; dz <= 3; dz++) {
+          if (Math.abs(dx) !== 3 && Math.abs(dz) !== 3) continue;
+          // les faces tournées vers la place sont entièrement en écrans
+          const versPlace = (cx < 0 ? dx === 3 : dx === -3) || (cz < 0 ? dz === 3 : dz === -3);
+          set(cx + dx, y, cz + dz,
+            versPlace && y > 1 ? ECRANS[(y + Math.abs(dx + dz)) % ECRANS.length] : ACIER);
+        }
+      }
+    }
+    for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) set(cx + dx, h, cz + dz, GRANIT);
+  }
+  // les gradins rouges, au milieu, face au sud
+  for (let k = 0; k <= 4; k++) {
+    for (let dx = -4; dx <= 4; dx++) set(dx, k, 1 + k, BRIQUE_ROUGE);
+  }
+  // le mât de la boule du Nouvel An
+  for (let y = 0; y <= 14; y++) set(0, y, -2, ACIER);
+  for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) set(dx, 15, -2 + dz, BLOCK.DIAMOND);
+}
+
+// Liberty Island : l'étoile de pierre du vieux fort, le socle, et la statue
+// verte qui lève son flambeau. Elle regarde vers le large, comme la vraie.
+export function buildLiberte(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  // l'île et le fort en étoile
+  for (let dx = -7; dx <= 7; dx++) {
+    for (let dz = -7; dz <= 7; dz++) {
+      const d = Math.hypot(dx, dz);
+      const branche = Math.abs(Math.sin(Math.atan2(dz, dx) * 5.5));
+      if (d > 6.5 + branche * 1.2) continue;
+      set(dx, -1, dz, d > 4.5 ? GRANIT : BLOCK.GRASS);
+    }
+  }
+  // le socle
+  for (let y = 0; y <= 5; y++) {
+    const r = 4 - Math.floor(y / 3);
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) set(dx, y, dz, GRANIT);
+    }
+  }
+  // la robe, qui s'affine
+  for (let y = 6; y <= 16; y++) {
+    const r = y < 10 ? 2 : 1;
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) set(dx, y, dz, CUIVRE);
+    }
+  }
+  // les bras, la tête, la couronne et le flambeau
+  set(0, 17, 0, CUIVRE);
+  for (let y = 17; y <= 21; y++) set(2, y, 0, CUIVRE);        // le bras levé
+  set(2, 22, 0, BLOCK.GOLD);                                   // la flamme
+  set(-1, 17, 0, CUIVRE); set(-2, 16, 0, CUIVRE);             // la tablette
+  set(0, 18, 0, CUIVRE);
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) set(dx, 19, dz, CUIVRE);
+  set(0, 19, 0, BLOCK.GOLD);                                   // la couronne
+}
+
+// Le pont de Brooklyn : deux tours de granit percées de deux arches gothiques,
+// et les câbles en éventail. C'est le premier pont suspendu en acier du monde,
+// et la silhouette qu'on met sur les cartes postales.
+export function buildBrooklyn(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  const TABLIER = 9;
+  // le tablier, d'une rive à l'autre
+  for (let dx = -26; dx <= 26; dx++) {
+    const h = TABLIER + Math.round(Math.cos((dx / 26) * Math.PI) * -2);
+    for (let dz = -2; dz <= 2; dz++) set(dx, h, dz, Math.abs(dz) === 2 ? GRANIT : PAVE_SOMBRE);
+    // les câbles porteurs, en arc
+    const cable = h + 10 + Math.round(Math.cos((dx / 16) * Math.PI) * -6);
+    if (Math.abs(dx) < 17) for (const dz of [-2, 2]) set(dx, cable, dz, ACIER);
+  }
+  // les deux tours
+  for (const tx of [-16, 16]) {
+    for (let y = 0; y <= TABLIER + 16; y++) {
+      for (let dz = -3; dz <= 3; dz++) {
+        for (const dx of [-1, 1]) set(tx + dx, y, dz, GRANIT);
+      }
+    }
+    // les deux arches gothiques
+    for (const az of [-1.6, 1.6]) {
+      const z0 = Math.round(az);
+      for (let y = TABLIER + 1; y <= TABLIER + 6; y++) {
+        for (const dx of [-1, 1]) set(tx + dx, y, z0, BLOCK.AIR);
+      }
+    }
+  }
 }

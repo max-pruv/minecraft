@@ -14,7 +14,9 @@ import {
 } from './paris.js';
 import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
-  MONUMENTS, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC, buildGrandCentral,
+  MONUMENTS, LIBERTE, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC,
+  buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
+  WALL,
 } from './manhattan.js';
 
 export const CHUNK = 16;
@@ -440,6 +442,7 @@ export const PLACES = [
   // par son seul nom, à un endroit quelconque de neuf kilomètres de long.
   { name: 'Central Park', x: NY.x - 8, z: NY.z + 18, r: 34 },
   { name: 'Times Square', x: NY.x - 11, z: NY.z + 64, r: 12 },
+  { name: 'Wall Street', x: NY.x, z: NY.z + WALL.v - 3, r: 12 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -742,8 +745,13 @@ const LANDMARKS = [
   { name: 'Flatiron', x: NY.x + MONUMENTS[3].u, z: NY.z + MONUMENTS[3].v, box: MONUMENTS[3].box, build: buildFlatiron },
   { name: 'Rockefeller Center', x: NY.x + MONUMENTS[4].u, z: NY.z + MONUMENTS[4].v, box: MONUMENTS[4].box, build: buildGrandCentral },
   { name: 'One World Trade Center', x: NY.x + MONUMENTS[5].u, z: NY.z + MONUMENTS[5].v, box: MONUMENTS[5].box, build: buildOneWTC },
+  { name: 'Times Square', x: NY.x + MONUMENTS[6].u, z: NY.z + MONUMENTS[6].v, box: MONUMENTS[6].box, build: buildTimesSquare },
+  { name: 'Bourse de New York', x: NY.x + MONUMENTS[7].u, z: NY.z + MONUMENTS[7].v, box: MONUMENTS[7].box, build: buildBourse },
+  { name: 'Trinity Church', x: NY.x + MONUMENTS[8].u, z: NY.z + MONUMENTS[8].v, box: MONUMENTS[8].box, build: buildTrinity },
+  // Le pont de Brooklyn part de la rive est, juste au nord de Wall Street.
+  { name: 'Pont de Brooklyn', x: NY.x + 30, z: NY.z + WALL.v - 6, box: 30, waterBase: true, build: buildBrooklyn },
   // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
-  { name: 'Statue de la Liberté', x: NY.x - 20, z: NY.z + 124, box: 4, waterBase: true, build: buildStatue },
+  { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
   // San Francisco
   { name: 'Golden Gate', x: 0, z: -373, box: 34, waterBase: true, build: buildSuspensionBridge },
   { name: 'Phare', x: -38, z: -353, box: 3, waterBase: true, build: buildLighthouse },
@@ -841,6 +849,11 @@ export class World {
     // Paris : la Seine se creuse dans la base plate, et la butte Montmartre s'y
     // relève. Une ville née autour d'un fleuve ne pouvait pas rester une table.
     h = hauteurParis(x, z, h, 34);
+
+    // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
+    // Sans lui, la statue se dresserait sur la mer.
+    const ld = Math.hypot(x - (NY.x + LIBERTE.u), z - (NY.z + LIBERTE.v));
+    if (ld < LIBERTE.r) h = Math.max(h, WATER_LEVEL + 1 - Math.floor(ld / 3));
 
     // Manhattan ne se pose pas sur le continent : elle en est détachée par
     // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
