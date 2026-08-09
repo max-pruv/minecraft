@@ -1,0 +1,696 @@
+// La carte du monde.
+//
+// Avant, c'était une vignette : une image fixe, centrée sur le joueur, qu'on
+// regardait sans pouvoir y entrer. Ici c'est un atlas — on la fait glisser,
+// on l'écarte à deux doigts, et plus on s'approche plus elle en dit :
+//
+//   loin   le relief, les mers, les massifs, les six domaines
+//   moyen  les villes et leur trame de rues
+//   près   les vraies constructions, là où le monde est déjà en mémoire
+//
+// Le fond est redessiné à partir du générateur de terrain — il connaît la
+// hauteur de n'importe quel point sans avoir à fabriquer le moindre bloc, ce
+// qui permet de survoler un continent entier sans rien charger. Entre deux
+// rendus, l'image précédente est simplement étirée : le doigt ne se heurte
+// jamais au calcul.
+
+import {
+  CHUNK, HEIGHT, WATER_LEVEL, CITIES, PLACES, REPERES,
+  MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
+} from './world.js';
+import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
+
+// Couleur de chaque bloc vu du dessus. Sert à la vignette comme à la carte.
+export const MAP_COLORS = {
+  [BLOCK.GRASS]: [88, 176, 76], [BLOCK.DIRT]: [138, 96, 67], [BLOCK.STONE]: [125, 125, 125],
+  [BLOCK.SAND]: [219, 207, 163], [BLOCK.LOG]: [103, 82, 49], [BLOCK.LEAVES]: [54, 116, 38],
+  [BLOCK.WATER]: [64, 120, 210], [BLOCK.PLANK]: [162, 130, 78], [BLOCK.COBBLE]: [120, 120, 120],
+  [BLOCK.GLASS]: [200, 230, 245], [BLOCK.BRICK]: [148, 68, 58], [BLOCK.SNOW]: [242, 250, 250],
+  [BLOCK.SANDSTONE]: [216, 200, 155], [BLOCK.GRAVEL]: [136, 130, 126], [BLOCK.MOSSY]: [98, 122, 82],
+  [BLOCK.BIRCH]: [214, 200, 165], [BLOCK.DARKPLANK]: [92, 66, 42], [BLOCK.ICE]: [160, 210, 240],
+  [BLOCK.GOLD]: [238, 202, 66], [BLOCK.DIAMOND]: [96, 219, 213], [BLOCK.OBSIDIAN]: [28, 22, 44],
+  [BLOCK.BOOKSHELF]: [162, 130, 78], [BLOCK.WOOL_RED]: [200, 62, 56], [BLOCK.WOOL_BLUE]: [64, 100, 190],
+  [BLOCK.WOOL_YELLOW]: [228, 200, 60], [BLOCK.WOOL_GREEN]: [88, 160, 70], [BLOCK.WOOL_PURPLE]: [140, 84, 190],
+  [BLOCK.WOOL_BLACK]: [42, 42, 46], [BLOCK.SLAB_STONE]: [125, 125, 125], [BLOCK.SLAB_PLANK]: [162, 130, 78],
+  [BLOCK.SLAB_COBBLE]: [120, 120, 120], [BLOCK.SLAB_BRICK]: [148, 68, 58],
+  [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
+  [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
+  [BLOCK.MARS_SOL]: [176, 96, 62], [BLOCK.MARS_ROCHE]: [116, 62, 48],
+  [VILLANDRY_BLOCK.TUFFEAU]: [230, 224, 206], [VILLANDRY_BLOCK.TUFFEAU_TAILLE]: [226, 219, 200],
+  [VILLANDRY_BLOCK.ARDOISE]: [76, 86, 102], [VILLANDRY_BLOCK.BUIS]: [46, 86, 44],
+  [VILLANDRY_BLOCK.ALLEE]: [208, 196, 168],
+  [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
+  [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
+  [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
+  [CITY_BLOCK.GRANITE]: [168, 166, 160], [CITY_BLOCK.CURTAIN]: [78, 118, 164],
+  [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [120, 120, 120],
+};
+
+// Une icône par lieu : un enfant de sept ans lit un pictogramme avant un mot.
+const ICONES = {
+  'Paris': '🥖', 'New York': '🗽', 'San Francisco': '🌁', 'Nice': '🏖️', 'Lille': '🔔',
+  'Planète Mars': '🔴', 'Château de Villandry': '🌷', 'Aéroport Charles-de-Gaulle': '✈️',
+  'Village gaulois': '🛖', 'Base spatiale': '🚀', 'Circuit de F1': '🏎️',
+  "Parc d'attractions": '🎡', 'Désert': '🌵', 'Volcan': '🌋', 'Île tropicale': '🏝️',
+  'Château médiéval': '🏰', 'Musée': '🖼️', 'Quartier des enfants': '🏘️',
+  'Tour Eiffel': '🗼', 'Arc de Triomphe': '🏛️', 'Pyramide du Louvre': '🔷',
+  'Empire State': '🏢', 'Statue de la Liberté': '🗽', 'Golden Gate': '🌉', 'Phare': '🚨',
+  'Beffroi de Lille': '🔔', 'Base martienne': '🛸', 'Caserne & Commissariat': '🚒',
+  'Pyramides': '🔺',
+};
+const icone = (nom) => ICONES[nom] || '📍';
+
+// Blocs par pixel. Petit = près.
+const ZOOM_MIN = 0.22;    // on distingue un bloc
+const ZOOM_MAX = 4.5;     // le monde entier tient dans la fenêtre
+const RENDU_MS = 110;     // on ne recalcule pas le fond plus souvent que ça
+const MARGE = 1.3;        // le fond déborde de la fenêtre : glisser ne montre pas de vide
+
+const borne = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// Safari ne connaît roundRect que depuis peu, et l'iPad de la maison n'est pas
+// forcément à jour : on trace le rectangle arrondi à la main.
+function rectArrondi(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+const melange = (a, b, t) => [
+  a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t,
+];
+
+export class Carte {
+  // opts : { canvas, world, joueur(), autres(), mobiles(), surVoyage(lieu), surTeleport(x, z) }
+  constructor(opts) {
+    Object.assign(this, opts);
+    this.vue = { cx: 0, cz: 0, bpp: 3 };
+    this.fond = document.createElement('canvas');
+    this.fondVue = null;        // la vue pour laquelle le fond a été calculé
+    this.dernierRendu = 0;
+    this.etiquettes = [];       // rectangles cliquables du dernier calque
+    this.pointeurs = new Map();
+    this.appuiLong = null;
+    this.aBouge = false;
+    this.dernierTap = 0;
+    this.boucle = 0;
+    this.ouverte = false;
+    this._brancher();
+  }
+
+  // --- géométrie -------------------------------------------------------------
+
+  // La taille affichée, en pixels CSS. Elle est relue une fois par image et
+  // mémorisée : la mesurer à chaque étiquette forcerait le navigateur à
+  // recalculer la mise en page des dizaines de fois par seconde.
+  taille() {
+    if (this._css) return { css: this._css };
+    const r = this.canvas.getBoundingClientRect();
+    // hors écran (modale masquée) le rectangle est nul : on retombe sur
+    // l'attribut du canvas plutôt que de diviser par zéro plus loin.
+    return { css: Math.round(r.width) || 480 };
+  }
+
+  versMonde(px, py) {
+    const { css } = this.taille();
+    const b = this.vue.bpp;
+    return { x: this.vue.cx + (px - css / 2) * b, z: this.vue.cz + (py - css / 2) * b };
+  }
+
+  versEcran(x, z) {
+    const { css } = this.taille();
+    const b = this.vue.bpp;
+    return { x: css / 2 + (x - this.vue.cx) / b, y: css / 2 + (z - this.vue.cz) / b };
+  }
+
+  // Le monde tient dans cette boîte : au-delà, il n'y a plus que de l'océan
+  // procédural, et un enfant qui glisse trop loin ne saurait plus revenir.
+  bornesMonde() {
+    let x0 = -700, x1 = 760, z0 = -700, z1 = 620;
+    for (const c of [...CITIES, ...PLACES]) {
+      const m = (c.r || 40) + 120;
+      x0 = Math.min(x0, c.x - m); x1 = Math.max(x1, c.x + m);
+      z0 = Math.min(z0, c.z - m); z1 = Math.max(z1, c.z + m);
+    }
+    return { x0, x1, z0, z1 };
+  }
+
+  limiter() {
+    const b = this.bornesMonde();
+    this.vue.cx = borne(this.vue.cx, b.x0, b.x1);
+    this.vue.cz = borne(this.vue.cz, b.z0, b.z1);
+  }
+
+  zoomMax() {
+    const { css } = this.taille();
+    const b = this.bornesMonde();
+    return Math.min(ZOOM_MAX, Math.max(b.x1 - b.x0, b.z1 - b.z0) / css);
+  }
+
+  zoomerVers(px, py, facteur) {
+    const avant = this.versMonde(px, py);
+    this.vue.bpp = borne(this.vue.bpp / facteur, ZOOM_MIN, this.zoomMax());
+    const apres = this.versMonde(px, py);
+    this.vue.cx += avant.x - apres.x;
+    this.vue.cz += avant.z - apres.z;
+    this.limiter();
+  }
+
+  centrerSurJoueur(bpp) {
+    const j = this.joueur();
+    this.vue.cx = j.x; this.vue.cz = j.z;
+    if (bpp) this.vue.bpp = borne(bpp, ZOOM_MIN, this.zoomMax());
+    this.limiter();
+  }
+
+  toutVoir() {
+    const b = this.bornesMonde();
+    this.vue.cx = (b.x0 + b.x1) / 2;
+    this.vue.cz = (b.z0 + b.z1) / 2;
+    this.vue.bpp = this.zoomMax();
+  }
+
+  // --- lecture du monde ------------------------------------------------------
+
+  // Bloc de surface, uniquement là où le terrain existe déjà en mémoire.
+  // Passer par world.getBlock fabriquerait le morceau manquant : sur une carte
+  // qui survole mille blocs, ce serait des centaines de morceaux générés pour
+  // afficher une image.
+  blocDeSurface(wx, wz) {
+    const w = this.world;
+    const cx = Math.floor(wx / CHUNK), cz = Math.floor(wz / CHUNK);
+    const data = w.chunks.get(cx + ',' + cz);
+    if (!data) return 0;
+    const lx = wx - cx * CHUNK, lz = wz - cz * CHUNK;
+    const haut = Math.min(HEIGHT - 1, (w.tops.get(cx + ',' + cz) ?? HEIGHT - 1));
+    for (let y = haut; y >= 0; y--) {
+      const id = data[lx + lz * CHUNK + y * CHUNK * CHUNK];
+      if (id !== BLOCK.AIR) return id;
+    }
+    return 0;
+  }
+
+  // Couleur d'un point du monde, à n'importe quelle échelle.
+  couleur(wx, wz, h, fin, rues) {
+    const w = this.world;
+
+    if (fin) {
+      const id = this.blocDeSurface(wx, wz);
+      if (id) return MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
+    }
+
+    // Les domaines se reconnaissent à leur couleur — la carte lit la hauteur
+    // du terrain, pas les blocs : sans cette règle, le plateau martien
+    // ressortirait vert comme une prairie.
+    if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) return [176, 96, 62];
+    if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) return [176, 186, 138];
+    if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) return [108, 112, 118];
+    if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) return [214, 190, 140];
+    if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) return [126, 158, 84];
+    if (Math.hypot(wx - CIRCUIT.x, wz - CIRCUIT.z) < CIRCUIT.r - 10) return [96, 108, 96];
+
+    if (h <= WATER_LEVEL) {
+      const p = Math.min(1, (WATER_LEVEL - h) / 16);
+      return melange([92, 156, 216], [20, 50, 122], p);
+    }
+
+    const ville = w.cityAt(wx, wz);
+    if (ville) {
+      // La trame des rues, telle que le générateur la pose. On ne la dessine
+      // que d'assez près : échantillonnée de loin, elle produirait un moiré.
+      if (rues && Math.hypot(wx - ville.x, wz - ville.z) < ville.r - 4 && h > WATER_LEVEL) {
+        const mx = ((wx % ville.cell) + ville.cell) % ville.cell;
+        const mz = ((wz % ville.cell) + ville.cell) % ville.cell;
+        if (mx < ville.street || mz < ville.street) return [62, 63, 68];
+      }
+      return [172, 168, 162];
+    }
+
+    if (h <= WATER_LEVEL + 1) return [226, 214, 172];               // la plage
+    if (h >= 58) return [242, 250, 250];                            // les neiges
+    if (h >= 48) return melange([140, 136, 126], [200, 202, 200], (h - 48) / 10);
+
+    // Prairie, puis bois. Les forêts sont peintes d'après le bruit qui les
+    // sème, jamais d'après les arbres posés : elles couvrent ainsi toute la
+    // carte, et non le seul carré de monde chargé autour du joueur — c'est ce
+    // raccord visible qui trahissait la limite de la mémoire.
+    const prairie = melange([104, 174, 88], [76, 138, 68], borne((h - 31) / 17, 0, 1));
+    return melange(prairie, [50, 104, 40], w.foret(wx, wz) * 0.8);
+  }
+
+  // --- le fond ---------------------------------------------------------------
+
+  rendreFond() {
+    const { css } = this.taille();
+    const N = Math.max(64, Math.round((css * MARGE) / 2));   // un échantillon pour deux pixels
+    if (this.fond.width !== N) { this.fond.width = N; this.fond.height = N; }
+    const ctx = this.fond.getContext('2d');
+    const img = ctx.createImageData(N, N);
+
+    const large = css * this.vue.bpp * MARGE;    // largeur couverte, en blocs
+    const pas = large / N;
+    const x0 = this.vue.cx - large / 2, z0 = this.vue.cz - large / 2;
+    // Les vrais blocs, seulement d'assez près : le monde n'est en mémoire que
+    // sur un carré d'environ 380 blocs autour du joueur, et au-delà de cette
+    // échelle ce carré se verrait comme une pièce rapportée.
+    const fin = this.vue.bpp <= 0.7;
+    // La trame des rues, elle, est calculée : on peut la montrer un peu plus
+    // loin, tant que l'échantillonnage ne la transforme pas en moirage.
+    const rues = this.vue.bpp <= 1.0;
+
+    // Le champ de hauteurs d'abord, avec une bordure : l'ombrage a besoin des
+    // voisins, et les recalculer pour chaque point coûterait cinq fois plus.
+    const L = N + 2;
+    const H = new Float32Array(L * L);
+    for (let j = -1; j <= N; j++) {
+      const wz = Math.floor(z0 + (j + 0.5) * pas);
+      for (let i = -1; i <= N; i++) {
+        H[(j + 1) * L + i + 1] = this.world.terrainHeight(Math.floor(x0 + (i + 0.5) * pas), wz);
+      }
+    }
+
+    for (let j = 0; j < N; j++) {
+      const wz = Math.floor(z0 + (j + 0.5) * pas);
+      for (let i = 0; i < N; i++) {
+        const wx = Math.floor(x0 + (i + 0.5) * pas);
+        const k = (j + 1) * L + i + 1;
+        const h = H[k];
+        const c = this.couleur(wx, wz, h, fin, rues);
+
+        // Relief : lumière rasante venant du nord-ouest. C'est elle qui donne
+        // aux montagnes leur volume — une carte plate paraît morte.
+        let ombre = 1;
+        if (h > WATER_LEVEL) {
+          const pente = ((H[k + 1] - H[k - 1]) + (H[k + L] - H[k - L])) / (2 * Math.max(1, pas));
+          ombre = borne(1 + pente * 0.30, 0.62, 1.34);
+        }
+        const o = (j * N + i) * 4;
+        img.data[o] = Math.min(255, c[0] * ombre);
+        img.data[o + 1] = Math.min(255, c[1] * ombre);
+        img.data[o + 2] = Math.min(255, c[2] * ombre);
+        img.data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    this.fondVue = { ...this.vue, css };
+    this.dernierRendu = performance.now();
+  }
+
+  // --- le calque : ce qui bouge et ce qui se lit -----------------------------
+
+  // Un lieu se dessine en deux morceaux : la pastille d'icône, plantée sur le
+  // point exact, et le nom, posé juste dessous. Le nom peut manquer quand la
+  // carte est trop chargée ; l'icône, jamais — c'est elle qu'on touche pour
+  // partir, et une destination qui s'efface est une destination perdue.
+  jeton(ctx, p, emoji, fort) {
+    ctx.fillStyle = 'rgba(16, 22, 38, 0.82)';
+    ctx.strokeStyle = fort ? 'rgba(255, 215, 94, 0.85)' : 'rgba(255,255,255,0.32)';
+    ctx.lineWidth = fort ? 2 : 1.5;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, p.x, p.y + 0.5);
+  }
+
+  // Cherche à la place exacte, puis sur deux anneaux de plus en plus larges.
+  // Le décalage reste borné : au-delà, on préfère renoncer plutôt que de
+  // planter une destination loin de là où elle se trouve vraiment.
+  ecarter(p, libre, css) {
+    const essais = [{ x: 0, y: 0 }];
+    for (const r of [16, 28]) {
+      for (let a = 0; a < 8; a++) {
+        const ang = (a / 8) * Math.PI * 2;
+        essais.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+      }
+    }
+    for (const d of essais) {
+      const q = { x: p.x + d.x, y: p.y + d.y };
+      if (q.x < 14 || q.x > css - 14 || q.y < 14 || q.y > css - 14) continue;
+      if (libre({ x0: q.x - 13, y0: q.y - 13, x1: q.x + 13, y1: q.y + 13 })) return q;
+    }
+    return null;
+  }
+
+  // Les places possibles pour le nom, dans l'ordre où on les préfère : dessous,
+  // dessus, à droite, à gauche. Chercher ailleurs quand la première est prise
+  // change tout — sur une carte chargée, c'est la différence entre trois noms
+  // affichés et douze. Chacune est rentrée de force dans le cadre : un nom
+  // coupé par le bord — « Base spatia » — n'est ni lisible ni touchable.
+  boites(ctx, p, texte, fort, css) {
+    ctx.font = fort ? 'bold 12px system-ui, sans-serif' : '11px system-ui, sans-serif';
+    const l = ctx.measureText(texte).width + 12;
+    const hh = fort ? 19 : 17;
+    const faire = (cx, cy) => {
+      const ex = borne(cx, l / 2 + 4, css - l / 2 - 4);
+      const ey = borne(cy - hh / 2, 4, css - hh - 4);
+      return { l, hh, ex, ey, x0: ex - l / 2, y0: ey, x1: ex + l / 2, y1: ey + hh };
+    };
+    return [
+      faire(p.x, p.y + 14 + hh / 2),
+      faire(p.x, p.y - 14 - hh / 2),
+      faire(p.x + 15 + l / 2, p.y),
+      faire(p.x - 15 - l / 2, p.y),
+    ];
+  }
+
+  pastille(ctx, b, texte, fort) {
+    ctx.font = fort ? 'bold 12px system-ui, sans-serif' : '11px system-ui, sans-serif';
+    ctx.fillStyle = fort ? 'rgba(16, 22, 38, 0.88)' : 'rgba(16, 22, 38, 0.74)';
+    ctx.strokeStyle = fort ? 'rgba(255, 215, 94, 0.6)' : 'rgba(255, 255, 255, 0.24)';
+    ctx.lineWidth = 1;
+    rectArrondi(ctx, b.x0, b.y0, b.l, b.hh, b.hh / 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = fort ? '#ffe9a8' : '#e8edf8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(texte, b.ex, b.ey + b.hh / 2 + 0.5);
+  }
+
+  rendreCalque(ctx, css) {
+    const b = this.vue.bpp;
+    this.etiquettes = [];
+
+    // Les bêtes et les gens, tant qu'on est assez près pour les distinguer.
+    if (b <= 1.4 && this.mobiles) {
+      for (const m of this.mobiles()) {
+        const p = this.versEcran(m.x, m.z);
+        if (p.x < -4 || p.x > css + 4 || p.y < -4 || p.y > css + 4) continue;
+        ctx.fillStyle = m.couleur;
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+      }
+    }
+
+    // Les lieux, du plus important au plus discret, sans jamais se recouvrir.
+    // Les deux coins que la carte se dessine à elle-même sont réservés
+    // d'avance : un lieu caché derrière la boussole n'est plus touchable.
+    const pris = [
+      { x0: css - 46, y0: 0, x1: css, y1: 46 },            // la boussole
+      { x0: 0, y0: css - 46, x1: 180, y1: css },           // l'échelle
+    ];
+    const libre = (r) => !pris.some((q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
+    // Trois rangs, et l'ordre compte : quand deux noms se disputent la même
+    // place, c'est toujours le plus important qui l'emporte. Les petites
+    // adresses n'apparaissent qu'une fois qu'on s'est approché, sinon elles
+    // encombrent le centre de la carte et chassent les grandes destinations.
+    const majeur = (c) => (c.r || 0) >= 30;
+    const candidats = [
+      ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
+      ...PLACES.map((c) => ({ c, fort: true, seuil: majeur(c) ? 99 : 1.9 })),
+      ...REPERES.map((c) => ({ c, fort: false, seuil: 1.6 })),
+    ];
+    // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
+    // vue du ciel, la carte est un menu de voyage, et une destination qui
+    // disparaît est une destination qu'on ne peut plus atteindre. Les grands
+    // noms ne s'ajoutent qu'ensuite, là où il reste de la place.
+    const deja = new Set();
+    const retenus = [];
+    for (const { c, fort, seuil } of candidats) {
+      if (b > seuil || deja.has(c.name)) continue;
+      const exact = this.versEcran(c.x, c.z);
+      if (exact.x < 2 || exact.x > css - 2 || exact.y < 2 || exact.y > css - 2) continue;
+      // Vue du ciel, deux domaines voisins tombent sur le même pixel. Plutôt
+      // que d'en effacer un, on écarte sa pastille de quelques pixels — moins
+      // que l'épaisseur d'un doigt, et une poignée de blocs à cette échelle,
+      // alors qu'un lieu effacé, lui, devient impossible à rejoindre.
+      const p = this.ecarter(exact, libre, css);
+      if (!p) continue;
+      const jeton = { x0: p.x - 13, y0: p.y - 13, x1: p.x + 13, y1: p.y + 13 };
+      deja.add(c.name);
+      pris.push(jeton);
+      retenus.push({ c, p, fort, jeton });
+      this.jeton(ctx, p, icone(c.name), fort);
+      this.etiquettes.push({ rect: jeton, lieu: c });
+    }
+    for (const r of retenus) {
+      const boite = this.boites(ctx, r.p, r.c.name, r.fort, css).find(libre);
+      if (!boite) continue;
+      pris.push(boite);
+      this.pastille(ctx, boite, r.c.name, r.fort);
+      // le nom aussi emmène en voyage : c'est la plus grande cible du doigt
+      this.etiquettes.push({ rect: boite, lieu: r.c });
+    }
+
+    // Les autres joueurs, avec leur prénom : c'est ce qu'on vient chercher.
+    if (this.autres) {
+      for (const a of this.autres()) {
+        const p = this.versEcran(a.x, a.z);
+        if (p.x < 0 || p.x > css || p.y < 0 || p.y > css) continue;
+        ctx.fillStyle = '#4ac9ff';
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (a.nom) {
+          ctx.font = 'bold 11px system-ui, sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+          ctx.strokeText(a.nom, p.x, p.y - 14);
+          ctx.fillStyle = '#bfe9ff';
+          ctx.fillText(a.nom, p.x, p.y - 14);
+        }
+      }
+    }
+
+    // Le joueur, flèche pointée là où il regarde.
+    const j = this.joueur();
+    const p = this.versEcran(j.x, j.z);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(Math.atan2(-Math.cos(j.yaw), -Math.sin(j.yaw)));
+    ctx.fillStyle = '#ff4444'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(10, 0); ctx.lineTo(-6, -6); ctx.lineTo(-6, 6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    this.echelle(ctx, css);
+    this.boussole(ctx, css);
+  }
+
+  // Une barre de mesure : sans elle, on ne sait pas si le zoom a bougé.
+  echelle(ctx, css) {
+    const jolis = [10, 20, 50, 100, 200, 500, 1000];
+    let blocs = jolis[jolis.length - 1];
+    for (const v of jolis) { if (v / this.vue.bpp >= 56) { blocs = v; break; } }
+    const l = blocs / this.vue.bpp;
+    const x = 14, y = css - 16;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + l, y);
+    ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 3); ctx.moveTo(x + l, y - 5); ctx.lineTo(x + l, y + 3);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText(`${blocs} blocs`, x, y - 9);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${blocs} blocs`, x, y - 9);
+  }
+
+  boussole(ctx, css) {
+    const x = css - 24, y = 24;
+    ctx.fillStyle = 'rgba(16,22,38,0.66)';
+    ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff5b5b';
+    ctx.beginPath(); ctx.moveTo(x, y - 11); ctx.lineTo(x - 5, y + 2); ctx.lineTo(x + 5, y + 2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e8edf8';
+    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('N', x, y + 8);
+  }
+
+  // --- la boucle -------------------------------------------------------------
+
+  peindre() {
+    this._css = 0;
+    const { css } = this.taille();
+    this._css = css;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (this.canvas.width !== Math.round(css * dpr)) {
+      this.canvas.width = Math.round(css * dpr);
+      this.canvas.height = Math.round(css * dpr);
+      this.fondVue = null;
+    }
+    const maintenant = performance.now();
+    const perime = !this.fondVue
+      || this.fondVue.css !== css
+      || this.fondVue.bpp !== this.vue.bpp
+      || this.fondVue.cx !== this.vue.cx
+      || this.fondVue.cz !== this.vue.cz;
+    // Un fond périmé attend son tour ; un fond absent, non — sans quoi la
+    // première image après un changement de taille n'aurait rien à étirer.
+    if (perime && (!this.fondVue || maintenant - this.dernierRendu >= RENDU_MS)) this.rendreFond();
+
+    const ctx = this.canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, css, css);
+
+    // Le fond calculé pour la vue précédente est étiré jusqu'à la vue
+    // courante : le déplacement reste fluide même pendant qu'on recalcule.
+    const f = this.fondVue;
+    const largeF = f.css * f.bpp * MARGE;
+    const gx = f.cx - largeF / 2, gz = f.cz - largeF / 2;
+    const a = this.versEcran(gx, gz);
+    const bpx = largeF / this.vue.bpp;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(this.fond, a.x, a.y, bpx, bpx);
+
+    this.rendreCalque(ctx, css);
+  }
+
+  ouvrir() {
+    this.ouverte = true;
+    this.fondVue = null;
+    const tick = () => {
+      if (!this.ouverte) return;
+      this.peindre();
+      this.boucle = requestAnimationFrame(tick);
+    };
+    cancelAnimationFrame(this.boucle);
+    tick();
+  }
+
+  fermer() {
+    this.ouverte = false;
+    cancelAnimationFrame(this.boucle);
+    this.annulerAppui();
+  }
+
+  // --- les gestes ------------------------------------------------------------
+
+  annulerAppui() {
+    clearTimeout(this.appuiLong);
+    this.appuiLong = null;
+    if (this.cible) { this.cible.classList.remove('arme'); this.cible.style.display = 'none'; }
+  }
+
+  _brancher() {
+    const cv = this.canvas;
+    this.cible = document.getElementById('map-cible');
+
+    cv.addEventListener('pointerdown', (e) => {
+      cv.setPointerCapture?.(e.pointerId);
+      this.pointeurs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.pointeurs.size === 1) {
+        this.depart = { x: e.clientX, y: e.clientY, t: performance.now() };
+        this.aBouge = false;
+        this._armerAppuiLong(e);
+      } else {
+        // deux doigts : c'est un zoom, pas une téléportation
+        this.annulerAppui();
+        this.multi = true;
+        this.pince = this._pince();
+      }
+      e.preventDefault();
+    });
+
+    cv.addEventListener('pointermove', (e) => {
+      const p = this.pointeurs.get(e.pointerId);
+      if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+
+      if (this.pointeurs.size === 1) {
+        if (Math.hypot(e.clientX - this.depart.x, e.clientY - this.depart.y) > 10) {
+          this.annulerAppui();
+          this.aBouge = true;
+        }
+        if (this.aBouge) {
+          this.vue.cx -= dx * this.vue.bpp;
+          this.vue.cz -= dy * this.vue.bpp;
+          this.limiter();
+        }
+      } else if (this.pointeurs.size >= 2 && this.pince) {
+        const p2 = this._pince();
+        const r = cv.getBoundingClientRect();
+        if (this.pince.d > 8) {
+          const mx = p2.x - r.left, my = p2.y - r.top;
+          this.zoomerVers(mx, my, p2.d / this.pince.d);
+          // le milieu des deux doigts entraîne aussi la carte
+          this.vue.cx -= (p2.x - this.pince.x) * this.vue.bpp;
+          this.vue.cz -= (p2.y - this.pince.y) * this.vue.bpp;
+          this.limiter();
+        }
+        this.pince = p2;
+      }
+      e.preventDefault();
+    });
+
+    const fini = (e) => {
+      const etait = this.pointeurs.size;
+      this.pointeurs.delete(e.pointerId);
+      if (this.pointeurs.size < 2) this.pince = null;
+      if (etait !== 1) { this.annulerAppui(); return; }
+      this.annulerAppui();
+      // Un zoom à deux doigts se termine par deux doigts levés l'un après
+      // l'autre : sans cette mémoire, le second était pris pour un appui bref
+      // et emmenait l'enfant en voyage au beau milieu de son geste.
+      const pince = this.multi;
+      this.multi = false;
+      if (pince || this.aBouge || this.teleporte) { this.teleporte = false; return; }
+      if (performance.now() - this.depart.t > 520) return;   // l'appui long a déjà tranché
+      this._tap(e);
+    };
+    for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, fini);
+
+    cv.addEventListener('wheel', (e) => {
+      const r = cv.getBoundingClientRect();
+      this.zoomerVers(e.clientX - r.left, e.clientY - r.top, e.deltaY > 0 ? 1 / 1.18 : 1.18);
+      e.preventDefault();
+    }, { passive: false });
+
+    // Le navigateur ne doit ni faire défiler la page ni zoomer par-dessus.
+    cv.style.touchAction = 'none';
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  _pince() {
+    const [a, b] = [...this.pointeurs.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) };
+  }
+
+  _armerAppuiLong(e) {
+    const cv = this.canvas;
+    const parent = cv.offsetParent;
+    if (this.cible && parent) {
+      const pr = parent.getBoundingClientRect();
+      this.cible.style.left = `${e.clientX - pr.left}px`;
+      this.cible.style.top = `${e.clientY - pr.top}px`;
+      this.cible.style.display = 'block';
+      void this.cible.offsetWidth;
+      this.cible.classList.add('arme');
+    }
+    const r = cv.getBoundingClientRect();
+    const m = this.versMonde(e.clientX - r.left, e.clientY - r.top);
+    this.appuiLong = setTimeout(() => {
+      this.annulerAppui();
+      this.teleporte = true;
+      this.surTeleport(m.x, m.z);
+    }, 550);
+  }
+
+  // Un appui bref : sur une étiquette on voyage, ailleurs on rapproche.
+  _tap(e) {
+    const r = this.canvas.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    for (const et of this.etiquettes) {
+      const q = et.rect;
+      if (px >= q.x0 - 6 && px <= q.x1 + 6 && py >= q.y0 - 6 && py <= q.y1 + 6) {
+        this.surVoyage(et.lieu);
+        return;
+      }
+    }
+    const t = performance.now();
+    if (t - this.dernierTap < 320 && Math.hypot(px - this.tapX, py - this.tapY) < 34) {
+      this.dernierTap = 0;
+      this.zoomerVers(px, py, 1.9);
+      return;
+    }
+    this.dernierTap = t; this.tapX = px; this.tapY = py;
+  }
+}

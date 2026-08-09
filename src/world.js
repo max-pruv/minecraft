@@ -705,6 +705,8 @@ function buildBaseMartienne(set) {
   }
 }
 
+// Les repères bâtis à la main. La carte s'en sert pour nommer ce qu'on voit
+// dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
 const LANDMARKS = [
   // Paris
   { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
@@ -732,6 +734,9 @@ const LANDMARKS = [
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
   { name: 'Musée', x: -34, z: 40, box: 10, build: buildMuseum },
 ];
+
+// La même liste, sans les constructeurs : ce que la carte a le droit de lire.
+export const REPERES = LANDMARKS.map(({ name, x, z, box }) => ({ name, x, z, box }));
 
 // --- world ----------------------------------------------------------------
 
@@ -909,6 +914,17 @@ export class World {
       if (Math.hypot(x - c.x, z - c.z) < c.r) return c;
     }
     return null;
+  }
+
+  // Densité de forêt en un point, entre 0 et 1. C'est le même bruit qui décide
+  // où treeAt plantera des arbres — la carte peut donc dessiner les bois
+  // partout, y compris là où pas un seul morceau de monde n'a été fabriqué.
+  foret(x, z) {
+    if (this.cityAt(x, z)) return 0;
+    // La rampe suit les seuils de treeAt : rien avant 0,52, forêt pleine à
+    // 0,70. La carte doit dire la même chose que le monde — sinon la limite du
+    // terrain chargé se voit comme un carré plus clair au milieu de l'image.
+    return Math.max(0, Math.min(1, (fbm(x * 0.008, z * 0.008, SEED + 701) - 0.52) / 0.18));
   }
 
   treeAt(x, z) {

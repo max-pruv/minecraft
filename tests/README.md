@@ -7,9 +7,10 @@ jouer par de vrais navigateurs.
 ```sh
 cd tests
 npm install
-npm test          # les deux suites
+npm test          # les trois suites
 npm run reseau    # le monde partagé
 npm run reglages  # les réglages, enfant et parent
+npm run carte     # la carte : glisser, zoomer, voyager
 ```
 
 Compter environ deux minutes. C'est normal et voulu : les attentes doivent
@@ -74,6 +75,26 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
 regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
 montre.
+
+## La carte (`npm run carte`)
+
+Deux joueurs : une tablette — contexte tactile, vrais contacts multiples envoyés
+par le protocole du navigateur — et un ordinateur à la souris. C'est la
+différence entre les deux qui a mis au jour le défaut le plus grave.
+
+| Scénario | La panne d'origine |
+|---|---|
+| la carte s'ouvre sur le joueur | — |
+| le menu du jeu ne recouvre pas la carte | à la souris, ouvrir la carte relâchait le pointeur, ce que le jeu prenait pour une pause : son menu se posait dessus et plus rien ne répondait |
+| glisser promène la carte | il n'y avait ni déplacement ni zoom |
+| écarter deux doigts rapproche, les rapprocher éloigne | idem |
+| zoomer sur une ville n'y emmène pas | le second doigt levé était pris pour un appui bref, et le zoom finissait en téléportation |
+| toutes les grandes destinations restent repérables | deux domaines voisins tombaient sur le même pixel, l'un s'effaçait — et devenait injoignable |
+| aucun nom ne déborde de la carte | « Base spatia », coupé par le bord, illisible et intouchable |
+| toucher un lieu emmène en voyage · un appui long dépose n'importe où | ce qui marchait avant, et qui devait continuer |
+| en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
+| ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
+| on ne peut ni zoomer à l'infini ni sortir du monde | — |
 
 ## Si Chromium n'est pas trouvé
 

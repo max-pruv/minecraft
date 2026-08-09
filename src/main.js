@@ -1,12 +1,13 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, CITY_BLOCK, VILLANDRY_BLOCK, MEUBLE_ITEMS, MEUBLE_START, isMeuble } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble } from './blocks.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, CASTLE, VILLANDRY, AEROPORT, GAULOIS, ESPACE, VILLE, CIRCUIT } from './world.js';
+import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { buildChunkGeometry } from './mesher.js';
+import { Carte, MAP_COLORS } from './carte.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
@@ -517,11 +518,17 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   }
 });
 
+// Les panneaux qui prennent tout l'écran relâchent la souris ; il ne faut pas
+// que le jeu prenne cette libération pour une mise en pause et vienne poser
+// son menu par-dessus. La carte est de ceux-là : sans elle dans cette liste,
+// le menu de pause recouvrait la carte et plus rien n'y répondait.
+let carteOuverte = false;
+
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
-    if (edu.quizActive || invOpen) { overlay.style.display = 'none'; return; }
+    if (edu.quizActive || invOpen || carteOuverte) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
     if (!locked) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
   }
@@ -3236,31 +3243,6 @@ document.addEventListener('wheel', (e) => {
 
 // --- minimap ---------------------------------------------------------------------
 
-const MAP_COLORS = {
-  [BLOCK.GRASS]: [88, 176, 76], [BLOCK.DIRT]: [138, 96, 67], [BLOCK.STONE]: [125, 125, 125],
-  [BLOCK.SAND]: [219, 207, 163], [BLOCK.LOG]: [103, 82, 49], [BLOCK.LEAVES]: [54, 116, 38],
-  [BLOCK.WATER]: [64, 120, 210], [BLOCK.PLANK]: [162, 130, 78], [BLOCK.COBBLE]: [120, 120, 120],
-  [BLOCK.GLASS]: [200, 230, 245], [BLOCK.BRICK]: [148, 68, 58], [BLOCK.SNOW]: [242, 250, 250],
-  [BLOCK.SANDSTONE]: [216, 200, 155], [BLOCK.GRAVEL]: [136, 130, 126], [BLOCK.MOSSY]: [98, 122, 82],
-  [BLOCK.BIRCH]: [214, 200, 165], [BLOCK.DARKPLANK]: [92, 66, 42], [BLOCK.ICE]: [160, 210, 240],
-  [BLOCK.GOLD]: [238, 202, 66], [BLOCK.DIAMOND]: [96, 219, 213], [BLOCK.OBSIDIAN]: [28, 22, 44],
-  [BLOCK.BOOKSHELF]: [162, 130, 78], [BLOCK.WOOL_RED]: [200, 62, 56], [BLOCK.WOOL_BLUE]: [64, 100, 190],
-  [BLOCK.WOOL_YELLOW]: [228, 200, 60], [BLOCK.WOOL_GREEN]: [88, 160, 70], [BLOCK.WOOL_PURPLE]: [140, 84, 190],
-  [BLOCK.WOOL_BLACK]: [42, 42, 46], [BLOCK.SLAB_STONE]: [125, 125, 125], [BLOCK.SLAB_PLANK]: [162, 130, 78],
-  [BLOCK.SLAB_COBBLE]: [120, 120, 120], [BLOCK.SLAB_BRICK]: [148, 68, 58],
-  [BLOCK.STONEBRICK]: [130, 130, 132], [BLOCK.DARKBRICK]: [92, 42, 40], [BLOCK.WHITEBRICK]: [232, 230, 222],
-  [BLOCK.TERRACOTTA]: [190, 108, 62], [BLOCK.BLUEBRICK]: [66, 96, 160],
-  [BLOCK.MARS_SOL]: [176, 96, 62], [BLOCK.MARS_ROCHE]: [116, 62, 48],
-  [VILLANDRY_BLOCK.TUFFEAU]: [230, 224, 206], [VILLANDRY_BLOCK.TUFFEAU_TAILLE]: [226, 219, 200],
-  [VILLANDRY_BLOCK.ARDOISE]: [76, 86, 102], [VILLANDRY_BLOCK.BUIS]: [46, 86, 44],
-  [VILLANDRY_BLOCK.ALLEE]: [208, 196, 168],
-  [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
-  [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
-  [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
-  [CITY_BLOCK.GRANITE]: [168, 166, 160], [CITY_BLOCK.CURTAIN]: [78, 118, 164],
-  [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [120, 120, 120],
-};
-
 const minimapCanvas = document.getElementById('minimap');
 const mapModal = document.getElementById('map-modal');
 const mapModalCanvas = document.getElementById('map-modal-canvas');
@@ -3325,14 +3307,16 @@ function drawMap(mapCanvas, radius) {
     ctx.fillRect(mx - 3, my - 3, 6, 6);
   }
 
-  // city names — clamped to the edge so they double as direction signs
+  // Le nom des lieux que l'on survole vraiment. Ils étaient auparavant tous
+  // rabattus sur les bords en guise de panneaux indicateurs : dix-huit noms
+  // empilés dans une vignette de cent soixante pixels, illisibles. Voir loin,
+  // c'est désormais le travail de la grande carte.
   if (radius >= 60) {
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
     for (const c of [...CITIES, ...PLACES]) {
-      let [mx, my] = toMap(c.x, c.z);
-      mx = Math.max(30, Math.min(size - 30, mx));
-      my = Math.max(12, Math.min(size - 6, my));
+      const [mx, my] = toMap(c.x, c.z);
+      if (mx < 24 || mx > size - 24 || my < 12 || my > size - 6) continue;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0,0,0,0.75)';
       ctx.strokeText(c.name, mx, my);
@@ -3354,92 +3338,10 @@ function drawMap(mapCanvas, radius) {
   ctx.restore();
 }
 
-// Fast whole-continent overview: colors come from the terrain function
-// directly (no chunk generation), so a 1000-block-wide map renders in
-// a fraction of a second. Tapping a city name teleports there.
-let overviewView = null; // { pcx, pcz, radius } of the last render
-function drawOverviewMap(mapCanvas, radius) {
-  const ctx = mapCanvas.getContext('2d');
-  const size = mapCanvas.width;
-  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
-  overviewView = { pcx, pcz, radius };
-  const img = ctx.createImageData(size, size);
-  const STEP = 2; // sample every other pixel — plenty for an overview
-  for (let py = 0; py < size; py += STEP) {
-    const wz = pcz + Math.round((py / size - 0.5) * radius * 2);
-    for (let pxx = 0; pxx < size; pxx += STEP) {
-      const wx = pcx + Math.round((pxx / size - 0.5) * radius * 2);
-      const h = world.terrainHeight(wx, wz);
-      let color;
-      if (h <= WATER_LEVEL) color = h < WATER_LEVEL - 8 ? [26, 60, 150] : [64, 120, 210];
-      // Mars se reconnaît à sa couleur, comme les villes : la vue générale
-      // colore d'après la hauteur du terrain, elle ne lit pas les blocs — sans
-      // cette règle, le plateau martien ressortait vert comme une prairie.
-      else if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) color = [176, 96, 62];
-      else if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) color = [176, 186, 138];
-      // l'aéroport se repère à son gris de béton, comme les villes
-      else if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) color = [108, 112, 118];
-      else if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) color = [214, 190, 140];
-      else if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) color = [126, 158, 84];
-      else if (Math.hypot(wx - CIRCUIT.x, wz - CIRCUIT.z) < CIRCUIT.r - 10) color = [96, 108, 96];
-      else if (world.cityAt(wx, wz)) color = [158, 158, 160];
-      else if (h <= WATER_LEVEL + 2) color = [219, 207, 163];
-      else if (h >= 58) color = [242, 250, 250];
-      else color = [88, 176, 76];
-      const shade = 0.7 + (h / HEIGHT) * 0.5;
-      for (let dy = 0; dy < STEP; dy++) {
-        for (let dx2 = 0; dx2 < STEP; dx2++) {
-          const o = ((py + dy) * size + pxx + dx2) * 4;
-          img.data[o] = Math.min(255, color[0] * shade);
-          img.data[o + 1] = Math.min(255, color[1] * shade);
-          img.data[o + 2] = Math.min(255, color[2] * shade);
-          img.data[o + 3] = 255;
-        }
-      }
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-
-  const toMap = (x, z) => [((x - pcx + radius) / (radius * 2)) * size, ((z - pcz + radius) / (radius * 2)) * size];
-  ctx.font = 'bold 13px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  for (const c of [...CITIES, ...PLACES]) {
-    let [mx, my] = toMap(c.x, c.z);
-    mx = Math.max(34, Math.min(size - 34, mx));
-    my = Math.max(14, Math.min(size - 8, my));
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.strokeText(c.name, mx, my);
-    ctx.fillStyle = '#ffe9a8';
-    ctx.fillText(c.name, mx, my);
-  }
-  ctx.fillStyle = '#4ac9ff'; // the other players
-  for (const rp of remotePlayers.values()) {
-    const [rx, ry] = toMap(rp.mesh.position.x, rp.mesh.position.z);
-    if (rx >= 0 && rx <= size && ry >= 0 && ry <= size) ctx.fillRect(rx - 3, ry - 3, 6, 6);
-  }
-  // player arrow
-  const [px2, py2] = toMap(player.pos.x, player.pos.z);
-  ctx.save();
-  ctx.translate(px2, py2);
-  ctx.rotate(Math.atan2(-Math.cos(player.yaw), -Math.sin(player.yaw)));
-  ctx.fillStyle = '#ff4444';
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(8, 0); ctx.lineTo(-5, -5); ctx.lineTo(-5, 5); ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  ctx.restore();
-}
-
-// Coordonnées du monde sous le doigt, à partir d'un événement de pointeur.
-function pointDeCarte(e) {
-  const rect = mapModalCanvas.getBoundingClientRect();
-  return {
-    x: overviewView.pcx + ((e.clientX - rect.left) / rect.width - 0.5) * overviewView.radius * 2,
-    z: overviewView.pcz + ((e.clientY - rect.top) / rect.height - 0.5) * overviewView.radius * 2,
-  };
-}
+// --- la carte du monde -------------------------------------------------------
+//
+// Tout le dessin, le zoom et les gestes vivent dans src/carte.js. Ici on lui
+// dit seulement où regarder et quoi faire quand un enfant touche un lieu.
 
 // Pose le joueur au sol à cet endroit du monde. Le terrain lointain n'est pas
 // forcément en mémoire : on demande donc sa hauteur au générateur, qui la
@@ -3457,99 +3359,77 @@ function deposerA(wx, wz) {
   return { dansEau, y: cible };
 }
 
-// --- voyager depuis la carte -------------------------------------------------
-//
-// Un appui bref sur un lieu nommé y emmène, comme avant. Un appui long
-// n'importe où — y compris en pleine campagne — dépose le joueur sur place :
-// la carte est trop grande pour qu'on ne puisse rejoindre que six adresses.
-const cibleCarte = document.getElementById('map-cible');
-let appuiLong = null;         // minuterie en cours
-let voyageFait = false;       // pour que le clic qui suit ne rejoue pas le voyage
-
-function annulerAppui() {
-  clearTimeout(appuiLong);
-  appuiLong = null;
-  cibleCarte.classList.remove('arme');
-  cibleCarte.style.display = 'none';
-}
-
-mapModalCanvas.addEventListener('pointerdown', (e) => {
-  if (!overviewView) return;
-  voyageFait = false;
-  const carte = mapModalCanvas.getBoundingClientRect();
-  const carteParent = mapModalCanvas.offsetParent.getBoundingClientRect();
-  cibleCarte.style.left = `${e.clientX - carteParent.left}px`;
-  cibleCarte.style.top = `${e.clientY - carteParent.top}px`;
-  cibleCarte.style.display = 'block';
-  void cibleCarte.offsetWidth;
-  cibleCarte.classList.add('arme');
-  const depart = { x: e.clientX, y: e.clientY };
-  const p = pointDeCarte(e);
-  mapModalCanvas._depart = depart;
-  appuiLong = setTimeout(() => {
-    annulerAppui();
-    voyageFait = true;
-    const { dansEau } = deposerA(p.x, p.z);
-    mapModal.style.display = 'none';
+const carte = new Carte({
+  canvas: mapModalCanvas,
+  world,
+  joueur: () => ({ x: player.pos.x, z: player.pos.z, yaw: player.yaw }),
+  autres: () => [...remotePlayers.entries()].map(([nom, rp]) => ({
+    x: rp.mesh.position.x, z: rp.mesh.position.z, nom,
+  })),
+  // Habitants, bêtes et créatures : la liste n'est construite que si la carte
+  // est assez rapprochée pour les montrer.
+  mobiles: () => [
+    ...npcs.map((n) => ({ x: n.pos.x, z: n.pos.z, couleur: '#ffffff' })),
+    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0' })),
+    ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
+  ],
+  surVoyage: (lieu) => {
+    deposerA(lieu.x + 1.5, lieu.z + 1.5);   // sur la trame des rues, pas dans une maison
+    fermerCarte();
+    creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+  },
+  surTeleport: (wx, wz) => {
+    const { dansEau } = deposerA(wx, wz);
+    fermerCarte();
     creatureManager.toast(
       dansEau ? '🌊 Téléporté en pleine mer — nage jusqu\'à la terre !' : '✨ Téléporté ! Bon voyage.',
       dansEau ? 0x6ec8ff : 0xffd75e
     );
-  }, 550);
+  },
 });
-mapModalCanvas.addEventListener('pointermove', (e) => {
-  const d = mapModalCanvas._depart;
-  if (appuiLong && d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12) annulerAppui();
-});
-for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
-  mapModalCanvas.addEventListener(ev, annulerAppui);
+
+function ouvrirCarte() {
+  mapModal.style.display = 'flex';
+  // Sur un ordinateur, la souris est capturée par le jeu tant qu'on joue :
+  // sans cette ligne, tous les clics de la carte partaient dans la fenêtre 3D
+  // et rien ne répondait. Les panneaux du jeu la relâchent déjà, la carte
+  // l'oubliait — et elle est bien plus qu'une image à regarder.
+  carteOuverte = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  // On arrive au-dessus du joueur, à l'échelle où la carte montre encore les
+  // vraies constructions : on reconnaît sa maison avant de choisir où aller.
+  carte.centrerSurJoueur(0.7);
+  carte.ouvrir();
+}
+function fermerCarte() {
+  carte.fermer();
+  mapModal.style.display = 'none';
+  carteOuverte = false;
+  // On rend la souris au jeu, comme à la fermeture de l'inventaire : la
+  // fermeture est elle-même le geste que le navigateur exige pour cela.
+  if (!IS_TOUCH && !dragLook && !edu.quizActive) startGame();
 }
 
-// tap a city on the overview to travel there
-mapModalCanvas.addEventListener('click', (e) => {
-  if (!overviewView) return;
-  if (voyageFait) { voyageFait = false; return; }   // l'appui long a déjà voyagé
-  const { x: wx, z: wz } = pointDeCarte(e);
-  for (const c of [...CITIES, ...PLACES]) {
-    if (Math.hypot(wx - c.x, wz - c.z) < Math.max(60, c.r)) {
-      deposerA(c.x + 1.5, c.z + 1.5);   // on the street grid, not in a house
-      mapModal.style.display = 'none';
-      creatureManager.toast(`🧳 Voyage vers ${c.name} !`, 0xffd75e);
-      return;
-    }
-  }
+document.getElementById('map-plus').addEventListener('click', () => {
+  const c = mapModalCanvas.getBoundingClientRect();
+  carte.zoomerVers(c.width / 2, c.width / 2, 1.7);
 });
+document.getElementById('map-moins').addEventListener('click', () => {
+  const c = mapModalCanvas.getBoundingClientRect();
+  carte.zoomerVers(c.width / 2, c.width / 2, 1 / 1.7);
+});
+document.getElementById('map-moi').addEventListener('click', () => carte.centrerSurJoueur(0.6));
+document.getElementById('map-tout').addEventListener('click', () => carte.toutVoir());
 
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
   if (minimapVisible) drawMap(minimapCanvas, 96);
 });
-// Rayon de la carte générale. Elle est centrée sur le joueur : un rayon fixe
-// faisait sortir les destinations lointaines — Mars la première — dès qu'on
-// s'éloignait du point de départ, et comme le clic est converti en coordonnées
-// du monde, un nom repoussé sur le bord n'était plus cliquable. On l'élargit
-// donc juste assez pour que TOUTE destination reste sur la carte, d'où qu'on
-// ouvre celle-ci.
-function rayonCarte() {
-  const pcx = player.pos.x, pcz = player.pos.z;
-  let besoin = 520; // le continent et ses cinq villes, comme avant
-  for (const c of [...CITIES, ...PLACES]) {
-    const marge = (c.r || 0) + 60;
-    besoin = Math.max(besoin, Math.abs(c.x - pcx) + marge, Math.abs(c.z - pcz) + marge);
-  }
-  return Math.ceil(besoin);
-}
-
-minimapCanvas.addEventListener('click', () => {
-  mapModal.style.display = 'flex';
-  drawOverviewMap(mapModalCanvas, rayonCarte());
-});
-document.getElementById('map-modal-close').addEventListener('click', () => {
-  mapModal.style.display = 'none';
-});
+minimapCanvas.addEventListener('click', ouvrirCarte);
+document.getElementById('map-modal-close').addEventListener('click', fermerCarte);
 mapModal.addEventListener('click', (e) => {
-  if (e.target === mapModal) mapModal.style.display = 'none';
+  if (e.target === mapModal) fermerCarte();
 });
 
 // --- day/night cycle ----------------------------------------------------------------
@@ -3852,7 +3732,7 @@ window.__fx = effects;
 // permet aux captures automatisées de figer l'heure du jour
 window.__setDayTime = (fraction) => { dayTime = fraction * DAY_LENGTH; };
 window.__eau = () => waterMaterial.userData.temps.value;
-window.__vueCarte = () => overviewView;
+window.__carte = carte;   // les tests regardent la vue et la pilotent
 window.__alerte = (k, v, t) => alerte(k, v, t);
 window.__vehicules = { etat: () => vehicules?.etat() };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
