@@ -63,18 +63,18 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // Le défaut d'origine : la tablette réécrit le document de réglages entier
     // toutes les quinze secondes, avec SA valeur. Le réglage du parent était
     // donc consciencieusement écrasé dans le quart de minute qui suivait.
-    nuage.poserReglages('Marlon', { lang: 'both', grade: 1, sessionMin: 5 });
+    nuage.poserReglages('Marlon', { lang: 'both', grade: 1 });
+    nuage.poserReglages('Marlon~parent', { sessionMin: 5 });
     const marlon = await joueur('Marlon');
     await jusqua(async () => (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 5);
     verifier('le rythme du serveur est appliqué au lancement',
       (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 5);
 
     // le parent change le rythne pendant que l'enfant joue
-    const avant = nuage.reglages('Marlon');
-    nuage.poserReglages('Marlon', { ...avant, sessionMin: 20 });
-    const tenu = await jusqua(async () => (nuage.reglages('Marlon') || {}).sessionMin === 20, 30000);
+    nuage.poserReglages('Marlon~parent', { sessionMin: 20 });
+    const tenu = await jusqua(async () => (nuage.reglages('Marlon~parent') || {}).sessionMin === 20, 30000);
     verifier('la tablette n\'écrase plus le réglage du parent', tenu,
-      `serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).sessionMin)}`);
+      `serveur : ${JSON.stringify((nuage.reglages('Marlon~parent') || {}).sessionMin)}`);
 
     // et l'enfant l'adopte sans avoir à relancer le jeu
     const adopte = await jusqua(
@@ -106,8 +106,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
 
     // et le changement de langue n'a pas emporté la consigne du parent
     verifier('sans emporter la consigne du parent au passage',
-      (nuage.reglages('Marlon') || {}).sessionMin === 20,
-      JSON.stringify((nuage.reglages('Marlon') || {}).sessionMin));
+      (nuage.reglages('Marlon~parent') || {}).sessionMin === 20,
+      JSON.stringify((nuage.reglages('Marlon~parent') || {}).sessionMin));
 
     // Ce que l'enfant constate vraiment, ce n'est pas un réglage enregistré,
     // c'est la langue des questions qu'on lui pose. On tire donc pour de bon.
@@ -151,7 +151,59 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       await autreIpad.evaluate(() => window.__game.edu.__prefs().lang));
     await autreIpad.close();
 
-    // ================= 4. arrêter les questions après N minutes ==============
+    // ================= 4. le parent règle la langue et le niveau =============
+    // Ces deux-là, l'enfant peut aussi les changer depuis son écran : deux mains
+    // écrivent au même endroit. C'est la date du dernier choix qui tranche, et
+    // c'est ce qui doit empêcher la tablette de réimposer sa version.
+    nuage.poserReglages('Marlon', {
+      ...nuage.reglages('Marlon'), lang: 'both', grade: 5,
+      majProfil: (nuage.reglages('Marlon').majProfil || 0) + 1,   // strictement plus récent
+    });
+    const suivi = await jusqua(async () => (await marlon.evaluate(
+      () => window.__game.edu.__prefs().lang)) === 'both', 60000);
+    verifier('la langue réglée par le parent arrive sur la tablette', suivi,
+      await marlon.evaluate(() => window.__game.edu.__prefs().lang));
+    verifier('le niveau scolaire aussi',
+      (await marlon.evaluate(() => JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade)) === 5,
+      String(await marlon.evaluate(() => JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade)));
+    // et la tablette ne repart pas en sens inverse à l'envoi suivant
+    await dormir(20000);
+    verifier('et la tablette ne le défait pas ensuite',
+      (nuage.reglages('Marlon') || {}).lang === 'both' && (nuage.reglages('Marlon') || {}).grade === 5,
+      `serveur : ${JSON.stringify({ lang: nuage.reglages('Marlon').lang, grade: nuage.reglages('Marlon').grade })}`);
+
+    // Et depuis l'espace parent pour de bon : on actionne les vrais menus du
+    // tableau, pas seulement l'écriture qu'ils déclenchent.
+    const parLePanneau = await marlon.evaluate(async () => {
+      const a = window.__game.admin;
+      await a.setProfil('Marlon', { lang: 'fr' }, 'langue : Français');
+      await a.setProfil('Marlon', { grade: 2 }, 'niveau : CE1');
+      await a.setArret('Marlon', '30');
+      await a.setRythme('Marlon', 12);
+      return true;
+    });
+    verifier('le panneau parent écrit sans lever d\'erreur', parLePanneau === true);
+    const viaPanneau = await jusqua(async () => {
+      const parent = nuage.reglages('Marlon~parent') || {};
+      return parent.lang === 'fr' && parent.grade === 2
+        && parent.quizStopMin === 30 && parent.sessionMin === 12;
+    });
+    // Tout ce que pose le parent va dans SON document. C'est ce qui le met hors
+    // de portée de la tablette, qui réécrit le sien toutes les quinze secondes.
+    verifier('chaque réglage atterrit dans le document du parent', viaPanneau,
+      JSON.stringify(nuage.reglages('Marlon~parent')));
+    const suiviPanneau = await jusqua(async () => (await marlon.evaluate(() => ({
+      lang: window.__game.edu.__prefs().lang, min: window.__game.edu.sessionMinutes(),
+      arret: window.__game.edu.arretApresSecondes,
+      grade: JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade,
+    }))).lang === 'fr', 60000);
+    verifier('et la tablette suit le panneau', suiviPanneau,
+      JSON.stringify(await marlon.evaluate(() => ({
+        lang: window.__game.edu.__prefs().lang, min: window.__game.edu.sessionMinutes(),
+        arret: window.__game.edu.arretApresSecondes,
+        grade: JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade }))));
+
+    // ================= 5. arrêter les questions après N minutes ==============
     const edu = async (expr) => marlon.evaluate(expr);
     await marlon.evaluate(() => { window.__game.edu.setArretApres(30); });
     verifier('sous le seuil, les questions continuent',
@@ -173,13 +225,13 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
 
     // la consigne arrive bien du serveur, comme le rythme
     await marlon.evaluate(() => { window.__game.edu.setArretApres(undefined); });
-    nuage.poserReglages('Marlon', { ...nuage.reglages('Marlon'), quizStopMin: 15 });
+    nuage.poserReglages('Marlon~parent', { ...nuage.reglages('Marlon~parent'), quizStopMin: 15 });
     const arret = await jusqua(async () => (await marlon.evaluate(
       () => window.__game.edu.arretApresSecondes)) === 15 * 60, 90000);
     verifier('l\'arrêt des questions vient du serveur lui aussi', arret,
       `dans le jeu : ${await marlon.evaluate(() => window.__game.edu.arretApresSecondes)}`);
 
-    // ================= 5. reprendre une partie mise en pause =================
+    // ================= 6. reprendre une partie mise en pause =================
     // Depuis un monde en ligne, la pause était sans retour : « Jouer en local »
     // basculait vers l'autre monde et rien ne ramenait à celui qu'on quittait.
     await marlon.evaluate(() => document.getElementById('play-btn').click());

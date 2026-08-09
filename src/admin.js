@@ -10,6 +10,7 @@
 // tableau, on ne joue pas. Police système, lignes denses, pas de pixel art.
 
 import { hashPin } from './identity.js';
+import { GRADES } from './education.js';
 
 const ADMIN_NAME = 'Max';
 const PARENT_CODE = '135246';
@@ -187,6 +188,7 @@ const HTML = `
     <table class="adm">
       <thead><tr>
         <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
+        <th>Langue</th><th>Niveau</th>
         <th>Quiz tous les</th><th>Quiz jusqu'à</th><th>Mondes</th><th>Compte</th><th></th>
       </tr></thead>
       <tbody id="adm-rows"></tbody>
@@ -233,6 +235,11 @@ const PRESENCE_MS = 70000;
 const RYTHMES = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
 // Au bout de combien de minutes de jeu on cesse de poser des questions.
 // « toujours » garde le comportement d'origine ; « aucune » n'en pose jamais.
+// Les consignes du parent vivent dans leur propre document : la tablette de
+// l'enfant réécrit le sien toutes les quinze secondes, et une décision glissée
+// entre sa lecture et son écriture y disparaissait sans retour.
+const consignes = (nom) => `${nom}~parent`;
+const LANGUES = [['fr', 'Français'], ['en', 'English'], ['both', 'Les deux']];
 const ARRETS = [
   ['', 'toujours'], [0, 'aucune'], [10, 'après 10 min'], [15, 'après 15 min'],
   [20, 'après 20 min'], [30, 'après 30 min'], [45, 'après 45 min'], [60, 'après 1 h'],
@@ -423,13 +430,18 @@ export class AdminPanel {
     if (this.el) this.el.classList.remove('on');
   }
 
+  // Le panneau peut ne pas être monté : ses méthodes d'écriture sont appelées
+  // depuis ses propres menus, mais aussi depuis les tests, et il n'y a aucune
+  // raison qu'un compte rendu à l'écran fasse échouer l'écriture elle-même.
   message(txt, err = false) {
-    const m = this.el.querySelector('#adm-msg');
+    const m = this.el && this.el.querySelector('#adm-msg');
+    if (!m) return;
     m.textContent = txt;
     m.className = err ? 'err' : '';
   }
 
   async load() {
+    if (!this.el) return;   // panneau fermé : rien à rafraîchir
     this.el.querySelector('#adm-sub').textContent = 'Lecture…';
     if (!this.cloud.configured) {
       this.el.querySelector('#adm-sub').textContent = 'Pas de cloud configuré sur cet appareil.';
@@ -482,9 +494,25 @@ export class AdminPanel {
       }
     }
     for (const r of reglages) {
+      // Le document des consignes porte le prénom suivi de ~parent. Il faut le
+      // reconnaître AVANT de créer une entrée, sinon il apparaîtrait dans la
+      // liste comme un enfant de plus.
+      if (r.name && r.name.endsWith('~parent')) {
+        const c = entree(r.name.slice(0, -'~parent'.length));
+        const m = Number((r.prefs || {}).sessionMin);
+        if (isFinite(m) && m > 0) c.rythme = Math.round(m);
+        if ((r.prefs || {}).quizStopMin !== undefined) c.arret = r.prefs.quizStopMin;
+        // La langue et le niveau posés d'ici priment sur ceux du document de
+        // l'enfant : c'est la décision la plus récente, et c'est nous.
+        if (typeof (r.prefs || {}).lang === 'string') c.lang = r.prefs.lang;
+        if (Number.isInteger((r.prefs || {}).grade)) c.grade = r.prefs.grade;
+        continue;
+      }
       const e = entree(r.name);
       e.majPrefs = r.updated_at;
       if ((r.prefs || {}).supprime) e.supprime = true;
+      if (typeof (r.prefs || {}).lang === 'string' && e.lang === undefined) e.lang = r.prefs.lang;
+      if (Number.isInteger((r.prefs || {}).grade) && e.grade === undefined) e.grade = r.prefs.grade;
       const arret = (r.prefs || {}).quizStopMin;
       if (arret !== undefined) e.arret = arret;
       const min = Number((r.prefs || {}).sessionMin);
@@ -552,6 +580,14 @@ export class AdminPanel {
             <div class="adm-dim">${l.dex} créature${l.dex > 1 ? 's' : ''} · ${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
         <td>${presence(l)}</td>
         <td>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
+        <td><span class="adm-rythme"><select data-langue="${esc(l.nom)}">${
+            LANGUES.map(([v, txt]) => `<option value="${v}"${
+              v === (l.lang || 'both') ? ' selected' : ''}>${txt}</option>`).join('')
+          }</select></span></td>
+        <td><span class="adm-rythme"><select data-niveau="${esc(l.nom)}">${
+            GRADES.map(([fr, us], i) => `<option value="${i}"${
+              i === (l.grade ?? 1) ? ' selected' : ''}>${fr} · ${us}</option>`).join('')
+          }</select></span></td>
         <td><span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
             RYTHMES.map((m) => `<option value="${m}"${m === l.rythme ? ' selected' : ''}>${m} min</option>`).join('')
           }</select></span></td>
@@ -575,6 +611,14 @@ export class AdminPanel {
     }
     for (const b of this.el.querySelectorAll('[data-suppr]')) {
       b.addEventListener('click', () => this.supprimer(b.getAttribute('data-suppr')));
+    }
+    for (const sel of this.el.querySelectorAll('[data-langue]')) {
+      sel.addEventListener('change', () => this.setProfil(sel.getAttribute('data-langue'),
+        { lang: sel.value }, `langue : ${sel.options[sel.selectedIndex].text}`));
+    }
+    for (const sel of this.el.querySelectorAll('[data-niveau]')) {
+      sel.addEventListener('change', () => this.setProfil(sel.getAttribute('data-niveau'),
+        { grade: Number(sel.value) }, `niveau : ${sel.options[sel.selectedIndex].text}`));
     }
     for (const sel of this.el.querySelectorAll('[data-arret]')) {
       sel.addEventListener('change', () => this.setArret(sel.getAttribute('data-arret'), sel.value));
@@ -655,11 +699,36 @@ export class AdminPanel {
   // lancement suivant — sur n'importe lequel de ses appareils.
   async setRythme(nom, minutes) {
     try {
-      const prefs = (await this.cloud.prefsPull(nom)) || {};
-      await this.cloud.prefsPush(nom, { ...prefs, sessionMin: minutes });
+      const prefs = (await this.cloud.prefsPull(consignes(nom))) || {};
+      await this.cloud.prefsPush(consignes(nom), { ...prefs, sessionMin: minutes });
       this.message(`${nom} : quiz toutes les ${minutes} minutes.`);
     } catch {
       this.message(`Impossible de changer le rythme de ${nom} — réessaie.`, true);
+      this.load();
+    }
+  }
+
+  // Langue des quiz et niveau scolaire, réglés depuis ici.
+  //
+  // Ce sont des réglages que l'enfant peut changer lui-même depuis son écran :
+  // deux mains écrivent donc au même endroit. C'est la date du dernier choix
+  // qui tranche — on pose la nôtre, et la tablette de l'enfant s'aligne à sa
+  // prochaine synchronisation, dans les quinze secondes. Sans cette date, la
+  // tablette réécrirait sa version et le réglage semblerait n'avoir servi à
+  // rien : c'est exactement ce qui se passait avant.
+  async setProfil(nom, champs, dit) {
+    try {
+      const sien = (await this.cloud.prefsPull(nom)) || {};
+      const notre = (await this.cloud.prefsPull(consignes(nom))) || {};
+      // Strictement postérieure aux deux dates connues, et pas seulement
+      // « maintenant » : une tablette dont l'horloge avance de quelques minutes
+      // — cela arrive — daterait ses choix dans le futur et la décision du
+      // parent serait ignorée sans un mot. Ici, le parent tranche toujours.
+      const date = Math.max(Date.now(), (sien.majProfil || 0) + 1, (notre.majProfil || 0) + 1);
+      await this.cloud.prefsPush(consignes(nom), { ...notre, ...champs, majProfil: date });
+      this.message(`${nom} — ${dit}.`);
+    } catch {
+      this.message(`Impossible de changer les réglages de ${nom} — réessaie.`, true);
       this.load();
     }
   }
@@ -673,11 +742,11 @@ export class AdminPanel {
   async setArret(nom, valeur) {
     const minutes = valeur === '' ? undefined : Number(valeur);
     try {
-      const prefs = (await this.cloud.prefsPull(nom)) || {};
+      const prefs = (await this.cloud.prefsPull(consignes(nom))) || {};
       const suite = { ...prefs };
       if (minutes === undefined) delete suite.quizStopMin;
       else suite.quizStopMin = minutes;
-      await this.cloud.prefsPush(nom, suite);
+      await this.cloud.prefsPush(consignes(nom), suite);
       this.message(minutes === undefined
         ? `${nom} : des questions pendant tout le temps de jeu.`
         : minutes === 0

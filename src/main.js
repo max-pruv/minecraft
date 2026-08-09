@@ -1146,12 +1146,39 @@ function presenceNow() {
 // telles quelles, il n'en fabrique jamais la valeur. Un seul auteur, plus de
 // course.
 const CLES_PARENT = ['sessionMin', 'quizStopMin'];
+// Elles vivent dans un document à part, écrit par le seul espace parent.
+//
+// Les loger avec les réglages de l'enfant laissait une course : entre le moment
+// où la tablette relit le document et celui où elle le réécrit, une décision du
+// parent pouvait se glisser — et disparaissait alors définitivement, puisque
+// l'écriture remplace le document entier. Fenêtre courte, mais toutes les
+// quinze secondes, et sans rattrapage possible. Un document par auteur supprime
+// la course au lieu de la rétrécir.
+const cleConsignes = (nom) => `${nom}~parent`;
 let consignesParents = {};
 
 function retenirConsignes(prefs) {
   for (const k of CLES_PARENT) {
     if (prefs && prefs[k] !== undefined) consignesParents[k] = prefs[k];
   }
+}
+
+// Les consignes d'abord dans leur document ; à défaut, dans celui de l'enfant,
+// où les versions précédentes les rangeaient.
+async function lireConsignes() {
+  let vues = null;
+  try { vues = await cloud.prefsPull(cleConsignes(playerProfile.name)); } catch { /* hors ligne */ }
+  const avant = JSON.stringify(consignesParents);
+  if (vues) {
+    retenirConsignes(vues);
+    // Un parent peut aussi régler la langue et le niveau. Ces deux-là,
+    // l'enfant les choisit lui-même de son côté — c'est donc la date du
+    // dernier choix qui tranche, et adopterProfilDistant s'en charge. Les
+    // loger ici plutôt que dans le document de l'enfant est ce qui les met
+    // hors de portée de sa réécriture toutes les quinze secondes.
+    adopterProfilDistant(vues);
+  }
+  return JSON.stringify(consignesParents) !== avant;
 }
 
 function appliquerConsignes() {
@@ -1161,7 +1188,6 @@ function appliquerConsignes() {
 
 function prefsPayload() {
   return {
-    ...consignesParents,     // recopiées, jamais recalculées : voir CLES_PARENT
     // Quand ces réglages-ci ont été choisis. Deux tablettes de la maison
     // peuvent être allumées en même temps : sans cette date, celle qui n'a rien
     // changé réécrivait sa version périmée par-dessus le choix de l'autre.
@@ -1199,14 +1225,12 @@ function pushPrefsToCloud() {
 async function envoyerPrefs() {
   if (!playerProfile.name) return;
   try {
+    if (await lireConsignes()) {
+      appliquerConsignes();
+      creatureManager.toast('⚙️ Un parent a modifié tes réglages.', 0x9fd8e8);
+    }
     const distant = await cloud.prefsPull(playerProfile.name);
     if (distant) {
-      const avant = JSON.stringify(consignesParents);
-      retenirConsignes(distant);
-      if (JSON.stringify(consignesParents) !== avant) {
-        appliquerConsignes();
-        creatureManager.toast('⚙️ Un parent a modifié tes réglages.', 0x9fd8e8);
-      }
       // Une autre tablette de la maison a peut-être un choix plus récent que le
       // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
       adopterProfilDistant(distant);
@@ -2917,7 +2941,8 @@ function adopterProfilDistant(prefs) {
 
   // Rythme des questions et arrêt des quiz, décidés depuis l'espace parent :
   // ils suivent l'enfant d'un appareil à l'autre, comme sa langue ou son niveau.
-  retenirConsignes(prefs);
+  retenirConsignes(prefs);      // repli sur les versions d'avant le document dédié
+  await lireConsignes();
   appliquerConsignes();
   const changed = adopterProfilDistant(prefs);
   // Adaptive quiz progress follows the child too: per-skill difficulty
@@ -3818,7 +3843,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
