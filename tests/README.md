@@ -47,6 +47,7 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | Alice retrouve son monde après une veille | « tu joues déjà depuis un autre appareil », et elle restait dehors |
 | la reprise tient dans la durée | l'ancien appareil la rechassait dix secondes plus tard |
 | seule après le départ de l'hôte | le compteur affichait encore deux joueurs |
+| un serveur de rendez-vous muet finit par le dire | le menu restait sur « Ouverture du monde… » indéfiniment |
 
 ## Les réglages (`npm run reglages`)
 

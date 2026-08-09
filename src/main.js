@@ -1869,7 +1869,10 @@ async function openWorld(code) {
       // poignée de secondes pour se réinscrire au serveur de rendez-vous, et
       // pendant ce court instant son monde paraît vide. Basculer tout de suite
       // en hôte, c'était couper le monde en deux pour une seconde d'écart.
-      onlineStatus.textContent = `Personne ne répond… on réessaie (${code})`;
+      // Pour un monde qu'on possède, trouver la place vide est le cas NORMAL —
+      // l'autre n'est pas encore arrivé. Un message alarmant à cet instant fait
+      // croire à une panne alors que le monde est sur le point de s'ouvrir.
+      onlineStatus.textContent = `Ouverture du monde ${code}…`;
       await new Promise((r) => setTimeout(r, 2500));
       try {
         await startNetSession(code, false);

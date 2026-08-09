@@ -138,6 +138,30 @@ function verifier(nom, ok, detail = '') {
       && (await nomsVus(enfin)).includes('Nina'),
       `${JSON.stringify(await nomsVus(solo))} / ${JSON.stringify(await nomsVus(enfin))}`);
 
+    // --- un serveur de rendez-vous muet ne doit pas figer le menu -------------
+    // Reproduit d'après une capture : le menu restait sur « Ouverture du
+    // monde… » indéfiniment. Certains réseaux — hôtels, partages de connexion,
+    // portails captifs — acceptent la connexion et ne répondent plus jamais.
+    // Sans limite de temps, la promesse d'ouverture ne se règle pas, et
+    // l'enfant n'a ni monde, ni erreur, ni rien à faire.
+    const muet = require('net').createServer(() => { /* on garde la socket */ });
+    await new Promise((ok) => muet.listen(9407, '127.0.0.1', ok));
+    const perdu = await banc.joueurVers('Tim', 9407);
+    await perdu.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await perdu.evaluate(() => {
+      document.getElementById('join-code').value = '30953';
+      document.getElementById('join-btn').click();
+    });
+    const t0 = Date.now();
+    const dit = await jusqua(async () => /❌/.test(
+      await perdu.evaluate(() => document.getElementById('online-status').textContent)), 40000);
+    verifier('un serveur de rendez-vous muet finit par le dire', dit,
+      `${((Date.now() - t0) / 1000).toFixed(0)} s · `
+      + JSON.stringify(await perdu.evaluate(() => document.getElementById('online-status').textContent)));
+    await perdu.close();
+    muet.close();
+
     // --- petites robustesses --------------------------------------------------
     const avant = fautes(alice2).length;
     await alice2.evaluate(() => {
