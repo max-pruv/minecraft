@@ -18,6 +18,7 @@ import {
   CHUNK, HEIGHT, WATER_LEVEL, CITIES, PLACES, REPERES,
   MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
+import { couleurCarteManhattan } from './manhattan.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
 // Couleur de chaque bloc vu du dessus. Sert à la vignette comme à la carte.
@@ -56,7 +57,9 @@ const ICONES = {
   'Tour Eiffel': '🗼', 'Arc de Triomphe': '🏛️', 'Pyramide du Louvre': '🔷',
   'Empire State': '🏢', 'Statue de la Liberté': '🗽', 'Golden Gate': '🌉', 'Phare': '🚨',
   'Beffroi de Lille': '🔔', 'Base martienne': '🛸', 'Caserne & Commissariat': '🚒',
-  'Pyramides': '🔺',
+  'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
+  'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
+  'Grand Central': '🚉',
 };
 const icone = (nom) => ICONES[nom] || '📍';
 
@@ -219,6 +222,13 @@ export class Carte {
     }
 
     const ville = w.cityAt(wx, wz);
+    // Manhattan a son propre dessin — rues, places et Central Park — que la
+    // trame régulière des autres villes ne saurait rendre : sans cela, l'île
+    // n'était qu'un rectangle gris, parc compris.
+    if (ville && ville.key === 'ny') {
+      const c = couleurCarteManhattan(wx, wz);
+      if (c) return c;
+    }
     if (ville) {
       // La trame des rues, telle que le générateur la pose. On ne la dessine
       // que d'assez près : échantillonnée de loin, elle produirait un moiré.
