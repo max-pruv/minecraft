@@ -1130,6 +1130,12 @@ profileSync.onSaveState = (etat) => {
 // et où. Rangé dans les réglages plutôt que dans une table à part — la lecture
 // des réglages ignore les clés qu'elle ne connaît pas, et une table de plus
 // demanderait un accès à la base que le jeu n'a pas.
+// La version qui tourne réellement sur CET appareil. Le service worker en est
+// la seule source de vérité — le recopier ici finirait décalé.
+let versionEnCours = null;
+// L'espace parent la lit pour dire si une tablette est restée en arrière.
+const publierVersion = () => { window.__version = versionEnCours; };
+
 function presenceNow() {
   return {
     at: Date.now(),
@@ -1137,6 +1143,10 @@ function presenceNow() {
     monde: net && net.active ? net.code : null,   // null = monde local
     joue: !!running,
     joueurs: net && net.active ? net.playerCount() : 0,
+    // Sur quelle version l'enfant joue. Elle voyage avec la présence, donc
+    // elle survit à la déconnexion : l'espace parent peut ainsi répondre à
+    // « sur quoi était-il la dernière fois ? », et pas seulement « maintenant ».
+    version: versionEnCours,
   };
 }
 
@@ -2789,7 +2799,6 @@ const profileMenu = document.getElementById('profile-menu');
 // lue sur le serveur. Hors-ligne on affiche le numéro sans se prononcer.
 (async function showVersion() {
   const el = document.getElementById('app-version');
-  if (!el) return;
   const court = (v) => (v || '').replace('web-minecraft-', '');
   const active = async () => {
     if (!navigator.serviceWorker?.controller) return null;
@@ -2804,8 +2813,18 @@ const profileMenu = document.getElementById('profile-menu');
     const t = await (await fetch('./sw.js', { cache: 'no-store' })).text();
     return (t.match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1] || null;
   };
+  // Sans service worker — première ouverture, navigation privée — la version
+  // qui tourne est celle du fichier servi.
+  const secours = async () => { try { versionEnCours = court(await serveur()) || null; } catch { /* hors ligne */ } };
   try {
     const v = await active();
+    versionEnCours = court(v) || null;
+    if (!versionEnCours) await secours();
+    publierVersion();
+    // La présence part toutes les vingt secondes ; on n'attend pas le prochain
+    // battement pour dire sur quoi tourne cet appareil.
+    if (versionEnCours) envoyerPrefs().catch(() => {});
+    if (!el) return;
     if (!navigator.onLine) { el.textContent = `version ${court(v) || '?'}`; return; }
     const attendue = await serveur();
     const label = court(v || attendue);

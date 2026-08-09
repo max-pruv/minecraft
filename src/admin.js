@@ -303,8 +303,23 @@ function reponses(l) {
 // « En ce moment » : connecté ou non, et si oui, où. Un enfant sur l'écran
 // d'accueil est connecté sans jouer — la nuance compte quand on se demande
 // s'il faut l'appeler pour le dîner.
+// Le numéro de version arrive du serveur, donc d'un autre appareil : il est
+// échappé comme tout ce qu'on n'a pas écrit soi-même.
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
 function presence(l) {
-  const secondaire = `${l.appareils.size || 0} appareil${l.appareils.size > 1 ? 's' : ''}`;
+  // La version sur laquelle tourne l'appareil de l'enfant. Elle vient de sa
+  // dernière présence, donc elle reste lisible même hors ligne : la question
+  // qu'on se pose est « sur quoi était-il ? », pas seulement « où est-il ? ».
+  // Une tablette restée sur une vieille version explique bien des choses.
+  const v = l.live && l.live.version;
+  // La référence est la version que fait tourner l'appareil du parent, qui
+  // vient de charger la page : une tablette qui n'y est pas est en retard.
+  const ref = typeof window !== 'undefined' ? window.__version : null;
+  const version = v
+    ? `<span class="adm-tag${!ref || v === ref ? ' ok' : ' warn'}" title="${!ref || v === ref ? 'à jour' : `en retard sur ${esc(ref)}`}">${esc(v)}</span>`
+    : '<span class="adm-dim">version inconnue</span>';
+  const secondaire = `${l.appareils.size || 0} appareil${l.appareils.size > 1 ? 's' : ''} · ${version}`;
   if (!l.live) {
     return `<span class="adm-dim">hors ligne</span><div class="adm-dim">vu ${depuis(l.vu)} · ${secondaire}</div>`;
   }
@@ -324,6 +339,10 @@ function presence(l) {
   }
   return `${etat}<div class="adm-dim">${secondaire}</div>`;
 }
+
+// Les tests regardent ce que la ligne affiche vraiment, sans monter tout le
+// panneau : c'est la seule façon de vérifier qu'une version périmée se voit.
+if (typeof window !== 'undefined') window.__adminPresence = presence;
 
 export class AdminPanel {
   constructor(cloud, identity, getName) {
@@ -584,7 +603,6 @@ export class AdminPanel {
       carte(sansCode, 'comptes non protégés'),
     ].join('');
 
-    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     this.el.querySelector('#adm-rows').innerHTML = lignes.map((l) => {
       const secu = [
         l.faces ? `<span class="adm-tag ok">👤 ${l.faces}</span>` : '<span class="adm-tag warn">👤 aucun</span>',

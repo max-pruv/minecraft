@@ -73,6 +73,7 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | et la tablette suit le panneau | elle réimposait sa version périmée |
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
+| la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
 regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
