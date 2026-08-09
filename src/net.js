@@ -240,19 +240,23 @@ export class NetSession {
       clearTimeout(minuteur);
       done?.(err);
     };
-    // Le pair existe (sinon PeerJS aurait dit « introuvable ») mais le canal
-    // ne s'ouvre pas : c'est le réseau qui bloque, pas le code qui est faux.
-    // Le dire franchement évite de chercher une faute de frappe pendant que
-    // le vrai coupable est le Wi-Fi de l'école.
+    // Le canal ne s'ouvre pas. On ne sait PAS pourquoi : le pair peut être
+    // absent sans que le serveur de rendez-vous l'ait dit, ou présent mais
+    // injoignable. L'ancien message tranchait — « le monde existe mais le
+    // réseau bloque » — et se trompait sur les deux points à la fois, en
+    // accusant un Wi-Fi parfaitement sain. On se contente de constater, et
+    // l'appelant se rabat sur l'ouverture du monde.
     const minuteur = setTimeout(
       () => {
         // La tentative morte ne doit rien laisser derrière elle : inscrite mais
         // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
         const c = this.conns.get(conn.peer);
         if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
-        rate(new Error('Le monde existe mais le réseau bloque la connexion — essaie un autre Wi-Fi ou le partage de connexion'));
+        rate(new Error('Personne n\'a répondu dans ce monde'));
       },
-      12000,
+      // Court : dans le cas courant — le monde est vide — cette attente est du
+      // temps perdu avant de l'ouvrir soi-même.
+      5000,
     );
     conn.on('open', () => {
       clearTimeout(minuteur);

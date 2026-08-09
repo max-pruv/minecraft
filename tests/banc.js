@@ -59,6 +59,53 @@ function servirLesPairs(port) {
   return new Promise((ok) => serveur.listen(port, '127.0.0.1', () => ok(serveur)));
 }
 
+// Un serveur de rendez-vous qui inscrit bien les pairs mais n'achemine jamais
+// les demandes de connexion. PeerJS ne dit alors NI « pair introuvable » NI
+// rien du tout : le canal reste muet. C'est ce que font certains relais publics
+// sous charge, et c'est le cas qui laissait l'enfant devant un refus sur son
+// propre monde vide.
+async function relaisSourd(portEcoute, portVrai) {
+  const { WebSocketServer, WebSocket } = require('ws');
+  const app = express();
+  const vrai = http.createServer(app);
+  app.use('/', ExpressPeerServer(vrai, { path: '/' }));
+  await new Promise((ok) => vrai.listen(portVrai, '127.0.0.1', ok));
+
+  // Le reste du dialogue doit passer normalement — y compris l'attribution
+  // d'identifiant, qui se fait en HTTP. Sans cela on n'éprouverait qu'un
+  // serveur injoignable, pas celui qui inscrit puis n'achemine rien.
+  const devant = http.createServer((q, r) => {
+    const amont = http.request(
+      { host: '127.0.0.1', port: portVrai, path: q.url, method: q.method, headers: q.headers },
+      (rep) => {
+        const h = { ...rep.headers };
+        delete h['access-control-allow-origin'];   // sinon l'en-tête arrive en double
+        r.writeHead(rep.statusCode, { ...h, 'Access-Control-Allow-Origin': '*' });
+        rep.pipe(r);
+      },
+    );
+    amont.on('error', () => { r.writeHead(502); r.end(''); });
+    q.pipe(amont);
+  });
+  const wss = new WebSocketServer({ server: devant });
+  wss.on('connection', (client, req) => {
+    const amont = new WebSocket(`ws://127.0.0.1:${portVrai}${req.url}`);
+    const file = [];
+    amont.on('open', () => { file.forEach((m) => amont.send(m)); file.length = 0; });
+    amont.on('error', () => { /* le relais meurt avec le test */ });
+    client.on('message', (m) => {
+      const txt = m.toString();
+      if (/"type"\s*:\s*"OFFER"/.test(txt)) return;     // avalée : c'est tout l'objet
+      if (amont.readyState === 1) amont.send(txt); else file.push(txt);
+    });
+    amont.on('message', (m) => { if (client.readyState === 1) client.send(m.toString()); });
+    amont.on('close', () => { try { client.close(); } catch { /* déjà */ } });
+    client.on('close', () => { try { amont.close(); } catch { /* déjà */ } });
+  });
+  await new Promise((ok) => devant.listen(portEcoute, '127.0.0.1', ok));
+  return () => { devant.close(); vrai.close(); };
+}
+
 // --- un joueur ---------------------------------------------------------------
 
 // `stay=1` garde la partie ouverte, `cloud=` coupe la sauvegarde en ligne
@@ -168,6 +215,22 @@ class Banc {
     return p;
   }
 
+  // Le vrai geste de l'enfant : « Mes mondes » puis « Jouer » sur le sien.
+  // C'est le parcours de la capture d'écran, et celui qui manquait au banc —
+  // on éprouvait « taper un code », pas « rouvrir mon monde ».
+  async rouvrirSonMonde(p, code) {
+    await p.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(500);
+    const trouve = await p.evaluate((c) => {
+      const b = [...document.querySelectorAll('#recent-worlds button')]
+        .find((x) => /Jouer/.test(x.textContent) && x.parentElement.textContent.includes(c));
+      if (!b) return false;
+      b.click();
+      return true;
+    }, code);
+    return trouve;
+  }
+
   async fermer() {
     if (this.navigateur) await this.navigateur.close();
     if (this.jeu) this.jeu.close();
@@ -248,6 +311,6 @@ const reveiller = (p) => p.evaluate(() => {
   document.dispatchEvent(new Event('visibilitychange'));
 });
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua,
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd,
   // réutilisés par les autres suites, qui montent leur propre décor
   servirLeJeuPour: servirLeJeu, trouverChromium };

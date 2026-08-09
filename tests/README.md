@@ -48,6 +48,8 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | la reprise tient dans la durée | l'ancien appareil la rechassait dix secondes plus tard |
 | seule après le départ de l'hôte | le compteur affichait encore deux joueurs |
 | un serveur de rendez-vous muet finit par le dire | le menu restait sur « Ouverture du monde… » indéfiniment |
+| rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
+| un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
 
 ## Les réglages (`npm run reglages`)
 
