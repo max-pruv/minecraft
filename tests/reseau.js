@@ -12,7 +12,7 @@
 // seuils réels du jeu (vingt secondes de silence toléré, cinq de battement),
 // sans quoi on ne testerait rien.
 
-const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua } = require('./banc.js');
+const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd } = require('./banc.js');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -22,7 +22,13 @@ const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua } = require('./ba
 //   l'envoi. La course est de l'ordre de la microseconde et ne peut pas être
 //   supprimée depuis le JavaScript ; le message perdu l'est sur un lien mourant,
 //   que le battement de cœur constate juste après.
-const TOLERE = /Could not connect to peer|readyState is not/;
+// — « ID … is taken » : un échelon voulu de l'ouverture d'un monde. Quand
+//   rejoindre échoue, le jeu tente d'ouvrir le monde lui-même ; si quelqu'un
+//   tient déjà le code, PeerJS le signale et l'on repart sur « rejoindre ».
+//   C'est le mécanisme qui fait que « Jouer » finit toujours par entrer.
+//   PeerJS fait précéder ce refus d'un « Aborting! » : c'est la même chose,
+//   dite deux fois.
+const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!/;
 const fautes = (p) => p.erreurs.filter((e) => !TOLERE.test(e));
 
 const echecs = [];
@@ -161,6 +167,43 @@ function verifier(nom, ok, detail = '') {
       + JSON.stringify(await perdu.evaluate(() => document.getElementById('online-status').textContent)));
     await perdu.close();
     muet.close();
+
+    // --- rouvrir SON monde doit marcher, quoi qu'il arrive --------------------
+    // Le parcours de la capture d'écran, et celui qui manquait : on éprouvait
+    // « taper un code », jamais « Mes mondes → Jouer ». Deux conditions, la
+    // seconde étant celle qui bloquait vraiment la famille : un serveur de
+    // rendez-vous qui n'achemine pas les demandes de connexion. Le jeu ne doit
+    // pas s'arrêter à un refus — le monde est vide, il l'ouvre.
+    const { p: prem, code: sien } = await banc.creerMonde('Zoé');
+    const appareil = prem.context();
+    const url = prem.url();
+    await dormir(1200);
+    await prem.close();
+    await dormir(1200);
+    const retourZoe = await appareil.newPage();
+    await retourZoe.goto(url, { waitUntil: 'load' });
+    await retourZoe.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    await banc.rouvrirSonMonde(retourZoe, sien);
+    const rentree = await jusqua(async () => retourZoe.evaluate(
+      () => document.getElementById('overlay').style.display === 'none'), 30000);
+    verifier('rouvrir son propre monde depuis la liste', rentree,
+      JSON.stringify(await retourZoe.evaluate(() => document.getElementById('online-status').textContent)));
+    await retourZoe.close();
+
+    const arreterSourd = await relaisSourd(9417, 9418);
+    const sourd = await banc.joueurVers('Ilan', 9417);
+    await sourd.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await sourd.evaluate(() => {
+      document.getElementById('join-code').value = '30953';
+      document.getElementById('join-btn').click();
+    });
+    const malgre = await jusqua(async () => sourd.evaluate(
+      () => document.getElementById('overlay').style.display === 'none'), 30000);
+    verifier('un serveur qui avale les demandes n\'empêche pas d\'entrer', malgre,
+      JSON.stringify(await sourd.evaluate(() => document.getElementById('online-status').textContent)));
+    await sourd.close();
+    arreterSourd();
 
     // --- petites robustesses --------------------------------------------------
     const avant = fautes(alice2).length;

@@ -1858,51 +1858,40 @@ async function openWorld(code) {
     return;
   }
   onlineStatus.textContent = `Ouverture du monde ${code}…`;
+
+  // Ouvrir un monde doit marcher. Point.
+  //
+  // L'ancienne version ne se rabattait sur l'ouverture que pour UNE raison
+  // d'échec bien précise — « partie introuvable ». Tous les autres cas
+  // laissaient l'enfant devant un refus, y compris quand le canal ne s'ouvrait
+  // pas alors que personne n'était en face : il voyait « le monde existe mais
+  // le réseau bloque la connexion » sur son propre monde vide, sur du Wi-Fi
+  // comme sur de la 5G, et n'avait aucun moyen d'entrer. Le message était
+  // doublement fautif — il affirmait que le monde existait, ce que le code ne
+  // sait pas, et il accusait un réseau qui n'y était pour rien.
+  //
+  // On procède donc par échelons, et on ne s'arrête qu'une fois dedans :
+  // rejoindre, sinon ouvrir soi-même, sinon rejoindre à nouveau — ce dernier
+  // cas étant celui où quelqu'un a pris la place entre nos deux tentatives.
+  const essayer = async (hote) => {
+    try { await startNetSession(code, hote); return null; }
+    catch (e) { if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; } return e; }
+  };
+
   let ouvertVide = false;
-  try {
-    await startNetSession(code, false);
-  } catch (err) {
-    if (net) { net.stop(); net = null; }
-    if (/introuvable/i.test(err.message)) {
-      // Personne ne répond. Avant d'en conclure quoi que ce soit, on réessaie
-      // une fois : quand l'iPad de l'autre sort de veille, il lui faut une
-      // poignée de secondes pour se réinscrire au serveur de rendez-vous, et
-      // pendant ce court instant son monde paraît vide. Basculer tout de suite
-      // en hôte, c'était couper le monde en deux pour une seconde d'écart.
-      // Pour un monde qu'on possède, trouver la place vide est le cas NORMAL —
-      // l'autre n'est pas encore arrivé. Un message alarmant à cet instant fait
-      // croire à une panne alors que le monde est sur le point de s'ouvrir.
-      onlineStatus.textContent = `Ouverture du monde ${code}…`;
-      await new Promise((r) => setTimeout(r, 2500));
-      try {
-        await startNetSession(code, false);
-      } catch (err2) {
-        if (net) { net.stop(); net = null; }
-        if (!/introuvable/i.test(err2.message)) {
-          onlineStatus.textContent = '❌ ' + err2.message;
-          world.switchContext('local');
-          return;
-        }
-        // Cette fois c'est sûr : le monde est vide. On l'ouvre — mais on le
-        // DIT. C'était le vrai défaut : l'enfant appuyait sur « Rejoindre »,
-        // tout se passait sans une erreur, et il se retrouvait seul en croyant
-        // avoir retrouvé l'autre. Un monde vide et un monde partagé doivent se
-        // distinguer au premier coup d'œil.
-        try {
-          await startNetSession(code, true);
-          ouvertVide = true;
-        } catch (err3) {
-          onlineStatus.textContent = '❌ ' + err3.message;
-          if (net) { net.stop(); net = null; }
-          world.switchContext('local');
-          return;
-        }
-      }
-    } else {
-      onlineStatus.textContent = '❌ ' + err.message;
-      world.switchContext('local');
-      return;
-    }
+  let err = await essayer(false);
+  if (err) {
+    err = await essayer(true);
+    ouvertVide = !err;
+  }
+  if (err && /déjà utilisé/i.test(err.message)) {
+    err = await essayer(false);
+    ouvertVide = false;
+  }
+  if (err) {
+    onlineStatus.textContent = '❌ ' + err.message;
+    world.switchContext('local');
+    return;
   }
   if (ouvertVide) {
     grandBandeau('🚪 MONDE OUVERT !', `Personne n'est encore là. Donne le code ${code} à ton ami·e !`, 5200);
