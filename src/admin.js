@@ -189,7 +189,7 @@ const HTML = `
       <thead><tr>
         <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
         <th>Langue</th><th>Niveau</th>
-        <th>Quiz tous les</th><th>Quiz jusqu'à</th><th>Mondes</th><th>Compte</th><th></th>
+        <th>Quiz</th><th>Mondes</th><th>Compte</th><th></th>
       </tr></thead>
       <tbody id="adm-rows"></tbody>
     </table>
@@ -230,20 +230,38 @@ export const isAdminName = (name) =>
 // manqués, on ne prétend plus que l'enfant est là.
 const PRESENCE_MS = 70000;
 
-// Intervalle entre deux séries de questions. Les bornes sont celles du jeu :
-// en deçà on harcèle, au-delà le mode éducatif devient décoratif.
-const RYTHMES = [3, 4, 5, 6, 8, 10, 12, 15, 20, 30];
-// Au bout de combien de minutes de jeu on cesse de poser des questions.
-// « toujours » garde le comportement d'origine ; « aucune » n'en pose jamais.
 // Les consignes du parent vivent dans leur propre document : la tablette de
 // l'enfant réécrit le sien toutes les quinze secondes, et une décision glissée
 // entre sa lecture et son écriture y disparaissait sans retour.
 const consignes = (nom) => `${nom}~parent`;
 const LANGUES = [['fr', 'Français'], ['en', 'English'], ['both', 'Les deux']];
-const ARRETS = [
-  ['', 'toujours'], [0, 'aucune'], [10, 'après 10 min'], [15, 'après 15 min'],
-  [20, 'après 20 min'], [30, 'après 30 min'], [45, 'après 45 min'], [60, 'après 1 h'],
+
+// Le quiz, en UN seul réglage.
+//
+// Il y en avait deux, côte à côte : la fréquence d'un côté, l'arrêt de l'autre.
+// « Toutes les 10 min » et « après 30 min » se lisent pareil et ne parlent pas
+// de la même chose — un parent n'a pas à faire cette gymnastique pour décider
+// d'une chose simple. Une seule liste, des phrases entières, et le code se
+// débrouille avec les deux valeurs qui vivent derrière.
+const QUIZ_CHOIX = [
+  { v: 'aucun', txt: 'Aucun quiz', min: 10, stop: 0 },
+  { v: '20', txt: 'Toutes les 20 min', min: 20, stop: undefined },
+  { v: '15', txt: 'Toutes les 15 min', min: 15, stop: undefined },
+  { v: '10', txt: 'Toutes les 10 min', min: 10, stop: undefined },
+  { v: '5', txt: 'Toutes les 5 min', min: 5, stop: undefined },
+  { v: '3', txt: 'Toutes les 3 min', min: 3, stop: undefined },
+  { v: 'p30', txt: '30 min de quiz, puis libre', min: 10, stop: 30 },
+  { v: 'p60', txt: '1 h de quiz, puis libre', min: 10, stop: 60 },
 ];
+
+// Quel choix décrit ce que porte le compte aujourd'hui.
+function quizChoisi(rythme, arret) {
+  if (arret === 0) return 'aucun';
+  if (arret === 30) return 'p30';
+  if (arret === 60) return 'p60';
+  const m = String(rythme ?? 10);
+  return QUIZ_CHOIX.some((c) => c.v === m) ? m : '10';
+}
 
 const jour = () => new Date().toISOString().slice(0, 10);
 
@@ -588,12 +606,9 @@ export class AdminPanel {
             GRADES.map(([fr, us], i) => `<option value="${i}"${
               i === (l.grade ?? 1) ? ' selected' : ''}>${fr} · ${us}</option>`).join('')
           }</select></span></td>
-        <td><span class="adm-rythme"><select data-rythme="${esc(l.nom)}">${
-            RYTHMES.map((m) => `<option value="${m}"${m === l.rythme ? ' selected' : ''}>${m} min</option>`).join('')
-          }</select></span></td>
-        <td><span class="adm-rythme"><select data-arret="${esc(l.nom)}">${
-            ARRETS.map(([v, txt]) => `<option value="${v}"${
-              String(v) === String(l.arret ?? '') ? ' selected' : ''}>${txt}</option>`).join('')
+        <td><span class="adm-rythme"><select data-quiz="${esc(l.nom)}">${
+            QUIZ_CHOIX.map((o) => `<option value="${o.v}"${
+              o.v === quizChoisi(l.rythme, l.arret) ? ' selected' : ''}>${o.txt}</option>`).join('')
           }</select></span></td>
         <td>${mondes}</td>
         <td>${secu}<div class="adm-dim">${reponses(l)}</div></td>
@@ -620,11 +635,8 @@ export class AdminPanel {
       sel.addEventListener('change', () => this.setProfil(sel.getAttribute('data-niveau'),
         { grade: Number(sel.value) }, `niveau : ${sel.options[sel.selectedIndex].text}`));
     }
-    for (const sel of this.el.querySelectorAll('[data-arret]')) {
-      sel.addEventListener('change', () => this.setArret(sel.getAttribute('data-arret'), sel.value));
-    }
-    for (const sel of this.el.querySelectorAll('[data-rythme]')) {
-      sel.addEventListener('change', () => this.setRythme(sel.getAttribute('data-rythme'), Number(sel.value)));
+    for (const sel of this.el.querySelectorAll('[data-quiz]')) {
+      sel.addEventListener('change', () => this.setQuiz(sel.getAttribute('data-quiz'), sel.value));
     }
   }
 
@@ -695,19 +707,6 @@ export class AdminPanel {
     }
   }
 
-  // Le réglage part dans les réglages du joueur, d'où le jeu le relit au
-  // lancement suivant — sur n'importe lequel de ses appareils.
-  async setRythme(nom, minutes) {
-    try {
-      const prefs = (await this.cloud.prefsPull(consignes(nom))) || {};
-      await this.cloud.prefsPush(consignes(nom), { ...prefs, sessionMin: minutes });
-      this.message(`${nom} : quiz toutes les ${minutes} minutes.`);
-    } catch {
-      this.message(`Impossible de changer le rythme de ${nom} — réessaie.`, true);
-      this.load();
-    }
-  }
-
   // Langue des quiz et niveau scolaire, réglés depuis ici.
   //
   // Ce sont des réglages que l'enfant peut changer lui-même depuis son écran :
@@ -733,27 +732,24 @@ export class AdminPanel {
     }
   }
 
-  // Jusqu'à quand poser des questions à cet enfant.
+  // Le quiz de cet enfant, en une seule décision.
   //
   // C'est un réglage de parent, et de parent seul : rien dans le jeu ne permet
-  // à l'enfant d'y toucher. Il sert à dire « une demi-heure de quiz, puis on le
-  // laisse construire », pour un plus jeune ou un jour de fatigue, sans avoir à
-  // désactiver le mode éducatif pour toute la famille.
-  async setArret(nom, valeur) {
-    const minutes = valeur === '' ? undefined : Number(valeur);
+  // à l'enfant d'y toucher. Derrière la phrase choisie vivent deux valeurs — à
+  // quel rythme on interroge, et jusqu'à quel temps de jeu — mais celui qui
+  // règle n'a pas à le savoir. « 30 min de quiz, puis libre » sert les jours de
+  // fatigue ou les plus jeunes, sans désactiver le mode éducatif pour autant.
+  async setQuiz(nom, choix) {
+    const o = QUIZ_CHOIX.find((c) => c.v === choix) || QUIZ_CHOIX.find((c) => c.v === '10');
     try {
       const prefs = (await this.cloud.prefsPull(consignes(nom))) || {};
-      const suite = { ...prefs };
-      if (minutes === undefined) delete suite.quizStopMin;
-      else suite.quizStopMin = minutes;
+      const suite = { ...prefs, sessionMin: o.min };
+      if (o.stop === undefined) delete suite.quizStopMin;
+      else suite.quizStopMin = o.stop;
       await this.cloud.prefsPush(consignes(nom), suite);
-      this.message(minutes === undefined
-        ? `${nom} : des questions pendant tout le temps de jeu.`
-        : minutes === 0
-          ? `${nom} : plus aucune question.`
-          : `${nom} : plus de questions après ${minutes} min de jeu.`);
+      this.message(`${nom} — quiz : ${o.txt.toLowerCase()}.`);
     } catch {
-      this.message(`Impossible de changer les questions de ${nom} — réessaie.`, true);
+      this.message(`Impossible de changer les quiz de ${nom} — réessaie.`, true);
       this.load();
     }
   }
