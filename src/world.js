@@ -438,8 +438,8 @@ export const PLACES = [
   { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z + 14, r: 34 },
   // Manhattan a ses propres destinations : sans elles, on arrivait sur l'île
   // par son seul nom, à un endroit quelconque de neuf kilomètres de long.
-  { name: 'Central Park', x: NY.x - 10, z: NY.z - 58, r: 30 },
-  { name: 'Times Square', x: NY.x - 15, z: NY.z - 9, r: 12 },
+  { name: 'Central Park', x: NY.x - 8, z: NY.z + 18, r: 34 },
+  { name: 'Times Square', x: NY.x - 11, z: NY.z + 64, r: 12 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -738,10 +738,12 @@ const LANDMARKS = [
   // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.
   { name: 'Empire State', x: NY.x + MONUMENTS[0].u, z: NY.z + MONUMENTS[0].v, box: MONUMENTS[0].box, build: buildEmpireState },
   { name: 'Chrysler Building', x: NY.x + MONUMENTS[1].u, z: NY.z + MONUMENTS[1].v, box: MONUMENTS[1].box, build: buildChrysler },
-  { name: 'Flatiron', x: NY.x + MONUMENTS[2].u, z: NY.z + MONUMENTS[2].v, box: MONUMENTS[2].box, build: buildFlatiron },
-  { name: 'One World Trade Center', x: NY.x + MONUMENTS[3].u, z: NY.z + MONUMENTS[3].v, box: MONUMENTS[3].box, build: buildOneWTC },
-  { name: 'Grand Central', x: NY.x + MONUMENTS[4].u, z: NY.z + MONUMENTS[4].v, box: MONUMENTS[4].box, build: buildGrandCentral },
-  { name: 'Statue de la Liberté', x: NY.x - 22, z: NY.z + 102, box: 4, waterBase: true, build: buildStatue },
+  { name: 'Grand Central', x: NY.x + MONUMENTS[2].u, z: NY.z + MONUMENTS[2].v, box: MONUMENTS[2].box, build: buildGrandCentral },
+  { name: 'Flatiron', x: NY.x + MONUMENTS[3].u, z: NY.z + MONUMENTS[3].v, box: MONUMENTS[3].box, build: buildFlatiron },
+  { name: 'Rockefeller Center', x: NY.x + MONUMENTS[4].u, z: NY.z + MONUMENTS[4].v, box: MONUMENTS[4].box, build: buildGrandCentral },
+  { name: 'One World Trade Center', x: NY.x + MONUMENTS[5].u, z: NY.z + MONUMENTS[5].v, box: MONUMENTS[5].box, build: buildOneWTC },
+  // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
+  { name: 'Statue de la Liberté', x: NY.x - 20, z: NY.z + 124, box: 4, waterBase: true, build: buildStatue },
   // San Francisco
   { name: 'Golden Gate', x: 0, z: -373, box: 34, waterBase: true, build: buildSuspensionBridge },
   { name: 'Phare', x: -38, z: -353, box: 3, waterBase: true, build: buildLighthouse },
@@ -780,7 +782,7 @@ export const CITIES = [
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
   // par zoneManhattan().
-  { key: 'ny', name: 'New York', x: 295, z: -110, r: 96, cell: 12, base: 33, street: 3 },
+  { key: 'ny', name: 'New York', x: 295, z: -110, r: 132, cell: 12, base: 33, street: 3 },
   { key: 'sf', name: 'San Francisco', x: 0, z: -320, r: 50, cell: 11, base: 33, street: 3 },
   { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
   { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },

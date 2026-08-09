@@ -18,7 +18,7 @@ import {
   CHUNK, HEIGHT, WATER_LEVEL, CITIES, PLACES, REPERES,
   MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
-import { couleurCarteManhattan } from './manhattan.js';
+import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
@@ -60,7 +60,12 @@ const ICONES = {
   'Beffroi de Lille': '🔔', 'Base martienne': '🛸', 'Caserne & Commissariat': '🚒',
   'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
   'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
-  'Grand Central': '🚉',
+  'Grand Central': '🚉', 'Rockefeller Center': '⛸️',
+  Harlem: '🎷', 'Upper West Side': '🎻', 'Upper East Side': '🖼️', Midtown: '🏙️',
+  Chelsea: '🎨', Gramercy: '🌿', 'Greenwich Village': '☕', 'East Village': '🎸',
+  SoHo: '👜', TriBeCa: '🎬', Chinatown: '🥟', 'Little Italy': '🍕',
+  'Lower East Side': '🥯', 'Financial District': '💵',
+  'Washington Heights': '⛰️', Inwood: '🌲',
 };
 const icone = (nom) => ICONES[nom] || '📍';
 
@@ -417,6 +422,11 @@ export class Carte {
       ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
       ...PLACES.map((c) => ({ c, fort: true, seuil: majeur(c) ? 99 : 1.9 })),
       ...REPERES.map((c) => ({ c, fort: false, seuil: 1.6 })),
+      // Les quartiers de Manhattan, à courte distance seulement. Sur un plan
+      // de New York, ce sont eux qu'on lit avant les noms de rue — et ils
+      // disent que l'île n'est pas une ville uniforme mais une file de
+      // villages soudés.
+      ...quartiersDuMonde().map((c) => ({ c, fort: false, seuil: 0.7 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui
