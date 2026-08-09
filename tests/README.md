@@ -62,6 +62,9 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | et il survit au redémarrage | la lecture de démarrage reprenait l'ancienne valeur 300 ms après le clic |
 | l'autre tablette ne le défait pas | un second appareil allumé réécrivait sa version périmée |
 | arrêter les questions après N minutes | nouvelle consigne parentale |
+| la langue réglée par le parent arrive sur la tablette | l'espace parent ne réglait que le rythme |
+| chaque réglage atterrit dans le document du parent | logé avec ceux de l'enfant, il pouvait être écrasé |
+| et la tablette suit le panneau | elle réimposait sa version périmée |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
