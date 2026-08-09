@@ -119,9 +119,13 @@ export class CloudSave {
 
   async prefsPull(name) {
     if (!this.configured || !name) return null;
+    // `no-store` : cette lecture sert à savoir si un parent vient de décider
+    // quelque chose. Une réponse ressortie d'un cache, si courte soit sa durée
+    // de vie, ferait croire que rien n'a changé — et c'est précisément la
+    // question qu'on pose.
     const res = await fetch(
       `${this.url}/rest/v1/player_prefs?name=eq.${encodeURIComponent(name)}&select=prefs`,
-      { headers: this.headers() }
+      { headers: this.headers(), cache: 'no-store' }
     );
     if (!res.ok) return null;
     const rows = await res.json();

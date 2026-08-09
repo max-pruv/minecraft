@@ -203,6 +203,20 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
         arret: window.__game.edu.arretApresSecondes,
         grade: JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade }))));
 
+    // Combien de temps entre la décision du parent et son effet sur la tablette.
+    // C'est ce délai que l'on mesure ici, pas seulement le fait qu'il finisse
+    // par arriver : debout à côté de l'enfant, quinze secondes de silence font
+    // douter du réglage et donner un second tour de menu.
+    const debut = Date.now();
+    await marlon.evaluate(async () => {
+      await window.__game.admin.setRythme('Marlon', 8);
+    });
+    const vite = await jusqua(
+      async () => (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 8, 15000, 200);
+    const delai = Date.now() - debut;
+    verifier('une décision du parent prend effet en quelques secondes',
+      vite && delai < 6000, `${(delai / 1000).toFixed(1)} s`);
+
     // ================= 5. arrêter les questions après N minutes ==============
     const edu = async (expr) => marlon.evaluate(expr);
     await marlon.evaluate(() => { window.__game.edu.setArretApres(30); });

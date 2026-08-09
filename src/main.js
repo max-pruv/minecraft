@@ -1169,6 +1169,7 @@ async function lireConsignes() {
   let vues = null;
   try { vues = await cloud.prefsPull(cleConsignes(playerProfile.name)); } catch { /* hors ligne */ }
   const avant = JSON.stringify(consignesParents);
+  let profilChange = false;
   if (vues) {
     retenirConsignes(vues);
     // Un parent peut aussi régler la langue et le niveau. Ces deux-là,
@@ -1176,10 +1177,37 @@ async function lireConsignes() {
     // dernier choix qui tranche, et adopterProfilDistant s'en charge. Les
     // loger ici plutôt que dans le document de l'enfant est ce qui les met
     // hors de portée de sa réécriture toutes les quinze secondes.
-    adopterProfilDistant(vues);
+    profilChange = adopterProfilDistant(vues);
   }
-  return JSON.stringify(consignesParents) !== avant;
+  return profilChange || JSON.stringify(consignesParents) !== avant;
 }
+
+// La veille des consignes : ce qu'un parent décide doit se voir tout de suite.
+//
+// Elles étaient relues au rythme des envois, toutes les quinze secondes. C'est
+// long quand on est debout à côté de l'enfant, qu'on vient de changer un
+// réglage et qu'il ne se passe rien : on doute du réglage, on recommence, on
+// finit par croire que ça ne marche pas. Deux secondes, et le doute disparaît.
+//
+// Le coût est une requête minuscule — une ligne, sans le journal de blocs — et
+// elle s'espace dès que l'application passe en arrière-plan, où personne ne
+// regarde l'écran.
+const GUET_ACTIF_MS = 2000;
+const GUET_FOND_MS = 20000;
+
+async function guetterConsignes() {
+  if (playerProfile.name && cloud.configured && navigator.onLine) {
+    try {
+      if (await lireConsignes()) {
+        appliquerConsignes();
+        creatureManager.toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
+      }
+    } catch { /* on repassera dans deux secondes */ }
+  }
+  setTimeout(guetterConsignes,
+    document.visibilityState === 'hidden' ? GUET_FOND_MS : GUET_ACTIF_MS);
+}
+setTimeout(guetterConsignes, GUET_ACTIF_MS);
 
 function appliquerConsignes() {
   if (consignesParents.sessionMin !== undefined) edu.setSessionMinutes(consignesParents.sessionMin);
@@ -1225,10 +1253,6 @@ function pushPrefsToCloud() {
 async function envoyerPrefs() {
   if (!playerProfile.name) return;
   try {
-    if (await lireConsignes()) {
-      appliquerConsignes();
-      creatureManager.toast('⚙️ Un parent a modifié tes réglages.', 0x9fd8e8);
-    }
     const distant = await cloud.prefsPull(playerProfile.name);
     if (distant) {
       // Une autre tablette de la maison a peut-être un choix plus récent que le

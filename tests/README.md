@@ -65,6 +65,7 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | la langue réglée par le parent arrive sur la tablette | l'espace parent ne réglait que le rythme |
 | chaque réglage atterrit dans le document du parent | logé avec ceux de l'enfant, il pouvait être écrasé |
 | et la tablette suit le panneau | elle réimposait sa version périmée |
+| une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
