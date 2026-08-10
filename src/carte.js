@@ -21,6 +21,7 @@ import {
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
 import { couleurCarteParis, lieuxDeParis } from './paris.js';
 import { couleurCarteParc, lieuxDuParc } from './parc.js';
+import { couleurCarteSF, lieuxDeSF } from './sanfrancisco.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
@@ -253,6 +254,13 @@ export class Carte {
       const c = couleurCarteParc(wx, wz);
       if (c) return c;
     }
+    // San Francisco : sa presqu'île, ses deux quadrillages, Market Street en
+    // couture, la plage, le Golden Gate Park et la teinte qui monte avec les
+    // collines. Tout cela se calcule — la carte n'a pas à attendre la visite.
+    if (ville && ville.key === 'sf') {
+      const c = couleurCarteSF(wx, wz);
+      if (c) return c;
+    }
     if (ville) {
       // La trame des rues, telle que le générateur la pose. On ne la dessine
       // que d'assez près : échantillonnée de loin, elle produirait un moiré.
@@ -446,6 +454,8 @@ export class Carte {
       // ses places, comme New York par ses quartiers.
       ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 0.7 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
+      // Et les quartiers et collines de San Francisco.
+      ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui

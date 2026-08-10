@@ -121,6 +121,8 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | chaque monument de Paris est sur sa rive et au sec | la Tour Eiffel se dressait rive droite et le Louvre rive gauche |
 | le parc a du relief, un lac et des attractions | le parc tenait dans cinquante blocs — une roue, un carrousel, un anneau de rails — et son allée dallée était posée un bloc trop bas, donc enterrée |
 | et ses villages sont des destinations | on arrivait au parc par son seul nom, sans savoir où aller ensuite |
+| San Francisco a ses collines et sa presqu'île | un disque de maisons pastel posé sur un bruit de terrain : ni côte, ni relief, ni plan — mesuré 13 buttes distinctes et 903 points en mer contre 1918 à terre |
+| et ses quartiers sont des destinations | Twin Peaks, le Golden Gate Park, la Mission, le Castro, Chinatown, le Presidio n'existaient pas |
 
 ## Si Chromium n'est pas trouvé
 
