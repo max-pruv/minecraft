@@ -463,6 +463,63 @@ const position = (p) => p.evaluate(() => ({
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
     await dormir(300);
 
+    // --- Nice et Lille --------------------------------------------------------
+    //
+    // Deux disques de maisons génériques, l'un « au bord de la mer » sans mer,
+    // l'autre avec un beffroi posé au milieu de rien. Or chacune tient dans une
+    // forme : la baie des Anges pour Nice, et pour Lille l'étoile à cinq
+    // branches de la citadelle de Vauban, qu'on ne lit que vue du ciel.
+    const releveVilles = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const EAU = 7;
+      // Nice : la mer occupe le sud de la baie, et trois collines se lèvent.
+      let mer = 0, terre = 0, sommetNice = 0;
+      for (let u = -44; u <= 44; u += 2) {
+        for (let v = -44; v <= 44; v += 2) {
+          if (Math.hypot(u, v) > 44) continue;
+          const h = w.terrainHeight(300 + u, 260 + v);
+          if (h <= 30) mer++; else { terre++; sommetNice = Math.max(sommetNice, h); }
+        }
+      }
+      // Lille : l'étoile se compte par ses douves. Cinq bastions, cinq
+      // courtines : le contour est bien plus long que celui d'un cercle de même
+      // aire — c'est cela, une étoile, et c'est mesurable.
+      let douves = 0;
+      for (let u = -40; u <= -4; u++) {
+        for (let v = -34; v <= 2; v++) {
+          // Les douves sont creusées sous le niveau de la mer : c'est le remplissage
+          // général du monde qui les met en eau, à la cote trente.
+          if (w.getBlock(-300 + u, 30, -200 + v) === EAU) douves++;
+        }
+      }
+      return { mer, terre, sommetNice, douves };
+    });
+    verifier('Nice a sa baie et ses collines',
+      releveVilles.mer > 200 && releveVilles.sommetNice >= 44,
+      `${releveVilles.mer} points en mer pour ${releveVilles.terre} à terre · sommet ${releveVilles.sommetNice}`);
+    verifier('Lille a sa citadelle en étoile, entourée d\'eau',
+      releveVilles.douves > 260,
+      `${releveVilles.douves} blocs de douves`);
+
+    await banc.ouvrirLaCarte(tab);
+    for (const [nom, cx, cz, attendus] of [
+      ['Nice', 300, 260, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],
+      ['Lille', -300, -200, ["Grand'Place", 'Vieux-Lille', 'Citadelle', 'Euralille']],
+    ]) {
+      await tab.evaluate(({ x, z }) => {
+        const c2 = window.__carte;
+        c2.vue.cx = x; c2.vue.cz = z; c2.vue.bpp = 0.35;
+        c2.limiter(); c2.peindre();
+      }, { x: cx, z: cz });
+      await dormir(500);
+      const vusV = await lieuxVus(tab);
+      const manque = attendus.filter((n) => !vusV.includes(n));
+      verifier(`les lieux de ${nom} sont sur la carte`, manque.length === 0,
+        manque.length ? `absents : ${manque.join(', ')}` : `${attendus.length} lieux`);
+    }
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 

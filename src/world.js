@@ -15,6 +15,14 @@ import {
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
 } from './sanfrancisco.js';
 import {
+  NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
+  MONUMENTS_NICE, buildMassena, buildCathedraleRusse, buildCollineChateau,
+} from './nice.js';
+import {
+  LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
+  MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
+} from './lille.js';
+import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
@@ -703,7 +711,17 @@ const LANDMARKS = [
     build,
   })),
   // Lille
-  { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
+  { name: 'Beffroi de Lille', x: LILLE.x + 6, z: LILLE.z + 14, box: 5, build: buildBelfry },
+  ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle].map((build, i) => ({
+    name: MONUMENTS_LILLE[i].nom,
+    x: LILLE.x + MONUMENTS_LILLE[i].u, z: LILLE.z + MONUMENTS_LILLE[i].v,
+    box: MONUMENTS_LILLE[i].box, build,
+  })),
+  ...[buildMassena, buildCathedraleRusse, buildCollineChateau].map((build, i) => ({
+    name: MONUMENTS_NICE[i].nom,
+    x: NICE.x + MONUMENTS_NICE[i].u, z: NICE.z + MONUMENTS_NICE[i].v,
+    box: MONUMENTS_NICE[i].box, build,
+  })),
   // Countryside
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
@@ -741,8 +759,8 @@ export const CITIES = [
   // San Francisco n'est pas un disque non plus : c'est une presqu'île, avec
   // l'océan à l'ouest, la passe au nord et la baie à l'est — cf. src/sanfrancisco.js.
   { key: 'sf', name: 'San Francisco', x: SF.x, z: SF.z, r: SF.r, cell: 11, base: 33, street: 3 },
-  { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
-  { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },
+  { key: 'nice', name: 'Nice', x: NICE.x, z: NICE.z, r: NICE.r, cell: 11, base: 32, street: 3 },
+  { key: 'lille', name: 'Lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, cell: 12, base: 34, street: 3 },
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -785,7 +803,8 @@ export class World {
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
-      if (c.key === 'ny' || c.key === 'sf') continue;   // deux reliefs à part, cf. plus bas
+      // Quatre reliefs à part, chacun dans son module : cf. plus bas.
+      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille') continue;
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
@@ -803,6 +822,14 @@ export class World {
     // bruit à la base plate — la ville n'avait donc ni collines ni côte, alors
     // que ce sont exactement les deux choses qui la font reconnaître.
     h = hauteurSF(x, z, h, 33);
+
+    // Nice : la baie des Anges se creuse, et les trois collines se lèvent —
+    // celle du Château, Cimiez et le mont Boron.
+    h = hauteurNice(x, z, h, 32);
+
+    // Lille : la Deûle et les douves de la citadelle se creusent, et le rempart
+    // de Vauban se relève au-dessus de la ville.
+    h = hauteurLille(x, z, h, 34);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -943,6 +970,7 @@ export class World {
       // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
       if (c.key === 'ny' && !surTerre(x, z)) continue;
       if (c.key === 'sf' && !surTerreSF(x, z)) continue;
+      if (c.key === 'nice' && !surTerreNice(x, z)) continue;
       return c;
     }
     return null;
@@ -1061,6 +1089,7 @@ export class World {
         // Manhattan a son propre dessin de sol : avenues numérotées, rues tous
         // les cinq blocs, Broadway en diagonale, Central Park et ses pièces
         // d'eau. Une colonne, une décision — comme pour les autres villes.
+        let fait = false;
         if (city && city.key === 'ny') {
           if (h > WATER_LEVEL) {
             const sol = solManhattan(wx, wz);
@@ -1084,6 +1113,25 @@ export class World {
 
         // San Francisco : ses deux quadrillages qui ne sont pas parallèles,
         // Market Street entre les deux, la plage, les quais et les parcs.
+        // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
+        // San Francisco, la trame générique ne s'applique pas par-dessus.
+        for (const [cle, sol, libre, batir] of [
+          ['nice', solNice, lotNiceLibre, batirColonneNice],
+          ['lille', solLille, lotLilleLibre, batirColonneLille],
+        ]) {
+          if (!city || city.key !== cle) continue;
+          const ss = sol(wx, wz);
+          if (ss !== null) data[World.index(x, h, z)] = ss;
+          else if (libre(wx, wz)) {
+            batir(wx, wz, (dy, id) => {
+              const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+          }
+          fait = true;
+        }
+        if (fait) continue;
+
         if (city && city.key === 'sf') {
           const ss = solSF(wx, wz);
           if (ss !== null) data[World.index(x, h, z)] = ss;
@@ -1215,7 +1263,8 @@ export class World {
     };
 
     for (const city of CITIES) {
-      if (city.key === 'ny' || city.key === 'sf') continue;   // elles se bâtissent colonne par colonne
+      // Quatre villes se bâtissent colonne par colonne, cf. leurs modules.
+      if (['ny', 'sf', 'nice', 'lille'].includes(city.key)) continue;
       const CELL = city.cell;
       const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
       const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);

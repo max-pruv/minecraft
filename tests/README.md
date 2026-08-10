@@ -123,6 +123,9 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | et ses villages sont des destinations | on arrivait au parc par son seul nom, sans savoir où aller ensuite |
 | San Francisco a ses collines et sa presqu'île | un disque de maisons pastel posé sur un bruit de terrain : ni côte, ni relief, ni plan — mesuré 13 buttes distinctes et 903 points en mer contre 1918 à terre |
 | et ses quartiers sont des destinations | Twin Peaks, le Golden Gate Park, la Mission, le Castro, Chinatown, le Presidio n'existaient pas |
+| Nice a sa baie et ses collines | une ville « au bord de la mer » sans mer — mesuré 519 points en mer pour 998 à terre |
+| Lille a sa citadelle en étoile, entourée d'eau | un beffroi posé au milieu de rien : l'étoile de Vauban se compte par ses douves, 415 blocs |
+| les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé
 
