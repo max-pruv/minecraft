@@ -32,6 +32,7 @@
 // inclinée de 29°, ce qui en blocs donnerait des rues en escalier illisibles.
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { rangerVoies, solDesVoies } from './voies.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -344,7 +345,7 @@ const VOIES = [
   // Fulton et Maiden Lane sont distantes d'un bloc et demi — dessinées à la
   // largeur d'une avenue, elles recouvraient tout le quartier de bitume, et le
   // Financial District n'avait plus un seul immeuble.
-  { nom: 'Wall Street', l: 0.7, t: 0.25, pave: true, pts: [[-8, 103], [8, 103]] },
+  { nom: 'Wall Street', l: 0.7, t: 0.25, sol: PAVE_SOMBRE, pts: [[-8, 103], [8, 103]] },
   { nom: 'Fulton Street', l: 0.5, t: 0.35, pts: [[-9, 100], [9, 100]] },
   { nom: 'Beaver Street', l: 0.5, t: 0.3, pts: [[-3, 105], [3, 105]] },
   { nom: 'Vesey Street', l: 0.5, t: 0.35, pts: [[-10, 97], [-1, 97]] },
@@ -381,51 +382,7 @@ const SQUARES = [
   { nom: 'Tompkins Square', u: 12, v: 69, ru: 2.2, rv: 1.8, sol: BLOCK.GRASS },
 ];
 
-// Trente voies, découpées en segments et rangées par bandes de six blocs : une
-// colonne n'en consulte qu'une poignée. Sans ce rangement, dessiner le bas de
-// l'île coûtait trente distances par colonne et cinq fois plus par immeuble —
-// l'île se chargeait par bribes sous les yeux de l'enfant.
-const BANDE = 6;
-const BANDES = new Map();
-for (const voie of VOIES) {
-  for (let i = 0; i < voie.pts.length - 1; i++) {
-    const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-    const t = voie.t === undefined ? 0.3 : voie.t;
-    const seg = {
-      u0, v0, u1, v1, l: voie.l, t, pave: !!voie.pave,
-      uMin: Math.min(u0, u1), uMax: Math.max(u0, u1),
-    };
-    const b0 = Math.floor((Math.min(v0, v1) - voie.l - t - 1) / BANDE);
-    const b1 = Math.floor((Math.max(v0, v1) + voie.l + t + 1) / BANDE);
-    for (let b = b0; b <= b1; b++) {
-      if (!BANDES.has(b)) BANDES.set(b, []);
-      BANDES.get(b).push(seg);
-    }
-  }
-}
-
-function distanceSegment(u, v, s) {
-  const du = s.u1 - s.u0, dv = s.v1 - s.v0;
-  const len2 = du * du + dv * dv;
-  let t = len2 > 0 ? ((u - s.u0) * du + (v - s.v0) * dv) / len2 : 0;
-  t = t < 0 ? 0 : t > 1 ? 1 : t;
-  return Math.hypot(u - (s.u0 + t * du), v - (s.v0 + t * dv));
-}
-
-// Ce qu'une voie nommée pose en ce point, ou null si aucune ne passe par là.
-function solDesVoies(u, v) {
-  const segs = BANDES.get(Math.floor(v / BANDE));
-  if (!segs) return null;
-  let dedans = null;
-  for (const s of segs) {
-    const marge = s.l + s.t;
-    if (u < s.uMin - marge || u > s.uMax + marge) continue;
-    const d = distanceSegment(u, v, s);
-    if (d <= s.l) return s.pave ? PAVE_SOMBRE : BITUME;
-    if (d <= marge) dedans = TROTTOIR;
-  }
-  return dedans;
-}
+const BANDES = rangerVoies(VOIES);
 
 // Le sol du bas de l'île : Battery Park, les squares, les voies nommées, puis
 // la trame du quartier.
@@ -443,7 +400,7 @@ function solBasManhattan(u, v) {
     }
   }
 
-  const voie = solDesVoies(u, v);
+  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
   if (voie !== null) return voie;
 
   const t = trameDe(u, v);

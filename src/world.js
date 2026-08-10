@@ -10,7 +10,8 @@ import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
-  buildNotreDame, buildSacreCoeur,
+  LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
+  buildMontparnasse, buildColonneBastille, buildMoulinRouge,
 } from './paris.js';
 import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
@@ -735,11 +736,21 @@ function buildBaseMartienne(set) {
 // dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
 const LANDMARKS = [
   // Paris
-  { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
-  { name: 'Arc de Triomphe', x: -263, z: 200, box: 7, build: buildArch },
-  { name: 'Pyramide du Louvre', x: -217, z: 222, box: 7, build: buildGlassPyramid },
-  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 13, build: buildNotreDame },
-  { name: 'Sacré-Cœur', x: PARIS.x + BUTTE.u, z: PARIS.z + BUTTE.v, box: 12, build: buildSacreCoeur },
+  // Paris : chacun à son écart réel à Notre-Dame, calculé par paris.js. La
+  // Tour Eiffel se dressait sur la rive droite et le Louvre sur la rive
+  // gauche — les deux ont changé de rive, et huit monuments manquants sont
+  // arrivés avec eux.
+  ...[
+    ['Tour Eiffel', 8, buildEiffelTower], ['Arc de Triomphe', 7, buildArch],
+    ['Louvre', 7, buildGlassPyramid], ['Panthéon', 8, buildPantheon],
+    ['Invalides', 11, buildInvalides], ['Opéra', 8, buildOpera],
+    ['Montparnasse', 4, buildMontparnasse], ['Bastille', 3, buildColonneBastille],
+    ['Moulin Rouge', 5, buildMoulinRouge], ['Sacré-Cœur', 12, buildSacreCoeur],
+  ].map(([nom, box, build]) => {
+    const p = LIEUX.find((q) => q.nom === nom);
+    return { name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom, x: PARIS.x + p.u, z: PARIS.z + p.v, box, build };
+  }),
+  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 9, build: buildNotreDame },
   // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
   // La Statue de la Liberté était plantée en pleine ville, sur ce qui est
   // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.

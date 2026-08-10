@@ -100,6 +100,8 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | on ne peut ni zoomer à l'infini ni sortir du monde | — |
 | les quartiers du bas de l'île ont la place d'exister | de Battery à la 14e Rue il y avait quinze blocs, moins qu'un pâté de Midtown : TriBeCa, SoHo, Chinatown, le Village et Wall Street s'y superposaient |
 | la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
+| les lieux de Paris sont sur la carte | l'Opéra, le Panthéon, les Invalides, la Bastille et le Luxembourg n'existaient pas |
+| chaque monument de Paris est sur sa rive et au sec | la Tour Eiffel se dressait rive droite et le Louvre rive gauche |
 
 ## Si Chromium n'est pas trouvé
 

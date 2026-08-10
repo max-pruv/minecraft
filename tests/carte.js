@@ -311,6 +311,58 @@ const position = (p) => p.evaluate(() => ({
       haut > 0.4 && bas < 0.4 && bas < haut * 0.8,
       `sur la grille : au nord ${haut.toFixed(2)}, au sud ${bas.toFixed(2)}`);
 
+    // --- Paris et ses deux rives ---------------------------------------------
+    //
+    // Paris avait reçu son fleuve, mais rien n'était placé : la Tour Eiffel se
+    // dressait sur la rive droite, le Louvre sur la rive gauche, et l'Opéra, le
+    // Panthéon, les Invalides, la Bastille, le Luxembourg n'existaient pas du
+    // tout. Une rive, ça ne se discute pas — c'est la première chose qu'un
+    // enfant vérifie quand il compare avec un vrai plan.
+    const PARIS = { x: -240, z: 200 };
+    await banc.ouvrirLaCarte(tab);
+    await tab.evaluate(({ p }) => {
+      const c2 = window.__carte;
+      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.24;
+      c2.limiter(); c2.peindre();
+    }, { p: PARIS });
+    await dormir(600);
+    const vusParis = await lieuxVus(tab);
+    const attendusParis = ['Tour Eiffel', 'Arc de Triomphe', 'Panthéon', 'Invalides',
+      'Opéra', 'Bastille', 'Luxembourg', 'Concorde'];
+    const absentsParis = attendusParis.filter((n) => !vusParis.includes(n));
+    verifier('les lieux de Paris sont sur la carte', absentsParis.length === 0,
+      absentsParis.length ? `absents : ${absentsParis.join(', ')}` : `${attendusParis.length} lieux`);
+
+    // Sur quelle rive ? On cherche la Seine dans le monde, à l'aplomb du
+    // monument, et on regarde de quel côté il tombe. Rien n'est supposé : si
+    // le fleuve bougeait, la mesure bougerait avec lui.
+    const rives = await tab.evaluate(({ p, noms }) => {
+      const w = window.__game.world;
+      const EAU = 7;
+      const out = {};
+      for (const [nom, x, z] of noms) {
+        const fil = [];
+        for (let zz = p.z - 45; zz <= p.z + 45; zz++) if (w.getBlock(x, 30, zz) === EAU) fil.push(zz);
+        const axe = fil.length ? fil.reduce((a, b) => a + b, 0) / fil.length : null;
+        const sol = w.terrainHeight(x, z);
+        out[nom] = { axe, rive: axe === null ? '?' : (z < axe ? 'droite' : 'gauche'), sec: sol > 31 };
+      }
+      return out;
+    }, { p: PARIS, noms: (await tab.evaluate(({ noms }) => noms.map((n) => {
+      const e = window.__carte.etiquettes.find((x) => x.lieu.name === n);
+      return e ? [n, Math.round(e.lieu.x), Math.round(e.lieu.z)] : null;
+    }).filter(Boolean), { noms: ['Tour Eiffel', 'Invalides', 'Panthéon', 'Luxembourg', 'Concorde', 'Opéra', 'Bastille', 'Arc de Triomphe'] })) });
+
+    const GAUCHE = ['Tour Eiffel', 'Invalides', 'Panthéon', 'Luxembourg'];
+    const DROITE = ['Concorde', 'Opéra', 'Bastille', 'Arc de Triomphe'];
+    const faux = [...GAUCHE.map((n) => [n, 'gauche']), ...DROITE.map((n) => [n, 'droite'])]
+      .filter(([n, r]) => !rives[n] || rives[n].rive !== r || !rives[n].sec)
+      .map(([n, r]) => `${n} devrait être rive ${r}, il est ${rives[n] ? rives[n].rive : 'absent'}${rives[n] && !rives[n].sec ? ' et dans l\'eau' : ''}`);
+    verifier('chaque monument de Paris est sur sa rive et au sec',
+      faux.length === 0, faux.join(' · '));
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 
