@@ -8,6 +8,7 @@ import { buildEspace } from './espace.js';
 import { buildVille } from './ville.js';
 import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
+import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
@@ -372,7 +373,9 @@ function buildBelfry(set) { // le beffroi de Lille, en brique avec son horloge
 
 // The amusement park: an open flattened area with a Ferris wheel, a
 // carousel, a circular roller-coaster and candy-striped circus tents.
-export const PARK = { name: "Parc d'attractions", x: 150, z: -60, r: 34 };
+// Le parc d'attractions a son propre module : c'est lui qui décide de sa
+// position et de son étendue, et le monde s'y conforme.
+export const PARK = { name: "Parc d'attractions", x: PARC_ATTRACTIONS.x, z: PARC_ATTRACTIONS.z, r: PARC_ATTRACTIONS.r };
 
 // Special biome zones stamped over the base terrain.
 export const DESERT = { name: 'Désert', x: 60, z: -190, r: 70 };
@@ -451,104 +454,6 @@ export const PLACES = [
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
-
-function buildFunPark(set) {
-  const R = 24;
-  // walkway grid across the park grounds
-  for (let dx = -R; dx <= R; dx++) {
-    for (let dz = -R; dz <= R; dz++) {
-      if (Math.hypot(dx, dz) > R) continue;
-      if (dx % 8 === 0 || dz % 8 === 0) set(dx, -1, dz, BLOCK.SANDSTONE);
-    }
-  }
-  // entrance arch on the south side
-  for (let y = 0; y < 5; y++) { set(-2, y, -R, BLOCK.GOLD); set(2, y, -R, BLOCK.GOLD); }
-  for (let dx = -2; dx <= 2; dx++) set(dx, 5, -R, BLOCK.WOOL_YELLOW);
-  set(0, 6, -R, BLOCK.WOOL_RED); // flag
-
-  // la grande roue — a tall Ferris wheel with rainbow gondolas
-  const FX = -10, FZ = 8, CY = 12, FR = 9;
-  const GONDOLAS = [BLOCK.WOOL_RED, BLOCK.WOOL_YELLOW, BLOCK.WOOL_GREEN, BLOCK.WOOL_BLUE,
-    BLOCK.WOOL_PURPLE, BLOCK.WOOL_RED, BLOCK.WOOL_YELLOW, BLOCK.WOOL_GREEN];
-  for (let i = 0; i < 64; i++) {
-    const a = (i / 64) * Math.PI * 2;
-    set(FX + Math.round(Math.cos(a) * FR), CY + Math.round(Math.sin(a) * FR), FZ, BLOCK.WHITEBRICK);
-  }
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    set(FX + Math.round(Math.cos(a) * (FR - 2)), CY + Math.round(Math.sin(a) * (FR - 2)), FZ, GONDOLAS[i]);
-  }
-  for (let r = 1; r < FR - 1; r++) { // spokes
-    set(FX + r, CY, FZ, BLOCK.WHITEBRICK); set(FX - r, CY, FZ, BLOCK.WHITEBRICK);
-    set(FX, CY + r, FZ, BLOCK.WHITEBRICK); set(FX, CY - r, FZ, BLOCK.WHITEBRICK);
-  }
-  set(FX, CY, FZ, BLOCK.GOLD); // hub
-  for (let y = 0; y < CY; y++) { set(FX, y, FZ - 1, BLOCK.DARKBRICK); set(FX, y, FZ + 1, BLOCK.DARKBRICK); }
-
-  // le carrousel — striped cone roof over golden poles
-  const KX = 10, KZ = -8;
-  for (let dx = -4; dx <= 4; dx++) {
-    for (let dz = -4; dz <= 4; dz++) {
-      if (Math.hypot(dx, dz) > 4.3) continue;
-      set(KX + dx, 0, KZ + dz, BLOCK.SLAB_PLANK);
-    }
-  }
-  for (const [px, pz] of [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2]]) {
-    set(KX + px, 1, KZ + pz, BLOCK.GOLD); set(KX + px, 2, KZ + pz, BLOCK.GOLD);
-  }
-  for (let y = 1; y <= 3; y++) set(KX, y, KZ, BLOCK.LOG); // center mast
-  for (let dx = -5; dx <= 5; dx++) {
-    for (let dz = -5; dz <= 5; dz++) {
-      const d = Math.hypot(dx, dz);
-      if (d <= 5.3) set(KX + dx, 4, KZ + dz, Math.round(d) % 2 === 0 ? BLOCK.WOOL_RED : BLOCK.SNOW);
-      if (d <= 3.3) set(KX + dx, 5, KZ + dz, Math.round(d) % 2 === 0 ? BLOCK.WOOL_RED : BLOCK.SNOW);
-    }
-  }
-  set(KX, 6, KZ, BLOCK.GOLD);
-
-  // les montagnes russes — a wavy circular roller-coaster around everything
-  const TR = 18;
-  for (let i = 0; i < 128; i++) {
-    const a = (i / 128) * Math.PI * 2;
-    const tx = Math.round(Math.cos(a) * TR), tz = Math.round(Math.sin(a) * TR);
-    const ty = 2 + Math.round(3 + 3 * Math.sin(a * 3));
-    set(tx, ty, tz, BLOCK.WOOL_PURPLE);
-    if (i % 8 === 0) for (let y = 0; y < ty; y++) set(tx, y, tz, BLOCK.DARKBRICK);
-  }
-
-  // candy-striped circus tents near the entrance
-  const tent = (tx, tz, col) => {
-    for (let y = 0; y < 3; y++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
-          if (Math.abs(dx) !== 2 && Math.abs(dz) !== 2) continue;
-          set(tx + dx, y, tz + dz, (dx + dz + y) % 2 === 0 ? col : BLOCK.SNOW);
-        }
-      }
-    }
-    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) set(tx + dx, 3, tz + dz, col);
-    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(tx + dx, 4, tz + dz, col);
-    set(tx, 5, tz, BLOCK.GOLD);
-    set(tx, 0, tz - 2, BLOCK.AIR); set(tx, 1, tz - 2, BLOCK.AIR); // doorway
-  };
-  tent(6, -14, BLOCK.WOOL_RED);
-  tent(-6, -14, BLOCK.WOOL_BLUE);
-
-  // parkour: floating steps climbing to a golden podium (east side)
-  const steps = [
-    [12, 1, 2], [14, 2, 4], [16, 3, 6], [14, 4, 8], [12, 5, 10],
-    [10, 6, 12], [12, 7, 14], [14, 8, 16], [16, 9, 18],
-  ];
-  for (const [sx, sy, sz2] of steps) set(sx, sy, sz2, BLOCK.SLAB_STONE);
-  for (let dx = 15; dx <= 17; dx++) for (let dz = 19; dz <= 21; dz++) set(dx, 9, dz, BLOCK.GOLD); // podium
-  set(16, 10, 20, BLOCK.WOOL_YELLOW); // victory beacon
-
-  // race track posts: start (green) near the entrance, finish (checkered) north
-  for (let y = 0; y < 4; y++) set(-16, y, -18, BLOCK.LOG);
-  set(-16, 4, -18, BLOCK.WOOL_GREEN);
-  for (let y = 0; y < 4; y++) set(-16, y, 20, BLOCK.LOG);
-  set(-16, 4, 20, BLOCK.WOOL_BLACK); set(-16, 5, 20, BLOCK.SNOW);
-}
 
 function buildPyramid(set) { // grande pyramide de grès du désert
   const B = 11;
@@ -789,7 +694,7 @@ const LANDMARKS = [
   { name: 'Base spatiale', x: ESPACE.x, z: ESPACE.z, box: 64, build: buildEspace },
   { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z, box: 46, build: buildVille },
   { name: 'Circuit de F1', x: CIRCUIT.x, z: CIRCUIT.z, box: 80, build: buildCircuit },
-  { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: 26, build: buildFunPark },
+  { name: "Parc d'attractions", x: PARK.x, z: PARK.z, box: PARC_ATTRACTIONS.r, build: buildParc },
   { name: 'Pyramides', x: DESERT.x, z: DESERT.z, box: 22, build: buildPyramid },
   { name: 'Quartier des enfants', x: 26, z: -14, box: 16, build: buildCottages },
   { name: 'Musée', x: -34, z: 40, box: 10, build: buildMuseum },
@@ -893,9 +798,13 @@ export class World {
     }
 
     // the amusement park sits on its own flat esplanade
+    // Le raccord au terrain naturel se fait AU-DELÀ du parc, pas dedans : avec
+    // un fondu de quatorze blocs pris sur le parc lui-même, sa lisière restait
+    // en pente et un étang naturel remontait par le sud-ouest, au milieu des
+    // allées. L'esplanade est plate jusqu'au monorail, qui en marque le bord.
     const pd = Math.hypot(x - PARK.x, z - PARK.z);
-    if (pd < PARK.r) {
-      const m = Math.min(1, (PARK.r - pd) / 14);
+    if (pd < PARK.r + 10) {
+      const m = Math.min(1, (PARK.r + 10 - pd) / 12);
       h = h * (1 - m) + 33 * m;
     }
 

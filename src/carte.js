@@ -20,6 +20,7 @@ import {
 } from './world.js';
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
 import { couleurCarteParis, lieuxDeParis } from './paris.js';
+import { couleurCarteParc, lieuxDuParc } from './parc.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
@@ -248,6 +249,10 @@ export class Carte {
       const c = couleurCarteParis(wx, wz);
       if (c) return c;
     }
+    {
+      const c = couleurCarteParc(wx, wz);
+      if (c) return c;
+    }
     if (ville) {
       // La trame des rues, telle que le générateur la pose. On ne la dessine
       // que d'assez près : échantillonnée de loin, elle produirait un moiré.
@@ -440,6 +445,7 @@ export class Carte {
       // la Bastille, le Luxembourg, Montmartre. Un plan de Paris se lit par
       // ses places, comme New York par ses quartiers.
       ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 0.7 })),
+      ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui
