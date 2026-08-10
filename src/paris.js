@@ -18,6 +18,14 @@
 // Ce qui n'a pas bougé : le centre de la ville, son rayon, l'anneau du métro,
 // la caserne et le commissariat. Les mondes déjà sauvegardés y retrouvent
 // leurs repères.
+//
+// Restait le tissu. Un plan juste posé sur une prairie n'est pas une ville :
+// entre les percées, Paris n'avait littéralement aucun immeuble ordinaire — la
+// trame générique en pose un par lot de douze blocs, mais elle écarte tout lot
+// voisin d'un repère, et le repère « Caserne & Commissariat » couvre Paris
+// entière. Le pâté haussmannien n'a donc jamais été bâti une seule fois.
+// Paris se construit maintenant colonne par colonne, comme les quatre autres
+// villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
@@ -34,6 +42,7 @@ const BLANC = uni(27);
 const VERT_DE_GRIS = CITY_BLOCK.COPPER;
 const NOIR = uni(25);
 const VERRE = BLOCK.GLASS;
+const COUR = BLOCK.COBBLE;       // les pavés du fond des cours
 
 export const PARIS = { x: -240, z: 200, r: 55 };
 
@@ -155,27 +164,27 @@ export const LIEUX = [
   L('Notre-Dame', 0, 0),
   L("Hôtel de Ville", 0.2, -0.35, { discret: true, rive: 'd', r: 2.5, sol: PAVE }),
   L('Châtelet', -0.2, -0.45, { discret: true, rive: 'd', r: 2, sol: PAVE }),
-  L('Louvre', -1.6, -0.6, { rive: 'd', r: 3, sol: PAVE }),
+  L('Louvre', -1.6, -0.6, { rive: 'd', r: 3, sol: PAVE, socle: [5, 5] }),
   L('Tuileries', -2.3, -0.75, { rive: 'd', ru: 5, rv: 2.5, jardin: true }),
   L('Concorde', -3.2, -0.9, { r: 3.5, sol: PAVE }),
   L('Madeleine', -2.9, -1.4, { discret: true, r: 2, sol: PAVE }),
-  L('Opéra', -2.2, -1.7, { r: 2.5, sol: PAVE }),
-  L('Arc de Triomphe', -5.4, -1.6, { r: 4.5, sol: PAVE }),
+  L('Opéra', -2.2, -1.7, { r: 2.5, sol: PAVE, socle: [7, 6] }),
+  L('Arc de Triomphe', -5.4, -1.6, { r: 4.5, sol: PAVE, socle: [5, 3] }),
   L('Trocadéro', -4.7, -0.6, { rive: 'd', r: 3, sol: PAVE }),
-  L('Tour Eiffel', -4.4, 0.5, { rive: 'g', r: 2.5, sol: PAVE }),
+  L('Tour Eiffel', -4.4, 0.5, { rive: 'g', r: 2.5, sol: PAVE, socle: [6, 6] }),
   L('Champ-de-Mars', -4.35, 0.95, { rive: 'g', ru: 2.5, rv: 4, jardin: true }),
-  L('Invalides', -3.3, 0.6, { rive: 'g', ru: 2.5, rv: 3.5, jardin: true }),
-  L('Montparnasse', -1.7, 1.9, { r: 2.5, sol: PAVE }),
+  L('Invalides', -3.3, 0.6, { rive: 'g', ru: 2.5, rv: 3.5, jardin: true, socle: [10, 9] }),
+  L('Montparnasse', -1.7, 1.9, { r: 2.5, sol: PAVE, socle: [3, 2] }),
   L('Luxembourg', -0.6, 1.1, { rive: 'g', ru: 4, rv: 3, jardin: true }),
-  L('Panthéon', 0.1, 0.9, { rive: 'g', r: 2.5, sol: PAVE }),
-  L('Bastille', 1.5, -0.2, { rive: 'd', r: 3, sol: PAVE }),
+  L('Panthéon', 0.1, 0.9, { rive: 'g', r: 2.5, sol: PAVE, socle: [6, 7] }),
+  L('Bastille', 1.5, -0.2, { rive: 'd', r: 3, sol: PAVE, socle: [2, 2] }),
   L('Place des Vosges', 0.9, -0.3, { discret: true, rive: 'd', ru: 2, rv: 2, jardin: true }),
   L('République', 0.9, -1.5, { r: 3, sol: PAVE }),
   L('Nation', 3.0, 0.5, { rive: 'd', r: 3, sol: PAVE }),
   L('Père-Lachaise', 3.3, -0.6, { ru: 4, rv: 4, jardin: true }),
   L('Buttes-Chaumont', 2.8, -2.8, { ru: 4, rv: 3.5, jardin: true }),
-  L('Sacré-Cœur', -1.6, -3.5, { r: 2.5, sol: PAVE }),
-  L('Moulin Rouge', -2.1, -3.1, { r: 1.5, sol: PAVE }),
+  L('Sacré-Cœur', -1.6, -3.5, { r: 2.5, sol: PAVE, socle: [8, 15] }),
+  L('Moulin Rouge', -2.1, -3.1, { r: 1.5, sol: PAVE, socle: [4, 4] }),
   L('Gare du Nord', -0.5, -2.4, { discret: true, r: 2, sol: PAVE }),
   L('Gare de Lyon', 2.0, 0.0, { discret: true, rive: 'd', r: 2, sol: PAVE }),
   L('Bois de Boulogne', -7.0, -0.2, { rive: 'd', ru: 7, rv: 8, jardin: true }),
@@ -183,6 +192,14 @@ export const LIEUX = [
 ];
 
 const lieu = (nom) => LIEUX.find((p) => p.nom === nom);
+
+// Les trois sous-listes que `solParis` consulte à chaque colonne. Elles sont
+// préparées une fois : la carte appelle `solParis` une fois par pixel, et
+// parcourir vingt-huit lieux trois fois par pixel se payait comptant — le fond
+// de carte est passé de 95 à 139 ms, et un geste à deux doigts arrivé pendant
+// ce temps-là n'était plus lu comme un geste.
+const PLACES = LIEUX.filter((p) => p.jardin || p.r);
+const SOCLES = LIEUX.filter((p) => p.socle);
 export const ETOILE = lieu('Arc de Triomphe');
 export const CONCORDE = lieu('Concorde');
 
@@ -234,6 +251,112 @@ const BANDES = rangerVoies(VOIES);
 // seule chose qui compte pour savoir où l'on traverse.
 const PONTS = [-28, -22, -19, -10, 3, 11, 17, 22, 30];
 
+// --- le tissu : les îlots, les cours et le gabarit -------------------------------
+//
+// Le fleuve, les places et les percées étaient au bon endroit ; entre elles, la
+// ville restait un lotissement — des immeubles carrés isolés, posés tous les
+// douze blocs sur une grille unique, avec du vide autour de chacun. Or de près,
+// un plan de Paris c'est exactement le contraire :
+//
+//   · des rues qui ne sont pas parallèles, parce qu'elles sont bien plus
+//     vieilles que la règle et le compas ;
+//   · des immeubles mitoyens, joints les uns aux autres, qui font le mur
+//     continu d'une rue au lieu de pavillons entourés de vide ;
+//   · au milieu de chaque îlot, une cour ;
+//   · aux carrefours, des pans coupés ;
+//   · et par-dessus tout une ligne de corniche : la hauteur est celle de
+//     l'ÎLOT, pas de la maison. C'est de là que vient le fameux ciel de Paris,
+//     ces toits qui s'alignent sur des kilomètres, seuls les monuments
+//     dépassant.
+//
+// Chaque quartier a donc sa trame — son angle, son pas — et son *désordre* :
+// l'amplitude du gauchissement appliqué à sa grille. À zéro, c'est l'ouest
+// d'Haussmann tiré au cordeau. À 1,7, ce sont les ruelles de Montmartre. C'est
+// ce seul nombre qui sépare la ville planifiée de la ville héritée, et l'écart
+// entre les deux est ce qu'on lit d'abord sur un plan de Paris.
+//
+// `cour` est la part de l'îlot laissée ouverte en son milieu. C'est une part et
+// non une profondeur en blocs : à profondeur bâtie fixe, élargir un îlot
+// n'élargissait que sa cour, et la ville perdait en densité tout ce qu'elle
+// gagnait en grandeur. À zéro — le Marais, le Quartier latin, Montmartre — les
+// îlots sont pleins, ce qui est juste : on n'y perçait pas de cour, on y
+// bâtissait jusqu'au fond. À 0,32 on obtient le puits de lumière de l'immeuble
+// haussmannien ; à 0,38, la cour du faubourg Saint-Germain, où les hôtels sont
+// « entre cour et jardin ».
+
+// Un quartier, à son écart réel à Notre-Dame. `rive` le repousse hors du lit du
+// fleuve, exactement comme pour un lieu, et pour la même raison : la Seine est
+// dessinée trois fois trop large, et le Marais — trois cents mètres au nord de
+// Notre-Dame — se retrouvait au milieu de l'eau. Sans cette correction, les
+// quartiers hérités n'existaient tout simplement pas : le vieux Paris était
+// sous la Seine, et il ne restait à voir que l'ouest d'Haussmann.
+const Q = (nom, dx, dz, r, t) => {
+  const [u, v0] = de(dx, dz);
+  let v = v0;
+  if (t.rive) {
+    const bord = largeurSeine(u) + 4;
+    v = t.rive === 'd'
+      ? Math.min(v, Math.round(vSeine(u) - bord))
+      : Math.max(v, Math.round(vSeine(u) + bord));
+  }
+  return { nom, u, v, r, r2: r * r, ...t };
+};
+
+const QUARTIERS = [
+  // le tissu hérité : ruelles tordues, îlots minuscules, pas de cour
+  Q('Marais', 0.9, -0.35, 8, { rive: 'd', ang: 0.30, pas: 4.4, cour: 0, etages: 5, desordre: 1.2 }),
+  Q('Quartier latin', 0.15, 0.85, 8, { rive: 'g', ang: -0.24, pas: 4.2, cour: 0, etages: 5, desordre: 1.4 }),
+  Q('Montmartre', -1.6, -3.4, 7, { ang: 0.5, pas: 3.8, cour: 0, etages: 3, desordre: 1.7 }),
+  Q('Belleville', 2.7, -1.6, 9, { rive: 'd', ang: -0.38, pas: 5.5, cour: 0, etages: 4, desordre: 1.3 }),
+  Q('Faubourg Saint-Antoine', 2.3, 0.25, 8, { rive: 'd', ang: 0.12, pas: 6.0, cour: 0.15, etages: 5, desordre: 0.8 }),
+  // et le tissu voulu : de grands îlots réguliers, chacun sa cour
+  Q('Saint-Germain', -1.7, 0.8, 8, { rive: 'g', ang: 0.06, pas: 8.5, cour: 0.38, etages: 5, desordre: 0.35 }),
+  Q('Monceau', -3.2, -2.2, 9, { ang: -0.2, pas: 9.0, cour: 0.32, etages: 6, desordre: 0.1 }),
+  Q('Étoile', -5.3, -1.4, 11, { ang: 0, pas: 9.5, cour: 0.32, etages: 6, desordre: 0 }),
+  Q('Passy', -6.2, 0.35, 9, { ang: 0.33, pas: 9.0, cour: 0.32, etages: 6, desordre: 0.12 }),
+];
+
+// Partout ailleurs : la ville d'Haussmann ordinaire, un peu moins réglée que
+// l'ouest, un peu moins tordue que le Marais.
+const HAUSSMANN = { nom: 'Haussmann', ang: 0.09, pas: 8.5, cour: 0.3, etages: 6, desordre: 0.5 };
+
+const CHAUSSEE = 0.55;   // demi-largeur de la chaussée : une rue d'un bloc
+const FACADE = 1.05;     // la ligne des façades, un trottoir plus loin
+
+function trameDeParis(u, v) {
+  let q = HAUSSMANN, meilleur = Infinity;
+  for (const c of QUARTIERS) {
+    const du = u - c.u, dv = v - c.v, d = du * du + dv * dv;
+    if (d < c.r2 && d < meilleur) { meilleur = d; q = c; }
+  }
+  return q;
+}
+
+// La maille du quartier : on tourne dans son angle, puis on gauchit avec deux
+// ondes de basse fréquence. Une grille droite gauchie, c'est une ville qui a
+// poussé toute seule — et cela ne coûte que quatre sinus par colonne.
+function formeParis(u, v) {
+  const t = trameDeParis(u, v);
+  const c = Math.cos(t.ang), s = Math.sin(t.ang);
+  let p = u * c - v * s, q = u * s + v * c;
+  const d = t.desordre;
+  if (d) {
+    p += Math.sin(q * 0.23 + 1.7) * d + Math.sin(q * 0.081 + 0.3) * d * 1.7;
+    q += Math.sin(p * 0.19 + 0.9) * d + Math.cos(p * 0.063) * d * 1.7;
+  }
+  const ai = Math.round(p / t.pas), bi = Math.round(q / t.pas);
+  const ep = Math.abs(p - ai * t.pas), eq = Math.abs(q - bi * t.pas);
+  // le fond de l'îlot : au-delà commence la cour
+  const fond = FACADE + (t.pas / 2 - FACADE) * (1 - t.cour);
+  return { t, ai, bi, ep, eq, fond, d: Math.min(ep, eq) };
+}
+
+function tirageParis(a, b, sel) {
+  let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(sel, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
 // --- le sol ------------------------------------------------------------------------
 
 // Ce qu'il faut poser au sol, ou null si la trame ordinaire de la ville doit
@@ -249,11 +372,17 @@ export function solParis(x, z) {
     for (const pu of PONTS) if (Math.abs(u - pu) <= 1) return PAVE;
     return BLOCK.WATER;
   }
-  if (d < 2) return QUAI;                    // les quais de pierre
+  // Les quais. En bas, la pierre au ras de l'eau ; au-dessus, la voie qui longe
+  // le fleuve d'un bout à l'autre de la ville. Cette bande haute restait en
+  // herbe : on ne bâtit pas à quatre blocs de la Seine — c'est la règle qui
+  // empêche un immeuble d'avoir les pieds dans l'eau — mais rien ne venait
+  // remplir ce qu'elle interdisait, et Paris avait des berges en prairie.
+  if (d < 2) return QUAI;
+  if (d < 4) return d < 3 ? PAVE : BITUME;
 
   // Les places et les jardins passent avant les rues : une avenue ne traverse
   // pas le Luxembourg.
-  for (const p of LIEUX) {
+  for (const p of PLACES) {
     if (p.jardin) {
       if (((u - p.u) / p.ru) ** 2 + ((v - p.v) / p.rv) ** 2 < 1) {
         // une allée en croix, et des arbres en bordure
@@ -285,14 +414,141 @@ export function solParis(x, z) {
     if (dv <= 3) return dv > 2 ? ARBRE : PAVE;
   }
 
-  return solDesVoies(BANDES, u, v, BITUME, PAVE);
+  const percee = solDesVoies(BANDES, u, v, BITUME, PAVE);
+  if (percee !== null) return percee;
+
+  // Le parvis et son square. Un monument occupe jusqu'à vingt blocs, la place
+  // déclarée avec lui n'en faisait que deux ou trois : tout autour, l'herbe
+  // repoussait au pied de la Tour Eiffel et sur le parvis du Sacré-Cœur. Le
+  // socle est donc dallé en son cœur, et planté sur son pourtour — le parvis,
+  // puis le square. C'est ainsi que sont posés les monuments de Paris : jamais
+  // à même la rue, jamais au milieu d'un pré.
+  const socle = socleDe(u, v);
+  if (socle !== null) {
+    if (socle < 0.55) return PAVE;
+    return ((u * 3 + v * 5) & 5) === 0 ? ARBRE : BLOCK.GRASS;
+  }
+
+  // Et enfin la trame ordinaire du quartier : ses rues, ses pans coupés et le
+  // cœur de ses îlots.
+  const f = formeParis(u, v);
+  if (f.d < CHAUSSEE) return BITUME;
+  if (f.d < FACADE) return PAVE;
+
+  // Le pan coupé. À l'angle de deux rues, l'immeuble est tranché en biais et le
+  // trottoir s'élargit d'autant : c'est la signature des carrefours parisiens,
+  // et la raison pour laquelle un croisement à Paris n'est jamais un angle droit
+  // franc. Il n'y en a pas dans les quartiers médiévaux, qui l'ignoraient.
+  if (f.t.desordre < 1 && f.ep + f.eq < FACADE * 2 + 0.9) return PAVE;
+
+  // La cour intérieure : pavée, avec parfois un arbre. Elle n'existe que si
+  // l'îlot est plus large que deux fois son bâti — ailleurs, il est plein.
+  if (f.d >= f.fond) {
+    return ((u * 5 + v * 3) & 7) === 0 ? ARBRE : COUR;
+  }
+  return null;
 }
 
-// Un lot est-il bâtissable ? Non sur l'eau, les quais, les percées et les
-// places — sinon un immeuble se retrouverait les pieds dans la Seine.
+// Un lot est-il bâtissable ? Non sur l'eau, les quais, les percées, les places
+// et les cours — sinon un immeuble se retrouverait les pieds dans la Seine, ou
+// bouché la cour qu'il est censé entourer.
 export function lotParisLibre(x, z) {
+  if (Math.hypot(x - PARIS.x, z - PARIS.z) > PARIS.r) return false;
   if (versSeine(x, z) < 4) return false;
+  if (surUnSocle(x - PARIS.x, z - PARIS.z)) return false;
   return solParis(x, z) === null;
+}
+
+// Le socle d'un monument : son emprise au sol, relevée sur son bâtisseur et non
+// estimée au jugé. Deux choses en dépendent, d'où le nombre unique : rien
+// d'ordinaire ne se bâtit dessus — sans quoi la ville venait pousser dans le
+// pied de la Tour Eiffel — et `world.js` en fait la boîte du repère, celle qui
+// dit aux morceaux de monde voisins de le dessiner. Recopiés séparément, les
+// deux avaient déjà divergé : l'escalier du Sacré-Cœur descend à quinze blocs
+// et sa boîte en annonçait douze — il était donc tranché de loin.
+const V_CITE = zCite() - PARIS.z;
+
+function socleDe(u, v) {
+  for (const p of SOCLES) {
+    const du = Math.abs(u - p.u) / (p.socle[0] + 1), dv = Math.abs(v - p.v) / (p.socle[1] + 1);
+    if (du <= 1 && dv <= 1) return du > dv ? du : dv;
+  }
+  // Notre-Dame, elle, se place sur l'île et non à son adresse de la liste.
+  const du = Math.abs(u - CITE.u) / 8, dv = Math.abs(v - V_CITE) / 4;
+  const dn = du > dv ? du : dv;
+  return dn <= 1 ? dn : null;
+}
+const surUnSocle = (u, v) => socleDe(u, v) !== null;
+
+// --- l'immeuble haussmannien ------------------------------------------------------
+//
+// Une colonne, une décision — comme à Manhattan, à San Francisco, à Nice et à
+// Lille. Ce qu'elle doit rendre : le rez-de-chaussée commerçant plus ouvert que
+// le reste, les travées de fenêtres alignées à la verticale, les balcons
+// continus du deuxième et du dernier étage, la corniche de pierre blanche, et
+// le toit de zinc à deux pentes percé de lucarnes, avec ses souches de cheminée
+// en terre cuite.
+
+export function batirColonneParis(x, z, poser) {
+  const u = x - PARIS.x, v = z - PARIS.z;
+  const f = formeParis(u, v);
+  const t = f.t;
+  const r = tirageParis(f.ai, f.bi, 611);
+
+  // Le gabarit. La hauteur est tirée une fois par ÎLOT — tous les immeubles
+  // d'un même pâté montent donc exactement à la même corniche, et c'est
+  // précisément ce qui fait le ciel de Paris. Un tirage par colonne aurait
+  // donné une dentelure : joli nulle part, faux ici.
+  const bh = t.etages + (r > 0.72 ? 1 : 0);
+
+  const oE = lotParisLibre(x + 1, z), oO = lotParisLibre(x - 1, z);
+  const oS = lotParisLibre(x, z + 1), oN = lotParisLibre(x, z - 1);
+  const dedans = oE && oO && oS && oN;
+  // La travée : on compte le long de la façade, pas en travers, pour que les
+  // fenêtres d'un même immeuble s'alignent à la verticale.
+  const face = (!oE || !oO) ? v : u;
+
+  if (dedans) {
+    // Le cœur de l'îlot bâti : un plancher, et rien de plus. Les immeubles sont
+    // des coques, comme partout ailleurs dans le jeu.
+    poser(1, BLOCK.PLANK);
+  } else {
+    for (let y = 1; y <= bh; y++) {
+      let id;
+      if (y === 1) {
+        // le rez-de-chaussée commerçant : de grandes vitrines entre des piles
+        id = (face & 3) === 0 ? PIERRE : VERRE;
+      } else if (y === 2) {
+        // le bandeau de pierre qui court au-dessus des boutiques
+        id = BLANC;
+      } else if (y === 3 || y === bh) {
+        // les deux étages à balcon filant : l'étage noble et le dernier
+        id = (face & 1) === 1 ? VERRE : NOIR;
+      } else {
+        id = (face & 1) === 1 ? VERRE : PIERRE;
+      }
+      poser(y, id);
+    }
+    poser(bh + 1, BLANC);       // la corniche
+  }
+
+  // Le toit. Il monte en marchant vers l'intérieur de l'îlot : la colonne de
+  // façade ne porte que le premier rang de zinc, celle d'un pas en arrière deux,
+  // et ainsi de suite — c'est le brisis du comble à la Mansart.
+  const prof = Math.max(0, Math.min(2, Math.round(f.d - FACADE)));
+  const faite = bh + 1 + (dedans ? 3 : 1 + prof);
+  for (let y = bh + 2; y <= faite; y++) poser(y, ZINC);
+
+  if (!dedans) {
+    // Les lucarnes : une fenêtre de zinc sur trois travées, au premier rang du
+    // comble. C'est ce qu'on voit depuis la rue quand on lève la tête.
+    if ((face % 3) === 0) poser(bh + 2, VERRE);
+    // Et les souches de cheminée, en terre cuite, une par immeuble.
+    if (tirageParis(f.ai, f.bi, 612) > 0.45 && (face & 7) === 3) {
+      poser(faite + 1, BLOCK.TERRACOTTA);
+      poser(faite + 2, BLOCK.TERRACOTTA);
+    }
+  }
 }
 
 // --- ce que la carte doit peindre ---------------------------------------------------
@@ -301,6 +557,8 @@ const VERT_JARDIN = [92, 152, 74];
 const VERT_PELOUSE = [116, 176, 92];
 const GRIS_RUE = [64, 66, 72];
 const BEIGE_PLACE = [212, 204, 188];
+const GRIS_COUR = [128, 124, 118];
+const CREME_TOIT = [186, 186, 182];   // le zinc et la pierre, vus du ciel
 
 // Paris comme Manhattan : ses places, ses jardins et ses percées se calculent,
 // la carte peut donc les montrer avant qu'on y ait mis les pieds.
@@ -308,10 +566,14 @@ export function couleurCarteParis(x, z) {
   const u = x - PARIS.x, v = z - PARIS.z;
   if (Math.hypot(u, v) > PARIS.r) return null;
   const sol = solParis(x, z);
-  if (sol === null) return null;
+  // Le bâti. Sans lui, tout l'intérieur des îlots restait vert : Paris
+  // apparaissait comme une prairie traversée de rues, alors que c'est la ville
+  // la plus dense d'Europe. La couleur est celle des toits de zinc.
+  if (sol === null) return CREME_TOIT;
   if (sol === BLOCK.WATER) return null;      // au fleuve de décider
   if (sol === BLOCK.GRASS) return VERT_PELOUSE;
   if (sol === ARBRE) return VERT_JARDIN;
+  if (sol === COUR) return GRIS_COUR;
   if (sol === PAVE || sol === QUAI) return BEIGE_PLACE;
   return GRIS_RUE;
 }

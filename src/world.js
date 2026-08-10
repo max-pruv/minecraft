@@ -23,7 +23,7 @@ import {
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
 } from './lille.js';
 import {
-  PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
+  PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
 } from './paris.js';
@@ -658,15 +658,22 @@ const LANDMARKS = [
   // Tour Eiffel se dressait sur la rive droite et le Louvre sur la rive
   // gauche — les deux ont changé de rive, et huit monuments manquants sont
   // arrivés avec eux.
+  // La taille de la boîte n'est plus recopiée ici : c'est le `socle` déclaré
+  // avec le lieu dans paris.js. Le même nombre interdit le bâti ordinaire
+  // au pied du monument et dit aux morceaux de monde voisins de le dessiner —
+  // ils ne peuvent donc plus se contredire.
   ...[
-    ['Tour Eiffel', 8, buildEiffelTower], ['Arc de Triomphe', 7, buildArch],
-    ['Louvre', 7, buildGlassPyramid], ['Panthéon', 8, buildPantheon],
-    ['Invalides', 11, buildInvalides], ['Opéra', 8, buildOpera],
-    ['Montparnasse', 4, buildMontparnasse], ['Bastille', 3, buildColonneBastille],
-    ['Moulin Rouge', 5, buildMoulinRouge], ['Sacré-Cœur', 12, buildSacreCoeur],
-  ].map(([nom, box, build]) => {
+    ['Tour Eiffel', buildEiffelTower], ['Arc de Triomphe', buildArch],
+    ['Louvre', buildGlassPyramid], ['Panthéon', buildPantheon],
+    ['Invalides', buildInvalides], ['Opéra', buildOpera],
+    ['Montparnasse', buildMontparnasse], ['Bastille', buildColonneBastille],
+    ['Moulin Rouge', buildMoulinRouge], ['Sacré-Cœur', buildSacreCoeur],
+  ].map(([nom, build]) => {
     const p = LIEUX.find((q) => q.nom === nom);
-    return { name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom, x: PARIS.x + p.u, z: PARIS.z + p.v, box, build };
+    return {
+      name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom,
+      x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
+    };
   }),
   { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 9, build: buildNotreDame },
   // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
@@ -1104,11 +1111,21 @@ export class World {
           continue;   // la trame générique ne s'applique pas ici
         }
 
-        // Paris : le fleuve, ses quais, ses ponts, l'Étoile et les
-        // Champs-Élysées passent avant la trame ordinaire des rues.
+        // Paris : le fleuve, ses quais, ses ponts, l'Étoile, les
+        // Champs-Élysées, puis la trame de chaque quartier — ses rues tordues,
+        // ses pans coupés, ses cours — et enfin l'immeuble lui-même. La trame
+        // générique ne s'applique pas ici : ses lots carrés de douze blocs
+        // faisaient un lotissement, pas une ville.
         if (city && city.key === 'paris') {
           const sp = solParis(wx, wz);
-          if (sp !== null) { data[World.index(x, h, z)] = sp; continue; }
+          if (sp !== null) data[World.index(x, h, z)] = sp;
+          else if (lotParisLibre(wx, wz)) {
+            batirColonneParis(wx, wz, (dy, id) => {
+              const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+          }
+          continue;
         }
 
         // San Francisco : ses deux quadrillages qui ne sont pas parallèles,
@@ -1263,8 +1280,8 @@ export class World {
     };
 
     for (const city of CITIES) {
-      // Quatre villes se bâtissent colonne par colonne, cf. leurs modules.
-      if (['ny', 'sf', 'nice', 'lille'].includes(city.key)) continue;
+      // Cinq villes se bâtissent colonne par colonne, cf. leurs modules.
+      if (['ny', 'sf', 'nice', 'lille', 'paris'].includes(city.key)) continue;
       const CELL = city.cell;
       const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
       const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);

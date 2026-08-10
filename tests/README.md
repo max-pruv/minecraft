@@ -63,6 +63,15 @@ l'hôte lui relayait — mais pas l'hôte, dont la connexion restait « en cours
 présentation » pour toujours. La présentation se relance maintenant d'elle-même
 au bout de trois secondes.
 
+Le geste à deux doigts, lui, dépend du temps de calcul disponible. En rendant
+le tissu de Paris, le fond de carte est passé de 95 à 139 ms ; les contacts
+envoyés pendant ce temps-là n'étaient plus lus comme un geste mais comme des
+appuis, et le joueur se retrouvait téléporté. Le scénario du zoom l'a vu tout
+de suite, deux fois sur deux. La réponse n'était pas d'attendre plus longtemps
+mais de rendre `solParis` moins cher — la carte l'appelle une fois par pixel, et
+il balayait vingt-huit lieux trois fois. Un test qui échoue parce que le jeu est
+devenu lent dit quelque chose de vrai sur le jeu.
+
 Et le banc referme les pages dont il n'a plus besoin. Chacune dessine un monde
 en trois dimensions à plein régime ; à quatre parties vivantes sur quatre
 cœurs, les minuteurs du navigateur partent en retard et ce sont les scénarios
@@ -119,6 +128,9 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
 | les lieux de Paris sont sur la carte | l'Opéra, le Panthéon, les Invalides, la Bastille et le Luxembourg n'existaient pas |
 | chaque monument de Paris est sur sa rive et au sec | la Tour Eiffel se dressait rive droite et le Louvre rive gauche |
+| Paris est bâtie de pierre de taille et de zinc | elle ne l'était pas du tout : la trame générique écarte tout lot voisin d'un repère, et le repère « Caserne & Commissariat » couvre Paris entière — le pâté haussmannien n'a jamais été bâti une seule fois. Mesuré 236 colonnes de pierre ou de zinc avant, 1036 après |
+| ses îlots ont une cour | il n'y avait pas d'îlots : des immeubles carrés isolés, du vide entre eux, aucune cour — zéro pavé de cour avant, 77 après |
+| et on ne la traverse plus dans l'herbe | 762 colonnes d'herbe nue au milieu de la ville, sur 5025 ; il en reste 218, et ce sont les squares des monuments |
 | le parc a du relief, un lac et des attractions | le parc tenait dans cinquante blocs — une roue, un carrousel, un anneau de rails — et son allée dallée était posée un bloc trop bas, donc enterrée |
 | et ses villages sont des destinations | on arrivait au parc par son seul nom, sans savoir où aller ensuite |
 | San Francisco a ses collines et sa presqu'île | un disque de maisons pastel posé sur un bruit de terrain : ni côte, ni relief, ni plan — mesuré 13 buttes distinctes et 903 points en mer contre 1918 à terre |
