@@ -98,6 +98,8 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
 | ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
 | on ne peut ni zoomer à l'infini ni sortir du monde | — |
+| les quartiers du bas de l'île ont la place d'exister | de Battery à la 14e Rue il y avait quinze blocs, moins qu'un pâté de Midtown : TriBeCa, SoHo, Chinatown, le Village et Wall Street s'y superposaient |
+| la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
 
 ## Si Chromium n'est pas trouvé
 
