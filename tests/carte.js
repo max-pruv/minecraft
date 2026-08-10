@@ -414,6 +414,55 @@ const position = (p) => p.evaluate(() => ({
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
     await dormir(300);
 
+    // --- San Francisco : les collines et la presqu'île ------------------------
+    //
+    // « Il n'y a pas les collines, il n'y a pas la cartographie exacte » : la
+    // ville était un disque de maisons pastel posé sur un bruit de terrain,
+    // sans côte et sans relief. Or c'est de ses collines et de sa presqu'île
+    // qu'on la reconnaît — et de Market Street, la couture entre ses deux
+    // quadrillages qui ne sont pas parallèles.
+    const SF = { x: 0, z: -320 };
+    const releveSF = await tab.evaluate(({ p }) => {
+      const w = window.__game.world;
+      // La plaine d'une ville n'est pas un défaut — le Sunset et SoMa sont
+      // plats pour de vrai. Ce qu'on compte, ce sont les BUTTES : les endroits
+      // qui montent d'au moins dix blocs au-dessus du niveau de la ville, et
+      // combien il y en a de distincts. Une ville sans collines n'en a aucune.
+      let sommet = 0, mer = 0, terre = 0, hautes = 0;
+      const parRang = new Set();
+      for (let u = -60; u <= 60; u += 2) {
+        for (let v = -60; v <= 60; v += 2) {
+          if (Math.hypot(u, v) > 60) continue;
+          const h = w.terrainHeight(p.x + u, p.z + v);
+          if (h <= 30) { mer++; continue; }
+          terre++;
+          sommet = Math.max(sommet, h);
+          if (h >= 43) { hautes++; parRang.add(`${Math.floor(u / 10)},${Math.floor(v / 10)}`); }
+        }
+      }
+      return { sommet, mer, terre, collines: parRang.size, hautes };
+    }, { p: SF });
+    verifier('San Francisco a ses collines et sa presqu\'île',
+      releveSF.sommet >= 55 && releveSF.collines >= 6 && releveSF.mer > releveSF.terre * 0.4,
+      `sommet ${releveSF.sommet} · ${releveSF.collines} buttes distinctes `
+      + `(${releveSF.hautes} points à dix blocs au-dessus de la ville) · `
+      + `${releveSF.mer} points en mer pour ${releveSF.terre} à terre`);
+
+    await banc.ouvrirLaCarte(tab);
+    await tab.evaluate(({ p }) => {
+      const c2 = window.__carte;
+      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.3;
+      c2.limiter(); c2.peindre();
+    }, { p: SF });
+    await dormir(600);
+    const vusSF = await lieuxVus(tab);
+    const quartiersSF = ['Twin Peaks', 'Golden Gate Park', 'Mission', 'Castro', 'Chinatown', 'Le Presidio'];
+    const sansQuartier = quartiersSF.filter((n) => !vusSF.includes(n));
+    verifier('et ses quartiers sont des destinations', sansQuartier.length === 0,
+      sansQuartier.length ? `absents : ${sansQuartier.join(', ')}` : `${quartiersSF.length} quartiers`);
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 

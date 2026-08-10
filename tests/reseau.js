@@ -96,7 +96,12 @@ function verifier(nom, ok, detail = '') {
 
     // --- un départ propre disparaît des deux côtés ----------------------------
     await nina.close();
-    await jusqua(async () => (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2);
+    // Quarante secondes, pas vingt-cinq. Une page qui se ferme ne coupe pas
+    // toujours son canal proprement : il reste alors les vingt secondes de
+    // silence tolérées, plus un battement de cœur pour s'en apercevoir. La
+    // limite était posée juste au-dessus de cette somme, et le scénario
+    // échouait une fois sur trois sans que rien ne soit cassé.
+    await jusqua(async () => (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2, 40000);
     verifier('un départ propre nettoie tout le monde',
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),

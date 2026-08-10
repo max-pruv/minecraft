@@ -270,22 +270,6 @@ export class NetSession {
       this.greet(conn);
       this.link('ok');
       if (!fini) { fini = true; done?.(null); }
-      // Le canal est ouvert, les deux « hello » sont partis — et il arrive
-      // qu'un des deux n'arrive jamais. On voyait alors, à trois, un enfant
-      // qui apercevait le troisième joueur (relayé par l'hôte) mais pas
-      // l'hôte lui-même : sa connexion restait « en cours de présentation »
-      // pour toujours, sans erreur ni message. Une relance au bout de trois
-      // secondes suffit, et ne coûte rien quand tout va bien.
-      setTimeout(() => {
-        const c = this.conns.get(conn.peer);
-        if (!this.active || !c || c.pret || !conn.open) return;
-        try {
-          conn.send({
-            t: 'hello', encore: true,
-            name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
-          });
-        } catch { /* le lien est mort, le reste du code s'en occupe */ }
-      }, 3000);
     });
     conn.on('error', () => rate(new Error('Connexion impossible')));
   }
@@ -434,6 +418,31 @@ export class NetSession {
     conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
     conn.send({ t: 'sync', blocks: this.hooks.world.exportEdits() });
     this.startPosLoop();
+
+    // Une présentation se perd dans UN sens seulement, et les deux sens font
+    // des dégâts différents. Quand c'est celle de l'hôte qui manque, l'invité
+    // voit les autres joueurs — l'hôte les lui relaie — mais pas l'hôte
+    // lui-même. Quand c'est celle de l'invité, c'est l'hôte qui ne le compte
+    // pas, et l'arrivant reste invisible pour tout le monde : « seul dans le
+    // monde » alors qu'ils sont deux. Aucune erreur, aucun message, et la
+    // connexion reste « en cours de présentation » pour toujours.
+    //
+    // On relance donc des deux côtés, au même endroit : trois secondes après
+    // s'être présenté, si l'autre ne s'est toujours pas présenté en retour, on
+    // le redemande. Deux fois au plus — au-delà ce n'est plus une présentation
+    // perdue, c'est un lien mort, et le battement de cœur s'en charge.
+    setTimeout(() => {
+      const c = this.conns.get(conn.peer);
+      if (!this.active || !c || c.pret || !conn.open) return;
+      c.relances = (c.relances || 0) + 1;
+      if (c.relances > 2) return;
+      try {
+        conn.send({
+          t: 'hello', encore: true,
+          name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
+        });
+      } catch { /* le lien est mort, le battement de cœur s'en occupe */ }
+    }, 3000);
   }
 
   dropPeer(id) {

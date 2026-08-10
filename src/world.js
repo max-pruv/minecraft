@@ -10,6 +10,11 @@ import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
 import {
+  SF, surTerreSF, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
+  buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
+  buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
+} from './sanfrancisco.js';
+import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
@@ -681,8 +686,22 @@ const LANDMARKS = [
   // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
   { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
   // San Francisco
-  { name: 'Golden Gate', x: 0, z: -373, box: 34, waterBase: true, build: buildSuspensionBridge },
-  { name: 'Phare', x: -38, z: -353, box: 3, waterBase: true, build: buildLighthouse },
+  // San Francisco : le Golden Gate enjambe enfin la passe, à son vrai endroit,
+  // et le Bay Bridge relie le centre à l'est.
+  { name: 'Golden Gate', x: SF.x - 21, z: SF.z - 40, box: 34, waterBase: true, build: buildSuspensionBridge },
+  { name: 'Bay Bridge', x: SF.x + 56, z: SF.z + 1, box: 30, waterBase: true, build: buildSuspensionBridge },
+  { name: 'Phare', x: SF.x - 44, z: SF.z - 30, box: 3, waterBase: true, build: buildLighthouse },
+  ...[
+    buildTransamerica, buildCoit, buildSutro, buildFerryBuilding,
+    buildPaintedLadies, buildPalaisBeauxArts, buildAlcatraz,
+  ].map((build, i) => ({
+    name: MONUMENTS_SF[i].nom,
+    x: SF.x + MONUMENTS_SF[i].u,
+    z: SF.z + MONUMENTS_SF[i].v,
+    box: MONUMENTS_SF[i].box,
+    waterBase: MONUMENTS_SF[i].nom === 'Alcatraz',
+    build,
+  })),
   // Lille
   { name: 'Beffroi de Lille', x: -300, z: -200, box: 5, build: buildBelfry },
   // Countryside
@@ -719,7 +738,9 @@ export const CITIES = [
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
   // par zoneManhattan().
   { key: 'ny', name: 'New York', x: 295, z: -110, r: 152, cell: 12, base: 33, street: 3 },
-  { key: 'sf', name: 'San Francisco', x: 0, z: -320, r: 50, cell: 11, base: 33, street: 3 },
+  // San Francisco n'est pas un disque non plus : c'est une presqu'île, avec
+  // l'océan à l'ouest, la passe au nord et la baie à l'est — cf. src/sanfrancisco.js.
+  { key: 'sf', name: 'San Francisco', x: SF.x, z: SF.z, r: SF.r, cell: 11, base: 33, street: 3 },
   { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
   { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },
 ];
@@ -764,12 +785,11 @@ export class World {
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
-      if (c.key === 'ny') continue;   // Manhattan est une île : cf. plus bas
+      if (c.key === 'ny' || c.key === 'sf') continue;   // deux reliefs à part, cf. plus bas
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
-        const target = c.key === 'sf' ? c.base + hills * 10 : c.base;
-        h = h * (1 - m) + target * m;
+        h = h * (1 - m) + c.base * m;
         break;
       }
     }
@@ -777,6 +797,12 @@ export class World {
     // Paris : la Seine se creuse dans la base plate, et la butte Montmartre s'y
     // relève. Une ville née autour d'un fleuve ne pouvait pas rester une table.
     h = hauteurParis(x, z, h, 34);
+
+    // San Francisco : ses treize collines nommées, chacune à sa hauteur réelle,
+    // et la mer sur trois côtés. L'ancienne version se contentait d'ajouter du
+    // bruit à la base plate — la ville n'avait donc ni collines ni côte, alors
+    // que ce sont exactement les deux choses qui la font reconnaître.
+    h = hauteurSF(x, z, h, 33);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -916,6 +942,7 @@ export class World {
       // Manhattan tient dans ce cercle mais n'en occupe qu'une bande : hors de
       // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
       if (c.key === 'ny' && !surTerre(x, z)) continue;
+      if (c.key === 'sf' && !surTerreSF(x, z)) continue;
       return c;
     }
     return null;
@@ -1055,6 +1082,24 @@ export class World {
           if (sp !== null) { data[World.index(x, h, z)] = sp; continue; }
         }
 
+        // San Francisco : ses deux quadrillages qui ne sont pas parallèles,
+        // Market Street entre les deux, la plage, les quais et les parcs.
+        if (city && city.key === 'sf') {
+          const ss = solSF(wx, wz);
+          if (ss !== null) data[World.index(x, h, z)] = ss;
+          else if (lotSFLibre(wx, wz)) {
+            batirColonneSF(wx, wz, (dy, id) => {
+              const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+          }
+          // La trame générique ne s'applique pas ici : San Francisco a DEUX
+          // quadrillages à elle, qui ne sont pas parallèles. Laisser la trame
+          // ordinaire par-dessus, c'était trois grilles superposées — et plus
+          // aucune des trois lisible.
+          continue;
+        }
+
         // city streets: asphalt with sidewalks, dashed center lines and
         // crosswalks at intersections
         if (city && Math.hypot(wx - city.x, wz - city.z) < city.r - 4 && h > WATER_LEVEL) {
@@ -1170,7 +1215,7 @@ export class World {
     };
 
     for (const city of CITIES) {
-      if (city.key === 'ny') continue;   // Manhattan se bâtit colonne par colonne
+      if (city.key === 'ny' || city.key === 'sf') continue;   // elles se bâtissent colonne par colonne
       const CELL = city.cell;
       const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
       const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);
