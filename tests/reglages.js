@@ -30,16 +30,20 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
 }
 
 (async () => {
-  const PORT_JEU = 8322, PORT_NUAGE = 9322;
+  const PORT_JEU = 8322, PORT_NUAGE = 9322, PORT_PAIRS = 9522;
   const nuage = await servirLeNuage(PORT_NUAGE);
   const jeu = await banc.servirLeJeuPour(PORT_JEU);
+  // Inviter un ami suppose un vrai monde en ligne : le serveur de rendez-vous
+  // du banc en fournit un, local, sans rien devoir à l'extérieur.
+  const pairs = await banc.servirLesPairsPour(PORT_PAIRS);
   const navigateur = await chromium.launch({
     executablePath: banc.trouverChromium(),
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader'],
   });
 
   const adresse = `http://127.0.0.1:${PORT_JEU}/index.html`
-    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2`;
+    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2`
+    + `&peerhost=127.0.0.1:${PORT_PAIRS}`;
 
   async function joueur(prenom) {
     const ctx = await navigateur.newContext({ viewport: { width: 420, height: 760 } });
@@ -361,11 +365,89 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('mais retaper le code le ramène', revenuVoulu.includes('424242'),
       JSON.stringify(revenuVoulu));
 
-    verifier('aucune erreur JavaScript', marlon.erreurs.length === 0,
-      JSON.stringify(marlon.erreurs));
+    // --- inviter un ami qui joue ailleurs ------------------------------------
+    //
+    // Le compteur du monde ne dit que ce qui se passe ICI. Un enfant seul dans
+    // son monde ne pouvait pas savoir que son frère était devant sa tablette,
+    // ni le lui demander autrement qu'en criant dans le couloir. La présence
+    // était pourtant déjà écrite — chaque tablette la pose dans ses réglages —
+    // mais seul l'espace parent la lisait.
+    //
+    // Le parcours est suivi d'un bout à l'autre, sur deux tablettes : Alice
+    // joue de son côté, Marlon ouvre un monde, la voit, l'invite, et elle
+    // arrive. C'est le seul scénario qui prouve quelque chose : chacune des
+    // moitiés prise séparément marchait déjà.
+    const alice = await joueur('Alice');
+    await alice.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById('play-btn').click();
+    });
+    await alice.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    await alice.evaluate(() => window.__game.__pushPresence());
+    const presente = await jusqua(async () => !!((nuage.reglages('Alice') || {}).live));
+    verifier('la tablette d\'Alice dit au serveur qu\'elle est là', presente,
+      JSON.stringify((nuage.reglages('Alice') || {}).live));
+
+    // Marlon ouvre un monde en ligne, comme un enfant le fait : le menu, puis
+    // le bouton, puis « Jouer ».
+    await marlon.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await marlon.evaluate(() => document.getElementById('host-btn').click());
+    await marlon.waitForFunction(
+      () => document.getElementById('room-code').textContent.trim().length >= 4,
+      null, { timeout: 40000 });
+    const codeMarlon = await marlon.evaluate(() =>
+      document.getElementById('room-code').textContent.trim());
+    await marlon.evaluate(() => document.getElementById('online-play-btn').click());
+    await dormir(1500);
+
+    const listeAmis = await marlon.evaluate(async () => {
+      await window.__listerLesAmis();
+      return [...document.querySelectorAll('#pp-amis .pp-row')].map((r) => r.textContent);
+    });
+    verifier('Marlon voit qu\'Alice est connectée ailleurs',
+      listeAmis.some((t) => t.includes('Alice')), JSON.stringify(listeAmis));
+
+    const envoyee = await marlon.evaluate(() => window.__inviter('Alice'));
+    const auServeur = await jusqua(async () =>
+      (nuage.reglages('Alice~invit') || {}).code === codeMarlon);
+    verifier('un bouton suffit à l\'inviter', envoyee && auServeur,
+      JSON.stringify(nuage.reglages('Alice~invit')));
+
+    // Et voici ce qui compte : la tablette d'Alice l'apprend toute seule, sans
+    // qu'elle ait rien à ouvrir ni à rafraîchir.
+    const panneauOuvert = await jusqua(async () => alice.evaluate(() =>
+      getComputedStyle(document.getElementById('invit-panel')).display !== 'none'), 20000);
+    const texte = await alice.evaluate(() =>
+      `${document.getElementById('invit-txt').textContent} ${document.getElementById('invit-code').textContent}`);
+    verifier('la tablette d\'Alice l\'annonce sans rien lui demander',
+      panneauOuvert && texte.includes('Marlon') && texte.includes(codeMarlon), texte);
+
+    await alice.evaluate(() => document.getElementById('invit-rejoindre').click());
+    const arrivee = await jusqua(async () => alice.evaluate(() => {
+      const n = window.__game.net;
+      return !!(n && n.active && n.code);
+    }), 45000);
+    const ouEstElle = await alice.evaluate(() =>
+      (window.__game.net && window.__game.net.code) || 'nulle part');
+    verifier('« Rejoindre » l\'emmène dans le monde de Marlon',
+      arrivee && ouEstElle === codeMarlon, `${ouEstElle} (attendu ${codeMarlon})`);
+
+    // Une invitation ne doit se montrer qu'une fois : la boucle relit le même
+    // document toutes les deux secondes, et sans mémoire de la dernière vue le
+    // panneau se rouvrait sans cesse par-dessus la partie.
+    await alice.evaluate(() => document.getElementById('invit-plus-tard').click());
+    await dormir(5000);
+    const revenue = await alice.evaluate(() =>
+      getComputedStyle(document.getElementById('invit-panel')).display !== 'none');
+    verifier('et elle ne se remontre pas en boucle', !revenue);
+
+    verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
+      JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {
     await navigateur.close();
     jeu.close();
+    pairs.close();
     nuage.fermer();
   }
 

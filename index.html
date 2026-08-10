@@ -399,6 +399,47 @@
       border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 15px;
     }
     .pp-row .pp-emoji { font-size: 20px; }
+    /* Les amis connectés ailleurs : dans un autre monde, ou dans le leur. */
+    #pp-amis-btn {
+      display: none; width: 100%; margin-top: 14px; padding: 11px 12px;
+      border-radius: 10px; border: 2px solid #58b04c; background: #2d6a2d;
+      color: #fff; font-family: inherit; font-size: 15px; font-weight: bold; cursor: pointer;
+    }
+    #pp-amis { text-align: left; }
+    #pp-amis .pp-ou { color: #8894b0; font-size: 12px; }
+    .pp-vide { color: #8894b0; font-size: 13px; padding: 10px 4px; text-align: center; }
+    .pp-inviter {
+      border-radius: 8px; border: 2px solid #58b04c; background: #2d6a2d;
+      color: #fff; font-family: inherit; font-size: 13px; font-weight: bold;
+      padding: 5px 10px; cursor: pointer;
+    }
+    .pp-inviter:disabled { border-color: #4a5570; background: #2a3145; color: #8894b0; cursor: default; }
+    /* L'invitation reçue. Elle passe par-dessus tout le reste : c'est une
+       personne qui appelle, et cela ne se range pas dans un coin d'écran. */
+    #invit-panel {
+      display: none; position: fixed; inset: 0; z-index: 40;
+      align-items: center; justify-content: center; background: rgba(12, 18, 32, 0.88);
+    }
+    #invit-card {
+      width: min(360px, 92vw); background: #1c2438; border: 3px solid #58b04c;
+      border-radius: 16px; padding: 22px; color: #fff; text-align: center;
+    }
+    #invit-titre { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+    #invit-txt { font-size: 15px; color: #cfd8ee; margin-bottom: 12px; }
+    #invit-code {
+      font-size: 30px; font-weight: bold; letter-spacing: 7px; color: #ffd75e;
+      background: rgba(0,0,0,0.4); border: 2px dashed #ffd75e; border-radius: 12px;
+      padding: 6px 14px; margin-bottom: 16px; display: inline-block;
+    }
+    #invit-rejoindre {
+      width: 100%; padding: 13px; border-radius: 10px; border: 2px solid #58b04c;
+      background: #2d6a2d; color: #fff; font-family: inherit; font-size: 17px;
+      font-weight: bold; cursor: pointer;
+    }
+    #invit-plus-tard {
+      margin-top: 10px; background: none; border: none; color: #8894b0;
+      font-family: inherit; font-size: 14px; cursor: pointer;
+    }
     #cam-btn {
       display: none; position: fixed; top: calc(104px + var(--safe-top)); right: 8px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
@@ -1176,6 +1217,18 @@
       <div id="pp-code"></div>
       <div id="pp-hint">Partage ce code : avec lui, on peut rejoindre ce monde à tout moment.</div>
       <div id="pp-list"></div>
+      <button id="pp-amis-btn">👋 Qui d'autre est connecté ?</button>
+      <div id="pp-amis"></div>
+    </div>
+  </div>
+
+  <div id="invit-panel">
+    <div id="invit-card">
+      <div id="invit-titre">🎉 Une invitation !</div>
+      <div id="invit-txt"></div>
+      <div id="invit-code"></div>
+      <button id="invit-rejoindre">Rejoindre le monde</button>
+      <button id="invit-plus-tard">Plus tard</button>
     </div>
   </div>
 

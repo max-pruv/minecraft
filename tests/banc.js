@@ -363,4 +363,4 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
 
 module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer,
   // réutilisés par les autres suites, qui montent leur propre décor
-  servirLeJeuPour: servirLeJeu, trouverChromium };
+  servirLeJeuPour: servirLeJeu, servirLesPairsPour: servirLesPairs, trouverChromium };

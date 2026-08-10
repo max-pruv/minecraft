@@ -100,6 +100,18 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
 | un monde retiré ne revient pas du nuage · ni sur l'autre tablette | la liste des mondes était fusionnée par union avec celle du serveur, et une union ne sait pas représenter une absence voulue : le monde effacé revenait tout seul, avec ses blocs |
 | mais retaper le code le ramène | une suppression irréversible est une suppression qu'on n'ose pas faire |
+| la tablette d'Alice dit au serveur qu'elle est là | la présence était écrite depuis toujours, mais seul l'espace parent la lisait |
+| Marlon voit qu'Alice est connectée ailleurs | le compteur ne dit que ce qui se passe *ici* : un enfant seul dans son monde ne pouvait pas savoir que son frère était devant sa tablette |
+| un bouton suffit à l'inviter | il fallait crier dans le couloir, ou dicter un code à six chiffres |
+| la tablette d'Alice l'annonce sans rien lui demander | — |
+| « Rejoindre » l'emmène dans le monde de Marlon | le parcours entier, d'un enfant à l'autre : chacune des moitiés prise séparément marchait déjà |
+| et elle ne se remontre pas en boucle | la boucle relit le même document toutes les deux secondes |
+
+L'invitation traverse deux tablettes pour de vrai : Alice joue de son côté,
+Marlon ouvre un monde en ligne — vrai serveur de rendez-vous, vraie session —
+la voit dans sa liste, l'invite, et elle arrive chez lui. C'est le seul
+scénario qui prouve quelque chose : la liste, l'écriture au serveur, la lecture
+et l'ouverture du monde marchaient déjà chacune de leur côté.
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
 regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
