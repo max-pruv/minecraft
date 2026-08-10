@@ -10,13 +10,14 @@ import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, versSeine,
-  buildNotreDame, buildSacreCoeur,
+  LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
+  buildMontparnasse, buildColonneBastille, buildMoulinRouge,
 } from './paris.js';
 import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
   MONUMENTS, LIBERTE, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC,
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
-  WALL,
+  buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
 
 export const CHUNK = 16;
@@ -439,10 +440,14 @@ export const PLACES = [
   // façades, les camions rouges et les voitures de patrouille.
   { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z + 14, r: 34 },
   // Manhattan a ses propres destinations : sans elles, on arrivait sur l'île
-  // par son seul nom, à un endroit quelconque de neuf kilomètres de long.
-  { name: 'Central Park', x: NY.x - 8, z: NY.z + 18, r: 34 },
-  { name: 'Times Square', x: NY.x - 11, z: NY.z + 64, r: 12 },
+  // par son seul nom, à un endroit quelconque de vingt kilomètres de long.
+  // Chacune est calculée depuis le plan, jamais recopiée : le jour où
+  // l'échelle de l'île change, elles suivent au lieu de rester en arrière.
+  { name: 'Central Park', x: NY.x - 8, z: NY.z + (PARC.v0 + PARC.v1) / 2, r: 34 },
+  { name: 'Times Square', x: NY.x - 11, z: NY.z + vDeRue(42), r: 12 },
   { name: 'Wall Street', x: NY.x, z: NY.z + WALL.v - 3, r: 12 },
+  { name: 'Washington Square', x: NY.x - 2, z: NY.z + 70, r: 12 },
+  { name: 'SoHo', x: NY.x - 5, z: NY.z + 82, r: 12 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
 ];
@@ -731,25 +736,43 @@ function buildBaseMartienne(set) {
 // dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
 const LANDMARKS = [
   // Paris
-  { name: 'Tour Eiffel', x: -240, z: 174, box: 8, build: buildEiffelTower },
-  { name: 'Arc de Triomphe', x: -263, z: 200, box: 7, build: buildArch },
-  { name: 'Pyramide du Louvre', x: -217, z: 222, box: 7, build: buildGlassPyramid },
-  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 13, build: buildNotreDame },
-  { name: 'Sacré-Cœur', x: PARIS.x + BUTTE.u, z: PARIS.z + BUTTE.v, box: 12, build: buildSacreCoeur },
+  // Paris : chacun à son écart réel à Notre-Dame, calculé par paris.js. La
+  // Tour Eiffel se dressait sur la rive droite et le Louvre sur la rive
+  // gauche — les deux ont changé de rive, et huit monuments manquants sont
+  // arrivés avec eux.
+  ...[
+    ['Tour Eiffel', 8, buildEiffelTower], ['Arc de Triomphe', 7, buildArch],
+    ['Louvre', 7, buildGlassPyramid], ['Panthéon', 8, buildPantheon],
+    ['Invalides', 11, buildInvalides], ['Opéra', 8, buildOpera],
+    ['Montparnasse', 4, buildMontparnasse], ['Bastille', 3, buildColonneBastille],
+    ['Moulin Rouge', 5, buildMoulinRouge], ['Sacré-Cœur', 12, buildSacreCoeur],
+  ].map(([nom, box, build]) => {
+    const p = LIEUX.find((q) => q.nom === nom);
+    return { name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom, x: PARIS.x + p.u, z: PARIS.z + p.v, box, build };
+  }),
+  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 9, build: buildNotreDame },
   // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
   // La Statue de la Liberté était plantée en pleine ville, sur ce qui est
   // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.
-  { name: 'Empire State', x: NY.x + MONUMENTS[0].u, z: NY.z + MONUMENTS[0].v, box: MONUMENTS[0].box, build: buildEmpireState },
-  { name: 'Chrysler Building', x: NY.x + MONUMENTS[1].u, z: NY.z + MONUMENTS[1].v, box: MONUMENTS[1].box, build: buildChrysler },
-  { name: 'Grand Central', x: NY.x + MONUMENTS[2].u, z: NY.z + MONUMENTS[2].v, box: MONUMENTS[2].box, build: buildGrandCentral },
-  { name: 'Flatiron', x: NY.x + MONUMENTS[3].u, z: NY.z + MONUMENTS[3].v, box: MONUMENTS[3].box, build: buildFlatiron },
-  { name: 'Rockefeller Center', x: NY.x + MONUMENTS[4].u, z: NY.z + MONUMENTS[4].v, box: MONUMENTS[4].box, build: buildGrandCentral },
-  { name: 'One World Trade Center', x: NY.x + MONUMENTS[5].u, z: NY.z + MONUMENTS[5].v, box: MONUMENTS[5].box, build: buildOneWTC },
-  { name: 'Times Square', x: NY.x + MONUMENTS[6].u, z: NY.z + MONUMENTS[6].v, box: MONUMENTS[6].box, build: buildTimesSquare },
-  { name: 'Bourse de New York', x: NY.x + MONUMENTS[7].u, z: NY.z + MONUMENTS[7].v, box: MONUMENTS[7].box, build: buildBourse },
-  { name: 'Trinity Church', x: NY.x + MONUMENTS[8].u, z: NY.z + MONUMENTS[8].v, box: MONUMENTS[8].box, build: buildTrinity },
-  // Le pont de Brooklyn part de la rive est, juste au nord de Wall Street.
-  { name: 'Pont de Brooklyn', x: NY.x + 30, z: NY.z + WALL.v - 6, box: 30, waterBase: true, build: buildBrooklyn },
+  ...[
+    buildEmpireState, buildChrysler, buildGrandCentral, buildFlatiron, buildGrandCentral,
+    buildOneWTC, buildTimesSquare, buildBourse, buildTrinity, buildArcheWashington,
+  ].map((build, i) => ({
+    name: MONUMENTS[i].nom,
+    x: NY.x + MONUMENTS[i].u,
+    z: NY.z + MONUMENTS[i].v,
+    // Un monument peut être plus long que large — le clocher de Trinity fait
+    // neuf blocs vers le nord. La boîte du repère doit couvrir le plus grand
+    // des deux, sinon le morceau de monde voisin oublie de le dessiner.
+    box: Math.max(MONUMENTS[i].box, MONUMENTS[i].bu || 0, MONUMENTS[i].bv || 0),
+    build,
+  })),
+  // Les trois ponts de l'East River, chacun au débouché de sa rue : Brooklyn
+  // face à l'Hôtel de Ville, Manhattan au bout de Canal Street, Williamsburg
+  // au bout de Delancey. C'est ce qui donne un but à ces rues-là.
+  { name: 'Pont de Brooklyn', x: NY.x + Math.round(bordEst(96)) + 22, z: NY.z + 96, box: 30, waterBase: true, build: buildBrooklyn },
+  { name: 'Pont de Manhattan', x: NY.x + Math.round(bordEst(85)) + 18, z: NY.z + 85, box: 24, waterBase: true, build: buildPontAcier },
+  { name: 'Pont de Williamsburg', x: NY.x + Math.round(bordEst(80)) + 18, z: NY.z + 80, box: 24, waterBase: true, build: buildPontAcier },
   // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
   { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
   // San Francisco
@@ -790,7 +813,7 @@ export const CITIES = [
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
   // par zoneManhattan().
-  { key: 'ny', name: 'New York', x: 295, z: -110, r: 132, cell: 12, base: 33, street: 3 },
+  { key: 'ny', name: 'New York', x: 295, z: -110, r: 152, cell: 12, base: 33, street: 3 },
   { key: 'sf', name: 'San Francisco', x: 0, z: -320, r: 50, cell: 11, base: 33, street: 3 },
   { key: 'nice', name: 'Nice', x: 300, z: 260, r: 45, cell: 11, base: 32, street: 3 },
   { key: 'lille', name: 'Lille', x: -300, z: -200, r: 45, cell: 12, base: 34, street: 3 },

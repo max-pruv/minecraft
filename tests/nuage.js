@@ -90,6 +90,10 @@ function servirLeNuage(port) {
     // ce que le test veut savoir : ce qui est RÉELLEMENT enregistré
     reglages: (nom) => prefs.get(nom),
     poserReglages: (nom, v) => prefs.set(nom, v),
+    // Le profil complet et les blocs d'un monde : c'est là que se voit ce qui
+    // survit vraiment à une suppression.
+    etat: (nom) => etats.get(nom),
+    monde: (code) => mondes.get(code),
     fermer: () => serveur.close(),
   })));
 }

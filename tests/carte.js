@@ -231,6 +231,138 @@ const position = (p) => p.evaluate(() => ({
     verifier('on ne peut ni zoomer à l\'infini ni sortir du monde',
       bornes.pres >= 0.2 && bornes.loin <= 5 && bornes.cx < 1500, JSON.stringify(bornes));
 
+    // --- le bas de Manhattan -------------------------------------------------
+    //
+    // Le bas de l'île tenait en quinze blocs : de la pointe de Battery à la 14e
+    // Rue, il y avait moins de place que dans un seul pâté de Midtown. Aucun
+    // plan réel n'y entrait, et les quartiers dont un enfant connaît le nom —
+    // TriBeCa, SoHo, Chinatown, le Village, Wall Street — se retrouvaient les
+    // uns sur les autres. On vérifie donc les deux choses qu'il verrait :
+    // qu'on peut y aller, et qu'une fois là-bas ce n'est pas la même ville
+    // qu'au nord.
+    const NY = { x: 295, z: -110 };
+    const sonder = (us, v0, v1) => tab.evaluate(({ ny, us: cols, v0: a, v1: b }) => {
+      const w = window.__game.world;
+      const RUE = [562, 563, 564, 566, 569];   // bitume, ligne, trottoir, pavé, passage
+      return cols.map((u) => {
+        const rues = [];
+        let terre = 0;
+        for (let v = a; v <= b; v++) {
+          const x = ny.x + u, z = ny.z + v;
+          const h = w.terrainHeight(x, z);
+          if (h < 31) continue;                // le fleuve
+          // Les deux voies rapides suivent la rive en diagonale : près du bord,
+          // toutes les rangées finissent par être de la rue, quel que soit le
+          // plan. On sonde donc l'intérieur de l'île, et lui seul.
+          if (w.terrainHeight(x + 4, z) < 31 || w.terrainHeight(x - 4, z) < 31) continue;
+          terre++;
+          const sol = w.getBlock(x, h, z);
+          let sommet = h;
+          for (let y = h + 60; y > h; y--) if (w.getBlock(x, y, z)) { sommet = y; break; }
+          if (RUE.includes(sol) && sommet === h) rues.push(v);
+        }
+        return { u, terre, rues };
+      });
+    }, { ny: NY, us, v0, v1 });
+
+    // Les quartiers du bas ont enfin la place d'exister. Tout le bas de l'île
+    // tenait dans quinze blocs — moins qu'un pâté de Midtown — et TriBeCa,
+    // SoHo, Chinatown, le Village et Wall Street s'y superposaient. On regarde
+    // donc ce qu'un enfant regarde : la carte, zoomée sur la pointe de l'île.
+    await banc.ouvrirLaCarte(tab);
+    await tab.evaluate(({ ny }) => {
+      const c2 = window.__carte;
+      c2.vue.cx = ny.x; c2.vue.cz = ny.z + 86; c2.vue.bpp = 0.4;
+      c2.limiter(); c2.peindre();
+    }, { ny: NY });
+    await dormir(600);
+    const quartiers = await tab.evaluate(() =>
+      Object.fromEntries(window.__carte.etiquettes.map((e) => [e.lieu.name, [e.lieu.x, e.lieu.z]])));
+    const attendus = ['Wall Street', 'SoHo', 'TriBeCa', 'Chinatown', 'Greenwich Village'];
+    const manquants = attendus.filter((n) => !quartiers[n]);
+    const zs = attendus.filter((n) => quartiers[n]).map((n) => quartiers[n][1]);
+    const etendue = zs.length ? Math.max(...zs) - Math.min(...zs) : 0;
+    verifier('les quartiers du bas de l\'île ont la place d\'exister',
+      manquants.length === 0 && etendue > 25,
+      manquants.length ? `absents : ${manquants.join(', ')}` : `${etendue} blocs entre Wall Street et le Village`);
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
+    // Au nord de la 14e Rue, une rue tous les six blocs : c'est le plan des
+    // commissaires de 1811, et presque toutes les rangées de rue tombent sur un
+    // multiple de six. Au sud, chaque quartier a sa propre trame, à son propre
+    // angle — la proportion s'effondre. C'est ce contraste qu'on mesure, et lui
+    // seul dit que le bas de l'île a un plan à lui : mesuré 0,63 quand la
+    // grille descendait jusqu'à la mer, 0,28 avec le vrai plan.
+    // On écarte les colonnes qui tombent sur une avenue : une avenue est de la
+    // rue du haut en bas, elle ne dirait rien.
+    const surLaGrille = (colonnes) => {
+      let n = 0, dessus = 0;
+      for (const c of colonnes) {
+        if (!c.terre || c.rues.length > c.terre * 0.5) continue;
+        for (const v of c.rues) { n++; if (((v % 6) + 6) % 6 === 0) dessus++; }
+      }
+      return n ? dessus / n : -1;
+    };
+    const colonnes = [2, -4, 6, -9, 13, 17];
+    const haut = surLaGrille(await sonder(colonnes, 20, 50));
+    const bas = surLaGrille(await sonder(colonnes, 66, 100));
+    verifier('la grille de 1811 s\'arrête bien à la 14e Rue',
+      haut > 0.4 && bas < 0.4 && bas < haut * 0.8,
+      `sur la grille : au nord ${haut.toFixed(2)}, au sud ${bas.toFixed(2)}`);
+
+    // --- Paris et ses deux rives ---------------------------------------------
+    //
+    // Paris avait reçu son fleuve, mais rien n'était placé : la Tour Eiffel se
+    // dressait sur la rive droite, le Louvre sur la rive gauche, et l'Opéra, le
+    // Panthéon, les Invalides, la Bastille, le Luxembourg n'existaient pas du
+    // tout. Une rive, ça ne se discute pas — c'est la première chose qu'un
+    // enfant vérifie quand il compare avec un vrai plan.
+    const PARIS = { x: -240, z: 200 };
+    await banc.ouvrirLaCarte(tab);
+    await tab.evaluate(({ p }) => {
+      const c2 = window.__carte;
+      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.24;
+      c2.limiter(); c2.peindre();
+    }, { p: PARIS });
+    await dormir(600);
+    const vusParis = await lieuxVus(tab);
+    const attendusParis = ['Tour Eiffel', 'Arc de Triomphe', 'Panthéon', 'Invalides',
+      'Opéra', 'Bastille', 'Luxembourg', 'Concorde'];
+    const absentsParis = attendusParis.filter((n) => !vusParis.includes(n));
+    verifier('les lieux de Paris sont sur la carte', absentsParis.length === 0,
+      absentsParis.length ? `absents : ${absentsParis.join(', ')}` : `${attendusParis.length} lieux`);
+
+    // Sur quelle rive ? On cherche la Seine dans le monde, à l'aplomb du
+    // monument, et on regarde de quel côté il tombe. Rien n'est supposé : si
+    // le fleuve bougeait, la mesure bougerait avec lui.
+    const rives = await tab.evaluate(({ p, noms }) => {
+      const w = window.__game.world;
+      const EAU = 7;
+      const out = {};
+      for (const [nom, x, z] of noms) {
+        const fil = [];
+        for (let zz = p.z - 45; zz <= p.z + 45; zz++) if (w.getBlock(x, 30, zz) === EAU) fil.push(zz);
+        const axe = fil.length ? fil.reduce((a, b) => a + b, 0) / fil.length : null;
+        const sol = w.terrainHeight(x, z);
+        out[nom] = { axe, rive: axe === null ? '?' : (z < axe ? 'droite' : 'gauche'), sec: sol > 31 };
+      }
+      return out;
+    }, { p: PARIS, noms: (await tab.evaluate(({ noms }) => noms.map((n) => {
+      const e = window.__carte.etiquettes.find((x) => x.lieu.name === n);
+      return e ? [n, Math.round(e.lieu.x), Math.round(e.lieu.z)] : null;
+    }).filter(Boolean), { noms: ['Tour Eiffel', 'Invalides', 'Panthéon', 'Luxembourg', 'Concorde', 'Opéra', 'Bastille', 'Arc de Triomphe'] })) });
+
+    const GAUCHE = ['Tour Eiffel', 'Invalides', 'Panthéon', 'Luxembourg'];
+    const DROITE = ['Concorde', 'Opéra', 'Bastille', 'Arc de Triomphe'];
+    const faux = [...GAUCHE.map((n) => [n, 'gauche']), ...DROITE.map((n) => [n, 'droite'])]
+      .filter(([n, r]) => !rives[n] || rives[n].rive !== r || !rives[n].sec)
+      .map(([n, r]) => `${n} devrait être rive ${r}, il est ${rives[n] ? rives[n].rive : 'absent'}${rives[n] && !rives[n].sec ? ' et dans l\'eau' : ''}`);
+    verifier('chaque monument de Paris est sur sa rive et au sec',
+      faux.length === 0, faux.join(' · '));
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 

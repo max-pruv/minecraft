@@ -19,6 +19,7 @@ import {
   MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
+import { couleurCarteParis, lieuxDeParis } from './paris.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
@@ -240,6 +241,13 @@ export class Carte {
       const c = couleurCarteManhattan(wx, wz);
       if (c) return c;
     }
+    // Paris de même : la Seine, ses îles, ses places, ses jardins et les
+    // percées d'Haussmann sont calculés — la carte peut donc les montrer avant
+    // qu'on y ait mis les pieds.
+    if (ville && ville.key === 'paris') {
+      const c = couleurCarteParis(wx, wz);
+      if (c) return c;
+    }
     if (ville) {
       // La trame des rues, telle que le générateur la pose. On ne la dessine
       // que d'assez près : échantillonnée de loin, elle produirait un moiré.
@@ -428,6 +436,10 @@ export class Carte {
       // disent que l'île n'est pas une ville uniforme mais une file de
       // villages soudés.
       ...quartiersDuMonde().map((c) => ({ c, fort: false, seuil: 0.7 })),
+      // Et les places de Paris, à la même distance : l'Étoile, la Concorde,
+      // la Bastille, le Luxembourg, Montmartre. Un plan de Paris se lit par
+      // ses places, comme New York par ses quartiers.
+      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 0.7 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui

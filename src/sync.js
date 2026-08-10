@@ -23,6 +23,7 @@ const FIELDS = [
   ['web-minecraft-quest-v1', 'quest'],
   ['web-minecraft-hotbar-v1', 'hotbar'],
   ['web-minecraft-worlds-v1', 'worlds'],
+  ['web-minecraft-worlds-del-v1', 'worldsDel'],
   ['web-minecraft-pos-v1', 'pos'],
   ['web-minecraft-photos-v1', 'photos'],
   ['web-minecraft-edits-v3', 'edits'],
@@ -98,10 +99,31 @@ function mergeQuest(a, b) {
   return a.date > b.date ? a : b;
 }
 
-function mergeWorlds(a = [], b = [], cap = 5) {
+// Les mondes retirés. Une union ne sait pas représenter une absence voulue :
+// l'enfant effaçait un monde, la synchronisation suivante le retrouvait dans le
+// document du serveur et le remettait — sur sa tablette comme sur l'autre. Il
+// faut donc garder la trace du geste, pas seulement son résultat.
+//
+// Une pierre tombale porte la date du retrait. Le monde ne revient que s'il est
+// rouvert APRÈS — ce qui est exactement ce qu'on veut : retaper son code doit
+// le faire revenir, la synchronisation non.
+const RETRAITS_MAX = 20;
+function mergeRetraits(a = {}, b = {}) {
+  const out = {};
+  for (const [code, t] of [...Object.entries(a || {}), ...Object.entries(b || {})]) {
+    if (!code) continue;
+    if (out[code] === undefined || num(t) > num(out[code])) out[code] = num(t);
+  }
+  return Object.fromEntries(
+    Object.entries(out).sort((x, y) => y[1] - x[1]).slice(0, RETRAITS_MAX),
+  );
+}
+
+function mergeWorlds(a = [], b = [], retraits = {}, cap = 5) {
   const out = new Map();
   for (const w of [...(a || []), ...(b || [])]) {
     if (!w || !w.code) continue;
+    if (num(retraits[w.code]) >= num(w.t)) continue;   // retiré après la dernière visite
     const prev = out.get(w.code);
     if (!prev || num(w.t) > num(prev.t)) out.set(w.code, w);
   }
@@ -150,6 +172,14 @@ function normalizeEdits(e) {
     else if (v && typeof v === 'object') out[k] = v;         // monde: { ... }
   }
   if (plat) out.local = mergeEdits(plat, out.local);
+  return out;
+}
+
+// Ne garder que les mondes encore là. Sert aux blocs comme aux positions :
+// les deux sont rangés par code de monde.
+function filtrerParMonde(carte, garder) {
+  const out = {};
+  for (const [ctx, v] of Object.entries(carte || {})) if (garder(ctx)) out[ctx] = v;
   return out;
 }
 
@@ -212,9 +242,15 @@ export class ProfileSync {
     out.bag = mergeCounts(local.bag, remote.bag);
     out.records = mergeRecords(local.records, remote.records, localNewer);
     out.quest = mergeQuest(local.quest, remote.quest);
-    out.worlds = mergeWorlds(local.worlds, remote.worlds);
-    out.pos = mergePos(local.pos, remote.pos);
-    out.edits = mergeAllEdits(local.edits, remote.edits);
+    out.worldsDel = mergeRetraits(local.worldsDel, remote.worldsDel);
+    out.worlds = mergeWorlds(local.worlds, remote.worlds, out.worldsDel);
+    // Ce que le monde retiré emporte avec lui : ses blocs et la position où
+    // l'enfant s'était arrêté. Sans cela le monde disparaissait de la liste
+    // mais son contenu restait dans le document, et remontait entier au
+    // premier code retapé — ou pesait pour rien jusqu'à la fin des temps.
+    const vivant = (ctx) => ctx === 'local' || !(num(out.worldsDel[ctx]) > 0);
+    out.pos = filtrerParMonde(mergePos(local.pos, remote.pos), vivant);
+    out.edits = filtrerParMonde(mergeAllEdits(local.edits, remote.edits), vivant);
     out.photos = [...new Set([...(local.photos || []), ...(remote.photos || [])])].slice(0, MAX_PHOTOS);
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');

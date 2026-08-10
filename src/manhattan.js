@@ -16,15 +16,23 @@
 //     Herald (34e), Times (42e), Columbus Circle (59e)
 //   · Central Park : de la 59e à la 110e, de la 5e Avenue à Central Park West
 //
-// Deux libertés assumées. D'abord l'échelle : l'île fait 21 km, on en garde
-// les neuf premiers — de la pointe de Battery au haut du parc — sur cent
-// soixante-seize blocs. Ensuite l'orientation : la vraie grille est inclinée
-// de 29°, ce qui, en blocs, donnerait des rues en escalier illisibles ; la
-// nôtre est droite. Tout le reste — l'ordre des avenues, la place de chaque
-// monument, la silhouette qui monte à Midtown, redescend au Village et remonte
-// à Wall Street — est fidèle.
+// Mais le plan de 1811 ne dit rien du bas de l'île, et c'est là que Manhattan
+// est la plus reconnaissable. Au sud de la 14e Rue la grille n'existe pas :
+// chaque quartier y a gardé la trame de son époque, et **c'est l'angle entre
+// ces trames** qu'on lit sur un plan avant tout le reste — SoHo aligné sur
+// Broadway, le West Village en biais sur l'ancienne rive, Chinatown penché sur
+// le Bowery, la pointe hollandaise en désordre. Un enfant qui compare avec un
+// vrai plan voit cela immédiatement.
+//
+// Une seule liberté d'échelle, mais assumée et **uniforme** : 11,7 blocs par
+// kilomètre. L'île fait 20,6 km, elle en fait 240 ici. C'est ce chiffre unique
+// qui remet le bas de l'île à sa taille — quarante-sept blocs de Battery à la
+// 14e Rue, et non quinze comme dans la première version, où aucun plan réel
+// n'aurait tenu. L'orientation, elle, reste droite : la vraie grille est
+// inclinée de 29°, ce qui en blocs donnerait des rues en escalier illisibles.
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { rangerVoies, solDesVoies } from './voies.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -47,22 +55,26 @@ const ARDOISE = uni(23);
 // sauvegardés gardent ainsi leurs constructions au même endroit.
 export const NY = { x: 295, z: -110 };
 
-export const NY_LONG = 130;   // demi-longueur nord-sud, en blocs
+export const NY_LONG = 134;   // demi-longueur nord-sud, en blocs
 export const NY_LARGE = 26;   // demi-largeur maximale
 export const NY_EAU = 26;     // largeur des fleuves de part et d'autre
 export const NY_SOL = 33;     // l'île est plate, comme la vraie sous ses rues
 
-// L'île fait 21,6 km de long pour 3,7 km au plus large : **presque six fois
-// plus longue que large**. C'est la première chose qu'on voit sur un plan, et
-// c'est ce que le premier jet ratait — une amande deux fois et demie plus
-// longue que large ne ressemble à rien. Deux cent quarante blocs sur quarante-
-// huit rétablissent la proportion.
+// L'échelle, et elle seule. Tout le reste — les rues numérotées comme les
+// quartiers du bas — se déduit de ces trois nombres.
 //
-// v = 110 à la pointe de Battery, v = −130 à Inwood : deux cent vingt rues sur
-// deux cent quarante blocs, soit 1,09 bloc par numéro de rue.
-const RUE_PAR_BLOC = 240 / 220;
-export const vDeRue = (n) => Math.round(110 - n * RUE_PAR_BLOC);
-export const rueDeV = (v) => Math.round((110 - v) / RUE_PAR_BLOC);
+// v = 110 à la pointe de Battery, v = −131 à Inwood. Entre les deux, la
+// distance réelle en kilomètres, multipliée par 11,7.
+const BLOCS_PAR_KM = 11.7;
+const KM_14E = 4.0;          // de la pointe de Battery à la 14e Rue
+const KM_PAR_RUE = 0.0805;   // 80 mètres : un pâté du plan de 1811
+
+export const vDeKm = (d) => Math.round(110 - d * BLOCS_PAR_KM);
+export const vDeRue = (n) => vDeKm(KM_14E + (n - 14) * KM_PAR_RUE);
+export const rueDeV = (v) => Math.round(14 + ((110 - v) / BLOCS_PAR_KM - KM_14E) / KM_PAR_RUE);
+
+// Au sud de cette ligne, la grille de 1811 n'a jamais été tracée.
+export const BAS_V = vDeRue(14);   // 63
 
 // Une rue tous les six blocs : c'est le plus petit pas qui laisse de la place
 // pour bâtir. À la vraie échelle — 18 m de chaussée pour 60 m d'entraxe — un
@@ -74,27 +86,32 @@ const estRue = (v) => ((v % RUE_PAS) + RUE_PAS) % RUE_PAS === 0;
 const LARGES = new Set([14, 23, 34, 42, 57, 72, 79, 86, 96, 106, 116, 125, 135, 145, 155]
   .map((n) => Math.round(vDeRue(n) / RUE_PAS) * RUE_PAS));
 
-// Les avenues, d'est en ouest, resserrées pour tenir dans une île enfin
-// étroite. Leurs écarts relatifs restent ceux de la vraie ville : 280 m entre
-// la 5e et la 6e, 120 m seulement entre la 5e, Madison et Park — d'où des
-// pâtés quatre fois plus longs d'est en ouest que du nord au sud.
+// Les avenues, d'est en ouest. Leurs écarts relatifs restent ceux de la vraie
+// ville : 280 m entre la 5e et la 6e, 120 m seulement entre la 5e, Madison et
+// Park — d'où des pâtés quatre fois plus longs d'est en ouest que du nord au
+// sud.
+//
+// `vFin` est leur extrémité **sud**, et ce n'est pas un détail : à New York
+// aucune avenue ne descend jusqu'à la mer. La 5e s'arrête à Washington Square,
+// la 3e au Bowery, la 8e à Abingdon Square où elle devient Hudson Street. Une
+// avenue qui traverserait SoHo trahirait le plan aussi sûrement qu'une rue de
+// travers.
 export const AVENUES = [
-  { u: 22, nom: '1re Avenue', l: 0 },
-  { u: 18, nom: '2e Avenue', l: 0 },
-  { u: 14, nom: '3e Avenue', l: 0 },
-  { u: 11, nom: 'Lexington Avenue', l: 0 },
-  { u: 8, nom: 'Park Avenue', l: 1 },
-  { u: 4, nom: 'Madison Avenue', l: 0 },
-  { u: 0, nom: '5e Avenue', l: 0 },     // la colonne vertébrale, bord est du parc
-  { u: -6, nom: '6e Avenue', l: 0 },
-  { u: -11, nom: '7e Avenue', l: 0 },
-  { u: -16, nom: '8e Avenue', l: 0 },   // Central Park West au droit du parc
-  { u: -20, nom: '9e Avenue', l: 0 },   // Columbus au-dessus de la 59e
-  { u: -24, nom: 'West Side Highway', l: 0 },
+  { u: 22, nom: '1re Avenue', l: 0, vFin: 76 },
+  { u: 18, nom: '2e Avenue', l: 0, vFin: 76 },
+  { u: 14, nom: '3e Avenue', l: 0, vFin: 73 },
+  { u: 11, nom: 'Lexington Avenue', l: 0, vFin: 57 },
+  { u: 8, nom: 'Park Avenue', l: 1, vFin: 63 },
+  { u: 4, nom: 'Madison Avenue', l: 0, vFin: 55 },
+  { u: 0, nom: '5e Avenue', l: 0, vFin: 70 },      // s'arrête à Washington Square
+  { u: -6, nom: '6e Avenue', l: 0, vFin: 92 },     // devient Church Street à TriBeCa
+  { u: -11, nom: '7e Avenue', l: 0, vFin: 65 },
+  { u: -16, nom: '8e Avenue', l: 0, vFin: 68 },    // Central Park West au droit du parc
+  { u: -20, nom: '9e Avenue', l: 0, vFin: 63 },    // Columbus au-dessus de la 59e
 ];
 
 // Central Park : de la 59e à la 110e, de la 5e Avenue à Central Park West.
-// Cinquante-six blocs sur seize — le vrai parc fait 4 km sur 800 m, et occupe
+// Quarante-huit blocs sur seize — le vrai parc fait 4,1 km sur 800 m, et occupe
 // un cinquième de la longueur de l'île. C'est cette proportion-là qu'on
 // reconnaît, pas un carré de verdure au milieu.
 export const PARC = { u0: -16, u1: 0, v0: vDeRue(110), v1: vDeRue(59) };
@@ -104,11 +121,21 @@ const dansParc = (u, v) => u > PARC.u0 && u < PARC.u1 && v > PARC.v0 && v < PARC
 export const dansCentralPark = (x, z) => dansParc(x - NY.x, z - NY.z);
 
 // Broadway. Chemin indien devenu route de poste, il est antérieur à la grille
-// et l'ignore : à chaque avenue qu'il croise naît une place.
+// et l'ignore : à chaque avenue qu'il croise naît une place. En bas de l'île il
+// passe à l'ouest, remonte vers l'est jusqu'à Union Square, puis redescend
+// vers l'ouest en coupant toutes les avenues l'une après l'autre.
 const BROADWAY = [
-  { v: 108, u: 1 }, { v: vDeRue(23), u: 0 }, { v: vDeRue(34), u: -6 },
-  { v: vDeRue(42), u: -11 }, { v: vDeRue(59), u: -16 }, { v: vDeRue(110), u: -19 },
-  { v: -130, u: -12 },
+  { v: 108, u: -1 },                  // Bowling Green, au pied de l'île
+  { v: 96, u: -3 },                   // devant l'Hôtel de Ville
+  { v: 87, u: -2 },                   // Canal Street
+  { v: 76, u: 2 },                    // Houston : le voilà à l'est de l'axe
+  { v: vDeRue(14), u: 3 },            // Union Square
+  { v: vDeRue(23), u: 0 },            // Madison Square, la 5e Avenue
+  { v: vDeRue(34), u: -6 },           // Herald Square, la 6e
+  { v: vDeRue(42), u: -11 },          // Times Square, la 7e
+  { v: vDeRue(59), u: -16 },          // Columbus Circle, la 8e
+  { v: vDeRue(110), u: -19 },
+  { v: -132, u: -12 },
 ];
 export function uBroadway(v) {
   if (v > BROADWAY[0].v || v < BROADWAY[BROADWAY.length - 1].v) return null;
@@ -121,7 +148,7 @@ export function uBroadway(v) {
 
 // Les places nées du croisement de Broadway et d'une avenue.
 export const PLACES_NY = [
-  { nom: 'Union Square', u: 1, v: vDeRue(14), r: 4 },
+  { nom: 'Union Square', u: 3, v: vDeRue(14), r: 4 },
   { nom: 'Madison Square', u: 0, v: vDeRue(23), r: 4 },
   { nom: 'Herald Square', u: -6, v: vDeRue(34), r: 4 },
   { nom: 'Times Square', u: -11, v: vDeRue(42), r: 5 },
@@ -138,39 +165,42 @@ export const quartiersDuMonde = () => QUARTIERS.map((q) => ({
 }));
 
 export const QUARTIERS = [
-  { nom: 'Financial District', u: 0, v: vDeRue(4) },
-  { nom: 'TriBeCa', u: -9, v: vDeRue(11) },
-  { nom: 'Chinatown', u: 9, v: vDeRue(12) },
-  { nom: 'SoHo', u: -3, v: vDeRue(18) },
-  { nom: 'Lower East Side', u: 14, v: vDeRue(19) },
-  { nom: 'Greenwich Village', u: -8, v: vDeRue(25) },
-  { nom: 'East Village', u: 10, v: vDeRue(26) },
-  { nom: 'Chelsea', u: -12, v: vDeRue(35) },
-  { nom: 'Gramercy', u: 6, v: vDeRue(34) },
+  { nom: 'Financial District', u: 0, v: 101 },
+  { nom: 'Battery Park City', u: -8, v: 101 },
+  { nom: 'TriBeCa', u: -9, v: 92 },
+  { nom: 'Chinatown', u: 7, v: 88 },
+  { nom: 'Little Italy', u: 1, v: 86 },
+  { nom: 'SoHo', u: -5, v: 82 },
+  { nom: 'Lower East Side', u: 13, v: 82 },
+  { nom: 'Greenwich Village', u: -5, v: 72 },
+  { nom: 'West Village', u: -14, v: 71 },
+  { nom: 'East Village', u: 11, v: 70 },
+  { nom: 'Gramercy', u: 7, v: vDeRue(21) },
+  { nom: 'Chelsea', u: -14, v: vDeRue(24) },
   { nom: 'Midtown', u: -4, v: vDeRue(48) },
   { nom: 'Upper West Side', u: -20, v: vDeRue(75) },
   { nom: 'Upper East Side', u: 12, v: vDeRue(75) },
-  { nom: 'Harlem', u: 2, v: vDeRue(122) },
+  { nom: 'Harlem', u: 2, v: vDeRue(125) },
   { nom: 'Washington Heights', u: -6, v: vDeRue(175) },
-  { nom: 'Inwood', u: -8, v: vDeRue(210) },
+  { nom: 'Inwood', u: -3, v: vDeRue(207) },
 ];
 
 // La silhouette. Le côté Hudson est presque rectiligne — c'est lui qui a donné
-// son alignement à la grille. Le côté East River s'évase entre la 14e et la
-// 96e : c'est le ventre de l'île. Puis tout se resserre vers Inwood, et la
-// pointe de Battery s'effile.
+// son alignement à la grille. L'île est la plus large vers la 14e Rue, puis
+// tout se resserre vers Inwood, et la pointe de Battery s'effile.
 const RIVE_OUEST = [
-  { v: 110, l: 2 }, { v: 102, l: 8 }, { v: 95, l: 16 }, { v: 85, l: 20 },
-  { v: 73, l: 22 }, { v: 46, l: 24 }, { v: 16, l: 24 }, { v: -10, l: 23 },
-  // Harlem reste large jusqu'à la 155e : c'est seulement au-dessus que l'île
-  // se réduit à la crête de Washington Heights, puis à la pointe d'Inwood.
-  { v: -40, l: 22 }, { v: -70, l: 18 }, { v: -100, l: 11 }, { v: -130, l: 3 },
+  { v: 110, l: 1 }, { v: 106, l: 6 }, { v: 103, l: 8 }, { v: 101, l: 9 },
+  { v: 96, l: 11 }, { v: 87, l: 13 }, { v: 76, l: 17 }, { v: 63, l: 21 },
+  { v: 54, l: 23 }, { v: 44, l: 23 }, { v: 21, l: 24 }, { v: -5, l: 24 },
+  { v: -27, l: 23 }, { v: -53, l: 22 }, { v: -78, l: 18 }, { v: -104, l: 11 },
+  { v: -132, l: 3 },
 ];
 const RIVE_EST = [
-  { v: 110, l: 2 }, { v: 104, l: 9 }, { v: 97, l: 17 }, { v: 92, l: 22 },
-  { v: 85, l: 23 }, { v: 73, l: 22 }, { v: 64, l: 21 }, { v: 46, l: 22 },
-  { v: 24, l: 24 }, { v: 5, l: 24 }, { v: -10, l: 21 }, { v: -40, l: 18 },
-  { v: -70, l: 14 }, { v: -100, l: 8 }, { v: -130, l: 2 },
+  { v: 110, l: 1 }, { v: 106, l: 6 }, { v: 103, l: 10 }, { v: 101, l: 11 },
+  { v: 96, l: 12 }, { v: 87, l: 14 }, { v: 76, l: 20 }, { v: 63, l: 23 },
+  { v: 54, l: 23 }, { v: 44, l: 22 }, { v: 36, l: 21 }, { v: 21, l: 21 },
+  { v: 2, l: 23 }, { v: -14, l: 23 }, { v: -27, l: 20 }, { v: -53, l: 18 },
+  { v: -78, l: 14 }, { v: -104, l: 8 }, { v: -132, l: 2 },
 ];
 function interp(table, v) {
   if (v >= table[0].v || v <= table[table.length - 1].v) return 0;
@@ -184,16 +214,16 @@ export const bordOuest = (v) => -interp(RIVE_OUEST, v);
 export const bordEst = (v) => interp(RIVE_EST, v);
 export const demiLargeur = (v) => (bordEst(v) - bordOuest(v)) / 2;
 
-// Roosevelt Island : le long ruban posé dans l'East River, de la 46e à la 86e.
-// Deux blocs de large, et pourtant personne ne confond un plan de Manhattan
-// avec ou sans lui.
 // Wall Street, Battery Park et Liberty Island : le bas de l'île, celui dont on
 // connaît les noms avant d'y être allé.
-export const WALL = { v: 100, u0: -8, u1: 10 };
-export const BATTERY = { v: 106 };
+export const WALL = { v: vDeKm(0.6), u0: -8, u1: 8 };
+export const BATTERY = { v: vDeKm(0.35) };
 export const LIBERTE = { u: -22, v: 122, r: 7 };
 export const PAVE_SOMBRE = CITY_BLOCK.GRANITE;
 
+// Roosevelt Island : le long ruban posé dans l'East River, de la 46e à la 86e.
+// Deux blocs de large, et pourtant personne ne confond un plan de Manhattan
+// avec ou sans lui.
 export const ROOSEVELT = { u: 27, v0: vDeRue(86), v1: vDeRue(46), l: 1.6 };
 export const surRoosevelt = (x, z) => {
   const u = x - NY.x, v = z - NY.z;
@@ -203,8 +233,8 @@ export const surRoosevelt = (x, z) => {
 // --- ce que le monde demande -------------------------------------------------
 
 // La zone d'influence : l'île ET ses deux fleuves. Au-delà, le terrain reprend
-// ses droits. Un rectangle plutôt qu'un disque — une île longue de cent
-// soixante-seize blocs ne tient dans aucun cercle raisonnable.
+// ses droits. Un rectangle plutôt qu'un disque — une île longue de deux cent
+// quarante blocs ne tient dans aucun cercle raisonnable.
 export function zoneManhattan(x, z) {
   const u = x - NY.x, v = z - NY.z;
   return Math.abs(v) < NY_LONG + 18 && Math.abs(u) < NY_LARGE + NY_EAU;
@@ -253,7 +283,151 @@ export function hauteurManhattan(x, z, h) {
   return h * (1 - marge) + cible * marge;
 }
 
+// --- le plan du bas de l'île --------------------------------------------------
+//
+// Au sud de la 14e Rue, rien n'a été tracé d'un coup : chaque quartier a gardé
+// la trame de son siècle, et ces trames ne sont pas parallèles. C'est cet
+// écart d'angles qui fait le plan de Lower Manhattan, bien plus que le tracé
+// de telle ou telle rue.
+//
+// Un point du bas de l'île appartient donc à une trame, et une seule ; les
+// voies qui portent un nom passent par-dessus.
+
+const TRAMES = {
+  // Le West Village : ses rues suivent l'ancienne rive de l'Hudson et le
+  // découpage des fermes du XVIIIe. C'est là que West 4th croise West 10th,
+  // l'anomalie la plus célèbre du plan de New York.
+  village: { ang: 0.55, pu: 6.5, pv: 6, cu: -13, cv: 71, w: 0.4, s: 0.7 },
+  // Autour de Washington Square : presque droit, mais pas tout à fait.
+  washington: { ang: 0.09, pu: 6.5, pv: 6, cu: -3, cv: 66, w: 0.4, s: 0.7 },
+  // L'East Village : ici, et ici seulement en bas de l'île, la grille de 1811
+  // descend jusqu'à Houston. Ses rues prolongent exactement celles du nord.
+  grille: { ang: 0, pu: 5, pv: 6, cu: 8, cv: 66, w: 0.5, s: 0.9 },
+  // SoHo et TriBeCa : la trame la plus régulière du bas, alignée sur Broadway
+  // — c'est le quartier des façades en fonte, bâti d'un seul mouvement.
+  soho: { ang: -0.16, pu: 5.5, pv: 7, cu: -6, cv: 84, w: 0.45, s: 0.75, travers: true },
+  // Chinatown et le Lower East Side, penchés sur le Bowery.
+  chinatown: { ang: 0.40, pu: 5, pv: 6.5, cu: 8, cv: 86, w: 0.45, s: 0.75, travers: true },
+};
+
+// La pointe hollandaise n'a pas de trame du tout, et c'est exactement ce qui
+// la caractérise : ses ruelles portent chacune un nom depuis le XVIIe siècle et
+// ne se répètent jamais. Elles sont donc toutes dessinées à la main, et rien
+// d'autre ne s'y ajoute — sinon le quartier n'était plus que du bitume.
+function trameDe(u, v) {
+  if (v > 95) return null;
+  if (v > 76) return u < 3 ? TRAMES.soho : TRAMES.chinatown;
+  if (u < -8) return TRAMES.village;
+  if (u < 3) return TRAMES.washington;
+  return TRAMES.grille;
+}
+
+// Les coordonnées d'un point dans le repère de sa trame.
+function repere(t, u, v) {
+  const du = u - t.cu, dv = v - t.cv;
+  const c = Math.cos(t.ang), s = Math.sin(t.ang);
+  return [du * c - dv * s, du * s + dv * c];
+}
+
+// Les voies qui portent un nom : celles qu'on trouve sur n'importe quel plan,
+// et dont un enfant a déjà entendu parler. Elles sont données par leurs points
+// de passage réels, ramenés à notre échelle.
+const VOIES = [
+  // les grandes traversées est-ouest
+  { nom: 'Canal Street', l: 1.0, t: 0.4, pts: [[-12, 88], [-4, 87], [6, 86], [13, 85]] },
+  { nom: 'Houston Street', l: 1.0, t: 0.4, pts: [[-16, 78], [-6, 76], [6, 75], [19, 74]] },
+  { nom: 'Delancey Street', l: 0.7, t: 0.3, pts: [[5, 82], [11, 81], [17, 80]] },
+  { nom: 'Grand Street', l: 0.5, t: 0.25, pts: [[-9, 85], [3, 84], [15, 82]] },
+  { nom: 'Chambers Street', l: 0.6, t: 0.3, pts: [[-11, 95], [-3, 95], [2, 94]] },
+  { nom: 'Bleecker Street', l: 0.5, t: 0.25, pts: [[-16, 72], [-8, 74], [-1, 76], [5, 78]] },
+  { nom: 'Christopher Street', l: 0.5, t: 0.25, pts: [[-18, 71], [-9, 72]] },
+  // La pointe hollandaise : des ruelles d'un bloc de large. À notre échelle,
+  // Fulton et Maiden Lane sont distantes d'un bloc et demi — dessinées à la
+  // largeur d'une avenue, elles recouvraient tout le quartier de bitume, et le
+  // Financial District n'avait plus un seul immeuble.
+  { nom: 'Wall Street', l: 0.7, t: 0.25, sol: PAVE_SOMBRE, pts: [[-8, 103], [8, 103]] },
+  { nom: 'Fulton Street', l: 0.5, t: 0.35, pts: [[-9, 100], [9, 100]] },
+  { nom: 'Beaver Street', l: 0.5, t: 0.3, pts: [[-3, 105], [3, 105]] },
+  { nom: 'Vesey Street', l: 0.5, t: 0.35, pts: [[-10, 97], [-1, 97]] },
+  { nom: 'Battery Place', l: 0.5, t: 0.35, pts: [[-4, 108], [1, 108]] },
+  // les grands axes nord-sud
+  { nom: 'Bowery', l: 0.8, t: 0.3, pts: [[8, 91], [6, 82], [5, 76]] },
+  { nom: '4e Avenue', l: 0.6, t: 0.3, pts: [[5, 76], [7, 70], [8, 64]] },
+  { nom: 'Lafayette Street', l: 0.5, t: 0.25, pts: [[2, 92], [2, 84], [1, 77]] },
+  { nom: 'West Broadway', l: 0.5, t: 0.25, pts: [[-8, 95], [-7, 84], [-6, 77]] },
+  { nom: 'Hudson Street', l: 0.6, t: 0.25, pts: [[-12, 94], [-14, 84], [-16, 74], [-16, 68]] },
+  { nom: '7e Avenue Sud', l: 0.6, t: 0.3, pts: [[-11, 65], [-9, 72], [-7, 78]] },
+  { nom: 'Greenwich Avenue', l: 0.5, t: 0.25, pts: [[-6, 68], [-11, 65], [-16, 63]] },
+  { nom: 'Greenwich Street', l: 0.5, t: 0.35, pts: [[-7, 101], [-9, 96], [-11, 90]] },
+  { nom: 'Essex Street', l: 0.5, t: 0.25, pts: [[12, 86], [14, 78], [15, 70], [16, 63]] },
+  { nom: 'East Broadway', l: 0.5, t: 0.25, pts: [[8, 91], [11, 88], [13, 86]] },
+  { nom: 'Park Row', l: 0.6, t: 0.3, pts: [[-2, 96], [3, 93], [7, 91]] },
+  { nom: 'William Street', l: 0.5, t: 0.35, pts: [[4, 105], [2, 97]] },
+  { nom: 'Pearl Street', l: 0.5, t: 0.35, pts: [[1, 107], [6, 103], [8, 99], [7, 96]] },
+  { nom: 'Trinity Place', l: 0.5, t: 0.35, pts: [[-5, 106], [-5, 99]] },
+];
+
+// Les places et les squares du bas. Ils comptent autant que les rues : c'est
+// autour d'eux que le quartier s'organise, et ce sont eux qu'on cherche des
+// yeux sur un plan.
+const SQUARES = [
+  { nom: 'Bowling Green', u: -2, v: 107, ru: 1.6, rv: 1.2, sol: PIERRE_CLAIRE },
+  { nom: "Parc de l'Hôtel de Ville", u: -1, v: 96.5, ru: 2.6, rv: 1.6, sol: BLOCK.GRASS },
+  { nom: 'Foley Square', u: 1, v: 93.5, ru: 1.6, rv: 1.2, sol: PIERRE_CLAIRE },
+  { nom: 'Chatham Square', u: 8, v: 91, ru: 1.4, rv: 1.2, sol: PIERRE_CLAIRE },
+  { nom: 'Columbus Park', u: 5, v: 89, ru: 1.6, rv: 1.4, sol: BLOCK.GRASS },
+  { nom: 'Seward Park', u: 12, v: 85.5, ru: 1.6, rv: 1.2, sol: BLOCK.GRASS },
+  { nom: 'Washington Square', u: -2, v: 70, ru: 3, rv: 2.4, sol: BLOCK.GRASS },
+  { nom: 'Astor Place', u: 6, v: 72, ru: 1.4, rv: 1.2, sol: PIERRE_CLAIRE },
+  { nom: 'Tompkins Square', u: 12, v: 69, ru: 2.2, rv: 1.8, sol: BLOCK.GRASS },
+];
+
+const BANDES = rangerVoies(VOIES);
+
+// Le sol du bas de l'île : Battery Park, les squares, les voies nommées, puis
+// la trame du quartier.
+function solBasManhattan(u, v) {
+  // Battery Park : la pointe verte de l'île, d'où partent les bateaux.
+  if (v > BATTERY.v) {
+    return Math.abs(Math.sin(u * 0.5 + v * 0.3)) < 0.15 ? PIERRE_CLAIRE : BLOCK.GRASS;
+  }
+
+  for (const s of SQUARES) {
+    if (((u - s.u) / s.ru) ** 2 + ((v - s.v) / s.rv) ** 2 < 1) {
+      // une allée en croix dans les squares plantés, un dallage plein ailleurs
+      if (s.sol !== BLOCK.GRASS) return s.sol;
+      return (Math.abs(u - s.u) < 0.5 || Math.abs(v - s.v) < 0.5) ? TROTTOIR : BLOCK.GRASS;
+    }
+  }
+
+  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
+  if (voie !== null) return voie;
+
+  const t = trameDe(u, v);
+  if (t === null) return null;
+  const [a, b] = repere(t, u, v);
+  // `travers` : à SoHo et à Chinatown, les rues du sens long portent déjà un
+  // nom et sont tracées plus haut. La trame n'a plus qu'à donner les traverses,
+  // sinon on comptait deux fois les mêmes rues et le quartier disparaissait
+  // sous le bitume — quatorze pour cent de terrain à bâtir contre quarante
+  // au nord de la 14e Rue.
+  const db = Math.abs(b - Math.round(b / t.pv) * t.pv);
+  const d = t.travers ? db : Math.min(Math.abs(a - Math.round(a / t.pu) * t.pu), db);
+  if (d < t.w) return BITUME;
+  if (d < t.s) return TROTTOIR;
+  return null;   // le pâté de maisons
+}
+
 // --- la surface : rues, trottoirs, parc, places ------------------------------
+
+// Les deux voies rapides qui font le tour de l'île, au ras de l'eau : la West
+// Side Highway sur l'Hudson, le FDR Drive sur l'East River. Elles ne sont pas
+// dans la liste des avenues parce qu'elles n'ont pas d'abscisse fixe — elles
+// suivent la rive, d'un bout à l'autre.
+function surLaVoieDeRive(u, v) {
+  if (demiLargeur(v) < 5) return false;
+  return Math.abs(u - (bordOuest(v) + 1.6)) <= 0.7 || Math.abs(u - (bordEst(v) - 1.6)) <= 0.7;
+}
 
 // Ce qu'il faut poser au niveau du sol en un point donné, ou null si c'est un
 // terrain à bâtir. Appelé une fois par colonne, comme la trame des autres
@@ -274,53 +448,35 @@ export function solManhattan(x, z) {
     if (Math.hypot(u - p.u, v - p.v) < p.r) return PIERRE_CLAIRE;
   }
 
+  if (surLaVoieDeRive(u, v)) return BITUME;
+
   // Broadway, la diagonale. Elle passe AVANT la grille : là où elle croise une
   // avenue, c'est elle qui donne son dessin à la chaussée.
+  // Broadway est large au nord et étroite au sud : passé la 14e Rue ce n'est
+  // plus une avenue mais une rue ordinaire, et une chaussée de cinq blocs y
+  // mangeait tout le quartier.
   const ub = uBroadway(v);
-  if (ub !== null && Math.abs(u - ub) <= 2) {
-    return Math.abs(u - ub) > 1.5 ? TROTTOIR : (Math.round(v) % 4 < 2 ? LIGNE : BITUME);
+  const large = v > BAS_V ? 1 : 2;
+  if (ub !== null && Math.abs(u - ub) <= large) {
+    return Math.abs(u - ub) > large - 0.5 ? TROTTOIR : (Math.round(v) % 4 < 2 ? LIGNE : BITUME);
   }
 
-  // Les avenues.
+  // Les avenues, chacune jusqu'à son extrémité sud et pas au-delà.
   for (const a of AVENUES) {
+    if (v > a.vFin) continue;
     const d = Math.abs(u - a.u);
     if (d > a.l) continue;
-    if (estRue(v)) return PASSAGE;                              // le carrefour
+    if (v <= BAS_V && estRue(v)) return PASSAGE;                 // le carrefour
     if (a.nom === 'Park Avenue' && d === 0) return BLOCK.LEAVES; // le terre-plein planté
     return (v & 7) < 4 ? LIGNE : BITUME;
   }
 
-  // Les rues. La grille de 1811 s'arrête à la 14e : au sud, les rues suivent
-  // encore les chemins hollandais et les anciennes limites de fermes. Le
-  // premier jet plaçait cette frontière à la 1re Rue — soit un bloc — et tout
-  // le bas de l'île se retrouvait quadrillé au cordeau, ce qu'il n'est pas.
-  if (v <= vDeRue(14)) {
-    if (estRue(v)) return (u & 7) < 4 ? LIGNE : BITUME;
-    if (LARGES.has(v - 1) || LARGES.has(v + 1)) return BITUME;  // les quinze rues élargies
-    return null;   // le pâté de maisons
-  }
-  return solVieilleVille(u, v);
-}
+  // Au sud de la 14e Rue, le plan réel ; au nord, la grille de 1811.
+  if (v > BAS_V) return solBasManhattan(u, v);
 
-// La ville d'avant le plan de 1811 : Greenwich Village, SoHo, Chinatown, la
-// pointe de la finance. Pas de grille — des rues qui tournent, héritées des
-// chemins hollandais. On les tire d'un bruit régulier plutôt que du hasard :
-// il faut qu'elles soient les mêmes à chaque visite.
-function solVieilleVille(u, v) {
-  // Battery Park : la pointe verte de l'île, d'où partent les bateaux.
-  if (v > BATTERY.v) return Math.abs(Math.sin(u * 0.5 + v * 0.3)) < 0.15 ? PIERRE_CLAIRE : BLOCK.GRASS;
-
-  // Wall Street. Elle porte le nom du mur que les Hollandais avaient dressé
-  // là, à la limite nord de leur ville : une saignée droite d'un fleuve à
-  // l'autre, étroite, au milieu des tours.
-  if (Math.abs(v - WALL.v) <= 0.5 && u > WALL.u0 && u < WALL.u1) return PAVE_SOMBRE;
-
-  const a = Math.sin(u * 0.31 + v * 0.11) + Math.sin(v * 0.27 - u * 0.07);
-  const b = Math.sin(u * 0.09 - v * 0.33) + Math.sin(v * 0.19 + u * 0.23);
-  const rue = Math.min(Math.abs(a), Math.abs(b));
-  if (rue < 0.18) return BITUME;
-  if (rue < 0.30) return TROTTOIR;
-  return null;
+  if (estRue(v)) return (u & 7) < 4 ? LIGNE : BITUME;
+  if (LARGES.has(v - 1) || LARGES.has(v + 1)) return BITUME;     // les rues élargies
+  return null;   // le pâté de maisons
 }
 
 // Central Park vu du sol. Les pièces retenues sont celles qu'un enfant repère
@@ -333,8 +489,8 @@ function solDuParc(u, v) {
   const cu = (PARC.u0 + PARC.u1) / 2;
   const eau = (du, dv, ru, rv) => ((u - du) / ru) ** 2 + ((v - dv) / rv) ** 2 < 1;
   // Chaque pièce d'eau à son numéro de rue, comme sur le plan.
-  if (eau(cu, vDeRue(91), 4.5, 5.5)) return BLOCK.WATER;   // le réservoir, 86e-96e
-  if (eau(cu - 1, vDeRue(75), 3.5, 2.5)) return BLOCK.WATER; // le lac, vers la 74e
+  if (eau(cu, vDeRue(91), 4.5, 5.5)) return BLOCK.WATER;      // le réservoir, 86e-96e
+  if (eau(cu - 1, vDeRue(75), 3.5, 2.5)) return BLOCK.WATER;  // le lac, vers la 74e
   if (eau(cu + 3, vDeRue(107), 2.5, 1.8)) return BLOCK.WATER; // Harlem Meer, angle nord-est
   if (eau(cu - 4, vDeRue(103), 2, 1.5)) return BLOCK.WATER;   // The Pool, angle nord-ouest
   if (eau(cu + 5, vDeRue(61), 2, 1.4)) return BLOCK.WATER;    // The Pond, angle sud-est
@@ -349,8 +505,9 @@ function solDuParc(u, v) {
 //
 // Les autres villes posent leurs immeubles lot par lot, sur une grille carrée
 // indépendante du dessin des rues. Ici c'est impossible : les avenues ne sont
-// pas également espacées, et Broadway coupe la grille en biais. Un pâté dessiné
-// sur sa propre trame se serait retrouvé à cheval sur une chaussée.
+// pas également espacées, Broadway coupe la grille en biais, et en bas de l'île
+// chaque quartier a sa propre trame. Un pâté dessiné sur sa propre grille se
+// serait retrouvé à cheval sur une chaussée.
 //
 // On procède donc comme pour le sol : une colonne, une décision. Les bords du
 // pâté se déduisent des mêmes rues que celles qu'on vient de tracer, et tout
@@ -358,13 +515,14 @@ function solDuParc(u, v) {
 
 // La silhouette de Manhattan n'est pas uniforme, et c'est ce qui la rend
 // reconnaissable : deux massifs de tours — Midtown et la pointe financière —
-// séparés par un creux au Village, parce que le socle rocheux y plonge.
+// séparés par tout le bas de l'île, resté bas parce que le socle rocheux y
+// plonge et que rien n'y a été rasé.
 export function quartier(v) {
-  if (v >= 62) return 'finance';
-  if (v >= 33) return 'village';
-  if (v >= 14) return 'chelsea';
-  if (v >= -30) return 'midtown';
-  return 'uptown';
+  if (v >= 95) return 'finance';    // au sud de Chambers : la seconde forêt
+  if (v >= BAS_V) return 'village'; // tout le bas de l'île, cinq à huit étages
+  if (v >= 44) return 'chelsea';    // de la 14e à la 34e
+  if (v >= 21) return 'midtown';    // de la 34e à la 59e : le plus haut
+  return 'uptown';                  // au-dessus du parc
 }
 
 const PALETTES = {
@@ -379,7 +537,7 @@ const PALETTES = {
 // vraie ville : une trentaine d'étages courants à Midtown, cinq à SoHo.
 function hauteurQuartier(q, t) {
   switch (q) {
-    case 'finance': return 16 + Math.floor(t * 26);
+    case 'finance': return 14 + Math.floor(t * 24);
     case 'midtown': return 14 + Math.floor(t * 26);
     case 'chelsea': return 8 + Math.floor(t * 7);
     case 'village': return 5 + Math.floor(t * 4);
@@ -395,19 +553,34 @@ function tirage(a, b, sel) {
 }
 
 // Les bornes du pâté qui contient ce point : entre deux rues au nord et au sud,
-// entre deux avenues à l'est et à l'ouest.
-function lotDe(u, v) {
+// entre deux avenues à l'est et à l'ouest. Valable au-dessus de la 14e Rue,
+// là où la grille de 1811 existe.
+function lotDeLaGrille(u, v) {
   const kv = Math.floor(v / RUE_PAS);
   const v0 = kv * RUE_PAS + 1, v1 = kv * RUE_PAS + RUE_PAS - 1;
   // les avenues sont rangées d'est en ouest : on cherche celles qui encadrent u
   let est = null, ouest = null;
   for (const a of AVENUES) {
+    if (v > a.vFin) continue;
     if (a.u >= u && (est === null || a.u < est.u)) est = a;
     if (a.u <= u && (ouest === null || a.u > ouest.u)) ouest = a;
   }
   const u1 = est ? est.u - est.l - 1 : Math.floor(bordEst(v)) - 1;
   const u0 = ouest ? ouest.u + ouest.l + 1 : Math.ceil(bordOuest(v)) + 1;
   return { u0, u1, v0, v1, kv, ku: ouest ? ouest.u : 99 };
+}
+
+// En bas de l'île il n'y a pas de pâté rectangulaire à trouver : l'îlot est la
+// case de la trame locale. Elle suffit à donner à chaque immeuble sa hauteur et
+// sa couleur, stables d'une visite à l'autre.
+function ilotDuBas(u, v) {
+  const t = trameDe(u, v);
+  // La pointe hollandaise n'a pas de trame : ses îlots sont de petits carrés de
+  // trois blocs, ce qui donne à la skyline de Wall Street le désordre serré
+  // qu'on lui connaît, chaque tour d'une hauteur différente de sa voisine.
+  if (t === null) return { kv: Math.floor(v / 3), ku: Math.floor(u / 3) };
+  const [a, b] = repere(t, u, v);
+  return { kv: Math.round(a / t.pu), ku: Math.round(b / t.pv) };
 }
 
 // Un lot est constructible s'il n'est ni rue, ni place, ni parc, ni fleuve.
@@ -421,23 +594,13 @@ export function lotConstructible(x, z) {
   return solManhattan(x, z) === null;
 }
 
-// De combien de blocs cette colonne est-elle à l'intérieur de son pâté ? Zéro
-// sur la façade. C'est ce nombre qui décide des retraits en hauteur : la loi de
-// zonage de 1916 imposait aux tours de se rétrécir en montant, pour que le jour
-// atteigne encore la rue. C'est de là que vient la silhouette en gradins des
-// gratte-ciel d'avant-guerre.
-function enfoncement(x, z, lot) {
-  const u = x - NY.x, v = z - NY.z;
-  const d = Math.min(u - lot.u0, lot.u1 - u, v - lot.v0, lot.v1 - v);
-  if (d <= 0) return 0;
-  // Broadway et les places rognent le pâté en biais. Un seul anneau de voisins
-  // suffit à savoir qu'on est en façade — et c'est la seule chose dont le
-  // rez-de-chaussée ait besoin. Sonder plus loin coûtait douze appels par
-  // colonne, soit trois millions par morceau de monde : l'île se chargeait
-  // par bribes sous les yeux de l'enfant.
-  if (!lotConstructible(x + 1, z) || !lotConstructible(x - 1, z)
-    || !lotConstructible(x, z + 1) || !lotConstructible(x, z - 1)) return 0;
-  return d;
+// La hauteur de l'immeuble qui occupe ce point. La carte s'en sert pour teinter
+// les pâtés sans fabriquer un seul bloc — c'est ce qui lui permet de dessiner
+// l'île entière avant même qu'on y soit allé.
+function hauteurIci(u, v) {
+  const q = quartier(v);
+  const lot = v > BAS_V ? ilotDuBas(u, v) : lotDeLaGrille(u, v);
+  return hauteurQuartier(q, tirage(lot.kv, lot.ku, 811));
 }
 
 // Bâtit la colonne. `poser(dy, id)` place un bloc dy au-dessus du sol.
@@ -446,24 +609,43 @@ export function batirColonne(x, z, poser, solDejaNul = false) {
   if (!solDejaNul && !lotConstructible(x, z)) return false;
   if (solDejaNul && (!surTerre(x, z) || versRive(x - NY.x, z - NY.z) >= -1)) return false;
   const u = x - NY.x, v = z - NY.z;
-  const lot = lotDe(u, v);
+  const bas = v > BAS_V;
+  const lot = bas ? ilotDuBas(u, v) : lotDeLaGrille(u, v);
   const q = quartier(v);
   const t = tirage(lot.kv, lot.ku, 811);
   let bh = hauteurQuartier(q, t);
   const mur = PALETTES[q][Math.floor(tirage(lot.kv, lot.ku, 812) * PALETTES[q].length) % PALETTES[q].length];
-  const d = enfoncement(x, z, lot);
+
+  // Où en est-on dans le pâté ? Un seul anneau de voisins suffit à savoir qu'on
+  // est en façade — et c'est la seule chose dont le rez-de-chaussée ait besoin.
+  // Sonder plus loin coûtait douze appels par colonne, soit trois millions par
+  // morceau de monde.
+  const oE = lotConstructible(x + 1, z), oO = lotConstructible(x - 1, z);
+  const oS = lotConstructible(x, z + 1), oN = lotConstructible(x, z - 1);
+  const interieur = oE && oO && oS && oN;
+  // De combien de blocs cette colonne est-elle à l'intérieur ? Zéro sur la
+  // façade. C'est ce nombre qui décide des retraits en hauteur : la loi de
+  // zonage de 1916 imposait aux tours de se rétrécir en montant, pour que le
+  // jour atteigne encore la rue. De là vient la silhouette en gradins des
+  // gratte-ciel d'avant-guerre.
+  let d = 0;
+  if (interieur) {
+    d = bas ? 1 : Math.max(1, Math.min(u - lot.u0, lot.u1 - u, v - lot.v0, lot.v1 - v));
+  }
 
   // Un immeuble ne peut pas être plus haut que son terrain ne le porte : une
   // tour de quarante blocs sur une emprise de trois, c'est un crayon, pas un
   // gratte-ciel. La vraie ville obéit à la même règle — les plus hautes tours
   // occupent les plus grands terrains.
-  const emprise = Math.min(lot.u1 - lot.u0, lot.v1 - lot.v0) + 1;
-  const bhMax = 6 + 5 * emprise;
+  const emprise = bas ? 4 : Math.min(lot.u1 - lot.u0, lot.v1 - lot.v0) + 1;
+  bh = Math.min(bh, 6 + 5 * emprise);
 
-  // Les gradins : deux retraits, plus haut on monte.
-  bh = Math.min(bh, bhMax);
-  const t1 = Math.floor(bh * 0.55), t2 = Math.floor(bh * 0.8);
-  const retraitA = (y) => (bh < 14 ? 0 : y < t1 ? 0 : y < t2 ? 1 : 2);
+  // Les gradins. En bas de l'île les îlots sont trop petits pour deux retraits :
+  // un seul, et seulement pour les tours de la pointe financière.
+  const t1 = Math.floor(bh * (bas ? 0.62 : 0.55)), t2 = Math.floor(bh * 0.8);
+  const retraitA = bas
+    ? (y) => (bh < 14 || y < t1 ? 0 : 1)
+    : (y) => (bh < 14 ? 0 : y < t1 ? 0 : y < t2 ? 1 : 2);
 
   // À chaque niveau, l'immeuble occupe le rectangle du pâté rentré de r blocs.
   // La colonne existe tant que son enfoncement le permet ; elle est en façade
@@ -471,24 +653,28 @@ export function batirColonne(x, z, poser, solDejaNul = false) {
   // c'est là que va la dalle. La première version posait cette dalle deux
   // niveaux au-dessus du dernier bloc posé : au-dessus des colonnes creuses,
   // elle flottait toute seule en plein ciel.
+  //
+  // Les fenêtres suivent la façade : le long d'un mur est-ouest c'est v qui les
+  // égrène, le long d'un mur nord-sud c'est u. La première version en mettait
+  // partout : les tours devenaient des cages de verre transparentes, et l'on
+  // voyait le ciel au travers de Midtown.
+  const face = (!oE || !oO) ? v : u;
   let toit = bh;
   for (let y = 0; y < bh; y++) {
     const r = retraitA(y);
     if (d < r) { toit = y; break; }
     if (d > r) { if (y === 0) poser(0, BLOCK.PLANK); continue; }   // l'intérieur
-    // Une fenêtre une rangée sur trois, une colonne sur deux. La première
-    // version en mettait partout : les tours devenaient des cages de verre
-    // transparentes, et l'on voyait le ciel au travers de Midtown.
-    const uu = (Math.abs(u - lot.u0) === r || Math.abs(u - lot.u1) === r) ? v : u;
-    const fenetre = y > 0 && y % 3 !== 0 && (uu & 1) === 1;
+    const fenetre = y > 0 && y % 3 !== 0 && (face & 1) === 1;
     poser(y + 1, fenetre ? VERRE : mur);
   }
   poser(toit + 1, GRANIT);
 
   // Le château d'eau en bois sur le toit : la signature des immeubles bas de
   // la ville, et ce qu'on remarque en premier en levant les yeux.
-  if (bh < 16 && toit === bh && d === 1 && tirage(lot.kv, lot.ku, 813) < 0.4
-    && (u - lot.u0) === 1 && (v - lot.v0) === 1) {
+  const auMilieu = bas
+    ? (((u % 5) + 5) % 5 === 0 && ((v % 5) + 5) % 5 === 0)
+    : ((u - lot.u0) === 1 && (v - lot.v0) === 1);
+  if (bh < 16 && toit === bh && d === 1 && tirage(lot.kv, lot.ku, 813) < 0.4 && auMilieu) {
     for (let k = 2; k <= 4; k++) poser(toit + k, BLOCK.DARKPLANK);
   }
   return true;
@@ -514,14 +700,14 @@ export function couleurCarteManhattan(x, z) {
     if (sol === CITY_BLOCK.SIDEWALK) return BEIGE_PLACE;
     return Math.abs(Math.sin(u * 0.3 + v * 0.17)) > 0.5 ? VERT_PARC : VERT_PELOUSE;
   }
+  // Les squares du bas de l'île et les pelouses de Roosevelt : du vert, sinon
+  // Battery Park et Washington Square se lisaient comme du bitume.
+  if (sol === BLOCK.GRASS || sol === BLOCK.LEAVES) return VERT_PELOUSE;
+  if (sol === BLOCK.WATER) return EAU_PARC;
   if (sol === PIERRE_CLAIRE) return BEIGE_PLACE;
   if (sol !== null) return GRIS_RUE;        // rue, avenue, trottoir, Broadway
   // un pâté de maisons : la teinte dit la hauteur, donc le quartier
-  const lot = lotDe(u, v);
-  const q = quartier(v);
-  const t = tirage(lot.kv, lot.ku, 811);
-  const bh = hauteurQuartier(q, t);
-  const clair = Math.min(1, bh / 40);
+  const clair = Math.min(1, hauteurIci(u, v) / 40);
   return [148 + clair * 60, 146 + clair * 58, 144 + clair * 62];
 }
 
@@ -530,23 +716,25 @@ export function couleurCarteManhattan(x, z) {
 // Chacun est à sa vraie adresse, ramenée à notre grille. Ils sont déclarés ici
 // plutôt que dans world.js pour une raison simple : le générateur d'immeubles
 // doit connaître leur emprise, sinon il bâtirait par-dessus.
-
-// Chacun à son adresse, exprimée en numéro de rue : le jour où l'échelle de
-// l'île change, ils suivent d'eux-mêmes au lieu de se retrouver à la mer.
+//
+// Au nord de la 14e Rue l'adresse est un numéro de rue, et suit donc l'échelle
+// toute seule. Au sud, les rues n'ont pas de numéro : l'adresse est alors
+// donnée en blocs depuis la pointe de Battery, comme le reste du bas de l'île.
 export const MONUMENTS = [
-  { nom: 'Empire State Building', u: 1, v: vDeRue(34), box: 5 },   // 350 Cinquième Avenue
+  { nom: 'Empire State', u: 1, v: vDeRue(34), box: 5 },   // 350 Cinquième Avenue
   { nom: 'Chrysler Building', u: 11, v: vDeRue(42), box: 4 },      // 42e et Lexington
-  { nom: 'Grand Central Terminal', u: 8, v: vDeRue(43), box: 4 },  // 42e et Park
-  { nom: 'Flatiron Building', u: 1, v: vDeRue(23), box: 4 },       // 23e, Broadway et la 5e
+  { nom: 'Grand Central', u: 8, v: vDeRue(43), box: 4 },  // 42e et Park
+  { nom: 'Flatiron', u: 1, v: vDeRue(23), box: 4 },       // 23e, Broadway et la 5e
   { nom: 'Rockefeller Center', u: -4, v: vDeRue(50), box: 4 },     // entre la 5e et la 6e
-  { nom: 'One World Trade Center', u: -7, v: vDeRue(9), box: 5 },  // Financial District
-  { nom: 'Times Square', u: -11, v: vDeRue(42), box: 11 },        // la place et ses écrans
-  { nom: 'Bourse de New York', u: 3, v: WALL.v + 3, box: 7 },     // Wall Street et Broad
-  { nom: 'Trinity Church', u: -6, v: WALL.v + 4, box: 7 },        // au bout de Wall Street
+  { nom: 'One World Trade Center', u: -5, v: 96, box: 5 },         // à l'ouest de Broadway
+  { nom: 'Times Square', u: -11, v: vDeRue(42), box: 11 },         // la place et ses écrans
+  { nom: 'Bourse de New York', u: 3, v: 105, box: 3 },             // Wall Street et Broad
+  { nom: 'Trinity Church', u: -2, v: 101, box: 3, bu: 8 },         // sur Broadway, face à Wall Street
+  { nom: 'Arche de Washington', u: -2, v: 67, box: 4, bv: 2 },
 ];
 
 const dansMonument = (u, v) =>
-  MONUMENTS.some((m) => Math.abs(u - m.u) <= m.box + 1 && Math.abs(v - m.v) <= m.box + 1);
+  MONUMENTS.some((m) => Math.abs(u - m.u) <= (m.bu || m.box) + 1 && Math.abs(v - m.v) <= (m.bv || m.box) + 1);
 
 // Une tour à gradins : le corps monte en se rétrécissant par paliers. C'est le
 // dessin qu'imposait le zonage de 1916, et celui de tous les gratte-ciel
@@ -685,23 +873,21 @@ export function buildGrandCentral(poser) {
 // colonnade, son fronton et le grand drapeau qui le couvre.
 export function buildBourse(poser) {
   const set = (x, y, z, id) => poser(x, y + 1, z, id);
-  for (let dx = -6; dx <= 6; dx++) {
-    for (let dz = -5; dz <= 5; dz++) {
-      const bord = Math.abs(dx) === 6 || Math.abs(dz) === 5;
-      for (let y = 0; y <= 11; y++) if (bord) set(dx, y, dz, PIERRE_CLAIRE);
-      set(dx, 12, dz, PIERRE_CLAIRE);
+  for (let dx = -3; dx <= 3; dx++) {
+    for (let dz = -2; dz <= 2; dz++) {
+      const bord = Math.abs(dx) === 3 || Math.abs(dz) === 2;
+      for (let y = 0; y <= 9; y++) if (bord) set(dx, y, dz, PIERRE_CLAIRE);
+      set(dx, 10, dz, PIERRE_CLAIRE);
     }
   }
-  // les six colonnes de la façade sud, et le fronton au-dessus
-  for (let dx = -5; dx <= 5; dx += 2) {
-    for (let y = 0; y <= 10; y++) set(dx, y, 6, PIERRE_CLAIRE);
-  }
-  for (let k = 0; k <= 3; k++) {
-    for (let dx = -5 + k; dx <= 5 - k; dx++) set(dx, 11 + k, 6, PIERRE_CLAIRE);
+  // les colonnes de la façade nord, tournée vers Wall Street, et le fronton
+  for (let dx = -3; dx <= 3; dx += 2) for (let y = 0; y <= 8; y++) set(dx, y, -3, PIERRE_CLAIRE);
+  for (let k = 0; k <= 2; k++) {
+    for (let dx = -3 + k; dx <= 3 - k; dx++) set(dx, 9 + k, -3, PIERRE_CLAIRE);
   }
   // le drapeau, tendu sur toute la colonnade
-  for (let dx = -4; dx <= 4; dx++) {
-    for (let y = 7; y <= 10; y++) set(dx, y, 7, dx < -1 ? VERRE_BLEU : ((y + dx) & 1 ? BRIQUE_ROUGE : PIERRE_CLAIRE));
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let y = 5; y <= 8; y++) set(dx, y, -4, dx < -1 ? VERRE_BLEU : ((y + dx) & 1 ? BRIQUE_ROUGE : PIERRE_CLAIRE));
   }
 }
 
@@ -710,28 +896,48 @@ export function buildBourse(poser) {
 // encore la rue dans l'axe.
 export function buildTrinity(poser) {
   const set = (x, y, z, id) => poser(x, y + 1, z, id);
-  for (let dx = -3; dx <= 3; dx++) {
-    for (let dz = -6; dz <= 6; dz++) {
-      const bord = Math.abs(dx) === 3 || Math.abs(dz) === 6;
+  // La nef court d'ouest en est, dans l'axe de Wall Street : c'est la vue que
+  // tout le monde connaît, la flèche qui ferme la perspective de la rue.
+  for (let dx = -2; dx <= 8; dx++) {
+    for (let dz = -2; dz <= 2; dz++) {
+      const bord = dx === 8 || Math.abs(dz) === 2;
       for (let y = 0; y <= 8; y++) if (bord) set(dx, y, dz, GRANIT);
       set(dx, 9, dz, ARDOISE);
     }
   }
-  for (let dz = -5; dz <= 5; dz += 2) { set(-3, 5, dz, VERRE); set(3, 5, dz, VERRE); }
-  // le clocher, au sud
+  for (let dx = -1; dx <= 7; dx += 2) { set(dx, 5, -2, VERRE); set(dx, 5, 2, VERRE); }
+  for (let y = 0; y <= 2; y++) set(8, y, 0, BLOCK.AIR);        // le portail, plein est
+  // le clocher, à l'ouest, sur Broadway
   for (let y = 0; y <= 20; y++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dz = 4; dz <= 8; dz++) {
-        if (Math.abs(dx) === 2 || dz === 4 || dz === 8) set(dx, y, dz, GRANIT);
+    for (let dz = -2; dz <= 2; dz++) {
+      for (let dx = -6; dx <= -2; dx++) {
+        if (Math.abs(dz) === 2 || dx === -6 || dx === -2) set(dx, y, dz, GRANIT);
       }
     }
   }
   for (let k = 0; k <= 5; k++) {
     const r = 2 - Math.floor(k / 2);
-    for (let dx = -r; dx <= r; dx++) for (let dz = 6 - r; dz <= 6 + r; dz++) set(dx, 21 + k, dz, ARDOISE);
+    for (let dz = -r; dz <= r; dz++) for (let dx = -4 - r; dx <= -4 + r; dx++) set(dx, 21 + k, dz, ARDOISE);
   }
-  for (let y = 14; y <= 17; y++) { set(0, y, 4, VERRE); set(0, y, 8, VERRE); }
-  set(0, 27, 6, BLOCK.GOLD);   // la croix
+  for (let y = 14; y <= 17; y++) { set(-6, y, 0, VERRE); set(-2, y, 0, VERRE); }
+  set(-4, 27, 0, BLOCK.GOLD);   // la croix
+}
+
+// L'arche de Washington Square : le pied de la Cinquième Avenue, en marbre
+// blanc. C'est là que l'avenue commence — et c'est ce qui explique qu'elle ne
+// descende pas plus bas.
+export function buildArcheWashington(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  for (const dx of [-3, 3]) {
+    for (let y = 0; y <= 8; y++) {
+      for (let dz = -1; dz <= 1; dz++) set(dx, y, dz, PIERRE_CLAIRE);
+    }
+  }
+  for (let dx = -3; dx <= 3; dx++) {
+    for (let dz = -1; dz <= 1; dz++) { set(dx, 9, dz, PIERRE_CLAIRE); set(dx, 10, dz, PIERRE_CLAIRE); }
+  }
+  for (const dx of [-2, 2]) for (let dz = -1; dz <= 1; dz++) set(dx, 8, dz, PIERRE_CLAIRE);
+  set(0, 11, 0, PIERRE_CLAIRE);
 }
 
 // Times Square : le carrefour le plus éclairé du monde. Ce qu'on en retient,
@@ -830,5 +1036,30 @@ export function buildBrooklyn(poser) {
         for (const dx of [-1, 1]) set(tx + dx, y, z0, BLOCK.AIR);
       }
     }
+  }
+}
+
+// Les deux autres ponts de l'East River, ceux dans lesquels débouchent Canal
+// Street et Delancey Street. Ils ne sont pas en pierre mais en acier ajouré,
+// et c'est ce qui les distingue du pont de Brooklyn quand on les voit ensemble
+// depuis la pointe de l'île — ce qui arrive tout le temps.
+export function buildPontAcier(poser) {
+  const set = (x, y, z, id) => poser(x, y + 1, z, id);
+  const TABLIER = 8;
+  for (let dx = -22; dx <= 22; dx++) {
+    for (let dz = -2; dz <= 2; dz++) set(dx, TABLIER, dz, Math.abs(dz) === 2 ? ACIER : PAVE_SOMBRE);
+    // le câble, en chaînette entre les deux tours
+    const cable = TABLIER + 12 + Math.round(Math.cos((dx / 14) * Math.PI) * -7);
+    if (Math.abs(dx) < 15) for (const dz of [-2, 2]) set(dx, cable, dz, ACIER);
+    // les piles dans l'eau, tous les six blocs
+    if (Math.abs(dx) > 15 && dx % 6 === 0) {
+      for (let y = 0; y < TABLIER; y++) for (const dz of [-2, 2]) set(dx, y, dz, ACIER);
+    }
+  }
+  for (const tx of [-14, 14]) {
+    for (let y = 0; y <= TABLIER + 14; y++) {
+      for (const dz of [-2, 2]) { set(tx, y, dz, ACIER); set(tx, y, 0, y > TABLIER ? ACIER : BLOCK.AIR); }
+    }
+    for (let dz = -2; dz <= 2; dz++) set(tx, TABLIER + 14, dz, ACIER);
   }
 }

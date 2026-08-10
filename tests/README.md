@@ -48,11 +48,26 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | Alice retrouve son monde après une veille | « tu joues déjà depuis un autre appareil », et elle restait dehors |
 | la reprise tient dans la durée | l'ancien appareil la rechassait dix secondes plus tard |
 | seule après le départ de l'hôte | le compteur affichait encore deux joueurs |
-| un serveur de rendez-vous muet finit par le dire | le menu restait sur « Ouverture du monde… » indéfiniment |
+| un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
 | l'invité voit le même temps et la même heure que l'hôte | chacun tirait sa météo au sort : l'un sous la pluie en pleine nuit, l'autre au soleil de midi |
 | et il le reste · un invité ne change pas le temps tout seul | mesuré : hôte 0,86 sous la pluie, invité 0,32 au sec |
+
+Deux de ces scénarios ont longtemps échoué une fois sur deux, et pas pour la
+même raison. Le serveur muet mettait quarante secondes à se déclarer parce que
+le jeu retentait en hôte ce que la première tentative avait déjà tranché ;
+c'est réparé, et le scénario mesure désormais aussi le temps. Le trio, lui,
+perdait parfois une présentation : l'invité voyait le troisième joueur — que
+l'hôte lui relayait — mais pas l'hôte, dont la connexion restait « en cours de
+présentation » pour toujours. La présentation se relance maintenant d'elle-même
+au bout de trois secondes.
+
+Et le banc referme les pages dont il n'a plus besoin. Chacune dessine un monde
+en trois dimensions à plein régime ; à quatre parties vivantes sur quatre
+cœurs, les minuteurs du navigateur partent en retard et ce sont les scénarios
+qui mesurent des délais qui en paient le prix. Un test qui échoue parce que la
+machine peine ne prouve rien.
 
 ## Les réglages (`npm run reglages`)
 
@@ -74,6 +89,8 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 | la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
+| un monde retiré ne revient pas du nuage · ni sur l'autre tablette | la liste des mondes était fusionnée par union avec celle du serveur, et une union ne sait pas représenter une absence voulue : le monde effacé revenait tout seul, avec ses blocs |
+| mais retaper le code le ramène | une suppression irréversible est une suppression qu'on n'ose pas faire |
 
 Le serveur est simulé par `nuage.js`, un Supabase de poche : le test peut ainsi
 regarder ce qui est **réellement** enregistré, ce qu'aucune capture d'écran ne
@@ -98,6 +115,10 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
 | ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
 | on ne peut ni zoomer à l'infini ni sortir du monde | — |
+| les quartiers du bas de l'île ont la place d'exister | de Battery à la 14e Rue il y avait quinze blocs, moins qu'un pâté de Midtown : TriBeCa, SoHo, Chinatown, le Village et Wall Street s'y superposaient |
+| la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
+| les lieux de Paris sont sur la carte | l'Opéra, le Panthéon, les Invalides, la Bastille et le Luxembourg n'existaient pas |
+| chaque monument de Paris est sur sa rive et au sec | la Tour Eiffel se dressait rive droite et le Louvre rive gauche |
 
 ## Si Chromium n'est pas trouvé
 
