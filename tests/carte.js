@@ -363,6 +363,57 @@ const position = (p) => p.evaluate(() => ({
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
     await dormir(300);
 
+    // --- le parc d'attractions -----------------------------------------------
+    //
+    // « Le parc d'attractions n'est pas dingue » — il tenait dans cinquante
+    // blocs : une grande roue, un carrousel, un anneau de rails, et une allée
+    // dallée posée un bloc trop bas, donc enterrée et invisible. On mesure
+    // maintenant ce qui fait un parc : du relief, un lac, et des villages qu'on
+    // peut viser sur la carte.
+    const PARC = { x: 150, z: -60 };
+    const releve = await tab.evaluate(({ p }) => {
+      const w = window.__game.world;
+      const EAU = 7;
+      let plusHaut = 0, eau = 0;
+      const hautes = [];
+      for (let u = -50; u <= 50; u++) {
+        for (let v = -50; v <= 50; v++) {
+          if (Math.hypot(u, v) > 50) continue;
+          const x = p.x + u, z = p.z + v;
+          if (w.getBlock(x, 33, z) === EAU) eau++;
+          let haut = 33;
+          for (let y = 90; y > 33; y--) if (w.getBlock(x, y, z)) { haut = y; break; }
+          const h = haut - 33;
+          if (h > plusHaut) plusHaut = h;
+          if (h >= 12) hautes.push([u, v]);
+        }
+      }
+      // Combien de bâtiments distincts dépassent douze blocs ? On regroupe les
+      // colonnes hautes par paquets de dix blocs : deux attractions à dix
+      // blocs l'une de l'autre, c'est la même.
+      const paquets = new Set(hautes.map(([u, v]) => `${Math.floor(u / 10)},${Math.floor(v / 10)}`));
+      return { plusHaut, eau, hautes: hautes.length, paquets: paquets.size };
+    }, { p: PARC });
+    verifier('le parc a du relief, un lac et des attractions',
+      releve.plusHaut >= 35 && releve.eau >= 250 && releve.paquets >= 12,
+      `plus haut ${releve.plusHaut} blocs · ${releve.eau} blocs d'eau · ${releve.paquets} ensembles bâtis`);
+
+    await banc.ouvrirLaCarte(tab);
+    await tab.evaluate(({ p }) => {
+      const c2 = window.__carte;
+      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.35;
+      c2.limiter(); c2.peindre();
+    }, { p: PARC });
+    await dormir(600);
+    const vusParc = await lieuxVus(tab);
+    const villages = ['Entrée du parc', 'Village allemand', 'Village italien', 'Village grec',
+      'Village scandinave', 'Village russe', 'Village néerlandais', 'Village espagnol'];
+    const sansVillage = villages.filter((n) => !vusParc.includes(n));
+    verifier('et ses villages sont des destinations', sansVillage.length === 0,
+      sansVillage.length ? `absents : ${sansVillage.join(', ')}` : `${villages.length} villages`);
+    await tab.evaluate(() => document.getElementById('map-modal-close').click());
+    await dormir(300);
+
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 

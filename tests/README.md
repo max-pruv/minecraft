@@ -119,6 +119,8 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
 | les lieux de Paris sont sur la carte | l'Opéra, le Panthéon, les Invalides, la Bastille et le Luxembourg n'existaient pas |
 | chaque monument de Paris est sur sa rive et au sec | la Tour Eiffel se dressait rive droite et le Louvre rive gauche |
+| le parc a du relief, un lac et des attractions | le parc tenait dans cinquante blocs — une roue, un carrousel, un anneau de rails — et son allée dallée était posée un bloc trop bas, donc enterrée |
+| et ses villages sont des destinations | on arrivait au parc par son seul nom, sans savoir où aller ensuite |
 
 ## Si Chromium n'est pas trouvé
 
