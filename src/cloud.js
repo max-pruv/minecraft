@@ -132,6 +132,25 @@ export class CloudSave {
     return rows.length ? rows[0].prefs : null;
   }
 
+  // Plusieurs documents d'un coup, en UNE requête.
+  //
+  // Le jeu guette deux choses toutes les deux secondes : les consignes d'un
+  // parent, et les invitations d'un ami. Les lire séparément, c'est doubler
+  // le trafic d'une boucle qui tourne en permanence sur la tablette d'un
+  // enfant. `in.(…)` les ramène ensemble, et le résultat est rendu par nom.
+  async prefsPullMany(names) {
+    const vide = new Map();
+    if (!this.configured || !names.length) return vide;
+    const liste = names.map((n) => `"${String(n).replace(/"/g, '')}"`).join(',');
+    const res = await fetch(
+      `${this.url}/rest/v1/player_prefs?name=in.(${encodeURIComponent(liste)})&select=name,prefs`,
+      { headers: this.headers(), cache: 'no-store' }
+    );
+    if (!res.ok) return vide;
+    for (const r of await res.json()) vide.set(r.name, r.prefs);
+    return vide;
+  }
+
   async prefsPush(name, prefs) {
     if (!this.configured || !name) return;
     await fetch(`${this.url}/rest/v1/player_prefs`, {
@@ -139,6 +158,24 @@ export class CloudSave {
       headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
       body: JSON.stringify([{ name, prefs, updated_at: new Date().toISOString() }]),
     });
+  }
+
+  // Qui est là, en ce moment, sur tous les appareils de la maison.
+  //
+  // La présence était déjà écrite — chaque tablette pose `live` dans ses
+  // réglages toutes les vingt secondes — mais seul l'espace parent la lisait.
+  // C'est pourtant elle qui permet à un enfant de voir qu'un autre est
+  // connecté ailleurs, et de l'inviter.
+  async presences() {
+    if (!this.configured) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/player_prefs?select=name,prefs`,
+      { headers: this.headers(), cache: 'no-store' }
+    );
+    if (!res.ok) return [];
+    return (await res.json())
+      .map((r) => ({ nom: r.name, live: (r.prefs || {}).live }))
+      .filter((p) => p.live && p.live.at);
   }
 
   // ---- whole-profile state, keyed by first name --------------------------

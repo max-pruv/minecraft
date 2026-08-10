@@ -26,6 +26,14 @@ function servirLeNuage(port) {
     const m = (url.searchParams.get(champ) || '').match(/^eq\.(.+)$/);
     return m ? decodeURIComponent(m[1]) : null;
   };
+  // `in.("a","b")` : le jeu lit les consignes du parent et l'invitation d'un
+  // ami dans la même requête, plutôt que de doubler une boucle qui tourne
+  // toutes les deux secondes sur la tablette d'un enfant.
+  const dans = (url, champ) => {
+    const m = (url.searchParams.get(champ) || '').match(/^in\.\((.*)\)$/);
+    if (!m) return null;
+    return m[1].split(',').map((v) => decodeURIComponent(v.trim()).replace(/^"|"$/g, ''));
+  };
 
   const serveur = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,6 +59,11 @@ function servirLeNuage(port) {
       if (req.method === 'GET') {
         const k = egal(url, t.champ);
         if (k !== null) return json(res, t.magasin.has(k) ? [t.seul(t.magasin.get(k))] : []);
+        const plusieurs = dans(url, t.champ);
+        if (plusieurs) {
+          return json(res, plusieurs.filter((k2) => t.magasin.has(k2))
+            .map((k2) => t.ligne(k2, t.magasin.get(k2))));
+        }
         return json(res, [...t.magasin.entries()].map(([k2, v]) => t.ligne(k2, v)));
       }
       if (req.method === 'POST') {

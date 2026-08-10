@@ -962,12 +962,141 @@ function openPlayersPanel() {
     row((NET_CHARACTERS[c.lookIdx] || NET_CHARACTERS[0]).emoji, c.name, 'en ligne');
   }
   fun.decoratePlayersPanel(list); // friendly duels & hide-and-seek
+  document.getElementById('pp-amis').innerHTML = '';
+  document.getElementById('pp-amis-btn').style.display = cloud.configured ? 'block' : 'none';
   document.getElementById('players-panel').style.display = 'flex';
 }
 playersBtn.addEventListener('click', openPlayersPanel);
 document.getElementById('players-close').addEventListener('click', () => {
   document.getElementById('players-panel').style.display = 'none';
 });
+
+// --- les amis connectés ailleurs ------------------------------------------
+//
+// Le compteur du monde ne dit qu'une chose : combien on est ICI. Un enfant qui
+// voit « 🌐 1 » ne sait pas si son frère est devant sa tablette, dans son
+// monde local, ou pas là du tout — et il n'avait aucun moyen de le lui
+// demander autrement qu'en criant dans le couloir.
+//
+// La présence, elle, était déjà écrite : chaque tablette pose dans ses
+// réglages où elle est et quand, toutes les vingt secondes. Seul l'espace
+// parent la lisait. Il suffisait de la rendre à l'enfant.
+const AMI_EN_LIGNE_MS = 90 * 1000;   // deux battements manqués : il n'est plus là
+
+// `~parent`, `~invit` : les documents de service ne sont pas des joueurs.
+const estUnJoueur = (nom) => !String(nom).includes('~');
+
+async function listerLesAmis() {
+  const zone = document.getElementById('pp-amis');
+  zone.innerHTML = '<div class="pp-vide">On regarde qui est là…</div>';
+  let presences = [];
+  try { presences = await cloud.presences(); } catch { /* hors ligne */ }
+  const moi = (myName() || '').toLowerCase();
+  const maintenant = Date.now();
+  const amis = presences
+    .filter((p) => estUnJoueur(p.nom) && p.nom.toLowerCase() !== moi)
+    .filter((p) => maintenant - (p.live.at || 0) < AMI_EN_LIGNE_MS)
+    // ceux qui sont déjà dans NOTRE monde n'ont pas besoin d'invitation
+    .filter((p) => !(net && net.active && p.live.monde === net.code));
+
+  zone.innerHTML = '';
+  if (!amis.length) {
+    zone.innerHTML = '<div class="pp-vide">Personne d\'autre n\'est connecté en ce moment.</div>';
+    return;
+  }
+  for (const a of amis) {
+    const ligne = document.createElement('div');
+    ligne.className = 'pp-row';
+    const ou = a.live.monde ? `monde ${a.live.monde}` : 'son propre monde';
+    const nom = document.createElement('span');
+    nom.style.flex = '1';
+    nom.textContent = a.nom;
+    const lieu = document.createElement('span');
+    lieu.className = 'pp-ou';
+    lieu.textContent = ou;
+    const bouton = document.createElement('button');
+    bouton.className = 'pp-inviter';
+    bouton.textContent = 'Inviter';
+    bouton.addEventListener('click', async () => {
+      bouton.disabled = true;
+      bouton.textContent = '…';
+      const parti = await inviter(a.nom);
+      bouton.textContent = parti ? '✓ invité' : '✗ raté';
+      if (!parti) bouton.disabled = false;
+    });
+    ligne.append(document.createElement('span'), nom, lieu, bouton);
+    ligne.firstChild.className = 'pp-emoji';
+    ligne.firstChild.textContent = '👋';
+    zone.appendChild(ligne);
+  }
+}
+document.getElementById('pp-amis-btn').addEventListener('click', listerLesAmis);
+
+async function inviter(nom) {
+  if (!net || !net.active) return false;
+  try {
+    await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, at: Date.now() });
+    creatureManager.toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
+    return true;
+  } catch {
+    creatureManager.toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
+    return false;
+  }
+}
+
+// --- recevoir une invitation ----------------------------------------------
+//
+// Deux chemins, parce qu'un enfant n'a pas toujours le jeu sous les yeux :
+// le panneau, qui attend qu'on revienne, et la vraie notification du système,
+// qui va le chercher sur son écran d'accueil. Elle ne part qu'une fois par
+// invitation — la date en fait l'identité, et on retient la dernière traitée.
+function recevoirInvitation(inv) {
+  if (!inv || !inv.code || !inv.at) return;
+  if (Date.now() - inv.at > INVIT_MS) return;
+  let vue = 0;
+  try { vue = Number(localStorage.getItem(INVIT_VUE)) || 0; } catch { /* ignore */ }
+  if (inv.at <= vue) return;
+  try { localStorage.setItem(INVIT_VUE, String(inv.at)); } catch { /* ignore */ }
+  // Déjà dedans : l'invitation est arrivée après coup, il n'y a rien à faire.
+  if (net && net.active && net.code === inv.code) return;
+  montrerInvitation(inv);
+  notifierSysteme(`🎉 ${inv.de} t'invite !`,
+    `Rejoins son monde ${inv.code} — ouvre le jeu et clique sur « Rejoindre ».`, 'wm-invit');
+}
+
+function montrerInvitation(inv) {
+  document.getElementById('invit-txt').textContent =
+    `${inv.de} t'invite à jouer dans son monde !`;
+  document.getElementById('invit-code').textContent = inv.code;
+  document.getElementById('invit-panel').style.display = 'flex';
+}
+
+function fermerInvitation() {
+  document.getElementById('invit-panel').style.display = 'none';
+}
+document.getElementById('invit-plus-tard').addEventListener('click', fermerInvitation);
+document.getElementById('invit-rejoindre').addEventListener('click', () => {
+  accepterInvitation(document.getElementById('invit-code').textContent);
+});
+
+// On accepte souvent depuis un monde où l'on est déjà. Il faut donc quitter
+// celui-ci avant d'ouvrir l'autre — sans cela, deux sessions se disputaient le
+// même joueur et les avatars de l'ancien monde restaient plantés là.
+async function accepterInvitation(code) {
+  fermerInvitation();
+  document.getElementById('players-panel').style.display = 'none';
+  if (net) {
+    try { net.stop(); } catch { /* déjà arrêté */ }
+    net = null;
+    syncRemotePlayers([]);
+  }
+  await openWorld(code);
+}
+
+// Les tests suivent le parcours entier, d'un enfant à l'autre.
+window.__inviter = inviter;
+window.__listerLesAmis = listerLesAmis;
+window.__accepterInvitation = accepterInvitation;
 const cloud = new CloudSave(world, (msg, color) => creatureManager.toast(msg, color));
 
 // player profile: each device types its own character name (Marlon, Alice…)
@@ -1180,11 +1309,32 @@ function retenirConsignes(prefs) {
   }
 }
 
+// Les invitations voyagent dans un document à part, pour la même raison que
+// les consignes : celui de l'enfant est réécrit en entier toutes les quinze
+// secondes par sa propre tablette, et une invitation qui s'y serait glissée
+// aurait disparu avant d'être lue. Le jeu n'a pas d'autre canal — il ne peut
+// écrire que dans les tables qu'il lit déjà.
+const cleInvit = (nom) => `${nom}~invit`;
+// Passé ce délai, l'invitation ne vaut plus : l'ami est parti manger, ou a
+// changé de monde. Mieux vaut ne rien dire que faire courir un enfant vers un
+// monde vide.
+const INVIT_MS = 5 * 60 * 1000;
+const INVIT_VUE = 'wm-invit-vue';
+
 // Les consignes d'abord dans leur document ; à défaut, dans celui de l'enfant,
-// où les versions précédentes les rangeaient.
+// où les versions précédentes les rangeaient. L'invitation d'un ami arrive
+// dans la même requête : c'est la boucle la plus fréquente du jeu, elle n'a pas
+// à être doublée.
 async function lireConsignes() {
-  let vues = null;
-  try { vues = await cloud.prefsPull(cleConsignes(playerProfile.name)); } catch { /* hors ligne */ }
+  let vues = null, invit = null;
+  try {
+    const docs = await cloud.prefsPullMany([
+      cleConsignes(playerProfile.name), cleInvit(playerProfile.name),
+    ]);
+    vues = docs.get(cleConsignes(playerProfile.name)) || null;
+    invit = docs.get(cleInvit(playerProfile.name)) || null;
+  } catch { /* hors ligne */ }
+  if (invit) recevoirInvitation(invit);
   const avant = JSON.stringify(consignesParents);
   let profilChange = false;
   if (vues) {
