@@ -285,6 +285,82 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'espace parent l\'affiche', affichee === null || /v99/.test(affichee),
       String(affichee).slice(0, 120));
 
+    // --- retirer un monde de sa liste ---------------------------------------
+    //
+    // Signalé à la maison : « quand on supprime un monde qu'on ne veut plus,
+    // en ligne il ne se supprime pas ». Il disparaît bien de l'écran, puis il
+    // revient tout seul quelques secondes plus tard — parce que la liste des
+    // mondes est fusionnée avec celle du serveur par UNION, et qu'une union
+    // ne sait pas représenter une absence voulue. Le monde effacé revenait
+    // donc du nuage, avec ses blocs, sur cette tablette comme sur l'autre.
+    await marlon.evaluate(() => {
+      localStorage.setItem('web-minecraft-worlds-v1', JSON.stringify([
+        { code: '424242', t: Date.now() }, { code: '515151', t: Date.now() - 1000 },
+      ]));
+      const blocs = JSON.parse(localStorage.getItem('web-minecraft-edits-v3') || '{}');
+      blocs['424242'] = { '10,40,10': [3, Date.now()] };
+      localStorage.setItem('web-minecraft-edits-v3', JSON.stringify(blocs));
+    });
+    await marlon.evaluate(() => window.__game.profileSync.push());
+    const monteAuNuage = await jusqua(async () =>
+      ((nuage.etat('Marlon') || {}).worlds || []).some((w) => w.code === '424242'), 20000);
+    verifier('le monde figure d\'abord dans le profil en ligne', monteAuNuage,
+      JSON.stringify(((nuage.etat('Marlon') || {}).worlds || []).map((w) => w.code)));
+
+    // On refait la liste à l'écran, puis on clique la croix du premier monde,
+    // exactement comme l'enfant.
+    const retire = await marlon.evaluate(async () => {
+      window.gameConfirm = () => Promise.resolve(true);
+      document.getElementById('online-btn').click();
+      await new Promise((r) => setTimeout(r, 300));
+      const croix = document.querySelector('#recent-worlds .world-chip .world-del');
+      if (!croix) return 'pas de croix';
+      croix.click();
+      await new Promise((r) => setTimeout(r, 600));
+      return JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code).join(',');
+    });
+    verifier('la croix retire le monde de l\'écran', retire === '515151', String(retire));
+
+    // Et maintenant l'épreuve : la synchronisation suivante ne doit pas le
+    // ramener, ni sur cette tablette, ni dans le document du serveur.
+    await marlon.evaluate(() => window.__game.profileSync.pull());
+    await dormir(1500);
+    const revenu = await marlon.evaluate(() =>
+      JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code));
+    verifier('et il ne revient pas du nuage', !revenu.includes('424242'), JSON.stringify(revenu));
+
+    const auNuage = ((nuage.etat('Marlon') || {}).worlds || []).map((w) => w.code);
+    const blocsRestants = Object.keys(((nuage.etat('Marlon') || {}).edits || {}));
+    verifier('le serveur l\'oublie aussi, avec ses blocs',
+      !auNuage.includes('424242') && !blocsRestants.includes('424242'),
+      `mondes ${JSON.stringify(auNuage)} · blocs ${JSON.stringify(blocsRestants)}`);
+
+    // L'autre tablette de l'enfant doit l'apprendre : c'est là que la panne se
+    // voyait le mieux, un monde effacé le matin et revenu le soir.
+    const autre = await joueur('Marlon');
+    const propre = await jusqua(async () => {
+      const l = await autre.evaluate(() =>
+        JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code));
+      return !l.includes('424242');
+    }, 30000);
+    verifier('et l\'autre tablette ne le ressuscite pas', propre,
+      JSON.stringify(await autre.evaluate(() =>
+        JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code))));
+    await autre.close();
+
+    // Une pierre tombale n'est pas définitive : retaper le code doit tout
+    // ramener. Sans cela, un enfant qui se trompe de croix perd son monde pour
+    // de bon — et c'est justement la crainte qui empêche de ranger sa liste.
+    await marlon.evaluate(() => window.__game.__reprendreMonde('424242'));
+    await marlon.evaluate(() => window.__game.profileSync.push());
+    await dormir(800);
+    await marlon.evaluate(() => window.__game.profileSync.pull());
+    await dormir(1200);
+    const revenuVoulu = await marlon.evaluate(() =>
+      JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code));
+    verifier('mais retaper le code le ramène', revenuVoulu.includes('424242'),
+      JSON.stringify(revenuVoulu));
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0,
       JSON.stringify(marlon.erreurs));
   } finally {

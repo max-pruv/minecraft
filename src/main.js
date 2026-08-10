@@ -1590,13 +1590,58 @@ function myName() {
 
 // worlds the device has already played in, for one-tap reopening
 const WORLDS_KEY = 'web-minecraft-worlds-v1';
+// Les mondes retirés, avec la date du geste. Sans cette trace, la liste des
+// mondes était fusionnée avec celle du serveur par union — et une union ne sait
+// pas représenter une absence voulue : le monde effacé revenait tout seul
+// quelques secondes plus tard, sur cette tablette comme sur l'autre.
+const WORLDS_DEL_KEY = 'web-minecraft-worlds-del-v1';
 function loadWorlds() {
   try { return JSON.parse(localStorage.getItem(WORLDS_KEY) || '[]'); } catch { return []; }
+}
+function loadRetraits() {
+  try { return JSON.parse(localStorage.getItem(WORLDS_DEL_KEY) || '{}'); } catch { return {}; }
 }
 function rememberWorld(code) {
   const worlds = loadWorlds().filter((w) => w.code !== code);
   worlds.unshift({ code, t: Date.now() });
   try { localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds.slice(0, 5))); } catch { /* ignore */ }
+  // Y retourner, c'est le reprendre : la pierre tombale saute. C'est ce qui
+  // permet à l'enfant de récupérer un monde retiré par erreur — il retape son
+  // code, et tout revient.
+  const retraits = loadRetraits();
+  if (retraits[code] !== undefined) {
+    delete retraits[code];
+    try { localStorage.setItem(WORLDS_DEL_KEY, JSON.stringify(retraits)); } catch { /* ignore */ }
+  }
+}
+
+// Retirer un monde : de la liste, de ses blocs, de sa position — et du profil
+// en ligne, pour que l'autre tablette l'apprenne. Ce qui est partagé avec un
+// ami, lui, reste : un enfant qui range sa liste n'efface pas le monde des
+// autres, il s'en va. Retaper le code le ramène.
+function oublierMonde(code) {
+  const t = Date.now();
+  // Si c'est le monde encore chargé en mémoire, on en sort d'abord : sinon la
+  // sauvegarde suivante — ou le simple instantané envoyé au serveur, qui lit
+  // le monde vivant et pas le stockage — le réécrirait aussitôt.
+  if (world.ctx === code) world.switchContext('local');
+  const retraits = loadRetraits();
+  retraits[code] = t;
+  try {
+    localStorage.setItem(WORLDS_KEY, JSON.stringify(loadWorlds().filter((w) => w.code !== code)));
+    localStorage.setItem(WORLDS_DEL_KEY, JSON.stringify(retraits));
+    const blocs = JSON.parse(localStorage.getItem(World.STORAGE_KEY) || '{}');
+    delete blocs[code];
+    localStorage.setItem(World.STORAGE_KEY, JSON.stringify(blocs));
+    const pos = JSON.parse(localStorage.getItem(POS_KEY) || '{}');
+    delete pos[code];
+    localStorage.setItem(POS_KEY, JSON.stringify(pos));
+  } catch { /* le stockage est plein ou fermé : la liste reste, on n'aggrave pas */ }
+  posRestored.delete(code);
+  posAppliquee.delete(code);
+  // Tout de suite au serveur : attendre le prochain battement, c'est laisser
+  // à l'autre tablette une chance de republier le monde entre-temps.
+  profileSync.push().catch(() => { /* le prochain battement s'en chargera */ });
 }
 function renderRecentWorlds() {
   const row = document.getElementById('recent-worlds');
@@ -1627,9 +1672,12 @@ function renderRecentWorlds() {
     del.title = 'Retirer ce monde de la liste';
     del.addEventListener('click', async () => {
       const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
-      if (!(await ask(`Retirer le monde ${w.code} de ta liste ?`, '🗑️', 'Retirer ✕'))) return;
-      const rest = loadWorlds().filter((o) => o.code !== w.code);
-      try { localStorage.setItem(WORLDS_KEY, JSON.stringify(rest)); } catch { /* ignore */ }
+      if (!(await ask(
+        `Retirer le monde ${w.code} de ta liste ?\n\nCe que tu y as construit sera effacé de tes tablettes.`
+        + ' Si un ami y joue encore, son monde à lui ne change pas — et tu peux revenir en retapant le code.',
+        '🗑️', 'Retirer ✕',
+      ))) return;
+      oublierMonde(w.code);
       renderRecentWorlds();
     });
     chip.append(btn, open, del);
@@ -3871,7 +3919,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
