@@ -363,6 +363,52 @@ const position = (p) => p.evaluate(() => ({
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
     await dormir(300);
 
+    // --- le tissu de Paris ----------------------------------------------------
+    //
+    // Le fleuve, les places et les percées étaient au bon endroit. Entre elles,
+    // il n'y avait rien : la trame générique posait un immeuble par lot de
+    // douze blocs, mais elle écartait tout lot voisin d'un repère, et le repère
+    // « Caserne & Commissariat » couvre Paris entière. Le pâté d'immeubles
+    // haussmannien n'a donc jamais été bâti une seule fois — Paris était un
+    // plan de rues posé sur une prairie.
+    //
+    // Trois choses le disent, et aucune n'a besoin d'une capture d'écran : la
+    // pierre de taille et le zinc dont la ville est faite, les cours au milieu
+    // des îlots, et l'herbe qu'on ne foule plus en la traversant.
+    const tissu = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const P = { x: -240, z: 200 };
+      const PIERRE = 560, ZINC = 561, PAVE_DE_COUR = 9, HERBE = 1, TERRE = 2;
+      let bati = 0, cours = 0, nu = 0, total = 0;
+      for (let u = -40; u <= 40; u++) {
+        for (let v = -40; v <= 40; v++) {
+          if (Math.hypot(u, v) > 40) continue;
+          total++;
+          const x = P.x + u, z = P.z + v;
+          const h = w.terrainHeight(x, z);
+          const sol = w.getBlock(x, h, z);
+          if (sol === PAVE_DE_COUR) cours++;
+          let pierre = false, rien = true;
+          for (let y = h + 1; y < h + 20; y++) {
+            const id = w.getBlock(x, y, z);
+            if (!id) continue;
+            rien = false;
+            if (id === PIERRE || id === ZINC) pierre = true;
+          }
+          if (pierre) bati++;
+          if (rien && (sol === HERBE || sol === TERRE)) nu++;
+        }
+      }
+      return { bati, cours, nu, total };
+    });
+    verifier('Paris est bâtie de pierre de taille et de zinc',
+      tissu.bati > 700,
+      `${tissu.bati} colonnes sur ${tissu.total}`);
+    verifier('ses îlots ont une cour', tissu.cours > 40,
+      `${tissu.cours} pavés de cour`);
+    verifier('et on ne la traverse plus dans l\'herbe', tissu.nu < 400,
+      `${tissu.nu} colonnes d'herbe nue`);
+
     // --- le parc d'attractions -----------------------------------------------
     //
     // « Le parc d'attractions n'est pas dingue » — il tenait dans cinquante
