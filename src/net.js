@@ -125,7 +125,13 @@ export class NetSession {
         settled = true;
         this.active = false;
         try { this.peer.destroy(); } catch { /* déjà en morceaux */ }
-        reject(new Error('Le serveur de jeu ne répond pas — réessaie dans un moment'));
+        // Marqué : c'est le serveur de rendez-vous qui n'a pas répondu, pas le
+        // monde d'en face. L'appelant n'a alors aucune raison de retenter en
+        // hôte — il buterait sur exactement le même mur, et l'enfant
+        // attendrait deux fois neuf secondes pour le même verdict.
+        const muet = new Error('Le serveur de jeu ne répond pas — réessaie dans un moment');
+        muet.signal = true;
+        reject(muet);
       }, OUVERTURE_MS);
       // À partir d'ici, le pair vit : les délais suivants sont ceux de
       // connectToHost, qui a sa propre limite.
@@ -264,6 +270,22 @@ export class NetSession {
       this.greet(conn);
       this.link('ok');
       if (!fini) { fini = true; done?.(null); }
+      // Le canal est ouvert, les deux « hello » sont partis — et il arrive
+      // qu'un des deux n'arrive jamais. On voyait alors, à trois, un enfant
+      // qui apercevait le troisième joueur (relayé par l'hôte) mais pas
+      // l'hôte lui-même : sa connexion restait « en cours de présentation »
+      // pour toujours, sans erreur ni message. Une relance au bout de trois
+      // secondes suffit, et ne coûte rien quand tout va bien.
+      setTimeout(() => {
+        const c = this.conns.get(conn.peer);
+        if (!this.active || !c || c.pret || !conn.open) return;
+        try {
+          conn.send({
+            t: 'hello', encore: true,
+            name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
+          });
+        } catch { /* le lien est mort, le reste du code s'en occupe */ }
+      }, 3000);
     });
     conn.on('error', () => rate(new Error('Connexion impossible')));
   }
@@ -535,6 +557,10 @@ export class NetSession {
             for (const o of this.conns.values()) this.envoyer(o, { t: 'bye', from: id });
           }
         }
+        // Une présentation relancée : notre première réponse s'est perdue en
+        // route, on la renvoie. Le drapeau vient de l'autre côté, jamais de
+        // nous — il n'y a donc pas d'échange qui s'entretient tout seul.
+        if (msg.encore) this.greet(conn);
         entry.pret = true;
         entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;

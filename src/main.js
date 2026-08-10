@@ -1897,7 +1897,12 @@ async function openWorld(code) {
 
   let ouvertVide = false;
   let err = await essayer(false);
-  if (err) {
+  // Un serveur de rendez-vous muet ne se soigne pas en changeant de rôle : la
+  // première tentative a déjà prouvé qu'il ne répond pas, et retenter en hôte
+  // ne faisait qu'ajouter neuf secondes d'attente avant le même message. Sur
+  // un portail captif d'hôtel, l'enfant patientait quarante secondes devant
+  // « Ouverture du monde… » pour finir sur un refus.
+  if (err && !err.signal) {
     err = await essayer(true);
     ouvertVide = !err;
   }

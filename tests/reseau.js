@@ -151,6 +151,23 @@ function verifier(nom, ok, detail = '') {
     verifier('et le jeu continue d\'essayer de la reconnecter',
       seule.lien === 'reconnexion', String(seule.lien));
 
+    // --- petites robustesses --------------------------------------------------
+    const avant = fautes(alice2).length;
+    await alice2.evaluate(() => {
+      window.__game.__leaving?.();
+      document.getElementById('online-play-btn').click();
+    }).catch(() => { /* le clic est justement ce qu'on éprouve */ });
+    await dormir(800);
+    verifier('« Entrer dans le monde » ne casse rien sans session',
+      fautes(alice2).length === avant, JSON.stringify(fautes(alice2).slice(avant)));
+
+    // Alice a quitté : sans cela sa page relance une tentative de reconnexion
+    // toutes les trois à vingt secondes jusqu'à la fin de la suite, contre un
+    // hôte qui n'existe plus. Ce n'est pas un test, c'est du bruit — et c'est
+    // ce bruit qui faisait échouer, une fois sur deux, le monde vide qui suit.
+    await alice2.close();
+
+
     // --- ouvrir un monde vide doit se voir ------------------------------------
     // Le défaut signalé par la famille : on tape un code, tout se passe sans la
     // moindre erreur, et l'enfant joue seul en croyant avoir rejoint l'autre.
@@ -174,6 +191,13 @@ function verifier(nom, ok, detail = '') {
     verifier('et les deux se voient', (await nomsVus(solo)).includes('Tom')
       && (await nomsVus(enfin)).includes('Nina'),
       `${JSON.stringify(await nomsVus(solo))} / ${JSON.stringify(await nomsVus(enfin))}`);
+    // On referme ce qui a servi. Chaque page laissée ouverte continue de
+    // dessiner un monde en trois dimensions à plein régime : à quatre parties
+    // vivantes, les minuteurs du navigateur partent en retard et ce sont les
+    // scénarios de la fin — ceux qui mesurent des délais — qui en paient le
+    // prix. Un test qui échoue parce que la machine peine ne prouve rien.
+    await solo.close();
+    await enfin.close();
 
     // --- un serveur de rendez-vous muet ne doit pas figer le menu -------------
     // Reproduit d'après une capture : le menu restait sur « Ouverture du
@@ -190,11 +214,17 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-code').value = '30953';
       document.getElementById('join-btn').click();
     });
+    // Et il doit le dire vite. Le jeu tentait de rejoindre, puis d'héberger,
+    // et attendait deux fois la même limite avant de conclure : quarante
+    // secondes devant « Ouverture du monde… » pour un verdict que la première
+    // tentative connaissait déjà. On mesure donc aussi le temps, pas seulement
+    // le message — c'est le temps qui était le défaut.
     const t0 = Date.now();
     const dit = await jusqua(async () => /❌/.test(
       await perdu.evaluate(() => document.getElementById('online-status').textContent)), 40000);
-    verifier('un serveur de rendez-vous muet finit par le dire', dit,
-      `${((Date.now() - t0) / 1000).toFixed(0)} s · `
+    const mis = (Date.now() - t0) / 1000;
+    verifier('un serveur de rendez-vous muet le dit, et vite', dit && mis < 20,
+      `${mis.toFixed(0)} s · `
       + JSON.stringify(await perdu.evaluate(() => document.getElementById('online-status').textContent)));
     await perdu.close();
     muet.close();
@@ -235,16 +265,6 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify(await sourd.evaluate(() => document.getElementById('online-status').textContent)));
     await sourd.close();
     arreterSourd();
-
-    // --- petites robustesses --------------------------------------------------
-    const avant = fautes(alice2).length;
-    await alice2.evaluate(() => {
-      window.__game.__leaving?.();
-      document.getElementById('online-play-btn').click();
-    }).catch(() => { /* le clic est justement ce qu'on éprouve */ });
-    await dormir(800);
-    verifier('« Entrer dans le monde » ne casse rien sans session',
-      fautes(alice2).length === avant, JSON.stringify(fautes(alice2).slice(avant)));
 
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));

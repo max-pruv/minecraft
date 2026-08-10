@@ -48,11 +48,26 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | Alice retrouve son monde après une veille | « tu joues déjà depuis un autre appareil », et elle restait dehors |
 | la reprise tient dans la durée | l'ancien appareil la rechassait dix secondes plus tard |
 | seule après le départ de l'hôte | le compteur affichait encore deux joueurs |
-| un serveur de rendez-vous muet finit par le dire | le menu restait sur « Ouverture du monde… » indéfiniment |
+| un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
 | l'invité voit le même temps et la même heure que l'hôte | chacun tirait sa météo au sort : l'un sous la pluie en pleine nuit, l'autre au soleil de midi |
 | et il le reste · un invité ne change pas le temps tout seul | mesuré : hôte 0,86 sous la pluie, invité 0,32 au sec |
+
+Deux de ces scénarios ont longtemps échoué une fois sur deux, et pas pour la
+même raison. Le serveur muet mettait quarante secondes à se déclarer parce que
+le jeu retentait en hôte ce que la première tentative avait déjà tranché ;
+c'est réparé, et le scénario mesure désormais aussi le temps. Le trio, lui,
+perdait parfois une présentation : l'invité voyait le troisième joueur — que
+l'hôte lui relayait — mais pas l'hôte, dont la connexion restait « en cours de
+présentation » pour toujours. La présentation se relance maintenant d'elle-même
+au bout de trois secondes.
+
+Et le banc referme les pages dont il n'a plus besoin. Chacune dessine un monde
+en trois dimensions à plein régime ; à quatre parties vivantes sur quatre
+cœurs, les minuteurs du navigateur partent en retard et ce sont les scénarios
+qui mesurent des délais qui en paient le prix. Un test qui échoue parce que la
+machine peine ne prouve rien.
 
 ## Les réglages (`npm run reglages`)
 
