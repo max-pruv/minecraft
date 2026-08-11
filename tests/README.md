@@ -28,6 +28,11 @@ Local : le serveur de fichiers et le serveur de rendez-vous. Le jeu accepte
 `?peerhost=` exactement pour cela, et rien ne dépend d'un service extérieur —
 les tests passent sans internet.
 
+Simulé : le VPN. On lui reprend ses deux effets, et rien d'autre — la
+signalisation passe, le canal de données entre les deux tablettes ne s'ouvre
+jamais. C'est la seule façon de reproduire à la demande ce qu'un VPN resté
+allumé fait au jeu à plusieurs.
+
 Simulé : la mise en veille d'iOS. On reproduit ses deux effets dans l'ordre où
 ils surviennent — la page se déclare cachée, puis tout se fige, le lien restant
 ouvert. C'est la seule façon de reproduire à la demande ce qui arrive dès qu'un
@@ -52,6 +57,7 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
+| un VPN ne fait plus dire que le monde est vide · et le message dit quoi faire | capture d'écran à l'appui : « ❌ Personne n'a répondu dans ce monde », alors que le code était pris et que quelqu'un le tenait bel et bien |
 | l'invité voit le même temps et la même heure que l'hôte | chacun tirait sa météo au sort : l'un sous la pluie en pleine nuit, l'autre au soleil de midi |
 | et il le reste · un invité ne change pas le temps tout seul | mesuré : hôte 0,86 sous la pluie, invité 0,32 au sec |
 

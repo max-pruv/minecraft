@@ -103,7 +103,15 @@ export class NetSession {
     }
   }
 
-  start(code, isHost, profile) {
+  // `patience` : combien de temps on laisse au canal de données pour s'ouvrir.
+  // Cinq secondes suffisent sur un réseau ordinaire, et c'est ce qu'on veut
+  // pour la première tentative — le cas courant est un monde vide, où toute
+  // attente est du temps volé. Mais quand on SAIT que quelqu'un tient le
+  // monde, cinq secondes ne suffisent plus : derrière un VPN, le trafic passe
+  // par le relais en TCP sur le port 443, et la poignée de main y prend
+  // couramment le double.
+  start(code, isHost, profile, patience) {
+    this.patience = patience;
     this.code = code.toUpperCase();
     this.isHost = isHost;
     this.profile = profile;
@@ -258,11 +266,17 @@ export class NetSession {
         // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
         const c = this.conns.get(conn.peer);
         if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
-        rate(new Error('Personne n\'a répondu dans ce monde'));
+        const muet = new Error('Personne n\'a répondu dans ce monde');
+        // L'appelant a besoin de distinguer « le monde est vide » de « le monde
+        // est là mais on ne l'atteint pas » : ce n'est pas la même panne, et ce
+        // n'est pas la même phrase à montrer à un enfant.
+        muet.canal = true;
+        rate(muet);
       },
-      // Court : dans le cas courant — le monde est vide — cette attente est du
-      // temps perdu avant de l'ouvrir soi-même.
-      5000,
+      // Court par défaut : dans le cas courant — le monde est vide — cette
+      // attente est du temps perdu avant de l'ouvrir soi-même. Quand on sait
+      // déjà que quelqu'un est là, l'appelant demande plus de patience.
+      this.patience || 5000,
     );
     conn.on('open', () => {
       clearTimeout(minuteur);
@@ -296,6 +310,10 @@ export class NetSession {
         ? `Reconnexion au monde ${this.code}…`
         : `Le monde ${this.code} ne répond pas — on continue d'essayer`);
       if (this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+      // On a déjà été dans ce monde : il existe, et c'est le chemin qui a
+      // lâché. Cinq secondes ne suffisent pas à le rétablir par le relais, et
+      // renoncer si tôt condamnait à retenter en boucle sans jamais aboutir.
+      this.patience = Math.max(this.patience || 0, 15000);
       this.connectToHost(null);
       // 3 s, 5 s, 7 s… jusqu'à un essai toutes les vingt secondes
       const attente = Math.min(3000 + essai * 2000, 20000);

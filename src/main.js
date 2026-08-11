@@ -2018,7 +2018,7 @@ function updateRemotePlayers(dt) {
   }
 }
 
-function startNetSession(code, isHost) {
+function startNetSession(code, isHost, patience) {
   net = new NetSession({
     world,
     toast: (msg, color) => creatureManager.toast(msg, color),
@@ -2043,7 +2043,8 @@ function startNetSession(code, isHost) {
   // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
   // la maison locale de l'hôte qui partait dans le monde partagé.
   world.switchContext(code.toUpperCase());
-  return net.start(code, isHost, { name: myName(), lookIdx: selectedChar, look: playerProfile.look });
+  return net.start(code, isHost,
+    { name: myName(), lookIdx: selectedChar, look: playerProfile.look }, patience);
 }
 
 // Reprendre pied dans un monde dont on vient de perdre la main, sans quitter
@@ -2054,7 +2055,9 @@ async function reprendreLeMonde(code, essai = 0) {
   if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
   syncRemotePlayers([]);
   try {
-    await startNetSession(code, essai >= 3);
+    // On rejoint un monde dont on sait qu'il existait il y a un instant : la
+    // même patience qu'ailleurs, sinon un réseau lent renonce avant d'aboutir.
+    await startNetSession(code, essai >= 3, PATIENCE_RELAIS);
     alerte('monde-reco', false);
     bonneNouvelle(essai >= 3 ? '✅ Monde rouvert !' : '✅ Monde rejoint !');
   } catch {
@@ -2063,6 +2066,12 @@ async function reprendreLeMonde(code, essai = 0) {
     setTimeout(() => reprendreLeMonde(code, essai + 1), 4000);
   }
 }
+
+// Le temps qu'on accorde au canal quand on sait déjà que le monde est tenu.
+// Vingt secondes : c'est long à regarder, mais c'est la durée réelle d'une
+// poignée de main relayée en TCP derrière un VPN — et renoncer avant, c'est
+// refuser une partie qui allait aboutir.
+const PATIENCE_RELAIS = 20000;
 
 // Opens a world by code: joins whoever is already there, or becomes the
 // host and plays solo if the world is empty. Either way the cloud copy is
@@ -2088,8 +2097,8 @@ async function openWorld(code) {
   // On procède donc par échelons, et on ne s'arrête qu'une fois dedans :
   // rejoindre, sinon ouvrir soi-même, sinon rejoindre à nouveau — ce dernier
   // cas étant celui où quelqu'un a pris la place entre nos deux tentatives.
-  const essayer = async (hote) => {
-    try { await startNetSession(code, hote); return null; }
+  const essayer = async (hote, patience) => {
+    try { await startNetSession(code, hote, patience); return null; }
     catch (e) { if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; } return e; }
   };
 
@@ -2105,8 +2114,22 @@ async function openWorld(code) {
     ouvertVide = !err;
   }
   if (err && /déjà utilisé/i.test(err.message)) {
-    err = await essayer(false);
+    // Ici on en sait beaucoup plus qu'au premier essai : le code est pris,
+    // donc quelqu'un tient ce monde, maintenant, sur le serveur de rendez-vous.
+    // La question n'est plus « y a-t-il un monde ? » mais « arrive-t-on à
+    // l'atteindre ? » — et cela mérite qu'on attende pour de bon. Derrière un
+    // VPN, le trafic passe par le relais en TCP sur le port 443 et la poignée
+    // de main dépasse couramment les cinq secondes du premier essai.
+    err = await essayer(false, PATIENCE_RELAIS);
     ouvertVide = false;
+    // Et si l'on n'y arrive toujours pas, on dit ce qui est vrai. « Personne
+    // n'a répondu dans ce monde » était doublement faux : quelqu'un est là,
+    // c'est établi, et l'enfant n'avait aucune idée de quoi faire. La cause
+    // de loin la plus fréquente à la maison est un VPN resté allumé.
+    if (err && err.canal) {
+      err = new Error(`Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
+        + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
+    }
   }
   if (err) {
     onlineStatus.textContent = '❌ ' + err.message;
