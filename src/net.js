@@ -41,6 +41,11 @@ const STALE_MS = 20000;
 const SOMMEIL_MAX_MS = 300000;
 // Après un réveil, on laisse au lien le temps de se rétablir avant de juger.
 const GRACE_REVEIL_MS = 15000;
+// La présentation entre deux pairs : on la relance à ce rythme, et on renonce
+// au-delà de cette durée. Renoncer, c'est couper — un lien ouvert mais jamais
+// présenté est une panne invisible qui dure pour toujours.
+const RELANCE_MS = 3000;
+const PRESENTATION_MS = 20000;
 // Au-delà, on renonce à ouvrir la session et on le dit. Sans cette limite, un
 // serveur de rendez-vous qui accepte la connexion sans jamais répondre — ce que
 // font les réseaux captifs et certains partages de connexion — laissait la
@@ -431,36 +436,64 @@ export class NetSession {
     this.startHeartbeat();
   }
 
+  // La présentation, et RIEN d'autre.
+  //
+  // Le journal de blocs partait avec elle, dans le même souffle. C'est ce qui
+  // rendait la panne suivante si tenace : sur un lien lent — relayé, partagé,
+  // un peu chargé — un monde bien construit fait un gros message, et les
+  // messages suivants attendent derrière lui dans le tampon d'envoi. Chaque
+  // relance de présentation renvoyait le journal ENTIER, donc bouchait un peu
+  // plus le tuyau qu'elle essayait de déboucher. On envoie maintenant le
+  // journal une seule fois, et seulement une fois qu'on s'est reconnus.
   greet(conn) {
-    // handshake: who we are + everything we know about the world
-    conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
-    conn.send({ t: 'sync', blocks: this.hooks.world.exportEdits() });
+    const c = this.conns.get(conn.peer);
+    if (c && !c.presenteA) c.presenteA = Date.now();
+    try {
+      conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
+    } catch { return; }   // le lien est mort-né : dropPeer s'en charge
     this.startPosLoop();
+    this.relancerPresentation(conn);
+  }
 
-    // Une présentation se perd dans UN sens seulement, et les deux sens font
-    // des dégâts différents. Quand c'est celle de l'hôte qui manque, l'invité
-    // voit les autres joueurs — l'hôte les lui relaie — mais pas l'hôte
-    // lui-même. Quand c'est celle de l'invité, c'est l'hôte qui ne le compte
-    // pas, et l'arrivant reste invisible pour tout le monde : « seul dans le
-    // monde » alors qu'ils sont deux. Aucune erreur, aucun message, et la
-    // connexion reste « en cours de présentation » pour toujours.
-    //
-    // On relance donc des deux côtés, au même endroit : trois secondes après
-    // s'être présenté, si l'autre ne s'est toujours pas présenté en retour, on
-    // le redemande. Deux fois au plus — au-delà ce n'est plus une présentation
-    // perdue, c'est un lien mort, et le battement de cœur s'en charge.
-    setTimeout(() => {
-      const c = this.conns.get(conn.peer);
-      if (!this.active || !c || c.pret || !conn.open) return;
-      c.relances = (c.relances || 0) + 1;
-      if (c.relances > 2) return;
+  // Une présentation se perd dans UN sens seulement, et les deux sens font des
+  // dégâts différents. Quand c'est celle de l'hôte qui manque, l'invité voit
+  // les autres joueurs — l'hôte les lui relaie — mais pas l'hôte lui-même.
+  // Quand c'est celle de l'invité, c'est l'hôte qui ne le compte pas, et
+  // l'arrivant reste invisible pour tout le monde.
+  //
+  // Le pire est que rien ne le disait et que rien ne le rattrapait. On
+  // relançait deux fois, puis on se taisait : le canal restait ouvert, les
+  // battements de cœur continuaient de passer — donc le lien n'était jamais
+  // jugé mort — et les deux enfants restaient chacun seul dans le même monde,
+  // sans erreur, sans message, indéfiniment. C'est exactement ce qui a été
+  // constaté à la maison, deux iPad sur la même connexion.
+  //
+  // On relance donc tant qu'il reste une chance, puis on coupe. Couper est ce
+  // qui manquait : côté invité, cela relance la boucle de reconnexion, qui
+  // repart sur un lien neuf.
+  relancerPresentation(conn) {
+    const c = this.conns.get(conn.peer);
+    if (!c || c.relanceEnCours) return;
+    c.relanceEnCours = true;
+    const tenter = () => {
+      const e = this.conns.get(conn.peer);
+      if (!this.active || !e || e.pret) { if (e) e.relanceEnCours = false; return; }
+      if (!conn.open) { e.relanceEnCours = false; return; }
+      if (Date.now() - (e.presenteA || 0) > PRESENTATION_MS) {
+        e.relanceEnCours = false;
+        try { conn.close(); } catch { /* déjà fermée */ }
+        this.dropPeer(conn.peer);
+        return;
+      }
       try {
         conn.send({
           t: 'hello', encore: true,
           name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
         });
-      } catch { /* le lien est mort, le battement de cœur s'en occupe */ }
-    }, 3000);
+      } catch { e.relanceEnCours = false; return; }
+      setTimeout(tenter, RELANCE_MS);
+    };
+    setTimeout(tenter, RELANCE_MS);
   }
 
   dropPeer(id) {
@@ -588,12 +621,19 @@ export class NetSession {
         // route, on la renvoie. Le drapeau vient de l'autre côté, jamais de
         // nous — il n'y a donc pas d'échange qui s'entretient tout seul.
         if (msg.encore) this.greet(conn);
+        const nouveau = !entry.pret;
         entry.pret = true;
         entry.name = wanted;
         entry.lookIdx = Number(msg.lookIdx) || 0;
         entry.look = msg.look && typeof msg.look === 'object' ? msg.look : null;
         // La page décide comment l'annoncer : une arrivée dans un monde
         // partagé mérite mieux qu'un message qui passe en trois secondes.
+        // Le journal de blocs, maintenant seulement : la présentation a abouti,
+        // le gros message ne peut plus lui barrer la route.
+        if (nouveau) {
+          try { conn.send({ t: 'sync', blocks: this.hooks.world.exportEdits() }); }
+          catch { /* le lien vient de lâcher, le battement de cœur le verra */ }
+        }
         if (this.onJoin) this.onJoin(entry.name);
         else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
