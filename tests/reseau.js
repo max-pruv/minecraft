@@ -284,6 +284,34 @@ function verifier(nom, ok, detail = '') {
     await sourd.close();
     arreterSourd();
 
+    // --- un VPN allumé --------------------------------------------------------
+    //
+    // Constaté à la maison, capture d'écran à l'appui : « ❌ Personne n'a
+    // répondu dans ce monde », alors que quelqu'un le tenait bel et bien.
+    //
+    // Ce que fait un VPN : la signalisation passe — le serveur de rendez-vous
+    // répond et sait qui tient quel monde — mais le canal de données entre les
+    // deux tablettes ne s'ouvre pas, ou met bien plus de cinq secondes à le
+    // faire. Le jeu renonçait donc au bout de cinq secondes, puis annonçait
+    // une chose fausse : personne n'a répondu, alors que le code était pris.
+    const { p: tenu, code: codeVPN } = await banc.creerMonde('Lou');
+    const derriereVPN = await banc.joueur('Sam', { sansPairAPair: true });
+    await derriereVPN.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await derriereVPN.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeVPN);
+    const verdict = await jusqua(async () => derriereVPN.evaluate(
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 60000);
+    const phrase = await derriereVPN.evaluate(
+      () => document.getElementById('online-status').textContent);
+    verifier('un VPN ne fait plus dire que le monde est vide',
+      verdict && !/Personne n'a répondu/.test(phrase), phrase);
+    verifier('et le message dit quoi faire', /VPN/.test(phrase) && phrase.includes(codeVPN), phrase);
+    await derriereVPN.close();
+    await tenu.close();
+
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));

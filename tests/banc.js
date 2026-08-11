@@ -165,6 +165,25 @@ class Banc {
       });
     });
     p.on('dialog', (d) => { p.dialogues.push(d.message().split('\n')[0]); d.accept(); });
+    // Ce qu'un VPN fait au jeu : la signalisation passe — le serveur de
+    // rendez-vous répond, il sait qui tient quel monde — mais le canal de
+    // données entre les deux tablettes ne s'ouvre jamais, parce que le trafic
+    // pair à pair est bloqué ou dérouté. C'est la seule façon de reproduire à
+    // la demande ce que la maison a constaté un soir de VPN allumé.
+    if (opts.sansPairAPair) {
+      await p.addInitScript(() => {
+        const Vrai = window.RTCPeerConnection;
+        window.RTCPeerConnection = function (...args) {
+          const pc = new Vrai(...args);
+          // On laisse tout se négocier, et on ne livre aucun candidat : sans
+          // chemin, le canal reste à jamais « connecting ».
+          pc.addIceCandidate = () => Promise.resolve();
+          Object.defineProperty(pc, 'onicecandidate', { get: () => null, set: () => {} });
+          return pc;
+        };
+        window.RTCPeerConnection.prototype = Vrai.prototype;
+      });
+    }
     await p.addInitScript((prenom) => {
       localStorage.setItem('web-minecraft-profile-v1', JSON.stringify({ name: prenom, lookIdx: 0 }));
       localStorage.setItem('wm-notif-propose', JSON.stringify({ n: 9, t: Date.now() }));
