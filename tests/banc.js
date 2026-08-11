@@ -184,6 +184,41 @@ class Banc {
         window.RTCPeerConnection.prototype = Vrai.prototype;
       });
     }
+    // Une présentation qui se perd en route. Le lien est bon, les battements
+    // passent, mais les messages « hello » n'arrivent pas pendant un moment —
+    // ce que fait un tuyau encombré, et ce qu'on ne peut pas reproduire en
+    // secouant le réseau local. On les avale à l'arrivée : l'effet est le même
+    // que s'ils s'étaient perdus, et le test peut décider quand ça s'arrête.
+    if (opts.helloFragile) {
+      //
+      // La fenêtre est comptée DANS la page, à partir du premier « hello »
+      // avalé — pas depuis le test. Cette machine met parfois une seconde et
+      // demie à répondre à un `evaluate` pendant qu'une partie tourne à plein
+      // régime : une fenêtre posée depuis le banc était déjà écoulée quand le
+      // lien s'ouvrait, et le scénario ne mesurait plus rien. Il passait sur le
+      // code fautif comme sur le code réparé, ce qui est la pire des deux
+      // façons d'échouer.
+      await p.addInitScript(() => {
+        window.__avalerHelloSecondes = 0;
+        window.__avalerHelloDebut = 0;
+        setInterval(() => {
+          const n = window.__game && window.__game.net;
+          if (!n || n.__filtreHello) return;
+          n.__filtreHello = true;
+          const vrai = n.onMessage.bind(n);
+          n.onMessage = (conn, msg) => {
+            if (msg && msg.t === 'hello' && window.__avalerHelloSecondes > 0) {
+              if (!window.__avalerHelloDebut) window.__avalerHelloDebut = Date.now();
+              if (Date.now() - window.__avalerHelloDebut < window.__avalerHelloSecondes * 1000) {
+                window.__avalerHelloComptes = (window.__avalerHelloComptes || 0) + 1;
+                return undefined;
+              }
+            }
+            return vrai(conn, msg);
+          };
+        }, 50);
+      });
+    }
     await p.addInitScript((prenom) => {
       localStorage.setItem('web-minecraft-profile-v1', JSON.stringify({ name: prenom, lookIdx: 0 }));
       localStorage.setItem('wm-notif-propose', JSON.stringify({ n: 9, t: Date.now() }));

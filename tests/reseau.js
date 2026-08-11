@@ -312,6 +312,50 @@ function verifier(nom, ok, detail = '') {
     await derriereVPN.close();
     await tenu.close();
 
+    // --- une présentation qui met du temps à passer -----------------------------
+    //
+    // Signalé à la maison, sans VPN cette fois : deux iPad sur la même
+    // connexion, dans le même monde, et chacun seul. Aucune erreur, aucun
+    // message.
+    //
+    // Le canal est bon — les battements de cœur passent, donc le lien n'est
+    // jamais jugé mort — mais les présentations, elles, se sont perdues. On
+    // relançait deux fois, puis on se taisait pour toujours. Rien ne rattrapait
+    // ensuite : ni le battement, qui voit un lien vivant, ni la reconnexion,
+    // qui n'a aucune raison de partir.
+    //
+    // Ici, les présentations sont avalées douze secondes — bien au-delà des six
+    // secondes que couvraient les deux anciennes relances.
+    const { p: patiente, code: codeLent } = await banc.creerMonde('Théo');
+    const lent = await banc.joueur('Zoé', { helloFragile: true });
+    await lent.evaluate(() => { window.__avalerHelloSecondes = 11; });
+    await lent.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await lent.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeLent);
+    await dormir(1500);
+    await lent.evaluate(() => document.getElementById('online-play-btn')?.click());
+
+    const seRetrouvent = await jusqua(async () => {
+      const a = await nomsVus(patiente);
+      const b = await nomsVus(lent);
+      return a.includes('Zoé') && b.includes('Théo');
+    }, 60000);
+    verifier('une présentation perdue finit par passer', seRetrouvent,
+      JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
+    const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
+    verifier('et le compteur le dit des deux côtés',
+      compteFinal.every((n) => n === 2), compteFinal.join('/'));
+    // Sans cette garantie, le scénario pourrait passer sans avoir rien éprouvé :
+    // c'est déjà arrivé une fois, la fenêtre s'étant écoulée avant la connexion.
+    const avalees = await lent.evaluate(() => window.__avalerHelloComptes || 0);
+    verifier('et des présentations ont bien été perdues en chemin', avalees >= 2,
+      `${avalees} avalées`);
+    await lent.close();
+    await patiente.close();
+
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));

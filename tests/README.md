@@ -28,6 +28,15 @@ Local : le serveur de fichiers et le serveur de rendez-vous. Le jeu accepte
 `?peerhost=` exactement pour cela, et rien ne dépend d'un service extérieur —
 les tests passent sans internet.
 
+Simulé : la présentation perdue. On avale les « hello » à l'arrivée pendant
+quelques secondes — l'effet est le même que s'ils s'étaient perdus, et le test
+décide quand ça s'arrête. La fenêtre est comptée DANS la page, à partir du
+premier message avalé : cette machine met parfois une seconde et demie à
+répondre à un `evaluate` pendant qu'une partie tourne, et une fenêtre posée
+depuis le banc était déjà écoulée quand le lien s'ouvrait. Le scénario passait
+alors sur le code fautif comme sur le code réparé — la pire des deux façons
+d'échouer. Il compte donc maintenant ce qu'il a réellement avalé, et le dit.
+
 Simulé : le VPN. On lui reprend ses deux effets, et rien d'autre — la
 signalisation passe, le canal de données entre les deux tablettes ne s'ouvre
 jamais. C'est la seule façon de reproduire à la demande ce qu'un VPN resté
@@ -57,6 +66,8 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
+| une présentation perdue finit par passer · et le compteur le dit des deux côtés | deux iPad sur la même connexion, dans le même monde, et chacun seul. On relançait la présentation deux fois puis on se taisait pour toujours : le canal restait ouvert, les battements passaient — donc le lien n'était jamais jugé mort — et rien ne rattrapait plus rien. Mesuré sur le code fautif : `[["Zoé"],[]]`, compteurs 2/1 |
+| et des présentations ont bien été perdues en chemin | le scénario a d'abord passé sur les deux codes : sa fenêtre s'écoulait avant même la connexion, et il ne mesurait rien |
 | un VPN ne fait plus dire que le monde est vide · et le message dit quoi faire | capture d'écran à l'appui : « ❌ Personne n'a répondu dans ce monde », alors que le code était pris et que quelqu'un le tenait bel et bien |
 | l'invité voit le même temps et la même heure que l'hôte | chacun tirait sa météo au sort : l'un sous la pluie en pleine nuit, l'autre au soleil de midi |
 | et il le reste · un invité ne change pas le temps tout seul | mesuré : hôte 0,86 sous la pluie, invité 0,32 au sec |
