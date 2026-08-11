@@ -328,6 +328,12 @@ function verifier(nom, ok, detail = '') {
     // secondes que couvraient les deux anciennes relances.
     const { p: patiente, code: codeLent } = await banc.creerMonde('Théo');
     const lent = await banc.joueur('Zoé', { helloFragile: true });
+    // Au premier plan : Chromium bride les minuteurs d'un onglet caché, et le
+    // filtre du banc s'installe justement sur un minuteur. Sans cela il
+    // arrivait après les présentations qu'il devait avaler — le scénario
+    // passait alors sans avoir rien éprouvé, ce que le garde-fou plus bas a
+    // fini par attraper.
+    await lent.bringToFront();
     await lent.evaluate(() => { window.__avalerHelloSecondes = 11; });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
@@ -355,6 +361,140 @@ function verifier(nom, ok, detail = '') {
       `${avalees} avalées`);
     await lent.close();
     await patiente.close();
+
+    // --- une présentation qui ne passe JAMAIS -----------------------------------
+    //
+    // L'autre bout du même correctif, et celui qu'on ajoute en dernier parce
+    // qu'il éprouve du code écrit pour réparer le précédent : au bout de vingt
+    // secondes, on renonce et on COUPE. Reste à prouver que couper laisse le jeu
+    // dans un état honnête plutôt que dans un autre limbe — pas de faux
+    // compteur, pas d'avatar fantôme, et une reconnexion qui repart.
+    const { p: muet2, code: codeMuet } = await banc.creerMonde('Iris');
+    const jamais = await banc.joueur('Noé', { helloFragile: true });
+    await jamais.bringToFront();
+    await jamais.evaluate(() => { window.__avalerHelloSecondes = 600; });
+    await jamais.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await jamais.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeMuet);
+    await dormir(1500);
+    await jamais.evaluate(() => document.getElementById('online-play-btn')?.click());
+    // Bien au-delà des vingt secondes : le lien doit avoir été coupé et repris
+    // au moins une fois, sans que personne n'apparaisse pour autant.
+    await dormir(35000);
+    const etatMuet = await vu(jamais);
+    verifier('un lien jamais présenté ne devient pas un joueur fantôme',
+      etatMuet.compteur === 1 && etatMuet.avatars.length === 0,
+      `compteur ${etatMuet.compteur} · ${JSON.stringify(etatMuet.avatars)}`);
+    // Et le lien est bel et bien REFAIT. Il a fallu trois rédactions pour
+    // trouver le bon témoin, et les deux ratées valent d'être dites :
+    //
+    //   · un drapeau interne de reconnexion ne vaut que l'instant où on le lit ;
+    //   · la clé d'une connexion d'invité est l'identifiant de l'hôte, qui ne
+    //     change jamais — donc la voir changer était impossible ;
+    //   · et le bandeau ne dit rien de la reconnexion, pour une raison qui est
+    //     juste : le canal, lui, s'ouvre très bien. Le lien EST « ok ». Ce qui
+    //     ne passe pas, c'est la présentation par-dessus. L'enfant lit donc
+    //     « Seul·e dans ce monde », ce qui est exact de son point de vue.
+    //
+    // Ce qu'on suit est la date de présentation de la connexion en cours : elle
+    // est posée à chaque nouvelle connexion, et la voir changer prouve qu'on a
+    // coupé le lien muet et qu'on en a rouvert un autre.
+    const presentations = new Set();
+    for (let i = 0; i < 16; i++) {
+      const d = await jamais.evaluate(() => {
+        const n = window.__game.net;
+        if (!n || !n.active) return null;
+        const c = [...n.conns.values()][0];
+        return c ? c.presenteA || 0 : null;
+      });
+      if (d) presentations.add(d);
+      await dormir(2500);
+    }
+    verifier('et le lien muet est coupé puis rouvert, au lieu de durer pour toujours',
+      presentations.size >= 2, `${presentations.size} présentations successives`);
+    const avaleesMuet = await jamais.evaluate(() => window.__avalerHelloComptes || 0);
+    verifier('et ce scénario a bien eu quelque chose à faire perdre', avaleesMuet >= 2,
+      `${avaleesMuet} avalées`);
+    await jamais.close();
+    await muet2.close();
+
+    // --- deux enfants ouvrent le même monde en même temps -----------------------
+    //
+    // Le geste réel d'une fratrie : le même code tapé sur les deux iPad, et
+    // « Jouer » pressé dans la même seconde. Aucun des deux ne trouve personne,
+    // les deux tentent donc d'ouvrir le monde — un seul peut l'obtenir, et
+    // l'autre doit se rabattre sur « rejoindre » sans que l'enfant ait rien à
+    // refaire. C'est le chemin le plus court vers deux mondes du même nom,
+    // chacun avec un enfant seul dedans.
+    const codeCourse = '31415';
+    const [unA, unB] = await Promise.all([banc.joueur('Ana'), banc.joueur('Bo')]);
+    await Promise.all([unA, unB].map((p) => p.evaluate(() =>
+      document.getElementById('online-btn').click())));
+    await dormir(400);
+    await Promise.all([unA, unB].map((p) => p.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeCourse)));
+    await dormir(2500);
+    await Promise.all([unA, unB].map((p) =>
+      p.evaluate(() => document.getElementById('online-play-btn')?.click())));
+    const ensemble = await jusqua(async () => {
+      const a = await nomsVus(unA), b = await nomsVus(unB);
+      return a.includes('Bo') && b.includes('Ana');
+    }, 60000);
+    verifier('deux enfants qui ouvrent le même monde en même temps se retrouvent',
+      ensemble, JSON.stringify([await nomsVus(unA), await nomsVus(unB)]));
+    const courseCompte = [(await vu(unA)).compteur, (await vu(unB)).compteur];
+    verifier('et il n\'y a bien qu\'un seul monde', courseCompte.every((n) => n === 2),
+      courseCompte.join('/'));
+    await unA.close();
+    await unB.close();
+
+    // --- un monde bien rempli ---------------------------------------------------
+    //
+    // Le journal de blocs ne part plus avec la présentation mais après elle,
+    // précisément pour qu'un gros monde ne retarde pas les retrouvailles. Sans
+    // un scénario qui le mesure, cette phrase n'est qu'une intention : on
+    // remplit donc le monde de l'hôte, et l'on chronomètre.
+    const { p: riche, code: codeRiche } = await banc.creerMonde('Elio');
+    const poses = await riche.evaluate(() => {
+      const g = window.__game;
+      let n = 0;
+      for (let x = 0; x < 40; x++) {
+        for (let z = 0; z < 40; z++) {
+          const y = g.world.terrainHeight(x + 60, z + 60) + 1;
+          g.world.setBlock(x + 60, y, z + 60, 5);
+          n++;
+        }
+      }
+      return n;
+    });
+    // On chronomètre à partir du CLIC, pas de la création de la page : sur cette
+    // machine, ouvrir un onglet et charger le jeu prend une dizaine de secondes,
+    // et les compter ici, c'était mesurer le banc au lieu du jeu.
+    const arrivant = await banc.joueur('Fara');
+    await arrivant.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    const depart = Date.now();
+    await arrivant.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeRiche);
+    const vite = await jusqua(async () => (await nomsVus(riche)).includes('Fara')
+      && (await nomsVus(arrivant)).includes('Elio'), 40000);
+    const misRiche = Math.round((Date.now() - depart) / 1000);
+    verifier('un monde bien rempli ne retarde pas les retrouvailles',
+      vite && misRiche < 25, `${poses} blocs posés · ${misRiche} s`);
+    // Et le monde arrive quand même : c'est l'autre moitié de la promesse.
+    const recus = await jusqua(async () => arrivant.evaluate(
+      () => window.__game.world.edits.size > 1000), 40000);
+    verifier('et le monde de l\'hôte arrive bien chez l\'invité', recus,
+      String(await arrivant.evaluate(() => window.__game.world.edits.size)));
+    await arrivant.close();
+    await riche.close();
 
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
