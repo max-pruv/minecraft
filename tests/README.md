@@ -42,6 +42,7 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | à trois, chacun voit les deux autres | un invité voyait `Alice` et `…` |
 | aucun avatar sans nom | un lien en cours d'ouverture était dessiné à l'origine du monde |
 | le compteur dit trois partout | il annonçait des joueurs invisibles |
+| sur la carte, les autres joueurs portent leur prénom | la table des joueurs est rangée par identifiant de pair, et c'est cette clé qui servait d'étiquette : sous le point bleu, un enfant lisait `632f7014-f54e-4ab2-9df2-eac67daa1b1c` |
 | un départ propre nettoie tout le monde | l'avatar restait planté là |
 | un joueur endormi n'est pas éjecté | la partie coupait au bout de vingt secondes en arrière-plan |
 | au réveil, la partie continue | il fallait tout recommencer |

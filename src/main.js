@@ -3637,8 +3637,16 @@ const carte = new Carte({
   canvas: mapModalCanvas,
   world,
   joueur: () => ({ x: player.pos.x, z: player.pos.z, yaw: player.yaw }),
-  autres: () => [...remotePlayers.entries()].map(([nom, rp]) => ({
-    x: rp.mesh.position.x, z: rp.mesh.position.z, nom,
+  // Le prénom, et rien d'autre. La table des autres joueurs est rangée par
+  // identifiant de pair, et c'est cette clé qui servait d'étiquette : la carte
+  // affichait « 632f7014-f54e-4ab2-9df2-eac67daa1b1c » sous le point bleu. Le
+  // prénom était pourtant là, à côté, depuis toujours.
+  //
+  // Sans prénom, on ne dessine rien plutôt qu'un identifiant : un lien encore
+  // en cours de présentation n'a pas de nom pendant une seconde ou deux, et
+  // c'est un cas normal, pas une raison de montrer de la mécanique à un enfant.
+  autres: () => [...remotePlayers.values()].map((rp) => ({
+    x: rp.mesh.position.x, z: rp.mesh.position.z, nom: rp.name,
   })),
   // Habitants, bêtes et créatures : la liste n'est construite que si la carte
   // est assez rapprochée pour les montrer.

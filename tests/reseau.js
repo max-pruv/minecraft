@@ -58,6 +58,19 @@ function verifier(nom, ok, detail = '') {
     const compte = [(await vu(hote)).compteur, (await vu(alice)).compteur, (await vu(nina)).compteur];
     verifier('le compteur dit trois partout', compte.every((n) => n === 3), compte.join('/'));
 
+    // Et sur la carte, ce sont des prénoms.
+    //
+    // La table des autres joueurs est rangée par identifiant de pair, et c'est
+    // cette clé qui servait d'étiquette : sous le point bleu, un enfant lisait
+    // « 632f7014-f54e-4ab2-9df2-eac67daa1b1c ». Le prénom était pourtant là,
+    // juste à côté, depuis toujours.
+    const surLaCarte = await hote.evaluate(() => window.__carte.autres().map((a) => a.nom));
+    const unIdentifiant = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
+    verifier('sur la carte, les autres joueurs portent leur prénom',
+      surLaCarte.length === 2 && surLaCarte.every((n) => n && !unIdentifiant.test(n))
+      && ['Alice', 'Nina'].every((n) => surLaCarte.includes(n)),
+      JSON.stringify(surLaCarte));
+
     // Un lien en cours d'ouverture n'est pas un joueur : il ne doit jamais
     // apparaître sous la forme d'un bonhomme nommé « … » à l'origine du monde.
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
