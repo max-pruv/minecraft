@@ -431,8 +431,12 @@ export class NetSession {
     // `pret` reste faux jusqu'à la présentation : voir presents().
     this.conns.set(conn.peer, { conn, name: '…', pret: false, lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
     conn.on('data', (msg) => this.onMessage(conn, msg));
-    conn.on('close', () => this.dropPeer(conn.peer));
-    conn.on('error', () => this.dropPeer(conn.peer));
+    // On dit DE QUELLE connexion on parle. Sans cela, la fin d'un lien mort
+    // emportait celui qui venait de le remplacer : les deux portent la même
+    // clé — l'identifiant de l'hôte — et l'événement « close » du premier
+    // arrive régulièrement après que le second est inscrit.
+    conn.on('close', () => this.dropPeer(conn.peer, conn));
+    conn.on('error', () => this.dropPeer(conn.peer, conn));
     this.startHeartbeat();
   }
 
@@ -447,7 +451,10 @@ export class NetSession {
   // journal une seule fois, et seulement une fois qu'on s'est reconnus.
   greet(conn) {
     const c = this.conns.get(conn.peer);
-    if (c && !c.presenteA) c.presenteA = Date.now();
+    // Se présenter sur un lien qu'on ne suit plus, c'est parler dans le vide :
+    // rien ne relancera, rien ne coupera. On referme plutôt.
+    if (!c) { try { conn.close(); } catch { /* déjà fermée */ } return; }
+    if (!c.presenteA) c.presenteA = Date.now();
     try {
       conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
     } catch { return; }   // le lien est mort-né : dropPeer s'en charge
@@ -481,8 +488,8 @@ export class NetSession {
       if (!conn.open) { e.relanceEnCours = false; return; }
       if (Date.now() - (e.presenteA || 0) > PRESENTATION_MS) {
         e.relanceEnCours = false;
+        this.dropPeer(conn.peer, conn);
         try { conn.close(); } catch { /* déjà fermée */ }
-        this.dropPeer(conn.peer);
         return;
       }
       try {
@@ -496,9 +503,19 @@ export class NetSession {
     setTimeout(tenter, RELANCE_MS);
   }
 
-  dropPeer(id) {
+  // `conn` : la connexion à laquelle se rapporte l'adieu, quand on la connaît.
+  //
+  // Un invité range son lien vers l'hôte sous l'identifiant de l'hôte, qui ne
+  // change jamais. Quand on coupe un lien et qu'on en rouvre aussitôt un autre,
+  // les deux portent donc la même clé — et l'événement « close » du premier,
+  // qui arrive après coup, effaçait le second. L'invité se retrouvait alors
+  // avec une connexion ouverte qui n'était plus dans sa table : invisible au
+  // battement de cœur, invisible au compteur, et sans reconnexion possible
+  // puisque le drapeau de reprise était déjà retombé. Un fantôme, définitif.
+  dropPeer(id, conn) {
     const c = this.conns.get(id);
     if (!c) return;
+    if (conn && c.conn && c.conn !== conn) return;   // adieu d'un lien déjà remplacé
     this.conns.delete(id);
     // Pour un invité, perdre ce lien-là, c'est perdre le monde entier :
     // tout passe par l'hôte.

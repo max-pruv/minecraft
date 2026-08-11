@@ -66,6 +66,11 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
+| un lien jamais présenté ne devient pas un joueur fantôme | — |
+| et le lien muet est coupé puis rouvert, au lieu de durer pour toujours | la coupure au bout de vingt secondes rouvrait bien un lien — puis l'adieu de l'ancien, arrivé après coup, effaçait le nouveau : les deux portent la même clé, l'identifiant de l'hôte. L'invité gardait alors une connexion ouverte absente de sa table, invisible au battement comme au compteur, et sans reconnexion possible. Un fantôme, définitif |
+| et ce scénario a bien eu quelque chose à faire perdre | — |
+| deux enfants qui ouvrent le même monde en même temps se retrouvent · et il n'y a bien qu'un seul monde | le geste réel d'une fratrie : le même code, « Jouer » pressé dans la même seconde, et le chemin le plus court vers deux mondes du même nom |
+| un monde bien rempli ne retarde pas les retrouvailles · et le monde de l'hôte arrive bien chez l'invité | le journal de blocs ne part plus avec la présentation mais après elle ; sans un scénario qui le mesure, cette phrase n'est qu'une intention |
 | une présentation perdue finit par passer · et le compteur le dit des deux côtés | deux iPad sur la même connexion, dans le même monde, et chacun seul. On relançait la présentation deux fois puis on se taisait pour toujours : le canal restait ouvert, les battements passaient — donc le lien n'était jamais jugé mort — et rien ne rattrapait plus rien. Mesuré sur le code fautif : `[["Zoé"],[]]`, compteurs 2/1 |
 | et des présentations ont bien été perdues en chemin | le scénario a d'abord passé sur les deux codes : sa fenêtre s'écoulait avant même la connexion, et il ne mesurait rien |
 | un VPN ne fait plus dire que le monde est vide · et le message dit quoi faire | capture d'écran à l'appui : « ❌ Personne n'a répondu dans ce monde », alors que le code était pris et que quelqu'un le tenait bel et bien |
@@ -183,6 +188,14 @@ Tout part de `banc.js` : `creerMonde`, `rejoindre`, `endormir`, `reveiller`, et
 `vu()` qui rapporte ce qu'un joueur voit à l'écran. La règle qui a permis de
 trouver ces défauts tient en une phrase : **comparer ce que le compteur annonce
 à ce qui est réellement dessiné**. C'est leur désaccord qui trahit les pannes.
+
+Trois vérifications de suite se sont trompées de témoin avant de trouver le bon,
+et les trois erreurs valent d'être connues, parce qu'elles se ressemblent :
+un drapeau interne ne vaut que l'instant où on le lit ; la clé d'une connexion
+d'invité est l'identifiant de l'hôte, qui ne change jamais ; et le bandeau ne
+dit rien d'une reconnexion quand le canal, lui, s'ouvre parfaitement — c'est la
+présentation par-dessus qui manque. Chaque fois, le témoin choisi disait
+quelque chose de vrai sur autre chose que ce qu'on éprouvait.
 
 Et avant de croire un test qui passe, faites-le échouer : remettez le défaut,
 vérifiez qu'il le voit. Un test vert des deux côtés ne prouve rien.
