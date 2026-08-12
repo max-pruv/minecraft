@@ -1310,9 +1310,17 @@ const CLES_PARENT = ['sessionMin', 'quizStopMin'];
 const cleConsignes = (nom) => `${nom}~parent`;
 let consignesParents = {};
 
-function retenirConsignes(prefs) {
+// `autoritaire` : le document dédié du parent fait foi, y compris par ses
+// absences. Sans cela, une consigne RETIRÉE ne se retirait jamais : on ne
+// copiait que les clés présentes, et la valeur d'avant restait en mémoire
+// jusqu'au prochain redémarrage. Un parent qui rendait les quiz à l'enfant —
+// « toutes les 10 min » après un « aucun quiz » — ne les rendait donc pas.
+// Le repli sur le document de l'enfant (les vieilles versions y rangeaient
+// les consignes) reste non autoritaire : son silence ne dit rien.
+function retenirConsignes(prefs, autoritaire = false) {
   for (const k of CLES_PARENT) {
     if (prefs && prefs[k] !== undefined) consignesParents[k] = prefs[k];
+    else if (autoritaire) delete consignesParents[k];
   }
 }
 
@@ -1345,7 +1353,7 @@ async function lireConsignes() {
   const avant = JSON.stringify(consignesParents);
   let profilChange = false;
   if (vues) {
-    retenirConsignes(vues);
+    retenirConsignes(vues, true);
     // Un parent peut aussi régler la langue et le niveau. Ces deux-là,
     // l'enfant les choisit lui-même de son côté — c'est donc la date du
     // dernier choix qui tranche, et adopterProfilDistant s'en charge. Les
@@ -4112,7 +4120,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 
