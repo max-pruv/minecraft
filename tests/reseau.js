@@ -496,6 +496,77 @@ function verifier(nom, ok, detail = '') {
     await arrivant.close();
     await riche.close();
 
+    // --- le chantier commun -------------------------------------------------
+    //
+    // Le multijoueur était « côte à côte » : rien à faire ENSEMBLE. Le chantier
+    // pose un plan fantôme dans le monde partagé ; chaque bloc posé au bon
+    // endroit — par n'importe qui — avance la même jauge, et la célébration
+    // part chez tout le monde. Tout est éprouvé par le vrai chemin : la pose
+    // s'échange comme un panneau, l'avancement se dérive du journal de blocs.
+    const { p: lea, code: codeLea } = await banc.creerMonde('Léa');
+    const rui = await banc.rejoindre('Rui', codeLea);
+    const pose = await lea.evaluate(() => window.__chantier.poser('cabane'));
+    verifier('l\'hôte pose un chantier', !!pose && pose.plan === 'cabane',
+      JSON.stringify(pose));
+    const vuParRui = await jusqua(async () => {
+      const e = await rui.evaluate(() => window.__chantier.etat());
+      return !!(e && e.plan === 'cabane' && e.x === pose.x && e.z === pose.z);
+    }, 20000);
+    verifier('et l\'invité voit le même plan au même endroit', vuParRui,
+      JSON.stringify(await rui.evaluate(() => window.__chantier.etat())));
+
+    // Rui pose la moitié des blocs, Léa l'autre moitié — par le vrai chemin de
+    // pose, celui qui journalise et synchronise.
+    const total = (await lea.evaluate(() => window.__chantier.etat())).total;
+    // Bâtir n blocs manquants, par le vrai chemin de pose — celui qui
+    // journalise et synchronise. Le plan n'est pas recopié dans le test : on
+    // demande au jeu ce qu'il attend à chaque cellule.
+    const construire = (page, combien) => page.evaluate((cible) => {
+      const g = window.__game, c = window.__chantier.etat();
+      let n = 0;
+      for (let dx = -1; dx <= 5 && n < cible; dx++) {
+        for (let dy = 0; dy <= 8 && n < cible; dy++) {
+          for (let dz = -1; dz <= 5 && n < cible; dz++) {
+            const attendu = window.__chantier.attendu(dx, dy, dz);
+            if (attendu === null) continue;
+            if (g.world.getBlock(c.x + dx, c.y + dy, c.z + dz) === attendu) continue;
+            g.world.setBlock(c.x + dx, c.y + dy, c.z + dz, attendu);
+            n++;
+          }
+        }
+      }
+      return n;
+    }, combien);
+    const parRui = await construire(rui, Math.floor(total / 2));
+    const jaugeChezLea = await jusqua(async () => {
+      const e = await lea.evaluate(() => window.__chantier.etat());
+      return e && e.faits >= Math.floor(total / 2);
+    }, 30000);
+    verifier('les blocs de l\'invité avancent la jauge de l\'hôte', jaugeChezLea,
+      `Rui a posé ${parRui} · hôte voit ${JSON.stringify(await lea.evaluate(() => window.__chantier.etat()))}`);
+
+    await construire(lea, total);   // Léa finit tout ce qui manque
+    const finiPartout = await jusqua(async () =>
+      (await lea.evaluate(() => window.__chantier.chantiers())) >= 1
+      && (await rui.evaluate(() => window.__chantier.chantiers())) >= 1, 30000);
+    verifier('la célébration part chez les deux bâtisseurs', finiPartout,
+      `hôte ${await lea.evaluate(() => window.__chantier.chantiers())} · invité ${await rui.evaluate(() => window.__chantier.chantiers())}`);
+
+    // --- la flèche vers l'ami -------------------------------------------------
+    // Les enfants passaient leur temps à se chercher. Quand l'ami sort du cadre
+    // de la minicarte, une flèche à son bord montre la direction.
+    await rui.evaluate(() => { const g = window.__game; g.player.pos.x += 400; });
+    await dormir(1500);
+    const fleches = await lea.evaluate(() => {
+      const g = window.__game;
+      document.getElementById('map-btn').click();
+      return new Promise((ok) => setTimeout(() => ok(window.__flechesAmis), 400));
+    });
+    verifier('un ami hors du cadre devient une flèche au bord de la minicarte',
+      fleches >= 1, `${fleches} flèche(s)`);
+    await rui.close();
+    await lea.close();
+
     // --- la sonde de version dit la vérité --------------------------------------
     //
     // Constaté sur une capture d'écran : « version v128 · à jour » alors que la

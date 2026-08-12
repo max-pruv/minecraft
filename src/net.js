@@ -648,7 +648,14 @@ export class NetSession {
         // Le journal de blocs, maintenant seulement : la présentation a abouti,
         // le gros message ne peut plus lui barrer la route.
         if (nouveau) {
-          try { conn.send({ t: 'sync', blocks: this.hooks.world.exportEdits() }); }
+          try {
+            conn.send({
+              t: 'sync', blocks: this.hooks.world.exportEdits(),
+              // le chantier en cours part avec le monde : un arrivant voit le
+              // fantôme et la jauge sans que personne n'ait rien à refaire
+              chantier: this.chantierActuel ? this.chantierActuel() : undefined,
+            });
+          }
           catch { /* le lien vient de lâcher, le battement de cœur le verra */ }
         }
         if (this.onJoin) this.onJoin(entry.name);
@@ -695,6 +702,10 @@ export class NetSession {
         if (this.onChest) this.onChest(msg.items);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      case 'chantier': // le plan commun posé ou retiré
+        if (this.onChantier) this.onChantier(msg.c);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
       // L'heure et le temps qu'il fait. Chaque appareil les tirait au sort de
       // son côté : deux enfants côte à côte pouvaient être l'un sous la pluie
       // en pleine nuit, l'autre au soleil de midi. C'est l'hôte qui décide, et
@@ -703,6 +714,9 @@ export class NetSession {
         if (!this.isHost && this.onCiel) this.onCiel(msg);
         break;
       case 'sync': {
+        if (msg.chantier !== undefined && msg.chantier !== null && this.onChantier) {
+          this.onChantier(msg.chantier);
+        }
         const applied = this.hooks.world.mergeEdits(msg.blocks);
         if (applied > 0) {
           this.hooks.world.saveEdits(); // remote history must survive a reload

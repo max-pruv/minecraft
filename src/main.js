@@ -3613,11 +3613,42 @@ function drawMap(mapCanvas, radius) {
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
   ctx.fillStyle = '#4ac9ff'; // the other players, bright blue
+  let flechesAmis = 0;
   for (const rp of remotePlayers.values()) {
     const [mx, my] = toMap(rp.mesh.position.x, rp.mesh.position.z);
-    if (mx < 0 || mx > size || my < 0 || my > size) continue;
+    if (mx < 0 || mx > size || my < 0 || my > size) {
+      // L'ami est hors du cadre : une flèche à son bord montre la direction.
+      // Les enfants passaient leur temps à se chercher — « t'es où ?? » crié
+      // d'une pièce à l'autre — alors que la minicarte savait répondre.
+      const a = Math.atan2(rp.mesh.position.z - player.pos.z, rp.mesh.position.x - player.pos.x);
+      const ex = size / 2 + Math.cos(a) * (size / 2 - 9);
+      const ey = size / 2 + Math.sin(a) * (size / 2 - 9);
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.rotate(a);
+      ctx.fillStyle = '#4ac9ff';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(7, 0); ctx.lineTo(-4, -4.5); ctx.lineTo(-4, 4.5); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+      if (rp.name) {
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const ix = size / 2 + Math.cos(a) * (size / 2 - 22);
+        const iy = size / 2 + Math.sin(a) * (size / 2 - 22);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.strokeText(rp.name[0], ix, iy);
+        ctx.fillStyle = '#bfe9ff';
+        ctx.fillText(rp.name[0], ix, iy);
+      }
+      flechesAmis++;
+      continue;
+    }
     ctx.fillRect(mx - 3, my - 3, 6, 6);
   }
+  window.__flechesAmis = flechesAmis;   // le banc compte ce qui est dessiné
 
   // Le nom des lieux que l'on survole vraiment. Ils étaient auparavant tous
   // rabattus sur les bords en guise de panneaux indicateurs : dix-huit noms
