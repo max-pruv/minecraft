@@ -496,6 +496,37 @@ function verifier(nom, ok, detail = '') {
     await arrivant.close();
     await riche.close();
 
+    // --- la sonde de version dit la vérité --------------------------------------
+    //
+    // Constaté sur une capture d'écran : « version v128 · à jour » alors que la
+    // v130 était publiée. La page demande la dernière version en lisant sw.js —
+    // mais le service worker interceptait cette lecture et la servait depuis
+    // son propre cache. L'accueil comparait donc la version avec elle-même, et
+    // affichait « à jour » pour toujours.
+    //
+    // Le témoin honnête est le journal du serveur : deux sondes de suite
+    // doivent TOUTES DEUX l'atteindre. La première atteint le réseau même sur
+    // le code fautif (rien en cache encore) ; c'est la seconde qui le trahit,
+    // servie depuis la copie que la première a laissée derrière elle.
+    const sonde = await banc.joueur('Vera', { avecSW: true });
+    await sonde.evaluate(() => navigator.serviceWorker.ready);
+    const controle = await jusqua(async () =>
+      sonde.evaluate(() => !!navigator.serviceWorker.controller), 30000);
+    const sonder = () => sonde.evaluate(async () => {
+      const r = await fetch('./sw.js', { cache: 'no-store' });
+      return ((await r.text()).match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1] || null;
+    });
+    await sonder();
+    banc.jeu.hits.length = 0;
+    const version2 = await sonder();
+    const atteint = banc.jeu.hits.filter((u) => u.includes('sw.js')).length;
+    const publiee = (require('fs').readFileSync(require('path').join(__dirname, '..', 'sw.js'), 'utf8')
+      .match(/CACHE_VERSION\s*=\s*'([^']+)'/) || [])[1];
+    verifier('la sonde de version traverse le service worker jusqu\'au réseau',
+      controle && atteint >= 1 && version2 === publiee,
+      `contrôlée ${controle} · ${atteint} requête(s) au serveur · lu ${version2}`);
+    await sonde.close();
+
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));

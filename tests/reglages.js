@@ -289,6 +289,34 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'espace parent l\'affiche', affichee === null || /v99/.test(affichee),
       String(affichee).slice(0, 120));
 
+    // Le prochain quiz, en direct dans l'espace parent. C'est la contre-épreuve
+    // du réglage de rythme : le jour où le panneau affichait « dix minutes »
+    // pendant que le compteur en tournait six, rien ne permettait de s'en
+    // apercevoir sans regarder par-dessus l'épaule de l'enfant.
+    await marlon.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 0;   // pas de répit : un quiz viendra
+      document.getElementById('play-btn').click();
+    });
+    await marlon.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    await marlon.evaluate(() => window.__game.__pushPresence());
+    const compteVu = await jusqua(async () => {
+      const p2 = (nuage.reglages('Marlon') || {}).live || {};
+      return Number.isFinite(p2.quizDans);
+    }, 30000);
+    const quizDans = ((nuage.reglages('Marlon') || {}).live || {}).quizDans;
+    verifier('la tablette annonce le prochain quiz avec sa présence',
+      compteVu && quizDans > 0 && quizDans <= 30 * 60, `dans ${quizDans} s`);
+    const ligneQuiz = await marlon.evaluate(() => {
+      const l = { nom: 'Marlon', appareils: new Set(['a']), vu: null,
+        live: { version: 'v99', monde: null, joue: true, joueurs: 0, quizDans: 240 } };
+      return window.__adminPresence ? window.__adminPresence(l) : null;
+    });
+    verifier('et l\'espace parent dit « quiz dans 4 min »',
+      ligneQuiz !== null && /quiz dans 4 min/.test(ligneQuiz),
+      String(ligneQuiz).slice(0, 160));
+    await marlon.evaluate(() => document.getElementById('home-btn').click());
+    await dormir(500);
+
     // --- retirer un monde de sa liste ---------------------------------------
     //
     // Signalé à la maison : « quand on supprime un monde qu'on ne veut plus,

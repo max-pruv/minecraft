@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v134';
+const CACHE_VERSION = 'web-minecraft-v135';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -112,6 +112,17 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) return;
+
+  // La sonde de version doit toucher le RÉSEAU. sw.js est dans le cache des
+  // ASSETS : la page qui demandait « quelle est la dernière version publiée ? »
+  // recevait sa propre copie, et l'accueil affichait « à jour » pour toujours —
+  // il comparait la version avec elle-même. (Le navigateur, lui, n'est pas
+  // affecté : la mise à jour du service worker contourne ce gestionnaire ;
+  // seul l'affichage mentait.)
+  if (new URL(request.url).pathname.endsWith('/sw.js')) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
 
   // pinned, immutable and big: cache-first, kept across game updates
   if (isStaticAsset(request.url)) {

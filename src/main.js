@@ -1276,6 +1276,13 @@ function presenceNow() {
     // elle survit à la déconnexion : l'espace parent peut ainsi répondre à
     // « sur quoi était-il la dernière fois ? », et pas seulement « maintenant ».
     version: versionEnCours,
+    // Dans combien de secondes tombe le prochain quiz — la suite naturelle du
+    // réglage de rythme : le parent qui vient de le poser peut vérifier d'un
+    // coup d'œil que la tablette le suit vraiment, sans aller regarder
+    // par-dessus l'épaule de l'enfant. null quand aucun quiz ne viendra
+    // (répit gagné, arrêt réglé par le parent, ou partie fermée).
+    quizDans: (typeof edu !== 'undefined' && running && !edu.quizFree() && !edu.quizArrete())
+      ? Math.max(0, Math.round(edu.remaining)) : null,
   };
 }
 

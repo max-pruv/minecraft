@@ -165,6 +165,10 @@ class Banc {
       });
     });
     p.on('dialog', (d) => { p.dialogues.push(d.message().split('\n')[0]); d.accept(); });
+    // Le service worker est coupé partout sauf là où c'est LUI qu'on éprouve :
+    // il précharge et sert depuis son cache, deux façons de fausser les autres
+    // scénarios — mais la sonde de version ne se teste qu'avec lui.
+    if (opts.avecSW) await p.addInitScript(() => { window.__gardeSW = true; });
     // Ce qu'un VPN fait au jeu : la signalisation passe — le serveur de
     // rendez-vous répond, il sait qui tient quel monde — mais le canal de
     // données entre les deux tablettes ne s'ouvre jamais, parce que le trafic
@@ -227,7 +231,7 @@ class Banc {
       // de chaque onglet, et il sert ensuite depuis son cache : deux bonnes
       // façons de faire échouer un test pour rien, ou pire, d'en faire passer un
       // sur du code qui n'est plus celui du dépôt.
-      if (navigator.serviceWorker) {
+      if (navigator.serviceWorker && !window.__gardeSW) {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
