@@ -9,6 +9,7 @@
 // Le style tranche volontairement avec le reste du jeu : ici on lit un
 // tableau, on ne joue pas. Police système, lignes denses, pas de pixel art.
 
+import { SESSION_MIN_USINE } from './education.js';
 import { hashPin } from './identity.js';
 import { GRADES } from './education.js';
 
@@ -259,8 +260,12 @@ function quizChoisi(rythme, arret) {
   if (arret === 0) return 'aucun';
   if (arret === 30) return 'p30';
   if (arret === 60) return 'p60';
-  const m = String(rythme ?? 10);
-  return QUIZ_CHOIX.some((c) => c.v === m) ? m : '10';
+  // Jamais configuré : on affiche la valeur d'usine du jeu, pas une valeur à
+  // nous. C'est le défaut qui a mordu : le panneau disait « toutes les 10
+  // min » pendant que la tablette, jamais configurée, tournait sur ses 6
+  // minutes d'usine d'alors. Ce que ce panneau affiche doit être vrai.
+  const m = String(rythme ?? SESSION_MIN_USINE);
+  return QUIZ_CHOIX.some((c) => c.v === m) ? m : String(SESSION_MIN_USINE);
 }
 
 const jour = () => new Date().toISOString().slice(0, 10);
@@ -342,7 +347,12 @@ function presence(l) {
 
 // Les tests regardent ce que la ligne affiche vraiment, sans monter tout le
 // panneau : c'est la seule façon de vérifier qu'une version périmée se voit.
-if (typeof window !== 'undefined') window.__adminPresence = presence;
+if (typeof window !== 'undefined') {
+  window.__adminPresence = presence;
+  // Les tests vérifient que ce que le sélecteur affiche pour un enfant jamais
+  // configuré est bien l'intervalle d'usine de la tablette — le même nombre.
+  window.__adminQuizChoisi = quizChoisi;
+}
 
 export class AdminPanel {
   constructor(cloud, identity, getName) {
@@ -504,7 +514,7 @@ export class AdminPanel {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
           quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
-          supprime: false, rythme: 6,
+          supprime: false, rythme: SESSION_MIN_USINE,
         });
       }
       return par.get(nom);

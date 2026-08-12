@@ -4,7 +4,12 @@
 // per skill from the child's history; random fast-clicking is detected,
 // frozen for 10 seconds, and penalized with extra required answers.
 
-const SESSION_SECONDS = 10 * 60;     // valeur d'usine, réglable par enfant
+// La valeur d'usine de l'intervalle entre deux quiz. Exportée parce que
+// l'espace parent doit afficher LA MÊME pour un enfant jamais configuré :
+// chacun avait sa copie, elles ont divergé (6 ici, 10 là-bas), et un parent
+// lisait « toutes les 10 min » pendant que la tablette tournait sur 6.
+export const SESSION_MIN_USINE = 10;
+const SESSION_SECONDS = SESSION_MIN_USINE * 60;
 const SESSION_MIN_BOUNDS = [3, 30];  // garde-fou : ni harcèlement, ni oubli
 const NEEDED_CORRECT = 5;
 const DAILY_LIMIT_SECONDS = 45 * 60; // hard stop after this much play per day
