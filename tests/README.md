@@ -121,6 +121,7 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 | la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
+| pour un enfant jamais configuré, le panneau dit ce que fait la tablette | « configuré à dix sur l'espace des parents », compteur à six sur la tablette — or il n'était configuré nulle part : le panneau affichait SA valeur par défaut, la tablette tournait sur SA valeur d'usine, deux constantes dans deux fichiers qui avaient divergé |
 | le tout premier lancement ne commence pas par un quiz | une dette jamais écrite était confondue avec une dette de zéro : profil neuf, appareil neuf ou données effacées, chaque premier lancement commençait par un quiz avant la première seconde de jeu |
 | et l'intervalle d'usine est bien de dix minutes | il était de six, et personne ne l'avait jamais réglé |
 | les dix minutes se cumulent du local à l'en ligne | mesuré sur le code fautif : quiz à la seconde 1 après la bascule, parce que la dette du lancement traînait encore |

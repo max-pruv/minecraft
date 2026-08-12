@@ -462,6 +462,22 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'intervalle d\'usine est bien de dix minutes',
       auDepart.session === 600, `${auDepart.session} s`);
 
+    // Ce que le panneau parent AFFICHE pour un enfant jamais configuré doit
+    // être ce que sa tablette FAIT. Constaté à la maison : « le compteur tourne
+    // toutes les six minutes alors qu'il est configuré à dix sur l'espace des
+    // parents » — or il n'était configuré nulle part, aucun document ~parent
+    // n'existait. Le panneau affichait SA valeur par défaut (10), la tablette
+    // tournait sur SA valeur d'usine (6) : deux constantes dans deux fichiers,
+    // qui avaient divergé. Basile n'a aucun réglage : les deux nombres doivent
+    // être le même.
+    const coherent = await neuf.evaluate(() => ({
+      panneau: window.__adminQuizChoisi ? window.__adminQuizChoisi(undefined, undefined) : null,
+      tablette: String(window.__game.edu.sessionMinutes()),
+    }));
+    verifier('pour un enfant jamais configuré, le panneau dit ce que fait la tablette',
+      coherent.panneau !== null && coherent.panneau === coherent.tablette,
+      JSON.stringify(coherent));
+
     // La deuxième : le temps de jeu est cumulatif à travers les modes. On joue
     // 200 secondes en local, on ouvre un monde en ligne, et le quiz suivant ne
     // tombe qu'une fois les dix minutes CUMULÉES écoulées — pas avant, pas à
