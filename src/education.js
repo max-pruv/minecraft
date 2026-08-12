@@ -4,7 +4,7 @@
 // per skill from the child's history; random fast-clicking is detected,
 // frozen for 10 seconds, and penalized with extra required answers.
 
-const SESSION_SECONDS = 6 * 60;      // valeur d'usine, réglable par enfant
+const SESSION_SECONDS = 10 * 60;     // valeur d'usine, réglable par enfant
 const SESSION_MIN_BOUNDS = [3, 30];  // garde-fou : ni harcèlement, ni oubli
 const NEEDED_CORRECT = 5;
 const DAILY_LIMIT_SECONDS = 45 * 60; // hard stop after this much play per day
@@ -1318,7 +1318,14 @@ export class EducationMode {
     // restarting the game must not burn minutes that were already earned.
     // With no time left over (or a refresh mid-quiz), a quiz is owed —
     // so refreshing is never an escape from answering questions.
-    const carried = Math.min(this.data.remaining || 0, this.sessionSeconds);
+    // Un profil qui n'a JAMAIS joué n'a pas de quiz en dette. La dette — un
+    // zéro enregistré — n'existe que si on l'a écrite, pendant une série en
+    // cours. `|| 0` confondait les deux : chaque premier lancement (nouveau
+    // profil, nouvel appareil, données effacées) commençait par un quiz avant
+    // la première seconde de jeu.
+    const carried = this.data.remaining === undefined
+      ? this.sessionSeconds
+      : Math.min(this.data.remaining, this.sessionSeconds);
     this.quizDue = carried < 15;
     this.remaining = this.quizDue ? 0 : carried;
     this.quizActive = false;
@@ -1387,7 +1394,7 @@ export class EducationMode {
     this.data.skills = this.skills;
     // remaining play time survives restarts; a quiz in progress saves 0 so
     // reloading mid-quiz restarts the quiz instead of skipping it
-    this.data.remaining = this.quizActive || this.quizDue
+    this.data.remaining = (this.quizActive && !this.serieReglee) || this.quizDue
       ? 0 : Math.max(0, Math.round(this.remaining));
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); } catch { /* ignore */ }
   }
@@ -1733,6 +1740,7 @@ export class EducationMode {
     this.quizActive = true;
     this.quizDue = true;
     this.remaining = 0;
+    this.serieReglee = false;
     this.save();
     this.correctCount = 0;
     this.questionCount = 0;
@@ -1970,6 +1978,14 @@ export class EducationMode {
       'Marlon : « Trop fort !! On retourne jouer ! 🎉 »',
       'Léo le Bâtisseur : « Solide comme une brique ! 🧱 »',
     ]);
+    // La dette est réglée ICI, à la victoire — pas au clic sur « Continuer ».
+    // Entre les deux, l'iPad peut recharger la page (iOS le fait sans
+    // prévenir) : l'enfant qui venait de finir sa série entière en recevait
+    // une nouvelle au retour, et cela ressemblait à des quiz en chaîne.
+    this.quizDue = false;
+    this.remaining = this.sessionSeconds;
+    this.serieReglee = true;
+    this.save();
     const reward = this.hooks.reward ? this.hooks.reward() : null;
     const rewardLine = reward
       ? `<br>🎁 Tu gagnes une créature : <b>${reward.name}</b> (${reward.type}) — elle est dans ton Dex !`
@@ -1992,9 +2008,8 @@ export class EducationMode {
     btn.addEventListener('click', () => {
       this.el.quiz.style.display = 'none';
       this.quizActive = false;
-      this.quizDue = false;
+      this.serieReglee = false;
       this.marathon = false;
-      this.remaining = this.sessionSeconds;
       this.warned60 = false;
       this.warned10 = false;
       this.save();
