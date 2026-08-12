@@ -121,6 +121,10 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 | la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
+| le tout premier lancement ne commence pas par un quiz | une dette jamais écrite était confondue avec une dette de zéro : profil neuf, appareil neuf ou données effacées, chaque premier lancement commençait par un quiz avant la première seconde de jeu |
+| et l'intervalle d'usine est bien de dix minutes | il était de six, et personne ne l'avait jamais réglé |
+| les dix minutes se cumulent du local à l'en ligne | mesuré sur le code fautif : quiz à la seconde 1 après la bascule, parce que la dette du lancement traînait encore |
+| finir sa série puis recharger ne redonne pas un quiz | la dette n'était réglée qu'au clic sur « Continuer » ; entre l'écran de victoire et ce clic, iOS pouvait recharger la page, et l'enfant qui venait de finir recevait une série entière de plus |
 | un monde retiré ne revient pas du nuage · ni sur l'autre tablette | la liste des mondes était fusionnée par union avec celle du serveur, et une union ne sait pas représenter une absence voulue : le monde effacé revenait tout seul, avec ses blocs |
 | mais retaper le code le ramène | une suppression irréversible est une suppression qu'on n'ose pas faire |
 | la tablette d'Alice dit au serveur qu'elle est là | la présence était écrite depuis toujours, mais seul l'espace parent la lisait |

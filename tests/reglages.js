@@ -442,6 +442,91 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       getComputedStyle(document.getElementById('invit-panel')).display !== 'none');
     verifier('et elle ne se remontre pas en boucle', !revenue);
 
+    // --- le rythme des questions ---------------------------------------------
+    //
+    // Constaté à la maison : « Marlon a enchaîné des questions sans beaucoup de
+    // temps de jeu ». Trois causes trouvées en creusant, chacune éprouvée ici.
+    //
+    // La première : chaque premier lancement — profil neuf, appareil neuf,
+    // données effacées — commençait par un quiz avant la première seconde de
+    // jeu, parce qu'une dette jamais écrite était confondue avec une dette de
+    // zéro.
+    const neuf = await joueur('Basile');
+    const auDepart = await neuf.evaluate(() => {
+      const e = window.__game.edu;
+      return { quizDue: e.quizDue, remaining: Math.round(e.remaining), session: e.sessionSeconds };
+    });
+    verifier('le tout premier lancement ne commence pas par un quiz',
+      !auDepart.quizDue && auDepart.remaining === auDepart.session,
+      JSON.stringify(auDepart));
+    verifier('et l\'intervalle d\'usine est bien de dix minutes',
+      auDepart.session === 600, `${auDepart.session} s`);
+
+    // La deuxième : le temps de jeu est cumulatif à travers les modes. On joue
+    // 200 secondes en local, on ouvre un monde en ligne, et le quiz suivant ne
+    // tombe qu'une fois les dix minutes CUMULÉES écoulées — pas avant, pas à
+    // la bascule. Le temps est simulé par le vrai chemin du jeu, une seconde
+    // à la fois.
+    const enLocal = await neuf.evaluate(() => {
+      const e = window.__game.edu;
+      let tombe = -1;
+      document.getElementById('play-btn').click();
+      for (let t = 1; t <= 200; t++) { e.update(1, true); if (e.quizActive && tombe < 0) tombe = t; }
+      return { tombe, remaining: Math.round(e.remaining) };
+    });
+    await neuf.evaluate(() => document.getElementById('home-btn').click());
+    await dormir(600);
+    await neuf.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await neuf.evaluate(() => document.getElementById('host-btn').click());
+    await neuf.waitForFunction(
+      () => document.getElementById('room-code').textContent.trim().length >= 4,
+      null, { timeout: 40000 });
+    await neuf.evaluate(() => document.getElementById('online-play-btn').click());
+    await dormir(1500);
+    const enLigne = await neuf.evaluate(() => {
+      const e = window.__game.edu;
+      let tombe = -1;
+      for (let t = 1; t <= 500; t++) { e.update(1, true); if (e.quizActive && tombe < 0) tombe = t; }
+      return { tombe };
+    });
+    const cumule = 200 + enLigne.tombe;
+    verifier('les dix minutes se cumulent du local à l\'en ligne',
+      enLocal.tombe === -1 && cumule >= 590 && cumule <= 615,
+      `rien en local (200 s), quiz en ligne à ${enLigne.tombe} s — cumul ${cumule} s`);
+
+    // La troisième : l'enfant finit sa série, l'écran de victoire s'affiche —
+    // et l'iPad recharge la page avant qu'il touche « Continuer » (iOS le fait
+    // sans prévenir). La dette n'était réglée qu'au clic : il recevait une
+    // série entière de plus. On répond aux vraies questions, par les vrais
+    // boutons.
+    await neuf.evaluate(() => { const e = window.__game.edu; e.remaining = 0; });
+    await neuf.waitForFunction(() => window.__game.edu.quizActive, null, { timeout: 15000 });
+    for (let q = 0; q < 30; q++) {
+      const victoire = await neuf.evaluate(() => !!document.querySelector('.quiz-continue'));
+      if (victoire) break;
+      await dormir(1700);   // le délai anti-clic-au-hasard, puis l'animation
+      await neuf.evaluate(() => {
+        const e = window.__game.edu;
+        const btns = [...document.querySelectorAll('#quiz-options .quiz-opt')];
+        if (e.current && btns[e.current.answerIndex]) btns[e.current.answerIndex].click();
+      });
+    }
+    const dette = await neuf.evaluate(() => {
+      window.__game.edu.save();
+      return JSON.parse(localStorage.getItem('web-minecraft-edu-v1') || '{}').remaining;
+    });
+    await neuf.reload({ waitUntil: 'load' });
+    await neuf.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const auRetour = await neuf.evaluate(() => {
+      const e = window.__game.edu;
+      return { quizDue: e.quizDue, remaining: Math.round(e.remaining) };
+    });
+    verifier('finir sa série puis recharger ne redonne pas un quiz',
+      dette > 500 && !auRetour.quizDue && auRetour.remaining > 500,
+      `enregistré ${dette} · au retour ${JSON.stringify(auRetour)}`);
+    await neuf.close();
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {
