@@ -430,8 +430,14 @@ export class Carte {
     this.etiquettes = [];
 
     // Les bêtes et les gens, tant qu'on est assez près pour les distinguer.
-    if (b <= 1.4 && this.mobiles) {
+    // Les créatures se dessinent à tous les zooms — la légende les promet, et
+    // un enfant qui dézoome les voyait disparaître sans un mot : « je ne vois
+    // plus de Pokémon sur la carte ». Habitants et animaux, plus nombreux et
+    // moins chassés, n'apparaissent qu'en s'approchant.
+    if (this.mobiles) {
+      const tous = b <= 1.4;
       for (const m of this.mobiles()) {
+        if (!tous && !m.toujours) continue;
         const p = this.versEcran(m.x, m.z);
         if (p.x < -4 || p.x > css + 4 || p.y < -4 || p.y > css + 4) continue;
         ctx.fillStyle = m.couleur;

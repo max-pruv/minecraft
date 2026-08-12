@@ -218,6 +218,32 @@ const position = (p) => p.evaluate(() => ({
     verifier('ce que l\'enfant construit apparaît sur la carte de près',
       construit.pres > 20 && construit.loin === 0, JSON.stringify(construit));
 
+    // Les créatures restent visibles en dézoomant. Elles disparaissaient sans
+    // un mot au-delà d'un seuil de zoom — « je ne vois plus de Pokémon sur la
+    // carte » — pendant que la légende continuait de les promettre. Elles
+    // vivent près du joueur : de loin, elles se regroupent autour de sa
+    // flèche, et c'est la vérité. Mesuré avant correction : 0 pixel violet
+    // dès bpp 1,6.
+    const violets = await tab.evaluate(() => {
+      const c2 = window.__carte, g = window.__game;
+      if (!g.creatureManager.creatures.length) return { erreur: 'aucune créature à dessiner' };
+      c2.vue.cx = Math.round(g.player.pos.x); c2.vue.cz = Math.round(g.player.pos.z);
+      const compter = () => {
+        const cv = document.getElementById('map-modal-canvas');
+        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i] - 200) < 30 && Math.abs(d[i + 1] - 110) < 30 && Math.abs(d[i + 2] - 224) < 30) n++;
+        }
+        return n;
+      };
+      const par = {};
+      for (const bpp of [0.7, 2.5]) { c2.vue.bpp = bpp; c2.limiter(); c2.peindre(); par[bpp] = compter(); }
+      return par;
+    });
+    verifier('les créatures restent visibles en dézoomant',
+      !violets.erreur && violets['0.7'] > 0 && violets['2.5'] > 0, JSON.stringify(violets));
+
     // --- les bornes ----------------------------------------------------------
     const bornes = await tab.evaluate(() => {
       const c2 = window.__carte;

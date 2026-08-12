@@ -3680,9 +3680,14 @@ const carte = new Carte({
   })),
   // Habitants, bêtes et créatures : la liste n'est construite que si la carte
   // est assez rapprochée pour les montrer.
+  // `toujours` : les créatures se voient à TOUS les zooms. Elles vivent à
+  // moins de soixante-dix blocs du joueur — de loin, elles se regroupent
+  // autour de sa flèche, ce qui est la vérité. Les cent quatorze habitants et
+  // les animaux, eux, restent réservés au zoom proche : dessinés de loin, ils
+  // couvraient les villes de confettis.
   mobiles: () => [
     ...npcs.map((n) => ({ x: n.pos.x, z: n.pos.z, couleur: '#ffffff' })),
-    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0' })),
+    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0', toujours: true })),
     ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
   ],
   surVoyage: (lieu) => {

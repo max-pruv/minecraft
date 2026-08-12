@@ -43,12 +43,18 @@ function trouverChromium() {
 // test échouait pour une raison qui n'avait rien à voir avec le jeu.
 function servirLeJeu(port) {
   const app = express();
+  // Le journal des requêtes qui ont VRAIMENT atteint le serveur. C'est le seul
+  // témoin honnête pour la sonde de version : un service worker peut répondre
+  // depuis son cache, et la page croit alors avoir interrogé le réseau.
+  const hits = [];
+  app.use((req, _res, next) => { hits.push(req.url); next(); });
   app.use(express.static(RACINE, {
     etag: false, lastModified: false, cacheControl: false,
     setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
   }));
   const serveur = http.createServer(app);
   serveur.on('clientError', (_e, socket) => socket.destroy());
+  serveur.hits = hits;
   return new Promise((ok) => serveur.listen(port, '127.0.0.1', () => ok(serveur)));
 }
 
