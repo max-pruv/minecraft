@@ -1276,6 +1276,13 @@ function presenceNow() {
     // elle survit à la déconnexion : l'espace parent peut ainsi répondre à
     // « sur quoi était-il la dernière fois ? », et pas seulement « maintenant ».
     version: versionEnCours,
+    // Dans combien de secondes tombe le prochain quiz — la suite naturelle du
+    // réglage de rythme : le parent qui vient de le poser peut vérifier d'un
+    // coup d'œil que la tablette le suit vraiment, sans aller regarder
+    // par-dessus l'épaule de l'enfant. null quand aucun quiz ne viendra
+    // (répit gagné, arrêt réglé par le parent, ou partie fermée).
+    quizDans: (typeof edu !== 'undefined' && running && !edu.quizFree() && !edu.quizArrete())
+      ? Math.max(0, Math.round(edu.remaining)) : null,
   };
 }
 
@@ -1303,9 +1310,17 @@ const CLES_PARENT = ['sessionMin', 'quizStopMin'];
 const cleConsignes = (nom) => `${nom}~parent`;
 let consignesParents = {};
 
-function retenirConsignes(prefs) {
+// `autoritaire` : le document dédié du parent fait foi, y compris par ses
+// absences. Sans cela, une consigne RETIRÉE ne se retirait jamais : on ne
+// copiait que les clés présentes, et la valeur d'avant restait en mémoire
+// jusqu'au prochain redémarrage. Un parent qui rendait les quiz à l'enfant —
+// « toutes les 10 min » après un « aucun quiz » — ne les rendait donc pas.
+// Le repli sur le document de l'enfant (les vieilles versions y rangeaient
+// les consignes) reste non autoritaire : son silence ne dit rien.
+function retenirConsignes(prefs, autoritaire = false) {
   for (const k of CLES_PARENT) {
     if (prefs && prefs[k] !== undefined) consignesParents[k] = prefs[k];
+    else if (autoritaire) delete consignesParents[k];
   }
 }
 
@@ -1338,7 +1353,7 @@ async function lireConsignes() {
   const avant = JSON.stringify(consignesParents);
   let profilChange = false;
   if (vues) {
-    retenirConsignes(vues);
+    retenirConsignes(vues, true);
     // Un parent peut aussi régler la langue et le niveau. Ces deux-là,
     // l'enfant les choisit lui-même de son côté — c'est donc la date du
     // dernier choix qui tranche, et adopterProfilDistant s'en charge. Les
@@ -3673,9 +3688,14 @@ const carte = new Carte({
   })),
   // Habitants, bêtes et créatures : la liste n'est construite que si la carte
   // est assez rapprochée pour les montrer.
+  // `toujours` : les créatures se voient à TOUS les zooms. Elles vivent à
+  // moins de soixante-dix blocs du joueur — de loin, elles se regroupent
+  // autour de sa flèche, ce qui est la vérité. Les cent quatorze habitants et
+  // les animaux, eux, restent réservés au zoom proche : dessinés de loin, ils
+  // couvraient les villes de confettis.
   mobiles: () => [
     ...npcs.map((n) => ({ x: n.pos.x, z: n.pos.z, couleur: '#ffffff' })),
-    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0' })),
+    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0', toujours: true })),
     ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
   ],
   surVoyage: (lieu) => {
@@ -4100,7 +4120,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 

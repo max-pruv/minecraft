@@ -289,6 +289,60 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'espace parent l\'affiche', affichee === null || /v99/.test(affichee),
       String(affichee).slice(0, 120));
 
+    // Un scénario précédent a posé un arrêt de quiz (quizStopMin 15). Le
+    // retirer du document du parent doit suffire — et c'est un scénario à part
+    // entière : une consigne RETIRÉE ne se retirait jamais en cours de partie,
+    // la clé absente laissant l'ancienne valeur en mémoire. Un parent qui
+    // rendait les quiz à l'enfant ne les rendait donc pas, jusqu'au
+    // redémarrage du jeu.
+    const consignesQuiz = { ...(nuage.reglages('Marlon~parent') || {}) };
+    delete consignesQuiz.quizStopMin;
+    nuage.poserReglages('Marlon~parent', consignesQuiz);
+    const rendu = await jusqua(async () => (await marlon.evaluate(
+      () => window.__game.edu.arretApresSecondes)) === null, 30000);
+    verifier('retirer l\'arrêt depuis l\'espace parent rend les quiz sans relancer',
+      rendu, `arretApresSecondes = ${await marlon.evaluate(
+        () => window.__game.edu.arretApresSecondes)}`);
+
+    // Le prochain quiz, en direct dans l'espace parent. C'est la contre-épreuve
+    // du réglage de rythme : le jour où le panneau affichait « dix minutes »
+    // pendant que le compteur en tournait six, rien ne permettait de s'en
+    // apercevoir sans regarder par-dessus l'épaule de l'enfant.
+    await marlon.evaluate(() => {
+      const e = window.__game.edu;
+      e.today().libreJusqua = 0;        // pas de répit : un quiz viendra…
+      e.quizDue = false;
+      e.remaining = e.sessionSeconds;   // …mais pas tout de suite. Un quiz déjà
+      // ouvert met le jeu en pause, et quizDans serait nul à bon droit :
+      // c'est l'intervalle qu'on mesure, pas l'écran de quiz.
+      document.getElementById('play-btn').click();
+    });
+    await marlon.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    await marlon.evaluate(() => window.__game.__pushPresence());
+    const compteVu = await jusqua(async () => {
+      const p2 = (nuage.reglages('Marlon') || {}).live || {};
+      return Number.isFinite(p2.quizDans);
+    }, 30000);
+    const quizDans = ((nuage.reglages('Marlon') || {}).live || {}).quizDans;
+    const temoin = await marlon.evaluate(() => {
+      const g = window.__game, e = g.edu;
+      return { running: g.running, free: e.quizFree(), arrete: e.quizArrete(),
+        remaining: Math.round(e.remaining), direct: (g.__presenceNow || (() => null))() };
+    });
+    verifier('la tablette annonce le prochain quiz avec sa présence',
+      compteVu && quizDans > 0 && quizDans <= 30 * 60,
+      `dans ${quizDans} s · témoin ${JSON.stringify(temoin)}`);
+    const ligneQuiz = await marlon.evaluate(() => {
+      const l = { nom: 'Marlon', appareils: new Set(['a']), vu: null,
+        live: { version: 'v99', monde: null, joue: true, joueurs: 0, quizDans: 240 } };
+      return window.__adminPresence ? window.__adminPresence(l) : null;
+    });
+    verifier('et l\'espace parent dit « quiz dans 4 min »',
+      ligneQuiz !== null && /quiz dans 4 min/.test(ligneQuiz),
+      String(ligneQuiz).slice(0, 160));
+    await marlon.evaluate(() => document.getElementById('home-btn').click());
+    await dormir(500);
+
     // --- retirer un monde de sa liste ---------------------------------------
     //
     // Signalé à la maison : « quand on supprime un monde qu'on ne veut plus,

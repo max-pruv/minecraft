@@ -430,15 +430,6 @@ export class Carte {
     this.etiquettes = [];
 
     // Les bêtes et les gens, tant qu'on est assez près pour les distinguer.
-    if (b <= 1.4 && this.mobiles) {
-      for (const m of this.mobiles()) {
-        const p = this.versEcran(m.x, m.z);
-        if (p.x < -4 || p.x > css + 4 || p.y < -4 || p.y > css + 4) continue;
-        ctx.fillStyle = m.couleur;
-        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
-      }
-    }
-
     // Les lieux, du plus important au plus discret, sans jamais se recouvrir.
     // Les deux coins que la carte se dessine à elle-même sont réservés
     // d'avance : un lieu caché derrière la boussole n'est plus touchable.
@@ -519,6 +510,23 @@ export class Carte {
           ctx.fillStyle = '#bfe9ff';
           ctx.fillText(a.nom, p.x, p.y - 14);
         }
+      }
+    }
+
+    // Les créatures se dessinent à tous les zooms — la légende les promet, et
+    // un enfant qui dézoome les voyait disparaître sans un mot : « je ne vois
+    // plus de Pokémon sur la carte ». Habitants et animaux, plus nombreux et
+    // moins chassés, n'apparaissent qu'en s'approchant. Et elles se dessinent
+    // APRÈS les étiquettes : quatre pixels violets sous une pastille de nom
+    // étaient effacés, et de loin il n'en reste parfois qu'une à l'écran.
+    if (this.mobiles) {
+      const tous = b <= 1.4;
+      for (const m of this.mobiles()) {
+        if (!tous && !m.toujours) continue;
+        const p = this.versEcran(m.x, m.z);
+        if (p.x < -4 || p.x > css + 4 || p.y < -4 || p.y > css + 4) continue;
+        ctx.fillStyle = m.couleur;
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
       }
     }
 

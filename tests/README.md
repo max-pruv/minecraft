@@ -66,6 +66,7 @@ Chaque scénario correspond à une panne qui s'est réellement produite :
 | un serveur de rendez-vous muet le dit, et vite | le menu restait sur « Ouverture du monde… » indéfiniment ; puis quarante secondes, parce que le jeu retentait en hôte ce que la première tentative avait déjà tranché — mesuré 10,7 s après correction |
 | rouvrir son propre monde depuis la liste | le parcours réel de l'enfant, qu'aucun test ne couvrait |
 | un serveur qui avale les demandes n'empêche pas d'entrer | « le monde existe mais le réseau bloque » — sur un réseau sain |
+| la sonde de version traverse le service worker jusqu'au réseau | « version v128 · à jour » alors que la v130 était publiée : le service worker servait la sonde depuis son propre cache, et l'accueil comparait la version avec elle-même |
 | un lien jamais présenté ne devient pas un joueur fantôme | — |
 | et le lien muet est coupé puis rouvert, au lieu de durer pour toujours | la coupure au bout de vingt secondes rouvrait bien un lien — puis l'adieu de l'ancien, arrivé après coup, effaçait le nouveau : les deux portent la même clé, l'identifiant de l'hôte. L'invité gardait alors une connexion ouverte absente de sa table, invisible au battement comme au compteur, et sans reconnexion possible. Un fantôme, définitif |
 | et ce scénario a bien eu quelque chose à faire perdre | — |
@@ -121,6 +122,8 @@ mains. C'est là que naissaient les réglages « qui ne s'enregistrent pas ».
 | une décision du parent prend effet en quelques secondes | jusqu'à quinze secondes d'attente : mesuré 14,6 s avant, 1,6 s après |
 | en pause, un bouton propose de reprendre | une pause en ligne était sans retour |
 | la version de la tablette part au serveur, et l'espace parent l'affiche | une tablette restée en arrière expliquait des correctifs « sans effet », sans moyen de le constater |
+| retirer l'arrêt depuis l'espace parent rend les quiz sans relancer | une consigne RETIRÉE ne se retirait jamais en cours de partie : on ne copiait que les clés présentes, et la valeur d'avant restait en mémoire jusqu'au redémarrage — mesuré : l'arrêt restait gelé à 900 s |
+| la tablette annonce le prochain quiz avec sa présence · et l'espace parent dit « quiz dans 4 min » | la contre-épreuve du réglage de rythme : le jour du « panneau à 10, compteur à 6 », rien ne permettait de le constater sans regarder par-dessus l'épaule de l'enfant |
 | pour un enfant jamais configuré, le panneau dit ce que fait la tablette | « configuré à dix sur l'espace des parents », compteur à six sur la tablette — or il n'était configuré nulle part : le panneau affichait SA valeur par défaut, la tablette tournait sur SA valeur d'usine, deux constantes dans deux fichiers qui avaient divergé |
 | le tout premier lancement ne commence pas par un quiz | une dette jamais écrite était confondue avec une dette de zéro : profil neuf, appareil neuf ou données effacées, chaque premier lancement commençait par un quiz avant la première seconde de jeu |
 | et l'intervalle d'usine est bien de dix minutes | il était de six, et personne ne l'avait jamais réglé |
@@ -163,6 +166,7 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | toucher un lieu emmène en voyage · un appui long dépose n'importe où | ce qui marchait avant, et qui devait continuer |
 | en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
 | ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
+| les créatures restent visibles en dézoomant | « je ne vois plus de Pokémon sur la carte » : elles disparaissaient sans un mot au-delà d'un seuil de zoom, pendant que la légende continuait de les promettre — mesuré 0 pixel violet dès l'échelle de 150 blocs |
 | on ne peut ni zoomer à l'infini ni sortir du monde | — |
 | les quartiers du bas de l'île ont la place d'exister | de Battery à la 14e Rue il y avait quinze blocs, moins qu'un pâté de Midtown : TriBeCa, SoHo, Chinatown, le Village et Wall Street s'y superposaient |
 | la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |

@@ -342,6 +342,15 @@ function presence(l) {
   } else {
     etat = '<span class="adm-live pause"><i class="adm-dot"></i>connecté, au menu</span>';
   }
+  // Le prochain quiz, en direct. C'est la contre-épreuve du réglage de
+  // rythme : le parent qui vient de le poser voit ici que la tablette le suit
+  // vraiment — c'est ce qui manquait le jour où le panneau affichait dix
+  // minutes pendant que le compteur en tournait six.
+  const qd = l.live.quizDans;
+  if (joue && Number.isFinite(qd)) {
+    const min = Math.ceil(qd / 60);
+    etat += `<div class="adm-dim">quiz dans ${qd < 60 ? 'moins d\'une minute' : `${min} min`}</div>`;
+  }
   return `${etat}<div class="adm-dim">${secondaire}</div>`;
 }
 
