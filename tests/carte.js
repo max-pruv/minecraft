@@ -226,6 +226,12 @@ const position = (p) => p.evaluate(() => ({
     // dès bpp 1,6.
     const violets = await tab.evaluate(() => {
       const c2 = window.__carte, g = window.__game;
+      // La ponte est opportuniste : près du spawn il peut n'y avoir qu'une
+      // seule créature, et une seule se cache facilement. On en garantit une
+      // poignée par le vrai chemin de ponte avant de mesurer.
+      for (let i = 0; i < 60 && g.creatureManager.creatures.length < 6; i++) {
+        g.creatureManager.trySpawn();
+      }
       if (!g.creatureManager.creatures.length) return { erreur: 'aucune créature à dessiner' };
       c2.vue.cx = Math.round(g.player.pos.x); c2.vue.cz = Math.round(g.player.pos.z);
       const compter = () => {
