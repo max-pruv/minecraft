@@ -218,10 +218,16 @@ class Banc {
           pc.addIceCandidate = () => Promise.resolve();
           Object.defineProperty(pc, 'onicecandidate', { get: () => null, set: () => {} });
           if (avecRelais) {
-            setTimeout(() => {
+            // Répété, et non pas une seule fois : l'écouteur du jeu s'attache
+            // au tour de boucle suivant la création de la connexion, et un
+            // candidat émis avant lui n'est vu de personne. Le témoin tombait
+            // alors sur un « relais jamais vu » purement instrumental.
+            let reste = 20;
+            const battre = setInterval(() => {
+              if (reste-- <= 0) { clearInterval(battre); return; }
               const ev = new Event('icecandidate');
               ev.candidate = { candidate: 'candidate:1 1 udp 1 10.0.0.1 3478 typ relay raddr 0.0.0.0 rport 0' };
-              try { pc.dispatchEvent(ev); } catch { /* la page est partie */ }
+              try { pc.dispatchEvent(ev); } catch { clearInterval(battre); }
             }, 300);
           }
           return pc;
@@ -242,8 +248,21 @@ class Banc {
         // La couture du jeu (net.js) : retenir un « hello », c'est exactement
         // ce que fait un tuyau encombré. Le compteur dit ce qui a vraiment été
         // retenu — un scénario qui n'a rien retenu n'a rien éprouvé.
+        // On peut avaler PAR NOMBRE plutôt que par durée, et c'est bien
+        // meilleur : une fenêtre en secondes dépend de la vitesse de la
+        // machine — sur un conteneur chargé, il ne passait qu'une seule
+        // présentation là où le scénario en attendait cinq, et le témoin
+        // tombait sans que le jeu y soit pour rien. Un compte, lui, éprouve
+        // exactement la même chose partout.
+        window.__avalerHelloNombre = 0;
         window.__filtreMessages = (msg) => {
-          if (!msg || msg.t !== 'hello' || !(window.__avalerHelloSecondes > 0)) return true;
+          if (!msg || msg.t !== 'hello') return true;
+          if (window.__avalerHelloNombre > 0) {
+            if (window.__avalerHelloComptes >= window.__avalerHelloNombre) return true;
+            window.__avalerHelloComptes++;
+            return false;
+          }
+          if (!(window.__avalerHelloSecondes > 0)) return true;
           if (!window.__avalerHelloDebut) window.__avalerHelloDebut = Date.now();
           if (Date.now() - window.__avalerHelloDebut < window.__avalerHelloSecondes * 1000) {
             window.__avalerHelloComptes++;

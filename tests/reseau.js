@@ -471,7 +471,10 @@ function verifier(nom, ok, detail = '') {
     // passait alors sans avoir rien éprouvé, ce que le garde-fou plus bas a
     // fini par attraper.
     await lent.bringToFront();
-    await lent.evaluate(() => { window.__avalerHelloSecondes = 14; });
+    // Cinq présentations avalées, quel que soit l'état de la machine — c'est
+    // ce que mesure un COMPTE là où une fenêtre en secondes mesurait surtout
+    // la vitesse du conteneur.
+    await lent.evaluate(() => { window.__avalerHelloNombre = 5; });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await lent.evaluate((c) => {
@@ -505,7 +508,7 @@ function verifier(nom, ok, detail = '') {
     // sur machine chargée, où les relances tiennent moins nombreuses dans la
     // même fenêtre : on rejetait alors un scénario qui avait bel et bien
     // éprouvé ce qu'il devait éprouver.
-    verifier('et des présentations ont bien été perdues en chemin', avalees >= 1,
+    verifier('et des présentations ont bien été perdues en chemin', avalees >= 5,
       `${avalees} avalées`);
     await lent.close();
     await patiente.close();
