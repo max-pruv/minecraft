@@ -310,7 +310,11 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-btn').click();
     }, codeVPN);
     const verdict = await jusqua(async () => derriereVPN.evaluate(
-      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 60000);
+      // Deux minutes : ce chemin-là cumule volontairement les patiences du jeu
+      // — cinq secondes pour le canal, neuf pour le serveur de rendez-vous,
+      // vingt de plus une fois qu'on sait le monde tenu. Soixante secondes
+      // suffisaient sur une machine au repos, jamais sur un conteneur chargé.
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 120000);
     const phrase = await derriereVPN.evaluate(
       () => document.getElementById('online-status').textContent);
     verifier('un VPN ne fait plus dire que le monde est vide',
@@ -342,7 +346,11 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-btn').click();
     }, codeMaison);
     await jusqua(async () => chezSoi.evaluate(
-      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 60000);
+      // Deux minutes : ce chemin-là cumule volontairement les patiences du jeu
+      // — cinq secondes pour le canal, neuf pour le serveur de rendez-vous,
+      // vingt de plus une fois qu'on sait le monde tenu. Soixante secondes
+      // suffisaient sur une machine au repos, jamais sur un conteneur chargé.
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 120000);
     const phraseMaison = await chezSoi.evaluate(
       () => document.getElementById('online-status').textContent);
     verifier('quand le relais répond, on accuse le VPN et pas le Wi-Fi',
