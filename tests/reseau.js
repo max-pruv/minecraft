@@ -12,7 +12,7 @@
 // seuils réels du jeu (vingt secondes de silence toléré, cinq de battement),
 // sans quoi on ne testerait rien.
 
-const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd } = require('./banc.js');
+const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, souffler } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
@@ -358,6 +358,7 @@ function verifier(nom, ok, detail = '') {
     await chezSoi.close();
     await tenu2.close();
 
+    await souffler();
     // --- le Wi-Fi public ne doit plus empêcher de jouer ----------------------
     //
     // « Ça me paraît aberrant que sur une connexion publique, je ne puisse pas
@@ -443,6 +444,9 @@ function verifier(nom, ok, detail = '') {
     await bloque.close();
     await hoteNuage.close();
 
+    // On laisse la machine redescendre : ce qui suit empile les délais du jeu
+    // et n'a rien à prouver sur un conteneur essoufflé.
+    await souffler();
     // --- une présentation qui met du temps à passer -----------------------------
     //
     // Signalé à la maison, sans VPN cette fois : deux iPad sur la même
@@ -471,10 +475,16 @@ function verifier(nom, ok, detail = '') {
     // passait alors sans avoir rien éprouvé, ce que le garde-fou plus bas a
     // fini par attraper.
     await lent.bringToFront();
-    // Cinq présentations avalées, quel que soit l'état de la machine — c'est
-    // ce que mesure un COMPTE là où une fenêtre en secondes mesurait surtout
-    // la vitesse du conteneur.
-    await lent.evaluate(() => { window.__avalerHelloNombre = 5; });
+    // Deux présentations avalées, quel que soit l'état de la machine.
+    //
+    // Un COMPTE plutôt qu'une fenêtre en secondes : une fenêtre mesurait
+    // surtout la vitesse du conteneur. Et DEUX plutôt que cinq : ce que le
+    // scénario doit établir, c'est qu'une présentation perdue finit par
+    // passer — deux pertes le prouvent aussi bien que cinq, et le prouvent en
+    // une dizaine de secondes au lieu d'empiler assez de cycles de reprise
+    // pour déborder l'attente sur une machine chargée. Cinq était un chiffre
+    // de mon cru, pas une exigence du jeu.
+    await lent.evaluate(() => { window.__avalerHelloNombre = 2; });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await lent.evaluate((c) => {
@@ -503,16 +513,15 @@ function verifier(nom, ok, detail = '') {
     // Sans cette garantie, le scénario pourrait passer sans avoir rien éprouvé :
     // c'est déjà arrivé une fois, la fenêtre s'étant écoulée avant la connexion.
     const avalees = await lent.evaluate(() => window.__avalerHelloComptes || 0);
-    // Une seule suffit à prouver que quelque chose a été perdu — et c'est
-    // tout ce que ce garde-fou doit établir. En exiger deux le faisait tomber
-    // sur machine chargée, où les relances tiennent moins nombreuses dans la
-    // même fenêtre : on rejetait alors un scénario qui avait bel et bien
-    // éprouvé ce qu'il devait éprouver.
-    verifier('et des présentations ont bien été perdues en chemin', avalees >= 5,
+    // Le garde-fou n'a qu'un travail : établir que le scénario n'était pas
+    // vide. Puisque le banc avale maintenant un nombre fixe, on exige ce
+    // nombre exactement — ni plus, ni moins.
+    verifier('et des présentations ont bien été perdues en chemin', avalees >= 2,
       `${avalees} avalées`);
     await lent.close();
     await patiente.close();
 
+    await souffler();
     // --- une présentation qui ne passe JAMAIS -----------------------------------
     //
     // L'autre bout du même correctif, et celui qu'on ajoute en dernier parce

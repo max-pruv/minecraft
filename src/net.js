@@ -101,6 +101,9 @@ export class NetSession {
     this.inboundVideo = new Map(); // peerId -> inbound video MediaConnection
     this.onRemoteVideo = null;     // hook(peerId, stream) — main shows the tile
     this.onRemoteVideoClosed = null;
+    this.onPhoto = null;           // hook(peerId, dataURL, nom) — la caméra lente
+    this.onPhotoFin = null;        // hook(peerId) — elle s'arrête
+    this.onCamChange = null;       // hook(allumee) — le jeu ajuste ses vignettes
     this.posTimer = null;
     this.bus = null;          // le relais par le nuage, quand le direct échoue
     this.relaisVu = false;
@@ -709,6 +712,7 @@ export class NetSession {
     const vIn = this.inboundVideo.get(id);
     if (vIn) { vIn.close(); this.inboundVideo.delete(id); }
     if (this.onRemoteVideoClosed) this.onRemoteVideoClosed(id);
+    if (this.onPhotoFin) this.onPhotoFin(id);
     this.playersChanged();
   }
 
@@ -883,6 +887,20 @@ export class NetSession {
         if (this.onChantier) this.onChantier(msg.c);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // La caméra lente. Sur un Wi-Fi public, le flux vidéo ne passe pas :
+      // c'est une photo toutes les deux secondes qui voyage à sa place, par le
+      // même tuyau que les blocs. On se voit, on se reconnaît, on se fait
+      // coucou — et c'est infiniment mieux qu'un carré noir.
+      case 'photo':
+        if (this.onPhoto) {
+          this.onPhoto(msg.from || conn.peer, String(msg.img || ''), String(msg.name || ''));
+        }
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
+      case 'photo-fin':
+        if (this.onPhotoFin) this.onPhotoFin(msg.from || conn.peer);
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
       // L'heure et le temps qu'il fait. Chaque appareil les tirait au sort de
       // son côté : deux enfants côte à côte pouvaient être l'un sous la pluie
       // en pleine nuit, l'autre au soleil de midi. C'est l'hôte qui décide, et
@@ -1033,30 +1051,109 @@ export class NetSession {
       this.videoStream.getTracks().forEach((t) => { t.enabled = true; });
       this.micOn = this.videoStream.getAudioTracks().length > 0;
       this.camOn = true;
-      for (const id of this.conns.keys()) this.videoCallPeer(id);
+      this.reconcilierVideo();
+      this.veillerSurLaVideo();
       this.hooks.toast(this.micOn
         ? '🎥 Caméra et micro activés — coucou !'
         : '🎥 Caméra activée (sans micro)', 0x6ee06e);
+      if (this.onCamChange) this.onCamChange(true);
     } else {
       this.camOn = false;
       this.micOn = false;
+      this.cesserDeVeillerSurLaVideo();
       for (const call of this.videoCalls.values()) call.close();
       this.videoCalls.clear();
       if (this.videoStream) {
         this.videoStream.getTracks().forEach((t) => t.stop());
         this.videoStream = null;
       }
+      this.annoncerFinDePhoto();
       this.hooks.toast('📷 Caméra et micro coupés', 0xcccccc);
+      if (this.onCamChange) this.onCamChange(false);
     }
     return this.camOn;
   }
 
   videoCallPeer(id) {
-    if (this.videoCalls.has(id) || !this.videoStream) return;
+    if (this.videoCalls.has(id) || !this.videoStream || !this.peer) return;
     const entry = this.conns.get(id);
     if (!entry || !entry.conn) return;
-    const call = this.peer.call(id, this.videoStream, { metadata: { kind: 'video' } });
-    if (call) this.videoCalls.set(id, call);
+    // Un pair rejoint par le nuage n'a aucun chemin pour un flux vidéo : le
+    // Wi-Fi qui a forcé le relais bloque exactement ce que la visio demande.
+    // Appeler quand même laissait une sonnerie sans fin — et un cadre noir.
+    // C'est la caméra lente qui prend le relais, par images.
+    if (entry.conn.parNuage) return;
+    let call = null;
+    try { call = this.peer.call(id, this.videoStream, { metadata: { kind: 'video' } }); }
+    catch { return; }            // la veille repassera
+    if (!call) return;
+    call.placeA = Date.now();
+    this.videoCalls.set(id, call);
+    // Un appel mort doit LIBÉRER sa place, sinon la veille le croit vivant et
+    // n'en replace jamais. C'est ce qui laissait un carré noir définitif.
+    const oublier = () => { if (this.videoCalls.get(id) === call) this.videoCalls.delete(id); };
+    call.on('close', oublier);
+    call.on('error', oublier);
+  }
+
+  // LA VISIO SE REMET D'APLOMB TOUTE SEULE.
+  //
+  // L'appel était placé une seule fois, à l'instant où l'on presse le bouton.
+  // C'est trop fragile pour ce que la famille en fait : le pair qui n'était
+  // pas encore tout à fait inscrit quand l'enfant a appuyé, celui qui arrive
+  // après, l'appel qui n'aboutit pas, le lien qui cligne — chacun de ces cas
+  // laissait un carré noir que RIEN ne venait réparer, et l'enfant en était
+  // réduit à éteindre et rallumer. Mesuré sur le banc : selon l'instant du
+  // clic, l'appel n'était parfois même jamais placé.
+  //
+  // On repasse donc toutes les deux secondes : chaque voisin en direct doit
+  // avoir son appel vivant, sinon on le rappelle. On laisse dix secondes à
+  // une négociation en cours — c'est long pour un réseau, court pour un
+  // enfant qui attend, et cela évite de couper un appel qui allait aboutir.
+  reconcilierVideo() {
+    if (!this.camOn || !this.videoStream || !this.active) return;
+    for (const [id, c] of this.conns) {
+      if (!c.conn || c.conn.parNuage) continue;
+      const appel = this.videoCalls.get(id);
+      if (!appel) { this.videoCallPeer(id); continue; }
+      if (appel.open) continue;
+      if (Date.now() - (appel.placeA || 0) < 10000) continue;
+      try { appel.close(); } catch { /* déjà fermé */ }
+      this.videoCalls.delete(id);
+      this.videoCallPeer(id);
+    }
+  }
+
+  veillerSurLaVideo() {
+    if (this._veilleVideo) return;
+    this._veilleVideo = setInterval(() => this.reconcilierVideo(), 2000);
+  }
+
+  cesserDeVeillerSurLaVideo() {
+    if (this._veilleVideo) { clearInterval(this._veilleVideo); this._veilleVideo = null; }
+  }
+
+  // Y a-t-il quelqu'un que seul le nuage nous relie ? C'est ce qui décide si
+  // la caméra lente doit tourner en plus — ou à la place — du flux vidéo.
+  aDesPairsNuage() {
+    for (const c of this.conns.values()) if (c.conn && c.conn.parNuage) return true;
+    return false;
+  }
+
+  // Une image fixe part vers ceux qu'on ne peut joindre que par le nuage. Les
+  // autres reçoivent déjà du vrai film : leur en envoyer serait du gâchis.
+  envoyerPhoto(img) {
+    for (const c of this.conns.values()) {
+      if (c.conn && c.conn.parNuage) this.envoyer(c, { t: 'photo', img, name: this.profile.name });
+    }
+  }
+
+  // La caméra s'éteint : on le dit, sinon la dernière image resterait affichée
+  // comme un portrait au mur.
+  annoncerFinDePhoto() {
+    for (const c of this.conns.values()) {
+      if (c.conn && c.conn.parNuage) this.envoyer(c, { t: 'photo-fin' });
+    }
   }
 
   attachVideoCall(call, inbound) {
@@ -1112,6 +1209,7 @@ export class NetSession {
     this.link('arret');
     for (const a of this.audios.values()) a.remove();
     if (this.localStream) this.localStream.getTracks().forEach((t) => t.stop());
+    this.cesserDeVeillerSurLaVideo();
     if (this.videoStream) this.videoStream.getTracks().forEach((t) => t.stop());
     if (this.peer) this.peer.destroy();
     this.conns.clear();

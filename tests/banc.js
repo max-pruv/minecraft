@@ -141,7 +141,13 @@ class Banc {
         // Une caméra et un micro simulés, toujours présents et toujours
         // autorisés. Sans eux, le chemin vidéo n'était éprouvé nulle part :
         // c'est précisément là qu'un carré noir a pu passer inaperçu.
-        '--use-fake-device-for-media-capture',
+        //
+        // Le nom du drapeau compte : Chromium connaît « for-media-STREAM ».
+        // Écrit « for-media-capture », il est accepté sans rien faire — pas
+        // d'erreur, pas d'avertissement, simplement aucune caméra, et un
+        // « Requested device not found » loin de là. Vérifié en énumérant les
+        // appareils : sept avec le bon nom, zéro avec l'autre.
+        '--use-fake-device-for-media-stream',
         '--use-fake-ui-for-media-stream',
         '--allow-file-access-from-files',
         '--autoplay-policy=no-user-gesture-required',
@@ -480,6 +486,24 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
   await dormir(200);
 }
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer,
+// Laisser souffler la machine avant un scénario lourd.
+//
+// Une suite longue chauffe le conteneur : les derniers scénarios s'exécutent
+// sur quatre cœurs déjà pris, et ce sont eux qui tombaient — jamais pour la
+// même raison, toujours à la même place. Un test qui mesure la vitesse du
+// conteneur ne mesure pas le jeu. On attend donc que la charge retombe avant
+// d'ouvrir les scénarios qui empilent trois navigateurs et des délais de
+// vingt secondes, exactement comme la porte de sortie le fait entre deux
+// suites.
+async function souffler(limiteMs = 120000, chargeMax = 2.0) {
+  const charge = () => {
+    try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
+    catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
+  };
+  const fin = Date.now() + limiteMs;
+  while (charge() > chargeMax && Date.now() < fin) await dormir(5000);
+}
+
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer, souffler,
   // réutilisés par les autres suites, qui montent leur propre décor
   servirLeJeuPour: servirLeJeu, servirLesPairsPour: servirLesPairs, trouverChromium };

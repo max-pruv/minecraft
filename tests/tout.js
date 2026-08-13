@@ -1,4 +1,4 @@
-// La porte de sortie unique : les trois suites, dans l'ordre, avec un verdict
+// La porte de sortie unique : toutes les suites, dans l'ordre, avec un verdict
 // pour l'ensemble.
 //
 // Pourquoi ce fichier existe : les suites étaient lancées à la main, une par
@@ -17,7 +17,7 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 
-const SUITES = ['reseau.js', 'reglages.js', 'carte.js'];
+const SUITES = ['reseau.js', 'visio.js', 'reglages.js', 'carte.js'];
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 
@@ -53,7 +53,7 @@ function lancer(fichier) {
   for (const [suite, vert] of verdicts) console.log(`${vert ? '✅' : '❌'} ${suite}`);
   const tout = verdicts.every(([, v]) => v);
   console.log(tout
-    ? '\n✅ les trois suites sont vertes — on peut publier'
+    ? '\n✅ toutes les suites sont vertes — on peut publier'
     : '\n❌ une suite au moins a échoué — on ne publie pas');
   process.exit(tout ? 0 : 1);
 })();
