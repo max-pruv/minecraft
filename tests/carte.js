@@ -621,8 +621,10 @@ const position = (p) => p.evaluate(() => ({
       const bout = haut(17, 0);
       const hb = w.terrainHeight(Lx + 17, Lz);
       const videSous = w.getBlock(Lx + 17, hb + 6, Lz) === 0;
-      // l'eau du quai du Wault, remplie à la cote trente comme les douves
-      const wault = w.getBlock(Lx - 10, 30, Lz - 4) === EAU;
+      // l'eau du quai du Wault, remplie à la cote trente comme les douves —
+      // sondée à son bout EST, le seul hors de l'étoile de la citadelle : au
+      // bout ouest, les douves du bastion mettaient déjà de l'eau avant.
+      const wault = w.getBlock(Lx - 7, 30, Lz - 4) === EAU;
       // la façade claire de la Treille, percée de sa rosace de verre
       const treille = haut(-2, -16).y >= 7 && colonne(-2, -16, VERRE);
       return { rueLibre, horloge, deesse, damier, cour, cci, hdv, ski,

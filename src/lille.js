@@ -99,8 +99,9 @@ const uDeule = (v) => {
 
 // Le quai du Wault : le bassin de l'ancien port de la Haute-Deûle, encore en
 // eau, entre la rue Nationale et l'esplanade. C'est lui qui rappelle que Lille
-// est née de l'eau — « l'île ».
-const WAULT = { u0: -13, u1: -8, v0: -5, v1: -4 };
+// est née de l'eau — « l'île ». Son bout ouest touche presque les douves du
+// bastion sud-est : c'est vrai aussi en ville, l'eau y est continue.
+const WAULT = { u0: -13, u1: -7, v0: -5, v1: -4 };
 const dansLeWault = (u, v, marge) =>
   u >= WAULT.u0 - marge && u <= WAULT.u1 + marge && v >= WAULT.v0 - marge && v <= WAULT.v1 + marge;
 
