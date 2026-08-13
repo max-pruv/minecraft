@@ -132,16 +132,23 @@ export class BusNuage {
       return;
     }
     let conn = this.conns.get(de);
+    const nouveau = !conn;
     if (!conn) {
       conn = new ConnexionNuage(this, de);
       this.conns.set(de, conn);
-      // Le nouveau venu est présenté au réseau, qui l'inscrit comme n'importe
-      // quel autre pair. C'est là que le tuyau devient invisible.
-      if (this.surPair) this.surPair(conn);
-      conn.emettre('open');
     }
-    // « nuage-coucou » ne sert qu'à se faire connaître : il a fait son office
-    // en créant la connexion ci-dessus.
+    // Un lien refermé par un adieu peut revivre : c'est exactement ce qui se
+    // passe quand un enfant quitte l'application et y revient.
+    if (!conn.open) conn.open = true;
+    // « nuage-coucou » ne sert qu'à se faire connaître — et à SE REFAIRE
+    // connaître. On re-présente donc le pair au réseau à chaque coucou, pas
+    // seulement au premier : pendant que l'iPhone dormait, l'hôte a pu
+    // l'oublier, et sans cette re-présentation l'enfant revenait dans un
+    // monde qui ne l'écoutait plus.
+    if (nouveau || (msg && msg.t === 'nuage-coucou')) {
+      if (this.surPair) this.surPair(conn);
+      if (nouveau) conn.emettre('open');
+    }
     if (msg && msg.t === 'nuage-coucou') return;
     conn.emettre('data', msg);
   }
@@ -165,6 +172,15 @@ export class BusNuage {
   }
 
   oublier(idDistant) { this.conns.delete(idDistant); }
+
+  // Le retour d'un appareil endormi. iOS gèle les minuteurs d'une page en
+  // arrière-plan : la boucle de relève s'arrête net et peut mettre longtemps
+  // à repartir. On la relance sur-le-champ, sans attendre son tour.
+  reveiller() {
+    if (!this.actif) { this.demarrer(); return; }
+    if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+    this.relever().then(() => this._boucler());
+  }
 
   arreter() {
     this.actif = false;

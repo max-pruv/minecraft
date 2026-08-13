@@ -404,6 +404,42 @@ function verifier(nom, ok, detail = '') {
       ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 23, posePassee), 60000);
     verifier('un bloc posé par le nuage arrive chez l\'autre',
       vuEnFace, JSON.stringify(posePassee));
+
+    // --- quitter l'application et y revenir, en jouant par le nuage ----------
+    //
+    // Signalé par Max sur son iPhone : « j'ai quitté l'app et je suis revenu,
+    // j'étais déconnecté, et impossible de me reconnecter — j'ai dû quitter le
+    // online pour revenir. » La reconnexion existait pourtant : elle ne
+    // retentait que le lien DIRECT, c'est-à-dire précisément celui que ce
+    // réseau interdit. Elle tournait donc en boucle sans aucune issue.
+    //
+    // On refait le geste exact : l'enfant part, reste absent plus longtemps
+    // que le silence toléré — de quoi se faire oublier de l'hôte — puis
+    // revient. Il doit retrouver la partie tout seul.
+    await endormir(bloque);
+    await dormir(26000);                       // au-delà des vingt secondes tolérées
+    await reveiller(bloque);
+    const retrouve = await jusqua(async () => {
+      const a = await nomsVus(hoteNuage);
+      const b = await nomsVus(bloque);
+      return a.includes('Tom') && b.includes('Emma');
+    }, 90000);
+    verifier('revenir dans l\'application remet dans la partie, sans rien redemander',
+      retrouve, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+    // Et le monde répond encore : un lien qui se rétablit sans porter les
+    // blocs ne servirait à rien.
+    const poseApres = await bloque.evaluate(() => {
+      const w = window.__game.world;
+      const p = window.__game.player;
+      const x = Math.round(p.pos.x) + 3, z = Math.round(p.pos.z) + 1;
+      const y = w.terrainHeight(x, z) + 1;
+      w.setBlock(x, y, z, 26);                 // laine verte
+      return { x, y, z };
+    });
+    verifier('et les blocs repassent après le retour',
+      await jusqua(async () => hoteNuage.evaluate(
+        ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 26, poseApres), 60000),
+      JSON.stringify(poseApres));
     await bloque.close();
     await hoteNuage.close();
 

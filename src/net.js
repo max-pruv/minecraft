@@ -313,12 +313,33 @@ export class NetSession {
       surPair: (conn) => {
         // Un pair arrivé par le nuage est un pair comme un autre : on
         // l'inscrit et on se présente. Tout ce qui suit l'ignore.
-        this.registerConn(conn);
+        //
+        // Appelé aussi à chaque « coucou », donc au retour d'un appareil
+        // endormi : on ne réinscrit que ce qu'on avait oublié, et on se
+        // représente dans tous les cas — c'est cette présentation-là qui
+        // remet l'enfant dans le monde.
+        if (!this.conns.has(conn.peer)) this.registerConn(conn);
         this.greet(conn);
       },
     });
     if (!this.bus.demarrer()) { this.bus = null; return null; }
     return this.bus;
+  }
+
+  // Reprendre le chemin du nuage, ou le rouvrir s'il s'était refermé. C'est
+  // idempotent à dessein : on l'appelle au réveil, à chaque tentative de
+  // reconnexion, et le coucou qui en part suffit à se refaire connaître de
+  // l'hôte. Sans cela, un enfant qui jouait par le nuage et qui quittait
+  // l'application ne revenait jamais dans la partie : la reconnexion ne
+  // retentait que le lien direct, précisément celui que son réseau interdit.
+  reprendreParLeNuage() {
+    const bus = this.ouvrirRelaisNuage();
+    if (!bus) return false;
+    bus.reveiller();
+    const conn = bus.connecter(ID_PREFIX + this.code);
+    if (!this.conns.has(conn.peer)) this.registerConn(conn);
+    this.greet(conn);
+    return true;
   }
 
   // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
@@ -449,6 +470,11 @@ export class NetSession {
       // renoncer si tôt condamnait à retenter en boucle sans jamais aboutir.
       this.patience = Math.max(this.patience || 0, 15000);
       this.connectToHost(null);
+      // Et le chemin du nuage, en parallèle. Sur un réseau qui interdit le
+      // pair-à-pair, retenter le lien direct seul, c'est retenter à l'infini
+      // ce qui n'a jamais marché : l'enfant restait sur « Reconnexion… » sans
+      // aucune issue, et devait quitter le mode en ligne pour y revenir.
+      if (this.bus || essai >= 2) this.reprendreParLeNuage();
       // 3 s, 5 s, 7 s… jusqu'à un essai toutes les vingt secondes
       const attente = Math.min(3000 + essai * 2000, 20000);
       this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, attente);
@@ -495,6 +521,10 @@ export class NetSession {
         this.diffusionBrute({ t: 'coucou' });
         // le réseau a pu changer pendant l'absence : on vérifie tout de suite
         if (this.peer && this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+        // Le tuyau du nuage, lui, a été gelé avec la page : on le relance
+        // tout de suite et on se re-annonce, plutôt que d'attendre un tour de
+        // sondage qui peut tarder après une longue veille.
+        if (this.bus) this.reprendreParLeNuage();
         if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
       }
     };
