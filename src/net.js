@@ -638,6 +638,20 @@ export class NetSession {
       // quelques secondes qui suivent le réveil.
       if (document.visibilityState === 'hidden') return;
       if (this._reveilA && now - this._reveilA < GRACE_REVEIL_MS) return;
+      // LE FILET : un invité en ligne a un lien vers l'hôte, ou il en cherche
+      // un. Jamais ni l'un ni l'autre.
+      //
+      // Mesuré sur le banc : un invité s'est retrouvé sans aucun lien ET sans
+      // boucle de reconnexion en cours — donc seul pour toujours, dans un
+      // monde qui avait l'air normal, sans erreur, sans message, sans rien à
+      // faire. Le chemin exact importe peu : il y en a plusieurs (une reprise
+      // qui aboutit puis meurt aussitôt, une relance annulée par une autre),
+      // et il y en aura d'autres. On rétablit donc l'invariant à chaque
+      // battement plutôt que de courir après chacun d'eux.
+      if (!this.isHost && this.active && !this._rejoining
+        && !this.conns.has(ID_PREFIX + this.code)) {
+        this.rejoinHost();
+      }
       for (const [id, c] of [...this.conns]) {
         if (c.dodo) {
           if (now - c.dodo > SOMMEIL_MAX_MS) this.dropPeer(id);
