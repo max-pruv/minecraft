@@ -108,7 +108,7 @@ const position = (p) => p.evaluate(() => ({
     // Les noms, eux, ont le droit de manquer quand la place manque : c'est la
     // pastille d'icône qui garantit qu'on peut toujours partir.
     const vus = await lieuxVus(tab);
-    const grands = ['Paris', 'New York', 'San Francisco', 'Nice', 'Lille', 'Planète Mars',
+    const grands = ['Paris', 'New York', 'San Francisco', 'Nice', 'Lille', 'Chine', 'Planète Mars',
       'Château de Villandry', 'Aéroport Charles-de-Gaulle', 'Village gaulois', 'Base spatiale',
       'Circuit de F1', 'Volcan', 'Désert', 'Île tropicale', 'Château médiéval', "Parc d'attractions"];
     const absents = grands.filter((n) => !vus.includes(n));
@@ -762,6 +762,61 @@ const position = (p) => p.evaluate(() => ({
     verifier('les otaries de Pier 39, Lombard fleurie et le Dragon Gate',
       frisco.otaries && frisco.lombard && frisco.dragon,
       JSON.stringify({ otaries: frisco.otaries, lombard: frisco.lombard, dragon: frisco.dragon }));
+
+    // --- la Chine : une région entière dans l'ancienne zone morte -------------
+    //
+    // Entre San Francisco et le Pôle Nord, il n'y avait RIEN : des collines de
+    // bruit. La fiche de terrain a posé une région culturelle complète, et on
+    // mesure ses signatures : la muraille qui serpente SUR les crêtes (jamais
+    // en fond de vallée), la Cité interdite vermillon et or avec ses lions de
+    // bronze, les karsts de Guilin au bord de la rivière turquoise, les
+    // rizières en marches d'eau, et les pandas dans leur bambouseraie.
+    const chine = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const Cx = -60, Cz = -520;
+      const GRIS_MUR = 33, VERMILLON = 40, JAUNE = 60, ORB = 19, EAU = 7, NOIR = 28, TIGE = 5;
+      const creteV = (u) => -34 + Math.round(6 * Math.sin(u / 9) + u * 0.12);
+      const colonne = (u, v, id) => {
+        const h = w.terrainHeight(Cx + u, Cz + v);
+        for (let y = h - 2; y < h + 20; y++) if (w.getBlock(Cx + u, y, Cz + v) === id) return true;
+        return false;
+      };
+      const surface = (u, v) => w.getBlock(Cx + u, w.terrainHeight(Cx + u, Cz + v), Cz + v);
+      // la muraille : présente sur la crête en cinq points, et la crête domine
+      let surCrete = 0, domine = 0;
+      for (const u of [-40, -20, 0, 20, 40]) {
+        const vc = creteV(u);
+        if (colonne(u, vc, GRIS_MUR)) surCrete++;
+        if (w.terrainHeight(Cx + u, Cz + vc) - w.terrainHeight(Cx + u, Cz + vc + 20) >= 6) domine++;
+      }
+      // la Cité interdite : la porte vermillon au pavillon jaune, les lions
+      const porte = colonne(-6, 10, VERMILLON) && colonne(-6, 10, JAUNE);
+      const lions = colonne(-8, 13, ORB);
+      // les karsts et la rivière turquoise
+      const karst = w.terrainHeight(Cx + 27, Cz + 4) - 34 >= 15;
+      const riviere = surface(34 + Math.round(5 * Math.sin(10 / 11)), 10) === EAU;
+      // les rizières : de l'eau en marches
+      const rizEau = surface(19, 40) === EAU;
+      const marches = w.terrainHeight(Cx + 19, Cz + 40) - w.terrainHeight(Cx + 19, Cz + 46) >= 1;
+      // les pandas dans leur bambouseraie
+      const panda = colonne(-18, 40, NOIR);
+      let bambous = 0;
+      for (let du = -8; du <= 8; du += 2) {
+        for (let dv = -6; dv <= 6; dv += 2) if (colonne(-14 + du, 40 + dv, TIGE)) { bambous++; }
+      }
+      return { surCrete, domine, porte, lions, karst, riviere, rizEau, marches, panda, bambous };
+    });
+    verifier('la Grande Muraille serpente sur les crêtes',
+      chine.surCrete >= 4 && chine.domine >= 3,
+      `${chine.surCrete}/5 points sur la crête · la crête domine en ${chine.domine}/5`);
+    verifier('la Cité interdite : vermillon, tuiles jaunes et lions de bronze',
+      chine.porte && chine.lions, JSON.stringify({ porte: chine.porte, lions: chine.lions }));
+    verifier('les karsts de Guilin au bord de la rivière turquoise',
+      chine.karst && chine.riviere, JSON.stringify({ karst: chine.karst, riviere: chine.riviere }));
+    verifier('les rizières en marches d\'eau, les pandas dans les bambous',
+      chine.rizEau && chine.marches && chine.panda && chine.bambous >= 5,
+      JSON.stringify({ rizEau: chine.rizEau, marches: chine.marches,
+        panda: chine.panda, bambous: chine.bambous }));
 
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus] of [
