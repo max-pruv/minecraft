@@ -552,6 +552,27 @@ function verifier(nom, ok, detail = '') {
     verifier('la célébration part chez les deux bâtisseurs', finiPartout,
       `hôte ${await lea.evaluate(() => window.__chantier.chantiers())} · invité ${await rui.evaluate(() => window.__chantier.chantiers())}`);
 
+    // --- les émotes, repliées et à bon escient --------------------------------
+    //
+    // Trois boutons d'émotes vivaient en permanence à l'écran — y compris seul
+    // dans un monde en ligne, où personne n'est là pour les voir : l'animation
+    // se joue sur notre avatar, que nous ne voyons pas nous-mêmes. Ils se
+    // replient désormais derrière UN bouton, qui n'apparaît que quand un ami
+    // est vraiment là.
+    const emotesChez = (page) => page.evaluate(() => ({
+      bouton: getComputedStyle(document.getElementById('emote-toggle')).display !== 'none',
+      rangee: getComputedStyle(document.getElementById('emote-row')).display !== 'none',
+    }));
+    const eAvant = await emotesChez(lea);
+    verifier('avec un ami là, un seul bouton d\'émotes, replié',
+      eAvant.bouton && !eAvant.rangee, JSON.stringify(eAvant));
+    await lea.evaluate(() => document.getElementById('emote-toggle').click());
+    const eOuvert = await emotesChez(lea);
+    await lea.evaluate(() => document.querySelector('#emote-row button').click());
+    const eApres = await emotesChez(lea);
+    verifier('il se déplie au toucher, et se replie après l\'émote',
+      eOuvert.rangee && !eApres.rangee, JSON.stringify({ eOuvert, eApres }));
+
     // --- la flèche vers l'ami -------------------------------------------------
     // Les enfants passaient leur temps à se chercher. Quand l'ami sort du cadre
     // de la minicarte, une flèche à son bord montre la direction.
@@ -565,6 +586,9 @@ function verifier(nom, ok, detail = '') {
     verifier('un ami hors du cadre devient une flèche au bord de la minicarte',
       fleches >= 1, `${fleches} flèche(s)`);
     await rui.close();
+    const emoteRangee = await jusqua(async () => !(await emotesChez(lea)).bouton, 45000);
+    verifier('seul dans le monde, le bouton d\'émotes se range', emoteRangee,
+      JSON.stringify(await emotesChez(lea)));
     await lea.close();
 
     // --- la sonde de version dit la vérité --------------------------------------

@@ -1608,7 +1608,14 @@ export class EducationMode {
       if (this.saveTimer <= 0) { this.saveTimer = 10; this.save(); }
     }
 
-    this.el.timer.style.display = 'block';
+    // « 🎨 Temps libre » en permanence n'apprend rien : quand les quiz sont
+    // arrêtés par un parent et que la limite du jour est loin, la pastille
+    // disparaît tout entière. Elle revient d'elle-même si la dernière
+    // demi-heure commence — la seule chose qu'elle ait encore à dire.
+    const dailyLeft0 = this.allowance() - this.today().play - this.otherDevicesPlaySeconds;
+    if (this.quizArrete() && dailyLeft0 > 1800) {
+      this.el.timer.style.display = 'none';
+    } else this.el.timer.style.display = 'block';
     if (!this.timerFermeBranche) {
       this.timerFermeBranche = true;
       document.getElementById('edu-timer-close')?.addEventListener('click', (e) => {

@@ -548,6 +548,13 @@ export class NetSession {
   }
 
   onMessage(conn, msg) {
+    // La couture du banc d'essai : un filtre posé par les tests peut retenir un
+    // message, comme le ferait un tuyau encombré. Inerte en jeu — le banc l'a
+    // longtemps installée en enveloppant cette méthode depuis l'extérieur, par
+    // un sondage qui perdait sa course une fois sur trois sur machine chargée :
+    // le scénario passait alors sans avoir rien éprouvé.
+    if (typeof window !== 'undefined' && window.__filtreMessages
+      && window.__filtreMessages(msg) === false) return;
     const entry = this.conns.get(conn.peer);
     if (!entry || !msg || typeof msg !== 'object') return;
     entry.seen = Date.now(); // tout message vaut preuve de vie

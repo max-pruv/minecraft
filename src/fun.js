@@ -108,6 +108,8 @@ export function initFun(ctx) {
     .photo-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
     .photo-grid .ph { position:relative; }
     .photo-grid img { width:100%; border-radius:10px; }
+    .photo-grid .garder { position:absolute; top:4px; left:4px; background:rgba(0,0,0,.6);
+      border:none; border-radius:8px; font-size:15px; padding:2px 6px; }
     .photo-grid .del { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6);
       color:#fff; border:none; border-radius:8px; font-size:13px; padding:2px 7px; }
   `;
@@ -131,9 +133,20 @@ export function initFun(ctx) {
   const fwBtn = mkBtn('🎆', "Feu d'artifice");
   const photoBtn = mkBtn('📸', 'Photo');
 
+  // Un seul bouton, qui se déplie. Trois émotes en permanence à l'écran d'un
+  // téléphone, c'est trois boutons de pris pour un geste occasionnel — et
+  // elles ne servent que si quelqu'un est là pour les voir : l'animation se
+  // joue sur NOTRE avatar, que nous ne voyons pas nous-mêmes. Un enfant seul
+  // dans un monde en ligne les avait pourtant sous les yeux, à ne rien faire.
+  const emoteToggle = el('<button class="fun-btn" id="emote-toggle" title="Émotes">😊</button>', railBottom);
   const emoteRow = el(`<div class="emote-row" id="emote-row">
     <button data-k="👋">👋</button><button data-k="💃">💃</button><button data-k="❤️">❤️</button>
   </div>`, railBottom);
+  let emotesDepliees = false;
+  emoteToggle.addEventListener('click', () => {
+    emotesDepliees = !emotesDepliees;
+    emoteRow.style.display = emotesDepliees ? 'flex' : 'none';
+  });
 
   const targetRow = el(`<div class="fun-target" id="fun-target">
     <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button>
@@ -550,6 +563,9 @@ export function initFun(ctx) {
       emojiBurst([k], 10);
       const net = getNet();
       if (net && net.active) net.broadcast({ t: 'emote', k, name: myName() });
+      // le geste est parti : la rangée se replie d'elle-même
+      emotesDepliees = false;
+      emoteRow.style.display = 'none';
     });
   });
 
@@ -1032,6 +1048,27 @@ export function initFun(ctx) {
           renderRecords();
         });
         d.appendChild(del);
+        // « Récupérer » la photo : le partage natif — vers Photos, Messages —
+        // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
+        const garder = document.createElement('button');
+        garder.className = 'garder';
+        garder.textContent = '📤';
+        garder.title = 'Garder la photo';
+        garder.addEventListener('click', async () => {
+          try {
+            const blob = await (await fetch(p)).blob();
+            const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
+            if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+              await navigator.share({ files: [fichier] });
+              return;
+            }
+          } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
+          const a = document.createElement('a');
+          a.href = p;
+          a.download = `minecraft-${i + 1}.jpg`;
+          a.click();
+        });
+        d.appendChild(garder);
         grid.appendChild(d);
       });
       recBody.appendChild(grid);
@@ -1066,7 +1103,9 @@ export function initFun(ctx) {
     saveJson(PHOTOS_KEY, photos);
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
-    toast('📸 Photo ajoutée à tes souvenirs ! (menu 🏆)', 0x9fd8e8);
+    // Le « menu 🏆 » n'existe plus depuis que les records ont déménagé dans
+    // l'atelier : le toast montrait un chemin qui ne menait nulle part.
+    toast('📸 Photo rangée dans 🛠️ Atelier → 📸 Souvenirs !', 0x9fd8e8);
   });
 
   // ---- daily treasure -------------------------------------------------------
@@ -1295,6 +1334,7 @@ export function initFun(ctx) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
       for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+      emoteToggle.style.display = 'none';
       emoteRow.style.display = 'none';
       targetRow.style.display = 'none';
       return;
@@ -1318,11 +1358,16 @@ export function initFun(ctx) {
     // buttons only make sense in-game
     for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'flex';
     const net = getNet();
-    emoteRow.style.display = net && net.active ? 'flex' : 'none';
+    const amisLa = net && net.active && net.playerCount() > 1;
+    emoteToggle.style.display = amisLa ? 'flex' : 'none';
+    if (!amisLa && emotesDepliees) { emotesDepliees = false; }
+    emoteRow.style.display = amisLa && emotesDepliees ? 'flex' : 'none';
   }
 
   function onLeave() {
     for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+    emoteToggle.style.display = 'none';
+    emotesDepliees = false;
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';
