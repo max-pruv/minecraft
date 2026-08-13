@@ -181,7 +181,12 @@ class Banc {
     // pair à pair est bloqué ou dérouté. C'est la seule façon de reproduire à
     // la demande ce que la maison a constaté un soir de VPN allumé.
     if (opts.sansPairAPair) {
-      await p.addInitScript(() => {
+      // `avecRelais` : le relais RÉPOND, mais le lien n'aboutit toujours pas.
+      // C'est la maison derrière un VPN — à distinguer du Wi-Fi d'hôtel, où
+      // le relais lui-même est inatteignable. Les deux pannes se ressemblent
+      // à l'écran ; elles n'appellent pas du tout le même conseil, et sans ce
+      // levier on ne pourrait vérifier qu'une seule des deux phrases.
+      await p.addInitScript((avecRelais) => {
         const Vrai = window.RTCPeerConnection;
         window.RTCPeerConnection = function (...args) {
           const pc = new Vrai(...args);
@@ -189,10 +194,17 @@ class Banc {
           // chemin, le canal reste à jamais « connecting ».
           pc.addIceCandidate = () => Promise.resolve();
           Object.defineProperty(pc, 'onicecandidate', { get: () => null, set: () => {} });
+          if (avecRelais) {
+            setTimeout(() => {
+              const ev = new Event('icecandidate');
+              ev.candidate = { candidate: 'candidate:1 1 udp 1 10.0.0.1 3478 typ relay raddr 0.0.0.0 rport 0' };
+              try { pc.dispatchEvent(ev); } catch { /* la page est partie */ }
+            }, 300);
+          }
           return pc;
         };
         window.RTCPeerConnection.prototype = Vrai.prototype;
-      });
+      }, !!opts.avecRelais);
     }
     // Une présentation qui se perd en route. Le lien est bon, les battements
     // passent, mais les messages « hello » n'arrivent pas pendant un moment —

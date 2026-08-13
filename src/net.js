@@ -18,18 +18,37 @@ const ID_PREFIX = 'wmc-marlon-';
 // directs ne mènent nulle part. Le trafic passe alors par le relais, plus
 // lent mais qui, lui, aboutit toujours. C'est ce qui manquait le jour où
 // Alice et Marlon étaient dans le même monde sans se voir.
+//
+// Le relais ne suffit pas : encore faut-il qu'il puisse SORTIR du réseau.
+// Sur un Wi-Fi public — hôtel, école, gare, café —, l'UDP est coupé net, et
+// ce qui reste est inspecté : du trafic quelconque sur le port 443, port
+// réservé au web chiffré, est jeté par le filtre. Nos trois anciennes
+// adresses tombaient donc toutes les trois, et l'enfant lisait « Connexion
+// impossible » sur un réseau qui, lui, marchait très bien.
+//
+// D'où « turns: » en tête, le relais enveloppé dans du TLS : pour le filtre,
+// c'est une page web ordinaire, et il passe là où tout le reste est arrêté.
+// Les autres restent derrière, du plus rapide au plus obstiné — le navigateur
+// les essaie tous et garde celui qui aboutit.
 const ICE_SERVERS = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
   {
     urls: [
-      'turn:openrelay.metered.ca:80',
-      'turn:openrelay.metered.ca:443',
+      'turns:openrelay.metered.ca:443?transport=tcp',
       'turn:openrelay.metered.ca:443?transport=tcp',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:80',
     ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
 ];
+
+// Un candidat de relais a-t-il seulement pu être obtenu ? C'est la question
+// qui sépare deux pannes que rien ne distinguait : « il n'y a personne au
+// bout » et « ce réseau interdit les jeux à plusieurs ». Sans relais obtenu,
+// couper un VPN ne servira à rien — il faut changer de réseau.
+const EST_RELAIS = / typ relay /;
 
 // Un lien mort ne se signale pas tout seul : le navigateur peut mettre une
 // minute à s'en apercevoir, et pendant ce temps l'enfant construit dans le
@@ -248,9 +267,29 @@ export class NetSession {
 
   // Un invité rejoint toujours par le même chemin — au démarrage comme après
   // une coupure. `done` n'est appelé qu'à la première tentative.
+  // Écoute les candidats que le navigateur récolte pour ce lien. On ne
+  // cherche qu'une chose : est-ce qu'un relais a répondu ? La réponse change
+  // le conseil qu'on donnera à l'enfant si le lien échoue.
+  surveillerLesChemins(conn) {
+    const brancher = () => {
+      const pc = conn && conn.peerConnection;
+      if (!pc || !pc.addEventListener) return false;
+      pc.addEventListener('icecandidate', (e) => {
+        const c = e && e.candidate && e.candidate.candidate;
+        if (c && EST_RELAIS.test(c)) this.relaisVu = true;
+      });
+      return true;
+    };
+    // PeerJS fabrique la connexion au moment du connect : elle n'est parfois
+    // là qu'au tour de boucle suivant.
+    if (!brancher()) setTimeout(brancher, 0);
+  }
+
   connectToHost(done) {
+    this.relaisVu = false;
     const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
     if (!conn) { done?.(new Error('Connexion impossible')); return; }
+    this.surveillerLesChemins(conn);
     this.registerConn(conn); // handlers BEFORE open — no missed messages
     let fini = false;
     const rate = (err) => {
@@ -276,6 +315,7 @@ export class NetSession {
         // est là mais on ne l'atteint pas » : ce n'est pas la même panne, et ce
         // n'est pas la même phrase à montrer à un enfant.
         muet.canal = true;
+        muet.reseauFerme = !this.relaisVu;
         rate(muet);
       },
       // Court par défaut : dans le cas courant — le monde est vide — cette
@@ -290,7 +330,17 @@ export class NetSession {
       this.link('ok');
       if (!fini) { fini = true; done?.(null); }
     });
-    conn.on('error', () => rate(new Error('Connexion impossible')));
+    // Le lien refuse de s'ouvrir. C'est la même panne que le silence
+    // ci-dessus, vue d'un autre côté : le canal n'existera pas. On la marque
+    // pareil, sans quoi l'enfant recevait « Connexion impossible » tout court
+    // — deux mots, aucun conseil, alors que c'est précisément le cas où il a
+    // besoin qu'on lui dise quoi essayer.
+    conn.on('error', () => {
+      const e = new Error('Connexion impossible');
+      e.canal = true;
+      e.reseauFerme = !this.relaisVu;
+      rate(e);
+    });
   }
 
   // L'hôte a disparu ou la connexion a sauté : on retente, en le disant.

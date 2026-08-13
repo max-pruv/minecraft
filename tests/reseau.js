@@ -309,8 +309,39 @@ function verifier(nom, ok, detail = '') {
     verifier('un VPN ne fait plus dire que le monde est vide',
       verdict && !/Personne n'a répondu/.test(phrase), phrase);
     verifier('et le message dit quoi faire', /VPN/.test(phrase) && phrase.includes(codeVPN), phrase);
+    // Aucun relais n'a répondu ici : c'est le réseau qui barre la route, et le
+    // conseil doit être d'en changer.
+    verifier('un réseau qui bloque tout renvoie vers un autre réseau',
+      /Wi-Fi|partage de connexion/.test(phrase), phrase);
     await derriereVPN.close();
     await tenu.close();
+
+    // --- le Wi-Fi d'hôtel et le VPN de la maison ne se soignent pas pareil ---
+    //
+    // Signalé par Max : « la connexion sur un réseau wifi public ne marche
+    // pas ». Les deux pannes se ressemblent à l'écran — le monde existe, on
+    // ne l'atteint pas — mais elles n'appellent pas le même geste. Quand le
+    // relais répond et que le lien échoue quand même, c'est la maison
+    // derrière un VPN : on dit de le couper. Quand même le relais est
+    // injoignable, couper le VPN ne servira à rien : il faut sortir de ce
+    // Wi-Fi. Ici le relais répond — on attend donc le conseil « VPN », et
+    // surtout PAS celui du Wi-Fi public.
+    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Nina');
+    const chezSoi = await banc.joueur('Théo', { sansPairAPair: true, avecRelais: true });
+    await chezSoi.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await chezSoi.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeMaison);
+    await jusqua(async () => chezSoi.evaluate(
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 60000);
+    const phraseMaison = await chezSoi.evaluate(
+      () => document.getElementById('online-status').textContent);
+    verifier('quand le relais répond, on accuse le VPN et pas le Wi-Fi',
+      /VPN/.test(phraseMaison) && !/hôtels/.test(phraseMaison), phraseMaison);
+    await chezSoi.close();
+    await tenu2.close();
 
     // --- une présentation qui met du temps à passer -----------------------------
     //

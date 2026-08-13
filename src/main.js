@@ -2173,8 +2173,18 @@ async function openWorld(code) {
     // c'est établi, et l'enfant n'avait aucune idée de quoi faire. La cause
     // de loin la plus fréquente à la maison est un VPN resté allumé.
     if (err && err.canal) {
-      err = new Error(`Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
-        + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
+      // Deux pannes, deux conseils. Quand aucun relais n'a répondu, le réseau
+      // lui-même barre la route — hôtel, école, gare, café : couper un VPN
+      // n'y changera rien, il faut sortir de ce Wi-Fi. Quand un relais a bien
+      // répondu mais que le lien n'aboutit pas, la cause la plus fréquente à
+      // la maison reste le VPN resté allumé.
+      err = new Error(err.reseauFerme
+        ? `Le monde ${code} existe, mais ce Wi-Fi bloque le jeu à plusieurs. `
+          + 'C\'est fréquent dans les hôtels, les écoles et les gares. '
+          + 'Essaie le partage de connexion d\'un téléphone, ou un autre Wi-Fi. '
+          + '(Un VPN allumé fait pareil.)'
+        : `Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
+          + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
     }
   }
   if (err) {
