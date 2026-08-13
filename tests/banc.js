@@ -137,7 +137,14 @@ class Banc {
     this.pairs = await servirLesPairs(this.portPairs);
     this.navigateur = await chromium.launch({
       executablePath: exe,
-      args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader'],
+      args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader',
+        // Une caméra et un micro simulés, toujours présents et toujours
+        // autorisés. Sans eux, le chemin vidéo n'était éprouvé nulle part :
+        // c'est précisément là qu'un carré noir a pu passer inaperçu.
+        '--use-fake-device-for-media-capture',
+        '--use-fake-ui-for-media-stream',
+        '--allow-file-access-from-files',
+        '--autoplay-policy=no-user-gesture-required'],
     });
   }
 
