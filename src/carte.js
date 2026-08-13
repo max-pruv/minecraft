@@ -67,6 +67,8 @@ const ICONES = {
   'Colonne de la Déesse': '👑', 'Opéra de Lille': '🎭',
   'Beffroi de la Chambre de commerce': '🕰️', 'Gare Lille-Flandres': '🚉',
   'Tour de Lille': '🎿', 'Cathédrale de la Treille': '⛪',
+  'Cathédrale russe': '⛪', 'Hôtel Negresco': '🏨', 'Cours Saleya': '💐',
+  'Baleine du Paillon': '🐋',
   'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
   'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
   'Grand Central': '🚉', 'Rockefeller Center': '⛸️', 'Wall Street': '💰',

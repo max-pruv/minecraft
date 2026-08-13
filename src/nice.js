@@ -114,7 +114,7 @@ export const LIEUX_NICE = [
   L('Vieux-Nice', 0.5, 0.3, { r: 4 }),
   L('Cours Saleya', 0.5, 0.45, { discret: true, r: 2, sol: PAVE }),
   L('Colline du Château', 0.9, 0.2, { r: 4 }),
-  L('Port Lympia', 1.4, 0.25, { ru: 3, rv: 2.5, bassin: true }),
+  L('Port Lympia', 1.4, 0.25, { ru: 2.5, rv: 3, bassin: true }),
   L('Promenade des Anglais', -1.6, 0.75, { r: 4 }),
   L('Cimiez', 0.3, -1.7, { r: 4 }),
   L('Gare de Nice', -0.7, -0.9, { r: 3, sol: PAVE }),
@@ -167,13 +167,22 @@ export function solNice(x, z) {
   if (!surTerreNice(x, z)) return null;
   const u = x - NICE.x, v = z - NICE.z;
 
+  // Le port avant la plage : le bassin du port Lympia s'ouvre sur la mer par
+  // son extrémité sud, il n'est pas ensablé. Vérifié dans l'autre ordre, la
+  // bande de galets recouvrait tout le bord sud-est du bassin.
+  for (const p of LIEUX_NICE) {
+    if (p.bassin && Math.abs(u - p.u) <= p.ru && Math.abs(v - p.v) <= p.rv) return EAU;
+  }
+
   // La plage de galets : Nice n'a pas de sable, et c'est la première chose que
   // remarque un enfant qui y met les pieds.
   if (vRivage(u) - v < 2.5) return GALETS;
 
   for (const p of LIEUX_NICE) {
     if (p.bassin) {
-      if (((u - p.u) / p.ru) ** 2 + ((v - p.v) / p.rv) ** 2 < 1) return EAU;
+      // Le port Lympia est un bassin RECTANGULAIRE creusé derrière la colline —
+      // un ovale ne ressemble à aucun port, et surtout pas à celui-là. (Sa
+      // surface en eau est servie plus haut, avant la plage.)
       continue;
     }
     if (p.jardin) {
@@ -267,7 +276,9 @@ export function couleurCarteNice(x, z) {
     if (!surTerreNice(x, z)) return null;
     return [206, 168, 132];     // les toits de tuiles, vus du ciel
   }
-  if (sol === EAU) return null;
+  // Le bassin du port est creusé dans un quartier plus haut que la mer : sans
+  // cette couleur, la carte le peignait comme de la terre et le port disparaissait.
+  if (sol === EAU) return [92, 142, 196];
   if (sol === GALETS) return GALET;
   if (sol === ARBRE || sol === HERBE) return VERT_JARDIN;
   if (sol === PAVE || sol === damier(0)) return BEIGE;
@@ -276,10 +287,20 @@ export function couleurCarteNice(x, z) {
 
 // --- les monuments -----------------------------------------------------------------------
 
+// Les positions viennent de la fiche de terrain : distances réelles à vol
+// d'oiseau depuis la place Masséna. La cathédrale russe est à 1,3 km à
+// l'ouest-nord-ouest ; le Negresco lève sa coupole rose SUR la Promenade,
+// à un kilomètre à l'ouest. Les petits repères n'affichent leur nom que de
+// tout près, pour ne pas chasser les grands de la carte.
 export const MONUMENTS_NICE = [
   { nom: 'Place Masséna', dx: 0, dz: 0, box: 9 },
-  { nom: 'Cathédrale russe', dx: -0.8, dz: -0.8, box: 8 },
+  { nom: 'Cathédrale russe', dx: -1.1, dz: -0.7, box: 7 },
   { nom: 'Colline du Château', dx: 0.9, dz: 0.2, box: 8 },
+  { nom: 'Hôtel Negresco', dx: -1.0, dz: 0.2, box: 5, seuil: 0.3 },
+  { nom: 'Port Lympia', dx: 1.4, dz: 0.25, box: 5, seuil: 0.3 },
+  { nom: 'Cours Saleya', dx: 0.5, dz: 0.45, box: 4, seuil: 0.3 },
+  { nom: 'Baleine du Paillon', dx: 0.1, dz: -0.6, box: 4, seuil: 0.3 },
+  { nom: 'Promenade des Anglais', dx: -2.0, dz: 1.0, box: 24, seuil: 0.3 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
@@ -314,38 +335,105 @@ export function buildMassena(poser) {
   }
   for (let y = 1; y <= 5; y++) set(0, y, 0, BLANC);
   set(0, 6, 0, OR);
-  // les sept statues sur leurs colonnes, autour de la place
-  for (const [dx, dz] of [[-6, -3], [-6, 3], [6, -3], [6, 3], [0, -4], [0, 4]]) {
+  // les sept statues sur leurs colonnes, autour de la place — sept, comme les
+  // sept continents de « Conversation à Nice », perchées sur leurs mâts
+  for (const [dx, dz] of [[-6, -3], [-6, 3], [6, -3], [6, 3], [0, -4], [0, 4], [6, 0]]) {
     for (let y = 1; y <= 6; y++) set(dx, y, dz, BLANC);
     set(dx, 7, dz, uni(19));
   }
 }
 
-// La cathédrale orthodoxe russe : six bulbes colorés, bâtie pour les hivernants
-// du tsar. C'est la plus grande hors de Russie, et elle est à Nice.
+// La cathédrale orthodoxe Saint-Nicolas, bâtie pour les hivernants du tsar :
+// un cube d'ocre aux touches bleu pastel, et CINQ coupoles à bulbes VERTES à
+// croix dorées — vertes, pas multicolores : c'est leur tuile vernissée qui
+// fait la carte postale. La plus grande cathédrale russe hors de Russie.
 export function buildCathedraleRusse(poser) {
   const { set, bloc } = boite(poser);
-  const OCRE_MUR = uni(1);
-  bloc(-5, 5, 0, 9, -4, 4, OCRE_MUR);
-  bloc(-4, 4, 0, 8, -3, 3, BLOCK.AIR);
-  for (let dx = -4; dx <= 4; dx += 2) for (let y = 3; y <= 7; y += 2) { set(dx, y, -4, VERRE); set(dx, y, 4, VERRE); }
-  for (let y = 0; y <= 2; y++) set(0, y, 4, BLOCK.AIR);
-  bloc(-5, 5, 10, 10, -4, 4, uni(5));
-  const bulbes = [[0, 0, 4, OR], [-4, -3, 2, uni(5)], [4, -3, 2, uni(10)], [-4, 3, 2, uni(0)], [4, 3, 2, uni(7)]];
-  for (const [dx, dz, r, c] of bulbes) {
-    const base = dx || dz ? 11 : 13;
-    for (let k = 0; k < 2; k++) set(dx, 11 + k, dz, BLANC);
+  bloc(-4, 4, 0, 7, -3, 3, OCRE);
+  bloc(-3, 3, 0, 6, -2, 2, BLOCK.AIR);
+  // la frise bleu pastel, et les hautes fenêtres
+  for (let dx = -4; dx <= 4; dx += 2) { set(dx, 5, -3, BLEU); set(dx, 5, 3, BLEU); }
+  for (let dx = -3; dx <= 3; dx += 2) for (const dz of [-3, 3]) { set(dx, 2, dz, VERRE); set(dx, 3, dz, VERRE); }
+  for (let y = 0; y <= 2; y++) set(0, y, 3, BLOCK.AIR);      // le portail
+  bloc(-4, 4, 8, 8, -3, 3, OCRE);                            // le toit
+  // les cinq bulbes verts : le grand au centre, quatre aux angles
+  const bulbes = [[0, 0, 3, 10], [-3, -2, 2, 9], [3, -2, 2, 9], [-3, 2, 2, 9], [3, 2, 2, 9]];
+  for (const [dx, dz, r, base] of bulbes) {
+    set(dx, base - 1, dz, BLANC);                            // le tambour
     for (let y = 0; y <= r; y++) {
       const rr = Math.round(Math.sqrt(Math.max(0, r * r - y * y)));
       for (let ax = -rr; ax <= rr; ax++) {
         for (let az = -rr; az <= rr; az++) {
           const hh = Math.hypot(ax, az);
           if (hh > rr || hh < rr - 1.3) continue;
-          set(dx + ax, base + y, dz + az, c);
+          set(dx + ax, base + y, dz + az, VERT);
         }
       }
     }
-    for (let y = base + r; y <= base + r + 1; y++) set(dx, y, dz, OR);
+    set(dx, base + r + 1, dz, OR);                           // la croix dorée
+  }
+}
+
+// Le Negresco : la façade blanche et la coupole rose, posées sur la Promenade
+// des Anglais. La coupole seule suffit à dire « Nice » sur une photo.
+export function buildNegresco(poser) {
+  const { set, bloc } = boite(poser);
+  bloc(-3, 3, 0, 4, -1, 1, BLANC);
+  for (const dx of [-2, -1, 0, 1]) { set(dx, 1, 1, VERRE); set(dx, 3, 1, VERRE); }
+  set(0, 0, 1, BLOCK.AIR);                                   // l'entrée, face à la mer
+  set(0, 1, 2, BLOCK.WOOL_RED);                              // l'auvent rouge du portier
+  // la tour d'angle et sa coupole rose
+  for (let y = 5; y <= 7; y++) for (const [tx, tz] of [[2, -1], [3, -1], [2, 0], [3, 0]]) set(tx, y, tz, BLANC);
+  for (const [tx, tz] of [[2, -1], [3, -1], [2, 0], [3, 0]]) { set(tx, 8, tz, ROSE); set(tx, 9, tz, ROSE); }
+  set(2, 10, 0, ROSE);
+  set(2, 11, 0, OR);
+}
+
+// Le port Lympia : les pointus — les barques de pêche colorées — à quai dans
+// le bassin, et le quai pavé côté ville.
+export function buildPortLympia(poser) {
+  const { set } = boite(poser);
+  const barques = [[-1, -2, BLOCK.WOOL_RED], [1, 0, BLOCK.WOOL_YELLOW], [-1, 2, BLOCK.WOOL_BLUE]];
+  for (const [dx, dz, c] of barques) { set(dx, 0, dz, c); set(dx + 1, 0, dz, c); }
+  for (let dz = -3; dz <= 3; dz++) set(-3, 0, dz, PAVE);
+}
+
+// Le cours Saleya : le marché aux fleurs sous ses stores rayés, à deux pas de
+// la mer, au pied de la colline.
+export function buildSaleya(poser) {
+  const { set } = boite(poser);
+  for (const [dx, dz] of [[-2, -1], [2, -1], [-2, 1], [2, 1]]) { set(dx, 0, dz, BLOCK.LOG); set(dx, 1, dz, BLOCK.LOG); }
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dz = -1; dz <= 1; dz++) set(dx, 2, dz, (dx & 1) ? BLOCK.WOOL_RED : BLOCK.WOOL_YELLOW);
+  }
+}
+
+// La baleine de bois du Paillon : le jeu le plus connu de la coulée verte,
+// celui que tous les enfants de Nice ont escaladé.
+export function buildBaleine(poser) {
+  const { set, bloc } = boite(poser);
+  bloc(-2, 1, 0, 1, -1, 0, BLOCK.LOG);                       // le corps
+  set(2, 0, -1, BLOCK.LOG); set(2, 0, 0, BLOCK.LOG);         // la tête
+  set(-3, 1, 0, BLOCK.LOG); set(-3, 2, 0, BLOCK.LOG);        // la queue levée
+  set(2, 1, 0, BLOCK.WOOL_BLUE);                             // le jet d'eau
+}
+
+// La Promenade des Anglais elle-même : les palmiers, et les fameuses chaises
+// bleues tournées vers la mer. Sans elles, ce n'est qu'un trottoir.
+export function buildPromenade(poser) {
+  const { set } = boite(poser);
+  const CU = -20, CV = 10;
+  for (let u = -40; u <= -2; u++) {
+    const vp = Math.round(vRivage(u)) - 2;
+    if (u % 5 === 0) {                                       // un palmier
+      for (let y = 0; y <= 2; y++) set(u - CU, y, vp + 1 - CV, BLOCK.LOG);
+      for (const [ax, az] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        set(u - CU + ax, 3, vp + 1 - CV + az, BLOCK.LEAVES);
+      }
+    } else if (u % 7 === 0) {                                // deux chaises bleues
+      set(u - CU, 0, vp - CV, BLOCK.WOOL_BLUE);
+      set(u - CU + 1, 0, vp - CV, BLOCK.WOOL_BLUE);
+    }
   }
 }
 
