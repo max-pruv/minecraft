@@ -309,16 +309,22 @@ export function couleurCarteLille(x, z) {
 
 // Les positions viennent de la fiche de terrain : distances réelles à vol
 // d'oiseau depuis la Grand'Place, converties à seize blocs par kilomètre.
+// La cathédrale est repoussée un peu au nord-est de sa position stricte : à
+// cette échelle, le bastion est de la citadelle arrive jusqu'à quatre blocs
+// de la Grand'Place, et la façade se retrouvait dans les douves.
+// Le « seuil » : la ville est compacte, et dix noms de monuments par-dessus
+// dix noms de lieux chassaient les destinations de la carte. Les petits
+// monuments n'affichent donc leur nom que de tout près.
 export const MONUMENTS_LILLE = [
   { nom: 'Vieille Bourse', dx: 0.25, dz: -0.375, box: 6 },
   { nom: 'Porte de Paris', dx: 0.35, dz: 0.65, box: 7 },
   { nom: 'Citadelle de Vauban', dx: -1.25, dz: -0.85, box: 18 },
-  { nom: 'Colonne de la Déesse', dx: 0, dz: 0, box: 2 },
-  { nom: 'Opéra de Lille', dx: 0.12, dz: -0.8, box: 4 },
-  { nom: 'Beffroi de la Chambre de commerce', dx: 0.4, dz: -0.8, box: 3 },
-  { nom: 'Gare Lille-Flandres', dx: 0.75, dz: 0, box: 6 },
-  { nom: 'Tour de Lille', dx: 1.05, dz: -0.2, box: 5 },
-  { nom: 'Cathédrale de la Treille', dx: -0.25, dz: -0.95, box: 6 },
+  { nom: 'Colonne de la Déesse', dx: 0, dz: 0, box: 2, seuil: 0.3 },
+  { nom: 'Opéra de Lille', dx: 0.12, dz: -0.8, box: 4, seuil: 0.3 },
+  { nom: 'Beffroi de la Chambre de commerce', dx: 0.4, dz: -0.8, box: 3, seuil: 0.3 },
+  { nom: 'Gare Lille-Flandres', dx: 0.75, dz: 0, box: 6, seuil: 0.3 },
+  { nom: 'Tour de Lille', dx: 1.05, dz: -0.2, box: 5, seuil: 0.3 },
+  { nom: 'Cathédrale de la Treille', dx: 0.12, dz: -1.0, box: 6, seuil: 0.3 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
@@ -461,7 +467,7 @@ export function buildTreille(poser) {
     set(dx, 7, 0, ARDOISE);                                  // la ligne de faîte
   }
   // la façade ouest de 1999 : une plaque claire, plus haute que la nef
-  bloc(-4, -4, 0, 8, -2, 2, CREME);
+  bloc(-4, -4, 0, 8, -1, 1, CREME);
   set(-4, 5, 0, VERRE);                                      // la rosace
   set(-4, 4, 0, VERRE);
   for (let y = 0; y <= 1; y++) set(-4, y, 0, BLOCK.AIR);     // le portail

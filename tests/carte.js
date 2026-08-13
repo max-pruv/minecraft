@@ -624,7 +624,7 @@ const position = (p) => p.evaluate(() => ({
       // l'eau du quai du Wault, remplie à la cote trente comme les douves
       const wault = w.getBlock(Lx - 10, 30, Lz - 4) === EAU;
       // la façade claire de la Treille, percée de sa rosace de verre
-      const treille = haut(-8, -15).y >= 7 && colonne(-8, -15, VERRE);
+      const treille = haut(-2, -16).y >= 7 && colonne(-2, -16, VERRE);
       return { rueLibre, horloge, deesse, damier, cour, cci, hdv, ski,
         blanc: bout.id === BLANC, videSous, wault, treille };
     });

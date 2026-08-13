@@ -726,7 +726,7 @@ const LANDMARKS = [
   ].map((build, i) => ({
     name: MONUMENTS_LILLE[i].nom,
     x: LILLE.x + MONUMENTS_LILLE[i].u, z: LILLE.z + MONUMENTS_LILLE[i].v,
-    box: MONUMENTS_LILLE[i].box, build,
+    box: MONUMENTS_LILLE[i].box, seuil: MONUMENTS_LILLE[i].seuil, build,
   })),
   ...[buildMassena, buildCathedraleRusse, buildCollineChateau].map((build, i) => ({
     name: MONUMENTS_NICE[i].nom,
@@ -753,7 +753,7 @@ const LANDMARKS = [
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
-export const REPERES = LANDMARKS.map(({ name, x, z, box }) => ({ name, x, z, box }));
+export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
 
 // --- world ----------------------------------------------------------------
 
