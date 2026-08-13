@@ -178,6 +178,19 @@ class Banc {
       isMobile: !!opts.tactile,
     });
     const p = await ctx.newPage();
+    // FERMER UN ENFANT, C'EST FERMER SON NAVIGATEUR.
+    //
+    // Chaque joueur a son contexte isolé, et fermer la page n'en fermait que
+    // l'onglet : le contexte restait, avec son processus de rendu et sa
+    // mémoire. Une suite de quarante scénarios en laissait donc une
+    // quarantaine derrière elle, sur quatre cœurs. Ce sont les DERNIERS
+    // scénarios qui en payaient le prix, toujours les mêmes, et l'on
+    // soupçonnait le jeu là où c'était le banc qui s'asphyxiait.
+    const fermerLaPage = p.close.bind(p);
+    p.close = async (...a) => {
+      await fermerLaPage(...a);
+      try { await ctx.close(); } catch { /* déjà refermé */ }
+    };
     p.prenom = prenom;
     p.erreurs = [];
     p.dialogues = [];

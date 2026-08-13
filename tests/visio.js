@@ -157,8 +157,9 @@ async function allumerLaCamera(p) {
       fautes(marlon).length === 0 && fautes(alice).length === 0,
       JSON.stringify([fautes(marlon), fautes(alice)]));
 
-    await marlon.context().close();
-    await alice.context().close();
+    // Fermer la page ferme aussi son contexte, cf. banc.js.
+    await marlon.close();
+    await alice.close();
 
     // --- le Wi-Fi public : la caméra lente ------------------------------------
     //
