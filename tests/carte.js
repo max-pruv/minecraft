@@ -644,6 +644,69 @@ const position = (p) => p.evaluate(() => ({
       fidele.wault && fidele.treille,
       JSON.stringify({ wault: fidele.wault, treille: fidele.treille }));
 
+    // --- Nice, relevée sur documents -----------------------------------------
+    //
+    // La fiche de terrain dit ce qui manquait : le port Lympia est un bassin
+    // RECTANGULAIRE caché derrière la colline (pas un ovale), avec ses pointus
+    // colorés à quai ; le Negresco lève sa coupole rose sur la Promenade ;
+    // Saint-Nicolas porte cinq bulbes VERTS (pas un arc-en-ciel) ; Masséna a
+    // SEPT statues perchées, pas six ; et la Promenade a ses chaises bleues et
+    // ses palmiers, le cours Saleya ses stores rayés, le Paillon sa baleine de
+    // bois — le mobilier que tout enfant niçois reconnaît avant les monuments.
+    const nicoise = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const Nx = 300, Nz = 260, EAU = 7, LOG = 5, ROUGE = 23, BLEU_CH = 24, JAUNE = 25;
+      const VERT = 90, ROSE = 200, BLANC = 310, STATUE = 230;
+      const haut = (u, v) => {
+        const h = w.terrainHeight(Nx + u, Nz + v);
+        for (let y = h + 40; y > h; y--) { const id = w.getBlock(Nx + u, y, Nz + v); if (id) return { y: y - h, id }; }
+        return { y: 0, id: 0 };
+      };
+      const colonne = (u, v, id) => {
+        const h = w.terrainHeight(Nx + u, Nz + v);
+        for (let y = h; y < h + 40; y++) if (w.getBlock(Nx + u, y, Nz + v) === id) return true;
+        return false;
+      };
+      const surface = (u, v) => w.getBlock(Nx + u, w.terrainHeight(Nx + u, Nz + v), Nz + v);
+      // le bassin rectangulaire : ses coins, hors de l'ancien ovale, sont en eau
+      const bassin = surface(12, 0) === EAU && surface(16, 6) === EAU;
+      const pointu = colonne(13, 1, ROUGE);
+      // la coupole rose sur la façade blanche, les bulbes verts sur l'ocre
+      const negresco = colonne(-10, 2, BLANC) && colonne(-8, 2, ROSE);
+      const stNicolas = haut(-11, -7).y >= 10 && colonne(-11, -7, VERT);
+      // les statues perchées de Masséna, comptées une à une
+      let statues = 0;
+      for (let du = -7; du <= 7; du++) {
+        for (let dv = -6; dv <= 6; dv++) {
+          const t = haut(du, dv);
+          if (t.id === STATUE && t.y >= 6) statues++;
+        }
+      }
+      // le mobilier de la Promenade, de Saleya et du Paillon
+      let chaises = 0, palmiers = 0;
+      for (const u of [-28, -21, -14, -7]) {
+        for (let v = 2; v <= 12; v++) if (colonne(u, v, BLEU_CH)) { chaises++; break; }
+      }
+      for (const u of [-40, -35, -30, -25, -20, -15, -5]) {
+        for (let v = 2; v <= 14; v++) if (colonne(u, v, LOG)) { palmiers++; break; }
+      }
+      const saleya = colonne(6, 5, ROUGE) && colonne(5, 5, JAUNE);
+      const baleine = colonne(0, -6, LOG);
+      return { bassin, pointu, negresco, stNicolas, statues, chaises, palmiers, saleya, baleine };
+    });
+    verifier('le port Lympia est un vrai bassin, et ses pointus sont à quai',
+      nicoise.bassin && nicoise.pointu,
+      JSON.stringify({ bassin: nicoise.bassin, pointu: nicoise.pointu }));
+    verifier('la coupole rose du Negresco, les bulbes verts de Saint-Nicolas',
+      nicoise.negresco && nicoise.stNicolas,
+      JSON.stringify({ negresco: nicoise.negresco, stNicolas: nicoise.stNicolas }));
+    verifier('sept statues perchées veillent sur Masséna',
+      nicoise.statues === 7, `${nicoise.statues} statues`);
+    verifier('chaises bleues, palmiers, stores rayés et la baleine du Paillon',
+      nicoise.chaises >= 3 && nicoise.palmiers >= 6 && nicoise.saleya && nicoise.baleine,
+      JSON.stringify({ chaises: nicoise.chaises, palmiers: nicoise.palmiers,
+        saleya: nicoise.saleya, baleine: nicoise.baleine }));
+
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus] of [
       ['Nice', 300, 260, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],

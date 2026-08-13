@@ -185,6 +185,10 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | la Déesse veille sur le damier, la Vieille Bourse sur sa cour | la Vieille Bourse était posée SUR la Grand'Place, la colonne à côté, et le damier de granit n'existait pas |
 | trois tours, trois tailles : CCI, beffroi, chaussure de ski | ni beffroi de la CCI, ni tour de Lille : des tours d'acier au hasard, parfois plus hautes que le beffroi de l'hôtel de ville |
 | le quai du Wault est en eau, la Treille montre sa façade de verre | l'ancien port et la cathédrale n'existaient pas du tout |
+| le port Lympia est un vrai bassin, et ses pointus sont à quai | un ovale sans bateaux : les coins du vrai rectangle étaient à sec |
+| la coupole rose du Negresco, les bulbes verts de Saint-Nicolas | pas de Negresco ; la cathédrale russe, mal placée, portait des bulbes multicolores |
+| sept statues perchées veillent sur Masséna | six : la septième de « Conversation à Nice » manquait |
+| chaises bleues, palmiers, stores rayés et la baleine du Paillon | la Promenade n'était qu'un trottoir, Saleya un pavage, le Paillon une pelouse |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé

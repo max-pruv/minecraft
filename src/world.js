@@ -17,6 +17,7 @@ import {
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
   MONUMENTS_NICE, buildMassena, buildCathedraleRusse, buildCollineChateau,
+  buildNegresco, buildPortLympia, buildSaleya, buildBaleine, buildPromenade,
 } from './nice.js';
 import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
@@ -728,10 +729,12 @@ const LANDMARKS = [
     x: LILLE.x + MONUMENTS_LILLE[i].u, z: LILLE.z + MONUMENTS_LILLE[i].v,
     box: MONUMENTS_LILLE[i].box, seuil: MONUMENTS_LILLE[i].seuil, build,
   })),
-  ...[buildMassena, buildCathedraleRusse, buildCollineChateau].map((build, i) => ({
+  ...[buildMassena, buildCathedraleRusse, buildCollineChateau, buildNegresco,
+    buildPortLympia, buildSaleya, buildBaleine, buildPromenade,
+  ].map((build, i) => ({
     name: MONUMENTS_NICE[i].nom,
     x: NICE.x + MONUMENTS_NICE[i].u, z: NICE.z + MONUMENTS_NICE[i].v,
-    box: MONUMENTS_NICE[i].box, build,
+    box: MONUMENTS_NICE[i].box, seuil: MONUMENTS_NICE[i].seuil, build,
   })),
   // Countryside
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
