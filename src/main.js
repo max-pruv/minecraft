@@ -25,6 +25,7 @@ import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, creat
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
+import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 // doubled view distance; ?rr= overrides (perf tuning and tests)
@@ -1866,6 +1867,36 @@ function refreshEduMenuBtn() {
 }
 setInterval(refreshEduMenuBtn, 10000);
 queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
+
+// --- partager le jeu ---------------------------------------------------------------
+//
+// Le carré à viser pour l'ami d'à côté, la feuille de partage du téléphone
+// pour l'ami d'ailleurs. Le code QR n'est fabriqué qu'à la première ouverture
+// — la bibliothèque qui le dessine ne se charge pas tant qu'on n'en a pas
+// besoin.
+const partagePanel = document.getElementById('partage-panel');
+if (partagePanel) {
+  const fermerPartage = () => partagePanel.classList.remove('on');
+  document.getElementById('partage-btn').addEventListener('click', async () => {
+    const lien = lienDuJeu();
+    document.getElementById('partage-lien').textContent = lien;
+    document.getElementById('partage-whatsapp').href = lienWhatsApp(lien);
+    document.getElementById('partage-sms').href = lienSMS(lien);
+    partagePanel.classList.add('on');
+    try {
+      await dessinerQR(document.getElementById('partage-qr'), lien);
+    } catch {
+      // Sans le carré, il reste le lien et les boutons : on n'ouvre pas un
+      // panneau vide pour autant.
+      document.getElementById('partage-qr').style.display = 'none';
+    }
+  });
+  document.getElementById('partage-close').addEventListener('click', fermerPartage);
+  partagePanel.addEventListener('click', (e) => { if (e.target === partagePanel) fermerPartage(); });
+  document.getElementById('partage-envoyer').addEventListener('click', () => {
+    partagerLien(lienDuJeu(), { toast: (m) => creatureManager.toast(m, 0x9fd8e8) });
+  });
+}
 
 function nameSprite(text) {
   const cv = document.createElement('canvas');
