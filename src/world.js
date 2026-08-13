@@ -1564,7 +1564,13 @@ export class World {
   mergeEdits(blocks) {
     let applied = 0;
     for (const [k, entry] of Object.entries(blocks || {})) {
+      // Une entrée mal formée — écriture tronquée, format plus ancien, moitié
+      // de synchronisation — faisait échouer le fondu ENTIER : une seule case
+      // douteuse et l'enfant perdait tout le reste du lot, sans un mot. On
+      // laisse passer celle-là et on continue.
+      if (!Array.isArray(entry) || entry.length < 2) continue;
       const [id, t] = entry;
+      if (!Number.isFinite(id) || !Number.isFinite(t)) continue;
       const localT = this.editTimes.has(k) ? this.editTimes.get(k) : -1;
       const localId = this.edits.get(k);
       if (t < localT || (t === localT && (localId === id || localId > id))) continue;

@@ -536,23 +536,59 @@ export class AdminPanel {
       this.el.querySelector('#adm-sub').textContent = 'Pas de cloud configuré sur cet appareil.';
       return;
     }
-    let identites = [], etats = [], temps = [], reglages = [];
+    // On lit les quatre tables ET on garde le compte-rendu de chacune. Une
+    // lecture refusée rendait un tableau vide, indiscernable d'une famille qui
+    // n'a rien joué : le panneau annonçait « 0 joueur » sans rien laisser
+    // deviner. Désormais chaque table dit ce qu'elle a rendu, ou pourquoi elle
+    // n'a rien rendu.
+    const TABLES = [
+      ['identites', 'player_identity', 'select=name,faces,pin_hash,updated_at'],
+      ['etats', 'player_state', 'select=name,state,updated_at'],
+      ['temps', 'play_time', 'select=name,device_id,day,play,quiz,correct,wrong,updated_at'],
+      ['reglages', 'player_prefs', 'select=name,prefs,updated_at'],
+    ];
+    let comptes;
     try {
-      [identites, etats, temps, reglages] = await Promise.all([
-        this.cloud.selectAll('player_identity', 'select=name,faces,pin_hash,updated_at'),
-        this.cloud.selectAll('player_state', 'select=name,state,updated_at'),
-        this.cloud.selectAll('play_time', 'select=name,device_id,day,play,quiz,correct,wrong,updated_at'),
-        this.cloud.selectAll('player_prefs', 'select=name,prefs,updated_at'),
-      ]);
+      comptes = await Promise.all(TABLES.map(([, table, q]) => this.cloud.selectAllDetaille(table, q)));
     } catch {
       this.el.querySelector('#adm-sub').textContent = 'Cloud injoignable — réessaie plus tard.';
+      return;
+    }
+    const lu = {};
+    TABLES.forEach(([cle], i) => { lu[cle] = comptes[i]; });
+    this.lecture = lu;
+
+    const fachees = TABLES.filter(([cle]) => !lu[cle].ok);
+    if (fachees.length === TABLES.length) {
+      // Aucune table n'a répondu : ce n'est pas « personne n'a joué », c'est le
+      // nuage qui refuse. On le dit avec son motif, seul indice exploitable.
+      const p = lu.identites;
+      this.el.querySelector('#adm-sub').textContent = p.statut
+        ? `Le nuage refuse la lecture (${p.statut}) — ${p.raison}`
+        : 'Nuage injoignable depuis cet appareil — vérifie la connexion.';
       return;
     }
 
     // Les lignes brutes restent à bord : changer un filtre ré-agrège sans
     // rien relire du serveur — l'attente tuerait l'usage d'un filtre.
-    this.donnees = { identites, etats, temps, reglages };
-    this.agreger();
+    this.donnees = {
+      identites: lu.identites.lignes, etats: lu.etats.lignes,
+      temps: lu.temps.lignes, reglages: lu.reglages.lignes,
+    };
+    try {
+      this.agreger();
+    } catch (e) {
+      // Une exception ici laissait le panneau vide et muet — le tableau restait
+      // tel quel, sans un mot. On préfère l'aveu à la page blanche.
+      this.el.querySelector('#adm-sub').textContent =
+        `Lecture faite, affichage en panne : ${(e && e.message) || e}`;
+      return;
+    }
+    if (fachees.length) {
+      // Lecture partielle : on montre ce qu'on a, en disant ce qui manque.
+      const sub = this.el.querySelector('#adm-sub');
+      sub.textContent += ` · ${fachees.map(([c]) => `${c} illisible (${lu[c].statut || 'hors ligne'})`).join(', ')}`;
+    }
   }
 
   // Depuis quel jour compte la période choisie (null = depuis toujours).
@@ -726,8 +762,17 @@ export class AdminPanel {
         : libellePeriode.charAt(0).toUpperCase() + libellePeriode.slice(1);
     const sansCode = lignes.filter((l) => !l.code && l.faces === 0).length;
 
-    this.el.querySelector('#adm-sub').textContent =
-      `${lignes.length} joueur${lignes.length > 1 ? 's' : ''} · lu à l'instant`;
+    // Ce qu'on a lu, en clair. Sans ce détail, une liste vide restait une
+    // énigme : rien ne distinguait « le nuage n'a rien renvoyé » de « tout le
+    // monde a été supprimé ». Les quatre chiffres tranchent d'un coup d'œil.
+    const l = this.lecture;
+    const brut = l
+      ? ` · ${l.identites.lignes.length} identités, ${l.etats.lignes.length} états, `
+        + `${l.temps.lignes.length} journées, ${l.reglages.lignes.length} réglages`
+      : '';
+    this.el.querySelector('#adm-sub').textContent = lignes.length
+      ? `${lignes.length} joueur${lignes.length > 1 ? 's' : ''} · lu à l'instant${brut}`
+      : `Aucun joueur à montrer — le nuage a répondu${brut}`;
 
     const carte = (v, t) => `<div class="adm-card"><b>${v}</b><span>${t}</span></div>`;
     this.el.querySelector('#adm-cards').innerHTML = [

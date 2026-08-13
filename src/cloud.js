@@ -245,10 +245,35 @@ export class CloudSave {
   // Lecture libre d'une table, pour la vue parent. Volontairement générique :
   // elle ne sert qu'à regarder, jamais à écrire.
   async selectAll(table, query = 'select=*') {
-    if (!this.configured) return [];
-    const res = await fetch(`${this.url}/rest/v1/${table}?${query}`, { headers: this.headers() });
-    if (!res.ok) return [];
-    return res.json();
+    return (await this.selectAllDetaille(table, query)).lignes;
+  }
+
+  // LA MÊME LECTURE, MAIS QUI DIT CE QUI S'EST PASSÉ.
+  //
+  // selectAll rendait un tableau vide pour TOUTES les raisons du monde : clé
+  // refusée, table renommée, droits retirés, appareil hors ligne. L'espace
+  // parent affichait alors « 0 joueur » avec le même aplomb que s'il n'y avait
+  // vraiment personne — et il n'y avait aucun moyen, depuis l'iPad, de
+  // distinguer « le nuage dit non » de « la famille n'a rien joué ». C'est
+  // exactement le genre de silence qui coûte une soirée d'enquête.
+  //
+  // On rend donc aussi le pourquoi. selectAll garde son ancien contrat pour
+  // tous ceux à qui le détail ne sert à rien.
+  async selectAllDetaille(table, query = 'select=*') {
+    if (!this.configured) return { ok: false, statut: 0, raison: 'sans nuage', lignes: [] };
+    let res;
+    try {
+      res = await fetch(`${this.url}/rest/v1/${table}?${query}`, { headers: this.headers() });
+    } catch (e) {
+      return { ok: false, statut: 0, raison: 'injoignable', lignes: [] };
+    }
+    if (!res.ok) {
+      let detail = '';
+      try { detail = (await res.text()).slice(0, 160); } catch { /* corps illisible */ }
+      return { ok: false, statut: res.status, raison: detail || `HTTP ${res.status}`, lignes: [] };
+    }
+    try { return { ok: true, statut: res.status, raison: '', lignes: await res.json() }; }
+    catch { return { ok: false, statut: res.status, raison: 'réponse illisible', lignes: [] }; }
   }
 
   // ---- play time: cross-device totals per child --------------------------

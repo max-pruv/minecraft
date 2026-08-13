@@ -17,7 +17,7 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 
-const SUITES = ['reseau.js', 'visio.js', 'reglages.js', 'carte.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js'];
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 

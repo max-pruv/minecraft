@@ -37,6 +37,8 @@ function servirLeNuage(port) {
     return m[1].split(',').map((v) => decodeURIComponent(v.trim()).replace(/^"|"$/g, ''));
   };
 
+  const identites = new Map();
+
   const serveur = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -117,6 +119,23 @@ function servirLeNuage(port) {
       }
     }
 
+    // La table des identités, celle que l'espace parent lit en premier.
+    //
+    // Elle n'était pas servie du tout : toute requête tombait sur le 404 de
+    // fin, selectAll rendait un tableau vide, et le panneau parent était
+    // éprouvé sans jamais voir une seule identité. Un pan entier de l'écran
+    // passait donc au travers des tests.
+    if (table.startsWith('player_identity')) {
+      if (req.method === 'GET') {
+        const nom = egal(url, 'name');
+        const lignes = [...identites.values()].filter((r) => !nom || r.name === nom);
+        return json(res, lignes);
+      }
+      if (req.method === 'POST') {
+        for (const r of await lire(req)) identites.set(r.name, { ...r, updated_at: r.updated_at || new Date().toISOString() });
+        res.writeHead(201); return res.end('');
+      }
+    }
     if (table.startsWith('player_identities')) {
       if (req.method === 'GET') return json(res, []);
       if (req.method === 'POST') { res.writeHead(201); return res.end(''); }
@@ -140,6 +159,9 @@ function servirLeNuage(port) {
     // Semer du temps de jeu jour par jour : c'est la matière première des
     // filtres de période de l'espace parent.
     poserTemps: (r) => temps.set(`${r.name}|${r.device_id}|${r.day}`, r),
+    // Semer une famille : c'est la matière première de l'espace parent.
+    poserIdentite: (r) => identites.set(r.name, r),
+    poserEtat: (nom, v) => etats.set(nom, v),
     monde: (code) => mondes.get(code),
     // Combien de messages ont VRAIMENT transité par le tuyau de secours :
     // c'est la preuve que la partie est passée par là et pas ailleurs.
