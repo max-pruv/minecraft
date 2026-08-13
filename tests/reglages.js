@@ -632,6 +632,60 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('chaque souvenir a son bouton « garder »',
       galerie.photos >= 1 && galerie.garder === galerie.photos, JSON.stringify(galerie));
 
+    // --- l'espace parent filtre par enfant et par période ---------------------
+    //
+    // « Voir un enfant en particulier », et « les 7 ou 30 derniers jours » :
+    // les données existaient — une ligne par enfant, appareil et JOUR — mais le
+    // panneau n'en montrait que l'agrégat d'aujourd'hui et de toujours.
+    const j = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    nuage.poserTemps({ name: 'Marlon', device_id: 'd1', day: j(0), play: 600, quiz: 60, correct: 5, wrong: 1 });
+    nuage.poserTemps({ name: 'Marlon', device_id: 'd1', day: j(3), play: 1200, quiz: 120, correct: 8, wrong: 2 });
+    nuage.poserTemps({ name: 'Marlon', device_id: 'd1', day: j(10), play: 1800, quiz: 0, correct: 0, wrong: 0 });
+    nuage.poserTemps({ name: 'Alice', device_id: 'd2', day: j(0), play: 300, quiz: 30, correct: 3, wrong: 0 });
+
+    const panneau = await marlon.evaluate(async () => {
+      const a = window.__game.admin;
+      a.mount();
+      await a.load();
+      const sel = a.el.querySelector('#adm-filtre-enfant');
+      return {
+        enfants: [...sel.options].map((o) => o.value).filter(Boolean),
+        lignes: a.el.querySelectorAll('#adm-rows tr').length,
+      };
+    });
+    verifier('la liste déroulante propose chaque enfant',
+      panneau.enfants.includes('Marlon') && panneau.enfants.includes('Alice'),
+      JSON.stringify(panneau.enfants));
+    // Attrapé par ce scénario à sa première exécution : le document de service
+    // des invitations (« Alice~invit ») apparaissait comme un enfant de plus.
+    verifier('et aucun document de service ne s\'y glisse',
+      panneau.enfants.every((n) => !n.includes('~')), JSON.stringify(panneau.enfants));
+
+    const filtre = await marlon.evaluate(async () => {
+      const a = window.__game.admin;
+      // la période : 7 derniers jours
+      const per = a.el.querySelector('#adm-filtre-periode');
+      per.value = '7'; per.dispatchEvent(new Event('change'));
+      // l'enfant : Marlon seul
+      const sel = a.el.querySelector('#adm-filtre-enfant');
+      sel.value = 'Marlon'; sel.dispatchEvent(new Event('change'));
+      await new Promise((r) => setTimeout(r, 200));
+      return {
+        lignes: a.el.querySelectorAll('#adm-rows tr').length,
+        entete: a.el.querySelector('#adm-th-periode').textContent,
+        detailJours: [...a.el.querySelectorAll('#adm-detail tbody tr td:first-child')].map((td) => td.textContent),
+        detailTexte: a.el.querySelector('#adm-detail').textContent,
+      };
+    });
+    verifier('l\'enfant choisi reste seul dans le tableau',
+      filtre.lignes === 1 && /7 jours/i.test(filtre.entete),
+      JSON.stringify({ lignes: filtre.lignes, entete: filtre.entete }));
+    verifier('son détail montre les jours de la période, et eux seuls',
+      filtre.detailJours.includes(j(0)) && filtre.detailJours.includes(j(3))
+      && !filtre.detailJours.includes(j(10)) && /8 justes · 2 faux/.test(filtre.detailTexte),
+      JSON.stringify(filtre.detailJours));
+    await marlon.evaluate(() => { const a = window.__game.admin; a.el.style.display = 'none'; });
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {
