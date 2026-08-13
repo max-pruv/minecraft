@@ -69,6 +69,8 @@ const ICONES = {
   'Tour de Lille': '🎿', 'Cathédrale de la Treille': '⛪',
   'Cathédrale russe': '⛪', 'Hôtel Negresco': '🏨', 'Cours Saleya': '💐',
   'Baleine du Paillon': '🐋',
+  'Pier 39': '🦭', 'Lombard Street': '🌺', 'Dragon Gate': '🐉',
+  'Karl the Fog': '☁️', 'Bay Bridge': '🌉',
   'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
   'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
   'Grand Central': '🚉', 'Rockefeller Center': '⛸️', 'Wall Street': '💰',

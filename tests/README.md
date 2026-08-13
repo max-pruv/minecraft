@@ -193,6 +193,10 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | le hub éducation propose chaque enfant de la famille | le panneau ne montrait que l'enfant connecté, aujourd'hui, point |
 | l'enfant choisi montre ses journées à lui, sans les niveaux du mien | aucun sélecteur n'existait |
 | les raccourcis de période cumulent — « Tout » dépasse « 7 jours » | le panneau ne savait compter qu'aujourd'hui et dessiner 14 jours |
+| le Golden Gate, orange, va du Presidio aux Marin Headlands | un pont rouge vif couché est-ouest, qui ne menait nulle part : pas de Headlands du tout |
+| Karl the Fog coule sur la passe, et les pylônes en dépassent | aucun brouillard — la signature atmosphérique de la ville manquait |
+| le Bay Bridge est gris — on ne le confond plus avec le Golden Gate | les deux ponts sortaient du même moule, rouge laine tous les deux |
+| les otaries de Pier 39, Lombard fleurie et le Dragon Gate | aucune des trois icônes que cherchent les enfants n'existait |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé
