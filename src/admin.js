@@ -74,6 +74,16 @@ const CSS = `
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   border: 1px solid var(--adm-trait); border-radius: 12px; background: var(--adm-carte);
 }
+#adm-filtres { display: flex; gap: 16px; margin: 10px 0 2px; flex-wrap: wrap; }
+#adm-filtres label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #8b98ad; }
+#adm-filtres select {
+  background: #161d27; color: #e7edf5; border: 1px solid #2a3648; border-radius: 8px;
+  padding: 5px 8px; font-size: 13px;
+}
+#adm-detail { margin: 8px 0; }
+#adm-detail table { border-collapse: collapse; font-size: 13px; width: auto; min-width: 420px; }
+#adm-detail th, #adm-detail td { padding: 4px 12px; text-align: left; border-bottom: 1px solid #222b39; }
+#adm-detail th { color: #8b98ad; font-weight: 500; }
 table.adm { width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 table.adm th {
   position: sticky; top: 0; z-index: 2;
@@ -184,11 +194,25 @@ const HTML = `
     <button class="adm-btn" id="adm-close">Fermer</button>
   </div>
   <div id="adm-sub"></div>
+  <div class="adm-filtres" id="adm-filtres">
+    <label>Enfant
+      <select id="adm-filtre-enfant"><option value="">Tous</option></select>
+    </label>
+    <label>Période
+      <select id="adm-filtre-periode">
+        <option value="1">Aujourd'hui</option>
+        <option value="7">7 derniers jours</option>
+        <option value="30">30 derniers jours</option>
+        <option value="" selected>Tout</option>
+      </select>
+    </label>
+  </div>
   <div class="adm-cards" id="adm-cards"></div>
+  <div id="adm-detail"></div>
   <div class="adm-scroll">
     <table class="adm">
       <thead><tr>
-        <th>Joueur</th><th>En ce moment</th><th>Aujourd'hui</th>
+        <th>Joueur</th><th>En ce moment</th><th id="adm-th-periode">Aujourd'hui</th>
         <th>Langue</th><th>Niveau</th>
         <th>Quiz</th><th>Mondes</th><th>Compte</th><th></th>
       </tr></thead>
@@ -387,6 +411,15 @@ export class AdminPanel {
     this.el = div;
     div.querySelector('#adm-close').addEventListener('click', () => this.hide());
     div.querySelector('#adm-refresh').addEventListener('click', () => this.load());
+    this.filtre = { enfant: '', periode: '' };
+    div.querySelector('#adm-filtre-enfant').addEventListener('change', (e) => {
+      this.filtre.enfant = e.target.value;
+      if (this.donnees) this.agreger();
+    });
+    div.querySelector('#adm-filtre-periode').addEventListener('change', (e) => {
+      this.filtre.periode = e.target.value;
+      if (this.donnees) this.agreger();
+    });
 
     const modal = document.createElement('div');
     modal.id = 'adm-modal';
@@ -516,12 +549,29 @@ export class AdminPanel {
       return;
     }
 
+    // Les lignes brutes restent à bord : changer un filtre ré-agrège sans
+    // rien relire du serveur — l'attente tuerait l'usage d'un filtre.
+    this.donnees = { identites, etats, temps, reglages };
+    this.agreger();
+  }
+
+  // Depuis quel jour compte la période choisie (null = depuis toujours).
+  jourDepuis() {
+    const n = Number(this.filtre && this.filtre.periode);
+    if (!n) return null;
+    const d = new Date(Date.now() - (n - 1) * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+
+  agreger() {
+    const { identites, etats, temps, reglages } = this.donnees;
+    const depuis = this.jourDepuis();
     const par = new Map();
     const entree = (nom) => {
       if (!par.has(nom)) {
         par.set(nom, {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
-          mondes: [], blocs: 0, dex: 0, aujourdhui: 0, total: 0,
+          mondes: [], blocs: 0, dex: 0, aujourdhui: 0, periode: 0, total: 0,
           quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
           supprime: false, rythme: SESSION_MIN_USINE,
         });
@@ -553,6 +603,11 @@ export class AdminPanel {
       // Le document des consignes porte le prénom suivi de ~parent. Il faut le
       // reconnaître AVANT de créer une entrée, sinon il apparaîtrait dans la
       // liste comme un enfant de plus.
+      // Les documents de service — consignes du parent, invitations — portent
+      // le prénom suivi d'un tilde. Aucun n'est un enfant : sans ce tri,
+      // « Alice~invit » apparaissait dans le panneau comme un joueur de plus,
+      // depuis l'arrivée des invitations.
+      if (r.name && r.name.includes('~') && !r.name.endsWith('~parent')) continue;
       if (r.name && r.name.endsWith('~parent')) {
         const c = entree(r.name.slice(0, -'~parent'.length));
         const m = Number((r.prefs || {}).sessionMin);
@@ -585,13 +640,17 @@ export class AdminPanel {
       e.majTemps = recent(e.majTemps, r.updated_at);
       e.total += r.play || 0;
       if (r.day === aujourd) e.aujourdhui += r.play || 0;
+      // La période choisie filtre TOUT ce qui se compte en temps et en
+      // réponses : c'est elle que les cartes et la colonne du milieu montrent.
+      if (depuis && (r.day || '') < depuis) continue;
+      e.periode += r.play || 0;
       e.quiz += r.quiz || 0;      // secondes passées en quiz
       e.justes += r.correct || 0; // bonnes réponses
       e.faux += r.wrong || 0;
       if (r.device_id) e.appareils.add(r.device_id);
     }
 
-    const lignes = [...par.values()]
+    const toutes = [...par.values()]
       // un compte supprimé garde une ligne vide dans la base : on ne la montre
       // pas, elle ne représente plus personne
       .filter((e) => !e.supprime)
@@ -600,14 +659,65 @@ export class AdminPanel {
       .sort((a, b) => (b.live ? 1 : 0) - (a.live ? 1 : 0)
         || String(b.vu || '').localeCompare(String(a.vu || '')));
 
-    this.render(lignes);
+    this.majFiltreEnfants(toutes);
+    const enfant = this.filtre && this.filtre.enfant;
+    this.render(enfant ? toutes.filter((l) => l.nom === enfant) : toutes);
+    this.renderDetail(enfant, depuis);
+  }
+
+  // La liste déroulante des enfants, reconstruite à chaque lecture — sans
+  // perdre le choix courant quand la liste n'a pas changé.
+  majFiltreEnfants(lignes) {
+    const sel = this.el.querySelector('#adm-filtre-enfant');
+    const choix = (this.filtre && this.filtre.enfant) || '';
+    const noms = lignes.map((l) => l.nom);
+    sel.innerHTML = '<option value="">Tous</option>'
+      + noms.map((n) => `<option value="${esc(n)}"${n === choix ? ' selected' : ''}>${esc(n)}</option>`).join('');
+    if (choix && !noms.includes(choix)) this.filtre.enfant = '';
+  }
+
+  // Le détail d'UN enfant : sa période, jour par jour. C'est ce que « voir un
+  // enfant en particulier » veut dire — pas seulement isoler sa ligne, mais
+  // répondre à « il a joué combien, mardi ? » sans tableur.
+  renderDetail(enfant, depuis) {
+    const zone = this.el.querySelector('#adm-detail');
+    if (!enfant) { zone.innerHTML = ''; return; }
+    const parJour = new Map();
+    for (const r of this.donnees.temps) {
+      if (r.name !== enfant) continue;
+      if (depuis && (r.day || '') < depuis) continue;
+      const d = parJour.get(r.day) || { play: 0, quiz: 0, justes: 0, faux: 0 };
+      d.play += r.play || 0;
+      d.quiz += r.quiz || 0;
+      d.justes += r.correct || 0;
+      d.faux += r.wrong || 0;
+      parJour.set(r.day, d);
+    }
+    const jours = [...parJour.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 31);
+    if (!jours.length) {
+      zone.innerHTML = `<div class="adm-dim">${esc(enfant)} n'a pas joué sur cette période.</div>`;
+      return;
+    }
+    zone.innerHTML = `<table><thead><tr>
+        <th>Jour</th><th>Jeu</th><th>Quiz</th><th>Réponses</th>
+      </tr></thead><tbody>${jours.map(([j, d]) => `<tr>
+        <td>${esc(j)}</td><td>${duree(d.play)}</td><td>${duree(d.quiz)}</td>
+        <td>${d.justes + d.faux ? `${d.justes} justes · ${d.faux} faux` : '—'}</td>
+      </tr>`).join('')}</tbody></table>`;
   }
 
   render(lignes) {
     const moi = (this.getName() || '').toLowerCase();
-    const actifs = lignes.filter((l) => l.aujourdhui > 0).length;
+    const depuis = this.jourDepuis();
+    const surPeriode = (l) => (depuis ? l.periode : l.aujourdhui);
+    const actifs = lignes.filter((l) => surPeriode(l) > 0).length;
     const enLigne = lignes.filter((l) => l.live).length;
-    const tempsJour = lignes.reduce((a, l) => a + l.aujourdhui, 0);
+    const tempsJour = lignes.reduce((a, l) => a + surPeriode(l), 0);
+    const libellePeriode = { 1: "aujourd'hui", 7: 'sur 7 jours', 30: 'sur 30 jours' }[
+      Number(this.filtre && this.filtre.periode)] || "aujourd'hui";
+    this.el.querySelector('#adm-th-periode').textContent =
+      libellePeriode === "aujourd'hui" && !depuis ? "Aujourd'hui"
+        : libellePeriode.charAt(0).toUpperCase() + libellePeriode.slice(1);
     const sansCode = lignes.filter((l) => !l.code && l.faces === 0).length;
 
     this.el.querySelector('#adm-sub').textContent =
@@ -617,8 +727,8 @@ export class AdminPanel {
     this.el.querySelector('#adm-cards').innerHTML = [
       carte(lignes.length, 'comptes'),
       carte(enLigne, 'connectés maintenant'),
-      carte(actifs, "actifs aujourd'hui"),
-      carte(duree(tempsJour), "jeu aujourd'hui"),
+      carte(actifs, `actifs ${libellePeriode}`),
+      carte(duree(tempsJour), `jeu ${libellePeriode}`),
       carte(sansCode, 'comptes non protégés'),
     ].join('');
 
@@ -634,7 +744,7 @@ export class AdminPanel {
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
             <div class="adm-dim">${l.dex} créature${l.dex > 1 ? 's' : ''} · ${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
         <td>${presence(l)}</td>
-        <td>${duree(l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
+        <td>${duree(this.jourDepuis() ? l.periode : l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
         <td><span class="adm-rythme"><select data-langue="${esc(l.nom)}">${
             LANGUES.map(([v, txt]) => `<option value="${v}"${
               v === (l.lang || 'both') ? ' selected' : ''}>${txt}</option>`).join('')
