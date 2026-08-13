@@ -27,6 +27,7 @@ import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
+import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe } from './visio.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 // doubled view distance; ?rr= overrides (perf tuning and tests)
@@ -2285,6 +2286,9 @@ function showOnlineUI() {
   chatBtn.style.display = 'block';
   net.onRemoteVideo = (id, stream) => addRemoteTile(id, stream);
   net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
+  net.onPhoto = (id, img, nom) => addPhotoTile(id, img, nom);
+  net.onPhotoFin = (id) => removePhotoTile(id);
+  net.onCamChange = () => majVisio();
   net.onChat = (name, msg) => {
     addChatMsg(name, msg, false);
     chatDing();
@@ -2332,6 +2336,7 @@ function leaveToMainMenu() {
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
   removeLocalTile();
   camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
+  viderLaVisio();
   playersBtn.style.display = 'none';
   chatBtn.style.display = 'none';
   chatPanel.style.display = 'none';
@@ -2586,26 +2591,143 @@ function removeLocalTile() {
   if (localTile) { localTile.remove(); localTile = null; }
 }
 
+// LE CARRÉ NOIR, ET POURQUOI IL ÉTAIT NOIR.
+//
+// La vignette de l'autre portait l'image ET le son dans le même élément. Or
+// aucun navigateur ne lance tout seul une lecture qui fait du bruit : play()
+// était refusé, le refus tombait dans un catch vide, et il ne restait qu'un
+// rectangle sombre et muet. On sépare donc les deux. L'image est MUETTE, donc
+// elle démarre toujours ; le son a son propre élément, et s'il est refusé on
+// demande une touche à l'enfant au lieu de se taire pour de bon.
 function addRemoteTile(id, stream) {
+  // PeerJS annonce le flux une fois par piste : deux fois, donc, pour une
+  // caméra qui porte l'image et le son. Reconstruire la vignette au second
+  // passage coupait le son qui venait de démarrer, et la relançait dans le
+  // vide. On reconnaît le flux déjà branché et on le laisse tranquille.
+  const dejaLa = remoteTiles.get(id);
+  if (dejaLa && dejaLa.video.srcObject === stream) return;
   removeRemoteTile(id);
   const video = document.createElement('video');
   video.className = 'remote';
   video.autoplay = true;
+  video.muted = true;                       // c'est ce qui garantit l'image
   video.setAttribute('playsinline', '');
+  video.dataset.pair = id;
   video.srcObject = stream;
   const label = document.createElement('div');
   label.className = 'video-name';
   const entry = net && net.conns.get(id);
-  label.textContent = entry ? entry.name : '';
+  const nom = entry ? entry.name : '';
+  label.textContent = nom;
   videoWrap.prepend(label);
   videoWrap.prepend(video);
-  remoteTiles.set(id, { video, label });
-  video.play().catch(() => {});
+  // Une lecture refusée ne doit pas rester refusée : on retente dès que le
+  // navigateur sait quelque chose du flux.
+  const lancer = () => video.play().catch(() => {});
+  lancer();
+  video.addEventListener('loadedmetadata', lancer);
+  video.addEventListener('canplay', lancer);
+  const audio = stream.getAudioTracks().length ? jouerLeSon(stream, nom) : null;
+  if (audio) audio.dataset.visio = id;
+  remoteTiles.set(id, { video, label, audio });
+  majVisio();
 }
 
 function removeRemoteTile(id) {
   const t = remoteTiles.get(id);
-  if (t) { t.video.remove(); t.label.remove(); remoteTiles.delete(id); }
+  if (!t) return;
+  t.video.srcObject = null;
+  t.video.remove();
+  t.label.remove();
+  arreterLeSon(t.audio);
+  remoteTiles.delete(id);
+  majVisio();
+}
+
+// --- la caméra lente : des images, quand le film ne peut pas passer -----------
+
+const photoTiles = new Map();   // peerId -> { img, label }
+
+function addPhotoTile(id, dataURL, nom) {
+  let t = photoTiles.get(id);
+  if (!t) {
+    const img = document.createElement('img');
+    img.className = 'remote';
+    img.alt = nom || '';
+    img.dataset.pair = id;
+    const label = document.createElement('div');
+    label.className = 'video-name';
+    const entry = net && net.conns.get(id);
+    label.textContent = entry ? entry.name : (nom || '');
+    videoWrap.prepend(label);
+    videoWrap.prepend(img);
+    t = { img, label };
+    photoTiles.set(id, t);
+  }
+  t.img.src = dataURL;
+  majVisio();
+}
+
+function removePhotoTile(id) {
+  const t = photoTiles.get(id);
+  if (!t) return;
+  t.img.remove();
+  t.label.remove();
+  photoTiles.delete(id);
+  majVisio();
+}
+
+// Le photographe local : tant que la caméra est allumée, il expédie une image
+// de temps en temps à ceux que seul le nuage nous relie.
+const photographe = new Photographe(
+  () => localTile,
+  (img) => { if (net && net.active) net.envoyerPhoto(img); },
+);
+
+// --- l'invitation, et le chemin emprunté --------------------------------------
+
+// « Alice a allumé sa caméra » : la voir apparaître sans savoir quoi faire est
+// frustrant, et chercher le bouton pendant que l'autre attend l'est encore
+// plus. On propose, en un geste.
+function majVisio() {
+  const invite = document.getElementById('visio-invite');
+  const chemin = document.getElementById('visio-chemin');
+  if (!invite || !chemin) return;
+  const qui = [...remoteTiles.keys(), ...photoTiles.keys()];
+  const noms = qui.map((id) => {
+    const e = net && net.conns.get(id);
+    return e && e.name ? e.name : null;
+  }).filter(Boolean);
+  const maCamera = !!(net && net.camOn);
+
+  if (noms.length && !maCamera) {
+    const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
+    const verbe = noms.length === 1 ? 'a allumé sa caméra' : 'ont allumé leur caméra';
+    document.getElementById('visio-invite-txt').textContent = `${liste} ${verbe}`;
+    invite.style.display = 'block';
+  } else {
+    invite.style.display = 'none';
+  }
+
+  // Par où passe l'image — et ce qui ne passe pas. Un enfant qui ne s'entend
+  // pas doit savoir que ce n'est ni sa faute ni une panne.
+  if (photoTiles.size) {
+    chemin.textContent = '☁️ Image par le nuage — le son ne passe pas sur ce Wi-Fi';
+    chemin.style.display = 'block';
+  } else if (remoteTiles.size) {
+    chemin.textContent = '⚡ Image et son en direct';
+    chemin.style.display = 'block';
+  } else {
+    chemin.textContent = '';
+    chemin.style.display = 'none';
+  }
+}
+
+function viderLaVisio() {
+  for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
+  for (const id of [...photoTiles.keys()]) removePhotoTile(id);
+  photographe.arreter();
+  majVisio();
 }
 
 camBtn.addEventListener('click', async () => {
@@ -2614,6 +2736,12 @@ camBtn.addEventListener('click', async () => {
     creatureManager.toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
     return;
   }
+  await allumerOuEteindreLaCamera();
+});
+
+// Le même geste, appelable depuis le bouton de la barre ET depuis
+// l'invitation : deux chemins vers une seule vérité.
+async function allumerOuEteindreLaCamera() {
   const on = await net.toggleCam();
   camBtn.textContent = on ? '🎥' : '📷';
   camBtn.classList.toggle('on', on);
@@ -2622,10 +2750,31 @@ camBtn.addEventListener('click', async () => {
     // s'entendre n'a pas de sens, et c'est ce qui permet de se passer d'un
     // bouton micro séparé.
     addLocalTile(net.videoStream);
+    // La caméra lente tourne dès que la nôtre est allumée : elle n'envoie
+    // quelque chose qu'aux pairs joints par le nuage, et rien du tout aux
+    // autres. Pas de condition à tenir à jour, donc pas de condition fausse.
+    photographe.demarrer();
   } else {
     // toggleCam a déjà arrêté le flux — donc l'image et le son ensemble.
     removeLocalTile();
+    photographe.arreter();
   }
+  majVisio();
+  return on;
+}
+
+// Le bouton de l'invitation fait exactement ce que fait celui de la barre.
+document.getElementById('visio-invite-btn').addEventListener('click', async () => {
+  if (!net || !net.active) return;
+  await allumerOuEteindreLaCamera();
+});
+
+// Le son distant refusé faute de geste : on le dit une fois, gentiment, et le
+// premier contact avec l'écran le débloque.
+surSonEnAttente((nom) => {
+  creatureManager.toast(nom
+    ? `🔊 Touche l'écran pour entendre ${nom}`
+    : "🔊 Touche l'écran pour entendre", 0xffd479);
 });
 
 // Quelqu'un arrive dans le monde partagé. Une bulle de trois secondes se rate

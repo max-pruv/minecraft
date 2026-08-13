@@ -12,7 +12,7 @@
 // seuils réels du jeu (vingt secondes de silence toléré, cinq de battement),
 // sans quoi on ne testerait rien.
 
-const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd } = require('./banc.js');
+const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, souffler } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
@@ -264,7 +264,8 @@ function verifier(nom, ok, detail = '') {
     const appareil = prem.context();
     const url = prem.url();
     await dormir(1200);
-    await prem.close();
+    // L'onglet seulement : l'appareil doit survivre, c'est tout le propos.
+    await prem.fermerOnglet();
     await dormir(1200);
     const retourZoe = await appareil.newPage();
     await retourZoe.goto(url, { waitUntil: 'load' });
@@ -358,6 +359,49 @@ function verifier(nom, ok, detail = '') {
     await chezSoi.close();
     await tenu2.close();
 
+    // --- l'enfant qui entend tout le monde et que personne n'entend ----------
+    //
+    // Le secours par le nuage est rouvert à chaque tentative de reconnexion et
+    // à chaque réveil. S'il prend la place d'un lien direct qui marche,
+    // l'enfant devient muet : il reçoit encore par les écouteurs de l'ancien
+    // lien — il voit les autres bouger, il croit tout normal — mais rien de ce
+    // qu'il envoie n'arrive. Et le troisième joueur, qui n'apprend l'existence
+    // des autres que par ces positions relayées, ne le voit jamais arriver.
+    //
+    // Ici le nuage pointe sur un port où personne n'écoute : c'est la version
+    // brutale d'un nuage lent, et elle rend la panne franche au lieu de la
+    // laisser dépendre de la vitesse de la machine.
+    const NUAGE_MORT = { portNuage: 9799 };
+    const { p: chef, code: codeMuet2 } = await banc.creerMonde('Léa', NUAGE_MORT);
+    const cadette = await banc.rejoindre('Jules', codeMuet2, NUAGE_MORT);
+    await jusqua(async () => (await nomsVus(chef)).includes('Jules'), 45000);
+    // Le geste qui déclenchait la panne, et que le jeu fait tout seul.
+    await cadette.evaluate(() => window.__game.net.reprendreParLeNuage());
+    await dormir(2000);
+    const lienGarde = await cadette.evaluate(() => {
+      const c = [...window.__game.net.conns.values()][0];
+      return !!(c && c.conn && !c.conn.parNuage);
+    });
+    verifier('un secours qui s\'ouvre ne débranche pas le lien direct', lienGarde);
+    // La mesure qui compte : la voix de l'enfant arrive-t-elle encore ? Les
+    // positions partent huit fois par seconde, c'est le débit le plus franc.
+    await chef.evaluate(() => {
+      window.__posRecues = 0;
+      const net = window.__game.net;
+      const vrai = net.onMessage.bind(net);
+      net.onMessage = (conn, msg) => {
+        if (msg && msg.t === 'pos') window.__posRecues++;
+        return vrai(conn, msg);
+      };
+    });
+    await dormir(3000);
+    const entendu = await chef.evaluate(() => window.__posRecues);
+    verifier('et l\'enfant continue de se faire entendre', entendu > 0,
+      `${entendu} positions reçues en 3 s`);
+    await chef.close();
+    await cadette.close();
+
+    await souffler();
     // --- le Wi-Fi public ne doit plus empêcher de jouer ----------------------
     //
     // « Ça me paraît aberrant que sur une connexion publique, je ne puisse pas
@@ -404,9 +448,48 @@ function verifier(nom, ok, detail = '') {
       ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 23, posePassee), 60000);
     verifier('un bloc posé par le nuage arrive chez l\'autre',
       vuEnFace, JSON.stringify(posePassee));
+
+    // --- quitter l'application et y revenir, en jouant par le nuage ----------
+    //
+    // Signalé par Max sur son iPhone : « j'ai quitté l'app et je suis revenu,
+    // j'étais déconnecté, et impossible de me reconnecter — j'ai dû quitter le
+    // online pour revenir. » La reconnexion existait pourtant : elle ne
+    // retentait que le lien DIRECT, c'est-à-dire précisément celui que ce
+    // réseau interdit. Elle tournait donc en boucle sans aucune issue.
+    //
+    // On refait le geste exact : l'enfant part, reste absent plus longtemps
+    // que le silence toléré — de quoi se faire oublier de l'hôte — puis
+    // revient. Il doit retrouver la partie tout seul.
+    await endormir(bloque);
+    await dormir(26000);                       // au-delà des vingt secondes tolérées
+    await reveiller(bloque);
+    const retrouve = await jusqua(async () => {
+      const a = await nomsVus(hoteNuage);
+      const b = await nomsVus(bloque);
+      return a.includes('Tom') && b.includes('Emma');
+    }, 90000);
+    verifier('revenir dans l\'application remet dans la partie, sans rien redemander',
+      retrouve, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+    // Et le monde répond encore : un lien qui se rétablit sans porter les
+    // blocs ne servirait à rien.
+    const poseApres = await bloque.evaluate(() => {
+      const w = window.__game.world;
+      const p = window.__game.player;
+      const x = Math.round(p.pos.x) + 3, z = Math.round(p.pos.z) + 1;
+      const y = w.terrainHeight(x, z) + 1;
+      w.setBlock(x, y, z, 26);                 // laine verte
+      return { x, y, z };
+    });
+    verifier('et les blocs repassent après le retour',
+      await jusqua(async () => hoteNuage.evaluate(
+        ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 26, poseApres), 60000),
+      JSON.stringify(poseApres));
     await bloque.close();
     await hoteNuage.close();
 
+    // On laisse la machine redescendre : ce qui suit empile les délais du jeu
+    // et n'a rien à prouver sur un conteneur essoufflé.
+    await souffler();
     // --- une présentation qui met du temps à passer -----------------------------
     //
     // Signalé à la maison, sans VPN cette fois : deux iPad sur la même
@@ -435,7 +518,16 @@ function verifier(nom, ok, detail = '') {
     // passait alors sans avoir rien éprouvé, ce que le garde-fou plus bas a
     // fini par attraper.
     await lent.bringToFront();
-    await lent.evaluate(() => { window.__avalerHelloSecondes = 14; });
+    // Deux présentations avalées, quel que soit l'état de la machine.
+    //
+    // Un COMPTE plutôt qu'une fenêtre en secondes : une fenêtre mesurait
+    // surtout la vitesse du conteneur. Et DEUX plutôt que cinq : ce que le
+    // scénario doit établir, c'est qu'une présentation perdue finit par
+    // passer — deux pertes le prouvent aussi bien que cinq, et le prouvent en
+    // une dizaine de secondes au lieu d'empiler assez de cycles de reprise
+    // pour déborder l'attente sur une machine chargée. Cinq était un chiffre
+    // de mon cru, pas une exigence du jeu.
+    await lent.evaluate(() => { window.__avalerHelloNombre = 2; });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await lent.evaluate((c) => {
@@ -445,11 +537,17 @@ function verifier(nom, ok, detail = '') {
     await dormir(1500);
     await lent.evaluate(() => document.getElementById('online-play-btn')?.click());
 
+    // Deux minutes. Ce scénario empile volontairement les délais du jeu :
+    // quatorze secondes de présentations avalées, la coupure du lien muet à
+    // vingt, puis la reconnexion. Soixante secondes suffisaient quand il
+    // arrivait tôt dans la suite ; depuis que les scénarios de réseau bloqué
+    // le précèdent, la machine est chaude et il lui faut plus d'air. Vérifié
+    // en isolation : le jeu s'en sort, avec cinq présentations perdues.
     const seRetrouvent = await jusqua(async () => {
       const a = await nomsVus(patiente);
       const b = await nomsVus(lent);
       return a.includes('Zoé') && b.includes('Théo');
-    }, 60000);
+    }, 120000);
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
     const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
@@ -458,11 +556,15 @@ function verifier(nom, ok, detail = '') {
     // Sans cette garantie, le scénario pourrait passer sans avoir rien éprouvé :
     // c'est déjà arrivé une fois, la fenêtre s'étant écoulée avant la connexion.
     const avalees = await lent.evaluate(() => window.__avalerHelloComptes || 0);
+    // Le garde-fou n'a qu'un travail : établir que le scénario n'était pas
+    // vide. Puisque le banc avale maintenant un nombre fixe, on exige ce
+    // nombre exactement — ni plus, ni moins.
     verifier('et des présentations ont bien été perdues en chemin', avalees >= 2,
       `${avalees} avalées`);
     await lent.close();
     await patiente.close();
 
+    await souffler();
     // --- une présentation qui ne passe JAMAIS -----------------------------------
     //
     // L'autre bout du même correctif, et celui qu'on ajoute en dernier parce

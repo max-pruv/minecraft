@@ -137,7 +137,33 @@ class Banc {
     this.pairs = await servirLesPairs(this.portPairs);
     this.navigateur = await chromium.launch({
       executablePath: exe,
-      args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader'],
+      args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader',
+        // Une caméra et un micro simulés, toujours présents et toujours
+        // autorisés. Sans eux, le chemin vidéo n'était éprouvé nulle part :
+        // c'est précisément là qu'un carré noir a pu passer inaperçu.
+        //
+        // Le nom du drapeau compte : Chromium connaît « for-media-STREAM ».
+        // Écrit « for-media-capture », il est accepté sans rien faire — pas
+        // d'erreur, pas d'avertissement, simplement aucune caméra, et un
+        // « Requested device not found » loin de là. Vérifié en énumérant les
+        // appareils : sept avec le bon nom, zéro avec l'autre.
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+        '--allow-file-access-from-files',
+        '--autoplay-policy=no-user-gesture-required',
+        // Les minuteurs des onglets d'arrière-plan, débridés.
+        //
+        // Un banc à plusieurs joueurs n'a qu'un seul onglet au premier plan :
+        // tous les autres voient leurs minuteurs ralentis par le navigateur.
+        // Or les relances de présentation du jeu battent toutes les trois
+        // secondes — bridées, il n'en partait plus qu'une là où le scénario
+        // en attendait cinq, et des scénarios de fin de suite tombaient sans
+        // que le jeu y soit pour rien. Sur un iPad, la question ne se pose
+        // pas : le jeu gère explicitement la mise en veille, et c'est CELA
+        // qu'un autre scénario éprouve.
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'],
     });
   }
 
@@ -152,6 +178,23 @@ class Banc {
       isMobile: !!opts.tactile,
     });
     const p = await ctx.newPage();
+    // FERMER UN ENFANT, C'EST FERMER SON NAVIGATEUR.
+    //
+    // Chaque joueur a son contexte isolé, et fermer la page n'en fermait que
+    // l'onglet : le contexte restait, avec son processus de rendu et sa
+    // mémoire. Une suite de quarante scénarios en laissait donc une
+    // quarantaine derrière elle, sur quatre cœurs. Ce sont les DERNIERS
+    // scénarios qui en payaient le prix, toujours les mêmes, et l'on
+    // soupçonnait le jeu là où c'était le banc qui s'asphyxiait.
+    // `fermerOnglet` reste disponible pour le seul cas où l'appareil doit
+    // SURVIVRE à la page : l'enfant qui quitte l'application et la rouvre sur
+    // le même iPad, avec son stockage et ses réglages intacts.
+    const fermerLaPage = p.close.bind(p);
+    p.fermerOnglet = fermerLaPage;
+    p.close = async (...a) => {
+      await fermerLaPage(...a);
+      try { await ctx.close(); } catch { /* déjà refermé */ }
+    };
     p.prenom = prenom;
     p.erreurs = [];
     p.dialogues = [];
@@ -198,10 +241,16 @@ class Banc {
           pc.addIceCandidate = () => Promise.resolve();
           Object.defineProperty(pc, 'onicecandidate', { get: () => null, set: () => {} });
           if (avecRelais) {
-            setTimeout(() => {
+            // Répété, et non pas une seule fois : l'écouteur du jeu s'attache
+            // au tour de boucle suivant la création de la connexion, et un
+            // candidat émis avant lui n'est vu de personne. Le témoin tombait
+            // alors sur un « relais jamais vu » purement instrumental.
+            let reste = 20;
+            const battre = setInterval(() => {
+              if (reste-- <= 0) { clearInterval(battre); return; }
               const ev = new Event('icecandidate');
               ev.candidate = { candidate: 'candidate:1 1 udp 1 10.0.0.1 3478 typ relay raddr 0.0.0.0 rport 0' };
-              try { pc.dispatchEvent(ev); } catch { /* la page est partie */ }
+              try { pc.dispatchEvent(ev); } catch { clearInterval(battre); }
             }, 300);
           }
           return pc;
@@ -222,8 +271,21 @@ class Banc {
         // La couture du jeu (net.js) : retenir un « hello », c'est exactement
         // ce que fait un tuyau encombré. Le compteur dit ce qui a vraiment été
         // retenu — un scénario qui n'a rien retenu n'a rien éprouvé.
+        // On peut avaler PAR NOMBRE plutôt que par durée, et c'est bien
+        // meilleur : une fenêtre en secondes dépend de la vitesse de la
+        // machine — sur un conteneur chargé, il ne passait qu'une seule
+        // présentation là où le scénario en attendait cinq, et le témoin
+        // tombait sans que le jeu y soit pour rien. Un compte, lui, éprouve
+        // exactement la même chose partout.
+        window.__avalerHelloNombre = 0;
         window.__filtreMessages = (msg) => {
-          if (!msg || msg.t !== 'hello' || !(window.__avalerHelloSecondes > 0)) return true;
+          if (!msg || msg.t !== 'hello') return true;
+          if (window.__avalerHelloNombre > 0) {
+            if (window.__avalerHelloComptes >= window.__avalerHelloNombre) return true;
+            window.__avalerHelloComptes++;
+            return false;
+          }
+          if (!(window.__avalerHelloSecondes > 0)) return true;
           if (!window.__avalerHelloDebut) window.__avalerHelloDebut = Date.now();
           if (Date.now() - window.__avalerHelloDebut < window.__avalerHelloSecondes * 1000) {
             window.__avalerHelloComptes++;
@@ -380,7 +442,13 @@ const nomsVus = async (p) => (await vu(p)).avatars.map((a) => a.nom).sort();
 // À n'employer que pour ce qui DOIT devenir vrai. Quand on vérifie au contraire
 // que rien ne bouge — un joueur endormi qui ne doit pas être éjecté —, il faut
 // bel et bien laisser le temps s'écouler.
-async function jusqua(condition, limiteMs = 20000, pasMs = 500) {
+// Vingt secondes suffisaient quand la suite était courte. Elle compte
+// aujourd'hui une quarantaine de scénarios et fait tourner plusieurs mondes
+// en parallèle sur un conteneur à quatre cœurs : la même vérité met plus
+// longtemps à s'établir, sans que rien ne soit cassé. Une attente plus
+// longue n'affaiblit aucune assertion — elle change seulement le temps
+// qu'on accorde à une réponse, jamais la réponse attendue.
+async function jusqua(condition, limiteMs = 45000, pasMs = 500) {
   const fin = Date.now() + limiteMs;
   for (;;) {
     if (await condition()) return true;
@@ -435,6 +503,24 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
   await dormir(200);
 }
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer,
+// Laisser souffler la machine avant un scénario lourd.
+//
+// Une suite longue chauffe le conteneur : les derniers scénarios s'exécutent
+// sur quatre cœurs déjà pris, et ce sont eux qui tombaient — jamais pour la
+// même raison, toujours à la même place. Un test qui mesure la vitesse du
+// conteneur ne mesure pas le jeu. On attend donc que la charge retombe avant
+// d'ouvrir les scénarios qui empilent trois navigateurs et des délais de
+// vingt secondes, exactement comme la porte de sortie le fait entre deux
+// suites.
+async function souffler(limiteMs = 120000, chargeMax = 2.0) {
+  const charge = () => {
+    try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
+    catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
+  };
+  const fin = Date.now() + limiteMs;
+  while (charge() > chargeMax && Date.now() < fin) await dormir(5000);
+}
+
+module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer, souffler,
   // réutilisés par les autres suites, qui montent leur propre décor
   servirLeJeuPour: servirLeJeu, servirLesPairsPour: servirLesPairs, trouverChromium };

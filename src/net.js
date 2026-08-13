@@ -101,6 +101,9 @@ export class NetSession {
     this.inboundVideo = new Map(); // peerId -> inbound video MediaConnection
     this.onRemoteVideo = null;     // hook(peerId, stream) — main shows the tile
     this.onRemoteVideoClosed = null;
+    this.onPhoto = null;           // hook(peerId, dataURL, nom) — la caméra lente
+    this.onPhotoFin = null;        // hook(peerId) — elle s'arrête
+    this.onCamChange = null;       // hook(allumee) — le jeu ajuste ses vignettes
     this.posTimer = null;
     this.bus = null;          // le relais par le nuage, quand le direct échoue
     this.relaisVu = false;
@@ -313,12 +316,80 @@ export class NetSession {
       surPair: (conn) => {
         // Un pair arrivé par le nuage est un pair comme un autre : on
         // l'inscrit et on se présente. Tout ce qui suit l'ignore.
-        this.registerConn(conn);
+        //
+        // Appelé aussi à chaque « coucou », donc au retour d'un appareil
+        // endormi. On réinscrit dès que le lien n'est PAS celui qu'on suivait
+        // — un lien neuf sous une clé connue reste un lien neuf, et sauter son
+        // inscription le laissait sans écouteurs : il envoyait sans jamais
+        // rien recevoir. C'est ce qui a cassé la poignée de main pendant une
+        // demi-heure. Se représenter, en revanche, se fait à chaque fois :
+        // c'est cette présentation-là qui remet l'enfant dans le monde.
+        this.inscrireSiNouveau(conn);
         this.greet(conn);
       },
     });
     if (!this.bus.demarrer()) { this.bus = null; return null; }
     return this.bus;
+  }
+
+  // Reprendre le chemin du nuage, ou le rouvrir s'il s'était refermé. C'est
+  // idempotent à dessein : on l'appelle au réveil, à chaque tentative de
+  // reconnexion, et le coucou qui en part suffit à se refaire connaître de
+  // l'hôte. Sans cela, un enfant qui jouait par le nuage et qui quittait
+  // l'application ne revenait jamais dans la partie : la reconnexion ne
+  // retentait que le lien direct, précisément celui que son réseau interdit.
+  reprendreParLeNuage() {
+    const bus = this.ouvrirRelaisNuage();
+    if (!bus) return false;
+    bus.reveiller();
+    const conn = bus.connecter(ID_PREFIX + this.code);
+    this.inscrireSiNouveau(conn);
+    this.greet(conn);
+    return true;
+  }
+
+  // Inscrire un lien, sauf si c'est exactement celui qu'on suit déjà. La
+  // nuance est tout : deux liens successifs vers le même pair portent la même
+  // clé, et ne pas inscrire le second revient à écouter un lien mort.
+  // C'EST ICI QU'UN ENFANT DEVENAIT MUET.
+  //
+  // Le relais par le nuage est rouvert à chaque tentative de reconnexion et à
+  // chaque réveil — c'est voulu, c'est ce qui ramène dans la partie un enfant
+  // dont le réseau interdit le direct. Mais il fabriquait alors un lien de
+  // secours qui prenait la place du lien DIRECT, même quand celui-ci marchait
+  // parfaitement.
+  //
+  // L'enfant continuait de tout RECEVOIR : les écouteurs de l'ancien lien
+  // vivaient encore, il voyait les autres bouger, construire, parler. Tout ce
+  // qu'il ENVOYAIT, en revanche, partait désormais dans le nuage. Là où le
+  // nuage répond, cela ne fait que ralentir. Là où il ne répond pas — et il ne
+  // répond pas toujours — l'enfant entendait tout le monde sans que personne
+  // ne l'entende, et rien à l'écran ne le disait : les avatars restaient là,
+  // figés sur leur dernière position connue.
+  //
+  // Mesuré sur le banc : l'hôte n'avait pas reçu UNE seule position de lui en
+  // trois secondes, quand son voisin en envoyait vingt-cinq. Et le troisième
+  // joueur, qui n'apprend l'existence des autres que par ces positions
+  // relayées, ne le voyait jamais arriver.
+  //
+  // La règle est donc : un lien direct vivant l'emporte toujours sur le
+  // nuage. Et l'inverse vaut aussi — un direct qui s'ouvre alors qu'on est
+  // au nuage reprend la main, ce qui donne gratuitement la remontée du
+  // secours vers le lien rapide.
+  inscrireSiNouveau(conn) {
+    const c = this.conns.get(conn.peer);
+    if (!c || !c.conn) { this.registerConn(conn); return; }
+    if (c.conn === conn) return;
+    if (conn.parNuage && !c.conn.parNuage && this.lienVivant(c.conn)) return;
+    this.registerConn(conn);
+  }
+
+  // Un lien qui porte vraiment quelque chose. `open` ne suffit pas : PeerJS le
+  // laisse à vrai un court instant après que le transport s'est refermé.
+  lienVivant(conn) {
+    if (!conn || conn.open === false) return false;
+    if (conn.parNuage) return true;      // le nuage n'a pas de canal à sonder
+    return !!(conn.dataChannel && conn.dataChannel.readyState === 'open');
   }
 
   // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
@@ -360,8 +431,26 @@ export class NetSession {
 
   connectToHost(done) {
     this.relaisVu = false;
+    // UNE SEULE TENTATIVE VIVANTE À LA FOIS.
+    //
+    // Chaque essai fabrique un canal WebRTC, et un canal jamais refermé garde
+    // sa RTCPeerConnection pour toujours. La boucle de reconnexion en ouvre un
+    // toutes les trois à vingt secondes ; au bout d'un moment le navigateur
+    // refuse d'en construire davantage — « Cannot create so many
+    // PeerConnections » — et à partir de cet instant plus AUCUNE connexion
+    // n'est possible, ni directe ni relayée. La tablette est bonne à
+    // recharger, et l'enfant lit « impossible de rejoindre » pour toujours.
+    //
+    // On referme donc l'essai précédent au moment d'en lancer un nouveau — et
+    // seulement à ce moment-là : couper plus tôt condamnerait un lien lent qui
+    // allait aboutir, ce que la remontée vers le direct sait justement
+    // rattraper.
+    if (this._essai && !this._essai.open) {
+      try { this._essai.close(); } catch { /* déjà refermée */ }
+    }
     const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
     if (!conn) { done?.(new Error('Connexion impossible')); return; }
+    this._essai = conn;
     this.surveillerLesChemins(conn);
     this.registerConn(conn); // handlers BEFORE open — no missed messages
     let fini = false;
@@ -402,6 +491,7 @@ export class NetSession {
     );
     conn.on('open', () => {
       clearTimeout(minuteur);
+      if (this._essai === conn) this._essai = null;   // celle-ci a abouti
       this._rejoining = false;
       this.greet(conn);
       this.link('ok');
@@ -449,6 +539,11 @@ export class NetSession {
       // renoncer si tôt condamnait à retenter en boucle sans jamais aboutir.
       this.patience = Math.max(this.patience || 0, 15000);
       this.connectToHost(null);
+      // Et le chemin du nuage, en parallèle. Sur un réseau qui interdit le
+      // pair-à-pair, retenter le lien direct seul, c'est retenter à l'infini
+      // ce qui n'a jamais marché : l'enfant restait sur « Reconnexion… » sans
+      // aucune issue, et devait quitter le mode en ligne pour y revenir.
+      if (this.bus || essai >= 2) this.reprendreParLeNuage();
       // 3 s, 5 s, 7 s… jusqu'à un essai toutes les vingt secondes
       const attente = Math.min(3000 + essai * 2000, 20000);
       this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, attente);
@@ -495,6 +590,10 @@ export class NetSession {
         this.diffusionBrute({ t: 'coucou' });
         // le réseau a pu changer pendant l'absence : on vérifie tout de suite
         if (this.peer && this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
+        // Le tuyau du nuage, lui, a été gelé avec la page : on le relance
+        // tout de suite et on se re-annonce, plutôt que d'attendre un tour de
+        // sondage qui peut tarder après une longue veille.
+        if (this.bus) this.reprendreParLeNuage();
         if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
       }
     };
@@ -539,6 +638,20 @@ export class NetSession {
       // quelques secondes qui suivent le réveil.
       if (document.visibilityState === 'hidden') return;
       if (this._reveilA && now - this._reveilA < GRACE_REVEIL_MS) return;
+      // LE FILET : un invité en ligne a un lien vers l'hôte, ou il en cherche
+      // un. Jamais ni l'un ni l'autre.
+      //
+      // Mesuré sur le banc : un invité s'est retrouvé sans aucun lien ET sans
+      // boucle de reconnexion en cours — donc seul pour toujours, dans un
+      // monde qui avait l'air normal, sans erreur, sans message, sans rien à
+      // faire. Le chemin exact importe peu : il y en a plusieurs (une reprise
+      // qui aboutit puis meurt aussitôt, une relance annulée par une autre),
+      // et il y en aura d'autres. On rétablit donc l'invariant à chaque
+      // battement plutôt que de courir après chacun d'eux.
+      if (!this.isHost && this.active && !this._rejoining
+        && !this.conns.has(ID_PREFIX + this.code)) {
+        this.rejoinHost();
+      }
       for (const [id, c] of [...this.conns]) {
         if (c.dodo) {
           if (now - c.dodo > SOMMEIL_MAX_MS) this.dropPeer(id);
@@ -566,7 +679,35 @@ export class NetSession {
     // arrive régulièrement après que le second est inscrit.
     conn.on('close', () => this.dropPeer(conn.peer, conn));
     conn.on('error', () => this.dropPeer(conn.peer, conn));
+    // LA REMONTÉE DU SECOURS VERS LE LIEN RAPIDE.
+    //
+    // L'autre moitié de la panne du muet. Quand le direct met plus de cinq
+    // secondes à s'ouvrir — machine chargée, réseau qui traîne —, le secours
+    // par le nuage prend la main légitimement : à cet instant le direct ne
+    // porte encore rien. Mais il finit par s'ouvrir une seconde plus tard, et
+    // PLUS RIEN ne lui rendait sa place : l'enfant restait sur le tuyau lent,
+    // ou muet là où le nuage ne répond pas.
+    //
+    // Un lien direct qui s'ouvre reprend donc la main sur le nuage — sans
+    // effacer ce qu'on sait déjà du joueur, sinon il redeviendrait un inconnu
+    // le temps d'une présentation.
+    if (!conn.parNuage) {
+      if (conn.open) this.promouvoirSiDirect(conn);
+      else conn.on('open', () => this.promouvoirSiDirect(conn));
+    }
     this.startHeartbeat();
+  }
+
+  promouvoirSiDirect(conn) {
+    if (!this.active || conn.parNuage) return;
+    const c = this.conns.get(conn.peer);
+    if (!c || c.conn === conn) return;
+    if (c.conn && !c.conn.parNuage) return;   // un direct en vaut un autre
+    c.conn = conn;
+    this.state(this.statusText());
+    // On se represente sur le nouveau chemin : l'hôte doit savoir par où
+    // répondre, et c'est gratuit quand on est déjà connus l'un de l'autre.
+    this.greet(conn);
   }
 
   // La présentation, et RIEN d'autre.
@@ -668,6 +809,7 @@ export class NetSession {
     const vIn = this.inboundVideo.get(id);
     if (vIn) { vIn.close(); this.inboundVideo.delete(id); }
     if (this.onRemoteVideoClosed) this.onRemoteVideoClosed(id);
+    if (this.onPhotoFin) this.onPhotoFin(id);
     this.playersChanged();
   }
 
@@ -842,6 +984,20 @@ export class NetSession {
         if (this.onChantier) this.onChantier(msg.c);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // La caméra lente. Sur un Wi-Fi public, le flux vidéo ne passe pas :
+      // c'est une photo toutes les deux secondes qui voyage à sa place, par le
+      // même tuyau que les blocs. On se voit, on se reconnaît, on se fait
+      // coucou — et c'est infiniment mieux qu'un carré noir.
+      case 'photo':
+        if (this.onPhoto) {
+          this.onPhoto(msg.from || conn.peer, String(msg.img || ''), String(msg.name || ''));
+        }
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
+      case 'photo-fin':
+        if (this.onPhotoFin) this.onPhotoFin(msg.from || conn.peer);
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
       // L'heure et le temps qu'il fait. Chaque appareil les tirait au sort de
       // son côté : deux enfants côte à côte pouvaient être l'un sous la pluie
       // en pleine nuit, l'autre au soleil de midi. C'est l'hôte qui décide, et
@@ -992,30 +1148,109 @@ export class NetSession {
       this.videoStream.getTracks().forEach((t) => { t.enabled = true; });
       this.micOn = this.videoStream.getAudioTracks().length > 0;
       this.camOn = true;
-      for (const id of this.conns.keys()) this.videoCallPeer(id);
+      this.reconcilierVideo();
+      this.veillerSurLaVideo();
       this.hooks.toast(this.micOn
         ? '🎥 Caméra et micro activés — coucou !'
         : '🎥 Caméra activée (sans micro)', 0x6ee06e);
+      if (this.onCamChange) this.onCamChange(true);
     } else {
       this.camOn = false;
       this.micOn = false;
+      this.cesserDeVeillerSurLaVideo();
       for (const call of this.videoCalls.values()) call.close();
       this.videoCalls.clear();
       if (this.videoStream) {
         this.videoStream.getTracks().forEach((t) => t.stop());
         this.videoStream = null;
       }
+      this.annoncerFinDePhoto();
       this.hooks.toast('📷 Caméra et micro coupés', 0xcccccc);
+      if (this.onCamChange) this.onCamChange(false);
     }
     return this.camOn;
   }
 
   videoCallPeer(id) {
-    if (this.videoCalls.has(id) || !this.videoStream) return;
+    if (this.videoCalls.has(id) || !this.videoStream || !this.peer) return;
     const entry = this.conns.get(id);
     if (!entry || !entry.conn) return;
-    const call = this.peer.call(id, this.videoStream, { metadata: { kind: 'video' } });
-    if (call) this.videoCalls.set(id, call);
+    // Un pair rejoint par le nuage n'a aucun chemin pour un flux vidéo : le
+    // Wi-Fi qui a forcé le relais bloque exactement ce que la visio demande.
+    // Appeler quand même laissait une sonnerie sans fin — et un cadre noir.
+    // C'est la caméra lente qui prend le relais, par images.
+    if (entry.conn.parNuage) return;
+    let call = null;
+    try { call = this.peer.call(id, this.videoStream, { metadata: { kind: 'video' } }); }
+    catch { return; }            // la veille repassera
+    if (!call) return;
+    call.placeA = Date.now();
+    this.videoCalls.set(id, call);
+    // Un appel mort doit LIBÉRER sa place, sinon la veille le croit vivant et
+    // n'en replace jamais. C'est ce qui laissait un carré noir définitif.
+    const oublier = () => { if (this.videoCalls.get(id) === call) this.videoCalls.delete(id); };
+    call.on('close', oublier);
+    call.on('error', oublier);
+  }
+
+  // LA VISIO SE REMET D'APLOMB TOUTE SEULE.
+  //
+  // L'appel était placé une seule fois, à l'instant où l'on presse le bouton.
+  // C'est trop fragile pour ce que la famille en fait : le pair qui n'était
+  // pas encore tout à fait inscrit quand l'enfant a appuyé, celui qui arrive
+  // après, l'appel qui n'aboutit pas, le lien qui cligne — chacun de ces cas
+  // laissait un carré noir que RIEN ne venait réparer, et l'enfant en était
+  // réduit à éteindre et rallumer. Mesuré sur le banc : selon l'instant du
+  // clic, l'appel n'était parfois même jamais placé.
+  //
+  // On repasse donc toutes les deux secondes : chaque voisin en direct doit
+  // avoir son appel vivant, sinon on le rappelle. On laisse dix secondes à
+  // une négociation en cours — c'est long pour un réseau, court pour un
+  // enfant qui attend, et cela évite de couper un appel qui allait aboutir.
+  reconcilierVideo() {
+    if (!this.camOn || !this.videoStream || !this.active) return;
+    for (const [id, c] of this.conns) {
+      if (!c.conn || c.conn.parNuage) continue;
+      const appel = this.videoCalls.get(id);
+      if (!appel) { this.videoCallPeer(id); continue; }
+      if (appel.open) continue;
+      if (Date.now() - (appel.placeA || 0) < 10000) continue;
+      try { appel.close(); } catch { /* déjà fermé */ }
+      this.videoCalls.delete(id);
+      this.videoCallPeer(id);
+    }
+  }
+
+  veillerSurLaVideo() {
+    if (this._veilleVideo) return;
+    this._veilleVideo = setInterval(() => this.reconcilierVideo(), 2000);
+  }
+
+  cesserDeVeillerSurLaVideo() {
+    if (this._veilleVideo) { clearInterval(this._veilleVideo); this._veilleVideo = null; }
+  }
+
+  // Y a-t-il quelqu'un que seul le nuage nous relie ? C'est ce qui décide si
+  // la caméra lente doit tourner en plus — ou à la place — du flux vidéo.
+  aDesPairsNuage() {
+    for (const c of this.conns.values()) if (c.conn && c.conn.parNuage) return true;
+    return false;
+  }
+
+  // Une image fixe part vers ceux qu'on ne peut joindre que par le nuage. Les
+  // autres reçoivent déjà du vrai film : leur en envoyer serait du gâchis.
+  envoyerPhoto(img) {
+    for (const c of this.conns.values()) {
+      if (c.conn && c.conn.parNuage) this.envoyer(c, { t: 'photo', img, name: this.profile.name });
+    }
+  }
+
+  // La caméra s'éteint : on le dit, sinon la dernière image resterait affichée
+  // comme un portrait au mur.
+  annoncerFinDePhoto() {
+    for (const c of this.conns.values()) {
+      if (c.conn && c.conn.parNuage) this.envoyer(c, { t: 'photo-fin' });
+    }
   }
 
   attachVideoCall(call, inbound) {
@@ -1071,6 +1306,7 @@ export class NetSession {
     this.link('arret');
     for (const a of this.audios.values()) a.remove();
     if (this.localStream) this.localStream.getTracks().forEach((t) => t.stop());
+    this.cesserDeVeillerSurLaVideo();
     if (this.videoStream) this.videoStream.getTracks().forEach((t) => t.stop());
     if (this.peer) this.peer.destroy();
     this.conns.clear();

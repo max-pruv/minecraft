@@ -163,9 +163,14 @@
     #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
 
     /* Le pied du menu : le partage et la version, discrets, côte à côte. */
+    /* Le pied du menu respire.
+       En rangeant le partage à côté du numéro de version, on avait annulé la
+       marge que ce dernier portait tout seul : les deux pastilles se
+       retrouvaient collées au bouton du dessus et l'une à l'autre. */
     #pied-menu {
       display: flex; align-items: center; justify-content: center;
-      gap: 10px; flex-wrap: wrap;
+      gap: 14px; flex-wrap: wrap;
+      margin: 24px 0 10px;
     }
     #pied-menu #app-version { margin-top: 0; }
     /* Le bouton de partage emprunte volontairement l'habit de la version :
@@ -590,9 +595,31 @@
     }
     #video-wrap video.remote { width: 128px; height: 96px; }
     #video-wrap video.local { width: 88px; height: 66px; transform: scaleX(-1); }
+    /* La caméra lente : une image fixe, rafraîchie, quand le flux ne passe pas. */
+    #video-wrap img.remote {
+      width: 128px; height: 96px; border-radius: 12px; object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.7); background: #10141c;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
     .video-name {
       font-size: 11px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
       margin-top: -20px; margin-right: 6px; position: relative; z-index: 7;
+    }
+    /* « Alice a allumé sa caméra » — et le bouton pour répondre coucou. */
+    #visio-invite {
+      max-width: 172px; padding: 8px 10px; border-radius: 12px;
+      background: rgba(12,16,24,0.9); border: 2px solid #58b04c; color: #fff;
+      font-size: 12px; line-height: 1.35; text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+    }
+    #visio-invite button {
+      margin-top: 6px; width: 100%; font-family: inherit; font-size: 12px;
+      padding: 6px 8px; cursor: pointer; border-radius: 8px;
+      background: #2d6a2d; color: #fff; border: 2px solid #58b04c;
+    }
+    #visio-chemin {
+      max-width: 172px; font-size: 10px; color: #e2eaf4; text-align: right;
+      text-shadow: 1px 1px 0 #000;
     }
 
     /* touch controls */
@@ -1271,7 +1298,13 @@
   <button id="home-btn" title="Retour à la maison">🏠</button>
   <button id="chat-btn" title="Messages du monde">💬</button>
   <div id="chat-badge" aria-live="polite"></div>
-  <div id="video-wrap"></div>
+  <div id="video-wrap">
+    <div id="visio-invite" style="display:none">
+      <span id="visio-invite-txt"></span>
+      <button id="visio-invite-btn">🎥 Allumer la mienne</button>
+    </div>
+    <div id="visio-chemin" style="display:none"></div>
+  </div>
 
   <div id="chat-panel">
     <div id="chat-head">
