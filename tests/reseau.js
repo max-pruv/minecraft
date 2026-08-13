@@ -324,8 +324,14 @@ function verifier(nom, ok, detail = '') {
     // ensuite : ni le battement, qui voit un lien vivant, ni la reconnexion,
     // qui n'a aucune raison de partir.
     //
-    // Ici, les présentations sont avalées douze secondes — bien au-delà des six
-    // secondes que couvraient les deux anciennes relances.
+    // Ici, les présentations sont avalées quatorze secondes — bien au-delà des
+    // six secondes que couvraient les deux anciennes relances, et toujours en
+    // deçà de la coupure à vingt. Quatorze et pas onze : la fenêtre part du
+    // premier hello avalé, et l'invité vient d'entrer dans le monde — sur une
+    // machine chargée, la génération des morceaux retarde ses minuteurs de
+    // relance de plusieurs secondes. Avec trois créneaux de relance seulement,
+    // le garde-fou « au moins deux perdues » tombait parfois à une seule
+    // (mesuré : 1 avalée, deux passes sur trois un jour de machine lente).
     const { p: patiente, code: codeLent } = await banc.creerMonde('Théo');
     const lent = await banc.joueur('Zoé', { helloFragile: true });
     // Au premier plan : Chromium bride les minuteurs d'un onglet caché, et le
@@ -334,7 +340,7 @@ function verifier(nom, ok, detail = '') {
     // passait alors sans avoir rien éprouvé, ce que le garde-fou plus bas a
     // fini par attraper.
     await lent.bringToFront();
-    await lent.evaluate(() => { window.__avalerHelloSecondes = 11; });
+    await lent.evaluate(() => { window.__avalerHelloSecondes = 14; });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await lent.evaluate((c) => {
