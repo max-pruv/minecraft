@@ -711,6 +711,76 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       !!horsLigne && /v901/.test(horsLigne) && !/version inconnue/.test(horsLigne),
       String(horsLigne).slice(0, 160));
 
+    // --- le hub Éducation filtre par enfant et par période --------------------
+    //
+    // « C'était sur le hub éducation que je voulais filtrer par date et par
+    // utilisateur, pas sur le hub parent nécessairement. » Le panneau
+    // Éducation du menu gagne donc les mêmes raccourcis que l'espace parent :
+    // une liste des enfants de la famille, et Aujourd'hui / 7 jours / 30
+    // jours / Tout — à portée de tous, pas seulement de Max.
+    nuage.poserTemps({ name: 'Alice', device_id: 'd2', day: j(2), play: 900, quiz: 0, correct: 4, wrong: 1 });
+    await marlon.evaluate(() => {
+      document.getElementById('edu-panel').style.display = 'block';
+      window.__game.edu.renderPanel();
+    });
+    const familleVue = await jusqua(async () => (await marlon.evaluate(() => {
+      const sel = document.getElementById('edu-filtre-enfant');
+      return sel ? [...sel.options].map((o) => o.value) : [];
+    })).includes('Alice'), 20000);
+    verifier('le hub éducation propose chaque enfant de la famille', familleVue,
+      JSON.stringify(await marlon.evaluate(() => {
+        const sel = document.getElementById('edu-filtre-enfant');
+        return sel ? [...sel.options].map((o) => o.value) : null;
+      })));
+
+    // Choisir Alice sur 7 jours : SES minutes (300 s + 900 s = 20 min), son
+    // nom dans le titre, et pas les niveaux par matière de Marlon.
+    const vueAlice = await jusqua(async () => {
+      const r = await marlon.evaluate(() => {
+        const sel = document.getElementById('edu-filtre-enfant');
+        const per = document.getElementById('edu-filtre-periode');
+        if (!sel || !per) return null;
+        sel.value = 'Alice'; sel.dispatchEvent(new Event('change'));
+        per.value = '7'; per.dispatchEvent(new Event('change'));
+        const titre = document.getElementById('edu-titre-periode');
+        const tuile = document.querySelector('#edu-panel .edu-stats .edu-stat b');
+        return { titre: titre ? titre.textContent : '', jeu: tuile ? tuile.textContent : '',
+          niveaux: !!document.querySelector('#edu-panel .edu-levels') };
+      });
+      return !!r && /Sur 7 jours/.test(r.titre) && /Alice/.test(r.titre)
+        && r.jeu === '20 min' && !r.niveaux;
+    }, 20000);
+    verifier('l\'enfant choisi montre ses journées à lui, sans les niveaux du mien',
+      vueAlice, JSON.stringify(await marlon.evaluate(() => ({
+        titre: (document.getElementById('edu-titre-periode') || {}).textContent,
+        jeu: (document.querySelector('#edu-panel .edu-stats .edu-stat b') || {}).textContent,
+      }))));
+
+    // Retour à Marlon : la période cumule vraiment. « Tout » contient la
+    // journée d'il y a dix jours (30 min), « 7 jours » non — l'écart doit
+    // faire au moins ces trente minutes, aux arrondis près.
+    await marlon.evaluate(() => window.__game.pullPlayTime());
+    const cumul = await marlon.evaluate(() => {
+      const lireJeu = () => {
+        const b = document.querySelector('#edu-panel .edu-stats .edu-stat b');
+        const m = (b ? b.textContent : '').match(/(?:(\d+) h )?(\d+) min/);
+        return m ? (Number(m[1] || 0) * 60 + Number(m[2])) : null;
+      };
+      const sel = document.getElementById('edu-filtre-enfant');
+      const per = document.getElementById('edu-filtre-periode');
+      if (!sel || !per) return null;
+      sel.value = sel.options[0].value; sel.dispatchEvent(new Event('change'));
+      per.value = '7'; per.dispatchEvent(new Event('change'));
+      const sept = lireJeu();
+      per.value = '-1'; per.dispatchEvent(new Event('change'));
+      const tout = lireJeu();
+      return { sept, tout };
+    });
+    verifier('les raccourcis de période cumulent — « Tout » dépasse « 7 jours » de la vieille journée',
+      !!cumul && cumul.sept !== null && cumul.tout !== null && cumul.tout - cumul.sept >= 25,
+      JSON.stringify(cumul));
+    await marlon.evaluate(() => { document.getElementById('edu-panel').style.display = 'none'; });
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {

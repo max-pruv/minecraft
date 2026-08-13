@@ -2860,6 +2860,16 @@ const edu = new EducationMode({
   onResume: () => startGame(),
   toast: (msg, color) => creatureManager.toast(msg, color),
   reward: () => creatureManager.awardRandom(),
+  // Le hub Éducation filtre par enfant et par période : la liste des enfants
+  // vient des documents du cloud (comme dans l'espace parent), les journées
+  // d'un autre enfant de ses lignes de temps de jeu.
+  moi: () => playerProfile.name,
+  famille: async () => {
+    if (!cloud.configured) return [];
+    const rows = await cloud.selectAll('player_prefs', 'select=name');
+    return [...new Set(rows.map((r) => r.name))].filter((n) => n && !n.includes('~'));
+  },
+  tempsDe: (nom) => cloud.timePull(nom),
 });
 
 // --- cross-device play time: a child's total is per-name, not per-device ----------
