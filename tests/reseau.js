@@ -264,7 +264,8 @@ function verifier(nom, ok, detail = '') {
     const appareil = prem.context();
     const url = prem.url();
     await dormir(1200);
-    await prem.close();
+    // L'onglet seulement : l'appareil doit survivre, c'est tout le propos.
+    await prem.fermerOnglet();
     await dormir(1200);
     const retourZoe = await appareil.newPage();
     await retourZoe.goto(url, { waitUntil: 'load' });

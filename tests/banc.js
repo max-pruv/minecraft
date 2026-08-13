@@ -186,7 +186,11 @@ class Banc {
     // quarantaine derrière elle, sur quatre cœurs. Ce sont les DERNIERS
     // scénarios qui en payaient le prix, toujours les mêmes, et l'on
     // soupçonnait le jeu là où c'était le banc qui s'asphyxiait.
+    // `fermerOnglet` reste disponible pour le seul cas où l'appareil doit
+    // SURVIVRE à la page : l'enfant qui quitte l'application et la rouvre sur
+    // le même iPad, avec son stockage et ses réglages intacts.
     const fermerLaPage = p.close.bind(p);
+    p.fermerOnglet = fermerLaPage;
     p.close = async (...a) => {
       await fermerLaPage(...a);
       try { await ctx.close(); } catch { /* déjà refermé */ }
