@@ -12,6 +12,8 @@ function servirLeNuage(port) {
   const temps = new Map();     // "prénom|appareil|jour" -> ligne
   const etats = new Map();     // prénom -> profil complet
   const mondes = new Map();    // code -> blocs
+  const relais = [];           // le tuyau de secours : une file de messages
+  let relaisSeq = 0;
 
   const lire = (req) => new Promise((ok) => {
     let corps = '';
@@ -86,6 +88,35 @@ function servirLeNuage(port) {
       }
     }
 
+    // Le relais de secours : le tuyau qu'empruntent les tablettes quand le
+    // pair-à-pair est bloqué. Une table, des numéros croissants, et chacun
+    // relit ce qui lui est adressé.
+    if (table.startsWith('world_relay')) {
+      if (req.method === 'GET') {
+        const code = egal(url, 'code');
+        const apres = Number((url.searchParams.get('id') || '').replace('gt.', '')) || 0;
+        const desc = /id\.desc/.test(url.searchParams.get('order') || '');
+        const limite = Number(url.searchParams.get('limit')) || 200;
+        let rows = relais.filter((r) => (!code || r.code === code) && r.id > apres);
+        rows.sort((a, b) => (desc ? b.id - a.id : a.id - b.id));
+        return json(res, rows.slice(0, limite));
+      }
+      if (req.method === 'POST') {
+        for (const r of await lire(req)) {
+          relais.push({ id: ++relaisSeq, code: r.code, de: r.de, vers: r.vers ?? null, msg: r.msg, created_at: Date.now() });
+        }
+        res.writeHead(201); return res.end('');
+      }
+      if (req.method === 'DELETE') {
+        const code = egal(url, 'code');
+        const avant = Date.parse((url.searchParams.get('created_at') || '').replace('lt.', '')) || 0;
+        for (let i = relais.length - 1; i >= 0; i--) {
+          if ((!code || relais[i].code === code) && relais[i].created_at < avant) relais.splice(i, 1);
+        }
+        res.writeHead(204); return res.end('');
+      }
+    }
+
     if (table.startsWith('player_identities')) {
       if (req.method === 'GET') return json(res, []);
       if (req.method === 'POST') { res.writeHead(201); return res.end(''); }
@@ -110,6 +141,9 @@ function servirLeNuage(port) {
     // filtres de période de l'espace parent.
     poserTemps: (r) => temps.set(`${r.name}|${r.device_id}|${r.day}`, r),
     monde: (code) => mondes.get(code),
+    // Combien de messages ont VRAIMENT transité par le tuyau de secours :
+    // c'est la preuve que la partie est passée par là et pas ailleurs.
+    relaisCompte: (code) => relais.filter((r) => !code || r.code === code).length,
     fermer: () => serveur.close(),
   })));
 }

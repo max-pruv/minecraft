@@ -285,6 +285,55 @@ export class CloudSave {
     });
   }
 
+  // ---- le relais de secours du jeu à plusieurs -----------------------------
+  //
+  // Quand le lien direct entre deux tablettes ne peut pas s'établir — Wi-Fi
+  // public, réseau filtré —, la partie passe par ici. Le HTTPS, lui, passe
+  // toujours : c'est par lui que le jeu s'est chargé.
+
+  async relaisLire(code, apres = 0, limite = 200) {
+    if (!this.configured) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
+      + `&id=gt.${apres}&select=id,de,vers,msg&order=id.asc&limit=${limite}`,
+      { headers: this.headers(), cache: 'no-store' },
+    );
+    if (!res.ok) return [];
+    return res.json();
+  }
+
+  // Le dernier numéro déposé dans ce monde : celui à partir duquel on écoute.
+  async relaisDernier(code) {
+    if (!this.configured) return 0;
+    const res = await fetch(
+      `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
+      + '&select=id&order=id.desc&limit=1',
+      { headers: this.headers(), cache: 'no-store' },
+    );
+    if (!res.ok) return 0;
+    const rows = await res.json();
+    return (rows[0] && rows[0].id) || 0;
+  }
+
+  async relaisEcrire(code, de, vers, msg) {
+    if (!this.configured) return;
+    await fetch(`${this.url}/rest/v1/world_relay`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'return=minimal' }),
+      body: JSON.stringify([{ code, de, vers: vers || null, msg }]),
+    });
+  }
+
+  async relaisNettoyer(code, ageMs) {
+    if (!this.configured) return;
+    const avant = new Date(Date.now() - ageMs).toISOString();
+    await fetch(
+      `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
+      + `&created_at=lt.${encodeURIComponent(avant)}`,
+      { method: 'DELETE', headers: this.headers({ Prefer: 'return=minimal' }) },
+    );
+  }
+
   // Joins a world: pull the cloud copy, merge it in, push the merged log
   // back, then keep pushing changes in the background.
   async attach(code) {

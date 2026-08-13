@@ -6,6 +6,7 @@ import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { POLE } from './pole.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { createEffects } from './effects.js';
@@ -21,10 +22,11 @@ import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
-import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, createAstronautes, buildKidMesh } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, createAstronautes, createLutins, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
+import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 // doubled view distance; ?rr= overrides (perf tuning and tests)
@@ -277,6 +279,10 @@ function updateChunks() {
     ...createVillagers(scene, world, player, say, player.pos.x, player.pos.z),
     // les astronautes vivent sur Mars, pas là où l'enfant apparaît
     ...createAstronautes(scene, world, player, say, MARS.x, MARS.z),
+    // Le Pôle Nord n'était qu'un décor : une usine vide, une étable sans
+    // rennes, un village sans habitants. Les lutins et le Père Noël lui
+    // donnent enfin quelqu'un à qui parler.
+    ...createLutins(scene, world, player, say, POLE.x, POLE.z),
   ];
   // la garnison du château et ses assaillants : ils rejoignent la troupe des
   // personnages, c'est la boucle principale qui les anime
@@ -1867,6 +1873,36 @@ function refreshEduMenuBtn() {
 setInterval(refreshEduMenuBtn, 10000);
 queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
 
+// --- partager le jeu ---------------------------------------------------------------
+//
+// Le carré à viser pour l'ami d'à côté, la feuille de partage du téléphone
+// pour l'ami d'ailleurs. Le code QR n'est fabriqué qu'à la première ouverture
+// — la bibliothèque qui le dessine ne se charge pas tant qu'on n'en a pas
+// besoin.
+const partagePanel = document.getElementById('partage-panel');
+if (partagePanel) {
+  const fermerPartage = () => partagePanel.classList.remove('on');
+  document.getElementById('partage-btn').addEventListener('click', async () => {
+    const lien = lienDuJeu();
+    document.getElementById('partage-lien').textContent = lien;
+    document.getElementById('partage-whatsapp').href = lienWhatsApp(lien);
+    document.getElementById('partage-sms').href = lienSMS(lien);
+    partagePanel.classList.add('on');
+    try {
+      await dessinerQR(document.getElementById('partage-qr'), lien);
+    } catch {
+      // Sans le carré, il reste le lien et les boutons : on n'ouvre pas un
+      // panneau vide pour autant.
+      document.getElementById('partage-qr').style.display = 'none';
+    }
+  });
+  document.getElementById('partage-close').addEventListener('click', fermerPartage);
+  partagePanel.addEventListener('click', (e) => { if (e.target === partagePanel) fermerPartage(); });
+  document.getElementById('partage-envoyer').addEventListener('click', () => {
+    partagerLien(lienDuJeu(), { toast: (m) => creatureManager.toast(m, 0x9fd8e8) });
+  });
+}
+
 function nameSprite(text) {
   const cv = document.createElement('canvas');
   cv.width = 256; cv.height = 64;
@@ -2036,6 +2072,9 @@ function updateRemotePlayers(dt) {
 function startNetSession(code, isHost, patience) {
   net = new NetSession({
     world,
+    // Le nuage sert de tuyau de secours quand le pair-à-pair est bloqué :
+    // c'est ce qui fait qu'un Wi-Fi d'hôtel n'interdit plus de jouer ensemble.
+    cloud,
     toast: (msg, color) => creatureManager.toast(msg, color),
     onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
     onState: () => updatePlayersBtn(),
@@ -2053,6 +2092,9 @@ function startNetSession(code, isHost, patience) {
     alerte('signal', etat === 'signal', detail);
     alerte('monde-perdu', etat === 'perdu', detail);
     if (etat === 'ok' && revenait) bonneNouvelle('✅ Reconnecté au monde !');
+    // Le secours a fonctionné : on le dit joyeusement plutôt que comme une
+    // panne. Pour l'enfant, la seule chose qui compte est qu'il joue.
+    if (etat === 'nuage') bonneNouvelle('☁️ Connecté par le nuage — ça marche même sur ce Wi-Fi !');
   };
   // Avant même la première poignée de main : à la connexion, les deux côtés
   // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
@@ -2142,8 +2184,18 @@ async function openWorld(code) {
     // c'est établi, et l'enfant n'avait aucune idée de quoi faire. La cause
     // de loin la plus fréquente à la maison est un VPN resté allumé.
     if (err && err.canal) {
-      err = new Error(`Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
-        + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
+      // Deux pannes, deux conseils. Quand aucun relais n'a répondu, le réseau
+      // lui-même barre la route — hôtel, école, gare, café : couper un VPN
+      // n'y changera rien, il faut sortir de ce Wi-Fi. Quand un relais a bien
+      // répondu mais que le lien n'aboutit pas, la cause la plus fréquente à
+      // la maison reste le VPN resté allumé.
+      err = new Error(err.reseauFerme
+        ? `Le monde ${code} existe, mais ce Wi-Fi bloque le jeu à plusieurs. `
+          + 'C\'est fréquent dans les hôtels, les écoles et les gares. '
+          + 'Essaie le partage de connexion d\'un téléphone, ou un autre Wi-Fi. '
+          + '(Un VPN allumé fait pareil.)'
+        : `Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
+          + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
     }
   }
   if (err) {

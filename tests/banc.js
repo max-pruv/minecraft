@@ -117,8 +117,11 @@ async function relaisSourd(portEcoute, portVrai) {
 // `stay=1` garde la partie ouverte, `cloud=` coupe la sauvegarde en ligne
 // (inutile ici et absente en local), `rr=2` réduit la distance d'affichage
 // pour que le monde se charge vite.
-const adresse = (portJeu, portPairs) =>
-  `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}&cloud=&stay=1&rr=2`;
+// `portNuage` : quand un scénario a besoin du nuage — le relais de secours du
+// jeu à plusieurs en a besoin, puisque c'est justement par là qu'il passe.
+const adresse = (portJeu, portPairs, portNuage) =>
+  `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=2`;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -181,7 +184,12 @@ class Banc {
     // pair à pair est bloqué ou dérouté. C'est la seule façon de reproduire à
     // la demande ce que la maison a constaté un soir de VPN allumé.
     if (opts.sansPairAPair) {
-      await p.addInitScript(() => {
+      // `avecRelais` : le relais RÉPOND, mais le lien n'aboutit toujours pas.
+      // C'est la maison derrière un VPN — à distinguer du Wi-Fi d'hôtel, où
+      // le relais lui-même est inatteignable. Les deux pannes se ressemblent
+      // à l'écran ; elles n'appellent pas du tout le même conseil, et sans ce
+      // levier on ne pourrait vérifier qu'une seule des deux phrases.
+      await p.addInitScript((avecRelais) => {
         const Vrai = window.RTCPeerConnection;
         window.RTCPeerConnection = function (...args) {
           const pc = new Vrai(...args);
@@ -189,10 +197,17 @@ class Banc {
           // chemin, le canal reste à jamais « connecting ».
           pc.addIceCandidate = () => Promise.resolve();
           Object.defineProperty(pc, 'onicecandidate', { get: () => null, set: () => {} });
+          if (avecRelais) {
+            setTimeout(() => {
+              const ev = new Event('icecandidate');
+              ev.candidate = { candidate: 'candidate:1 1 udp 1 10.0.0.1 3478 typ relay raddr 0.0.0.0 rport 0' };
+              try { pc.dispatchEvent(ev); } catch { /* la page est partie */ }
+            }, 300);
+          }
           return pc;
         };
         window.RTCPeerConnection.prototype = Vrai.prototype;
-      });
+      }, !!opts.avecRelais);
     }
     // Une présentation qui se perd en route. Le lien est bon, les battements
     // passent, mais les messages « hello » n'arrivent pas pendant un moment —
@@ -230,7 +245,13 @@ class Banc {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse(this.portJeu, this.portPairs), { waitUntil: 'load' });
+    // Quatre-vingt-dix secondes, comme l'attente du jeu juste en dessous : la
+    // trentaine de fichiers du jeu, sur un conteneur à quatre cœurs qui vient
+    // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
+    // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
+    // sur un défaut.
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage),
+      { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
     return p;
@@ -270,8 +291,8 @@ class Banc {
     await dormir(600);
   }
 
-  async creerMonde(prenom) {
-    const p = await this.joueur(prenom);
+  async creerMonde(prenom, opts = {}) {
+    const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await p.evaluate(() => document.getElementById('host-btn').click());
@@ -282,8 +303,8 @@ class Banc {
     return { p, code };
   }
 
-  async rejoindre(prenom, code) {
-    const p = await this.joueur(prenom);
+  async rejoindre(prenom, code, opts = {}) {
+    const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await p.evaluate((c) => {

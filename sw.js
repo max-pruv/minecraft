@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v144';
+const CACHE_VERSION = 'web-minecraft-v148';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -33,6 +33,8 @@ const ASSETS = [
   './src/nice.js',
   './src/lille.js',
   './src/chine.js',
+  './src/partage.js',
+  './src/relaisnuage.js',
   './src/effects.js',
   './src/sky.js',
   './src/siege.js',
@@ -64,6 +66,7 @@ const ASSETS = [
   './src/admin.js',
   './vendor/three.module.min.js',
   './vendor/peerjs.min.js',
+  './vendor/qrcode.module.js',
 ];
 
 self.addEventListener('install', (event) => {

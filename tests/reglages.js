@@ -811,6 +811,73 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       JSON.stringify(cumul));
     await marlon.evaluate(() => { document.getElementById('edu-panel').style.display = 'none'; });
 
+    // --- partager le jeu -----------------------------------------------------
+    //
+    // Un enfant qui veut inviter un cousin n'avait aucun moyen de lui donner
+    // l'adresse : il fallait qu'un adulte la retape. On suit le geste entier —
+    // ouvrir le panneau depuis le bas du menu, voir le carré à viser, envoyer
+    // le lien — et on vérifie surtout que le lien partagé MÈNE QUELQUE PART :
+    // le banc tourne sur 127.0.0.1, une adresse qui ne veut rien dire pour le
+    // cousin, donc c'est l'adresse publique qui doit partir.
+    const partage = await marlon.evaluate(async () => {
+      // On intercepte la feuille de partage du système pour savoir ce qui
+      // serait réellement envoyé.
+      window.__partages = [];
+      navigator.share = (d) => { window.__partages.push(d); return Promise.resolve(); };
+      const bouton = document.getElementById('partage-btn');
+      const pied = document.getElementById('pied-menu');
+      // le bouton est bien dans le pied du menu, après tout le reste
+      const dansLePied = !!(pied && bouton && pied.contains(bouton));
+      const version = document.getElementById('app-version');
+      bouton.click();
+      // le QR se dessine après un chargement : on lui laisse le temps
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const cv = document.getElementById('partage-qr');
+        const g = cv.getContext('2d');
+        const px = g.getImageData(0, 0, cv.width, cv.height).data;
+        let noirs = 0;
+        for (let p = 0; p < px.length; p += 4) if (px[p] < 60 && px[p + 3] > 0) noirs++;
+        if (noirs > 500) break;
+      }
+      const cv = document.getElementById('partage-qr');
+      const g = cv.getContext('2d');
+      const px = g.getImageData(0, 0, cv.width, cv.height).data;
+      let noirs = 0, blancs = 0;
+      for (let p = 0; p < px.length; p += 4) {
+        if (px[p + 3] === 0) continue;
+        if (px[p] < 60) noirs++; else if (px[p] > 200) blancs++;
+      }
+      // la marge : le pourtour du carré doit être blanc, sinon rien ne scanne
+      const coin = g.getImageData(2, 2, 1, 1).data;
+      const ouvert = document.getElementById('partage-panel').classList.contains('on');
+      document.getElementById('partage-envoyer').click();
+      await new Promise((r) => setTimeout(r, 200));
+      const envoye = window.__partages[0] || null;
+      document.getElementById('partage-close').click();
+      return {
+        dansLePied,
+        apresVersion: !!(version && bouton.compareDocumentPosition(version)
+          & Node.DOCUMENT_POSITION_FOLLOWING),
+        ouvert, noirs, blancs, margeBlanche: coin[0] > 200,
+        ferme: !document.getElementById('partage-panel').classList.contains('on'),
+        url: envoye && envoye.url,
+        whatsapp: document.getElementById('partage-whatsapp').href,
+      };
+    });
+    verifier('le menu offre un partage discret tout en bas',
+      partage.dansLePied && partage.apresVersion && partage.ouvert,
+      JSON.stringify({ dansLePied: partage.dansLePied, ouvert: partage.ouvert }));
+    verifier('le carré à viser est dessiné, avec sa marge blanche',
+      partage.noirs > 500 && partage.blancs > partage.noirs && partage.margeBlanche,
+      `${partage.noirs} modules sombres · ${partage.blancs} clairs · marge ${partage.margeBlanche}`);
+    // C'est LE piège de cette fonctionnalité : partager l'adresse du banc
+    // d'essai — ou celle du serveur local d'un parent — n'invite personne.
+    verifier('et le lien envoyé mène à l\'adresse publique, pas au banc d\'essai',
+      partage.url === 'https://minecraft-fam.vercel.app/'
+      && /wa\.me/.test(partage.whatsapp) && /vercel/.test(partage.whatsapp),
+      JSON.stringify({ url: partage.url }));
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {

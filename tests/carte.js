@@ -813,6 +813,84 @@ const position = (p) => p.evaluate(() => ({
       chine.porte && chine.lions, JSON.stringify({ porte: chine.porte, lions: chine.lions }));
     verifier('les karsts de Guilin au bord de la rivière turquoise',
       chine.karst && chine.riviere, JSON.stringify({ karst: chine.karst, riviere: chine.riviere }));
+    // --- l'usine du Père Noël -------------------------------------------------
+    //
+    // « Il n'y a pas d'elfe. Tout est vide à l'intérieur. Il n'y a pas les
+    // rênes, il n'y a pas de traîneau, il n'y a pas plein de jouets, des
+    // cadeaux. Il n'y a pas cette magie, cette féerie. » Tout était juste : la
+    // halle était une coquille, l'étable un hangar, le traîneau une caisse, et
+    // le village n'avait aucun habitant. On mesure donc les quatre manques.
+    const noel = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const Px = 40, Pz = -690;                    // le Pôle Nord
+      const FX = Px + 16, FZ = Pz;                 // la halle de l'usine
+      const bloc = (x, y, z) => w.getBlock(x, y, z);
+      const sol = (x, z) => w.terrainHeight(x, z);
+      // Les jouets et les cadeaux : tout ce qui est coloré à l'intérieur des
+      // murs de la halle, du sol au plafond. Avant, il n'y avait presque rien.
+      // Les identifiants des blocs décoratifs : rouge, vert lutin, vert sapin,
+      // jaune, bleu, rose, turquoise — et l'or des rubans.
+      const COULEURS = new Set([40, 100, 90, 60, 140, 200, 110, 19]);
+      let colores = 0, tapis = 0;
+      const base = sol(FX, FZ);
+      for (let x = FX - 11; x <= FX + 11; x++) {
+        for (let z = FZ - 13; z <= FZ + 13; z++) {
+          for (let y = base; y <= base + 9; y++) {
+            const id = bloc(x, y, z);
+            if (COULEURS.has(id)) colores++;
+          }
+        }
+      }
+      // La chaîne de montage : le tapis qui traverse la halle du nord au sud.
+      // Le tapis est posé un bloc au-dessus du sol de la halle : on balaie la
+      // hauteur plutôt que de parier sur une cote exacte.
+      for (let z = FZ - 12; z <= FZ + 12; z++) {
+        for (let y = base - 2; y <= base + 2; y++) if (bloc(FX, y, z) === 33) { tapis++; break; }
+      }
+      // Les rennes : leurs bois, en bois sombre, au-dessus des stalles.
+      const EX = Px - 2, EZ = Pz - 26;
+      let bois = 0;
+      for (let x = EX - 10; x <= EX + 14; x++) {
+        for (let z = EZ - 6; z <= EZ + 6; z++) {
+          const h = sol(x, z);
+          for (let y = h + 3; y <= h + 6; y++) if (bloc(x, y, z) === 17) bois++;
+        }
+      }
+      // Le traîneau : ses patins dorés, et la hotte chargée de cadeaux.
+      const TX = Px + 4, TZ = Pz - 16;
+      let patins = 0;
+      for (let x = TX - 6; x <= TX + 4; x++) {
+        for (const dz of [-2, 2]) {
+          const h = sol(x, TZ + dz);
+          if (bloc(x, h, TZ + dz) === 19 || bloc(x, h + 1, TZ + dz) === 19) patins++;
+        }
+      }
+      let hotte = 0;
+      for (let x = TX - 2; x <= TX + 1; x++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          const h = sol(x, TZ + dz);
+          for (let y = h + 3; y <= h + 5; y++) if (COULEURS.has(bloc(x, y, TZ + dz))) hotte++;
+        }
+      }
+      // Les lutins et le Père Noël : des personnages vivants, pas du décor.
+      const gens = (window.__game.npcs || []).map((n) => n.name);
+      const lutins = gens.filter((n) => ['Piprik', 'Noisette', 'Gambille', 'Chamalo',
+        'Pignon', 'Grelot', 'Bricole', 'Cannelle'].includes(n));
+      return { colores, tapis, bois, patins, hotte, lutins: lutins.length,
+        pereNoel: gens.includes('Père Noël') };
+    });
+    verifier('l\'usine du Père Noël déborde de jouets et de cadeaux',
+      noel.colores > 300 && noel.tapis > 20,
+      `${noel.colores} blocs colorés dans la halle · chaîne de ${noel.tapis} blocs`);
+    verifier('des lutins y travaillent, et le Père Noël est là',
+      noel.lutins >= 6 && noel.pereNoel,
+      `${noel.lutins} lutins · Père Noël ${noel.pereNoel}`);
+    verifier('les rennes ont leurs bois dans l\'étable',
+      noel.bois >= 30, `${noel.bois} blocs de bois de rennes`);
+    verifier('le traîneau a ses patins et sa hotte pleine',
+      noel.patins >= 12 && noel.hotte >= 6,
+      `${noel.patins} blocs de patins · ${noel.hotte} cadeaux dans la hotte`);
+
     verifier('les rizières en marches d\'eau, les pandas dans les bambous',
       chine.rizEau && chine.marches && chine.panda && chine.bambous >= 5,
       JSON.stringify({ rizEau: chine.rizEau, marches: chine.marches,

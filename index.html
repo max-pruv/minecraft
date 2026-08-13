@@ -161,6 +161,65 @@
     }
     #app-version.ok { color: #7fae91; border-color: rgba(90,200,140,.3); }
     #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
+
+    /* Le pied du menu : le partage et la version, discrets, côte à côte. */
+    #pied-menu {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap;
+    }
+    #pied-menu #app-version { margin-top: 0; }
+    /* Le bouton de partage emprunte volontairement l'habit de la version :
+       il est là pour qui le cherche, il ne dispute rien au bouton « Jouer ». */
+    #overlay #partage-btn {
+      font-size: 11px; letter-spacing: .3px; padding: 3px 10px; margin: 0;
+      border-radius: 999px; background: transparent; color: #6d7a92;
+      border: 1px solid rgba(255,255,255,.12); opacity: .7;
+    }
+    #overlay #partage-btn:hover { opacity: 1; color: #9fb0c8; }
+
+    /* Le panneau de partage : le carré blanc du QR au milieu, parce que
+       c'est lui qu'on tend à l'ami d'en face. */
+    #partage-panel {
+      display: none; position: fixed; inset: 0; z-index: 125;
+      align-items: center; justify-content: center; padding: 18px;
+      background: rgba(4, 8, 14, .78);
+    }
+    #partage-panel.on { display: flex; }
+    #partage-carte {
+      position: relative; width: min(360px, 92vw); text-align: center;
+      background: #14181f; border: 1px solid #2a3444; border-radius: 18px;
+      padding: 18px 16px 16px; color: #e8eef6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      box-shadow: 0 20px 60px rgba(0,0,0,.55);
+      max-height: 92vh; overflow-y: auto;
+    }
+    #partage-close {
+      position: absolute; top: 8px; right: 8px; width: 32px; height: 32px;
+      border-radius: 50%; border: none; background: #222b38; color: #cbd6e6;
+      font-size: 15px; cursor: pointer; padding: 0; margin: 0;
+    }
+    .partage-titre { font-size: 18px; font-weight: 650; margin-bottom: 4px; }
+    .partage-sous { font-size: 13px; color: #8e9cb2; margin-bottom: 12px; line-height: 1.4; }
+    /* Fond blanc obligatoire : un QR sombre ou sans marge ne se lit pas. */
+    #partage-qr {
+      width: min(260px, 68vw); height: auto; background: #fff;
+      border-radius: 12px; display: block; margin: 0 auto 10px;
+    }
+    #partage-lien {
+      font-size: 12px; color: #7f8da0; word-break: break-all;
+      margin-bottom: 12px;
+    }
+    .partage-boutons { display: flex; flex-direction: column; gap: 8px; }
+    #overlay #partage-envoyer, #partage-envoyer {
+      font-size: 16px; padding: 12px 18px; margin: 0; border: none;
+      border-radius: 12px; background: #2f7cf6; color: #fff; cursor: pointer;
+      font-family: inherit; font-weight: 600;
+    }
+    .partage-lien-app {
+      display: block; padding: 10px 18px; border-radius: 12px;
+      background: #1d2530; border: 1px solid #2a3444; color: #cbd6e6;
+      text-decoration: none; font-size: 15px;
+    }
     #overlay button {
       font-family: inherit; font-size: 18px; padding: 12px 40px; margin: 6px;
       cursor: pointer; color: #fff; background: #6a6a6a;
@@ -1495,7 +1554,28 @@
       <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
       <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>
     </div>
-    <div id="app-version" title="Version installée sur cet appareil"></div>
+    <!-- Partager le jeu : discret, tout en bas, à côté du numéro de version.
+         Un enfant qui veut inviter un cousin n'avait aucun moyen de lui
+         donner l'adresse. -->
+    <div id="pied-menu">
+      <button id="partage-btn" title="Partager le jeu">🔗 Partager le jeu</button>
+      <div id="app-version" title="Version installée sur cet appareil"></div>
+    </div>
+  </div>
+
+  <div id="partage-panel">
+    <div id="partage-carte">
+      <button id="partage-close" aria-label="Fermer">✕</button>
+      <div class="partage-titre">🔗 Partager le jeu</div>
+      <div class="partage-sous">Ton ami·e vise ce carré avec son appareil photo — et il est dans le jeu.</div>
+      <canvas id="partage-qr" width="440" height="440"></canvas>
+      <div id="partage-lien"></div>
+      <div class="partage-boutons">
+        <button id="partage-envoyer">📲 Envoyer le lien</button>
+        <a id="partage-whatsapp" class="partage-lien-app" target="_blank" rel="noopener">💬 WhatsApp</a>
+        <a id="partage-sms" class="partage-lien-app">✉️ SMS</a>
+      </div>
+    </div>
   </div>
 
   <div id="maj-fete"><div id="maj-mot"><span id="maj-texte"></span><button class="fermer-msg" id="maj-close" aria-label="Fermer">✕</button></div></div>

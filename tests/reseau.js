@@ -13,6 +13,7 @@
 // sans quoi on ne testerait rien.
 
 const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd } = require('./banc.js');
+const { servirLeNuage } = require('./nuage.js');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -40,6 +41,12 @@ function verifier(nom, ok, detail = '') {
 (async () => {
   const banc = new Banc();
   await banc.ouvrir();
+  // Le relais de secours passe par le nuage : il faut donc un nuage. On ne
+  // lance PAS un second navigateur pour autant — deux Chromium sur quatre
+  // cœurs suffisaient à faire tomber la suite entière. C'est le joueur, pas
+  // le banc, qui reçoit l'adresse du nuage.
+  const nuageRelais = await servirLeNuage(9721);
+  const AVEC_NUAGE = { portNuage: 9721 };
   try {
     // --- à trois, tout le monde se voit ---------------------------------------
     // Les invités ne sont pas reliés entre eux : leurs positions transitent par
@@ -303,14 +310,102 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-btn').click();
     }, codeVPN);
     const verdict = await jusqua(async () => derriereVPN.evaluate(
-      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 60000);
+      // Deux minutes : ce chemin-là cumule volontairement les patiences du jeu
+      // — cinq secondes pour le canal, neuf pour le serveur de rendez-vous,
+      // vingt de plus une fois qu'on sait le monde tenu. Soixante secondes
+      // suffisaient sur une machine au repos, jamais sur un conteneur chargé.
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 120000);
     const phrase = await derriereVPN.evaluate(
       () => document.getElementById('online-status').textContent);
     verifier('un VPN ne fait plus dire que le monde est vide',
       verdict && !/Personne n'a répondu/.test(phrase), phrase);
     verifier('et le message dit quoi faire', /VPN/.test(phrase) && phrase.includes(codeVPN), phrase);
+    // Aucun relais n'a répondu ici : c'est le réseau qui barre la route, et le
+    // conseil doit être d'en changer.
+    verifier('un réseau qui bloque tout renvoie vers un autre réseau',
+      /Wi-Fi|partage de connexion/.test(phrase), phrase);
     await derriereVPN.close();
     await tenu.close();
+
+    // --- le Wi-Fi d'hôtel et le VPN de la maison ne se soignent pas pareil ---
+    //
+    // Signalé par Max : « la connexion sur un réseau wifi public ne marche
+    // pas ». Les deux pannes se ressemblent à l'écran — le monde existe, on
+    // ne l'atteint pas — mais elles n'appellent pas le même geste. Quand le
+    // relais répond et que le lien échoue quand même, c'est la maison
+    // derrière un VPN : on dit de le couper. Quand même le relais est
+    // injoignable, couper le VPN ne servira à rien : il faut sortir de ce
+    // Wi-Fi. Ici le relais répond — on attend donc le conseil « VPN », et
+    // surtout PAS celui du Wi-Fi public.
+    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Nina');
+    const chezSoi = await banc.joueur('Théo', { sansPairAPair: true, avecRelais: true });
+    await chezSoi.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await chezSoi.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeMaison);
+    await jusqua(async () => chezSoi.evaluate(
+      // Deux minutes : ce chemin-là cumule volontairement les patiences du jeu
+      // — cinq secondes pour le canal, neuf pour le serveur de rendez-vous,
+      // vingt de plus une fois qu'on sait le monde tenu. Soixante secondes
+      // suffisaient sur une machine au repos, jamais sur un conteneur chargé.
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 120000);
+    const phraseMaison = await chezSoi.evaluate(
+      () => document.getElementById('online-status').textContent);
+    verifier('quand le relais répond, on accuse le VPN et pas le Wi-Fi',
+      /VPN/.test(phraseMaison) && !/hôtels/.test(phraseMaison), phraseMaison);
+    await chezSoi.close();
+    await tenu2.close();
+
+    // --- le Wi-Fi public ne doit plus empêcher de jouer ----------------------
+    //
+    // « Ça me paraît aberrant que sur une connexion publique, je ne puisse pas
+    // juste jouer au réseau. » Et c'est vrai : une chose passe forcément, sans
+    // quoi le jeu ne se serait pas ouvert — le HTTPS vers le nuage. Quand le
+    // pair-à-pair est mort, la partie emprunte donc ce tuyau-là.
+    //
+    // Ici le pair-à-pair est coupé À LA RACINE : aucun candidat ne circule,
+    // aucun lien direct n'est possible, quel que soit le relais. C'est le
+    // Wi-Fi d'hôtel dans ce qu'il a de pire. Les deux enfants doivent malgré
+    // tout se voir — et sans que personne n'ait rien à faire.
+    const { p: hoteNuage, code: codeNuage } = await banc.creerMonde('Emma', AVEC_NUAGE);
+    const bloque = await banc.joueur('Tom', { sansPairAPair: true, ...AVEC_NUAGE });
+    await bloque.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await bloque.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeNuage);
+    await bloque.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const seVoient = await jusqua(async () => {
+      const a = await nomsVus(hoteNuage);
+      const b = await nomsVus(bloque);
+      return a.includes('Tom') && b.includes('Emma');
+    }, 90000);
+    verifier('pair-à-pair mort, les deux enfants se voient quand même',
+      seVoient, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+    // Et c'est bien par le tuyau de secours que c'est passé : sans cette
+    // mesure, un lien direct rétabli en douce ferait passer le scénario sans
+    // rien prouver du tout.
+    verifier('et c\'est bien le nuage qui a porté la partie',
+      nuageRelais.relaisCompte(codeNuage.toUpperCase()) > 2,
+      `${nuageRelais.relaisCompte(codeNuage.toUpperCase())} messages relayés`);
+    // Ce qu'un enfant fait en premier : poser un bloc, et que l'autre le voie.
+    const posePassee = await bloque.evaluate(() => {
+      const w = window.__game.world;
+      const p = window.__game.player;
+      const x = Math.round(p.pos.x) + 2, z = Math.round(p.pos.z);
+      const y = w.terrainHeight(x, z) + 1;
+      w.setBlock(x, y, z, 23);          // laine rouge
+      return { x, y, z };
+    });
+    const vuEnFace = await jusqua(async () => hoteNuage.evaluate(
+      ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 23, posePassee), 60000);
+    verifier('un bloc posé par le nuage arrive chez l\'autre',
+      vuEnFace, JSON.stringify(posePassee));
+    await bloque.close();
+    await hoteNuage.close();
 
     // --- une présentation qui met du temps à passer -----------------------------
     //
@@ -633,6 +728,7 @@ function verifier(nom, ok, detail = '') {
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));
   } finally {
     await banc.fermer();
+    nuageRelais.fermer();
   }
 
   console.log(echecs.length

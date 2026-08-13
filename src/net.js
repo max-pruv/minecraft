@@ -10,6 +10,8 @@
 // "continue": each child can build alone offline, and the next time any
 // two devices meet, their histories converge automatically.
 
+import { BusNuage } from './relaisnuage.js';
+
 const ID_PREFIX = 'wmc-marlon-';
 
 // Sans relais, deux appareils derrière le même partage de connexion mobile ne
@@ -18,18 +20,37 @@ const ID_PREFIX = 'wmc-marlon-';
 // directs ne mènent nulle part. Le trafic passe alors par le relais, plus
 // lent mais qui, lui, aboutit toujours. C'est ce qui manquait le jour où
 // Alice et Marlon étaient dans le même monde sans se voir.
+//
+// Le relais ne suffit pas : encore faut-il qu'il puisse SORTIR du réseau.
+// Sur un Wi-Fi public — hôtel, école, gare, café —, l'UDP est coupé net, et
+// ce qui reste est inspecté : du trafic quelconque sur le port 443, port
+// réservé au web chiffré, est jeté par le filtre. Nos trois anciennes
+// adresses tombaient donc toutes les trois, et l'enfant lisait « Connexion
+// impossible » sur un réseau qui, lui, marchait très bien.
+//
+// D'où « turns: » en tête, le relais enveloppé dans du TLS : pour le filtre,
+// c'est une page web ordinaire, et il passe là où tout le reste est arrêté.
+// Les autres restent derrière, du plus rapide au plus obstiné — le navigateur
+// les essaie tous et garde celui qui aboutit.
 const ICE_SERVERS = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
   {
     urls: [
-      'turn:openrelay.metered.ca:80',
-      'turn:openrelay.metered.ca:443',
+      'turns:openrelay.metered.ca:443?transport=tcp',
       'turn:openrelay.metered.ca:443?transport=tcp',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:80',
     ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
 ];
+
+// Un candidat de relais a-t-il seulement pu être obtenu ? C'est la question
+// qui sépare deux pannes que rien ne distinguait : « il n'y a personne au
+// bout » et « ce réseau interdit les jeux à plusieurs ». Sans relais obtenu,
+// couper un VPN ne servira à rien — il faut changer de réseau.
+const EST_RELAIS = / typ relay /;
 
 // Un lien mort ne se signale pas tout seul : le navigateur peut mettre une
 // minute à s'en apercevoir, et pendant ce temps l'enfant construit dans le
@@ -81,6 +102,8 @@ export class NetSession {
     this.onRemoteVideo = null;     // hook(peerId, stream) — main shows the tile
     this.onRemoteVideoClosed = null;
     this.posTimer = null;
+    this.bus = null;          // le relais par le nuage, quand le direct échoue
+    this.relaisVu = false;
     this.getPos = null;       // set by main: () => ({x,y,z,yaw,moving})
     this.active = false;
   }
@@ -124,9 +147,15 @@ export class NetSession {
     this.state(isHost ? 'Création de la partie…' : 'Connexion à la partie…');
 
     return new Promise((resolve, reject) => {
-      const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
       // tests can point signaling at a local server via ?peerhost=host:port
       const m = location.search.match(/[?&]peerhost=([^&]+)/);
+      // La même liste partout, banc d'essai compris. Deux tentatives d'alléger
+      // celle du banc — tout retirer, puis ne garder que le STUN — ont chacune
+      // cassé la visibilité entre invités : le troisième joueur ne voyait plus
+      // le deuxième, trois exécutions de suite. Ce que les navigateurs font de
+      // ces adresses est plus subtil qu'il n'y paraît, et le banc doit éprouver
+      // la configuration réelle, pas une variante commode.
+      const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
       if (m) {
         const [h, p] = decodeURIComponent(m[1]).split(':');
         Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
@@ -160,6 +189,10 @@ export class NetSession {
         // « ok » de l'invité vient de connectToHost, quand le canal s'ouvre.
         if (isHost) this.link('ok');
         if (isHost) {
+          // L'hôte relève sa boîte aux lettres dès l'ouverture : un invité
+          // coincé derrière un Wi-Fi public n'a que ce chemin-là pour se
+          // manifester, et il ne doit pas trouver porte close.
+          this.ouvrirRelaisNuage();
           this.state(`En attente d'un joueur… code : ${this.code}`);
           settled = true;
           resolve(this.code);
@@ -248,9 +281,88 @@ export class NetSession {
 
   // Un invité rejoint toujours par le même chemin — au démarrage comme après
   // une coupure. `done` n'est appelé qu'à la première tentative.
+  // Écoute les candidats que le navigateur récolte pour ce lien. On ne
+  // cherche qu'une chose : est-ce qu'un relais a répondu ? La réponse change
+  // le conseil qu'on donnera à l'enfant si le lien échoue.
+  surveillerLesChemins(conn) {
+    const brancher = () => {
+      const pc = conn && conn.peerConnection;
+      if (!pc || !pc.addEventListener) return false;
+      pc.addEventListener('icecandidate', (e) => {
+        const c = e && e.candidate && e.candidate.candidate;
+        if (c && EST_RELAIS.test(c)) this.relaisVu = true;
+      });
+      return true;
+    };
+    // PeerJS fabrique la connexion au moment du connect : elle n'est parfois
+    // là qu'au tour de boucle suivant.
+    if (!brancher()) setTimeout(brancher, 0);
+  }
+
+  // --- le relais par le nuage -------------------------------------------------
+  //
+  // Le dernier chemin, celui qui ne dépend d'aucune ouverture de port : les
+  // tablettes se déposent des messages dans la base, exactement comme elles y
+  // déposent déjà leurs mondes. Il n'est jamais choisi tant que le lien direct
+  // marche — il est plus lent — mais il rattrape les réseaux qui interdisent
+  // tout le reste, et l'enfant n'a rien à faire pour cela.
+  ouvrirRelaisNuage() {
+    if (this.bus || !this.hooks.cloud) return null;
+    const monId = this.isHost ? ID_PREFIX + this.code : (this.peer && this.peer.id) || `inv-${Math.random().toString(36).slice(2, 10)}`;
+    this.bus = new BusNuage(this.hooks.cloud, this.code, monId, {
+      surPair: (conn) => {
+        // Un pair arrivé par le nuage est un pair comme un autre : on
+        // l'inscrit et on se présente. Tout ce qui suit l'ignore.
+        this.registerConn(conn);
+        this.greet(conn);
+      },
+    });
+    if (!this.bus.demarrer()) { this.bus = null; return null; }
+    return this.bus;
+  }
+
+  // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
+  // On ne renonce qu'après avoir essayé cela aussi.
+  basculerSurLeNuage(done) {
+    const bus = this.ouvrirRelaisNuage();
+    if (!bus) return false;
+    this.link('signal', 'Passage par le nuage…');
+    const conn = bus.connecter(ID_PREFIX + this.code);
+    this.registerConn(conn);
+    this.greet(conn);
+    // On laisse à l'hôte le temps de relever sa boîte et de répondre. Deux
+    // tours de sondage suffisent en général ; on en accorde largement plus.
+    const limite = setTimeout(() => {
+      const c = this.conns.get(conn.peer);
+      if (c && c.pret) return;                   // quelqu'un a répondu : tout va bien
+      this.conns.delete(conn.peer);
+      this.playersChanged();
+      try { bus.arreter(); } catch { /* déjà arrêté */ }
+      this.bus = null;
+      const muet = new Error('Personne n\'a répondu dans ce monde');
+      muet.canal = true;
+      muet.reseauFerme = !this.relaisVu;
+      done?.(muet);
+    }, 12000);
+    // La présentation reçue par le nuage vaut réussite : c'est onMessage qui
+    // marque `pret`, on se contente de guetter.
+    const guetter = setInterval(() => {
+      const c = this.conns.get(conn.peer);
+      if (!this.active || !c) { clearInterval(guetter); return; }
+      if (!c.pret) return;
+      clearInterval(guetter);
+      clearTimeout(limite);
+      this.link('nuage', 'Partie relayée par le nuage — un peu plus lente, mais elle marche.');
+      done?.(null);
+    }, 300);
+    return true;
+  }
+
   connectToHost(done) {
+    this.relaisVu = false;
     const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
     if (!conn) { done?.(new Error('Connexion impossible')); return; }
+    this.surveillerLesChemins(conn);
     this.registerConn(conn); // handlers BEFORE open — no missed messages
     let fini = false;
     const rate = (err) => {
@@ -271,11 +383,16 @@ export class NetSession {
         // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
         const c = this.conns.get(conn.peer);
         if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
+        // Avant de renoncer, le dernier chemin : la base. Sur un Wi-Fi
+        // public c'est le seul qui reste, et il n'appartient pas à l'enfant
+        // de le deviner.
+        if (!this.bus && this.basculerSurLeNuage((e) => rate(e || null))) return;
         const muet = new Error('Personne n\'a répondu dans ce monde');
         // L'appelant a besoin de distinguer « le monde est vide » de « le monde
         // est là mais on ne l'atteint pas » : ce n'est pas la même panne, et ce
         // n'est pas la même phrase à montrer à un enfant.
         muet.canal = true;
+        muet.reseauFerme = !this.relaisVu;
         rate(muet);
       },
       // Court par défaut : dans le cas courant — le monde est vide — cette
@@ -290,7 +407,19 @@ export class NetSession {
       this.link('ok');
       if (!fini) { fini = true; done?.(null); }
     });
-    conn.on('error', () => rate(new Error('Connexion impossible')));
+    // Le lien refuse de s'ouvrir. C'est la même panne que le silence
+    // ci-dessus, vue d'un autre côté : le canal n'existera pas. On la marque
+    // pareil, sans quoi l'enfant recevait « Connexion impossible » tout court
+    // — deux mots, aucun conseil, alors que c'est précisément le cas où il a
+    // besoin qu'on lui dise quoi essayer.
+    conn.on('error', () => {
+      if (fini) return;
+      if (!this.bus && this.basculerSurLeNuage((err) => rate(err || null))) return;
+      const e = new Error('Connexion impossible');
+      e.canal = true;
+      e.reseauFerme = !this.relaisVu;
+      rate(e);
+    });
   }
 
   // L'hôte a disparu ou la connexion a sauté : on retente, en le disant.
@@ -923,6 +1052,7 @@ export class NetSession {
     // connexions dans une session morte — d'où des avatars qui revenaient
     // hanter un monde qu'on venait de quitter.
     this.active = false;
+    if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }
     if (this._veille) {
       document.removeEventListener('visibilitychange', this._veille);
       window.removeEventListener('online', this._auRetourDuReseau);
