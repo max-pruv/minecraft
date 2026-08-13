@@ -245,7 +245,7 @@ class Banc {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse(this.portJeu, this.portPairs, this.opts.portNuage), { waitUntil: 'load' });
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage), { waitUntil: 'load' });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
     return p;
@@ -285,8 +285,8 @@ class Banc {
     await dormir(600);
   }
 
-  async creerMonde(prenom) {
-    const p = await this.joueur(prenom);
+  async creerMonde(prenom, opts = {}) {
+    const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await p.evaluate(() => document.getElementById('host-btn').click());
@@ -297,8 +297,8 @@ class Banc {
     return { p, code };
   }
 
-  async rejoindre(prenom, code) {
-    const p = await this.joueur(prenom);
+  async rejoindre(prenom, code, opts = {}) {
+    const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await p.evaluate((c) => {

@@ -41,12 +41,12 @@ function verifier(nom, ok, detail = '') {
 (async () => {
   const banc = new Banc();
   await banc.ouvrir();
-  // Un second banc, celui-là relié au nuage : le relais de secours passe par
-  // lui, et on ne peut donc pas l'éprouver sur un banc dont le nuage est
-  // coupé. Ports distincts pour que les deux vivent côte à côte.
+  // Le relais de secours passe par le nuage : il faut donc un nuage. On ne
+  // lance PAS un second navigateur pour autant — deux Chromium sur quatre
+  // cœurs suffisaient à faire tomber la suite entière. C'est le joueur, pas
+  // le banc, qui reçoit l'adresse du nuage.
   const nuageRelais = await servirLeNuage(9721);
-  const bancNuage = new Banc({ portJeu: 8722, portPairs: 9722, portNuage: 9721 });
-  await bancNuage.ouvrir();
+  const AVEC_NUAGE = { portNuage: 9721 };
   try {
     // --- à trois, tout le monde se voit ---------------------------------------
     // Les invités ne sont pas reliés entre eux : leurs positions transitent par
@@ -361,8 +361,8 @@ function verifier(nom, ok, detail = '') {
     // aucun lien direct n'est possible, quel que soit le relais. C'est le
     // Wi-Fi d'hôtel dans ce qu'il a de pire. Les deux enfants doivent malgré
     // tout se voir — et sans que personne n'ait rien à faire.
-    const { p: hoteNuage, code: codeNuage } = await bancNuage.creerMonde('Emma');
-    const bloque = await bancNuage.joueur('Tom', { sansPairAPair: true });
+    const { p: hoteNuage, code: codeNuage } = await banc.creerMonde('Emma', AVEC_NUAGE);
+    const bloque = await banc.joueur('Tom', { sansPairAPair: true, ...AVEC_NUAGE });
     await bloque.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await bloque.evaluate((c) => {
@@ -716,12 +716,10 @@ function verifier(nom, ok, detail = '') {
     await sonde.close();
 
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
-    const bruit = [...banc.pages, ...bancNuage.pages]
-      .flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
+    const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));
   } finally {
     await banc.fermer();
-    await bancNuage.fermer();
     nuageRelais.fermer();
   }
 
