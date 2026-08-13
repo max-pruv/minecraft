@@ -163,9 +163,14 @@
     #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
 
     /* Le pied du menu : le partage et la version, discrets, côte à côte. */
+    /* Le pied du menu respire.
+       En rangeant le partage à côté du numéro de version, on avait annulé la
+       marge que ce dernier portait tout seul : les deux pastilles se
+       retrouvaient collées au bouton du dessus et l'une à l'autre. */
     #pied-menu {
       display: flex; align-items: center; justify-content: center;
-      gap: 10px; flex-wrap: wrap;
+      gap: 14px; flex-wrap: wrap;
+      margin: 24px 0 10px;
     }
     #pied-menu #app-version { margin-top: 0; }
     /* Le bouton de partage emprunte volontairement l'habit de la version :
