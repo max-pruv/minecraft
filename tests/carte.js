@@ -828,7 +828,9 @@ const position = (p) => p.evaluate(() => ({
       const sol = (x, z) => w.terrainHeight(x, z);
       // Les jouets et les cadeaux : tout ce qui est coloré à l'intérieur des
       // murs de la halle, du sol au plafond. Avant, il n'y avait presque rien.
-      const COULEURS = new Set([40, 90, 60, 140, 200, 110, 19]);   // jouets + or
+      // Les identifiants des blocs décoratifs : rouge, vert lutin, vert sapin,
+      // jaune, bleu, rose, turquoise — et l'or des rubans.
+      const COULEURS = new Set([40, 100, 90, 60, 140, 200, 110, 19]);
       let colores = 0, tapis = 0;
       const base = sol(FX, FZ);
       for (let x = FX - 11; x <= FX + 11; x++) {
@@ -840,7 +842,11 @@ const position = (p) => p.evaluate(() => ({
         }
       }
       // La chaîne de montage : le tapis qui traverse la halle du nord au sud.
-      for (let z = FZ - 12; z <= FZ + 12; z++) if (bloc(FX, base, z) === 33) tapis++;
+      // Le tapis est posé un bloc au-dessus du sol de la halle : on balaie la
+      // hauteur plutôt que de parier sur une cote exacte.
+      for (let z = FZ - 12; z <= FZ + 12; z++) {
+        for (let y = base - 2; y <= base + 2; y++) if (bloc(FX, y, z) === 33) { tapis++; break; }
+      }
       // Les rennes : leurs bois, en bois sombre, au-dessus des stalles.
       const EX = Px - 2, EZ = Pz - 26;
       let bois = 0;
