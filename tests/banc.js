@@ -117,8 +117,11 @@ async function relaisSourd(portEcoute, portVrai) {
 // `stay=1` garde la partie ouverte, `cloud=` coupe la sauvegarde en ligne
 // (inutile ici et absente en local), `rr=2` réduit la distance d'affichage
 // pour que le monde se charge vite.
-const adresse = (portJeu, portPairs) =>
-  `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}&cloud=&stay=1&rr=2`;
+// `portNuage` : quand un scénario a besoin du nuage — le relais de secours du
+// jeu à plusieurs en a besoin, puisque c'est justement par là qu'il passe.
+const adresse = (portJeu, portPairs, portNuage) =>
+  `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=2`;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -242,7 +245,7 @@ class Banc {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse(this.portJeu, this.portPairs), { waitUntil: 'load' });
+    await p.goto(adresse(this.portJeu, this.portPairs, this.opts.portNuage), { waitUntil: 'load' });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
     return p;

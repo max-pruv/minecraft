@@ -10,6 +10,8 @@
 // "continue": each child can build alone offline, and the next time any
 // two devices meet, their histories converge automatically.
 
+import { BusNuage } from './relaisnuage.js';
+
 const ID_PREFIX = 'wmc-marlon-';
 
 // Sans relais, deux appareils derrière le même partage de connexion mobile ne
@@ -100,6 +102,8 @@ export class NetSession {
     this.onRemoteVideo = null;     // hook(peerId, stream) — main shows the tile
     this.onRemoteVideoClosed = null;
     this.posTimer = null;
+    this.bus = null;          // le relais par le nuage, quand le direct échoue
+    this.relaisVu = false;
     this.getPos = null;       // set by main: () => ({x,y,z,yaw,moving})
     this.active = false;
   }
@@ -179,6 +183,10 @@ export class NetSession {
         // « ok » de l'invité vient de connectToHost, quand le canal s'ouvre.
         if (isHost) this.link('ok');
         if (isHost) {
+          // L'hôte relève sa boîte aux lettres dès l'ouverture : un invité
+          // coincé derrière un Wi-Fi public n'a que ce chemin-là pour se
+          // manifester, et il ne doit pas trouver porte close.
+          this.ouvrirRelaisNuage();
           this.state(`En attente d'un joueur… code : ${this.code}`);
           settled = true;
           resolve(this.code);
@@ -285,6 +293,65 @@ export class NetSession {
     if (!brancher()) setTimeout(brancher, 0);
   }
 
+  // --- le relais par le nuage -------------------------------------------------
+  //
+  // Le dernier chemin, celui qui ne dépend d'aucune ouverture de port : les
+  // tablettes se déposent des messages dans la base, exactement comme elles y
+  // déposent déjà leurs mondes. Il n'est jamais choisi tant que le lien direct
+  // marche — il est plus lent — mais il rattrape les réseaux qui interdisent
+  // tout le reste, et l'enfant n'a rien à faire pour cela.
+  ouvrirRelaisNuage() {
+    if (this.bus || !this.hooks.cloud) return null;
+    const monId = this.isHost ? ID_PREFIX + this.code : (this.peer && this.peer.id) || `inv-${Math.random().toString(36).slice(2, 10)}`;
+    this.bus = new BusNuage(this.hooks.cloud, this.code, monId, {
+      surPair: (conn) => {
+        // Un pair arrivé par le nuage est un pair comme un autre : on
+        // l'inscrit et on se présente. Tout ce qui suit l'ignore.
+        this.registerConn(conn);
+        this.greet(conn);
+      },
+    });
+    if (!this.bus.demarrer()) { this.bus = null; return null; }
+    return this.bus;
+  }
+
+  // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
+  // On ne renonce qu'après avoir essayé cela aussi.
+  basculerSurLeNuage(done) {
+    const bus = this.ouvrirRelaisNuage();
+    if (!bus) return false;
+    this.link('signal', 'Passage par le nuage…');
+    const conn = bus.connecter(ID_PREFIX + this.code);
+    this.registerConn(conn);
+    this.greet(conn);
+    // On laisse à l'hôte le temps de relever sa boîte et de répondre. Deux
+    // tours de sondage suffisent en général ; on en accorde largement plus.
+    const limite = setTimeout(() => {
+      const c = this.conns.get(conn.peer);
+      if (c && c.pret) return;                   // quelqu'un a répondu : tout va bien
+      this.conns.delete(conn.peer);
+      this.playersChanged();
+      try { bus.arreter(); } catch { /* déjà arrêté */ }
+      this.bus = null;
+      const muet = new Error('Personne n\'a répondu dans ce monde');
+      muet.canal = true;
+      muet.reseauFerme = !this.relaisVu;
+      done?.(muet);
+    }, 12000);
+    // La présentation reçue par le nuage vaut réussite : c'est onMessage qui
+    // marque `pret`, on se contente de guetter.
+    const guetter = setInterval(() => {
+      const c = this.conns.get(conn.peer);
+      if (!this.active || !c) { clearInterval(guetter); return; }
+      if (!c.pret) return;
+      clearInterval(guetter);
+      clearTimeout(limite);
+      this.link('nuage', 'Partie relayée par le nuage — un peu plus lente, mais elle marche.');
+      done?.(null);
+    }, 300);
+    return true;
+  }
+
   connectToHost(done) {
     this.relaisVu = false;
     const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
@@ -310,6 +377,10 @@ export class NetSession {
         // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
         const c = this.conns.get(conn.peer);
         if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
+        // Avant de renoncer, le dernier chemin : la base. Sur un Wi-Fi
+        // public c'est le seul qui reste, et il n'appartient pas à l'enfant
+        // de le deviner.
+        if (!this.bus && this.basculerSurLeNuage((e) => rate(e || null))) return;
         const muet = new Error('Personne n\'a répondu dans ce monde');
         // L'appelant a besoin de distinguer « le monde est vide » de « le monde
         // est là mais on ne l'atteint pas » : ce n'est pas la même panne, et ce
@@ -336,6 +407,8 @@ export class NetSession {
     // — deux mots, aucun conseil, alors que c'est précisément le cas où il a
     // besoin qu'on lui dise quoi essayer.
     conn.on('error', () => {
+      if (fini) return;
+      if (!this.bus && this.basculerSurLeNuage((err) => rate(err || null))) return;
       const e = new Error('Connexion impossible');
       e.canal = true;
       e.reseauFerme = !this.relaisVu;
@@ -973,6 +1046,7 @@ export class NetSession {
     // connexions dans une session morte — d'où des avatars qui revenaient
     // hanter un monde qu'on venait de quitter.
     this.active = false;
+    if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }
     if (this._veille) {
       document.removeEventListener('visibilitychange', this._veille);
       window.removeEventListener('online', this._auRetourDuReseau);

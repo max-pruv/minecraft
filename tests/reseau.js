@@ -13,6 +13,7 @@
 // sans quoi on ne testerait rien.
 
 const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd } = require('./banc.js');
+const { servirLeNuage } = require('./nuage.js');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -40,6 +41,12 @@ function verifier(nom, ok, detail = '') {
 (async () => {
   const banc = new Banc();
   await banc.ouvrir();
+  // Un second banc, celui-là relié au nuage : le relais de secours passe par
+  // lui, et on ne peut donc pas l'éprouver sur un banc dont le nuage est
+  // coupé. Ports distincts pour que les deux vivent côte à côte.
+  const nuageRelais = await servirLeNuage(9721);
+  const bancNuage = new Banc({ portJeu: 8722, portPairs: 9722, portNuage: 9721 });
+  await bancNuage.ouvrir();
   try {
     // --- à trois, tout le monde se voit ---------------------------------------
     // Les invités ne sont pas reliés entre eux : leurs positions transitent par
@@ -342,6 +349,55 @@ function verifier(nom, ok, detail = '') {
       /VPN/.test(phraseMaison) && !/hôtels/.test(phraseMaison), phraseMaison);
     await chezSoi.close();
     await tenu2.close();
+
+    // --- le Wi-Fi public ne doit plus empêcher de jouer ----------------------
+    //
+    // « Ça me paraît aberrant que sur une connexion publique, je ne puisse pas
+    // juste jouer au réseau. » Et c'est vrai : une chose passe forcément, sans
+    // quoi le jeu ne se serait pas ouvert — le HTTPS vers le nuage. Quand le
+    // pair-à-pair est mort, la partie emprunte donc ce tuyau-là.
+    //
+    // Ici le pair-à-pair est coupé À LA RACINE : aucun candidat ne circule,
+    // aucun lien direct n'est possible, quel que soit le relais. C'est le
+    // Wi-Fi d'hôtel dans ce qu'il a de pire. Les deux enfants doivent malgré
+    // tout se voir — et sans que personne n'ait rien à faire.
+    const { p: hoteNuage, code: codeNuage } = await bancNuage.creerMonde('Emma');
+    const bloque = await bancNuage.joueur('Tom', { sansPairAPair: true });
+    await bloque.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await bloque.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeNuage);
+    await bloque.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const seVoient = await jusqua(async () => {
+      const a = await nomsVus(hoteNuage);
+      const b = await nomsVus(bloque);
+      return a.includes('Tom') && b.includes('Emma');
+    }, 90000);
+    verifier('pair-à-pair mort, les deux enfants se voient quand même',
+      seVoient, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+    // Et c'est bien par le tuyau de secours que c'est passé : sans cette
+    // mesure, un lien direct rétabli en douce ferait passer le scénario sans
+    // rien prouver du tout.
+    verifier('et c\'est bien le nuage qui a porté la partie',
+      nuageRelais.relaisCompte(codeNuage.toUpperCase()) > 2,
+      `${nuageRelais.relaisCompte(codeNuage.toUpperCase())} messages relayés`);
+    // Ce qu'un enfant fait en premier : poser un bloc, et que l'autre le voie.
+    const posePassee = await bloque.evaluate(() => {
+      const w = window.__game.world;
+      const p = window.__game.player;
+      const x = Math.round(p.pos.x) + 2, z = Math.round(p.pos.z);
+      const y = w.terrainHeight(x, z) + 1;
+      w.setBlock(x, y, z, 23);          // laine rouge
+      return { x, y, z };
+    });
+    const vuEnFace = await jusqua(async () => hoteNuage.evaluate(
+      ({ x, y, z }) => window.__game.world.getBlock(x, y, z) === 23, posePassee), 60000);
+    verifier('un bloc posé par le nuage arrive chez l\'autre',
+      vuEnFace, JSON.stringify(posePassee));
+    await bloque.close();
+    await hoteNuage.close();
 
     // --- une présentation qui met du temps à passer -----------------------------
     //
@@ -660,10 +716,13 @@ function verifier(nom, ok, detail = '') {
     await sonde.close();
 
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
-    const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
+    const bruit = [...banc.pages, ...bancNuage.pages]
+      .flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));
   } finally {
     await banc.fermer();
+    await bancNuage.fermer();
+    nuageRelais.fermer();
   }
 
   console.log(echecs.length

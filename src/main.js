@@ -2067,6 +2067,9 @@ function updateRemotePlayers(dt) {
 function startNetSession(code, isHost, patience) {
   net = new NetSession({
     world,
+    // Le nuage sert de tuyau de secours quand le pair-à-pair est bloqué :
+    // c'est ce qui fait qu'un Wi-Fi d'hôtel n'interdit plus de jouer ensemble.
+    cloud,
     toast: (msg, color) => creatureManager.toast(msg, color),
     onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
     onState: () => updatePlayersBtn(),
@@ -2084,6 +2087,9 @@ function startNetSession(code, isHost, patience) {
     alerte('signal', etat === 'signal', detail);
     alerte('monde-perdu', etat === 'perdu', detail);
     if (etat === 'ok' && revenait) bonneNouvelle('✅ Reconnecté au monde !');
+    // Le secours a fonctionné : on le dit joyeusement plutôt que comme une
+    // panne. Pour l'enfant, la seule chose qui compte est qu'il joue.
+    if (etat === 'nuage') bonneNouvelle('☁️ Connecté par le nuage — ça marche même sur ce Wi-Fi !');
   };
   // Avant même la première poignée de main : à la connexion, les deux côtés
   // s'échangent tout leur journal de blocs. Sur l'ancien code, c'était donc
