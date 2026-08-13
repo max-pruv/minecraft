@@ -149,15 +149,13 @@ export class NetSession {
     return new Promise((resolve, reject) => {
       // tests can point signaling at a local server via ?peerhost=host:port
       const m = location.search.match(/[?&]peerhost=([^&]+)/);
-      // Sur le banc d'essai, on garde le STUN — c'est la configuration qui a
-      // toujours été verte — mais on retire les relais : injoignables depuis
-      // le banc, ils faisaient attendre à chaque lien l'expiration de leur
-      // allocation, quelques secondes par connexion, de quoi faire échouer des
-      // scénarios qui n'ont rien à voir. Tout retirer était pire encore :
-      // privés de STUN, les navigateurs n'échangeaient plus que des candidats
-      // masqués en .local, et le troisième joueur ne voyait plus le deuxième.
-      // La maison, elle, garde tout.
-      const peerOpts = { debug: 1, config: { iceServers: m ? ICE_SERVERS.slice(0, 1) : ICE_SERVERS } };
+      // La même liste partout, banc d'essai compris. Deux tentatives d'alléger
+      // celle du banc — tout retirer, puis ne garder que le STUN — ont chacune
+      // cassé la visibilité entre invités : le troisième joueur ne voyait plus
+      // le deuxième, trois exécutions de suite. Ce que les navigateurs font de
+      // ces adresses est plus subtil qu'il n'y paraît, et le banc doit éprouver
+      // la configuration réelle, pas une variante commode.
+      const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
       if (m) {
         const [h, p] = decodeURIComponent(m[1]).split(':');
         Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
