@@ -24,6 +24,7 @@ import { couleurCarteParc, lieuxDuParc } from './parc.js';
 import { couleurCarteSF, lieuxDeSF } from './sanfrancisco.js';
 import { couleurCarteNice, lieuxDeNice } from './nice.js';
 import { couleurCarteLille, lieuxDeLille } from './lille.js';
+import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
@@ -71,6 +72,9 @@ const ICONES = {
   'Baleine du Paillon': '🐋',
   'Pier 39': '🦭', 'Lombard Street': '🌺', 'Dragon Gate': '🐉',
   'Karl the Fog': '☁️', 'Bay Bridge': '🌉',
+  'Chine': '🐉', 'Grande Muraille': '🧱', 'Cité interdite': '🏯',
+  'Village chinois': '🏮', 'Karsts de Guilin': '⛰️', 'Rizières': '🌾',
+  'Bambouseraie': '🐼', 'Radeau de Guilin': '🛶',
   'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
   'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
   'Grand Central': '🚉', 'Rockefeller Center': '⛸️', 'Wall Street': '💰',
@@ -281,6 +285,12 @@ export class Carte {
       const c = couleurCarteLille(wx, wz);
       if (c) return c;
     }
+    // La Chine n'est pas une ville : sa rivière turquoise et ses rizières se
+    // peignent par-dessus le terrain ordinaire.
+    {
+      const c = couleurCarteChine(wx, wz);
+      if (c) return c;
+    }
     if (ville) {
       // La trame des rues, telle que le générateur la pose. On ne la dessine
       // que d'assez près : échantillonnée de loin, elle produirait un moiré.
@@ -469,6 +479,7 @@ export class Carte {
       ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),
       ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLille().map((c) => ({ c, fort: false, seuil: 0.55 })),
+      ...LIEUX_CHINE.map((c) => ({ c, fort: false, seuil: 0.55 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui

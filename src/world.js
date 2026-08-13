@@ -21,6 +21,10 @@ import {
   buildNegresco, buildPortLympia, buildSaleya, buildBaleine, buildPromenade,
 } from './nice.js';
 import {
+  CHINE, hauteurChine, solChine, LIEUX_CHINE,
+  buildMuraille, buildCiteInterdite, buildVillageChinois, buildGuilin, buildPandas,
+} from './chine.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -454,6 +458,9 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
   PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
+  // La Chine : une région culturelle entière — muraille, Cité interdite,
+  // karsts, rizières, pandas — dans l'ancienne zone morte du nord.
+  { name: 'Chine', x: CHINE.x, z: CHINE.z, r: CHINE.r },
   // La caserne et le commissariat sont bâtis au cœur de Paris, mais ils
   // n'étaient pas des destinations : on ne pouvait y aller qu'en tombant
   // dessus par hasard, au milieu d'une ville de cent dix blocs de large. Le
@@ -760,6 +767,13 @@ const LANDMARKS = [
   // panneau n'y mène, aucun nom ne l'annonce. Il faut voler droit vers le nord
   // jusqu'à ce que la mer gèle.
   { name: 'Pôle Nord', x: POLE.x, z: POLE.z, box: 62, build: buildPole },
+  // La Chine : la muraille suit la crête de son propre chef (elle en connaît
+  // la formule), les autres monuments se posent sur la plaine.
+  { name: 'Grande Muraille', x: CHINE.x, z: CHINE.z, box: 66, build: buildMuraille },
+  { name: 'Cité interdite', x: CHINE.x - 6, z: CHINE.z + 2, box: 14, build: buildCiteInterdite },
+  { name: 'Village chinois', x: CHINE.x - 34, z: CHINE.z + 26, box: 16, build: buildVillageChinois },
+  { name: 'Radeau de Guilin', x: CHINE.x + 30, z: CHINE.z + 16, box: 5, seuil: 0.25, waterBase: true, build: buildGuilin },
+  { name: 'Bambouseraie', x: CHINE.x - 14, z: CHINE.z + 40, box: 11, seuil: 0.3, build: buildPandas },
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -851,6 +865,11 @@ export class World {
     // Lille : la Deûle et les douves de la citadelle se creusent, et le rempart
     // de Vauban se relève au-dessus de la ville.
     h = hauteurLille(x, z, h, 34);
+
+    // La Chine : les crêtes de la muraille, la rivière de Guilin et ses
+    // karsts, les rizières en marches — une région entière dans ce qui était
+    // une zone morte entre San Francisco et le Pôle Nord.
+    h = hauteurChine(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -1032,6 +1051,9 @@ export class World {
     // au village, les arbres sont plantés par le constructeur, pas au hasard
     if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;
     if (Math.hypot(x - ESPACE.x, z - ESPACE.z) < ESPACE.r) return null;   // rien ne pousse ici
+    // en Chine, la végétation est composée : bambouseraie plantée, karsts
+    // coiffés d'herbe — pas de forêt sauvage par-dessus
+    if (Math.hypot(x - CHINE.x, z - CHINE.z) < CHINE.r) return null;
     if (Math.hypot(x - CIRCUIT.x, z - CIRCUIT.z) < CIRCUIT.r - 6) return null;  // pas d'arbre sur la piste
     // the tropical island grows palm trees instead
     const di = Math.hypot(x - ISLAND.x, z - ISLAND.z);
@@ -1179,6 +1201,14 @@ export class World {
           // ordinaire par-dessus, c'était trois grilles superposées — et plus
           // aucune des trois lisible.
           continue;
+        }
+
+        // La Chine n'est pas une ville : pas de rues, pas de maisons en
+        // grille. Seul son sol parle — la rivière turquoise, l'eau des
+        // rizières — et ses monuments font le reste.
+        {
+          const sc = solChine(wx, wz);
+          if (sc !== null) { data[World.index(x, h, z)] = sc; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

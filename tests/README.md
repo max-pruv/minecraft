@@ -197,6 +197,12 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | Karl the Fog coule sur la passe, et les pylônes en dépassent | aucun brouillard — la signature atmosphérique de la ville manquait |
 | le Bay Bridge est gris — on ne le confond plus avec le Golden Gate | les deux ponts sortaient du même moule, rouge laine tous les deux |
 | les otaries de Pier 39, Lombard fleurie et le Dragon Gate | aucune des trois icônes que cherchent les enfants n'existait |
+| le hub trace le taux de réussite par jour | le hub disait combien l'enfant avait joué, jamais s'il progressait |
+| et un jour sans question n'y compte pas pour zéro | une journée de vacances aurait ressemblé à un échec |
+| la Grande Muraille serpente sur les crêtes | entre San Francisco et le Pôle Nord, il n'y avait que du bruit de terrain |
+| la Cité interdite : vermillon, tuiles jaunes et lions de bronze | la Chine n'existait pas |
+| les karsts de Guilin au bord de la rivière turquoise | idem |
+| les rizières en marches d'eau, les pandas dans les bambous | idem |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé
