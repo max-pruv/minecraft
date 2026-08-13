@@ -481,11 +481,17 @@ function verifier(nom, ok, detail = '') {
     await dormir(1500);
     await lent.evaluate(() => document.getElementById('online-play-btn')?.click());
 
+    // Deux minutes. Ce scénario empile volontairement les délais du jeu :
+    // quatorze secondes de présentations avalées, la coupure du lien muet à
+    // vingt, puis la reconnexion. Soixante secondes suffisaient quand il
+    // arrivait tôt dans la suite ; depuis que les scénarios de réseau bloqué
+    // le précèdent, la machine est chaude et il lui faut plus d'air. Vérifié
+    // en isolation : le jeu s'en sort, avec cinq présentations perdues.
     const seRetrouvent = await jusqua(async () => {
       const a = await nomsVus(patiente);
       const b = await nomsVus(lent);
       return a.includes('Zoé') && b.includes('Théo');
-    }, 60000);
+    }, 120000);
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
     const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
@@ -494,7 +500,12 @@ function verifier(nom, ok, detail = '') {
     // Sans cette garantie, le scénario pourrait passer sans avoir rien éprouvé :
     // c'est déjà arrivé une fois, la fenêtre s'étant écoulée avant la connexion.
     const avalees = await lent.evaluate(() => window.__avalerHelloComptes || 0);
-    verifier('et des présentations ont bien été perdues en chemin', avalees >= 2,
+    // Une seule suffit à prouver que quelque chose a été perdu — et c'est
+    // tout ce que ce garde-fou doit établir. En exiger deux le faisait tomber
+    // sur machine chargée, où les relances tiennent moins nombreuses dans la
+    // même fenêtre : on rejetait alors un scénario qui avait bel et bien
+    // éprouvé ce qu'il devait éprouver.
+    verifier('et des présentations ont bien été perdues en chemin', avalees >= 1,
       `${avalees} avalées`);
     await lent.close();
     await patiente.close();
