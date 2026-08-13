@@ -181,6 +181,10 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | et ses quartiers sont des destinations | Twin Peaks, le Golden Gate Park, la Mission, le Castro, Chinatown, le Presidio n'existaient pas |
 | Nice a sa baie et ses collines | une ville « au bord de la mer » sans mer — mesuré 519 points en mer pour 998 à terre |
 | Lille a sa citadelle en étoile, entourée d'eau | un beffroi posé au milieu de rien : l'étoile de Vauban se compte par ses douves, 415 blocs |
+| la rue Faidherbe file droit vers l'horloge de la gare | il n'y avait pas de gare : la perspective de 1869 s'arrêtait dans des maisons quelconques |
+| la Déesse veille sur le damier, la Vieille Bourse sur sa cour | la Vieille Bourse était posée SUR la Grand'Place, la colonne à côté, et le damier de granit n'existait pas |
+| trois tours, trois tailles : CCI, beffroi, chaussure de ski | ni beffroi de la CCI, ni tour de Lille : des tours d'acier au hasard, parfois plus hautes que le beffroi de l'hôtel de ville |
+| le quai du Wault est en eau, la Treille montre sa façade de verre | l'ancien port et la cathédrale n'existaient pas du tout |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé

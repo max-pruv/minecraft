@@ -579,6 +579,69 @@ const position = (p) => p.evaluate(() => ({
       releveVilles.douves > 260,
       `${releveVilles.douves} blocs de douves`);
 
+    // --- Lille, relevée sur documents ----------------------------------------
+    //
+    // « La ville de Lille ne ressemble pas du tout à la réalité. » La fiche de
+    // terrain (Wikipédia, offices de tourisme) dit ce qu'un enfant lillois
+    // vérifie au premier regard, et on mesure exactement cela : la rue
+    // Faidherbe file droit de la Grand'Place à la gare, dont l'horloge ferme
+    // la vue ; la Déesse est au centre du damier de la Grand'Place et la
+    // Vieille Bourse, à CÔTÉ d'elle et non dessus, garde sa cour intérieure ;
+    // trois tours ont trois tailles (beffroi CCI 76 m < beffroi de l'hôtel de
+    // ville 104 m < tour de Lille 120 m, blanche et en porte-à-faux — la
+    // « chaussure de ski ») ; et l'eau : le quai du Wault, doigt de la Deûle
+    // pointé vers le centre, et la façade translucide de la Treille.
+    const fidele = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const Lx = -300, Lz = -200, OR = 19, VERRE = 10, EAU = 7, BLANC = 310;
+      const haut = (u, v) => {
+        const h = w.terrainHeight(Lx + u, Lz + v);
+        for (let y = h + 40; y > h; y--) { const id = w.getBlock(Lx + u, y, Lz + v); if (id) return { y: y - h, id }; }
+        return { y: 0, id: 0 };
+      };
+      const colonne = (u, v, id) => {
+        const h = w.terrainHeight(Lx + u, Lz + v);
+        for (let y = h; y < h + 40; y++) if (w.getBlock(Lx + u, y, Lz + v) === id) return true;
+        return false;
+      };
+      // la rue Faidherbe : rien au-dessus de la chaussée sur toute sa longueur
+      let rueLibre = true;
+      for (let u = 2; u <= 10; u++) if (haut(u, 0).y > 0) rueLibre = false;
+      const horloge = colonne(11, 0, OR);
+      // la Grand'Place : la Déesse au centre, le damier sous elle
+      const deesse = haut(0, 0).id === OR;
+      const p1 = w.getBlock(Lx + 2, w.terrainHeight(Lx + 2, Lz + 1), Lz + 1);
+      const p2 = w.getBlock(Lx + 3, w.terrainHeight(Lx + 3, Lz + 1), Lz + 1);
+      const damier = p1 !== p2 && p1 !== 0 && p2 !== 0;
+      // la Vieille Bourse : des murs tout autour, une cour au milieu
+      const cour = haut(4, -6).y <= 1 && haut(4, -10).y >= 5 && haut(0, -6).y >= 5;
+      // les trois tours, chacune à sa place
+      const cci = haut(6, -13).y, hdv = haut(6, 14).y, ski = haut(17, -3).y;
+      // la chaussure de ski : blanche, et son porte-à-faux au-dessus du vide
+      const bout = haut(17, 0);
+      const hb = w.terrainHeight(Lx + 17, Lz);
+      const videSous = w.getBlock(Lx + 17, hb + 6, Lz) === 0;
+      // l'eau du quai du Wault, remplie à la cote trente comme les douves
+      const wault = w.getBlock(Lx - 10, 30, Lz - 4) === EAU;
+      // la façade claire de la Treille, percée de sa rosace de verre
+      const treille = haut(-8, -15).y >= 7 && colonne(-8, -15, VERRE);
+      return { rueLibre, horloge, deesse, damier, cour, cci, hdv, ski,
+        blanc: bout.id === BLANC, videSous, wault, treille };
+    });
+    verifier("la rue Faidherbe file droit vers l'horloge de la gare",
+      fidele.rueLibre && fidele.horloge,
+      JSON.stringify({ rueLibre: fidele.rueLibre, horloge: fidele.horloge }));
+    verifier('la Déesse veille sur le damier, la Vieille Bourse sur sa cour',
+      fidele.deesse && fidele.damier && fidele.cour,
+      JSON.stringify({ deesse: fidele.deesse, damier: fidele.damier, cour: fidele.cour }));
+    verifier('trois tours, trois tailles : CCI, beffroi, chaussure de ski',
+      fidele.cci >= 15 && fidele.hdv > fidele.cci && fidele.ski > fidele.hdv && fidele.blanc && fidele.videSous,
+      `CCI ${fidele.cci} < hôtel de ville ${fidele.hdv} < tour de Lille ${fidele.ski}`
+      + ` · blanche ${fidele.blanc} · porte-à-faux ${fidele.videSous}`);
+    verifier('le quai du Wault est en eau, la Treille montre sa façade de verre',
+      fidele.wault && fidele.treille,
+      JSON.stringify({ wault: fidele.wault, treille: fidele.treille }));
+
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus] of [
       ['Nice', 300, 260, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],

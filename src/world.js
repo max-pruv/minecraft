@@ -21,6 +21,8 @@ import {
 import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
+  buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
+  buildTourDeLille, buildTreille,
 } from './lille.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
@@ -719,7 +721,9 @@ const LANDMARKS = [
   })),
   // Lille
   { name: 'Beffroi de Lille', x: LILLE.x + 6, z: LILLE.z + 14, box: 5, build: buildBelfry },
-  ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle].map((build, i) => ({
+  ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle, buildColonneDeesse,
+    buildOperaLille, buildBeffroiCCI, buildGareFlandres, buildTourDeLille, buildTreille,
+  ].map((build, i) => ({
     name: MONUMENTS_LILLE[i].nom,
     x: LILLE.x + MONUMENTS_LILLE[i].u, z: LILLE.z + MONUMENTS_LILLE[i].v,
     box: MONUMENTS_LILLE[i].box, build,
