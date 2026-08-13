@@ -747,8 +747,11 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
         return { titre: titre ? titre.textContent : '', jeu: tuile ? tuile.textContent : '',
           niveaux: !!document.querySelector('#edu-panel .edu-levels') };
       });
+      // Alice joue en direct pendant la suite : ses 20 minutes semées
+      // s'arrondissent vers le haut au fil de ses vraies secondes de jeu.
+      const min = Number((String(r && r.jeu).match(/^(\d+) min$/) || [])[1]);
       return !!r && /Sur 7 jours/.test(r.titre) && /Alice/.test(r.titre)
-        && r.jeu === '20 min' && !r.niveaux;
+        && min >= 20 && min <= 30 && !r.niveaux;
     }, 20000);
     verifier('l\'enfant choisi montre ses journées à lui, sans les niveaux du mien',
       vueAlice, JSON.stringify(await marlon.evaluate(() => ({
