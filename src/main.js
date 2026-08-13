@@ -6,6 +6,7 @@ import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { POLE } from './pole.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { createEffects } from './effects.js';
@@ -21,7 +22,7 @@ import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
-import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, createAstronautes, buildKidMesh } from './marlon.js';
+import { Marlon, Cornichon, createHeroes, createBuilders, createVillagers, createAstronautes, createLutins, buildKidMesh } from './marlon.js';
 import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
@@ -278,6 +279,10 @@ function updateChunks() {
     ...createVillagers(scene, world, player, say, player.pos.x, player.pos.z),
     // les astronautes vivent sur Mars, pas là où l'enfant apparaît
     ...createAstronautes(scene, world, player, say, MARS.x, MARS.z),
+    // Le Pôle Nord n'était qu'un décor : une usine vide, une étable sans
+    // rennes, un village sans habitants. Les lutins et le Père Noël lui
+    // donnent enfin quelqu'un à qui parler.
+    ...createLutins(scene, world, player, say, POLE.x, POLE.z),
   ];
   // la garnison du château et ses assaillants : ils rejoignent la troupe des
   // personnages, c'est la boucle principale qui les anime

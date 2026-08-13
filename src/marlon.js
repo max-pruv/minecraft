@@ -637,3 +637,83 @@ export function createVillagers(scene, world, player, toast, cx, cz) {
   }
   return villagers;
 }
+
+// Les lutins du Pôle Nord, et le Père Noël lui-même.
+//
+// L'usine était une halle vide : des établis, trois cheminées, et personne.
+// Or ce qu'un enfant vient chercher ici, ce ne sont pas des murs — c'est du
+// monde qui s'affaire, qui lui parle, et qui lui dit ce qu'il fabrique. On
+// peuple donc l'atelier, l'étable et le village, et on met le Père Noël
+// devant son traîneau.
+export function createLutins(scene, world, player, toast, cx, cz) {
+  const VERT = 0x3f8f4a, VERT_CLAIR = 0x58b04c, ROUGE = 0xc8322c, ROUGE_VIF = 0xd83a3a;
+  const NOMS = ['Piprik', 'Noisette', 'Gambille', 'Chamalo', 'Pignon', 'Grelot', 'Bricole', 'Cannelle'];
+  const PHRASES = [
+    'On a trois cent mille jouets à finir avant le 24 !',
+    'Attention, la machine à cadeaux chauffe !',
+    'Tu veux voir l\'atelier des trains en bois ?',
+    'Chut… la liste est secrète.',
+    'Les rennes mangent leur avoine, ils décollent à minuit.',
+    'J\'emballe six cadeaux à la minute. Enfin, quand tout va bien.',
+    'Le rouge, c\'est pour les paquets. Le vert, c\'est pour moi !',
+    'Tu as été sage cette année ? Moi non plus.',
+    'Le Père Noël dort trois heures par nuit en décembre.',
+    'On teste chaque jouet avant de l\'emballer. C\'est le meilleur métier.',
+  ];
+  const lutins = [];
+  for (let i = 0; i < NOMS.length; i++) {
+    const vert = i % 2 === 0;
+    const habit = vert ? VERT : ROUGE;
+    const accent = vert ? VERT_CLAIR : ROUGE_VIF;
+    // Répartis : la moitié dans la halle de l'usine, le reste au village et
+    // près de l'étable — on en croise partout, comme dans une vraie fourmilière.
+    const postes = [
+      [16, -8], [16, 4], [22, -2], [10, 6],          // l'atelier
+      [-14, 12], [-30, 20],                          // le village et la place
+      [-2, -22], [4, -14],                           // l'étable et le traîneau
+    ];
+    const [dx, dz] = postes[i % postes.length];
+    lutins.push(new Wanderer(scene, world, player, toast, {
+      name: NOMS[i],
+      label: `${NOMS[i]} — lutin de l'atelier !`,
+      walkSpeed: 1.8 + (i % 3) * 0.5,               // vifs : ce sont des lutins
+      firstSpeech: 8 + i * 5,
+      look: {
+        skin: 0xf0c8a0,
+        hair: i % 3 === 0 ? 0xb5651d : 0x704214,
+        torsoSlabs: [habit, accent, habit, accent, habit],
+        sleeveSegs: [habit, accent, habit],
+        pants: vert ? 0x2f6b38 : 0x8a2420,
+        shoes: 0x4a2c14,
+        hairstyle: i % 2 ? 'bun' : 'short',
+        glasses: i === 3,
+        hat: accent,                                  // le bonnet pointu
+      },
+      phrases: PHRASES,
+    }, cx + dx, cz + dz));
+  }
+
+  // Le Père Noël, devant son traîneau. Il ne court pas : il attend le 24.
+  lutins.push(new Wanderer(scene, world, player, toast, {
+    name: 'Père Noël',
+    label: 'Le Père Noël en personne !',
+    walkSpeed: 0.9,
+    firstSpeech: 5,
+    look: {
+      skin: 0xf0c8a0, hair: 0xf4f4f4,
+      torsoSlabs: [0xc8322c, 0xf4f4f4, 0xc8322c, 0xc8322c, 0xf4f4f4],
+      sleeveSegs: [0xc8322c, 0xf4f4f4, 0xc8322c],
+      pants: 0xc8322c, shoes: 0x2c1c10,
+      hairstyle: 'bun', glasses: true, hat: 0xd83a3a,
+    },
+    phrases: [
+      'Ho ho ho ! Bienvenue au Pôle Nord !',
+      'Mes lutins travaillent dur, tu sais.',
+      'Le traîneau est prêt. Les rennes aussi.',
+      'Tu veux voir la liste ? Elle est très longue.',
+      'Il fait froid dehors, mais le cœur est chaud ici.',
+      'Chaque cadeau est fabriqué à la main, un par un.',
+    ],
+  }, cx + 4, cz - 12));
+  return lutins;
+}

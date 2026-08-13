@@ -130,12 +130,102 @@ export function buildPole(poser) {
   cheminee(FX, FZ + 6, 10, 20);
   cheminee(FX + 7, FZ + 6, 10, 17);
 
-  // les établis, à l'intérieur : des tables de bois chargées de cubes colorés
-  for (let z = FZ - 11; z <= FZ + 11; z += 5) {
-    for (let x = FX - 9; x <= FX + 9; x += 9) {
-      bloc(x - 2, x + 2, 0, 0, z, z, BOIS);
-      set(x - 1, 1, z, ROUGE); set(x + 1, 1, z, VERT_LUTIN); set(x, 1, z, uni(2));
+  // ---- l'intérieur de l'usine : ce qu'on vient voir -----------------------
+  //
+  // La halle était vide : quatre murs, un toit de verre, trois établis perdus
+  // dedans. On y met maintenant ce qui fait une fabrique de jouets — une
+  // chaîne qui traverse tout le bâtiment, la grande machine à cadeaux qui
+  // fume au bout, des étagères pleines, des montagnes de paquets, le sapin
+  // de l'atelier et le tri du courrier.
+
+  // La chaîne de montage : un long tapis de fer qui court du nord au sud, et
+  // dessus les jouets aux différentes étapes de leur fabrication.
+  const JOUETS = [ROUGE, VERT_LUTIN, uni(2), uni(10), uni(16), uni(7)];
+  for (let z = FZ - 12; z <= FZ + 12; z++) {
+    for (let dx = -1; dx <= 1; dx++) set(FX + dx, 0, z, PIERRE);
+    // le rebord du tapis
+    set(FX - 2, 0, z, BOIS); set(FX + 2, 0, z, BOIS);
+    // un jouet tous les deux blocs, de plus en plus fini vers le sud
+    if (z % 2 === 0) {
+      const j = JOUETS[((z + 24) / 2) % JOUETS.length];
+      set(FX, 1, z, j);
+      if (z > FZ) set(FX + 1, 1, z, OR);          // au bout, le paquet est doré
     }
+  }
+
+  // La grande machine à cadeaux, au bout de la chaîne : un bloc de fer, un
+  // entonnoir, des engrenages dorés et son tuyau de vapeur qui monte au toit.
+  bloc(FX - 4, FX + 4, 0, 5, FZ - 15, FZ - 12, PIERRE);
+  bloc(FX - 3, FX + 3, 1, 4, FZ - 14, FZ - 13, BOIS);
+  for (const dy of [2, 4]) { set(FX - 4, dy, FZ - 13, OR); set(FX + 4, dy, FZ - 13, OR); }
+  set(FX, 6, FZ - 13, OR);                         // l'entonnoir
+  for (let y = 6; y <= 9; y++) set(FX - 2, y, FZ - 14, PIERRE);   // le tuyau
+  for (let y = 1; y <= 4; y++) set(FX, y, FZ - 12, VERRE);        // le hublot
+
+  // Les établis, de part et d'autre de la chaîne, avec leurs outils et leurs
+  // pièces détachées.
+  for (let z = FZ - 10; z <= FZ + 10; z += 4) {
+    for (const x of [FX - 7, FX + 7]) {
+      bloc(x - 2, x + 2, 0, 0, z, z, BOIS);
+      set(x - 1, 1, z, JOUETS[(z + 40) % JOUETS.length]);
+      set(x + 1, 1, z, JOUETS[(z + 41) % JOUETS.length]);
+      set(x, 1, z, BLANC);                          // le pot à outils
+    }
+  }
+
+  // Les étagères contre les murs : des rangées de jouets finis, du sol au
+  // plafond. C'est ce qui donne le sentiment qu'il y en a des milliers.
+  for (const x of [FX - 11, FX + 11]) {
+    for (let z = FZ - 13; z <= FZ + 13; z++) {
+      for (let y = 0; y <= 6; y += 2) {
+        set(x, y, z, BOIS);
+        if (y < 6) set(x, y + 1, z, JOUETS[(z * 3 + y) % JOUETS.length]);
+      }
+    }
+  }
+
+  // Les montagnes de cadeaux emballés, près de la grande porte : des paquets
+  // colorés avec leur ruban doré, empilés en pyramides.
+  for (const [px, pz] of [[FX - 7, FZ + 12], [FX + 7, FZ + 12], [FX, FZ + 13]]) {
+    for (let y = 0; y <= 2; y++) {
+      const r = 2 - y;
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dz = -r; dz <= r; dz++) {
+          const paquet = JOUETS[(px + pz + dx + dz + y) % JOUETS.length];
+          set(px + dx, y, pz + dz, (dx === 0 || dz === 0) && y === r ? OR : paquet);
+        }
+      }
+    }
+  }
+
+  // Le sapin de l'atelier, au milieu de la halle : les lutins ont bien le
+  // droit d'avoir le leur.
+  for (let y = 0; y <= 1; y++) set(FX + 6, y, FZ - 6, BOIS);
+  for (let y = 2; y <= 6; y++) {
+    const r = 6 - y;
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        if (Math.abs(dx) + Math.abs(dz) > r) continue;
+        const boule = (dx + dz + y) % 5 === 0;
+        set(FX + 6 + dx, y, FZ - 6 + dz, boule ? ROUGE : VERT_SAPIN);
+      }
+    }
+  }
+  set(FX + 6, 7, FZ - 6, OR);
+
+  // Le tri du courrier : les sacs de lettres des enfants, et la table où on
+  // les lit.
+  for (const [sx, sz] of [[FX - 8, FZ + 8], [FX - 9, FZ + 9], [FX - 7, FZ + 9]]) {
+    set(sx, 0, sz, BLANC); set(sx, 1, sz, BLANC);
+  }
+  bloc(FX - 9, FX - 6, 0, 0, FZ + 6, FZ + 6, BOIS);
+  set(FX - 8, 1, FZ + 6, BLANC);                    // une lettre ouverte
+
+  // Les guirlandes du plafond : une rangée de boules rouges et dorées d'un
+  // bout à l'autre de la halle.
+  for (let z = FZ - 13; z <= FZ + 13; z += 3) {
+    set(FX - 5, 8, z, z % 2 ? ROUGE : OR);
+    set(FX + 5, 8, z, z % 2 ? OR : ROUGE);
   }
 
   // ================= L'ÉTABLE DES RENNES =================
@@ -149,26 +239,63 @@ export function buildPole(poser) {
   }
   dalle(EX - 11, EX + 11, EZ + 5, EZ + 5, 0, BLOCK.AIR);   // la façade ouverte
   bloc(EX - 11, EX + 11, 1, 4, EZ + 5, EZ + 5, BLOCK.AIR);
-  // les stalles, et le foin
+  // les stalles, le foin — et les rennes dedans, ce qui manquait le plus :
+  // une étable sans rennes n'est qu'un hangar.
   for (let x = EX - 9; x <= EX + 9; x += 5) {
     for (let y = 0; y <= 2; y++) set(x, y, EZ + 2, PLANCHE);
     set(x - 2, 0, EZ - 3, BLOCK.LEAVES);
   }
   dalle(EX - 10, EX + 10, EZ - 4, EZ + 4, -1, PLANCHE);
 
+  // Un renne : quatre pattes, un corps brun, une tête claire et surtout des
+  // BOIS — c'est à eux qu'un enfant le reconnaît du premier coup d'œil.
+  const renne = (rx, rz, nezRouge) => {
+    const BRUN = uni(17), BRUN_CLAIR = uni(19);
+    for (const [dx, dz] of [[0, 0], [2, 0], [0, 1], [2, 1]]) set(rx + dx, 0, rz + dz, uni(18));  // les pattes
+    for (let dx = 0; dx <= 2; dx++) for (let dz = 0; dz <= 1; dz++) set(rx + dx, 1, rz + dz, BRUN);
+    set(rx + 3, 1, rz, BRUN_CLAIR); set(rx + 3, 1, rz + 1, BRUN_CLAIR);   // l'encolure
+    set(rx + 4, 2, rz, BRUN_CLAIR);                                        // la tête
+    set(rx + 5, 2, rz, nezRouge ? ROUGE : BRUN_CLAIR);                     // le museau
+    // les bois, en fourche
+    for (const dz of [0, 1]) { set(rx + 4, 3, rz + dz - (dz ? 0 : 0), BOIS); }
+    set(rx + 4, 4, rz, BOIS); set(rx + 3, 4, rz, BOIS); set(rx + 5, 4, rz, BOIS);
+    set(rx + 5, 4, rz + 1, BOIS); set(rx + 3, 4, rz + 1, BOIS);
+  };
+  // Huit rennes dans leurs stalles, et le neuvième au nez rouge devant.
+  for (let i = 0; i < 4; i++) {
+    renne(EX - 9 + i * 5, EZ - 2, false);
+    renne(EX - 9 + i * 5, EZ + 1, false);
+  }
+
   // ================= LE TRAÎNEAU =================
   // Devant l'étable, tourné vers le sud, chargé de sa hotte.
   const TX = 4, TZ = -16;
+  // La coque, rouge et or, avec son dossier haut à l'arrière
   for (let x = TX - 4; x <= TX + 4; x++) {
     set(x, 0, TZ - 1, ROUGE); set(x, 0, TZ + 1, ROUGE);
     set(x, 1, TZ - 1, ROUGE_SOMBRE); set(x, 1, TZ + 1, ROUGE_SOMBRE);
+    set(x, 0, TZ, ROUGE);
   }
-  bloc(TX - 4, TX + 4, 0, 0, TZ, TZ, ROUGE);
-  for (const dz of [-1, 1]) { set(TX - 5, 0, TZ + dz, OR); set(TX + 5, 1, TZ + dz, OR); }
-  bloc(TX + 1, TX + 3, 1, 2, TZ - 1, TZ + 1, BOIS);        // la hotte
-  set(TX + 2, 3, TZ, ROUGE);
-  // les traits jusqu'à l'étable
-  for (let z = TZ - 2; z >= TZ - 6; z--) set(TX - 5, 0, z, BOIS);
+  for (let dz = -1; dz <= 1; dz++) { set(TX + 4, 2, TZ + dz, ROUGE_SOMBRE); set(TX + 4, 3, TZ + dz, OR); }
+  // Les patins recourbés : deux lames dorées qui remontent à l'avant. C'est
+  // cette courbe qui fait qu'on lit « traîneau » et pas « caisse ».
+  for (const dz of [-2, 2]) {
+    for (let x = TX - 5; x <= TX + 4; x++) set(x, -1, TZ + dz, OR);
+    set(TX - 6, 0, TZ + dz, OR);
+    set(TX - 6, 1, TZ + dz, OR);
+  }
+  // Le siège, et la hotte débordante de cadeaux
+  bloc(TX + 2, TX + 3, 1, 1, TZ - 1, TZ + 1, BOIS);
+  bloc(TX - 2, TX + 1, 1, 2, TZ - 1, TZ + 1, BOIS);
+  for (const [gx, gz, c] of [[TX - 2, TZ, ROUGE], [TX - 1, TZ - 1, VERT_LUTIN],
+    [TX - 1, TZ + 1, uni(2)], [TX, TZ, uni(10)], [TX + 1, TZ - 1, uni(16)]]) {
+    set(gx, 3, gz, c);
+    set(gx, 4, gz, OR);                                    // le ruban
+  }
+  // Les traits, et l'attelage : deux rennes devant, dont celui au nez rouge
+  for (let z = TZ - 2; z >= TZ - 7; z--) { set(TX - 5, 0, z, BOIS); set(TX + 3, 0, z, BOIS); }
+  renne(TX - 6, TZ - 11, true);
+  renne(TX + 1, TZ - 11, false);
 
   // ================= LA PISTE D'ENVOL =================
   // Une allée de glace bordée de lanternes, plein sud : c'est par là qu'ils
