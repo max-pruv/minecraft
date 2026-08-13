@@ -431,8 +431,26 @@ export class NetSession {
 
   connectToHost(done) {
     this.relaisVu = false;
+    // UNE SEULE TENTATIVE VIVANTE À LA FOIS.
+    //
+    // Chaque essai fabrique un canal WebRTC, et un canal jamais refermé garde
+    // sa RTCPeerConnection pour toujours. La boucle de reconnexion en ouvre un
+    // toutes les trois à vingt secondes ; au bout d'un moment le navigateur
+    // refuse d'en construire davantage — « Cannot create so many
+    // PeerConnections » — et à partir de cet instant plus AUCUNE connexion
+    // n'est possible, ni directe ni relayée. La tablette est bonne à
+    // recharger, et l'enfant lit « impossible de rejoindre » pour toujours.
+    //
+    // On referme donc l'essai précédent au moment d'en lancer un nouveau — et
+    // seulement à ce moment-là : couper plus tôt condamnerait un lien lent qui
+    // allait aboutir, ce que la remontée vers le direct sait justement
+    // rattraper.
+    if (this._essai && !this._essai.open) {
+      try { this._essai.close(); } catch { /* déjà refermée */ }
+    }
     const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
     if (!conn) { done?.(new Error('Connexion impossible')); return; }
+    this._essai = conn;
     this.surveillerLesChemins(conn);
     this.registerConn(conn); // handlers BEFORE open — no missed messages
     let fini = false;
@@ -473,6 +491,7 @@ export class NetSession {
     );
     conn.on('open', () => {
       clearTimeout(minuteur);
+      if (this._essai === conn) this._essai = null;   // celle-ci a abouti
       this._rejoining = false;
       this.greet(conn);
       this.link('ok');
