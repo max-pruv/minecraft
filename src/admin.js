@@ -338,10 +338,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 function presence(l) {
   // La version sur laquelle tourne l'appareil de l'enfant. Elle vient de sa
-  // dernière présence, donc elle reste lisible même hors ligne : la question
-  // qu'on se pose est « sur quoi était-il ? », pas seulement « où est-il ? ».
-  // Une tablette restée sur une vieille version explique bien des choses.
-  const v = l.live && l.live.version;
+  // dernière présence — fraîche ou non : la question qu'on se pose est « sur
+  // quoi était-il ? », pas seulement « où est-il ? ». Une tablette restée sur
+  // une vieille version explique bien des choses.
+  const v = (l.live && l.live.version) || (l.derniere && l.derniere.version);
   // La référence est la version que fait tourner l'appareil du parent, qui
   // vient de charger la page : une tablette qui n'y est pas est en retard.
   const ref = typeof window !== 'undefined' ? window.__version : null;
@@ -572,7 +572,7 @@ export class AdminPanel {
         par.set(nom, {
           nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
           mondes: [], blocs: 0, dex: 0, aujourdhui: 0, periode: 0, total: 0,
-          quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, majPrefs: null,
+          quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, derniere: null, majPrefs: null,
           supprime: false, rythme: SESSION_MIN_USINE,
         });
       }
@@ -629,9 +629,15 @@ export class AdminPanel {
       const min = Number((r.prefs || {}).sessionMin);
       if (isFinite(min) && min > 0) e.rythme = Math.round(min);
       const l = (r.prefs || {}).live;
+      // La dernière présence connue, quel que soit son âge : la version de la
+      // tablette n'est pas une donnée périssable. Jetée avec le reste, elle
+      // affichait « version inconnue » pour une tablette dont la version
+      // était connue — deux jours après un passage d'Alice, par exemple.
+      if (l) e.derniere = l;
       // Passé ce délai, le battement s'est arrêté : l'appareil est en veille,
       // le jeu fermé, ou le réseau coupé. Dans tous les cas l'enfant n'est
-      // plus là, et il vaut mieux ne rien dire que dire une chose fausse.
+      // plus là, et il vaut mieux ne rien dire que dire une chose fausse —
+      // cela ne vaut que pour l'état « en ligne », pas pour la version.
       if (l && Date.now() - (l.at || 0) < PRESENCE_MS) e.live = l;
     }
     const aujourd = jour();

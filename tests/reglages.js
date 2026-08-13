@@ -686,6 +686,31 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       JSON.stringify(filtre.detailJours));
     await marlon.evaluate(() => { const a = window.__game.admin; a.el.style.display = 'none'; });
 
+    // --- la version d'une tablette éteinte reste lisible ---------------------
+    //
+    // Alice s'était connectée deux jours plus tôt : sa présence, avec sa
+    // version, dormait dans son document — et l'espace parent la jetait parce
+    // qu'elle n'était plus « fraîche ». Le parent lisait « version inconnue »
+    // pour une tablette dont la version était parfaitement connue, et ne
+    // pouvait pas voir qu'elle était restée en arrière.
+    nuage.poserReglages('Zoé', { live: { at: Date.now() - 2 * 86400000, device: 'dz',
+      monde: null, joue: false, joueurs: 0, version: 'v901' } });
+    const horsLigne = await marlon.evaluate(async () => {
+      const a = window.__game.admin;
+      a.mount();
+      await a.load();
+      const sel = a.el.querySelector('#adm-filtre-enfant');
+      sel.value = ''; sel.dispatchEvent(new Event('change'));
+      await new Promise((r) => setTimeout(r, 200));
+      const ligne = [...a.el.querySelectorAll('#adm-rows tr')]
+        .find((tr) => tr.textContent.includes('Zoé'));
+      a.el.style.display = 'none';
+      return ligne ? ligne.innerHTML : null;
+    });
+    verifier('la version d\'une tablette éteinte reste lisible deux jours après',
+      !!horsLigne && /v901/.test(horsLigne) && !/version inconnue/.test(horsLigne),
+      String(horsLigne).slice(0, 160));
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {

@@ -189,6 +189,7 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | la coupole rose du Negresco, les bulbes verts de Saint-Nicolas | pas de Negresco ; la cathédrale russe, mal placée, portait des bulbes multicolores |
 | sept statues perchées veillent sur Masséna | six : la septième de « Conversation à Nice » manquait |
 | chaises bleues, palmiers, stores rayés et la baleine du Paillon | la Promenade n'était qu'un trottoir, Saleya un pavage, le Paillon une pelouse |
+| la version d'une tablette éteinte reste lisible deux jours après | la présence périmée était jetée en bloc, version comprise : « version inconnue » pour une tablette dont la version était connue |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé
