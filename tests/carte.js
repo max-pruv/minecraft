@@ -732,8 +732,10 @@ const position = (p) => p.evaluate(() => ({
         for (let y = h; y < h + 45; y++) if (w.getBlock(Sx + u, y, Sz + v) === id) return true;
         return false;
       };
-      // le pont : orange, pylône sud dressé, tablier filant vers le nord
-      const pylone = colonne(-22, -35, ORANGE) && haut(-22, -35).y > 25;
+      // le pont : orange, pylône sud dressé, tablier filant vers le nord.
+      // Le rivage sous le pylône est à la cote 33 : le sommet à 54 fait une
+      // hauteur relative de 21 — bien au-dessus du brouillard, qui plafonne à 14.
+      const pylone = colonne(-22, -35, ORANGE) && haut(-22, -35).y >= 18;
       const tablier = colonne(-21, -46, 562);
       // les Marin Headlands : de la terre dorée là où il n'y avait que la mer
       const hMarin = w.terrainHeight(Sx - 22, Sz - 52);

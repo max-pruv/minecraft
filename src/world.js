@@ -10,7 +10,7 @@ import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
 import {
-  SF, surTerreSF, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
+  SF, surTerreSF, surMarin, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
   buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate,
@@ -990,7 +990,9 @@ export class World {
       // Manhattan tient dans ce cercle mais n'en occupe qu'une bande : hors de
       // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
       if (c.key === 'ny' && !surTerre(x, z)) continue;
-      if (c.key === 'sf' && !surTerreSF(x, z)) continue;
+      // Les Marin Headlands font partie de San Francisco : sans cela, leur
+      // herbe sèche dorée restait l'herbe verte de la campagne.
+      if (c.key === 'sf' && !surTerreSF(x, z) && !surMarin(x, z)) continue;
       if (c.key === 'nice' && !surTerreNice(x, z)) continue;
       return c;
     }

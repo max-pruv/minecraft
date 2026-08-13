@@ -110,6 +110,10 @@ function versMer(u, v) {
 const MARIN = { u: -22, v: -52, ru: 12, rv: 7 };
 const versMarin = (u, v) =>
   1 - ((u - MARIN.u) / MARIN.ru) ** 2 - ((v - MARIN.v) / MARIN.rv) ** 2;
+// Le générateur ne donne un sol de ville qu'aux colonnes de la ville : les
+// Headlands doivent en être, sinon leur herbe sèche reste l'herbe de la
+// campagne — vérifié : des collines vertes, et la fiche dit dorées.
+export const surMarin = (x, z) => versMarin(x - SF.x, z - SF.z) > 0;
 
 // --- les collines -----------------------------------------------------------------
 //
@@ -434,9 +438,11 @@ export const MONUMENTS_SF = [
   { nom: 'Alcatraz', dx: -1.2, dz: -3.5, box: 9 },
   // Les trois icônes que les enfants cherchent — et que les reconstitutions
   // oublient presque toujours (fiche de terrain).
-  { nom: 'Pier 39', dx: -1.3, dz: -2.45, box: 6, seuil: 0.3, waterBase: true },
-  { nom: 'Lombard Street', dx: -1.45, dz: -1.55, box: 5, seuil: 0.3 },
-  { nom: 'Dragon Gate', dx: -1.0, dz: -0.55, box: 5, seuil: 0.3 },
+  // Seuil 0,25 : au zoom des quartiers (0,3), leurs pastilles chassaient le
+  // nom de Chinatown — vu au premier passage du scénario des destinations.
+  { nom: 'Pier 39', dx: -1.3, dz: -2.45, box: 6, seuil: 0.25, waterBase: true },
+  { nom: 'Lombard Street', dx: -1.45, dz: -1.55, box: 5, seuil: 0.25 },
+  { nom: 'Dragon Gate', dx: -1.0, dz: -0.55, box: 5, seuil: 0.25 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
