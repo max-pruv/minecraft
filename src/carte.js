@@ -63,6 +63,10 @@ const ICONES = {
   'Tour Eiffel': '🗼', 'Arc de Triomphe': '🏛️', 'Pyramide du Louvre': '🔷',
   'Empire State': '🏢', 'Statue de la Liberté': '🗽', 'Golden Gate': '🌉', 'Phare': '🚨',
   'Beffroi de Lille': '🔔', 'Base martienne': '🛸', 'Caserne & Commissariat': '🚒',
+  'Vieille Bourse': '🏛️', 'Porte de Paris': '🚪', 'Citadelle de Vauban': '⭐',
+  'Colonne de la Déesse': '👑', 'Opéra de Lille': '🎭',
+  'Beffroi de la Chambre de commerce': '🕰️', 'Gare Lille-Flandres': '🚉',
+  'Tour de Lille': '🎿', 'Cathédrale de la Treille': '⛪',
   'Pyramides': '🔺', 'Central Park': '🌳', 'Times Square': '🎭',
   'Chrysler Building': '🏙️', 'Flatiron': '📐', 'One World Trade Center': '🗼',
   'Grand Central': '🚉', 'Rockefeller Center': '⛸️', 'Wall Street': '💰',
@@ -446,7 +450,7 @@ export class Carte {
     const candidats = [
       ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
       ...PLACES.map((c) => ({ c, fort: true, seuil: majeur(c) ? 99 : 1.9 })),
-      ...REPERES.map((c) => ({ c, fort: false, seuil: 1.6 })),
+      ...REPERES.map((c) => ({ c, fort: false, seuil: c.seuil || 1.6 })),
       // Les quartiers de Manhattan, à courte distance seulement. Sur un plan
       // de New York, ce sont eux qu'on lit avant les noms de rue — et ils
       // disent que l'île n'est pas une ville uniforme mais une file de

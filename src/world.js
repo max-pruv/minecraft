@@ -21,6 +21,8 @@ import {
 import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
+  buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
+  buildTourDeLille, buildTreille,
 } from './lille.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
@@ -719,10 +721,12 @@ const LANDMARKS = [
   })),
   // Lille
   { name: 'Beffroi de Lille', x: LILLE.x + 6, z: LILLE.z + 14, box: 5, build: buildBelfry },
-  ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle].map((build, i) => ({
+  ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle, buildColonneDeesse,
+    buildOperaLille, buildBeffroiCCI, buildGareFlandres, buildTourDeLille, buildTreille,
+  ].map((build, i) => ({
     name: MONUMENTS_LILLE[i].nom,
     x: LILLE.x + MONUMENTS_LILLE[i].u, z: LILLE.z + MONUMENTS_LILLE[i].v,
-    box: MONUMENTS_LILLE[i].box, build,
+    box: MONUMENTS_LILLE[i].box, seuil: MONUMENTS_LILLE[i].seuil, build,
   })),
   ...[buildMassena, buildCathedraleRusse, buildCollineChateau].map((build, i) => ({
     name: MONUMENTS_NICE[i].nom,
@@ -749,7 +753,7 @@ const LANDMARKS = [
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
-export const REPERES = LANDMARKS.map(({ name, x, z, box }) => ({ name, x, z, box }));
+export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
 
 // --- world ----------------------------------------------------------------
 
