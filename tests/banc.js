@@ -245,7 +245,13 @@ class Banc {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage), { waitUntil: 'load' });
+    // Quatre-vingt-dix secondes, comme l'attente du jeu juste en dessous : la
+    // trentaine de fichiers du jeu, sur un conteneur à quatre cœurs qui vient
+    // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
+    // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
+    // sur un défaut.
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage),
+      { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
     return p;
