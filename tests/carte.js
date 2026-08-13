@@ -708,6 +708,61 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify({ chaises: nicoise.chaises, palmiers: nicoise.palmiers,
         saleya: nicoise.saleya, baleine: nicoise.baleine }));
 
+    // --- San Francisco, relevée sur documents --------------------------------
+    //
+    // La fiche de terrain énumère les erreurs classiques, et l'ancien code les
+    // faisait toutes : un pont ROUGE VIF couché est-ouest qui ne menait nulle
+    // part (l'orange international est un rouge-orangé brûlé, et le pont va du
+    // Presidio aux Marin Headlands, plein nord) ; pas de Headlands du tout ;
+    // pas de brouillard ; le Bay Bridge de la même couleur que le Golden Gate ;
+    // et aucune des icônes que cherchent les enfants — les otaries de Pier 39,
+    // les épingles fleuries de Lombard Street, le Dragon Gate de Chinatown.
+    const frisco = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const Sx = 0, Sz = -320;
+      const ORANGE = 40, ICE = 18, MARRON = 210, BRIQUE = 11, VIOLET = 27;
+      const VERT_TOIT = 90, DORE = 260, OLIVE = 250, GRIS = 33, ROUGE_LAINE = 23;
+      const haut = (u, v) => {
+        const h = w.terrainHeight(Sx + u, Sz + v);
+        for (let y = h + 45; y > h; y--) { const id = w.getBlock(Sx + u, y, Sz + v); if (id) return { y: y - h, id }; }
+        return { y: 0, id: 0 };
+      };
+      const colonne = (u, v, id) => {
+        const h = w.terrainHeight(Sx + u, Sz + v);
+        for (let y = h; y < h + 45; y++) if (w.getBlock(Sx + u, y, Sz + v) === id) return true;
+        return false;
+      };
+      // le pont : orange, pylône sud dressé, tablier filant vers le nord.
+      // Le rivage sous le pylône est à la cote 33 : le sommet à 54 fait une
+      // hauteur relative de 21 — bien au-dessus du brouillard, qui plafonne à 14.
+      const pylone = colonne(-22, -35, ORANGE) && haut(-22, -35).y >= 18;
+      const tablier = colonne(-21, -46, 562);
+      // les Marin Headlands : de la terre dorée là où il n'y avait que la mer
+      const hMarin = w.terrainHeight(Sx - 22, Sz - 52);
+      const solMarin = w.getBlock(Sx - 22, hMarin, Sz - 52);
+      const marin = hMarin >= 32 && (solMarin === DORE || solMarin === OLIVE);
+      // Karl the Fog : la nappe translucide sur la passe, sous les pylônes
+      const brouillard = colonne(-27, -44, ICE) && colonne(-15, -44, ICE);
+      // le Bay Bridge est gris — c'est la couleur qui empêche de le confondre
+      const bayGris = colonne(38, 1, GRIS) && !colonne(38, 1, ROUGE_LAINE);
+      // les icônes des enfants
+      const otaries = colonne(29, -29, MARRON);
+      const lombard = colonne(32, -18, BRIQUE) && colonne(32, -17, VIOLET);
+      const dragon = colonne(36, -9, VERT_TOIT) && colonne(36, -9, 19);
+      return { pylone, tablier, marin, brouillard, bayGris, otaries, lombard, dragon };
+    });
+    verifier('le Golden Gate, orange, va du Presidio aux Marin Headlands',
+      frisco.pylone && frisco.tablier && frisco.marin,
+      JSON.stringify({ pylone: frisco.pylone, tablier: frisco.tablier, marin: frisco.marin }));
+    verifier('Karl the Fog coule sur la passe, et les pylônes en dépassent',
+      frisco.brouillard && frisco.pylone,
+      JSON.stringify({ brouillard: frisco.brouillard }));
+    verifier('le Bay Bridge est gris — on ne le confond plus avec le Golden Gate',
+      frisco.bayGris, JSON.stringify({ bayGris: frisco.bayGris }));
+    verifier('les otaries de Pier 39, Lombard fleurie et le Dragon Gate',
+      frisco.otaries && frisco.lombard && frisco.dragon,
+      JSON.stringify({ otaries: frisco.otaries, lombard: frisco.lombard, dragon: frisco.dragon }));
+
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus] of [
       ['Nice', 300, 260, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],

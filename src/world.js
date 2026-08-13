@@ -10,9 +10,10 @@ import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
 import {
-  SF, surTerreSF, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
+  SF, surTerreSF, surMarin, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
+  buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate,
 } from './sanfrancisco.js';
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
@@ -134,8 +135,9 @@ function buildStatue(set) { // Lady Liberty: granite pedestal, copper body, gold
   set(-2, 10, 0, C); // tablet arm
 }
 
-function buildSuspensionBridge(set) { // Golden Gate, international orange
-  const R = BLOCK.WOOL_RED;
+function buildSuspensionBridge(set, R = BLOCK.WOOL_RED) { // pont suspendu générique
+  // Le Bay Bridge le prend en GRIS : le Golden Gate a désormais son propre
+  // bâtisseur, orange international, dans sanfrancisco.js.
   for (const tx of [-18, 18]) { // the two towers
     for (let y = 0; y < 26; y++) {
       for (const dz of [-2, 3]) { set(tx, y, dz, R); set(tx + 1, y, dz, R); }
@@ -704,20 +706,25 @@ const LANDMARKS = [
   // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
   { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
   // San Francisco
-  // San Francisco : le Golden Gate enjambe enfin la passe, à son vrai endroit,
-  // et le Bay Bridge relie le centre à l'est.
-  { name: 'Golden Gate', x: SF.x - 21, z: SF.z - 40, box: 34, waterBase: true, build: buildSuspensionBridge },
-  { name: 'Bay Bridge', x: SF.x + 56, z: SF.z + 1, box: 30, waterBase: true, build: buildSuspensionBridge },
+  // San Francisco : le Golden Gate — orange international, orienté nord-sud,
+  // du Presidio aux Marin Headlands — avec Karl the Fog qui entre par la
+  // passe ; le Bay Bridge, GRIS, relie le centre à l'est : les confondre est
+  // l'erreur classique, la couleur les distingue désormais.
+  { name: 'Golden Gate', x: SF.x - 21, z: SF.z - 42, box: 30, waterBase: true, build: buildGoldenGate },
+  { name: 'Karl the Fog', x: SF.x - 21, z: SF.z - 44, box: 18, waterBase: true, seuil: 0.3, build: buildKarl },
+  { name: 'Bay Bridge', x: SF.x + 56, z: SF.z + 1, box: 30, waterBase: true, build: (set) => buildSuspensionBridge(set, BLOCK.STONEBRICK) },
   { name: 'Phare', x: SF.x - 44, z: SF.z - 30, box: 3, waterBase: true, build: buildLighthouse },
   ...[
     buildTransamerica, buildCoit, buildSutro, buildFerryBuilding,
     buildPaintedLadies, buildPalaisBeauxArts, buildAlcatraz,
+    buildPier39, buildLombard, buildDragonGate,
   ].map((build, i) => ({
     name: MONUMENTS_SF[i].nom,
     x: SF.x + MONUMENTS_SF[i].u,
     z: SF.z + MONUMENTS_SF[i].v,
     box: MONUMENTS_SF[i].box,
-    waterBase: MONUMENTS_SF[i].nom === 'Alcatraz',
+    seuil: MONUMENTS_SF[i].seuil,
+    waterBase: !!(MONUMENTS_SF[i].waterBase || MONUMENTS_SF[i].nom === 'Alcatraz'),
     build,
   })),
   // Lille
@@ -983,7 +990,9 @@ export class World {
       // Manhattan tient dans ce cercle mais n'en occupe qu'une bande : hors de
       // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
       if (c.key === 'ny' && !surTerre(x, z)) continue;
-      if (c.key === 'sf' && !surTerreSF(x, z)) continue;
+      // Les Marin Headlands font partie de San Francisco : sans cela, leur
+      // herbe sèche dorée restait l'herbe verte de la campagne.
+      if (c.key === 'sf' && !surTerreSF(x, z) && !surMarin(x, z)) continue;
       if (c.key === 'nice' && !surTerreNice(x, z)) continue;
       return c;
     }

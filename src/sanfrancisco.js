@@ -41,6 +41,12 @@ const ACIER = uni(24);
 const ANTHRACITE = uni(25);
 const VERRE = BLOCK.GLASS;
 const BETON = BLOCK.STONEBRICK;
+const OR = BLOCK.GOLD;
+const DORE = uni(22);        // l'herbe sèche des Marin Headlands
+const OLIVE = uni(21);
+const MARRON = uni(17);      // les otaries
+const GRIS_QUAI = uni(23);
+const VERT_TOIT = uni(5);    // les toits de pagode de Chinatown
 
 export const SF = { x: 0, z: -320, r: 66 };
 
@@ -97,6 +103,18 @@ function versMer(u, v) {
   return -Math.min(v - bordNord(u), u - bordOuest(v), bordEst(v) - u);
 }
 
+// Les Marin Headlands : les collines dorées et vides de l'autre côté du
+// détroit. Sans elles, le Golden Gate ne menait nulle part — et c'est bien le
+// détroit qu'il enjambe, pas le large. Positif dedans, à la manière d'une
+// ellipse : 1 au cœur, 0 au rivage.
+const MARIN = { u: -22, v: -52, ru: 12, rv: 7 };
+const versMarin = (u, v) =>
+  1 - ((u - MARIN.u) / MARIN.ru) ** 2 - ((v - MARIN.v) / MARIN.rv) ** 2;
+// Le générateur ne donne un sol de ville qu'aux colonnes de la ville : les
+// Headlands doivent en être, sinon leur herbe sèche reste l'herbe de la
+// campagne — vérifié : des collines vertes, et la fiche dit dorées.
+export const surMarin = (x, z) => versMarin(x - SF.x, z - SF.z) > 0;
+
 // --- les collines -----------------------------------------------------------------
 //
 // Chacune à sa hauteur réelle, comptée en blocs de dix mètres. Twin Peaks fait
@@ -128,8 +146,12 @@ export function hauteurSF(x, z, h, base) {
   const marge = Math.min(1, (SF.r + 14 - d) / 14);
 
   const mer = versMer(u, v);
+  const marin = versMarin(u, v);
   let cible;
-  if (mer >= 0) {
+  if (marin > 0) {
+    // les Marin Headlands : une rive basse qui monte vite en collines rondes
+    cible = base - 2 + Math.min(1, marin * 2) * 8;
+  } else if (mer >= 0) {
     // l'eau : une berge courte, puis le fond
     cible = mer < 2 ? base - 1 - mer : Math.max(20, 26 - Math.min(6, mer - 2));
   } else {
@@ -250,8 +272,12 @@ const BANDES = rangerVoies(VOIES);
 // --- le sol ---------------------------------------------------------------------------
 
 export function solSF(x, z) {
+  const u0 = x - SF.x, v0 = z - SF.z;
+  // Les Marin Headlands : de l'herbe sèche dorée, quelques touffes d'olive,
+  // et rien d'autre — pas de rues, pas de maisons, comme les vraies.
+  if (versMarin(u0, v0) > 0) return ((u0 * 3 + v0) % 5 === 0) ? OLIVE : DORE;
   if (!surTerreSF(x, z)) return null;
-  const u = x - SF.x, v = z - SF.z;
+  const u = u0, v = v0;
 
   // la plage, tout le long du Pacifique
   if (u - bordOuest(v) < 2.5) return SABLE;
@@ -392,6 +418,7 @@ export function couleurCarteSF(x, z) {
     return [150 + t * 70, 145 + t * 65, 140 + t * 60];
   }
   if (sol === EAU) return null;
+  if (sol === DORE || sol === OLIVE) return [178, 162, 112];   // les Headlands
   if (sol === SABLE) return SABLE_PLAGE;
   if (sol === ARBRE) return VERT_BOIS;
   if (sol === HERBE) return VERT_PARC;
@@ -409,6 +436,13 @@ export const MONUMENTS_SF = [
   { nom: 'Painted Ladies', dx: -4.3, dz: 0.75, box: 10 },
   { nom: 'Palais des Beaux-Arts', dx: -4.6, dz: -2.5, box: 10 },
   { nom: 'Alcatraz', dx: -1.2, dz: -3.5, box: 9 },
+  // Les trois icônes que les enfants cherchent — et que les reconstitutions
+  // oublient presque toujours (fiche de terrain).
+  // Seuil 0,25 : au zoom des quartiers (0,3), leurs pastilles chassaient le
+  // nom de Chinatown — vu au premier passage du scénario des destinations.
+  { nom: 'Pier 39', dx: -1.3, dz: -2.45, box: 6, seuil: 0.25, waterBase: true },
+  { nom: 'Lombard Street', dx: -1.45, dz: -1.55, box: 5, seuil: 0.25 },
+  { nom: 'Dragon Gate', dx: -1.0, dz: -0.55, box: 5, seuil: 0.25 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
@@ -583,4 +617,116 @@ export function buildAlcatraz(poser) {
   bloc(-6, 5, 9, 9, -3, 3, ANTHRACITE);
   for (let y = 3; y <= 16; y++) set(6, y, -4, BLANC);
   set(6, 17, -4, BLOCK.GOLD);      // le phare
+}
+
+// Le Golden Gate, le vrai : orange international — un rouge-orangé brûlé,
+// jamais rouge vif —, orienté nord-sud du Presidio aux Marin Headlands,
+// pylônes Art déco à gradins exagérés en hauteur pour qu'ils dominent tout
+// sauf les collines, câbles paraboliques et suspentes. L'ancien pont était
+// rouge laine, couché est-ouest, et ne menait nulle part.
+export function buildGoldenGate(poser) {
+  const { set, bloc } = boite(poser);
+  const O = ROUGE_PONT;
+  // le tablier, du Presidio aux Headlands
+  for (let dz = -12; dz <= 12; dz++) {
+    for (const dx of [-1, 0]) set(dx, 10, dz, BITUME);
+    set(-2, 11, dz, O);
+    set(1, 11, dz, O);
+  }
+  // les deux pylônes : un socle, un retrait, puis les jambes et leurs
+  // traverses — les gradins Art déco, pas de simples poteaux
+  for (const tz of [-7, 7]) {
+    bloc(-3, 2, 0, 8, tz, tz + 1, O);
+    bloc(-2, 1, 9, 16, tz, tz + 1, O);
+    for (const dx of [-2, 1]) bloc(dx, dx, 17, 24, tz, tz + 1, O);
+    for (const yy of [12, 18, 24]) bloc(-2, 1, yy, yy, tz, tz + 1, O);
+  }
+  // les câbles paraboliques entre les pylônes, et leurs suspentes
+  for (let dz = -7; dz <= 7; dz++) {
+    const t = Math.abs(dz) / 7;
+    const cy = 24 - Math.round((1 - t * t) * 12);
+    set(-2, cy, dz, O);
+    set(1, cy, dz, O);
+    if ((dz + 12) % 3 === 0) {
+      for (let y = 12; y < cy; y++) { set(-2, y, dz, O); set(1, y, dz, O); }
+    }
+  }
+  // les travées de rive, qui redescendent vers les ancrages
+  for (const s of [-1, 1]) {
+    for (let i = 1; i <= 5; i++) {
+      const dz = s * (7 + i), cy = 24 - i * 3;
+      if (cy > 11) { set(-2, cy, dz, O); set(1, cy, dz, O); }
+    }
+  }
+}
+
+// Karl the Fog : le brouillard d'été qui entre par la passe et coule sur
+// l'ouest en laissant l'est ensoleillé. Une nappe translucide à mi-hauteur —
+// et les sommets des pylônes du pont qui en dépassent. C'est la signature
+// atmosphérique de la ville, et aucun décor ne peut la remplacer.
+export function buildKarl(poser) {
+  const { set } = boite(poser);
+  for (let dx = -14; dx <= 14; dx++) {
+    for (let dz = -10; dz <= 10; dz++) {
+      if (((dx + dz) & 1) === 0) set(dx, 16, dz, BLOCK.ICE);
+      else if ((dx * 3 + dz) % 5 === 0) set(dx, 17, dz, BLOCK.ICE);
+    }
+  }
+}
+
+// Pier 39 : la jetée des otaries. Des pontons flottants gris couverts de
+// grosses formes brunes vautrées au soleil, et le petit carrousel au bout —
+// l'attraction préférée des enfants, presque toujours oubliée.
+export function buildPier39(poser) {
+  const { set, bloc } = boite(poser);
+  // la jetée sur pilotis, vers le large
+  for (let dz = -4; dz <= 2; dz++) {
+    for (let dx = -1; dx <= 1; dx++) set(dx, 2, dz, GRIS_QUAI);
+    if (dz % 2 === 0) { set(-1, 0, dz, BLOCK.LOG); set(1, 0, dz, BLOCK.LOG); set(-1, 1, dz, BLOCK.LOG); set(1, 1, dz, BLOCK.LOG); }
+  }
+  // le K-Dock : les pontons des otaries, à fleur d'eau côté ouest
+  for (const dz of [-3, -1]) {
+    for (let dx = -4; dx <= -3; dx++) set(dx, 0, dz, GRIS_QUAI);
+    set(-4, 1, dz, MARRON);
+    set(-3, 1, dz, MARRON);
+  }
+  set(-4, 1, -2, MARRON);                                    // une otarie de plus
+  // le carrousel, au bout de la jetée
+  for (const [dx, dz, c] of [[-1, -4, BLOCK.WOOL_RED], [1, -4, BLOCK.WOOL_BLUE], [0, -5, BLOCK.WOOL_YELLOW]]) {
+    set(dx, 3, dz, c);
+  }
+  set(0, 4, -4, OR);
+}
+
+// Lombard Street : huit virages en épingle sur un seul pâté de maisons, la
+// chaussée de briques rouges, les hortensias roses et violets. À notre
+// échelle c'est un micro-décor : un zigzag fleuri qui dévale Russian Hill
+// vers l'est.
+export function buildLombard(poser) {
+  const { set } = boite(poser);
+  const chemin = [
+    [-3, -1], [-2, -1], [-2, 0], [-1, 0], [-1, -1], [0, -1], [0, 0], [1, 0], [1, -1], [2, -1], [2, 0], [3, 0],
+  ];
+  for (const [dx, dz] of chemin) { set(dx, 0, dz, BLOCK.BRICK); set(dx, -1, dz, BLOCK.BRICK); }
+  // les hortensias, entre les épingles
+  for (const [dx, dz] of [[-2, 1], [0, 1], [2, 1], [-1, -2], [1, -2], [3, -2]]) {
+    set(dx, 1, dz, ((dx + dz) & 1) ? BLOCK.WOOL_PURPLE : ARBRE);
+  }
+}
+
+// Le Dragon Gate : la porte verte de Chinatown offerte par Taïwan, ses lions
+// gardiens, et les lanternes rouges de Grant Avenue derrière — un quartier
+// qui change de couleur d'un coup.
+export function buildDragonGate(poser) {
+  const { set, bloc } = boite(poser);
+  for (const dx of [-2, 0, 2]) for (let y = 0; y <= 2; y++) set(dx, y, 0, ROUGE_PONT);
+  bloc(-3, 3, 3, 3, 0, 0, VERT_TOIT);
+  set(-3, 4, 0, VERT_TOIT);
+  set(3, 4, 0, VERT_TOIT);
+  set(0, 4, 0, VERT_TOIT);
+  set(0, 5, 0, OR);
+  set(-3, 0, 1, GRIS_QUAI);                                  // les lions de pierre
+  set(3, 0, 1, GRIS_QUAI);
+  // les lanternes de Grant Avenue, vers le nord
+  for (const dz of [-2, -4]) { set(-2, 2, dz, BLOCK.WOOL_RED); set(2, 2, dz, BLOCK.WOOL_RED); }
 }
