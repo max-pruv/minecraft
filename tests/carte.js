@@ -668,8 +668,9 @@ const position = (p) => p.evaluate(() => ({
         return false;
       };
       const surface = (u, v) => w.getBlock(Nx + u, w.terrainHeight(Nx + u, Nz + v), Nz + v);
-      // le bassin rectangulaire : ses coins, hors de l'ancien ovale, sont en eau
-      const bassin = surface(12, 0) === EAU && surface(16, 6) === EAU;
+      // le bassin rectangulaire : ses coins, hors de l'ancien ovale, sont en
+      // eau — dont celui du sud-est, là où le bassin gagne sur la plage
+      const bassin = surface(12, 1) === EAU && surface(16, 5) === EAU;
       const pointu = colonne(13, 1, ROUGE);
       // la coupole rose sur la façade blanche, les bulbes verts sur l'ocre
       const negresco = colonne(-10, 2, BLANC) && colonne(-8, 2, ROSE);

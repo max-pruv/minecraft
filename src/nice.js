@@ -167,6 +167,13 @@ export function solNice(x, z) {
   if (!surTerreNice(x, z)) return null;
   const u = x - NICE.x, v = z - NICE.z;
 
+  // Le port avant la plage : le bassin du port Lympia s'ouvre sur la mer par
+  // son extrémité sud, il n'est pas ensablé. Vérifié dans l'autre ordre, la
+  // bande de galets recouvrait tout le bord sud-est du bassin.
+  for (const p of LIEUX_NICE) {
+    if (p.bassin && Math.abs(u - p.u) <= p.ru && Math.abs(v - p.v) <= p.rv) return EAU;
+  }
+
   // La plage de galets : Nice n'a pas de sable, et c'est la première chose que
   // remarque un enfant qui y met les pieds.
   if (vRivage(u) - v < 2.5) return GALETS;
@@ -174,8 +181,8 @@ export function solNice(x, z) {
   for (const p of LIEUX_NICE) {
     if (p.bassin) {
       // Le port Lympia est un bassin RECTANGULAIRE creusé derrière la colline —
-      // un ovale ne ressemble à aucun port, et surtout pas à celui-là.
-      if (Math.abs(u - p.u) <= p.ru && Math.abs(v - p.v) <= p.rv) return EAU;
+      // un ovale ne ressemble à aucun port, et surtout pas à celui-là. (Sa
+      // surface en eau est servie plus haut, avant la plage.)
       continue;
     }
     if (p.jardin) {
