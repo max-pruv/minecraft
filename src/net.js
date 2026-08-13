@@ -315,10 +315,13 @@ export class NetSession {
         // l'inscrit et on se présente. Tout ce qui suit l'ignore.
         //
         // Appelé aussi à chaque « coucou », donc au retour d'un appareil
-        // endormi : on ne réinscrit que ce qu'on avait oublié, et on se
-        // représente dans tous les cas — c'est cette présentation-là qui
-        // remet l'enfant dans le monde.
-        if (!this.conns.has(conn.peer)) this.registerConn(conn);
+        // endormi. On réinscrit dès que le lien n'est PAS celui qu'on suivait
+        // — un lien neuf sous une clé connue reste un lien neuf, et sauter son
+        // inscription le laissait sans écouteurs : il envoyait sans jamais
+        // rien recevoir. C'est ce qui a cassé la poignée de main pendant une
+        // demi-heure. Se représenter, en revanche, se fait à chaque fois :
+        // c'est cette présentation-là qui remet l'enfant dans le monde.
+        this.inscrireSiNouveau(conn);
         this.greet(conn);
       },
     });
@@ -337,9 +340,17 @@ export class NetSession {
     if (!bus) return false;
     bus.reveiller();
     const conn = bus.connecter(ID_PREFIX + this.code);
-    if (!this.conns.has(conn.peer)) this.registerConn(conn);
+    this.inscrireSiNouveau(conn);
     this.greet(conn);
     return true;
+  }
+
+  // Inscrire un lien, sauf si c'est exactement celui qu'on suit déjà. La
+  // nuance est tout : deux liens successifs vers le même pair portent la même
+  // clé, et ne pas inscrire le second revient à écouter un lien mort.
+  inscrireSiNouveau(conn) {
+    const c = this.conns.get(conn.peer);
+    if (!c || c.conn !== conn) this.registerConn(conn);
   }
 
   // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
