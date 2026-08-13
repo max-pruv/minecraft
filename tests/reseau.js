@@ -358,6 +358,48 @@ function verifier(nom, ok, detail = '') {
     await chezSoi.close();
     await tenu2.close();
 
+    // --- l'enfant qui entend tout le monde et que personne n'entend ----------
+    //
+    // Le secours par le nuage est rouvert à chaque tentative de reconnexion et
+    // à chaque réveil. S'il prend la place d'un lien direct qui marche,
+    // l'enfant devient muet : il reçoit encore par les écouteurs de l'ancien
+    // lien — il voit les autres bouger, il croit tout normal — mais rien de ce
+    // qu'il envoie n'arrive. Et le troisième joueur, qui n'apprend l'existence
+    // des autres que par ces positions relayées, ne le voit jamais arriver.
+    //
+    // Ici le nuage pointe sur un port où personne n'écoute : c'est la version
+    // brutale d'un nuage lent, et elle rend la panne franche au lieu de la
+    // laisser dépendre de la vitesse de la machine.
+    const NUAGE_MORT = { portNuage: 9799 };
+    const { p: chef, code: codeMuet2 } = await banc.creerMonde('Léa', NUAGE_MORT);
+    const cadette = await banc.rejoindre('Jules', codeMuet2, NUAGE_MORT);
+    await jusqua(async () => (await nomsVus(chef)).includes('Jules'), 45000);
+    // Le geste qui déclenchait la panne, et que le jeu fait tout seul.
+    await cadette.evaluate(() => window.__game.net.reprendreParLeNuage());
+    await dormir(2000);
+    const lienGarde = await cadette.evaluate(() => {
+      const c = [...window.__game.net.conns.values()][0];
+      return !!(c && c.conn && !c.conn.parNuage);
+    });
+    verifier('un secours qui s\'ouvre ne débranche pas le lien direct', lienGarde);
+    // La mesure qui compte : la voix de l'enfant arrive-t-elle encore ? Les
+    // positions partent huit fois par seconde, c'est le débit le plus franc.
+    await chef.evaluate(() => {
+      window.__posRecues = 0;
+      const net = window.__game.net;
+      const vrai = net.onMessage.bind(net);
+      net.onMessage = (conn, msg) => {
+        if (msg && msg.t === 'pos') window.__posRecues++;
+        return vrai(conn, msg);
+      };
+    });
+    await dormir(3000);
+    const entendu = await chef.evaluate(() => window.__posRecues);
+    verifier('et l\'enfant continue de se faire entendre', entendu > 0,
+      `${entendu} positions reçues en 3 s`);
+    await chef.close();
+    await cadette.close();
+
     await souffler();
     // --- le Wi-Fi public ne doit plus empêcher de jouer ----------------------
     //

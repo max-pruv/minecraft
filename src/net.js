@@ -351,9 +351,45 @@ export class NetSession {
   // Inscrire un lien, sauf si c'est exactement celui qu'on suit déjà. La
   // nuance est tout : deux liens successifs vers le même pair portent la même
   // clé, et ne pas inscrire le second revient à écouter un lien mort.
+  // C'EST ICI QU'UN ENFANT DEVENAIT MUET.
+  //
+  // Le relais par le nuage est rouvert à chaque tentative de reconnexion et à
+  // chaque réveil — c'est voulu, c'est ce qui ramène dans la partie un enfant
+  // dont le réseau interdit le direct. Mais il fabriquait alors un lien de
+  // secours qui prenait la place du lien DIRECT, même quand celui-ci marchait
+  // parfaitement.
+  //
+  // L'enfant continuait de tout RECEVOIR : les écouteurs de l'ancien lien
+  // vivaient encore, il voyait les autres bouger, construire, parler. Tout ce
+  // qu'il ENVOYAIT, en revanche, partait désormais dans le nuage. Là où le
+  // nuage répond, cela ne fait que ralentir. Là où il ne répond pas — et il ne
+  // répond pas toujours — l'enfant entendait tout le monde sans que personne
+  // ne l'entende, et rien à l'écran ne le disait : les avatars restaient là,
+  // figés sur leur dernière position connue.
+  //
+  // Mesuré sur le banc : l'hôte n'avait pas reçu UNE seule position de lui en
+  // trois secondes, quand son voisin en envoyait vingt-cinq. Et le troisième
+  // joueur, qui n'apprend l'existence des autres que par ces positions
+  // relayées, ne le voyait jamais arriver.
+  //
+  // La règle est donc : un lien direct vivant l'emporte toujours sur le
+  // nuage. Et l'inverse vaut aussi — un direct qui s'ouvre alors qu'on est
+  // au nuage reprend la main, ce qui donne gratuitement la remontée du
+  // secours vers le lien rapide.
   inscrireSiNouveau(conn) {
     const c = this.conns.get(conn.peer);
-    if (!c || c.conn !== conn) this.registerConn(conn);
+    if (!c || !c.conn) { this.registerConn(conn); return; }
+    if (c.conn === conn) return;
+    if (conn.parNuage && !c.conn.parNuage && this.lienVivant(c.conn)) return;
+    this.registerConn(conn);
+  }
+
+  // Un lien qui porte vraiment quelque chose. `open` ne suffit pas : PeerJS le
+  // laisse à vrai un court instant après que le transport s'est refermé.
+  lienVivant(conn) {
+    if (!conn || conn.open === false) return false;
+    if (conn.parNuage) return true;      // le nuage n'a pas de canal à sonder
+    return !!(conn.dataChannel && conn.dataChannel.readyState === 'open');
   }
 
   // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
@@ -610,7 +646,35 @@ export class NetSession {
     // arrive régulièrement après que le second est inscrit.
     conn.on('close', () => this.dropPeer(conn.peer, conn));
     conn.on('error', () => this.dropPeer(conn.peer, conn));
+    // LA REMONTÉE DU SECOURS VERS LE LIEN RAPIDE.
+    //
+    // L'autre moitié de la panne du muet. Quand le direct met plus de cinq
+    // secondes à s'ouvrir — machine chargée, réseau qui traîne —, le secours
+    // par le nuage prend la main légitimement : à cet instant le direct ne
+    // porte encore rien. Mais il finit par s'ouvrir une seconde plus tard, et
+    // PLUS RIEN ne lui rendait sa place : l'enfant restait sur le tuyau lent,
+    // ou muet là où le nuage ne répond pas.
+    //
+    // Un lien direct qui s'ouvre reprend donc la main sur le nuage — sans
+    // effacer ce qu'on sait déjà du joueur, sinon il redeviendrait un inconnu
+    // le temps d'une présentation.
+    if (!conn.parNuage) {
+      if (conn.open) this.promouvoirSiDirect(conn);
+      else conn.on('open', () => this.promouvoirSiDirect(conn));
+    }
     this.startHeartbeat();
+  }
+
+  promouvoirSiDirect(conn) {
+    if (!this.active || conn.parNuage) return;
+    const c = this.conns.get(conn.peer);
+    if (!c || c.conn === conn) return;
+    if (c.conn && !c.conn.parNuage) return;   // un direct en vaut un autre
+    c.conn = conn;
+    this.state(this.statusText());
+    // On se represente sur le nouveau chemin : l'hôte doit savoir par où
+    // répondre, et c'est gratuit quand on est déjà connus l'un de l'autre.
+    this.greet(conn);
   }
 
   // La présentation, et RIEN d'autre.
