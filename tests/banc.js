@@ -144,7 +144,20 @@ class Banc {
         '--use-fake-device-for-media-capture',
         '--use-fake-ui-for-media-stream',
         '--allow-file-access-from-files',
-        '--autoplay-policy=no-user-gesture-required'],
+        '--autoplay-policy=no-user-gesture-required',
+        // Les minuteurs des onglets d'arrière-plan, débridés.
+        //
+        // Un banc à plusieurs joueurs n'a qu'un seul onglet au premier plan :
+        // tous les autres voient leurs minuteurs ralentis par le navigateur.
+        // Or les relances de présentation du jeu battent toutes les trois
+        // secondes — bridées, il n'en partait plus qu'une là où le scénario
+        // en attendait cinq, et des scénarios de fin de suite tombaient sans
+        // que le jeu y soit pour rien. Sur un iPad, la question ne se pose
+        // pas : le jeu gère explicitement la mise en veille, et c'est CELA
+        // qu'un autre scénario éprouve.
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'],
     });
   }
 
