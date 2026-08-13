@@ -147,9 +147,14 @@ export class NetSession {
     this.state(isHost ? 'Création de la partie…' : 'Connexion à la partie…');
 
     return new Promise((resolve, reject) => {
-      const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
       // tests can point signaling at a local server via ?peerhost=host:port
       const m = location.search.match(/[?&]peerhost=([^&]+)/);
+      // Sur le banc d'essai, tout tient sur la même machine : les candidats
+      // locaux suffisent. Y ajouter des relais publics injoignables depuis le
+      // banc, c'est faire attendre à chaque lien l'expiration de l'allocation
+      // — quelques secondes par connexion, de quoi faire échouer des scénarios
+      // qui n'ont rien à voir. La maison, elle, les garde tous.
+      const peerOpts = { debug: 1, config: { iceServers: m ? [] : ICE_SERVERS } };
       if (m) {
         const [h, p] = decodeURIComponent(m[1]).split(':');
         Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
