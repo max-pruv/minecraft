@@ -108,6 +108,8 @@ export function initFun(ctx) {
     .photo-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
     .photo-grid .ph { position:relative; }
     .photo-grid img { width:100%; border-radius:10px; }
+    .photo-grid .garder { position:absolute; top:4px; left:4px; background:rgba(0,0,0,.6);
+      border:none; border-radius:8px; font-size:15px; padding:2px 6px; }
     .photo-grid .del { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6);
       color:#fff; border:none; border-radius:8px; font-size:13px; padding:2px 7px; }
   `;
@@ -131,9 +133,20 @@ export function initFun(ctx) {
   const fwBtn = mkBtn('🎆', "Feu d'artifice");
   const photoBtn = mkBtn('📸', 'Photo');
 
+  // Un seul bouton, qui se déplie. Trois émotes en permanence à l'écran d'un
+  // téléphone, c'est trois boutons de pris pour un geste occasionnel — et
+  // elles ne servent que si quelqu'un est là pour les voir : l'animation se
+  // joue sur NOTRE avatar, que nous ne voyons pas nous-mêmes. Un enfant seul
+  // dans un monde en ligne les avait pourtant sous les yeux, à ne rien faire.
+  const emoteToggle = el('<button class="fun-btn" id="emote-toggle" title="Émotes">😊</button>', railBottom);
   const emoteRow = el(`<div class="emote-row" id="emote-row">
     <button data-k="👋">👋</button><button data-k="💃">💃</button><button data-k="❤️">❤️</button>
   </div>`, railBottom);
+  let emotesDepliees = false;
+  emoteToggle.addEventListener('click', () => {
+    emotesDepliees = !emotesDepliees;
+    emoteRow.style.display = emotesDepliees ? 'flex' : 'none';
+  });
 
   const targetRow = el(`<div class="fun-target" id="fun-target">
     <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button>
@@ -146,6 +159,7 @@ export function initFun(ctx) {
       <button class="fun-tab" data-t="chest">📦 Coffre</button>
       <button class="fun-tab" data-t="quest">📜 Quête</button>
       <button class="fun-tab" data-t="sign">🪧 Panneau</button>
+      <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
       <button class="fun-tab" data-t="records">🏆 Records</button>
       <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
       <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
@@ -328,6 +342,201 @@ export function initFun(ctx) {
   }
   fwBtn.addEventListener('click', () => launchFirework());
 
+  // ---- le chantier commun ----------------------------------------------------
+  //
+  // Le multijoueur était « côte à côte » : chacun construit dans son coin du
+  // même monde. Le chantier donne un but COMMUN : un plan fantôme posé dans le
+  // monde, une jauge partagée, et une célébration quand la dernière brique est
+  // à sa place — peu importe qui l'a posée.
+  //
+  // L'avancement n'est jamais synchronisé : il se DÉRIVE du monde. Une cellule
+  // est accomplie quand le bloc attendu est à sa place, et le journal de blocs
+  // voyage déjà entre les joueurs. Seule la pose du plan (nom + origine)
+  // s'échange, par le même chemin que les panneaux et le coffre.
+  const B_PLANCHE = 8, B_BUCHE = 5, B_VERRE = 10, B_BRIQUE = 11, B_NEIGE = 12, B_LAINE_ROUGE = 23;
+
+  function planCabane() {
+    const c = [];
+    for (let x = 0; x <= 4; x++) {
+      for (let z = 0; z <= 4; z++) {
+        const mur = x === 0 || x === 4 || z === 0 || z === 4;
+        for (let y = 0; y <= 2; y++) {
+          if (!mur) continue;
+          if (z === 4 && (x === 2) && y <= 1) continue;          // la porte
+          if (y === 1 && ((x === 0 && z === 2) || (x === 4 && z === 2))) { c.push([x, y, z, B_VERRE]); continue; }
+          c.push([x, y, z, B_PLANCHE]);
+        }
+        c.push([x, 3, z, B_BUCHE]);                              // le toit
+      }
+    }
+    return c;
+  }
+  function planPhare() {
+    const c = [];
+    for (let y = 0; y <= 6; y++) {
+      for (let x = 0; x <= 2; x++) {
+        for (let z = 0; z <= 2; z++) {
+          if (x === 1 && z === 1) continue;                      // creux
+          c.push([x, y, z, y % 2 === 0 ? B_BRIQUE : B_NEIGE]);   // rayures
+        }
+      }
+    }
+    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) {
+      if (!(x === 1 && z === 1)) c.push([x, 7, z, B_VERRE]);     // la lanterne
+      c.push([x, 8, z, B_BUCHE]);                                // le chapeau
+    }
+    return c;
+  }
+  function planFusee() {
+    const c = [];
+    for (let y = 0; y <= 5; y++) {
+      for (let x = 0; x <= 2; x++) {
+        for (let z = 0; z <= 2; z++) {
+          if (x === 1 && z === 1) continue;
+          c.push([x, y, z, B_NEIGE]);                            // le fuselage
+        }
+      }
+    }
+    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) c.push([x, 6, z, B_LAINE_ROUGE]);
+    c.push([1, 7, 1, B_LAINE_ROUGE]);                            // la pointe
+    for (const [fx, fz] of [[-1, 1], [3, 1], [1, -1], [1, 3]]) {
+      c.push([fx, 0, fz, B_BUCHE]);                              // les ailerons
+    }
+    return c;
+  }
+  const PLANS_CHANTIER = {
+    cabane: { nom: 'Cabane', emoji: '🏡', cellules: planCabane },
+    phare: { nom: 'Phare rayé', emoji: '🗼', cellules: planPhare },
+    fusee: { nom: 'Fusée', emoji: '🚀', cellules: planFusee },
+  };
+
+  let chantier = null;       // { plan, x, y, z, t }
+  let chantierFantome = null;   // le groupe de blocs translucides
+  let chantierTimer = 0;
+  let chantierDernier = -1;  // dernier « faits » annoncé, pour ne parler qu'aux changements
+  const chantierKey = () => `web-minecraft-chantier-v1::${getPosCtx() || 'local'}`;
+  const chantierHud = document.getElementById('chantier-hud');
+
+  function cellulesDe(ch) {
+    const p = PLANS_CHANTIER[ch.plan];
+    return p ? p.cellules() : [];
+  }
+  function avancementChantier() {
+    if (!chantier) return null;
+    const cellules = cellulesDe(chantier);
+    let faits = 0;
+    for (const [dx, dy, dz, id] of cellules) {
+      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) faits++;
+    }
+    return { faits, total: cellules.length };
+  }
+
+  const fantomeGeo = new THREE.BoxGeometry(0.86, 0.86, 0.86);
+  const fantomeMat = new THREE.MeshBasicMaterial({ color: 0x6ec8ff, transparent: true, opacity: 0.3 });
+  function redessinerFantome() {
+    if (chantierFantome) { scene.remove(chantierFantome); chantierFantome = null; }
+    if (!chantier) return;
+    const g = new THREE.Group();
+    for (const [dx, dy, dz, id] of cellulesDe(chantier)) {
+      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) continue;
+      const m = new THREE.Mesh(fantomeGeo, fantomeMat);
+      m.position.set(chantier.x + dx + 0.5, chantier.y + dy + 0.5, chantier.z + dz + 0.5);
+      g.add(m);
+    }
+    scene.add(g);
+    chantierFantome = g;
+  }
+
+  function adopterChantier(c, { save = true, annonce = false } = {}) {
+    if (c && chantier && c.t <= chantier.t) return;   // le plus récent fait foi
+    chantier = c || null;
+    chantierDernier = -1;
+    if (save) saveJson(chantierKey(), chantier);
+    redessinerFantome();
+    majChantierHud();
+    if (annonce && chantier) {
+      const p = PLANS_CHANTIER[chantier.plan];
+      toast(`🏗️ Chantier ouvert : ${p.emoji} ${p.nom} — construisez-le ensemble !`, 0x6ec8ff);
+    }
+  }
+
+  function majChantierHud() {
+    if (!chantierHud) return;
+    const a = avancementChantier();
+    if (!a) { chantierHud.style.display = 'none'; return; }
+    const p = PLANS_CHANTIER[chantier.plan];
+    chantierHud.style.display = 'block';
+    chantierHud.textContent = `${p.emoji} ${a.faits}/${a.total}`;
+  }
+
+  function poserChantier(nomPlan) {
+    if (!PLANS_CHANTIER[nomPlan]) return null;
+    // Quatre blocs devant le joueur, au niveau du sol : on voit ce qu'on pose.
+    const dx = -Math.sin(player.yaw), dz = -Math.cos(player.yaw);
+    const x = Math.round(player.pos.x + dx * 5) - 2;
+    const z = Math.round(player.pos.z + dz * 5) - 2;
+    const y = world.terrainHeight(x + 1, z + 1) + 1;
+    const c = { plan: nomPlan, x, y, z, t: Date.now() };
+    adopterChantier(c, { annonce: true });
+    const net = getNet();
+    if (net && net.active) net.broadcast({ t: 'chantier', c });
+    return c;
+  }
+  function retirerChantier() {
+    adopterChantier(null);
+    saveJson(chantierKey(), null);
+    const net = getNet();
+    if (net && net.active) net.broadcast({ t: 'chantier', c: null });
+  }
+
+  function suivreChantier(dt) {
+    if (!chantier) return;
+    chantierTimer -= dt;
+    if (chantierTimer > 0) return;
+    chantierTimer = 1;
+    const a = avancementChantier();
+    if (a.faits !== chantierDernier) {
+      chantierDernier = a.faits;
+      redessinerFantome();
+      majChantierHud();
+      if (a.faits >= a.total && a.total > 0) {
+        // Fini ! La célébration part chez tout le monde : chacun constate la
+        // même chose dans son propre monde, personne n'a de message à croire.
+        records.chantiers = (records.chantiers || 0) + 1;
+        saveRecords();
+        launchFirework(true);
+        toast('🏗️✨ CHANTIER TERMINÉ ! Bravo les bâtisseurs !', 0xffe05a);
+        emojiBurst(['🏗️', '🎉', '⭐'], 18);
+        chantier = null;
+        saveJson(chantierKey(), null);
+        redessinerFantome();
+        majChantierHud();
+      }
+    }
+  }
+  // au chargement : le chantier du monde où l'on est
+  adopterChantier(loadJson(chantierKey(), null), { save: false });
+
+  // Les tests suivent le parcours entier : poser, voir, compter, célébrer.
+  if (typeof window !== 'undefined') {
+    window.__chantier = {
+      poser: poserChantier,
+      retirer: retirerChantier,
+      etat: () => (chantier ? { ...chantier, ...avancementChantier() } : null),
+      chantiers: () => records.chantiers || 0,
+      hud: () => (chantierHud && chantierHud.style.display !== 'none' ? chantierHud.textContent : ''),
+      // Le bloc attendu à une cellule relative, ou null : le banc s'en sert
+      // pour bâtir par le vrai chemin de pose, sans copie du plan dans le test.
+      attendu: (dx, dy, dz) => {
+        if (!chantier) return null;
+        for (const [x, y, z, id] of cellulesDe(chantier)) {
+          if (x === dx && y === dy && z === dz) return id;
+        }
+        return null;
+      },
+    };
+  }
+
   function updateFireworks(dt) {
     for (const f of [...fireworks]) {
       f.life -= dt;
@@ -354,6 +563,9 @@ export function initFun(ctx) {
       emojiBurst([k], 10);
       const net = getNet();
       if (net && net.active) net.broadcast({ t: 'emote', k, name: myName() });
+      // le geste est parti : la rangée se replie d'elle-même
+      emotesDepliees = false;
+      emoteRow.style.display = 'none';
     });
   });
 
@@ -733,6 +945,31 @@ export function initFun(ctx) {
       b.textContent = '🪧 Planter un panneau ici';
       b.addEventListener('click', plantSign);
       tabBody.appendChild(b);
+    } else if (currentTab === 'chantier') {
+      const a = avancementChantier();
+      tabBody.innerHTML = `<h3>🏗️ Chantier commun</h3>
+        <div class="fun-note">Pose un plan fantôme devant toi, et construisez-le ensemble :
+        chaque bloc posé au bon endroit — par n'importe qui — fait avancer la jauge !</div>`;
+      if (chantier) {
+        const p2 = PLANS_CHANTIER[chantier.plan];
+        const enCours = document.createElement('div');
+        enCours.className = 'fun-note';
+        enCours.textContent = `${p2.emoji} ${p2.nom} en cours : ${a.faits}/${a.total} blocs posés.`;
+        tabBody.appendChild(enCours);
+        const arreter = document.createElement('button');
+        arreter.className = 'fun-tab';
+        arreter.textContent = '🗑️ Abandonner ce chantier';
+        arreter.addEventListener('click', () => { retirerChantier(); renderTab(); });
+        tabBody.appendChild(arreter);
+      } else {
+        for (const [cle, p2] of Object.entries(PLANS_CHANTIER)) {
+          const b2 = document.createElement('button');
+          b2.className = 'fun-tab';
+          b2.textContent = `${p2.emoji} Poser : ${p2.nom} (${p2.cellules().length} blocs)`;
+          b2.addEventListener('click', () => { poserChantier(cle); panel.style.display = 'none'; });
+          tabBody.appendChild(b2);
+        }
+      }
     }
   }
 
@@ -811,6 +1048,27 @@ export function initFun(ctx) {
           renderRecords();
         });
         d.appendChild(del);
+        // « Récupérer » la photo : le partage natif — vers Photos, Messages —
+        // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
+        const garder = document.createElement('button');
+        garder.className = 'garder';
+        garder.textContent = '📤';
+        garder.title = 'Garder la photo';
+        garder.addEventListener('click', async () => {
+          try {
+            const blob = await (await fetch(p)).blob();
+            const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
+            if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+              await navigator.share({ files: [fichier] });
+              return;
+            }
+          } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
+          const a = document.createElement('a');
+          a.href = p;
+          a.download = `minecraft-${i + 1}.jpg`;
+          a.click();
+        });
+        d.appendChild(garder);
         grid.appendChild(d);
       });
       recBody.appendChild(grid);
@@ -845,7 +1103,9 @@ export function initFun(ctx) {
     saveJson(PHOTOS_KEY, photos);
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
-    toast('📸 Photo ajoutée à tes souvenirs ! (menu 🏆)', 0x9fd8e8);
+    // Le « menu 🏆 » n'existe plus depuis que les records ont déménagé dans
+    // l'atelier : le toast montrait un chemin qui ne menait nulle part.
+    toast('📸 Photo rangée dans 🛠️ Atelier → 📸 Souvenirs !', 0x9fd8e8);
   });
 
   // ---- daily treasure -------------------------------------------------------
@@ -1069,10 +1329,12 @@ export function initFun(ctx) {
   function update(dt) {
     updateFireworks(dt);
     updateEmotes(dt);
+    suivreChantier(dt);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
       for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+      emoteToggle.style.display = 'none';
       emoteRow.style.display = 'none';
       targetRow.style.display = 'none';
       return;
@@ -1096,11 +1358,16 @@ export function initFun(ctx) {
     // buttons only make sense in-game
     for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'flex';
     const net = getNet();
-    emoteRow.style.display = net && net.active ? 'flex' : 'none';
+    const amisLa = net && net.active && net.playerCount() > 1;
+    emoteToggle.style.display = amisLa ? 'flex' : 'none';
+    if (!amisLa && emotesDepliees) { emotesDepliees = false; }
+    emoteRow.style.display = amisLa && emotesDepliees ? 'flex' : 'none';
   }
 
   function onLeave() {
     for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+    emoteToggle.style.display = 'none';
+    emotesDepliees = false;
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';
@@ -1112,6 +1379,10 @@ export function initFun(ctx) {
     net.onDuel = onDuelMsg;
     net.onEmote = (peerId, k) => showRemoteEmote(peerId, k);
     net.onSign = (s) => addSign(s); // save locally, never re-upload
+    // Le chantier voyage comme les panneaux : la pose s'échange, l'avancement
+    // se dérive du monde. À l'arrivée dans un monde, celui de l'hôte fait foi.
+    net.onChantier = (c) => adopterChantier(c, { annonce: !!c });
+    net.chantierActuel = () => chantier;
     net.onChest = (items) => chestChanged(items || {});
   }
 

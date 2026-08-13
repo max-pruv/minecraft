@@ -1063,6 +1063,13 @@
       background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px; pointer-events: none;
     }
 
+    /* La jauge du chantier commun : toujours lisible, jamais touchable. */
+    #chantier-hud {
+      display: none; position: fixed; top: calc(236px + var(--safe-top)); right: 56px; z-index: 6;
+      font-size: 15px; font-weight: bold; color: #9fd8ff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px; pointer-events: none;
+    }
+
     /* catch celebration */
     #catch-banner {
       display: none; position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%);
@@ -1208,6 +1215,7 @@
   </div>
   <canvas id="minimap" width="160" height="160"></canvas>
   <div id="meat-counter"></div>
+  <div id="chantier-hud"></div>
   <button id="players-btn" title="Joueurs et code du monde"></button>
 
   <div id="players-panel">

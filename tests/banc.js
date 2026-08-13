@@ -200,33 +200,22 @@ class Banc {
     // secouant le réseau local. On les avale à l'arrivée : l'effet est le même
     // que s'ils s'étaient perdus, et le test peut décider quand ça s'arrête.
     if (opts.helloFragile) {
-      //
-      // La fenêtre est comptée DANS la page, à partir du premier « hello »
-      // avalé — pas depuis le test. Cette machine met parfois une seconde et
-      // demie à répondre à un `evaluate` pendant qu'une partie tourne à plein
-      // régime : une fenêtre posée depuis le banc était déjà écoulée quand le
-      // lien s'ouvrait, et le scénario ne mesurait plus rien. Il passait sur le
-      // code fautif comme sur le code réparé, ce qui est la pire des deux
-      // façons d'échouer.
       await p.addInitScript(() => {
         window.__avalerHelloSecondes = 0;
         window.__avalerHelloDebut = 0;
-        setInterval(() => {
-          const n = window.__game && window.__game.net;
-          if (!n || n.__filtreHello) return;
-          n.__filtreHello = true;
-          const vrai = n.onMessage.bind(n);
-          n.onMessage = (conn, msg) => {
-            if (msg && msg.t === 'hello' && window.__avalerHelloSecondes > 0) {
-              if (!window.__avalerHelloDebut) window.__avalerHelloDebut = Date.now();
-              if (Date.now() - window.__avalerHelloDebut < window.__avalerHelloSecondes * 1000) {
-                window.__avalerHelloComptes = (window.__avalerHelloComptes || 0) + 1;
-                return undefined;
-              }
-            }
-            return vrai(conn, msg);
-          };
-        }, 50);
+        window.__avalerHelloComptes = 0;
+        // La couture du jeu (net.js) : retenir un « hello », c'est exactement
+        // ce que fait un tuyau encombré. Le compteur dit ce qui a vraiment été
+        // retenu — un scénario qui n'a rien retenu n'a rien éprouvé.
+        window.__filtreMessages = (msg) => {
+          if (!msg || msg.t !== 'hello' || !(window.__avalerHelloSecondes > 0)) return true;
+          if (!window.__avalerHelloDebut) window.__avalerHelloDebut = Date.now();
+          if (Date.now() - window.__avalerHelloDebut < window.__avalerHelloSecondes * 1000) {
+            window.__avalerHelloComptes++;
+            return false;
+          }
+          return true;
+        };
       });
     }
     await p.addInitScript((prenom) => {
