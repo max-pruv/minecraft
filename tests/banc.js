@@ -400,7 +400,13 @@ const nomsVus = async (p) => (await vu(p)).avatars.map((a) => a.nom).sort();
 // À n'employer que pour ce qui DOIT devenir vrai. Quand on vérifie au contraire
 // que rien ne bouge — un joueur endormi qui ne doit pas être éjecté —, il faut
 // bel et bien laisser le temps s'écouler.
-async function jusqua(condition, limiteMs = 20000, pasMs = 500) {
+// Vingt secondes suffisaient quand la suite était courte. Elle compte
+// aujourd'hui une quarantaine de scénarios et fait tourner plusieurs mondes
+// en parallèle sur un conteneur à quatre cœurs : la même vérité met plus
+// longtemps à s'établir, sans que rien ne soit cassé. Une attente plus
+// longue n'affaiblit aucune assertion — elle change seulement le temps
+// qu'on accorde à une réponse, jamais la réponse attendue.
+async function jusqua(condition, limiteMs = 45000, pasMs = 500) {
   const fin = Date.now() + limiteMs;
   for (;;) {
     if (await condition()) return true;
