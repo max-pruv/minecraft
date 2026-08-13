@@ -190,6 +190,9 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | sept statues perchées veillent sur Masséna | six : la septième de « Conversation à Nice » manquait |
 | chaises bleues, palmiers, stores rayés et la baleine du Paillon | la Promenade n'était qu'un trottoir, Saleya un pavage, le Paillon une pelouse |
 | la version d'une tablette éteinte reste lisible deux jours après | la présence périmée était jetée en bloc, version comprise : « version inconnue » pour une tablette dont la version était connue |
+| le hub éducation propose chaque enfant de la famille | le panneau ne montrait que l'enfant connecté, aujourd'hui, point |
+| l'enfant choisi montre ses journées à lui, sans les niveaux du mien | aucun sélecteur n'existait |
+| les raccourcis de période cumulent — « Tout » dépasse « 7 jours » | le panneau ne savait compter qu'aujourd'hui et dessiner 14 jours |
 | les lieux de Nice · de Lille sont sur la carte | on arrivait par le seul nom de la ville |
 
 ## Si Chromium n'est pas trouvé

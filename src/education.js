@@ -2104,19 +2104,119 @@ export class EducationMode {
     if (this.el.panel.style.display === 'block') this.renderPanel();
   }
 
+  // Les journées d'un autre enfant, sommées appareil par appareil à partir de
+  // ses lignes de temps — la même règle que pour ses totaux dans l'espace
+  // parent.
+  joursDepuisLignes(rows) {
+    const m = {};
+    for (const r of rows || []) {
+      const d = m[r.day] || (m[r.day] = { play: 0, quiz: 0, wrong: 0, n: 0 });
+      d.play += r.play || 0;
+      d.quiz += r.quiz || 0;
+      d.wrong += r.wrong || 0;
+      d.n += r.correct || 0;
+    }
+    const jours = {};
+    for (const [day, d] of Object.entries(m)) {
+      jours[day] = { play: d.play, quiz: d.quiz, wrong: d.wrong, correct: new Array(d.n) };
+    }
+    return jours;
+  }
+
   renderPanel() {
     const body = this.el.panelBody;
     body.innerHTML = '';
     const t = this.today();
-    const days = this.crossDeviceDays || this.data.days || {};
+
+    // Le hub filtre par enfant et par période. « C'était sur le hub éducation
+    // que je voulais filtrer par date et par utilisateur » — les mêmes
+    // raccourcis que l'espace parent, mais ici, à portée de tous.
+    this.filtre = this.filtre || { enfant: null, periode: 0 };
+    this.joursAutres = this.joursAutres || {};
+    const moi = this.hooks.moi ? this.hooks.moi() : null;
+    const nomVue = this.filtre.enfant || moi;
+    const autre = !!(moi && nomVue && nomVue !== moi);
+
+    let days = this.crossDeviceDays || this.data.days || {};
+    if (autre) days = this.joursAutres[nomVue] || {};
     // "aujourd'hui" combines this device's live count with every other
     // device's last known push, so the number is the child's true total
-    const td = days[todayKey()] || t;
+    const td = days[todayKey()] || (autre ? { play: 0, quiz: 0, wrong: 0, correct: [] } : t);
 
     const dateEl = document.getElementById('edu-panel-date');
     if (dateEl) {
       dateEl.textContent = new Date().toLocaleDateString('fr-FR',
         { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    // --- la barre des filtres ------------------------------------------------
+    const filtres = document.createElement('div');
+    filtres.className = 'edu-summary';
+    filtres.id = 'edu-filtres';
+    const famille = this.familleListe || (moi ? [moi] : []);
+    const optEnfants = famille.map((n) =>
+      `<option value="${n}"${n === nomVue ? ' selected' : ''}>${n === moi ? `${n} (moi)` : n}</option>`).join('');
+    const periodes = [[0, "Aujourd'hui"], [7, '7 jours'], [30, '30 jours'], [90, '90 jours'], [-1, 'Tout']];
+    const optPeriodes = periodes.map(([v, l]) =>
+      `<option value="${v}"${Number(this.filtre.periode) === v ? ' selected' : ''}>${l}</option>`).join('');
+    filtres.innerHTML = '<div class="edu-filtres-row">'
+      + `<label>👧 <select id="edu-filtre-enfant">${optEnfants}</select></label>`
+      + `<label>📅 <select id="edu-filtre-periode">${optPeriodes}</select></label>`
+      + '</div>';
+    body.appendChild(filtres);
+    filtres.querySelector('#edu-filtre-enfant').addEventListener('change', (e) => {
+      this.filtre.enfant = e.target.value === moi ? null : e.target.value;
+      this.renderPanel();
+    });
+    filtres.querySelector('#edu-filtre-periode').addEventListener('change', (e) => {
+      this.filtre.periode = Number(e.target.value);
+      this.renderPanel();
+    });
+    // La liste des enfants et les journées d'un autre arrivent du cloud, une
+    // fois, puis restent à bord : changer de filtre ne fait pas attendre.
+    if (!this.familleListe && this.hooks.famille) {
+      this.familleListe = moi ? [moi] : [];
+      this.hooks.famille().then((noms) => {
+        this.familleListe = [...new Set([...(moi ? [moi] : []), ...(noms || [])])];
+        if (this.el.panel.style.display === 'block') this.renderPanel();
+      }).catch(() => {});
+    }
+    if (autre && !this.joursAutres[nomVue] && this.hooks.tempsDe) {
+      this.joursAutres[nomVue] = {};
+      this.hooks.tempsDe(nomVue).then((rows) => {
+        this.joursAutres[nomVue] = this.joursDepuisLignes(rows);
+        if (this.el.panel.style.display === 'block') this.renderPanel();
+      }).catch(() => {});
+    }
+
+    // --- la période choisie --------------------------------------------------
+    const periode = Number(this.filtre.periode);
+    const clesDe = (n) => {
+      const cles = [];
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        cles.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+      }
+      return cles;
+    };
+    let vue = td;
+    let titre = "Aujourd'hui";
+    if (periode !== 0) {
+      const cles = periode > 0 ? clesDe(periode) : Object.keys(days).sort();
+      const somme = { play: 0, quiz: 0, wrong: 0, justes: 0 };
+      for (const k of cles) {
+        const d = days[k];
+        if (!d) continue;
+        somme.play += d.play || 0;
+        somme.quiz += d.quiz || 0;
+        somme.wrong += d.wrong || 0;
+        somme.justes += (d.correct || []).length;
+      }
+      // aujourd'hui, sur CET appareil, n'est pas encore poussé au cloud pour
+      // un autre enfant — mais pour moi, il vit dans days aussi
+      vue = { play: somme.play, quiz: somme.quiz, wrong: somme.wrong, correct: new Array(somme.justes) };
+      titre = periode > 0 ? `Sur ${periode} jours` : 'Depuis le début';
     }
 
     const summary = document.createElement('div');
@@ -2135,25 +2235,35 @@ export class EducationMode {
         + `<span class="barre"><i style="width:${Math.round((n / sur) * 100)}%"></i></span></div>`;
     };
     const unlocks = t.unlocks || 0;
+    const sousTitre = autre ? nomVue
+      : (this.crossDeviceDays ? 'tous appareils' : '');
     summary.innerHTML =
-      `<div class="edu-title">Aujourd'hui${this.crossDeviceDays ? ' <span>tous appareils</span>' : ''}</div>` +
+      `<div class="edu-title" id="edu-titre-periode">${titre}${sousTitre ? ` <span>${sousTitre}</span>` : ''}</div>` +
       '<div class="edu-stats">' +
-        tuile(this.formatDuration(td.play), 'de jeu') +
-        (td.quiz > 5 ? tuile(this.formatDuration(td.quiz), 'de quiz', 'quiz') : '') +
-        tuile(td.correct.length, 'bonnes réponses', 'ok') +
-        tuile(td.wrong, td.wrong > 1 ? 'erreurs' : 'erreur', td.wrong ? 'ko' : '') +
-        tuile(this.formatDuration(this.allowance()),
-          unlocks ? `de limite · ${unlocks} déblocage${unlocks > 1 ? 's' : ''}` : 'de limite', 'lim') +
+        tuile(this.formatDuration(vue.play), 'de jeu') +
+        (vue.quiz > 5 ? tuile(this.formatDuration(vue.quiz), 'de quiz', 'quiz') : '') +
+        tuile(vue.correct.length, 'bonnes réponses', 'ok') +
+        tuile(vue.wrong, vue.wrong > 1 ? 'erreurs' : 'erreur', vue.wrong ? 'ko' : '') +
+        // La limite du jour est une valeur vivante de CET appareil : elle n'a
+        // de sens que pour moi, aujourd'hui.
+        (!autre && periode === 0
+          ? tuile(this.formatDuration(this.allowance()),
+            unlocks ? `de limite · ${unlocks} déblocage${unlocks > 1 ? 's' : ''}` : 'de limite', 'lim')
+          : '') +
       '</div>';
     body.appendChild(summary);
 
-    const niveaux = document.createElement('div');
-    niveaux.className = 'edu-summary';
-    niveaux.innerHTML = '<div class="edu-title">Niveaux <span>par matière</span></div>' +
-      '<div class="edu-levels">' +
-        niveau('Math', 5) + niveau('English', 3) + niveau('Français', 3) + niveau('Découverte', 3) +
-      '</div>';
-    body.appendChild(niveaux);
+    // Les niveaux par matière vivent dans le profil de l'enfant connecté : on
+    // ne les invente pas pour un frère ou une sœur.
+    if (!autre) {
+      const niveaux = document.createElement('div');
+      niveaux.className = 'edu-summary';
+      niveaux.innerHTML = '<div class="edu-title">Niveaux <span>par matière</span></div>' +
+        '<div class="edu-levels">' +
+          niveau('Math', 5) + niveau('English', 3) + niveau('Français', 3) + niveau('Découverte', 3) +
+        '</div>';
+      body.appendChild(niveaux);
+    }
 
     // 📊 stacked bar chart: minutes of play (+ quiz time) per day, 2 weeks.
     // The quiz segment exists so the chart never looks like time "went
@@ -2161,7 +2271,8 @@ export class EducationMode {
     // counted as "jeu", so it's shown separately instead of just vanishing.
     const chartBox = document.createElement('div');
     chartBox.className = 'edu-summary';
-    chartBox.innerHTML = '<div class="edu-title">Temps par jour <span>14 derniers jours · touche une barre</span></div>' +
+    const jbar = periode === 0 ? 14 : periode > 0 ? Math.min(periode, 30) : 30;
+    chartBox.innerHTML = `<div class="edu-title">Temps par jour <span>${jbar} derniers jours · touche une barre</span></div>` +
       '<div style="font-size:12.5px;color:#8e8e93;margin:-8px 0 6px">' +
       '<span style="color:#ff9f0a">●</span> jeu &nbsp;·&nbsp; ' +
       '<span style="color:#0a84ff">●</span> quiz</div>';
@@ -2179,12 +2290,11 @@ export class EducationMode {
     dayDetail.style.display = 'none';
     body.appendChild(dayDetail);
 
-    const keys14 = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      keys14.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-    }
+    // Le graphique suit la période choisie : 14 jours par défaut, la période
+    // exacte pour un raccourci, et jusqu'à 30 barres — au-delà, elles
+    // deviendraient des allumettes illisibles sur un iPad.
+    const portee = periode === 0 ? 14 : periode > 0 ? Math.min(periode, 30) : 30;
+    const keys14 = clesDe(portee);
     const playMins = keys14.map((k) => (days[k] ? Math.round(days[k].play / 60) : 0));
     const quizMins = keys14.map((k) => (days[k] ? Math.round((days[k].quiz || 0) / 60) : 0));
     const totalMins = keys14.map((i2, i) => playMins[i] + quizMins[i]);
