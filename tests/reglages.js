@@ -759,6 +759,33 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
         jeu: (document.querySelector('#edu-panel .edu-stats .edu-stat b') || {}).textContent,
       }))));
 
+    // --- le taux de réussite, jour par jour ----------------------------------
+    //
+    // Le temps de jeu dit combien l'enfant a joué, pas s'il progresse. Le
+    // second graphique du hub répond à cela : sur les questions posées ce
+    // jour-là, combien étaient justes. Alice est encore sélectionnée : ses
+    // journées viennent de ses lignes de temps, donc les chiffres sont ceux
+    // qu'on a semés — 4 justes sur 5 il y a deux jours, soit 80 %. Et le jour
+    // sans question n'a PAS zéro pour cent : il n'a pas de barre du tout.
+    const succes = await marlon.evaluate((jour2) => {
+      const edu = window.__game.edu;
+      const box = document.getElementById('edu-succes');
+      const t = edu.dernierTaux || [];
+      return {
+        boite: !!box,
+        toile: !!(box && box.querySelector('canvas')),
+        jours: t.map((r) => [r.k, r.pct]),
+        avantHier: (t.find((r) => r.k === jour2) || {}).pct,
+        zeros: t.filter((r) => r.total === 0).length,
+      };
+    }, j(2));
+    verifier('le hub trace le taux de réussite par jour',
+      succes.boite && succes.toile && succes.avantHier === 80,
+      JSON.stringify({ boite: succes.boite, jours: succes.jours }));
+    verifier('et un jour sans question n\'y compte pas pour zéro',
+      succes.zeros === 0 && !succes.jours.some(([k]) => k === j(6)),
+      JSON.stringify(succes.jours));
+
     // Retour à Marlon : la période cumule vraiment. « Tout » contient la
     // journée d'il y a dix jours (30 min), « 7 jours » non — l'écart doit
     // faire au moins ces trente minutes, aux arrondis près.

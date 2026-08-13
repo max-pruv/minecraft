@@ -2404,6 +2404,93 @@ export class EducationMode {
       renderDayDetail(keys14[i]);
     });
 
+    // 📈 Le taux de réussite, jour par jour.
+    //
+    // Le temps de jeu dit combien l'enfant a joué ; il ne dit pas s'il
+    // progresse. Ce second graphique répond à la seule question qui reste :
+    // sur les questions posées ce jour-là, combien étaient justes ? Un jour
+    // sans question n'a PAS zéro pour cent — il n'a pas de barre du tout,
+    // sinon une journée de vacances ressemblerait à un échec.
+    const taux = keys14.map((k) => {
+      const d = days[k];
+      if (!d) return null;
+      const justes = (d.correct || []).length;
+      const total = justes + (d.wrong || 0);
+      return total ? { k, pct: Math.round((justes / total) * 100), justes, total } : null;
+    });
+    // Ce que les tests mesurent : les journées avec questions, et leur taux.
+    this.dernierTaux = taux.filter(Boolean);
+
+    const succBox = document.createElement('div');
+    succBox.className = 'edu-summary';
+    succBox.id = 'edu-succes';
+    const avecQuestions = this.dernierTaux;
+    const moyenne = avecQuestions.length
+      ? Math.round(avecQuestions.reduce((a, r) => a + r.justes, 0) * 100
+        / Math.max(1, avecQuestions.reduce((a, r) => a + r.total, 0)))
+      : null;
+    succBox.innerHTML = '<div class="edu-title">Taux de réussite '
+      + `<span>${jbar} derniers jours${moyenne === null ? '' : ` · moyenne ${moyenne} %`}</span></div>`
+      + '<div style="font-size:12.5px;color:#8e8e93;margin:-8px 0 6px">'
+      + 'bonnes réponses sur les questions posées ce jour-là</div>';
+    const cvs = document.createElement('canvas');
+    cvs.width = 900; cvs.height = 200;
+    cvs.style.width = '100%';
+    cvs.style.height = 'auto';
+    succBox.appendChild(cvs);
+    if (avecQuestions.length === 0) {
+      succBox.innerHTML += '<div style="color:#8894b0">Aucune question sur la période.</div>';
+      cvs.style.display = 'none';
+    }
+    body.insertBefore(succBox, dayDetail);
+
+    const gs = cvs.getContext('2d');
+    const SH = cvs.height - PADB - PADT;
+    gs.clearRect(0, 0, cvs.width, cvs.height);
+    gs.strokeStyle = 'rgba(255,255,255,0.08)';
+    gs.fillStyle = '#8e8e93';
+    gs.font = '14px -apple-system, system-ui, sans-serif';
+    gs.textAlign = 'right';
+    for (let p = 0; p <= 100; p += 25) {
+      const y = PADT + SH - (p / 100) * SH;
+      gs.beginPath(); gs.moveTo(PADL, y); gs.lineTo(PADL + W, y); gs.stroke();
+      gs.fillText(`${p}`, PADL - 6, y + 5);
+    }
+    // la moyenne de la période, en pointillés : le repère qui dit « au-dessus
+    // ou en dessous de son habitude »
+    if (moyenne !== null) {
+      const ym = PADT + SH - (moyenne / 100) * SH;
+      gs.save();
+      gs.setLineDash([6, 6]);
+      gs.strokeStyle = 'rgba(255,255,255,0.35)';
+      gs.beginPath(); gs.moveTo(PADL, ym); gs.lineTo(PADL + W, ym); gs.stroke();
+      gs.restore();
+    }
+    taux.forEach((r, i) => {
+      const x = PADL + i * bw + bw * 0.12;
+      const bwPlot = bw * 0.76;
+      if (!r) {
+        // pas de question ce jour-là : un tiret discret, pas une barre à zéro
+        gs.fillStyle = 'rgba(255,255,255,0.10)';
+        gs.fillRect(x, PADT + SH - 2, bwPlot, 2);
+      } else {
+        const hh = Math.max(2, (r.pct / 100) * SH);
+        // vert quand c'est acquis, orange quand ça flotte, rouge quand ça
+        // coince : un parent lit la couleur avant le chiffre
+        gs.fillStyle = r.pct >= 80 ? '#30d158' : r.pct >= 50 ? '#ff9f0a' : '#ff453a';
+        barre(gs, x, PADT + SH - hh, bwPlot, hh, Math.min(bwPlot / 2, 5));
+        gs.fillStyle = '#fff';
+        gs.font = '600 13px -apple-system, system-ui, sans-serif';
+        gs.textAlign = 'center';
+        gs.fillText(`${r.pct}`, x + bwPlot / 2, PADT + SH - hh - 7);
+      }
+      gs.fillStyle = '#8e8e93';
+      gs.font = `${keys14[i] === todayKey() ? '600 ' : ''}12px -apple-system, system-ui, sans-serif`;
+      gs.textAlign = 'center';
+      gs.fillText(keys14[i] === todayKey() ? "auj." : `${keys14[i].slice(8, 10)}/${keys14[i].slice(5, 7)}`,
+        x + bwPlot / 2, PADT + SH + 18);
+    });
+
     // Parent digest: what works well / what needs practice, from today's log
     // — merged across every device the child played on today, when known.
     const qs = (this.crossDeviceDays && td.qs) || t.qs || [];
