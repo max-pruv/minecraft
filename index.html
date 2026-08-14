@@ -52,7 +52,10 @@
     }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none; }
     body { font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-    #game { display: block; width: 100%; height: 100%; touch-action: none; }
+    /* Le canvas remplit l'écran par la CSS, et par elle seule : c'est ce qui
+       fait qu'une mesure en retard adoucit l'image au lieu de laisser une
+       bande noire. */
+    #game { display: block; position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
 
     /* crosshair */
     #crosshair {

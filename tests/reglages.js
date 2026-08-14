@@ -878,6 +878,59 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       && /wa\.me/.test(partage.whatsapp) && /vercel/.test(partage.whatsapp),
       JSON.stringify({ url: partage.url }));
 
+    // ================= la moitié de l'écran restée noire ======================
+    //
+    // « Des fois sur iPad quand je rouvre l'app, j'ai la moitié en noir, je
+    // suis obligé de la kill et de la rouvrir. » Le canvas gardait la taille
+    // qu'il avait au moment où iOS a suspendu la page, et rien ne la reprenait.
+    //
+    // On ne peut pas suspendre un onglet comme le fait iOS. On reproduit donc
+    // ce qu'il en RESTE : une surface de dessin qui ne correspond plus à la
+    // boîte qu'elle remplit. Et l'on exige la garantie qui compte pour
+    // l'enfant — quoi qu'il arrive, l'écran se répare tout seul.
+    const ecran = await joueur('Ivy');
+    await ecran.evaluate(() => document.getElementById('play-btn').click());
+    await ecran.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+
+    const tailles = () => ecran.evaluate(() => {
+      const c = document.getElementById('game');
+      return {
+        tampon: c.width, boite: c.clientWidth,
+        haut: c.clientHeight, fenetre: window.innerHeight,
+        styleFige: !!c.style.width,
+      };
+    });
+
+    const depart = await tailles();
+    verifier('le canvas remplit tout l\'écran',
+      depart.haut === depart.fenetre, JSON.stringify(depart));
+    verifier('et sa taille n\'est pas figée dans son style',
+      depart.styleFige === false, JSON.stringify(depart));
+
+    // On abîme la surface de dessin, sans toucher au code qui doit la réparer.
+    await ecran.evaluate(() => window.__game.renderer.setSize(240, 180, false));
+    const cassee = await tailles();
+    verifier('le témoin a bien abîmé la surface de dessin',
+      cassee.tampon < cassee.boite, JSON.stringify(cassee));
+
+    const reparee = await jusqua(async () => {
+      const t = await tailles();
+      return t.tampon >= t.boite;
+    }, 8000);
+    verifier('l\'écran se répare tout seul, sans rien tuer', reparee,
+      JSON.stringify(await tailles()));
+
+    // Et l'appareil qu'on tourne pendant que l'application dort : au retour, la
+    // fenêtre a changé de forme sans qu'aucun événement fiable ne l'annonce.
+    await ecran.setViewportSize({ width: 760, height: 420 });
+    const tourne = await jusqua(async () => {
+      const t = await tailles();
+      return t.tampon >= t.boite && t.haut === t.fenetre;
+    }, 8000);
+    verifier('et il suit quand l\'appareil change de forme', tourne,
+      JSON.stringify(await tailles()));
+    await ecran.close();
+
     verifier('aucune erreur JavaScript', marlon.erreurs.length === 0 && alice.erreurs.length === 0,
       JSON.stringify([...marlon.erreurs, ...alice.erreurs]));
   } finally {
