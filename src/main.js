@@ -46,7 +46,11 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
+// Sans le troisième argument, setSize écrit la taille en dur dans le style du
+// canvas et l'emporte sur la feuille de style — c'est ainsi qu'une mesure
+// fausse devenait une bande noire. La vraie taille est posée par
+// ajusterLaVue(), juste en dessous, une fois la caméra créée.
+renderer.setSize(window.innerWidth, window.innerHeight, false);
 
 const scene = new THREE.Scene();
 const DAY_SKY = new THREE.Color(0x87ceeb);
@@ -64,11 +68,62 @@ const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
 sunLight.position.set(0.6, 1, 0.4);
 scene.add(sunLight);
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+// LA MOITIÉ DE L'ÉCRAN RESTÉE NOIRE.
+//
+// En revenant dans l'application sur l'iPad, la moitié de l'écran était noire
+// et il fallait tuer l'application pour s'en sortir. La cause : le canvas
+// gardait la taille qu'il avait au moment où iOS a suspendu la page.
+//
+// Deux fautes se cumulaient.
+//
+// La première : on ne mesurait qu'au seul événement « resize ». Or iOS ne le
+// tire pas fidèlement au retour d'une application suspendue — et quand il le
+// tire, innerHeight vaut encore l'ancienne valeur pendant quelques dizaines de
+// millisecondes, le temps que la barre du navigateur se replace. On ne
+// rattrapait donc jamais rien.
+//
+// La seconde, plus grave : renderer.setSize() écrivait la taille EN DUR dans
+// le style du canvas, ce qui l'emportait sur le « 100 % » de la feuille de
+// style. Une mesure fausse devenait donc une bande noire, définitivement. En
+// laissant la mise en page à la CSS — setSize(…, false) — une mesure en
+// retard ne coûte plus qu'une image légèrement adoucie pendant une fraction
+// de seconde. La panne dégrade au lieu de casser.
+//
+// Et l'on mesure le canvas lui-même plutôt que la fenêtre : c'est la boîte
+// qu'on remplit, c'est donc elle qui dit la vérité.
+function ajusterLaVue() {
+  const l = canvas.clientWidth || window.innerWidth;
+  const h = canvas.clientHeight || window.innerHeight;
+  if (!l || !h) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // On compare à ce que le canvas PORTE, jamais à ce qu'on croit lui avoir
+  // donné. La nuance décide de tout : une surface abîmée par autre chose que
+  // nous — une suspension d'iOS — laisse notre mémoire intacte et fausse, et
+  // c'est exactement l'état dont il faut sortir. Le canvas, lui, ne ment pas.
+  if (canvas.width === Math.round(l * dpr) && canvas.height === Math.round(h * dpr)) return;
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(l, h, false);   // false : la CSS garde la main sur la mise en page
+  camera.aspect = l / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// Au retour d'une suspension, la bonne taille n'est pas connue tout de suite :
+// on repasse quelques fois plutôt que de croire la première mesure.
+function ajusterEtRepasser() {
+  ajusterLaVue();
+  for (const delai of [50, 200, 600, 1500]) setTimeout(ajusterLaVue, delai);
+}
+
+for (const evt of ['resize', 'orientationchange', 'pageshow', 'focus']) {
+  window.addEventListener(evt, ajusterEtRepasser);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') ajusterEtRepasser();
 });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', ajusterEtRepasser);
+}
+ajusterLaVue();
 
 // --- materials ---------------------------------------------------------------
 
@@ -4365,6 +4420,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 window.__game = { renderer, world, player, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
+let frameDepuisMesure = 0;
 
 // Le vol prend son élan au bout de quelques secondes. Sans un mot, l'enfant
 // croit à un bug ; avec ce mot, il comprend qu'il vient de gagner quelque chose.
@@ -4382,6 +4438,13 @@ function frame(now) {
   // animaux et le compteur de temps de jeu. Le plancher à zéro le neutralise.
   const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
   lastTime = now;
+
+  // LE FILET DE L'ÉCRAN. Deux fois par seconde, on vérifie que ce qu'on dessine
+  // a bien la taille de la boîte qu'on remplit. Aucun événement du navigateur
+  // n'est alors nécessaire : quoi qu'iOS oublie de nous dire en rendant la main
+  // à l'application, l'écran se répare tout seul en moins d'une demi-seconde,
+  // sans que l'enfant ait à tuer l'application et à la rouvrir.
+  if (++frameDepuisMesure >= 30) { frameDepuisMesure = 0; ajusterLaVue(); }
 
   if (running) {
     player.update(dt);
