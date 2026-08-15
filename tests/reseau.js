@@ -29,7 +29,11 @@ const { servirLeNuage } = require('./nuage.js');
 //   C'est le mécanisme qui fait que « Jouer » finit toujours par entrer.
 //   PeerJS fait précéder ce refus d'un « Aborting! » : c'est la même chose,
 //   dite deux fois.
-const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!/;
+// Trois messages de PeerJS supplémentaires ne comptent pas comme des fautes :
+// ce sont exactement les CONDITIONS du scénario sans courtier — un serveur de
+// rendez-vous injoignable. Les compter en fautes reviendrait à reprocher au
+// jeu la panne qu'on lui demande de traverser.
+const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!|Lost connection to server|Could not get an ID from the server|Error retrieving ID/;
 const fautes = (p) => p.erreurs.filter((e) => !TOLERE.test(e));
 
 const echecs = [];

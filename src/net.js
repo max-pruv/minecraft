@@ -182,16 +182,18 @@ export class NetSession {
         // raison d'être. C'est pourtant ce que disait l'écran — « Le serveur de
         // jeu ne répond pas » — sur un téléphone dont la connexion marchait
         // parfaitement.
-        if (this.jouerSansCourtier(resolve)) { settled = true; return; }
         settled = true;
-        this.active = false;
-        // Marqué : c'est le serveur de rendez-vous qui n'a pas répondu, pas le
-        // monde d'en face. L'appelant n'a alors aucune raison de retenter en
-        // hôte — il buterait sur exactement le même mur, et l'enfant
-        // attendrait deux fois neuf secondes pour le même verdict.
-        const muet = new Error('Le serveur de jeu ne répond pas — réessaie dans un moment');
-        muet.signal = true;
-        reject(muet);
+        this.jouerSansCourtier().then((parLeNuage) => {
+          if (parLeNuage) { resolve(this.code); return; }
+          this.active = false;
+          // Marqué : c'est le serveur de rendez-vous qui n'a pas répondu, pas
+          // le monde d'en face. L'appelant n'a alors aucune raison de retenter
+          // en hôte — il buterait sur le même mur, et l'enfant attendrait deux
+          // fois neuf secondes pour le même verdict.
+          const muet = new Error('Le serveur de jeu ne répond pas — réessaie dans un moment');
+          muet.signal = true;
+          reject(muet);
+        });
       }, OUVERTURE_MS);
       // À partir d'ici, le pair vit : les délais suivants sont ceux de
       // connectToHost, qui a sa propre limite.
@@ -278,9 +280,11 @@ export class NetSession {
           // branche, un port injoignable renvoyait l'enfant au menu avec « Pas
           // de connexion internet au serveur de jeu », sur un téléphone dont la
           // connexion était parfaite.
-          if (this.jouerSansCourtier(resolve)) { settled = true; return; }
           settled = true;
-          reject(new Error('Pas de connexion internet au serveur de jeu'));
+          this.jouerSansCourtier().then((parLeNuage) => {
+            if (parLeNuage) { resolve(this.code); return; }
+            reject(new Error('Pas de connexion internet au serveur de jeu'));
+          });
         } else if (!settled) {
           // Tous les autres cas — navigateur incompatible, socket refusée,
           // certificat… Les ignorer laissait l'ouverture en suspens sans un mot.
@@ -358,8 +362,21 @@ export class NetSession {
   // On abandonne le pair — il n'a jamais reçu d'identifiant, il ne servira à
   // rien. Tout ce qui suit doit donc supporter `this.peer` absent : c'est la
   // contrepartie honnête de ce chemin, et elle est explicite.
-  jouerSansCourtier(resolve) {
-    if (!this.hooks.cloud || !this.hooks.cloud.configured) return false;
+  async jouerSansCourtier() {
+    const cloud = this.hooks.cloud;
+    if (!cloud || !cloud.configured) return false;
+    // ON NE PROMET PAS UN CHEMIN QU'ON N'A PAS VÉRIFIÉ.
+    //
+    // Le nuage est « configuré » sur tous les appareils — c'est une adresse
+    // écrite dans la page, pas une garantie. Configuré n'est pas joignable :
+    // un enfant vraiment hors ligne se serait retrouvé dans un monde qui ne
+    // mène nulle part, sans un mot, au lieu de lire une phrase honnête. Un
+    // aller-retour tranche, et quatre secondes suffisent à le savoir.
+    const repond = await Promise.race([
+      cloud.relaisDernier(this.code).then(() => true).catch(() => false),
+      new Promise((ok) => setTimeout(() => ok(false), 4000)),
+    ]);
+    if (!repond || !this.active) return false;
     this.peer = null;
     const bus = this.ouvrirRelaisNuage();
     if (!bus) return false;
@@ -371,7 +388,6 @@ export class NetSession {
     }
     this.state(this.statusText());
     this.startHeartbeat();
-    resolve(this.code);
     return true;
   }
 
