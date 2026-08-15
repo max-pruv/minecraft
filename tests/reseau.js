@@ -412,16 +412,29 @@ function verifier(nom, ok, detail = '') {
       };
     });
     const zia = await banc.rejoindre('Zia', codeVieux);
-    const ziaReprend = await jusqua(async () => zia.evaluate(
-      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 90000);
+    await dormir(6000);
     const accuseVieux = zia.dialogues.filter((d) => /joue déjà/.test(d));
     verifier('un hôte d\'ancienne version ne renvoie plus au menu',
       accuseVieux.length === 0, JSON.stringify(zia.dialogues));
-    verifier('et l\'enfant reprend son monde malgré lui', ziaReprend,
-      JSON.stringify(await zia.evaluate(() => ({
-        actif: !!window.__game.net.active, hote: !!window.__game.net.isHost }))));
-    await zia.close();
+    // Le jeu ne se tait pas non plus : il DIT ce qu'il fait, et il insiste.
+    const insiste = await jusqua(async () => zia.evaluate(
+      () => /reprend ton monde/i.test(document.body.textContent || '')), 30000);
+    verifier('il annonce qu\'il reprend le monde, au lieu d\'un cul-de-sac', insiste,
+      JSON.stringify(await zia.evaluate(
+        () => (document.getElementById('online-status') || {}).textContent || '')));
+
+    // Tant que la vieille session tient l'identifiant, personne ne peut le
+    // reprendre — c'est physique. Ce qu'on exige, c'est qu'à la SECONDE où
+    // elle lâche prise, l'enfant retrouve son monde sans avoir rien à faire.
+    // Un fantôme finit toujours par mourir ; le cul-de-sac, lui, ne finit pas.
     await vieilHote.close();
+    const ziaReprend = await jusqua(async () => zia.evaluate(
+      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 90000);
+    verifier('et dès que le fantôme lâche prise, l\'enfant retrouve son monde', ziaReprend,
+      JSON.stringify(await zia.evaluate(() => ({
+        actif: !!(window.__game.net && window.__game.net.active),
+        hote: !!(window.__game.net && window.__game.net.isHost) }))));
+    await zia.close();
 
     // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
     //
