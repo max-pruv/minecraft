@@ -359,6 +359,61 @@ function verifier(nom, ok, detail = '') {
     await chezSoi.close();
     await tenu2.close();
 
+    // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
+    //
+    // « Le serveur de jeu ne répond pas — réessaie dans un moment », sur un
+    // téléphone dont la connexion marchait parfaitement. Ce serveur ne sert
+    // qu'aux présentations ; le nuage, lui, n'a besoin d'aucun courtier. Un
+    // service extérieur indisponible n'est pas une raison de refuser de jouer.
+    //
+    // Ici le courtier est injoignable À LA RACINE : le port ne répond pas du
+    // tout. C'est le cas le plus franc, et le plus proche de celui de Max.
+    const sansCourtier = await banc.joueurVers('Sacha', 9798, AVEC_NUAGE);
+    await sansCourtier.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await sansCourtier.evaluate(() => document.getElementById('host-btn').click());
+    // Le jeu laisse neuf secondes au courtier avant de choisir le nuage : on
+    // lui donne de quoi le faire, et de la marge.
+    const ouvertSansCourtier = await jusqua(async () => sansCourtier.evaluate(
+      () => !!(window.__game.net && window.__game.net.active)), 60000);
+    const etatSans = await sansCourtier.evaluate(() => {
+      const n = window.__game.net;
+      return {
+        actif: !!(n && n.active), bus: !!(n && n.bus), pair: !!(n && n.peer),
+        statut: (document.getElementById('online-status') || {}).textContent || '',
+      };
+    });
+    verifier('un courtier muet n\'empêche plus d\'ouvrir un monde',
+      ouvertSansCourtier && etatSans.actif, JSON.stringify(etatSans));
+    verifier('et c\'est le nuage qui porte la partie, sans courtier du tout',
+      etatSans.bus === true && etatSans.pair === false, JSON.stringify(etatSans));
+    verifier('l\'enfant ne lit plus « le serveur ne répond pas »',
+      !/ne répond pas|Pas de connexion/.test(etatSans.statut), JSON.stringify(etatSans.statut));
+
+    // Et l'essentiel : à DEUX, sans courtier ni d'un côté ni de l'autre. C'est
+    // la promesse entière — le jeu à plusieurs ne dépend plus d'aucun service
+    // extérieur autre que celui qui sert déjà la page.
+    const codeSans = await sansCourtier.evaluate(
+      () => document.getElementById('room-code').textContent.trim());
+    const secondSans = await banc.joueurVers('Nina', 9798, AVEC_NUAGE);
+    await secondSans.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await secondSans.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeSans);
+    await dormir(2000);
+    await secondSans.evaluate(() => document.getElementById('online-play-btn')?.click());
+    await sansCourtier.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const ensembleSans = await jusqua(async () => {
+      const a = await nomsVus(sansCourtier), b = await nomsVus(secondSans);
+      return a.includes('Nina') && b.includes('Sacha');
+    }, 120000);
+    verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
+      JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
+    await secondSans.close();
+    await sansCourtier.close();
+
     // --- l'enfant qui entend tout le monde et que personne n'entend ----------
     //
     // Le secours par le nuage est rouvert à chaque tentative de reconnexion et

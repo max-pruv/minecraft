@@ -2136,6 +2136,12 @@ function startNetSession(code, isHost, patience) {
     onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
     onState: () => updatePlayersBtn(),
   });
+  // L'appareil, pour que l'hôte sache reconnaître son propre fantôme d'une
+  // session précédente — et lui céder la place au lieu de l'accuser.
+  net.deviceId = deviceId;
+  // Notre reflet nous rend la main : on rouvre le monde sans un mot. Pour
+  // l'enfant, il a simplement rejoint sa partie.
+  net.onCeder = () => { leaveToMainMenu(); };
   net.getPos = () => ({
     x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
     moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,

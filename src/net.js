@@ -167,9 +167,24 @@ export class NetSession {
       let settled = false;
       const abandon = setTimeout(() => {
         if (settled) return;
+        try { this.peer.destroy(); } catch { /* déjà en morceaux */ }
+        // LE COURTIER EST MUET — CE N'EST PLUS UN REFUS.
+        //
+        // Ce serveur ne sert qu'aux présentations : il attribue un identifiant
+        // et transmet la première poignée de main. Tout le reste de la partie
+        // passe ailleurs. Or il existe un second chemin, celui qui traverse
+        // déjà les Wi-Fi d'hôtel : le nuage. Lui n'a besoin d'aucun courtier —
+        // l'hôte relève sa boîte, l'invité y dépose, et le code du monde suffit
+        // à se reconnaître.
+        //
+        // Renvoyer l'enfant au menu parce qu'un service extérieur ne répond
+        // pas, alors qu'un chemin praticable est grand ouvert, n'a aucune
+        // raison d'être. C'est pourtant ce que disait l'écran — « Le serveur de
+        // jeu ne répond pas » — sur un téléphone dont la connexion marchait
+        // parfaitement.
+        if (this.jouerSansCourtier(resolve)) { settled = true; return; }
         settled = true;
         this.active = false;
-        try { this.peer.destroy(); } catch { /* déjà en morceaux */ }
         // Marqué : c'est le serveur de rendez-vous qui n'a pas répondu, pas le
         // monde d'en face. L'appelant n'a alors aucune raison de retenter en
         // hôte — il buterait sur exactement le même mur, et l'enfant
@@ -257,8 +272,14 @@ export class NetSession {
         } else if (err.type === 'peer-unavailable') {
           if (!settled) { settled = true; ouvert(); reject(new Error('Partie introuvable — vérifie le code !')); }
         } else if (!settled && (err.type === 'network' || err.type === 'server-error')) {
-          settled = true;
           ouvert();
+          // Le courtier crie au lieu de se taire — même panne, autre symptôme,
+          // et donc même issue : le nuage n'a pas besoin de lui. Sans cette
+          // branche, un port injoignable renvoyait l'enfant au menu avec « Pas
+          // de connexion internet au serveur de jeu », sur un téléphone dont la
+          // connexion était parfaite.
+          if (this.jouerSansCourtier(resolve)) { settled = true; return; }
+          settled = true;
           reject(new Error('Pas de connexion internet au serveur de jeu'));
         } else if (!settled) {
           // Tous les autres cas — navigateur incompatible, socket refusée,
@@ -330,6 +351,28 @@ export class NetSession {
     });
     if (!this.bus.demarrer()) { this.bus = null; return null; }
     return this.bus;
+  }
+
+  // Jouer sans courtier du tout : le nuage porte la présentation ET la partie.
+  //
+  // On abandonne le pair — il n'a jamais reçu d'identifiant, il ne servira à
+  // rien. Tout ce qui suit doit donc supporter `this.peer` absent : c'est la
+  // contrepartie honnête de ce chemin, et elle est explicite.
+  jouerSansCourtier(resolve) {
+    if (!this.hooks.cloud || !this.hooks.cloud.configured) return false;
+    this.peer = null;
+    const bus = this.ouvrirRelaisNuage();
+    if (!bus) return false;
+    this.link('nuage');
+    if (!this.isHost) {
+      const conn = bus.connecter(ID_PREFIX + this.code);
+      this.inscrireSiNouveau(conn);
+      this.greet(conn);
+    }
+    this.state(this.statusText());
+    this.startHeartbeat();
+    resolve(this.code);
+    return true;
   }
 
   // Reprendre le chemin du nuage, ou le rouvrir s'il s'était refermé. C'est
@@ -726,7 +769,7 @@ export class NetSession {
     if (!c) { try { conn.close(); } catch { /* déjà fermée */ } return; }
     if (!c.presenteA) c.presenteA = Date.now();
     try {
-      conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look });
+      conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look, device: this.deviceId });
     } catch { return; }   // le lien est mort-né : dropPeer s'en charge
     this.startPosLoop();
     this.relancerPresentation(conn);
@@ -764,7 +807,7 @@ export class NetSession {
       }
       try {
         conn.send({
-          t: 'hello', encore: true,
+          t: 'hello', encore: true, device: this.deviceId,
           name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
         });
       } catch { e.relanceEnCours = false; return; }
@@ -872,6 +915,23 @@ export class NetSession {
         // message clair au lieu d'un refus.
         if (this.isHost) {
           if (wanted === this.profile.name) {
+            // LE FANTÔME DE SOI-MÊME.
+            //
+            // Même prénom ET même appareil : ce n'est pas un doublon, c'est
+            // nous — une session précédente restée accrochée pendant que
+            // l'enfant rouvrait l'application. Un appareil ne joue pas deux
+            // fois en même temps ; entre les deux, le vivant est celui qui
+            // arrive.
+            //
+            // L'ancienne règle refusait l'arrivant avec « tu joues déjà depuis
+            // un autre appareil », ce qui était faux et sans issue : l'enfant
+            // était renvoyé au menu par son propre reflet. On cède donc la
+            // place, et il rouvre son monde.
+            if (msg.device && this.deviceId && msg.device === this.deviceId) {
+              conn.send({ t: 'cede', name: wanted });
+              setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
+              break;
+            }
             // Celui-là, on ne peut pas l'expulser : c'est nous.
             conn.send({ t: 'duplicate', name: wanted });
             setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
@@ -949,6 +1009,12 @@ export class NetSession {
       }
       case 'duplicate':
         if (this.onDuplicate) this.onDuplicate(msg.name);
+        break;
+      // Notre propre fantôme nous rend la main : on rouvre le monde, qu'il
+      // vient de libérer. Rien à dire à l'enfant — de son point de vue, il a
+      // simplement rejoint sa partie.
+      case 'cede':
+        if (this.onCodePris) this.onCodePris(this.code);
         break;
       // Cet appareil-ci vient d'être remplacé par un autre portant le même
       // prénom. Ce n'est pas une erreur de l'enfant : on le dit autrement.
@@ -1037,7 +1103,10 @@ export class NetSession {
         break;
       case 'rpos': { // relayed position of another guest (host-mediated)
         // treat the origin guest as a virtual peer entry
-        if (!this.conns.has(msg.from) && msg.from !== this.peer.id) {
+        // `this.peer` peut être absent : quand le courtier est muet, la partie
+        // se joue entièrement par le nuage et il n'y a jamais eu de pair.
+        const monId = this.peer ? this.peer.id : null;
+        if (!this.conns.has(msg.from) && msg.from !== monId) {
           this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', pret: true, lookIdx: msg.lookIdx || 0, look: msg.look || null, pos: null, yaw: 0, moving: false });
         }
         const e2 = this.conns.get(msg.from);
