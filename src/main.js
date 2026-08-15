@@ -2207,7 +2207,11 @@ function startNetSession(code, isHost, patience) {
 // la partie ni rien redemander à l'enfant : on rejoint celui qui l'héberge
 // maintenant. Si personne ne le tient au bout de quelques essais, c'est qu'il
 // est de nouveau libre — on le rouvre nous-mêmes.
-async function reprendreLeMonde(code, essai = 0) {
+// `motif` : ce qu'on montre à l'enfant pendant qu'on s'obstine. Reprendre son
+// monde à un fantôme et se reconnecter après une coupure sont deux histoires
+// différentes ; les dire de la même façon laissait l'enfant devant un message
+// qui ne correspondait pas à ce qu'il venait de vivre.
+async function reprendreLeMonde(code, essai = 0, motif = null) {
   if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
   syncRemotePlayers([]);
   try {
@@ -2218,8 +2222,8 @@ async function reprendreLeMonde(code, essai = 0) {
     bonneNouvelle(essai >= 3 ? '✅ Monde rouvert !' : '✅ Monde rejoint !');
   } catch {
     if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
-    alerte('monde-reco', true, `Reconnexion au monde ${code}…`);
-    setTimeout(() => reprendreLeMonde(code, essai + 1), 4000);
+    alerte('monde-reco', true, motif || `Reconnexion au monde ${code}…`);
+    setTimeout(() => reprendreLeMonde(code, essai + 1, motif), 4000);
   }
 }
 
@@ -2424,8 +2428,9 @@ function showOnlineUI() {
   net.onDuplicate = () => {
     const code = net && net.code;
     if (!code) { leaveToMainMenu(); return; }
-    alerte('monde-reco', true, `On reprend ton monde ${code}…`);
-    reprendreLeMonde(code, 3);   // 3 : on rouvre en hôte, on ne rejoint plus
+    const motif = `On reprend ton monde ${code}…`;
+    alerte('monde-reco', true, motif);
+    reprendreLeMonde(code, 3, motif);   // 3 : on rouvre en hôte, on ne rejoint plus
   };
   // Cet appareil vient de céder la place à un autre au même prénom — le plus
   // souvent le sien, revenu après une coupure. Ce n'est pas une faute : on le
