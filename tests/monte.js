@@ -48,11 +48,45 @@ const poserDevant = (p, espece, distance = 3) => p.evaluate(({ espece, distance 
   return !!g.animalManager.invoquer(espece, x, z);
 }, { espece, distance });
 
-// Combien de mètres on parcourt en tenant la touche « avance » une seconde.
-async function avancerUneSeconde(p) {
+// Un cap où l'on peut courir six mètres sans rien rencontrer : sol praticable
+// devant, rien à hauteur de tête, aucun trou. Sans cela on ne compare pas
+// deux vitesses mais deux obstacles — à pied on n'atteignait pas l'arbre, en
+// selle on le percutait, et la monture semblait plus lente.
+const capDegage = (p) => p.evaluate(() => {
+  const g = window.__game;
+  const w = g.world;
+  const pos = g.player.pos;
+  const fy = Math.floor(pos.y + 0.01);
+  for (let i = 0; i < 32; i++) {
+    const yaw = (i * Math.PI) / 16;
+    let libre = true;
+    for (let d = 1; d <= 6 && libre; d++) {
+      const x = Math.floor(pos.x - Math.sin(yaw) * d);
+      const z = Math.floor(pos.z - Math.cos(yaw) * d);
+      // le terrain ondule : un creux d'un bloc se traverse, une bosse non
+      if (!w.isSolid(x, fy - 1, z) && !w.isSolid(x, fy - 2, z)) libre = false;
+      for (let dy = 0; dy <= 1; dy++) if (w.isSolid(x, fy + dy, z)) libre = false;
+    }
+    if (libre) return yaw;
+  }
+  return null;
+});
+
+// Combien de mètres on parcourt en tenant la touche « avance » une demi-seconde,
+// toujours depuis le même point et dans la même direction : comparer un
+// départ en terrain libre à un départ le nez contre un arbre ne prouverait
+// rien du tout.
+async function avancerUnDemiSeconde(p, depart) {
+  await p.evaluate((d) => {
+    const g = window.__game;
+    g.player.pos.set(d.x, d.y, d.z);
+    g.player.vel.set(0, 0, 0);
+    g.player.yaw = d.yaw;
+  }, depart);
+  await dormir(250);
   const avant = await pose(p);
   await p.keyboard.down('KeyW');
-  await dormir(1000);
+  await dormir(500);
   await p.keyboard.up('KeyW');
   const apres = await pose(p);
   return Math.hypot(apres.x - avant.x, apres.z - avant.z);
@@ -82,6 +116,17 @@ async function avancerUneSeconde(p) {
     verifier('le bouton tient bon quand on regarde l\'animal de biais',
       deBiais.visible, JSON.stringify(deBiais));
 
+    // La preuve que ce n'est pas la même règle qu'avant : dans cette position
+    // exacte, la visée — celle qui commandait le bouton et qui sert encore à
+    // nourrir — ne trouve aucun animal. C'est ce cône de vingt degrés qui
+    // rendait la monte introuvable.
+    const regles = await tab.evaluate(() => ({
+      vise: !!window.__game.animalManager.targeted(),
+      monture: !!window.__game.animalManager.monture(),
+    }));
+    verifier('là où l\'ancienne visée ne trouvait rien, la monte la voit',
+      !regles.vise && regles.monture, JSON.stringify(regles));
+
     // Mais tourner le dos, c'est autre chose : le bouton doit disparaître.
     await tab.evaluate(() => { window.__game.player.yaw += Math.PI; });
     await dormir(600);
@@ -92,7 +137,14 @@ async function avancerUneSeconde(p) {
 
     // --- en selle ------------------------------------------------------------
     const aPied = await pose(tab);
-    const distanceAPied = await avancerUneSeconde(tab);
+    const cap = await capDegage(tab);
+    verifier('on a trouvé un champ dégagé pour comparer les deux allures',
+      cap !== null, cap === null ? 'aucun cap libre sur six mètres' : `${(cap * 180 / Math.PI).toFixed(0)}°`);
+    const depart = await tab.evaluate((yaw) => {
+      const g = window.__game;
+      return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: yaw ?? g.player.yaw };
+    }, cap);
+    const distanceAPied = await avancerUnDemiSeconde(tab, depart);
     await poserDevant(tab, 'elephant');
     await dormir(600);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
@@ -103,9 +155,9 @@ async function avancerUneSeconde(p) {
       enSelle.oeil - enSelle.y > (aPied.oeil - aPied.y) + 2,
       `œil à ${(aPied.oeil - aPied.y).toFixed(2)} m à pied, ${(enSelle.oeil - enSelle.y).toFixed(2)} m en selle`);
 
-    const distanceEnSelle = await avancerUneSeconde(tab);
+    const distanceEnSelle = await avancerUnDemiSeconde(tab, depart);
     verifier('et on avance plus vite qu\'à pied',
-      distanceEnSelle > distanceAPied * 1.2,
+      distanceEnSelle > distanceAPied * 1.3,
       `${distanceAPied.toFixed(1)} m à pied · ${distanceEnSelle.toFixed(1)} m en selle`);
 
     const monture = await tab.evaluate(() => {
@@ -158,10 +210,10 @@ async function avancerUneSeconde(p) {
       aBord.visible, JSON.stringify(aBord));
 
     await tab.evaluate(() => document.getElementById('board-btn').click());
-    const depart = await pose(tab);
+    const embarque = await pose(tab);
     await dormir(2500);
     const arrivee = await pose(tab);
-    const parcouru = Math.hypot(arrivee.x - depart.x, arrivee.z - depart.z);
+    const parcouru = Math.hypot(arrivee.x - embarque.x, arrivee.z - embarque.z);
     verifier('et le métro nous emmène pour de bon',
       parcouru > 8, `${parcouru.toFixed(1)} m en 2,5 s`);
 

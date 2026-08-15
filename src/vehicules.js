@@ -158,6 +158,10 @@ class Convoi {
     this.vitesse = opts.vitesse;
     this.distance = opts.depart || 0;
     this.ecart = opts.ecart ?? 8;
+    this.nom = opts.nom || 'véhicule';
+    this.emoji = opts.emoji || '🚗';
+    // À quelle hauteur, au-dessus du tracé, on est assis dedans.
+    this.assise = opts.assise ?? 1.2;
     this.elements = [];
     for (let i = 0; i < opts.nb; i++) {
       const m = opts.modele(i);
@@ -165,6 +169,17 @@ class Convoi {
       scene.add(m);
       this.elements.push(m);
     }
+  }
+
+  // Où se trouve la place assise de l'élément i, en ce moment même.
+  //
+  // C'est recalculé depuis le tracé, jamais lu sur le maillage : loin du
+  // joueur les modèles sont cachés et leur position est périmée, alors que le
+  // convoi, lui, continue de rouler. On peut donc demander « où est la rame ? »
+  // même quand elle est à l'autre bout de la ville.
+  place(i, avance = 0) {
+    const p = this.parcours.a(this.distance + avance - i * this.ecart);
+    return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap };
   }
 
   update(dt, joueur) {
@@ -201,7 +216,7 @@ export function createVehicules({ scene, player }) {
     const p = new Parcours(points);
     for (const [depart, teinte] of [[0, 0x2a6ad8], [p.longueur / 2, 0xd8a02a]]) {
       ajouter(points, {
-        nb: 4, ecart: 7.6, vitesse: 7, depart,
+        nb: 4, ecart: 7.6, vitesse: 7, depart, nom: 'métro', emoji: '🚇', assise: 1.1,
         modele: (i) => construireRame(i === 0, teinte),
       });
     }
@@ -219,6 +234,7 @@ export function createVehicules({ scene, player }) {
       const [c1, c2] = teintes[i % teintes.length];
       ajouter(points, {
         nb: 1, vitesse: 17 + (i % 3) * 1.6, depart: -i * (p.longueur / nb) * 0.55,
+        nom: 'formule 1', emoji: '🏎️', assise: 0.75,
         modele: () => construireF1(c1, c2),
       });
     }
@@ -228,8 +244,39 @@ export function createVehicules({ scene, player }) {
     for (const c of convois) c.update(dt, player.pos);
   }
 
+  // La place libre la plus proche d'un point donné : c'est elle qui décide si
+  // le bouton « monter à bord » apparaît. On compare en trois dimensions —
+  // le métro passe au-dessus des rues, et on ne monte pas dedans depuis le
+  // trottoir six mètres plus bas.
+  function placeProche(pos, rayon = 4) {
+    let meilleur = null, meilleureD = rayon;
+    convois.forEach((c, ci) => {
+      c.elements.forEach((m, i) => {
+        const p = c.place(i);
+        const d = Math.hypot(p.x - pos.x, p.z - pos.z);
+        if (d > meilleureD || Math.abs(p.y - pos.y) > 2.5) return;
+        meilleureD = d;
+        meilleur = { id: `${ci}:${i}`, nom: c.nom, emoji: c.emoji, x: p.x, y: p.y, z: p.z, cap: p.cap };
+      });
+    });
+    return meilleur;
+  }
+
+  // Où en est la place qu'on occupe. Renvoie null si le convoi a disparu —
+  // c'est ce qui fait redescendre proprement plutôt que de rester accroché
+  // à un fantôme.
+  function place(id) {
+    const [ci, i] = String(id).split(':').map(Number);
+    const c = convois[ci];
+    if (!c || !c.elements[i]) return null;
+    return c.place(i);
+  }
+
   return {
-    metro, course, update,
+    metro, course, update, placeProche, place,
+    // pour les tests : un point du tracé, en avant de la tête du convoi, là
+    // où l'on peut aller attendre son passage
+    point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
     // pour les tests : où en est chaque convoi, et combien sont affichés
     etat: () => convois.map((c) => ({
       distance: Math.round(c.distance),
