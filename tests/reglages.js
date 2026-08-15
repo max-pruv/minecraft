@@ -908,8 +908,17 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       depart.styleFige === false, JSON.stringify(depart));
 
     // On abîme la surface de dessin, sans toucher au code qui doit la réparer.
-    await ecran.evaluate(() => window.__game.renderer.setSize(240, 180, false));
-    const cassee = await tailles();
+    //
+    // La mesure se prend dans le MÊME souffle que le dégât : la réparation
+    // passe deux fois par seconde, et elle est désormais si prompte qu'elle
+    // effaçait la panne avant qu'on ait pu la constater. Un témoin qui court
+    // après son propre sujet ne prouve rien.
+    const cassee = await ecran.evaluate(() => {
+      const c = document.getElementById('game');
+      window.__game.renderer.setSize(240, 180, false);
+      return { tampon: c.width, boite: c.clientWidth, haut: c.clientHeight,
+        fenetre: window.innerHeight, styleFige: !!c.style.width };
+    });
     verifier('le témoin a bien abîmé la surface de dessin',
       cassee.tampon < cassee.boite, JSON.stringify(cassee));
 

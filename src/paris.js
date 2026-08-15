@@ -27,13 +27,17 @@
 // Paris se construit maintenant colonne par colonne, comme les quatre autres
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
 const PAVE = CITY_BLOCK.SIDEWALK;
-const BITUME = CITY_BLOCK.ASPHALT;
+// La chaussée de Paris est pavée, pas bitumée : des pavés de grès posés en
+// éventail, et c'est ce dessin-là qu'on reconnaît au sol sur toutes les photos
+// de la ville. L'asphalte uni convenait à n'importe quelle route ; il ne disait
+// rien de Paris.
+const BITUME = ARCHI.PAVE;
 const PIERRE = CITY_BLOCK.HAUSSMANN;
 const ZINC = CITY_BLOCK.ZINC;
 const QUAI = CITY_BLOCK.GRANITE;
@@ -433,6 +437,10 @@ export function solParis(x, z) {
   // cœur de ses îlots.
   const f = formeParis(u, v);
   if (f.d < CHAUSSEE) return BITUME;
+  // La bordure de granit : le trait clair qui sépare la chaussée du trottoir.
+  // Un détail d'un seul bloc, et c'est pourtant lui qui fait qu'une rue se lit
+  // comme une rue plutôt que comme deux aplats côte à côte.
+  if (f.d < CHAUSSEE + 0.22) return ARCHI.BORDURE;
   if (f.d < FACADE) return PAVE;
 
   // Le pan coupé. À l'angle de deux rues, l'immeuble est tranché en biais et le
@@ -508,28 +516,46 @@ export function batirColonneParis(x, z, poser) {
   // fenêtres d'un même immeuble s'alignent à la verticale.
   const face = (!oE || !oO) ? v : u;
 
+  // Le coin de l'immeuble : il est en façade dans les DEUX directions. C'est
+  // là que se pose le chaînage d'angle, ces grands blocs de pierre alternés
+  // sans lesquels un immeuble a l'air d'une boîte posée sur le trottoir.
+  const angle = (!oE || !oO) && (!oS || !oN);
+
   if (dedans) {
     // Le cœur de l'îlot bâti : un plancher, et rien de plus. Les immeubles sont
     // des coques, comme partout ailleurs dans le jeu.
     poser(1, BLOCK.PLANK);
   } else {
+    // LA FAÇADE HAUSSMANNIENNE, REGISTRE PAR REGISTRE.
+    //
+    // Ce n'est pas une invention : c'est la règle écrite du Second Empire, et
+    // elle se lit de bas en haut. Rez-de-chaussée commerçant à haut plafond,
+    // entresol bas, ÉTAGE NOBLE au deuxième avec son balcon filant, des étages
+    // courants, un second balcon filant au dernier, la corniche, puis le
+    // comble. Six niveaux, jamais plus.
+    //
+    // Avant, chacun de ces registres était un cube uni — pierre crème ou verre
+    // plein. Une fenêtre était donc un bloc de verre d'un mètre de côté. C'est
+    // ce qui faisait grossier, et aucune forme n'y pouvait rien : le défaut
+    // n'était pas dans le volume, il était dans la surface.
     for (let y = 1; y <= bh; y++) {
       let id;
       if (y === 1) {
-        // le rez-de-chaussée commerçant : de grandes vitrines entre des piles
-        id = (face & 3) === 0 ? PIERRE : VERRE;
+        // Une porte cochère par immeuble, le reste en devantures. Une rue où
+        // chaque travée serait une boutique n'existe nulle part.
+        id = (face & 7) === 2 ? ARCHI.PORTE : ARCHI.VITRINE;
       } else if (y === 2) {
-        // le bandeau de pierre qui court au-dessus des boutiques
-        id = BLANC;
+        id = ARCHI.ENTRESOL;
       } else if (y === 3 || y === bh) {
-        // les deux étages à balcon filant : l'étage noble et le dernier
-        id = (face & 1) === 1 ? VERRE : NOIR;
+        id = ARCHI.NOBLE;          // les deux balcons filants
       } else {
-        id = (face & 1) === 1 ? VERRE : PIERRE;
+        id = ARCHI.ETAGE;
       }
-      poser(y, id);
+      // L'angle prime sur le registre : la pierre de taille monte d'un seul
+      // tenant, du trottoir à la corniche. C'est ainsi que ça se construit.
+      poser(y, angle && y > 1 ? ARCHI.CHAINAGE : id);
     }
-    poser(bh + 1, BLANC);       // la corniche
+    poser(bh + 1, ARCHI.CORNICHE);
   }
 
   // Le toit. Il monte en marchant vers l'intérieur de l'îlot : la colonne de
@@ -537,12 +563,13 @@ export function batirColonneParis(x, z, poser) {
   // et ainsi de suite — c'est le brisis du comble à la Mansart.
   const prof = Math.max(0, Math.min(2, Math.round(f.d - FACADE)));
   const faite = bh + 1 + (dedans ? 3 : 1 + prof);
-  for (let y = bh + 2; y <= faite; y++) poser(y, ZINC);
+  for (let y = bh + 2; y <= faite; y++) poser(y, ARCHI.ZINC_LISSE);
 
   if (!dedans) {
-    // Les lucarnes : une fenêtre de zinc sur trois travées, au premier rang du
-    // comble. C'est ce qu'on voit depuis la rue quand on lève la tête.
-    if ((face % 3) === 0) poser(bh + 2, VERRE);
+    // Le chien-assis : sa lucarne est DESSINÉE dans le zinc, elle n'est plus un
+    // cube de verre planté dans la pente. Une travée sur trois, au premier rang
+    // du comble — c'est ce qu'on voit en levant la tête depuis le trottoir.
+    if ((face % 3) === 0) poser(bh + 2, ARCHI.MANSARDE);
     // Et les souches de cheminée, en terre cuite, une par immeuble.
     if (tirageParis(f.ai, f.bi, 612) > 0.45 && (face & 7) === 3) {
       poser(faite + 1, BLOCK.TERRACOTTA);

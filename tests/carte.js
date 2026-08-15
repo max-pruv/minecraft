@@ -425,7 +425,11 @@ const position = (p) => p.evaluate(() => ({
             const id = w.getBlock(x, y, z);
             if (!id) continue;
             rien = false;
-            if (id === PIERRE || id === ZINC) pierre = true;
+            // Le vocabulaire a changé, et c'est tout le propos : une façade
+            // n'est plus un aplat de « pierre haussmannienne », c'est une
+            // devanture, un entresol, un étage noble, une corniche. On accepte
+            // l'ancien pour les autres villes, et on exige le nouveau ici.
+            if (id === PIERRE || id === ZINC || (id >= 620 && id <= 631)) pierre = true;
           }
           if (pierre) bati++;
           if (rien && (sol === HERBE || sol === TERRE)) nu++;
@@ -914,6 +918,91 @@ const position = (p) => p.evaluate(() => ({
     }
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
     await dormir(300);
+
+    // --- Paris : la façade haussmannienne, registre par registre ------------
+    //
+    // « Ce qu'on a là n'est pas du tout à la hauteur de quelque chose de
+    // vraiment sharp. » C'était juste, et la cause n'était pas la forme : une
+    // fenêtre était un CUBE DE VERRE d'un mètre de côté, une façade un aplat
+    // crème. On vérifie donc que la rue se lit maintenant comme une vraie
+    // façade parisienne, de bas en haut, selon la règle du Second Empire :
+    // devanture, entresol, étage noble à balcon, étages courants, second
+    // balcon, corniche, puis le zinc.
+    const facades = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const { PARIS } = window.__game.__paris || {};
+      const A = window.__game.__archi;
+      if (!A || !PARIS) return { err: 'modules non exposés' };
+      // On balaie le quartier et on relève, pour chaque colonne de façade,
+      // l'empilement des registres.
+      const compte = {};
+      let piles = 0, correctes = 0, rythmees = 0;
+      for (let x = PARIS.x - 40; x <= PARIS.x + 40; x += 1) {
+        for (let z = PARIS.z - 40; z <= PARIS.z + 40; z += 1) {
+          // La base d'un immeuble n'est pas toujours à la même hauteur : le
+          // terrain de Paris monte vers la Butte. On la CHERCHE.
+          const sol = w.terrainHeight(x, z);
+          let y0 = null;
+          for (let d = -1; d <= 2 && y0 === null; d++) {
+            const b = w.getBlock(x, sol + d, z);
+            if (b === A.VITRINE || b === A.PORTE) y0 = sol + d - 1;
+          }
+          if (y0 === null) continue;
+          const pile = [];
+          for (let y = y0 + 1; y <= y0 + 12; y++) pile.push(w.getBlock(x, y, z));
+          piles++;
+          for (const id of pile) compte[id] = (compte[id] || 0) + 1;
+          // La règle : entresol juste au-dessus, étage noble encore au-dessus,
+          // et une corniche quelque part avant le zinc.
+          // Deux lectures sont justes, et une seule est fausse. Une travée
+          // ordinaire empile entresol puis étage noble ; un ANGLE porte le
+          // chaînage de pierre d'un seul tenant, du trottoir à la corniche —
+          // c'est ainsi qu'un immeuble se construit, et l'oublier faisait
+          // passer un tiers des colonnes pour fautives.
+          const corniche = pile.includes(A.CORNICHE);
+          const registre = pile[1] === A.ENTRESOL && pile[2] === A.NOBLE;
+          const chaine = pile[1] === A.CHAINAGE && pile[2] === A.CHAINAGE;
+          if (corniche && (registre || chaine)) correctes++;
+          if (corniche && registre) rythmees++;
+        }
+      }
+      return { piles, correctes, rythmees, compte };
+    });
+    verifier('Paris a de vraies façades haussmanniennes',
+      !facades.err && facades.piles > 40, JSON.stringify({ piles: facades.piles, err: facades.err }));
+    verifier('et chaque colonne est un registre ou un chaînage d\'angle',
+      !facades.err && facades.correctes > facades.piles * 0.95,
+      `${facades.correctes}/${facades.piles} conformes`);
+    verifier('l\'étage noble à balcon court sur la majorité des travées',
+      !facades.err && facades.rythmees > facades.piles * 0.5,
+      `${facades.rythmees}/${facades.piles} travées rythmées`);
+
+    const rue = await tab.evaluate(() => {
+      const w = window.__game.world;
+      const { PARIS } = window.__game.__paris || {};
+      const A = window.__game.__archi;
+      if (!A || !PARIS) return { err: 'modules non exposés' };
+      let paves = 0, bordures = 0, mansardes = 0, chainages = 0;
+      for (let x = PARIS.x - 40; x <= PARIS.x + 40; x += 1) {
+        for (let z = PARIS.z - 40; z <= PARIS.z + 40; z += 1) {
+          const y = w.terrainHeight(x, z);
+          const sol = w.getBlock(x, y, z);
+          if (sol === A.PAVE) paves++;
+          if (sol === A.BORDURE) bordures++;
+          for (let h = y + 1; h <= y + 12; h++) {
+            const b = w.getBlock(x, h, z);
+            if (b === A.MANSARDE) mansardes++;
+            if (b === A.CHAINAGE) chainages++;
+          }
+        }
+      }
+      return { paves, bordures, mansardes, chainages };
+    });
+    verifier('la chaussée est pavée et bordée de granit',
+      !rue.err && rue.paves > 200 && rue.bordures > 60,
+      JSON.stringify(rue));
+    verifier('les combles ont leurs chiens-assis et les angles leur chaînage',
+      !rue.err && rue.mansardes > 10 && rue.chainages > 10, JSON.stringify(rue));
 
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

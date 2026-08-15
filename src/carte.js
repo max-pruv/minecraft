@@ -26,7 +26,7 @@ import { couleurCarteNice, lieuxDeNice } from './nice.js';
 import { couleurCarteLille, lieuxDeLille } from './lille.js';
 import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
-import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
+import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, ARCHI, DECOR_START, decorMapColor } from './blocks.js';
 
 // Couleur de chaque bloc vu du dessus. Sert à la vignette comme à la carte.
 export const MAP_COLORS = {
@@ -52,6 +52,17 @@ export const MAP_COLORS = {
   [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
   [CITY_BLOCK.GRANITE]: [168, 166, 160], [CITY_BLOCK.CURTAIN]: [78, 118, 164],
   [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [120, 120, 120],
+  // L'architecture. Sans ces lignes, une ville rebâtie avec le nouveau
+  // vocabulaire devenait INVISIBLE sur la carte : la table ne connaissait pas
+  // ces identifiants, et les rues pavées disparaissaient au moment même où
+  // elles devenaient fidèles. Vu du ciel, une façade est sa corniche, un
+  // comble est son zinc, une chaussée est son pavé.
+  [ARCHI.VITRINE]: [206, 197, 176], [ARCHI.ENTRESOL]: [223, 214, 192],
+  [ARCHI.ETAGE]: [223, 214, 192], [ARCHI.NOBLE]: [219, 210, 188],
+  [ARCHI.CORNICHE]: [231, 224, 204], [ARCHI.MANSARDE]: [130, 137, 144],
+  [ARCHI.ZINC_LISSE]: [138, 144, 150], [ARCHI.CHAINAGE]: [232, 225, 205],
+  [ARCHI.PORTE]: [92, 74, 58], [ARCHI.PAVE]: [72, 71, 70],
+  [ARCHI.BORDURE]: [166, 164, 160], [ARCHI.MUR_NU]: [196, 190, 178],
 };
 
 // Une icône par lieu : un enfant de sept ans lit un pictogramme avant un mot.
