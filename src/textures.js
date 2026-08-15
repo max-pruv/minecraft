@@ -1,11 +1,17 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE } from './blocks.js';
+import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE } from './blocks.js';
 
 const TILE_PX = 16;
 export const ATLAS_COLS = 20;
-export const ATLAS_ROWS = 18; // 35 base tiles + 300 decor tiles + 10 city tiles
+// L'atlas était PLEIN : 360 cases, 350 prises. Impossible d'ajouter une seule
+// texture — c'est ce qui plafonnait la fidélité des villes, où chaque bloc
+// devait se contenter d'une teinte unie. On ouvre vingt-deux rangées de plus
+// (440 cases libres) : de quoi peindre une vraie architecture, façade par
+// façade. Le coût est une image de 320 × 640 pixels au lieu de 320 × 288 —
+// deux cents kilo-octets de mémoire vidéo, rien pour une tablette.
+export const ATLAS_ROWS = 40;
 
 // Deterministic RNG so textures look identical every load.
 function mulberry32(seed) {
@@ -34,7 +40,218 @@ function noisyFill(ctx, ox, oy, base, vary, rng) {
   }
 }
 
+// --- l'architecture haussmannienne, registre par registre -------------------
+//
+// Tout se joue ici. Une façade parisienne n'est pas une teinte : c'est un
+// calcaire lutétien crème, des fenêtres HAUTES à petits bois, des appuis en
+// saillie, des ferronneries, une corniche moulurée. Peindre cela dans la tuile
+// coûte quelques dizaines de pixels et change tout ce qu'on voit depuis la rue
+// — bien davantage que n'importe quelle géométrie qu'on pourrait ajouter.
+const PIERRE_PARIS = [223, 214, 192];
+const JOINT_PARIS = [199, 190, 168];
+const FER_FORGE = [38, 40, 44];
+const ZINC_PARIS = [138, 144, 150];
+const VITRE = [86, 108, 128];
+const VITRE_CLAIRE = [122, 148, 170];
+
+// La pierre de fond et ses assises horizontales : c'est elle qui donne
+// l'échelle. Sans les joints, une façade est un mur de plâtre.
+function pierreDeTaille(ctx, ox, oy, rng) {
+  noisyFill(ctx, ox, oy, PIERRE_PARIS, 5, rng);
+  for (let x = 0; x < TILE_PX; x++) {
+    px(ctx, ox, oy, x, 0, ...JOINT_PARIS);
+    px(ctx, ox, oy, x, 8, ...JOINT_PARIS);
+  }
+}
+
+// Une fenêtre haute, son encadrement de pierre, son appui en saillie et ses
+// petits bois.
+function fenetre(ctx, ox, oy, y0, haut, clair) {
+  const v = clair ? VITRE_CLAIRE : VITRE;
+  for (let y = y0; y < y0 + haut; y++) {
+    for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, y, ...v);
+  }
+  for (let y = y0 - 1; y <= y0 + haut; y++) {
+    px(ctx, ox, oy, 3, y, 238, 231, 212);
+    px(ctx, ox, oy, 12, y, 238, 231, 212);
+  }
+  for (let x = 3; x <= 12; x++) {
+    px(ctx, ox, oy, x, y0 - 1, 238, 231, 212);
+    px(ctx, ox, oy, x, y0 + haut, 210, 202, 182);
+  }
+  for (let y = y0; y < y0 + haut; y++) px(ctx, ox, oy, 7, y, 226, 220, 202);
+  const mi = y0 + ((haut / 2) | 0);
+  for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, mi, 226, 220, 202);
+}
+
+// Le balcon filant : deux lisses et les barreaux entre elles. C'est la
+// signature de l'étage noble, celle qu'on reconnaît de l'autre bout du
+// boulevard.
+function ferronnerie(ctx, ox, oy, yh) {
+  for (let x = 0; x < TILE_PX; x++) {
+    px(ctx, ox, oy, x, yh, ...FER_FORGE);
+    px(ctx, ox, oy, x, yh + 3, ...FER_FORGE);
+  }
+  for (let x = 0; x < TILE_PX; x += 2) {
+    px(ctx, ox, oy, x, yh + 1, ...FER_FORGE);
+    px(ctx, ox, oy, x, yh + 2, ...FER_FORGE);
+  }
+}
+
+const peintresArchi = {
+  // Le rez-de-chaussée commerçant : hauts plafonds, grande devanture, et le
+  // store de toile rayé qui court au-dessus. Le registre le plus vivant.
+  [ARCHI_TILE.VITRINE](ctx, ox, oy) {
+    const rng = mulberry32(7001);
+    noisyFill(ctx, ox, oy, [206, 197, 176], 5, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      const rouge = (x >> 1) & 1;
+      px(ctx, ox, oy, x, 1, rouge ? 150 : 226, rouge ? 44 : 216, rouge ? 44 : 200);
+      px(ctx, ox, oy, x, 2, rouge ? 128 : 200, rouge ? 36 : 190, rouge ? 36 : 176);
+    }
+    for (let y = 4; y <= 14; y++) {
+      for (let x = 1; x <= 14; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    }
+    for (const x of [0, 7, 15]) for (let y = 3; y <= 15; y++) px(ctx, ox, oy, x, y, 62, 44, 34);
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 3, 62, 44, 34);
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 15, 74, 70, 64);
+  },
+
+  // L'entresol : coincé sous l'étage noble, plafond bas, petites fenêtres
+  // presque carrées. On l'oublie toujours, et c'est pourtant lui qui donne à
+  // la façade son rythme si particulier.
+  [ARCHI_TILE.ENTRESOL](ctx, ox, oy) {
+    const rng = mulberry32(7002);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 5; y <= 10; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE);
+    for (let y = 4; y <= 11; y++) { px(ctx, ox, oy, 4, y, 238, 231, 212); px(ctx, ox, oy, 11, y, 238, 231, 212); }
+    for (let x = 4; x <= 11; x++) { px(ctx, ox, oy, x, 4, 238, 231, 212); px(ctx, ox, oy, x, 11, 214, 206, 186); }
+  },
+
+  // L'étage courant.
+  [ARCHI_TILE.ETAGE](ctx, ox, oy) {
+    const rng = mulberry32(7003);
+    pierreDeTaille(ctx, ox, oy, rng);
+    fenetre(ctx, ox, oy, 3, 10, false);
+  },
+
+  // L'étage noble : la même fenêtre, et le balcon filant.
+  [ARCHI_TILE.NOBLE](ctx, ox, oy) {
+    const rng = mulberry32(7004);
+    pierreDeTaille(ctx, ox, oy, rng);
+    fenetre(ctx, ox, oy, 4, 9, true);
+    ferronnerie(ctx, ox, oy, 11);
+  },
+
+  // La corniche : trois moulures en surplomb et leur ombre portée. C'est elle
+  // qui donne à la ligne de toits parisienne son trait net.
+  [ARCHI_TILE.CORNICHE](ctx, ox, oy) {
+    const rng = mulberry32(7005);
+    noisyFill(ctx, ox, oy, [231, 224, 204], 4, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      px(ctx, ox, oy, x, 0, 244, 238, 222);
+      px(ctx, ox, oy, x, 3, 208, 200, 180);
+      px(ctx, ox, oy, x, 4, 246, 240, 224);
+      px(ctx, ox, oy, x, 8, 196, 188, 168);
+      px(ctx, ox, oy, x, 9, 242, 236, 220);
+      px(ctx, ox, oy, x, 14, 176, 168, 150);
+      px(ctx, ox, oy, x, 15, 158, 150, 134);
+    }
+  },
+
+  // Le comble à la Mansart : zinc à joints debout, et le chien-assis qui
+  // l'éclaire.
+  [ARCHI_TILE.MANSARDE](ctx, ox, oy) {
+    const rng = mulberry32(7006);
+    noisyFill(ctx, ox, oy, ZINC_PARIS, 8, rng);
+    for (let x = 1; x < TILE_PX; x += 4) {
+      for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 116, 122, 128);
+    }
+    for (let y = 5; y <= 11; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE);
+    for (let y = 4; y <= 12; y++) { px(ctx, ox, oy, 4, y, 168, 174, 180); px(ctx, ox, oy, 11, y, 168, 174, 180); }
+    for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, 12, 168, 174, 180);
+    for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, 3, 178, 184, 190);
+    px(ctx, ox, oy, 7, 2, 178, 184, 190); px(ctx, ox, oy, 8, 2, 178, 184, 190);
+  },
+
+  // Le zinc nu : le brisis et le terrasson, sans ouverture.
+  [ARCHI_TILE.ZINC_LISSE](ctx, ox, oy) {
+    const rng = mulberry32(7007);
+    noisyFill(ctx, ox, oy, ZINC_PARIS, 9, rng);
+    for (let x = 1; x < TILE_PX; x += 4) {
+      for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 116, 122, 128);
+      for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x + 1, y, 156, 162, 168);
+    }
+  },
+
+  // Le chaînage d'angle : les grands blocs de pierre alternés qui tiennent les
+  // angles. Sans eux un immeuble a l'air d'une boîte ; avec eux, il a l'air
+  // construit.
+  [ARCHI_TILE.CHAINAGE](ctx, ox, oy) {
+    const rng = mulberry32(7008);
+    noisyFill(ctx, ox, oy, [232, 225, 205], 5, rng);
+    for (let x = 0; x < TILE_PX; x++) { px(ctx, ox, oy, x, 0, ...JOINT_PARIS); px(ctx, ox, oy, x, 7, ...JOINT_PARIS); }
+    for (let y = 1; y <= 6; y++) px(ctx, ox, oy, 10, y, ...JOINT_PARIS);
+    for (let y = 8; y < TILE_PX; y++) px(ctx, ox, oy, 5, y, ...JOINT_PARIS);
+  },
+
+  // La porte cochère : deux vantaux de bois sombre, une imposte vitrée et les
+  // clous de bronze.
+  [ARCHI_TILE.PORTE](ctx, ox, oy) {
+    const rng = mulberry32(7009);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 4; y <= 15; y++) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y, 52, 38, 30);
+    for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, 3, ...VITRE_CLAIRE);
+    for (let y = 4; y <= 5; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    for (let y = 4; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
+    for (const [cx, cy] of [[5, 8], [11, 8], [5, 12], [11, 12]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);
+  },
+
+  // Les pavés de Paris : posés en éventail, pas en damier. C'est ce qui les
+  // distingue d'un dallage quelconque.
+  [ARCHI_TILE.PAVE](ctx, ox, oy) {
+    const rng = mulberry32(7010);
+    noisyFill(ctx, ox, oy, [104, 102, 100], 10, rng);
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const d = Math.abs(((x + y * 0.6) % 5) - 2);
+        if (d < 0.6) px(ctx, ox, oy, x, y, 74, 72, 70);
+        else if (d > 1.9) px(ctx, ox, oy, x, y, 124 + ((rng() * 10) | 0), 121, 118);
+      }
+    }
+  },
+
+  // La bordure de granit : le trait clair qui sépare le trottoir de la
+  // chaussée, et le caniveau juste derrière.
+  [ARCHI_TILE.BORDURE](ctx, ox, oy) {
+    const rng = mulberry32(7011);
+    noisyFill(ctx, ox, oy, [166, 164, 160], 7, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      px(ctx, ox, oy, x, 0, 196, 194, 190);
+      px(ctx, ox, oy, x, 11, 128, 126, 122);
+      px(ctx, ox, oy, x, 12, 96, 96, 94);
+      px(ctx, ox, oy, x, 13, 88, 88, 86);
+    }
+    for (let x = 3; x < TILE_PX; x += 6) for (let y = 1; y <= 10; y++) px(ctx, ox, oy, x, y, 148, 146, 142);
+  },
+
+  // Le mur mitoyen : le pignon aveugle qu'on voit depuis les cours et les
+  // percées. C'est ce qui manque quand tous les murs d'une ville ont des
+  // fenêtres.
+  [ARCHI_TILE.MUR_NU](ctx, ox, oy) {
+    const rng = mulberry32(7012);
+    noisyFill(ctx, ox, oy, [196, 190, 178], 9, rng);
+    for (let i = 0; i < 20; i++) {
+      const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
+      px(ctx, ox, oy, x, y, 178, 172, 160);
+    }
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 12, 184, 178, 166);
+  },
+};
+
 const painters = {
+  ...peintresArchi,
+
   // --- Villandry ----------------------------------------------------------
   // Le tuffeau : un calcaire blanc crème, très clair, à peine grenu. C'est lui
   // qui donne aux châteaux de la Loire leur lumière particulière.

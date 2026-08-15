@@ -296,8 +296,6 @@ export function isMeuble(id) {
   return id >= MEUBLE_START && id < MEUBLE_START + MEUBLE_ITEMS.length;
 }
 
-export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
-  .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START));
 
 export function isSolid(id) {
   return id !== BLOCK.AIR && id !== BLOCK.WATER && !isProp(id);
@@ -312,3 +310,76 @@ export const HOTBAR_BLOCKS = [
   BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.COBBLE, BLOCK.PLANK,
   BLOCK.LOG, BLOCK.GLASS, BLOCK.BRICK, BLOCK.SLAB_PLANK,
 ];
+
+// --- l'architecture, pour de vrai ------------------------------------------
+//
+// POURQUOI CETTE PLAGE EXISTE. Jusqu'ici une ville se bâtissait avec dix blocs
+// unis : « pierre haussmannienne », « verre », « zinc ». Une fenêtre était donc
+// un cube de verre d'un mètre de côté, une façade un aplat crème. C'est
+// exactement ce qui faisait grossier — et aucune géométrie n'y pouvait rien,
+// parce que le défaut n'est pas dans le volume, il est dans la surface.
+//
+// Un immeuble haussmannien obéit à des règles écrites, et elles se lisent de
+// bas en haut : rez-de-chaussée commerçant à haut plafond, entresol bas et
+// discret, ÉTAGE NOBLE au deuxième avec son balcon filant en fer forgé, des
+// étages courants, un second balcon filant au dernier, une corniche moulurée,
+// puis le comble à la Mansart en zinc, pente à 45°, percé de chiens-assis.
+// Six niveaux, jamais plus. Chacun de ces registres a désormais sa tuile.
+export const ARCHI_START = 620;
+export const ARCHI_TILE_START = 360;   // la première rangée neuve de l'atlas
+
+export const ARCHI = {
+  VITRINE: 620,        // rez-de-chaussée : devanture de commerce et son store
+  ENTRESOL: 621,       // entresol : petites fenêtres carrées, presque au ras
+  ETAGE: 622,          // étage courant : fenêtre haute à petits bois
+  NOBLE: 623,          // étage noble : la même, avec son balcon filant
+  CORNICHE: 624,       // la corniche moulurée qui couronne la façade
+  MANSARDE: 625,       // le comble en zinc, percé d'un chien-assis
+  ZINC_LISSE: 626,     // le zinc plein du brisis et du terrasson
+  CHAINAGE: 627,       // le chaînage d'angle en pierre de taille
+  PORTE: 628,          // la porte cochère et son imposte
+  PAVE: 629,           // les pavés de Paris, posés en éventail
+  BORDURE: 630,        // la bordure de trottoir en granit
+  MUR_NU: 631,         // le mur aveugle : pignon mitoyen, fond de cour
+};
+
+const ARCHI_NOMS = {
+  VITRINE: 'Devanture de commerce',
+  ENTRESOL: 'Entresol',
+  ETAGE: 'Étage haussmannien',
+  NOBLE: 'Étage noble à balcon',
+  CORNICHE: 'Corniche moulurée',
+  MANSARDE: 'Comble mansardé',
+  ZINC_LISSE: 'Zinc de toiture',
+  CHAINAGE: 'Chaînage d’angle',
+  PORTE: 'Porte cochère',
+  PAVE: 'Pavé parisien',
+  BORDURE: 'Bordure de granit',
+  MUR_NU: 'Mur mitoyen',
+};
+
+// L'ordre de cet objet fixe l'ordre des tuiles : le premier bloc prend la
+// première case neuve, et ainsi de suite.
+export const ARCHI_TILE = {};
+Object.keys(ARCHI).forEach((nom, i) => { ARCHI_TILE[nom] = ARCHI_TILE_START + i; });
+
+for (const [nom, id] of Object.entries(ARCHI)) {
+  const tuile = ARCHI_TILE[nom];
+  // Le dessus et le dessous ne portent pas la façade : un immeuble vu d'en
+  // haut n'est pas une fenêtre. C'est la corniche qui fait la tranche.
+  const dessus = (nom === 'MANSARDE' || nom === 'ZINC_LISSE') ? ARCHI_TILE.ZINC_LISSE
+    : (nom === 'PAVE' || nom === 'BORDURE') ? tuile
+      : ARCHI_TILE.CORNICHE;
+  BLOCK_INFO[id] = {
+    name: ARCHI_NOMS[nom],
+    tiles: [dessus, tuile, dessus],
+    solid: true, transparent: false,
+  };
+}
+
+// La liste des blocs qu'un enfant peut poser. Elle se calcule EN DERNIER, une
+// fois tous les registres déclarés : calculée plus haut, elle ignorait les
+// blocs d'architecture, et les façades haussmanniennes seraient restées
+// réservées au générateur de ville au lieu de rejoindre l'inventaire.
+export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
+  .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START));
