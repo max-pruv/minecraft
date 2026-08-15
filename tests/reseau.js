@@ -375,12 +375,12 @@ function verifier(nom, ok, detail = '') {
     // c'est là que l'enfant tombait.
     const { p: refletHote, code: codeReflet } = await banc.creerMonde('Ludo');
     const refletNeuf = await banc.rejoindre('Ludo', codeReflet);
-    const repris = await jusqua(async () => refletNeuf.evaluate(
+    const refletRepris = await jusqua(async () => refletNeuf.evaluate(
       () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 60000);
     const accusation = refletNeuf.dialogues.filter((d) => /joue déjà/.test(d));
     verifier('on n\'est plus refusé par son propre reflet', accusation.length === 0,
       JSON.stringify(refletNeuf.dialogues));
-    verifier('et l\'enfant reprend bien son monde', repris,
+    verifier('et l\'enfant reprend bien son monde', refletRepris,
       JSON.stringify(await refletNeuf.evaluate(() => ({
         actif: !!window.__game.net.active, hote: !!window.__game.net.isHost }))));
     await refletNeuf.close();
