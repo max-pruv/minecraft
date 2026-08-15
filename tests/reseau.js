@@ -29,7 +29,11 @@ const { servirLeNuage } = require('./nuage.js');
 //   C'est le mécanisme qui fait que « Jouer » finit toujours par entrer.
 //   PeerJS fait précéder ce refus d'un « Aborting! » : c'est la même chose,
 //   dite deux fois.
-const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!/;
+// Trois messages de PeerJS supplémentaires ne comptent pas comme des fautes :
+// ce sont exactement les CONDITIONS du scénario sans courtier — un serveur de
+// rendez-vous injoignable. Les compter en fautes reviendrait à reprocher au
+// jeu la panne qu'on lui demande de traverser.
+const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!|Lost connection to server|Could not get an ID from the server|Error retrieving ID/;
 const fautes = (p) => p.erreurs.filter((e) => !TOLERE.test(e));
 
 const echecs = [];
@@ -358,6 +362,90 @@ function verifier(nom, ok, detail = '') {
       /VPN/.test(phraseMaison) && !/hôtels/.test(phraseMaison), phraseMaison);
     await chezSoi.close();
     await tenu2.close();
+
+    // --- refusé par son propre reflet ----------------------------------------
+    //
+    // « Max joue déjà dans ce monde depuis un autre appareil ! » — alors qu'il
+    // n'y avait personne. En rouvrant son monde, une session précédente peut
+    // être restée accrochée : elle entend l'arrivant, voit son prénom, et le
+    // renvoie au menu. Trois fois de suite, sur une capture d'écran.
+    //
+    // Le jeu applique partout la règle « entre deux connexions au même prénom,
+    // la vivante est la plus récente ». L'hôte était la seule exception, et
+    // c'est là que l'enfant tombait.
+    const { p: refletHote, code: codeReflet } = await banc.creerMonde('Ludo');
+    const refletNeuf = await banc.rejoindre('Ludo', codeReflet);
+    // La reprise passe par une seconde et demie d'attente — le temps que le
+    // fantôme lâche le code — puis par une réouverture complète du monde.
+    const refletRepris = await jusqua(async () => refletNeuf.evaluate(
+      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 90000);
+    const accusation = refletNeuf.dialogues.filter((d) => /joue déjà/.test(d));
+    verifier('on n\'est plus refusé par son propre reflet', accusation.length === 0,
+      JSON.stringify(refletNeuf.dialogues));
+    verifier('et l\'enfant reprend bien son monde', refletRepris,
+      JSON.stringify(await refletNeuf.evaluate(() => ({
+        actif: !!window.__game.net.active, hote: !!window.__game.net.isHost }))));
+    await refletNeuf.close();
+    await refletHote.close();
+
+    // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
+    //
+    // « Le serveur de jeu ne répond pas — réessaie dans un moment », sur un
+    // téléphone dont la connexion marchait parfaitement. Ce serveur ne sert
+    // qu'aux présentations ; le nuage, lui, n'a besoin d'aucun courtier. Un
+    // service extérieur indisponible n'est pas une raison de refuser de jouer.
+    //
+    // Ici le courtier est injoignable À LA RACINE : le port ne répond pas du
+    // tout. C'est le cas le plus franc, et le plus proche de celui de Max.
+    const sansCourtier = await banc.joueurVers('Sacha', 9798, AVEC_NUAGE);
+    await sansCourtier.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await sansCourtier.evaluate(() => document.getElementById('host-btn').click());
+    // Le jeu laisse neuf secondes au courtier avant de choisir le nuage : on
+    // lui donne de quoi le faire, et de la marge.
+    // On attend que le NUAGE ait pris la main, pas que la session existe :
+    // `active` est vrai dès la première milliseconde de l'ouverture et ne
+    // prouve rien. Un témoin qui mesure trop tôt lit l'état de départ et
+    // conclut à une panne là où le jeu n'avait simplement pas fini.
+    const ouvertSansCourtier = await jusqua(async () => sansCourtier.evaluate(
+      () => !!(window.__game.net && window.__game.net.bus)), 60000);
+    const etatSans = await sansCourtier.evaluate(() => {
+      const n = window.__game.net;
+      return {
+        actif: !!(n && n.active), bus: !!(n && n.bus), pair: !!(n && n.peer),
+        statut: (document.getElementById('online-status') || {}).textContent || '',
+      };
+    });
+    verifier('un courtier muet n\'empêche plus d\'ouvrir un monde',
+      ouvertSansCourtier && etatSans.actif, JSON.stringify(etatSans));
+    verifier('et c\'est le nuage qui porte la partie, sans courtier du tout',
+      etatSans.bus === true && etatSans.pair === false, JSON.stringify(etatSans));
+    verifier('l\'enfant ne lit plus « le serveur ne répond pas »',
+      !/ne répond pas|Pas de connexion/.test(etatSans.statut), JSON.stringify(etatSans.statut));
+
+    // Et l'essentiel : à DEUX, sans courtier ni d'un côté ni de l'autre. C'est
+    // la promesse entière — le jeu à plusieurs ne dépend plus d'aucun service
+    // extérieur autre que celui qui sert déjà la page.
+    const codeSans = await sansCourtier.evaluate(
+      () => document.getElementById('room-code').textContent.trim());
+    const secondSans = await banc.joueurVers('Nina', 9798, AVEC_NUAGE);
+    await secondSans.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await secondSans.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeSans);
+    await dormir(2000);
+    await secondSans.evaluate(() => document.getElementById('online-play-btn')?.click());
+    await sansCourtier.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const ensembleSans = await jusqua(async () => {
+      const a = await nomsVus(sansCourtier), b = await nomsVus(secondSans);
+      return a.includes('Nina') && b.includes('Sacha');
+    }, 120000);
+    verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
+      JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
+    await secondSans.close();
+    await sansCourtier.close();
 
     // --- l'enfant qui entend tout le monde et que personne n'entend ----------
     //
