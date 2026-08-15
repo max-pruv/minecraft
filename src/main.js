@@ -2126,7 +2126,43 @@ function updateRemotePlayers(dt) {
   }
 }
 
+// LES PAGES DU MÊME APPAREIL SE PARLENT DIRECTEMENT.
+//
+// Le fantôme qui barrait la route à l'enfant vivait dans une autre page du
+// même téléphone — l'application laissée en arrière-plan. Deux pages d'un même
+// site peuvent se parler sans aucun réseau, instantanément. On s'en sert pour
+// que ce fantôme ne puisse plus exister : celui qui ouvre une partie annonce
+// son prénom, et toute autre page du même appareil ouverte sous ce prénom
+// referme la sienne.
+//
+// Cela ne répare pas le passé — une page d'une ancienne version n'écoute pas —
+// mais à partir d'ici la situation ne peut plus se reproduire, et sans
+// dépendre du réseau ni d'un serveur.
+const CANAL_PAGES = (() => {
+  try { return new BroadcastChannel('web-minecraft-sessions'); } catch { return null; }
+})();
+
+if (CANAL_PAGES) {
+  CANAL_PAGES.addEventListener('message', (e) => {
+    const m = e.data || {};
+    if (m.t !== 'jouvre' || !net || !net.active) return;
+    if (m.nom !== playerProfile.name) return;   // un autre enfant : rien à voir
+    // Une autre page de cet appareil vient d'ouvrir une partie sous notre
+    // prénom. La vivante est la plus récente : on s'efface, sans un mot.
+    leaveToMainMenu();
+  });
+}
+
+function annoncerOuverture() {
+  if (!CANAL_PAGES) return;
+  try { CANAL_PAGES.postMessage({ t: 'jouvre', nom: playerProfile.name }); }
+  catch { /* le canal n'existe pas partout, ce n'est pas grave */ }
+}
+
 function startNetSession(code, isHost, patience) {
+  // On prévient les autres pages de cet appareil AVANT d'ouvrir : elles ont
+  // ainsi le temps de lâcher l'identifiant du monde.
+  annoncerOuverture();
   net = new NetSession({
     world,
     // Le nuage sert de tuyau de secours quand le pair-à-pair est bloqué :
@@ -2171,7 +2207,11 @@ function startNetSession(code, isHost, patience) {
 // la partie ni rien redemander à l'enfant : on rejoint celui qui l'héberge
 // maintenant. Si personne ne le tient au bout de quelques essais, c'est qu'il
 // est de nouveau libre — on le rouvre nous-mêmes.
-async function reprendreLeMonde(code, essai = 0) {
+// `motif` : ce qu'on montre à l'enfant pendant qu'on s'obstine. Reprendre son
+// monde à un fantôme et se reconnecter après une coupure sont deux histoires
+// différentes ; les dire de la même façon laissait l'enfant devant un message
+// qui ne correspondait pas à ce qu'il venait de vivre.
+async function reprendreLeMonde(code, essai = 0, motif = null) {
   if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
   syncRemotePlayers([]);
   try {
@@ -2182,8 +2222,8 @@ async function reprendreLeMonde(code, essai = 0) {
     bonneNouvelle(essai >= 3 ? '✅ Monde rouvert !' : '✅ Monde rejoint !');
   } catch {
     if (net) { try { net.stop(); } catch { /* déjà arrêté */ } net = null; }
-    alerte('monde-reco', true, `Reconnexion au monde ${code}…`);
-    setTimeout(() => reprendreLeMonde(code, essai + 1), 4000);
+    alerte('monde-reco', true, motif || `Reconnexion au monde ${code}…`);
+    setTimeout(() => reprendreLeMonde(code, essai + 1, motif), 4000);
   }
 }
 
@@ -2369,9 +2409,28 @@ function showOnlineUI() {
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
   net.onLeave = (nom) => creatureManager.toast(`👋 ${nom} est parti·e`, 0xcccccc);
-  net.onDuplicate = (name) => {
-    leaveToMainMenu();
-    window.alert(`⚠️ ${name} joue déjà dans ce monde depuis un autre appareil !\nChaque joueur ne peut être connecté qu'à un seul endroit à la fois.`);
+  // ON NE RENVOIE PLUS L'ENFANT AU MENU AVEC UNE ACCUSATION.
+  //
+  // Ce message vient d'un hôte qui porte notre prénom. Le jeu ne l'envoie plus
+  // jamais depuis la v153 : s'il arrive encore, il vient d'une session
+  // ANCIENNE — la nôtre, restée accrochée en arrière-plan, qui tourne un code
+  // d'avant le correctif et ne sait pas céder la place.
+  //
+  // C'est précisément pourquoi le correctif précédent ne suffisait pas : il
+  // demandait au fantôme de se comporter mieux, or le fantôme est par
+  // définition l'ancienne version. Le seul côté toujours à jour est celui qui
+  // ARRIVE — c'est donc ici que la panne doit être traitée, et nulle part
+  // ailleurs.
+  //
+  // On reprend donc le monde en hôte, obstinément, en le disant. Dès que la
+  // vieille session lâche l'identifiant — elle finit toujours par le lâcher —
+  // l'enfant retrouve sa partie. Sans boîte d'alerte, et sans cul-de-sac.
+  net.onDuplicate = () => {
+    const code = net && net.code;
+    if (!code) { leaveToMainMenu(); return; }
+    const motif = `On reprend ton monde ${code}…`;
+    alerte('monde-reco', true, motif);
+    reprendreLeMonde(code, 3, motif);   // 3 : on rouvre en hôte, on ne rejoint plus
   };
   // Cet appareil vient de céder la place à un autre au même prénom — le plus
   // souvent le sien, revenu après une coupure. Ce n'est pas une faute : on le

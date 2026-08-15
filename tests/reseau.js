@@ -388,6 +388,95 @@ function verifier(nom, ok, detail = '') {
     await refletNeuf.close();
     await refletHote.close();
 
+    // --- l'enfant tue ses propres fantômes en arrivant -----------------------
+    //
+    // Relevé sur la base de PRODUCTION : trois identités d'invité différentes
+    // dans le même monde, et l'hôte parlant à deux d'entre elles à la fois.
+    // C'était un seul téléphone, présent plusieurs fois chez lui — chaque
+    // relance laissait une identité vivante deux minutes, or l'enfant revient
+    // en dix secondes. D'où « un joueur arrive » et un compteur à deux alors
+    // qu'il est seul, et d'où le fait que fermer l'application n'y changeait
+    // rien : il revenait plus vite que son fantôme ne s'effaçait.
+    //
+    // Attendre l'expiration ne suffit pas. Celui qui arrive sait exactement
+    // quelles lignes sont mortes — ce sont les siennes — et il est le seul à
+    // avoir le droit de les effacer.
+    const FANTOME = 'dev-fantomedemax-vieux';
+    nuageRelais.relaisSemer({ code: '44444', de: FANTOME, vers: 'wmc-marlon-44444',
+      msg: { t: 'hello', name: 'Milo' } });
+    nuageRelais.relaisSemer({ code: '44444', de: 'dev-unautreenfant-x',
+      vers: 'wmc-marlon-44444', msg: { t: 'hello', name: 'Autre' } });
+    // Le même appareil que le fantôme : c'est toute la question. On pose
+    // l'identifiant d'appareil AVANT le chargement, comme s'il venait d'un
+    // lancement précédent sur ce téléphone.
+    const revenant = await banc.joueur('Milo', AVEC_NUAGE);
+    await revenant.evaluate((d) => localStorage.setItem('web-minecraft-device-id-v1', d),
+      'fantomedemax');
+    await revenant.reload({ waitUntil: 'load' });
+    await revenant.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    await revenant.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await revenant.evaluate(() => {
+      document.getElementById('join-code').value = '44444';
+      document.getElementById('join-btn').click();
+    });
+    const purge = await jusqua(async () =>
+      !nuageRelais.relaisEmetteurs('44444').includes(FANTOME), 60000);
+    const restants = nuageRelais.relaisEmetteurs('44444');
+    verifier('en arrivant, l\'enfant efface ses propres fantômes', purge,
+      JSON.stringify(restants));
+    verifier('et il ne touche pas à ceux des autres',
+      restants.includes('dev-unautreenfant-x'), JSON.stringify(restants));
+    await revenant.close();
+
+    // --- un hôte d'ANCIENNE version ne bloque plus l'enfant ------------------
+    //
+    // Le correctif précédent demandait à l'hôte de céder la place. Mais l'hôte,
+    // dans cette panne, c'est le FANTÔME — la session restée accrochée en
+    // arrière-plan — et le fantôme tourne par définition le code d'avant. Il ne
+    // peut pas obéir à une règle qu'il ne connaît pas.
+    //
+    // On rejoue donc exactement cela : un hôte qui se comporte comme la v151,
+    // c'est-à-dire qui refuse l'arrivant au lieu de s'effacer. Le seul côté
+    // toujours à jour est celui qui arrive, et c'est lui qu'on éprouve.
+    const { p: vieilHote, code: codeVieux } = await banc.creerMonde('Zia');
+    await vieilHote.evaluate(() => {
+      const n = window.__game.net;
+      const vrai = n.onMessage.bind(n);
+      n.onMessage = (conn, msg) => {
+        if (msg && msg.t === 'hello' && msg.name === 'Zia') {
+          // Le comportement d'avant : « tu joues déjà ailleurs », et rien d'autre.
+          try { conn.send({ t: 'duplicate', name: 'Zia' }); } catch { /* lien mort */ }
+          return;
+        }
+        return vrai(conn, msg);
+      };
+    });
+    const zia = await banc.rejoindre('Zia', codeVieux);
+    await dormir(6000);
+    const accuseVieux = zia.dialogues.filter((d) => /joue déjà/.test(d));
+    verifier('un hôte d\'ancienne version ne renvoie plus au menu',
+      accuseVieux.length === 0, JSON.stringify(zia.dialogues));
+    // Le jeu ne se tait pas non plus : il DIT ce qu'il fait, et il insiste.
+    const insiste = await jusqua(async () => zia.evaluate(
+      () => /reprend ton monde/i.test(document.body.textContent || '')), 30000);
+    verifier('il annonce qu\'il reprend le monde, au lieu d\'un cul-de-sac', insiste,
+      JSON.stringify(await zia.evaluate(
+        () => (document.getElementById('online-status') || {}).textContent || '')));
+
+    // Tant que la vieille session tient l'identifiant, personne ne peut le
+    // reprendre — c'est physique. Ce qu'on exige, c'est qu'à la SECONDE où
+    // elle lâche prise, l'enfant retrouve son monde sans avoir rien à faire.
+    // Un fantôme finit toujours par mourir ; le cul-de-sac, lui, ne finit pas.
+    await vieilHote.close();
+    const ziaReprend = await jusqua(async () => zia.evaluate(
+      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 90000);
+    verifier('et dès que le fantôme lâche prise, l\'enfant retrouve son monde', ziaReprend,
+      JSON.stringify(await zia.evaluate(() => ({
+        actif: !!(window.__game.net && window.__game.net.active),
+        hote: !!(window.__game.net && window.__game.net.isHost) }))));
+    await zia.close();
+
     // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
     //
     // « Le serveur de jeu ne répond pas — réessaie dans un moment », sur un
