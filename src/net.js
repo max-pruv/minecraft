@@ -1038,7 +1038,12 @@ export class NetSession {
       // vient de libérer. Rien à dire à l'enfant — de son point de vue, il a
       // simplement rejoint sa partie.
       case 'cede':
-        if (this.onCodePris) this.onCodePris(this.code);
+        // On laisse au fantôme le temps de LÂCHER le code avant de le
+        // reprendre. Sans ce délai, l'arrivant se rebranchait sur une session
+        // en train de mourir : il redevenait invité d'un hôte qui n'existait
+        // déjà plus, et n'était jamais l'hôte de son propre monde. Une seconde
+        // et demie suffit à ce que le pair soit détruit et l'identifiant rendu.
+        setTimeout(() => { if (this.onCodePris) this.onCodePris(this.code); }, 1500);
         break;
       // Cet appareil-ci vient d'être remplacé par un autre portant le même
       // prénom. Ce n'est pas une erreur de l'enfant : on le dit autrement.
