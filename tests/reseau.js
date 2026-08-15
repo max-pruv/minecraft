@@ -388,6 +388,41 @@ function verifier(nom, ok, detail = '') {
     await refletNeuf.close();
     await refletHote.close();
 
+    // --- un hôte d'ANCIENNE version ne bloque plus l'enfant ------------------
+    //
+    // Le correctif précédent demandait à l'hôte de céder la place. Mais l'hôte,
+    // dans cette panne, c'est le FANTÔME — la session restée accrochée en
+    // arrière-plan — et le fantôme tourne par définition le code d'avant. Il ne
+    // peut pas obéir à une règle qu'il ne connaît pas.
+    //
+    // On rejoue donc exactement cela : un hôte qui se comporte comme la v151,
+    // c'est-à-dire qui refuse l'arrivant au lieu de s'effacer. Le seul côté
+    // toujours à jour est celui qui arrive, et c'est lui qu'on éprouve.
+    const { p: vieilHote, code: codeVieux } = await banc.creerMonde('Zia');
+    await vieilHote.evaluate(() => {
+      const n = window.__game.net;
+      const vrai = n.onMessage.bind(n);
+      n.onMessage = (conn, msg) => {
+        if (msg && msg.t === 'hello' && msg.name === 'Zia') {
+          // Le comportement d'avant : « tu joues déjà ailleurs », et rien d'autre.
+          try { conn.send({ t: 'duplicate', name: 'Zia' }); } catch { /* lien mort */ }
+          return;
+        }
+        return vrai(conn, msg);
+      };
+    });
+    const zia = await banc.rejoindre('Zia', codeVieux);
+    const ziaReprend = await jusqua(async () => zia.evaluate(
+      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 90000);
+    const accuseVieux = zia.dialogues.filter((d) => /joue déjà/.test(d));
+    verifier('un hôte d\'ancienne version ne renvoie plus au menu',
+      accuseVieux.length === 0, JSON.stringify(zia.dialogues));
+    verifier('et l\'enfant reprend son monde malgré lui', ziaReprend,
+      JSON.stringify(await zia.evaluate(() => ({
+        actif: !!window.__game.net.active, hote: !!window.__game.net.isHost }))));
+    await zia.close();
+    await vieilHote.close();
+
     // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
     //
     // « Le serveur de jeu ne répond pas — réessaie dans un moment », sur un
