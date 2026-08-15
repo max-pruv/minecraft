@@ -112,8 +112,21 @@ function servirLeNuage(port) {
       if (req.method === 'DELETE') {
         const code = egal(url, 'code');
         const avant = Date.parse((url.searchParams.get('created_at') || '').replace('lt.', '')) || 0;
+        // Le ménage ciblé : effacer ce QU'UN APPAREIL a écrit sous une autre
+        // identité que la sienne. Le vrai PostgREST le sait faire — vérifié
+        // contre la base de production — et sans cela le Supabase de poche
+        // laissait passer un scénario que la réalité aurait démenti.
+        const params = url.searchParams.getAll('de');
+        const prefixe = (params.find((v) => v.startsWith('like.')) || '').slice(5).replace(/\*$/, '');
+        const sauf = (params.find((v) => v.startsWith('neq.')) || '').slice(4);
         for (let i = relais.length - 1; i >= 0; i--) {
-          if ((!code || relais[i].code === code) && relais[i].created_at < avant) relais.splice(i, 1);
+          const r = relais[i];
+          if (code && r.code !== code) continue;
+          if (prefixe) {
+            if (String(r.de || '').startsWith(prefixe) && r.de !== sauf) relais.splice(i, 1);
+            continue;
+          }
+          if (r.created_at < avant) relais.splice(i, 1);
         }
         res.writeHead(204); return res.end('');
       }
@@ -166,6 +179,9 @@ function servirLeNuage(port) {
     // Combien de messages ont VRAIMENT transité par le tuyau de secours :
     // c'est la preuve que la partie est passée par là et pas ailleurs.
     relaisCompte: (code) => relais.filter((r) => !code || r.code === code).length,
+    // Qui a écrit dans ce monde : c'est ainsi qu'on voit un fantôme survivre.
+    relaisEmetteurs: (code) => [...new Set(relais.filter((r) => !code || r.code === code).map((r) => r.de))],
+    relaisSemer: (r) => relais.push({ id: ++relaisSeq, created_at: Date.now(), ...r }),
     fermer: () => serveur.close(),
   })));
 }

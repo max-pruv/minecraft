@@ -336,7 +336,17 @@ export class NetSession {
   // tout le reste, et l'enfant n'a rien à faire pour cela.
   ouvrirRelaisNuage() {
     if (this.bus || !this.hooks.cloud) return null;
-    const monId = this.isHost ? ID_PREFIX + this.code : (this.peer && this.peer.id) || `inv-${Math.random().toString(36).slice(2, 10)}`;
+    // L'IDENTITÉ PORTE L'APPAREIL.
+    //
+    // Une session prenait jusqu'ici une identité tirée au sort à chaque
+    // lancement : rien ne reliait les trois incarnations successives d'un même
+    // téléphone, et personne — pas même lui — ne pouvait reconnaître ses
+    // propres échos. En préfixant par l'appareil, un enfant qui revient sait
+    // exactement quelles lignes du relais sont les siennes et peut les
+    // effacer. L'hôte, lui, reconnaît son écho sans même avoir besoin de la
+    // présentation.
+    const monId = this.isHost ? ID_PREFIX + this.code
+      : `${this.prefixeAppareil()}${Math.random().toString(36).slice(2, 8)}`;
     this.bus = new BusNuage(this.hooks.cloud, this.code, monId, {
       surPair: (conn) => {
         // Un pair arrivé par le nuage est un pair comme un autre : on
@@ -354,7 +364,23 @@ export class NetSession {
       },
     });
     if (!this.bus.demarrer()) { this.bus = null; return null; }
+    this.purgerMesFantomes(monId);
     return this.bus;
+  }
+
+  // Le préfixe qui désigne cet appareil, et lui seul.
+  prefixeAppareil() {
+    const brut = String(this.deviceId || 'sansappareil').replace(/[^a-z0-9]/gi, '').slice(0, 18);
+    return `dev-${brut}-`;
+  }
+
+  // Tuer ses propres fantômes, tout de suite, plutôt que d'attendre qu'ils
+  // expirent. On n'efface QUE ce que cet appareil a écrit sous une autre
+  // identité : jamais les lignes d'un autre enfant, jamais les siennes.
+  purgerMesFantomes(monId) {
+    const cloud = this.hooks.cloud;
+    if (!cloud || !cloud.configured || !this.deviceId) return;
+    cloud.relaisPurgerMesFantomes(this.code, this.prefixeAppareil(), monId).catch(() => {});
   }
 
   // Jouer sans courtier du tout : le nuage porte la présentation ET la partie.
@@ -959,6 +985,33 @@ export class NetSession {
             // promet — « chaque joueur ne peut être connecté qu'à un seul
             // endroit à la fois ». Un autre enfant ne peut rien déloger : il
             // faudrait qu'il porte le même prénom.
+            //
+            // MON PROPRE ÉCHO N'EST PAS UN JOUEUR.
+            //
+            // Corrige la règle posée en v153, qui était trop large. « Le plus
+            // récent gagne » est juste entre deux vrais appareils ; c'est faux
+            // quand le prétendu arrivant est une incarnation précédente du
+            // MÊME téléphone, encore vivante côté nuage. La session vivante
+            // cédait alors la place à un fantôme qui n'était plus là pour
+            // prendre le relais — d'où un manège que fermer l'application
+            // n'interrompait pas.
+            //
+            // Trois cas, et un seul mérite qu'on s'efface :
+            //   — même appareil : c'est moi, je referme en silence ;
+            //   — appareil inconnu : une version d'avant, qui n'annonce pas le
+            //     sien. Une session vivante d'aujourd'hui l'annonce toujours,
+            //     donc c'est un fantôme : je referme aussi ;
+            //   — un autre appareil réel : là, et là seulement, je cède.
+            const memeAppareil = !!(msg.device && this.deviceId && msg.device === this.deviceId);
+            const sansAppareil = !msg.device;
+            const echoDeMoi = memeAppareil || sansAppareil
+              || String(conn.peer || '').startsWith(this.prefixeAppareil());
+            if (echoDeMoi) {
+              this.conns.delete(conn.peer);
+              setTimeout(() => { try { conn.close(); } catch { /* déjà fermée */ } }, 200);
+              this.playersChanged();
+              break;
+            }
             conn.send({ t: 'cede', name: wanted });
             setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
             break;

@@ -349,6 +349,33 @@ export class CloudSave {
     });
   }
 
+  // LE MÉNAGE CIBLÉ : une session efface ses PROPRES fantômes.
+  //
+  // Un appareil qui rouvre l'application laisse derrière lui une identité
+  // encore vivante côté nuage, le temps que le ménage par l'âge la rattrape —
+  // deux minutes. Or l'enfant, lui, revient en dix secondes. Son monde
+  // contenait donc plusieurs incarnations de lui-même, et l'hôte prenait son
+  // propre écho pour un second joueur : compteur à deux, « un joueur arrive »,
+  // et la sarabande des cessions de place.
+  //
+  // Attendre l'expiration ne suffit pas. La session qui arrive sait exactement
+  // quelles lignes sont mortes — ce sont les siennes, écrites sous une
+  // identité qu'elle n'utilise plus — et elle est la seule à avoir le droit de
+  // les effacer. Elle le fait donc, tout de suite, et ne touche à rien
+  // d'autre : le préfixe porte l'appareil, jamais le prénom.
+  async relaisPurgerMesFantomes(code, prefixeAppareil, monId) {
+    if (!this.configured || !prefixeAppareil) return 0;
+    try {
+      const res = await fetch(
+        `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
+        + `&de=like.${encodeURIComponent(prefixeAppareil + '*')}`
+        + `&de=neq.${encodeURIComponent(monId)}`,
+        { method: 'DELETE', headers: this.headers({ Prefer: 'return=minimal' }) },
+      );
+      return res.ok ? 1 : 0;
+    } catch { return 0; }
+  }
+
   async relaisNettoyer(code, ageMs) {
     if (!this.configured) return;
     const avant = new Date(Date.now() - ageMs).toISOString();

@@ -388,6 +388,47 @@ function verifier(nom, ok, detail = '') {
     await refletNeuf.close();
     await refletHote.close();
 
+    // --- l'enfant tue ses propres fantômes en arrivant -----------------------
+    //
+    // Relevé sur la base de PRODUCTION : trois identités d'invité différentes
+    // dans le même monde, et l'hôte parlant à deux d'entre elles à la fois.
+    // C'était un seul téléphone, présent plusieurs fois chez lui — chaque
+    // relance laissait une identité vivante deux minutes, or l'enfant revient
+    // en dix secondes. D'où « un joueur arrive » et un compteur à deux alors
+    // qu'il est seul, et d'où le fait que fermer l'application n'y changeait
+    // rien : il revenait plus vite que son fantôme ne s'effaçait.
+    //
+    // Attendre l'expiration ne suffit pas. Celui qui arrive sait exactement
+    // quelles lignes sont mortes — ce sont les siennes — et il est le seul à
+    // avoir le droit de les effacer.
+    const FANTOME = 'dev-fantomedemax-vieux';
+    nuageRelais.relaisSemer({ code: '44444', de: FANTOME, vers: 'wmc-marlon-44444',
+      msg: { t: 'hello', name: 'Milo' } });
+    nuageRelais.relaisSemer({ code: '44444', de: 'dev-unautreenfant-x',
+      vers: 'wmc-marlon-44444', msg: { t: 'hello', name: 'Autre' } });
+    // Le même appareil que le fantôme : c'est toute la question. On pose
+    // l'identifiant d'appareil AVANT le chargement, comme s'il venait d'un
+    // lancement précédent sur ce téléphone.
+    const revenant = await banc.joueur('Milo', AVEC_NUAGE);
+    await revenant.evaluate((d) => localStorage.setItem('web-minecraft-device-id-v1', d),
+      'fantomedemax');
+    await revenant.reload({ waitUntil: 'load' });
+    await revenant.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    await revenant.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await revenant.evaluate(() => {
+      document.getElementById('join-code').value = '44444';
+      document.getElementById('join-btn').click();
+    });
+    const purge = await jusqua(async () =>
+      !nuageRelais.relaisEmetteurs('44444').includes(FANTOME), 60000);
+    const restants = nuageRelais.relaisEmetteurs('44444');
+    verifier('en arrivant, l\'enfant efface ses propres fantômes', purge,
+      JSON.stringify(restants));
+    verifier('et il ne touche pas à ceux des autres',
+      restants.includes('dev-unautreenfant-x'), JSON.stringify(restants));
+    await revenant.close();
+
     // --- un hôte d'ANCIENNE version ne bloque plus l'enfant ------------------
     //
     // Le correctif précédent demandait à l'hôte de céder la place. Mais l'hôte,
