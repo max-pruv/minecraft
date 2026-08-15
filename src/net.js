@@ -943,16 +943,24 @@ export class NetSession {
             // un autre appareil », ce qui était faux et sans issue : l'enfant
             // était renvoyé au menu par son propre reflet. On cède donc la
             // place, et il rouvre son monde.
-            if (msg.device && this.deviceId && msg.device === this.deviceId) {
-              conn.send({ t: 'cede', name: wanted });
-              setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
-              break;
-            }
-            // Celui-là, on ne peut pas l'expulser : c'est nous.
-            conn.send({ t: 'duplicate', name: wanted });
-            setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
-            this.conns.delete(conn.peer);
-            this.playersChanged();
+            //
+            // L'EXCEPTION EST SUPPRIMÉE, ET C'EST LE FOND DE L'AFFAIRE.
+            //
+            // Le jeu applique partout la même règle : entre deux connexions au
+            // même prénom, la vivante est la plus récente — l'autre est un
+            // cadavre. Un seul endroit y dérogeait, l'hôte, qui se protégeait
+            // lui-même au motif que « c'est nous ». C'est précisément là que
+            // l'enfant se faisait piéger : renvoyé au menu par son propre
+            // reflet, avec une phrase fausse et aucune issue, trois fois de
+            // suite.
+            //
+            // On cède donc toujours. Le seul délogé possible est soi-même
+            // depuis un autre appareil, ce qui est exactement ce que la règle
+            // promet — « chaque joueur ne peut être connecté qu'à un seul
+            // endroit à la fois ». Un autre enfant ne peut rien déloger : il
+            // faudrait qu'il porte le même prénom.
+            conn.send({ t: 'cede', name: wanted });
+            setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
             break;
           }
           // Un appareil qu'on vient d'écarter se rebranche tout seul : sa boucle

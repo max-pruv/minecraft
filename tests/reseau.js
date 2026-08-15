@@ -363,6 +363,29 @@ function verifier(nom, ok, detail = '') {
     await chezSoi.close();
     await tenu2.close();
 
+    // --- refusé par son propre reflet ----------------------------------------
+    //
+    // « Max joue déjà dans ce monde depuis un autre appareil ! » — alors qu'il
+    // n'y avait personne. En rouvrant son monde, une session précédente peut
+    // être restée accrochée : elle entend l'arrivant, voit son prénom, et le
+    // renvoie au menu. Trois fois de suite, sur une capture d'écran.
+    //
+    // Le jeu applique partout la règle « entre deux connexions au même prénom,
+    // la vivante est la plus récente ». L'hôte était la seule exception, et
+    // c'est là que l'enfant tombait.
+    const { p: refletHote, code: codeReflet } = await banc.creerMonde('Ludo');
+    const refletNeuf = await banc.rejoindre('Ludo', codeReflet);
+    const repris = await jusqua(async () => refletNeuf.evaluate(
+      () => !!(window.__game.net && window.__game.net.active && window.__game.net.isHost)), 60000);
+    const accusation = refletNeuf.dialogues.filter((d) => /joue déjà/.test(d));
+    verifier('on n\'est plus refusé par son propre reflet', accusation.length === 0,
+      JSON.stringify(refletNeuf.dialogues));
+    verifier('et l\'enfant reprend bien son monde', repris,
+      JSON.stringify(await refletNeuf.evaluate(() => ({
+        actif: !!window.__game.net.active, hote: !!window.__game.net.isHost }))));
+    await refletNeuf.close();
+    await refletHote.close();
+
     // --- le courtier muet ne renvoie plus l'enfant au menu -------------------
     //
     // « Le serveur de jeu ne répond pas — réessaie dans un moment », sur un
@@ -378,8 +401,12 @@ function verifier(nom, ok, detail = '') {
     await sansCourtier.evaluate(() => document.getElementById('host-btn').click());
     // Le jeu laisse neuf secondes au courtier avant de choisir le nuage : on
     // lui donne de quoi le faire, et de la marge.
+    // On attend que le NUAGE ait pris la main, pas que la session existe :
+    // `active` est vrai dès la première milliseconde de l'ouverture et ne
+    // prouve rien. Un témoin qui mesure trop tôt lit l'état de départ et
+    // conclut à une panne là où le jeu n'avait simplement pas fini.
     const ouvertSansCourtier = await jusqua(async () => sansCourtier.evaluate(
-      () => !!(window.__game.net && window.__game.net.active)), 60000);
+      () => !!(window.__game.net && window.__game.net.bus)), 60000);
     const etatSans = await sansCourtier.evaluate(() => {
       const n = window.__game.net;
       return {
