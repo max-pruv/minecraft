@@ -190,6 +190,44 @@ Décisions qui ont chacune coûté une panne réelle :
 - **C'est le receveur qui cède**, pas l'émetteur : le fantôme tourne du vieux
   code et ne peut obéir à une règle qu'il ne connaît pas.
 
+### Conduire — trois façons d'être porté, un seul jeu de commandes
+
+Idée de Max, et elle est juste : **ne pas inventer de commandes**. Tout ce qui
+fait bouger l'enfant se réduit à trois nombres, lus dans `player.update()` :
+`forward` (avant/arrière), `strafe` (gauche/droite) et `yaw` (le regard). Le
+clavier et le joystick tactile alimentent les mêmes. Conduire, c'est brancher
+ces trois nombres sur autre chose que des jambes — donc rien de neuf à
+apprendre pour un enfant, et l'iPad marche sans une ligne de plus.
+
+Trois modes, dont deux existent déjà :
+
+1. **`monture`** — la bête suit le joueur, qui marche normalement. La caméra
+   s'élève à la hauteur du dos. *(fait, v155)*
+2. **`bord`** — le convoi suit son tracé précalculé, le joueur est collé au
+   siège et ses commandes sont ignorées. Métro, monoplaces. *(fait, v155)*
+3. **`pilote`** — **à faire.** Le véhicule a sa propre position et sa propre
+   physique ; les commandes du joueur la pilotent ; le joueur est collé au
+   siège. C'est le seul des trois où l'enfant décide où l'on va.
+
+Le caractère de chaque véhicule vient du **branchement**, pas d'un moteur
+séparé :
+
+| Véhicule | `forward` | `strafe` | Le regard |
+| --- | --- | --- | --- |
+| Voiture | accélérateur / frein, avec inertie | volant — l'angle de braquage n'agit qu'en roulant, on ne pivote pas à l'arrêt | libre, découplé du cap |
+| Avion | poussée | roulis | assiette (tangage) ; la portance dépend de la vitesse |
+| Bateau | poussée | gouvernail, mou et lent à répondre | libre |
+
+Les deux difficultés réelles, à ne pas découvrir en route :
+
+- **Le véhicule a besoin de sa propre boîte de collision.** Celle du joueur fait
+  0,6 bloc de large ; une voiture qui l'emprunte traverse les murs. Il faut une
+  collision contre le monde à l'échelle du véhicule, sans quoi rien ne tient.
+- **Un véhicule conduit doit se voir en ligne.** Le réseau diffuse aujourd'hui
+  la position des *joueurs*. Si Marlon conduit et qu'Alice ne voit qu'un enfant
+  qui glisse à toute vitesse, la moitié du plaisir est perdue. La position du
+  véhicule et son pilote font partie de ce qui voyage.
+
 ### Le monde (`world.js`)
 
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).
@@ -226,8 +264,6 @@ Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
   documentée sur de vraies recherches (emboutissage, carrosserie robotisée,
   peinture, mariage batterie-caisse, piste d'essai), la voiture qui se construit
   visiblement de poste en poste, et à la sortie **on monte dedans et on la
-  conduit**. Attention : les véhicules actuels suivent un `Parcours`
-  précalculé — ils ne se conduisent pas. Conduire demande une physique de
-  véhicule pilotée par le joueur (direction, accélération, freinage, adhérence),
-  c'est le vrai morceau du travail, pas l'usine.
+  conduit**. Voir la section « Conduire » ci-dessous : c'est là qu'est le
+  travail, pas dans la chaîne de production.
 - Intérieurs visitables, guides dans les villes, notifications push.

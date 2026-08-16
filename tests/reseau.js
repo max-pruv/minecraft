@@ -816,7 +816,7 @@ function verifier(nom, ok, detail = '') {
       const a = await nomsVus(patiente);
       const b = await nomsVus(lent);
       return a.includes('Camille') && b.includes('Théo');
-    }, 120000);
+    }, 200000);
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
     const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
@@ -891,9 +891,19 @@ function verifier(nom, ok, detail = '') {
     // Ce qu'on suit est la date de présentation de la connexion en cours : elle
     // est posée à chaque nouvelle connexion, et la voir changer prouve qu'on a
     // coupé le lien muet et qu'on en a rouvert un autre.
-    for (let i = 0; i < 16; i++) { await echantillonner(); await dormir(2500); }
+    // On attend que la seconde présentation arrive, on ne compte pas les tours.
+    // Le cycle dure vingt secondes de jeu, mais sur un conteneur qui enchaîne
+    // sept suites les minuteries du navigateur glissent : un nombre fixe
+    // d'échantillons mesure la vitesse de la machine, pas le comportement du
+    // jeu. « Finit par arriver » se prouve avec une échéance, pas un compteur.
+    await jusqua(async () => {
+      await echantillonner();
+      return presentations.size >= 2;
+    }, 150000);
     verifier('et le lien muet est coupé puis rouvert, au lieu de durer pour toujours',
       presentations.size >= 2, `${presentations.size} présentations successives`);
+    await jusqua(async () => (await jamais.evaluate(
+      () => window.__avalerHelloComptes || 0)) >= 2, 60000);
     const avaleesMuet = await jamais.evaluate(() => window.__avalerHelloComptes || 0);
     verifier('et ce scénario a bien eu quelque chose à faire perdre', avaleesMuet >= 2,
       `${avaleesMuet} avalées`);
