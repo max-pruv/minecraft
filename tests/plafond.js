@@ -42,12 +42,16 @@ const COLONNES = [
 ];
 
 // Une maison telle que l'aurait sauvegardée la version d'avant : des
-// coordonnées absolues, et rien d'autre. Le sol est à 33 en (0,0) ; le
-// plancher repose donc sur 34.
-const SOL_MAISON = 33;
+// coordonnées absolues, et rien d'autre. Le sol est à 26 autour de (100,100) ;
+// le plancher repose donc sur 27.
+//
+// Loin du point d'apparition, volontairement : bâtie à l'origine, elle
+// enfermait l'enfant dans ses propres murs dès l'ouverture du monde, et c'est
+// le test qui fabriquait la panne qu'il croyait mesurer.
+const MAISON_X = 100, MAISON_Z = 100, SOL_MAISON = 26;
 const MAISON = [];
-for (let x = -1; x <= 1; x++) {
-  for (let z = -1; z <= 1; z++) MAISON.push([x, SOL_MAISON + 1, z]);
+for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
+  for (let z = MAISON_Z - 1; z <= MAISON_Z + 1; z++) MAISON.push([x, SOL_MAISON + 1, z]);
 }
 
 (async () => {
@@ -122,9 +126,22 @@ for (let x = -1; x <= 1; x++) {
       maison.enLair === 0 && maison.surLeSol === maison.total, JSON.stringify(maison));
 
     // Monter là où l'on ne pouvait pas aller.
-    await tab.evaluate(() => { window.__game.player.flying = true; });
+    //
+    // On rend d'abord le clavier au jeu : le bouton « Jouer » garde le focus
+    // après un clic, et c'est LUI qui recevait la barre d'espace. Un enfant
+    // touche l'écran avant de voler ; le banc doit faire pareil, sinon il
+    // mesure le focus du navigateur et pas le vol.
+    await tab.evaluate(() => {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      window.__game.player.flying = true;
+    });
     await tab.keyboard.down('Space');
-    await dormir(9000);
+    await dormir(700);
+    const decolle = await tab.evaluate(() => ({
+      vy: window.__game.player.vel.y, y: window.__game.player.pos.y,
+    }));
+    verifier('la touche « monter » fait bien décoller', decolle.vy > 0, JSON.stringify(decolle));
+    await dormir(12000);
     await tab.keyboard.up('Space');
     const haut = await tab.evaluate(() => ({
       y: window.__game.player.pos.y,
@@ -136,7 +153,7 @@ for (let x = -1; x <= 1; x++) {
     // monde par le haut, là où poser un bloc ne fait rien, et le jeu finissait
     // par nous reposer au sol sans explication.
     verifier('mais on ne sort plus du monde par le haut',
-      haut.jeu && haut.y < HEIGHT, `${haut.y.toFixed(0)} pour un monde de ${HEIGHT}`);
+      haut.jeu && haut.y < HEIGHT - 1, `${haut.y.toFixed(0)} pour un monde de ${HEIGHT}`);
 
     // Y bâtir, et retrouver ce qu'on y a bâti.
     const perchoir = await tab.evaluate(() => {
