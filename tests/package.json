@@ -10,6 +10,7 @@
     "reglages": "node reglages.js",
     "carte": "node carte.js",
     "monte": "node monte.js",
+    "plafond": "node plafond.js",
     "tout": "node tout.js"
   },
   "devDependencies": {

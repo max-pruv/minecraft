@@ -3,9 +3,13 @@
 
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
+import { HEIGHT } from './world.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 const PLAYER_HEIGHT = 1.8;
+// Assez bas pour que la tête reste dans le monde, assez haut pour qu'on
+// puisse bâtir jusqu'au dernier étage.
+const PLAFOND_VOL = HEIGHT - PLAYER_HEIGHT - 0.2;
 const EYE_HEIGHT = 1.62;
 const GRAVITY = 26;
 const JUMP_SPEED = 8.6;
@@ -110,6 +114,14 @@ export class Player {
       this.vel.y = 0;
       if (k.has('Space')) this.vel.y = v;
       if (k.has('KeyC')) this.vel.y = -v;
+      // Le ciel a un toit.
+      //
+      // Rien n'arrêtait la montée : un enfant qui gardait le doigt sur
+      // « monter » sortait du monde par le haut, dans une zone où plus rien
+      // n'existe et où poser un bloc ne fait rien du tout — le jeu finissait
+      // par le reposer au sol sans un mot, comme s'il avait triché. On bute
+      // désormais contre le plafond, ce qui se comprend tout seul.
+      if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);
     } else if (this.inWater) {
       this.vel.y -= GRAVITY * 0.25 * dt;
       this.vel.y *= Math.pow(0.02, dt); // heavy drag

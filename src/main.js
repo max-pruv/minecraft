@@ -415,9 +415,7 @@ function savePosition() {
 
 // Highest solid block at a column (generates the chunk on demand).
 function surfaceAt(x, z) {
-  let y = HEIGHT - 1;
-  while (y > 1 && !world.isSolid(Math.floor(x), y, Math.floor(z))) y--;
-  return y + 1;
+  return world.sommetColonne(x, z) + 1;
 }
 
 // On the first entry into a context this session, teleport back to the
@@ -3893,6 +3891,11 @@ const mapModalCanvas = document.getElementById('map-modal-canvas');
 let minimapVisible = false;
 let minimapTimer = 0;
 
+// La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
+// monde s'arrêtait là. Elle reste fixe : c'est un choix de dessin, pas une
+// dimension du monde.
+const RELIEF_CARTE = 96;
+
 function drawMap(mapCanvas, radius) {
   const ctx = mapCanvas.getContext('2d');
   const size = mapCanvas.width;
@@ -3905,7 +3908,13 @@ function drawMap(mapCanvas, radius) {
     for (let pxx = 0; pxx < size; pxx++) {
       const wx = pcx + Math.floor(pxx / scale) - radius;
       let color = [20, 26, 40], h = 0;
-      for (let y = HEIGHT - 1; y >= 0; y--) {
+      // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
+      // chaque point de la carte traverserait d'abord tout le ciel vide, et la
+      // carte coûterait de plus en plus cher à chaque fois qu'on relève le
+      // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
+      // vitres comprises — pas le premier bloc plein.
+      const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
+      for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
         const id = world.getBlock(wx, y, wz);
         if (id !== BLOCK.AIR) {
           color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
@@ -3913,7 +3922,10 @@ function drawMap(mapCanvas, radius) {
           break;
         }
       }
-      const shade = 0.65 + (h / HEIGHT) * 0.6; // higher terrain reads brighter
+      // Le relief lit plus clair en altitude. La référence est figée à la
+      // hauteur du monde d'avant : indexée sur le plafond, elle aurait
+      // assombri toute la carte d'un coup le jour où le ciel a monté.
+      const shade = 0.65 + (Math.min(h, RELIEF_CARTE) / RELIEF_CARTE) * 0.6;
       const o = (py * size + pxx) * 4;
       img.data[o] = Math.min(255, color[0] * shade);
       img.data[o + 1] = Math.min(255, color[1] * shade);
@@ -4023,9 +4035,7 @@ function drawMap(mapCanvas, radius) {
 // connaît partout, plutôt que de sonder des blocs qui n'existent pas encore.
 function deposerA(wx, wz) {
   const bx = Math.floor(wx), bz = Math.floor(wz);
-  let y = HEIGHT - 1;
-  while (y > 1 && !world.isSolid(bx, y, bz)) y--;
-  let sol = y + 1;
+  let sol = world.sommetColonne(bx, bz) + 1;
   if (sol <= 2) sol = world.terrainHeight(bx, bz) + 1;   // chunk pas encore généré
   const dansEau = sol <= WATER_LEVEL;
   const cible = dansEau ? WATER_LEVEL + 1 : sol;

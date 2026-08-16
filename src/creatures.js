@@ -370,10 +370,8 @@ export class CreatureManager {
   }
 
   surfaceY(x, z) {
-    for (let y = HEIGHT - 1; y > 0; y--) {
-      if (this.world.isSolid(x, y, z)) return y + 1;
-    }
-    return null;
+    const y = this.world.sommetColonne(x, z);
+    return y > 0 ? y + 1 : null;
   }
 
   speciesForBiome(topBlock, nearWater) {
