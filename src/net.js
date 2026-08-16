@@ -969,7 +969,24 @@ export class NetSession {
     const tenter = () => {
       const e = this.conns.get(conn.peer);
       if (!this.active || !e || e.pret) { if (e) e.relanceEnCours = false; return; }
-      if (!conn.open) { e.relanceEnCours = false; return; }
+      // LE LIEN MORT SANS LE DIRE.
+      //
+      // On renonçait ici, et rien ne reprenait jamais la main : la relance
+      // s'arrêtait, personne ne retirait la connexion de la liste, et la
+      // sécurité du battement de cœur — qui ne rejoint que si l'hôte a
+      // DISPARU de la liste — ne voyait donc rien à faire. L'enfant restait
+      // pour toujours seul dans un monde peuplé, avec un lien fantôme qui
+      // n'était ni vivant ni retiré.
+      //
+      // Cela ne se produit que lorsque le transport meurt sans émettre son
+      // « close » — ce qui arrive quand la machine est à bout, et donc
+      // précisément quand l'enfant en a le plus besoin. On retire le pair :
+      // la reconnexion s'en charge, comme pour n'importe quelle rupture.
+      if (!conn.open) {
+        e.relanceEnCours = false;
+        this.dropPeer(conn.peer, conn);
+        return;
+      }
       if (Date.now() - (e.presenteA || 0) > PRESENTATION_MS) {
         e.relanceEnCours = false;
         this.dropPeer(conn.peer, conn);
