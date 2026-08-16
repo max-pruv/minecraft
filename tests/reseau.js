@@ -556,7 +556,7 @@ function verifier(nom, ok, detail = '') {
     const codeTenu = await hotePhare.evaluate(
       () => document.getElementById('room-code').textContent.trim());
 
-    const inviteSain = await banc.joueur('Emma', AVEC_NUAGE);
+    const inviteSain = await banc.joueur('Basile', AVEC_NUAGE);
     await inviteSain.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await inviteSain.evaluate((c) => {
@@ -568,7 +568,7 @@ function verifier(nom, ok, detail = '') {
     await hotePhare.evaluate(() => document.getElementById('online-play-btn')?.click());
     const retrouves = await jusqua(async () => {
       const a = await nomsVus(hotePhare), b = await nomsVus(inviteSain);
-      return a.includes('Emma') && b.includes('Léo');
+      return a.includes('Basile') && b.includes('Léo');
     }, 120000);
     verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
       retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]));

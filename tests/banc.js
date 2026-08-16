@@ -170,6 +170,25 @@ class Banc {
   // Un enfant devant sa tablette : contexte isolé, profil déjà rempli, pas de
   // proposition d'alertes qui viendrait masquer l'écran pendant le test.
   async joueur(prenom, opts = {}) {
+    // LE PRÉNOM EST UNE CLÉ, PAS UNE ÉTIQUETTE.
+    //
+    // Le nuage range le profil d'un enfant sous son PRÉNOM : mondes, position,
+    // blocs. Deux scénarios qui réutilisent le même prénom se passent donc
+    // leur état par-dessous — et le second, trouvant un état différent du
+    // sien, fait ce qu'il doit faire : il recharge la page pour l'appliquer.
+    // En plein milieu du scénario. La session meurt, l'hôte disparaît, et le
+    // témoin accuse le réseau.
+    //
+    // Une heure de fouille pour cela. On le dit donc à voix haute : un prénom
+    // déjà servi dans cette exécution est signalé, et le scénario qui le veut
+    // vraiment — le même enfant sur deux appareils — le déclare.
+    if (this._prenoms && this._prenoms.has(prenom) && !opts.memePrenom) {
+      console.log(`⚠️  le prénom « ${prenom} » resservi : les deux scénarios vont`
+        + ' se passer leur profil par le nuage. Ajoute { memePrenom: true } si'
+        + ' c\'est voulu, sinon change de prénom.');
+    }
+    if (!this._prenoms) this._prenoms = new Set();
+    this._prenoms.add(prenom);
     // `tactile` reproduit une tablette : c'est ce que la famille a réellement
     // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
     const ctx = await this.navigateur.newContext({
