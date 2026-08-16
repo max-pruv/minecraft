@@ -9,6 +9,7 @@
     "reseau": "node reseau.js",
     "reglages": "node reglages.js",
     "carte": "node carte.js",
+    "monte": "node monte.js",
     "tout": "node tout.js"
   },
   "devDependencies": {

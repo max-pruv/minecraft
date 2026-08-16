@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
+import { MONTURES, MODELES_MONTURE } from './montures.js';
 
 const GRAVITY = 22;
 
@@ -222,6 +223,7 @@ const BUILDERS = {
     g.userData.legs = legs;
     return g;
   },
+  ...MODELES_MONTURE,
 };
 
 // habitat: 'grass' (default) for meadows, 'sand' for beaches, 'snow' for peaks
@@ -229,21 +231,27 @@ const SPECIES = [
   { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7, meat: '🥩 Steak' },
   { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6, meat: '🍖 Côtelette' },
   { key: 'sheep', name: 'Mouton', cry: 'Bêêê !', emoji: '🐑', speed: 0.9, height: 1.0, width: 0.65, meat: '🍖 Gigot' },
-  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, meat: '🍖 Viande' },
+  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, meat: '🍖 Viande', montable: true, allure: 2.2, assise: 1.0 },
   { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4, meat: '🍗 Poulet' },
   { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true, meat: '🍗 Lapin' },
   { key: 'goat', name: 'Chèvre', cry: 'Bêêêh !', emoji: '🐐', speed: 1.2, height: 1.0, width: 0.6, meat: '🍖 Gigot' },
-  { key: 'deer', name: 'Cerf', cry: '…brame !', emoji: '🦌', speed: 1.9, height: 1.3, width: 0.65, meat: '🍖 Viande' },
+  { key: 'deer', name: 'Cerf', cry: '…brame !', emoji: '🦌', speed: 1.9, height: 1.3, width: 0.65, meat: '🍖 Viande', montable: true, allure: 2.4, assise: 0.95 },
   { key: 'fox', name: 'Renard', cry: 'Glapit !', emoji: '🦊', speed: 1.7, height: 0.7, width: 0.5, meat: '🍓 Baies' },
-  { key: 'wolf', name: 'Loup', cry: 'Aouuuh !', emoji: '🐺', speed: 1.6, height: 0.9, width: 0.6, meat: '🍖 Viande' },
+  { key: 'wolf', name: 'Loup', cry: 'Aouuuh !', emoji: '🐺', speed: 1.6, height: 0.9, width: 0.6, meat: '🍖 Viande', montable: true, allure: 2.1, assise: 0.85 },
   { key: 'squirrel', name: 'Écureuil', cry: '…scrat scrat', emoji: '🐿️', speed: 1.5, height: 0.5, width: 0.35, hopper: true, meat: '🌰 Noisette' },
   { key: 'duck', name: 'Canard', cry: 'Coin coin !', emoji: '🦆', speed: 0.9, height: 0.7, width: 0.4, habitat: 'sand', meat: '🍗 Canard' },
   { key: 'turtle', name: 'Tortue', cry: '…', emoji: '🐢', speed: 0.4, height: 0.5, width: 0.55, habitat: 'sand', meat: '🥚 Œuf' },
   { key: 'crab', name: 'Crabe', cry: 'Clac clac !', emoji: '🦀', speed: 1.0, height: 0.5, width: 0.6, habitat: 'sand', meat: '🦀 Pince de crabe' },
   { key: 'penguin', name: 'Manchot', cry: 'Groink !', emoji: '🐧', speed: 0.9, height: 0.9, width: 0.45, habitat: 'snow', meat: '🐟 Poisson' },
+  // Les bêtes qu'on peut monter vivent dans le même bestiaire que les autres :
+  // elles broutent, fuient et se reproduisent exactement pareil. Ce qui les
+  // distingue tient dans leur fiche (src/montures.js), pas dans leur code.
+  ...MONTURES,
 ];
 
-const MAX_ANIMALS = 16;
+// Un peu plus de monde à l'écran depuis qu'il y a huit espèces de plus : sans
+// cela, on pouvait marcher longtemps sans croiser une seule bête à monter.
+const MAX_ANIMALS = 20;
 
 class Animal {
   constructor(def, x, y, z, baby) {
@@ -453,5 +461,49 @@ export class AnimalManager {
       if (dot > bestDot) { bestDot = dot; best = a; }
     }
     return best;
+  }
+
+  // La bête qu'on propose de monter.
+  //
+  // Ce n'est volontairement pas la même chose que `targeted()`. Viser demande
+  // de pointer le museau au degré près : c'est juste pour nourrir, où l'on
+  // choisit vraiment un animal parmi d'autres. Pour monter, l'enfant ne vise
+  // pas — il marche vers le cheval et veut grimper. On prend donc la plus
+  // proche des bêtes montables qui se trouve devant soi, au sens large : tout
+  // ce qui n'est pas dans le dos. Un bébé ne se monte pas.
+  monture(portee = 8) {
+    const dir = new THREE.Vector3();
+    this.player.camera.getWorldDirection(dir);
+    dir.y = 0;
+    if (dir.lengthSq() < 1e-6) return null;
+    dir.normalize();
+    const eye = this.player.eyePosition();
+    let best = null, bestD = portee;
+    for (const a of this.animals) {
+      if (a.dying > 0 || a.baby || !a.def.montable) continue;
+      const dx = a.pos.x - eye.x, dz = a.pos.z - eye.z;
+      const d = Math.hypot(dx, dz);
+      if (d > bestD) continue;
+      // Tout près, l'orientation n'a plus de sens : on est déjà contre la bête.
+      if (d > 1.2 && (dx * dir.x + dz * dir.z) / d < 0.2) continue;
+      bestD = d;
+      best = a;
+    }
+    return best;
+  }
+
+  // Poser une bête d'une espèce donnée, au sol, à l'endroit demandé. Sert au
+  // banc d'essai, et un jour aux enclos : c'est le même chemin que la ponte
+  // naturelle, surface comprise.
+  invoquer(key, x, z, baby = false) {
+    const def = SPECIES.find((s) => s.key === key);
+    if (!def) return null;
+    const bx = Math.floor(x), bz = Math.floor(z);
+    let y = HEIGHT - 1;
+    while (y > 0 && !this.world.isSolid(bx, y, bz)) y--;
+    const animal = new Animal(def, bx + 0.5, y + 1.1, bz + 0.5, baby);
+    this.animals.push(animal);
+    this.scene.add(animal.mesh);
+    return animal;
   }
 }

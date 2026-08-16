@@ -38,7 +38,7 @@ function saveJson(key, v) {
 export function initFun(ctx) {
   const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
     renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
-    isNight, getWeather, getPosCtx, getProfiles } = ctx;
+    isNight, getWeather, getPosCtx, getProfiles, getVehicules } = ctx;
 
   // ---- persistent state -----------------------------------------------------
   const bag = loadJson(BAG_KEY, {});
@@ -149,7 +149,7 @@ export function initFun(ctx) {
   });
 
   const targetRow = el(`<div class="fun-target" id="fun-target">
-    <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button>
+    <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button><button id="board-btn">🚇 Monter à bord</button>
   </div>`);
 
   const panel = el(`<div class="fun-panel" id="fun-main-panel">
@@ -287,7 +287,13 @@ export function initFun(ctx) {
     }
   }
 
-  const RIDEABLE = new Set(['horse', 'deer', 'wolf']);
+  // Qui se monte n'est plus une liste écrite ici : c'est la fiche de l'espèce
+  // qui le dit (`montable`, dans src/montures.js). Ajouter une bête à monter
+  // ne demande donc plus de penser à revenir modifier ce fichier — l'oubli
+  // qui, pendant des mois, a laissé le cheval, le cerf et le loup seuls
+  // montables alors que le bestiaire s'était étoffé.
+  const montable = (a) => !!(a && a.def && a.def.montable && !a.baby);
+
   function toggleRide(a) {
     if (riding) {
       riding = null;
@@ -295,11 +301,53 @@ export function initFun(ctx) {
       toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
-    if (!a || !RIDEABLE.has(a.def.key)) return;
+    if (!montable(a)) return;
+    debarquer();
     riding = a;
     a.state = 'idle';
-    toast(`${a.def.emoji} En selle sur ${a.def.name} ! Vitesse ×2 — refais pareil pour descendre.`, 0xffe07a);
+    const allure = a.def.allure || 2;
+    toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
+      + ' — refais pareil pour descendre.', 0xffe07a);
     emojiBurst([a.def.emoji, '💨'], 8);
+  }
+
+  // ---- monter à bord de ce qui roule ---------------------------------------
+  // Le métro et les monoplaces tournaient depuis toujours sans qu'on puisse y
+  // monter : on les regardait passer. Embarquer, ici, c'est simplement se
+  // laisser porter par la place qu'on occupe — le convoi suit son tracé, on
+  // suit le convoi.
+  let bord = null;
+
+  function debarquer(silencieux = false) {
+    if (!bord) return;
+    const nom = bord.nom;
+    bord = null;
+    player.vel.set(0, 0, 0);
+    if (!silencieux) toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
+  }
+
+  function embarquer() {
+    if (bord) { debarquer(); return; }
+    const v = getVehicules && getVehicules();
+    const place = v && v.placeProche(player.pos, 4);
+    if (!place) return;
+    if (riding) toggleRide(null);
+    bord = { id: place.id, nom: place.nom, emoji: place.emoji };
+    toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
+    emojiBurst([place.emoji, '💨'], 8);
+  }
+
+  function updateBord() {
+    if (!bord) return;
+    const v = getVehicules && getVehicules();
+    const place = v && v.place(bord.id);
+    if (!place) { debarquer(true); return; }
+    player.pos.set(place.x, place.y, place.z);
+    player.vel.set(0, 0, 0);
+    // La caméra a déjà été posée en début d'image, avant que le convoi n'avance :
+    // sans ce rappel, on verrait le paysage avec une image de retard, ce qui
+    // suffit à donner mal au cœur sur une tablette.
+    player.camera.position.copy(player.eyePosition());
   }
 
   let juiceTimer = 0;
@@ -307,11 +355,19 @@ export function initFun(ctx) {
   document.addEventListener('keydown', (e) => {
     if (!isRunning()) return;
     if (e.code === 'KeyN') feed(animalManager.targeted());
-    if (e.code === 'KeyM') toggleRide(animalManager.targeted());
+    // Une seule touche pour « monter » : sur ce qui vit s'il y a une bête
+    // devant soi, à bord sinon. L'enfant n'a pas à savoir laquelle des deux.
+    if (e.code === 'KeyM') {
+      if (riding) toggleRide(null);
+      else if (bord) debarquer();
+      else if (animalManager.monture()) toggleRide(animalManager.monture());
+      else embarquer();
+    }
     if (e.code === 'KeyG') launchFirework();
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
-  document.getElementById('ride-btn').addEventListener('click', () => toggleRide(riding ? null : animalManager.targeted()));
+  document.getElementById('ride-btn').addEventListener('click', () => toggleRide(riding ? null : animalManager.monture()));
+  document.getElementById('board-btn').addEventListener('click', () => embarquer());
 
   // ---- fireworks ------------------------------------------------------------
   const fireworks = [];
@@ -1283,9 +1339,14 @@ export function initFun(ctx) {
     }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) { riding = null; player.boost = undefined; return; }
-    player.boost = 2.0;
+    player.boost = riding.def.allure || 2.0;
     const a = riding;
-    a.pos.set(player.pos.x, player.pos.y - a.def.height * 0.55, player.pos.z);
+    // La bête pose ses pattes là où l'enfant a les pieds, et c'est le regard
+    // qu'on élève à la hauteur de son dos. C'est l'inverse de ce qu'on faisait :
+    // avant, on enfonçait la monture dans le sol pour aligner son dos sur nos
+    // pieds — passable sur un cheval, absurde sur un éléphant, qu'on aurait vu
+    // enterré jusqu'aux oreilles.
+    a.pos.set(player.pos.x, player.pos.y, player.pos.z);
     a.vel.set(0, 0, 0);
     a.yaw = player.yaw + Math.PI;
     a.state = 'idle'; a.stateTime = 5; a.cryTimer = 99;
@@ -1295,6 +1356,7 @@ export function initFun(ctx) {
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;
     a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
+    player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
 
   function updatePet(dt) {
@@ -1313,14 +1375,28 @@ export function initFun(ctx) {
     if (targetTimer > 0) return;
     targetTimer = 0.25;
     const a = animalManager.targeted();
-    const show = isRunning() && a && a.pos.distanceTo(player.pos) < 6;
-    targetRow.style.display = show || riding ? 'flex' : 'none';
-    if (show || riding) {
-      document.getElementById('feed-btn').style.display = riding ? 'none' : 'block';
-      const rideB = document.getElementById('ride-btn');
-      rideB.textContent = riding ? '⬇️ Descendre' : `${a && RIDEABLE.has(a.def.key) ? a.def.emoji : '🐴'} Monter`;
-      rideB.style.display = riding || (a && RIDEABLE.has(a.def.key)) ? 'block' : 'none';
-    }
+    const nourrissable = isRunning() && a && a.pos.distanceTo(player.pos) < 6;
+    // Monter ne se vise pas comme on vise pour nourrir : on prend la bête
+    // montable la plus proche devant soi, même de biais. C'est tout l'écart
+    // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.
+    const m = isRunning() && !bord ? animalManager.monture() : null;
+    const v = isRunning() && !riding && !bord
+      ? (getVehicules && getVehicules() ? getVehicules().placeProche(player.pos, 4) : null)
+      : null;
+
+    const feedB = document.getElementById('feed-btn');
+    const rideB = document.getElementById('ride-btn');
+    const boardB = document.getElementById('board-btn');
+
+    const montrer = nourrissable || m || v || riding || bord;
+    targetRow.style.display = montrer ? 'flex' : 'none';
+    if (!montrer) return;
+
+    feedB.style.display = nourrissable && !riding && !bord ? 'block' : 'none';
+    rideB.textContent = riding ? '⬇️ Descendre' : `${m ? m.def.emoji : '🐴'} Monter`;
+    rideB.style.display = riding || m ? 'block' : 'none';
+    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}` : `${v ? v.emoji : '🚇'} Monter à bord`;
+    boardB.style.display = bord || v ? 'block' : 'none';
   }
 
   // ---- hooks & lifecycle ----------------------------------------------------
@@ -1345,6 +1421,7 @@ export function initFun(ctx) {
       loadSigns(ctxKey);
     }
     updateRide(dt);
+    updateBord();
     updatePet(dt);
     updateTargetButtons(dt);
     updateTreasure(dt);
@@ -1373,6 +1450,7 @@ export function initFun(ctx) {
     panel.style.display = 'none';
     recordsPanel.style.display = 'none';
     if (riding) { riding = null; player.boost = undefined; }
+    debarquer(true);
   }
 
   function attachNet(net) {

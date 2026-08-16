@@ -149,6 +149,17 @@ export class NetSession {
     this.active = true;
     this.state(isHost ? 'Création de la partie…' : 'Connexion à la partie…');
 
+    // ON TUE SES FANTÔMES EN ENTRANT, PAS EN ARRIVANT.
+    //
+    // Le nettoyage se faisait à l'ouverture du relais en nuage — donc
+    // seulement quand la partie empruntait ce chemin-là. Un enfant qui
+    // rejoignait par le lien direct laissait ses vieilles lignes en place, et
+    // c'est précisément lui qu'elles allaient accuser au lancement suivant.
+    // Le moment juste est celui-ci : dès qu'on entre dans un monde, tout ce
+    // que cet appareil y a écrit auparavant est mort, quel que soit le chemin
+    // qu'on prendra ensuite. Aucune identité à épargner : on n'en a pas encore.
+    this.purgerMesFantomes(null);
+
     return new Promise((resolve, reject) => {
       // tests can point signaling at a local server via ?peerhost=host:port
       const m = location.search.match(/[?&]peerhost=([^&]+)/);

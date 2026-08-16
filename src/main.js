@@ -4448,6 +4448,9 @@ const fun = initFun({
   isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
   getWeather: () => weather,
   getPosCtx: () => posCtx,
+  // Les convois n'existent qu'une fois le monde bâti : on les demande au
+  // moment de s'en servir, pas au moment de brancher les boutons.
+  getVehicules: () => vehicules,
   getProfiles: () => loadRegistry().list.map((p) => ({ id: p.id, name: p.name })),
   getMeat: () => meatCount,
   takeMeat: (n) => {
@@ -4478,7 +4481,11 @@ window.__setMeteo = (m) => {
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__carte = carte;   // les tests regardent la vue et la pilotent
 window.__alerte = (k, v, t) => alerte(k, v, t);
-window.__vehicules = { etat: () => vehicules?.etat() };
+window.__vehicules = {
+  etat: () => vehicules?.etat(),
+  point: (ci, avance) => vehicules?.point(ci, avance),
+  placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
+};
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
