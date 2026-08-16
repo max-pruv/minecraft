@@ -302,7 +302,17 @@ export class NetSession {
             const introuvable = () => reject(new Error('Partie introuvable — vérifie le code !'));
             const cloud = this.hooks.cloud;
             if (this.isHost || !cloud || !cloud.configured) { introuvable(); return; }
-            cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code)
+            // CONFIGURÉ N'EST PAS JOIGNABLE — la même leçon que le chemin sans
+            // courtier. Le nuage est « configuré » sur tous les appareils :
+            // c'est une adresse écrite dans la page, pas une garantie. Sans
+            // délai limite, ce sondage pendait pour toujours sur un réseau qui
+            // avale les requêtes, et l'enfant restait devant « Ouverture du
+            // monde… » sans verdict. Trois secondes, puis on tranche comme
+            // avant : introuvable.
+            Promise.race([
+              cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code),
+              new Promise((ok) => setTimeout(() => ok(false), 3000)),
+            ])
               .then((tenu) => {
                 if (!this.active) return;
                 if (!tenu) { introuvable(); return; }
