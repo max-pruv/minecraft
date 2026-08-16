@@ -547,13 +547,13 @@ function verifier(nom, ok, detail = '') {
     // le jeu » sur le Wi-Fi familial. Pire : l'ancien code rouvrait alors le
     // monde en hôte — deux mondes jumeaux sous le même code, qui divergent
     // sans que personne le voie.
-    const hoteNuage = await banc.joueurVers('Léo', 9798, AVEC_NUAGE);
-    await hoteNuage.evaluate(() => document.getElementById('online-btn').click());
+    const hotePhare = await banc.joueurVers('Léo', 9798, AVEC_NUAGE);
+    await hotePhare.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
-    await hoteNuage.evaluate(() => document.getElementById('host-btn').click());
-    await jusqua(async () => hoteNuage.evaluate(
+    await hotePhare.evaluate(() => document.getElementById('host-btn').click());
+    await jusqua(async () => hotePhare.evaluate(
       () => !!(window.__game.net && window.__game.net.bus)), 60000);
-    const codeTenu = await hoteNuage.evaluate(
+    const codeTenu = await hotePhare.evaluate(
       () => document.getElementById('room-code').textContent.trim());
 
     const inviteSain = await banc.joueur('Emma', AVEC_NUAGE);
@@ -565,13 +565,13 @@ function verifier(nom, ok, detail = '') {
     }, codeTenu);
     await dormir(2000);
     await inviteSain.evaluate(() => document.getElementById('online-play-btn')?.click());
-    await hoteNuage.evaluate(() => document.getElementById('online-play-btn')?.click());
+    await hotePhare.evaluate(() => document.getElementById('online-play-btn')?.click());
     const retrouves = await jusqua(async () => {
-      const a = await nomsVus(hoteNuage), b = await nomsVus(inviteSain);
+      const a = await nomsVus(hotePhare), b = await nomsVus(inviteSain);
       return a.includes('Emma') && b.includes('Léo');
     }, 120000);
     verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
-      retrouves, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(inviteSain)]));
+      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]));
     const rolesTenus = await inviteSain.evaluate(() => ({
       hote: window.__game.net ? window.__game.net.isHost : null,
       actif: !!(window.__game.net && window.__game.net.active),
@@ -579,7 +579,7 @@ function verifier(nom, ok, detail = '') {
     verifier('et il le REJOINT, au lieu d\'ouvrir un monde jumeau sous le même code',
       rolesTenus.actif && rolesTenus.hote === false, JSON.stringify(rolesTenus));
     await inviteSain.close();
-    await hoteNuage.close();
+    await hotePhare.close();
     await souffler();
 
     // --- et quand l'hôte vient VRAIMENT de partir, on dit la vérité ----------
