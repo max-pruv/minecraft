@@ -855,7 +855,24 @@ function verifier(nom, ok, detail = '') {
     await jamais.evaluate(() => document.getElementById('online-play-btn')?.click());
     // Bien au-delà des vingt secondes : le lien doit avoir été coupé et repris
     // au moins une fois, sans que personne n'apparaisse pour autant.
-    await dormir(35000);
+    //
+    // On observe DÈS MAINTENANT, et pas seulement après l'attente : la date de
+    // présentation du premier lien ne vit que vingt secondes, et un témoin qui
+    // n'ouvre l'œil qu'après trente-cinq ne voyait jamais que le second. Sur
+    // une machine au repos plusieurs cycles tenaient encore dans sa fenêtre et
+    // il passait ; sur un conteneur chargé, il n'en voyait qu'un seul et
+    // tombait — sans que le jeu y soit pour rien.
+    const presentations = new Set();
+    const echantillonner = async () => {
+      const d = await jamais.evaluate(() => {
+        const n = window.__game.net;
+        if (!n || !n.active) return null;
+        const c = [...n.conns.values()][0];
+        return c ? c.presenteA || 0 : null;
+      });
+      if (d) presentations.add(d);
+    };
+    for (let i = 0; i < 14; i++) { await echantillonner(); await dormir(2500); }
     const etatMuet = await vu(jamais);
     verifier('un lien jamais présenté ne devient pas un joueur fantôme',
       etatMuet.compteur === 1 && etatMuet.avatars.length === 0,
@@ -874,17 +891,7 @@ function verifier(nom, ok, detail = '') {
     // Ce qu'on suit est la date de présentation de la connexion en cours : elle
     // est posée à chaque nouvelle connexion, et la voir changer prouve qu'on a
     // coupé le lien muet et qu'on en a rouvert un autre.
-    const presentations = new Set();
-    for (let i = 0; i < 16; i++) {
-      const d = await jamais.evaluate(() => {
-        const n = window.__game.net;
-        if (!n || !n.active) return null;
-        const c = [...n.conns.values()][0];
-        return c ? c.presenteA || 0 : null;
-      });
-      if (d) presentations.add(d);
-      await dormir(2500);
-    }
+    for (let i = 0; i < 16; i++) { await echantillonner(); await dormir(2500); }
     verifier('et le lien muet est coupé puis rouvert, au lieu de durer pour toujours',
       presentations.size >= 2, `${presentations.size} présentations successives`);
     const avaleesMuet = await jamais.evaluate(() => window.__avalerHelloComptes || 0);
