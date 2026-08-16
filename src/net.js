@@ -1141,7 +1141,7 @@ export class NetSession {
               this.playersChanged();
               break;
             }
-            conn.send({ t: 'cede', name: wanted });
+            try { conn.send({ t: 'cede', name: wanted }); } catch { /* lien mort-né */ }
             setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
             break;
           }
@@ -1157,7 +1157,7 @@ export class NetSession {
           // retiré au sort à chaque chargement de page, si bien qu'un vrai
           // retour de l'enfant se présente toujours sous un identifiant neuf.
           if (this._evinces && this._evinces.has(conn.peer)) {
-            conn.send({ t: 'remplace', name: wanted });
+            try { conn.send({ t: 'remplace', name: wanted }); } catch { /* lien mort-né */ }
             setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
             this.conns.delete(conn.peer);
             this.playersChanged();

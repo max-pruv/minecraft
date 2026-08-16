@@ -681,8 +681,23 @@ function verifier(nom, ok, detail = '') {
       const b = await nomsVus(bloque);
       return a.includes('Tom') && b.includes('Emma');
     }, 90000);
+    // À l'échec, on veut l'autopsie, pas juste le constat : l'état réseau des
+    // deux côtés dit lequel a lâché, et où.
+    const autopsie = async (p) => p.evaluate(() => {
+      const n = window.__game.net;
+      return {
+        actif: !!(n && n.active), hote: n ? n.isHost : null, bus: !!(n && n.bus),
+        conns: n ? [...n.conns.entries()].map(([k, c]) => [k.slice(0, 18), c.pret, !!c.conn.parNuage]) : [],
+        statut: (document.getElementById('online-status') || {}).textContent || '',
+        lien: n ? n.linkState : null,
+      };
+    });
     verifier('pair-à-pair mort, les deux enfants se voient quand même',
-      seVoient, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+      seVoient, seVoient ? '' : JSON.stringify({
+        noms: [await nomsVus(hoteNuage), await nomsVus(bloque)],
+        emma: await autopsie(hoteNuage), tom: await autopsie(bloque),
+        erreursTom: bloque.erreurs.slice(0, 3),
+      }));
     // Et c'est bien par le tuyau de secours que c'est passé : sans cette
     // mesure, un lien direct rétabli en douce ferait passer le scénario sans
     // rien prouver du tout.
