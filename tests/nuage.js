@@ -126,9 +126,15 @@ function servirLeNuage(port) {
         const params = url.searchParams.getAll('de');
         const prefixe = (params.find((v) => v.startsWith('like.')) || '').slice(5).replace(/\*$/, '');
         const sauf = (params.find((v) => v.startsWith('neq.')) || '').slice(4);
+        // L'extinction du phare efface par émetteur exact, comme le vrai.
+        const exact = (params.find((v) => v.startsWith('eq.')) || '').slice(3);
         for (let i = relais.length - 1; i >= 0; i--) {
           const r = relais[i];
           if (code && r.code !== code) continue;
+          if (exact) {
+            if (r.de === exact) relais.splice(i, 1);
+            continue;
+          }
           if (prefixe) {
             if (String(r.de || '').startsWith(prefixe) && r.de !== sauf) relais.splice(i, 1);
             continue;

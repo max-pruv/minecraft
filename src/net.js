@@ -431,8 +431,9 @@ export class NetSession {
     // L'hôte écrit donc une ligne toutes les quarante-cinq secondes. Elle
     // n'est adressée à personne — aucun invité ne la relit — mais elle dit,
     // à qui interroge la base, qu'un hôte tient ce monde EN CE MOMENT. Les
-    // lignes expirent avec le ménage : un hôte disparu cesse d'exister en
-    // moins de deux minutes, et sa place se libère.
+    // lignes expirent avec le ménage : un hôte parti proprement l'éteint
+    // lui-même en s'en allant, et un hôte tué net cesse d'exister en moins
+    // d'une minute — le temps que sa place se libère.
     if (this.isHost) {
       const phare = () => {
         if (!this.active || !this.bus) { clearInterval(this._phare); return; }
@@ -440,7 +441,7 @@ export class NetSession {
       };
       phare();
       clearInterval(this._phare);
-      this._phare = setInterval(phare, 45000);
+      this._phare = setInterval(phare, 15000);
     }
     return this.bus;
   }
@@ -1558,6 +1559,11 @@ export class NetSession {
     this.active = false;
     clearInterval(this._phare);
     this._phare = null;
+    // L'hôte qui part éteint son phare : sans cela, son propre monde lui
+    // semblait « tenu » à son retour, et il ne pouvait plus le rouvrir.
+    if (this.isHost && this.hooks.cloud && this.hooks.cloud.configured) {
+      this.hooks.cloud.relaisEteindre(this.code, ID_PREFIX + this.code).catch(() => {});
+    }
     this._basculeAbonnes = null;   // plus personne à prévenir : la session est close
     if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }
     if (this._veille) {
