@@ -374,7 +374,7 @@ function verifier(nom, ok, detail = '') {
     // la vivante est la plus récente ». L'hôte était la seule exception, et
     // c'est là que l'enfant tombait.
     const { p: refletHote, code: codeReflet } = await banc.creerMonde('Ludo');
-    const refletNeuf = await banc.rejoindre('Ludo', codeReflet);
+    const refletNeuf = await banc.rejoindre('Ludo', codeReflet, { memePrenom: true });
     // La reprise passe par une seconde et demie d'attente — le temps que le
     // fantôme lâche le code — puis par une réouverture complète du monde.
     const refletRepris = await jusqua(async () => refletNeuf.evaluate(
@@ -452,7 +452,7 @@ function verifier(nom, ok, detail = '') {
         return vrai(conn, msg);
       };
     });
-    const zia = await banc.rejoindre('Zia', codeVieux);
+    const zia = await banc.rejoindre('Zia', codeVieux, { memePrenom: true });
     await dormir(6000);
     const accuseVieux = zia.dialogues.filter((d) => /joue déjà/.test(d));
     verifier('un hôte d\'ancienne version ne renvoie plus au menu',
@@ -780,7 +780,7 @@ function verifier(nom, ok, detail = '') {
     // le garde-fou « au moins deux perdues » tombait parfois à une seule
     // (mesuré : 1 avalée, deux passes sur trois un jour de machine lente).
     const { p: patiente, code: codeLent } = await banc.creerMonde('Théo');
-    const lent = await banc.joueur('Zoé', { helloFragile: true });
+    const lent = await banc.joueur('Camille', { helloFragile: true });
     // Au premier plan : Chromium bride les minuteurs d'un onglet caché, et le
     // filtre du banc s'installe justement sur un minuteur. Sans cela il
     // arrivait après les présentations qu'il devait avaler — le scénario
@@ -815,7 +815,7 @@ function verifier(nom, ok, detail = '') {
     const seRetrouvent = await jusqua(async () => {
       const a = await nomsVus(patiente);
       const b = await nomsVus(lent);
-      return a.includes('Zoé') && b.includes('Théo');
+      return a.includes('Camille') && b.includes('Théo');
     }, 120000);
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
