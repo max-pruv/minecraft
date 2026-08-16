@@ -7,7 +7,8 @@ jamais casser, et pourquoi** — la mémoire des pannes qui ont coûté cher.
 **Règle de tenue : toute modification qui change une règle, un invariant ou une
 décision d'architecture met ce fichier à jour dans le même commit.** L'histoire
 détaillée, elle, vit dans `git log` — les messages de commit sont écrits pour
-être lus.
+être lus — et ce que chaque version apporte vit dans `CHANGELOG.md`, qui n'a
+pas le droit d'avoir un train de retard sur la production.
 
 ---
 
@@ -46,18 +47,48 @@ travail est irrattrapable.
 
 ## Procédure de publication
 
+**Rien ne part en production sans être expliqué, documenté et versionné. Ce
+n'est pas une étape de fin, c'est une partie de la livraison** — au même titre
+que le code. Une version qu'on ne sait plus expliquer six mois plus tard est
+une version qu'on ne saura pas déboguer.
+
 1. **Portail complet vert obligatoire** : `cd tests && npm test`. Sept suites.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
-   clients installés (PWA sur l'iPad) ne voient jamais la mise à jour.
+   clients installés (PWA sur l'iPad) ne voient jamais la mise à jour. C'est ce
+   numéro qui fait foi partout ailleurs.
 3. Tout fichier `src/*.js` **nouveau** doit être ajouté à la liste `ASSETS` de
    `sw.js`, sinon il manque hors ligne.
-4. PR **prête, jamais en brouillon**, fusionnée immédiatement (squash). Consigne
-   permanente de Max : « une manière continue constante ».
-5. Vérifier que la production sert bien la nouvelle version :
+4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
+   parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
+   constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
+   peut faire), **ce qui le prouve** (le nombre de témoins, et ceux qui
+   comptent).
+5. **Mettre à jour ce fichier** si la livraison change une règle, un invariant
+   ou une décision d'architecture. Même commit.
+6. **Corriger le `README`** s'il vient de devenir faux — une dimension, une
+   durée, un fichier. Un README périmé induit en erreur plus longtemps qu'il
+   n'informe.
+7. PR **prête, jamais en brouillon**, fusionnée immédiatement (squash). Consigne
+   permanente de Max : « une manière continue constante ». Le corps de la PR
+   reprend la structure de l'entrée du journal.
+8. Vérifier que la production sert bien la nouvelle version :
    `curl -s https://minecraft-fam.vercel.app/sw.js | grep CACHE_VERSION`
-6. Rebaser la branche sur `main` après fusion.
+9. Rebaser la branche sur `main` après fusion.
+
+### Où va quoi
+
+| Document | Ce qu'il porte | Quand il change |
+| --- | --- | --- |
+| `CHANGELOG.md` | Une entrée par version : pourquoi, quoi, preuve | À chaque livraison, sans exception |
+| `CLAUDE.md` | Invariants, procédure, pièges, décisions | Quand une règle change |
+| `README.md` | Ce que le jeu fait, comment le lancer | Quand un fait devient faux |
+| `git log` | Le détail technique, le raisonnement | À chaque commit |
+
+Ces quatre-là ne se recopient pas l'un l'autre. Le journal dit **à quoi sert**
+une version ; `git log` dit **comment** elle est faite ; `CLAUDE.md` dit **ce
+qu'il ne faut pas casser**.
 
 ---
 
@@ -191,4 +222,12 @@ Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
   ~115 blocs au-dessus du sol, donc **une échelle par monument** (chacun aussi
   grand que possible sous le plafond) plutôt qu'une échelle unique.
 - **Recalibrer les monuments existants** dans le ciel neuf.
+- **L'usine automobile et le mode conduite** — une chaîne de production complète
+  documentée sur de vraies recherches (emboutissage, carrosserie robotisée,
+  peinture, mariage batterie-caisse, piste d'essai), la voiture qui se construit
+  visiblement de poste en poste, et à la sortie **on monte dedans et on la
+  conduit**. Attention : les véhicules actuels suivent un `Parcours`
+  précalculé — ils ne se conduisent pas. Conduire demande une physique de
+  véhicule pilotée par le joueur (direction, accélération, freinage, adhérence),
+  c'est le vrai morceau du travail, pas l'usine.
 - Intérieurs visitables, guides dans les villes, notifications push.
