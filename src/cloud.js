@@ -366,10 +366,13 @@ export class CloudSave {
   async relaisPurgerMesFantomes(code, prefixeAppareil, monId) {
     if (!this.configured || !prefixeAppareil) return 0;
     try {
+      // `monId` absent veut dire « aucune de mes lignes n'est encore vivante » :
+      // on efface alors tout ce que cet appareil a laissé dans ce monde, sans
+      // exception à préserver.
+      const sauf = monId ? `&de=neq.${encodeURIComponent(monId)}` : '';
       const res = await fetch(
         `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
-        + `&de=like.${encodeURIComponent(prefixeAppareil + '*')}`
-        + `&de=neq.${encodeURIComponent(monId)}`,
+        + `&de=like.${encodeURIComponent(prefixeAppareil + '*')}${sauf}`,
         { method: 'DELETE', headers: this.headers({ Prefer: 'return=minimal' }) },
       );
       return res.ok ? 1 : 0;
