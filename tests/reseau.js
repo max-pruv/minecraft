@@ -154,7 +154,7 @@ function verifier(nom, ok, detail = '') {
     // accusé de jouer déjà ailleurs.
     await endormir(alice);
     await dormir(1000);
-    const alice2 = await banc.rejoindre('Alice', code);
+    const alice2 = await banc.rejoindre('Alice', code, { memePrenom: true });
     await jusqua(async () => (await vu(alice2)).compteur === 2);
     const retour = await vu(alice2);
     verifier('Alice retrouve son monde après une veille sans retour',
@@ -200,7 +200,7 @@ function verifier(nom, ok, detail = '') {
     // --- ouvrir un monde vide doit se voir ------------------------------------
     // Le défaut signalé par la famille : on tape un code, tout se passe sans la
     // moindre erreur, et l'enfant joue seul en croyant avoir rejoint l'autre.
-    const solo = await banc.rejoindre('Nina', '77777');
+    const solo = await banc.rejoindre('Elsa', '77777');
     await jusqua(async () => /seul/i.test((await vu(solo)).bandeau));
     const etatSolo = await vu(solo);
     verifier('ouvrir un monde vide le dit franchement',
@@ -210,15 +210,15 @@ function verifier(nom, ok, detail = '') {
       `compteur ${etatSolo.compteur}`);
 
     // Quand quelqu'un arrive enfin, l'avertissement s'efface de lui-même.
-    const enfin = await banc.rejoindre('Tom', '77777');
+    const enfin = await banc.rejoindre('Yanis', '77777');
     await jusqua(async () => (await vu(solo)).compteur === 2
-      && (await nomsVus(solo)).includes('Tom') && (await nomsVus(enfin)).includes('Nina'));
+      && (await nomsVus(solo)).includes('Yanis') && (await nomsVus(enfin)).includes('Elsa'));
     const apres = await vu(solo);
     verifier('l\'avertissement s\'efface dès qu\'un ami arrive',
       !/seul/i.test(apres.bandeau) && apres.compteur === 2,
       `bandeau ${JSON.stringify(apres.bandeau)}, compteur ${apres.compteur}`);
-    verifier('et les deux se voient', (await nomsVus(solo)).includes('Tom')
-      && (await nomsVus(enfin)).includes('Nina'),
+    verifier('et les deux se voient', (await nomsVus(solo)).includes('Yanis')
+      && (await nomsVus(enfin)).includes('Elsa'),
       `${JSON.stringify(await nomsVus(solo))} / ${JSON.stringify(await nomsVus(enfin))}`);
     // On referme ce qui a servi. Chaque page laissée ouverte continue de
     // dessiner un monde en trois dimensions à plein régime : à quatre parties
@@ -342,8 +342,8 @@ function verifier(nom, ok, detail = '') {
     // injoignable, couper le VPN ne servira à rien : il faut sortir de ce
     // Wi-Fi. Ici le relais répond — on attend donc le conseil « VPN », et
     // surtout PAS celui du Wi-Fi public.
-    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Nina');
-    const chezSoi = await banc.joueur('Théo', { sansPairAPair: true, avecRelais: true });
+    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Awa');
+    const chezSoi = await banc.joueur('Rémi', { sansPairAPair: true, avecRelais: true });
     await chezSoi.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await chezSoi.evaluate((c) => {
@@ -517,7 +517,7 @@ function verifier(nom, ok, detail = '') {
     // extérieur autre que celui qui sert déjà la page.
     const codeSans = await sansCourtier.evaluate(
       () => document.getElementById('room-code').textContent.trim());
-    const secondSans = await banc.joueurVers('Nina', 9798, AVEC_NUAGE);
+    const secondSans = await banc.joueurVers('Alba', 9798, AVEC_NUAGE);
     await secondSans.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await secondSans.evaluate((c) => {
@@ -529,7 +529,7 @@ function verifier(nom, ok, detail = '') {
     await sansCourtier.evaluate(() => document.getElementById('online-play-btn')?.click());
     const ensembleSans = await jusqua(async () => {
       const a = await nomsVus(sansCourtier), b = await nomsVus(secondSans);
-      return a.includes('Nina') && b.includes('Sacha');
+      return a.includes('Alba') && b.includes('Sacha');
     }, 120000);
     verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
       JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
@@ -992,7 +992,7 @@ function verifier(nom, ok, detail = '') {
     // endroit — par n'importe qui — avance la même jauge, et la célébration
     // part chez tout le monde. Tout est éprouvé par le vrai chemin : la pose
     // s'échange comme un panneau, l'avancement se dérive du journal de blocs.
-    const { p: lea, code: codeLea } = await banc.creerMonde('Léa');
+    const { p: lea, code: codeLea } = await banc.creerMonde('Jade');
     const rui = await banc.rejoindre('Rui', codeLea);
     const pose = await lea.evaluate(() => window.__chantier.poser('cabane'));
     verifier('l\'hôte pose un chantier', !!pose && pose.plan === 'cabane',
