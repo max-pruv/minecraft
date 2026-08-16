@@ -2267,7 +2267,13 @@ async function openWorld(code) {
   // ne faisait qu'ajouter neuf secondes d'attente avant le même message. Sur
   // un portail captif d'hôtel, l'enfant patientait quarante secondes devant
   // « Ouverture du monde… » pour finir sur un refus.
-  if (err && !err.signal) {
+  // `tenu` : le phare de l'hôte brillait il y a moins de deux minutes.
+  // Quelqu'un tient ce monde par le nuage — l'ouvrir à notre tour créerait un
+  // SECOND monde sous le même code, et chacun bâtirait dans sa copie sans
+  // jamais voir l'autre. C'est la pire panne possible : silencieuse,
+  // divergente, irréconciliable. On ne retente donc l'ouverture que pour un
+  // monde dont personne ne s'est réclamé.
+  if (err && !err.signal && !err.tenu) {
     err = await essayer(true);
     ouvertVide = !err;
   }
@@ -2284,12 +2290,14 @@ async function openWorld(code) {
     // n'a répondu dans ce monde » était doublement faux : quelqu'un est là,
     // c'est établi, et l'enfant n'avait aucune idée de quoi faire. La cause
     // de loin la plus fréquente à la maison est un VPN resté allumé.
-    if (err && err.canal) {
+    if (err && err.canal && !err.personne) {
       // Deux pannes, deux conseils. Quand aucun relais n'a répondu, le réseau
       // lui-même barre la route — hôtel, école, gare, café : couper un VPN
       // n'y changera rien, il faut sortir de ce Wi-Fi. Quand un relais a bien
       // répondu mais que le lien n'aboutit pas, la cause la plus fréquente à
-      // la maison reste le VPN resté allumé.
+      // la maison reste le VPN resté allumé. Et quand le NUAGE nous a parlé,
+      // ni l'un ni l'autre : le réseau est sain, c'est l'hôte qui se tait —
+      // ce cas-là est composé plus bas, pour tous les chemins à la fois.
       err = new Error(err.reseauFerme
         ? `Le monde ${code} existe, mais ce Wi-Fi bloque le jeu à plusieurs. `
           + 'C\'est fréquent dans les hôtels, les écoles et les gares. '
@@ -2298,6 +2306,16 @@ async function openWorld(code) {
         : `Le monde ${code} existe, mais ta tablette n'arrive pas à le joindre. `
           + 'Un VPN ou un réseau protégé bloque souvent le jeu à plusieurs — demande à un parent de le couper.');
     }
+  }
+  // Quand le relais nous a parlé mais que personne n'a répondu, le réseau est
+  // hors de cause — on vient d'en faire la preuve. Le message d'avant accusait
+  // le Wi-Fi de la maison, plein écran, et le seul conseil qu'il donnait était
+  // faux. La vérité est plus simple et plus utile : le monde est là, l'hôte ne
+  // répond pas en ce moment, réessaie.
+  if (err && err.personne) {
+    err = new Error(`Le monde ${code} est bien là, mais personne n'y répond à l'instant `
+      + '— l\'application est peut-être fermée ou endormie en face. '
+      + 'Réessaie dans un petit moment.');
   }
   if (err) {
     onlineStatus.textContent = '❌ ' + err.message;

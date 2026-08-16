@@ -100,7 +100,14 @@ async function avancerUnDemiSeconde(p, depart) {
 
     // --- une bête devant soi -------------------------------------------------
     verifier('l\'éléphant fait partie du monde', await poserDevant(tab, 'elephant'));
-    await dormir(600);
+    // Le bouton se rafraîchit tous les quarts de seconde : on l'attend, on ne
+    // le devine pas. Une attente fixe passait sur une machine au repos et
+    // tombait sous la charge du portail complet.
+    await tab.waitForFunction(() => {
+      const b = document.getElementById('ride-btn');
+      return b && getComputedStyle(b).display !== 'none'
+        && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+    }, null, { timeout: 5000 }).catch(() => {});
 
     const propose = await bouton(tab, 'ride-btn');
     verifier('un éléphant devant soi propose de monter',
@@ -211,11 +218,17 @@ async function avancerUnDemiSeconde(p, depart) {
 
     await tab.evaluate(() => document.getElementById('board-btn').click());
     const embarque = await pose(tab);
-    await dormir(2500);
-    const arrivee = await pose(tab);
-    const parcouru = Math.hypot(arrivee.x - embarque.x, arrivee.z - embarque.z);
+    // On mesure une DISTANCE, pas une vitesse : sous la charge du portail
+    // complet, le jeu tourne au ralenti et le même trajet prend plus de
+    // temps. Ce qui compte est qu'on soit emporté, pas le chrono.
+    let parcouru = 0;
+    for (let i = 0; i < 16 && parcouru < 8; i++) {
+      await dormir(700);
+      const ici = await pose(tab);
+      parcouru = Math.hypot(ici.x - embarque.x, ici.z - embarque.z);
+    }
     verifier('et le métro nous emmène pour de bon',
-      parcouru > 8, `${parcouru.toFixed(1)} m en 2,5 s`);
+      parcouru > 8, `${parcouru.toFixed(1)} m`);
 
     const surLaRame = await tab.evaluate(() => {
       const g = window.__game;

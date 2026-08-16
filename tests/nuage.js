@@ -97,9 +97,16 @@ function servirLeNuage(port) {
       if (req.method === 'GET') {
         const code = egal(url, 'code');
         const apres = Number((url.searchParams.get('id') || '').replace('gt.', '')) || 0;
-        const desc = /id\.desc/.test(url.searchParams.get('order') || '');
+        // `created_at.desc` et `id.desc` ordonnent pareil ici : les lignes
+        // naissent dans l'ordre. Le vrai PostgREST accepte les deux, le banc
+        // aussi — c'est le sondage du phare de l'hôte qui trie par date.
+        const desc = /desc/.test(url.searchParams.get('order') || '');
         const limite = Number(url.searchParams.get('limit')) || 200;
-        let rows = relais.filter((r) => (!code || r.code === code) && r.id > apres);
+        // Le filtre par émetteur, comme le vrai : sans lui, le sondage « un
+        // hôte a-t-il émis récemment ? » recevait la ligne de n'importe qui.
+        const deEq = (url.searchParams.getAll('de').find((v) => v.startsWith('eq.')) || '').slice(3);
+        let rows = relais.filter((r) => (!code || r.code === code) && r.id > apres
+          && (!deEq || r.de === deEq));
         rows.sort((a, b) => (desc ? b.id - a.id : a.id - b.id));
         return json(res, rows.slice(0, limite));
       }

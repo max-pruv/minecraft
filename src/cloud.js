@@ -328,6 +328,27 @@ export class CloudSave {
   }
 
   // Le dernier numéro déposé dans ce monde : celui à partir duquel on écoute.
+  // Un hôte a-t-il émis dans ce monde ces derniers instants ? C'est LA
+  // question qui distingue « le monde est vide, ouvre-le » de « le monde est
+  // tenu par le nuage, frappe par là ». On ne regarde que les lignes de
+  // l'hôte : les restes d'un invité malchanceux ne doivent pas faire croire
+  // que quelqu'un tient la maison.
+  async relaisHoteRecent(code, idHote, ageMs = 90000) {
+    if (!this.configured) return false;
+    try {
+      const res = await fetch(
+        `${this.url}/rest/v1/world_relay?code=eq.${encodeURIComponent(code)}`
+        + `&de=eq.${encodeURIComponent(idHote)}`
+        + '&select=created_at&order=created_at.desc&limit=1',
+        { headers: this.headers(), cache: 'no-store' },
+      );
+      if (!res.ok) return false;
+      const rows = await res.json();
+      if (!rows.length) return false;
+      return Date.now() - new Date(rows[0].created_at).getTime() < ageMs;
+    } catch { return false; }
+  }
+
   async relaisDernier(code) {
     if (!this.configured) return 0;
     const res = await fetch(

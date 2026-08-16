@@ -283,7 +283,40 @@ export class NetSession {
             if (this.onCodePris) this.onCodePris(this.code);
           }
         } else if (err.type === 'peer-unavailable') {
-          if (!settled) { settled = true; ouvert(); reject(new Error('Partie introuvable — vérifie le code !')); }
+          // « Introuvable » au courtier ne veut plus dire « vide ».
+          //
+          // Depuis que le courtier est facultatif, un monde peut être TENU
+          // sans jamais y paraître : l'hôte vit alors par le nuage, et il
+          // répond en deux secondes à qui frappe par là. C'est le journal de
+          // production qui l'a montré, sur le monde de la maison : l'hôte
+          // saluait un invité dont la tentative avait déjà renoncé.
+          //
+          // Rejeter ici avait un second coût, pire que le refus : l'appelant
+          // rouvrait le monde en hôte, et la famille se retrouvait dans DEUX
+          // mondes divergents sous le même code. On interroge donc le phare
+          // de l'hôte : s'il brille, on frappe par le nuage ; sinon le monde
+          // est réellement vide et l'appelant peut l'ouvrir sans crainte.
+          if (!settled) {
+            settled = true;
+            ouvert();
+            const introuvable = () => reject(new Error('Partie introuvable — vérifie le code !'));
+            const cloud = this.hooks.cloud;
+            if (this.isHost || !cloud || !cloud.configured) { introuvable(); return; }
+            cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code)
+              .then((tenu) => {
+                if (!this.active) return;
+                if (!tenu) { introuvable(); return; }
+                const ok = this.basculerSurLeNuage((e) => {
+                  if (!e) { resolve(this.code); return; }
+                  // Le phare brillait il y a moins de deux minutes : quelqu'un
+                  // tient ce monde, il ne faut PAS l'ouvrir par-dessus.
+                  e.tenu = true;
+                  reject(e);
+                });
+                if (!ok) introuvable();
+              })
+              .catch(introuvable);
+          }
         } else if (!settled && (err.type === 'network' || err.type === 'server-error')) {
           ouvert();
           // Le courtier crie au lieu de se taire — même panne, autre symptôme,
@@ -346,6 +379,16 @@ export class NetSession {
   // marche — il est plus lent — mais il rattrape les réseaux qui interdisent
   // tout le reste, et l'enfant n'a rien à faire pour cela.
   ouvrirRelaisNuage() {
+    // UNE SESSION ARRÊTÉE NE FRAPPE À AUCUNE PORTE.
+    //
+    // Les tentatives de connexion arment des minuteries — patience du canal,
+    // bascule de secours — et une tentative abandonnée laissait les siennes
+    // derrière elle. Elles se réveillaient sur une session morte, ouvraient
+    // le relais, frappaient chez l'hôte (« coucou ») et raccrochaient dans la
+    // même seconde (« adieu ») : le journal de production du monde 30953 en
+    // porte la trace, à deux millisecondes d'écart. L'hôte répondait dans le
+    // vide, l'enfant lisait un refus, et le diagnostic accusait le Wi-Fi.
+    if (!this.active) return null;
     if (this.bus || !this.hooks.cloud) return null;
     // L'IDENTITÉ PORTE L'APPAREIL.
     //
@@ -376,6 +419,29 @@ export class NetSession {
     });
     if (!this.bus.demarrer()) { this.bus = null; return null; }
     this.purgerMesFantomes(monId);
+    // LE PHARE DE L'HÔTE.
+    //
+    // Un hôte sans courtier est invisible : il ne s'annonce nulle part, il ne
+    // fait que répondre. Un invité dont le courtier marche demandait alors
+    // « ce monde existe-t-il ? » au seul courtier — qui l'ignorait — et
+    // concluait à un monde vide. Au mieux il lisait un refus ; au pire il
+    // OUVRAIT le monde à son tour, et la famille jouait dans deux mondes
+    // divergents sous le même code.
+    //
+    // L'hôte écrit donc une ligne toutes les quarante-cinq secondes. Elle
+    // n'est adressée à personne — aucun invité ne la relit — mais elle dit,
+    // à qui interroge la base, qu'un hôte tient ce monde EN CE MOMENT. Les
+    // lignes expirent avec le ménage : un hôte disparu cesse d'exister en
+    // moins de deux minutes, et sa place se libère.
+    if (this.isHost) {
+      const phare = () => {
+        if (!this.active || !this.bus) { clearInterval(this._phare); return; }
+        try { this.bus.envoyer('monde', { t: 'phare' }); } catch { /* au prochain tour */ }
+      };
+      phare();
+      clearInterval(this._phare);
+      this._phare = setInterval(phare, 45000);
+    }
     return this.bus;
   }
 
@@ -400,6 +466,7 @@ export class NetSession {
   // rien. Tout ce qui suit doit donc supporter `this.peer` absent : c'est la
   // contrepartie honnête de ce chemin, et elle est explicite.
   async jouerSansCourtier() {
+    if (!this.active) return false;   // une tentative abandonnée n'a plus de chemin à choisir
     const cloud = this.hooks.cloud;
     if (!cloud || !cloud.configured) return false;
     // ON NE PROMET PAS UN CHEMIN QU'ON N'A PAS VÉRIFIÉ.
@@ -491,8 +558,35 @@ export class NetSession {
   // L'invité bascule : le lien direct n'a pas abouti, on passe par la base.
   // On ne renonce qu'après avoir essayé cela aussi.
   basculerSurLeNuage(done) {
+    if (!this.active) return false;   // la bascule d'une tentative abandonnée
+    // UNE BASCULE, PLUSIEURS GUETTEURS.
+    //
+    // Deux chemins d'échec peuvent demander la bascule à quelques
+    // millisecondes d'écart : la patience du canal qui expire, et l'erreur du
+    // pair qui remonte. Le premier arrivé l'ouvre ; le second recevait
+    // `false` — « déjà en cours » — et le lisait comme « pas de nuage » : il
+    // rejetait toute la tentative PENDANT que la bascule du premier attendait
+    // sa réponse. Huit millisecondes après l'envoi du coucou, la session
+    // était arrêtée. C'est la panne exacte filmée en production sur le monde
+    // de la maison. Désormais le second s'abonne au même verdict : quel que
+    // soit le chemin qui a demandé le nuage, il y a UNE bascule, et tout le
+    // monde apprend la même issue.
+    if (this._basculeAbonnes) {
+      if (done) this._basculeAbonnes.push(done);
+      return true;
+    }
     const bus = this.ouvrirRelaisNuage();
     if (!bus) return false;
+    const abonnes = [];
+    if (done) abonnes.push(done);
+    this._basculeAbonnes = abonnes;
+    const finir = (e) => {
+      if (this._basculeAbonnes !== abonnes) return;   // déjà réglée
+      this._basculeAbonnes = null;
+      for (const d of abonnes) {
+        try { d(e); } catch { /* un guetteur fautif n'emporte pas les autres */ }
+      }
+    };
     this.link('signal', 'Passage par le nuage…');
     const conn = bus.connecter(ID_PREFIX + this.code);
     this.registerConn(conn);
@@ -500,16 +594,22 @@ export class NetSession {
     // On laisse à l'hôte le temps de relever sa boîte et de répondre. Deux
     // tours de sondage suffisent en général ; on en accorde largement plus.
     const limite = setTimeout(() => {
+      if (!this.active) return;                  // la session a été arrêtée entre-temps
       const c = this.conns.get(conn.peer);
       if (c && c.pret) return;                   // quelqu'un a répondu : tout va bien
-      this.conns.delete(conn.peer);
-      this.playersChanged();
+      if (c && c.conn === conn) { this.conns.delete(conn.peer); this.playersChanged(); }
+      // Le relais nous a-t-il parlé ? La réponse change tout le diagnostic :
+      // si oui, le réseau est sain et c'est le monde d'en face qui se tait —
+      // dire « ce Wi-Fi bloque » à cet instant, c'était accuser un réseau qui
+      // venait de faire la preuve du contraire.
+      const relaisJoignable = !!(bus && bus.joignable);
       try { bus.arreter(); } catch { /* déjà arrêté */ }
       this.bus = null;
       const muet = new Error('Personne n\'a répondu dans ce monde');
       muet.canal = true;
-      muet.reseauFerme = !this.relaisVu;
-      done?.(muet);
+      muet.personne = relaisJoignable;
+      muet.reseauFerme = !this.relaisVu && !relaisJoignable;
+      finir(muet);
     }, 12000);
     // La présentation reçue par le nuage vaut réussite : c'est onMessage qui
     // marque `pret`, on se contente de guetter.
@@ -520,7 +620,7 @@ export class NetSession {
       clearInterval(guetter);
       clearTimeout(limite);
       this.link('nuage', 'Partie relayée par le nuage — un peu plus lente, mais elle marche.');
-      done?.(null);
+      finir(null);
     }, 300);
     return true;
   }
@@ -564,14 +664,19 @@ export class NetSession {
     // l'appelant se rabat sur l'ouverture du monde.
     const minuteur = setTimeout(
       () => {
+        if (fini || !this.active) return;   // tentative déjà tranchée, ou session close
         // La tentative morte ne doit rien laisser derrière elle : inscrite mais
         // jamais présentée, elle gonflait le compte des joueurs à chaque essai.
+        // On vérifie que l'entrée est bien la SIENNE : la bascule inscrit sa
+        // connexion nuage sous la même clé — l'identifiant de l'hôte — et ce
+        // nettoyage emportait le lien de secours qui venait de la remplacer.
         const c = this.conns.get(conn.peer);
-        if (c && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
+        if (c && c.conn === conn && !c.pret) { this.conns.delete(conn.peer); this.playersChanged(); }
         // Avant de renoncer, le dernier chemin : la base. Sur un Wi-Fi
         // public c'est le seul qui reste, et il n'appartient pas à l'enfant
-        // de le deviner.
-        if (!this.bus && this.basculerSurLeNuage((e) => rate(e || null))) return;
+        // de le deviner. Si une bascule est déjà en route, on s'abonne à son
+        // verdict au lieu de trancher à sa place.
+        if (this.basculerSurLeNuage((e) => rate(e || null))) return;
         const muet = new Error('Personne n\'a répondu dans ce monde');
         // L'appelant a besoin de distinguer « le monde est vide » de « le monde
         // est là mais on ne l'atteint pas » : ce n'est pas la même panne, et ce
@@ -600,7 +705,9 @@ export class NetSession {
     // besoin qu'on lui dise quoi essayer.
     conn.on('error', () => {
       if (fini) return;
-      if (!this.bus && this.basculerSurLeNuage((err) => rate(err || null))) return;
+      // Même règle que la patience : une bascule en route rend son verdict à
+      // tous ses guetteurs — on s'y abonne, on ne la déclare pas morte.
+      if (this.basculerSurLeNuage((err) => rate(err || null))) return;
       const e = new Error('Connexion impossible');
       e.canal = true;
       e.reseauFerme = !this.relaisVu;
@@ -1449,6 +1556,9 @@ export class NetSession {
     // connexions dans une session morte — d'où des avatars qui revenaient
     // hanter un monde qu'on venait de quitter.
     this.active = false;
+    clearInterval(this._phare);
+    this._phare = null;
+    this._basculeAbonnes = null;   // plus personne à prévenir : la session est close
     if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }
     if (this._veille) {
       document.removeEventListener('visibilitychange', this._veille);

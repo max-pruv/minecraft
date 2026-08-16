@@ -535,6 +535,83 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
     await secondSans.close();
     await sansCourtier.close();
+    await souffler();
+
+    // --- la diagonale qui a eu Marlon : hôte SANS courtier, invité AVEC ------
+    //
+    // La v154 avait éprouvé « les deux sans courtier ». Restait l'autre moitié
+    // du monde réel : l'hôte vit par le nuage seul, et l'invité, lui, a un
+    // courtier qui répond — lequel lui jure que ce monde n'existe pas. Vu en
+    // production sur le monde de la maison : l'hôte saluait l'invité par le
+    // relais en deux secondes, pendant que l'invité lisait « ce Wi-Fi bloque
+    // le jeu » sur le Wi-Fi familial. Pire : l'ancien code rouvrait alors le
+    // monde en hôte — deux mondes jumeaux sous le même code, qui divergent
+    // sans que personne le voie.
+    const hoteNuage = await banc.joueurVers('Léo', 9798, AVEC_NUAGE);
+    await hoteNuage.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await hoteNuage.evaluate(() => document.getElementById('host-btn').click());
+    await jusqua(async () => hoteNuage.evaluate(
+      () => !!(window.__game.net && window.__game.net.bus)), 60000);
+    const codeTenu = await hoteNuage.evaluate(
+      () => document.getElementById('room-code').textContent.trim());
+
+    const inviteSain = await banc.joueur('Emma', AVEC_NUAGE);
+    await inviteSain.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await inviteSain.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeTenu);
+    await dormir(2000);
+    await inviteSain.evaluate(() => document.getElementById('online-play-btn')?.click());
+    await hoteNuage.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const retrouves = await jusqua(async () => {
+      const a = await nomsVus(hoteNuage), b = await nomsVus(inviteSain);
+      return a.includes('Emma') && b.includes('Léo');
+    }, 120000);
+    verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
+      retrouves, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(inviteSain)]));
+    const rolesTenus = await inviteSain.evaluate(() => ({
+      hote: window.__game.net ? window.__game.net.isHost : null,
+      actif: !!(window.__game.net && window.__game.net.active),
+    }));
+    verifier('et il le REJOINT, au lieu d\'ouvrir un monde jumeau sous le même code',
+      rolesTenus.actif && rolesTenus.hote === false, JSON.stringify(rolesTenus));
+    await inviteSain.close();
+    await hoteNuage.close();
+    await souffler();
+
+    // --- et quand l'hôte vient VRAIMENT de partir, on dit la vérité ----------
+    //
+    // Le phare de l'hôte brille encore — il était là il y a moins de deux
+    // minutes — mais plus personne ne répond. L'ancien message accusait le
+    // Wi-Fi de la maison, plein écran, avec un conseil inapplicable. Le seul
+    // texte honnête : le monde est là, personne n'y répond, réessaie.
+    nuageRelais.relaisSemer({ code: '80808', de: 'wmc-marlon-80808', vers: 'monde',
+      msg: { t: 'phare' } });
+    const prudente = await banc.joueur('Théa', AVEC_NUAGE);
+    await prudente.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await prudente.evaluate(() => {
+      document.getElementById('join-code').value = '80808';
+      document.getElementById('join-btn').click();
+    });
+    await jusqua(async () => prudente.evaluate(
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 90000);
+    const phraseHonnete = await prudente.evaluate(
+      () => document.getElementById('online-status').textContent);
+    verifier('quand l\'hôte vient de partir, le message dit que personne ne répond',
+      /personne n'y répond/i.test(phraseHonnete), phraseHonnete);
+    verifier('sans accuser le Wi-Fi de la maison', !/Wi-Fi bloque|hôtels/.test(phraseHonnete),
+      phraseHonnete);
+    const pasDeJumeau = await prudente.evaluate(() => ({
+      enJeu: window.__game.running,
+      hote: window.__game.net ? window.__game.net.isHost : null,
+    }));
+    verifier('et l\'enfant n\'est pas devenu l\'hôte d\'un monde jumeau',
+      !pasDeJumeau.enJeu && pasDeJumeau.hote !== true, JSON.stringify(pasDeJumeau));
+    await prudente.close();
 
     // --- l'enfant qui entend tout le monde et que personne n'entend ----------
     //
