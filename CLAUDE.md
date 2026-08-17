@@ -145,6 +145,50 @@ sert.** Soit elle est branchée dans la même livraison, soit elle attend.
 
 ---
 
+## Travailler à plusieurs sessions en parallèle
+
+Plusieurs sessions peuvent avancer en même temps — chacune a sa propre machine,
+donc aucune ne ralentit l'autre. Trois collisions sont possibles, et une seule
+est vraiment coûteuse.
+
+**1. La branche.** Tout le monde poussait jusqu'ici sur
+`claude/web-minecraft-replica-f0wk4b`. Deux sessions dessus se marchent dessus.
+Une session parallèle prend **sa propre branche**, nommée par son sujet :
+`claude/paris-metro-souterrain`, `claude/usine-auto`. La branche historique
+reste celle de la session principale.
+
+**2. `CACHE_VERSION`.** Chaque livraison le monte d'un cran. Deux sessions qui
+partent de v159 écrivent toutes les deux v160 : conflit à la fusion, et si l'une
+passe quand même, la seconde livre une version qui **écrase l'entrée de cache de
+la première**. Donc : on ne choisit pas son numéro à l'avance. On monte
+`CACHE_VERSION` **juste avant de fusionner**, après avoir rebasé sur `main` — le
+numéro se lit alors sur `main`, il ne se devine pas.
+
+**3. Les mêmes fichiers.** C'est la collision qui coûte cher, et elle
+s'évite en découpant par **zone** plutôt que par tâche. Les zones qui ne se
+touchent presque pas :
+
+| Zone | Fichiers | Se marche dessus avec |
+| --- | --- | --- |
+| Contenu et bâtiments | `monuments.js`, villes, `creatures.js` | rien |
+| Apprendre / quiz | `education.js` | l'espace parent |
+| Paris et transports | `ville.js`, `paris.js`, `vehicules.js`, `main.js` | l'usine auto |
+| Usine et conduite | `vehicules.js`, `fun.js`, `main.js` | Paris |
+| Réseau et sauvegarde | `net.js`, `sync.js`, `cloud.js` | rien |
+
+`main.js` est le point de friction : presque tout y passe. Deux sessions qui y
+touchent en même temps auront un conflit — surmontable, mais à savoir.
+
+**Ce qui ne collisionne PAS**, contrairement à l'intuition : le banc d'essai.
+Chaque session a sa propre machine à quatre cœurs, donc deux portails
+simultanés ne se volent pas de temps. Ce qui se partage, ce sont les **limites
+d'usage du compte** : deux sessions actives les consomment deux fois plus vite.
+
+**Et `TASKS.md`** se met à jour à la fusion, pas pendant — sinon chaque session
+le réécrit et il conflit à chaque fois.
+
+---
+
 ## Le banc d'essai — et ses pièges
 
 Playwright + express servant le dépôt **depuis le disque**, courtier PeerJS
