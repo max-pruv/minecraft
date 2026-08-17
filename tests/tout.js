@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js', 'maj.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -60,7 +60,7 @@ const GARDIENS = {
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js'],
-  'index.html': ['carte.js', 'reglages.js'],
+  'index.html': ['carte.js', 'reglages.js', 'maj.js'],
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
@@ -116,6 +116,13 @@ function suitesNecessaires() {
       if (swAnodin(base)) { raisons.push('sw.js (version + cache seulement)'); continue; }
       tout = true; raisons.push('sw.js (logique modifiée)'); continue;
     }
+    // Une suite d'essai qu'on modifie se rejoue elle-même, et rien d'autre :
+    // elle ne peut pas casser le jeu, seulement se tromper sur lui. Sans cette
+    // règle, retoucher un témoin relançait les huit suites — et le gain de
+    // l'aiguillage disparaissait dès qu'on améliorait un essai.
+    const suite = f.match(/^tests\/([\w-]+\.js)$/);
+    if (suite && SUITES.includes(suite[1])) { besoin.add(suite[1]); raisons.push(f); continue; }
+    if (suite && suite[1] === 'fumee.js') { raisons.push(f); continue; }
     // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
     // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
     if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;

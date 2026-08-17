@@ -1859,9 +1859,53 @@
         let reg;
         try { reg = await navigator.serviceWorker.register('./sw.js'); } catch { return; }
 
-        // iPads gardent l'application en veille : on revérifie au retour.
+        // REVENIR DANS L'APPLICATION DOIT SUFFIRE À VOIR LA NOUVEAUTÉ.
+        //
+        // Ce retour ne faisait qu'appeler `reg.update()`. Le service worker
+        // passait donc bien à la version neuve — le badge l'affichait — mais
+        // LA PAGE CONTINUAIT DE FAIRE TOURNER L'ANCIEN JAVASCRIPT, parce que
+        // rien ne la rechargeait : le rechargement n'a lieu que si le drapeau
+        // `wm-updating` a été posé, et il ne l'était que dans le chemin du
+        // démarrage complet.
+        //
+        // Sur un iPad, l'application n'est jamais vraiment fermée : elle
+        // s'endort et revient. C'est donc le cas NORMAL, pas le cas rare. Max
+        // a livré la bibliothèque de monuments et ne l'a pas vue, sur un
+        // appareil qui annonçait pourtant la bonne version.
+        //
+        // On refait donc au retour exactement la même comparaison qu'au
+        // démarrage, et on emprunte le même chemin éprouvé — loader, drapeau,
+        // `reg.update()`, rechargement sur `controllerchange`.
+        let verifEnCours = false;
+        const verifierAuRetour = async () => {
+          // Une trace du passage, lisible depuis un test. Sans elle, un témoin
+          // rouge ne distingue pas « la vérification n'a pas eu lieu » de
+          // « elle a eu lieu et n'a rien décidé » — deux pannes opposées.
+          window.__majVerif = (window.__majVerif || 0) + 1;
+          if (verifEnCours || refreshing || !navigator.onLine) return;
+          verifEnCours = true;
+          try {
+            const [attendue, courante] = await Promise.all([versionServeur(), versionActive()]);
+            if (attendue && courante && courante !== attendue) {
+              showLoader('📦 Mise à jour du jeu… il faut la dernière version pour jouer');
+              sessionStorage.setItem('wm-updating', '1');
+              await reg.update().catch(() => {});
+              // Le service worker peut avoir DÉJÀ pris la main pendant la
+              // veille : `controllerchange` ne se produira alors jamais, et
+              // l'enfant resterait devant le bandeau sans que rien n'arrive.
+              setTimeout(() => {
+                if (!refreshing) reloadOnce('✨ Mise à jour installée — on démarre !');
+              }, 4000);
+            }
+          } catch (e) {
+            // On garde la raison : un `catch` muet ici a masqué pendant une
+            // heure le fait que la vérification s'exécutait bien et échouait
+            // ensuite. Le test la lit, l'enfant ne la voit jamais.
+            window.__majErreur = String(e && e.message || e);
+          } finally { verifEnCours = false; }
+        };
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+          if (document.visibilityState === 'visible') verifierAuRetour();
         });
 
         if (!navigator.onLine) return; // hors-ligne : on joue avec ce qu'on a

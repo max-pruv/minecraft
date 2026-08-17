@@ -20,6 +20,62 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v160 — trois cents bâtiments, sans écrire trois cents fichiers
+
+**Pourquoi.** Max en voulait « à peu près trois cents ». v159 en a livré 21,
+écrits un par un — justifié pour la Tour Eiffel, qui mérite ses quatre piliers
+évasés, mais pas pour un immeuble de rue. À ce rythme, trois cents, c'était des
+semaines de travail pour un résultat *moins* varié qu'une famille bien
+paramétrée.
+
+**Ce que ça change.**
+
+- **Huit familles de bâtiments**, et **301 modèles** en tout avec les monuments :
+  maison de village, immeuble haussmannien, tour de bureaux, hôtel, boutique,
+  école, pavillon de banlieue, ferme.
+- **Une famille est un dessin à trous.** L'immeuble haussmannien sait où vont la
+  devanture, l'entresol, l'étage noble et son balcon, la corniche et le comble
+  en zinc — cette grammaire-là existait déjà dans l'atlas depuis v152. Ce qu'on
+  lui donne, c'est la largeur, la profondeur, le nombre d'étages et la pierre.
+- **La variété est réelle**, pas cosmétique : de 123 blocs pour la plus petite
+  maison à 3 921 pour la plus haute tour, et jusqu'à 37 tailles distinctes sur
+  38 variantes. Ce n'est pas la même boîte repeinte.
+- **Une liste de 301 lignes serait illisible à sept ans.** L'onglet montre donc
+  les 8 familles avec un bouton 🔀 « modèle suivant » et un bouton « Poser ».
+  Tous les modèles restent atteignables, aucun écran n'est noyé.
+- **Le même numéro rend toujours le même bâtiment.** Un enfant qui aime le
+  septième modèle le retrouve demain — les réglages viennent d'une suite
+  déterministe, pas d'un tirage au sort.
+
+**Et un défaut que Max a trouvé avant nous : la nouveauté n'arrivait pas
+jusqu'à l'iPad.** Il a ouvert le jeu après la livraison de v159 et n'a pas vu le
+bouton des monuments, alors que le serveur servait bien la bonne version. La
+cause : le retour dans l'application appelait `reg.update()` et **rien d'autre**.
+Le service worker passait donc à la version neuve, le badge l'affichait, et **la
+page continuait de faire tourner l'ancien JavaScript** — le rechargement n'avait
+lieu que dans le chemin du démarrage complet. Sur un iPad, l'application n'est
+jamais vraiment fermée : elle s'endort et revient. C'était donc le cas *normal*,
+et rien ne l'éprouvait. Revenir dans l'application refait maintenant la même
+comparaison qu'au démarrage, et recharge.
+
+**Ce qui le prouve.** `fumee.js` construit **les 280 variantes**, pas un
+échantillon : une seule qui lèverait une exception, et c'est un enfant qui
+clique et à qui rien n'arrive. Il vérifie aussi qu'aucune ne dépasse le plafond
+du monde — un immeuble décapité en silence — et que deux appels au même numéro
+rendent bien le même bâtiment.
+
+Et une suite neuve, `maj.js` : elle publie une version pendant que l'enfant
+joue, endort l'application, y revient, et vérifie que la page a rechargé. Sur
+l'ancien code, la trace dit tout — « vérifications déclenchées par le retour :
+0 ». Avec le correctif : 1, et la page repart sur la version neuve.
+
+L'aiguillage a par ailleurs gagné une règle en chemin : **une suite d'essai
+qu'on modifie se rejoue elle-même, et rien d'autre.** Sans cela, retoucher un
+témoin relançait les huit suites, et le gain disparaissait dès qu'on améliorait
+un essai.
+
+---
+
 ## v159 — la bibliothèque de monuments s'ouvre enfin
 
 **Pourquoi.** Max, après deux jours : « la bibliothèque, ça fait quand même deux

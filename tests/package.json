@@ -16,7 +16,8 @@
     "sauvegarde": "node sauvegarde.js",
     "visio": "node visio.js",
     "parent": "node parent.js",
-    "tout": "node tout.js"
+    "tout": "node tout.js",
+    "maj": "node maj.js"
   },
   "devDependencies": {
     "express": "^4.19.2",

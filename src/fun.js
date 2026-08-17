@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { MONUMENTS, monumentBati, MONUMENTS_PAR_VILLE } from './monuments.js';
+import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 
 const BAG_KEY = 'web-minecraft-bag-v1';
 const RECORDS_KEY = 'web-minecraft-records-v1';
@@ -930,7 +931,10 @@ export function initFun(ctx) {
   //     monument à cheval sur une pente flotterait d'un côté ;
   //   — les blocs partent en UN lot au lieu de sept mille messages.
   function poserMonument(id) {
-    const m = monumentBati(id);
+    poserBati(monumentBati(id));
+  }
+
+  function poserBati(m) {
     if (!m || !m.blocs.length) return;
     // Devant soi, à bonne distance : la moitié de l'emprise plus six pas, pour
     // qu'on voie le bâtiment en entier au lieu d'avoir le nez dans un mur.
@@ -972,11 +976,53 @@ export function initFun(ctx) {
     panel.style.display = 'none';
   }
 
+  // Quel modèle chaque famille propose en ce moment. Recliquer sur « Poser »
+  // donne le suivant : c'est ce qui rend trois cents bâtiments atteignables
+  // sans jamais afficher une liste de trois cents lignes — illisible à sept ans.
+  const modeleCourant = {};
+
+  function renderBatiments() {
+    const t = document.createElement('div');
+    t.className = 'fun-note';
+    t.style.cssText = 'margin-top:14px;color:#ffd166;font-weight:600';
+    t.textContent = `Bâtiments de ville — ${NB_BATIMENTS} modèles`;
+    tabBody.appendChild(t);
+    const aide = document.createElement('div');
+    aide.className = 'fun-note';
+    aide.textContent = 'Chaque famille a des dizaines de modèles : reclique pour voir le suivant.';
+    tabBody.appendChild(aide);
+
+    for (const f of FAMILLES) {
+      const n = modeleCourant[f.id] || 0;
+      const b = batimentVariante(f.id, n);
+      const row = document.createElement('div');
+      row.className = 'fun-row';
+      row.innerHTML = `<span>${f.emoji} ${f.nom}<br>`
+        + `<small style="color:#8894b0">modèle ${n + 1} sur ${f.variantes}`
+        + ` · ${b ? `${b.emprise.l}×${b.emprise.p}, ${b.emprise.h} blocs de haut` : ''}</small></span>`;
+      const suivant = document.createElement('button');
+      suivant.textContent = '🔀';
+      suivant.title = 'Voir le modèle suivant';
+      suivant.addEventListener('click', () => {
+        modeleCourant[f.id] = (n + 1) % f.variantes;
+        renderTab();
+      });
+      const poser = document.createElement('button');
+      poser.textContent = 'Poser';
+      poser.addEventListener('click', () => poserBati(batimentVariante(f.id, n)));
+      row.appendChild(suivant);
+      row.appendChild(poser);
+      tabBody.appendChild(row);
+    }
+  }
+
   function renderMonuments() {
     const villes = MONUMENTS_PAR_VILLE();
-    let html = `<h3>🏛️ Monuments du monde</h3>
+    let html = `<h3>🏛️ Bâtiments</h3>
       <div class="fun-note">Choisis un bâtiment : il se pose devant toi, à sa vraie
-      forme. ${MONUMENTS.length} monuments de ${villes.size} villes.</div>`;
+      forme. ${MONUMENTS.length + NB_BATIMENTS} en tout.</div>
+      <div class="fun-note" style="margin-top:10px;color:#9fd8e8;font-weight:600">
+      Monuments célèbres — ${MONUMENTS.length}</div>`;
     tabBody.innerHTML = html;
     for (const [ville, liste] of villes) {
       const titre = document.createElement('div');
@@ -1001,6 +1047,7 @@ export function initFun(ctx) {
         tabBody.appendChild(row);
       }
     }
+    renderBatiments();
   }
 
   function renderTab() {

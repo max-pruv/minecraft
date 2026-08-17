@@ -48,6 +48,21 @@ function servirLeJeu(port) {
   // depuis son cache, et la page croit alors avoir interrogé le réseau.
   const hits = [];
   app.use((req, _res, next) => { hits.push(req.url); next(); });
+  // PUBLIER UNE NOUVELLE VERSION PENDANT QU'UN ENFANT JOUE.
+  //
+  // C'est le seul moyen d'éprouver la mise à jour pour de vrai : la page doit
+  // voir le serveur annoncer autre chose que ce qu'elle fait tourner. On
+  // réécrit donc `CACHE_VERSION` à la volée, sans toucher au fichier du dépôt
+  // — modifier `src/` pendant qu'une suite tourne est justement ce qu'on
+  // s'interdit partout ailleurs.
+  let versionServie = null;
+  app.get('/sw.js', (req, res, next) => {
+    if (!versionServie) return next();
+    const brut = fs.readFileSync(path.join(RACINE, 'sw.js'), 'utf8');
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(brut.replace(/CACHE_VERSION\s*=\s*'[^']+'/, `CACHE_VERSION = '${versionServie}'`));
+  });
   app.use(express.static(RACINE, {
     etag: false, lastModified: false, cacheControl: false,
     setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
@@ -55,6 +70,8 @@ function servirLeJeu(port) {
   const serveur = http.createServer(app);
   serveur.on('clientError', (_e, socket) => socket.destroy());
   serveur.hits = hits;
+  // Ce que le test appelle pour « publier » une version pendant la partie.
+  serveur.publierVersion = (v) => { versionServie = v; };
   return new Promise((ok) => serveur.listen(port, '127.0.0.1', () => ok(serveur)));
 }
 
