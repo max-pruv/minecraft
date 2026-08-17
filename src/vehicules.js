@@ -51,6 +51,25 @@ export class Parcours {
       cap: Math.atan2(b.x - a.x, b.z - a.z),
     };
   }
+
+  // De combien le tracé tourne dans les prochains mètres, en radians.
+  //
+  // C'est ce qui manquait pour que la monoplace ressemble à une monoplace :
+  // elle roulait à dix-sept mètres par seconde partout, épingles comprises.
+  // Une vraie voiture freine AVANT le virage — d'où ce regard en avant, et
+  // non la courbure sous les roues.
+  virageDevant(distance, avance = 16) {
+    const ici = this.a(distance).cap;
+    let max = 0;
+    for (let d = 3; d <= avance; d += 3) {
+      let e = this.a(distance + d).cap - ici;
+      while (e > Math.PI) e -= Math.PI * 2;
+      while (e < -Math.PI) e += Math.PI * 2;
+      const abs = Math.abs(e);
+      if (abs > max) max = abs;
+    }
+    return max;
+  }
 }
 
 // --- les modèles -------------------------------------------------------------
@@ -162,6 +181,13 @@ class Convoi {
     this.emoji = opts.emoji || '🚗';
     // À quelle hauteur, au-dessus du tracé, on est assis dedans.
     this.assise = opts.assise ?? 1.2;
+    // `freine` : la vitesse suit le tracé. Une rame de métro garde la sienne —
+    // elle roule sur des rails — mais une monoplace ralentit en épingle et
+    // relance en ligne droite. `allureMin` est la part de vitesse qu'il lui
+    // reste dans le virage le plus serré.
+    this.freine = !!opts.freine;
+    this.allureMin = opts.allureMin ?? 0.35;
+    this.vitesseActuelle = opts.vitesse;
     this.elements = [];
     for (let i = 0; i < opts.nb; i++) {
       const m = opts.modele(i);
@@ -183,7 +209,19 @@ class Convoi {
   }
 
   update(dt, joueur) {
-    this.distance += this.vitesse * dt;
+    if (this.freine) {
+      // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
+      // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
+      // consigne qu'à moitié par seconde — donne le freinage et la relance, et
+      // c'est elle qu'on voit à l'œil, bien plus que le chiffre.
+      const virage = this.parcours.virageDevant(this.distance);
+      const vise = this.vitesse
+        * Math.max(this.allureMin, 1 - (virage / (Math.PI / 3)) * (1 - this.allureMin));
+      this.vitesseActuelle += (vise - this.vitesseActuelle) * Math.min(1, dt * 2.2);
+      this.distance += this.vitesseActuelle * dt;
+    } else {
+      this.distance += this.vitesse * dt;
+    }
     const tete = this.parcours.a(this.distance);
     const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < VU;
     if (!proche) {
@@ -234,7 +272,7 @@ export function createVehicules({ scene, player }) {
       const [c1, c2] = teintes[i % teintes.length];
       ajouter(points, {
         nb: 1, vitesse: 17 + (i % 3) * 1.6, depart: -i * (p.longueur / nb) * 0.55,
-        nom: 'formule 1', emoji: '🏎️', assise: 0.75,
+        nom: 'formule 1', emoji: '🏎️', assise: 0.75, freine: true, allureMin: 0.2,
         modele: () => construireF1(c1, c2),
       });
     }
@@ -256,7 +294,7 @@ export function createVehicules({ scene, player }) {
         const d = Math.hypot(p.x - pos.x, p.z - pos.z);
         if (d > meilleureD || Math.abs(p.y - pos.y) > 2.5) return;
         meilleureD = d;
-        meilleur = { id: `${ci}:${i}`, nom: c.nom, emoji: c.emoji, x: p.x, y: p.y, z: p.z, cap: p.cap };
+        meilleur = { id: `${ci}:${i}`, nom: c.nom, emoji: c.emoji, d, x: p.x, y: p.y, z: p.z, cap: p.cap };
       });
     });
     return meilleur;
@@ -279,6 +317,7 @@ export function createVehicules({ scene, player }) {
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
     // pour les tests : où en est chaque convoi, et combien sont affichés
     etat: () => convois.map((c) => ({
+      vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
       visibles: c.elements.filter((m) => m.visible).length,
       total: c.elements.length,

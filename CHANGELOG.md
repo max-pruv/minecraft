@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v157 — la monoplace freine dans les virages
+
+**Pourquoi.** Max, en essayant de jouer : « je n'arrive pas à monter sur la
+formule un parce qu'elle va trop vite ». Elle roulait à dix-sept mètres par
+seconde **partout**, épingles comprises — et le bouton d'embarquement ne se
+rafraîchissait que quatre fois par seconde. La voiture traversait donc toute la
+zone d'embarquement **entre deux clignements**.
+
+**Ce que ça change.**
+
+- **La monoplace regarde devant elle.** Le tracé sait dire de combien il tourne
+  dans les seize prochains mètres ; la voiture freine avant le virage et relance
+  en ligne droite, avec l'inertie qui rend le geste visible. De **14,5 m/s** en
+  ligne droite à **4,5 m/s** en épingle — trois fois plus lente là où on veut la
+  rejoindre. Le métro, lui, garde son allure : il roule sur des rails.
+- **Le bouton regarde huit fois plus souvent** dès qu'un véhicule s'approche à
+  moins de quinze mètres. Il ne propose d'embarquer qu'à quatre mètres — on ne
+  monte pas dans une voiture qu'on ne touche pas — mais il ne rate plus le
+  passage.
+
+**Ce qui le prouve.** `monte.js` suit **une seule** monoplace pendant seize
+secondes : « la monoplace ne roule pas à la même allure partout » (rapport de
+3,2), « et elle ralentit assez pour qu'on puisse la rejoindre ». Puis le trajet
+réel : l'enfant se poste au bord du circuit et attend — « quand la monoplace
+arrive, on a le temps de voir le bouton ».
+
+---
+
 ## v156 — l'enfant n'est plus seul dans un monde peuplé
 
 **Pourquoi.** Marlon ne pouvait pas rejoindre le monde de la maison. Le jeu

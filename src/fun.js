@@ -1374,15 +1374,25 @@ export function initFun(ctx) {
     targetTimer -= dt;
     if (targetTimer > 0) return;
     targetTimer = 0.25;
+    // Un quart de seconde suffit pour une bête qui broute. Pour une monoplace
+    // à dix-sept mètres par seconde, c'est quatre mètres parcourus entre deux
+    // clignements — soit toute la zone d'embarquement traversée sans que le
+    // bouton n'ait eu le temps d'exister. Dès qu'un véhicule approche, on
+    // regarde huit fois plus souvent.
     const a = animalManager.targeted();
     const nourrissable = isRunning() && a && a.pos.distanceTo(player.pos) < 6;
     // Monter ne se vise pas comme on vise pour nourrir : on prend la bête
     // montable la plus proche devant soi, même de biais. C'est tout l'écart
     // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.
     const m = isRunning() && !bord ? animalManager.monture() : null;
-    const v = isRunning() && !riding && !bord
-      ? (getVehicules && getVehicules() ? getVehicules().placeProche(player.pos, 4) : null)
+    // On sonde large — quinze mètres — pour savoir si quelque chose arrive,
+    // mais on ne propose d'embarquer qu'à quatre : sinon l'enfant monterait
+    // dans une voiture qu'il ne touche pas encore.
+    const approche = isRunning() && !riding && !bord
+      ? (getVehicules && getVehicules() ? getVehicules().placeProche(player.pos, 15) : null)
       : null;
+    if (approche) targetTimer = 0.03;
+    const v = approche && approche.d <= 4 ? approche : null;
 
     const feedB = document.getElementById('feed-btn');
     const rideB = document.getElementById('ride-btn');
