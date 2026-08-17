@@ -966,35 +966,45 @@ export class NetSession {
     const c = this.conns.get(conn.peer);
     if (!c || c.relanceEnCours) return;
     c.relanceEnCours = true;
+    // LA RELANCE SUIT LA FICHE, PAS LE LIEN QU'ELLE AVAIT EN MAIN.
+    //
+    // C'est le défaut qu'une chronologie a fini par montrer, après quatre
+    // diagnostics faux. Quand le lien direct traîne, le nuage prend le relais
+    // — et le direct finit par s'ouvrir juste après. La reprise remplace alors
+    // la connexion dans la fiche du joueur, en gardant la fiche.
+    //
+    // Mais cette boucle-ci tenait encore l'ANCIENNE connexion, celle du nuage.
+    // À son réveil elle la trouvait fermée, se déclarait terminée, et personne
+    // ne la réarmait pour la nouvelle : `greet` refuse de relancer tant que
+    // `relanceEnCours` est vrai, et il l'était encore au moment de la relève.
+    // L'échéance de vingt secondes ne s'appliquait donc plus jamais. L'enfant
+    // restait avec un lien ouvert, vivant, jamais présenté — seul dans un
+    // monde peuplé, pour toujours.
+    //
+    // On ne retient donc que la CLÉ du pair, et on lit à chaque tour le lien
+    // que la fiche porte à cet instant. Une relève devient transparente.
+    const cle = conn.peer;
     const tenter = () => {
-      const e = this.conns.get(conn.peer);
+      const e = this.conns.get(cle);
       if (!this.active || !e || e.pret) { if (e) e.relanceEnCours = false; return; }
-      // LE LIEN MORT SANS LE DIRE.
-      //
-      // On renonçait ici, et rien ne reprenait jamais la main : la relance
-      // s'arrêtait, personne ne retirait la connexion de la liste, et la
-      // sécurité du battement de cœur — qui ne rejoint que si l'hôte a
-      // DISPARU de la liste — ne voyait donc rien à faire. L'enfant restait
-      // pour toujours seul dans un monde peuplé, avec un lien fantôme qui
-      // n'était ni vivant ni retiré.
-      //
-      // Cela ne se produit que lorsque le transport meurt sans émettre son
-      // « close » — ce qui arrive quand la machine est à bout, et donc
-      // précisément quand l'enfant en a le plus besoin. On retire le pair :
-      // la reconnexion s'en charge, comme pour n'importe quelle rupture.
-      if (!conn.open) {
+      const lien = e.conn;
+      // Le lien est mort sans le dire — le transport peut disparaître sans
+      // émettre son « close », et c'est la machine à bout qui le provoque.
+      // On retire le pair : la reconnexion s'en charge comme pour n'importe
+      // quelle rupture.
+      if (!lien || !lien.open) {
         e.relanceEnCours = false;
-        this.dropPeer(conn.peer, conn);
+        this.dropPeer(cle, lien);
         return;
       }
       if (Date.now() - (e.presenteA || 0) > PRESENTATION_MS) {
         e.relanceEnCours = false;
-        this.dropPeer(conn.peer, conn);
-        try { conn.close(); } catch { /* déjà fermée */ }
+        this.dropPeer(cle, lien);
+        try { lien.close(); } catch { /* déjà fermée */ }
         return;
       }
       try {
-        conn.send({
+        lien.send({
           t: 'hello', encore: true, device: this.deviceId,
           name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
         });
@@ -1003,6 +1013,7 @@ export class NetSession {
     };
     setTimeout(tenter, RELANCE_MS);
   }
+
 
   // `conn` : la connexion à laquelle se rapporte l'adieu, quand on la connaît.
   //
