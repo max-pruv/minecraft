@@ -7,7 +7,7 @@
 //
 //     cd tests && npm install && npm run carte
 
-const { Banc, dormir, pincer } = require('./banc.js');
+const { Banc, dormir, pincer, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -16,6 +16,23 @@ function verifier(nom, ok, detail = '') {
 }
 
 const vue = (p) => p.evaluate(() => ({ ...window.__carte.vue }));
+
+// Regarder le zoom PENDANT toute la fenêtre, pas une fois à la fin.
+//
+// Un geste tactile n'agit pas au moment où le doigt se lève : le zoom
+// s'applique au tour d'affichage suivant, et sur un conteneur chargé ce tour
+// peut se faire attendre. On rend la première vue qui satisfait l'attente, ou
+// la dernière lue si rien ne vient — le témoin dit alors la vérité, à savoir
+// que le geste n'a rien produit.
+async function attendreLeZoom(p, atteint, limiteMs = 5000) {
+  const fin = Date.now() + limiteMs;
+  let v = await vue(p);
+  while (!atteint(v) && Date.now() < fin) {
+    await dormir(150);
+    v = await vue(p);
+  }
+  return v;
+}
 const cadre = (p) => p.evaluate(() => {
   const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
   return { x: r.left, y: r.top, w: r.width };
@@ -65,18 +82,47 @@ const position = (p) => p.evaluate(() => ({
     // --- écarter deux doigts -------------------------------------------------
     // Au centre de la carte : plus loin, un doigt du geste large sortirait du
     // cadre et le navigateur n'annoncerait qu'un seul contact.
+    //
+    // ON LAISSE SOUFFLER AVANT DE TOUCHER, ET ON REGARDE PENDANT, PAS APRÈS.
+    //
+    // Cette suite est la seule à faire des gestes au pixel près, et elle passe
+    // en cinquième position, sur un conteneur que quatre suites viennent de
+    // chauffer. Le zoom était lu dans la foulée du geste : sur une machine au
+    // repos l'image est déjà redessinée, sur une machine chargée elle ne l'est
+    // pas encore, et le témoin annonçait « 0.70 → 0.70 » — le geste n'aurait
+    // rien produit. Il avait produit, on regardait trop tôt.
+    await souffler();
+    // Une sonde qui compte les contacts REÇUS par la carte. Sans elle, un
+    // témoin rouge ne dit pas si le geste n'est pas arrivé ou si la carte l'a
+    // ignoré — deux pannes opposées, et on a soupçonné la mauvaise.
+    await tab.evaluate(() => {
+      window.__contacts = { start: 0, move: 0, fin: 0 };
+      const cv = document.getElementById('map-modal-canvas');
+      cv.addEventListener('touchstart', () => { window.__contacts.start++; }, true);
+      cv.addEventListener('touchmove', () => { window.__contacts.move++; }, true);
+      cv.addEventListener('touchend', () => { window.__contacts.fin++; }, true);
+    });
     const centre = { x: c.x + c.w / 2, y: c.y + c.w / 2 };
     const avantPince = await vue(tab);
     await pincer(tab, centre, 60, 200);
-    const apresPince = await vue(tab);
+    const contacts = await tab.evaluate(() => ({
+      ...window.__contacts,
+      cadre: (() => { const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+        return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; })(),
+      ouverte: !!(window.__carte && window.__carte.ouverte),
+    }));
+    console.log(`   🔎 contacts reçus par la carte : ${JSON.stringify(contacts)}`);
+    console.log(`   🔎 geste visé au centre : ${JSON.stringify(centre)}`);
+    const apresPince = await attendreLeZoom(tab, (v) => v.bpp < avantPince.bpp * 0.75);
     verifier('écarter deux doigts rapproche la carte',
       apresPince.bpp < avantPince.bpp * 0.75,
       `${avantPince.bpp.toFixed(2)} → ${apresPince.bpp.toFixed(2)}`);
 
     await pincer(tab, centre, 200, 60);
+    const apresEcart = await attendreLeZoom(tab, (v) => v.bpp > apresPince.bpp * 1.3);
     verifier('les rapprocher éloigne',
-      (await vue(tab)).bpp > apresPince.bpp * 1.3,
-      `${apresPince.bpp.toFixed(2)} → ${(await vue(tab)).bpp.toFixed(2)}`);
+      apresEcart.bpp > apresPince.bpp * 1.3,
+      `${apresPince.bpp.toFixed(2)} → ${apresEcart.bpp.toFixed(2)}`);
 
     // Un zoom se termine par deux doigts levés l'un après l'autre. Le second
     // ressemble à s'y méprendre à un appui bref : s'il est pris pour tel, un

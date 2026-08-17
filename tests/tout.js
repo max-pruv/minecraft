@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 
@@ -103,8 +103,16 @@ function lancer(fichier) {
       verdicts.push([suite, true]);
       continue;
     }
+    // LA CHARGE AU MOMENT DU DÉPART, ÉCRITE NOIR SUR BLANC.
+    //
+    // Trois portails de suite, trois verdicts rouges différents, et chaque
+    // suite verte quand on la joue seule. On a soupçonné la charge sans jamais
+    // la mesurer à l'instant qui compte : celui où la suite démarre. Deux
+    // lignes règlent la question au lieu d'une heure d'hypothèses.
+    const avant = charge();
     await attendreLeCalme();
-    console.log(`\n════════ ${suite} ════════\n`);
+    console.log(`\n════════ ${suite} ════════`);
+    console.log(`   charge ${avant.toFixed(2)} avant l'attente, ${charge().toFixed(2)} au départ\n`);
     const vert = await lancer(suite);
     verdicts.push([suite, vert]);
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.

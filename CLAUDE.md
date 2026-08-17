@@ -35,6 +35,14 @@ travail est irrattrapable.
    doit plus jamais toucher au relief. Le témoin `plafond.js` vérifie une
    empreinte du paysage sur 218 089 colonnes ; si elle change, c'est une
    décision, pas une mise à jour de valeur.
+
+   **Une exception, une seule, accordée par Max** (août 2026) : la remise à
+   plat de la carte sur la vraie géographie. « On reste sur une phase très
+   early du développement, donc on peut se permettre de casser certaines
+   choses pour refaire bien le fond. » Elle vaut **pour cette refonte-là et
+   pas au-delà** : une fois les villes à leur place, le sol se refige et
+   l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
+   casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 2. **Mode éducatif toujours actif et non contournable.**
 3. **Visages : signatures uniquement, jamais de photo stockée.** Le code
    parental est stocké haché.
@@ -117,9 +125,28 @@ local, Supabase de poche (`tests/nuage.js`).
   pas seulement à la fin. Le témoin du lien muet échantillonnait après 35 s ce
   qui ne vit que 20 s : vert sur machine au repos, rouge sous charge, sans que
   le jeu y soit pour rien.
+- **Un geste ne produit pas son effet au moment où le doigt se lève.** Le zoom
+  s'applique au tour d'affichage suivant, et sur une machine chargée ce tour se
+  fait attendre. Lire la valeur dans la foulée du geste donne « 0.70 → 0.70 » :
+  le témoin annonce que rien n'a bougé alors qu'on a simplement regardé trop
+  tôt. On attend le résultat, borné dans le temps (`attendreLeZoom`).
+- **`souffler()` avant tout passage lourd, dans TOUTES les suites.** `carte.js`
+  ne l'appelait pas une seule fois alors que c'est la seule à viser au pixel
+  près, et elle passe en cinquième position sur un conteneur que quatre suites
+  viennent de chauffer. Un portail dont les rouges se déplacent d'une exécution
+  à l'autre n'accuse pas le jeu : il dit que le banc manque d'air.
+- **Ne jamais relancer le portail jusqu'à obtenir du vert.** Trois suites
+  vertes chacune de son côté ne valent pas un portail vert : c'est ainsi qu'on
+  publie une régression en croyant l'avoir écartée. Un rouge se démonte, il ne
+  se rejoue pas.
 - **Le navigateur du conteneur n'a aucun accès Internet sortant.** `curl` passe
   par le mandataire, Playwright non. Tout scénario en ligne passe par le nuage
   de poche.
+- **Un témoin doit échouer *proprement* sur l'ancien code, pas s'effondrer.**
+  Une méthode neuve appelée sans garde fait planter le banc au premier témoin
+  et masque les quatre suivants — on ne voit donc jamais l'étendue réelle du
+  défaut. Appeler `s.machin ? s.machin() : repli` coûte une ligne et rend la
+  vérification lisible.
 
 ### Reprise après coupure
 
@@ -236,6 +263,53 @@ Les deux difficultés réelles, à ne pas découvrir en route :
 - Le vol a un toit (`PLAFOND_VOL`) : sans lui, l'enfant sortait du monde par le
   haut, dans une zone où poser un bloc ne fait rien.
 
+### La sauvegarde (`sync.js`)
+
+Le profil d'un enfant est **un seul document JSON**, rangé dans le nuage sous
+son prénom. Trois règles s'y sont payées cher.
+
+- **On pèse ce qui part, pas ce qu'on a sous la main.** L'ancienne version
+  mesurait le document *en clair* et le comparait au plafond ; elle se croyait
+  pleine cinq fois trop tôt et jetait les blocs d'un enfant qui avait encore
+  toute la place. La mesure se fait **après compression** (`ajuster()`), sur le
+  paquet réel.
+- **Ce qui est déjà compressé ne partage pas le document.** Les photos sont des
+  JPEG : elles ne se réduisent pas d'un octet, et elles pesaient un tiers de la
+  place de Marlon. Elles ont leur document, `prénom~photos`. Toute nouvelle
+  donnée lourde et incompressible doit suivre le même chemin — pas le document
+  du profil.
+- **Un champ qui change de forme change de nom.** Les blocs compressés
+  s'appellent `editsz`, ils ne remplacent pas `edits`. Une tablette restée sur
+  l'ancienne version ne comprend pas le champ neuf, garde donc ses propres
+  blocs et les republie en clair : elle n'abîme rien. Un `edits` devenu
+  illisible, lui, lui aurait fait croire à un monde vide.
+
+Tailler reste le dernier recours, et **jamais en silence** : `onTrim` le dit.
+Ce qu'on sacrifie, ce sont les blocs les plus anciens, tous mondes confondus —
+tailler monde par monde en effacerait un entier.
+
+### La refonte de la carte — ce que Max a tranché
+
+- **L'échelle.** Équirectangulaire centrée sur Paris, **1 bloc = 4 km**. Une
+  seule entorse : la traversée de l'Atlantique (−74° à −10°) ramenée à **60 %**.
+  L'Europe, l'Afrique et l'Asie gardent leur échelle exacte au bloc près, et
+  Paris-Tokyo aussi — c'est de la terre ferme d'un bout à l'autre, pas un
+  océan. New York 1 415 → 956 blocs, San Francisco 2 303 → 1 840.
+- **On voyage par la carte.** La téléportation existe déjà, et c'est elle qui
+  rend ces distances jouables. Pas de traversée à pied à prévoir.
+- **Casser est autorisé, gâcher ne l'est pas.** Max accepte de perdre des
+  constructions pour refaire le fond correctement. Cela ne dispense pas de
+  garder ce qui se garde sans effort : le sol qui bouge d'un ou deux blocs sous
+  une maison se rattrape en migrant la colonne, et une copie de sauvegarde des
+  blocs d'avant la refonte coûte trois lignes maintenant que le document a de
+  la place. On casse ce qu'on ne sait pas suivre, pas ce qu'on n'a pas envie de
+  suivre.
+- **Le réalisme prime sur ce qui existe.** Consigne explicite de Max : **le
+  métro de Paris est souterrain**, il n'y a pas de train aérien dans Paris.
+  L'anneau aérien actuel (`ville.js:metroAerien`, `vehicules.js:metro`,
+  `main.js`) est à refaire sous terre. Le même critère s'applique partout
+  ailleurs : on regarde comment la vraie ville est faite avant de bâtir.
+
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 
 - **Ce qui se monte est une propriété de l'espèce** (`montable`), jamais une
@@ -253,8 +327,21 @@ Les deux difficultés réelles, à ne pas découvrir en route :
 
 Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
 
-- **La F1 freine dans les virages** — elle roule à 17 m/s constants et traverse
-  la zone d'embarquement entre deux rafraîchissements du bouton.
+- **Le monde reprend sa vraie géographie** — les villes sont trop serrées, et
+  Paris ne ressemble pas à Paris faute de place. Projection équirectangulaire
+  centrée sur Paris, **1 bloc = 4 km**, avec **une seule entorse, décidée par
+  Max** : la traversée de l'Atlantique (-74° à -10°) est ramenée à **60 %** de
+  sa longueur vraie. C'est le seul grand vide d'eau de cette carte — vers l'est,
+  Paris-Tokyo traverse l'Eurasie, donc de la terre ferme d'un bout à l'autre, et
+  garde son échelle exacte. Résultat : New York 1 415 → **956 blocs**, San
+  Francisco 2 303 → **1 840**, l'Europe et l'Asie inchangées au bloc près.
+  **On voyage par la carte**, pas à pied : la téléportation existe déjà et
+  c'est elle qui rend ces distances jouables.
+
+  **Le piège : déplacer une ville déplace le sol sous les blocs des enfants**
+  (invariant 1). Il faut donc versionner le générateur de terrain et migrer
+  chaque bloc de la différence de hauteur de sa colonne — pas régénérer et
+  espérer.
 - **La bibliothèque de monuments** — onglet 🏛️ dans l'inventaire, vignette par
   bâtiment, pose devant soi comme une brique. Contrainte : le plafond libère
   ~115 blocs au-dessus du sol, donc **une échelle par monument** (chacun aussi

@@ -603,15 +603,30 @@ export class AdminPanel {
     const { identites, etats, temps, reglages } = this.donnees;
     const depuis = this.jourDepuis();
     const par = new Map();
+    // UN DOCUMENT DE SERVICE N'EST PAS UN ENFANT.
+    //
+    // Le tilde range les documents qui portent autre chose que l'enfant
+    // lui-même : « Alice~parent » ses consignes, « Alice~invit » une
+    // invitation, « Alice~photos » son album. Aucun n'est un joueur.
+    //
+    // Le tri se faisait table par table — et il ne couvrait que celle des
+    // réglages. La première fois, « Alice~invit » est apparu dans le panneau
+    // comme un enfant de plus ; la seconde, « Alice~photos », arrivé par une
+    // AUTRE table. Le garde est donc ici, au seul endroit où l'on crée une
+    // fiche : une table de plus, un document de service de plus, et il n'y a
+    // rien à repenser.
+    const service = (nom) => !!nom && nom.includes('~');
+    const neuve = (nom) => ({
+      nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
+      mondes: [], blocs: 0, dex: 0, aujourdhui: 0, periode: 0, total: 0,
+      quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, derniere: null, majPrefs: null,
+      supprime: false, rythme: SESSION_MIN_USINE,
+    });
     const entree = (nom) => {
-      if (!par.has(nom)) {
-        par.set(nom, {
-          nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
-          mondes: [], blocs: 0, dex: 0, aujourdhui: 0, periode: 0, total: 0,
-          quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, derniere: null, majPrefs: null,
-          supprime: false, rythme: SESSION_MIN_USINE,
-        });
-      }
+      // Une fiche jetable pour un document de service : l'appelant la remplit
+      // sans rien casser, et elle ne rejoint jamais la liste des enfants.
+      if (service(nom)) return neuve(nom);
+      if (!par.has(nom)) par.set(nom, neuve(nom));
       return par.get(nom);
     };
 

@@ -25,12 +25,67 @@ const FIELDS = [
   ['web-minecraft-worlds-v1', 'worlds'],
   ['web-minecraft-worlds-del-v1', 'worldsDel'],
   ['web-minecraft-pos-v1', 'pos'],
-  ['web-minecraft-photos-v1', 'photos'],
   ['web-minecraft-edits-v3', 'edits'],
 ];
 
+// LES PHOTOS NE VOYAGENT PLUS AVEC LES BLOCS.
+//
+// Elles étaient dans le même document que tout le reste, et elles y pesaient
+// un tiers de la place : trois cent dix-neuf kilo-octets sur les neuf cents
+// permis, pour Marlon. Or ce sont des JPEG déjà compressés — ils ne se
+// réduisent pas — et le jeu, arrivé au plafond, jetait d'abord ces photos
+// puis LES BLOCS LES PLUS ANCIENS de l'enfant. Un souvenir de vacances lui
+// coûtait sa maison.
+//
+// Elles ont donc leur propre document, rangé sous « prénom~photos » — la même
+// convention que l'espace parent, déjà en place. Il ne barre plus jamais la
+// route à une construction.
+const PHOTOS_CLE = 'web-minecraft-photos-v1';
+const nomPhotos = (nom) => `${nom}~photos`;
+
 const MAX_PHOTOS = 8;
-const MAX_BYTES = 900000; // keep a single push comfortably small
+
+// LES BLOCS SE COMPRESSENT CINQ FOIS.
+//
+// Ce sont des coordonnées répétitives — « -240,34,200 » mille fois de suite,
+// à trois chiffres près — et c'est exactement ce que la compression avale.
+// Mesuré sur la vraie sauvegarde de Marlon : 577 Ko de blocs deviennent
+// 118 Ko. Le navigateur sait le faire tout seul depuis iOS 16.4, sans rien
+// installer.
+//
+// Le champ compressé porte un NOM DIFFÉRENT (`editsz`) plutôt que de remplacer
+// `edits`. C'est délibéré : une tablette restée sur l'ancienne version lit un
+// document sans `edits`, garde donc ses propres blocs et les republie en
+// clair. Elle ne comprend rien au nouveau champ, mais elle n'abîme rien — là
+// où un `edits` devenu illisible lui aurait fait croire à un monde vide.
+const compressionDispo = () => typeof CompressionStream === 'function';
+
+async function comprimer(valeur) {
+  const octets = new TextEncoder().encode(JSON.stringify(valeur));
+  const flux = new Blob([octets]).stream().pipeThrough(new CompressionStream('gzip'));
+  const brut = new Uint8Array(await new Response(flux).arrayBuffer());
+  // base64 par tranches : passer trois cent mille octets d'un coup à
+  // String.fromCharCode fait déborder la pile d'appels sur iOS.
+  let s = '';
+  for (let i = 0; i < brut.length; i += 8192) {
+    s += String.fromCharCode(...brut.subarray(i, i + 8192));
+  }
+  return btoa(s);
+}
+
+async function decomprimer(b64) {
+  const s = atob(b64);
+  const brut = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) brut[i] = s.charCodeAt(i);
+  const flux = new Blob([brut]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(flux).text());
+}
+// Neuf cents kilo-octets étaient déjà atteints par Marlon : le jeu jetait ses
+// blocs pour tenir dedans. Avec les photos sorties et les blocs compressés,
+// quatre méga-octets laissent passer environ six cent mille blocs — trente-cinq
+// fois ce qu'il a posé jusqu'ici. C'est un plafond de sécurité contre un
+// document devenu fou, plus une contrainte de place.
+const MAX_BYTES = 4000000;
 
 function readJson(key) {
   try {
@@ -251,7 +306,6 @@ export class ProfileSync {
     const vivant = (ctx) => ctx === 'local' || !(num(out.worldsDel[ctx]) > 0);
     out.pos = filtrerParMonde(mergePos(local.pos, remote.pos), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, remote.edits), vivant);
-    out.photos = [...new Set([...(local.photos || []), ...(remote.photos || [])])].slice(0, MAX_PHOTOS);
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');
     out.hotbar = pick('hotbar');
@@ -275,32 +329,76 @@ export class ProfileSync {
     }
   }
 
-  // Trims the heaviest, least important things first so a big world never
-  // costs a child their collection.
-  trim(state) {
-    let body = JSON.stringify(state);
-    if (body.length <= MAX_BYTES) return { state, dropped: [] };
-    const dropped = [];
-    const out = { ...state };
-    if (out.photos && out.photos.length) {
-      out.photos = out.photos.slice(0, 2);
-      dropped.push('photos');
-      body = JSON.stringify(out);
+  // LA TAILLE QUI COMPTE EST CELLE DE CE QUI PART.
+  //
+  // L'ancienne version pesait le document EN CLAIR et le comparait au plafond.
+  // Elle se croyait donc pleine cinq fois trop tôt et jetait les blocs d'un
+  // enfant qui avait encore toute la place. On compresse d'abord, on pèse
+  // ensuite, et on ne taille que si le paquet réel déborde vraiment.
+  async ajuster(state) {
+    let paquet = await this.resserrer(state);
+    if (JSON.stringify(paquet).length <= MAX_BYTES) return { paquet, dropped: [] };
+
+    // Au-delà seulement : les blocs les plus récents d'abord, tous mondes
+    // confondus — tailler monde par monde en sacrifierait un entier. On
+    // divise par deux jusqu'à ce que ça rentre plutôt que de deviner un
+    // nombre : ce qui compte est que ça passe, pas un chiffre rond.
+    const tous = [];
+    for (const [ctx, map] of Object.entries(normalizeEdits(state.edits))) {
+      for (const [k, entry] of Object.entries(map || {})) tous.push([ctx, k, entry]);
     }
-    if (body.length > MAX_BYTES && out.edits) {
-      // On garde les blocs les plus récents, tous mondes confondus : sur un
-      // seul monde, tailler par monde en sacrifierait un entier.
-      const tous = [];
-      for (const [ctx, map] of Object.entries(normalizeEdits(out.edits))) {
-        for (const [k, entry] of Object.entries(map || {})) tous.push([ctx, k, entry]);
-      }
-      tous.sort((a, b) => num(b[2][1]) - num(a[2][1]));
-      const garde = {};
-      for (const [ctx, k, entry] of tous.slice(0, 4000)) (garde[ctx] || (garde[ctx] = {}))[k] = entry;
-      out.edits = garde;
-      dropped.push('anciens blocs');
+    tous.sort((a, b) => num(b[2][1]) - num(a[2][1]));
+    let garde = tous.length;
+    for (let i = 0; i < 12 && garde > 500; i++) {
+      garde = Math.floor(garde / 2);
+      const edits = {};
+      for (const [ctx, k, entry] of tous.slice(0, garde)) (edits[ctx] || (edits[ctx] = {}))[k] = entry;
+      paquet = await this.resserrer({ ...state, edits });
+      if (JSON.stringify(paquet).length <= MAX_BYTES) break;
     }
-    return { state: out, dropped };
+    return { paquet, dropped: ['anciens blocs'] };
+  }
+
+  // Le document tel qu'il part : blocs compressés si le navigateur sait le
+  // faire, en clair sinon. Rien d'autre ne change de forme.
+  async resserrer(state) {
+    if (!compressionDispo() || !state.edits) return state;
+    try {
+      const { edits, ...reste } = state;
+      return { ...reste, editsz: await comprimer(edits) };
+    } catch { return state; }   // au pire on envoie en clair, jamais rien de perdu
+  }
+
+  // Et tel qu'il revient.
+  async dilater(state) {
+    if (!state || !state.editsz) return state;
+    try {
+      const { editsz, ...reste } = state;
+      return { ...reste, edits: await decomprimer(editsz) };
+    } catch { return state; }   // document illisible : on garde ce qu'on a en local
+  }
+
+  // Les photos, sur leur propre document. Elles ne partent qu'avec l'album,
+  // et ne pèsent plus jamais sur les blocs.
+  async photosPousser() {
+    const nom = this.getName();
+    if (!nom || !this.cloud.configured) return;
+    const photos = (readJson(PHOTOS_CLE) || []).slice(0, MAX_PHOTOS);
+    try { await this.cloud.statePush(nomPhotos(nom), { photos }, false); }
+    catch { /* la prochaine photo réessaiera */ }
+  }
+
+  async photosTirer() {
+    const nom = this.getName();
+    if (!nom || !this.cloud.configured) return [];
+    try {
+      const doc = await this.cloud.statePull(nomPhotos(nom));
+      const distantes = (doc && doc.photos) || [];
+      const local = readJson(PHOTOS_CLE) || [];
+      const tout = [...new Set([...local, ...distantes])].slice(0, MAX_PHOTOS);
+      writeJson(PHOTOS_CLE, tout);
+      return tout;
+    } catch { return readJson(PHOTOS_CLE) || []; }
   }
 
   async pull() {
@@ -318,6 +416,7 @@ export class ProfileSync {
     // réserve et la boucle réessaiera de lire.
     this.hydrated = true;
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
+    remote = await this.dilater(remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
     // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
@@ -345,7 +444,7 @@ export class ProfileSync {
     let local = this.snapshot();
     if (!keepalive && navigator.onLine) {
       try {
-        const remote = await this.cloud.statePull(name);
+        const remote = await this.dilater(await this.cloud.statePull(name));
         if (remote) {
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;
@@ -356,11 +455,11 @@ export class ProfileSync {
         }
       } catch { /* offline or unreachable — push the local copy as-is */ }
     }
-    const { state, dropped } = this.trim(local);
-    const body = JSON.stringify({ ...state, [STATE_TS]: 0 }); // ignore the clock when diffing
+    const body = JSON.stringify({ ...local, [STATE_TS]: 0 }); // ignore the clock when diffing
     if (body === this.lastPushed) return; // nothing actually changed
+    const { paquet, dropped } = await this.ajuster(local);
     try {
-      await this.cloud.statePush(name, state, keepalive);
+      await this.cloud.statePush(name, paquet, keepalive);
       this.lastPushed = body;
       this.noteSuccess();
       if (dropped.length && this.onTrim) this.onTrim(dropped);

@@ -136,10 +136,26 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       window.__game.player.flying = true;
     });
     await tab.keyboard.down('Space');
-    await dormir(700);
-    const decolle = await tab.evaluate(() => ({
-      vy: window.__game.player.vel.y, y: window.__game.player.pos.y,
-    }));
+    // On REGARDE PENDANT que la touche est tenue, pas une fois à la fin.
+    //
+    // Le décollage était lu après sept cents millisecondes de montre. Or ce
+    // qui fait monter le joueur, ce sont des tours d'affichage — et sur un
+    // conteneur chargé, sept cents millisecondes de montre peuvent n'en
+    // contenir presque aucun. Le témoin annonçait alors « vy 0 », c'est-à-dire
+    // que la touche ne faisait rien, alors qu'elle n'avait pas encore eu
+    // l'occasion d'agir. On lui laisse le temps de faire ses preuves, borné.
+    const decolle = await (async () => {
+      const fin = Date.now() + 6000;
+      let e = null;
+      do {
+        e = await tab.evaluate(() => ({
+          vy: window.__game.player.vel.y, y: window.__game.player.pos.y,
+        }));
+        if (e.vy > 0) return e;
+        await dormir(150);
+      } while (Date.now() < fin);
+      return e;
+    })();
     verifier('la touche « monter » fait bien décoller', decolle.vy > 0, JSON.stringify(decolle));
     await dormir(12000);
     await tab.keyboard.up('Space');

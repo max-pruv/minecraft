@@ -729,14 +729,47 @@ function verifier(nom, ok, detail = '') {
     // On refait le geste exact : l'enfant part, reste absent plus longtemps
     // que le silence toléré — de quoi se faire oublier de l'hôte — puis
     // revient. Il doit retrouver la partie tout seul.
+    // Ce scénario-ci est le plus long de la suite : deux navigateurs, un tuyau
+    // de secours qui sonde toutes les deux secondes, une absence de vingt-six
+    // secondes, puis une reconnexion qui a droit à quatre-vingt-dix secondes.
+    // Il démarrait sur une machine que tout ce qui précède vient de chauffer,
+    // et c'est le seul de la suite dont la fenêtre soit trop courte pour
+    // absorber cela. On le fait donc partir au calme, comme les cinq autres
+    // passages lourds — sans toucher à la fenêtre, qui mesure le jeu.
+    await souffler();
     await endormir(bloque);
     await dormir(26000);                       // au-delà des vingt secondes tolérées
     await reveiller(bloque);
+    // UNE CHRONOLOGIE, PAS UN VERDICT SEC.
+    //
+    // Ce scénario est le seul du dépôt à échouer dans le portail et à réussir
+    // en solo, trois fois sur cinq. Un booléen au bout de quatre-vingt-dix
+    // secondes ne dit rien de ce qui s'est passé pendant : on a soupçonné la
+    // charge, le prénom, ma garde d'envoi — sans jamais regarder. On note donc
+    // ce que chacun voit, toutes les cinq secondes, et l'état de sa session.
+    // Si tout va bien la chronologie ne coûte rien ; si ça retombe, elle dit
+    // lequel des deux n'est pas revenu, et à quelle seconde.
+    const etatCourt = async (p) => p.evaluate(() => {
+      const n = window.__game.net;
+      return n ? { actif: !!n.active, hote: !!n.isHost, liens: n.conns ? n.conns.size : -1,
+        prets: n.conns ? [...n.conns.values()].filter((c) => c.pret).length : -1 } : null;
+    }).catch(() => 'page morte');
+    const chrono = [];
+    const tRetour = Date.now();
     const retrouve = await jusqua(async () => {
       const a = await nomsVus(hoteNuage);
       const b = await nomsVus(bloque);
+      const s = Math.round((Date.now() - tRetour) / 1000);
+      if (!chrono.length || s - chrono[chrono.length - 1].s >= 5) {
+        chrono.push({ s, hote: a, revenu: b,
+          eH: await etatCourt(hoteNuage), eR: await etatCourt(bloque) });
+      }
       return a.includes('Tom') && b.includes('Emma');
     }, 90000);
+    if (!retrouve) {
+      console.log('   🔎 chronologie du retour (5 s) :');
+      for (const l of chrono) console.log(`      ${String(l.s).padStart(2)} s  ${JSON.stringify(l)}`);
+    }
     verifier('revenir dans l\'application remet dans la partie, sans rien redemander',
       retrouve, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
     // Et le monde répond encore : un lien qui se rétablit sans porter les
