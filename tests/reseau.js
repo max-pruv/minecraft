@@ -797,6 +797,41 @@ function verifier(nom, ok, detail = '') {
     // pour déborder l'attente sur une machine chargée. Cinq était un chiffre
     // de mon cru, pas une exigence du jeu.
     await lent.evaluate(() => { window.__avalerHelloNombre = 2; });
+    // MOUCHARD TEMPORAIRE — à retirer une fois le défaut compris.
+    // On enregistre, seconde par seconde, ce que voit l'invité : l'état de ses
+    // liens, ce qui les ouvre et les ferme, et ce que le jeu décide.
+    await lent.evaluate(() => {
+      window.__t0 = Date.now();
+      window.__trace = [];
+      const noter = (...a) => window.__trace.push([Date.now() - window.__t0, ...a]);
+      window.__noter = noter;
+      const armer = () => {
+        const n = window.__game.net;
+        if (!n || n.__mouchard) return;
+        n.__mouchard = true;
+        noter('session', 'hote=' + n.isHost);
+        for (const m of ['connectToHost', 'dropPeer', 'rejoinHost', 'basculerSurLeNuage',
+          'ouvrirRelaisNuage', 'greet', 'relancerPresentation', 'scheduleReconnect', 'stop']) {
+          if (typeof n[m] !== 'function') continue;
+          const vrai = n[m].bind(n);
+          n[m] = (...a) => { noter(m, String(a[0] && a[0].peer ? a[0].peer.slice(0, 14) : '')); return vrai(...a); };
+        }
+        const vraiMsg = n.onMessage.bind(n);
+        n.onMessage = (conn, msg) => {
+          if (msg && (msg.t === 'hello' || msg.t === 'sync')) noter('recu:' + msg.t, msg.name || '');
+          return vraiMsg(conn, msg);
+        };
+      };
+      setInterval(armer, 100);
+      setInterval(() => {
+        const n = window.__game.net;
+        if (!n) return;
+        noter('etat', JSON.stringify([...n.conns.entries()].map(([k, c]) => [
+          k.slice(0, 14), c.pret ? 'pret' : '-', c.conn.open ? 'open' : 'CLOS',
+          c.conn.parNuage ? 'nuage' : 'direct', Math.round((Date.now() - (c.presenteA || 0)) / 1000),
+        ])) + ' lien=' + n.linkState + ' avalees=' + (window.__avalerHelloComptes || 0));
+      }, 2000);
+    });
     await lent.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await lent.evaluate((c) => {
@@ -817,6 +852,12 @@ function verifier(nom, ok, detail = '') {
       const b = await nomsVus(lent);
       return a.includes('Camille') && b.includes('Théo');
     }, 200000);
+    if (!seRetrouvent) {
+      const trace = await lent.evaluate(() => window.__trace || []);
+      console.log('\n──── MOUCHARD (invité) ────');
+      for (const l of trace) console.log(`  +${(l[0] / 1000).toFixed(1)}s ${l.slice(1).join(' ')}`);
+      console.log('──── fin ────\n');
+    }
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
     const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
