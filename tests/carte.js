@@ -92,9 +92,27 @@ const position = (p) => p.evaluate(() => ({
     // pas encore, et le témoin annonçait « 0.70 → 0.70 » — le geste n'aurait
     // rien produit. Il avait produit, on regardait trop tôt.
     await souffler();
+    // Une sonde qui compte les contacts REÇUS par la carte. Sans elle, un
+    // témoin rouge ne dit pas si le geste n'est pas arrivé ou si la carte l'a
+    // ignoré — deux pannes opposées, et on a soupçonné la mauvaise.
+    await tab.evaluate(() => {
+      window.__contacts = { start: 0, move: 0, fin: 0 };
+      const cv = document.getElementById('map-modal-canvas');
+      cv.addEventListener('touchstart', () => { window.__contacts.start++; }, true);
+      cv.addEventListener('touchmove', () => { window.__contacts.move++; }, true);
+      cv.addEventListener('touchend', () => { window.__contacts.fin++; }, true);
+    });
     const centre = { x: c.x + c.w / 2, y: c.y + c.w / 2 };
     const avantPince = await vue(tab);
     await pincer(tab, centre, 60, 200);
+    const contacts = await tab.evaluate(() => ({
+      ...window.__contacts,
+      cadre: (() => { const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+        return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; })(),
+      ouverte: !!(window.__carte && window.__carte.ouverte),
+    }));
+    console.log(`   🔎 contacts reçus par la carte : ${JSON.stringify(contacts)}`);
+    console.log(`   🔎 geste visé au centre : ${JSON.stringify(centre)}`);
     const apresPince = await attendreLeZoom(tab, (v) => v.bpp < avantPince.bpp * 0.75);
     verifier('écarter deux doigts rapproche la carte',
       apresPince.bpp < avantPince.bpp * 0.75,
