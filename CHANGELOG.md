@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v156 — le nuage porte enfin la partie jusqu'au bout
+## v156 — l'enfant n'est plus seul dans un monde peuplé
 
 **Pourquoi.** Marlon ne pouvait pas rejoindre le monde de la maison. Le jeu
 disait « ce Wi-Fi bloque le jeu à plusieurs » sur un Wi-Fi familial parfaitement
@@ -28,7 +28,25 @@ sain. Le journal de production a montré la vérité : l'hôte répondait **en d
 secondes** par le nuage, mais la tentative de Marlon avait déjà fermé sa
 connexion — deux millisecondes après l'avoir ouverte.
 
+En cherchant, le banc d'essai en a sorti deux autres, plus graves parce que
+muettes. Il reproduit une machine chargée — un iPad de famille un soir de
+semaine — et c'est là qu'elles vivaient. J'ai cru trois fois qu'il se trompait
+avant d'accepter qu'il avait raison.
+
 **Ce que ça change.**
+
+- **Le lien fantôme.** Quand le lien direct traîne, le nuage prend le relais —
+  puis le direct aboutit quand même et le remplace. La boucle de présentation
+  tenait encore l'ancien lien : à son réveil elle le trouvait fermé, se
+  déclarait terminée, et personne ne la réarmait. L'enfant gardait un lien
+  **ouvert, vivant, jamais présenté**. Aucune erreur, aucun message : juste
+  invisible pour toujours. La relance ne retient plus qu'une clé de joueur et
+  relit à chaque tour le lien du moment.
+- **Le monde perdu en silence.** Le journal de blocs ne part qu'une fois, à la
+  présentation. S'il tombait sur un canal pas tout à fait prêt — PeerJS le dit
+  « ouvert » un instant trop tôt — il disparaissait sans un mot, et l'enfant
+  arrivait dans un monde vide de tout ce que les autres avaient bâti. Il se
+  renvoie maintenant jusqu'à passer.
 
 - Une session arrêtée ne frappe plus à aucune porte : les minuteries des
   tentatives abandonnées ne réveillent plus le relais.
@@ -46,11 +64,15 @@ connexion — deux millisecondes après l'avoir ouverte.
   et découplé du plafond.
 - Le vol a un toit : on ne sort plus du monde par le haut.
 
-**Ce qui le prouve.** Sept suites. `plafond.js` est neuve : elle vérifie
-l'empreinte du paysage sur **218 089 colonnes** et qu'une maison sauvegardée
-avant le changement repose toujours sur son sol, ni enterrée ni en l'air.
-Nouveaux témoins réseau : « un hôte sans courtier est trouvé par un invité dont
-le courtier marche », « et il le REJOINT, au lieu d'ouvrir un monde jumeau ».
+**Ce qui le prouve.** **277 témoins**, sept suites. `plafond.js` est neuve :
+elle vérifie l'empreinte du paysage sur **218 089 colonnes** et qu'une maison
+sauvegardée avant le changement repose toujours sur son sol, ni enterrée ni en
+l'air. Nouveaux témoins réseau : « un hôte sans courtier est trouvé par un
+invité dont le courtier marche », « et il le REJOINT, au lieu d'ouvrir un monde
+jumeau ». Et trois témoins qui existaient déjà ont fini par avoir raison contre
+moi — « une présentation perdue finit par passer », « le lien muet est coupé
+puis rouvert », « les blocs repassent après le retour » : ce sont eux qui
+tenaient les deux défauts muets.
 
 ---
 
