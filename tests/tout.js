@@ -21,29 +21,68 @@ const crypto = require('crypto');
 
 const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
 
-// DEUX VOIES, ET C'EST LE CODE MODIFIÉ QUI CHOISIT — PAS CELUI QUI LIVRE.
+// QUELLE SUITE PROTÈGE QUOI.
 //
 // Le portail est passé de cinq suites à huit, et chaque livraison le payait en
 // entier : une heure, même pour ajouter un bâtiment. La cadence est tombée de
 // neuf versions par jour à deux ou trois, et la bibliothèque de monuments est
 // restée un jour entier dans le dépôt sans être branchée, faute de place dans
-// la file. Une heure de portail sur un fichier de décor, c'est une heure qui
-// ne protège rien.
+// la file.
 //
-// La voie rapide (`fumee.js`, cinq minutes) couvre ce qui casse vraiment quand
-// on ne touche qu'au contenu : un module qui ne charge pas, une erreur au
-// démarrage, un joueur qui traverse le sol, un bâtiment qui ne se pose pas.
+// Première version de cet aiguillage : deux voies, rapide ou complète. Mesurée
+// sur les douze dernières livraisons, elle aurait pris la voie complète DOUZE
+// fois sur douze — donc elle ne servait à rien. Deux raisons : `sw.js` change à
+// chaque livraison puisqu'il faut monter CACHE_VERSION, et `main.js` change
+// presque toujours puisque c'est là que tout se branche.
 //
-// Ces fichiers-ci, eux, ne prennent JAMAIS la voie rapide. Ce sont ceux dont un
-// défaut ne se voit pas à l'œil et coûte les données d'un enfant : le réseau,
-// la sauvegarde, le terrain sous les maisons, l'espace parent, et le banc
-// lui-même. La liste est volontairement large — au moindre doute, voie longue.
-const DÉLICAT = [
-  'src/net.js', 'src/cloud.js', 'src/relaisnuage.js', 'src/sync.js',
-  'src/world.js', 'src/player.js', 'src/admin.js', 'src/identity.js',
-  'src/education.js', 'src/main.js', 'sw.js', 'index.html',
-  'tests/banc.js', 'tests/nuage.js', 'tests/tout.js',
-];
+// Le bon découpage n'est pas « rapide ou tout », c'est « ce qui protège la zone
+// touchée ». Toucher au réseau lance les deux suites qui l'éprouvent, pas les
+// huit. La couverture ne baisse pas : elle cesse seulement de rejouer ce que le
+// changement ne peut pas casser.
+//
+// Un fichier absent de cette table est du contenu — décor, villes, monuments,
+// créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
+// enfant est ici, et la table doit grandir avec le code.
+const GARDIENS = {
+  'src/net.js': ['reseau.js', 'visio.js'],
+  'src/cloud.js': ['reseau.js', 'reglages.js'],
+  'src/relaisnuage.js': ['reseau.js'],
+  'src/sync.js': ['sauvegarde.js', 'reglages.js'],
+  'src/world.js': ['plafond.js', 'carte.js'],
+  'src/player.js': ['plafond.js', 'monte.js'],
+  'src/admin.js': ['parent.js', 'reglages.js'],
+  'src/identity.js': ['reglages.js', 'parent.js'],
+  'src/education.js': ['reglages.js', 'parent.js'],
+  'src/vehicules.js': ['monte.js'],
+  'src/animals.js': ['monte.js'],
+  'src/montures.js': ['monte.js'],
+  'src/fun.js': ['monte.js', 'carte.js'],
+  // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
+  // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
+  'src/main.js': ['carte.js', 'monte.js'],
+  'index.html': ['carte.js', 'reglages.js'],
+};
+
+// Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
+const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js'];
+
+// `sw.js` SE JUGE SUR CE QUI A CHANGÉ, PAS SUR LE FAIT QU'IL A CHANGÉ.
+//
+// Monter CACHE_VERSION et ajouter un fichier à la liste du cache, c'est la
+// procédure de publication elle-même : cela arrive à CHAQUE livraison et ne
+// risque rien. Une vraie modification de sa logique, en revanche, touche à ce
+// que toutes les tablettes téléchargent — et là, tout se rejoue.
+function swAnodin(base) {
+  try {
+    const { execSync } = require('child_process');
+    const d = execSync('git diff origin/main...HEAD -- sw.js; git diff HEAD -- sw.js',
+      { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const lignes = d.split('\n')
+      .filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
+    if (!lignes.length) return true;
+    return lignes.every((l) => /CACHE_VERSION/.test(l) || /^[+-]\s*'\.\/[\w./-]+',?\s*$/.test(l));
+  } catch { return false; }
+}
 
 // Ce qui a bougé depuis la dernière livraison. Sans réponse de git — dépôt
 // absent, historique tronqué — on prend la voie longue : ne pas savoir n'est
@@ -59,12 +98,36 @@ function fichiersModifies() {
   } catch { return null; }
 }
 
-function voieCourteSuffit() {
+// Ce qu'il faut rejouer pour ce changement-ci. Rend la liste des suites, dans
+// l'ordre du portail, et la raison — qui s'affiche : un choix d'essais qu'on ne
+// peut pas relire est un choix qu'on ne peut pas contester.
+function suitesNecessaires() {
+  const base = path.resolve(__dirname, '..');
   const changes = fichiersModifies();
-  if (!changes) return { court: false, pourquoi: 'git muet — on ne parie pas' };
-  const risque = changes.filter((f) => DÉLICAT.includes(f));
-  if (risque.length) return { court: false, pourquoi: `touche ${risque.join(', ')}` };
-  return { court: true, pourquoi: `${changes.length} fichier(s), aucun délicat` };
+  if (!changes) return { suites: SUITES, pourquoi: 'git muet — on ne parie pas' };
+
+  const besoin = new Set();
+  const raisons = [];
+  let tout = false;
+  for (const f of changes) {
+    if (BANC.includes(f)) { tout = true; raisons.push(`${f} (le banc)`); continue; }
+    if (GARDIENS[f]) { GARDIENS[f].forEach((s) => besoin.add(s)); raisons.push(f); continue; }
+    if (f === 'sw.js') {
+      if (swAnodin(base)) { raisons.push('sw.js (version + cache seulement)'); continue; }
+      tout = true; raisons.push('sw.js (logique modifiée)'); continue;
+    }
+    // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
+    // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
+    if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;
+    // Tout le reste : on ne sait pas, donc on ne parie pas.
+    tout = true; raisons.push(`${f} (inconnu)`);
+  }
+  if (tout) return { suites: SUITES, pourquoi: raisons.join(', ') };
+  const liste = SUITES.filter((s) => besoin.has(s));
+  return {
+    suites: liste,
+    pourquoi: raisons.length ? raisons.join(', ') : `${changes.length} fichier(s) de contenu`,
+  };
 }
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
@@ -135,20 +198,26 @@ function lancer(fichier) {
 (async () => {
   const depuisZero = process.argv.includes('--depuis-zero');
 
-  // `--voie` : on demande au dépôt quelle voie mérite ce changement.
-  // `--long` force la voie complète, toujours disponible sans discuter.
+  // `--voie` : on demande au dépôt ce qu'il faut rejouer pour ce changement.
+  // `--long` force les huit suites, toujours disponible sans discuter.
+  let aJouer = SUITES;
   if (process.argv.includes('--voie') && !process.argv.includes('--long')) {
-    const { court, pourquoi } = voieCourteSuffit();
-    console.log(court
-      ? `🏃 voie rapide — ${pourquoi}\n`
-      : `🐢 voie complète — ${pourquoi}\n`);
-    if (court) {
-      const vert = await lancer('fumee.js');
-      console.log(vert
-        ? '\n✅ voie rapide verte — on peut publier'
-        : '\n❌ la voie rapide a échoué — on ne publie pas');
-      process.exit(vert ? 0 : 1);
+    const { suites, pourquoi } = suitesNecessaires();
+    aJouer = suites;
+    console.log(`🎯 ${suites.length === SUITES.length ? 'tout le portail' : `${suites.length + 1} suite(s)`}`
+      + ` — ${pourquoi}`);
+    console.log(`   fumee.js${suites.length ? ' + ' + suites.join(', ') : ' seul'}\n`);
+    // Le témoin de fumée passe TOUJOURS en premier : trois minutes qui
+    // attrapent un module qui ne charge pas, avant d'en dépenser cinquante.
+    if (!await lancer('fumee.js')) {
+      console.log('\n❌ la fumée a échoué — on ne publie pas');
+      process.exit(1);
     }
+    if (!suites.length) {
+      console.log('\n✅ voie rapide verte — on peut publier');
+      process.exit(0);
+    }
+    await dormir(REPOS_MS);
   }
 
   const empreinte = empreinteDuDepot();
@@ -160,7 +229,7 @@ function lancer(fichier) {
     console.log('   (npm test -- --depuis-zero pour tout rejouer)\n');
   }
   const verdicts = [];
-  for (const suite of SUITES) {
+  for (const suite of aJouer) {
     if (verts[suite]) {
       console.log(`\n════════ ${suite} ════════\n⏭️  déjà vert sur ce code, on ne le rejoue pas`);
       verdicts.push([suite, true]);
@@ -181,7 +250,7 @@ function lancer(fichier) {
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.
     verts[suite] = vert;
     acquisEcrits(empreinte, verts);
-    if (suite !== SUITES[SUITES.length - 1]) await dormir(REPOS_MS);
+    if (suite !== aJouer[aJouer.length - 1]) await dormir(REPOS_MS);
   }
   console.log('\n════════ verdict ════════');
   for (const [suite, vert] of verdicts) console.log(`${vert ? '✅' : '❌'} ${suite}`);
