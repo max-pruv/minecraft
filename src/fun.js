@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
+import { MONUMENTS, monumentBati, MONUMENTS_PAR_VILLE } from './monuments.js';
 
 const BAG_KEY = 'web-minecraft-bag-v1';
 const RECORDS_KEY = 'web-minecraft-records-v1';
@@ -160,6 +161,7 @@ export function initFun(ctx) {
       <button class="fun-tab" data-t="quest">📜 Quête</button>
       <button class="fun-tab" data-t="sign">🪧 Panneau</button>
       <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
+      <button class="fun-tab" data-t="monuments">🏛️ Monuments</button>
       <button class="fun-tab" data-t="records">🏆 Records</button>
       <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
       <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
@@ -916,7 +918,93 @@ export function initFun(ctx) {
       : 'Ton sac est vide — chasse des animaux pour trouver des trésors !';
   }
 
+  // ---- la bibliothèque de monuments ------------------------------------------
+  //
+  // Vingt-et-un bâtiments célèbres, relevés sur leurs vraies proportions. Un
+  // enfant en choisit un et le pose devant lui : c'est un chantier de plusieurs
+  // milliers de blocs qui apparaît d'un coup.
+  //
+  // Trois précautions, chacune apprise d'un vrai défaut :
+  //   — on pose DEVANT le joueur et non sur lui, sinon il se réveille muré ;
+  //   — le sol est cherché sous chaque colonne, pas une fois au centre : un
+  //     monument à cheval sur une pente flotterait d'un côté ;
+  //   — les blocs partent en UN lot au lieu de sept mille messages.
+  function poserMonument(id) {
+    const m = monumentBati(id);
+    if (!m || !m.blocs.length) return;
+    // Devant soi, à bonne distance : la moitié de l'emprise plus six pas, pour
+    // qu'on voie le bâtiment en entier au lieu d'avoir le nez dans un mur.
+    const recul = Math.max(m.emprise.l, m.emprise.p) / 2 + 6;
+    const cx = Math.round(player.pos.x - Math.sin(player.yaw) * recul);
+    const cz = Math.round(player.pos.z - Math.cos(player.yaw) * recul);
+    // Le sol de référence : le point le plus bas sous l'emprise. Poser sur le
+    // point le plus haut enterrerait la moitié du monument dans une pente.
+    let sol = Infinity;
+    for (let dx = -m.emprise.l / 2; dx <= m.emprise.l / 2; dx += 4) {
+      for (let dz = -m.emprise.p / 2; dz <= m.emprise.p / 2; dz += 4) {
+        const s = world.sommetColonne(cx + dx, cz + dz);
+        if (s < sol) sol = s;
+      }
+    }
+    if (!isFinite(sol)) sol = world.terrainHeight(cx, cz);
+
+    const t = Date.now();
+    const lot = [];
+    // On coupe le crieur le temps de bâtir : sinon chaque bloc partirait seul.
+    const crieur = world.onOp;
+    world.onOp = null;
+    try {
+      for (const [bx, by, bz, bid] of m.blocs) {
+        const x = cx + bx - Math.round((m.emprise.minX + m.emprise.maxX) / 2);
+        const y = sol + 1 + (by - m.emprise.minY);
+        const z = cz + bz - Math.round((m.emprise.minZ + m.emprise.maxZ) / 2);
+        world.setBlock(x, y, z, bid, t);
+        lot.push([`${x},${y},${z}`, bid, t]);
+      }
+    } finally { world.onOp = crieur; }
+    world.saveEdits();
+
+    const net = getNet && getNet();
+    if (net && net.active && net.sendLot) net.sendLot(lot);
+    records.blocks += lot.length;
+    saveRecords();
+    toast(`${m.emoji} ${m.nom} — ${lot.length.toLocaleString('fr')} blocs posés !`, 0xffd166);
+    panel.style.display = 'none';
+  }
+
+  function renderMonuments() {
+    const villes = MONUMENTS_PAR_VILLE();
+    let html = `<h3>🏛️ Monuments du monde</h3>
+      <div class="fun-note">Choisis un bâtiment : il se pose devant toi, à sa vraie
+      forme. ${MONUMENTS.length} monuments de ${villes.size} villes.</div>`;
+    tabBody.innerHTML = html;
+    for (const [ville, liste] of villes) {
+      const titre = document.createElement('div');
+      titre.className = 'fun-note';
+      titre.style.cssText = 'margin-top:10px;color:#9fd8e8;font-weight:600';
+      titre.textContent = ville;
+      tabBody.appendChild(titre);
+      for (const def of liste) {
+        const row = document.createElement('div');
+        row.className = 'fun-row';
+        // La taille se lit sur le monument déjà bâti — c'est le vrai chiffre,
+        // pas une estimation qui dériverait au premier changement de forme.
+        const bati = monumentBati(def.id);
+        const h = bati ? Math.round(bati.emprise.h * def.metresParBloc) : 0;
+        row.innerHTML = `<span>${def.emoji} ${def.nom}<br>`
+          + `<small style="color:#8894b0">${bati ? bati.emprise.h : '?'} blocs de haut`
+          + ` · ${h} m en vrai</small></span>`;
+        const b = document.createElement('button');
+        b.textContent = 'Poser';
+        b.addEventListener('click', () => poserMonument(def.id));
+        row.appendChild(b);
+        tabBody.appendChild(row);
+      }
+    }
+  }
+
   function renderTab() {
+    if (currentTab === 'monuments') return renderMonuments();
     if (currentTab === 'craft') {
       let html = `<h3>🛠️ Atelier</h3><div class="fun-note">Sac : ${bagSummary()}</div>
         <div class="fun-note">🍖 Garde-manger : ${ctx.getMeat()} viandes</div>`;

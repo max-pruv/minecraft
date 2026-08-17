@@ -100,6 +100,95 @@ qu'il ne faut pas casser**.
 
 ---
 
+## Deux voies d'essai — et c'est le code qui choisit
+
+`npm test` demande au dépôt quelle voie mérite le changement.
+
+| Voie | Quand | Durée |
+| --- | --- | --- |
+| **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
+| **Complète** (8 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~50 min |
+
+Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
+nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
+`sw.js`, `index.html`, et le banc lui-même. La liste est volontairement large.
+**Au moindre doute, voie longue** — et `npm run long` la force toujours.
+
+**Pourquoi cette séparation existe.** Le portail est passé de cinq suites à
+huit, de 2 588 à 5 297 lignes, et chaque livraison le payait en entier. La
+cadence est tombée de neuf versions par jour à deux ou trois, et la bibliothèque
+de monuments est restée un jour entier dans le dépôt **sans être branchée**,
+faute de place dans la file. Une heure de portail sur un fichier de décor ne
+protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
+
+**Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
+rapide n'est pas une permission d'aller vite sur ce qui compte.
+
+---
+
+## Ne jamais livrer un fichier que personne n'importe
+
+`src/monuments.js` est parti en production dans v157 : 803 lignes, 21 monuments,
+**aucun `import`**. Il n'était pas non plus dans la liste des fichiers mis en
+cache, donc il ne serait jamais arrivé sur un iPad. Du code mort qui ressemble à
+de l'avancement dans le journal et ne délivre rien.
+
+Avant de livrer un fichier neuf, deux vérifications qui coûtent dix secondes :
+
+```
+grep -rn "from './monfichier" src/     # quelqu'un l'importe-t-il ?
+grep -c "monfichier.js" sw.js          # arrivera-t-il sur la tablette ?
+```
+
+Et la règle en amont : **on ne commite pas une brique tant que rien ne s'en
+sert.** Soit elle est branchée dans la même livraison, soit elle attend.
+
+---
+
+## Travailler à plusieurs sessions en parallèle
+
+Plusieurs sessions peuvent avancer en même temps — chacune a sa propre machine,
+donc aucune ne ralentit l'autre. Trois collisions sont possibles, et une seule
+est vraiment coûteuse.
+
+**1. La branche.** Tout le monde poussait jusqu'ici sur
+`claude/web-minecraft-replica-f0wk4b`. Deux sessions dessus se marchent dessus.
+Une session parallèle prend **sa propre branche**, nommée par son sujet :
+`claude/paris-metro-souterrain`, `claude/usine-auto`. La branche historique
+reste celle de la session principale.
+
+**2. `CACHE_VERSION`.** Chaque livraison le monte d'un cran. Deux sessions qui
+partent de v159 écrivent toutes les deux v160 : conflit à la fusion, et si l'une
+passe quand même, la seconde livre une version qui **écrase l'entrée de cache de
+la première**. Donc : on ne choisit pas son numéro à l'avance. On monte
+`CACHE_VERSION` **juste avant de fusionner**, après avoir rebasé sur `main` — le
+numéro se lit alors sur `main`, il ne se devine pas.
+
+**3. Les mêmes fichiers.** C'est la collision qui coûte cher, et elle
+s'évite en découpant par **zone** plutôt que par tâche. Les zones qui ne se
+touchent presque pas :
+
+| Zone | Fichiers | Se marche dessus avec |
+| --- | --- | --- |
+| Contenu et bâtiments | `monuments.js`, villes, `creatures.js` | rien |
+| Apprendre / quiz | `education.js` | l'espace parent |
+| Paris et transports | `ville.js`, `paris.js`, `vehicules.js`, `main.js` | l'usine auto |
+| Usine et conduite | `vehicules.js`, `fun.js`, `main.js` | Paris |
+| Réseau et sauvegarde | `net.js`, `sync.js`, `cloud.js` | rien |
+
+`main.js` est le point de friction : presque tout y passe. Deux sessions qui y
+touchent en même temps auront un conflit — surmontable, mais à savoir.
+
+**Ce qui ne collisionne PAS**, contrairement à l'intuition : le banc d'essai.
+Chaque session a sa propre machine à quatre cœurs, donc deux portails
+simultanés ne se volent pas de temps. Ce qui se partage, ce sont les **limites
+d'usage du compte** : deux sessions actives les consomment deux fois plus vite.
+
+**Et `TASKS.md`** se met à jour à la fusion, pas pendant — sinon chaque session
+le réécrit et il conflit à chaque fois.
+
+---
+
 ## Le banc d'essai — et ses pièges
 
 Playwright + express servant le dépôt **depuis le disque**, courtier PeerJS
@@ -167,7 +256,33 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
 
 ---
 
-## Le conteneur a été recréé sur un vieux commit — trois fois
+## Le conteneur a été recréé sur un vieux commit — sept fois
+
+**C'est désormais automatique.** `.claude/hooks/session-start.sh` tourne au
+démarrage de chaque session et fait trois choses :
+
+1. **Récupère la bonne révision.** Si la branche est en retard sur `origin/main`
+   et ne porte aucun commit non fusionné, elle est remise à jour. Les
+   modifications non enregistrées — le conteneur périmé revient toujours avec
+   `src/nice.js` modifié — sont **mises en remise** (`git stash`), jamais
+   effacées : sans cela le garde-fou ne se déclencherait jamais dans le seul cas
+   qui compte.
+2. **Installe les dépendances du banc** si `tests/node_modules` manque.
+3. **Rappelle ce qui était en cours**, depuis `TASKS.md`.
+
+Il refuse d'agir dès que la branche porte des commits non fusionnés : du travail
+en cours ne se jette pas, même vieux.
+
+**La cause racine, elle, est côté environnement** : la session est reclonée sur
+une révision figée (04b3e72, v138) au lieu de la branche par défaut. Cela se
+règle dans les réglages de l'environnement sur claude.ai — le crochet est un
+filet, pas un remède.
+
+**Et ce qui se perd sans bruit** : la liste de tâches de la session vit dans le
+conteneur et part avec lui. C'est arrivé deux fois. Ce qui compte assez pour
+être suivi va donc dans `TASKS.md`, versionné.
+
+### L'ancien réflexe, si le crochet n'a pas tourné
 
 Symptôme : le travail des heures précédentes a « disparu ». Ce n'est pas une
 perte, c'est un arbre périmé.

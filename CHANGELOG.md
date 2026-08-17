@@ -20,6 +20,52 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v159 — la bibliothèque de monuments s'ouvre enfin
+
+**Pourquoi.** Max, après deux jours : « la bibliothèque, ça fait quand même deux
+jours que tu travailles dessus. On n'arrive pas à avancer. » Il avait raison, et
+le dépôt le prouvait : `src/monuments.js` existait — 803 lignes, 21 monuments
+relevés sur leurs vraies proportions — et **personne ne l'importait**. Il avait
+été livré à l'intérieur de v157 sans être branché. Du code mort : ça ressemble à
+de l'avancement dans le journal, et Marlon n'y a jamais eu accès une seconde.
+
+En cherchant pourquoi, une cause plus large est apparue. Le portail d'essai est
+passé de cinq suites à huit, de 2 588 à 5 297 lignes, et **chaque livraison le
+payait en entier — une heure, même pour ajouter un bâtiment**. La cadence est
+tombée de neuf versions par jour à deux ou trois, et ce qui n'était pas urgent
+attendait indéfiniment.
+
+**Ce que ça change.**
+
+- **Un onglet 🏛️ Monuments dans l'atelier.** Vingt-et-un bâtiments rangés par
+  ville — Tour Eiffel, Notre-Dame, Empire State, Colisée, Taj Mahal, Opéra de
+  Sydney… — chacun avec sa hauteur en blocs et en mètres réels. On en choisit
+  un, il se pose devant soi.
+- **Il se pose bien**, pas n'importe comment : devant l'enfant et non sur lui,
+  et le sol est cherché **sous chaque colonne de l'emprise** plutôt qu'une fois
+  au centre — sans quoi un monument à cheval sur une pente flotterait d'un côté.
+- **Un lot au lieu de sept mille messages.** La Tour Eiffel fait 6 972 blocs.
+  Le jeu envoyait un message réseau **par bloc** : l'ami d'en face aurait vu le
+  monument pousser pendant une minute, ou pas du tout. Les blocs partent
+  désormais groupés, par tranches de mille.
+- **`src/monuments.js` est enfin dans la liste des fichiers mis en cache** — il
+  n'y était pas non plus, donc il ne serait jamais arrivé sur l'iPad.
+
+**Et le portail apprend à choisir sa voie.** Une voie rapide (`fumee.js`, cinq
+minutes) couvre ce qui casse vraiment quand on ne touche qu'au contenu : un
+module qui ne charge pas, une erreur au démarrage, un enfant qui traverse le
+sol, un bâtiment qui ne se pose pas. La voie complète reste **obligatoire** dès
+qu'un fichier délicat bouge — réseau, sauvegarde, terrain, espace parent, ou le
+banc lui-même. **C'est le code modifié qui décide, pas celui qui livre** : au
+moindre doute, ou si git ne répond pas, voie longue.
+
+**Ce qui le prouve.** `fumee.js` ouvre l'atelier comme l'enfant, compte les
+21 monuments dans l'onglet, clique sur « Poser » et vérifie que le monde passe
+de 1 à 6 973 blocs — puis qu'aucune erreur JavaScript n'est apparue. Et cette
+livraison-ci, parce qu'elle touche `net.js`, est passée par le portail complet.
+
+---
+
 ## v158 — construire beaucoup ne coûte plus ses blocs
 
 **Pourquoi.** En regardant la vraie base : le profil de Marlon pesait

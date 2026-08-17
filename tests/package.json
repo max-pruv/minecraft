@@ -5,13 +5,17 @@
   "description": "Tests de bout en bout du monde partagé : plusieurs navigateurs réels qui jouent ensemble.",
   "type": "commonjs",
   "scripts": {
-    "test": "node tout.js",
+    "test": "node tout.js --voie",
+    "fumee": "node fumee.js",
+    "long": "node tout.js",
     "reseau": "node reseau.js",
     "reglages": "node reglages.js",
     "carte": "node carte.js",
     "monte": "node monte.js",
     "plafond": "node plafond.js",
     "sauvegarde": "node sauvegarde.js",
+    "visio": "node visio.js",
+    "parent": "node parent.js",
     "tout": "node tout.js"
   },
   "devDependencies": {
