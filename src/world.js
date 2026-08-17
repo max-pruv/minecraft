@@ -43,7 +43,26 @@ import {
 } from './manhattan.js';
 
 export const CHUNK = 16;
-export const HEIGHT = 96;
+
+// LE CIEL MONTE, LE SOL NE BOUGE PAS.
+//
+// Le monde s'arrêtait à quatre-vingt-seize blocs. Le sol étant vers 45, il
+// restait une cinquantaine de blocs de ciel : de quoi bâtir un immeuble, pas
+// une tour Eiffel, qui en demande plus de cent à l'échelle des bâtiments. Le
+// plafond passe donc à cent soixante.
+//
+// Toute la difficulté est là : des mondes existent déjà, avec des milliers de
+// blocs posés par les enfants, et ces blocs sont repérés par leurs
+// coordonnées absolues. Si le relief se décalait ne serait-ce que d'un bloc,
+// une maison se retrouverait enterrée ou suspendue en l'air.
+//
+// Or le relief était plafonné à `HEIGHT - 16`. Lié au plafond, il aurait donc
+// grandi avec lui. On le détache : `SOMMET_TERRAIN` garde la valeur qu'avait
+// `HEIGHT - 16` jusqu'ici — quatre-vingts — et ne bougera plus, quel que soit
+// le ciel qu'on ouvre au-dessus. Le paysage engendré reste identique au bloc
+// près, et un témoin le vérifie sur deux cent mille colonnes.
+export const HEIGHT = 160;
+export const SOMMET_TERRAIN = 80;
 export const WATER_LEVEL = 30;
 export const SEED = 1337;
 
@@ -1000,7 +1019,7 @@ export class World {
       h = h * (1 - m) + cone * m;
     }
 
-    return Math.max(2, Math.min(HEIGHT - 16, Math.floor(h)));
+    return Math.max(2, Math.min(SOMMET_TERRAIN, Math.floor(h)));
   }
 
   cityAt(x, z) {
@@ -1513,6 +1532,23 @@ export class World {
     const top = i < 0 ? -1 : Math.floor(i / (CHUNK * CHUNK));
     this.tops.set(key, top);
     return top;
+  }
+
+  // Le plus haut bloc plein d'une colonne, ou -1 si elle est vide.
+  //
+  // Tout ce qui cherche le sol — poser un animal, faire réapparaître un
+  // enfant, dessiner la carte — descendait depuis le plafond du monde. Ce
+  // plafond ayant grandi de soixante-quatre blocs, chacune de ces recherches
+  // paierait désormais soixante-quatre pas de vide avant même de commencer.
+  // On part donc du sommet réel du morceau de monde, déjà connu et tenu à
+  // jour : la recherche coûte ce que le terrain contient, et non ce que le
+  // ciel mesure. Relever encore le plafond, demain, ne coûtera rien non plus.
+  sommetColonne(x, z) {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+    let y = Math.min(HEIGHT - 1, this.chunkTop(cx, cz));
+    while (y >= 0 && !this.isSolid(bx, y, bz)) y--;
+    return y;
   }
 
   getBlock(x, y, z) {

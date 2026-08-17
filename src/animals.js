@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
-import { HEIGHT, WATER_LEVEL } from './world.js';
+import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
 
 const GRAVITY = 22;
@@ -401,8 +401,7 @@ export class AnimalManager {
     const dist = 10 + Math.random() * 30;
     const x = Math.floor(this.player.pos.x + Math.sin(angle) * dist);
     const z = Math.floor(this.player.pos.z + Math.cos(angle) * dist);
-    let y = HEIGHT - 1;
-    while (y > 0 && !this.world.isSolid(x, y, z)) y--;
+    const y = this.world.sommetColonne(x, z);
     const surface = y + 1;
     if (surface <= WATER_LEVEL) return; // never in the water
     // the ground block decides who lives here: meadow, beach or snowy peak
@@ -499,8 +498,7 @@ export class AnimalManager {
     const def = SPECIES.find((s) => s.key === key);
     if (!def) return null;
     const bx = Math.floor(x), bz = Math.floor(z);
-    let y = HEIGHT - 1;
-    while (y > 0 && !this.world.isSolid(bx, y, bz)) y--;
+    const y = this.world.sommetColonne(bx, bz);
     const animal = new Animal(def, bx + 0.5, y + 1.1, bz + 0.5, baby);
     this.animals.push(animal);
     this.scene.add(animal.mesh);

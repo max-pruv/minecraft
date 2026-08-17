@@ -16,12 +16,58 @@
 
 const { spawn } = require('child_process');
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js'];
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// LE PORTAIL SE SOUVIENT DE CE QU'IL A DÉJÀ PROUVÉ.
+//
+// Sept suites, trois quarts d'heure. Le conteneur de la session, lui, peut
+// être recyclé à tout moment — c'est arrivé à la sixième suite sur sept, et
+// les six verdicts verts sont partis avec la mémoire du processus. Tout était
+// à refaire, à l'identique, pour rien.
+//
+// Chaque verdict est donc écrit sur le disque dès qu'il tombe, et une reprise
+// saute ce qui est déjà vert. Mais SEULEMENT si le code n'a pas bougé d'un
+// octet : c'est là tout le danger, et c'est précisément le travers que ce
+// fichier existe pour empêcher — publier sur la foi de suites « probablement
+// encore bonnes ». L'empreinte couvre src/, tests/, sw.js et index.html ; au
+// moindre changement, tous les acquis sont annulés et tout se rejoue.
+const MEMOIRE = '/tmp/portail-verdicts-v2.json';
+const RACINE = path.join(__dirname, '..');
+
+function empreinteDuDepot() {
+  const h = crypto.createHash('sha1');
+  for (const dossier of ['src', 'tests']) {
+    const chemin = path.join(RACINE, dossier);
+    for (const f of fs.readdirSync(chemin).sort()) {
+      if (!f.endsWith('.js')) continue;
+      h.update(dossier + '/' + f).update(fs.readFileSync(path.join(chemin, f)));
+    }
+  }
+  for (const f of ['sw.js', 'index.html']) {
+    try { h.update(f).update(fs.readFileSync(path.join(RACINE, f))); } catch { /* absent */ }
+  }
+  return h.digest('hex');
+}
+
+function acquisLus(empreinte) {
+  try {
+    const m = JSON.parse(fs.readFileSync(MEMOIRE, 'utf8'));
+    if (m.empreinte === empreinte) return m.verts || {};
+  } catch { /* première fois, ou mémoire abîmée */ }
+  return {};
+}
+
+function acquisEcrits(empreinte, verts) {
+  try { fs.writeFileSync(MEMOIRE, JSON.stringify({ empreinte, verts }, null, 2)); }
+  catch { /* sans mémoire, on rejouera tout : c'est le pire, pas le faux */ }
+}
 
 const charge = () => {
   try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
@@ -41,12 +87,29 @@ function lancer(fichier) {
 }
 
 (async () => {
+  const depuisZero = process.argv.includes('--depuis-zero');
+  const empreinte = empreinteDuDepot();
+  const verts = depuisZero ? {} : acquisLus(empreinte);
+  const dejaVus = Object.keys(verts).filter((s) => verts[s]);
+  if (dejaVus.length) {
+    console.log(`↩️  reprise : ${dejaVus.length} suite(s) déjà verte(s) sur ce code exact`
+      + ` — ${dejaVus.join(', ')}`);
+    console.log('   (npm test -- --depuis-zero pour tout rejouer)\n');
+  }
   const verdicts = [];
   for (const suite of SUITES) {
+    if (verts[suite]) {
+      console.log(`\n════════ ${suite} ════════\n⏭️  déjà vert sur ce code, on ne le rejoue pas`);
+      verdicts.push([suite, true]);
+      continue;
+    }
     await attendreLeCalme();
     console.log(`\n════════ ${suite} ════════\n`);
     const vert = await lancer(suite);
     verdicts.push([suite, vert]);
+    // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.
+    verts[suite] = vert;
+    acquisEcrits(empreinte, verts);
     if (suite !== SUITES[SUITES.length - 1]) await dormir(REPOS_MS);
   }
   console.log('\n════════ verdict ════════');

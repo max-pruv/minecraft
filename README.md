@@ -9,7 +9,9 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
 
 - **Infinite procedural terrain** — rolling hills, mountains, beaches, oceans and
   snowy peaks, generated from deterministic fractal value noise and streamed in
-  16×96×16 chunks as you walk.
+  16×160×16 chunks as you walk. The sky reaches 160 blocks so landmarks can be
+  built at something close to their real proportions; the ground is capped
+  independently at 80 so raising the ceiling never shifts a saved world.
 - **Trees** with trunks and canopies that correctly span chunk borders.
 - **Break & place blocks** — 31 block types: terrain blocks, sandstone, gravel,
   mossy cobble, three wood tones, ice, gold, diamond, obsidian, bookshelf, six
@@ -89,10 +91,17 @@ npm install
 npm test
 ```
 
-It takes about two minutes on purpose: the waits have to outlast the game's own
-thresholds (twenty seconds of silence before a link is cut) or they would prove
-nothing. See `tests/README.md` for what each scenario reproduces — every one of
-them is a failure that actually happened to the children playing.
+It takes about forty-five minutes, on purpose. Seven suites run one after the
+other — never in parallel, since two browsers fighting over four cores produce
+failures that don't exist in the game — and the waits have to outlast the
+game's own thresholds (twenty seconds of silence before a link is cut) or they
+would prove nothing. Each verdict is written to disk as it lands, so a crashed
+or recycled container costs one suite rather than the whole run;
+`npm test -- --depuis-zero` forces a full replay.
+
+See `tests/README.md` for what each scenario reproduces — every one of them is
+a failure that actually happened to the children playing — and `CLAUDE.md` for
+the invariants a change must not break.
 
 ## Controls
 
@@ -119,14 +128,37 @@ handle jumping, flying, and throwing catch-balls.
 
 ```
 index.html        page shell, HUD, styles
+CLAUDE.md         invariants, release procedure, and the traps that cost time
 src/main.js       scene setup, chunk streaming, input, HUD, game loop
 src/world.js      noise, terrain/tree generation, chunk storage, edits + saving
 src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
-src/creatures.js  creature species/AI/meshes, catch-balls, collection
-src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
-src/education.js  educational timer mode: quiz bank, stats, persistence
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
+
+  the shared world
+src/net.js        sessions, peers, presentation, edit log, reconnection
+src/relaisnuage.js  cloud relay: a PeerJS-shaped pipe through the database
+src/cloud.js      Supabase calls: world saves, profiles, relay, presence
+src/sync.js       whole-profile portability, keyed by first name
+src/visio.js      camera tiles and sound, split so autoplay can't mute both
+
+  who lives there
+src/creatures.js  creature species/AI/meshes, catch-balls, collection
+src/animals.js    passive animals, spawning, the mount you can climb
+src/montures.js   the eight rideable beasts and the height of their backs
+src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
+src/vie.js        city life; src/vehicules.js  métro trains and F1 cars
+
+  the places
+src/paris.js src/manhattan.js src/sanfrancisco.js src/nice.js src/lille.js
+src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
+src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
+
+  learning and parents
+src/education.js  quiz bank, adaptive difficulty, stats, persistence
+src/identity.js   face signatures (never photos) and the hashed parent code
+src/admin.js      the parent space
+
 vendor/           three.js (r160, MIT — see THREE_LICENSE)
 ```

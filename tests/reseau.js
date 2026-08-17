@@ -154,7 +154,7 @@ function verifier(nom, ok, detail = '') {
     // accusé de jouer déjà ailleurs.
     await endormir(alice);
     await dormir(1000);
-    const alice2 = await banc.rejoindre('Alice', code);
+    const alice2 = await banc.rejoindre('Alice', code, { memePrenom: true });
     await jusqua(async () => (await vu(alice2)).compteur === 2);
     const retour = await vu(alice2);
     verifier('Alice retrouve son monde après une veille sans retour',
@@ -200,7 +200,7 @@ function verifier(nom, ok, detail = '') {
     // --- ouvrir un monde vide doit se voir ------------------------------------
     // Le défaut signalé par la famille : on tape un code, tout se passe sans la
     // moindre erreur, et l'enfant joue seul en croyant avoir rejoint l'autre.
-    const solo = await banc.rejoindre('Nina', '77777');
+    const solo = await banc.rejoindre('Elsa', '77777');
     await jusqua(async () => /seul/i.test((await vu(solo)).bandeau));
     const etatSolo = await vu(solo);
     verifier('ouvrir un monde vide le dit franchement',
@@ -210,15 +210,15 @@ function verifier(nom, ok, detail = '') {
       `compteur ${etatSolo.compteur}`);
 
     // Quand quelqu'un arrive enfin, l'avertissement s'efface de lui-même.
-    const enfin = await banc.rejoindre('Tom', '77777');
+    const enfin = await banc.rejoindre('Yanis', '77777');
     await jusqua(async () => (await vu(solo)).compteur === 2
-      && (await nomsVus(solo)).includes('Tom') && (await nomsVus(enfin)).includes('Nina'));
+      && (await nomsVus(solo)).includes('Yanis') && (await nomsVus(enfin)).includes('Elsa'));
     const apres = await vu(solo);
     verifier('l\'avertissement s\'efface dès qu\'un ami arrive',
       !/seul/i.test(apres.bandeau) && apres.compteur === 2,
       `bandeau ${JSON.stringify(apres.bandeau)}, compteur ${apres.compteur}`);
-    verifier('et les deux se voient', (await nomsVus(solo)).includes('Tom')
-      && (await nomsVus(enfin)).includes('Nina'),
+    verifier('et les deux se voient', (await nomsVus(solo)).includes('Yanis')
+      && (await nomsVus(enfin)).includes('Elsa'),
       `${JSON.stringify(await nomsVus(solo))} / ${JSON.stringify(await nomsVus(enfin))}`);
     // On referme ce qui a servi. Chaque page laissée ouverte continue de
     // dessiner un monde en trois dimensions à plein régime : à quatre parties
@@ -342,8 +342,8 @@ function verifier(nom, ok, detail = '') {
     // injoignable, couper le VPN ne servira à rien : il faut sortir de ce
     // Wi-Fi. Ici le relais répond — on attend donc le conseil « VPN », et
     // surtout PAS celui du Wi-Fi public.
-    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Nina');
-    const chezSoi = await banc.joueur('Théo', { sansPairAPair: true, avecRelais: true });
+    const { p: tenu2, code: codeMaison } = await banc.creerMonde('Awa');
+    const chezSoi = await banc.joueur('Rémi', { sansPairAPair: true, avecRelais: true });
     await chezSoi.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await chezSoi.evaluate((c) => {
@@ -374,7 +374,7 @@ function verifier(nom, ok, detail = '') {
     // la vivante est la plus récente ». L'hôte était la seule exception, et
     // c'est là que l'enfant tombait.
     const { p: refletHote, code: codeReflet } = await banc.creerMonde('Ludo');
-    const refletNeuf = await banc.rejoindre('Ludo', codeReflet);
+    const refletNeuf = await banc.rejoindre('Ludo', codeReflet, { memePrenom: true });
     // La reprise passe par une seconde et demie d'attente — le temps que le
     // fantôme lâche le code — puis par une réouverture complète du monde.
     const refletRepris = await jusqua(async () => refletNeuf.evaluate(
@@ -452,7 +452,7 @@ function verifier(nom, ok, detail = '') {
         return vrai(conn, msg);
       };
     });
-    const zia = await banc.rejoindre('Zia', codeVieux);
+    const zia = await banc.rejoindre('Zia', codeVieux, { memePrenom: true });
     await dormir(6000);
     const accuseVieux = zia.dialogues.filter((d) => /joue déjà/.test(d));
     verifier('un hôte d\'ancienne version ne renvoie plus au menu',
@@ -517,7 +517,7 @@ function verifier(nom, ok, detail = '') {
     // extérieur autre que celui qui sert déjà la page.
     const codeSans = await sansCourtier.evaluate(
       () => document.getElementById('room-code').textContent.trim());
-    const secondSans = await banc.joueurVers('Nina', 9798, AVEC_NUAGE);
+    const secondSans = await banc.joueurVers('Alba', 9798, AVEC_NUAGE);
     await secondSans.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     await secondSans.evaluate((c) => {
@@ -529,12 +529,89 @@ function verifier(nom, ok, detail = '') {
     await sansCourtier.evaluate(() => document.getElementById('online-play-btn')?.click());
     const ensembleSans = await jusqua(async () => {
       const a = await nomsVus(sansCourtier), b = await nomsVus(secondSans);
-      return a.includes('Nina') && b.includes('Sacha');
+      return a.includes('Alba') && b.includes('Sacha');
     }, 120000);
     verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
       JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
     await secondSans.close();
     await sansCourtier.close();
+    await souffler();
+
+    // --- la diagonale qui a eu Marlon : hôte SANS courtier, invité AVEC ------
+    //
+    // La v154 avait éprouvé « les deux sans courtier ». Restait l'autre moitié
+    // du monde réel : l'hôte vit par le nuage seul, et l'invité, lui, a un
+    // courtier qui répond — lequel lui jure que ce monde n'existe pas. Vu en
+    // production sur le monde de la maison : l'hôte saluait l'invité par le
+    // relais en deux secondes, pendant que l'invité lisait « ce Wi-Fi bloque
+    // le jeu » sur le Wi-Fi familial. Pire : l'ancien code rouvrait alors le
+    // monde en hôte — deux mondes jumeaux sous le même code, qui divergent
+    // sans que personne le voie.
+    const hotePhare = await banc.joueurVers('Léo', 9798, AVEC_NUAGE);
+    await hotePhare.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await hotePhare.evaluate(() => document.getElementById('host-btn').click());
+    await jusqua(async () => hotePhare.evaluate(
+      () => !!(window.__game.net && window.__game.net.bus)), 60000);
+    const codeTenu = await hotePhare.evaluate(
+      () => document.getElementById('room-code').textContent.trim());
+
+    const inviteSain = await banc.joueur('Basile', AVEC_NUAGE);
+    await inviteSain.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await inviteSain.evaluate((c) => {
+      document.getElementById('join-code').value = c;
+      document.getElementById('join-btn').click();
+    }, codeTenu);
+    await dormir(2000);
+    await inviteSain.evaluate(() => document.getElementById('online-play-btn')?.click());
+    await hotePhare.evaluate(() => document.getElementById('online-play-btn')?.click());
+    const retrouves = await jusqua(async () => {
+      const a = await nomsVus(hotePhare), b = await nomsVus(inviteSain);
+      return a.includes('Basile') && b.includes('Léo');
+    }, 120000);
+    verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
+      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]));
+    const rolesTenus = await inviteSain.evaluate(() => ({
+      hote: window.__game.net ? window.__game.net.isHost : null,
+      actif: !!(window.__game.net && window.__game.net.active),
+    }));
+    verifier('et il le REJOINT, au lieu d\'ouvrir un monde jumeau sous le même code',
+      rolesTenus.actif && rolesTenus.hote === false, JSON.stringify(rolesTenus));
+    await inviteSain.close();
+    await hotePhare.close();
+    await souffler();
+
+    // --- et quand l'hôte vient VRAIMENT de partir, on dit la vérité ----------
+    //
+    // Le phare de l'hôte brille encore — il était là il y a moins de deux
+    // minutes — mais plus personne ne répond. L'ancien message accusait le
+    // Wi-Fi de la maison, plein écran, avec un conseil inapplicable. Le seul
+    // texte honnête : le monde est là, personne n'y répond, réessaie.
+    nuageRelais.relaisSemer({ code: '80808', de: 'wmc-marlon-80808', vers: 'monde',
+      msg: { t: 'phare' } });
+    const prudente = await banc.joueur('Théa', AVEC_NUAGE);
+    await prudente.evaluate(() => document.getElementById('online-btn').click());
+    await dormir(400);
+    await prudente.evaluate(() => {
+      document.getElementById('join-code').value = '80808';
+      document.getElementById('join-btn').click();
+    });
+    await jusqua(async () => prudente.evaluate(
+      () => (document.getElementById('online-status').textContent || '').startsWith('❌')), 90000);
+    const phraseHonnete = await prudente.evaluate(
+      () => document.getElementById('online-status').textContent);
+    verifier('quand l\'hôte vient de partir, le message dit que personne ne répond',
+      /personne n'y répond/i.test(phraseHonnete), phraseHonnete);
+    verifier('sans accuser le Wi-Fi de la maison', !/Wi-Fi bloque|hôtels/.test(phraseHonnete),
+      phraseHonnete);
+    const pasDeJumeau = await prudente.evaluate(() => ({
+      enJeu: window.__game.running,
+      hote: window.__game.net ? window.__game.net.isHost : null,
+    }));
+    verifier('et l\'enfant n\'est pas devenu l\'hôte d\'un monde jumeau',
+      !pasDeJumeau.enJeu && pasDeJumeau.hote !== true, JSON.stringify(pasDeJumeau));
+    await prudente.close();
 
     // --- l'enfant qui entend tout le monde et que personne n'entend ----------
     //
@@ -604,8 +681,23 @@ function verifier(nom, ok, detail = '') {
       const b = await nomsVus(bloque);
       return a.includes('Tom') && b.includes('Emma');
     }, 90000);
+    // À l'échec, on veut l'autopsie, pas juste le constat : l'état réseau des
+    // deux côtés dit lequel a lâché, et où.
+    const autopsie = async (p) => p.evaluate(() => {
+      const n = window.__game.net;
+      return {
+        actif: !!(n && n.active), hote: n ? n.isHost : null, bus: !!(n && n.bus),
+        conns: n ? [...n.conns.entries()].map(([k, c]) => [k.slice(0, 18), c.pret, !!c.conn.parNuage]) : [],
+        statut: (document.getElementById('online-status') || {}).textContent || '',
+        lien: n ? n.linkState : null,
+      };
+    });
     verifier('pair-à-pair mort, les deux enfants se voient quand même',
-      seVoient, JSON.stringify([await nomsVus(hoteNuage), await nomsVus(bloque)]));
+      seVoient, seVoient ? '' : JSON.stringify({
+        noms: [await nomsVus(hoteNuage), await nomsVus(bloque)],
+        emma: await autopsie(hoteNuage), tom: await autopsie(bloque),
+        erreursTom: bloque.erreurs.slice(0, 3),
+      }));
     // Et c'est bien par le tuyau de secours que c'est passé : sans cette
     // mesure, un lien direct rétabli en douce ferait passer le scénario sans
     // rien prouver du tout.
@@ -688,7 +780,7 @@ function verifier(nom, ok, detail = '') {
     // le garde-fou « au moins deux perdues » tombait parfois à une seule
     // (mesuré : 1 avalée, deux passes sur trois un jour de machine lente).
     const { p: patiente, code: codeLent } = await banc.creerMonde('Théo');
-    const lent = await banc.joueur('Zoé', { helloFragile: true });
+    const lent = await banc.joueur('Camille', { helloFragile: true });
     // Au premier plan : Chromium bride les minuteurs d'un onglet caché, et le
     // filtre du banc s'installe justement sur un minuteur. Sans cela il
     // arrivait après les présentations qu'il devait avaler — le scénario
@@ -723,8 +815,8 @@ function verifier(nom, ok, detail = '') {
     const seRetrouvent = await jusqua(async () => {
       const a = await nomsVus(patiente);
       const b = await nomsVus(lent);
-      return a.includes('Zoé') && b.includes('Théo');
-    }, 120000);
+      return a.includes('Camille') && b.includes('Théo');
+    }, 200000);
     verifier('une présentation perdue finit par passer', seRetrouvent,
       JSON.stringify([await nomsVus(patiente), await nomsVus(lent)]));
     const compteFinal = [(await vu(patiente)).compteur, (await vu(lent)).compteur];
@@ -763,7 +855,24 @@ function verifier(nom, ok, detail = '') {
     await jamais.evaluate(() => document.getElementById('online-play-btn')?.click());
     // Bien au-delà des vingt secondes : le lien doit avoir été coupé et repris
     // au moins une fois, sans que personne n'apparaisse pour autant.
-    await dormir(35000);
+    //
+    // On observe DÈS MAINTENANT, et pas seulement après l'attente : la date de
+    // présentation du premier lien ne vit que vingt secondes, et un témoin qui
+    // n'ouvre l'œil qu'après trente-cinq ne voyait jamais que le second. Sur
+    // une machine au repos plusieurs cycles tenaient encore dans sa fenêtre et
+    // il passait ; sur un conteneur chargé, il n'en voyait qu'un seul et
+    // tombait — sans que le jeu y soit pour rien.
+    const presentations = new Set();
+    const echantillonner = async () => {
+      const d = await jamais.evaluate(() => {
+        const n = window.__game.net;
+        if (!n || !n.active) return null;
+        const c = [...n.conns.values()][0];
+        return c ? c.presenteA || 0 : null;
+      });
+      if (d) presentations.add(d);
+    };
+    for (let i = 0; i < 14; i++) { await echantillonner(); await dormir(2500); }
     const etatMuet = await vu(jamais);
     verifier('un lien jamais présenté ne devient pas un joueur fantôme',
       etatMuet.compteur === 1 && etatMuet.avatars.length === 0,
@@ -782,19 +891,19 @@ function verifier(nom, ok, detail = '') {
     // Ce qu'on suit est la date de présentation de la connexion en cours : elle
     // est posée à chaque nouvelle connexion, et la voir changer prouve qu'on a
     // coupé le lien muet et qu'on en a rouvert un autre.
-    const presentations = new Set();
-    for (let i = 0; i < 16; i++) {
-      const d = await jamais.evaluate(() => {
-        const n = window.__game.net;
-        if (!n || !n.active) return null;
-        const c = [...n.conns.values()][0];
-        return c ? c.presenteA || 0 : null;
-      });
-      if (d) presentations.add(d);
-      await dormir(2500);
-    }
+    // On attend que la seconde présentation arrive, on ne compte pas les tours.
+    // Le cycle dure vingt secondes de jeu, mais sur un conteneur qui enchaîne
+    // sept suites les minuteries du navigateur glissent : un nombre fixe
+    // d'échantillons mesure la vitesse de la machine, pas le comportement du
+    // jeu. « Finit par arriver » se prouve avec une échéance, pas un compteur.
+    await jusqua(async () => {
+      await echantillonner();
+      return presentations.size >= 2;
+    }, 150000);
     verifier('et le lien muet est coupé puis rouvert, au lieu de durer pour toujours',
       presentations.size >= 2, `${presentations.size} présentations successives`);
+    await jusqua(async () => (await jamais.evaluate(
+      () => window.__avalerHelloComptes || 0)) >= 2, 60000);
     const avaleesMuet = await jamais.evaluate(() => window.__avalerHelloComptes || 0);
     verifier('et ce scénario a bien eu quelque chose à faire perdre', avaleesMuet >= 2,
       `${avaleesMuet} avalées`);
@@ -883,7 +992,7 @@ function verifier(nom, ok, detail = '') {
     // endroit — par n'importe qui — avance la même jauge, et la célébration
     // part chez tout le monde. Tout est éprouvé par le vrai chemin : la pose
     // s'échange comme un panneau, l'avancement se dérive du journal de blocs.
-    const { p: lea, code: codeLea } = await banc.creerMonde('Léa');
+    const { p: lea, code: codeLea } = await banc.creerMonde('Jade');
     const rui = await banc.rejoindre('Rui', codeLea);
     const pose = await lea.evaluate(() => window.__chantier.poser('cabane'));
     verifier('l\'hôte pose un chantier', !!pose && pose.plan === 'cabane',

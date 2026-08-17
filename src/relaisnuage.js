@@ -73,6 +73,11 @@ export class BusNuage {
     this.actif = false;
     this._timer = null;
     this._menage = 0;
+    // Vrai dès qu'UNE lecture a abouti. C'est la pièce qui manquait au
+    // diagnostic : « personne ne répond » n'a pas le même sens selon que le
+    // relais nous parle ou pas. S'il nous parle, le réseau n'y est pour rien
+    // — accuser le Wi-Fi à ce moment-là, c'était mentir à l'enfant.
+    this.joignable = false;
   }
 
   get disponible() { return !!(this.cloud && this.cloud.configured); }
@@ -111,6 +116,7 @@ export class BusNuage {
     let lignes = [];
     try { lignes = await this.cloud.relaisLire(this.code, this.dernierId); }
     catch { return; }             // réseau capricieux : on retentera
+    this.joignable = true;        // le relais nous parle : le réseau est sain
     for (const l of lignes) {
       if (l.id > this.dernierId) this.dernierId = l.id;
       if (l.de === this.monId) continue;                       // notre propre écho
