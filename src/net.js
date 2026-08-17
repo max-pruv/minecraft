@@ -939,10 +939,21 @@ export class NetSession {
     // rien ne relancera, rien ne coupera. On referme plutôt.
     if (!c) { try { conn.close(); } catch { /* déjà fermée */ } return; }
     if (!c.presenteA) c.presenteA = Date.now();
-    try {
-      conn.send({ t: 'hello', name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look, device: this.deviceId });
-    } catch { return; }   // le lien est mort-né : dropPeer s'en charge
+    // UN SEUL CHEMIN D'ENVOI, ET UNE SEULE GARDE.
+    //
+    // `conn.send` partait tout droit, sans regarder si le canal était prêt.
+    // PeerJS laisse `open` à vrai un court instant avant que le transport ne
+    // le soit vraiment ; l'envoi échouait alors dans la console — « Connection
+    // is not open » — et, pire, la présentation était perdue en silence.
+    // `envoyer` sonde le canal lui-même, et c'est la seule porte de sortie.
+    this.envoyer(c, {
+      t: 'hello', name: this.profile.name,
+      lookIdx: this.profile.lookIdx, look: this.profile.look, device: this.deviceId,
+    });
     this.startPosLoop();
+    // La relance est armée MÊME SI l'envoi n'a pas pu partir : c'est
+    // précisément elle qui rattrape un canal pas encore prêt. Renoncer ici
+    // laissait le lien sans présentation et sans échéance — le limbe.
     this.relancerPresentation(conn);
   }
 
@@ -1003,12 +1014,10 @@ export class NetSession {
         try { lien.close(); } catch { /* déjà fermée */ }
         return;
       }
-      try {
-        lien.send({
-          t: 'hello', encore: true, device: this.deviceId,
-          name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
-        });
-      } catch { e.relanceEnCours = false; return; }
+      this.envoyer(e, {
+        t: 'hello', encore: true, device: this.deviceId,
+        name: this.profile.name, lookIdx: this.profile.lookIdx, look: this.profile.look,
+      });
       setTimeout(tenter, RELANCE_MS);
     };
     setTimeout(tenter, RELANCE_MS);
