@@ -285,10 +285,19 @@ Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
 
 - **Le monde reprend sa vraie géographie** — les villes sont trop serrées, et
   Paris ne ressemble pas à Paris faute de place. Projection équirectangulaire
-  centrée sur Paris, 1 bloc = 4 km. **Le piège : déplacer une ville déplace le
-  sol sous les blocs des enfants** (invariant 1). Il faut donc versionner le
-  générateur de terrain et migrer chaque bloc de la différence de hauteur de sa
-  colonne — pas régénérer et espérer.
+  centrée sur Paris, **1 bloc = 4 km**, avec **une seule entorse, décidée par
+  Max** : la traversée de l'Atlantique (-74° à -10°) est ramenée à **60 %** de
+  sa longueur vraie. C'est le seul grand vide d'eau de cette carte — vers l'est,
+  Paris-Tokyo traverse l'Eurasie, donc de la terre ferme d'un bout à l'autre, et
+  garde son échelle exacte. Résultat : New York 1 415 → **956 blocs**, San
+  Francisco 2 303 → **1 840**, l'Europe et l'Asie inchangées au bloc près.
+  **On voyage par la carte**, pas à pied : la téléportation existe déjà et
+  c'est elle qui rend ces distances jouables.
+
+  **Le piège : déplacer une ville déplace le sol sous les blocs des enfants**
+  (invariant 1). Il faut donc versionner le générateur de terrain et migrer
+  chaque bloc de la différence de hauteur de sa colonne — pas régénérer et
+  espérer.
 - **La bibliothèque de monuments** — onglet 🏛️ dans l'inventaire, vignette par
   bâtiment, pose devant soi comme une brique. Contrainte : le plafond libère
   ~115 blocs au-dessus du sol, donc **une échelle par monument** (chacun aussi
