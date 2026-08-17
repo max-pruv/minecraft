@@ -828,14 +828,28 @@ export class NetSession {
   // d'établissement. PeerJS refusait chaque message avec une erreur, huit fois
   // par seconde, et surtout : on croyait avoir parlé. On vérifie donc, une fois
   // pour toutes et au même endroit, que le canal est réellement ouvert.
-  envoyer(c, msg) {
-    if (!c || !c.conn || !c.conn.open) return false;
+  // Envoyer sur un lien brut — un lien qu'on n'a pas encore rangé dans
+  // `conns`, comme celui d'un pair qui se présente à peine.
+  //
+  // UN try/catch NE SUFFIT PAS ICI, et c'est tout le piège. PeerJS n'échoue
+  // pas en levant une exception : il ÉCRIT « Connection is not open » dans la
+  // console et rend la main. Le try/catch n'attrapait donc rien du tout, le
+  // message partait dans le vide sans que personne ne le sache, et le seul
+  // témoin qui l'a vu est celui qui interdit toute erreur de bout en bout.
+  // Quatre envois passaient à côté de la garde — le pong, le « cède », le
+  // « remplace » et le journal de blocs envoyé à un arrivant.
+  envoyerBrut(conn, msg) {
+    if (!conn || !conn.open) return false;
     // On interroge le canal lui-même plutôt que la comptabilité de PeerJS :
     // `open` reste vrai un court instant après que le transport s'est refermé,
     // et c'est dans cet intervalle qu'un envoi partait dans le vide.
-    const canal = c.conn.dataChannel;
+    const canal = conn.dataChannel;
     if (canal && canal.readyState !== 'open') return false;
-    try { c.conn.send(msg); return true; } catch { return false; }
+    try { conn.send(msg); return true; } catch { return false; }
+  }
+
+  envoyer(c, msg) {
+    return !!c && this.envoyerBrut(c.conn, msg);
   }
 
   diffusionBrute(msg) {
@@ -1082,7 +1096,7 @@ export class NetSession {
     entry.seen = Date.now(); // tout message vaut preuve de vie
     switch (msg.t) {
       case 'ping':
-        try { conn.send({ t: 'pong' }); } catch { /* le lien se ferme, on le verra */ }
+        this.envoyerBrut(conn, { t: 'pong' });   // le lien se ferme ? le battement le verra
         break;
       case 'pong':
         break;
@@ -1178,7 +1192,7 @@ export class NetSession {
               this.playersChanged();
               break;
             }
-            try { conn.send({ t: 'cede', name: wanted }); } catch { /* lien mort-né */ }
+            this.envoyerBrut(conn, { t: 'cede', name: wanted });   // lien mort-né : tant pis
             setTimeout(() => { if (this.onCeder) this.onCeder(); }, 300);
             break;
           }
@@ -1194,7 +1208,7 @@ export class NetSession {
           // retiré au sort à chaque chargement de page, si bien qu'un vrai
           // retour de l'enfant se présente toujours sous un identifiant neuf.
           if (this._evinces && this._evinces.has(conn.peer)) {
-            try { conn.send({ t: 'remplace', name: wanted }); } catch { /* lien mort-né */ }
+            this.envoyerBrut(conn, { t: 'remplace', name: wanted });   // idem
             setTimeout(() => { try { conn.close(); } catch { /* already gone */ } }, 400);
             this.conns.delete(conn.peer);
             this.playersChanged();
@@ -1229,15 +1243,15 @@ export class NetSession {
         // Le journal de blocs, maintenant seulement : la présentation a abouti,
         // le gros message ne peut plus lui barrer la route.
         if (nouveau) {
-          try {
-            conn.send({
-              t: 'sync', blocks: this.hooks.world.exportEdits(),
-              // le chantier en cours part avec le monde : un arrivant voit le
-              // fantôme et la jauge sans que personne n'ait rien à refaire
-              chantier: this.chantierActuel ? this.chantierActuel() : undefined,
-            });
-          }
-          catch { /* le lien vient de lâcher, le battement de cœur le verra */ }
+          // Le lien vient de lâcher ? Le battement de cœur le verra, et
+          // `envoyerLeMonde` réessaiera : ce message-ci porte tout le monde
+          // bâti, c'est le dernier qu'on veut perdre en silence.
+          this.envoyerBrut(conn, {
+            t: 'sync', blocks: this.hooks.world.exportEdits(),
+            // le chantier en cours part avec le monde : un arrivant voit le
+            // fantôme et la jauge sans que personne n'ait rien à refaire
+            chantier: this.chantierActuel ? this.chantierActuel() : undefined,
+          });
         }
         if (this.onJoin) this.onJoin(entry.name);
         else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);

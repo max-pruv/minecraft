@@ -127,10 +127,22 @@ async function avancerUnDemiSeconde(p, depart) {
     // exacte, la visée — celle qui commandait le bouton et qui sert encore à
     // nourrir — ne trouve aucun animal. C'est ce cône de vingt degrés qui
     // rendait la monte introuvable.
-    const regles = await tab.evaluate(() => ({
+    // Les deux règles sont lues DANS LE MÊME INSTANT — c'est ce qui rend la
+    // comparaison honnête — et on attend le moment qui prouve quelque chose.
+    // La bête marche : selon qu'elle dérive vers le regard ou s'en écarte, la
+    // visée la trouve ou non, et un seul coup d'œil tombait parfois sur
+    // l'instant où elle repassait dans le cône. Ce n'était pas la règle qui
+    // vacillait, c'était l'échantillon.
+    const lire = () => tab.evaluate(() => ({
       vise: !!window.__game.animalManager.targeted(),
       monture: !!window.__game.animalManager.monture(),
     }));
+    let regles = await lire();
+    const finDeBiais = Date.now() + 4000;
+    while ((regles.vise || !regles.monture) && Date.now() < finDeBiais) {
+      await dormir(200);
+      regles = await lire();
+    }
     verifier('là où l\'ancienne visée ne trouvait rien, la monte la voit',
       !regles.vise && regles.monture, JSON.stringify(regles));
 
