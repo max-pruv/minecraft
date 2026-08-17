@@ -35,6 +35,14 @@ travail est irrattrapable.
    doit plus jamais toucher au relief. Le témoin `plafond.js` vérifie une
    empreinte du paysage sur 218 089 colonnes ; si elle change, c'est une
    décision, pas une mise à jour de valeur.
+
+   **Une exception, une seule, accordée par Max** (août 2026) : la remise à
+   plat de la carte sur la vraie géographie. « On reste sur une phase très
+   early du développement, donc on peut se permettre de casser certaines
+   choses pour refaire bien le fond. » Elle vaut **pour cette refonte-là et
+   pas au-delà** : une fois les villes à leur place, le sol se refige et
+   l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
+   casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 2. **Mode éducatif toujours actif et non contournable.**
 3. **Visages : signatures uniquement, jamais de photo stockée.** Le code
    parental est stocké haché.
@@ -265,6 +273,28 @@ son prénom. Trois règles s'y sont payées cher.
 Tailler reste le dernier recours, et **jamais en silence** : `onTrim` le dit.
 Ce qu'on sacrifie, ce sont les blocs les plus anciens, tous mondes confondus —
 tailler monde par monde en effacerait un entier.
+
+### La refonte de la carte — ce que Max a tranché
+
+- **L'échelle.** Équirectangulaire centrée sur Paris, **1 bloc = 4 km**. Une
+  seule entorse : la traversée de l'Atlantique (−74° à −10°) ramenée à **60 %**.
+  L'Europe, l'Afrique et l'Asie gardent leur échelle exacte au bloc près, et
+  Paris-Tokyo aussi — c'est de la terre ferme d'un bout à l'autre, pas un
+  océan. New York 1 415 → 956 blocs, San Francisco 2 303 → 1 840.
+- **On voyage par la carte.** La téléportation existe déjà, et c'est elle qui
+  rend ces distances jouables. Pas de traversée à pied à prévoir.
+- **Casser est autorisé, gâcher ne l'est pas.** Max accepte de perdre des
+  constructions pour refaire le fond correctement. Cela ne dispense pas de
+  garder ce qui se garde sans effort : le sol qui bouge d'un ou deux blocs sous
+  une maison se rattrape en migrant la colonne, et une copie de sauvegarde des
+  blocs d'avant la refonte coûte trois lignes maintenant que le document a de
+  la place. On casse ce qu'on ne sait pas suivre, pas ce qu'on n'a pas envie de
+  suivre.
+- **Le réalisme prime sur ce qui existe.** Consigne explicite de Max : **le
+  métro de Paris est souterrain**, il n'y a pas de train aérien dans Paris.
+  L'anneau aérien actuel (`ville.js:metroAerien`, `vehicules.js:metro`,
+  `main.js`) est à refaire sous terre. Le même critère s'applique partout
+  ailleurs : on regarde comment la vraie ville est faite avant de bâtir.
 
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 
