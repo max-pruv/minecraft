@@ -116,6 +116,13 @@ function suitesNecessaires() {
       if (swAnodin(base)) { raisons.push('sw.js (version + cache seulement)'); continue; }
       tout = true; raisons.push('sw.js (logique modifiée)'); continue;
     }
+    // Une suite d'essai qu'on modifie se rejoue elle-même, et rien d'autre :
+    // elle ne peut pas casser le jeu, seulement se tromper sur lui. Sans cette
+    // règle, retoucher un témoin relançait les huit suites — et le gain de
+    // l'aiguillage disparaissait dès qu'on améliorait un essai.
+    const suite = f.match(/^tests\/([\w-]+\.js)$/);
+    if (suite && SUITES.includes(suite[1])) { besoin.add(suite[1]); raisons.push(f); continue; }
+    if (suite && suite[1] === 'fumee.js') { raisons.push(f); continue; }
     // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
     // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
     if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;

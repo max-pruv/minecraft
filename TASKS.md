@@ -13,12 +13,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Les familles de bâtiments paramétrées** — aller des 21 monuments écrits
-  à la main aux ~300 demandés. Maisons, immeubles haussmanniens, hôtels, tours
-  de bureaux, boutiques, écoles : une famille avec une dizaine de réglages
-  (hauteur, largeur, matériau, toit, balcons) donne des centaines de bâtiments
-  tous différents. Écrire trois cents fichiers à la main est le mauvais chemin.
-
 - [ ] **Paris et son métro souterrain** — consigne de Max : il n'y a pas de
   train aérien dans Paris. L'anneau actuel passe au-dessus des toits
   (`ville.js:metroAerien`, `vehicules.js:metro`, `main.js`). À refaire sous
@@ -50,6 +44,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v160** — les huit familles de bâtiments : 301 modèles en tout, variés
+  pour de vrai (123 à 3 921 blocs), atteignables sans liste de 301 lignes.
 
 - [x] **v159** — la bibliothèque de monuments branchée (onglet 🏛️, 21 bâtiments,
   pose devant soi, envoi par lots) et le portail à deux voies.

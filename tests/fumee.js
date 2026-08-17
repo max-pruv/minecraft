@@ -93,6 +93,49 @@ function verifier(nom, ok, detail = '') {
         posee, `${avant} → ${apresPose} blocs`);
     }
 
+    // Les familles de bâtiments : ce sont elles qui portent les trois cents.
+    //
+    // On les bâtit TOUTES, pas un échantillon : une variante sur trois cents
+    // qui lève une exception, c'est un enfant qui clique et à qui rien
+    // n'arrive. C'est bon marché — quelques secondes — parce qu'elles sont
+    // gardées en mémoire une fois construites.
+    const familles = await tab.evaluate(async () => {
+      const m = await import('./src/batiments.js');
+      const bilan = { total: m.NB_BATIMENTS, batis: 0, vides: [], erreurs: [], trop: [] };
+      for (const f of m.FAMILLES) {
+        for (let n = 0; n < f.variantes; n++) {
+          try {
+            const b = m.batimentVariante(f.id, n);
+            if (!b || !b.blocs.length) { bilan.vides.push(`${f.id}#${n}`); continue; }
+            // Le monde plafonne à 160 blocs : un bâtiment plus haut serait
+            // tronqué en silence, et l'enfant verrait un immeuble décapité.
+            if (b.emprise.h > 120) bilan.trop.push(`${f.id}#${n} (${b.emprise.h})`);
+            bilan.batis++;
+          } catch (e) { bilan.erreurs.push(`${f.id}#${n} : ${e.message}`); }
+        }
+      }
+      return bilan;
+    });
+    verifier('les trois cents bâtiments se construisent tous',
+      familles.batis === familles.total && !familles.erreurs.length,
+      `${familles.batis}/${familles.total}`
+      + (familles.erreurs.length ? ` · ${familles.erreurs.slice(0, 2).join(' ; ')}` : '')
+      + (familles.vides.length ? ` · vides : ${familles.vides.slice(0, 3).join(', ')}` : ''));
+    verifier('et aucun ne dépasse le plafond du monde',
+      familles.trop.length === 0, JSON.stringify(familles.trop.slice(0, 3)));
+
+    // Le même numéro doit rendre le même bâtiment : un enfant qui aime le
+    // septième modèle doit le retrouver demain.
+    const stable = await tab.evaluate(async () => {
+      const m = await import('./src/batiments.js');
+      const a = m.batimentVariante('maison', 7).blocs.length;
+      const b = m.batimentVariante('maison', 7).blocs.length;
+      const autre = m.batimentVariante('maison', 8).blocs.length;
+      return { a, b, autre };
+    });
+    verifier('un modèle gardé est bien toujours le même',
+      stable.a === stable.b && stable.a !== stable.autre, JSON.stringify(stable));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
