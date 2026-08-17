@@ -212,7 +212,33 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
 
 ---
 
-## Le conteneur a été recréé sur un vieux commit — trois fois
+## Le conteneur a été recréé sur un vieux commit — sept fois
+
+**C'est désormais automatique.** `.claude/hooks/session-start.sh` tourne au
+démarrage de chaque session et fait trois choses :
+
+1. **Récupère la bonne révision.** Si la branche est en retard sur `origin/main`
+   et ne porte aucun commit non fusionné, elle est remise à jour. Les
+   modifications non enregistrées — le conteneur périmé revient toujours avec
+   `src/nice.js` modifié — sont **mises en remise** (`git stash`), jamais
+   effacées : sans cela le garde-fou ne se déclencherait jamais dans le seul cas
+   qui compte.
+2. **Installe les dépendances du banc** si `tests/node_modules` manque.
+3. **Rappelle ce qui était en cours**, depuis `TASKS.md`.
+
+Il refuse d'agir dès que la branche porte des commits non fusionnés : du travail
+en cours ne se jette pas, même vieux.
+
+**La cause racine, elle, est côté environnement** : la session est reclonée sur
+une révision figée (04b3e72, v138) au lieu de la branche par défaut. Cela se
+règle dans les réglages de l'environnement sur claude.ai — le crochet est un
+filet, pas un remède.
+
+**Et ce qui se perd sans bruit** : la liste de tâches de la session vit dans le
+conteneur et part avec lui. C'est arrivé deux fois. Ce qui compte assez pour
+être suivi va donc dans `TASKS.md`, versionné.
+
+### L'ancien réflexe, si le crochet n'a pas tourné
 
 Symptôme : le travail des heures précédentes a « disparu ». Ce n'est pas une
 perte, c'est un arbre périmé.
