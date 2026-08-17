@@ -4479,6 +4479,12 @@ const fun = initFun({
   // Les convois n'existent qu'une fois le monde bâti : on les demande au
   // moment de s'en servir, pas au moment de brancher les boutons.
   getVehicules: () => vehicules,
+  // Les photos voyagent sur leur propre document depuis qu'elles pesaient un
+  // tiers du profil et faisaient jeter les blocs de l'enfant.
+  photos: {
+    pousser: () => profileSync.photosPousser().catch(() => {}),
+    tirer: () => profileSync.photosTirer().catch(() => []),
+  },
   getProfiles: () => loadRegistry().list.map((p) => ({ id: p.id, name: p.name })),
   getMeat: () => meatCount,
   takeMeat: (n) => {

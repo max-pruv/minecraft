@@ -38,7 +38,7 @@ function saveJson(key, v) {
 export function initFun(ctx) {
   const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
     renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
-    isNight, getWeather, getPosCtx, getProfiles, getVehicules } = ctx;
+    isNight, getWeather, getPosCtx, getProfiles, getVehicules, photos: photosNuage } = ctx;
 
   // ---- persistent state -----------------------------------------------------
   const bag = loadJson(BAG_KEY, {});
@@ -1087,6 +1087,12 @@ export function initFun(ctx) {
       }
     } else {
       const photos = loadJson(PHOTOS_KEY, []);
+      // On va chercher celles prises sur les autres appareils : c'est le seul
+      // moment où l'album coûte quelque chose, et c'est celui où l'enfant le
+      // regarde. Une seule redessinée, s'il y a du neuf.
+      photosNuage?.tirer().then((tout) => {
+        if (tout && tout.length !== photos.length) renderTab();
+      });
       recBody.innerHTML = `<h3>📸 Souvenirs</h3>
         <div class="fun-note">${photos.length ? 'Tes plus belles photos du monde !' : 'Appuie sur 📸 en jeu pour prendre une photo !'}</div>`;
       const grid = document.createElement('div');
@@ -1157,6 +1163,10 @@ export function initFun(ctx) {
     photos.unshift(data);
     while (photos.length > 10) photos.pop();
     saveJson(PHOTOS_KEY, photos);
+    // Les photos ont leur propre document depuis qu'elles pesaient un tiers de
+    // la place du profil — et faisaient jeter les blocs de l'enfant. Elles
+    // partent donc à part, sans jamais bousculer une construction.
+    photosNuage?.pousser();
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
     // Le « menu 🏆 » n'existe plus depuis que les records ont déménagé dans

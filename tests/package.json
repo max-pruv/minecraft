@@ -11,6 +11,7 @@
     "carte": "node carte.js",
     "monte": "node monte.js",
     "plafond": "node plafond.js",
+    "sauvegarde": "node sauvegarde.js",
     "tout": "node tout.js"
   },
   "devDependencies": {

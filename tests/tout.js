@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 

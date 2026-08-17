@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v158 — construire beaucoup ne coûte plus ses blocs
+
+**Pourquoi.** En regardant la vraie base : le profil de Marlon pesait
+**901 886 octets** pour une limite fixée à 900 000. Il était donc *déjà*
+au-delà. À chaque sauvegarde, le jeu taillait pour rentrer — d'abord ses
+photos, puis **ses blocs les plus anciens**, dont il ne gardait que quatre
+mille sur dix-sept mille quatre cent trente-cinq. En silence. Un enfant qui
+construit beaucoup était puni de construire, et plus il bâtissait, plus il
+perdait.
+
+Deux causes, dans le même document. Ses huit photos y pesaient **319 Ko**, un
+tiers de la place — or ce sont des JPEG déjà compressés, ils ne se réduisent
+pas d'un octet. Et ses blocs y voyageaient **en clair**, alors que ce sont des
+coordonnées répétitives qui se compressent dix fois.
+
+**Ce que ça change.**
+
+- **Les photos ont leur propre document**, rangé sous `prénom~photos`. Elles ne
+  barrent plus jamais la route à une construction, et elles suivent toujours
+  l'enfant d'un appareil à l'autre.
+- **Les blocs partent compressés.** Mesuré sur la sauvegarde de Marlon :
+  **848 849 → 157 054 octets**, cinq fois moins, blocs identiques au retour. Le
+  navigateur sait le faire seul depuis iOS 16.4, sans rien installer.
+- **Le plafond passe de 900 Ko à 4 Mo**, et surtout **il se mesure enfin sur ce
+  qui part vraiment** — après compression, pas avant. L'ancienne version se
+  croyait pleine cinq fois trop tôt. Il y a désormais la place pour des
+  **centaines de milliers de blocs** ; le plafond est un garde-fou contre un
+  document devenu fou, plus une limite qu'un enfant rencontre.
+- **Quand il faut vraiment tailler**, on divise par deux jusqu'à ce que ça
+  rentre au lieu de retomber d'un coup à quatre mille.
+
+Le champ compressé porte un nom neuf (`editsz`) plutôt que de remplacer
+`edits` : une tablette restée sur l'ancienne version ne le comprend pas, garde
+donc ses propres blocs et les republie en clair. Elle n'abîme rien — là où un
+`edits` devenu illisible lui aurait fait croire à un monde vide.
+
+**Ce qui le prouve.** Une suite neuve, `sauvegarde.js` : un enfant pose
+**quarante mille blocs** et huit photos, et l'on regarde ce que le nuage a
+*vraiment* reçu. Sur l'ancien code, cinq témoins tombent — « 4 000 blocs relus
+sur 40 000 posés », et le second appareil ne retrouve que ces quatre mille. Sur
+le nouveau : quarante mille sur quarante mille, 121 Ko en tout, compression de
+10,1×, et l'album arrive sur son propre document.
+
+---
+
 ## v157 — la monoplace freine dans les virages
 
 **Pourquoi.** Max, en essayant de jouer : « je n'arrive pas à monter sur la

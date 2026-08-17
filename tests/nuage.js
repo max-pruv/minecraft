@@ -182,6 +182,11 @@ function servirLeNuage(port) {
     // Le profil complet et les blocs d'un monde : c'est là que se voit ce qui
     // survit vraiment à une suppression.
     etat: (nom) => etats.get(nom),
+    // Le document EXACT tel qu'il est arrivé — champs compris. C'est ainsi
+    // qu'on voit si les blocs sont partis compressés et si les photos ont
+    // bien quitté le profil, au lieu de le déduire de ce que la tablette
+    // croit avoir envoyé.
+    etatDe: (nom) => etats.get(nom),
     // Semer du temps de jeu jour par jour : c'est la matière première des
     // filtres de période de l'espace parent.
     poserTemps: (r) => temps.set(`${r.name}|${r.device_id}|${r.day}`, r),

@@ -120,6 +120,11 @@ local, Supabase de poche (`tests/nuage.js`).
 - **Le navigateur du conteneur n'a aucun accès Internet sortant.** `curl` passe
   par le mandataire, Playwright non. Tout scénario en ligne passe par le nuage
   de poche.
+- **Un témoin doit échouer *proprement* sur l'ancien code, pas s'effondrer.**
+  Une méthode neuve appelée sans garde fait planter le banc au premier témoin
+  et masque les quatre suivants — on ne voit donc jamais l'étendue réelle du
+  défaut. Appeler `s.machin ? s.machin() : repli` coûte une ligne et rend la
+  vérification lisible.
 
 ### Reprise après coupure
 
@@ -236,6 +241,31 @@ Les deux difficultés réelles, à ne pas découvrir en route :
 - Le vol a un toit (`PLAFOND_VOL`) : sans lui, l'enfant sortait du monde par le
   haut, dans une zone où poser un bloc ne fait rien.
 
+### La sauvegarde (`sync.js`)
+
+Le profil d'un enfant est **un seul document JSON**, rangé dans le nuage sous
+son prénom. Trois règles s'y sont payées cher.
+
+- **On pèse ce qui part, pas ce qu'on a sous la main.** L'ancienne version
+  mesurait le document *en clair* et le comparait au plafond ; elle se croyait
+  pleine cinq fois trop tôt et jetait les blocs d'un enfant qui avait encore
+  toute la place. La mesure se fait **après compression** (`ajuster()`), sur le
+  paquet réel.
+- **Ce qui est déjà compressé ne partage pas le document.** Les photos sont des
+  JPEG : elles ne se réduisent pas d'un octet, et elles pesaient un tiers de la
+  place de Marlon. Elles ont leur document, `prénom~photos`. Toute nouvelle
+  donnée lourde et incompressible doit suivre le même chemin — pas le document
+  du profil.
+- **Un champ qui change de forme change de nom.** Les blocs compressés
+  s'appellent `editsz`, ils ne remplacent pas `edits`. Une tablette restée sur
+  l'ancienne version ne comprend pas le champ neuf, garde donc ses propres
+  blocs et les republie en clair : elle n'abîme rien. Un `edits` devenu
+  illisible, lui, lui aurait fait croire à un monde vide.
+
+Tailler reste le dernier recours, et **jamais en silence** : `onTrim` le dit.
+Ce qu'on sacrifie, ce sont les blocs les plus anciens, tous mondes confondus —
+tailler monde par monde en effacerait un entier.
+
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 
 - **Ce qui se monte est une propriété de l'espèce** (`montable`), jamais une
@@ -253,8 +283,12 @@ Les deux difficultés réelles, à ne pas découvrir en route :
 
 Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
 
-- **La F1 freine dans les virages** — elle roule à 17 m/s constants et traverse
-  la zone d'embarquement entre deux rafraîchissements du bouton.
+- **Le monde reprend sa vraie géographie** — les villes sont trop serrées, et
+  Paris ne ressemble pas à Paris faute de place. Projection équirectangulaire
+  centrée sur Paris, 1 bloc = 4 km. **Le piège : déplacer une ville déplace le
+  sol sous les blocs des enfants** (invariant 1). Il faut donc versionner le
+  générateur de terrain et migrer chaque bloc de la différence de hauteur de sa
+  colonne — pas régénérer et espérer.
 - **La bibliothèque de monuments** — onglet 🏛️ dans l'inventaire, vignette par
   bâtiment, pose devant soi comme une brique. Contrainte : le plafond libère
   ~115 blocs au-dessus du sol, donc **une échelle par monument** (chacun aussi
