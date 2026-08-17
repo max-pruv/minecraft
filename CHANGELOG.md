@@ -56,12 +56,37 @@ Le champ compressé porte un nom neuf (`editsz`) plutôt que de remplacer
 donc ses propres blocs et les republie en clair. Elle n'abîme rien — là où un
 `edits` devenu illisible lui aurait fait croire à un monde vide.
 
+**Deux défauts de plus, trouvés par le portail en route.**
+
+- **Un document de service apparaissait comme un enfant.** Le nouveau document
+  des photos se glissait dans l'espace parent : tu voyais un quatrième prénom,
+  « Alice~photos », dans ta liste déroulante. Le tri existait déjà — écrit la
+  première fois que le cas s'est produit, avec « Alice~invit » — mais il se
+  faisait table par table et ne couvrait que celle des réglages. Il est
+  désormais au seul endroit où une fiche d'enfant naît : une table de plus ou
+  un document de service de plus ne demandent plus rien à repenser.
+- **Le réseau perdait des messages en silence.** Quatre envois contournaient la
+  garde du jeu, dont **le journal de blocs envoyé à un enfant qui arrive** —
+  celui qui porte tout le monde bâti. Ils étaient entourés d'un `try/catch`
+  qui n'attrapait rien, parce que PeerJS n'échoue pas en levant une exception :
+  il écrit l'erreur dans la console et rend la main. Le message partait dans le
+  vide sans que personne ne le sache. Les quatre passent maintenant par la même
+  garde, qui interroge le canal lui-même.
+
 **Ce qui le prouve.** Une suite neuve, `sauvegarde.js` : un enfant pose
 **quarante mille blocs** et huit photos, et l'on regarde ce que le nuage a
 *vraiment* reçu. Sur l'ancien code, cinq témoins tombent — « 4 000 blocs relus
 sur 40 000 posés », et le second appareil ne retrouve que ces quatre mille. Sur
 le nouveau : quarante mille sur quarante mille, 121 Ko en tout, compression de
 10,1×, et l'album arrive sur son propre document.
+
+Et le **portail complet est vert, les huit suites dans la même exécution** —
+c'est ce qui a coûté le plus de travail. Six portails ont été nécessaires, et
+chacun a rendu un verdict rouge différent : quatre témoins jugeaient trop tôt
+(un zoom lu avant le redessin, un décollage lu avant le premier tour
+d'affichage, deux règles de monte lues pendant que la bête marche) et une suite
+ne laissait jamais souffler la machine. Ils observent maintenant pendant la
+fenêtre, et disent toujours la vérité si rien ne vient.
 
 ---
 
