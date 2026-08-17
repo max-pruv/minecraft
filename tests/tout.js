@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js', 'maj.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -60,7 +60,7 @@ const GARDIENS = {
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js'],
-  'index.html': ['carte.js', 'reglages.js'],
+  'index.html': ['carte.js', 'reglages.js', 'maj.js'],
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.

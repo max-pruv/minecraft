@@ -47,11 +47,27 @@ paramétrée.
   septième modèle le retrouve demain — les réglages viennent d'une suite
   déterministe, pas d'un tirage au sort.
 
+**Et un défaut que Max a trouvé avant nous : la nouveauté n'arrivait pas
+jusqu'à l'iPad.** Il a ouvert le jeu après la livraison de v159 et n'a pas vu le
+bouton des monuments, alors que le serveur servait bien la bonne version. La
+cause : le retour dans l'application appelait `reg.update()` et **rien d'autre**.
+Le service worker passait donc à la version neuve, le badge l'affichait, et **la
+page continuait de faire tourner l'ancien JavaScript** — le rechargement n'avait
+lieu que dans le chemin du démarrage complet. Sur un iPad, l'application n'est
+jamais vraiment fermée : elle s'endort et revient. C'était donc le cas *normal*,
+et rien ne l'éprouvait. Revenir dans l'application refait maintenant la même
+comparaison qu'au démarrage, et recharge.
+
 **Ce qui le prouve.** `fumee.js` construit **les 280 variantes**, pas un
 échantillon : une seule qui lèverait une exception, et c'est un enfant qui
 clique et à qui rien n'arrive. Il vérifie aussi qu'aucune ne dépasse le plafond
 du monde — un immeuble décapité en silence — et que deux appels au même numéro
 rendent bien le même bâtiment.
+
+Et une suite neuve, `maj.js` : elle publie une version pendant que l'enfant
+joue, endort l'application, y revient, et vérifie que la page a rechargé. Sur
+l'ancien code, la trace dit tout — « vérifications déclenchées par le retour :
+0 ». Avec le correctif : 1, et la page repart sur la version neuve.
 
 L'aiguillage a par ailleurs gagné une règle en chemin : **une suite d'essai
 qu'on modifie se rejoue elle-même, et rien d'autre.** Sans cela, retoucher un
