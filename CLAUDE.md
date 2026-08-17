@@ -125,6 +125,20 @@ local, Supabase de poche (`tests/nuage.js`).
   pas seulement à la fin. Le témoin du lien muet échantillonnait après 35 s ce
   qui ne vit que 20 s : vert sur machine au repos, rouge sous charge, sans que
   le jeu y soit pour rien.
+- **Un geste ne produit pas son effet au moment où le doigt se lève.** Le zoom
+  s'applique au tour d'affichage suivant, et sur une machine chargée ce tour se
+  fait attendre. Lire la valeur dans la foulée du geste donne « 0.70 → 0.70 » :
+  le témoin annonce que rien n'a bougé alors qu'on a simplement regardé trop
+  tôt. On attend le résultat, borné dans le temps (`attendreLeZoom`).
+- **`souffler()` avant tout passage lourd, dans TOUTES les suites.** `carte.js`
+  ne l'appelait pas une seule fois alors que c'est la seule à viser au pixel
+  près, et elle passe en cinquième position sur un conteneur que quatre suites
+  viennent de chauffer. Un portail dont les rouges se déplacent d'une exécution
+  à l'autre n'accuse pas le jeu : il dit que le banc manque d'air.
+- **Ne jamais relancer le portail jusqu'à obtenir du vert.** Trois suites
+  vertes chacune de son côté ne valent pas un portail vert : c'est ainsi qu'on
+  publie une régression en croyant l'avoir écartée. Un rouge se démonte, il ne
+  se rejoue pas.
 - **Le navigateur du conteneur n'a aucun accès Internet sortant.** `curl` passe
   par le mandataire, Playwright non. Tout scénario en ligne passe par le nuage
   de poche.

@@ -729,6 +729,14 @@ function verifier(nom, ok, detail = '') {
     // On refait le geste exact : l'enfant part, reste absent plus longtemps
     // que le silence toléré — de quoi se faire oublier de l'hôte — puis
     // revient. Il doit retrouver la partie tout seul.
+    // Ce scénario-ci est le plus long de la suite : deux navigateurs, un tuyau
+    // de secours qui sonde toutes les deux secondes, une absence de vingt-six
+    // secondes, puis une reconnexion qui a droit à quatre-vingt-dix secondes.
+    // Il démarrait sur une machine que tout ce qui précède vient de chauffer,
+    // et c'est le seul de la suite dont la fenêtre soit trop courte pour
+    // absorber cela. On le fait donc partir au calme, comme les cinq autres
+    // passages lourds — sans toucher à la fenêtre, qui mesure le jeu.
+    await souffler();
     await endormir(bloque);
     await dormir(26000);                       // au-delà des vingt secondes tolérées
     await reveiller(bloque);
