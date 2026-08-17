@@ -1350,6 +1350,19 @@ export class NetSession {
         }
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // UN MONUMENT N'EST PAS SEPT MILLE GESTES.
+      //
+      // Poser la Tour Eiffel, c'est 6 972 blocs. Un message par bloc — ce que
+      // fait `op` — noierait le lien et l'ami d'en face verrait le monument
+      // pousser pendant une minute, ou pas du tout. Un lot part en une fois,
+      // découpé en tranches assez petites pour tenir dans un canal WebRTC.
+      case 'lot': {
+        const carte = {};
+        for (const [k, id, ts] of msg.blocs || []) carte[k] = [id, ts];
+        if (this.hooks.world.mergeEdits(carte) > 0) this.scheduleRemoteSave();
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
+      }
       case 'pos':
         entry.pos = { x: msg.x, y: msg.y, z: msg.z };
         entry.yaw = msg.yaw;
@@ -1397,6 +1410,16 @@ export class NetSession {
 
   sendOp(k, id, ts) {
     for (const c of this.conns.values()) this.envoyer(c, { t: 'op', k, id, ts });
+  }
+
+  // Un lot de blocs, en tranches : mille blocs par message tiennent
+  // confortablement dans un canal WebRTC, là où le monument entier ne
+  // passerait pas d'un coup.
+  sendLot(blocs, parTranche = 1000) {
+    for (let i = 0; i < blocs.length; i += parTranche) {
+      const tranche = blocs.slice(i, i + parTranche);
+      for (const c of this.conns.values()) this.envoyer(c, { t: 'lot', blocs: tranche });
+    }
   }
 
   sendChat(name, msg) {

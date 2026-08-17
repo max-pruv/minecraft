@@ -20,6 +20,52 @@ const path = require('path');
 const crypto = require('crypto');
 
 const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'plafond.js', 'sauvegarde.js'];
+
+// DEUX VOIES, ET C'EST LE CODE MODIFIÉ QUI CHOISIT — PAS CELUI QUI LIVRE.
+//
+// Le portail est passé de cinq suites à huit, et chaque livraison le payait en
+// entier : une heure, même pour ajouter un bâtiment. La cadence est tombée de
+// neuf versions par jour à deux ou trois, et la bibliothèque de monuments est
+// restée un jour entier dans le dépôt sans être branchée, faute de place dans
+// la file. Une heure de portail sur un fichier de décor, c'est une heure qui
+// ne protège rien.
+//
+// La voie rapide (`fumee.js`, cinq minutes) couvre ce qui casse vraiment quand
+// on ne touche qu'au contenu : un module qui ne charge pas, une erreur au
+// démarrage, un joueur qui traverse le sol, un bâtiment qui ne se pose pas.
+//
+// Ces fichiers-ci, eux, ne prennent JAMAIS la voie rapide. Ce sont ceux dont un
+// défaut ne se voit pas à l'œil et coûte les données d'un enfant : le réseau,
+// la sauvegarde, le terrain sous les maisons, l'espace parent, et le banc
+// lui-même. La liste est volontairement large — au moindre doute, voie longue.
+const DÉLICAT = [
+  'src/net.js', 'src/cloud.js', 'src/relaisnuage.js', 'src/sync.js',
+  'src/world.js', 'src/player.js', 'src/admin.js', 'src/identity.js',
+  'src/education.js', 'src/main.js', 'sw.js', 'index.html',
+  'tests/banc.js', 'tests/nuage.js', 'tests/tout.js',
+];
+
+// Ce qui a bougé depuis la dernière livraison. Sans réponse de git — dépôt
+// absent, historique tronqué — on prend la voie longue : ne pas savoir n'est
+// pas une raison d'aller vite.
+function fichiersModifies() {
+  try {
+    const { execSync } = require('child_process');
+    const base = path.resolve(__dirname, '..');
+    const sorti = execSync('git diff --name-only origin/main...HEAD; git diff --name-only HEAD',
+      { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const liste = [...new Set(sorti.split('\n').map((s) => s.trim()).filter(Boolean))];
+    return liste.length ? liste : null;
+  } catch { return null; }
+}
+
+function voieCourteSuffit() {
+  const changes = fichiersModifies();
+  if (!changes) return { court: false, pourquoi: 'git muet — on ne parie pas' };
+  const risque = changes.filter((f) => DÉLICAT.includes(f));
+  if (risque.length) return { court: false, pourquoi: `touche ${risque.join(', ')}` };
+  return { court: true, pourquoi: `${changes.length} fichier(s), aucun délicat` };
+}
 const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
 const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
 
@@ -88,6 +134,23 @@ function lancer(fichier) {
 
 (async () => {
   const depuisZero = process.argv.includes('--depuis-zero');
+
+  // `--voie` : on demande au dépôt quelle voie mérite ce changement.
+  // `--long` force la voie complète, toujours disponible sans discuter.
+  if (process.argv.includes('--voie') && !process.argv.includes('--long')) {
+    const { court, pourquoi } = voieCourteSuffit();
+    console.log(court
+      ? `🏃 voie rapide — ${pourquoi}\n`
+      : `🐢 voie complète — ${pourquoi}\n`);
+    if (court) {
+      const vert = await lancer('fumee.js');
+      console.log(vert
+        ? '\n✅ voie rapide verte — on peut publier'
+        : '\n❌ la voie rapide a échoué — on ne publie pas');
+      process.exit(vert ? 0 : 1);
+    }
+  }
+
   const empreinte = empreinteDuDepot();
   const verts = depuisZero ? {} : acquisLus(empreinte);
   const dejaVus = Object.keys(verts).filter((s) => verts[s]);

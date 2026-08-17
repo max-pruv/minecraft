@@ -100,6 +100,51 @@ qu'il ne faut pas casser**.
 
 ---
 
+## Deux voies d'essai — et c'est le code qui choisit
+
+`npm test` demande au dépôt quelle voie mérite le changement.
+
+| Voie | Quand | Durée |
+| --- | --- | --- |
+| **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
+| **Complète** (8 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~50 min |
+
+Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
+nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
+`sw.js`, `index.html`, et le banc lui-même. La liste est volontairement large.
+**Au moindre doute, voie longue** — et `npm run long` la force toujours.
+
+**Pourquoi cette séparation existe.** Le portail est passé de cinq suites à
+huit, de 2 588 à 5 297 lignes, et chaque livraison le payait en entier. La
+cadence est tombée de neuf versions par jour à deux ou trois, et la bibliothèque
+de monuments est restée un jour entier dans le dépôt **sans être branchée**,
+faute de place dans la file. Une heure de portail sur un fichier de décor ne
+protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
+
+**Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
+rapide n'est pas une permission d'aller vite sur ce qui compte.
+
+---
+
+## Ne jamais livrer un fichier que personne n'importe
+
+`src/monuments.js` est parti en production dans v157 : 803 lignes, 21 monuments,
+**aucun `import`**. Il n'était pas non plus dans la liste des fichiers mis en
+cache, donc il ne serait jamais arrivé sur un iPad. Du code mort qui ressemble à
+de l'avancement dans le journal et ne délivre rien.
+
+Avant de livrer un fichier neuf, deux vérifications qui coûtent dix secondes :
+
+```
+grep -rn "from './monfichier" src/     # quelqu'un l'importe-t-il ?
+grep -c "monfichier.js" sw.js          # arrivera-t-il sur la tablette ?
+```
+
+Et la règle en amont : **on ne commite pas une brique tant que rien ne s'en
+sert.** Soit elle est branchée dans la même livraison, soit elle attend.
+
+---
+
 ## Le banc d'essai — et ses pièges
 
 Playwright + express servant le dépôt **depuis le disque**, courtier PeerJS
