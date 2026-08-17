@@ -1370,7 +1370,40 @@ export function initFun(ctx) {
 
   // ---- targeted-animal buttons ---------------------------------------------
   let targetTimer = 0;
+  let dernierBord = '';
+
+  // Écrire dans la page à chaque image coûterait plus cher que le calcul
+  // lui-même : on ne touche au bouton que quand son état change.
+  function majBoutonBord(v) {
+    const etat = bord ? `d:${bord.nom}` : v ? `m:${v.emoji}` : '';
+    if (etat === dernierBord) return;
+    dernierBord = etat;
+    const boardB = document.getElementById('board-btn');
+    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}` : `${v ? v.emoji : '🚇'} Monter à bord`;
+    boardB.style.display = bord || v ? 'block' : 'none';
+    if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
+  }
   function updateTargetButtons(dt) {
+    // DEUX RYTHMES, PAS UN.
+    //
+    // Chercher la bête devant soi coûte cher : on parcourt tout le bestiaire,
+    // on projette chaque bête sur le regard. Un quart de seconde suffit
+    // largement pour un animal qui broute.
+    //
+    // Mais une monoplace à quatorze mètres par seconde traverse toute la zone
+    // d'embarquement entre deux clignements. Il faut donc la guetter à chaque
+    // image — et c'est bon marché : quatorze positions calculées sur un tracé.
+    //
+    // La première version accélérait TOUT le calcul à trente-trois hertz,
+    // bestiaire compris. La carte du jeu, elle, expirait : on avait rendu le
+    // jeu lent pour rattraper une voiture rapide.
+    const v = (() => {
+      if (!isRunning() || riding || bord) return null;
+      const vv = getVehicules && getVehicules();
+      const p = vv ? vv.placeProche(player.pos, 4) : null;
+      return p;
+    })();
+    if (v || bord) majBoutonBord(v);
     targetTimer -= dt;
     if (targetTimer > 0) return;
     targetTimer = 0.25;
@@ -1380,13 +1413,9 @@ export function initFun(ctx) {
     // montable la plus proche devant soi, même de biais. C'est tout l'écart
     // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.
     const m = isRunning() && !bord ? animalManager.monture() : null;
-    const v = isRunning() && !riding && !bord
-      ? (getVehicules && getVehicules() ? getVehicules().placeProche(player.pos, 4) : null)
-      : null;
 
     const feedB = document.getElementById('feed-btn');
     const rideB = document.getElementById('ride-btn');
-    const boardB = document.getElementById('board-btn');
 
     const montrer = nourrissable || m || v || riding || bord;
     targetRow.style.display = montrer ? 'flex' : 'none';
@@ -1395,8 +1424,10 @@ export function initFun(ctx) {
     feedB.style.display = nourrissable && !riding && !bord ? 'block' : 'none';
     rideB.textContent = riding ? '⬇️ Descendre' : `${m ? m.def.emoji : '🐴'} Monter`;
     rideB.style.display = riding || m ? 'block' : 'none';
-    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}` : `${v ? v.emoji : '🚇'} Monter à bord`;
-    boardB.style.display = bord || v ? 'block' : 'none';
+    // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
+    // deux se contrediraient quatre fois par seconde.
+    dernierBord = '';
+    majBoutonBord(v);
   }
 
   // ---- hooks & lifecycle ----------------------------------------------------

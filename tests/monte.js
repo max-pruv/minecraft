@@ -253,6 +253,52 @@ async function avancerUnDemiSeconde(p, depart) {
       Math.hypot(apresDescente.x - laisse.x, apresDescente.z - laisse.z) < 3,
       JSON.stringify({ laisse, apresDescente }));
 
+    // --- la monoplace freine dans les virages -------------------------------
+    //
+    // Demandé par Max : « je n'arrive pas à monter sur la formule un parce
+    // qu'elle va trop vite ». Elle roulait à dix-sept mètres par seconde
+    // partout, épingles comprises, et traversait la zone d'embarquement entre
+    // deux rafraîchissements du bouton. Une vraie monoplace freine avant le
+    // virage et relance en ligne droite — c'est ce qui laisse le temps.
+    const allures = [];
+    for (let i = 0; i < 40; i++) {
+      await dormir(400);
+      const etats = await tab.evaluate(() => window.__vehicules.etat());
+      // Les deux premiers convois sont les rames du métro ; les suivants sont
+      // les monoplaces, et ce sont elles qui freinent.
+      // UNE seule voiture, suivie dans le temps. Prendre la plus lente des six
+      // à chaque instant ne suit personne : il y a toujours quelqu'un dans un
+      // virage, et on mesure alors la forme du circuit, pas le comportement
+      // d'une monoplace.
+      if (etats[2]) allures.push(etats[2].vitesse);
+    }
+    const lente = Math.min(...allures), rapide = Math.max(...allures);
+    verifier('la monoplace ne roule pas à la même allure partout',
+      rapide / Math.max(0.1, lente) > 1.8,
+      `de ${lente.toFixed(1)} à ${rapide.toFixed(1)} m/s`);
+    verifier('et elle ralentit assez pour qu\'on puisse la rejoindre',
+      lente < 9, `${lente.toFixed(1)} m/s au plus lent`);
+
+    // Et le bouton, lui, doit apparaître : c'est le vrai trajet de l'enfant,
+    // planté au bord du circuit à attendre qu'une voiture passe.
+    const surLeCircuit = await tab.evaluate(() => window.__vehicules.point(2, 12));
+    verifier('le circuit tourne quelque part sur la carte', !!surLeCircuit,
+      JSON.stringify(surLeCircuit));
+    await tab.evaluate((pt) => {
+      const g = window.__game;
+      g.player.flying = true;
+      g.player.pos.set(pt.x, pt.y, pt.z);
+      g.player.vel.set(0, 0, 0);
+    }, surLeCircuit);
+    const monteeF1 = await tab.waitForFunction(() => {
+      const b = document.getElementById('board-btn');
+      return !!(b && getComputedStyle(b).display !== 'none'
+        && getComputedStyle(b.closest('.fun-target')).display !== 'none'
+        && b.textContent.includes('🏎️'));
+    }, null, { timeout: 60000 }).then(() => true).catch(() => false);
+    verifier('quand la monoplace arrive, on a le temps de voir le bouton',
+      monteeF1, JSON.stringify(await bouton(tab, 'board-btn')));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {
