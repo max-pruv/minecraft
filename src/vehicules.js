@@ -14,6 +14,22 @@ import { Atelier } from './modeles.js';
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
+// MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
+//
+// Sous terre, on ne voit rien du tout : un train enterré à douze blocs est
+// caché par douze blocs de roche, qu'on soit à dix mètres ou à cent. Washington
+// est à cent trente-sept blocs du point d'apparition, et ses douze rames
+// tombaient donc dans la portée : DIX convois, quarante wagons dessinés dans la
+// pierre, au-dessus de l'endroit précis où chaque partie commence. Le rendu est
+// tombé de vingt-cinq à seize images par seconde — et comme `main.js` borne
+// `dt` à un vingtième de seconde, sous cette barre le monde avance moins vite
+// que le temps réel : l'enfant court moins loin en appuyant aussi longtemps.
+//
+// Un convoi souterrain ne se montre donc que quand on est dans le tunnel avec
+// lui — assez loin pour le voir arriver le long du quai, pas assez pour le
+// dessiner à travers la ville.
+const VU_SOUTERRAIN = 40;
+
 // --- le tracé ----------------------------------------------------------------
 
 // Un parcours fermé, échantillonné : on précalcule les longueurs cumulées pour
@@ -185,6 +201,8 @@ class Convoi {
     // elle roule sur des rails — mais une monoplace ralentit en épingle et
     // relance en ligne droite. `allureMin` est la part de vitesse qu'il lui
     // reste dans le virage le plus serré.
+    // À partir de quelle distance on cesse de le dessiner. Voir VU_SOUTERRAIN.
+    this.vu = opts.souterrain ? VU_SOUTERRAIN : VU;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
     this.vitesseActuelle = opts.vitesse;
@@ -257,7 +275,7 @@ class Convoi {
   // Placer les voitures sur le tracé, ou les effacer si l'enfant est loin.
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
-    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < VU;
+    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < this.vu;
     if (!proche) {
       if (this.elements[0].visible) for (const m of this.elements) m.visible = false;
       return;
@@ -311,7 +329,7 @@ export function createVehicules({ scene, player }) {
       ajouter(points, {
         nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
         depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
-        arrets, pause: opts.pause,
+        arrets, pause: opts.pause, souterrain: opts.souterrain,
         modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }
@@ -346,6 +364,18 @@ export function createVehicules({ scene, player }) {
   function placeProche(pos, rayon = 4) {
     let meilleur = null, meilleureD = rayon;
     convois.forEach((c, ci) => {
+      // UN SEUL TEST AVANT D'ENTRER DANS LES WAGONS.
+      //
+      // Cette fonction est appelée à chaque image, pour tous les convois du
+      // jeu. Avec les quatre lignes de Washington, cela faisait quatre-vingts
+      // positions recalculées par image — dont soixante-dix-huit à l'autre bout
+      // du monde. La queue du convoi traîne derrière la tête d'au plus
+      // `ecart × (wagons − 1)` le long du tracé, et une courbe est toujours plus
+      // longue que sa corde : si la tête est plus loin que ça plus le rayon,
+      // aucun wagon ne peut être à portée.
+      const tete = c.place(0);
+      const trainee = c.ecart * (c.elements.length - 1);
+      if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
         const p = c.place(i);
         const d = Math.hypot(p.x - pos.x, p.z - pos.z);

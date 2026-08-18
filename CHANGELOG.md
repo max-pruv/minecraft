@@ -63,21 +63,40 @@ d'une ville générique et ne s'arrêtait jamais nulle part.
   remonte à la rue et un pylône brun marqué M. **Les rames s'arrêtent en
   station** trois secondes, trois par ligne : on descend, on attend sur le quai,
   le train arrive, on monte, il nous emmène à la suivante.
-- **Georgetown n'a pas de station**, comme dans la vraie ville. Et Rosslyn est
-  la plus profonde du réseau, quinze marches sous la rue, parce que la Bleue
-  passe sous le Potomac pour y arriver.
+- **Georgetown n'a pas de station**, comme dans la vraie ville. Et les deux
+  stations les plus profondes sont de l'autre côté du Potomac — Pentagon à
+  dix-neuf blocs sous la rue, Rosslyn à dix-sept — parce que le tunnel doit
+  plonger sous le fleuve pour y arriver, puis remonter.
 - **Le bouton « Monter à bord » ne ment plus.** Il restait affiché après le
   départ de la rame — plus personne ne lui disait de disparaître — et l'enfant
   appuyait dans le vide. Il se cache maintenant dès qu'il n'y a plus rien à
   prendre. Le défaut existait déjà pour le métro de la ville et la monoplace du
   circuit ; il est corrigé pour les trois.
+- **Et le jeu est plus fluide au point d'apparition qu'avant Washington.** Un
+  convoi se dessine tant qu'il est à moins de cent cinquante blocs — la portée
+  du regard à ciel ouvert. Mais un train enterré à douze blocs est caché par
+  douze blocs de roche, et la capitale n'est qu'à cent trente-sept blocs du point
+  d'apparition : dix des douze rames s'y dessinaient **dans la pierre**, au-dessus
+  de l'endroit précis où chaque partie commence. Un convoi souterrain ne se montre
+  plus que depuis son tunnel. Au passage, la fonction qui cherche la place à
+  portée de main recalculait la position de **tous** les wagons de tous les
+  convois à chaque image ; un seul test de distance par convoi suffisait.
 
-**Ce qui le prouve.** Une suite neuve, `tests/washington.js`, dix-sept témoins
+**Ce qui le prouve.** Une suite neuve, `tests/washington.js`, vingt-trois témoins
 qui suivent le trajet d'un enfant : arriver sur le Mall, pousser la porte du
 Capitole et se retrouver sous la coupole, entrer chez les gens, descendre
 l'escalier du métro, attendre, monter et **arriver à la station suivante**
 (Smithsonian → Federal Triangle). Elle est rouge sur la version d'avant, et
 proprement : le module n'existe pas, elle le dit au lieu de s'effondrer.
+
+La fluidité, elle, a été trouvée par un témoin qui ne la cherchait pas :
+`monte.js` compare depuis longtemps la vitesse à pied et en selle, et il est
+passé au rouge. Ce n'était pas la monture — c'était le nombre d'images. Mesuré
+sur la même machine, avant et après : quarante wagons rendus au point
+d'apparition, puis zéro ; huit images par demi-seconde, puis douze ; et
+l'éléphant qui retrouve enfin l'allure que le code lui promet, 1,66 fois la
+marche pour un `allure: 1.6` annoncé. Même la version d'avant Washington
+n'atteignait que 1,46.
 
 Et surtout, `tests/plafond.js` gagne un second témoin. Bâtir une ville de cent
 soixante-quinze blocs déplace forcément le sol sous elle : l'empreinte du relief

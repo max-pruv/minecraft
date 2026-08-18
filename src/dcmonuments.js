@@ -80,12 +80,6 @@ function outils(poser) {
       }
     }
   };
-  // Une porte de deux blocs de large et trois de haut, percée dans un mur.
-  const porte = (x, y, z, dx, dz) => {
-    for (let k = 0; k < 2; k++) {
-      for (let h = 0; h < 3; h++) set(x + dx * k, y + h, z + dz * k, BLOCK.AIR);
-    }
-  };
   // Une colonnade : un fût tous les deux blocs, chapiteau compris.
   const colonnade = (x0, x1, z0, z1, y0, y1, id, pas = 2) => {
     const long = Math.abs(x1 - x0) > Math.abs(z1 - z0);
@@ -131,19 +125,7 @@ function outils(poser) {
       }
     }
   };
-  // Un perron : des marches qui descendent d'un côté.
-  const perron = (x0, x1, z0, z1, marches, id, vers) => {
-    for (let m = 0; m < marches; m++) {
-      for (let x = x0; x <= x1; x++) {
-        for (let z = z0; z <= z1; z++) {
-          const xx = vers === 'x-' ? x - m : vers === 'x+' ? x + m : x;
-          const zz = vers === 'z-' ? z - m : vers === 'z+' ? z + m : z;
-          set(xx, marches - 1 - m, zz, id);
-        }
-      }
-    }
-  };
-  return { set, bloc, salle, porte, colonnade, fronton, dome, tambour, perron };
+  return { set, bloc, salle, colonnade, fronton, dome, tambour };
 }
 
 // --- LE CAPITOLE ---------------------------------------------------------------
@@ -235,8 +217,8 @@ export function buildCapitole(poser) {
 // épuisée. La ligne est restée.
 //
 // Dedans, un escalier en colimaçon monte jusqu'aux fenêtres du sommet. Le vrai
-// en compte huit cent quatre-vingt-dix-sept marches ; ici soixante, et la vue
-// sur tout le Mall à l'arrivée.
+// en compte huit cent quatre-vingt-dix-sept marches ; ici cinquante-deux, et la
+// vue sur tout le Mall à l'arrivée.
 export function buildObelisque(poser) {
   const { set, bloc } = outils(poser);
   const H = 62;
@@ -255,7 +237,7 @@ export function buildObelisque(poser) {
     }
   }
   // LE COLIMAÇON. Une marche tous les blocs, en tournant autour du fût : c'est
-  // le seul moyen de monter soixante blocs dans une cage de cinq de côté.
+  // le seul moyen de monter cinquante blocs dans une cage de cinq de côté.
   const anneau = [[-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [2, -1], [2, 0], [2, 1],
     [2, 2], [1, 2], [0, 2], [-1, 2], [-2, 2], [-2, 1], [-2, 0], [-2, -1]];
   for (let y = 1; y < H - 9; y++) {

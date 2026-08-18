@@ -452,12 +452,18 @@ décisions structurent le module, et elles se paient si on les défait.
   — qui est aussi le point zéro du vrai plan de L'Enfant, celui d'où se
   comptent les rues et les quatre quadrants. Chaque lieu est donné par sa vraie
   latitude et sa vraie longitude, `de()` fait le reste.
-- **Deux entorses, déclarées.** Les monuments sont dessinés cinq à sept fois
-  trop grands, sans quoi on ne rentre pas dedans : le Capitole fait 229 m, soit
-  trois blocs et demi à l'échelle de la carte. Et la **largeur** du Mall est
-  étirée pour que les musées tiennent de part et d'autre de la pelouse ; sa
-  longueur, elle, est exacte au bloc près. Toute nouvelle entorse s'écrit dans
-  l'en-tête du fichier, pas dans un coin du code.
+- **Trois entorses, déclarées.** Les monuments sont dessinés plus grands que
+  nature, sans quoi on ne rentre pas dedans : le Capitole fait 229 m, soit trois
+  blocs et demi à l'échelle de la carte. Le facteur n'est pas le même pour tous
+  — chacun est fait aussi petit qu'il peut l'être en restant visitable, ce qui
+  exagère surtout les petits : trois fois pour le Pentagone, six pour le
+  Capitole, trente pour l'obélisque. La **largeur** du Mall est étirée pour que
+  les musées tiennent de part et d'autre de la pelouse ; sa longueur, elle, est
+  exacte au bloc près. Et **quelques monuments reculent de leur vraie adresse**,
+  conséquence directe de la première entorse : agrandis, ils se recouvriraient.
+  Toute nouvelle entorse s'écrit dans l'en-tête du fichier, pas dans un coin du
+  code — et un en-tête qui dit « deux » quand le tableau en documente trois est
+  pire qu'un en-tête muet.
 - **Les monuments ne se recouvrent pas, et ne se posent pas sur l'eau.** À cette
   échelle ils se marchent dessus naturellement — les cinq mémoriaux de West
   Potomac Park tiennent dans trois cents mètres réels. Leurs positions ont été
@@ -489,6 +495,15 @@ Trois autres choses apprises en creusant :
   seconde, la fenêtre pour monter dure une seconde et un enfant de sept ans la
   rate à tous les coups. Les rames marquent les stations trois secondes ; il en
   faut trois par ligne pour que l'attente reste sous la demi-minute.
+- **Ce qui est sous terre ne se dessine pas de loin** (`souterrain: true`). Un
+  convoi reste rendu tant qu'il est à moins de cent cinquante blocs — la portée
+  du regard à ciel ouvert. Washington n'étant qu'à **cent trente-sept blocs du
+  point d'apparition**, dix de ses douze rames se dessinaient dans la roche,
+  au-dessus de l'endroit où chaque partie commence : le jeu est tombé de
+  vingt-cinq à seize images par seconde. Et comme `main.js` borne `dt` à un
+  vingtième de seconde, sous cette barre **le monde avance moins vite que le
+  temps réel** — l'enfant court moins loin en appuyant aussi longtemps. C'est un
+  témoin de la monte, qui ne cherchait rien de tel, qui l'a signalé.
 
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 

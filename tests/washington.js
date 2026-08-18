@@ -190,13 +190,23 @@ const descendre = async (p, ms) => {
       `${axe[1]} blocs contre ${axe[0]} au Capitole`);
     verifier('le Lincoln ferme l\'axe à l\'ouest', axe[2] > 10, `${axe[2]} blocs`);
 
-    // La loi de 1910 : aucun immeuble ordinaire ne dépasse le dôme. C'est ce
+    // La loi de 1910 : aucun immeuble ORDINAIRE ne dépasse le dôme. C'est ce
     // qui fait qu'on voit le Capitole de partout, et ça se vérifie.
-    const plusHaut = await tab.evaluate(({ px, pz }) => {
+    //
+    // « Ordinaire » est le mot qui compte : un monument a le droit d'être haut,
+    // c'est même tout son propos. Le balayage commençait à quatre blocs du
+    // centre alors que le Capitole s'étend jusqu'à dix — il mesurait donc le
+    // dôme qu'il prend pour référence, et ne passait que parce que la grille
+    // d'échantillonnage manquait la pointe. On écarte les emprises réservées.
+    const emprisesDC = D.MONUMENTS_DC.map((m) => [m.u, m.v, m.bu + 2, m.bv + 2]);
+    const plusHaut = await tab.evaluate(({ px, pz, emprisesDC }) => {
       const w = window.__game.world;
+      const surUnMonument = (u, v) => emprisesDC.some(
+        ([mu, mv, bu, bv]) => Math.abs(u - mu) <= bu && Math.abs(v - mv) <= bv);
       let max = 0;
       for (let u = 4; u < 40; u += 3) {
         for (let v = -30; v < 30; v += 3) {
+          if (surUnMonument(u, v)) continue;
           const sol = w.terrainHeight(px + u, pz + v);
           let h = 0;
           for (let y = sol + 1; y < 80; y++) if (w.getBlock(px + u, y, pz + v) !== 0) h = y - sol;
@@ -204,7 +214,7 @@ const descendre = async (p, ms) => {
         }
       }
       return max;
-    }, { px: P.x, pz: P.z });
+    }, { px: P.x, pz: P.z, emprisesDC });
     verifier('et la loi de 1910 tient : rien d\'ordinaire ne dépasse le dôme',
       plusHaut < axe[0], `le plus haut immeuble fait ${plusHaut} blocs`);
 

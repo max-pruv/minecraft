@@ -33,19 +33,32 @@
 // latitude et sa vraie longitude ; `de()` fait le reste. Le jour où l'échelle
 // change, toute la ville suit — rien n'est recopié à la main.
 //
-// Deux entorses, les seules, et toutes deux pour que des bâtiments tiennent
-// debout dans la place que la carte leur laisse :
+// Trois entorses, les seules, et toutes trois pour la même raison : à seize
+// blocs par kilomètre un bâtiment vrai tient sur trois blocs, et on n'entre pas
+// dans trois blocs.
 //
-//   · **les monuments sont dessinés six fois trop grands.** Le Capitole fait
-//     229 m de long, soit trois blocs et demi à notre échelle — on ne rentre
-//     pas dans trois blocs. C'est la même entorse qu'à Manhattan, où l'Empire
-//     State occupe onze blocs pour cent vingt-neuf mètres.
+//   · **les monuments sont dessinés bien plus grands que nature**, et pas tous
+//     du même facteur. Chacun est fait aussi petit qu'il peut l'être en restant
+//     visitable — un couloir fait un bloc, une salle en fait trois — ce qui
+//     exagère surtout les petits : le Pentagone, immense pour de vrai, tient
+//     presque à l'échelle (trois fois) ; le Capitole est six fois trop long ;
+//     l'obélisque, qui ne mesure que dix-sept mètres de côté, est trente fois
+//     trop large. C'est la même entorse qu'à Manhattan, où l'Empire State
+//     occupe onze blocs pour cent vingt-neuf mètres.
 //   · **la largeur du Mall est étirée**, sa longueur non. L'axe garde ses
 //     distances vraies au bloc près ; la bande nord-sud est écartée pour que
 //     les musées se posent de part et d'autre sans manger la pelouse.
+//   · **quelques monuments reculent de leur vraie adresse**, et c'est la
+//     conséquence directe de la première entorse : agrandis, ils se
+//     recouvriraient. La Cour suprême et la Bibliothèque du Congrès s'écartent
+//     d'un Capitole devenu six fois trop large ; les cinq mémoriaux de West
+//     Potomac Park, serrés dans quelques centaines de mètres réels, s'espacent
+//     de dix blocs. **Leur ordre et leur côté sont gardés** — le Vietnam au nord
+//     du Lincoln, la Corée au sud — et chaque écart est écrit à côté de sa ligne
+//     dans `MONUMENTS_DC`.
 //
-// Tout le reste — les rives, les collines, les cercles, les stations de métro —
-// est à sa place réelle, calculée et non devinée.
+// Le reste — les rives, les collines, les cercles, le tracé des avenues, les
+// stations de métro — est à sa place réelle, calculé et non deviné.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
@@ -847,7 +860,7 @@ function surMonument(u, v) {
 // s'allume quand un train approche. Aucune publicité, aucune enseigne : rien
 // que la voûte, la lumière rasante et le nom de la station.
 //
-// Six lignes de couleur dans la vraie ville. Ici quatre convois, parce que
+// Six lignes de couleur dans la vraie ville. Ici quatre lignes, parce que
 // quatre suffisent à desservir tout ce qu'un enfant veut voir, et que deux
 // lignes qui partagent le même tunnel donnent deux trains qui se traversent.
 //
@@ -1385,7 +1398,7 @@ function axeDeLot(la, lb) {
   const ns = (libre(3, 2) || libre(4, 2)) && (libre(3, 5) || libre(4, 5));
   const eo = (libre(2, 3) || libre(2, 4)) && (libre(5, 3) || libre(5, 4));
   const tire = tirage(la, lb, 73) < 0.5;
-  const axe = (tire && ns) || (!tire && !eo && ns) ? true : (eo ? false : true);
+  const axe = (tire && ns) || !eo;
   if (AXE_ILOT.size > 8192) AXE_ILOT.clear();
   AXE_ILOT.set(cle, axe);
   return axe;

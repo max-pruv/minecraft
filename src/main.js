@@ -363,13 +363,19 @@ function updateChunks() {
   vehicules = createVehicules({ scene, player });
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
-  // Le métro de Washington : quatre lignes de couleur, deux rames chacune, et
+  // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
-  // rouler à côté de son tunnel. Rien ne tourne tant que l'enfant est loin.
+  // rouler à côté de son tunnel.
+  //
+  // `souterrain` n'est pas décoratif : sans lui, ces douze rames se dessinent
+  // depuis le point d'apparition, qui n'est qu'à cent trente-sept blocs de la
+  // capitale — quarante wagons rendus dans la roche, et le jeu tombe à seize
+  // images par seconde là où chaque partie commence.
   for (const ligne of LIGNES_DC) {
     vehicules.metro(traceLigneMetro(ligne.nom), {
       nom: `métro ${ligne.nom}`, emoji: ligne.emoji, teinte: ligne.teinte,
       nb: 4, vitesse: 8, rames: 3, pause: 3, arretsIndex: arretsDeLigne(ligne.nom),
+      souterrain: true,
     });
   }
 })();
