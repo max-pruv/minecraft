@@ -332,7 +332,10 @@ export function initFun(ctx) {
   function embarquer() {
     if (bord) { debarquer(); return; }
     const v = getVehicules && getVehicules();
-    const place = v && v.placeProche(player.pos, 4);
+    // Cinq blocs, pas quatre : les voies du métro de Washington sont à quatre
+    // blocs de l'axe du quai — une rame à l'arrêt est donc à 4,2 blocs d'un
+    // enfant au milieu du quai, et l'ancien rayon la déclarait hors de portée.
+    const place = v && v.placeProche(player.pos, 5);
     if (!place) return;
     if (riding) toggleRide(null);
     bord = { id: place.id, nom: place.nom, emoji: place.emoji };
@@ -1547,7 +1550,7 @@ export function initFun(ctx) {
     const v = (() => {
       if (!isRunning() || riding || bord) return null;
       const vv = getVehicules && getVehicules();
-      const p = vv ? vv.placeProche(player.pos, 4) : null;
+      const p = vv ? vv.placeProche(player.pos, 5) : null;   // 5 : voir embarquer()
       return p;
     })();
     // ON APPELLE TOUJOURS, MÊME QUAND IL N'Y A RIEN.

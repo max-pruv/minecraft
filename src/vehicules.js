@@ -203,6 +203,11 @@ class Convoi {
     // reste dans le virage le plus serré.
     // À partir de quelle distance on cesse de le dessiner. Voir VU_SOUTERRAIN.
     this.vu = opts.souterrain ? VU_SOUTERRAIN : VU;
+    // La Jaune de Washington sort de terre pour franchir le Potomac sur son
+    // pont : là, et là seulement, elle se voit de loin comme un convoi de
+    // surface. `decouvert(p)` répond « ce point est-il à l'air libre ? » —
+    // c'est main.js qui le branche, car lui seul connaît le monde.
+    this.decouvert = opts.decouvert || null;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
     this.vitesseActuelle = opts.vitesse;
@@ -275,7 +280,8 @@ class Convoi {
   // Placer les voitures sur le tracé, ou les effacer si l'enfant est loin.
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
-    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < this.vu;
+    const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
+    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < portee;
     if (!proche) {
       if (this.elements[0].visible) for (const m of this.elements) m.visible = false;
       return;
@@ -329,7 +335,7 @@ export function createVehicules({ scene, player }) {
       ajouter(points, {
         nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
         depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
-        arrets, pause: opts.pause, souterrain: opts.souterrain,
+        arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert,
         modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }

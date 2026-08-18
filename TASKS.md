@@ -30,13 +30,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   ce qu'on ne sait pas suivre, pas à jeter ce qui se rattrape.
 
 - [ ] **Recalibrer les monuments existants** dans le ciel à 160 blocs. Ceux de
-  Washington sont déjà à leur échelle (v161) : chacun aussi grand que sa place
-  le permet, l'obélisque à soixante-quatre blocs, le Capitole à trente-trois.
+  Washington sont à leur échelle depuis v162 — l'obélisque à soixante-douze
+  blocs, la ville entière à 48 blocs/km.
 
-- [ ] **Le reste de Washington** — le mémorial Roosevelt, qui n'a pas trouvé
-  trente blocs entre le Potomac et le Tidal Basin ; les lignes Orange et
-  Argent, qui partagent le tunnel de la Bleue dans la vraie ville ; les guides
-  qui raconteraient ce qu'on visite.
+- [ ] **Le reste de Washington** — la Cathédrale nationale et Georgetown
+  University, sorties de l'emprise quand l'échelle a triplé (elles attendent
+  que le monde grandisse) ; les lignes Orange et Argent, qui partagent le
+  tunnel de la Bleue dans la vraie ville ; les guides qui racontent ce qu'on
+  visite. Le mémorial Roosevelt, lui, est revenu en v162.
 
 - [ ] **Ce que Washington a à apprendre** — la ville est pleine de choses qui
   se racontent : pourquoi les avenues coupent la grille en diagonale, pourquoi
@@ -62,6 +63,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v162** — Washington repris à zéro sur le verdict de Max (« très low
+  cost ») : échelle triplée (48 blocs/km), le cœur monumental seulement, les
+  douze musées du Mall, trente-deux intérieurs réels (hémicycles du Capitole,
+  Bureau ovale, avions suspendus), maisons à étages, vingt vraies stations, et
+  le pont de la Jaune sur le Potomac. L'ancienne emprise rend son relief de
+  v160 au bloc près.
 
 - [x] **v161** — Washington : le plan de L'Enfant, le Mall, vingt-quatre
   monuments dans lesquels on entre, trois ponts, et quatre lignes de métro dont

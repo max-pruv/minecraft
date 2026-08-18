@@ -20,6 +20,74 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v162 — Washington repris à zéro : trois fois plus grand, et on habite dedans
+
+**Pourquoi.** Le verdict de Max sur v161, quelques heures après sa mise en
+ligne : « une version très low cost de Washington ». Et il avait raison sur le
+fond : à seize blocs par kilomètre, le Capitole faisait vingt blocs de long, un
+musée en faisait dix, une « salle » était une pièce de trois blocs — une
+maquette qu'on survole, pas une ville qu'on habite. Sa demande : « me promener
+quasiment comme dans GTA, dans une immersion » — la grande esplanade avec tous
+les musées, des vrais bâtiments dans lesquels on entre, un métro qui connecte
+vraiment.
+
+**Ce que ça change.**
+
+- **L'échelle triple : quarante-huit blocs par kilomètre.** La carte couvre le
+  cœur monumental — d'Arlington à Union Station, de Dupont Circle au
+  Pentagone, 311 × 206 blocs — et à ce prix les grands bâtiments sont à leur
+  taille quasi réelle. La ville déménage au sud, sur la rive du grand estuaire :
+  l'ancienne emprise rend son relief d'avant v161 **au bloc près** — vérifié
+  colonne par colonne contre v160.
+- **Les DOUZE musées du Mall**, dans l'ordre vrai, rive nord puis rive sud, et
+  la pelouse entre les deux n'est plus mangée : les façades s'alignent sur les
+  allées, comme les vraies sur Madison et Jefferson Drive.
+- **On habite dedans.** Trente-deux bâtiments à intérieur, chacun avec la chose
+  qu'on vient voir : le Spirit of St. Louis et le Bell X-1 suspendus au plafond
+  de l'Air et de l'Espace, les capsules Apollo 11 et Friendship 7 au sol ;
+  l'éléphant sous la rotonde de l'Histoire naturelle, le squelette de la salle
+  des dinosaures, le diamant Hope sous sa vitrine ; la Bannière étoilée et la
+  locomotive de l'Histoire américaine ; la Rotonde du Capitole sous sa coupole
+  — désormais étanche — ET les deux hémicycles, Sénat au nord, Chambre au sud,
+  pupitres en arcs de cercle ; la Maison-Blanche avec l'East Room, la salle à
+  manger d'État, la colonnade, la roseraie et le Bureau ovale — ovale ; la
+  salle de lecture de la Bibliothèque du Congrès ; la grande halle dorée
+  d'Union Station et ses quais ; le théâtre Ford avec la loge du 14 avril 1865.
+  Le mémorial Roosevelt, sacrifié en v161 faute de place, est revenu — ses
+  quatre salles, ses cascades, et Fala.
+- **Les maisons ordinaires ont des étages.** Chaque îlot porte un vrai
+  escalier de granit en zigzag, des dalles tous les quatre blocs, des meubles à
+  chaque niveau, deux portes. Les rues font trois blocs, les trottoirs un, la
+  grille est celle de L'Enfant avec ses seize places et ronds-points.
+- **Le métro relie pour de vrai.** Quatre lignes aux vraies stations — vingt
+  quais, les distances vraies — rails et traverses visibles dans les tunnels,
+  quais de vingt-cinq blocs sous des voûtes à caissons de neuf blocs de haut,
+  mezzanine des portillons à mi-profondeur. **Et la Jaune fait la chose la plus
+  spectaculaire du vrai réseau : elle sort de terre dans East Potomac Park,
+  franchit le Potomac À L'AIR LIBRE sur son pont** — le pont routier de la 14e
+  Rue en parallèle, comme en vrai — et replonge vers Pentagon. La rame se voit
+  de loin sur le pont, de près dans les tunnels.
+- **Réparé en creusant** : la Bleue traversait déjà le Potomac en v161… dans un
+  tunnel fantôme jamais creusé — le générateur sautait les colonnes d'eau. Le
+  fleuve appartient maintenant à la ville : tunnel creusé sous le lit, pont
+  bâti au-dessus.
+
+**Ce qui le prouve.** `tests/washington.js` refaite : vingt-huit témoins, du
+trajet d'un enfant — pousser la porte du Capitole et se retrouver sous la
+coupole, entrer chez les gens, descendre les treize marches et la mezzanine
+jusqu'au quai, monter dans la Bleue à Smithsonian et descendre à L'Enfant
+Plaza — jusqu'aux deux témoins neufs : le pont de la Jaune (tablier sous le
+ciel, eau dessous, soixante-huit points de voie à l'air libre) et les avions
+suspendus au-dessus de la tête. Douze photos prises dans le jeu, regardées, et
+envoyées à Max.
+
+Et `tests/plafond.js` : l'empreinte hors-zone de v162 est **identique à celle
+de v160** — même découpe, 209 764 colonnes, le même condensat. Là où la
+capitale n'est plus, le sol est redevenu ce qu'il a toujours été ; là où elle
+s'installe, trois sanctuaires vérifiés et deux colonnes de référence figées.
+
+---
+
 ## v161 — Washington, et un métro dans lequel on monte
 
 **Pourquoi.** Max voulait la capitale américaine, « très high fidelity, beaucoup

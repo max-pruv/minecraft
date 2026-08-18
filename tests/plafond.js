@@ -32,13 +32,18 @@ function verifier(nom, ok, detail = '') {
 // pas une valeur à mettre à jour d'un revers de main : c'est une décision, et
 // elle se paie en maisons perdues.
 //
-// **Elle a changé une fois**, en v161, pour Washington : bâtir une capitale de
-// cent soixante-quinze blocs de large déplace forcément le sol sous elle. C'est
-// l'exception que Max a accordée pour la remise à plat de la carte sur la vraie
-// géographie — « on peut se permettre de casser certaines choses pour refaire
-// bien le fond ». Ancienne valeur, pour mémoire :
-// eb490353e3ffb238d8090c0854f9654045ff6bef.
-const EMPREINTE_RELIEF = 'b29a76348ff4b20a5827ba585b65d1786f19131b';
+// **Elle a changé deux fois**, toutes deux pour Washington, sous l'exception
+// que Max a accordée pour la remise à plat de la carte — « on peut se
+// permettre de casser certaines choses pour refaire bien le fond ».
+//
+// En v161, pour bâtir la capitale près du point d'apparition. En v162, pour
+// la DÉMÉNAGER au sud et la tripler : l'ancienne emprise rend alors son relief
+// d'avant v161 — vérifié : l'empreinte hors-zone de v162 est identique à celle
+// de v160, colonne pour colonne — et la nouvelle emprise prend le sien.
+// Valeurs précédentes, pour mémoire :
+// v160 : eb490353e3ffb238d8090c0854f9654045ff6bef
+// v161 : b29a76348ff4b20a5827ba585b65d1786f19131b
+const EMPREINTE_RELIEF = '7d60346f002c3df460f9be9e879b51ff60f024e1';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -51,7 +56,9 @@ const EMPREINTE_RELIEF = 'b29a76348ff4b20a5827ba585b65d1786f19131b';
 // Autrement dit : la première empreinte dit « on a bâti une ville », la
 // seconde dit « et on n'a rien cassé ailleurs ». C'est la seconde qui protège
 // les maisons de Marlon et d'Alice.
-const EMPREINTE_HORS_WASHINGTON = '7c3324fd0611e3c59513c2a22a0200f0d2e3fa33';
+// Calculée sur v160 ET sur v162 avec la même découpe : identiques. Hors de la
+// capitale, v162 rend le monde EXACTEMENT tel qu'il était avant v161.
+const EMPREINTE_HORS_WASHINGTON = '50566cefdeca64138a9ee906598a004c9f139e49';
 
 // Quelques colonnes nommées, pour que l'échec dise quelque chose de lisible.
 const COLONNES = [
@@ -59,11 +66,14 @@ const COLONNES = [
   [-140, 420, 53], [60, -190, 35], [620, 80, 37], [250, 205, 34], [-140, 80, 35],
   [-420, 300, 34], [450, 420, 36], [-520, -480, 41],
   [-100, -100, 26], [300, -300, 24], [-64, 16, 46],
-  // (100, 100) et (16, 64) étaient ici, à 26 et 35. Washington est passée
-  // dessus : la première est sur Capitol Hill, la seconde sur les hauteurs du
-  // nord-est. On les garde, avec leurs nouvelles cotes — c'est plus parlant
-  // que de les effacer, et si elles rebougeaient un jour, on le saurait.
-  [100, 100, 36], [16, 64, 37],
+  // (100, 100) et (16, 64) : Washington v161 était passée dessus (36 et 37) ;
+  // la capitale a déménagé au sud en v162, et elles ont RETROUVÉ leurs cotes
+  // de v160 — 26 et 35. C'est exactement ce que promet le déménagement : là où
+  // la ville n'est plus, le sol redevient ce qu'il a toujours été.
+  [100, 100, 26], [16, 64, 35],
+  // et deux colonnes DANS la nouvelle emprise, pour figer son relief à elle :
+  // le Mall, et l'esplanade du Pentagone.
+  [106, 374, 33], [-31, 456, 33],
 ];
 
 // Une maison telle que l'aurait sauvegardée la version d'avant : des

@@ -36,16 +36,18 @@ import {
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
 } from './paris.js';
 import {
-  WASHINGTON, WASHINGTON_R, surTerreWashington, hauteurWashington, solWashington,
+  WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
   batirColonneWashington, MONUMENTS_DC, QUAIS_METRO,
 } from './washington.js';
 import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
-  buildCourSupreme, buildBibliotheque, buildUnionStation, buildGalerieArt,
-  buildHistoireNaturelle, buildAirEspace, buildChateauSmithsonian, buildAfroAmericain,
-  buildArchives, buildArcChinatown, buildJefferson, buildMLK,
-  buildCoree, buildVietnam, buildKennedyCenter, buildGeorgetownU, buildCathedrale,
-  buildPentagone, buildSoldatInconnu, buildPontMemorial, buildPontDouglass, buildKeyBridge,
+  buildCourSupreme, buildBibliotheque, buildUnionStation, buildGalerieArt, buildNGAEst,
+  buildHistoireNaturelle, buildHistoireAmericaine, buildAirEspace, buildHirshhorn,
+  buildIndienAmerique, buildArtsIndustries, buildChateauSmithsonian, buildFreer,
+  buildAfroAmericain, buildTresor, buildArchives, buildArcChinatown, buildFordTheatre,
+  buildJefferson, buildMLK, buildRoosevelt, buildCoree, buildVietnam, buildKennedyCenter,
+  buildPentagone, buildSoldatInconnu, buildIwoJima,
+  buildPontMemorial, buildPont14e, buildKeyBridge,
 } from './dcmonuments.js';
 import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
@@ -512,12 +514,12 @@ export const PLACES = [
   // Washington : ses destinations, calculées depuis le plan comme celles de
   // Manhattan. Arriver « à Washington » sans elles, c'était atterrir quelque
   // part dans cent quarante blocs de capitale.
-  { name: 'Le Mall', x: WASHINGTON.x - 24, z: WASHINGTON.z, r: 22 },
-  { name: 'Capitole', x: WASHINGTON.x, z: WASHINGTON.z + 16, r: 12 },
-  { name: 'Maison-Blanche', x: WASHINGTON.x - 42, z: WASHINGTON.z - 25, r: 12 },
-  { name: 'Tidal Basin', x: WASHINGTON.x - 40, z: WASHINGTON.z + 10, r: 12 },
-  { name: 'Georgetown', x: WASHINGTON.x - 78, z: WASHINGTON.z - 26, r: 14 },
-  { name: 'Arlington', x: WASHINGTON.x - 86, z: WASHINGTON.z + 20, r: 14 },
+  { name: 'Le Mall', x: WASHINGTON.x - 60, z: WASHINGTON.z, r: 45 },
+  { name: 'Capitole', x: WASHINGTON.x, z: WASHINGTON.z + 24, r: 18 },
+  { name: 'Maison-Blanche', x: WASHINGTON.x - 115, z: WASHINGTON.z - 55, r: 14 },
+  { name: 'Tidal Basin', x: WASHINGTON.x - 125, z: WASHINGTON.z + 36, r: 14 },
+  { name: 'Georgetown', x: WASHINGTON.x - 222, z: WASHINGTON.z - 66, r: 20 },
+  { name: 'Arlington', x: WASHINGTON.x - 230, z: WASHINGTON.z + 52, r: 22 },
   // Les stations de métro sont des destinations à part entière : c'est de
   // là qu'on prend le train, et une station qu'on ne sait pas trouver ne
   // sert à rien. Le point d'arrivée est le haut de l'escalier, pas le quai.
@@ -796,28 +798,35 @@ const LANDMARKS = [
     x: NICE.x + MONUMENTS_NICE[i].u, z: NICE.z + MONUMENTS_NICE[i].v,
     box: MONUMENTS_NICE[i].box, seuil: MONUMENTS_NICE[i].seuil, build,
   })),
-  // WASHINGTON. Vingt-sept repères — vingt-quatre bâtiments et trois ponts —
+  // WASHINGTON. Trente-cinq repères — trente-deux bâtiments et trois ponts —
   // et l'ordre compte : les ponts d'abord,
   // parce qu'un pont TOUCHE ce qu'il dessert — celui du Mémorial part du pied
   // du Lincoln — et que le monument doit garder la main sur les colonnes
   // communes. Le tableau vient de src/washington.js : les positions ne sont
   // pas recopiées, elles s'en déduisent.
   ...[
-    ['Pont du Mémorial', buildPontMemorial], ['Pont Frederick Douglass', buildPontDouglass],
+    ['Pont du Mémorial', buildPontMemorial], ['Pont de la 14e Rue', buildPont14e],
     ['Key Bridge', buildKeyBridge],
     ['Capitole des États-Unis', buildCapitole], ['Monument de Washington', buildObelisque],
     ['Lincoln Memorial', buildLincoln], ['Mémorial de la Seconde Guerre mondiale', buildMemorialGuerre],
-    ['Maison-Blanche', buildMaisonBlanche], ['Cour suprême', buildCourSupreme],
-    ['Bibliothèque du Congrès', buildBibliotheque], ['Union Station', buildUnionStation],
-    ["Galerie nationale d'art", buildGalerieArt], ["Musée d'Histoire naturelle", buildHistoireNaturelle],
-    ["Musée de l'Air et de l'Espace", buildAirEspace], ['Château du Smithsonian', buildChateauSmithsonian],
-    ['Musée afro-américain', buildAfroAmericain], ['Archives nationales', buildArchives],
-    ['Arc de Chinatown', buildArcChinatown], ['Mémorial Jefferson', buildJefferson],
-    ['Mémorial Martin Luther King', buildMLK],
-    ['Mémorial de la guerre de Corée', buildCoree], ['Mémorial des vétérans du Vietnam', buildVietnam],
-    ['Kennedy Center', buildKennedyCenter], ['Université de Georgetown', buildGeorgetownU],
-    ['Cathédrale nationale', buildCathedrale], ['Pentagone', buildPentagone],
-    ['Tombe du Soldat inconnu', buildSoldatInconnu],
+    ["Galerie nationale d'art — Est", buildNGAEst], ["Galerie nationale d'art", buildGalerieArt],
+    ["Musée d'Histoire naturelle", buildHistoireNaturelle],
+    ["Musée d'Histoire américaine", buildHistoireAmericaine],
+    ['Musée afro-américain', buildAfroAmericain],
+    ["Musée de l'Indien d'Amérique", buildIndienAmerique],
+    ["Musée de l'Air et de l'Espace", buildAirEspace], ['Hirshhorn', buildHirshhorn],
+    ['Arts et Industries', buildArtsIndustries], ['Château du Smithsonian', buildChateauSmithsonian],
+    ['Galerie Freer', buildFreer],
+    ['Maison-Blanche', buildMaisonBlanche], ['Le Trésor', buildTresor],
+    ['Archives nationales', buildArchives], ['Arc de Chinatown', buildArcChinatown],
+    ['Théâtre Ford', buildFordTheatre],
+    ['Cour suprême', buildCourSupreme], ['Bibliothèque du Congrès', buildBibliotheque],
+    ['Union Station', buildUnionStation],
+    ['Mémorial des vétérans du Vietnam', buildVietnam],
+    ['Mémorial de la guerre de Corée', buildCoree], ['Mémorial Martin Luther King', buildMLK],
+    ['Mémorial Roosevelt', buildRoosevelt], ['Mémorial Jefferson', buildJefferson],
+    ['Kennedy Center', buildKennedyCenter], ['Pentagone', buildPentagone],
+    ['Tombe du Soldat inconnu', buildSoldatInconnu], ['Mémorial Iwo Jima', buildIwoJima],
   ].map(([nom, build]) => {
     const m = MONUMENTS_DC.find((q) => q.nom === nom);
     return {
@@ -1241,7 +1250,14 @@ export class World {
         // leurs escaliers. Le creusement se fait à chaque colonne, y compris
         // sous les rues et les pelouses ; c'est pour cela qu'il vient APRÈS
         // le sol et non à sa place.
-        if (city && city.key === 'dc') {
+        //
+        // Y COMPRIS SUR L'EAU : `cityAt` s'arrête à la rive — c'est son rôle,
+        // il dit où est la VILLE — mais le fleuve appartient quand même à la
+        // capitale : la Bleue passe en tunnel SOUS le Potomac, et la Jaune le
+        // franchit SUR son pont. Sans cette clause, ni l'un ni l'autre
+        // n'existaient : le générateur sautait les colonnes d'eau, et le train
+        // traversait le fleuve dans un tunnel fantôme jamais creusé.
+        if ((city && city.key === 'dc') || dansEauWashington(wx, wz)) {
           const sw = solWashington(wx, wz);
           if (sw !== null) data[World.index(x, h, z)] = sw;
           batirColonneWashington(wx, wz, h, (dy, id) => {

@@ -58,16 +58,19 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   plan rather than from a random-building generator: Haussmann Paris on the
   Seine, the island of Manhattan on the 1811 commissioners' grid, San
   Francisco's two clashing street grids across thirteen named hills, Nice,
-  Lille, and **Washington** — L'Enfant's grid split by diagonal state avenues
-  meeting at circles, the Mall running from the Capitol dome past the obelisk
-  to the Lincoln Memorial, and no skyscrapers anywhere, because the 1910 Height
-  Act says so. Its **24 landmarks are hollow**: push the door and you are in the
-  Rotunda, in the reading room, under the hanging aeroplanes.
-- **A metro you actually ride** — four colour-coded lines run in tunnels under
-  Washington, with coffered concrete vaults, brown-tiled island platforms and
-  stairs up to a pylon in the street. Trains **stop at every station** for a few
-  seconds, so a seven-year-old can get on, sit down and be carried to the next
-  one.
+  Lille, and **Washington's monumental core at 48 blocks/km** — L'Enfant's grid
+  split by diagonal state avenues meeting at circles, the Mall lined with its
+  twelve museums in true order, no skyscrapers because the 1910 Height Act says
+  so. Its **32 landmarks have real interiors**: the Spirit of St. Louis hangs
+  over your head in Air & Space, the elephant stands under the Natural History
+  rotunda, the Capitol has both chambers, the Oval Office is oval — and the
+  rowhouses have staircases and second floors.
+- **A metro you actually ride** — four colour-coded lines with 20 real
+  stations, visible rails and sleepers in the tunnels, coffered concrete
+  vaults, mezzanines with fare gates. Trains **stop at every station**, and the
+  Yellow Line does what the real one does: it surfaces in East Potomac Park and
+  **crosses the Potomac on its own bridge**, in the open air, before diving
+  back down at the Pentagon.
 - **Fully offline** — the game is an installable PWA: open it once online,
   add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
   runs entirely offline afterwards. When releasing changes, bump
@@ -168,7 +171,7 @@ src/vie.js        city life; src/vehicules.js  métro trains (which stop at
   the places
 src/paris.js src/manhattan.js src/sanfrancisco.js src/nice.js src/lille.js
 src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
-src/dcmonuments.js its 24 landmarks — hollow, you walk in — and its 3 bridges
+src/dcmonuments.js its 32 landmarks — real interiors, you walk in — and 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
 

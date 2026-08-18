@@ -376,6 +376,9 @@ function updateChunks() {
       nom: `métro ${ligne.nom}`, emoji: ligne.emoji, teinte: ligne.teinte,
       nb: 4, vitesse: 8, rames: 3, pause: 3, arretsIndex: arretsDeLigne(ligne.nom),
       souterrain: true,
+      // La Jaune sort de terre sur son pont du Potomac : à l'air libre, la
+      // rame se voit de loin comme n'importe quel train de surface.
+      decouvert: (p) => p.y >= world.terrainHeight(Math.floor(p.x), Math.floor(p.z)),
     });
   }
 })();
