@@ -188,6 +188,14 @@ class Convoi {
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
     this.vitesseActuelle = opts.vitesse;
+    // LES ARRÊTS. Un métro qui ne s'arrête jamais n'est pas un métro : il
+    // traverse la station à huit mètres par seconde, la fenêtre pour monter
+    // dure une seconde, et un enfant de sept ans la rate à tous les coups.
+    // `arrets` donne les distances, le long du tracé, où la tête doit
+    // s'immobiliser — et `pause` combien de temps les portes restent ouvertes.
+    this.arrets = (opts.arrets || []).slice().sort((a, b) => a - b);
+    this.pause = opts.pause ?? 5;
+    this.attente = 0;
     this.elements = [];
     for (let i = 0; i < opts.nb; i++) {
       const m = opts.modele(i);
@@ -209,6 +217,13 @@ class Convoi {
   }
 
   update(dt, joueur) {
+    if (this.attente > 0) {
+      // à quai : on ne bouge pas, mais on continue de se montrer ou de se
+      // cacher selon la distance au joueur
+      this.attente -= dt;
+      this.montrer(joueur);
+      return;
+    }
     if (this.freine) {
       // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
       // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
@@ -220,8 +235,27 @@ class Convoi {
       this.vitesseActuelle += (vise - this.vitesseActuelle) * Math.min(1, dt * 2.2);
       this.distance += this.vitesseActuelle * dt;
     } else {
+      const avant = this.distance;
       this.distance += this.vitesse * dt;
+      // Vient-on de franchir un arrêt ? Si oui, on s'y cale exactement — la
+      // tête du convoi au droit du quai — et on ouvre les portes.
+      const L = this.parcours.longueur;
+      if (this.arrets.length && L > 0) {
+        const d0 = ((avant % L) + L) % L, d1 = ((this.distance % L) + L) % L;
+        for (const a of this.arrets) {
+          const franchi = d1 >= d0 ? (a > d0 && a <= d1) : (a > d0 || a <= d1);
+          if (!franchi) continue;
+          this.distance = avant + ((a - d0 + L) % L);
+          this.attente = this.pause;
+          break;
+        }
+      }
     }
+    this.montrer(joueur);
+  }
+
+  // Placer les voitures sur le tracé, ou les effacer si l'enfant est loin.
+  montrer(joueur) {
     const tete = this.parcours.a(this.distance);
     const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < VU;
     if (!proche) {
@@ -248,14 +282,37 @@ export function createVehicules({ scene, player }) {
     return c;
   }
 
-  // Deux rames sur l'anneau, à l'opposé l'une de l'autre : où qu'on soit sur
-  // le tour, il y en a toujours une qui arrive.
-  function metro(points) {
+  // Deux rames sur le tour, à l'opposé l'une de l'autre : où qu'on soit sur la
+  // ligne, il y en a toujours une qui arrive. C'est aussi ce qui fait qu'un
+  // enfant n'attend jamais longtemps sur un quai.
+  //
+  // `opts` sert aux lignes nommées de Washington : chacune a sa couleur, son
+  // nom sur le bouton d'embarquement, et une seule livrée — une ligne rouge
+  // dont une rame sur deux serait jaune ne serait plus une ligne rouge.
+  function metro(points, opts = {}) {
     const p = new Parcours(points);
-    for (const [depart, teinte] of [[0, 0x2a6ad8], [p.longueur / 2, 0xd8a02a]]) {
+    const nom = opts.nom || 'métro';
+    const teintes = opts.teinte !== undefined
+      ? [opts.teinte, opts.teinte] : [0x2a6ad8, 0xd8a02a];
+    // Les arrêts sont donnés par leur RANG dans la liste de points, pas par une
+    // distance : c'est le creusement du tunnel qui sait où sont les quais, et
+    // lui compte en points de tracé. On convertit ici, une fois.
+    const arrets = (opts.arretsIndex || []).map((i) => p.cumul[Math.min(i, p.cumul.length - 1)]);
+    // COMBIEN DE RAMES ? Autant qu'il en faut pour qu'on n'attende pas.
+    //
+    // Deux suffisaient tant que le métro ne s'arrêtait jamais. Depuis qu'il
+    // marque les stations, un tour complet de la ligne Bleue dure deux minutes
+    // — treize arrêts dans chaque sens — et l'enfant restait une minute sur le
+    // quai à ne rien voir venir. Trois rames ramènent l'attente sous la
+    // demi-minute, ce qui est déjà l'intervalle du vrai métro aux heures
+    // creuses.
+    const rames = opts.rames ?? 2;
+    for (let k = 0; k < rames; k++) {
       ajouter(points, {
-        nb: 4, ecart: 7.6, vitesse: 7, depart, nom: 'métro', emoji: '🚇', assise: 1.1,
-        modele: (i) => construireRame(i === 0, teinte),
+        nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
+        depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
+        arrets, pause: opts.pause,
+        modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }
   }

@@ -43,6 +43,23 @@ travail est irrattrapable.
    pas au-delà** : une fois les villes à leur place, le sol se refige et
    l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
    casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
+
+   **Elle a servi une fois, en v161, pour bâtir Washington** — et la manière
+   dont elle a servi fait règle pour la suite. Poser une ville de cent
+   soixante-quinze blocs déplace le sol sous elle, c'est inévitable. Ce qui ne
+   l'est pas, c'est de le déplacer ailleurs : la première version fondait le
+   relief de la capitale sur vingt blocs autour d'elle, et ces vingt blocs
+   atteignaient le point d'apparition — un demi-bloc de plus sous les pieds,
+   arrondi à un bloc entier, et le plancher d'une maison est enterré.
+
+   D'où la forme que prend désormais toute casse autorisée : **elle se déclare,
+   elle se borne, et la borne se vérifie.** `washington.js` exporte
+   `ZONE_WASHINGTON`, l'emprise exacte de son influence sur le relief ;
+   `plafond.js` porte DEUX empreintes — celle du monde entier, qui a changé, et
+   **celle du monde hors de cette zone, qui n'a pas le droit de bouger**. Un
+   troisième témoin vérifie que la zone ne touche ni le point d'apparition, ni
+   le musée, ni le quartier des enfants. Une casse qu'on ne sait pas borner
+   n'est pas une casse autorisée.
 2. **Mode éducatif toujours actif et non contournable.**
 3. **Visages : signatures uniquement, jamais de photo stockée.** Le code
    parental est stocké haché.
@@ -107,7 +124,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (8 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~50 min |
+| **Complète** (10 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
@@ -171,6 +188,7 @@ touchent presque pas :
 | Zone | Fichiers | Se marche dessus avec |
 | --- | --- | --- |
 | Contenu et bâtiments | `monuments.js`, villes, `creatures.js` | rien |
+| Washington | `washington.js`, `dcmonuments.js` | `vehicules.js` (le métro) |
 | Apprendre / quiz | `education.js` | l'espace parent |
 | Paris et transports | `ville.js`, `paris.js`, `vehicules.js`, `main.js` | l'usine auto |
 | Usine et conduite | `vehicules.js`, `fun.js`, `main.js` | Paris |
@@ -424,6 +442,53 @@ tailler monde par monde en effacerait un entier.
   L'anneau aérien actuel (`ville.js:metroAerien`, `vehicules.js:metro`,
   `main.js`) est à refaire sous terre. Le même critère s'applique partout
   ailleurs : on regarde comment la vraie ville est faite avant de bâtir.
+
+### Washington (`washington.js`, `dcmonuments.js`)
+
+La sixième ville, et la première où **on entre dans les bâtiments**. Trois
+décisions structurent le module, et elles se paient si on les défait.
+
+- **Une échelle, un ancrage.** Seize blocs par kilomètre, ancré sur le Capitole
+  — qui est aussi le point zéro du vrai plan de L'Enfant, celui d'où se
+  comptent les rues et les quatre quadrants. Chaque lieu est donné par sa vraie
+  latitude et sa vraie longitude, `de()` fait le reste.
+- **Deux entorses, déclarées.** Les monuments sont dessinés cinq à sept fois
+  trop grands, sans quoi on ne rentre pas dedans : le Capitole fait 229 m, soit
+  trois blocs et demi à l'échelle de la carte. Et la **largeur** du Mall est
+  étirée pour que les musées tiennent de part et d'autre de la pelouse ; sa
+  longueur, elle, est exacte au bloc près. Toute nouvelle entorse s'écrit dans
+  l'en-tête du fichier, pas dans un coin du code.
+- **Les monuments ne se recouvrent pas, et ne se posent pas sur l'eau.** À cette
+  échelle ils se marchent dessus naturellement — les cinq mémoriaux de West
+  Potomac Park tiennent dans trois cents mètres réels. Leurs positions ont été
+  résolues une fois pour toutes et sont **figées dans `MONUMENTS_DC`**, avec
+  l'adresse vraie et l'écart en commentaire. Déplacer l'un d'eux se vérifie :
+  aucune empreinte en commun, aucune colonne sur le fleuve.
+
+**Le métro, et le seul piège qui compte.** Quatre lignes, creusées colonne par
+colonne comme le reste de la ville. Un tunnel en pente se rebouche tout seul :
+deux tronçons voisins couvrent la même colonne à deux cotes différentes, et le
+ballast du plus haut retombe au milieu du vide du plus bas. On collecte donc
+tout ce que les tronçons ont à dire, **on creuse le vide d'abord**, on abandonne
+les pleins qui tomberaient dedans — et surtout on creuse **le gabarit des rames
+en dernier**, après les quais et les voûtes. Rien ne peut alors se mettre en
+travers d'un train. C'est ce qui a fait passer la ligne Bleue de soixante et un
+points murés à zéro.
+
+Trois autres choses apprises en creusant :
+
+- **La pente se limite, la profondeur ne se force pas.** Prendre le point le
+  plus bas à huit blocs à la ronde enterrait Foggy Bottom à quatorze blocs sous
+  la rue parce que le Potomac passe à vingt blocs de là. On borne la pente à un
+  tiers de bloc par bloc : le tunnel plonge sous le fleuve et remonte tout seul.
+- **Le terminus a besoin d'un tiroir.** La rame fait demi-tour en décrivant un
+  demi-cercle ; sans prolongement au-delà de la dernière station, ce demi-cercle
+  se referme **sur le quai**. L'emprise de la ville doit couvrir ces tiroirs,
+  sinon la rame roule dans la roche.
+- **Un métro qui ne s'arrête pas n'est pas un métro.** À huit mètres par
+  seconde, la fenêtre pour monter dure une seconde et un enfant de sept ans la
+  rate à tous les coups. Les rames marquent les stations trois secondes ; il en
+  faut trois par ligne pour que l'attente reste sous la demi-minute.
 
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 

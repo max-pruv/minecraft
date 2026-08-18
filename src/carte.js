@@ -24,6 +24,7 @@ import { couleurCarteParc, lieuxDuParc } from './parc.js';
 import { couleurCarteSF, lieuxDeSF } from './sanfrancisco.js';
 import { couleurCarteNice, lieuxDeNice } from './nice.js';
 import { couleurCarteLille, lieuxDeLille } from './lille.js';
+import { couleurCarteWashington, lieuxDeWashington } from './washington.js';
 import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
 import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, ARCHI, DECOR_START, decorMapColor } from './blocks.js';
@@ -95,8 +96,39 @@ const ICONES = {
   SoHo: '👜', TriBeCa: '🎬', Chinatown: '🥟', 'Little Italy': '🍕',
   'Lower East Side': '🥯', 'Financial District': '💵',
   'Washington Heights': '⛰️', Inwood: '🌲',
+  // Washington. Le métro a la sienne : sur un plan de la capitale, c'est le
+  // premier repère qu'on cherche quand on veut aller quelque part.
+  Washington: '🏛️', 'Le Mall': '🌿', Capitole: '🏛️', 'Maison-Blanche': '🏠',
+  'Monument de Washington': '📍', 'Lincoln Memorial': '🏛️', 'Mémorial Jefferson': '🏛️',
+  'Tidal Basin': '🌸', 'Union Station': '🚉', 'Cathédrale nationale': '⛪',
+  Pentagone: '🛡️', Arlington: '🎖️', 'Tombe du Soldat inconnu': '🎖️',
+  "Musée de l'Air et de l'Espace": '🚀', 'Château du Smithsonian': '🏰',
+  "Galerie nationale d'art": '🖼️', "Musée d'Histoire naturelle": '🦕',
+  'Musée afro-américain': '✊', 'Archives nationales': '📜', 'Cour suprême': '⚖️',
+  'Bibliothèque du Congrès': '📚', 'Kennedy Center': '🎭', 'Arc de Chinatown': '🐉',
+  "Université de Georgetown": '🎓', Georgetown: '🧱',
+  'Mémorial des vétérans du Vietnam': '🕯️', 'Mémorial de la guerre de Corée': '🕯️',
+  'Mémorial Martin Luther King': '✊', 'Mémorial Roosevelt': '💧',
+  'Mémorial de la Seconde Guerre mondiale': '⭐',
+  'Pont du Mémorial': '🌉', 'Pont Frederick Douglass': '🌉', 'Key Bridge': '🌉',
+  'Dupont Circle': '⭕', 'Logan Circle': '⭕', 'Thomas Circle': '⭕',
+  'Scott Circle': '⭕', 'Washington Circle': '⭕', 'Mount Vernon Square': '⭕',
+  'Farragut Square': '🌳', 'Lafayette Square': '🌳', 'McPherson Square': '🌳',
+  'Judiciary Square': '⚖️', 'Lincoln Park': '🌳', 'Stanton Park': '🌳',
+  'Folger Park': '🌳', 'Sheridan Circle': '⭕', 'Ward Circle': '⭕',
+  'Meridian Hill Park': '💦', 'Capitol Hill': '🏛️', 'Foggy Bottom': '🌫️',
+  'Adams Morgan': '🎺', 'Columbia Heights': '🏘️', Shaw: '🎷', 'U Street': '🎷',
+  'Le Triangle fédéral': '🏛️', 'Penn Quarter': '🎫', Chinatown: '🥟',
+  'K Street': '💼', NoMa: '🏗️', 'Navy Yard': '⚓', 'Southwest Waterfront': '⛵',
+  Brookland: '🏘️', Anacostia: '🌉', Rosslyn: '🏢', 'Crystal City': '🏢',
+  'Cathedral Heights': '⛪', 'Woodley Park': '🦁',
 };
-const icone = (nom) => ICONES[nom] || '📍';
+
+// Les stations de métro portent toutes le même pictogramme : le « M » brun de
+// Washington. Un enfant qui cherche une bouche la reconnaît d'un coup d'œil,
+// sans lire le nom.
+const ICONE_METRO = 'Ⓜ️';
+const icone = (nom) => (nom.startsWith('Métro ') ? ICONE_METRO : ICONES[nom] || '📍');
 
 // Blocs par pixel. Petit = près.
 const ZOOM_MIN = 0.22;    // on distingue un bloc
@@ -296,6 +328,13 @@ export class Carte {
       const c = couleurCarteLille(wx, wz);
       if (c) return c;
     }
+    // Washington : le plan de L'Enfant se lit d'en haut et de nulle part
+    // ailleurs — la grille, les diagonales qui la coupent, les ronds-points
+    // où elles se croisent, et le Mall qui traverse tout d'est en ouest.
+    if (ville && ville.key === 'dc') {
+      const c = couleurCarteWashington(wx, wz);
+      if (c) return c;
+    }
     // La Chine n'est pas une ville : sa rivière turquoise et ses rizières se
     // peignent par-dessus le terrain ordinaire.
     {
@@ -491,6 +530,9 @@ export class Carte {
       ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLille().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...LIEUX_CHINE.map((c) => ({ c, fort: false, seuil: 0.55 })),
+      // Et les quartiers et ronds-points de Washington : un plan de la
+      // capitale se lit par ses cercles, comme New York par ses quartiers.
+      ...lieuxDeWashington().map((c) => ({ c, fort: false, seuil: 0.7 })),
     ];
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui

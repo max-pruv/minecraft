@@ -12,6 +12,7 @@
     "reglages": "node reglages.js",
     "carte": "node carte.js",
     "monte": "node monte.js",
+    "washington": "node washington.js",
     "plafond": "node plafond.js",
     "sauvegarde": "node sauvegarde.js",
     "visio": "node visio.js",
