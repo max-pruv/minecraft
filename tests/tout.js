@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -48,16 +48,19 @@ const GARDIENS = {
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js'],
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
   'src/washington.js': ['washington.js', 'plafond.js'],
   'src/dcmonuments.js': ['washington.js'],
+  // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
+  // commissariat.
+  'src/ville.js': ['metro.js', 'carte.js'],
   'src/player.js': ['plafond.js', 'monte.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js'],
-  'src/vehicules.js': ['monte.js', 'washington.js'],
+  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],

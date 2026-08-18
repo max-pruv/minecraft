@@ -13,11 +13,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Paris et son métro souterrain** — consigne de Max : il n'y a pas de
-  train aérien dans Paris. L'anneau actuel passe au-dessus des toits
-  (`ville.js:metroAerien`, `vehicules.js:metro`, `main.js`). À refaire sous
-  terre, avec bouches et quais. Et la place qu'il faut pour que Paris ressemble
-  à Paris.
+- [ ] **Paris a la place qu'il lui faut** — le métro est passé sous terre
+  (v161), mais la ville reste comprimée. À reprendre avec la refonte de la
+  carte, qui lui donnera l'espace.
 
 - [ ] **La carte sur la vraie géographie** — équirectangulaire centrée sur
   Paris, 1 bloc = 4 km, Atlantique (−74° à −10°) resserré à 60 %. New York
@@ -64,6 +62,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v163** — le métro de Paris passe sous terre : tunnel annulaire, quatre
+  stations à quais, bouches de métro au bord du trottoir, plus un seul pilier.
 - [x] **v162** — Washington repris à zéro sur le verdict de Max (« très low
   cost ») : échelle triplée (48 blocs/km), le cœur monumental seulement, les
   douze musées du Mall, trente-deux intérieurs réels (hémicycles du Capitole,

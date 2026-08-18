@@ -18,7 +18,8 @@
     "visio": "node visio.js",
     "parent": "node parent.js",
     "tout": "node tout.js",
-    "maj": "node maj.js"
+    "maj": "node maj.js",
+    "metro": "node metro.js"
   },
   "devDependencies": {
     "express": "^4.19.2",
