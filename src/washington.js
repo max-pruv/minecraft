@@ -58,6 +58,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -123,7 +124,7 @@ const de = (lat, lon) => [
 // blocs encore libre — et son coin sud-est plonge dans la mer existante, qui
 // joue l'estuaire du Potomac. C'est la disposition vraie : la ville sur la
 // rive nord, le fleuve qui s'élargit vers le sud-est.
-export const WASHINGTON = { x: 166, z: 374 };
+export const WASHINGTON = positionDe('washington');
 
 export const BOITE = { u0: -244, u1: 67, v0: -109, v1: 96 };
 export const WASHINGTON_R = 187;   // le cercle qui contient la boîte

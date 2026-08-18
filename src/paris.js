@@ -29,6 +29,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -48,7 +49,7 @@ const NOIR = uni(25);
 const VERRE = BLOCK.GLASS;
 const COUR = BLOCK.COBBLE;       // les pavés du fond des cours
 
-export const PARIS = { x: -240, z: 200, r: 55 };
+export const PARIS = { ...positionDe('paris'), r: 55 };
 
 // L'échelle, et le point d'ancrage. `de(dx, dz)` traduit un écart réel à
 // Notre-Dame, en kilomètres vers l'est et vers le sud, en coordonnées locales.

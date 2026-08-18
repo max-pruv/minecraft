@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -48,7 +48,10 @@ const GARDIENS = {
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js'],
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js'],
+  // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
+  // toutes, donc tout ce qui les dessine se rejoue.
+  'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
   'src/washington.js': ['washington.js', 'plafond.js'],

@@ -20,10 +20,21 @@
 
 // --- les projections ---------------------------------------------------------
 
-// Équirectangulaire : la plus simple des projections, et la bonne ici. Elle
-// déforme les surfaces près des pôles, ce qui n'a aucune importance pour un
-// jeu où l'on va de Paris à Rome — et elle a la propriété qui compte : une
-// distance sur la carte est une distance sur le terrain.
+// Équirectangulaire : la plus simple des projections, et la bonne ici.
+//
+// CE QU'ELLE GARANTIT, ET CE QU'ELLE NE GARANTIT PAS. Elle est exacte au
+// PARALLÈLE DE RÉFÉRENCE — ici la latitude de Paris — et s'écarte à mesure
+// qu'on s'en éloigne, parce qu'un degré de longitude vaut plus de kilomètres
+// près de l'équateur qu'au nord. Concrètement : Paris-Lille et Paris-Nice sont
+// justes au bloc près ; New York-San Francisco, à huit degrés plus au sud,
+// ressort 15 % trop court — 4 702 blocs au lieu de 5 519.
+//
+// C'est une propriété de TOUTE carte plate — aucune ne préserve à la fois les
+// distances, les angles et les surfaces — et non un défaut qu'on aurait laissé
+// passer. On la nomme ici plutôt que de la laisser découvrir, et le témoin
+// `carteMonde.js` ne vérifie les distances au bloc près QUE là où la projection
+// les promet. Ce qui reste vrai partout : l'ordre des villes, leurs directions
+// les unes par rapport aux autres, et le fait qu'on ne les confond plus.
 //
 // `compressions` : des bandes de longitude qu'on resserre. Max a tranché sur
 // l'Atlantique — « compresse légèrement la distance transocéanique » — parce
@@ -75,7 +86,24 @@ export const MONDES = {
       type: 'equirectangulaire',
       rayonKm: 6371,
       lat0: 48.8566, lon0: 2.3522,       // Paris : l'origine de la carte
-      kmParBloc: 4,
+      // 0,75 km par bloc, et ce chiffre est un RÉSULTAT, pas un choix de goût.
+      //
+      // Max avait tranché pour 4 km/bloc. La mesure l'a invalidé : les villes ne
+      // sont pas à l'échelle de la carte. Washington est bâtie à 48 blocs par
+      // kilomètre ; à 4 km/bloc elle devrait tenir dans 1,3 bloc. New York et
+      // Washington, distantes de 330 km, se seraient superposées sur près de
+      // deux cents blocs.
+      //
+      // Balayage, avec les emprises réelles : 4 km/bloc → −197 blocs de marge,
+      // 1 km/bloc → −42, 0,75 → +58, 0,5 → +256. C'est la première échelle qui
+      // tient, et elle sert ce que Max voulait — « laisser beaucoup plus
+      // d'espace, pour laisser grossir les villes ». Le prix est la distance :
+      // San Francisco à près de dix mille blocs. Le voyage se fait par
+      // téléportation, déjà tranché, et le terrain est engendré à la demande.
+      //
+      // `carte.js` a un témoin qui rougit si une ville grossit au point d'en
+      // toucher une autre : on ne redécouvrira pas ce défaut en jouant.
+      kmParBloc: 0.75,
       // Paris ne bouge PAS. C'est là que les enfants ont le plus construit, et
       // ancrer la projection sur sa position actuelle épargne leurs blocs.
       ancre: { x: -240, z: 200 },
@@ -89,8 +117,11 @@ export const MONDES = {
       { cle: 'nice', nom: 'Nice', lat: 43.7102, lon: 7.2620, r: 48 },
       { cle: 'ny', nom: 'New York', lat: 40.7128, lon: -74.0060, r: 152 },
       { cle: 'sf', nom: 'San Francisco', lat: 37.7749, lon: -122.4194, r: 66 },
-      { cle: 'washington', nom: 'Washington', lat: 38.9072, lon: -77.0369, r: 120 },
-      { cle: 'chine', nom: 'Chine', lat: 39.9042, lon: 116.4074, r: 150 },
+      // Washington est la plus étendue : bâtie à 48 blocs par kilomètre depuis
+      // v162, son emprise fait 311 × 206 blocs. C'est elle qui dicte l'échelle.
+      { cle: 'washington', nom: 'Washington', lat: 38.9072, lon: -77.0369, r: 187 },
+      // La Chine est une région, pas une ville : le repère est Pékin.
+      { cle: 'chine', nom: 'Chine', lat: 39.9042, lon: 116.4074, r: 70 },
     ],
   },
 

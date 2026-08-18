@@ -55,6 +55,7 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
+import { positionDe } from './mondes.js';
 
 export const CHUNK = 16;
 
@@ -471,7 +472,10 @@ export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
 // Les coordonnées de Paris sont recopiées ici parce que CITIES est déclaré
 // plus bas dans le fichier ; le test de cohérence les compare à chaque
 // démarrage, elles ne peuvent donc pas se mettre à diverger en silence.
-export const VILLE = { name: 'Caserne & Commissariat', x: -240, z: 200, r: 50 };
+// La caserne et le commissariat sont AU CŒUR de Paris : ils suivent la ville,
+// ils ne vivent pas à une adresse à eux. Les laisser sur des coordonnées écrites
+// à la main, c'était les voir rester en rase campagne le jour où Paris bouge.
+export const VILLE = { name: 'Caserne & Commissariat', ...positionDe('paris'), r: 50 };
 export const CIRCUIT = { name: 'Circuit de F1', x: 400, z: 110, r: 88 };
 
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
@@ -869,12 +873,12 @@ export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x,
 // pattern and landmarks: Haussmann Paris, skyscraper New York, and
 // pastel-hilled San Francisco.
 export const CITIES = [
-  { key: 'paris', name: 'Paris', x: -240, z: 200, r: 55, cell: 12, base: 34, street: 3 },
+  { key: 'paris', name: 'Paris', ...positionDe('paris'), r: 55, cell: 12, base: 34, street: 3 },
   // New York n'est plus un disque : c'est l'île de Manhattan, longue et
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
   // par zoneManhattan().
-  { key: 'ny', name: 'New York', x: 295, z: -110, r: 152, cell: 12, base: 33, street: 3 },
+  { key: 'ny', name: 'New York', ...positionDe('ny'), r: 152, cell: 12, base: 33, street: 3 },
   // San Francisco n'est pas un disque non plus : c'est une presqu'île, avec
   // l'océan à l'ouest, la passe au nord et la baie à l'est — cf. src/sanfrancisco.js.
   { key: 'sf', name: 'San Francisco', x: SF.x, z: SF.z, r: SF.r, cell: 11, base: 33, street: 3 },
