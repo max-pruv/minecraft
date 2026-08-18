@@ -36,6 +36,18 @@ import {
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
 } from './paris.js';
 import {
+  WASHINGTON, WASHINGTON_R, surTerreWashington, hauteurWashington, solWashington,
+  batirColonneWashington, MONUMENTS_DC, QUAIS_METRO,
+} from './washington.js';
+import {
+  buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
+  buildCourSupreme, buildBibliotheque, buildUnionStation, buildGalerieArt,
+  buildHistoireNaturelle, buildAirEspace, buildChateauSmithsonian, buildAfroAmericain,
+  buildArchives, buildArcChinatown, buildJefferson, buildMLK,
+  buildCoree, buildVietnam, buildKennedyCenter, buildGeorgetownU, buildCathedrale,
+  buildPentagone, buildSoldatInconnu, buildPontMemorial, buildPontDouglass, buildKeyBridge,
+} from './dcmonuments.js';
+import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
   MONUMENTS, LIBERTE, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC,
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
@@ -497,6 +509,21 @@ export const PLACES = [
   { name: 'SoHo', x: NY.x - 5, z: NY.z + 82, r: 12 },
   { name: 'Musée', x: -34, z: 40, r: 20 },
   { name: 'Quartier des enfants', x: 26, z: -14, r: 20 },
+  // Washington : ses destinations, calculées depuis le plan comme celles de
+  // Manhattan. Arriver « à Washington » sans elles, c'était atterrir quelque
+  // part dans cent quarante blocs de capitale.
+  { name: 'Le Mall', x: WASHINGTON.x - 24, z: WASHINGTON.z, r: 22 },
+  { name: 'Capitole', x: WASHINGTON.x, z: WASHINGTON.z + 16, r: 12 },
+  { name: 'Maison-Blanche', x: WASHINGTON.x - 42, z: WASHINGTON.z - 25, r: 12 },
+  { name: 'Tidal Basin', x: WASHINGTON.x - 40, z: WASHINGTON.z + 10, r: 12 },
+  { name: 'Georgetown', x: WASHINGTON.x - 78, z: WASHINGTON.z - 26, r: 14 },
+  { name: 'Arlington', x: WASHINGTON.x - 86, z: WASHINGTON.z + 20, r: 14 },
+  // Les stations de métro sont des destinations à part entière : c'est de
+  // là qu'on prend le train, et une station qu'on ne sait pas trouver ne
+  // sert à rien. Le point d'arrivée est le haut de l'escalier, pas le quai.
+  ...QUAIS_METRO.map((q) => ({
+    name: `Métro ${q.nom}`, x: WASHINGTON.x + q.u, z: WASHINGTON.z + q.v, r: 0,
+  })),
 ];
 
 function buildPyramid(set) { // grande pyramide de grès du désert
@@ -769,6 +796,35 @@ const LANDMARKS = [
     x: NICE.x + MONUMENTS_NICE[i].u, z: NICE.z + MONUMENTS_NICE[i].v,
     box: MONUMENTS_NICE[i].box, seuil: MONUMENTS_NICE[i].seuil, build,
   })),
+  // WASHINGTON. Vingt-sept repères — vingt-quatre bâtiments et trois ponts —
+  // et l'ordre compte : les ponts d'abord,
+  // parce qu'un pont TOUCHE ce qu'il dessert — celui du Mémorial part du pied
+  // du Lincoln — et que le monument doit garder la main sur les colonnes
+  // communes. Le tableau vient de src/washington.js : les positions ne sont
+  // pas recopiées, elles s'en déduisent.
+  ...[
+    ['Pont du Mémorial', buildPontMemorial], ['Pont Frederick Douglass', buildPontDouglass],
+    ['Key Bridge', buildKeyBridge],
+    ['Capitole des États-Unis', buildCapitole], ['Monument de Washington', buildObelisque],
+    ['Lincoln Memorial', buildLincoln], ['Mémorial de la Seconde Guerre mondiale', buildMemorialGuerre],
+    ['Maison-Blanche', buildMaisonBlanche], ['Cour suprême', buildCourSupreme],
+    ['Bibliothèque du Congrès', buildBibliotheque], ['Union Station', buildUnionStation],
+    ["Galerie nationale d'art", buildGalerieArt], ["Musée d'Histoire naturelle", buildHistoireNaturelle],
+    ["Musée de l'Air et de l'Espace", buildAirEspace], ['Château du Smithsonian', buildChateauSmithsonian],
+    ['Musée afro-américain', buildAfroAmericain], ['Archives nationales', buildArchives],
+    ['Arc de Chinatown', buildArcChinatown], ['Mémorial Jefferson', buildJefferson],
+    ['Mémorial Martin Luther King', buildMLK],
+    ['Mémorial de la guerre de Corée', buildCoree], ['Mémorial des vétérans du Vietnam', buildVietnam],
+    ['Kennedy Center', buildKennedyCenter], ['Université de Georgetown', buildGeorgetownU],
+    ['Cathédrale nationale', buildCathedrale], ['Pentagone', buildPentagone],
+    ['Tombe du Soldat inconnu', buildSoldatInconnu],
+  ].map(([nom, build]) => {
+    const m = MONUMENTS_DC.find((q) => q.nom === nom);
+    return {
+      name: nom, x: WASHINGTON.x + m.u, z: WASHINGTON.z + m.v,
+      box: Math.max(m.bu, m.bv), seuil: m.seuil, waterBase: !!m.eau, build,
+    };
+  }),
   // Countryside
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
@@ -815,6 +871,10 @@ export const CITIES = [
   { key: 'sf', name: 'San Francisco', x: SF.x, z: SF.z, r: SF.r, cell: 11, base: 33, street: 3 },
   { key: 'nice', name: 'Nice', x: NICE.x, z: NICE.z, r: NICE.r, cell: 11, base: 32, street: 3 },
   { key: 'lille', name: 'Lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, cell: 12, base: 34, street: 3 },
+  // Washington n'est pas un disque non plus : c'est un rectangle posé sur le
+  // confluent de deux rivières, découpé par surTerreWashington(). Le rayon ne
+  // sert qu'à écarter d'emblée ce qui est loin.
+  { key: 'dc', name: 'Washington', x: WASHINGTON.x, z: WASHINGTON.z, r: WASHINGTON_R, cell: 12, base: 33, street: 3 },
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -858,7 +918,7 @@ export class World {
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
       // Quatre reliefs à part, chacun dans son module : cf. plus bas.
-      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille') continue;
+      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc') continue;
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
@@ -899,6 +959,12 @@ export class World {
     // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
     // creusé autant que nivelé.
     h = hauteurManhattan(x, z, h);
+
+    // Washington : le Potomac et l'Anacostia se creusent et se rejoignent, le
+    // ravin de Rock Creek coupe le nord-ouest, et les collines nommées se
+    // lèvent — Capitol Hill sous le Capitole, la crête d'Arlington en face,
+    // Mount Saint Alban sous la cathédrale.
+    h = hauteurWashington(x, z, h);
 
     // Le pôle Nord : une banquise plate posée sur l'océan, tout au nord. On n'y
     // arrive qu'en volant longtemps — c'est un trésor caché, il n'est annoncé
@@ -1032,6 +1098,7 @@ export class World {
       // herbe sèche dorée restait l'herbe verte de la campagne.
       if (c.key === 'sf' && !surTerreSF(x, z) && !surMarin(x, z)) continue;
       if (c.key === 'nice' && !surTerreNice(x, z)) continue;
+      if (c.key === 'dc' && !surTerreWashington(x, z)) continue;
       return c;
     }
     return null;
@@ -1166,6 +1233,22 @@ export class World {
             }
           }
           continue;   // la trame générique ne s'applique pas ici
+        }
+
+        // Washington : le plan de L'Enfant — la grille, les avenues d'État en
+        // diagonale, les ronds-points — puis le Mall, et enfin ce qui est
+        // SOUS la ville : quatre lignes de métro, leurs voûtes à caissons et
+        // leurs escaliers. Le creusement se fait à chaque colonne, y compris
+        // sous les rues et les pelouses ; c'est pour cela qu'il vient APRÈS
+        // le sol et non à sa place.
+        if (city && city.key === 'dc') {
+          const sw = solWashington(wx, wz);
+          if (sw !== null) data[World.index(x, h, z)] = sw;
+          batirColonneWashington(wx, wz, h, (dy, id) => {
+            const wy = h + dy;
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+          });
+          continue;
         }
 
         // Paris : le fleuve, ses quais, ses ponts, l'Étoile, les
@@ -1345,8 +1428,11 @@ export class World {
     };
 
     for (const city of CITIES) {
-      // Cinq villes se bâtissent colonne par colonne, cf. leurs modules.
-      if (['ny', 'sf', 'nice', 'lille', 'paris'].includes(city.key)) continue;
+      // Six villes se bâtissent colonne par colonne, cf. leurs modules. Oublier
+      // Washington dans cette liste ne se voyait pas tout de suite : la trame
+      // générique posait par-dessus des maisons pastel de San Francisco, pleines
+      // et sans porte, au milieu des maisons de brique de la capitale.
+      if (['ny', 'sf', 'nice', 'lille', 'paris', 'dc'].includes(city.key)) continue;
       const CELL = city.cell;
       const minGX = Math.floor((baseX - CELL) / CELL), maxGX = Math.floor((baseX + CHUNK + CELL) / CELL);
       const minGZ = Math.floor((baseZ - CELL) / CELL), maxGZ = Math.floor((baseZ + CHUNK + CELL) / CELL);

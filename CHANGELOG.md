@@ -20,6 +20,95 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v161 — Washington, et un métro dans lequel on monte
+
+**Pourquoi.** Max voulait la capitale américaine, « très high fidelity, beaucoup
+de détails, bien placée sur la carte », avec deux exigences précises : **qu'on
+puisse rentrer dans les bâtiments**, et **qu'il y ait le métro, et qu'on puisse
+le prendre**. Le jeu avait cinq villes, et aucune ne se visitait de l'intérieur :
+on tournait autour de la tour Eiffel et du Chrysler Building sans jamais pousser
+une porte. Quant au seul métro existant, il tournait en rond au-dessus des toits
+d'une ville générique et ne s'arrêtait jamais nulle part.
+
+**Ce que ça change.**
+
+- **Washington, cent soixante-quinze blocs de large**, sur le confluent du
+  Potomac et de l'Anacostia. Le plan de L'Enfant est là pour de vrai : la grille
+  des rues numérotées et lettrées, **fendue en diagonale** par dix-huit avenues
+  d'État qui se coupent sur seize ronds-points — Dupont, Logan, Thomas, Scott,
+  Washington Circle. C'est ce croisement-là qu'on lit sur un plan de Washington
+  avant tout le reste, et c'est ce qu'on voit en ouvrant la carte du jeu.
+- **Le Mall**, du Capitole au Lincoln Memorial en passant par l'obélisque, aux
+  distances exactes : trente-sept blocs jusqu'au monument de Washington,
+  cinquante-sept jusqu'au Lincoln. Les musées bordent la pelouse dans le bon
+  ordre et du bon côté.
+- **Aucun gratte-ciel.** La loi de 1910 plafonne l'immeuble à cent trente pieds,
+  et c'est pour cela qu'on voit le dôme du Capitole de n'importe quel trottoir.
+  Après Manhattan, le contraste est le premier détail qu'un enfant remarque —
+  et il est vrai.
+- **Vingt-quatre monuments, et on entre dans tous** — plus les trois ponts. La
+  Rotonde du Capitole, avec la coupole creuse au-dessus de la tête ; le Lincoln
+  assis dans sa chambre à colonnes ; l'obélisque et son **escalier en
+  colimaçon** de cinquante-deux marches jusqu'aux fenêtres du sommet ; la
+  Maison-Blanche et son portique arrondi ; les avions suspendus au plafond du
+  musée de l'Air et de l'Espace ; le diplodocus de l'Histoire naturelle ; la
+  salle de lecture ronde de la Bibliothèque du Congrès ; le mur noir du
+  Vietnam, enfoncé dans la pelouse.
+- **Et les maisons ordinaires aussi.** Chaque îlot de la ville est creux, avec
+  deux portes face à face : on entre d'un côté, on ressort de l'autre. Il y a
+  une lampe, une table, parfois un canapé.
+- **Le métro, quatre lignes de couleur, sous terre.** Des voûtes de béton à
+  caissons — le gaufrier de Harry Weese, qui fait la beauté du vrai réseau — un
+  quai central carrelé de brun, des rails de part et d'autre, un escalier qui
+  remonte à la rue et un pylône brun marqué M. **Les rames s'arrêtent en
+  station** trois secondes, trois par ligne : on descend, on attend sur le quai,
+  le train arrive, on monte, il nous emmène à la suivante.
+- **Georgetown n'a pas de station**, comme dans la vraie ville. Et les deux
+  stations les plus profondes sont de l'autre côté du Potomac — Pentagon à
+  dix-neuf blocs sous la rue, Rosslyn à dix-sept — parce que le tunnel doit
+  plonger sous le fleuve pour y arriver, puis remonter.
+- **Le bouton « Monter à bord » ne ment plus.** Il restait affiché après le
+  départ de la rame — plus personne ne lui disait de disparaître — et l'enfant
+  appuyait dans le vide. Il se cache maintenant dès qu'il n'y a plus rien à
+  prendre. Le défaut existait déjà pour le métro de la ville et la monoplace du
+  circuit ; il est corrigé pour les trois.
+- **Et le jeu est plus fluide au point d'apparition qu'avant Washington.** Un
+  convoi se dessine tant qu'il est à moins de cent cinquante blocs — la portée
+  du regard à ciel ouvert. Mais un train enterré à douze blocs est caché par
+  douze blocs de roche, et la capitale n'est qu'à cent trente-sept blocs du point
+  d'apparition : dix des douze rames s'y dessinaient **dans la pierre**, au-dessus
+  de l'endroit précis où chaque partie commence. Un convoi souterrain ne se montre
+  plus que depuis son tunnel. Au passage, la fonction qui cherche la place à
+  portée de main recalculait la position de **tous** les wagons de tous les
+  convois à chaque image ; un seul test de distance par convoi suffisait.
+
+**Ce qui le prouve.** Une suite neuve, `tests/washington.js`, vingt-trois témoins
+qui suivent le trajet d'un enfant : arriver sur le Mall, pousser la porte du
+Capitole et se retrouver sous la coupole, entrer chez les gens, descendre
+l'escalier du métro, attendre, monter et **arriver à la station suivante**
+(Smithsonian → Federal Triangle). Elle est rouge sur la version d'avant, et
+proprement : le module n'existe pas, elle le dit au lieu de s'effondrer.
+
+La fluidité, elle, a été trouvée par un témoin qui ne la cherchait pas :
+`monte.js` compare depuis longtemps la vitesse à pied et en selle, et il est
+passé au rouge. Ce n'était pas la monture — c'était le nombre d'images. Mesuré
+sur la même machine, avant et après : quarante wagons rendus au point
+d'apparition, puis zéro ; huit images par demi-seconde, puis douze ; et
+l'éléphant qui retrouve enfin l'allure que le code lui promet, 1,66 fois la
+marche pour un `allure: 1.6` annoncé. Même la version d'avant Washington
+n'atteignait que 1,46.
+
+Et surtout, `tests/plafond.js` gagne un second témoin. Bâtir une ville de cent
+soixante-quinze blocs déplace forcément le sol sous elle : l'empreinte du relief
+change, pour la première fois, et c'est la seule exception que Max ait accordée
+— celle de la remise à plat de la carte. Mais **une seconde empreinte, calculée
+en retirant la zone d'influence de la capitale, doit rester identique au bloc
+près**, et elle l'est. Un troisième témoin vérifie que cette zone ne touche ni
+le point d'apparition, ni le musée, ni le quartier des enfants. Autrement dit :
+on a bâti une ville, et on n'a rien cassé ailleurs — c'est vérifié, pas espéré.
+
+---
+
 ## v160 — trois cents bâtiments, sans écrire trois cents fichiers
 
 **Pourquoi.** Max en voulait « à peu près trois cents ». v159 en a livré 21,

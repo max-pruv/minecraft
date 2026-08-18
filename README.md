@@ -54,6 +54,20 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   locks. Unlocking another 45-minute block takes either the parental code or
   a 20-correct-answer marathon quiz. Repeatable; survives refreshes since play
   time is persisted.
+- **Real places, at real proportions** — six cities, each drawn from its own
+  plan rather than from a random-building generator: Haussmann Paris on the
+  Seine, the island of Manhattan on the 1811 commissioners' grid, San
+  Francisco's two clashing street grids across thirteen named hills, Nice,
+  Lille, and **Washington** — L'Enfant's grid split by diagonal state avenues
+  meeting at circles, the Mall running from the Capitol dome past the obelisk
+  to the Lincoln Memorial, and no skyscrapers anywhere, because the 1910 Height
+  Act says so. Its **24 landmarks are hollow**: push the door and you are in the
+  Rotunda, in the reading room, under the hanging aeroplanes.
+- **A metro you actually ride** — four colour-coded lines run in tunnels under
+  Washington, with coffered concrete vaults, brown-tiled island platforms and
+  stairs up to a pylon in the street. Trains **stop at every station** for a few
+  seconds, so a seven-year-old can get on, sit down and be carried to the next
+  one.
 - **Fully offline** — the game is an installable PWA: open it once online,
   add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
   runs entirely offline afterwards. When releasing changes, bump
@@ -91,8 +105,8 @@ npm install
 npm test
 ```
 
-It takes about forty-five minutes, on purpose. Seven suites run one after the
-other — never in parallel, since two browsers fighting over four cores produce
+It takes about an hour, on purpose. Ten suites run one after the other — never
+in parallel, since two browsers fighting over four cores produce
 failures that don't exist in the game — and the waits have to outlast the
 game's own thresholds (twenty seconds of silence before a link is cut) or they
 would prove nothing. Each verdict is written to disk as it lands, so a crashed
@@ -148,10 +162,13 @@ src/creatures.js  creature species/AI/meshes, catch-balls, collection
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
-src/vie.js        city life; src/vehicules.js  métro trains and F1 cars
+src/vie.js        city life; src/vehicules.js  métro trains (which stop at
+                  stations) and F1 cars
 
   the places
 src/paris.js src/manhattan.js src/sanfrancisco.js src/nice.js src/lille.js
+src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
+src/dcmonuments.js its 24 landmarks — hollow, you walk in — and its 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
 

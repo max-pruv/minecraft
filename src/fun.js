@@ -1515,7 +1515,9 @@ export function initFun(ctx) {
 
   // ---- targeted-animal buttons ---------------------------------------------
   let targetTimer = 0;
-  let dernierBord = '';
+  // `null` et non chaîne vide : le premier passage doit POSER l'état du bouton
+  // — c'est-à-dire le cacher — et non se croire déjà à jour.
+  let dernierBord = null;
 
   // Écrire dans la page à chaque image coûterait plus cher que le calcul
   // lui-même : on ne touche au bouton que quand son état change.
@@ -1548,7 +1550,14 @@ export function initFun(ctx) {
       const p = vv ? vv.placeProche(player.pos, 4) : null;
       return p;
     })();
-    if (v || bord) majBoutonBord(v);
+    // ON APPELLE TOUJOURS, MÊME QUAND IL N'Y A RIEN.
+    //
+    // La garde `if (v || bord)` économisait un appel et coûtait un bouton
+    // menteur : quand la rame s'éloignait, plus personne ne disait au bouton
+    // de disparaître, et « 🚇 Monter à bord » restait à l'écran au-dessus du
+    // vide. L'enfant appuie, rien ne se passe. Et `majBoutonBord` sort tout
+    // seul quand l'état n'a pas changé — la garde n'économisait donc rien.
+    majBoutonBord(v);
     targetTimer -= dt;
     if (targetTimer > 0) return;
     targetTimer = 0.25;

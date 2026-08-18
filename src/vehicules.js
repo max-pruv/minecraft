@@ -14,6 +14,22 @@ import { Atelier } from './modeles.js';
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
+// MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
+//
+// Sous terre, on ne voit rien du tout : un train enterré à douze blocs est
+// caché par douze blocs de roche, qu'on soit à dix mètres ou à cent. Washington
+// est à cent trente-sept blocs du point d'apparition, et ses douze rames
+// tombaient donc dans la portée : DIX convois, quarante wagons dessinés dans la
+// pierre, au-dessus de l'endroit précis où chaque partie commence. Le rendu est
+// tombé de vingt-cinq à seize images par seconde — et comme `main.js` borne
+// `dt` à un vingtième de seconde, sous cette barre le monde avance moins vite
+// que le temps réel : l'enfant court moins loin en appuyant aussi longtemps.
+//
+// Un convoi souterrain ne se montre donc que quand on est dans le tunnel avec
+// lui — assez loin pour le voir arriver le long du quai, pas assez pour le
+// dessiner à travers la ville.
+const VU_SOUTERRAIN = 40;
+
 // --- le tracé ----------------------------------------------------------------
 
 // Un parcours fermé, échantillonné : on précalcule les longueurs cumulées pour
@@ -185,9 +201,19 @@ class Convoi {
     // elle roule sur des rails — mais une monoplace ralentit en épingle et
     // relance en ligne droite. `allureMin` est la part de vitesse qu'il lui
     // reste dans le virage le plus serré.
+    // À partir de quelle distance on cesse de le dessiner. Voir VU_SOUTERRAIN.
+    this.vu = opts.souterrain ? VU_SOUTERRAIN : VU;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
     this.vitesseActuelle = opts.vitesse;
+    // LES ARRÊTS. Un métro qui ne s'arrête jamais n'est pas un métro : il
+    // traverse la station à huit mètres par seconde, la fenêtre pour monter
+    // dure une seconde, et un enfant de sept ans la rate à tous les coups.
+    // `arrets` donne les distances, le long du tracé, où la tête doit
+    // s'immobiliser — et `pause` combien de temps les portes restent ouvertes.
+    this.arrets = (opts.arrets || []).slice().sort((a, b) => a - b);
+    this.pause = opts.pause ?? 5;
+    this.attente = 0;
     this.elements = [];
     for (let i = 0; i < opts.nb; i++) {
       const m = opts.modele(i);
@@ -209,6 +235,13 @@ class Convoi {
   }
 
   update(dt, joueur) {
+    if (this.attente > 0) {
+      // à quai : on ne bouge pas, mais on continue de se montrer ou de se
+      // cacher selon la distance au joueur
+      this.attente -= dt;
+      this.montrer(joueur);
+      return;
+    }
     if (this.freine) {
       // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
       // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
@@ -220,10 +253,29 @@ class Convoi {
       this.vitesseActuelle += (vise - this.vitesseActuelle) * Math.min(1, dt * 2.2);
       this.distance += this.vitesseActuelle * dt;
     } else {
+      const avant = this.distance;
       this.distance += this.vitesse * dt;
+      // Vient-on de franchir un arrêt ? Si oui, on s'y cale exactement — la
+      // tête du convoi au droit du quai — et on ouvre les portes.
+      const L = this.parcours.longueur;
+      if (this.arrets.length && L > 0) {
+        const d0 = ((avant % L) + L) % L, d1 = ((this.distance % L) + L) % L;
+        for (const a of this.arrets) {
+          const franchi = d1 >= d0 ? (a > d0 && a <= d1) : (a > d0 || a <= d1);
+          if (!franchi) continue;
+          this.distance = avant + ((a - d0 + L) % L);
+          this.attente = this.pause;
+          break;
+        }
+      }
     }
+    this.montrer(joueur);
+  }
+
+  // Placer les voitures sur le tracé, ou les effacer si l'enfant est loin.
+  montrer(joueur) {
     const tete = this.parcours.a(this.distance);
-    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < VU;
+    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < this.vu;
     if (!proche) {
       if (this.elements[0].visible) for (const m of this.elements) m.visible = false;
       return;
@@ -248,14 +300,37 @@ export function createVehicules({ scene, player }) {
     return c;
   }
 
-  // Deux rames sur l'anneau, à l'opposé l'une de l'autre : où qu'on soit sur
-  // le tour, il y en a toujours une qui arrive.
-  function metro(points) {
+  // Deux rames sur le tour, à l'opposé l'une de l'autre : où qu'on soit sur la
+  // ligne, il y en a toujours une qui arrive. C'est aussi ce qui fait qu'un
+  // enfant n'attend jamais longtemps sur un quai.
+  //
+  // `opts` sert aux lignes nommées de Washington : chacune a sa couleur, son
+  // nom sur le bouton d'embarquement, et une seule livrée — une ligne rouge
+  // dont une rame sur deux serait jaune ne serait plus une ligne rouge.
+  function metro(points, opts = {}) {
     const p = new Parcours(points);
-    for (const [depart, teinte] of [[0, 0x2a6ad8], [p.longueur / 2, 0xd8a02a]]) {
+    const nom = opts.nom || 'métro';
+    const teintes = opts.teinte !== undefined
+      ? [opts.teinte, opts.teinte] : [0x2a6ad8, 0xd8a02a];
+    // Les arrêts sont donnés par leur RANG dans la liste de points, pas par une
+    // distance : c'est le creusement du tunnel qui sait où sont les quais, et
+    // lui compte en points de tracé. On convertit ici, une fois.
+    const arrets = (opts.arretsIndex || []).map((i) => p.cumul[Math.min(i, p.cumul.length - 1)]);
+    // COMBIEN DE RAMES ? Autant qu'il en faut pour qu'on n'attende pas.
+    //
+    // Deux suffisaient tant que le métro ne s'arrêtait jamais. Depuis qu'il
+    // marque les stations, un tour complet de la ligne Bleue dure deux minutes
+    // — treize arrêts dans chaque sens — et l'enfant restait une minute sur le
+    // quai à ne rien voir venir. Trois rames ramènent l'attente sous la
+    // demi-minute, ce qui est déjà l'intervalle du vrai métro aux heures
+    // creuses.
+    const rames = opts.rames ?? 2;
+    for (let k = 0; k < rames; k++) {
       ajouter(points, {
-        nb: 4, ecart: 7.6, vitesse: 7, depart, nom: 'métro', emoji: '🚇', assise: 1.1,
-        modele: (i) => construireRame(i === 0, teinte),
+        nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
+        depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
+        arrets, pause: opts.pause, souterrain: opts.souterrain,
+        modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }
   }
@@ -289,6 +364,18 @@ export function createVehicules({ scene, player }) {
   function placeProche(pos, rayon = 4) {
     let meilleur = null, meilleureD = rayon;
     convois.forEach((c, ci) => {
+      // UN SEUL TEST AVANT D'ENTRER DANS LES WAGONS.
+      //
+      // Cette fonction est appelée à chaque image, pour tous les convois du
+      // jeu. Avec les quatre lignes de Washington, cela faisait quatre-vingts
+      // positions recalculées par image — dont soixante-dix-huit à l'autre bout
+      // du monde. La queue du convoi traîne derrière la tête d'au plus
+      // `ecart × (wagons − 1)` le long du tracé, et une courbe est toujours plus
+      // longue que sa corde : si la tête est plus loin que ça plus le rayon,
+      // aucun wagon ne peut être à portée.
+      const tete = c.place(0);
+      const trainee = c.ecart * (c.elements.length - 1);
+      if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
         const p = c.place(i);
         const d = Math.hypot(p.x - pos.x, p.z - pos.z);
