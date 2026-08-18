@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v163 — le métro de Paris passe sous terre
+
+**Pourquoi.** Max, en jouant : « pas du tout de métro ou de train aérien à
+Paris. Typiquement, la réalité voudrait dire qu'on devrait avoir un métro
+souterrain. Le train ne devrait pas être aérien. » Il a raison — un anneau aérien
+faisant le tour de Paris n'existe nulle part, et le viaduc parisien se limite à
+deux tronçons des lignes 2 et 6. Le nôtre passait au-dessus des toits, porté sur
+quarante piliers.
+
+**Ce que ça change.**
+
+- **Un tunnel annulaire**, sept blocs sous la rue, avec ses piédroits carrelés
+  de blanc, sa voûte arrondie — un couloir carré fait cave, c'est la courbe du
+  plafond qui fait métro — et ses lampes tous les sept blocs, sans lesquelles on
+  ne sait plus de quel côté on regarde sous terre.
+- **Quatre stations avec de vrais quais** : un renfoncement à côté de la voie,
+  pas la voie elle-même. Un enfant qui attend se tient **hors** du passage de la
+  rame, sur un quai surélevé bordé de sa bande d'éveil jaune.
+- **Des bouches de métro au bord du trottoir** : édicule vert, escalier,
+  balustrade. C'est le seul morceau du métro visible depuis la rue, donc c'est
+  lui qui rend le reste trouvable — un tunnel parfait mais invisible ne sert à
+  personne.
+- **Plus un seul pilier, plus un seul rail en l'air.**
+
+**Ce qui ne bouge pas : le sol.** L'empreinte du relief mesure `terrainHeight`,
+le paysage engendré — creuser un tunnel dessous n'y touche pas. Et les blocs
+posés par un enfant sont réappliqués **après** la ville : une cabane enterrée
+sur le tracé reste intacte, et c'est le tunnel qui a un trou.
+
+**Ce qui le prouve.** Une suite neuve, `metro.js`, éprouve ce qu'un enfant vit,
+pas la présence d'un tunnel quelque part. Sur l'ancien code, quatre témoins
+tombent — « hauteur la plus pleine : +9, **100 % du tour** », « 8 points dégagés
+sur 180 », « 0 point praticable sur 12 », « la rame roule à y=44 pour un sol à
+34 ». Sur le nouveau : 35 % du tour au plus (les immeubles, que l'anneau
+traverse), 180 points dégagés sur 180, 12 quais praticables sur 12, et la rame à
+**y=27 pour un sol à 34**.
+
+Le premier témoin, écrit trop vite, comptait *tout* ce qui était solide au-dessus
+du sol le long de l'anneau : il rendait 2 459 blocs, et c'étaient les immeubles
+de Paris. Il accusait la ville d'être un viaduc. Ce qui distingue un viaduc d'un
+quartier, c'est la **continuité** — d'où la mesure actuelle, la hauteur la plus
+pleine du tour.
 ## v162 — Washington repris à zéro : trois fois plus grand, et on habite dedans
 
 **Pourquoi.** Le verdict de Max sur v161, quelques heures après sa mise en
