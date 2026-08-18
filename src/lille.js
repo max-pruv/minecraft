@@ -25,6 +25,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -46,7 +47,7 @@ const VERRE = BLOCK.GLASS;
 const OR = BLOCK.GOLD;
 const ACIER = uni(24);
 
-export const LILLE = { x: -300, z: -200, r: 46 };
+export const LILLE = { ...positionDe('lille'), r: 46 };
 
 const BLOCS_PAR_KM = 16;
 const GRAND_PLACE = { u: 0, v: 0 };

@@ -13,6 +13,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const damier = (c) => DECOR_START + c * 10 + 3;
@@ -35,7 +36,7 @@ const OR = BLOCK.GOLD;
 const BLEU = uni(10);
 const VERT = uni(5);
 
-export const NICE = { x: 300, z: 260, r: 48 };
+export const NICE = { ...positionDe('nice'), r: 48 };
 
 const BLOCS_PAR_KM = 10;
 // La place Masséna : le point où tout se croise, et d'où tout se mesure.

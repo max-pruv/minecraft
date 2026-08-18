@@ -33,6 +33,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -53,7 +54,7 @@ const ARDOISE = uni(23);
 
 // Le centre de l'île, qui reste celui de l'ancienne ville : les mondes déjà
 // sauvegardés gardent ainsi leurs constructions au même endroit.
-export const NY = { x: 295, z: -110 };
+export const NY = positionDe('ny');
 
 export const NY_LONG = 134;   // demi-longueur nord-sud, en blocs
 export const NY_LARGE = 26;   // demi-largeur maximale
