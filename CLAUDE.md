@@ -445,25 +445,40 @@ tailler monde par monde en effacerait un entier.
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 
-La sixième ville, et la première où **on entre dans les bâtiments**. Trois
-décisions structurent le module, et elles se paient si on les défait.
+La sixième ville, la première où **on entre dans les bâtiments** — et la
+première à avoir été **refaite sur verdict de l'utilisateur** : v161, à seize
+blocs par kilomètre, était « une version très low cost » (Max, quelques heures
+après la mise en ligne), une maquette qu'on survole. v162 triple l'échelle et
+réduit la couverture au cœur monumental. La leçon vaut pour toute ville à
+venir : **le critère n'est pas « la carte est juste », c'est « on s'y promène
+comme dans GTA »** — la fidélité de plan ne sauve pas une ville où les
+bâtiments font dix blocs.
 
-- **Une échelle, un ancrage.** Seize blocs par kilomètre, ancré sur le Capitole
-  — qui est aussi le point zéro du vrai plan de L'Enfant, celui d'où se
-  comptent les rues et les quatre quadrants. Chaque lieu est donné par sa vraie
-  latitude et sa vraie longitude, `de()` fait le reste.
-- **Trois entorses, déclarées.** Les monuments sont dessinés plus grands que
-  nature, sans quoi on ne rentre pas dedans : le Capitole fait 229 m, soit trois
-  blocs et demi à l'échelle de la carte. Le facteur n'est pas le même pour tous
-  — chacun est fait aussi petit qu'il peut l'être en restant visitable, ce qui
-  exagère surtout les petits : trois fois pour le Pentagone, six pour le
-  Capitole, trente pour l'obélisque. La **largeur** du Mall est étirée pour que
-  les musées tiennent de part et d'autre de la pelouse ; sa longueur, elle, est
-  exacte au bloc près. Et **quelques monuments reculent de leur vraie adresse**,
-  conséquence directe de la première entorse : agrandis, ils se recouvriraient.
-  Toute nouvelle entorse s'écrit dans l'en-tête du fichier, pas dans un coin du
-  code — et un en-tête qui dit « deux » quand le tableau en documente trois est
-  pire qu'un en-tête muet.
+- **Une échelle, un ancrage.** Quarante-huit blocs par kilomètre, ancré sur le
+  Capitole — le point zéro du vrai plan de L'Enfant. Chaque lieu est donné par
+  sa vraie latitude et sa vraie longitude, `de()` fait le reste. À cette
+  échelle les grands bâtiments sont quasi à leur taille ; en échange, la carte
+  s'arrête au cœur monumental (la Cathédrale nationale et Georgetown University
+  sont hors emprise, ils attendent que le monde grandisse).
+- **Trois entorses, déclarées dans l'en-tête** : les petits mémoriaux deux à
+  trois fois trop grands (l'obélisque six fois trop large, pour son colimaçon) ;
+  les îlots agrandis d'un facteur 1,7 (`PAS_RUE` 12) pour que chaque maison ait
+  un étage et un escalier ; et des écarts de position commentés ligne à ligne
+  — dont les deux rangées de musées, reculées d'un à deux blocs pour que leurs
+  façades s'alignent sur les allées du Mall **sans manger la pelouse**.
+- **L'eau appartient à la ville.** `cityAt` s'arrête à la rive — c'est son rôle
+  — mais le générateur bâtit aussi les colonnes d'eau de l'emprise
+  (`dansEauWashington`). Sans cette clause, la Bleue traversait le Potomac dans
+  un tunnel fantôme jamais creusé, et le pont de la Jaune n'existait pas. Le
+  défaut a vécu toute la v161 sans être vu : aucun témoin ne regardait sous le
+  fleuve.
+- **Une coupole se dessine colonne par colonne** (une hauteur par colonne,
+  `√(r²−d²)`), jamais par anneaux : les anneaux laissent des trous en couronne
+  près du sommet, et de la Rotonde on voyait le ciel à travers le dôme.
+- **Le déménagement d'une ville se prouve.** L'ancienne emprise doit rendre le
+  relief d'AVANT la ville, au bloc près : l'empreinte hors-nouvelle-zone de
+  v162 est identique à celle de v160 — c'est la forme que prend l'invariant 1
+  quand une ville bouge, et `plafond.js` la vérifie.
 - **Les monuments ne se recouvrent pas, et ne se posent pas sur l'eau.** À cette
   échelle ils se marchent dessus naturellement — les cinq mémoriaux de West
   Potomac Park tiennent dans trois cents mètres réels. Leurs positions ont été
@@ -497,13 +512,14 @@ Trois autres choses apprises en creusant :
   faut trois par ligne pour que l'attente reste sous la demi-minute.
 - **Ce qui est sous terre ne se dessine pas de loin** (`souterrain: true`). Un
   convoi reste rendu tant qu'il est à moins de cent cinquante blocs — la portée
-  du regard à ciel ouvert. Washington n'étant qu'à **cent trente-sept blocs du
-  point d'apparition**, dix de ses douze rames se dessinaient dans la roche,
-  au-dessus de l'endroit où chaque partie commence : le jeu est tombé de
-  vingt-cinq à seize images par seconde. Et comme `main.js` borne `dt` à un
-  vingtième de seconde, sous cette barre **le monde avance moins vite que le
-  temps réel** — l'enfant court moins loin en appuyant aussi longtemps. C'est un
-  témoin de la monte, qui ne cherchait rien de tel, qui l'a signalé.
+  du regard à ciel ouvert. La v161 de Washington étant à cent trente-sept blocs
+  du point d'apparition, dix de ses douze rames se dessinaient dans la roche :
+  le jeu est tombé de vingt-cinq à seize images par seconde. Et comme `main.js`
+  borne `dt` à un vingtième de seconde, sous cette barre **le monde avance
+  moins vite que le temps réel** — l'enfant court moins loin en appuyant aussi
+  longtemps. C'est un témoin de la monte, qui ne cherchait rien de tel, qui l'a
+  signalé. Depuis v162, `decouvert` complète la règle : une rame souterraine
+  qui SORT de terre — le pont de la Jaune — redevient visible de loin.
 
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 

@@ -1,61 +1,52 @@
-// Les monuments de Washington.
+// Les monuments de Washington — et cette fois, ON HABITE DEDANS.
 //
-// Une règle, et elle vaut pour les vingt-six : **on entre dedans**. Pas un
-// bloc plein qu'on regarde de l'extérieur — un bâtiment avec une porte, un
-// sol, un plafond et quelque chose à voir à l'intérieur. C'était la demande, et
-// c'est aussi ce qui distingue une capitale d'un décor : à Washington, tout est
-// ouvert au public et gratuit.
+// La règle de ce fichier : chaque grand bâtiment a un intérieur qui vaut le
+// détour. Pas « quatre murs et une lampe » — la chose qu'on vient VOIR :
+// le Spirit of St. Louis suspendu au plafond de l'Air et de l'Espace,
+// l'éléphant sous la rotonde de l'Histoire naturelle, l'hémicycle du Sénat,
+// le Bureau ovale. Un enfant qui pousse une porte doit trouver quelque chose
+// derrière, et un étage doit mener quelque part.
 //
-// Deuxième règle : **la silhouette d'abord**. Un enfant reconnaît un bâtiment à
-// trois traits, pas à trente. Le Capitole, c'est un dôme entre deux ailes
-// basses ; le Lincoln, une boîte à colonnes ; l'obélisque, une aiguille avec un
-// changement de teinte au tiers. Chaque constructeur commence donc par ces
-// trois traits-là, et n'ajoute le détail qu'après.
-//
-// Troisième règle, imposée par le ciel : le plafond du monde est à 160 et le
-// sol de Washington autour de 33. Il reste donc environ cent vingt blocs, et
-// **chaque monument a sa propre échelle** — l'obélisque prend soixante-deux
-// blocs parce qu'il domine tout, le Château du Smithsonian en prend douze
-// parce qu'il est petit dans la vraie ville aussi. Une échelle unique aurait
-// écrasé l'un ou ridiculisé l'autre.
+// Tout est creux, tout se visite, et chaque builder reçoit `poser` ancré sur
+// le centre du monument, au niveau du sol : set(x, y, z) avec y = 0 posé SUR
+// le sol. Les matières viennent de la palette de la ville — marbre pour les
+// monuments, calcaire pour les ministères, brique pour le XIXe siècle.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START } from './blocks.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
-const MARBRE = uni(27);          // le marbre blanc du Mall
-const MARBRE_2 = uni(28);        // la seconde carrière de l'obélisque, plus crème
-const CALCAIRE = uni(19);
-const GRES_ROUGE = uni(18);      // le grès du Château du Smithsonian
+const MARBRE = uni(27);
+const MARBRE_2 = uni(19);        // un marbre plus chaud, pour les soubassements
+const CALCAIRE = uni(28);
 const GRANIT = CITY_BLOCK.GRANITE;
-const GRANIT_NOIR = uni(26);     // le mur du Vietnam, poli comme un miroir
-const BRONZE = uni(22);          // la résille du musée afro-américain
-const CUIVRE = CITY_BLOCK.COPPER;
-const OR = BLOCK.GOLD;
+const GRES_ROUGE = uni(17);      // le grès rouge du Château Smithsonian
+const BRIQUE = BLOCK.BRICK;
 const VERRE = BLOCK.GLASS;
 const VERRE_BLEU = CITY_BLOCK.CURTAIN;
 const ACIER = uni(24);
-const ARDOISE = uni(25);
 const BETON = BLOCK.STONEBRICK;
+const BETON_CLAIR = uni(23);
+const NOIR = uni(26);            // le granit noir du mur du Vietnam
+const OR = CITY_BLOCK.GOLD ?? uni(2);
+const DALLE = uni(23);
+const PLANCHER = BLOCK.PLANK;
+const ROUGE = uni(0);
+const BLANC = uni(27);
+const BLEU = uni(21);
+const JAUNE = uni(2);
+const ORANGE = uni(1);
+const GRIS = uni(24);
+const VERT_SOMBRE = uni(5);
 const HERBE = BLOCK.GRASS;
 const EAU = BLOCK.WATER;
-const ARBRE = BLOCK.LEAVES;
-const DALLE = CITY_BLOCK.SIDEWALK;
-const ROUGE = uni(0);
-const VERT = uni(5);
-const JAUNE = uni(2);
-const BOIS = BLOCK.PLANK;
-const TAPIS = BLOCK.WOOL_RED;
-const LAMPE = PROP_START + 9;    // la lampe : de la lumière dans les intérieurs
-const BANC = PROP_START + 5;     // le fauteuil, qui fait un banc de musée
+const FEUILLES = BLOCK.LEAVES;
+
+const LAMPE = PROP_START + 9;
 const TABLE = PROP_START + 6;
+const BANC = PROP_START + 4;
 
 // --- la boîte à outils ---------------------------------------------------------
-//
-// Les mêmes gestes reviennent dans les vingt-six : poser un mur creux, une
-// colonnade, un fronton, un dôme. Les écrire une fois évite vingt-six versions
-// qui divergent — et c'est ce qui rend chaque constructeur lisible en dix
-// lignes au lieu de cent.
 
 function outils(poser) {
   const set = (x, y, z, id) => poser(x, y + 1, z, id);
@@ -66,8 +57,8 @@ function outils(poser) {
       }
     }
   };
-  // Une salle : quatre murs, un plancher, un plafond, et du vide dedans. C'est
-  // l'inverse d'un bloc plein — et c'est ce qui fait qu'on peut y entrer.
+  // Une salle : murs, plancher, plafond, et du vide dedans — l'inverse d'un
+  // bloc plein, et c'est ce qui fait qu'on peut y entrer.
   const salle = (x0, x1, y0, y1, z0, z1, mur, sol, plafond) => {
     for (let x = x0; x <= x1; x++) {
       for (let z = z0; z <= z1; z++) {
@@ -80,7 +71,15 @@ function outils(poser) {
       }
     }
   };
-  // Une colonnade : un fût tous les deux blocs, chapiteau compris.
+  // Une porte percée dans un mur : deux blocs de large, trois de haut.
+  const porte = (x, z, versX) => {
+    for (let k = 0; k < 2; k++) {
+      for (let h = 1; h <= 3; h++) {
+        set(versX ? x : x + k, h, versX ? z + k : z, BLOCK.AIR);
+      }
+    }
+  };
+  // Une colonnade : un fût tous les deux ou trois blocs, chapiteau compris.
   const colonnade = (x0, x1, z0, z1, y0, y1, id, pas = 2) => {
     const long = Math.abs(x1 - x0) > Math.abs(z1 - z0);
     const n = long ? Math.abs(x1 - x0) : Math.abs(z1 - z0);
@@ -88,7 +87,7 @@ function outils(poser) {
       const x = long ? Math.min(x0, x1) + i : x0;
       const z = long ? z0 : Math.min(z0, z1) + i;
       for (let y = y0; y <= y1; y++) set(x, y, z, id);
-      set(x, y1 + 1, z, id);                    // le chapiteau
+      set(x, y1 + 1, z, id);
     }
   };
   // Un fronton triangulaire, posé sur une colonnade.
@@ -101,15 +100,19 @@ function outils(poser) {
       }
     }
   };
-  // Une coupole : une calotte sphérique creuse. `plein` la remplit.
-  const dome = (xc, y0, zc, r, id, plein = false) => {
-    for (let dy = 0; dy <= r; dy++) {
-      const rr = Math.sqrt(Math.max(0, r * r - dy * dy));
-      for (let dx = -r; dx <= r; dx++) {
-        for (let dz = -r; dz <= r; dz++) {
-          const d = Math.hypot(dx, dz);
-          if (plein ? d <= rr : Math.abs(d - rr) < 0.75) set(xc + dx, y0 + dy, zc + dz, id);
-        }
+  // Une coupole : calotte sphérique creuse, ÉTANCHE. On la dessine colonne
+  // par colonne — chaque colonne reçoit le bloc à sa hauteur de calotte — et
+  // non par anneaux : les anneaux laissaient des trous en couronne près du
+  // sommet, et de l'intérieur de la Rotonde on voyait le ciel à travers le
+  // dôme. Le bord est doublé d'un bloc pour que la retombée soit pleine.
+  const dome = (xc, y0, zc, r, id) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (d > r + 0.4) continue;
+        const ys = Math.round(Math.sqrt(Math.max(0, r * r - d * d)));
+        set(xc + dx, y0 + ys, zc + dz, id);
+        if (d > r - 1.4 && ys > 0) set(xc + dx, y0 + ys - 1, zc + dz, id);
       }
     }
   };
@@ -125,108 +128,137 @@ function outils(poser) {
       }
     }
   };
-  return { set, bloc, salle, colonnade, fronton, dome, tambour };
+  // Un anneau au sol (ou un disque, avec `plein`).
+  const anneau = (xc, y, zc, r, id, plein = false) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (plein ? d <= r + 0.4 : Math.abs(d - r) < 0.6) set(xc + dx, y, zc + dz, id);
+      }
+    }
+  };
+  // Un tableau au mur : cadre doré, toile colorée. C'est ce qui fait une
+  // galerie de peinture — des murs nus ne racontent rien.
+  const cadre = (x, y, z, versX, teinte, larg = 3, haut = 2) => {
+    for (let a = -1; a <= larg; a++) {
+      for (let b = -1; b <= haut; b++) {
+        const bord = a === -1 || a === larg || b === -1 || b === haut;
+        const id = bord ? JAUNE : teinte;
+        if (versX) set(x, y + b, z + a, id);
+        else set(x + a, y + b, z, id);
+      }
+    }
+  };
+  // Un escalier droit : des marches d'un bloc, de (x0,z0) vers +dx/+dz.
+  const escalier = (x0, y0, z0, n, dx, dz, id = DALLE) => {
+    for (let k = 0; k < n; k++) set(x0 + dx * k, y0 + k, z0 + dz * k, id);
+  };
+  return { set, bloc, salle, porte, colonnade, fronton, dome, tambour, anneau, cadre, escalier };
 }
 
 // --- LE CAPITOLE ---------------------------------------------------------------
 //
-// Le dôme entre deux ailes basses, et rien d'autre ne ressemble à ça. Les deux
-// ailes ne sont pas décoratives : celle du nord est le Sénat, celle du sud la
-// Chambre des représentants, et le dôme est au milieu parce qu'il ne doit
-// appartenir à aucune des deux.
+// Le dôme entre deux ailes, et rien d'autre ne ressemble à ça. Les ailes ne
+// sont pas décoratives : celle du nord est le Sénat, celle du sud la Chambre
+// des représentants — et ICI ON Y ENTRE : chaque aile a son hémicycle, ses
+// pupitres en arcs de cercle et sa tribune. Au centre, la Rotonde sous la
+// coupole creuse, et la salle des Statues au sud.
 //
-// Dedans : **la Rotonde**, la salle ronde sous la coupole, quatre-vingts pieds
-// de large et cent quatre-vingts de haut. On y entre par la façade ouest, celle
-// qui regarde le Mall — et de l'intérieur, on voit toute la coupole au-dessus
-// de soi, parce qu'elle est creuse pour de vrai.
+// L'emprise : bu 11 (est-ouest), bv 19 (nord-sud). L'entrée d'honneur est à
+// l'OUEST, face au Mall, comme le vrai — c'est la façade des investitures.
 export function buildCapitole(poser) {
-  const { set, bloc, salle, colonnade, fronton, dome, tambour } = outils(poser);
+  const { set, bloc, salle, colonnade, fronton, dome, tambour, anneau, escalier } = outils(poser);
 
-  // la terrasse et son emmarchement, côté Mall
-  bloc(-8, 8, 0, 1, -10, 10, MARBRE);
-  for (let m = 0; m < 2; m++) {
-    for (let z = -5; z <= 5; z++) set(-9 - m, 1 - m, z, MARBRE);
-  }
+  // Le socle : une terrasse de marbre sur toute l'emprise.
+  bloc(-11, 11, -1, -1, -19, 19, MARBRE_2);
 
-  // les deux ailes : le Sénat au nord, la Chambre au sud
-  for (const s of [-1, 1]) {
-    salle(-7, 7, 2, 8, s * 10, s * 7, MARBRE, MARBRE, MARBRE);
-    for (let x = -6; x <= 6; x++) {
-      for (let y = 3; y <= 7; y += 2) { set(x, y, s * 10, ((x & 1) ? VERRE : MARBRE)); }
+  // LE CORPS CENTRAL (la Rotonde) — un carré de 17 sur 17.
+  salle(-8, 8, 0, 11, -8, 8, MARBRE, MARBRE_2, MARBRE);
+  // le mur intérieur circulaire de la Rotonde
+  for (let y = 0; y <= 11; y++) anneau(0, y, 0, 7, MARBRE);
+  bloc(-6, 6, 12, 12, -6, 6, BLOCK.AIR);           // ouvrir le plafond sous le tambour
+  for (let y = 0; y <= 11; y++) {                   // vider la Rotonde
+    for (let dx = -6; dx <= 6; dx++) for (let dz = -6; dz <= 6; dz++) {
+      if (Math.hypot(dx, dz) < 6.4) set(dx, y, dz, BLOCK.AIR);
     }
-    // le portique à colonnes et son fronton, au bout de chaque aile
-    colonnade(-5, 5, s * 11, s * 11, 2, 8, MARBRE);
-    fronton(0, 9, s * 11, 6, MARBRE);
-    // une porte par aile
-    set(0, 2, s * 10, BLOCK.AIR); set(0, 3, s * 10, BLOCK.AIR);
-    set(1, 2, s * 10, BLOCK.AIR); set(1, 3, s * 10, BLOCK.AIR);
+  }
+  bloc(-6, 6, -1, -1, -6, 6, MARBRE_2);             // le sol de la Rotonde
+  // les huit tableaux historiques de la Rotonde, entre les portes
+  for (const a of [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4]) {
+    const x = Math.round(Math.cos(a) * 6), z = Math.round(Math.sin(a) * 6);
+    set(x, 3, z, uni(21)); set(x, 4, z, uni(21));
+  }
+  // le tambour et la coupole, creux — de l'intérieur on voit tout là-haut
+  tambour(0, 12, 19, 0, 6, MARBRE, VERRE);
+  dome(0, 20, 0, 6, MARBRE);
+  set(0, 27, 0, MARBRE); set(0, 28, 0, OR);         // la statue de la Liberté (1863)
+
+  // les quatre portes de la Rotonde : ouest (le Mall), est, nord, sud —
+  // percées à travers le mur circulaire ET le mur carré du corps central
+  for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    for (let h = 0; h <= 3; h++) {
+      for (let k = -1; k <= 1; k++) {
+        for (let p = 6; p <= 8; p++) {
+          set(dx * p + (dz !== 0 ? k : 0), h, dz * p + (dx !== 0 ? k : 0), BLOCK.AIR);
+        }
+      }
+    }
   }
 
-  // LE CORPS CENTRAL, ET LA ROTONDE À L'INTÉRIEUR.
-  // Les murs montent à douze ; le vide, lui, monte bien plus haut — jusque
-  // sous la clef de la coupole. C'est ce vide-là qu'on vient voir.
-  salle(-6, 6, 2, 12, -7, 7, MARBRE, MARBRE, BLOCK.AIR);
-  bloc(-5, 5, 2, 12, -6, 6, BLOCK.AIR);
-  bloc(-5, 5, 1, 1, -6, 6, DALLE);                 // le sol de la Rotonde
-  // Huit colonnes en couronne dans la salle, et les tableaux entre elles. La
-  // couronne est tournée d'un huitième de tour : sans cela une colonne tombait
-  // pile dans l'axe de la porte, et l'enfant qui entrait butait dessus.
-  for (let a = 0; a < 8; a++) {
-    const ang = ((a + 0.5) / 8) * Math.PI * 2;
-    const x = Math.round(Math.cos(ang) * 4), z = Math.round(Math.sin(ang) * 4.5);
-    for (let y = 2; y <= 8; y++) set(x, y, z, MARBRE);
-    set(x, 9, z, OR);
+  // LES DEUX AILES : le Sénat au NORD (z négatif), la Chambre au SUD.
+  for (const signe of [-1, 1]) {
+    const z0 = signe * 9, z1 = signe * 19;
+    salle(-9, 9, 0, 8, Math.min(z0, z1), Math.max(z0, z1), MARBRE, MARBRE_2, MARBRE);
+    // le couloir qui relie l'aile à la Rotonde
+    for (let h = 0; h <= 3; h++) for (let k = -1; k <= 1; k++) set(k, h, signe * 9, BLOCK.AIR);
+    // L'HÉMICYCLE : trois arcs de pupitres tournés vers la tribune, côté
+    // Rotonde — comme les vrais, où le perchoir regarde l'entrée.
+    for (let r = 3; r <= 7; r += 2) {
+      for (let a = -Math.PI / 2.6; a <= Math.PI / 2.6; a += 2.2 / r) {
+        const x = Math.round(Math.sin(a) * r);
+        const z = signe * (11 + Math.round(Math.cos(a) * r * 0.8));
+        if (Math.abs(x) < 8 && Math.abs(z) < 19) set(x, 0, z, TABLE);
+      }
+    }
+    set(0, 0, signe * 10, GRANIT);                  // la tribune du président de séance
+    set(0, 1, signe * 10, TABLE);
+    set(-3, 0, signe * 17, LAMPE); set(3, 0, signe * 17, LAMPE);
+    // la porte extérieure de l'aile, à l'est
+    for (let h = 0; h <= 2; h++) for (let k = 0; k <= 1; k++) set(9, h, signe * 14 + k, BLOCK.AIR);
   }
-  set(0, 2, 0, LAMPE);
-  set(3, 2, 3, BANC); set(-3, 2, -3, BANC);
 
-  // la porte d'honneur, façade ouest, face au Mall
-  for (let z = -1; z <= 1; z++) for (let y = 2; y <= 4; y++) set(-6, y, z, BLOCK.AIR);
-  // Le portique ouest : huit colonnes et le fronton. L'entrecolonnement du
-  // MILIEU est laissé libre — c'est la règle de tout portique antique, et ici
-  // c'est aussi ce qui permet d'entrer : avec une colonne pile devant la
-  // porte, on butait dessus au lieu de la franchir.
-  colonnade(-7, -7, -6, 6, 2, 9, MARBRE);
-  for (let y = 2; y <= 10; y++) set(-7, y, 0, BLOCK.AIR);
-  fronton(-7, 10, 0, 6, MARBRE, false);
+  // LA FAÇADE OUEST : l'escalier d'honneur qui descend vers le Mall, la
+  // colonnade et le fronton — c'est par là qu'on arrive.
+  colonnade(-10, -10, -5, 5, 0, 6, MARBRE, 2);
+  fronton(-10, 7, 0, 5, MARBRE, false);
+  escalier(-11, -1, -3, 0, 0, 0);                   // (l'esplanade fait le reste)
+  for (let k = -3; k <= 3; k++) { set(-11, 0, k, MARBRE_2); set(-12, -1, k, MARBRE_2); }
+  // la porte d'honneur, dans l'axe — l'intercolonnement central est ouvert
+  for (let h = 0; h <= 3; h++) for (let k = -1; k <= 1; k++) set(-8, h, k, BLOCK.AIR);
+  for (let h = 0; h <= 3; h++) set(-9, h, 0, BLOCK.AIR);
+  for (let h = 0; h <= 4; h++) set(-10, h, 0, BLOCK.AIR);
 
-  // LE DÔME. Un tambour à colonnes, une calotte, une lanterne, et la statue de
-  // la Liberté au sommet — celle-là est une femme casquée, pas la New-Yorkaise.
-  tambour(0, 13, 19, 0, 5, MARBRE);
-  for (let a = 0; a < 16; a++) {
-    const ang = (a / 16) * Math.PI * 2;
-    const x = Math.round(Math.cos(ang) * 6), z = Math.round(Math.sin(ang) * 6);
-    for (let y = 13; y <= 18; y++) set(x, y, z, MARBRE);
-    set(x, 19, z, MARBRE);
-  }
-  bloc(-5, 5, 13, 19, -5, 5, BLOCK.AIR);           // le tambour reste creux
-  dome(0, 20, 0, 5, MARBRE);                        // la calotte, creuse elle aussi
-  tambour(0, 26, 28, 0, 2, MARBRE, VERRE);
-  set(0, 29, 0, MARBRE);
-  set(0, 30, 0, BRONZE); set(0, 31, 0, BRONZE);     // la statue de la Liberté
-  set(1, 31, 0, BRONZE); set(-1, 31, 0, BRONZE);
-  set(0, 32, 0, OR);
+  // la façade est : colonnade aussi, porte simple
+  colonnade(9, 9, -5, 5, 0, 6, MARBRE, 2);
+  fronton(9, 7, 0, 5, MARBRE, false);
 }
 
-// --- LE MONUMENT DE WASHINGTON --------------------------------------------------
+// --- L'OBÉLISQUE ----------------------------------------------------------------
 //
-// La plus haute maçonnerie du monde, et le détail que personne ne remarque
-// avant qu'on le lui montre : **la couleur change au quart de la hauteur**. Les
-// travaux se sont arrêtés vingt-trois ans, faute d'argent et à cause de la
-// guerre de Sécession ; quand ils ont repris, la carrière du début était
-// épuisée. La ligne est restée.
+// Cent soixante-neuf mètres de marbre, le plus haut du monde en pierre. La
+// ligne de teinte au tiers marque l'arrêt du chantier pendant la guerre de
+// Sécession — le marbre d'après ne venait plus de la même carrière.
 //
-// Dedans, un escalier en colimaçon monte jusqu'aux fenêtres du sommet. Le vrai
-// en compte huit cent quatre-vingt-dix-sept marches ; ici cinquante-deux, et la
-// vue sur tout le Mall à l'arrivée.
+// Dedans, le colimaçon monte jusqu'aux huit fenêtres du sommet. Le vrai en
+// compte huit cent quatre-vingt-dix-sept marches ; ici soixante, et la vue
+// sur tout le Mall à l'arrivée.
 export function buildObelisque(poser) {
   const { set, bloc } = outils(poser);
-  const H = 62;
-  const CHANGEMENT = 16;      // la ligne de teinte, au quart de la hauteur
+  const H = 70;
+  const CHANGEMENT = 22;
 
   for (let y = 0; y < H; y++) {
-    // le fût s'affine très légèrement en montant, comme le vrai
-    const demi = y < H - 8 ? (y < 30 ? 3 : 2) : 2;
+    const demi = y < H - 10 ? (y < 34 ? 4 : 3) : 3;
     const teinte = y < CHANGEMENT ? MARBRE_2 : MARBRE;
     for (let dx = -demi; dx <= demi; dx++) {
       for (let dz = -demi; dz <= demi; dz++) {
@@ -236,759 +268,766 @@ export function buildObelisque(poser) {
       }
     }
   }
-  // LE COLIMAÇON. Une marche tous les blocs, en tournant autour du fût : c'est
-  // le seul moyen de monter cinquante blocs dans une cage de cinq de côté.
-  const anneau = [[-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [2, -1], [2, 0], [2, 1],
-    [2, 2], [1, 2], [0, 2], [-1, 2], [-2, 2], [-2, 1], [-2, 0], [-2, -1]];
-  for (let y = 1; y < H - 9; y++) {
-    const [dx, dz] = anneau[y % anneau.length];
+  // LE COLIMAÇON : une marche par bloc en tournant autour du fût.
+  const cage = [[-3, -3], [-2, -3], [-1, -3], [0, -3], [1, -3], [2, -3], [3, -3],
+    [3, -2], [3, -1], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3],
+    [-1, 3], [-2, 3], [-3, 3], [-3, 2], [-3, 1], [-3, 0], [-3, -1], [-3, -2]];
+  for (let y = 1; y < H - 11; y++) {
+    const [dx, dz] = cage[y % cage.length];
     set(dx, y, dz, DALLE);
-    // le palier : sans lui, on ne peut pas se retourner en montant
-    if (y % 16 === 0) for (const [ax, az] of anneau) set(ax, y, az, DALLE);
+    if (y % 20 === 0) for (const [ax, az] of cage) set(ax, y, az, DALLE);   // le palier
   }
   // la porte, plein est, face au Capitole
-  for (let y = 1; y <= 3; y++) { set(3, y, 0, BLOCK.AIR); set(3, y, 1, BLOCK.AIR); }
-  // les huit fenêtres du sommet : deux par face, juste sous la pointe
+  for (let y = 1; y <= 3; y++) { set(4, y, 0, BLOCK.AIR); set(4, y, 1, BLOCK.AIR); }
+  // les huit fenêtres du sommet, deux par face
   for (const [dx, dz] of [[3, -1], [3, 1], [-3, -1], [-3, 1], [-1, 3], [1, 3], [-1, -3], [1, -3]]) {
-    const x = Math.abs(dx) === 3 ? Math.sign(dx) * 2 : dx;
-    const z = Math.abs(dz) === 3 ? Math.sign(dz) * 2 : dz;
-    set(x, H - 11, z, VERRE);
-    set(x, H - 10, z, VERRE);
+    set(dx, H - 13, dz, VERRE);
+    set(dx, H - 12, dz, VERRE);
   }
-  bloc(-1, 1, H - 12, H - 10, -1, 1, BLOCK.AIR);   // la salle du sommet
-  bloc(-1, 1, H - 13, H - 13, -1, 1, DALLE);
-  // le pyramidion : quatre pans qui se rejoignent en pointe
-  for (let k = 0; k < 8; k++) {
-    const demi = Math.max(0, 2 - Math.floor(k / 2.2));
+  bloc(-2, 2, H - 14, H - 12, -2, 2, BLOCK.AIR);    // la salle du sommet
+  bloc(-2, 2, H - 15, H - 15, -2, 2, DALLE);
+  // le pyramidion
+  for (let k = 0; k < 10; k++) {
+    const demi = Math.max(0, 3 - Math.floor(k / 2.8));
     for (let dx = -demi; dx <= demi; dx++) {
-      for (let dz = -demi; dz <= demi; dz++) set(dx, H - 8 + k, dz, MARBRE);
+      for (let dz = -demi; dz <= demi; dz++) set(dx, H - 10 + k, dz, MARBRE);
     }
   }
-  set(0, H + 1, 0, OR);       // la pointe d'aluminium, qui valait l'argent en 1884
-  // les cinquante drapeaux, en cercle autour du tertre
-  for (let a = 0; a < 12; a++) {
-    const ang = (a / 12) * Math.PI * 2;
-    const x = Math.round(Math.cos(ang) * 4), z = Math.round(Math.sin(ang) * 4);
-    for (let y = 0; y <= 3; y++) set(x, y, z, MARBRE);
-    set(x, 4, z, a % 3 === 0 ? ROUGE : (a % 3 === 1 ? MARBRE : uni(10)));
-  }
+  set(0, H + 1, 0, OR);           // la pointe d'aluminium, qui valait de l'or en 1884
 }
 
 // --- LE LINCOLN MEMORIAL --------------------------------------------------------
 //
-// Un temple grec au bout du Mall, avec **trente-six colonnes** — le nombre
-// d'États que comptait l'Union à la mort de Lincoln. Dedans, la statue assise,
-// six mètres de haut, et le discours de Gettysburg gravé sur le mur.
-//
-// C'est aussi de ces marches-là que Martin Luther King a dit « I have a
-// dream », en 1963, devant deux cent cinquante mille personnes.
+// Un temple grec fermé, trente-six colonnes — une par État de 1865 — et
+// dedans, Lincoln assis qui regarde le miroir d'eau et le Capitole. L'entrée
+// est à l'EST, et c'est le seul côté ouvert : le vrai n'a pas de porte, on
+// entre entre les colonnes.
 export function buildLincoln(poser) {
   const { set, bloc, salle, colonnade } = outils(poser);
-
-  // le podium ; l'emmarchement regarde l'EST — celui de « I have a dream »,
-  // face au miroir d'eau et, tout au bout, au Capitole. L'est, ici, c'est +x.
-  bloc(-5, 6, 0, 2, -5, 5, MARBRE);
-  for (let m = 0; m < 1; m++) {
-    for (let z = -4; z <= 4; z++) set(7 + m, 2 - m, z, MARBRE);
+  bloc(-6, 6, -1, 1, -7, 7, MARBRE_2);              // le socle à degrés
+  bloc(-7, 7, -1, -1, -7, 7, MARBRE_2);
+  // l'escalier monumental, à l'est
+  for (let m = 0; m < 3; m++) {
+    for (let z = -4; z <= 4; z++) set(9 - m, m - 1, z, MARBRE_2);
   }
-  // la chambre, creuse — c'est elle qu'on vient voir
-  salle(-4, 5, 3, 9, -3, 3, MARBRE, DALLE, MARBRE);
-  // la colonnade qui fait le tour : trente-six fûts, un par État de l'Union
-  // à la mort de Lincoln
-  colonnade(-5, 6, -4, -4, 3, 10, MARBRE);
-  colonnade(-5, 6, 4, 4, 3, 10, MARBRE);
-  colonnade(-5, -5, -4, 4, 3, 10, MARBRE);
-  colonnade(6, 6, -4, 4, 3, 10, MARBRE);
-  // l'entablement et l'attique, qui portent les noms des États
-  bloc(-5, 6, 11, 11, -5, 5, MARBRE);
-  bloc(-5, 6, 12, 13, -4, 4, MARBRE_2);
-  bloc(-4, 5, 14, 14, -3, 3, ARDOISE);
-
-  // la porte, plein est
-  for (let z = -1; z <= 1; z++) for (let y = 3; y <= 5; y++) set(5, y, z, BLOCK.AIR);
-  // LINCOLN ASSIS, dans son fauteuil, tourné vers le Mall
-  set(0, 3, 0, MARBRE); set(1, 3, 0, MARBRE); set(-1, 3, 0, MARBRE);   // le siège
-  set(0, 4, 0, MARBRE); set(0, 5, 0, MARBRE);                          // le buste
-  set(1, 4, 0, MARBRE); set(-1, 4, 0, MARBRE);                         // les bras
-  set(0, 6, 0, uni(19));                                               // la tête
-  set(2, 3, 1, MARBRE); set(2, 3, -1, MARBRE);                         // les accoudoirs
-  set(3, 3, 2, LAMPE); set(3, 3, -2, LAMPE);
-  set(-3, 3, 2, MARBRE); set(-3, 3, -2, MARBRE);   // les stèles des deux discours
+  salle(-5, 5, 2, 9, -6, 6, MARBRE, MARBRE_2, MARBRE);
+  // la colonnade périptère
+  colonnade(-6, 6, -7, -7, 2, 8, MARBRE, 2);
+  colonnade(-6, 6, 7, 7, 2, 8, MARBRE, 2);
+  colonnade(-6, -6, -5, 5, 2, 8, MARBRE, 2);
+  colonnade(6, 6, -5, 5, 2, 8, MARBRE, 2);
+  bloc(-6, 6, 9, 10, -7, 7, MARBRE);                // l'attique
+  // la façade est s'ouvre : trois entrecolonnements percés, cella comprise
+  for (let h = 2; h <= 6; h++) for (let z = -2; z <= 2; z++) {
+    set(5, h, z, BLOCK.AIR); set(6, h, z, BLOCK.AIR);
+  }
+  // LINCOLN ASSIS, au fond, sur son trône — il regarde l'est.
+  bloc(-3, -2, 2, 3, -2, 2, MARBRE_2);              // le trône
+  bloc(-3, -2, 4, 6, -1, 1, BLANC);                 // le buste
+  set(-2, 7, 0, BLANC);                             // la tête
+  bloc(-1, -1, 4, 4, -2, 2, BLANC);                 // les bras sur les accoudoirs
+  set(0, 2, -1, BLANC); set(0, 2, 1, BLANC);        // les genoux
+  set(-3, 3, 0, LAMPE);
 }
 
-// --- LA MAISON-BLANCHE ----------------------------------------------------------
+// --- LE MÉMORIAL DE LA SECONDE GUERRE MONDIALE ----------------------------------
 //
-// Plus petite qu'on ne l'imagine : deux étages, une aile de chaque côté, et
-// deux portiques. Celui du nord, à colonnes carrées, donne sur Pennsylvania
-// Avenue ; celui du sud est arrondi — c'est ce demi-cercle qu'on voit sur les
-// photos officielles, et c'est lui qui a donné sa forme au Bureau ovale.
-export function buildMaisonBlanche(poser) {
-  const { set, bloc, salle, colonnade, fronton } = outils(poser);
-
-  bloc(-7, 7, 0, 0, -5, 5, MARBRE);                       // la terrasse
-  salle(-5, 5, 1, 6, -4, 4, MARBRE, DALLE, MARBRE);       // le corps de logis
-  bloc(-5, 5, 7, 7, -4, 4, MARBRE_2);                     // la balustrade du toit
-  // les fenêtres à petits carreaux, deux rangs
-  for (let x = -4; x <= 4; x++) {
-    for (const y of [2, 5]) { if (x % 2 === 0) { set(x, y, -4, VERRE); set(x, y, 4, VERRE); } }
-  }
-  // le portique nord, à quatre colonnes, et son fronton
-  colonnade(-2, 2, -6, -6, 1, 6, MARBRE);
-  bloc(-3, 3, 7, 7, -6, -5, MARBRE);
-  fronton(0, 8, -6, 3, MARBRE);
-  for (let z = -6; z <= -4; z++) for (let y = 1; y <= 3; y++) set(0, y, z, BLOCK.AIR);
-  set(1, 1, -4, BLOCK.AIR); set(1, 2, -4, BLOCK.AIR);      // la porte, deux blocs
-  // le portique sud, arrondi : le fameux demi-cercle
-  for (let a = 0; a <= 8; a++) {
-    const ang = Math.PI * (a / 8);
-    const x = Math.round(Math.cos(ang) * 3), z = 4 + Math.round(Math.sin(ang) * 2.4);
-    for (let y = 1; y <= 6; y++) set(x, y, z, MARBRE);
-    set(x, 7, z, MARBRE_2);
-  }
-  // les deux ailes basses : l'ouest où travaille le président, l'est pour les
-  // visites. Le Bureau ovale est au bout de l'aile ouest, au rez-de-chaussée.
-  bloc(-8, -6, 1, 3, -3, 2, MARBRE);
-  bloc(6, 8, 1, 3, -3, 2, MARBRE);
-  bloc(-8, -6, 4, 4, -3, 2, MARBRE_2);
-  bloc(6, 8, 4, 4, -3, 2, MARBRE_2);
-  bloc(-7, -7, 1, 2, -2, 1, BLOCK.AIR);
-  bloc(7, 7, 1, 2, -2, 1, BLOCK.AIR);
-  set(-7, 1, -3, BLOCK.AIR); set(-7, 2, -3, BLOCK.AIR);
-
-  // dedans : le grand hall, un tapis rouge, un lustre et le Bureau ovale
-  bloc(-4, 4, 1, 5, -3, 3, BLOCK.AIR);
-  for (let z = -3; z <= 3; z++) set(0, 1, z, TAPIS);
-  set(0, 5, 0, LAMPE);
-  set(-3, 1, -2, TABLE); set(3, 1, 2, BANC);
-  // la pelouse sud et sa fontaine
-  for (let dx = -5; dx <= 5; dx++) {
-    for (let dz = 5; dz <= 6; dz++) {
-      set(dx, 0, dz, Math.hypot(dx, dz - 6) < 2.2 ? EAU : HERBE);
-    }
-  }
-}
-
-// --- LE MÉMORIAL JEFFERSON ------------------------------------------------------
-//
-// Une rotonde ouverte au bord du Tidal Basin, copiée du Panthéon de Rome —
-// Jefferson était architecte autant que président, et c'est le bâtiment qu'il
-// aimait le plus. Sa statue de bronze regarde la Maison-Blanche, à travers
-// l'eau : les deux se voient en ligne droite, et ce n'est pas un hasard.
-export function buildJefferson(poser) {
-  const { set, bloc, colonnade, fronton, dome, tambour } = outils(poser);
-
-  bloc(-6, 6, 0, 1, -6, 6, MARBRE);
-  for (let m = 0; m < 1; m++) for (let x = -3; x <= 3; x++) set(x, 1 - m, -7 - m, MARBRE);
-  // la couronne de colonnes : vingt-six fûts autour de la rotonde
-  for (let a = 0; a < 22; a++) {
-    const ang = (a / 22) * Math.PI * 2;
-    const x = Math.round(Math.cos(ang) * 5), z = Math.round(Math.sin(ang) * 5);
-    for (let y = 2; y <= 9; y++) set(x, y, z, MARBRE);
-    set(x, 10, z, MARBRE);
-  }
-  tambour(0, 2, 10, 0, 3, MARBRE);
-  bloc(-2, 2, 2, 10, -2, 2, BLOCK.AIR);
-  bloc(-2, 2, 1, 1, -2, 2, DALLE);
-  dome(0, 11, 0, 4, MARBRE);
-  // le portique nord, vers le bassin, et sa porte
-  colonnade(-2, 2, -6, -6, 2, 9, MARBRE);
-  fronton(0, 11, -6, 3, MARBRE);
-  for (let y = 2; y <= 4; y++) { set(0, y, -3, BLOCK.AIR); set(1, y, -3, BLOCK.AIR); }
-  // JEFFERSON DEBOUT, en bronze, au centre
-  set(0, 2, 0, BRONZE); set(0, 3, 0, BRONZE); set(0, 4, 0, BRONZE);
-  set(0, 5, 0, uni(19));
-  set(1, 3, 0, BRONZE); set(-1, 3, 0, BRONZE);
-  set(0, 1, 0, GRANIT);
-  set(-2, 2, 2, LAMPE); set(2, 2, -2, LAMPE);
-}
-
-// --- UNION STATION ---------------------------------------------------------------
-//
-// La gare de la capitale, et la plus grande salle publique de la ville : trois
-// arcs monumentaux en façade, et derrière eux un hall voûté à caissons dorés où
-// l'on entre vraiment. Les trains sont derrière ; devant, la fontaine de
-// Colomb et l'esplanade.
-export function buildUnionStation(poser) {
-  const { set, bloc, salle, colonnade } = outils(poser);
-
-  bloc(-7, 7, 0, 0, -4, 4, DALLE);
-  salle(-7, 7, 1, 8, -3, 3, MARBRE_2, DALLE, MARBRE_2);
-  // les trois grands arcs de la façade sud, vers le Capitole
-  for (const cx of [-4, 0, 4]) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const haut = 4 - Math.abs(dx);
-      for (let y = 1; y <= haut; y++) set(cx + dx, y, 3, BLOCK.AIR);
-      set(cx + dx, haut + 1, 3, GRANIT);
-    }
-  }
-  colonnade(-6, 6, 5, 5, 1, 7, MARBRE_2, 4);
-  bloc(-8, 8, 9, 9, -4, 4, MARBRE_2);
-  bloc(-7, 7, 10, 10, -3, 3, CUIVRE);            // la toiture de cuivre
-  // le hall voûté, à caissons : c'est le plafond qu'on vient voir
-  bloc(-6, 6, 1, 7, -2, 2, BLOCK.AIR);
-  for (let x = -6; x <= 6; x++) {
-    for (let z = -2; z <= 2; z++) {
-      set(x, 8, z, ((Math.floor(x / 2) + Math.floor(z / 2)) & 1) === 0 ? OR : MARBRE_2);
-    }
-  }
-  for (let x = -4; x <= 4; x += 4) set(x, 1, 0, BANC);
-  set(0, 7, 0, LAMPE); set(-5, 7, 0, LAMPE); set(5, 7, 0, LAMPE);
-  // les quais et les rails, derrière la gare
-  for (let x = -6; x <= 6; x++) {
-    for (const z of [-6, -8]) { set(x, 0, z, ACIER); set(x, 0, z + 1, GRANIT); }
-  }
-  // la fontaine de Colomb, sur le parvis
-  for (let dx = -2; dx <= 2; dx++) {
-    for (let dz = 5; dz <= 8; dz++) set(dx, 0, dz, Math.hypot(dx, dz - 7) < 2.2 ? EAU : DALLE);
-  }
-  set(0, 1, 7, MARBRE); set(0, 2, 7, MARBRE); set(0, 3, 7, MARBRE_2);
-}
-
-// --- LA CATHÉDRALE NATIONALE ------------------------------------------------------
-//
-// Gothique, et bâtie au vingtième siècle : commencée en 1907, finie en 1990.
-// Deux tours à l'ouest, une tour centrale plus haute, des arcs-boutants — et
-// sur les gargouilles, un Dark Vador sculpté en 1986 après un concours pour
-// enfants. Elle couronne le point le plus haut de Washington.
-export function buildCathedrale(poser) {
-  const { set, bloc, salle, dome } = outils(poser);
-
-  // la nef, longue et étroite, orientée est-ouest comme toute cathédrale
-  salle(-4, 4, 1, 12, -9, 9, CALCAIRE, DALLE, CALCAIRE);
-  bloc(-3, 3, 1, 12, -8, 8, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -8, 8, DALLE);
-  // le transept, qui fait la croix
-  salle(-9, 9, 1, 10, -3, 3, CALCAIRE, DALLE, CALCAIRE);
-  bloc(-8, 8, 1, 10, -2, 2, BLOCK.AIR);
-  // les vitraux : trois rangs, et la grande rose à l'ouest
-  for (let z = -7; z <= 7; z += 3) {
-    for (const y of [5, 8]) { set(-4, y, z, VERRE_BLEU); set(4, y, z, VERRE_BLEU); }
-  }
-  for (let dx = -2; dx <= 2; dx++) {
-    for (let dy = -2; dy <= 2; dy++) {
-      if (Math.hypot(dx, dy) < 2.4) set(dx, 9 + dy, -9, VERRE_BLEU);
-    }
-  }
-  // les arcs-boutants, qui reprennent la poussée de la voûte
-  for (let z = -6; z <= 6; z += 4) {
-    for (const s of [-1, 1]) {
-      for (let k = 0; k <= 2; k++) set(s * (5 + k), 9 - k * 2, z, CALCAIRE);
-      set(s * 7, 1, z, CALCAIRE); set(s * 7, 2, z, CALCAIRE); set(s * 7, 3, z, CALCAIRE);
-    }
-  }
-  // les deux tours de la façade ouest
-  for (const s of [-1, 1]) {
-    for (let y = 1; y <= 22; y++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
-          if (Math.abs(dx) === 2 || Math.abs(dz) === 2) set(s * 5 + dx, y, -10 + dz, CALCAIRE);
-        }
-      }
-    }
-    for (let k = 0; k <= 3; k++) {
-      const d = 2 - Math.floor(k / 1.4);
-      for (let dx = -d; dx <= d; dx++) for (let dz = -d; dz <= d; dz++) set(s * 5 + dx, 23 + k, -10 + dz, ARDOISE);
-    }
-  }
-  // la tour centrale, la plus haute : trente blocs
-  for (let y = 11; y <= 28; y++) {
-    for (let dx = -3; dx <= 3; dx++) {
-      for (let dz = -3; dz <= 3; dz++) {
-        if (Math.abs(dx) === 3 || Math.abs(dz) === 3) set(dx, y, dz, CALCAIRE);
-      }
-    }
-  }
-  dome(0, 29, 0, 3, ARDOISE);
-  set(0, 33, 0, OR);
-  // le portail ouest
-  for (let dx = -1; dx <= 1; dx++) for (let y = 1; y <= 4; y++) set(dx, y, -9, BLOCK.AIR);
-  set(0, 1, 7, LAMPE); set(0, 1, -6, LAMPE);
-  for (let z = -6; z <= 6; z += 4) { set(-2, 1, z, BANC); set(2, 1, z, BANC); }
-}
-
-// --- LE PENTAGONE -----------------------------------------------------------------
-//
-// Cinq côtés, cinq étages, cinq anneaux concentriques, et une cour au milieu.
-// On peut aller de n'importe quel point à n'importe quel autre en sept minutes
-// à pied, et c'est pour cela qu'il a cette forme-là : un carré aurait été plus
-// long à traverser. Bâti en seize mois, pendant la guerre.
-export function buildPentagone(poser) {
-  const { set } = outils(poser);
-  const R = 8;
-  // Distance au bord d'un pentagone régulier : le maximum des cinq demi-plans.
-  // C'est ce qui donne la forme, la cour et les couloirs d'un seul calcul.
-  const dedans = (dx, dz, r) => {
-    for (let k = 0; k < 5; k++) {
-      const a = (k / 5) * Math.PI * 2 - Math.PI / 2;
-      if (dx * Math.cos(a) + dz * Math.sin(a) > r) return false;
-    }
-    return true;
-  };
-  for (let dx = -R - 1; dx <= R + 1; dx++) {
-    for (let dz = -R - 1; dz <= R + 1; dz++) {
-      if (!dedans(dx, dz, R)) continue;
-      set(dx, 0, dz, DALLE);
-      // la cour centrale : cinq acres de pelouse, et le kiosque au milieu
-      if (dedans(dx, dz, R - 6)) {
-        set(dx, 0, dz, HERBE);
-        if ((dx * 3 + dz * 5) % 7 === 0) set(dx, 1, dz, ARBRE);
-        continue;
-      }
-      const mur = !dedans(dx, dz, R - 1) || dedans(dx, dz, R - 5);
-      if (mur) {
-        // la façade extérieure et la façade sur cour, percées de fenêtres
-        for (let y = 1; y <= 5; y++) {
-          const fen = y % 2 === 1 && ((dx + dz) & 1) === 0;
-          set(dx, y, dz, fen ? VERRE : CALCAIRE);
-        }
-      } else {
-        // l'intérieur : cinq anneaux de couloirs, et un refend tous les six
-        // blocs pour que le bâtiment ne soit pas une seule halle vide
-        const refend = ((dx * 7 + dz * 11) % 17 + 17) % 17 === 0;
-        for (let y = 1; y <= 5; y++) set(dx, y, dz, refend ? CALCAIRE : BLOCK.AIR);
-        if (!refend && ((dx + dz * 3) % 11 + 11) % 11 === 0) set(dx, 1, dz, LAMPE);
-      }
-      set(dx, 6, dz, GRANIT);        // la toiture
-    }
-  }
-  // les cinq couloirs radiaux, qui traversent le bâtiment de part en part —
-  // c'est eux qui font qu'on va d'un point à un autre en sept minutes
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * Math.PI * 2 - Math.PI / 2 + 0.35;
-    for (let r = 1; r <= R; r++) {
-      const x = Math.round(Math.cos(a) * r), z = Math.round(Math.sin(a) * r);
-      for (const d of [0, 1]) {
-        for (let y = 1; y <= 3; y++) set(x + d, y, z, BLOCK.AIR);
-        set(x + d, 0, z, DALLE);
-      }
-    }
-  }
-  // la grande entrée, plein nord
-  for (let y = 1; y <= 3; y++) { set(0, y, -R, BLOCK.AIR); set(1, y, -R, BLOCK.AIR); }
-  set(0, 1, 0, LAMPE);
-}
-
-// --- LES MUSÉES DU MALL ------------------------------------------------------------
-//
-// Onze musées du Smithsonian bordent la pelouse, et **tous sont gratuits** —
-// c'est une particularité américaine qui vaut d'être dite à un enfant. Chacun a
-// donc une porte et quelque chose dedans : un avion suspendu, un squelette de
-// dinosaure, un tableau au mur.
-
-// Le Château : le premier bâtiment du Smithsonian, et le seul en grès rouge du
-// Mall. Neuf tours, aucune pareille — c'est un château pour de vrai.
-export function buildChateauSmithsonian(poser) {
-  const { set, bloc, salle } = outils(poser);
-  salle(-4, 4, 1, 6, -3, 3, GRES_ROUGE, DALLE, GRES_ROUGE);
-  bloc(-3, 3, 1, 6, -2, 2, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -2, 2, DALLE);
-  // les neuf tours, chacune à sa hauteur
-  for (const [x, z, h] of [[0, 0, 15], [-3, -2, 10], [3, -2, 10], [-3, 2, 8], [3, 2, 8],
-    [-1, -3, 9], [1, -3, 7], [-1, 3, 7], [1, 3, 9]]) {
-    for (let y = 1; y <= h; y++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dz = -1; dz <= 1; dz++) {
-          if (dx === 0 && dz === 0 && y > 1) continue;
-          set(x + dx, y, z + dz, GRES_ROUGE);
-        }
-      }
-    }
-    // les créneaux, puis la flèche
-    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
-      if ((dx + dz) % 2 === 0) set(x + dx, h + 1, z + dz, GRES_ROUGE);
-    }
-    set(x, h + 2, z, ARDOISE);
-  }
-  for (let y = 1; y <= 3; y++) { set(0, y, -3, BLOCK.AIR); set(1, y, -3, BLOCK.AIR); }
-  set(0, 1, 0, LAMPE); set(-2, 1, 1, BANC); set(2, 1, -1, BANC);
-
-}
-
-// Le musée de l'Air et de l'Espace : le plus visité du pays. Dedans, ce qui
-// vole est ACCROCHÉ AU PLAFOND — le Spirit of St. Louis, le X-15, la capsule
-// Apollo 11. Un enfant entre et lève la tête.
-export function buildAirEspace(poser) {
-  const { set, bloc, salle } = outils(poser);
-  // quatre cubes de marbre séparés par trois nefs de verre : c'est la façade
-  salle(-5, 5, 1, 9, -3, 3, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-4, 4, 1, 9, -2, 2, BLOCK.AIR);
-  bloc(-4, 4, 0, 0, -2, 2, DALLE);
-  // trois nefs de verre entre quatre massifs de marbre : c'est la façade
-  for (const x of [-2, 0, 2]) {
-    for (let y = 1; y <= 9; y++) { set(x, y, -3, VERRE); set(x, y, 3, VERRE); }
-  }
-  for (let x = -4; x <= 4; x++) for (let z = -2; z <= 2; z++) set(x, 10, z, VERRE);
-  for (let y = 1; y <= 3; y++) { set(-1, y, 3, BLOCK.AIR); set(0, y, 3, BLOCK.AIR); }
-
-  // CE QUI VOLE, SUSPENDU. Un avion à hélice, une fusée debout, une capsule.
-  const avion = (cx, cz, y, teinte) => {
-    for (let dx = -2; dx <= 2; dx++) set(cx + dx, y, cz, teinte);      // le fuselage
-    for (let dz = -1; dz <= 1; dz++) set(cx, y, cz + dz, teinte);      // les ailes
-    set(cx - 2, y + 1, cz, teinte); set(cx + 2, y, cz, ACIER);
-  };
-  avion(-2, 0, 8, MARBRE);                     // le Spirit of St. Louis
-  avion(2, 1, 6, uni(26));                     // le X-15, noir
-  for (let y = 1; y <= 6; y++) set(0, y, -1, y > 4 ? ROUGE : MARBRE);
-  set(0, 7, -1, ROUGE);                        // la fusée
-  set(3, 1, 1, ACIER); set(3, 2, 1, uni(22));  // la capsule Apollo
-  set(-3, 1, 0, LAMPE); set(3, 1, 0, LAMPE); set(-2, 1, 2, BANC);
-}
-
-// Le musée d'Histoire naturelle : une coupole verte, et sous elle l'éléphant
-// d'Afrique. Plus loin, le diplodocus — un squelette de vingt-cinq mètres.
-export function buildHistoireNaturelle(poser) {
-  const { set, bloc, salle, colonnade, fronton, dome, tambour } = outils(poser);
-  salle(-4, 4, 1, 8, -3, 3, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-3, 3, 1, 8, -2, 2, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -2, 2, DALLE);
-  tambour(0, 9, 11, 0, 3, MARBRE_2, VERRE);
-  bloc(-2, 2, 9, 11, -2, 2, BLOCK.AIR);
-  dome(0, 12, 0, 3, CUIVRE);
-  colonnade(-2, 2, 4, 4, 1, 8, MARBRE_2);
-  fronton(0, 10, 4, 3, MARBRE_2);
-  for (let y = 1; y <= 3; y++) { set(0, y, 3, BLOCK.AIR); set(1, y, 3, BLOCK.AIR); }
-  // l'éléphant sous la coupole
-  bloc(-1, 1, 1, 2, -1, 1, uni(24));
-  set(0, 3, 0, uni(24)); set(0, 2, -2, uni(24));
-  // le diplodocus : la queue, le dos, puis le cou qui se relève
-  for (let x = -3; x <= 2; x++) set(x, 3, -2, MARBRE);
-  for (let k = 1; k <= 3; k++) set(2 + Math.min(1, k), 3 + k, -2, MARBRE);
-  for (let x = -2; x <= 1; x += 3) { set(x, 1, -2, MARBRE); set(x, 2, -2, MARBRE); }
-  set(0, 8, 0, LAMPE); set(2, 1, 1, BANC);
-}
-
-// La Galerie nationale d'art : une coupole de plus, un péristyle, et des
-// tableaux au mur. Le bâtiment de marbre rose du Tennessee le plus grand du
-// monde à son ouverture.
-export function buildGalerieArt(poser) {
-  const { set, bloc, salle, colonnade, fronton, dome, tambour } = outils(poser);
-  salle(-4, 4, 1, 7, -3, 3, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-3, 3, 1, 7, -2, 2, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -2, 2, DALLE);
-  tambour(0, 8, 10, 0, 3, MARBRE_2);
-  bloc(-2, 2, 8, 10, -2, 2, BLOCK.AIR);
-  dome(0, 11, 0, 3, MARBRE);
-  colonnade(-2, 2, 4, 4, 1, 7, MARBRE_2);
-  fronton(0, 9, 4, 3, MARBRE_2);
-  for (let y = 1; y <= 3; y++) { set(0, y, 3, BLOCK.AIR); set(1, y, 3, BLOCK.AIR); }
-  // les tableaux, accrochés aux murs : chacun sa couleur
-  const teintes = [ROUGE, uni(10), VERT, JAUNE, uni(12), uni(16)];
-  for (let k = 0; k < 6; k++) {
-    const x = -3 + (k % 3) * 3, z = k < 3 ? -2 : 2;
-    set(x, 4, z, teintes[k]); set(x + 1, 4, z, teintes[k]);
-    set(x, 3, z, uni(18)); set(x + 1, 3, z, uni(18));
-  }
-  set(0, 1, 0, BANC); set(-2, 1, 1, BANC); set(2, 1, 1, BANC);
-  set(0, 7, 0, LAMPE);
-}
-
-// Le musée afro-américain : le plus récent du Mall, et le seul qui ne soit pas
-// blanc. Trois couronnes de bronze qui s'évasent en montant — la forme vient
-// d'une couronne yoruba, et la résille des balcons de fer forgé de
-// La Nouvelle-Orléans, ouvragés par des esclaves.
-export function buildAfroAmericain(poser) {
-  const { set, bloc, salle } = outils(poser);
-  salle(-4, 4, 1, 3, -3, 3, GRANIT, DALLE, GRANIT);
-  bloc(-3, 3, 1, 3, -2, 2, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -2, 2, DALLE);
-  for (let y = 1; y <= 3; y++) { set(0, y, -3, BLOCK.AIR); set(1, y, -3, BLOCK.AIR); }
-  // les trois couronnes : chacune plus large que celle du dessous
-  for (let k = 0; k < 3; k++) {
-    const dx = 3 + k, dz = 2 + k, y0 = 4 + k * 3;
-    for (let y = y0; y < y0 + 3; y++) {
-      for (let x = -dx; x <= dx; x++) {
-        for (let z = -dz; z <= dz; z++) {
-          if (Math.abs(x) !== dx && Math.abs(z) !== dz) continue;
-          // la résille : un plein, un vide, comme une dentelle de fonte
-          set(x, y, z, ((x + z + y) & 1) === 0 ? BRONZE : VERRE);
-        }
-      }
-    }
-  }
-  bloc(-5, 5, 13, 13, -4, 4, BRONZE);
-  bloc(-4, 4, 4, 12, -3, 3, BLOCK.AIR);
-  set(0, 4, 0, LAMPE); set(-2, 1, 1, BANC); set(2, 1, -1, BANC);
-}
-
-// Les Archives nationales : la Déclaration d'indépendance, la Constitution et
-// la Charte des droits sont là, sous verre, dans la rotonde. Sur le fronton :
-// « Ce qui est passé est prologue ».
-export function buildArchives(poser) {
-  const { set, bloc, salle, colonnade, fronton } = outils(poser);
-  salle(-4, 4, 1, 8, -3, 3, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-3, 3, 1, 8, -2, 2, BLOCK.AIR);
-  bloc(-3, 3, 0, 0, -2, 2, DALLE);
-  colonnade(-3, 3, -4, -4, 1, 9, MARBRE_2);
-  fronton(0, 11, -4, 4, MARBRE_2);
-  bloc(-4, 4, 10, 10, -4, 4, MARBRE_2);
-  for (let y = 1; y <= 3; y++) { set(0, y, -3, BLOCK.AIR); set(1, y, -3, BLOCK.AIR); }
-  // les trois documents, sous vitrine, au fond de la rotonde
-  for (const x of [-2, 0, 2]) {
-    set(x, 1, 3, GRANIT); set(x, 2, 3, VERRE);
-  }
-  set(0, 8, 0, LAMPE);
-}
-
-// --- LES MÉMORIAUX -----------------------------------------------------------------
-
-// Le mémorial de la Seconde Guerre mondiale : une ellipse, deux arcs — le
-// Pacifique et l'Atlantique — et cinquante-six piliers, un par État et
-// territoire. Au fond, quatre mille étoiles d'or : une pour quatre cents morts.
+// L'ovale de piliers entre l'obélisque et le miroir d'eau : cinquante-six
+// piliers — un par État et territoire — et les deux pavillons Atlantique et
+// Pacifique. Le bassin au centre, avec ses jets.
 export function buildMemorialGuerre(poser) {
   const { set, bloc } = outils(poser);
-  for (let dx = -3; dx <= 3; dx++) {
-    for (let dz = -4; dz <= 4; dz++) {
-      const e = (dx / 3) ** 2 + (dz / 4) ** 2;
-      if (e > 1.15) continue;
-      set(dx, 0, dz, e < 0.5 ? EAU : DALLE);
-    }
+  const RU = 7, RV = 5;
+  for (let a = 0; a < 28; a++) {
+    const ang = (a / 28) * Math.PI * 2;
+    const x = Math.round(Math.cos(ang) * RU), z = Math.round(Math.sin(ang) * RV);
+    bloc(x, x, 0, 2, z, z, MARBRE);
+    set(x, 3, z, MARBRE_2);
   }
-  // les piliers, en couronne : un par État et territoire
-  for (let a = 0; a < 14; a++) {
-    const ang = (a / 14) * Math.PI * 2;
-    const x = Math.round(Math.cos(ang) * 2), z = Math.round(Math.sin(ang) * 3);
-    for (let y = 1; y <= 4; y++) set(x, y, z, MARBRE_2);
-    set(x, 5, z, uni(22));
+  // les deux pavillons, aux deux bouts du grand axe
+  for (const sx of [-1, 1]) {
+    bloc(sx * RU - 1, sx * RU + 1, 0, 4, -1, 1, MARBRE);
+    bloc(sx * RU, sx * RU, 1, 3, 0, 0, BLOCK.AIR);
+    set(sx * RU, 5, 0, OR);                         // l'aigle de bronze
   }
-  // les deux arcs, le Pacifique au nord et l'Atlantique au sud
-  for (const s of [-1, 1]) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const h = 7 - Math.abs(dx);
-      for (let y = 1; y <= h; y++) if (Math.abs(dx) === 2 || y > h - 2) set(dx, y, s * 4, MARBRE_2);
-    }
-    set(0, 8, s * 4, uni(22));
-  }
-  set(0, 1, 0, EAU);
-}
-
-// Le mémorial du Vietnam : deux murs de granit noir poli enfoncés dans la
-// pelouse, qui se rejoignent en V. Cinquante-huit mille noms, dans l'ordre des
-// morts. On descend le long du mur, il grandit à mesure — et on s'y voit,
-// parce que le granit est un miroir. C'est Maya Lin qui l'a dessiné : elle
-// avait vingt et un ans, et c'était un devoir d'étudiante.
-export function buildVietnam(poser) {
-  const { set } = outils(poser);
-  for (const s of [-1, 1]) {
-    for (let k = 0; k <= 4; k++) {
-      const x = s * k, z = Math.round(k * 0.7);
-      // la pelouse se creuse, le mur monte : au sommet du V il fait trois blocs
-      const h = 3 - Math.floor(k / 3.5);
-      for (let y = 0; y > -h; y--) set(x, y + 2, z, GRANIT_NOIR);
-      for (let y = 0; y <= 2; y++) set(x, y - 1, z + 1, DALLE);       // l'allée qui descend
-      for (let dz = 2; dz <= 3; dz++) set(x, 2, z + dz, HERBE);
-    }
-  }
-  for (let dx = -4; dx <= 4; dx++) { set(dx, 2, -1, HERBE); set(dx, 2, -2, HERBE); }
-}
-
-// Le mémorial de la guerre de Corée : dix-neuf soldats de bronze qui traversent
-// un champ, en poncho, en ordre dispersé. Reflétés dans le mur, ils font
-// trente-huit — le 38e parallèle.
-export function buildCoree(poser) {
-  const { set } = outils(poser);
-  for (let dx = -3; dx <= 3; dx++) {
-    for (let dz = -3; dz <= 3; dz++) {
-      if (Math.abs(dx) + Math.abs(dz * 1.3) > 5) continue;
-      set(dx, 0, dz, ((dx + dz) & 3) === 0 ? DALLE : HERBE);
-    }
-  }
-  const pas = [[-2, 1], [-2, -1], [-1, 2], [-1, 0], [0, -2], [0, 1], [1, -1], [2, 2], [2, 0]];
-  for (const [x, z] of pas) {
-    set(x, 1, z, uni(21)); set(x, 2, z, uni(21)); set(x, 3, z, uni(19));
-  }
-  for (let dz = -2; dz <= 2; dz++) { set(3, 1, dz, GRANIT_NOIR); set(3, 2, dz, GRANIT_NOIR); }
-}
-
-// Le mémorial Martin Luther King : un bloc de granit poussé HORS d'une
-// montagne fendue, et King qui s'en dégage, les bras croisés. La phrase du
-// discours : « De la montagne du désespoir, une pierre d'espérance. »
-export function buildMLK(poser) {
-  const { set, bloc } = outils(poser);
-  // la montagne du désespoir, fendue en deux
-  for (const s of [-1, 1]) {
-    bloc(s * 2, s * 3, 1, 5, -2, 2, GRANIT);
-  }
-  // la pierre d'espérance, avancée de quatre blocs
-  bloc(-1, 1, 1, 6, -3, 0, GRANIT);
-  set(0, 7, -2, GRANIT);
-  set(0, 4, -3, uni(19));            // le visage
-  set(-1, 3, -3, GRANIT); set(1, 3, -3, GRANIT);   // les bras croisés
-  for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
-    set(dx, 0, dz, ((dx + dz) & 1) === 0 ? DALLE : HERBE);
-  }
-}
-
-// La tombe du Soldat inconnu, au cimetière d'Arlington : un sarcophage de
-// marbre du Colorado, veillé nuit et jour depuis 1937, par tous les temps. La
-// relève de la garde se fait au pas compté.
-export function buildSoldatInconnu(poser) {
-  const { set, bloc } = outils(poser);
-  bloc(-6, 6, 0, 0, -5, 5, DALLE);
-  for (let m = 0; m < 3; m++) for (let x = -5; x <= 5; x++) set(x, m, 5 - m, MARBRE);
-  bloc(-2, 2, 1, 3, -1, 1, MARBRE);           // le sarcophage
-  set(0, 4, 0, MARBRE_2);
-  // l'amphithéâtre de marbre, derrière
-  for (let a = 0; a < 20; a++) {
-    const ang = Math.PI * (a / 19) - Math.PI / 2;
-    const x = Math.round(Math.cos(ang) * 8), z = -4 + Math.round(Math.sin(ang) * 5);
-    for (let y = 1; y <= 5; y++) set(x, y, z, MARBRE);
-    set(x, 6, z, MARBRE_2);
-  }
-  set(3, 1, 2, uni(21)); set(3, 2, 2, uni(21)); set(3, 3, 2, uni(19));   // la sentinelle
-}
-
-// --- LES AUTRES ---------------------------------------------------------------------
-
-// La Cour suprême : « Égale justice devant la loi » sur le fronton, seize
-// colonnes, et un escalier de quarante-quatre marches. Le plus petit des trois
-// pouvoirs, et le seul dont on ne connaît pas les visages.
-export function buildCourSupreme(poser) {
-  const { set, bloc, salle, colonnade, fronton } = outils(poser);
-  bloc(-4, 4, 0, 1, -4, 4, MARBRE);
-  for (let m = 0; m < 1; m++) for (let z = -3; z <= 3; z++) set(-5 - m, 1 - m, z, MARBRE);
-  salle(-3, 3, 2, 7, -3, 3, MARBRE, DALLE, MARBRE);
-  bloc(-2, 2, 2, 7, -2, 2, BLOCK.AIR);
-  bloc(-2, 2, 1, 1, -2, 2, DALLE);
-  colonnade(-4, -4, -3, 3, 2, 8, MARBRE);
-  fronton(-4, 10, 0, 4, MARBRE, false);
-  bloc(-4, 4, 8, 8, -4, 4, MARBRE);
-  for (let z = -1; z <= 1; z++) for (let y = 2; y <= 4; y++) set(-3, y, z, BLOCK.AIR);
-  set(0, 2, 1, TABLE); set(-1, 2, 0, BANC); set(1, 2, 0, BANC);
-  set(0, 7, 0, LAMPE);
-}
-
-// La Bibliothèque du Congrès : la plus grande bibliothèque du monde, et sa
-// coupole de cuivre couverte à l'or fin. Dedans, la salle de lecture ronde,
-// des rayonnages sur tout le pourtour, et une table par lecteur.
-export function buildBibliotheque(poser) {
-  const { set, bloc, salle, dome, tambour } = outils(poser);
-  salle(-5, 5, 1, 7, -4, 4, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-4, 4, 1, 7, -3, 3, BLOCK.AIR);
-  bloc(-4, 4, 0, 0, -3, 3, DALLE);
-  tambour(0, 8, 11, 0, 3, MARBRE_2, VERRE);
-  bloc(-2, 2, 8, 11, -2, 2, BLOCK.AIR);
-  dome(0, 12, 0, 3, CUIVRE);
-  set(0, 16, 0, OR);
-  for (let y = 1; y <= 3; y++) { set(-5, y, 0, BLOCK.AIR); set(-5, y, 1, BLOCK.AIR); }
-  // la salle de lecture : les rayonnages tout autour, les tables en couronne
-  for (let x = -4; x <= 4; x++) {
-    for (const z of [-3, 3]) { set(x, 2, z, BLOCK.BOOKSHELF); set(x, 3, z, BLOCK.BOOKSHELF); }
-  }
-  for (const [x, z] of [[-2, -1], [2, -1], [-2, 1], [2, 1], [0, 0]]) {
-    set(x, 1, z, TABLE);
-  }
-  set(0, 7, 0, LAMPE);
-}
-
-// Le Trésor : la plus longue colonnade de la ville, tout contre la
-// Maison-Blanche. C'est ce bâtiment-là qui est au dos du billet de dix dollars.
-export function buildTresor(poser) {
-  const { set, bloc, salle, colonnade } = outils(poser);
-  salle(-3, 3, 1, 7, -5, 5, MARBRE_2, DALLE, MARBRE_2);
-  bloc(-2, 2, 1, 7, -4, 4, BLOCK.AIR);
-  bloc(-2, 2, 0, 0, -4, 4, DALLE);
-  colonnade(-4, -4, -5, 5, 1, 8, MARBRE_2);
-  bloc(-4, 3, 9, 9, -6, 6, MARBRE_2);
-  for (let y = 1; y <= 3; y++) { set(-3, y, 0, BLOCK.AIR); set(-3, y, 1, BLOCK.AIR); }
-  set(0, 1, 0, LAMPE); set(0, 1, -3, TABLE); set(0, 1, 3, TABLE);
-}
-
-// Le Kennedy Center : une longue boîte de marbre blanc au bord du Potomac,
-// portée par une colonnade de piliers de bronze. Trois salles côte à côte, et
-// une terrasse d'où l'on voit le fleuve.
-export function buildKennedyCenter(poser) {
-  const { set, bloc, salle } = outils(poser);
-  salle(-3, 3, 1, 9, -7, 7, MARBRE, DALLE, MARBRE);
-  bloc(-2, 2, 1, 9, -6, 6, BLOCK.AIR);
-  bloc(-2, 2, 0, 0, -6, 6, DALLE);
-  for (const s of [-1, 1]) {
-    for (let z = -7; z <= 7; z += 2) {
-      for (let y = 1; y <= 9; y++) set(s * 4, y, z, BRONZE);
-    }
-  }
-  bloc(-4, 4, 10, 10, -8, 8, MARBRE);
-  for (let y = 1; y <= 3; y++) { set(-3, y, 0, BLOCK.AIR); set(-3, y, 1, BLOCK.AIR); }
-  // les trois salles : un tapis rouge par salle, et le lustre
-  for (const z of [-4, 0, 4]) {
-    for (let x = -1; x <= 1; x++) set(x, 1, z, TAPIS);
-    set(0, 8, z, LAMPE);
-    set(-1, 1, z + 1, BANC); set(1, 1, z + 1, BANC);
-  }
-}
-
-// L'université de Georgetown : Healy Hall, sa flèche d'horloge, et la plus
-// vieille université catholique du pays — fondée en 1789, l'année de la
-// Constitution.
-export function buildGeorgetownU(poser) {
-  const { set, bloc, salle } = outils(poser);
-  salle(-8, 8, 1, 8, -4, 4, GRES_ROUGE, DALLE, GRES_ROUGE);
-  bloc(-7, 7, 1, 8, -3, 3, BLOCK.AIR);
-  bloc(-7, 7, 0, 0, -3, 3, DALLE);
-  bloc(-8, 8, 9, 9, -4, 4, ARDOISE);
-  for (let x = -7; x <= 7; x += 2) for (const y of [3, 6]) { set(x, y, -4, VERRE); set(x, y, 4, VERRE); }
-  // la tour de l'horloge, au milieu de la façade
-  for (let y = 1; y <= 18; y++) {
-    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
-      if (Math.abs(dx) === 2 || Math.abs(dz) === 2) set(dx, y, dz - 5, GRES_ROUGE);
-    }
-  }
-  set(0, 15, -7, OR); set(0, 15, -3, OR);        // les cadrans
-  for (let k = 0; k <= 5; k++) {
-    const d = Math.max(0, 2 - Math.floor(k / 1.6));
-    for (let dx = -d; dx <= d; dx++) for (let dz = -d; dz <= d; dz++) set(dx, 19 + k, dz - 5, ARDOISE);
-  }
-  for (let y = 1; y <= 3; y++) { set(0, y, -7, BLOCK.AIR); set(1, y, -7, BLOCK.AIR); }
-  set(0, 1, 0, LAMPE); set(-4, 1, 0, BANC); set(4, 1, 0, BANC);
-}
-
-// L'arche de l'Amitié, à Chinatown : sept toits de tuiles vernissées au-dessus
-// de la rue H, deux cent soixante-douze dragons peints, et le plus grand
-// portique chinois hors de Chine.
-export function buildArcChinatown(poser) {
-  const { set, bloc } = outils(poser);
-  for (const s of [-1, 1]) {
-    for (let y = 1; y <= 6; y++) { set(s * 3, y, 0, ROUGE); set(s * 3, y, 1, ROUGE); }
-    set(s * 3, 0, 0, GRANIT); set(s * 3, 0, 1, GRANIT);
-  }
-  // les trois toits étagés, en tuiles vertes et jaunes
-  for (let k = 0; k < 3; k++) {
-    const demi = 4 - k, y = 7 + k * 2;
-    for (let x = -demi; x <= demi; x++) {
-      for (let z = -1; z <= 2; z++) set(x, y, z, k % 2 === 0 ? VERT : JAUNE);
-      set(x, y + 1, 0, ROUGE); set(x, y + 1, 1, ROUGE);
-    }
-    set(-demi - 1, y + 1, 0, VERT); set(demi + 1, y + 1, 0, VERT);   // les retroussis
-  }
-  bloc(-2, 2, 7, 7, 0, 1, OR);
-  for (const s of [-1, 1]) { set(s * 4, 12, 0, OR); set(s * 4, 12, 1, OR); }
-}
-
-// --- LES PONTS -----------------------------------------------------------------------
-//
-// Trois franchissements, et le même principe : des arcs de pierre et un tablier
-// qui repose dessus. Le pont du Mémorial relie le Lincoln au cimetière
-// d'Arlington — une ligne droite entre le président qui a sauvé l'Union et les
-// tombes de ceux qui sont morts pour elle. Ce n'est pas de l'urbanisme, c'est
-// une phrase.
-
-function pontArcs(poser, portee, arcs, materiau, axeX) {
-  const { set } = outils(poser);
-  const demi = Math.floor((arcs * portee) / 2);
-  for (let d = -demi; d <= demi; d++) {
-    // la courbe de l'arc : creusée sous le tablier, entre deux piles
-    const dansArc = ((d + demi) % portee) - portee / 2;
-    const creux = Math.round(Math.sqrt(Math.max(0, (portee / 2) ** 2 - dansArc * dansArc)) * 0.7);
-    for (let l = -2; l <= 2; l++) {
-      const x = axeX ? d : l, z = axeX ? l : d;
-      set(x, 0, z, materiau);                              // le tablier
-      set(x, 1, z, Math.abs(l) === 2 ? materiau : BLOCK.AIR);   // les parapets
-      for (let y = -1; y >= -6; y--) {
-        if (y < -creux) set(x, y, z, materiau);            // la pile
+  // le bassin ovale et ses jets
+  for (let dx = -RU + 2; dx <= RU - 2; dx++) {
+    for (let dz = -RV + 2; dz <= RV - 2; dz++) {
+      if ((dx / (RU - 2)) ** 2 + (dz / (RV - 2)) ** 2 <= 1) {
+        set(dx, -1, dz, EAU);
+        if ((dx & 1) === 0 && dz === 0) set(dx, 0, dz, EAU);
       }
     }
   }
 }
 
-export function buildPontMemorial(poser) { pontArcs(poser, 6, 4, MARBRE_2, true); }
-export function buildPontDouglass(poser) { pontArcs(poser, 5, 4, GRANIT, false); }
-export function buildKeyBridge(poser) { pontArcs(poser, 5, 4, GRANIT, true); }
+// --- LES MUSÉES DU MALL — RIVE NORD --------------------------------------------
+
+// LA GALERIE NATIONALE D'ART — BÂTIMENT OUEST. Le dôme sur sa rotonde à
+// fontaine, et des salles de peinture EN ENFILADE : les cadres dorés au mur,
+// chacun sa toile. C'est une vraie visite de musée.
+export function buildGalerieArt(poser) {
+  const { set, salle, bloc, dome, tambour, colonnade, fronton, cadre, anneau } = outils(poser);
+  salle(-7, 7, 0, 7, -4, 4, MARBRE_2, MARBRE, MARBRE);
+  // le portique d'entrée au sud, vers le Mall
+  colonnade(-2, 2, 5, 5, 0, 4, MARBRE, 2);
+  fronton(0, 5, 5, 3, MARBRE);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, 4, BLOCK.AIR);
+  // la rotonde centrale : colonnes noires, fontaine, oculus
+  anneau(0, 0, 0, 3, GRANIT); anneau(0, 4, 0, 3, GRANIT);
+  for (const a of [0, 1, 2, 3, 4, 5]) {
+    const x = Math.round(Math.cos(a * Math.PI / 3) * 3), z = Math.round(Math.sin(a * Math.PI / 3) * 3);
+    bloc(x, x, 0, 4, z, z, VERT_SOMBRE);
+  }
+  set(0, -1, 0, EAU); set(0, 0, 0, EAU);            // la fontaine de Mercure
+  bloc(-2, 2, 8, 8, -2, 2, BLOCK.AIR);
+  tambour(0, 8, 9, 0, 3, MARBRE, VERRE);
+  dome(0, 10, 0, 3, MARBRE);
+  // les salles de peinture, à l'est et à l'ouest de la rotonde
+  for (const sx of [-1, 1]) {
+    for (let h = 0; h <= 2; h++) set(sx * 4, h, 0, BLOCK.AIR);   // l'enfilade
+    cadre(sx * 6, 2, -2, true, sx < 0 ? BLEU : ROUGE);
+    cadre(sx * 6, 2, 1, true, sx < 0 ? VERT_SOMBRE : ORANGE);
+    cadre(sx * 5 - (sx < 0 ? -1 : 1) * 0, 2, sx < 0 ? -3 : -3, false, uni(15), 2, 2);
+    set(sx * 5, 0, 2, BANC);
+  }
+}
+
+// LA GALERIE NATIONALE — BÂTIMENT EST. Les triangles de marbre de I. M. Pei,
+// l'atrium de verre, et le mobile de Calder suspendu dedans.
+export function buildNGAEst(poser) {
+  const { set, bloc, salle } = outils(poser);
+  salle(-4, 4, 0, 8, -4, 4, MARBRE, MARBRE_2, VERRE);
+  // les deux tours triangulaires, en écharpe
+  for (let k = 0; k < 4; k++) {
+    bloc(-4 + k, -4 + k, 9, 10, -4, -4 + k, MARBRE);
+    bloc(4 - k, 4, 9, 10, 4 - k, 4, MARBRE);
+  }
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 0; k++) set(k, h, 4, BLOCK.AIR);
+  // LE MOBILE DE CALDER, suspendu dans l'atrium : des pales rouges et noires.
+  set(0, 7, 0, ACIER);
+  set(-1, 6, -1, ROUGE); set(1, 6, 1, ROUGE); set(2, 6, -1, NOIR); set(-2, 6, 1, NOIR);
+  set(0, 0, -2, BANC); set(0, 0, 2, BANC);
+}
+
+// LE MUSÉE D'HISTOIRE NATURELLE. La rotonde avec L'ÉLÉPHANT au milieu — le
+// plus grand jamais naturalisé —, la salle des dinosaures à l'ouest avec son
+// squelette, la salle des gemmes à l'est avec le diamant Hope.
+export function buildHistoireNaturelle(poser) {
+  const { set, salle, bloc, dome, tambour, colonnade, fronton } = outils(poser);
+  salle(-8, 8, 0, 7, -4, 4, MARBRE_2, MARBRE, MARBRE);
+  colonnade(-2, 2, 5, 5, 0, 4, MARBRE, 2);
+  fronton(0, 5, 5, 3, MARBRE);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, 4, BLOCK.AIR);
+  bloc(-2, 2, 8, 8, -2, 2, BLOCK.AIR);
+  tambour(0, 8, 10, 0, 3, MARBRE, VERRE);
+  dome(0, 11, 0, 3, MARBRE);
+  // L'ÉLÉPHANT de la rotonde, sur son socle
+  bloc(-1, 1, 0, 0, -1, 1, MARBRE_2);               // le socle
+  bloc(-1, 1, 1, 3, 0, 1, GRIS);                    // le corps
+  set(-1, 1, 0, GRIS); set(-1, 1, 1, GRIS);         // les pattes avant
+  set(1, 1, 0, GRIS); set(1, 1, 1, GRIS);
+  set(-1, 3, -1, GRIS);                             // la tête, trompe levée
+  set(-1, 4, -1, GRIS); set(-1, 5, -2, GRIS);
+  // LA SALLE DES DINOSAURES, à l'ouest : le squelette, épine dorsale en arc.
+  for (let h = 0; h <= 2; h++) set(-5, h, 0, BLOCK.AIR);
+  for (let k = 0; k < 5; k++) {
+    const y = [1, 2, 3, 2, 1][k];
+    set(-8 + k + 1, y, -1, BLANC);                  // la colonne vertébrale
+    if (k % 2 === 0) { set(-8 + k + 1, y - 1, -1, BLANC); }   // les côtes
+  }
+  set(-6, 1, -2, BLANC); set(-6, 2, -2, BLANC);     // le cou et la tête
+  set(-6, 3, -2, BLANC);
+  set(-4, 0, 2, BANC);
+  // LA SALLE DES GEMMES, à l'est : le diamant Hope sous sa vitrine.
+  for (let h = 0; h <= 2; h++) set(5, h, 0, BLOCK.AIR);
+  set(6, 0, 0, MARBRE_2); set(6, 1, 0, BLEU); set(6, 2, 0, VERRE);   // le Hope
+  set(7, 0, -2, MARBRE_2); set(7, 1, -2, JAUNE); set(7, 2, -2, VERRE);
+  set(7, 0, 2, MARBRE_2); set(7, 1, 2, VERT_SOMBRE); set(7, 2, 2, VERRE);
+  set(5, 0, -2, LAMPE);
+}
+
+// LE MUSÉE D'HISTOIRE AMÉRICAINE. La Bannière étoilée — l'originale de 1814,
+// celle de l'hymne — dans sa pénombre, et une locomotive à vapeur posée dans
+// la grande halle.
+export function buildHistoireAmericaine(poser) {
+  const { set, salle, bloc } = outils(poser);
+  salle(-7, 7, 0, 7, -4, 4, MARBRE_2, MARBRE, MARBRE);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, 4, BLOCK.AIR);
+  // LA BANNIÈRE ÉTOILÉE, au mur nord : rayures rouges et blanches, canton bleu.
+  for (let x = -5; x <= 0; x++) {
+    for (let y = 2; y <= 5; y++) {
+      const id = (x <= -3 && y >= 4) ? BLEU : ((y & 1) === 0 ? ROUGE : BLANC);
+      set(x, y, -3, id);
+    }
+  }
+  bloc(-5, 0, 1, 1, -3, -3, MARBRE_2);              // la rampe de présentation
+  // LA LOCOMOTIVE 1401, dans la halle est : chaudière, cabine, roues.
+  bloc(2, 5, 1, 2, 1, 2, VERT_SOMBRE);              // la chaudière
+  bloc(6, 6, 1, 3, 1, 2, VERT_SOMBRE);              // la cabine
+  set(2, 3, 1, NOIR);                               // la cheminée
+  for (const x of [2, 4, 6]) { set(x, 0, 1, NOIR); set(x, 0, 2, NOIR); }   // les roues
+  set(0, 0, 2, BANC);
+}
+
+// LE MUSÉE AFRO-AMÉRICAIN. La couronne de bronze — trois plateaux renversés,
+// ajourés — au-dessus d'un hall de verre.
+export function buildAfroAmericain(poser) {
+  const { set, bloc, salle } = outils(poser);
+  salle(-3, 3, 0, 2, -2, 2, VERRE, GRANIT, ACIER);
+  for (let h = 0; h <= 1; h++) set(0, h, 2, BLOCK.AIR);
+  for (let n = 0; n < 3; n++) {
+    const y0 = 3 + n * 3, demiU = 2 + n, demiV = 1 + n;
+    for (let dx = -demiU; dx <= demiU; dx++) {
+      for (let dz = -demiV; dz <= demiV; dz++) {
+        const bord = Math.abs(dx) === demiU || Math.abs(dz) === demiV;
+        for (let y = y0; y < y0 + 3; y++) {
+          if (bord && ((dx + dz + y) & 1) === 0) set(dx, y, dz, uni(1));   // le bronze ajouré
+        }
+      }
+    }
+  }
+  bloc(-2, 2, 2, 2, -1, 1, ACIER);
+  set(0, 0, 0, LAMPE);
+}
+
+// --- LES MUSÉES DU MALL — RIVE SUD ---------------------------------------------
+
+// LE MUSÉE DE L'INDIEN D'AMÉRIQUE. Le calcaire doré en strates courbes,
+// sculpté par le vent — aucune ligne droite dans la vraie façade.
+export function buildIndienAmerique(poser) {
+  const { set, bloc, salle } = outils(poser);
+  const RAYONS = [5, 4.6, 5, 4.2, 4.8, 4, 3.2];
+  for (let y = 0; y < RAYONS.length; y++) {
+    const r = RAYONS[y];
+    for (let dx = -5; dx <= 5; dx++) {
+      for (let dz = -4; dz <= 4; dz++) {
+        const d = Math.hypot(dx, dz * 1.2);
+        if (Math.abs(d - r) < 0.8) set(dx, y, dz, uni(16));
+        else if (d < r && y === 0) set(dx, y, dz, GRANIT);
+      }
+    }
+  }
+  bloc(-2, 2, 7, 7, -2, 2, uni(16));
+  for (let h = 0; h <= 2; h++) set(-5, h, 0, BLOCK.AIR);   // l'entrée face au levant
+  for (let h = 0; h <= 2; h++) set(-4, h, 0, BLOCK.AIR);
+  set(0, 0, 0, LAMPE); set(2, 0, 0, BANC);
+}
+
+// LE MUSÉE DE L'AIR ET DE L'ESPACE — le hall des Jalons du vol. Le musée le
+// plus visité d'Amérique, et on comprend en poussant la porte : le Spirit of
+// St. Louis et le Bell X-1 SUSPENDUS au plafond, la capsule Apollo 11 et
+// Friendship 7 posées au sol, le module lunaire sur ses pattes, et deux
+// fusées debout dans la baie vitrée.
+export function buildAirEspace(poser) {
+  const { set, salle, bloc } = outils(poser);
+  salle(-7, 7, 0, 10, -4, 4, MARBRE_2, GRANIT, ACIER);
+  // la façade nord, vers le Mall, tout en verre
+  for (let x = -6; x <= 6; x++) {
+    for (let y = 0; y <= 9; y++) {
+      if ((x & 3) !== 0) set(x, y, -4, VERRE);
+    }
+  }
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, -4, BLOCK.AIR);
+  // LE SPIRIT OF ST. LOUIS, argenté, suspendu — fuselage et grande aile.
+  bloc(-4, -1, 8, 8, -1, -1, ACIER);                // le fuselage
+  bloc(-3, -3, 8, 8, -3, 1, ACIER);                 // l'aile
+  set(-1, 8, -1, GRIS);                             // le moteur
+  // LE BELL X-1, orange, suspendu plus bas.
+  bloc(2, 4, 6, 6, 0, 0, ORANGE);
+  set(3, 6, -1, ORANGE); set(3, 6, 1, ORANGE);      // les ailes courtes
+  // LA CAPSULE APOLLO 11 (Columbia), cône posé au sol.
+  set(-4, 0, 2, ACIER); bloc(-5, -3, 1, 1, 1, 3, ACIER); set(-4, 2, 2, GRIS);
+  // FRIENDSHIP 7, la capsule de John Glenn.
+  set(1, 0, 2, GRIS); set(1, 1, 2, NOIR);
+  // LE MODULE LUNAIRE, sur ses quatre pattes dorées.
+  bloc(4, 5, 1, 2, 1, 2, OR);
+  set(3, 0, 0, OR); set(6, 0, 0, OR); set(3, 0, 3, OR); set(6, 0, 3, OR);
+  // LES DEUX FUSÉES, debout dans la baie est.
+  for (let y = 0; y <= 8; y++) set(6, y, -2, y === 8 ? ROUGE : BLANC);
+  for (let y = 0; y <= 7; y++) set(5, y, -3, y === 7 ? NOIR : GRIS);
+  set(0, 0, 3, BANC); set(-2, 0, 3, BANC);
+}
+
+// LE HIRSHHORN. Le donut de béton sur pilotis — le musée d'art moderne le
+// plus reconnaissable du monde, une cour ronde à ciel ouvert au milieu.
+export function buildHirshhorn(poser) {
+  const { set, bloc, anneau } = outils(poser);
+  for (let y = 2; y <= 7; y++) {
+    for (let dx = -4; dx <= 4; dx++) {
+      for (let dz = -4; dz <= 4; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (d <= 4.4 && d >= 2.2) set(dx, y, dz, BETON_CLAIR);
+      }
+    }
+  }
+  // vider la galerie intérieure de l'anneau
+  for (let y = 3; y <= 6; y++) {
+    for (let dx = -4; dx <= 4; dx++) {
+      for (let dz = -4; dz <= 4; dz++) {
+        const d = Math.hypot(dx, dz);
+        if (d <= 3.8 && d >= 2.8) set(dx, y, dz, BLOCK.AIR);
+      }
+    }
+  }
+  // les quatre pilotis
+  for (const [x, z] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) bloc(x, x, 0, 1, z, z, BETON);
+  anneau(0, -1, 0, 3, GRANIT, true);                // la cour, sous l'anneau
+  set(0, -1, 0, EAU); set(0, 0, 0, EAU);            // la fontaine centrale
+  // une sculpture dans la cour, et l'escalier qui monte dans l'anneau
+  set(2, 0, 0, ROUGE); set(2, 1, 0, ROUGE); set(2, 2, 0, NOIR);
+  for (let k = 0; k < 3; k++) set(-2, k, -2 + k, DALLE);
+}
+
+// ARTS ET INDUSTRIES. Le premier musée du Smithsonian (1881), brique
+// polychrome et rosaces — un pavillon victorien.
+export function buildArtsIndustries(poser) {
+  const { set, salle, bloc } = outils(poser);
+  salle(-2, 2, 0, 5, -3, 3, BRIQUE, GRANIT, uni(5));
+  for (let y = 1; y <= 4; y += 3) {
+    for (const z of [-2, 0, 2]) { set(-2, y, z, uni(1)); set(2, y, z, uni(1)); }
+  }
+  bloc(-1, 1, 6, 7, -1, 1, BRIQUE);
+  set(0, 8, 0, uni(5));
+  for (let h = 0; h <= 2; h++) set(0, h, -3, BLOCK.AIR);
+  set(0, 0, 0, LAMPE); set(0, 0, 2, BANC);
+}
+
+// LE CHÂTEAU DU SMITHSONIAN. Le grès rouge, les neuf tours — la maison mère,
+// et la crypte de James Smithson dans l'entrée.
+export function buildChateauSmithsonian(poser) {
+  const { set, salle, bloc } = outils(poser);
+  salle(-3, 3, 0, 5, -2, 2, GRES_ROUGE, GRANIT, GRES_ROUGE);
+  // les tours : deux hautes au nord, deux basses au sud
+  for (const [x, z, h] of [[-3, -2, 9], [3, -2, 8], [-3, 2, 7], [3, 2, 7]]) {
+    bloc(x, x, 5, h, z, z, GRES_ROUGE);
+    set(x, h + 1, z, uni(5));
+  }
+  bloc(-1, 1, 6, 6, -1, 1, GRES_ROUGE);
+  for (let h = 0; h <= 2; h++) set(0, h, -2, BLOCK.AIR);
+  set(-2, 0, 0, MARBRE_2); set(-2, 1, 0, MARBRE);   // la crypte de Smithson
+  set(2, 0, 0, LAMPE);
+}
+
+// LA GALERIE FREER. Un palais florentin fermé sur sa cour intérieure.
+export function buildFreer(poser) {
+  const { set, salle } = outils(poser);
+  salle(-2, 2, 0, 4, -2, 2, MARBRE_2, GRANIT, uni(5));
+  set(0, -1, 0, HERBE); set(0, 0, 0, FEUILLES);     // la cour plantée
+  for (let h = 0; h <= 2; h++) set(0, h, 2, BLOCK.AIR);
+}
+
+// --- AUTOUR DE LA MAISON-BLANCHE ------------------------------------------------
+
+// LA MAISON-BLANCHE. Le corps central avec le portique nord à colonnes et le
+// portique sud ARRONDI ; l'aile ouest, basse, avec LE BUREAU OVALE — ovale
+// pour de vrai — et la roseraie le long de la colonnade. Dedans : le hall
+// d'entrée, l'East Room et ses lustres, la salle à manger d'État.
+//
+// L'entrée d'un enfant : par le portique NORD (v négatif), comme les invités.
+export function buildMaisonBlanche(poser) {
+  const { set, salle, bloc, colonnade, fronton } = outils(poser);
+
+  // le corps central : 13 de large, 9 de profond
+  salle(-6, 6, 0, 7, -4, 4, BLANC, PLANCHER, BLANC);
+  bloc(-6, 6, 8, 8, -4, 4, MARBRE_2);               // la balustrade du toit
+  // le portique nord et son fronton
+  colonnade(-2, 2, -5, -5, 0, 5, BLANC, 2);
+  fronton(0, 6, -5, 3, BLANC);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, -4, BLOCK.AIR);
+  // le portique sud, arrondi
+  for (const [dx, dz] of [[-2, 5], [-1, 6], [0, 6], [1, 6], [2, 5]]) {
+    bloc(dx, dx, 0, 5, dz, dz, BLANC);
+  }
+  // le hall d'entrée : deux torchères de part et d'autre de la porte
+  set(-2, 0, -2, LAMPE); set(2, 0, -2, LAMPE);
+  // L'EAST ROOM, à l'est : la grande salle de bal, trois lustres dorés.
+  for (const z of [-2, 0, 2]) { set(4, 6, z, OR); set(4, 5, z, LAMPE); }
+  // la salle à manger d'État, à l'ouest : la grande table dressée
+  for (let z = -1; z <= 1; z++) set(-4, 0, z, TABLE);
+  set(-4, 0, -3, LAMPE);
+  // le mur intérieur qui sépare hall et salles
+  for (let z = -3; z <= 3; z++) {
+    if (z >= -1 && z <= 1) continue;                // le passage central
+    bloc(1, 1, 0, 6, z, z, BLANC); bloc(-3, -3, 0, 6, z, z, BLANC);
+  }
+
+  // L'AILE OUEST, basse, reliée par la colonnade — et LE BUREAU OVALE.
+  salle(-12, -7, 0, 3, 0, 6, BLANC, PLANCHER, MARBRE_2);
+  for (let h = 0; h <= 2; h++) set(-7, h, 1, BLOCK.AIR);   // on passe de l'une à l'autre
+  for (let h = 0; h <= 2; h++) set(-6, h, 1, BLOCK.AIR);
+  // le Bureau ovale : des murs en ellipse dans l'angle sud de l'aile
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dz = -2; dz <= 2; dz++) {
+      const d = (dx / 2) ** 2 + (dz / 2) ** 2;
+      if (d <= 1.3 && d >= 0.6) bloc(-10 + dx, -10 + dx, 0, 3, 4 + dz, 4 + dz, BLANC);
+    }
+  }
+  for (let h = 0; h <= 2; h++) set(-10, h, 2, BLOCK.AIR);  // la porte du Bureau
+  set(-10, 0, 5, TABLE);                            // le bureau Resolute
+  set(-11, 0, 4, LAMPE);
+  // la roseraie, le long de la colonnade nord de l'aile
+  for (let x = -12; x <= -7; x++) {
+    for (let z = -3; z <= -2; z++) set(x, 0, z, (x & 1) === 0 ? uni(15) : FEUILLES);
+  }
+}
+
+// LE TRÉSOR. La façade grecque à quinze colonnes, juste à l'est de la
+// Maison-Blanche — c'est lui qui bouche la perspective de Pennsylvania
+// Avenue, la plus célèbre erreur d'urbanisme du pays.
+export function buildTresor(poser) {
+  const { set, salle, colonnade } = outils(poser);
+  salle(-2, 2, 0, 6, -4, 4, CALCAIRE, GRANIT, CALCAIRE);
+  colonnade(-3, -3, -4, 4, 0, 5, CALCAIRE, 2);
+  for (let h = 0; h <= 2; h++) set(-2, h, 0, BLOCK.AIR);
+  set(0, 0, 0, TABLE); set(0, 1, 0, OR);            // le lingot sur la table
+  set(0, 0, -3, LAMPE); set(0, 0, 3, LAMPE);
+}
+
+// LES ARCHIVES NATIONALES. Le temple aux Chartes : la Déclaration, la
+// Constitution et le Bill of Rights sous leurs vitrines, dans la pénombre de
+// la rotonde.
+export function buildArchives(poser) {
+  const { set, salle, colonnade, fronton, bloc } = outils(poser);
+  salle(-4, 4, 0, 6, -2, 2, CALCAIRE, GRANIT, CALCAIRE);
+  colonnade(-4, 4, -3, -3, 0, 5, CALCAIRE, 2);
+  fronton(0, 6, -3, 4, CALCAIRE);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(k, h, -2, BLOCK.AIR);
+  // les trois Chartes, sous verre, sur l'estrade du fond
+  bloc(-2, 2, 0, 0, 1, 1, MARBRE_2);
+  for (const x of [-2, 0, 2]) { set(x, 1, 1, uni(16)); set(x, 2, 1, VERRE); }
+  set(-3, 0, 0, LAMPE); set(3, 0, 0, LAMPE);
+}
+
+// L'ARC DE L'AMITIÉ DE CHINATOWN. Le plus grand arc chinois hors de Chine :
+// sept toits verts et or au-dessus de H Street.
+export function buildArcChinatown(poser) {
+  const { set, bloc } = outils(poser);
+  bloc(-4, -3, 0, 5, -1, 1, ROUGE);
+  bloc(3, 4, 0, 5, -1, 1, ROUGE);
+  bloc(-4, 4, 6, 6, -1, 1, VERT_SOMBRE);
+  bloc(-3, 3, 7, 7, -1, 1, OR);
+  bloc(-1, 1, 8, 8, -1, 1, VERT_SOMBRE);
+  set(0, 9, 0, OR);
+}
+
+// LE THÉÂTRE FORD. La scène, les fauteuils, et la loge drapée où Lincoln fut
+// assassiné le 14 avril 1865 — on la voit depuis le parterre, à jamais vide.
+export function buildFordTheatre(poser) {
+  const { set, salle, bloc } = outils(poser);
+  salle(-3, 3, 0, 6, -3, 3, BRIQUE, PLANCHER, BRIQUE);
+  for (let h = 0; h <= 2; h++) set(0, h, 3, BLOCK.AIR);
+  bloc(-2, 2, 0, 0, -3, -2, GRANIT);                // la scène surélevée
+  set(0, 1, -2, LAMPE);
+  for (let x = -2; x <= 2; x += 2) {                // les fauteuils du parterre
+    for (let z = 0; z <= 2; z += 1) set(x, 0, z, BANC);
+  }
+  bloc(2, 2, 2, 3, -2, -2, ROUGE);                  // la loge présidentielle, drapée
+  set(2, 4, -2, BLEU);
+}
+
+// --- CAPITOL HILL ----------------------------------------------------------------
+
+// LA COUR SUPRÊME. « Equal Justice Under Law » : le temple blanc, et la salle
+// d'audience aux neuf fauteuils.
+export function buildCourSupreme(poser) {
+  const { set, salle, colonnade, fronton, bloc } = outils(poser);
+  salle(-3, 3, 0, 6, -3, 3, MARBRE, MARBRE_2, MARBRE);
+  colonnade(-4, -4, -3, 3, 0, 5, MARBRE, 2);
+  fronton(0, 6, -4, 4, MARBRE, true);
+  for (let m = 0; m < 3; m++) for (let z = -2; z <= 2; z++) set(-5 - m, 1 - m - 1, z, MARBRE_2);
+  for (let h = 0; h <= 2; h++) set(-3, h, 0, BLOCK.AIR);
+  for (let h = 0; h <= 2; h++) set(-4, h, 0, BLOCK.AIR);
+  // la salle d'audience : l'estrade et les neuf sièges
+  bloc(1, 2, 0, 0, -2, 2, GRANIT);
+  for (let z = -2; z <= 2; z++) set(2, 1, z, BANC);
+  set(0, 0, 0, TABLE);
+}
+
+// LA BIBLIOTHÈQUE DU CONGRÈS. Le bâtiment Jefferson, et la plus belle salle
+// du pays : LA SALLE DE LECTURE octogonale, ses pupitres en cercles sous la
+// coupole.
+export function buildBibliotheque(poser) {
+  const { set, salle, bloc, dome, tambour, anneau } = outils(poser);
+  salle(-5, 5, 0, 6, -4, 4, CALCAIRE, MARBRE_2, CALCAIRE);
+  for (let h = 0; h <= 2; h++) set(-5, h, 0, BLOCK.AIR);
+  bloc(-3, 3, 7, 7, -3, 3, BLOCK.AIR);
+  tambour(0, 7, 9, 0, 4, CALCAIRE, VERRE);
+  dome(0, 10, 0, 4, uni(1));                        // la coupole cuivrée
+  set(0, 14, 0, OR);                                // la Torche du Savoir
+  // la salle de lecture : les pupitres en deux cercles autour du bureau central
+  anneau(0, 0, 0, 3, TABLE);
+  set(0, 0, 0, GRANIT); set(0, 1, 0, LAMPE);        // le bureau du contrôle
+  for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) set(x, 0, z, LAMPE);
+  // les rayonnages, contre les murs
+  for (const x of [-4, 4]) for (let z = -3; z <= 3; z++) { set(x, 0, z, uni(6)); set(x, 1, z, uni(6)); set(x, 2, z, uni(6)); }
+}
+
+// UNION STATION. Les trois grandes arches de calcaire, la halle aux caissons
+// dorés, et derrière, LES QUAIS : c'est la porte d'entrée ferroviaire de la
+// capitale depuis 1907.
+export function buildUnionStation(poser) {
+  const { set, salle, bloc } = outils(poser);
+  // la grande halle — sa façade regarde le SUD, vers le Capitole
+  salle(-8, 8, 0, 9, -2, 5, CALCAIRE, MARBRE_2, CALCAIRE);
+  // les caissons dorés de la voûte
+  for (let x = -7; x <= 7; x++) {
+    for (let z = -1; z <= 4; z++) {
+      if (((x + z) & 1) === 0) set(x, 9, z, OR);
+    }
+  }
+  // les trois arches de la façade
+  for (const cx of [-5, 0, 5]) {
+    for (let h = 0; h <= 4; h++) {
+      for (let k = -1; k <= 1; k++) {
+        if (h <= 3 || k === 0) set(cx + k, h, 5, BLOCK.AIR);
+      }
+    }
+  }
+  set(-3, 0, 2, BANC); set(3, 0, 2, BANC);
+  set(0, 0, 3, LAMPE);
+  // le tableau des départs, au-dessus des portes des quais
+  bloc(-2, 2, 4, 5, -2, -2, NOIR);
+  // LES QUAIS, derrière la halle : deux voies, deux trains à l'arrêt.
+  bloc(-8, 8, 0, 0, -6, -3, GRANIT);
+  for (let h = 0; h <= 2; h++) for (const k of [-1, 0, 1]) set(k, h, -2, BLOCK.AIR);
+  for (const z of [-4, -6]) {
+    for (let x = -7; x <= -2; x++) { set(x, 1, z, ACIER); if (x === -7) set(x, 2, z, ACIER); }
+  }
+  // la marquise au-dessus des quais
+  for (let x = -8; x <= 8; x++) for (const z of [-3, -5]) set(x, 5, z, VERRE);
+}
+
+// --- WEST POTOMAC PARK ------------------------------------------------------------
+
+// LE MUR DU VIETNAM. Deux ailes de granit noir enfoncées dans la pelouse, en
+// V ouvert — l'une vise le Lincoln, l'autre l'obélisque. Les noms sont
+// gravés ; ici, le poli du noir suffit à dire le silence.
+export function buildVietnam(poser) {
+  const { set } = outils(poser);
+  for (let k = 0; k < 7; k++) {
+    const h = Math.max(1, 3 - Math.floor(k / 2.5));
+    for (let y = 0; y < h; y++) {
+      set(-k, y, -Math.round(k * 0.4), NOIR);       // l'aile vers le Lincoln
+      set(k, y, -Math.round(k * 0.4), NOIR);        // l'aile vers l'obélisque
+    }
+    // le chemin qui descend le long du mur
+    set(-k, -1, -Math.round(k * 0.4) + 1, GRANIT);
+    set(k, -1, -Math.round(k * 0.4) + 1, GRANIT);
+  }
+  set(0, -1, 1, GRANIT);
+}
+
+// LE MÉMORIAL DE CORÉE. Les dix-neuf soldats d'acier qui marchent en
+// triangle vers le drapeau, ponchos au vent, et le mur de granit poli.
+export function buildCoree(poser) {
+  const { set, bloc } = outils(poser);
+  for (let r = 0; r < 4; r++) {
+    for (let k = 0; k <= r; k++) {
+      const x = -4 + r * 2, z = -r + k * 2;
+      if (Math.abs(z) > 2) continue;
+      set(x, 0, z, GRIS); set(x, 1, z, GRIS);       // un soldat, poncho gris
+      set(x, 2, z, uni(16));                        // le visage
+    }
+  }
+  for (let x = -4; x <= 4; x++) set(x, -1, 3, NOIR);   // le mur poli
+  set(4, 0, 0, BLANC); set(4, 1, 0, ROUGE); set(4, 2, 0, BLEU);   // le drapeau
+}
+
+// LE MÉMORIAL MARTIN LUTHER KING. La Pierre de l'Espoir, détachée de la
+// Montagne du Désespoir — on passe ENTRE les deux, comme le veut le vrai.
+export function buildMLK(poser) {
+  const { set, bloc } = outils(poser);
+  bloc(-4, -3, 0, 4, -2, 2, MARBRE_2);              // la Montagne, fendue
+  bloc(3, 4, 0, 4, -2, 2, MARBRE_2);
+  bloc(0, 1, 0, 4, -1, 1, MARBRE);                  // la Pierre de l'Espoir, avancée
+  set(0, 2, -2, uni(16));                           // le visage tourné vers le bassin
+  set(-2, -1, 0, GRANIT); set(2, -1, 0, GRANIT);    // le passage
+}
+
+// LE MÉMORIAL ROOSEVELT. Il manquait à la première version, faute de place —
+// le voilà : QUATRE SALLES à ciel ouvert, une par mandat, granit rouge,
+// cascades et citations. On les traverse dans l'ordre, comme les douze ans.
+export function buildRoosevelt(poser) {
+  const { set, bloc } = outils(poser);
+  for (let n = 0; n < 4; n++) {
+    const z0 = -8 + n * 4;
+    // les murs de granit rouge de la salle
+    bloc(-4, -4, 0, 2, z0, z0 + 3, GRES_ROUGE);
+    bloc(-3, 3, 0, 2, z0, z0, GRES_ROUGE);
+    for (let h = 0; h <= 1; h++) { set(0, h, z0, BLOCK.AIR); set(1, h, z0, BLOCK.AIR); }  // le passage
+    // la cascade : l'eau qui tombe du mur dans sa vasque
+    set(-4, 2, z0 + 2, EAU); set(-4, 1, z0 + 2, EAU);
+    set(-3, -1, z0 + 2, EAU);
+    set(3, 0, z0 + 2, GRANIT);                      // le banc de la salle
+  }
+  set(2, 0, -6, GRIS); set(2, 1, -6, GRIS);         // Roosevelt assis, et Fala
+  set(3, 0, -5, NOIR);                              // le petit chien
+}
+
+// LE MÉMORIAL JEFFERSON. La rotonde ouverte sur le Tidal Basin : un anneau de
+// colonnes, le dôme, et Jefferson debout qui regarde la Maison-Blanche.
+export function buildJefferson(poser) {
+  const { set, bloc, dome, anneau, colonnade, fronton } = outils(poser);
+  anneau(0, -1, 0, 6, MARBRE_2, true);              // le socle circulaire
+  for (let a = 0; a < 14; a++) {
+    const ang = (a / 14) * Math.PI * 2;
+    const x = Math.round(Math.cos(ang) * 5), z = Math.round(Math.sin(ang) * 5);
+    bloc(x, x, 0, 5, z, z, MARBRE);
+  }
+  dome(0, 6, 0, 6, MARBRE);
+  // le portique d'entrée au nord, face au bassin et à la Maison-Blanche
+  colonnade(-2, 2, -6, -6, 0, 4, MARBRE, 2);
+  fronton(0, 5, -6, 3, MARBRE);
+  bloc(-1, 1, 0, 3, -1, 1, BLOCK.AIR);
+  for (let m = 0; m < 3; m++) for (let x = -2; x <= 2; x++) set(x, -m - 1 + 1, -7 - m, MARBRE_2);
+  set(0, 0, 0, uni(1)); set(0, 1, 0, uni(1)); set(0, 2, 0, uni(1)); set(0, 3, 0, uni(16));  // la statue de bronze
+}
+
+// LE KENNEDY CENTER. La boîte blanche au bord du fleuve, ses colonnes dorées
+// en aiguille, et la grande terrasse d'où l'on voit tout le Potomac.
+export function buildKennedyCenter(poser) {
+  const { set, salle, bloc, colonnade } = outils(poser);
+  salle(-4, 4, 0, 7, -8, 8, MARBRE, PLANCHER, MARBRE);
+  colonnade(-5, -5, -8, 8, 0, 7, OR, 2);
+  colonnade(5, 5, -8, 8, 0, 7, OR, 2);
+  for (let h = 0; h <= 2; h++) for (let k = -1; k <= 1; k++) set(-4, h, k, BLOCK.AIR);
+  // le Grand Foyer : les lustres, le buste de Kennedy
+  for (const z of [-5, 0, 5]) set(0, 6, z, LAMPE);
+  set(0, 0, 0, MARBRE_2); set(0, 1, 0, uni(16));    // le buste
+  bloc(-2, 2, 0, 0, -6, -4, ROUGE);                 // la salle de concert, moquette rouge
+  for (const z of [-6, -5, -4]) { set(-2, 0, z, BANC); set(2, 0, z, BANC); }
+  set(0, 0, -6, GRANIT); set(0, 1, -6, TABLE);      // la scène et le piano
+}
+
+// --- LA VIRGINIE, DE L'AUTRE CÔTÉ DU FLEUVE --------------------------------------
+
+// LE PENTAGONE. Cinq côtés, cinq anneaux concentriques, la cour de deux
+// hectares au milieu — le plus grand bâtiment de bureaux du monde. On entre,
+// on traverse les anneaux par les couloirs rayonnants, on débouche dans la
+// cour.
+export function buildPentagone(poser) {
+  const { set, bloc } = outils(poser);
+  const coin = (k, r) => {
+    const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5;
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  };
+  const H = 5;
+  // trois anneaux de murs (le vrai en a cinq ; trois suffisent à l'effet)
+  for (const r of [12, 8.5, 5]) {
+    for (let k = 0; k < 5; k++) {
+      const [x0, z0] = coin(k, r), [x1, z1] = coin((k + 1) % 5, r);
+      const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0));
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(x0 + ((x1 - x0) * i) / n), z = Math.round(z0 + ((z1 - z0) * i) / n);
+        for (let y = 0; y < H; y++) {
+          const fen = y === 1 || y === 3;
+          set(x, y, z, fen && ((x + z) & 1) === 0 ? VERRE : BETON_CLAIR);
+        }
+        set(x, H, z, GRIS);
+      }
+    }
+  }
+  // le sol entre les anneaux, et LA COUR au centre
+  for (let dx = -12; dx <= 12; dx++) {
+    for (let dz = -12; dz <= 12; dz++) {
+      const d = Math.hypot(dx, dz);
+      if (d < 4.6) set(dx, -1 + 1 - 1, dz, HERBE);
+      else if (d < 12) set(dx, -1, dz, GRANIT);
+    }
+  }
+  set(0, 0, 0, FEUILLES);                           // l'arbre de la cour
+  // les couloirs rayonnants, qui percent les trois anneaux
+  for (let k = 0; k < 5; k++) {
+    const a = -Math.PI / 2 + ((k + 0.5) * 2 * Math.PI) / 5;
+    for (let r = 4; r <= 13; r++) {
+      const x = Math.round(Math.cos(a) * r), z = Math.round(Math.sin(a) * r);
+      for (let y = 0; y <= 2; y++) { set(x, y, z, BLOCK.AIR); set(x + 1, y, z, BLOCK.AIR); }
+    }
+  }
+}
+
+// LA TOMBE DU SOLDAT INCONNU, au cimetière d'Arlington : l'amphithéâtre de
+// marbre, le sarcophage face à la ville, et la sentinelle qui fait les cent
+// pas — vingt et un pas, comme les vingt et un coups de canon.
+export function buildSoldatInconnu(poser) {
+  const { set, bloc, anneau, colonnade } = outils(poser);
+  // l'amphithéâtre en demi-cercle, à l'ouest
+  for (let r = 3; r <= 5; r++) {
+    for (let a = 0; a <= 16; a++) {
+      const ang = Math.PI / 2 + (a / 16) * Math.PI;
+      const x = Math.round(Math.cos(ang) * r) - 1, z = Math.round(Math.sin(ang) * r);
+      set(x, r - 3, z, MARBRE_2);
+    }
+  }
+  colonnade(-4, -4, -3, 3, 2, 4, MARBRE, 2);
+  bloc(2, 4, 0, 1, -1, 1, MARBRE);                  // le sarcophage
+  set(3, 2, 0, MARBRE_2);
+  bloc(1, 5, -1 + 1 - 1, -1 + 1 - 1, -2, 2, GRANIT);   // le tapis noir de la sentinelle
+  set(5, 0, 0, VERT_SOMBRE); set(5, 1, 0, uni(16)); // la sentinelle
+}
+
+// LE MÉMORIAL IWO JIMA. Les six soldats de bronze qui dressent le drapeau —
+// la photographie la plus célèbre de la guerre, coulée dans dix mètres de
+// bronze au-dessus du Potomac, face aux monuments.
+export function buildIwoJima(poser) {
+  const { set, bloc } = outils(poser);
+  bloc(-4, 4, -1, 0, -3, 3, GRANIT);                // le socle
+  // les six soldats, en grappe montante
+  const soldats = [[-3, 0], [-2, 1], [-1, -1], [0, 0], [1, 1], [2, 0]];
+  soldats.forEach(([x, z], i) => {
+    const h = 1 + Math.floor(i / 2);
+    for (let y = 1; y <= h; y++) set(x, y, z, uni(1));
+    set(x, h + 1, z, uni(16));
+  });
+  // le mât incliné et le drapeau
+  for (let k = 0; k < 5; k++) set(2, 3 + k, 0, ACIER);
+  for (let k = 0; k < 3; k++) { set(3, 6, k - 2, ROUGE); set(3, 7, k - 2, BLANC); }
+  set(4, 6, -2, BLEU);
+}
+
+// --- LES PONTS -------------------------------------------------------------------
+
+// LE PONT DU MÉMORIAL. Neuf arches basses entre le Lincoln et Arlington —
+// l'axe qui relie le Nord et le Sud réconciliés, et c'est voulu.
+export function buildPontMemorial(poser) {
+  const { set, bloc } = outils(poser);
+  for (let x = -16; x <= 16; x++) {
+    for (let z = -2; z <= 2; z++) set(x, 2, z, MARBRE_2);          // le tablier
+    set(x, 3, -3, MARBRE_2); set(x, 3, 3, MARBRE_2);               // les parapets
+    if (((x + 16) % 6) === 0) {
+      for (let y = -3; y <= 1; y++) { set(x, y, -2, GRANIT); set(x, y, 2, GRANIT); }  // les piles
+    }
+  }
+  // les quatre statues équestres dorées, aux deux entrées
+  for (const [x, z] of [[-16, -4], [-16, 4], [16, -4], [16, 4]]) {
+    set(x, 3, z, GRANIT); set(x, 4, z, OR); set(x, 5, z, OR);
+  }
+}
+
+// LE PONT DE LA 14e RUE, sur le grand Potomac — celui des voitures ; le pont
+// du métro de la Jaune, lui, est bâti par le creusement de la ligne.
+export function buildPont14e(poser) {
+  const { set } = outils(poser);
+  for (let z = -14; z <= 14; z++) {
+    for (let x = -2; x <= 2; x++) set(x, 2, z, BETON_CLAIR);
+    set(-3, 3, z, BETON); set(3, 3, z, BETON);
+    if (((z + 14) % 6) === 0) {
+      for (let y = -3; y <= 1; y++) { set(-2, y, z, BETON); set(2, y, z, BETON); }
+    }
+    if (((z + 14) % 4) === 2) set(0, 2, z, CITY_BLOCK.ROADLINE);
+  }
+}
+
+// KEY BRIDGE. Les hautes arches de béton entre Georgetown et la Virginie —
+// le plus vieux pont du Potomac encore debout.
+export function buildKeyBridge(poser) {
+  const { set, bloc } = outils(poser);
+  for (let z = -9; z <= 9; z++) {
+    for (let x = -2; x <= 2; x++) set(x, 4, z, BETON_CLAIR);
+    set(-3, 5, z, BETON); set(3, 5, z, BETON);
+    const arche = Math.abs(((z + 9) % 9) - 4.5);
+    const yPile = Math.round(arche * 1.2);
+    for (let y = -3; y <= Math.min(3, yPile); y++) { set(-2, y, z, BETON); set(2, y, z, BETON); }
+  }
+}

@@ -95,7 +95,7 @@ const descendre = async (p, ms) => {
     process.exit(1);
   }
   const P = D.WASHINGTON;
-  const PAS_ILOT = 6;   // la trame de la ville : une rue tous les six blocs
+  const PAS_ILOT = 12;  // la trame de la ville : une rue dessinée tous les douze blocs
   // --- 0. ce qui se vérifie sans navigateur --------------------------------
   //
   // La ville est bâtie à seize blocs par kilomètre alors que ses monuments sont
@@ -108,26 +108,29 @@ const descendre = async (p, ms) => {
   const FN = {
     'Capitole des États-Unis': 'buildCapitole', 'Monument de Washington': 'buildObelisque',
     'Lincoln Memorial': 'buildLincoln', 'Mémorial de la Seconde Guerre mondiale': 'buildMemorialGuerre',
-    'Maison-Blanche': 'buildMaisonBlanche', 'Cour suprême': 'buildCourSupreme',
+    "Galerie nationale d'art — Est": 'buildNGAEst', "Galerie nationale d'art": 'buildGalerieArt',
+    "Musée d'Histoire naturelle": 'buildHistoireNaturelle', "Musée d'Histoire américaine": 'buildHistoireAmericaine',
+    'Musée afro-américain': 'buildAfroAmericain', "Musée de l'Indien d'Amérique": 'buildIndienAmerique',
+    "Musée de l'Air et de l'Espace": 'buildAirEspace', 'Hirshhorn': 'buildHirshhorn',
+    'Arts et Industries': 'buildArtsIndustries', 'Château du Smithsonian': 'buildChateauSmithsonian',
+    'Galerie Freer': 'buildFreer', 'Maison-Blanche': 'buildMaisonBlanche', 'Le Trésor': 'buildTresor',
+    'Archives nationales': 'buildArchives', 'Arc de Chinatown': 'buildArcChinatown',
+    'Théâtre Ford': 'buildFordTheatre', 'Cour suprême': 'buildCourSupreme',
     'Bibliothèque du Congrès': 'buildBibliotheque', 'Union Station': 'buildUnionStation',
-    "Galerie nationale d'art": 'buildGalerieArt', "Musée d'Histoire naturelle": 'buildHistoireNaturelle',
-    "Musée de l'Air et de l'Espace": 'buildAirEspace', 'Château du Smithsonian': 'buildChateauSmithsonian',
-    'Musée afro-américain': 'buildAfroAmericain', 'Archives nationales': 'buildArchives',
-    'Arc de Chinatown': 'buildArcChinatown', 'Mémorial Jefferson': 'buildJefferson',
-    'Mémorial Martin Luther King': 'buildMLK', 'Mémorial de la guerre de Corée': 'buildCoree',
-    'Mémorial des vétérans du Vietnam': 'buildVietnam', 'Kennedy Center': 'buildKennedyCenter',
-    'Université de Georgetown': 'buildGeorgetownU', 'Cathédrale nationale': 'buildCathedrale',
+    'Mémorial des vétérans du Vietnam': 'buildVietnam', 'Mémorial de la guerre de Corée': 'buildCoree',
+    'Mémorial Martin Luther King': 'buildMLK', 'Mémorial Roosevelt': 'buildRoosevelt',
+    'Mémorial Jefferson': 'buildJefferson', 'Kennedy Center': 'buildKennedyCenter',
     'Pentagone': 'buildPentagone', 'Tombe du Soldat inconnu': 'buildSoldatInconnu',
-    'Pont du Mémorial': 'buildPontMemorial', 'Pont Frederick Douglass': 'buildPontDouglass',
-    'Key Bridge': 'buildKeyBridge',
+    'Mémorial Iwo Jima': 'buildIwoJima', 'Pont du Mémorial': 'buildPontMemorial',
+    'Pont de la 14e Rue': 'buildPont14e', 'Key Bridge': 'buildKeyBridge',
   };
   const emprises = D.MONUMENTS_DC.map((m) => {
     const cols = new Set();
     M[FN[m.nom]]((dx, dy, dz) => cols.add(`${m.u + dx},${m.v + dz}`));
     return { ...m, cols };
   });
-  verifier('les vingt-sept repères de la capitale sont tous dessinés',
-    emprises.length === 27 && emprises.every((m) => m.cols.size > 0), `${emprises.length}`);
+  verifier('les trente-cinq repères de la capitale sont tous dessinés',
+    emprises.length === 35 && emprises.every((m) => m.cols.size > 0), `${emprises.length}`);
 
   const collisions = [];
   for (let i = 0; i < emprises.length; i++) {
@@ -159,8 +162,9 @@ const descendre = async (p, ms) => {
     }
     return false;
   });
-  verifier('et les vingt-huit bouches de métro sortent au sec',
-    bouchesNoyees.length === 0, bouchesNoyees.map((b) => b.nom).join(', '));
+  verifier('et les vingt bouches de métro sortent au sec',
+    bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
+    bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
   const banc = new Banc({ portJeu: 8331, portPairs: 9331 });
   await banc.ouvrir();
@@ -172,7 +176,7 @@ const descendre = async (p, ms) => {
       const w = window.__game.world;
       const ville = w.cityAt(x, z);
       return { ville: ville ? ville.key : null, sol: w.terrainHeight(x, z) };
-    }, { x: P.x - 24, z: P.z });
+    }, { x: P.x - 60, z: P.z });
     verifier('le Mall est bien dans Washington', mall.ville === 'dc',
       `${mall.ville} · sol ${mall.sol}`);
 
@@ -184,11 +188,11 @@ const descendre = async (p, ms) => {
         for (let y = sol + 1; y < 140; y++) if (w.getBlock(px + u, y, pz + v) !== 0) haut = y - sol;
         return haut;
       });
-    }, { px: P.x, pz: P.z, pts: [[0, 0], [-37, 0], [-57, 1]] });
+    }, { px: P.x, pz: P.z, pts: [[0, 0], [-110, 0], [-172, 2]] });
     verifier('le dôme du Capitole domine la pelouse', axe[0] > 25, `${axe[0]} blocs`);
-    verifier('et l\'obélisque domine tout le reste', axe[1] > 55 && axe[1] > axe[0],
+    verifier('et l\'obélisque domine tout le reste', axe[1] > 60 && axe[1] > axe[0],
       `${axe[1]} blocs contre ${axe[0]} au Capitole`);
-    verifier('le Lincoln ferme l\'axe à l\'ouest', axe[2] > 10, `${axe[2]} blocs`);
+    verifier('le Lincoln ferme l\'axe à l\'ouest', axe[2] > 8, `${axe[2]} blocs`);
 
     // La loi de 1910 : aucun immeuble ORDINAIRE ne dépasse le dôme. C'est ce
     // qui fait qu'on voit le Capitole de partout, et ça se vérifie.
@@ -204,8 +208,8 @@ const descendre = async (p, ms) => {
       const surUnMonument = (u, v) => emprisesDC.some(
         ([mu, mv, bu, bv]) => Math.abs(u - mu) <= bu && Math.abs(v - mv) <= bv);
       let max = 0;
-      for (let u = 4; u < 40; u += 3) {
-        for (let v = -30; v < 30; v += 3) {
+      for (let u = -120; u < -40; u += 4) {
+        for (let v = -75; v < -25; v += 4) {
           if (surUnMonument(u, v)) continue;
           const sol = w.terrainHeight(px + u, pz + v);
           let h = 0;
@@ -224,18 +228,20 @@ const descendre = async (p, ms) => {
     const capitole = D.MONUMENTS_DC.find((m) => m.nom === 'Capitole des États-Unis');
     const solCap = await tab.evaluate(({ x, z }) =>
       window.__game.world.terrainHeight(x, z), { x: P.x + capitole.u, z: P.z + capitole.v });
-    await poserLe(tab, P.x + capitole.u - 9, solCap + 5, P.z + capitole.v, capVers(1, 0));
+    await poserLe(tab, P.x + capitole.u - 16, solCap + 5, P.z + capitole.v, capVers(1, 0));
     await dormir(500);
     const dehors = await autour(tab);
     verifier('devant le Capitole, on a le ciel au-dessus de la tête',
       dehors.plafond < 0, `plafond à ${dehors.plafond}`);
-    await avancer(tab, 2600);
+    // Six secondes : le perron, la marche du seuil et les sauts font perdre
+    // la moitié de l'allure — mesuré, l'enfant avance à 2,4 m/s ici, pas 4,3.
+    await avancer(tab, 6000);
     const dedans = await autour(tab);
     const ou = await pose(tab);
     // Franchi la porte ET sous un plafond : l'un sans l'autre ne prouve rien —
     // sous le portique aussi, on a quelque chose au-dessus de la tête.
     verifier('on pousse la porte et on est dans la Rotonde',
-      dedans.plafond > 4 && ou.x > P.x + capitole.u - 6,
+      dedans.plafond > 4 && ou.x > P.x + capitole.u - 7,
       `plafond à ${dedans.plafond} blocs, x=${(ou.x - P.x - capitole.u).toFixed(1)} du centre`);
 
     // Une maison ordinaire, ensuite : la capitale n'est pas qu'une vitrine.
@@ -243,10 +249,10 @@ const descendre = async (p, ms) => {
     // portent vraiment un bâtiment — sinon on éprouve des morceaux de rue et
     // des pelouses, et le témoin dit n'importe quoi.
     const ilots = [];
-    for (let u = 6; u < 44 && ilots.length < 12; u += PAS_ILOT) {
+    for (let u = 26; u < 62 && ilots.length < 12; u += PAS_ILOT) {
       for (let v = -12; v < 30 && ilots.length < 12; v += PAS_ILOT) {
         const la = Math.floor(u / PAS_ILOT) * PAS_ILOT, lb = Math.floor(v / PAS_ILOT) * PAS_ILOT;
-        const x = P.x + la + 3, z = P.z + lb + 3;
+        const x = P.x + la + 7, z = P.z + lb + 7;
         // « dedans » au sens du générateur : les quatre voisins bâtissables.
         // Une colonne au bord de l'îlot porte un mur, et c'est normal — un
         // témoin qui la prend pour un salon accuse la maison à tort.
@@ -261,7 +267,7 @@ const descendre = async (p, ms) => {
       for (const [x, z] of pts) {
         const sol = w.terrainHeight(x, z);
         let toit = 0;
-        for (let y = sol + 3; y < sol + 16; y++) if (w.getBlock(x, y, z) !== 0) { toit = y; break; }
+        for (let y = sol + 3; y < sol + 20; y++) if (w.getBlock(x, y, z) !== 0) { toit = y; break; }
         // sol + 2, pas sol + 1 : le premier bloc au-dessus du plancher porte la
         // lampe de la maison, et une lampe n'est pas du vide
         if (w.getBlock(x, sol + 2, z) === 0 && toit) creuses++;
@@ -279,9 +285,9 @@ const descendre = async (p, ms) => {
       window.__game.world.terrainHeight(x, z), { x: mx, z: mz });
     let entre = false;
     for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      await poserLe(tab, mx + dx * 4, solM + 2, mz + dz * 4, capVers(-dx, -dz));
+      await poserLe(tab, mx + dx * 6, solM + 2, mz + dz * 6, capVers(-dx, -dz));
       await dormir(300);
-      await avancer(tab, 1600);
+      await avancer(tab, 2200);
       const dedansM = await autour(tab);
       if (dedansM.plafond > 0 && dedansM.plafond < 12) { entre = true; break; }
     }
@@ -305,10 +311,10 @@ const descendre = async (p, ms) => {
     verifier('la bouche de métro débouche bien dans la rue',
       Math.abs(enRue.y - (solBouche + 1)) < 2.5, `y=${enRue.y.toFixed(1)} pour un sol à ${solBouche}`);
 
-    for (let i = 0; i < 9; i++) await descendre(tab, 1400);
+    for (let i = 0; i < 12; i++) await descendre(tab, 1400);
     const enBas = await pose(tab);
     verifier('en descendant l\'escalier, on arrive sur le quai',
-      enBas.y < solBouche - 6, `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`);
+      enBas.y < solBouche - 8, `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`);
     // On laisse l'enfant se poser avant de regarder en l'air : mesuré en pleine
     // chute, le plafond change d'un bloc d'une exécution à l'autre.
     await dormir(900);
@@ -374,6 +380,57 @@ const descendre = async (p, ms) => {
     await dormir(1500);
     verifier('et on redescend quand on veut',
       !(await bouton(tab, 'board-btn')).texte.startsWith('⬇️'));
+
+    // --- 5. le pont de la Jaune -----------------------------------------------
+    // La chose la plus spectaculaire du vrai réseau, et elle est vraie : la
+    // Jaune sort de terre, franchit le Potomac À L'AIR LIBRE sur son pont, et
+    // replonge. On vérifie le tablier au-dessus de l'eau : du rail sous le
+    // ciel, de l'eau sous le rail.
+    const surLePont = D.traceLigneMetro('Jaune')
+      .map((pt) => ({ u: Math.round(pt.x - P.x), v: Math.round(pt.z - P.z), y: Math.round(pt.y) }))
+      .filter((pt) => pt.y >= 33 && D.surEauWashington(pt.u, pt.v));
+    verifier('la Jaune a un pont sur le Potomac, pas un tunnel',
+      surLePont.length > 12, `${surLePont.length} points de voie au-dessus de l'eau`);
+    const tablier = surLePont[Math.floor(surLePont.length / 2)];
+    const pont = await tab.evaluate(({ x, y, z }) => {
+      const w = window.__game.world;
+      let eau = false;
+      for (let yy = y - 2; yy > 20; yy--) if (w.getBlock(x, yy, z) === 7) { eau = true; break; }   // 7 = l'eau
+      // le tablier est à la cote du tracé, à l'arrondi de tronçon près
+      const tablier = w.getBlock(x, y, z) !== 0 || w.getBlock(x, y - 1, z) !== 0;
+      return { tablier, cielOuvert: w.getBlock(x, y + 6, z) === 0, eau };
+    }, { x: P.x + tablier.u, y: tablier.y, z: P.z + tablier.v });
+    verifier('et le train y roule sous le ciel, au-dessus de l\'eau',
+      pont.tablier && pont.cielOuvert && pont.eau, JSON.stringify(pont));
+
+    // --- 6. l'Air et l'Espace : des avions au-dessus de la tête ---------------
+    // Le musée le plus visité d'Amérique. On entre, on lève les yeux : le
+    // Spirit of St. Louis et le Bell X-1 sont suspendus. C'est LE « wow »
+    // demandé — un intérieur qui vaut le détour, pas quatre murs.
+    const musee = D.MONUMENTS_DC.find((m) => m.nom === "Musée de l'Air et de l'Espace");
+    const solMusee = await tab.evaluate(({ x, z }) =>
+      window.__game.world.terrainHeight(x, z), { x: P.x + musee.u, z: P.z + musee.v });
+    await poserLe(tab, P.x + musee.u, solMusee + 2, P.z + musee.v - 8, capVers(0, 1));
+    await dormir(400);
+    await avancer(tab, 2600);
+    const dansMusee = await autour(tab);
+    const suspendus = await tab.evaluate(({ px, pz, u, v }) => {
+      const w = window.__game.world;
+      const sol = w.terrainHeight(px + u, pz + v);
+      let n = 0;
+      for (let du = -5; du <= 5; du++) {
+        for (let dv = -3; dv <= 3; dv++) {
+          for (let dy = 5; dy <= 10; dy++) {
+            if (w.getBlock(px + u + du, sol + dy, pz + v + dv) !== 0) { n++; break; }
+          }
+        }
+      }
+      return n;
+    }, { px: P.x, pz: P.z, u: musee.u, v: musee.v });
+    verifier('on entre dans l\'Air et l\'Espace',
+      dansMusee.plafond > 3, `plafond à ${dansMusee.plafond}`);
+    verifier('et des avions sont suspendus au-dessus de la tête',
+      suspendus >= 4, `${suspendus} colonnes portent quelque chose en l'air`);
   } finally {
     await banc.fermer();
   }
