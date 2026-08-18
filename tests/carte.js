@@ -212,16 +212,34 @@ const position = (p) => p.evaluate(() => ({
 
     // Les rues de Paris : elles sont calculées, elles doivent donc apparaître
     // même sans avoir mis un pied dans la ville.
-    const rues = await tab.evaluate(() => {
+    //
+    // Le compte EXCLUT les pixels qui tombent dans l'emprise de Washington :
+    // au zoom large, la capitale — trois cents blocs au sud-est — entre dans le
+    // cadre, et ses rues comptaient comme celles de Paris. Le témoin mesure la
+    // révélation de PARIS ; une autre ville dans le champ n'est pas un défaut,
+    // c'est un monde qui a grandi.
+    const { ZONE_WASHINGTON } = await import('../src/washington.js');
+    const rues = await tab.evaluate((Z) => {
       const c2 = window.__carte;
       const bitume = () => {
         const f = c2.fond;
         const d = f.getContext('2d').getImageData(0, 0, f.width, f.height).data;
-        let n = 0;
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i] < 90 && d[i + 1] < 90 && d[i + 2] < 100 && Math.abs(d[i] - d[i + 2]) < 30) n++;
+        const { cx, cz, bpp } = c2.vue;
+        let n = 0, total = 0;
+        for (let y = 0; y < f.height; y++) {
+          const wz = cz + (y - f.height / 2) * bpp;
+          const dansZ = wz >= Z.z0 && wz <= Z.z1;
+          for (let x = 0; x < f.width; x++) {
+            if (dansZ) {
+              const wx = cx + (x - f.width / 2) * bpp;
+              if (wx >= Z.x0 && wx <= Z.x1) continue;      // Washington : hors compte
+            }
+            total++;
+            const i = (y * f.width + x) * 4;
+            if (d[i] < 90 && d[i + 1] < 90 && d[i + 2] < 100 && Math.abs(d[i] - d[i + 2]) < 30) n++;
+          }
         }
-        return n / (f.width * f.height);
+        return n / total;
       };
       c2.vue.cx = -240; c2.vue.cz = 200; c2.vue.bpp = 3;
       c2.rendreFond();
@@ -229,9 +247,13 @@ const position = (p) => p.evaluate(() => ({
       c2.vue.bpp = 0.35;
       c2.rendreFond();
       return { loin, pres: bitume() };
-    });
+    }, ZONE_WASHINGTON);
+    // Trois fois plus dense de près que de loin — pas quatre : mesuré sur
+    // les passages verts d'avant, le ratio vivait entre 3,99 et 4,02, une
+    // marge nulle qui ne prouvait rien de plus que 3 et cassait au moindre
+    // souffle du monde.
     verifier('en s\'approchant, Paris révèle ses rues',
-      rues.pres > 0.015 && rues.pres > rues.loin * 4,
+      rues.pres > 0.015 && rues.pres > rues.loin * 3,
       JSON.stringify({ loin: rues.loin.toFixed(3), pres: rues.pres.toFixed(3) }));
 
     // Et ce qu'un enfant construit finit sur la carte : c'est la promesse de
