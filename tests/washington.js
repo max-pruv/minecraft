@@ -233,15 +233,28 @@ const descendre = async (p, ms) => {
     const dehors = await autour(tab);
     verifier('devant le Capitole, on a le ciel au-dessus de la tête',
       dehors.plafond < 0, `plafond à ${dehors.plafond}`);
-    // Six secondes : le perron, la marche du seuil et les sauts font perdre
-    // la moitié de l'allure — mesuré, l'enfant avance à 2,4 m/s ici, pas 4,3.
-    await avancer(tab, 6000);
-    const dedans = await autour(tab);
-    const ou = await pose(tab);
-    // Franchi la porte ET sous un plafond : l'un sans l'autre ne prouve rien —
-    // sous le portique aussi, on a quelque chose au-dessus de la tête.
+    // ON MARCHE JUSQU'À ÊTRE ARRIVÉ, PAS PENDANT UNE DURÉE. Une durée fixe
+    // était bimodale : sur banc chargé l'enfant avance à 2,4 m/s et six
+    // secondes le laissaient SOUS le porche ouest (plafond 4) ; sur banc au
+    // repos il file à 4,3 et les mêmes six secondes le faisaient TRAVERSER la
+    // Rotonde et ressortir sous le porche est (plafond 4, x = +7). On avance
+    // donc par petits pas, et on s'arrête quand on est dans la salle : sous un
+    // vrai plafond, à moins de cinq blocs du centre.
+    let dedans = await autour(tab);
+    let ou = await pose(tab);
+    for (let pas = 0; pas < 14; pas++) {
+      const centre = ou.x - (P.x + capitole.u);
+      if (dedans.plafond > 4 && Math.abs(centre) < 5) break;
+      if (centre > 5) break;                      // ressorti côté est : constat
+      await avancer(tab, 700);
+      dedans = await autour(tab);
+      ou = await pose(tab);
+    }
+    // Dans la salle ET sous un vrai plafond : l'un sans l'autre ne prouve
+    // rien — sous les deux porches aussi, on a quelque chose au-dessus de la
+    // tête, mais à quatre blocs seulement.
     verifier('on pousse la porte et on est dans la Rotonde',
-      dedans.plafond > 4 && ou.x > P.x + capitole.u - 7,
+      dedans.plafond > 4 && Math.abs(ou.x - (P.x + capitole.u)) < 5,
       `plafond à ${dedans.plafond} blocs, x=${(ou.x - P.x - capitole.u).toFixed(1)} du centre`);
 
     // Une maison ordinaire, ensuite : la capitale n'est pas qu'une vitrine.
