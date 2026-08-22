@@ -758,11 +758,127 @@ export class NetSession {
       // ce qui n'a jamais marché : l'enfant restait sur « Reconnexion… » sans
       // aucune issue, et devait quitter le mode en ligne pour y revenir.
       if (this.bus || essai >= 2) this.reprendreParLeNuage();
+      // À partir du troisième essai, on se demande aussi si l'hôte n'est pas
+      // tout simplement PARTI — voir tenterDevenirHote() ci-dessous.
+      if (essai >= 3) this.tenterDevenirHote();
       // 3 s, 5 s, 7 s… jusqu'à un essai toutes les vingt secondes
       const attente = Math.min(3000 + essai * 2000, 20000);
       this._rejoinTimer = setTimeout(() => { if (this._rejoining) tenter(); }, attente);
     };
     tenter();
+  }
+
+  // LE MAÎTRE PARTI POUR DE BON.
+  //
+  // « rejoinHost » ne fait que retenter le même identifiant, pour toujours —
+  // et s'il est mort, plus rien n'y répondra jamais. C'est pourtant lui qui
+  // relayait chaque message entre les invités : sans reprise, chacun restait
+  // seul dans un monde qui semblait normal, à composer avec des voisins qui
+  // ne le voyaient plus bouger. C'est exactement ce qui a été rapporté à la
+  // maison quand l'hôte a quitté la partie.
+  //
+  // On vérifie donc le phare de l'hôte : s'il brille encore, ce n'est peut-
+  // être que NOTRE lien qui a un souci — on continue simplement d'essayer de
+  // le rejoindre. S'il s'est éteint, l'hôte n'est plus là, et on réclame son
+  // identifiant à sa place. Le serveur de rendez-vous ne l'accorde qu'à un
+  // seul appareil à la fois : si un autre invité (ou l'hôte, revenu) nous a
+  // devancés, la demande échoue et on redevient simplement invité — aucune
+  // poignée de main entre enfants n'est nécessaire pour se mettre d'accord.
+  //
+  // Sans nuage configuré, rien ne permet de distinguer « l'hôte est parti »
+  // de « c'est mon propre réseau qui bloque » : reprendre au hasard dans ce
+  // doute risquerait de fabriquer deux mondes sous le même code. On renonce
+  // alors à la reprise — seule la reconnexion ordinaire continue.
+  async tenterDevenirHote() {
+    if (this.isHost || !this.active || this._devenantHote || this._rendreLaMain) return;
+    const cloud = this.hooks.cloud;
+    if (!cloud || !cloud.configured) return;
+    this._devenantHote = true;
+    let tenu;
+    try {
+      tenu = await Promise.race([
+        cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code),
+        new Promise((ok) => setTimeout(() => ok(true), 3000)), // verdict pas clair -> on ne bouscule rien
+      ]);
+    } catch { tenu = true; }
+    if (tenu || !this.active || this.isHost) { this._devenantHote = false; return; }
+
+    this.link('reconnexion', `Le monde ${this.code} semble abandonné — on en reprend la garde…`);
+    const peerOpts = { debug: 1, config: { iceServers: ICE_SERVERS } };
+    const m = location.search.match(/[?&]peerhost=([^&]+)/);
+    if (m) {
+      const [h, p] = decodeURIComponent(m[1]).split(':');
+      Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
+    }
+    const candidat = new Peer(ID_PREFIX + this.code, peerOpts);
+    let tranche = false;
+    const renoncer = () => {
+      if (tranche) return;
+      tranche = true;
+      this._devenantHote = false;
+      try { candidat.destroy(); } catch { /* déjà en morceaux */ }
+    };
+    const abandon = setTimeout(renoncer, OUVERTURE_MS);
+    candidat.on('open', () => {
+      if (tranche || !this.active) { clearTimeout(abandon); try { candidat.destroy(); } catch { /* déjà en morceaux */ } return; }
+      tranche = true;
+      clearTimeout(abandon);
+      this.devenirHote(candidat);
+    });
+    // Pris de vitesse par un autre invité — ou par l'ancien hôte, revenu :
+    // dans les deux cas, quelqu'un tient déjà la maison, et on reste invité.
+    candidat.on('error', () => renoncer());
+  }
+
+  // La bascule elle-même, une fois l'identifiant en poche : on démonte le
+  // pair d'invité et on branche celui d'hôte à sa place, avec les mêmes
+  // écouteurs que start() pose pour un hôte.
+  devenirHote(candidat) {
+    const ancienPeer = this.peer;
+    try { if (ancienPeer) ancienPeer.destroy(); } catch { /* déjà en morceaux */ }
+    this._rejoining = false;
+    clearTimeout(this._rejoinTimer);
+    this._rejoinTimer = null;
+    // Le lien vers l'ancien maître n'a plus de sens ; les invités que lui
+    // seul reliait n'étaient de toute façon connus de nous que par son
+    // intermédiaire — il n'y a rien d'autre à emporter.
+    this.conns.delete(ID_PREFIX + this.code);
+    for (const a of this.audios.values()) a.remove();
+    this.audios.clear();
+    this.calls.clear();
+    this.videoCalls.clear();
+    this.inboundVideo.clear();
+    // Le bus d'invité portait notre identité tirée au sort ; celui d'hôte
+    // porte l'identifiant du monde. Il faut le refaire, pas le garder.
+    if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }
+    this.peer = candidat;
+    this.isHost = true;
+    this._devenantHote = false;
+    candidat.on('connection', (conn) => {
+      this.registerConn(conn); // handlers BEFORE open — no missed messages
+      if (conn.open) this.greet(conn);
+      else conn.on('open', () => this.greet(conn));
+    });
+    candidat.on('call', (call) => {
+      if (!this.active) { try { call.close(); } catch { /* déjà fermé */ } return; }
+      if (call.metadata && call.metadata.kind === 'video') {
+        call.answer(undefined); // video flows one-way per call; we place our own
+        this.attachVideoCall(call, true);
+      } else {
+        call.answer(this.localStream || undefined);
+        this.attachCall(call);
+      }
+    });
+    candidat.on('disconnected', () => {
+      if (!this.active) return;
+      this.link('signal', 'Reconnexion au serveur de jeu…');
+      this.scheduleReconnect();
+    });
+    candidat.on('close', () => { if (this.active) this.link('perdu', 'Connexion au serveur de jeu perdue'); });
+    this.ouvrirRelaisNuage();   // reconstruit le phare, désormais sous notre identifiant
+    this.link('ok');
+    this.state(`En attente d'un joueur… code : ${this.code}`);
+    this.hooks.toast('👑 Tu deviens l\'hôte : le monde continue !', 0x6ee06e);
   }
 
   scheduleReconnect() {
@@ -1545,6 +1661,36 @@ export class NetSession {
     const oublier = () => { if (this.videoCalls.get(id) === call) this.videoCalls.delete(id); };
     call.on('close', oublier);
     call.on('error', oublier);
+    this.surveillerLaVoix(call, id);
+  }
+
+  // LA VOIX DE ROBOT.
+  //
+  // « appel.open » ne dit qu'une chose : la négociation a abouti un jour. Un
+  // lien qui bascule de réseau en cours d'appel — le Wi-Fi qui faiblit, la 4G
+  // qui prend le relais — reste « open » aux yeux de PeerJS pendant que le son
+  // qui passe vraiment se hache et se déforme. C'était rapporté à la maison :
+  // une voix robotique qui ne se rétablissait qu'en éteignant puis rallumant
+  // l'application, faute de mieux. `reconcilierVideo` ne rattrapait que
+  // l'appel jamais ouvert ou fermé — jamais celui-ci, ouvert mais malade.
+  //
+  // On y branche donc la vraie mesure : l'état de la connexion ICE sous
+  // l'appel. Elle peut clignoter — « disconnected » puis « connected » en une
+  // seconde est courant et ne mérite pas qu'on recompose. Ce n'est qu'une
+  // panne SOUTENUE, remarquée par reconcilierVideo, qui déclenche la reprise.
+  surveillerLaVoix(call, id) {
+    const brancher = () => {
+      if (this.videoCalls.get(id) !== call) return;   // remplacé ou fermé entre-temps
+      const pc = call.peerConnection;
+      if (!pc) { setTimeout(brancher, 300); return; }
+      const noter = () => {
+        const mal = pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected';
+        call.malDepuis = mal ? (call.malDepuis || Date.now()) : 0;
+      };
+      pc.addEventListener('iceconnectionstatechange', noter);
+      noter();
+    };
+    brancher();
   }
 
   // LA VISIO SE REMET D'APLOMB TOUTE SEULE.
@@ -1567,7 +1713,17 @@ export class NetSession {
       if (!c.conn || c.conn.parNuage) continue;
       const appel = this.videoCalls.get(id);
       if (!appel) { this.videoCallPeer(id); continue; }
-      if (appel.open) continue;
+      if (appel.open) {
+        // Huit secondes de panne ICE soutenue : assez pour laisser passer un
+        // clignotement de réseau, assez court pour qu'un enfant qui attend ne
+        // s'impatiente pas devant une voix robotique.
+        if (appel.malDepuis && Date.now() - appel.malDepuis > 8000) {
+          try { appel.close(); } catch { /* déjà fermé */ }
+          this.videoCalls.delete(id);
+          this.videoCallPeer(id);
+        }
+        continue;
+      }
       if (Date.now() - (appel.placeA || 0) < 10000) continue;
       try { appel.close(); } catch { /* déjà fermé */ }
       this.videoCalls.delete(id);

@@ -145,6 +145,36 @@ async function allumerLaCamera(p) {
     verifier('et Alice voit Marlon à son tour',
       chezAlice.length === 1 && chezAlice[0].large > 0, JSON.stringify(chezAlice));
 
+    // --- la voix de robot : un appel « open » mais malade se répare seul -----
+    //
+    // Rapporté à la maison : le son se met à grésiller façon robot, et rien ne
+    // le répare — il fallait éteindre puis rallumer l'application. La veille
+    // vidéo ne rattrapait que l'appel jamais ouvert ou fermé ; jamais celui-ci,
+    // ouvert mais dont le lien ICE en dessous s'est mis à boiter. On simule
+    // ici huit secondes de panne ICE soutenue sur l'appel d'Alice vers Marlon
+    // — c'est SA voix qu'il entend — et on attend que la veille, qui tourne
+    // toute seule toutes les deux secondes, la remarque et recompose l'appel.
+    const idMarlonVuParAlice = await alice.evaluate(() => [...window.__game.net.conns.keys()][0]);
+    await alice.evaluate((id) => {
+      const c = window.__game.net.videoCalls.get(id);
+      c.__temoin = true;
+      c.malDepuis = Date.now() - 9000;
+    }, idMarlonVuParAlice);
+    const recompose = await jusqua(async () => alice.evaluate((id) => {
+      const c = window.__game.net.videoCalls.get(id);
+      return !!c && !c.__temoin;
+    }, idMarlonVuParAlice), 15000);
+    verifier('un appel ouvert mais malade depuis huit secondes est recomposé', recompose);
+
+    // Et Marlon continue bel et bien à entendre quelque chose derrière, pas un
+    // silence laissé par l'appel qu'on vient de fermer.
+    const sonApresRepriseOk = await jusqua(async () => {
+      const s = await sons(marlon);
+      return s.length === 1 && !s[0].arrete && !s[0].muet && s[0].pistes > 0;
+    }, 15000);
+    verifier('et Marlon entend toujours quelque chose après la reprise', sonApresRepriseOk,
+      JSON.stringify(await sons(marlon)));
+
     // --- éteindre nettoie tout -----------------------------------------------
     await alice.evaluate(() => document.getElementById('cam-btn').click());
     await jusqua(async () => (await vignettes(marlon)).length === 0, 20000);

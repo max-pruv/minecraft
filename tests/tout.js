@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -44,7 +44,7 @@ const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js',
 // créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
-  'src/net.js': ['reseau.js', 'visio.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
