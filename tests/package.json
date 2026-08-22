@@ -20,7 +20,8 @@
     "tout": "node tout.js",
     "maj": "node maj.js",
     "metro": "node metro.js",
-    "carteMonde": "node carteMonde.js"
+    "carteMonde": "node carteMonde.js",
+    "hote": "node hote.js"
   },
   "devDependencies": {
     "express": "^4.19.2",
