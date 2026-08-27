@@ -122,6 +122,34 @@ export const MONDES = {
       { cle: 'washington', nom: 'Washington', lat: 38.9072, lon: -77.0369, r: 187 },
       // La Chine est une région, pas une ville : le repère est Pékin.
       { cle: 'chine', nom: 'Chine', lat: 39.9042, lon: 116.4074, r: 70 },
+
+      // --- LE TOUR DU MONDE ----------------------------------------------
+      //
+      // Vingt et un monuments célèbres dormaient dans src/monuments.js :
+      // Big Ben, le Colisée, le Taj Mahal, le Christ Rédempteur, l'Opéra de
+      // Sydney, la pyramide de Khéops… Chacun était bâti au bloc près, et
+      // AUCUN ne se dressait nulle part. On ne pouvait que les poser soi-même
+      // depuis le menu, comme des objets de décor — le monde, lui, n'en
+      // portait pas un seul, et la carte n'allait pas plus loin que New York.
+      //
+      // Maintenant que les villes se déduisent de leurs coordonnées réelles,
+      // les accueillir ne coûte qu'une ligne chacune : la projection sait
+      // déjà où tombe Londres. Les monuments, eux, sont déjà écrits. Il ne
+      // manquait que le rendez-vous entre les deux — c'est src/capitales.js.
+      //
+      // Les rayons sont modestes : ce sont des sites de monuments, pas des
+      // villes entières. Une ville qui grandira plus tard n'a qu'à grandir —
+      // le témoin `carteMonde.js` rougira bien avant qu'elle n'en touche une
+      // autre. Marge la plus étroite aujourd'hui : 58 blocs.
+      { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 60 },
+      { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 45 },
+      { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 40 },
+      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 30 },
+      { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 50 },
+      { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 45 },
+      { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 40 },
+      { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 40 },
+      { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 35 },
     ],
   },
 

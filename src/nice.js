@@ -82,6 +82,12 @@ export const COLLINES_NICE = [
   { nom: 'Mont Boron', dx: 2.1, dz: 0.1, r: 9, h: 16 },
 ].map((c) => { const [u, v] = de(c.dx, c.dz); return { ...c, u, v }; });
 
+// L'emprise de la place Masséna, en coordonnées locales. Deux choses la
+// consultent : le relief, qui ne veut pas de talus dessus, et la colline du
+// Château, dont le tapis d'herbe débordait sur les statues.
+export const surLaPlaceMassena = (u, v) =>
+  Math.abs(u - MASSENA.u) <= 8 && Math.abs(v - MASSENA.v) <= 7;
+
 export function hauteurNice(x, z, h, base) {
   const u = x - NICE.x, v = z - NICE.z;
   const d = Math.hypot(u, v);
@@ -93,11 +99,22 @@ export function hauteurNice(x, z, h, base) {
   if (mer >= 0) cible = mer < 3 ? base - 1 - mer : Math.max(20, 26 - Math.min(6, mer - 3));
   else {
     cible = base;
-    for (const c of COLLINES_NICE) {
-      const dc = Math.hypot(u - c.u, v - c.v);
-      if (dc >= c.r) continue;
-      const m = Math.cos((dc / c.r) * Math.PI * 0.5);
-      cible += m * m * c.h;
+    // UNE PLACE EST PLATE — MÊME AU PIED D'UNE COLLINE.
+    //
+    // La colline du Château monte à dix blocs et son pied déborde sur la place
+    // Masséna : la moitié est de la place se retrouvait dans le talus, et deux
+    // des sept statues de « Conversation à Nice » y étaient enterrées jusqu'aux
+    // épaules. Cela ne se voyait pas tant que Nice était un plateau uniforme —
+    // elle n'a reçu son relief qu'avec la remise à plat de la carte. Dans la
+    // vraie ville, la place est plate et la colline commence après : on protège
+    // donc son emprise, et le talus reprend juste derrière.
+    if (!surLaPlaceMassena(u, v)) {
+      for (const c of COLLINES_NICE) {
+        const dc = Math.hypot(u - c.u, v - c.v);
+        if (dc >= c.r) continue;
+        const m = Math.cos((dc / c.r) * Math.PI * 0.5);
+        cible += m * m * c.h;
+      }
     }
   }
   return h * (1 - marge) + cible * marge;
@@ -301,7 +318,17 @@ export const MONUMENTS_NICE = [
   { nom: 'Port Lympia', dx: 1.4, dz: 0.25, box: 5, seuil: 0.3 },
   { nom: 'Cours Saleya', dx: 0.5, dz: 0.45, box: 4, seuil: 0.3 },
   { nom: 'Baleine du Paillon', dx: 0.1, dz: -0.6, box: 4, seuil: 0.3 },
-  { nom: 'Promenade des Anglais', dx: -2.0, dz: 1.0, box: 24, seuil: 0.3 },
+  // La Promenade s'ancre SUR le trottoir, pas dans l'eau.
+  //
+  // Son point d'ancrage était à dz = 1,0, soit trois blocs au large du rivage :
+  // le repère prenait donc sa cote de base dans la mer (29) alors qu'il dessine
+  // ses palmiers et ses chaises bleues sur la promenade (32). Tant que Nice
+  // était un plateau parfaitement plat — elle n'a eu sa vraie baie qu'avec la
+  // remise à plat de la carte — l'écart n'existait pas et rien ne se voyait.
+  // Depuis que la mer entre pour de bon, le mobilier se retrouvait enterré
+  // trois blocs sous le sable. On pose l'ancre sur le trottoir : dz = 0,7
+  // tombe exactement sur `vRivage(−20) − 2`, la ligne du cheminement.
+  { nom: 'Promenade des Anglais', dx: -2.0, dz: 0.7, box: 24, seuil: 0.3 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
@@ -442,12 +469,22 @@ export function buildPromenade(poser) {
 // ruines de la cathédrale et le belvédère d'où l'on voit toute la baie.
 export function buildCollineChateau(poser) {
   const { set } = boite(poser);
-  // la cascade, sur le flanc ouest
+  // La cascade, sur le flanc ouest — et qui s'arrête au bord de la place. Son
+  // pied retombait sur le dallage de Masséna et noyait la septième statue.
+  const COLLINE = COLLINES_NICE.find((c) => c.nom === 'Colline du Château');
   for (let k = 0; k <= 9; k++) {
-    for (let dx = -2; dx <= 2; dx++) set(-6 + Math.round(k * 0.3) + dx, 8 - k, -1 + Math.round(k * 0.2), EAU);
+    for (let dx = -2; dx <= 2; dx++) {
+      const cu = -6 + Math.round(k * 0.3) + dx, cv = -1 + Math.round(k * 0.2);
+      if (surLaPlaceMassena(COLLINE.u + cu, COLLINE.v + cv)) continue;
+      set(cu, 8 - k, cv, EAU);
+    }
   }
+  // Le tapis d'herbe du sommet, qui s'arrête au bord de la place : le repère
+  // est bâti APRÈS Masséna et son herbe recouvrait deux des sept statues.
   for (let dx = -4; dx <= 4; dx++) for (let dz = -3; dz <= 3; dz++) {
-    if (Math.hypot(dx, dz) <= 4) set(dx, 0, dz, HERBE);
+    if (Math.hypot(dx, dz) > 4) continue;
+    if (surLaPlaceMassena(COLLINE.u + dx, COLLINE.v + dz)) continue;
+    set(dx, 0, dz, HERBE);
   }
   // les ruines : des pans de mur et deux colonnes
   for (const [x0, x1, z0] of [[-3, 2, -3], [-3, -3, -3], [2, 2, -3]]) {

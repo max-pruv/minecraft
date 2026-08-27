@@ -25,6 +25,9 @@ import {
   buildMuraille, buildCiteInterdite, buildVillageChinois, buildGuilin, buildPandas,
 } from './chine.js';
 import {
+  hauteurCapitales, solCapitales, landmarksCapitales, placesCapitales,
+} from './capitales.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -530,6 +533,9 @@ export const PLACES = [
   ...QUAIS_METRO.map((q) => ({
     name: `Métro ${q.nom}`, x: WASHINGTON.x + q.u, z: WASHINGTON.z + q.v, r: 0,
   })),
+  // Le tour du monde : une destination par ville, et une par monument. Sans
+  // elles on arriverait « à Londres » sans savoir de quel côté regarder.
+  ...placesCapitales(),
 ];
 
 function buildPyramid(set) { // grande pyramide de grès du désert
@@ -862,6 +868,14 @@ const LANDMARKS = [
   { name: 'Village chinois', x: CHINE.x - 34, z: CHINE.z + 26, box: 16, build: buildVillageChinois },
   { name: 'Radeau de Guilin', x: CHINE.x + 30, z: CHINE.z + 16, box: 5, seuil: 0.25, waterBase: true, build: buildGuilin },
   { name: 'Bambouseraie', x: CHINE.x - 14, z: CHINE.z + 40, box: 11, seuil: 0.3, build: buildPandas },
+  // LE TOUR DU MONDE. Big Ben, Tower Bridge, le Colisée, la Sagrada Família,
+  // la tour de Pise, la pyramide de Khéops, le Taj Mahal, l'Opéra de Sydney,
+  // le Christ Rédempteur et la Space Needle. Ils étaient tous écrits dans
+  // src/monuments.js depuis longtemps, et aucun ne se dressait nulle part :
+  // on ne pouvait que les poser soi-même depuis le menu du constructeur.
+  // Maintenant que les villes se déduisent de leurs coordonnées réelles,
+  // chacun se dresse chez lui.
+  ...landmarksCapitales(),
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -962,6 +976,11 @@ export class World {
     // karsts, les rizières en marches — une région entière dans ce qui était
     // une zone morte entre San Francisco et le Pôle Nord.
     h = hauteurChine(x, z, h);
+
+    // Le tour du monde : Londres, Rome, Barcelone, Pise, Gizeh, Agra, Sydney,
+    // Rio et Seattle. Chacune aplanit le parvis de son monument, avec un fondu
+    // au pourtour — au-delà, le paysage est celui du bruit, au bloc près.
+    h = hauteurCapitales(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -1331,6 +1350,14 @@ export class World {
         {
           const sc = solChine(wx, wz);
           if (sc !== null) { data[World.index(x, h, z)] = sc; continue; }
+        }
+
+        // Le parvis des monuments du tour du monde : dallé sous le monument,
+        // herbe sur le pourtour. Sans lui, le Colisée poserait ses arcades
+        // dans un pré.
+        {
+          const scap = solCapitales(wx, wz);
+          if (scap !== null) { data[World.index(x, h, z)] = scap; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

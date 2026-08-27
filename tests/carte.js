@@ -52,6 +52,24 @@ const position = (p) => p.evaluate(() => ({
     const tab = await banc.jouerSeul('Marlon', { tactile: true });
     await banc.ouvrirLaCarte(tab);
 
+    // OÙ SONT LES VILLES : ON LE DEMANDE, ON NE LE SUPPOSE PAS.
+    //
+    // Ces coordonnées étaient recopiées à la main dans le test — « New York est
+    // en (295, −110) ». Le jour où la carte a été refaite sur la vraie
+    // géographie, vingt-cinq vérifications sont tombées d'un coup : elles
+    // sondaient le terrain vide là où la ville n'était plus, et disaient « le
+    // quartier a disparu » alors qu'il avait seulement déménagé. Un test qui
+    // recopie ce qu'il éprouve ne l'éprouve pas — il éprouve sa propre copie.
+    //
+    // On lit donc le registre des mondes, qui est la source de vérité du jeu :
+    // les villes peuvent bouger autant qu'on veut, le témoin les suit.
+    const V = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const out = {};
+      for (const l of m.lieuxDuMonde('terre')) out[l.cle] = { x: l.x, z: l.z, r: l.r };
+      return out;
+    });
+
     const depart = await vue(tab);
     const moi = await position(tab);
     verifier('la carte s\'ouvre sur le joueur',
@@ -148,7 +166,20 @@ const position = (p) => p.evaluate(() => ({
     await tab.click('#map-tout');
     await dormir(700);
     const monde = await vue(tab);
-    verifier('le bouton 🌍 montre tout le monde', monde.bpp > 3, monde.bpp.toFixed(2));
+    // « Tout le monde » veut dire tout le monde : la fenêtre doit contenir les
+    // bornes réelles, d'un bord à l'autre. Un seuil écrit à la main — « bpp > 3 »
+    // — se contentait d'un dézoom quelconque et laissait passer une carte qui
+    // n'en montrait qu'un huitième.
+    const tient = await tab.evaluate(() => {
+      const c2 = window.__carte;
+      const b = c2.bornesMonde();
+      const { css } = c2.taille();
+      const coin = (x, z) => c2.versEcran(x, z);
+      const a = coin(b.x0, b.z0), d = coin(b.x1, b.z1);
+      return { a, d, css, dedans: a.x >= -1 && a.y >= -1 && d.x <= css + 1 && d.y <= css + 1 };
+    });
+    verifier('le bouton 🌍 montre tout le monde — d\'un bord à l\'autre',
+      tient.dedans, `bpp ${monde.bpp.toFixed(2)} · ${JSON.stringify(tient)}`);
 
     // Une destination sans repère à l'écran est une destination inatteignable.
     // Les noms, eux, ont le droit de manquer quand la place manque : c'est la
@@ -326,10 +357,17 @@ const position = (p) => p.evaluate(() => ({
       for (let i = 0; i < 60; i++) c2.zoomerVers(100, 100, 1 / 1.5);
       const loin = c2.vue.bpp;
       for (let i = 0; i < 60; i++) { c2.vue.cx += 500; c2.limiter(); }
-      return { pres, loin, cx: c2.vue.cx };
+      return { pres, loin, cx: c2.vue.cx, plafond: c2.zoomMax(), monde: c2.bornesMonde() };
     });
+    // Les deux bornes se mesurent CONTRE LE MONDE, pas contre deux chiffres
+    // écrits à la main. « loin ≤ 5 » et « cx < 1500 » décrivaient le monde
+    // d'avant, large de mille cinq cents blocs ; ils condamnaient d'avance
+    // toute carte plus grande — et c'est bien ce qui est arrivé.
     verifier('on ne peut ni zoomer à l\'infini ni sortir du monde',
-      bornes.pres >= 0.2 && bornes.loin <= 5 && bornes.cx < 1500, JSON.stringify(bornes));
+      bornes.pres >= 0.2
+      && bornes.loin <= bornes.plafond + 0.001
+      && bornes.cx <= bornes.monde.x1 + 0.001,
+      JSON.stringify(bornes));
 
     // --- le bas de Manhattan -------------------------------------------------
     //
@@ -340,7 +378,7 @@ const position = (p) => p.evaluate(() => ({
     // uns sur les autres. On vérifie donc les deux choses qu'il verrait :
     // qu'on peut y aller, et qu'une fois là-bas ce n'est pas la même ville
     // qu'au nord.
-    const NY = { x: 295, z: -110 };
+    const NY = V.ny;
     const sonder = (us, v0, v1) => tab.evaluate(({ ny, us: cols, v0: a, v1: b }) => {
       const w = window.__game.world;
       const RUE = [562, 563, 564, 566, 569];   // bitume, ligne, trottoir, pavé, passage
@@ -418,7 +456,7 @@ const position = (p) => p.evaluate(() => ({
     // Panthéon, les Invalides, la Bastille, le Luxembourg n'existaient pas du
     // tout. Une rive, ça ne se discute pas — c'est la première chose qu'un
     // enfant vérifie quand il compare avec un vrai plan.
-    const PARIS = { x: -240, z: 200 };
+    const PARIS = V.paris;
     await banc.ouvrirLaCarte(tab);
     await tab.evaluate(({ p }) => {
       const c2 = window.__carte;
@@ -475,9 +513,8 @@ const position = (p) => p.evaluate(() => ({
     // Trois choses le disent, et aucune n'a besoin d'une capture d'écran : la
     // pierre de taille et le zinc dont la ville est faite, les cours au milieu
     // des îlots, et l'herbe qu'on ne foule plus en la traversant.
-    const tissu = await tab.evaluate(() => {
+    const tissu = await tab.evaluate((P) => {
       const w = window.__game.world;
-      const P = { x: -240, z: 200 };
       const PIERRE = 560, ZINC = 561, PAVE_DE_COUR = 9, HERBE = 1, TERRE = 2;
       let bati = 0, cours = 0, nu = 0, total = 0;
       for (let u = -40; u <= 40; u++) {
@@ -504,7 +541,7 @@ const position = (p) => p.evaluate(() => ({
         }
       }
       return { bati, cours, nu, total };
-    });
+    }, V.paris);
     verifier('Paris est bâtie de pierre de taille et de zinc',
       tissu.bati > 700,
       `${tissu.bati} colonnes sur ${tissu.total}`);
@@ -571,7 +608,7 @@ const position = (p) => p.evaluate(() => ({
     // sans côte et sans relief. Or c'est de ses collines et de sa presqu'île
     // qu'on la reconnaît — et de Market Street, la couture entre ses deux
     // quadrillages qui ne sont pas parallèles.
-    const SF = { x: 0, z: -320 };
+    const SF = V.sf;
     const releveSF = await tab.evaluate(({ p }) => {
       const w = window.__game.world;
       // La plaine d'une ville n'est pas un défaut — le Sunset et SoMa sont
@@ -619,7 +656,7 @@ const position = (p) => p.evaluate(() => ({
     // l'autre avec un beffroi posé au milieu de rien. Or chacune tient dans une
     // forme : la baie des Anges pour Nice, et pour Lille l'étoile à cinq
     // branches de la citadelle de Vauban, qu'on ne lit que vue du ciel.
-    const releveVilles = await tab.evaluate(() => {
+    const releveVilles = await tab.evaluate(({ N, L }) => {
       const w = window.__game.world;
       const EAU = 7;
       // Nice : la mer occupe le sud de la baie, et trois collines se lèvent.
@@ -627,7 +664,7 @@ const position = (p) => p.evaluate(() => ({
       for (let u = -44; u <= 44; u += 2) {
         for (let v = -44; v <= 44; v += 2) {
           if (Math.hypot(u, v) > 44) continue;
-          const h = w.terrainHeight(300 + u, 260 + v);
+          const h = w.terrainHeight(N.x + u, N.z + v);
           if (h <= 30) mer++; else { terre++; sommetNice = Math.max(sommetNice, h); }
         }
       }
@@ -639,11 +676,11 @@ const position = (p) => p.evaluate(() => ({
         for (let v = -34; v <= 2; v++) {
           // Les douves sont creusées sous le niveau de la mer : c'est le remplissage
           // général du monde qui les met en eau, à la cote trente.
-          if (w.getBlock(-300 + u, 30, -200 + v) === EAU) douves++;
+          if (w.getBlock(L.x + u, 30, L.z + v) === EAU) douves++;
         }
       }
       return { mer, terre, sommetNice, douves };
-    });
+    }, { N: V.nice, L: V.lille });
     verifier('Nice a sa baie et ses collines',
       releveVilles.mer > 200 && releveVilles.sommetNice >= 44,
       `${releveVilles.mer} points en mer pour ${releveVilles.terre} à terre · sommet ${releveVilles.sommetNice}`);
@@ -663,9 +700,9 @@ const position = (p) => p.evaluate(() => ({
     // ville 104 m < tour de Lille 120 m, blanche et en porte-à-faux — la
     // « chaussure de ski ») ; et l'eau : le quai du Wault, doigt de la Deûle
     // pointé vers le centre, et la façade translucide de la Treille.
-    const fidele = await tab.evaluate(() => {
+    const fidele = await tab.evaluate((L) => {
       const w = window.__game.world;
-      const Lx = -300, Lz = -200, OR = 19, VERRE = 10, EAU = 7, BLANC = 310;
+      const Lx = L.x, Lz = L.z, OR = 19, VERRE = 10, EAU = 7, BLANC = 310;
       const haut = (u, v) => {
         const h = w.terrainHeight(Lx + u, Lz + v);
         for (let y = h + 40; y > h; y--) { const id = w.getBlock(Lx + u, y, Lz + v); if (id) return { y: y - h, id }; }
@@ -701,7 +738,7 @@ const position = (p) => p.evaluate(() => ({
       const treille = haut(-2, -16).y >= 7 && colonne(-2, -16, VERRE);
       return { rueLibre, horloge, deesse, damier, cour, cci, hdv, ski,
         blanc: bout.id === BLANC, videSous, wault, treille };
-    });
+    }, V.lille);
     verifier("la rue Faidherbe file droit vers l'horloge de la gare",
       fidele.rueLibre && fidele.horloge,
       JSON.stringify({ rueLibre: fidele.rueLibre, horloge: fidele.horloge }));
@@ -725,9 +762,9 @@ const position = (p) => p.evaluate(() => ({
     // SEPT statues perchées, pas six ; et la Promenade a ses chaises bleues et
     // ses palmiers, le cours Saleya ses stores rayés, le Paillon sa baleine de
     // bois — le mobilier que tout enfant niçois reconnaît avant les monuments.
-    const nicoise = await tab.evaluate(() => {
+    const nicoise = await tab.evaluate((N) => {
       const w = window.__game.world;
-      const Nx = 300, Nz = 260, EAU = 7, LOG = 5, ROUGE = 23, BLEU_CH = 24, JAUNE = 25;
+      const Nx = N.x, Nz = N.z, EAU = 7, LOG = 5, ROUGE = 23, BLEU_CH = 24, JAUNE = 25;
       const VERT = 90, ROSE = 200, BLANC = 310, STATUE = 230;
       const haut = (u, v) => {
         const h = w.terrainHeight(Nx + u, Nz + v);
@@ -766,7 +803,7 @@ const position = (p) => p.evaluate(() => ({
       const saleya = colonne(6, 5, ROUGE) && colonne(5, 5, JAUNE);
       const baleine = colonne(0, -6, LOG);
       return { bassin, pointu, negresco, stNicolas, statues, chaises, palmiers, saleya, baleine };
-    });
+    }, V.nice);
     verifier('le port Lympia est un vrai bassin, et ses pointus sont à quai',
       nicoise.bassin && nicoise.pointu,
       JSON.stringify({ bassin: nicoise.bassin, pointu: nicoise.pointu }));
@@ -789,9 +826,9 @@ const position = (p) => p.evaluate(() => ({
     // pas de brouillard ; le Bay Bridge de la même couleur que le Golden Gate ;
     // et aucune des icônes que cherchent les enfants — les otaries de Pier 39,
     // les épingles fleuries de Lombard Street, le Dragon Gate de Chinatown.
-    const frisco = await tab.evaluate(() => {
+    const frisco = await tab.evaluate((S) => {
       const w = window.__game.world;
-      const Sx = 0, Sz = -320;
+      const Sx = S.x, Sz = S.z;
       const ORANGE = 40, ICE = 18, MARRON = 210, BRIQUE = 11, VIOLET = 27;
       const VERT_TOIT = 90, DORE = 260, OLIVE = 250, GRIS = 33, ROUGE_LAINE = 23;
       const haut = (u, v) => {
@@ -822,7 +859,7 @@ const position = (p) => p.evaluate(() => ({
       const lombard = colonne(32, -18, BRIQUE) && colonne(32, -17, VIOLET);
       const dragon = colonne(36, -9, VERT_TOIT) && colonne(36, -9, 19);
       return { pylone, tablier, marin, brouillard, bayGris, otaries, lombard, dragon };
-    });
+    }, V.sf);
     verifier('le Golden Gate, orange, va du Presidio aux Marin Headlands',
       frisco.pylone && frisco.tablier && frisco.marin,
       JSON.stringify({ pylone: frisco.pylone, tablier: frisco.tablier, marin: frisco.marin }));
@@ -843,9 +880,9 @@ const position = (p) => p.evaluate(() => ({
     // en fond de vallée), la Cité interdite vermillon et or avec ses lions de
     // bronze, les karsts de Guilin au bord de la rivière turquoise, les
     // rizières en marches d'eau, et les pandas dans leur bambouseraie.
-    const chine = await tab.evaluate(() => {
+    const chine = await tab.evaluate((C) => {
       const w = window.__game.world;
-      const Cx = -60, Cz = -520;
+      const Cx = C.x, Cz = C.z;
       const GRIS_MUR = 33, VERMILLON = 40, JAUNE = 60, ORB = 19, EAU = 7, NOIR = 28, TIGE = 5;
       const creteV = (u) => -34 + Math.round(6 * Math.sin(u / 9) + u * 0.12);
       const colonne = (u, v, id) => {
@@ -877,7 +914,7 @@ const position = (p) => p.evaluate(() => ({
         for (let dv = -6; dv <= 6; dv += 2) if (colonne(-14 + du, 40 + dv, TIGE)) { bambous++; }
       }
       return { surCrete, domine, porte, lions, karst, riviere, rizEau, marches, panda, bambous };
-    });
+    }, V.chine);
     verifier('la Grande Muraille serpente sur les crêtes',
       chine.surCrete >= 4 && chine.domine >= 3,
       `${chine.surCrete}/5 points sur la crête · la crête domine en ${chine.domine}/5`);
@@ -970,8 +1007,8 @@ const position = (p) => p.evaluate(() => ({
 
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus] of [
-      ['Nice', 300, 260, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],
-      ['Lille', -300, -200, ["Grand'Place", 'Vieux-Lille', 'Citadelle', 'Euralille']],
+      ['Nice', V.nice.x, V.nice.z, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],
+      ['Lille', V.lille.x, V.lille.z, ["Grand'Place", 'Vieux-Lille', 'Citadelle', 'Euralille']],
     ]) {
       await tab.evaluate(({ x, z }) => {
         const c2 = window.__carte;

@@ -135,7 +135,14 @@ const icone = (nom) => (nom.startsWith('Métro ') ? ICONE_METRO : ICONES[nom] ||
 
 // Blocs par pixel. Petit = près.
 const ZOOM_MIN = 0.22;    // on distingue un bloc
-const ZOOM_MAX = 4.5;     // le monde entier tient dans la fenêtre
+// Le dézoom MINIMUM garanti, pour un monde qui tiendrait dans un mouchoir.
+// Ce n'est plus un plafond : voir `zoomMax()`, qui l'élargit à la taille réelle
+// du monde. Tant que la carte s'arrêtait à 4,5, elle montrait 2 700 blocs de
+// large — assez quand le monde en faisait 1 500, plus du tout depuis que les
+// villes sont posées sur leurs vraies coordonnées et que la carte en fait
+// vingt et un mille. Le bouton 🌍 « voir tout le monde » ne montrait alors
+// qu'un huitième du monde, et San Francisco n'existait plus pour personne.
+const ZOOM_MAX = 4.5;
 const RENDU_MS = 110;     // on ne recalcule pas le fond plus souvent que ça
 const MARGE = 1.3;        // le fond déborde de la fenêtre : glisser ne montre pas de vide
 
@@ -218,10 +225,14 @@ export class Carte {
     this.vue.cz = borne(this.vue.cz, b.z0, b.z1);
   }
 
+  // Jusqu'où l'on a le droit de s'éloigner : assez pour que le monde ENTIER
+  // tienne dans la fenêtre, quelle que soit sa taille. C'était un `min` contre
+  // un plafond fixe, ce qui revenait à promettre « tout le monde » en n'en
+  // montrant qu'une part — et la part rétrécissait à chaque ville ajoutée.
   zoomMax() {
     const { css } = this.taille();
     const b = this.bornesMonde();
-    return Math.min(ZOOM_MAX, Math.max(b.x1 - b.x0, b.z1 - b.z0) / css);
+    return Math.max(ZOOM_MAX, Math.max(b.x1 - b.x0, b.z1 - b.z0) / css);
   }
 
   zoomerVers(px, py, facteur) {
