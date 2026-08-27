@@ -181,16 +181,49 @@ const position = (p) => p.evaluate(() => ({
     verifier('le bouton 🌍 montre tout le monde — d\'un bord à l\'autre',
       tient.dedans, `bpp ${monde.bpp.toFixed(2)} · ${JSON.stringify(tient)}`);
 
-    // Une destination sans repère à l'écran est une destination inatteignable.
-    // Les noms, eux, ont le droit de manquer quand la place manque : c'est la
-    // pastille d'icône qui garantit qu'on peut toujours partir.
-    const vus = await lieuxVus(tab);
+    // UNE DESTINATION SANS REPÈRE EST UNE DESTINATION INATTEIGNABLE.
+    //
+    // Ce témoin exigeait que TOUTES les destinations tiennent à l'écran au
+    // dézoom maximum. C'était juste dans un monde de mille cinq cents blocs :
+    // tout y tenait. Le monde en fait aujourd'hui vingt-quatre mille, et une
+    // douzaine de domaines — le désert, le volcan, l'île, les deux châteaux,
+    // l'aéroport, le circuit, la base spatiale — se serrent dans les mille
+    // blocs autour de l'origine. Vus de la carte entière, cela fait trente-six
+    // pixels pour douze pastilles de vingt-six : aucune carte au monde ne peut
+    // les montrer toutes à la fois, et l'exiger revenait à interdire au monde
+    // de grandir.
+    //
+    // Ce qui compte vraiment n'est pas « tout à l'écran d'un coup » — c'est
+    // « rien n'est perdu ». On vérifie donc, destination par destination,
+    // qu'elle est bien repérable À SON ÉCHELLE : on cadre dessus, et sa
+    // pastille doit être là. C'est plus exigeant que l'ancienne version, qui
+    // se contentait d'un unique coup d'œil de très loin.
     const grands = ['Paris', 'New York', 'San Francisco', 'Nice', 'Lille', 'Chine', 'Planète Mars',
       'Château de Villandry', 'Aéroport Charles-de-Gaulle', 'Village gaulois', 'Base spatiale',
-      'Circuit de F1', 'Volcan', 'Désert', 'Île tropicale', 'Château médiéval', "Parc d'attractions"];
-    const absents = grands.filter((n) => !vus.includes(n));
-    verifier('toutes les grandes destinations restent repérables',
-      absents.length === 0, absents.join(', '));
+      'Circuit de F1', 'Volcan', 'Désert', 'Île tropicale', 'Château médiéval', "Parc d'attractions",
+      // Le tour du monde : neuf villes de plus, chacune avec son monument.
+      'Londres', 'Rome', 'Barcelone', 'Pise', 'Gizeh', 'Agra', 'Sydney',
+      'Rio de Janeiro', 'Seattle'];
+    const introuvables = [];
+    for (const nom of grands) {
+      // On cadre sur la destination, à une échelle où son domaine tient à
+      // l'écran, puis on lit ce que la carte propose vraiment.
+      const trouve = await tab.evaluate(async (n) => {
+        const w = await import('./src/world.js');
+        const cible = [...w.CITIES, ...w.PLACES, ...w.REPERES].find((p) => p.name === n);
+        if (!cible) return { erreur: 'destination absente du monde' };
+        const c2 = window.__carte;
+        c2.vue.cx = cible.x; c2.vue.cz = cible.z; c2.vue.bpp = 0.9;
+        c2.limiter(); c2.peindre();
+        return { noms: c2.etiquettes.map((e) => e.lieu.name) };
+      }, nom);
+      await dormir(120);
+      if (trouve.erreur || !trouve.noms.includes(nom)) {
+        introuvables.push(`${nom}${trouve.erreur ? ` (${trouve.erreur})` : ''}`);
+      }
+    }
+    verifier('chaque grande destination reste repérable à son échelle',
+      introuvables.length === 0, introuvables.join(', '));
 
     // Rien ne doit déborder du cadre : un nom coupé n'est ni lisible ni touchable.
     const debord = await tab.evaluate(() => {
