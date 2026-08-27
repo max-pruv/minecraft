@@ -42,6 +42,15 @@ const VRAIES_KM = [
   // L'Atlantique est volontairement resserré à 60 % : décision de Max, pas une
   // erreur. On vérifie donc qu'il EST resserré, et de combien.
   ['paris', 'ny', 5837, 0.45],
+  // Le tour du monde. Les paires européennes restent près du parallèle de
+  // référence, donc justes au bloc près ; les lointaines ne vérifient que
+  // l'ordre de grandeur, ce qui suffit à attraper une ville mal posée.
+  ['paris', 'londres', 344, 0.10],
+  ['paris', 'rome', 1106, 0.12],
+  ['paris', 'barcelone', 831, 0.12],
+  ['rome', 'pise', 265, 0.15],
+  ['paris', 'gizeh', 3210, 0.25],
+  ['paris', 'agra', 6675, 0.30],
 ];
 
 (async () => {
@@ -105,6 +114,15 @@ const VRAIES_KM = [
       ['ny', 'paris', ['ouest']],
       ['chine', 'paris', ['est']],
       ['washington', 'ny', ['sud', 'ouest']],
+      // Le tour du monde : Londres à l'ouest-nord-ouest de Paris, Rome au
+      // sud-est, Sydney à l'autre bout, Rio au sud-ouest par l'Atlantique.
+      ['londres', 'paris', ['nord', 'ouest']],
+      ['rome', 'paris', ['sud', 'est']],
+      ['barcelone', 'paris', ['sud', 'ouest']],
+      ['gizeh', 'paris', ['sud', 'est']],
+      ['sydney', 'paris', ['sud', 'est']],
+      ['rio', 'paris', ['sud', 'ouest']],
+      ['seattle', 'ny', ['nord', 'ouest']],
     ];
     const fauxCaps = [];
     for (const [a, ref, attendus] of boussole) {
@@ -155,6 +173,73 @@ const VRAIES_KM = [
     }, { x: pos.sf.x, z: pos.sf.z });
     verifier('le terrain existe là où San Francisco a déménagé',
       loin.h > 0 && loin.solide, JSON.stringify(loin));
+
+    // --- LE TOUR DU MONDE : les monuments se dressent-ils VRAIMENT ? --------
+    //
+    // Vingt et un monuments étaient bâtis au bloc près dans src/monuments.js et
+    // aucun ne se dressait nulle part : on ne pouvait que les poser soi-même
+    // depuis le menu du constructeur. Le témoin ne demande donc pas « le
+    // monument est-il déclaré » — il l'était déjà — mais « y a-t-il vraiment de
+    // la pierre à cet endroit du monde, et jusqu'à sa vraie hauteur ».
+    const debout = await tab.evaluate(async () => {
+      const [cap, mon] = await Promise.all([
+        import('./src/capitales.js'), import('./src/monuments.js'),
+      ]);
+      const w = window.__game.world;
+      const out = [];
+      for (const s2 of cap.SITES) {
+        const p = cap.positionSite(s2.cle);
+        for (const m of s2.monuments) {
+          const b = mon.monumentBati(m.id);
+          const x = p.x + m.du, z = p.z + m.dv;
+          const R = Math.ceil(Math.max(b.emprise.l, b.emprise.p) / 2) + 2;
+          const sol = w.terrainHeight(x, z);
+          let blocs = 0;
+          for (let dx = -R; dx <= R; dx += 2) {
+            for (let dz = -R; dz <= R; dz += 2) {
+              for (let y = sol; y < sol + b.emprise.h + 4; y++) {
+                if (w.getBlock(x + dx, y, z + dz)) blocs++;
+              }
+            }
+          }
+          // LA FLÈCHE SE VÉRIFIE À SON ADRESSE EXACTE.
+          //
+          // Un balayage de deux en deux rate une flèche large d'un bloc et
+          // annonce Big Ben tronqué à 64 sur 70 alors qu'il est entier : c'est
+          // l'échantillonnage qui manque le sommet, pas le monument. On demande
+          // donc au modèle OÙ est son point le plus haut, et on regarde cette
+          // colonne-là — c'est à la fois exact et bien moins coûteux.
+          const e = b.emprise;
+          const cx = Math.round((e.minX + e.maxX) / 2);
+          const cz = Math.round((e.minZ + e.maxZ) / 2);
+          let sommet = b.blocs[0];
+          for (const bl of b.blocs) if (bl[1] > sommet[1]) sommet = bl;
+          const fx = x + (sommet[0] - cx), fz = z + (sommet[2] - cz);
+          const yFleche = sol + (sommet[1] - e.minY) + 1;
+          let hMax = 0;
+          for (let y = sol; y < sol + e.h + 4; y++) if (w.getBlock(fx, y, fz)) hMax = y - sol;
+          out.push({ nom: b.nom, ville: p.nom, blocs, hMax, attendu: e.h, sol,
+            fleche: w.getBlock(fx, yFleche, fz) !== 0 });
+        }
+      }
+      return out;
+    });
+    verifier('les dix monuments du tour du monde se dressent pour de vrai',
+      debout.length === 10 && debout.every((m) => m.blocs > 50),
+      debout.filter((m) => m.blocs <= 50).map((m) => `${m.nom} : ${m.blocs} blocs`).join(' · ')
+        || `${debout.length} monuments`);
+    // Et à leur VRAIE hauteur : un monument tronqué au bord d'un morceau de
+    // terrain passerait le test précédent sans que sa flèche existe.
+    const tronques = debout.filter((m) => !m.fleche);
+    verifier('et aucun n\'est tronqué : chacun monte jusqu\'à sa flèche',
+      tronques.length === 0,
+      tronques.map((m) => `${m.nom} : ${m.hMax}/${m.attendu}`).join(' · ')
+        || debout.map((m) => `${m.nom} ${m.hMax}`).join(', '));
+    // Chacun se tient sur un parvis, pas dans un trou ni sur un pic.
+    const malAssis = debout.filter((m) => m.sol !== 34);
+    verifier('chacun repose sur un parvis de plain-pied',
+      malAssis.length === 0,
+      malAssis.map((m) => `${m.nom} : sol ${m.sol}`).join(' · ') || 'tous à la cote 34');
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

@@ -52,6 +52,12 @@ const GARDIENS = {
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
+  // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
+  // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
+  'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
+  'src/monuments.js': ['carteMonde.js'],
+  'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/carte.js': ['carte.js', 'carteMonde.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
   'src/washington.js': ['washington.js', 'plafond.js'],

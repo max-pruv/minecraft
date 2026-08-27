@@ -62,6 +62,7 @@ const ASSETS = [
   './src/animals.js',
   './src/montures.js',
   './src/mondes.js',
+  './src/capitales.js',
   './src/batiments.js',
   './src/monuments.js',
   './src/education.js',
