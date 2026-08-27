@@ -235,8 +235,19 @@ const position = (p) => p.evaluate(() => ({
     verifier('aucun nom ne déborde de la carte', debord.length === 0, debord.join(', '));
 
     // --- toucher un nom ------------------------------------------------------
-    const cible = await tab.evaluate(() => {
-      const e = window.__carte.etiquettes.find((x) => x.lieu.name === 'Nice');
+    //
+    // Ce témoin cadre lui-même sur Nice au lieu d'hériter de la vue laissée par
+    // le précédent. Il en dépendait en silence, et cela a fini par se voir : le
+    // témoin d'au-dessus parcourt désormais les destinations une à une et
+    // s'arrête sur la dernière, si bien que Nice n'était plus à l'écran. Ce
+    // qu'on éprouve ici est « toucher un nom emmène en voyage », pas « Nice se
+    // trouve dans le cadre où le test d'avant a laissé la carte ».
+    const cible = await tab.evaluate(async () => {
+      const nice = await import('./src/nice.js');
+      const c2 = window.__carte;
+      c2.vue.cx = nice.NICE.x; c2.vue.cz = nice.NICE.z; c2.vue.bpp = 0.9;
+      c2.limiter(); c2.peindre();
+      const e = c2.etiquettes.find((x) => x.lieu.name === 'Nice');
       if (!e) return null;
       const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
       return { x: r.left + (e.rect.x0 + e.rect.x1) / 2, y: r.top + (e.rect.y0 + e.rect.y1) / 2,
