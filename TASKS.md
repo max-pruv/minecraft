@@ -18,12 +18,15 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Le tour du monde, suite** — Londres est bâtie (v165) et fixe
-  l'étalon : la Tamise et son coude, les monuments aux coordonnées, trois
-  tissus de rues, le Mall rouge, les parcs. Rome, Barcelone, Pise, Gizeh,
-  Agra, Sydney, Rio et Seattle attendent le même traitement, une ville par
-  livraison. Et les mers manquantes du planisphère — la mer Noire, la
-  Caspienne, la Baltique fine — viendront quand un enfant les cherchera.
+- [ ] **Le tour du monde, approfondissements** — les NEUF villes sont bâties
+  (v165) : Londres à la main, les huit autres par la machine à villes. La
+  suite est du raffinement : donner à Rome, Sydney ou Rio la profondeur
+  artisanale de Londres (voies nommées, mobilier, intérieurs), ajouter des
+  villes neuves (Tokyo ? Le Caire ? New Delhi ?) — une fiche de plus dans la
+  machine —, et les mers manquantes du planisphère (mer Noire, Caspienne,
+  Baltique fine) quand un enfant les cherchera. Question produit ouverte :
+  que se passe-t-il quand un enfant se dépose volontairement en plein
+  océan ? (Aujourd'hui : il nage.)
   Neuf monuments du catalogue attendent encore leur adresse dans des villes
   déjà bâties : Notre-Dame, le Sacré-Cœur et l'Élysée à Paris ; l'Empire
   State, le Chrysler, la Statue de la Liberté et le Flatiron à New York ;

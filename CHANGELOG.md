@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v165 — la Terre se reconnaît, et Londres devient Londres
+## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
 
 **Pourquoi.** Max, devant la carte de v164 : « quand je regarde la carte, je ne
 reconnais pas la vraie carte du monde… je veux une espèce de carte du monde un
@@ -81,13 +81,39 @@ casse est confinée à ce que la géographie réclame.
 la Tamise, Big Ben et l'Eye, Tower Bridge au-dessus de l'eau, St Paul et le
 Shard, le Mall rouge et la Serpentine, la brique et les bus) ; cinq sur la
 Terre dans carteMonde.js (océans en eau, continents à terre, seize villes au
-sec, l'Everest et le mont Blanc qui culminent, la gorge du canyon) ; les
-empreintes de plafond.js recalculées et racontées.
+sec, l'Everest et le mont Blanc qui culminent, la gorge du canyon) ; trois
+sur les huit villes (les vingt-deux monuments debout chacun chez lui, les
+huit grands du catalogue à leur vraie hauteur, l'eau là où la géographie la
+met et chaque centre-ville au sec) ; les empreintes de plafond.js
+recalculées et racontées.
 
-**La suite du tour du monde.** Rome, Barcelone, Pise, Gizeh, Agra, Sydney,
-Rio et Seattle attendent le même traitement — une ville par livraison, comme
-Nice, Lille et San Francisco l'ont reçu en leur temps. Londres est
-l'étalon du niveau attendu.
+**Et les huit autres, dans la même livraison.** Max : « fais pas que Londres,
+hein — je veux plein de villes iconiques. » Londres a fixé la recette ; la
+machine à villes (src/villesmonde.js) la déroule sur les huit autres, chacune
+relevée sur documents :
+
+- **Rome** : le Tibre et son S, le Colisée, le Panthéon, Saint-Pierre de
+  l'autre côté du fleuve, le Forum, l'ocre et la terracotta ;
+- **Barcelone** : la grille de l'Eixample aux angles CHANFREINÉS — la
+  signature aérienne unique de la ville —, la Rambla, la Sagrada, la plage
+  de la Barceloneta ;
+- **Pise** : l'Arno, et les trois de la piazza dei Miracoli alignés comme
+  sur place — la tour penchée, le Duomo, le baptistère rond ;
+- **Gizeh** : le plateau de sable, les TROIS pyramides en taille
+  décroissante — Khéphren garde sa coiffe de calcaire —, le Sphinx tourné
+  vers le levant, la vallée verte du Nil ;
+- **Agra** : le Taj sur la Yamuna, le charbagh — le jardin moghol en croix
+  coupé de canaux —, la mosquée de grès rouge, le fort d'Agra ;
+- **Sydney** : le port entre ses deux rives, l'Opéra sur la pointe
+  Bennelong, le Harbour Bridge d'une seule arche, les tours du CBD ;
+- **Rio** : la baie de Guanabara, le Pain de Sucre, le Christ posé AU SOMMET
+  du Corcovado — la statue hérite de l'altitude de son morne —, le croissant
+  de Copacabana, la forêt de Tijuca, les maisons vives des pentes ;
+- **Seattle** : la baie d'Elliott, la Space Needle, Pike Place, la grande
+  roue du front de mer — et le mont Rainier à l'horizon, déjà levé par le
+  relief.
+
+Une ville de plus, demain, c'est une fiche de plus dans la machine.
 
 ---
 
