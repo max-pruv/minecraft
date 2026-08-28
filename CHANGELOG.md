@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v174 — les poissons : la mer aussi est vivante
+
+**Pourquoi.** Max : « add fish swimming ». Le monde a des océans sur tout le
+planisphère, des fleuves dans les villes, des lacs dans la campagne — et
+toute cette eau était parfaitement immobile. Un enfant qui plongeait n'y
+trouvait rien.
+
+**Ce que ça change.** Des poissons de récif — six robes vives : clown,
+chirurgien bleu, demoiselle jaune, vivaneau rose, turquoise, gramma violet —
+nagent partout où il y a de l'eau. Ils avancent, ondulent de la queue,
+virent devant les berges, respirent en profondeur sans jamais crever la
+surface ni racler le fond. Le banc s'entretient autour de l'enfant (une
+vingtaine de poissons, nés à portée de vue en quelques secondes) : le monde
+entier semble peuplé pour le prix d'un petit banc. Première coupe corrigée
+sur capture : nés à quarante-six blocs ils étaient invisibles dans la brume
+bleue, et l'éclairage sous-marin éteignait leurs robes — naissance
+rapprochée, couleurs pleines.
+
+**Ce qui le prouve.** Trois témoins neufs dans la suite de la monte, au
+large de Marseille — des poissons existent, chacun est DANS l'eau (pas dans
+le pré, pas dans le ciel), et quatre secondes de jeu les déplacent — la
+fenêtre comptée en secondes de JEU, leçon du métro gelé. Et la capture du
+banc dans la discussion.
+
 ## v173 — les deux cents villes : le monde entier se peuple
 
 **Pourquoi.** Max : « recalibrate all cities, and 200 other cities ». Le
