@@ -349,12 +349,12 @@ export const MONTURES = [
   // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
   // dans la nature, seul le garagiste de main.js la gare sur le parc.
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
-  // `siege` : la PLACE DU CONDUCTEUR dans le repère de la voiture — à gauche
-  // (x négatif), l'œil bas (0,98 : une hypersportive s'assied bas), à peine
-  // en avant. Remplace `oeil` (hauteur seule, caméra au milieu de la
-  // banquette : le volant flottait au centre du pare-brise). `assise` reste
-  // en secours : un fun.js ancien qui ignore `siege` retombe dessus et
-  // l'enfant voit encore la route, juste du milieu.
+  // `poursuite` : la VUE GTA, décidée par Max après deux essais de vue
+  // intérieure (« on va rester dans une vue un peu comme GTA, où on voit la
+  // voiture par derrière ») — la caméra recule et s'élève derrière le
+  // véhicule. Le cockpit sculpté reste : on le voit à travers les vitres.
+  // `assise` reste en secours : un fun.js ancien qui ignore `poursuite`
+  // retombe dessus et l'enfant voit encore la route.
   // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
   // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   // `immobile` : garée, elle ne flâne pas et ne pivote pas (le vagabondage
@@ -362,5 +362,5 @@ export const MONTURES = [
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, siege: { x: -0.33, y: 0.96, z: 0.05 }, nourrissable: false, immobile: true },
+    assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true },
 ];
