@@ -18,10 +18,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Les villes vivantes ET aérées** (verdicts de Max, captures à
-  l'appui) — « too packed » sur Londres : des places, des squares, des cours,
-  des dents creuses ; et « much more life » : des bus, des métros dans les
-  grandes villes générées, des chiens, plus de passants et de voitures.
+- [ ] **Les métros des grandes villes générées** — le creuseur de Washington
+  sait faire ; après les trains intervilles.
 
 - [ ] **Les trains intervilles sur les vraies lignes** (Eurostar, Shinkansen,
   AVE…), à monter via le bouton « Monter à bord » existant.
@@ -73,6 +71,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v178** — les villes respirent (Londres recalibrée, un lot sur dix en
+  jardin de poche dans les 278 villes) et vivent (bus montables, six
+  voitures, dix passants dont deux chiens par ville).
 
 - [x] **v177** — les calottes polaires sont blanches : neige et glace au-delà
   de 78° nord et 63° sud, au sol comme sur la carte.

@@ -19,13 +19,45 @@
 // les gens des châteaux ; les habits, eux, sont d'aujourd'hui — la tenue
 // « passant » de personnages.js — avec quelques robes de la tenue « dame ».
 
+import * as THREE from 'three';
 import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
 import { CITIES } from './world.js';
 
 const PORTEE_REVEIL = 150;         // l'enfant approche : la ville peuple ses rues
-const PAR_VILLE = 6;
+// Dix par ville depuis v178 — Max : « much more life… people walking » — et
+// un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
+const PAR_VILLE = 10;
+
+// Un petit chien de ville : corps, tête, museau, quatre pattes, la queue en
+// l'air. Quatre robes, stables par graine — le chien roux de Rome y sera
+// encore demain.
+const ROBES_CHIEN = [0x8a5a30, 0x2a2a2e, 0xe8e2d4, 0xc86a2a];
+function construireChien(robe) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color: robe });
+  const boite = (w, h, d, x, y, z, m = mat) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z);
+    g.add(b);
+    return b;
+  };
+  boite(0.3, 0.28, 0.62, 0, 0.42, 0);                       // le corps
+  boite(0.26, 0.24, 0.26, 0, 0.58, -0.4);                   // la tête
+  boite(0.14, 0.12, 0.14, 0, 0.5, -0.56);                   // le museau
+  boite(0.08, 0.12, 0.06, -0.09, 0.74, -0.42);              // les oreilles
+  boite(0.08, 0.12, 0.06, 0.09, 0.74, -0.42);
+  const pattes = [];
+  for (const sz of [-0.22, 0.22]) for (const sx of [-0.1, 0.1]) pattes.push(boite(0.09, 0.3, 0.09, sx, 0.14, sz));
+  boite(0.07, 0.22, 0.07, 0, 0.56, 0.34);                   // la queue, dressée
+  // Habitant.update anime `legs` et `arms` — sans elles, la troupe entière
+  // plantait au premier chien (vécu en sonde : une image morte par frame).
+  // Les pattes avant jouent les bras, les arrière les jambes : le trot vient
+  // tout seul du balancement croisé de la marche.
+  g.userData = { legs: [pattes[0], pattes[1]], arms: [pattes[2], pattes[3]] };
+  return g;
+}
 
 const TEINTS = [0xe0b48c, 0xc9905e, 0xa9713f, 0xf0c9a4, 0xd8a878, 0x8a5a30];
 const CHEVEUX = [0x3a2a1a, 0x6a4a26, 0x1c1814, 0x8a6a3a, 0x9a9a94, 0xb8b8b2];
@@ -57,6 +89,19 @@ export function createPassants({ scene, world, player, toast, npcs }) {
     const gens = [];
     for (let k = 0; k < PAR_VILLE; k++) {
       const g = site.graine + k;
+      // Un promeneur sur cinq est un chien.
+      if (k % 5 === 4) {
+        const a2 = (k / PAR_VILLE) * Math.PI * 2 + tirage(g, 23, 43);
+        const d2 = site.r * (0.25 + 0.5 * tirage(g, 29, 47));
+        const chien = new Habitant(scene, world, player, toast, {
+          name: 'chien', label: '🐕 Un chien', phrases: ['Wouf !', 'Wouf wouf !'],
+          walkSpeed: 2.2, rayon: 10, largeur: 0.4, hauteur: 0.7,
+          build: () => construireChien(ROBES_CHIEN[Math.floor(tirage(g, 31, 53) * ROBES_CHIEN.length)]),
+        }, site.x + Math.cos(a2) * d2, site.z + Math.sin(a2) * d2);
+        gens.push(chien);
+        npcs.push(chien);
+        continue;
+      }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
         tenue: robe ? 'dame' : 'passant',

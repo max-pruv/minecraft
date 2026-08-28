@@ -181,10 +181,16 @@ const BANDES = rangerVoies(VOIES);
 // Trois tissus, comme la vraie ville : Westminster et Mayfair tracés large,
 // la City sur son lacis médiéval serré et de guingois — elle a brûlé en 1666
 // et s'est rebâtie sur ses propres ruelles —, la rive sud plus industrielle.
+// LE GRAND RECALIBRAGE DE LONDRES (v178). Max, capture à l'appui sur
+// Westminster : « too packed ». Londres avait échappé au recalibrage v172
+// des villes machine : rues d'UN bloc, îlots de quatre — un tapis de
+// maisons sans respiration. Même remède, même gabarit : périodes ×3,
+// chaussée de trois blocs, trottoirs de deux. Chaque trame garde son ANGLE
+// — le damier penché de la City reste penché — c'est lui qui fait Londres.
 const TRAMES = {
-  ouest: { ang: 0, pu: 7, pv: 6, cu: 0, cv: 0, w: 0.55, s: 0.95 },
-  city: { ang: 0.32, pu: 5, pv: 4, cu: 60, cv: -14, w: 0.45, s: 0.8 },
-  sud: { ang: 0.08, pu: 8, pv: 6, cu: 40, cv: 14, w: 0.5, s: 0.9 },
+  ouest: { ang: 0, pu: 21, pv: 18, cu: 0, cv: 0, w: 1.7, s: 4.0 },
+  city: { ang: 0.32, pu: 15, pv: 12, cu: 60, cv: -14, w: 1.7, s: 4.0 },
+  sud: { ang: 0.08, pu: 24, pv: 18, cu: 40, cv: 14, w: 1.7, s: 4.0 },
 };
 
 const auNordDeLaTamise = (u, v) => {
@@ -316,12 +322,27 @@ export function batirColonneLondres(x, z, poser) {
 
   const city = t === TRAMES.city;
   const stuc = t === TRAMES.ouest && u < -18 && v > -14 && r > 0.35;
+
+  // LE JARDIN DE POCHE (v178) : un lot sur huit ne se bâtit pas — un arbre,
+  // des fleurs, de l'air. C'est ce qui manquait à la capture de Max : les
+  // squares sont l'âme de Londres, pas une exception.
+  if (tirageLondres(a, b, 733) < 0.12 && !(city && r > 0.62)) {
+    if ((((u * 7 + v * 13) % 23) + 23) % 23 === 0) {
+      poser(1, BLOCK.LOG); poser(2, BLOCK.LOG); poser(3, BLOCK.LOG);
+      poser(4, ARBRE); poser(5, ARBRE);
+    } else if ((((u + v) % 6) + 6) % 6 === 0) {
+      poser(1, DECOR_START + ((u * 3 + v * 5) & 3) * 50);
+    }
+    return;
+  }
   // La City : des tours de verre — mais aucune ne dépasse le Shard (310 m),
   // qui reste, comme dans la vraie ville, le sommet de Londres.
   const tour = city && r > 0.62;
+  // Les maisons grandissent avec les rues (leçon de v172) : un canyon d'un
+  // étage n'est pas une rue, c'est une tranchée.
   const bh = tour ? 14 + Math.floor(r * 20)
-    : stuc ? 5 + Math.floor(r * 2)
-      : 4 + Math.floor(r * 2);
+    : stuc ? 7 + Math.floor(r * 3)
+      : 6 + Math.floor(r * 3);
   const mur = tour ? ACIER
     : stuc ? BLANC
       : BRIQUES_LONDRES[Math.floor(tirageLondres(a, b, 732) * 3) % 3];

@@ -994,6 +994,8 @@ function animerLesVilles(dt) {
     const tr = circulationsEnAttente[i];
     if (Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z) < 220) {
       vehicules.circulation(tr.pts, tr.pts.length + i);
+      // le bus dessert le grand anneau — un par ville, à sa couleur
+      if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
       circulationsEnAttente.splice(i, 1);
     }
   }

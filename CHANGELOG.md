@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v178 — les villes respirent, et elles vivent
+
+**Pourquoi.** Deux verdicts de Max, captures à l'appui. Sur Westminster :
+« too packed » — Londres avait échappé au grand recalibrage v172, rues d'un
+bloc, un bâtiment sur chaque case, pas un square. Et : « i expect much more
+life in cities, cars, buses, metros, dogs, people walking ».
+
+**Ce que ça change.** Londres reçoit le gabarit v172 — chaussées de trois
+blocs, trottoirs, maisons à étages, et chaque trame garde son angle (le
+damier penché de la City reste penché). Partout, dans les deux cent
+soixante-dix-huit villes comme à Londres : UN LOT SUR DIX ne se bâtit plus —
+un jardin de poche, son arbre, ses fleurs. Et la vie : les deux anneaux de
+circulation roulent (six voitures par ville au lieu de trois), chaque ville
+gagne son BUS — long, haut, à sa couleur, qui marque quatre arrêts par tour
+et se prend par « Monter à bord » — les passants passent de six à dix, et
+deux promeneurs sur dix sont des CHIENS qui trottinent. Les métros des
+grandes villes générées suivront avec les trains.
+
+**Ce qui le prouve.** Trois témoins neufs — le bus roule sur le grand
+anneau, dix promeneurs peuplent Rome, deux chiens parmi eux — plus les
+témoins de vie de v171 inchangés ; la sonde des jardins (sept arbres et
+cent soixante-dix-sept parterres autour du centre de Rome) ; et la capture
+de Londres vue du ciel, dans la discussion. Le premier chien a d'ailleurs
+attrapé un vrai piège avant la barrière : sans pattes déclarées, il plantait
+l'animation de toute la troupe — vécu en sonde, corrigé, et c'est pour cela
+que le chien trotte.
+
 ## v177 — les calottes polaires sont blanches
 
 **Pourquoi.** Max, capture à l'appui : « bug on top and bottom on the map »
