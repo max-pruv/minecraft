@@ -301,8 +301,18 @@ class Convoi {
       const L = this.parcours.longueur;
       if (this.arrets.length && L > 0) {
         const d0 = ((avant % L) + L) % L, d1 = ((this.distance % L) + L) % L;
+        // LE PIÈGE DES FLOTTANTS QUI GELAIT LE MÉTRO. Le recalage à quai pose
+        // la rame une poignée d'ulps EN DEÇÀ de l'arrêt (l'addition-modulo
+        // n'est pas exacte), et le double modulo de d0 en perd encore : au
+        // redémarrage, l'arrêt paraissait toujours devant — refranchi,
+        // re-pause, à l'infini. Toutes les rames de Washington gelaient une à
+        // une en quelques minutes de jeu ; la première de chaque ligne dès la
+        // vingt-deuxième image. La marge d'un millionième écarte ces
+        // fantômes : un vrai franchissement avance d'au moins trois
+        // centièmes de bloc (huit m/s au deux-cent-quarantième de seconde).
+        const EPS = 1e-6;
         for (const a of this.arrets) {
-          const franchi = d1 >= d0 ? (a > d0 && a <= d1) : (a > d0 || a <= d1);
+          const franchi = d1 >= d0 ? (a > d0 + EPS && a <= d1) : (a > d0 + EPS || a <= d1);
           if (!franchi) continue;
           this.distance = avant + ((a - d0 + L) % L);
           this.attente = this.pause;
@@ -493,6 +503,7 @@ export function createVehicules({ scene, player }) {
       y: Math.round((c.elements[0] ? c.elements[0].position.y : 0) * 10) / 10,
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
+      attente: Math.round((c.attente || 0) * 10) / 10,
       visibles: c.elements.filter((m) => m.visible).length,
       total: c.elements.length,
       // les teintes de carrosserie des éléments visibles — la preuve, pour un

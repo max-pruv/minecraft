@@ -42,12 +42,24 @@ devenu criant : la forêt sauvage poussait dans les rues (Lyon disparaissait
 sous les feuillages) — plus aucun arbre sauvage ne pousse dans une ville de
 la machine, leurs parcs suffisent.
 
+Et la barrière a attrapé un bug de production qui dormait depuis que le
+métro marque les stations : un piège de flottants recollait chaque rame une
+poignée de milliardièmes de bloc AVANT son quai, et au redémarrage l'arrêt
+paraissait encore devant — refranchi, re-pause, à l'infini. Toutes les
+rames de Washington gelaient une à une en quelques minutes de jeu, la
+première de chaque ligne dès la vingt-deuxième image. Un enfant qui montait
+dedans n'allait nulle part. C'est corrigé — et le même correctif protège la
+chaîne de la Giga-usine, qui partage cette mécanique.
+
 **Ce qui le prouve.** Les 278 lieux sans un seul chevauchement (marge
 minimale 8 blocs, Pise/Florence), tous au sec ; l'empreinte du paysage hors
 villes, mesurée avec la même découpe sur main et sur cette branche :
 identique au bloc près (c5a30b6f…, 167 512 colonnes des deux côtés) — les
-deux cents villes n'ont pas déplacé un caillou ailleurs. Et les captures de
-Marseille et Lyon, avant/après, dans la discussion.
+deux cents villes n'ont pas déplacé un caillou ailleurs. Les captures de
+Marseille et Lyon, avant/après, dans la discussion. Et pour le métro gelé :
+la reproduction en node pur — 194 pauses fantômes au même arrêt en dix
+minutes avant le correctif, les douze rames de la capitale bouclant leurs
+tours complets après.
 
 ## v172 — le grand recalibrage : de vraies rues, de vraies villes
 
