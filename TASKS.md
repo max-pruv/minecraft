@@ -23,10 +23,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   des dents creuses ; et « much more life » : des bus, des métros dans les
   grandes villes générées, des chiens, plus de passants et de voitures.
 
-- [ ] **Les calottes polaires** (bug signalé par Max) — les bandes arctique
-  et antarctique du planisphère se rendent en campagne verte, au sol comme
-  sur la carte : passer en neige et glace, et peindre la carte en blanc.
-
 - [ ] **Les trains intervilles sur les vraies lignes** (Eurostar, Shinkansen,
   AVE…), à monter via le bouton « Monter à bord » existant.
 
@@ -77,6 +73,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v177** — les calottes polaires sont blanches : neige et glace au-delà
+  de 78° nord et 63° sud, au sol comme sur la carte.
 
 - [x] **v176** — l'onglet 🏛️ Bâtiments dans le + (601 modèles, vignettes en
   élévation, 15 familles nouvelles, 6 blocs d'architecture neufs) — et le vol
