@@ -214,8 +214,33 @@ for (let i = 0; i < 200; i++) {
   };
 }
 
+// --- le mobilier de rue (v180) -----------------------------------------------
+//
+// Max, capture de Moscou à l'appui : les lampadaires en blocs (trois noirs,
+// un or) se lisaient comme des monolithes dorés, les bacs à fleurs comme des
+// cubes de bonbon. Un lampadaire doit ressembler à un lampadaire : ce sont
+// désormais des MESHES fins (comme les meubles), dans leur propre plage
+// d'identifiants — surtout pas dans la boucle des 200 meubles, dont l'ordre
+// est gravé dans les sauvegardes des enfants.
+export const RUE_START = 700;
+export const RUE_ITEMS = [
+  { type: 'reverbere', name: 'Réverbère', emoji: '🛞', rgb: [40, 42, 48] },
+  { type: 'feux', name: 'Feu tricolore', emoji: '🚦', rgb: [40, 42, 48] },
+  { type: 'jardiniere', name: 'Jardinière fleurie', emoji: '🌸', rgb: [235, 130, 180] },
+];
+export const RUE = { REVERBERE: 700, FEUX: 701, JARDINIERE: 702 };
+RUE_ITEMS.forEach((item, i) => {
+  BLOCK_INFO[RUE_START + i] = {
+    name: item.name, prop: true, solid: false, transparent: true, tiles: null,
+  };
+});
+export function isRue(id) {
+  return id >= RUE_START && id < RUE_START + RUE_ITEMS.length;
+}
+
 export function isProp(id) {
   if (id >= MEUBLE_START && id < MEUBLE_START + MEUBLE_ITEMS.length) return true;
+  if (isRue(id)) return true;
   return id >= PROP_START && id < PROP_START + PROP_ITEMS.length;
 }
 

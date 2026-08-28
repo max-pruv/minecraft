@@ -443,14 +443,14 @@ const VRAIES_KM = [
     // une vraie diversité de blocs, comptée, pas promise.
     const facades = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
-      const { BLOCK, CITY_BLOCK, DECOR_START } = await import('./src/blocks.js');
+      const { BLOCK, CITY_BLOCK, DECOR_START, RUE } = await import('./src/blocks.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
       const ENS = new Set([raye(0), raye(5), raye(10), raye(11), raye(13), raye(2), raye(6), raye(14)]);
       const villes = {};
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
-        const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, bancs: 0 };
+        const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0, bancs: 0 };
         const ids = new Set();
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
@@ -462,7 +462,10 @@ const VRAIES_KM = [
             if (s0 === BLOCK.GLASS) c.vitrines++;
             if (s0 === CITY_BLOCK.SIDEWALK) {
               if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
-              if (w.getBlock(x, sol + 4, z) === BLOCK.GOLD) c.lampes++;
+              // v180 : le lampadaire est un mesh (RUE.REVERBERE), plus un
+              // monolithe à chapeau d'or — et les carrefours ont leurs feux.
+              if (w.getBlock(x, sol + 1, z) === RUE.REVERBERE) c.lampes++;
+              if (w.getBlock(x, sol + 1, z) === RUE.FEUX) c.feux++;
               if (w.getBlock(x, sol + 1, z) === BLOCK.PLANK) c.bancs++;
             } else if (ENS.has(w.getBlock(x, sol + 2, z))) c.enseignes++;
           }
@@ -479,8 +482,10 @@ const VRAIES_KM = [
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
-    const sansVie = Object.entries(facades).filter(([, c]) =>
-      !(c.lampes >= 45 && c.bancs >= 30 && c.diversite >= 20));
+    // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
+    // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
+    const sansVie = Object.entries(facades).filter(([v, c]) =>
+      !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')

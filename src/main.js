@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue, ARCHI } from './blocks.js';
 import { PARIS as PARIS_ANCRE } from './paris.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
@@ -3845,7 +3845,8 @@ function blockThumb(id, size) {
   const info = BLOCK_INFO[id];
   if (info.prop) { // furniture: colored background + type emoji
     // le mobilier Renaissance vit dans sa propre plage, après les 200 objets
-    const item = isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
+    const item = isRue(id) ? RUE_ITEMS[id - RUE_START]
+      : isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
     ctx.fillStyle = `rgb(${item.rgb[0]},${item.rgb[1]},${item.rgb[2]})`;
     ctx.fillRect(0, 0, size, size);
     ctx.font = `${Math.floor(size * 0.62)}px sans-serif`;
