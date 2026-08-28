@@ -402,6 +402,45 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && allures.sommet > allures.milieu * 1.3 && allures.sommet < 95,
       `${allures.depart.toFixed(0)} puis ${allures.milieu.toFixed(0)} puis ${allures.sommet.toFixed(0)} blocs par seconde de jeu`);
 
+    // ET LA MARCHE N'EN HÉRITE PAS (Max, v182 : « on est à pied et pas en
+    // vol, la vitesse ne doit pas accélérer »). Le vol ne se coupe pas quand
+    // on atterrit, et l'ancienne rampe lisait donc ses secondes de vol
+    // pendant qu'on MARCHAIT. Debout sur un ponton posé exprès, mode vol
+    // encore actif, élan réglé au sommet : trois secondes de jeu de marche
+    // doivent rester à l'allure de la marche, pas à quatre-vingt-huit blocs
+    // par seconde. Rouge garanti sur l'ancien code.
+    const marche = await tab.evaluate(async () => {
+      const g = window.__game;
+      const x0 = Math.floor(g.player.pos.x), z0 = Math.floor(g.player.pos.z);
+      const y = 120;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -60; dz <= 2; dz++) g.world.setBlock(x0 + dx, y, z0 + dz, 3);
+      }
+      g.player.flying = true;
+      g.player.volDepuis = 60;                        // l'élan d'un long vol
+      g.player.pos.set(x0, y + 1, z0);
+      g.player.yaw = 0;                               // vers -z, le long du ponton
+      g.player.vel.set(0, 0, 0);
+      g.player.keys.add('KeyW');
+      let sim = 0, prec = performance.now();
+      const tic = (now) => {
+        sim += Math.min(Math.max((now - prec) / 1000, 0), 0.05); prec = now;
+        if (sim < 3) requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+      await new Promise((res) => {
+        const fin = () => { if (sim >= 3) return res(); requestAnimationFrame(fin); };
+        requestAnimationFrame(fin);
+      });
+      g.player.keys.delete('KeyW');
+      const d = Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0) / sim;
+      g.player.flying = false;
+      g.player.vel.set(0, 0, 0);
+      return d;
+    });
+    verifier('posé au sol, même en mode vol, on marche à l\'allure de la marche',
+      marche < 9, `${marche.toFixed(1)} blocs par seconde de jeu (marche 4,3 · sprint 6,8)`);
+
     // Y bâtir, et retrouver ce qu'on y a bâti.
     const perchoir = await tab.evaluate(() => {
       const g = window.__game;

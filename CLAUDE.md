@@ -141,6 +141,13 @@ protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
 **Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
 rapide n'est pas une permission d'aller vite sur ce qui compte.
 
+**Et le portail, c'est `npm test` — jamais une liste de suites choisie à la
+main.** De v176 à v181, les barrières rejouaient six suites nommées une à une
+et jamais la fumée : son témoin de la bibliothèque de monuments est resté
+HUIT versions sur l'onglet supprimé en v176, rouge sans que personne ne le
+voie. Six suites vertes ne valent pas un portail vert — c'est la même leçon
+que « ne jamais relancer jusqu'au vert », par l'autre bout.
+
 ---
 
 ## Ne jamais livrer un fichier que personne n'importe

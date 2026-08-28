@@ -63,30 +63,37 @@ function verifier(nom, ok, detail = '') {
     verifier('poser un bloc marche encore', pose.pose, JSON.stringify(pose));
 
     // La bibliothèque de monuments : elle se feuillette et elle pose.
-    const biblio = await tab.evaluate(() => {
-      // On ouvre par le bouton de l'atelier, comme l'enfant.
-      const inv = [...document.querySelectorAll('.fun-btn')]
-        .find((b) => b.title === 'Atelier');
-      if (inv) inv.click();
-      const onglet = document.querySelector('.fun-tab[data-t="monuments"]');
+    //
+    // DEPUIS v176 elle vit dans l'inventaire (bouton +), onglet Bâtiments,
+    // monuments en tête — plus dans l'Atelier. Ce témoin est resté HUIT
+    // versions sur l'ancien onglet, rouge sans que personne ne le voie :
+    // les barrières de v176 à v181 rejouaient des suites choisies à la main
+    // et jamais la fumée. La leçon est dans CLAUDE.md — le portail, c'est
+    // `npm test`, pas une liste de suites.
+    const biblio = await tab.evaluate(async () => {
+      document.getElementById('inv-panel').style.display = 'flex';
+      const onglet = document.querySelector('#inv-tabs button[data-tab="batiments"]');
       if (!onglet) return { onglet: false };
       onglet.click();
-      const lignes = document.querySelectorAll('#fun-tab-body .fun-row').length;
-      return { onglet: true, lignes };
+      // les vignettes arrivent par petits paquets : on les attend
+      for (let k = 0; k < 200; k++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        if (document.querySelectorAll('#inv-grid .inv-bat').length >= 20) break;
+      }
+      return { onglet: true, cellules: document.querySelectorAll('#inv-grid .inv-bat').length };
     });
     verifier('l\'onglet des monuments existe et se remplit',
-      biblio.onglet && biblio.lignes > 0, JSON.stringify(biblio));
+      biblio.onglet && biblio.cellules > 0, JSON.stringify(biblio));
 
-    if (biblio.onglet && biblio.lignes > 0) {
+    if (biblio.onglet && biblio.cellules > 0) {
       const avant = await tab.evaluate(
         () => Object.keys(window.__game.world.exportEdits()).length);
       await tab.evaluate(() => {
-        const b = [...document.querySelectorAll('#fun-tab-body .fun-row button')]
-          .find((x) => x.textContent === 'Poser');
-        if (b) b.click();
+        const cell = document.querySelector('#inv-grid .inv-bat');
+        if (cell) cell.click();
       });
       const posee = await jusqua(async () => (await tab.evaluate(
-        () => Object.keys(window.__game.world.exportEdits()).length)) > avant + 500, 30000);
+        () => Object.keys(window.__game.world.exportEdits()).length)) > avant + 80, 30000);
       const apresPose = await tab.evaluate(
         () => Object.keys(window.__game.world.exportEdits()).length);
       verifier('et un monument se pose vraiment devant l\'enfant',
