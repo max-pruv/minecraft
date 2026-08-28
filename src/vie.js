@@ -29,7 +29,7 @@ const CHEVEUX = [0x3a2a1a, 0x6a4a26, 0x1c1814, 0x8a6a3a, 0x9a9a94, 0x4a3524];
 
 // Un habitant tient un poste : il s'en écarte un peu, y revient, se tourne vers
 // l'enfant qui approche, et fait son geste de métier quand il est à l'arrêt.
-class Habitant extends BaseNPC {
+export class Habitant extends BaseNPC {
   constructor(scene, world, player, toast, opts, x, z) {
     super(scene, world, player, toast, opts);
     this.poste = new THREE.Vector2(x, z);

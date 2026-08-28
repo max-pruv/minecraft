@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v171 — la vie : des voitures qui circulent, des passants qui marchent
+
+**Pourquoi.** Max : « les villes n'ont pas de vie. Il n'y a pas de voitures
+qui circulent, il n'y a pas de piétons. » Deuxième étage du programme
+« villes vivantes », après les devantures de v170.
+
+**Ce que ça change.**
+
+- **La circulation** : vingt-neuf villes reçoivent un anneau de circulation
+  qui suit leurs rues, coins posés sur les intersections — trois voitures
+  par ville, chacune sa couleur stable, qui freinent dans les virages.
+  L'anneau évite l'eau, mesuré sur la géographie de chaque fiche : les
+  quinze villes de fleuves et de canaux restent piétonnes — Venise n'aura
+  jamais de voitures, et c'est très bien comme ça.
+- **Les passants** : toutes les villes à rues — les cinquante grandes ET
+  Paris, New York, Nice, Lille, Londres… — reçoivent six habitants en tenue
+  d'aujourd'hui (t-shirt de couleur, pantalon sombre, quelques robes), qui
+  flânent, s'écartent, reviennent, et saluent l'enfant qui s'approche.
+  Chaque ville a les siens, tirés d'une graine : le passant à la chemise
+  rouge de Rome y sera encore demain.
+- **Et la tablette ne le paie pas** : villes paresseuses — la circulation et
+  les passants d'une ville ne naissent qu'à l'approche de l'enfant, jamais à
+  l'ouverture ; l'animation reste bornée au champ de vision, comme pour les
+  gens des châteaux.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js` : on arrive à
+Rome, l'anneau naît et ses voitures se montrent ; six passants peuplent les
+rues ; et huit secondes plus tard, ils ont MARCHÉ — ce sont des passants,
+pas des statues.
+
+
 ## v170 — les devantures : les villes prennent des couleurs de vraies rues
 
 **Pourquoi.** Max : « on n'a pas suffisamment de diversité d'un point de vue

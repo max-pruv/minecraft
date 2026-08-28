@@ -1462,6 +1462,49 @@ export function mobilierVillesMonde(x, z, poser) {
 
 const NOIR_LAMPE = uni(26);
 
+// --- la circulation ----------------------------------------------------------
+//
+// Max : « il n'y a pas de voitures qui circulent ». Chaque ville à trame
+// reçoit un anneau de circulation : un rectangle qui suit ses rues, aux
+// coins posés sur les intersections. Les voitures y roulent en freinant
+// dans les virages (vehicules.js). L'anneau évite l'eau : on le mesure sur
+// la géographie de la fiche, et s'il trempe, on essaie plus petit — Venise,
+// elle, n'aura jamais de voitures, et c'est très bien comme ça.
+export function tracesCirculation(solDe) {
+  const traces = [];
+  for (const f of VILLES_MONDE) {
+    if (!f.trame) continue;
+    const t = f.trame;
+    const co = Math.cos(t.ang), si = Math.sin(t.ang);
+    for (const part of [0.55, 0.3]) {
+      const Ru = Math.max(t.pu, Math.round((f.rayon * part) / t.pu) * t.pu);
+      const Rv = Math.max(t.pv, Math.round((f.rayon * part) / t.pv) * t.pv);
+      // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
+      // de la trame, puis on tourne vers le monde.
+      let sec = true;
+      for (let k = 0; k < 40 && sec; k++) {
+        const c2 = k / 40;
+        let A, B;
+        if (c2 < 0.25) { A = Ru; B = Rv * (c2 * 8 - 1); }
+        else if (c2 < 0.5) { A = Ru * (3 - c2 * 8); B = Rv; }
+        else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
+        else { A = Ru * (c2 * 8 - 7); B = -Rv; }
+        const u = A * co + B * si, v = -A * si + B * co;
+        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u, v)) sec = false;
+        if (t.sud && v > t.sud) sec = false;
+      }
+      if (!sec) continue;
+      const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
+        x: f.ancre.x + A * co + B * si, y, z: f.ancre.z + (-A * si + B * co),
+      }));
+      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts });
+      break;
+    }
+  }
+  return traces;
+}
+
 // Les monuments, pour la liste LANDMARKS de world.js.
 export function landmarksVillesMonde() {
   const out = [];

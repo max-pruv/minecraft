@@ -79,6 +79,8 @@ const GARDIENS = {
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
+  // Les passants des villes : la vie des rues se prouve dans monte.js.
+  'src/passants.js': ['monte.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],
