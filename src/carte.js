@@ -28,6 +28,7 @@ import { couleurCarteLille, lieuxDeLille } from './lille.js';
 import { couleurCarteLondres, lieuxDeLondres } from './londres.js';
 import { couleurCarteVillesMonde, lieuxDesVillesMonde } from './villesmonde.js';
 import { zDeLatitude } from './mondes.js';
+import { surLaVoie } from './trains.js';
 
 // Les lisières des calottes, calculées une fois : la latitude ne dépend que
 // de z, donc peindre le pôle coûte une comparaison — pas une projection.
@@ -393,6 +394,9 @@ export class Carte {
       return [172, 168, 162];
     }
 
+    // La voie ferrée : le trait qui relie les villes se lit sur la carte —
+    // c'est ainsi qu'un enfant découvre qu'un train l'attend.
+    if (surLaVoie(wx, wz)) return h <= WATER_LEVEL + 1 ? [150, 150, 156] : [122, 120, 116];
     // Les calottes : au-delà du cercle arctique et de l'Antarctique, le sol
     // du monde est neige (world.js) — la carte doit dire la même chose. Vu
     // par Max : deux bandes de prairie mouchetée en haut et en bas du monde.

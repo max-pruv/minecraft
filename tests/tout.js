@@ -61,6 +61,9 @@ const GARDIENS = {
   // Les deux cents villes : des données pures, jugées par les mêmes témoins
   // que la machine qui les lit.
   'src/villes200.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  // Les trains intervilles : les voies touchent le terrain et la carte, les
+  // rames se prouvent dans monte.js.
+  'src/trains.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],

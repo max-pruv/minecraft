@@ -333,6 +333,30 @@ const VRAIES_KM = [
       calottes.nord === calottes.sur && calottes.sud === calottes.sur && calottes.dedans === 0,
       JSON.stringify(calottes));
 
+    // LES VOIES FERRÉES (v179). Max : « add train connecting cities from
+    // real life train lanes ». On sonde le MILIEU de chaque navette : du
+    // ballast de gravier sur la terre, un viaduc de pierre au ras des flots
+    // sur la mer — l'Eurostar traverse la Manche à découvert.
+    const rails = await tab.evaluate(async () => {
+      let m2;
+      try { m2 = await import('./src/trains.js'); } catch { return { absent: true }; }
+      const { BLOCK } = await import('./src/blocks.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const w = window.__game.world;
+      const segs = m2.segmentsDeTrain();
+      let poses = 0, viaduc = 0;
+      for (const s of segs) {
+        const mx = Math.round((s.x0 + s.x1) / 2), mz = Math.round((s.z0 + s.z1) / 2);
+        const h = w.terrainHeight(mx, mz);
+        if (h > WATER_LEVEL) { if (w.getBlock(mx, h, mz) === BLOCK.GRAVEL) poses++; }
+        else if (w.getBlock(mx, WATER_LEVEL, mz) === BLOCK.STONEBRICK) { poses++; viaduc++; }
+      }
+      return { segments: segs.length, poses, viaduc };
+    });
+    verifier('les voies ferrées sont posées — ballast à terre, viaduc sur la mer',
+      !rails.absent && rails.segments === 9 && rails.poses === 9 && rails.viaduc >= 1,
+      JSON.stringify(rails));
+
     const villesATerre = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');
       const m = await import('./src/mondes.js');
