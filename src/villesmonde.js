@@ -844,11 +844,12 @@ const FICHES = {
     lat0: 55.7558, lon0: 37.6173, echelle: 20, rayon: 56,
     fleuve: { pts: [[-52, 30], [-25, 24], [-5, 20], [20, 22], [52, 28]], l: 4 },   // la Moskova
     trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85 },
-    // PILOTE DU PROGRAMME RÉALISME v2 (v181) : la grammaire relevée sur la
-    // rue Piatnitskaïa — pastels (crème, beige, sable, saumon) à travées
+    // Le PILOTE du programme réalisme v2 : la grammaire relevée sur la rue
+    // Piatnitskaïa — pastels (crème, beige, sable, saumon) à travées
     // régulières et encadrements blancs, corniche, toits de métal vert.
-    // `facades: 2` n'est posé QUE sur Moscou tant que Max n'a pas validé
-    // les captures : la généralisation attend son verdict.
+    // Depuis « refait une passe sur toutes les villes » (Max), la grammaire
+    // est le DÉFAUT de toute ville à trame hors médinas — chaque ville garde
+    // ses matériaux par sa palette. `facades: 2` reste ici pour mémoire.
     facades: 2,
     palette: [CREME, uni(19), uni(20), uni(16)], toit: uni(6), hMaison: [4, 6],
     monuments: [
@@ -1665,19 +1666,25 @@ export function batirColonneVillesMonde(x, z, poser) {
     const toitLot = tour ? ACIER
       : [f.toit, f.toit, f.toit, f.toit, ARDOISE, TUILE][Math.floor(tirage(a, b, 199) * 6)];
 
-    // LA GRAMMAIRE À TRAVÉES (facades: 2 — le pilote Moscou du programme
-    // réalisme v2). Relevée sur la rue Piatnitskaïa : un rez-de-chaussée
-    // distinct (socle de pierre ou devanture), des ÉTAGES RÉGULIERS de
-    // trois rangs — l'allège blanche, puis la fenêtre haute de deux rangs —
-    // des travées de fenêtres séparées par des piles de mur pastel, et la
-    // CORNICHE qui couronne. C'est l'alignement qui fait la vraie façade :
-    // toutes les fenêtres d'un étage tombent sur les mêmes rangs.
-    if (f.facades === 2 && !tour && !favela) {
+    // LA GRAMMAIRE À TRAVÉES (réalisme v2, point 3). Née du pilote Moscou
+    // (rue Piatnitskaïa), généralisée sur consigne de Max (« refait une
+    // passe sur toutes les villes ») : un rez-de-chaussée distinct (socle de
+    // pierre ou devanture), des ÉTAGES RÉGULIERS de trois rangs — l'allège
+    // blanche, puis la fenêtre haute de deux rangs — une baie sur deux, et
+    // la CORNICHE qui couronne. Chaque ville garde SES matériaux : le mur
+    // vient de sa palette, le toit de sa fiche — Tokyo ≠ Rome ≠ Moscou.
+    // Les médinas (`ruelles`) gardent leur grammaire propre : des baies
+    // vitrées régulières n'ont rien à faire dans une ruelle de Marrakech.
+    const grammaire2 = f.facades === 2 || (f.facades === undefined && !t.ruelles);
+    if (grammaire2 && !tour && !favela) {
       // Le mur d'enduit domine, comme sur la vraie Piatnitskaïa : une baie de
       // fenêtre une colonne sur deux, encadrée de blanc, tout le reste en mur.
       const ci = Math.round(along);                          // le rang de colonne
       const fen = ((ci % 2) + 2) % 2 === 0;                  // une baie sur deux
-      const etages = 2 + Math.floor(r * 2);                  // deux ou trois étages
+      // Le nombre d'étages respecte la hauteur PROPRE de la ville (hMaison) :
+      // la grammaire est partagée, l'échelle ne l'est pas — un bourg toscan
+      // ne prend pas les quatre étages de la Piatnitskaïa.
+      const etages = Math.max(1, Math.round((bh + 1) / 3));
       const bh2 = 3 + etages * 3;
       for (let y = 0; y < bh2; y++) {
         if (y < 3) {

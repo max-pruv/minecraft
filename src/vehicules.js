@@ -185,35 +185,52 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
   return a.finir();
 }
 
-// Une voiture de route, celle qui naît sur la chaîne de la Giga-usine : la
-// caisse, l'habitacle vitré, quatre roues. La carrosserie garde son matériau
-// sous la main (userData.carrosserie) pour que la peinture puisse opérer —
-// c'est la seule voiture du jeu qui change de couleur en roulant.
-function construireVoitureRoute(couleur = 0x9a9a9a) {
-  const g = new THREE.Group();
-  const caisse = new THREE.MeshBasicMaterial({ color: couleur });
-  const boite = (w, h, d, mat, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
-      mat instanceof THREE.Material ? mat : new THREE.MeshBasicMaterial({ color: mat }));
-    m.position.set(x, y, z);
-    g.add(m);
-    return m;
-  };
-  boite(1.7, 0.5, 3.6, caisse, 0, 0.62, 0);                       // la caisse
-  boite(1.4, 0.55, 1.8, caisse, 0, 1.12, 0.15);                   // le pavillon
-  boite(1.32, 0.42, 1.9, 0x18242e, 0, 1.14, 0.14);                // les vitres, teintées
-  boite(1.5, 0.16, 0.5, 0xf0f0ea, 0, 0.5, -1.72);                 // le bouclier avant
-  boite(1.5, 0.16, 0.4, 0x2a2a30, 0, 0.5, 1.75);                  // l'arrière
-  for (const sz of [-1.15, 1.2]) {
-    for (const sx of [-1, 1]) {
-      const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
-        new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
-      roue.rotation.z = Math.PI / 2;
-      roue.position.set(sx * 0.82, 0.36, sz);
-      g.add(roue);
+// Une voiture de la vraie vie, pas un empilement de cubes — Max, capture à
+// l'appui : « je les veux pas en format minecraft mais en format de la vraie
+// vie ». Sculptée à l'Atelier comme les rames : galbe des flancs, capot
+// plongeant, pare-brise couché, montants fins, et de VRAIES vitres — on voit
+// l'habitacle à travers. Deux membres : `caisse` porte tout ce qui se peint,
+// son maillage fusionné reçoit un matériau à lui (userData.carrosserie, celui
+// que la chaîne de la Giga-usine repeint) ; `tronc` porte le reste — roues,
+// verre, optiques. Trois maillages par voiture, contre neuf à l'ancienne.
+export function construireVoitureRoute(couleur = 0x9a9a9a) {
+  const a = new Atelier();
+  const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c;
+  // tout ce qui se repeint est posé blanc : la teinte vient du matériau
+  a.membre('caisse');
+  a.boite(BLANC, { p: [0, 0.46, 0.05], e: [1.68, 0.26, 3.4] });                    // le soubassement
+  a.sphere(BLANC, { p: [0, 0.66, 0], e: [1.82, 0.52, 3.85], seg: 14 });            // le galbe des flancs
+  a.boite(BLANC, { p: [0, 0.85, -1.1], r: [-0.09, 0, 0], e: [1.5, 0.1, 1.15] });   // le capot
+  a.boite(BLANC, { p: [0, 0.6, -1.68], r: [-0.3, 0, 0], e: [1.58, 0.26, 0.5] });   // le nez plongeant
+  a.boite(BLANC, { p: [0, 1.33, 0.35], e: [1.26, 0.07, 1.0] });                    // le toit
+  a.boite(BLANC, { p: [0, 0.85, 1.5], r: [0.08, 0, 0], e: [1.54, 0.12, 0.66] });   // le coffre
+  for (const sx of [-1, 1]) {
+    a.boite(BLANC, { p: [sx * 0.66, 1.07, -0.5], r: [-0.6, 0, 0], e: [0.07, 0.05, 1.0] });  // montant A
+    a.boite(BLANC, { p: [sx * 0.63, 1.1, 0.95], r: [0.55, 0, 0], e: [0.09, 0.05, 0.8] });   // montant C
+    a.boite(BLANC, { p: [sx * 0.9, 1.0, -0.45], e: [0.13, 0.07, 0.17] });                   // rétroviseur
+  }
+  a.membre('tronc');
+  // de vraies vitres : on voit à travers, et l'habitacle avec
+  a.boite(0x9fb8cc, { p: [0, 1.07, -0.5], r: [-0.6, 0, 0], e: [1.3, 0.04, 1.0], verre: true });   // pare-brise
+  a.boite(0x9fb8cc, { p: [0, 1.1, 0.95], r: [0.55, 0, 0], e: [1.24, 0.04, 0.8], verre: true });   // la lunette
+  a.boite(0x9fb8cc, { p: [0, 1.13, 0.22], e: [1.3, 0.3, 1.1], verre: true });                     // vitres latérales
+  a.boite(NOIR, { p: [0, 0.5, -1.87], e: [0.66, 0.2, 0.08] });                     // la calandre
+  a.boite(SOMBRE, { p: [0, 0.36, -1.78], e: [1.6, 0.16, 0.24] });                  // bouclier avant
+  a.boite(SOMBRE, { p: [0, 0.36, 1.76], e: [1.6, 0.16, 0.24] });                   // bouclier arrière
+  for (const sx of [-1, 1]) {
+    a.boite(0xfff4cc, { p: [sx * 0.56, 0.68, -1.83], e: [0.34, 0.09, 0.07] });     // phare
+    a.boite(0xd83a2a, { p: [sx * 0.56, 0.8, 1.8], e: [0.32, 0.08, 0.07] });        // feu arrière
+    for (const sz of [-1.15, 1.2]) {
+      a.cylindre(0x16161a, { p: [sx * 0.88, 0.37, sz], r: [0, 0, Math.PI / 2],
+        e: [0.74, 0.27, 0.74], seg: 12 });                                         // le pneu
+      a.cylindre(0xb8bcc2, { p: [sx * 0.9, 0.37, sz], r: [0, 0, Math.PI / 2],
+        e: [0.4, 0.29, 0.4], seg: 10 });                                           // la jante
     }
   }
-  g.userData.carrosserie = caisse;
+  const g = a.finir();
+  const peint = new THREE.MeshLambertMaterial({ color: couleur });
+  g.userData.membres.caisse.children[0].material = peint;
+  g.userData.carrosserie = peint;
   return g;
 }
 

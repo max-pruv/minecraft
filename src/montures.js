@@ -11,6 +11,7 @@
 // gros — la caméra monte, la bête garde ses pattes par terre.
 
 import * as THREE from 'three';
+import { construireVoitureRoute } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -208,44 +209,31 @@ export const MODELES_MONTURE = {
 //   montable — la bête accepte qu'on grimpe
 //   allure   — combien de fois plus vite on avance en selle
 //   assise   — la hauteur du dos, donc celle du regard une fois assis
-// La voiture neuve de la Giga-usine : la seule monture à roues du jeu. Pas de
-// pattes qui balancent — les roues sont des cylindres fixes — et un pare-brise
-// à sa place, parce qu'on la regarde de près avant de monter dedans.
+// La voiture neuve de la Giga-usine : la seule monture à roues du jeu. C'est
+// LA carrosserie de la vraie vie (vehicules.js, l'Atelier) — galbe, capot
+// plongeant, pare-brise couché — plus l'habitacle : ses vitres sont de vraies
+// vitres transparentes, donc le tableau de bord, le volant et les sièges se
+// voient de dehors comme de derrière le volant. C'est ce qui donne la vue
+// pare-brise en conduisant, et une voiture qu'on a envie d'ouvrir à l'arrêt.
 function voitureNeuve() {
-  const g = new THREE.Group();
   const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
-  const c = teintes[Math.floor(Math.random() * teintes.length)];
-  g.add(box(1.7, 0.5, 3.4, c, 0, 0.62, 0));                       // la caisse
-  g.add(box(1.4, 0.6, 1.7, c, 0, 1.16, 0.15));                    // le pavillon
-  g.add(box(1.32, 0.48, 1.8, 0x18242e, 0, 1.16, 0.14));           // les vitres
-  g.add(box(1.5, 0.16, 0.4, 0xf0f0ea, 0, 0.5, -1.65));            // le bouclier
-  for (const [sx, sz] of [[-1, -1.1], [1, -1.1], [-1, 1.15], [1, 1.15]]) {
-    const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
-      new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
-    roue.rotation.z = Math.PI / 2;
-    roue.position.set(sx * 0.82, 0.36, sz);
-    g.add(roue);
-  }
-  for (const sx of [-1, 1]) g.add(box(0.3, 0.12, 0.08, 0xfff2c8, sx * 0.55, 0.66, -1.72));  // les phares
-
-  // L'habitacle. On le voit UNIQUEMENT une fois assis dedans : les vitres et
-  // le pavillon sont des boîtes opaques, donc invisibles depuis l'intérieur
-  // (leurs faces regardent dehors) et ils cachent tout ceci depuis l'extérieur.
-  // C'est ce qui donne la vue « derrière le pare-brise » : le capot dans la
-  // couleur de la caisse (le dessus de la boîte existante), un tableau de bord,
-  // le volant, les montants du pare-brise, le rétroviseur et le ciel de toit.
+  const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
   const sombre = 0x22262c, noir = 0x14161a;
-  g.add(box(1.3, 0.12, 0.3, sombre, 0, 0.93, -0.6));               // tableau de bord
+  g.add(box(1.24, 0.12, 0.26, sombre, 0, 0.97, -0.55));            // tableau de bord
   const volant = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.024, 6, 14),
     new THREE.MeshBasicMaterial({ color: noir }));
   volant.rotation.x = -0.5;                                        // incliné vers soi
-  volant.position.set(0, 0.98, -0.5);
+  volant.position.set(0, 1.0, -0.42);
   g.add(volant);
-  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.94, -0.56));              // colonne de direction
-  g.add(box(0.3, 0.07, 0.03, noir, 0, 1.34, -0.56));               // rétroviseur central
-  for (const sx of [-1, 1]) g.add(box(0.06, 0.5, 0.06, sombre, sx * 0.6, 1.16, -0.7)); // montants A
-  g.add(box(1.26, 0.06, 0.06, sombre, 0, 1.38, -0.7));             // traverse haute du pare-brise
-  g.add(box(1.26, 0.03, 1.5, 0x2a2e34, 0, 1.42, 0.2));             // ciel de toit
+  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.95, -0.5));               // colonne de direction
+  // Le rétroviseur se colle en HAUT du pare-brise, loin de l'œil : à 0,32
+  // bloc du regard il occupait la moitié de l'écran — un rectangle géant
+  // qui bouchait la route.
+  g.add(box(0.16, 0.05, 0.02, noir, 0, 1.29, -0.54));              // rétroviseur central
+  for (const sx of [-1, 1]) {
+    g.add(box(0.46, 0.46, 0.14, noir, sx * 0.36, 1.02, 0.42));     // dossiers des sièges
+    g.add(box(0.46, 0.09, 0.4, noir, sx * 0.36, 0.8, 0.26));       // assises
+  }
   g.userData.legs = [];                                            // rien ne balance
   return g;
 }
@@ -274,7 +262,7 @@ export const MONTURES = [
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
   // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
   // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
-  // entre le capot (0,87) et le toit (1,39), derrière le pare-brise — alors
+  // entre le capot (~0,9) et le toit (1,36), derrière le pare-brise — alors
   // que l'ancienne formule posait la caméra à 2,6 blocs, au-dessus du toit.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,

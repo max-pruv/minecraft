@@ -520,6 +520,31 @@ async function avancerUnDemiSeconde(p, depart) {
       cockpit.oeil > 0.9 && cockpit.oeil < 1.46, `${cockpit.oeil} bloc au-dessus des pieds`);
     verifier('et le volant est là, dans l\'habitacle',
       cockpit.volant, cockpit.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
+
+    // LA CARROSSERIE DE LA VRAIE VIE (Max, capture à l'appui : « je les veux
+    // pas en format minecraft »). Une vraie voiture a des vitres TRANSPARENTES
+    // — on voit l'habitacle à travers — et une caisse sculptée à l'Atelier :
+    // un maillage fusionné de centaines de sommets (galbe, capot plongeant,
+    // montants), pas huit boîtes. L'ancien modèle : vitres opaques, zéro
+    // maillage fusionné — rouge garanti.
+    const carrosserie = await tab.evaluate(() => {
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      let vitresTransparentes = false, sommetsFusionnes = 0;
+      if (a) a.mesh.traverse((m) => {
+        if (!m.isMesh) return;
+        if (m.material && m.material.transparent && m.material.opacity < 0.8) vitresTransparentes = true;
+        if (m.geometry && m.geometry.attributes && m.geometry.attributes.position
+          && m.geometry.attributes.position.count > sommetsFusionnes) {
+          sommetsFusionnes = m.geometry.attributes.position.count;
+        }
+      });
+      return { vitresTransparentes, sommetsFusionnes };
+    });
+    verifier('la voiture a de vraies vitres — on voit l\'habitacle à travers',
+      carrosserie.vitresTransparentes, JSON.stringify(carrosserie));
+    verifier('et une carrosserie sculptée, fusionnée — pas un empilement de cubes',
+      carrosserie.sommetsFusionnes >= 300, `${carrosserie.sommetsFusionnes} sommets`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 

@@ -529,6 +529,39 @@ const VRAIES_KM = [
       && routes.passNS >= 30 && routes.passEO >= 30,
       JSON.stringify(routes));
 
+    // --- LA GRAMMAIRE À TRAVÉES, GÉNÉRALISÉE (réalisme v2, point 3) ---------
+    //
+    // Max : « refait une passe sur toutes les villes. » La grammaire du pilote
+    // Moscou (étages réguliers, baies encadrées, corniche) devient le défaut
+    // de toute ville à trame — chacune avec SES matériaux — SAUF les médinas,
+    // qui gardent leur caractère. Preuve : des corniches couronnent Rome et
+    // Tokyo (sur l'ancien code, seul Moscou en avait : rouge garanti), et
+    // Marrakech n'en a toujours AUCUNE.
+    const couronnes = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { ARCHI } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const n = {};
+      for (const cle of ['rome', 'tokyo', 'marrakech']) {
+        const p = positionDe(cle);
+        let c = 0;
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            const x = p.x + du, z = p.z + dv;
+            const sol = w.terrainHeight(x, z);
+            for (let dy = 3; dy <= 20; dy++) {
+              if (w.getBlock(x, sol + dy, z) === ARCHI.CORNICHE) { c++; break; }
+            }
+          }
+        }
+        n[cle] = c;
+      }
+      return n;
+    });
+    verifier('les corniches couronnent Rome et Tokyo — et la médina n\'en a aucune',
+      couronnes.rome >= 200 && couronnes.tokyo >= 200 && couronnes.marrakech === 0,
+      JSON.stringify(couronnes));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
