@@ -185,6 +185,38 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
   return a.finir();
 }
 
+// Une voiture de route, celle qui naît sur la chaîne de la Giga-usine : la
+// caisse, l'habitacle vitré, quatre roues. La carrosserie garde son matériau
+// sous la main (userData.carrosserie) pour que la peinture puisse opérer —
+// c'est la seule voiture du jeu qui change de couleur en roulant.
+function construireVoitureRoute() {
+  const g = new THREE.Group();
+  const caisse = new THREE.MeshBasicMaterial({ color: 0x9a9a9a });
+  const boite = (w, h, d, mat, x, y, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+      mat instanceof THREE.Material ? mat : new THREE.MeshBasicMaterial({ color: mat }));
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  boite(1.7, 0.5, 3.6, caisse, 0, 0.62, 0);                       // la caisse
+  boite(1.4, 0.55, 1.8, caisse, 0, 1.12, 0.15);                   // le pavillon
+  boite(1.32, 0.42, 1.9, 0x18242e, 0, 1.14, 0.14);                // les vitres, teintées
+  boite(1.5, 0.16, 0.5, 0xf0f0ea, 0, 0.5, -1.72);                 // le bouclier avant
+  boite(1.5, 0.16, 0.4, 0x2a2a30, 0, 0.5, 1.75);                  // l'arrière
+  for (const sz of [-1.15, 1.2]) {
+    for (const sx of [-1, 1]) {
+      const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
+        new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
+      roue.rotation.z = Math.PI / 2;
+      roue.position.set(sx * 0.82, 0.36, sz);
+      g.add(roue);
+    }
+  }
+  g.userData.carrosserie = caisse;
+  return g;
+}
+
 // --- les convois -------------------------------------------------------------
 
 class Convoi {
@@ -210,6 +242,10 @@ class Convoi {
     this.decouvert = opts.decouvert || null;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
+    // `relooke(mesh, distanceAbsolue, rang)` : appelé à chaque image sur
+    // chaque élément visible. C'est lui qui peint les voitures de la chaîne
+    // de la Giga-usine — grises avant le tunnel de peinture, colorées après.
+    this.relooke = opts.relooke || null;
     this.vitesseActuelle = opts.vitesse;
     // LES ARRÊTS. Un métro qui ne s'arrête jamais n'est pas un métro : il
     // traverse la station à huit mètres par seconde, la fenêtre pour monter
@@ -293,6 +329,10 @@ class Convoi {
       // marche, il faut donc le retourner d'un demi-tour.
       m.rotation.y = p.cap + Math.PI;
       m.visible = true;
+      if (this.relooke) {
+        const L = this.parcours.longueur;
+        this.relooke(m, (((this.distance - i * this.ecart) % L) + L) % L, i);
+      }
     });
   }
 }
@@ -359,6 +399,29 @@ export function createVehicules({ scene, player }) {
     }
   }
 
+  // La chaîne de la Giga-usine : les voitures avancent de poste en poste,
+  // marquent l'arrêt à chacun — le temps qu'un robot soude, qu'une buse
+  // peigne — puis sortent faire le tour du parc avant de revenir. Grises
+  // avant le tunnel de peinture, colorées après : `peinture` donne la
+  // fenêtre en distance, et chaque voiture garde SA teinte, stable de tour
+  // en tour.
+  function chaine(trace, opts = {}) {
+    const p = new Parcours(trace.pts);
+    const arrets = (trace.arretsIndex || []).map((i) => p.cumul[Math.min(i, p.cumul.length - 1)]);
+    const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a, 0x58b8e8, 0xe8c83a];
+    const fen = opts.peinture || trace.peinture || null;
+    return ajouter(trace.pts, {
+      nb: opts.nb ?? 8, ecart: opts.ecart ?? 16, vitesse: opts.vitesse ?? 4.5,
+      nom: 'voiture de la chaîne', emoji: '🚗', assise: 1.15,
+      arrets, pause: opts.pause ?? 5,
+      modele: () => construireVoitureRoute(),
+      relooke: fen ? (m, d, i) => {
+        const peinte = d > fen.sortie && d < fen.retour;
+        m.userData.carrosserie.color.set(peinte ? teintes[i % teintes.length] : 0x9a9a9a);
+      } : null,
+    });
+  }
+
   function update(dt) {
     for (const c of convois) c.update(dt, player.pos);
   }
@@ -404,7 +467,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, update, placeProche, place,
+    metro, course, chaine, update, placeProche, place,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
@@ -419,6 +482,11 @@ export function createVehicules({ scene, player }) {
       distance: Math.round(c.distance),
       visibles: c.elements.filter((m) => m.visible).length,
       total: c.elements.length,
+      // les teintes de carrosserie des éléments visibles — la preuve, pour un
+      // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
+      // tunnel, des couleurs APRÈS, dans le même convoi au même instant
+      couleurs: c.elements.filter((m) => m.visible && m.userData.carrosserie)
+        .map((m) => m.userData.carrosserie.color.getHex()),
     })),
   };
 }

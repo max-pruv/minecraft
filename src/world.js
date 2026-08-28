@@ -3,6 +3,9 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { buildAeroport } from './aeroport.js';
+import {
+  USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
+} from './usine.js';
 import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
 import { buildVille } from './ville.js';
@@ -507,6 +510,8 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
   PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
+  // La Giga-usine d'Austin, Texas : le nom vient du registre des mondes.
+  { name: USINE().nom, x: USINE().x, z: USINE().z, r: USINE().r },
   // La Chine : une région culturelle entière — muraille, Cité interdite,
   // karsts, rizières, pandas — dans l'ancienne zone morte du nord.
   { name: 'Chine', x: CHINE.x, z: CHINE.z, r: CHINE.r },
@@ -862,6 +867,15 @@ const LANDMARKS = [
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
   { name: 'Aéroport Charles-de-Gaulle', x: AEROPORT.x, z: AEROPORT.z, box: 70, build: buildAeroport },
+  // La Giga-usine d'Austin : le hall et sa chaîne d'un côté, le parc des
+  // voitures neuves de l'autre — deux tampons, parce qu'une seule boîte assez
+  // grande pour les deux ferait rejouer tout le site à chaque morceau voisin.
+  // Les bâtisseurs de l'usine comptent depuis le centre du SITE ; le tampon,
+  // lui, pose depuis le centre de sa boîte — la translation se fait ici.
+  { name: 'La Giga-usine', x: USINE().x - 38, z: USINE().z, box: 60,
+    build: (poser) => buildUsine((u, y, v, id) => poser(u + 38, y, v, id)) },
+  { name: 'Le parc des voitures neuves', x: USINE().x + 50, z: USINE().z - 18, box: 42,
+    build: (poser) => buildParcUsine((u, y, v, id) => poser(u - 50, y, v + 18, id)) },
   { name: 'Village gaulois', x: GAULOIS.x, z: GAULOIS.z, box: 62, build: buildGaulois },
   { name: 'Base spatiale', x: ESPACE.x, z: ESPACE.z, box: 64, build: buildEspace },
   { name: 'Caserne & Commissariat', x: VILLE.x, z: VILLE.z, box: 46, build: buildVille },
@@ -1075,6 +1089,10 @@ export class World {
     // baie d'Elliott de Seattle. Cf. src/villesmonde.js.
     h = hauteurVillesMonde(x, z, h);
 
+    // La Giga-usine d'Austin : son disque est plat — une chaîne de production
+    // qui ondule n'assemble rien du tout. Cf. src/usine.js.
+    h = hauteurUsine(x, z, h);
+
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
     const ld = Math.hypot(x - (NY.x + LIBERTE.u), z - (NY.z + LIBERTE.v));
@@ -1259,6 +1277,7 @@ export class World {
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
     if (Math.hypot(x - AEROPORT.x, z - AEROPORT.z) < AEROPORT.r) return null;     // pas d'arbre au milieu des pistes
+    if (dansLUsine(x, z)) return null;                                            // ni sur la chaîne, ni sur le parc
     // au village, les arbres sont plantés par le constructeur, pas au hasard
     if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;
     if (Math.hypot(x - ESPACE.x, z - ESPACE.z) < ESPACE.r) return null;   // rien ne pousse ici
@@ -1466,6 +1485,13 @@ export class World {
             continue;
           }
           if (svm !== null) { data[World.index(x, h, z)] = svm; continue; }
+        }
+
+        // La Giga-usine : la dalle du hall, l'asphalte du parc et de la voie,
+        // les lignes blanches des places.
+        {
+          const su = solUsine(wx, wz);
+          if (su !== null) { data[World.index(x, h, z)] = su; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

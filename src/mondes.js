@@ -211,6 +211,10 @@ export const MONDES = {
       { cle: 'losangeles', nom: 'Los Angeles', lat: 34.0522, lon: -118.2437, r: 56 },
       { cle: 'chicago', nom: 'Chicago', lat: 41.8781, lon: -87.6298, r: 50 },
       { cle: 'lasvegas', nom: 'Las Vegas', lat: 36.11, lon: -115.17, r: 44 },
+      // Le site de la Giga-usine automobile : Austin, Texas — là où la vraie
+      // giga-usine s'étire sur plus d'un kilomètre. Pas une ville : un site,
+      // bâti par src/usine.js, comme Roissy l'est près de Paris.
+      { cle: 'gigatexas', nom: 'La Giga-usine', lat: 30.2225, lon: -97.6208, r: 114 },
       { cle: 'miami', nom: 'Miami', lat: 25.7617, lon: -80.1918, r: 42 },
       { cle: 'toronto', nom: 'Toronto', lat: 43.6532, lon: -79.3832, r: 44 },
       { cle: 'mexico', nom: 'Mexico', lat: 19.4326, lon: -99.1332, r: 50 },
