@@ -443,6 +443,24 @@ tailler monde par monde en effacerait un entier.
   `main.js`) est à refaire sous terre. Le même critère s'applique partout
   ailleurs : on regarde comment la vraie ville est faite avant de bâtir.
 
+### Le programme réalisme v2 — la règle de jugement
+
+Consigne permanente de Max : **il juge uniquement sur captures** — une vue
+au niveau de la rue et une vue aérienne, à côté d'une vraie photo de
+référence du même endroit, AVANT de fusionner. « Si un élément ne se
+reconnaît pas au premier regard (un lampadaire doit ressembler à un
+lampadaire), refais-le. » On itère sur captures, on montre, on ne fusionne
+que validé. C'est cette discipline qui a attrapé, dans l'ordre : les
+lampadaires-monolithes, le damier des marquages, les auvents criards, et
+quatre voitures « trop cubiques » avant le modèle d'artiste.
+
+État : mobilier urbain (v180), routes, façades et voiture (v181) livrés.
+La grammaire à travées est le DÉFAUT de toute ville à trame (mur de la
+palette de la ville, hauteur de sa fiche, corniche en couronnement) ; les
+médinas (`ruelles`) gardent leur grammaire propre — Marrakech sans baies
+vitrées, c'est vérifié par témoin. Reste le point 4 : la vie dense —
+voitures qui s'arrêtent aux feux, enseignes lumineuses la nuit.
+
 ### Washington (`washington.js`, `dcmonuments.js`)
 
 La sixième ville, la première où **on entre dans les bâtiments** — et la
@@ -525,7 +543,35 @@ Trois autres choses apprises en creusant :
 
 - **Ce qui se monte est une propriété de l'espèce** (`montable`), jamais une
   liste écrite dans le fichier des boutons — c'est cet oubli qui avait laissé
-  trois espèces montables pendant que le bestiaire s'étoffait.
+  trois espèces montables pendant que le bestiaire s'étoffait. Même règle
+  pour **ce qui se nourrit** (`nourrissable: false` sur la voiture) : la
+  règle vit dans la fiche, jamais dans `fun.js`.
+- **La voiture est un modèle 3D d'artiste, plus jamais une sculpture de
+  primitives.** Quatre itérations de coordonnées écrites à l'aveugle
+  (verdicts de Max : « très carrée », « low fidelity », « ça ne ressemble
+  pas à ça du tout ») ont prouvé que la méthode plafonne. Le modèle vit dans
+  `vendor/voiture.glb` (licence : `vendor/VOITURE_LICENSE`), chargé une fois
+  par `chargerVraieVoiture()` (vehicules.js) et cloné ; la coque sculptée
+  reste l'ATTENTE et le SECOURS si le fichier manque — un modèle absent ne
+  doit jamais empêcher le jeu de démarrer. Trois pièges payés en captures :
+  un glb **quantifié** ment sur ses boîtes englobantes (la voiture flottait
+  — on livre non quantifié) ; le modèle embarquait un **socle** nommé
+  « None » posé 1,4 sous les pneus (retiré au chargement) ; et la **cabine
+  avancée** met le siège hors de l'origine — recalée de 0,55 pour que la
+  caméra s'asseye dans le vrai cockpit, sinon on voyait le dos des sièges.
+  L'allègement se fait HORS LIGNE (881 794 → 98 959 triangles, 12,4 →
+  1,3 Mo) : jamais de décodeur Draco embarqué dans la PWA.
+- **Les reflets de carrosserie sont une caméra cubique** (`refletsVoiture`/
+  `majRefletsVoiture`, cadencés par main.js : 128 px, deux fois par seconde,
+  seulement à moins de 45 blocs d'une voiture). Ne JAMAIS fabriquer de
+  CubeTexture depuis des canvases : l'échantillonnage casse et blanchit
+  toute la voiture, teinte et couleurs de sommets comprises — une heure de
+  bissection de matériaux pour le voir.
+- **En voiture, l'œil s'assied DANS l'habitacle** (`oeil`, hauteur absolue
+  dans la fiche) — l'ancienne formule yeux + assise posait la caméra
+  au-dessus du toit. Un rétroviseur central est interdit de séjour : dans un
+  habitacle aussi bas il flotte au milieu du pare-brise, trois captures
+  l'ont montré.
 - Le bouton « Monter » prend la monture **la plus proche devant soi**, pas celle
   visée au degré près. Viser reste la règle pour *nourrir*, où l'on choisit
   vraiment un animal parmi d'autres.

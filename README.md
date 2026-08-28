@@ -180,5 +180,6 @@ src/education.js  quiz bank, adaptive difficulty, stats, persistence
 src/identity.js   face signatures (never photos) and the hashed parent code
 src/admin.js      the parent space
 
-vendor/           three.js (r160, MIT — see THREE_LICENSE)
+vendor/           three.js r160 + GLTFLoader (MIT — see THREE_LICENSE),
+                  voiture.glb — the drivable car's 3D model (VOITURE_LICENSE)
 ```
