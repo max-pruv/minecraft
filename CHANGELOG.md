@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v173 — les deux cents villes : le monde entier se peuple
+
+**Pourquoi.** Max : « recalibrate all cities, and 200 other cities ». Le
+recalibrage (v172) avait donné de vraies rues aux cinquante grandes — mais
+entre elles, le globe restait vide : pas de Lyon, pas de Marseille, pas de
+Manchester, pas de Lagos. Un enfant qui survolait la France ne croisait que
+des forêts.
+
+**Ce que ça change.** Deux cent vingt-six villes réelles de plus, à leurs
+vraies coordonnées — le registre passe de 55 à 281 lieux. Chacune reçoit de
+la machine tout ce que les grandes ont : rues et avenues à passages piétons,
+place centrale à fontaine, devantures, toits variés, passants, circulation.
+Onze archétypes régionaux (Europe, monde britannique, Nordique, Méditerranée,
+Orient, Asie, tours modernes, Amériques, Afrique, tropiques) donnent à chaque
+région sa palette, ses hauteurs, ses tours. La côte est automatique : le
+générateur sonde le planisphère autour du disque de chaque ville, et
+Marseille reçoit sa plage au sud, Göteborg ses quais à l'ouest — orientés
+comme sur la carte. Et les captures d'écran ont attrapé un vieux défaut
+devenu criant : la forêt sauvage poussait dans les rues (Lyon disparaissait
+sous les feuillages) — plus aucun arbre sauvage ne pousse dans une ville de
+la machine, leurs parcs suffisent.
+
+**Ce qui le prouve.** Les 281 lieux sans un seul chevauchement (marge
+minimale 8 blocs, Pise/Florence), tous au sec ; l'empreinte du paysage hors
+villes, mesurée avec la même découpe sur main et sur cette branche :
+identique au bloc près (3a8e2a2c…, 163 800 colonnes des deux côtés) — les
+deux cents villes n'ont pas déplacé un caillou ailleurs. Et les captures de
+Marseille et Lyon, avant/après, dans la discussion.
+
 ## v172 — le grand recalibrage : de vraies rues, de vraies villes
 
 **Pourquoi.** Max, captures d'écran à l'appui : « je ne vois pas du tout le

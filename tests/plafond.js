@@ -80,7 +80,11 @@ function verifier(nom, ok, detail = '') {
 // v172 : le grand recalibrage étend trente-six disques de villes — dont
 // Amsterdam, dans la fenêtre — d'où la nouvelle valeur ; la preuve
 // d'intégrité hors villes est refaite plus bas.
-const EMPREINTE_RELIEF = '0b61c487d55f77ab0e221fbfd49af048191aa897';
+// v173 : les deux cents villes — une vingtaine tombe dans la fenêtre
+// observée (Lyon, Gand, Luxembourg, Cologne, Francfort, Zurich, Genève,
+// Manchester…) — d'où la nouvelle valeur ; la preuve hors villes, refaite
+// plus bas.
+const EMPREINTE_RELIEF = '6896b0141e7262b4628a5137d23ed476154dfecf';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -118,7 +122,11 @@ const EMPREINTE_RELIEF = '0b61c487d55f77ab0e221fbfd49af048191aa897';
 // v172 : découpe recalculée avec les NOUVEAUX rayons — et mesurée identique
 // sur origin/main et sur la branche : hors des disques agrandis, pas un
 // bloc n'a bougé (ec09838a…, 195 668 colonnes des deux côtés).
-const EMPREINTE_HORS_VILLES = 'ec09838ad0bd078fb10aa2139d5b1b09c44b3462';
+// v173 : découpe élargie aux deux cents villes (281 lieux au registre) — et
+// mesurée identique sur origin/main (v172) et sur la branche : hors des
+// disques neufs, pas un bloc n'a bougé (3a8e2a2c…, 163 800 colonnes des
+// deux côtés).
+const EMPREINTE_HORS_VILLES = '3a8e2a2cd17244bf82e27aa4cfbedcc46b5c2e79';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.

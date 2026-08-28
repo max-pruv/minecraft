@@ -36,7 +36,7 @@ import {
 } from './londres.js';
 import {
   hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
-  landmarksVillesMonde, placesVillesMonde,
+  landmarksVillesMonde, placesVillesMonde, dansVilleMonde,
 } from './villesmonde.js';
 import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
@@ -1290,6 +1290,10 @@ export class World {
       return { h: hp, trunk: 4 + Math.floor(hash2i(x, z, SEED + 778) * 3), kind: roll < 0.7 ? 0 : 1 };
     }
     if (this.cityAt(x, z)) return null; // no wild trees downtown
+    // Ni dans les villes de la machine : elles plantent leurs parcs
+    // elles-mêmes. Sans ce garde, une ville posée sur du bruit de forêt dense
+    // (Marseille, Lyon) disparaissait sous les feuillages sauvages.
+    if (dansVilleMonde(x, z)) return null;
     if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
     if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock

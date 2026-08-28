@@ -46,6 +46,8 @@
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
+import { surTerreReelle } from './terre.js';
+import { VILLES_GENEREES } from './villes200.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -1239,7 +1241,93 @@ const FICHES = {
 
 };
 
-export const VILLES_MONDE = Object.entries(FICHES).map(([cle, f]) => fabrique(cle, f));
+// --- les deux cents villes ---------------------------------------------------
+//
+// Max : « recalibrate all cities, and 200 other cities ». Les cinquante
+// grandes gardent leurs fiches écrites à la main — monuments, fleuves, baies.
+// Les deux cents autres reçoivent une fiche FABRIQUÉE : un archétype régional
+// (palette, toits, hauteurs, part de tours), un angle de trame propre à
+// chacune, et la côte AUTOMATIQUE — le générateur interroge le planisphère
+// autour des vraies coordonnées de la ville, et si la mer est là, la fiche
+// reçoit sa `mer` orientée comme dans la réalité : plage au sud de Marseille,
+// quais à l'ouest de Porto.
+//
+// Les gabarits sont en unités PRÉ-NORMALISATION : fabrique() leur applique le
+// même grand recalibrage (v172) qu'aux fiches manuscrites — mêmes rues, mêmes
+// trottoirs, mêmes îlots.
+const ARCHETYPES = {
+  europe: { pu: 5, pv: 4, hMaison: [3, 5], palette: [CREME, PIERRE, uni(2), OCRE], toit: ARDOISE, couleurToits: [152, 144, 140] },
+  britannique: { pu: 5, pv: 4, hMaison: [3, 5], palette: [brique(0), ROUGE_GRES, CREME], toit: ARDOISE, couleurToits: [152, 120, 104] },
+  nordique: { pu: 5, pv: 4, hMaison: [3, 5], palette: [ROSE, OCRE, uni(7), CREME], toit: ARDOISE, couleurToits: [134, 128, 134] },
+  mediterranee: { pu: 5, pv: 4, hMaison: [3, 5], palette: [BLANC, CREME, OCRE, ROSE], toit: TUILE, plage: true, couleurToits: [186, 122, 90] },
+  orient: { pu: 5, pv: 4, hMaison: [2, 4], palette: [GRES, CREME, ROSE], toit: CREME, couleurToits: [212, 186, 146] },
+  asie: { pu: 5, pv: 4, hMaison: [3, 6], tours: 0.45, tourMax: 26, palette: [CREME, BLANC, ACIER], toit: ARDOISE, couleurToits: [158, 154, 152] },
+  moderne: { pu: 6, pv: 5, hMaison: [4, 7], tours: 0.55, tourMax: 34, palette: [ACIER, CREME, BLANC], toit: ARDOISE, couleurToits: [142, 144, 150] },
+  ameriquenord: { pu: 6, pv: 5, hMaison: [4, 6], tours: 0.5, tourMax: 30, grille: true, palette: [brique(0), ACIER, CREME], toit: ARDOISE, couleurToits: [148, 134, 126] },
+  ameriquelatine: { pu: 5, pv: 4, hMaison: [3, 5], palette: [ROSE, uni(7), OCRE, CREME], toit: TUILE, couleurToits: [184, 132, 100] },
+  afrique: { pu: 5, pv: 4, hMaison: [2, 4], palette: [OCRE, ROUGE_GRES, CREME], toit: CREME, couleurToits: [198, 158, 120] },
+  tropical: { pu: 5, pv: 4, hMaison: [2, 4], palette: [BLANC, ROSE, uni(7), CREME], toit: TUILE, plage: true, couleurToits: [196, 142, 110] },
+};
+
+// La côte automatique. Le juge de paix n'est pas la géographie réelle mais le
+// PLANISPHÈRE DU JEU : c'est lui qui peint l'océan autour du disque protégé de
+// chaque ville, et une mer découpée dans la ville doit prolonger CET océan-là
+// — pas celui d'une carte plus fine que la nôtre (le planisphère pose Porto à
+// quarante kilomètres dans les terres ; lui donner des quais ferait un carré
+// d'eau posé au milieu de la campagne). On sonde donc seize caps juste au-delà
+// du disque, à l'échelle du monde (0,75 km/bloc) : chaque cap qui trouve la
+// mer vote pour sa direction. Des votes qui s'accordent → une `mer` orientée
+// comme sur la carte ; des votes dans tous les sens → une île (Honolulu,
+// Malte), et l'océan réel qui l'entoure suffit.
+function chercheMer(v) {
+  const kmLon = Math.max(20, 111.32 * Math.cos((v.lat * Math.PI) / 180));
+  let sx = 0, sz = 0, votes = 0, pres = 0;
+  for (let k = 0; k < 16; k++) {
+    const cap = (k / 16) * Math.PI * 2;
+    const e = Math.cos(cap), s = Math.sin(cap);            // est, sud — le repère (u, v) du jeu
+    for (const [blocs, poids] of [[v.r + 18, 2], [v.r + 50, 1]]) {
+      const dist = blocs * 0.75;                            // l'échelle du monde
+      const lat = v.lat - (s * dist) / 111.19;
+      const lon = v.lon + (e * dist) / kmLon;
+      if (!surTerreReelle(lat, lon)) {
+        sx += e * poids; sz += s * poids; votes += poids;
+        if (poids === 2) pres++;
+      }
+    }
+  }
+  if (pres < 2) return null;                                // pas de mer au bord du disque
+  const l = Math.hypot(sx, sz);
+  if (l < votes * 0.5) return null;                         // île : la mer est partout autour
+  return { nx: sx / l, nz: sz / l, d: 0 };                  // d est posé par ficheGeneree (0.55·rayon)
+}
+
+function ficheGeneree(v) {
+  const arch = ARCHETYPES[v.style] || ARCHETYPES.europe;
+  // L'angle de trame : déterministe par ville, pour que deux voisines ne
+  // soient pas deux copies — sauf les grilles nord-américaines, plein nord.
+  let h = 0;
+  for (let i = 0; i < v.cle.length; i++) h = Math.imul(h ^ v.cle.charCodeAt(i), 2654435761);
+  const t = (h >>> 0) / 4294967296;
+  const fiche = {
+    lat0: v.lat, lon0: v.lon, echelle: 20, rayon: v.r,
+    trame: { ang: arch.grille ? 0 : t * 1.4, pu: arch.pu, pv: arch.pv, w: 0.5, s: 0.85 },
+    palette: arch.palette, toit: arch.toit, hMaison: arch.hMaison,
+    couleurToits: arch.couleurToits,
+  };
+  if (arch.tours) {
+    fiche.trame.tours = arch.tours;
+    // l'ambition suit la taille : une capitale moderne monte plus haut
+    fiche.tourMax = Math.max(16, Math.round(arch.tourMax * Math.min(1, v.r / 80)));
+  }
+  const mer = chercheMer(v);
+  if (mer) fiche.mer = { ...mer, d: Math.round(v.r * 0.55), ...(arch.plage ? { plage: 3 } : { quais: true }) };
+  return fiche;
+}
+
+export const VILLES_MONDE = [
+  ...Object.entries(FICHES).map(([cle, f]) => fabrique(cle, f)),
+  ...VILLES_GENEREES.map((v) => fabrique(v.cle, ficheGeneree(v))),
+];
 
 // --- l'index spatial ---------------------------------------------------------
 //
@@ -1264,6 +1352,18 @@ for (const f of VILLES_MONDE) {
 const RIEN = [];
 function villesPres(x, z) {
   return INDEX_VILLES.get(Math.floor(x / CASE) * 100000 + Math.floor(z / CASE)) || RIEN;
+}
+
+// Cette colonne est-elle dans une ville de la machine ? La forêt sauvage
+// s'arrête là (treeAt, dans world.js) : une ville plante ses parcs elle-même,
+// et un chêne au milieu d'un carrefour n'est pas de la nature, c'est un bug.
+// Vu sur les captures de Marseille et Lyon (v173) : posées sur du bruit de
+// forêt dense, elles disparaissaient sous les feuillages.
+export function dansVilleMonde(x, z) {
+  for (const f of villesPres(x, z)) {
+    if (Math.hypot(x - f.ancre.x, z - f.ancre.z) <= f.rayon) return true;
+  }
+  return false;
 }
 
 // --- la géométrie commune ----------------------------------------------------
@@ -1632,7 +1732,7 @@ export function tracesCirculation(solDe) {
 export function landmarksVillesMonde() {
   const out = [];
   for (const f of VILLES_MONDE) {
-    for (const m of f.monuments) {
+    for (const m of f.monuments || []) {
       const [du, dv] = f.local(m.lat, m.lon);
       let box = m.box;
       if (!box) {
@@ -1654,7 +1754,7 @@ export function placesVillesMonde() {
   const out = [];
   for (const f of VILLES_MONDE) {
     out.push({ name: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon });
-    for (const m of f.monuments) {
+    for (const m of f.monuments || []) {
       const [du, dv] = f.local(m.lat, m.lon);
       out.push({ name: m.nom, x: f.ancre.x + du, z: f.ancre.z + dv, r: 0 });
     }

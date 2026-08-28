@@ -18,6 +18,8 @@
 // 1 737 km au lieu de 6 371, et c'est un paramètre, pas une branche `if`. Un
 // monde neuf, c'est une entrée de plus dans `MONDES` — pas une réécriture.
 
+import { VILLES_GENEREES } from './villes200.js';
+
 // --- les projections ---------------------------------------------------------
 
 // Équirectangulaire : la plus simple des projections, et la bonne ici.
@@ -224,6 +226,12 @@ export const MONDES = {
       // Afrique.
       { cle: 'marrakech', nom: 'Marrakech', lat: 31.6295, lon: -7.9811, r: 70 },
       { cle: 'lecap', nom: 'Le Cap', lat: -33.9249, lon: 18.4241, r: 70 },
+      // LES DEUX CENTS VILLES. Max : « recalibrate all cities, and 200 other
+      // cities ». Elles vivent dans villes200.js — un fichier de données pur,
+      // vérifié par sonde (à terre, sans chevauchement) — et le registre les
+      // accueille ici comme n'importe quel lieu : latitude, longitude, rayon.
+      // Leur style (europe, orient, tropical…) est lu par villesmonde.js.
+      ...VILLES_GENEREES.map((v) => ({ cle: v.cle, nom: v.nom, lat: v.lat, lon: v.lon, r: v.r })),
     ],
   },
 
