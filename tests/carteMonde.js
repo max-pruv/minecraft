@@ -379,6 +379,56 @@ const VRAIES_KM = [
       usine.voitureParc && usine.asphalte,
       JSON.stringify({ voiture: usine.voitureParc, asphalte: usine.asphalte }));
 
+    // --- LES FAÇADES DES CINQUANTE GRANDES ----------------------------------
+    //
+    // Max : « on ne retrouve pas des façades de magasins… pas assez de
+    // diversité d'objets ni de couleurs. » On sonde trois villes aux trames
+    // et palettes opposées — Rome, Tokyo, Marrakech : chacune doit montrer
+    // ses vitrines, ses portes de boutiques, ses bandeaux d'enseigne, ses
+    // auvents rayés au-dessus du trottoir, ses lampadaires, ses bancs — et
+    // une vraie diversité de blocs, comptée, pas promise.
+    const facades = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { BLOCK, CITY_BLOCK, DECOR_START } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const raye = (c) => DECOR_START + c * 10 + 5;
+      const ENS = new Set([raye(0), raye(5), raye(10), raye(11), raye(13), raye(2), raye(6), raye(14)]);
+      const villes = {};
+      for (const cle of ['rome', 'tokyo', 'marrakech']) {
+        const p = positionDe(cle);
+        const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, bancs: 0 };
+        const ids = new Set();
+        for (let du = -25; du <= 25; du++) {
+          for (let dv = -25; dv <= 25; dv++) {
+            const x = p.x + du, z = p.z + dv;
+            const sol = w.terrainHeight(x, z);
+            const s0 = w.getBlock(x, sol, z);
+            for (let dy = 0; dy <= 8; dy++) { const id = w.getBlock(x, sol + dy, z); if (id) ids.add(id); }
+            if (s0 === BLOCK.DARKPLANK) c.portes++;
+            if (s0 === BLOCK.GLASS) c.vitrines++;
+            if (s0 === CITY_BLOCK.SIDEWALK) {
+              if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
+              if (w.getBlock(x, sol + 4, z) === BLOCK.GOLD) c.lampes++;
+              if (w.getBlock(x, sol + 1, z) === BLOCK.PLANK) c.bancs++;
+            } else if (ENS.has(w.getBlock(x, sol + 2, z))) c.enseignes++;
+          }
+        }
+        villes[cle] = { ...c, diversite: ids.size };
+      }
+      return villes;
+    });
+    const sansDevanture = Object.entries(facades).filter(([, c]) =>
+      !(c.vitrines >= 60 && c.portes >= 40 && c.enseignes >= 100 && c.auvents >= 60));
+    verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
+      sansDevanture.length === 0,
+      sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
+    const sansVie = Object.entries(facades).filter(([, c]) =>
+      !(c.lampes >= 8 && c.bancs >= 4 && c.diversite >= 18));
+    verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
+      sansVie.length === 0,
+      sansVie.map(([v]) => v).join(' · ')
+        || Object.entries(facades).map(([v, c]) => `${v} ${c.diversite} blocs différents`).join(' · '));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

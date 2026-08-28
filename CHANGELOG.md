@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v170 — les devantures : les villes prennent des couleurs de vraies rues
+
+**Pourquoi.** Max : « on n'a pas suffisamment de diversité d'un point de vue
+objet, d'un point de vue couleur. On ne retrouve pas des façades de
+magasins, de bâtiments. C'est une version assez low cost. Je veux un
+réalisme quasi GTA. » Premier étage du programme « villes vivantes » : les
+façades — le reste (circulation, piétons) suit dans les prochaines versions.
+
+**Ce que ça change.** Les quarante-six villes de la machine, d'un coup,
+reçoivent la grammaire des vraies devantures (relevée sur les guides de
+conservation des shopfronts) :
+
+- **Le rez-de-chaussée commerçant** : la moitié des lots du centre — la
+  vitrine sur deux blocs, la porte de bois au milieu du front, et le
+  **bandeau d'enseigne** coloré au-dessus, huit teintes rayées, chaque
+  boutique gardant la sienne de visite en visite.
+- **L'auvent rayé** qui s'avance au-dessus du trottoir, de la couleur de
+  l'enseigne qu'il prolonge.
+- **Le mobilier de rue** : lampadaires allumés au bord du caniveau (un tous
+  les neuf blocs), bancs de bois, bacs à fleurs.
+- **Les toits ne sont plus uniformes** : deux tiers gardent la couleur de la
+  ville, le reste pioche — ardoise, tuile — et une maison sur deux a sa
+  **cheminée de brique** au coin du lot.
+
+**Ce qui le prouve.** Deux témoins neufs sondent Rome, Tokyo et Marrakech —
+trois trames, trois palettes : vitrines (≥ 60), portes (≥ 40), enseignes
+(≥ 100), auvents (≥ 60), lampadaires (≥ 8), bancs (≥ 4), et la diversité de
+blocs COMPTÉE (≥ 18 sortes par quartier ; mesuré : 27 à 31). Les empreintes
+du plafond ne bougent pas : les façades ne touchent pas au terrain.
+
+
 ## v169 — la carte ne lague plus
 
 **Pourquoi.** Max : « la carte lag un peu. » Mesuré au banc : un fond de
