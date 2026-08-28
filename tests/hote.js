@@ -36,10 +36,16 @@ function verifier(nom, ok, detail = '') {
     const alice = await banc.rejoindre('Alice', code, AVEC_NUAGE);
     const nina = await banc.rejoindre('Nina', code, AVEC_NUAGE);
 
+    // UN TÉMOIN QUI ÉCHOUE DOIT DIRE CE QU'IL A VU.
+    //
+    // Celui-ci ne rendait qu'un « faux » nu : impossible de savoir si le trio
+    // ne s'était pas formé, s'il manquait un seul avatar, ou si un fantôme
+    // s'était ajouté. On a perdu deux tours de banc à le deviner.
     const attenduAvant = JSON.stringify([['Alice', 'Nina'], ['Marlon', 'Nina'], ['Alice', 'Marlon']]);
-    const avant = await jusqua(async () => JSON.stringify(
-      [await nomsVus(marlon), await nomsVus(alice), await nomsVus(nina)]) === attenduAvant);
-    verifier('avant le départ, les trois se voient', avant);
+    const trio = async () => [await nomsVus(marlon), await nomsVus(alice), await nomsVus(nina)];
+    const avant = await jusqua(async () => JSON.stringify(await trio()) === attenduAvant);
+    verifier('avant le départ, les trois se voient', avant,
+      avant ? '' : `vu ${JSON.stringify(await trio())} au lieu de ${attenduAvant}`);
 
     // Marlon s'en va — comme un enfant qui ferme l'application, pas comme un
     // crash : c'est « pagehide » qui prévient les autres et éteint le phare.
