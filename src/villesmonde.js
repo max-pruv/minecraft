@@ -74,6 +74,7 @@ const ROUGE_GRES = brique(18);
 const BLANC_SOL = uni(27);            // la peinture blanche des chaussées
 const BOIS_PORTE = BLOCK.DARKPLANK;   // les portes des boutiques
 const BOIS_BANC = BLOCK.PLANK;        // les bancs des trottoirs
+const BOISF_ARBRE = BLOCK.LOG;        // les troncs des jardins de poche
 
 // Les enseignes des boutiques : le bandeau au-dessus de la vitrine (la
 // « fascia » des devanturiers) et l'auvent rayé qui s'avance sur le trottoir.
@@ -1591,6 +1592,22 @@ export function batirColonneVillesMonde(x, z, poser) {
     const dAxe = Math.min(Math.abs(A), Math.abs(B));
     const bord = dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
 
+    // LE JARDIN DE POCHE (v178). Max, sur Londres : « too packed ». Une
+    // vraie ville respire : un lot sur dix ne se bâtit pas — il devient un
+    // jardin, avec son arbre au centre et ses fleurs — et cette seule règle
+    // aère les deux cent soixante-dix-huit villes d'un coup. Jamais une
+    // tour : le cœur d'affaires garde sa densité, c'est son caractère.
+    if (!favela && !tour && tirage(a, b, 401) < 0.1) {
+      const centreLot = Math.abs(ra) > t.pu / 2 - 0.6 && Math.abs(rb) > t.pv / 2 - 0.6;
+      if (centreLot) {
+        poser(1, BOISF_ARBRE); poser(2, BOISF_ARBRE); poser(3, BOISF_ARBRE);
+        poser(4, ARBRE); poser(5, ARBRE);
+      } else if ((((u + v) % 5) + 5) % 5 === 0) {
+        poser(1, uni(((a * 7 + b * 13) & 3) * 5));   // un parterre de fleurs
+      }
+      return;
+    }
+
     // LE REZ-DE-CHAUSSÉE COMMERÇANT. Max : « on ne retrouve pas des façades
     // de magasins ». La moitié des lots du centre en reçoivent une, à la
     // grammaire des vraies devantures : la vitrine sur deux blocs, la porte
@@ -1721,8 +1738,10 @@ export function tracesCirculation(solDe) {
       const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
         x: f.ancre.x + A * co + B * si, y, z: f.ancre.z + (-A * si + B * co),
       }));
-      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts });
-      break;
+      // `rang` distingue le grand anneau du petit : le bus ne dessert que le
+      // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
+      // Max : « much more life in cities » — au lieu de s'arrêter au premier.
+      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, rang: traces.filter((t2) => t2.cle === f.cle).length });
     }
   }
   return traces;

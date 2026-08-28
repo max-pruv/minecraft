@@ -528,12 +528,31 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('la circulation naît à l\'approche, et ses voitures se montrent',
       !!circule, circule ? `${circule.convois} anneau(x), ${circule.vues} voiture(s) en vue` : 'aucune voiture');
 
+    // LE BUS (v178). Max : « much more life in cities, cars, buses… » Chaque
+    // ville a son bus sur le grand anneau — il existe, et il dessert : ses
+    // arrêts sont posés sur son tracé.
+    const lebus = await tab.waitForFunction(() => {
+      const b2 = (window.__vehicules.etat() || []).find((c2) => c2.nom === 'bus');
+      return b2 ? { present: true, total: b2.total } : null;
+    }, null, { timeout: 15000, polling: 400 }).then((h) => h.jsonValue()).catch(() => null);
+    verifier('et le bus de la ville roule sur le grand anneau',
+      !!lebus && lebus.total >= 1, JSON.stringify(lebus));
+
     const peuple = await tab.waitForFunction(() => {
       const p2 = window.__game.passants;
-      return p2 && p2.effectif() >= 6 ? p2.effectif() : null;
+      return p2 && p2.effectif() >= 10 ? p2.effectif() : null;
     }, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => 0);
-    verifier('les passants peuplent les rues à l\'arrivée',
-      peuple >= 6, `${peuple} passant(s)`);
+    verifier('les passants peuplent les rues à l\'arrivée — dix par ville',
+      peuple >= 10, `${peuple} promeneur(s)`);
+
+    // ET LES CHIENS (v178) : « dogs » — deux promeneurs sur dix trottinent à
+    // quatre pattes.
+    const chiens = await tab.evaluate(() => {
+      const s2 = window.__game.passants.sites.find((x) => x.peuple);
+      return s2.peuple.filter((h) => h.name === 'chien').length;
+    });
+    verifier('et deux d\'entre eux sont des chiens qui trottinent',
+      chiens >= 2, `${chiens} chien(s)`);
 
     const avant = await tab.evaluate(() => {
       const s2 = window.__game.passants.sites.find((x) => x.peuple);
@@ -549,7 +568,7 @@ async function avancerUnDemiSeconde(p, depart) {
       return n;
     }, avant);
     verifier('et ils marchent — ce sont des passants, pas des statues',
-      bouge >= 2, `${bouge} sur 6 ont bougé en huit secondes`);
+      bouge >= 2, `${bouge} promeneur(s) sur la place ont bougé en huit secondes`);
 
     // --- les poissons : la mer aussi est vivante ------------------------------
     //

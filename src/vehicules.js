@@ -217,6 +217,37 @@ function construireVoitureRoute(couleur = 0x9a9a9a) {
   return g;
 }
 
+// Le bus de ville : long, haut, une bande de fenêtres continue — la
+// silhouette qu'un enfant reconnaît avant même de lire « bus ». La teinte
+// vient de la ville (rouge à Londres, jaune ailleurs…), stable par graine.
+function construireBus(couleur = 0xd84a3a) {
+  const g = new THREE.Group();
+  const caisse = new THREE.MeshBasicMaterial({ color: couleur });
+  const boite = (w, h, d, mat, x, y, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+      mat instanceof THREE.Material ? mat : new THREE.MeshBasicMaterial({ color: mat }));
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  boite(2.1, 1.5, 6.4, caisse, 0, 1.15, 0);                       // la caisse haute
+  boite(2.12, 0.6, 5.9, 0x9fc8e8, 0, 1.55, 0);                    // la bande de fenêtres
+  boite(2.0, 0.12, 6.4, 0xf0f0ea, 0, 1.96, 0);                    // le toit clair
+  boite(1.9, 0.5, 0.15, 0x9fc8e8, 0, 1.1, -3.2);                  // le pare-brise
+  boite(0.5, 1.1, 0.12, 0x2a2a30, 0.7, 0.9, 3.2);                 // la porte arrière
+  for (const sz of [-2.2, 2.2]) {
+    for (const sx of [-1, 1]) {
+      const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.32, 10),
+        new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
+      roue.rotation.z = Math.PI / 2;
+      roue.position.set(sx * 1.0, 0.42, sz);
+      g.add(roue);
+    }
+  }
+  g.userData.carrosserie = caisse;
+  return g;
+}
+
 // --- les convois -------------------------------------------------------------
 
 class Convoi {
@@ -445,6 +476,25 @@ export function createVehicules({ scene, player }) {
     });
   }
 
+  // Le bus de la ville : un seul par anneau, plus lent que les voitures, et
+  // qui marque quatre arrêts par tour — assez pour qu'un enfant le prenne
+  // (« Monter à bord » le voit comme n'importe quel convoi). Max : « much
+  // more life in cities, cars, buses… »
+  function bus(pts, graine = 0) {
+    const p = new Parcours(pts);
+    const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
+    const arrets = [0.12, 0.37, 0.62, 0.87].map((f) => p.longueur * f);
+    // Pas de `freine` : les arrêts ne vivent que dans la marche à vitesse
+    // constante (c'est le mécanisme du métro), et un bus qui ne s'arrête
+    // jamais n'est pas un bus.
+    return ajouter(pts, {
+      nb: 1, vitesse: 5,
+      nom: 'bus', emoji: '🚌', assise: 1.7,
+      arrets, pause: 2,
+      modele: () => construireBus(teintes[graine % teintes.length]),
+    });
+  }
+
   function update(dt) {
     for (const c of convois) c.update(dt, player.pos);
   }
@@ -490,7 +540,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, update, placeProche, place,
+    metro, course, chaine, circulation, bus, update, placeProche, place,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
