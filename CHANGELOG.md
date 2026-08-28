@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
+
+**Pourquoi.** Max : « une usine automobile comme une Tesla factory,
+extrêmement réaliste, tant de l'extérieur que de l'intérieur : des chaînes de
+production, des robots, des voitures qui avancent, des steps de process —
+châssis, assemblage, peinture. On peut monter dedans, les suivre ; finies,
+elles se garent sur un géant parking. Je veux conduire la voiture quand elle
+est finie. »
+
+**Ce que ça change.**
+
+- **La Giga-usine d'Austin, Texas** — aux vraies coordonnées (30,22 / −97,62),
+  destination du tour du monde. Le long hall blanc au bandeau vitré, les
+  lettres GIGA rouges en façade, et dedans, dans l'ordre du vrai process :
+  les presses géantes, la Giga-presse de fonderie (la signature d'Austin),
+  huit bras-robots orange qui soudent au-dessus de la ligne, le tunnel de
+  peinture vitré et ses buses, les racks de roues et de portes de
+  l'assemblage, le portique jaune du test.
+- **La chaîne roule pour de vrai** : huit voitures avancent de poste en
+  poste, marquent l'arrêt à chacun, sortent faire le tour du parc et
+  reviennent. On monte à bord (bouton « Monter à bord », comme le métro) et
+  on suit SA voiture d'un bout à l'autre.
+- **La peinture opère sous les yeux** : les caisses sont GRISES jusqu'au
+  tunnel de peinture, elles en ressortent COLORÉES — et chaque voiture garde
+  sa teinte, stable de tour en tour.
+- **Le parc des voitures neuves** : trois rangées de livrées colorées sur le
+  parking géant, ses places marquées de blanc.
+- **On conduit, enfin** : trois voitures neuves attendent sur le parc, clés
+  sur le contact — ce sont des montures, comme le cheval, mais à 3,4 fois la
+  vitesse à pied : la plus rapide du jeu au sol. Une voiture emmenée au loin
+  « rentre à l'usine » : le garagiste en gare une neuve à sa place.
+
+**Ce qui le prouve.** Sept témoins neufs. Dans `monte.js` : la chaîne roule
+et se montre, la peinture opère (du gris ET de la couleur sur la même
+chaîne), les postes marquent l'arrêt, le garagiste gare trois voitures, la
+voiture propose de monter, on file plus de 2,2 fois plus vite qu'à pied, et
+elle reste sous nous. Dans `carteMonde.js` : le hall vitré, les lettres, les
+robots, le tunnel et le parc garni, sondés dans le monde engendré. Les deux
+empreintes du plafond sont inchangées au hash près : l'usine n'a pas bougé
+un bloc hors de son site.
+
+
 ## v167 — les pastilles répondent au doigt, et la bibliothèque de bâtiments se trouve
 
 **Pourquoi.** Max, capture d'écran à l'appui : « je ne comprends pas à quoi

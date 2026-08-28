@@ -19,6 +19,7 @@ import {
   MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
+import { couleurCarteUsine } from './usine.js';
 import { couleurCarteParis, lieuxDeParis } from './paris.js';
 import { couleurCarteParc, lieuxDuParc } from './parc.js';
 import { couleurCarteSF, lieuxDeSF } from './sanfrancisco.js';
@@ -295,6 +296,11 @@ export class Carte {
     if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) return [176, 96, 62];
     if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) return [176, 186, 138];
     if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) return [108, 112, 118];
+    // La Giga-usine : le hall blanc, l'asphalte du parc, la pelouse du site.
+    {
+      const cu = couleurCarteUsine(wx, wz);
+      if (cu) return cu;
+    }
     if (Math.hypot(wx - ESPACE.x, wz - ESPACE.z) < ESPACE.r - 6) return [214, 190, 140];
     if (Math.hypot(wx - GAULOIS.x, wz - GAULOIS.z) < GAULOIS.r - 20) return [126, 158, 84];
     if (Math.hypot(wx - CIRCUIT.x, wz - CIRCUIT.z) < CIRCUIT.r - 10) return [96, 108, 96];

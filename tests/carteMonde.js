@@ -348,6 +348,37 @@ const VRAIES_KM = [
     verifier('et le Grand Canyon se creuse d\'au moins quatorze blocs',
       relief.canyon >= 14, `gorge de ${relief.canyon}`);
 
+    // --- LA GIGA-USINE D'AUSTIN ---------------------------------------------
+    //
+    // Max : « une usine automobile comme une Tesla factory, extrêmement
+    // réaliste ». Le site vit aux vraies coordonnées d'Austin, Texas, inscrit
+    // au registre. On sonde le monde ENGENDRÉ : le hall et son bandeau vitré,
+    // les lettres de la façade, un bras-robot, le tunnel de peinture, et le
+    // parc garni de voitures neuves sur son asphalte.
+    const usine = await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const p = USINE();
+      const sol = w.terrainHeight(p.x, p.z);
+      return {
+        sol,
+        mur: w.getBlock(p.x - 38, sol + 3, p.z - 20) !== 0,
+        bandeau: w.getBlock(p.x - 38, sol + 6, p.z - 20) === BLOCK.GLASS,
+        lettre: w.getBlock(p.x - 60, sol + 10, p.z + 21) !== 0,
+        robot: w.getBlock(p.x - 56, sol + 5, p.z + 5) !== 0,
+        tunnel: w.getBlock(p.x - 32, sol + 8, p.z) !== 0,
+        voitureParc: w.getBlock(p.x + 20, sol + 1, p.z - 26) !== 0,
+        asphalte: w.getBlock(p.x + 50, sol, p.z + 5) !== 0,
+      };
+    });
+    verifier('la Giga-usine se dresse à Austin : hall vitré, lettres, robots, tunnel',
+      usine.sol === 33 && usine.mur && usine.bandeau && usine.lettre && usine.robot && usine.tunnel,
+      JSON.stringify(usine));
+    verifier('et le parc des voitures neuves est garni, sur son asphalte',
+      usine.voitureParc && usine.asphalte,
+      JSON.stringify({ voiture: usine.voitureParc, asphalte: usine.asphalte }));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

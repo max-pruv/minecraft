@@ -18,6 +18,7 @@ import { createVie } from './vie.js';
 import { createVehicules } from './vehicules.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
+import { USINE, PARC, traceChaine } from './usine.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -363,6 +364,12 @@ function updateChunks() {
   vehicules = createVehicules({ scene, player });
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
+  // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
+  // — presse, carrosserie, peinture, assemblage, test — puis font le tour du
+  // parc. On peut monter à bord et suivre la sienne (bouton « Monter à
+  // bord », comme le métro). Le tracé et la fenêtre de peinture viennent du
+  // bâtisseur du site : la chaîne ne peut pas rouler à côté de son tapis.
+  vehicules.chaine(traceChaine(world.terrainHeight(USINE().x, USINE().z)));
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
   // rouler à côté de son tunnel.
@@ -943,6 +950,29 @@ function emojiBurst(emojis, n = 18) {
     s.style.fontSize = 20 + Math.random() * 26 + 'px';
     container.appendChild(s);
     setTimeout(() => s.remove(), 2400);
+  }
+}
+
+// Le garagiste de la Giga-usine : trois voitures neuves attendent toujours
+// sur le parc, prêtes à conduire — ce sont des montures (montures.js), la
+// seule façon de VRAIMENT conduire, au doigt, où l'on veut. Les bêtes du jeu
+// s'effacent à soixante-dix blocs (animals.js) : une voiture garée
+// disparaîtrait dès qu'on s'éloigne. Le garagiste regarnit donc les places
+// quand un enfant approche — et une voiture emmenée au loin « rentre à
+// l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
+const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
+let garagisteTimer = 0;
+function garagiste(dt) {
+  garagisteTimer -= dt;
+  if (garagisteTimer > 0) return;
+  garagisteTimer = 3;
+  const pu = USINE();
+  if (Math.hypot(player.pos.x - (pu.x + 44), player.pos.z - (pu.z + 7)) > 80) return;
+  for (const [du, dv] of PLACES_GARAGE) {
+    const x = pu.x + du, z = pu.z + dv;
+    const dejaLa = animalManager.animals.some((a) => a.def.key === 'voiture'
+      && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
+    if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
 }
 
@@ -4583,6 +4613,7 @@ function frame(now) {
     signalerElanDeVol();
     creatureManager.update(dt);
     animalManager.update(dt);
+    garagiste(dt);
     // Les personnages lointains — la garnison du château, les astronautes de
     // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur
     // collision forcerait à garder en mémoire des chunks à l'autre bout de la

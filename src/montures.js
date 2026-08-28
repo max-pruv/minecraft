@@ -43,6 +43,7 @@ function yeux(g, y, z, ecart = 0.11, taille = 0.05) {
 }
 
 export const MODELES_MONTURE = {
+  voiture: voitureNeuve,
   // L'éléphant : la seule bête du jeu plus haute qu'une maison de plain-pied.
   // Trompe en quatre segments qui descendent en s'affinant, défenses ivoire,
   // et de grandes oreilles plates qu'on voit de loin — c'est la silhouette qui
@@ -207,6 +208,29 @@ export const MODELES_MONTURE = {
 //   montable — la bête accepte qu'on grimpe
 //   allure   — combien de fois plus vite on avance en selle
 //   assise   — la hauteur du dos, donc celle du regard une fois assis
+// La voiture neuve de la Giga-usine : la seule monture à roues du jeu. Pas de
+// pattes qui balancent — les roues sont des cylindres fixes — et un pare-brise
+// à sa place, parce qu'on la regarde de près avant de monter dedans.
+function voitureNeuve() {
+  const g = new THREE.Group();
+  const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
+  const c = teintes[Math.floor(Math.random() * teintes.length)];
+  g.add(box(1.7, 0.5, 3.4, c, 0, 0.62, 0));                       // la caisse
+  g.add(box(1.4, 0.55, 1.7, c, 0, 1.12, 0.15));                   // le pavillon
+  g.add(box(1.32, 0.42, 1.8, 0x18242e, 0, 1.14, 0.14));           // les vitres
+  g.add(box(1.5, 0.16, 0.4, 0xf0f0ea, 0, 0.5, -1.65));            // le bouclier
+  for (const [sx, sz] of [[-1, -1.1], [1, -1.1], [-1, 1.15], [1, 1.15]]) {
+    const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
+      new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
+    roue.rotation.z = Math.PI / 2;
+    roue.position.set(sx * 0.82, 0.36, sz);
+    g.add(roue);
+  }
+  for (const sx of [-1, 1]) g.add(box(0.3, 0.12, 0.08, 0xfff2c8, sx * 0.55, 0.66, -1.72));  // les phares
+  g.userData.legs = [];                                            // rien ne balance
+  return g;
+}
+
 export const MONTURES = [
   { key: 'elephant', name: 'Éléphant', cry: 'Barriiiit !', emoji: '🐘', speed: 0.9,
     height: 2.9, width: 1.6, meat: '🥜 Cacahuète', montable: true, allure: 1.6, assise: 2.5 },
@@ -224,4 +248,11 @@ export const MONTURES = [
     height: 1.0, width: 0.7, meat: '🍄 Champignon', montable: true, allure: 1.9, assise: 0.9 },
   { key: 'ours', name: 'Ours brun', cry: 'Grooo !', emoji: '🐻', speed: 1.3,
     height: 1.3, width: 0.9, habitat: 'snow', meat: '🍯 Pot de miel', montable: true, allure: 1.8, assise: 1.2 },
+  // La voiture neuve : elle sort de la chaîne de la Giga-usine, et c'est la
+  // plus rapide de toutes les montures — c'est une voiture. Son habitat
+  // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
+  // dans la nature, seul le garagiste de main.js la gare sur le parc.
+  // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
+  { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
+    height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4, assise: 1.0 },
 ];

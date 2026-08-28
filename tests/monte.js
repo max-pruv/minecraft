@@ -379,6 +379,102 @@ async function avancerUnDemiSeconde(p, depart) {
       JSON.stringify(biblio));
     await tab.evaluate(() => { document.querySelector('#fun-main-panel .fun-close').click(); });
 
+    // --- la Giga-usine : la chaîne roule, la peinture opère, on conduit ------
+    //
+    // Max : « des chaînes de production, des robots, des voitures qui
+    // avancent, des steps de process… je veux conduire la voiture quand elle
+    // est finie. » On va donc à Austin, on regarde la chaîne travailler, et
+    // on prend le volant d'une voiture neuve sur le parc.
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game;
+      const p = USINE();
+      g.player.flying = true;
+      g.player.pos.set(p.x - 30, g.world.terrainHeight(p.x - 30, p.z) + 3, p.z + 8);
+      g.player.vel.set(0, 0, 0);
+    });
+    await dormir(3500);   // le temps que les morceaux du Texas arrivent
+
+    // Un seul guetteur accumule trois preuves dans la durée : du GRIS et de
+    // la COULEUR vus sur la chaîne (la peinture opère), et un ARRÊT tenu
+    // presque deux secondes (les postes marquent). Un tour complet dure plus
+    // de deux minutes — on laisse le temps du tour, pas davantage.
+    await tab.evaluate(() => {
+      window.__usineVu = { gris: false, couleur: false, arret: false, visibles: 0, d0: -1, t0: 0 };
+    });
+    await tab.waitForFunction(() => {
+      const v = window.__usineVu;
+      const e = (window.__vehicules.etat() || []).find((c) => c.nom === 'voiture de la chaîne');
+      if (!e) return false;
+      v.visibles = Math.max(v.visibles, e.visibles);
+      for (const c of e.couleurs || []) { if (c === 0x9a9a9a) v.gris = true; else v.couleur = true; }
+      if (e.visibles > 0) {
+        const t = performance.now();
+        if (e.distance === v.d0) { if (t - v.t0 > 1800) v.arret = true; }
+        else { v.d0 = e.distance; v.t0 = t; }
+      }
+      return v.gris && v.couleur && v.arret;
+    }, null, { timeout: 160000, polling: 300 }).catch(() => {});
+    const vuUsine = await tab.evaluate(() => window.__usineVu);
+    verifier('la chaîne de la Giga-usine roule, ses voitures se montrent',
+      vuUsine.visibles > 0, `${vuUsine.visibles} voiture(s) vue(s)`);
+    verifier('la peinture opère : des caisses grises, et des colorées, sur la même chaîne',
+      vuUsine.gris && vuUsine.couleur, JSON.stringify({ gris: vuUsine.gris, couleur: vuUsine.couleur }));
+    verifier('et la chaîne marque l\'arrêt à ses postes',
+      vuUsine.arret, vuUsine.arret ? 'un arrêt tenu' : 'jamais vue à l\'arrêt');
+
+    // Le garagiste : on approche du parc, trois voitures neuves attendent.
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game;
+      const p = USINE();
+      g.player.pos.set(p.x + 44, g.world.terrainHeight(p.x + 44, p.z + 7) + 3, p.z + 12);
+      g.player.vel.set(0, 0, 0);
+    });
+    const garees = await tab.waitForFunction(() => {
+      const n = window.__game.animalManager.animals.filter((a) => a.def.key === 'voiture').length;
+      return n >= 3 ? n : null;
+    }, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => 0);
+    verifier('le garagiste gare trois voitures neuves sur le parc',
+      garees >= 3, `${garees} voiture(s) garée(s)`);
+
+    // Au volant. Le même protocole que l'éléphant : on mesure la distance
+    // parcourue en une demi-seconde, à pied puis au volant, sur le même cap.
+    verifier('une voiture neuve se pose devant soi', await poserDevant(tab, 'voiture'));
+    await tab.waitForFunction(() => {
+      const b = document.getElementById('ride-btn');
+      return b && getComputedStyle(b).display !== 'none'
+        && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+    }, null, { timeout: 5000 }).catch(() => {});
+    const proposeAuto = await bouton(tab, 'ride-btn');
+    verifier('elle propose de monter — clés sur le contact',
+      proposeAuto.visible && proposeAuto.texte.includes('🚗'), JSON.stringify(proposeAuto));
+
+    await tab.evaluate(() => { window.__game.player.flying = false; });
+    const capAuto = await capDegage(tab);
+    const departAuto = await tab.evaluate((yaw) => {
+      const g = window.__game;
+      return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: yaw ?? g.player.yaw };
+    }, capAuto);
+    const distanceAPiedTexas = await avancerUnDemiSeconde(tab, departAuto);
+    await poserDevant(tab, 'voiture');
+    await dormir(600);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto);
+    verifier('au volant, on file bien plus vite qu\'à pied — c\'est une voiture',
+      distanceAuVolant > distanceAPiedTexas * 2.2,
+      `${distanceAPiedTexas.toFixed(1)} m à pied · ${distanceAuVolant.toFixed(1)} m au volant`);
+    const sousNous = await tab.evaluate(() => {
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      return a ? Math.hypot(a.pos.x - g.player.pos.x, a.pos.z - g.player.pos.z) : 99;
+    });
+    verifier('la voiture reste sous nous pendant tout le trajet',
+      sousNous < 1.5, `${sousNous.toFixed(2)} m`);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(400);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {
