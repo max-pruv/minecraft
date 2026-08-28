@@ -178,6 +178,12 @@ let npcs = [];
 let siege = null;
 let vie = null;
 let vehicules = null;
+// La circulation qui attend son heure, et les passants des villes — déclarés
+// ICI, avant le code d'amorçage qui les assigne : déclarés plus bas, c'était
+// la zone morte temporelle, et le jeu ne démarrait plus du tout.
+let circulationsEnAttente = [];
+let circulationTimer = 0;
+let passants = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -971,10 +977,6 @@ function emojiBurst(emojis, n = 18) {
 // l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
 const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 let garagisteTimer = 0;
-// La circulation qui attend son heure, et les passants des villes.
-let circulationsEnAttente = [];
-let circulationTimer = 0;
-let passants = null;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   circulationTimer -= dt;
