@@ -43,6 +43,12 @@ verrière, hanok au toit gris incurvé, shophouse arcadée. Six blocs
 d'architecture neufs les servent : pan de bois, grès brun, zellige,
 vitrail, panneau shoji, tuile grise — dans l'inventaire eux aussi.
 
+Et le vol, réglé une deuxième fois sur verdict de Max : la rampe de v175
+(« la vitesse de flight n'avance pas assez vite ») était encore molle. La
+montée démarre dès deux secondes, gagne un cran toutes les deux secondes et
+demie, et culmine plus haut — huit fois la vitesse de base, quatre-vingt-huit
+blocs par seconde, atteints en dix-sept secondes au lieu de vingt-sept.
+
 **Ce qui le prouve.** Les trois cents variantes neuves bâties une à une en
 sonde (aucune vide, toutes sous le plafond du ciel — l'Art déco culmine à
 107 blocs) ; deux témoins réécrits sur le nouveau trajet — l'onglet montre
