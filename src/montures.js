@@ -222,42 +222,94 @@ function voitureNeuve() {
   // l'éclairage et mangeaient le bi-ton avant/arrière.
   const teintes = [0xb02020, 0x2a4e9c, 0xc0a878, 0x1f7a4c];
   const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
-  // L'habitacle sculpté vit dans SON groupe : quand le vrai modèle arrive, il
-  // part d'un bloc avec la coque — le modèle a son propre intérieur. Seul le
-  // volant centré reste, pour l'enfant assis au milieu (et il est minuscule,
-  // noyé dans le cockpit du modèle).
-  const habitacle = new THREE.Group();
-  const sombre = 0x22262c, noir = 0x14161a;
-  habitacle.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));     // tableau de bord
-  const volant = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 6, 14),
-    new THREE.MeshBasicMaterial({ color: noir }));
-  volant.rotation.x = -0.5;                                        // incliné vers soi
-  volant.position.set(0, 0.8, -0.45);
-  g.add(volant);                                                   // à part : il survit au modèle
-  habitacle.add(box(0.04, 0.04, 0.14, noir, 0, 0.75, -0.5));       // colonne de direction
-  // PAS de rétroviseur central : l'habitacle est si bas que, où qu'on le
-  // pose, il flotte en plein milieu du pare-brise et bouche la route — trois
-  // captures l'ont montré. Le cadre vient des montants, du capot et du volant.
-  for (const sx of [-1, 1]) {
-    const montant = box(0.05, 0.05, 0.6, sombre, sx * 0.5, 0.94, -0.28);
-    montant.rotation.x = -0.5;                                     // suit le pare-brise
-    habitacle.add(montant);
-    habitacle.add(box(0.44, 0.38, 0.12, noir, sx * 0.34, 0.84, 0.36));  // dossiers baquets
-    habitacle.add(box(0.44, 0.08, 0.38, noir, sx * 0.34, 0.64, 0.22));  // assises
+  // LE COCKPIT — le nôtre, et il SURVIT au vrai modèle. L'ancien habitacle
+  // partait quand le modèle arrivait, ne laissant qu'un petit tore centré qui
+  // flottait au milieu du pare-brise (capture à l'appui) : l'intérieur du
+  // modèle d'artiste n'est pas fait pour être habité par une caméra. On bâtit
+  // donc un poste de conduite complet, ENVELOPPANT — planche de bord, ciel de
+  // toit, panneaux de porte, baquets — dont les surfaces opaques cachent les
+  // entrailles du modèle vues de dedans. Le siège est à GAUCHE (fiche
+  // `siege`) : le volant est devant le conducteur, comme dans une voiture.
+  const cockpit = new THREE.Group();
+  const cuir = 0x14161a, anthr = 0x1d2026, creme = 0xd8d2c4, navy = 0x0e1a2e;
+  // la plage du capot, vue à travers le pare-brise (les faces du modèle
+  // regardent dehors : de dedans, sans elle, le capot serait invisible) —
+  // INCLINÉE pour suivre le capot plongeant : plate et large, elle
+  // dépassait de l'aile et flottait au-dessus du nez (vu de dehors)
+  const plage = box(1.5, 0.02, 0.75, navy, 0, 0.66, -1.05);
+  plage.rotation.x = -0.3;
+  cockpit.add(plage);
+  // le plancher et la cloison avant : le réservoir du modèle faisait office
+  // des deux — retiré (il murait la vue), l'habitacle donnait sur la route
+  cockpit.add(box(1.5, 0.03, 1.5, 0x101216, 0, 0.5, -0.05));
+  cockpit.add(box(1.5, 0.26, 0.04, anthr, 0, 0.64, -0.78));
+  // la planche de bord : la masse et le bourrelet, le cowl à 7,5 cm SOUS la
+  // ligne du regard (0,96) — plus haut, la fente de vue devient meurtrière
+  cockpit.add(box(1.5, 0.16, 0.34, anthr, 0, 0.78, -0.62));
+  cockpit.add(box(1.5, 0.05, 0.38, cuir, 0, 0.86, -0.6));
+  // le bloc-compteurs DERRIÈRE le volant (pas une dalle néon devant : la
+  // première version dessinait un écran cyan géant par-dessus la jante),
+  // et l'écran du milieu sur la façade de la planche
+  cockpit.add(box(0.3, 0.1, 0.06, cuir, -0.33, 0.9, -0.52));
+  cockpit.add(box(0.24, 0.055, 0.015, 0x0e8aa8, -0.33, 0.895, -0.487));
+  cockpit.add(box(0.14, 0.06, 0.02, 0x8a5618, 0.12, 0.845, -0.4));
+  // LE VOLANT : jante, trois branches, moyeu — plus un anneau qui flotte
+  const volant = new THREE.Group();
+  volant.add(new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.018, 8, 20),
+    new THREE.MeshBasicMaterial({ color: cuir })));
+  const bMat = new THREE.MeshBasicMaterial({ color: anthr });
+  for (const angle of [Math.PI / 2, Math.PI + 0.6, Math.PI * 2 - 0.6]) {
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.115, 0.02), bMat);
+    br.position.set(Math.cos(angle) * 0.06, Math.sin(angle) * 0.06, 0);
+    br.rotation.z = angle - Math.PI / 2;
+    volant.add(br);
   }
-  habitacle.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));      // traverse du pare-brise
-  habitacle.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));    // ciel de toit
-  // Son propre matériau : celui de la caisse lit des couleurs de sommets
-  // (le bi-ton) qu'une boîte nue n'a pas — partagé, la plaque serait noire.
-  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0),
-    new THREE.MeshBasicMaterial({ color: g.userData.carrosserie.color }));
-  capot.position.set(0, 0.72, -1.0);                               // le capot, vu du volant
-  habitacle.add(capot);
-  g.add(habitacle);
+  const moyeu = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 12),
+    new THREE.MeshBasicMaterial({ color: navy }));
+  moyeu.rotation.x = Math.PI / 2;
+  volant.add(moyeu);
+  volant.rotation.x = -0.42;                                       // incliné vers soi
+  volant.position.set(-0.33, 0.79, -0.44);                         // jante SOUS l'œil : on regarde par-dessus
+  cockpit.add(volant);
+  cockpit.add(box(0.045, 0.05, 0.16, anthr, -0.33, 0.74, -0.5));   // la colonne
+  // la console centrale et son accent
+  cockpit.add(box(0.2, 0.26, 0.55, anthr, 0, 0.7, -0.18));
+  cockpit.add(box(0.06, 0.02, 0.3, 0xd88a2a, 0, 0.835, -0.2));
+  // deux baquets : assise, dossier épaulé, appuie-tête — crème, flancs navy
+  for (const sx of [-0.33, 0.33]) {
+    cockpit.add(box(0.4, 0.09, 0.42, creme, sx, 0.62, 0.18));
+    cockpit.add(box(0.4, 0.44, 0.12, creme, sx, 0.85, 0.38));
+    cockpit.add(box(0.05, 0.4, 0.14, navy, sx - 0.2, 0.83, 0.38));
+    cockpit.add(box(0.05, 0.4, 0.14, navy, sx + 0.2, 0.83, 0.38));
+    cockpit.add(box(0.2, 0.14, 0.1, creme, sx, 1.04, 0.4));
+  }
+  // les panneaux de porte, ARRÊTÉS SOUS la ligne du regard : au-dessus, les
+  // faces de la coque regardent dehors et laissent le jour entrer — c'est la
+  // fenêtre latérale, gratuite, comme dans une voiture sans vitre teintée.
+  // L'accoudoir est sombre : en crème, si près de l'œil, c'était un pavé.
+  for (const sx of [-1, 1]) {
+    cockpit.add(box(0.045, 0.3, 1.15, anthr, sx * 0.73, 0.77, -0.05));
+    cockpit.add(box(0.05, 0.05, 0.4, cuir, sx * 0.7, 0.86, -0.1));
+    // le bas de caisse, entre plancher et porte : sans lui, on voyait la
+    // roue avant par l'angle du plancher
+    cockpit.add(box(0.05, 0.14, 1.5, 0x101216, sx * 0.75, 0.56, -0.05));
+  }
+  // le ciel de toit, collé à la ligne de toit du modèle (1,12 mesuré), du
+  // haut du pare-brise jusque derrière les têtes : trop bas il fait visière,
+  // trop court il découvre la tranche du toit (faces vers dehors : du dedans,
+  // c'est un trou de ciel). Son bord avant EST la traverse : une traverse
+  // séparée doublait la moulure de vitre du modèle — deux barres dans la vue.
+  cockpit.add(box(1.16, 0.02, 1.3, 0x101318, 0, 1.13, -0.01));
+  for (const sx of [-1, 1]) {
+    const m = box(0.05, 0.05, 0.62, anthr, sx * 0.56, 1.0, -0.42);
+    m.rotation.x = -0.55;
+    cockpit.add(m);
+  }
+  g.add(cockpit);
   // LE VRAI MODÈLE remplace la sculpture dès qu'il est chargé — la coque de
   // primitives ne sert plus que d'attente, et de secours si le fichier
-  // manque. On retire caisse, verrière, détails et habitacle sculptés : le
-  // modèle apporte les siens, vitres et cockpit compris.
+  // manque. On retire caisse, verrière et détails sculptés ; le cockpit,
+  // lui, RESTE : c'est le même poste de conduite dans les deux carrosseries.
   const chargement = chargerVraieVoiture();
   if (chargement) {
     chargement.then((proto) => {
@@ -266,7 +318,6 @@ function voitureNeuve() {
         const membre = g.userData.membres[nom];
         if (membre) g.remove(membre);
       }
-      g.remove(habitacle);
       g.add(proto.clone(true));
     });
   }
@@ -296,10 +347,12 @@ export const MONTURES = [
   // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
   // dans la nature, seul le garagiste de main.js la gare sur le parc.
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
-  // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
-  // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
-  // au ras du galbe (0,92 : une hypersportive s'assied BAS) — alors que
-  // l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
+  // `siege` : la PLACE DU CONDUCTEUR dans le repère de la voiture — à gauche
+  // (x négatif), l'œil bas (0,98 : une hypersportive s'assied bas), à peine
+  // en avant. Remplace `oeil` (hauteur seule, caméra au milieu de la
+  // banquette : le volant flottait au centre du pare-brise). `assise` reste
+  // en secours : un fun.js ancien qui ignore `siege` retombe dessus et
+  // l'enfant voit encore la route, juste du milieu.
   // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
   // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   // `immobile` : garée, elle ne flâne pas et ne pivote pas (le vagabondage
@@ -307,5 +360,5 @@ export const MONTURES = [
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, oeil: 0.97, nourrissable: false, immobile: true },
+    assise: 1.0, siege: { x: -0.33, y: 0.96, z: 0.05 }, nourrissable: false, immobile: true },
 ];

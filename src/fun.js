@@ -1452,11 +1452,20 @@ export function initFun(ctx) {
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;
     a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
-    // Deux façons d'être porté : sur le dos d'une bête, le regard s'ÉLÈVE de
-    // la hauteur du dos ; dans une voiture, il se POSE à la hauteur du siège
-    // (`oeil`, absolu depuis les pieds) — derrière le pare-brise, capot et
-    // volant en vue, au lieu de flotter au-dessus du toit.
-    if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
+    // Trois façons d'être porté : dos de bête (`assise`, relative), habitacle
+    // simple (`oeil`, hauteur absolue), ou VRAI SIÈGE (`siege` {x,y,z}, décalé
+    // dans le repère de la voiture). La monture tourne AVEC le regard (a.yaw
+    // suit player.yaw juste au-dessus), donc le repère du regard est celui de
+    // la voiture : on s'assied à GAUCHE, à la place du conducteur, et le
+    // volant tombe dans l'axe des yeux au lieu de flotter au milieu.
+    if (a.def.siege) {
+      const s = a.def.siege, cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+      player.camera.position.set(
+        player.pos.x + s.x * cy + s.z * sy,
+        player.pos.y + s.y,
+        player.pos.z - s.x * sy + s.z * cy,
+      );
+    } else if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
     else player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
 

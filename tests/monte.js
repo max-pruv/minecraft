@@ -521,6 +521,18 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et le volant est là, dans l\'habitacle',
       cockpit.volant, cockpit.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
 
+    // LA PLACE DU CONDUCTEUR (Max : « la vue depuis l'intérieur du cockpit
+    // n'est pas beau »). On s'assied À GAUCHE, pas au milieu de la banquette :
+    // l'œil est décalé latéralement d'un tiers de bloc par rapport aux pieds.
+    // L'ancien code ne touchait qu'à la hauteur — décalage nul, rouge garanti.
+    const conducteur = await tab.evaluate(() => {
+      const g = window.__game;
+      return +Math.hypot(g.player.camera.position.x - g.player.pos.x,
+        g.player.camera.position.z - g.player.pos.z).toFixed(3);
+    });
+    verifier('on est assis à la place du conducteur, pas au milieu',
+      conducteur > 0.25 && conducteur < 0.5, `œil décalé de ${conducteur} bloc`);
+
     // LA CARROSSERIE DE LA VRAIE VIE (Max, capture à l'appui : « je les veux
     // pas en format minecraft »). Une vraie voiture a des vitres TRANSPARENTES
     // — on voit l'habitacle à travers — et une caisse sculptée à l'Atelier :
