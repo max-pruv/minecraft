@@ -86,6 +86,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v182** — la voiture garée ne bouge plus (« tac tac tac »), la marche
+  n'hérite plus de la rampe de vol, et la fumée éprouve la bibliothèque là où
+  v176 l'a mise — le portail redevient `npm test`, jamais une liste de suites.
+
+- [x] **v181** — réalisme v2, deuxième acte : vrai bitume et marquages dans la
+  texture, la grammaire de façades généralisée aux 278 villes, et LA voiture —
+  le modèle d'artiste fourni par Max, reflets par caméra cubique, vue cockpit.
+
 - [x] **v180** — réalisme v2, premier acte : réverbères-meshes fins, feux
   tricolores aux carrefours, jardinières, marquage net ou rien.
 
