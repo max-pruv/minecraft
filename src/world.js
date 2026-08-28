@@ -70,6 +70,7 @@ import {
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
 import { positionDe, cielDe, zDeLatitude } from './mondes.js';
+import { surLaVoie, presDeLaVoie } from './trains.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
 // le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
@@ -1289,6 +1290,7 @@ export class World {
 
   treeAt(x, z) {
     if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
+    if (presDeLaVoie(x, z)) return null;                            // la voie ferrée reste dégagée
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
@@ -1398,6 +1400,15 @@ export class World {
         }
         for (let y = h + 1; y <= WATER_LEVEL; y++) {
           data[World.index(x, y, z)] = BLOCK.WATER;
+        }
+
+        // La voie ferrée (v179) : le ballast de gravier sur la terre, et le
+        // VIADUC au ras des flots quand la ligne traverse la mer — l'Eurostar
+        // voit la Manche passer sous ses fenêtres. Les rails s'arrêtent aux
+        // portes des villes, donc aucune rue n'est jamais éventrée.
+        if (surLaVoie(wx, wz)) {
+          if (h > WATER_LEVEL) data[World.index(x, h, z)] = BLOCK.GRAVEL;
+          else data[World.index(x, WATER_LEVEL, z)] = BLOCK.STONEBRICK;
         }
 
         // Manhattan a son propre dessin de sol : avenues numérotées, rues tous

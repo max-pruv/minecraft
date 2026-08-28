@@ -538,6 +538,31 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et le bus de la ville roule sur le grand anneau',
       !!lebus && lebus.total >= 1, JSON.stringify(lebus));
 
+    // LES TRAINS INTERVILLES (v179) : dix-huit rames sur neuf navettes
+    // réelles (Eurostar, TGV, Shinkansen, AVE, Frecciarossa, ICE), et elles
+    // ROULENT — on suit la distance d'une rame jusqu'à la voir avancer, en
+    // laissant passer un éventuel arrêt en gare (quatre secondes de jeu).
+    const train = await tab.evaluate(async () => {
+      const v = window.__vehicules;
+      const etat0 = v.etat() || [];
+      // On suit UNE rame par son RANG dans la liste — deux rames partagent le
+      // même nom, et suivre « le premier train dont la distance a changé »
+      // comparerait deux rames différentes.
+      const i0 = etat0.findIndex((c2) => c2.nom.startsWith('train '));
+      const rames = etat0.filter((c2) => c2.nom.startsWith('train ')).length;
+      if (i0 < 0) return { rames: 0 };
+      const d0 = etat0[i0].distance;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 60000) {
+        await new Promise((r) => setTimeout(r, 800));
+        const d1 = v.etat()[i0].distance;
+        if (Math.abs(d1 - d0) > 10) return { rames, avance: Math.round(Math.abs(d1 - d0)) };
+      }
+      return { rames, avance: 0 };
+    });
+    verifier('les trains intervilles roulent sur leurs lignes',
+      train.rames >= 9 && train.avance > 10, JSON.stringify(train));
+
     const peuple = await tab.waitForFunction(() => {
       const p2 = window.__game.passants;
       return p2 && p2.effectif() >= 10 ? p2.effectif() : null;

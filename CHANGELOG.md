@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v179 — les trains intervilles, sur les vraies lignes
+
+**Pourquoi.** Max : « add train connecting cities from real life train
+lanes ». Le monde a deux cent soixante-dix-huit villes et l'on ne voyage
+qu'en se téléportant — aucun chemin visible ne relie rien.
+
+**Ce que ça change.** Six vraies lignes — l'Eurostar (Londres-Paris), le
+TGV (Paris-Lyon-Marseille), le Shinkansen (Tokyo-Kyoto), l'AVE
+(Madrid-Barcelone), le Frecciarossa (Milan-Florence-Rome), l'ICE
+(Amsterdam-Cologne-Francfort) — découpées en neuf navettes de gare en gare.
+Le ballast de gravier court sur la campagne, un VIADUC de pierre porte la
+voie au ras des flots (l'Eurostar voit la Manche passer sous ses fenêtres —
+un viaduc plutôt qu'un tunnel : un enfant veut voir la mer), la carte
+dessine le trait qui relie les villes, et plus un arbre ne pousse sur les
+voies. Les gares sont aux portes des villes — jamais un rail à travers une
+rue — et « Monter à bord » fait le reste : deux rames par navette, arrêt à
+chaque gare, quatre secondes pour monter.
+
+**Ce qui le prouve.** Deux témoins neufs — le milieu de chaque navette
+porte son ballast ou son viaduc (neuf sur neuf, dont la Manche), et une
+rame suivie par son rang avance de plus de dix blocs — plus les sondes :
+neuf navettes tracées entre 121 et 410 blocs, 200 000 requêtes « suis-je
+sur la voie ? » en neuf millisecondes loin des lignes. Captures du viaduc
+et d'une rame en voie, dans la discussion.
+
 ## v178 — les villes respirent, et elles vivent
 
 **Pourquoi.** Deux verdicts de Max, captures à l'appui. Sur Westminster :

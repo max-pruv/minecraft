@@ -24,6 +24,7 @@ import { USINE, PARC, traceChaine } from './usine.js';
 import { tracesCirculation } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
+import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -408,6 +409,18 @@ function updateChunks() {
       // La Jaune sort de terre sur son pont du Potomac : à l'air libre, la
       // rame se voit de loin comme n'importe quel train de surface.
       decouvert: (p) => p.y >= world.terrainHeight(Math.floor(p.x), Math.floor(p.z)),
+    });
+  }
+
+  // Les trains intervilles (v179). Max : « add train connecting cities from
+  // real life train lanes ». Chaque segment est une navette : deux rames qui
+  // font l'aller-retour de gare en gare, marquant l'arrêt à chaque bout —
+  // « Monter à bord » fait le reste. Les gares sont aux portes des villes.
+  for (const seg of segmentsDeTrain()) {
+    const t = traceSegment(seg, (x, z) => world.terrainHeight(x, z), WATER_LEVEL);
+    vehicules.metro(t.pts, {
+      nom: `train ${seg.ligne.nom}`, emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
+      nb: 5, vitesse: 14, rames: 2, pause: 4, arretsIndex: t.arretsIndex,
     });
   }
 })();
