@@ -18,11 +18,18 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Les poissons qui nagent** (demande de Max, avec les deux cents
-  villes) — petits, colorés, dans les océans et les fleuves autour de
-  l'enfant ; le brouillon du module existe. Puis **les trains intervilles
-  sur les vraies lignes** (Eurostar, Shinkansen, AVE…), à monter via le
-  bouton « Monter à bord » existant.
+- [ ] **Le vol qui accélère** (demande de Max) — la carte est immense : la
+  vitesse de vol monte progressivement avec le temps de vol continu, jusqu'à
+  une vraie vitesse de croisière.
+
+- [ ] **L'onglet Bâtiments dans le +** (demande de Max) — la bibliothèque
+  déménage de la pilule 🏛️ vers l'inventaire (blocs / déco / meubles /
+  bâtiments), et s'enrichit de trois cents modèles très documentés — familles
+  nouvelles (colombages, brownstone, pagode, riad, gothique…), blocs
+  d'architecture neufs si besoin.
+
+- [ ] **Les trains intervilles sur les vraies lignes** (Eurostar, Shinkansen,
+  AVE…), à monter via le bouton « Monter à bord » existant.
 
 - [ ] **Le tour du monde, approfondissements** — DEUX CENT SOIXANTE-DIX-HUIT
   lieux au registre (v173) : Londres à la main, les autres par la machine.
@@ -72,6 +79,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v174** — les poissons : un banc de récif entretenu autour de
+  l'enfant, partout où il y a de l'eau — six robes vives, nage vraie,
+  naissance à portée de vue.
 - [x] **v173** — les deux cents villes : 223 villes générées par archétypes
   régionaux avec côte automatique, 278 lieux au registre, plus d'arbres
   sauvages dans les rues — et le métro de Washington dégelé (le piège de
