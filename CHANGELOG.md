@@ -43,10 +43,18 @@ colonne de terrain interrogeait les 46 villes de la machine une à une
 Au banc : la vue monde passe de 781 à 152 ms à froid, la vue continent de
 1 026 à 199 ms — et les rendus suivants sont presque gratuits.
 
-**Ce qui le prouve.** Deux témoins neufs dans `carte.js` jurent sur les
-millisecondes : le fond entier à froid sous 400 ms, le rendu suivant sous
-150 ms. Les 111 témoins existants de la carte, du plafond et du tour du
-monde repassent au vert — même monde, au bloc près, juste plus vite.
+- **Et une vraie panne attrapée au passage** : sur une machine chargée, le
+  minuteur d'appui long tirait pendant un glisser — les déplacements du
+  doigt attendaient leur tour dans la file, le minuteur passait devant, et
+  l'enfant était téléporté au point de départ de son propre geste, carte
+  refermée. La décision attend désormais l'image suivante, où les entrées
+  ont été dépouillées : glisser ne téléporte jamais.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carte.js` : le fond entier à
+froid sous 400 ms (mesuré 134), le rendu suivant sous 150 ms (mesuré 34), et
+le glisser qui ne téléporte jamais même le fil principal étouffé 700 ms. Les
+témoins existants de la carte, du plafond et du tour du monde repassent au
+vert — même monde, au bloc près, juste plus vite.
 
 
 ## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
