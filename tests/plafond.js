@@ -365,7 +365,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const allures = await tab.evaluate(async () => {
       const g = window.__game;
       g.player.flying = true;
-      g.player.pos.set(0, 100, 0);
+      // À 140 : au-dessus de tout ce qui se dresse, et surtout PLUS HAUT que
+      // la barre du témoin suivant — le perchoir se pose à hauteur du joueur,
+      // et ce vol-ci ne doit pas le faire redescendre sous l'ancien plafond.
+      g.player.pos.set(0, 140, 0);
       g.player.yaw = Math.PI / 2;
       g.player.vel.set(0, 0, 0);
       g.player.keys.add('KeyW');
