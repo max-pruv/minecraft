@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v167 — les pastilles répondent au doigt, et la bibliothèque de bâtiments se trouve
+
+**Pourquoi.** Max, capture d'écran à l'appui : « je ne comprends pas à quoi
+servent ces boutons. Quand on clique, il ne se passe rien — et tu n'as jamais
+livré la liste de bâtiments préconçus. » Les deux pastilles (🍖 le
+garde-manger, 🏡 la jauge du chantier commun) étaient des indicateurs muets,
+`pointer-events: none`. Et la bibliothèque de bâtiments existait bel et bien
+— 21 monuments célèbres + ~300 bâtiments de ville par familles — mais cachée
+derrière un onglet nommé « Monuments » au fond de l'atelier : personne ne
+pouvait deviner qu'elle était là.
+
+**Ce que ça change.**
+
+- **Toucher 🍖 ouvre l'atelier** — là où la viande se dépense (recettes,
+  nourrir les bêtes), le garde-manger sous les yeux.
+- **Toucher 🏡 0/71 ouvre l'onglet Chantier**, qui dit maintenant OÙ est le
+  chantier : « À 48 blocs, direction ↗ nord-est. Cherche les blocs bleus
+  translucides. » Une jauge sans direction ne servait à rien.
+- **L'onglet s'appelle « 🏛️ Bâtiments »** — son vrai contenu : les monuments
+  célèbres ET les familles de bâtiments de ville (maisons, pavillons,
+  immeubles…), chacun posable devant soi d'un bouton, avec 🔀 pour faire
+  défiler les dizaines de modèles de chaque famille.
+
+**Ce qui le prouve.** Quatre témoins neufs dans la suite `monte.js`, qui
+suivent le doigt de l'enfant : la récolte fait naître la pastille (visible et
+touchable), le toucher ouvre l'atelier sur le garde-manger ; poser une cabane
+fait naître la jauge, la toucher ouvre le Chantier avec la ligne 📍 ; et
+l'onglet Bâtiments montre bien monuments célèbres et bâtiments de ville.
+
+
 ## v166 — les cinquante grandes : le tour du monde au complet
 
 **Pourquoi.** Max : « refais les 50 plus grosses et famous villes mondiales en
