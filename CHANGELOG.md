@@ -38,6 +38,10 @@ pouvait deviner qu'elle était là.
 - **Toucher 🏡 0/71 ouvre l'onglet Chantier**, qui dit maintenant OÙ est le
   chantier : « À 48 blocs, direction ↗ nord-est. Cherche les blocs bleus
   translucides. » Une jauge sans direction ne servait à rien.
+- **Les pastilles quittent le milieu de l'écran** : elles flottaient en plein
+  champ de vision, décollées de tout. Elles habitent désormais le rail
+  bas-gauche, au-dessus du bouton émotes, à portée de pouce — en flux, comme
+  tout le bord gauche.
 - **L'onglet s'appelle « 🏛️ Bâtiments »** — son vrai contenu : les monuments
   célèbres ET les familles de bâtiments de ville (maisons, pavillons,
   immeubles…), chacun posable devant soi d'un bouton, avec 🔀 pour faire
