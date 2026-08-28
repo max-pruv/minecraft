@@ -28,6 +28,14 @@ import {
   hauteurCapitales, solCapitales, landmarksCapitales, placesCapitales,
 } from './capitales.js';
 import {
+  LONDRES, hauteurLondres, solLondres, lotLondresLibre, batirColonneLondres,
+  MONUMENTS_LONDRES, lieuxDeLondres,
+} from './londres.js';
+import {
+  hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde,
+  landmarksVillesMonde, placesVillesMonde,
+} from './villesmonde.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -58,7 +66,8 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
-import { positionDe } from './mondes.js';
+import { positionDe, cielDe } from './mondes.js';
+import { surTerreReelle, reliefReel } from './terre.js';
 
 export const CHUNK = 16;
 
@@ -534,8 +543,12 @@ export const PLACES = [
     name: `Métro ${q.nom}`, x: WASHINGTON.x + q.u, z: WASHINGTON.z + q.v, r: 0,
   })),
   // Le tour du monde : une destination par ville, et une par monument. Sans
-  // elles on arriverait « à Londres » sans savoir de quel côté regarder.
+  // elles on arriverait « à Rome » sans savoir de quel côté regarder.
   ...placesCapitales(),
+  ...placesVillesMonde(),
+  // Les destinations de Londres : la ville, puis ses hauts lieux.
+  { name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r },
+  ...lieuxDeLondres().map((p) => ({ name: p.name, x: p.x, z: p.z, r: 0 })),
 ];
 
 function buildPyramid(set) { // grande pyramide de grès du désert
@@ -875,7 +888,15 @@ const LANDMARKS = [
   // on ne pouvait que les poser soi-même depuis le menu du constructeur.
   // Maintenant que les villes se déduisent de leurs coordonnées réelles,
   // chacun se dresse chez lui.
+  // Londres, bâtie monument par monument à ses vraies coordonnées : Big Ben
+  // au bord de l'eau, Tower Bridge TOURNÉ pour enjamber la Tamise, le London
+  // Eye en face du Parlement, St Paul dans la City, le Shard sur la rive sud.
+  ...MONUMENTS_LONDRES.map((m) => ({
+    name: m.nom, x: LONDRES.x + m.u, z: LONDRES.z + m.v,
+    box: m.box, seuil: m.seuil, build: m.build,
+  })),
   ...landmarksCapitales(),
+  ...landmarksVillesMonde(),
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -902,12 +923,67 @@ export const CITIES = [
   // confluent de deux rivières, découpé par surTerreWashington(). Le rayon ne
   // sert qu'à écarter d'emblée ce qui est loin.
   { key: 'dc', name: 'Washington', x: WASHINGTON.x, z: WASHINGTON.z, r: WASHINGTON_R, cell: 12, base: 33, street: 3 },
+  // Londres : la première ville du tour du monde bâtie en entier — la Tamise
+  // et son coude de Westminster, trois tissus de rues, ses monuments à leurs
+  // vraies coordonnées. Cf. src/londres.js.
+  { key: 'londres', name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, cell: 11, base: 33, street: 3 },
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
 const SF_PASTELS = [15, 9, 29, 28, 16, 3, 4, 7].map((ci) => DECOR_START + ci * 10);
 // Nice: warm Mediterranean facades (ochre, orange, rose, cream, sand).
 const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
+
+// --- la vraie Terre : océans et grandes chaînes -------------------------------
+//
+// Max : « quand je regarde la carte, je ne reconnais pas la vraie carte du
+// monde ». Chaque colonne de terrain demande donc au planisphère (src/terre.js)
+// au-dessus de quel point du globe elle se trouve : la mer s'y creuse, les
+// Alpes s'y lèvent, le Grand Canyon s'y taille.
+//
+// TOUT CE QUI EST BÂTI EST À L'ABRI. Les villes, les domaines, les monuments
+// et le point d'apparition gardent leur sol quoi qu'en dise l'océan : une
+// ville trente fois trop grande pour l'échelle de la carte (Washington est
+// bâtie à 48 blocs/km sur une carte à 1,3 bloc/km) déborde forcément sur la
+// géographie voisine — c'est assumé depuis v162, la côte s'écarte autour.
+let zonesATerre = null;
+function dansUneZoneATerre(x, z) {
+  if (!zonesATerre) {
+    zonesATerre = [
+      { x: 0, z: 0, r: 320 },                    // le continent du départ
+      // +24 et pas davantage : les fondus de villes font quatorze blocs, et
+      // une marge de +60 faisait déborder le renflement de Londres jusque sur
+      // le détroit de Douvres — la Manche disparaissait à l'endroit exact où
+      // elle est la plus célèbre.
+      ...CITIES.map((c) => ({ x: c.x, z: c.z, r: c.r + 24 })),
+      ...PLACES.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
+      ...LANDMARKS.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
+    ];
+  }
+  for (const zone of zonesATerre) {
+    if (Math.hypot(x - zone.x, z - zone.z) <= zone.r) return true;
+  }
+  return false;
+}
+
+function hauteurTerre(x, z, h) {
+  const ciel = cielDe(x, z);
+  // Une côte au cordeau fait maquette : un léger tremblé la rend naturelle,
+  // déterministe pour que deux tablettes engendrent le même rivage.
+  const lat = ciel.lat + 0.05 * Math.sin(x * 0.021 + z * 0.013) + 0.02 * Math.sin(x * 0.11);
+  const lon = ciel.lon + 0.05 * Math.sin(z * 0.019 - x * 0.011) + 0.02 * Math.sin(z * 0.13);
+  if (!surTerreReelle(lat, lon)) {
+    if (dansUneZoneATerre(x, z)) return h;
+    const fond = WATER_LEVEL - 6 + Math.sin(x * 0.05) * 1.5 + Math.sin(z * 0.043) * 1.5;
+    return Math.min(h, Math.round(fond));
+  }
+  // à terre : le relief réel s'ajoute, plafonné sous le toit du terrain
+  const delta = reliefReel(lat, lon);
+  if (delta && !dansUneZoneATerre(x, z)) {
+    h = Math.min(SOMMET_TERRAIN - 2, Math.max(2, Math.round(h + delta)));
+  }
+  return h;
+}
 
 export class World {
   constructor() {
@@ -930,22 +1006,28 @@ export class World {
     const hills = fbm(x * 0.016, z * 0.016, SEED);
     let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
 
-    // seas: low continentalness sinks the land, but never near spawn
-    // (pushed far out so the playable continent is ~8x larger)
-    const distO = Math.hypot(x, z);
-    const oceanFactor = Math.min(1, Math.max(0, (distO - 260) / 120));
-    const continent = fbm(x * 0.005, z * 0.005, SEED + 501);
-    if (continent < 0.45) h -= (0.45 - continent) * 130 * oceanFactor;
+    // LA MER DE BRUIT A VÉCU. Avant le planisphère, un bruit de
+    // « continentalité » creusait des mers au hasard passé 260 blocs du
+    // départ — c'était la seule façon d'avoir des côtes. Maintenant que les
+    // océans sont les VRAIS, ces mers aléatoires tombaient au milieu de la
+    // France et l'empêchaient de ressembler à la France. La mer vient du
+    // planisphère (hauteurTerre, plus bas), et de lui seul ; les lacs, eux,
+    // restent — la France a des lacs.
 
     // lakes: small pockets carved below water level
     const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
     if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
 
+    // La vraie Terre : les océans du planisphère et les grandes chaînes.
+    // Après les lacs — la mer a le dernier mot sur le bruit — et avant les
+    // villes, qui gardent la main sur leur propre relief.
+    h = hauteurTerre(x, z, h);
+
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
       // Quatre reliefs à part, chacun dans son module : cf. plus bas.
-      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc') continue;
+      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc' || c.key === 'londres') continue;
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
@@ -972,6 +1054,11 @@ export class World {
     // de Vauban se relève au-dessus de la ville.
     h = hauteurLille(x, z, h, 34);
 
+    // Londres : la Tamise se creuse dans la plaine — son coude de Westminster
+    // est LE trait qu'on reconnaît sur tous les plans — et Primrose Hill se
+    // lève au nord, d'où toute la ville se découvre.
+    h = hauteurLondres(x, z, h, 33);
+
     // La Chine : les crêtes de la muraille, la rivière de Guilin et ses
     // karsts, les rizières en marches — une région entière dans ce qui était
     // une zone morte entre San Francisco et le Pôle Nord.
@@ -981,6 +1068,12 @@ export class World {
     // Rio et Seattle. Chacune aplanit le parvis de son monument, avec un fondu
     // au pourtour — au-delà, le paysage est celui du bruit, au bloc près.
     h = hauteurCapitales(x, z, h);
+
+    // Les huit villes iconiques du tour du monde : Rome et le Tibre, la
+    // grille chanfreinée de Barcelone, l'Arno de Pise, le plateau de Gizeh,
+    // la Yamuna d'Agra, le port de Sydney, la baie de Rio et ses mornes, la
+    // baie d'Elliott de Seattle. Cf. src/villesmonde.js.
+    h = hauteurVillesMonde(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -1314,6 +1407,7 @@ export class World {
         for (const [cle, sol, libre, batir] of [
           ['nice', solNice, lotNiceLibre, batirColonneNice],
           ['lille', solLille, lotLilleLibre, batirColonneLille],
+          ['londres', solLondres, lotLondresLibre, batirColonneLondres],
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);
@@ -1358,6 +1452,20 @@ export class World {
         {
           const scap = solCapitales(wx, wz);
           if (scap !== null) { data[World.index(x, h, z)] = scap; continue; }
+        }
+
+        // Les huit villes iconiques : leur sol, et leurs maisons quand la
+        // colonne est un lot à bâtir.
+        {
+          const svm = solVillesMonde(wx, wz);
+          if (svm === 'lot') {
+            batirColonneVillesMonde(wx, wz, (dy, id) => {
+              const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+            continue;
+          }
+          if (svm !== null) { data[World.index(x, h, z)] = svm; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

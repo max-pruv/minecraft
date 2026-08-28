@@ -265,7 +265,11 @@ const position = (p) => p.evaluate(() => ({
 
     // --- appui long n'importe où ---------------------------------------------
     await banc.ouvrirLaCarte(tab);
-    await tab.evaluate(() => { const c2 = window.__carte; c2.vue.cx = 0; c2.vue.cz = -320; c2.vue.bpp = 1.2; });
+    // Le cadre vise la campagne française : l'ancien (0, −320) donnait un
+    // point de dépose en (−113, −433) — de la terre en v164, la MER DU NORD
+    // depuis que le planisphère existe. Le joueur nageait, l'or se posait au
+    // fond de l'eau, et les deux témoins suivants accusaient la carte.
+    await tab.evaluate(() => { const c2 = window.__carte; c2.vue.cx = 0; c2.vue.cz = 480; c2.vue.bpp = 1.2; });
     await dormir(400);
     const attendu = await tab.evaluate(() => {
       const c2 = window.__carte;
@@ -1049,16 +1053,98 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify({ rizEau: chine.rizEau, marches: chine.marches,
         panda: chine.panda, bambous: chine.bambous }));
 
+    // --- Londres, relevée sur documents --------------------------------------
+    //
+    // Max : « quand tu vois Londres aujourd'hui, il n'y a qu'un seul bâtiment…
+    // je veux un petit bout de Londres avec une vraie fidélité — les rues,
+    // les maisons. » On éprouve donc ce qu'un enfant reconnaît : la Tamise et
+    // son coude de Westminster, Big Ben au bord de l'eau, Tower Bridge qui
+    // ENJAMBE le fleuve, la roue du London Eye, le dôme de St Paul, le Shard,
+    // le Mall rouge, les parcs royaux, la brique victorienne et les bus.
+    const londres = await tab.evaluate(async () => {
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const { DECOR_START } = await import('./src/blocks.js');
+      const { LONDRES } = await import('./src/londres.js');
+      const w = window.__game.world;
+      const X = (u) => LONDRES.x + u, Z = (v) => LONDRES.z + v;
+      const eau = (u, v) => w.terrainHeight(X(u), Z(v)) < WATER_LEVEL;
+      const debout = (u, v, R) => {
+        const sol = w.terrainHeight(X(u), Z(v));
+        let hMax = 0;
+        for (let du = -R; du <= R; du++) {
+          for (let dv = -R; dv <= R; dv++) {
+            for (let y = sol + 110; y > sol; y--) {
+              if (w.getBlock(X(u) + du, y, Z(v) + dv)) { hMax = Math.max(hMax, y - sol); break; }
+            }
+          }
+        }
+        return hMax;
+      };
+      const MALL_ROUGE = DECOR_START + 161;
+      let mall = 0;
+      for (let k = 0; k <= 10; k++) {
+        const u = Math.round(-2 - (19 * k) / 10), v = Math.round(2 + (12 * k) / 10);
+        if (w.getBlock(X(u), w.terrainHeight(X(u), Z(v)), Z(v)) === MALL_ROUGE) mall++;
+      }
+      let briques = 0;
+      for (let du = -8; du <= 8; du++) {
+        for (let dv = -8; dv <= 8; dv++) {
+          const sol = w.terrainHeight(X(-40 + du), Z(30 + dv));
+          for (let y = sol; y < sol + 10; y++) {
+            const id = w.getBlock(X(-40 + du), y, Z(30 + dv));
+            if (id === DECOR_START + 1 || id === DECOR_START + 181 || id === DECOR_START + 171) briques++;
+          }
+        }
+      }
+      let bus = 0;
+      for (const [u, v] of [[-30, -21], [-12, -19], [10, -4], [2, 8], [30, -8]]) {
+        const sol = w.terrainHeight(X(u), Z(v));
+        for (let y = sol; y < sol + 4; y++) if (w.getBlock(X(u), y, Z(v)) === 23) { bus++; break; }
+      }
+      return {
+        tamiseWestminster: eau(10, 18), tamiseCity: eau(66, -1), coude: eau(13, 3),
+        trafalgarAuSec: !eau(0, 0),
+        bigBen: debout(8, 18, 6), eye: debout(14, 11, 4), stPaul: debout(49, -17, 8),
+        shard: debout(69, 8, 6), towerBridge: debout(87, 5, 15), sousLePont: eau(87, 5),
+        serpentine: eau(-62, 5),
+        hydeVert: w.getBlock(X(-72), w.terrainHeight(X(-72), Z(-3)), Z(-3)),
+        mall, briques, bus,
+      };
+    });
+    verifier('la Tamise fait son coude : en eau à Westminster, Charing Cross et la City',
+      londres.tamiseWestminster && londres.coude && londres.tamiseCity && londres.trafalgarAuSec,
+      JSON.stringify({ w: londres.tamiseWestminster, c: londres.coude,
+        city: londres.tamiseCity, trafalgar: londres.trafalgarAuSec }));
+    verifier('Big Ben au bord de l\'eau, la roue du London Eye en face',
+      londres.bigBen >= 55 && londres.eye >= 38,
+      `Big Ben ${londres.bigBen} · Eye ${londres.eye}`);
+    verifier('Tower Bridge enjambe le fleuve — de l\'eau sous le tablier',
+      londres.towerBridge >= 30 && londres.sousLePont,
+      `pont ${londres.towerBridge} de haut · eau dessous : ${londres.sousLePont}`);
+    verifier('le dôme de St Paul et la flèche du Shard',
+      londres.stPaul >= 14 && londres.shard >= 90,
+      `St Paul ${londres.stPaul} · Shard ${londres.shard}`);
+    verifier('le Mall est rouge, Hyde Park est vert, la Serpentine est en eau',
+      londres.mall >= 6 && (londres.hydeVert === 1 || londres.hydeVert === 6) && londres.serpentine,
+      JSON.stringify({ mall: londres.mall, hyde: londres.hydeVert, serpentine: londres.serpentine }));
+    verifier('les terrasses de brique victoriennes, et les bus impériaux rouges',
+      londres.briques >= 60 && londres.bus >= 3,
+      `${londres.briques} blocs de brique · ${londres.bus}/5 bus`);
+
     await banc.ouvrirLaCarte(tab);
-    for (const [nom, cx, cz, attendus] of [
+    for (const [nom, cx, cz, attendus, bpp] of [
       ['Nice', V.nice.x, V.nice.z, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],
       ['Lille', V.lille.x, V.lille.z, ["Grand'Place", 'Vieux-Lille', 'Citadelle', 'Euralille']],
+      // Londres est deux fois plus étendue que Nice : Tower Bridge vit à
+      // 87 blocs du centre, un cadre de ±65 le laissait dehors.
+      ['Londres', V.londres.x, V.londres.z,
+        ['Big Ben', 'Buckingham Palace', 'Tower Bridge', 'Hyde Park', 'La City'], 0.6],
     ]) {
-      await tab.evaluate(({ x, z }) => {
+      await tab.evaluate(({ x, z, b }) => {
         const c2 = window.__carte;
-        c2.vue.cx = x; c2.vue.cz = z; c2.vue.bpp = 0.35;
+        c2.vue.cx = x; c2.vue.cz = z; c2.vue.bpp = b;
         c2.limiter(); c2.peindre();
-      }, { x: cx, z: cz });
+      }, { x: cx, z: cz, b: bpp || 0.35 });
       await dormir(500);
       const vusV = await lieuxVus(tab);
       const manque = attendus.filter((n) => !vusV.includes(n));

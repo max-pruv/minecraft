@@ -47,19 +47,31 @@ function equirectangulaire(p) {
   const kmParDegreLon = p.rayonKm * D * Math.cos(p.lat0 * D);
   const kmParDegreLat = p.rayonKm * D;
 
+  // L'écart de longitude, intégré EXACTEMENT par morceaux : on découpe aux
+  // frontières des bandes de compression, et chaque morceau compte pour sa
+  // largeur réelle — fractions comprises.
+  //
+  // La première version marchait par pas d'un degré ENTIER depuis le méridien
+  // d'origine : le dernier pas, fractionnaire, comptait pour un degré plein.
+  // Toutes les longitudes étaient donc quantifiées au degré près — Rome se
+  // retrouvait 60 km trop à l'est, et personne ne l'a vu tant que la carte
+  // n'avait pas de côtes. C'est le planisphère qui l'a trahi : la projection
+  // inverse, exacte, ne retombait pas sur les villes posées par l'aller.
   const kmVersEst = (lon) => {
-    let km = 0;
-    let reste = lon - p.lon0;
-    // On parcourt l'écart de longitude par morceaux, en appliquant à chacun le
-    // facteur de sa bande. Traiter la bande d'un bloc, comme le faisait un
-    // premier jet, déplaçait aussi tout ce qui se trouvait au-delà.
-    const pas = reste >= 0 ? 1 : -1;
-    for (let l = p.lon0; pas > 0 ? l < lon : l > lon; l += pas) {
-      const large = Math.min(l, l + pas);
-      const bande = (p.compressions || []).find((c) => large >= c.de && large < c.a);
-      km += pas * kmParDegreLon * (bande ? bande.k : 1);
+    const de = Math.min(p.lon0, lon), a = Math.max(p.lon0, lon);
+    const bornes = [de, a];
+    for (const c of p.compressions || []) {
+      if (c.de > de && c.de < a) bornes.push(c.de);
+      if (c.a > de && c.a < a) bornes.push(c.a);
     }
-    return km;
+    bornes.sort((q, r) => q - r);
+    let km = 0;
+    for (let i = 0; i < bornes.length - 1; i++) {
+      const milieu = (bornes[i] + bornes[i + 1]) / 2;
+      const bande = (p.compressions || []).find((c) => milieu >= c.de && milieu < c.a);
+      km += (bornes[i + 1] - bornes[i]) * kmParDegreLon * (bande ? bande.k : 1);
+    }
+    return lon >= p.lon0 ? km : -km;
   };
 
   return {
@@ -141,15 +153,19 @@ export const MONDES = {
       // villes entières. Une ville qui grandira plus tard n'a qu'à grandir —
       // le témoin `carteMonde.js` rougira bien avant qu'elle n'en touche une
       // autre. Marge la plus étroite aujourd'hui : 58 blocs.
-      { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 60 },
-      { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 45 },
-      { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 40 },
-      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 30 },
-      { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 50 },
-      { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 45 },
-      { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 40 },
-      { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 40 },
-      { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 35 },
+      // Londres n'est plus un site à monument : c'est une VILLE bâtie
+      // (src/londres.js), la première du tour du monde au niveau de Nice et
+      // Lille. Son ancrage est Charing Cross, le point d'où les distances à
+      // Londres se mesurent officiellement.
+      { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 112 },
+      { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 75 },
+      { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 66 },
+      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 42 },
+      { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 62 },
+      { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 58 },
+      { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 66 },
+      { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 85 },
+      { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 54 },
     ],
   },
 
@@ -197,4 +213,61 @@ export function positionDe(cle, mondeId = 'terre') {
 // Toutes les positions d'un coup, pour qui veut dessiner la carte entière.
 export function lieuxDuMonde(mondeId = 'terre') {
   return (MONDES[mondeId].lieux || []).map((l) => ({ ...l, ...positionDe(l.cle, mondeId) }));
+}
+
+// --- la projection inverse : d'un bloc vers le ciel --------------------------
+//
+// La projection sait poser une latitude sur la carte ; dessiner les CONTINENTS
+// demande l'inverse — pour chaque colonne de terrain, savoir au-dessus de quel
+// point du globe elle se trouve, et demander à la Terre si c'est de la mer.
+//
+// La latitude s'inverse d'une ligne : elle est linéaire. La longitude, non —
+// les compressions (l'Atlantique resserré à 60 %) la rendent affine PAR
+// MORCEAUX. On bâtit donc une table cumulée, un demi-degré à la fois, et on y
+// cherche par dichotomie. La table reprend les MÊMES facteurs de bande que le
+// sens aller : les côtes dessinées et les villes posées se compressent
+// ensemble, et New York reste sur sa côte même avec l'océan raccourci.
+const cacheInverse = new Map();
+
+function tableLongitudes(mondeId) {
+  if (cacheInverse.has(mondeId)) return cacheInverse.get(mondeId);
+  const p = MONDES[mondeId].projection;
+  const D = Math.PI / 180;
+  const kmParDegreLon = p.rayonKm * D * Math.cos(p.lat0 * D);
+  // La table n'a besoin que des POINTS DE RUPTURE : la relation km↔longitude
+  // est affine entre deux frontières de bande. Exacte, et minuscule.
+  const ruptures = new Set([-180, 180, p.lon0]);
+  for (const c of p.compressions || []) {
+    if (c.de > -180 && c.de < 180) ruptures.add(c.de);
+    if (c.a > -180 && c.a < 180) ruptures.add(c.a);
+  }
+  const lons = [...ruptures].sort((a, b) => a - b);
+  const kms = [0];
+  for (let i = 1; i < lons.length; i++) {
+    const milieu = (lons[i - 1] + lons[i]) / 2;
+    const bande = (p.compressions || []).find((c) => milieu >= c.de && milieu < c.a);
+    kms.push(kms[i - 1] + (lons[i] - lons[i - 1]) * kmParDegreLon * (bande ? bande.k : 1));
+  }
+  const kmOrigine = kms[lons.indexOf(p.lon0)];
+  const table = { lons, kms, kmOrigine, kmParDegreLat: p.rayonKm * D };
+  cacheInverse.set(mondeId, table);
+  return table;
+}
+
+export function cielDe(x, z, mondeId = 'terre') {
+  const p = MONDES[mondeId].projection;
+  const t = tableLongitudes(mondeId);
+  const lat = p.lat0 + ((p.ancre.z - z) * p.kmParBloc) / t.kmParDegreLat;
+  const km = t.kmOrigine + (x - p.ancre.x) * p.kmParBloc;
+  // dichotomie dans la table cumulée, puis interpolation dans la tranche
+  const { lons, kms } = t;
+  if (km <= kms[0]) return { lat, lon: -180 };
+  if (km >= kms[kms.length - 1]) return { lat, lon: 180 };
+  let a = 0, b = kms.length - 1;
+  while (b - a > 1) {
+    const m = (a + b) >> 1;
+    if (kms[m] <= km) a = m; else b = m;
+  }
+  const part = (km - kms[a]) / (kms[b] - kms[a] || 1);
+  return { lat, lon: lons[a] + (lons[b] - lons[a]) * part };
 }

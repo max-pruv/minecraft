@@ -18,12 +18,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Le tour du monde, suite** — neuf villes ont leur monument (v164), pas
-  encore leur ville : Londres n'a que Big Ben et Tower Bridge sur un parvis.
-  Onze monuments du catalogue attendent encore une adresse (Notre-Dame, le
-  Sacré-Cœur, l'Empire State, le Chrysler, la Statue de la Liberté, le
-  Flatiron, le Golden Gate, l'Élysée, la Maison-Blanche — ceux-là appartiennent
-  à des villes déjà bâties et doivent y être posés à leur vraie place).
+- [ ] **Le tour du monde, approfondissements** — les NEUF villes sont bâties
+  (v165) : Londres à la main, les huit autres par la machine à villes. La
+  suite est du raffinement : donner à Rome, Sydney ou Rio la profondeur
+  artisanale de Londres (voies nommées, mobilier, intérieurs), ajouter des
+  villes neuves (Tokyo ? Le Caire ? New Delhi ?) — une fiche de plus dans la
+  machine —, et les mers manquantes du planisphère (mer Noire, Caspienne,
+  Baltique fine) quand un enfant les cherchera. Question produit ouverte :
+  que se passe-t-il quand un enfant se dépose volontairement en plein
+  océan ? (Aujourd'hui : il nage.)
+  Neuf monuments du catalogue attendent encore leur adresse dans des villes
+  déjà bâties : Notre-Dame, le Sacré-Cœur et l'Élysée à Paris ; l'Empire
+  State, le Chrysler, la Statue de la Liberté et le Flatiron à New York ;
+  le Golden Gate à San Francisco.
 
 - [ ] **Recalibrer les monuments existants** dans le ciel à 160 blocs. Ceux de
   Washington sont à leur échelle depuis v162 — l'obélisque à soixante-douze

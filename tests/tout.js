@@ -52,6 +52,12 @@ const GARDIENS = {
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
+  // La Terre elle-même : ses côtes et son relief décident du sol partout.
+  'src/terre.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
+  // Londres, ville entière du tour du monde.
+  'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  // Les huit autres villes iconiques, par la machine à villes.
+  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],

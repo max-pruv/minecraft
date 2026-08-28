@@ -20,6 +20,103 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
+
+**Pourquoi.** Max, devant la carte de v164 : « quand je regarde la carte, je ne
+reconnais pas la vraie carte du monde… je veux une espèce de carte du monde un
+peu réduite. Et surtout, les villes sont une vraie déception. Quand tu vois
+Londres aujourd'hui, il n'y a qu'un seul bâtiment… je veux un petit bout de
+Londres avec une vraie fidélité — les rues, les maisons — qu'on ait
+l'impression d'être à Londres. Il y a aussi le relief : les Alpes, l'Himalaya,
+le Grand Canyon. Je veux un revamp deep, deep, deep. » Il avait raison deux
+fois : les villes étaient aux bonnes coordonnées, mais posées sur du bruit —
+ni océans, ni continents, ni relief — et les neuf villes du tour du monde
+n'étaient que des monuments sur des esplanades.
+
+**Ce que ça change.**
+
+- **La Terre, la vraie.** Vingt et un contours de continents relevés au degré
+  près : l'Atlantique s'étend entre Paris et New York, la Manche sépare
+  Londres de Lille, la Méditerranée borde Nice, l'Afrique a sa corne et
+  l'Amérique du Sud sa pointe. Au dézoom entier, la carte EST un planisphère.
+- **Le relief, demandé dans la même phrase.** Dix-sept chaînes et sommets sur
+  documents : les Alpes entre Nice et Rome (Mont Blanc), l'Himalaya au nord
+  d'Agra (l'Everest culmine à 74 blocs, sous le plafond du terrain), les
+  Andes, les Rocheuses, le mont Rainier au-dessus de Seattle, le Kilimandjaro,
+  le Fuji, Uluru — et le Grand Canyon, le seul qui creuse : gorge de 28 blocs,
+  le Colorado se remplissant tout seul.
+- **Londres, ville entière — la première du tour du monde au niveau de Nice
+  et Lille.** Tout est relevé sur documents, ancré à Charing Cross, le point
+  d'où les distances à Londres se mesurent depuis le XIXᵉ siècle :
+  - **la Tamise et son « S »** : elle coule vers le nord à Vauxhall, Lambeth
+    et Westminster, tourne plein est à Charing Cross — le coude qu'on voit
+    sur tous les plans — et repart vers Tower Bridge ;
+  - **les monuments à leurs coordonnées** : Big Ben au bord de l'eau
+    (51,5007/−0,1246), le palais de Westminster et sa tour Victoria, le
+    London Eye juste en face sur l'autre rive, Tower Bridge TOURNÉ pour
+    enjamber le fleuve, St Paul et son dôme dans la City, la Tour de Londres,
+    Buckingham et ses gardes en tunique rouge, la colonne Nelson et ses
+    lions, le Shard — 310 m, le sommet de la ville, comme le vrai ;
+  - **trois tissus de rues** : les terrasses victoriennes de brique aux
+    fenêtres blanches et aux cheminées par paires, le stuc blanc de Mayfair,
+    les tours de verre de la City sur son lacis médiéval de guingois ;
+  - **le Mall ROUGE** — l'avenue à l'oxyde de fer qui mène à Buckingham —
+    les parcs royaux avec la Serpentine et le lac de St James, Primrose Hill
+    d'où l'on voit toute la ville, les bus impériaux, les cabines
+    téléphoniques, les taxis noirs.
+
+**Une faute débusquée par la Terre elle-même.** La projection quantifiait la
+longitude au degré près — Rome était posée 60 km trop à l'est depuis v164, et
+personne ne pouvait le voir tant que la carte n'avait pas de côtes. C'est la
+projection inverse, exacte, qui l'a trahie. Corrigée : chaque ville est au
+kilomètre de sa vraie place, aller-retour juste à 0,008°.
+
+**Ce qui casse, et c'était demandé.** « Je veux vraiment que tu refasses toute
+la carte. » La mer de bruit qui inventait des océans au hasard a vécu ; le
+relief change là où la Terre a pris ses droits. Les DIX-HUIT colonnes témoins
+de plafond.js n'ont pas bougé d'un bloc, la maison sauvegardée non plus : la
+casse est confinée à ce que la géographie réclame.
+
+**Ce qui le prouve.** Six témoins neufs sur Londres dans carte.js (le coude de
+la Tamise, Big Ben et l'Eye, Tower Bridge au-dessus de l'eau, St Paul et le
+Shard, le Mall rouge et la Serpentine, la brique et les bus) ; cinq sur la
+Terre dans carteMonde.js (océans en eau, continents à terre, seize villes au
+sec, l'Everest et le mont Blanc qui culminent, la gorge du canyon) ; trois
+sur les huit villes (les vingt-deux monuments debout chacun chez lui, les
+huit grands du catalogue à leur vraie hauteur, l'eau là où la géographie la
+met et chaque centre-ville au sec) ; les empreintes de plafond.js
+recalculées et racontées.
+
+**Et les huit autres, dans la même livraison.** Max : « fais pas que Londres,
+hein — je veux plein de villes iconiques. » Londres a fixé la recette ; la
+machine à villes (src/villesmonde.js) la déroule sur les huit autres, chacune
+relevée sur documents :
+
+- **Rome** : le Tibre et son S, le Colisée, le Panthéon, Saint-Pierre de
+  l'autre côté du fleuve, le Forum, l'ocre et la terracotta ;
+- **Barcelone** : la grille de l'Eixample aux angles CHANFREINÉS — la
+  signature aérienne unique de la ville —, la Rambla, la Sagrada, la plage
+  de la Barceloneta ;
+- **Pise** : l'Arno, et les trois de la piazza dei Miracoli alignés comme
+  sur place — la tour penchée, le Duomo, le baptistère rond ;
+- **Gizeh** : le plateau de sable, les TROIS pyramides en taille
+  décroissante — Khéphren garde sa coiffe de calcaire —, le Sphinx tourné
+  vers le levant, la vallée verte du Nil ;
+- **Agra** : le Taj sur la Yamuna, le charbagh — le jardin moghol en croix
+  coupé de canaux —, la mosquée de grès rouge, le fort d'Agra ;
+- **Sydney** : le port entre ses deux rives, l'Opéra sur la pointe
+  Bennelong, le Harbour Bridge d'une seule arche, les tours du CBD ;
+- **Rio** : la baie de Guanabara, le Pain de Sucre, le Christ posé AU SOMMET
+  du Corcovado — la statue hérite de l'altitude de son morne —, le croissant
+  de Copacabana, la forêt de Tijuca, les maisons vives des pentes ;
+- **Seattle** : la baie d'Elliott, la Space Needle, Pike Place, la grande
+  roue du front de mer — et le mont Rainier à l'horizon, déjà levé par le
+  relief.
+
+Une ville de plus, demain, c'est une fiche de plus dans la machine.
+
+---
+
 ## v164 — la carte prend ses vraies coordonnées, et le tour du monde commence
 
 **Pourquoi.** Max, en jouant : « il y a un vrai sujet structurel, elles sont
