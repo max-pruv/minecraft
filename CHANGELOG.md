@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v177 — les calottes polaires sont blanches
+
+**Pourquoi.** Max, capture à l'appui : « bug on top and bottom on the map »
+— deux bandes de prairie mouchetée barraient le haut et le bas de la carte.
+C'étaient la banquise arctique et l'Antarctique : le planisphère les déclare
+« terre » pour que le monde n'ait pas de trous, mais rien ne leur donnait
+leur visage — elles se rendaient en campagne verte, au sol comme sur la
+carte.
+
+**Ce que ça change.** Au-delà du cercle arctique (78°) et de la lisière de
+l'Antarctique (−63°), le sol du monde est neige, glace au ras de l'eau —
+plus de plage de sable au pôle, plus un arbre sur la banquise — et la carte
+les peint en blanc. La lisière se lit en une ligne z calculée une fois
+(la latitude ne dépend que de z) : le test par colonne est gratuit.
+
+**Ce qui le prouve.** Un témoin neuf sonde le sol de part et d'autre des
+deux lisières — neige ou glace au-delà sur neuf colonnes sur neuf, jamais en
+deçà (rouge sur l'ancien code : il y trouvait de l'herbe) — et la capture de
+la carte monde, calottes blanches, dans la discussion.
+
 ## v176 — l'onglet Bâtiments : six cents modèles dans le +
 
 **Pourquoi.** Max : « les bâtiments, je voudrais que tu les déplaces dans le

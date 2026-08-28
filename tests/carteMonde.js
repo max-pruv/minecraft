@@ -307,6 +307,32 @@ const VRAIES_KM = [
       aTerre(geographie.france) && aTerre(geographie.ameriques),
       JSON.stringify({ france: geographie.france, ameriques: geographie.ameriques }));
 
+    // LES CALOTTES SONT BLANCHES (v177). Max, capture à l'appui : « bug on
+    // top and bottom on the map » — la banquise arctique et l'Antarctique,
+    // déclarés terre par le planisphère, se rendaient en campagne verte. On
+    // sonde le SOL du monde de part et d'autre des deux lisières : neige ou
+    // glace au-delà, jamais en deçà.
+    const calottes = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      // sur l'ancien code, zDeLatitude n'existe pas : on échoue proprement
+      if (!m.zDeLatitude) return { nord: -1, sud: -1, dedans: -1, sur: 9 };
+      const zN = Math.round(m.zDeLatitude(78)), zS = Math.round(m.zDeLatitude(-63));
+      const sol = (x, z) => w.getBlock(x, w.terrainHeight(x, z), z);
+      const blanc = (id) => id === BLOCK.SNOW || id === BLOCK.ICE;
+      let nord = 0, sud = 0, dedans = 0;
+      for (let x = -600; x <= 600; x += 150) {
+        if (blanc(sol(x, zN - 120))) nord++;
+        if (blanc(sol(x, zS + 120))) sud++;
+        if (blanc(sol(x, 300))) dedans++;          // la France n'est pas un pôle
+      }
+      return { nord, sud, dedans, sur: 9 };
+    });
+    verifier('les calottes polaires sont de neige et de glace, pas de prairie',
+      calottes.nord === calottes.sur && calottes.sud === calottes.sur && calottes.dedans === 0,
+      JSON.stringify(calottes));
+
     const villesATerre = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');
       const m = await import('./src/mondes.js');

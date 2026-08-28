@@ -69,7 +69,17 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
-import { positionDe, cielDe } from './mondes.js';
+import { positionDe, cielDe, zDeLatitude } from './mondes.js';
+
+// LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
+// le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
+// pas de trous — mais ce sol se rendait en campagne verte, et Max l'a vu sur
+// la carte : deux bandes de prairie mouchetée en haut et en bas du monde. Au
+// delà de ces deux lignes, le sol est NEIGE. La latitude ne dépendant que de
+// z, la lisière se calcule une fois et le test par colonne est gratuit.
+const Z_ARCTIQUE = Math.round(zDeLatitude(78));
+const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
+const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
 import { surTerreReelle, reliefReel } from './terre.js';
 
 export const CHUNK = 16;
@@ -1278,6 +1288,7 @@ export class World {
   }
 
   treeAt(x, z) {
+    if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
@@ -1341,7 +1352,12 @@ export class World {
 
         let top = BLOCK.GRASS;
         let filler = BLOCK.DIRT;
-        if (h <= WATER_LEVEL + 1) { top = BLOCK.SAND; filler = BLOCK.SAND; }
+        if (dansUneCalotte(wz)) {
+          // la banquise et l'Antarctique : de la neige sur la terre, de la
+          // glace au ras de l'eau — jamais de plage de sable au pôle
+          top = h <= WATER_LEVEL + 1 ? BLOCK.ICE : BLOCK.SNOW;
+          filler = BLOCK.SNOW;
+        } else if (h <= WATER_LEVEL + 1) { top = BLOCK.SAND; filler = BLOCK.SAND; }
         else if (h >= 58) { top = BLOCK.SNOW; filler = BLOCK.STONE; }
 
         // biome overrides: sandy desert, rocky volcano with a lava crater
