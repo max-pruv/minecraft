@@ -18,8 +18,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Le tour du monde, approfondissements** — CINQUANTE-QUATRE villes
-  bâties (v166) : Londres à la main, quarante-six par la machine à villes.
+- [ ] **Les poissons qui nagent** (demande de Max, avec les deux cents
+  villes) — petits, colorés, dans les océans et les fleuves autour de
+  l'enfant ; le brouillon du module existe. Puis **les trains intervilles
+  sur les vraies lignes** (Eurostar, Shinkansen, AVE…), à monter via le
+  bouton « Monter à bord » existant.
+
+- [ ] **Le tour du monde, approfondissements** — DEUX CENT SOIXANTE-DIX-HUIT
+  lieux au registre (v173) : Londres à la main, les autres par la machine.
   La suite est du raffinement : donner à Tokyo, Rome ou Rio la profondeur
   artisanale de Londres (voies nommées, mobilier, intérieurs), et les mers
   manquantes du planisphère (mer Noire, Caspienne, Baltique fine) quand un
@@ -66,6 +72,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v173** — les deux cents villes : 223 villes générées par archétypes
+  régionaux avec côte automatique, 278 lieux au registre, plus d'arbres
+  sauvages dans les rues — et le métro de Washington dégelé (le piège de
+  flottants qui remettait la pause à l'infini, bug de production attrapé
+  par la barrière).
 - [x] **v164** — la carte prend ses vraies coordonnées : chaque ville déduite
   de sa latitude et de sa longitude, aucun chevauchement (marge la plus étroite
   58 blocs), et le tour du monde commence — neuf villes, dix monuments qui se
