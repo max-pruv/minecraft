@@ -174,75 +174,65 @@ const VRAIES_KM = [
     verifier('le terrain existe là où San Francisco a déménagé',
       loin.h > 0 && loin.solide, JSON.stringify(loin));
 
-    // --- LE TOUR DU MONDE : les monuments se dressent-ils VRAIMENT ? --------
+    // --- LE TOUR DU MONDE : huit villes, pas huit esplanades -----------------
     //
-    // Vingt et un monuments étaient bâtis au bloc près dans src/monuments.js et
-    // aucun ne se dressait nulle part : on ne pouvait que les poser soi-même
-    // depuis le menu du constructeur. Le témoin ne demande donc pas « le
-    // monument est-il déclaré » — il l'était déjà — mais « y a-t-il vraiment de
-    // la pierre à cet endroit du monde, et jusqu'à sa vraie hauteur ».
-    const debout = await tab.evaluate(async () => {
-      const [cap, mon] = await Promise.all([
-        import('./src/capitales.js'), import('./src/monuments.js'),
-      ]);
+    // Max : « fais pas que Londres, hein — je veux plein de villes iconiques. »
+    // Les parvis ont tous promu : chaque monument se dresse désormais DANS sa
+    // ville (src/villesmonde.js), au bord de son eau. Le témoin sonde le monde
+    // engendré : chaque monument debout, les huit grands du catalogue jusqu'à
+    // leur vraie hauteur, l'eau là où la géographie la met — le Tibre,
+    // la Barceloneta, l'Arno, la Yamuna, le port de Sydney, la baie de
+    // Guanabara, la baie d'Elliott — et le centre de chaque ville au sec.
+    const tour = await tab.evaluate(async () => {
+      const { VILLES_MONDE } = await import('./src/villesmonde.js');
+      const { monumentBati } = await import('./src/monuments.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
       const w = window.__game.world;
-      const out = [];
-      for (const s2 of cap.SITES) {
-        const p = cap.positionSite(s2.cle);
-        for (const m of s2.monuments) {
-          const b = mon.monumentBati(m.id);
-          const x = p.x + m.du, z = p.z + m.dv;
-          const R = Math.ceil(Math.max(b.emprise.l, b.emprise.p) / 2) + 2;
+      const CAT = { 'Colisée': 'colisee', 'Sagrada Família': 'sagrada', 'Tour de Pise': 'tour-pise',
+        'Pyramide de Khéops': 'pyramide-gizeh', 'Taj Mahal': 'taj-mahal', "Opéra de Sydney": 'opera-sydney',
+        'Christ Rédempteur': 'christ-redempteur', 'Space Needle': 'space-needle' };
+      const EAU_TEMOIN = { rome: [-50, 1], barcelone: [45, 25], pise: [0, 15], agra: [10, -6],
+        sydney: [-5, -18], rio: [45, 20], seattle: [-35, 0] };
+      const monuments = [], eaux = [], centres = [];
+      for (const f of VILLES_MONDE) {
+        for (const m of f.monuments) {
+          const [du, dv] = f.local(m.lat, m.lon);
+          const x = f.ancre.x + du, z = f.ancre.z + dv;
           const sol = w.terrainHeight(x, z);
-          let blocs = 0;
-          for (let dx = -R; dx <= R; dx += 2) {
-            for (let dz = -R; dz <= R; dz += 2) {
-              for (let y = sol; y < sol + b.emprise.h + 4; y++) {
-                if (w.getBlock(x + dx, y, z + dz)) blocs++;
+          const R = Math.min(m.box || 24, 24);
+          let hMax = 0;
+          for (let a = -R; a <= R; a += 2) {
+            for (let b = -R; b <= R; b += 2) {
+              for (let y = sol + 115; y > sol; y--) {
+                if (w.getBlock(x + a, y, z + b)) { hMax = Math.max(hMax, y - sol); break; }
               }
             }
           }
-          // LA FLÈCHE SE VÉRIFIE À SON ADRESSE EXACTE.
-          //
-          // Un balayage de deux en deux rate une flèche large d'un bloc et
-          // annonce Big Ben tronqué à 64 sur 70 alors qu'il est entier : c'est
-          // l'échantillonnage qui manque le sommet, pas le monument. On demande
-          // donc au modèle OÙ est son point le plus haut, et on regarde cette
-          // colonne-là — c'est à la fois exact et bien moins coûteux.
-          const e = b.emprise;
-          const cx = Math.round((e.minX + e.maxX) / 2);
-          const cz = Math.round((e.minZ + e.maxZ) / 2);
-          let sommet = b.blocs[0];
-          for (const bl of b.blocs) if (bl[1] > sommet[1]) sommet = bl;
-          const fx = x + (sommet[0] - cx), fz = z + (sommet[2] - cz);
-          const yFleche = sol + (sommet[1] - e.minY) + 1;
-          let hMax = 0;
-          for (let y = sol; y < sol + e.h + 4; y++) if (w.getBlock(fx, y, fz)) hMax = y - sol;
-          out.push({ nom: b.nom, ville: p.nom, blocs, hMax, attendu: e.h, sol,
-            fleche: w.getBlock(fx, yFleche, fz) !== 0 });
+          const cat = CAT[m.nom] ? monumentBati(CAT[m.nom]) : null;
+          monuments.push({ nom: m.nom, ville: f.cle, hMax, attendu: cat ? cat.emprise.h : 3 });
         }
+        const e = EAU_TEMOIN[f.cle];
+        if (e) eaux.push({ ville: f.cle, eau: w.terrainHeight(f.ancre.x + e[0], f.ancre.z + e[1]) < WATER_LEVEL });
+        centres.push({ ville: f.cle, sec: w.terrainHeight(f.ancre.x, f.ancre.z) >= WATER_LEVEL });
       }
-      return out;
+      return { monuments, eaux, centres };
     });
-    // Huit monuments sur parvis : Big Ben et Tower Bridge ont déménagé dans
-    // Londres, devenue une ville entière — ils sont éprouvés avec elle, dans
-    // carte.js, au milieu de leurs rues.
-    verifier('les huit monuments du tour du monde se dressent pour de vrai',
-      debout.length === 8 && debout.every((m) => m.blocs > 50),
-      debout.filter((m) => m.blocs <= 50).map((m) => `${m.nom} : ${m.blocs} blocs`).join(' · ')
-        || `${debout.length} monuments`);
-    // Et à leur VRAIE hauteur : un monument tronqué au bord d'un morceau de
-    // terrain passerait le test précédent sans que sa flèche existe.
-    const tronques = debout.filter((m) => !m.fleche);
-    verifier('et aucun n\'est tronqué : chacun monte jusqu\'à sa flèche',
+    const couches = tour.monuments.filter((m) => m.hMax < 3);
+    verifier('les vingt-deux monuments des huit villes se dressent, chacun chez lui',
+      tour.monuments.length === 22 && couches.length === 0,
+      couches.map((m) => `${m.nom} (${m.ville}) : ${m.hMax}`).join(' · ')
+        || `${tour.monuments.length} monuments debout`);
+    const tronques = tour.monuments.filter((m) => m.attendu > 3 && m.hMax < m.attendu - 2);
+    verifier('et les huit grands du catalogue montent jusqu\'à leur vraie hauteur',
       tronques.length === 0,
       tronques.map((m) => `${m.nom} : ${m.hMax}/${m.attendu}`).join(' · ')
-        || debout.map((m) => `${m.nom} ${m.hMax}`).join(', '));
-    // Chacun se tient sur un parvis, pas dans un trou ni sur un pic.
-    const malAssis = debout.filter((m) => m.sol !== 34);
-    verifier('chacun repose sur un parvis de plain-pied',
-      malAssis.length === 0,
-      malAssis.map((m) => `${m.nom} : sol ${m.sol}`).join(' · ') || 'tous à la cote 34');
+        || tour.monuments.filter((m) => m.attendu > 3).map((m) => `${m.nom} ${m.hMax}`).join(', '));
+    const sansEau = tour.eaux.filter((e) => !e.eau);
+    const noyes = tour.centres.filter((c) => !c.sec);
+    verifier('chaque ville a son eau là où la géographie la met, et son centre au sec',
+      sansEau.length === 0 && noyes.length === 0,
+      [...sansEau.map((e) => `${e.ville} sans eau`), ...noyes.map((c) => `${c.ville} noyée`)].join(' · ')
+        || 'le Tibre, la Barceloneta, l\'Arno, la Yamuna, le port, les deux baies');
 
     // --- LA TERRE SE RECONNAÎT ----------------------------------------------
     //

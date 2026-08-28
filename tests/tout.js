@@ -56,6 +56,8 @@ const GARDIENS = {
   'src/terre.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
   // Londres, ville entière du tour du monde.
   'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  // Les huit autres villes iconiques, par la machine à villes.
+  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],

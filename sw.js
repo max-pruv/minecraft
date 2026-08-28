@@ -65,6 +65,7 @@ const ASSETS = [
   './src/capitales.js',
   './src/terre.js',
   './src/londres.js',
+  './src/villesmonde.js',
   './src/batiments.js',
   './src/monuments.js',
   './src/education.js',

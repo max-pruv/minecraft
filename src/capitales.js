@@ -40,40 +40,12 @@ const HERBE = 1;
 // `sol` : la cote à laquelle on aplanit le site. Toutes les villes du jeu sont
 // bâties autour de 33-34 ; on garde la même, sinon un enfant qui arrive de
 // Paris tomberait dans un trou ou sur une falaise.
-export const SITES = [
-  {
-    cle: 'rome', emoji: '🇮🇹', sol: 34, parvis: 38,
-    monuments: [{ id: 'colisee', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'barcelone', emoji: '🇪🇸', sol: 34, parvis: 32,
-    monuments: [{ id: 'sagrada', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'pise', emoji: '🗼', sol: 34, parvis: 24,
-    monuments: [{ id: 'tour-pise', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'gizeh', emoji: '🇪🇬', sol: 34, parvis: 42,
-    monuments: [{ id: 'pyramide-gizeh', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'agra', emoji: '🇮🇳', sol: 34, parvis: 38,
-    monuments: [{ id: 'taj-mahal', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'sydney', emoji: '🇦🇺', sol: 34, parvis: 32,
-    monuments: [{ id: 'opera-sydney', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'rio', emoji: '🇧🇷', sol: 34, parvis: 32,
-    monuments: [{ id: 'christ-redempteur', du: 0, dv: 0 }],
-  },
-  {
-    cle: 'seattle', emoji: '🇺🇸', sol: 34, parvis: 28,
-    monuments: [{ id: 'space-needle', du: 0, dv: 0 }],
-  },
-];
+// TOUS LES SITES ONT PROMU. Les huit parvis restants sont devenus des villes
+// entières dans src/villesmonde.js — Max : « je veux plein de villes
+// iconiques » — comme Londres l'avait fait dans src/londres.js. Le mécanisme
+// du parvis reste : le prochain site posé ici (la Lune ?) le retrouvera tel
+// quel.
+export const SITES = [];
 
 // La position d'un site, lue au registre. On la calcule une fois : `positionDe`
 // reprojette à chaque appel, et ces listes sont parcourues à chaque morceau de

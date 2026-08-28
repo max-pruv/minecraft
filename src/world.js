@@ -32,6 +32,10 @@ import {
   MONUMENTS_LONDRES, lieuxDeLondres,
 } from './londres.js';
 import {
+  hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde,
+  landmarksVillesMonde, placesVillesMonde,
+} from './villesmonde.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -541,6 +545,7 @@ export const PLACES = [
   // Le tour du monde : une destination par ville, et une par monument. Sans
   // elles on arriverait « à Rome » sans savoir de quel côté regarder.
   ...placesCapitales(),
+  ...placesVillesMonde(),
   // Les destinations de Londres : la ville, puis ses hauts lieux.
   { name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r },
   ...lieuxDeLondres().map((p) => ({ name: p.name, x: p.x, z: p.z, r: 0 })),
@@ -891,6 +896,7 @@ const LANDMARKS = [
     box: m.box, seuil: m.seuil, build: m.build,
   })),
   ...landmarksCapitales(),
+  ...landmarksVillesMonde(),
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -1062,6 +1068,12 @@ export class World {
     // Rio et Seattle. Chacune aplanit le parvis de son monument, avec un fondu
     // au pourtour — au-delà, le paysage est celui du bruit, au bloc près.
     h = hauteurCapitales(x, z, h);
+
+    // Les huit villes iconiques du tour du monde : Rome et le Tibre, la
+    // grille chanfreinée de Barcelone, l'Arno de Pise, le plateau de Gizeh,
+    // la Yamuna d'Agra, le port de Sydney, la baie de Rio et ses mornes, la
+    // baie d'Elliott de Seattle. Cf. src/villesmonde.js.
+    h = hauteurVillesMonde(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -1440,6 +1452,20 @@ export class World {
         {
           const scap = solCapitales(wx, wz);
           if (scap !== null) { data[World.index(x, h, z)] = scap; continue; }
+        }
+
+        // Les huit villes iconiques : leur sol, et leurs maisons quand la
+        // colonne est un lot à bâtir.
+        {
+          const svm = solVillesMonde(wx, wz);
+          if (svm === 'lot') {
+            batirColonneVillesMonde(wx, wz, (dy, id) => {
+              const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+            continue;
+          }
+          if (svm !== null) { data[World.index(x, h, z)] = svm; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

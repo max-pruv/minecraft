@@ -158,14 +158,14 @@ export const MONDES = {
       // Lille. Son ancrage est Charing Cross, le point d'où les distances à
       // Londres se mesurent officiellement.
       { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 112 },
-      { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 45 },
-      { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 40 },
-      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 30 },
-      { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 50 },
-      { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 45 },
-      { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 40 },
-      { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 40 },
-      { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 35 },
+      { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 75 },
+      { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 66 },
+      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 42 },
+      { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 62 },
+      { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 58 },
+      { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 66 },
+      { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 85 },
+      { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 54 },
     ],
   },
 
