@@ -239,6 +239,16 @@ function voitureNeuve() {
   const plage = box(1.5, 0.02, 0.75, navy, 0, 0.66, -1.05);
   plage.rotation.x = -0.3;
   cockpit.add(plage);
+  // LE NEZ SE REMPLIT. Verdict de Max en vue GTA : « la voiture à l'avant,
+  // la transparence, on voit la pelouse — elle n'est pas bien fermée. » Le
+  // capot du modèle n'a que des faces tournées vers dehors : un rayon qui
+  // entre par le pare-brise ressort par le nez et tombe sur l'herbe. Deux
+  // masses pleines, taillées SOUS la ligne de capot et entre les passages
+  // de roue, bouchent le compartiment avant — et font un fond aux phares.
+  // — étroites et basses : le capot plonge sur les flancs, et la première
+  // version de ces masses perçait l'aile (capture à l'appui)
+  cockpit.add(box(1.1, 0.34, 0.85, navy, 0, 0.42, -1.12));
+  cockpit.add(box(0.8, 0.2, 0.6, navy, 0, 0.4, -1.76));  // jusqu'au dos de la calandre
   // le plancher et la cloison avant : le réservoir du modèle faisait office
   // des deux — retiré (il murait la vue), l'habitacle donnait sur la route
   cockpit.add(box(1.5, 0.03, 1.5, 0x101216, 0, 0.5, -0.05));
