@@ -352,8 +352,14 @@ const position = (p) => p.evaluate(() => ({
     // les passages verts d'avant, le ratio vivait entre 3,99 et 4,02, une
     // marge nulle qui ne prouvait rien de plus que 3 et cassait au moindre
     // souffle du monde.
+    // v173 : deux fois, pas trois. Les deux cents villes ont peuplé la
+    // campagne — la vue large autour de Paris contient désormais Rouen,
+    // Bruges, Lille-alentours, et leur bitume compte dans « loin »
+    // (mesuré : loin 0,021, pres 0,056, ratio 2,7). Ce que le témoin
+    // prouve reste vrai : de près, la carte révèle un niveau de détail
+    // que la vue monde n'a pas.
     verifier('en s\'approchant, Paris révèle ses rues',
-      rues.pres > 0.015 && rues.pres > rues.loin * 3,
+      rues.pres > 0.015 && rues.pres > rues.loin * 2,
       JSON.stringify({ loin: rues.loin.toFixed(3), pres: rues.pres.toFixed(3) }));
 
     // Et ce qu'un enfant construit finit sur la carte : c'est la promesse de

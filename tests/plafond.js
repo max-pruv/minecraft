@@ -81,10 +81,9 @@ function verifier(nom, ok, detail = '') {
 // Amsterdam, dans la fenêtre — d'où la nouvelle valeur ; la preuve
 // d'intégrité hors villes est refaite plus bas.
 // v173 : les deux cents villes — une vingtaine tombe dans la fenêtre
-// observée (Lyon, Gand, Luxembourg, Cologne, Francfort, Zurich, Genève,
-// Manchester…) — d'où la nouvelle valeur ; la preuve hors villes, refaite
-// plus bas.
-const EMPREINTE_RELIEF = '6896b0141e7262b4628a5137d23ed476154dfecf';
+// observée (Lyon, Cologne, Francfort, Zurich, Genève, Manchester…) — d'où
+// la nouvelle valeur ; la preuve hors villes, refaite plus bas.
+const EMPREINTE_RELIEF = 'a18ae3735ba737b6198a68cb24cdebab06b9836d';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -122,11 +121,14 @@ const EMPREINTE_RELIEF = '6896b0141e7262b4628a5137d23ed476154dfecf';
 // v172 : découpe recalculée avec les NOUVEAUX rayons — et mesurée identique
 // sur origin/main et sur la branche : hors des disques agrandis, pas un
 // bloc n'a bougé (ec09838a…, 195 668 colonnes des deux côtés).
-// v173 : découpe élargie aux deux cents villes (281 lieux au registre) — et
+// v173 : découpe élargie aux deux cents villes (278 lieux au registre) — et
 // mesurée identique sur origin/main (v172) et sur la branche : hors des
-// disques neufs, pas un bloc n'a bougé (3a8e2a2c…, 163 800 colonnes des
-// deux côtés).
-const EMPREINTE_HORS_VILLES = '3a8e2a2cd17244bf82e27aa4cfbedcc46b5c2e79';
+// disques neufs, pas un bloc n'a bougé (c5a30b6f…, 167 512 colonnes des
+// deux côtés). Trois villes candidates (Gand, Luxembourg, Nuremberg) ont
+// été RETIRÉES parce que leur fondu atteignait des colonnes-témoins
+// ci-dessous — dont la maison sauvegardée en (-100,-100) : le contrat avec
+// les vieilles sauvegardes pèse plus lourd qu'une ville de plus.
+const EMPREINTE_HORS_VILLES = 'c5a30b6f16cb825157c90f631bc166ba1688be33';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.

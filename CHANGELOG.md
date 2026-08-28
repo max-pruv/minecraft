@@ -28,8 +28,8 @@ entre elles, le globe restait vide : pas de Lyon, pas de Marseille, pas de
 Manchester, pas de Lagos. Un enfant qui survolait la France ne croisait que
 des forêts.
 
-**Ce que ça change.** Deux cent vingt-six villes réelles de plus, à leurs
-vraies coordonnées — le registre passe de 55 à 281 lieux. Chacune reçoit de
+**Ce que ça change.** Deux cent vingt-trois villes réelles de plus, à leurs
+vraies coordonnées — le registre passe de 55 à 278 lieux. Chacune reçoit de
 la machine tout ce que les grandes ont : rues et avenues à passages piétons,
 place centrale à fontaine, devantures, toits variés, passants, circulation.
 Onze archétypes régionaux (Europe, monde britannique, Nordique, Méditerranée,
@@ -42,10 +42,10 @@ devenu criant : la forêt sauvage poussait dans les rues (Lyon disparaissait
 sous les feuillages) — plus aucun arbre sauvage ne pousse dans une ville de
 la machine, leurs parcs suffisent.
 
-**Ce qui le prouve.** Les 281 lieux sans un seul chevauchement (marge
+**Ce qui le prouve.** Les 278 lieux sans un seul chevauchement (marge
 minimale 8 blocs, Pise/Florence), tous au sec ; l'empreinte du paysage hors
 villes, mesurée avec la même découpe sur main et sur cette branche :
-identique au bloc près (3a8e2a2c…, 163 800 colonnes des deux côtés) — les
+identique au bloc près (c5a30b6f…, 167 512 colonnes des deux côtés) — les
 deux cents villes n'ont pas déplacé un caillou ailleurs. Et les captures de
 Marseille et Lyon, avant/après, dans la discussion.
 

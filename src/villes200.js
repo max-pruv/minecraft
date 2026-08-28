@@ -18,8 +18,10 @@ export const VILLES_GENEREES = [
   { cle: 'strasbourg', nom: 'Strasbourg', lat: 48.5734, lon: 7.7521, r: 34, style: 'europe' },
   { cle: 'montpellier', nom: 'Montpellier', lat: 43.6108, lon: 3.8767, r: 32, style: 'mediterranee' },
   { cle: 'rennes', nom: 'Rennes', lat: 48.1173, lon: -1.6778, r: 30, style: 'europe' },
-  { cle: 'gand', nom: 'Gand', lat: 51.0543, lon: 3.7174, r: 24, style: 'nordique' },
-  { cle: 'luxembourg', nom: 'Luxembourg', lat: 49.6116, lon: 6.1319, r: 28, style: 'europe' },
+  // Gand et Luxembourg ont été retirées : leur fondu de terrain atteignait
+  // les colonnes-témoins du plafond près de l'origine — dont la maison
+  // sauvegardée en (-100,-100), un contrat avec les vieilles sauvegardes.
+  // Nuremberg, pareil, pour la colonne (620, 80).
   // --- Îles britanniques -----------------------------------------------------
   { cle: 'manchester', nom: 'Manchester', lat: 53.4808, lon: -2.2426, r: 36, style: 'britannique' },
   { cle: 'liverpool', nom: 'Liverpool', lat: 53.4084, lon: -2.9916, r: 27, style: 'britannique' },
@@ -57,7 +59,6 @@ export const VILLES_GENEREES = [
   { cle: 'stuttgart', nom: 'Stuttgart', lat: 48.7758, lon: 9.1829, r: 32, style: 'europe' },
   { cle: 'dresde', nom: 'Dresde', lat: 51.0504, lon: 13.7373, r: 30, style: 'europe' },
   { cle: 'leipzig', nom: 'Leipzig', lat: 51.3397, lon: 12.3731, r: 30, style: 'europe' },
-  { cle: 'nuremberg', nom: 'Nuremberg', lat: 49.4521, lon: 11.0767, r: 30, style: 'europe' },
   { cle: 'zurich', nom: 'Zurich', lat: 47.3769, lon: 8.5417, r: 32, style: 'europe' },
   { cle: 'geneve', nom: 'Genève', lat: 46.2044, lon: 6.1432, r: 30, style: 'europe' },
   { cle: 'bale', nom: 'Bâle', lat: 47.5596, lon: 7.5886, r: 28, style: 'europe' },
