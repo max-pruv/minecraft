@@ -11,6 +11,81 @@
 
 import * as THREE from 'three';
 import { Atelier } from './modeles.js';
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
+
+// --- les reflets --------------------------------------------------------------
+//
+// La carrosserie REFLÈTE le monde : une caméra cubique rend la scène autour
+// de la voiture la plus proche (128 px, quelques fois par seconde, voir
+// main.js) et sa texture sert d'horizon aux matériaux. C'est ce qui sépare
+// la laque de l'argile. L'essai précédent — un « ciel en boîte » peint à la
+// main dans des canvases — cassait l'échantillonnage et blanchissait toute
+// la voiture ; une cible de rendu GPU, elle, est valide par construction.
+let refletsRT = null;
+let refletsCamera = null;
+export function refletsVoiture() {
+  if (!refletsRT && typeof document !== 'undefined') {
+    refletsRT = new THREE.WebGLCubeRenderTarget(128, {
+      generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
+    });
+    refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);
+  }
+  return refletsRT;
+}
+export function majRefletsVoiture(renderer, scene, pos) {
+  if (!refletsRT) return;
+  refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
+  refletsCamera.update(renderer, scene);
+}
+
+// --- la vraie voiture ---------------------------------------------------------
+//
+// Le modèle d'artiste (vendor/voiture.glb, voir vendor/VOITURE_LICENSE) :
+// une vraie carrosserie de 99 000 triangles fournie par Max — la sculpture
+// de primitives à l'aveugle plafonnait au low-poly, et il a eu raison de le
+// dire. Chargé UNE fois, cloné pour chaque voiture garée. En cas d'échec
+// (fichier absent d'un vieux cache), la coque sculptée reste en place : le
+// modèle améliore, il ne conditionne jamais le démarrage.
+let chargementVraieVoiture = null;
+export function chargerVraieVoiture() {
+  if (chargementVraieVoiture || typeof document === 'undefined') return chargementVraieVoiture;
+  chargementVraieVoiture = new GLTFLoader().loadAsync('./vendor/voiture.glb').then((gltf) => {
+    const brut = gltf.scene;
+    // Le modèle embarque un socle de présentation nommé « None », posé 1,4
+    // sous les pneus : mesuré avec lui, la voiture flottait à sa hauteur.
+    const socles = [];
+    brut.traverse((o) => { if (o.isMesh && o.name === 'None') socles.push(o); });
+    for (const s of socles) s.removeFromParent();
+    const boite = new THREE.Box3().setFromObject(brut);
+    const taille = boite.getSize(new THREE.Vector3());
+    const centre = boite.getCenter(new THREE.Vector3());
+    // recentré, posé au sol, à l'échelle du jeu, l'avant vers -z
+    const cadre = new THREE.Group();
+    cadre.add(brut);
+    brut.position.set(-centre.x, -boite.min.y, -centre.z);
+    cadre.scale.setScalar(4.4 / Math.max(taille.x, taille.z));
+    if (taille.x > taille.z) cadre.rotation.y = Math.PI / 2;
+    // La cabine est AVANCÉE (moteur central) : recalée de 0,55 vers
+    // l'arrière pour que le siège du conducteur tombe sur l'origine — c'est
+    // là que la caméra s'assied. Sans cela on voyait le DOS des sièges.
+    cadre.position.z = 0.55;
+    const porteur = new THREE.Group();
+    porteur.add(cadre);
+    const rt = refletsVoiture();
+    porteur.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const nom = (o.material.name || '').toLowerCase();
+      if (nom.includes('glass') || nom.includes('window')) {
+        o.material.transparent = true;
+        o.material.opacity = 0.35;
+      }
+      if (rt) { o.material.envMap = rt.texture; o.material.envMapIntensity = 1.0; }
+      o.material.needsUpdate = true;
+    });
+    return porteur;
+  }).catch(() => null);
+  return chargementVraieVoiture;
+}
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
@@ -338,13 +413,16 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   // galbe — le passage de l'argile à la laque. PAS de carte d'environnement :
   // une CubeTexture de canvases cassait l'échantillonnage et blanchissait
   // toute la voiture, bi-ton compris — vérifié en bissection de matériaux.
+  const rt = refletsVoiture();
   const peint = new THREE.MeshPhongMaterial({
     color: couleur, shininess: 80, specular: 0x8a9098, vertexColors: true,
+    envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.22,
   });
   mc.material = peint;
   g.userData.carrosserie = peint;
   g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
     color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
+    envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.4,
     transparent: true, opacity: 0.78,
   });
   return g;

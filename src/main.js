@@ -17,7 +17,7 @@ import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules } from './vehicules.js';
+import { createVehicules, majRefletsVoiture, refletsVoiture } from './vehicules.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -4153,6 +4153,7 @@ const mapModal = document.getElementById('map-modal');
 const mapModalCanvas = document.getElementById('map-modal-canvas');
 let minimapVisible = false;
 let minimapTimer = 0;
+let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 
 // La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
 // monde s'arrêtait là. Elle reste fixe : c'est un choix de dessin, pas une
@@ -4852,6 +4853,19 @@ function frame(now) {
   const hit = running ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
+
+  // Les reflets de la carrosserie : la caméra cubique ne tourne que quand une
+  // voiture est à portée de regard, et deux fois par seconde — six rendus de
+  // 128 px, rien quand on est à pied loin de tout.
+  refletsHorloge -= dt;
+  if (refletsHorloge <= 0) {
+    refletsHorloge = 0.5;
+    const voitureProche = animalManager.animals.find((a) => a.def.key === 'voiture'
+      && Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 45);
+    if (voitureProche && refletsVoiture()) {
+      majRefletsVoiture(renderer, scene, voitureProche.pos);
+    }
+  }
 
   renderer.render(scene, camera);
   requestAnimationFrame(frame);

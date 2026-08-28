@@ -83,6 +83,10 @@ const ASSETS = [
   './vendor/three.module.min.js',
   './vendor/peerjs.min.js',
   './vendor/qrcode.module.js',
+  // La vraie voiture (réalisme v2) : le chargeur glTF et le modèle d'artiste.
+  './vendor/GLTFLoader.js',
+  './vendor/BufferGeometryUtils.js',
+  './vendor/voiture.glb',
 ];
 
 self.addEventListener('install', (event) => {

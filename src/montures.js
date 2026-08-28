@@ -11,7 +11,7 @@
 // gros — la caméra monte, la bête garde ses pattes par terre.
 
 import * as THREE from 'three';
-import { construireVoitureRoute } from './vehicules.js';
+import { construireVoitureRoute, chargerVraieVoiture } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -222,32 +222,54 @@ function voitureNeuve() {
   // l'éclairage et mangeaient le bi-ton avant/arrière.
   const teintes = [0xb02020, 0x2a4e9c, 0xc0a878, 0x1f7a4c];
   const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
+  // L'habitacle sculpté vit dans SON groupe : quand le vrai modèle arrive, il
+  // part d'un bloc avec la coque — le modèle a son propre intérieur. Seul le
+  // volant centré reste, pour l'enfant assis au milieu (et il est minuscule,
+  // noyé dans le cockpit du modèle).
+  const habitacle = new THREE.Group();
   const sombre = 0x22262c, noir = 0x14161a;
-  g.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));             // tableau de bord
+  habitacle.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));     // tableau de bord
   const volant = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 6, 14),
     new THREE.MeshBasicMaterial({ color: noir }));
   volant.rotation.x = -0.5;                                        // incliné vers soi
   volant.position.set(0, 0.8, -0.45);
-  g.add(volant);
-  g.add(box(0.04, 0.04, 0.14, noir, 0, 0.75, -0.5));               // colonne de direction
+  g.add(volant);                                                   // à part : il survit au modèle
+  habitacle.add(box(0.04, 0.04, 0.14, noir, 0, 0.75, -0.5));       // colonne de direction
   // PAS de rétroviseur central : l'habitacle est si bas que, où qu'on le
   // pose, il flotte en plein milieu du pare-brise et bouche la route — trois
   // captures l'ont montré. Le cadre vient des montants, du capot et du volant.
   for (const sx of [-1, 1]) {
     const montant = box(0.05, 0.05, 0.6, sombre, sx * 0.5, 0.94, -0.28);
     montant.rotation.x = -0.5;                                     // suit le pare-brise
-    g.add(montant);
-    g.add(box(0.44, 0.38, 0.12, noir, sx * 0.34, 0.84, 0.36));     // dossiers baquets
-    g.add(box(0.44, 0.08, 0.38, noir, sx * 0.34, 0.64, 0.22));     // assises
+    habitacle.add(montant);
+    habitacle.add(box(0.44, 0.38, 0.12, noir, sx * 0.34, 0.84, 0.36));  // dossiers baquets
+    habitacle.add(box(0.44, 0.08, 0.38, noir, sx * 0.34, 0.64, 0.22));  // assises
   }
-  g.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));              // traverse du pare-brise
-  g.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));            // ciel de toit
+  habitacle.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));      // traverse du pare-brise
+  habitacle.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));    // ciel de toit
   // Son propre matériau : celui de la caisse lit des couleurs de sommets
   // (le bi-ton) qu'une boîte nue n'a pas — partagé, la plaque serait noire.
   const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0),
     new THREE.MeshBasicMaterial({ color: g.userData.carrosserie.color }));
   capot.position.set(0, 0.72, -1.0);                               // le capot, vu du volant
-  g.add(capot);
+  habitacle.add(capot);
+  g.add(habitacle);
+  // LE VRAI MODÈLE remplace la sculpture dès qu'il est chargé — la coque de
+  // primitives ne sert plus que d'attente, et de secours si le fichier
+  // manque. On retire caisse, verrière, détails et habitacle sculptés : le
+  // modèle apporte les siens, vitres et cockpit compris.
+  const chargement = chargerVraieVoiture();
+  if (chargement) {
+    chargement.then((proto) => {
+      if (!proto || !g.userData.membres) return;
+      for (const nom of ['caisse', 'verriere', 'tronc']) {
+        const membre = g.userData.membres[nom];
+        if (membre) g.remove(membre);
+      }
+      g.remove(habitacle);
+      g.add(proto.clone(true));
+    });
+  }
   g.userData.legs = [];                                            // rien ne balance
   return g;
 }
