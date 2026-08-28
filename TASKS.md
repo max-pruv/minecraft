@@ -18,10 +18,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **Le vol qui accélère** (demande de Max) — la carte est immense : la
-  vitesse de vol monte progressivement avec le temps de vol continu, jusqu'à
-  une vraie vitesse de croisière.
-
 - [ ] **L'onglet Bâtiments dans le +** (demande de Max) — la bibliothèque
   déménage de la pilule 🏛️ vers l'inventaire (blocs / déco / meubles /
   bâtiments), et s'enrichit de trois cents modèles très documentés — familles
@@ -78,6 +74,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v175** — le vol prend sa vitesse de croisière : l'allure grandit sans
+  à-coup avec le temps de vol, jusqu'à ×6 (66 blocs/s) — Paris-Rome en une
+  demi-minute.
 
 - [x] **v174** — les poissons : un banc de récif entretenu autour de
   l'enfant, partout où il y a de l'eau — six robes vives, nage vraie,
