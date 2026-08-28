@@ -218,7 +218,9 @@ export const MODELES_MONTURE = {
 // complet : montants, traverse, ciel de toit, et la plaque de capot dans la
 // couleur de la caisse, pour voir l'avant de SA voiture en conduisant.
 function voitureNeuve() {
-  const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
+  // Des teintes PROFONDES de carrosserie : les pastels saturaient sous
+  // l'éclairage et mangeaient le bi-ton avant/arrière.
+  const teintes = [0xb02020, 0x2a4e9c, 0xc0a878, 0x1f7a4c];
   const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
   const sombre = 0x22262c, noir = 0x14161a;
   g.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));             // tableau de bord
@@ -240,7 +242,10 @@ function voitureNeuve() {
   }
   g.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));              // traverse du pare-brise
   g.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));            // ciel de toit
-  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0), g.userData.carrosserie);
+  // Son propre matériau : celui de la caisse lit des couleurs de sommets
+  // (le bi-ton) qu'une boîte nue n'a pas — partagé, la plaque serait noire.
+  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0),
+    new THREE.MeshBasicMaterial({ color: g.userData.carrosserie.color }));
   capot.position.set(0, 0.72, -1.0);                               // le capot, vu du volant
   g.add(capot);
   g.userData.legs = [];                                            // rien ne balance

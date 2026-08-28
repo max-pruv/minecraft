@@ -264,53 +264,88 @@ function extruderProfil(shape, largeur, arrondi) {
 
 export function construireVoitureRoute(couleur = 0x9a9a9a) {
   const a = new Atelier();
-  const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c;
+  const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c, ARGENT = 0xcfd4da;
   // tout ce qui se repeint est posé blanc : la teinte vient du matériau
   a.membre('caisse');
   a.geometrie(extruderProfil(profilCaisse(), 1.34, 0.3), BLANC, {});               // la coque, basse et large
   for (const sx of [-1, 1]) {
     a.boite(BLANC, { p: [sx * 0.95, 0.88, -0.45], e: [0.11, 0.05, 0.14] });        // rétroviseur
-    // Les AILES BOMBÉES au-dessus des roues : quatre sphères écrasées dans
-    // la couleur de la caisse — c'est elles qui font les hanches d'une
-    // hypersportive, une coque seule reste une savonnette.
-    a.sphere(BLANC, { p: [sx * 0.78, 0.66, -1.15], e: [0.55, 0.34, 1.0], seg: 12 });
-    a.sphere(BLANC, { p: [sx * 0.8, 0.68, 1.15], e: [0.58, 0.36, 1.05], seg: 12 });
+    // Les AILES BOMBÉES au-dessus des roues : les hanches de l'hypersportive.
+    a.sphere(BLANC, { p: [sx * 0.78, 0.66, -1.25], e: [0.55, 0.34, 1.0], seg: 12 });
+    a.sphere(BLANC, { p: [sx * 0.8, 0.68, 1.25], e: [0.58, 0.36, 1.05], seg: 12 });
   }
-  // La verrière a son membre À ELLE : son maillage reçoit après coup un verre
-  // fumé quasi opaque — le verre partagé de l'Atelier (0,42) se noyait dans
-  // la couleur de la caisse, on ne voyait pas de vitres du tout.
+  // La verrière a son membre À ELLE : verre fumé quasi opaque, reflets du ciel.
   a.membre('verriere');
   a.geometrie(extruderProfil(profilVerriere(), 1.36, 0.3), 0xffffff, { p: [0, 0.02, 0] });
   a.membre('tronc');
-  // La LIGNE EN C sur le flanc : l'arc sombre qui enveloppe la portière —
-  // la signature d'une hypersportive, à demi noyé dans la coque.
+  // La LIGNE EN C sur le flanc, qui sépare les deux tons comme sur la vraie.
   for (const sx of [-1, 1]) {
     const arc = new THREE.TorusGeometry(0.4, 0.05, 6, 18, Math.PI * 1.15);
     arc.rotateZ(Math.PI * 0.42);                          // l'ouverture regarde l'avant-haut
     arc.rotateY(Math.PI / 2);                             // dans le plan du flanc
     a.geometrie(arc, SOMBRE, { p: [sx * 0.92, 0.72, 0.1] });
   }
-  a.sphere(NOIR, { p: [0, 0.56, -1.98], e: [0.56, 0.34, 0.3], seg: 12 });          // la calandre ovale
-  a.boite(SOMBRE, { p: [0, 0.34, -1.88], e: [1.6, 0.14, 0.34] });                  // la lame avant
+  // LA FACE AVANT — c'est elle qu'on regarde en premier sur la photo :
+  // le fer à cheval VERTICAL, les quadruples phares dans leur bandeau
+  // sombre, la grande bouche basse et la lame.
+  a.sphere(NOIR, { p: [0, 0.58, -1.96], e: [0.4, 0.5, 0.26], seg: 12 });           // le fer à cheval
+  a.boite(0x1a1e24, { p: [0, 0.4, -1.9], e: [1.34, 0.16, 0.16] });                 // la bouche basse
+  a.boite(SOMBRE, { p: [0, 0.32, -1.92], e: [1.62, 0.08, 0.3] });                  // la lame avant
   a.boite(SOMBRE, { p: [0, 0.4, 1.82], e: [1.6, 0.2, 0.3] });                      // le diffuseur
   a.boite(0xd83a2a, { p: [0, 0.84, 1.88], e: [1.46, 0.06, 0.08] });                // la barre de feux
+  // L'AILERON déployé : deux jambes, une lame.
+  for (const sx of [-1, 1]) a.boite(SOMBRE, { p: [sx * 0.42, 0.92, 1.5], e: [0.07, 0.22, 0.16] });
+  a.boite(SOMBRE, { p: [0, 1.05, 1.52], r: [0.14, 0, 0], e: [1.44, 0.05, 0.34] }); // la lame de l'aileron
   for (const sx of [-1, 1]) {
-    a.boite(0xfff4cc, { p: [sx * 0.58, 0.72, -1.92], e: [0.3, 0.06, 0.1] });       // phare fin
+    a.boite(0x22262c, { p: [sx * 0.56, 0.74, -1.88], e: [0.38, 0.12, 0.1] });      // le bandeau de phare
+    for (let k = 0; k < 4; k++) {
+      a.boite(0xfff7d8, { p: [sx * (0.42 + k * 0.1), 0.74, -1.93], e: [0.055, 0.07, 0.05] }); // les 4 LED
+    }
     a.cylindre(0x1c1c22, { p: [sx * 0.3, 0.46, 1.94], r: [Math.PI / 2, 0, 0],
       e: [0.14, 0.12, 0.14], seg: 8 });                                            // l'échappement
-    for (const sz of [-1.15, 1.2]) {
-      a.cylindre(0x16161a, { p: [sx * 0.94, 0.4, sz], r: [0, 0, Math.PI / 2],
-        e: [0.8, 0.28, 0.8], seg: 14 });                                           // le pneu
-      a.cylindre(0xb8bcc2, { p: [sx * 0.96, 0.4, sz], r: [0, 0, Math.PI / 2],
-        e: [0.46, 0.3, 0.46], seg: 12 });                                          // la grande jante
+    // LA ROUE : pneu, fond de jante sombre, six rayons d'argent, moyeu —
+    // un disque plein ne ressemble à rien de la vraie vie.
+    for (const sz of [-1.25, 1.25]) {
+      a.cylindre(0x141418, { p: [sx * 0.94, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.84, 0.28, 0.84], seg: 14 });                                         // le pneu
+      a.cylindre(0x2e3236, { p: [sx * 0.95, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.6, 0.29, 0.6], seg: 12 });                                           // le fond de jante
+      for (const th of [0, Math.PI / 3, (2 * Math.PI) / 3]) {
+        a.boite(ARGENT, { p: [sx * 0.97, 0.4, sz], r: [th, 0, 0], e: [0.05, 0.56, 0.09] }); // les rayons
+      }
+      a.cylindre(ARGENT, { p: [sx * 0.98, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.14, 0.3, 0.14], seg: 8 });                                           // le moyeu
     }
   }
   const g = a.finir();
-  const peint = new THREE.MeshLambertMaterial({ color: couleur });
-  g.userData.membres.caisse.children[0].material = peint;
+  // LE BI-TON de la vraie : clair à l'avant, sombre à l'arrière, la coupure
+  // suit la ligne en C. Peint dans les SOMMETS de la coque — le matériau
+  // multiplie, donc la chaîne repeint toujours d'une seule teinte, déclinée.
+  const mc = g.userData.membres.caisse.children[0];
+  const pos = mc.geometry.attributes.position, col = mc.geometry.attributes.color;
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, (pos.getZ(i) + 0.2) / 0.55));
+    // 0,65 devant, 0,065 derrière. Le 0,65 compense l'éclairage de la scène
+    // (ambiant + soleil doublent presque la teinte : un rouge profond
+    // ressortait rose layette) ; il vit ICI, dans les sommets, pour que la
+    // peinture de la chaîne — qui refixe material.color — le garde. Et
+    // l'arrière à un dixième : tout facteur plus doux se délavait en gris.
+    const v = 0.65 * (1 - 0.9 * t * t * (3 - 2 * t));
+    col.setXYZ(i, v, v, v);
+  }
+  col.needsUpdate = true;
+  // Une peinture LAQUÉE : le spéculaire Phong fait glisser un reflet sur le
+  // galbe — le passage de l'argile à la laque. PAS de carte d'environnement :
+  // une CubeTexture de canvases cassait l'échantillonnage et blanchissait
+  // toute la voiture, bi-ton compris — vérifié en bissection de matériaux.
+  const peint = new THREE.MeshPhongMaterial({
+    color: couleur, shininess: 80, specular: 0x8a9098, vertexColors: true,
+  });
+  mc.material = peint;
   g.userData.carrosserie = peint;
-  g.userData.membres.verriere.children[0].material = new THREE.MeshLambertMaterial({
-    color: 0x18222e, transparent: true, opacity: 0.78,
+  g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
+    color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
+    transparent: true, opacity: 0.78,
   });
   return g;
 }
