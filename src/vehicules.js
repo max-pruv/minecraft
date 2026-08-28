@@ -11,6 +11,81 @@
 
 import * as THREE from 'three';
 import { Atelier } from './modeles.js';
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
+
+// --- les reflets --------------------------------------------------------------
+//
+// La carrosserie REFLÈTE le monde : une caméra cubique rend la scène autour
+// de la voiture la plus proche (128 px, quelques fois par seconde, voir
+// main.js) et sa texture sert d'horizon aux matériaux. C'est ce qui sépare
+// la laque de l'argile. L'essai précédent — un « ciel en boîte » peint à la
+// main dans des canvases — cassait l'échantillonnage et blanchissait toute
+// la voiture ; une cible de rendu GPU, elle, est valide par construction.
+let refletsRT = null;
+let refletsCamera = null;
+export function refletsVoiture() {
+  if (!refletsRT && typeof document !== 'undefined') {
+    refletsRT = new THREE.WebGLCubeRenderTarget(128, {
+      generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
+    });
+    refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);
+  }
+  return refletsRT;
+}
+export function majRefletsVoiture(renderer, scene, pos) {
+  if (!refletsRT) return;
+  refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
+  refletsCamera.update(renderer, scene);
+}
+
+// --- la vraie voiture ---------------------------------------------------------
+//
+// Le modèle d'artiste (vendor/voiture.glb, voir vendor/VOITURE_LICENSE) :
+// une vraie carrosserie de 99 000 triangles fournie par Max — la sculpture
+// de primitives à l'aveugle plafonnait au low-poly, et il a eu raison de le
+// dire. Chargé UNE fois, cloné pour chaque voiture garée. En cas d'échec
+// (fichier absent d'un vieux cache), la coque sculptée reste en place : le
+// modèle améliore, il ne conditionne jamais le démarrage.
+let chargementVraieVoiture = null;
+export function chargerVraieVoiture() {
+  if (chargementVraieVoiture || typeof document === 'undefined') return chargementVraieVoiture;
+  chargementVraieVoiture = new GLTFLoader().loadAsync('./vendor/voiture.glb').then((gltf) => {
+    const brut = gltf.scene;
+    // Le modèle embarque un socle de présentation nommé « None », posé 1,4
+    // sous les pneus : mesuré avec lui, la voiture flottait à sa hauteur.
+    const socles = [];
+    brut.traverse((o) => { if (o.isMesh && o.name === 'None') socles.push(o); });
+    for (const s of socles) s.removeFromParent();
+    const boite = new THREE.Box3().setFromObject(brut);
+    const taille = boite.getSize(new THREE.Vector3());
+    const centre = boite.getCenter(new THREE.Vector3());
+    // recentré, posé au sol, à l'échelle du jeu, l'avant vers -z
+    const cadre = new THREE.Group();
+    cadre.add(brut);
+    brut.position.set(-centre.x, -boite.min.y, -centre.z);
+    cadre.scale.setScalar(4.4 / Math.max(taille.x, taille.z));
+    if (taille.x > taille.z) cadre.rotation.y = Math.PI / 2;
+    // La cabine est AVANCÉE (moteur central) : recalée de 0,55 vers
+    // l'arrière pour que le siège du conducteur tombe sur l'origine — c'est
+    // là que la caméra s'assied. Sans cela on voyait le DOS des sièges.
+    cadre.position.z = 0.55;
+    const porteur = new THREE.Group();
+    porteur.add(cadre);
+    const rt = refletsVoiture();
+    porteur.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const nom = (o.material.name || '').toLowerCase();
+      if (nom.includes('glass') || nom.includes('window')) {
+        o.material.transparent = true;
+        o.material.opacity = 0.35;
+      }
+      if (rt) { o.material.envMap = rt.texture; o.material.envMapIntensity = 1.0; }
+      o.material.needsUpdate = true;
+    });
+    return porteur;
+  }).catch(() => null);
+  return chargementVraieVoiture;
+}
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
@@ -185,35 +260,171 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
   return a.finir();
 }
 
-// Une voiture de route, celle qui naît sur la chaîne de la Giga-usine : la
-// caisse, l'habitacle vitré, quatre roues. La carrosserie garde son matériau
-// sous la main (userData.carrosserie) pour que la peinture puisse opérer —
-// c'est la seule voiture du jeu qui change de couleur en roulant.
-function construireVoitureRoute(couleur = 0x9a9a9a) {
-  const g = new THREE.Group();
-  const caisse = new THREE.MeshBasicMaterial({ color: couleur });
-  const boite = (w, h, d, mat, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
-      mat instanceof THREE.Material ? mat : new THREE.MeshBasicMaterial({ color: mat }));
-    m.position.set(x, y, z);
-    g.add(m);
-    return m;
-  };
-  boite(1.7, 0.5, 3.6, caisse, 0, 0.62, 0);                       // la caisse
-  boite(1.4, 0.55, 1.8, caisse, 0, 1.12, 0.15);                   // le pavillon
-  boite(1.32, 0.42, 1.9, 0x18242e, 0, 1.14, 0.14);                // les vitres, teintées
-  boite(1.5, 0.16, 0.5, 0xf0f0ea, 0, 0.5, -1.72);                 // le bouclier avant
-  boite(1.5, 0.16, 0.4, 0x2a2a30, 0, 0.5, 1.75);                  // l'arrière
-  for (const sz of [-1.15, 1.2]) {
-    for (const sx of [-1, 1]) {
-      const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
-        new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
-      roue.rotation.z = Math.PI / 2;
-      roue.position.set(sx * 0.82, 0.36, sz);
-      g.add(roue);
+// Une voiture de la vraie vie, pas un empilement de cubes — Max, capture à
+// l'appui : « je les veux pas en format minecraft mais en format de la vraie
+// vie ». Sculptée à l'Atelier comme les rames : galbe des flancs, capot
+// plongeant, pare-brise couché, montants fins, et de VRAIES vitres — on voit
+// l'habitacle à travers. Deux membres : `caisse` porte tout ce qui se peint,
+// son maillage fusionné reçoit un matériau à lui (userData.carrosserie, celui
+// que la chaîne de la Giga-usine repeint) ; `tronc` porte le reste — roues,
+// verre, optiques. Trois maillages par voiture, contre neuf à l'ancienne.
+// Le profil de la caisse, vu de côté, en UNE courbe continue : nez rond,
+// capot qui plonge, pare-brise couché, arche de toit, arrière fuyant. `sx`
+// est l'AVANT vers le positif (l'extrusion retourne l'axe), `sy` la hauteur.
+// Extrudé sur la largeur avec un chanfrein arrondi (bevel), il donne des
+// flancs bombés — c'est le bevel qui fait les épaules de la voiture.
+function profilCaisse() {
+  // Le profil d'une hypersportive — l'expérience « réplique une Chiron »
+  // demandée par Max : TRÈS basse (le toit culmine à ~1,29 pour 1,9 de
+  // large), le nez émoussé et plongeant, le pare-brise profond qui part
+  // loin en avant, l'arche courte au-dessus des sièges, la longue plage
+  // moteur et le petit becquet de queue. Pas de logo, pas de nom : la
+  // forme, rien que la forme.
+  const s = new THREE.Shape();
+  s.moveTo(1.7, 0.42);                                    // la lame avant, au ras du sol
+  s.quadraticCurveTo(1.86, 0.56, 1.6, 0.7);               // le nez émoussé
+  s.quadraticCurveTo(1.2, 0.84, 0.75, 0.88);              // le capot bas, l'aile qui monte
+  s.quadraticCurveTo(0.35, 1.06, 0.02, 1.12);             // le pare-brise, profond
+  s.quadraticCurveTo(-0.32, 1.18, -0.68, 1.06);           // l'arche courte du toit
+  s.quadraticCurveTo(-1.1, 0.88, -1.42, 0.8);             // la plage moteur
+  s.lineTo(-1.58, 0.78);                                  // le becquet de queue
+  s.quadraticCurveTo(-1.72, 0.7, -1.62, 0.48);            // la poupe, pleine
+  s.lineTo(1.7, 0.42);                                    // le dessous
+  return s;
+}
+
+// La verrière : l'arc du profil entre le bas du pare-brise et la plage
+// arrière, refermé par la ligne de ceinture. Extrudée un peu PLUS LARGE que
+// la caisse, elle l'enveloppe d'une coque de verre fumé — c'est elle qui
+// fait l'habitacle sombre et galbé de la vraie vie.
+function profilVerriere() {
+  const s = new THREE.Shape();
+  s.moveTo(0.78, 0.86);                                   // le bas du pare-brise
+  s.quadraticCurveTo(0.35, 1.08, 0.02, 1.14);
+  s.quadraticCurveTo(-0.32, 1.21, -0.7, 1.08);
+  s.quadraticCurveTo(-0.88, 0.98, -0.98, 0.9);            // la plage arrière
+  s.lineTo(0.78, 0.86);                                   // la ligne de ceinture
+  return s;
+}
+
+// Souder puis lisser : l'extrusion sort des normales À FACETTES — la coque
+// était courbe mais éclairée comme un origami, et Max la voyait « cubique ».
+// On indexe les sommets confondus et on remoyenne les normales : la lumière
+// glisse alors d'une facette à l'autre, et le galbe devient continu.
+function lisser(geo) {
+  const p = geo.attributes.position;
+  const vus = new Map();
+  const index = [];
+  for (let i = 0; i < p.count; i++) {
+    const k = `${Math.round(p.getX(i) * 500)}|${Math.round(p.getY(i) * 500)}|${Math.round(p.getZ(i) * 500)}`;
+    let j = vus.get(k);
+    if (j === undefined) { j = i; vus.set(k, i); }
+    index.push(j);
+  }
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function extruderProfil(shape, largeur, arrondi) {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: largeur, curveSegments: 12,
+    bevelEnabled: true, bevelThickness: arrondi, bevelSize: arrondi * 0.8,
+    bevelSegments: 5,
+  });
+  geo.rotateY(Math.PI / 2);                               // la largeur suit x, l'avant part vers -z
+  geo.translate(-largeur / 2, 0, 0);                      // centré sur l'axe
+  return lisser(geo);
+}
+
+export function construireVoitureRoute(couleur = 0x9a9a9a) {
+  const a = new Atelier();
+  const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c, ARGENT = 0xcfd4da;
+  // tout ce qui se repeint est posé blanc : la teinte vient du matériau
+  a.membre('caisse');
+  a.geometrie(extruderProfil(profilCaisse(), 1.34, 0.3), BLANC, {});               // la coque, basse et large
+  for (const sx of [-1, 1]) {
+    a.boite(BLANC, { p: [sx * 0.95, 0.88, -0.45], e: [0.11, 0.05, 0.14] });        // rétroviseur
+    // Les AILES BOMBÉES au-dessus des roues : les hanches de l'hypersportive.
+    a.sphere(BLANC, { p: [sx * 0.78, 0.66, -1.25], e: [0.55, 0.34, 1.0], seg: 12 });
+    a.sphere(BLANC, { p: [sx * 0.8, 0.68, 1.25], e: [0.58, 0.36, 1.05], seg: 12 });
+  }
+  // La verrière a son membre À ELLE : verre fumé quasi opaque, reflets du ciel.
+  a.membre('verriere');
+  a.geometrie(extruderProfil(profilVerriere(), 1.36, 0.3), 0xffffff, { p: [0, 0.02, 0] });
+  a.membre('tronc');
+  // La LIGNE EN C sur le flanc, qui sépare les deux tons comme sur la vraie.
+  for (const sx of [-1, 1]) {
+    const arc = new THREE.TorusGeometry(0.4, 0.05, 6, 18, Math.PI * 1.15);
+    arc.rotateZ(Math.PI * 0.42);                          // l'ouverture regarde l'avant-haut
+    arc.rotateY(Math.PI / 2);                             // dans le plan du flanc
+    a.geometrie(arc, SOMBRE, { p: [sx * 0.92, 0.72, 0.1] });
+  }
+  // LA FACE AVANT — c'est elle qu'on regarde en premier sur la photo :
+  // le fer à cheval VERTICAL, les quadruples phares dans leur bandeau
+  // sombre, la grande bouche basse et la lame.
+  a.sphere(NOIR, { p: [0, 0.58, -1.96], e: [0.4, 0.5, 0.26], seg: 12 });           // le fer à cheval
+  a.boite(0x1a1e24, { p: [0, 0.4, -1.9], e: [1.34, 0.16, 0.16] });                 // la bouche basse
+  a.boite(SOMBRE, { p: [0, 0.32, -1.92], e: [1.62, 0.08, 0.3] });                  // la lame avant
+  a.boite(SOMBRE, { p: [0, 0.4, 1.82], e: [1.6, 0.2, 0.3] });                      // le diffuseur
+  a.boite(0xd83a2a, { p: [0, 0.84, 1.88], e: [1.46, 0.06, 0.08] });                // la barre de feux
+  // L'AILERON déployé : deux jambes, une lame.
+  for (const sx of [-1, 1]) a.boite(SOMBRE, { p: [sx * 0.42, 0.92, 1.5], e: [0.07, 0.22, 0.16] });
+  a.boite(SOMBRE, { p: [0, 1.05, 1.52], r: [0.14, 0, 0], e: [1.44, 0.05, 0.34] }); // la lame de l'aileron
+  for (const sx of [-1, 1]) {
+    a.boite(0x22262c, { p: [sx * 0.56, 0.74, -1.88], e: [0.38, 0.12, 0.1] });      // le bandeau de phare
+    for (let k = 0; k < 4; k++) {
+      a.boite(0xfff7d8, { p: [sx * (0.42 + k * 0.1), 0.74, -1.93], e: [0.055, 0.07, 0.05] }); // les 4 LED
+    }
+    a.cylindre(0x1c1c22, { p: [sx * 0.3, 0.46, 1.94], r: [Math.PI / 2, 0, 0],
+      e: [0.14, 0.12, 0.14], seg: 8 });                                            // l'échappement
+    // LA ROUE : pneu, fond de jante sombre, six rayons d'argent, moyeu —
+    // un disque plein ne ressemble à rien de la vraie vie.
+    for (const sz of [-1.25, 1.25]) {
+      a.cylindre(0x141418, { p: [sx * 0.94, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.84, 0.28, 0.84], seg: 14 });                                         // le pneu
+      a.cylindre(0x2e3236, { p: [sx * 0.95, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.6, 0.29, 0.6], seg: 12 });                                           // le fond de jante
+      for (const th of [0, Math.PI / 3, (2 * Math.PI) / 3]) {
+        a.boite(ARGENT, { p: [sx * 0.97, 0.4, sz], r: [th, 0, 0], e: [0.05, 0.56, 0.09] }); // les rayons
+      }
+      a.cylindre(ARGENT, { p: [sx * 0.98, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.14, 0.3, 0.14], seg: 8 });                                           // le moyeu
     }
   }
-  g.userData.carrosserie = caisse;
+  const g = a.finir();
+  // LE BI-TON de la vraie : clair à l'avant, sombre à l'arrière, la coupure
+  // suit la ligne en C. Peint dans les SOMMETS de la coque — le matériau
+  // multiplie, donc la chaîne repeint toujours d'une seule teinte, déclinée.
+  const mc = g.userData.membres.caisse.children[0];
+  const pos = mc.geometry.attributes.position, col = mc.geometry.attributes.color;
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, (pos.getZ(i) + 0.2) / 0.55));
+    // 0,65 devant, 0,065 derrière. Le 0,65 compense l'éclairage de la scène
+    // (ambiant + soleil doublent presque la teinte : un rouge profond
+    // ressortait rose layette) ; il vit ICI, dans les sommets, pour que la
+    // peinture de la chaîne — qui refixe material.color — le garde. Et
+    // l'arrière à un dixième : tout facteur plus doux se délavait en gris.
+    const v = 0.65 * (1 - 0.9 * t * t * (3 - 2 * t));
+    col.setXYZ(i, v, v, v);
+  }
+  col.needsUpdate = true;
+  // Une peinture LAQUÉE : le spéculaire Phong fait glisser un reflet sur le
+  // galbe — le passage de l'argile à la laque. PAS de carte d'environnement :
+  // une CubeTexture de canvases cassait l'échantillonnage et blanchissait
+  // toute la voiture, bi-ton compris — vérifié en bissection de matériaux.
+  const rt = refletsVoiture();
+  const peint = new THREE.MeshPhongMaterial({
+    color: couleur, shininess: 80, specular: 0x8a9098, vertexColors: true,
+    envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.22,
+  });
+  mc.material = peint;
+  g.userData.carrosserie = peint;
+  g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
+    color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
+    envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.4,
+    transparent: true, opacity: 0.78,
+  });
   return g;
 }
 

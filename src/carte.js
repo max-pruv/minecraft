@@ -37,7 +37,7 @@ const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
 import { couleurCarteWashington, lieuxDeWashington } from './washington.js';
 import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
-import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, ARCHI, DECOR_START, decorMapColor } from './blocks.js';
+import { BLOCK, CITY_BLOCK, VILLANDRY_BLOCK, ARCHI, ROUTE_BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 
 // Couleur de chaque bloc vu du dessus. Sert à la vignette comme à la carte.
 export const MAP_COLORS = {
@@ -59,10 +59,14 @@ export const MAP_COLORS = {
   [VILLANDRY_BLOCK.ARDOISE]: [76, 86, 102], [VILLANDRY_BLOCK.BUIS]: [46, 86, 44],
   [VILLANDRY_BLOCK.ALLEE]: [208, 196, 168],
   [CITY_BLOCK.HAUSSMANN]: [229, 219, 194], [CITY_BLOCK.ZINC]: [112, 122, 136],
-  [CITY_BLOCK.ASPHALT]: [57, 58, 62], [CITY_BLOCK.ROADLINE]: [80, 76, 58],
+  [CITY_BLOCK.ASPHALT]: [96, 97, 101], [CITY_BLOCK.ROADLINE]: [104, 100, 84],
   [CITY_BLOCK.SIDEWALK]: [178, 178, 172], [CITY_BLOCK.BROWNSTONE]: [126, 76, 56],
   [CITY_BLOCK.GRANITE]: [168, 166, 160], [CITY_BLOCK.CURTAIN]: [78, 118, 164],
-  [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [120, 120, 120],
+  [CITY_BLOCK.COPPER]: [98, 168, 142], [CITY_BLOCK.CROSSWALK]: [128, 128, 128],
+  // Les marquages orientés des villes générées : sur la carte, une chaussée
+  // marquée reste une chaussée — même gris que l'asphalte, à peine relevé.
+  [ROUTE_BLOCK.LIGNE_NS]: [108, 109, 112], [ROUTE_BLOCK.LIGNE_EO]: [108, 109, 112],
+  [ROUTE_BLOCK.PASSAGE_NS]: [128, 128, 128],
   // L'architecture. Sans ces lignes, une ville rebâtie avec le nouveau
   // vocabulaire devenait INVISIBLE sur la carte : la table ne connaissait pas
   // ces identifiants, et les rues pavées disparaissaient au moment même où

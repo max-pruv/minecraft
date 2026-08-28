@@ -1,0 +1,9 @@
+vendor/voiture.glb — modèle 3D de la voiture de sport conduite dans le jeu.
+
+Fourni par Max (août 2026), issu du projet public GitHub
+« mokshkumargupta34-lgtm/buggati-chiron-interactive-site », décompressé
+(Draco) puis simplifié (~880 000 → ~99 000 triangles) et quantifié pour
+l'iPad. Usage privé familial, non commercial.
+
+vendor/GLTFLoader.js et vendor/BufferGeometryUtils.js proviennent de
+three.js r160 (examples/jsm), licence MIT — voir THREE_LICENSE.

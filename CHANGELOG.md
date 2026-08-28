@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v181 — réalisme v2, deuxième acte : les routes, les façades partout, et LA voiture
+
+**Pourquoi.** Trois verdicts de Max, capture à l'appui à chaque fois. « Les
+routes ne ressemblent pas à des routes » : l'asphalte était noir charbon et
+les marquages des BLOCS entièrement blancs — une ligne d'un tiers de
+chaussée, des zébras pleine largeur, un damier vu du ciel. « Refait une
+passe sur toutes les villes » : la belle grammaire de façades du pilote
+Moscou n'existait que là. Et la voiture : « pas en format minecraft mais en
+format de la vraie vie… ça reste tout très cubique… prends du recul, ça ne
+ressemble pas à ça du tout » — quatre sculptures de primitives plus tard,
+le constat était sans appel : coder une carrosserie en coordonnées plafonne
+au low-poly, quoi qu'on tape.
+
+**Ce que ça change.** Les chaussées sont en vrai bitume gris, la peinture
+vit DANS la texture — ligne médiane en tirets fins qui s'interrompt aux
+passages piétons, zébras orientés dans l'axe, aux carrefours seulement — et
+trois blocs de marquage rejoignent l'inventaire. Les auvents des boutiques
+deviennent de vrais stores : segments courts, couleurs sobres. La grammaire
+à travées (étages réguliers, baies encadrées, corniches) s'étend à TOUTES
+les villes à trame, chacune avec ses matériaux et sa hauteur — les médinas
+gardent leurs ruelles. En voiture, on s'assied enfin DERRIÈRE le pare-brise
+(l'œil était au-dessus du toit), et la voiture ne se « nourrit » plus.
+Surtout : la voiture EST désormais le modèle 3D d'artiste fourni par Max —
+99 000 triangles, cockpit compris — allégé de 12,4 à 1,3 Mo pour l'iPad,
+avec de VRAIS reflets : une caméra cubique rend la ville autour de la
+voiture et l'horizon glisse sur la carrosserie. Si le fichier manque, une
+coque sculptée prend le relais : le jeu démarre toujours.
+
+**Ce qui le prouve.** Barrière complète verte (six suites), avec les
+témoins neufs du programme : zéro bloc de blanc plein sur la chaussée et
+des marquages dans les deux orientations (134/192/341 à Moscou) ; des
+corniches à Rome (709) et Tokyo (569) et AUCUNE à Marrakech ; l'œil au
+volant sous le toit ; des vitres transparentes et une carrosserie qui n'est
+plus un empilement de cubes. Et le juge qui compte : les captures
+envoyées à Max à chaque itération — c'est sa photo de Chiron qui a fait
+basculer la méthode.
+
 ## v180 — réalisme v2, premier acte : la rue se reconnaît
 
 **Pourquoi.** Max, capture de Moscou à l'appui : « rien de ce screenshot

@@ -11,6 +11,7 @@
 // gros — la caméra monte, la bête garde ses pattes par terre.
 
 import * as THREE from 'three';
+import { construireVoitureRoute, chargerVraieVoiture } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -208,25 +209,67 @@ export const MODELES_MONTURE = {
 //   montable — la bête accepte qu'on grimpe
 //   allure   — combien de fois plus vite on avance en selle
 //   assise   — la hauteur du dos, donc celle du regard une fois assis
-// La voiture neuve de la Giga-usine : la seule monture à roues du jeu. Pas de
-// pattes qui balancent — les roues sont des cylindres fixes — et un pare-brise
-// à sa place, parce qu'on la regarde de près avant de monter dedans.
+// La voiture neuve de la Giga-usine : la seule monture à roues du jeu. C'est
+// LA carrosserie de la vraie vie (vehicules.js) : un profil de Bézier extrudé
+// en coque galbée, sous sa verrière de verre fumé. L'habitacle vit À
+// L'INTÉRIEUR de la coque pleine : invisible de dehors (la coque opaque le
+// couvre), et c'est TOUT ce qu'on voit une fois assis — la coque, elle,
+// disparaît de l'intérieur, ses faces regardent dehors. D'où le cadre
+// complet : montants, traverse, ciel de toit, et la plaque de capot dans la
+// couleur de la caisse, pour voir l'avant de SA voiture en conduisant.
 function voitureNeuve() {
-  const g = new THREE.Group();
-  const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
-  const c = teintes[Math.floor(Math.random() * teintes.length)];
-  g.add(box(1.7, 0.5, 3.4, c, 0, 0.62, 0));                       // la caisse
-  g.add(box(1.4, 0.55, 1.7, c, 0, 1.12, 0.15));                   // le pavillon
-  g.add(box(1.32, 0.42, 1.8, 0x18242e, 0, 1.14, 0.14));           // les vitres
-  g.add(box(1.5, 0.16, 0.4, 0xf0f0ea, 0, 0.5, -1.65));            // le bouclier
-  for (const [sx, sz] of [[-1, -1.1], [1, -1.1], [-1, 1.15], [1, 1.15]]) {
-    const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
-      new THREE.MeshBasicMaterial({ color: 0x1c1c22 }));
-    roue.rotation.z = Math.PI / 2;
-    roue.position.set(sx * 0.82, 0.36, sz);
-    g.add(roue);
+  // Des teintes PROFONDES de carrosserie : les pastels saturaient sous
+  // l'éclairage et mangeaient le bi-ton avant/arrière.
+  const teintes = [0xb02020, 0x2a4e9c, 0xc0a878, 0x1f7a4c];
+  const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
+  // L'habitacle sculpté vit dans SON groupe : quand le vrai modèle arrive, il
+  // part d'un bloc avec la coque — le modèle a son propre intérieur. Seul le
+  // volant centré reste, pour l'enfant assis au milieu (et il est minuscule,
+  // noyé dans le cockpit du modèle).
+  const habitacle = new THREE.Group();
+  const sombre = 0x22262c, noir = 0x14161a;
+  habitacle.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));     // tableau de bord
+  const volant = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 6, 14),
+    new THREE.MeshBasicMaterial({ color: noir }));
+  volant.rotation.x = -0.5;                                        // incliné vers soi
+  volant.position.set(0, 0.8, -0.45);
+  g.add(volant);                                                   // à part : il survit au modèle
+  habitacle.add(box(0.04, 0.04, 0.14, noir, 0, 0.75, -0.5));       // colonne de direction
+  // PAS de rétroviseur central : l'habitacle est si bas que, où qu'on le
+  // pose, il flotte en plein milieu du pare-brise et bouche la route — trois
+  // captures l'ont montré. Le cadre vient des montants, du capot et du volant.
+  for (const sx of [-1, 1]) {
+    const montant = box(0.05, 0.05, 0.6, sombre, sx * 0.5, 0.94, -0.28);
+    montant.rotation.x = -0.5;                                     // suit le pare-brise
+    habitacle.add(montant);
+    habitacle.add(box(0.44, 0.38, 0.12, noir, sx * 0.34, 0.84, 0.36));  // dossiers baquets
+    habitacle.add(box(0.44, 0.08, 0.38, noir, sx * 0.34, 0.64, 0.22));  // assises
   }
-  for (const sx of [-1, 1]) g.add(box(0.3, 0.12, 0.08, 0xfff2c8, sx * 0.55, 0.66, -1.72));  // les phares
+  habitacle.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));      // traverse du pare-brise
+  habitacle.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));    // ciel de toit
+  // Son propre matériau : celui de la caisse lit des couleurs de sommets
+  // (le bi-ton) qu'une boîte nue n'a pas — partagé, la plaque serait noire.
+  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0),
+    new THREE.MeshBasicMaterial({ color: g.userData.carrosserie.color }));
+  capot.position.set(0, 0.72, -1.0);                               // le capot, vu du volant
+  habitacle.add(capot);
+  g.add(habitacle);
+  // LE VRAI MODÈLE remplace la sculpture dès qu'il est chargé — la coque de
+  // primitives ne sert plus que d'attente, et de secours si le fichier
+  // manque. On retire caisse, verrière, détails et habitacle sculptés : le
+  // modèle apporte les siens, vitres et cockpit compris.
+  const chargement = chargerVraieVoiture();
+  if (chargement) {
+    chargement.then((proto) => {
+      if (!proto || !g.userData.membres) return;
+      for (const nom of ['caisse', 'verriere', 'tronc']) {
+        const membre = g.userData.membres[nom];
+        if (membre) g.remove(membre);
+      }
+      g.remove(habitacle);
+      g.add(proto.clone(true));
+    });
+  }
   g.userData.legs = [];                                            // rien ne balance
   return g;
 }
@@ -253,6 +296,13 @@ export const MONTURES = [
   // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
   // dans la nature, seul le garagiste de main.js la gare sur le parc.
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
+  // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
+  // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
+  // au ras du galbe (0,92 : une hypersportive s'assied BAS) — alors que
+  // l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
+  // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
+  // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
-    height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4, assise: 1.0 },
+    height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
+    assise: 1.0, oeil: 0.97, nourrissable: false },
 ];

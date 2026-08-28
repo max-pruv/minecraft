@@ -446,7 +446,9 @@ const VRAIES_KM = [
       const { BLOCK, CITY_BLOCK, DECOR_START, RUE } = await import('./src/blocks.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
-      const ENS = new Set([raye(0), raye(5), raye(10), raye(11), raye(13), raye(2), raye(6), raye(14)]);
+      // La palette sobre du réalisme v2 : bordeaux, vert, marine, émeraude,
+      // anthracite, crème — les criards (jaune, pourpre, magenta) sont partis.
+      const ENS = new Set([raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)]);
       const villes = {};
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
@@ -476,9 +478,11 @@ const VRAIES_KM = [
     });
     // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
     // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
-    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075.
+    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075. Les auvents ont
+    // rebaissé au réalisme v2 : par segments de trois blocs sur cinq, comme de
+    // vrais stores de devanture — le seuil suit (×0,6 sur la mesure de v180).
     const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 110));
+      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 60));
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
@@ -490,6 +494,73 @@ const VRAIES_KM = [
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')
         || Object.entries(facades).map(([v, c]) => `${v} ${c.diversite} blocs différents`).join(' · '));
+
+    // --- LES ROUTES COMME DE VRAIES ROUTES (réalisme v2, point 2) -----------
+    //
+    // Max : « les routes ne ressemblent pas à des routes. » La peinture vit
+    // désormais DANS la texture — ligne médiane en tirets fins, zébras dans
+    // l'axe de la circulation — plus jamais en blocs entièrement blancs :
+    // c'est eux qui faisaient des chaussées un damier vu du ciel. On sonde
+    // Moscou : zéro bloc de blanc plein au sol, et des marquages texturés
+    // présents dans les DEUX orientations. Sur l'ancien code, les centaines
+    // de blocs uni(27) de la chaussée font tomber le témoin — vérifié.
+    const routes = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const blocs = await import('./src/blocks.js');
+      const RB = blocs.ROUTE_BLOCK || {};                  // absent sur l'ancien code
+      const w = window.__game.world;
+      const p = positionDe('moscou');
+      const c = { blancs: 0, ligneNS: 0, ligneEO: 0, passNS: 0, passEO: 0 };
+      for (let du = -40; du <= 40; du++) {
+        for (let dv = -40; dv <= 40; dv++) {
+          const x = p.x + du, z = p.z + dv;
+          const s0 = w.getBlock(x, w.terrainHeight(x, z), z);
+          if (s0 === blocs.DECOR_START + 270) c.blancs++;  // uni(27), l'ancien blanc plein
+          else if (s0 === RB.LIGNE_NS) c.ligneNS++;
+          else if (s0 === RB.LIGNE_EO) c.ligneEO++;
+          else if (s0 === RB.PASSAGE_NS) c.passNS++;
+          else if (s0 === blocs.CITY_BLOCK.CROSSWALK) c.passEO++;
+        }
+      }
+      return c;
+    });
+    verifier('la chaussée n\'a plus un bloc de blanc plein — la peinture est dans la texture',
+      routes.blancs === 0 && routes.ligneNS >= 30 && routes.ligneEO >= 30
+      && routes.passNS >= 30 && routes.passEO >= 30,
+      JSON.stringify(routes));
+
+    // --- LA GRAMMAIRE À TRAVÉES, GÉNÉRALISÉE (réalisme v2, point 3) ---------
+    //
+    // Max : « refait une passe sur toutes les villes. » La grammaire du pilote
+    // Moscou (étages réguliers, baies encadrées, corniche) devient le défaut
+    // de toute ville à trame — chacune avec SES matériaux — SAUF les médinas,
+    // qui gardent leur caractère. Preuve : des corniches couronnent Rome et
+    // Tokyo (sur l'ancien code, seul Moscou en avait : rouge garanti), et
+    // Marrakech n'en a toujours AUCUNE.
+    const couronnes = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { ARCHI } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const n = {};
+      for (const cle of ['rome', 'tokyo', 'marrakech']) {
+        const p = positionDe(cle);
+        let c = 0;
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            const x = p.x + du, z = p.z + dv;
+            const sol = w.terrainHeight(x, z);
+            for (let dy = 3; dy <= 20; dy++) {
+              if (w.getBlock(x, sol + dy, z) === ARCHI.CORNICHE) { c++; break; }
+            }
+          }
+        }
+        n[cle] = c;
+      }
+      return n;
+    });
+    verifier('les corniches couronnent Rome et Tokyo — et la médina n\'en a aucune',
+      couronnes.rome >= 200 && couronnes.tokyo >= 200 && couronnes.marrakech === 0,
+      JSON.stringify(couronnes));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

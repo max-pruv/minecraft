@@ -43,7 +43,7 @@
 // le sont en vrai : l'Atomium à Heysel, le panneau Hollywood sur sa
 // colline, le Burj al Arab sur son île.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, RUE } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI, ROUTE_BLOCK } from './blocks.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
@@ -71,7 +71,13 @@ const TUILE = uni(0);
 const ARDOISE = uni(25);
 const ACIER = uni(24);
 const ROUGE_GRES = brique(18);
-const BLANC_SOL = uni(27);            // la peinture blanche des chaussées
+// Les marquages peints dans la texture (réalisme v2) : une bande à l'échelle
+// d'une vraie bande, plus jamais des blocs entiers de blanc — c'est eux qui
+// faisaient des chaussées un damier noir et blanc vu du ciel.
+const LIGNE_NS = ROUTE_BLOCK.LIGNE_NS;
+const LIGNE_EO = ROUTE_BLOCK.LIGNE_EO;
+const PASSAGE_NS = ROUTE_BLOCK.PASSAGE_NS;
+const PASSAGE_EO = CITY_BLOCK.CROSSWALK;
 const BOIS_PORTE = BLOCK.DARKPLANK;   // les portes des boutiques
 const BOIS_BANC = BLOCK.PLANK;        // les bancs des trottoirs
 const BOISF_ARBRE = BLOCK.LOG;        // les troncs des jardins de poche
@@ -79,8 +85,11 @@ const BOISF_ARBRE = BLOCK.LOG;        // les troncs des jardins de poche
 // Les enseignes des boutiques : le bandeau au-dessus de la vitrine (la
 // « fascia » des devanturiers) et l'auvent rayé qui s'avance sur le trottoir.
 // Rayures : le motif n° 5 de la palette de décor — c'est LE tissu de store.
+// Palette SOBRE (réalisme v2) : bordeaux, vert anglais, marine, émeraude,
+// anthracite, crème — les jaunes, pourpres et magentas criards faisaient de
+// chaque rue un carnaval qui mangeait la ville vue du ciel.
 const raye = (c) => DECOR_START + c * 10 + 5;
-const ENSEIGNES = [raye(0), raye(5), raye(10), raye(11), raye(13), raye(2), raye(6), raye(14)];
+const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 
 // --- les fiches --------------------------------------------------------------
 //
@@ -835,7 +844,14 @@ const FICHES = {
     lat0: 55.7558, lon0: 37.6173, echelle: 20, rayon: 56,
     fleuve: { pts: [[-52, 30], [-25, 24], [-5, 20], [20, 22], [52, 28]], l: 4 },   // la Moskova
     trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85 },
-    palette: [CREME, ROSE, uni(2), BLANC], toit: ARDOISE, hMaison: [4, 6],
+    // Le PILOTE du programme réalisme v2 : la grammaire relevée sur la rue
+    // Piatnitskaïa — pastels (crème, beige, sable, saumon) à travées
+    // régulières et encadrements blancs, corniche, toits de métal vert.
+    // Depuis « refait une passe sur toutes les villes » (Max), la grammaire
+    // est le DÉFAUT de toute ville à trame hors médinas — chaque ville garde
+    // ses matériaux par sa palette. `facades: 2` reste ici pour mémoire.
+    facades: 2,
+    palette: [CREME, uni(19), uni(20), uni(16)], toit: uni(6), hMaison: [4, 6],
     monuments: [
       { nom: 'Saint-Basile', lat: 55.7525, lon: 37.6231, box: 6, build: bulbes([VERMILLON, uni(5), uni(10), uni(2), ROSE]) },
       { nom: 'Le Kremlin', lat: 55.752, lon: 37.6175, box: 10, build: muraillesRect(8, 5, ROUGE_GRES) },
@@ -1523,6 +1539,11 @@ export function solVillesMonde(x, z) {
 
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     const a = u * co - v * si, b = u * si + v * co;
+    // Les rues « à a constant » s'étendent le long du vecteur monde (si, co) :
+    // elles sont nord-sud quand |co| domine. `t.net` accepte aussi les trames
+    // tournées d'un quart de tour, où les axes s'échangent — d'où ce calcul,
+    // au lieu de deviner l'orientation depuis a et b seuls.
+    const nsDeA = Math.abs(co) >= Math.abs(si);
 
     // LES AVENUES : la croix centrale de la ville, deux fois plus large que
     // les rues, avec sa ligne médiane pointillée — c'est elle qui structure
@@ -1531,8 +1552,11 @@ export function solVillesMonde(x, z) {
       const dAxe = Math.min(Math.abs(a), Math.abs(b));
       if (dAxe < 5.6) {
         if (dAxe < 3.4) {
-          const longAv = Math.abs(a) < Math.abs(b) ? b : a;
-          if (t.net && dAxe < 0.4 && (((Math.round(longAv) % 6) + 6) % 6) < 3) return BLANC_SOL;
+          // la ligne médiane vit dans la texture : des tirets à l'échelle
+          // d'une vraie bande, continus le long de l'avenue
+          if (t.net && dAxe < 0.4) {
+            return (Math.abs(a) < Math.abs(b) ? nsDeA : !nsDeA) ? LIGNE_NS : LIGNE_EO;
+          }
           return BITUME;
         }
         return TROTTOIR;
@@ -1543,16 +1567,19 @@ export function solVillesMonde(x, z) {
     const dRue = Math.min(Math.abs(ra), Math.abs(rb));
     if (dRue < t.w) {
       const pres = Math.abs(ra) < Math.abs(rb);
-      const long = pres ? b : a;
       const travers = pres ? ra : rb;
+      const ns = pres ? nsDeA : !nsDeA;
       const versCarrefour = Math.max(Math.abs(ra), Math.abs(rb));
-      // le passage piéton zébré, à l'abord de chaque carrefour
+      // le passage piéton à l'abord de chaque carrefour : les bandes sont
+      // peintes dans la texture, dans l'axe de la circulation
       if (!t.ruelles && t.net && versCarrefour < t.w + 2.1 && versCarrefour > t.w + 0.4) {
-        if ((Math.round(travers * 1.4) & 1) === 0) return BLANC_SOL;
-        return BITUME;
+        return ns ? PASSAGE_NS : PASSAGE_EO;
       }
-      // la ligne axiale pointillée
-      if (!t.ruelles && t.net && Math.abs(travers) < 0.35 && (((Math.round(long) % 6) + 6) % 6) < 3) return BLANC_SOL;
+      // la ligne médiane en tirets, qui s'interrompt avant le passage piéton
+      // comme sur une vraie chaussée
+      if (!t.ruelles && t.net && Math.abs(travers) < 0.4 && versCarrefour > t.w + 2.1) {
+        return ns ? LIGNE_NS : LIGNE_EO;
+      }
       return BITUME;
     }
     if (dRue < t.s) return TROTTOIR;
@@ -1639,6 +1666,49 @@ export function batirColonneVillesMonde(x, z, poser) {
     const toitLot = tour ? ACIER
       : [f.toit, f.toit, f.toit, f.toit, ARDOISE, TUILE][Math.floor(tirage(a, b, 199) * 6)];
 
+    // LA GRAMMAIRE À TRAVÉES (réalisme v2, point 3). Née du pilote Moscou
+    // (rue Piatnitskaïa), généralisée sur consigne de Max (« refait une
+    // passe sur toutes les villes ») : un rez-de-chaussée distinct (socle de
+    // pierre ou devanture), des ÉTAGES RÉGULIERS de trois rangs — l'allège
+    // blanche, puis la fenêtre haute de deux rangs — une baie sur deux, et
+    // la CORNICHE qui couronne. Chaque ville garde SES matériaux : le mur
+    // vient de sa palette, le toit de sa fiche — Tokyo ≠ Rome ≠ Moscou.
+    // Les médinas (`ruelles`) gardent leur grammaire propre : des baies
+    // vitrées régulières n'ont rien à faire dans une ruelle de Marrakech.
+    const grammaire2 = f.facades === 2 || (f.facades === undefined && !t.ruelles);
+    if (grammaire2 && !tour && !favela) {
+      // Le mur d'enduit domine, comme sur la vraie Piatnitskaïa : une baie de
+      // fenêtre une colonne sur deux, encadrée de blanc, tout le reste en mur.
+      const ci = Math.round(along);                          // le rang de colonne
+      const fen = ((ci % 2) + 2) % 2 === 0;                  // une baie sur deux
+      // Le nombre d'étages respecte la hauteur PROPRE de la ville (hMaison) :
+      // la grammaire est partagée, l'échelle ne l'est pas — un bourg toscan
+      // ne prend pas les quatre étages de la Piatnitskaïa.
+      const etages = Math.max(1, Math.round((bh + 1) / 3));
+      const bh2 = 3 + etages * 3;
+      for (let y = 0; y < bh2; y++) {
+        if (y < 3) {
+          // le rez-de-chaussée : devanture si commerce, socle sinon
+          if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : VERRE); continue; }
+          if (commerce && bord && y === 1) { poser(2, VERRE); continue; }
+          if (commerce && bord && y === 2) { poser(3, enseigne); continue; }
+          poser(y + 1, y === 0 ? PIERRE : (fen && y === 1 ? VERRE : mur));
+          continue;
+        }
+        const yy = (y - 3) % 3;
+        if (yy === 0) { poser(y + 1, fen ? BLANC : mur); continue; }   // l'encadrement
+        poser(y + 1, fen ? VERRE : mur);                               // la fenêtre haute
+      }
+      poser(bh2 + 1, ARCHI.CORNICHE);
+      poser(bh2 + 2, toitLot);
+      if (Math.abs(ra) > t.pu / 2 - t.s - 0.9 && Math.abs(rb) > t.pv / 2 - t.s - 0.9
+        && tirage(a, b, 241) < 0.5) {
+        poser(bh2 + 3, brique(0));
+        poser(bh2 + 4, brique(0));
+      }
+      return;
+    }
+
     for (let y = 0; y < bh; y++) {
       if (tour) {
         // même une tour a son pied commerçant : vitrines sur deux niveaux et
@@ -1688,7 +1758,13 @@ export function mobilierVillesMonde(x, z, poser) {
     // tirage : l'auvent est de la couleur de l'enseigne qu'il prolonge.
     const commerce = tirage(a, b, 131) < 0.5;
     if (commerce && t.s - dRue < 1.15) {
-      poser(3, ENSEIGNES[Math.floor(tirage(a, b, 173) * ENSEIGNES.length)]);
+      // Par SEGMENTS, pas d'un seul tenant : un vrai store couvre une
+      // devanture, pas tout le pâté de maisons — trois blocs d'auvent, deux
+      // de vide, et la rue respire.
+      const longA = Math.abs(ra) < Math.abs(rb) ? B : A;
+      if (((Math.round(longA) % 5) + 5) % 5 < 3) {
+        poser(3, ENSEIGNES[Math.floor(tirage(a, b, 173) * ENSEIGNES.length)]);
+      }
       return;
     }
     // LE LAMPADAIRE : au bord du caniveau, un tous les neuf blocs le long de
@@ -1811,7 +1887,8 @@ export function couleurCarteVillesMonde(x, z) {
     const sol = solVillesMonde(x, z);
     if (sol === SABLE) return [226, 206, 156];
     if (sol === ARBRE || sol === HERBE) return [96, 156, 92];
-    if (sol === BITUME) return [76, 78, 86];
+    if (sol === BITUME || sol === LIGNE_NS || sol === LIGNE_EO
+      || sol === PASSAGE_NS || sol === PASSAGE_EO) return [96, 97, 101];
     if (sol === TROTTOIR || sol === PAVE) return [178, 174, 166];
     return f.couleurToits;
   }

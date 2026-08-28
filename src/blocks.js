@@ -263,6 +263,22 @@ CITY_NAMES.forEach((name, i) => {
   BLOCK_INFO[id] = { name, tiles: [tile, tile, tile], solid: true, transparent: false };
 });
 
+// Les marquages routiers orientés (réalisme v2). La peinture vit DANS la
+// texture, à l'échelle d'une vraie bande — poser des blocs entièrement blancs
+// faisait des chaussées un damier vu du ciel. Deux orientations par marquage,
+// parce que les tuiles ne tournent pas : ROADLINE (563, jaune, N-S) et
+// CROSSWALK (569, zébra E-O) restent telles quelles pour Manhattan/Washington.
+export const ROUTE_BLOCK = {
+  LIGNE_NS: 570,       // ligne axiale blanche pointillée, rue nord-sud
+  LIGNE_EO: 571,       // la même, rue est-ouest
+  PASSAGE_NS: 572,     // passage piéton zébré, rue nord-sud
+};
+export const ROUTE_TILE_START = 378;   // après les tuiles ARCHI (360..377)
+['Ligne axiale N-S', 'Ligne axiale E-O', 'Passage piéton N-S'].forEach((name, i) => {
+  const tile = ROUTE_TILE_START + i;
+  BLOCK_INFO[ROUTE_BLOCK.LIGNE_NS + i] = { name, tiles: [tile, tile, tile], solid: true, transparent: false };
+});
+
 // Curated blocks shown in the inventory's first tab (decor has its own tab).
 // --- Villandry : les matériaux de la Renaissance ligérienne ----------------
 // Une plage à part, après les blocs de ville : ajouter des identifiants sous

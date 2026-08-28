@@ -16,9 +16,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [ ] **Programme réalisme v2** (prompt de Max, 28/08) — il juge uniquement
   sur captures ; chaque ville retravaillée est montrée AVANT fusion (rue +
   aérien + photo de référence), généralisation seulement après validation.
-  Fait : 1) mobilier (v180), 2) routes (v180). En pilote : 3) façades
-  (Moscou d'abord, grammaire de Piatnitskaïa). À venir : 4) vie dense —
-  voitures arrêtées aux feux, enseignes lumineuses la nuit.
+  Fait : 1) mobilier (v180), 2) routes (v181), 3) façades partout, matériaux
+  par ville, médinas préservées (v181) — et LA voiture : le modèle 3D
+  d'artiste fourni par Max, reflets par caméra cubique, vue cockpit (v181).
+  À venir : 4) vie dense — voitures arrêtées aux feux, enseignes lumineuses
+  la nuit.
+
+- [ ] **Moderniser les villes bâties à la main — New York d'abord** (Max,
+  28/08 : « remettre à l'échelle, beaucoup plus riches, des choses qui se
+  passent, Times Square… »). Manhattan est à 11,7 blocs/km — l'échelle
+  « maquette » qui a fait refaire Washington (48/km en v162). Même recette :
+  le cœur à grande échelle (Times Square et ses écrans, Midtown, Wall
+  Street/Downtown), casse déclarée et BORNÉE (double empreinte, invariant 1),
+  vie de rue, captures avant fusion.
 
 - [ ] **Paris a la place qu'il lui faut** — le métro est passé sous terre
   (v163) et la carte lui a donné l'espace (v164) : la ville peut maintenant
