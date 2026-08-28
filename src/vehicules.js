@@ -199,20 +199,22 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
 // Extrudé sur la largeur avec un chanfrein arrondi (bevel), il donne des
 // flancs bombés — c'est le bevel qui fait les épaules de la voiture.
 function profilCaisse() {
-  // La cabine AVANCÉE et la poupe longue : c'est ce qui distingue une
-  // sportive d'une berline à hayon — le pic du toit est presque au-dessus
-  // du siège, pas au-dessus du coffre.
+  // Le profil d'une hypersportive — l'expérience « réplique une Chiron »
+  // demandée par Max : TRÈS basse (le toit culmine à ~1,29 pour 1,9 de
+  // large), le nez émoussé et plongeant, le pare-brise profond qui part
+  // loin en avant, l'arche courte au-dessus des sièges, la longue plage
+  // moteur et le petit becquet de queue. Pas de logo, pas de nom : la
+  // forme, rien que la forme.
   const s = new THREE.Shape();
-  s.moveTo(1.62, 0.62);                                   // le bas du nez
-  s.quadraticCurveTo(1.8, 0.64, 1.5, 0.78);               // le nez, rond
-  s.quadraticCurveTo(1.05, 0.92, 0.62, 0.97);             // le capot qui plonge
-  s.quadraticCurveTo(0.28, 1.16, 0.0, 1.22);              // le pare-brise couché
-  s.quadraticCurveTo(-0.42, 1.3, -0.78, 1.14);            // l'arche du toit
-  s.quadraticCurveTo(-1.25, 0.9, -1.52, 0.76);            // la poupe, longue et fuyante
-  s.quadraticCurveTo(-1.7, 0.64, -1.58, 0.6);             // l'arrière rond
-  // Le dessous se tient HAUT (0,6 : la jupe descend à ~0,4 avec l'arrondi) :
-  // plus bas, la caisse avalait les roues aux trois quarts.
-  s.lineTo(1.62, 0.62);
+  s.moveTo(1.7, 0.42);                                    // la lame avant, au ras du sol
+  s.quadraticCurveTo(1.86, 0.56, 1.6, 0.7);               // le nez émoussé
+  s.quadraticCurveTo(1.2, 0.84, 0.75, 0.88);              // le capot bas, l'aile qui monte
+  s.quadraticCurveTo(0.35, 1.06, 0.02, 1.12);             // le pare-brise, profond
+  s.quadraticCurveTo(-0.32, 1.18, -0.68, 1.06);           // l'arche courte du toit
+  s.quadraticCurveTo(-1.1, 0.88, -1.42, 0.8);             // la plage moteur
+  s.lineTo(-1.58, 0.78);                                  // le becquet de queue
+  s.quadraticCurveTo(-1.72, 0.7, -1.62, 0.48);            // la poupe, pleine
+  s.lineTo(1.7, 0.42);                                    // le dessous
   return s;
 }
 
@@ -222,23 +224,42 @@ function profilCaisse() {
 // fait l'habitacle sombre et galbé de la vraie vie.
 function profilVerriere() {
   const s = new THREE.Shape();
-  s.moveTo(0.66, 0.95);                                   // le bas du pare-brise
-  s.quadraticCurveTo(0.28, 1.18, 0.0, 1.24);
-  s.quadraticCurveTo(-0.42, 1.33, -0.8, 1.16);
-  s.quadraticCurveTo(-1.0, 1.0, -1.12, 0.92);             // la plage arrière
-  s.lineTo(0.66, 0.95);                                   // la ligne de ceinture
+  s.moveTo(0.78, 0.86);                                   // le bas du pare-brise
+  s.quadraticCurveTo(0.35, 1.08, 0.02, 1.14);
+  s.quadraticCurveTo(-0.32, 1.21, -0.7, 1.08);
+  s.quadraticCurveTo(-0.88, 0.98, -0.98, 0.9);            // la plage arrière
+  s.lineTo(0.78, 0.86);                                   // la ligne de ceinture
   return s;
+}
+
+// Souder puis lisser : l'extrusion sort des normales À FACETTES — la coque
+// était courbe mais éclairée comme un origami, et Max la voyait « cubique ».
+// On indexe les sommets confondus et on remoyenne les normales : la lumière
+// glisse alors d'une facette à l'autre, et le galbe devient continu.
+function lisser(geo) {
+  const p = geo.attributes.position;
+  const vus = new Map();
+  const index = [];
+  for (let i = 0; i < p.count; i++) {
+    const k = `${Math.round(p.getX(i) * 500)}|${Math.round(p.getY(i) * 500)}|${Math.round(p.getZ(i) * 500)}`;
+    let j = vus.get(k);
+    if (j === undefined) { j = i; vus.set(k, i); }
+    index.push(j);
+  }
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return geo;
 }
 
 function extruderProfil(shape, largeur, arrondi) {
   const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: largeur, curveSegments: 10,
+    depth: largeur, curveSegments: 12,
     bevelEnabled: true, bevelThickness: arrondi, bevelSize: arrondi * 0.8,
-    bevelSegments: 4,
+    bevelSegments: 5,
   });
   geo.rotateY(Math.PI / 2);                               // la largeur suit x, l'avant part vers -z
   geo.translate(-largeur / 2, 0, 0);                      // centré sur l'axe
-  return geo;
+  return lisser(geo);
 }
 
 export function construireVoitureRoute(couleur = 0x9a9a9a) {
@@ -246,27 +267,42 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c;
   // tout ce qui se repeint est posé blanc : la teinte vient du matériau
   a.membre('caisse');
-  a.geometrie(extruderProfil(profilCaisse(), 1.24, 0.26), BLANC, {});              // la coque en courbes
+  a.geometrie(extruderProfil(profilCaisse(), 1.34, 0.3), BLANC, {});               // la coque, basse et large
   for (const sx of [-1, 1]) {
-    a.boite(BLANC, { p: [sx * 0.9, 0.98, -0.4], e: [0.12, 0.06, 0.16] });          // rétroviseur
+    a.boite(BLANC, { p: [sx * 0.95, 0.88, -0.45], e: [0.11, 0.05, 0.14] });        // rétroviseur
+    // Les AILES BOMBÉES au-dessus des roues : quatre sphères écrasées dans
+    // la couleur de la caisse — c'est elles qui font les hanches d'une
+    // hypersportive, une coque seule reste une savonnette.
+    a.sphere(BLANC, { p: [sx * 0.78, 0.66, -1.15], e: [0.55, 0.34, 1.0], seg: 12 });
+    a.sphere(BLANC, { p: [sx * 0.8, 0.68, 1.15], e: [0.58, 0.36, 1.05], seg: 12 });
   }
   // La verrière a son membre À ELLE : son maillage reçoit après coup un verre
   // fumé quasi opaque — le verre partagé de l'Atelier (0,42) se noyait dans
   // la couleur de la caisse, on ne voyait pas de vitres du tout.
   a.membre('verriere');
-  a.geometrie(extruderProfil(profilVerriere(), 1.27, 0.27), 0xffffff, { p: [0, 0.02, 0] });
+  a.geometrie(extruderProfil(profilVerriere(), 1.36, 0.3), 0xffffff, { p: [0, 0.02, 0] });
   a.membre('tronc');
-  a.boite(NOIR, { p: [0, 0.54, -1.94], e: [0.6, 0.24, 0.14] });                    // la calandre
-  a.boite(SOMBRE, { p: [0, 0.42, -1.72], e: [1.5, 0.14, 0.34] });                  // bouclier avant
-  a.boite(SOMBRE, { p: [0, 0.42, 1.68], e: [1.5, 0.14, 0.34] });                   // bouclier arrière
+  // La LIGNE EN C sur le flanc : l'arc sombre qui enveloppe la portière —
+  // la signature d'une hypersportive, à demi noyé dans la coque.
   for (const sx of [-1, 1]) {
-    a.boite(0xfff4cc, { p: [sx * 0.52, 0.7, -1.9], e: [0.3, 0.1, 0.1] });          // phare
-    a.boite(0xd83a2a, { p: [sx * 0.52, 0.74, 1.84], e: [0.3, 0.09, 0.1] });        // feu arrière
+    const arc = new THREE.TorusGeometry(0.4, 0.05, 6, 18, Math.PI * 1.15);
+    arc.rotateZ(Math.PI * 0.42);                          // l'ouverture regarde l'avant-haut
+    arc.rotateY(Math.PI / 2);                             // dans le plan du flanc
+    a.geometrie(arc, SOMBRE, { p: [sx * 0.92, 0.72, 0.1] });
+  }
+  a.sphere(NOIR, { p: [0, 0.56, -1.98], e: [0.56, 0.34, 0.3], seg: 12 });          // la calandre ovale
+  a.boite(SOMBRE, { p: [0, 0.34, -1.88], e: [1.6, 0.14, 0.34] });                  // la lame avant
+  a.boite(SOMBRE, { p: [0, 0.4, 1.82], e: [1.6, 0.2, 0.3] });                      // le diffuseur
+  a.boite(0xd83a2a, { p: [0, 0.84, 1.88], e: [1.46, 0.06, 0.08] });                // la barre de feux
+  for (const sx of [-1, 1]) {
+    a.boite(0xfff4cc, { p: [sx * 0.58, 0.72, -1.92], e: [0.3, 0.06, 0.1] });       // phare fin
+    a.cylindre(0x1c1c22, { p: [sx * 0.3, 0.46, 1.94], r: [Math.PI / 2, 0, 0],
+      e: [0.14, 0.12, 0.14], seg: 8 });                                            // l'échappement
     for (const sz of [-1.15, 1.2]) {
-      a.cylindre(0x16161a, { p: [sx * 0.9, 0.37, sz], r: [0, 0, Math.PI / 2],
-        e: [0.74, 0.27, 0.74], seg: 12 });                                         // le pneu
-      a.cylindre(0xb8bcc2, { p: [sx * 0.92, 0.37, sz], r: [0, 0, Math.PI / 2],
-        e: [0.4, 0.29, 0.4], seg: 10 });                                           // la jante
+      a.cylindre(0x16161a, { p: [sx * 0.94, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.8, 0.28, 0.8], seg: 14 });                                           // le pneu
+      a.cylindre(0xb8bcc2, { p: [sx * 0.96, 0.4, sz], r: [0, 0, Math.PI / 2],
+        e: [0.46, 0.3, 0.46], seg: 12 });                                          // la grande jante
     }
   }
   const g = a.finir();

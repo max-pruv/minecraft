@@ -272,7 +272,9 @@ export function initFun(ctx) {
   let riding = null;
 
   function feed(a) {
-    if (!a) return;
+    // Comme `montable`, c'est la fiche de l'espèce qui décide : une voiture
+    // ne se nourrit pas, ne se câline pas, et ne fait pas de bébés voitures.
+    if (!a || a.def.nourrissable === false) return;
     emojiBurst(['💕', a.def.emoji], 8);
     const partner = animalManager.animals.find((o) =>
       o !== a && o.def.key === a.def.key && !o.baby && o.pos.distanceTo(a.pos) < 9);
@@ -1516,7 +1518,8 @@ export function initFun(ctx) {
     if (targetTimer > 0) return;
     targetTimer = 0.25;
     const a = animalManager.targeted();
-    const nourrissable = isRunning() && a && a.pos.distanceTo(player.pos) < 6;
+    const nourrissable = isRunning() && a && a.pos.distanceTo(player.pos) < 6
+      && a.def.nourrissable !== false;
     // Monter ne se vise pas comme on vise pour nourrir : on prend la bête
     // montable la plus proche devant soi, même de biais. C'est tout l'écart
     // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.

@@ -221,27 +221,27 @@ function voitureNeuve() {
   const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
   const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
   const sombre = 0x22262c, noir = 0x14161a;
-  g.add(box(1.14, 0.12, 0.26, sombre, 0, 0.94, -0.55));            // tableau de bord
-  const volant = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.024, 6, 14),
+  g.add(box(1.1, 0.08, 0.22, sombre, 0, 0.76, -0.52));             // tableau de bord
+  const volant = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 6, 14),
     new THREE.MeshBasicMaterial({ color: noir }));
   volant.rotation.x = -0.5;                                        // incliné vers soi
-  volant.position.set(0, 0.97, -0.42);
+  volant.position.set(0, 0.8, -0.45);
   g.add(volant);
-  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.92, -0.5));               // colonne de direction
+  g.add(box(0.04, 0.04, 0.14, noir, 0, 0.75, -0.5));               // colonne de direction
   // PAS de rétroviseur central : l'habitacle est si bas que, où qu'on le
   // pose, il flotte en plein milieu du pare-brise et bouche la route — trois
   // captures l'ont montré. Le cadre vient des montants, du capot et du volant.
   for (const sx of [-1, 1]) {
-    const montant = box(0.06, 0.05, 0.72, sombre, sx * 0.55, 1.06, -0.32);
-    montant.rotation.x = -0.55;                                    // suit le pare-brise
+    const montant = box(0.05, 0.05, 0.6, sombre, sx * 0.5, 0.94, -0.28);
+    montant.rotation.x = -0.5;                                     // suit le pare-brise
     g.add(montant);
-    g.add(box(0.46, 0.44, 0.14, noir, sx * 0.36, 0.98, 0.42));     // dossiers des sièges
-    g.add(box(0.46, 0.09, 0.4, noir, sx * 0.36, 0.78, 0.26));      // assises
+    g.add(box(0.44, 0.38, 0.12, noir, sx * 0.34, 0.84, 0.36));     // dossiers baquets
+    g.add(box(0.44, 0.08, 0.38, noir, sx * 0.34, 0.64, 0.22));     // assises
   }
-  g.add(box(1.1, 0.05, 0.06, sombre, 0, 1.24, -0.12));             // traverse du pare-brise
-  g.add(box(1.1, 0.03, 1.0, 0x2a2e34, 0, 1.27, 0.3));              // ciel de toit
-  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 1.1), g.userData.carrosserie);
-  capot.position.set(0, 0.85, -1.05);                              // le capot, vu du volant
+  g.add(box(1.0, 0.05, 0.06, sombre, 0, 1.04, -0.1));              // traverse du pare-brise
+  g.add(box(1.0, 0.03, 0.85, 0x2a2e34, 0, 1.06, 0.28));            // ciel de toit
+  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.04, 1.0), g.userData.carrosserie);
+  capot.position.set(0, 0.72, -1.0);                               // le capot, vu du volant
   g.add(capot);
   g.userData.legs = [];                                            // rien ne balance
   return g;
@@ -271,9 +271,11 @@ export const MONTURES = [
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
   // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
   // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
-  // au creux du galbe (1,12), bien à l'intérieur de la coque en courbes —
-  // alors que l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
+  // au ras du galbe (0,92 : une hypersportive s'assied BAS) — alors que
+  // l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
+  // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
+  // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
-    height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, oeil: 1.12 },
+    height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
+    assise: 1.0, oeil: 0.97, nourrissable: false },
 ];
