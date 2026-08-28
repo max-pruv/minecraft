@@ -302,7 +302,10 @@ export const MONTURES = [
   // l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
   // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
   // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
+  // `immobile` : garée, elle ne flâne pas et ne pivote pas (le vagabondage
+  // du bestiaire la faisait « bouger tac tac tac sans rouler » — Max). Elle
+  // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, oeil: 0.97, nourrissable: false },
+    assise: 1.0, oeil: 0.97, nourrissable: false, immobile: true },
 ];

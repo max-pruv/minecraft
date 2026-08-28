@@ -118,10 +118,21 @@ export class Player {
     const len = Math.hypot(dx, dz);
     if (len > 1) { dx /= len; dz /= len; } // keep analog magnitudes below 1
 
-    if (this.flying) this.volDepuis += dt; else this.volDepuis = 0;
+    // POSÉ, PAS EN L'AIR. En mode vol on peut marcher au sol — le vol ne se
+    // coupe pas quand on atterrit — et la rampe de croisière s'appliquait
+    // donc aussi à la marche : « on est à pied et pas en vol, la vitesse ne
+    // doit pas accélérer » (Max). `onGround` ne sert à rien ici : en vol la
+    // vitesse verticale est nulle et la collision vers le bas ne se déclenche
+    // jamais. Posé = un bloc solide juste sous les pieds, et alors on marche
+    // à la vitesse de la marche, élan remis à zéro.
+    const solSous = this.world.getBlock(
+      Math.floor(this.pos.x), Math.floor(this.pos.y - 0.15), Math.floor(this.pos.z));
+    const pose = blockIsSolid(solSous);
+    const enLair = this.flying && !pose;
+    if (enLair) this.volDepuis += dt; else this.volDepuis = 0;
 
     let speed = k.has('ShiftLeft') || k.has('ShiftRight') ? SPRINT_SPEED : WALK_SPEED;
-    if (this.flying) speed = this.vitesseVol();
+    if (enLair) speed = this.vitesseVol();
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 

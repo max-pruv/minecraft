@@ -548,6 +548,36 @@ async function avancerUnDemiSeconde(p, depart) {
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 
+    // LA VOITURE GARÉE NE BOUGE PLUS TOUTE SEULE (Max : « elles bougent
+    // d'une position à une autre de manière radicale et violente, tac tac
+    // tac »). Le vagabondage du bestiaire lui sautait un cap aléatoire au
+    // plus tard toutes les quatre secondes. On la regarde cinq secondes DE
+    // JEU — l'horloge du banc, pas celle du mur — : cap et position figés.
+    const garee0 = await tab.evaluate(() => {
+      const a = window.__game.animalManager.animals.find((x) => x.def.key === 'voiture');
+      return a ? { yaw: a.mesh.rotation.y, x: a.pos.x, z: a.pos.z } : null;
+    });
+    await tab.evaluate(() => new Promise((fin) => {
+      let sim = 0, prec = performance.now();
+      const tic = (t) => {
+        sim += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+        if (sim >= 5) fin(); else requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+    }));
+    const garee1 = await tab.evaluate(() => {
+      const a = window.__game.animalManager.animals.find((x) => x.def.key === 'voiture');
+      return a ? { yaw: a.mesh.rotation.y, x: a.pos.x, z: a.pos.z } : null;
+    });
+    const derive = garee0 && garee1
+      ? { cap: Math.abs(garee1.yaw - garee0.yaw),
+        pas: Math.hypot(garee1.x - garee0.x, garee1.z - garee0.z) }
+      : null;
+    verifier('une voiture garée ne bouge plus toute seule — ni cap ni position',
+      !!derive && derive.cap < 0.01 && derive.pas < 0.05,
+      derive ? `cap ${derive.cap.toFixed(3)} rad · ${derive.pas.toFixed(2)} bloc en 5 s de jeu`
+        : 'voiture introuvable');
+
     // --- les villes vivantes : la circulation roule, les passants marchent ---
     //
     // Max : « les villes n'ont pas de vie. Il n'y a pas de voitures qui

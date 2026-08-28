@@ -277,10 +277,14 @@ class Animal {
   hurt(player) {
     if (this.dying > 0) return false;
     this.hp--;
-    this.fleeTime = 2.5;
-    this.yaw = Math.atan2(this.pos.x - player.pos.x, this.pos.z - player.pos.z);
-    this.state = 'walk';
-    this.stateTime = Math.max(this.stateTime, 2.5);
+    // une espèce immobile encaisse sur place : pas de fuite, pas de
+    // pivotement — une voiture frappée ne détale pas comme une poule
+    if (!this.def.immobile) {
+      this.fleeTime = 2.5;
+      this.yaw = Math.atan2(this.pos.x - player.pos.x, this.pos.z - player.pos.z);
+      this.state = 'walk';
+      this.stateTime = Math.max(this.stateTime, 2.5);
+    }
     this.mesh.traverse((o) => {
       if (o.isMesh && o.material && o.material.color) {
         if (o.userData.baseColor === undefined) o.userData.baseColor = o.material.color.getHex();
@@ -306,13 +310,19 @@ class Animal {
     }
     this.fleeTime -= dt;
     this.stateTime -= dt;
-    if (this.stateTime <= 0) {
+    // `immobile` (fiche d'espèce) : une voiture garée ne flâne pas ET ne
+    // pivote pas. Le vagabondage des bêtes changeait son cap d'un coup —
+    // « elles bougent d'une position à une autre de manière radicale et
+    // violente, tac tac tac » (Max) — parce qu'un poulet peut se retourner
+    // instantanément, pas une carrosserie. Elle ne bouge que conduite.
+    if (this.stateTime <= 0 && !this.def.immobile) {
       this.state = this.state === 'idle' ? 'walk' : 'idle';
       this.stateTime = this.state === 'idle' ? 1.5 + Math.random() * 3 : 1.5 + Math.random() * 2.5;
       if (this.state === 'walk') this.yaw = Math.random() * Math.PI * 2;
     }
     const panic = this.fleeTime > 0 ? 2.2 : 1;
-    const speed = this.state === 'walk' ? this.def.speed * this.scale * panic : 0;
+    const speed = (this.state === 'walk' && !this.def.immobile)
+      ? this.def.speed * this.scale * panic : 0;
 
     this.vel.x = Math.sin(this.yaw) * speed;
     this.vel.z = Math.cos(this.yaw) * speed;
