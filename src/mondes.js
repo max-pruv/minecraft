@@ -320,6 +320,17 @@ function tableLongitudes(mondeId) {
   return table;
 }
 
+// L'inverse en latitude : à quelle ligne z du monde passe un parallèle. La
+// latitude ne dépend que de z — les compressions ne resserrent que la
+// longitude — donc la réponse est exacte. C'est elle qui trace la lisière
+// des calottes polaires, une fois pour toutes : le test par colonne devient
+// une simple comparaison de z.
+export function zDeLatitude(lat, mondeId = 'terre') {
+  const p = MONDES[mondeId].projection;
+  const t = tableLongitudes(mondeId);
+  return p.ancre.z - ((lat - p.lat0) * t.kmParDegreLat) / p.kmParBloc;
+}
+
 export function cielDe(x, z, mondeId = 'terre') {
   const p = MONDES[mondeId].projection;
   const t = tableLongitudes(mondeId);

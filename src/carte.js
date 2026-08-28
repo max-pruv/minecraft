@@ -27,6 +27,12 @@ import { couleurCarteNice, lieuxDeNice } from './nice.js';
 import { couleurCarteLille, lieuxDeLille } from './lille.js';
 import { couleurCarteLondres, lieuxDeLondres } from './londres.js';
 import { couleurCarteVillesMonde, lieuxDesVillesMonde } from './villesmonde.js';
+import { zDeLatitude } from './mondes.js';
+
+// Les lisières des calottes, calculées une fois : la latitude ne dépend que
+// de z, donc peindre le pôle coûte une comparaison — pas une projection.
+const Z_ARCTIQUE = Math.round(zDeLatitude(78));
+const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
 import { couleurCarteWashington, lieuxDeWashington } from './washington.js';
 import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
@@ -387,6 +393,12 @@ export class Carte {
       return [172, 168, 162];
     }
 
+    // Les calottes : au-delà du cercle arctique et de l'Antarctique, le sol
+    // du monde est neige (world.js) — la carte doit dire la même chose. Vu
+    // par Max : deux bandes de prairie mouchetée en haut et en bas du monde.
+    if (wz < Z_ARCTIQUE || wz > Z_ANTARCTIQUE) {
+      return h <= WATER_LEVEL + 1 ? [214, 230, 238] : [244, 249, 252];
+    }
     if (h <= WATER_LEVEL + 1) return [226, 214, 172];               // la plage
     if (h >= 58) return [242, 250, 250];                            // les neiges
     if (h >= 48) return melange([140, 136, 126], [200, 202, 200], (h - 48) / 10);
