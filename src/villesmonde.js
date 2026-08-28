@@ -69,6 +69,14 @@ const TUILE = uni(0);
 const ARDOISE = uni(25);
 const ACIER = uni(24);
 const ROUGE_GRES = brique(18);
+const BOIS_PORTE = BLOCK.DARKPLANK;   // les portes des boutiques
+const BOIS_BANC = BLOCK.PLANK;        // les bancs des trottoirs
+
+// Les enseignes des boutiques : le bandeau au-dessus de la vitrine (la
+// « fascia » des devanturiers) et l'auvent rayé qui s'avance sur le trottoir.
+// Rayures : le motif n° 5 de la palette de décor — c'est LE tissu de store.
+const raye = (c) => DECOR_START + c * 10 + 5;
+const ENSEIGNES = [raye(0), raye(5), raye(10), raye(11), raye(13), raye(2), raye(6), raye(14)];
 
 // --- les fiches --------------------------------------------------------------
 //
@@ -1360,15 +1368,99 @@ export function batirColonneVillesMonde(x, z, poser) {
     const bh = tour ? 10 + Math.floor(r * 14) : h0 + Math.floor(r * (h1 - h0 + 1));
     const mur = tour ? ACIER : palette[Math.floor(tirage(a, b, 97) * palette.length) % palette.length];
     const face = (u & 1) === 0 ? v : u;
+
+    // Où est cette colonne DANS son lot ? C'est ce qui décide de la façade.
+    const A = u * co - v * si, B = u * si + v * co;
+    const ra = A - a * t.pu, rb = B - b * t.pv;
+    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
+    const bord = dRue < t.s + 1.15;                                // colonne de façade
+
+    // LE REZ-DE-CHAUSSÉE COMMERÇANT. Max : « on ne retrouve pas des façades
+    // de magasins ». La moitié des lots du centre en reçoivent une, à la
+    // grammaire des vraies devantures : la vitrine sur deux blocs, la porte
+    // de bois, et le bandeau d'enseigne coloré au-dessus — chaque boutique
+    // garde la sienne, stable de visite en visite.
+    const commerce = !favela && !tour && tirage(a, b, 131) < 0.5;
+    const enseigne = ENSEIGNES[Math.floor(tirage(a, b, 173) * ENSEIGNES.length)];
+    // La porte : une colonne par façade, au milieu du front du lot — qui est
+    // un QUART d'îlot : son front court de s à p/2, son milieu est entre les
+    // deux.
+    const along = Math.abs(ra) < Math.abs(rb) ? Math.abs(rb) : Math.abs(ra);
+    const milieuFront = Math.abs(ra) < Math.abs(rb) ? (t.s + t.pv / 2) / 2 : (t.s + t.pu / 2) / 2;
+    // Une porte, pas une rayure : le premier rang de façade seulement, et une
+    // demi-colonne de tolérance de part et d'autre du milieu du front.
+    const porte = commerce && dRue < t.s + 1.0 && Math.abs(along - milieuFront) < 0.28;
+
+    // Les toits ne sont plus tous du même gris : deux tiers gardent la
+    // couleur de la ville, le reste pioche — c'est ce qui fait un vrai
+    // quartier vu des toits.
+    const toitLot = tour ? ACIER
+      : [f.toit, f.toit, f.toit, f.toit, ARDOISE, TUILE][Math.floor(tirage(a, b, 199) * 6)];
+
     for (let y = 0; y < bh; y++) {
       if (tour) { poser(y + 1, y % 3 === 2 ? ACIER : VERRE); continue; }
+      if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : VERRE); continue; }
+      if (commerce && bord && y === 1) { poser(2, bh > 3 ? VERRE : mur); continue; }
+      if (commerce && bord && y === 2) { poser(3, enseigne); continue; }
       const fenetre = y > 0 && y % 2 === 1 && (face & 1) === 1;
       poser(y + 1, fenetre ? VERRE : mur);
     }
-    poser(bh + 1, tour ? ACIER : f.toit);
+    poser(bh + 1, toitLot);
+    // La cheminée, au coin du lot — une maison sur deux en a une.
+    if (!tour && !favela && Math.abs(ra) > t.pu / 2 - t.s - 0.9 && Math.abs(rb) > t.pv / 2 - t.s - 0.9
+      && tirage(a, b, 241) < 0.5) {
+      poser(bh + 2, brique(0));
+      poser(bh + 3, brique(0));
+    }
     return;
   }
 }
+
+// Le trottoir vivant : l'auvent de la boutique qui s'avance au-dessus du
+// passant, le lampadaire au bord du caniveau, le banc et le bac à fleurs.
+// Appelé par world.js pour chaque colonne de trottoir des villes machine —
+// tout est déterministe : le même trottoir, les mêmes lampadaires, toujours.
+export function mobilierVillesMonde(x, z, poser) {
+  for (const f of villesPres(x, z)) {
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (Math.hypot(u, v) > f.rayon) continue;
+    if (!f.trame) return;
+    const t = f.trame;
+    if (t.sud && v > t.sud) return;
+    const co = Math.cos(t.ang), si = Math.sin(t.ang);
+    const A = u * co - v * si, B = u * si + v * co;
+    const a = Math.round(A / t.pu), b = Math.round(B / t.pv);
+    const ra = A - a * t.pu, rb = B - b * t.pv;
+    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
+    if (dRue < t.w || dRue >= t.s) return;                        // pas sur ce trottoir
+
+    // L'AUVENT : la bande rayée de la boutique, au-dessus de la tête. Le
+    // trottoir et son lot partagent le même index (a, b), donc le même
+    // tirage : l'auvent est de la couleur de l'enseigne qu'il prolonge.
+    const commerce = tirage(a, b, 131) < 0.5;
+    if (commerce && t.s - dRue < 1.15) {
+      poser(3, ENSEIGNES[Math.floor(tirage(a, b, 173) * ENSEIGNES.length)]);
+      return;
+    }
+    // LE LAMPADAIRE : au bord du caniveau, un tous les neuf blocs le long de
+    // la rue. `long` est la coordonnée LE LONG de la rue la plus proche.
+    const long = Math.abs(ra) < Math.abs(rb) ? B : A;
+    const cran = ((Math.round(long) % 9) + 9) % 9;
+    if (dRue - t.w < 0.9) {
+      if (cran === 4) {
+        poser(1, NOIR_LAMPE); poser(2, NOIR_LAMPE); poser(3, NOIR_LAMPE);
+        poser(4, OR);
+        return;
+      }
+      // LE BANC, et LE BAC À FLEURS — assez rares pour rester des trouvailles.
+      if (cran === 0 && tirage(a, b, 263) < 0.5) { poser(1, BOIS_BANC); return; }
+      if (cran === 7 && tirage(a, b, 269) < 0.5) { poser(1, uni(5)); poser(2, uni(15)); return; }
+    }
+    return;
+  }
+}
+
+const NOIR_LAMPE = uni(26);
 
 // Les monuments, pour la liste LANDMARKS de world.js.
 export function landmarksVillesMonde() {

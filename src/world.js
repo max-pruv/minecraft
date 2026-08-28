@@ -35,7 +35,7 @@ import {
   MONUMENTS_LONDRES, lieuxDeLondres,
 } from './londres.js';
 import {
-  hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde,
+  hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
   landmarksVillesMonde, placesVillesMonde,
 } from './villesmonde.js';
 import {
@@ -1503,7 +1503,18 @@ export class World {
             });
             continue;
           }
-          if (svm !== null) { data[World.index(x, h, z)] = svm; continue; }
+          if (svm !== null) {
+            data[World.index(x, h, z)] = svm;
+            // Le trottoir porte son mobilier : auvents des boutiques,
+            // lampadaires, bancs, bacs à fleurs. Cf. mobilierVillesMonde.
+            if (svm === CITY_BLOCK.SIDEWALK) {
+              mobilierVillesMonde(wx, wz, (dy, id) => {
+                const wy = h + dy;
+                if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+              });
+            }
+            continue;
+          }
         }
 
         // La Giga-usine : la dalle du hall, l'asphalte du parc et de la voie,
