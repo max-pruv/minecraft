@@ -829,7 +829,7 @@ const FICHES = {
   },
   kyoto: {
     lat0: 35.0116, lon0: 135.7681, echelle: 8, rayon: 42,
-    fleuve: { pts: [[3.5, -38], [2.5, -10], [2, 20], [-1, 40]], l: 2.5 },     // la Kamo
+    fleuve: { pts: [[3, -38], [2.5, -10], [2, 20], [-1, 40]], l: 1.6 },       // la Kamo — FINE : large de 2,5 elle avalait l'ancre, et Gion avec
     collines: [{ nom: 'Higashiyama', cu: 17, cv: 12, r: 10, h: 10 }],
     trame: { ang: 0, pu: 5, pv: 5, w: 0.45, s: 0.8 },             // la grille impériale, millénaire
     palette: [CREME, uni(19), OCRE], toit: ARDOISE, hMaison: [2, 4],
