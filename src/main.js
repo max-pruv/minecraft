@@ -4621,10 +4621,16 @@ let frameDepuisMesure = 0;
 // Le vol prend son élan au bout de quelques secondes. Sans un mot, l'enfant
 // croit à un bug ; avec ce mot, il comprend qu'il vient de gagner quelque chose.
 let elanAnnonce = false;
+let croisiereAnnonce = false;
 function signalerElanDeVol() {
   const lance = player.volLance();
-  if (lance && !elanAnnonce) creatureManager.toast('🚀 Vol rapide — tu vas deux fois plus vite !', 0x6ec8ff);
+  if (lance && !elanAnnonce) creatureManager.toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
   elanAnnonce = lance;
+  // Puis la vitesse grandit sans bruit — sauf une fois, au sommet : l'enfant
+  // sait qu'il tient sa vitesse de croisière et qu'insister ne donnera plus.
+  const croisiere = player.volCroisiere && player.volCroisiere();
+  if (croisiere && !croisiereAnnonce) creatureManager.toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
+  croisiereAnnonce = croisiere;
 }
 
 function frame(now) {

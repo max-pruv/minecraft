@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v175 — le vol prend sa vitesse de croisière
+
+**Pourquoi.** Max : « comme la carte est beaucoup plus grande, ça serait bien
+que, en fonction du temps de vol, la vitesse s'accélère de manière
+progressive jusqu'à une vitesse assez rapide pour vite progresser sur la
+carte. » Le vol doublait après trois secondes et s'arrêtait là — vingt-deux
+blocs par seconde pour un monde de plusieurs milliers.
+
+**Ce que ça change.** L'allure du vol grandit maintenant sans à-coup avec le
+temps de vol continu : les trois premières secondes gardent la vitesse de
+toujours (sauter de toit en toit reste précis), puis l'élan (« et ça
+continue d'accélérer ! ») monte cran par cran jusqu'à la croisière — six
+fois la vitesse de base, saluée d'un mot (« ✈️ Vitesse de croisière »).
+Paris-Rome se survole en une demi-minute. Se poser remet tout à zéro.
+
+**Ce qui le prouve.** Un témoin neuf mesure ce que l'enfant obtient — des
+blocs parcourus par seconde de JEU — à trois moments du même vol : calme au
+départ, plus du double à quinze secondes, et un plafond net en croisière
+(vérifié rouge sur l'ancien code, qui échoue à l'égalité 22 = 2 × 11). Et la
+sonde de croisière : 1 583 blocs parcourus en trente secondes, zéro morceau
+de monde en retard derrière.
+
 ## v174 — les poissons : la mer aussi est vivante
 
 **Pourquoi.** Max : « add fish swimming ». Le monde a des océans sur tout le
