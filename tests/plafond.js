@@ -60,7 +60,18 @@ function verifier(nom, ok, detail = '') {
 // et Seattle — chacun aplanissant le parvis de son monument. Un seul tombe
 // dans la fenêtre observée, Londres ; les huit autres sont trop loin pour y
 // paraître, et ne changent donc pas ce chiffre-ci.
-const EMPREINTE_RELIEF = 'da4fccca8dc97507b80350dbf8b74d74232855c6';
+// v164 (villes sur leurs vraies coordonnées) : da4fccca8dc97507…
+//
+// **Cinquième changement, en v165, et c'est le plus grand** : la Terre. Max —
+// « quand je regarde la carte, je ne reconnais pas la vraie carte du monde…
+// il y a aussi le relief : les Alpes, l'Himalaya, le Grand Canyon. » La
+// fenêtre observée contient désormais la Manche et la mer du Nord (le
+// planisphère les met là où elles sont), Londres bâtie en ville entière, et
+// les villes recalées au kilomètre près — la projection quantifiait la
+// longitude au degré, Rome était 60 km trop à l'est. Les DIX-HUIT colonnes
+// nommées, elles, n'ont pas bougé d'un bloc : la casse est réelle, elle est
+// voulue, et elle est confinée là où la Terre a pris ses droits.
+const EMPREINTE_RELIEF = 'ee57fee01302de3d98fa4175c24015e53df057d4';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -89,7 +100,7 @@ const EMPREINTE_RELIEF = 'da4fccca8dc97507b80350dbf8b74d74232855c6';
 // le témoin promet redevient vrai et le restera quand la carte grandira : là où
 // aucune ville ne se pose, le paysage est celui du bruit de terrain, intact.
 // `PAS_VIDE` plus bas interdit désormais à ce témoin de se vider en silence.
-const EMPREINTE_HORS_VILLES = 'f482dec7e266d6f94c9f5b1da6d6b21701bd7a4c';
+const EMPREINTE_HORS_VILLES = '65b0f362fd08edb0fd8df62d2581f09f77243a79';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.

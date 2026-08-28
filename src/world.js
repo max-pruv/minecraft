@@ -28,6 +28,10 @@ import {
   hauteurCapitales, solCapitales, landmarksCapitales, placesCapitales,
 } from './capitales.js';
 import {
+  LONDRES, hauteurLondres, solLondres, lotLondresLibre, batirColonneLondres,
+  MONUMENTS_LONDRES, lieuxDeLondres,
+} from './londres.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -535,8 +539,11 @@ export const PLACES = [
     name: `Métro ${q.nom}`, x: WASHINGTON.x + q.u, z: WASHINGTON.z + q.v, r: 0,
   })),
   // Le tour du monde : une destination par ville, et une par monument. Sans
-  // elles on arriverait « à Londres » sans savoir de quel côté regarder.
+  // elles on arriverait « à Rome » sans savoir de quel côté regarder.
   ...placesCapitales(),
+  // Les destinations de Londres : la ville, puis ses hauts lieux.
+  { name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r },
+  ...lieuxDeLondres().map((p) => ({ name: p.name, x: p.x, z: p.z, r: 0 })),
 ];
 
 function buildPyramid(set) { // grande pyramide de grès du désert
@@ -876,6 +883,13 @@ const LANDMARKS = [
   // on ne pouvait que les poser soi-même depuis le menu du constructeur.
   // Maintenant que les villes se déduisent de leurs coordonnées réelles,
   // chacun se dresse chez lui.
+  // Londres, bâtie monument par monument à ses vraies coordonnées : Big Ben
+  // au bord de l'eau, Tower Bridge TOURNÉ pour enjamber la Tamise, le London
+  // Eye en face du Parlement, St Paul dans la City, le Shard sur la rive sud.
+  ...MONUMENTS_LONDRES.map((m) => ({
+    name: m.nom, x: LONDRES.x + m.u, z: LONDRES.z + m.v,
+    box: m.box, seuil: m.seuil, build: m.build,
+  })),
   ...landmarksCapitales(),
 ];
 
@@ -903,6 +917,10 @@ export const CITIES = [
   // confluent de deux rivières, découpé par surTerreWashington(). Le rayon ne
   // sert qu'à écarter d'emblée ce qui est loin.
   { key: 'dc', name: 'Washington', x: WASHINGTON.x, z: WASHINGTON.z, r: WASHINGTON_R, cell: 12, base: 33, street: 3 },
+  // Londres : la première ville du tour du monde bâtie en entier — la Tamise
+  // et son coude de Westminster, trois tissus de rues, ses monuments à leurs
+  // vraies coordonnées. Cf. src/londres.js.
+  { key: 'londres', name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, cell: 11, base: 33, street: 3 },
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -927,7 +945,11 @@ function dansUneZoneATerre(x, z) {
   if (!zonesATerre) {
     zonesATerre = [
       { x: 0, z: 0, r: 320 },                    // le continent du départ
-      ...CITIES.map((c) => ({ x: c.x, z: c.z, r: c.r + 60 })),
+      // +24 et pas davantage : les fondus de villes font quatorze blocs, et
+      // une marge de +60 faisait déborder le renflement de Londres jusque sur
+      // le détroit de Douvres — la Manche disparaissait à l'endroit exact où
+      // elle est la plus célèbre.
+      ...CITIES.map((c) => ({ x: c.x, z: c.z, r: c.r + 24 })),
       ...PLACES.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
       ...LANDMARKS.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
     ];
@@ -999,7 +1021,7 @@ export class World {
     // keeps its rolling hills so its streets climb like the real thing
     for (const c of CITIES) {
       // Quatre reliefs à part, chacun dans son module : cf. plus bas.
-      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc') continue;
+      if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc' || c.key === 'londres') continue;
       const cd = Math.hypot(x - c.x, z - c.z);
       if (cd < c.r) {
         const m = Math.min(1, (c.r - cd) / 16);
@@ -1025,6 +1047,11 @@ export class World {
     // Lille : la Deûle et les douves de la citadelle se creusent, et le rempart
     // de Vauban se relève au-dessus de la ville.
     h = hauteurLille(x, z, h, 34);
+
+    // Londres : la Tamise se creuse dans la plaine — son coude de Westminster
+    // est LE trait qu'on reconnaît sur tous les plans — et Primrose Hill se
+    // lève au nord, d'où toute la ville se découvre.
+    h = hauteurLondres(x, z, h, 33);
 
     // La Chine : les crêtes de la muraille, la rivière de Guilin et ses
     // karsts, les rizières en marches — une région entière dans ce qui était
@@ -1368,6 +1395,7 @@ export class World {
         for (const [cle, sol, libre, batir] of [
           ['nice', solNice, lotNiceLibre, batirColonneNice],
           ['lille', solLille, lotLilleLibre, batirColonneLille],
+          ['londres', solLondres, lotLondresLibre, batirColonneLondres],
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);

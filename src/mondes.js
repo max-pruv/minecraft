@@ -153,7 +153,11 @@ export const MONDES = {
       // villes entières. Une ville qui grandira plus tard n'a qu'à grandir —
       // le témoin `carteMonde.js` rougira bien avant qu'elle n'en touche une
       // autre. Marge la plus étroite aujourd'hui : 58 blocs.
-      { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 60 },
+      // Londres n'est plus un site à monument : c'est une VILLE bâtie
+      // (src/londres.js), la première du tour du monde au niveau de Nice et
+      // Lille. Son ancrage est Charing Cross, le point d'où les distances à
+      // Londres se mesurent officiellement.
+      { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 112 },
       { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 45 },
       { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 40 },
       { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 30 },

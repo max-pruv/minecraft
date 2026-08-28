@@ -24,6 +24,7 @@ import { couleurCarteParc, lieuxDuParc } from './parc.js';
 import { couleurCarteSF, lieuxDeSF } from './sanfrancisco.js';
 import { couleurCarteNice, lieuxDeNice } from './nice.js';
 import { couleurCarteLille, lieuxDeLille } from './lille.js';
+import { couleurCarteLondres, lieuxDeLondres } from './londres.js';
 import { couleurCarteWashington, lieuxDeWashington } from './washington.js';
 import { couleurCarteChine, LIEUX_CHINE } from './chine.js';
 import { POLE } from './pole.js';
@@ -342,6 +343,12 @@ export class Carte {
       const c = couleurCarteLille(wx, wz);
       if (c) return c;
     }
+    // Londres : la Tamise et son coude, le Mall rouge, les parcs royaux, la
+    // brique et le verre — le plan qu'on reconnaît d'en haut.
+    if (ville && ville.key === 'londres') {
+      const c = couleurCarteLondres(wx, wz);
+      if (c) return c;
+    }
     // Washington : le plan de L'Enfant se lit d'en haut et de nulle part
     // ailleurs — la grille, les diagonales qui la coupent, les ronds-points
     // où elles se croisent, et le Mall qui traverse tout d'est en ouest.
@@ -543,6 +550,7 @@ export class Carte {
       ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),
       ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLille().map((c) => ({ c, fort: false, seuil: 0.55 })),
+      ...lieuxDeLondres().map((c) => ({ c, fort: false, seuil: 0.7 })),
       ...LIEUX_CHINE.map((c) => ({ c, fort: false, seuil: 0.55 })),
       // Et les quartiers et ronds-points de Washington : un plan de la
       // capitale se lit par ses cercles, comme New York par ses quartiers.

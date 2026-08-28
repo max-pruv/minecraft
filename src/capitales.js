@@ -33,17 +33,14 @@ const HERBE = 1;
 // rapport au centre. Les écarts sont en blocs et restent dans le rayon déclaré
 // au registre — c'est ce que vérifie `capitales.js` côté test.
 //
+// Londres n'est plus ici : promue VILLE entière dans src/londres.js — la
+// première du tour du monde à recevoir le traitement de Nice et Lille. Les
+// huit autres attendent leur tour, chacune sur son parvis.
+//
 // `sol` : la cote à laquelle on aplanit le site. Toutes les villes du jeu sont
 // bâties autour de 33-34 ; on garde la même, sinon un enfant qui arrive de
 // Paris tomberait dans un trou ou sur une falaise.
 export const SITES = [
-  {
-    cle: 'londres', emoji: '🇬🇧', sol: 34, parvis: 46,
-    monuments: [
-      { id: 'big-ben', du: -16, dv: -10 },
-      { id: 'tower-bridge', du: 18, dv: 12 },
-    ],
-  },
   {
     cle: 'rome', emoji: '🇮🇹', sol: 34, parvis: 38,
     monuments: [{ id: 'colisee', du: 0, dv: 0 }],

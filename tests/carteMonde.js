@@ -224,8 +224,11 @@ const VRAIES_KM = [
       }
       return out;
     });
-    verifier('les dix monuments du tour du monde se dressent pour de vrai',
-      debout.length === 10 && debout.every((m) => m.blocs > 50),
+    // Huit monuments sur parvis : Big Ben et Tower Bridge ont déménagé dans
+    // Londres, devenue une ville entière — ils sont éprouvés avec elle, dans
+    // carte.js, au milieu de leurs rues.
+    verifier('les huit monuments du tour du monde se dressent pour de vrai',
+      debout.length === 8 && debout.every((m) => m.blocs > 50),
       debout.filter((m) => m.blocs <= 50).map((m) => `${m.nom} : ${m.blocs} blocs`).join(' · ')
         || `${debout.length} monuments`);
     // Et à leur VRAIE hauteur : un monument tronqué au bord d'un morceau de
@@ -240,6 +243,85 @@ const VRAIES_KM = [
     verifier('chacun repose sur un parvis de plain-pied',
       malAssis.length === 0,
       malAssis.map((m) => `${m.nom} : sol ${m.sol}`).join(' · ') || 'tous à la cote 34');
+
+    // --- LA TERRE SE RECONNAÎT ----------------------------------------------
+    //
+    // Max : « quand je regarde la carte, je ne reconnais pas la vraie carte du
+    // monde ». On sonde donc le monde ENGENDRÉ — pas le planisphère qui le
+    // décrit : l'Atlantique est en eau entre Paris et New York, la Manche
+    // sépare Londres de Lille, la Méditerranée borde Nice, et chaque ville du
+    // registre est à terre.
+    const geographie = await tab.evaluate(async () => {
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const w = window.__game.world;
+      const mer = (x, z) => w.terrainHeight(x, z) < WATER_LEVEL;
+      const sonde = (x, z, r) => {
+        let e = 0, t = 0;
+        for (let dx = -r; dx <= r; dx += Math.max(2, r >> 2)) {
+          for (let dz = -r; dz <= r; dz += Math.max(2, r >> 2)) { mer(x + dx, z + dz) ? e++ : t++; }
+        }
+        return { e, t };
+      };
+      return {
+        atlantique: sonde(-3200, -800, 24), manche: sonde(-330, -125, 8),
+        mediterranee: sonde(300, 1100, 12), pacifique: sonde(-12000, 3000, 24),
+        france: sonde(-300, 480, 24), ameriques: sonde(-7000, 1200, 24),
+      };
+    });
+    const enEau = (o) => o.e > o.t * 2;
+    const aTerre = (o) => o.t > o.e * 2;
+    verifier('les océans sont en eau : Atlantique, Manche, Méditerranée, Pacifique',
+      enEau(geographie.atlantique) && enEau(geographie.manche)
+      && enEau(geographie.mediterranee) && enEau(geographie.pacifique),
+      JSON.stringify(geographie));
+    verifier('et les continents sont à terre : la France, l\'Amérique',
+      aTerre(geographie.france) && aTerre(geographie.ameriques),
+      JSON.stringify({ france: geographie.france, ameriques: geographie.ameriques }));
+
+    const villesATerre = await tab.evaluate(async () => {
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const m = await import('./src/mondes.js');
+      const w = window.__game.world;
+      return m.lieuxDuMonde('terre')
+        .filter((l) => w.terrainHeight(l.x, l.z) < WATER_LEVEL)
+        .map((l) => l.nom);
+    });
+    verifier('chaque ville du registre est à terre, aucune ne baigne',
+      villesATerre.length === 0, villesATerre.join(', ') || '16 villes au sec');
+
+    // Le relief : l'Everest culmine, le Grand Canyon se creuse. Les sommets
+    // sont sous le plafond du terrain — c'est plafond.js qui y veille.
+    const relief = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const w = window.__game.world;
+      const blocDe = (lat, lon) => {
+        const z = Math.round(200 - ((lat - 48.8566) * 111.19) / 0.75);
+        let a = -30000, b = 30000;
+        while (b - a > 1) { const mi = (a + b) >> 1; (m.cielDe(mi, z).lon < lon) ? a = mi : b = mi; }
+        return { x: a, z };
+      };
+      const sommet = (lat, lon) => {
+        const { x, z } = blocDe(lat, lon);
+        let s = 0;
+        for (let dx = -8; dx <= 8; dx += 2) {
+          for (let dz = -8; dz <= 8; dz += 2) s = Math.max(s, w.terrainHeight(x + dx, z + dz));
+        }
+        return s;
+      };
+      const gc = blocDe(36.2, -112.4);
+      let bord = 0, fond = 99;
+      for (let dz = -40; dz <= 40; dz++) {
+        const h = w.terrainHeight(gc.x, gc.z + dz);
+        bord = Math.max(bord, h); fond = Math.min(fond, h);
+      }
+      return { everest: sommet(27.99, 86.92), montBlanc: sommet(45.83, 6.87),
+        rainier: sommet(46.85, -121.76), canyon: bord - fond };
+    });
+    verifier('l\'Everest, le mont Blanc et le mont Rainier culminent',
+      relief.everest >= 66 && relief.montBlanc >= 45 && relief.rainier >= 45,
+      JSON.stringify(relief));
+    verifier('et le Grand Canyon se creuse d\'au moins quatorze blocs',
+      relief.canyon >= 14, `gorge de ${relief.canyon}`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
