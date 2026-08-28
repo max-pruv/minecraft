@@ -1,6 +1,7 @@
-// Le tour du monde, pour de vrai : huit villes iconiques d'un coup.
+// Le tour du monde, pour de vrai : la machine à villes iconiques.
 //
 // Max : « fais pas que Londres, hein — je veux plein de villes iconiques. »
+// Puis : « refais les 50 plus grosses et famous villes mondiales en détail. »
 // Londres a fixé la recette (src/londres.js) ; ce fichier en fait une MACHINE
 // et la déroule sur les huit autres. Chaque ville est une fiche de données —
 // son eau, sa trame de rues, sa palette, ses monuments aux coordonnées — et
@@ -30,6 +31,17 @@
 // — SEATTLE : la baie d'Elliott, la Space Needle (47,6205/−122,3493), le
 //   marché de Pike Place, les tours du centre — et le mont Rainier à
 //   l'horizon, déjà levé par le relief de la Terre.
+//
+// V166 — LES CINQUANTE GRANDES : trente-huit fiches de plus, relevées de la
+// même façon. L'Europe de Madrid à Copenhague, l'Asie de Tokyo à Delhi, les
+// Amériques de Chicago au Machu Picchu, l'Afrique de Marrakech au Cap. Le
+// moteur a appris ce que ces villes exigeaient : les canaux concentriques
+// d'Amsterdam, la lagune de Venise, les passes de Stockholm et du port
+// Victoria, la montagne-table du Cap, le sol d'altitude du Machu Picchu,
+// l'île-barrière de Miami, la bande du Strip dans le désert du Nevada — et
+// trois monuments volontairement HORS du rayon de leur ville, parce qu'ils
+// le sont en vrai : l'Atomium à Heysel, le panneau Hollywood sur sa
+// colline, le Burj al Arab sur son île.
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { positionDe } from './mondes.js';
@@ -208,7 +220,236 @@ function buildColom(poser) {
   poser(0, 13, 0, OR);
 }
 
-// --- les huit fiches ---------------------------------------------------------
+// Un minaret : le fût, le balcon du muezzin, le toit pointu.
+function minaret(h, mur) {
+  return (poser) => {
+    for (let y = 1; y <= h; y++) poser(0, y, 0, mur);
+    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) poser(a, h - 2, b, mur);
+    poser(0, h + 1, 0, PIERRE);
+  };
+}
+
+// Des bulbes sur leurs tambours : Saint-Basile en cinq couleurs, les églises
+// russes, les tours de Munich en vert.
+function bulbes(couleurs, haut = 6) {
+  return (poser) => {
+    const postes = couleurs.length === 1 ? [[0, 0]]
+      : [[0, 0], [-3, -3], [3, -3], [-3, 3], [3, 3]].slice(0, couleurs.length);
+    postes.forEach(([dx, dz], i) => {
+      const hh = i === 0 ? haut + 2 : haut;
+      for (let y = 1; y <= hh; y++) poser(dx, y, dz, CREME);
+      poser(dx, hh + 1, dz, couleurs[i]);
+      poser(dx, hh + 2, dz, couleurs[i]);
+      poser(dx, hh + 3, dz, OR);
+    });
+  };
+}
+
+// Une porte monumentale : Brandebourg, la porte de l'Inde, la Gateway de
+// Bombay — deux piliers, un linteau, l'attique.
+function archePorte(l, h, mur) {
+  return (poser) => {
+    for (const dz of [-l, l]) {
+      for (let y = 1; y <= h; y++) { poser(0, y, dz, mur); poser(-1, y, dz, mur); }
+    }
+    for (let dz = -l; dz <= l; dz++) { poser(0, h + 1, dz, mur); poser(-1, h + 1, dz, mur); poser(0, h + 2, dz, mur); }
+    poser(0, h + 3, 0, mur);
+  };
+}
+
+// Une tour à boule(s) : la Fernsehturm, la CN Tower, la perle de Shanghai.
+function tourBoule(h, boules, fut = ACIER, boule = ACIER) {
+  return (poser) => {
+    for (let y = 1; y <= h; y++) poser(0, y, 0, fut);
+    for (const by of boules) {
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
+        poser(a, by, b, boule); poser(a, by + 1, b, boule);
+      }
+    }
+    poser(0, h + 1, 0, boule);
+  };
+}
+
+// Le périptère grec : la colonnade du Parthénon, et rien que lui.
+function colonnade(du2, dv2) {
+  return (poser) => {
+    for (let dx = -du2; dx <= du2; dx += 2) {
+      for (const dz of [-dv2, dv2]) for (let y = 1; y <= 4; y++) poser(dx, y, dz, BLANC);
+    }
+    for (const dx of [-du2, du2]) {
+      for (let dz = -dv2; dz <= dv2; dz += 2) for (let y = 1; y <= 4; y++) poser(dx, y, dz, BLANC);
+    }
+    for (let dx = -du2; dx <= du2; dx++) for (let dz = -dv2; dz <= dv2; dz++) poser(dx, 5, dz, CREME);
+    for (let dz = -dv2 + 1; dz < dv2; dz++) poser(0, 6, dz, CREME);   // le fronton
+  };
+}
+
+// Un long palais à ailes : l'Ermitage, Schönbrunn, le Palais royal.
+function palaisLong(demi, mur, toit) {
+  return (poser) => {
+    for (let dz = -demi; dz <= demi; dz++) {
+      for (let du = -1; du <= 1; du++) {
+        for (let y = 1; y <= 4; y++) {
+          poser(du, y, dz, y >= 2 && y <= 3 && (dz & 1) === 1 && du === 1 ? VERRE : mur);
+        }
+        poser(du, 5, dz, toit);
+      }
+    }
+    poser(1, 5, 0, OR);
+  };
+}
+
+// Une enceinte carrée à tours d'angle : le Kremlin, le Fort rouge, Jérusalem,
+// les murailles de Marrakech.
+function muraillesRect(demi, h, mur) {
+  return (poser) => {
+    for (let k = -demi; k <= demi; k++) {
+      for (const [a, b] of [[k, -demi], [k, demi], [-demi, k], [demi, k]]) {
+        for (let y = 1; y <= h; y++) poser(a, y, b, mur);
+        if ((k & 3) === 0) poser(a, h + 1, b, mur);
+      }
+    }
+    for (const [a, b] of [[-demi, -demi], [-demi, demi], [demi, -demi], [demi, demi]]) {
+      for (let y = h + 1; y <= h + 3; y++) poser(a, y, b, mur);
+    }
+  };
+}
+
+// La grappe de sphères de l'Atomium : neuf boules, huit aux coins d'un cube
+// et une au centre, reliées par leurs tubes.
+function buildAtomium(poser) {
+  const S = 5;
+  const coins = [[0, 7, 0]];
+  for (const dx of [-S, S]) for (const dy of [-S, S]) for (const dz of [-S, S]) coins.push([dx, 7 + dy, dz]);
+  for (const [cx, cy, cz] of coins) {
+    for (const [a, b, c] of [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+      poser(cx + a, cy + b, cz + c, ACIER);
+    }
+  }
+  for (let k = 1; k < S; k++) poser(0, 7 + k, 0, ACIER), poser(0, 7 - k, 0, ACIER), poser(k, 7, 0, ACIER), poser(-k, 7, 0, ACIER);
+  for (let y = 1; y < 2; y++) poser(0, y, 0, ACIER);
+}
+
+// Un pont bâti : Vecchio et ses boutiques, Charles et ses statues.
+function pontBati(demi, boutiques, travers = false) {
+  return (poser) => {
+    // tablier a +6 : l'eau des villes est a 30 sur un fond a 26 — un tablier
+    // plus bas serait noye, la lecon est venue du Rialto.
+    const P = travers ? (a, y, b, id) => poser(b, y, a, id) : poser;
+    for (let k = -demi; k <= demi; k++) {
+      for (let du = -1; du <= 1; du++) P(du, 6, k, PIERRE);
+      if (boutiques && (k & 1) === 0 && Math.abs(k) < demi - 1) {
+        P(-1, 7, k, OCRE); P(1, 7, k, OCRE); P(-1, 8, k, TUILE); P(1, 8, k, TUILE);
+      }
+      if (!boutiques && (k & 3) === 0) { P(-1, 7, k, NOIRB); P(1, 7, k, NOIRB); }
+      if ((k + demi) % Math.max(3, Math.floor(demi / 2)) === 0 && k < demi) {
+        for (let y = 1; y <= 5; y++) { P(-1, y, k, PIERRE); P(1, y, k, PIERRE); }
+      }
+    }
+  };
+}
+
+// Une silhouette dressée : la Petite Sirène, le Merlion, un ange doré.
+function statuette(h, bloc, socle = PIERRE) {
+  return (poser) => {
+    poser(0, 1, 0, socle);
+    for (let y = 2; y <= h + 1; y++) poser(0, y, 0, bloc);
+  };
+}
+
+// L'obélisque : Buenos Aires, et tous les autres.
+function obelisque(h) {
+  return (poser) => {
+    for (let y = 1; y <= 2; y++) for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) poser(a, y, b, BLANC);
+    for (let y = 3; y <= h; y++) poser(0, y, 0, BLANC);
+    poser(0, h + 1, 0, PIERRE);
+  };
+}
+
+// La pagode étagée : Toji, le prang de Wat Arun, la Skytree n'en est pas une.
+function pagode(niveaux, mur, toit) {
+  return (poser) => {
+    for (let n = 0; n < niveaux; n++) {
+      const y0 = 1 + n * 3, r = Math.max(1, niveaux - n);
+      for (let y = y0; y < y0 + 2; y++) poser(0, y, 0, mur);
+      for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+        if (Math.abs(dx) === r || Math.abs(dz) === r) poser(dx, y0 + 2, dz, toit);
+      }
+    }
+    poser(0, niveaux * 3 + 1, 0, OR);
+  };
+}
+
+// La rangée de toriis vermillon de Fushimi Inari.
+function buildToriis(poser) {
+  for (let k = 0; k < 5; k++) {
+    const dz = k * 3;
+    for (let y = 1; y <= 3; y++) { poser(-1, y, dz, VERMILLON); poser(1, y, dz, VERMILLON); }
+    for (let dx = -1; dx <= 1; dx++) poser(dx, 4, dz, VERMILLON);
+  }
+}
+
+// Le Burj Khalifa : 828 mètres en Y — le seul monument bâti à 7 m par bloc,
+// sinon il crèverait le ciel du monde.
+function buildBurj(poser) {
+  const H = 116;
+  for (let y = 1; y <= H; y++) {
+    const n = y < 40 ? 2 : y < 80 ? 1 : 0;
+    for (let dx = -n; dx <= n; dx++) for (let dz = -n; dz <= n; dz++) {
+      if (Math.abs(dx) === n || Math.abs(dz) === n) poser(dx, y, dz, y % 6 === 0 ? ACIER : VERRE);
+    }
+    if (y < 40 && y % 3 === 0) { poser(3, y, 0, VERRE); poser(-3, y, 0, VERRE); poser(0, y, 3, VERRE); poser(0, y, -3, VERRE); }
+  }
+  for (let y = H + 1; y <= H + 6; y++) poser(0, y, 0, ACIER);
+}
+
+// La voile du Burj al Arab, gonflée face au Golfe.
+function buildVoile(poser) {
+  const H = 30;
+  for (let y = 1; y <= H; y++) {
+    const bombe = Math.round(4 * Math.sin((y / H) * Math.PI));
+    poser(bombe, y, -2, BLANC); poser(bombe, y, 2, BLANC);
+    if (y % 2 === 0) poser(bombe, y, 0, VERRE);
+    poser(0, y, -2, ACIER); poser(0, y, 2, ACIER);
+  }
+  for (let dz = -2; dz <= 2; dz++) poser(0, H + 1, dz, BLANC);
+}
+
+// Les neuf lettres blanches sur la colline de Los Angeles.
+function buildHollywood(poser) {
+  for (let k = 0; k < 9; k++) {
+    const dz = k * 2 - 8;
+    for (let y = 1; y <= 3; y++) poser(0, y, dz, BLANC);
+  }
+}
+
+// Les terrasses incas : des gradins de granit accrochés à la crête.
+function buildTerrasses(poser) {
+  for (let n = 0; n < 6; n++) {
+    const r = 4 + n * 2;
+    for (let dx = -r; dx <= r; dx++) {
+      for (const dz of [-r, r]) poser(dx, -n + 3, dz, PIERRE);
+      for (const dzz of [-r, r]) poser(dzz - 0 + dx * 0, -n + 3, dx, PIERRE);
+    }
+  }
+  for (const [dx, dz] of [[-2, -2], [2, 0], [0, 2], [-1, 3]]) {
+    for (let y = 4; y <= 5; y++) { poser(dx, y, dz, PIERRE); poser(dx + 1, y, dz, PIERRE); }
+  }
+}
+
+// Les vieilles américaines de La Havane, en couleurs.
+function buildVoituresCubaines(poser) {
+  const teintes = [VERMILLON, uni(10), uni(5), ROSE, OR];
+  [[-8, -20], [4, -12], [-2, 6], [10, 14], [-14, 2], [6, -26]].forEach(([du, dv], i) => {
+    poser(du, 1, dv, teintes[i % teintes.length]);
+    poser(du + 1, 1, dv, teintes[i % teintes.length]);
+  });
+}
+
+const VERMILLON = uni(0);          // le rouge des toriis et des Chevrolet
+const NOIRB = ARDOISE;             // le bronze sombre des statues de pont
+
+// --- les fiches ---------------------------------------------------------
 
 const FICHES = {
   rome: {
@@ -330,6 +571,597 @@ const FICHES = {
     lieux: [['Le front de mer', 47.605, -122.34], ['Downtown', 47.608, -122.335]],
     couleurToits: [140, 146, 156],
   },
+  // --- LES CINQUANTE GRANDES — l'Europe --------------------------------------
+  madrid: {
+    lat0: 40.4168, lon0: -3.7038, echelle: 20, rayon: 50,
+    trame: { ang: 0.3, pu: 6, pv: 5, w: 0.5, s: 0.85 },
+    palette: [brique(0), CREME, OCRE], toit: TUILE, hMaison: [4, 6],
+    parcs: [{ cu: 33, cv: 3, ru: 8, rv: 10, lac: { cu: 31, cv: 1, ru: 3, rv: 4 } }],   // le Retiro et son bassin
+    monuments: [
+      { nom: 'Palais royal', lat: 40.418, lon: -3.7144, box: 8, build: palaisLong(6, BLANC, ARDOISE) },
+      { nom: "Porte d'Alcalá", lat: 40.42, lon: -3.6889, box: 6, seuil: 0.4, build: archePorte(4, 7, PIERRE) },
+      { nom: 'Plaza Mayor', lat: 40.4155, lon: -3.7074, box: 8, seuil: 0.4, build: muraillesRect(6, 3, brique(0)) },
+    ],
+    lieux: [['Le Retiro', 40.4153, -3.6845], ['Gran Vía', 40.4203, -3.7058],
+      ['Le Prado', 40.4138, -3.6921]],
+    couleurToits: [186, 122, 92],
+  },
+  lisbonne: {
+    lat0: 38.7223, lon0: -9.1393, echelle: 20, rayon: 46,
+    mer: { nx: 0.1, nz: 0.99, d: 34, quais: true },               // le Tage, large comme une mer
+    collines: [
+      { nom: 'Alfama', cu: 10, cv: 19, r: 10, h: 8, favela: true },
+      { nom: 'Bairro Alto', cu: -12, cv: 8, r: 9, h: 7, favela: true },
+    ],
+    trame: { ang: 0, pu: 5, pv: 4, w: 0.45, s: 0.8 },             // la Baixa de Pombal, au cordeau
+    palette: [CREME, BLANC, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    paletteFavela: [CREME, ROSE, BLANC, OCRE],                    // les azulejos pastel des pentes
+    monuments: [
+      { nom: 'Château São Jorge', lat: 38.7139, lon: -9.1335, box: 8, build: muraillesRect(6, 4, PIERRE) },
+      { nom: 'Santa Justa', lat: 38.7124, lon: -9.1393, box: 3, seuil: 0.4, build: minaret(10, ACIER) },
+      { nom: 'Praça do Comércio', lat: 38.7075, lon: -9.1364, box: 6, seuil: 0.4, build: archePorte(4, 6, CREME) },
+    ],
+    lieux: [['La Baixa', 38.7118, -9.1365], ["L'Alfama", 38.7126, -9.1305], ['Le Tage', 38.703, -9.135]],
+    couleurToits: [198, 128, 92],
+  },
+  amsterdam: {
+    lat0: 52.3676, lon0: 4.9041, echelle: 20, rayon: 40,
+    fleuve: { pts: [[-38, -33], [0, -29], [38, -31]], l: 6 },     // l'IJ, derrière la gare
+    canaux: { rayons: [10, 15, 20, 25], v0: -6 },                 // la ceinture de canaux, en demi-cercles
+    trame: { ang: 0, pu: 4, pv: 4, w: 0.4, s: 0.7 },
+    palette: [brique(0), brique(18), CREME, ARDOISE], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Palais du Dam', lat: 52.3731, lon: 4.8913, box: 7, build: palaisLong(5, CREME, ARDOISE) },
+      { nom: 'Westerkerk', lat: 52.3745, lon: 4.8839, box: 3, build: minaret(16, brique(0)) },
+      { nom: 'Rijksmuseum', lat: 52.36, lon: 4.8852, box: 8, build: palaisLong(6, brique(0), ARDOISE) },
+    ],
+    lieux: [['Le Dam', 52.373, 4.8936], ['Jordaan', 52.3739, 4.8809], ['Prinsengracht', 52.37, 4.884]],
+    couleurToits: [150, 118, 96],
+  },
+  bruxelles: {
+    lat0: 50.8503, lon0: 4.3517, echelle: 20, rayon: 34,
+    trame: { ang: 0.15, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [PIERRE, CREME, brique(0)], toit: ARDOISE, hMaison: [4, 6],
+    parcs: [{ cu: 15, cv: 13, ru: 6, rv: 5 }],                    // le parc de Bruxelles
+    monuments: [
+      { nom: "L'hôtel de ville", lat: 50.8467, lon: 4.3525, box: 3, build: minaret(22, PIERRE) },
+      { nom: 'Manneken Pis', lat: 50.845, lon: 4.3499, box: 2, seuil: 0.4, build: statuette(2, OR) },
+      // L'Atomium est à Heysel, à cinq vrais kilomètres du centre : hors du
+      // rayon de la ville, ses neuf boules posent sur la campagne — comme en vrai.
+      { nom: "L'Atomium", lat: 50.8949, lon: 4.3415, box: 8, build: buildAtomium },
+    ],
+    lieux: [['Grand-Place', 50.8467, 4.3536], ['Le Sablon', 50.8415, 4.3565]],
+    couleurToits: [160, 152, 144],
+  },
+  berlin: {
+    lat0: 52.52, lon0: 13.405, echelle: 20, rayon: 50,
+    fleuve: { pts: [[-46, -2], [-30, -4], [-16, -3], [-9, 1], [-2, 6], [8, 4], [22, -8], [46, -14]], l: 3 },   // la Spree
+    trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85 },
+    palette: [PIERRE, CREME, ACIER], toit: ARDOISE, hMaison: [4, 6],
+    parcs: [{ cu: -47, cv: 12, ru: 6, rv: 8 }],                   // le Tiergarten
+    monuments: [
+      { nom: 'Porte de Brandebourg', lat: 52.5163, lon: 13.3777, box: 7, build: archePorte(5, 7, PIERRE) },
+      { nom: 'Fernsehturm', lat: 52.5208, lon: 13.4094, box: 4, build: tourBoule(40, [28], ACIER, ACIER) },
+      { nom: 'Reichstag', lat: 52.5186, lon: 13.3762, box: 7, build: dome(4, PIERRE, VERRE) },
+      { nom: 'Berliner Dom', lat: 52.5192, lon: 13.4038, box: 6, build: dome(4, CREME, uni(6)) },
+    ],
+    lieux: [['Unter den Linden', 52.5171, 13.3888], ['Alexanderplatz', 52.5219, 13.4132],
+      ["L'île aux Musées", 52.5169, 13.4019]],
+    couleurToits: [156, 152, 148],
+  },
+  munich: {
+    lat0: 48.1351, lon0: 11.582, echelle: 20, rayon: 42,
+    fleuve: { pts: [[30, -40], [26, -10], [28, 15], [32, 40]], l: 3 },   // l'Isar
+    trame: { ang: 0.1, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [CREME, ROSE, OCRE, uni(2)], toit: TUILE, hMaison: [4, 5],
+    parcs: [{ cu: 16, cv: -32, ru: 7, rv: 9 }],                   // le jardin anglais
+    monuments: [
+      { nom: 'Frauenkirche', lat: 48.1386, lon: 11.5736, box: 6, build: bulbes([uni(5), uni(5)], 10) },
+      { nom: "Le nouvel hôtel de ville", lat: 48.1374, lon: 11.5755, box: 3, build: minaret(16, PIERRE) },
+      { nom: 'Colonne de Marie', lat: 48.1371, lon: 11.5748, box: 2, seuil: 0.4, build: statuette(5, OR) },
+    ],
+    lieux: [['Marienplatz', 48.1374, 11.5755], ['Viktualienmarkt', 48.1353, 11.5763]],
+    couleurToits: [190, 130, 96],
+  },
+  vienne: {
+    lat0: 48.2082, lon0: 16.3738, echelle: 20, rayon: 46,
+    fleuve: { pts: [[-22, -32], [8, -20], [28, -6], [40, 12]], l: 3 },   // le canal du Danube
+    voies: [{ pts: [[-16, -14], [14, -14], [16, 12], [-14, 14], [-16, -14]], l: 1.2 }],   // le Ring
+    trame: { ang: 0.2, pu: 5, pv: 5, w: 0.45, s: 0.8 },
+    palette: [CREME, BLANC, OCRE], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Stephansdom', lat: 48.2086, lon: 16.3733, box: 4, build: minaret(24, ARDOISE) },
+      { nom: 'La Hofburg', lat: 48.2065, lon: 16.3653, box: 8, build: palaisLong(6, CREME, uni(6)) },
+      { nom: 'La grande roue du Prater', lat: 48.2167, lon: 16.3958, box: 9, build: buildGrandeRoue },
+    ],
+    lieux: [['Le Graben', 48.2088, 16.3696], ['Le Prater', 48.2162, 16.3987],
+      ['Naschmarkt', 48.1985, 16.3634]],
+    couleurToits: [178, 170, 158],
+  },
+  prague: {
+    lat0: 50.0755, lon0: 14.4378, echelle: 13, rayon: 44,
+    fleuve: { pts: [[-28, 42], [-33, 10], [-29, -18], [-18, -36], [-2, -43]], l: 4 },   // la Vltava
+    collines: [{ nom: 'Hradčany', cu: -35, cv: -22, r: 9, h: 8 }],
+    trame: { ang: 0.35, pu: 5, pv: 4, w: 0.4, s: 0.75 },
+    palette: [OCRE, CREME, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Le château de Prague', lat: 50.0906, lon: 14.4005, box: 8, build: palaisLong(6, CREME, ARDOISE) },
+      { nom: 'Saint-Guy', lat: 50.0912, lon: 14.4025, box: 4, build: minaret(18, PIERRE) },
+      { nom: 'Le pont Charles', lat: 50.0865, lon: 14.4114, box: 9, build: pontBati(7, false, true) },
+      { nom: "L'horloge astronomique", lat: 50.087, lon: 14.4207, box: 3, seuil: 0.4, build: minaret(12, PIERRE) },
+    ],
+    lieux: [['La place de la Vieille-Ville', 50.0875, 14.4213], ['Malá Strana', 50.0874, 14.4039]],
+    couleurToits: [192, 116, 82],
+  },
+  venise: {
+    lat0: 45.4408, lon0: 12.3155, echelle: 15, rayon: 40,
+    lagune: { r: 33 },                                            // la ville flotte au milieu de sa lagune
+    fleuve: { pts: [[-8, -13], [2, -9], [10, -3], [18, 1], [24, 6], [21, 12], [24, 17]], l: 2.5 },   // le Grand Canal
+    trame: { ang: 0.1, pu: 4, pv: 4, w: 0.35, s: 0.65 },          // les calli — pas une voiture
+    palette: [OCRE, ROSE, CREME, brique(0)], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Le campanile', lat: 45.4341, lon: 12.339, box: 3, build: minaret(20, brique(0)) },
+      { nom: 'Saint-Marc', lat: 45.4346, lon: 12.3399, box: 6, build: dome(3, CREME, ARDOISE) },
+      { nom: 'Le Rialto', lat: 45.438, lon: 12.3358, box: 6, build: pontBati(4, true) },
+    ],
+    lieux: [['Place Saint-Marc', 45.434, 12.3387], ['Le Grand Canal', 45.4408, 12.3306]],
+    couleurToits: [196, 126, 92],
+  },
+  florence: {
+    lat0: 43.7696, lon0: 11.2558, echelle: 20, rayon: 40,
+    fleuve: { pts: [[-38, 9], [-15, 6], [-4, 4], [15, 4], [38, 7]], l: 3 },   // l'Arno
+    trame: { ang: 0.05, pu: 5, pv: 4, w: 0.4, s: 0.75 },
+    palette: [OCRE, CREME, ROSE], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Le Duomo', lat: 43.7731, lon: 11.256, box: 7, build: dome(5, CREME, TUILE) },
+      { nom: 'Palazzo Vecchio', lat: 43.7694, lon: 11.2565, box: 3, build: minaret(20, PIERRE) },
+      { nom: 'Le Ponte Vecchio', lat: 43.7679, lon: 11.2531, box: 7, build: pontBati(5, true) },
+    ],
+    lieux: [['Les Offices', 43.7685, 11.256], ['Boboli', 43.7623, 11.2486]],
+    couleurToits: [194, 128, 90],
+  },
+  athenes: {
+    lat0: 37.9838, lon0: 23.7275, echelle: 20, rayon: 46,
+    collines: [
+      { nom: "L'Acropole", cu: -3, cv: 27, r: 10, h: 14, roche: true, mesa: true },
+      { nom: 'Le Lycabette', cu: 29, cv: 4, r: 8, h: 18, roche: true },
+    ],
+    trame: { ang: 0.25, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [BLANC, CREME], toit: CREME, hMaison: [3, 5],        // la ville blanche
+    monuments: [
+      // Le Parthénon hérite de l'altitude de sa mesa, comme le Christ du Corcovado.
+      { nom: 'Le Parthénon', lat: 37.9715, lon: 23.7267, box: 9, build: colonnade(7, 3) },
+      { nom: 'Temple de Zeus', lat: 37.9693, lon: 23.7331, box: 6, seuil: 0.4, build: colonnade(4, 2) },
+      { nom: 'Le Parlement', lat: 37.9755, lon: 23.7375, box: 8, build: palaisLong(6, CREME, TUILE) },
+    ],
+    lieux: [['Plaka', 37.9725, 23.7286], ['Syntagma', 37.9756, 23.7349], ['Monastiraki', 37.976, 23.7256]],
+    couleurToits: [226, 224, 216],
+  },
+  istanbul: {
+    lat0: 41.0082, lon0: 28.9784, echelle: 20, rayon: 54,
+    fleuve: { pts: [[40, -54], [36, -20], [42, 10], [38, 54]], l: 6 },        // le Bosphore
+    fleuves: [{ pts: [[36, -22], [10, -25], [-15, -32], [-38, -45]], l: 4 }], // la Corne d'Or
+    trame: { ang: 0.3, pu: 5, pv: 4, w: 0.4, s: 0.75 },
+    palette: [OCRE, CREME, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Sainte-Sophie', lat: 41.0086, lon: 28.9802, box: 8, build: dome(6, OCRE, ARDOISE) },
+      { nom: 'La Mosquée bleue', lat: 41.0054, lon: 28.9768, box: 7, build: dome(5, CREME, ARDOISE) },
+      { nom: 'La tour de Galata', lat: 41.0256, lon: 28.9744, box: 3, build: minaret(18, PIERRE) },
+      { nom: 'Topkapi', lat: 41.0115, lon: 28.9834, box: 9, build: muraillesRect(7, 4, PIERRE) },
+    ],
+    lieux: [['Le Grand Bazar', 41.0106, 28.9681], ['Sultanahmet', 41.0058, 28.9784],
+      ['Galata', 41.0233, 28.9736]],
+    couleurToits: [198, 138, 96],
+  },
+  moscou: {
+    lat0: 55.7558, lon0: 37.6173, echelle: 20, rayon: 56,
+    fleuve: { pts: [[-52, 30], [-25, 24], [-5, 20], [20, 22], [52, 28]], l: 4 },   // la Moskova
+    trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85 },
+    palette: [CREME, ROSE, uni(2), BLANC], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Saint-Basile', lat: 55.7525, lon: 37.6231, box: 6, build: bulbes([VERMILLON, uni(5), uni(10), uni(2), ROSE]) },
+      { nom: 'Le Kremlin', lat: 55.752, lon: 37.6175, box: 10, build: muraillesRect(8, 5, ROUGE_GRES) },
+      { nom: 'Le Bolchoï', lat: 55.7602, lon: 37.6186, box: 6, build: colonnade(4, 3) },
+    ],
+    lieux: [['La place Rouge', 55.7539, 37.6208], ['Le Goum', 55.7547, 37.6215],
+      ['La Tretiakov', 55.7415, 37.6208]],
+    couleurToits: [176, 148, 128],
+  },
+  stpetersbourg: {
+    lat0: 59.9311, lon0: 30.3609, echelle: 16, rayon: 48,
+    fleuve: { pts: [[-48, -19], [-25, -25], [0, -35], [20, -48]], l: 4 },     // la Neva
+    voies: [{ pts: [[-46, -13], [0, 0], [12, 5]], l: 1.2 }],                  // la perspective Nevski
+    trame: { ang: 0.4, pu: 6, pv: 5, w: 0.5, s: 0.85 },
+    palette: [CREME, ROSE, uni(29), OCRE], toit: ARDOISE, hMaison: [4, 5],
+    monuments: [
+      { nom: "Le palais d'Hiver", lat: 59.9398, lon: 30.3146, box: 11, build: palaisLong(9, uni(29), BLANC) },
+      { nom: 'Saint-Sauveur-sur-le-Sang', lat: 59.94, lon: 30.3289, box: 6, build: bulbes([VERMILLON, uni(10), uni(2)]) },
+      { nom: 'Notre-Dame-de-Kazan', lat: 59.9343, lon: 30.3245, box: 7, build: colonnade(5, 3) },
+    ],
+    lieux: [['La perspective Nevski', 59.933, 30.345], ['Dostoïevskaïa', 59.9284, 30.3465]],
+    couleurToits: [172, 168, 160],
+  },
+  stockholm: {
+    lat0: 59.3293, lon0: 18.0686, echelle: 20, rayon: 42,
+    archipel: [{ v0: 1.6, v1: 3.4 }, { v0: 12, v1: 15 }],             // Norrström et Söderström — Gamla Stan entre les deux
+    mer: { nx: 0.95, nz: 0.3, d: 30 },                            // le Saltsjön, vers le large
+    trame: { ang: 0.2, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [OCRE, ROSE, CREME, uni(2)], toit: TUILE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Le Palais royal', lat: 59.3268, lon: 18.0717, box: 8, build: palaisLong(6, OCRE, ARDOISE) },
+      { nom: "L'hôtel de ville", lat: 59.3274, lon: 18.0543, box: 4, build: minaret(15, brique(0)) },
+      { nom: 'Storkyrkan', lat: 59.3257, lon: 18.0706, box: 3, seuil: 0.4, build: minaret(10, OCRE) },
+    ],
+    lieux: [['Gamla Stan', 59.3258, 18.0717], ['Sergels torg', 59.3322, 18.0644],
+      ['Djurgården', 59.3268, 18.0905]],
+    couleurToits: [200, 144, 100],
+  },
+  copenhague: {
+    lat0: 55.6761, lon0: 12.5683, echelle: 14, rayon: 40,
+    fleuve: { pts: [[26, -40], [27, -12], [28, 12], [24, 40]], l: 3 },        // le port intérieur
+    trame: { ang: 0.15, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [brique(0), OCRE, ROSE, CREME], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Amalienborg', lat: 55.6841, lon: 12.5928, box: 7, build: palaisLong(5, CREME, ARDOISE) },
+      { nom: 'La Rundetaarn', lat: 55.6813, lon: 12.5757, box: 3, build: minaret(10, brique(0)) },
+      // Sur son rocher, dans l'eau du port — la tête au-dessus des vagues.
+      { nom: 'La Petite Sirène', lat: 55.6929, lon: 12.5993, box: 2, seuil: 0.4, build: statuette(6, uni(6)) },
+      { nom: 'Tivoli', lat: 55.6736, lon: 12.5681, box: 9, build: buildGrandeRoue },
+    ],
+    lieux: [['Nyhavn', 55.6797, 12.59], ['Strøget', 55.6786, 12.5771]],
+    couleurToits: [166, 122, 94],
+  },
+  // --- l'Asie et le Moyen-Orient ---------------------------------------------
+  tokyo: {
+    lat0: 35.6812, lon0: 139.7671, echelle: 11, rayon: 60,
+    fleuve: { pts: [[38, -48], [31, -20], [34, 8], [28, 38]], l: 4 },         // la Sumida
+    trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.5 },
+    palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
+    parcs: [{ cu: -14, cv: -5, ru: 10, rv: 8 }],                  // le palais impérial et ses jardins
+    monuments: [
+      { nom: 'La tour de Tokyo', lat: 35.6586, lon: 139.7454, box: 4, build: tourBoule(24, [], VERMILLON, BLANC) },
+      { nom: 'La Skytree', lat: 35.7101, lon: 139.8107, box: 4, build: tourBoule(38, [30], ACIER, ACIER) },
+      { nom: 'Sensō-ji', lat: 35.7148, lon: 139.7967, box: 8, build: pagode(5, VERMILLON, TUILE) },
+      { nom: 'Le palais impérial', lat: 35.6852, lon: 139.7528, box: 10, build: muraillesRect(8, 3, PIERRE) },
+    ],
+    lieux: [['Ginza', 35.6717, 139.765], ['Akihabara', 35.6984, 139.7731], ['Ueno', 35.7141, 139.7774]],
+    couleurToits: [158, 160, 168],
+  },
+  kyoto: {
+    lat0: 35.0116, lon0: 135.7681, echelle: 8, rayon: 42,
+    fleuve: { pts: [[3.5, -38], [2.5, -10], [2, 20], [-1, 40]], l: 2.5 },     // la Kamo
+    collines: [{ nom: 'Higashiyama', cu: 17, cv: 12, r: 10, h: 10 }],
+    trame: { ang: 0, pu: 5, pv: 5, w: 0.45, s: 0.8 },             // la grille impériale, millénaire
+    palette: [CREME, uni(19), OCRE], toit: ARDOISE, hMaison: [2, 4],
+    monuments: [
+      { nom: "Le Pavillon d'or", lat: 35.0394, lon: 135.7292, box: 5, build: pagode(3, OR, TUILE) },
+      { nom: 'Fushimi Inari', lat: 34.9671, lon: 135.7727, box: 14, seuil: 0.4, build: buildToriis },
+      { nom: 'Kiyomizu-dera', lat: 34.9949, lon: 135.785, box: 6, build: pagode(3, VERMILLON, TUILE) },
+      { nom: 'Tō-ji', lat: 34.9805, lon: 135.7476, box: 7, build: pagode(5, ARDOISE, TUILE) },
+    ],
+    lieux: [['Gion', 35.0037, 135.7751], ['Le chemin de la philosophie', 35.0271, 135.7944]],
+    couleurToits: [130, 126, 128],
+  },
+  seoul: {
+    lat0: 37.5665, lon0: 126.978, echelle: 20, rayon: 50,
+    fleuve: { pts: [[-48, 48], [-15, 44], [15, 42], [48, 46]], l: 6 },        // le Han
+    collines: [{ nom: 'Namsan', cu: 18, cv: 34, r: 10, h: 16 }],
+    trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.55 },
+    palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
+    monuments: [
+      { nom: 'Gyeongbokgung', lat: 37.5796, lon: 126.977, box: 8, build: palaisLong(6, VERMILLON, uni(6)) },
+      { nom: 'La tour de Séoul', lat: 37.5512, lon: 126.9882, box: 4, build: tourBoule(20, [16], ACIER, ACIER) },
+      { nom: 'Namdaemun', lat: 37.5599, lon: 126.9753, box: 5, seuil: 0.4, build: archePorte(3, 4, PIERRE) },
+    ],
+    lieux: [['Myeongdong', 37.5637, 126.9838], ['Bukchon', 37.5826, 126.9831],
+      ['Insadong', 37.5744, 126.9856]],
+    couleurToits: [160, 162, 170],
+  },
+  shanghai: {
+    lat0: 31.2304, lon0: 121.4737, echelle: 18, rayon: 54,
+    fleuve: { pts: [[32, -50], [38, -20], [38, 5], [34, 30], [38, 52]], l: 5 },   // le Huangpu — le Bund d'un côté, Pudong de l'autre
+    trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
+    palette: [ACIER, CREME, brique(0)], toit: ARDOISE, hMaison: [4, 7],
+    monuments: [
+      { nom: "La perle de l'Orient", lat: 31.2397, lon: 121.4998, box: 4, build: tourBoule(36, [10, 26], ACIER, ROSE) },
+      { nom: 'La tour Jin Mao', lat: 31.2372, lon: 121.5015, box: 4, build: tourBoule(40, [], ACIER, ACIER) },
+      { nom: 'Le jardin Yu', lat: 31.2271, lon: 121.4921, box: 5, seuil: 0.4, build: pagode(2, VERMILLON, TUILE) },
+    ],
+    lieux: [['Le Bund', 31.24, 121.4906], ['Nanjing Road', 31.2354, 121.4762], ['Pudong', 31.2397, 121.5064]],
+    couleurToits: [152, 156, 166],
+  },
+  hongkong: {
+    lat0: 22.3193, lon0: 114.1694, echelle: 8, rayon: 46,
+    archipel: [{ v0: 23.5, v1: 29.5 }],                           // le port Victoria, entre Kowloon et l'île
+    collines: [{ nom: 'Le pic Victoria', cu: -20, cv: 39, r: 12, h: 22 }],
+    trame: { ang: 0.05, pu: 5, pv: 5, w: 0.45, s: 0.8, tours: 0.5 },
+    palette: [ACIER, CREME, BLANC], toit: ARDOISE, hMaison: [5, 8],
+    monuments: [
+      { nom: 'La Banque de Chine', lat: 22.2789, lon: 114.1616, box: 4, build: tourBoule(30, [], ACIER, VERRE) },
+      { nom: "L'IFC", lat: 22.2849, lon: 114.1577, box: 4, build: tourBoule(34, [], CREME, CREME) },
+      { nom: 'Le Star Ferry', lat: 22.2937, lon: 114.1684, box: 4, seuil: 0.4, build: statuette(2, VERMILLON) },
+    ],
+    lieux: [['Tsim Sha Tsui', 22.2976, 114.1722], ['Central', 22.2819, 114.1582], ['Le Pic', 22.2759, 114.1455]],
+    couleurToits: [150, 154, 164],
+  },
+  singapour: {
+    lat0: 1.29, lon0: 103.85, echelle: 20, rayon: 44,
+    mer: { nx: 0.5, nz: 0.87, d: 38 },
+    parcs: [{ cu: 17, cv: 9, ru: 9, rv: 10, lac: { cu: 17, cv: 9, ru: 7, rv: 8 } }],   // la Marina Bay elle-même
+    trame: { ang: 0.2, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
+    palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [5, 8],
+    monuments: [
+      // Trois tours, une planche posée dessus : le SkyPark au-dessus de la baie.
+      { nom: 'Marina Bay Sands', lat: 1.2834, lon: 103.8607, box: 8, build: (poser) => {
+        for (const dz of [-5, 0, 5]) for (let y = 1; y <= 16; y++) { poser(0, y, dz, CREME); poser(1, y, dz, VERRE); }
+        for (let dz = -6; dz <= 6; dz++) { poser(0, 17, dz, BLANC); poser(1, 17, dz, BLANC); }
+      } },
+      { nom: 'Les Supertrees', lat: 1.2816, lon: 103.8636, box: 7, seuil: 0.4, build: (poser) => {
+        for (const [du, dv] of [[0, 0], [-4, 2], [4, -2], [2, 4], [-3, -4]]) {
+          for (let y = 1; y <= 8; y++) poser(du, y, dv, uni(13));
+          for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) poser(du + a, 8, dv + b, uni(5));
+        }
+      } },
+      { nom: 'Le Merlion', lat: 1.2868, lon: 103.8545, box: 2, seuil: 0.4, build: statuette(4, BLANC) },
+    ],
+    lieux: [['Gardens by the Bay', 1.2816, 103.8656], ['Le quartier colonial', 1.2903, 103.8519]],
+    couleurToits: [172, 176, 182],
+  },
+  bangkok: {
+    lat0: 13.7563, lon0: 100.5018, echelle: 20, rayon: 46,
+    fleuve: { pts: [[-22, -40], [-26, -5], [-27, 14], [-24, 28], [-28, 46]], l: 3.5 },   // la Chao Phraya
+    trame: { ang: 0.05, pu: 5, pv: 4, w: 0.45, s: 0.8, tours: 0.45 },
+    palette: [CREME, BLANC, ROSE], toit: TUILE, hMaison: [3, 6],
+    monuments: [
+      { nom: 'Le Grand Palais', lat: 13.75, lon: 100.4913, box: 8, build: muraillesRect(6, 4, BLANC) },
+      { nom: 'Wat Arun', lat: 13.7437, lon: 100.4889, box: 6, seuil: 0.4, build: pagode(4, CREME, OR) },
+      { nom: 'Wat Pho', lat: 13.7465, lon: 100.4933, box: 4, seuil: 0.4, build: statuette(3, OR) },
+    ],
+    lieux: [['Khao San', 13.7588, 100.4972], ['Chinatown', 13.7403, 100.5096],
+      ['Le marché aux fleurs', 13.7417, 100.4973]],
+    couleurToits: [204, 158, 116],
+  },
+  dubai: {
+    lat0: 25.2048, lon0: 55.2708, echelle: 20, rayon: 50,
+    mer: { nx: -0.6, nz: -0.8, d: 38, plage: 4 },                 // le Golfe, au nord-ouest
+    trame: { ang: 0.35, pu: 7, pv: 6, w: 0.55, s: 0.9, tours: 0.7 },
+    palette: [CREME, BLANC, ACIER], toit: CREME, hMaison: [5, 9],
+    monuments: [
+      { nom: 'Burj Khalifa', lat: 25.1972, lon: 55.2744, box: 5, build: buildBurj },
+      { nom: 'La fontaine de Dubaï', lat: 25.1953, lon: 55.2724, box: 5, seuil: 0.4, hmin: 2, build: (poser) => {
+        for (let y = 1; y <= 2; y++) poser(0, y, 0, EAU);            // le jet
+        for (let dx = -3; dx <= 3; dx++) for (let dz = -2; dz <= 2; dz++) {
+          poser(dx, 0, dz, Math.abs(dx) === 3 || Math.abs(dz) === 2 ? PIERRE : EAU);
+        }
+      } },
+      // Le Burj al Arab est sur son île, à quinze vrais kilomètres au
+      // sud-ouest — hors du rayon, sa voile seule au bord du Golfe.
+      { nom: 'Burj al Arab', lat: 25.1412, lon: 55.1853, box: 7, build: buildVoile },
+    ],
+    lieux: [['Dubai Mall', 25.1985, 55.2796], ['Sheikh Zayed Road', 25.2098, 55.2777]],
+    couleurToits: [206, 196, 176],
+  },
+  jerusalem: {
+    lat0: 31.7683, lon0: 35.2137, echelle: 14, rayon: 40,
+    collines: [{ nom: 'Le mont des Oliviers', cu: 36, cv: -16, r: 8, h: 12 }],
+    trame: { ang: 0.25, pu: 4, pv: 4, w: 0.4, s: 0.7 },
+    palette: [GRES, CREME, PIERRE], toit: CREME, hMaison: [2, 4], // tout en pierre de Jérusalem
+    monuments: [
+      { nom: 'Le dôme du Rocher', lat: 31.778, lon: 35.2354, box: 7, build: dome(5, uni(10), OR) },
+      { nom: 'Le mur des Lamentations', lat: 31.7767, lon: 35.2262, box: 7, build: (poser) => {
+        for (let dz = -5; dz <= 5; dz++) for (let y = 1; y <= 6; y++) poser(0, y, dz, GRES);
+      } },
+      { nom: 'La vieille ville', lat: 31.7767, lon: 35.2295, box: 14, build: muraillesRect(12, 4, GRES) },
+      { nom: 'La tour de David', lat: 31.7765, lon: 35.2274, box: 3, seuil: 0.4, build: minaret(10, GRES) },
+    ],
+    lieux: [['Le Saint-Sépulcre', 31.7784, 35.2296], ['Mahané Yehuda', 31.7857, 35.2007]],
+    couleurToits: [214, 200, 172],
+  },
+  mumbai: {
+    lat0: 18.94, lon0: 72.835, echelle: 20, rayon: 48,
+    mer: { nx: 0.99, nz: 0.15, d: 12, quais: true },              // le port, à l'est
+    cote: { base: -16, pente: 0.1 },                               // la mer d'Arabie, à l'ouest — Colaba est une presqu'île
+    trame: { ang: 0.1, pu: 5, pv: 4, w: 0.45, s: 0.8, tours: 0.4 },
+    palette: [brique(0), CREME, OCRE], toit: TUILE, hMaison: [3, 6],
+    monuments: [
+      { nom: "La porte de l'Inde", lat: 18.922, lon: 72.8347, box: 6, build: archePorte(4, 8, GRES) },
+      { nom: 'Le Taj Mahal Palace', lat: 18.9217, lon: 72.8331, box: 7, build: palaisLong(5, brique(0), TUILE) },
+      { nom: 'La gare Victoria', lat: 18.9398, lon: 72.8355, box: 7, build: dome(4, brique(0), ARDOISE) },
+    ],
+    lieux: [['Colaba', 18.918, 72.8315], ['Marine Drive', 18.941, 72.828]],
+    couleurToits: [182, 140, 104],
+  },
+  delhi: {
+    lat0: 28.6139, lon0: 77.209, echelle: 20, rayon: 45,
+    voies: [{ pts: [[-17, -1], [39, 2]], l: 1.5 }],               // le Rajpath, du palais à la porte
+    trame: { ang: 0.55, pu: 6, pv: 5, w: 0.5, s: 0.85 },          // les avenues en étoile de Lutyens
+    palette: [GRES, CREME, ROSE], toit: CREME, hMaison: [3, 5],
+    monuments: [
+      { nom: "La porte de l'Inde", lat: 28.6129, lon: 77.2295, box: 8, build: archePorte(5, 10, GRES) },
+      { nom: 'Rashtrapati Bhavan', lat: 28.6144, lon: 77.1996, box: 7, build: dome(4, GRES, ARDOISE) },
+      { nom: 'Jantar Mantar', lat: 28.627, lon: 77.2166, box: 5, seuil: 0.4, build: (poser) => {
+        for (let k = 0; k <= 6; k++) poser(k - 3, 1 + Math.min(k, 6 - k), 0, ROUGE_GRES);   // le cadran géant
+      } },
+    ],
+    lieux: [['Connaught Place', 28.6315, 77.2167], ['Lodhi Gardens', 28.5931, 77.2197]],
+    couleurToits: [210, 186, 150],
+  },
+  // --- les Amériques ------------------------------------------------------
+  losangeles: {
+    lat0: 34.0522, lon0: -118.2437, echelle: 12, rayon: 56,
+    trame: { ang: 0.63, pu: 6, pv: 5, w: 0.55, s: 0.9, tours: 0.6 },   // le damier penché du downtown
+    palette: [BLANC, CREME, ACIER], toit: CREME, hMaison: [4, 7],
+    parcs: [{ cu: -18, cv: 20, ru: 6, rv: 5 }],
+    monuments: [
+      { nom: "L'hôtel de ville", lat: 34.0537, lon: -118.2427, box: 3, build: minaret(20, BLANC) },
+      { nom: 'Walt Disney Hall', lat: 34.0553, lon: -118.25, box: 6, build: dome(4, ACIER, ACIER) },
+      // Le panneau est sur le mont Lee, à dix vrais kilomètres — hors du
+      // rayon, ses neuf lettres blanches sur la colline, comme en vrai.
+      { nom: 'Hollywood', lat: 34.1341, lon: -118.3215, box: 11, seuil: 0.4, build: buildHollywood },
+    ],
+    lieux: [['Grand Central Market', 34.0508, -118.2489], ['Little Tokyo', 34.0505, -118.24]],
+    couleurToits: [188, 184, 176],
+  },
+  chicago: {
+    lat0: 41.8781, lon0: -87.6298, echelle: 20, rayon: 50,
+    mer: { nx: 1, nz: 0, d: 24, plage: 2 },                       // le lac Michigan
+    fleuve: { pts: [[23, -8], [3, -6], [-3, -2], [-4, 22]], l: 2.5 },   // la Chicago River et sa fourche sud
+    trame: { ang: 0, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
+    palette: [brique(0), ACIER, CREME], toit: ARDOISE, hMaison: [4, 7],
+    parcs: [{ cu: 14, cv: -6, ru: 5, rv: 8 }],                    // Millennium Park
+    monuments: [
+      { nom: 'La Willis Tower', lat: 41.8789, lon: -87.6359, box: 4, build: tourBoule(42, [], NOIRB, NOIRB) },
+      { nom: 'Le Bean', lat: 41.8827, lon: -87.6233, box: 4, seuil: 0.4, build: dome(2, ACIER, ACIER) },
+      { nom: 'Le John Hancock', lat: 41.8988, lon: -87.6229, box: 4, build: tourBoule(36, [], NOIRB, NOIRB) },
+      { nom: 'Navy Pier', lat: 41.8917, lon: -87.6086, box: 9, build: palaisLong(7, CREME, TUILE) },
+    ],
+    lieux: [['Le Loop', 41.8786, -87.6297], ['Magnificent Mile', 41.8946, -87.6247]],
+    couleurToits: [148, 150, 160],
+  },
+  lasvegas: {
+    lat0: 36.11, lon0: -115.17, echelle: 20, rayon: 44,
+    desert: { bande: 16 },                                         // le Strip — et le désert du Nevada tout autour
+    voies: [{ pts: [[-5, -42], [-4, 0], [-8, 42]], l: 2 }],
+    trame: { ang: 0, pu: 7, pv: 6, w: 0.5, s: 0.9, tours: 0.55 },
+    palette: [OR, ROSE, BLANC, uni(12)], toit: CREME, hMaison: [4, 8],
+    parcs: [{ cu: -12, cv: -7, ru: 5, rv: 4, lac: { cu: -12, cv: -7, ru: 4, rv: 3 } }],   // le lac du Bellagio
+    monuments: [
+      { nom: 'Le Luxor', lat: 36.0955, lon: -115.1761, box: 12, build: (poser) => {
+        for (let y = 0; y <= 14; y++) {
+          const r = 10 - Math.round((y * 10) / 14);
+          for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+            if (Math.abs(dx) === r || Math.abs(dz) === r) poser(dx, y + 1, dz, y === 14 ? BLANC : NOIRB);
+          }
+        }
+      } },
+      { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue },
+      { nom: 'La demi-tour Eiffel', lat: 36.1125, lon: -115.1707, box: 4, build: tourBoule(16, [], ACIER, ACIER) },
+    ],
+    lieux: [['Le Strip', 36.1147, -115.1728]],
+    couleurToits: [216, 196, 152],
+  },
+  miami: {
+    lat0: 25.7617, lon0: -80.1918, echelle: 20, rayon: 42,
+    mer: { nx: 1, nz: 0, d: 14, ile: { u0: 26, u1: 34, plage: 3 } },   // la baie de Biscayne — et Miami Beach, l'île-barrière
+    trame: { ang: 0, pu: 5, pv: 5, w: 0.5, s: 0.85, tours: 0.45 },
+    palette: [BLANC, ROSE, CREME, uni(7)], toit: CREME, hMaison: [3, 6],
+    monuments: [
+      { nom: 'La Freedom Tower', lat: 25.7787, lon: -80.1896, box: 3, build: minaret(14, CREME) },
+      // Trois façades Art déco pastel, face à la plage.
+      { nom: 'Ocean Drive', lat: 25.772, lon: -80.177, box: 5, seuil: 0.4, build: (poser) => {
+        [[-3, ROSE], [0, uni(7)], [3, uni(2)]].forEach(([dz, c]) => {
+          for (let y = 1; y <= 3; y++) poser(0, y, dz, c);
+          poser(0, 4, dz, BLANC);
+        });
+      } },
+    ],
+    lieux: [['Bayside', 25.7785, -80.1867], ['South Beach', 25.7717, -80.1774]],
+    couleurToits: [224, 210, 200],
+  },
+  toronto: {
+    lat0: 43.6532, lon0: -79.3832, echelle: 20, rayon: 44,
+    mer: { nx: 0, nz: 1, d: 26, quais: true },                    // le lac Ontario
+    trame: { ang: 0.3, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
+    palette: [ACIER, brique(0), CREME], toit: ARDOISE, hMaison: [4, 7],
+    monuments: [
+      { nom: 'La CN Tower', lat: 43.6426, lon: -79.3871, box: 4, build: tourBoule(44, [32], ACIER, ACIER) },
+      { nom: 'Le Rogers Centre', lat: 43.6414, lon: -79.3894, box: 7, build: dome(5, BLANC, BLANC) },
+      { nom: "L'ancien hôtel de ville", lat: 43.6525, lon: -79.3818, box: 3, build: minaret(12, brique(0)) },
+    ],
+    lieux: [['La Distillerie', 43.6503, -79.3596], ['Kensington', 43.6547, -79.4005]],
+    couleurToits: [152, 154, 162],
+  },
+  mexico: {
+    lat0: 19.4326, lon0: -99.1332, echelle: 20, rayon: 50,
+    trame: { ang: 0, pu: 5, pv: 4, w: 0.45, s: 0.8 },             // le damier colonial
+    palette: [ROUGE_GRES, OCRE, ROSE, CREME], toit: CREME, hMaison: [3, 5],
+    parcs: [{ cu: -23, cv: -7, ru: 6, rv: 3 }],                   // l'Alameda
+    monuments: [
+      { nom: 'La cathédrale', lat: 19.4342, lon: -99.1332, box: 7, build: dome(4, PIERRE, OCRE) },
+      { nom: 'Le Templo Mayor', lat: 19.4348, lon: -99.1316, box: 9, build: pyramide(7, 9, 0) },
+      { nom: 'Bellas Artes', lat: 19.4352, lon: -99.1413, box: 6, build: dome(4, CREME, OCRE) },
+      { nom: 'La Torre Latino', lat: 19.4339, lon: -99.1406, box: 3, build: tourBoule(28, [], ACIER, ACIER) },
+    ],
+    lieux: [['Madero', 19.4337, -99.1389], ['La Merced', 19.4258, -99.1244]],
+    couleurToits: [196, 152, 124],
+  },
+  havane: {
+    lat0: 23.1136, lon0: -82.3666, echelle: 9, rayon: 40,
+    mer: { nx: 0.2, nz: -0.98, d: 30, quais: true },              // le détroit de Floride — le Malecón en quais
+    trame: { ang: 0.2, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [ROSE, CREME, OCRE, uni(7)], toit: CREME, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Le Capitole', lat: 23.1359, lon: -82.3592, box: 7, build: dome(5, BLANC, BLANC) },
+      { nom: 'La cathédrale', lat: 23.1391, lon: -82.3517, box: 5, build: minaret(8, GRES) },
+      // Le Morro garde l'entrée du port, les pieds dans l'eau de la passe.
+      { nom: 'El Morro', lat: 23.1502, lon: -82.3564, box: 7, build: muraillesRect(5, 6, GRES) },
+      { nom: 'Les vieilles américaines', lat: 23.116, lon: -82.361, box: 28, seuil: 0.4, hmin: 1, build: buildVoituresCubaines },
+    ],
+    lieux: [['Le Malecón', 23.1445, -82.3661], ['La Habana Vieja', 23.1373, -82.3535]],
+    couleurToits: [216, 190, 156],
+  },
+  buenosaires: {
+    lat0: -34.6037, lon0: -58.3816, echelle: 20, rayon: 48,
+    mer: { nx: 0.6, nz: -0.8, d: 34 },                            // le Río de la Plata
+    voies: [{ pts: [[0, -42], [0, 42]], l: 2.5 }],                // la 9 de Julio — la plus large du monde
+    trame: { ang: 0, pu: 5, pv: 5, w: 0.5, s: 0.85, tours: 0.5 },
+    palette: [CREME, BLANC, OCRE], toit: ARDOISE, hMaison: [4, 7],
+    monuments: [
+      // L'Obélisque est exactement à l'ancre : c'est lui, le centre.
+      { nom: "L'Obélisque", lat: -34.6037, lon: -58.3816, box: 4, build: obelisque(22) },
+      { nom: 'La Casa Rosada', lat: -34.608, lon: -58.3702, box: 8, build: palaisLong(6, ROSE, ROSE) },
+      { nom: 'Le Cabildo', lat: -34.6089, lon: -58.3742, box: 5, seuil: 0.4, build: archePorte(3, 4, BLANC) },
+    ],
+    lieux: [['Florida', -34.6035, -58.3752], ['San Telmo', -34.6203, -58.3717],
+      ['Puerto Madero', -34.6081, -58.3634]],
+    couleurToits: [184, 176, 164],
+  },
+  machupicchu: {
+    lat0: -13.1631, lon0: -72.545, echelle: 20, rayon: 30,
+    sol: 52,                                                       // la citadelle vit en altitude, pas à 33
+    collines: [{ nom: 'Huayna Picchu', cu: -3, cv: -13, r: 7, h: 20, roche: true }],
+    foret: { u1: 30, v0: -30 },                                    // la forêt de nuages, partout
+    monuments: [
+      { nom: 'Les terrasses incas', lat: -13.1633, lon: -72.5456, box: 16, seuil: 0.4, build: buildTerrasses },
+      { nom: 'Le temple du Soleil', lat: -13.1642, lon: -72.545, box: 4, seuil: 0.4, build: muraillesRect(2, 2, PIERRE) },
+    ],
+    lieux: [['La porte du Soleil', -13.1655, -72.54], ['Le Huayna Picchu', -13.1575, -72.5465]],
+    couleurToits: [148, 164, 128],
+  },
+  // --- l'Afrique ---------------------------------------------------------------
+  marrakech: {
+    lat0: 31.6295, lon0: -7.9811, echelle: 20, rayon: 44,
+    trame: { ang: 0.2, pu: 4, pv: 4, w: 0.4, s: 0.7 },            // les ruelles serrées de la médina
+    palette: [ROUGE_GRES, OCRE, ROSE], toit: ROUGE_GRES, hMaison: [2, 4],   // la ville rouge
+    parcs: [{ cu: -10, cv: -27, ru: 4, rv: 4 }],                  // le jardin Majorelle
+    monuments: [
+      { nom: 'La Koutoubia', lat: 31.6258, lon: -7.9891, box: 4, build: minaret(18, ROUGE_GRES) },
+      { nom: 'Les remparts', lat: 31.6295, lon: -7.9811, box: 18, build: muraillesRect(16, 4, ROUGE_GRES) },
+      { nom: 'Le palais Bahia', lat: 31.6216, lon: -7.9822, box: 6, build: palaisLong(4, OCRE, TUILE) },
+    ],
+    lieux: [['Jemaâ el-Fna', 31.6259, -7.9852], ['Les souks', 31.6308, -7.9843],
+      ['La Majorelle', 31.6417, -7.9862]],
+    couleurToits: [190, 122, 90],
+  },
+  lecap: {
+    lat0: -33.9249, lon0: 18.4241, echelle: 8, rayon: 44,
+    mer: { nx: -0.5, nz: -0.87, d: 16, quais: true },             // la baie de la Table
+    collines: [
+      // La montagne-table : la seule mesa du jeu avec l'Acropole — plate au
+      // sommet, abrupte au bord. La ville l'aplanirait sans cette fiche.
+      { nom: 'La montagne de la Table', cu: -11, cv: 34, r: 14, h: 24, roche: true, mesa: true },
+      { nom: 'La tête de Lion', cu: -26, cv: 10, r: 5, h: 18, roche: true },
+    ],
+    trame: { ang: 0.15, pu: 5, pv: 4, w: 0.45, s: 0.8 },
+    palette: [BLANC, CREME, ROSE, uni(7)], toit: TUILE, hMaison: [3, 5],   // Bo-Kaap en couleurs
+    monuments: [
+      { nom: 'Le château de Bonne-Espérance', lat: -33.9258, lon: 18.4276, box: 8, build: muraillesRect(6, 4, OCRE) },
+    ],
+    lieux: [['Bo-Kaap', -33.92, 18.411], ['Le Waterfront', -33.908, 18.421],
+      ['La montagne de la Table', -33.9628, 18.4098]],
+    couleurToits: [204, 184, 162],
+  },
+
 };
 
 export const VILLES_MONDE = Object.entries(FICHES).map(([cle, f]) => fabrique(cle, f));
@@ -351,7 +1183,19 @@ function distancePolyligne(pts, u, v) {
 // L'eau d'une ville, en ce point ? (hors Tamise : Londres a son propre module)
 function eauDeVille(f, u, v) {
   if (f.fleuve && distancePolyligne(f.fleuve.pts, u, v) < f.fleuve.l) return true;
-  if (f.mer && u * f.mer.nx + v * f.mer.nz > f.mer.d) return true;
+  for (const fl of f.fleuves || []) {
+    if (distancePolyligne(fl.pts, u, v) < fl.l) return true;      // la Corne d'Or, en plus du Bosphore
+  }
+  if (f.lagune && Math.hypot(u, v) > f.lagune.r) return true;     // Venise flotte au milieu
+  if (f.canaux && v > f.canaux.v0) {
+    const dc = Math.hypot(u, v);                                   // la ceinture d'Amsterdam
+    for (const rc of f.canaux.rayons) if (Math.abs(dc - rc) < 1.1) return true;
+  }
+  for (const ch of f.archipel || []) {
+    if (v >= ch.v0 && v <= ch.v1) return true;                    // les passes de Stockholm, le port Victoria
+  }
+  if (f.mer && u * f.mer.nx + v * f.mer.nz > f.mer.d
+    && !(f.mer.ile && u >= f.mer.ile.u0 && u <= f.mer.ile.u1)) return true;   // sauf Miami Beach
   if (f.cote && u < f.cote.base + f.cote.pente * v) return true;
   if (f.baie) {
     if (v < f.baie.v0 && v > f.baie.v1) {
@@ -383,6 +1227,11 @@ function collineDeVille(f, u, v) {
   for (const c of f.collines || []) {
     const d = Math.hypot(u - c.cu, v - c.cv);
     if (d >= c.r) continue;
+    if (c.mesa) {
+      // la montagne-table : plate jusqu'aux deux tiers, puis la falaise
+      plus = Math.max(plus, Math.min(1, (1 - d / c.r) * 3) * c.h);
+      continue;
+    }
     const m = Math.cos((d / c.r) * Math.PI * 0.5);
     plus = Math.max(plus, m * m * c.h);
   }
@@ -397,7 +1246,7 @@ export function hauteurVillesMonde(x, z, h) {
     const d = Math.hypot(u, v);
     if (d > f.rayon + 14) continue;
     const marge = Math.min(1, (f.rayon + 14 - d) / 14);
-    let cible = 33;
+    let cible = f.sol || 33;                                       // le Machu Picchu vit a 52
     if (eauDeVille(f, u, v)) cible = 26;
     else cible += collineDeVille(f, u, v);
     return h * (1 - marge) + cible * marge;
@@ -415,9 +1264,13 @@ export function solVillesMonde(x, z) {
     if (f.mer && f.mer.quais && u * f.mer.nx + v * f.mer.nz > f.mer.d - 2) return PAVE;
     if (f.cote && f.cote.quais && u < f.cote.base + f.cote.pente * v + 2) return PAVE;
     if (f.plage && v >= f.plage.v0 && v <= f.plage.v1) return SABLE;
-    if (f.desert) {
+    if (f.desert && !(f.desert.bande && Math.abs(u) <= f.desert.bande)) {
+      // Gizeh est desert partout ; Las Vegas garde une bande pour le Strip.
       if (f.oasis && u > f.oasis.u0) return ((u + v) & 3) === 0 ? ARBRE : HERBE;
       return SABLE;
+    }
+    if (f.mer && f.mer.ile && u >= f.mer.ile.u1 - (f.mer.ile.plage || 0) && u <= f.mer.ile.u1) {
+      return SABLE;                                                // la plage de Miami Beach
     }
     if (f.charbagh) {
       const c = f.charbagh;

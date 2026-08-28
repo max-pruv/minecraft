@@ -71,7 +71,13 @@ function verifier(nom, ok, detail = '') {
 // longitude au degré, Rome était 60 km trop à l'est. Les DIX-HUIT colonnes
 // nommées, elles, n'ont pas bougé d'un bloc : la casse est réelle, elle est
 // voulue, et elle est confinée là où la Terre a pris ses droits.
-const EMPREINTE_RELIEF = 'ee57fee01302de3d98fa4175c24015e53df057d4';
+//
+// Recalculée en v166 : les cinquante grandes posent Bruxelles et Amsterdam
+// dans la fenêtre observée — deux disques aplanis de plus, l'IJ et les
+// canaux en eau. Le changement est celui-là et rien d'autre : la même
+// découpe, mesurée sur main et sur v166, rend la MÊME empreinte hors
+// villes (voir ci-dessous).
+const EMPREINTE_RELIEF = '0d379ffbc2b19618aac9e8f7ed6d5b2f50009c29';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -100,7 +106,13 @@ const EMPREINTE_RELIEF = 'ee57fee01302de3d98fa4175c24015e53df057d4';
 // le témoin promet redevient vrai et le restera quand la carte grandira : là où
 // aucune ville ne se pose, le paysage est celui du bruit de terrain, intact.
 // `PAS_VIDE` plus bas interdit désormais à ce témoin de se vider en silence.
-const EMPREINTE_HORS_VILLES = '65b0f362fd08edb0fd8df62d2581f09f77243a79';
+//
+// v166 : la découpe s'élargit aux villes de la machine (Bruxelles, Amsterdam
+// dans la fenêtre), donc la valeur change — mais la preuve d'intégrité a été
+// refaite à l'identique : cette empreinte, calculée avec la MÊME découpe sur
+// origin/main (avant les cinquante grandes) et sur v166, donne le même hash
+// des deux côtés. Hors des villes neuves, pas un bloc n'a bougé.
+const EMPREINTE_HORS_VILLES = '5e54e15c1b0405e609ad04e3ae3a4ac6f54da965';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -163,11 +175,18 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // annoncerait « le paysage a bougé hors des villes » pour une esplanade
   // parfaitement voulue.
   const SITES_POS = SITES.map((s) => ({ ...positionSite(s.cle), portee: s.parvis + 24 }));
+  // Les villes de la machine aplanissent leur disque elles aussi. Depuis les
+  // cinquante grandes, deux d'entre elles tombent dans la fenêtre observée :
+  // Bruxelles et Amsterdam. Sans elles dans la découpe, le témoin « hors des
+  // villes » compterait leurs rues comme du paysage qui a bougé.
+  const { VILLES_MONDE } = await import('../src/villesmonde.js');
+  const VM_POS = VILLES_MONDE.map((f) => ({ x: f.ancre.x, z: f.ancre.z, portee: f.rayon + MARGE_VILLE }));
   // Dans une ville, ou dans le fondu qui la borde ?
   const dansUneVille = (x, z) => {
     if (x >= Z.x0 - MARGE_VILLE && x <= Z.x1 + MARGE_VILLE
       && z >= Z.z0 - MARGE_VILLE && z <= Z.z1 + MARGE_VILLE) return true;
     if (CITIES.some((c) => Math.hypot(x - c.x, z - c.z) <= c.r + MARGE_VILLE)) return true;
+    if (VM_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee)) return true;
     return SITES_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee);
   };
   const vals = [], hors = [];
