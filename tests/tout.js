@@ -65,6 +65,9 @@ const GARDIENS = {
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
   'src/monuments.js': ['carteMonde.js'],
+  // Les familles de bâtiments : la bibliothèque de l'inventaire se prouve
+  // dans monte.js (onglet, vignettes, pose).
+  'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   'src/carte.js': ['carte.js', 'carteMonde.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche

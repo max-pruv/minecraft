@@ -364,20 +364,49 @@ async function avancerUnDemiSeconde(p, depart) {
       ongletChantier.ouvert && ongletChantier.onglet === 'chantier' && ongletChantier.ditOu,
       JSON.stringify({ onglet: ongletChantier.onglet, ditOu: ongletChantier.ditOu }));
 
-    // Et la bibliothèque de bâtiments porte enfin son vrai nom : Max la
-    // cherchait, elle s'appelait « Monuments ».
-    const biblio = await tab.evaluate(() => {
-      const bouton2 = document.querySelector('.fun-tab[data-t="monuments"]');
-      bouton2.click();
-      const corps = document.getElementById('fun-tab-body').textContent;
-      return { libelle: bouton2.textContent.trim(),
-        monuments: corps.includes('Monuments célèbres'),
-        batiments: corps.includes('Bâtiments de ville') };
+    // LA BIBLIOTHÈQUE VIT DANS LE + (v176). Max : « les bâtiments, je
+    // voudrais que tu les déplaces dans le bouton plus, là où tu as les
+    // blocs, la déco et les meubles. » On éprouve le trajet de l'enfant :
+    // ouvrir l'inventaire, toucher l'onglet 🏛️, voir des vignettes — et
+    // POSER : un tap, et le bâtiment se dresse devant soi.
+    const biblio = await tab.evaluate(async () => {
+      document.getElementById('inv-panel').style.display = 'flex';
+      const onglet = document.querySelector('#inv-tabs button[data-tab="batiments"]');
+      if (!onglet) return { onglet: false };
+      onglet.click();
+      // les vignettes arrivent par petits paquets d'images : on les attend
+      for (let k = 0; k < 200; k++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        if (document.querySelectorAll('#inv-grid .inv-bat').length >= 40) break;
+      }
+      const cellules = document.querySelectorAll('#inv-grid .inv-bat');
+      const vignettes = [...cellules].filter((c) => c.querySelector('canvas')).length;
+      return { onglet: true, libelle: onglet.textContent.trim(),
+        cellules: cellules.length, vignettes,
+        titre: document.getElementById('inv-title').textContent };
     });
-    verifier('l\'onglet Bâtiments montre monuments ET bâtiments de ville',
-      biblio.libelle.includes('Bâtiments') && biblio.monuments && biblio.batiments,
+    verifier('l\'onglet Bâtiments vit dans l\'inventaire, vignettes à l\'appui',
+      biblio.onglet && biblio.libelle.includes('Bâtiments') && biblio.cellules >= 40
+      && biblio.vignettes === biblio.cellules && /\d{3}/.test(biblio.titre),
       JSON.stringify(biblio));
-    await tab.evaluate(() => { document.querySelector('#fun-main-panel .fun-close').click(); });
+    // On dégage le champ, on pose le premier bâtiment, et on compte ce qui
+    // s'est dressé devant : des blocs, beaucoup, là où il n'y avait rien.
+    const pose2 = await tab.evaluate(async () => {
+      const g = window.__game;
+      g.player.flying = true;
+      g.player.pos.set(-1500, g.world.terrainHeight(-1500, -1500) + 2, -1500);
+      g.player.yaw = 0; g.player.vel.set(0, 0, 0);
+      await new Promise((r) => setTimeout(r, 600));
+      // On compte ce que le monde retient : chaque bloc posé est une édition.
+      const avant = g.world.edits.size;
+      const cell = document.querySelector('#inv-grid .inv-bat');
+      cell.click();
+      await new Promise((r) => setTimeout(r, 800));
+      return { poses: g.world.edits.size - avant,
+        ferme: document.getElementById('inv-panel').style.display === 'none' };
+    });
+    verifier('un tap sur une vignette pose le bâtiment devant soi',
+      pose2.poses > 100 && pose2.ferme, JSON.stringify(pose2));
 
     // --- la Giga-usine : la chaîne roule, la peinture opère, on conduit ------
     //

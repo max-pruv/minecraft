@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v176 — l'onglet Bâtiments : six cents modèles dans le +
+
+**Pourquoi.** Max : « les bâtiments, je voudrais que tu les déplaces dans le
+bouton plus, là où tu as les blocs, la déco et les meubles, que tu rajoutes
+un onglet bâtiment et rajoutes-en trois cents de plus avec des bâtiments de
+très haute fidélité, très recherchés. » La bibliothèque vivait dans le
+panneau des pilules, sans images — des lignes de texte pour choisir une
+Tour Eiffel.
+
+**Ce que ça change.** Un onglet 🏛️ Bâtiments dans l'inventaire du +, à côté
+des blocs, de la déco et des meubles : chaque bâtiment se montre en VIGNETTE
+— sa façade dessinée bloc par bloc aux couleurs réelles de l'atlas — et se
+pose devant soi d'un tap. Et quinze familles nouvelles, trois cents modèles
+de plus (six cent un en tout), chacune sur la vraie grammaire de son type :
+maison à colombages et son encorbellement, brownstone de New York et son
+perron, pagode à toits superposés, riad tourné vers son patio, église
+gothique à contreforts et vitraux, mosquée à minaret, temple grec
+périptère, chalet à balcon filant, maison de canal d'Amsterdam à pignon,
+gratte-ciel Art déco en gradins, phare rayé, moulin à ailes, gare à
+verrière, hanok au toit gris incurvé, shophouse arcadée. Six blocs
+d'architecture neufs les servent : pan de bois, grès brun, zellige,
+vitrail, panneau shoji, tuile grise — dans l'inventaire eux aussi.
+
+**Ce qui le prouve.** Les trois cents variantes neuves bâties une à une en
+sonde (aucune vide, toutes sous le plafond du ciel — l'Art déco culmine à
+107 blocs) ; deux témoins réécrits sur le nouveau trajet — l'onglet montre
+ses vignettes (une par cellule, pas une de moins), et un tap pose des
+centaines de blocs devant l'enfant ; et les captures de l'onglet et d'une
+pagode posée, dans la discussion.
+
 ## v175 — le vol prend sa vitesse de croisière
 
 **Pourquoi.** Max : « comme la carte est beaucoup plus grande, ça serait bien
