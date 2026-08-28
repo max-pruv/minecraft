@@ -1,7 +1,7 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE } from './blocks.js';
+import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE, ROUTE_TILE_START } from './blocks.js';
 
 const TILE_PX = 16;
 export const ATLAS_COLS = 20;
@@ -708,11 +708,13 @@ painters[CT + 1] = (ctx, ox, oy) => { // toit de zinc: blue-grey standing seams
 };
 
 painters[CT + 2] = (ctx, ox, oy) => { // asphalte
+  // Gris moyen, pas charbon : l'ancien [57,58,62] rendait les rues noires
+  // comme des gouffres — le vrai bitume au soleil est bien plus clair.
   const rng = mulberry32(162);
-  noisyFill(ctx, ox, oy, [57, 58, 62], 6, rng);
+  noisyFill(ctx, ox, oy, [96, 97, 101], 7, rng);
   for (let i = 0; i < 14; i++) {
     const x = (rng() * TILE_PX) | 0, y = (rng() * TILE_PX) | 0;
-    const s = rng() > 0.5 ? 74 : 45;
+    const s = rng() > 0.5 ? 116 : 80;
     px(ctx, ox, oy, x, y, s, s, s + 2);
   }
 };
@@ -790,6 +792,37 @@ painters[CT + 9] = (ctx, ox, oy) => { // passage piéton: zebra stripes on aspha
   for (let y0 = 1; y0 < TILE_PX; y0 += 4) {
     for (let y = y0; y < y0 + 2; y++) {
       for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 225, 225, 222);
+    }
+  }
+};
+
+// Les marquages orientés du réalisme v2 (villes générées) : blancs, fins, et
+// dans l'axe. Sur une face du dessus, texture-x suit le monde-x et texture-y
+// le monde-z (mesher.js) — d'où une tuile par orientation, elles ne tournent pas.
+const RT = ROUTE_TILE_START;
+painters[RT] = (ctx, ox, oy) => { // ligne axiale N-S : tirets le long de z
+  painters[CT + 2](ctx, ox, oy);
+  for (const y0 of [1, 9]) {
+    for (let y = y0; y < y0 + 5; y++) {
+      px(ctx, ox, oy, 7, y, 232, 232, 228);
+      px(ctx, ox, oy, 8, y, 232, 232, 228);
+    }
+  }
+};
+painters[RT + 1] = (ctx, ox, oy) => { // ligne axiale E-O : les mêmes, le long de x
+  painters[CT + 2](ctx, ox, oy);
+  for (const x0 of [1, 9]) {
+    for (let x = x0; x < x0 + 5; x++) {
+      px(ctx, ox, oy, x, 7, 232, 232, 228);
+      px(ctx, ox, oy, x, 8, 232, 232, 228);
+    }
+  }
+};
+painters[RT + 2] = (ctx, ox, oy) => { // passage piéton N-S : bandes le long de z
+  painters[CT + 2](ctx, ox, oy);
+  for (let x0 = 1; x0 < TILE_PX; x0 += 4) {
+    for (let x = x0; x < x0 + 2; x++) {
+      for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 225, 225, 222);
     }
   }
 };

@@ -1450,7 +1450,12 @@ export function initFun(ctx) {
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;
     a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
-    player.camera.position.y += a.def.assise || a.def.height * 0.6;
+    // Deux façons d'être porté : sur le dos d'une bête, le regard s'ÉLÈVE de
+    // la hauteur du dos ; dans une voiture, il se POSE à la hauteur du siège
+    // (`oeil`, absolu depuis les pieds) — derrière le pare-brise, capot et
+    // volant en vue, au lieu de flotter au-dessus du toit.
+    if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
+    else player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
 
   function updatePet(dt) {

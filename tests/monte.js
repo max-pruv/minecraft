@@ -501,6 +501,25 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     verifier('la voiture reste sous nous pendant tout le trajet',
       sousNous < 1.5, `${sousNous.toFixed(2)} m`);
+
+    // LA VUE PARE-BRISE (Max) : « quand on roule avec une voiture, je veux la
+    // vue derrière le pare-brise, réaliste. » Assis au volant, l'œil est DANS
+    // l'habitacle — au-dessus du capot (0,87), sous le toit (1,46) — et le
+    // volant existe dans le modèle. L'ancien code posait la caméra à 2,6 blocs,
+    // au-dessus du toit de la voiture : rouge garanti.
+    const cockpit = await tab.evaluate(() => {
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      let volant = false;
+      if (a) a.mesh.traverse((m) => {
+        if (m.geometry && m.geometry.type === 'TorusGeometry') volant = true;
+      });
+      return { oeil: +(g.player.camera.position.y - g.player.pos.y).toFixed(2), volant };
+    });
+    verifier('au volant, l\'œil est derrière le pare-brise, sous le toit',
+      cockpit.oeil > 0.9 && cockpit.oeil < 1.46, `${cockpit.oeil} bloc au-dessus des pieds`);
+    verifier('et le volant est là, dans l\'habitacle',
+      cockpit.volant, cockpit.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 

@@ -216,8 +216,8 @@ function voitureNeuve() {
   const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
   const c = teintes[Math.floor(Math.random() * teintes.length)];
   g.add(box(1.7, 0.5, 3.4, c, 0, 0.62, 0));                       // la caisse
-  g.add(box(1.4, 0.55, 1.7, c, 0, 1.12, 0.15));                   // le pavillon
-  g.add(box(1.32, 0.42, 1.8, 0x18242e, 0, 1.14, 0.14));           // les vitres
+  g.add(box(1.4, 0.6, 1.7, c, 0, 1.16, 0.15));                    // le pavillon
+  g.add(box(1.32, 0.48, 1.8, 0x18242e, 0, 1.16, 0.14));           // les vitres
   g.add(box(1.5, 0.16, 0.4, 0xf0f0ea, 0, 0.5, -1.65));            // le bouclier
   for (const [sx, sz] of [[-1, -1.1], [1, -1.1], [-1, 1.15], [1, 1.15]]) {
     const roue = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10),
@@ -227,6 +227,25 @@ function voitureNeuve() {
     g.add(roue);
   }
   for (const sx of [-1, 1]) g.add(box(0.3, 0.12, 0.08, 0xfff2c8, sx * 0.55, 0.66, -1.72));  // les phares
+
+  // L'habitacle. On le voit UNIQUEMENT une fois assis dedans : les vitres et
+  // le pavillon sont des boîtes opaques, donc invisibles depuis l'intérieur
+  // (leurs faces regardent dehors) et ils cachent tout ceci depuis l'extérieur.
+  // C'est ce qui donne la vue « derrière le pare-brise » : le capot dans la
+  // couleur de la caisse (le dessus de la boîte existante), un tableau de bord,
+  // le volant, les montants du pare-brise, le rétroviseur et le ciel de toit.
+  const sombre = 0x22262c, noir = 0x14161a;
+  g.add(box(1.3, 0.12, 0.3, sombre, 0, 0.93, -0.6));               // tableau de bord
+  const volant = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.024, 6, 14),
+    new THREE.MeshBasicMaterial({ color: noir }));
+  volant.rotation.x = -0.5;                                        // incliné vers soi
+  volant.position.set(0, 0.98, -0.5);
+  g.add(volant);
+  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.94, -0.56));              // colonne de direction
+  g.add(box(0.3, 0.07, 0.03, noir, 0, 1.34, -0.56));               // rétroviseur central
+  for (const sx of [-1, 1]) g.add(box(0.06, 0.5, 0.06, sombre, sx * 0.6, 1.16, -0.7)); // montants A
+  g.add(box(1.26, 0.06, 0.06, sombre, 0, 1.38, -0.7));             // traverse haute du pare-brise
+  g.add(box(1.26, 0.03, 1.5, 0x2a2e34, 0, 1.42, 0.2));             // ciel de toit
   g.userData.legs = [];                                            // rien ne balance
   return g;
 }
@@ -253,6 +272,11 @@ export const MONTURES = [
   // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
   // dans la nature, seul le garagiste de main.js la gare sur le parc.
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
+  // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
+  // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
+  // entre le capot (0,87) et le toit (1,39), derrière le pare-brise — alors
+  // que l'ancienne formule posait la caméra à 2,6 blocs, au-dessus du toit.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
-    height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4, assise: 1.0 },
+    height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
+    assise: 1.0, oeil: 1.2 },
 ];
