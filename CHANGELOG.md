@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v183 — le cockpit du conducteur, et la voiture remise à l'endroit
+
+**Pourquoi.** Max : « La vue depuis l'intérieur du cockpit de la Bugatti
+n'est pas beau. » Sous ce verdict, l'inventaire des maillages du modèle a
+révélé plus grave : depuis v181 la voiture roulait À L'ENVERS — le
+chargeur alignait le grand axe sur z sans vérifier quel bout est l'avant,
+les phares regardaient l'arrière et, du volant, on contemplait l'aileron.
+Le pare-brise était opaque (son matériau ne s'appelle ni glass ni window),
+et la caméra s'asseyait au milieu de la banquette, dans le réservoir du
+modèle recalé à l'œil sur la voiture à l'envers.
+
+**Ce que ça change.** On s'assied à la place du conducteur, à gauche :
+volant dans l'axe des yeux, bloc-compteurs derrière la jante, planche
+basse sous la ligne du regard, plancher et cloison, ciel de toit à la
+vraie ligne de toit, fenêtres latérales ouvertes — et la rue arrive par
+un pare-brise enfin transparent. Dehors, les phares regardent là où l'on
+va, l'échappement derrière.
+
+**Ce qui le prouve.** Un témoin neuf — l'œil décalé d'un tiers de bloc
+des pieds, la place du conducteur — vérifié rouge sur l'ancien code
+(décalage mesuré : zéro exactement). Les témoins d'habitacle existants
+(œil sous le toit, volant présent, vitres transparentes) restent verts.
+Portail : la voie choisie par l'aiguillage — fumée, monte, carte,
+washington, metro.
+
 ## v182 — la voiture garée ne bouge plus, la marche n'accélère plus
 
 **Pourquoi.** Deux bogues signalés par Max en jouant avec la nouvelle
