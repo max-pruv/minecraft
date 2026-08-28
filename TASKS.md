@@ -21,9 +21,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.
 
-- [ ] **Les trains intervilles sur les vraies lignes** (Eurostar, Shinkansen,
-  AVE…), à monter via le bouton « Monter à bord » existant.
-
 - [ ] **Le tour du monde, approfondissements** — DEUX CENT SOIXANTE-DIX-HUIT
   lieux au registre (v173) : Londres à la main, les autres par la machine.
   La suite est du raffinement : donner à Tokyo, Rome ou Rio la profondeur
@@ -71,6 +68,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v179** — les trains intervilles : six vraies lignes en neuf navettes
+  de gare en gare, ballast, viaduc sur la Manche, le trait sur la carte, et
+  « Monter à bord » pour voyager.
 
 - [x] **v178** — les villes respirent (Londres recalibrée, un lot sur dix en
   jardin de poche dans les 278 villes) et vivent (bus montables, six
