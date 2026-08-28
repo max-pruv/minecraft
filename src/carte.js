@@ -401,9 +401,13 @@ export class Carte {
 
   // --- le fond ---------------------------------------------------------------
 
-  rendreFond() {
+  rendreFond(grossier = false) {
     const { css } = this.taille();
-    const N = Math.max(64, Math.round((css * MARGE) / 2));   // un échantillon pour deux pixels
+    // Pendant un glisser ou un pincement, un échantillon pour quatre pixels :
+    // quatre fois moins de colonnes à calculer, le geste reste fluide sur
+    // tablette. Au repos, la pleine finesse revient en un rendu.
+    const N = Math.max(64, Math.round((css * MARGE) / (grossier ? 4 : 2)));
+    this.fondGrossier = grossier;
     if (this.fond.width !== N) { this.fond.width = N; this.fond.height = N; }
     const ctx = this.fond.getContext('2d');
     const img = ctx.createImageData(N, N);
@@ -423,10 +427,23 @@ export class Carte {
     // voisins, et les recalculer pour chaque point coûterait cinq fois plus.
     const L = N + 2;
     const H = new Float32Array(L * L);
+    // Le cache de colonnes : la hauteur d'une colonne est immuable — c'est le
+    // même chiffre à chaque rendu. Pendant un glisser, la carte se redessine
+    // à chaque image, et l'écran suivant recouvre presque le même monde que
+    // le précédent : on garde donc les hauteurs déjà calculées, et un rendu
+    // qui suit un autre ne paie que la tranche neuve. Le cache se vide quand
+    // il déborde : un tour du monde entier tient dedans sans effort.
+    if (!this.cacheH) this.cacheH = new Map();
+    if (this.cacheH.size > 400000) this.cacheH.clear();
+    const cache = this.cacheH;
     for (let j = -1; j <= N; j++) {
       const wz = Math.floor(z0 + (j + 0.5) * pas);
       for (let i = -1; i <= N; i++) {
-        H[(j + 1) * L + i + 1] = this.world.terrainHeight(Math.floor(x0 + (i + 0.5) * pas), wz);
+        const wx = Math.floor(x0 + (i + 0.5) * pas);
+        const cle = wx * 262144 + wz;
+        let h = cache.get(cle);
+        if (h === undefined) { h = this.world.terrainHeight(wx, wz); cache.set(cle, h); }
+        H[(j + 1) * L + i + 1] = h;
       }
     }
 
@@ -706,9 +723,17 @@ export class Carte {
       || this.fondVue.bpp !== this.vue.bpp
       || this.fondVue.cx !== this.vue.cx
       || this.fondVue.cz !== this.vue.cz;
+    // Tant que la vue bouge, on note l'instant : c'est lui qui décide si on
+    // rend grossier (geste en cours) ou fin (la carte s'est posée).
+    if (perime) this.vueBougeaitA = maintenant;
     // Un fond périmé attend son tour ; un fond absent, non — sans quoi la
     // première image après un changement de taille n'aurait rien à étirer.
-    if (perime && (!this.fondVue || maintenant - this.dernierRendu >= RENDU_MS)) this.rendreFond();
+    if (perime && (!this.fondVue || maintenant - this.dernierRendu >= RENDU_MS)) {
+      this.rendreFond(maintenant - (this.vueBougeaitA || 0) < 350 && !!this.fondVue);
+    } else if (!perime && this.fondGrossier && maintenant - this.dernierRendu >= RENDU_MS
+      && maintenant - (this.vueBougeaitA || 0) >= 350) {
+      this.rendreFond(false);        // le geste est fini : la finesse revient
+    }
 
     const ctx = this.canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

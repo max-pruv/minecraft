@@ -417,6 +417,34 @@ const position = (p) => p.evaluate(() => ({
       && bornes.cx <= bornes.monde.x1 + 0.001,
       JSON.stringify(bornes));
 
+    // --- LA CARTE NE LAGUE PLUS ---------------------------------------------
+    //
+    // Max : « la carte lag un peu ». Les cinquante grandes avaient porté le
+    // coût d'une colonne à ~250 zones et 46 villes interrogées une à une :
+    // un fond entier coûtait jusqu'à une seconde, rejoué à chaque geste. Deux
+    // index en cases et un cache de colonnes plus tard, on jure ici sur les
+    // millisecondes : le fond entier au dézoom monde, D'ABORD SANS CACHE
+    // (le vrai premier rendu), doit tenir sous 400 ms sur la machine du banc
+    // — l'iPad est plus lent, mais c'est le même ordre — et le rendu suivant,
+    // cache chaud, sous 150 ms.
+    const vitesse = await tab.evaluate(() => {
+      const c2 = window.__carte;
+      c2.toutVoir();
+      c2.cacheH = new Map();                       // premier rendu honnête
+      const t0 = performance.now();
+      c2.rendreFond();
+      const froid = performance.now() - t0;
+      c2.fondVue = null;
+      const t1 = performance.now();
+      c2.rendreFond();
+      const chaud = performance.now() - t1;
+      return { froid: Math.round(froid), chaud: Math.round(chaud) };
+    });
+    verifier('le fond de carte entier se rend vite, même à froid',
+      vitesse.froid < 400, `${vitesse.froid} ms à froid (borne 400)`);
+    verifier('et le rendu suivant, cache chaud, est presque gratuit',
+      vitesse.chaud < 150, `${vitesse.chaud} ms à chaud (borne 150)`);
+
     // --- le bas de Manhattan -------------------------------------------------
     //
     // Le bas de l'île tenait en quinze blocs : de la pointe de Battery à la 14e

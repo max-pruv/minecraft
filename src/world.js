@@ -960,10 +960,17 @@ const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 // ville trente fois trop grande pour l'échelle de la carte (Washington est
 // bâtie à 48 blocs/km sur une carte à 1,3 bloc/km) déborde forcément sur la
 // géographie voisine — c'est assumé depuis v162, la côte s'écarte autour.
-let zonesATerre = null;
+// DEUX CENT CINQUANTE ZONES, ET CHAQUE COLONNE DE MER LES INTERROGEAIT
+// TOUTES. Les cinquante grandes ont porté la liste à ~250 entrées (142
+// monuments à elles seules), et la carte, qui rejoue des dizaines de
+// milliers de colonnes par rendu, s'est mise à laguer. Une zone tient dans
+// un disque borné : on la range dans les cases de 512 blocs qu'elle touche,
+// et une colonne ne regarde plus que sa case — presque toujours vide.
+let zonesIndex = null;
+const CASE_ZONE = 512;
 function dansUneZoneATerre(x, z) {
-  if (!zonesATerre) {
-    zonesATerre = [
+  if (!zonesIndex) {
+    const zones = [
       { x: 0, z: 0, r: 320 },                    // le continent du départ
       // +24 et pas davantage : les fondus de villes font quatorze blocs, et
       // une marge de +60 faisait déborder le renflement de Londres jusque sur
@@ -973,8 +980,20 @@ function dansUneZoneATerre(x, z) {
       ...PLACES.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
       ...LANDMARKS.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
     ];
+    zonesIndex = new Map();
+    for (const zone of zones) {
+      for (let cx = Math.floor((zone.x - zone.r) / CASE_ZONE); cx <= Math.floor((zone.x + zone.r) / CASE_ZONE); cx++) {
+        for (let cz = Math.floor((zone.z - zone.r) / CASE_ZONE); cz <= Math.floor((zone.z + zone.r) / CASE_ZONE); cz++) {
+          const cle = cx * 100000 + cz;
+          if (!zonesIndex.has(cle)) zonesIndex.set(cle, []);
+          zonesIndex.get(cle).push(zone);
+        }
+      }
+    }
   }
-  for (const zone of zonesATerre) {
+  const pres = zonesIndex.get(Math.floor(x / CASE_ZONE) * 100000 + Math.floor(z / CASE_ZONE));
+  if (!pres) return false;
+  for (const zone of pres) {
     if (Math.hypot(x - zone.x, z - zone.z) <= zone.r) return true;
   }
   return false;
