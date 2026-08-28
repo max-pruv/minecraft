@@ -209,7 +209,23 @@ const VRAIES_KM = [
             }
           }
           const cat = CAT[m.nom] ? monumentBati(CAT[m.nom]) : null;
-          monuments.push({ nom: m.nom, ville: f.cle, hMax, attendu: cat ? cat.emprise.h : 3 });
+          // LA FLÈCHE SE VÉRIFIE À SON ADRESSE EXACTE — la leçon de v164,
+          // réapprise ici : l'échantillonnage de deux en deux ratait le
+          // fleuron du Taj, large d'un bloc, et l'annonçait tronqué à 38/41.
+          // On demande au modèle OÙ est son point le plus haut, et on lit
+          // cette colonne-là.
+          let fleche = !cat;
+          if (cat) {
+            const e2 = cat.emprise;
+            const ccx = Math.round((e2.minX + e2.maxX) / 2);
+            const ccz = Math.round((e2.minZ + e2.maxZ) / 2);
+            let sommet = cat.blocs[0];
+            for (const bl of cat.blocs) if (bl[1] > sommet[1]) sommet = bl;
+            const fx = x + (sommet[0] - ccx), fz = z + (sommet[2] - ccz);
+            const solF = w.terrainHeight(fx, fz);
+            fleche = w.getBlock(fx, solF + (sommet[1] - e2.minY) + 1, fz) !== 0;
+          }
+          monuments.push({ nom: m.nom, ville: f.cle, hMax, fleche, attendu: cat ? cat.emprise.h : 3 });
         }
         const e = EAU_TEMOIN[f.cle];
         if (e) eaux.push({ ville: f.cle, eau: w.terrainHeight(f.ancre.x + e[0], f.ancre.z + e[1]) < WATER_LEVEL });
@@ -222,7 +238,7 @@ const VRAIES_KM = [
       tour.monuments.length === 22 && couches.length === 0,
       couches.map((m) => `${m.nom} (${m.ville}) : ${m.hMax}`).join(' · ')
         || `${tour.monuments.length} monuments debout`);
-    const tronques = tour.monuments.filter((m) => m.attendu > 3 && m.hMax < m.attendu - 2);
+    const tronques = tour.monuments.filter((m) => m.attendu > 3 && !m.fleche);
     verifier('et les huit grands du catalogue montent jusqu\'à leur vraie hauteur',
       tronques.length === 0,
       tronques.map((m) => `${m.nom} : ${m.hMax}/${m.attendu}`).join(' · ')
