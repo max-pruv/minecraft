@@ -58,7 +58,8 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
-import { positionDe } from './mondes.js';
+import { positionDe, cielDe } from './mondes.js';
+import { surTerreReelle, reliefReel } from './terre.js';
 
 export const CHUNK = 16;
 
@@ -909,6 +910,53 @@ const SF_PASTELS = [15, 9, 29, 28, 16, 3, 4, 7].map((ci) => DECOR_START + ci * 1
 // Nice: warm Mediterranean facades (ochre, orange, rose, cream, sand).
 const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 
+// --- la vraie Terre : océans et grandes chaînes -------------------------------
+//
+// Max : « quand je regarde la carte, je ne reconnais pas la vraie carte du
+// monde ». Chaque colonne de terrain demande donc au planisphère (src/terre.js)
+// au-dessus de quel point du globe elle se trouve : la mer s'y creuse, les
+// Alpes s'y lèvent, le Grand Canyon s'y taille.
+//
+// TOUT CE QUI EST BÂTI EST À L'ABRI. Les villes, les domaines, les monuments
+// et le point d'apparition gardent leur sol quoi qu'en dise l'océan : une
+// ville trente fois trop grande pour l'échelle de la carte (Washington est
+// bâtie à 48 blocs/km sur une carte à 1,3 bloc/km) déborde forcément sur la
+// géographie voisine — c'est assumé depuis v162, la côte s'écarte autour.
+let zonesATerre = null;
+function dansUneZoneATerre(x, z) {
+  if (!zonesATerre) {
+    zonesATerre = [
+      { x: 0, z: 0, r: 320 },                    // le continent du départ
+      ...CITIES.map((c) => ({ x: c.x, z: c.z, r: c.r + 60 })),
+      ...PLACES.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
+      ...LANDMARKS.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
+    ];
+  }
+  for (const zone of zonesATerre) {
+    if (Math.hypot(x - zone.x, z - zone.z) <= zone.r) return true;
+  }
+  return false;
+}
+
+function hauteurTerre(x, z, h) {
+  const ciel = cielDe(x, z);
+  // Une côte au cordeau fait maquette : un léger tremblé la rend naturelle,
+  // déterministe pour que deux tablettes engendrent le même rivage.
+  const lat = ciel.lat + 0.05 * Math.sin(x * 0.021 + z * 0.013) + 0.02 * Math.sin(x * 0.11);
+  const lon = ciel.lon + 0.05 * Math.sin(z * 0.019 - x * 0.011) + 0.02 * Math.sin(z * 0.13);
+  if (!surTerreReelle(lat, lon)) {
+    if (dansUneZoneATerre(x, z)) return h;
+    const fond = WATER_LEVEL - 6 + Math.sin(x * 0.05) * 1.5 + Math.sin(z * 0.043) * 1.5;
+    return Math.min(h, Math.round(fond));
+  }
+  // à terre : le relief réel s'ajoute, plafonné sous le toit du terrain
+  const delta = reliefReel(lat, lon);
+  if (delta && !dansUneZoneATerre(x, z)) {
+    h = Math.min(SOMMET_TERRAIN - 2, Math.max(2, Math.round(h + delta)));
+  }
+  return h;
+}
+
 export class World {
   constructor() {
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
@@ -930,16 +978,22 @@ export class World {
     const hills = fbm(x * 0.016, z * 0.016, SEED);
     let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
 
-    // seas: low continentalness sinks the land, but never near spawn
-    // (pushed far out so the playable continent is ~8x larger)
-    const distO = Math.hypot(x, z);
-    const oceanFactor = Math.min(1, Math.max(0, (distO - 260) / 120));
-    const continent = fbm(x * 0.005, z * 0.005, SEED + 501);
-    if (continent < 0.45) h -= (0.45 - continent) * 130 * oceanFactor;
+    // LA MER DE BRUIT A VÉCU. Avant le planisphère, un bruit de
+    // « continentalité » creusait des mers au hasard passé 260 blocs du
+    // départ — c'était la seule façon d'avoir des côtes. Maintenant que les
+    // océans sont les VRAIS, ces mers aléatoires tombaient au milieu de la
+    // France et l'empêchaient de ressembler à la France. La mer vient du
+    // planisphère (hauteurTerre, plus bas), et de lui seul ; les lacs, eux,
+    // restent — la France a des lacs.
 
     // lakes: small pockets carved below water level
     const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
     if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
+
+    // La vraie Terre : les océans du planisphère et les grandes chaînes.
+    // Après les lacs — la mer a le dernier mot sur le bruit — et avant les
+    // villes, qui gardent la main sur leur propre relief.
+    h = hauteurTerre(x, z, h);
 
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
