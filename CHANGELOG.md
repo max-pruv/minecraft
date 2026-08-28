@@ -36,7 +36,9 @@ volant dans l'axe des yeux, bloc-compteurs derrière la jante, planche
 basse sous la ligne du regard, plancher et cloison, ciel de toit à la
 vraie ligne de toit, fenêtres latérales ouvertes — et la rue arrive par
 un pare-brise enfin transparent. Dehors, les phares regardent là où l'on
-va, l'échappement derrière.
+va, l'échappement derrière. Et sur second verdict de Max (« simplifie »,
+capture iPhone où la jante mangeait l'écran en portrait) : volant petit
+et bas qu'on regarde par-dessus, planche nue, compteurs amincis.
 
 **Ce qui le prouve.** Un témoin neuf — l'œil décalé d'un tiers de bloc
 des pieds, la place du conducteur — vérifié rouge sur l'ancien code
