@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v182 — la voiture garée ne bouge plus, la marche n'accélère plus
+
+**Pourquoi.** Deux bogues signalés par Max en jouant avec la nouvelle
+voiture. « Les Bugatti bougent de manière hyper brusque… elles font que
+bouger, tac, tac, tac » : une voiture garée héritait de la vie d'un animal —
+errance qui claque le cap d'un coup toutes les quelques secondes, sursaut
+contre les obstacles, fuite quand on la frappe. Et « on est à pied et pas en
+vol, la vitesse ne doit pas accélérer » : la rampe de vitesse du vol
+continuait de monter après l'atterrissage, parce qu'en vol le sol ne se
+détecte pas par la chute — on marchait à 88 blocs par seconde. En chemin, un
+troisième défaut, invisible celui-là : la suite de fumée accusait un onglet
+de monuments disparu depuis v176 — huit versions au rouge sans que personne
+ne le voie, parce que les barrières rejouaient des suites choisies à la main
+au lieu du portail entier.
+
+**Ce que ça change.** La voiture garée est parfaitement immobile : elle ne
+bouge que quand un enfant la conduit. La marche redevient de la marche,
+partout — la rampe ne se construit qu'en l'air. Et le portail redevient
+digne de confiance : la fumée éprouve la bibliothèque là où elle vit
+vraiment (l'inventaire, onglet Bâtiments), et la règle « le portail, c'est
+`npm test`, jamais une liste de suites » entre dans `CLAUDE.md`.
+
+**Ce qui le prouve.** Trois témoins neufs, chacun vérifié rouge sur
+l'ancien code : la voiture garée ne dérive ni ne pivote sur cinq secondes de
+jeu ; après une longue montée en vol, la marche reste sous 9 blocs par
+seconde (l'ancien code : 88) ; la fumée ouvre l'inventaire, clique
+Bâtiments et pose un monument comme le ferait l'enfant. Portail complet
+vert — toutes les suites.
+
 ## v181 — réalisme v2, deuxième acte : les routes, les façades partout, et LA voiture
 
 **Pourquoi.** Trois verdicts de Max, capture à l'appui à chaque fois. « Les
