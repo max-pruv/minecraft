@@ -247,6 +247,92 @@ const peintresArchi = {
     }
     for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 12, 184, 178, 166);
   },
+// textures.js (graines mulberry 7013 et suivantes, la 7012 est MUR_NU).
+
+  // Le pan de bois : le torchis crème quadrillé de poutres brunes — montants,
+  // sablières, et la croix de Saint-André qui contrevente. C'est la croix
+  // qu'on reconnaît d'Alsace en Normandie.
+  [ARCHI_TILE.COLOMBAGE](ctx, ox, oy) {
+    const rng = mulberry32(7013);
+    noisyFill(ctx, ox, oy, [228, 218, 196], 6, rng);
+    const bois = [92, 62, 38];
+    for (let y = 0; y < TILE_PX; y++) { px(ctx, ox, oy, 0, y, ...bois); px(ctx, ox, oy, 15, y, ...bois); }
+    for (let x = 0; x < TILE_PX; x++) { px(ctx, ox, oy, x, 0, ...bois); px(ctx, ox, oy, x, 15, ...bois); }
+    for (let k = 1; k < 15; k++) {
+      px(ctx, ox, oy, k, k, ...bois); px(ctx, ox, oy, 15 - k, k, ...bois);
+      if (k < 14) { px(ctx, ox, oy, k + 1, k, 108, 76, 48); px(ctx, ox, oy, 14 - k, k, 108, 76, 48); }
+    }
+  },
+
+  // Le grès brun de Brooklyn : des blocs chauds, presque chocolat, aux joints
+  // fins — et cette légère irrégularité de teinte qui fait la pierre vraie.
+  [ARCHI_TILE.GRES_BRUN](ctx, ox, oy) {
+    const rng = mulberry32(7014);
+    noisyFill(ctx, ox, oy, [122, 82, 62], 9, rng);
+    for (let y = 0; y < TILE_PX; y += 4) {
+      for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, 96, 62, 46);
+    }
+    for (let y = 0; y < TILE_PX; y += 4) {
+      const dec = ((y / 4) & 1) * 4;
+      for (let x = dec; x < TILE_PX; x += 8) for (let k = 1; k < 4; k++) px(ctx, ox, oy, x, y + k, 100, 66, 50);
+    }
+  },
+
+  // Le zellige : la mosaïque marocaine — étoiles bleues, blanches et vertes
+  // taillées au petit fer. On pose le motif en losanges imbriqués.
+  [ARCHI_TILE.ZELLIGE](ctx, ox, oy) {
+    const rng = mulberry32(7015);
+    noisyFill(ctx, ox, oy, [238, 234, 222], 4, rng);
+    const teintes = [[38, 84, 148], [58, 128, 108], [222, 216, 202], [180, 140, 58]];
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const u = (x + y) & 7, v = (x - y + 16) & 7;
+        if (u < 2 && v < 2) px(ctx, ox, oy, x, y, ...teintes[0]);
+        else if (u >= 4 && u < 6 && v >= 4 && v < 6) px(ctx, ox, oy, x, y, ...teintes[1]);
+        else if ((u === 3 || v === 3) && ((x ^ y) & 1)) px(ctx, ox, oy, x, y, ...teintes[3]);
+      }
+    }
+  },
+
+  // Le vitrail : des losanges de verre coloré sertis de plomb sombre. Vu du
+  // dehors il est profond, vu du dedans il s'allume — ici, la mosaïque suffit.
+  [ARCHI_TILE.VITRAIL](ctx, ox, oy) {
+    const rng = mulberry32(7016);
+    const teintes = [[172, 40, 52], [40, 78, 156], [196, 160, 48], [52, 122, 74], [124, 52, 132]];
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const cel = ((x >> 2) * 5 + (y >> 2) * 3) % teintes.length;
+        const t = teintes[cel];
+        const plomb = (x & 3) === 0 || (y & 3) === 0;
+        if (plomb) px(ctx, ox, oy, x, y, 44, 42, 46);
+        else px(ctx, ox, oy, x, y, t[0] + ((rng() * 22) | 0), t[1] + ((rng() * 22) | 0), t[2] + ((rng() * 22) | 0));
+      }
+    }
+  },
+
+  // Le shoji : le panneau coulissant japonais — papier lumineux sur son
+  // treillis de bois clair, trois travées par vantail.
+  [ARCHI_TILE.SHOJI](ctx, ox, oy) {
+    const rng = mulberry32(7017);
+    noisyFill(ctx, ox, oy, [240, 236, 222], 3, rng);
+    const bois = [136, 104, 66];
+    for (const x of [0, 5, 10, 15]) for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, ...bois);
+    for (const y of [0, 5, 10, 15]) for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, y, ...bois);
+  },
+
+  // La tuile grise d'Asie : les rangs ronds qui se recouvrent, l'ombre sous
+  // chaque rang — le toit de Kyoto et de Séoul.
+  [ARCHI_TILE.TUILE_GRISE](ctx, ox, oy) {
+    const rng = mulberry32(7018);
+    noisyFill(ctx, ox, oy, [124, 128, 134], 7, rng);
+    for (let y = 0; y < TILE_PX; y += 4) {
+      for (let x = 0; x < TILE_PX; x++) {
+        px(ctx, ox, oy, x, y, 88, 92, 98);
+        const bombe = 2 - Math.abs(((x + (y & 4 ? 4 : 0)) % 8) - 4) / 2;
+        if (bombe > 1 && y + 2 < TILE_PX) px(ctx, ox, oy, x, y + 2, 152, 156, 162);
+      }
+    }
+  },
 };
 
 const painters = {

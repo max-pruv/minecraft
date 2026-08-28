@@ -341,6 +341,15 @@ export const ARCHI = {
   PAVE: 629,           // les pavés de Paris, posés en éventail
   BORDURE: 630,        // la bordure de trottoir en granit
   MUR_NU: 631,         // le mur aveugle : pignon mitoyen, fond de cour
+  // v176 — les blocs des nouvelles familles de bâtiments. On les AJOUTE en
+  // fin de registre : ARCHI_TILE se déduit de l'ordre des clés, et insérer
+  // au milieu décalerait toutes les tuiles existantes.
+  COLOMBAGE: 632,      // pan de bois : torchis crème et croix de Saint-André
+  GRES_BRUN: 633,      // le grès brun des brownstones de Brooklyn
+  ZELLIGE: 634,        // la mosaïque marocaine, étoiles bleues et vertes
+  VITRAIL: 635,        // losanges de verre coloré sertis de plomb
+  SHOJI: 636,          // le panneau japonais : papier sur treillis de bois
+  TUILE_GRISE: 637,    // les rangs ronds des toits de Kyoto et de Séoul
 };
 
 const ARCHI_NOMS = {
@@ -356,6 +365,12 @@ const ARCHI_NOMS = {
   PAVE: 'Pavé parisien',
   BORDURE: 'Bordure de granit',
   MUR_NU: 'Mur mitoyen',
+  COLOMBAGE: 'Pan de bois',
+  GRES_BRUN: 'Grès brun',
+  ZELLIGE: 'Zellige',
+  VITRAIL: 'Vitrail',
+  SHOJI: 'Panneau shoji',
+  TUILE_GRISE: 'Tuile grise',
 };
 
 // L'ordre de cet objet fixe l'ordre des tuiles : le premier bloc prend la
@@ -368,7 +383,8 @@ for (const [nom, id] of Object.entries(ARCHI)) {
   // Le dessus et le dessous ne portent pas la façade : un immeuble vu d'en
   // haut n'est pas une fenêtre. C'est la corniche qui fait la tranche.
   const dessus = (nom === 'MANSARDE' || nom === 'ZINC_LISSE') ? ARCHI_TILE.ZINC_LISSE
-    : (nom === 'PAVE' || nom === 'BORDURE') ? tuile
+    // Le zellige est un sol, la tuile grise un toit : leur dessus, c'est eux.
+    : (nom === 'PAVE' || nom === 'BORDURE' || nom === 'ZELLIGE' || nom === 'TUILE_GRISE') ? tuile
       : ARCHI_TILE.CORNICHE;
   BLOCK_INFO[id] = {
     name: ARCHI_NOMS[nom],

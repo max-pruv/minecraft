@@ -6,6 +6,8 @@ import { PARIS as PARIS_ANCRE } from './paris.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
+import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
+import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne } from './washington.js';
@@ -3906,6 +3908,113 @@ function invCell(id) {
   return cell;
 }
 
+// --- l'onglet Bâtiments : la bibliothèque vit dans le + ----------------------
+//
+// Max : « les bâtiments, je voudrais que tu les déplaces dans le bouton plus,
+// là où tu as les blocs, la déco et les meubles. » Chaque bâtiment se montre
+// en VIGNETTE — sa façade sud, dessinée bloc par bloc aux couleurs de
+// l'atlas — et se pose devant soi d'un tap. Les familles gardent leur bouton
+// 🔀 : des centaines de modèles atteignables sans liste de centaines de
+// lignes.
+
+// La couleur moyenne d'une tuile de l'atlas, calculée une fois : c'est elle
+// qui peint les vignettes, donc un bâtiment en vignette a VRAIMENT les
+// couleurs qu'il aura posé.
+const couleursTuile = new Map();
+function couleurBloc(id) {
+  const info = BLOCK_INFO[id];
+  if (!info || info.prop) return [190, 190, 190];
+  const tile = Array.isArray(info.tiles) ? info.tiles[1] : info.tiles;
+  if (!couleursTuile.has(tile)) {
+    const cx = (tile % ATLAS_COLS) * TILE_PX, cy = Math.floor(tile / ATLAS_COLS) * TILE_PX;
+    const d = atlasCanvas.getContext('2d').getImageData(cx, cy, TILE_PX, TILE_PX).data;
+    let r = 0, g = 0, b = 0;
+    for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+    const n = d.length / 4;
+    couleursTuile.set(tile, [(r / n) | 0, (g / n) | 0, (b / n) | 0]);
+  }
+  return couleursTuile.get(tile);
+}
+
+// La façade sud d'un bâtiment, en vignette : pour chaque colonne (x, y) on
+// dessine le bloc le plus proche du regard. C'est une élévation d'architecte,
+// pas un rendu — et c'est exactement ce qu'il faut pour choisir.
+function vignetteBati(m, taille = 68) {
+  const face = new Map();
+  for (const [x, y, z, id] of m.blocs) {
+    const k = x * 4096 + y;
+    const cur = face.get(k);
+    if (!cur || z < cur.z) face.set(k, { z, id });
+  }
+  const cv = document.createElement('canvas');
+  cv.width = taille; cv.height = taille;
+  const ctx = cv.getContext('2d');
+  const l = m.emprise.maxX - m.emprise.minX + 1;
+  const h = m.emprise.maxY - m.emprise.minY + 1;
+  const ech = Math.min(taille / l, taille / h);
+  const ox = (taille - l * ech) / 2, oy = (taille - h * ech) / 2;
+  for (const [k, v] of face) {
+    const x = Math.floor(k / 4096), y = k - x * 4096;
+    const [r, g, b] = couleurBloc(v.id);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(ox + (x - m.emprise.minX) * ech, oy + (h - 1 - (y - m.emprise.minY)) * ech,
+      Math.ceil(ech), Math.ceil(ech));
+  }
+  return cv;
+}
+
+// Le modèle que chaque famille montre en ce moment — le 🔀 passe au suivant.
+const modeleInv = {};
+
+function titreInv(texte) {
+  const t = document.createElement('div');
+  t.textContent = texte;
+  t.style.cssText = 'grid-column:1/-1;color:#9fd8e8;font-weight:600;margin-top:6px';
+  return t;
+}
+
+function celluleBati(m, sousTitre, surRemplace) {
+  const cell = document.createElement('button');
+  cell.className = 'inv-cell inv-bat';
+  cell.style.flexDirection = 'column';
+  cell.title = m.nom;
+  const cv = vignetteBati(m);
+  cv.style.cssText = 'width:68px;height:68px;image-rendering:pixelated';
+  cell.appendChild(cv);
+  const nom = document.createElement('div');
+  nom.textContent = `${m.emoji} ${m.nom}`;
+  nom.style.cssText = 'font-size:11px;color:#dfe6f2;margin-top:4px;text-align:center';
+  cell.appendChild(nom);
+  const petit = document.createElement('div');
+  petit.textContent = sousTitre;
+  petit.style.cssText = 'font-size:10px;color:#8894b0';
+  cell.appendChild(petit);
+  if (surRemplace) {
+    const melanger = document.createElement('span');
+    melanger.textContent = '🔀';
+    melanger.title = 'Voir le modèle suivant';
+    melanger.style.cssText = 'position:absolute;top:4px;right:6px;cursor:pointer';
+    melanger.addEventListener('click', (e) => { e.stopPropagation(); surRemplace(cell); });
+    cell.style.position = 'relative';
+    cell.appendChild(melanger);
+  }
+  cell.addEventListener('click', () => {
+    closeInventory(true);
+    fun.poserBati(m);
+  });
+  return cell;
+}
+
+function celluleFamille(f) {
+  const n = ((modeleInv[f.id] || 0) % f.variantes + f.variantes) % f.variantes;
+  const m = batimentVariante(f.id, n);
+  return celluleBati(m, `modèle ${n + 1}/${f.variantes} · ${m.emprise.l}×${m.emprise.p}×${m.emprise.h}`,
+    (cell) => {
+      modeleInv[f.id] = n + 1;
+      cell.replaceWith(celluleFamille(f));
+    });
+}
+
 function buildInventory() {
   const grid = document.getElementById('inv-grid');
   const pager = document.getElementById('inv-pager');
@@ -3914,8 +4023,39 @@ function buildInventory() {
     b.classList.toggle('active', b.dataset.tab === invTab));
 
   pager.style.display = 'none';
+  document.getElementById('inv-title').textContent = invTab === 'batiments'
+    ? `🏛️ ${MONUMENTS.length + NB_BATIMENTS} bâtiments — choisis, il se pose devant toi`
+    : '🎒 Choisis un bloc pour la case sélectionnée';
+  grid.style.gridTemplateColumns = invTab === 'batiments'
+    ? 'repeat(auto-fill, minmax(108px, 1fr))' : '';
   if (invTab === 'blocks') {
     for (const id of PLACEABLE_BLOCKS) grid.appendChild(invCell(id));
+    return;
+  }
+  if (invTab === 'batiments') {
+    // Les monuments célèbres d'abord, ville par ville, puis les familles —
+    // le tout par petits paquets d'images : bâtir six cents modèles d'un
+    // coup gèlerait l'ouverture.
+    const lots = [];
+    for (const [ville, liste] of MONUMENTS_PAR_VILLE()) {
+      lots.push(() => grid.appendChild(titreInv(ville)));
+      for (const def of liste) {
+        lots.push(() => {
+          const m = monumentBati(def.id);
+          if (m) grid.appendChild(celluleBati({ ...m, nom: def.nom, emoji: def.emoji }, `${m.emprise.h} blocs de haut`));
+        });
+      }
+    }
+    lots.push(() => grid.appendChild(titreInv(`Bâtiments de ville — ${NB_BATIMENTS} modèles, 🔀 pour changer`)));
+    for (const f of FAMILLES) lots.push(() => grid.appendChild(celluleFamille(f)));
+    const myToken = ++invBuildToken;
+    let index = 0;
+    const paquet = () => {
+      if (myToken !== invBuildToken) return;
+      for (let n = 0; n < 4 && index < lots.length; n++, index++) lots[index]();
+      if (index < lots.length) requestAnimationFrame(paquet);
+    };
+    paquet();
     return;
   }
   // decor & furniture tabs: every item, appended in rAF batches so opening

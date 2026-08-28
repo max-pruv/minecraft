@@ -23,10 +23,14 @@ const FLY_SPEED = 11;
 // vitesse de croisière : Paris-Rome se survole en une demi-minute au lieu
 // de deux. Un petit saut de toit en toit reste précis : les trois premières
 // secondes gardent l'allure de toujours, et se poser remet tout à zéro.
-const FLY_ELAN_APRES = 3;   // secondes de vol continu avant l'élan
+// Réglé DEUX fois sur verdict de Max : la première rampe (un cran par six
+// secondes, plafond ×6 atteint à vingt-sept) lui semblait encore molle —
+// « j'expect une augmentation progressive de la vitesse plus rapide ». La
+// montée se fait donc en dix-sept secondes, et va plus haut.
+const FLY_ELAN_APRES = 2;   // secondes de vol continu avant l'élan
 const FLY_ELAN = 2;         // multiplicateur au moment de l'élan
-const FLY_CROISIERE = 6;    // multiplicateur maximal (66 blocs/s)
-const FLY_MONTEE = 6;       // secondes de vol pour gagner un cran (+×1)
+const FLY_CROISIERE = 8;    // multiplicateur maximal (88 blocs/s)
+const FLY_MONTEE = 2.5;     // secondes de vol pour gagner un cran (+×1)
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
 

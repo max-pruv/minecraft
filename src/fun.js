@@ -7,8 +7,7 @@
 import * as THREE from 'three';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
-import { MONUMENTS, monumentBati, MONUMENTS_PAR_VILLE } from './monuments.js';
-import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
+import { monumentBati } from './monuments.js';
 
 const BAG_KEY = 'web-minecraft-bag-v1';
 const RECORDS_KEY = 'web-minecraft-records-v1';
@@ -162,7 +161,6 @@ export function initFun(ctx) {
       <button class="fun-tab" data-t="quest">📜 Quête</button>
       <button class="fun-tab" data-t="sign">🪧 Panneau</button>
       <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
-      <button class="fun-tab" data-t="monuments">🏛️ Bâtiments</button>
       <button class="fun-tab" data-t="records">🏆 Records</button>
       <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
       <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
@@ -979,82 +977,7 @@ export function initFun(ctx) {
     panel.style.display = 'none';
   }
 
-  // Quel modèle chaque famille propose en ce moment. Recliquer sur « Poser »
-  // donne le suivant : c'est ce qui rend trois cents bâtiments atteignables
-  // sans jamais afficher une liste de trois cents lignes — illisible à sept ans.
-  const modeleCourant = {};
-
-  function renderBatiments() {
-    const t = document.createElement('div');
-    t.className = 'fun-note';
-    t.style.cssText = 'margin-top:14px;color:#ffd166;font-weight:600';
-    t.textContent = `Bâtiments de ville — ${NB_BATIMENTS} modèles`;
-    tabBody.appendChild(t);
-    const aide = document.createElement('div');
-    aide.className = 'fun-note';
-    aide.textContent = 'Chaque famille a des dizaines de modèles : reclique pour voir le suivant.';
-    tabBody.appendChild(aide);
-
-    for (const f of FAMILLES) {
-      const n = modeleCourant[f.id] || 0;
-      const b = batimentVariante(f.id, n);
-      const row = document.createElement('div');
-      row.className = 'fun-row';
-      row.innerHTML = `<span>${f.emoji} ${f.nom}<br>`
-        + `<small style="color:#8894b0">modèle ${n + 1} sur ${f.variantes}`
-        + ` · ${b ? `${b.emprise.l}×${b.emprise.p}, ${b.emprise.h} blocs de haut` : ''}</small></span>`;
-      const suivant = document.createElement('button');
-      suivant.textContent = '🔀';
-      suivant.title = 'Voir le modèle suivant';
-      suivant.addEventListener('click', () => {
-        modeleCourant[f.id] = (n + 1) % f.variantes;
-        renderTab();
-      });
-      const poser = document.createElement('button');
-      poser.textContent = 'Poser';
-      poser.addEventListener('click', () => poserBati(batimentVariante(f.id, n)));
-      row.appendChild(suivant);
-      row.appendChild(poser);
-      tabBody.appendChild(row);
-    }
-  }
-
-  function renderMonuments() {
-    const villes = MONUMENTS_PAR_VILLE();
-    let html = `<h3>🏛️ Bâtiments</h3>
-      <div class="fun-note">Choisis un bâtiment : il se pose devant toi, à sa vraie
-      forme. ${MONUMENTS.length + NB_BATIMENTS} en tout.</div>
-      <div class="fun-note" style="margin-top:10px;color:#9fd8e8;font-weight:600">
-      Monuments célèbres — ${MONUMENTS.length}</div>`;
-    tabBody.innerHTML = html;
-    for (const [ville, liste] of villes) {
-      const titre = document.createElement('div');
-      titre.className = 'fun-note';
-      titre.style.cssText = 'margin-top:10px;color:#9fd8e8;font-weight:600';
-      titre.textContent = ville;
-      tabBody.appendChild(titre);
-      for (const def of liste) {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        // La taille se lit sur le monument déjà bâti — c'est le vrai chiffre,
-        // pas une estimation qui dériverait au premier changement de forme.
-        const bati = monumentBati(def.id);
-        const h = bati ? Math.round(bati.emprise.h * def.metresParBloc) : 0;
-        row.innerHTML = `<span>${def.emoji} ${def.nom}<br>`
-          + `<small style="color:#8894b0">${bati ? bati.emprise.h : '?'} blocs de haut`
-          + ` · ${h} m en vrai</small></span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Poser';
-        b.addEventListener('click', () => poserMonument(def.id));
-        row.appendChild(b);
-        tabBody.appendChild(row);
-      }
-    }
-    renderBatiments();
-  }
-
   function renderTab() {
-    if (currentTab === 'monuments') return renderMonuments();
     if (currentTab === 'craft') {
       let html = `<h3>🛠️ Atelier</h3><div class="fun-note">Sac : ${bagSummary()}</div>
         <div class="fun-note">🍖 Garde-manger : ${ctx.getMeat()} viandes</div>`;
@@ -1680,6 +1603,11 @@ export function initFun(ctx) {
     onLeave,
     attachNet,
     ouvrirOnglet,
+    // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
+    // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
+    // lot réseau — reste ici : c'est fun qui connaît le monde et le réseau.
+    poserBati,
+    poserMonument,
     decoratePlayersPanel,
     onBlockPlaced() {
       records.blocks++;

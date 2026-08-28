@@ -18,11 +18,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
   l'étaler pour de bon.
 
-- [ ] **L'onglet Bâtiments dans le +** (demande de Max) — la bibliothèque
-  déménage de la pilule 🏛️ vers l'inventaire (blocs / déco / meubles /
-  bâtiments), et s'enrichit de trois cents modèles très documentés — familles
-  nouvelles (colombages, brownstone, pagode, riad, gothique…), blocs
-  d'architecture neufs si besoin.
+- [ ] **Les villes vivantes ET aérées** (verdicts de Max, captures à
+  l'appui) — « too packed » sur Londres : des places, des squares, des cours,
+  des dents creuses ; et « much more life » : des bus, des métros dans les
+  grandes villes générées, des chiens, plus de passants et de voitures.
+
+- [ ] **Les calottes polaires** (bug signalé par Max) — les bandes arctique
+  et antarctique du planisphère se rendent en campagne verte, au sol comme
+  sur la carte : passer en neige et glace, et peindre la carte en blanc.
 
 - [ ] **Les trains intervilles sur les vraies lignes** (Eurostar, Shinkansen,
   AVE…), à monter via le bouton « Monter à bord » existant.
@@ -74,6 +77,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v176** — l'onglet 🏛️ Bâtiments dans le + (601 modèles, vignettes en
+  élévation, 15 familles nouvelles, 6 blocs d'architecture neufs) — et le vol
+  reréglé sur verdict : croisière ×8 en dix-sept secondes.
 
 - [x] **v175** — le vol prend sa vitesse de croisière : l'allure grandit sans
   à-coup avec le temps de vol, jusqu'à ×6 (66 blocs/s) — Paris-Rome en une

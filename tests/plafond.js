@@ -389,17 +389,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         attendre();
       });
       g.player.volDepuis = 0;
-      const depart = await fenetre(0.4, 1.8);        // avant l'élan : ~11 blocs/s
-      const milieu = await fenetre(15, 2);           // en pleine montée : ~35 blocs/s
+      const depart = await fenetre(0.3, 1.4);        // avant l'élan : ~11 blocs/s
+      const milieu = await fenetre(6, 2);            // en pleine montée : ~45 blocs/s
       g.player.volDepuis = 60;                       // très au-delà de la croisière
-      const sommet = await fenetre(sim + 0.3, 2);    // le plafond : ~66 blocs/s
+      const sommet = await fenetre(sim + 0.3, 2);    // le plafond : ~88 blocs/s
       g.player.keys.delete('KeyW');
       g.player.vel.set(0, 0, 0);
       return { depart, milieu, sommet };
     });
     verifier('le vol part calme, accélère franchement, et plafonne en croisière',
-      allures.depart < 16 && allures.milieu > allures.depart * 2
-      && allures.sommet > allures.milieu * 1.3 && allures.sommet < 75,
+      allures.depart < 16 && allures.milieu > allures.depart * 2.5
+      && allures.sommet > allures.milieu * 1.3 && allures.sommet < 95,
       `${allures.depart.toFixed(0)} puis ${allures.milieu.toFixed(0)} puis ${allures.sommet.toFixed(0)} blocs par seconde de jeu`);
 
     // Y bâtir, et retrouver ce qu'on y a bâti.
