@@ -2,7 +2,7 @@
 // Group built from boxes; chunks clone the template (geometry is shared).
 
 import * as THREE from 'three';
-import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble } from './blocks.js';
+import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue } from './blocks.js';
 
 const WOOD = 0x6b4a2a, DARKWOOD = 0x4a3218, TRUNK = 0x67513a, LEG = 0x2c2c2c;
 const WHITE = 0xf2f2f0, DARK = 0x222226, GLOW = 0xffe9a0;
@@ -224,6 +224,42 @@ Object.assign(BUILDERS, {
   },
 });
 
+// --- le mobilier de rue (v180) -----------------------------------------------
+//
+// À l'échelle RÉELLE du bloc : un réverbère fait trois mètres, pas un
+// monolithe. Le fût est fin comme celui de la lampe d'intérieur — c'est
+// exactement pour cela qu'on passe des blocs aux meshes.
+Object.assign(BUILDERS, {
+  reverbere() {
+    const g = new THREE.Group();
+    g.add(box(0.34, 0.06, 0.34, DARK, 0, 0.03, 0));         // le socle
+    g.add(box(0.1, 3.0, 0.1, DARK, 0, 1.5, 0));             // le fût
+    g.add(box(0.55, 0.08, 0.1, DARK, 0.26, 2.96, 0));       // la crosse
+    g.add(box(0.26, 0.14, 0.2, GLOW, 0.5, 2.86, 0));        // la lanterne
+    g.add(box(0.3, 0.04, 0.24, DARK, 0.5, 2.95, 0));        // son chapeau
+    return g;
+  },
+  feux() {
+    const g = new THREE.Group();
+    g.add(box(0.3, 0.05, 0.3, DARK, 0, 0.02, 0));
+    g.add(box(0.09, 2.4, 0.09, DARK, 0, 1.2, 0));
+    g.add(box(0.26, 0.72, 0.18, 0x2a2a30, 0, 2.35, 0));     // le boîtier
+    g.add(box(0.14, 0.14, 0.05, 0xd83a2a, 0, 2.58, -0.09)); // rouge
+    g.add(box(0.14, 0.14, 0.05, 0xf0a83a, 0, 2.35, -0.09)); // orange
+    g.add(box(0.14, 0.14, 0.05, 0x3ac862, 0, 2.12, -0.09)); // vert
+    return g;
+  },
+  jardiniere(c) {
+    const g = new THREE.Group();
+    g.add(box(0.86, 0.34, 0.42, WOOD, 0, 0.17, 0));         // le bac
+    g.add(box(0.8, 0.08, 0.36, 0x3a5a2a, 0, 0.38, 0));      // la terre et la verdure
+    for (const dx of [-0.26, 0, 0.26]) {
+      g.add(box(0.14, 0.16, 0.14, c, dx, 0.5, 0));          // les fleurs
+    }
+    return g;
+  },
+});
+
 const SCALE = {
   tree: 1.8, pine: 1.8, bush: 1.5,
   sofa: 1.55, armchair: 1.5, table: 1.5, chair: 1.45, bed: 1.55,
@@ -232,6 +268,8 @@ const SCALE = {
   // le mobilier Renaissance est déjà dessiné à l'échelle du bloc
   lit_baldaquin: 1.0, cheminee: 1.0, lustre: 1.0, tapisserie: 1.0,
   buffet: 1.0, table_banquet: 1.0, fauteuil_renaissance: 1.0, vasque: 1.0,
+  // le mobilier de rue est dessiné à l'échelle réelle
+  reverbere: 1.0, feux: 1.0, jardiniere: 1.0,
 };
 
 const templates = new Map(); // prop id -> Group template
@@ -239,7 +277,8 @@ const templates = new Map(); // prop id -> Group template
 export function buildPropMesh(id) {
   let template = templates.get(id);
   if (!template) {
-    const item = isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
+    const item = isRue(id) ? RUE_ITEMS[id - RUE_START]
+      : isMeuble(id) ? MEUBLE_ITEMS[id - MEUBLE_START] : PROP_ITEMS[id - PROP_START];
     if (!item || !BUILDERS[item.type]) return null;
     template = BUILDERS[item.type](rgbToHex(item.rgb));
     template.scale.setScalar(SCALE[item.type] || 1.5);

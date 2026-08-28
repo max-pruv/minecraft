@@ -43,7 +43,7 @@
 // le sont en vrai : l'Atomium à Heysel, le panneau Hollywood sur sa
 // colline, le Burj al Arab sur son île.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, RUE } from './blocks.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
@@ -116,6 +116,15 @@ function fabrique(cle, fiche) {
       t.pu = Math.round(t.pu * 3); t.pv = Math.round(t.pv * 3);
       t.w = 1.7; t.s = 4.0;
       if (t.chanfrein) t.chanfrein = 4.2;                    // l'Eixample garde ses coins coupés
+    }
+    // LE MARQUAGE NE SE PEINT QUE S'IL RESTE NET. Vu sur la capture de
+    // Moscou : sur une trame en diagonale, pointillés et zèbres se
+    // pixellisent en mouchetis blanc aléatoire — pire que rien. Une trame
+    // quasi alignée sur les axes du monde garde ses marques ; une trame
+    // penchée roule sur de l'asphalte propre.
+    {
+      const a90 = ((t.ang % (Math.PI / 2)) + Math.PI / 2) % (Math.PI / 2);
+      t.net = Math.min(a90, Math.PI / 2 - a90) < 0.15;
     }
     f.trame = t;
     // les maisons grandissent avec les rues : un canyon d'un étage n'est pas
@@ -1523,7 +1532,7 @@ export function solVillesMonde(x, z) {
       if (dAxe < 5.6) {
         if (dAxe < 3.4) {
           const longAv = Math.abs(a) < Math.abs(b) ? b : a;
-          if (dAxe < 0.4 && (((Math.round(longAv) % 6) + 6) % 6) < 3) return BLANC_SOL;
+          if (t.net && dAxe < 0.4 && (((Math.round(longAv) % 6) + 6) % 6) < 3) return BLANC_SOL;
           return BITUME;
         }
         return TROTTOIR;
@@ -1538,12 +1547,12 @@ export function solVillesMonde(x, z) {
       const travers = pres ? ra : rb;
       const versCarrefour = Math.max(Math.abs(ra), Math.abs(rb));
       // le passage piéton zébré, à l'abord de chaque carrefour
-      if (!t.ruelles && versCarrefour < t.w + 2.1 && versCarrefour > t.w + 0.4) {
+      if (!t.ruelles && t.net && versCarrefour < t.w + 2.1 && versCarrefour > t.w + 0.4) {
         if ((Math.round(travers * 1.4) & 1) === 0) return BLANC_SOL;
         return BITUME;
       }
       // la ligne axiale pointillée
-      if (!t.ruelles && Math.abs(travers) < 0.35 && (((Math.round(long) % 6) + 6) % 6) < 3) return BLANC_SOL;
+      if (!t.ruelles && t.net && Math.abs(travers) < 0.35 && (((Math.round(long) % 6) + 6) % 6) < 3) return BLANC_SOL;
       return BITUME;
     }
     if (dRue < t.s) return TROTTOIR;
@@ -1687,20 +1696,24 @@ export function mobilierVillesMonde(x, z, poser) {
     const long = Math.abs(ra) < Math.abs(rb) ? B : A;
     const cran = ((Math.round(long) % 9) + 9) % 9;
     if (dRue - t.w < 0.9) {
-      if (cran === 4) {
-        poser(1, NOIR_LAMPE); poser(2, NOIR_LAMPE); poser(3, NOIR_LAMPE);
-        poser(4, OR);
+      // LE FEU TRICOLORE, un par coin de carrefour : la colonne du caniveau
+      // qui touche le croisement en diagonale — une seule par coin.
+      if (!t.ruelles && Math.abs(ra) > t.w + 0.4 && Math.abs(ra) < t.w + 1.3
+        && Math.abs(rb) > t.w + 0.4 && Math.abs(rb) < t.w + 1.3) {
+        poser(1, RUE.FEUX);
         return;
       }
-      // LE BANC, et LE BAC À FLEURS — assez rares pour rester des trouvailles.
+      // LE RÉVERBÈRE : un mesh fin de trois mètres, plus jamais le monolithe
+      // noir à chapeau doré de la capture de Moscou.
+      if (cran === 4) { poser(1, RUE.REVERBERE); return; }
+      // LE BANC, et LA JARDINIÈRE — assez rares pour rester des trouvailles.
       if (cran === 0 && tirage(a, b, 263) < 0.5) { poser(1, BOIS_BANC); return; }
-      if (cran === 7 && tirage(a, b, 269) < 0.5) { poser(1, uni(5)); poser(2, uni(15)); return; }
+      if (cran === 7 && tirage(a, b, 269) < 0.5) { poser(1, RUE.JARDINIERE); return; }
     }
     return;
   }
 }
 
-const NOIR_LAMPE = uni(26);
 
 // --- la circulation ----------------------------------------------------------
 //

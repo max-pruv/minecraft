@@ -13,6 +13,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Programme réalisme v2** (prompt de Max, 28/08) — il juge uniquement
+  sur captures ; chaque ville retravaillée est montrée AVANT fusion (rue +
+  aérien + photo de référence), généralisation seulement après validation.
+  Fait : 1) mobilier (v180), 2) routes (v180). En pilote : 3) façades
+  (Moscou d'abord, grammaire de Piatnitskaïa). À venir : 4) vie dense —
+  voitures arrêtées aux feux, enseignes lumineuses la nuit.
+
 - [ ] **Paris a la place qu'il lui faut** — le métro est passé sous terre
   (v163) et la carte lui a donné l'espace (v164) : la ville peut maintenant
   grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
@@ -68,6 +75,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v180** — réalisme v2, premier acte : réverbères-meshes fins, feux
+  tricolores aux carrefours, jardinières, marquage net ou rien.
 
 - [x] **v179** — les trains intervilles : six vraies lignes en neuf navettes
   de gare en gare, ballast, viaduc sur la Manche, le trait sur la carte, et

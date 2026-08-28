@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v180 — réalisme v2, premier acte : la rue se reconnaît
+
+**Pourquoi.** Max, capture de Moscou à l'appui : « rien de ce screenshot
+n'est montrable ». Il avait raison trois fois. Les lampadaires en blocs —
+trois noirs, un or — se lisaient comme des monolithes dorés ; les bacs à
+fleurs comme des cubes de bonbon empilés ; et sur les trames en diagonale,
+pointillés et passages piétons se pixellisaient en mouchetis blanc aléatoire.
+
+**Ce que ça change.** Le mobilier de rue devient des MESHES fins, comme les
+meubles : un réverbère de trois mètres au fût de dix centimètres, à crosse
+et lanterne ; un feu tricolore à chaque coin de carrefour (jamais dans la
+médina de Marrakech — elle n'en a pas dans la vraie vie non plus) ; une
+jardinière basse en bois, fleurie. Et le marquage ne se peint que s'il
+reste NET : une trame quasi alignée garde pointillés et zèbres, une trame
+penchée roule sur de l'asphalte propre — mieux vaut pas de marque qu'un
+mouchetis. Les trois accessoires rejoignent aussi l'inventaire des blocs :
+un enfant peut poser son propre réverbère.
+
+**Ce qui le prouve.** Le témoin du mobilier compte désormais les vrais
+réverbères et les feux (Rome 68 et 43, Tokyo 88 et 34, Moscou 90 et 40 sur
+la fenêtre de mesure), et la capture avant/après de la même rue de Moscou,
+dans la discussion.
+
 ## v179 — les trains intervilles, sur les vraies lignes
 
 **Pourquoi.** Max : « add train connecting cities from real life train
