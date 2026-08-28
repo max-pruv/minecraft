@@ -97,6 +97,27 @@ const position = (p) => p.evaluate(() => ({
       glisse.cx > depart.cx + 20 && glisse.cz > depart.cz + 10,
       JSON.stringify({ dx: Math.round(glisse.cx - depart.cx), dz: Math.round(glisse.cz - depart.cz) }));
 
+    // LE GLISSER NE TÉLÉPORTE JAMAIS — même sur une machine qui suffoque.
+    //
+    // On rejoue le geste en étouffant le fil principal juste après la pose
+    // du doigt : le minuteur d'appui long (550 ms) expire pendant que les
+    // déplacements attendent leur tour dans la file. Avant le correctif, le
+    // minuteur tirait le premier et l'enfant était téléporté au point de
+    // départ de son propre glisser — vécu au banc, porte de v169.
+    const avantEtouffe = await position(tab);
+    await tab.mouse.move(milieu.x, milieu.y);
+    await tab.mouse.down();
+    const etouffe = tab.evaluate(() => { const t = performance.now(); while (performance.now() - t < 700); });
+    for (let i = 1; i <= 8; i++) await tab.mouse.move(milieu.x - i * 12, milieu.y - i * 8);
+    await tab.mouse.up();
+    await etouffe;
+    await dormir(600);
+    const apresEtouffe = await position(tab);
+    verifier('et il ne téléporte jamais, même le fil principal étouffé',
+      apresEtouffe.x === avantEtouffe.x && apresEtouffe.z === avantEtouffe.z
+      && (await carteOuverte(tab)),
+      JSON.stringify({ avant: avantEtouffe, apres: apresEtouffe }));
+
     // --- écarter deux doigts -------------------------------------------------
     // Au centre de la carte : plus loin, un doigt du geste large sortirait du
     // cadre et le navigateur n'annoncerait qu'un seul contact.

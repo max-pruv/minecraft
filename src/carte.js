@@ -878,9 +878,21 @@ export class Carte {
     const r = cv.getBoundingClientRect();
     const m = this.versMonde(e.clientX - r.left, e.clientY - r.top);
     this.appuiLong = setTimeout(() => {
-      this.annulerAppui();
-      this.teleporte = true;
-      this.surTeleport(m.x, m.z);
+      // LA COURSE DU MINUTEUR. Sur une machine chargée, le doigt a bougé mais
+      // ses évènements attendent encore leur tour dans la file : le minuteur
+      // tire AVANT que l'annulation n'ait été traitée, et l'enfant qui
+      // faisait glisser la carte se retrouve téléporté au point de départ de
+      // son geste. Vécu au banc, reproductible sous contention. On remet donc
+      // la décision à l'image suivante — les entrées en attente sont
+      // dépouillées avant les rappels d'animation — et on ne part que si le
+      // doigt n'a VRAIMENT pas bougé, est toujours posé, et que rien n'a
+      // annulé l'appui entre-temps.
+      requestAnimationFrame(() => {
+        if (this.aBouge || this.pointeurs.size !== 1 || !this.appuiLong) return;
+        this.annulerAppui();
+        this.teleporte = true;
+        this.surTeleport(m.x, m.z);
+      });
     }, 550);
   }
 
