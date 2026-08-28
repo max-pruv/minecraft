@@ -97,6 +97,27 @@ const position = (p) => p.evaluate(() => ({
       glisse.cx > depart.cx + 20 && glisse.cz > depart.cz + 10,
       JSON.stringify({ dx: Math.round(glisse.cx - depart.cx), dz: Math.round(glisse.cz - depart.cz) }));
 
+    // LE GLISSER NE TÉLÉPORTE JAMAIS — même sur une machine qui suffoque.
+    //
+    // On rejoue le geste en étouffant le fil principal juste après la pose
+    // du doigt : le minuteur d'appui long (550 ms) expire pendant que les
+    // déplacements attendent leur tour dans la file. Avant le correctif, le
+    // minuteur tirait le premier et l'enfant était téléporté au point de
+    // départ de son propre glisser — vécu au banc, porte de v169.
+    const avantEtouffe = await position(tab);
+    await tab.mouse.move(milieu.x, milieu.y);
+    await tab.mouse.down();
+    const etouffe = tab.evaluate(() => { const t = performance.now(); while (performance.now() - t < 700); });
+    for (let i = 1; i <= 8; i++) await tab.mouse.move(milieu.x - i * 12, milieu.y - i * 8);
+    await tab.mouse.up();
+    await etouffe;
+    await dormir(600);
+    const apresEtouffe = await position(tab);
+    verifier('et il ne téléporte jamais, même le fil principal étouffé',
+      apresEtouffe.x === avantEtouffe.x && apresEtouffe.z === avantEtouffe.z
+      && (await carteOuverte(tab)),
+      JSON.stringify({ avant: avantEtouffe, apres: apresEtouffe }));
+
     // --- écarter deux doigts -------------------------------------------------
     // Au centre de la carte : plus loin, un doigt du geste large sortirait du
     // cadre et le navigateur n'annoncerait qu'un seul contact.
@@ -416,6 +437,34 @@ const position = (p) => p.evaluate(() => ({
       && bornes.loin <= bornes.plafond + 0.001
       && bornes.cx <= bornes.monde.x1 + 0.001,
       JSON.stringify(bornes));
+
+    // --- LA CARTE NE LAGUE PLUS ---------------------------------------------
+    //
+    // Max : « la carte lag un peu ». Les cinquante grandes avaient porté le
+    // coût d'une colonne à ~250 zones et 46 villes interrogées une à une :
+    // un fond entier coûtait jusqu'à une seconde, rejoué à chaque geste. Deux
+    // index en cases et un cache de colonnes plus tard, on jure ici sur les
+    // millisecondes : le fond entier au dézoom monde, D'ABORD SANS CACHE
+    // (le vrai premier rendu), doit tenir sous 400 ms sur la machine du banc
+    // — l'iPad est plus lent, mais c'est le même ordre — et le rendu suivant,
+    // cache chaud, sous 150 ms.
+    const vitesse = await tab.evaluate(() => {
+      const c2 = window.__carte;
+      c2.toutVoir();
+      c2.cacheH = new Map();                       // premier rendu honnête
+      const t0 = performance.now();
+      c2.rendreFond();
+      const froid = performance.now() - t0;
+      c2.fondVue = null;
+      const t1 = performance.now();
+      c2.rendreFond();
+      const chaud = performance.now() - t1;
+      return { froid: Math.round(froid), chaud: Math.round(chaud) };
+    });
+    verifier('le fond de carte entier se rend vite, même à froid',
+      vitesse.froid < 400, `${vitesse.froid} ms à froid (borne 400)`);
+    verifier('et le rendu suivant, cache chaud, est presque gratuit',
+      vitesse.chaud < 150, `${vitesse.chaud} ms à chaud (borne 150)`);
 
     // --- le bas de Manhattan -------------------------------------------------
     //

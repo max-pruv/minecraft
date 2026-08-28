@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v169 — la carte ne lague plus
+
+**Pourquoi.** Max : « la carte lag un peu. » Mesuré au banc : un fond de
+carte coûtait de 450 à 1 000 ms, rejoué en continu pendant un glisser ou un
+pincement. Les cinquante grandes en étaient la cause silencieuse : chaque
+colonne de terrain interrogeait les 46 villes de la machine une à une
+(217 ms rien que pour elles), puis ~250 zones de protection une à une —
+142 monuments dans la liste.
+
+**Ce que ça change.** Rien à l'œil — tout sous le doigt :
+
+- **Deux index en cases de 512 blocs** : une colonne ne regarde plus que sa
+  case (zéro ou une ville, presque toujours aucune zone). Prouvé équivalent
+  à l'ancien parcours sur 18 400 points : zéro écart, et les deux empreintes
+  du plafond sont inchangées au hash près.
+- **Un cache de colonnes côté carte** : la hauteur d'une colonne ne change
+  jamais — le rendu suivant ne paie que la tranche neuve.
+- **Le fond au quart pendant le geste** : quatre fois moins de colonnes tant
+  que le doigt bouge, la pleine finesse revient dès qu'il se pose.
+
+Au banc : la vue monde passe de 781 à 152 ms à froid, la vue continent de
+1 026 à 199 ms — et les rendus suivants sont presque gratuits.
+
+- **Et une vraie panne attrapée au passage** : sur une machine chargée, le
+  minuteur d'appui long tirait pendant un glisser — les déplacements du
+  doigt attendaient leur tour dans la file, le minuteur passait devant, et
+  l'enfant était téléporté au point de départ de son propre geste, carte
+  refermée. La décision attend désormais l'image suivante, où les entrées
+  ont été dépouillées : glisser ne téléporte jamais.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carte.js` : le fond entier à
+froid sous 400 ms (mesuré 134), le rendu suivant sous 150 ms (mesuré 34), et
+le glisser qui ne téléporte jamais même le fil principal étouffé 700 ms. Les
+témoins existants de la carte, du plafond et du tour du monde repassent au
+vert — même monde, au bloc près, juste plus vite.
+
+
 ## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
 
 **Pourquoi.** Max : « une usine automobile comme une Tesla factory,

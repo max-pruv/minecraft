@@ -1166,6 +1166,31 @@ const FICHES = {
 
 export const VILLES_MONDE = Object.entries(FICHES).map(([cle, f]) => fabrique(cle, f));
 
+// --- l'index spatial ---------------------------------------------------------
+//
+// Quarante-six villes, et chaque colonne de terrain les interrogeait TOUTES —
+// quarante-six hypoténuses par colonne, des dizaines de milliers de colonnes
+// par rendu de carte : c'est ce qui faisait laguer la carte. Une ville tient
+// dans un disque de 128 blocs au plus (rayon + fondu) : on range donc chacune
+// dans les cases de 512 blocs que son disque touche, et une colonne ne regarde
+// plus que sa case — zéro ou une ville dans l'immense majorité des cas.
+const CASE = 512;
+const INDEX_VILLES = new Map();
+for (const f of VILLES_MONDE) {
+  const portee = f.rayon + 14;
+  for (let cx = Math.floor((f.ancre.x - portee) / CASE); cx <= Math.floor((f.ancre.x + portee) / CASE); cx++) {
+    for (let cz = Math.floor((f.ancre.z - portee) / CASE); cz <= Math.floor((f.ancre.z + portee) / CASE); cz++) {
+      const cle2 = cx * 100000 + cz;
+      if (!INDEX_VILLES.has(cle2)) INDEX_VILLES.set(cle2, []);
+      INDEX_VILLES.get(cle2).push(f);
+    }
+  }
+}
+const RIEN = [];
+function villesPres(x, z) {
+  return INDEX_VILLES.get(Math.floor(x / CASE) * 100000 + Math.floor(z / CASE)) || RIEN;
+}
+
 // --- la géométrie commune ----------------------------------------------------
 
 function distancePolyligne(pts, u, v) {
@@ -1241,7 +1266,7 @@ function collineDeVille(f, u, v) {
 // --- ce que world.js appelle -------------------------------------------------
 
 export function hauteurVillesMonde(x, z, h) {
-  for (const f of VILLES_MONDE) {
+  for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     const d = Math.hypot(u, v);
     if (d > f.rayon + 14) continue;
@@ -1255,7 +1280,7 @@ export function hauteurVillesMonde(x, z, h) {
 }
 
 export function solVillesMonde(x, z) {
-  for (const f of VILLES_MONDE) {
+  for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
 
@@ -1318,7 +1343,7 @@ export function solVillesMonde(x, z) {
 }
 
 export function batirColonneVillesMonde(x, z, poser) {
-  for (const f of VILLES_MONDE) {
+  for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
     if (!f.trame && !f.collines) return;
@@ -1389,7 +1414,7 @@ export function lieuxDesVillesMonde() {
 
 // La couleur sur la carte, vue du ciel.
 export function couleurCarteVillesMonde(x, z) {
-  for (const f of VILLES_MONDE) {
+  for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
     if (eauDeVille(f, u, v)) return [92, 142, 196];
