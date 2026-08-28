@@ -159,6 +159,13 @@ export class Atelier {
 
   boite(couleur, o) { return this._poser(BOITE(), couleur, o); }
 
+  // Une géométrie libre, préparée par l'appelant (profil extrudé, tour…) :
+  // elle rejoint la fusion comme les primitives. C'est ce qui permet les
+  // carrosseries en vraies courbes — un profil de Bézier extrudé ne se
+  // fabrique pas avec des boîtes. L'appelant garde la responsabilité de la
+  // géométrie (pas de cache ici : chaque profil est unique).
+  geometrie(geo, couleur, o = {}) { return this._poser(geo, couleur, o); }
+
   sphere(couleur, o) { return this._poser(SPH(decoupe(o.seg || 12)), couleur, o); }
 
   demiSphere(couleur, o) { return this._poser(DEMI(decoupe(o.seg || 12)), couleur, o); }

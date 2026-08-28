@@ -210,30 +210,39 @@ export const MODELES_MONTURE = {
 //   allure   — combien de fois plus vite on avance en selle
 //   assise   — la hauteur du dos, donc celle du regard une fois assis
 // La voiture neuve de la Giga-usine : la seule monture à roues du jeu. C'est
-// LA carrosserie de la vraie vie (vehicules.js, l'Atelier) — galbe, capot
-// plongeant, pare-brise couché — plus l'habitacle : ses vitres sont de vraies
-// vitres transparentes, donc le tableau de bord, le volant et les sièges se
-// voient de dehors comme de derrière le volant. C'est ce qui donne la vue
-// pare-brise en conduisant, et une voiture qu'on a envie d'ouvrir à l'arrêt.
+// LA carrosserie de la vraie vie (vehicules.js) : un profil de Bézier extrudé
+// en coque galbée, sous sa verrière de verre fumé. L'habitacle vit À
+// L'INTÉRIEUR de la coque pleine : invisible de dehors (la coque opaque le
+// couvre), et c'est TOUT ce qu'on voit une fois assis — la coque, elle,
+// disparaît de l'intérieur, ses faces regardent dehors. D'où le cadre
+// complet : montants, traverse, ciel de toit, et la plaque de capot dans la
+// couleur de la caisse, pour voir l'avant de SA voiture en conduisant.
 function voitureNeuve() {
   const teintes = [0xd82a2a, 0x2a6ad8, 0xf0f0ea, 0x3a9a4a];
   const g = construireVoitureRoute(teintes[Math.floor(Math.random() * teintes.length)]);
   const sombre = 0x22262c, noir = 0x14161a;
-  g.add(box(1.24, 0.12, 0.26, sombre, 0, 0.97, -0.55));            // tableau de bord
+  g.add(box(1.14, 0.12, 0.26, sombre, 0, 0.94, -0.55));            // tableau de bord
   const volant = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.024, 6, 14),
     new THREE.MeshBasicMaterial({ color: noir }));
   volant.rotation.x = -0.5;                                        // incliné vers soi
-  volant.position.set(0, 1.0, -0.42);
+  volant.position.set(0, 0.97, -0.42);
   g.add(volant);
-  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.95, -0.5));               // colonne de direction
-  // Le rétroviseur se colle en HAUT du pare-brise, loin de l'œil : à 0,32
-  // bloc du regard il occupait la moitié de l'écran — un rectangle géant
-  // qui bouchait la route.
-  g.add(box(0.16, 0.05, 0.02, noir, 0, 1.29, -0.54));              // rétroviseur central
+  g.add(box(0.05, 0.05, 0.18, noir, 0, 0.92, -0.5));               // colonne de direction
+  // PAS de rétroviseur central : l'habitacle est si bas que, où qu'on le
+  // pose, il flotte en plein milieu du pare-brise et bouche la route — trois
+  // captures l'ont montré. Le cadre vient des montants, du capot et du volant.
   for (const sx of [-1, 1]) {
-    g.add(box(0.46, 0.46, 0.14, noir, sx * 0.36, 1.02, 0.42));     // dossiers des sièges
-    g.add(box(0.46, 0.09, 0.4, noir, sx * 0.36, 0.8, 0.26));       // assises
+    const montant = box(0.06, 0.05, 0.72, sombre, sx * 0.55, 1.06, -0.32);
+    montant.rotation.x = -0.55;                                    // suit le pare-brise
+    g.add(montant);
+    g.add(box(0.46, 0.44, 0.14, noir, sx * 0.36, 0.98, 0.42));     // dossiers des sièges
+    g.add(box(0.46, 0.09, 0.4, noir, sx * 0.36, 0.78, 0.26));      // assises
   }
+  g.add(box(1.1, 0.05, 0.06, sombre, 0, 1.24, -0.12));             // traverse du pare-brise
+  g.add(box(1.1, 0.03, 1.0, 0x2a2e34, 0, 1.27, 0.3));              // ciel de toit
+  const capot = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 1.1), g.userData.carrosserie);
+  capot.position.set(0, 0.85, -1.05);                              // le capot, vu du volant
+  g.add(capot);
   g.userData.legs = [];                                            // rien ne balance
   return g;
 }
@@ -262,9 +271,9 @@ export const MONTURES = [
   // Sa vitesse de flânerie est quasi nulle : une voiture garée ne broute pas.
   // `oeil` : la hauteur ABSOLUE du regard une fois assis, à la place du calcul
   // yeux + assise des bêtes. En voiture on s'assied DANS l'habitacle — l'œil
-  // entre le capot (~0,9) et le toit (1,36), derrière le pare-brise — alors
-  // que l'ancienne formule posait la caméra à 2,6 blocs, au-dessus du toit.
+  // au creux du galbe (1,12), bien à l'intérieur de la coque en courbes —
+  // alors que l'ancienne formule posait la caméra à 2,6 blocs, sur le toit.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.35, width: 0.95, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, oeil: 1.2 },
+    assise: 1.0, oeil: 1.12 },
 ];

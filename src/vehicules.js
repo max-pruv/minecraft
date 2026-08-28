@@ -193,37 +193,79 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
 // son maillage fusionné reçoit un matériau à lui (userData.carrosserie, celui
 // que la chaîne de la Giga-usine repeint) ; `tronc` porte le reste — roues,
 // verre, optiques. Trois maillages par voiture, contre neuf à l'ancienne.
+// Le profil de la caisse, vu de côté, en UNE courbe continue : nez rond,
+// capot qui plonge, pare-brise couché, arche de toit, arrière fuyant. `sx`
+// est l'AVANT vers le positif (l'extrusion retourne l'axe), `sy` la hauteur.
+// Extrudé sur la largeur avec un chanfrein arrondi (bevel), il donne des
+// flancs bombés — c'est le bevel qui fait les épaules de la voiture.
+function profilCaisse() {
+  // La cabine AVANCÉE et la poupe longue : c'est ce qui distingue une
+  // sportive d'une berline à hayon — le pic du toit est presque au-dessus
+  // du siège, pas au-dessus du coffre.
+  const s = new THREE.Shape();
+  s.moveTo(1.62, 0.62);                                   // le bas du nez
+  s.quadraticCurveTo(1.8, 0.64, 1.5, 0.78);               // le nez, rond
+  s.quadraticCurveTo(1.05, 0.92, 0.62, 0.97);             // le capot qui plonge
+  s.quadraticCurveTo(0.28, 1.16, 0.0, 1.22);              // le pare-brise couché
+  s.quadraticCurveTo(-0.42, 1.3, -0.78, 1.14);            // l'arche du toit
+  s.quadraticCurveTo(-1.25, 0.9, -1.52, 0.76);            // la poupe, longue et fuyante
+  s.quadraticCurveTo(-1.7, 0.64, -1.58, 0.6);             // l'arrière rond
+  // Le dessous se tient HAUT (0,6 : la jupe descend à ~0,4 avec l'arrondi) :
+  // plus bas, la caisse avalait les roues aux trois quarts.
+  s.lineTo(1.62, 0.62);
+  return s;
+}
+
+// La verrière : l'arc du profil entre le bas du pare-brise et la plage
+// arrière, refermé par la ligne de ceinture. Extrudée un peu PLUS LARGE que
+// la caisse, elle l'enveloppe d'une coque de verre fumé — c'est elle qui
+// fait l'habitacle sombre et galbé de la vraie vie.
+function profilVerriere() {
+  const s = new THREE.Shape();
+  s.moveTo(0.66, 0.95);                                   // le bas du pare-brise
+  s.quadraticCurveTo(0.28, 1.18, 0.0, 1.24);
+  s.quadraticCurveTo(-0.42, 1.33, -0.8, 1.16);
+  s.quadraticCurveTo(-1.0, 1.0, -1.12, 0.92);             // la plage arrière
+  s.lineTo(0.66, 0.95);                                   // la ligne de ceinture
+  return s;
+}
+
+function extruderProfil(shape, largeur, arrondi) {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: largeur, curveSegments: 10,
+    bevelEnabled: true, bevelThickness: arrondi, bevelSize: arrondi * 0.8,
+    bevelSegments: 4,
+  });
+  geo.rotateY(Math.PI / 2);                               // la largeur suit x, l'avant part vers -z
+  geo.translate(-largeur / 2, 0, 0);                      // centré sur l'axe
+  return geo;
+}
+
 export function construireVoitureRoute(couleur = 0x9a9a9a) {
   const a = new Atelier();
   const BLANC = 0xffffff, NOIR = 0x14161a, SOMBRE = 0x26262c;
   // tout ce qui se repeint est posé blanc : la teinte vient du matériau
   a.membre('caisse');
-  a.boite(BLANC, { p: [0, 0.46, 0.05], e: [1.68, 0.26, 3.4] });                    // le soubassement
-  a.sphere(BLANC, { p: [0, 0.66, 0], e: [1.82, 0.52, 3.85], seg: 14 });            // le galbe des flancs
-  a.boite(BLANC, { p: [0, 0.85, -1.1], r: [-0.09, 0, 0], e: [1.5, 0.1, 1.15] });   // le capot
-  a.boite(BLANC, { p: [0, 0.6, -1.68], r: [-0.3, 0, 0], e: [1.58, 0.26, 0.5] });   // le nez plongeant
-  a.boite(BLANC, { p: [0, 1.33, 0.35], e: [1.26, 0.07, 1.0] });                    // le toit
-  a.boite(BLANC, { p: [0, 0.85, 1.5], r: [0.08, 0, 0], e: [1.54, 0.12, 0.66] });   // le coffre
+  a.geometrie(extruderProfil(profilCaisse(), 1.24, 0.26), BLANC, {});              // la coque en courbes
   for (const sx of [-1, 1]) {
-    a.boite(BLANC, { p: [sx * 0.66, 1.07, -0.5], r: [-0.6, 0, 0], e: [0.07, 0.05, 1.0] });  // montant A
-    a.boite(BLANC, { p: [sx * 0.63, 1.1, 0.95], r: [0.55, 0, 0], e: [0.09, 0.05, 0.8] });   // montant C
-    a.boite(BLANC, { p: [sx * 0.9, 1.0, -0.45], e: [0.13, 0.07, 0.17] });                   // rétroviseur
+    a.boite(BLANC, { p: [sx * 0.9, 0.98, -0.4], e: [0.12, 0.06, 0.16] });          // rétroviseur
   }
+  // La verrière a son membre À ELLE : son maillage reçoit après coup un verre
+  // fumé quasi opaque — le verre partagé de l'Atelier (0,42) se noyait dans
+  // la couleur de la caisse, on ne voyait pas de vitres du tout.
+  a.membre('verriere');
+  a.geometrie(extruderProfil(profilVerriere(), 1.27, 0.27), 0xffffff, { p: [0, 0.02, 0] });
   a.membre('tronc');
-  // de vraies vitres : on voit à travers, et l'habitacle avec
-  a.boite(0x9fb8cc, { p: [0, 1.07, -0.5], r: [-0.6, 0, 0], e: [1.3, 0.04, 1.0], verre: true });   // pare-brise
-  a.boite(0x9fb8cc, { p: [0, 1.1, 0.95], r: [0.55, 0, 0], e: [1.24, 0.04, 0.8], verre: true });   // la lunette
-  a.boite(0x9fb8cc, { p: [0, 1.13, 0.22], e: [1.3, 0.3, 1.1], verre: true });                     // vitres latérales
-  a.boite(NOIR, { p: [0, 0.5, -1.87], e: [0.66, 0.2, 0.08] });                     // la calandre
-  a.boite(SOMBRE, { p: [0, 0.36, -1.78], e: [1.6, 0.16, 0.24] });                  // bouclier avant
-  a.boite(SOMBRE, { p: [0, 0.36, 1.76], e: [1.6, 0.16, 0.24] });                   // bouclier arrière
+  a.boite(NOIR, { p: [0, 0.54, -1.94], e: [0.6, 0.24, 0.14] });                    // la calandre
+  a.boite(SOMBRE, { p: [0, 0.42, -1.72], e: [1.5, 0.14, 0.34] });                  // bouclier avant
+  a.boite(SOMBRE, { p: [0, 0.42, 1.68], e: [1.5, 0.14, 0.34] });                   // bouclier arrière
   for (const sx of [-1, 1]) {
-    a.boite(0xfff4cc, { p: [sx * 0.56, 0.68, -1.83], e: [0.34, 0.09, 0.07] });     // phare
-    a.boite(0xd83a2a, { p: [sx * 0.56, 0.8, 1.8], e: [0.32, 0.08, 0.07] });        // feu arrière
+    a.boite(0xfff4cc, { p: [sx * 0.52, 0.7, -1.9], e: [0.3, 0.1, 0.1] });          // phare
+    a.boite(0xd83a2a, { p: [sx * 0.52, 0.74, 1.84], e: [0.3, 0.09, 0.1] });        // feu arrière
     for (const sz of [-1.15, 1.2]) {
-      a.cylindre(0x16161a, { p: [sx * 0.88, 0.37, sz], r: [0, 0, Math.PI / 2],
+      a.cylindre(0x16161a, { p: [sx * 0.9, 0.37, sz], r: [0, 0, Math.PI / 2],
         e: [0.74, 0.27, 0.74], seg: 12 });                                         // le pneu
-      a.cylindre(0xb8bcc2, { p: [sx * 0.9, 0.37, sz], r: [0, 0, Math.PI / 2],
+      a.cylindre(0xb8bcc2, { p: [sx * 0.92, 0.37, sz], r: [0, 0, Math.PI / 2],
         e: [0.4, 0.29, 0.4], seg: 10 });                                           // la jante
     }
   }
@@ -231,6 +273,9 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   const peint = new THREE.MeshLambertMaterial({ color: couleur });
   g.userData.membres.caisse.children[0].material = peint;
   g.userData.carrosserie = peint;
+  g.userData.membres.verriere.children[0].material = new THREE.MeshLambertMaterial({
+    color: 0x18222e, transparent: true, opacity: 0.78,
+  });
   return g;
 }
 
