@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v172 — le grand recalibrage : de vraies rues, de vraies villes
+
+**Pourquoi.** Max, captures d'écran à l'appui : « je ne vois pas du tout le
+côté réalisé. Les rues sont hyper petites. Faut reformater les rues, le
+sizing des villes. Tokyo ne ressemble pas à Tokyo. » Il avait raison : les
+trames faisaient des rues d'UN bloc et des îlots de trois — un tapis de
+cubes, pas une ville — et on arrivait de la carte le nez dans un mur.
+
+**Ce que ça change.** Le gabarit de TOUTES les villes de la machine, refait
+en un seul endroit (la normalisation de `fabrique`) :
+
+- **De vraies rues** : chaussée d'asphalte de trois blocs avec ligne médiane
+  pointillée, trottoirs de deux, **passages piétons zébrés** à chaque
+  carrefour, et une **croix d'avenues** deux fois plus larges qui structure
+  chaque ville — bordées de boutiques, comme les vraies.
+- **Le sizing** : trente-six villes gagnent ×1,6 de rayon (Rome 75 → 120,
+  Tokyo 60 → 96, Rio 85 → 136…), vérifié contre chaque voisine ; les villes
+  d'eau serrée (Venise, Stockholm, Hong Kong…) gardent leur taille, c'est
+  leur identité. Les fleuves se prolongent jusqu'aux nouveaux bords — le
+  Bosphore traverse à nouveau tout Istanbul.
+- **Les hauteurs** : maisons 5–10 selon la ville, et les métropoles ont une
+  **skyline** qui culmine au centre et redescend — Dubaï monte à 58, Tokyo
+  à 46, chaque tour avec son pied commerçant.
+- **La place centrale** : pavée, avec sa fontaine (sauf là où un monument
+  EST la place, comme l'Obélisque de Buenos Aires) — on arrive de la carte
+  sur une place dégagée, plus jamais dans un mur.
+- **Venise, Marrakech et la vieille Jérusalem gardent leurs ruelles** — à
+  peine élargies : c'est leur âme.
+
+**Ce qui le prouve.** La sonde des 142 monuments repasse (la Yamuna
+recourbée épargne le fort d'Agra), les seuils des devantures sont recalés
+sur les nouvelles mesures, et la preuve d'intégrité est refaite : la même
+découpe aux nouveaux rayons, mesurée sur main et sur la branche, rend le
+même hash hors des villes — pas un bloc n'a bougé ailleurs. Et surtout : la
+discipline du regard — Tokyo, capturée à hauteur d'yeux et du ciel, se lit
+enfin comme une ville, rues noires, zèbres blancs, skyline.
+
+
 ## v171 — la vie : des voitures qui circulent, des passants qui marchent
 
 **Pourquoi.** Max : « les villes n'ont pas de vie. Il n'y a pas de voitures

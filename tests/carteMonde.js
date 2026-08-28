@@ -212,8 +212,12 @@ const VRAIES_KM = [
           const cat0 = CAT[m.nom];
           const R = Math.min(m.box || 24, cat0 ? 24 : 12);
           let hMax = 0;
-          for (let a = -R; a <= R; a += 2) {
-            for (let b = -R; b <= R; b += 2) {
+          // Le pas de deux doit TOMBER sur la colonne centrale : avec une
+          // boîte impaire (R = 3), -3, -1, 1, 3 ne lit jamais 0 — et un
+          // beffroi planté au centre exact d'une place dégagée passait pour
+          // couché. La leçon du fleuron du Taj, version place publique.
+          for (let a = -R + (R & 1); a <= R; a += 2) {
+            for (let b = -R + (R & 1); b <= R; b += 2) {
               for (let y = sol + 115; y > sol; y--) {
                 if (w.getBlock(x + a, y, z + b)) { hMax = Math.max(hMax, y - sol); break; }
               }
@@ -398,8 +402,8 @@ const VRAIES_KM = [
         const p = positionDe(cle);
         const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, bancs: 0 };
         const ids = new Set();
-        for (let du = -25; du <= 25; du++) {
-          for (let dv = -25; dv <= 25; dv++) {
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
             const x = p.x + du, z = p.z + dv;
             const sol = w.terrainHeight(x, z);
             const s0 = w.getBlock(x, sol, z);
@@ -417,13 +421,16 @@ const VRAIES_KM = [
       }
       return villes;
     });
+    // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
+    // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
+    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075.
     const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 60 && c.portes >= 40 && c.enseignes >= 100 && c.auvents >= 60));
+      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 110));
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
     const sansVie = Object.entries(facades).filter(([, c]) =>
-      !(c.lampes >= 8 && c.bancs >= 4 && c.diversite >= 18));
+      !(c.lampes >= 45 && c.bancs >= 30 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')
