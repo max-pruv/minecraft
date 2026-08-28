@@ -222,8 +222,12 @@ const VRAIES_KM = [
             let sommet = cat.blocs[0];
             for (const bl of cat.blocs) if (bl[1] > sommet[1]) sommet = bl;
             const fx = x + (sommet[0] - ccx), fz = z + (sommet[2] - ccz);
-            const solF = w.terrainHeight(fx, fz);
-            fleche = w.getBlock(fx, solF + (sommet[1] - e2.minY) + 1, fz) !== 0;
+            // Le monde tamponne à baseY + (by − minY), où baseY est le sol AU
+            // CENTRE du monument — pas sous la colonne de la flèche. Lire un
+            // bloc plus haut (l'ancienne formule de v164, qui vivait avec le
+            // parvis surélevé des capitales) déclarait six monuments sur huit
+            // tronqués d'un bloc qu'ils avaient bel et bien.
+            fleche = w.getBlock(fx, sol + (sommet[1] - e2.minY), fz) !== 0;
           }
           monuments.push({ nom: m.nom, ville: f.cle, hMax, fleche, attendu: cat ? cat.emprise.h : 3 });
         }
