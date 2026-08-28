@@ -212,8 +212,12 @@ const VRAIES_KM = [
           const cat0 = CAT[m.nom];
           const R = Math.min(m.box || 24, cat0 ? 24 : 12);
           let hMax = 0;
-          for (let a = -R; a <= R; a += 2) {
-            for (let b = -R; b <= R; b += 2) {
+          // Le pas de deux doit TOMBER sur la colonne centrale : avec une
+          // boîte impaire (R = 3), -3, -1, 1, 3 ne lit jamais 0 — et un
+          // beffroi planté au centre exact d'une place dégagée passait pour
+          // couché. La leçon du fleuron du Taj, version place publique.
+          for (let a = -R + (R & 1); a <= R; a += 2) {
+            for (let b = -R + (R & 1); b <= R; b += 2) {
               for (let y = sol + 115; y > sol; y--) {
                 if (w.getBlock(x + a, y, z + b)) { hMax = Math.max(hMax, y - sol); break; }
               }
