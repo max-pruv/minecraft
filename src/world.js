@@ -25,6 +25,9 @@ import {
   buildMuraille, buildCiteInterdite, buildVillageChinois, buildGuilin, buildPandas,
 } from './chine.js';
 import {
+  hauteurCapitales, solCapitales, landmarksCapitales, placesCapitales,
+} from './capitales.js';
+import {
   LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
@@ -55,6 +58,7 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
 } from './manhattan.js';
+import { positionDe } from './mondes.js';
 
 export const CHUNK = 16;
 
@@ -471,7 +475,10 @@ export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
 // Les coordonnées de Paris sont recopiées ici parce que CITIES est déclaré
 // plus bas dans le fichier ; le test de cohérence les compare à chaque
 // démarrage, elles ne peuvent donc pas se mettre à diverger en silence.
-export const VILLE = { name: 'Caserne & Commissariat', x: -240, z: 200, r: 50 };
+// La caserne et le commissariat sont AU CŒUR de Paris : ils suivent la ville,
+// ils ne vivent pas à une adresse à eux. Les laisser sur des coordonnées écrites
+// à la main, c'était les voir rester en rase campagne le jour où Paris bouge.
+export const VILLE = { name: 'Caserne & Commissariat', ...positionDe('paris'), r: 50 };
 export const CIRCUIT = { name: 'Circuit de F1', x: 400, z: 110, r: 88 };
 
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
@@ -526,6 +533,9 @@ export const PLACES = [
   ...QUAIS_METRO.map((q) => ({
     name: `Métro ${q.nom}`, x: WASHINGTON.x + q.u, z: WASHINGTON.z + q.v, r: 0,
   })),
+  // Le tour du monde : une destination par ville, et une par monument. Sans
+  // elles on arriverait « à Londres » sans savoir de quel côté regarder.
+  ...placesCapitales(),
 ];
 
 function buildPyramid(set) { // grande pyramide de grès du désert
@@ -858,6 +868,14 @@ const LANDMARKS = [
   { name: 'Village chinois', x: CHINE.x - 34, z: CHINE.z + 26, box: 16, build: buildVillageChinois },
   { name: 'Radeau de Guilin', x: CHINE.x + 30, z: CHINE.z + 16, box: 5, seuil: 0.25, waterBase: true, build: buildGuilin },
   { name: 'Bambouseraie', x: CHINE.x - 14, z: CHINE.z + 40, box: 11, seuil: 0.3, build: buildPandas },
+  // LE TOUR DU MONDE. Big Ben, Tower Bridge, le Colisée, la Sagrada Família,
+  // la tour de Pise, la pyramide de Khéops, le Taj Mahal, l'Opéra de Sydney,
+  // le Christ Rédempteur et la Space Needle. Ils étaient tous écrits dans
+  // src/monuments.js depuis longtemps, et aucun ne se dressait nulle part :
+  // on ne pouvait que les poser soi-même depuis le menu du constructeur.
+  // Maintenant que les villes se déduisent de leurs coordonnées réelles,
+  // chacun se dresse chez lui.
+  ...landmarksCapitales(),
 ];
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -869,12 +887,12 @@ export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x,
 // pattern and landmarks: Haussmann Paris, skyscraper New York, and
 // pastel-hilled San Francisco.
 export const CITIES = [
-  { key: 'paris', name: 'Paris', x: -240, z: 200, r: 55, cell: 12, base: 34, street: 3 },
+  { key: 'paris', name: 'Paris', ...positionDe('paris'), r: 55, cell: 12, base: 34, street: 3 },
   // New York n'est plus un disque : c'est l'île de Manhattan, longue et
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
   // par zoneManhattan().
-  { key: 'ny', name: 'New York', x: 295, z: -110, r: 152, cell: 12, base: 33, street: 3 },
+  { key: 'ny', name: 'New York', ...positionDe('ny'), r: 152, cell: 12, base: 33, street: 3 },
   // San Francisco n'est pas un disque non plus : c'est une presqu'île, avec
   // l'océan à l'ouest, la passe au nord et la baie à l'est — cf. src/sanfrancisco.js.
   { key: 'sf', name: 'San Francisco', x: SF.x, z: SF.z, r: SF.r, cell: 11, base: 33, street: 3 },
@@ -958,6 +976,11 @@ export class World {
     // karsts, les rizières en marches — une région entière dans ce qui était
     // une zone morte entre San Francisco et le Pôle Nord.
     h = hauteurChine(x, z, h);
+
+    // Le tour du monde : Londres, Rome, Barcelone, Pise, Gizeh, Agra, Sydney,
+    // Rio et Seattle. Chacune aplanit le parvis de son monument, avec un fondu
+    // au pourtour — au-delà, le paysage est celui du bruit, au bloc près.
+    h = hauteurCapitales(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
@@ -1327,6 +1350,14 @@ export class World {
         {
           const sc = solChine(wx, wz);
           if (sc !== null) { data[World.index(x, h, z)] = sc; continue; }
+        }
+
+        // Le parvis des monuments du tour du monde : dallé sous le monument,
+        // herbe sur le pourtour. Sans lui, le Colisée poserait ses arcades
+        // dans un pré.
+        {
+          const scap = solCapitales(wx, wz);
+          if (scap !== null) { data[World.index(x, h, z)] = scap; continue; }
         }
 
         // city streets: asphalt with sidewalks, dashed center lines and

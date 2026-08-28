@@ -21,6 +21,7 @@
 // trois pandas — l'habitat avec l'animal, c'est le message.
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -41,7 +42,7 @@ const BLANC_PANDA = uni(27);
 const OR = BLOCK.GOLD;
 const DALLE = CITY_BLOCK.GRANITE;
 
-export const CHINE = { x: -60, z: -520, r: 70 };
+export const CHINE = { ...positionDe('chine'), r: 70 };
 
 // --- le relief -----------------------------------------------------------------------
 //

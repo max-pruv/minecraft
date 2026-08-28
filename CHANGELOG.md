@@ -20,6 +20,132 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v164 — la carte prend ses vraies coordonnées, et le tour du monde commence
+
+**Pourquoi.** Max, en jouant : « il y a un vrai sujet structurel, elles sont
+beaucoup trop rapprochées… considère cette opportunité comme un reset de la
+carte pour laisser beaucoup plus d'espace ». Et, sur Paris : « la ville de Paris
+ne ressemble pas du tout à la ville de Paris » — faute de place. Les villes
+étaient posées à des coordonnées écrites à la main, choisies au fil des versions
+pour qu'elles ne se marchent pas dessus ; aucune n'était où elle devait être, et
+aucune ne pouvait grandir.
+
+Deux pannes de la partie en ligne, signalées le même jour : « quand la personne
+qui est le host du jeu en ligne part, les autres se retrouvent déconnectés » ;
+et « le son qui passait d'un côté avait une voix de robot, il a fallu éteindre
+et remettre plusieurs fois ».
+
+**Ce que ça change.**
+
+- **La carte est la vraie carte.** Chaque ville est donnée par sa latitude et sa
+  longitude, et une projection décide du reste. Personne n'écrit plus « Lille est
+  en (−300, −200) ». Lille est au nord de Paris parce qu'elle y est vraiment, et
+  Paris–Lille fait 204 km à l'échelle. L'Atlantique est resserré à 60 % — décision
+  de Max —, tout le reste est à l'échelle exacte.
+- **Le tour du monde.** Vingt et un monuments étaient bâtis au bloc près depuis
+  des versions, et **aucun ne se dressait nulle part** : on ne pouvait que les
+  poser soi-même depuis le menu du constructeur. Neuf villes rejoignent la carte —
+  Londres, Rome, Barcelone, Pise, Gizeh, Agra, Sydney, Rio, Seattle — et dix
+  monuments s'y dressent enfin : Big Ben, Tower Bridge, le Colisée, la Sagrada
+  Família, la tour de Pise, la pyramide de Khéops, le Taj Mahal, l'Opéra de
+  Sydney, le Christ Rédempteur, la Space Needle.
+- **Le monde ne se referme plus quand l'hôte s'en va.** Un invité reprend
+  automatiquement la maison : il vérifie que l'hôte est bien parti — et non que
+  c'est son propre réseau qui flanche — puis réclame son identifiant. Le serveur
+  de rendez-vous ne l'accorde qu'à un seul, ce qui suffit à les départager sans
+  qu'aucune poignée de main entre enfants soit nécessaire. La partie continue,
+  sous le même code.
+- **La voix de robot se répare toute seule.** Un appel restait « ouvert » aux
+  yeux de la visio pendant que le lien dessous se hachait : rien ne le rattrapait,
+  et il fallait éteindre et rallumer. La veille surveille désormais l'état réel de
+  la liaison et recompose l'appel après huit secondes de panne soutenue — assez
+  pour laisser passer un clignotement de réseau, assez court pour un enfant qui
+  attend.
+- **Nice a enfin sa baie.** Elle sortait parfaitement plate — ni mer, ni collines —
+  et personne ne l'avait vu. Avec son relief actif, deux défauts d'assise sont
+  apparus et ont été corrigés : la Promenade des Anglais enterrait ses chaises
+  bleues trois blocs sous le sable, et la colline du Château débordait sur la
+  place Masséna, où deux des sept statues étaient prises dans le talus et une
+  troisième noyée sous la cascade.
+- **La carte montre enfin tout le monde.** Son dézoom butait sur un plafond écrit
+  à la main, fixé quand le monde faisait mille cinq cents blocs de large. Il en
+  fait aujourd'hui vingt-quatre mille : le bouton 🌍 n'en montrait qu'un huitième,
+  et San Francisco n'existait plus pour personne.
+
+**Ce qui casse, et c'était accordé.** Le relief change là où les villes étaient
+et là où elles sont désormais. Max l'avait tranché pour ce chantier précis : « on
+peut se permettre de casser certaines choses pour refaire bien le fond. » Hors des
+villes, le paysage n'a pas bougé d'un bloc, et c'est vérifié colonne par colonne.
+
+**Ce qui le prouve.** Une suite neuve, `carteMonde.js` : aucune ville n'en
+chevauche une autre (marge la plus étroite : 58 blocs), les distances sont les
+vraies distances, chaque ville est du bon côté de sa voisine, et les dix
+monuments se dressent pour de vrai — jusqu'à leur flèche, sur un parvis de
+plain-pied. Une autre, `hote.js`, éprouve le départ de l'hôte sur trois
+navigateurs réels.
+
+Deux témoins ont été trouvés **menteurs** en chemin, et c'est le plus instructif
+de cette version :
+
+- `plafond.js` jurait que « hors de Washington, le paysage n'a pas bougé » — en
+  vert, et sans plus rien prouver. La capitale ayant déménagé à x ≈ −5 500, sa
+  soustraction ne retirait plus une seule colonne de la fenêtre observée :
+  l'empreinte était devenue la copie exacte de la précédente. Il découpe désormais
+  autour de **toutes** les villes, et un garde-fou lui interdit de se vider en
+  silence.
+- `carte.js` recopiait les coordonnées des villes à la main — « New York est en
+  (295, −110) ». Vingt-cinq témoins sont tombés d'un coup au premier déménagement,
+  en annonçant des quartiers disparus qui avaient seulement changé d'adresse. Un
+  test qui recopie ce qu'il éprouve n'éprouve que sa propre copie : il lit
+  maintenant le registre. Et son « toutes les destinations tiennent à l'écran au
+  dézoom maximum » interdisait au monde de grandir — douze domaines dans trente-six
+  pixels ; il vérifie désormais que chacune est repérable **à son échelle**, ce qui
+  est plus exigeant.
+
+---
+
+## v163 — le métro de Paris passe sous terre
+
+**Pourquoi.** Max, en jouant : « pas du tout de métro ou de train aérien à
+Paris. Typiquement, la réalité voudrait dire qu'on devrait avoir un métro
+souterrain. Le train ne devrait pas être aérien. » Il a raison — un anneau aérien
+faisant le tour de Paris n'existe nulle part, et le viaduc parisien se limite à
+deux tronçons des lignes 2 et 6. Le nôtre passait au-dessus des toits, porté sur
+quarante piliers.
+
+**Ce que ça change.**
+
+- **Un tunnel annulaire**, sept blocs sous la rue, avec ses piédroits carrelés
+  de blanc, sa voûte arrondie — un couloir carré fait cave, c'est la courbe du
+  plafond qui fait métro — et ses lampes tous les sept blocs, sans lesquelles on
+  ne sait plus de quel côté on regarde sous terre.
+- **Quatre stations avec de vrais quais** : un renfoncement à côté de la voie,
+  pas la voie elle-même. Un enfant qui attend se tient **hors** du passage de la
+  rame, sur un quai surélevé bordé de sa bande d'éveil jaune.
+- **Des bouches de métro au bord du trottoir** : édicule vert, escalier,
+  balustrade. C'est le seul morceau du métro visible depuis la rue, donc c'est
+  lui qui rend le reste trouvable — un tunnel parfait mais invisible ne sert à
+  personne.
+- **Plus un seul pilier, plus un seul rail en l'air.**
+
+**Ce qui ne bouge pas : le sol.** L'empreinte du relief mesure `terrainHeight`,
+le paysage engendré — creuser un tunnel dessous n'y touche pas. Et les blocs
+posés par un enfant sont réappliqués **après** la ville : une cabane enterrée
+sur le tracé reste intacte, et c'est le tunnel qui a un trou.
+
+**Ce qui le prouve.** Une suite neuve, `metro.js`, éprouve ce qu'un enfant vit,
+pas la présence d'un tunnel quelque part. Sur l'ancien code, quatre témoins
+tombent — « hauteur la plus pleine : +9, **100 % du tour** », « 8 points dégagés
+sur 180 », « 0 point praticable sur 12 », « la rame roule à y=44 pour un sol à
+34 ». Sur le nouveau : 35 % du tour au plus (les immeubles, que l'anneau
+traverse), 180 points dégagés sur 180, 12 quais praticables sur 12, et la rame à
+**y=27 pour un sol à 34**.
+
+Le premier témoin, écrit trop vite, comptait *tout* ce qui était solide au-dessus
+du sol le long de l'anneau : il rendait 2 459 blocs, et c'étaient les immeubles
+de Paris. Il accusait la ville d'être un viaduc. Ce qui distingue un viaduc d'un
+quartier, c'est la **continuité** — d'où la mesure actuelle, la hauteur la plus
+pleine du tour.
 ## v162 — Washington repris à zéro : trois fois plus grand, et on habite dedans
 
 **Pourquoi.** Le verdict de Max sur v161, quelques heures après sa mise en

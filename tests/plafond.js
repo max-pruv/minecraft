@@ -43,7 +43,24 @@ function verifier(nom, ok, detail = '') {
 // Valeurs précédentes, pour mémoire :
 // v160 : eb490353e3ffb238d8090c0854f9654045ff6bef
 // v161 : b29a76348ff4b20a5827ba585b65d1786f19131b
-const EMPREINTE_RELIEF = '7d60346f002c3df460f9be9e879b51ff60f024e1';
+// v162 : 7d60346f002c3df460f9be9e879b51ff60f024e1
+//
+// **Troisième changement, en v163** : la remise à plat de la carte. Les villes
+// ne sont plus posées à des coordonnées écrites à la main mais déduites de leur
+// latitude et de leur longitude réelles (cf. src/mondes.js). Toutes ont bougé —
+// New York, San Francisco et Washington de plusieurs milliers de blocs vers
+// l'ouest —, donc le relief de la fenêtre observée a changé partout où l'une
+// d'elles se trouvait. C'est la casse que Max avait autorisée pour ce chantier
+// précis : « on peut se permettre de casser certaines choses pour refaire bien
+// le fond ».
+// v163 (villes remises sur leurs vraies coordonnées) : e6041d0a5a7b3f8c…
+//
+// Et une quatrième fois dans la même livraison, pour le TOUR DU MONDE : neuf
+// sites s'ajoutent — Londres, Rome, Barcelone, Pise, Gizeh, Agra, Sydney, Rio
+// et Seattle — chacun aplanissant le parvis de son monument. Un seul tombe
+// dans la fenêtre observée, Londres ; les huit autres sont trop loin pour y
+// paraître, et ne changent donc pas ce chiffre-ci.
+const EMPREINTE_RELIEF = 'da4fccca8dc97507b80350dbf8b74d74232855c6';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -58,7 +75,25 @@ const EMPREINTE_RELIEF = '7d60346f002c3df460f9be9e879b51ff60f024e1';
 // les maisons de Marlon et d'Alice.
 // Calculée sur v160 ET sur v162 avec la même découpe : identiques. Hors de la
 // capitale, v162 rend le monde EXACTEMENT tel qu'il était avant v161.
-const EMPREINTE_HORS_WASHINGTON = '50566cefdeca64138a9ee906598a004c9f139e49';
+//
+// EN v163, CE TÉMOIN S'ÉTAIT VIDÉ DE SON SENS — ET IL LE DISAIT EN VERT.
+//
+// La découpe ne retirait QUE Washington. Le remaniement de la carte l'a
+// expédiée à x ≈ −5 500, très au-delà de la fenêtre observée (±700) : la
+// soustraction ne retirait donc plus une seule colonne, et cette empreinte
+// était devenue, au bit près, la copie de la précédente. Elle continuait de
+// passer sans plus rien protéger — le pire état pour un test, car il inspire
+// une confiance qu'il ne mérite plus.
+//
+// On découpe donc autour de TOUTES les villes, pas de la seule capitale. Ce que
+// le témoin promet redevient vrai et le restera quand la carte grandira : là où
+// aucune ville ne se pose, le paysage est celui du bruit de terrain, intact.
+// `PAS_VIDE` plus bas interdit désormais à ce témoin de se vider en silence.
+const EMPREINTE_HORS_VILLES = 'f482dec7e266d6f94c9f5b1da6d6b21701bd7a4c';
+
+// La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
+// rien de la ville ne déteint sur le relief.
+const MARGE_VILLE = 40;
 
 // Quelques colonnes nommées, pour que l'échec dise quelque chose de lisible.
 const COLONNES = [
@@ -71,10 +106,19 @@ const COLONNES = [
   // de v160 — 26 et 35. C'est exactement ce que promet le déménagement : là où
   // la ville n'est plus, le sol redevient ce qu'il a toujours été.
   [100, 100, 26], [16, 64, 35],
-  // et deux colonnes DANS la nouvelle emprise, pour figer son relief à elle :
-  // le Mall, et l'esplanade du Pentagone.
-  [106, 374, 33], [-31, 456, 33],
 ];
+
+// Et deux colonnes DANS la capitale, pour figer son relief à elle : le Mall, et
+// l'esplanade du Pentagone.
+//
+// Elles étaient écrites en absolu — [106, 374] et [−31, 456] — et le
+// remaniement de la carte les a laissées sur place pendant que la ville, elle,
+// partait à quatre mille blocs de là. Le test annonçait « le Mall s'est
+// affaissé de 33 à 8 » alors que le Mall se portait très bien : c'est le témoin
+// qui regardait au mauvais endroit. On les exprime donc en ÉCART au centre de
+// Washington, lu dans le registre : la capitale peut déménager encore, ses
+// repères la suivent.
+const REPERES_DC = [[-60, 0, 33, 'le Mall'], [-197, 82, 33, 'le Pentagone']];
 
 // Une maison telle que l'aurait sauvegardée la version d'avant : des
 // coordonnées absolues, et rien d'autre. Le sol est à 26 autour de
@@ -101,20 +145,47 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
+  const { CITIES } = await import('../src/world.js');
+  const { SITES, positionSite } = await import('../src/capitales.js');
+  // Les sites du tour du monde aplanissent eux aussi leur parvis : Londres
+  // tombe dans la fenêtre observée, et sans elle dans la découpe le témoin
+  // annoncerait « le paysage a bougé hors des villes » pour une esplanade
+  // parfaitement voulue.
+  const SITES_POS = SITES.map((s) => ({ ...positionSite(s.cle), portee: s.parvis + 24 }));
+  // Dans une ville, ou dans le fondu qui la borde ?
+  const dansUneVille = (x, z) => {
+    if (x >= Z.x0 - MARGE_VILLE && x <= Z.x1 + MARGE_VILLE
+      && z >= Z.z0 - MARGE_VILLE && z <= Z.z1 + MARGE_VILLE) return true;
+    if (CITIES.some((c) => Math.hypot(x - c.x, z - c.z) <= c.r + MARGE_VILLE)) return true;
+    return SITES_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee);
+  };
   const vals = [], hors = [];
   for (let x = -700; x <= 700; x += 3) {
     for (let z = -700; z <= 700; z += 3) {
       const h = w.terrainHeight(x, z);
       vals.push(h);
-      if (x < Z.x0 || x > Z.x1 || z < Z.z0 || z > Z.z1) hors.push(h);
+      if (!dansUneVille(x, z)) hors.push(h);
     }
   }
   const empreinte = createHash('sha1').update(vals.join(',')).digest('hex');
   verifier('le paysage est resté exactement le même',
     empreinte === EMPREINTE_RELIEF, `${vals.length} colonnes · ${empreinte.slice(0, 12)}`);
+
+  // LE TÉMOIN QUI SURVEILLE LE TÉMOIN.
+  //
+  // Sans lui, une ville qui s'éloigne de la fenêtre vide la soustraction sans
+  // que personne ne le voie : l'empreinte « hors des villes » redevient la
+  // copie de l'empreinte totale et passe au vert en ne prouvant plus rien.
+  // C'est exactement ce qui est arrivé en v163. On exige donc qu'il reste
+  // quelque chose à soustraire, et que le résultat DIFFÈRE du tout.
+  verifier('la découpe retire vraiment quelque chose — le témoin n\'est pas vide',
+    hors.length > 0 && hors.length < vals.length
+      && createHash('sha1').update(hors.join(',')).digest('hex') !== empreinte,
+    `${vals.length - hors.length} colonnes retirées sur ${vals.length}`);
+
   const empreinteHors = createHash('sha1').update(hors.join(',')).digest('hex');
-  verifier('et hors de Washington, il n\'a pas bougé d\'un bloc',
-    empreinteHors === EMPREINTE_HORS_WASHINGTON,
+  verifier('et hors des villes, le paysage n\'a pas bougé d\'un bloc',
+    empreinteHors === EMPREINTE_HORS_VILLES,
     `${hors.length} colonnes · ${empreinteHors.slice(0, 12)}`);
 
   // Ce que la zone d'influence NE DOIT PAS toucher : les endroits où les
@@ -130,7 +201,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et la capitale ne touche à rien de ce que les enfants ont bâti',
     atteints.length === 0, atteints.map((a) => a[0]).join(', '));
 
-  const decalees = COLONNES.filter(([x, z, h]) => w.terrainHeight(x, z) !== h);
+  const { WASHINGTON } = await import('../src/washington.js');
+  const toutes = [
+    ...COLONNES,
+    ...REPERES_DC.map(([dx, dz, h]) => [WASHINGTON.x + dx, WASHINGTON.z + dz, h]),
+  ];
+  const decalees = toutes.filter(([x, z, h]) => w.terrainHeight(x, z) !== h);
   verifier('aucune colonne de référence n\'a bougé', decalees.length === 0,
     JSON.stringify(decalees.map(([x, z, h]) => ({ x, z, attendu: h, trouve: w.terrainHeight(x, z) }))));
 

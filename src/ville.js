@@ -1,12 +1,23 @@
 // Les services de la ville : la caserne de pompiers, le commissariat, et le
-// métro aérien qui fait le tour de Paris.
+// métro qui fait le tour de Paris — SOUS terre.
 //
-// Le viaduc n'est pas un caprice. Autour de la ville, quinze points sur
-// vingt-quatre relevés sont sous l'eau : une voie posée au sol aurait plongé
-// dans le fleuve. À l'intérieur, en revanche, la ville repose sur une base
-// parfaitement plate — c'est là que passe l'anneau, porté sur piliers au-dessus
-// des toits bas, comme un métro aérien. Il se creuse son propre couloir : sans
-// cela, un immeuble sur son passage l'aurait enseveli.
+// POURQUOI IL EST PASSÉ SOUS TERRE. Il était aérien, porté sur piliers au-dessus
+// des toits. Max, en jouant : « pas du tout de métro ou de train aérien à Paris.
+// Typiquement, la réalité voudrait dire qu'on devrait avoir un métro souterrain.
+// Le train ne devrait pas être aérien. » Il a raison : le viaduc parisien
+// n'existe que sur deux tronçons des lignes 2 et 6, et ce n'est pas l'image
+// qu'on a de la ville. Un anneau aérien qui fait le tour de Paris, ça
+// n'existe nulle part.
+//
+// La ville repose sur une base parfaitement plate — c'est ce qui rend le tunnel
+// possible sans jamais déboucher à flanc de colline. Le tunnel se creuse son
+// propre couloir sous les rues, et on y descend par des bouches de métro
+// posées au bord du trottoir, comme on le fait vraiment.
+//
+// CE QUE LE TUNNEL NE PEUT PAS CASSER. Les blocs posés par un enfant sont
+// réappliqués APRÈS la ville, à la fin de `generateChunk` : ils gagnent sur
+// tout ce que le bâtisseur pose ou creuse. Une cabane enterrée sur le tracé
+// reste donc intacte, et c'est le tunnel qui a un trou — pas l'inverse.
 
 import { BLOCK, DECOR_START } from './blocks.js';
 
@@ -21,11 +32,17 @@ const GRIS = uni(24);
 const GRIS_CLAIR = uni(23);
 const ANTHRACITE = uni(25);
 const JAUNE = uni(2);
+const VERT_METRO = uni(13);      // le vert des édicules Guimard, reconnaissable de loin
 const BETON = BLOCK.STONEBRICK;
 const VERRE = BLOCK.GLASS;
 
-// L'anneau du métro : rayon et hauteur du tablier, dans le repère du bâtisseur.
-export const ANNEAU = { rayon: 38, tablier: 9 };
+// L'anneau du métro : rayon, et niveau des rails dans le repère du bâtisseur.
+//
+// `tablier` est désormais NÉGATIF : c'est une profondeur. Les rails sont à sept
+// blocs sous la surface, ce qui laisse trois blocs de terre au-dessus de la
+// voûte — assez pour qu'on ne voie rien depuis la rue, assez peu pour que les
+// bouches de métro restent des escaliers et non des puits.
+export const ANNEAU = { rayon: 38, tablier: -8 };
 
 // Le tracé, en coordonnées ABSOLUES du monde. Les véhicules s'en servent pour
 // tourner ; le bâtisseur, pour poser la voie. Un seul endroit décide donc du
@@ -80,7 +97,7 @@ export function buildVille(poser) {
   // de l'anneau ne peut plus décoiffer une halle, et un pilier qui tomberait
   // dans un mur est simplement recouvert par le mur. Chaque fois qu'on ajoutera
   // un bâtiment ici, il gagnera contre la voie au lieu d'être mangé par elle.
-  metroAerien();
+  metroSouterrain();
 
   // ================= LA CASERNE DE POMPIERS =================
   // À l'ouest de la place centrale, portes ouvertes sur celle-ci.
@@ -174,9 +191,22 @@ export function buildVille(poser) {
   // ================= LE MÉTRO AÉRIEN =================
   // Un anneau porté sur piliers. Le tablier se creuse d'abord son couloir :
   // sans cela, la voie disparaissait dans le premier immeuble rencontré.
-  function metroAerien() {
-    const Y = ANNEAU.tablier;
+  // Le métro souterrain : un tunnel annulaire, quatre stations, et les bouches
+  // par lesquelles on y descend.
+  //
+  // Trois choses comptent pour qu'un enfant y croie, et aucune n'est décorative :
+  //   — on DESCEND. Une bouche au bord du trottoir, un escalier, un quai. Un
+  //     tunnel où l'on tombe par un trou ne ressemble pas au métro.
+  //   — le tunnel est ÉCLAIRÉ. Sous terre, sans repère lumineux, on ne sait plus
+  //     de quel côté on regarde ; les lampes régulières donnent la direction.
+  //   — la voûte est ARRONDIE. Un couloir carré fait cave ; c'est la courbe du
+  //     plafond qui fait métro.
+  function metroSouterrain() {
+    const Y = ANNEAU.tablier;          // niveau des rails (négatif : sous terre)
     const R = ANNEAU.rayon;
+    const SOL = Y;                     // le ballast
+    const VOUTE = Y + 5;               // le sommet du tunnel
+
     // Les points de l'anneau, dédoublonnés une fois pour toutes.
     const points = [];
     const vus = new Set();
@@ -189,78 +219,111 @@ export function buildVille(poser) {
       points.push({ a, x, z });
     }
 
-    // Deux passes, et pas une seule : le couloir dégagé d'un point effaçait les
-    // rails posés au point précédent, l'anneau se retrouvait en pointillé.
-    for (const { x, z } of points) vider(x - 3, x + 3, Y, Y + 6, z - 3, z + 3);
+    // Deux passes, et pas une seule : le couloir creusé d'un point effaçait la
+    // voie posée au point précédent, et l'anneau se retrouvait en pointillé.
+    // C'est le même piège qu'au temps du viaduc — il n'a pas disparu en
+    // descendant sous terre.
+    for (const { a } of points) {
+      for (let d = -3; d <= 3; d++) {
+        const px = Math.round(Math.sin(a) * (R + d)), pz = Math.round(Math.cos(a) * (R + d));
+        // La voûte s'abaisse sur les bords : c'est ce qui l'arrondit.
+        const haut = VOUTE - (Math.abs(d) === 3 ? 2 : Math.abs(d) === 2 ? 1 : 0);
+        vider(px, px, SOL, haut, pz, pz);
+      }
+    }
 
     for (const { a, x, z } of points) {
-      // le tablier : cinq blocs de large, posés le long du rayon
-      for (let d = -2; d <= 2; d++) {
-        set(Math.round(Math.sin(a) * (R + d)), Y - 1, Math.round(Math.cos(a) * (R + d)),
-          Math.abs(d) === 2 ? GRIS : BETON);
-      }
-      // les deux files de rails, de part et d'autre de l'axe
-      for (const d of [-1, 1]) {
-        set(Math.round(Math.sin(a) * (R + d)), Y, Math.round(Math.cos(a) * (R + d)), GRIS_CLAIR);
-      }
+      const en = (d, y, id) => set(Math.round(Math.sin(a) * (R + d)), y,
+        Math.round(Math.cos(a) * (R + d)), id);
+      // le ballast et la plate-forme de voie
+      for (let d = -3; d <= 3; d++) en(d, SOL - 1, Math.abs(d) === 3 ? BETON : GRIS);
+      // les deux files de rails
+      for (const d of [-1, 1]) en(d, SOL, GRIS_CLAIR);
       // la traverse, une sur six
-      if ((x + z) % 6 === 0) set(x, Y, z, ROUGE_SOMBRE);
-      // le garde-corps, au bord du tablier
-      for (const d of [-2, 2]) {
-        set(Math.round(Math.sin(a) * (R + d)), Y + 1, Math.round(Math.cos(a) * (R + d)), GRIS);
+      if ((x + z) % 6 === 0) set(x, SOL, z, ROUGE_SOMBRE);
+      // le piédroit carrelé de blanc, des deux côtés — le carreau du métro
+      for (const d of [-3, 3]) {
+        for (let y = SOL; y <= VOUTE - 2; y++) en(d, y, BLANC);
       }
+      // la voûte, arrondie
+      for (const d of [-3, -2, -1, 0, 1, 2, 3]) {
+        const haut = VOUTE - (Math.abs(d) === 3 ? 2 : Math.abs(d) === 2 ? 1 : 0);
+        en(d, haut + 1, BETON);
+      }
+      // les lampes, tous les sept blocs : sous terre, c'est ce qui donne la
+      // direction et empêche de se croire à l'arrêt
+      if ((x + z) % 7 === 0) en(0, VOUTE, JAUNE);
     }
 
-    // les piliers, un tous les neuf degrés
-    for (let i = 0; i < 40; i++) {
-      const a = (i / 40) * Math.PI * 2;
-      const x = Math.round(Math.sin(a) * R), z = Math.round(Math.cos(a) * R);
-      for (let y = -1; y < Y - 1; y++) {
-        set(x, y, z, BETON);
-        if (y > 0 && y % 4 === 0) {
-          set(Math.round(Math.sin(a) * (R + 1)), y, Math.round(Math.cos(a) * (R + 1)), GRIS);
-          set(Math.round(Math.sin(a) * (R - 1)), y, Math.round(Math.cos(a) * (R - 1)), GRIS);
-        }
-      }
-    }
-
-    // Quatre stations aux points cardinaux : quai couvert, escalier jusqu'à la
-    // rue, et le nom sur le fronton.
-    for (const [sx, sz] of [[0, -R], [R, 0], [0, R], [-R, 0]]) {
+    // --- les quatre stations, aux points cardinaux ---------------------------
+    //
+    // Un quai, c'est un renfoncement à côté de la voie, pas la voie elle-même :
+    // un enfant qui attend doit pouvoir se tenir HORS du passage de la rame.
+    const stations = [[0, -R], [R, 0], [0, R], [-R, 0]];
+    for (const [sx, sz] of stations) {
       const long = Math.abs(sx) > Math.abs(sz);
       const [ax, az] = long ? [0, 1] : [1, 0];          // axe du quai
-      for (let k = -6; k <= 6; k++) {
+      const [px, pz] = long ? [1, 0] : [0, 1];          // perpendiculaire
+      const cote = Math.sign(sx || sz);                 // vers l'intérieur de l'anneau
+
+      for (let k = -7; k <= 7; k++) {
         const qx = sx + ax * k, qz = sz + az * k;
-        // élargissement du quai
-        for (let d = -4; d <= 4; d++) {
-          const dx = long ? d : 0, dz = long ? 0 : d;
-          set(qx + dx, Y - 1, qz + dz, Math.abs(d) > 2 ? GRIS_CLAIR : BETON);
+        // on élargit la salle : quatre blocs de plus du côté du quai
+        for (let d = 1; d <= 5; d++) {
+          const ex = qx - px * cote * d, ez = qz - pz * cote * d;
+          vider(ex, ex, SOL, VOUTE + 1, ez, ez);
+          set(ex, SOL, ez, d <= 4 ? GRIS_CLAIR : BLANC);   // le quai, surélevé
+          set(ex, VOUTE + 2, ez, BETON);                    // son plafond
+          if (d === 5) for (let y = SOL + 1; y <= VOUTE + 1; y++) set(ex, y, ez, BLANC);
         }
-        // la marquise
-        for (let d = -4; d <= 4; d++) {
-          const dx = long ? d : 0, dz = long ? 0 : d;
-          set(qx + dx, Y + 5, qz + dz, JAUNE);
-        }
+        // la bande d'éveil au bord du quai, jaune, comme partout
+        const bx = qx - px * cote, bz = qz - pz * cote;
+        set(bx, SOL + 1, bz, k % 2 === 0 ? JAUNE : GRIS_CLAIR);
+        // les lampes du quai
         if (k % 4 === 0) {
-          for (const s of [-1, 1]) {
-            const dx = long ? s * 4 : 0, dz = long ? 0 : s * 4;
-            for (let y = Y; y <= Y + 4; y++) set(qx + dx, y, qz + dz, GRIS);
-          }
+          const lx = qx - px * cote * 3, lz = qz - pz * cote * 3;
+          set(lx, VOUTE + 1, lz, JAUNE);
         }
       }
-      // l'escalier vers la rue, à l'intérieur de l'anneau
-      const ix = Math.sign(-sx), iz = Math.sign(-sz);
-      for (let k = 0; k <= Y + 1; k++) {
-        const ex = sx + ix * (4 + k), ez = sz + iz * (4 + k);
+
+      // --- la bouche de métro, au bord du trottoir --------------------------
+      //
+      // C'est elle qui rend le métro trouvable. Sans elle, un tunnel parfait
+      // reste invisible : l'enfant passe au-dessus sans se douter de rien.
+      const ox = sx - px * cote * 8, oz = sz - pz * cote * 8;   // au bout du quai
+      // la trémie : une cage d'escalier qui monte du quai jusqu'à la rue
+      for (let y = SOL; y <= 1; y++) {
         for (let d = -1; d <= 1; d++) {
-          const dx = long ? d : 0, dz = long ? 0 : d;
-          set(ex + dx, Y - 1 - k, ez + dz, GRIS_CLAIR);
+          const ex = ox + ax * d, ez = oz + az * d;
+          vider(ex, ex, y, y, ez, ez);
         }
       }
-      // le fronton
-      for (let d = -3; d <= 3; d++) {
-        const dx = long ? d : 0, dz = long ? 0 : d;
-        set(sx + dx + ix * 3, Y + 6, sz + dz + iz * 3, BLEU);
+      // les marches, du quai jusqu'à la rue
+      const marches = Math.abs(SOL) + 1;
+      for (let m = 0; m <= marches; m++) {
+        const ex = ox - px * cote * Math.round(m / 2), ez = oz - pz * cote * Math.round(m / 2);
+        for (let d = -1; d <= 1; d++) {
+          const mx = ex + ax * d, mz = ez + az * d;
+          vider(mx, mx, SOL + m, SOL + m + 3, mz, mz);
+          set(mx, SOL + m - 1, mz, GRIS_CLAIR);
+        }
+      }
+      // l'édicule en surface : l'arche verte, deux mâts et l'enseigne jaune.
+      // C'est le seul morceau du métro qu'on voit depuis la rue, donc c'est
+      // lui qui doit se reconnaître de loin.
+      const ex0 = ox - px * cote * Math.round(marches / 2), ez0 = oz - pz * cote * Math.round(marches / 2);
+      for (const d of [-2, 2]) {
+        const mx = ex0 + ax * d, mz = ez0 + az * d;
+        for (let y = 0; y <= 3; y++) set(mx, y, mz, VERT_METRO);
+      }
+      for (let d = -2; d <= 2; d++) {
+        set(ex0 + ax * d, 4, ez0 + az * d, VERT_METRO);
+      }
+      set(ex0, 5, ez0, JAUNE);                                  // le M de l'enseigne
+      // la balustrade autour de la trémie, pour ne pas y tomber
+      for (const d of [-2, 2]) {
+        const mx = ex0 + px * cote * d, mz = ez0 + pz * cote * d;
+        set(mx, 0, mz, VERT_METRO);
       }
     }
   }

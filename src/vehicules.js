@@ -409,7 +409,12 @@ export function createVehicules({ scene, player }) {
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
     // pour les tests : où en est chaque convoi, et combien sont affichés
+    // `nom` et `y` s'ajoutent au reste : sans eux, un test ne peut pas dire DE
+    // QUEL convoi il parle ni à quelle hauteur il roule — c'est précisément ce
+    // qu'il fallait pour prouver que le métro est passé sous terre.
     etat: () => convois.map((c) => ({
+      nom: c.nom,
+      y: Math.round((c.elements[0] ? c.elements[0].position.y : 0) * 10) / 10,
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
       visibles: c.elements.filter((m) => m.visible).length,

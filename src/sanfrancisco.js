@@ -24,6 +24,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
+import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -48,7 +49,7 @@ const MARRON = uni(17);      // les otaries
 const GRIS_QUAI = uni(23);
 const VERT_TOIT = uni(5);    // les toits de pagode de Chinatown
 
-export const SF = { x: 0, z: -320, r: 66 };
+export const SF = { ...positionDe('sf'), r: 66 };
 
 const BLOCS_PAR_KM = 9;
 // Le Ferry Building : le pied de Market Street, et le point d'où tout se mesure.

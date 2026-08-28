@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -44,20 +44,32 @@ const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js',
 // créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
-  'src/net.js': ['reseau.js', 'visio.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js'],
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js'],
+  // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
+  // toutes, donc tout ce qui les dessine se rejoue.
+  'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
+  // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
+  // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
+  'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
+  'src/monuments.js': ['carteMonde.js'],
+  'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/carte.js': ['carte.js', 'carteMonde.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
   'src/washington.js': ['washington.js', 'plafond.js'],
   'src/dcmonuments.js': ['washington.js'],
+  // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
+  // commissariat.
+  'src/ville.js': ['metro.js', 'carte.js'],
   'src/player.js': ['plafond.js', 'monte.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js'],
-  'src/vehicules.js': ['monte.js', 'washington.js'],
+  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],

@@ -13,21 +13,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Paris et son métro souterrain** — consigne de Max : il n'y a pas de
-  train aérien dans Paris. L'anneau actuel passe au-dessus des toits
-  (`ville.js:metroAerien`, `vehicules.js:metro`, `main.js`). À refaire sous
-  terre, avec bouches et quais. Et la place qu'il faut pour que Paris ressemble
-  à Paris.
+- [ ] **Paris a la place qu'il lui faut** — le métro est passé sous terre
+  (v163) et la carte lui a donné l'espace (v164) : la ville peut maintenant
+  grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
+  l'étaler pour de bon.
 
-- [ ] **La carte sur la vraie géographie** — équirectangulaire centrée sur
-  Paris, 1 bloc = 4 km, Atlantique (−74° à −10°) resserré à 60 %. New York
-  956 blocs, San Francisco 1 840, Tokyo 2 538. On voyage par téléportation.
-  Washington est posée au sud-ouest de New York, à 44° de l'axe nord-sud là où
-  la vraie relève 52° : c'est la place disponible qui a décidé, pas la
-  géographie, et c'est cette refonte qui la replacera au kilomètre près.
-  **Le piège** : déplacer une ville déplace le sol sous les blocs des enfants.
-  Générateur de terrain versionné + migration par colonne. Max autorise à casser
-  ce qu'on ne sait pas suivre, pas à jeter ce qui se rattrape.
+- [ ] **Le tour du monde, suite** — neuf villes ont leur monument (v164), pas
+  encore leur ville : Londres n'a que Big Ben et Tower Bridge sur un parvis.
+  Onze monuments du catalogue attendent encore une adresse (Notre-Dame, le
+  Sacré-Cœur, l'Empire State, le Chrysler, la Statue de la Liberté, le
+  Flatiron, le Golden Gate, l'Élysée, la Maison-Blanche — ceux-là appartiennent
+  à des villes déjà bâties et doivent y être posés à leur vraie place).
 
 - [ ] **Recalibrer les monuments existants** dans le ciel à 160 blocs. Ceux de
   Washington sont à leur échelle depuis v162 — l'obélisque à soixante-douze
@@ -64,6 +60,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v164** — la carte prend ses vraies coordonnées : chaque ville déduite
+  de sa latitude et de sa longitude, aucun chevauchement (marge la plus étroite
+  58 blocs), et le tour du monde commence — neuf villes, dix monuments qui se
+  dressent enfin quelque part. Plus : la reprise d'hôte automatique quand celui
+  qui héberge s'en va, la voix de robot qui se répare seule, la baie de Nice
+  qui existe enfin, et deux témoins pris en flagrant délit de mensonge (voir le
+  journal).
+
+
+- [x] **v163** — le métro de Paris passe sous terre : tunnel annulaire, quatre
+  stations à quais, bouches de métro au bord du trottoir, plus un seul pilier.
 - [x] **v162** — Washington repris à zéro sur le verdict de Max (« très low
   cost ») : échelle triplée (48 blocs/km), le cœur monumental seulement, les
   douze musées du Mall, trente-deux intérieurs réels (hémicycles du Capitole,
