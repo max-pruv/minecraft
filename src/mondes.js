@@ -160,12 +160,66 @@ export const MONDES = {
       { cle: 'londres', nom: 'Londres', lat: 51.5074, lon: -0.1278, r: 112 },
       { cle: 'rome', nom: 'Rome', lat: 41.9028, lon: 12.4964, r: 75 },
       { cle: 'barcelone', nom: 'Barcelone', lat: 41.3874, lon: 2.1686, r: 66 },
-      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 42 },
+      // Pise cède quelques blocs : Florence n'est qu'à 84 blocs de Toscane.
+      { cle: 'pise', nom: 'Pise', lat: 43.7228, lon: 10.3966, r: 36 },
       { cle: 'gizeh', nom: 'Gizeh', lat: 29.9773, lon: 31.1325, r: 62 },
       { cle: 'agra', nom: 'Agra', lat: 27.1751, lon: 78.0421, r: 58 },
       { cle: 'sydney', nom: 'Sydney', lat: -33.8688, lon: 151.2093, r: 66 },
       { cle: 'rio', nom: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, r: 85 },
       { cle: 'seattle', nom: 'Seattle', lat: 47.6062, lon: -122.3321, r: 54 },
+
+      // --- LES CINQUANTE GRANDES -----------------------------------------
+      //
+      // Max : « refais les 50 plus grosses et famous villes mondiales en
+      // détail. » Trente-huit de plus d'un coup, par la machine à villes —
+      // le registre porte leurs coordonnées et leur emprise, la machine
+      // (src/villesmonde.js) porte leur eau, leurs rues et leurs monuments.
+      // Les rayons sont dictés par la géographie : Bruxelles est serrée
+      // entre Lille et la fenêtre des enfants, Florence et Pise se partagent
+      // 84 blocs de Toscane.
+      // Europe.
+      { cle: 'madrid', nom: 'Madrid', lat: 40.4168, lon: -3.7038, r: 50 },
+      { cle: 'lisbonne', nom: 'Lisbonne', lat: 38.7223, lon: -9.1393, r: 46 },
+      { cle: 'amsterdam', nom: 'Amsterdam', lat: 52.3676, lon: 4.9041, r: 40 },
+      { cle: 'bruxelles', nom: 'Bruxelles', lat: 50.8503, lon: 4.3517, r: 34 },
+      { cle: 'berlin', nom: 'Berlin', lat: 52.52, lon: 13.405, r: 50 },
+      { cle: 'munich', nom: 'Munich', lat: 48.1351, lon: 11.582, r: 42 },
+      { cle: 'vienne', nom: 'Vienne', lat: 48.2082, lon: 16.3738, r: 46 },
+      { cle: 'prague', nom: 'Prague', lat: 50.0755, lon: 14.4378, r: 44 },
+      { cle: 'venise', nom: 'Venise', lat: 45.4408, lon: 12.3155, r: 40 },
+      { cle: 'florence', nom: 'Florence', lat: 43.7696, lon: 11.2558, r: 40 },
+      { cle: 'athenes', nom: 'Athènes', lat: 37.9838, lon: 23.7275, r: 46 },
+      { cle: 'istanbul', nom: 'Istanbul', lat: 41.0082, lon: 28.9784, r: 54 },
+      { cle: 'moscou', nom: 'Moscou', lat: 55.7558, lon: 37.6173, r: 56 },
+      { cle: 'stpetersbourg', nom: 'Saint-Pétersbourg', lat: 59.9311, lon: 30.3609, r: 48 },
+      { cle: 'stockholm', nom: 'Stockholm', lat: 59.3293, lon: 18.0686, r: 42 },
+      { cle: 'copenhague', nom: 'Copenhague', lat: 55.6761, lon: 12.5683, r: 40 },
+      // Asie et Moyen-Orient.
+      // Ancrée sur la gare de Tokyo : c'est de là que la ville se visite.
+      { cle: 'tokyo', nom: 'Tokyo', lat: 35.6812, lon: 139.7671, r: 60 },
+      { cle: 'kyoto', nom: 'Kyoto', lat: 35.0116, lon: 135.7681, r: 42 },
+      { cle: 'seoul', nom: 'Séoul', lat: 37.5665, lon: 126.978, r: 50 },
+      { cle: 'shanghai', nom: 'Shanghai', lat: 31.2304, lon: 121.4737, r: 54 },
+      { cle: 'hongkong', nom: 'Hong Kong', lat: 22.3193, lon: 114.1694, r: 46 },
+      { cle: 'singapour', nom: 'Singapour', lat: 1.29, lon: 103.85, r: 44 },
+      { cle: 'bangkok', nom: 'Bangkok', lat: 13.7563, lon: 100.5018, r: 46 },
+      { cle: 'dubai', nom: 'Dubaï', lat: 25.2048, lon: 55.2708, r: 50 },
+      { cle: 'jerusalem', nom: 'Jérusalem', lat: 31.7683, lon: 35.2137, r: 40 },
+      { cle: 'mumbai', nom: 'Mumbai', lat: 18.94, lon: 72.835, r: 48 },
+      { cle: 'delhi', nom: 'Delhi', lat: 28.6139, lon: 77.209, r: 45 },
+      // Amériques.
+      { cle: 'losangeles', nom: 'Los Angeles', lat: 34.0522, lon: -118.2437, r: 56 },
+      { cle: 'chicago', nom: 'Chicago', lat: 41.8781, lon: -87.6298, r: 50 },
+      { cle: 'lasvegas', nom: 'Las Vegas', lat: 36.11, lon: -115.17, r: 44 },
+      { cle: 'miami', nom: 'Miami', lat: 25.7617, lon: -80.1918, r: 42 },
+      { cle: 'toronto', nom: 'Toronto', lat: 43.6532, lon: -79.3832, r: 44 },
+      { cle: 'mexico', nom: 'Mexico', lat: 19.4326, lon: -99.1332, r: 50 },
+      { cle: 'havane', nom: 'La Havane', lat: 23.1136, lon: -82.3666, r: 40 },
+      { cle: 'buenosaires', nom: 'Buenos Aires', lat: -34.6037, lon: -58.3816, r: 48 },
+      { cle: 'machupicchu', nom: 'Machu Picchu', lat: -13.1631, lon: -72.545, r: 30 },
+      // Afrique.
+      { cle: 'marrakech', nom: 'Marrakech', lat: 31.6295, lon: -7.9811, r: 44 },
+      { cle: 'lecap', nom: 'Le Cap', lat: -33.9249, lon: 18.4241, r: 44 },
     ],
   },
 

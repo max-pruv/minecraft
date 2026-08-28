@@ -174,15 +174,15 @@ const VRAIES_KM = [
     verifier('le terrain existe là où San Francisco a déménagé',
       loin.h > 0 && loin.solide, JSON.stringify(loin));
 
-    // --- LE TOUR DU MONDE : huit villes, pas huit esplanades -----------------
+    // --- LE TOUR DU MONDE : quarante-six villes, pas des esplanades ----------
     //
     // Max : « fais pas que Londres, hein — je veux plein de villes iconiques. »
-    // Les parvis ont tous promu : chaque monument se dresse désormais DANS sa
-    // ville (src/villesmonde.js), au bord de son eau. Le témoin sonde le monde
-    // engendré : chaque monument debout, les huit grands du catalogue jusqu'à
-    // leur vraie hauteur, l'eau là où la géographie la met — le Tibre,
-    // la Barceloneta, l'Arno, la Yamuna, le port de Sydney, la baie de
-    // Guanabara, la baie d'Elliott — et le centre de chaque ville au sec.
+    // Puis : « refais les 50 plus grosses et famous villes mondiales en
+    // détail. » Chaque monument se dresse DANS sa ville (src/villesmonde.js),
+    // au bord de son eau. Le témoin sonde le monde engendré : chaque monument
+    // debout, les huit grands du catalogue jusqu'à leur vraie hauteur, l'eau
+    // là où la géographie la met — du Tibre au Bosphore, de la lagune de
+    // Venise au port Victoria — et le centre de chaque ville au sec.
     const tour = await tab.evaluate(async () => {
       const { VILLES_MONDE } = await import('./src/villesmonde.js');
       const { monumentBati } = await import('./src/monuments.js');
@@ -192,14 +192,25 @@ const VRAIES_KM = [
         'Pyramide de Khéops': 'pyramide-gizeh', 'Taj Mahal': 'taj-mahal', "Opéra de Sydney": 'opera-sydney',
         'Christ Rédempteur': 'christ-redempteur', 'Space Needle': 'space-needle' };
       const EAU_TEMOIN = { rome: [-50, 1], barcelone: [45, 25], pise: [0, 15], agra: [10, -6],
-        sydney: [-5, -18], rio: [45, 20], seattle: [-35, 0] };
+        sydney: [-5, -18], rio: [45, 20], seattle: [-35, 0],
+        // les cinquante grandes : chaque signature d'eau nouvelle a son point
+        venise: [36, 0],          // la lagune, au-delà du rayon 33
+        amsterdam: [0, 20],       // la ceinture de canaux, anneau r=20
+        istanbul: [40, 30],       // le Bosphore
+        stockholm: [0, 3],        // le Norrström, devant Gamla Stan
+        tokyo: [33, -5],          // la Sumida
+        hongkong: [0, 26],        // le port Victoria
+        chicago: [40, 0],         // le lac Michigan
+        miami: [20, 0],           // la baie de Biscayne, avant l'île-barrière
+        lecap: [0, -25] };        // la baie de la Table
       const monuments = [], eaux = [], centres = [];
       for (const f of VILLES_MONDE) {
         for (const m of f.monuments) {
           const [du, dv] = f.local(m.lat, m.lon);
           const x = f.ancre.x + du, z = f.ancre.z + dv;
           const sol = w.terrainHeight(x, z);
-          const R = Math.min(m.box || 24, 24);
+          const cat0 = CAT[m.nom];
+          const R = Math.min(m.box || 24, cat0 ? 24 : 12);
           let hMax = 0;
           for (let a = -R; a <= R; a += 2) {
             for (let b = -R; b <= R; b += 2) {
@@ -208,7 +219,7 @@ const VRAIES_KM = [
               }
             }
           }
-          const cat = CAT[m.nom] ? monumentBati(CAT[m.nom]) : null;
+          const cat = cat0 ? monumentBati(cat0) : null;
           // LA FLÈCHE SE VÉRIFIE À SON ADRESSE EXACTE — la leçon de v164,
           // réapprise ici : l'échantillonnage de deux en deux ratait le
           // fleuron du Taj, large d'un bloc, et l'annonçait tronqué à 38/41.
@@ -229,7 +240,8 @@ const VRAIES_KM = [
             // tronqués d'un bloc qu'ils avaient bel et bien.
             fleche = w.getBlock(fx, sol + (sommet[1] - e2.minY), fz) !== 0;
           }
-          monuments.push({ nom: m.nom, ville: f.cle, hMax, fleche, attendu: cat ? cat.emprise.h : 3 });
+          monuments.push({ nom: m.nom, ville: f.cle, hMax, fleche,
+            attendu: cat ? cat.emprise.h : 3, hMin: m.hmin || 3 });
         }
         const e = EAU_TEMOIN[f.cle];
         if (e) eaux.push({ ville: f.cle, eau: w.terrainHeight(f.ancre.x + e[0], f.ancre.z + e[1]) < WATER_LEVEL });
@@ -237,9 +249,12 @@ const VRAIES_KM = [
       }
       return { monuments, eaux, centres };
     });
-    const couches = tour.monuments.filter((m) => m.hMax < 3);
-    verifier('les vingt-deux monuments des huit villes se dressent, chacun chez lui',
-      tour.monuments.length === 22 && couches.length === 0,
+    // Un monument volontairement plat — les voitures de La Havane, la
+    // fontaine de Dubaï — porte sa hauteur minimale dans sa fiche (hmin) ;
+    // pour tous les autres, moins de trois blocs, c'est un monument couché.
+    const couches = tour.monuments.filter((m) => m.hMax < m.hMin);
+    verifier('les cent quarante-deux monuments des quarante-six villes se dressent, chacun chez lui',
+      tour.monuments.length === 142 && couches.length === 0,
       couches.map((m) => `${m.nom} (${m.ville}) : ${m.hMax}`).join(' · ')
         || `${tour.monuments.length} monuments debout`);
     const tronques = tour.monuments.filter((m) => m.attendu > 3 && !m.fleche);
@@ -252,7 +267,7 @@ const VRAIES_KM = [
     verifier('chaque ville a son eau là où la géographie la met, et son centre au sec',
       sansEau.length === 0 && noyes.length === 0,
       [...sansEau.map((e) => `${e.ville} sans eau`), ...noyes.map((c) => `${c.ville} noyée`)].join(' · ')
-        || 'le Tibre, la Barceloneta, l\'Arno, la Yamuna, le port, les deux baies');
+        || `${tour.eaux.length} signatures d'eau, ${tour.centres.length} centres au sec`);
 
     // --- LA TERRE SE RECONNAÎT ----------------------------------------------
     //

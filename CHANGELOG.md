@@ -20,6 +20,53 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v166 — les cinquante grandes : le tour du monde au complet
+
+**Pourquoi.** Max : « refais les 50 plus grosses et famous villes mondiales en
+détail. » Après Londres bâtie à la main et huit villes par la machine (v165),
+le monde comptait seize destinations — et il manquait tout le reste : pas de
+Tokyo, pas de Moscou, pas de Venise, pas de Rio de l'hémisphère nord au sud
+d'un continent à l'autre.
+
+**Ce que ça change.**
+
+- **Trente-huit villes de plus, toutes par la machine à villes** — le monde
+  passe à cinquante-quatre destinations. Chacune est une fiche relevée sur
+  documents : son eau, sa trame de rues, sa palette, ses monuments aux vraies
+  coordonnées, ses lieux sur la carte. L'Europe de Madrid à Copenhague (16),
+  l'Asie et le Moyen-Orient de Tokyo à Delhi (11), les Amériques de Chicago
+  au Machu Picchu (9), l'Afrique avec Marrakech et Le Cap (2).
+- **Cent vingt monuments nouveaux, chacun chez lui** : Saint-Basile en cinq
+  bulbes de couleurs devant le Kremlin, la Sainte-Sophie face au Bosphore, le
+  Burj Khalifa à 116 blocs (le seul monument compté à 7 m par bloc, sinon il
+  crèverait le ciel), la perle de l'Orient au-dessus du Huangpu, les toriis
+  vermillon de Fushimi Inari, le Parthénon sur sa mesa de l'Acropole, la
+  Petite Sirène sur son rocher DANS l'eau du port, l'Obélisque exactement à
+  l'ancre de Buenos Aires — et trois monuments volontairement HORS du rayon
+  de leur ville, parce qu'ils le sont en vrai : l'Atomium à Heysel, le
+  panneau Hollywood sur sa colline, le Burj al Arab sur son île.
+- **Le moteur a appris sept géographies nouvelles** : la lagune de Venise
+  (la ville flotte au milieu), les canaux concentriques d'Amsterdam, les
+  passes de Stockholm et du port Victoria de Hong Kong, la montagne-table du
+  Cap (plate au sommet, falaise au bord), le sol d'altitude du Machu Picchu
+  (la citadelle vit à 52, pas à 33), l'île-barrière de Miami Beach et sa
+  plage, la bande du Strip dans le désert du Nevada.
+- **Les ponts tiennent au-dessus de l'eau** : le Rialto, le Ponte Vecchio et
+  ses boutiques, le pont Charles et ses statues — tablier à +6, appris en
+  posant le premier tablier sous la ligne de flottaison.
+
+**Ce qui le prouve.** La sonde de fabrication passe les 142 monuments des 46
+villes de la machine : chacun dans son rayon (ou hors-rayon déclaré), au sec
+(ou dans l'eau exprès — El Morro, la Sirène, les ponts). Le témoin du tour du
+monde compte désormais les 142 debout, lit la flèche des huit grands du
+catalogue à son adresse exacte, et vérifie neuf signatures d'eau nouvelles
+(lagune, canaux, Bosphore, port Victoria…) plus le centre de chaque ville au
+sec. Les deux empreintes du plafond sont recalculées avec Bruxelles et
+Amsterdam dans la découpe — et la preuve d'intégrité est refaite : la même
+découpe, mesurée sur main et sur v166, rend le MÊME hash hors des villes
+(5e54e15c…) : pas un bloc n'a bougé ailleurs.
+
+
 ## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
 
 **Pourquoi.** Max, devant la carte de v164 : « quand je regarde la carte, je ne
