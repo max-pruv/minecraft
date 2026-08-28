@@ -17,10 +17,16 @@ const WALK_SPEED = 4.3;
 const SPRINT_SPEED = 6.8;
 const FLY_SPEED = 11;
 // Voler longtemps, c'est vouloir aller loin. Passé trois secondes en l'air,
-// on double l'allure : les allers-retours entre Paris et Mars deviennent
-// supportables, et un petit saut de toit en toit reste précis.
-const FLY_ELAN_APRES = 3;   // secondes de vol continu
-const FLY_ELAN = 2;         // multiplicateur
+// on double l'allure — puis, depuis que la carte fait des milliers de blocs
+// (Max : « en fonction du temps de vol, la vitesse s'accélère de manière
+// progressive »), elle continue de monter, sans à-coup, jusqu'à une vraie
+// vitesse de croisière : Paris-Rome se survole en une demi-minute au lieu
+// de deux. Un petit saut de toit en toit reste précis : les trois premières
+// secondes gardent l'allure de toujours, et se poser remet tout à zéro.
+const FLY_ELAN_APRES = 3;   // secondes de vol continu avant l'élan
+const FLY_ELAN = 2;         // multiplicateur au moment de l'élan
+const FLY_CROISIERE = 6;    // multiplicateur maximal (66 blocs/s)
+const FLY_MONTEE = 6;       // secondes de vol pour gagner un cran (+×1)
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
 
@@ -59,14 +65,23 @@ export class Player {
     this.vel.y = 0;
   }
 
-  // Vitesse de vol du moment. Elle double après quelques secondes en l'air.
+  // Vitesse de vol du moment. Elle double après quelques secondes en l'air,
+  // puis grandit d'un cran toutes les FLY_MONTEE secondes jusqu'à la
+  // croisière — la progression que Max a demandée pour la grande carte.
   vitesseVol() {
-    return FLY_SPEED * (this.volDepuis >= FLY_ELAN_APRES ? FLY_ELAN : 1);
+    if (this.volDepuis < FLY_ELAN_APRES) return FLY_SPEED;
+    const facteur = Math.min(FLY_CROISIERE, FLY_ELAN + (this.volDepuis - FLY_ELAN_APRES) / FLY_MONTEE);
+    return FLY_SPEED * facteur;
   }
 
   // Vrai quand l'élan est pris — le jeu s'en sert pour le dire à l'enfant.
   volLance() {
     return this.flying && this.volDepuis >= FLY_ELAN_APRES;
+  }
+
+  // Vrai quand la croisière est atteinte — même usage.
+  volCroisiere() {
+    return this.flying && this.vitesseVol() >= FLY_SPEED * FLY_CROISIERE;
   }
 
   eyePosition() {

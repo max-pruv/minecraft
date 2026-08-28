@@ -354,6 +354,54 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('mais on ne sort plus du monde par le haut',
       haut.jeu && haut.y < HEIGHT - 1, `${haut.y.toFixed(0)} pour un monde de ${HEIGHT}`);
 
+    // LE VOL QUI ACCÉLÈRE (v175). Max : « en fonction du temps de vol, la
+    // vitesse s'accélère de manière progressive jusqu'à une vitesse assez
+    // rapide pour vite progresser sur la carte. » On mesure ce que l'enfant
+    // OBTIENT — des blocs parcourus par seconde de JEU — à trois moments d'un
+    // même vol : au décollage, après quinze secondes, à la croisière. Trois
+    // choses doivent être vraies : ça part calme (précis pour sauter de toit
+    // en toit), ça grandit franchement, et ça plafonne (la croisière est un
+    // sommet, pas une fuite).
+    const allures = await tab.evaluate(async () => {
+      const g = window.__game;
+      g.player.flying = true;
+      // À 140 : au-dessus de tout ce qui se dresse, et surtout PLUS HAUT que
+      // la barre du témoin suivant — le perchoir se pose à hauteur du joueur,
+      // et ce vol-ci ne doit pas le faire redescendre sous l'ancien plafond.
+      g.player.pos.set(0, 140, 0);
+      g.player.yaw = Math.PI / 2;
+      g.player.vel.set(0, 0, 0);
+      g.player.keys.add('KeyW');
+      // la même horloge que le jeu : min(dt, 0.05) cumulé sur les images
+      let sim = 0, prec = performance.now();
+      const tic = (now) => { sim += Math.min(Math.max((now - prec) / 1000, 0), 0.05); prec = now; requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      const fenetre = (depuis, duree) => new Promise((res) => {
+        const attendre = () => {
+          if (sim < depuis) return requestAnimationFrame(attendre);
+          const x0 = g.player.pos.x, z0 = g.player.pos.z, s0 = sim;
+          const finir = () => {
+            if (sim - s0 < duree) return requestAnimationFrame(finir);
+            res(Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0) / (sim - s0));
+          };
+          requestAnimationFrame(finir);
+        };
+        attendre();
+      });
+      g.player.volDepuis = 0;
+      const depart = await fenetre(0.4, 1.8);        // avant l'élan : ~11 blocs/s
+      const milieu = await fenetre(15, 2);           // en pleine montée : ~35 blocs/s
+      g.player.volDepuis = 60;                       // très au-delà de la croisière
+      const sommet = await fenetre(sim + 0.3, 2);    // le plafond : ~66 blocs/s
+      g.player.keys.delete('KeyW');
+      g.player.vel.set(0, 0, 0);
+      return { depart, milieu, sommet };
+    });
+    verifier('le vol part calme, accélère franchement, et plafonne en croisière',
+      allures.depart < 16 && allures.milieu > allures.depart * 2
+      && allures.sommet > allures.milieu * 1.3 && allures.sommet < 75,
+      `${allures.depart.toFixed(0)} puis ${allures.milieu.toFixed(0)} puis ${allures.sommet.toFixed(0)} blocs par seconde de jeu`);
+
     // Y bâtir, et retrouver ce qu'on y a bâti.
     const perchoir = await tab.evaluate(() => {
       const g = window.__game;
