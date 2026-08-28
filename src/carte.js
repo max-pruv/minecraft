@@ -877,7 +877,17 @@ export class Carte {
     }
     const r = cv.getBoundingClientRect();
     const m = this.versMonde(e.clientX - r.left, e.clientY - r.top);
+    const prevu = performance.now() + 550;
     this.appuiLong = setTimeout(() => {
+      // UN MINUTEUR EN RETARD N'A PAS LE DROIT DE TÉLÉPORTER. S'il tire très
+      // au-delà de son heure, c'est que le fil principal était bloqué — et
+      // les gestes du doigt pendant ce blocage sont peut-être ENCORE en
+      // route : même l'image suivante ne les aura pas vus. Dans le doute, on
+      // renonce ; l'enfant rappuiera, et « le glisser ne téléporte jamais »
+      // pèse plus lourd qu'un appui long à refaire. Vécu au banc de v173 :
+      // la carte alourdie de deux cents villes a élargi la fenêtre de la
+      // course de v169, et le correctif d'alors ne suffisait plus.
+      if (performance.now() - prevu > 120) { this.annulerAppui(); return; }
       // LA COURSE DU MINUTEUR. Sur une machine chargée, le doigt a bougé mais
       // ses évènements attendent encore leur tour dans la file : le minuteur
       // tire AVANT que l'annulation n'ait été traitée, et l'enfant qui

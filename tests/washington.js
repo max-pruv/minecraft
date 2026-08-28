@@ -355,6 +355,25 @@ const descendre = async (p, ms) => {
 
     await tab.evaluate(() => document.getElementById('board-btn').click());
     const embarque = await pose(tab);
+    // L'HORLOGE DU JEU, PAS CELLE DU MUR. Le jeu borne dt à un vingtième de
+    // seconde : sous cinq images par seconde (SwiftShader au banc), une
+    // seconde de mur ne fait avancer la simulation que d'un quart de seconde.
+    // Un témoin qui attend « trente-deux secondes » au mur n'en offre alors
+    // que huit au train — la pause en gare les mange, et il accuse un métro
+    // qui roule très bien. On accumule donc le MÊME dt que le jeu, et c'est
+    // en secondes de jeu que la fenêtre se compte. Mesuré : v172 et v173
+    // rendent pareil (4,9 contre 5,2 fps à Washington) — le rouge de la
+    // première passe disait la lenteur du banc, pas celle du métro.
+    await tab.evaluate(() => {
+      window.__simDC = 0;
+      let prec = performance.now();
+      const tic = (now) => {
+        window.__simDC += Math.min(Math.max((now - prec) / 1000, 0), 0.05);
+        prec = now;
+        requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+    });
 
     // CE QU'ON MESURE : PAS DES MÈTRES, UNE STATION.
     //
@@ -371,16 +390,20 @@ const descendre = async (p, ms) => {
       return { nom: best, d: bd };
     };
     const depart = stationLaPlusProche(embarque);
-    let arrivee = depart, parcouru = 0;
-    for (let i = 0; i < 40 && arrivee.nom === depart.nom; i++) {
+    let arrivee = depart, parcouru = 0, simJeu = 0;
+    // Le budget : la pause à quai (3 s) plus le trajet inter-stations à
+    // 8 m/s, avec de la marge — 40 s de JEU. Le garde-fou au mur (300 tours
+    // de 800 ms) n'existe que pour ne jamais attendre sans fin un jeu mort.
+    for (let i = 0; i < 300 && arrivee.nom === depart.nom && simJeu < 40; i++) {
       await dormir(800);
       const ici = await pose(tab);
       parcouru = Math.hypot(ici.x - embarque.x, ici.z - embarque.z);
       arrivee = stationLaPlusProche(ici);
+      simJeu = await tab.evaluate(() => window.__simDC);
     }
     verifier('et le métro nous emmène à la station suivante',
       arrivee.nom !== depart.nom,
-      `${depart.nom} → ${arrivee.nom}, ${parcouru.toFixed(0)} m`);
+      `${depart.nom} → ${arrivee.nom}, ${parcouru.toFixed(0)} m en ${simJeu.toFixed(0)} s de jeu`);
 
     const enTunnel = await pose(tab);
     const solIci = await tab.evaluate(({ x, z }) =>

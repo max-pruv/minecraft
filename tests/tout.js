@@ -58,6 +58,9 @@ const GARDIENS = {
   'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   // La machine à villes : les cinquante grandes du tour du monde.
   'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  // Les deux cents villes : des données pures, jugées par les mêmes témoins
+  // que la machine qui les lit.
+  'src/villes200.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],

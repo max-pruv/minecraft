@@ -205,7 +205,7 @@ const VRAIES_KM = [
         lecap: [0, -25] };        // la baie de la Table
       const monuments = [], eaux = [], centres = [];
       for (const f of VILLES_MONDE) {
-        for (const m of f.monuments) {
+        for (const m of f.monuments || []) {
           const [du, dv] = f.local(m.lat, m.lon);
           const x = f.ancre.x + du, z = f.ancre.z + dv;
           const sol = w.terrainHeight(x, z);
