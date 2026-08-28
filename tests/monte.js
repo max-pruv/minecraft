@@ -522,6 +522,69 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils marchent — ce sont des passants, pas des statues',
       bouge >= 2, `${bouge} sur 6 ont bougé en huit secondes`);
 
+    // --- les poissons : la mer aussi est vivante ------------------------------
+    //
+    // Max : « add fish swimming ». On se pose au-dessus de la mer de Marseille
+    // — la côte automatique de v173 : la plage au sud, l'eau au-delà — et on
+    // attend que le banc s'entretienne. Trois preuves, dans l'ordre du regard
+    // de l'enfant : des poissons existent, ils sont DANS l'eau (pas dans le
+    // pré ni dans le ciel), et ils NAGENT. La fenêtre se compte en secondes de
+    // JEU, leçon du métro de Washington : sous SwiftShader la simulation
+    // avance quatre fois plus lentement que l'horloge.
+    await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game;
+      const m2 = positionDe('marseille');
+      // au large : au-delà de la plage (mer à 0,55 rayon), côté sud
+      g.player.flying = true;
+      g.player.pos.set(m2.x + 4, 42, m2.z + m2.r * 0.8);
+      g.player.vel.set(0, 0, 0);
+      window.__simPoissons = 0;
+      let prec = performance.now();
+      const tic = (now) => {
+        window.__simPoissons += Math.min(Math.max((now - prec) / 1000, 0), 0.05);
+        prec = now;
+        requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+    });
+    const banc2 = await tab.waitForFunction(() => {
+      const po = window.__game.poissons;
+      if (!po) return 'absent';
+      return po.effectif() >= 3 || window.__simPoissons > 45 ? po.effectif() : null;
+    }, null, { timeout: 180000, polling: 800 }).then((h) => h.jsonValue()).catch(() => 0);
+    verifier('des poissons peuplent la mer devant l\'enfant',
+      banc2 !== 'absent' && banc2 >= 3, `${banc2} poisson(s)`);
+
+    const dansLEau = await tab.evaluate(async () => {
+      const { BLOCK } = await import('./src/blocks.js');
+      const g = window.__game;
+      if (!g.poissons) return null;
+      return g.poissons.banc.filter((p2) => {
+        const m3 = p2.mesh.position;
+        return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
+      }).length;
+    });
+    verifier('et chacun est dans l\'eau — pas dans le pré, pas dans le ciel',
+      dansLEau === 0, `${dansLEau} hors de l'eau`);
+
+    const nage0 = await tab.evaluate(() => ({
+      sim: window.__simPoissons,
+      pos: window.__game.poissons ? window.__game.poissons.banc.map((p2) => [p2.mesh.position.x, p2.mesh.position.z]) : [],
+    }));
+    await tab.waitForFunction((s0) => window.__simPoissons - s0 > 4, nage0.sim, { timeout: 60000 }).catch(() => {});
+    const nage = await tab.evaluate((av) => {
+      const po = window.__game.poissons;
+      if (!po) return 0;
+      let n = 0;
+      po.banc.slice(0, av.length).forEach((p2, i) => {
+        if (Math.hypot(p2.mesh.position.x - av[i][0], p2.mesh.position.z - av[i][1]) > 1) n++;
+      });
+      return n;
+    }, nage0.pos);
+    verifier('et ils nagent — quatre secondes de jeu les déplacent',
+      nage >= 2, `${nage} sur ${nage0.pos.length} ont nagé plus d'un bloc`);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

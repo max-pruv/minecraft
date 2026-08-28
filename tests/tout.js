@@ -84,6 +84,8 @@ const GARDIENS = {
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Les passants des villes : la vie des rues se prouve dans monte.js.
   'src/passants.js': ['monte.js'],
+  // Les poissons : la vie de la mer se prouve au même endroit.
+  'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],

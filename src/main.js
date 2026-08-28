@@ -21,6 +21,7 @@ import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
 import { tracesCirculation } from './villesmonde.js';
 import { createPassants } from './passants.js';
+import { createPoissons } from './poissons.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -184,6 +185,7 @@ let vehicules = null;
 let circulationsEnAttente = [];
 let circulationTimer = 0;
 let passants = null;
+let poissons = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -367,6 +369,9 @@ function updateChunks() {
   npcs.push(...vie.npcs);
   // Les passants des villes : fabriqués à l'approche, jamais avant.
   passants = createPassants({ scene, world, player, toast: say, npcs });
+  // Les poissons : un petit banc entretenu autour de l'enfant, partout où
+  // il y a de l'eau — océans du planisphère, fleuves des villes, lacs.
+  poissons = createPoissons({ scene, world, player });
 
   // Ce qui roule tout seul : les rames du métro aérien autour de la ville, et
   // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
@@ -979,6 +984,7 @@ const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 let garagisteTimer = 0;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
+  if (poissons) poissons.update(dt);
   circulationTimer -= dt;
   if (circulationTimer > 0 || !vehicules) return;
   circulationTimer = 2.5;
@@ -4607,7 +4613,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, fun, get vehicules() { return vehicules; }, get passants() { return passants; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, fun, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let frameDepuisMesure = 0;
