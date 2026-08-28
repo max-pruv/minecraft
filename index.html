@@ -1157,19 +1157,21 @@
     .toggle.on { background: #2d6a2d; border-color: #58b04c; }
     .toggle.on::after { transform: translateX(24px); background: #fff; }
 
-    /* meat counter */
-    #meat-counter {
-      display: none; position: fixed; top: calc(200px + var(--safe-top)); right: 56px; z-index: 6;
+    /* Le garde-manger et la jauge du chantier : deux pastilles qui OUVRENT
+       l'atelier quand on les touche. Max, devant les deux jauges muettes qui
+       flottaient en plein champ de vision : « je ne comprends pas à quoi
+       servent ces boutons, quand on clique il ne se passe rien — et replace-
+       les, c'est pas bien fait ». Si ça ressemble à un bouton, ça doit en
+       être un ; et un bouton vit dans un rail, pas au milieu de l'écran.
+       Elles habitent donc le rail bas-gauche : en flux, comme tout le bord
+       gauche — plus aucune coordonnée à la main. */
+    #meat-counter, #chantier-hud {
+      display: none; white-space: nowrap;
       font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
-      background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px; pointer-events: none;
+      background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px;
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.25);
     }
-
-    /* La jauge du chantier commun : toujours lisible, jamais touchable. */
-    #chantier-hud {
-      display: none; position: fixed; top: calc(236px + var(--safe-top)); right: 56px; z-index: 6;
-      font-size: 15px; font-weight: bold; color: #9fd8ff; text-shadow: 1px 1px 0 #000;
-      background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px; pointer-events: none;
-    }
+    #chantier-hud { color: #9fd8ff; border-color: rgba(159,216,255,0.35); }
 
     /* catch celebration */
     #catch-banner {
@@ -1295,7 +1297,10 @@
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
   <div id="left-rail"><button id="map-btn" title="Mini-carte">🗺️</button></div>
-  <div id="left-rail-bottom"></div>
+  <div id="left-rail-bottom">
+    <div id="meat-counter"></div>
+    <div id="chantier-hud"></div>
+  </div>
   <button id="settings-btn" title="Réglages">⚙️</button>
   <button id="cam-btn" title="Caméra (mini visio)">📷</button>
   <button id="home-btn" title="Retour à la maison">🏠</button>
@@ -1321,8 +1326,7 @@
     </div>
   </div>
   <canvas id="minimap" width="160" height="160"></canvas>
-  <div id="meat-counter"></div>
-  <div id="chantier-hud"></div>
+
   <button id="players-btn" title="Joueurs et code du monde"></button>
 
   <div id="players-panel">

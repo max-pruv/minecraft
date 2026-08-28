@@ -311,6 +311,74 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('quand la monoplace arrive, on a le temps de voir le bouton',
       monteeF1, JSON.stringify(await bouton(tab, 'board-btn')));
 
+    // --- les pastilles de l'écran sont des boutons, pas des jauges muettes --
+    //
+    // Max, capture à l'appui : « je ne comprends pas à quoi servent ces
+    // boutons — quand on clique, il ne se passe rien. » Désormais le
+    // garde-manger ouvre l'atelier, et la jauge du chantier ouvre l'onglet
+    // Chantier, qui dit OÙ est le chantier. On suit le doigt de l'enfant :
+    // la récolte fait naître la pastille, le toucher fait le reste.
+    await tab.evaluate(() => window.__game.animalManager.onHarvest({ meat: '🍖 Côtelette' }));
+    const pastille = await tab.evaluate(() => {
+      const el = document.getElementById('meat-counter');
+      const st = getComputedStyle(el);
+      return { visible: st.display !== 'none', touchable: st.pointerEvents !== 'none', texte: el.textContent };
+    });
+    verifier('la pastille du garde-manger est visible et touchable',
+      pastille.visible && pastille.touchable, JSON.stringify(pastille));
+    await tab.evaluate(() => document.getElementById('meat-counter').click());
+    const atelier = await tab.evaluate(() => {
+      const panneau = document.getElementById('fun-main-panel');
+      const on = panneau.querySelector('.fun-tab.on');
+      return { ouvert: getComputedStyle(panneau).display === 'block',
+        onglet: on && on.dataset.t,
+        gardeManger: document.getElementById('fun-tab-body').textContent.includes('Garde-manger') };
+    });
+    verifier('la toucher ouvre l\'atelier, garde-manger sous les yeux',
+      atelier.ouvert && atelier.onglet === 'craft' && atelier.gardeManger, JSON.stringify(atelier));
+
+    // Le chantier : on le pose par le vrai chemin (l'onglet), puis on touche
+    // la jauge qui vient d'apparaître.
+    await tab.evaluate(() => {
+      window.__game.fun.ouvrirOnglet('chantier');
+      const b = [...document.querySelectorAll('#fun-tab-body button')]
+        .find((x) => x.textContent.includes('Cabane'));
+      b.click();
+    });
+    const jauge = await tab.evaluate(() => {
+      const el = document.getElementById('chantier-hud');
+      const st = getComputedStyle(el);
+      return { visible: st.display !== 'none', touchable: st.pointerEvents !== 'none', texte: el.textContent };
+    });
+    verifier('poser un chantier fait apparaître sa jauge, touchable',
+      jauge.visible && jauge.touchable && /\/71$/.test(jauge.texte), JSON.stringify(jauge));
+    await tab.evaluate(() => document.getElementById('chantier-hud').click());
+    const ongletChantier = await tab.evaluate(() => {
+      const panneau = document.getElementById('fun-main-panel');
+      const on = panneau.querySelector('.fun-tab.on');
+      const corps = document.getElementById('fun-tab-body').textContent;
+      return { ouvert: getComputedStyle(panneau).display === 'block',
+        onglet: on && on.dataset.t, ditOu: corps.includes('📍'), corps: corps.slice(0, 160) };
+    });
+    verifier('toucher la jauge ouvre le Chantier, qui dit où il est',
+      ongletChantier.ouvert && ongletChantier.onglet === 'chantier' && ongletChantier.ditOu,
+      JSON.stringify({ onglet: ongletChantier.onglet, ditOu: ongletChantier.ditOu }));
+
+    // Et la bibliothèque de bâtiments porte enfin son vrai nom : Max la
+    // cherchait, elle s'appelait « Monuments ».
+    const biblio = await tab.evaluate(() => {
+      const bouton2 = document.querySelector('.fun-tab[data-t="monuments"]');
+      bouton2.click();
+      const corps = document.getElementById('fun-tab-body').textContent;
+      return { libelle: bouton2.textContent.trim(),
+        monuments: corps.includes('Monuments célèbres'),
+        batiments: corps.includes('Bâtiments de ville') };
+    });
+    verifier('l\'onglet Bâtiments montre monuments ET bâtiments de ville',
+      biblio.libelle.includes('Bâtiments') && biblio.monuments && biblio.batiments,
+      JSON.stringify(biblio));
+    await tab.evaluate(() => { document.querySelector('#fun-main-panel .fun-close').click(); });
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

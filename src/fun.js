@@ -162,7 +162,7 @@ export function initFun(ctx) {
       <button class="fun-tab" data-t="quest">📜 Quête</button>
       <button class="fun-tab" data-t="sign">🪧 Panneau</button>
       <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
-      <button class="fun-tab" data-t="monuments">🏛️ Monuments</button>
+      <button class="fun-tab" data-t="monuments">🏛️ Bâtiments</button>
       <button class="fun-tab" data-t="records">🏆 Records</button>
       <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
       <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
@@ -1150,6 +1150,18 @@ export function initFun(ctx) {
         enCours.className = 'fun-note';
         enCours.textContent = `${p2.emoji} ${p2.nom} en cours : ${a.faits}/${a.total} blocs posés.`;
         tabBody.appendChild(enCours);
+        // Où est-il ? Une jauge à 0/71 ne sert à rien si on ne trouve pas le
+        // fantôme bleu. Distance et direction, comme pour un ami.
+        const du2 = chantier.x + 2 - player.pos.x, dv2 = chantier.z + 2 - player.pos.z;
+        const dist = Math.round(Math.hypot(du2, dv2));
+        const FLECHES = ['↑ nord', '↗ nord-est', '→ est', '↘ sud-est', '↓ sud', '↙ sud-ouest', '← ouest', '↖ nord-ouest'];
+        const oct = ((Math.round(Math.atan2(du2, -dv2) / (Math.PI / 4)) % 8) + 8) % 8;
+        const où = document.createElement('div');
+        où.className = 'fun-note';
+        où.textContent = dist <= 6
+          ? '📍 Tu es dessus : les blocs bleus translucides montrent ce qui manque.'
+          : `📍 À ${dist} blocs, direction ${FLECHES[oct]}. Cherche les blocs bleus translucides.`;
+        tabBody.appendChild(où);
         const arreter = document.createElement('button');
         arreter.className = 'fun-tab';
         arreter.textContent = '🗑️ Abandonner ce chantier';
@@ -1172,6 +1184,17 @@ export function initFun(ctx) {
     panel.style.display = 'block';
     renderTab();
   });
+
+  // Ouvrir l'atelier directement sur un onglet : c'est ce que font les
+  // pastilles de l'écran (le garde-manger, la jauge du chantier). Max :
+  // « quand on clique, il ne se passe rien » — maintenant, il se passe ça.
+  function ouvrirOnglet(t) {
+    currentTab = t;
+    panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o.dataset.t === t));
+    panel.style.display = 'block';
+    if (REC_TABS.includes(t)) { recTab = t; renderRecords(); } else renderTab();
+  }
+  if (chantierHud) chantierHud.addEventListener('click', () => ouvrirOnglet('chantier'));
 
   // ---- records, hats & photos ----------------------------------------------
   let recTab = 'records';
@@ -1656,6 +1679,7 @@ export function initFun(ctx) {
     update,
     onLeave,
     attachNet,
+    ouvrirOnglet,
     decoratePlayersPanel,
     onBlockPlaced() {
       records.blocks++;
