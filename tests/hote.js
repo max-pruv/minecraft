@@ -96,12 +96,15 @@ function verifier(nom, ok, detail = '') {
     await banc.fermer();
   }
 
-  console.log('');
-  if (echecs.length) {
-    console.log(`❌ ${echecs.length} échec(s) :`);
-    echecs.forEach((e) => console.log(`   - ${e}`));
-    process.exit(1);
-  } else {
-    console.log('✅ tout est passé — la reprise d\'hôte fonctionne');
-  }
-})();
+  // ON SORT TOUJOURS, ET SURTOUT QUAND TOUT VA BIEN.
+  //
+  // La branche de succès ne sortait pas : le serveur du nuage et les
+  // navigateurs gardent des poignées ouvertes, et le processus restait pendu
+  // pour toujours. Le piège est retors — il ne se déclenche QUE lorsque tout
+  // passe, donc jamais pendant qu'on met une suite au point, et le portail
+  // entier se serait figé sur la première exécution verte.
+  console.log(echecs.length
+    ? `\n❌ ${echecs.length} échec(s) :\n   ${echecs.join('\n   ')}`
+    : '\n✅ tout est passé — la reprise d\'hôte fonctionne');
+  process.exit(echecs.length ? 1 : 0);
+})().catch((e) => { console.error('\n💥 le banc d\'essai a lâché :', e); process.exit(2); });
