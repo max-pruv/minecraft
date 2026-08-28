@@ -189,9 +189,9 @@ function construireF1(couleur = 0xd82a2a, second = 0xf0f0ea) {
 // caisse, l'habitacle vitré, quatre roues. La carrosserie garde son matériau
 // sous la main (userData.carrosserie) pour que la peinture puisse opérer —
 // c'est la seule voiture du jeu qui change de couleur en roulant.
-function construireVoitureRoute() {
+function construireVoitureRoute(couleur = 0x9a9a9a) {
   const g = new THREE.Group();
-  const caisse = new THREE.MeshBasicMaterial({ color: 0x9a9a9a });
+  const caisse = new THREE.MeshBasicMaterial({ color: couleur });
   const boite = (w, h, d, mat, x, y, z) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
       mat instanceof THREE.Material ? mat : new THREE.MeshBasicMaterial({ color: mat }));
@@ -422,6 +422,19 @@ export function createVehicules({ scene, player }) {
     });
   }
 
+  // La circulation d'une ville : trois voitures sur l'anneau de ses rues,
+  // espacées d'un tiers de tour, qui freinent dans les virages. Chacune sa
+  // couleur, stable — la voiture bleue de Rome est toujours la bleue.
+  function circulation(pts, graine = 0) {
+    const p = new Parcours(pts);
+    const teintes = [0xd84a3a, 0x3a6ac8, 0xf0f0ea, 0x2a2a30, 0x3a9a4a, 0xe8c83a];
+    return ajouter(pts, {
+      nb: 3, ecart: p.longueur / 3, vitesse: 4.2, freine: true, allureMin: 0.4,
+      nom: 'voiture', emoji: '🚙', assise: 1.15,
+      modele: (i) => construireVoitureRoute(teintes[(graine + i) % teintes.length]),
+    });
+  }
+
   function update(dt) {
     for (const c of convois) c.update(dt, player.pos);
   }
@@ -467,7 +480,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, update, placeProche, place,
+    metro, course, chaine, circulation, update, placeProche, place,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

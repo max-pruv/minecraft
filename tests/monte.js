@@ -475,6 +475,53 @@ async function avancerUnDemiSeconde(p, depart) {
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 
+    // --- les villes vivantes : la circulation roule, les passants marchent ---
+    //
+    // Max : « les villes n'ont pas de vie. Il n'y a pas de voitures qui
+    // circulent, il n'y a pas de piétons. » On va à Rome : dans les secondes
+    // qui suivent l'arrivée, l'anneau de circulation naît et ses voitures se
+    // montrent, et six passants peuplent les rues — puis on vérifie qu'ils
+    // MARCHENT, pas qu'ils posent.
+    await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game;
+      const p = positionDe('rome');
+      g.player.flying = true;
+      g.player.pos.set(p.x, g.world.terrainHeight(p.x, p.z) + 6, p.z);
+      g.player.vel.set(0, 0, 0);
+    });
+    await dormir(3000);
+    const circule = await tab.waitForFunction(() => {
+      const conv = (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture');
+      const vues = conv.reduce((n, c) => n + c.visibles, 0);
+      return conv.length > 0 && vues > 0 ? { convois: conv.length, vues } : null;
+    }, null, { timeout: 30000, polling: 400 }).then((h) => h.jsonValue()).catch(() => null);
+    verifier('la circulation naît à l\'approche, et ses voitures se montrent',
+      !!circule, circule ? `${circule.convois} anneau(x), ${circule.vues} voiture(s) en vue` : 'aucune voiture');
+
+    const peuple = await tab.waitForFunction(() => {
+      const p2 = window.__game.passants;
+      return p2 && p2.effectif() >= 6 ? p2.effectif() : null;
+    }, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => 0);
+    verifier('les passants peuplent les rues à l\'arrivée',
+      peuple >= 6, `${peuple} passant(s)`);
+
+    const avant = await tab.evaluate(() => {
+      const s2 = window.__game.passants.sites.find((x) => x.peuple);
+      return s2.peuple.map((h) => [h.pos.x, h.pos.z]);
+    });
+    await dormir(8000);
+    const bouge = await tab.evaluate((av) => {
+      const s2 = window.__game.passants.sites.find((x) => x.peuple);
+      let n = 0;
+      s2.peuple.forEach((h, i) => {
+        if (Math.hypot(h.pos.x - av[i][0], h.pos.z - av[i][1]) > 0.6) n++;
+      });
+      return n;
+    }, avant);
+    verifier('et ils marchent — ce sont des passants, pas des statues',
+      bouge >= 2, `${bouge} sur 6 ont bougé en huit secondes`);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

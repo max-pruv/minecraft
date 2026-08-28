@@ -149,6 +149,15 @@ function fraise(a, couleur = LIN) {   // la collerette Renaissance
 
 const TENUES = {
   // Manant, servante, artisan : tunique de laine, chausses, bottes basses.
+  // Le passant d'aujourd'hui : t-shirt ou chemise de couleur, pantalon
+  // sombre, baskets claires. C'est la tenue des rues des cinquante grandes.
+  passant(a, p) {
+    const { haut = 0x4a78c8, bas = 0x2e3038, baskets = 0xe8e8e4 } = p;
+    torse(a, p, haut);
+    jambes(a, p, { bas, chaussure: baskets });
+    bras(a, p, { manche: haut, main: p.teint });
+  },
+
   tunique(a, p) {
     const { drap, drap2 = drap, chausses = 0x5a4a38, bottes = CUIR_SOMBRE } = p;
     torse(a, p, drap);

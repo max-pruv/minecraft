@@ -19,6 +19,8 @@ import { createVehicules } from './vehicules.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
+import { tracesCirculation } from './villesmonde.js';
+import { createPassants } from './passants.js';
 import { Player, raycastBlocks } from './player.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -176,6 +178,12 @@ let npcs = [];
 let siege = null;
 let vie = null;
 let vehicules = null;
+// La circulation qui attend son heure, et les passants des villes — déclarés
+// ICI, avant le code d'amorçage qui les assigne : déclarés plus bas, c'était
+// la zone morte temporelle, et le jeu ne démarrait plus du tout.
+let circulationsEnAttente = [];
+let circulationTimer = 0;
+let passants = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
@@ -357,6 +365,8 @@ function updateChunks() {
   // et toute la basse-cour. Chaque site dort tant que l'enfant n'y est pas.
   vie = createVie({ scene, world, player, toast: say });
   npcs.push(...vie.npcs);
+  // Les passants des villes : fabriqués à l'approche, jamais avant.
+  passants = createPassants({ scene, world, player, toast: say, npcs });
 
   // Ce qui roule tout seul : les rames du métro aérien autour de la ville, et
   // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
@@ -370,6 +380,11 @@ function updateChunks() {
   // bord », comme le métro). Le tracé et la fenêtre de peinture viennent du
   // bâtisseur du site : la chaîne ne peut pas rouler à côté de son tapis.
   vehicules.chaine(traceChaine(world.terrainHeight(USINE().x, USINE().z)));
+  // La circulation des villes : les anneaux sont calculés une fois, mais un
+  // convoi ne naît qu'à l'approche de l'enfant — trente villes de voitures
+  // fabriquées à l'ouverture pèseraient sur la tablette pour des rues
+  // lointaines. Une ville visitée garde sa circulation pour la session.
+  circulationsEnAttente = tracesCirculation((x, z) => world.terrainHeight(x, z));
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
   // rouler à côté de son tunnel.
@@ -962,6 +977,19 @@ function emojiBurst(emojis, n = 18) {
 // l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
 const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 let garagisteTimer = 0;
+function animerLesVilles(dt) {
+  if (passants) passants.update(dt);
+  circulationTimer -= dt;
+  if (circulationTimer > 0 || !vehicules) return;
+  circulationTimer = 2.5;
+  for (let i = circulationsEnAttente.length - 1; i >= 0; i--) {
+    const tr = circulationsEnAttente[i];
+    if (Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z) < 220) {
+      vehicules.circulation(tr.pts, tr.pts.length + i);
+      circulationsEnAttente.splice(i, 1);
+    }
+  }
+}
 function garagiste(dt) {
   garagisteTimer -= dt;
   if (garagisteTimer > 0) return;
@@ -4579,7 +4607,7 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, fun, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, fun, get passants() { return passants; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let frameDepuisMesure = 0;
@@ -4614,6 +4642,7 @@ function frame(now) {
     creatureManager.update(dt);
     animalManager.update(dt);
     garagiste(dt);
+    animerLesVilles(dt);
     // Les personnages lointains — la garnison du château, les astronautes de
     // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur
     // collision forcerait à garder en mémoire des chunks à l'autre bout de la
