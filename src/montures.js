@@ -248,33 +248,35 @@ function voitureNeuve() {
   cockpit.add(box(1.5, 0.16, 0.34, anthr, 0, 0.78, -0.62));
   cockpit.add(box(1.5, 0.05, 0.38, cuir, 0, 0.86, -0.6));
   // le bloc-compteurs DERRIÈRE le volant (pas une dalle néon devant : la
-  // première version dessinait un écran cyan géant par-dessus la jante),
-  // et l'écran du milieu sur la façade de la planche
-  cockpit.add(box(0.3, 0.1, 0.06, cuir, -0.33, 0.9, -0.52));
-  cockpit.add(box(0.24, 0.055, 0.015, 0x0e8aa8, -0.33, 0.895, -0.487));
-  cockpit.add(box(0.14, 0.06, 0.02, 0x8a5618, 0.12, 0.845, -0.4));
-  // LE VOLANT : jante, trois branches, moyeu — plus un anneau qui flotte
+  // première version dessinait un écran cyan géant par-dessus la jante).
+  // Et rien d'autre sur la planche — verdict de Max sur capture iPhone :
+  // « simplifie ». L'écran du milieu et le liseré orange sont partis.
+  cockpit.add(box(0.26, 0.09, 0.06, cuir, -0.33, 0.89, -0.52));
+  cockpit.add(box(0.19, 0.04, 0.015, 0x0e8aa8, -0.33, 0.885, -0.487));
+  // LE VOLANT : jante, trois branches, moyeu — plus un anneau qui flotte.
+  // PETIT : sur l'iPhone en portrait, le champ horizontal est étroit et la
+  // jante d'avant mangeait l'écran entier (capture de Max). Jante fine,
+  // sous la ligne du regard : on conduit en regardant PAR-DESSUS.
   const volant = new THREE.Group();
-  volant.add(new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.018, 8, 20),
+  volant.add(new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.014, 8, 20),
     new THREE.MeshBasicMaterial({ color: cuir })));
   const bMat = new THREE.MeshBasicMaterial({ color: anthr });
   for (const angle of [Math.PI / 2, Math.PI + 0.6, Math.PI * 2 - 0.6]) {
-    const br = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.115, 0.02), bMat);
-    br.position.set(Math.cos(angle) * 0.06, Math.sin(angle) * 0.06, 0);
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.085, 0.016), bMat);
+    br.position.set(Math.cos(angle) * 0.045, Math.sin(angle) * 0.045, 0);
     br.rotation.z = angle - Math.PI / 2;
     volant.add(br);
   }
-  const moyeu = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 12),
+  const moyeu = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.026, 12),
     new THREE.MeshBasicMaterial({ color: navy }));
   moyeu.rotation.x = Math.PI / 2;
   volant.add(moyeu);
   volant.rotation.x = -0.42;                                       // incliné vers soi
-  volant.position.set(-0.33, 0.79, -0.44);                         // jante SOUS l'œil : on regarde par-dessus
+  volant.position.set(-0.33, 0.78, -0.46);
   cockpit.add(volant);
-  cockpit.add(box(0.045, 0.05, 0.16, anthr, -0.33, 0.74, -0.5));   // la colonne
-  // la console centrale et son accent
+  cockpit.add(box(0.04, 0.05, 0.14, anthr, -0.33, 0.73, -0.51));   // la colonne
+  // la console centrale, nue
   cockpit.add(box(0.2, 0.26, 0.55, anthr, 0, 0.7, -0.18));
-  cockpit.add(box(0.06, 0.02, 0.3, 0xd88a2a, 0, 0.835, -0.2));
   // deux baquets : assise, dossier épaulé, appuie-tête — crème, flancs navy
   for (const sx of [-0.33, 0.33]) {
     cockpit.add(box(0.4, 0.09, 0.42, creme, sx, 0.62, 0.18));
