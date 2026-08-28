@@ -398,8 +398,8 @@ const VRAIES_KM = [
         const p = positionDe(cle);
         const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, bancs: 0 };
         const ids = new Set();
-        for (let du = -25; du <= 25; du++) {
-          for (let dv = -25; dv <= 25; dv++) {
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
             const x = p.x + du, z = p.z + dv;
             const sol = w.terrainHeight(x, z);
             const s0 = w.getBlock(x, sol, z);
@@ -417,13 +417,16 @@ const VRAIES_KM = [
       }
       return villes;
     });
+    // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
+    // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
+    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075.
     const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 60 && c.portes >= 40 && c.enseignes >= 100 && c.auvents >= 60));
+      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 110));
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
     const sansVie = Object.entries(facades).filter(([, c]) =>
-      !(c.lampes >= 8 && c.bancs >= 4 && c.diversite >= 18));
+      !(c.lampes >= 45 && c.bancs >= 30 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')

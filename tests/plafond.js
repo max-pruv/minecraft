@@ -77,7 +77,10 @@ function verifier(nom, ok, detail = '') {
 // canaux en eau. Le changement est celui-là et rien d'autre : la même
 // découpe, mesurée sur main et sur v166, rend la MÊME empreinte hors
 // villes (voir ci-dessous).
-const EMPREINTE_RELIEF = '0d379ffbc2b19618aac9e8f7ed6d5b2f50009c29';
+// v172 : le grand recalibrage étend trente-six disques de villes — dont
+// Amsterdam, dans la fenêtre — d'où la nouvelle valeur ; la preuve
+// d'intégrité hors villes est refaite plus bas.
+const EMPREINTE_RELIEF = '0b61c487d55f77ab0e221fbfd49af048191aa897';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -112,7 +115,10 @@ const EMPREINTE_RELIEF = '0d379ffbc2b19618aac9e8f7ed6d5b2f50009c29';
 // refaite à l'identique : cette empreinte, calculée avec la MÊME découpe sur
 // origin/main (avant les cinquante grandes) et sur v166, donne le même hash
 // des deux côtés. Hors des villes neuves, pas un bloc n'a bougé.
-const EMPREINTE_HORS_VILLES = '5e54e15c1b0405e609ad04e3ae3a4ac6f54da965';
+// v172 : découpe recalculée avec les NOUVEAUX rayons — et mesurée identique
+// sur origin/main et sur la branche : hors des disques agrandis, pas un
+// bloc n'a bougé (ec09838a…, 195 668 colonnes des deux côtés).
+const EMPREINTE_HORS_VILLES = 'ec09838ad0bd078fb10aa2139d5b1b09c44b3462';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.

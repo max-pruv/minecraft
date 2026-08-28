@@ -69,6 +69,7 @@ const TUILE = uni(0);
 const ARDOISE = uni(25);
 const ACIER = uni(24);
 const ROUGE_GRES = brique(18);
+const BLANC_SOL = uni(27);            // la peinture blanche des chaussées
 const BOIS_PORTE = BLOCK.DARKPLANK;   // les portes des boutiques
 const BOIS_BANC = BLOCK.PLANK;        // les bancs des trottoirs
 
@@ -90,7 +91,64 @@ function fabrique(cle, fiche) {
   const u = (lon) => Math.round((lon - fiche.lon0) * kmLon * fiche.echelle);
   const v = (lat) => Math.round(-(lat - fiche.lat0) * 111.19 * fiche.echelle);
   const local = (lat, lon) => [u(lon), v(lat)];
-  return { cle, ancre, ...fiche, u, v, local };
+  const f = { cle, ancre, ...fiche, u, v, local };
+
+  // LE GRAND RECALIBRAGE (v172). Max, captures à l'appui : « les rues sont
+  // hyper petites, faut reformater les rues, le sizing des villes ». Les
+  // trames historiques faisaient des rues d'UN bloc et des îlots de trois :
+  // un tissu de couture, pas une ville. La normalisation se fait ICI, une
+  // fois pour toutes les fiches : chaque ville garde son ANGLE, son
+  // caractère (chanfreins, ruelles, part de tours), mais le gabarit devient
+  // celui d'une vraie rue — chaussée de trois blocs, trottoirs de deux,
+  // îlots de cinq à dix.
+  if (f.trame) {
+    const t = { ...f.trame };
+    if (t.ruelles) {
+      // Venise, la médina de Marrakech, la vieille ville de Jérusalem : les
+      // ruelles SONT leur identité — on les élargit juste assez pour y
+      // marcher à deux, sans les transformer en boulevards.
+      t.pu = Math.round(t.pu * 2); t.pv = Math.round(t.pv * 2);
+      t.w = 0.9; t.s = 2.0;
+    } else {
+      t.pu = Math.round(t.pu * 3); t.pv = Math.round(t.pv * 3);
+      t.w = 1.7; t.s = 4.0;
+      if (t.chanfrein) t.chanfrein = 4.2;                    // l'Eixample garde ses coins coupés
+    }
+    f.trame = t;
+    // les maisons grandissent avec les rues : un canyon d'un étage n'est pas
+    // une rue, c'est une tranchée
+    const [h0, h1] = f.hMaison || [3, 5];
+    f.hMaison = [h0 + 2, h1 + 3];
+  }
+
+  // Les fleuves s'étendent jusqu'au nouveau bord : leurs polylignes avaient
+  // été tracées pour l'ancien rayon, et un Bosphore qui s'arrête au milieu
+  // de la ville n'est plus un détroit. On prolonge chaque bout dans l'axe de
+  // son dernier segment.
+  const prolonge = (fl) => {
+    const pts = fl.pts.map((q) => q.slice());
+    const etire = (a, b) => {
+      const dx = a[0] - b[0], dz = a[1] - b[1];
+      const l = Math.hypot(dx, dz) || 1;
+      let [x2, z2] = a;
+      while (Math.hypot(x2, z2) < f.rayon + 16) { x2 += (dx / l) * 8; z2 += (dz / l) * 8; }
+      return [x2, z2];
+    };
+    pts.unshift(etire(pts[0], pts[1]));
+    pts.push(etire(pts[pts.length - 1], pts[pts.length - 2]));
+    return { ...fl, pts };
+  };
+  f.rayon = ancre.r;                                          // le registre fait foi
+  if (f.fleuve) f.fleuve = prolonge(f.fleuve);
+  if (f.fleuves) f.fleuves = f.fleuves.map(prolonge);
+
+  // La place centrale reçoit sa fontaine — sauf si un monument vit déjà au
+  // centre (l'Obélisque de Buenos Aires EST la pièce maîtresse de sa place).
+  f.fontaine = !(f.monuments || []).some((m2) => {
+    const [du, dv] = local(m2.lat, m2.lon);
+    return Math.hypot(du, dv) < 7;
+  });
+  return f;
 }
 
 // Un pavillon de ville, tiré au sort mais toujours le même au même endroit.
@@ -518,7 +576,7 @@ const FICHES = {
   },
   agra: {
     lat0: 27.1751, lon0: 78.0421, echelle: 24, rayon: 58,
-    fleuve: { pts: [[-40, -12], [-10, -8], [10, -6], [30, -12], [45, -20]], l: 4 },
+    fleuve: { pts: [[-62, -26], [-40, -12], [-10, -8], [10, -6], [30, -12], [45, -20]], l: 4 },
     charbagh: { v0: 3, v1: 30, demi: 14 },                        // le jardin moghol en croix
     trame: { ang: 0, pu: 6, pv: 5, w: 0.45, s: 0.8, sud: 34 },
     palette: [uni(20), CREME, ROSE], toit: CREME, hMaison: [2, 4],
@@ -705,7 +763,7 @@ const FICHES = {
     lat0: 45.4408, lon0: 12.3155, echelle: 15, rayon: 40,
     lagune: { r: 33 },                                            // la ville flotte au milieu de sa lagune
     fleuve: { pts: [[-8, -13], [2, -9], [10, -3], [18, 1], [24, 6], [21, 12], [24, 17]], l: 2.5 },   // le Grand Canal
-    trame: { ang: 0.1, pu: 4, pv: 4, w: 0.35, s: 0.65 },          // les calli — pas une voiture
+    trame: { ang: 0.1, pu: 4, pv: 4, w: 0.35, s: 0.65, ruelles: true },   // les calli — pas une voiture
     palette: [OCRE, ROSE, CREME, brique(0)], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Le campanile', lat: 45.4341, lon: 12.339, box: 3, build: minaret(20, brique(0)) },
@@ -822,6 +880,7 @@ const FICHES = {
   // --- l'Asie et le Moyen-Orient ---------------------------------------------
   tokyo: {
     lat0: 35.6812, lon0: 139.7671, echelle: 11, rayon: 60,
+    tourMax: 34,
     fleuve: { pts: [[38, -48], [31, -20], [34, 8], [28, 38]], l: 4 },         // la Sumida
     trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.5 },
     palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
@@ -852,6 +911,7 @@ const FICHES = {
   },
   seoul: {
     lat0: 37.5665, lon0: 126.978, echelle: 20, rayon: 50,
+    tourMax: 30,
     fleuve: { pts: [[-48, 48], [-15, 44], [15, 42], [48, 46]], l: 6 },        // le Han
     collines: [{ nom: 'Namsan', cu: 18, cv: 34, r: 10, h: 16 }],
     trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.55 },
@@ -867,6 +927,7 @@ const FICHES = {
   },
   shanghai: {
     lat0: 31.2304, lon0: 121.4737, echelle: 18, rayon: 54,
+    tourMax: 40,
     fleuve: { pts: [[32, -50], [38, -20], [38, 5], [34, 30], [38, 52]], l: 5 },   // le Huangpu — le Bund d'un côté, Pudong de l'autre
     trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
     palette: [ACIER, CREME, brique(0)], toit: ARDOISE, hMaison: [4, 7],
@@ -880,6 +941,7 @@ const FICHES = {
   },
   hongkong: {
     lat0: 22.3193, lon0: 114.1694, echelle: 8, rayon: 46,
+    tourMax: 38,
     archipel: [{ v0: 23.5, v1: 29.5 }],                           // le port Victoria, entre Kowloon et l'île
     collines: [{ nom: 'Le pic Victoria', cu: -20, cv: 39, r: 12, h: 22 }],
     trame: { ang: 0.05, pu: 5, pv: 5, w: 0.45, s: 0.8, tours: 0.5 },
@@ -894,6 +956,7 @@ const FICHES = {
   },
   singapour: {
     lat0: 1.29, lon0: 103.85, echelle: 20, rayon: 44,
+    tourMax: 34,
     mer: { nx: 0.5, nz: 0.87, d: 38 },
     parcs: [{ cu: 17, cv: 9, ru: 9, rv: 10, lac: { cu: 17, cv: 9, ru: 7, rv: 8 } }],   // la Marina Bay elle-même
     trame: { ang: 0.2, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
@@ -931,6 +994,7 @@ const FICHES = {
   },
   dubai: {
     lat0: 25.2048, lon0: 55.2708, echelle: 20, rayon: 50,
+    tourMax: 46,
     mer: { nx: -0.6, nz: -0.8, d: 38, plage: 4 },                 // le Golfe, au nord-ouest
     trame: { ang: 0.35, pu: 7, pv: 6, w: 0.55, s: 0.9, tours: 0.7 },
     palette: [CREME, BLANC, ACIER], toit: CREME, hMaison: [5, 9],
@@ -952,7 +1016,7 @@ const FICHES = {
   jerusalem: {
     lat0: 31.7683, lon0: 35.2137, echelle: 14, rayon: 40,
     collines: [{ nom: 'Le mont des Oliviers', cu: 36, cv: -16, r: 8, h: 12 }],
-    trame: { ang: 0.25, pu: 4, pv: 4, w: 0.4, s: 0.7 },
+    trame: { ang: 0.25, pu: 4, pv: 4, w: 0.4, s: 0.7, ruelles: true },    // la vieille ville en ruelles
     palette: [GRES, CREME, PIERRE], toit: CREME, hMaison: [2, 4], // tout en pierre de Jérusalem
     monuments: [
       { nom: 'Le dôme du Rocher', lat: 31.778, lon: 35.2354, box: 7, build: dome(5, uni(10), OR) },
@@ -997,6 +1061,7 @@ const FICHES = {
   // --- les Amériques ------------------------------------------------------
   losangeles: {
     lat0: 34.0522, lon0: -118.2437, echelle: 12, rayon: 56,
+    tourMax: 30,
     trame: { ang: 0.63, pu: 6, pv: 5, w: 0.55, s: 0.9, tours: 0.6 },   // le damier penché du downtown
     palette: [BLANC, CREME, ACIER], toit: CREME, hMaison: [4, 7],
     parcs: [{ cu: -18, cv: 20, ru: 6, rv: 5 }],
@@ -1012,6 +1077,7 @@ const FICHES = {
   },
   chicago: {
     lat0: 41.8781, lon0: -87.6298, echelle: 20, rayon: 50,
+    tourMax: 36,
     mer: { nx: 1, nz: 0, d: 24, plage: 2 },                       // le lac Michigan
     fleuve: { pts: [[23, -8], [3, -6], [-3, -2], [-4, 22]], l: 2.5 },   // la Chicago River et sa fourche sud
     trame: { ang: 0, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
@@ -1068,6 +1134,7 @@ const FICHES = {
   },
   toronto: {
     lat0: 43.6532, lon0: -79.3832, echelle: 20, rayon: 44,
+    tourMax: 30,
     mer: { nx: 0, nz: 1, d: 26, quais: true },                    // le lac Ontario
     trame: { ang: 0.3, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
     palette: [ACIER, brique(0), CREME], toit: ARDOISE, hMaison: [4, 7],
@@ -1139,7 +1206,7 @@ const FICHES = {
   // --- l'Afrique ---------------------------------------------------------------
   marrakech: {
     lat0: 31.6295, lon0: -7.9811, echelle: 20, rayon: 44,
-    trame: { ang: 0.2, pu: 4, pv: 4, w: 0.4, s: 0.7 },            // les ruelles serrées de la médina
+    trame: { ang: 0.2, pu: 4, pv: 4, w: 0.4, s: 0.7, ruelles: true },     // les ruelles serrées de la médina
     palette: [ROUGE_GRES, OCRE, ROSE], toit: ROUGE_GRES, hMaison: [2, 4],   // la ville rouge
     parcs: [{ cu: -10, cv: -27, ru: 4, rv: 4 }],                  // le jardin Majorelle
     monuments: [
@@ -1334,11 +1401,50 @@ export function solVillesMonde(x, z) {
     if (!f.trame) return null;
     const t = f.trame;
     if (t.sud && v > t.sud) return null;
+
+    // LA PLACE CENTRALE. On arrive en ville ICI, par la carte : une place
+    // pavée, dégagée, avec sa fontaine — plus jamais le nez dans un mur.
+    const dCentre = Math.hypot(u, v);
+    if (dCentre < 10.5) {
+      if (f.fontaine && dCentre < 2.3) return EAU;
+      if (f.fontaine && dCentre < 3.3) return PIERRE;
+      return PAVE;
+    }
+
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     const a = u * co - v * si, b = u * si + v * co;
+
+    // LES AVENUES : la croix centrale de la ville, deux fois plus large que
+    // les rues, avec sa ligne médiane pointillée — c'est elle qui structure
+    // le plan, comme dans toute vraie ville.
+    if (!t.ruelles) {
+      const dAxe = Math.min(Math.abs(a), Math.abs(b));
+      if (dAxe < 5.6) {
+        if (dAxe < 3.4) {
+          const longAv = Math.abs(a) < Math.abs(b) ? b : a;
+          if (dAxe < 0.4 && (((Math.round(longAv) % 6) + 6) % 6) < 3) return BLANC_SOL;
+          return BITUME;
+        }
+        return TROTTOIR;
+      }
+    }
+
     const ra = a - Math.round(a / t.pu) * t.pu, rb = b - Math.round(b / t.pv) * t.pv;
     const dRue = Math.min(Math.abs(ra), Math.abs(rb));
-    if (dRue < t.w) return BITUME;
+    if (dRue < t.w) {
+      const pres = Math.abs(ra) < Math.abs(rb);
+      const long = pres ? b : a;
+      const travers = pres ? ra : rb;
+      const versCarrefour = Math.max(Math.abs(ra), Math.abs(rb));
+      // le passage piéton zébré, à l'abord de chaque carrefour
+      if (!t.ruelles && versCarrefour < t.w + 2.1 && versCarrefour > t.w + 0.4) {
+        if ((Math.round(travers * 1.4) & 1) === 0) return BLANC_SOL;
+        return BITUME;
+      }
+      // la ligne axiale pointillée
+      if (!t.ruelles && Math.abs(travers) < 0.35 && (((Math.round(long) % 6) + 6) % 6) < 3) return BLANC_SOL;
+      return BITUME;
+    }
     if (dRue < t.s) return TROTTOIR;
     // Les chanfreins de l'Eixample : aux carrefours, le coin est coupé —
     // c'est CE dessin-là qu'on voit du ciel à Barcelone, et nulle part
@@ -1362,10 +1468,17 @@ export function batirColonneVillesMonde(x, z, poser) {
 
     const c = (f.collines || []).find((k) => Math.hypot(u - k.cu, v - k.cv) < k.r);
     const favela = c && c.favela;
-    const tour = !favela && t.tours && r > t.tours && Math.hypot(u, v) < f.rayon * 0.4;
+    const dCentre2 = Math.hypot(u, v);
+    const tour = !favela && t.tours && r > t.tours && dCentre2 < f.rayon * 0.5;
     const palette = favela ? f.paletteFavela : f.palette;
     const [h0, h1] = favela ? [2, 3] : (f.hMaison || [3, 5]);
-    const bh = tour ? 10 + Math.floor(r * 14) : h0 + Math.floor(r * (h1 - h0 + 1));
+    // LA SKYLINE. Une vraie métropole n'a pas des tours de hauteur uniforme :
+    // elle culmine au centre et redescend vers les quartiers — c'est cette
+    // courbe qu'on reconnaît de loin. `tourMax` donne l'ambition de la ville
+    // (Dubaï ne plafonne pas comme Séoul), le fondu fait le reste.
+    const ambition = Math.max(0.3, 1 - dCentre2 / (f.rayon * 0.55));
+    const bh = tour ? Math.max(8, Math.round((12 + r * (f.tourMax ?? 24)) * ambition))
+      : h0 + Math.floor(r * (h1 - h0 + 1));
     const mur = tour ? ACIER : palette[Math.floor(tirage(a, b, 97) * palette.length) % palette.length];
     const face = (u & 1) === 0 ? v : u;
 
@@ -1373,7 +1486,10 @@ export function batirColonneVillesMonde(x, z, poser) {
     const A = u * co - v * si, B = u * si + v * co;
     const ra = A - a * t.pu, rb = B - b * t.pv;
     const dRue = Math.min(Math.abs(ra), Math.abs(rb));
-    const bord = dRue < t.s + 1.15;                                // colonne de façade
+    // La façade donne sur la petite rue — OU sur l'avenue : dans une vraie
+    // ville, ce sont les avenues que les boutiques bordent en premier.
+    const dAxe = Math.min(Math.abs(A), Math.abs(B));
+    const bord = dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
 
     // LE REZ-DE-CHAUSSÉE COMMERÇANT. Max : « on ne retrouve pas des façades
     // de magasins ». La moitié des lots du centre en reçoivent une, à la
@@ -1398,7 +1514,14 @@ export function batirColonneVillesMonde(x, z, poser) {
       : [f.toit, f.toit, f.toit, f.toit, ARDOISE, TUILE][Math.floor(tirage(a, b, 199) * 6)];
 
     for (let y = 0; y < bh; y++) {
-      if (tour) { poser(y + 1, y % 3 === 2 ? ACIER : VERRE); continue; }
+      if (tour) {
+        // même une tour a son pied commerçant : vitrines sur deux niveaux et
+        // bandeau d'enseigne — c'est le socle de toutes les tours du monde
+        if (bord && y <= 1) { poser(y + 1, VERRE); continue; }
+        if (bord && y === 2) { poser(3, enseigne); continue; }
+        poser(y + 1, y % 3 === 2 ? ACIER : VERRE);
+        continue;
+      }
       if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : VERRE); continue; }
       if (commerce && bord && y === 1) { poser(2, bh > 3 ? VERRE : mur); continue; }
       if (commerce && bord && y === 2) { poser(3, enseigne); continue; }
