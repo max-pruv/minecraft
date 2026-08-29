@@ -529,7 +529,10 @@ async function avancerUnDemiSeconde(p, depart) {
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
       let volant = false;
       if (a) a.mesh.traverse((m) => {
-        if (m.geometry && m.geometry.type === 'TorusGeometry') volant = true;
+        // le tore du cockpit sculpté, ou le SteeringWheel des modèles de la
+        // flotte — chacun des cinquante-et-un a l'un ou l'autre
+        if ((m.geometry && m.geometry.type === 'TorusGeometry')
+          || /steeringwheel/i.test(m.name || '')) volant = true;
       });
       const dx = g.player.camera.position.x - g.player.pos.x;
       const dz = g.player.camera.position.z - g.player.pos.z;
@@ -564,7 +567,10 @@ async function avancerUnDemiSeconde(p, depart) {
       let vitresTransparentes = false, sommetsFusionnes = 0;
       if (a) a.mesh.traverse((m) => {
         if (!m.isMesh) return;
-        if (m.material && m.material.transparent && m.material.opacity < 0.8) vitresTransparentes = true;
+        // opacité basse (Chiron d'artiste) ou vitrage nommé de la flotte,
+        // déjà en alpha BLEND — l'un comme l'autre laisse voir l'habitacle
+        if (m.material && m.material.transparent
+          && (m.material.opacity < 0.8 || /glass/i.test(m.material.name || ''))) vitresTransparentes = true;
         if (m.geometry && m.geometry.attributes && m.geometry.attributes.position
           && m.geometry.attributes.position.count > sommetsFusionnes) {
           sommetsFusionnes = m.geometry.attributes.position.count;
@@ -578,6 +584,33 @@ async function avancerUnDemiSeconde(p, depart) {
       carrosserie.sommetsFusionnes >= 300, `${carrosserie.sommetsFusionnes} sommets`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+
+    // LA FLOTTE (Max : « add those cars for better diversity »). Huit
+    // voitures invoquées ne sortent pas du même moule : au moins trois
+    // modèles différents parmi les cinquante-et-un. Le choix est écrit à la
+    // CONSTRUCTION (userData.flotte), pas au chargement du fichier — le
+    // témoin n'attend donc aucun téléchargement. L'ancien code ne
+    // connaissait qu'un modèle et n'écrivait rien : un seul « modèle »
+    // indéfini, rouge garanti.
+    const diversite = await tab.evaluate(() => {
+      const g = window.__game;
+      const nes = [];
+      for (let n = 0; n < 8; n++) {
+        const a = g.animalManager.invoquer('voiture',
+          g.player.pos.x + 4 + (n % 4) * 3, g.player.pos.z + 4 + Math.floor(n / 4) * 3);
+        if (a) nes.push(a);
+      }
+      const modeles = new Set(nes.map((a) => a.mesh.userData.flotte));
+      for (const a of nes) {                      // on range le parking d'essai
+        g.animalManager.scene.remove(a.mesh);
+        const i = g.animalManager.animals.indexOf(a);
+        if (i >= 0) g.animalManager.animals.splice(i, 1);
+      }
+      return { invoquees: nes.length, modeles: [...modeles].filter(Boolean).length };
+    });
+    verifier('huit voitures invoquées, au moins trois modèles différents',
+      diversite.invoquees === 8 && diversite.modeles >= 3,
+      `${diversite.modeles} modèle(s) distincts sur ${diversite.invoquees}`);
 
     // LA VOITURE GARÉE NE BOUGE PLUS TOUTE SEULE (Max : « elles bougent
     // d'une position à une autre de manière radicale et violente, tac tac

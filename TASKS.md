@@ -86,6 +86,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v184** — la flotte : cinquante modèles fournis par Max tirés au sort
+  (le Chiron d'artiste reste en rotation), téléchargés à la première
+  rencontre par le canal statique — et le filet de l'écran compte en temps
+  réel (la moitié noire d'iPad se répare même quand les images bégaient).
+  À CREUSER : les modèles ont des pivots `Wheel_FL/FR/RL/RR` — des roues
+  qui tournent en roulant sont à portée de main.
+
+- [x] **v183** — la vue GTA au volant (fiche `poursuite`, caméra derrière,
+  anti-mur), la voiture remise à l'endroit (l'avant vérifié par les phares —
+  elle roulait à l'envers depuis v181), vitres transparentes, nez fermé.
+
 - [x] **v182** — la voiture garée ne bouge plus (« tac tac tac »), la marche
   n'hérite plus de la rampe de vol, et la fumée éprouve la bibliothèque là où
   v176 l'a mise — le portail redevient `npm test`, jamais une liste de suites.

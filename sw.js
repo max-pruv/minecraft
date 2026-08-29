@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v183';
+const CACHE_VERSION = 'web-minecraft-v184';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -10,8 +10,12 @@ const CACHE_VERSION = 'web-minecraft-v183';
 // precached — they download only the first time a child actually uses the
 // scanner, and work offline from then on.
 const STATIC_CACHE = 'web-minecraft-static-v1';
+// La flotte de voitures suit le même canal que les modèles du scanner :
+// 83 Mo re-téléchargés à chaque livraison auraient tué la cadence — chaque
+// voiture se télécharge à sa PREMIÈRE rencontre, une fois par appareil.
 const isStaticAsset = (url) =>
-  url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/');
+  url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
+  || url.includes('/vendor/voitures/');
 
 const ASSETS = [
   './',

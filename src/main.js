@@ -4773,7 +4773,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 window.__game = { renderer, world, player, fun, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
-let frameDepuisMesure = 0;
+let derniereMesureVue = 0;
 
 // Le vol prend son élan au bout de quelques secondes. Sans un mot, l'enfant
 // croit à un bug ; avec ce mot, il comprend qu'il vient de gagner quelque chose.
@@ -4803,7 +4803,11 @@ function frame(now) {
   // n'est alors nécessaire : quoi qu'iOS oublie de nous dire en rendant la main
   // à l'application, l'écran se répare tout seul en moins d'une demi-seconde,
   // sans que l'enfant ait à tuer l'application et à la rouvrir.
-  if (++frameDepuisMesure >= 30) { frameDepuisMesure = 0; ajusterLaVue(); }
+  // EN TEMPS RÉEL, pas en rendus : l'ancien compteur (30 frames) tenait la
+  // demi-seconde à 60 i/s — mais l'écran cassé arrive précisément quand les
+  // images bégaient, au réveil de l'application. À trois images par seconde,
+  // trente rendus font dix secondes d'écran à moitié noir.
+  if (now - derniereMesureVue > 500) { derniereMesureVue = now; ajusterLaVue(); }
 
   if (running) {
     player.update(dt);

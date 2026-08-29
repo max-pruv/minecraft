@@ -128,6 +128,103 @@ export function chargerVraieVoiture() {
   return chargementVraieVoiture;
 }
 
+// --- la flotte ----------------------------------------------------------------
+//
+// Cinquante modèles fournis par Max (vendor/voitures, voir LICENSE.md) pour
+// la diversité des voitures à conduire. Paramétriques, HOMOGÈNES, et déjà
+// normalisés par leur manifeste — c'est ce qui rend ce chargeur trivial là
+// où celui du modèle d'artiste mesure et devine :
+//   - mètres réels, et 1 m = 1 bloc : AUCUNE mise à l'échelle ;
+//   - roues posées à y = 0, origine au centre : AUCUN recalage ;
+//   - +Z vers le nez pour tous : UNE rotation π, la même pour tous —
+//     l'avant ne se devine pas, il est écrit dans le contrat du fichier ;
+//   - vitrage déjà transparent (alpha BLEND), intérieur complet.
+// Chaque fichier pèse ~1,6 Mo et N'EST PAS dans les ASSETS : il passe par
+// le STATIC_CACHE du service worker — téléchargé à la première rencontre,
+// gardé à travers les mises à jour. Hors ligne avant cette rencontre, la
+// coque sculptée d'attente reste en place : un modèle absent ne casse rien.
+export const FLOTTE = [
+  { fichier: 'acura-nsx-type-s.glb', nom: 'Acura NSX Type S' },
+  { fichier: 'amg-gt-black-series.glb', nom: 'Mercedes-AMG GT Black Series' },
+  { fichier: 'aston-martin-dbs-superleggera.glb', nom: 'Aston Martin DBS Superleggera' },
+  { fichier: 'aston-martin-one-77.glb', nom: 'Aston Martin One-77' },
+  { fichier: 'aston-martin-valkyrie.glb', nom: 'Aston Martin Valkyrie' },
+  { fichier: 'audi-r8-v10-performance.glb', nom: 'Audi R8 V10 Performance' },
+  { fichier: 'bentley-continental-gt-speed.glb', nom: 'Bentley Continental GT Speed' },
+  { fichier: 'bmw-i8.glb', nom: 'BMW i8' },
+  { fichier: 'bmw-m8-competition.glb', nom: 'BMW M8 Competition' },
+  { fichier: 'bugatti-bolide.glb', nom: 'Bugatti Bolide' },
+  { fichier: 'bugatti-chiron.glb', nom: 'Bugatti Chiron' },
+  { fichier: 'bugatti-veyron.glb', nom: 'Bugatti Veyron 16.4' },
+  { fichier: 'bugatti-w16-mistral.glb', nom: 'Bugatti W16 Mistral' },
+  { fichier: 'ferrari-812-competizione.glb', nom: 'Ferrari 812 Competizione' },
+  { fichier: 'ferrari-daytona-sp3.glb', nom: 'Ferrari Daytona SP3' },
+  { fichier: 'ferrari-f40.glb', nom: 'Ferrari F40' },
+  { fichier: 'ferrari-laferrari.glb', nom: 'Ferrari LaFerrari' },
+  { fichier: 'ferrari-sf90.glb', nom: 'Ferrari SF90 Stradale' },
+  { fichier: 'ford-gt.glb', nom: 'Ford GT' },
+  { fichier: 'koenigsegg-cc850.glb', nom: 'Koenigsegg CC850' },
+  { fichier: 'koenigsegg-gemera.glb', nom: 'Koenigsegg Gemera' },
+  { fichier: 'koenigsegg-jesko.glb', nom: 'Koenigsegg Jesko' },
+  { fichier: 'koenigsegg-regera.glb', nom: 'Koenigsegg Regera' },
+  { fichier: 'lamborghini-aventador-svj.glb', nom: 'Lamborghini Aventador SVJ' },
+  { fichier: 'lamborghini-countach-lpi-800-4.glb', nom: 'Lamborghini Countach LPI 800-4' },
+  { fichier: 'lamborghini-huracan-sto.glb', nom: 'Lamborghini Huracan STO' },
+  { fichier: 'lamborghini-revuelto.glb', nom: 'Lamborghini Revuelto' },
+  { fichier: 'lamborghini-sian-fkp-37.glb', nom: 'Lamborghini Sian FKP 37' },
+  { fichier: 'lexus-lfa.glb', nom: 'Lexus LFA' },
+  { fichier: 'lotus-evija.glb', nom: 'Lotus Evija' },
+  { fichier: 'maserati-mc20.glb', nom: 'Maserati MC20' },
+  { fichier: 'mclaren-765lt.glb', nom: 'McLaren 765LT' },
+  { fichier: 'mclaren-artura.glb', nom: 'McLaren Artura' },
+  { fichier: 'mclaren-p1.glb', nom: 'McLaren P1' },
+  { fichier: 'mclaren-senna.glb', nom: 'McLaren Senna' },
+  { fichier: 'mclaren-speedtail.glb', nom: 'McLaren Speedtail' },
+  { fichier: 'mercedes-amg-one.glb', nom: 'Mercedes-AMG One' },
+  { fichier: 'nissan-gtr-nismo.glb', nom: 'Nissan GT-R Nismo' },
+  { fichier: 'pagani-huayra-bc.glb', nom: 'Pagani Huayra BC' },
+  { fichier: 'pagani-utopia.glb', nom: 'Pagani Utopia' },
+  { fichier: 'pagani-zonda-cinque.glb', nom: 'Pagani Zonda Cinque' },
+  { fichier: 'pininfarina-battista.glb', nom: 'Automobili Pininfarina Battista' },
+  { fichier: 'porsche-718-cayman-gt4-rs.glb', nom: 'Porsche 718 Cayman GT4 RS' },
+  { fichier: 'porsche-911-gt3-rs.glb', nom: 'Porsche 911 GT3 RS (992)' },
+  { fichier: 'porsche-918-spyder.glb', nom: 'Porsche 918 Spyder' },
+  { fichier: 'porsche-carrera-gt.glb', nom: 'Porsche Carrera GT' },
+  { fichier: 'porsche-taycan-turbo-s.glb', nom: 'Porsche Taycan Turbo S' },
+  { fichier: 'rimac-nevera.glb', nom: 'Rimac Nevera' },
+  { fichier: 'rolls-royce-spectre.glb', nom: 'Rolls-Royce Spectre' },
+  { fichier: 'sls-amg-black-series.glb', nom: 'Mercedes-Benz SLS AMG Black Series' },
+];
+
+const chargementsFlotte = new Map();
+export function chargerVoitureFlotte(entree) {
+  if (typeof document === 'undefined') return null;
+  if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
+  const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
+    .then((gltf) => {
+      const cadre = new THREE.Group();
+      cadre.add(gltf.scene);
+      cadre.rotation.y = Math.PI;                      // +Z nez (contrat) → -z jeu
+      const porteur = new THREE.Group();
+      porteur.add(cadre);
+      const rt = refletsVoiture();
+      if (rt) {
+        porteur.traverse((o) => {
+          if (!o.isMesh || !o.material) return;
+          // la laque seulement : le vitrage et le carbone gardent leur rendu
+          if ((o.material.name || '').includes('Paint')) {
+            o.material.envMap = rt.texture;
+            o.material.envMapIntensity = 1.0;
+            o.material.needsUpdate = true;
+          }
+        });
+      }
+      return porteur;
+    }).catch(() => null);
+  chargementsFlotte.set(entree.fichier, chargement);
+  return chargement;
+}
+
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
 // MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
