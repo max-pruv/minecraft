@@ -142,7 +142,13 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       !cats.English, JSON.stringify(cats));
 
     // …et le choix survit à un redémarrage, servi depuis le serveur.
-    await marlon.reload({ waitUntil: 'load' });
+    // Un rechargement attend TOUTES les ressources de la page — Three.js, la
+    // voiture d'artiste, les textures. Sur un banc qui rend en logiciel avec
+    // deux autres parties vivantes, trente secondes (le défaut de Playwright)
+    // ne suffisent pas, et la ligne suivante en accorde déjà quatre-vingt-dix
+    // pour la MÊME page. On aligne, et on laisse d'abord retomber la charge.
+    await banc.souffler();
+    await marlon.reload({ waitUntil: 'load', timeout: 90000 });
     await marlon.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const apresRelance = await jusqua(async () => (await marlon.evaluate(
       () => window.__game.edu.__prefs().lang)) === 'fr');
@@ -605,7 +611,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       window.__game.edu.save();
       return JSON.parse(localStorage.getItem('web-minecraft-edu-v1') || '{}').remaining;
     });
-    await neuf.reload({ waitUntil: 'load' });
+    await banc.souffler();
+    await neuf.reload({ waitUntil: 'load', timeout: 90000 });
     await neuf.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const auRetour = await neuf.evaluate(() => {
       const e = window.__game.edu;
