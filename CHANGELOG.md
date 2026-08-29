@@ -38,11 +38,18 @@ chaque modèle se télécharge à sa première rencontre, une fois par
 appareil, par le canal statique du service worker (celui du scanner de
 visages) — hors ligne avant cette rencontre, la coque d'attente reste.
 
+En chemin, le portail complet a débusqué un vrai défaut d'iPad : le filet
+qui répare la moitié d'écran noire comptait en RENDUS (une demi-seconde à
+60 images par seconde — mais dix secondes quand l'application bégaie au
+réveil, précisément le moment où l'écran casse). Il compte désormais en
+temps réel : l'écran se répare en une demi-seconde, quoi qu'il arrive.
+
 **Ce qui le prouve.** Un témoin neuf : huit voitures invoquées, au moins
 trois modèles différents — rouge sur l'ancien code, qui n'en connaissait
 qu'un. Les témoins d'habitacle acceptent les deux familles (volant en
-tore ou nœud SteeringWheel, vitres à opacité basse ou vitrage nommé).
-Portail complet — la modification du service worker rejoue tout.
+tore ou nœud SteeringWheel, vitres à opacité basse ou vitrage nommé). Et
+le témoin de l'écran cassé, rouge sous charge sur l'ancien filet, vert en
+temps réel. Portail complet — quatorze suites, tout rejoué deux fois.
 
 ## v183 — la vue GTA au volant, et la voiture remise à l'endroit
 
