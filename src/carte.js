@@ -592,10 +592,16 @@ export class Carte {
       // disent que l'île n'est pas une ville uniforme mais une file de
       // villages soudés.
       ...quartiersDuMonde().map((c) => ({ c, fort: false, seuil: 0.7 })),
-      // Et les places de Paris, à la même distance : l'Étoile, la Concorde,
-      // la Bastille, le Luxembourg, Montmartre. Un plan de Paris se lit par
-      // ses places, comme New York par ses quartiers.
-      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 0.7 })),
+      // Et les places de Paris : l'Étoile, la Concorde, la Bastille, le
+      // Luxembourg, Montmartre. Un plan de Paris se lit par ses places, comme
+      // New York par ses quartiers.
+      //
+      // Leur seuil est plus large que celui des autres villes (1,0 au lieu de
+      // 0,7) parce que Paris est plus large : depuis v187 elle fait trois cent
+      // soixante-dix blocs de bord à bord, et au zoom qui la montre ENTIÈRE le
+      // seuil de 0,7 effaçait justement ses places. Un plan qu'on ne peut pas
+      // lire d'un coup d'œil n'est pas un plan.
+      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.0 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
       // Et les quartiers et collines de San Francisco.
       ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),

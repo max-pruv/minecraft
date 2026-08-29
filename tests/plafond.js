@@ -83,7 +83,17 @@ function verifier(nom, ok, detail = '') {
 // v173 : les deux cents villes — une vingtaine tombe dans la fenêtre
 // observée (Lyon, Cologne, Francfort, Zurich, Genève, Manchester…) — d'où
 // la nouvelle valeur ; la preuve hors villes, refaite plus bas.
-const EMPREINTE_RELIEF = 'a18ae3735ba737b6198a68cb24cdebab06b9836d';
+//
+// **v187 : PARIS**, et c'est la troisième fois que l'exception de Max sert.
+// La ville passe de huit à vingt-quatre blocs par kilomètre : son disque
+// s'étend de 55 à 185 blocs de rayon, la Seine se recreuse sur toute sa
+// nouvelle course, la butte Montmartre s'élargit. Paris est en plein dans la
+// fenêtre observée — contrairement à New York en v186 — donc cette empreinte
+// change, et c'est exactement le genre de casse que l'invariant 1 exige de
+// DÉCLARER et de BORNER. La borne est vérifiée deux lignes plus bas : hors du
+// disque de Paris, le paysage est identique au bloc près.
+// v186 (avant Paris) : a18ae3735ba737b6198a68cb24cdebab06b9836d
+const EMPREINTE_RELIEF = 'cac3b8a64c09a458d3fcbd0446cf49d09d135c3a';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -128,7 +138,15 @@ const EMPREINTE_RELIEF = 'a18ae3735ba737b6198a68cb24cdebab06b9836d';
 // été RETIRÉES parce que leur fondu atteignait des colonnes-témoins
 // ci-dessous — dont la maison sauvegardée en (-100,-100) : le contrat avec
 // les vieilles sauvegardes pèse plus lourd qu'une ville de plus.
-const EMPREINTE_HORS_VILLES = 'c5a30b6f16cb825157c90f631bc166ba1688be33';
+//
+// v187 : la découpe s'élargit au nouveau disque de Paris (55 → 185 blocs), et
+// la preuve d'intégrité a été refaite exactement comme en v162, v166, v172 et
+// v173 — cette empreinte, calculée avec la MÊME découpe sur origin/main (v186)
+// et sur la branche, donne le même hash des deux côtés :
+// d813ba3f…, 153 382 colonnes des deux côtés. Hors du disque de Paris, pas un
+// bloc n'a bougé. C'est cela qui protège les maisons de Marlon et d'Alice —
+// et c'est cela, et rien d'autre, qui autorise l'empreinte du dessus à changer.
+const EMPREINTE_HORS_VILLES = 'd813ba3ff705a4539d8d10dba21cdeaf1eb39c9f';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -246,6 +264,23 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     x + r >= Z.x0 && x - r <= Z.x1 && z + r >= Z.z0 && z - r <= Z.z1);
   verifier('et la capitale ne touche à rien de ce que les enfants ont bâti',
     atteints.length === 0, atteints.map((a) => a[0]).join(', '));
+
+  // MÊME EXIGENCE POUR PARIS, qui a triplé d'emprise en v187.
+  //
+  // Une ville qui grandit de 55 à 185 blocs de rayon déplace le sol sous elle,
+  // c'est le prix déclaré. Ce qui n'est PAS déclaré, c'est qu'elle aille
+  // déplacer le sol ailleurs — et « ailleurs », ici, ce sont les trois endroits
+  // où les enfants ont vraiment bâti. Le fondu du pourtour compte : le relief
+  // se lisse sur seize blocs au-delà du disque, on prend donc la marge de
+  // ville, qui est plus large.
+  const PARIS_CITE = CITIES.find((c) => c.key === 'paris');
+  const prochesDeParis = SANCTUAIRES.filter(([, x, z, r]) =>
+    Math.hypot(x - PARIS_CITE.x, z - PARIS_CITE.z) < PARIS_CITE.r + MARGE_VILLE + r);
+  verifier('et Paris non plus, malgré son emprise triplée',
+    prochesDeParis.length === 0,
+    prochesDeParis.length ? prochesDeParis.map((a) => a[0]).join(', ')
+      : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
+        Math.hypot(x - PARIS_CITE.x, z - PARIS_CITE.z) - PARIS_CITE.r - r)))} blocs du bord`);
 
   const { WASHINGTON } = await import('../src/washington.js');
   const toutes = [

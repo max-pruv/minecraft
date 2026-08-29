@@ -565,11 +565,22 @@ const position = (p) => p.evaluate(() => ({
     // Panthéon, les Invalides, la Bastille, le Luxembourg n'existaient pas du
     // tout. Une rive, ça ne se discute pas — c'est la première chose qu'un
     // enfant vérifie quand il compare avec un vrai plan.
+    //
+    // LE ZOOM SUIT LA VILLE. Il était écrit en dur (0,24 bloc par pixel), ce
+    // qui montrait tout Paris tant qu'elle faisait cent dix blocs de large. À
+    // trois cent soixante-dix — Paris à vingt-quatre blocs par kilomètre,
+    // v187 — le même chiffre ne montrait plus que le premier arrondissement,
+    // et le témoin annonçait « la Tour Eiffel a disparu de la carte » alors
+    // qu'elle était simplement hors du cadre. On le calcule donc pour que le
+    // disque de la ville TIENNE dans la carte, quelle que soit son emprise.
     const PARIS = V.paris;
     await banc.ouvrirLaCarte(tab);
     await tab.evaluate(({ p }) => {
       const c2 = window.__carte;
-      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.24;
+      const r = c2.canvas.getBoundingClientRect();
+      const css = Math.min(r.width, r.height);
+      c2.vue.cx = p.x; c2.vue.cz = p.z;
+      c2.vue.bpp = (2 * p.r * 1.05) / css;      // toute la ville, et un peu d'air
       c2.limiter(); c2.peindre();
     }, { p: PARIS });
     await dormir(600);
@@ -622,6 +633,20 @@ const position = (p) => p.evaluate(() => ({
     // Trois choses le disent, et aucune n'a besoin d'une capture d'écran : la
     // pierre de taille et le zinc dont la ville est faite, les cours au milieu
     // des îlots, et l'herbe qu'on ne foule plus en la traversant.
+    //
+    // ET LA FENÊTRE DE MESURE AUSSI SUIT LA VILLE. Elle était centrée sur
+    // l'ancre de Paris, ce qui à l'ancienne échelle tombait en plein tissu
+    // ordinaire. À vingt-quatre blocs par kilomètre, ces quarante blocs-là
+    // sont le Louvre, les Tuileries, la Seine et la caserne : on y mesurait
+    // des monuments en croyant compter des immeubles. On vise donc un
+    // quartier haussmannien ORDINAIRE, donné en kilomètres réels depuis
+    // Notre-Dame — une adresse qui survivra à la prochaine remise à l'échelle.
+    const CŒUR = await tab.evaluate(async () => {
+      const M = await import('./src/paris.js');
+      const [x, z] = M.adresseParis ? M.adresseParis(-3.7, -2.5)
+        : [M.PARIS.x, M.PARIS.z];
+      return { x, z };
+    });
     const tissu = await tab.evaluate((P) => {
       const w = window.__game.world;
       const PIERRE = 560, ZINC = 561, PAVE_DE_COUR = 9, HERBE = 1, TERRE = 2;
@@ -650,7 +675,7 @@ const position = (p) => p.evaluate(() => ({
         }
       }
       return { bati, cours, nu, total };
-    }, V.paris);
+    }, CŒUR);
     verifier('Paris est bâtie de pierre de taille et de zinc',
       tissu.bati > 700,
       `${tissu.bati} colonnes sur ${tissu.total}`);

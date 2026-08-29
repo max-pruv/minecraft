@@ -55,8 +55,12 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   a 20-correct-answer marathon quiz. Repeatable; survives refreshes since play
   time is persisted.
 - **Real places, at real proportions** — six cities, each drawn from its own
-  plan rather than from a random-building generator: Haussmann Paris on the
-  Seine, the island of Manhattan on the 1811 commissioners' grid, San
+  plan rather than from a random-building generator: **Haussmann Paris at 24
+  blocks/km** — every place at its true distance from Notre-Dame, the Étoile's
+  twelve avenues, the Champs-Élysées lined with real chestnut trees, streets
+  wide enough to walk down between six-storey stone facades, and a different
+  street width per quarter (a Marais alley is not a Monceau avenue) —
+  the island of Manhattan on the 1811 commissioners' grid, San
   Francisco's two clashing street grids across thirteen named hills, Nice,
   Lille, and **Washington's monumental core at 48 blocks/km** — L'Enfant's grid
   split by diagonal state avenues meeting at circles, the Mall lined with its

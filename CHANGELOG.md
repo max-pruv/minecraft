@@ -20,6 +20,57 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v187 — Paris à l'échelle GTA : la ville où l'on marche
+
+**Pourquoi.** Max, après New York : « Est-ce que tu peux maintenant
+retravailler sur toutes les villes ? » Paris venait en premier — c'est la
+ville de la maison, et c'est celle qui allait le plus mal. Elle était bâtie à
+HUIT blocs par kilomètre : un pâté d'immeubles y faisait quatre blocs, une rue
+en faisait un, et un enfant qui descendait dans une rue de Paris se cognait
+le nez dans une façade sans jamais voir la rue. Le plan était juste — la
+Seine, les îles, l'Étoile, les percées d'Haussmann, chaque lieu à sa vraie
+adresse — mais on le survolait, on n'y entrait pas. C'est mot pour mot le
+verdict que Washington avait reçu en v161 (« une version très low cost ») et
+Manhattan en v186.
+
+**Ce que ça change.**
+
+*L'échelle.* Vingt-quatre blocs par kilomètre au lieu de huit, et le disque de
+la ville passe de 55 à 185 blocs de rayon — tout Paris intra-muros, le bois de
+Boulogne à l'ouest et celui de Vincennes à l'est. Les rues font trois à cinq
+blocs de large entre les façades, les immeubles six étages plus le comble : on
+marche entre des murs de pierre de taille, on lève la tête, on voit le ciel.
+Chaque quartier a maintenant SA rue — cinq mètres de venelle dans le Marais,
+trente mètres d'avenue à Monceau —, ce qui à l'ancienne échelle ne pouvait pas
+se voir puisque tout faisait un bloc.
+
+*Ce qui se reconnaît enfin.* La place de l'Étoile et ses douze avenues : deux
+cent quarante mètres de rond-point et des avenues de quarante mètres, au lieu
+d'une esplanade de onze cents mètres qui mangeait tout l'ouest de la ville.
+L'Arc de Triomphe est un vrai arc à quatre faces, deux fois et demie la
+corniche des immeubles, et non plus une dalle de neuf blocs. La Tour Eiffel
+est un TREILLIS de soixante-quatre blocs — on voit le ciel à travers, ses
+jambes s'écartent, ses trois plateformes se lisent de loin. Notre-Dame a ses
+deux tours, sa rosace, ses arcs-boutants et sa flèche sur une nef de vingt
+blocs. Le Panthéon a un tambour à colonnes plus haut que large. Et les
+marronniers des Champs-Élysées sont des ARBRES — un fût et une couronne —
+alors qu'un bloc de feuillage posé à plat faisait de la pelouse sur le bitume.
+
+*Ce qui a été rangé au passage.* La Seine est dessinée à sa vraie largeur (à
+huit blocs par kilomètre il fallait l'élargir cinq fois pour qu'elle se voie,
+et elle engloutissait le Louvre) ; le toit du commissariat n'est plus une
+bâche bleue de vingt-cinq blocs à côté de Notre-Dame — le bleu de la police
+reste en bandeau de façade, là où un enfant le lit.
+
+**Ce qui le prouve.** Le portail complet, sept suites. Et surtout la forme que
+prend l'invariant numéro un quand on a le droit de le casser : l'empreinte du
+relief change, puisque la ville a triplé ; l'empreinte HORS des villes, elle,
+est identique au bit près à celle de la v186 — 153 382 colonnes des deux côtés,
+mesurées avec la même découpe sur `origin/main` et sur la branche. Hors du
+disque de Paris, pas un bloc n'a bougé. Un troisième témoin vérifie que ce
+disque, malgré son emprise triplée, reste à soixante-six blocs du plus proche
+des trois endroits où les enfants ont bâti.
+
 ## v186 — New York à l'échelle GTA, des voitures partout, et des fenêtres allumées la nuit
 
 **Pourquoi.** Trois verdicts de Max, dans l'ordre. « Remettre à l'échelle,

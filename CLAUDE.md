@@ -44,6 +44,18 @@ travail est irrattrapable.
    l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
    casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 
+   **Elle a servi une TROISIÈME fois, en v187, pour Paris** — et cette
+   fois-là, elle sert dans la fenêtre d'empreinte, ce qui rend la borne
+   vérifiable au bit près. Paris passe de huit à vingt-quatre blocs par
+   kilomètre et son disque de 55 à 185 blocs : l'empreinte du relief change.
+   L'empreinte HORS villes, elle, est identique à celle de la v186 — 153 382
+   colonnes des deux côtés, mesurées avec la MÊME découpe sur `origin/main` et
+   sur la branche. C'est la manière canonique de prouver qu'une casse est
+   confinée, et elle se refait à chaque fois : on ne met pas à jour un hash,
+   on mesure les deux côtés. Un troisième témoin vérifie que le disque de
+   Paris ne s'approche d'aucun des trois sanctuaires (il en reste à
+   soixante-six blocs).
+
    **Elle a servi une SECONDE fois, en v186, pour Manhattan** — et cette
    fois sans double empreinte, pour une raison qu'il faut connaître :
    `plafond.js` échantillonne x, z dans [−700, 700], et New York est à
@@ -535,6 +547,55 @@ flotte. Deux pièges, tous deux payés :
   une seule voiture. Leurs anneaux s'éprouvent sur le VRAI terrain
   (`tracesCirculationMain`), ce qui écarte la Seine et la Tamise sans rien
   savoir de leur géographie.
+
+### Paris (`paris.js`) — et ce qu'on apprend d'une remise à l'échelle
+
+La sixième ville remise à l'échelle GTA, en v187 : **vingt-quatre blocs par
+kilomètre** (contre 48 à Washington, 34 à Manhattan), disque de 185 blocs,
+ancrée sur Notre-Dame. Trois choses à savoir avant d'y toucher.
+
+- **Le plan d'auteur est en KILOMÈTRES RÉELS, et il ne se réécrit pas.**
+  `de(dx, dz)` traduit un écart réel à Notre-Dame en coordonnées locales ;
+  c'est la seule chose que la table des lieux connaisse. Ce qui restait écrit
+  en blocs de l'ancienne échelle — la courbe de la Seine, les îles, la butte,
+  les points de passage des percées, les ponts — se projette par `k()`.
+  `adresseParis(dx, dz)` rend une adresse du monde à partir de kilomètres :
+  c'est ce que les sondes et les témoins doivent viser, jamais un `u`/`v` en
+  dur, sinon ils meurent à la prochaine remise à l'échelle.
+
+- **Les LARGEURS ne se projettent pas, elles se relèvent.** Multiplier une
+  largeur par trois lui garde sa taille réelle d'avant — et cette taille était
+  fausse : la place de l'Étoile faisait cinq cent soixante mètres de rayon et
+  ses avenues cent soixante-dix mètres de large. À huit blocs par kilomètre
+  cela ne se voyait pas ; à vingt-quatre, l'Étoile mangeait tout l'ouest de
+  Paris. Chaussée, trottoir, pas d'îlot, rayon de place, largeur d'avenue,
+  largeur de quai : tout cela se redonne en blocs neufs, mesuré sur le vrai
+  plan. **C'est LE piège d'une remise à l'échelle**, et il vaut pour Londres,
+  Nice, Lille et San Francisco quand leur tour viendra.
+
+- **L'entorse assumée, c'est l'îlot.** Un îlot parisien fait cent mètres, soit
+  deux blocs et demi : de quoi poser une façade et rien derrière. Le plus grand
+  ici en fait dix-sept, soit sept cents mètres. On choisit la rue praticable et
+  l'îlot suit — même arbitrage que Washington, qui a élargi les siens de 1,7
+  pour qu'une maison ait un escalier. Ce qui reste juste, en échange : la rue
+  appartient au QUARTIER (`rue`, `face` dans sa fiche), et une venelle du
+  Marais ne fait pas la largeur d'une avenue de Monceau.
+
+Deux pièges de rendu payés en captures :
+
+- **`solParis` rend un identifiant de SOL, donc un arbre posé à plat est un
+  carré vert.** Vus du ciel les marronniers des Champs-Élysées faisaient de
+  belles rangées ; vus de la rue, c'était de la pelouse sur le bitume. Le
+  feuillage se fait donc pousser dans `world.js` (fût + couronne) — et il faut
+  l'ESPACER, sinon une colonne sur deux fait une haie pleine qui bouche
+  l'avenue.
+- **Un monument ne grandit pas parce que la carte grandit.** Les `socle` de la
+  table des lieux sont l'emprise du bâtisseur, pas une longueur du plan : ils
+  ne passent pas par `k()`. En revanche, un monument qui était acceptable à
+  côté d'immeubles de quatre blocs ne l'est plus à côté d'immeubles de neuf —
+  la Tour Eiffel et l'Arc de Triomphe ont dû être refaits, et c'est la règle
+  générale : **remettre une ville à l'échelle, c'est aussi refaire ses
+  monuments.**
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 
