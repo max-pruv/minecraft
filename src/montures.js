@@ -11,7 +11,7 @@
 // gros — la caméra monte, la bête garde ses pattes par terre.
 
 import * as THREE from 'three';
-import { construireVoitureRoute, chargerVraieVoiture } from './vehicules.js';
+import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -320,9 +320,20 @@ function voitureNeuve() {
   g.add(cockpit);
   // LE VRAI MODÈLE remplace la sculpture dès qu'il est chargé — la coque de
   // primitives ne sert plus que d'attente, et de secours si le fichier
-  // manque. On retire caisse, verrière et détails sculptés ; le cockpit,
-  // lui, RESTE : c'est le même poste de conduite dans les deux carrosseries.
-  const chargement = chargerVraieVoiture();
+  // manque (ou tant qu'il n'a jamais été téléchargé, hors ligne).
+  //
+  // DEPUIS LA FLOTTE (Max : « add those cars for better diversity ») chaque
+  // voiture neuve tire son modèle parmi cinquante-et-un : les cinquante de
+  // vendor/voitures, plus le Chiron d'artiste historique — l'ajout est
+  // additif, il ne remplace pas le cadeau. Deux différences de traitement :
+  // les modèles de la flotte apportent leur PROPRE intérieur complet, donc
+  // notre cockpit sculpté part avec la coque d'attente ; le modèle
+  // d'artiste, lui, n'en a pas, et le cockpit reste.
+  const enFlotte = Math.random() < FLOTTE.length / (FLOTTE.length + 1)
+    ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null;
+  g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';
+  g.userData.nomVoiture = enFlotte ? enFlotte.nom : 'Bugatti Chiron';
+  const chargement = enFlotte ? chargerVoitureFlotte(enFlotte) : chargerVraieVoiture();
   if (chargement) {
     chargement.then((proto) => {
       if (!proto || !g.userData.membres) return;
@@ -330,6 +341,7 @@ function voitureNeuve() {
         const membre = g.userData.membres[nom];
         if (membre) g.remove(membre);
       }
+      if (enFlotte) g.remove(cockpit);
       g.add(proto.clone(true));
     });
   }

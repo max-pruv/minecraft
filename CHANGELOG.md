@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v184 — cinquante voitures de plus, chacune la sienne
+
+**Pourquoi.** Max, trois archives de modèles à l'appui : « add those cars
+for better diversity in cars driving. » Toutes les voitures du jeu
+sortaient du même moule — trois Chiron identiques sur le parc de la
+Giga-usine.
+
+**Ce que ça change.** Cinquante modèles rejoignent le Chiron d'artiste :
+Ferrari, Lamborghini, Porsche, McLaren, Koenigsegg, Pagani, Rolls,
+Bugatti… Des paramétriques stylisés, homogènes, aux vraies proportions
+(1 m = 1 bloc, du Huracán de 4,4 m à la Spectre de 5,46 m), avec vitres
+teintées et intérieurs complets — visibles à travers la lunette en vue
+GTA. Chaque voiture neuve tire son modèle au sort ; le garagiste gare
+désormais un parc varié. Les 83 Mo ne pèsent PAS sur les mises à jour :
+chaque modèle se télécharge à sa première rencontre, une fois par
+appareil, par le canal statique du service worker (celui du scanner de
+visages) — hors ligne avant cette rencontre, la coque d'attente reste.
+
+**Ce qui le prouve.** Un témoin neuf : huit voitures invoquées, au moins
+trois modèles différents — rouge sur l'ancien code, qui n'en connaissait
+qu'un. Les témoins d'habitacle acceptent les deux familles (volant en
+tore ou nœud SteeringWheel, vitres à opacité basse ou vitrage nommé).
+Portail complet — la modification du service worker rejoue tout.
+
 ## v183 — la vue GTA au volant, et la voiture remise à l'endroit
 
 **Pourquoi.** Max : « La vue depuis l'intérieur du cockpit de la Bugatti
