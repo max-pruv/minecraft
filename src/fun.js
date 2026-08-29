@@ -1318,12 +1318,24 @@ export function initFun(ctx) {
       : (dz > 0 ? 'le sud ⬇️' : 'le nord ⬆️');
     toast(`💰 Le trésor du jour est vers ${dir}, à environ ${dist} pas ! Cherche le rayon doré !`, 0xffd75e);
   }
-  // hook the hint into the map modal
-  document.getElementById('map-modal')?.insertAdjacentHTML('beforeend',
-    '<button id="treasure-hint-btn" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:12px;border:none;background:#d0a03a;color:#fff;font-size:15px;z-index:5">💰 Indice trésor</button>');
+  // L'INDICE DU TRÉSOR EST UN OUTIL DE LA CARTE : il va dans la RANGÉE
+  // D'OUTILS, avec « moi » et « tout ».
+  //
+  // Il était posé en absolu au bas de la modale — donc au bas de l'ÉCRAN,
+  // puisque la modale occupe tout l'écran — et il venait donc s'asseoir sur la
+  // légende. Sur un téléphone couché, où la fiche descend bien plus bas, il
+  // recouvrait la ligne « appui long pour t'y téléporter » : capture de Max à
+  // l'appui. Dans la rangée, il ne peut plus recouvrir quoi que ce soit, et il
+  // se voit enfin pour ce qu'il est.
+  document.getElementById('map-outils')?.insertAdjacentHTML('beforeend',
+    '<button id="treasure-hint-btn" title="Où est le trésor du jour ?">💰 trésor</button>');
   document.getElementById('treasure-hint-btn')?.addEventListener('click', () => {
     treasureHint();
-    document.getElementById('map-modal').style.display = 'none';
+    // On referme par le bouton de fermeture, jamais en cachant la modale à la
+    // main : c'est lui qui arrête la boucle de dessin de la carte et rend la
+    // souris au jeu. Masquée sans être fermée, la carte continuait de se
+    // redessiner soixante fois par seconde derrière un écran noir.
+    document.getElementById('map-modal-close')?.click();
   });
 
   // ---- park mini-games ------------------------------------------------------

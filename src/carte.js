@@ -201,24 +201,37 @@ export class Carte {
   // La taille affichée, en pixels CSS. Elle est relue une fois par image et
   // mémorisée : la mesurer à chaque étiquette forcerait le navigateur à
   // recalculer la mise en page des dizaines de fois par seconde.
+  // LA CARTE N'EST PLUS CARRÉE, ET C'EST TOUT LE SUJET.
+  //
+  // Elle lisait UNE dimension — la largeur — et s'en servait pour les deux
+  // axes. Tant que la feuille de style lui donnait un carré, personne ne le
+  // voyait. Sur un iPhone COUCHÉ, la hauteur disponible tombe à 74 % de
+  // trois cent quatre-vingt-dix pixels : la boîte devenait un rectangle large,
+  // l'image restait carrée, et le navigateur l'écrasait dedans. Le monde
+  // s'étirait à l'horizontale — capture de Max à l'appui, le golfe du Mexique
+  // deux fois trop large.
+  //
+  // On rend donc les DEUX dimensions, et tout ce qui suit s'en sert. En
+  // échange, la carte remplit désormais la place qu'on lui donne dans les deux
+  // sens : couché, on voit large ; debout, on voit loin.
   taille() {
-    if (this._css) return { css: this._css };
+    if (this._l) return { l: this._l, h: this._h };
     const r = this.canvas.getBoundingClientRect();
     // hors écran (modale masquée) le rectangle est nul : on retombe sur
     // l'attribut du canvas plutôt que de diviser par zéro plus loin.
-    return { css: Math.round(r.width) || 480 };
+    return { l: Math.round(r.width) || 480, h: Math.round(r.height) || 480 };
   }
 
   versMonde(px, py) {
-    const { css } = this.taille();
+    const { l, h } = this.taille();
     const b = this.vue.bpp;
-    return { x: this.vue.cx + (px - css / 2) * b, z: this.vue.cz + (py - css / 2) * b };
+    return { x: this.vue.cx + (px - l / 2) * b, z: this.vue.cz + (py - h / 2) * b };
   }
 
   versEcran(x, z) {
-    const { css } = this.taille();
+    const { l, h } = this.taille();
     const b = this.vue.bpp;
-    return { x: css / 2 + (x - this.vue.cx) / b, y: css / 2 + (z - this.vue.cz) / b };
+    return { x: l / 2 + (x - this.vue.cx) / b, y: h / 2 + (z - this.vue.cz) / b };
   }
 
   // Le monde tient dans cette boîte : au-delà, il n'y a plus que de l'océan
@@ -244,9 +257,11 @@ export class Carte {
   // un plafond fixe, ce qui revenait à promettre « tout le monde » en n'en
   // montrant qu'une part — et la part rétrécissait à chaque ville ajoutée.
   zoomMax() {
-    const { css } = this.taille();
+    const { l, h } = this.taille();
     const b = this.bornesMonde();
-    return Math.max(ZOOM_MAX, Math.max(b.x1 - b.x0, b.z1 - b.z0) / css);
+    // Le monde entier doit tenir : c'est la plus contraignante des deux
+    // dimensions qui décide, jamais une moyenne.
+    return Math.max(ZOOM_MAX, Math.max((b.x1 - b.x0) / l, (b.z1 - b.z0) / h));
   }
 
   zoomerVers(px, py, facteur) {
@@ -422,19 +437,27 @@ export class Carte {
   // --- le fond ---------------------------------------------------------------
 
   rendreFond(grossier = false) {
-    const { css } = this.taille();
+    const { l, h } = this.taille();
     // Pendant un glisser ou un pincement, un échantillon pour quatre pixels :
     // quatre fois moins de colonnes à calculer, le geste reste fluide sur
     // tablette. Au repos, la pleine finesse revient en un rendu.
-    const N = Math.max(64, Math.round((css * MARGE) / (grossier ? 4 : 2)));
+    const div = grossier ? 4 : 2;
+    const NL = Math.max(64, Math.round((l * MARGE) / div));
+    const NH = Math.max(64, Math.round((h * MARGE) / div));
     this.fondGrossier = grossier;
-    if (this.fond.width !== N) { this.fond.width = N; this.fond.height = N; }
+    if (this.fond.width !== NL || this.fond.height !== NH) {
+      this.fond.width = NL; this.fond.height = NH;
+    }
     const ctx = this.fond.getContext('2d');
-    const img = ctx.createImageData(N, N);
+    const img = ctx.createImageData(NL, NH);
 
-    const large = css * this.vue.bpp * MARGE;    // largeur couverte, en blocs
-    const pas = large / N;
-    const x0 = this.vue.cx - large / 2, z0 = this.vue.cz - large / 2;
+    const largeL = l * this.vue.bpp * MARGE;     // largeur couverte, en blocs
+    const largeH = h * this.vue.bpp * MARGE;     // et hauteur, qui peut différer
+    // Le PAS est le même sur les deux axes — c'est ce qui empêche le monde de
+    // s'étirer, et c'est vrai par construction puisque les deux côtés se
+    // déduisent du même `bpp`.
+    const pas = largeL / NL;
+    const x0 = this.vue.cx - largeL / 2, z0 = this.vue.cz - largeH / 2;
     // Les vrais blocs, seulement d'assez près : le monde n'est en mémoire que
     // sur un carré d'environ 380 blocs autour du joueur, et au-delà de cette
     // échelle ce carré se verrait comme une pièce rapportée.
@@ -445,8 +468,8 @@ export class Carte {
 
     // Le champ de hauteurs d'abord, avec une bordure : l'ombrage a besoin des
     // voisins, et les recalculer pour chaque point coûterait cinq fois plus.
-    const L = N + 2;
-    const H = new Float32Array(L * L);
+    const L = NL + 2;
+    const H = new Float32Array(L * (NH + 2));
     // Le cache de colonnes : la hauteur d'une colonne est immuable — c'est le
     // même chiffre à chaque rendu. Pendant un glisser, la carte se redessine
     // à chaque image, et l'écran suivant recouvre presque le même monde que
@@ -456,9 +479,9 @@ export class Carte {
     if (!this.cacheH) this.cacheH = new Map();
     if (this.cacheH.size > 400000) this.cacheH.clear();
     const cache = this.cacheH;
-    for (let j = -1; j <= N; j++) {
+    for (let j = -1; j <= NH; j++) {
       const wz = Math.floor(z0 + (j + 0.5) * pas);
-      for (let i = -1; i <= N; i++) {
+      for (let i = -1; i <= NL; i++) {
         const wx = Math.floor(x0 + (i + 0.5) * pas);
         const cle = wx * 262144 + wz;
         let h = cache.get(cle);
@@ -467,9 +490,9 @@ export class Carte {
       }
     }
 
-    for (let j = 0; j < N; j++) {
+    for (let j = 0; j < NH; j++) {
       const wz = Math.floor(z0 + (j + 0.5) * pas);
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < NL; i++) {
         const wx = Math.floor(x0 + (i + 0.5) * pas);
         const k = (j + 1) * L + i + 1;
         const h = H[k];
@@ -482,7 +505,7 @@ export class Carte {
           const pente = ((H[k + 1] - H[k - 1]) + (H[k + L] - H[k - L])) / (2 * Math.max(1, pas));
           ombre = borne(1 + pente * 0.30, 0.62, 1.34);
         }
-        const o = (j * N + i) * 4;
+        const o = (j * NL + i) * 4;
         img.data[o] = Math.min(255, c[0] * ombre);
         img.data[o + 1] = Math.min(255, c[1] * ombre);
         img.data[o + 2] = Math.min(255, c[2] * ombre);
@@ -490,7 +513,7 @@ export class Carte {
       }
     }
     ctx.putImageData(img, 0, 0);
-    this.fondVue = { ...this.vue, css };
+    this.fondVue = { ...this.vue, l, h };
     this.dernierRendu = performance.now();
   }
 
@@ -514,7 +537,7 @@ export class Carte {
   // Cherche à la place exacte, puis sur deux anneaux de plus en plus larges.
   // Le décalage reste borné : au-delà, on préfère renoncer plutôt que de
   // planter une destination loin de là où elle se trouve vraiment.
-  ecarter(p, libre, css) {
+  ecarter(p, libre, l, h) {
     const essais = [{ x: 0, y: 0 }];
     for (const r of [16, 28]) {
       for (let a = 0; a < 8; a++) {
@@ -524,7 +547,7 @@ export class Carte {
     }
     for (const d of essais) {
       const q = { x: p.x + d.x, y: p.y + d.y };
-      if (q.x < 14 || q.x > css - 14 || q.y < 14 || q.y > css - 14) continue;
+      if (q.x < 14 || q.x > l - 14 || q.y < 14 || q.y > h - 14) continue;
       if (libre({ x0: q.x - 13, y0: q.y - 13, x1: q.x + 13, y1: q.y + 13 })) return q;
     }
     return null;
@@ -535,13 +558,13 @@ export class Carte {
   // change tout — sur une carte chargée, c'est la différence entre trois noms
   // affichés et douze. Chacune est rentrée de force dans le cadre : un nom
   // coupé par le bord — « Base spatia » — n'est ni lisible ni touchable.
-  boites(ctx, p, texte, fort, css) {
+  boites(ctx, p, texte, fort, larg, haut) {
     ctx.font = fort ? 'bold 12px system-ui, sans-serif' : '11px system-ui, sans-serif';
     const l = ctx.measureText(texte).width + 12;
     const hh = fort ? 19 : 17;
     const faire = (cx, cy) => {
-      const ex = borne(cx, l / 2 + 4, css - l / 2 - 4);
-      const ey = borne(cy - hh / 2, 4, css - hh - 4);
+      const ex = borne(cx, l / 2 + 4, larg - l / 2 - 4);
+      const ey = borne(cy - hh / 2, 4, haut - hh - 4);
       return { l, hh, ex, ey, x0: ex - l / 2, y0: ey, x1: ex + l / 2, y1: ey + hh };
     };
     return [
@@ -565,25 +588,24 @@ export class Carte {
     ctx.fillText(texte, b.ex, b.ey + b.hh / 2 + 0.5);
   }
 
-  rendreCalque(ctx, css) {
-    const b = this.vue.bpp;
-    this.etiquettes = [];
-
-    // Les bêtes et les gens, tant qu'on est assez près pour les distinguer.
-    // Les lieux, du plus important au plus discret, sans jamais se recouvrir.
-    // Les deux coins que la carte se dessine à elle-même sont réservés
-    // d'avance : un lieu caché derrière la boussole n'est plus touchable.
-    const pris = [
-      { x0: css - 46, y0: 0, x1: css, y1: 46 },            // la boussole
-      { x0: 0, y0: css - 46, x1: 180, y1: css },           // l'échelle
-    ];
-    const libre = (r) => !pris.some((q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
-    // Trois rangs, et l'ordre compte : quand deux noms se disputent la même
-    // place, c'est toujours le plus important qui l'emporte. Les petites
-    // adresses n'apparaissent qu'une fois qu'on s'est approché, sinon elles
-    // encombrent le centre de la carte et chassent les grandes destinations.
+  // LE CATALOGUE DES LIEUX — un seul endroit, deux usages.
+  //
+  // Cette liste servait uniquement à dessiner les noms, et elle se
+  // reconstruisait à CHAQUE image : deux cents lieux rassemblés soixante fois
+  // par seconde pendant qu'on fait glisser la carte. Elle est désormais
+  // calculée une fois — rien là-dedans ne bouge pendant une partie — et elle
+  // sert aussi à la barre de recherche, qui doit pouvoir trouver un lieu que
+  // la carte n'affiche pas encore parce qu'on est trop loin. C'est même tout
+  // son intérêt : on tape « Tokyo » sans savoir où il est.
+  //
+  // `seuil` est l'échelle au-delà de laquelle un nom disparaît de la carte —
+  // exprimé en blocs par pixel, donc plus il est grand, plus le nom résiste au
+  // dézoom. La recherche, elle, l'ignore : elle voit tout.
+  catalogueDesLieux() {
+    if (this._catalogue) return this._catalogue;
     const majeur = (c) => (c.r || 0) >= 30;
-    const candidats = [
+    this._catalogue = [
+
       ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
       ...PLACES.map((c) => ({ c, fort: true, seuil: majeur(c) ? 99 : 1.9 })),
       ...REPERES.map((c) => ({ c, fort: false, seuil: c.seuil || 1.6 })),
@@ -617,6 +639,27 @@ export class Carte {
       // capitale se lit par ses cercles, comme New York par ses quartiers.
       ...lieuxDeWashington().map((c) => ({ c, fort: false, seuil: 0.7 })),
     ];
+    return this._catalogue;
+  }
+
+  rendreCalque(ctx, l, h) {
+    const b = this.vue.bpp;
+    this.etiquettes = [];
+
+    // Les bêtes et les gens, tant qu'on est assez près pour les distinguer.
+    // Les lieux, du plus important au plus discret, sans jamais se recouvrir.
+    // Les deux coins que la carte se dessine à elle-même sont réservés
+    // d'avance : un lieu caché derrière la boussole n'est plus touchable.
+    const pris = [
+      { x0: l - 46, y0: 0, x1: l, y1: 46 },                // la boussole
+      { x0: 0, y0: h - 46, x1: 180, y1: h },               // l'échelle
+    ];
+    const libre = (r) => !pris.some((q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
+    // Trois rangs, et l'ordre compte : quand deux noms se disputent la même
+    // place, c'est toujours le plus important qui l'emporte. Les petites
+    // adresses n'apparaissent qu'une fois qu'on s'est approché, sinon elles
+    // encombrent le centre de la carte et chassent les grandes destinations.
+    const candidats = this.catalogueDesLieux();
     // On réserve d'abord la petite pastille d'icône de CHAQUE destination :
     // vue du ciel, la carte est un menu de voyage, et une destination qui
     // disparaît est une destination qu'on ne peut plus atteindre. Les grands
@@ -626,12 +669,12 @@ export class Carte {
     for (const { c, fort, seuil } of candidats) {
       if (b > seuil || deja.has(c.name)) continue;
       const exact = this.versEcran(c.x, c.z);
-      if (exact.x < 2 || exact.x > css - 2 || exact.y < 2 || exact.y > css - 2) continue;
+      if (exact.x < 2 || exact.x > l - 2 || exact.y < 2 || exact.y > h - 2) continue;
       // Vue du ciel, deux domaines voisins tombent sur le même pixel. Plutôt
       // que d'en effacer un, on écarte sa pastille de quelques pixels — moins
       // que l'épaisseur d'un doigt, et une poignée de blocs à cette échelle,
       // alors qu'un lieu effacé, lui, devient impossible à rejoindre.
-      const p = this.ecarter(exact, libre, css);
+      const p = this.ecarter(exact, libre, l, h);
       if (!p) continue;
       const jeton = { x0: p.x - 13, y0: p.y - 13, x1: p.x + 13, y1: p.y + 13 };
       deja.add(c.name);
@@ -641,7 +684,7 @@ export class Carte {
       this.etiquettes.push({ rect: jeton, lieu: c });
     }
     for (const r of retenus) {
-      const boite = this.boites(ctx, r.p, r.c.name, r.fort, css).find(libre);
+      const boite = this.boites(ctx, r.p, r.c.name, r.fort, l, h).find(libre);
       if (!boite) continue;
       pris.push(boite);
       this.pastille(ctx, boite, r.c.name, r.fort);
@@ -653,7 +696,7 @@ export class Carte {
     if (this.autres) {
       for (const a of this.autres()) {
         const p = this.versEcran(a.x, a.z);
-        if (p.x < 0 || p.x > css || p.y < 0 || p.y > css) continue;
+        if (p.x < 0 || p.x > l || p.y < 0 || p.y > h) continue;
         ctx.fillStyle = '#4ac9ff';
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -679,7 +722,7 @@ export class Carte {
       for (const m of this.mobiles()) {
         if (!tous && !m.toujours) continue;
         const p = this.versEcran(m.x, m.z);
-        if (p.x < -4 || p.x > css + 4 || p.y < -4 || p.y > css + 4) continue;
+        if (p.x < -4 || p.x > l + 4 || p.y < -4 || p.y > h + 4) continue;
         ctx.fillStyle = m.couleur;
         ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
       }
@@ -697,17 +740,17 @@ export class Carte {
     ctx.fill(); ctx.stroke();
     ctx.restore();
 
-    this.echelle(ctx, css);
-    this.boussole(ctx, css);
+    this.echelle(ctx, h);
+    this.boussole(ctx, l);
   }
 
   // Une barre de mesure : sans elle, on ne sait pas si le zoom a bougé.
-  echelle(ctx, css) {
+  echelle(ctx, haut) {
     const jolis = [10, 20, 50, 100, 200, 500, 1000];
     let blocs = jolis[jolis.length - 1];
     for (const v of jolis) { if (v / this.vue.bpp >= 56) { blocs = v; break; } }
     const l = blocs / this.vue.bpp;
-    const x = 14, y = css - 16;
+    const x = 14, y = haut - 16;
     ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + l, y);
     ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 3); ctx.moveTo(x + l, y - 5); ctx.lineTo(x + l, y + 3);
@@ -721,8 +764,8 @@ export class Carte {
     ctx.fillText(`${blocs} blocs`, x, y - 9);
   }
 
-  boussole(ctx, css) {
-    const x = css - 24, y = 24;
+  boussole(ctx, larg) {
+    const x = larg - 24, y = 24;
     ctx.fillStyle = 'rgba(16,22,38,0.66)';
     ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ff5b5b';
@@ -737,18 +780,18 @@ export class Carte {
   // --- la boucle -------------------------------------------------------------
 
   peindre() {
-    this._css = 0;
-    const { css } = this.taille();
-    this._css = css;
+    this._l = 0;
+    const { l, h } = this.taille();
+    this._l = l; this._h = h;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    if (this.canvas.width !== Math.round(css * dpr)) {
-      this.canvas.width = Math.round(css * dpr);
-      this.canvas.height = Math.round(css * dpr);
+    if (this.canvas.width !== Math.round(l * dpr) || this.canvas.height !== Math.round(h * dpr)) {
+      this.canvas.width = Math.round(l * dpr);
+      this.canvas.height = Math.round(h * dpr);
       this.fondVue = null;
     }
     const maintenant = performance.now();
     const perime = !this.fondVue
-      || this.fondVue.css !== css
+      || this.fondVue.l !== l || this.fondVue.h !== h
       || this.fondVue.bpp !== this.vue.bpp
       || this.fondVue.cx !== this.vue.cx
       || this.fondVue.cz !== this.vue.cz;
@@ -766,20 +809,19 @@ export class Carte {
 
     const ctx = this.canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, css, css);
+    ctx.clearRect(0, 0, l, h);
 
     // Le fond calculé pour la vue précédente est étiré jusqu'à la vue
     // courante : le déplacement reste fluide même pendant qu'on recalcule.
     const f = this.fondVue;
-    const largeF = f.css * f.bpp * MARGE;
-    const gx = f.cx - largeF / 2, gz = f.cz - largeF / 2;
+    const largeFL = f.l * f.bpp * MARGE, largeFH = f.h * f.bpp * MARGE;
+    const gx = f.cx - largeFL / 2, gz = f.cz - largeFH / 2;
     const a = this.versEcran(gx, gz);
-    const bpx = largeF / this.vue.bpp;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(this.fond, a.x, a.y, bpx, bpx);
+    ctx.drawImage(this.fond, a.x, a.y, largeFL / this.vue.bpp, largeFH / this.vue.bpp);
 
-    this.rendreCalque(ctx, css);
+    this.rendreCalque(ctx, l, h);
   }
 
   ouvrir() {

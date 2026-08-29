@@ -1067,9 +1067,17 @@
     #map-modal-canvas {
       /* La carte prend toute la place qu'on peut lui donner : c'est un atlas,
          pas une vignette. Le lissage est volontaire — le fond est calculé à
-         demi-résolution et agrandi, comme sur une carte routière. */
-      width: min(560px, 88vw); height: min(560px, 88vw);
-      max-height: 74vh; border-radius: 10px; touch-action: none; cursor: grab;
+         demi-résolution et agrandi, comme sur une carte routière.
+
+         ELLE N'EST PLUS CARRÉE, et c'est la correction d'un défaut vu par Max
+         sur un iPhone COUCHÉ : la largeur valait `min(560px, 88vw)` et la
+         hauteur était plafonnée à 74vh. En paysage cela donnait une boîte de
+         560 × 289 pendant que le dessin, lui, restait carré — le navigateur
+         l'écrasait dedans et le monde s'étirait à l'horizontale. Les deux
+         côtés se déclarent donc séparément, et src/carte.js dessine dans le
+         rapport réel de la boîte. */
+      width: min(560px, 88vw); height: min(560px, 62vh);
+      border-radius: 10px; touch-action: none; cursor: grab;
       background: #16203a;
     }
     #map-modal-canvas:active { cursor: grabbing; }
@@ -1100,6 +1108,36 @@
       position: absolute; top: 8px; right: 10px; background: none; border: none;
       color: #aaa; font-size: 18px; cursor: pointer; z-index: 1;
     }
+    /* CHERCHER UN LIEU PAR SON NOM.
+       Deux cent soixante-dix-huit lieux au registre : les trouver en glissant
+       la carte demande de savoir où ils sont, ce qui est exactement ce qu'on
+       ne sait pas. On tape « Tokyo », on y va. */
+    #map-recherche { position: relative; margin: 0 0 8px; text-align: left; }
+    #map-chercher {
+      width: 100%; box-sizing: border-box; height: 38px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.09);
+      color: #fff; font-size: 15px; padding: 0 34px 0 12px; -webkit-appearance: none;
+      font-family: inherit;
+    }
+    #map-chercher::placeholder { color: #8f9dbb; }
+    #map-chercher:focus { outline: none; border-color: #6f8dd0; background: rgba(255,255,255,0.14); }
+    /* La liste flotte AU-DESSUS de la carte : sur un téléphone couché il n'y a
+       pas la place de la pousser plus bas, et une liste qui pousse la carte
+       hors du cadre est pire qu'une liste qui la recouvre un instant. */
+    #map-resultats {
+      display: none; position: absolute; left: 0; right: 0; top: 42px; z-index: 3;
+      background: #202a42; border: 1px solid #3a4a6b; border-radius: 10px;
+      max-height: 46vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+    }
+    #map-resultats button {
+      display: block; width: 100%; text-align: left; background: none; border: none;
+      color: #e8edf8; font-size: 15px; padding: 11px 12px; cursor: pointer;
+      font-family: inherit; border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    #map-resultats button:last-child { border-bottom: none; }
+    #map-resultats button:hover, #map-resultats button.vise { background: rgba(90,120,190,0.38); }
+    #map-resultats .rien { color: #8f9dbb; padding: 11px 12px; font-size: 14px; }
     #map-legend {
       color: #cdd7ee; font-size: 12px; margin-top: 8px;
       max-width: min(560px, 88vw); line-height: 1.5;
@@ -1276,6 +1314,24 @@
       #hardstop-code { width: 140px; font-size: 16px; }
       #inv-card { padding: 14px 10px; }
     }
+
+    /* TÉLÉPHONE COUCHÉ. Trois cent quatre-vingt-dix pixels de haut, et il faut
+       y loger une carte, ses commandes et sa légende. On resserre tout, la
+       carte prend la largeur, et la légende tient sur une ligne. Sans cette
+       règle, la fiche dépassait de l'écran et le bandeau « Indice trésor »
+       venait se poser sur les noms — vu sur la capture de Max. */
+    @media (max-height: 520px) and (orientation: landscape) {
+      #map-modal-card { padding: 8px 12px; }
+      #map-modal-canvas { width: min(92vw, 900px); height: 54vh; }
+      #map-recherche { margin-bottom: 6px; }
+      #map-chercher { height: 32px; font-size: 14px; }
+      #map-resultats { top: 36px; max-height: 40vh; }
+      #map-resultats button { padding: 8px 12px; font-size: 14px; }
+      #map-outils { margin-top: 6px; gap: 6px; }
+      #map-outils button { height: 32px; min-width: 40px; font-size: 14px; }
+      #map-outils button.zoom { min-width: 48px; font-size: 22px; }
+      #map-legend, #map-astuce { font-size: 11px; margin-top: 4px; max-width: none; }
+    }
   </style>
 </head>
 <body>
@@ -1401,6 +1457,12 @@
   <div id="map-modal">
     <div id="map-modal-card">
       <button id="map-modal-close">✕</button>
+      <div id="map-recherche">
+        <input id="map-chercher" type="text" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false"
+               placeholder="🔎 Chercher un lieu — Paris, Tokyo, la Tour Eiffel…">
+        <div id="map-resultats"></div>
+      </div>
       <div id="map-zone">
         <canvas id="map-modal-canvas" width="560" height="560"></canvas>
         <div id="map-cible"></div>

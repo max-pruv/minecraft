@@ -4388,6 +4388,9 @@ function ouvrirCarte() {
   // vraies constructions : on reconnaît sa maison avant de choisir où aller.
   carte.centrerSurJoueur(0.7);
   carte.ouvrir();
+  // La recherche repart vierge à chaque ouverture : une liste laissée ouverte
+  // recouvrirait la carte avant même qu'on l'ait regardée.
+  if (champLieu) { champLieu.value = ''; listeLieux.style.display = 'none'; }
 }
 function fermerCarte() {
   carte.fermer();
@@ -4398,14 +4401,103 @@ function fermerCarte() {
   if (!IS_TOUCH && !dragLook && !edu.quizActive) startGame();
 }
 
-document.getElementById('map-plus').addEventListener('click', () => {
+// Le centre de la carte, c'est la moitié de sa largeur ET la moitié de sa
+// hauteur : depuis que la carte peut être un rectangle (v187), les deux
+// diffèrent, et zoomer visait un point au-dessus du cadre sur un téléphone
+// couché — la vue partait vers le nord à chaque appui.
+const centreDeLaCarte = () => {
   const c = mapModalCanvas.getBoundingClientRect();
-  carte.zoomerVers(c.width / 2, c.width / 2, 1.7);
+  return [c.width / 2, c.height / 2];
+};
+document.getElementById('map-plus').addEventListener('click', () => {
+  carte.zoomerVers(...centreDeLaCarte(), 1.7);
 });
 document.getElementById('map-moins').addEventListener('click', () => {
-  const c = mapModalCanvas.getBoundingClientRect();
-  carte.zoomerVers(c.width / 2, c.width / 2, 1 / 1.7);
+  carte.zoomerVers(...centreDeLaCarte(), 1 / 1.7);
 });
+
+// --- chercher un lieu par son nom -------------------------------------------
+//
+// Deux cent soixante-dix-huit lieux au registre, plus les places de Paris, les
+// quartiers de Manhattan, les monuments de Washington. Les atteindre demandait
+// jusqu'ici de faire glisser la carte jusqu'à eux — donc de savoir où ils
+// sont, ce qui est exactement ce qu'un enfant ne sait pas. On tape « Tokyo »,
+// on y va.
+const champLieu = document.getElementById('map-chercher');
+const listeLieux = document.getElementById('map-resultats');
+
+// Sans accents ni casse : un enfant tape « eiffel », « chateau », « new york ».
+const sansAccent = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function chercherLieux(saisie) {
+  const t = sansAccent(saisie.trim());
+  if (!t) return [];
+  const vus = new Set();
+  const debute = [], contient = [];
+  for (const { c } of carte.catalogueDesLieux()) {
+    if (!c.name || vus.has(c.name)) continue;
+    const i = sansAccent(c.name).indexOf(t);
+    if (i < 0) continue;
+    vus.add(c.name);
+    (i === 0 ? debute : contient).push(c);
+  }
+  // Ce qui COMMENCE par ce qu'on tape passe devant : « Paris » avant « Porte
+  // de Paris », « Nice » avant « Venise ».
+  return [...debute, ...contient].slice(0, 12);
+}
+
+let resultatsLieux = [];
+function montrerResultats() {
+  resultatsLieux = chercherLieux(champLieu.value);
+  listeLieux.innerHTML = '';
+  if (!champLieu.value.trim()) { listeLieux.style.display = 'none'; return; }
+  if (!resultatsLieux.length) {
+    const rien = document.createElement('div');
+    rien.className = 'rien';
+    rien.textContent = 'Aucun lieu de ce nom.';
+    listeLieux.appendChild(rien);
+  }
+  for (const lieu of resultatsLieux) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    // La distance dit quelque chose d'utile : « Tokyo, à 2 400 blocs » prépare
+    // l'enfant au voyage au lieu de le téléporter à l'aveugle.
+    const d = Math.round(Math.hypot(lieu.x - player.pos.x, lieu.z - player.pos.z));
+    b.textContent = `📍 ${lieu.name}  ·  ${d} blocs`;
+    b.addEventListener('click', () => allerAuLieu(lieu));
+    listeLieux.appendChild(b);
+  }
+  listeLieux.style.display = 'block';
+}
+
+function allerAuLieu(lieu) {
+  champLieu.value = '';
+  listeLieux.style.display = 'none';
+  champLieu.blur();
+  // La carte se recentre AVANT le voyage : si l'enfant rouvre la carte, il est
+  // là où il vient d'arriver, pas là d'où il est parti.
+  carte.vue.cx = lieu.x; carte.vue.cz = lieu.z;
+  carte.limiter();
+  deposerA(lieu.x + 1.5, lieu.z + 1.5);
+  fermerCarte();
+  creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+}
+
+champLieu.addEventListener('input', montrerResultats);
+// Les touches du jeu ne doivent pas traverser le champ : sans cela, taper
+// « Paris » ouvrait l'inventaire (« e »), faisait décoller (« f ») et lançait
+// une balle (« q ») pendant qu'on écrivait. C'est déjà la règle du champ de
+// prénom sur l'accueil.
+for (const ev of ['keydown', 'keyup', 'keypress']) {
+  champLieu.addEventListener(ev, (e) => {
+    e.stopPropagation();
+    if (ev === 'keydown' && e.key === 'Enter' && resultatsLieux.length) allerAuLieu(resultatsLieux[0]);
+    if (ev === 'keydown' && e.key === 'Escape') { champLieu.value = ''; montrerResultats(); }
+  });
+}
+// Un appui sur la carte referme la liste : elle flotte au-dessus, elle ne doit
+// pas rester dans le chemin.
+mapModalCanvas.addEventListener('pointerdown', () => { listeLieux.style.display = 'none'; });
 document.getElementById('map-moi').addEventListener('click', () => carte.centrerSurJoueur(0.6));
 document.getElementById('map-tout').addEventListener('click', () => carte.toutVoir());
 
