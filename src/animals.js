@@ -358,7 +358,13 @@ class Animal {
       suivi.x = this.pos.x; suivi.z = this.pos.z;
       const theta = this.mesh.rotation.y;
       const avance = dx * -Math.sin(theta) + dz * -Math.cos(theta);
-      if (avance !== 0) {
+      // UN TÉLÉPORT N'EST PAS UN ROULEMENT. À quatorze mètres par seconde et
+      // dt plafonné au vingtième de seconde, une frame honnête fait au plus
+      // sept dixièmes de bloc. Au-delà de deux, c'est un déplacement
+      // d'autorité — un voyage par la carte, une remise en place — et les
+      // roues n'ont aucune raison de faire un tour sur elles-mêmes : on note
+      // la nouvelle position sans les toucher.
+      if (avance !== 0 && Math.abs(avance) < 2) {
         // Le SENS ne se devine pas : mesuré à la sonde, sur le point de
         // contact. Le pivot des modèles porte déjà un quart de tour, et la
         // carrosserie est retournée d'un demi-tour au chargement — deux

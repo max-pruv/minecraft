@@ -76,7 +76,11 @@ const capDegage = (p) => p.evaluate(() => {
 // toujours depuis le même point et dans la même direction : comparer un
 // départ en terrain libre à un départ le nez contre un arbre ne prouverait
 // rien du tout.
-async function avancerUnDemiSeconde(p, depart) {
+// Se PLACER est un geste à part, et il compte : c'est un téléport. La
+// monture conduite y suit le joueur d'un bond de plusieurs blocs, et un
+// témoin qui mesure à cheval sur ce bond mesure le bond. (Le jeu, lui,
+// ignore désormais ces sauts pour la rotation des roues.)
+async function placerA(p, depart) {
   await p.evaluate((d) => {
     const g = window.__game;
     g.player.pos.set(d.x, d.y, d.z);
@@ -84,6 +88,10 @@ async function avancerUnDemiSeconde(p, depart) {
     g.player.yaw = d.yaw;
   }, depart);
   await dormir(250);
+}
+
+async function avancerUnDemiSeconde(p, depart) {
+  if (depart) await placerA(p, depart);
   const avant = await pose(p);
   await p.keyboard.down('KeyW');
   // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
@@ -638,7 +646,6 @@ async function avancerUnDemiSeconde(p, depart) {
       const r = a && a.mesh.userData.roues && a.mesh.userData.roues[0];
       return r ? { angle: r.rotation.x, rayon: a.mesh.userData.rayonRoue } : null;
     });
-    const angleAvant = await angleRoue();
     await tab.waitForFunction(() => {
       const b = document.getElementById('ride-btn');
       return b && getComputedStyle(b).display !== 'none'
@@ -646,7 +653,12 @@ async function avancerUnDemiSeconde(p, depart) {
     }, null, { timeout: 5000 }).catch(() => {});
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(600);
-    const rouleSur = await avancerUnDemiSeconde(tab, departAuto);
+    // On se place D'ABORD, on lit l'angle ENSUITE : la mise en place est un
+    // téléport de douze blocs, et le compter comme du roulage retournait la
+    // mesure (−12 rad pour 8 m avancés, la première fois).
+    await placerA(tab, departAuto);
+    const angleAvant = await angleRoue();
+    const rouleSur = await avancerUnDemiSeconde(tab);
     const angleApres = await angleRoue();
     // Une roue qui roule sans patiner tourne d'exactement ce que le sol a
     // défilé : l'angle vaut la distance divisée par le rayon, et il grandit
