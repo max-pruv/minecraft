@@ -596,12 +596,15 @@ export class Carte {
       // Luxembourg, Montmartre. Un plan de Paris se lit par ses places, comme
       // New York par ses quartiers.
       //
-      // Leur seuil est plus large que celui des autres villes (1,0 au lieu de
+      // Leur seuil est plus large que celui des autres villes (1,3 au lieu de
       // 0,7) parce que Paris est plus large : depuis v187 elle fait trois cent
       // soixante-dix blocs de bord à bord, et au zoom qui la montre ENTIÈRE le
       // seuil de 0,7 effaçait justement ses places. Un plan qu'on ne peut pas
-      // lire d'un coup d'œil n'est pas un plan.
-      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.0 })),
+      // lire d'un coup d'œil n'est pas un plan. Sur un téléphone la carte n'a
+      // que quatre cents pixels de côté : montrer Paris en entier y demande
+      // presque UN bloc par pixel, d'où 1,3 et non 1,0 — c'est le petit écran
+      // qui fixe la barre, pas le grand.
+      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.3 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
       // Et les quartiers et collines de San Francisco.
       ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),

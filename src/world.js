@@ -1563,7 +1563,21 @@ export class World {
         // faisaient un lotissement, pas une ville.
         if (city && city.key === 'paris') {
           const sp = solParis(wx, wz);
-          if (sp === BLOCK.LEAVES) {
+          // La couronne déborde d'un bloc sur les quatre côtés : un arbre
+          // large d'un seul bloc est un poteau vert, pas un arbre — trois
+          // captures de rue pour s'en convaincre. On ne pose la question que
+          // pour les colonnes qui peuvent être AU PIED d'un arbre (trottoir,
+          // pelouse), jamais pour une chaussée ou une façade.
+          const souche = (sp === CITY_BLOCK.SIDEWALK || sp === BLOCK.GRASS)
+            && (solParis(wx + 1, wz) === BLOCK.LEAVES || solParis(wx - 1, wz) === BLOCK.LEAVES
+              || solParis(wx, wz + 1) === BLOCK.LEAVES || solParis(wx, wz - 1) === BLOCK.LEAVES);
+          if (souche) {
+            data[World.index(x, h, z)] = sp;
+            for (const dy of [3, 4]) {
+              const wy = h + dy;
+              if (wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.LEAVES;
+            }
+          } else if (sp === BLOCK.LEAVES) {
             // UN ARBRE D'ALIGNEMENT, PAS UN CARRÉ VERT.
             //
             // `solParis` rend un identifiant de sol, et le feuillage était
@@ -1572,7 +1586,7 @@ export class World {
             // de la rue, c'était de la pelouse sur le bitume. Un fût de trois
             // blocs et une couronne de deux, et l'avenue devient une avenue.
             data[World.index(x, h, z)] = CITY_BLOCK.SIDEWALK;
-            for (let dy = 1; dy <= 6; dy++) {
+            for (let dy = 1; dy <= 5; dy++) {
               const wy = h + dy;
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }

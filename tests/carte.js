@@ -567,21 +567,28 @@ const position = (p) => p.evaluate(() => ({
     // enfant vérifie quand il compare avec un vrai plan.
     //
     // LE ZOOM SUIT LA VILLE. Il était écrit en dur (0,24 bloc par pixel), ce
-    // qui montrait tout Paris tant qu'elle faisait cent dix blocs de large. À
-    // trois cent soixante-dix — Paris à vingt-quatre blocs par kilomètre,
-    // v187 — le même chiffre ne montrait plus que le premier arrondissement,
-    // et le témoin annonçait « la Tour Eiffel a disparu de la carte » alors
-    // qu'elle était simplement hors du cadre. On le calcule donc pour que le
-    // disque de la ville TIENNE dans la carte, quelle que soit son emprise.
+    // qui cadrait les quatre cinquièmes de Paris tant qu'elle faisait cent dix
+    // blocs de large. À trois cent soixante-dix — Paris à vingt-quatre blocs
+    // par kilomètre, v187 — le même chiffre ne montrait plus que le premier
+    // arrondissement, et le témoin annonçait « la Tour Eiffel a disparu de la
+    // carte » alors qu'elle était simplement hors du cadre.
+    //
+    // On garde donc le CADRAGE d'origine — les quatre cinquièmes de la ville,
+    // de l'Étoile à la Bastille — et on le calcule depuis le rayon du
+    // registre. Pas la ville entière : sur un téléphone la carte fait trois
+    // cent soixante-dix pixels, une pastille en fait vingt-six, et vingt-cinq
+    // lieux ne tiennent pas côte à côte — au-delà de ce cadrage la carte en
+    // écarte deux, ce qui est son travail et non un défaut.
     const PARIS = V.paris;
     await banc.ouvrirLaCarte(tab);
-    await tab.evaluate(({ p }) => {
+    const cadre = await tab.evaluate(({ p }) => {
       const c2 = window.__carte;
       const r = c2.canvas.getBoundingClientRect();
       const css = Math.min(r.width, r.height);
       c2.vue.cx = p.x; c2.vue.cz = p.z;
-      c2.vue.bpp = (2 * p.r * 1.05) / css;      // toute la ville, et un peu d'air
+      c2.vue.bpp = (2 * p.r * 0.85) / css;      // de l'Étoile à la Bastille
       c2.limiter(); c2.peindre();
+      return { css: Math.round(css), bpp: +c2.vue.bpp.toFixed(2) };
     }, { p: PARIS });
     await dormir(600);
     const vusParis = await lieuxVus(tab);
@@ -589,7 +596,9 @@ const position = (p) => p.evaluate(() => ({
       'Opéra', 'Bastille', 'Luxembourg', 'Concorde'];
     const absentsParis = attendusParis.filter((n) => !vusParis.includes(n));
     verifier('les lieux de Paris sont sur la carte', absentsParis.length === 0,
-      absentsParis.length ? `absents : ${absentsParis.join(', ')}` : `${attendusParis.length} lieux`);
+      absentsParis.length
+        ? `absents : ${absentsParis.join(', ')} (carte ${cadre.css} px, ${cadre.bpp} bloc/px)`
+        : `${attendusParis.length} lieux · carte ${cadre.css} px, ${cadre.bpp} bloc/px`);
 
     // Sur quelle rive ? On cherche la Seine dans le monde, à l'aplomb du
     // monument, et on regarde de quel côté il tombe. Rien n'est supposé : si
