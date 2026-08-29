@@ -86,12 +86,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v185** — les roues tournent avec le sol qui défile, rayon mesuré par
+  modèle, et un téléport ne les fait plus tournoyer.
+
 - [x] **v184** — la flotte : cinquante modèles fournis par Max tirés au sort
   (le Chiron d'artiste reste en rotation), téléchargés à la première
   rencontre par le canal statique — et le filet de l'écran compte en temps
   réel (la moitié noire d'iPad se répare même quand les images bégaient).
-  À CREUSER : les modèles ont des pivots `Wheel_FL/FR/RL/RR` — des roues
-  qui tournent en roulant sont à portée de main.
 
 - [x] **v183** — la vue GTA au volant (fiche `poursuite`, caméra derrière,
   anti-mur), la voiture remise à l'endroit (l'avant vérifié par les phares —

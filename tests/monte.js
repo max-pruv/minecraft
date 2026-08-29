@@ -76,7 +76,11 @@ const capDegage = (p) => p.evaluate(() => {
 // toujours depuis le même point et dans la même direction : comparer un
 // départ en terrain libre à un départ le nez contre un arbre ne prouverait
 // rien du tout.
-async function avancerUnDemiSeconde(p, depart) {
+// Se PLACER est un geste à part, et il compte : c'est un téléport. La
+// monture conduite y suit le joueur d'un bond de plusieurs blocs, et un
+// témoin qui mesure à cheval sur ce bond mesure le bond. (Le jeu, lui,
+// ignore désormais ces sauts pour la rotation des roues.)
+async function placerA(p, depart) {
   await p.evaluate((d) => {
     const g = window.__game;
     g.player.pos.set(d.x, d.y, d.z);
@@ -84,6 +88,10 @@ async function avancerUnDemiSeconde(p, depart) {
     g.player.yaw = d.yaw;
   }, depart);
   await dormir(250);
+}
+
+async function avancerUnDemiSeconde(p, depart) {
+  if (depart) await placerA(p, depart);
   const avant = await pose(p);
   await p.keyboard.down('KeyW');
   // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
@@ -611,6 +619,62 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('huit voitures invoquées, au moins trois modèles différents',
       diversite.invoquees === 8 && diversite.modeles >= 3,
       `${diversite.modeles} modèle(s) distincts sur ${diversite.invoquees}`);
+
+    // LES ROUES TOURNENT. Une voiture dont les roues restent figées ne roule
+    // pas : elle glisse comme une savonnette, et un enfant de sept ans le
+    // voit au premier mètre. On éprouve le trajet — on monte dans une
+    // voiture de la flotte, on avance, et on demande de combien la roue a
+    // tourné. L'ancien code ne collectait aucun pivot : rouge garanti.
+    let deLaFlotte = false;
+    for (let essai = 0; essai < 8 && !deLaFlotte; essai++) {
+      await poserDevant(tab, 'voiture');
+      deLaFlotte = await tab.evaluate(() => {
+        const a = window.__game.animalManager.animals.find((x) => x.def.key === 'voiture');
+        return !!a && a.mesh.userData.flotte !== 'voiture.glb';
+      });
+    }
+    // le modèle arrive par le réseau : on l'attend, on ne le suppose pas
+    const quatreRoues = await tab.waitForFunction(() => {
+      const a = window.__game.animalManager.animals.find((x) => x.def.key === 'voiture');
+      return !!(a && a.mesh.userData.roues && a.mesh.userData.roues.length >= 4);
+    }, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    verifier('une voiture de la flotte arrive avec ses quatre roues',
+      deLaFlotte && quatreRoues, `flotte=${deLaFlotte} · roues=${quatreRoues}`);
+
+    const angleRoue = () => tab.evaluate(() => {
+      const a = window.__game.animalManager.animals.find((x) => x.def.key === 'voiture');
+      const r = a && a.mesh.userData.roues && a.mesh.userData.roues[0];
+      return r ? { angle: r.rotation.x, rayon: a.mesh.userData.rayonRoue } : null;
+    });
+    await tab.waitForFunction(() => {
+      const b = document.getElementById('ride-btn');
+      return b && getComputedStyle(b).display !== 'none'
+        && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+    }, null, { timeout: 5000 }).catch(() => {});
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(600);
+    // On se place D'ABORD, on lit l'angle ENSUITE : la mise en place est un
+    // téléport de douze blocs, et le compter comme du roulage retournait la
+    // mesure (−12 rad pour 8 m avancés, la première fois).
+    await placerA(tab, departAuto);
+    const angleAvant = await angleRoue();
+    const rouleSur = await avancerUnDemiSeconde(tab);
+    const angleApres = await angleRoue();
+    // Une roue qui roule sans patiner tourne d'exactement ce que le sol a
+    // défilé : l'angle vaut la distance divisée par le rayon, et il grandit
+    // quand on avance. Le SENS compte autant que le mouvement — à l'envers,
+    // le bas de la roue glisserait vers l'avant (vérifié à la sonde, sur le
+    // point de contact). L'ancien code ne collectait aucun pivot : la
+    // lecture rend null, et le témoin échoue proprement.
+    const tourne = angleAvant && angleApres ? angleApres.angle - angleAvant.angle : null;
+    const attendu = angleAvant && rouleSur ? rouleSur / angleAvant.rayon : null;
+    verifier('et ses roues tournent avec le sol qui défile — pas des savonnettes',
+      tourne != null && rouleSur > 1 && tourne > 0
+      && tourne > attendu * 0.7 && tourne < attendu * 1.4,
+      `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
+      + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(400);
 
     // LA VOITURE GARÉE NE BOUGE PLUS TOUTE SEULE (Max : « elles bougent
     // d'une position à une autre de manière radicale et violente, tac tac
