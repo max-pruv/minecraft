@@ -43,15 +43,28 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   prenant la voie longue : `reseau.js`, `visio.js`, `reglages.js` et `hote.js`
   sont rouges, et ils le sont AUSSI sur `origin/main` — mesuré, pas supposé :
   `hote.js` échoue sur les trois mêmes témoins aux mêmes valeurs, `reseau.js`
-  sur les quatre mêmes plus un, avec le même effondrement du banc. Le code
-  réseau n'a pas bougé depuis v164, vingt-trois versions : ces suites ne sont
-  plus sélectionnées par l'aiguillage, et elles ont rougi sans que personne ne
-  le voie — la panne exacte que `CLAUDE.md` documente (« six suites vertes ne
-  valent pas un portail vert »). Deux pistes : le mandataire signale 188
-  connexions refusées vers le vrai Supabase pendant ces essais (le navigateur
-  du conteneur n'a pas d'Internet sortant), et plusieurs témoins mesurent des
-  durées de MONTRE sur un banc qui rend en logiciel. À démonter suite par
-  suite, hors d'un chantier de contenu.
+  sur les quatre mêmes plus un, avec le même effondrement du banc, et
+  `reglages.js` s'arrête au 45e témoin sur main comme sur la branche dès que le
+  conteneur a chauffé. Le code réseau n'a pas bougé depuis v164, vingt-trois
+  versions : ces suites ne sont plus sélectionnées par l'aiguillage, et elles
+  ont rougi sans que personne ne le voie — la panne exacte que `CLAUDE.md`
+  documente (« six suites vertes ne valent pas un portail vert »).
+
+  Ce qui est DÉJÀ réparé en v187, dans `reglages.js` : elle était la seule
+  suite du portail à n'appeler jamais `souffler()`, et trois de ses attentes
+  de chargement avaient trente secondes là où la ligne suivante en donnait
+  quatre-vingt-dix. Elle passe de 46 à 63 témoins.
+
+  Ce qui reste, et c'est le vrai fond : **elle ouvre trois pages sous le
+  prénom « Marlon »** par un assistant local qui contourne le garde-fou du
+  banc. C'est le piège documenté — le nuage range le profil sous le prénom, la
+  seconde page se recharge en plein scénario pour appliquer l'état « retrouvé
+  de ses autres appareils », et l'évaluation en cours meurt. Ici la
+  réutilisation est VOULUE (« l'autre iPad de Marlon ») : il faut donc la
+  déclarer par `{ memePrenom: true }` et apprendre à la suite à attendre ce
+  rechargement au lieu de le subir. Et le mandataire signale des centaines de
+  connexions refusées vers le vrai Supabase pendant ces essais : le navigateur
+  du conteneur n'a pas d'Internet sortant.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.

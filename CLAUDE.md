@@ -282,6 +282,15 @@ local, Supabase de poche (`tests/nuage.js`).
   près, et elle passe en cinquième position sur un conteneur que quatre suites
   viennent de chauffer. Un portail dont les rouges se déplacent d'une exécution
   à l'autre n'accuse pas le jeu : il dit que le banc manque d'air.
+  **En v187, `reglages.js` était encore dans ce cas** — pas un appel sur onze
+  passages, six navigateurs ouverts et quatre refermés. Corrigée, elle passe de
+  46 à 63 témoins.
+- **Une attente de chargement se donne le même budget que l'attente qui la
+  suit.** Trois `goto`/`reload` en `waitUntil: 'load'` de `reglages.js` avaient
+  les trente secondes par défaut de Playwright, quand la ligne d'après en
+  accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
+  PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
+  un banc qui rend en logiciel, c'est la première moitié qui casse.
 - **Ne jamais relancer le portail jusqu'à obtenir du vert.** Trois suites
   vertes chacune de son côté ne valent pas un portail vert : c'est ainsi qu'on
   publie une régression en croyant l'avoir écartée. Un rouge se démonte, il ne
