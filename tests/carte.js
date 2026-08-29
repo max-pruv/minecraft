@@ -537,17 +537,23 @@ const position = (p) => p.evaluate(() => ({
     // grille descendait jusqu'à la mer, 0,28 avec le vrai plan.
     // On écarte les colonnes qui tombent sur une avenue : une avenue est de la
     // rue du haut en bas, elle ne dirait rien.
+    // Le pas de la grille et les coordonnées suivent l'ÉCHELLE de la ville :
+    // depuis la refonte, une rue tous les CINQ blocs, l'île va de la pointe
+    // (v +142) à la 68e Rue (v −141), et la 14e Rue — la frontière du plan de
+    // 1811 — tombe à v +6. Le témoin lisait encore l'ancienne unité : ses deux
+    // fenêtres, +20..+50 et +66..+100, étaient toutes les deux DANS le bas de
+    // l'île, et il comparait le bas au bas.
     const surLaGrille = (colonnes) => {
       let n = 0, dessus = 0;
       for (const c of colonnes) {
         if (!c.terre || c.rues.length > c.terre * 0.5) continue;
-        for (const v of c.rues) { n++; if (((v % 6) + 6) % 6 === 0) dessus++; }
+        for (const v of c.rues) { n++; if (((v % 5) + 5) % 5 === 0) dessus++; }
       }
       return n ? dessus / n : -1;
     };
-    const colonnes = [2, -4, 6, -9, 13, 17];
-    const haut = surLaGrille(await sonder(colonnes, 20, 50));
-    const bas = surLaGrille(await sonder(colonnes, 66, 100));
+    const colonnes = [6, -12, 18, -26, 38, 50];
+    const haut = surLaGrille(await sonder(colonnes, -110, -40));
+    const bas = surLaGrille(await sonder(colonnes, 40, 110));
     verifier('la grille de 1811 s\'arrête bien à la 14e Rue',
       haut > 0.4 && bas < 0.4 && bas < haut * 0.8,
       `sur la grille : au nord ${haut.toFixed(2)}, au sud ${bas.toFixed(2)}`);

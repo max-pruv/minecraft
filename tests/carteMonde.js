@@ -619,6 +619,27 @@ const VRAIES_KM = [
     verifier('Times Square est un mur d\'écrans, et ça se compte',
       ecrans >= 300, `${ecrans} blocs d'écran au-dessus de la rue`);
 
+    // ================= LA VILLE ÉCLAIRÉE LA NUIT ============================
+    //
+    // Max, capture de Moscou à minuit : des réverbères allumés, des feux
+    // rouges, des passages piétons — et pas une fenêtre éclairée. Le monde
+    // entier partageait UN matériau dont la couleur est le niveau du jour :
+    // à minuit tout tombait à trente pour cent, fenêtres comprises. Une
+    // ville la nuit, c'est pourtant d'abord des carrés de lumière.
+    const nuit = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game;
+      const c = positionDe('moscou');
+      g.player.pos.set(c.x, g.world.terrainHeight(c.x, c.z) + 20, c.z + 20);
+      g.player.vel.set(0, 0, 0);
+      window.__setDayTime(0.75);                 // minuit
+      await new Promise((r) => setTimeout(r, 2500));
+      return window.__lumiere();
+    });
+    verifier('à minuit, les fenêtres de la ville restent allumées',
+      nuit.fenetres > nuit.solide * 1.8 && nuit.morceauxEclaires >= 3,
+      `murs à ${nuit.solide}, fenêtres à ${nuit.fenetres} · ${nuit.morceauxEclaires} morceaux éclairés`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

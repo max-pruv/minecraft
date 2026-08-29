@@ -170,10 +170,22 @@ async function avancerUnDemiSeconde(p, depart) {
       !regles.vise && regles.monture, JSON.stringify(regles));
 
     // Mais tourner le dos, c'est autre chose : le bouton doit disparaître.
+    //
+    // On ATTEND sa disparition au lieu de dormir six cents millisecondes : le
+    // bouton se rafraîchit tous les quarts de seconde, et sous la charge du
+    // portail complet (3,4 relevée le jour où ce témoin est tombé) une attente
+    // fixe peut ne contenir aucun rafraîchissement. C'est exactement la leçon
+    // déjà appliquée à son jumeau, l'apparition — prise par l'autre bout.
     await tab.evaluate(() => { window.__game.player.yaw += Math.PI; });
-    await dormir(600);
-    verifier('et il s\'efface quand on tourne le dos à la bête',
-      !(await bouton(tab, 'ride-btn')).visible);
+    const efface = await tab.waitForFunction(() => {
+      const b = document.getElementById('ride-btn');
+      if (!b) return true;
+      const rangee = b.closest('.fun-target');
+      return getComputedStyle(b).display === 'none'
+        || (rangee && getComputedStyle(rangee).display === 'none');
+    }, null, { timeout: 6000 }).then(() => true).catch(() => false);
+    verifier('et il s\'efface quand on tourne le dos à la bête', efface,
+      efface ? '' : JSON.stringify(await bouton(tab, 'ride-btn')));
     await tab.evaluate(() => { window.__game.player.yaw -= Math.PI + 0.5; });
     await dormir(600);
 
