@@ -23,15 +23,48 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   la nuit.
 
 - [ ] **Moderniser les villes bâties à la main** — New York est faite (v186,
-  validée par Max : « Manhattan est mieux, je valide fort »). Restent Paris,
-  Londres, Nice, Lille et San Francisco, qui vivent encore à leur échelle
-  d'origine. Même recette : le cœur à grande échelle, casse déclarée et
-  bornée, vie de rue, captures avant fusion.
+  validée par Max : « Manhattan est mieux, je valide fort ») et **Paris aussi
+  (v187, 8 → 24 blocs/km)**. Restent Londres, Nice, Lille et San Francisco,
+  qui vivent encore à leur échelle d'origine. Même recette : le cœur à grande
+  échelle, casse déclarée et bornée, vie de rue, captures avant fusion. Le
+  piège est écrit dans `CLAUDE.md` (section Paris) : les largeurs ne se
+  projettent pas, elles se relèvent — et il faut refaire les monuments, qui
+  ne grandissent pas avec la carte.
 
-- [ ] **Paris a la place qu'il lui faut** — le métro est passé sous terre
-  (v163) et la carte lui a donné l'espace (v164) : la ville peut maintenant
-  grandir jusqu'à son rayon réel sans toucher Lille ni Londres. Reste à
-  l'étaler pour de bon.
+- [ ] **Le métro de Paris, pour de vrai** — l'anneau souterrain de v163 est
+  resté à trente-huit blocs de rayon pendant que la ville en prenait 185 :
+  il fait donc désormais la boucle du centre historique, ce qui est juste mais
+  petit. Paris mérite ses vraies lignes (1, 4, 6) avec leurs stations, par le
+  creuseur de Washington. Et la caserne et le commissariat, eux, sont restés
+  au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
+  façades de pierre plutôt qu'en halles de béton.
+
+- [ ] **Le rouge ancien des suites réseau du portail** — découvert en v187 en
+  prenant la voie longue : `reseau.js`, `visio.js`, `reglages.js` et `hote.js`
+  sont rouges, et ils le sont AUSSI sur `origin/main` — mesuré, pas supposé :
+  `hote.js` échoue sur les trois mêmes témoins aux mêmes valeurs, `reseau.js`
+  sur les quatre mêmes plus un, avec le même effondrement du banc, et
+  `reglages.js` s'arrête au 45e témoin sur main comme sur la branche dès que le
+  conteneur a chauffé. Le code réseau n'a pas bougé depuis v164, vingt-trois
+  versions : ces suites ne sont plus sélectionnées par l'aiguillage, et elles
+  ont rougi sans que personne ne le voie — la panne exacte que `CLAUDE.md`
+  documente (« six suites vertes ne valent pas un portail vert »).
+
+  Ce qui est DÉJÀ réparé en v187, dans `reglages.js` : elle était la seule
+  suite du portail à n'appeler jamais `souffler()`, et trois de ses attentes
+  de chargement avaient trente secondes là où la ligne suivante en donnait
+  quatre-vingt-dix. Elle passe de 46 à 63 témoins.
+
+  Ce qui reste, et c'est le vrai fond : **elle ouvre trois pages sous le
+  prénom « Marlon »** par un assistant local qui contourne le garde-fou du
+  banc. C'est le piège documenté — le nuage range le profil sous le prénom, la
+  seconde page se recharge en plein scénario pour appliquer l'état « retrouvé
+  de ses autres appareils », et l'évaluation en cours meurt. Ici la
+  réutilisation est VOULUE (« l'autre iPad de Marlon ») : il faut donc la
+  déclarer par `{ memePrenom: true }` et apprendre à la suite à attendre ce
+  rechargement au lieu de le subir. Et le mandataire signale des centaines de
+  connexions refusées vers le vrai Supabase pendant ces essais : le navigateur
+  du conteneur n'a pas d'Internet sortant.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.
@@ -83,6 +116,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v187** — Paris à l'échelle GTA : 24 blocs par kilomètre, un disque de
+  185, des rues où l'on marche, une rue par quartier, l'Étoile à sa vraie
+  taille, et quatre monuments refaits (Tour Eiffel en treillis, Arc de
+  Triomphe à quatre faces, Notre-Dame, Panthéon). Plus la carte : elle ne
+  s'étire plus sur un téléphone couché, et on y cherche un lieu par son nom.
 
 - [x] **v186** — New York à l'échelle GTA (34 blocs/km, Times Square, les
   monuments à leur vraie emprise), des voitures dans TOUTES les villes (les

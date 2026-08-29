@@ -20,6 +20,105 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v187 — Paris à l'échelle GTA, et une carte où l'on cherche un lieu
+
+**Pourquoi.** Max, après New York : « Est-ce que tu peux maintenant
+retravailler sur toutes les villes ? » Paris venait en premier — c'est la
+ville de la maison, et c'est celle qui allait le plus mal. Elle était bâtie à
+HUIT blocs par kilomètre : un pâté d'immeubles y faisait quatre blocs, une rue
+en faisait un, et un enfant qui descendait dans une rue de Paris se cognait
+le nez dans une façade sans jamais voir la rue. Le plan était juste — la
+Seine, les îles, l'Étoile, les percées d'Haussmann, chaque lieu à sa vraie
+adresse — mais on le survolait, on n'y entrait pas. C'est mot pour mot le
+verdict que Washington avait reçu en v161 (« une version très low cost ») et
+Manhattan en v186.
+
+**Ce que ça change.**
+
+*L'échelle.* Vingt-quatre blocs par kilomètre au lieu de huit, et le disque de
+la ville passe de 55 à 185 blocs de rayon — tout Paris intra-muros, le bois de
+Boulogne à l'ouest et celui de Vincennes à l'est. Les rues font trois à cinq
+blocs de large entre les façades, les immeubles six étages plus le comble : on
+marche entre des murs de pierre de taille, on lève la tête, on voit le ciel.
+Chaque quartier a maintenant SA rue — cinq mètres de venelle dans le Marais,
+trente mètres d'avenue à Monceau —, ce qui à l'ancienne échelle ne pouvait pas
+se voir puisque tout faisait un bloc.
+
+*Ce qui se reconnaît enfin.* La place de l'Étoile et ses douze avenues : deux
+cent quarante mètres de rond-point et des avenues de quarante mètres, au lieu
+d'une esplanade de onze cents mètres qui mangeait tout l'ouest de la ville.
+L'Arc de Triomphe est un vrai arc à quatre faces, deux fois et demie la
+corniche des immeubles, et non plus une dalle de neuf blocs. La Tour Eiffel
+est un TREILLIS de soixante-quatre blocs — on voit le ciel à travers, ses
+jambes s'écartent, ses trois plateformes se lisent de loin. Notre-Dame a ses
+deux tours, sa rosace, ses arcs-boutants et sa flèche sur une nef de vingt
+blocs. Le Panthéon a un tambour à colonnes plus haut que large. Et les
+marronniers des Champs-Élysées sont des ARBRES — un fût et une couronne —
+alors qu'un bloc de feuillage posé à plat faisait de la pelouse sur le bitume.
+
+*Ce qui a été rangé au passage.* La Seine est dessinée à sa vraie largeur (à
+huit blocs par kilomètre il fallait l'élargir cinq fois pour qu'elle se voie,
+et elle engloutissait le Louvre) ; le toit du commissariat n'est plus une
+bâche bleue de vingt-cinq blocs à côté de Notre-Dame — le bleu de la police
+reste en bandeau de façade, là où un enfant le lit.
+
+*La carte, sur un téléphone.* Deux défauts signalés par Max, capture à
+l'appui. **Couchée, la carte s'étirait** : la feuille de style lui donnait une
+largeur et un plafond de hauteur — 560 sur 289 — pendant que le dessin, lui,
+restait carré, et le navigateur l'écrasait dedans. Le golfe du Mexique
+ressortait deux fois trop large. La carte assume maintenant un cadre
+rectangulaire de bout en bout, et elle remplit la place qu'on lui donne dans
+les deux sens : couché on voit large, debout on voit loin. La fiche entière
+tient enfin dans l'écran couché — elle en débordait de dix-neuf pixels en haut
+comme en bas —, et le bouton du trésor, qui était posé au bas de l'écran et
+venait s'asseoir sur la légende, rejoint la rangée d'outils. Le bandeau du
+réseau, lui, s'efface le temps de la carte : posé plus haut que tous les
+panneaux du jeu, il interceptait les touchers.
+
+Et **on peut chercher un lieu par son nom.** Deux cent soixante-dix-huit lieux
+au registre, plus les places de Paris, les quartiers de Manhattan, les
+monuments de Washington : les atteindre demandait de faire glisser la carte
+jusqu'à eux, donc de savoir où ils sont — ce qu'un enfant ne sait justement
+pas. On tape « tokyo », on touche, on y est. Sans accent ni majuscule, ce qui
+commence par la saisie d'abord, et chaque résultat dit sa distance.
+
+**Ce qui le prouve.** Le portail, neuf suites. Et surtout la forme que
+prend l'invariant numéro un quand on a le droit de le casser : l'empreinte du
+relief change, puisque la ville a triplé ; l'empreinte HORS des villes, elle,
+est identique au bit près à celle de la v186 — 153 382 colonnes des deux côtés,
+mesurées avec la même découpe sur `origin/main` et sur la branche. Hors du
+disque de Paris, pas un bloc n'a bougé. Un troisième témoin vérifie que ce
+disque, malgré son emprise triplée, reste à soixante-six blocs du plus proche
+des trois endroits où les enfants ont bâti.
+
+Cinq témoins neufs gardent la carte, tous vérifiés rouges sur la v186 : cent
+blocs vers l'est font autant de pixels À L'ÉCRAN que cent vers le sud (143
+contre 74 avant), le dessin a le rapport de sa boîte, la fiche tient dans
+l'écran couché, la recherche trouve « washing » et « eiffel », et le résultat
+touché dépose l'enfant à moins de huit blocs de Washington. Le premier a dû
+être réécrit : mesuré dans le repère du DESSIN, il passait au vert sur le code
+fautif — l'ancienne carte y était parfaitement carrée, et la déformation naît
+une étape plus loin.
+
+Trois témoins de Paris ont dû être réparés, tous pour la même raison : ils
+visaient en dur ce qui aurait dû se calculer. Le zoom de la carte (0,24 bloc
+par pixel) ne montrait plus que le premier arrondissement et annonçait « la
+Tour Eiffel a disparu » ; la fenêtre qui mesure le tissu était centrée sur
+l'ancre, soit à cette échelle le Louvre, les Tuileries et la Seine — on y
+comptait des monuments en croyant compter des immeubles. Et le témoin de la
+monoplace mesurait SEIZE SECONDES DE MONTRE là où il voulait mesurer un tour
+de circuit : comme le métro dépose l'enfant au milieu de Paris, la vue la plus
+chargée du jeu, la voiture ne parcourait plus qu'un bout de ligne droite. Il
+compte maintenant deux cent cinquante blocs de tracé.
+
+**Ce que la voie longue a trouvé au passage, et qui ne vient pas de Paris.**
+Quatre suites — `reseau.js`, `visio.js`, `reglages.js`, `hote.js` — sont
+rouges, et elles le sont AUSSI sur la version en production : mêmes témoins,
+mêmes valeurs, mesuré des deux côtés. Le code réseau n'a pas bougé depuis la
+v164, vingt-trois versions plus tôt ; ces suites n'étaient simplement plus
+sélectionnées par l'aiguillage du portail et ont rougi sans que personne ne le
+voie. C'est un chantier à part, inscrit dans `TASKS.md`.
+
 ## v186 — New York à l'échelle GTA, des voitures partout, et des fenêtres allumées la nuit
 
 **Pourquoi.** Trois verdicts de Max, dans l'ordre. « Remettre à l'échelle,

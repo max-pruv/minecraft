@@ -144,26 +144,95 @@ function fbm(x, z, seed, octaves = 4) {
 // red suspension bridge. set(dx, dy, dz, id) is relative to the anchor base.
 
 function buildEiffelTower(set) {
-  const IRON = BLOCK.DARKBRICK;
-  const ring = (r, y) => {
-    for (let d = -r; d <= r; d++) {
-      set(d, y, -r, IRON); set(d, y, r, IRON);
-      set(-r, y, d, IRON); set(r, y, d, IRON);
+  // LA TOUR EIFFEL, REFAITE POUR LE PARIS À VINGT-QUATRE BLOCS PAR KILOMÈTRE.
+  //
+  // L'ancienne faisait quarante et un blocs pour douze de large. À côté d'une
+  // ville dont les immeubles font quatre blocs, elle passait ; à côté d'une
+  // ville dont les immeubles en font neuf, c'était un pylône trapu.
+  //
+  // Et surtout : la tour Eiffel n'est pas une MASSE, c'est un TREILLIS. On
+  // voit le ciel à travers, et c'est à cela qu'on la reconnaît avant même sa
+  // silhouette — la première version d'ici, pleine, ressemblait à une cheminée
+  // d'usine. On ne pose donc que quatre montants, des ceintures tous les cinq
+  // blocs, et une diagonale par panneau. Tout le reste est du vide, exprès.
+  //
+  // Les proportions vraies sont 330 m de haut pour 125 m de côté. Ici la
+  // hauteur suit l'étage (trois mètres et demi le bloc) et l'emprise suit le
+  // sol (quarante-deux mètres le bloc) : élargir la base pour retrouver le
+  // rapport vrai lui ferait manger le Champ-de-Mars entier.
+  const FER = BLOCK.DARKBRICK;
+  const H = 64, P1 = 16, P2 = 30, P3 = 52, PANNEAU = 6;
+
+  // Le profil : la demi-portée à chaque hauteur. C'est une courbe, et Eiffel
+  // l'a calculée — elle suit le vent, pas le compas.
+  const portee = (y) => {
+    if (y <= P1) return 6 - 3 * Math.pow(y / P1, 0.8);     // les jambes s'écartent
+    if (y <= P2) return 3 - 1 * ((y - P1) / (P2 - P1));
+    if (y <= P3) return 2 - 1 * ((y - P2) / (P3 - P2));
+    return 0.4;                                            // la flèche
+  };
+  const rayon = (y) => Math.max(0, Math.round(portee(y)));
+
+  for (let dx = -8; dx <= 8; dx++) {
+    for (let dz = -8; dz <= 8; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK); // le parvis
+  }
+
+  // La diagonale d'un panneau : UN SEUL bloc par niveau, qui se décale d'un
+  // coin vers l'autre. La première version en posait trois — en projection les
+  // quatre niveaux d'un panneau recouvraient la face entière, et la tour
+  // redevenait une cheminée pleine. Un treillis, c'est d'abord du vide.
+  const diagonale = (y, r, t) => {
+    const d = Math.round(-r + (2 * r) * (t / PANNEAU));
+    set(d, y, -r, FER); set(-d, y, r, FER); set(-r, y, -d, FER); set(r, y, d, FER);
+  };
+
+  for (let y = 0; y < H; y++) {
+    const r = rayon(y);
+    if (r <= 0) { set(0, y, 0, FER); continue; }
+    // Les quatre montants. Épais de deux blocs dans les tout premiers niveaux
+    // — ce sont des maçonneries —, d'un seul au-dessus.
+    for (const sx of [-r, r]) {
+      for (const sz of [-r, r]) {
+        set(sx, y, sz, FER);
+        if (y < 3) { set(sx - Math.sign(sx), y, sz, FER); set(sx, y, sz - Math.sign(sz), FER); }
+      }
+    }
+    if (y % PANNEAU === 0) {                                                   // les ceintures
+      for (let d = -r; d <= r; d++) {
+        set(d, y, -r, FER); set(d, y, r, FER); set(-r, y, d, FER); set(r, y, d, FER);
+      }
+    } else if (r >= 2) {
+      diagonale(y, r, y % PANNEAU);
+    }
+  }
+
+  // Les trois plateformes, en encorbellement : elles débordent la tour, et ce
+  // sont les trois traits horizontaux qu'on lit de loin.
+  const plateforme = (y, r) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dz = -r; dz <= r; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) < r - 1) continue;
+        set(dx, y, dz, FER);
+      }
     }
   };
-  for (let dx = -6; dx <= 6; dx++) for (let dz = -6; dz <= 6; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK); // parvis
-  for (let y = 0; y < 10; y++) { // four splayed legs
-    const off = y < 5 ? 4 : 3;
-    for (const sx of [-off, off]) for (const sz of [-off, off]) set(sx, y, sz, IRON);
+  plateforme(P1, rayon(P1) + 1);
+  plateforme(P2, rayon(P2) + 1);
+  plateforme(P3, rayon(P3) + 1);
+
+  // La grande arche entre les jambes : c'est ce qu'on voit du Trocadéro, et
+  // c'est le seul détail qui distingue la tour d'un pylône à haute tension.
+  for (let d = -6; d <= 6; d++) {
+    const creux = Math.round(Math.sqrt(Math.max(0, 36 - d * d)) * 0.55);
+    const y = P1 - 4 - creux;
+    if (y < 1) continue;
+    for (const c of [-6, 6]) { set(d, y, c, FER); set(c, y, d, FER); }
   }
-  ring(4, 10); ring(3, 11); // first platform
-  for (let y = 12; y < 20; y++) for (const sx of [-2, 2]) for (const sz of [-2, 2]) set(sx, y, sz, IRON);
-  ring(2, 20); // second platform
-  for (let y = 21; y < 30; y++) for (const sx of [-1, 1]) for (const sz of [-1, 1]) set(sx, y, sz, IRON);
-  ring(1, 30); // third platform
-  for (let y = 31; y < 40; y++) set(0, y, 0, IRON); // mast
-  set(0, 40, 0, BLOCK.GOLD);
-  set(0, 41, 0, BLOCK.GLASS); // the beacon
+
+  // La flèche et le phare.
+  for (let y = H; y < H + 4; y++) set(0, y, 0, FER);
+  set(0, H + 4, 0, BLOCK.GOLD);
+  set(0, H + 5, 0, BLOCK.GLASS);
 }
 
 function buildSkyscraper(set) { // Empire State: limestone tiers + steel spire
@@ -257,25 +326,60 @@ function buildLighthouse(set) { // rayé rouge et blanc
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(dx, 17, dz, BLOCK.SLAB_STONE);
 }
 
-function buildArch(set) { // l'Arc de Triomphe
+function buildArch(set) {
+  // L'ARC DE TRIOMPHE. L'ancien faisait neuf blocs de large sur trois de
+  // profondeur : vu du ciel, une dalle ; vu de la rue, un pilier. Or l'arc de
+  // l'Étoile est un CUBE percé de deux passages qui se croisent — c'est un arc
+  // à quatre faces, et c'est ce qui le distingue de tous les autres arcs.
+  //
+  // Cinquante mètres de large, quarante-cinq de haut, vingt-deux d'épaisseur :
+  // les hauteurs suivent l'étage, l'emprise suit le sol, et treize blocs sur
+  // sept rendent le rapport juste sans écraser la place.
   const S = CITY_BLOCK.HAUSSMANN;
-  for (let dx = -5; dx <= 5; dx++) for (let dz = -2; dz <= 3; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK);
-  for (let y = 0; y < 8; y++) {
-    for (const sx of [-4, -3, 3, 4]) {
-      for (let dz = 0; dz <= 2; dz++) set(sx, y, dz, S);
+  // Quarante-cinq mètres de haut : deux fois et demie la corniche
+  // haussmannienne. C'est ce rapport qui le fait dominer l'Étoile — à quatorze
+  // blocs il se cachait derrière les immeubles de la place.
+  const R = 7, D = 4, H = 21;            // demi-largeur, demi-profondeur, hauteur
+  const PASSAGE = 3, VOUTE = 11;         // demi-largeur du grand passage, sa clé
+
+  for (let dx = -R - 3; dx <= R + 3; dx++) {
+    for (let dz = -D - 3; dz <= D + 3; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK);
+  }
+
+  for (let y = 0; y < H; y++) {
+    for (let dx = -R; dx <= R; dx++) {
+      for (let dz = -D; dz <= D; dz++) {
+        // Les deux passages voûtés, croisés. Une voûte est un demi-cercle :
+        // elle se calcule, elle ne s'empile pas en marches.
+        const arcX = Math.abs(dz) <= PASSAGE
+          && y < VOUTE + Math.sqrt(Math.max(0, PASSAGE * PASSAGE - dz * dz)) * 1.4;
+        const arcZ = Math.abs(dx) <= PASSAGE
+          && y < VOUTE + Math.sqrt(Math.max(0, PASSAGE * PASSAGE - dx * dx)) * 1.4;
+        if (arcX || arcZ) continue;
+        // Le bandeau d'attique, en retrait : le haut de l'arc est plus étroit.
+        if (y >= H - 4 && (Math.abs(dx) === R || Math.abs(dz) === D)) continue;
+        set(dx, y, dz, S);
+      }
     }
   }
-  for (let y = 8; y < 12; y++) { // attic over the arch
-    for (let dx = -4; dx <= 4; dx++) {
-      for (let dz = 0; dz <= 2; dz++) set(dx, y, dz, S);
-    }
+
+  // La corniche, qui déborde, puis la terrasse.
+  for (let dx = -R; dx <= R; dx++) {
+    for (let dz = -D; dz <= D; dz++) set(dx, H - 4, dz, BLOCK.SLAB_STONE);
   }
-  for (let dx = -2; dx <= 2; dx++) { // vault curve carved out
-    set(dx, 8, 1, BLOCK.AIR);
-    if (Math.abs(dx) <= 1) set(dx, 9, 1, BLOCK.AIR);
+  for (let dx = -R + 1; dx <= R - 1; dx++) {
+    for (let dz = -D + 1; dz <= D - 1; dz++) set(dx, H, dz, BLOCK.SLAB_STONE);
   }
-  for (let dx = -4; dx <= 4; dx++) { set(dx, 12, 0, BLOCK.SLAB_STONE); set(dx, 12, 1, BLOCK.SLAB_STONE); set(dx, 12, 2, BLOCK.SLAB_STONE); }
+  // Les hauts-reliefs des quatre piliers : un liseré de pierre claire qui
+  // casse la face nue — sans lui l'arc reste un bloc lisse de treize mètres.
+  for (const dx of [-R, R]) {
+    for (let y = 4; y <= 9; y++) for (const dz of [-1, 0, 1]) set(dx, y, dz, BLOCK.SANDSTONE);
+  }
+  for (const dz of [-D, D]) {
+    for (let y = 4; y <= 9; y++) for (const dx of [-1, 0, 1]) set(dx, y, dz, BLOCK.SANDSTONE);
+  }
 }
+
 
 // Le château médiéval : douves en eau, pont-levis, courtines à créneaux,
 // tours d'angle, donjon habitable et jardins à la française. Il tient dans
@@ -933,7 +1037,7 @@ export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x,
 // pattern and landmarks: Haussmann Paris, skyscraper New York, and
 // pastel-hilled San Francisco.
 export const CITIES = [
-  { key: 'paris', name: 'Paris', ...positionDe('paris'), r: 55, cell: 12, base: 34, street: 3 },
+  { key: 'paris', name: 'Paris', ...positionDe('paris'), r: 185, cell: 12, base: 34, street: 3 },
   // New York n'est plus un disque : c'est l'île de Manhattan, longue et
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
@@ -1459,7 +1563,34 @@ export class World {
         // faisaient un lotissement, pas une ville.
         if (city && city.key === 'paris') {
           const sp = solParis(wx, wz);
-          if (sp !== null) data[World.index(x, h, z)] = sp;
+          // La couronne déborde d'un bloc sur les quatre côtés : un arbre
+          // large d'un seul bloc est un poteau vert, pas un arbre — trois
+          // captures de rue pour s'en convaincre. On ne pose la question que
+          // pour les colonnes qui peuvent être AU PIED d'un arbre (trottoir,
+          // pelouse), jamais pour une chaussée ou une façade.
+          const souche = (sp === CITY_BLOCK.SIDEWALK || sp === BLOCK.GRASS)
+            && (solParis(wx + 1, wz) === BLOCK.LEAVES || solParis(wx - 1, wz) === BLOCK.LEAVES
+              || solParis(wx, wz + 1) === BLOCK.LEAVES || solParis(wx, wz - 1) === BLOCK.LEAVES);
+          if (souche) {
+            data[World.index(x, h, z)] = sp;
+            for (const dy of [3, 4]) {
+              const wy = h + dy;
+              if (wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.LEAVES;
+            }
+          } else if (sp === BLOCK.LEAVES) {
+            // UN ARBRE D'ALIGNEMENT, PAS UN CARRÉ VERT.
+            //
+            // `solParis` rend un identifiant de sol, et le feuillage était
+            // posé comme tel : à plat, au ras du trottoir. Vus du ciel les
+            // marronniers des Champs-Élysées faisaient de belles rangées ; vus
+            // de la rue, c'était de la pelouse sur le bitume. Un fût de trois
+            // blocs et une couronne de deux, et l'avenue devient une avenue.
+            data[World.index(x, h, z)] = CITY_BLOCK.SIDEWALK;
+            for (let dy = 1; dy <= 5; dy++) {
+              const wy = h + dy;
+              if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
+            }
+          } else if (sp !== null) data[World.index(x, h, z)] = sp;
           else if (lotParisLibre(wx, wz)) {
             batirColonneParis(wx, wz, (dy, id) => {
               const wy = h + dy - 1;

@@ -194,10 +194,12 @@ const position = (p) => p.evaluate(() => ({
     const tient = await tab.evaluate(() => {
       const c2 = window.__carte;
       const b = c2.bornesMonde();
-      const { css } = c2.taille();
+      // La carte n'est plus carrée depuis v187 : elle rend sa largeur ET sa
+      // hauteur, et un cadre se vérifie sur les deux.
+      const { l, h } = c2.taille();
       const coin = (x, z) => c2.versEcran(x, z);
       const a = coin(b.x0, b.z0), d = coin(b.x1, b.z1);
-      return { a, d, css, dedans: a.x >= -1 && a.y >= -1 && d.x <= css + 1 && d.y <= css + 1 };
+      return { a, d, l, h, dedans: a.x >= -1 && a.y >= -1 && d.x <= l + 1 && d.y <= h + 1 };
     });
     verifier('le bouton 🌍 montre tout le monde — d\'un bord à l\'autre',
       tient.dedans, `bpp ${monde.bpp.toFixed(2)} · ${JSON.stringify(tient)}`);
@@ -249,9 +251,9 @@ const position = (p) => p.evaluate(() => ({
     // Rien ne doit déborder du cadre : un nom coupé n'est ni lisible ni touchable.
     const debord = await tab.evaluate(() => {
       const c2 = window.__carte;
-      const css = c2.taille().css;
-      return c2.etiquettes.filter((e) => e.rect.x0 < -1 || e.rect.x1 > css + 1
-        || e.rect.y0 < -1 || e.rect.y1 > css + 1).map((e) => e.lieu.name);
+      const { l, h } = c2.taille();
+      return c2.etiquettes.filter((e) => e.rect.x0 < -1 || e.rect.x1 > l + 1
+        || e.rect.y0 < -1 || e.rect.y1 > h + 1).map((e) => e.lieu.name);
     });
     verifier('aucun nom ne déborde de la carte', debord.length === 0, debord.join(', '));
 
@@ -565,12 +567,30 @@ const position = (p) => p.evaluate(() => ({
     // Panthéon, les Invalides, la Bastille, le Luxembourg n'existaient pas du
     // tout. Une rive, ça ne se discute pas — c'est la première chose qu'un
     // enfant vérifie quand il compare avec un vrai plan.
+    //
+    // LE ZOOM SUIT LA VILLE. Il était écrit en dur (0,24 bloc par pixel), ce
+    // qui cadrait les quatre cinquièmes de Paris tant qu'elle faisait cent dix
+    // blocs de large. À trois cent soixante-dix — Paris à vingt-quatre blocs
+    // par kilomètre, v187 — le même chiffre ne montrait plus que le premier
+    // arrondissement, et le témoin annonçait « la Tour Eiffel a disparu de la
+    // carte » alors qu'elle était simplement hors du cadre.
+    //
+    // On garde donc le CADRAGE d'origine — les quatre cinquièmes de la ville,
+    // de l'Étoile à la Bastille — et on le calcule depuis le rayon du
+    // registre. Pas la ville entière : sur un téléphone la carte fait trois
+    // cent soixante-dix pixels, une pastille en fait vingt-six, et vingt-cinq
+    // lieux ne tiennent pas côte à côte — au-delà de ce cadrage la carte en
+    // écarte deux, ce qui est son travail et non un défaut.
     const PARIS = V.paris;
     await banc.ouvrirLaCarte(tab);
-    await tab.evaluate(({ p }) => {
+    const cadreParis = await tab.evaluate(({ p }) => {
       const c2 = window.__carte;
-      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.24;
+      const { l, h } = c2.taille();
+      const cote = Math.min(l, h);
+      c2.vue.cx = p.x; c2.vue.cz = p.z;
+      c2.vue.bpp = (2 * p.r * 0.85) / cote;     // de l'Étoile à la Bastille
       c2.limiter(); c2.peindre();
+      return { css: Math.round(cote), bpp: +c2.vue.bpp.toFixed(2) };
     }, { p: PARIS });
     await dormir(600);
     const vusParis = await lieuxVus(tab);
@@ -578,7 +598,9 @@ const position = (p) => p.evaluate(() => ({
       'Opéra', 'Bastille', 'Luxembourg', 'Concorde'];
     const absentsParis = attendusParis.filter((n) => !vusParis.includes(n));
     verifier('les lieux de Paris sont sur la carte', absentsParis.length === 0,
-      absentsParis.length ? `absents : ${absentsParis.join(', ')}` : `${attendusParis.length} lieux`);
+      absentsParis.length
+        ? `absents : ${absentsParis.join(', ')} (carte ${cadreParis.css} px, ${cadreParis.bpp} bloc/px)`
+        : `${attendusParis.length} lieux · carte ${cadreParis.css} px, ${cadreParis.bpp} bloc/px`);
 
     // Sur quelle rive ? On cherche la Seine dans le monde, à l'aplomb du
     // monument, et on regarde de quel côté il tombe. Rien n'est supposé : si
@@ -622,6 +644,20 @@ const position = (p) => p.evaluate(() => ({
     // Trois choses le disent, et aucune n'a besoin d'une capture d'écran : la
     // pierre de taille et le zinc dont la ville est faite, les cours au milieu
     // des îlots, et l'herbe qu'on ne foule plus en la traversant.
+    //
+    // ET LA FENÊTRE DE MESURE AUSSI SUIT LA VILLE. Elle était centrée sur
+    // l'ancre de Paris, ce qui à l'ancienne échelle tombait en plein tissu
+    // ordinaire. À vingt-quatre blocs par kilomètre, ces quarante blocs-là
+    // sont le Louvre, les Tuileries, la Seine et la caserne : on y mesurait
+    // des monuments en croyant compter des immeubles. On vise donc un
+    // quartier haussmannien ORDINAIRE, donné en kilomètres réels depuis
+    // Notre-Dame — une adresse qui survivra à la prochaine remise à l'échelle.
+    const CŒUR = await tab.evaluate(async () => {
+      const M = await import('./src/paris.js');
+      const [x, z] = M.adresseParis ? M.adresseParis(-3.7, -2.5)
+        : [M.PARIS.x, M.PARIS.z];
+      return { x, z };
+    });
     const tissu = await tab.evaluate((P) => {
       const w = window.__game.world;
       const PIERRE = 560, ZINC = 561, PAVE_DE_COUR = 9, HERBE = 1, TERRE = 2;
@@ -650,7 +686,7 @@ const position = (p) => p.evaluate(() => ({
         }
       }
       return { bati, cours, nu, total };
-    }, V.paris);
+    }, CŒUR);
     verifier('Paris est bâtie de pierre de taille et de zinc',
       tissu.bati > 700,
       `${tissu.bati} colonnes sur ${tissu.total}`);
@@ -1334,6 +1370,100 @@ const position = (p) => p.evaluate(() => ({
 
     verifier('aucune erreur JavaScript sur l\'ordinateur', bureau.erreurs.length === 0,
       JSON.stringify(bureau.erreurs));
+
+    // --- LE TÉLÉPHONE COUCHÉ, ET LA CARTE QUI S'ÉTIRAIT --------------------
+    //
+    // Signalé par Max, capture à l'appui : sur un iPhone en paysage, le golfe
+    // du Mexique était deux fois trop large. La feuille de style donnait à la
+    // carte une boîte de 560 × 289 — la largeur d'un côté, un plafond de 74vh
+    // de l'autre — pendant que le dessin, lui, restait carré. Le navigateur
+    // l'écrasait dedans, et le monde s'étirait à l'horizontale.
+    //
+    // Ce qui se mesure ici n'est pas une taille mais un RAPPORT : cent blocs
+    // vers l'est doivent occuper autant de pixels À L'ÉCRAN que cent blocs
+    // vers le sud. C'est la définition même de « ne pas s'étirer ».
+    //
+    // « À L'ÉCRAN », et c'est tout le piège : `versEcran` rend des pixels du
+    // DESSIN, et dans ce repère-là l'ancienne carte était parfaitement carrée
+    // — un premier témoin écrit ainsi passait au vert sur le code fautif. La
+    // déformation naît une étape plus loin, quand le navigateur écrase une
+    // image carrée dans une boîte qui ne l'est pas. On multiplie donc chaque
+    // écart par le facteur d'échelle de son axe, celui-là même que la feuille
+    // de style applique.
+    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
+    await banc.ouvrirLaCarte(couche);
+    const forme = await couche.evaluate(() => {
+      const c = window.__carte;
+      const r = c.canvas.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const kx = r.width / (c.canvas.width / dpr);       // ce que la CSS étire
+      const ky = r.height / (c.canvas.height / dpr);
+      const o = c.versEcran(c.vue.cx, c.vue.cz);
+      const est = (c.versEcran(c.vue.cx + 100, c.vue.cz).x - o.x) * kx;
+      const sud = (c.versEcran(c.vue.cx, c.vue.cz + 100).y - o.y) * ky;
+      const carte = document.getElementById('map-modal-card').getBoundingClientRect();
+      return {
+        est: Math.round(est), sud: Math.round(sud),
+        boite: [Math.round(r.width), Math.round(r.height)],
+        dessin: [c.canvas.width, c.canvas.height],
+        dedans: carte.top >= -1 && carte.bottom <= window.innerHeight + 1,
+        bas: Math.round(carte.bottom), ecran: window.innerHeight,
+      };
+    });
+    verifier('couchée, la carte ne s\'étire plus : cent blocs font la même chose dans les deux sens',
+      Math.abs(forme.est - forme.sud) <= 1,
+      `${forme.est} px à l'écran vers l'est, ${forme.sud} vers le sud`);
+    verifier('et le dessin a le rapport de sa boîte',
+      Math.abs((forme.dessin[0] / forme.dessin[1]) - (forme.boite[0] / forme.boite[1])) < 0.02,
+      `boîte ${forme.boite.join('×')} · dessin ${forme.dessin.join('×')}`);
+    // Et la fiche entière tient dans l'écran : c'est ce qui manquait aussi sur
+    // la capture, où le bouton du trésor venait s'asseoir sur la légende.
+    verifier('et la fiche de la carte tient dans l\'écran couché', forme.dedans,
+      `elle descend à ${forme.bas} pour un écran de ${forme.ecran}`);
+
+    // --- CHERCHER UN LIEU PAR SON NOM --------------------------------------
+    //
+    // Demandé par Max : « mets une barre de recherche où on peut taper Paris,
+    // Washington… pour que l'utilisateur puisse avoir un raccourci et se
+    // téléporter ». Deux cent soixante-dix-huit lieux au registre : les
+    // atteindre demandait de faire glisser la carte jusqu'à eux, donc de
+    // savoir où ils sont — ce qu'un enfant ne sait justement pas.
+    await couche.fill('#map-chercher', 'washing');
+    await dormir(500);
+    const trouves = await couche.evaluate(() =>
+      [...document.querySelectorAll('#map-resultats button')].map((b) => b.textContent));
+    verifier('la recherche trouve une ville sur un début de nom',
+      trouves.some((t) => /Washington/i.test(t)),
+      trouves.length ? trouves.join(' · ') : 'aucun résultat');
+
+    // Sans accent et sans majuscule : c'est ainsi qu'un enfant tape.
+    await couche.fill('#map-chercher', 'eiffel');
+    await dormir(500);
+    const sansAccents = await couche.evaluate(() =>
+      [...document.querySelectorAll('#map-resultats button')].map((b) => b.textContent));
+    verifier('et elle trouve un monument sans accent ni majuscule',
+      sansAccents.some((t) => /Tour Eiffel/i.test(t)),
+      sansAccents.join(' · ') || 'aucun résultat');
+
+    // Le raccourci, c'est le voyage : toucher un résultat DÉPOSE l'enfant.
+    await couche.fill('#map-chercher', 'washington');
+    await dormir(500);
+    await couche.click('#map-resultats button');
+    await dormir(1500);
+    const arrivee = await couche.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const w = m.positionDe('washington');
+      const g = window.__game;
+      return {
+        loin: Math.round(Math.hypot(g.player.pos.x - w.x, g.player.pos.z - w.z)),
+        fermee: getComputedStyle(document.getElementById('map-modal')).display === 'none',
+      };
+    });
+    verifier('et toucher un résultat emmène vraiment là-bas', arrivee.loin < 8 && arrivee.fermee,
+      JSON.stringify(arrivee));
+
+    verifier('aucune erreur JavaScript sur le téléphone couché', couche.erreurs.length === 0,
+      JSON.stringify(couche.erreurs));
   } finally {
     await banc.fermer();
   }

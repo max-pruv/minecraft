@@ -44,6 +44,18 @@ travail est irrattrapable.
    l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
    casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 
+   **Elle a servi une TROISIÈME fois, en v187, pour Paris** — et cette
+   fois-là, elle sert dans la fenêtre d'empreinte, ce qui rend la borne
+   vérifiable au bit près. Paris passe de huit à vingt-quatre blocs par
+   kilomètre et son disque de 55 à 185 blocs : l'empreinte du relief change.
+   L'empreinte HORS villes, elle, est identique à celle de la v186 — 153 382
+   colonnes des deux côtés, mesurées avec la MÊME découpe sur `origin/main` et
+   sur la branche. C'est la manière canonique de prouver qu'une casse est
+   confinée, et elle se refait à chaque fois : on ne met pas à jour un hash,
+   on mesure les deux côtés. Un troisième témoin vérifie que le disque de
+   Paris ne s'approche d'aucun des trois sanctuaires (il en reste à
+   soixante-six blocs).
+
    **Elle a servi une SECONDE fois, en v186, pour Manhattan** — et cette
    fois sans double empreinte, pour une raison qu'il faut connaître :
    `plafond.js` échantillonne x, z dans [−700, 700], et New York est à
@@ -149,6 +161,18 @@ protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
 
 **Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
 rapide n'est pas une permission d'aller vite sur ce qui compte.
+
+**La voie longue trouve ce que la voie rapide ne peut pas voir.** En v187 elle
+a rendu QUATRE suites rouges — `reseau.js`, `visio.js`, `reglages.js`,
+`hote.js` — qui l'étaient DÉJÀ sur `origin/main`, donc en production : mêmes
+témoins, mêmes valeurs. Le code réseau n'avait pas bougé depuis v164. Elles
+n'étaient simplement plus sélectionnées par l'aiguillage, et elles ont rougi
+en silence pendant vingt-trois versions. La leçon n'est pas « l'aiguillage est
+mauvais » — il fait gagner une heure par livraison — c'est que **la voie longue
+doit tourner de temps en temps même quand rien ne l'exige**, et que le premier
+réflexe devant un rouge inattendu est de le rejouer SUR `origin/main` : c'est
+la seule mesure qui distingue « je viens de casser ça » de « c'était déjà
+cassé ».
 
 **Et le portail, c'est `npm test` — jamais une liste de suites choisie à la
 main.** De v176 à v181, les barrières rejouaient six suites nommées une à une
@@ -258,6 +282,15 @@ local, Supabase de poche (`tests/nuage.js`).
   près, et elle passe en cinquième position sur un conteneur que quatre suites
   viennent de chauffer. Un portail dont les rouges se déplacent d'une exécution
   à l'autre n'accuse pas le jeu : il dit que le banc manque d'air.
+  **En v187, `reglages.js` était encore dans ce cas** — pas un appel sur onze
+  passages, six navigateurs ouverts et quatre refermés. Corrigée, elle passe de
+  46 à 63 témoins.
+- **Une attente de chargement se donne le même budget que l'attente qui la
+  suit.** Trois `goto`/`reload` en `waitUntil: 'load'` de `reglages.js` avaient
+  les trente secondes par défaut de Playwright, quand la ligne d'après en
+  accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
+  PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
+  un banc qui rend en logiciel, c'est la première moitié qui casse.
 - **Ne jamais relancer le portail jusqu'à obtenir du vert.** Trois suites
   vertes chacune de son côté ne valent pas un portail vert : c'est ainsi qu'on
   publie une régression en croyant l'avoir écartée. Un rouge se démonte, il ne
@@ -535,6 +568,55 @@ flotte. Deux pièges, tous deux payés :
   une seule voiture. Leurs anneaux s'éprouvent sur le VRAI terrain
   (`tracesCirculationMain`), ce qui écarte la Seine et la Tamise sans rien
   savoir de leur géographie.
+
+### Paris (`paris.js`) — et ce qu'on apprend d'une remise à l'échelle
+
+La sixième ville remise à l'échelle GTA, en v187 : **vingt-quatre blocs par
+kilomètre** (contre 48 à Washington, 34 à Manhattan), disque de 185 blocs,
+ancrée sur Notre-Dame. Trois choses à savoir avant d'y toucher.
+
+- **Le plan d'auteur est en KILOMÈTRES RÉELS, et il ne se réécrit pas.**
+  `de(dx, dz)` traduit un écart réel à Notre-Dame en coordonnées locales ;
+  c'est la seule chose que la table des lieux connaisse. Ce qui restait écrit
+  en blocs de l'ancienne échelle — la courbe de la Seine, les îles, la butte,
+  les points de passage des percées, les ponts — se projette par `k()`.
+  `adresseParis(dx, dz)` rend une adresse du monde à partir de kilomètres :
+  c'est ce que les sondes et les témoins doivent viser, jamais un `u`/`v` en
+  dur, sinon ils meurent à la prochaine remise à l'échelle.
+
+- **Les LARGEURS ne se projettent pas, elles se relèvent.** Multiplier une
+  largeur par trois lui garde sa taille réelle d'avant — et cette taille était
+  fausse : la place de l'Étoile faisait cinq cent soixante mètres de rayon et
+  ses avenues cent soixante-dix mètres de large. À huit blocs par kilomètre
+  cela ne se voyait pas ; à vingt-quatre, l'Étoile mangeait tout l'ouest de
+  Paris. Chaussée, trottoir, pas d'îlot, rayon de place, largeur d'avenue,
+  largeur de quai : tout cela se redonne en blocs neufs, mesuré sur le vrai
+  plan. **C'est LE piège d'une remise à l'échelle**, et il vaut pour Londres,
+  Nice, Lille et San Francisco quand leur tour viendra.
+
+- **L'entorse assumée, c'est l'îlot.** Un îlot parisien fait cent mètres, soit
+  deux blocs et demi : de quoi poser une façade et rien derrière. Le plus grand
+  ici en fait dix-sept, soit sept cents mètres. On choisit la rue praticable et
+  l'îlot suit — même arbitrage que Washington, qui a élargi les siens de 1,7
+  pour qu'une maison ait un escalier. Ce qui reste juste, en échange : la rue
+  appartient au QUARTIER (`rue`, `face` dans sa fiche), et une venelle du
+  Marais ne fait pas la largeur d'une avenue de Monceau.
+
+Deux pièges de rendu payés en captures :
+
+- **`solParis` rend un identifiant de SOL, donc un arbre posé à plat est un
+  carré vert.** Vus du ciel les marronniers des Champs-Élysées faisaient de
+  belles rangées ; vus de la rue, c'était de la pelouse sur le bitume. Le
+  feuillage se fait donc pousser dans `world.js` (fût + couronne) — et il faut
+  l'ESPACER, sinon une colonne sur deux fait une haie pleine qui bouche
+  l'avenue.
+- **Un monument ne grandit pas parce que la carte grandit.** Les `socle` de la
+  table des lieux sont l'emprise du bâtisseur, pas une longueur du plan : ils
+  ne passent pas par `k()`. En revanche, un monument qui était acceptable à
+  côté d'immeubles de quatre blocs ne l'est plus à côté d'immeubles de neuf —
+  la Tour Eiffel et l'Arc de Triomphe ont dû être refaits, et c'est la règle
+  générale : **remettre une ville à l'échelle, c'est aussi refaire ses
+  monuments.**
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 

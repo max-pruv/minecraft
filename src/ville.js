@@ -42,6 +42,13 @@ const VERRE = BLOCK.GLASS;
 // blocs sous la surface, ce qui laisse trois blocs de terre au-dessus de la
 // voûte — assez pour qu'on ne voie rien depuis la rue, assez peu pour que les
 // bouches de métro restent des escaliers et non des puits.
+// v187, Paris à vingt-quatre blocs par kilomètre : l'anneau NE CHANGE PAS, et
+// c'est un choix. À huit blocs par kilomètre, trente-huit blocs de rayon
+// faisaient quatre kilomètres et sept cents — le boulevard périphérique. À
+// vingt-quatre ils en font mille six cents : la boucle du centre historique,
+// de la Bastille à la Concorde. C'est un métro plus petit dans une ville plus
+// grande, et c'est plus juste ainsi : les vraies lignes de Paris viendront
+// avec le creuseur de Washington, qui sait faire des lignes et des stations.
 export const ANNEAU = { rayon: 38, tablier: -8 };
 
 // Le tracé, en coordonnées ABSOLUES du monde. Les véhicules s'en servent pour
@@ -156,13 +163,18 @@ export function buildVille(poser) {
   const PX = 17, PZ = -8;
   vider(PX - 14, PX + 14, 0, 18, PZ - 12, PZ + 14);
   dalle(PX - 14, PX + 14, PZ - 12, PZ + 14, -1, GRIS_CLAIR);
-  halle(PX - 11, PX + 11, PZ - 10, PZ + 4, 8, BETON, BLEU_NUIT, [[PX, PZ + 4]]);
+  // Le toit est en ARDOISE et non en bleu vif. Paris a triplé d'échelle en
+  // v187, et ce qui n'était qu'une tuile de couleur au milieu d'un village est
+  // devenu, vu du ciel, une bâche bleue de vingt-cinq blocs posée à côté de
+  // Notre-Dame. Le bleu de la police reste — en bandeau, sur la façade, là où
+  // un enfant le lit — mais il ne fait plus le toit.
+  halle(PX - 11, PX + 11, PZ - 10, PZ + 4, 8, BETON, ANTHRACITE, [[PX, PZ + 4]]);
   // le perron et les colonnes
   dalle(PX - 6, PX + 6, PZ + 5, PZ + 7, -1, BLANC);
   for (const dx of [-5, -2, 2, 5]) {
     for (let y = 0; y <= 8; y++) set(PX + dx, y, PZ + 5, BLANC);
   }
-  dalle(PX - 6, PX + 6, PZ + 4, PZ + 6, 9, BLEU_NUIT);
+  dalle(PX - 6, PX + 6, PZ + 4, PZ + 6, 9, BLEU);
   // le bandeau bleu, l'enseigne et le gyrophare de façade
   for (let x = PX - 11; x <= PX + 11; x++) set(x, 7, PZ + 4, BLEU);
   for (let x = PX - 3; x <= PX + 3; x += 2) set(x, 10, PZ + 5, BLEU);

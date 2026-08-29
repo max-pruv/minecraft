@@ -307,22 +307,47 @@ async function avancerUnDemiSeconde(p, depart) {
     // partout, épingles comprises, et traversait la zone d'embarquement entre
     // deux rafraîchissements du bouton. Une vraie monoplace freine avant le
     // virage et relance en ligne droite — c'est ce qui laisse le temps.
+    // ON MESURE UN TRAJET, PAS UNE DURÉE — et c'est tout le sujet.
+    //
+    // L'ancienne version échantillonnait pendant seize secondes de MONTRE.
+    // Or `main.js` borne `dt` à un vingtième de seconde : sous vingt images
+    // par seconde, le monde avance moins vite que l'horloge, et le banc y
+    // descend franchement puisqu'il rend en logiciel. Le témoin se fait donc
+    // déposer par le métro AU MILIEU DE PARIS, la vue la plus chargée du jeu,
+    // et la monoplace ne parcourt qu'un bout de ligne droite pendant sa
+    // fenêtre : « elle roule toujours pareil », conclut-il, alors qu'il n'a
+    // simplement pas vu de virage. Il rougissait sur la ville agrandie de
+    // v187 et serait passé au vert sur une machine au repos — le pire des
+    // témoins, celui dont le verdict dépend de la charge.
+    //
+    // La question posée est « son allure change-t-elle AUTOUR DU CIRCUIT ? ».
+    // On échantillonne donc jusqu'à ce qu'elle ait couvert deux cent
+    // cinquante blocs de tracé — virages compris, par construction —, avec
+    // une borne de temps pour ne jamais bloquer le portail.
+    //
+    // Les deux premiers convois sont les rames du métro ; les suivants sont
+    // les monoplaces, et ce sont elles qui freinent. UNE seule voiture,
+    // suivie sur son trajet : prendre la plus lente des six à chaque instant
+    // ne suit personne — il y a toujours quelqu'un dans un virage, et on
+    // mesure alors la forme du circuit, pas le comportement d'une monoplace.
     const allures = [];
-    for (let i = 0; i < 40; i++) {
-      await dormir(400);
+    const departF1 = await tab.evaluate(() => {
+      const e = window.__vehicules.etat()[2];
+      return e ? e.distance : null;
+    });
+    const finMesure = Date.now() + 150000;
+    let tourF1 = 0;
+    while (tourF1 < 250 && Date.now() < finMesure) {
+      await dormir(300);
       const etats = await tab.evaluate(() => window.__vehicules.etat());
-      // Les deux premiers convois sont les rames du métro ; les suivants sont
-      // les monoplaces, et ce sont elles qui freinent.
-      // UNE seule voiture, suivie dans le temps. Prendre la plus lente des six
-      // à chaque instant ne suit personne : il y a toujours quelqu'un dans un
-      // virage, et on mesure alors la forme du circuit, pas le comportement
-      // d'une monoplace.
-      if (etats[2]) allures.push(etats[2].vitesse);
+      if (!etats[2]) break;
+      allures.push(etats[2].vitesse);
+      tourF1 = etats[2].distance - departF1;      // `distance` cumule, elle ne boucle pas
     }
     const lente = Math.min(...allures), rapide = Math.max(...allures);
     verifier('la monoplace ne roule pas à la même allure partout',
       rapide / Math.max(0.1, lente) > 1.8,
-      `de ${lente.toFixed(1)} à ${rapide.toFixed(1)} m/s`);
+      `de ${lente.toFixed(1)} à ${rapide.toFixed(1)} m/s sur ${Math.round(tourF1)} blocs de circuit`);
     verifier('et elle ralentit assez pour qu\'on puisse la rejoindre',
       lente < 9, `${lente.toFixed(1)} m/s au plus lent`);
 

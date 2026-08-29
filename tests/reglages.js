@@ -46,6 +46,21 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     + `&peerhost=127.0.0.1:${PORT_PAIRS}`;
 
   async function joueur(prenom) {
+    // DE L'AIR AVANT CHAQUE PAGE.
+    //
+    // Cette suite était la SEULE du portail à n'appeler `souffler()` pas une
+    // fois, alors qu'elle ouvre six navigateurs et n'en referme que quatre :
+    // à partir du cinquième scénario, trois mondes en trois dimensions se
+    // dessinent en même temps sur un conteneur à quatre cœurs, en rendu
+    // logiciel. Les minuteurs du navigateur partent alors en retard, et ce
+    // sont les scénarios qui MESURENT UN DÉLAI qui le paient — ici l'attente
+    // d'un code de partie, quarante secondes qui ne suffisent plus.
+    //
+    // Le verdict se déplaçait d'une exécution à l'autre avec le même code :
+    // vert, puis rouge, puis vert. Ce n'est pas le jeu qu'un tel portail
+    // accuse, c'est le banc qui manque d'air — la leçon est déjà écrite dans
+    // `CLAUDE.md`, elle n'avait simplement pas été appliquée ici.
+    await banc.souffler();
     const ctx = await navigateur.newContext({ viewport: { width: 420, height: 760 } });
     const p = await ctx.newPage();
     p.erreurs = [];
@@ -57,7 +72,13 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse, { waitUntil: 'load' });
+    // Même budget que la ligne suivante, et pour la même raison : `waitUntil:
+    // 'load'` attend TOUTES les ressources de la page — Three.js, la voiture
+    // d'artiste, les textures —, et trente secondes (le défaut de Playwright)
+    // ne suffisent pas sur un banc qui rend en logiciel. Il serait absurde
+    // d'accorder quatre-vingt-dix secondes à `window.__game` et trente au
+    // chargement qui le précède : c'est la même attente, coupée en deux.
+    await p.goto(adresse, { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     return p;
   }
@@ -127,7 +148,13 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       !cats.English, JSON.stringify(cats));
 
     // …et le choix survit à un redémarrage, servi depuis le serveur.
-    await marlon.reload({ waitUntil: 'load' });
+    // Un rechargement attend TOUTES les ressources de la page — Three.js, la
+    // voiture d'artiste, les textures. Sur un banc qui rend en logiciel avec
+    // deux autres parties vivantes, trente secondes (le défaut de Playwright)
+    // ne suffisent pas, et la ligne suivante en accorde déjà quatre-vingt-dix
+    // pour la MÊME page. On aligne, et on laisse d'abord retomber la charge.
+    await banc.souffler();
+    await marlon.reload({ waitUntil: 'load', timeout: 90000 });
     await marlon.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const apresRelance = await jusqua(async () => (await marlon.evaluate(
       () => window.__game.edu.__prefs().lang)) === 'fr');
@@ -548,6 +575,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     await dormir(600);
     await neuf.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
+    // Le passage le plus lourd de la suite : ouvrir un monde en ligne pendant
+    // que deux autres parties tournent encore. On laisse la charge retomber
+    // avant, sans quoi c'est la machine qu'on mesure et non le jeu.
+    await banc.souffler();
     await neuf.evaluate(() => document.getElementById('host-btn').click());
     await neuf.waitForFunction(
       () => document.getElementById('room-code').textContent.trim().length >= 4,
@@ -586,7 +617,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       window.__game.edu.save();
       return JSON.parse(localStorage.getItem('web-minecraft-edu-v1') || '{}').remaining;
     });
-    await neuf.reload({ waitUntil: 'load' });
+    await banc.souffler();
+    await neuf.reload({ waitUntil: 'load', timeout: 90000 });
     await neuf.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const auRetour = await neuf.evaluate(() => {
       const e = window.__game.edu;

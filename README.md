@@ -54,9 +54,19 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   locks. Unlocking another 45-minute block takes either the parental code or
   a 20-correct-answer marathon quiz. Repeatable; survives refreshes since play
   time is persisted.
+- **A map you can search** — type a few letters (`tokyo`, `eiffel`, `washing`)
+  and every one of the 278 registered places, plus Paris's squares, Manhattan's
+  neighbourhoods and Washington's monuments, comes up with its distance in
+  blocks; tap one and you are there. Accent- and case-insensitive, and the map
+  fills whatever shape the screen gives it — wide on a phone held sideways,
+  tall when held upright.
 - **Real places, at real proportions** — six cities, each drawn from its own
-  plan rather than from a random-building generator: Haussmann Paris on the
-  Seine, the island of Manhattan on the 1811 commissioners' grid, San
+  plan rather than from a random-building generator: **Haussmann Paris at 24
+  blocks/km** — every place at its true distance from Notre-Dame, the Étoile's
+  twelve avenues, the Champs-Élysées lined with real chestnut trees, streets
+  wide enough to walk down between six-storey stone facades, and a different
+  street width per quarter (a Marais alley is not a Monceau avenue) —
+  the island of Manhattan on the 1811 commissioners' grid, San
   Francisco's two clashing street grids across thirteen named hills, Nice,
   Lille, and **Washington's monumental core at 48 blocks/km** — L'Enfant's grid
   split by diagonal state avenues meeting at circles, the Mall lined with its
