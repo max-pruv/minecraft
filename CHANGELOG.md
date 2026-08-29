@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v187 — Paris à l'échelle GTA : la ville où l'on marche
+## v187 — Paris à l'échelle GTA, et une carte où l'on cherche un lieu
 
 **Pourquoi.** Max, après New York : « Est-ce que tu peux maintenant
 retravailler sur toutes les villes ? » Paris venait en premier — c'est la
@@ -62,7 +62,27 @@ et elle engloutissait le Louvre) ; le toit du commissariat n'est plus une
 bâche bleue de vingt-cinq blocs à côté de Notre-Dame — le bleu de la police
 reste en bandeau de façade, là où un enfant le lit.
 
-**Ce qui le prouve.** Le portail, sept suites. Et surtout la forme que
+*La carte, sur un téléphone.* Deux défauts signalés par Max, capture à
+l'appui. **Couchée, la carte s'étirait** : la feuille de style lui donnait une
+largeur et un plafond de hauteur — 560 sur 289 — pendant que le dessin, lui,
+restait carré, et le navigateur l'écrasait dedans. Le golfe du Mexique
+ressortait deux fois trop large. La carte assume maintenant un cadre
+rectangulaire de bout en bout, et elle remplit la place qu'on lui donne dans
+les deux sens : couché on voit large, debout on voit loin. La fiche entière
+tient enfin dans l'écran couché — elle en débordait de dix-neuf pixels en haut
+comme en bas —, et le bouton du trésor, qui était posé au bas de l'écran et
+venait s'asseoir sur la légende, rejoint la rangée d'outils. Le bandeau du
+réseau, lui, s'efface le temps de la carte : posé plus haut que tous les
+panneaux du jeu, il interceptait les touchers.
+
+Et **on peut chercher un lieu par son nom.** Deux cent soixante-dix-huit lieux
+au registre, plus les places de Paris, les quartiers de Manhattan, les
+monuments de Washington : les atteindre demandait de faire glisser la carte
+jusqu'à eux, donc de savoir où ils sont — ce qu'un enfant ne sait justement
+pas. On tape « tokyo », on touche, on y est. Sans accent ni majuscule, ce qui
+commence par la saisie d'abord, et chaque résultat dit sa distance.
+
+**Ce qui le prouve.** Le portail, neuf suites. Et surtout la forme que
 prend l'invariant numéro un quand on a le droit de le casser : l'empreinte du
 relief change, puisque la ville a triplé ; l'empreinte HORS des villes, elle,
 est identique au bit près à celle de la v186 — 153 382 colonnes des deux côtés,
@@ -71,7 +91,16 @@ disque de Paris, pas un bloc n'a bougé. Un troisième témoin vérifie que ce
 disque, malgré son emprise triplée, reste à soixante-six blocs du plus proche
 des trois endroits où les enfants ont bâti.
 
-Deux témoins ont dû être réparés, et tous deux pour la même raison : ils
+Cinq témoins neufs gardent la carte, tous vérifiés rouges sur la v186 : cent
+blocs vers l'est font autant de pixels À L'ÉCRAN que cent vers le sud (143
+contre 74 avant), le dessin a le rapport de sa boîte, la fiche tient dans
+l'écran couché, la recherche trouve « washing » et « eiffel », et le résultat
+touché dépose l'enfant à moins de huit blocs de Washington. Le premier a dû
+être réécrit : mesuré dans le repère du DESSIN, il passait au vert sur le code
+fautif — l'ancienne carte y était parfaitement carrée, et la déformation naît
+une étape plus loin.
+
+Trois témoins de Paris ont dû être réparés, tous pour la même raison : ils
 visaient en dur ce qui aurait dû se calculer. Le zoom de la carte (0,24 bloc
 par pixel) ne montrait plus que le premier arrondissement et annonçait « la
 Tour Eiffel a disparu » ; la fenêtre qui mesure le tissu était centrée sur
