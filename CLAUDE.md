@@ -162,6 +162,18 @@ protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
 **Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
 rapide n'est pas une permission d'aller vite sur ce qui compte.
 
+**La voie longue trouve ce que la voie rapide ne peut pas voir.** En v187 elle
+a rendu QUATRE suites rouges — `reseau.js`, `visio.js`, `reglages.js`,
+`hote.js` — qui l'étaient DÉJÀ sur `origin/main`, donc en production : mêmes
+témoins, mêmes valeurs. Le code réseau n'avait pas bougé depuis v164. Elles
+n'étaient simplement plus sélectionnées par l'aiguillage, et elles ont rougi
+en silence pendant vingt-trois versions. La leçon n'est pas « l'aiguillage est
+mauvais » — il fait gagner une heure par livraison — c'est que **la voie longue
+doit tourner de temps en temps même quand rien ne l'exige**, et que le premier
+réflexe devant un rouge inattendu est de le rejouer SUR `origin/main` : c'est
+la seule mesure qui distingue « je viens de casser ça » de « c'était déjà
+cassé ».
+
 **Et le portail, c'est `npm test` — jamais une liste de suites choisie à la
 main.** De v176 à v181, les barrières rejouaient six suites nommées une à une
 et jamais la fumée : son témoin de la bibliothèque de monuments est resté

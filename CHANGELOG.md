@@ -62,7 +62,7 @@ et elle engloutissait le Louvre) ; le toit du commissariat n'est plus une
 bâche bleue de vingt-cinq blocs à côté de Notre-Dame — le bleu de la police
 reste en bandeau de façade, là où un enfant le lit.
 
-**Ce qui le prouve.** Le portail complet, sept suites. Et surtout la forme que
+**Ce qui le prouve.** Le portail, sept suites. Et surtout la forme que
 prend l'invariant numéro un quand on a le droit de le casser : l'empreinte du
 relief change, puisque la ville a triplé ; l'empreinte HORS des villes, elle,
 est identique au bit près à celle de la v186 — 153 382 colonnes des deux côtés,
@@ -70,6 +70,25 @@ mesurées avec la même découpe sur `origin/main` et sur la branche. Hors du
 disque de Paris, pas un bloc n'a bougé. Un troisième témoin vérifie que ce
 disque, malgré son emprise triplée, reste à soixante-six blocs du plus proche
 des trois endroits où les enfants ont bâti.
+
+Deux témoins ont dû être réparés, et tous deux pour la même raison : ils
+visaient en dur ce qui aurait dû se calculer. Le zoom de la carte (0,24 bloc
+par pixel) ne montrait plus que le premier arrondissement et annonçait « la
+Tour Eiffel a disparu » ; la fenêtre qui mesure le tissu était centrée sur
+l'ancre, soit à cette échelle le Louvre, les Tuileries et la Seine — on y
+comptait des monuments en croyant compter des immeubles. Et le témoin de la
+monoplace mesurait SEIZE SECONDES DE MONTRE là où il voulait mesurer un tour
+de circuit : comme le métro dépose l'enfant au milieu de Paris, la vue la plus
+chargée du jeu, la voiture ne parcourait plus qu'un bout de ligne droite. Il
+compte maintenant deux cent cinquante blocs de tracé.
+
+**Ce que la voie longue a trouvé au passage, et qui ne vient pas de Paris.**
+Quatre suites — `reseau.js`, `visio.js`, `reglages.js`, `hote.js` — sont
+rouges, et elles le sont AUSSI sur la version en production : mêmes témoins,
+mêmes valeurs, mesuré des deux côtés. Le code réseau n'a pas bougé depuis la
+v164, vingt-trois versions plus tôt ; ces suites n'étaient simplement plus
+sélectionnées par l'aiguillage du portail et ont rougi sans que personne ne le
+voie. C'est un chantier à part, inscrit dans `TASKS.md`.
 
 ## v186 — New York à l'échelle GTA, des voitures partout, et des fenêtres allumées la nuit
 

@@ -39,6 +39,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
   façades de pierre plutôt qu'en halles de béton.
 
+- [ ] **Le rouge ancien des suites réseau du portail** — découvert en v187 en
+  prenant la voie longue : `reseau.js`, `visio.js`, `reglages.js` et `hote.js`
+  sont rouges, et ils le sont AUSSI sur `origin/main` — mesuré, pas supposé :
+  `hote.js` échoue sur les trois mêmes témoins aux mêmes valeurs, `reseau.js`
+  sur les quatre mêmes plus un, avec le même effondrement du banc. Le code
+  réseau n'a pas bougé depuis v164, vingt-trois versions : ces suites ne sont
+  plus sélectionnées par l'aiguillage, et elles ont rougi sans que personne ne
+  le voie — la panne exacte que `CLAUDE.md` documente (« six suites vertes ne
+  valent pas un portail vert »). Deux pistes : le mandataire signale 188
+  connexions refusées vers le vrai Supabase pendant ces essais (le navigateur
+  du conteneur n'a pas d'Internet sortant), et plusieurs témoins mesurent des
+  durées de MONTRE sur un banc qui rend en logiciel. À démonter suite par
+  suite, hors d'un chantier de contenu.
+
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.
 
