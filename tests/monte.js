@@ -86,7 +86,22 @@ async function avancerUnDemiSeconde(p, depart) {
   await dormir(250);
   const avant = await pose(p);
   await p.keyboard.down('KeyW');
-  await dormir(500);
+  // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
+  // la charge du portail, une demi-seconde murale ne contient parfois que
+  // trois images à dt plafonné (1/20 s) — la distance fondait, et le témoin
+  // accusait la voiture d'être lente alors qu'on avait mesuré la machine.
+  // Vu en v183 : la mesure « au volant » tombait 700 ms après la monte, en
+  // pleine fête d'emojis, et rendait 1,5 m contre 1,6 m à pied. On accumule
+  // donc le même dt que main.js, borne comprise, comme l'horloge du banc.
+  await p.evaluate(() => new Promise((fin) => {
+    let cumul = 0, prec = performance.now();
+    const pas = (t) => {
+      cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+      prec = t;
+      if (cumul >= 0.5) fin(); else requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }));
   await p.keyboard.up('KeyW');
   const apres = await pose(p);
   return Math.hypot(apres.x - avant.x, apres.z - avant.z);
@@ -502,24 +517,40 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('la voiture reste sous nous pendant tout le trajet',
       sousNous < 1.5, `${sousNous.toFixed(2)} m`);
 
-    // LA VUE PARE-BRISE (Max) : « quand on roule avec une voiture, je veux la
-    // vue derrière le pare-brise, réaliste. » Assis au volant, l'œil est DANS
-    // l'habitacle — au-dessus du capot (0,87), sous le toit (1,46) — et le
-    // volant existe dans le modèle. L'ancien code posait la caméra à 2,6 blocs,
-    // au-dessus du toit de la voiture : rouge garanti.
-    const cockpit = await tab.evaluate(() => {
+    // LA VUE DE POURSUITE (Max, après deux essais de vue intérieure : « on
+    // va rester dans une vue un peu comme GTA, où on voit la voiture par
+    // derrière »). Au volant, la caméra est DERRIÈRE le véhicule — à
+    // l'opposé du regard, plusieurs blocs en retrait, en hauteur — et le
+    // cockpit sculpté (son volant en tore) reste dans le modèle, visible à
+    // travers les vitres. L'ancien code asseyait l'œil dans l'habitacle, à
+    // un tiers de bloc des pieds : rouge garanti sur les trois mesures.
+    const poursuite = await tab.evaluate(() => {
       const g = window.__game;
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
       let volant = false;
       if (a) a.mesh.traverse((m) => {
         if (m.geometry && m.geometry.type === 'TorusGeometry') volant = true;
       });
-      return { oeil: +(g.player.camera.position.y - g.player.pos.y).toFixed(2), volant };
+      const dx = g.player.camera.position.x - g.player.pos.x;
+      const dz = g.player.camera.position.z - g.player.pos.z;
+      // le regard porte vers (-sin, -cos) : un produit scalaire négatif dit
+      // que la caméra est bien DERRIÈRE, pas devant
+      const devant = dx * -Math.sin(g.player.yaw) + dz * -Math.cos(g.player.yaw);
+      return { volant,
+        recul: +Math.hypot(dx, dz).toFixed(2),
+        hauteur: +(g.player.camera.position.y - g.player.pos.y).toFixed(2),
+        devant: +devant.toFixed(2) };
     });
-    verifier('au volant, l\'œil est derrière le pare-brise, sous le toit',
-      cockpit.oeil > 0.9 && cockpit.oeil < 1.46, `${cockpit.oeil} bloc au-dessus des pieds`);
-    verifier('et le volant est là, dans l\'habitacle',
-      cockpit.volant, cockpit.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
+    // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
+    // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
+    // comportement voulu, pas un défaut.
+    verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
+      poursuite.recul > 3.0 && poursuite.recul < 6.5 && poursuite.devant < 0,
+      `${poursuite.recul} blocs en retrait (devant=${poursuite.devant})`);
+    verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
+      poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
+    verifier('le volant, lui, reste dans l\'habitacle — visible par les vitres',
+      poursuite.volant, poursuite.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
 
     // LA CARROSSERIE DE LA VRAIE VIE (Max, capture à l'appui : « je les veux
     // pas en format minecraft »). Une vraie voiture a des vitres TRANSPARENTES

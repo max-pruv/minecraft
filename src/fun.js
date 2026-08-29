@@ -1452,11 +1452,38 @@ export function initFun(ctx) {
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;
     a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
-    // Deux façons d'être porté : sur le dos d'une bête, le regard s'ÉLÈVE de
-    // la hauteur du dos ; dans une voiture, il se POSE à la hauteur du siège
-    // (`oeil`, absolu depuis les pieds) — derrière le pare-brise, capot et
-    // volant en vue, au lieu de flotter au-dessus du toit.
-    if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
+    // Trois façons d'être porté : dos de bête (`assise`, relative), habitacle
+    // simple (`oeil`, hauteur absolue), ou VUE DE POURSUITE (`poursuite`,
+    // verdict de Max après deux essais de vue intérieure : « une vue un peu
+    // comme GTA, où on voit la voiture par derrière »). La caméra se place
+    // derrière et au-dessus du véhicule, dans son repère — la monture tourne
+    // avec le regard, donc « derrière » suit le cap — et le cockpit détaillé
+    // reste visible à travers les vitres. Si un mur se glisse entre la
+    // voiture et la caméra, elle avance devant lui plutôt que d'entrer
+    // dans la roche.
+    if (a.def.poursuite) {
+      const c = a.def.poursuite, cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+      // La ligne de caméra part du TOIT du véhicule et monte vers l'arrière :
+      // échantillonnée trop bas, une simple bordure de trottoir la faisait
+      // plonger dans l'aileron. Et jamais plus près que la carrosserie
+      // elle-même (3,2) : en deçà, on regarde l'intérieur du moteur.
+      const TOIT = 1.4, PLANCHER_RECUL = 3.2;
+      const hauteurA = (d) => TOIT + (c.hauteur - TOIT) * (d / c.recul);
+      let recul = c.recul;
+      for (let d = PLANCHER_RECUL; d <= c.recul; d += 0.6) {
+        const bx = player.pos.x + sy * d, bz = player.pos.z + cy * d;
+        if (player.world.isSolid(Math.floor(bx),
+          Math.floor(player.pos.y + hauteurA(d)), Math.floor(bz))) {
+          recul = Math.max(PLANCHER_RECUL, d - 0.6);
+          break;
+        }
+      }
+      player.camera.position.set(
+        player.pos.x + sy * recul,
+        player.pos.y + hauteurA(recul),
+        player.pos.z + cy * recul,
+      );
+    } else if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
     else player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
 

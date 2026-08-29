@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v183 — la vue GTA au volant, et la voiture remise à l'endroit
+
+**Pourquoi.** Max : « La vue depuis l'intérieur du cockpit de la Bugatti
+n'est pas beau. » Sous ce verdict, l'inventaire des maillages du modèle a
+révélé plus grave : depuis v181 la voiture roulait À L'ENVERS — le
+chargeur alignait le grand axe sur z sans vérifier quel bout est l'avant,
+les phares regardaient l'arrière et, du volant, on contemplait l'aileron.
+Deux refontes de vue intérieure plus tard, verdict final de Max sur
+captures : « on va rester dans une vue un peu comme GTA, où on voit la
+voiture par derrière. »
+
+**Ce que ça change.** Au volant, la caméra suit la voiture de derrière et
+d'un peu au-dessus, comme dans GTA : on voit SA voiture filer dans la
+rue. Si un mur ou un trottoir se glisse derrière, la caméra avance devant
+l'obstacle au lieu d'entrer dans la roche — jamais plus près que la
+carrosserie. La voiture est remise à l'endroit (l'avant vérifié par les
+phares, mesuré, pas deviné), ses vitres sont enfin transparentes, et un
+vrai cockpit sculpté — sièges crème, volant, compteurs — se voit à
+travers elles.
+
+**Ce qui le prouve.** Trois témoins neufs : la caméra est derrière la
+voiture (à l'opposé du regard, plusieurs blocs en retrait), elle prend de
+la hauteur, et le volant reste dans l'habitacle. Rouge sur l'ancien code,
+qui asseyait l'œil dans la voiture à un tiers de bloc des pieds. Portail :
+la voie choisie par l'aiguillage — fumée, monte, carte, washington,
+metro.
+
 ## v182 — la voiture garée ne bouge plus, la marche n'accélère plus
 
 **Pourquoi.** Deux bogues signalés par Max en jouant avec la nouvelle

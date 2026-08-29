@@ -51,31 +51,72 @@ export function chargerVraieVoiture() {
   if (chargementVraieVoiture || typeof document === 'undefined') return chargementVraieVoiture;
   chargementVraieVoiture = new GLTFLoader().loadAsync('./vendor/voiture.glb').then((gltf) => {
     const brut = gltf.scene;
+    const chercherMesh = (bout) => {
+      let trouve = null;
+      brut.traverse((o) => {
+        if (!trouve && o.isMesh && (o.name || '').toLowerCase().includes(bout)) trouve = o;
+      });
+      return trouve;
+    };
     // Le modèle embarque un socle de présentation nommé « None », posé 1,4
     // sous les pneus : mesuré avec lui, la voiture flottait à sa hauteur.
-    const socles = [];
-    brut.traverse((o) => { if (o.isMesh && o.name === 'None') socles.push(o); });
-    for (const s of socles) s.removeFromParent();
+    // Le RÉSERVOIR, lui, est la baignoire noire qui remplit l'habitacle du
+    // modèle : elle enterrait notre poste de conduite (montures.js) et
+    // murait la vue. Le moteur reste — on le voit derrière les sièges,
+    // comme sur la vraie.
+    const retraits = [];
+    brut.traverse((o) => {
+      if (!o.isMesh) return;
+      const nom = (o.name || '').toLowerCase();
+      if (o.name === 'None' || nom.includes('fuel_tank')) retraits.push(o);
+    });
+    for (const s of retraits) s.removeFromParent();
     const boite = new THREE.Box3().setFromObject(brut);
     const taille = boite.getSize(new THREE.Vector3());
     const centre = boite.getCenter(new THREE.Vector3());
-    // recentré, posé au sol, à l'échelle du jeu, l'avant vers -z
+    // recentré, posé au sol, à l'échelle du jeu
     const cadre = new THREE.Group();
     cadre.add(brut);
     brut.position.set(-centre.x, -boite.min.y, -centre.z);
     cadre.scale.setScalar(4.4 / Math.max(taille.x, taille.z));
     if (taille.x > taille.z) cadre.rotation.y = Math.PI / 2;
-    // La cabine est AVANCÉE (moteur central) : recalée de 0,55 vers
-    // l'arrière pour que le siège du conducteur tombe sur l'origine — c'est
-    // là que la caméra s'assied. Sans cela on voyait le DOS des sièges.
-    cadre.position.z = 0.55;
+    // L'AVANT VERS -Z, VÉRIFIÉ, PAS DEVINÉ. Aligner le grand axe sur z ne
+    // dit pas quel bout est l'avant : pile ou face — et c'était tombé face.
+    // Pendant toute la v181 la voiture a roulé phares vers l'arrière, et de
+    // l'habitacle on regardait l'aileron (capture à l'appui). Les phares
+    // tranchent : s'ils finissent à z positif, demi-tour.
+    cadre.updateMatrixWorld(true);
+    const phare = chercherMesh('headlight');
+    if (phare) {
+      const ou = new THREE.Box3().setFromObject(phare).getCenter(new THREE.Vector3());
+      if (ou.z > 0) { cadre.rotation.y += Math.PI; cadre.updateMatrixWorld(true); }
+    }
+    // LA CABINE SUR L'ORIGINE, MESURÉE, PAS RÉGLÉE À L'ŒIL. La caméra
+    // s'assied sur l'origine (fiche `siege`) : le pare-brise du modèle doit
+    // tomber juste devant elle, son centre au-dessus de la planche de bord
+    // de montures.js. L'ancien recalage (+0,55, réglé à l'œil sur le modèle
+    // à l'envers) posait le moteur sur les genoux du conducteur.
+    const vitre = chercherMesh('front_window');
+    if (vitre) {
+      const ou = new THREE.Box3().setFromObject(vitre).getCenter(new THREE.Vector3());
+      cadre.position.z = -0.45 - ou.z;
+    } else cadre.position.z = 0.55;
     const porteur = new THREE.Group();
     porteur.add(cadre);
     const rt = refletsVoiture();
     porteur.traverse((o) => {
       if (!o.isMesh || !o.material) return;
-      const nom = (o.material.name || '').toLowerCase();
-      if (nom.includes('glass') || nom.includes('window')) {
+      // La transparence se juge sur le nom du matériau ET celui du maillage :
+      // le pare-brise s'appelle front_window mais porte le matériau à tout
+      // faire « breaks_ » — jugé sur le matériau seul, il restait OPAQUE, et
+      // la vue cockpit regardait un mur sombre. Ce matériau étant PARTAGÉ
+      // (freins, moteur, jantes…), on le CLONE avant de le rendre
+      // transparent, sinon la moitié de la voiture devient fantôme.
+      const matNom = (o.material.name || '').toLowerCase();
+      const meshNom = (o.name || '').toLowerCase();
+      const matVitre = matNom.includes('glass') || matNom.includes('window');
+      if (matVitre || meshNom.includes('glass') || meshNom.includes('window')) {
+        if (!matVitre) o.material = o.material.clone();
         o.material.transparent = true;
         o.material.opacity = 0.35;
       }
