@@ -344,6 +344,32 @@ class Animal {
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw + Math.PI;
 
+    // LES ROUES TOURNENT. On les fait tourner sur la distance RÉELLEMENT
+    // parcourue depuis la frame précédente, pas sur la vitesse voulue : une
+    // voiture conduite est posée par fun.js, pas par la boucle du bestiaire,
+    // et une voiture bloquée contre un mur ne doit pas faire patiner ses
+    // roues dans le vide. Le signe vient de la projection sur l'avant du
+    // véhicule : en marche arrière, elles tournent à l'envers.
+    const roues = this.mesh.userData.roues;
+    if (roues && roues.length) {
+      const suivi = this.mesh.userData.roulement
+        || (this.mesh.userData.roulement = { x: this.pos.x, z: this.pos.z });
+      const dx = this.pos.x - suivi.x, dz = this.pos.z - suivi.z;
+      suivi.x = this.pos.x; suivi.z = this.pos.z;
+      const theta = this.mesh.rotation.y;
+      const avance = dx * -Math.sin(theta) + dz * -Math.cos(theta);
+      if (avance !== 0) {
+        // Le SENS ne se devine pas : mesuré à la sonde, sur le point de
+        // contact. Le pivot des modèles porte déjà un quart de tour, et la
+        // carrosserie est retournée d'un demi-tour au chargement — deux
+        // occasions de se tromper. À l'envers, le bas de la roue glissait
+        // vers l'avant à trois fois la vitesse de la voiture ; à l'endroit,
+        // il reste collé au sol, comme une vraie roue.
+        const angle = avance / (this.mesh.userData.rayonRoue || 0.34);
+        for (const r of roues) r.rotation.x += angle;
+      }
+    }
+
     // animal sounds when the player is nearby
     this.cryTimer -= dt;
     if (this.cryTimer <= 0) {

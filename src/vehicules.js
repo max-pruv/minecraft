@@ -219,6 +219,17 @@ export function chargerVoitureFlotte(entree) {
           }
         });
       }
+      // LE RAYON DES ROUES, MESURÉ. Le manifeste garantit les pivots
+      // Wheel_FL/FR/RL/RR ; c'est animals.js qui les fait tourner, et il lui
+      // faut un rayon — un angle, c'est une distance divisée par un rayon.
+      // On le mesure sur le pneu plutôt que de le supposer : d'une Countach
+      // à une Rolls il varie assez pour que l'œil voie la roue patiner.
+      porteur.updateMatrixWorld(true);
+      let roue = null;
+      porteur.traverse((o) => { if (!roue && /^Wheel_/i.test(o.name || '')) roue = o; });
+      const boite = roue ? new THREE.Box3().setFromObject(roue) : null;
+      const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
+      porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       return porteur;
     }).catch(() => null);
   chargementsFlotte.set(entree.fichier, chargement);

@@ -342,7 +342,15 @@ function voitureNeuve() {
         if (membre) g.remove(membre);
       }
       if (enFlotte) g.remove(cockpit);
-      g.add(proto.clone(true));
+      const modele = proto.clone(true);
+      g.add(modele);
+      // Les roues du clone, retrouvées par leur nom : le bestiaire les fera
+      // tourner à la distance parcourue (animals.js). Les références ne se
+      // recopient pas d'un clone à l'autre — le rayon, lui, si (userData).
+      const roues = [];
+      modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+      g.userData.roues = roues;
+      g.userData.rayonRoue = proto.userData.rayonRoue || 0.34;
     });
   }
   g.userData.legs = [];                                            // rien ne balance
