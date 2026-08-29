@@ -4376,6 +4376,11 @@ const carte = new Carte({
   },
 });
 
+// L'état où l'on a trouvé le bandeau du lien en ouvrant la carte : on le rend
+// tel quel, sans décider à la place du réseau s'il doit se voir ou non.
+// (`linkBanner` est déjà déclaré plus haut, avec le reste du bandeau.)
+let bandeauAvantCarte = null;
+
 function ouvrirCarte() {
   mapModal.style.display = 'flex';
   // Sur un ordinateur, la souris est capturée par le jeu tant qu'on joue :
@@ -4391,11 +4396,28 @@ function ouvrirCarte() {
   // La recherche repart vierge à chaque ouverture : une liste laissée ouverte
   // recouvrirait la carte avant même qu'on l'ait regardée.
   if (champLieu) { champLieu.value = ''; listeLieux.style.display = 'none'; }
+  // RIEN NE FLOTTE AU-DESSUS DE LA CARTE.
+  //
+  // Le bandeau du lien réseau est posé à z-index 20, au-dessus de tous les
+  // panneaux du jeu — il le faut, car il doit rester lisible par-dessus
+  // l'écran d'accueil, où se joue justement la connexion. Mais en jeu il
+  // recouvrait le haut de la carte : il interceptait les touchers sur les
+  // résultats de la recherche, et masquait les noms des lieux du nord. C'est
+  // la même règle que les commandes, qui sont SOUS la carte et jamais dessus.
+  // Il revient à la fermeture, intact.
+  if (linkBanner) {
+    bandeauAvantCarte = linkBanner.style.display;
+    linkBanner.style.display = 'none';
+  }
 }
 function fermerCarte() {
   carte.fermer();
   mapModal.style.display = 'none';
   carteOuverte = false;
+  if (linkBanner && bandeauAvantCarte !== null) {
+    linkBanner.style.display = bandeauAvantCarte;
+    bandeauAvantCarte = null;
+  }
   // On rend la souris au jeu, comme à la fermeture de l'inventaire : la
   // fermeture est elle-même le geste que le navigateur exige pour cela.
   if (!IS_TOUCH && !dragLook && !edu.quizActive) startGame();
