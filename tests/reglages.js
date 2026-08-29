@@ -72,7 +72,13 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
         navigator.serviceWorker.register = () => Promise.reject(new Error('désactivé pour les tests'));
       }
     }, prenom);
-    await p.goto(adresse, { waitUntil: 'load' });
+    // Même budget que la ligne suivante, et pour la même raison : `waitUntil:
+    // 'load'` attend TOUTES les ressources de la page — Three.js, la voiture
+    // d'artiste, les textures —, et trente secondes (le défaut de Playwright)
+    // ne suffisent pas sur un banc qui rend en logiciel. Il serait absurde
+    // d'accorder quatre-vingt-dix secondes à `window.__game` et trente au
+    // chargement qui le précède : c'est la même attente, coupée en deux.
+    await p.goto(adresse, { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     return p;
   }
