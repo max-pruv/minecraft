@@ -839,6 +839,26 @@ export function couleurCarteManhattan(x, z) {
   return [148 + clair * 60, 146 + clair * 58, 144 + clair * 62];
 }
 
+// LA CIRCULATION DE MANHATTAN. Les villes générées ont leurs anneaux
+// (villesmonde.js) ; New York, bâtie à la main, n'en avait aucun — pas une
+// voiture sur la 5e Avenue. Ces deux boucles suivent de VRAIES avenues et
+// de VRAIES rues, choisies parce qu'elles se croisent : Midtown autour de
+// Times Square, et le bas de l'île autour de Washington Square. Les points
+// tombent au milieu de la chaussée, là où les voitures roulent.
+export function tracesCirculationNY(solDe) {
+  const y = solDe(NY.x, NY.z) + 1.05;
+  const boucles = [
+    // Midtown : la 5e et la 8e Avenue, de la 34e à la 59e Rue
+    [[uK(0), vDeRue(34)], [uK(-16), vDeRue(34)], [uK(-16), vDeRue(59)], [uK(0), vDeRue(59)]],
+    // le bas de l'île : la 5e et la 6e, de la 14e à la 23e
+    [[uK(0), vDeRue(14)], [uK(-6), vDeRue(14)], [uK(-6), vDeRue(23)], [uK(0), vDeRue(23)]],
+  ];
+  return boucles.map((pts, rang) => ({
+    cle: 'ny', x: NY.x, z: NY.z, rang,
+    pts: pts.map(([u, v]) => ({ x: NY.x + u, y, z: NY.z + v })),
+  }));
+}
+
 // --- les monuments -------------------------------------------------------------
 //
 // Chacun est à sa vraie adresse, ramenée à notre grille. Ils sont déclarés ici

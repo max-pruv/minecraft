@@ -21,7 +21,8 @@ import { createVehicules, majRefletsVoiture, refletsVoiture } from './vehicules.
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation } from './villesmonde.js';
+import { tracesCirculation, tracesCirculationMain } from './villesmonde.js';
+import { tracesCirculationNY } from './manhattan.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -392,7 +393,14 @@ function updateChunks() {
   // convoi ne naît qu'à l'approche de l'enfant — trente villes de voitures
   // fabriquées à l'ouverture pèseraient sur la tablette pour des rues
   // lointaines. Une ville visitée garde sa circulation pour la session.
-  circulationsEnAttente = tracesCirculation((x, z) => world.terrainHeight(x, z));
+  const solDe = (x, z) => world.terrainHeight(x, z);
+  // Les villes à trame, les villes bâties à la main (Paris, Londres…), et
+  // Manhattan, dont les boucles suivent de vraies avenues.
+  circulationsEnAttente = [
+    ...tracesCirculation(solDe),
+    ...tracesCirculationMain(CITIES.filter((c) => c.key !== 'ny'), solDe),
+    ...tracesCirculationNY(solDe),
+  ];
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
   // rouler à côté de son tunnel.

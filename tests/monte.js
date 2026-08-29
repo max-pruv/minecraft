@@ -860,6 +860,36 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils nagent — quatre secondes de jeu les déplacent',
       nage >= 2, `${nage} sur ${nage0.pos.length} ont nagé plus d'un bloc`);
 
+    // ================= LES VILLES NE SONT PLUS VIDES ========================
+    //
+    // Max, capture de Moscou de nuit à l'appui : « les villes sont toujours
+    // désespérément vides, rajoute les flottes de voitures qui circulent ».
+    // Deux défauts derrière ce verdict : trois voitures par anneau espacées
+    // d'un tiers de tour (une tous les soixante-six blocs), et surtout AUCUN
+    // anneau dès qu'un fleuve traversait la ville — il tombait dans l'eau et
+    // on abandonnait. Moscou, coupée par la Moskova, n'avait pas une seule
+    // voiture : rouge garanti sur l'ancien code.
+    await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game;
+      const c = positionDe('moscou');
+      g.player.pos.set(c.x, g.world.terrainHeight(c.x, c.z) + 24, c.z + 30);
+      g.player.vel.set(0, 0, 0);
+      g.player.flying = true;
+    });
+    // les convois naissent à l'approche du joueur, par paquets de deux
+    // secondes et demie : on les attend, on ne les suppose pas
+    const circulation = await tab.waitForFunction(() => {
+      const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
+      const autos = etat.filter((c) => c.nom === 'voiture');
+      const visibles = autos.reduce((n, c) => n + c.visibles, 0);
+      return visibles >= 8 ? { anneaux: autos.length, visibles } : null;
+    }, null, { timeout: 30000 }).then((h) => h.jsonValue()).catch(() => null);
+    verifier('à Moscou, traversée par son fleuve, les rues sont pleines de voitures',
+      !!circulation,
+      circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
+        : 'moins de huit voitures visibles en trente secondes');
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {
