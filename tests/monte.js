@@ -86,7 +86,22 @@ async function avancerUnDemiSeconde(p, depart) {
   await dormir(250);
   const avant = await pose(p);
   await p.keyboard.down('KeyW');
-  await dormir(500);
+  // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
+  // la charge du portail, une demi-seconde murale ne contient parfois que
+  // trois images à dt plafonné (1/20 s) — la distance fondait, et le témoin
+  // accusait la voiture d'être lente alors qu'on avait mesuré la machine.
+  // Vu en v183 : la mesure « au volant » tombait 700 ms après la monte, en
+  // pleine fête d'emojis, et rendait 1,5 m contre 1,6 m à pied. On accumule
+  // donc le même dt que main.js, borne comprise, comme l'horloge du banc.
+  await p.evaluate(() => new Promise((fin) => {
+    let cumul = 0, prec = performance.now();
+    const pas = (t) => {
+      cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+      prec = t;
+      if (cumul >= 0.5) fin(); else requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }));
   await p.keyboard.up('KeyW');
   const apres = await pose(p);
   return Math.hypot(apres.x - avant.x, apres.z - avant.z);
