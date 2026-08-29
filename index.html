@@ -975,6 +975,12 @@
       background: rgba(180, 120, 40, 0.92); border: 1px solid rgba(255, 220, 150, 0.5);
     }
     #link-banner.grave { background: rgba(170, 60, 55, 0.94); border-color: rgba(255, 170, 160, 0.55); }
+    /* Tant que la carte est ouverte, le bandeau se tait : il est posé plus
+       haut que tous les panneaux du jeu (il le faut pour l'écran d'accueil),
+       et il interceptait les touchers sur la carte. Une classe plutôt qu'un
+       `display` forcé : le bandeau garde sa propre logique d'affichage, et un
+       message arrivé pendant qu'on regardait la carte se voit à la fermeture. */
+    body.carte-ouverte #link-banner { display: none !important; }
     #link-banner.ok { background: rgba(45, 120, 70, 0.92); border-color: rgba(150, 230, 180, 0.5); }
     /* La croix des messages : une fois qu'on a compris, on referme. */
     .fermer-msg {

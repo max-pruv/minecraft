@@ -4376,11 +4376,6 @@ const carte = new Carte({
   },
 });
 
-// L'état où l'on a trouvé le bandeau du lien en ouvrant la carte : on le rend
-// tel quel, sans décider à la place du réseau s'il doit se voir ou non.
-// (`linkBanner` est déjà déclaré plus haut, avec le reste du bandeau.)
-let bandeauAvantCarte = null;
-
 function ouvrirCarte() {
   mapModal.style.display = 'flex';
   // Sur un ordinateur, la souris est capturée par le jeu tant qu'on joue :
@@ -4404,20 +4399,21 @@ function ouvrirCarte() {
   // recouvrait le haut de la carte : il interceptait les touchers sur les
   // résultats de la recherche, et masquait les noms des lieux du nord. C'est
   // la même règle que les commandes, qui sont SOUS la carte et jamais dessus.
-  // Il revient à la fermeture, intact.
-  if (linkBanner) {
-    bandeauAvantCarte = linkBanner.style.display;
-    linkBanner.style.display = 'none';
-  }
+  //
+  // On le masque par une CLASSE sur le corps du document, jamais en touchant
+  // son `display`. La première version enregistrait l'état trouvé à
+  // l'ouverture et le rendait à la fermeture — et perdait donc tout bandeau
+  // ARRIVÉ PENDANT que la carte était ouverte : on lui rendait un « caché »
+  // périmé, et l'enfant ne voyait jamais que son ami venait de le rejoindre.
+  // Une classe ne mémorise rien : le bandeau garde sa propre logique
+  // d'affichage, la carte se contente de le couvrir tant qu'elle est là.
+  document.body.classList.add('carte-ouverte');
 }
 function fermerCarte() {
   carte.fermer();
   mapModal.style.display = 'none';
   carteOuverte = false;
-  if (linkBanner && bandeauAvantCarte !== null) {
-    linkBanner.style.display = bandeauAvantCarte;
-    bandeauAvantCarte = null;
-  }
+  document.body.classList.remove('carte-ouverte');
   // On rend la souris au jeu, comme à la fermeture de l'inventaire : la
   // fermeture est elle-même le geste que le navigateur exige pour cela.
   if (!IS_TOUCH && !dragLook && !edu.quizActive) startGame();
