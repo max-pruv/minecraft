@@ -1392,6 +1392,20 @@ const position = (p) => p.evaluate(() => ({
     // de style applique.
     const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
     await banc.ouvrirLaCarte(couche);
+    // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
+    //
+    // Signalé par Max sur son iPhone installé : « avec le header blur on voit
+    // pas bien le haut ». La fiche se centrait sur l'écran ENTIER, si bien que
+    // son bord haut passait sous la barre d'état — et la barre de recherche,
+    // premier élément de la fiche, se retrouvait dans le voile du système.
+    // Chromium sans appareil rend `env(safe-area-inset-*)` à zéro : on pose
+    // donc les marges à la main, comme un iPhone à Dynamic Island les donne.
+    const ENCOCHE = 59, BAS = 34;
+    await couche.evaluate(({ h, b }) => {
+      document.documentElement.style.setProperty('--safe-top', `${h}px`);
+      document.documentElement.style.setProperty('--safe-bottom', `${b}px`);
+    }, { h: ENCOCHE, b: BAS });
+    await dormir(700);
     const forme = await couche.evaluate(() => {
       const c = window.__carte;
       const r = c.canvas.getBoundingClientRect();
@@ -1407,7 +1421,7 @@ const position = (p) => p.evaluate(() => ({
         boite: [Math.round(r.width), Math.round(r.height)],
         dessin: [c.canvas.width, c.canvas.height],
         dedans: carte.top >= -1 && carte.bottom <= window.innerHeight + 1,
-        bas: Math.round(carte.bottom), ecran: window.innerHeight,
+        haut: Math.round(carte.top), bas: Math.round(carte.bottom), ecran: window.innerHeight,
       };
     });
     verifier('couchée, la carte ne s\'étire plus : cent blocs font la même chose dans les deux sens',
@@ -1420,6 +1434,9 @@ const position = (p) => p.evaluate(() => ({
     // la capture, où le bouton du trésor venait s'asseoir sur la légende.
     verifier('et la fiche de la carte tient dans l\'écran couché', forme.dedans,
       `elle descend à ${forme.bas} pour un écran de ${forme.ecran}`);
+    verifier('et elle reste sous l\'encoche, jamais dessous',
+      forme.haut >= ENCOCHE && forme.bas <= forme.ecran - BAS,
+      `de ${forme.haut} à ${forme.bas}, pour une zone sûre de ${ENCOCHE} à ${forme.ecran - BAS}`);
 
     // --- CHERCHER UN LIEU PAR SON NOM --------------------------------------
     //
