@@ -1805,7 +1805,25 @@ export function tracesCirculation(solDe) {
     if (!f.trame) continue;
     const t = f.trame;
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
-    for (const part of [0.55, 0.3]) {
+    // UNE VILLE COUPÉE PAR UN FLEUVE N'AVAIT AUCUNE VOITURE. On essayait
+    // deux anneaux centrés sur l'ancre ; s'ils trempaient, on abandonnait —
+    // et Moscou, Paris, Londres, Rome, toutes les villes de rivière étaient
+    // désespérément vides. Max l'a vu sur une capture de Moscou de nuit :
+    // des feux, des lampadaires, des passages piétons, et rien qui roule.
+    //
+    // On cherche donc plus loin : quatre tailles, et quatre décalages qui
+    // poussent l'anneau sur une seule rive. Le premier sec gagne, et on en
+    // garde deux par ville.
+    const candidats = [];
+    for (const part of [0.55, 0.42, 0.34, 0.26]) {
+      for (const [du, dv] of [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]]) {
+        candidats.push([part, du, dv]);
+      }
+    }
+    for (const [part, decU, decV] of candidats) {
+      if (traces.filter((t2) => t2.cle === f.cle).length >= 2) break;
+      const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
+      const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
       const Ru = Math.max(t.pu, Math.round((f.rayon * part) / t.pu) * t.pu);
       const Rv = Math.max(t.pv, Math.round((f.rayon * part) / t.pv) * t.pv);
       // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
@@ -1818,19 +1836,62 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.5) { A = Ru * (3 - c2 * 8); B = Rv; }
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
-        const u = A * co + B * si, v = -A * si + B * co;
+        const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
         if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u, v)) sec = false;
         if (t.sud && v > t.sud) sec = false;
       }
       if (!sec) continue;
       const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
       const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
-        x: f.ancre.x + A * co + B * si, y, z: f.ancre.z + (-A * si + B * co),
+        x: f.ancre.x + (A + cU) * co + (B + cV) * si,
+        y,
+        z: f.ancre.z + (-(A + cU) * si + (B + cV) * co),
       }));
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
       traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, rang: traces.filter((t2) => t2.cle === f.cle).length });
+    }
+  }
+  return traces;
+}
+
+// LES VILLES BÂTIES À LA MAIN — Paris, Londres, Nice, Lille, Washington, San
+// Francisco. Elles ne sont pas dans VILLES_MONDE : leur plan vit dans leur
+// propre module, et elles n'ont donc JAMAIS eu de voitures. Paris est la
+// ville de la maison, et elle était vide.
+//
+// Ici on ne connaît pas leur géographie ; on interroge donc le TERRAIN
+// lui-même. Un anneau est bon si ses vingt-quatre points de contrôle sont
+// tous sur du sol au niveau de la ville, à un bloc près : cela écarte d'un
+// coup la Seine, la Tamise, la baie de San Francisco et les collines.
+export function tracesCirculationMain(villes, solDe) {
+  const traces = [];
+  for (const c of villes) {
+    const base = solDe(c.x, c.z);
+    let gardes = 0;
+    for (const part of [0.5, 0.38, 0.3, 0.22]) {
+      for (const [decU, decV] of [[0, 0], [0.28, 0], [-0.28, 0], [0, 0.28], [0, -0.28]]) {
+        if (gardes >= 2) break;
+        const R = Math.round(Math.min(c.r, 70) * part);
+        if (R < 12) continue;
+        const cu = Math.round(c.r * decU), cv = Math.round(c.r * decV);
+        const coins = [[R, R], [-R, R], [-R, -R], [R, -R]];
+        let sec = true;
+        for (let k = 0; k < 24 && sec; k++) {
+          const t = (k / 24) * 4;
+          const i = Math.floor(t), f = t - i;
+          const a = coins[i % 4], b = coins[(i + 1) % 4];
+          const u = cu + a[0] + (b[0] - a[0]) * f, v = cv + a[1] + (b[1] - a[1]) * f;
+          if (Math.abs(solDe(c.x + u, c.z + v) - base) > 1) sec = false;
+        }
+        if (!sec) continue;
+        traces.push({
+          cle: c.key, x: c.x, z: c.z, rang: gardes,
+          pts: coins.map(([a, b]) => ({ x: c.x + cu + a, y: base + 1.05, z: c.z + cv + b })),
+        });
+        gardes++;
+      }
     }
   }
   return traces;

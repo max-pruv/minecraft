@@ -625,7 +625,7 @@ class Convoi {
     // relance en ligne droite. `allureMin` est la part de vitesse qu'il lui
     // reste dans le virage le plus serré.
     // À partir de quelle distance on cesse de le dessiner. Voir VU_SOUTERRAIN.
-    this.vu = opts.souterrain ? VU_SOUTERRAIN : VU;
+    this.vu = opts.vu ?? (opts.souterrain ? VU_SOUTERRAIN : VU);
     // La Jaune de Washington sort de terre pour franchir le Potomac sur son
     // pont : là, et là seulement, elle se voit de loin comme un convoi de
     // surface. `decouvert(p)` répond « ce point est-il à l'air libre ? » —
@@ -638,6 +638,7 @@ class Convoi {
     // de la Giga-usine — grises avant le tunnel de peinture, colorées après.
     this.relooke = opts.relooke || null;
     this.vitesseActuelle = opts.vitesse;
+    this.dernierDt = 0;
     // LES ARRÊTS. Un métro qui ne s'arrête jamais n'est pas un métro : il
     // traverse la station à huit mètres par seconde, la fenêtre pour monter
     // dure une seconde, et un enfant de sept ans la rate à tous les coups.
@@ -667,6 +668,7 @@ class Convoi {
   }
 
   update(dt, joueur) {
+    this.dernierDt = dt;
     if (this.attente > 0) {
       // à quai : on ne bouge pas, mais on continue de se montrer ou de se
       // cacher selon la distance au joueur
@@ -730,6 +732,15 @@ class Convoi {
       // marche, il faut donc le retourner d'un demi-tour.
       m.rotation.y = p.cap + Math.PI;
       m.visible = true;
+      // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
+      // distance exacte parcourue depuis la dernière image : l'angle en
+      // découle sans rien mesurer. Une voiture qui glisse sans que ses roues
+      // tournent, un enfant de sept ans le voit au premier mètre.
+      const roues = m.userData.roues;
+      if (roues && roues.length) {
+        const angle = (this.vitesseActuelle * this.dernierDt) / (m.userData.rayonRoue || 0.34);
+        for (const r of roues) r.rotation.x += angle;
+      }
       if (this.relooke) {
         const L = this.parcours.longueur;
         this.relooke(m, (((this.distance - i * this.ecart) % L) + L) % L, i);
@@ -823,16 +834,53 @@ export function createVehicules({ scene, player }) {
     });
   }
 
-  // La circulation d'une ville : trois voitures sur l'anneau de ses rues,
-  // espacées d'un tiers de tour, qui freinent dans les virages. Chacune sa
-  // couleur, stable — la voiture bleue de Rome est toujours la bleue.
+  // UNE VOITURE DE VILLE. La coque sculptée est posée tout de suite — il faut
+  // un maillage dans la seconde — puis le vrai modèle de la flotte la
+  // remplace dès qu'il arrive du réseau. C'est le même échange qu'aux
+  // montures, à un détail près : ici on garde une trace des pivots de roue,
+  // parce que c'est le convoi qui les fait tourner.
+  function voitureDeVille(n, teinte) {
+    const g = construireVoitureRoute(teinte);
+    const entree = FLOTTE[((n % FLOTTE.length) + FLOTTE.length) % FLOTTE.length];
+    const chargement = chargerVoitureFlotte(entree);
+    if (chargement) {
+      chargement.then((proto) => {
+        if (!proto || !g.userData.membres) return;
+        for (const nom of ['caisse', 'verriere', 'tronc']) {
+          const membre = g.userData.membres[nom];
+          if (membre) g.remove(membre);
+        }
+        const modele = proto.clone(true);
+        g.add(modele);
+        const roues = [];
+        modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+        g.userData.roues = roues;
+        g.userData.rayonRoue = proto.userData.rayonRoue || 0.34;
+      });
+    }
+    return g;
+  }
+
+  // LA CIRCULATION D'UNE VILLE. Verdict de Max, capture de Moscou de nuit à
+  // l'appui : « les villes sont toujours désespérément vides, rajoute les
+  // flottes de voitures qui circulent ». Il avait raison, et le chiffre le
+  // dit : TROIS voitures espacées d'un tiers de tour, sur un anneau de deux
+  // cents blocs, c'est une voiture tous les soixante-six blocs — on peut
+  // traverser la ville sans en croiser une seule.
+  //
+  // Désormais une voiture tous les vingt-cinq blocs, chacune un modèle
+  // différent de la flotte, à quatorze au plus par anneau : au-delà, une
+  // tablette qui dessine déjà une ville entière commence à ramer. Et on ne
+  // les dessine qu'à cent dix blocs — en ville, les immeubles cachent tout
+  // ce qui est plus loin, il n'y a rien à gagner à les rendre.
   function circulation(pts, graine = 0) {
     const p = new Parcours(pts);
     const teintes = [0xd84a3a, 0x3a6ac8, 0xf0f0ea, 0x2a2a30, 0x3a9a4a, 0xe8c83a];
+    const nb = Math.max(4, Math.min(10, Math.round(p.longueur / 28)));
     return ajouter(pts, {
-      nb: 3, ecart: p.longueur / 3, vitesse: 4.2, freine: true, allureMin: 0.4,
-      nom: 'voiture', emoji: '🚙', assise: 1.15,
-      modele: (i) => construireVoitureRoute(teintes[(graine + i) % teintes.length]),
+      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4,
+      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 110,
+      modele: (i) => voitureDeVille(graine * 7 + i * 13, teintes[(graine + i) % teintes.length]),
     });
   }
 

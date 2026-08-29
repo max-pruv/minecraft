@@ -8,7 +8,7 @@
 // sur du terrain, de la forêt et le château : 3,2 fois moins de triangles.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp } from './blocks.js';
+import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './textures.js';
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
@@ -55,6 +55,35 @@ const FACES = [
 ];
 
 const WATER_SURFACE_Y = 0.875; // water sits slightly below the block top
+
+// LES FENÊTRES ALLUMÉES.
+//
+// Verdict de Max, capture de Moscou de nuit à l'appui : une ville éteinte,
+// où seuls les réverbères brillaient. Le monde entier partage UN matériau
+// dont la couleur est le niveau de lumière du jour : à minuit, tout tombe à
+// trente pour cent, fenêtres comprises. Une ville la nuit, c'est pourtant
+// d'abord ça — des carrés de lumière dans le noir.
+//
+// On sort donc les vitres ALLUMÉES dans une troisième géométrie, à côté du
+// solide et de l'eau, que main.js rend avec un matériau qu'on n'éteint pas.
+// Une vitre sur deux environ : une ville dont toutes les fenêtres brillent
+// n'est pas une ville, c'est une guirlande. Le tirage est STABLE — il ne
+// dépend que des coordonnées du bloc — sinon les fenêtres clignoteraient à
+// chaque remaillage du morceau de monde.
+// Ce qui s'allume : le verre, le mur-rideau — et surtout les blocs de
+// FAÇADE qui portent une fenêtre dans leur texture (étage, étage noble,
+// entresol, devanture). Dans les villes générées, une fenêtre n'est pas un
+// bloc de verre : c'est le dessin du bloc de façade, à raison d'une baie
+// par bloc. N'allumer que le verre ne rallumait donc presque rien.
+const VITRES = new Set([
+  BLOCK.GLASS, CITY_BLOCK.CURTAIN,
+  ARCHI.VITRINE, ARCHI.ENTRESOL, ARCHI.ETAGE, ARCHI.NOBLE, ARCHI.VITRAIL, ARCHI.SHOJI,
+]);
+function vitreAllumee(x, y, z) {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return (((h ^ (h >>> 16)) >>> 0) % 100) < 30;
+}
 
 // Per-vertex ambient occlusion: corners tucked against neighbouring solid
 // blocks get darker, which grounds every edge and crevice visually.
@@ -171,6 +200,10 @@ class GeomBuffer {
 export function buildChunkGeometry(world, cx, cz) {
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
+  const lumineux = new GeomBuffer();
+  // le tirage des vitres allumées se fait en coordonnées du MONDE : en
+  // coordonnées locales, le même motif se répéterait dans chaque morceau
+  const ox = cx * CHUNK, oz = cz * CHUNK;
   const props = [];
   const baseX = cx * CHUNK, baseZ = cz * CHUNK;
   const data = world.ensureChunk(cx, cz);
@@ -250,10 +283,11 @@ export function buildChunkGeometry(world, cx, cz) {
           //   et laisse les bords intacts, au pixel près.
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
+          const allume = VITRES.has(id) && vitreAllumee(ox + x, y, oz + z);
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
-            : `${id}|${yTop}|${ao ? ao[0] : '-'}`;
-          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, x, y, z };
+            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
+          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z };
           vide = false;
         }
       }
@@ -286,12 +320,17 @@ export function buildChunkGeometry(world, cx, cz) {
             for (let du = 0; du < w; du++) masque[u + du + (v + dv) * nU] = null;
           }
 
-          const buffer = cel.isWater ? water : solid;
+          const buffer = cel.isWater ? water : (cel.allume ? lumineux : solid);
           buffer.addFace(face, cel.x, cel.y, cel.z, cel.tile, cel.yTop, cel.ao, w, h);
         }
       }
     }
   }
 
-  return { solid: solid.toGeometry(), water: water.toGeometry(), props };
+  return {
+    solid: solid.toGeometry(),
+    water: water.toGeometry(),
+    lumineux: lumineux.toGeometry(),
+    props,
+  };
 }

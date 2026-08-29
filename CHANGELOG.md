@@ -20,6 +20,56 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v186 — New York à l'échelle GTA, des voitures partout, et des fenêtres allumées la nuit
+
+**Pourquoi.** Trois verdicts de Max, dans l'ordre. « Remettre à l'échelle,
+beaucoup plus riches, des choses qui se passent, Times Square » : Manhattan
+était à 11,7 blocs par kilomètre, l'échelle maquette qui avait déjà fait
+refaire Washington. « Les villes sont toujours désespérément vides, rajoute
+les flottes de voitures qui circulent » : capture de Moscou de nuit à
+l'appui — des feux, des lampadaires, des passages piétons, et rien qui
+roule. Et sur la même image, un manque que personne n'avait nommé : pas
+UNE fenêtre éclairée.
+
+**Ce que ça change.**
+
+*New York.* Trente-quatre blocs par kilomètre, de Battery à la 68e Rue —
+le haut de l'île attend que le monde grandisse, comme la Cathédrale
+nationale à Washington. Les avenues ont trois voies et des trottoirs, les
+pâtés sont minces et longs comme les vrais, et la ville n'est plus une
+brosse à dents : un tapis de dix à vingt étages d'où sortent quelques
+tours. Times Square a son nœud papillon, ses six tours d'écrans en grands
+aplats, One Times Square et sa boule, les gradins rouges du TKTS. Les
+monuments sont à leur vraie adresse, avec leur vraie emprise au sol, et
+les ponts franchissent enfin l'East River.
+
+*Les voitures.* Une tous les vingt-huit blocs au lieu d'une tous les
+soixante-six, chacune un modèle différent de la flotte des cinquante, les
+roues qui tournent. Surtout : une ville traversée par un fleuve n'avait
+AUCUNE voiture — l'anneau de circulation tombait dans l'eau et le code
+abandonnait. Moscou, Rome, Tokyo étaient vides pour cette raison. Et les
+villes bâties à la main — Paris, Londres, Nice, Lille, Washington, San
+Francisco — n'en avaient jamais eu du tout. Paris est la ville de la
+maison.
+
+*La nuit.* Les fenêtres restent allumées quand le jour tombe. Une sur
+trois environ, toujours les mêmes, dans toutes les villes du monde.
+
+**Ce qui casse, et c'est assumé.** Les blocs posés par les enfants sur
+l'ancienne île de New York se retrouvent déplacés : l'île entière a changé
+d'échelle. C'est l'exception accordée par Max pour la refonte de la carte,
+et elle ne vaut que pour elle — hors de l'emprise de Manhattan, le sol n'a
+pas bougé d'un bloc.
+
+**Ce qui le prouve.** Six témoins neufs : l'île tient de Battery à la 68e
+et reste plate, ses deux fleuves l'entourent, Times Square compte ses
+écrans, Moscou a huit voitures visibles au moins, les roues tournent avec
+le sol qui défile, et à minuit les fenêtres brillent près de deux fois
+plus que les murs. Tous rouges sur l'ancien code. Deux témoins anciens ont
+été remis d'aplomb au passage : la grille de 1811 mesurait encore dans
+l'ancienne unité, et la disparition du bouton « Monter » s'attendait par
+un sommeil fixe. Portail complet — sept suites.
+
 ## v185 — les roues tournent
 
 **Pourquoi.** Les cinquante modèles arrivés en v184 portent des pivots de

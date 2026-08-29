@@ -21,7 +21,8 @@ import { createVehicules, majRefletsVoiture, refletsVoiture } from './vehicules.
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation } from './villesmonde.js';
+import { tracesCirculation, tracesCirculationMain } from './villesmonde.js';
+import { tracesCirculationNY } from './manhattan.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -143,6 +144,15 @@ const { texture: atlasTexture, canvas: atlasCanvas } = createAtlas();
 const solidMaterial = new THREE.MeshBasicMaterial({
   map: atlasTexture, vertexColors: true, alphaTest: 0.25,
 });
+
+// LES FENÊTRES ALLUMÉES (mesher.js les met à part). Même atlas, même
+// découpe — mais leur couleur ne suit PAS le cycle du jour : à minuit, la
+// ville garde ses carrés de lumière au lieu de tomber à trente pour cent
+// comme le reste. Une ville éteinte, c'est ce que Max a vu à Moscou.
+const litMaterial = new THREE.MeshBasicMaterial({
+  map: atlasTexture, vertexColors: true, alphaTest: 0.25,
+});
+const LUMIERE_FENETRE = new THREE.Color(1, 0.9, 0.66);
 const waterMaterial = new THREE.MeshBasicMaterial({
   map: atlasTexture, vertexColors: true, transparent: true, opacity: 0.7,
   depthWrite: false, side: THREE.DoubleSide,
@@ -153,6 +163,10 @@ const waterMaterial = new THREE.MeshBasicMaterial({
 // dans la bonne tuile de l'atlas. L'eau y ajoute son clapot.
 activerTuilage(solidMaterial);
 activerTuilage(waterMaterial, { onde: true });
+// Les fenêtres allumées sont de la même géométrie fusionnée : sans ce même
+// repli, une baie étirée sur trois blocs échantillonnait l'atlas ENTIER —
+// un immeuble arc-en-ciel en pleine rue, vu à la première capture de nuit.
+activerTuilage(litMaterial);
 
 // --- world & player ----------------------------------------------------------
 
@@ -232,7 +246,7 @@ function rebuildQueue() {
 }
 
 function disposeChunkMesh(entry) {
-  for (const mesh of [entry.solid, entry.water]) {
+  for (const mesh of [entry.solid, entry.water, entry.lumineux]) {
     if (!mesh) continue;
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -246,8 +260,8 @@ function meshChunk(cx, cz) {
   const old = chunkMeshes.get(key);
   if (old) disposeChunkMesh(old);
 
-  const { solid, water, props } = buildChunkGeometry(world, cx, cz);
-  const entry = { solid: null, water: null, props: null };
+  const { solid, water, lumineux, props } = buildChunkGeometry(world, cx, cz);
+  const entry = { solid: null, water: null, lumineux: null, props: null };
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -257,6 +271,11 @@ function meshChunk(cx, cz) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
     scene.add(entry.water);
+  }
+  if (lumineux) {
+    entry.lumineux = new THREE.Mesh(lumineux, litMaterial);
+    entry.lumineux.position.set(cx * CHUNK, 0, cz * CHUNK);
+    scene.add(entry.lumineux);
   }
   if (props.length > 0) {
     const group = new THREE.Group();
@@ -392,7 +411,14 @@ function updateChunks() {
   // convoi ne naît qu'à l'approche de l'enfant — trente villes de voitures
   // fabriquées à l'ouverture pèseraient sur la tablette pour des rues
   // lointaines. Une ville visitée garde sa circulation pour la session.
-  circulationsEnAttente = tracesCirculation((x, z) => world.terrainHeight(x, z));
+  const solDe = (x, z) => world.terrainHeight(x, z);
+  // Les villes à trame, les villes bâties à la main (Paris, Londres…), et
+  // Manhattan, dont les boucles suivent de vraies avenues.
+  circulationsEnAttente = [
+    ...tracesCirculation(solDe),
+    ...tracesCirculationMain(CITIES.filter((c) => c.key !== 'ny'), solDe),
+    ...tracesCirculationNY(solDe),
+  ];
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
   // rouler à côté de son tunnel.
@@ -4431,6 +4457,15 @@ function updateSky(dt) {
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
   solidMaterial.color.copy(lightColor);
   waterMaterial.color.copy(lightColor);
+  // Les vitres allumées prennent le plus lumineux des deux : la lumière du
+  // jour quand il fait jour, la leur quand la nuit tombe. Elles ne
+  // s'allument donc pas au crépuscule — elles cessent simplement de
+  // s'éteindre, ce qui est exactement ce que fait une ville.
+  litMaterial.color.set(
+    Math.max(lightColor.r, LUMIERE_FENETRE.r * 0.92),
+    Math.max(lightColor.g, LUMIERE_FENETRE.g * 0.92),
+    Math.max(lightColor.b, LUMIERE_FENETRE.b * 0.92),
+  );
   hemiLight.intensity = (0.3 + 0.8 * daylight) * wDim;
   sunLight.intensity = 0.15 + 0.75 * daylight * wDim;
 
@@ -4767,6 +4802,14 @@ window.__vehicules = {
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
+// Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
+// de lumière du monde, `fenetres` celui des vitres allumées — la nuit, le
+// second doit dominer, sinon la ville est éteinte.
+window.__lumiere = () => ({
+  solide: Math.round(solidMaterial.color.r * 100) / 100,
+  fenetres: Math.round(litMaterial.color.r * 100) / 100,
+  morceauxEclaires: [...chunkMeshes.values()].filter((e) => e.lumineux).length,
+});
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
