@@ -562,6 +562,63 @@ const VRAIES_KM = [
       couronnes.rome >= 200 && couronnes.tokyo >= 200 && couronnes.marrakech === 0,
       JSON.stringify(couronnes));
 
+    // ================= NEW YORK À L'ÉCHELLE GTA =============================
+    //
+    // Verdict de Max sur les villes bâties à la main : « remettre à
+    // l'échelle, beaucoup plus riches, des choses qui se passent, Times
+    // Square ». Manhattan est passée de 11,7 à trente-quatre blocs par
+    // kilomètre. Trois choses doivent tenir : l'île est bien là de Battery
+    // à la 68e Rue, les fleuves l'entourent toujours, et Times Square est
+    // un mur d'écrans. À l'ancienne échelle l'île tenait dans un quart de
+    // cette emprise : rouge garanti sur les cinq sondes du nord.
+    const manhattan = await tab.evaluate(async () => {
+      const m = await import('./src/manhattan.js');
+      const g = window.__game;
+      const sol = (u, v) => g.world.terrainHeight(Math.round(m.NY.x + u), Math.round(m.NY.z + v));
+      const lieux = {
+        battery: sol(0, m.vDeKm(0.35) - 6),
+        wallStreet: sol(0, 128),
+        washingtonSq: sol(-6, 17),
+        empire: sol(3, m.vDeRue(34)),
+        timesSquare: sol(-32, m.vDeRue(45)),
+        parc59e: sol(-20, m.vDeRue(62)),
+      };
+      return {
+        lieux,
+        surLIle: Object.values(lieux).every((h) => h === m.NY_SOL),
+        hudson: sol(-95, 0), eastRiver: sol(95, 0),
+        largeur: Math.round(m.demiLargeur(6) * 2),
+      };
+    });
+    verifier('Manhattan tient de Battery à la 68e Rue, plate comme la vraie',
+      manhattan.surLIle, JSON.stringify(manhattan.lieux));
+    verifier('et ses deux fleuves l\'entourent toujours',
+      manhattan.hudson < 26 && manhattan.eastRiver < 26,
+      `Hudson ${manhattan.hudson} · East River ${manhattan.eastRiver} · île large de ${manhattan.largeur}`);
+
+    // Times Square : ce qu'on vient y voir, ce sont les écrans. On les
+    // compte au-dessus du niveau de la rue, dans les trente blocs autour de
+    // la place — des aplats de couleur vive, pas du verre ni de la pierre.
+    const ecrans = await tab.evaluate(async () => {
+      const m = await import('./src/manhattan.js');
+      const { DECOR_START } = await import('./src/blocks.js');
+      const g = window.__game;
+      const cx = Math.round(m.NY.x - 32), cz = Math.round(m.NY.z + m.vDeRue(45));
+      let n = 0;
+      for (let dx = -20; dx <= 20; dx++) {
+        for (let dz = -24; dz <= 20; dz++) {
+          for (let y = m.NY_SOL + 6; y < m.NY_SOL + 50; y++) {
+            const id = g.world.getBlock(cx + dx, y, cz + dz);
+            // les aplats de pub : des blocs de décor unis et vifs
+            if (id >= DECOR_START && (id - DECOR_START) % 10 === 0) n++;
+          }
+        }
+      }
+      return n;
+    });
+    verifier('Times Square est un mur d\'écrans, et ça se compte',
+      ecrans >= 300, `${ecrans} blocs d'écran au-dessus de la rue`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

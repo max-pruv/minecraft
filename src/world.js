@@ -67,7 +67,7 @@ import {
   NY, zoneManhattan, surTerre, hauteurManhattan, solManhattan, dansCentralPark, batirColonne,
   MONUMENTS, LIBERTE, buildEmpireState, buildChrysler, buildFlatiron, buildOneWTC,
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
-  buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst,
+  buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst, vDuPlan,
 } from './manhattan.js';
 import { positionDe, cielDe, zDeLatitude } from './mondes.js';
 import { surLaVoie, presDeLaVoie } from './trains.js';
@@ -794,11 +794,11 @@ const LANDMARKS = [
   // Les trois ponts de l'East River, chacun au débouché de sa rue : Brooklyn
   // face à l'Hôtel de Ville, Manhattan au bout de Canal Street, Williamsburg
   // au bout de Delancey. C'est ce qui donne un but à ces rues-là.
-  { name: 'Pont de Brooklyn', x: NY.x + Math.round(bordEst(96)) + 22, z: NY.z + 96, box: 30, waterBase: true, build: buildBrooklyn },
-  { name: 'Pont de Manhattan', x: NY.x + Math.round(bordEst(85)) + 18, z: NY.z + 85, box: 24, waterBase: true, build: buildPontAcier },
-  { name: 'Pont de Williamsburg', x: NY.x + Math.round(bordEst(80)) + 18, z: NY.z + 80, box: 24, waterBase: true, build: buildPontAcier },
+  { name: 'Pont de Brooklyn', x: NY.x + Math.round(bordEst(vDuPlan(96))) + 46, z: NY.z + vDuPlan(96), box: 66, waterBase: true, build: buildBrooklyn },
+  { name: 'Pont de Manhattan', x: NY.x + Math.round(bordEst(vDuPlan(85))) + 38, z: NY.z + vDuPlan(85), box: 56, waterBase: true, build: buildPontAcier },
+  { name: 'Pont de Williamsburg', x: NY.x + Math.round(bordEst(vDuPlan(80))) + 38, z: NY.z + vDuPlan(80), box: 56, waterBase: true, build: buildPontAcier },
   // Liberty Island, dans la baie au sud-ouest de Battery — pas en pleine ville.
-  { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 10, waterBase: true, build: buildLiberte },
+  { name: 'Statue de la Liberté', x: NY.x + LIBERTE.u, z: NY.z + LIBERTE.v, box: 20, waterBase: true, build: buildLiberte },
   // San Francisco
   // San Francisco : le Golden Gate — orange international, orienté nord-sud,
   // du Presidio aux Marin Headlands — avec Karl the Fog qui entre par la
