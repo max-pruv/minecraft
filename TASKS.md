@@ -107,7 +107,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [x] **v187** — Paris à l'échelle GTA : 24 blocs par kilomètre, un disque de
   185, des rues où l'on marche, une rue par quartier, l'Étoile à sa vraie
   taille, et quatre monuments refaits (Tour Eiffel en treillis, Arc de
-  Triomphe à quatre faces, Notre-Dame, Panthéon).
+  Triomphe à quatre faces, Notre-Dame, Panthéon). Plus la carte : elle ne
+  s'étire plus sur un téléphone couché, et on y cherche un lieu par son nom.
 
 - [x] **v186** — New York à l'échelle GTA (34 blocs/km, Times Square, les
   monuments à leur vraie emprise), des voitures dans TOUTES les villes (les
