@@ -581,7 +581,7 @@ const position = (p) => p.evaluate(() => ({
     // écarte deux, ce qui est son travail et non un défaut.
     const PARIS = V.paris;
     await banc.ouvrirLaCarte(tab);
-    const cadre = await tab.evaluate(({ p }) => {
+    const cadreParis = await tab.evaluate(({ p }) => {
       const c2 = window.__carte;
       const r = c2.canvas.getBoundingClientRect();
       const css = Math.min(r.width, r.height);
@@ -597,8 +597,8 @@ const position = (p) => p.evaluate(() => ({
     const absentsParis = attendusParis.filter((n) => !vusParis.includes(n));
     verifier('les lieux de Paris sont sur la carte', absentsParis.length === 0,
       absentsParis.length
-        ? `absents : ${absentsParis.join(', ')} (carte ${cadre.css} px, ${cadre.bpp} bloc/px)`
-        : `${attendusParis.length} lieux · carte ${cadre.css} px, ${cadre.bpp} bloc/px`);
+        ? `absents : ${absentsParis.join(', ')} (carte ${cadreParis.css} px, ${cadreParis.bpp} bloc/px)`
+        : `${attendusParis.length} lieux · carte ${cadreParis.css} px, ${cadreParis.bpp} bloc/px`);
 
     // Sur quelle rive ? On cherche la Seine dans le monde, à l'aplomb du
     // monument, et on regarde de quel côté il tombe. Rien n'est supposé : si
