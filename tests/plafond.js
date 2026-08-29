@@ -340,7 +340,23 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       return e;
     })();
     verifier('la touche « monter » fait bien décoller', decolle.vy > 0, JSON.stringify(decolle));
-    await dormir(12000);
+    // DOUZE SECONDES DE JEU, pas douze secondes d'horloge. La montée dépend
+    // du temps SIMULÉ, et `main.js` borne dt au vingtième de seconde : sous
+    // la charge du portail complet, une douzaine de secondes murales n'en
+    // contient que la moitié en temps de jeu, et l'enfant monte deux fois
+    // moins haut. Le témoin accusait alors le vol d'un défaut qui était
+    // celui de la machine — 79 blocs mesurés au lieu de 130. C'est la même
+    // leçon que le lien muet, le zoom et la vitesse au volant : quand on
+    // mesure une durée, on la compte dans l'horloge du jeu.
+    await tab.evaluate(() => new Promise((fin) => {
+      let cumul = 0, prec = performance.now();
+      const pas = (t) => {
+        cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+        prec = t;
+        if (cumul >= 12) fin(); else requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    }));
     await tab.keyboard.up('Space');
     const haut = await tab.evaluate(() => ({
       y: window.__game.player.pos.y,

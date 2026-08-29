@@ -44,7 +44,16 @@ travail est irrattrapable.
    l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
    casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 
-   **Elle a servi une fois, en v161, pour bâtir Washington** — et la manière
+   **Elle a servi une SECONDE fois, en v186, pour Manhattan** — et cette
+   fois sans double empreinte, pour une raison qu'il faut connaître :
+   `plafond.js` échantillonne x, z dans [−700, 700], et New York est à
+   (−5191, 1407). L'empreinte ne l'atteint pas. Ce qui garde la refonte,
+   ce sont donc les témoins de `carteMonde.js` — l'île plate de Battery à
+   la 68e Rue, ses deux fleuves autour, aucune ville qui en touche une
+   autre — et rien d'autre. Une refonte hors de la fenêtre d'empreinte
+   doit apporter ses propres témoins : personne ne le fera à sa place.
+
+   **Elle a servi une première fois, en v161, pour bâtir Washington** — et la manière
    dont elle a servi fait règle pour la suite. Poser une ville de cent
    soixante-quinze blocs déplace le sol sous elle, c'est inévitable. Ce qui ne
    l'est pas, c'est de le déplacer ailleurs : la première version fondait le
@@ -467,6 +476,65 @@ palette de la ville, hauteur de sa fiche, corniche en couronnement) ; les
 médinas (`ruelles`) gardent leur grammaire propre — Marrakech sans baies
 vitrées, c'est vérifié par témoin. Reste le point 4 : la vie dense —
 voitures qui s'arrêtent aux feux, enseignes lumineuses la nuit.
+
+### Deux échelles dans la même ville, et c'est voulu
+
+Au SOL, un bloc vaut trente mètres à Manhattan (vingt à Washington). En
+HAUTEUR, il vaut un étage — trois mètres et demi. Le rapport est donc de
+huit ou neuf, et c'est la convention de tout le jeu depuis l'obélisque de
+Washington : sans elle, une skyline n'est pas lisible.
+
+**Ce qui se trompe de scala, c'est le PLAN.** L'Empire State bâti « à
+l'échelle de sa hauteur » faisait vingt-six blocs de large — sept cent
+cinquante mètres, un plateau. Sa vraie emprise, cent trente mètres, en
+fait quatre. Règle : les HAUTEURS suivent l'étage, les EMPRISES suivent le
+sol. Et la borne d'emprise (`bh = min(bh, 10 + 14 × emprise)`) se règle
+sur ce rapport-là, pas sur l'intuition : à 4 × 14 elle laissait Midtown à
+vingt-six blocs, une ville de garages.
+
+**Le corollaire, vérifié en capture :** des hauteurs tirées à plat donnent
+une brosse vue du ciel. Une vraie ville est un TAPIS de dix à vingt étages
+d'où sortent quelques tours — c'est ce que fait `t³`, qui n'envoie au
+sommet que le dernier dixième des tirages.
+
+### La nuit, et pourquoi elle était noire
+
+Le monde entier partage UN matériau (`solidMaterial`) dont la couleur EST
+le niveau de lumière du jour. À minuit tout tombe à trente pour cent, et
+les villes s'éteignaient — fenêtres comprises. Le mailleur sort donc les
+vitres allumées dans une TROISIÈME géométrie (`lumineux`, à côté de
+`solid` et `water`), rendue avec un matériau qu'on n'éteint pas.
+
+Trois choses à savoir avant d'y toucher :
+
+- **Ce qui s'allume n'est pas le verre.** Dans les villes générées, une
+  fenêtre est le DESSIN d'un bloc de façade (`ARCHI.ETAGE`, `NOBLE`,
+  `ENTRESOL`, `VITRINE`), pas un bloc de verre. N'allumer que `GLASS`
+  n'allume presque rien.
+- **Tout matériau qui rend de la géométrie fusionnée doit passer par
+  `activerTuilage()`.** Les UV vont au-delà de 1 et c'est un shader qui
+  les replie dans leur tuile. Sans lui, une baie étirée sur trois blocs
+  échantillonne l'atlas ENTIER : un immeuble arc-en-ciel en pleine rue,
+  vu à la première capture de nuit.
+- **Le tirage se fait en coordonnées du MONDE.** En coordonnées locales,
+  le même motif se répète dans chaque morceau — et les fenêtres changent
+  au remaillage.
+
+### La circulation des villes
+
+Chaque ville reçoit des anneaux de rues où roulent des voitures de la
+flotte. Deux pièges, tous deux payés :
+
+- **Un anneau qui trempe ne se jette pas, il se déplace.** On essayait
+  deux anneaux centrés sur l'ancre ; s'ils touchaient l'eau, la ville
+  n'avait AUCUNE voiture. Moscou, Rome, Tokyo — toutes les villes de
+  fleuve — étaient vides. On cherche désormais vingt candidats (quatre
+  tailles, cinq décalages) jusqu'à en trouver deux au sec.
+- **Les villes bâties à la main ne sont pas dans `VILLES_MONDE`.** Paris,
+  Londres, Nice, Lille, Washington, San Francisco n'avaient donc jamais eu
+  une seule voiture. Leurs anneaux s'éprouvent sur le VRAI terrain
+  (`tracesCirculationMain`), ce qui écarte la Seine et la Tamise sans rien
+  savoir de leur géographie.
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 
