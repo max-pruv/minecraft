@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v185 — les roues tournent
+
+**Pourquoi.** Les cinquante modèles arrivés en v184 portent des pivots de
+roue nommés, prêts à servir : une voiture dont les roues restent figées ne
+roule pas, elle glisse comme une savonnette, et un enfant de sept ans le
+voit au premier mètre.
+
+**Ce que ça change.** Les quatre roues de chaque voiture de la flotte
+tournent avec le sol qui défile — d'autant plus vite que la voiture va
+vite, à l'arrêt quand elle est garée, à l'envers en marche arrière. Le
+rayon est mesuré sur chaque modèle : la petite roue d'une Countach tourne
+plus vite que la grande d'une Rolls, comme dans la vraie vie. Et un
+voyage par la carte ne les fait plus tournoyer : un téléport n'est pas un
+roulement.
+
+**Ce qui le prouve.** Un témoin neuf : après une demi-seconde de conduite,
+l'angle de la roue vaut la distance parcourue divisée par le rayon (20,5
+radians mesurés pour 22,5 attendus sur huit mètres), et il grandit dans le
+bon sens. Rouge sur l'ancien code, qui ne collectait aucun pivot — et
+rouge une seconde fois, à raison, sur le téléport du banc, qui a révélé le
+défaut. Le SENS, lui, s'est mesuré à la sonde et ne s'est pas deviné :
+voiture à l'arrêt, on tourne la roue d'un dixième de radian et le point de
+contact doit reculer de r × 0,1 — il recule de 0,0343 m pour 0,0344
+attendu. Portail : fumée, monte, washington, metro.
+
 ## v184 — cinquante voitures de plus, chacune la sienne
 
 **Pourquoi.** Max, trois archives de modèles à l'appui : « add those cars
