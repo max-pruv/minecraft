@@ -20,6 +20,69 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v188 — Un garage où la voiture reste, et une voiture qui ne vole plus
+
+**Pourquoi.** Deux demandes de Max le même jour, et elles vont ensemble : « je
+voudrais que dans les monuments que tu as, tu puisses avoir des garages, et que
+quand un véhicule est déposé dans un garage, il reste tout le temps, un peu
+comme dans GTA » ; et « je voudrais que le véhicule se comporte tel qu'un
+véhicule normal. Aujourd'hui, on est capable de voler avec une voiture. Je ne
+veux pas qu'une voiture vole ».
+
+Les deux disent la même chose : une voiture n'était pas encore un véhicule.
+Elle volait, parce que conduire consiste à brancher le véhicule sur les
+commandes du joueur — donc sur sa physique, vol compris, ce que personne
+n'avait jamais décidé. Et elle ne durait pas : les voitures repeuplent le monde
+à chaque lancement comme les poules et les vaches, si bien qu'une voiture aimée
+disparaissait au premier rechargement de la page.
+
+Cette version rattrape aussi un défaut resté VINGT-TROIS versions en
+production. Un invité dont le lien direct traîne finit par basculer sur le
+nuage ; l'hôte recevait alors deux présentations au même prénom, sous deux
+identifiants différents mais venant du même iPad, et sa garde anti-doublon
+renvoyait l'enfant au menu d'accueil. Mesuré à la sonde : Alice rejoint par le
+nuage, se fait éjecter trois secondes plus tard par son propre écho, et reste
+devant « ☁️ Connecté par le nuage — ça marche même sur ce Wi-Fi ! » sans être
+connectée à quoi que ce soit, pendant que les deux autres jouent sans elle.
+
+**Ce que ça change.**
+
+*Les garages.* Deux modèles neufs dans la bibliothèque 🏛️ — « Garage », une
+place, et « Grand garage », deux. On y entre en voiture, on descend, et la
+voiture RESTE : elle est écrite dans la sauvegarde de l'enfant à côté de ses
+blocs, monde par monde, et elle revient avec SON modèle — la Bugatti reste la
+Bugatti, pas une inconnue de la même couleur. Elle traverse le rechargement de
+la page, l'extinction de l'iPad, et se retrouve sur la seconde tablette.
+
+*Les bâtiments à façade pivotent.* La bibliothèque posait tout dans la même
+direction — sans gêne pour la Tour Eiffel, qui se regarde de partout. Un
+garage, si : une porte qui regarde toujours le sud, c'est un enfant qui fait le
+tour de son propre garage sans trouver l'entrée. La façade regarde désormais
+celui qui vient de la poser.
+
+*La voiture ne vole plus*, et le jeu dit pourquoi au lieu de ne rien faire :
+« 🚗 Une voiture ne vole pas — descends d'abord ». À pied, rien ne change.
+
+*En ligne, plus personne ne disparaît.* Un enfant dont le Wi-Fi impose le nuage
+reste dans la partie, et les autres le voient.
+
+*La carte se centre dans l'écran utile* : l'encoche de l'iPhone n'est plus de
+la place perdue, et le haut de la fiche ne passe plus sous la barre d'état.
+
+**Ce qui le prouve.** `hote.js` passe de trois échecs à zéro et `visio.js` de
+cinq à zéro — le témoin « avant le départ, les trois se voient » existait déjà
+et rendait `[["Nina"],[],["Marlon"]]` au lieu des trois qui se voient tous.
+Quatre témoins neufs dans `fumee.js`, tous vérifiés rouges sur l'ancien code :
+« à pied, l'enfant vole toujours », « mais une voiture ne décolle pas », « et le
+vol revient dès qu'on est descendu » — les trois comptent ENSEMBLE, sans le
+premier on prouverait seulement qu'on a cassé le vol partout — puis « après un
+rechargement, la voiture est toujours au garage », qui est le seul à distinguer
+une voiture sauvegardée d'une voiture encore à l'écran. Et deux séries de
+captures : le premier garage ressemblait à un kiosque à musique, il a fallu lui
+rendre sa porte, la baisser et raccourcir son parvis.
+
+---
+
 ## v187 — Paris à l'échelle GTA, et une carte où l'on cherche un lieu
 
 **Pourquoi.** Max, après New York : « Est-ce que tu peux maintenant

@@ -143,6 +143,142 @@ function verifier(nom, ok, detail = '') {
     verifier('un modèle gardé est bien toujours le même',
       stable.a === stable.b && stable.a !== stable.autre, JSON.stringify(stable));
 
+    // ---- une voiture ne vole pas ------------------------------------------
+    //
+    // Max, août 2026 : « je voudrais que le véhicule se comporte tel qu'un
+    // véhicule normal. Aujourd'hui, on est capable de voler avec une voiture.
+    // Je ne veux pas qu'une voiture vole. » Le témoin éprouve le geste de
+    // l'enfant — il monte, il appuie sur la touche du vol — et regarde ce que
+    // le monde en fait, pas ce que dit un drapeau.
+    //
+    // Les trois mesures comptent ENSEMBLE : sans « à pied, ça vole encore », on
+    // prouverait seulement qu'on a cassé le vol partout ; sans « et ça revient
+    // après », on aurait pu clouer l'enfant au sol pour toute la partie.
+    const volVoiture = await tab.evaluate(async () => {
+      const g = window.__game, p = g.player;
+      const patiente = async (f) => {
+        for (let k = 0; k < 120; k++) {
+          if (f()) return true;
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return false;
+      };
+      const auto = g.animalManager.invoquer('voiture',
+        Math.round(p.pos.x) + 3, Math.round(p.pos.z) + 3);
+      if (!auto) return { erreur: 'pas de voiture' };
+      p.toggleFly();
+      const aPied = p.flying;
+      if (p.flying) p.toggleFly();
+      // se coller à la voiture, puis monter comme l'enfant le fait
+      p.pos.set(auto.pos.x, auto.pos.y + 0.5, auto.pos.z);
+      document.getElementById('ride-btn').click();
+      const enVoiture = await patiente(
+        () => document.getElementById('ride-btn').textContent.includes('Descendre'));
+      p.toggleFly();
+      const voleEnVoiture = p.flying;
+      if (p.flying) p.toggleFly();
+      document.getElementById('ride-btn').click();
+      await patiente(
+        () => !document.getElementById('ride-btn').textContent.includes('Descendre'));
+      p.toggleFly();
+      const apresDescente = p.flying;
+      if (p.flying) p.toggleFly();
+      return { aPied, enVoiture, voleEnVoiture, apresDescente };
+    });
+    verifier('à pied, l\'enfant vole toujours',
+      volVoiture.aPied === true, JSON.stringify(volVoiture));
+    verifier('mais une voiture ne décolle pas',
+      volVoiture.enVoiture === true && volVoiture.voleEnVoiture === false,
+      JSON.stringify(volVoiture));
+    verifier('et le vol revient dès qu\'on est descendu',
+      volVoiture.apresDescente === true, JSON.stringify(volVoiture));
+
+    // ---- le garage garde la voiture ---------------------------------------
+    //
+    // La promesse de Max : « quand un véhicule est déposé dans un garage, il
+    // reste tout le temps, un peu comme dans GTA ». C'est donc la promesse
+    // qu'on éprouve, et rien d'autre : je gare, je recharge la page, ma
+    // voiture est là — et c'est bien LA MIENNE, le même modèle.
+    const garage = await tab.evaluate(async () => {
+      const g = window.__game;
+      const mods = await import('./src/monuments.js');
+      // Sur l'ancien code, `src/garages.js` n'existe pas. Un témoin doit
+      // échouer PROPREMENT là-dessus, pas emporter la suite avec lui : sans
+      // cette garde, l'import rejeté fait tomber les quatre témoins suivants
+      // et on ne voit jamais l'étendue réelle du défaut.
+      const gar = await import('./src/garages.js').catch(() => null);
+      if (!gar) return { erreur: 'pas de src/garages.js', inscrits: 0 };
+      const def = mods.MONUMENTS.find((x) => x.id === 'garage');
+      if (!def) return { erreur: 'pas de garage dans la bibliothèque', inscrits: 0 };
+      const avant = Object.keys(gar.garagesDe(g.world.ctx)).length;
+      g.fun.poserBati(mods.monumentBati('garage'));
+      const liste = Object.entries(gar.garagesDe(g.world.ctx));
+      if (liste.length <= avant) return { erreur: 'garage non inscrit', inscrits: liste.length };
+      const [id, box] = liste[liste.length - 1];
+      // On amène la voiture à sa place et on descend : exactement ce que fait
+      // un enfant, sauf qu'on lui épargne la conduite.
+      const [px, pz] = box.places[0];
+      const auto = g.animalManager.invoquer('voiture', px, pz);
+      if (!auto) return { erreur: 'pas de voiture' };
+      auto.pos.set(px + 0.5, box.y + 1, pz + 0.5);
+      g.player.pos.set(auto.pos.x, auto.pos.y + 0.5, auto.pos.z);
+      const patiente = async (f) => {
+        for (let k = 0; k < 120; k++) {
+          if (f()) return true;
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return false;
+      };
+      document.getElementById('ride-btn').click();
+      const monte = await patiente(
+        () => document.getElementById('ride-btn').textContent.includes('Descendre'));
+      document.getElementById('ride-btn').click();
+      await patiente(
+        () => !document.getElementById('ride-btn').textContent.includes('Descendre'));
+      // On ne présume PAS lequel des garages a pris la voiture : deux
+      // garages posés d'affilée devant l'enfant se chevauchent, et c'est très
+      // bien ainsi — ce qui compte est qu'un garage l'ait gardée, pas lequel.
+      const rangee = Object.values(gar.garagesDe(g.world.ctx)).find((b) => b.voiture);
+      return {
+        inscrits: liste.length, monte, id,
+        rangee: !!rangee,
+        modele: rangee ? rangee.voiture.flotte : null,
+      };
+    });
+    verifier('un garage de la bibliothèque s\'inscrit là où on le pose',
+      garage.inscrits >= 1, JSON.stringify(garage));
+    verifier('la voiture qu\'on y laisse est rangée, avec son modèle',
+      garage.rangee === true && !!garage.modele, JSON.stringify(garage));
+
+    // LE RECHARGEMENT EST LE TÉMOIN. C'est lui qui distingue « la voiture est
+    // encore à l'écran » de « la voiture est sauvegardée » — sans lui, tout
+    // serait vert sur un code qui ne retient rien.
+    await tab.reload({ waitUntil: 'load', timeout: 90000 });
+    await tab.waitForFunction(() => !!window.__game, null, { timeout: 90000 });
+    // Un rechargement ramène au menu : l'enfant rappuie sur « Jouer ». Sans ce
+    // geste, on attendrait `running` pour toujours et le témoin ne dirait plus
+    // rien sur les garages — il dirait seulement que le banc a lâché.
+    await tab.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById('play-btn').click();
+    });
+    await tab.waitForFunction(() => window.__game.running, null, { timeout: 90000 });
+    await dormir(3500);
+    const retrouvee = await tab.evaluate(async () => {
+      const g = window.__game;
+      const gar = await import('./src/garages.js').catch(() => null);
+      if (!gar) return { garages: 0, modele: null };
+      const boxes = Object.values(gar.garagesDe(g.world.ctx));
+      const rangee = boxes.find((b) => b.voiture);
+      return {
+        garages: boxes.length,
+        modele: rangee ? rangee.voiture.flotte : null,
+      };
+    });
+    verifier('après un rechargement, la voiture est toujours au garage',
+      retrouvee.modele === garage.modele && !!retrouvee.modele,
+      `${JSON.stringify(retrouvee)} vs ${garage.modele}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

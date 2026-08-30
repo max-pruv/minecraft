@@ -44,6 +44,16 @@ export class Player {
     this.pitch = 0;
     this.onGround = false;
     this.flying = false;
+    // UNE VOITURE NE VOLE PAS (Max, août 2026 : « aujourd'hui, on est capable
+    // de voler avec une voiture. Je ne veux pas qu'une voiture vole »).
+    //
+    // Conduire, dans ce jeu, c'est brancher le véhicule sur les commandes du
+    // joueur — donc sur SA physique. Le vol en faisait partie sans que
+    // personne l'ait décidé : une berline montait dans le ciel à la touche F.
+    // Le drapeau vit ici parce que c'est ici que le vol se décide, et il est
+    // POSÉ par la fiche de l'espèce (`vole: false`), jamais par une liste de
+    // véhicules écrite ailleurs — même règle que `montable` et `nourrissable`.
+    this.volInterdit = false;
     this.volDepuis = 0;       // secondes de vol continu, cf. FLY_ELAN_APRES
     this.inWater = false;
     this.keys = new Set();
@@ -63,10 +73,22 @@ export class Player {
     this.pitch = Math.max(-limit, Math.min(limit, this.pitch));
   }
 
+  // La fiche du véhicule décide, le joueur obéit. Monter dans une voiture
+  // pose l'interdit ET coupe le vol en cours — sinon l'enfant déjà en l'air
+  // repartirait avec la voiture au plafond du monde.
+  interdireVol(interdit) {
+    this.volInterdit = !!interdit;
+    if (interdit) this.flying = false;
+  }
+
   toggleFly() {
+    // Refuser en silence serait pire que tout : l'enfant appuierait dix fois.
+    // On rend `false`, et l'appelant explique pourquoi.
+    if (this.volInterdit) { this.flying = false; return false; }
     this.flying = !this.flying;
     this.volDepuis = 0;   // on repart au pas : l'élan se mérite
     this.vel.y = 0;
+    return true;
   }
 
   // Vitesse de vol du moment. Elle double après quelques secondes en l'air,

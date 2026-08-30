@@ -695,7 +695,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('keydown', (e) => {
   if (!running) return;
   player.keys.add(e.code);
-  if (e.code === 'KeyF') player.toggleFly();
+  if (e.code === 'KeyF') refuserOuVoler();
   if (e.code === 'KeyQ') creatureManager.throwBall();
   if (e.code === 'KeyB') toggleDex();
   if (e.code === 'KeyE') openInventory();
@@ -900,9 +900,17 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.target.textContent = breakMode ? '⛏️' : '🧱';
 }, { passive: false });
 
+// Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
+// fait rien, sinon il appuiera dix fois en croyant l'écran cassé.
+function refuserOuVoler() {
+  if (player.toggleFly()) return true;
+  creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
+  return false;
+}
+
 document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
-  player.toggleFly();
+  refuserOuVoler();
   document.getElementById('down-btn').style.display = player.flying ? 'flex' : 'none';
 }, { passive: false });
 

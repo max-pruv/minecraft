@@ -77,6 +77,7 @@ const ASSETS = [
   './src/trains.js',
   './src/batiments.js',
   './src/monuments.js',
+  './src/garages.js',
   './src/education.js',
   './src/net.js',
   './src/cloud.js',

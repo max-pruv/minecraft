@@ -17,7 +17,7 @@
 // sépare « une tour en treillis » de « la Tour Eiffel » : les quatre piliers
 // évasés, les deux plateformes aux bons tiers, l'arche du premier étage.
 
-import { BLOCK, ARCHI } from './blocks.js';
+import { BLOCK, ARCHI, CITY_BLOCK } from './blocks.js';
 
 // --- l'atelier ---------------------------------------------------------------
 
@@ -773,6 +773,121 @@ export const MONUMENTS = [
       c.boite(-20, 5, -26, 20, 5, -26, OR);
       c.boite(-26, 0, -26, -26, 6, -26, P);
       c.boite(26, 0, -26, 26, 6, -26, P);
+    },
+  },
+  // --- les garages -----------------------------------------------------------
+  //
+  // Les seuls bâtiments de la bibliothèque qui ne copient rien de réel : ce
+  // sont des OUTILS. Demande de Max — « quand un véhicule est déposé dans un
+  // garage, il reste tout le temps, un peu comme dans GTA ». Le champ `garage`
+  // porte cette promesse : `places` donne les emplacements de stationnement en
+  // coordonnées d'auteur, et `src/garages.js` fait le reste.
+  //
+  // CE QUI FAIT QU'ON RECONNAÎT UN GARAGE, et qui a manqué au premier dessin
+  // (verdict sur capture : un kiosque à musique). Dans l'ordre :
+  //   1. LA PORTE, et le fait qu'on la VOIE — un simple trou dans un mur, c'est
+  //      un abri de bus. Le tablier de la porte reste donc dessiné, relevé sous
+  //      le linteau, comme une porte sectionnelle ouverte.
+  //   2. Un volume BAS et PROFOND. Le premier était aussi haut que large.
+  //   3. Une allée qui mène à la porte, et le marquage de la place au sol.
+  //
+  // La porte regarde celui qui pose le bâtiment : `poserBati` fait pivoter par
+  // quarts de tour tout ce qui déclare une façade.
+  {
+    id: 'garage', nom: 'Garage', ville: 'Garages 🅿️', emoji: '🅿️',
+    metresParBloc: 3,
+    // Un garage de maison : 15 m sur 21, porte de 12 m. Une voiture, son
+    // établi au fond, et l'allée devant.
+    garage: { places: [[0, -2]], l: 11, p: 17 },
+    bati(c) {
+      const MUR = PB, SOCLE = P, CADRE = F, TABLIER = Z;
+      const BITUME = CITY_BLOCK.ASPHALT, DALLE = CITY_BLOCK.SIDEWALK;
+      const MARQUE = CITY_BLOCK.ROADLINE;
+      // Le sol. Deux gris qui se distinguent : la dalle de béton dedans, le
+      // bitume de l'allée dehors. Un seul gris, et l'on ne lit plus le seuil.
+      c.boite(-4, 0, -8, 4, 0, 7, DALLE);
+      // LE SEUIL, PAS UN PARVIS. La première allée courait sur sept blocs de
+      // bitume sombre : posée un bloc au-dessus du sol comme tout le bâtiment,
+      // elle formait une estrade de music-hall devant la porte — c'est ce que
+      // la capture a montré. Trois rangs suffisent à dire « on entre par là ».
+      c.boite(-4, 0, 8, 4, 0, 10, BITUME);
+      // Le marquage de la place : deux traits blancs. C'est le détail qui dit
+      // « on gare ici », et il ne coûte que vingt blocs.
+      for (const sx of [-3, 3]) c.boite(sx, 0, -6, sx, 0, 4, MARQUE);
+      // Les quatre murs, d'un bloc, sur un soubassement de pierre.
+      c.boite(-5, 0, -9, -5, 4, 7, MUR);
+      c.boite(5, 0, -9, 5, 4, 7, MUR);
+      c.boite(-5, 0, -9, 5, 4, -9, MUR);
+      c.boite(-5, 0, 7, -4, 4, 7, MUR);
+      c.boite(4, 0, 7, 5, 4, 7, MUR);
+      for (const z of [-9, 7]) c.boite(-5, 0, z, 5, 0, z, SOCLE);
+      for (const sx of [-5, 5]) c.boite(sx, 0, -9, sx, 0, 7, SOCLE);
+      // L'ENCADREMENT ET LE TABLIER. Le jambage sombre de part et d'autre, le
+      // linteau au-dessus, et la porte elle-même — relevée, une bande sous le
+      // linteau. Sans elle, la façade n'a plus qu'un trou, et un trou ne
+      // ressemble à rien.
+      for (const sx of [-4, 4]) c.boite(sx, 0, 7, sx, 4, 7, CADRE);
+      c.boite(-4, 4, 7, 4, 4, 7, CADRE);
+      c.boite(-3, 3, 7, 3, 3, 7, TABLIER);
+      // La porte de service, sur le côté, et sa fenêtre haute : c'est ce qui
+      // donne l'échelle du bâtiment quand on le voit de trois quarts.
+      for (let y = 0; y <= 2; y++) c.blocs.delete(`-5,${y},-6`);
+      c.boite(-5, 3, -6, -5, 3, -6, CADRE);
+      // UN MUR AVEUGLE DE SEIZE BLOCS N'EST PAS UN MUR, C'EST UNE PALISSADE.
+      // Deux fenêtres hautes et un bandeau de pierre à mi-hauteur : de quoi
+      // lire l'échelle du bâtiment depuis la rue.
+      for (const sx of [-5, 5]) {
+        c.boite(sx, 3, -2, sx, 3, 0, V);
+        c.boite(sx, 3, 3, sx, 3, 5, V);
+        c.boite(sx, 2, -9, sx, 2, -7, SOCLE);
+      }
+      // Le toit plat, débordant d'un bloc — la casquette de béton d'un garage.
+      c.boite(-6, 5, -10, 6, 5, 9, Z);
+      // L'établi du fond et son panneau à outils.
+      c.boite(-4, 1, -8, 4, 1, -8, BLOCK.PLANK);
+      c.boite(-3, 2, -9, 3, 3, -9, CADRE);
+    },
+  },
+  {
+    id: 'garage-double', nom: 'Grand garage (2 places)', ville: 'Garages 🅿️', emoji: '🏎️',
+    metresParBloc: 3,
+    // Deux boxes côte à côte, séparés par un pilier de maçonnerie — 27 m sur 21.
+    garage: { places: [[-5, -2], [5, -2]], l: 19, p: 17 },
+    bati(c) {
+      // Le grès plutôt que la brique : sur capture, l'encadrement sombre des
+      // portes se noyait dans le rouge du mur et l'on ne voyait plus les deux
+      // baies. Un mur clair, un cadre sombre — c'est le contraste qui fait
+      // qu'on lit une porte de garage, pas la couleur.
+      const MUR = S, SOCLE = P, CADRE = F, TABLIER = Z;
+      const BITUME = CITY_BLOCK.ASPHALT, DALLE = CITY_BLOCK.SIDEWALK;
+      const MARQUE = CITY_BLOCK.ROADLINE;
+      c.boite(-8, 0, -8, 8, 0, 7, DALLE);
+      c.boite(-8, 0, 8, 8, 0, 10, BITUME);
+      for (const sx of [-8, -2, 2, 8]) c.boite(sx, 0, -6, sx, 0, 4, MARQUE);
+      c.boite(-9, 0, -9, -9, 4, 7, MUR);
+      c.boite(9, 0, -9, 9, 4, 7, MUR);
+      c.boite(-9, 0, -9, 9, 4, -9, MUR);
+      // La façade : deux jambages extérieurs et le pilier central.
+      c.boite(-9, 0, 7, -8, 4, 7, MUR);
+      c.boite(-1, 0, 7, 1, 4, 7, MUR);
+      c.boite(8, 0, 7, 9, 4, 7, MUR);
+      for (const z of [-9, 7]) c.boite(-9, 0, z, 9, 0, z, SOCLE);
+      for (const sx of [-9, 9]) c.boite(sx, 0, -9, sx, 0, 7, SOCLE);
+      // Les deux portes, encadrées et à tablier relevé.
+      for (const cx of [-5, 5]) {
+        for (const sx of [cx - 3, cx + 3]) c.boite(sx, 0, 7, sx, 4, 7, CADRE);
+        c.boite(cx - 3, 4, 7, cx + 3, 4, 7, CADRE);
+        c.boite(cx - 2, 3, 7, cx + 2, 3, 7, TABLIER);
+      }
+      for (let y = 0; y <= 2; y++) c.blocs.delete(`-9,${y},-6`);
+      c.boite(-9, 3, -6, -9, 3, -6, CADRE);
+      for (const sx of [-9, 9]) {
+        c.boite(sx, 3, -2, sx, 3, 0, V);
+        c.boite(sx, 3, 3, sx, 3, 5, V);
+      }
+      c.boite(-10, 5, -10, 10, 5, 9, Z);
+      c.boite(-8, 1, -8, 8, 1, -8, BLOCK.PLANK);
+      c.boite(-6, 2, -9, 6, 3, -9, CADRE);
     },
   },
 ];

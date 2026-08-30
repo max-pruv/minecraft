@@ -254,7 +254,7 @@ const SPECIES = [
 const MAX_ANIMALS = 20;
 
 class Animal {
-  constructor(def, x, y, z, baby) {
+  constructor(def, x, y, z, baby, voeu) {
     this.def = def;
     this.baby = baby;
     this.scale = baby ? 0.55 : 1;
@@ -269,7 +269,9 @@ class Animal {
     this.hp = baby ? 2 : 3;
     this.fleeTime = 0;
     this.dying = 0;
-    this.mesh = BUILDERS[def.key]();
+    // `voeu` : ce que l'appelant demande de particulier. Aujourd'hui le modèle
+    // d'une voiture qu'on ressort d'un garage ; les autres espèces l'ignorent.
+    this.mesh = BUILDERS[def.key](voeu);
     this.mesh.scale.setScalar(this.scale);
   }
 
@@ -536,12 +538,12 @@ export class AnimalManager {
   // Poser une bête d'une espèce donnée, au sol, à l'endroit demandé. Sert au
   // banc d'essai, et un jour aux enclos : c'est le même chemin que la ponte
   // naturelle, surface comprise.
-  invoquer(key, x, z, baby = false) {
+  invoquer(key, x, z, baby = false, voeu = null) {
     const def = SPECIES.find((s) => s.key === key);
     if (!def) return null;
     const bx = Math.floor(x), bz = Math.floor(z);
     const y = this.world.sommetColonne(bx, bz);
-    const animal = new Animal(def, bx + 0.5, y + 1.1, bz + 0.5, baby);
+    const animal = new Animal(def, bx + 0.5, y + 1.1, bz + 0.5, baby, voeu);
     this.animals.push(animal);
     this.scene.add(animal.mesh);
     return animal;

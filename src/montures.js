@@ -217,7 +217,7 @@ export const MODELES_MONTURE = {
 // disparaît de l'intérieur, ses faces regardent dehors. D'où le cadre
 // complet : montants, traverse, ciel de toit, et la plaque de capot dans la
 // couleur de la caisse, pour voir l'avant de SA voiture en conduisant.
-function voitureNeuve() {
+function voitureNeuve(voeu) {
   // Des teintes PROFONDES de carrosserie : les pastels saturaient sous
   // l'éclairage et mangeaient le bi-ton avant/arrière.
   const teintes = [0xb02020, 0x2a4e9c, 0xc0a878, 0x1f7a4c];
@@ -329,8 +329,17 @@ function voitureNeuve() {
   // les modèles de la flotte apportent leur PROPRE intérieur complet, donc
   // notre cockpit sculpté part avec la coque d'attente ; le modèle
   // d'artiste, lui, n'en a pas, et le cockpit reste.
-  const enFlotte = Math.random() < FLOTTE.length / (FLOTTE.length + 1)
-    ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null;
+  // UNE VOITURE GARÉE REVIENT AVEC SON MODÈLE. Un vœu (`voeu.flotte`, le nom
+  // du fichier) court-circuite le tirage au sort : c'est ce qui rend à
+  // l'enfant SA voiture au sortir du garage, et non une inconnue de la même
+  // couleur. Sans vœu, ou si le modèle demandé n'existe plus dans la flotte,
+  // on retombe sur le tirage — un fichier disparu ne doit pas rendre le
+  // garage muet.
+  const voulu = voeu && voeu.flotte
+    ? FLOTTE.find((f) => f.fichier === voeu.flotte) || null : null;
+  const enFlotte = voulu || (voeu && voeu.flotte === 'voiture.glb' ? null
+    : Math.random() < FLOTTE.length / (FLOTTE.length + 1)
+      ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null);
   g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';
   g.userData.nomVoiture = enFlotte ? enFlotte.nom : 'Bugatti Chiron';
   const chargement = enFlotte ? chargerVoitureFlotte(enFlotte) : chargerVraieVoiture();
@@ -392,5 +401,8 @@ export const MONTURES = [
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true },
+    assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true,
+    // `vole: false` : la fiche interdit le vol, player.js l'applique. Voir la
+    // note de `volInterdit` — la règle vit ici, jamais dans fun.js.
+    vole: false, garable: true },
 ];
