@@ -21,6 +21,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
   méthode.
 
+- [ ] **SoMa et les quartiers de maisons ont encore des fenêtres de verre
+  plein** — le centre de San Francisco est passé au mur-rideau en v195, pas le
+  reste. Un bloc de `GLASS` fait trente-sept mètres de large : au pied d'un
+  entrepôt de SoMa, la façade reste un aquarium. Il manque au jeu un bloc de
+  façade « fenêtre industrielle » et un « fenêtre de Victorienne » — deux
+  tuiles à peindre dans `textures.js`, sur le modèle des blocs `ARCHI`.
+
 - [ ] **Des arbres dans les rues de Londres** — Max, même capture : « pas
   d'arbres ». Paris en a depuis la v187 (le feuillage pousse dans `world.js` à
   partir des marques de `solParis`), Londres non : ses rues n'ont que des
