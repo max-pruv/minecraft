@@ -186,9 +186,22 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // Ces deux-là, l'enfant peut aussi les changer depuis son écran : deux mains
     // écrivent au même endroit. C'est la date du dernier choix qui tranche, et
     // c'est ce qui doit empêcher la tablette de réimposer sa version.
+    // ON ÉCRIT COMME LE VRAI PANNEAU PARENT ÉCRIT, PAS « UN DE PLUS ».
+    //
+    // `majProfil` est une HORLOGE — `admin.js` y met
+    // `max(Date.now(), sien + 1, notre + 1)`. Le scénario, lui, posait
+    // « la valeur d'avant + 1 » : une milliseconde après un instant DÉJÀ
+    // passé, donc plusieurs secondes DERRIÈRE l'horloge. La tablette, qui
+    // repousse ses réglages toutes les quinze secondes avec un `Date.now()`
+    // frais, l'emportait alors — à bon droit, puisque la règle est « la date
+    // du dernier choix tranche ». Le témoin ne gagnait que s'il gagnait la
+    // course, et il annonçait « la tablette défait le choix du parent » sur
+    // un jeu qui faisait exactement ce qu'on lui demande. Trois rouges qui se
+    // déplaçaient d'une exécution à l'autre depuis des semaines.
+    const avant = nuage.reglages('Marlon') || {};
     nuage.poserReglages('Marlon', {
-      ...nuage.reglages('Marlon'), lang: 'both', grade: 5,
-      majProfil: (nuage.reglages('Marlon').majProfil || 0) + 1,   // strictement plus récent
+      ...avant, lang: 'both', grade: 5,
+      majProfil: Math.max(Date.now(), (avant.majProfil || 0) + 1),
     });
     const suivi = await jusqua(async () => (await marlon.evaluate(
       () => window.__game.edu.__prefs().lang)) === 'both', 60000);
