@@ -39,26 +39,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
   façades de pierre plutôt qu'en halles de béton.
 
-- [ ] **Le rouge ancien des suites réseau du portail** — TROIS des quatre sont
-  réparées en v188. La cause de `hote.js` et `visio.js` n'était ni le banc ni
-  le réseau, c'était le JEU : un invité qui bascule sur le nuage se présentait
-  à l'hôte une seconde fois, sous un autre identifiant de pair mais depuis le
-  même iPad, et la garde anti-doublon le renvoyait au menu d'accueil. L'appareil
-  tranche désormais là où le prénom ne peut pas. `hote.js` passe de trois
-  échecs à zéro, `visio.js` de cinq à zéro, `reglages.js` rend 25 témoins verts.
+- [ ] **Le rouge ancien des suites réseau du portail** — `hote.js`, `visio.js`
+  et `reglages.js` sont réparées. `reseau.js` **va au bout pour la première
+  fois** : elle s'effondrait au 27ᵉ témoin, elle en passe désormais soixante.
 
-  **Reste `reseau.js`**, jamais rejouée jusqu'au bout depuis la correction :
-  soixante-dix minutes par tour, et deux tours ont été arrêtés en route. C'est
-  la première chose à faire au prochain passage.
+  Ce qui l'a débloquée n'était pas le jeu. `endormir()` ne fait dormir que le
+  RÉSEAU — la page continue de dessiner un monde en 3D à plein régime, et le
+  navigateur du banc tourne avec `--disable-renderer-backgrounding`. Cette
+  page-là n'était jamais refermée : elle brûlait un cœur sur quatre du milieu
+  de la suite jusqu'à la fin, pile sous les scénarios qui chronomètrent.
+  Mesuré à la sonde, page seule : renoncer sur un courtier muet met **13,0 s**
+  (9 s d'attente du courtier, 4 s de course vers le nuage), contre 24 à 29 s
+  avec le fantôme à côté. Aucun seuil n'a été relevé.
 
-  **Et une leçon à écrire dans `CLAUDE.md` :** `souffler()` ne sert à rien
-  quand la charge est produite par la suite elle-même. Trois navigateurs d'un
-  même scénario ne laissent jamais la charge redescendre sous 3, donc chaque
-  ouverture de page brûle ses vingt secondes pour rien — `reseau.js` est passée
-  de cinquante à soixante-dix minutes sans gagner un seul témoin. Attendre
-  l'air d'un VOISIN, oui ; attendre le sien, non. L'appel posé en v188 dans
-  `Banc.joueur()` est donc à revoir : il devrait mesurer la charge AVANT
-  d'ouvrir le premier navigateur du scénario, pas à chaque page.
+  **Restent quatre rouges, et ils sont dans le jeu, pas dans le banc :**
+
+  1. `revenir dans l'application remet dans la partie, sans rien redemander`
+     — et `et les blocs repassent après le retour`, qui n'en est que la
+     conséquence. La trace sur quatre-vingt-dix secondes montre le lien qui
+     existe des deux côtés (`liens: 1`) sans jamais devenir prêt
+     (`prets: 0`), et le compte de l'invité qui bat 1/0/1 : le lien se
+     démonte et se refait, la présentation n'aboutit jamais. C'est le plus
+     gros morceau, et le plus proche de l'enfant — c'est le cas de l'iPad
+     qu'on repose et qu'on reprend.
+  2. `un bloc posé par le nuage arrive chez l'autre` — le relais porte la
+     partie (« 90 messages relayés » est vert juste avant) mais pas ce
+     bloc-là. À rapprocher du point 1 : peut-être la même présentation qui
+     manque.
+  3. `un monde bien rempli ne retarde pas les retrouvailles` — 1 600 blocs,
+     30 s. Une mesure de durée, donc à éprouver d'abord à la sonde, page
+     seule, avant d'accuser le jeu : c'est ce qui a démasqué les treize
+     secondes du courtier muet.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.
