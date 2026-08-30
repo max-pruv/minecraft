@@ -122,6 +122,42 @@ const BLOCS = 40000;
     verifier('un second appareil retrouve la construction entière',
       retrouves, `${compte} blocs sur ${BLOCS}`);
 
+    // FUSIONNER UN DOCUMENT AVEC LUI-MÊME NE CHANGE RIEN.
+    //
+    // C'est l'invariant qui protège l'enfant du rechargement en pleine partie :
+    // `changed` ne vaut vrai que si la fusion a VRAIMENT rapporté quelque
+    // chose, et c'est lui qui décide si la page se relance. Le champ des
+    // garages, ajouté en v188, fabriquait un objet vide là où il n'y avait
+    // rien — `undefined` contre `{}`, donc « oui » à chaque première fusion,
+    // donc une page qui se recharge sur toute tablette neuve. Alice rejoignait
+    // le monde et sa session mourait dans la seconde.
+    //
+    // Le témoin se lit tout seul : je prends le document tel qu'il est, je le
+    // fusionne avec lui-même, et rien ne doit avoir bougé.
+    //
+    // LA TABLETTE NEUVE, et c'est tout le témoin. Une fois la première fusion
+    // passée, le champ existe des deux côtés et la comparaison retombe juste :
+    // le défaut ne mord QUE la première fois, sur un appareil qui n'a jamais
+    // rien synchronisé. On retire donc les champs jamais écrits — ceux qui
+    // n'existent que le jour où l'enfant s'en sert — pour se remettre dans
+    // l'état exact du premier lancement.
+    const surPlace = await tab.evaluate(() => {
+      const ps = window.__game.profileSync;
+      if (!ps || !ps.snapshot || !ps.merge) return { absent: true };
+      const doc = ps.snapshot();
+      for (const jamaisEcrit of ['garages', 'pet', 'quest', 'hotbar']) delete doc[jamaisEcrit];
+      const r = ps.merge(doc, JSON.parse(JSON.stringify(doc)));
+      const bouges = [];
+      for (const k of new Set([...Object.keys(doc), ...Object.keys(r.state || {})])) {
+        if (k === '_t') continue;
+        if (JSON.stringify(doc[k] ?? null) !== JSON.stringify((r.state || {})[k] ?? null)) bouges.push(k);
+      }
+      return { changed: !!r.changed, bouges };
+    });
+    verifier('fusionner le profil avec lui-même ne recharge pas la page',
+      surPlace.changed === false && (surPlace.bouges || []).length === 0,
+      JSON.stringify(surPlace));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0 && autre.erreurs.length === 0,
       JSON.stringify([tab.erreurs.slice(0, 2), autre.erreurs.slice(0, 2)]));

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v189 — La page ne se recharge plus toute seule en pleine partie
+
+**Pourquoi.** La v188 est partie avec une régression, et elle touchait tout le
+monde. Le nuage fusionne le profil de l'enfant en tâche de fond, et compare le
+résultat à ce que la tablette avait déjà pour répondre à une seule question :
+la fusion a-t-elle vraiment rapporté quelque chose ? C'est cette réponse qui
+décide si la page se relance. Le champ neuf des garages fabriquait un objet
+vide là où il n'y avait rien — et « rien » contre « objet vide », c'est
+différent. Donc « oui » à la première fusion de toute tablette qui n'avait
+jamais eu de garage. Donc **un rechargement de la page en pleine partie**, une
+fois par appareil.
+
+C'est exactement le piège que le banc documente depuis des mois — une page qui
+se relance au milieu d'un scénario et emporte la session avec elle — reconstruit
+avec un champ neuf.
+
+**Ce que ça change.** Un enfant qui joue ne voit plus son jeu se relancer tout
+seul au bout de quelques secondes. En ligne, sa partie ne meurt plus dans la
+seconde qui suit son arrivée.
+
+**Ce qui le prouve.** Un témoin neuf dans `sauvegarde.js`, vérifié rouge sur la
+v188 : **fusionner le profil avec lui-même ne change rien**. Sa subtilité est
+qu'il faut se remettre dans l'état d'une TABLETTE NEUVE — une fois la première
+fusion passée, le champ existe des deux côtés et la comparaison retombe juste ;
+une première version du témoin était verte des deux côtés et ne prouvait rien.
+Celui-ci nomme le coupable : `bouges ["garages"]`, et montre que les autres
+champs jamais écrits — `pet`, `quest`, `hotbar` — ne bougent pas. Dans
+`reseau.js`, le témoin « Alice retrouve son monde après une veille sans
+retour » repasse de `compteur 1 []` à `compteur 2 ["Marlon"]` — et c'est LUI
+qui a démasqué la panne, rejoué sur une machine vide pour écarter la charge.
+
+---
+
 ## v188 — Un garage où la voiture reste, et une voiture qui ne vole plus
 
 **Pourquoi.** Deux demandes de Max le même jour, et elles vont ensemble : « je

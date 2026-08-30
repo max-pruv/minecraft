@@ -315,7 +315,17 @@ export class ProfileSync {
     // Les garages suivent les blocs : rangés par monde, et emportés quand le
     // monde est retiré. Sans `filtrerParMonde`, la voiture d'un monde effacé
     // pèserait dans le document jusqu'à la fin des temps.
-    out.garages = filtrerParMonde(fusionnerGarages(local.garages, remote.garages), vivant);
+    //
+    // UN CHAMP VIDE DES DEUX CÔTÉS DOIT RESTER ABSENT — et c'est un piège qui
+    // a coûté une livraison. Fabriquer un objet vide là où il n'y avait RIEN
+    // fait mentir la comparaison d'en dessous : `undefined` contre `{}`, c'est
+    // différent, donc « oui, quelque chose est descendu », donc UN
+    // RECHARGEMENT DE LA PAGE. Livré en v188, vu au banc dès le lendemain :
+    // Alice rejoint le monde, sa page se recharge dans la seconde et sa
+    // session meurt — sur une tablette neuve, où le champ n'existe pas encore.
+    // Tout champ ajouté ici doit suivre la même règle.
+    const garages = filtrerParMonde(fusionnerGarages(local.garages, remote.garages), vivant);
+    if (Object.keys(garages).length) out.garages = garages;
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');
     out.hotbar = pick('hotbar');
