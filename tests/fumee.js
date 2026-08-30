@@ -404,6 +404,59 @@ function verifier(nom, ok, detail = '') {
     verifier('loin du centre, la ville est habitée quand même',
       habite.pres >= 3, JSON.stringify(habite));
 
+    // ---- conduire une voiture qu'on a vue passer ----------------------------
+    //
+    // Max : « je veux que l'on puisse conduire n'importe quel type de voiture
+    // dans le jeu. » Une voiture de ville était un SIÈGE : le convoi suivait
+    // son tracé et les commandes de l'enfant ne servaient à rien. Il la sort
+    // désormais du convoi et repart avec — et c'est bien CELLE-LÀ, avec son
+    // modèle, pas une inconnue de la flotte.
+    const volant = await tab.evaluate(async () => {
+      const P = await import('./src/paris.js');
+      const g = window.__game;
+      if (typeof P.circuitsParis !== 'function') return { absent: true };
+      const c = P.circuitsParis((x, z) => g.world.terrainHeight(x, z))[0];
+      if (!c) return { pasDeCircuit: true };
+      const A = c.pts[2], B = c.pts[3];
+      const x = A.x + (B.x - A.x) * 0.4, z = A.z + (B.z - A.z) * 0.4;
+      g.player.pos.set(x, g.world.sommetColonne(Math.floor(x), Math.floor(z)) + 1, z);
+      g.player.vel.set(0, 0, 0);
+      for (let i = 0; i < 400; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const v = window.__vehicules;
+        const place = v && v.placeProche(g.player.pos, 5);
+        if (!place || place.nom !== 'voiture') continue;
+        const avant = v.etat().filter((k) => k.nom === 'voiture').reduce((s, k) => s + k.total, 0);
+        document.getElementById('board-btn').click();
+        // Le bouton ne change qu'au tour d'affichage suivant : on attend le
+        // RÉSULTAT, on ne le lit pas dans la foulée du clic.
+        for (let j = 0; j < 60 && !g.player.volInterdit; j++) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        const apres = v.etat().filter((k) => k.nom === 'voiture').reduce((s, k) => s + k.total, 0);
+        // Huit blocs, pas quatre : la voiture est prise là où elle ROULAIT, à
+        // cinq blocs au plus de l'enfant, et c'est le tour d'affichage suivant
+        // qui la ramène sous lui. Cherchée trop près, on ne la trouvait pas.
+        const auto = g.animalManager.animals
+          .filter((a) => a.def.key === 'voiture'
+            && Math.hypot(a.pos.x - g.player.pos.x, a.pos.z - g.player.pos.z) < 8)
+          .sort((a, b2) => Math.hypot(a.pos.x - g.player.pos.x, a.pos.z - g.player.pos.z)
+            - Math.hypot(b2.pos.x - g.player.pos.x, b2.pos.z - g.player.pos.z))[0];
+        return {
+          // `volInterdit` n'est posé que par la monte d'un véhicule : c'est la
+          // preuve la plus directe qu'on tient le volant.
+          auVolant: !!g.player.volInterdit,
+          prise: avant - apres,
+          modele: auto && auto.mesh ? auto.mesh.userData.flotte || null : null,
+        };
+      }
+      return { aucuneVoiture: true };
+    });
+    verifier('on prend le volant d\'une voiture vue dans la rue',
+      volant.auVolant === true && volant.prise === 1, JSON.stringify(volant));
+    verifier('et c\'est bien celle-là, avec son modèle',
+      !!volant.modele, JSON.stringify(volant));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

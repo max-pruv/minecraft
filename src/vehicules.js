@@ -842,6 +842,11 @@ export function createVehicules({ scene, player }) {
   function voitureDeVille(n, teinte) {
     const g = construireVoitureRoute(teinte);
     const entree = FLOTTE[((n % FLOTTE.length) + FLOTTE.length) % FLOTTE.length];
+    // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
+    // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
+    // flotte — c'est le même soin que pour la voiture garée.
+    g.userData.flotte = entree.fichier;
+    g.userData.nomVoiture = entree.nom;
     const chargement = chargerVoitureFlotte(entree);
     if (chargement) {
       chargement.then((proto) => {
@@ -937,6 +942,32 @@ export function createVehicules({ scene, player }) {
     return meilleur;
   }
 
+  // PRENDRE LE VOLANT D'UNE VOITURE QU'ON VOIT PASSER.
+  //
+  // Max : « je veux que l'on puisse conduire n'importe quel type de voiture
+  // dans le jeu. » Jusqu'ici, monter dans une voiture de ville, c'était s'y
+  // laisser PORTER : le convoi suit son tracé, l'enfant est collé au siège.
+  // Ce qu'il demande, c'est de la conduire.
+  //
+  // On la sort donc du convoi et on la rend à l'appelant, qui en fera une
+  // monture — le mode qui sait déjà conduire. La circulation perd une voiture,
+  // et c'est honnête : l'enfant vient de la prendre. Le modèle part avec elle,
+  // sinon il monterait dans une autre voiture que celle qu'il a vue.
+  function emprunter(id) {
+    const [ci, i] = String(id).split(':').map(Number);
+    const c = convois[ci];
+    if (!c || !c.elements[i]) return null;
+    const p = c.place(i);
+    const mesh = c.elements[i];
+    const flotte = mesh.userData ? mesh.userData.flotte : null;
+    const nom = mesh.userData ? mesh.userData.nomVoiture : null;
+    scene.remove(mesh);
+    c.elements.splice(i, 1);
+    // Un convoi vidé de tous ses éléments n'a plus rien à animer ; on le
+    // laisse en place, `place()` rendra null et l'appelant descendra proprement.
+    return { x: p.x, y: p.y, z: p.z, cap: p.cap, flotte, nom };
+  }
+
   // Où en est la place qu'on occupe. Renvoie null si le convoi a disparu —
   // c'est ce qui fait redescendre proprement plutôt que de rester accroché
   // à un fantôme.
@@ -948,7 +979,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

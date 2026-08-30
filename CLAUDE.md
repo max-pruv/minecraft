@@ -424,6 +424,13 @@ Trois modes, dont deux existent déjà :
    s'élève à la hauteur du dos. *(fait, v155)*
 2. **`bord`** — le convoi suit son tracé précalculé, le joueur est collé au
    siège et ses commandes sont ignorées. Métro, monoplaces. *(fait, v155)*
+**Et depuis v194, TOUTE voiture de la ville se conduit.** Le bouton
+« Monter à bord » est devenu « Conduire cette voiture » : elle sort du convoi
+et devient une monture, avec son modèle — les voitures de ville tiraient déjà
+dans la flotte, elles retiennent désormais lequel. La circulation perd une
+voiture, et c'est honnête : l'enfant vient de la prendre. Le métro et les
+monoplaces gardent l'embarquement : on ne conduit pas un métro.
+
 3. **`pilote`** — **à faire.** Le véhicule a sa propre position et sa propre
    physique ; les commandes du joueur la pilotent ; le joueur est collé au
    siège. C'est le seul des trois où l'enfant décide où l'on va.

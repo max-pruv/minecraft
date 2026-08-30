@@ -336,6 +336,34 @@ export function initFun(ctx) {
     if (!silencieux) toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
   }
 
+  // ON PREND LE VOLANT, ON NE SE LAISSE PLUS PORTER.
+  //
+  // Max : « je veux que l'on puisse conduire n'importe quel type de voiture
+  // dans le jeu. » Une voiture de ville était un siège : le convoi suivait son
+  // tracé et les commandes de l'enfant ne servaient à rien. Désormais il la
+  // SORT du convoi et repart avec — le mode monture, celui qui sait déjà
+  // conduire, prend le relais.
+  //
+  // Le modèle voyage avec elle : la voiture qu'on conduit est exactement celle
+  // qu'on a vue passer, pas une inconnue de la flotte. Le métro, les rames et
+  // les monoplaces gardent l'ancien comportement — on ne conduit pas un métro.
+  function conduireLaVoiture(place) {
+    const v = getVehicules && getVehicules();
+    if (!v || !v.emprunter) return false;
+    const pris = v.emprunter(place.id);
+    if (!pris) return false;
+    const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte });
+    if (!auto) return false;
+    // À SA PLACE EXACTE, pas au sommet de la colonne — la leçon du garage.
+    auto.pos.set(pris.x, pris.y, pris.z);
+    auto.yaw = pris.cap || 0;
+    auto.mesh.position.copy(auto.pos);
+    auto.mesh.rotation.y = auto.yaw + Math.PI;
+    toggleRide(auto);
+    toast(`🚗 Tu prends le volant ${pris.nom ? `de la ${pris.nom}` : 'de la voiture'} !`, 0xa8d8ff);
+    return true;
+  }
+
   function embarquer() {
     if (bord) { debarquer(); return; }
     const v = getVehicules && getVehicules();
@@ -345,6 +373,8 @@ export function initFun(ctx) {
     const place = v && v.placeProche(player.pos, 5);
     if (!place) return;
     if (riding) toggleRide(null);
+    // Une voiture se conduit ; un métro se prend.
+    if (place.nom === 'voiture' && conduireLaVoiture(place)) return;
     bord = { id: place.id, nom: place.nom, emoji: place.emoji };
     toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
     emojiBurst([place.emoji, '💨'], 8);
@@ -1641,7 +1671,9 @@ export function initFun(ctx) {
     if (etat === dernierBord) return;
     dernierBord = etat;
     const boardB = document.getElementById('board-btn');
-    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}` : `${v ? v.emoji : '🚇'} Monter à bord`;
+    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}`
+      : v && v.nom === 'voiture' ? '🚗 Conduire cette voiture'
+        : `${v ? v.emoji : '🚇'} Monter à bord`;
     boardB.style.display = bord || v ? 'block' : 'none';
     if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
   }
