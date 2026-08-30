@@ -279,6 +279,45 @@ function verifier(nom, ok, detail = '') {
       retrouvee.modele === garage.modele && !!retrouvee.modele,
       `${JSON.stringify(retrouvee)} vs ${garage.modele}`);
 
+    // ET ELLE REVIENT SUR LE PLANCHER, PAS SUR LE TOIT.
+    //
+    // Max : « j'ai mis une voiture dans un garage et quand je suis revenu,
+    // elle a été mise au-dessus du garage, elle est passée sur le toit ». La
+    // cause : on repositionnait la voiture à la hauteur rendue par
+    // `sommetColonne`, qui répond sur la COLONNE — et le sommet de la colonne,
+    // sous un garage, c'est la casquette de béton.
+    //
+    // Le témoin d'au-dessus ne pouvait pas l'attraper : il vérifiait que la
+    // voiture est ENREGISTRÉE, jamais qu'elle revient au bon endroit. C'est ce
+    // qui manquait, et c'est la promesse que Max a vue tomber.
+    const ouRevient = await tab.evaluate(async () => {
+      const g = window.__game;
+      const gar = await import('./src/garages.js').catch(() => null);
+      if (!gar) return { absent: true };
+      const box = Object.values(gar.garagesDe(g.world.ctx)).find((b) => b.voiture);
+      if (!box) return { pasDeVoiture: true };
+      const v = box.voiture;
+      // On va la chercher : la boucle ne refabrique que ce qui est proche.
+      g.player.pos.set(v.x, v.y + 1, v.z + 4);
+      for (let i = 0; i < 200; i++) {
+        await new Promise((r) => setTimeout(r, 60));
+        const auto = g.animalManager.animals.find((a) => a.garage);
+        if (auto) {
+          return {
+            garee: [Math.round(v.x), Math.round(v.y), Math.round(v.z)],
+            revenue: [Math.round(auto.pos.x), Math.round(auto.pos.y), Math.round(auto.pos.z)],
+            ecartY: Math.round(Math.abs(auto.pos.y - v.y) * 10) / 10,
+            ecartSol: Math.round(Math.hypot(auto.pos.x - v.x, auto.pos.z - v.z) * 10) / 10,
+          };
+        }
+      }
+      return { jamaisRevenue: true };
+    });
+    verifier('et elle revient sur le plancher du garage, pas sur son toit',
+      !ouRevient.absent && !ouRevient.jamaisRevenue && !ouRevient.pasDeVoiture
+      && ouRevient.ecartY <= 1.5 && ouRevient.ecartSol <= 2,
+      JSON.stringify(ouRevient));
+
     // ---- des voitures dans les villes, et sur la rue ------------------------
     //
     // « Ya toujours pas de voitures dans les villes » (Max). Il avait raison :

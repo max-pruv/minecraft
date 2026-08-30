@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v193 — La voiture rangée revient sur le plancher, pas sur le toit
+
+**Pourquoi.** Max : « j'ai mis une voiture dans un garage et quand je suis
+revenu, la voiture a été mise au-dessus du garage, elle n'a pas exactement
+respecté les mêmes localisations, elle est passée sur le toit. » C'est la
+promesse du garage qui tombe, et c'est un défaut introduit avec lui en v188.
+
+La hauteur où l'enfant laisse sa voiture était pourtant enregistrée depuis le
+début — on la range en même temps que la place et le modèle. Mais au moment de
+la refabriquer, on gardait celle que venait de calculer `sommetColonne`, qui
+répond sur la COLONNE : et le sommet de la colonne, sous un garage, c'est la
+casquette de béton. C'est le même contresens que celui trouvé le matin même
+dans `passants.js` — quand on sait où l'on a laissé quelque chose, on ne le
+redemande pas au monde.
+
+**Ce que ça change.** La voiture revient exactement où elle était : même
+plancher, même place, même cap.
+
+**Ce qui le prouve.** Un témoin neuf dans `fumee.js`, vérifié rouge sur
+l'ancien code, qui mesure la chose que le témoin d'avant ne regardait pas :
+non pas que la voiture soit ENREGISTRÉE, mais qu'elle revienne AU BON ENDROIT.
+Garée à y = 36, elle revenait à y = 40 — trois blocs et demi plus haut, sur le
+toit ; l'écart est désormais nul.
+
+---
+
 ## v192 — San Francisco à l'échelle GTA, une marche plus calme, et des villes habitées
 
 **Pourquoi (la marche et la vie).** Max, capture à l'appui depuis une rue de
