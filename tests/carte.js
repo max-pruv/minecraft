@@ -292,17 +292,26 @@ const position = (p) => p.evaluate(() => ({
     // point de dépose en (−113, −433) — de la terre en v164, la MER DU NORD
     // depuis que le planisphère existe. Le joueur nageait, l'or se posait au
     // fond de l'eau, et les deux témoins suivants accusaient la carte.
-    await tab.evaluate(() => {
-      const c2 = window.__carte;
-      c2.vue.cx = 0; c2.vue.cz = 480; c2.vue.bpp = 1.2;
-      c2.limiter(); c2.peindre();
-    });
-    await dormir(400);
-    const attendu = await tab.evaluate(() => {
-      const c2 = window.__carte;
-      const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
-      return { ecran: { x: r.left + 90, y: r.top + 90 }, monde: c2.versMonde(90, 90) };
-    });
+    // LE CADRAGE SE REFAIT À CHAQUE ESSAI, et c'est ce que j'avais manqué.
+    // Un appui long réussi TÉLÉPORTE et ferme la carte ; la rouvrir la
+    // recentre sur l'enfant. Rappuyer au même point de l'ÉCRAN vise alors un
+    // tout autre point du MONDE — le second essai emmenait l'enfant ailleurs
+    // et le témoin accusait la carte de « déposer n'importe où ». Ce qu'on
+    // veut savoir, c'est où pointe le doigt MAINTENANT.
+    const viser = async () => {
+      await tab.evaluate(() => {
+        const c2 = window.__carte;
+        c2.vue.cx = 0; c2.vue.cz = 480; c2.vue.bpp = 1.2;
+        c2.limiter(); c2.peindre();
+      });
+      await dormir(400);
+      return tab.evaluate(() => {
+        const c2 = window.__carte;
+        const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+        return { ecran: { x: r.left + 90, y: r.top + 90 }, monde: c2.versMonde(90, 90) };
+      });
+    };
+    let attendu = await viser();
     // ON RAPPUIE, COMME L'ENFANT — ET C'EST LE JEU QUI LE DEMANDE.
     //
     // Depuis v173 la carte REFUSE un appui long dont le minuteur tire plus de
@@ -314,19 +323,23 @@ const position = (p) => p.evaluate(() => ({
     // à bon droit — et il accusait la carte. Il fait donc ce que l'enfant fait,
     // et l'on laisse la machine respirer entre deux essais.
     let pose = await position(tab);
-    for (let essai = 0; essai < 4; essai++) {
-      if (Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
-        && !(await carteOuverte(tab))) break;
-      if (essai) { await souffler(); await banc.ouvrirLaCarte(tab); }
+    let arrive = false;
+    for (let essai = 0; essai < 4 && !arrive; essai++) {
+      if (essai) {
+        await souffler();
+        if (!(await carteOuverte(tab))) await banc.ouvrirLaCarte(tab);
+        attendu = await viser();
+      }
       await tab.mouse.move(attendu.ecran.x, attendu.ecran.y);
       await tab.mouse.down();
       await dormir(900);
       await tab.mouse.up();
       await dormir(600);
       pose = await position(tab);
+      arrive = Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
+        && !(await carteOuverte(tab));
     }
-    verifier('un appui long dépose n\'importe où',
-      Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6 && !(await carteOuverte(tab)),
+    verifier('un appui long dépose n\'importe où', arrive,
       JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z] }));
 
     // --- plus on s'approche, plus la carte montre ----------------------------
@@ -1614,6 +1627,18 @@ const position = (p) => p.evaluate(() => ({
     verifier('et elle reste sous l\'encoche, jamais dessous',
       forme.haut >= ENCOCHE && forme.bas <= forme.ecran - BAS,
       `de ${forme.haut} à ${forme.bas}, pour une zone sûre de ${ENCOCHE} à ${forme.ecran - BAS}`);
+    // ON REND L'ÉCRAN À CE QU'IL EST. Ces quatre-vingt-treize pixels d'encoche
+    // sont une FICTION posée pour ce témoin-là : Chromium sans appareil rend
+    // `env(safe-area-inset-*)` à zéro, on les écrit donc à la main. Les
+    // laisser allumées les fait peser sur tout ce qui suit, sur la même page
+    // et sur un écran de 390 pixels de haut — et c'est ainsi que la barre de
+    // recherche s'est retrouvée hors du cadre, « présente mais pas
+    // modifiable », jusqu'à faire tomber le banc au bout de trente secondes.
+    await couche.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-top', '0px');
+      document.documentElement.style.setProperty('--safe-bottom', '0px');
+    });
+    await dormir(400);
 
     // --- CHERCHER UN LIEU PAR SON NOM --------------------------------------
     //
