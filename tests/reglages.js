@@ -183,23 +183,29 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     await autreIpad.close();
 
     // ================= 4. le parent règle la langue et le niveau =============
-    // Ces deux-là, l'enfant peut aussi les changer depuis son écran : deux mains
-    // écrivent au même endroit. C'est la date du dernier choix qui tranche, et
-    // c'est ce qui doit empêcher la tablette de réimposer sa version.
-    // ON ÉCRIT COMME LE VRAI PANNEAU PARENT ÉCRIT, PAS « UN DE PLUS ».
+    // ON ÉCRIT LÀ OÙ LE PARENT ÉCRIT — et c'est TOUT le sujet.
     //
-    // `majProfil` est une HORLOGE — `admin.js` y met
-    // `max(Date.now(), sien + 1, notre + 1)`. Le scénario, lui, posait
-    // « la valeur d'avant + 1 » : une milliseconde après un instant DÉJÀ
-    // passé, donc plusieurs secondes DERRIÈRE l'horloge. La tablette, qui
-    // repousse ses réglages toutes les quinze secondes avec un `Date.now()`
-    // frais, l'emportait alors — à bon droit, puisque la règle est « la date
-    // du dernier choix tranche ». Le témoin ne gagnait que s'il gagnait la
-    // course, et il annonçait « la tablette défait le choix du parent » sur
-    // un jeu qui faisait exactement ce qu'on lui demande. Trois rouges qui se
-    // déplaçaient d'une exécution à l'autre depuis des semaines.
-    const avant = nuage.reglages('Marlon') || {};
-    nuage.poserReglages('Marlon', {
+    // Ce témoin posait la langue et le niveau dans `Marlon`, le document de
+    // l'ENFANT. Or le jeu les loge exprès ailleurs, dans `Marlon~parent`, et
+    // `main.js` dit pourquoi en toutes lettres : « les loger ici plutôt que
+    // dans le document de l'enfant est ce qui les met hors de portée de sa
+    // réécriture toutes les quinze secondes ». La tablette republie en effet
+    // son propre document tous les vingt secondes SANS le relire d'abord
+    // (le battement de `main.js`) : tout ce qu'on y dépose de l'extérieur est
+    // condamné, et c'est voulu.
+    //
+    // Le témoin éprouvait donc un chemin que le panneau parent n'emprunte
+    // jamais — `admin.js` écrit dans `consignes(nom)`, comme les six autres
+    // écritures parentales de ce fichier. Il ne passait que s'il gagnait une
+    // course qu'il avait lui-même créée : vert sur machine au repos, rouge
+    // sous charge, et il accusait le jeu de défaire le choix du parent.
+    //
+    // Deux corrections en une : le bon document, et `majProfil` posé comme
+    // une HORLOGE — `admin.js` y met `max(Date.now(), sien + 1, notre + 1)`,
+    // là où le scénario posait « la valeur d'avant + 1 », soit une
+    // milliseconde après un instant déjà passé.
+    const avant = nuage.reglages('Marlon~parent') || {};
+    nuage.poserReglages('Marlon~parent', {
       ...avant, lang: 'both', grade: 5,
       majProfil: Math.max(Date.now(), (avant.majProfil || 0) + 1),
     });
@@ -210,11 +216,18 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('le niveau scolaire aussi',
       (await marlon.evaluate(() => JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade)) === 5,
       String(await marlon.evaluate(() => JSON.parse(localStorage.getItem('web-minecraft-profile-v1')).grade)));
-    // et la tablette ne repart pas en sens inverse à l'envoi suivant
+    // Et la tablette ne repart pas en sens inverse à l'envoi suivant : vingt
+    // secondes, c'est un battement complet de sa republication. Ce qu'on
+    // regarde, c'est la consigne du parent — intacte — ET ce que la tablette
+    // republie de son côté, qui doit s'y être aligné.
     await dormir(20000);
+    const consigne = nuage.reglages('Marlon~parent') || {};
+    const sien = nuage.reglages('Marlon') || {};
     verifier('et la tablette ne le défait pas ensuite',
-      (nuage.reglages('Marlon') || {}).lang === 'both' && (nuage.reglages('Marlon') || {}).grade === 5,
-      `serveur : ${JSON.stringify({ lang: nuage.reglages('Marlon').lang, grade: nuage.reglages('Marlon').grade })}`);
+      consigne.lang === 'both' && consigne.grade === 5
+      && sien.lang === 'both' && sien.grade === 5,
+      `parent ${JSON.stringify({ lang: consigne.lang, grade: consigne.grade })}`
+      + ` · tablette ${JSON.stringify({ lang: sien.lang, grade: sien.grade })}`);
 
     // Et depuis l'espace parent pour de bon : on actionne les vrais menus du
     // tableau, pas seulement l'écriture qu'ils déclenchent.
