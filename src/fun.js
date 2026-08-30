@@ -1538,7 +1538,21 @@ export function initFun(ctx) {
       const auto = animalManager.invoquer('voiture', v.x, v.z, false, { flotte: v.flotte });
       if (!auto) continue;
       auto.garage = id;
-      auto.pos.set(v.x, auto.pos.y, v.z);
+      // SUR LE PLANCHER, PAS SUR LE TOIT.
+      //
+      // `invoquer` pose la bête au SOMMET DE LA COLONNE — et le sommet de la
+      // colonne, sous un garage, c'est le toit. La voiture rangée revenait
+      // donc sur la casquette de béton, ce que Max a vu du premier coup :
+      // « elle n'a pas exactement respecté les mêmes localisations, elle est
+      // passée sur le toit ».
+      //
+      // La hauteur du garage était pourtant écrite depuis le début — on la
+      // range en même temps que la place et le modèle — mais on gardait celle
+      // que venait de calculer `invoquer`. C'est le même contresens que dans
+      // `passants.js` : `sommetColonne` répond sur la COLONNE, pas sur le sol
+      // de la pièce où l'on se trouve. Quand on sait où l'on a laissé la
+      // voiture, on ne le redemande pas au monde.
+      auto.pos.set(v.x, v.y, v.z);
       auto.yaw = v.yaw || 0;
       auto.mesh.position.copy(auto.pos);
       auto.mesh.rotation.y = auto.yaw + Math.PI;
