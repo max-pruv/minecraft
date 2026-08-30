@@ -701,6 +701,40 @@ Deux pièges de rendu payés en captures :
   générale : **remettre une ville à l'échelle, c'est aussi refaire ses
   monuments.**
 
+### San Francisco (`sanfrancisco.js`) — la septième remise à l'échelle
+
+**Vingt-sept blocs par kilomètre** (v192), contre neuf : un bloc valait CENT
+ONZE MÈTRES, et Market Street en faisait trois cents de large. Le disque passe
+de 66 à 220 blocs, et couvre toute la presqu'île. Trois choses à savoir.
+
+- **Le rayon vient du REGISTRE.** `export const SF = positionDe('sf')` — le
+  littéral `r: 66` qui traînait là était le même piège qu'à Paris : il masquait
+  la valeur de `mondes.js`, et rien ne se bâtissait au-delà.
+- **`adresseSF(dx, dz)` rend une adresse du monde à partir de kilomètres réels
+  depuis le Ferry Building.** C'est ce que les sondes, les témoins ET LES
+  AUTRES FICHIERS doivent viser. Le Golden Gate était posé dans `world.js` à
+  `SF.x - 21, SF.z - 42` — des blocs de l'ancienne échelle : après la remise à
+  l'échelle il s'est retrouvé trois fois trop près du centre, au milieu des
+  maisons, et le détroit était vide. Une capture l'a montré, pas un témoin.
+- **Un pont, lui, SUIT LE SOL.** C'est la seule pièce dont la longueur soit une
+  longueur de plan : le tablier passe de 25 à 73 blocs, sans quoi il s'arrêtait
+  au milieu de l'eau. Les hauteurs, elles, ne bougent pas — 227 m de pylône
+  font toujours vingt-quatre blocs.
+
+**Et le piège de forme, qui n'existait qu'à petite échelle.** Les Marin
+Headlands montaient par `min(1, marin * 2) * 8` : la saturation aplatissait
+toute la moitié intérieure de l'ellipse. Invisible tant qu'elle faisait vingt
+blocs, c'est une mesa à table quand elle en fait soixante. `marin` seul est
+déjà un paraboloïde — sommet arrondi, bords doux ; la racine carrée, elle,
+fait l'inverse (sommet plat, falaise au bord), et c'est l'erreur que j'ai
+faite d'abord.
+
+**Hors de la fenêtre d'empreinte.** San Francisco est à dix mille blocs du
+point d'apparition ; `plafond.js` échantillonne [−700, 700] et ne l'atteint
+pas. Comme Manhattan en v186, la refonte apporte donc SES PROPRES témoins,
+dans `carteMonde.js` : la presqu'île va du Ferry Building à Ocean Beach, et le
+Golden Gate traverse vraiment le détroit.
+
 ### Washington (`washington.js`, `dcmonuments.js`)
 
 La sixième ville, la première où **on entre dans les bâtiments** — et la

@@ -135,7 +135,7 @@ export const MONDES = {
       { cle: 'lille', nom: 'Lille', lat: 50.6292, lon: 3.0573, r: 46 },
       { cle: 'nice', nom: 'Nice', lat: 43.7102, lon: 7.2620, r: 48 },
       { cle: 'ny', nom: 'New York', lat: 40.7128, lon: -74.0060, r: 152 },
-      { cle: 'sf', nom: 'San Francisco', lat: 37.7749, lon: -122.4194, r: 66 },
+      { cle: 'sf', nom: 'San Francisco', lat: 37.7749, lon: -122.4194, r: 220 },
       // Washington est la plus étendue : bâtie à 48 blocs par kilomètre depuis
       // v162, son emprise fait 311 × 206 blocs. C'est elle qui dicte l'échelle.
       { cle: 'washington', nom: 'Washington', lat: 38.9072, lon: -77.0369, r: 187 },

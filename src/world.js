@@ -16,7 +16,7 @@ import {
   SF, surTerreSF, surMarin, hauteurSF, solSF, lotSFLibre, LIEUX_SF, MONUMENTS_SF,
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
-  buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate,
+  buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate, adresseSF,
 } from './sanfrancisco.js';
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
@@ -908,7 +908,14 @@ const LANDMARKS = [
   // du Presidio aux Marin Headlands — avec Karl the Fog qui entre par la
   // passe ; le Bay Bridge, GRIS, relie le centre à l'est : les confondre est
   // l'erreur classique, la couleur les distingue désormais.
-  { name: 'Golden Gate', x: SF.x - 21, z: SF.z - 42, box: 30, waterBase: true, build: buildGoldenGate },
+  // PAR SON ADRESSE, PAS PAR UN DÉCALAGE EN BLOCS. Il était posé à
+  // `SF.x - 21, SF.z - 42` — des blocs de l'ancienne échelle. Quand San
+  // Francisco est passée de neuf à vingt-sept blocs par kilomètre, le pont
+  // s'est retrouvé trois fois trop près du centre, au milieu des maisons, et
+  // le détroit était vide. Sept kilomètres et demi à l'ouest-nord-ouest du
+  // Ferry Building : c'est là qu'il est, et cela ne changera plus.
+  { name: 'Golden Gate', ...(() => { const [x, z] = adresseSF(-7.33, -4.22); return { x, z }; })(),
+    box: 76, waterBase: true, build: buildGoldenGate },
   { name: 'Karl the Fog', x: SF.x - 21, z: SF.z - 44, box: 18, waterBase: true, seuil: 0.3, build: buildKarl },
   { name: 'Bay Bridge', x: SF.x + 56, z: SF.z + 1, box: 30, waterBase: true, build: (set) => buildSuspensionBridge(set, BLOCK.STONEBRICK) },
   { name: 'Phare', x: SF.x - 44, z: SF.z - 30, box: 3, waterBase: true, build: buildLighthouse },

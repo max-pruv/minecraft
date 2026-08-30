@@ -640,6 +640,52 @@ const VRAIES_KM = [
       nuit.fenetres > nuit.solide * 1.8 && nuit.morceauxEclaires >= 3,
       `murs à ${nuit.solide}, fenêtres à ${nuit.fenetres} · ${nuit.morceauxEclaires} morceaux éclairés`);
 
+    // --- San Francisco à l'échelle GTA (v192) --------------------------------
+    //
+    // Neuf blocs par kilomètre, c'était un bloc pour CENT ONZE MÈTRES : Market
+    // Street faisait trois cents mètres de large. Vingt-sept blocs par
+    // kilomètre, et le disque passe de 66 à 220. San Francisco est à dix mille
+    // blocs du point d'apparition, donc HORS de la fenêtre d'empreinte de
+    // `plafond.js` : la casse ne peut pas s'y prouver, et c'est ce témoin-ci
+    // qui la borne. Deux choses doivent tenir : la presqu'île va bien du Ferry
+    // Building à Ocean Beach, et le Golden Gate rejoint les deux rives — à
+    // l'ancienne échelle il faisait vingt-cinq blocs et s'arrêtait au milieu
+    // de l'eau.
+    const sf = await tab.evaluate(async () => {
+      const m = await import('./src/sanfrancisco.js');
+      const g = window.__game;
+      // Des adresses en KILOMÈTRES RÉELS depuis le Ferry Building : elles
+      // restent justes à toute échelle, un `u`/`v` en dur non. C'est la ville
+      // qui les traduit (`adresseSF`), jamais le témoin.
+      if (typeof m.adresseSF !== 'function') return { absent: true };
+      const points = {
+        ferry: [0, 0], twinPeaks: [-5.6, 2.2], mission: [-3, 1.6],
+        sunset: [-8, 1], richmond: [-8, -0.5],
+        // Bernal Heights : une colline que la ville DÉCLARE, donc elle est
+        // forcément à terre. Hunters Point, que j'avais mis ici de mémoire,
+        // tombait dans la baie — le témoin avait raison, c'est mon adresse qui
+        // était fausse.
+        bernal: [-2.4, 4.2],
+      };
+      const surTerre = {};
+      for (const [nom, [dx, dz]] of Object.entries(points)) {
+        const [x, z] = m.adresseSF(dx, dz);
+        surTerre[nom] = m.surTerreSF(Math.round(x), Math.round(z));
+      }
+      // Le pont : son tablier doit traverser tout le détroit. À l'ancienne
+      // échelle il faisait vingt-cinq blocs et s'arrêtait au milieu de l'eau.
+      const blocs = [];
+      m.buildGoldenGate((dx, dy, dz) => { if (dy === 11 && dx === -1) blocs.push(dz); });
+      const tablier = blocs.length ? Math.max(...blocs) - Math.min(...blocs) + 1 : 0;
+      return { rayon: m.SF.r, surTerre, tablier };
+    });
+    verifier('San Francisco tient du Ferry Building à Ocean Beach',
+      !sf.absent && sf.rayon >= 200 && Object.values(sf.surTerre).every(Boolean),
+      JSON.stringify(sf));
+    verifier('et le Golden Gate traverse vraiment le détroit',
+      sf.tablier !== null && sf.tablier >= 60,
+      `tablier de ${sf.tablier} blocs`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

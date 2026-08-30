@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v192 — San Francisco à l'échelle GTA
+
+**Pourquoi.** La quatrième ville remise à l'échelle, et la pire des quatre.
+San Francisco était bâtie à NEUF blocs par kilomètre : un bloc valait cent
+onze mètres, Market Street en faisait trois cents de large, et un enfant ne
+pouvait pas plus s'y promener qu'il ne le pouvait dans le Paris d'avant la
+v187. Le plan était juste — la presqu'île, les deux quadrillages qui ne sont
+pas parallèles, les treize collines à leur vraie hauteur — mais on le
+survolait.
+
+**Ce que ça change.**
+
+*L'échelle.* Vingt-sept blocs par kilomètre, soit trente-sept mètres par bloc,
+et le disque passe de 66 à 220 blocs de rayon : toute la presqu'île, du Ferry
+Building à Ocean Beach, du Golden Gate à Bernal Heights. Les rues font deux
+blocs de chaussée et un trottoir de chaque côté, les îlots huit à quinze
+blocs — de quoi marcher entre les maisons pastel au lieu de les survoler.
+
+*Le Golden Gate traverse vraiment le détroit.* Il faisait vingt-cinq blocs de
+tablier, ce qui était juste à l'ancienne échelle ; il en fait soixante-treize.
+Et il était posé par un décalage en blocs, pas par une adresse : après la
+remise à l'échelle il s'est retrouvé trois fois trop près du centre, au milieu
+des maisons, pendant que le détroit restait vide. C'est une capture qui l'a
+montré.
+
+*Les Marin Headlands sont redevenues des collines.* Leur courbe saturait sur
+toute la moitié intérieure de l'ellipse — invisible à vingt blocs, une mesa à
+table à soixante.
+
+*Et les voitures suivent Columbus et Lombard*, remesurées après la remise à
+l'échelle : les enchaînements d'avant ne valaient plus que 92 %.
+
+**Ce qui le prouve.** San Francisco est à dix mille blocs du point
+d'apparition, donc HORS de la fenêtre d'empreinte de `plafond.js` : la casse ne
+peut pas s'y prouver, et la refonte apporte donc ses propres témoins, comme
+Manhattan en v186. Deux témoins neufs dans `carteMonde.js`, vérifiés rouges
+sur l'ancien code : « San Francisco tient du Ferry Building à Ocean Beach » et
+« le Golden Gate traverse vraiment le détroit » (25 blocs avant, 73 après).
+`plafond.js` reste vert — le sol du reste du monde n'a pas bougé d'un bloc — et
+`carteMonde.js` confirme qu'aucune ville n'en chevauche une autre.
+
+---
+
 ## v191 — Des voitures qui roulent vraiment dans les villes
 
 **Pourquoi.** Max, deux versions après qu'on ait cru le sujet réglé : « ya
