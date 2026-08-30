@@ -1014,8 +1014,36 @@ export class NetSession {
 
   registerConn(conn) {
     if (!this.active) { try { conn.close(); } catch { /* déjà fermée */ } return; }
+    // UN LIEN QUI N'EST PAS ENCORE OUVERT NE CHASSE PAS UN LIEN QUI MARCHE.
+    //
+    // C'est l'autre moitié de la panne du Wi-Fi d'hôtel, et la voici enfin.
+    // Chez l'invité, le lien direct et le lien de secours portent la MÊME clé
+    // — l'identifiant de l'hôte —, donc la même case. `connectToHost` inscrit
+    // sa tentative AVANT qu'elle ne s'ouvre, à dessein : sans cela on raterait
+    // les premiers messages. Mais quand le pair-à-pair est mort à la racine,
+    // cette tentative ne s'ouvre JAMAIS — et elle prenait quand même la place
+    // du lien par le nuage, qui, lui, portait la partie.
+    //
+    // Ce que cela donnait, mesuré à la sonde : l'hôte voit
+    // ["…/direct", "…:pret/nuage"] et se croit connecté ; l'invité n'a plus
+    // que ["…/direct"], jamais prêt, avec le bandeau « reconnexion ». Chacune
+    // de ses tentatives rechasse le secours qui venait de marcher, la boucle
+    // ne s'arrête jamais, et ses blocs ne partent nulle part. C'est mot pour
+    // mot ce que Max a signalé depuis son iPhone : « j'étais déconnecté, et
+    // impossible de me reconnecter ».
+    //
+    // La promotion existait déjà dans l'autre sens (`promouvoirSiDirect` :
+    // un direct qui s'OUVRE reprend la main) — elle était simplement
+    // court-circuitée, la case ayant déjà changé de main avant l'ouverture.
+    // On laisse donc le secours en place et on branche les écouteurs : c'est
+    // `open` qui donnera la main au direct, quand il l'aura méritée.
+    const tenant = this.conns.get(conn.peer);
+    const secoursTient = !!(tenant && tenant.pret && tenant.conn && tenant.conn.parNuage
+      && tenant.conn !== conn && !conn.parNuage && !conn.open);
     // `pret` reste faux jusqu'à la présentation : voir presents().
-    this.conns.set(conn.peer, { conn, name: '…', pret: false, lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
+    if (!secoursTient) {
+      this.conns.set(conn.peer, { conn, name: '…', pret: false, lookIdx: 0, pos: null, yaw: 0, moving: false, seen: Date.now() });
+    }
     conn.on('data', (msg) => this.onMessage(conn, msg));
     // On dit DE QUELLE connexion on parle. Sans cela, la fin d'un lien mort
     // emportait celui qui venait de le remplacer : les deux portent la même
