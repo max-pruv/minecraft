@@ -532,26 +532,50 @@ async function jusqua(condition, limiteMs = 45000, pasMs = 500) {
 // tout se fige. Plus rien n'est émis ni traité, le lien restant ouvert. C'est
 // exactement la situation que le jeu doit savoir traverser, et celle qui
 // coupait la partie au bout de vingt secondes.
-const endormir = (p) => p.evaluate(() => {
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
-  document.dispatchEvent(new Event('visibilitychange'));
-  const n = window.__game.net;
-  n._gele = n.onMessage;
-  n.onMessage = () => {};
-  clearInterval(n.posTimer); n.posTimer = null;
-  clearInterval(n._hb); n._hb = null;
-});
+// UNE PAGE ENDORMIE NE DOIT PLUS DESSINER À PLEIN RÉGIME.
+//
+// `endormir()` ne gelait que le RÉSEAU ; la page continuait de rendre un monde
+// en trois dimensions en logiciel, et le navigateur du banc est lancé avec
+// `--disable-renderer-backgrounding`, donc rien ne la ralentissait. Sur quatre
+// cœurs, un fantôme pareil brûle un cœur entier — et ce sont les scénarios qui
+// CHRONOMÈTRENT qui le paient. `reseau.js` le disait déjà en toutes lettres
+// pour un cas précis (13 s seule, 24 à 29 s avec le fantôme) ; la même charge
+// faisait flotter trois témoins de la veille, verts d'une exécution à l'autre
+// et rouges à la suivante sans que le jeu ait bougé.
+//
+// Le rendu logiciel coûte au PIXEL : réduire la fenêtre à une vignette divise
+// ce coût par cinquante, et ne change rien à ce que la page a le droit de
+// faire — elle garde ses liens, ses tentatives de reconnexion et son état.
+// C'est ce qu'un vrai téléphone fait de toute façon en arrière-plan.
+const endormir = async (p) => {
+  await p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    const n = window.__game.net;
+    n._gele = n.onMessage;
+    n.onMessage = () => {};
+    clearInterval(n.posTimer); n.posTimer = null;
+    clearInterval(n._hb); n._hb = null;
+  });
+  try {
+    p.__taille = p.viewportSize();
+    await p.setViewportSize({ width: 160, height: 120 });
+  } catch { /* une page sans fenêtre propre : rien à réduire */ }
+};
 
 // L'enfant revient à l'application : tout redémarre, et le jeu doit se
 // rattraper sans qu'on ait rien perdu.
-const reveiller = (p) => p.evaluate(() => {
-  const n = window.__game.net;
-  if (n._gele) { n.onMessage = n._gele; n._gele = null; }
-  n.startHeartbeat();
-  n.startPosLoop();
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
-  document.dispatchEvent(new Event('visibilitychange'));
-});
+const reveiller = async (p) => {
+  try { if (p.__taille) { await p.setViewportSize(p.__taille); p.__taille = null; } } catch { /* idem */ }
+  await p.evaluate(() => {
+    const n = window.__game.net;
+    if (n._gele) { n.onMessage = n._gele; n._gele = null; }
+    n.startHeartbeat();
+    n.startPosLoop();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+};
 
 // Deux doigts qui s'écartent sur l'écran. Playwright ne sait taper qu'à un
 // doigt : le multi-touch passe par le protocole du navigateur.

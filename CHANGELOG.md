@@ -51,6 +51,23 @@ redescendue sur la façade, où elle est en vrai, et les toits sont du goudron
 sombre. Les Victoriennes perdent leurs trois tons acides — citron, vert clair,
 turquoise — qui leur donnaient l'air de briques de plastique.
 
+**Et le portail arrête de faire perdre du temps.** Max : « je ne vois pas
+pourquoi on vient tester réseau quand on change la carte ». Il avait raison, et
+la cause était mesurable : porter UNE limite d'attente de dix à trente secondes
+dans le banc relançait les treize suites — trois quarts d'heure. Un diff limité
+à des délais et des commentaires est désormais anodin, comme l'est déjà celui
+qui monte `CACHE_VERSION`. Et le cache de reprise est tenu PAR SUITE : le
+verdict d'une suite reste acquis tant qu'aucun fichier qui la garde n'a bougé,
+au lieu d'être annulé au moindre octet du dépôt — ce qui obligeait à tout
+rejouer dès qu'on corrigeait le rouge qu'on venait de trouver.
+
+Au passage, la table des gardiens a récupéré **trente fichiers qui n'y étaient
+pas**, dont deux vrais trous : `src/visio.js` ne lançait pas la suite `visio`,
+et `src/garages.js` — qui écrit dans le profil de l'enfant, à côté de ses
+blocs — ne lançait pas la suite de sauvegarde. Aucune ville bâtie à la main n'y
+figurait non plus : c'est par ce trou que le pont de cette version est arrivé
+en production.
+
 **Ce qui le prouve.** Douze suites vertes sur treize, 462 témoins. Cinq témoins
 neufs, tous vérifiés ROUGES sur le code livré avant d'être écrits : de l'eau sur
 toute la travée du pont (0 → 57 colonnes sur 57), le phare sur son rocher, zéro

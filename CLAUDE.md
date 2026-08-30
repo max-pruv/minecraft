@@ -162,6 +162,26 @@ protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
 **Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
 rapide n'est pas une permission d'aller vite sur ce qui compte.
 
+**UN ROUGE MESURÉ IDENTIQUE SUR `origin/main` NE BLOQUE PLUS — MAIS IL SE
+PROUVE.** Décision de Max, v195. Un défaut déjà en production n'est pas causé
+par la livraison en cours, et l'immobiliser derrière elle coûte des heures sans
+rien protéger. La preuve exigée est stricte, et c'est elle qui empêche
+l'échappatoire facile : la suite doit avoir été **rejouée SEULE des deux
+côtés** — sur la branche et sur `origin/main`, dans un arbre séparé
+(`git worktree add`) — et les deux mesures jointes. Le défaut part alors dans
+`TASKS.md` comme dette déclarée, et la fusion passe. Sans cette double mesure,
+il bloque comme avant.
+
+**Et la table des gardiens doit être COMPLÈTE, pas indicative.** En v195 il y
+manquait trente fichiers de `src/`, dont deux vrais trous : `src/visio.js` ne
+lançait pas `visio.js`, et `src/garages.js` — qui écrit dans le profil de
+l'enfant, à côté de ses blocs — ne lançait pas `sauvegarde.js`. Pire, aucune
+ville bâtie à la main n'y figurait : `src/sanfrancisco.js` partait en voie
+rapide, et c'est par ce trou que le Bay Bridge planté au milieu de la ville est
+arrivé en production. Le portail vérifie désormais qu'aucun fichier de `src/`
+n'est sans gardien ; un module neuf sans gardien déclaré annule tous les acquis
+du cache de reprise, ce qui le rend visible tout de suite.
+
 **La voie longue trouve ce que la voie rapide ne peut pas voir.** En v187 elle
 a rendu QUATRE suites rouges — `reseau.js`, `visio.js`, `reglages.js`,
 `hote.js` — qui l'étaient DÉJÀ sur `origin/main`, donc en production : mêmes

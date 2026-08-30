@@ -99,10 +99,94 @@ const GARDIENS = {
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js', 'washington.js'],
   'index.html': ['carte.js', 'reglages.js', 'maj.js'],
+
+  // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
+  // trous, pas des oublis de confort. `src/visio.js` ne lançait pas
+  // `visio.js` ; `src/garages.js`, qui écrit dans le profil de l'enfant à
+  // côté de ses blocs, ne lançait pas `sauvegarde.js`. Le fichier disait
+  // déjà « la table doit grandir avec le code » — elle n'avait pas grandi.
+  //
+  // Les villes bâties à la main : elles dessinent leur relief et leurs
+  // destinations, exactement comme Nice et Londres, déjà listées.
+  'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js'],
+  'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  // Les régions et les sites du tour du monde : ils aplanissent leur parvis,
+  // donc le témoin du relief, et s'ajoutent aux destinations de la carte.
+  'src/chine.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/pole.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/espace.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/gaulois.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/villandry.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/parc.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/aeroport.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/circuit.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  // Les voies nommées : elles portent les circuits de voitures de toutes les
+  // villes bâties à la main.
+  'src/voies.js': ['carte.js', 'monte.js'],
+  // Le garage écrit dans le profil de l'enfant, à côté de ses blocs : c'est
+  // de la sauvegarde, et cela doit se prouver comme telle.
+  'src/garages.js': ['sauvegarde.js', 'monte.js'],
+  'src/visio.js': ['visio.js', 'reseau.js'],
+  'src/partage.js': ['reseau.js', 'parent.js'],
+  'src/siege.js': ['monte.js', 'washington.js'],
+  // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
+  // n'abîme pas une ville, il les abîme toutes.
+  'src/blocks.js': SUITES,
+  'src/mesher.js': SUITES,
+  'src/textures.js': SUITES,
+  'src/sky.js': ['carte.js', 'monte.js'],
+  'src/effects.js': ['monte.js', 'carte.js'],
+  'src/props.js': ['monte.js', 'carte.js'],
+  'src/modeles.js': ['monte.js'],
+  'src/betes.js': ['monte.js'],
+  'src/creatures.js': ['monte.js'],
+  'src/personnages.js': ['monte.js'],
+  'src/vie.js': ['monte.js'],
+  'src/marlon.js': ['monte.js'],
+  'src/face-worker.js': ['parent.js'],
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
 const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js'];
+
+// SAUF QUAND CE QUI BOUGE EST UN DÉLAI OU UN COMMENTAIRE.
+//
+// Même raisonnement que `swAnodin`, et pour la même raison mesurée : porter
+// UNE limite d'attente de dix à trente secondes dans `banc.js` a relancé les
+// treize suites — trois quarts d'heure — alors que le changement ne pouvait
+// rien casser. C'est ce qui a fait dire à Max, à juste titre, « je ne vois pas
+// pourquoi on vient tester réseau quand on change la carte ».
+//
+// Est anodin : un commentaire, une ligne vide, ou une ligne dont la SEULE
+// différence est un nombre — une temporisation, une borne. Tout le reste — une
+// signature, un appel, une structure — reste du banc qui bouge.
+function bancAnodin(base, fichier) {
+  try {
+    const { execSync } = require('child_process');
+    const d = execSync(`git diff origin/main...HEAD -- ${fichier}; git diff HEAD -- ${fichier}`,
+      { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const bouge = d.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
+    if (!bouge.length) return true;
+    // Un commentaire ou une ligne vide ne change rien à ce que le banc fait.
+    const utile = (l) => l.slice(1).trim() && !/^\s*(\/\/|\*|\/\*)/.test(l.slice(1));
+    // Une ligne de code, effacée de ses nombres : c'est sa FORME. Si chaque
+    // ligne ajoutée a une jumelle retirée de même forme, seuls des nombres ont
+    // bougé — des délais, des bornes.
+    const forme = (l) => l.slice(1).replace(/\d+/g, '#').trim();
+    const ajoutees = bouge.filter((l) => l[0] === '+' && utile(l)).map(forme);
+    const retirees = bouge.filter((l) => l[0] === '-' && utile(l)).map(forme);
+    if (ajoutees.length !== retirees.length) return false;
+    const reste = [...retirees];
+    for (const a of ajoutees) {
+      const k = reste.indexOf(a);
+      if (k === -1) return false;
+      reste.splice(k, 1);
+    }
+    return true;
+  } catch { return false; }
+}
 
 // `sw.js` SE JUGE SUR CE QUI A CHANGÉ, PAS SUR LE FAIT QU'IL A CHANGÉ.
 //
@@ -148,7 +232,10 @@ function suitesNecessaires() {
   const raisons = [];
   let tout = false;
   for (const f of changes) {
-    if (BANC.includes(f)) { tout = true; raisons.push(`${f} (le banc)`); continue; }
+    if (BANC.includes(f)) {
+      if (bancAnodin(base, f)) { raisons.push(`${f} (délais seulement)`); continue; }
+      tout = true; raisons.push(`${f} (le banc)`); continue;
+    }
     if (GARDIENS[f]) { GARDIENS[f].forEach((s) => besoin.add(s)); raisons.push(f); continue; }
     if (f === 'sw.js') {
       if (swAnodin(base)) { raisons.push('sw.js (version + cache seulement)'); continue; }
@@ -192,34 +279,63 @@ const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 // fichier existe pour empêcher — publier sur la foi de suites « probablement
 // encore bonnes ». L'empreinte couvre src/, tests/, sw.js et index.html ; au
 // moindre changement, tous les acquis sont annulés et tout se rejoue.
-const MEMOIRE = '/tmp/portail-verdicts-v2.json';
+// v195 : L'EMPREINTE EST DÉSORMAIS PAR SUITE, ET C'EST LE PLUS GROS LEVIER
+// SUR L'ITÉRATION.
+//
+// Une empreinte unique sur tout `src/` et tout `tests/` annulait TOUS les
+// acquis au moindre octet — donc dès qu'on corrigeait le rouge qu'on venait de
+// trouver, les douze suites vertes se rejouaient pour rien. Mesuré sur la
+// session de la v195 : trois passages de `carte.js`, trois quarts d'heure, là
+// où un seul suffisait.
+//
+// Le verdict d'une suite reste valable tant qu'aucun fichier qui la GARDE n'a
+// bougé. Ses gardiens, c'est exactement la table ci-dessus, lue à l'envers —
+// plus son propre fichier, le banc, `sw.js` et `index.html`. Et, par prudence,
+// tout fichier de `src/` que la table ne connaît PAS encore : un module neuf
+// n'a pas de gardien déclaré, et ne pas savoir n'est pas une raison de garder
+// un acquis.
+const MEMOIRE = '/tmp/portail-verdicts-v3.json';
 const RACINE = path.join(__dirname, '..');
 
-function empreinteDuDepot() {
-  const h = crypto.createHash('sha1');
-  for (const dossier of ['src', 'tests']) {
-    const chemin = path.join(RACINE, dossier);
-    for (const f of fs.readdirSync(chemin).sort()) {
-      if (!f.endsWith('.js')) continue;
-      h.update(dossier + '/' + f).update(fs.readFileSync(path.join(chemin, f)));
-    }
+function listeSrc() {
+  try { return fs.readdirSync(path.join(RACINE, 'src')).filter((f) => f.endsWith('.js')).sort(); }
+  catch { return []; }
+}
+
+function gardiensDe(suite) {
+  const fichiers = new Set([`tests/${suite}`, ...BANC, 'sw.js', 'index.html']);
+  for (const [f, suites] of Object.entries(GARDIENS)) {
+    if (suites.includes(suite)) fichiers.add(f);
   }
-  for (const f of ['sw.js', 'index.html']) {
-    try { h.update(f).update(fs.readFileSync(path.join(RACINE, f))); } catch { /* absent */ }
+  for (const f of listeSrc()) if (!GARDIENS[`src/${f}`]) fichiers.add(`src/${f}`);
+  return [...fichiers].sort();
+}
+
+function empreinteDe(fichiers) {
+  const h = crypto.createHash('sha1');
+  for (const f of fichiers) {
+    try { h.update(f).update(fs.readFileSync(path.join(RACINE, f))); }
+    catch { h.update(f).update('absent'); }
   }
   return h.digest('hex');
 }
 
-function acquisLus(empreinte) {
-  try {
-    const m = JSON.parse(fs.readFileSync(MEMOIRE, 'utf8'));
-    if (m.empreinte === empreinte) return m.verts || {};
-  } catch { /* première fois, ou mémoire abîmée */ }
-  return {};
+function acquisLus() {
+  let m;
+  try { m = JSON.parse(fs.readFileSync(MEMOIRE, 'utf8')); } catch { return {}; }
+  const verts = {};
+  for (const [suite, note] of Object.entries(m.verts || {})) {
+    if (note && note.empreinte === empreinteDe(gardiensDe(suite))) verts[suite] = true;
+  }
+  return verts;
 }
 
-function acquisEcrits(empreinte, verts) {
-  try { fs.writeFileSync(MEMOIRE, JSON.stringify({ empreinte, verts }, null, 2)); }
+function acquisEcrits(_ignore, verts) {
+  const note = {};
+  for (const suite of Object.keys(verts)) {
+    if (verts[suite]) note[suite] = { empreinte: empreinteDe(gardiensDe(suite)) };
+  }
+  try { fs.writeFileSync(MEMOIRE, JSON.stringify({ verts: note }, null, 2)); }
   catch { /* sans mémoire, on rejouera tout : c'est le pire, pas le faux */ }
 }
 
@@ -265,8 +381,8 @@ function lancer(fichier) {
     await dormir(REPOS_MS);
   }
 
-  const empreinte = empreinteDuDepot();
-  const verts = depuisZero ? {} : acquisLus(empreinte);
+  const empreinte = null;      // l'empreinte est désormais tenue par suite
+  const verts = depuisZero ? {} : acquisLus();
   const dejaVus = Object.keys(verts).filter((s) => verts[s]);
   if (dejaVus.length) {
     console.log(`↩️  reprise : ${dejaVus.length} suite(s) déjà verte(s) sur ce code exact`
