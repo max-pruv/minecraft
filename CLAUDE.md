@@ -437,6 +437,43 @@ Les deux difficultés réelles, à ne pas découvrir en route :
   qui glisse à toute vitesse, la moitié du plaisir est perdue. La position du
   véhicule et son pilote font partie de ce qui voyage.
 
+### Les garages, et ce qui dure d'une session à l'autre
+
+Le bestiaire ne survit à rien : aucune bête n'a jamais été enregistrée, elles
+repeuplent le monde à chaque lancement. **Une voiture garée est donc une ligne
+de sauvegarde, pas une créature qui dort** — `src/garages.js` l'écrit dans le
+profil de l'enfant, à côté de ses blocs, rangée par monde et horodatée pour
+que deux tablettes se fusionnent sans se contredire.
+
+Trois choses à savoir avant d'y toucher :
+
+- **Le garage est repéré par sa POSE, pas par ses blocs.** Chercher dans le
+  monde ce qui ressemble à un garage serait fragile et lent. Quand la
+  bibliothèque pose un bâtiment marqué `garage`, on note son emprise une fois
+  pour toutes. Un enfant qui démolit son garage garde donc une place de
+  parking invisible — c'est le prix, et il est bien plus petit que celui d'une
+  voiture qu'on ne retrouve pas.
+- **Ce qu'on inscrit, c'est l'ORIGINE DE L'AUTEUR, pas le centre de
+  l'emprise.** Les deux diffèrent dès qu'un bâtiment déborde d'un côté — ici
+  le seuil goudronné, qui tire l'emprise vers l'avant. Les places, elles, sont
+  données par rapport à l'origine.
+- **Le modèle voyage avec la voiture.** La flotte compte cinquante-et-un
+  modèles tirés au sort. Ranger « une voiture » rendrait une Twingo à la place
+  d'une Bugatti : on retient le fichier du modèle, et `voitureNeuve(voeu)` le
+  réclame à la sortie — avec repli sur le tirage si le fichier a disparu.
+
+**Et un bâtiment qui déclare une façade PIVOTE.** `poserBati` posait tout dans
+la même direction ; une porte de garage tournée vers le sud, c'est un enfant
+qui fait le tour de son propre garage sans trouver l'entrée. La rotation se
+fait par quarts de tour — à ce pas-là les coordonnées restent entières et
+aucun bloc ne se perd — et seuls les bâtiments à façade y passent.
+
+**Un véhicule ne vole pas**, et la règle vit dans la fiche de l'espèce
+(`vole: false`), jamais dans une liste écrite dans `fun.js` — même discipline
+que `montable` et `nourrissable`, dont l'oubli a déjà coûté des mois. C'est
+`player.volInterdit` qui l'applique, parce que c'est là que le vol se décide.
+Monter coupe le vol en cours ; descendre le rend.
+
 ### Le monde (`world.js`)
 
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).

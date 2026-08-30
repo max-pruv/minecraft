@@ -11,6 +11,11 @@
 // world blocks resolve per block by timestamp, and only genuinely
 // single-valued settings fall back to "most recently written wins".
 
+// LA FUSION DES GARAGES vit dans src/garages.js, avec le reste de leur
+// mécanique — c'est là qu'on saura pourquoi elle horodate. Ici on l'applique,
+// comme les autres fusions de ce fichier.
+import { fusionnerGarages } from './garages.js';
+
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
 // [localStorage key, field name in the state document]
@@ -26,6 +31,7 @@ const FIELDS = [
   ['web-minecraft-worlds-del-v1', 'worldsDel'],
   ['web-minecraft-pos-v1', 'pos'],
   ['web-minecraft-edits-v3', 'edits'],
+  ['web-minecraft-garages-v1', 'garages'],
 ];
 
 // LES PHOTOS NE VOYAGENT PLUS AVEC LES BLOCS.
@@ -306,6 +312,10 @@ export class ProfileSync {
     const vivant = (ctx) => ctx === 'local' || !(num(out.worldsDel[ctx]) > 0);
     out.pos = filtrerParMonde(mergePos(local.pos, remote.pos), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, remote.edits), vivant);
+    // Les garages suivent les blocs : rangés par monde, et emportés quand le
+    // monde est retiré. Sans `filtrerParMonde`, la voiture d'un monde effacé
+    // pèserait dans le document jusqu'à la fin des temps.
+    out.garages = filtrerParMonde(fusionnerGarages(local.garages, remote.garages), vivant);
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');
     out.hotbar = pick('hotbar');

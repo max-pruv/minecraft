@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
+import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
 
 const BAG_KEY = 'web-minecraft-bag-v1';
 const RECORDS_KEY = 'web-minecraft-records-v1';
@@ -299,14 +300,20 @@ export function initFun(ctx) {
 
   function toggleRide(a) {
     if (riding) {
+      const quitte = riding;
       riding = null;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
-      toast('🐴 Tu es descendu·e.', 0xd8c9a4);
+      // Le vol redevient permis dès qu'on a les pieds par terre.
+      player.interdireVol(false);
+      if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
     if (!montable(a)) return;
     debarquer();
     riding = a;
+    // La fiche décide : une voiture ne décolle pas, un cheval non plus une
+    // fois qu'on le dira. Voir `volInterdit` dans player.js.
+    player.interdireVol(a.def.vole === false);
     a.state = 'idle';
     const allure = a.def.allure || 2;
     toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
@@ -955,6 +962,23 @@ export function initFun(ctx) {
     }
     if (!isFinite(sol)) sol = world.terrainHeight(cx, cz);
 
+    // UN GARAGE A UNE FAÇADE, LA TOUR EIFFEL N'EN A PAS.
+    //
+    // La bibliothèque posait tout sans jamais faire pivoter : personne ne s'en
+    // était plaint, parce qu'un monument se regarde de partout. Un garage, non
+    // — il faut pouvoir ENTRER, et une porte qui regarde toujours le sud, c'est
+    // un enfant qui fait le tour de son propre garage sans trouver l'entrée.
+    //
+    // Seuls les bâtiments qui déclarent une façade pivotent, et seulement par
+    // quarts de tour : à un quart de tour près, les coordonnées restent
+    // entières et aucun bloc ne se perd en chemin. La façade regarde alors
+    // l'enfant qui vient de la poser.
+    const quart = m.garage ? ((Math.round(player.yaw / (Math.PI / 2)) % 4) + 4) % 4 : 0;
+    const cosT = [1, 0, -1, 0][quart], sinT = [0, 1, 0, -1][quart];
+    const ox = Math.round((m.emprise.minX + m.emprise.maxX) / 2);
+    const oz = Math.round((m.emprise.minZ + m.emprise.maxZ) / 2);
+    const tourner = (bx, bz) => [bx * cosT + bz * sinT, bz * cosT - bx * sinT];
+
     const t = Date.now();
     const lot = [];
     // On coupe le crieur le temps de bâtir : sinon chaque bloc partirait seul.
@@ -962,14 +986,38 @@ export function initFun(ctx) {
     world.onOp = null;
     try {
       for (const [bx, by, bz, bid] of m.blocs) {
-        const x = cx + bx - Math.round((m.emprise.minX + m.emprise.maxX) / 2);
+        const [rx, rz] = tourner(bx - ox, bz - oz);
+        const x = cx + rx;
         const y = sol + 1 + (by - m.emprise.minY);
-        const z = cz + bz - Math.round((m.emprise.minZ + m.emprise.maxZ) / 2);
+        const z = cz + rz;
         world.setBlock(x, y, z, bid, t);
         lot.push([`${x},${y},${z}`, bid, t]);
       }
     } finally { world.onOp = crieur; }
     world.saveEdits();
+
+    // UN GARAGE POSÉ EST UN GARAGE INSCRIT. C'est ici, et pas ailleurs, qu'on
+    // sait où il a atterri : la pose recentre le bâtiment sur son emprise, la
+    // fait pivoter, et cherche le sol colonne par colonne. Refaire ce calcul
+    // plus tard, c'est le refaire faux.
+    if (m.garage) {
+      // L'ORIGINE DE L'AUTEUR, PAS LE CENTRE DE L'EMPRISE. Les deux diffèrent
+      // dès qu'un bâtiment déborde d'un côté — ici l'allée goudronnée, qui
+      // tire l'emprise de deux blocs vers l'avant. Les places, elles, sont
+      // données par rapport à l'origine : inscrire le centre de l'emprise
+      // décalerait la boîte de ces deux blocs-là, et un jour une voiture
+      // garée au fond serait déclarée dehors.
+      const [gx, gz] = tourner(-ox, -oz);
+      inscrireGarage(world.ctx, {
+        x: cx + gx, y: sol + 1, z: cz + gz,
+        l: quart % 2 ? m.garage.p : m.garage.l,
+        p: quart % 2 ? m.garage.l : m.garage.p,
+        places: m.garage.places.map(([px, pz]) => {
+          const [rx, rz] = tourner(px - ox, pz - oz);
+          return [cx + rx, cz + rz];
+        }),
+      });
+    }
 
     const net = getNet && getNet();
     if (net && net.active && net.sendLot) net.sendLot(lot);
@@ -1439,6 +1487,64 @@ export function initFun(ctx) {
     setTimeout(() => { mathPop.style.display = 'none'; }, 25000);
   }
 
+  // ---- les garages ----------------------------------------------------------
+  //
+  // Trois gestes, et c'est tout ce que l'enfant a à comprendre : je pose un
+  // garage, j'y gare ma voiture, je la retrouve. Le reste — le modèle, le
+  // cap, le monde auquel elle appartient — est du travail de scribe, fait
+  // dans src/garages.js.
+
+  // On descend d'un véhicule. S'il est dans un garage, il y reste pour de
+  // bon ; s'il en sort, la place se libère. Rend `true` quand il a parlé, pour
+  // que l'appelant ne double pas le message par un « tu es descendu·e ».
+  function rangerAuGarage(monture) {
+    if (!monture || !monture.def || !monture.def.garable) return false;
+    const ctxJeu = world.ctx;
+    // D'abord libérer la place d'où il vient : sans cela, sortir sa voiture du
+    // garage pour aller se promener en laisserait un double dedans.
+    if (monture.garage) { sortir(ctxJeu, monture.garage); monture.garage = null; }
+    const g = garageAutour(ctxJeu, monture.pos.x, monture.pos.y, monture.pos.z);
+    if (!g) return false;
+    const flotte = (monture.mesh && monture.mesh.userData.flotte) || null;
+    const nom = (monture.mesh && monture.mesh.userData.nomVoiture) || monture.def.name;
+    garer(ctxJeu, g.id, {
+      flotte, nom,
+      x: monture.pos.x, y: monture.pos.y, z: monture.pos.z, yaw: monture.yaw,
+    });
+    monture.garage = g.id;
+    toast(`🅿️ ${nom} est garée — tu la retrouveras ici, même demain.`, 0xa8d8ff);
+    emojiBurst(['🅿️', '🚗'], 8);
+    return true;
+  }
+
+  // Rendre à l'enfant ce qu'il a rangé. On ne refabrique une voiture que si
+  // aucune n'occupe déjà sa place : la boucle passe toutes les trois secondes,
+  // et sans cette garde le garage se remplirait à l'infini.
+  let garageTimer = 0;
+  function veillerLesGarages(dt) {
+    garageTimer -= dt;
+    if (garageTimer > 0) return;
+    garageTimer = 3;
+    const ctxJeu = world.ctx;
+    for (const [id, g] of Object.entries(garagesDe(ctxJeu))) {
+      if (!g.voiture) continue;
+      const v = g.voiture;
+      // Ce qui est loin ne se fabrique pas : cinquante voitures invoquées à
+      // l'autre bout de la carte, c'est la panne de v161 refaite à neuf.
+      if (Math.hypot(player.pos.x - v.x, player.pos.z - v.z) > 140) continue;
+      const deja = animalManager.animals.some((a) => a.garage === id
+        || (a.def.garable && Math.hypot(a.pos.x - v.x, a.pos.z - v.z) < 3));
+      if (deja) continue;
+      const auto = animalManager.invoquer('voiture', v.x, v.z, false, { flotte: v.flotte });
+      if (!auto) continue;
+      auto.garage = id;
+      auto.pos.set(v.x, auto.pos.y, v.z);
+      auto.yaw = v.yaw || 0;
+      auto.mesh.position.copy(auto.pos);
+      auto.mesh.rotation.y = auto.yaw + Math.PI;
+    }
+  }
+
   // ---- riding & pet update --------------------------------------------------
   function updateRide(dt) {
     if (juiceTimer > 0) {
@@ -1587,6 +1693,7 @@ export function initFun(ctx) {
     updateFireworks(dt);
     updateEmotes(dt);
     suivreChantier(dt);
+    if (isRunning()) veillerLesGarages(dt);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath

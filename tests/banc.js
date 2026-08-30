@@ -206,6 +206,33 @@ class Banc {
     }
     if (!this._prenoms) this._prenoms = new Set();
     this._prenoms.add(prenom);
+    // DE L'AIR AVANT CHAQUE PAGE — POUR TOUTES LES SUITES À LA FOIS.
+    //
+    // `souffler()` existait depuis carte.js, et la règle « avant tout passage
+    // lourd, dans TOUTES les suites » est écrite dans CLAUDE.md. Elle n'était
+    // pourtant appliquée que dans deux suites sur treize : reseau.js et
+    // carte.js. hote.js, visio.js et reglages.js — les trois qui rougissaient
+    // en fin de portail — ne l'appelaient pas une seule fois, et c'est
+    // justement à la fin, sur un conteneur que douze suites viennent de
+    // chauffer, que le mal frappe.
+    //
+    // Ouvrir un navigateur est LE passage lourd du banc : un contexte, un
+    // processus de rendu, un monde en trois dimensions rendu en logiciel. On
+    // le place donc ici, à la porte unique par laquelle chaque suite crée ses
+    // joueurs — plutôt que de le saupoudrer dans treize fichiers en espérant
+    // n'en oublier aucun. Sur une machine au repos, cela ne coûte rien : la
+    // fonction rend la main immédiatement tant que la charge est basse.
+    //
+    // UN SOUFFLE COURT, PAS UNE PAUSE. Le réglage par défaut — attendre que la
+    // charge repasse sous 2,0, jusqu'à deux minutes — convient ENTRE deux
+    // suites, quand la machine se vide. Ici, non : une suite qui fait vivre
+    // trois navigateurs maintient elle-même la charge au-dessus de 2, si bien
+    // que l'attente allait au bout de son budget à chaque page. reseau.js, qui
+    // en ouvre une vingtaine, a dépassé cinquante minutes et s'est fait
+    // couper. On prend donc le seuil au-dessus duquel une suite est vraiment
+    // en surcharge (3,0 sur quatre cœurs) et un budget qui ne peut pas coûter
+    // la suite : vingt secondes.
+    await souffler(20000, 3.0);
     // `tactile` reproduit une tablette : c'est ce que la famille a réellement
     // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
     const ctx = await this.navigateur.newContext({

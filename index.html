@@ -1065,10 +1065,22 @@
     #map-modal {
       display: none; position: fixed; inset: 0; z-index: 14;
       align-items: center; justify-content: center; background: rgba(12, 18, 32, 0.88);
+      /* LA ZONE SÛRE FAIT PARTIE DU CENTRAGE.
+         La fiche se centrait sur l'écran ENTIER, encoche comprise : sur un
+         iPhone à Dynamic Island, son bord haut passait sous la barre d'état, et
+         la barre de recherche — le premier élément de la fiche — se retrouvait
+         dans le voile que le système dessine là. Vu par Max : « avec le header
+         blur on voit pas bien le haut ». On réserve donc les marges du système
+         avant de centrer, et la fiche ne peut plus y entrer. */
+      padding: calc(10px + var(--safe-top)) 0 calc(10px + var(--safe-bottom));
+      box-sizing: border-box;
     }
     #map-modal-card {
       position: relative; background: #1c2438; border: 3px solid #3a4a6b;
       border-radius: 16px; padding: 16px; text-align: center;
+      /* Et si l'écran est vraiment court, c'est la fiche qui cède, pas le
+         système : elle se contente de la hauteur disponible. */
+      max-height: 100%; box-sizing: border-box;
     }
     #map-modal-canvas {
       /* La carte prend toute la place qu'on peut lui donner : c'est un atlas,
@@ -1082,7 +1094,10 @@
          l'écrasait dedans et le monde s'étirait à l'horizontale. Les deux
          côtés se déclarent donc séparément, et src/carte.js dessine dans le
          rapport réel de la boîte. */
-      width: min(560px, 88vw); height: min(560px, 62vh);
+      /* La hauteur se prend sur l'écran UTILE, pas sur l'écran brut : les
+         marges du système ne sont pas de la place disponible. */
+      width: min(560px, 88vw);
+      height: min(560px, calc((100vh - var(--safe-top) - var(--safe-bottom)) * 0.62));
       border-radius: 10px; touch-action: none; cursor: grab;
       background: #16203a;
     }
@@ -1121,11 +1136,14 @@
     #map-recherche { position: relative; margin: 0 0 8px; text-align: left; }
     #map-chercher {
       width: 100%; box-sizing: border-box; height: 38px; border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.16);
       color: #fff; font-size: 15px; padding: 0 34px 0 12px; -webkit-appearance: none;
       font-family: inherit;
     }
-    #map-chercher::placeholder { color: #8f9dbb; }
+    /* Assez contrasté pour se lire d'un coup d'œil : le fond à 9 % de blanc et
+       un texte gris-bleu se noyaient dans la fiche, et c'est le premier
+       élément qu'on doit voir en ouvrant la carte. */
+    #map-chercher::placeholder { color: #a9b6d2; }
     #map-chercher:focus { outline: none; border-color: #6f8dd0; background: rgba(255,255,255,0.14); }
     /* La liste flotte AU-DESSUS de la carte : sur un téléphone couché il n'y a
        pas la place de la pousser plus bas, et une liste qui pousse la carte
@@ -1328,7 +1346,8 @@
        venait se poser sur les noms — vu sur la capture de Max. */
     @media (max-height: 520px) and (orientation: landscape) {
       #map-modal-card { padding: 8px 12px; }
-      #map-modal-canvas { width: min(92vw, 900px); height: 54vh; }
+      #map-modal-canvas { width: min(92vw, 900px);
+        height: calc((100vh - var(--safe-top) - var(--safe-bottom)) * 0.54); }
       #map-recherche { margin-bottom: 6px; }
       #map-chercher { height: 32px; font-size: 14px; }
       #map-resultats { top: 36px; max-height: 40vh; }

@@ -1332,6 +1332,33 @@ export class NetSession {
           }
           for (const [id, c] of [...this.conns]) {
             if (c === entry || c.name !== wanted) continue;
+            // DEUX CHEMINS DU MÊME APPAREIL NE SONT PAS DEUX JOUEURS.
+            //
+            // C'est ici qu'un enfant se faisait sortir par lui-même, et c'est
+            // le défaut qui rendait `hote.js` et `visio.js` rouges.
+            //
+            // Un invité dont le lien direct traîne finit par basculer sur le
+            // nuage. L'hôte reçoit alors DEUX présentations au même prénom,
+            // sous deux identifiants de pair différents — le WebRTC et le
+            // relais —, mais venant du MÊME iPad. Cette boucle ne regardait
+            // que le prénom : elle voyait un doublon, envoyait « remplace »
+            // sur le premier lien, et l'enfant recevait sur son propre canal
+            // le message qui le renvoie au menu d'accueil. Mesuré à la sonde :
+            // Alice rejoint par le nuage à la trentième seconde, se fait
+            // éjecter trois secondes plus tard par son propre écho, et reste
+            // devant « ☁️ Connecté par le nuage — ça marche même sur ce
+            // Wi-Fi ! » sans être connectée à quoi que ce soit.
+            //
+            // L'appareil tranche là où le prénom ne peut pas : même appareil,
+            // c'est le même enfant qui change de route. On referme l'ancien
+            // chemin en silence — ni « remplace », ni mise à l'écart, sans
+            // quoi on interdirait à cet enfant de revenir par où il est venu.
+            const memeAppareil = !!(msg.device && c.device && msg.device === c.device);
+            if (memeAppareil) {
+              if (c.conn) setTimeout(() => { try { c.conn.close(); } catch { /* déjà fermée */ } }, 400);
+              this.conns.delete(id);
+              continue;
+            }
             if (c.conn) {
               this.envoyer(c, { t: 'remplace', name: wanted });
               setTimeout(() => { try { c.conn.close(); } catch { /* déjà fermée */ } }, 400);
@@ -1352,6 +1379,9 @@ export class NetSession {
         const nouveau = !entry.pret;
         entry.pret = true;
         entry.name = wanted;
+        // L'appareil se retient : c'est lui qui distingue « le même enfant par
+        // une autre route » de « le même prénom sur une autre tablette ».
+        entry.device = msg.device || null;
         entry.lookIdx = Number(msg.lookIdx) || 0;
         entry.look = msg.look && typeof msg.look === 'object' ? msg.look : null;
         // La page décide comment l'annoncer : une arrivée dans un monde
