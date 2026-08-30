@@ -503,6 +503,18 @@ son prénom. Trois règles s'y sont payées cher.
   blocs et les republie en clair : elle n'abîme rien. Un `edits` devenu
   illisible, lui, lui aurait fait croire à un monde vide.
 
+- **Un champ vide des deux côtés doit rester ABSENT.** La fusion compare le
+  document fusionné au document local, champ par champ, pour répondre à une
+  seule question : a-t-elle vraiment rapporté quelque chose ? C'est cette
+  réponse qui décide si **la page se relance**. Fabriquer un objet vide là où
+  il n'y avait rien — `undefined` contre `{}` — répond « oui » à la première
+  fusion de toute tablette neuve, et l'enfant voit son jeu redémarrer en pleine
+  partie. Livré en v188 avec le champ des garages, corrigé en v189. La règle
+  vaut pour **tout** champ ajouté à `FIELDS`, et le témoin qui la garde est
+  dans `sauvegarde.js` : fusionner le profil avec lui-même ne change rien —
+  éprouvé dans l'état d'une tablette NEUVE, sans quoi il est vert des deux
+  côtés et ne prouve rien.
+
 Tailler reste le dernier recours, et **jamais en silence** : `onTrim` le dit.
 Ce qu'on sacrifie, ce sont les blocs les plus anciens, tous mondes confondus —
 tailler monde par monde en effacerait un entier.
