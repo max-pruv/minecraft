@@ -21,6 +21,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
   méthode.
 
+- [ ] **Des arbres dans les rues de Londres** — Max, même capture : « pas
+  d'arbres ». Paris en a depuis la v187 (le feuillage pousse dans `world.js` à
+  partir des marques de `solParis`), Londres non : ses rues n'ont que des
+  façades. Même recette à appliquer — et il faut ESPACER, sinon une colonne sur
+  deux fait une haie pleine qui bouche la rue.
+
 - [ ] **Programme réalisme v2** (prompt de Max, 28/08) — il juge uniquement
   sur captures ; chaque ville retravaillée est montrée AVANT fusion (rue +
   aérien + photo de référence), généralisation seulement après validation.
@@ -33,7 +39,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [ ] **Moderniser les villes bâties à la main** — New York est faite (v186,
   validée par Max : « Manhattan est mieux, je valide fort ») et **Paris aussi
   (v187, 8 → 24 blocs/km)**. Restent Londres, Nice, Lille et San Francisco,
-  qui vivent encore à leur échelle d'origine. Même recette : le cœur à grande
+  qui vivent encore à leur échelle d'origine. **San Francisco est faite
+  (v192, 9 → 27 blocs/km)** ; **Londres était DÉJÀ à 24 blocs/km** — il ne lui
+  manque pas une remise à l'échelle mais la passe de rue. Restent donc Nice
+  (10 blocs/km, 668 blocs de marge) et Lille (16, mais seulement 41 blocs de
+  marge avant le disque de Paris : c'est un arbitrage à trancher, pas un
+  chantier). Même recette : le cœur à grande
   échelle, casse déclarée et bornée, vie de rue, captures avant fusion. Le
   piège est écrit dans `CLAUDE.md` (section Paris) : les largeurs ne se
   projettent pas, elles se relèvent — et il faut refaire les monuments, qui

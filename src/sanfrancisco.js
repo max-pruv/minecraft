@@ -49,29 +49,54 @@ const MARRON = uni(17);      // les otaries
 const GRIS_QUAI = uni(23);
 const VERT_TOIT = uni(5);    // les toits de pagode de Chinatown
 
-export const SF = { ...positionDe('sf'), r: 66 };
+// LE RAYON VIENT DU REGISTRE, il n'est pas réécrit ici. Un littéral à cet
+// endroit a déjà coûté une livraison à Paris : il masquait le rayon de
+// `mondes.js`, et rien ne se bâtissait au-delà de l'ancienne valeur.
+export const SF = positionDe('sf');
 
-const BLOCS_PAR_KM = 9;
+// LA REMISE À L'ÉCHELLE GTA (v192). Neuf blocs par kilomètre, c'était un bloc
+// pour CENT ONZE MÈTRES : Market Street faisait trois cents mètres de large et
+// l'on survolait la ville au lieu d'y marcher. Vingt-sept blocs par kilomètre,
+// soit trente-sept mètres par bloc — l'échelle de Paris, à peu près, et le
+// disque passe de 66 à 220 blocs pour couvrir toute la presqu'île.
+const BLOCS_PAR_KM = 27;
+const K = BLOCS_PAR_KM / 9;
+// `k` projette une longueur écrite dans l'ANCIENNE unité du plan ; `kr` la
+// rend en blocs entiers. Les LARGEURS, elles, ne se projettent pas — elles se
+// remesurent en blocs neufs, plus bas. C'est LE piège d'une remise à
+// l'échelle : multiplier une largeur lui garde sa taille d'avant, et cette
+// taille était fausse.
+const k = (n) => n * K;
+const kr = (n) => Math.round(n * K);
+
 // Le Ferry Building : le pied de Market Street, et le point d'où tout se mesure.
-const FERRY = { u: 45, v: -4 };
+const FERRY = { u: kr(45), v: kr(-4) };
 const de = (dx, dz) => [
   Math.round(FERRY.u + dx * BLOCS_PAR_KM),
   Math.round(FERRY.v + dz * BLOCS_PAR_KM),
 ];
+
+// Une adresse du monde à partir de kilomètres réels depuis le Ferry Building.
+// C'est ce que les sondes et les témoins doivent viser — jamais un `u`/`v` en
+// dur, qui meurt à la prochaine remise à l'échelle. Même règle qu'à Paris.
+export const adresseSF = (dx, dz) => {
+  const [u, v] = de(dx, dz);
+  return [SF.x + u, SF.z + v];
+};
 
 // --- la presqu'île ------------------------------------------------------------------
 
 // Les trois rives, relevées point par point. Au sud il n'y en a pas : la
 // presqu'île continue vers Daly City, et la campagne du monde reprend la main.
 const RIVE_OUEST = [   // le Pacifique, de Lands End à la plage
-  [-41, -28], [-44, -20], [-46, -8], [-46, 6], [-45, 20], [-43, 34], [-41, 44],
+  [kr(-41), kr(-28)], [kr(-44), kr(-20)], [kr(-46), kr(-8)], [kr(-46), kr(6)], [kr(-45), kr(20)], [kr(-43), kr(34)], [kr(-41), kr(44)],
 ];
 const RIVE_NORD = [    // la passe du Golden Gate, puis la baie
-  [-44, -26], [-30, -32], [-21, -36], [-10, -33], [0, -30], [12, -28], [26, -26],
-  [36, -24], [45, -20],
+  [kr(-44), kr(-26)], [kr(-30), kr(-32)], [kr(-21), kr(-36)], [kr(-10), kr(-33)], [kr(0), kr(-30)], [kr(12), kr(-28)], [kr(26), kr(-26)],
+  [kr(36), kr(-24)], [kr(45), kr(-20)],
 ];
 const RIVE_EST = [     // la baie, du Fisherman's Wharf à Hunters Point
-  [43, -24], [47, -14], [49, -2], [50, 10], [46, 22], [40, 32], [34, 44],
+  [kr(43), kr(-24)], [kr(47), kr(-14)], [kr(49), kr(-2)], [kr(50), kr(10)], [kr(46), kr(22)], [kr(40), kr(32)], [kr(34), kr(44)],
 ];
 
 // Interpolation sur une table triée : la première coordonnée est l'abscisse
@@ -108,7 +133,7 @@ function versMer(u, v) {
 // détroit. Sans elles, le Golden Gate ne menait nulle part — et c'est bien le
 // détroit qu'il enjambe, pas le large. Positif dedans, à la manière d'une
 // ellipse : 1 au cœur, 0 au rivage.
-const MARIN = { u: -22, v: -52, ru: 12, rv: 7 };
+const MARIN = { u: kr(-22), v: kr(-52), ru: kr(12), rv: kr(7) };
 const versMarin = (u, v) =>
   1 - ((u - MARIN.u) / MARIN.ru) ** 2 - ((v - MARIN.v) / MARIN.rv) ** 2;
 // Le générateur ne donne un sol de ville qu'aux colonnes de la ville : les
@@ -123,19 +148,19 @@ export const surMarin = (x, z) => versMarin(x - SF.x, z - SF.z) > 0;
 // l'on voit tout depuis là-haut.
 
 export const COLLINES = [
-  { nom: 'Twin Peaks', dx: -5.6, dz: 2.2, r: 13, h: 28 },
-  { nom: 'Mont Sutro', dx: -4.9, dz: 1.2, r: 8, h: 24 },
-  { nom: 'Mont Davidson', dx: -5.4, dz: 4.2, r: 10, h: 26 },
-  { nom: 'Buena Vista', dx: -5.0, dz: 1.2, r: 6, h: 16 },
-  { nom: 'Corona Heights', dx: -4.4, dz: 1.5, r: 5, h: 14 },
-  { nom: 'Lone Mountain', dx: -5.9, dz: -0.3, r: 6, h: 13 },
-  { nom: 'Pacific Heights', dx: -2.8, dz: -1.1, r: 8, h: 11 },
-  { nom: 'Nob Hill', dx: -1.3, dz: -0.8, r: 6, h: 10 },
-  { nom: 'Russian Hill', dx: -1.7, dz: -1.5, r: 6, h: 9 },
-  { nom: 'Telegraph Hill', dx: -0.6, dz: -1.3, r: 5, h: 9 },
-  { nom: 'Potrero Hill', dx: -0.6, dz: 2.6, r: 7, h: 9 },
-  { nom: 'Bernal Heights', dx: -2.4, dz: 4.2, r: 7, h: 13 },
-  { nom: 'le Presidio', dx: -6.5, dz: -2.6, r: 9, h: 12 },
+  { nom: 'Twin Peaks', dx: -5.6, dz: 2.2, r: kr(13), h: 28 },
+  { nom: 'Mont Sutro', dx: -4.9, dz: 1.2, r: kr(8), h: 24 },
+  { nom: 'Mont Davidson', dx: -5.4, dz: 4.2, r: kr(10), h: 26 },
+  { nom: 'Buena Vista', dx: -5.0, dz: 1.2, r: kr(6), h: 16 },
+  { nom: 'Corona Heights', dx: -4.4, dz: 1.5, r: kr(5), h: 14 },
+  { nom: 'Lone Mountain', dx: -5.9, dz: -0.3, r: kr(6), h: 13 },
+  { nom: 'Pacific Heights', dx: -2.8, dz: -1.1, r: kr(8), h: 11 },
+  { nom: 'Nob Hill', dx: -1.3, dz: -0.8, r: kr(6), h: 10 },
+  { nom: 'Russian Hill', dx: -1.7, dz: -1.5, r: kr(6), h: 9 },
+  { nom: 'Telegraph Hill', dx: -0.6, dz: -1.3, r: kr(5), h: 9 },
+  { nom: 'Potrero Hill', dx: -0.6, dz: 2.6, r: kr(7), h: 9 },
+  { nom: 'Bernal Heights', dx: -2.4, dz: 4.2, r: kr(7), h: 13 },
+  { nom: 'le Presidio', dx: -6.5, dz: -2.6, r: kr(9), h: 12 },
 ].map((c) => { const [u, v] = de(c.dx, c.dz); return { ...c, u, v }; });
 
 // La hauteur du terrain. La ville est posée au niveau de la mer et ses collines
@@ -143,18 +168,33 @@ export const COLLINES = [
 export function hauteurSF(x, z, h, base) {
   const u = x - SF.x, v = z - SF.z;
   const d = Math.hypot(u, v);
-  if (d > SF.r + 14) return h;
-  const marge = Math.min(1, (SF.r + 14 - d) / 14);
+  // Le fondu avec la campagne du monde : une longueur au sol, donc projetée.
+  const FONDU = kr(14);
+  if (d > SF.r + FONDU) return h;
+  const marge = Math.min(1, (SF.r + FONDU - d) / FONDU);
 
   const mer = versMer(u, v);
   const marin = versMarin(u, v);
   let cible;
   if (marin > 0) {
     // les Marin Headlands : une rive basse qui monte vite en collines rondes
-    cible = base - 2 + Math.min(1, marin * 2) * 8;
+    // UNE COLLINE, PAS UNE MESA. `min(1, marin * 2)` saturait sur toute la
+    // moitié intérieure de l'ellipse : cela passait inaperçu tant qu'elle
+    // faisait vingt blocs, cela donne un plateau à table quand elle en fait
+    // soixante. Une racine arrondit le sommet, comme les vraies Headlands.
+    // UNE COLLINE, PAS UNE MESA. `min(1, marin * 2)` saturait sur toute la
+    // moitié intérieure de l'ellipse : cela passait inaperçu tant qu'elle
+    // faisait vingt blocs, cela donne un plateau à table quand elle en fait
+    // soixante. `marin` est déjà la forme d'un paraboloïde — arrondi au
+    // sommet, doux sur les bords — et c'est celle-là qu'il faut ; la racine,
+    // que j'ai essayée d'abord, fait exactement l'inverse : sommet plat et
+    // falaise au bord.
+    cible = base - 2 + Math.max(0, marin) * 12;
   } else if (mer >= 0) {
     // l'eau : une berge courte, puis le fond
-    cible = mer < 2 ? base - 1 - mer : Math.max(20, 26 - Math.min(6, mer - 2));
+    // La berge : une largeur, donc remesurée — cent mètres de pente douce
+    // avant que le fond ne descende.
+    cible = mer < 3 ? base - 1 - mer : Math.max(20, 26 - Math.min(6, mer - 3));
   } else {
     cible = base;
     for (const c of COLLINES) {
@@ -213,15 +253,33 @@ export const lieuxDeSF = () => LIEUX_SF
 
 const MARKET = [de(0, 0), de(-2.2, 0.7), de(-4.2, 1.4), de(-5.4, 2.0)];
 
+// LES LARGEURS SE REMESURENT, ELLES NE SE PROJETTENT PAS.
+//
+// À neuf blocs par kilomètre, une chaussée de 0,6 de demi-largeur faisait cent
+// trente mètres de large : personne ne s'en apercevait, parce qu'un îlot en
+// faisait cinq cents. Multiplier par trois lui aurait gardé cette taille-là.
+// On redonne donc tout en blocs neufs, mesuré sur le vrai plan.
+//
+// Une rue praticable fait deux blocs de chaussée (74 m — large pour San
+// Francisco, mais c'est le minimum pour qu'on y roule) et un trottoir de
+// presque un bloc de chaque côté.
+//
+// L'ÎLOT, lui, est l'entorse assumée, la même qu'à Paris et à Washington : un
+// îlot de la trame de 1847 fait cent mètres, soit deux blocs et demi — de quoi
+// poser une façade et rien derrière. On choisit la rue praticable et l'îlot
+// suit. Le RAPPORT entre les trames, lui, reste juste : SoMa garde ses îlots
+// deux fois plus grands, c'est ce qui saute aux yeux sur un plan.
+const CHAUSSEE = 1.0;         // demi-largeur de la chaussée, en blocs
+const AVEC_TROTTOIR = 1.9;    // et jusqu'au bord du trottoir
+
 const TRAMES = {
   // le centre, la Chine, North Beach : la trame de 1847, en biais
-  nord: { ang: -0.36, pu: 5, pv: 5, cu: FERRY.u - 10, cv: FERRY.v - 10, w: 0.6, s: 1.0 },
-  // South of Market : mêmes angles, mais des îlots quatre fois plus grands —
-  // c'est ce qui saute aux yeux sur un plan, et ce qui a fait de SoMa un
-  // quartier d'entrepôts puis de bureaux.
-  soma: { ang: -0.36, pu: 9, pv: 7, cu: FERRY.u - 6, cv: FERRY.v + 8, w: 0.6, s: 1.0 },
+  nord: { ang: -0.36, pu: 8, pv: 8, cu: FERRY.u - kr(10), cv: FERRY.v - kr(10), w: CHAUSSEE, s: AVEC_TROTTOIR },
+  // South of Market : mêmes angles, mais des îlots deux fois plus grands —
+  // c'est ce qui a fait de SoMa un quartier d'entrepôts puis de bureaux.
+  soma: { ang: -0.36, pu: 15, pv: 12, cu: FERRY.u - kr(6), cv: FERRY.v + kr(8), w: CHAUSSEE, s: AVEC_TROTTOIR },
   // tout l'ouest : la Mission, le Castro, le Sunset, le Richmond — nord-sud
-  ouest: { ang: 0, pu: 6, pv: 6, cu: 0, cv: 0, w: 0.55, s: 0.95 },
+  ouest: { ang: 0, pu: 10, pv: 10, cu: 0, cv: 0, w: CHAUSSEE, s: AVEC_TROTTOIR },
 };
 
 // De quel côté de Market est-on ? Le produit vectoriel avec le segment le plus
@@ -243,42 +301,54 @@ function versMarket(u, v) {
 
 function trameDe(u, v) {
   // à l'ouest de Van Ness, la trame nord-sud gouverne toute la ville
-  if (u < FERRY.u - 26) return TRAMES.ouest;
+  if (u < FERRY.u - kr(26)) return TRAMES.ouest;
   const m = versMarket(u, v);
-  if (m.d > 26) return TRAMES.ouest;
+  if (m.d > kr(26)) return TRAMES.ouest;
   return m.cote < 0 ? TRAMES.nord : TRAMES.soma;
 }
 
 // Les voies qui portent un nom. Market d'abord — c'est l'épine dorsale — puis
 // celles qu'on cite quand on décrit la ville.
+// La hiérarchie des voies est conservée — Market plus large qu'une rue de
+// quartier — mais la base est redonnée en blocs neufs : `av(1)` vaut une
+// avenue ordinaire, et Market en vaut 1,4.
+const AVENUE = 1.1;
+const av = (rang) => rang * AVENUE;
+const TROTTOIR_AV = 0.8;
+
 const VOIES = [
-  { nom: 'Market Street', l: 1.4, t: 0.5, pts: MARKET.concat([de(-6.2, 2.4)]) },
-  { nom: 'The Embarcadero', l: 1.0, pts: [de(-1.5, -2.2), de(-0.4, -1.2), de(0.2, -0.2), de(0.4, 1.2), de(0.2, 2.4)] },
-  { nom: 'Columbus Avenue', l: 0.9, pts: [de(-0.4, -0.5), de(-1.0, -1.3), de(-1.5, -2.0)] },
-  { nom: 'Van Ness Avenue', l: 1.0, pts: [de(-2.6, -2.2), de(-2.5, 0.2), de(-2.4, 2.0)] },
-  { nom: 'Geary Boulevard', l: 0.9, pts: [de(-1.0, -0.3), de(-4.0, -0.4), de(-8.0, -0.5), de(-10, -0.5)] },
-  { nom: 'Divisadero Street', l: 0.7, pts: [de(-4.6, -2.0), de(-4.7, 0.4), de(-4.7, 2.2)] },
-  { nom: 'Mission Street', l: 0.9, pts: [de(-1.6, 0.6), de(-3.0, 1.6), de(-3.6, 3.4), de(-3.8, 4.6)] },
-  { nom: 'Valencia Street', l: 0.7, pts: [de(-3.2, 1.4), de(-3.4, 3.6)] },
-  { nom: 'Lombard Street', l: 0.7, pts: [de(-2.8, -2.0), de(-1.7, -1.6), de(-0.6, -1.5)] },
-  { nom: 'Fulton Street', l: 0.7, pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.6, 0.0)] },
-  { nom: 'Lincoln Way', l: 0.7, pts: [de(-5.6, 0.9), de(-9.6, 0.9)] },
-  { nom: 'Great Highway', l: 0.8, pts: [de(-10.1, -0.6), de(-10.2, 1.6), de(-10.0, 3.4)] },
-  { nom: '19e Avenue', l: 0.8, pts: [de(-7.6, -0.8), de(-7.7, 1.6), de(-7.8, 4.2)] },
-  { nom: 'Third Street', l: 0.8, pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.4, 4.4)] },
+  { nom: 'Market Street', l: av(1.4), t: TROTTOIR_AV, pts: MARKET.concat([de(-6.2, 2.4)]) },
+  { nom: 'The Embarcadero', l: av(1.0), t: TROTTOIR_AV, pts: [de(-1.5, -2.2), de(-0.4, -1.2), de(0.2, -0.2), de(0.4, 1.2), de(0.2, 2.4)] },
+  { nom: 'Columbus Avenue', l: av(0.9), t: TROTTOIR_AV, pts: [de(-0.4, -0.5), de(-1.0, -1.3), de(-1.5, -2.0)] },
+  { nom: 'Van Ness Avenue', l: av(1.0), t: TROTTOIR_AV, pts: [de(-2.6, -2.2), de(-2.5, 0.2), de(-2.4, 2.0)] },
+  { nom: 'Geary Boulevard', l: av(0.9), t: TROTTOIR_AV, pts: [de(-1.0, -0.3), de(-4.0, -0.4), de(-8.0, -0.5), de(-10, -0.5)] },
+  { nom: 'Divisadero Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-4.6, -2.0), de(-4.7, 0.4), de(-4.7, 2.2)] },
+  { nom: 'Mission Street', l: av(0.9), t: TROTTOIR_AV, pts: [de(-1.6, 0.6), de(-3.0, 1.6), de(-3.6, 3.4), de(-3.8, 4.6)] },
+  { nom: 'Valencia Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.2, 1.4), de(-3.4, 3.6)] },
+  { nom: 'Lombard Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-2.8, -2.0), de(-1.7, -1.6), de(-0.6, -1.5)] },
+  { nom: 'Fulton Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.6, 0.0)] },
+  { nom: 'Lincoln Way', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.6, 0.9), de(-9.6, 0.9)] },
+  { nom: 'Great Highway', l: av(0.8), t: TROTTOIR_AV, pts: [de(-10.1, -0.6), de(-10.2, 1.6), de(-10.0, 3.4)] },
+  { nom: '19e Avenue', l: av(0.8), t: TROTTOIR_AV, pts: [de(-7.6, -0.8), de(-7.7, 1.6), de(-7.8, 4.2)] },
+  { nom: 'Third Street', l: av(0.8), t: TROTTOIR_AV, pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.4, 4.4)] },
 ];
 
 const BANDES = rangerVoies(VOIES);
+export const __voiesSF = VOIES;
 
 // --- où roulent les voitures -------------------------------------------------
 //
 // Des avenues mises bout à bout, pas un carré posé au hasard : voir la note de
 // `voies.js`. L'enchaînement n'est pas deviné — toutes les combinaisons ont été
 // éprouvées contre le sol de la ville, et voici celle qui passe.
-  // Columbus, Van Ness et Geary font le tour du centre (97 %, 257 blocs) ;
-  // Market et Columbus doublent le cœur (99 %, 157).
-const CIRCUITS = [['Columbus Avenue', 'Van Ness Avenue', 'Geary Boulevard'],
-  ['Market Street', 'Columbus Avenue']];
+// Remesurés APRÈS la remise à l'échelle : les enchaînements d'avant ne
+// valaient plus que 92 %, la ville ayant triplé sous eux. Columbus et Lombard
+// bouclent North Beach (94 %, 217 blocs) ; Van Ness et Lombard font le tour
+// du nord (93 %, 289).
+const CIRCUITS = [
+  ['Columbus Avenue', 'Lombard Street'],
+  ['Van Ness Avenue', 'Lombard Street'],
+];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
   CITY_BLOCK.GRANITE, ARCHI.PAVE]);
@@ -298,24 +368,26 @@ export function solSF(x, z) {
   if (!surTerreSF(x, z)) return null;
   const u = u0, v = v0;
 
-  // la plage, tout le long du Pacifique
-  if (u - bordOuest(v) < 2.5) return SABLE;
-  // les quais de la baie
-  if (bordEst(v) - u < 2 || v - bordNord(u) < 2) return PAVE;
+  // La plage et les quais : des LARGEURS, donc remesurées. Ocean Beach fait
+  // cent mètres de sable, soit près de trois blocs ; les quais de la baie en
+  // font une soixantaine.
+  if (u - bordOuest(v) < 3) return SABLE;
+  if (bordEst(v) - u < 1.8 || v - bordNord(u) < 1.8) return PAVE;
 
   // les parcs et les places : ils passent avant les rues.
   for (const p of LIEUX_SF) {
     if (p.jardin) {
       if (((u - p.u) / (p.ru * BLOCS_PAR_KM / 9)) ** 2 + ((v - p.v) / (p.rv * BLOCS_PAR_KM / 9)) ** 2 < 1) {
-        if (Math.abs(v - p.v) < 0.6) return TROTTOIR;         // l'allée centrale
+        if (Math.abs(v - p.v) < 1) return TROTTOIR;          // l'allée centrale
         // les deux lacs du Golden Gate Park, et les bosquets du Presidio
-        if (p.nom === 'Golden Gate Park' && ((u - (p.u - 8)) ** 2 / 9 + (v - p.v) ** 2 / 2) < 1) return EAU;
+        if (p.nom === 'Golden Gate Park'
+          && ((u - (p.u - kr(8))) ** 2 / kr(9) ** 2 + (v - p.v) ** 2 / kr(2) ** 2) < 1) return EAU;
         return ((u * 3 + v * 5) % 7 === 0) ? ARBRE : HERBE;
       }
       continue;
     }
     if (!p.sol) continue;
-    if (Math.hypot(u - p.u, v - p.v) < p.r) return p.sol;
+      if (Math.hypot(u - p.u, v - p.v) < k(p.r)) return p.sol;
   }
 
   const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
@@ -339,7 +411,8 @@ export function solSF(x, z) {
 export function lotSFLibre(x, z) {
   if (!surTerreSF(x, z)) return false;
   const u = x - SF.x, v = z - SF.z;
-  if (versMer(u, v) > -2) return false;
+  // On ne bâtit pas au ras de l'eau : soixante mètres de recul, remesurés.
+  if (versMer(u, v) > -1.6) return false;
   for (const c of COLLINES) {
     if (c.h >= 24 && Math.hypot(u - c.u, v - c.v) < c.r * 0.5) return false;
   }
@@ -377,9 +450,9 @@ function ilotSF(u, v) {
 // de maisons de trois étages — c'est ce contraste qui fait la silhouette de San
 // Francisco vue depuis la baie.
 function hauteurSFQuartier(u, v, t) {
-  const centre = u > FERRY.u - 16 && v > FERRY.v - 12 && v < FERRY.v + 8;
+  const centre = u > FERRY.u - kr(16) && v > FERRY.v - kr(12) && v < FERRY.v + kr(8);
   if (centre) return 12 + Math.floor(t * 22);
-  const soma = u > FERRY.u - 24 && v > FERRY.v + 6 && v < FERRY.v + 22;
+  const soma = u > FERRY.u - kr(24) && v > FERRY.v + kr(6) && v < FERRY.v + kr(22);
   if (soma) return 5 + Math.floor(t * 7);
   return 3 + Math.floor(t * 4);
 }
@@ -646,34 +719,40 @@ export function buildAlcatraz(poser) {
 export function buildGoldenGate(poser) {
   const { set, bloc } = boite(poser);
   const O = ROUGE_PONT;
-  // le tablier, du Presidio aux Headlands
-  for (let dz = -12; dz <= 12; dz++) {
+  // UN PONT TRAVERSE, DONC IL SUIT LE SOL. C'est la seule pièce de San
+  // Francisco dont la longueur soit une longueur de PLAN : le détroit a triplé
+  // avec la ville, et un tablier resté à vingt-cinq blocs se serait arrêté au
+  // milieu de l'eau. La HAUTEUR, elle, ne bouge pas — deux cent vingt-sept
+  // mètres de pylône font toujours vingt-quatre blocs.
+  const DEMI = 36;              // 2,7 km de tablier, à vingt-sept blocs par km
+  const PYL = 21;               // les deux pylônes, à 1 280 m l'un de l'autre
+  for (let dz = -DEMI; dz <= DEMI; dz++) {
     for (const dx of [-1, 0]) set(dx, 10, dz, BITUME);
     set(-2, 11, dz, O);
     set(1, 11, dz, O);
   }
   // les deux pylônes : un socle, un retrait, puis les jambes et leurs
   // traverses — les gradins Art déco, pas de simples poteaux
-  for (const tz of [-7, 7]) {
+  for (const tz of [-PYL, PYL]) {
     bloc(-3, 2, 0, 8, tz, tz + 1, O);
     bloc(-2, 1, 9, 16, tz, tz + 1, O);
     for (const dx of [-2, 1]) bloc(dx, dx, 17, 24, tz, tz + 1, O);
     for (const yy of [12, 18, 24]) bloc(-2, 1, yy, yy, tz, tz + 1, O);
   }
   // les câbles paraboliques entre les pylônes, et leurs suspentes
-  for (let dz = -7; dz <= 7; dz++) {
-    const t = Math.abs(dz) / 7;
+  for (let dz = -PYL; dz <= PYL; dz++) {
+    const t = Math.abs(dz) / PYL;
     const cy = 24 - Math.round((1 - t * t) * 12);
     set(-2, cy, dz, O);
     set(1, cy, dz, O);
-    if ((dz + 12) % 3 === 0) {
+    if ((dz + DEMI) % 3 === 0) {
       for (let y = 12; y < cy; y++) { set(-2, y, dz, O); set(1, y, dz, O); }
     }
   }
   // les travées de rive, qui redescendent vers les ancrages
   for (const s of [-1, 1]) {
-    for (let i = 1; i <= 5; i++) {
-      const dz = s * (7 + i), cy = 24 - i * 3;
+    for (let i = 1; i <= DEMI - PYL; i++) {
+      const dz = s * (PYL + i), cy = 24 - Math.round(i * 12 / (DEMI - PYL));
       if (cy > 11) { set(-2, cy, dz, O); set(1, cy, dz, O); }
     }
   }

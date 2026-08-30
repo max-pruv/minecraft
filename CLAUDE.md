@@ -612,6 +612,38 @@ Trois choses à savoir avant d'y toucher :
   le même motif se répète dans chaque morceau — et les fenêtres changent
   au remaillage.
 
+### La vie des rues — et le plafond qui la tuait
+
+**Un rayon écrit quand les villes étaient petites est une bombe à retardement.**
+`passants.js` posait ses dix habitants dans `Math.min(c.r, 40)` autour du
+centre, sur un anneau de 0,25 à 0,75 de ce rayon — soit dix à trente blocs.
+Écrit quand une ville en faisait cinquante, c'était juste. Londres fait
+aujourd'hui 112 blocs de rayon, Paris 185, San Francisco 220 : toute la vie
+tenait dans un disque de trente blocs au milieu, et Max, à soixante blocs de
+là, a signalé des « villes vides ». C'est le MÊME défaut que les anneaux de
+voitures, à un fichier près.
+
+Trois règles en sortent :
+
+- **On peuple autour de L'ENFANT, pas autour du centre.** Dix passants ne
+  peuvent pas remplir un disque de deux cents blocs ; ils remplissent très bien
+  ce que l'enfant voit. Ceux qu'il distance sont rapatriés devant lui — la
+  ville reste habitée partout sans un seul habitant de plus.
+- **On les pose SUR LA RUE.** Un passant tombé derrière un immeuble n'existe
+  pas : vingt-deux personnages à moins de soixante-dix blocs, et pas un dans le
+  cadre, c'est ce qu'une capture a montré. On essaie une douzaine de points et
+  l'on garde le premier dont le bloc de surface est de la chaussée. Le monde
+  répond tout seul — nul besoin de connaître la ville.
+- **`sommetColonne` rend le y DU bloc de surface**, pas celui de l'espace
+  au-dessus. Lu un cran trop bas, on interroge la terre sous la chaussée et
+  AUCUN point ne passe jamais le test — la sélection tombe alors en silence sur
+  son repli, et l'on croit que la règle ne marche pas.
+
+**Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
+mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
+défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les
+distances se font en volant ou par la carte.
+
 ### La circulation des villes
 
 Chaque ville reçoit des anneaux de rues où roulent des voitures de la
@@ -700,6 +732,40 @@ Deux pièges de rendu payés en captures :
   la Tour Eiffel et l'Arc de Triomphe ont dû être refaits, et c'est la règle
   générale : **remettre une ville à l'échelle, c'est aussi refaire ses
   monuments.**
+
+### San Francisco (`sanfrancisco.js`) — la septième remise à l'échelle
+
+**Vingt-sept blocs par kilomètre** (v192), contre neuf : un bloc valait CENT
+ONZE MÈTRES, et Market Street en faisait trois cents de large. Le disque passe
+de 66 à 220 blocs, et couvre toute la presqu'île. Trois choses à savoir.
+
+- **Le rayon vient du REGISTRE.** `export const SF = positionDe('sf')` — le
+  littéral `r: 66` qui traînait là était le même piège qu'à Paris : il masquait
+  la valeur de `mondes.js`, et rien ne se bâtissait au-delà.
+- **`adresseSF(dx, dz)` rend une adresse du monde à partir de kilomètres réels
+  depuis le Ferry Building.** C'est ce que les sondes, les témoins ET LES
+  AUTRES FICHIERS doivent viser. Le Golden Gate était posé dans `world.js` à
+  `SF.x - 21, SF.z - 42` — des blocs de l'ancienne échelle : après la remise à
+  l'échelle il s'est retrouvé trois fois trop près du centre, au milieu des
+  maisons, et le détroit était vide. Une capture l'a montré, pas un témoin.
+- **Un pont, lui, SUIT LE SOL.** C'est la seule pièce dont la longueur soit une
+  longueur de plan : le tablier passe de 25 à 73 blocs, sans quoi il s'arrêtait
+  au milieu de l'eau. Les hauteurs, elles, ne bougent pas — 227 m de pylône
+  font toujours vingt-quatre blocs.
+
+**Et le piège de forme, qui n'existait qu'à petite échelle.** Les Marin
+Headlands montaient par `min(1, marin * 2) * 8` : la saturation aplatissait
+toute la moitié intérieure de l'ellipse. Invisible tant qu'elle faisait vingt
+blocs, c'est une mesa à table quand elle en fait soixante. `marin` seul est
+déjà un paraboloïde — sommet arrondi, bords doux ; la racine carrée, elle,
+fait l'inverse (sommet plat, falaise au bord), et c'est l'erreur que j'ai
+faite d'abord.
+
+**Hors de la fenêtre d'empreinte.** San Francisco est à dix mille blocs du
+point d'apparition ; `plafond.js` échantillonne [−700, 700] et ne l'atteint
+pas. Comme Manhattan en v186, la refonte apporte donc SES PROPRES témoins,
+dans `carteMonde.js` : la presqu'île va du Ferry Building à Ocean Beach, et le
+Golden Gate traverse vraiment le détroit.
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 

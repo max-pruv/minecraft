@@ -13,8 +13,14 @@ const PLAFOND_VOL = HEIGHT - PLAYER_HEIGHT - 0.2;
 const EYE_HEIGHT = 1.62;
 const GRAVITY = 26;
 const JUMP_SPEED = 8.6;
-const WALK_SPEED = 4.3;
-const SPRINT_SPEED = 6.8;
+// LA MARCHE, RALENTIE (Max, capture depuis une rue de Londres : « la vitesse
+// de marche est trop rapide ! »). 4,3 m/s était la valeur de Minecraft — mais
+// là-bas un bloc fait un mètre, alors qu'ici un pâté d'immeubles en fait
+// quarante : on le traversait en deux secondes, et les villes défilaient au
+// lieu de se parcourir. Les distances, elles, se font en volant ou par la
+// carte, pas à pied.
+const WALK_SPEED = 3.2;
+const SPRINT_SPEED = 5.4;
 const FLY_SPEED = 11;
 // Voler longtemps, c'est vouloir aller loin. Passé trois secondes en l'air,
 // on double l'allure — puis, depuis que la carte fait des milliers de blocs
