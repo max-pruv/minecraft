@@ -39,32 +39,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
   façades de pierre plutôt qu'en halles de béton.
 
-- [ ] **Le rouge ancien des suites réseau du portail** — découvert en v187 en
-  prenant la voie longue : `reseau.js`, `visio.js`, `reglages.js` et `hote.js`
-  sont rouges, et ils le sont AUSSI sur `origin/main` — mesuré, pas supposé :
-  `hote.js` échoue sur les trois mêmes témoins aux mêmes valeurs, `reseau.js`
-  sur les quatre mêmes plus un, avec le même effondrement du banc, et
-  `reglages.js` s'arrête au 45e témoin sur main comme sur la branche dès que le
-  conteneur a chauffé. Le code réseau n'a pas bougé depuis v164, vingt-trois
-  versions : ces suites ne sont plus sélectionnées par l'aiguillage, et elles
-  ont rougi sans que personne ne le voie — la panne exacte que `CLAUDE.md`
-  documente (« six suites vertes ne valent pas un portail vert »).
+- [ ] **Le rouge ancien des suites réseau du portail** — TROIS des quatre sont
+  réparées en v188. La cause de `hote.js` et `visio.js` n'était ni le banc ni
+  le réseau, c'était le JEU : un invité qui bascule sur le nuage se présentait
+  à l'hôte une seconde fois, sous un autre identifiant de pair mais depuis le
+  même iPad, et la garde anti-doublon le renvoyait au menu d'accueil. L'appareil
+  tranche désormais là où le prénom ne peut pas. `hote.js` passe de trois
+  échecs à zéro, `visio.js` de cinq à zéro, `reglages.js` rend 25 témoins verts.
 
-  Ce qui est DÉJÀ réparé en v187, dans `reglages.js` : elle était la seule
-  suite du portail à n'appeler jamais `souffler()`, et trois de ses attentes
-  de chargement avaient trente secondes là où la ligne suivante en donnait
-  quatre-vingt-dix. Elle passe de 46 à 63 témoins.
+  **Reste `reseau.js`**, jamais rejouée jusqu'au bout depuis la correction :
+  soixante-dix minutes par tour, et deux tours ont été arrêtés en route. C'est
+  la première chose à faire au prochain passage.
 
-  Ce qui reste, et c'est le vrai fond : **elle ouvre trois pages sous le
-  prénom « Marlon »** par un assistant local qui contourne le garde-fou du
-  banc. C'est le piège documenté — le nuage range le profil sous le prénom, la
-  seconde page se recharge en plein scénario pour appliquer l'état « retrouvé
-  de ses autres appareils », et l'évaluation en cours meurt. Ici la
-  réutilisation est VOULUE (« l'autre iPad de Marlon ») : il faut donc la
-  déclarer par `{ memePrenom: true }` et apprendre à la suite à attendre ce
-  rechargement au lieu de le subir. Et le mandataire signale des centaines de
-  connexions refusées vers le vrai Supabase pendant ces essais : le navigateur
-  du conteneur n'a pas d'Internet sortant.
+  **Et une leçon à écrire dans `CLAUDE.md` :** `souffler()` ne sert à rien
+  quand la charge est produite par la suite elle-même. Trois navigateurs d'un
+  même scénario ne laissent jamais la charge redescendre sous 3, donc chaque
+  ouverture de page brûle ses vingt secondes pour rien — `reseau.js` est passée
+  de cinquante à soixante-dix minutes sans gagner un seul témoin. Attendre
+  l'air d'un VOISIN, oui ; attendre le sien, non. L'appel posé en v188 dans
+  `Banc.joueur()` est donc à revoir : il devrait mesurer la charge AVANT
+  d'ouvrir le premier navigateur du scénario, pas à chaque page.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.
@@ -105,7 +99,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   peinture, mariage batterie-caisse, piste d'essai), la voiture qui se construit
   de poste en poste, et à la sortie **on monte dedans et on la conduit**. Le
   travail est dans le mode `pilote`, pas dans la chaîne — voir la section
-  « Conduire » de `CLAUDE.md`.
+  « Conduire » de `CLAUDE.md`. **v188 a posé la première brique** : une voiture
+  ne vole plus (`vole: false` dans la fiche, `player.volInterdit` l'applique).
+  Restent les deux difficultés réelles, écrites dans `CLAUDE.md` : le véhicule
+  a besoin de SA boîte de collision — celle du joueur fait 0,6 bloc, une
+  voiture qui l'emprunte traverse les murs — et un véhicule conduit doit se
+  voir en ligne, sinon Alice ne verra qu'un enfant qui glisse à toute vitesse.
+
+- [ ] **Les garages, la suite** — v188 en pose deux dans la bibliothèque et
+  garde la voiture qu'on y laisse. Ce qui manque : un garage posé sur une
+  PENTE s'enterre, parce que la pose cherche le point le plus bas sous
+  l'emprise (juste pour un monument, fatal pour un bâtiment de plain-pied) ;
+  un garage démoli laisse une place de parking invisible ; et rien ne garde
+  encore les autres véhicules — la voiture seule est `garable`.
 
 - [ ] **Apprendre** — guides dans les villes, questions audio.
 
