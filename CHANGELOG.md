@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v190 — Sur un Wi-Fi qui bloque, l'enfant reste vraiment dans la partie
+
+**Pourquoi.** Max, depuis son iPhone : « j'ai quitté l'app et je suis revenu,
+j'étais déconnecté, et impossible de me reconnecter — j'ai dû quitter le online
+pour revenir. » Le secours par le nuage existait pourtant, et il marchait : la
+panne était qu'il se faisait chasser.
+
+Chez l'invité, le lien direct et le lien de secours portent la **même clé** —
+l'identifiant de l'hôte —, donc la même case. Le jeu inscrit sa tentative de
+lien direct AVANT qu'elle ne s'ouvre, et c'est voulu : sans cela il raterait
+les premiers messages. Mais quand le réseau interdit le pair-à-pair — hôtel,
+école, gare —, cette tentative ne s'ouvre **jamais**, et elle prenait quand
+même la place du lien par le nuage qui portait la partie. Chaque tentative de
+reconnexion rechassait le secours qui venait de marcher, et la boucle ne
+s'arrêtait jamais.
+
+Vu de l'hôte, tout allait bien — il voyait l'enfant. Vu de l'enfant, il n'y
+avait plus qu'un lien mort et un bandeau « reconnexion » qui tournait pour
+toujours.
+
+**Ce que ça change.** Sur un Wi-Fi qui bloque le jeu à plusieurs, l'enfant
+rejoint, VOIT l'autre, et ses blocs arrivent. Il n'a plus à quitter le mode en
+ligne pour y revenir.
+
+**Ce qui le prouve.** Une sonde qui coupe le pair-à-pair à la racine, avant et
+après, sur une machine au repos :
+
+    avant  hôte ["…/direct", "…:pret/nuage"] · invité ["…/direct"] reconnexion
+           ils ne se voient pas, le bloc de l'invité n'arrive jamais (60 s)
+    après  hôte ["…/direct", "…:pret/nuage"] · invité ["…:pret/nuage"] nuage
+           ils se voient, le bloc traverse en moins de deux secondes
+
+Dans `reseau.js`, « Alice retrouve son monde après une veille sans retour »
+repasse au vert et la suite monte à cinquante-huit témoins. Trois scénarios de
+nuage y restent rouges **sous la charge du banc** — la même sonde les rend
+verts sur une machine vide : c'est le prochain chantier, et il est écrit dans
+`TASKS.md`.
+
+---
+
 ## v189 — La page ne se recharge plus toute seule en pleine partie
 
 **Pourquoi.** La v188 est partie avec une régression, et elle touchait tout le
