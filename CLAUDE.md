@@ -612,6 +612,38 @@ Trois choses à savoir avant d'y toucher :
   le même motif se répète dans chaque morceau — et les fenêtres changent
   au remaillage.
 
+### La vie des rues — et le plafond qui la tuait
+
+**Un rayon écrit quand les villes étaient petites est une bombe à retardement.**
+`passants.js` posait ses dix habitants dans `Math.min(c.r, 40)` autour du
+centre, sur un anneau de 0,25 à 0,75 de ce rayon — soit dix à trente blocs.
+Écrit quand une ville en faisait cinquante, c'était juste. Londres fait
+aujourd'hui 112 blocs de rayon, Paris 185, San Francisco 220 : toute la vie
+tenait dans un disque de trente blocs au milieu, et Max, à soixante blocs de
+là, a signalé des « villes vides ». C'est le MÊME défaut que les anneaux de
+voitures, à un fichier près.
+
+Trois règles en sortent :
+
+- **On peuple autour de L'ENFANT, pas autour du centre.** Dix passants ne
+  peuvent pas remplir un disque de deux cents blocs ; ils remplissent très bien
+  ce que l'enfant voit. Ceux qu'il distance sont rapatriés devant lui — la
+  ville reste habitée partout sans un seul habitant de plus.
+- **On les pose SUR LA RUE.** Un passant tombé derrière un immeuble n'existe
+  pas : vingt-deux personnages à moins de soixante-dix blocs, et pas un dans le
+  cadre, c'est ce qu'une capture a montré. On essaie une douzaine de points et
+  l'on garde le premier dont le bloc de surface est de la chaussée. Le monde
+  répond tout seul — nul besoin de connaître la ville.
+- **`sommetColonne` rend le y DU bloc de surface**, pas celui de l'espace
+  au-dessus. Lu un cran trop bas, on interroge la terre sous la chaussée et
+  AUCUN point ne passe jamais le test — la sélection tombe alors en silence sur
+  son repli, et l'on croit que la règle ne marche pas.
+
+**Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
+mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
+défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les
+distances se font en volant ou par la carte.
+
 ### La circulation des villes
 
 Chaque ville reçoit des anneaux de rues où roulent des voitures de la

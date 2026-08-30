@@ -24,8 +24,21 @@ import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
 import { CITIES } from './world.js';
+import { CITY_BLOCK, ARCHI } from './blocks.js';
 
-const PORTEE_REVEIL = 150;         // l'enfant approche : la ville peuple ses rues
+// Ce sur quoi un passant se tient : la chaussée, le trottoir, les pavés.
+const SOLS_DE_RUE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
+  CITY_BLOCK.GRANITE, CITY_BLOCK.CROSSWALK, ARCHI.PAVE, ARCHI.BORDURE]);
+
+// L'ENFANT APPROCHE : LA VILLE PEUPLE SES RUES. Le réveil se mesure depuis le
+// BORD de la ville, pas depuis son centre — sinon une ville de deux cents
+// blocs de rayon reste morte tant qu'on n'a pas marché jusqu'à son cœur.
+const PORTEE_REVEIL = 150;
+// À quelle distance de l'enfant on pose les passants, et au-delà de quoi on
+// les rapatrie. Voir la note de `poste()`.
+const AUTOUR_MIN = 14;
+const AUTOUR_MAX = 55;
+const TROP_LOIN = 150;
 // Dix par ville depuis v178 — Max : « much more life… people walking » — et
 // un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
 const PAR_VILLE = 10;
@@ -77,13 +90,63 @@ export function createPassants({ scene, world, player, toast, npcs }) {
   // Toutes les villes à rues : les cinquante grandes qui ont une trame, et
   // les villes historiques (Paris, New York, Nice, Lille, Londres…).
   const sites = [
+    // LE RAYON DE LA VILLE, PAS QUARANTE BLOCS.
+    //
+    // `Math.min(r, 40)` datait du temps où les villes étaient petites. Depuis,
+    // Londres fait 112 blocs de rayon, Paris 185, San Francisco 220 — et les
+    // dix passants restaient entassés dans un disque de trente blocs au centre.
+    // Max, capture à l'appui depuis une rue de Londres : « les villes sont
+    // vides : pas d'arbres, pas de piétons, de chien, de voitures ». Il était à
+    // soixante blocs du centre, c'est-à-dire à côté de toute la vie de la ville.
     ...VILLES_MONDE.filter((f) => f.trame).map((f) => ({
-      nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: Math.min(f.rayon, 40), graine: f.rayon * 31 + 7,
+      nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon, graine: f.rayon * 31 + 7,
     })),
-    ...CITIES.map((c, i) => ({ nom: c.name, x: c.x, z: c.z, r: Math.min(c.r, 40), graine: i * 53 + 11 })),
+    ...CITIES.map((c, i) => ({ nom: c.name, x: c.x, z: c.z, r: c.r, graine: i * 53 + 11 })),
   ].map((s) => ({ ...s, peuple: null }));
 
   let minuteur = 0;
+
+  // OÙ POSER QUELQU'UN : autour de L'ENFANT, pas autour du centre de la ville.
+  //
+  // C'est le cœur du correctif. Dix passants ne peuvent pas remplir un disque
+  // de deux cents blocs ; en revanche ils suffisent largement à remplir ce que
+  // l'enfant VOIT. On les pose donc en couronne autour de lui — assez loin
+  // pour ne pas apparaître sous son nez, assez près pour qu'il les croise — et
+  // toujours à l'intérieur de la ville, sinon on peuplerait la campagne.
+  function dansLaVille(site, x, z) {
+    const du = x - site.x, dv = z - site.z;
+    const dist = Math.hypot(du, dv);
+    if (dist <= site.r) return [x, z];
+    const f = (site.r * 0.9) / dist;
+    return [site.x + du * f, site.z + dv * f];
+  }
+
+  // SUR LE TROTTOIR, PAS DANS UNE COUR.
+  //
+  // Un passant posé à un angle au hasard tombe une fois sur deux derrière un
+  // immeuble, et l'enfant ne le voit jamais — c'est ce que la capture a
+  // montré : vingt-deux personnages à moins de soixante-dix blocs, et pas un
+  // seul dans le cadre. On essaie donc une douzaine de points et l'on garde le
+  // premier qui tombe sur de la chaussée ou du trottoir. Le monde répond tout
+  // seul : nul besoin de connaître la ville, il suffit de regarder le bloc du
+  // dessus. Faute de rue, on garde le premier point — mieux vaut un passant
+  // dans une cour que pas de passant du tout.
+  function posteAutour(site, g) {
+    let repli = null;
+    for (let essai = 0; essai < 12; essai++) {
+      const a = tirage(g + essai * 7, 23, 43) * Math.PI * 2;
+      const d = AUTOUR_MIN + (AUTOUR_MAX - AUTOUR_MIN) * tirage(g + essai * 7, 29, 47);
+      const [x, z] = dansLaVille(site, player.pos.x + Math.cos(a) * d, player.pos.z + Math.sin(a) * d);
+      if (!repli) repli = [x, z];
+      const bx = Math.floor(x), bz = Math.floor(z);
+      // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
+      // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
+      // passant ne trouvait jamais de rue, et tous retombaient sur le repli.
+      const y = world.sommetColonne(bx, bz);
+      if (SOLS_DE_RUE.has(world.getBlock(bx, y, bz))) return [x, z];
+    }
+    return repli;
+  }
 
   function peupler(site) {
     const gens = [];
@@ -91,13 +154,12 @@ export function createPassants({ scene, world, player, toast, npcs }) {
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
       if (k % 5 === 4) {
-        const a2 = (k / PAR_VILLE) * Math.PI * 2 + tirage(g, 23, 43);
-        const d2 = site.r * (0.25 + 0.5 * tirage(g, 29, 47));
+        const [cx, cz] = posteAutour(site, g + 7777);
         const chien = new Habitant(scene, world, player, toast, {
           name: 'chien', label: '🐕 Un chien', phrases: ['Wouf !', 'Wouf wouf !'],
           walkSpeed: 2.2, rayon: 10, largeur: 0.4, hauteur: 0.7,
           build: () => construireChien(ROBES_CHIEN[Math.floor(tirage(g, 31, 53) * ROBES_CHIEN.length)]),
-        }, site.x + Math.cos(a2) * d2, site.z + Math.sin(a2) * d2);
+        }, cx, cz);
         gens.push(chien);
         npcs.push(chien);
         continue;
@@ -112,11 +174,7 @@ export function createPassants({ scene, world, player, toast, npcs }) {
         bas: parmi(BAS, tirage(g, 17, 37)),
         drap: parmi(ROBES, tirage(g, 19, 41)),
       };
-      // Le poste : en couronne autour du centre, sur le tiers du rayon — les
-      // rues du cœur de ville. L'habitant s'en écarte, y revient, salue.
-      const a = (k / PAR_VILLE) * Math.PI * 2 + tirage(g, 23, 43);
-      const d = site.r * (0.25 + 0.5 * tirage(g, 29, 47));
-      const x = site.x + Math.cos(a) * d, z = site.z + Math.sin(a) * d;
+      const [x, z] = posteAutour(site, g);
       const h = new Habitant(scene, world, player, toast, {
         name: 'passant', label: '🚶 Un passant', phrases: ['Bonjour !', 'Belle journée, non ?'],
         walkSpeed: 1.6, rayon: 8, largeur: 0.5, hauteur: 1.72,
@@ -128,13 +186,39 @@ export function createPassants({ scene, world, player, toast, npcs }) {
     site.peuple = gens;
   }
 
+  // Un compteur qui ne se répète pas : sans lui, un passant rapatrié
+  // retomberait toujours au même endroit relatif, et l'enfant verrait la même
+  // personne le doubler en boucle.
+  let tour = 0;
+
   function update(dt) {
     minuteur -= dt;
     if (minuteur > 0) return;
     minuteur = 2;
+    tour++;
     for (const site of sites) {
-      if (site.peuple) continue;
-      if (Math.hypot(player.pos.x - site.x, player.pos.z - site.z) < PORTEE_REVEIL) peupler(site);
+      // Le réveil se mesure au BORD de la ville : une ville de deux cents
+      // blocs de rayon se peuplait sinon seulement depuis son cœur.
+      const d = Math.hypot(player.pos.x - site.x, player.pos.z - site.z);
+      if (!site.peuple) {
+        if (d < site.r + PORTEE_REVEIL) peupler(site);
+        continue;
+      }
+      // ON RAPATRIE CEUX QUI SONT RESTÉS DERRIÈRE. Dix passants posés une fois
+      // pour toutes, c'est une ville vide dès qu'on s'éloigne de cent mètres.
+      // Ceux que l'enfant a distancés reviennent devant lui — la ville reste
+      // habitée partout, sans qu'il y ait un seul habitant de plus.
+      if (d > site.r + PORTEE_REVEIL) continue;
+      for (let i = 0; i < site.peuple.length; i++) {
+        const h = site.peuple[i];
+        if (!h.pos) continue;
+        if (Math.hypot(player.pos.x - h.pos.x, player.pos.z - h.pos.z) < TROP_LOIN) continue;
+        const [nx, nz] = posteAutour(site, site.graine + i + tour * 131);
+        // `poste` est le point autour duquel il flâne, `placeAt` le pose au sol
+        // — c'est le même chemin que sa naissance, donc rien à réinventer.
+        h.poste.set(nx, nz);
+        h.placeAt(nx, nz, 40);
+      }
     }
   }
 

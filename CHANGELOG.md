@@ -20,9 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v192 — San Francisco à l'échelle GTA
+## v192 — San Francisco à l'échelle GTA, une marche plus calme, et des villes habitées
 
-**Pourquoi.** La quatrième ville remise à l'échelle, et la pire des quatre.
+**Pourquoi (la marche et la vie).** Max, capture à l'appui depuis une rue de
+Londres : « la vitesse de marche est trop rapide ! Et les villes sont vides :
+pas d'arbres, pas de piétons, de chien, de voitures, de bus ».
+
+Les deux venaient de valeurs écrites quand le jeu était plus petit. La marche
+était à 4,3 m/s — la vitesse de Minecraft, où un bloc fait un mètre ; ici un
+pâté d'immeubles en fait quarante, et on le traversait en deux secondes. Et les
+passants étaient posés UNE FOIS POUR TOUTES dans un rayon **plafonné à quarante
+blocs** autour du centre : Londres fait 112 blocs de rayon, Paris 185, San
+Francisco 220. Toute la vie de la ville tenait dans un disque de trente blocs
+au milieu, et Max était à soixante blocs de là.
+
+**Ce que ça change (la marche et la vie).** La marche passe à 3,2 m/s et la
+course à 5,4 — les distances se font en volant ou par la carte, pas à pied. Et
+les passants vivent désormais **là où l'enfant se trouve** : ils naissent
+autour de lui, sur le trottoir — le monde répond tout seul, il suffit de
+regarder le bloc de surface — et ceux qu'il distance reviennent devant lui. Dix
+habitants par ville, comme avant : ce n'est pas leur nombre qui manquait, c'est
+leur place.
+
+**Pourquoi (San Francisco).** La quatrième ville remise à l'échelle, et la pire des quatre.
 San Francisco était bâtie à NEUF blocs par kilomètre : un bloc valait cent
 onze mètres, Market Street en faisait trois cents de large, et un enfant ne
 pouvait pas plus s'y promener qu'il ne le pouvait dans le Paris d'avant la
@@ -52,7 +72,14 @@ table à soixante.
 *Et les voitures suivent Columbus et Lombard*, remesurées après la remise à
 l'échelle : les enchaînements d'avant ne valaient plus que 92 %.
 
-**Ce qui le prouve.** San Francisco est à dix mille blocs du point
+**Ce qui le prouve (la vie).** Un témoin neuf dans `fumee.js`, vérifié rouge
+sur l'ancien code : « loin du centre, la ville est habitée quand même » — aux
+quatre cinquièmes du rayon de Londres, on comptait ZÉRO habitant dans les
+quarante-cinq blocs alentour ; on en compte six, en trois secondes. La première
+version du témoin, mesurée à mi-rayon et à soixante-dix blocs, passait sur
+l'ancien code et ne prouvait rien.
+
+**Ce qui le prouve (San Francisco).** San Francisco est à dix mille blocs du point
 d'apparition, donc HORS de la fenêtre d'empreinte de `plafond.js` : la casse ne
 peut pas s'y prouver, et la refonte apporte donc ses propres témoins, comme
 Manhattan en v186. Deux témoins neufs dans `carteMonde.js`, vérifiés rouges

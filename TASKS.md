@@ -21,6 +21,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
   méthode.
 
+- [ ] **Des arbres dans les rues de Londres** — Max, même capture : « pas
+  d'arbres ». Paris en a depuis la v187 (le feuillage pousse dans `world.js` à
+  partir des marques de `solParis`), Londres non : ses rues n'ont que des
+  façades. Même recette à appliquer — et il faut ESPACER, sinon une colonne sur
+  deux fait une haie pleine qui bouche la rue.
+
 - [ ] **Programme réalisme v2** (prompt de Max, 28/08) — il juge uniquement
   sur captures ; chaque ville retravaillée est montrée AVANT fusion (rue +
   aérien + photo de référence), généralisation seulement après validation.

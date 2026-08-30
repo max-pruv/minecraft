@@ -322,6 +322,49 @@ function verifier(nom, ok, detail = '') {
       && villesAvecCircuit.every(([, v]) => v.part.every((q) => q >= 88)),
       JSON.stringify(Object.fromEntries(villesAvecCircuit.map(([k, v]) => [k, v.part]))));
 
+    // ---- une ville habitée PARTOUT, pas seulement en son centre -------------
+    //
+    // Max, capture à l'appui depuis une rue de Londres : « les villes sont
+    // vides : pas d'arbres, pas de piétons, de chien, de voitures ». Il était à
+    // soixante blocs du centre. Les passants étaient posés une fois pour
+    // toutes dans un rayon PLAFONNÉ À QUARANTE BLOCS — une valeur écrite quand
+    // les villes étaient petites, alors que Londres en fait 112 de rayon,
+    // Paris 185 et San Francisco 220. Toute la vie tenait dans un disque de
+    // trente blocs au milieu.
+    //
+    // Le témoin se met donc là où l'enfant était : à mi-rayon d'une ville, pas
+    // sur sa place centrale.
+    const habite = await tab.evaluate(async () => {
+      const w = await import('./src/world.js');
+      const g = window.__game;
+      const c = w.CITIES.find((x) => x.key === 'londres');
+      // Aux quatre cinquièmes du rayon, et l'on ne compte que ce qu'on VOIT —
+      // quarante-cinq blocs, la rue autour de soi. Avec l'ancien plafond de
+      // quarante blocs, les dix passants restaient à moins de trente blocs du
+      // centre : d'ici, aucun n'entre dans le compte. Mesuré à mi-rayon et à
+      // soixante-dix blocs, le témoin passait sur l'ancien code et ne prouvait
+      // rien — c'est la première version que j'avais écrite.
+      const x = c.x + Math.round(c.r * 0.8), z = c.z + Math.round(c.r * 0.25);
+      g.player.pos.set(x, g.world.sommetColonne(Math.floor(x), Math.floor(z)) + 2, z);
+      g.player.vel.set(0, 0, 0);
+      // la boucle des passants passe toutes les deux secondes ; on lui en
+      // laisse plusieurs, le temps qu'elle rapatrie ceux restés au centre
+      for (let i = 0; i < 300; i++) {
+        await new Promise((r) => setTimeout(r, 60));
+        const pres = g.npcs.filter((n) => n.pos
+          && Math.hypot(g.player.pos.x - n.pos.x, g.player.pos.z - n.pos.z) < 45);
+        if (pres.length >= 3) {
+          return { pres: pres.length, secondes: Math.round(i * 0.06),
+            noms: [...new Set(pres.map((n) => n.name))] };
+        }
+      }
+      const pres = g.npcs.filter((n) => n.pos
+        && Math.hypot(g.player.pos.x - n.pos.x, g.player.pos.z - n.pos.z) < 45);
+      return { pres: pres.length, secondes: 18, noms: [...new Set(pres.map((n) => n.name))] };
+    });
+    verifier('loin du centre, la ville est habitée quand même',
+      habite.pres >= 3, JSON.stringify(habite));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
