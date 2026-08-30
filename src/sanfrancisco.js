@@ -22,8 +22,8 @@
 // et un point d'ancrage, le Ferry Building, au pied de Market. Chaque lieu est
 // donné par son écart réel à lui.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
-import { rangerVoies, solDesVoies } from './voies.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -269,6 +269,24 @@ const VOIES = [
 ];
 
 const BANDES = rangerVoies(VOIES);
+
+// --- où roulent les voitures -------------------------------------------------
+//
+// Des avenues mises bout à bout, pas un carré posé au hasard : voir la note de
+// `voies.js`. L'enchaînement n'est pas deviné — toutes les combinaisons ont été
+// éprouvées contre le sol de la ville, et voici celle qui passe.
+  // Columbus, Van Ness et Geary font le tour du centre (97 %, 257 blocs) ;
+  // Market et Columbus doublent le cœur (99 %, 157).
+const CIRCUITS = [['Columbus Avenue', 'Van Ness Avenue', 'Geary Boulevard'],
+  ['Market Street', 'Columbus Avenue']];
+
+const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
+  CITY_BLOCK.GRANITE, ARCHI.PAVE]);
+
+export const circuitsSF = fabriqueCircuits({
+  cle: 'sf', ancre: SF, chaines: CIRCUITS, roulant: ROULANT_VILLE,
+  voies: { liste: VOIES, sol: solSF },
+});
 
 // --- le sol ---------------------------------------------------------------------------
 

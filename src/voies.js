@@ -63,3 +63,97 @@ export function solDesVoies(bandes, u, v, chaussee, trottoir) {
   }
   return dedans;
 }
+
+// --- les circuits de circulation ---------------------------------------------
+//
+// « Ya toujours pas de voitures dans les villes » (Max). Il avait raison, et la
+// cause tenait à la manière dont on cherchait où les faire rouler : un CARRÉ
+// posé au hasard autour de l'ancre, validé sur le TERRAIN BRUT — la hauteur du
+// sol, pas la nature de la rue. Mesuré à la sonde sur Paris : quarante-quatre
+// pour cent de la ville est de la chaussée, et pourtant le meilleur carré
+// aligné sur les axes du monde ne dépassait pas seize blocs de rayon à 93 % sur
+// la rue ; en le faisant tourner dans le repère du quartier, on ne trouvait
+// qu'un rectangle de 19 × 16. Une rue fait deux à quatre blocs de large : il
+// faudrait la suivre au demi-bloc près sur toute sa longueur, et aucun carré ne
+// sait faire cela dans une ville radiale.
+//
+// Les villes bâties à la main publient pourtant déjà leurs avenues, avec leurs
+// points de passage. Un circuit se fabrique donc en METTANT DES AVENUES BOUT À
+// BOUT — la Rivoli à l'aller, les Grands Boulevards au retour — exactement
+// comme Manhattan fait rouler ses voitures sur la 5e et la 8e. C'est la ville
+// qui sait quelles avenues se suivent ; ce fichier ne sait que les chaîner.
+
+// Mettre des voies bout à bout, en retournant celles qui sont à l'envers. Le
+// circuit est fermé par le convoi lui-même : on ne répète pas le premier point.
+export function chainerVoies(voies, noms) {
+  const pts = [];
+  for (const nom of noms) {
+    const v = voies.find((w) => w.nom === nom);
+    if (!v || !v.pts || v.pts.length < 2) return null;
+    let bout = v.pts;
+    if (pts.length) {
+      const q = pts[pts.length - 1];
+      const d = (a) => (a[0] - q[0]) ** 2 + (a[1] - q[1]) ** 2;
+      // On accroche la voie par celle de ses deux extrémités qui est la plus
+      // proche du point où l'on est : sans cela, une avenue écrite d'est en
+      // ouest ferait faire demi-tour au circuit au milieu du carrefour.
+      if (d(bout[bout.length - 1]) < d(bout[0])) bout = [...bout].reverse();
+    }
+    for (const q of bout) {
+      const dernier = pts[pts.length - 1];
+      if (dernier && dernier[0] === q[0] && dernier[1] === q[1]) continue;
+      pts.push(q);
+    }
+  }
+  return pts.length >= 3 ? pts : null;
+}
+
+// LA VILLE VALIDE SON PROPRE CIRCUIT. Un tracé qui traverse la Seine, un
+// jardin ou un pâté d'immeubles est pire que pas de voitures du tout : on
+// échantillonne le trajet entier et l'on exige que presque tout tombe sur du
+// roulant. `estRoulant(x, z)` est rendu par la ville, qui seule connaît ses
+// sols.
+export function circuitSurRue(pts, ancre, estRoulant, seuil = 0.9) {
+  let bons = 0, n = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    const long = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const pas = Math.max(2, Math.round(long));
+    for (let k = 0; k < pas; k++) {
+      const t = k / pas;
+      n++;
+      if (estRoulant(Math.round(ancre.x + a[0] + (b[0] - a[0]) * t),
+        Math.round(ancre.z + a[1] + (b[1] - a[1]) * t))) bons++;
+    }
+  }
+  return { part: n ? bons / n : 0, bon: n > 0 && bons / n >= seuil, n };
+}
+
+// La fabrique : une ville déclare ses enchaînements d'avenues et ce qui, chez
+// elle, se roule ; elle reçoit une fonction qui rend ses circuits en
+// coordonnées du monde — et SEULEMENT ceux qui tiennent la rue.
+//
+// Les enchaînements ne se devinent pas : ils ont été trouvés en éprouvant
+// toutes les combinaisons d'avenues de chaque ville contre son propre sol, et
+// l'on n'a gardé que ce qui passe. Un circuit qui traverserait la Seine, un
+// jardin ou un pâté d'immeubles ne part pas — le témoin s'en assure.
+export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9 }) {
+  return (solDe) => {
+    const est = (x, z) => roulant.has(voies.sol ? voies.sol(x, z) : null);
+    const out = [];
+    // La cote se prend au centre : la ville est plate, et un convoi qui
+    // suivrait le relief bloc à bloc ferait des montagnes russes.
+    const y = solDe(ancre.x, ancre.z) + 1.05;
+    for (const noms of chaines) {
+      const pts = chainerVoies(voies.liste, noms);
+      if (!pts) continue;
+      const verdict = circuitSurRue(pts, ancre, est, seuil);
+      if (!verdict.bon) continue;
+      out.push({
+        cle, x: ancre.x, z: ancre.z, rang: out.length, part: Math.round(verdict.part * 100),
+        pts: pts.map(([u, v]) => ({ x: ancre.x + u, y, z: ancre.z + v })),
+      });
+    }
+    return out;
+  };
+}

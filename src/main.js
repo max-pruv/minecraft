@@ -2,7 +2,9 @@
 
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue, ARCHI } from './blocks.js';
-import { PARIS as PARIS_ANCRE } from './paris.js';
+import { PARIS as PARIS_ANCRE, circuitsParis } from './paris.js';
+import { circuitsLondres } from './londres.js';
+import { circuitsSF } from './sanfrancisco.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
@@ -414,10 +416,21 @@ function updateChunks() {
   const solDe = (x, z) => world.terrainHeight(x, z);
   // Les villes à trame, les villes bâties à la main (Paris, Londres…), et
   // Manhattan, dont les boucles suivent de vraies avenues.
+  //
+  // LES VILLES BÂTIES À LA MAIN DONNENT LEURS PROPRES CIRCUITS, faits de
+  // vraies avenues mises bout à bout et validés par elles — c'est la seule
+  // manière d'avoir des voitures qui suivent des rues. Le carré cherché au
+  // hasard reste en secours pour celles qui n'en publient pas encore.
+  const propres = [
+    ...circuitsParis(solDe), ...circuitsLondres(solDe), ...circuitsSF(solDe),
+  ];
+  const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [
     ...tracesCirculation(solDe),
-    ...tracesCirculationMain(CITIES.filter((c) => c.key !== 'ny'), solDe),
+    ...tracesCirculationMain(
+      CITIES.filter((c) => c.key !== 'ny' && !dejaServies.has(c.key)), solDe),
     ...tracesCirculationNY(solDe),
+    ...propres,
   ];
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas

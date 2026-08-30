@@ -34,8 +34,8 @@
 //    lac entre Buckingham et Whitehall, Green Park, Regent's Park — et la
 //    butte de Primrose Hill d'où l'on voit toute la ville.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
-import { rangerVoies, solDesVoies } from './voies.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 
@@ -175,6 +175,23 @@ const VOIES = [
 ];
 
 const BANDES = rangerVoies(VOIES);
+
+// --- où roulent les voitures -------------------------------------------------
+//
+// Des avenues mises bout à bout, pas un carré posé au hasard : voir la note de
+// `voies.js`. L'enchaînement n'est pas deviné — toutes les combinaisons ont été
+// éprouvées contre le sol de la ville, et voici celle qui passe.
+  // Le triangle de Mayfair : Oxford, Regent, Piccadilly — 96 % du trajet sur
+  // la rue, cent quarante blocs de tour.
+const CIRCUITS = [['Oxford Street', 'Regent Street', 'Piccadilly']];
+
+const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
+  CITY_BLOCK.GRANITE, ARCHI.PAVE]);
+
+export const circuitsLondres = fabriqueCircuits({
+  cle: 'londres', ancre: LONDRES, chaines: CIRCUITS, roulant: ROULANT_VILLE,
+  voies: { liste: VOIES, sol: solLondres },
+});
 
 // --- les trames de rues ------------------------------------------------------
 //

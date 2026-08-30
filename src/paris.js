@@ -28,7 +28,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
@@ -382,6 +382,35 @@ const VOIES = [
 ];
 
 const BANDES = rangerVoies(VOIES);
+
+
+// --- où roulent les voitures -------------------------------------------------
+//
+// Deux circuits, chacun fait de VRAIES avenues mises bout à bout — la seule
+// manière d'avoir des voitures qui suivent des rues plutôt que de traverser la
+// Seine. Voir la longue note de `voies.js` : le carré cherché au hasard sur le
+// terrain brut ne trouvait rien, alors que quarante-quatre pour cent de Paris
+// est de la chaussée.
+//
+// Ces deux enchaînements-là ne sont pas devinés : toutes les combinaisons
+// d'avenues ont été éprouvées contre `solParis`, et voici celles qui passent —
+// 99 % et 100 % du trajet sur la rue, pour 345 et 233 blocs de tour.
+const CIRCUITS = [
+  // Le cœur de la rive droite : les Grands Boulevards de la Madeleine à la
+  // Bastille, l'avenue de l'Opéra, la rue La Fayette.
+  ['Grands Boulevards', "Avenue de l'Opéra", 'Rue La Fayette'],
+  // L'est : Sébastopol, Magenta, Voltaire — République au centre.
+  ['Boulevard de Sébastopol', 'Boulevard de Magenta', 'Boulevard Voltaire'],
+];
+
+// Ce qui se roule : la chaussée, les pavés, le trottoir et le granit des
+// quais. Pas l'eau, pas l'herbe, pas les façades.
+const ROULANT = new Set([BITUME, PAVE, QUAI]);
+
+export const circuitsParis = fabriqueCircuits({
+  cle: 'paris', ancre: PARIS, chaines: CIRCUITS, roulant: ROULANT,
+  voies: { liste: VOIES, sol: solParis },
+});
 
 // Les ponts. Ils sont donnés par leur abscisse, comme sur un plan : c'est la
 // seule chose qui compte pour savoir où l'on traverse.

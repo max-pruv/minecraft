@@ -627,6 +627,30 @@ flotte. Deux pièges, tous deux payés :
   une seule voiture. Leurs anneaux s'éprouvent sur le VRAI terrain
   (`tracesCirculationMain`), ce qui écarte la Seine et la Tamise sans rien
   savoir de leur géographie.
+- **UN CARRÉ POSÉ AU HASARD NE TROUVE JAMAIS UNE RUE**, et c'est ce qui
+  faisait dire à Max, deux versions plus tard, « ya toujours pas de voitures
+  dans les villes ». `tracesCirculationMain` cherche un carré autour de
+  l'ancre et le valide sur le TERRAIN BRUT — la hauteur du sol, pas la nature
+  de la rue. Mesuré sur Paris : **quarante-quatre pour cent de la ville est de
+  la chaussée**, et pourtant le meilleur carré aligné sur les axes du monde ne
+  dépassait pas seize blocs de rayon à 93 % ; tourné dans le repère du
+  quartier, on ne trouvait qu'un rectangle de 19 × 16. Une rue fait deux à
+  quatre blocs de large : il faudrait la suivre au demi-bloc près sur toute sa
+  longueur.
+- **Un circuit se fait donc d'AVENUES MISES BOUT À BOUT** — la même méthode
+  que Manhattan, qui fait rouler ses voitures sur la 5e et la 8e. Les villes
+  bâties à la main publient déjà leurs voies nommées avec leurs points de
+  passage : `fabriqueCircuits` (voies.js) les chaîne et **la ville valide son
+  propre trajet contre son propre sol**. Un circuit qui traverserait la Seine
+  ou un pâté d'immeubles ne part pas.
+- **Les enchaînements ne se devinent pas, ils se mesurent.** Toutes les
+  combinaisons d'avenues de chaque ville ont été éprouvées, et l'on n'a gardé
+  que ce qui passe : Paris 99 % et 100 % (345 et 233 blocs), Londres 96 %,
+  San Francisco 97 % et 99 %. **Nice et Lille n'ont RIEN au-dessus du seuil**
+  — leurs rues sont trop courtes pour refermer une boucle — et gardent
+  l'anneau de secours jusqu'à leur remise à l'échelle. On ne déclare pas un
+  circuit qui ne valide jamais : ce serait du code mort qui ressemble à de
+  l'avancement.
 
 ### Paris (`paris.js`) — et ce qu'on apprend d'une remise à l'échelle
 
