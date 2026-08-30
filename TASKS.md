@@ -52,24 +52,33 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (9 s d'attente du courtier, 4 s de course vers le nuage), contre 24 à 29 s
   avec le fantôme à côté. Aucun seuil n'a été relevé.
 
-  **Restent quatre rouges, et ils sont dans le jeu, pas dans le banc :**
+  **v190 corrige le plus gros** : chez l'invité, un lien direct jamais ouvert
+  chassait le lien par le nuage qui portait la partie. Prouvé à la sonde, sur
+  machine vide, pair-à-pair coupé à la racine — le bloc passait de « jamais en
+  soixante secondes » à « moins de deux secondes ». `reseau.js` monte à
+  cinquante-huit témoins verts.
 
-  1. `revenir dans l'application remet dans la partie, sans rien redemander`
-     — et `et les blocs repassent après le retour`, qui n'en est que la
-     conséquence. La trace sur quatre-vingt-dix secondes montre le lien qui
-     existe des deux côtés (`liens: 1`) sans jamais devenir prêt
-     (`prets: 0`), et le compte de l'invité qui bat 1/0/1 : le lien se
-     démonte et se refait, la présentation n'aboutit jamais. C'est le plus
-     gros morceau, et le plus proche de l'enfant — c'est le cas de l'iPad
-     qu'on repose et qu'on reprend.
-  2. `un bloc posé par le nuage arrive chez l'autre` — le relais porte la
-     partie (« 90 messages relayés » est vert juste avant) mais pas ce
-     bloc-là. À rapprocher du point 1 : peut-être la même présentation qui
-     manque.
-  3. `un monde bien rempli ne retarde pas les retrouvailles` — 1 600 blocs,
-     30 s. Une mesure de durée, donc à éprouver d'abord à la sonde, page
-     seule, avant d'accuser le jeu : c'est ce qui a démasqué les treize
-     secondes du courtier muet.
+  **Restent cinq rouges, et ils se ressemblent tous :**
+
+  1. `un bloc posé par le nuage arrive chez l'autre`, `revenir dans
+     l'application remet dans la partie` et `et les blocs repassent après le
+     retour` — les trois scénarios de NUAGE, tous rouges dans la suite et tous
+     VERTS à la sonde sur machine vide. La chronologie montre `liens: 1,
+     prets: 0` des deux côtés pendant quatre-vingt-dix secondes : le lien
+     existe, la présentation n'aboutit jamais. Le prochain pas est celui qui a
+     marché pour le courtier muet — reproduire à la sonde AVEC la charge, pour
+     savoir ce qui expire.
+  2. `quand le relais répond, on accuse le VPN et pas le Wi-Fi` — le message
+     bascule d'un tour à l'autre : `relaisJoignable` dépend de la première
+     réponse du relais, qui arrive parfois après la limite de douze secondes.
+  3. `un monde bien rempli ne retarde pas les retrouvailles` — mille six cents
+     blocs, 41 s. Mesure de durée : à éprouver d'abord à la sonde, page seule.
+
+  **Et un mensonge à corriger, vu à la sonde :** même réparé, le bandeau de
+  l'invité repasse à « reconnexion » alors que le nuage porte la partie très
+  bien. Pour un enfant, lire « reconnexion » pendant que tout marche est le
+  même défaut que le « ça marche ! » affiché sur une session morte, dans
+  l'autre sens.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
   sait faire ; après les trains intervilles.

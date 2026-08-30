@@ -396,6 +396,16 @@ Décisions qui ont chacune coûté une panne réelle :
   permet à un enfant d'effacer **ses propres** fantômes en entrant dans un monde
   — jamais ceux des autres. La purge se fait à l'entrée, pas à l'ouverture du
   relais : sinon elle ne s'exécutait que pour les parties passant par le nuage.
+- **Un lien qui n'est pas encore OUVERT ne chasse pas un lien qui marche.**
+  Chez l'invité, le lien direct et le lien de secours portent la MÊME clé —
+  l'identifiant de l'hôte —, donc la même case. `connectToHost` inscrit sa
+  tentative avant qu'elle ne s'ouvre, à dessein (sinon on rate les premiers
+  messages) ; mais si le pair-à-pair est mort à la racine, elle ne s'ouvre
+  jamais et prenait quand même la place du nuage. Chaque reconnexion rechassait
+  le secours qui venait de marcher. La promotion inverse existait déjà
+  (`promouvoirSiDirect`) : elle était court-circuitée, la case ayant changé de
+  main avant l'ouverture. C'est `open` qui donne la main au direct, jamais
+  l'inscription.
 - **C'est le receveur qui cède**, pas l'émetteur : le fantôme tourne du vieux
   code et ne peut obéir à une règle qu'il ne connaît pas.
 
