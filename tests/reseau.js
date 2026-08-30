@@ -155,7 +155,14 @@ function verifier(nom, ok, detail = '') {
     await endormir(alice);
     await dormir(1000);
     const alice2 = await banc.rejoindre('Alice', code, { memePrenom: true });
-    await jusqua(async () => (await vu(alice2)).compteur === 2);
+    // ON ATTEND LE RÉSULTAT QU'ON VÉRIFIE, PAS UN SIGNE QUI LE PRÉCÈDE. Le
+    // compteur monte à deux dès que le lien est inscrit ; le PRÉNOM de
+    // l'avatar, lui, n'arrive qu'avec la présentation, un instant plus tard.
+    // Attendre le premier pour affirmer le second, c'est se donner rendez-vous
+    // trop tôt : vu au banc, « compteur 2 [] » sur un retour parfaitement
+    // réussi.
+    await jusqua(async () => (await vu(alice2)).compteur === 2
+      && (await nomsVus(alice2)).includes('Marlon'));
     const retour = await vu(alice2);
     verifier('Alice retrouve son monde après une veille sans retour',
       retour.compteur === 2 && (await nomsVus(alice2)).includes('Marlon'),
