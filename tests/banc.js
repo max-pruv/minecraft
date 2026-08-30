@@ -412,7 +412,12 @@ class Banc {
       }
       document.getElementById('minimap').click();
     });
-    await p.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 10000 });
+    // MÊME BUDGET QUE L'ATTENTE QUI PRÉCÈDE. `joueur()` accorde trente
+    // secondes pour que la partie démarre ; ouvrir la carte juste après n'en
+    // avait que dix, sur le même conteneur et souvent après quatre suites.
+    // C'est une même attente coupée en deux, et c'est la moitié courte qui
+    // lâchait — le banc tombait sur le DERNIER témoin de `carte.js`.
+    await p.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
     await dormir(600);
   }
 

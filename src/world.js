@@ -916,9 +916,30 @@ const LANDMARKS = [
   // Ferry Building : c'est là qu'il est, et cela ne changera plus.
   { name: 'Golden Gate', ...(() => { const [x, z] = adresseSF(-7.33, -4.22); return { x, z }; })(),
     box: 76, waterBase: true, build: buildGoldenGate },
-  { name: 'Karl the Fog', x: SF.x - 21, z: SF.z - 44, box: 18, waterBase: true, seuil: 0.3, build: buildKarl },
-  { name: 'Bay Bridge', x: SF.x + 56, z: SF.z + 1, box: 30, waterBase: true, build: (set) => buildSuspensionBridge(set, BLOCK.STONEBRICK) },
-  { name: 'Phare', x: SF.x - 44, z: SF.z - 30, box: 3, waterBase: true, build: buildLighthouse },
+  // MÊME PIÈGE QUE LE PONT, DEUX LIGNES PLUS HAUT. Karl était posé lui aussi
+  // par un décalage en blocs de l'ancienne échelle : j'ai corrigé le Golden
+  // Gate et laissé son voisin. Résultat, le brouillard tombait à un tiers du
+  // chemin, quelque part au-dessus des maisons, et la passe restait dégagée.
+  // Il se pose désormais à la même adresse que le pont, et son emprise suit :
+  // un détroit trois fois plus large demande une nappe trois fois plus large.
+  { name: 'Karl the Fog', ...(() => { const [x, z] = adresseSF(-7.33, -4.44); return { x, z }; })(),
+    box: 54, waterBase: true, seuil: 0.3, build: buildKarl },
+  // ET LES DEUX DERNIERS DE LA MÊME FAMILLE. Mesuré à la sonde : sur les
+  // soixante-trois colonnes du tablier du Bay Bridge, ZÉRO n'était de l'eau —
+  // un pont suspendu gris planté en travers de la ville, à trois kilomètres à
+  // l'OUEST du Ferry Building quand le vrai part vers l'est. Le phare, lui,
+  // se dressait au milieu d'un quartier. Aucun des deux n'était visible d'un
+  // témoin : celui du Bay Bridge cherchait de la pierre grise dans un rayon
+  // de huit blocs, et il en trouvait — celle des immeubles.
+  //
+  // Le pont enjambe désormais la travée ouest, du Rincon à Yerba Buena :
+  // soixante-trois colonnes d'eau sous le tablier. Le phare va à Point Bonita,
+  // sur son rocher au large de la passe — le seul phare de San Francisco qui
+  // tienne dans le disque de la ville (202 blocs du centre pour 220).
+  { name: 'Bay Bridge', ...(() => { const [x, z] = adresseSF(1.56, -0.5); return { x, z }; })(),
+    box: 36, waterBase: true, build: (set) => buildSuspensionBridge(set, BLOCK.STONEBRICK) },
+  { name: 'Phare', ...(() => { const [x, z] = adresseSF(-11.95, -2.26); return { x, z }; })(),
+    box: 3, waterBase: true, build: buildLighthouse },
   ...[
     buildTransamerica, buildCoit, buildSutro, buildFerryBuilding,
     buildPaintedLadies, buildPalaisBeauxArts, buildAlcatraz,
@@ -1066,7 +1087,9 @@ export const CITIES = [
 ];
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
-const SF_PASTELS = [15, 9, 29, 28, 16, 3, 4, 7].map((ci) => DECOR_START + ci * 10);
+// Mêmes tons rompus que `sanfrancisco.js` : le citron, le vert clair et le
+// turquoise donnaient une ville en briques de plastique.
+const SF_PASTELS = [15, 9, 29, 28, 16, 19, 22, 23].map((ci) => DECOR_START + ci * 10);
 // Nice: warm Mediterranean facades (ochre, orange, rose, cream, sand).
 const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 

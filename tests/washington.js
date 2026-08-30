@@ -448,8 +448,19 @@ const descendre = async (p, ms) => {
       window.__game.world.terrainHeight(x, z), { x: P.x + musee.u, z: P.z + musee.v });
     await poserLe(tab, P.x + musee.u, solMusee + 2, P.z + musee.v - 8, capVers(0, 1));
     await dormir(400);
-    await avancer(tab, 2600);
-    const dansMusee = await autour(tab);
+    // ON MARCHE JUSQU'À ÊTRE ENTRÉ, PAS PENDANT UN NOMBRE DE SECONDES.
+    //
+    // Ce témoin accordait 2,6 s pour franchir huit blocs, ce qui tenait à 4,3
+    // blocs par seconde et ne tient plus à 3,2 depuis que la marche a été
+    // calmée (v192) : l'enfant s'arrêtait sur le perron et le témoin annonçait
+    // « plafond à -1 » comme si le musée n'avait pas de toit. Une durée mesure
+    // la vitesse du joueur ; ce qu'on veut mesurer, c'est qu'il y a une porte
+    // et une salle derrière.
+    let dansMusee = await autour(tab);
+    for (let pas = 0; pas < 8 && !(dansMusee.plafond > 3); pas++) {
+      await avancer(tab, 700);
+      dansMusee = await autour(tab);
+    }
     const suspendus = await tab.evaluate(({ px, pz, u, v }) => {
       const w = window.__game.world;
       const sol = w.terrainHeight(px + u, pz + v);

@@ -181,10 +181,6 @@ export function hauteurSF(x, z, h, base) {
     // UNE COLLINE, PAS UNE MESA. `min(1, marin * 2)` saturait sur toute la
     // moitié intérieure de l'ellipse : cela passait inaperçu tant qu'elle
     // faisait vingt blocs, cela donne un plateau à table quand elle en fait
-    // soixante. Une racine arrondit le sommet, comme les vraies Headlands.
-    // UNE COLLINE, PAS UNE MESA. `min(1, marin * 2)` saturait sur toute la
-    // moitié intérieure de l'ellipse : cela passait inaperçu tant qu'elle
-    // faisait vingt blocs, cela donne un plateau à table quand elle en fait
     // soixante. `marin` est déjà la forme d'un paraboloïde — arrondi au
     // sommet, doux sur les bords — et c'est celle-là qu'il faut ; la racine,
     // que j'ai essayée d'abord, fait exactement l'inverse : sommet plat et
@@ -427,7 +423,20 @@ export function lotSFLibre(x, z) {
 // — et le générateur, qui refuse de bâtir sur une chaussée, ne bâtissait alors
 // plus rien du tout : tout l'ouest de la ville restait en herbe.
 
-const PASTELS_MAISONS = [15, 9, 29, 28, 16, 3, 4, 7, 19, 20].map(uni);
+// LES PAINTED LADIES NE SONT PAS DES BONBONS. La palette tirait le citron
+// (200, 220, 70), le vert clair et le turquoise : vue du ciel, la ville
+// ressemblait à un tapis de briques de plastique — c'est ce que la capture de
+// Max montre. Les vraies façades de Victoriennes sont des tons ROMPUS : crème,
+// sauge, rose poudré, bleu ciel, ocre, gris perle. On garde les vifs qui
+// existent vraiment (le rose, le ciel), on retire les trois acides, et on
+// ajoute le kaki, le gris clair et le blanc qui font la majorité des rues.
+const PASTELS_MAISONS = [15, 9, 29, 28, 16, 19, 20, 22, 23, 27].map(uni);
+
+// LE CENTRE DES AFFAIRES N'EST PAS PEINT EN PASTEL. Le Financial District est
+// de la pierre claire, de l'acier et du verre sombre — pas une rue de
+// Victoriennes agrandie. Et SoMa est un quartier d'entrepôts de brique.
+const PIERRES_CENTRE = [uni(23), uni(24), uni(28), uni(27), uni(25)];
+const BRIQUES_SOMA = [BLOCK.BRICK, uni(19), uni(23), uni(18)];
 
 function tirageSF(a, b, sel) {
   let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(sel, 2246822519);
@@ -449,12 +458,26 @@ function ilotSF(u, v) {
 // Combien d'étages ? Le centre des affaires monte, le reste est une ville basse
 // de maisons de trois étages — c'est ce contraste qui fait la silhouette de San
 // Francisco vue depuis la baie.
+// LA COURBE COMPTE AUTANT QUE LES BORNES, et c'est la leçon de Manhattan
+// (v186), jamais appliquée ici. Tirée à plat, `12 + t × 22` donnait une forêt
+// de tours toutes de la même taille — vue du ciel, une brosse ; vue de la rue,
+// un mur. La vraie ville est un TAPIS de dix à quinze étages d'où sortent
+// quelques tours : c'est ce que fait t³, qui n'envoie au sommet que le dernier
+// dixième des tirages. Les bornes viennent du vrai centre : Salesforce Tower
+// soixante-et-un étages, Transamerica quarante-huit, 555 California
+// cinquante-deux.
+export function quartierSF(u, v) {
+  if (u > FERRY.u - kr(16) && v > FERRY.v - kr(12) && v < FERRY.v + kr(8)) return 'centre';
+  if (u > FERRY.u - kr(24) && v > FERRY.v + kr(6) && v < FERRY.v + kr(22)) return 'soma';
+  return 'maisons';
+}
+
 function hauteurSFQuartier(u, v, t) {
-  const centre = u > FERRY.u - kr(16) && v > FERRY.v - kr(12) && v < FERRY.v + kr(8);
-  if (centre) return 12 + Math.floor(t * 22);
-  const soma = u > FERRY.u - kr(24) && v > FERRY.v + kr(6) && v < FERRY.v + kr(22);
-  if (soma) return 5 + Math.floor(t * 7);
-  return 3 + Math.floor(t * 4);
+  switch (quartierSF(u, v)) {
+    case 'centre': return 8 + Math.floor(t * t * t * 44);
+    case 'soma': return 5 + Math.floor(t * t * 12);
+    default: return 3 + Math.floor(t * t * 4);
+  }
 }
 
 // Bâtit la colonne. `poser(dy, id)` place un bloc dy au-dessus du sol.
@@ -463,8 +486,10 @@ export function batirColonneSF(x, z, poser) {
   const lot = ilotSF(u, v);
   const t = tirageSF(lot.a, lot.b, 911);
   const bh = hauteurSFQuartier(u, v, t);
-  const mur = PASTELS_MAISONS[Math.floor(tirageSF(lot.a, lot.b, 912) * PASTELS_MAISONS.length) % PASTELS_MAISONS.length];
+  const q = quartierSF(u, v);
   const tour = bh >= 12;
+  const palette = q === 'centre' ? PIERRES_CENTRE : q === 'soma' ? BRIQUES_SOMA : PASTELS_MAISONS;
+  const mur = palette[Math.floor(tirageSF(lot.a, lot.b, 912) * palette.length) % palette.length];
 
   const oE = lotSFLibre(x + 1, z), oO = lotSFLibre(x - 1, z);
   const oS = lotSFLibre(x, z + 1), oN = lotSFLibre(x, z - 1);
@@ -475,12 +500,50 @@ export function batirColonneSF(x, z, poser) {
   const face = (!oE || !oO) ? v : u;
   for (let y = 0; y < bh; y++) {
     if (dedans) { if (y === 0) poser(1, BLOCK.PLANK); continue; }
-    const fenetre = y > 0 && y % 3 !== 0 && (face & 1) === 1;
-    poser(y + 1, fenetre ? VERRE : (tour ? (y % 4 === 0 ? BETON : VERRE) : mur));
+    // UNE TOUR N'EST PAS UNE CAGE DE VERRE. Elle l'était : hors fenêtre, une
+    // colonne de tour posait du VERRE, et du béton un niveau sur quatre. Comme
+    // l'intérieur du bâtiment est creux — il l'est partout, c'est ce qui rend
+    // une ville possible — on voyait au travers, et le Financial District
+    // n'était plus qu'un nuage de cubes gris suspendus. Signalé par Max sur
+    // capture ; c'est MOT POUR MOT le défaut que Manhattan avait payé et
+    // documenté (« les tours devenaient des cages de verre transparentes, et
+    // l'on voyait le ciel au travers de Midtown »), et San Francisco ne l'a
+    // jamais corrigé. Le verre reste la MINORITÉ de la façade : sa trame,
+    // rien de plus.
+    // ET LE VERRE D'UNE TOUR EST UN MUR-RIDEAU, PAS UNE VITRE. Un bloc de
+    // `GLASS` fait ici trente-sept mètres de large : au pied d'une tour, la
+    // façade devenait un aquarium d'un seul tenant, et l'on voyait le mobilier
+    // de l'immeuble d'en face. `CITY_BLOCK.CURTAIN` porte le mur-rideau DANS
+    // sa texture — une trame de meneaux d'aluminium sur du verre bleu, quatre
+    // baies par bloc — il est opaque, et il s'allume déjà la nuit.
+    // Le mur-rideau vaut pour TOUT le centre, pas seulement pour les tours :
+    // le tapis d'immeubles de huit à onze étages qui les entoure est fait des
+    // mêmes bureaux, et c'est lui qu'on longe à pied. Ailleurs — SoMa, les
+    // quartiers de maisons — la fenêtre reste ce qu'elle était.
+    const fenetre = y > 0 && (tour ? y % 4 !== 0 : y % 3 !== 0) && (face & 1) === 1;
+    // LA CORNICHE BLANCHE EST UNE LIGNE DE FAÇADE, PAS UNE TOITURE. Elle
+    // était posée sur la dalle du toit : sur une maison de trois blocs de
+    // large, la dalle EST tout le toit, et San Francisco vue d'Alamo Square
+    // avait l'air enneigée. Le dernier niveau de la façade suffit — c'est là
+    // qu'elle se voit depuis la rue, et c'est là qu'elle est en vrai.
+    if (!tour && !dedans && y === bh - 1) { poser(y + 1, BLANC); continue; }
+    poser(y + 1, fenetre ? (q === 'centre' ? CITY_BLOCK.CURTAIN : VERRE) : mur);
   }
-  // La corniche blanche des victoriennes, et le bow-window sur la rue : deux
-  // détails, mais ce sont eux qu'on reconnaît sur les cartes postales.
-  poser(bh + 1, tour ? BETON : BLANC);
+  // Le couronnement : UN niveau sombre, pas trois, et pas de flèche.
+  // La première version en posait trois plus six d'antenne sur les colonnes
+  // intérieures — vue depuis Alamo Square, la skyline était un faisceau de
+  // cheminées noires, chaque tour en portant quatre. Les vraies pointes de la
+  // ville (Transamerica, Coit) sont des MONUMENTS bâtis à la main : une tour
+  // ordinaire n'en a pas, elle a un toit plat et sombre.
+  if (tour) {
+    poser(bh + 1, ANTHRACITE);
+  } else {
+    // LE TOIT D'UNE MAISON N'EST PAS BLANC : c'est du goudron sombre, et
+    // c'est ce qu'on voit depuis les collines.
+    poser(bh + 1, ANTHRACITE);
+  }
+  // Le bow-window sur la rue : un détail, mais c'est lui qu'on reconnaît sur
+  // les cartes postales.
   if (!tour && !dedans && (face & 3) === 1) {
     poser(2, BLANC); poser(3, BLANC);
   }
@@ -764,8 +827,11 @@ export function buildGoldenGate(poser) {
 // atmosphérique de la ville, et aucun décor ne peut la remplacer.
 export function buildKarl(poser) {
   const { set } = boite(poser);
-  for (let dx = -14; dx <= 14; dx++) {
-    for (let dz = -10; dz <= 10; dz++) {
+  // La nappe couvre la PASSE, dont la largeur est une longueur de plan : elle
+  // a triplé avec la ville. Une nappe restée à vingt-huit blocs laissait le
+  // détroit dégagé de part et d'autre.
+  for (let dx = -42; dx <= 42; dx++) {
+    for (let dz = -30; dz <= 30; dz++) {
       if (((dx + dz) & 1) === 0) set(dx, 16, dz, BLOCK.ICE);
       else if ((dx * 3 + dz) % 5 === 0) set(dx, 17, dz, BLOCK.ICE);
     }

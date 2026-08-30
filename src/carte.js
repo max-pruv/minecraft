@@ -628,8 +628,14 @@ export class Carte {
       // qui fixe la barre, pas le grand.
       ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.3 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
-      // Et les quartiers et collines de San Francisco.
-      ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 0.7 })),
+      // Et les quartiers et collines de San Francisco — MÊME RAISON QUE PARIS,
+      // huit lignes plus haut, et le même remède. Depuis la v192 la ville fait
+      // quatre cent quarante blocs de bord à bord au lieu de cent trente-deux :
+      // au zoom qui la montre entière, le seuil de 0,7 effaçait Chinatown, le
+      // Presidio, le Golden Gate Park et les autres. Une ville qui triple
+      // demande qu'on relève le seuil de ses quartiers, sinon elle devient
+      // illisible au moment même où elle devient promenable.
+      ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 1.3 })),
       ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLille().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLondres().map((c) => ({ c, fort: false, seuil: 0.7 })),
