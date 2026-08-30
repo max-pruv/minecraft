@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v194 — On conduit la voiture qu'on a vue passer
+
+**Pourquoi.** Max : « je veux que l'on puisse conduire n'importe quel type de
+voiture dans le jeu. » Les voitures qui roulent en ville n'étaient qu'un
+SIÈGE : on montait à bord, le convoi suivait son tracé, et les commandes de
+l'enfant ne servaient à rien. Il regardait passer les voitures et pouvait, au
+mieux, se laisser porter par elles.
+
+**Ce que ça change.** Le bouton dit désormais « 🚗 Conduire cette voiture », et
+c'est ce qu'il fait : la voiture SORT du convoi et devient une monture — le
+mode qui sait déjà conduire, avec sa caméra de poursuite et son interdiction de
+voler. La circulation perd une voiture, et c'est honnête : l'enfant vient de la
+prendre.
+
+Et c'est bien CELLE-LÀ. Les voitures de ville tiraient déjà leur modèle parmi
+les cinquante-et-un de la flotte ; elles retiennent désormais lequel, si bien
+qu'on repart au volant de la Rimac Nevera qu'on a vue arriver, et pas d'une
+inconnue de la même couleur. Le métro, les rames et les monoplaces gardent
+l'ancien comportement : on ne conduit pas un métro.
+
+**Ce qui le prouve.** Deux témoins neufs dans `fumee.js`, vérifiés rouges sur
+l'ancien code : « on prend le volant d'une voiture vue dans la rue » — le
+convoi passe de 32 à 31 voitures et `volInterdit` se pose, ce que seule la
+monte d'un véhicule fait — et « c'est bien celle-là, avec son modèle ». Plus
+une capture : l'enfant au volant d'une Rimac Nevera dans une rue de Paris.
+
+**Ce qui reste.** C'est le mode `monture` qui conduit, pas encore le mode
+`pilote` décrit dans `CLAUDE.md` : le véhicule emprunte toujours la boîte de
+collision du joueur (0,6 bloc de large), et il ne se voit pas encore en ligne.
+
+---
+
 ## v193 — La voiture rangée revient sur le plancher, pas sur le toit
 
 **Pourquoi.** Max : « j'ai mis une voiture dans un garage et quand je suis
