@@ -13,6 +13,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Nice et Lille n'ont pas de circuit de voitures** — mesuré en v191 :
+  aucune combinaison de leurs avenues ne referme une boucle qui tienne la rue
+  à 90 % (Nice plafonne à 89 %, Lille à rien). Leurs rues sont trop courtes,
+  parce que les deux villes sont encore à leur échelle d'origine (10 et 16
+  blocs/km). Leur remise à l'échelle réglera les deux d'un coup. Washington
+  n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
+  méthode.
+
 - [ ] **Programme réalisme v2** (prompt de Max, 28/08) — il juge uniquement
   sur captures ; chaque ville retravaillée est montrée AVANT fusion (rue +
   aérien + photo de référence), généralisation seulement après validation.

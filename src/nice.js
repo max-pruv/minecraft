@@ -11,8 +11,8 @@
 // point d'ancrage, la place Masséna. Chaque lieu est donné par son écart réel
 // à elle.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
-import { rangerVoies, solDesVoies } from './voies.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -180,6 +180,16 @@ const VOIES = [
 ];
 
 const BANDES = rangerVoies(VOIES);
+
+// --- où roulent les voitures -------------------------------------------------
+//
+// PAS ENCORE DE CIRCUIT ICI, et c'est mesuré, pas supposé. Toutes les
+// combinaisons des sept avenues de Nice ont été éprouvées contre `solNice` :
+// la meilleure — Victor-Hugo puis Cimiez — ne tient la rue qu'à 89 %, sous le
+// seuil de 90 %. La ville est petite (rayon 48, dix blocs par kilomètre) et
+// ses avenues sont courtes et courbes : aucune paire ne referme une boucle
+// sans passer par les jardins ou le rivage. Nice garde donc l'anneau de
+// secours jusqu'à sa remise à l'échelle, qui lui donnera de vraies avenues.
 
 export function solNice(x, z) {
   if (!surTerreNice(x, z)) return null;

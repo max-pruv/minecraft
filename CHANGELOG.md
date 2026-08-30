@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v191 — Des voitures qui roulent vraiment dans les villes
+
+**Pourquoi.** Max, deux versions après qu'on ait cru le sujet réglé : « ya
+toujours pas de voitures dans les villes ». Il avait raison, et la cause était
+dans la manière de chercher où les faire rouler.
+
+Le jeu cherchait un CARRÉ autour du centre de la ville et le validait sur le
+terrain brut — la hauteur du sol, pas la nature de la rue. Sur Paris, la sonde
+a mesuré que **quarante-quatre pour cent de la ville est de la chaussée**, et
+que le meilleur carré aligné sur les axes du monde ne dépassait pourtant pas
+seize blocs de rayon à 93 % ; tourné dans le repère du quartier, on ne trouvait
+qu'un rectangle de dix-neuf sur seize. Une rue fait deux à quatre blocs de
+large : il faudrait la suivre au demi-bloc près sur toute sa longueur, et aucun
+carré ne sait faire cela dans une ville radiale. Résultat : six anneaux pour
+six villes, posés n'importe où, et zéro voiture visible à Paris.
+
+**Ce que ça change.**
+
+*Les voitures suivent de vraies avenues.* Un circuit se fabrique désormais en
+mettant des avenues bout à bout — les Grands Boulevards, l'avenue de l'Opéra
+et la rue La Fayette pour le cœur de Paris ; Oxford, Regent et Piccadilly à
+Londres ; Columbus, Van Ness et Geary à San Francisco. C'est la méthode de
+Manhattan, qui fait rouler ses voitures sur la 5e et la 8e depuis toujours, et
+les villes publiaient déjà leurs voies nommées.
+
+*Et la ville valide son propre trajet.* Un circuit qui traverserait la Seine,
+un jardin ou un pâté d'immeubles ne part pas : chaque point est éprouvé contre
+le sol de la ville. Nice et Lille n'ont rien qui passe le seuil — leurs rues
+sont trop courtes pour refermer une boucle — et gardent l'anneau de secours
+jusqu'à leur remise à l'échelle. On ne déclare pas un circuit qui ne valide
+jamais.
+
+**Ce qui le prouve.** Deux témoins neufs dans `fumee.js`, vérifiés rouges sur
+l'ancien code : « chaque grande ville a son circuit de voitures » et « le
+trajet tient la rue, sans traverser l'eau ni les maisons ». Mesuré à la sonde :
+Paris passe de **zéro à dix-huit voitures visibles**, San Francisco de zéro à
+quinze. Et deux captures de rue — une voiture sur les Grands Boulevards entre
+les façades haussmanniennes, une autre sur Market Street entre les maisons
+pastel.
+
+---
+
 ## v190 — Sur un Wi-Fi qui bloque, l'enfant reste vraiment dans la partie
 
 **Pourquoi.** Max, depuis son iPhone : « j'ai quitté l'app et je suis revenu,

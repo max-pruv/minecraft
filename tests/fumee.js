@@ -279,6 +279,49 @@ function verifier(nom, ok, detail = '') {
       retrouvee.modele === garage.modele && !!retrouvee.modele,
       `${JSON.stringify(retrouvee)} vs ${garage.modele}`);
 
+    // ---- des voitures dans les villes, et sur la rue ------------------------
+    //
+    // « Ya toujours pas de voitures dans les villes » (Max). Il avait raison :
+    // les anneaux étaient cherchés sous forme de CARRÉS posés au hasard autour
+    // de l'ancre et validés sur le terrain brut — jamais sur les rues. Mesuré :
+    // quarante-quatre pour cent de Paris est de la chaussée, et le meilleur
+    // carré ne dépassait pas seize blocs de rayon à 93 %.
+    //
+    // Ce que le témoin éprouve, c'est la promesse : chaque grande ville a au
+    // moins un circuit, et ce circuit TIENT LA RUE. Un tracé qui traverse la
+    // Seine ou un pâté d'immeubles est pire que pas de voitures du tout.
+    const circuits = await tab.evaluate(async () => {
+      const sol = (x, z) => window.__game.world.terrainHeight(x, z);
+      const out = {};
+      const sources = [
+        ['paris', './src/paris.js', 'circuitsParis'],
+        ['londres', './src/londres.js', 'circuitsLondres'],
+        ['sf', './src/sanfrancisco.js', 'circuitsSF'],
+      ];
+      for (const [cle, mod, fn] of sources) {
+        try {
+          const m = await import(mod);
+          // Une méthode neuve appelée sans garde ferait tomber la suite
+          // entière sur l'ancien code : on répond proprement à la place.
+          if (typeof m[fn] !== 'function') { out[cle] = { absent: true }; continue; }
+          const c = m[fn](sol);
+          out[cle] = { nb: c.length, part: c.map((t) => t.part), pts: c.map((t) => t.pts.length) };
+        } catch (e) { out[cle] = { erreur: String(e.message).slice(0, 50) }; }
+      }
+      return out;
+    });
+    const villesAvecCircuit = Object.entries(circuits)
+      .filter(([, v]) => v && v.nb > 0);
+    // Nice n'y est pas, et c'est écrit dans `nice.js` : aucune de ses paires
+    // d'avenues ne referme une boucle au-dessus du seuil. Elle garde l'anneau
+    // de secours jusqu'à sa remise à l'échelle.
+    verifier('chaque grande ville a son circuit de voitures',
+      villesAvecCircuit.length === 3, JSON.stringify(circuits));
+    verifier('et le trajet tient la rue, sans traverser l\'eau ni les maisons',
+      villesAvecCircuit.length > 0
+      && villesAvecCircuit.every(([, v]) => v.part.every((q) => q >= 88)),
+      JSON.stringify(Object.fromEntries(villesAvecCircuit.map(([k, v]) => [k, v.part]))));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

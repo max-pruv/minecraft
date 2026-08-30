@@ -181,6 +181,12 @@ const VOIES = [
 
 const BANDES = rangerVoies(VOIES);
 
+// PAS DE CIRCUIT DE VOITURES ICI, et c'est mesuré. Toutes les combinaisons des
+// sept rues de Lille ont été éprouvées contre `solLille` : aucune ne referme
+// une boucle qui tienne la rue à quatre-vingt-dix pour cent. La ville est la
+// plus petite du jeu (rayon 46) et ses rues sont courtes ; elle garde l'anneau
+// de secours jusqu'à sa remise à l'échelle. Voir la note de `voies.js`.
+
 export function solLille(x, z) {
   const u = x - LILLE.x, v = z - LILLE.z;
   if (Math.hypot(u, v) > LILLE.r) return null;

@@ -1237,6 +1237,29 @@ export class NetSession {
       && window.__filtreMessages(msg) === false) return;
     const entry = this.conns.get(conn.peer);
     if (!entry || !msg || typeof msg !== 'object') return;
+    // CELUI QUI PORTE LE MESSAGE EST LE LIEN VIVANT.
+    //
+    // Le lien direct et le lien de secours portent la même clé — l'identifiant
+    // de l'hôte — donc la même case, et rien ne garantissait que la case pointe
+    // sur celui des deux qui parle vraiment. Un message arrivé PAR LE NUAGE
+    // était rangé dans une case pointant sur le lien direct : `pret` se posait
+    // sur un lien mort, et tout ce que l'enfant envoyait partait par là.
+    //
+    // Mesuré à la sonde, pair-à-pair coupé à la racine : l'invité affichait
+    // `pret/direct` — prêt ET direct, ce qui est impossible ici — voyait
+    // parfaitement l'autre (ses messages entraient par le nuage) pendant que
+    // ses propres blocs n'arrivaient nulle part. Puis le lien direct
+    // s'effondrait, emportait la case avec lui, et la boucle de reconnexion
+    // repartait pour toujours.
+    //
+    // Recevoir est la seule preuve qui vaille : un lien qui vient de délivrer
+    // un message est vivant, celui que la case désigne ne l'est peut-être plus.
+    // On ne prend donc la main que dans ce cas-là — sinon un lien de secours
+    // bavard dégraderait un direct parfaitement sain.
+    if (entry.conn !== conn && !this.lienVivant(entry.conn)) {
+      entry.conn = conn;
+      this.state(this.statusText());
+    }
     entry.seen = Date.now(); // tout message vaut preuve de vie
     switch (msg.t) {
       case 'ping':
