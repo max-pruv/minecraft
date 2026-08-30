@@ -170,6 +170,23 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice2)).compteur === 2,
       `hôte ${(await vu(hote)).compteur} · Alice ${(await vu(alice2)).compteur}`);
 
+    // ENDORMIE N'EST PAS ÉTEINTE, et c'est ce qui faussait la fin de la suite.
+    //
+    // `endormir()` ne fait dormir que le RÉSEAU : elle ment sur
+    // `visibilityState`, gèle `onMessage` et arrête les battements. La page,
+    // elle, continue de dessiner un monde en trois dimensions à plein régime —
+    // et le navigateur du banc est lancé avec `--disable-renderer-backgrounding`,
+    // donc rien ne la ralentit non plus. Cette page-ci n'était jamais refermée :
+    // elle brûlait un cœur sur quatre, en rendu logiciel, depuis le milieu de la
+    // suite jusqu'à la fin.
+    //
+    // Ce sont les scénarios qui CHRONOMÈTRENT qui le payaient — la suite le dit
+    // déjà plus bas pour `solo` et `enfin`, il manquait celle-là. Mesuré : le
+    // renoncement sur courtier muet met 13,0 s quand la page est seule (9 s
+    // d'attente du courtier, 4 s de course vers le nuage), et 24 à 29 s avec ce
+    // fantôme qui tourne à côté. Le jeu n'y était pour rien.
+    await alice.close();
+
     // --- l'hôte s'en va -------------------------------------------------------
     await hote.close();
     await jusqua(async () => (await vu(alice2)).compteur === 1, 40000);
@@ -248,10 +265,27 @@ function verifier(nom, ok, detail = '') {
     // secondes devant « Ouverture du monde… » pour un verdict que la première
     // tentative connaissait déjà. On mesure donc aussi le temps, pas seulement
     // le message — c'est le temps qui était le défaut.
-    const t0 = Date.now();
-    const dit = await jusqua(async () => /❌/.test(
-      await perdu.evaluate(() => document.getElementById('online-status').textContent)), 40000);
-    const mis = (Date.now() - t0) / 1000;
+    // ON CHRONOMÈTRE DANS LA PAGE, PAS DEPUIS LE BANC. Compter d'ici, c'est
+    // compter aussi les allers-retours du protocole du navigateur, qui
+    // s'allongent précisément quand la machine peine — donc accuser le jeu
+    // d'une lenteur qui est celle de la mesure. Ce que l'enfant voit, c'est le
+    // délai entre son doigt et le message : c'est cela qu'on observe, à la
+    // source, sans rien interroger en boucle.
+    const mesure = await perdu.evaluate(() => new Promise((ok) => {
+      const el = document.getElementById('online-status');
+      const debut = performance.now();
+      const fini = () => {
+        if (!/❌/.test(el.textContent)) return false;
+        ok((performance.now() - debut) / 1000);
+        return true;
+      };
+      if (fini()) return;
+      const obs = new MutationObserver(() => { if (fini()) obs.disconnect(); });
+      obs.observe(el, { childList: true, characterData: true, subtree: true });
+      setTimeout(() => { obs.disconnect(); ok(-1); }, 40000);
+    }));
+    const dit = mesure >= 0;
+    const mis = dit ? mesure : 40;
     verifier('un serveur de rendez-vous muet le dit, et vite', dit && mis < 20,
       `${mis.toFixed(0)} s · `
       + JSON.stringify(await perdu.evaluate(() => document.getElementById('online-status').textContent)));
