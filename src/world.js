@@ -1761,6 +1761,14 @@ export class World {
             });
             continue;
           }
+          // ET LE MÊME REMÈDE POUR LES CINQUANTE VILLES DU TOUR DU MONDE.
+          // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et
+          // ses forêts — le Tiergarten de Berlin, le Retiro de Madrid, le
+          // jardin anglais de Munich — et cette branche les posait à plat
+          // comme n'importe quel sol. C'est le défaut de Paris (v187), de
+          // Londres, de Nice et de Lille (v197), une quatrième fois : il ne
+          // manquait plus que la boucle qui dessine le monde entier.
+          if (arbreDeVille(data, x, z, h, wx, wz, solVillesMonde, svm)) continue;
           if (svm !== null) {
             data[World.index(x, h, z)] = svm;
             // Le trottoir porte son mobilier : auvents des boutiques,
