@@ -44,7 +44,7 @@
 // colline, le Burj al Arab sur son île.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI, ROUTE_BLOCK } from './blocks.js';
-import { positionDe } from './mondes.js';
+import { positionDe, K_VILLES, MONDES } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
 import { VILLES_GENEREES } from './villes200.js';
@@ -122,10 +122,22 @@ const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 function fabrique(cle, fiche) {
   const ancre = positionDe(cle);
   const kmLon = 111.32 * Math.cos((fiche.lat0 * Math.PI) / 180);
-  const u = (lon) => Math.round((lon - fiche.lon0) * kmLon * fiche.echelle);
-  const v = (lat) => Math.round(-(lat - fiche.lat0) * 111.19 * fiche.echelle);
+  // LES DEUX UNITÉS D'UNE FICHE (v200). L'échelle est celle du registre, donc
+  // multipliée par K_VILLES : `u`/`v` rendent des BLOCS DU MONDE, et monuments
+  // et lieux tombent à leur place sans qu'on touche une seule adresse.
+  //
+  // La géométrie écrite à la main dans la fiche — la courbe d'un fleuve, le
+  // centre d'une colline, la distance au rivage — est restée dans ses unités
+  // D'ORIGINE, et c'est voulu : on ne réécrit pas trois cents coordonnées
+  // relevées sur de vraies cartes. Ce sont les LECTEURS qui se convertissent,
+  // en divisant leur (u, v) par K — d'où `f.K`. Une seule division, au seuil
+  // de chaque fonction de géographie, et pas un littéral à retrouver : c'est
+  // ce qui rend la remise à l'échelle vérifiable plutôt qu'espérée.
+  const echelle = fiche.echelle * K_VILLES;
+  const u = (lon) => Math.round((lon - fiche.lon0) * kmLon * echelle);
+  const v = (lat) => Math.round(-(lat - fiche.lat0) * 111.19 * echelle);
   const local = (lat, lon) => [u(lon), v(lat)];
-  const f = { cle, ancre, ...fiche, u, v, local };
+  const f = { cle, ancre, ...fiche, echelle, K: K_VILLES, u, v, local };
 
   // LE GRAND RECALIBRAGE (v172). Max, captures à l'appui : « les rues sont
   // hyper petites, faut reformater les rues, le sizing des villes ». Les
@@ -174,7 +186,7 @@ function fabrique(cle, fiche) {
       const dx = a[0] - b[0], dz = a[1] - b[1];
       const l = Math.hypot(dx, dz) || 1;
       let [x2, z2] = a;
-      while (Math.hypot(x2, z2) < f.rayon + 16) { x2 += (dx / l) * 8; z2 += (dz / l) * 8; }
+      while (Math.hypot(x2, z2) < f.rayon / f.K + 16) { x2 += (dx / l) * 8; z2 += (dz / l) * 8; }
       return [x2, z2];
     };
     pts.unshift(etire(pts[0], pts[1]));
@@ -189,7 +201,7 @@ function fabrique(cle, fiche) {
   // centre (l'Obélisque de Buenos Aires EST la pièce maîtresse de sa place).
   f.fontaine = !(f.monuments || []).some((m2) => {
     const [du, dv] = local(m2.lat, m2.lon);
-    return Math.hypot(du, dv) < 7;
+    return Math.hypot(du, dv) < 7 * K_VILLES;              // sept unités de fiche, comme avant
   });
   return f;
 }
@@ -1333,8 +1345,20 @@ function chercheMer(v) {
   for (let k = 0; k < 16; k++) {
     const cap = (k / 16) * Math.PI * 2;
     const e = Math.cos(cap), s = Math.sin(cap);            // est, sud — le repère (u, v) du jeu
-    for (const [blocs, poids] of [[v.r + 18, 2], [v.r + 50, 1]]) {
-      const dist = blocs * 0.75;                            // l'échelle du monde
+    // LA MARGE DE SONDAGE EST EN KILOMÈTRES, PAS EN BLOCS — et c'est la leçon.
+    // Elle était écrite `rayon + 18 blocs`, convertie par un `0.75` figé ici
+    // depuis la carte d'avant. La v199 a divisé l'échelle du monde par deux
+    // sans que rien ne rougisse : la sonde a continué de chercher la mer deux
+    // fois trop loin. Même piège que les `SF.x + n` de world.js, à un fichier
+    // près. Mais la corriger au bloc près la rendait trop COURTE : Beyrouth,
+    // Koweït et Reykjavik — trois villes de bord de mer — perdaient leur
+    // rivage, parce que le planisphère du jeu a des mailles d'une cinquantaine
+    // de kilomètres et ne sait rien répondre à vingt-sept. Le disque se mesure
+    // donc à l'échelle du monde, et la marge en kilomètres, à la résolution de
+    // la carte qu'on interroge.
+    const rayonKm = v.r * K_VILLES * MONDES.terre.projection.kmParBloc;
+    for (const [marge, poids] of [[20, 2], [45, 1]]) {
+      const dist = rayonKm + marge;
       const lat = v.lat - (s * dist) / 111.19;
       const lon = v.lon + (e * dist) / kmLon;
       if (!surTerreReelle(lat, lon)) {
@@ -1494,9 +1518,11 @@ export function hauteurVillesMonde(x, z, h) {
     const d = Math.hypot(u, v);
     if (d > f.rayon + 14) continue;
     const marge = Math.min(1, (f.rayon + 14 - d) / 14);
+    // en unités de fiche pour interroger la géographie (voir fabrique)
+    const U = u / f.K, V = v / f.K;
     let cible = f.sol || 33;                                       // le Machu Picchu vit a 52
-    if (eauDeVille(f, u, v)) cible = 26;
-    else cible += collineDeVille(f, u, v);
+    if (eauDeVille(f, U, V)) cible = 26;
+    else cible += collineDeVille(f, U, V);
     return h * (1 - marge) + cible * marge;
   }
   return h;
@@ -1506,49 +1532,54 @@ export function solVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
+    // (U, V) interrogent la GÉOGRAPHIE de la fiche — fleuve, rivage, colline,
+    // parc — écrite dans ses unités d'origine ; (u, v) restent les blocs du
+    // monde, et ce sont eux qui portent la trame de rues et les MOTIFS (un
+    // `& 3` n'a de sens que sur des entiers de bloc). Voir fabrique().
+    const U = u / f.K, V = v / f.K;
 
-    if (eauDeVille(f, u, v)) return null;                          // l'eau se remplit seule
-    if (f.mer && f.mer.plage && u * f.mer.nx + v * f.mer.nz > f.mer.d - f.mer.plage) return SABLE;
-    if (f.mer && f.mer.quais && u * f.mer.nx + v * f.mer.nz > f.mer.d - 2) return PAVE;
-    if (f.cote && f.cote.quais && u < f.cote.base + f.cote.pente * v + 2) return PAVE;
-    if (f.plage && v >= f.plage.v0 && v <= f.plage.v1) return SABLE;
-    if (f.desert && !(f.desert.bande && Math.abs(u) <= f.desert.bande)) {
+    if (eauDeVille(f, U, V)) return null;                          // l'eau se remplit seule
+    if (f.mer && f.mer.plage && U * f.mer.nx + V * f.mer.nz > f.mer.d - f.mer.plage) return SABLE;
+    if (f.mer && f.mer.quais && U * f.mer.nx + V * f.mer.nz > f.mer.d - 2) return PAVE;
+    if (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2) return PAVE;
+    if (f.plage && V >= f.plage.v0 && V <= f.plage.v1) return SABLE;
+    if (f.desert && !(f.desert.bande && Math.abs(U) <= f.desert.bande)) {
       // Gizeh est desert partout ; Las Vegas garde une bande pour le Strip.
-      if (f.oasis && u > f.oasis.u0) return ((u + v) & 3) === 0 ? ARBRE : HERBE;
+      if (f.oasis && U > f.oasis.u0) return ((u + v) & 3) === 0 ? ARBRE : HERBE;
       return SABLE;
     }
-    if (f.mer && f.mer.ile && u >= f.mer.ile.u1 - (f.mer.ile.plage || 0) && u <= f.mer.ile.u1) {
+    if (f.mer && f.mer.ile && U >= f.mer.ile.u1 - (f.mer.ile.plage || 0) && U <= f.mer.ile.u1) {
       return SABLE;                                                // la plage de Miami Beach
     }
     if (f.charbagh) {
       const c = f.charbagh;
-      if (v >= c.v0 && v <= c.v1 && Math.abs(u) <= c.demi) {
-        if (Math.abs(u) < 2.4 || Math.abs(v - (c.v0 + c.v1) / 2) < 2.4) return TROTTOIR;
+      if (V >= c.v0 && V <= c.v1 && Math.abs(U) <= c.demi) {
+        if (Math.abs(U) < 2.4 || Math.abs(V - (c.v0 + c.v1) / 2) < 2.4) return TROTTOIR;
         return HERBE;
       }
     }
     for (const p of f.parcs || []) {
-      if (((u - p.cu) / p.ru) ** 2 + ((v - p.cv) / p.rv) ** 2 < 1) {
+      if (((U - p.cu) / p.ru) ** 2 + ((V - p.cv) / p.rv) ** 2 < 1) {
         if (p.mosaique && ((u + v) & 1) === 0) return uni(((u * 7 + v * 13) & 3) * 5);
         return ((u + v) & 3) === 0 ? ARBRE : HERBE;
       }
     }
-    const colline = collineDeVille(f, u, v);
+    const colline = collineDeVille(f, U, V);
     if (colline > 1) {
-      const c = (f.collines || []).find((k) => Math.hypot(u - k.cu, v - k.cv) < k.r);
+      const c = (f.collines || []).find((k) => Math.hypot(U - k.cu, V - k.cv) < k.r);
       if (c && c.roche) return PIERRE;
       if (c && c.favela) return 'lot';                             // les maisons s'accrochent
       return ((u + v) & 3) === 0 ? ARBRE : HERBE;
     }
-    if (f.foret && u < f.foret.u1 && v > f.foret.v0) return ((u + v) & 1) === 0 ? ARBRE : HERBE;
+    if (f.foret && U < f.foret.u1 && V > f.foret.v0) return ((u + v) & 1) === 0 ? ARBRE : HERBE;
 
     for (const voie of f.voies || []) {
-      if (distancePolyligne(voie.pts, u, v) < voie.l) return BITUME;
-      if (distancePolyligne(voie.pts, u, v) < voie.l + 0.8) return TROTTOIR;
+      if (distancePolyligne(voie.pts, U, V) < voie.l) return BITUME;
+      if (distancePolyligne(voie.pts, U, V) < voie.l + 0.8) return TROTTOIR;
     }
     if (!f.trame) return null;
     const t = f.trame;
-    if (t.sud && v > t.sud) return null;
+    if (t.sud && V > t.sud) return null;
 
     // LA PLACE CENTRALE. On arrive en ville ICI, par la carte : une place
     // pavée, dégagée, avec sa fontaine — plus jamais le nez dans un mur.
@@ -1625,7 +1656,7 @@ export function batirColonneVillesMonde(x, z, poser) {
     const a = Math.round((u * co - v * si) / t.pu), b = Math.round((u * si + v * co) / t.pv);
     const r = tirage(a, b, f.rayon * 7 + 11);
 
-    const c = (f.collines || []).find((k) => Math.hypot(u - k.cu, v - k.cv) < k.r);
+    const c = (f.collines || []).find((k) => Math.hypot(u / f.K - k.cu, v / f.K - k.cv) < k.r);
     const favela = c && c.favela;
     const dCentre2 = Math.hypot(u, v);
     const tour = !favela && t.tours && r > t.tours && dCentre2 < f.rayon * 0.5;
@@ -1699,10 +1730,26 @@ export function batirColonneVillesMonde(x, z, poser) {
     // vitrées régulières n'ont rien à faire dans une ruelle de Marrakech.
     const grammaire2 = f.facades === 2 || (f.facades === undefined && !t.ruelles);
     if (grammaire2 && !tour && !favela) {
-      // Le mur d'enduit domine, comme sur la vraie Piatnitskaïa : une baie de
-      // fenêtre une colonne sur deux, encadrée de blanc, tout le reste en mur.
+      // UNE FENÊTRE EST UN DESSIN, PAS UN TROU — et c'est la leçon que San
+      // Francisco a payée en v195, jamais portée jusqu'ici. Cette grammaire
+      // posait un bloc de VERRE une colonne sur deux, à TOUS les étages et sur
+      // TOUTES les colonnes du lot, y compris celles de l'intérieur. Comme un
+      // bâtiment est creux — il l'est partout, c'est ce qui rend une ville
+      // possible — on voyait au travers : Rome n'était pas faite d'immeubles
+      // mais d'étagères, des bandes blanches empilées sur des poteaux d'angle.
+      // Vu en capture au ras de la rue, dans deux cent soixante-neuf villes.
+      //
+      // Trois règles en sortent, les mêmes qu'à San Francisco :
+      //   — la baie ne vit que sur le BORD, la façade ; le cœur du lot est du
+      //     mur plein, sinon le bâtiment n'a pas de masse ;
+      //   — le bloc de baie est OPAQUE et porte ses meneaux dans sa texture
+      //     (`f.baie`, choisi par la ville) — un bloc de verre fait ici
+      //     vingt-huit mètres de large, c'est un aquarium, pas une fenêtre ;
+      //   — et l'allège blanche pleine largeur disparaît : c'est elle qui
+      //     faisait les rayures d'étagère. La texture porte déjà son appui.
       const ci = Math.round(along);                          // le rang de colonne
-      const fen = ((ci % 2) + 2) % 2 === 0;                  // une baie sur deux
+      const baie = f.baie || ARCHI.ETAGE;
+      const fen = bord && ((ci % 2) + 2) % 2 === 0;          // une baie sur deux, EN FAÇADE
       // Le nombre d'étages respecte la hauteur PROPRE de la ville (hMaison) :
       // la grammaire est partagée, l'échelle ne l'est pas — un bourg toscan
       // ne prend pas les quatre étages de la Piatnitskaïa.
@@ -1711,15 +1758,19 @@ export function batirColonneVillesMonde(x, z, poser) {
       for (let y = 0; y < bh2; y++) {
         if (y < 3) {
           // le rez-de-chaussée : devanture si commerce, socle sinon
-          if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : VERRE); continue; }
-          if (commerce && bord && y === 1) { poser(2, VERRE); continue; }
+          // la devanture, dessinée elle aussi : deux rangs de VERRE ouvraient
+          // le rez-de-chaussée sur le vide du bâtiment, tout le long des rues
+          if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : ARCHI.VITRINE); continue; }
+          if (commerce && bord && y === 1) { poser(2, ARCHI.VITRINE); continue; }
           if (commerce && bord && y === 2) { poser(3, enseigne); continue; }
-          poser(y + 1, y === 0 ? PIERRE : (fen && y === 1 ? VERRE : mur));
+          poser(y + 1, y === 0 ? PIERRE : (fen && y === 1 ? (f.entresol || ARCHI.ENTRESOL) : mur));
           continue;
         }
         const yy = (y - 3) % 3;
-        if (yy === 0) { poser(y + 1, fen ? BLANC : mur); continue; }   // l'encadrement
-        poser(y + 1, fen ? VERRE : mur);                               // la fenêtre haute
+        // l'allège du plancher, puis les deux rangs de la baie : le dessin de
+        // la fenêtre porte son propre encadrement, le mur fait le reste
+        if (yy === 0) { poser(y + 1, mur); continue; }
+        poser(y + 1, fen ? baie : mur);
       }
       poser(bh2 + 1, ARCHI.CORNICHE);
       poser(bh2 + 2, toitLot);
@@ -1731,20 +1782,30 @@ export function batirColonneVillesMonde(x, z, poser) {
       return;
     }
 
+    const baie = f.baie || ARCHI.ENTRESOL;      // les ruelles : de petites baies carrées
     for (let y = 0; y < bh; y++) {
       if (tour) {
         // même une tour a son pied commerçant : vitrines sur deux niveaux et
         // bandeau d'enseigne — c'est le socle de toutes les tours du monde
-        if (bord && y <= 1) { poser(y + 1, VERRE); continue; }
+        if (bord && y <= 1) { poser(y + 1, ARCHI.VITRINE); continue; }
         if (bord && y === 2) { poser(3, enseigne); continue; }
-        poser(y + 1, y % 3 === 2 ? ACIER : VERRE);
+        // LE MUR D'UNE TOUR EST OPAQUE (v195, San Francisco : « there is no
+        // bridge in the middle of the city and building of fidi are not
+        // looking great »). Deux rangs sur trois étaient du VERRE, sur TOUTES
+        // les colonnes : le Financial District n'était qu'un nuage de cubes
+        // gris suspendus, parce qu'un bâtiment est creux. Le remède avait été
+        // écrit pour San Francisco seule ; toutes les villes à tours du monde
+        // — Tokyo, Séoul, Shanghai, Dubaï — le portaient encore. Le mur de
+        // rideau (CURTAIN) porte ses meneaux dans sa texture, il est opaque,
+        // et il s'allume déjà la nuit.
+        poser(y + 1, bord && y % 3 !== 2 ? CITY_BLOCK.CURTAIN : ACIER);
         continue;
       }
-      if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : VERRE); continue; }
-      if (commerce && bord && y === 1) { poser(2, bh > 3 ? VERRE : mur); continue; }
+      if (commerce && bord && y === 0) { poser(1, porte ? BOIS_PORTE : ARCHI.VITRINE); continue; }
+      if (commerce && bord && y === 1) { poser(2, bh > 3 ? ARCHI.VITRINE : mur); continue; }
       if (commerce && bord && y === 2) { poser(3, enseigne); continue; }
-      const fenetre = y > 0 && y % 2 === 1 && (face & 1) === 1;
-      poser(y + 1, fenetre ? VERRE : mur);
+      const fenetre = bord && y > 0 && y % 2 === 1 && (face & 1) === 1;
+      poser(y + 1, fenetre ? baie : mur);
     }
     poser(bh + 1, toitLot);
     // La cheminée, au coin du lot — une maison sur deux en a une.
@@ -1767,7 +1828,7 @@ export function mobilierVillesMonde(x, z, poser) {
     if (Math.hypot(u, v) > f.rayon) continue;
     if (!f.trame) return;
     const t = f.trame;
-    if (t.sud && v > t.sud) return;
+    if (t.sud && v / f.K > t.sud) return;                         // `sud` est en unités de fiche
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     const A = u * co - v * si, B = u * si + v * co;
     const a = Math.round(A / t.pu), b = Math.round(B / t.pv);
@@ -1859,8 +1920,8 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
         const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
-        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u, v)) sec = false;
-        if (t.sud && v > t.sud) sec = false;
+        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) sec = false;
+        if (t.sud && v / f.K > t.sud) sec = false;
       }
       if (!sec) continue;
       const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
@@ -1966,7 +2027,7 @@ export function couleurCarteVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
-    if (eauDeVille(f, u, v)) return [92, 142, 196];
+    if (eauDeVille(f, u / f.K, v / f.K)) return [92, 142, 196];
     const sol = solVillesMonde(x, z);
     if (sol === SABLE) return [226, 206, 156];
     if (sol === ARBRE || sol === HERBE) return [96, 156, 92];

@@ -20,6 +20,60 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v200 — On ne voit plus au travers des immeubles, et les villes ont la place
+
+**Pourquoi.** La v199 avait rendu la place aux villes ; il restait à la leur
+donner. Un bloc de Rome valait CINQUANTE MÈTRES au sol : ses îlots faisaient
+sept cent cinquante mètres de côté, un seul bâtiment les remplissait, et c'est
+ce que Max avait signalé en capture — ce qui cloche à Rome n'est pas la
+hauteur, c'est l'emprise.
+
+Mais la capture prise pour vérifier a montré autre chose, bien pire, et que
+personne n'avait jamais regardé au ras de la rue : **la moitié des murs était
+en verre.** La grammaire des façades posait un bloc de VERRE une colonne sur
+deux à tous les étages, et les tours deux rangs sur trois. Comme un bâtiment
+est creux — il l'est partout, c'est ce qui rend une ville possible — on voyait
+au travers. Rome n'était pas faite d'immeubles mais d'étagères, des bandes
+blanches empilées sur des poteaux d'angle. C'est exactement la panne que San
+Francisco avait payée en v195 ; le remède avait été écrit pour San Francisco
+seule, et les deux cent soixante-neuf autres villes le portaient encore.
+
+**Ce que ça change.** Une fenêtre est un DESSIN, plus un trou : la baie et la
+devanture portent leurs meneaux dans leur texture, elles sont opaques, et elles
+s'allument déjà la nuit. Les bâtiments ont une masse ; les tours de Tokyo, de
+Séoul, de Shanghai et de Dubaï sont des tours. Et les villes engendrées passent
+de 20 à 36 blocs par kilomètre — entre Paris (24) et Washington (48) : Rome
+grandit de 120 à 216 blocs de rayon, ses îlots tombent de 750 à 417 mètres, sa
+chaussée de 170 à 94, et l'on marche du Colisée au Panthéon en cinquante-six
+blocs au lieu de trente et un. Ce qui grandit est la RÉSOLUTION, pas la
+géographie : le disque couvre les mêmes kilomètres, le Tibre garde sa largeur
+en mètres.
+
+**Ce qui le prouve.** Le verre dans le volume bâti, mesuré des deux côtés :
+Rome **24,7 % → 0**, Tokyo **47,4 % → 0**, Marrakech 33,3 % → 0, Séoul 40,4 %
+→ 0, Dubaï 37,0 % → 0. Presque la moitié de Tokyo était un trou. Un témoin
+neuf de `carteMonde.js` l'exige désormais sous 2 %, et les seize points d'eau
+des cinquante grandes visent en unités de fiche — plus jamais un (u, v) en dur
+qui meurt à la prochaine échelle.
+
+Le facteur d'échelle est un résultat, pas un goût : la pire marge entre deux
+disques donne k=1,7 → 37 blocs, k=1,8 → 31, k=1,9 → 24, k=2,0 → 17, k=2,2 → 1.
+On prend 1,8. Deux villes tombent dans la fenêtre d'empreinte de `plafond.js`,
+Bruxelles et Cologne : l'exception de Max sert donc une cinquième fois, et pour
+la première fois depuis Paris elle se BORNE. La même découpe, mesurée sur
+`origin/main` et sur la branche, rend **188 166 colonnes et le même hash des
+deux côtés** — hors de ces deux disques, pas un bloc n'a bougé. Un témoin de
+plus vérifie qu'aucune des deux cent soixante-neuf villes ne s'approche de ce
+que les enfants ont bâti : la plus proche, Bruxelles, en reste à 228 blocs.
+
+Corrigé au passage, et trouvé par la même mesure : la sonde qui cherche la mer
+autour de chaque ville convertissait ses blocs en kilomètres avec un `0,75` figé
+depuis la carte d'avant — la v199 l'avait divisée par deux sans que rien ne
+rougisse. Beyrouth, Koweït et Reykjavik retrouvent leur rivage, et Bilbao,
+Colombo, Hangzhou et Maputo le leur.
+
+---
+
 ## v199 — La carte double, et le sol des enfants ne bouge pas d'un bloc
 
 **Pourquoi.** Max : « agrandir la carte entière ». Les villes n'avaient plus la

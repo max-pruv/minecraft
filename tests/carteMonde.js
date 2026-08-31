@@ -191,6 +191,13 @@ const VRAIES_KM = [
       const CAT = { 'Colisée': 'colisee', 'Sagrada Família': 'sagrada', 'Tour de Pise': 'tour-pise',
         'Pyramide de Khéops': 'pyramide-gizeh', 'Taj Mahal': 'taj-mahal', "Opéra de Sydney": 'opera-sydney',
         'Christ Rédempteur': 'christ-redempteur', 'Space Needle': 'space-needle' };
+      // CES POINTS SONT EN UNITÉS DE FICHE, PAS EN BLOCS — et c'est ce qui
+      // leur permet de survivre à une remise à l'échelle. Ils sont relevés sur
+      // le plan que la fiche décrit (la lagune de Venise au-delà de son rayon
+      // 33, l'anneau de canaux d'Amsterdam à 20) ; la conversion en blocs se
+      // fait à la lecture, en multipliant par le facteur de la ville. Une
+      // sonde qui vise un (u, v) en dur meurt à la prochaine échelle : c'est
+      // écrit noir sur blanc pour Paris, et cela vaut ici aussi.
       const EAU_TEMOIN = { rome: [-50, 1], barcelone: [45, 25], pise: [0, 15], agra: [10, -6],
         sydney: [-5, -18], rio: [45, 20], seattle: [-35, 0],
         // les cinquante grandes : chaque signature d'eau nouvelle a son point
@@ -248,7 +255,10 @@ const VRAIES_KM = [
             attendu: cat ? cat.emprise.h : 3, hMin: m.hmin || 3 });
         }
         const e = EAU_TEMOIN[f.cle];
-        if (e) eaux.push({ ville: f.cle, eau: w.terrainHeight(f.ancre.x + e[0], f.ancre.z + e[1]) < WATER_LEVEL });
+        if (e) {
+          const ex = Math.round(f.ancre.x + e[0] * f.K), ez = Math.round(f.ancre.z + e[1] * f.K);
+          eaux.push({ ville: f.cle, eau: w.terrainHeight(ex, ez) < WATER_LEVEL });
+        }
         centres.push({ ville: f.cle, sec: w.terrainHeight(f.ancre.x, f.ancre.z) >= WATER_LEVEL });
       }
       return { monuments, eaux, centres };
@@ -489,7 +499,7 @@ const VRAIES_KM = [
     // une vraie diversité de blocs, comptée, pas promise.
     const facades = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
-      const { BLOCK, CITY_BLOCK, DECOR_START, RUE } = await import('./src/blocks.js');
+      const { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI } = await import('./src/blocks.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
       // La palette sobre du réalisme v2 : bordeaux, vert, marine, émeraude,
@@ -498,7 +508,8 @@ const VRAIES_KM = [
       const villes = {};
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
-        const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0, bancs: 0 };
+        const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0,
+          bancs: 0, verre: 0, batis: 0 };
         const ids = new Set();
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
@@ -506,8 +517,18 @@ const VRAIES_KM = [
             const sol = w.terrainHeight(x, z);
             const s0 = w.getBlock(x, sol, z);
             for (let dy = 0; dy <= 8; dy++) { const id = w.getBlock(x, sol + dy, z); if (id) ids.add(id); }
+            // LE VERRE DANS LE VOLUME BÂTI. Un bâtiment est CREUX : un bloc de
+            // verre dans son mur, c'est un trou par lequel on voit au travers.
+            for (let dy = 1; dy <= 20; dy++) {
+              const id = w.getBlock(x, sol + dy, z);
+              if (!id) continue;
+              c.batis++;
+              if (id === BLOCK.GLASS) c.verre++;
+            }
             if (s0 === BLOCK.DARKPLANK) c.portes++;
-            if (s0 === BLOCK.GLASS) c.vitrines++;
+            // La devanture est DESSINÉE : elle porte sa vitrine et son store
+            // dans sa texture, elle est opaque, et elle s'allume la nuit.
+            if (s0 === ARCHI.VITRINE) c.vitrines++;
             if (s0 === CITY_BLOCK.SIDEWALK) {
               if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
               // v180 : le lampadaire est un mesh (RUE.REVERBERE), plus un
@@ -534,6 +555,24 @@ const VRAIES_KM = [
       sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
+    // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
+    //
+    // C'est la leçon de San Francisco (v195), qui n'avait été portée que dans
+    // `sanfrancisco.js` : partout ailleurs, la grammaire des villes posait un
+    // bloc de VERRE une colonne sur deux, à tous les étages, et les tours
+    // deux rangs sur trois. Comme un bâtiment est creux, on voyait au
+    // travers — Rome était faite d'étagères, Tokyo d'un nuage de cubes.
+    // Mesuré dans le volume bâti, sur origin/main : Rome 24,7 % de verre,
+    // Tokyo 47,4 %, Marrakech 33,3 %. Presque la MOITIÉ de Tokyo était un
+    // trou. Une fenêtre est un DESSIN — la baie et la devanture portent leurs
+    // meneaux dans leur texture, elles sont opaques, et elles s'allument déjà
+    // la nuit. Le seuil est à 2 % : il reste les vitraux des monuments.
+    const ajourees = Object.entries(facades).filter(([, c]) => c.verre > c.batis * 0.02);
+    verifier('et l\'on ne voit pas au travers des immeubles : le verre est la minorité',
+      ajourees.length === 0,
+      Object.entries(facades).map(([v, c]) =>
+        `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
+
     const sansVie = Object.entries(facades).filter(([v, c]) =>
       !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',

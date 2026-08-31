@@ -75,6 +75,19 @@ travail est irrattrapable.
    prouve pas l'absence : il en donne l'illusion. Toute distance du monde réel
    se redemande à la projection, jamais ne se recopie.
 
+   **Elle a servi une CINQUIÈME fois, en v200**, pour remettre à l'échelle les
+   deux cent soixante-neuf villes engendrées — et cette fois elle se BORNE à
+   nouveau, ce qui en fait le modèle à suivre. Deux villes seulement tombent
+   dans la fenêtre d'empreinte, Bruxelles et Cologne. L'empreinte du relief
+   change, celle d'HORS des disques ne bouge pas : 188 166 colonnes et le même
+   hash sur `origin/main` et sur la branche, avec la MÊME découpe des deux
+   côtés. Un troisième témoin vérifie qu'aucune des deux cent soixante-neuf
+   villes ne s'approche de ce que les enfants ont bâti — la plus proche,
+   Bruxelles, en reste à 228 blocs. **Et le facteur d'échelle est un résultat,
+   pas un goût** : la pire marge entre deux disques donne k=1,8 → 31 blocs,
+   k=1,9 → 24, k=2,0 → 17, k=2,2 → 1. On prend 1,8, et le chiffre se
+   remesurera le jour où une ville bougera.
+
    **Elle a servi une TROISIÈME fois, en v187, pour Paris** — et cette
    fois-là, elle sert dans la fenêtre d'empreinte, ce qui rend la borne
    vérifiable au bit près. Paris passe de huit à vingt-quatre blocs par
@@ -692,6 +705,58 @@ Trois règles en sortent, et elles s'appliquent à la prochaine ville :
   maison de trois blocs de large, et la ville est enneigée vue du ciel.
   738 toits blancs pour 94 sombres à Alamo Square avant la correction.
 
+### Les villes engendrées — deux unités dans une fiche, et un mur qui était un trou
+
+**Un bâtiment est CREUX. Un bloc de verre dans son mur est donc un TROU par
+lequel on voit au travers.** C'est la panne de San Francisco (v195), et le
+remède avait été écrit pour `sanfrancisco.js` SEUL : les deux cent
+soixante-neuf villes de `villesmonde.js` la portaient encore, treize versions
+plus tard. Mesuré dans le volume bâti : Rome 24,7 % de verre, **Tokyo 47,4 %**,
+Marrakech 33,3 %. Presque la moitié de Tokyo était un trou, et la vue de rue le
+montrait sans ambiguïté — des étagères, pas des immeubles.
+
+Trois règles, les mêmes qu'à San Francisco, et qui valent pour la prochaine
+ville :
+
+- **La baie ne vit que sur le BORD du lot.** L'ancienne grammaire posait sa
+  fenêtre sur TOUTES les colonnes du lot, intérieur compris : le bâtiment
+  n'avait aucune masse. Le cœur du lot est du mur plein.
+- **Une fenêtre est un DESSIN, pas un trou.** `ARCHI.ETAGE`, `ARCHI.ENTRESOL`,
+  `ARCHI.VITRINE`, `CITY_BLOCK.CURTAIN` portent leurs meneaux dans leur
+  texture, sont opaques, et s'allument déjà la nuit. Un bloc de `GLASS` fait
+  ici vingt-huit mètres de large.
+- **La devanture aussi.** Deux rangs de verre au rez-de-chaussée ouvraient le
+  bâtiment sur son vide tout le long des rues commerçantes.
+
+**Et une fiche de ville a DEUX unités, depuis v200.** `f.echelle` est en blocs
+du monde — c'est elle qui place monuments et lieux, et elle vaut l'échelle
+d'auteur multipliée par `K_VILLES` (1,8). La géométrie écrite à la main dans la
+fiche — courbe de fleuve, centre de colline, distance au rivage — est restée
+dans ses unités D'ORIGINE, à dessein : on ne réécrit pas trois cents
+coordonnées relevées sur de vraies cartes. Ce sont les LECTEURS qui se
+convertissent, en divisant leur (u, v) par `f.K` au seuil de chaque fonction de
+géographie. Trois choses à savoir :
+
+- **Ce qui reste en BLOCS, c'est la trame de rues** — largeur de chaussée, de
+  trottoir, pas d'îlot — parce qu'une rue doit rester praticable quelle que
+  soit l'échelle. C'est de là que vient tout le gain : l'îlot passe de 750 à
+  417 mètres sans qu'une seule ligne de trame ne change.
+- **Ce qui reste en BLOCS aussi, ce sont les MOTIFS** : un `((u + v) & 3)` n'a
+  de sens que sur des entiers de bloc. Diviser avant de tirer un motif le
+  détruit.
+- **Une sonde qui vise un (u, v) en dur meurt à la remise à l'échelle
+  suivante.** Les seize points d'eau de `carteMonde.js` sont en unités de
+  fiche et se multiplient par `f.K` à la lecture. Même leçon qu'`adresseParis`
+  et `adresseSF`, par un troisième bout.
+
+**Et une échelle ne se recopie JAMAIS.** `chercheMer` convertissait ses blocs
+en kilomètres avec un `0.75` figé depuis la carte d'avant ; la v199 l'a
+divisée par deux et la sonde a continué de chercher la mer deux fois trop loin,
+sans que rien ne rougisse. Elle se demande à `MONDES.terre.projection`. Et sa
+marge, elle, est en KILOMÈTRES — corrigée au bloc près elle devenait trop
+courte, et Beyrouth, Koweït et Reykjavik perdaient leur rivage, parce que le
+planisphère du jeu a des mailles d'une cinquantaine de kilomètres.
+
 ### La nuit, et pourquoi elle était noire
 
 Le monde entier partage UN matériau (`solidMaterial`) dont la couleur EST
@@ -810,6 +875,10 @@ que Manhattan et Washington. Ce qui cloche à Rome n'est pas la hauteur, c'est
 l'emprise — et cela se corrige en remettant la ville à l'échelle, pas en la
 rabotant. Or les marges entre villes voisines vont de 8 à 41 blocs : doubler
 Rome la ferait toucher Naples. Décision de carte, pas de rendu.
+
+**Fait en v199 et v200** : la carte a doublé, puis les villes engendrées ont
+pris 1,8 fois leur emprise. Rome est à 36 blocs par kilomètre, ses îlots font
+417 mètres. La hauteur, elle, n'a jamais bougé — elle n'était pas le défaut.
 
 ### La vie des rues — et le plafond qui la tuait
 

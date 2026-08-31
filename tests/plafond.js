@@ -111,7 +111,15 @@ function verifier(nom, ok, detail = '') {
 // Ce qui reste vert de l'ancien monde, et ce n'est pas rien : les dix-huit
 // colonnes de référence ont gardé leur cote AU BLOC PRÈS, et la maison
 // sauvegardée avant le changement repose toujours sur le sol.
-const EMPREINTE_RELIEF = '4754a91ef7fed692c2b8f6b6238f7c0cb4f082c5';
+// v200 — LES VILLES ENGENDRÉES REMISES À L'ÉCHELLE. C'est la CINQUIÈME fois
+// que l'exception sert, et cette fois elle se borne à nouveau, comme en v162
+// et v187 : deux cent soixante-neuf villes passent leur échelle de 20 à 36
+// blocs par kilomètre et leur disque avec, et DEUX d'entre elles tombent dans
+// la fenêtre observée — Bruxelles et Cologne. Le relief change sous leurs
+// disques, nulle part ailleurs, et c'est mesuré des deux côtés dix lignes
+// plus bas.
+// v199 (avant la remise à l'échelle) : 4754a91ef7fed692c2b8f6b6238f7c0cb4f082c5
+const EMPREINTE_RELIEF = 'f0b43c078bb4787599b1762c7d25834cca4a88c5';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -168,7 +176,15 @@ const EMPREINTE_RELIEF = '4754a91ef7fed692c2b8f6b6238f7c0cb4f082c5';
 // le monde a grandi, mais parce que les villes se sont ÉCARTÉES : dans la
 // fenêtre de ±700 blocs, il n'en reste presque plus qu'une, Paris, dont
 // l'ancre ne bouge pas.
-const EMPREINTE_HORS_VILLES = '4877f83bb63e6918936b99d3098f077506dba068';
+// v200 : la découpe s'élargit aux nouveaux disques, et la preuve se refait
+// comme toujours — la MÊME découpe (les disques d'APRÈS, des deux côtés)
+// mesurée sur origin/main (v199) et sur la branche :
+//   origin/main  188 166 colonnes  5503fd10965064886b1dc6d8dba2800b50d122be
+//   la branche   188 166 colonnes  5503fd10965064886b1dc6d8dba2800b50d122be
+// Hors des disques de Bruxelles et de Cologne, pas un bloc n'a bougé. On ne
+// met pas un hash à jour : on mesure les deux côtés, et c'est cela, et rien
+// d'autre, qui autorise l'empreinte du dessus à changer.
+const EMPREINTE_HORS_VILLES = '5503fd10965064886b1dc6d8dba2800b50d122be';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -303,6 +319,23 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     prochesDeParis.length ? prochesDeParis.map((a) => a[0]).join(', ')
       : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
         Math.hypot(x - PARIS_CITE.x, z - PARIS_CITE.z) - PARIS_CITE.r - r)))} blocs du bord`);
+
+  // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
+  // qui ont pris 1,8 fois leur emprise en v200.
+  //
+  // C'est la forme que prend une casse autorisée quand on SAIT la borner : on
+  // ne demande pas « le hash est-il le bon », on demande « le disque qui a
+  // grandi atteint-il un endroit où un enfant a bâti ». Un jour où une ville
+  // grandira encore, ce témoin rougira AVANT que le sol ne se dérobe — et il
+  // ne peut pas être satisfait en mettant une valeur à jour.
+  const villeTropPres = VILLES_MONDE.map((f) => {
+    const pire = Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
+      Math.hypot(f.ancre.x - x, f.ancre.z - z) - f.rayon - MARGE_VILLE - r));
+    return { cle: f.cle, marge: Math.round(pire) };
+  }).sort((p1, p2) => p1.marge - p2.marge);
+  verifier('et aucune ville engendrée ne s\'approche de ce que les enfants ont bâti',
+    villeTropPres[0].marge > 0,
+    `la plus proche est ${villeTropPres[0].cle}, à ${villeTropPres[0].marge} blocs du bord`);
 
   const { WASHINGTON } = await import('../src/washington.js');
   const toutes = [
