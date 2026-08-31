@@ -686,6 +686,48 @@ const VRAIES_KM = [
       sf.tablier !== null && sf.tablier >= 60,
       `tablier de ${sf.tablier} blocs`);
 
+    // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
+    //
+    // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses
+    // forêts — le Tiergarten de Berlin, le Retiro de Madrid, le jardin
+    // anglais de Munich. La boucle qui dessine le monde les posait À PLAT,
+    // comme n'importe quel identifiant de sol : vus du ciel, de belles taches
+    // vertes ; vus de la rue, de la pelouse d'une autre nuance.
+    //
+    // C'est le défaut de Paris (v187), puis de Londres, Nice et Lille (v197),
+    // une QUATRIÈME fois — et cette fois pour cinquante villes d'un coup. Ce
+    // qui distingue un arbre d'une pelouse n'est pas sa couleur : c'est du
+    // tronc au-dessus du sol, et du feuillage au-dessus du tronc.
+    const bois = await tab.evaluate(async () => {
+      const M = await import('./src/mondes.js');
+      const g = window.__game;
+      const LOG = 5, LEAVES = 6;
+      const b = M.positionDe('berlin');
+      // le Tiergarten, tel que la fiche de Berlin le pose
+      const cx = Math.round(b.x - 47), cz = Math.round(b.z + 12);
+      g.player.pos.set(cx, g.world.sommetColonne(cx, cz) + 30, cz);
+      await new Promise((r) => setTimeout(r, 9000));
+      let arbres = 0, feuillesAuSol = 0;
+      for (let du = -10; du <= 10; du++) {
+        for (let dv = -12; dv <= 12; dv++) {
+          const x = cx + du, z = cz + dv;
+          const h = g.world.terrainHeight(x, z);
+          // un arbre : du tronc juste au-dessus du sol, du feuillage plus haut
+          const tronc = g.world.getBlock(x, h + 1, z) === LOG
+            && g.world.getBlock(x, h + 2, z) === LOG;
+          const couronne = g.world.getBlock(x, h + 4, z) === LEAVES
+            || g.world.getBlock(x, h + 5, z) === LEAVES;
+          if (tronc && couronne) arbres++;
+          // une feuille POSÉE AU SOL, c'est le défaut : de la pelouse verte
+          if (g.world.getBlock(x, h, z) === LEAVES) feuillesAuSol++;
+        }
+      }
+      return { arbres, feuillesAuSol };
+    });
+    verifier('les parcs du tour du monde ont de vrais arbres, pas des aplats',
+      bois.arbres >= 8 && bois.feuillesAuSol === 0,
+      `${bois.arbres} arbres · ${bois.feuillesAuSol} feuillage(s) posé(s) à plat`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
