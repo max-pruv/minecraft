@@ -834,6 +834,39 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils marchent — ce sont des passants, pas des statues',
       bouge >= 2, `${bouge} promeneur(s) sur la place ont bougé en huit secondes`);
 
+    // ET CE QU'ON NE VOIT PAS NE SE DESSINE PAS.
+    //
+    // Max, sur son iPad : « ce n'est pas très fluide, c'est saccadé ». Mesuré
+    // à la sonde au centre de Paris : 1 522 appels de dessin, dont 1 353 pour
+    // des personnages — quatre-vingt-neuf pour cent. Et sur les cent
+    // cinquante-trois personnages du monde, CENT TREIZE étaient à plus de
+    // quatre-vingt-dix blocs, à quatorze pixels de haut, chacun coûtant onze
+    // maillages pour une marche que personne ne regarde. Le jeu avait cessé de
+    // les ANIMER au loin depuis longtemps ; il ne les avait jamais retirés du
+    // dessin.
+    //
+    // Ce que le témoin éprouve, c'est le fait, pas la conséquence : aucun
+    // personnage au-delà de la portée ne doit rester dessiné. Le nombre
+    // d'appels dépend d'où l'on regarde ; celui-ci, non.
+    const auLoin = await tab.evaluate(() => {
+      const g = window.__game;
+      const px = g.player.pos.x, pz = g.player.pos.z;
+      let dessinesLoin = 0, dessinesPres = 0, loin = 0;
+      for (const n of g.npcs || []) {
+        const d = Math.hypot(n.pos.x - px, n.pos.z - pz);
+        if (d > 75) { loin++; if (n.mesh.visible) dessinesLoin++; }
+        else if (d < 45 && n.mesh.visible) dessinesPres++;
+      }
+      return { dessinesLoin, dessinesPres, loin, total: (g.npcs || []).length };
+    });
+    verifier('et les personnages lointains ne sont plus dessinés du tout',
+      auLoin.loin >= 20 && auLoin.dessinesLoin === 0,
+      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} à plus de 75 blocs`);
+    // L'autre moitié de la promesse : on n'a pas vidé la rue pour autant.
+    verifier('mais ceux d\'à côté sont toujours là',
+      auLoin.dessinesPres >= 3,
+      `${auLoin.dessinesPres} personnage(s) dessinés à moins de 45 blocs`);
+
     // --- les poissons : la mer aussi est vivante ------------------------------
     //
     // Max : « add fish swimming ». On se pose au-dessus de la mer de Marseille
