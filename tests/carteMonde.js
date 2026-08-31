@@ -633,8 +633,20 @@ const VRAIES_KM = [
       g.player.pos.set(c.x, g.world.terrainHeight(c.x, c.z) + 20, c.z + 20);
       g.player.vel.set(0, 0, 0);
       window.__setDayTime(0.75);                 // minuit
-      await new Promise((r) => setTimeout(r, 2500));
-      return window.__lumiere();
+      // ON ATTEND QUE LA VILLE SOIT LÀ, PAS DEUX SECONDES ET DEMIE.
+      //
+      // Ce que ce témoin promet, c'est que les fenêtres restent allumées la
+      // nuit — pas que trois morceaux de monde se maillent en 2,5 s. Le
+      // compte de morceaux ÉCLAIRÉS est un compte de morceaux CHARGÉS : sur
+      // un conteneur chargé il tombe à un, et le témoin accuse l'éclairage
+      // alors que ses deux autres mesures sont justes (murs à 0,31, fenêtres
+      // à 0,92). On attend le résultat, borné dans le temps.
+      let vu = window.__lumiere();
+      for (let i = 0; i < 30 && vu.morceauxEclaires < 3; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        vu = window.__lumiere();
+      }
+      return vu;
     });
     verifier('à minuit, les fenêtres de la ville restent allumées',
       nuit.fenetres > nuit.solide * 1.8 && nuit.morceauxEclaires >= 3,
