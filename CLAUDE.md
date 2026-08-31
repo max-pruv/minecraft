@@ -44,6 +44,37 @@ travail est irrattrapable.
    l'invariant reprend tel quel, empreinte comprise. Même autorisé, on ne
    casse pas plus que nécessaire — voir « La refonte de la carte » plus bas.
 
+   **Elle a servi une QUATRIÈME fois, en v199, pour agrandir la carte
+   entière** — décision de Max, « agrandir la carte entière » — et c'est la
+   seule fois où la casse n'a PAS pu être bornée : l'échelle passant de 0,75 à
+   0,375 km par bloc, le relief se réécrit partout où la projection décide de
+   la géographie. Les deux empreintes changent, et aucune découpe ne peut les
+   sauver.
+
+   **Ce qui la rend acceptable est ailleurs, et c'est la leçon à garder :
+   quand on ne peut pas BORNER une casse, on prouve autre chose — et la preuve
+   doit être plus forte qu'un hash.** La carte d'avant est figée pour toujours
+   dans `MONDES.terreAvant`, et un témoin compare les deux : le sol sous le
+   point d'apparition et sous Paris doit être IDENTIQUE, colonne par colonne.
+   Mesuré à la livraison : 4 040 colonnes, zéro déplacée. Ce témoin ne peut pas
+   être satisfait en mettant une valeur à jour — c'est ce qui le distingue
+   d'une empreinte, et c'est lui qui porte l'invariant désormais.
+
+   Trois filets, posés AVANT que rien ne bouge : une copie des blocs de chaque
+   enfant sur son propre document (écrite une seule fois — repasser dessus
+   remplacerait la copie d'avant par une copie d'après) ; une migration qui
+   décale chaque bloc de la différence de sol sous sa colonne, bornée à
+   vingt-quatre blocs ; et le témoin ci-dessus.
+
+   **Et une casse de cette taille révèle les témoins qui ne prouvaient rien.**
+   Quatre témoins de `carteMonde.js` portaient l'échelle écrite en dur —
+   `/ 0.75`, l'ancre `200`, des rayons de recherche en blocs qui valaient des
+   kilomètres. Ils cherchaient le sommet de l'Everest à mi-chemin de l'Everest.
+   Ils étaient verts depuis toujours PARCE QUE RIEN N'AVAIT BOUGÉ, pas parce
+   qu'ils étaient justes. Un témoin qui ne peut pas voir un changement n'en
+   prouve pas l'absence : il en donne l'illusion. Toute distance du monde réel
+   se redemande à la projection, jamais ne se recopie.
+
    **Elle a servi une TROISIÈME fois, en v187, pour Paris** — et cette
    fois-là, elle sert dans la fenêtre d'empreinte, ce qui rend la borne
    vérifiable au bit près. Paris passe de huit à vingt-quatre blocs par

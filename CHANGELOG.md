@@ -20,6 +20,53 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v199 — La carte double, et le sol des enfants ne bouge pas d'un bloc
+
+**Pourquoi.** Max : « agrandir la carte entière ». Les villes n'avaient plus la
+place de grandir — huit blocs entre Pise et Florence, neuf entre Johannesburg
+et Pretoria, quarante et un entre Paris et Lille. Rome est mince et haute sur
+des îlots de cinquante mètres, et la remettre à l'échelle comme Paris ou San
+Francisco l'aurait fait toucher Naples.
+
+L'échelle ne s'est pas choisie, elle s'est balayée — le raisonnement même qui
+avait donné 0,75 km/bloc en son temps, refait avec les emprises d'aujourd'hui.
+À chaque échelle candidate on demande ce qui resterait si chaque ville DOUBLAIT
+son emprise, puisque c'est la raison de l'agrandissement : 0,75 → −279 blocs,
+0,50 → −79, 0,429 → −4, **0,375 → +17**, 0,30 → +53. La première qui tient.
+
+**Ce que ça change.** Les distances doublent et la marge la plus étroite de
+toute la carte passe de HUIT blocs à SOIXANTE-QUINZE. Chaque ville a désormais
+de quoi doubler. Le monde s'étend de 21 000 à 43 000 blocs — on voyage par la
+carte, c'était déjà tranché, et le terrain s'engendre à la demande.
+
+**Ce qui le prouve, et c'est là que tout se joue.** Le sol se réécrit partout
+où la projection décide de la géographie : c'est la casse que Max avait
+autorisée pour cette refonte-là. Mais **là où les enfants ont bâti, il ne bouge
+pas d'un bloc** — 4 040 colonnes mesurées autour du point d'apparition et
+autour de Paris, cent pour cent identiques. L'ancre de la projection est
+plantée sur Paris exprès, et le bruit du terrain ne dépend que de la position.
+Les dix-huit colonnes de référence de `plafond.js` ont gardé leur cote au bloc
+près, et la maison sauvegardée avant le changement repose toujours sur le sol.
+
+Trois filets ont été posés dans cet ordre, avant que rien ne bouge : une COPIE
+des blocs de chaque enfant sur son propre document, écrite une seule fois ; une
+MIGRATION qui décale chaque bloc de la différence de sol sous sa colonne, la
+carte d'avant étant figée pour toujours dans `MONDES.terreAvant` ; et un TÉMOIN
+qui compare les deux cartes et qu'aucune mise à jour de valeur ne peut
+satisfaire — c'est lui, désormais, qui porte l'invariant du sol, à la place
+d'une empreinte devenue impossible à borner.
+
+**Et l'agrandissement a révélé mieux que lui-même.** Quatre témoins de
+`carteMonde.js` portaient l'échelle ÉCRITE EN DUR : `blocDe` calculait son `z`
+avec `/ 0.75` et l'ancre `200`, et cherchait donc le sommet de l'Everest à
+mi-chemin de l'Everest — 40 blocs au lieu de 78, le Grand Canyon creusé de 3 au
+lieu de 23, la Manche annoncée sans une goutte d'eau. Ils étaient verts depuis
+toujours parce que rien n'avait bougé, pas parce qu'ils étaient justes. Un
+témoin qui ne peut pas voir un changement n'en prouve pas l'absence : il en
+donne l'illusion.
+
+---
+
 ## v198 — La carte cesse d'être peinte en bonbon, et ses parcs ont des arbres
 
 **Pourquoi.** Max, capture de Rome à l'appui : « refais toute la carte ». La
