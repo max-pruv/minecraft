@@ -20,6 +20,54 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v198 — La carte cesse d'être peinte en bonbon, et ses parcs ont des arbres
+
+**Pourquoi.** Max, capture de Rome à l'appui : « refais toute la carte ». La
+ville était un champ de bâtonnets orange, jaune citron et rose, coiffés de
+rouge pompier — et aucun de ses parcs n'avait d'arbre. C'est l'état des deux
+cent cinquante villes que le réalisme v2 n'avait jamais atteintes.
+
+Quatre constantes mal choisies expliquent la couleur, et elles peignent
+dix-neuf villes à la fois. `OCRE` n'était pas de l'ocre : `uni(1)` est
+l'orange de signalisation (232, 137, 44), et il peint les murs de Rome,
+Florence, Venise, Barcelone, Lisbonne, Prague, Munich, Vienne. Le nom disait
+déjà ce qu'il fallait peindre — il n'a jamais été suivi. `ROSE` était un saumon
+vif, employé trente-trois fois. `uni(2)`, le jaune de balise, était écrit EN
+DUR dans douze fiches, hors de portée de toute constante. Et `TUILE`, le rouge
+de la palette, coiffait chaque ville méditerranéenne de casquettes écarlates.
+
+Le plus frappant : la carte 2D disait DÉJÀ la bonne couleur de toits depuis
+toujours — `couleurToits: [178, 108, 82]`, un brun orangé — pendant que le bloc
+posait du rouge vif. Les deux ne s'étaient jamais parlé.
+
+Les arbres, eux, sont le même défaut pour la quatrième fois. `solVillesMonde`
+les marque dans ses parcs, ses oasis et ses forêts — le Tiergarten de Berlin,
+le Retiro de Madrid, le jardin anglais de Munich, le parc Güell — et la boucle
+qui dessine le monde les posait à plat, comme n'importe quel identifiant de
+sol. Paris l'a payé en v187, Londres, Nice et Lille en v197 ; il ne manquait
+plus que la boucle du monde entier.
+
+**Ce que ça change.** Les villes méditerranéennes sont en pierre chaude et en
+travertin, coiffées de terre cuite à rangs de tuiles, au lieu de plastique
+orange sous des toits écarlates. Et l'on marche sous les arbres dans les parcs
+du tour du monde.
+
+**Ce qui le prouve.** Portail vert, cinq suites. Le témoin des parcs nomme les
+deux moitiés du défaut, parce que « il y a du vert » ne distingue pas un arbre
+d'une pelouse : **0 arbre et 37 feuillages posés à plat** au Tiergarten avant,
+**37 arbres et 0 aplat** après. Les couleurs, elles, se jugent en capture —
+c'est la règle de Max — et le lot entier a été photographié en une passe, cinq
+villes, deux vues chacune.
+
+Un rouge est tombé en chemin et ne venait pas de là : « à minuit, les fenêtres
+de la ville restent allumées » mesurait DEUX choses, dont un compte de morceaux
+de monde CHARGÉS après deux secondes et demie. Ses deux autres mesures étaient
+justes. Il attend désormais la ville, borné dans le temps : dix morceaux
+éclairés au lieu d'un. Écarté en dix secondes par le code plutôt qu'en vingt
+minutes de portail — Moscou n'emploie aucune des constantes du lot.
+
+---
+
 ## v197 — Les rues de Londres ont leurs platanes
 
 **Pourquoi.** Max, capture d'une rue londonienne à l'appui : « les villes sont

@@ -744,6 +744,42 @@ Quatre choses à savoir avant d'en planter ailleurs :
   est donc INVISIBLE en capture, et seul un témoin qui lit le bloc au sol
   peut le voir.
 
+### Les couleurs des villes engendrées — et un nom qui mentait
+
+**Une constante nommée `OCRE` valait `uni(1)`, c'est-à-dire l'ORANGE de
+signalisation (232, 137, 44).** Elle peignait les murs de dix-neuf villes.
+`ROSE` était un saumon vif, `TUILE` le rouge de la palette. D'où l'aspect
+« briques de plastique » que Max a signalé sur Rome, et qu'on avait déjà
+corrigé pour les Painted Ladies de San Francisco en v195 sans voir que le
+même mal courait sur toute la carte.
+
+Trois choses à retenir avant d'y toucher :
+
+- **On ne change pas la palette de décor, on choisit dedans.** Ces trente
+  couleurs sont celles avec lesquelles les enfants construisent. Les tons
+  chauds et rompus qui existent : Beige (215, 195, 160), Sable
+  (225, 210, 170), Kaki (150, 140, 100), Marron, Crème.
+- **Une constante n'attrape pas ce qui est écrit en dur.** `uni(2)`, le
+  jaune de balise, figurait tel quel dans DOUZE fiches de ville : renommer
+  ou réaffecter `OCRE` ne pouvait rien pour lui. Chercher les littéraux
+  autant que les constantes.
+- **La carte 2D et le bloc doivent dire la même chose.** `couleurToits`
+  annonçait `[178, 108, 82]` — un brun orangé — depuis toujours, pendant
+  que `TUILE` posait du rouge vif. Quand les deux divergent, c'est en
+  général la carte qui a raison : elle a été réglée à l'œil sur une vue
+  d'ensemble.
+
+**Et la hauteur des villes engendrées n'est PAS un défaut.** La chaîne va de
+« 3 à 5 étages » dans la fiche à onze ou seize blocs rendus : la grammaire à
+travées dépense trois blocs par étage, plus le rez-de-chaussée, la corniche
+et le toit. C'est tentant de la raboter — et ce serait faux. Au sol, un bloc
+de Rome vaut CINQUANTE mètres (échelle 20 blocs/km) : un immeuble de cinq
+blocs de haut y serait une galette. C'est la même convention à deux échelles
+que Manhattan et Washington. Ce qui cloche à Rome n'est pas la hauteur, c'est
+l'emprise — et cela se corrige en remettant la ville à l'échelle, pas en la
+rabotant. Or les marges entre villes voisines vont de 8 à 41 blocs : doubler
+Rome la ferait toucher Naples. Décision de carte, pas de rendu.
+
 ### La vie des rues — et le plafond qui la tuait
 
 **Un rayon écrit quand les villes étaient petites est une bombe à retardement.**
