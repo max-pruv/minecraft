@@ -65,7 +65,28 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
   façades de pierre plutôt qu'en halles de béton.
 
-- [ ] **Le rouge ancien des suites réseau du portail** — `hote.js`, `visio.js`
+- [x] **Le rouge ancien des suites réseau du portail — CLOS en v195/v196.**
+  Les treize suites sont vertes. Sept vieux rouges ont été démontés, et
+  AUCUN n'était un défaut du jeu : une durée mesurée sans laisser souffler la
+  machine (55 s annoncés, six mesurés seule), un appui long que la carte
+  refuse à bon droit depuis la v173, une fausse encoche d'iPhone jamais
+  retirée, un fond de carte qui dépendait d'où le test précédent avait laissé
+  l'enfant, une horloge écrite « la valeur d'avant + 1 », un document de
+  destination erroné, et une relance de page — voulue depuis la v189 — prise
+  pour une panne à trois reprises. Le seul qui venait de nous était le témoin
+  du musée de l'Air et de l'Espace, cassé en calmant la marche en v192.
+
+- [ ] **Une page légère pour les tests réseau** — le dernier gros levier sur
+  la durée du portail, et sur les faux rouges. Mesuré : `reseau.js` ouvre
+  **trente-deux navigateurs** sur les cinquante-deux du portail entier, et
+  chacun charge un monde en 3D complet — dix secondes, d'après le commentaire
+  du dépôt lui-même. Or cette suite éprouve `net.js`, pas le rendu. Un mode
+  `?banc=reseau` qui saute la scène Three.js et la génération de terrain
+  ferait tomber le démarrage à une seconde : cinq à six minutes gagnées, et
+  surtout la fin de la contention du rendu logiciel qui fabrique les rouges
+  flottants. Les attentes fixes de la suite pèsent 124 s de plus.
+
+- [ ] **(historique) Le rouge ancien des suites réseau** — `hote.js`, `visio.js`
   et `reglages.js` sont réparées. `reseau.js` **va au bout pour la première
   fois** : elle s'effondrait au 27ᵉ témoin, elle en passe désormais soixante.
 
