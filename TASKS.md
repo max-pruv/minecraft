@@ -80,15 +80,23 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   pour une panne à trois reprises. Le seul qui venait de nous était le témoin
   du musée de l'Air et de l'Espace, cassé en calmant la marche en v192.
 
-- [ ] **Une page légère pour les tests réseau** — le dernier gros levier sur
-  la durée du portail, et sur les faux rouges. Mesuré : `reseau.js` ouvre
-  **trente-deux navigateurs** sur les cinquante-deux du portail entier, et
-  chacun charge un monde en 3D complet — dix secondes, d'après le commentaire
-  du dépôt lui-même. Or cette suite éprouve `net.js`, pas le rendu. Un mode
-  `?banc=reseau` qui saute la scène Three.js et la génération de terrain
-  ferait tomber le démarrage à une seconde : cinq à six minutes gagnées, et
-  surtout la fin de la contention du rendu logiciel qui fabrique les rouges
-  flottants. Les attentes fixes de la suite pèsent 124 s de plus.
+- [x] **Une page légère pour les tests réseau — ABANDONNÉ, et mesuré.**
+  L'idée était de sauter la scène Three.js pour les suites réseau, en
+  estimant le démarrage d'une page à dix secondes dont l'essentiel en 3D.
+  **La mesure dit le contraire** : le démarrage tient en 4,6 s, dont
+  4 532 ms de CHARGEMENT (78 requêtes, 3,5 Mo de modules) et seulement
+  84 ms pour la scène et le lancement de la partie. Le banc charge déjà
+  chaque page avec `rr=2` — deux morceaux de monde de rayon — donc la
+  génération du terrain est réduite depuis longtemps.
+
+  Une page légère chargerait exactement les mêmes modules : le gain serait
+  d'une fraction de seconde par page, pour un changement au chemin de
+  DÉMARRAGE du jeu — celui que les enfants lancent. Refait, le calcul donne
+  2,5 minutes sur `reseau.js`, pas les cinq à six annoncées. Le rapport
+  n'y est pas.
+
+  Ce qui reste vrai et gagnable sans toucher au jeu : les **124 s
+  d'attentes fixes** de la suite, à remplacer par des conditions bornées.
 
 - [ ] **(historique) Le rouge ancien des suites réseau** — `hote.js`, `visio.js`
   et `reglages.js` sont réparées. `reseau.js` **va au bout pour la première
