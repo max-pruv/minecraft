@@ -48,6 +48,9 @@ const FIELDS = [
 // route à une construction.
 const PHOTOS_CLE = 'web-minecraft-photos-v1';
 const nomPhotos = (nom) => `${nom}~photos`;
+// La copie des blocs d'avant l'agrandissement de la carte. Même principe que
+// les photos : son propre document, pour ne jamais peser sur les blocs vivants.
+const nomAvantCarte = (nom) => `${nom}~avant-carte`;
 
 const MAX_PHOTOS = 8;
 
@@ -396,6 +399,48 @@ export class ProfileSync {
       const { editsz, ...reste } = state;
       return { ...reste, edits: await decomprimer(editsz) };
     } catch { return state; }   // document illisible : on garde ce qu'on a en local
+  }
+
+  // UNE COPIE DES BLOCS AVANT LA REFONTE DE LA CARTE.
+  //
+  // Max a tranché : la carte s'agrandit d'un facteur deux, pour que les villes
+  // aient enfin la place de grandir. Le prix est connu et accepté — le relief
+  // change PARTOUT sauf à Paris, où l'ancre de la projection est plantée
+  // exprès. Mais `CLAUDE.md` est net sur la manière : « On casse ce qu'on ne
+  // sait pas suivre, pas ce qu'on n'a pas envie de suivre », et « une copie de
+  // sauvegarde des blocs d'avant la refonte coûte trois lignes maintenant que
+  // le document a de la place ».
+  //
+  // Elle est sur SON PROPRE document, comme les photos, et pour la même
+  // raison : ces blocs ne doivent jamais peser sur ceux que l'enfant pose
+  // aujourd'hui, ni être taillés à sa place quand le profil arrive au plafond.
+  //
+  // Elle s'écrit UNE FOIS. Repasser dessus au deuxième lancement écraserait la
+  // copie d'avant par une copie d'après — exactement ce qu'on veut empêcher.
+  async sauverAvantLaRefonte() {
+    const nom = this.getName();
+    if (!nom || !this.cloud.configured) return 'sans nuage';
+    try {
+      const deja = await this.cloud.statePull(nomAvantCarte(nom));
+      if (deja && (deja.editsz || deja.edits)) return 'déjà sauvé';
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const edits = readJson('web-minecraft-edits-v3');
+    if (!edits || !Object.keys(edits).length) return 'rien à sauver';
+    const paquet = await this.resserrer({ edits, carte: 1, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantCarte(nom), paquet, false);
+      return 'sauvé';
+    } catch { return 'échec'; }             // on réessaiera au prochain lancement
+  }
+
+  // Et la relire, si un jour il faut rendre à un enfant ce qu'il avait bâti.
+  async lireAvantLaRefonte() {
+    const nom = this.getName();
+    if (!nom || !this.cloud.configured) return null;
+    try {
+      const doc = await this.cloud.statePull(nomAvantCarte(nom));
+      return doc ? await this.dilater(doc) : null;
+    } catch { return null; }
   }
 
   // Les photos, sur leur propre document. Elles ne partent qu'avec l'album,
