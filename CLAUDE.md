@@ -327,6 +327,19 @@ local, Supabase de poche (`tests/nuage.js`).
 - **Le navigateur du conteneur n'a aucun accès Internet sortant.** `curl` passe
   par le mandataire, Playwright non. Tout scénario en ligne passe par le nuage
   de poche.
+- **UNE PAGE QUI SE RELANCE N'EST PAS UNE PANNE — c'est le jeu qui fait son
+  travail.** Depuis la v189, la synchronisation relance la page quand la
+  fusion rapporte vraiment quelque chose. Pendant cette relance, Playwright
+  rend « Execution context was destroyed », et un `page.fill` qui expire au
+  bout de trente secondes sur un élément qui EXISTE ne dit qu'une chose : la
+  fiche n'était plus à l'écran. Trois témoins sont tombés là-dessus dans la
+  même journée (v196) — la seconde tablette d'un enfant dans `reglages.js`,
+  la barre de recherche de la carte deux fois. Toute attente qui traverse une
+  relance possible se garde : on rouvre ce qui s'est fermé, on retape, et
+  **on dit ce qu'on a vu à chaque échec**. `page.fill` qui expire recouvre
+  cinq pannes très différentes — élément absent, invisible, dans une fiche
+  fermée, hors écran, désactivé — sous un seul message ; un rouge qui ne les
+  distingue pas ne se démonte pas.
 - **Un témoin doit échouer *proprement* sur l'ancien code, pas s'effondrer.**
   Une méthode neuve appelée sans garde fait planter le banc au premier témoin
   et masque les quatre suivants — on ne voit donc jamais l'étendue réelle du
@@ -670,6 +683,38 @@ Trois choses à savoir avant d'y toucher :
 - **Le tirage se fait en coordonnées du MONDE.** En coordonnées locales,
   le même motif se répète dans chaque morceau — et les fenêtres changent
   au remaillage.
+
+### Ce qui se dessine, et ce qui coûte
+
+**Ce ne sont ni les triangles ni les pixels : ce sont les APPELS DE DESSIN.**
+Signalé par Max sur son iPad — « ça lag, ce n'est pas très fluide ». Mesuré à
+la sonde au centre de Paris : 1 522 appels par image, dont **1 353 pour des
+personnages**, quatre-vingt-neuf pour cent. Les triangles, eux, plafonnaient à
+un demi-million — un iPad en avale des millions. Chaque appel est un
+aller-retour avec le pilote, payé par le PROCESSEUR : c'est le goulot du
+mobile, et il ne se voit pas dans un compte de triangles.
+
+Trois choses à savoir avant de chercher ailleurs :
+
+- **Un personnage coûte onze maillages.** Un par membre articulé — deux bras,
+  deux jambes, le torse — plus le verre de chacun. C'est le prix d'une marche
+  qui se voit, et il est juste. Ce qui ne l'est pas, c'est de le payer pour
+  quelqu'un qui fait quatorze pixels de haut.
+- **Cesser d'ANIMER ne suffit pas, il faut cesser de DESSINER.** Le jeu
+  n'animait plus les personnages au-delà de cent quarante blocs — le
+  commentaire disait déjà « personne ne les voit » — mais leurs maillages
+  partaient au rendu à chaque image. Cent treize des cent cinquante-trois
+  personnages du monde étaient à plus de quatre-vingt-dix blocs.
+- **La distance vient de `vie.js` (`VU = 62`), qui appliquait DÉJÀ la règle
+  aux siens.** La garnison du château s'efface à soixante-deux blocs depuis
+  des versions et personne ne l'a jamais signalé : c'est la preuve que la
+  distance est bonne. Ce qui manquait, c'est qu'elle vaille pour TOUS les
+  personnages. Et l'on n'allume jamais ce qu'on n'a pas éteint — `vie.js`
+  cache les siens pour ses propres raisons, les rallumer sous ses pieds les
+  ferait clignoter. D'où le drapeau `__cachePourLoin`.
+
+Résultat : 1 522 → 451 appels. Aucun détail retiré, aucune distance de vue
+réduite, aucune texture dégradée.
 
 ### La vie des rues — et le plafond qui la tuait
 

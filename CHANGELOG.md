@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v196 — L'iPad respire : on ne dessine plus ce que personne ne voit
+
+**Pourquoi.** Max, sur son iPad : « depuis ces dernières mises à jour,
+l'application lag un peu, ce n'est pas très fluide et saccadé ». Et un jeu qui
+saccade n'est pas seulement inconfortable : sous vingt images par seconde, le
+monde avance moins vite que le temps réel — Marlon appuie aussi longtemps sur
+la même touche et court moins loin.
+
+La cause n'était ni les pixels ni les triangles. Mesuré à la sonde au centre de
+Paris : **1 522 appels de dessin par image, dont 1 353 pour des personnages** —
+quatre-vingt-neuf pour cent. Un personnage coûte onze maillages, un par membre
+articulé plus son verre, et c'est le juste prix d'une marche qui se voit. Ce
+qui ne l'est pas, c'est de le payer pour quelqu'un qui fait quatorze pixels de
+haut : **cent treize des cent cinquante-trois personnages du monde étaient à
+plus de quatre-vingt-dix blocs** — la garnison du château, les villageois, les
+astronautes de Mars — et partaient au dessin à chaque image. Le jeu avait cessé
+de les ANIMER au loin depuis longtemps ; il ne les avait jamais retirés du
+RENDU.
+
+**Ce que ça change.** Le jeu bouge souple sur l'iPad, et rien d'autre ne bouge :
+même distance de vue, mêmes détails, mêmes habitants, mêmes textures. On cesse
+seulement de dessiner des gens que personne ne regarde. La distance retenue,
+soixante-deux blocs, est celle que le code appliquait DÉJÀ aux personnages des
+châteaux et des villages depuis des versions, sans que personne ne l'ait jamais
+remarqué — c'est ce qui prouve qu'elle est bonne.
+
+**Ce qui le prouve.** 1 522 → 451 appels de dessin au centre de Paris, et 1 353
+→ 47 maillages de personnages dans le champ de la caméra. Deux témoins qui vont
+par paire : le premier vérifie qu'aucun personnage lointain n'est dessiné —
+vérifié ROUGE sur la version précédente, 81 sur 163 ; le second qu'on n'a pas
+vidé la rue pour autant, et il est vert des deux côtés, c'est son rôle.
+
+Le portail a par ailleurs cessé d'être bavard sur une relance de page. Depuis la
+v189, la synchronisation relance la page quand elle rapporte vraiment quelque
+chose — comportement voulu. Trois témoins tombaient dessus en l'accusant : la
+seconde tablette d'un enfant dans les réglages, et la barre de recherche de la
+carte, deux fois. Ils rouvrent désormais ce qui s'est fermé et recommencent,
+comme le ferait un enfant.
+
+---
+
 ## v195 — Le pont sort de la ville, et le Financial District se tient debout
 
 **Pourquoi.** Deux captures de Max, prises sur son iPhone dans San Francisco :
