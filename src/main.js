@@ -51,6 +51,9 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 const MESH_BUDGET_MS = 6;
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
+// Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de
+// `vie.js`, qui applique la règle aux siens depuis longtemps.
+const PORTEE_PERSONNAGES = 62;
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
 // --- renderer / scene -------------------------------------------------------
@@ -4994,9 +4997,38 @@ function frame(now) {
     // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur
     // collision forcerait à garder en mémoire des chunks à l'autre bout de la
     // carte.
+    //
+    // ET ILS N'ONT PAS BESOIN D'ÊTRE DESSINÉS NON PLUS. On avait cessé de les
+    // ANIMER au-delà de cent quarante blocs, jamais de les rendre : leurs
+    // maillages partaient au dessin à chaque image, où qu'ils soient.
+    //
+    // Signalé par Max sur son iPad — « ce n'est pas très fluide, c'est
+    // saccadé ». Mesuré à la sonde, au centre de Paris : 1 522 appels de
+    // dessin, dont 1 353 pour des personnages — QUATRE-VINGT-NEUF POUR CENT.
+    // Et sur les cent cinquante-trois personnages du monde, CENT TREIZE
+    // étaient à plus de quatre-vingt-dix blocs. Un personnage est fait de onze
+    // maillages — un par membre articulé, plus son verre — et c'est le prix
+    // d'une marche qui se voit ; à quatre-vingt-dix blocs, il fait quatorze
+    // pixels de haut et personne ne regarde ses jambes.
+    //
+    // La distance est celle que `vie.js` applique DÉJÀ aux siens depuis des
+    // versions (`VU = 62`) : la garnison du château s'efface à soixante-deux
+    // blocs et personne ne l'a jamais signalé. Ce qui manquait, c'est que la
+    // règle vaille pour TOUS les personnages, pas seulement les siens.
+    //
+    // On n'allume jamais ce qu'on n'a pas éteint : `vie.js` cache les siens
+    // pour ses propres raisons, et les rallumer sous ses pieds les ferait
+    // clignoter. D'où le drapeau.
+    const LOIN2 = PORTEE_PERSONNAGES * PORTEE_PERSONNAGES;
     for (const npc of npcs) {
+      const d2 = npc.pos.distanceToSquared(player.pos);
+      if (d2 > LOIN2) {
+        if (npc.mesh.visible) { npc.mesh.visible = false; npc.__cachePourLoin = true; }
+      } else if (npc.__cachePourLoin) {
+        npc.mesh.visible = true; npc.__cachePourLoin = false;
+      }
       if (!npc.mesh.visible) continue;
-      if (npc.pos.distanceToSquared(player.pos) < 140 * 140) npc.update(dt);
+      npc.update(dt);
     }
     siege?.update(dt);
     vie?.update(dt);

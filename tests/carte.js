@@ -1647,7 +1647,68 @@ const position = (p) => p.evaluate(() => ({
     // téléporter ». Deux cent soixante-dix-huit lieux au registre : les
     // atteindre demandait de faire glisser la carte jusqu'à eux, donc de
     // savoir où ils sont — ce qu'un enfant ne sait justement pas.
-    await couche.fill('#map-chercher', 'washing');
+    // UNE SONDE AVANT LE GESTE. `page.fill` qui expire ne dit qu'une chose :
+    // « pas actionnable ». Absent du DOM, invisible, dans une fiche fermée,
+    // hors écran, désactivé — cinq pannes très différentes, un seul message.
+    // On regarde donc l'état avant d'agir : un rouge doit se démonter, et
+    // pour cela il faut qu'il parle.
+    const etatRecherche = await couche.evaluate(() => {
+      const i = document.getElementById('map-chercher');
+      const modal = document.getElementById('map-modal');
+      const carte = document.getElementById('map-modal-card');
+      if (!i) return { absent: true };
+      const r = i.getBoundingClientRect();
+      const cs = getComputedStyle(i);
+      return {
+        modal: modal ? getComputedStyle(modal).display : 'pas de modal',
+        ouverte: !!(window.__carte && window.__carte.ouverte),
+        boite: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
+        ecran: [window.innerWidth, window.innerHeight],
+        display: cs.display, visibility: cs.visibility, opacite: cs.opacity,
+        desactive: i.disabled || i.readOnly,
+        carte: carte ? Math.round(carte.getBoundingClientRect().height) : -1,
+      };
+    });
+    console.log(`   🔎 la barre de recherche : ${JSON.stringify(etatRecherche)}`);
+
+    // TAPER, MÊME SI LA PAGE S'EST RELANCÉE SOUS NOS PIEDS.
+    //
+    // `page.fill` qui expire au bout de trente secondes sur un élément qui
+    // EXISTE ne laisse qu'une explication : la fiche n'était pas à l'écran.
+    // Et ce qui la referme sans que personne n'y touche, c'est la relance que
+    // le jeu déclenche quand la synchronisation rapporte vraiment quelque
+    // chose — comportement voulu depuis la v189, rencontré le même jour dans
+    // `reglages.js`. Après une relance, la carte est fermée : l'élément est
+    // toujours là, mais invisible, et Playwright attend pour rien.
+    //
+    // On fait donc ce qu'un enfant fait : on rouvre la carte et on retape. Et
+    // l'on dit ce qu'on a vu à chaque échec, sinon le prochain rouge sera
+    // aussi muet que celui-ci.
+    const chercher = async (mot) => {
+      for (let essai = 0; essai < 3; essai++) {
+        try {
+          if (!(await couche.evaluate(() => !!(window.__carte && window.__carte.ouverte)))) {
+            await banc.ouvrirLaCarte(couche);
+          }
+          await couche.fill('#map-chercher', mot, { timeout: 12000 });
+          return true;
+        } catch (e) {
+          const vu = await couche.evaluate(() => {
+            const i = document.getElementById('map-chercher');
+            const m = document.getElementById('map-modal');
+            return { ouverte: !!(window.__carte && window.__carte.ouverte),
+              modal: m ? getComputedStyle(m).display : 'absent',
+              boite: i ? i.getBoundingClientRect().height : -1 };
+          }).catch(() => ({ page: 'contexte détruit — la page se relançait' }));
+          console.log(`   🔎 « ${mot} » a échoué (essai ${essai + 1}) : `
+            + `${e.message.split('\n')[0]} · ${JSON.stringify(vu)}`);
+          await souffler();
+        }
+      }
+      return false;
+    };
+    verifier('la barre de recherche accepte ce qu\'on tape',
+      await chercher('washing'), 'trois essais, la carte rouverte à chaque fois');
     await dormir(500);
     const trouves = await couche.evaluate(() =>
       [...document.querySelectorAll('#map-resultats button')].map((b) => b.textContent));
@@ -1656,7 +1717,7 @@ const position = (p) => p.evaluate(() => ({
       trouves.length ? trouves.join(' · ') : 'aucun résultat');
 
     // Sans accent et sans majuscule : c'est ainsi qu'un enfant tape.
-    await couche.fill('#map-chercher', 'eiffel');
+    await chercher('eiffel');
     await dormir(500);
     const sansAccents = await couche.evaluate(() =>
       [...document.querySelectorAll('#map-resultats button')].map((b) => b.textContent));
@@ -1665,7 +1726,7 @@ const position = (p) => p.evaluate(() => ({
       sansAccents.join(' · ') || 'aucun résultat');
 
     // Le raccourci, c'est le voyage : toucher un résultat DÉPOSE l'enfant.
-    await couche.fill('#map-chercher', 'washington');
+    await chercher('washington');
     await dormir(500);
     await couche.click('#map-resultats button');
     await dormir(1500);
