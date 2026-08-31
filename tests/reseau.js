@@ -1022,6 +1022,16 @@ function verifier(nom, ok, detail = '') {
     // précisément pour qu'un gros monde ne retarde pas les retrouvailles. Sans
     // un scénario qui le mesure, cette phrase n'est qu'une intention : on
     // remplit donc le monde de l'hôte, et l'on chronomètre.
+    // ON LAISSE SOUFFLER AVANT CE PASSAGE-LÀ, et c'est la règle générale du
+    // banc qui manquait ici. Ce scénario ouvre deux navigateurs de plus après
+    // une vingtaine de scénarios, et il CHRONOMÈTRE : c'est le seul de la
+    // suite dont le verdict soit une durée. Mesuré à la sonde sur une machine
+    // qui respire, la rencontre se fait en SIX secondes ; dans la suite, à la
+    // file, le même scénario annonçait 55 à 57 s — au-delà même de sa propre
+    // limite d'attente, ce qui ne peut pas venir du jeu. Rouge à l'identique
+    // sur origin/main, donc en production, et depuis longtemps : personne ne
+    // l'avait rejoué seul.
+    await souffler();
     const { p: riche, code: codeRiche } = await banc.creerMonde('Elio');
     const poses = await riche.evaluate(() => {
       const g = window.__game;
@@ -1039,6 +1049,9 @@ function verifier(nom, ok, detail = '') {
     // machine, ouvrir un onglet et charger le jeu prend une dizaine de secondes,
     // et les compter ici, c'était mesurer le banc au lieu du jeu.
     const arrivant = await banc.joueur('Fara');
+    // Et une seconde fois : ouvrir un onglet et charger le jeu chauffe la
+    // machine juste avant le coup de chronomètre.
+    await souffler();
     await arrivant.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
     const depart = Date.now();

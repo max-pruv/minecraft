@@ -20,6 +20,71 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v195 — Le pont sort de la ville, et le Financial District se tient debout
+
+**Pourquoi.** Deux captures de Max, prises sur son iPhone dans San Francisco :
+« there is no bridge in the middle of the city and building of fidi are not
+looking great ». Sur la première, le Financial District est un nuage de cubes
+gris suspendus dans le vide. Sur la seconde, un pont suspendu gris traverse la
+ville par-dessus les rues.
+
+Les deux ont la même racine. La remise à l'échelle de la v192 a fait passer San
+Francisco de neuf à vingt-sept blocs par kilomètre ; le Golden Gate a suivi son
+adresse réelle, mais le Bay Bridge et le phare étaient posés par des décalages
+en blocs, jamais convertis. Mesuré : sur les soixante-trois colonnes du tablier,
+**zéro n'était de l'eau**. Aucun témoin ne le voyait — celui du Bay Bridge
+cherchait de la pierre grise dans un rayon de huit blocs, et il en trouvait,
+celle des immeubles. Un témoin qui ne peut pas échouer ne prouve rien.
+
+Le Financial District, lui, cumulait quatre défauts dont aucun n'avait de
+témoin. Les tours posaient du VERRE partout sauf aux fenêtres : comme
+l'intérieur d'un bâtiment est creux, on voyait au travers. C'est mot pour mot
+le défaut que Manhattan avait payé et documenté deux versions plus tôt.
+
+**Ce que ça change.** Le Bay Bridge enjambe la travée ouest, du Rincon à Yerba
+Buena, et le phare veille à Point Bonita, sur son rocher au large de la passe.
+Les tours du centre sont opaques, en pierre claire et en mur-rideau — au pied
+d'une tour on longe une façade, plus un aquarium. Le centre est devenu un tapis
+d'immeubles d'où sortent quelques tours, au lieu d'une brosse de crayons tous de
+la même taille. Et San Francisco n'est plus enneigée : la corniche blanche est
+redescendue sur la façade, où elle est en vrai, et les toits sont du goudron
+sombre. Les Victoriennes perdent leurs trois tons acides — citron, vert clair,
+turquoise — qui leur donnaient l'air de briques de plastique.
+
+**Et le portail arrête de faire perdre du temps.** Max : « je ne vois pas
+pourquoi on vient tester réseau quand on change la carte ». Il avait raison, et
+la cause était mesurable : porter UNE limite d'attente de dix à trente secondes
+dans le banc relançait les treize suites — trois quarts d'heure. Un diff limité
+à des délais et des commentaires est désormais anodin, comme l'est déjà celui
+qui monte `CACHE_VERSION`. Et le cache de reprise est tenu PAR SUITE : le
+verdict d'une suite reste acquis tant qu'aucun fichier qui la garde n'a bougé,
+au lieu d'être annulé au moindre octet du dépôt — ce qui obligeait à tout
+rejouer dès qu'on corrigeait le rouge qu'on venait de trouver.
+
+Au passage, la table des gardiens a récupéré **trente fichiers qui n'y étaient
+pas**, dont deux vrais trous : `src/visio.js` ne lançait pas la suite `visio`,
+et `src/garages.js` — qui écrit dans le profil de l'enfant, à côté de ses
+blocs — ne lançait pas la suite de sauvegarde. Aucune ville bâtie à la main n'y
+figurait non plus : c'est par ce trou que le pont de cette version est arrivé
+en production.
+
+**Ce qui le prouve.** Douze suites vertes sur treize, 462 témoins. Cinq témoins
+neufs, tous vérifiés ROUGES sur le code livré avant d'être écrits : de l'eau sur
+toute la travée du pont (0 → 57 colonnes sur 57), le phare sur son rocher, zéro
+colonne de verre plein dans le centre (contre 123 pour 152 de façade), une
+médiane de dix blocs au lieu de dix-huit, et 73 toits blancs pour 687 sombres au
+lieu de 738 pour 94. `plafond.js` est vert : l'empreinte du relief sur 218 089
+colonnes n'a pas bougé d'un bloc — déplacer un repère ne déplace pas le sol, et
+l'invariant 1 n'a pas eu à être entamé.
+
+Quatre vieux rouges du portail ont été démontés au passage, dont un qui était
+de nous : le témoin du musée de l'Air et de l'Espace accordait 2,6 s pour
+franchir huit blocs, ce qui tenait à 4,3 blocs par seconde et ne tenait plus à
+3,2 depuis que la marche a été calmée en v192. L'enfant s'arrêtait sur le
+perron.
+
+---
+
 ## v194 — On conduit la voiture qu'on a vue passer
 
 **Pourquoi.** Max : « je veux que l'on puisse conduire n'importe quel type de

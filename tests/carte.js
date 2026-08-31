@@ -292,21 +292,54 @@ const position = (p) => p.evaluate(() => ({
     // point de dépose en (−113, −433) — de la terre en v164, la MER DU NORD
     // depuis que le planisphère existe. Le joueur nageait, l'or se posait au
     // fond de l'eau, et les deux témoins suivants accusaient la carte.
-    await tab.evaluate(() => { const c2 = window.__carte; c2.vue.cx = 0; c2.vue.cz = 480; c2.vue.bpp = 1.2; });
-    await dormir(400);
-    const attendu = await tab.evaluate(() => {
-      const c2 = window.__carte;
-      const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
-      return { ecran: { x: r.left + 90, y: r.top + 90 }, monde: c2.versMonde(90, 90) };
-    });
-    await tab.mouse.move(attendu.ecran.x, attendu.ecran.y);
-    await tab.mouse.down();
-    await dormir(900);
-    await tab.mouse.up();
-    await dormir(600);
-    const pose = await position(tab);
-    verifier('un appui long dépose n\'importe où',
-      Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6 && !(await carteOuverte(tab)),
+    // LE CADRAGE SE REFAIT À CHAQUE ESSAI, et c'est ce que j'avais manqué.
+    // Un appui long réussi TÉLÉPORTE et ferme la carte ; la rouvrir la
+    // recentre sur l'enfant. Rappuyer au même point de l'ÉCRAN vise alors un
+    // tout autre point du MONDE — le second essai emmenait l'enfant ailleurs
+    // et le témoin accusait la carte de « déposer n'importe où ». Ce qu'on
+    // veut savoir, c'est où pointe le doigt MAINTENANT.
+    const viser = async () => {
+      await tab.evaluate(() => {
+        const c2 = window.__carte;
+        c2.vue.cx = 0; c2.vue.cz = 480; c2.vue.bpp = 1.2;
+        c2.limiter(); c2.peindre();
+      });
+      await dormir(400);
+      return tab.evaluate(() => {
+        const c2 = window.__carte;
+        const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+        return { ecran: { x: r.left + 90, y: r.top + 90 }, monde: c2.versMonde(90, 90) };
+      });
+    };
+    let attendu = await viser();
+    // ON RAPPUIE, COMME L'ENFANT — ET C'EST LE JEU QUI LE DEMANDE.
+    //
+    // Depuis v173 la carte REFUSE un appui long dont le minuteur tire plus de
+    // 120 ms en retard : sur un fil principal étouffé, les mouvements du doigt
+    // sont peut-être encore dans la file, et téléporter un enfant qui faisait
+    // glisser sa carte pèse plus lourd qu'un appui à refaire. C'est écrit noir
+    // sur blanc dans `carte.js` : « l'enfant rappuiera ». Le témoin, lui, ne
+    // rappuyait pas : sur un conteneur chargé le premier appui était décliné —
+    // à bon droit — et il accusait la carte. Il fait donc ce que l'enfant fait,
+    // et l'on laisse la machine respirer entre deux essais.
+    let pose = await position(tab);
+    let arrive = false;
+    for (let essai = 0; essai < 4 && !arrive; essai++) {
+      if (essai) {
+        await souffler();
+        if (!(await carteOuverte(tab))) await banc.ouvrirLaCarte(tab);
+        attendu = await viser();
+      }
+      await tab.mouse.move(attendu.ecran.x, attendu.ecran.y);
+      await tab.mouse.down();
+      await dormir(900);
+      await tab.mouse.up();
+      await dormir(600);
+      pose = await position(tab);
+      arrive = Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
+        && !(await carteOuverte(tab));
+    }
+    verifier('un appui long dépose n\'importe où', arrive,
       JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z] }));
 
     // --- plus on s'approche, plus la carte montre ----------------------------
@@ -367,15 +400,15 @@ const position = (p) => p.evaluate(() => ({
     // Et ce qu'un enfant construit finit sur la carte : c'est la promesse de
     // « plus précise » — une carte qui ne montrerait que le terrain d'origine
     // ne dirait rien de son monde à lui.
+    // ON COMPTE L'ÉCART, PAS LE TOTAL. Le témoin exigeait ZÉRO pixel doré dans
+    // la vue large — ce qui ne dépend pas de la carte mais de l'endroit où le
+    // scénario PRÉCÉDENT a laissé l'enfant : douze pixels de sable de la Côte
+    // d'Azur suffisaient à le faire rougir. Ce qu'il promet, c'est que ce que
+    // l'ENFANT pose apparaît de près et pas de loin ; on mesure donc ce que
+    // l'or ajoute, en photographiant le fond avant de le poser.
     const construit = await tab.evaluate(() => {
       const g = window.__game, c2 = window.__carte;
       const x0 = Math.round(g.player.pos.x) + 8, z0 = Math.round(g.player.pos.z) + 8;
-      for (let dx = 0; dx < 8; dx++) {
-        for (let dz = 0; dz < 8; dz++) {
-          const y = g.world.terrainHeight(x0 + dx, z0 + dz) + 1;
-          g.world.setBlock(x0 + dx, y, z0 + dz, 19);   // de l'or : rien de tel en surface
-        }
-      }
       const compterOr = () => {
         const f = c2.fond;
         const d = f.getContext('2d').getImageData(0, 0, f.width, f.height).data;
@@ -387,12 +420,22 @@ const position = (p) => p.evaluate(() => ({
       };
       c2.vue.cx = x0 + 4; c2.vue.cz = z0 + 4;
       c2.vue.bpp = 0.35; c2.rendreFond();
-      const pres = compterOr();
+      const presAvant = compterOr();
       c2.vue.bpp = 2.5; c2.rendreFond();
-      return { pres, loin: compterOr() };
+      const loinAvant = compterOr();
+      for (let dx = 0; dx < 8; dx++) {
+        for (let dz = 0; dz < 8; dz++) {
+          const y = g.world.terrainHeight(x0 + dx, z0 + dz) + 1;
+          g.world.setBlock(x0 + dx, y, z0 + dz, 19);   // de l'or : rien de tel en surface
+        }
+      }
+      c2.vue.bpp = 0.35; c2.rendreFond();
+      const pres = compterOr() - presAvant;
+      c2.vue.bpp = 2.5; c2.rendreFond();
+      return { pres, loin: compterOr() - loinAvant };
     });
     verifier('ce que l\'enfant construit apparaît sur la carte de près',
-      construit.pres > 20 && construit.loin === 0, JSON.stringify(construit));
+      construit.pres > 20 && construit.loin <= 0, JSON.stringify(construit));
 
     // Les créatures restent visibles en dézoomant. Elles disparaissaient sans
     // un mot au-delà d'un seuil de zoom — « je ne vois plus de Pokémon sur la
@@ -754,22 +797,35 @@ const position = (p) => p.evaluate(() => ({
     // qu'on la reconnaît — et de Market Street, la couture entre ses deux
     // quadrillages qui ne sont pas parallèles.
     const SF = V.sf;
-    const releveSF = await tab.evaluate(({ p }) => {
+    // LA FENÊTRE SUIT LA VILLE, elle n'est plus écrite en dur.
+    //
+    // Elle valait soixante blocs — la moitié de San Francisco quand la ville
+    // en faisait 66 de rayon. Depuis la v192 elle en fait 220 : la fenêtre ne
+    // sortait plus de la ville, et le témoin comptait zéro point en mer pour
+    // 2 821 à terre. C'est le piège que `CLAUDE.md` décrit pour Paris —
+    // un témoin qui vise en dur meurt à la remise à l'échelle suivante.
+    const releveSF = await tab.evaluate(async ({ p }) => {
       const w = window.__game.world;
+      const S = await import('./src/sanfrancisco.js');
+      const R = Math.round(S.SF.r * 0.9);
       // La plaine d'une ville n'est pas un défaut — le Sunset et SoMa sont
       // plats pour de vrai. Ce qu'on compte, ce sont les BUTTES : les endroits
       // qui montent d'au moins dix blocs au-dessus du niveau de la ville, et
       // combien il y en a de distincts. Une ville sans collines n'en a aucune.
       let sommet = 0, mer = 0, terre = 0, hautes = 0;
       const parRang = new Set();
-      for (let u = -60; u <= 60; u += 2) {
-        for (let v = -60; v <= 60; v += 2) {
-          if (Math.hypot(u, v) > 60) continue;
+      const pas = Math.max(2, Math.round(R / 30));
+      for (let u = -R; u <= R; u += pas) {
+        for (let v = -R; v <= R; v += pas) {
+          if (Math.hypot(u, v) > R) continue;
           const h = w.terrainHeight(p.x + u, p.z + v);
           if (h <= 30) { mer++; continue; }
           terre++;
           sommet = Math.max(sommet, h);
-          if (h >= 43) { hautes++; parRang.add(`${Math.floor(u / 10)},${Math.floor(v / 10)}`); }
+          // Les buttes se comptent par CASE, et la case suit l'échelle : à dix
+          // blocs elle valait un kilomètre, elle en vaudrait un tiers aujourd'hui.
+          const case_ = Math.round(R / 6);
+          if (h >= 43) { hautes++; parRang.add(`${Math.floor(u / case_)},${Math.floor(v / case_)}`); }
         }
       }
       return { sommet, mer, terre, collines: parRang.size, hautes };
@@ -781,11 +837,23 @@ const position = (p) => p.evaluate(() => ({
       + `${releveSF.mer} points en mer pour ${releveSF.terre} à terre`);
 
     await banc.ouvrirLaCarte(tab);
-    await tab.evaluate(({ p }) => {
+    // ON CADRE SUR LA VILLE, PAS SUR SON ANCRE — et le zoom suit son rayon.
+    //
+    // Le contenu de San Francisco se dessine autour du Ferry Building, qui est
+    // à cent trente-cinq blocs à l'est de l'ancre : la presqu'île s'étend d'un
+    // seul côté, comme dans la réalité. À 0,3 bloc par pixel la fenêtre ne
+    // faisait que cent soixante-huit blocs de large, centrée au mauvais
+    // endroit — Chinatown, le Presidio et le Golden Gate Park tombaient
+    // dehors. Ce que le témoin veut savoir, c'est que ces quartiers SONT des
+    // destinations, pas qu'ils tiennent dans une fenêtre écrite en dur.
+    await tab.evaluate(async () => {
+      const S = await import('./src/sanfrancisco.js');
       const c2 = window.__carte;
-      c2.vue.cx = p.x; c2.vue.cz = p.z; c2.vue.bpp = 0.3;
+      const [cx, cz] = S.adresseSF(-5, 0.5);      // le milieu de la presqu'île
+      c2.vue.cx = cx; c2.vue.cz = cz;
+      c2.vue.bpp = Math.max(0.3, (S.SF.r * 2.2) / 560);
       c2.limiter(); c2.peindre();
-    }, { p: SF });
+    });
     await dormir(600);
     const vusSF = await lieuxVus(tab);
     const quartiersSF = ['Twin Peaks', 'Golden Gate Park', 'Mission', 'Castro', 'Chinatown', 'Le Presidio'];
@@ -971,9 +1039,10 @@ const position = (p) => p.evaluate(() => ({
     // pas de brouillard ; le Bay Bridge de la même couleur que le Golden Gate ;
     // et aucune des icônes que cherchent les enfants — les otaries de Pier 39,
     // les épingles fleuries de Lombard Street, le Dragon Gate de Chinatown.
-    const frisco = await tab.evaluate((S) => {
+    const frisco = await tab.evaluate(async (ancre) => {
+      const S = await import('./src/sanfrancisco.js');
       const w = window.__game.world;
-      const Sx = S.x, Sz = S.z;
+      const Sx = ancre.x, Sz = ancre.z;
       const ORANGE = 40, ICE = 18, MARRON = 210, BRIQUE = 11, VIOLET = 27;
       const VERT_TOIT = 90, DORE = 260, OLIVE = 250, GRIS = 33, ROUGE_LAINE = 23;
       const haut = (u, v) => {
@@ -986,24 +1055,130 @@ const position = (p) => p.evaluate(() => ({
         for (let y = h; y < h + 45; y++) if (w.getBlock(Sx + u, y, Sz + v) === id) return true;
         return false;
       };
-      // le pont : orange, pylône sud dressé, tablier filant vers le nord.
-      // Le rivage sous le pylône est à la cote 33 : le sommet à 54 fait une
-      // hauteur relative de 21 — bien au-dessus du brouillard, qui plafonne à 14.
-      const pylone = colonne(-22, -35, ORANGE) && haut(-22, -35).y >= 18;
-      const tablier = colonne(-21, -46, 562);
+      // ON VISE UNE ADRESSE, PAS UN u/v EN DUR.
+      //
+      // Tous ces repères étaient cherchés à des coordonnées écrites en blocs
+      // de l'ANCIENNE échelle. La v192 a triplé la ville : le pont, le
+      // brouillard et les trois icônes des enfants ont suivi leurs adresses
+      // réelles, et les témoins sont restés à regarder de l'eau vide. Ils
+      // annonçaient une ville cassée alors que — mesuré à la sonde — tout
+      // était en place sauf le brouillard.
+      //
+      // `adresseSF(dx, dz)` traduit des KILOMÈTRES depuis le Ferry Building.
+      // On cherche donc dans un voisinage de l'adresse, pas sur une colonne
+      // unique : un monument a le droit d'être redessiné.
+      const pres = (dx, dz, id, r, hMax) => {
+        const [cx, cz] = S.adresseSF(dx, dz);
+        for (let u = -r; u <= r; u++) for (let v = -r; v <= r; v++) {
+          const x = Math.round(cx + u), z = Math.round(cz + v);
+          const h = w.terrainHeight(x, z);
+          for (let y = h; y < h + (hMax || 45); y++) if (w.getBlock(x, y, z) === id) return true;
+        }
+        return false;
+      };
+      // le pont : orange, et son tablier de bitume, à sept kilomètres et demi
+      // à l'ouest-nord-ouest du Ferry Building.
+      const pylone = pres(-7.33, -4.22, ORANGE, 40, 60);
+      const tablier = pres(-7.33, -4.22, 562, 40, 60);
       // les Marin Headlands : de la terre dorée là où il n'y avait que la mer
-      const hMarin = w.terrainHeight(Sx - 22, Sz - 52);
-      const solMarin = w.getBlock(Sx - 22, hMarin, Sz - 52);
+      const [mx, mz] = S.adresseSF(-7.44, -5.33);
+      const hMarin = w.terrainHeight(Math.round(mx), Math.round(mz));
+      const solMarin = w.getBlock(Math.round(mx), hMarin, Math.round(mz));
       const marin = hMarin >= 32 && (solMarin === DORE || solMarin === OLIVE);
-      // Karl the Fog : la nappe translucide sur la passe, sous les pylônes
-      const brouillard = colonne(-27, -44, ICE) && colonne(-15, -44, ICE);
-      // le Bay Bridge est gris — c'est la couleur qui empêche de le confondre
-      const bayGris = colonne(38, 1, GRIS) && !colonne(38, 1, ROUGE_LAINE);
-      // les icônes des enfants
-      const otaries = colonne(29, -29, MARRON);
-      const lombard = colonne(32, -18, BRIQUE) && colonne(32, -17, VIOLET);
-      const dragon = colonne(36, -9, VERT_TOIT) && colonne(36, -9, 19);
-      return { pylone, tablier, marin, brouillard, bayGris, otaries, lombard, dragon };
+      // Karl the Fog : la nappe translucide sur la passe
+      const brouillard = pres(-7.33, -4.44, ICE, 40, 60);
+      // LE BAY BRIDGE : GRIS, ET AU-DESSUS DE L'EAU.
+      //
+      // L'ancien témoin cherchait de la pierre grise dans huit blocs autour
+      // d'une adresse — et il en trouvait toujours, celle des immeubles. Il
+      // est resté vert pendant que le pont était planté en travers de la
+      // ville, sur la terre ferme, à l'ouest du Ferry Building. Ce qui fait
+      // un pont, ce n'est pas sa couleur : c'est qu'il y a de l'eau dessous.
+      // On mesure donc les deux, sur la travée ouest, du Rincon à Yerba Buena.
+      const bayGris = pres(1.56, -0.5, GRIS, 10) && !pres(1.56, -0.5, ROUGE_LAINE, 10);
+      const bayEau = (() => {
+        const [cx, cz] = S.adresseSF(1.56, -0.5);
+        let n = 0;
+        for (let u = -28; u <= 28; u++) {
+          if (w.terrainHeight(Math.round(cx + u), Math.round(cz)) <= 30) n++;
+        }
+        return n;
+      })();
+      // le phare est sur son rocher au large, pas dans une rue
+      const phare = (() => {
+        const [cx, cz] = S.adresseSF(-11.95, -2.26);
+        return { rouge: pres(-11.95, -2.26, ROUGE_LAINE, 6),
+          mer: w.terrainHeight(Math.round(cx), Math.round(cz)) <= 30 };
+      })();
+      // les icônes des enfants, à l'adresse que la ville leur donne
+      const otaries = pres(-1.3, -2.45, MARRON, 10);
+      const lombard = pres(-1.45, -1.55, BRIQUE, 10) && pres(-1.45, -1.55, VIOLET, 10);
+      const dragon = pres(-1.0, -0.55, VERT_TOIT, 10) && pres(-1.0, -0.55, 19, 10);
+      // LE FINANCIAL DISTRICT SE TIENT DEBOUT.
+      //
+      // Signalé par Max sur capture : « buildings of fidi are not looking
+      // great ». Trois défauts se mesurent d'ici, et aucun n'avait de témoin.
+      //  — les tours posaient du VERRE partout sauf aux fenêtres : comme
+      //    l'intérieur d'un bâtiment est creux, on voyait au travers, et le
+      //    quartier n'était qu'un nuage de cubes gris suspendus ;
+      //  — leurs hauteurs étaient tirées À PLAT, d'où une brosse de tours
+      //    toutes de la même taille au lieu d'un tapis d'où quelques-unes
+      //    sortent ;
+      //  — et tous les toits de la ville portaient une dalle BLANCHE : vue
+      //    d'Alamo Square, San Francisco était enneigée.
+      const VERRE = 10, BLANC_DECOR = 310;
+      const centre = (() => {
+        const [cx, cz] = S.adresseSF(-0.4, -0.2);   // Montgomery & California
+        let verre = 0, plein = 0;
+        const hauteurs = [];
+        for (let du = -26; du <= 26; du++) {
+          for (let dv = -26; dv <= 26; dv++) {
+            const x = Math.round(cx + du), z = Math.round(cz + dv);
+            // ON DEMANDE À LA VILLE OÙ EST SON CENTRE — et l'on écarte ses
+            // MONUMENTS. Un carré de cinquante blocs autour de Montgomery
+            // déborde sur SoMa, dont les fenêtres sont — à bon droit — du
+            // verre ; et il contient la Transamerica et le Ferry Building,
+            // bâtis à la main, qui ont le droit d'être en verre. Ce qu'on
+            // éprouve ici, ce sont les immeubles ENGENDRÉS.
+            // La garde sur `quartierSF` n'est pas décorative : sur l'ancien
+            // code la fonction n'existe pas, et sans elle le banc s'effondre
+            // au premier témoin au lieu d'en montrer trois rouges.
+            if (S.quartierSF && S.quartierSF(x - S.SF.x, z - S.SF.z) !== 'centre') continue;
+            if (S.MONUMENTS_SF.some((m) => Math.abs(x - (S.SF.x + m.u)) <= m.box + 2
+              && Math.abs(z - (S.SF.z + m.v)) <= m.box + 2)) continue;
+            const h = w.terrainHeight(x, z);
+            let sommet = 0;
+            for (let y = h + 60; y > h; y--) if (w.getBlock(x, y, z)) { sommet = y - h; break; }
+            if (sommet > 3) hauteurs.push(sommet);
+            const id = w.getBlock(x, h + 8, z);    // à mi-hauteur du tapis
+            if (id === VERRE) verre++; else if (id) plein++;
+          }
+        }
+        hauteurs.sort((a, b) => a - b);
+        return { verre, plein, n: hauteurs.length,
+          median: hauteurs[Math.floor(hauteurs.length / 2)] || 0,
+          plusHaute: hauteurs[hauteurs.length - 1] || 0 };
+      })();
+      // les toits du quartier des Victoriennes, vus du dessus
+      const toits = (() => {
+        const [cx, cz] = S.adresseSF(-4.3, 0.75);   // Alamo Square
+        let blanc = 0, autre = 0;
+        for (let du = -24; du <= 24; du++) {
+          for (let dv = -24; dv <= 24; dv++) {
+            const x = Math.round(cx + du), z = Math.round(cz + dv);
+            const h = w.terrainHeight(x, z);
+            for (let y = h + 20; y > h + 2; y--) {
+              const id = w.getBlock(x, y, z);
+              if (!id) continue;
+              if (id === BLANC_DECOR) blanc++; else autre++;
+              break;
+            }
+          }
+        }
+        return { blanc, autre };
+      })();
+      return { pylone, tablier, marin, brouillard, bayGris, bayEau, phare, otaries, lombard, dragon,
+        centre, toits };
     }, V.sf);
     verifier('le Golden Gate, orange, va du Presidio aux Marin Headlands',
       frisco.pylone && frisco.tablier && frisco.marin,
@@ -1013,6 +1188,19 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify({ brouillard: frisco.brouillard }));
     verifier('le Bay Bridge est gris — on ne le confond plus avec le Golden Gate',
       frisco.bayGris, JSON.stringify({ bayGris: frisco.bayGris }));
+    verifier('et il enjambe vraiment la baie : de l\'eau sur toute sa travée',
+      frisco.bayEau >= 50, `${frisco.bayEau} colonnes d'eau sous le tablier sur 57`);
+    verifier('le phare veille au large de la passe, sur son rocher',
+      frisco.phare.rouge && frisco.phare.mer, JSON.stringify(frisco.phare));
+    verifier('aucune tour du Financial District n\'est une cage de verre',
+      frisco.centre.verre === 0 && frisco.centre.plein > 200,
+      `${frisco.centre.verre} colonnes de verre plein · ${frisco.centre.plein} de façade`);
+    verifier('et le centre est un tapis d\'où sortent quelques tours',
+      frisco.centre.median <= 15 && frisco.centre.plusHaute >= 30,
+      `médiane ${frisco.centre.median} blocs · la plus haute ${frisco.centre.plusHaute} · ${frisco.centre.n} colonnes bâties`);
+    verifier('les toits de San Francisco ne sont pas enneigés',
+      frisco.toits.autre > frisco.toits.blanc * 3,
+      `${frisco.toits.blanc} toits blancs pour ${frisco.toits.autre} sombres`);
     verifier('les otaries de Pier 39, Lombard fleurie et le Dragon Gate',
       frisco.otaries && frisco.lombard && frisco.dragon,
       JSON.stringify({ otaries: frisco.otaries, lombard: frisco.lombard, dragon: frisco.dragon }));
@@ -1342,6 +1530,7 @@ const position = (p) => p.evaluate(() => ({
     // --- et sur un ordinateur, à la souris -----------------------------------
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
+    await souffler();
     const bureau = await banc.jouerSeul('Alice');
     await banc.ouvrirLaCarte(bureau);
     const boutonRecoit = await bureau.evaluate(() => {
@@ -1390,6 +1579,7 @@ const position = (p) => p.evaluate(() => ({
     // image carrée dans une boîte qui ne l'est pas. On multiplie donc chaque
     // écart par le facteur d'échelle de son axe, celui-là même que la feuille
     // de style applique.
+    await souffler();
     const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
     await banc.ouvrirLaCarte(couche);
     // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
@@ -1437,6 +1627,18 @@ const position = (p) => p.evaluate(() => ({
     verifier('et elle reste sous l\'encoche, jamais dessous',
       forme.haut >= ENCOCHE && forme.bas <= forme.ecran - BAS,
       `de ${forme.haut} à ${forme.bas}, pour une zone sûre de ${ENCOCHE} à ${forme.ecran - BAS}`);
+    // ON REND L'ÉCRAN À CE QU'IL EST. Ces quatre-vingt-treize pixels d'encoche
+    // sont une FICTION posée pour ce témoin-là : Chromium sans appareil rend
+    // `env(safe-area-inset-*)` à zéro, on les écrit donc à la main. Les
+    // laisser allumées les fait peser sur tout ce qui suit, sur la même page
+    // et sur un écran de 390 pixels de haut — et c'est ainsi que la barre de
+    // recherche s'est retrouvée hors du cadre, « présente mais pas
+    // modifiable », jusqu'à faire tomber le banc au bout de trente secondes.
+    await couche.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-top', '0px');
+      document.documentElement.style.setProperty('--safe-bottom', '0px');
+    });
+    await dormir(400);
 
     // --- CHERCHER UN LIEU PAR SON NOM --------------------------------------
     //

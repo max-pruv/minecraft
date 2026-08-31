@@ -162,6 +162,26 @@ protège rien ; une minute gagnée sur `net.js` coûte les données d'un enfant.
 **Ce qui ne change pas** : un rouge se démonte, il ne se rejoue pas. La voie
 rapide n'est pas une permission d'aller vite sur ce qui compte.
 
+**UN ROUGE MESURÉ IDENTIQUE SUR `origin/main` NE BLOQUE PLUS — MAIS IL SE
+PROUVE.** Décision de Max, v195. Un défaut déjà en production n'est pas causé
+par la livraison en cours, et l'immobiliser derrière elle coûte des heures sans
+rien protéger. La preuve exigée est stricte, et c'est elle qui empêche
+l'échappatoire facile : la suite doit avoir été **rejouée SEULE des deux
+côtés** — sur la branche et sur `origin/main`, dans un arbre séparé
+(`git worktree add`) — et les deux mesures jointes. Le défaut part alors dans
+`TASKS.md` comme dette déclarée, et la fusion passe. Sans cette double mesure,
+il bloque comme avant.
+
+**Et la table des gardiens doit être COMPLÈTE, pas indicative.** En v195 il y
+manquait trente fichiers de `src/`, dont deux vrais trous : `src/visio.js` ne
+lançait pas `visio.js`, et `src/garages.js` — qui écrit dans le profil de
+l'enfant, à côté de ses blocs — ne lançait pas `sauvegarde.js`. Pire, aucune
+ville bâtie à la main n'y figurait : `src/sanfrancisco.js` partait en voie
+rapide, et c'est par ce trou que le Bay Bridge planté au milieu de la ville est
+arrivé en production. Le portail vérifie désormais qu'aucun fichier de `src/`
+n'est sans gardien ; un module neuf sans gardien déclaré annule tous les acquis
+du cache de reprise, ce qui le rend visible tout de suite.
+
 **La voie longue trouve ce que la voie rapide ne peut pas voir.** En v187 elle
 a rendu QUATRE suites rouges — `reseau.js`, `visio.js`, `reglages.js`,
 `hote.js` — qui l'étaient DÉJÀ sur `origin/main`, donc en production : mêmes
@@ -291,6 +311,15 @@ local, Supabase de poche (`tests/nuage.js`).
   accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
   PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
   un banc qui rend en logiciel, c'est la première moitié qui casse.
+- **Un témoin dont le verdict est une DURÉE mesure le banc si on ne le fait
+  pas souffler.** « Un monde bien rempli ne retarde pas les retrouvailles »
+  annonçait 55 à 57 s pour une borne de 25 — au-delà même de sa propre limite
+  d'attente, ce qui ne peut pas venir du jeu. Rejoué seul à la sonde sur une
+  machine qui respire : **six secondes**. Il était rouge à l'identique sur
+  `origin/main`, donc en production, et personne ne l'avait rejoué seul. C'est
+  la même leçon que `reglages.js` en v187, par un autre bout : le premier
+  réflexe devant un rouge de durée est de le REJOUER SEUL, pas de croire le
+  chiffre.
 - **Ne jamais relancer le portail jusqu'à obtenir du vert.** Trois suites
   vertes chacune de son côté ne valent pas un portail vert : c'est ainsi qu'on
   publie une régression en croyant l'avoir écartée. Un rouge se démonte, il ne
@@ -596,6 +625,29 @@ une brosse vue du ciel. Une vraie ville est un TAPIS de dix à vingt étages
 d'où sortent quelques tours — c'est ce que fait `t³`, qui n'envoie au
 sommet que le dernier dixième des tirages.
 
+**ET CES DEUX RÈGLES VALENT POUR TOUTE VILLE À TOURS, pas seulement pour
+Manhattan.** San Francisco a vécu neuf versions avec la loi à plat ET avec
+le défaut que Manhattan avait pourtant payé et écrit noir sur blanc : hors
+fenêtre, une colonne de tour posait du VERRE. Comme l'intérieur d'un
+bâtiment est CREUX — il l'est partout, c'est ce qui rend une ville
+possible — on voyait au travers, et le Financial District n'était qu'un
+nuage de cubes gris suspendus. Signalé par Max en capture, v195.
+
+Trois règles en sortent, et elles s'appliquent à la prochaine ville :
+
+- **Le verre est la MINORITÉ d'une façade.** Sa trame, rien de plus. Une
+  tour dont le mur par défaut est transparent n'est pas une tour.
+- **Un bloc de `GLASS` fait ici trente-sept mètres de large.** Au pied
+  d'une tour, la façade devient un aquarium d'un seul tenant. Le verre
+  d'un immeuble moderne est `CITY_BLOCK.CURTAIN`, qui porte les meneaux
+  DANS sa texture — il est opaque, et il s'allume déjà la nuit. Même
+  principe que les blocs `ARCHI` pour les villes haussmanniennes : une
+  fenêtre est un DESSIN, pas un trou.
+- **Le toit d'une maison n'est pas blanc.** La corniche est une ligne de
+  FAÇADE ; posée sur la dalle de toiture, elle couvre tout le toit d'une
+  maison de trois blocs de large, et la ville est enneigée vue du ciel.
+  738 toits blancs pour 94 sombres à Alamo Square avant la correction.
+
 ### La nuit, et pourquoi elle était noire
 
 Le monde entier partage UN matériau (`solidMaterial`) dont la couleur EST
@@ -759,6 +811,19 @@ de 66 à 220 blocs, et couvre toute la presqu'île. Trois choses à savoir.
   longueur de plan : le tablier passe de 25 à 73 blocs, sans quoi il s'arrêtait
   au milieu de l'eau. Les hauteurs, elles, ne bougent pas — 227 m de pylône
   font toujours vingt-quatre blocs.
+
+**ET LE PIÈGE SE REFERME TROIS FOIS, PARCE QU'ON CORRIGE UNE LIGNE À LA FOIS.**
+Le Golden Gate a été rattrapé en v192, Karl the Fog — deux lignes plus bas dans
+`world.js` — au début de la session suivante, le Bay Bridge et le phare en v195,
+sur signalement de Max en capture (« there is no bridge in the middle of the
+city »). Mesuré : sur les soixante-trois colonnes du tablier du Bay Bridge,
+**zéro n'était de l'eau**. Un pont suspendu gris planté en travers de la ville.
+La règle qui en sort : **quand on remet une ville à l'échelle, on cherche TOUS
+les `VILLE.x + n` du dépôt, pas seulement celui qu'on a sous les yeux** —
+`grep -n "SF\.x\|SF\.z" src/*.js` prend dix secondes et aurait évité trois
+versions. Et un témoin qui cherche « de la pierre grise dans huit blocs » n'en
+garde aucun : il en trouve toujours, celle des immeubles. Ce qui prouve un pont,
+c'est l'eau sous son tablier.
 
 **Et le piège de forme, qui n'existait qu'à petite échelle.** Les Marin
 Headlands montaient par `min(1, marin * 2) * 8` : la saturation aplatissait
