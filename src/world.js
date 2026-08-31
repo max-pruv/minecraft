@@ -855,6 +855,54 @@ function buildBaseMartienne(set) {
 
 // Les repères bâtis à la main. La carte s'en sert pour nommer ce qu'on voit
 // dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
+// UN ARBRE D'ALIGNEMENT, PAS UN CARRÉ VERT.
+//
+// Les fonctions `sol*` d'une ville rendent un identifiant de SOL. Un feuillage
+// rendu comme tel se pose à plat : de la pelouse sur le bitume. Paris l'a payé
+// en v187 ; Nice, Lille et Londres marquaient leurs arbres exactement de la
+// même façon et n'avaient jamais reçu le remède.
+//
+// Deux cas, et le second est celui qu'on oublie :
+//  — la colonne EST l'arbre : un fût de deux blocs, une couronne de trois ;
+//  — la colonne est AU PIED d'un arbre voisin : elle reçoit le débord de la
+//    couronne. Sans lui, un arbre large d'un seul bloc est un poteau vert —
+//    trois captures de rue pour s'en convaincre.
+//
+// Rend `true` si la colonne a été traitée.
+function arbreDeVille(data, x, z, h, wx, wz, sol, ss) {
+  // ET IL EST PLUS HAUT QU'UN ENFANT. Un fût de deux blocs met la couronne à
+  // hauteur de visage : la première capture de Londres montrait une rue dont
+  // le feuillage commençait aux genoux. Trois blocs de tronc, et l'on marche
+  // DESSOUS — c'est ce qui fait une rue plantée plutôt qu'un fourré.
+  if (ss === BLOCK.LEAVES) {
+    // AU PIED D'UN ARBRE, LE SOL EST CELUI D'À CÔTÉ. La première version
+    // posait du trottoir sous TOUS les arbres — juste sur une avenue, faux
+    // dans un parc : Hyde Park se retrouvait pavé sous chacun de ses
+    // marronniers, et son témoin de verdure rougissait à bon droit. On
+    // demande donc aux quatre voisins de quoi ils sont faits.
+    const auPied = [sol(wx + 1, wz), sol(wx - 1, wz), sol(wx, wz + 1), sol(wx, wz - 1)]
+      .includes(BLOCK.GRASS) ? BLOCK.GRASS : CITY_BLOCK.SIDEWALK;
+    data[World.index(x, h, z)] = auPied;
+    for (let dy = 1; dy <= 6; dy++) {
+      const wy = h + dy;
+      if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 3 ? BLOCK.LOG : BLOCK.LEAVES;
+    }
+    return true;
+  }
+  // Le débord ne se demande que pour ce qui peut être au pied d'un arbre —
+  // un trottoir, une pelouse — jamais pour une chaussée ni une façade.
+  if (ss !== CITY_BLOCK.SIDEWALK && ss !== BLOCK.GRASS) return false;
+  const voisin = sol(wx + 1, wz) === BLOCK.LEAVES || sol(wx - 1, wz) === BLOCK.LEAVES
+    || sol(wx, wz + 1) === BLOCK.LEAVES || sol(wx, wz - 1) === BLOCK.LEAVES;
+  if (!voisin) return false;
+  data[World.index(x, h, z)] = ss;
+  for (const dy of [4, 5]) {
+    const wy = h + dy;
+    if (wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.LEAVES;
+  }
+  return true;
+}
+
 const LANDMARKS = [
   // Paris
   // Paris : chacun à son écart réel à Notre-Dame, calculé par paris.js. La
@@ -1641,6 +1689,24 @@ export class World {
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);
+          // UN ARBRE, PAS UN CARRÉ VERT — et la leçon vaut pour TOUTE ville,
+          // pas seulement pour Paris.
+          //
+          // Ces trois villes marquaient déjà leurs arbres (`BLOCK.LEAVES` dans
+          // les parcs), mais la boucle générique les posait comme n'importe
+          // quel sol : à plat, au ras de l'herbe. Vus du ciel, de belles
+          // taches vertes ; vus de la rue, de la pelouse d'une autre nuance.
+          // C'est mot pour mot ce que Paris avait payé en v187, et les trois
+          // autres villes ne l'avaient jamais reçu. Max, sur sa capture de
+          // Londres : « les villes sont vides : pas d'arbres ».
+          // ON LÈVE LE DRAPEAU AVANT DE PASSER. Ce `continue` sort de la
+          // boucle qui cherche LA VILLE, pas de celle des colonnes : sans
+          // `fait = true`, la grille de rues générique repasse derrière et
+          // écrase le sol qu'on vient de poser. C'est ainsi que Hyde Park se
+          // retrouvait pavé sous ses arbres alors que le code plantait bien
+          // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
+          // rendait le défaut invisible en capture de rue.
+          if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
           if (ss !== null) data[World.index(x, h, z)] = ss;
           else if (libre(wx, wz)) {
             batir(wx, wz, (dy, id) => {
