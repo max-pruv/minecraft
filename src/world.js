@@ -1699,7 +1699,14 @@ export class World {
           // C'est mot pour mot ce que Paris avait payé en v187, et les trois
           // autres villes ne l'avaient jamais reçu. Max, sur sa capture de
           // Londres : « les villes sont vides : pas d'arbres ».
-          if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) continue;
+          // ON LÈVE LE DRAPEAU AVANT DE PASSER. Ce `continue` sort de la
+          // boucle qui cherche LA VILLE, pas de celle des colonnes : sans
+          // `fait = true`, la grille de rues générique repasse derrière et
+          // écrase le sol qu'on vient de poser. C'est ainsi que Hyde Park se
+          // retrouvait pavé sous ses arbres alors que le code plantait bien
+          // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
+          // rendait le défaut invisible en capture de rue.
+          if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
           if (ss !== null) data[World.index(x, h, z)] = ss;
           else if (libre(wx, wz)) {
             batir(wx, wz, (dy, id) => {
