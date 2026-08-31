@@ -65,9 +65,31 @@ const OR = BLOCK.GOLD;
 const PIERRE = uni(19);
 const BLANC = uni(27);
 const CREME = uni(28);
-const OCRE = uni(1);
-const ROSE = uni(16);
-const TUILE = uni(0);
+// L'OCRE N'ÉTAIT PAS DE L'OCRE. `uni(1)` est l'orange de signalisation
+// (232, 137, 44) : il peignait les murs de DIX-NEUF villes — Rome, Florence,
+// Venise, Barcelone, Lisbonne, Prague, Munich, Vienne… — et c'est lui qui leur
+// donnait cet air de briques de plastique que Max a signalé sur Rome.
+//
+// On ne change pas la palette de décor du jeu : c'est celle avec laquelle les
+// enfants construisent. On choisit les bonnes couleurs dedans. Le beige
+// (215, 195, 160) est la pierre chaude des villes méditerranéennes ; le sable
+// (225, 210, 170) est le travertin. Le nom disait déjà ce qu'il fallait
+// peindre — il n'a jamais été suivi.
+const OCRE = uni(19);
+const ROSE = uni(20);
+// LE JAUNE DES MURS EST UN JAUNE ROMPU. `uni(2)` est le jaune de balise
+// (228, 200, 60), écrit EN DUR dans douze fiches de ville — la constante
+// `OCRE` ne pouvait donc pas l'attraper. Le kaki (150, 140, 100) est le
+// « giallo romano » et l'ocre jaune des enduits méditerranéens : la même
+// famille, sans la fluorescence.
+const JAUNE_MUR = uni(22);
+// LA TERRE CUITE N'EST PAS DU ROUGE POMPIER. `uni(0)` est le rouge de la
+// palette (200, 62, 56) : vue du ciel, chaque ville méditerranéenne devenait
+// un champ de casquettes écarlates. La tuile romaine est brune et orangée, et
+// surtout elle a des RANGS — le motif « briques » les donne, le uni non. La
+// carte, elle, disait déjà la bonne couleur depuis toujours dans
+// `couleurToits: [178, 108, 82]` ; le bloc ne la suivait pas.
+const TUILE = brique(17);
 const ARDOISE = uni(25);
 const ACIER = uni(24);
 const ROUGE_GRES = brique(18);
@@ -543,7 +565,7 @@ const FICHES = {
     lat0: 41.9028, lon0: 12.4964, echelle: 20, rayon: 75,
     fleuve: { pts: [[-49, -62], [-44, -20], [-50, 1], [-44, 25], [-41, 30], [-44, 55], [-46, 75]], l: 3 },
     trame: { ang: 0.2, pu: 5, pv: 4, w: 0.45, s: 0.8 },
-    palette: [OCRE, uni(2), CREME, ROSE], toit: TUILE, hMaison: [3, 5],
+    palette: [OCRE, JAUNE_MUR, CREME, ROSE], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Colisée', lat: 41.8902, lon: 12.4922, build: depuisCatalogue('colisee') },
       { nom: 'Panthéon', lat: 41.8986, lon: 12.4769, box: 6, build: dome(4, CREME, PIERRE) },
@@ -573,7 +595,7 @@ const FICHES = {
     lat0: 43.7228, lon0: 10.3966, echelle: 20, rayon: 42,
     fleuve: { pts: [[-40, 17], [-10, 13], [15, 16], [40, 14]], l: 2.5 },
     trame: { ang: 0.15, pu: 5, pv: 4, w: 0.45, s: 0.8 },
-    palette: [OCRE, CREME, uni(2)], toit: TUILE, hMaison: [3, 4],
+    palette: [OCRE, CREME, JAUNE_MUR], toit: TUILE, hMaison: [3, 4],
     monuments: [
       { nom: 'Tour de Pise', lat: 43.7229, lon: 10.3966, build: depuisCatalogue('tour-pise') },
       { nom: 'Duomo de Pise', lat: 43.7231, lon: 10.3955, box: 6, build: dome(4, BLANC, TUILE) },
@@ -681,7 +703,7 @@ const FICHES = {
       { nom: 'Bairro Alto', cu: -12, cv: 8, r: 9, h: 7, favela: true },
     ],
     trame: { ang: 0, pu: 5, pv: 4, w: 0.45, s: 0.8 },             // la Baixa de Pombal, au cordeau
-    palette: [CREME, BLANC, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    palette: [CREME, BLANC, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [3, 5],
     paletteFavela: [CREME, ROSE, BLANC, OCRE],                    // les azulejos pastel des pentes
     monuments: [
       { nom: 'Château São Jorge', lat: 38.7139, lon: -9.1335, box: 8, build: muraillesRect(6, 4, PIERRE) },
@@ -740,7 +762,7 @@ const FICHES = {
     lat0: 48.1351, lon0: 11.582, echelle: 20, rayon: 42,
     fleuve: { pts: [[30, -40], [26, -10], [28, 15], [32, 40]], l: 3 },   // l'Isar
     trame: { ang: 0.1, pu: 5, pv: 4, w: 0.45, s: 0.8 },
-    palette: [CREME, ROSE, OCRE, uni(2)], toit: TUILE, hMaison: [4, 5],
+    palette: [CREME, ROSE, OCRE, JAUNE_MUR], toit: TUILE, hMaison: [4, 5],
     parcs: [{ cu: 16, cv: -32, ru: 7, rv: 9 }],                   // le jardin anglais
     monuments: [
       { nom: 'Frauenkirche', lat: 48.1386, lon: 11.5736, box: 6, build: bulbes([uni(5), uni(5)], 10) },
@@ -770,7 +792,7 @@ const FICHES = {
     fleuve: { pts: [[-28, 42], [-33, 10], [-29, -18], [-18, -36], [-2, -43]], l: 4 },   // la Vltava
     collines: [{ nom: 'Hradčany', cu: -35, cv: -22, r: 9, h: 8 }],
     trame: { ang: 0.35, pu: 5, pv: 4, w: 0.4, s: 0.75 },
-    palette: [OCRE, CREME, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    palette: [OCRE, CREME, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Le château de Prague', lat: 50.0906, lon: 14.4005, box: 8, build: palaisLong(6, CREME, ARDOISE) },
       { nom: 'Saint-Guy', lat: 50.0912, lon: 14.4025, box: 4, build: minaret(18, PIERRE) },
@@ -829,7 +851,7 @@ const FICHES = {
     fleuve: { pts: [[40, -54], [36, -20], [42, 10], [38, 54]], l: 6 },        // le Bosphore
     fleuves: [{ pts: [[36, -22], [10, -25], [-15, -32], [-38, -45]], l: 4 }], // la Corne d'Or
     trame: { ang: 0.3, pu: 5, pv: 4, w: 0.4, s: 0.75 },
-    palette: [OCRE, CREME, ROSE, uni(2)], toit: TUILE, hMaison: [3, 5],
+    palette: [OCRE, CREME, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Sainte-Sophie', lat: 41.0086, lon: 28.9802, box: 8, build: dome(6, OCRE, ARDOISE) },
       { nom: 'La Mosquée bleue', lat: 41.0054, lon: 28.9768, box: 7, build: dome(5, CREME, ARDOISE) },
@@ -880,7 +902,7 @@ const FICHES = {
     archipel: [{ v0: 1.6, v1: 3.4 }, { v0: 12, v1: 15 }],             // Norrström et Söderström — Gamla Stan entre les deux
     mer: { nx: 0.95, nz: 0.3, d: 30 },                            // le Saltsjön, vers le large
     trame: { ang: 0.2, pu: 5, pv: 4, w: 0.45, s: 0.8 },
-    palette: [OCRE, ROSE, CREME, uni(2)], toit: TUILE, hMaison: [4, 6],
+    palette: [OCRE, ROSE, CREME, JAUNE_MUR], toit: TUILE, hMaison: [4, 6],
     monuments: [
       { nom: 'Le Palais royal', lat: 59.3268, lon: 18.0717, box: 8, build: palaisLong(6, OCRE, ARDOISE) },
       { nom: "L'hôtel de ville", lat: 59.3274, lon: 18.0543, box: 4, build: minaret(15, brique(0)) },
@@ -1282,7 +1304,7 @@ const FICHES = {
 // même grand recalibrage (v172) qu'aux fiches manuscrites — mêmes rues, mêmes
 // trottoirs, mêmes îlots.
 const ARCHETYPES = {
-  europe: { pu: 5, pv: 4, hMaison: [3, 5], palette: [CREME, PIERRE, uni(2), OCRE], toit: ARDOISE, couleurToits: [152, 144, 140] },
+  europe: { pu: 5, pv: 4, hMaison: [3, 5], palette: [CREME, PIERRE, JAUNE_MUR, OCRE], toit: ARDOISE, couleurToits: [152, 144, 140] },
   britannique: { pu: 5, pv: 4, hMaison: [3, 5], palette: [brique(0), ROUGE_GRES, CREME], toit: ARDOISE, couleurToits: [152, 120, 104] },
   nordique: { pu: 5, pv: 4, hMaison: [3, 5], palette: [ROSE, OCRE, uni(7), CREME], toit: ARDOISE, couleurToits: [134, 128, 134] },
   mediterranee: { pu: 5, pv: 4, hMaison: [3, 5], palette: [BLANC, CREME, OCRE, ROSE], toit: TUILE, plage: true, couleurToits: [186, 122, 90] },
