@@ -20,10 +20,20 @@ function verifier(nom, ok, detail = '') {
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 // Attendre qu'une chose devienne vraie plutôt que d'attendre longtemps.
+//
+// ET UNE PAGE QUI SE RECHARGE N'EST PAS UNE PANNE, ICI. La seconde tablette
+// d'un enfant relance sa page pour appliquer l'état retrouvé de ses autres
+// appareils — c'est un comportement voulu du jeu, écrit en v189. Pendant cette
+// relance, Playwright rend « Execution context was destroyed », et le banc
+// tombait avec, emportant les vingt témoins suivants. Or l'attente porte
+// justement sur ce que la relance va produire : on repasse, on ne renonce pas.
 async function jusqua(cond, limiteMs = 25000, pas = 500) {
   const fin = Date.now() + limiteMs;
   for (;;) {
-    if (await cond()) return true;
+    let vrai = false;
+    try { vrai = await cond(); }
+    catch (e) { if (!/context was destroyed|Target closed|Execution context/i.test(e.message)) throw e; }
+    if (vrai) return true;
     if (Date.now() > fin) return false;
     await dormir(pas);
   }
@@ -449,14 +459,18 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // L'autre tablette de l'enfant doit l'apprendre : c'est là que la panne se
     // voyait le mieux, un monde effacé le matin et revenu le soir.
     const autre = await joueur('Marlon');
+    const sesMondes = async () => {
+      try {
+        return await autre.evaluate(() =>
+          JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code));
+      } catch { return null; }      // elle se recharge : on repassera
+    };
     const propre = await jusqua(async () => {
-      const l = await autre.evaluate(() =>
-        JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code));
-      return !l.includes('424242');
+      const l = await sesMondes();
+      return !!l && !l.includes('424242');
     }, 30000);
     verifier('et l\'autre tablette ne le ressuscite pas', propre,
-      JSON.stringify(await autre.evaluate(() =>
-        JSON.parse(localStorage.getItem('web-minecraft-worlds-v1') || '[]').map((w) => w.code))));
+      JSON.stringify(await sesMondes()));
     await autre.close();
 
     // Une pierre tombale n'est pas définitive : retaper le code doit tout
