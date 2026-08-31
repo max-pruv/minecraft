@@ -28,7 +28,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   façade « fenêtre industrielle » et un « fenêtre de Victorienne » — deux
   tuiles à peindre dans `textures.js`, sur le modèle des blocs `ARCHI`.
 
-- [ ] **Des arbres dans les rues de Londres** — Max, même capture : « pas
+- [x] **Des arbres dans les rues de Londres — FAIT en v197.** Et le remède
+  vaut pour Nice et Lille, qui avaient le même défaut : leurs parcs
+  marquaient déjà des arbres, posés à plat comme n'importe quel sol.
+
+- [ ] **(historique) Des arbres dans les rues de Londres** — Max, même capture : « pas
   d'arbres ». Paris en a depuis la v187 (le feuillage pousse dans `world.js` à
   partir des marques de `solParis`), Londres non : ses rues n'ont que des
   façades. Même recette à appliquer — et il faut ESPACER, sinon une colonne sur

@@ -716,6 +716,34 @@ Trois choses à savoir avant de chercher ailleurs :
 Résultat : 1 522 → 451 appels. Aucun détail retiré, aucune distance de vue
 réduite, aucune texture dégradée.
 
+### Les arbres d'une ville — et le piège qui se répète
+
+**Un `sol*` rend un identifiant de SOL : un feuillage rendu comme tel se pose
+À PLAT.** C'est de la pelouse sur le bitume. Paris l'a payé en v187, et
+Londres, Nice et Lille marquaient leurs arbres exactement de la même façon
+sans jamais recevoir le remède — trois villes, dix versions. Il est
+désormais partagé : `arbreDeVille` (world.js) fait pousser un fût et une
+couronne pour toute ville de la boucle générique.
+
+Quatre choses à savoir avant d'en planter ailleurs :
+
+- **Il faut ESPACER beaucoup plus qu'on ne croit.** Un trottoir est une
+  SURFACE, pas une ligne, et chaque couronne déborde d'un bloc de chaque
+  côté. Une colonne sur onze faisait un mur vert d'un bout à l'autre de la
+  rue, l'enfant marchant dans le feuillage. Une sur trente et un.
+- **Un fût de deux blocs met la couronne à hauteur de visage.** Trois blocs,
+  et l'on marche DESSOUS — c'est ce qui fait une rue plantée plutôt qu'un
+  fourré.
+- **Au pied d'un arbre, le sol est celui d'à côté** : de l'herbe dans un
+  parc, du trottoir dans la rue. Poser du trottoir partout pavait Hyde Park
+  sous chacun de ses marronniers.
+- **ET LE DRAPEAU `fait` SE LÈVE AVANT DE PASSER.** Le `continue` de cette
+  boucle-là sort de la recherche de LA VILLE, pas de la boucle des colonnes :
+  sans lui, la grille de rues générique repasse derrière et écrase le sol
+  qu'on vient de poser. Le tronc et la couronne survivent, eux — le défaut
+  est donc INVISIBLE en capture, et seul un témoin qui lit le bloc au sol
+  peut le voir.
+
 ### La vie des rues — et le plafond qui la tuait
 
 **Un rayon écrit quand les villes étaient petites est une bombe à retardement.**

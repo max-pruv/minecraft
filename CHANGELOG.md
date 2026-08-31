@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v197 — Les rues de Londres ont leurs platanes
+
+**Pourquoi.** Max, capture d'une rue londonienne à l'appui : « les villes sont
+vides : pas d'arbres ». Deux défauts en un, et le second durait depuis des
+versions sans que personne ne puisse le voir.
+
+Les rues n'en avaient aucun — le platane à écorce tachetée est pourtant l'arbre
+de Londres, celui de toutes les photos de Bloomsbury. Et les parcs en
+marquaient déjà : `solLondres` rendait du feuillage dans Hyde Park, Regent's
+Park et Primrose Hill, mais la boucle générique le posait comme n'importe quel
+sol — à plat, au ras de l'herbe. Vus du ciel, de belles taches vertes ; vus de
+la rue, de la pelouse d'une autre nuance. C'est mot pour mot ce que Paris avait
+payé en v187, et **Nice et Lille faisaient exactement pareil** : aucune des
+trois n'avait reçu le remède.
+
+**Ce que ça change.** On marche sous les arbres dans les rues de Londres, et
+Hyde Park est une vraie masse d'arbres au lieu d'un aplat vert. Nice et Lille
+en profitent d'un coup, sans que leur code ait bougé : le remède est désormais
+partagé.
+
+**Ce qui le prouve.** Portail vert. Trois témoins neufs, vérifiés sur la
+version précédente : zéro arbre dans Hyde Park, zéro dans les rues. Ce qui
+distingue un arbre d'une pelouse n'est pas sa couleur — c'est du tronc au-dessus
+du sol et du feuillage en l'air, l'un sur l'autre ; et de l'air libre à hauteur
+d'enfant entre les deux, sinon c'est un fourré.
+
+Quatre défauts ont été trouvés en chemin, chacun par un moyen que les autres ne
+pouvaient pas remplacer. Les captures ont attrapé le mur vert d'un bout à
+l'autre de la rue, puis la couronne à hauteur de visage. Un témoin écrit il y a
+des versions pour garder la couleur de Hyde Park a attrapé le trottoir posé
+sous les arbres du parc. Et une sonde sur la colonne exacte a montré pourquoi
+il rougissait encore : un `continue` qui sortait de la boucle des VILLES au
+lieu de celle des colonnes laissait la grille de rues générique repasser
+derrière et écraser le sol. Le tronc et la couronne, eux, survivaient — le
+défaut était donc invisible en capture.
+
+---
+
 ## v196 — L'iPad respire : on ne dessine plus ce que personne ne voit
 
 **Pourquoi.** Max, sur son iPad : « depuis ces dernières mises à jour,
