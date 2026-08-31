@@ -1647,6 +1647,33 @@ const position = (p) => p.evaluate(() => ({
     // téléporter ». Deux cent soixante-dix-huit lieux au registre : les
     // atteindre demandait de faire glisser la carte jusqu'à eux, donc de
     // savoir où ils sont — ce qu'un enfant ne sait justement pas.
+    // UNE SONDE AVANT LE GESTE. `page.fill` qui expire ne dit qu'une chose :
+    // « pas actionnable ». Absent du DOM, invisible, dans une fiche fermée,
+    // hors écran, désactivé — cinq pannes très différentes, un seul message.
+    // On regarde donc l'état avant d'agir : un rouge doit se démonter, et
+    // pour cela il faut qu'il parle.
+    const etatRecherche = await couche.evaluate(() => {
+      const i = document.getElementById('map-chercher');
+      const modal = document.getElementById('map-modal');
+      const carte = document.getElementById('map-modal-card');
+      if (!i) return { absent: true };
+      const r = i.getBoundingClientRect();
+      const cs = getComputedStyle(i);
+      return {
+        modal: modal ? getComputedStyle(modal).display : 'pas de modal',
+        ouverte: !!(window.__carte && window.__carte.ouverte),
+        boite: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
+        ecran: [window.innerWidth, window.innerHeight],
+        display: cs.display, visibility: cs.visibility, opacite: cs.opacity,
+        desactive: i.disabled || i.readOnly,
+        carte: carte ? Math.round(carte.getBoundingClientRect().height) : -1,
+      };
+    });
+    console.log(`   🔎 la barre de recherche : ${JSON.stringify(etatRecherche)}`);
+    // Si la fiche s'est refermée entre-temps, on la rouvre : c'est ce qu'un
+    // enfant ferait, et cela distingue « la recherche est cassée » de « la
+    // carte n'était plus à l'écran ».
+    if (!etatRecherche.ouverte) await banc.ouvrirLaCarte(couche);
     await couche.fill('#map-chercher', 'washing');
     await dormir(500);
     const trouves = await couche.evaluate(() =>
