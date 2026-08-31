@@ -875,7 +875,14 @@ function arbreDeVille(data, x, z, h, wx, wz, sol, ss) {
   // le feuillage commençait aux genoux. Trois blocs de tronc, et l'on marche
   // DESSOUS — c'est ce qui fait une rue plantée plutôt qu'un fourré.
   if (ss === BLOCK.LEAVES) {
-    data[World.index(x, h, z)] = CITY_BLOCK.SIDEWALK;
+    // AU PIED D'UN ARBRE, LE SOL EST CELUI D'À CÔTÉ. La première version
+    // posait du trottoir sous TOUS les arbres — juste sur une avenue, faux
+    // dans un parc : Hyde Park se retrouvait pavé sous chacun de ses
+    // marronniers, et son témoin de verdure rougissait à bon droit. On
+    // demande donc aux quatre voisins de quoi ils sont faits.
+    const auPied = [sol(wx + 1, wz), sol(wx - 1, wz), sol(wx, wz + 1), sol(wx, wz - 1)]
+      .includes(BLOCK.GRASS) ? BLOCK.GRASS : CITY_BLOCK.SIDEWALK;
+    data[World.index(x, h, z)] = auPied;
     for (let dy = 1; dy <= 6; dy++) {
       const wy = h + dy;
       if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 3 ? BLOCK.LOG : BLOCK.LEAVES;
