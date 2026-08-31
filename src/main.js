@@ -10,7 +10,7 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -188,6 +188,17 @@ activerTuilage(litMaterial);
 })();
 
 const world = new World();
+// LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
+// disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
+// Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
+// sauvegarde suivante grave l'erreur.
+{
+  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t));
+  if (bilan && bilan.deplaces) {
+    console.log(`carte agrandie : ${bilan.deplaces} blocs suivis, `
+      + `${bilan.laisses} laissés, ${bilan.intacts} intacts`);
+  }
+}
 world.loadEdits();
 
 const player = new Player(camera, world);

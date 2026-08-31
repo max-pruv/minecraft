@@ -93,7 +93,31 @@ const PROJECTIONS = { equirectangulaire };
 
 // --- les mondes --------------------------------------------------------------
 
+// LA CARTE D'AVANT, FIGÉE POUR TOUJOURS.
+//
+// Agrandir la carte déplace le sol sous les blocs des enfants. `CLAUDE.md`
+// dit comment s'y prendre : « versionner le générateur de terrain et migrer
+// chaque bloc de la différence de hauteur de sa colonne — pas régénérer et
+// espérer ». Cette entrée EST cette version : la projection telle qu'elle
+// était avant l'agrandissement, gardée pour qu'on puisse toujours demander
+// « quelle était la hauteur du sol ici, avant ? ».
+//
+// Elle n'est jamais proposée à l'enfant — rien n'énumère `MONDES`, seul
+// `cielDe(x, z, 'terreAvant')` la lit. Et elle ne se met JAMAIS à jour : le
+// jour où elle suivrait la carte courante, elle ne servirait plus à rien.
+const PROJECTION_AVANT = {
+  type: 'equirectangulaire',
+  rayonKm: 6371,
+  lat0: 48.8566, lon0: 2.3522,
+  kmParBloc: 0.75,
+  ancre: { x: -240, z: 200 },
+  compressions: [{ de: -74, a: -10, k: 0.6 }],
+};
+
 export const MONDES = {
+  // La carte d'avant l'agrandissement : elle ne sert qu'à la migration.
+  terreAvant: { id: 'terreAvant', nom: 'La Terre (avant)', emoji: '🌍',
+    projection: PROJECTION_AVANT, lieux: [] },
   terre: {
     id: 'terre', nom: 'La Terre', emoji: '🌍',
     projection: {
@@ -117,7 +141,21 @@ export const MONDES = {
       //
       // `carte.js` a un témoin qui rougit si une ville grossit au point d'en
       // toucher une autre : on ne redécouvrira pas ce défaut en jouant.
-      kmParBloc: 0.75,
+      // AGRANDIE D'UN FACTEUR DEUX (décision de Max). 0,75 km/bloc était la
+      // première échelle qui tenait à l'époque ; les villes ont grandi depuis
+      // — Paris 185, San Francisco 220, Washington 187 — et la marge la plus
+      // étroite était retombée à HUIT blocs (Pise/Florence).
+      //
+      // Balayage refait avec les emprises d'aujourd'hui, en demandant à chaque
+      // échelle ce qui resterait si chaque ville DOUBLAIT son emprise — la
+      // raison même de l'agrandissement : 0,75 → −279 blocs, 0,50 → −79,
+      // 0,429 → −4, 0,375 → +17, 0,30 → +53. C'est la première qui tient, et
+      // c'est le même raisonnement qui avait donné 0,75 en son temps.
+      //
+      // Le prix est la distance : le monde passe de 21 000 à 43 000 blocs. On
+      // voyage par la carte, déjà tranché, et le terrain est engendré à la
+      // demande.
+      kmParBloc: 0.375,
       // Paris ne bouge PAS. C'est là que les enfants ont le plus construit, et
       // ancrer la projection sur sa position actuelle épargne leurs blocs.
       ancre: { x: -240, z: 200 },
