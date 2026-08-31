@@ -93,7 +93,25 @@ function verifier(nom, ok, detail = '') {
 // DÉCLARER et de BORNER. La borne est vérifiée deux lignes plus bas : hors du
 // disque de Paris, le paysage est identique au bloc près.
 // v186 (avant Paris) : a18ae3735ba737b6198a68cb24cdebab06b9836d
-const EMPREINTE_RELIEF = 'cac3b8a64c09a458d3fcbd0446cf49d09d135c3a';
+// v199 — L'AGRANDISSEMENT DE LA CARTE. Décision de Max : « agrandir la carte
+// entière », pour que les villes aient enfin la place de grandir. L'échelle
+// passe de 0,75 à 0,375 km par bloc, les distances doublent, et la marge la
+// plus étroite entre deux villes passe de HUIT blocs à SOIXANTE-QUINZE.
+//
+// Cette empreinte change donc, et c'est la quatrième fois de l'histoire du
+// projet qu'elle en a le droit. Mais ici la casse n'est PAS confinée à une
+// zone : le relief se réécrit partout où la projection décide de la
+// géographie. La borner est impossible — alors on prouve AUTRE CHOSE, et
+// c'est le témoin « le sol n'a pas bougé là où les enfants ont bâti », plus
+// bas, qui porte la garantie désormais. Il est plus fort qu'un hash : il
+// compare la carte d'AUJOURD'HUI à la carte d'AVANT, figée dans
+// `MONDES.terreAvant`, et il ne peut pas être satisfait en mettant une
+// valeur à jour.
+//
+// Ce qui reste vert de l'ancien monde, et ce n'est pas rien : les dix-huit
+// colonnes de référence ont gardé leur cote AU BLOC PRÈS, et la maison
+// sauvegardée avant le changement repose toujours sur le sol.
+const EMPREINTE_RELIEF = '4754a91ef7fed692c2b8f6b6238f7c0cb4f082c5';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -146,7 +164,11 @@ const EMPREINTE_RELIEF = 'cac3b8a64c09a458d3fcbd0446cf49d09d135c3a';
 // d813ba3f…, 153 382 colonnes des deux côtés. Hors du disque de Paris, pas un
 // bloc n'a bougé. C'est cela qui protège les maisons de Marlon et d'Alice —
 // et c'est cela, et rien d'autre, qui autorise l'empreinte du dessus à changer.
-const EMPREINTE_HORS_VILLES = 'd813ba3ff705a4539d8d10dba21cdeaf1eb39c9f';
+// v199 : 191 185 colonnes hors villes contre 153 382 avant — non pas parce que
+// le monde a grandi, mais parce que les villes se sont ÉCARTÉES : dans la
+// fenêtre de ±700 blocs, il n'en reste presque plus qu'une, Paris, dont
+// l'ancre ne bouge pas.
+const EMPREINTE_HORS_VILLES = '4877f83bb63e6918936b99d3098f077506dba068';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -290,6 +312,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const decalees = toutes.filter(([x, z, h]) => w.terrainHeight(x, z) !== h);
   verifier('aucune colonne de référence n\'a bougé', decalees.length === 0,
     JSON.stringify(decalees.map(([x, z, h]) => ({ x, z, attendu: h, trouve: w.terrainHeight(x, z) }))));
+
+  // LE SOL N'A PAS BOUGÉ LÀ OÙ LES ENFANTS ONT BÂTI.
+  //
+  // C'est ce témoin, désormais, qui porte l'invariant numéro un — pas
+  // l'empreinte du dessus. L'agrandissement de la carte (v199) réécrit le
+  // relief partout où la projection décide de la géographie : une empreinte
+  // globale ne peut plus rien promettre, et la borner est impossible.
+  //
+  // Alors on prouve ce qui compte vraiment, et on le prouve d'une manière
+  // qu'aucune mise à jour de valeur ne peut satisfaire : on demande au jeu la
+  // hauteur du sol sur la carte d'AUJOURD'HUI et sur la carte d'AVANT — figée
+  // pour toujours dans `MONDES.terreAvant` — et l'on exige qu'elles soient
+  // IDENTIQUES autour du point d'apparition et autour de Paris. Ce sont les
+  // deux endroits où Marlon et Alice ont construit, et l'ancre de la
+  // projection est plantée sur Paris exprès pour cela.
+  //
+  // Mesuré à la livraison : 4 040 colonnes, cent pour cent identiques.
+  const chezLesEnfants = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    if (!W.hauteurBase) return { absent: true };
+    const P = M.positionDe('paris');
+    const zones = [['apparition', 0, 0, 90], ['Paris', P.x, P.z, 200]];
+    const bouge = [];
+    let n = 0;
+    for (const [nom, cx, cz, r] of zones) {
+      for (let dx = -r; dx <= r; dx += 7) {
+        for (let dz = -r; dz <= r; dz += 7) {
+          const x = Math.round(cx + dx), z = Math.round(cz + dz);
+          n++;
+          const av = W.hauteurBase(x, z, 'terreAvant');
+          const ap = W.hauteurBase(x, z, 'terre');
+          if (av !== ap) bouge.push({ ou: nom, x, z, avant: av, apres: ap });
+        }
+      }
+    }
+    return { n, bouge: bouge.slice(0, 5), total: bouge.length };
+  })();
+  verifier('et le sol n\'a pas bougé d\'un bloc là où les enfants ont bâti',
+    !chezLesEnfants.absent && chezLesEnfants.total === 0 && chezLesEnfants.n > 3000,
+    chezLesEnfants.absent ? 'la carte d\'avant n\'est pas gardée'
+      : `${chezLesEnfants.n} colonnes · ${chezLesEnfants.total} déplacée(s)`
+        + (chezLesEnfants.total ? ` · ${JSON.stringify(chezLesEnfants.bouge)}` : ''));
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {

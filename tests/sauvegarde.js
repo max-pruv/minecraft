@@ -111,6 +111,42 @@ const BLOCS = 40000;
     verifier('mais elles arrivent bien, sur le leur', albumRecu,
       JSON.stringify((nuage.etatDe('Marlon~photos') || {}).photos?.length));
 
+    // LES BLOCS SONT MIS À L'ABRI AVANT QUE LA CARTE NE CHANGE.
+    //
+    // Max a tranché l'agrandissement de la carte d'un facteur deux : le relief
+    // changera partout sauf à Paris. `CLAUDE.md` est net sur la manière — « on
+    // casse ce qu'on ne sait pas suivre, pas ce qu'on n'a pas envie de
+    // suivre » — et la première marche est une copie des blocs de l'enfant,
+    // sur son propre document, comme les photos.
+    //
+    // Ce que le témoin éprouve, c'est ce qui compte pour la famille : la copie
+    // existe, elle contient VRAIMENT la construction, et elle ne pèse pas sur
+    // le profil vivant.
+    const copieFaite = await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-carte');
+      return !!(a && (a.editsz || a.edits));
+    }, 30000);
+    const copie = nuage.etatDe('Marlon~avant-carte') || {};
+    verifier('les blocs sont mis à l\'abri avant que la carte ne change',
+      copieFaite, JSON.stringify(Object.keys(copie)));
+    verifier('et la copie porte bien la construction, pas un document vide',
+      !!(copie.editsz && copie.editsz.length > 200) || !!(copie.edits
+        && Object.keys(copie.edits).length),
+      copie.editsz ? `${copie.editsz.length} octets compressés` : 'pas de blocs');
+    // Elle ne se réécrit JAMAIS : repasser dessus remplacerait la copie
+    // d'AVANT par une copie d'APRÈS — exactement ce qu'on veut empêcher.
+    const empreinteUn = copie.editsz || JSON.stringify(copie.edits || {});
+    await tab.evaluate(() => window.__game.world.setBlock(70, 40, 70, 1));
+    await tab.evaluate(() => {
+      const s = window.__game.profileSync;
+      return s.sauverAvantLaRefonte ? s.sauverAvantLaRefonte() : null;
+    });
+    await dormir(1500);
+    const apres = nuage.etatDe('Marlon~avant-carte') || {};
+    verifier('et elle ne se réécrit pas au lancement suivant',
+      (apres.editsz || JSON.stringify(apres.edits || {})) === empreinteUn,
+      'la copie d\'avant reste la copie d\'avant');
+
     // Et le retour : un autre appareil doit retrouver la construction entière.
     // C'est le témoin qui compte pour l'enfant — pas le contenu du document,
     // mais ce qu'il retrouve en ouvrant le jeu sur la tablette de la maison.

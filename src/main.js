@@ -10,7 +10,7 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -188,6 +188,17 @@ activerTuilage(litMaterial);
 })();
 
 const world = new World();
+// LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
+// disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
+// Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
+// sauvegarde suivante grave l'erreur.
+{
+  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t));
+  if (bilan && bilan.deplaces) {
+    console.log(`carte agrandie : ${bilan.deplaces} blocs suivis, `
+      + `${bilan.laisses} laissés, ${bilan.intacts} intacts`);
+  }
+}
 world.loadEdits();
 
 const player = new Player(camera, world);
@@ -1343,6 +1354,25 @@ profileSync.onMerged = (state) => {
   }
 };
 profileSync.start();
+
+// LA COPIE D'AVANT L'AGRANDISSEMENT DE LA CARTE.
+//
+// Max a tranché : la carte double, pour que les villes aient enfin la place de
+// grandir. Le relief changera partout sauf à Paris, où l'ancre de la
+// projection est plantée exprès parce que c'est là que les enfants ont le plus
+// bâti. Avant que quoi que ce soit ne bouge, on met leurs blocs à l'abri —
+// c'est la règle de `CLAUDE.md` sur les casses autorisées : on casse ce qu'on
+// ne sait pas suivre, pas ce qu'on n'a pas envie de suivre.
+//
+// Une seule fois, sur son propre document, et sans un mot à l'enfant : ce
+// n'est pas une manœuvre qui le concerne. On laisse d'abord la première
+// synchronisation se faire — la copie doit contenir TOUT ce qu'il a bâti, y
+// compris ce qui dort encore sur une autre tablette.
+setTimeout(() => {
+  profileSync.sauverAvantLaRefonte()
+    .then((r) => { if (r === 'sauvé') console.log('blocs mis à l\'abri avant la refonte de la carte'); })
+    .catch(() => {});
+}, 12000);
 
 // --- bandeau d'état : réseau et sauvegardes ---------------------------------
 //

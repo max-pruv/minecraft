@@ -280,10 +280,31 @@ const VRAIES_KM = [
     // décrit : l'Atlantique est en eau entre Paris et New York, la Manche
     // sépare Londres de Lille, la Méditerranée borde Nice, et chaque ville du
     // registre est à terre.
+    // ON VISE UNE LATITUDE ET UNE LONGITUDE, PAS UN x/z EN DUR.
+    //
+    // Ces six sondes étaient écrites en coordonnées absolues, calculées pour
+    // l'échelle d'alors. L'agrandissement de la carte (v199) les a laissées
+    // sur place pendant que la géographie, elle, doublait ses distances : la
+    // Manche annonçait 0 case d'eau sur 81, le Pacifique aussi, et les
+    // Amériques 81 cases d'eau sur 81. Rien n'avait disparu — les témoins
+    // regardaient au mauvais endroit.
+    //
+    // C'est la leçon déjà écrite pour Paris et San Francisco, à l'échelle du
+    // monde entier : une sonde vise une ADRESSE, jamais un u/v en dur, sinon
+    // elle meurt à la prochaine remise à l'échelle.
     const geographie = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');
+      const m = await import('./src/mondes.js');
       const w = window.__game.world;
       const mer = (x, z) => w.terrainHeight(x, z) < WATER_LEVEL;
+      // d'une latitude et d'une longitude vers un bloc : la projection sait
+      const pr = m.MONDES.terre.projection;
+      const ou = (lat, lon) => {
+        const z = Math.round(pr.ancre.z - ((lat - pr.lat0) * 111.19) / pr.kmParBloc);
+        let a = -120000, b = 120000;
+        while (b - a > 1) { const mi = (a + b) >> 1; (m.cielDe(mi, z).lon < lon) ? a = mi : b = mi; }
+        return { x: a, z };
+      };
       const sonde = (x, z, r) => {
         let e = 0, t = 0;
         for (let dx = -r; dx <= r; dx += Math.max(2, r >> 2)) {
@@ -291,10 +312,13 @@ const VRAIES_KM = [
         }
         return { e, t };
       };
+      const parKm = 1 / pr.kmParBloc;
+      const km = (n) => Math.round(n * parKm);
+      const la = (lat, lon, rKm) => { const p = ou(lat, lon); return sonde(p.x, p.z, km(rKm)); };
       return {
-        atlantique: sonde(-3200, -800, 24), manche: sonde(-330, -125, 8),
-        mediterranee: sonde(300, 1100, 12), pacifique: sonde(-12000, 3000, 24),
-        france: sonde(-300, 480, 24), ameriques: sonde(-7000, 1200, 24),
+        atlantique: la(40, -40, 18), manche: la(50.2, -0.5, 6),
+        mediterranee: la(39, 6, 9), pacifique: la(30, -150, 18),
+        france: la(47.2, 2.5, 18), ameriques: la(39, -98, 18),
       };
     });
     const enEau = (o) => o.e > o.t * 2;
@@ -373,23 +397,45 @@ const VRAIES_KM = [
     const relief = await tab.evaluate(async () => {
       const m = await import('./src/mondes.js');
       const w = window.__game.world;
+      // L'ÉCHELLE SE DEMANDE, ELLE NE S'ÉCRIT PAS EN DUR. Ce `0.75` et cet
+      // ancrage `200` étaient l'échelle du jour où le témoin a été écrit :
+      // après l'agrandissement de la carte (v199), il calculait un `z` pour
+      // l'ancienne projection et cherchait le sommet de l'Everest à
+      // mi-chemin de l'Everest. Les montagnes n'avaient pas rapetissé — le
+      // témoin regardait ailleurs.
+      const pr = m.MONDES.terre.projection;
       const blocDe = (lat, lon) => {
-        const z = Math.round(200 - ((lat - 48.8566) * 111.19) / 0.75);
-        let a = -30000, b = 30000;
+        const z = Math.round(pr.ancre.z - ((lat - pr.lat0) * 111.19) / pr.kmParBloc);
+        // LES BORNES SUIVENT LE MONDE. À 0,75 km/bloc il tenait dans
+        // ±30 000 ; à 0,375 il en fait 43 000, et la dichotomie clampait —
+        // l'Everest sortait de la fenêtre de recherche et le témoin lisait
+        // la cote d'un endroit quelconque. On prend large.
+        let a = -120000, b = 120000;
         while (b - a > 1) { const mi = (a + b) >> 1; (m.cielDe(mi, z).lon < lon) ? a = mi : b = mi; }
         return { x: a, z };
       };
+      // UN RAYON DE RECHERCHE EST UNE DISTANCE RÉELLE, PAS UN NOMBRE DE
+      // BLOCS. ±8 blocs valaient six kilomètres à 0,75 km/bloc ; à 0,375 ils
+      // n'en valent plus que trois, et l'on cherche un sommet dans une
+      // fenêtre deux fois plus étroite. Même leçon que les largeurs de Paris
+      // à sa remise à l'échelle : ce qui est une longueur du monde réel se
+      // reprojette, il ne se recopie pas.
+      const parKm = 1 / pr.kmParBloc;                    // blocs par km
+      const R = Math.round(6 * parKm);            // six kilomètres à la ronde
       const sommet = (lat, lon) => {
         const { x, z } = blocDe(lat, lon);
         let s = 0;
-        for (let dx = -8; dx <= 8; dx += 2) {
-          for (let dz = -8; dz <= 8; dz += 2) s = Math.max(s, w.terrainHeight(x + dx, z + dz));
+        for (let dx = -R; dx <= R; dx += Math.max(2, R >> 3)) {
+          for (let dz = -R; dz <= R; dz += Math.max(2, R >> 3)) {
+            s = Math.max(s, w.terrainHeight(x + dx, z + dz));
+          }
         }
         return s;
       };
       const gc = blocDe(36.2, -112.4);
+      const RC = Math.round(30 * parKm);          // le Grand Canyon fait trente km de large
       let bord = 0, fond = 99;
-      for (let dz = -40; dz <= 40; dz++) {
+      for (let dz = -RC; dz <= RC; dz++) {
         const h = w.terrainHeight(gc.x, gc.z + dz);
         bord = Math.max(bord, h); fond = Math.min(fond, h);
       }

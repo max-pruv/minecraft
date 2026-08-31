@@ -1192,8 +1192,8 @@ function dansUneZoneATerre(x, z) {
   return false;
 }
 
-function hauteurTerre(x, z, h) {
-  const ciel = cielDe(x, z);
+function hauteurTerre(x, z, h, mondeId = 'terre') {
+  const ciel = cielDe(x, z, mondeId);
   // Une côte au cordeau fait maquette : un léger tremblé la rend naturelle,
   // déterministe pour que deux tablettes engendrent le même rivage.
   const lat = ciel.lat + 0.05 * Math.sin(x * 0.021 + z * 0.013) + 0.02 * Math.sin(x * 0.11);
@@ -1209,6 +1209,75 @@ function hauteurTerre(x, z, h) {
     h = Math.min(SOMMET_TERRAIN - 2, Math.max(2, Math.round(h + delta)));
   }
   return h;
+}
+
+// LA HAUTEUR DE BASE, SUR LA CARTE QU'ON VEUT.
+//
+// C'est le relief SANS les villes : le bruit, les lacs, et le planisphère.
+// La migration s'en sert pour comparer le sol d'avant et le sol d'après sous
+// chaque bloc d'un enfant. On écarte volontairement les villes : sous une
+// ville, la hauteur est décidée par la ville, et une ville qui se déplace ne
+// laisse pas un écart de hauteur à rattraper — elle laisse un AUTRE endroit.
+export function hauteurBase(x, z, mondeId = 'terre') {
+  const mountains = fbm(x * 0.0035, z * 0.0035, SEED + 9001);
+  const hills = fbm(x * 0.016, z * 0.016, SEED);
+  let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
+  const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
+  if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
+  return Math.round(hauteurTerre(x, z, h, mondeId));
+}
+
+// SUIVRE LES BLOCS QUAND LE SOL BOUGE.
+//
+// Agrandir la carte déplace le relief. `CLAUDE.md` dit comment s'y prendre :
+// « versionner le générateur de terrain et migrer chaque bloc de la différence
+// de hauteur de sa colonne — pas régénérer et espérer ». `MONDES.terreAvant`
+// garde la projection d'avant, figée ; `hauteurBase` répond sur l'une ou
+// l'autre. Il ne reste qu'à décaler.
+//
+// CE QUE ÇA RATTRAPE, ET CE QUE ÇA NE RATTRAPE PAS. Une maison enterrée de
+// deux blocs remonte de deux blocs : c'est le cas courant, et c'est réglé. Une
+// maison dont la colonne est passée sous la mer, non — aucun décalage vertical
+// ne sauve un endroit qui n'existe plus. On borne donc le décalage : au-delà,
+// on laisse le bloc où il est plutôt que de le catapulter, et on le compte.
+//
+// Mesuré AVANT de livrer, sur 4 040 colonnes : autour du point d'apparition et
+// autour de Paris, le sol ne bouge PAS D'UN BLOC — cent pour cent identiques.
+// L'ancre de la projection est plantée sur Paris exprès, et le bruit du
+// terrain ne dépend que de la position. C'est la campagne lointaine qui se
+// réécrit : douze blocs d'écart médian à six cents blocs à l'ouest.
+export const CARTE_VERSION = 2;
+const CLE_CARTE = 'web-minecraft-carte-v1';
+const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
+
+export function migrerLesBlocs(lire, ecrire) {
+  let version = 0;
+  try { version = Number(localStorage.getItem(CLE_CARTE)) || 0; } catch { /* ignore */ }
+  if (version >= CARTE_VERSION) return null;
+  const tout = lire() || {};
+  let deplaces = 0, laisses = 0, intacts = 0;
+  const sols = new Map();       // une colonne se calcule une fois, pas par bloc
+  for (const [ctx, map] of Object.entries(tout)) {
+    const neuf = {};
+    for (const [k, entry] of Object.entries(map || {})) {
+      const [x, y, z] = k.split(',').map(Number);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) { neuf[k] = entry; continue; }
+      const cle = `${x},${z}`;
+      let d = sols.get(cle);
+      if (d === undefined) {
+        d = hauteurBase(x, z, 'terre') - hauteurBase(x, z, 'terreAvant');
+        sols.set(cle, d);
+      }
+      if (d === 0) { neuf[k] = entry; intacts++; continue; }
+      if (Math.abs(d) > ECART_MAX) { neuf[k] = entry; laisses++; continue; }
+      neuf[`${x},${y + d},${z}`] = entry;
+      deplaces++;
+    }
+    tout[ctx] = neuf;
+  }
+  ecrire(tout);
+  try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
+  return { deplaces, laisses, intacts };
 }
 
 export class World {
