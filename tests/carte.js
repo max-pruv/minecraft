@@ -1416,6 +1416,52 @@ const position = (p) => p.evaluate(() => ({
       londres.briques >= 60 && londres.bus >= 3,
       `${londres.briques} blocs de brique · ${londres.bus}/5 bus`);
 
+    // DES ARBRES QUI SONT DES ARBRES, PAS DES CARRÉS VERTS.
+    //
+    // Max, capture d'une rue à l'appui : « les villes sont vides : pas
+    // d'arbres ». Deux défauts en un. Les rues n'en avaient aucun ; et les
+    // parcs en marquaient déjà (`BLOCK.LEAVES`) mais la boucle générique les
+    // posait comme n'importe quel sol — à plat, au ras de l'herbe. C'est mot
+    // pour mot ce que Paris avait payé en v187, et Londres, Nice et Lille
+    // n'avaient jamais reçu le remède.
+    //
+    // Ce qui distingue un arbre d'une pelouse, c'est qu'il y a du TRONC
+    // au-dessus du sol et du feuillage EN L'AIR. On ne compte donc pas des
+    // blocs verts : on cherche des colonnes qui ont les deux, l'une sur
+    // l'autre, et l'on regarde deux endroits — un parc et une rue ordinaire.
+    const arbres = await tab.evaluate(async () => {
+      const L = await import('./src/londres.js');
+      const A = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const compter = (u0, v0, r) => {
+        let arbres2 = 0, ciel = 0;
+        for (let du = -r; du <= r; du++) {
+          for (let dv = -r; dv <= r; dv++) {
+            const x = L.LONDRES.x + u0 + du, z = L.LONDRES.z + v0 + dv;
+            const h = w.terrainHeight(x, z);
+            let tronc = false, feuille = false;
+            for (let dy = 1; dy <= 8; dy++) {
+              const id = w.getBlock(x, h + dy, z);
+              if (id === A.BLOCK.LOG) tronc = true;
+              if (id === A.BLOCK.LEAVES && dy >= 3) feuille = true;
+            }
+            if (tronc && feuille) arbres2++;
+            // et l'on passe DESSOUS : à hauteur d'enfant, l'air est libre
+            if (!w.getBlock(x, h + 2, z)) ciel++;
+          }
+        }
+        return { arbres: arbres2, degage: ciel };
+      };
+      return { parc: compter(-72, -3, 14), rue: compter(-55, -20, 20) };
+    });
+    verifier('Hyde Park a de vrais arbres, avec tronc et couronne',
+      arbres.parc.arbres >= 8, `${arbres.parc.arbres} arbres dans le parc`);
+    verifier('et les rues de Londres ont leurs platanes',
+      arbres.rue.arbres >= 3, `${arbres.rue.arbres} arbres dans le quartier`);
+    verifier('mais on marche dessous : la rue n\'est pas un fourré',
+      arbres.rue.degage > arbres.rue.arbres * 12,
+      `${arbres.rue.degage} colonnes dégagées à hauteur d'enfant pour ${arbres.rue.arbres} arbres`);
+
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus, bpp] of [
       ['Nice', V.nice.x, V.nice.z, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],

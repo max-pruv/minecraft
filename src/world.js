@@ -855,6 +855,47 @@ function buildBaseMartienne(set) {
 
 // Les repères bâtis à la main. La carte s'en sert pour nommer ce qu'on voit
 // dès qu'on zoome : sans eux, une ville n'est qu'une tache grise.
+// UN ARBRE D'ALIGNEMENT, PAS UN CARRÉ VERT.
+//
+// Les fonctions `sol*` d'une ville rendent un identifiant de SOL. Un feuillage
+// rendu comme tel se pose à plat : de la pelouse sur le bitume. Paris l'a payé
+// en v187 ; Nice, Lille et Londres marquaient leurs arbres exactement de la
+// même façon et n'avaient jamais reçu le remède.
+//
+// Deux cas, et le second est celui qu'on oublie :
+//  — la colonne EST l'arbre : un fût de deux blocs, une couronne de trois ;
+//  — la colonne est AU PIED d'un arbre voisin : elle reçoit le débord de la
+//    couronne. Sans lui, un arbre large d'un seul bloc est un poteau vert —
+//    trois captures de rue pour s'en convaincre.
+//
+// Rend `true` si la colonne a été traitée.
+function arbreDeVille(data, x, z, h, wx, wz, sol, ss) {
+  // ET IL EST PLUS HAUT QU'UN ENFANT. Un fût de deux blocs met la couronne à
+  // hauteur de visage : la première capture de Londres montrait une rue dont
+  // le feuillage commençait aux genoux. Trois blocs de tronc, et l'on marche
+  // DESSOUS — c'est ce qui fait une rue plantée plutôt qu'un fourré.
+  if (ss === BLOCK.LEAVES) {
+    data[World.index(x, h, z)] = CITY_BLOCK.SIDEWALK;
+    for (let dy = 1; dy <= 6; dy++) {
+      const wy = h + dy;
+      if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 3 ? BLOCK.LOG : BLOCK.LEAVES;
+    }
+    return true;
+  }
+  // Le débord ne se demande que pour ce qui peut être au pied d'un arbre —
+  // un trottoir, une pelouse — jamais pour une chaussée ni une façade.
+  if (ss !== CITY_BLOCK.SIDEWALK && ss !== BLOCK.GRASS) return false;
+  const voisin = sol(wx + 1, wz) === BLOCK.LEAVES || sol(wx - 1, wz) === BLOCK.LEAVES
+    || sol(wx, wz + 1) === BLOCK.LEAVES || sol(wx, wz - 1) === BLOCK.LEAVES;
+  if (!voisin) return false;
+  data[World.index(x, h, z)] = ss;
+  for (const dy of [4, 5]) {
+    const wy = h + dy;
+    if (wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.LEAVES;
+  }
+  return true;
+}
+
 const LANDMARKS = [
   // Paris
   // Paris : chacun à son écart réel à Notre-Dame, calculé par paris.js. La
@@ -1641,6 +1682,17 @@ export class World {
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);
+          // UN ARBRE, PAS UN CARRÉ VERT — et la leçon vaut pour TOUTE ville,
+          // pas seulement pour Paris.
+          //
+          // Ces trois villes marquaient déjà leurs arbres (`BLOCK.LEAVES` dans
+          // les parcs), mais la boucle générique les posait comme n'importe
+          // quel sol : à plat, au ras de l'herbe. Vus du ciel, de belles
+          // taches vertes ; vus de la rue, de la pelouse d'une autre nuance.
+          // C'est mot pour mot ce que Paris avait payé en v187, et les trois
+          // autres villes ne l'avaient jamais reçu. Max, sur sa capture de
+          // Londres : « les villes sont vides : pas d'arbres ».
+          if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) continue;
           if (ss !== null) data[World.index(x, h, z)] = ss;
           else if (libre(wx, wz)) {
             batir(wx, wz, (dy, id) => {

@@ -263,6 +263,26 @@ export const surTerreLondres = (x, z) => {
 
 // --- le sol ------------------------------------------------------------------
 
+// LES PLATANES DE LONDRES. Max, capture d'une rue à l'appui : « les villes
+// sont vides : pas d'arbres ». Paris a ses marronniers depuis la v187 ; les
+// rues de Londres n'avaient que des façades, alors que le platane à écorce
+// tachetée est l'arbre de la ville — celui de toutes les photos de Bloomsbury.
+//
+// ET IL FAUT L'ESPACER BEAUCOUP PLUS QU'ON NE CROIT. C'est le piège que Paris
+// a payé, et la première capture de Londres l'a repris tel quel : une colonne
+// sur onze semblait raisonnable, mais un trottoir est une SURFACE, pas une
+// ligne — quelques blocs de large sur toute la longueur de la rue — et chaque
+// couronne déborde d'un bloc de chaque côté (`arbreDeVille`, dans `world.js`).
+// Résultat : les couronnes se rejoignaient et la rue était un mur vert d'un
+// bout à l'autre, l'enfant marchant dans le feuillage.
+//
+// Une colonne sur trente et un, tirée sans régularité visible, donne une
+// rangée irrégulière où il manque toujours un arbre quelque part — ce qu'est
+// une vraie rue plantée. Vérifié en capture, comme le veut la règle.
+function platane(u, v) {
+  return ((Math.round(u) * 5 + Math.round(v) * 3) % 31) === 0;
+}
+
 export function solLondres(x, z) {
   const u = x - LONDRES.x, v = z - LONDRES.z;
   if (Math.hypot(u, v) > LONDRES.r) return null;
@@ -286,7 +306,7 @@ export function solLondres(x, z) {
   }
 
   const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
-  if (voie !== null) return voie;
+  if (voie !== null) return voie === TROTTOIR && platane(u, v) ? ARBRE : voie;
 
   const t = trameDeLondres(u, v);
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
@@ -297,7 +317,7 @@ export function solLondres(x, z) {
     Math.abs(b - Math.round(b / t.pv) * t.pv),
   );
   if (dRue < t.w) return BITUME;
-  if (dRue < t.s) return TROTTOIR;
+  if (dRue < t.s) return platane(u, v) ? ARBRE : TROTTOIR;
   return null;
 }
 
