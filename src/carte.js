@@ -636,7 +636,13 @@ export class Carte {
       // demande qu'on relève le seuil de ses quartiers, sinon elle devient
       // illisible au moment même où elle devient promenable.
       ...lieuxDeSF().map((c) => ({ c, fort: false, seuil: 1.3 })),
-      ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.55 })),
+      // Nice a triplé en v203 (dix à trente blocs par kilomètre, disque de
+      // 144) : de bord à bord elle fait deux cent quatre-vingt-huit blocs, et
+      // sur un téléphone de quatre cents pixels la montrer ENTIÈRE demande
+      // 0,72 bloc par pixel. À 0,55, ses quartiers s'effaçaient à ce zoom-là —
+      // le portail l'a vu avant Max. Même leçon que Paris et San Francisco,
+      // et la barre suit la même règle : un peu au-dessus du petit écran.
+      ...lieuxDeNice().map((c) => ({ c, fort: false, seuil: 0.8 })),
       ...lieuxDeLille().map((c) => ({ c, fort: false, seuil: 0.55 })),
       ...lieuxDeLondres().map((c) => ({ c, fort: false, seuil: 0.7 })),
       ...lieuxDesVillesMonde().map((c) => ({ c, fort: false, seuil: 0.7 })),

@@ -336,6 +336,7 @@ function verifier(nom, ok, detail = '') {
         ['paris', './src/paris.js', 'circuitsParis'],
         ['londres', './src/londres.js', 'circuitsLondres'],
         ['sf', './src/sanfrancisco.js', 'circuitsSF'],
+        ['nice', './src/nice.js', 'circuitsNice'],
       ];
       for (const [cle, mod, fn] of sources) {
         try {
@@ -351,11 +352,11 @@ function verifier(nom, ok, detail = '') {
     });
     const villesAvecCircuit = Object.entries(circuits)
       .filter(([, v]) => v && v.nb > 0);
-    // Nice n'y est pas, et c'est écrit dans `nice.js` : aucune de ses paires
-    // d'avenues ne referme une boucle au-dessus du seuil. Elle garde l'anneau
-    // de secours jusqu'à sa remise à l'échelle.
+    // Nice y est depuis sa remise à l'échelle (v203) : ses avenues ont été
+    // redessinées pour se refermer sur des carrefours, et cinq circuits mesurés
+    // couvrent ses seize avenues. Lille attend encore la sienne.
     verifier('chaque grande ville a son circuit de voitures',
-      villesAvecCircuit.length === 3, JSON.stringify(circuits));
+      villesAvecCircuit.length === 4, JSON.stringify(circuits));
     verifier('et le trajet tient la rue, sans traverser l\'eau ni les maisons',
       villesAvecCircuit.length > 0
       && villesAvecCircuit.every(([, v]) => v.part.every((q) => q >= 88)),

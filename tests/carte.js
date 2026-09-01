@@ -873,10 +873,12 @@ const position = (p) => p.evaluate(() => ({
       const w = window.__game.world;
       const EAU = 7;
       // Nice : la mer occupe le sud de la baie, et trois collines se lèvent.
+      // On balaie TOUT le disque de la fiche — un rayon écrit en dur (44)
+      // n'atteignait plus que le tiers de la ville remise à l'échelle.
       let mer = 0, terre = 0, sommetNice = 0;
-      for (let u = -44; u <= 44; u += 2) {
-        for (let v = -44; v <= 44; v += 2) {
-          if (Math.hypot(u, v) > 44) continue;
+      for (let u = -N.r; u <= N.r; u += 4) {
+        for (let v = -N.r; v <= N.r; v += 4) {
+          if (Math.hypot(u, v) > N.r) continue;
           const h = w.terrainHeight(N.x + u, N.z + v);
           if (h <= 30) mer++; else { terre++; sommetNice = Math.max(sommetNice, h); }
         }
@@ -894,8 +896,10 @@ const position = (p) => p.evaluate(() => ({
       }
       return { mer, terre, sommetNice, douves };
     }, { N: V.nice, L: V.lille });
+    // Un dixième du disque en mer au moins — la baie des Anges en occupe tout
+    // le sud —, et le mont Boron à vingt-quatre blocs au-dessus du sol (32).
     verifier('Nice a sa baie et ses collines',
-      releveVilles.mer > 200 && releveVilles.sommetNice >= 44,
+      releveVilles.mer > (releveVilles.mer + releveVilles.terre) / 10 && releveVilles.sommetNice >= 56,
       `${releveVilles.mer} points en mer pour ${releveVilles.terre} à terre · sommet ${releveVilles.sommetNice}`);
     verifier('Lille a sa citadelle en étoile, entourée d\'eau',
       releveVilles.douves > 260,
@@ -975,10 +979,19 @@ const position = (p) => p.evaluate(() => ({
     // SEPT statues perchées, pas six ; et la Promenade a ses chaises bleues et
     // ses palmiers, le cours Saleya ses stores rayés, le Paillon sa baleine de
     // bois — le mobilier que tout enfant niçois reconnaît avant les monuments.
-    const nicoise = await tab.evaluate((N) => {
+    const nicoise = await tab.evaluate(async (N) => {
       const w = window.__game.world;
+      const nice = await import('./src/nice.js');
       const Nx = N.x, Nz = N.z, EAU = 7, LOG = 5, ROUGE = 23, BLEU_CH = 24, JAUNE = 25;
       const VERT = 90, ROSE = 200, BLANC = 310, STATUE = 230;
+      // Les adresses viennent du plan d'auteur, en kilomètres depuis Masséna :
+      // un (u, v) écrit en dur meurt à la remise à l'échelle suivante.
+      const chez = (nom) => {
+        const m = (nice.MONUMENTS_NICE || []).find((p) => p.nom === nom);
+        if (!m || !nice.adresseNice) return null;
+        const [x, z] = nice.adresseNice(m.dx, m.dz);
+        return { u: x - Nx, v: z - Nz };
+      };
       const haut = (u, v) => {
         const h = w.terrainHeight(Nx + u, Nz + v);
         for (let y = h + 40; y > h; y--) { const id = w.getBlock(Nx + u, y, Nz + v); if (id) return { y: y - h, id }; }
@@ -990,13 +1003,18 @@ const position = (p) => p.evaluate(() => ({
         return false;
       };
       const surface = (u, v) => w.getBlock(Nx + u, w.terrainHeight(Nx + u, Nz + v), Nz + v);
-      // le bassin rectangulaire : ses coins, hors de l'ancien ovale, sont en
-      // eau — dont celui du sud-est, là où le bassin gagne sur la plage
-      const bassin = surface(12, 1) === EAU && surface(16, 5) === EAU;
-      const pointu = colonne(13, 1, ROUGE);
+      const port = chez('Port Lympia'), neg = chez('Hôtel Negresco'), cath = chez('Cathédrale russe');
+      const sal = chez('Cours Saleya'), bal = chez('Baleine du Paillon');
+      if (!port) return { ancien: true };
+      // le bassin rectangulaire : ses quatre coins sont en eau, et les pointus à quai
+      const lieuPort = nice.LIEUX_NICE.find((p) => p.bassin);
+      const ru = lieuPort.ru - 1, rv = lieuPort.rv - 1;
+      const bassin = [[-ru, -rv], [ru, -rv], [-ru, rv], [ru, rv]]
+        .every(([du, dv]) => surface(lieuPort.u + du, lieuPort.v + dv) === EAU);
+      const pointu = colonne(port.u - 1, port.v - 2, ROUGE);
       // la coupole rose sur la façade blanche, les bulbes verts sur l'ocre
-      const negresco = colonne(-10, 2, BLANC) && colonne(-8, 2, ROSE);
-      const stNicolas = haut(-11, -7).y >= 10 && colonne(-11, -7, VERT);
+      const negresco = colonne(neg.u - 1, neg.v, BLANC) && colonne(neg.u + 2, neg.v, ROSE);
+      const stNicolas = haut(cath.u, cath.v).y >= 10 && colonne(cath.u, cath.v, VERT);
       // les statues perchées de Masséna, comptées une à une
       let statues = 0;
       for (let du = -7; du <= 7; du++) {
@@ -1005,30 +1023,39 @@ const position = (p) => p.evaluate(() => ({
           if (t.id === STATUE && t.y >= 6) statues++;
         }
       }
-      // le mobilier de la Promenade, de Saleya et du Paillon
+      // le mobilier de la Promenade : chaises et palmiers sur le trottoir côté
+      // mer, cherchés le long du rivage puisque la Promenade le suit
+      const rivage = (u) => Math.round(nice.vRivage ? nice.vRivage(u) : 0);
       let chaises = 0, palmiers = 0;
       for (const u of [-28, -21, -14, -7]) {
-        for (let v = 2; v <= 12; v++) if (colonne(u, v, BLEU_CH)) { chaises++; break; }
+        for (let v = rivage(u) - 10; v <= rivage(u); v++) if (colonne(u, v, BLEU_CH)) { chaises++; break; }
       }
-      for (const u of [-40, -35, -30, -25, -20, -15, -5]) {
-        for (let v = 2; v <= 14; v++) if (colonne(u, v, LOG)) { palmiers++; break; }
+      for (const u of [-110, -90, -70, -50, -30, -10]) {
+        for (let v = rivage(u) - 10; v <= rivage(u); v++) if (colonne(u, v, LOG)) { palmiers++; break; }
       }
-      const saleya = colonne(6, 5, ROUGE) && colonne(5, 5, JAUNE);
-      const baleine = colonne(0, -6, LOG);
-      return { bassin, pointu, negresco, stNicolas, statues, chaises, palmiers, saleya, baleine };
+      const saleya = colonne(sal.u + 1, sal.v, ROUGE) && colonne(sal.u, sal.v, JAUNE);
+      const baleine = colonne(bal.u, bal.v, LOG);
+      // Saleya n'est pas sur la plage : sous ses stores, du pavé et pas des galets
+      const GALETS = 4;
+      const saleyaAuSec = surface(sal.u, sal.v) !== GALETS;
+      return { bassin, pointu, negresco, stNicolas, statues, chaises, palmiers, saleya, baleine, saleyaAuSec };
     }, V.nice);
-    verifier('le port Lympia est un vrai bassin, et ses pointus sont à quai',
+    verifier('le port Lympia est un vrai bassin ouvert sur la mer, et ses pointus sont à quai',
       nicoise.bassin && nicoise.pointu,
-      JSON.stringify({ bassin: nicoise.bassin, pointu: nicoise.pointu }));
+      JSON.stringify({ bassin: nicoise.bassin, pointu: nicoise.pointu, ancien: nicoise.ancien }));
     verifier('la coupole rose du Negresco, les bulbes verts de Saint-Nicolas',
       nicoise.negresco && nicoise.stNicolas,
       JSON.stringify({ negresco: nicoise.negresco, stNicolas: nicoise.stNicolas }));
     verifier('sept statues perchées veillent sur Masséna',
       nicoise.statues === 7, `${nicoise.statues} statues`);
     verifier('chaises bleues, palmiers, stores rayés et la baleine du Paillon',
-      nicoise.chaises >= 3 && nicoise.palmiers >= 6 && nicoise.saleya && nicoise.baleine,
+      nicoise.chaises >= 3 && nicoise.palmiers >= 5 && nicoise.saleya && nicoise.baleine,
       JSON.stringify({ chaises: nicoise.chaises, palmiers: nicoise.palmiers,
         saleya: nicoise.saleya, baleine: nicoise.baleine }));
+    // Le cours Saleya vivait SUR LA PLAGE : à l'ancienne échelle il était à un
+    // bloc du rivage, et ses stores rayés se dressaient sur les galets.
+    verifier('et le cours Saleya est pavé, pas posé sur les galets',
+      nicoise.saleyaAuSec === true, JSON.stringify({ saleyaAuSec: nicoise.saleyaAuSec }));
 
     // --- San Francisco, relevée sur documents --------------------------------
     //
@@ -1464,7 +1491,8 @@ const position = (p) => p.evaluate(() => ({
 
     await banc.ouvrirLaCarte(tab);
     for (const [nom, cx, cz, attendus, bpp] of [
-      ['Nice', V.nice.x, V.nice.z, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia']],
+      // Nice a triplé : le port Lympia vit à cinquante blocs de Masséna.
+      ['Nice', V.nice.x, V.nice.z, ['Place Masséna', 'Vieux-Nice', 'Promenade des Anglais', 'Port Lympia'], 0.6],
       ['Lille', V.lille.x, V.lille.z, ["Grand'Place", 'Vieux-Lille', 'Citadelle', 'Euralille']],
       // Londres est deux fois plus étendue que Nice : Tower Bridge vit à
       // 87 blocs du centre, un cadre de ±65 le laissait dehors.

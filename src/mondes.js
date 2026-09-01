@@ -171,7 +171,7 @@ export const MONDES = {
       // ancres, il en reste 41 de marge une fois les deux disques posés.
       { cle: 'paris', nom: 'Paris', lat: 48.8566, lon: 2.3522, r: 185 },
       { cle: 'lille', nom: 'Lille', lat: 50.6292, lon: 3.0573, r: 46 },
-      { cle: 'nice', nom: 'Nice', lat: 43.7102, lon: 7.2620, r: 48 },
+      { cle: 'nice', nom: 'Nice', lat: 43.7102, lon: 7.2620, r: 144 },
       { cle: 'ny', nom: 'New York', lat: 40.7128, lon: -74.0060, r: 152 },
       { cle: 'sf', nom: 'San Francisco', lat: 37.7749, lon: -122.4194, r: 220 },
       // Washington est la plus étendue : bâtie à 48 blocs par kilomètre depuis
