@@ -31,7 +31,7 @@
 // n'aurait tenu. L'orientation, elle, reste droite : la vraie grille est
 // inclinée de 29°, ce qui en blocs donnerait des rues en escalier illisibles.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
 import { positionDe } from './mondes.js';
 
@@ -792,8 +792,17 @@ export function batirColonne(x, z, poser, solDejaNul = false) {
     const r = retraitA(y);
     if (d < r) { toit = y; break; }
     if (d > r) { if (y === 0) poser(0, BLOCK.PLANK); continue; }   // l'intérieur
+    // UNE FENÊTRE EST UN DESSIN, PAS UN TROU — et Manhattan était la pire de
+    // toutes : 30,4 % de son volume bâti était du VERRE, donc un trou par
+    // lequel on voyait l'intérieur creux des tours. Le commentaire du dessus
+    // disait déjà « les tours devenaient des cages de verre transparentes » et
+    // avait limité les fenêtres à la façade ; il restait à ne plus les percer
+    // du tout. Chaque quartier garde SON matériau : le mur-rideau à meneaux
+    // pour la finance et Midtown, les petits bois pour la brique du Village,
+    // de Chelsea et de l'Upper East Side.
     const fenetre = y > 0 && y % 4 !== 0 && (face & 1) === 1;
-    poser(y + 1, fenetre ? VERRE : mur);
+    const baie = (q === 'finance' || q === 'midtown') ? CITY_BLOCK.CURTAIN : ARCHI.ETAGE;
+    poser(y + 1, fenetre ? baie : mur);
   }
   poser(toit + 1, GRANIT);
 

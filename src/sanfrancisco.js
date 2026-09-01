@@ -534,7 +534,12 @@ export function batirColonneSF(x, z, poser) {
     // avait l'air enneigée. Le dernier niveau de la façade suffit — c'est là
     // qu'elle se voit depuis la rue, et c'est là qu'elle est en vrai.
     if (!tour && !dedans && y === bh - 1) { poser(y + 1, BLANC); continue; }
-    poser(y + 1, fenetre ? (q === 'centre' ? CITY_BLOCK.CURTAIN : VERRE) : mur);
+    // LE REMÈDE DE LA v195 S'ARRÊTAIT AU CENTRE. SoMa et les quartiers de
+    // maisons posaient encore du VERRE — 14,2 % du volume bâti restait un
+    // trou, au pied d'un entrepôt comme d'une Victorienne. Les petits bois
+    // d'`ARCHI.ETAGE` valent mieux qu'une baie de trente-sept mètres : c'est
+    // un dessin, c'est opaque, et cela s'allume la nuit.
+    poser(y + 1, fenetre ? (q === 'centre' ? CITY_BLOCK.CURTAIN : ARCHI.ETAGE) : mur);
   }
   // Le couronnement : UN niveau sombre, pas trois, et pas de flèche.
   // La première version en posait trois plus six d'antenne sur les colonnes

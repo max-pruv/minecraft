@@ -705,6 +705,35 @@ Trois règles en sortent, et elles s'appliquent à la prochaine ville :
   maison de trois blocs de large, et la ville est enneigée vue du ciel.
   738 toits blancs pour 94 sombres à Alamo Square avant la correction.
 
+### Le verre dans un mur — la panne qui s'est payée QUATRE fois
+
+**Un bâtiment est CREUX ; un bloc de `GLASS` dans son mur est donc un TROU.**
+Cette panne a été corrigée quatre fois, et à chaque fois le remède est resté
+dans le fichier qu'on regardait :
+
+| | découverte | où le remède s'est arrêté |
+| --- | --- | --- |
+| v195 | San Francisco, signalée par Max en capture | son seul centre |
+| v200 | Rome et Tokyo, en capture de contrôle | `villesmonde.js` |
+| v202 | les sept villes bâties à la main | — |
+
+Mesuré dans le volume bâti avant la v202 : **New York 30,4 %**, Londres
+23,1 %, Nice 18,7 %, Lille 16,4 %, San Francisco 14,2 % hors centre,
+Washington 1,2 %. Seul Paris était propre, parce qu'il utilise les blocs
+`ARCHI` depuis sa remise à l'échelle.
+
+**La leçon n'est pas la règle — elle était déjà écrite — c'est la PORTÉE du
+remède.** Chaque ville a sa propre boucle de façade, dans son propre fichier,
+et corriger celle qu'on a sous les yeux laisse les autres intactes. Quand une
+panne touche une grammaire partagée, on cherche TOUTES ses occurrences le jour
+même : `grep -n "fenetre ? VERRE\|GLASS" src/*.js` prend dix secondes.
+
+**Et le témoin interroge le BÂTISSEUR, pas le monde chargé.** `getBlock` ne
+répond que sur les morceaux déjà engendrés : lire sept villes sans y aller
+rend zéro bloc partout, et le témoin passe au vert en ne prouvant rien. Les
+`batirColonne*` sont des fonctions pures, on les appelle directement — et un
+compte nul se traite comme un défaut.
+
 ### Les villes engendrées — deux unités dans une fiche, et un mur qui était un trou
 
 **Un bâtiment est CREUX. Un bloc de verre dans son mur est donc un TROU par

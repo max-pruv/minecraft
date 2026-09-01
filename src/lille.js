@@ -23,7 +23,7 @@
 // Seize blocs par kilomètre — la ville est compacte — et un point d'ancrage, la
 // Grand'Place.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
 import { positionDe } from './mondes.js';
 
@@ -283,7 +283,10 @@ export function batirColonneLille(x, z, poser) {
   for (let y = 0; y < bh; y++) {
     if (dedans) { if (y === 0) poser(1, BLOCK.PLANK); continue; }
     const fenetre = y > 0 && y % 2 === 1 && (face & 1) === 1;
-    let id = fenetre ? VERRE : mur;
+    // Une fenêtre est un DESSIN, pas un trou : 16,4 % du volume bâti de Lille
+    // était du verre, donc un trou par lequel on voyait l'intérieur creux.
+    // Même remède qu'à San Francisco (v195) et aux villes engendrées (v200).
+    let id = fenetre ? ARCHI.ETAGE : mur;
     if (raye && !fenetre && y > 0 && y % 2 === 0) id = PIERRE;
     poser(y + 1, id);
   }

@@ -13,20 +13,34 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Nice et Lille n'ont pas de circuit de voitures** — mesuré en v191 :
-  aucune combinaison de leurs avenues ne referme une boucle qui tienne la rue
-  à 90 % (Nice plafonne à 89 %, Lille à rien). Leurs rues sont trop courtes,
-  parce que les deux villes sont encore à leur échelle d'origine (10 et 16
-  blocs/km). Leur remise à l'échelle réglera les deux d'un coup. Washington
-  n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
-  méthode.
+- [ ] **Nice et Lille n'ont pas de circuit de voitures, et c'est leur échelle**
+  — mesuré en v191 : aucune combinaison de leurs avenues ne referme une boucle
+  qui tienne la rue à 90 % (Nice plafonne à 89 %, Lille à rien). Leurs rues
+  sont trop courtes parce que les deux villes sont encore à leur échelle
+  d'origine : **dix et seize blocs par kilomètre**, soit cent mètres et
+  soixante-deux mètres par bloc, là où Paris est à 24 et San Francisco à 27.
+  La place existe, remesurée après la v199 : **262 blocs de marge autour de
+  Nice** (jusqu'à Marseille), **153 autour de Lille** (jusqu'à Bruxelles).
+
+  Les pièges sont écrits dans la section Paris de `CLAUDE.md`, et `nice.js`
+  les porte tous : les LARGEURS ne se projettent pas, elles se remesurent ;
+  le rayon vient du REGISTRE, pas d'un littéral (`NICE = { ...positionDe(
+  'nice'), r: 48 }` le masque encore, comme `SF` avant la v192) ; et `RIVAGE`,
+  les collines, les origines de trame et les seuils de `trameDeNice` sont
+  écrits en BLOCS — à reprendre en kilomètres pour qu'ils survivent à la
+  prochaine échelle.
+
+  Washington n'a pas de voies nommées du tout — son plan de L'Enfant demande
+  sa propre méthode.
 
 - [ ] **Londres n'a qu'un circuit de voitures** — remesuré en v201 sur toutes
   les combinaisons : le triangle de Mayfair passe à 95 %, et les six autres
   voies (le Mall, Whitehall, le Strand, Victoria Street, le Victoria
-  Embankment, Borough High Street) plafonnent entre 57 % et 85 % — la Tamise
-  et les parcs les coupent. Même cause qu'à Nice et Lille : la ville est
-  encore à son échelle d'origine. Sa remise à l'échelle réglera les trois.
+  Embankment, Borough High Street) plafonnent entre 57 % et 85 %. **Ce n'est
+  PAS une affaire d'échelle** — contrairement à ce que cette entrée disait
+  d'abord : Londres est déjà à 24 blocs/km, comme Paris. Ce sont la Tamise et
+  les parcs qui coupent ses avenues. Il lui faut des voies nommées de plus,
+  choisies pour se croiser, pas une remise à l'échelle.
 
 - [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
   Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune
@@ -42,12 +56,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   permettrait d'en dessiner beaucoup plus. À faire hors ligne ou à la volée,
   jamais avec un décodeur embarqué dans la PWA.
 
-- [ ] **SoMa et les quartiers de maisons ont encore des fenêtres de verre
-  plein** — le centre de San Francisco est passé au mur-rideau en v195, pas le
-  reste. Un bloc de `GLASS` fait trente-sept mètres de large : au pied d'un
-  entrepôt de SoMa, la façade reste un aquarium. Il manque au jeu un bloc de
-  façade « fenêtre industrielle » et un « fenêtre de Victorienne » — deux
-  tuiles à peindre dans `textures.js`, sur le modèle des blocs `ARCHI`.
+- [ ] **Il manque deux tuiles de façade au jeu** — la v202 a sorti le verre de
+  toutes les villes, mais faute de mieux SoMa, les Victoriennes de San
+  Francisco, la brique de Lille et les façades ocre de Nice portent toutes le
+  même `ARCHI.ETAGE`, qui est une fenêtre haussmannienne à petits bois. C'est
+  opaque et c'est déjà juste de loin ; de près, un entrepôt de SoMa n'a pas
+  des fenêtres parisiennes. Deux tuiles à peindre dans `textures.js`, sur le
+  modèle des blocs `ARCHI` : « fenêtre industrielle » (grande, à croisillons
+  métalliques) et « fenêtre de Victorienne » (baie en encorbellement).
 
 - [x] **Des arbres dans les rues de Londres — FAIT en v197.** Et le remède
   vaut pour Nice et Lille, qui avaient le même défaut : leurs parcs
