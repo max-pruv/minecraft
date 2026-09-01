@@ -20,6 +20,81 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v203 — Nice à l'échelle GTA, avec ses voitures
+
+**Pourquoi.** Nice était la dernière grande ville de la Côte encore à son
+échelle d'origine : **dix blocs par kilomètre**, un bloc pour cent mètres. La
+baie des Anges tenait en quatre-vingt-seize blocs, la Promenade en une
+minute de marche, et surtout aucune avenue n'était assez longue pour refermer
+une boucle de voitures — la meilleure paire tenait la rue à 89 %, sous le
+seuil. Depuis la v191 la ville roulait sur un anneau de secours, et depuis la
+v201 c'était la seule des grandes villes, avec Lille, à ne pas avoir un vrai
+circuit. Consigne de Max : accélérer la remise à l'échelle de toutes les
+villes. Nice est la huitième.
+
+**Ce que ça change.** Nice passe à **trente blocs par kilomètre** et son
+disque de 48 à 144 blocs : la baie des Anges fait cinq kilomètres de courbe,
+la Promenade des Anglais la longe d'un bout à l'autre avec sa plage de
+galets, ses palmiers et ses chaises bleues, le Vieux-Nice tient entre le
+Paillon et la colline, le port Lympia est un bassin creusé derrière le cap et
+ouvert sur la mer, et la ville monte jusqu'à Cimiez au nord, la Californie à
+l'ouest et le mont Boron à l'est. Le Negresco est en face de la mer, le cours
+Saleya sur le sol et non sur les galets, la cathédrale russe et la baleine du
+Paillon à leur place.
+
+La colline du Château et le mont Boron sont des **bois sur un rocher**, pas
+des quartiers : dans la vraie ville ce sont des parcs de pins, et la capture
+du port montrait des maisons empilées dans un talus de pierre. Ils sont
+désormais en herbe et en pins, le sommet du Château dégagé pour ses ruines.
+
+Et **cinq circuits de voitures mesurés couvrent les seize avenues** : le grand
+tour de l'ouest par la rue de France et la Promenade (100 %, 486 blocs), la
+montée de Cimiez (100 %), le carré de la gare (100 %), le tour du vieux Nice
+par les quais, le cap, Carabacel et Verdun (99 %, 153 blocs), la Californie
+(100 %). Pour cela les avenues ont été **refermées sur des carrefours** : une
+avenue dont le bout tombe au milieu d'un îlot ne peut appartenir à aucune
+boucle. Les tracés restent ceux du vrai plan ; ce sont les bouts qui sont
+recalés.
+
+**Ce qui le prouve.** Trois témoins neufs de `carteMonde.js` : Nice tient de
+la Californie à Cimiez et au mont Boron (six adresses en kilomètres réels,
+toutes sur terre, rayon ≥ 140) ; la mer commence au sud de Masséna et le port
+Lympia est en eau — lu dans `solNice`, le bâtisseur pur, pas dans le monde
+chargé ; et au moins quatre circuits se referment sur de la chaussée à 90 %.
+Le témoin de `carte.js` balaie tout le disque de la fiche au lieu d'un rayon
+de 44 écrit en dur, exige un dixième du disque en mer et un sommet à 56. La
+fumée compte Nice parmi les quatre villes à circuit et exige que chaque
+trajet tienne la rue à 88 %. Tous ont été vérifiés ROUGES sur `origin/main`
+(`monde absent`, `sommetNice 47 < 56`, trois villes à circuit au lieu de
+quatre).
+
+La sonde de la ville, rejouée après le boisement des collines : bassin,
+Negresco, Saint-Nicolas, Saleya au sec, sept statues, quatre chaises bleues,
+six palmiers, tous verts. Et les circuits se sont mesurés deux fois : le front
+de mer en deux quais tenait à 93 % tant que la colline portait des rues ;
+boisée, la même paire tombe à 72 %, parce que sa ligne de retour la traversait
+en droite ligne. Le tour se fait donc comme dans la vraie ville, par Carabacel
+derrière la colline — 99 %. Un circuit qu'on ne mesure pas n'existe pas.
+
+Et le portail a attrapé ce que la sonde ne regardait pas : au zoom qui
+montre Nice ENTIÈRE sur un téléphone, le plan effaçait Vieux-Nice, la
+Promenade et le port — le seuil de ses lieux (`carte.js`) datait d'une ville
+trois fois plus petite. Même piège que Paris en v187 et San Francisco en
+v192 ; relevé à 0,8 bloc par pixel, et le témoin qui l'a vu reste.
+
+Portail (voie ciblée, sept suites) : **vert**, deux cent soixante-dix-sept
+témoins. Le premier passage avait rendu un rouge — « la mer commence au sud de Masséna »,
+`enMer: false` — et c'était le témoin qui se trompait, pas la ville : sa sonde
+visait quatre cents mètres au sud de Masséna, et le rivage relevé du vrai
+plan est à cinq cents. On avait les pieds sur les galets. Une distance de
+sonde se mesure contre le relevé (`surTerreNice` en node, dz par dz), elle
+ne se devine pas ; la sonde vise désormais sept cents mètres, au large.
+
+Jugé sur captures : vue aérienne de la baie, vue de rue à Masséna, sur la
+Promenade et au pied de la colline côté port.
+
+---
+
 ## v202 — Les sept villes bâties à la main cessent d'être transparentes
 
 **Pourquoi.** La v195 avait sorti le verre du Financial District de San

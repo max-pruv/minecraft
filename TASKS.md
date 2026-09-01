@@ -13,22 +13,27 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Nice et Lille n'ont pas de circuit de voitures, et c'est leur échelle**
-  — mesuré en v191 : aucune combinaison de leurs avenues ne referme une boucle
-  qui tienne la rue à 90 % (Nice plafonne à 89 %, Lille à rien). Leurs rues
-  sont trop courtes parce que les deux villes sont encore à leur échelle
-  d'origine : **dix et seize blocs par kilomètre**, soit cent mètres et
-  soixante-deux mètres par bloc, là où Paris est à 24 et San Francisco à 27.
-  La place existe, remesurée après la v199 : **262 blocs de marge autour de
-  Nice** (jusqu'à Marseille), **153 autour de Lille** (jusqu'à Bruxelles).
+- [ ] **Lille n'a pas de circuit de voitures, et c'est son échelle** —
+  mesuré en v191 : aucune combinaison de ses avenues ne referme une boucle
+  qui tienne la rue à 90 %. Ses rues sont trop courtes parce que la ville est
+  encore à son échelle d'origine : **seize blocs par kilomètre**, soit
+  soixante-deux mètres par bloc, là où Paris est à 24, San Francisco à 27 et
+  Nice à 30. La place existe, remesurée après la v199 : **153 blocs de marge
+  autour de Lille** (jusqu'à Bruxelles). **Nice est faite (v203, 10 → 30
+  blocs/km, cinq circuits mesurés qui couvrent ses seize avenues)** — et sa
+  recette vaut pour Lille, section Nice de `CLAUDE.md` : les bouts d'avenue se
+  posent SUR des carrefours, les chaînes se mesurent sur une copie avant
+  d'être écrites, et un parc qui remplace des rues remesure les circuits qui
+  le longent.
 
-  Les pièges sont écrits dans la section Paris de `CLAUDE.md`, et `nice.js`
-  les porte tous : les LARGEURS ne se projettent pas, elles se remesurent ;
-  le rayon vient du REGISTRE, pas d'un littéral (`NICE = { ...positionDe(
-  'nice'), r: 48 }` le masque encore, comme `SF` avant la v192) ; et `RIVAGE`,
-  les collines, les origines de trame et les seuils de `trameDeNice` sont
-  écrits en BLOCS — à reprendre en kilomètres pour qu'ils survivent à la
-  prochaine échelle.
+  Ce qui distingue Lille de Nice : elle est DANS la fenêtre d'empreinte de
+  `plafond.js` (−102, −326), donc sa remise à l'échelle demande la double
+  empreinte — la même découpe mesurée sur `origin/main` et sur la branche,
+  hors du disque — et un témoin de distance aux sanctuaires. Le beffroi est
+  posé dans `world.js` à `LILLE.x + 6, LILLE.z + 14` (des blocs de l'ancienne
+  échelle, le piège du Golden Gate), `CITADELLE` porte `R: 11` et `pointe:
+  4.5` en blocs, et `LILLE = { ...positionDe('lille'), r: 46 }` masque le
+  registre.
 
   Washington n'a pas de voies nommées du tout — son plan de L'Enfant demande
   sa propre méthode.
@@ -89,10 +94,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (v187, 8 → 24 blocs/km)**. Restent Londres, Nice, Lille et San Francisco,
   qui vivent encore à leur échelle d'origine. **San Francisco est faite
   (v192, 9 → 27 blocs/km)** ; **Londres était DÉJÀ à 24 blocs/km** — il ne lui
-  manque pas une remise à l'échelle mais la passe de rue. Restent donc Nice
-  (10 blocs/km, 668 blocs de marge) et Lille (16, mais seulement 41 blocs de
-  marge avant le disque de Paris : c'est un arbitrage à trancher, pas un
-  chantier). Même recette : le cœur à grande
+  manque pas une remise à l'échelle mais la passe de rue. **Nice est faite
+  (v203, 10 → 30 blocs/km, disque de 144)**. Reste Lille (16 blocs/km, 153
+  blocs de marge jusqu'à Bruxelles après la v199, et dans la fenêtre
+  d'empreinte : double empreinte obligatoire). Même recette : le cœur à grande
   échelle, casse déclarée et bornée, vie de rue, captures avant fusion. Le
   piège est écrit dans `CLAUDE.md` (section Paris) : les largeurs ne se
   projettent pas, elles se relèvent — et il faut refaire les monuments, qui

@@ -838,6 +838,58 @@ const VRAIES_KM = [
       sf.tablier !== null && sf.tablier >= 60,
       `tablier de ${sf.tablier} blocs`);
 
+    // --- Nice à l'échelle GTA (v203) -----------------------------------------
+    //
+    // Dix blocs par kilomètre : la baie des Anges tenait en quatre-vingt-seize
+    // blocs, la Promenade en trente, et aucune paire d'avenues ne refermait
+    // une boucle — Nice n'a jamais eu une voiture. Trente blocs par kilomètre,
+    // le disque passe de 48 à 144. Nice est à mille huit cents blocs du point
+    // d'apparition, HORS de la fenêtre d'empreinte de `plafond.js` : comme
+    // Manhattan et San Francisco, la refonte apporte ses propres témoins. Ce
+    // qui doit tenir : la ville va de la Californie à Cimiez et au mont Boron,
+    // la mer commence bien au sud de Masséna, le port est en eau, et au moins
+    // un circuit de voitures se referme sur de la chaussée.
+    const nice = await tab.evaluate(async () => {
+      const m = await import('./src/nice.js');
+      const g = window.__game;
+      // Des adresses en KILOMÈTRES RÉELS depuis la place Masséna : elles
+      // restent justes à toute échelle, un `u`/`v` en dur non.
+      if (typeof m.adresseNice !== 'function' || typeof m.circuitsNice !== 'function') return { absent: true };
+      const points = {
+        massena: [0, 0], negresco: [-1.0, 0.03], gare: [-0.7, -0.9], cimiez: [0.3, -1.7],
+        californie: [-3.2, 0.2], montBoron: [2.4, 0.1],
+      };
+      const surTerre = {};
+      for (const [nom, [dx, dz]] of Object.entries(points)) {
+        const [x, z] = m.adresseNice(dx, dz);
+        surTerre[nom] = m.surTerreNice(Math.round(x), Math.round(z));
+      }
+      // Le rivage relevé passe à cinq cents mètres au sud de Masséna (quinze
+      // blocs) : à quatre cents on a les pieds sur les galets, pas dans l'eau
+      // — c'est ce que le premier portail a rendu. À sept cents mètres, on
+      // est au large.
+      const [mx, mz] = m.adresseNice(0, 0.7);
+      const enMer = !m.surTerreNice(Math.round(mx), Math.round(mz));
+      // Le bassin du port : de l'eau, servie par le bâtisseur pur, pas par le
+      // monde chargé.
+      const [px, pz] = m.adresseNice(1.65, 0.25);
+      const port = m.solNice(Math.round(px), Math.round(pz)) === 7;
+      // Les circuits se valident contre le sol de la ville, donc contre
+      // `solNice` et le relief — c'est la ville qui juge son propre trajet.
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const circuits = m.circuitsNice(solDe).map((c) => ({ part: c.part, pts: c.pts.length }));
+      return { rayon: m.NICE.r, surTerre, enMer, port, circuits };
+    });
+    verifier('Nice tient de la Californie à Cimiez et au mont Boron',
+      !nice.absent && nice.rayon >= 140 && Object.values(nice.surTerre).every(Boolean),
+      JSON.stringify({ absent: nice.absent, rayon: nice.rayon, surTerre: nice.surTerre }));
+    verifier('la mer commence au sud de Masséna et le port Lympia est en eau',
+      nice.enMer === true && nice.port === true,
+      JSON.stringify({ enMer: nice.enMer, port: nice.port }));
+    verifier('et des voitures peuvent enfin faire le tour de Nice',
+      Array.isArray(nice.circuits) && nice.circuits.length >= 4 && nice.circuits.every((c) => c.part >= 90),
+      JSON.stringify(nice.circuits));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

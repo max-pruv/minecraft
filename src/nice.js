@@ -7,9 +7,16 @@
 // Paillon et la colline ; et **la colline du Château**, qui ferme la baie à
 // l'est et sépare la vieille ville du port.
 //
-// Une échelle unique, comme partout ailleurs : dix blocs par kilomètre, et un
-// point d'ancrage, la place Masséna. Chaque lieu est donné par son écart réel
-// à elle.
+// Une échelle unique, et un point d'ancrage, la place Masséna : chaque lieu est
+// donné par son écart réel à elle, en kilomètres.
+//
+// LA HUITIÈME VILLE REMISE À L'ÉCHELLE GTA (v203) : trente blocs par kilomètre,
+// contre dix. Un bloc valait cent mètres, la baie des Anges tenait en
+// quatre-vingt-seize blocs et aucune avenue n'était assez longue pour refermer
+// un circuit de voitures — Nice roulait sur un anneau de secours. Même méthode
+// qu'à Paris (v187) et San Francisco (v192) : le plan d'auteur reste dans ses
+// unités d'origine (dix blocs par kilomètre) et se PROJETTE par `k()` ; les
+// largeurs, elles, ne se projettent pas, elles se REDONNENT en blocs.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
@@ -36,26 +43,47 @@ const OR = BLOCK.GOLD;
 const BLEU = uni(10);
 const VERT = uni(5);
 
-export const NICE = { ...positionDe('nice'), r: 48 };
+// LE RAYON VIENT DU REGISTRE (`mondes.js`), jamais d'un littéral ici : c'est le
+// piège de San Francisco, dont le `r: 66` masquait la valeur de la carte.
+export const NICE = positionDe('nice');
 
-const BLOCS_PAR_KM = 10;
+export const BLOCS_PAR_KM = 30;
+// Le plan d'auteur a été relevé à dix blocs par kilomètre ; tout ce qui y est
+// écrit en blocs — le rivage, les origines de trame, les points du quai — se
+// projette par `k()`. Les LARGEURS, elles, ne passent jamais par là.
+const K = BLOCS_PAR_KM / 10;
+const k = (n) => n * K;
+const pk = ([u, v]) => [k(u), k(v)];
 // La place Masséna : le point où tout se croise, et d'où tout se mesure.
 const MASSENA = { u: 0, v: 0 };
 const de = (dx, dz) => [
   Math.round(MASSENA.u + dx * BLOCS_PAR_KM),
   Math.round(MASSENA.v + dz * BLOCS_PAR_KM),
 ];
+// Une adresse du monde à partir de kilomètres réels depuis Masséna. C'est ce
+// que les sondes et les témoins doivent viser — jamais un (u, v) en dur, qui
+// meurt à la remise à l'échelle suivante.
+export const adresseNice = (dx, dz) => {
+  const [u, v] = de(dx, dz);
+  return [NICE.x + u, NICE.z + v];
+};
 
 // --- la baie des Anges ---------------------------------------------------------------
 
 // Le rivage, relevé point par point : une courbe très ouverte, qui se relève à
 // l'est où la colline du Château vient fermer la baie, puis retombe au port.
-const RIVAGE = [
+// Relevé à dix blocs par kilomètre, projeté : les cinq kilomètres de baie
+// tiennent désormais en deux cent quatre-vingt-huit blocs.
+const RIVAGE_AUTEUR = [
   [-48, 16], [-38, 13], [-26, 10], [-14, 7], [-4, 5], [4, 5], [9, 8], [13, 10],
   [16, 6], [22, 4], [30, 2], [48, 0],
 ];
+const RIVAGE = RIVAGE_AUTEUR.map(pk);
+// La plage de galets, en blocs : quatre, soit cent trente mètres — c'est sa
+// vraie largeur devant la Promenade.
+const PLAGE = 4;
 
-const vRivage = (u) => {
+export const vRivage = (u) => {
   if (u <= RIVAGE[0][0]) return RIVAGE[0][1];
   const fin = RIVAGE[RIVAGE.length - 1];
   if (u >= fin[0]) return fin[1];
@@ -69,18 +97,40 @@ const vRivage = (u) => {
 export const surTerreNice = (x, z) => {
   const u = x - NICE.x, v = z - NICE.z;
   if (Math.hypot(u, v) > NICE.r) return false;
-  return v < vRivage(u);
+  // Le bassin du port s'ouvre sur la mer : son coin sud-est passe le rivage, et
+  // il appartient quand même à la ville — sinon ce coin devient une bande de
+  // galets à sec au milieu de l'eau du port.
+  return v < vRivage(u) || dansBassin(u, v);
 };
 
 // --- les collines ------------------------------------------------------------------
 
+// Les rayons sont en KILOMÈTRES et se relèvent sur la vraie carte, pas sur
+// l'ancienne échelle : le Château fait quatre cents mètres de rayon, Cimiez
+// un bon kilomètre, le mont Boron huit cents mètres — et ses cent
+// quatre-vingt-onze mètres en font le plus haut, deux fois le Château.
 export const COLLINES_NICE = [
   // La colline du Château : pas de château dessus depuis 1706, mais le nom est
   // resté, et c'est elle qui coupe la ville en deux.
-  { nom: 'Colline du Château', dx: 0.9, dz: 0.2, r: 8, h: 10 },
-  { nom: 'Cimiez', dx: 0.3, dz: -1.7, r: 11, h: 13 },
-  { nom: 'Mont Boron', dx: 2.1, dz: 0.1, r: 9, h: 16 },
-].map((c) => { const [u, v] = de(c.dx, c.dz); return { ...c, u, v }; });
+  // `parc` : la colline est un BOIS SUR UN ROCHER, pas un quartier. Le
+  // Château et le mont Boron sont des parcs de pins dans la vraie ville ; la
+  // capture du port montrait des maisons empilées dans leur talus de pierre.
+  { nom: 'Colline du Château', dx: 0.9, dz: 0.2, rayon: 0.43, h: 18, parc: true },
+  { nom: 'Cimiez', dx: 0.3, dz: -1.7, rayon: 1.2, h: 14 },
+  // Le mont Boron est REPOUSSÉ derrière le port : à 2,1 km et huit cents
+  // mètres de rayon, son pied soulevait les quais du bassin. La vraie
+  // colline commence à l'est du port, pas dessus.
+  { nom: 'Mont Boron', dx: 2.4, dz: 0.1, rayon: 0.6, h: 26, parc: true },
+].map((c) => {
+  const [u, v] = de(c.dx, c.dz);
+  return { ...c, u, v, r: Math.round(c.rayon * BLOCS_PAR_KM) };
+});
+
+// Le bassin du port Lympia est CREUSÉ : ses quais dominent l'eau de trois
+// blocs, comme les vrais. Le relief le demande avant les collines, sinon le
+// pied du mont Boron le soulevait en étang perché.
+const dansBassin = (u, v) => LIEUX_NICE.some((p) =>
+  p.bassin && Math.abs(u - p.u) <= p.ru && Math.abs(v - p.v) <= p.rv);
 
 // L'emprise de la place Masséna, en coordonnées locales. Deux choses la
 // consultent : le relief, qui ne veut pas de talus dessus, et la colline du
@@ -88,15 +138,21 @@ export const COLLINES_NICE = [
 export const surLaPlaceMassena = (u, v) =>
   Math.abs(u - MASSENA.u) <= 8 && Math.abs(v - MASSENA.v) <= 7;
 
+const FONDU = 30;
+
 export function hauteurNice(x, z, h, base) {
   const u = x - NICE.x, v = z - NICE.z;
   const d = Math.hypot(u, v);
-  if (d > NICE.r + 12) return h;
-  const marge = Math.min(1, (NICE.r + 12 - d) / 12);
+  // Le fondu a suivi l'échelle : trente blocs, un kilomètre, comme avant.
+  if (d > NICE.r + FONDU) return h;
+  const marge = Math.min(1, (NICE.r + FONDU - d) / FONDU);
 
   const mer = v - vRivage(u);
   let cible;
-  if (mer >= 0) cible = mer < 3 ? base - 1 - mer : Math.max(20, 26 - Math.min(6, mer - 3));
+  // Le bassin passe AVANT le rivage : son coin sud-est déborde sur la mer, et
+  // la bande de galets le rebouchait à sec.
+  if (dansBassin(u, v)) cible = base - 3;
+  else if (mer >= 0) cible = mer < PLAGE ? base - 1 - mer : Math.max(20, 26 - Math.min(6, (mer - PLAGE) / K));
   else {
     cible = base;
     // UNE PLACE EST PLATE — MÊME AU PIED D'UNE COLLINE.
@@ -122,27 +178,33 @@ export function hauteurNice(x, z, h, base) {
 
 // --- les lieux -----------------------------------------------------------------------
 
+// `r` est en blocs — un disque de sol autour d'un repère, qui n'a pas à
+// grandir avec la carte. Les EMPRISES de plan (`ku`, `kv`), elles, sont en
+// kilomètres et se convertissent : le bassin du port fait quatre cents mètres
+// sur six cents, la coulée verte du Paillon deux cents sur huit cents.
 const L = (nom, dx, dz, reste = {}) => {
   const [u, v] = de(dx, dz);
-  return { nom, u, v, ...reste };
+  const p = { nom, u, v, ...reste };
+  if (p.ku) { p.ru = p.ku * BLOCS_PAR_KM; p.rv = p.kv * BLOCS_PAR_KM; }
+  return p;
 };
 
 export const LIEUX_NICE = [
-  L('Place Masséna', 0, 0, { r: 4, sol: damier(0) }),
+  L('Place Masséna', 0, 0, { r: 5, sol: damier(0) }),
   L('Vieux-Nice', 0.5, 0.3, { r: 4 }),
-  L('Cours Saleya', 0.5, 0.45, { discret: true, r: 2, sol: PAVE }),
+  L('Cours Saleya', 0.5, 0.4, { discret: true, r: 4, sol: PAVE }),
   L('Colline du Château', 0.9, 0.2, { r: 4 }),
-  L('Port Lympia', 1.4, 0.25, { ru: 2.5, rv: 3, bassin: true }),
+  L('Port Lympia', 1.65, 0.25, { ku: 0.2, kv: 0.3, bassin: true }),
   L('Promenade des Anglais', -1.6, 0.75, { r: 4 }),
   L('Cimiez', 0.3, -1.7, { r: 4 }),
-  L('Gare de Nice', -0.7, -0.9, { r: 3, sol: PAVE }),
-  L('Jardin du Paillon', 0.05, -0.35, { ru: 1.6, rv: 3.5, jardin: true }),
-  L('Mont Boron', 2.1, 0.1, { r: 4 }),
+  L('Gare de Nice', -0.7, -0.9, { r: 5, sol: PAVE }),
+  L('Jardin du Paillon', 0.05, -0.35, { ku: 0.1, kv: 0.4, jardin: true }),
+  L('Mont Boron', 2.4, 0.1, { r: 4 }),
 ];
 
 export const lieuxDeNice = () => LIEUX_NICE
   .filter((p) => (p.r || p.jardin || p.bassin) && !p.discret)
-  .map((p) => ({ name: p.nom, x: NICE.x + p.u, z: NICE.z + p.v, r: 6 }));
+  .map((p) => ({ name: p.nom, x: NICE.x + p.u, z: NICE.z + p.v, r: 12 }));
 
 // --- les rues ------------------------------------------------------------------------
 //
@@ -152,44 +214,123 @@ export const lieuxDeNice = () => LIEUX_NICE
 // anglais et russes. La frontière entre les deux, c'est le Paillon — aujourd'hui
 // couvert, et devenu jardin.
 
+// Les ORIGINES de trame (`cu`, `cv`) sont du plan et se projettent ; le pas,
+// la chaussée et le trottoir sont en BLOCS et se redonnent, parce qu'une rue
+// doit rester praticable quelle que soit l'échelle. Une ruelle du Vieux-Nice
+// fait un bloc de chaussée, une rue de la ville neuve deux, et les îlots
+// passent de deux blocs et demi à cinq — de quoi poser une façade ET une
+// maison derrière.
 const TRAMES = {
-  vieux: { ang: 0.34, pu: 3.5, pv: 3, cu: 5, cv: 3, w: 0.4, s: 0.7 },
-  neuve: { ang: 0, pu: 6, pv: 5, cu: -6, cv: -4, w: 0.55, s: 0.95 },
-  cimiez: { ang: 0.15, pu: 7, pv: 6, cu: 3, cv: -17, w: 0.5, s: 0.9 },
+  vieux: { ang: 0.34, pu: 5, pv: 4.5, cu: k(5), cv: k(3), w: 0.6, s: 1.1 },
+  neuve: { ang: 0, pu: 9, pv: 8, cu: k(-6), cv: k(-4), w: 1.0, s: 1.8 },
+  cimiez: { ang: 0.15, pu: 11, pv: 10, cu: k(3), cv: k(-17), w: 0.9, s: 1.6 },
 };
 
+// Les frontières entre quartiers sont du plan, elles aussi.
+const LIMITE_CIMIEZ = k(-10);
+const VIEUX = { u0: k(2), u1: k(12), v0: k(-2) };
+
 function trameDeNice(u, v) {
-  if (v < -10) return TRAMES.cimiez;
-  if (u >= 2 && u <= 12 && v >= -2) return TRAMES.vieux;
+  if (v < LIMITE_CIMIEZ) return TRAMES.cimiez;
+  if (u >= VIEUX.u0 && u <= VIEUX.u1 && v >= VIEUX.v0) return TRAMES.vieux;
   return TRAMES.neuve;
 }
 
 const pt = (nom) => [lieu(nom).u, lieu(nom).v];
 const lieu = (nom) => LIEUX_NICE.find((p) => p.nom === nom);
 
+// LES LARGEURS NE SE PROJETTENT PAS, ELLES SE REDONNENT. `l` est la
+// demi-largeur de la chaussée en blocs, `t` le trottoir de chaque côté ; la
+// Promenade est la plus large, et son trottoir côté mer est le plus large de
+// la ville — c'est lui, la promenade.
+const AVENUE = 2.4;
+const a = (l) => l * AVENUE;
+const TROTTOIR_AV = 1.2;
+// La chaussée de la Promenade passe à dix blocs derrière le rivage : quatre
+// de galets, trois de trottoir planté de palmiers, puis la route. La rue de
+// France court parallèle, douze blocs plus haut — entre les deux, la rangée
+// des palaces, dont le Negresco.
+const RECUL_PROMENADE = 10;
+const RECUL_FRANCE = 22;
+const surPromenade = (u) => [u, Math.round(vRivage(u)) - RECUL_PROMENADE];
+const surFrance = (u) => [u, Math.round(vRivage(u)) - RECUL_FRANCE];
+
+// UN CIRCUIT SE REFERME SUR DES CARREFOURS. `chainerVoies` accroche chaque
+// avenue par son EXTRÉMITÉ la plus proche — jamais au milieu — et relie deux
+// extrémités par une droite. Une avenue dont le bout tombe au milieu d'un
+// îlot ne peut donc appartenir à aucune boucle : chaque bout ci-dessous est
+// posé SUR la chaussée d'une autre avenue, et c'est ce qui a fait passer la
+// meilleure boucle de 89 % à plus de 90 %. Les tracés restent ceux du vrai
+// plan ; ce sont les bouts qui sont recalés au carrefour.
 const VOIES = [
-  // La Promenade des Anglais, puis le quai des États-Unis : cinq kilomètres de
-  // front de mer, l'un dans le prolongement de l'autre.
-  { nom: 'Promenade des Anglais', l: 1.6, t: 0.6, pts: RIVAGE.slice(0, 6).map(([u, v]) => [u, v - 2]) },
-  { nom: 'Quai des États-Unis', l: 1.2, pts: [[4, 3], [9, 6], [13, 8]] },
-  { nom: 'Avenue Jean-Médecin', l: 1.1, pts: [de(0, -0.1), de(-0.2, -0.6), de(-0.6, -0.95)] },
-  { nom: 'Boulevard Victor-Hugo', l: 0.8, pts: [de(-0.2, -0.25), de(-1.4, -0.35), de(-2.4, -0.3)] },
-  { nom: 'Rue de France', l: 0.7, pts: [de(-0.3, 0.35), de(-1.6, 0.5), de(-2.8, 0.6)] },
-  { nom: 'Boulevard de Cimiez', l: 0.8, pts: [de(0.2, -0.5), de(0.3, -1.1), de(0.3, -1.7)] },
-  { nom: 'Boulevard Gambetta', l: 0.7, pts: [de(-1.5, 0.55), de(-1.6, -0.4), de(-1.6, -1.2)] },
+  // Le front de mer, d'ouest en est : la Promenade des Anglais, le quai des
+  // États-Unis sous la colline, puis Rauba-Capeu qui contourne le cap jusqu'au
+  // port.
+  { nom: 'Promenade des Anglais', l: a(1.2), t: 2.2, pts: [-114, -78, -42, -12, 12].map(surPromenade) },
+  { nom: 'Quai des États-Unis', l: a(0.9), t: 1.6, pts: [surPromenade(12), [27, 16], [39, 22]] },
+  { nom: 'Quai Rauba-Capeu', l: a(0.6), t: 1.2, pts: [[39, 22], [42, 18], [40, -4]] },
+  // Le boulevard Carabacel descend du nord vers le port, et Dubouchage puis
+  // Victor-Hugo traversent la ville neuve d'est en ouest, au nord de Masséna.
+  { nom: 'Boulevard Carabacel', l: a(0.6), t: TROTTOIR_AV, pts: [[27, -15], [36, -8], [40, -4]] },
+  { nom: 'Boulevard Dubouchage', l: a(0.7), t: TROTTOIR_AV, pts: [[-4, -15], [6, -15], [27, -15]] },
+  { nom: 'Boulevard Victor-Hugo', l: a(0.7), t: TROTTOIR_AV, pts: [[-48, -15], [-4, -15]] },
+  // Jean-Médecin monte de Masséna à la gare ; Thiers longe la gare vers
+  // l'ouest ; Gambetta et Verdun redescendent vers la mer.
+  { nom: 'Avenue Jean-Médecin', l: a(0.9), t: TROTTOIR_AV, pts: [[-4, -9], [-4, -30]] },
+  { nom: 'Avenue Thiers', l: a(0.7), t: TROTTOIR_AV, pts: [[-4, -30], [-21, -30], [-48, -30]] },
+  { nom: 'Boulevard Gambetta', l: a(0.6), t: TROTTOIR_AV, pts: [surPromenade(-48), [-48, -15], [-48, -30]] },
+  { nom: 'Avenue de Verdun', l: a(0.7), t: TROTTOIR_AV, pts: [surPromenade(-12), [-9, -9]] },
+  // La rue de France, puis l'avenue de la Californie qui la prolonge vers
+  // l'aéroport ; René-Cassin referme la boucle sur la Promenade à l'ouest.
+  { nom: 'Rue de France', l: a(0.6), t: TROTTOIR_AV, pts: [[-9, -7], [-30, surFrance(-30)[1]], surFrance(-48)] },
+  { nom: 'Avenue de la Californie', l: a(0.6), t: TROTTOIR_AV, pts: [surFrance(-48), surFrance(-84), surFrance(-114)] },
+  { nom: 'Boulevard René-Cassin', l: a(0.6), t: TROTTOIR_AV, pts: [surFrance(-114), surPromenade(-114)] },
+  // Le boulevard de Cimiez grimpe la colline depuis Dubouchage ; l'avenue des
+  // Arènes en redescend vers Libération, et Malausséna — le prolongement de
+  // Jean-Médecin au nord de la gare — ramène en ville.
+  { nom: 'Boulevard de Cimiez', l: a(0.7), t: TROTTOIR_AV, pts: [[6, -15], [9, -33], [9, -51]] },
+  { nom: 'Avenue des Arènes de Cimiez', l: a(0.6), t: TROTTOIR_AV, pts: [[9, -51], [-4, -51]] },
+  { nom: 'Avenue Malausséna', l: a(0.8), t: TROTTOIR_AV, pts: [[-4, -51], [-4, -30]] },
 ];
 
 const BANDES = rangerVoies(VOIES);
 
 // --- où roulent les voitures -------------------------------------------------
 //
-// PAS ENCORE DE CIRCUIT ICI, et c'est mesuré, pas supposé. Toutes les
-// combinaisons des sept avenues de Nice ont été éprouvées contre `solNice` :
-// la meilleure — Victor-Hugo puis Cimiez — ne tient la rue qu'à 89 %, sous le
-// seuil de 90 %. La ville est petite (rayon 48, dix blocs par kilomètre) et
-// ses avenues sont courtes et courbes : aucune paire ne referme une boucle
-// sans passer par les jardins ou le rivage. Nice garde donc l'anneau de
-// secours jusqu'à sa remise à l'échelle, qui lui donnera de vraies avenues.
+// LES ENCHAÎNEMENTS NE SE DEVINENT PAS, ILS SE MESURENT. Toutes les
+// combinaisons de deux à cinq avenues voisines ont été éprouvées contre
+// `solNice` et l'on n'a gardé que celles qui tiennent la rue à 90 % au moins,
+// choisies par couverture gloutonne — à chaque tour, celle qui apporte le
+// plus d'avenues neuves. Avant la remise à l'échelle, la meilleure paire
+// tenait à 89 % : la ville était trop petite pour refermer une seule boucle.
+// Cinq circuits couvrent les seize avenues de Nice.
+//
+// ET UN PARC PEUT MANGER LE RETOUR D'UN CIRCUIT. Le front de mer se refermait
+// en deux quais (93 %) tant que la colline du Château portait des rues : sa
+// ligne de retour la traversait en droite ligne. Boisée, la colline n'a plus
+// de chaussée, et la même paire tombe à 72 %. Le tour se fait donc comme dans
+// la vraie ville : par le cap, derrière la colline par Carabacel, et retour
+// à la mer par Verdun.
+const CIRCUITS = [
+  // Le grand tour de l'ouest, par la rue de France et la Promenade — 100 %, 486 blocs.
+  ['Boulevard Gambetta', 'Avenue de la Californie', 'Rue de France', 'Avenue de Verdun', 'Promenade des Anglais'],
+  // La montée de Cimiez et le retour par Malausséna — 100 %, 149 blocs.
+  ['Boulevard Dubouchage', 'Boulevard de Cimiez', 'Avenue des Arènes de Cimiez', 'Avenue Malausséna', 'Avenue Jean-Médecin'],
+  // Le carré de la ville neuve, autour de la gare — 100 %, 186 blocs.
+  ['Boulevard Victor-Hugo', 'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta'],
+  // Le tour du vieux Nice : les quais, le cap, Carabacel derrière la colline
+  // et Verdun pour redescendre à la mer — 99 %, 153 blocs.
+  ['Quai des États-Unis', 'Quai Rauba-Capeu', 'Boulevard Carabacel', 'Boulevard Dubouchage', 'Avenue de Verdun'],
+  // La Californie, jusqu'au bout de la Promenade — 100 %, 160 blocs.
+  ['Boulevard René-Cassin', 'Avenue de la Californie'],
+];
+
+const ROULANT = new Set([BITUME, PAVE]);
+
+export const circuitsNice = fabriqueCircuits({
+  cle: 'nice', ancre: NICE, chaines: CIRCUITS, roulant: ROULANT,
+  voies: { liste: VOIES, sol: solNice },
+});
 
 export function solNice(x, z) {
   if (!surTerreNice(x, z)) return null;
@@ -204,7 +345,7 @@ export function solNice(x, z) {
 
   // La plage de galets : Nice n'a pas de sable, et c'est la première chose que
   // remarque un enfant qui y met les pieds.
-  if (vRivage(u) - v < 2.5) return GALETS;
+  if (vRivage(u) - v < PLAGE) return GALETS;
 
   for (const p of LIEUX_NICE) {
     if (p.bassin) {
@@ -213,19 +354,40 @@ export function solNice(x, z) {
       // surface en eau est servie plus haut, avant la plage.)
       continue;
     }
-    if (p.jardin) {
-      if (((u - p.u) / p.ru) ** 2 + ((v - p.v) / p.rv) ** 2 < 1) {
-        if (Math.abs(u - p.u) < 0.6) return TROTTOIR;
-        return ((u + v) & 3) === 0 ? ARBRE : HERBE;
-      }
-      continue;
-    }
+    if (p.jardin) continue;
     if (!p.sol) continue;
     if (Math.hypot(u - p.u, v - p.v) < p.r) return p.sol;
   }
 
   const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
   if (voie !== null) return voie;
+
+  // La coulée verte du Paillon vient APRÈS les avenues : Dubouchage la
+  // traverse, comme dans la vraie ville, et une rue qui s'arrête au bord
+  // d'un jardin ne referme aucune boucle.
+  for (const p of LIEUX_NICE) {
+    if (!p.jardin) continue;
+    if (((u - p.u) / p.ru) ** 2 + ((v - p.v) / p.rv) ** 2 < 1) {
+      if (Math.abs(u - p.u) < 0.6) return TROTTOIR;
+      // Un arbre sur vingt-cinq colonnes : chaque couronne déborde d'un
+      // bloc, et plus serré la coulée verte devenait un fourré.
+      return (u % 5 === 0 && v % 5 === 0) ? ARBRE : HERBE;
+    }
+  }
+
+  // Les collines boisées viennent APRÈS les avenues — Rauba-Capeu contourne
+  // le cap du Château — et AVANT la trame : à dix-huit blocs sur treize de
+  // rayon, la pente expose la roche, et des maisons posées dedans font un
+  // escalier de pierre, pas un quartier. Des pins sur l'herbe, un sur seize
+  // colonnes — assez serrés pour qu'on lise un bois vu du ciel, assez
+  // espacés pour marcher dessous ; le sommet du Château reste dégagé pour
+  // ses ruines.
+  for (const c of COLLINES_NICE) {
+    if (!c.parc) continue;
+    const dc = Math.hypot(u - c.u, v - c.v);
+    if (dc >= c.r) continue;
+    return (dc > 5 && u % 4 === 0 && v % 4 === 0) ? ARBRE : HERBE;
+  }
 
   const t = trameDeNice(u, v);
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
@@ -243,10 +405,12 @@ export function solNice(x, z) {
 export function lotNiceLibre(x, z) {
   if (!surTerreNice(x, z)) return false;
   const u = x - NICE.x, v = z - NICE.z;
-  if (vRivage(u) - v < 3.5) return false;
-  // le sommet de la colline du Château reste un jardin, comme le vrai
-  const ch = COLLINES_NICE[0];
-  if (Math.hypot(u - ch.u, v - ch.v) < ch.r * 0.55) return false;
+  if (vRivage(u) - v < PLAGE + 1) return false;
+  // les collines-parcs ne se bâtissent pas — leur sol le dit déjà, mais on
+  // le redit ici pour que la règle se lise sans suivre `solNice`
+  for (const c of COLLINES_NICE) {
+    if (c.parc && Math.hypot(u - c.u, v - c.v) < c.r) return false;
+  }
   return solNice(x, z) === null;
 }
 
@@ -330,9 +494,11 @@ export const MONUMENTS_NICE = [
   { nom: 'Place Masséna', dx: 0, dz: 0, box: 9 },
   { nom: 'Cathédrale russe', dx: -1.1, dz: -0.7, box: 7 },
   { nom: 'Colline du Château', dx: 0.9, dz: 0.2, box: 8 },
-  { nom: 'Hôtel Negresco', dx: -1.0, dz: 0.2, box: 5, seuil: 0.3 },
-  { nom: 'Port Lympia', dx: 1.4, dz: 0.25, box: 5, seuil: 0.3 },
-  { nom: 'Cours Saleya', dx: 0.5, dz: 0.45, box: 4, seuil: 0.3 },
+  // Le Negresco se pose ENTRE la Promenade et la rue de France, pas sur la
+  // chaussée : à dz = 0,2 il était au milieu de la route.
+  { nom: 'Hôtel Negresco', dx: -1.0, dz: 0.03, box: 5, seuil: 0.3 },
+  { nom: 'Port Lympia', dx: 1.65, dz: 0.25, box: 5, seuil: 0.3 },
+  { nom: 'Cours Saleya', dx: 0.5, dz: 0.4, box: 4, seuil: 0.3 },
   { nom: 'Baleine du Paillon', dx: 0.1, dz: -0.6, box: 4, seuil: 0.3 },
   // La Promenade s'ancre SUR le trottoir, pas dans l'eau.
   //
@@ -342,9 +508,10 @@ export const MONUMENTS_NICE = [
   // était un plateau parfaitement plat — elle n'a eu sa vraie baie qu'avec la
   // remise à plat de la carte — l'écart n'existait pas et rien ne se voyait.
   // Depuis que la mer entre pour de bon, le mobilier se retrouvait enterré
-  // trois blocs sous le sable. On pose l'ancre sur le trottoir : dz = 0,7
-  // tombe exactement sur `vRivage(−20) − 2`, la ligne du cheminement.
-  { nom: 'Promenade des Anglais', dx: -2.0, dz: 0.7, box: 24, seuil: 0.3 },
+  // trois blocs sous le sable. On pose l'ancre sur le trottoir, et depuis la
+  // remise à l'échelle le bâtisseur calcule lui-même sa ligne depuis
+  // `vRivage` : l'ancre n'a plus à tomber juste, elle n'a qu'à être à terre.
+  { nom: 'Promenade des Anglais', dx: -2.0, dz: 0.55, box: 60, seuil: 0.3 },
 ].map((m) => { const [u, v] = de(m.dx, m.dz); return { ...m, u, v }; });
 
 const boite = (poser) => {
@@ -464,15 +631,24 @@ export function buildBaleine(poser) {
 
 // La Promenade des Anglais elle-même : les palmiers, et les fameuses chaises
 // bleues tournées vers la mer. Sans elles, ce n'est qu'un trottoir.
+//
+// Le bâtisseur se repère sur SON ancre (`MONUMENTS_NICE`), pas sur des
+// constantes recopiées : l'ancienne version portait `CV = 10` pour une ancre à
+// v = 7, et le mobilier se posait trois blocs à côté de la ligne visée. Les
+// palmiers vont sur le trottoir côté mer, un bloc derrière les galets ; les
+// chaises devant eux, tournées vers la baie. Tout cela sur les quatre
+// kilomètres de Promenade, de l'ouest jusqu'au jardin Albert-Ier.
+const PROMENADE_ANCRE = () => MONUMENTS_NICE.find((m) => m.nom === 'Promenade des Anglais');
 export function buildPromenade(poser) {
   const { set } = boite(poser);
-  const CU = -20, CV = 10;
-  for (let u = -40; u <= -2; u++) {
-    const vp = Math.round(vRivage(u)) - 2;
-    if (u % 5 === 0) {                                       // un palmier
-      for (let y = 0; y <= 2; y++) set(u - CU, y, vp + 1 - CV, BLOCK.LOG);
+  const { u: CU, v: CV } = PROMENADE_ANCRE();
+  const u0 = Math.round(k(-38)), u1 = Math.round(k(-2));
+  for (let u = u0; u <= u1; u++) {
+    const vp = Math.round(vRivage(u)) - PLAGE - 1;           // le trottoir côté mer
+    if (u % 10 === 0) {                                      // un palmier
+      for (let y = 0; y <= 3; y++) set(u - CU, y, vp - CV, BLOCK.LOG);
       for (const [ax, az] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        set(u - CU + ax, 3, vp + 1 - CV + az, BLOCK.LEAVES);
+        set(u - CU + ax, 4, vp - CV + az, BLOCK.LEAVES);
       }
     } else if (u % 7 === 0) {                                // deux chaises bleues
       set(u - CU, 0, vp - CV, BLOCK.WOOL_BLUE);

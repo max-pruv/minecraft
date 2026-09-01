@@ -1124,6 +1124,62 @@ pas. Comme Manhattan en v186, la refonte apporte donc SES PROPRES témoins,
 dans `carteMonde.js` : la presqu'île va du Ferry Building à Ocean Beach, et le
 Golden Gate traverse vraiment le détroit.
 
+### Nice (`nice.js`) — la huitième remise à l'échelle, et un circuit qui se referme
+
+**Trente blocs par kilomètre** (v203), contre dix : un bloc valait CENT
+MÈTRES, et la meilleure boucle de voitures tenait à 89 % — la ville était trop
+petite pour en refermer une seule. Le disque passe de 48 à 144 blocs et couvre
+la vraie ville, de la Californie à Cimiez et au mont Boron. Même méthode qu'à
+Paris et San Francisco : rayon du registre, `K = 3`, `k()` sur la géométrie
+d'auteur, largeurs remesurées en blocs neufs, `adresseNice(dx, dz)` en
+kilomètres pour les sondes. Quatre choses apprises ici, qui valent pour Lille.
+
+- **UN CIRCUIT SE REFERME SUR DES CARREFOURS.** `chainerVoies` accroche chaque
+  avenue par son EXTRÉMITÉ la plus proche, et joint les bouts en droite ligne.
+  Une avenue dont le bout s'arrête à trois blocs de la suivante laisse trois
+  blocs de façade sur le trajet, et la boucle rate le seuil. Chaque bout de
+  `VOIES` est donc posé SUR la chaussée d'une autre avenue — c'est ce qui a
+  fait passer la meilleure boucle de 89 % à 100 %. Cinq circuits mesurés
+  couvrent les seize avenues (couverture gloutonne, comme à Paris).
+- **Les enchaînements se mesurent sur une COPIE.** `VOIES` n'est pas exporté
+  ; on copie `src/` dans le brouillon, on y ajoute `export const VOIES`, et
+  l'on éprouve toutes les chaînes avec `chainerVoies` + `circuitSurRue` contre
+  `hauteurNice`. Le chiffre écrit en commentaire au-dessus de chaque circuit est
+  celui de cette mesure, pas un souvenir.
+- **UN PARC PEUT MANGER LE RETOUR D'UN CIRCUIT.** Le front de mer se refermait
+  en deux quais à 93 % tant que la colline du Château portait des rues : sa
+  ligne de retour la traversait en droite ligne. Boisée (`parc: true` — herbe
+  et pins, un sur seize colonnes), la colline n'a plus de chaussée, et la même
+  paire tombe à 72 %. Le tour se fait donc comme dans la vraie ville : par le
+  cap, derrière la colline par Carabacel, retour à la mer par Verdun — 99 %.
+  Changer le sol d'un quartier, c'est remesurer les circuits qui le longent.
+- **Le rayon en dur de `releveVilles` (carte.js) était 44.** Le témoin
+  balayait quarante-quatre blocs autour de Nice quelle que soit la taille du
+  registre : à 144, il ne voyait ni la mer ni les collines et jugeait une
+  ville qui n'existait plus. Même piège que `r: 66` à San Francisco, du côté
+  du BANC. Un témoin qui porte une dimension de ville la demande au registre.
+
+**Et une ville qui triple demande qu'on relève le seuil de ses quartiers sur
+la carte 2D** — la même leçon que Paris (1,3) et San Francisco (1,3), et le
+portail de la v203 l'a rendue rouge : à 0,55 bloc par pixel, le zoom qui
+montre Nice entière effaçait le Vieux-Nice, la Promenade et le port. Le seuil
+suit la taille de la ville, il n'est pas une constante de la carte.
+
+**Le banc rend ses captures dans le brouillard.** `banc.js` ouvre le jeu avec
+`rr=2` — deux morceaux de distance d'affichage, pour que les suites tiennent
+sur quatre cœurs. Une capture prise sur cette page montre un mur gris à
+trente blocs et fait croire à une ville vide. Pour juger sur captures, on
+rouvre la page avec `rr=9`. Et un script de banc (`sonde.js`, `captures.js`)
+NE SE TERMINE PAS après avoir imprimé son résultat — express et le courtier
+restent ouverts ; on lit le journal, puis on tue le processus par son pid.
+
+**Hors de la fenêtre d'empreinte.** Nice est à (718, 1726) ; `plafond.js`
+échantillonne [−700, 700]. Comme Manhattan et San Francisco, la refonte
+apporte donc SES PROPRES témoins dans `carteMonde.js` : la ville tient de la
+Californie à Cimiez, la mer commence au sud de Masséna et le port Lympia est
+en eau, et des voitures font le tour de Nice. Lille, elle, est DANS la
+fenêtre : sa remise à l'échelle devra la double empreinte.
+
 ### Washington (`washington.js`, `dcmonuments.js`)
 
 La sixième ville, la première où **on entre dans les bâtiments** — et la
