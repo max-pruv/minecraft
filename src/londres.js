@@ -183,6 +183,12 @@ const BANDES = rangerVoies(VOIES);
 // éprouvées contre le sol de la ville, et voici celle qui passe.
   // Le triangle de Mayfair : Oxford, Regent, Piccadilly — 96 % du trajet sur
   // la rue, cent quarante blocs de tour.
+// Londres n'en a toujours qu'UN, et c'est mesuré, pas résigné : les six autres
+// voies (le Mall, Whitehall, le Strand, Victoria Street, le Victoria
+// Embankment, Borough High Street) plafonnent entre 57 % et 85 % du trajet sur
+// la rue — sous le seuil. La Tamise et les parcs les coupent. On ne déclare
+// pas un circuit qui ne valide jamais : ce serait du code mort qui ressemble à
+// de l'avancement. Ce que Londres gagne en v201, c'est la DENSITÉ.
 const CIRCUITS = [['Oxford Street', 'Regent Street', 'Piccadilly']];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,

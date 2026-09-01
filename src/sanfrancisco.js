@@ -341,9 +341,16 @@ export const __voiesSF = VOIES;
 // valaient plus que 92 %, la ville ayant triplé sous eux. Columbus et Lombard
 // bouclent North Beach (94 %, 217 blocs) ; Van Ness et Lombard font le tour
 // du nord (93 %, 289).
+// v201 : quatre au lieu de deux, choisis par couverture — neuf des quatorze
+// voies de la ville sont désormais parcourues, contre trois. Les cinq qui
+// restent (Fulton, Lincoln Way, la Great Highway, la 19e, Third Street) ne
+// referment aucune boucle qui passe le seuil : on ne déclare pas un circuit
+// qui ne valide jamais.
 const CIRCUITS = [
-  ['Columbus Avenue', 'Lombard Street'],
-  ['Van Ness Avenue', 'Lombard Street'],
+  ['Columbus Avenue', 'Van Ness Avenue', 'Mission Street', 'Valencia Street'],   // 93 %, 548 blocs
+  ['Market Street', 'Divisadero Street'],                                        // 92 %, 468
+  ['The Embarcadero', 'Van Ness Avenue', 'Lombard Street'],                      // 92 %, 427
+  ['Columbus Avenue', 'Van Ness Avenue', 'Geary Boulevard'],                     // 92 %, 769
 ];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,

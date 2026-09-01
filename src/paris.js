@@ -392,15 +392,31 @@ const BANDES = rangerVoies(VOIES);
 // terrain brut ne trouvait rien, alors que quarante-quatre pour cent de Paris
 // est de la chaussée.
 //
-// Ces deux enchaînements-là ne sont pas devinés : toutes les combinaisons
-// d'avenues ont été éprouvées contre `solParis`, et voici celles qui passent —
-// 99 % et 100 % du trajet sur la rue, pour 345 et 233 blocs de tour.
+// CINQ CIRCUITS, ET ILS COUVRENT LES DIX-HUIT AVENUES DE PARIS.
+//
+// Max, après une visite : « je viens d'aller visiter Paris et je n'ai vu aucun
+// véhicule en circulation. » Il n'y en avait bien aucun là où il était. Paris
+// publiait seize avenues et n'en déclarait que deux enchaînements, tous deux
+// sur la RIVE DROITE : Saint-Germain, Saint-Michel, Rennes, Montparnasse,
+// Raspail, les Gobelins, Rivoli, la Grande Armée n'avaient jamais vu une
+// voiture. Toute la rive gauche et tout l'ouest étaient vides, et l'on pouvait
+// traverser la ville sans rien croiser.
+//
+// Les enchaînements ne se devinent toujours pas : les 270 combinaisons
+// d'avenues qui tiennent le seuil de 90 % ont été éprouvées contre `solParis`,
+// puis choisies par couverture gloutonne — à chaque tour, celle qui apporte le
+// plus d'avenues neuves. Cinq suffisent pour les couvrir TOUTES.
 const CIRCUITS = [
-  // Le cœur de la rive droite : les Grands Boulevards de la Madeleine à la
-  // Bastille, l'avenue de l'Opéra, la rue La Fayette.
-  ['Grands Boulevards', "Avenue de l'Opéra", 'Rue La Fayette'],
-  // L'est : Sébastopol, Magenta, Voltaire — République au centre.
-  ['Boulevard de Sébastopol', 'Boulevard de Magenta', 'Boulevard Voltaire'],
+  // Le cœur de la rive droite — 99 %, 431 blocs.
+  ['Grands Boulevards', "Avenue de l'Opéra", 'Boulevard de Sébastopol', 'Rue La Fayette'],
+  // LA RIVE GAUCHE, qui n'avait rien — 95 %, 350 blocs.
+  ['Boulevard Saint-Germain', 'Boulevard Saint-Michel', 'Rue de Rennes', 'Avenue de la Motte-Picquet'],
+  // L'est populaire, de Magenta à Belleville — 94 %, 328 blocs.
+  ['Boulevard de Magenta', 'Boulevard Voltaire', 'Faubourg Saint-Antoine', 'Rue de Belleville'],
+  // Le sud : Montparnasse, Raspail, les Gobelins — 93 %, 321 blocs.
+  ['Boulevard du Montparnasse', 'Boulevard Raspail', 'Avenue des Gobelins'],
+  // Le grand tour d'ouest en est, par Clichy et l'Étoile — 91 %, 458 blocs.
+  ['Rue de Rivoli', 'Boulevard de Sébastopol', 'Boulevard de Clichy', 'Avenue de la Grande Armée'],
 ];
 
 // Ce qui se roule : la chaussée, les pavés, le trottoir et le granit des

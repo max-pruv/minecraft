@@ -20,6 +20,65 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v201 — Paris a enfin des voitures, et on peut monter dedans
+
+**Pourquoi.** Max, après une visite : « je viens d'aller visiter Paris et je
+n'ai vu aucun véhicule en circulation. » Il avait raison, et pas seulement un
+peu. Paris publie seize avenues et n'en déclarait que DEUX enchaînements, tous
+les deux sur la rive droite : Saint-Germain, Saint-Michel, Rennes,
+Montparnasse, Raspail, les Gobelins, Rivoli, la Grande Armée n'avaient jamais
+vu passer une voiture. Toute la rive gauche et tout l'ouest étaient vides.
+
+Trois autres choses ne marchaient pas, et il les avait vues aussi. Le code
+calculait `min(10, longueur / 28)` voitures par circuit alors que son propre
+commentaire, juste au-dessus, promettait « une tous les vingt-cinq blocs, à
+quatorze au plus » — dix-huit voitures pour tout Paris. La flotte de cinquante
+modèles n'en montrait que vingt, et le pas de tirage (13 sur 50) revient sur
+ses pas au bout de cinquante. Et pour monter dans une voiture qui roule, il
+fallait être à moins de CINQ blocs d'elle : à 4,2 m/s, une fenêtre d'une
+seconde — un enfant de sept ans la rate à tous les coups et croit que le jeu
+refuse.
+
+**Ce que ça change.** Paris passe de 2 à **5 circuits qui couvrent ses dix-huit
+avenues**, rive gauche comprise, et de 18 à **95 voitures**. San Francisco de 2
+à 4 circuits (neuf de ses quatorze voies parcourues, contre trois). Les deux
+cent soixante-neuf villes engendrées passent de deux anneaux à quatre — et
+comme un anneau peut désormais être RECTANGULAIRE et décalé en diagonale, les
+quatre villes qui n'avaient aucune voiture (Agra, Berlin, Mumbai, Chicago,
+coupées par un fleuve, un lac ou une côte) en ont enfin. **Plus une seule ville
+à trame n'est vide : 267 sur 267.** Le rayon d'embarquement passe à neuf blocs,
+et le bouton « Conduire cette voiture » s'offre tout seul quand on marche dans
+la rue.
+
+**Ce qui le prouve, et c'est là que se cachait le vrai défaut.** Mettre cinq
+fois plus de voitures a d'abord fait passer Paris de 537 à **1 018 appels de
+dessin** — exactement ce que la v196 avait gagné, rendu d'un coup. La sonde a
+donné le chiffre que personne n'avait jamais mesuré : **une voiture coûte 32,6
+maillages**, trois fois un personnage. Et la portée se testait sur la TÊTE du
+convoi : les vingt voitures d'une boucle de 431 blocs se dessinaient dès qu'on
+approchait d'un seul de ses points — quatre-vingt-neuf voitures dessinées à
+Paris, dont celles de l'autre rive. C'est la leçon de la v196 d'un cran plus
+haut : cesser d'animer ne suffit pas, il faut cesser de DESSINER.
+
+Corrigé — portée par voiture, et 45 blocs au lieu de 110 (un bloc de ville vaut
+ici trente à quarante mètres : à 110 blocs une voiture est à quatre kilomètres,
+et les immeubles la cachent depuis longtemps) — le compte retombe **SOUS** son
+point de départ : Paris centre **537 → 498**, San Francisco **407 → 376**. Cinq
+fois plus de voitures dans la ville, deux fois plus visibles à la fois, et
+moins d'appels de dessin qu'avant.
+
+Mesuré sur les cinq circuits de Paris : 16 à 31 voitures visibles, **toutes à
+moins de 45 blocs** — plus une seule dessinée pour personne — et 16 à 28
+modèles différents. Quatre témoins neufs dans `monte.js`, rouges sur le code
+d'aujourd'hui : la rive gauche a des voitures, aucune ne se dessine hors de
+portée, ce ne sont pas dix fois la même, et le bouton s'offre tout seul.
+
+Londres garde son unique circuit, et c'est mesuré, pas résigné : ses six autres
+voies plafonnent entre 57 % et 85 % du trajet sur la rue — sous le seuil. On ne
+déclare pas un circuit qui ne valide jamais.
+
+---
+
 ## v200 — On ne voit plus au travers des immeubles, et les villes ont la place
 
 **Pourquoi.** La v199 avait rendu la place aux villes ; il restait à la leur

@@ -268,8 +268,20 @@ async function avancerUnDemiSeconde(p, depart) {
     // On mesure une DISTANCE, pas une vitesse : sous la charge du portail
     // complet, le jeu tourne au ralenti et le même trajet prend plus de
     // temps. Ce qui compte est qu'on soit emporté, pas le chrono.
+    // ET ON OBSERVE PENDANT TOUTE LA FENÊTRE, pas pendant un tiers.
+    //
+    // Onze secondes ne suffisaient pas : la rame MARQUE LES STATIONS trois
+    // secondes, et embarquer juste avant un quai passait la moitié du temps à
+    // l'arrêt. Le verdict tenait alors au hasard du moment où l'on monte.
+    // Mesuré à la sonde, trois embarquements d'affilée sur `origin/main` :
+    // 1,8 m · 2,7 m · 0,0 m — le témoin est rouge une fois sur deux depuis
+    // toujours, et il l'a été en travers d'une livraison qui n'y était pour
+    // rien. C'est la règle du banc, déjà écrite pour le lien muet et pour le
+    // zoom : un témoin dont le verdict est une durée doit observer pendant
+    // TOUTE la fenêtre, pas seulement à la fin — ici, assez longtemps pour
+    // qu'un arrêt en station soit suivi d'un départ.
     let parcouru = 0;
-    for (let i = 0; i < 16 && parcouru < 8; i++) {
+    for (let i = 0; i < 45 && parcouru < 8; i++) {
       await dormir(700);
       const ici = await pose(tab);
       parcouru = Math.hypot(ici.x - embarque.x, ici.z - embarque.z);
@@ -370,6 +382,90 @@ async function avancerUnDemiSeconde(p, depart) {
     }, null, { timeout: 60000 }).then(() => true).catch(() => false);
     verifier('quand la monoplace arrive, on a le temps de voir le bouton',
       monteeF1, JSON.stringify(await bouton(tab, 'board-btn')));
+
+    // --- LA CIRCULATION DE PARIS (v201) -------------------------------------
+    //
+    // Max, après une visite : « je viens d'aller visiter Paris et je n'ai vu
+    // aucun véhicule en circulation. » Il avait raison, et pas seulement un
+    // peu : Paris publiait seize avenues et n'en déclarait que deux
+    // enchaînements, tous deux sur la RIVE DROITE. Saint-Germain,
+    // Saint-Michel, Rennes, Montparnasse, Raspail, les Gobelins n'avaient
+    // jamais vu une voiture.
+    //
+    // On éprouve donc le trajet de l'enfant, pas le mécanisme : on se plante
+    // au milieu d'une rue de la RIVE GAUCHE, et l'on compte ce qui roule
+    // autour de soi. Sur l'ancien code il n'y a AUCUN circuit là-bas — le
+    // témoin est rouge par construction.
+    const rive = await tab.evaluate(async () => {
+      const P = await import('./src/paris.js');
+      const g = window.__game;
+      const solDe = (x, z) => g.world.terrainHeight(Math.round(x), Math.round(z));
+      const cs = P.circuitsParis ? P.circuitsParis(solDe) : [];
+      // le circuit de la rive gauche est celui dont le milieu est au SUD de
+      // Notre-Dame — on ne le désigne pas par son rang, qui peut changer
+      const sud = cs.map((c) => {
+        const m = c.pts.reduce((a2, q) => ({ x: a2.x + q.x / c.pts.length, z: a2.z + q.z / c.pts.length }),
+          { x: 0, z: 0 });
+        return { c, dz: m.z - P.PARIS.z };
+      }).sort((a2, b2) => b2.dz - a2.dz)[0];
+      if (!sud || sud.dz <= 0) return { circuits: cs.length, surLaRiveGauche: false };
+      const p0 = sud.c.pts[0], p1 = sud.c.pts[1] || p0;
+      const x = Math.round((p0.x + p1.x) / 2), z = Math.round((p0.z + p1.z) / 2);
+      g.player.flying = false;
+      g.player.pos.set(x, g.world.sommetColonne(x, z) + 3, z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = Math.atan2(-(p1.x - p0.x), -(p1.z - p0.z));
+      return { circuits: cs.length, surLaRiveGauche: true };
+    });
+    // La circulation ne naît pas à l'instant du saut : `animerLesVilles` la
+    // sème quand l'enfant approche, à son propre rythme. On attend le
+    // résultat, borné — jamais on ne lit dans la foulée du geste.
+    const trafic = await tab.waitForFunction(() => {
+      const g = window.__game;
+      let scene = g.npcs && g.npcs[0] ? g.npcs[0].mesh : null;
+      while (scene && scene.parent) scene = scene.parent;
+      if (!scene) return null;
+      const px = g.player.pos.x, pz = g.player.pos.z;
+      let proches = 0, loin = 0; const modeles = new Set();
+      scene.traverse((o) => {
+        if (!o.userData || !(o.userData.flotte || o.userData.nomVoiture) || !o.visible) return;
+        const d = Math.hypot(o.position.x - px, o.position.z - pz);
+        if (d < 60) { proches++; modeles.add(o.userData.nomVoiture || o.userData.flotte); } else loin++;
+      });
+      return proches >= 6 ? { proches, loin, modeles: modeles.size } : null;
+    }, null, { timeout: 60000 }).then((h) => h.jsonValue()).catch(() => ({ proches: 0, loin: -1, modeles: 0 }));
+    verifier('la rive gauche de Paris a enfin des voitures qui roulent',
+      rive.surLaRiveGauche && trafic.proches >= 6,
+      `${rive.circuits} circuits · ${trafic.proches} voiture(s) à moins de 60 blocs`);
+
+    // ET ON NE DESSINE PAS CE QUE PERSONNE NE VOIT. C'était le défaut de fond,
+    // celui qui interdisait d'en mettre plus : la portée se testait sur la
+    // TÊTE du convoi, donc les vingt voitures d'une boucle de quatre cent
+    // trente et un blocs se dessinaient dès qu'on approchait d'un seul de ses
+    // points. Une voiture coûte TRENTE-DEUX maillages — trois fois un
+    // personnage. Même leçon que la v196, un cran plus haut.
+    verifier('et aucune voiture ne se dessine hors de portée',
+      trafic.loin === 0, `${trafic.loin} voiture(s) dessinée(s) au-delà de 60 blocs`);
+
+    // LA FLOTTE SE VOIT. Cinquante modèles ont été injectés ; Max : « je ne
+    // retrouve pas autant de diversité ». Deux circuits de dix voitures n'en
+    // montraient que vingt sur cinquante, et le pas de 13 revient sur ses pas
+    // au bout de cinquante — 13 × 50 ≡ 0. Le pas est premier avec la flotte
+    // désormais, et il y a assez de voitures pour que cela se voie.
+    verifier('et ce ne sont pas dix fois la même voiture',
+      trafic.modeles >= 8, `${trafic.modeles} modèle(s) différent(s) autour de soi`);
+
+    // ON PEUT MONTER DANS CE QUI ROULE. Le code pour conduire existe depuis la
+    // v194 et il marchait ; c'est ATTRAPER qui ne marchait pas — cinq blocs
+    // autour d'une voiture à 4,2 m/s laissent une seconde pour appuyer.
+    const boutonVoiture = await tab.waitForFunction(() => {
+      const b = document.getElementById('board-btn');
+      return !!(b && getComputedStyle(b).display !== 'none'
+        && getComputedStyle(b.closest('.fun-target')).display !== 'none'
+        && b.textContent.includes('Conduire'));
+    }, null, { timeout: 60000 }).then(() => true).catch(() => false);
+    verifier('et le bouton « Conduire cette voiture » s\'offre tout seul dans la rue',
+      boutonVoiture, JSON.stringify(await bouton(tab, 'board-btn')));
 
     // --- les pastilles de l'écran sont des boutons, pas des jauges muettes --
     //
