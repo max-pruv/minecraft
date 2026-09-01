@@ -56,6 +56,10 @@ témoin passerait au vert en ne prouvant rien. Un compte nul est donc traité
 comme un défaut — un bâtisseur qui ne pose rien ne prouve pas que ses murs
 sont opaques, il prouve qu'on ne l'a pas appelé.
 
+Portail complet (voie longue, treize suites) : douze vertes, `reseau.js` avec
+un seul rouge — `quand le relais répond, on accuse le VPN et pas le Wi-Fi`,
+la dette déclarée dans `TASKS.md` depuis la v195, identique sur `origin/main`.
+
 ---
 
 ## v201 — Paris a enfin des voitures, et on peut monter dedans
