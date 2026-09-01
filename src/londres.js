@@ -397,10 +397,16 @@ export function batirColonneLondres(x, z, poser) {
 
   for (let y = 0; y < bh; y++) {
     if (dedans) { if (y === 0) poser(1, BLOCK.PLANK); continue; }
-    if (tour) { poser(y + 1, y % 3 === 2 ? ACIER : VERRE); continue; }
+    // LE MUR D'UNE TOUR EST OPAQUE, et celui d'une maison victorienne aussi.
+    // 23,1 % du volume bâti de Londres était du VERRE — deux rangs sur trois
+    // dans les tours de la City, un sur deux ailleurs — et un bâtiment est
+    // creux : on voyait au travers. C'est la panne de San Francisco (v195),
+    // puis des villes engendrées (v200), pour la troisième fois. Le mur de
+    // rideau porte ses meneaux dans sa texture, `ARCHI.ETAGE` ses petits bois.
+    if (tour) { poser(y + 1, y % 3 === 2 ? ACIER : CITY_BLOCK.CURTAIN); continue; }
     // la fenêtre à guillotine : un carreau sur deux, encadré de blanc
     const fenetre = y > 0 && y % 2 === 1 && (face & 1) === 1;
-    let id = fenetre ? VERRE : mur;
+    let id = fenetre ? ARCHI.ETAGE : mur;
     if (stuc && y === 0) id = CREME;                     // le soubassement à refends
     if (!stuc && !fenetre && y > 0 && y % 2 === 0 && (face & 3) === 2) id = BLANC;
     poser(y + 1, id);

@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v202 — Les sept villes bâties à la main cessent d'être transparentes
+
+**Pourquoi.** La v195 avait sorti le verre du Financial District de San
+Francisco, la v200 des deux cent soixante-neuf villes engendrées. À chaque
+fois le remède avait été écrit dans le fichier de la ville qu'on regardait, et
+à chaque fois il s'était arrêté là. Restaient les villes écrites à la main,
+chacune avec sa propre boucle de façade et son propre bloc de `GLASS` un rang
+sur deux.
+
+Mesuré dans le volume bâti, sur le code en production : **New York 30,4 %**,
+Londres 23,1 %, Nice 18,7 %, Lille 16,4 %, San Francisco 14,2 % hors de son
+centre, Washington 1,2 %. Presque un tiers de Manhattan était un trou — et
+comme un bâtiment est creux, on voyait à travers les tours jusqu'au ciel. Le
+commentaire de `manhattan.js` le disait déjà, mot pour mot : « les tours
+devenaient des cages de verre transparentes ». Il avait limité les fenêtres à
+la façade ; il restait à ne plus les percer du tout.
+
+**Ce que ça change.** Une fenêtre est un DESSIN. Chaque ville garde SES
+matériaux : le mur-rideau à meneaux pour la finance et Midtown, pour les tours
+de la City de Londres et pour le centre de San Francisco ; les petits bois de
+l'étage haussmannien pour la brique du Village, les maisons victoriennes de
+Londres, les façades ocre de Nice, la brique de Lille, les Painted Ladies de
+San Francisco et les immeubles de calcaire de Washington. Tous ces blocs sont
+opaques, portent leurs meneaux dans leur texture, et s'allument déjà la nuit.
+
+**Ce qui le prouve.** Les sept villes passent à **0,0 %** de verre dans leur
+volume bâti. Un témoin neuf de `carteMonde.js` l'exige sous 2 % — le reliquat
+autorisé, ce sont les verrières voulues des monuments. Il a été vérifié ROUGE
+sur `origin/main`, avec les valeurs ci-dessus, et vert sur la branche.
+
+Et il interroge les `batirColonne*` directement, pas le monde chargé : sept
+villes lues avec `getBlock` sans y aller rendraient zéro bloc partout, et le
+témoin passerait au vert en ne prouvant rien. Un compte nul est donc traité
+comme un défaut — un bâtisseur qui ne pose rien ne prouve pas que ses murs
+sont opaques, il prouve qu'on ne l'a pas appelé.
+
+---
+
 ## v201 — Paris a enfin des voitures, et on peut monter dedans
 
 **Pourquoi.** Max, après une visite : « je viens d'aller visiter Paris et je

@@ -573,6 +573,61 @@ const VRAIES_KM = [
       Object.entries(facades).map(([v, c]) =>
         `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
 
+    // ET LES SEPT VILLES BÂTIES À LA MAIN AUSSI (v202).
+    //
+    // Le remède de la v200 avait été porté aux deux cent soixante-neuf villes
+    // engendrées ; les villes écrites à la main le portaient encore, chacune
+    // dans son propre fichier. Mesuré dans le volume bâti sur `origin/main` :
+    // New York 30,4 % de verre — la pire —, Londres 23,1 %, Nice 18,7 %,
+    // Lille 16,4 %, San Francisco 14,2 % hors de son centre, Washington 1,2 %.
+    // Seul Paris était déjà propre, parce qu'il utilise les blocs `ARCHI`
+    // depuis sa remise à l'échelle. C'est la troisième fois que cette panne
+    // se paie ; ce témoin-là couvre le dernier endroit où elle pouvait vivre.
+    // ON INTERROGE LE BÂTISSEUR, PAS LE MONDE CHARGÉ. `getBlock` ne répond que
+    // sur les morceaux déjà engendrés : sept villes lues sans y aller
+    // rendraient zéro bloc partout, et le témoin passerait au vert en ne
+    // prouvant rien. Les `batirColonne*` sont des fonctions pures — on leur
+    // demande directement ce qu'elles posent, et l'on exige d'avoir compté
+    // quelque chose.
+    const mains = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const modules = {
+        ny: [await import('./src/manhattan.js'), 'batirColonne'],
+        londres: [await import('./src/londres.js'), 'batirColonneLondres'],
+        nice: [await import('./src/nice.js'), 'batirColonneNice'],
+        lille: [await import('./src/lille.js'), 'batirColonneLille'],
+        sf: [await import('./src/sanfrancisco.js'), 'batirColonneSF'],
+        washington: [await import('./src/washington.js'), 'batirColonneWashington'],
+        paris: [await import('./src/paris.js'), 'batirColonneParis'],
+      };
+      const out = {};
+      for (const [cle, [mod, nom]] of Object.entries(modules)) {
+        const batir = mod[nom];
+        const p = positionDe(cle);
+        let verre = 0, batis = 0;
+        const poser = (dy, id) => { batis++; if (id === BLOCK.GLASS) verre++; };
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            // Washington veut la cote du sol en plus — on la lui donne.
+            if (cle === 'washington') batir(p.x + du, p.z + dv, 33, poser);
+            else batir(p.x + du, p.z + dv, poser);
+          }
+        }
+        out[cle] = { verre, batis };
+      }
+      return out;
+    });
+    // Le seuil est à 2 % : il reste les vitraux et les verrières des monuments
+    // — la coupole du Reichstag, la Banque de Chine — qui sont voulus.
+    // `batis === 0` compte comme un défaut : un bâtisseur qui ne pose rien ne
+    // prouve pas que ses murs sont opaques, il prouve qu'on ne l'a pas appelé.
+    const troues = Object.entries(mains).filter(([, c]) => c.batis === 0 || c.verre > c.batis * 0.02);
+    verifier('et les villes bâties à la main non plus : leurs murs sont opaques',
+      troues.length === 0,
+      Object.entries(mains).map(([v, c]) =>
+        `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
+
     const sansVie = Object.entries(facades).filter(([v, c]) =>
       !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',

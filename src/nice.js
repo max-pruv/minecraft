@@ -281,8 +281,14 @@ export function batirColonneNice(x, z, poser) {
 
   for (let y = 0; y < bh; y++) {
     if (dedans) { if (y === 0) poser(1, BLOCK.PLANK); continue; }
+    // UNE FENÊTRE EST UN DESSIN, PAS UN TROU. Un rang sur deux était un bloc
+    // de VERRE : comme un bâtiment est creux, on voyait au travers — 18,7 %
+    // du volume bâti de Nice était un trou. C'est la panne de San Francisco
+    // (v195) puis des deux cent soixante-neuf villes engendrées (v200), la
+    // troisième fois. `ARCHI.ETAGE` porte ses meneaux dans sa texture, il est
+    // opaque, et il s'allume déjà la nuit.
     const fenetre = y > 0 && y % 2 === 1 && (face & 1) === 1;
-    poser(y + 1, fenetre ? VERRE : mur);
+    poser(y + 1, fenetre ? ARCHI.ETAGE : mur);
   }
   // les tuiles rondes, et les volets peints du Vieux-Nice
   poser(bh + 1, TUILE);

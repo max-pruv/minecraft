@@ -56,7 +56,7 @@
 // Le reste — les rives, les collines, le tracé des avenues, les stations de
 // métro — est à sa place réelle, calculé et non deviné.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies } from './voies.js';
 import { positionDe } from './mondes.js';
 
@@ -1398,7 +1398,11 @@ export function batirColonneWashington(x, z, h, poser) {
     // une fenêtre par étage, sur un rythme de façade
     const dansEtage = y % 4;
     const fenetre = (dansEtage === 2 || dansEtage === 3) && (face & 1) === 1;
-    let id = fenetre ? (q.genre === 'bureaux' ? VERRE_BLEU : VERRE) : mur;
+    // Les bureaux avaient déjà leur mur-rideau opaque ; les immeubles de
+    // brique et de calcaire, eux, posaient encore du VERRE — 1,2 % du volume
+    // bâti, le reliquat de la même panne que New York, Londres, Nice, Lille
+    // et San Francisco. `ARCHI.ETAGE` porte ses petits bois dans sa texture.
+    let id = fenetre ? (q.genre === 'bureaux' ? VERRE_BLEU : ARCHI.ETAGE) : mur;
     if (!fenetre && dansEtage === 0 && q.genre === 'brique') id = CALCAIRE;  // le bandeau
     poser(y, id);
   }
