@@ -296,6 +296,39 @@ export const MONDES = {
   //   },
 };
 
+// --- la remise à l'échelle des villes engendrées ------------------------------
+//
+// Un bloc de Rome valait CINQUANTE MÈTRES au sol (échelle 20 blocs/km) : ses
+// îlots faisaient sept cent cinquante mètres de côté, et un seul bâtiment les
+// remplissait. C'est ce que Max a signalé en capture — ce qui cloche à Rome
+// n'est pas la hauteur, c'est l'EMPRISE. La correction documentée est de
+// remettre la ville à l'échelle, pas de la raboter ; ce qui l'empêchait était
+// la carte, dont les marges étaient tombées à huit blocs. La v199 les a
+// rendues, et voici la contrepartie.
+//
+// Le facteur est un RÉSULTAT, comme l'échelle de la carte. Mesuré sur les deux
+// cent soixante-dix-huit lieux du registre, la pire marge entre deux disques :
+// k=1,5 → 48 blocs, k=1,7 → 37, k=1,8 → 31, k=1,9 → 24, k=2,0 → 17, k=2,2 → 1.
+// On prend 1,8 : Rome passe de 20 à 36 blocs par kilomètre — entre Paris (24)
+// et Washington (48) — et il reste trente et un blocs de campagne entre
+// Johannesburg et Pretoria.
+//
+// Ce qui grandit, c'est la RÉSOLUTION, pas la géographie : le disque couvre le
+// même nombre de kilomètres réels, le Tibre garde sa largeur en mètres, et
+// seule la trame de rues reste comptée en blocs — donc un îlot passe de sept
+// cent cinquante mètres à quatre cent dix-sept. C'est exactement le défaut
+// qu'on corrige.
+//
+// Les villes bâties à la main ne bougent PAS : elles ont chacune leur échelle,
+// mesurée sur leur vrai plan, et des monuments posés à des adresses qui en
+// dépendent. Les deux sites (la Grande Muraille, la giga-usine) non plus.
+export const K_VILLES = 1.8;
+const BATIES_A_LA_MAIN = new Set(['paris', 'lille', 'nice', 'londres', 'ny', 'sf', 'washington',
+  'chine', 'gigatexas']);
+for (const l of MONDES.terre.lieux) {
+  if (!BATIES_A_LA_MAIN.has(l.cle)) l.r = Math.round(l.r * K_VILLES);
+}
+
 // --- ce que le reste du jeu appelle ------------------------------------------
 
 const cache = new Map();
