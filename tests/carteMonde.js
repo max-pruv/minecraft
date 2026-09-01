@@ -797,11 +797,20 @@ const VRAIES_KM = [
     // tronc au-dessus du sol, et du feuillage au-dessus du tronc.
     const bois = await tab.evaluate(async () => {
       const M = await import('./src/mondes.js');
+      const { VILLES_MONDE } = await import('./src/villesmonde.js');
       const g = window.__game;
       const LOG = 5, LEAVES = 6;
       const b = M.positionDe('berlin');
-      // le Tiergarten, tel que la fiche de Berlin le pose
-      const cx = Math.round(b.x - 47), cz = Math.round(b.z + 12);
+      // LE TIERGARTEN SE DEMANDE À LA FICHE, IL NE SE RECOPIE PAS. Ce point
+      // était écrit `b.x - 47, b.z + 12` — les unités de la fiche prises pour
+      // des blocs du monde. La remise à l'échelle de la v200 l'a déplacé de
+      // quarante blocs et le témoin a cherché des arbres dans une rue : « 0
+      // arbres · 0 feuillage » — pas « le parc a perdu ses arbres », mais « je
+      // ne suis pas dans le parc ». Un témoin qui vise un (u, v) en dur meurt
+      // à la prochaine échelle, et il meurt en accusant le mauvais coupable.
+      const berlin = VILLES_MONDE.find((f) => f.cle === 'berlin');
+      const parc = berlin.parcs[0];
+      const cx = Math.round(b.x + parc.cu * berlin.K), cz = Math.round(b.z + parc.cv * berlin.K);
       g.player.pos.set(cx, g.world.sommetColonne(cx, cz) + 30, cz);
       await new Promise((r) => setTimeout(r, 9000));
       let arbres = 0, feuillesAuSol = 0;
