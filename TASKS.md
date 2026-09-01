@@ -21,6 +21,27 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   n'a pas de voies nommées du tout — son plan de L'Enfant demande sa propre
   méthode.
 
+- [ ] **Londres n'a qu'un circuit de voitures** — remesuré en v201 sur toutes
+  les combinaisons : le triangle de Mayfair passe à 95 %, et les six autres
+  voies (le Mall, Whitehall, le Strand, Victoria Street, le Victoria
+  Embankment, Borough High Street) plafonnent entre 57 % et 85 % — la Tamise
+  et les parcs les coupent. Même cause qu'à Nice et Lille : la ville est
+  encore à son échelle d'origine. Sa remise à l'échelle réglera les trois.
+
+- [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
+  Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune
+  boucle au-dessus du seuil. La ville en a quatre qui la couvrent aux neuf
+  dixièmes ; ces cinq-là bordent le Golden Gate Park et la côte, où il n'y a
+  rien à boucler.
+
+- [ ] **Une voiture coûte 32,6 maillages** — mesuré en v201, et c'est ce qui
+  borne tout le reste : trois fois un personnage, pour un objet qui n'a ni
+  bras ni jambes. Le modèle `.glb` arrive découpé en trente-deux morceaux, et
+  seuls les quatre pivots `Wheel_*` ont besoin de tourner. Fusionner le reste
+  par matériau, une fois au chargement, diviserait le coût par cinq et
+  permettrait d'en dessiner beaucoup plus. À faire hors ligne ou à la volée,
+  jamais avec un décodeur embarqué dans la PWA.
+
 - [ ] **SoMa et les quartiers de maisons ont encore des fenêtres de verre
   plein** — le centre de San Francisco est passé au mur-rideau en v195, pas le
   reste. Un bloc de `GLASS` fait trente-sept mètres de large : au pied d'un
