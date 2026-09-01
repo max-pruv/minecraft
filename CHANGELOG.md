@@ -20,6 +20,67 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v204 — Lille à l'échelle GTA, et la citadelle en étoile
+
+**Pourquoi.** Lille était la dernière grande ville de France à son échelle
+d'origine : **seize blocs par kilomètre**, un bloc pour soixante-deux mètres.
+La rue Faidherbe — la perspective de Lille, de la place du Théâtre à la gare
+— faisait dix blocs de long, on la traversait en cinq secondes ; la citadelle
+de Vauban, l'étoile qui fait reconnaître la ville de n'importe quelle vue
+aérienne, tenait dans un disque de sept blocs ; et aucune des sept rues n'était
+assez longue pour refermer une boucle de voitures. Depuis la v201 Lille était,
+avec Nice, la seule grande ville à rouler sur un anneau de secours. Nice est
+passée en v203 ; Lille est la neuvième ville remise à l'échelle, et la
+première depuis Paris à être DANS la fenêtre d'empreinte du relief.
+
+**Ce que ça change.** Lille passe à **trente-deux blocs par kilomètre** et
+son disque de 46 à 92 blocs : il couvre Lille intra-muros, de la citadelle à
+Euralille et de Wazemmes au Vieux-Lille. La citadelle est une vraie étoile à
+cinq branches de onze blocs, ses douves en eau tout autour, la Deûle qui
+l'enveloppe et le quai du Wault qui pointe vers le centre. La Grand'Place a
+son damier, la Vieille Bourse et la colonne de la Déesse ; la rue Faidherbe
+file droit sur la gare Lille-Flandres ; l'Opéra et le beffroi de la Chambre
+de commerce sont côte à côte place du Théâtre ; la Porte de Paris a le grand
+beffroi de l'hôtel de ville derrière elle — posé en kilomètres réels, plus en
+`LILLE.x + 6` — et la tour « chaussure de ski » ferme Euralille. Le beffroi
+ne laisse plus voir le ciel par ses meurtrières : ses fenêtres sont un
+dessin, comme partout depuis la v202.
+
+Et **six circuits de voitures mesurés couvrent les quinze avenues** : la
+grande boucle du sud-ouest par Nationale, Vauban, Gambetta et la Liberté
+(100 %, 189 blocs), la Grand'Place à la Porte de Paris (100 %, 144), le
+quartier des gares par Carnot, Willy-Brandt, Tournai et Faidherbe (99 %, 96),
+le tour du Vieux-Lille par la Monnaie et le Peuple-Belge (100 %, 94), l'axe
+Esquermoise–Royale jusqu'à la citadelle (100 %, 82), le triangle de Wazemmes
+(100 %, 97).
+
+**Ce qui le prouve.** Lille est à (−102, −326), DANS la fenêtre que
+`plafond.js` observe : la casse se borne donc **au bit près**, comme Paris en
+v187. L'empreinte du relief change (c20adb73…) ; celle HORS des villes, mesurée
+avec la MÊME découpe — le disque de 92 plus quarante de fondu — sur
+`origin/main` et sur la branche, rend le même hash des deux côtés
+(c79c2f3b…, **184 656 colonnes**, zéro déplacée). Un troisième témoin vérifie
+que le disque agrandi n'atteint aucun des trois endroits où les enfants ont
+bâti : le plus proche, le quartier des enfants, en reste à deux cent
+vingt-neuf blocs.
+
+Trois témoins neufs de `carteMonde.js` interrogent le bâtisseur pur
+(`solLille`), jamais le monde chargé : six adresses en kilomètres réels toutes
+sur terre et un rayon d'au moins 90 ; les douves de la citadelle en eau
+(217 colonnes sur les 200 exigées), le Wault et la Deûle aussi ; et au moins
+cinq circuits qui tiennent la rue à 90 %. Le témoin de `carte.js` balaie le
+disque de la fiche au lieu d'un rayon écrit en dur, exige plus de deux cent
+soixante-dix colonnes de douves et retrouve Faidherbe, la citadelle et la
+hiérarchie des tours (CCI < hôtel de ville < tour de Lille) par
+`adresseLille` et `VOIES_LILLE`. La fumée compte Lille parmi les cinq villes
+à circuit. Tous ont été vérifiés ROUGES sur `origin/main` (`adresseLille`
+absente, rayon 46 < 90, quatre villes à circuit au lieu de cinq).
+
+Jugé sur captures : vue aérienne de la citadelle et du centre, vue de rue
+sur la Grand'Place, dans le Vieux-Lille et devant Euralille.
+
+---
+
 ## v203 — Nice à l'échelle GTA, avec ses voitures
 
 **Pourquoi.** Nice était la dernière grande ville de la Côte encore à son

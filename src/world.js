@@ -1,6 +1,6 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, isSolid as blockIsSolid } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { buildAeroport } from './aeroport.js';
 import {
@@ -39,7 +39,7 @@ import {
   landmarksVillesMonde, placesVillesMonde, dansVilleMonde,
 } from './villesmonde.js';
 import {
-  LILLE, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
+  LILLE, adresseLille, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
   buildTourDeLille, buildTreille,
@@ -546,8 +546,10 @@ function buildBelfry(set) { // le beffroi de Lille, en brique avec son horloge
     for (let dx = -2; dx <= 2; dx++) {
       for (let dz = -2; dz <= 2; dz++) {
         if (Math.abs(dx) !== 2 && Math.abs(dz) !== 2) continue; // walls only
+        // une fenêtre est un DESSIN, pas un trou : le beffroi est creux, et
+        // un bloc de verre y ouvrait une meurtrière sur le vide
         const window = y % 4 === 2 && (dx === 0 || dz === 0);
-        set(dx, y, dz, window ? BLOCK.GLASS : BLOCK.BRICK);
+        set(dx, y, dz, window ? ARCHI.ETAGE : BLOCK.BRICK);
       }
     }
   }
@@ -1002,7 +1004,10 @@ const LANDMARKS = [
     build,
   })),
   // Lille
-  { name: 'Beffroi de Lille', x: LILLE.x + 6, z: LILLE.z + 14, box: 5, build: buildBelfry },
+  // L'hôtel de ville et son beffroi, place Roger-Salengro : 680 m à l'est et
+  // 1,15 km au sud de la Grand'Place, en KILOMÈTRES réels — un `LILLE.x + 6`
+  // écrit en blocs de l'ancienne échelle serait mort à la remise à l'échelle.
+  { name: 'Beffroi de Lille', x: adresseLille(0.68, 1.15)[0], z: adresseLille(0.68, 1.15)[1], box: 5, build: buildBelfry },
   ...[buildVieilleBourse, buildPorteDeParis, buildCitadelle, buildColonneDeesse,
     buildOperaLille, buildBeffroiCCI, buildGareFlandres, buildTourDeLille, buildTreille,
   ].map((build, i) => ({

@@ -869,8 +869,9 @@ const position = (p) => p.evaluate(() => ({
     // l'autre avec un beffroi posé au milieu de rien. Or chacune tient dans une
     // forme : la baie des Anges pour Nice, et pour Lille l'étoile à cinq
     // branches de la citadelle de Vauban, qu'on ne lit que vue du ciel.
-    const releveVilles = await tab.evaluate(({ N, L }) => {
+    const releveVilles = await tab.evaluate(async ({ N, L }) => {
       const w = window.__game.world;
+      const lille = await import('./src/lille.js');
       const EAU = 7;
       // Nice : la mer occupe le sud de la baie, et trois collines se lèvent.
       // On balaie TOUT le disque de la fiche — un rayon écrit en dur (44)
@@ -885,13 +886,19 @@ const position = (p) => p.evaluate(() => ({
       }
       // Lille : l'étoile se compte par ses douves. Cinq bastions, cinq
       // courtines : le contour est bien plus long que celui d'un cercle de même
-      // aire — c'est cela, une étoile, et c'est mesurable.
+      // aire — c'est cela, une étoile, et c'est mesurable. La citadelle se
+      // demande au plan d'auteur, en kilomètres depuis la Grand'Place : une
+      // fenêtre écrite en blocs (u −40..−4) est morte à la remise à l'échelle
+      // de la v204, qui a doublé la ville.
       let douves = 0;
-      for (let u = -40; u <= -4; u++) {
-        for (let v = -34; v <= 2; v++) {
-          // Les douves sont creusées sous le niveau de la mer : c'est le remplissage
-          // général du monde qui les met en eau, à la cote trente.
-          if (w.getBlock(L.x + u, 30, L.z + v) === EAU) douves++;
+      if (lille.adresseLille) {
+        const [cx, cz] = lille.adresseLille(-1.55, -0.8);
+        for (let du = -20; du <= 20; du++) {
+          for (let dv = -20; dv <= 20; dv++) {
+            // Les douves sont creusées sous le niveau de la mer : c'est le
+            // remplissage général du monde qui les met en eau, à la cote trente.
+            if (w.getBlock(cx + du, 30, cz + dv) === EAU) douves++;
+          }
         }
       }
       return { mer, terre, sommetNice, douves };
@@ -901,8 +908,11 @@ const position = (p) => p.evaluate(() => ({
     verifier('Nice a sa baie et ses collines',
       releveVilles.mer > (releveVilles.mer + releveVilles.terre) / 10 && releveVilles.sommetNice >= 56,
       `${releveVilles.mer} points en mer pour ${releveVilles.terre} à terre · sommet ${releveVilles.sommetNice}`);
+    // Un anneau de trois blocs et demi autour d'un CERCLE de onze en ferait
+    // deux cent quarante-deux ; l'étoile, avec ses cinq pointes, en compte
+    // trois cents. C'est la pointe qu'on mesure.
     verifier('Lille a sa citadelle en étoile, entourée d\'eau',
-      releveVilles.douves > 260,
+      releveVilles.douves > 270,
       `${releveVilles.douves} blocs de douves`);
 
     // --- Lille, relevée sur documents ----------------------------------------
@@ -917,9 +927,15 @@ const position = (p) => p.evaluate(() => ({
     // ville 104 m < tour de Lille 120 m, blanche et en porte-à-faux — la
     // « chaussure de ski ») ; et l'eau : le quai du Wault, doigt de la Deûle
     // pointé vers le centre, et la façade translucide de la Treille.
-    const fidele = await tab.evaluate((L) => {
+    const fidele = await tab.evaluate(async (L) => {
       const w = window.__game.world;
+      const lille = await import('./src/lille.js');
       const Lx = L.x, Lz = L.z, OR = 19, VERRE = 10, EAU = 7, BLANC = 310;
+      if (typeof lille.adresseLille !== 'function') return { absent: true };
+      // Les adresses viennent du plan d'auteur, en kilomètres depuis la
+      // Grand'Place : un (u, v) écrit en dur meurt à la remise à l'échelle
+      // suivante — ceux de la v197 sont morts à la v204.
+      const chez = (dx, dz) => { const [x, z] = lille.adresseLille(dx, dz); return [x - Lx, z - Lz]; };
       const haut = (u, v) => {
         const h = w.terrainHeight(Lx + u, Lz + v);
         for (let y = h + 40; y > h; y--) { const id = w.getBlock(Lx + u, y, Lz + v); if (id) return { y: y - h, id }; }
@@ -930,34 +946,50 @@ const position = (p) => p.evaluate(() => ({
         for (let y = h; y < h + 40; y++) if (w.getBlock(Lx + u, y, Lz + v) === id) return true;
         return false;
       };
-      // la rue Faidherbe : rien au-dessus de la chaussée sur toute sa longueur
-      let rueLibre = true;
-      for (let u = 2; u <= 10; u++) if (haut(u, 0).y > 0) rueLibre = false;
-      const horloge = colonne(11, 0, OR);
+      // la rue Faidherbe : rien au-dessus de la chaussée sur toute sa
+      // longueur, de la place du Théâtre à la gare — elle file en diagonale,
+      // on la suit d'un bout à l'autre par sa voie déclarée
+      const faidherbe = (lille.VOIES_LILLE || []).find((r) => r.nom === 'Rue Faidherbe');
+      let rueLibre = !!faidherbe;
+      if (faidherbe) {
+        const [[u0, v0], [u1, v1]] = faidherbe.pts;
+        for (let t = 0; t <= 1; t += 0.1) {
+          if (haut(Math.round(u0 + (u1 - u0) * t), Math.round(v0 + (v1 - v0) * t)).y > 0) rueLibre = false;
+        }
+      }
+      // l'horloge dorée au fronton de la gare, sur sa façade ouest
+      const [gu, gv] = chez(1.03, 0);
+      const horloge = colonne(gu - 1, gv, OR);
       // la Grand'Place : la Déesse au centre, le damier sous elle
       const deesse = haut(0, 0).id === OR;
       const p1 = w.getBlock(Lx + 2, w.terrainHeight(Lx + 2, Lz + 1), Lz + 1);
       const p2 = w.getBlock(Lx + 3, w.terrainHeight(Lx + 3, Lz + 1), Lz + 1);
       const damier = p1 !== p2 && p1 !== 0 && p2 !== 0;
       // la Vieille Bourse : des murs tout autour, une cour au milieu
-      const cour = haut(4, -6).y <= 1 && haut(4, -10).y >= 5 && haut(0, -6).y >= 5;
+      const [bu, bv] = chez(0.28, -0.22);
+      const cour = haut(bu, bv).y <= 1 && haut(bu, bv - 4).y >= 5 && haut(bu - 4, bv).y >= 5;
       // les trois tours, chacune à sa place
-      const cci = haut(6, -13).y, hdv = haut(6, 14).y, ski = haut(17, -3).y;
+      const [cu, cv] = chez(0.55, -0.6), [hu, hv] = chez(0.68, 1.15), [su, sv] = chez(1.55, -0.35);
+      const cci = haut(cu, cv).y, hdv = haut(hu, hv).y, ski = haut(su, sv).y;
       // la chaussure de ski : blanche, et son porte-à-faux au-dessus du vide
-      const bout = haut(17, 0);
-      const hb = w.terrainHeight(Lx + 17, Lz);
-      const videSous = w.getBlock(Lx + 17, hb + 6, Lz) === 0;
+      // — trois blocs au nord du fût, il n'y a que le sommet
+      const bout = haut(su, sv + 3);
+      const hb = w.terrainHeight(Lx + su, Lz + sv + 3);
+      const videSous = w.getBlock(Lx + su, hb + 6, Lz + sv + 3) === 0;
       // l'eau du quai du Wault, remplie à la cote trente comme les douves —
       // sondée à son bout EST, le seul hors de l'étoile de la citadelle : au
       // bout ouest, les douves du bastion mettaient déjà de l'eau avant.
-      const wault = w.getBlock(Lx - 7, 30, Lz - 4) === EAU;
-      // la façade claire de la Treille, percée de sa rosace de verre
-      const treille = haut(-2, -16).y >= 7 && colonne(-2, -16, VERRE);
+      const [wu, wv] = chez(-0.85, -0.1);
+      const wault = w.getBlock(Lx + wu, 30, Lz + wv) === EAU;
+      // la façade claire de la Treille, percée de sa rosace de verre — la
+      // façade ouest de 1999, quatre blocs à l'ouest de la nef
+      const [tu, tv] = chez(-0.05, -0.75);
+      const treille = haut(tu - 4, tv).y >= 7 && colonne(tu - 4, tv, VERRE);
       return { rueLibre, horloge, deesse, damier, cour, cci, hdv, ski,
         blanc: bout.id === BLANC, videSous, wault, treille };
     }, V.lille);
     verifier("la rue Faidherbe file droit vers l'horloge de la gare",
-      fidele.rueLibre && fidele.horloge,
+      !fidele.absent && fidele.rueLibre && fidele.horloge,
       JSON.stringify({ rueLibre: fidele.rueLibre, horloge: fidele.horloge }));
     verifier('la Déesse veille sur le damier, la Vieille Bourse sur sa cour',
       fidele.deesse && fidele.damier && fidele.cour,

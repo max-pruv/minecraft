@@ -75,6 +75,16 @@ travail est irrattrapable.
    prouve pas l'absence : il en donne l'illusion. Toute distance du monde réel
    se redemande à la projection, jamais ne se recopie.
 
+   **Elle a servi une SIXIÈME fois, en v204, pour Lille** — dans la fenêtre
+   d'empreinte, comme Paris, et bornée de la même manière : Lille passe de
+   seize à trente-deux blocs par kilomètre et son disque de 46 à 92. La
+   découpe hors villes s'élargit avec le disque (86 → 132 blocs de portée),
+   donc le NOMBRE de colonnes change — 188 166 → 184 656 — et le hash avec ;
+   ce qui prouve la borne, c'est que la MÊME découpe mesurée sur `origin/main`
+   et sur la branche rend le même hash, colonne pour colonne. Un troisième
+   témoin vérifie qu'aucun sanctuaire n'est à portée du disque ; le plus
+   proche, le quartier des enfants, en reste à 229 blocs.
+
    **Elle a servi une CINQUIÈME fois, en v200**, pour remettre à l'échelle les
    deux cent soixante-neuf villes engendrées — et cette fois elle se BORNE à
    nouveau, ce qui en fait le modèle à suivre. Deux villes seulement tombent
@@ -975,11 +985,11 @@ flotte. Deux pièges, tous deux payés :
 - **Les enchaînements ne se devinent pas, ils se mesurent.** Toutes les
   combinaisons d'avenues de chaque ville ont été éprouvées, et l'on n'a gardé
   que ce qui passe : Paris 99 % et 100 % (345 et 233 blocs), Londres 96 %,
-  San Francisco 97 % et 99 %. **Nice et Lille n'ont RIEN au-dessus du seuil**
-  — leurs rues sont trop courtes pour refermer une boucle — et gardent
-  l'anneau de secours jusqu'à leur remise à l'échelle. On ne déclare pas un
-  circuit qui ne valide jamais : ce serait du code mort qui ressemble à de
-  l'avancement.
+  San Francisco 97 % et 99 %. **Nice et Lille n'avaient RIEN au-dessus du
+  seuil** — leurs rues étaient trop courtes pour refermer une boucle — et ont
+  gardé l'anneau de secours jusqu'à leur remise à l'échelle (v203 et v204),
+  où chacune a gagné ses circuits mesurés. On ne déclare pas un circuit qui
+  ne valide jamais : ce serait du code mort qui ressemble à de l'avancement.
 
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
@@ -1178,7 +1188,49 @@ restent ouverts ; on lit le journal, puis on tue le processus par son pid.
 apporte donc SES PROPRES témoins dans `carteMonde.js` : la ville tient de la
 Californie à Cimiez, la mer commence au sud de Masséna et le port Lympia est
 en eau, et des voitures font le tour de Nice. Lille, elle, est DANS la
-fenêtre : sa remise à l'échelle devra la double empreinte.
+fenêtre : sa remise à l'échelle a exigé la double empreinte — voir ci-dessous.
+
+### Lille (`lille.js`) — la neuvième remise à l'échelle, DANS la fenêtre d'empreinte
+
+**Trente-deux blocs par kilomètre** (v204), contre seize : un bloc valait
+soixante-deux mètres, la rue Faidherbe — la perspective de Lille — faisait dix
+blocs, et la citadelle de Vauban, restée à ses onze blocs de rayon, faisait un
+kilomètre de pointe à pointe, près du double de la vraie. Le disque passe de
+46 à 92 blocs et couvre Lille intra-muros, d'Euralille à la citadelle et de
+Wazemmes au Vieux-Lille. Même méthode qu'à Paris et à Nice : rayon du
+registre, `K = 2`, `k()` sur la géométrie d'auteur (la Deûle, le quai du
+Wault, les origines de trame), largeurs remesurées en blocs neufs,
+`adresseLille(dx, dz)` en kilomètres pour les sondes et les autres fichiers
+— le beffroi de `world.js` se pose par elle, plus jamais par `LILLE.x + n`.
+Six circuits mesurés couvrent les quinze avenues, tous à 99 ou 100 %. Quatre
+choses à savoir.
+
+- **C'est la seule ville remise à l'échelle DANS la fenêtre d'empreinte
+  depuis Paris**, et la preuve prend donc la forme canonique : deux
+  empreintes dans `plafond.js`, celle du relief qui change, celle d'hors des
+  villes qui ne bouge pas — mesurée avec la MÊME découpe des deux côtés. Et
+  un piège de plus qu'à Paris : **quand le disque grandit, la découpe
+  grandit avec lui**, donc le NOMBRE de colonnes hors villes change
+  (188 166 → 184 656) et le hash de référence aussi. Un hash qui change n'est
+  pas une preuve de casse ni d'innocence ; seule la double mesure, même
+  découpe sur `origin/main` et sur la branche, tranche. Le brouillon
+  `empreinte.mjs` doit reproduire `dansUneVille` EXACTEMENT — villes
+  engendrées comprises, sinon il compte 194 757 colonnes et ne prouve rien.
+- **Une forme d'auteur ne suit pas l'échelle quand elle était déjà trop
+  grande.** Les onze blocs de rayon de la citadelle sont restés onze : à
+  trente-deux blocs par kilomètre ils font enfin trois cent cinquante mètres.
+  La Deûle, elle, s'est déplacée à l'OUEST de l'étoile : projetée telle
+  quelle, elle la coupait en deux et noyait deux bastions — et la forme est
+  toute la raison d'être de cette citadelle.
+- **La brique du Nord n'est pas orange.** `brique(1)` est l'orange de
+  signalisation et `brique(16)` un rose vif — les « briques de plastique »
+  déjà signalées sur Rome, qui ont survécu ici à la remise à l'échelle
+  jusqu'à la capture de rue. Rouge, brun, chocolat, jaune-ocre (Kaki) :
+  c'est la palette.
+- **Le témoin de la fumée compte les villes à circuit** : cinq désormais
+  (Paris, Londres, San Francisco, Nice, Lille). Une ville qui gagne ses
+  circuits met ce chiffre à jour dans la même livraison, sinon la voie
+  rapide rougit pour la bonne raison au mauvais moment.
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 
