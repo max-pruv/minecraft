@@ -952,6 +952,53 @@ flotte. Deux pièges, tous deux payés :
   circuit qui ne valide jamais : ce serait du code mort qui ressemble à de
   l'avancement.
 
+### Ce que coûte une voiture, et pourquoi les villes semblaient vides
+
+**Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et
+personne ne l'avait mesuré avant la v201. C'est le chiffre qui gouverne tout
+le reste : il interdit d'en mettre beaucoup tant qu'on ne les découpe pas
+correctement, et il les rend abordables dès qu'on le fait.
+
+- **La portée se teste VOITURE PAR VOITURE, jamais sur la tête du convoi.**
+  C'était le défaut de fond : si la tête était à portée, les vingt voitures
+  d'une boucle de 431 blocs se dessinaient — y compris celles de l'autre rive.
+  Quatre-vingt-neuf voitures dessinées à Paris pour une trentaine visibles.
+  Même leçon que la v196 sur les personnages, un cran plus haut : cesser
+  d'animer ne suffit pas, il faut cesser de DESSINER. Le test par convoi reste
+  comme PRÉ-FILTRE, élargi de la traînée (`ecart × (n − 1)`), sinon mille
+  circuits se recalculent à chaque image.
+- **Quarante-cinq blocs, pas cent dix.** Un bloc de ville vaut ici trente à
+  quarante mètres : à 110 blocs une voiture est à quatre kilomètres, et les
+  immeubles la cachent depuis longtemps. Les personnages s'effacent à 62 sans
+  que personne ne l'ait jamais signalé.
+- **Résultat : cinq fois plus de voitures et MOINS d'appels qu'avant** — Paris
+  537 → 498, San Francisco 407 → 376.
+
+**Et les circuits ne se devinent toujours pas, ils se mesurent — mais on ne
+s'arrête plus au premier.** Paris avait deux enchaînements déclarés sur 270 qui
+passent le seuil, tous deux sur la rive droite : la moitié de la ville n'avait
+jamais vu une voiture. On balaie toutes les combinaisons, puis on choisit par
+COUVERTURE GLOUTONNE — à chaque tour, celle qui apporte le plus d'avenues
+neuves. Cinq circuits couvrent les dix-huit avenues de Paris.
+
+**Un anneau qui trempe ne se jette pas, il se déplace ET s'aplatit.** Pour les
+villes engendrées, quatre villes (Agra, Berlin, Mumbai, Chicago) n'avaient
+AUCUNE voiture : un fleuve, un lac ou une côte mouillait toujours un coin, et
+un anneau carré centré ne sait pas longer une rive. Avec les rectangles et les
+décalages en diagonale, plus une seule des 267 villes à trame n'est vide.
+
+**Le rayon d'embarquement est de neuf blocs, et c'est un chiffre d'enfant.**
+Cinq blocs autour d'une voiture à 4,2 m/s laissent une seconde pour appuyer ;
+un enfant de sept ans la rate à tous les coups et en conclut que le jeu refuse.
+Le bouton et l'embarquement partagent le même chiffre, sinon le bouton
+s'affiche pour une voiture qu'appuyer ne peut pas attraper. Le garde de hauteur
+(`|Δy| > 2,5`) est ce qui empêche un quai de métro souterrain d'attraper une
+voiture de la rue.
+
+**Et un pas de tirage se choisit PREMIER avec la taille de la flotte.** Le pas
+de 13 sur cinquante modèles revient sur ses pas au bout de cinquante
+(13 × 50 ≡ 0). 17 l'est : cinquante voitures d'affilée, cinquante modèles.
+
 ### Paris (`paris.js`) — et ce qu'on apprend d'une remise à l'échelle
 
 La sixième ville remise à l'échelle GTA, en v187 : **vingt-quatre blocs par

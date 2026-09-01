@@ -1897,18 +1897,34 @@ export function tracesCirculation(solDe) {
     // On cherche donc plus loin : quatre tailles, et quatre décalages qui
     // poussent l'anneau sur une seule rive. Le premier sec gagne, et on en
     // garde deux par ville.
+    // QUATRE ANNEAUX, PAS DEUX (v201). Deux anneaux suffisaient quand une
+    // ville faisait cinquante blocs de rayon ; depuis la v200 elle en fait
+    // deux cents, et deux anneaux concentriques y laissent tout le reste
+    // désert. C'est le même défaut que les passants — un chiffre écrit
+    // quand les villes étaient petites — et il se corrige de la même façon :
+    // on en garde autant que la ville a de place, jusqu'à quatre.
+    // ET DES ANNEAUX QUI NE SONT PAS CARRÉS. Quatre villes n'en avaient
+    // AUCUN — Agra, Berlin, Mumbai, Chicago : un fleuve, un lac ou une côte
+    // mouillait toujours un coin, et un anneau carré centré ne sait pas
+    // longer une rive. On essaie donc aussi les rectangles (plus large que
+    // haut, et l'inverse) et les décalages en diagonale : un anneau qui
+    // trempe ne se jette pas, il se déplace ET s'aplatit.
     const candidats = [];
-    for (const part of [0.55, 0.42, 0.34, 0.26]) {
-      for (const [du, dv] of [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]]) {
-        candidats.push([part, du, dv]);
+    for (const part of [0.62, 0.55, 0.48, 0.42, 0.34, 0.26, 0.2]) {
+      for (const [du, dv] of [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3],
+        [0.28, 0.28], [-0.28, 0.28], [0.28, -0.28], [-0.28, -0.28]]) {
+        for (const [ku, kv] of [[1, 1], [1, 0.55], [0.55, 1]]) {
+          candidats.push([part, du, dv, ku, kv]);
+        }
       }
     }
-    for (const [part, decU, decV] of candidats) {
-      if (traces.filter((t2) => t2.cle === f.cle).length >= 2) break;
+    const MAX_ANNEAUX = 4;
+    for (const [part, decU, decV, ku, kv] of candidats) {
+      if (traces.filter((t2) => t2.cle === f.cle).length >= MAX_ANNEAUX) break;
       const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
       const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
-      const Ru = Math.max(t.pu, Math.round((f.rayon * part) / t.pu) * t.pu);
-      const Rv = Math.max(t.pv, Math.round((f.rayon * part) / t.pv) * t.pv);
+      const Ru = Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
+      const Rv = Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
       // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
       // de la trame, puis on tourne vers le monde.
       let sec = true;
@@ -1953,9 +1969,9 @@ export function tracesCirculationMain(villes, solDe) {
   for (const c of villes) {
     const base = solDe(c.x, c.z);
     let gardes = 0;
-    for (const part of [0.5, 0.38, 0.3, 0.22]) {
+    for (const part of [0.58, 0.5, 0.44, 0.38, 0.3, 0.22]) {
       for (const [decU, decV] of [[0, 0], [0.28, 0], [-0.28, 0], [0, 0.28], [0, -0.28]]) {
-        if (gardes >= 2) break;
+        if (gardes >= 4) break;
         const R = Math.round(Math.min(c.r, 70) * part);
         if (R < 12) continue;
         const cu = Math.round(c.r * decU), cv = Math.round(c.r * decV);

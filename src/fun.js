@@ -328,6 +328,17 @@ export function initFun(ctx) {
   // suit le convoi.
   let bord = null;
 
+  // NEUF BLOCS, PAS CINQ — et c'est la réponse à « on ne peut pas monter dans
+  // les véhicules en déplacement ». Le code pour conduire une voiture de ville
+  // existe depuis la v194 et il marche ; ce qui ne marchait pas, c'est de
+  // l'ATTRAPER. À 4,2 m/s, cinq blocs laissent une seconde pour appuyer sur le
+  // bouton — un enfant de sept ans la rate à tous les coups, et il en conclut
+  // que le jeu refuse. Neuf blocs lui en laissent deux, et `placeProche` rend
+  // toujours la PLUS PROCHE : on ne monte pas dans la voiture d'en face. Le
+  // bouton et l'embarquement partagent le même chiffre, sinon le bouton
+  // s'affiche pour une voiture qu'appuyer ne peut pas attraper.
+  const RAYON_BORD = 9;
+
   function debarquer(silencieux = false) {
     if (!bord) return;
     const nom = bord.nom;
@@ -370,7 +381,7 @@ export function initFun(ctx) {
     // Cinq blocs, pas quatre : les voies du métro de Washington sont à quatre
     // blocs de l'axe du quai — une rame à l'arrêt est donc à 4,2 blocs d'un
     // enfant au milieu du quai, et l'ancien rayon la déclarait hors de portée.
-    const place = v && v.placeProche(player.pos, 5);
+    const place = v && v.placeProche(player.pos, RAYON_BORD);
     if (!place) return;
     if (riding) toggleRide(null);
     // Une voiture se conduit ; un métro se prend.
@@ -1694,7 +1705,7 @@ export function initFun(ctx) {
     const v = (() => {
       if (!isRunning() || riding || bord) return null;
       const vv = getVehicules && getVehicules();
-      const p = vv ? vv.placeProche(player.pos, 5) : null;   // 5 : voir embarquer()
+      const p = vv ? vv.placeProche(player.pos, RAYON_BORD) : null;
       return p;
     })();
     // ON APPELLE TOUJOURS, MÊME QUAND IL N'Y A RIEN.

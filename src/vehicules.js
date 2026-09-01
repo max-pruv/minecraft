@@ -717,21 +717,39 @@ class Convoi {
   }
 
   // Placer les voitures sur le tracé, ou les effacer si l'enfant est loin.
+  //
+  // LA PORTÉE SE TESTE VOITURE PAR VOITURE, PAS SUR LA TÊTE DU CONVOI.
+  //
+  // C'était le même défaut que les personnages avant la v196 — « cesser
+  // d'ANIMER ne suffit pas, il faut cesser de DESSINER » — d'un cran plus
+  // haut : on regardait si la TÊTE était à portée, et si oui on dessinait
+  // les vingt voitures, y compris celles qui sont à l'autre bout d'une
+  // boucle de quatre cent trente et un blocs. Un circuit de Paris coûtait
+  // donc toutes ses voitures dès qu'on approchait d'un seul de ses points.
+  //
+  // Le test par convoi reste, mais comme PRÉ-FILTRE, élargi de la traînée :
+  // la queue traîne d'au plus `ecart × (n − 1)` le long du tracé, et une
+  // courbe est toujours plus longue que sa corde. C'est la même arithmétique
+  // que `placeProche`, et elle garde le calcul bon marché pour les mille
+  // circuits du monde.
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
-    const proche = Math.hypot(tete.x - joueur.x, tete.z - joueur.z) < portee;
-    if (!proche) {
+    const trainee = this.ecart * (this.elements.length - 1);
+    if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
       if (this.elements[0].visible) for (const m of this.elements) m.visible = false;
       return;
     }
+    const portee2 = portee * portee;
     this.elements.forEach((m, i) => {
       const p = this.parcours.a(this.distance - i * this.ecart);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
       // marche, il faut donc le retourner d'un demi-tour.
       m.rotation.y = p.cap + Math.PI;
-      m.visible = true;
+      const dx = p.x - joueur.x, dz = p.z - joueur.z;
+      m.visible = dx * dx + dz * dz < portee2;
+      if (!m.visible) return;
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
       // découle sans rien mesurer. Une voiture qui glisse sans que ses roues
@@ -878,14 +896,50 @@ export function createVehicules({ scene, player }) {
   // tablette qui dessine déjà une ville entière commence à ramer. Et on ne
   // les dessine qu'à cent dix blocs — en ville, les immeubles cachent tout
   // ce qui est plus loin, il n'y a rien à gagner à les rendre.
+  // LE CODE ET SON PROPRE COMMENTAIRE NE DISAIENT PAS LA MÊME CHOSE. Celui du
+  // dessus promettait « une voiture tous les vingt-cinq blocs, à quatorze au
+  // plus » ; le code calculait `min(10, longueur / 28)` — une tous les
+  // trente-quatre. Sur les 431 blocs du plus grand circuit de Paris, cela fait
+  // dix voitures pour toute la rive droite.
+  //
+  // Désormais une tous les DIX-HUIT blocs, vingt au plus par circuit. Le prix
+  // se paie en appels de dessin, et il est mesuré : voir la note de main.js
+  // sur les cent quarante voitures de Paris.
+  const TEINTES = [
+    0xd84a3a, 0x3a6ac8, 0xf0f0ea, 0x2a2a30, 0x3a9a4a, 0xe8c83a,   // les six d'origine
+    // ET DOUZE DE PLUS, parce qu'un modèle de la flotte met une seconde ou
+    // deux à arriver du réseau : jusque-là c'est la coque d'attente qu'on
+    // voit, et six teintes pour cent quarante voitures donnaient six
+    // voitures identiques par carrefour. La teinte, elle, est là tout de
+    // suite.
+    0x8a2b3a, 0x2f7f8f, 0xc86a2a, 0x5a4a8a, 0x1f4a2f, 0xb0b4bc,
+    0x7a1f1f, 0x2a3f7a, 0xd8a83a, 0x3f7a5a, 0x6a2f6a, 0x8a8a6a,
+  ];
   function circulation(pts, graine = 0) {
     const p = new Parcours(pts);
-    const teintes = [0xd84a3a, 0x3a6ac8, 0xf0f0ea, 0x2a2a30, 0x3a9a4a, 0xe8c83a];
-    const nb = Math.max(4, Math.min(10, Math.round(p.longueur / 28)));
+    const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
     return ajouter(pts, {
       nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4,
-      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 110,
-      modele: (i) => voitureDeVille(graine * 7 + i * 13, teintes[(graine + i) % teintes.length]),
+      // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
+      // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
+      // personne ne l'avait jamais compté. À cent dix blocs de portée, les
+      // quatre-vingt-quinze voitures de Paris en faisaient dessiner
+      // quatre-vingt-neuf : deux mille neuf cents maillages pour la seule
+      // circulation, et le compteur d'appels passait de 537 à 1 018. C'est
+      // exactement ce que la v196 avait gagné, rendu d'un coup.
+      //
+      // Or un bloc de ville vaut ici trente à quarante mètres : une voiture à
+      // cent dix blocs est à quatre kilomètres, et les immeubles la cachent
+      // depuis longtemps. Les personnages s'effacent à soixante-deux blocs
+      // depuis des versions sans que personne ne l'ait jamais signalé ; une
+      // voiture, plus petite et plus basse, tient largement à quarante-cinq.
+      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 45,
+      // LE PAS DE 13 SUR UNE FLOTTE DE 50 REVIENT SUR SES PAS AU BOUT DE
+      // CINQUANTE : `13 × 50 ≡ 0`. Avec vingt voitures par circuit c'était
+      // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille
+      // de la flotte, et 17 l'est — cinquante voitures d'affilée, cinquante
+      // modèles différents.
+      modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length]),
     });
   }
 
@@ -916,6 +970,13 @@ export function createVehicules({ scene, player }) {
   // le bouton « monter à bord » apparaît. On compare en trois dimensions —
   // le métro passe au-dessus des rues, et on ne monte pas dedans depuis le
   // trottoir six mètres plus bas.
+  // LE RAYON D'EMBARQUEMENT. Max : « assure-toi que l'on peut monter dans
+  // n'importe quel véhicule en déplacement dans les villes. » Le code pour
+  // conduire marchait ; c'était ATTRAPER qui ne marchait pas. Cinq blocs
+  // autour d'une voiture à 4,2 m/s, c'est une fenêtre d'une seconde — un
+  // enfant de sept ans la rate à tous les coups, et il croit que le jeu ne
+  // veut pas de lui. Neuf blocs lui laissent deux secondes, et l'on choisit
+  // toujours la PLUS PROCHE : on ne monte pas dans une voiture d'en face.
   function placeProche(pos, rayon = 4) {
     let meilleur = null, meilleureD = rayon;
     convois.forEach((c, ci) => {
