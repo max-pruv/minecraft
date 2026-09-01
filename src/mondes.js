@@ -167,10 +167,14 @@ export const MONDES = {
       // Paris triple d'emprise en v187 : la ville passe de huit à vingt-quatre
       // blocs par kilomètre, et son rayon avec elle. 175 blocs couvrent tout
       // Paris intra-muros, le bois de Boulogne à l'ouest et celui de Vincennes
-      // à l'est. Ce qui la borne, c'est Lille : 272 blocs séparent les deux
-      // ancres, il en reste 41 de marge une fois les deux disques posés.
+      // à l'est. Depuis la carte doublée (v199), 544 blocs séparent Paris de
+      // Lille : les deux disques laissent 267 blocs entre eux.
       { cle: 'paris', nom: 'Paris', lat: 48.8566, lon: 2.3522, r: 185 },
-      { cle: 'lille', nom: 'Lille', lat: 50.6292, lon: 3.0573, r: 46 },
+      // Lille double d'emprise en v204 : trente-deux blocs par kilomètre, et
+      // ses 92 blocs vont de la Citadelle à Euralille. Ce qui la borne, c'est
+      // Bruxelles (villesmonde), à 107 blocs de marge une fois les disques
+      // posés.
+      { cle: 'lille', nom: 'Lille', lat: 50.6292, lon: 3.0573, r: 92 },
       { cle: 'nice', nom: 'Nice', lat: 43.7102, lon: 7.2620, r: 144 },
       { cle: 'ny', nom: 'New York', lat: 40.7128, lon: -74.0060, r: 152 },
       { cle: 'sf', nom: 'San Francisco', lat: 37.7749, lon: -122.4194, r: 220 },

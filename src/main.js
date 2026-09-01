@@ -6,6 +6,7 @@ import { PARIS as PARIS_ANCRE, circuitsParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
 import { circuitsNice } from './nice.js';
+import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
@@ -438,7 +439,7 @@ function updateChunks() {
   // hasard reste en secours pour celles qui n'en publient pas encore.
   const propres = [
     ...circuitsParis(solDe), ...circuitsLondres(solDe), ...circuitsSF(solDe),
-    ...circuitsNice(solDe),
+    ...circuitsNice(solDe), ...circuitsLille(solDe),
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [

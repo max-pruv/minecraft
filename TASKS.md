@@ -13,29 +13,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Lille n'a pas de circuit de voitures, et c'est son échelle** —
-  mesuré en v191 : aucune combinaison de ses avenues ne referme une boucle
-  qui tienne la rue à 90 %. Ses rues sont trop courtes parce que la ville est
-  encore à son échelle d'origine : **seize blocs par kilomètre**, soit
-  soixante-deux mètres par bloc, là où Paris est à 24, San Francisco à 27 et
-  Nice à 30. La place existe, remesurée après la v199 : **153 blocs de marge
-  autour de Lille** (jusqu'à Bruxelles). **Nice est faite (v203, 10 → 30
-  blocs/km, cinq circuits mesurés qui couvrent ses seize avenues)** — et sa
-  recette vaut pour Lille, section Nice de `CLAUDE.md` : les bouts d'avenue se
-  posent SUR des carrefours, les chaînes se mesurent sur une copie avant
-  d'être écrites, et un parc qui remplace des rues remesure les circuits qui
-  le longent.
-
-  Ce qui distingue Lille de Nice : elle est DANS la fenêtre d'empreinte de
-  `plafond.js` (−102, −326), donc sa remise à l'échelle demande la double
-  empreinte — la même découpe mesurée sur `origin/main` et sur la branche,
-  hors du disque — et un témoin de distance aux sanctuaires. Le beffroi est
-  posé dans `world.js` à `LILLE.x + 6, LILLE.z + 14` (des blocs de l'ancienne
-  échelle, le piège du Golden Gate), `CITADELLE` porte `R: 11` et `pointe:
-  4.5` en blocs, et `LILLE = { ...positionDe('lille'), r: 46 }` masque le
-  registre.
-
-  Washington n'a pas de voies nommées du tout — son plan de L'Enfant demande
+- [ ] **Washington n'a pas de circuit de voitures** — Lille est faite (v204,
+  16 → 32 blocs/km, disque de 92, six circuits mesurés à 99–100 % qui couvrent
+  ses quinze avenues, double empreinte dans `plafond.js`). Il ne reste que
+  Washington sans voies nommées du tout — son plan de L'Enfant demande
   sa propre méthode.
 
 - [ ] **Londres n'a qu'un circuit de voitures** — remesuré en v201 sur toutes
@@ -95,13 +76,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   qui vivent encore à leur échelle d'origine. **San Francisco est faite
   (v192, 9 → 27 blocs/km)** ; **Londres était DÉJÀ à 24 blocs/km** — il ne lui
   manque pas une remise à l'échelle mais la passe de rue. **Nice est faite
-  (v203, 10 → 30 blocs/km, disque de 144)**. Reste Lille (16 blocs/km, 153
-  blocs de marge jusqu'à Bruxelles après la v199, et dans la fenêtre
-  d'empreinte : double empreinte obligatoire). Même recette : le cœur à grande
-  échelle, casse déclarée et bornée, vie de rue, captures avant fusion. Le
-  piège est écrit dans `CLAUDE.md` (section Paris) : les largeurs ne se
-  projettent pas, elles se relèvent — et il faut refaire les monuments, qui
-  ne grandissent pas avec la carte.
+  (v203, 10 → 30 blocs/km, disque de 144)** et **Lille aussi (v204, 16 → 32
+  blocs/km, disque de 92, double empreinte)**. Toutes les villes bâties à la
+  main sont désormais à l'échelle GTA ; ce qui reste, c'est la passe de rue
+  de Londres et les monuments à refaire là où ils n'ont pas suivi. Le piège
+  est écrit dans `CLAUDE.md` (section Paris) : les largeurs ne se projettent
+  pas, elles se relèvent — et il faut refaire les monuments, qui ne
+  grandissent pas avec la carte.
 
 - [ ] **Le métro de Paris, pour de vrai** — l'anneau souterrain de v163 est
   resté à trente-huit blocs de rayon pendant que la ville en prenait 185 :

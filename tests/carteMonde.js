@@ -890,6 +890,62 @@ const VRAIES_KM = [
       Array.isArray(nice.circuits) && nice.circuits.length >= 4 && nice.circuits.every((c) => c.part >= 90),
       JSON.stringify(nice.circuits));
 
+    // --- Lille à l'échelle GTA (v204) ----------------------------------------
+    //
+    // Seize blocs par kilomètre, soixante-deux mètres par bloc : la citadelle
+    // faisait un kilomètre de pointe à pointe, le double de la vraie, et
+    // aucune paire d'avenues ne refermait une boucle. Trente-deux blocs par
+    // kilomètre, le disque passe de 46 à 92. Lille est DANS la fenêtre
+    // d'empreinte de `plafond.js`, qui porte la double empreinte ; ici on
+    // vérifie la ville elle-même, par ses bâtisseurs purs : elle va de la
+    // Citadelle à Euralille, l'étoile a ses douves en eau et le quai du Wault
+    // son bassin, et ses circuits de voitures se referment sur la chaussée.
+    const lille = await tab.evaluate(async () => {
+      const m = await import('./src/lille.js');
+      const g = window.__game;
+      if (typeof m.adresseLille !== 'function' || typeof m.circuitsLille !== 'function') return { absent: true };
+      const EAU = 7;
+      // Des adresses en KILOMÈTRES RÉELS depuis la Grand'Place. « Sur terre »
+      // veut dire : dans le disque de la ville, et pas dans l'eau.
+      const points = {
+        grandPlace: [0, 0], citadelle: [-1.55, -0.8], vieuxLille: [-0.15, -0.55],
+        euralille: [1.55, -0.35], porteDeParis: [0.35, 0.85], wazemmes: [-0.6, 0.9],
+      };
+      const surTerre = {};
+      for (const [nom, [dx, dz]] of Object.entries(points)) {
+        const [x, z] = m.adresseLille(dx, dz);
+        const dedans = Math.hypot(x - m.LILLE.x, z - m.LILLE.z) <= m.LILLE.r;
+        surTerre[nom] = dedans && m.solLille(Math.round(x), Math.round(z)) !== EAU;
+      }
+      // Les douves : de l'eau tout autour de l'étoile, comptée dans un carré
+      // de quarante blocs autour de son centre. Un anneau autour d'un CERCLE
+      // de onze blocs en ferait moins de deux cents ; l'étoile, avec ses
+      // cinq pointes et ses cinq rentrants, en compte plus.
+      const [cx, cz] = m.adresseLille(-1.55, -0.8);
+      let douves = 0;
+      for (let du = -20; du <= 20; du++) {
+        for (let dv = -20; dv <= 20; dv++) {
+          if (m.solLille(Math.round(cx) + du, Math.round(cz) + dv) === EAU) douves++;
+        }
+      }
+      const [wx, wz] = m.adresseLille(-0.85, -0.1);
+      const wault = m.solLille(Math.round(wx), Math.round(wz)) === EAU;
+      const [ex, ez] = m.adresseLille(-2.3, -0.2);
+      const deule = m.solLille(Math.round(ex), Math.round(ez)) === EAU;
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const circuits = m.circuitsLille(solDe).map((c) => ({ part: c.part, pts: c.pts.length }));
+      return { rayon: m.LILLE.r, surTerre, douves, wault, deule, circuits };
+    });
+    verifier('Lille tient de la Citadelle à Euralille, et de Wazemmes à la porte de Paris',
+      !lille.absent && lille.rayon >= 90 && Object.values(lille.surTerre).every(Boolean),
+      JSON.stringify({ absent: lille.absent, rayon: lille.rayon, surTerre: lille.surTerre }));
+    verifier('la citadelle est une étoile, ses douves en eau, le Wault et la Deûle aussi',
+      lille.douves >= 200 && lille.wault === true && lille.deule === true,
+      JSON.stringify({ douves: lille.douves, wault: lille.wault, deule: lille.deule }));
+    verifier('et des voitures peuvent enfin faire le tour de Lille',
+      Array.isArray(lille.circuits) && lille.circuits.length >= 5 && lille.circuits.every((c) => c.part >= 90),
+      JSON.stringify(lille.circuits));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

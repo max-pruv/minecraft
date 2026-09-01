@@ -119,7 +119,15 @@ function verifier(nom, ok, detail = '') {
 // disques, nulle part ailleurs, et c'est mesuré des deux côtés dix lignes
 // plus bas.
 // v199 (avant la remise à l'échelle) : 4754a91ef7fed692c2b8f6b6238f7c0cb4f082c5
-const EMPREINTE_RELIEF = 'f0b43c078bb4787599b1762c7d25834cca4a88c5';
+// v204 — LILLE À L'ÉCHELLE GTA. SIXIÈME usage de l'exception, borné comme
+// en v187 pour Paris : Lille passe de 16 à 32 blocs par kilomètre et son
+// disque de 46 à 92, et elle est à (−102, −326), DANS la fenêtre observée.
+// Le relief change sous son disque — citadelle en étoile, douves, Deûle —
+// et nulle part ailleurs : hors du disque (92 + 40 de fondu) l'empreinte est
+// IDENTIQUE des deux côtés, 184 656 colonnes, même découpe sur `origin/main`
+// et sur la branche. C'est la ligne du dessous qui le prouve.
+// v203 (avant Lille) : f0b43c078bb4787599b1762c7d25834cca4a88c5
+const EMPREINTE_RELIEF = 'c20adb7308aec773780185acfa4ecbc88d575f0d';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -184,7 +192,12 @@ const EMPREINTE_RELIEF = 'f0b43c078bb4787599b1762c7d25834cca4a88c5';
 // Hors des disques de Bruxelles et de Cologne, pas un bloc n'a bougé. On ne
 // met pas un hash à jour : on mesure les deux côtés, et c'est cela, et rien
 // d'autre, qui autorise l'empreinte du dessus à changer.
-const EMPREINTE_HORS_VILLES = '5503fd10965064886b1dc6d8dba2800b50d122be';
+// v204 : la découpe s'élargit avec le disque de Lille (86 → 132 blocs de
+// portée), donc le NOMBRE de colonnes change — 188 166 → 184 656 — et le hash
+// avec. Ce qui compte : mesuré avec CETTE découpe sur `origin/main` (v203) ET
+// sur la branche, les deux rendent c79c2f3b…, colonne pour colonne.
+// v200 → v203 (découpe à 86) : 5503fd10965064886b1dc6d8dba2800b50d122be
+const EMPREINTE_HORS_VILLES = 'c79c2f3b0135a6077aa49a46eb1f744c26cf6db5';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -319,6 +332,22 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     prochesDeParis.length ? prochesDeParis.map((a) => a[0]).join(', ')
       : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
         Math.hypot(x - PARIS_CITE.x, z - PARIS_CITE.z) - PARIS_CITE.r - r)))} blocs du bord`);
+
+  // ET MÊME EXIGENCE POUR LILLE, qui a doublé d'emprise en v204 (46 → 92).
+  //
+  // Lille est à (−102, −326) : DANS la fenêtre d'empreinte, comme Paris — la
+  // double empreinte du haut porte donc la borne au bit près. Ce témoin-ci dit
+  // autre chose : que le disque agrandi, fondu compris, n'atteint aucun des
+  // trois endroits où les enfants ont bâti. Le plus proche est le quartier
+  // des enfants, à (26, −14) : deux cent vingt-neuf blocs du bord.
+  const LILLE_CITE = CITIES.find((c) => c.key === 'lille');
+  const prochesDeLille = SANCTUAIRES.filter(([, x, z, r]) =>
+    Math.hypot(x - LILLE_CITE.x, z - LILLE_CITE.z) < LILLE_CITE.r + MARGE_VILLE + r);
+  verifier('et Lille non plus, malgré son emprise doublée',
+    prochesDeLille.length === 0,
+    prochesDeLille.length ? prochesDeLille.map((a) => a[0]).join(', ')
+      : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
+        Math.hypot(x - LILLE_CITE.x, z - LILLE_CITE.z) - LILLE_CITE.r - r)))} blocs du bord`);
 
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
