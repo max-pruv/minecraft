@@ -77,7 +77,14 @@ hiérarchie des tours (CCI < hôtel de ville < tour de Lille) par
 absente, rayon 46 < 90, quatre villes à circuit au lieu de cinq).
 
 Jugé sur captures : vue aérienne de la citadelle et du centre, vue de rue
-sur la Grand'Place, dans le Vieux-Lille et devant Euralille.
+sur la Grand'Place, dans le Vieux-Lille et devant Euralille. La première
+passe de rue a montré des briques orange et saumon — les « briques de
+plastique » de Rome — : la palette est passée au rouge, au brun et au kaki,
+et la seconde passe l'a confirmé.
+
+Portail (voie ciblée, sept suites — fumée, carte, monte, washington, plafond,
+métro, carte du monde) : **vert**, deux cent quatre-vingt-un témoins, aucun
+rouge au premier passage.
 
 ---
 
