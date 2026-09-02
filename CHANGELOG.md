@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v216 — Toutes les avenues de Paris ont retrouvé leurs voitures
+
+**Pourquoi.** La v211 avait réglé ce que Max avait vu — « les voitures passent
+à travers les unes des autres » — en choisissant les circuits sous contrainte
+de partage : deux convois ne peuvent avoir plus de vingt blocs de chaussée en
+commun, la taille d'un carrefour. Le prix était déclaré dans `TASKS.md` et il
+était réel : **trois avenues de Paris n'avaient plus une seule voiture** —
+l'avenue de l'Opéra, le Faubourg Saint-Antoine et le boulevard Haussmann. Un
+enfant qui descendait avenue de l'Opéra trouvait une rue morte au milieu d'une
+ville qui roule.
+
+**Ce que ça change.** Paris a **douze rues de plus**, toutes réelles, prises
+sur le plan : Beaumarchais, Turbigo, les quais de la rive droite, Diderot,
+Bourdon, Ledru-Rollin, la rue du Louvre, le Quatre-Septembre, la rue de la
+Paix, Castiglione, Tronchet et Malesherbes. Elles ne sont pas là pour décorer :
+ce sont elles qui donnent à ces trois avenues une boucle à ELLES, au lieu de
+repasser sur celle du voisin. Les **quarante** avenues de la ville sont
+désormais parcourues, par huit circuits, et le seuil de la v211 n'a pas bougé
+d'un bloc.
+
+Deux choses se voient au sol. Le Faubourg Saint-Antoine se fait comme dans la
+vraie ville — on revient à la Bastille par les quais et le boulevard Bourdon,
+donc par le SUD, parce que Bastille, Nation et le retour sont presque alignés
+et que toute autre boucle y faisait un demi-tour. Et l'avenue de l'Opéra a ses
+deux tours : le triangle Rivoli / Bourse / Opéra par la rue du Louvre, et la
+descente sur les Tuileries par la place Vendôme.
+
+**Ce qui le prouve.** Les huit chaînes ont été mesurées une à une contre
+`solParis` — 95 à 100 % de tenue sur la chaussée, virage le plus serré 140° —
+et aucune n'est jetée par `fabriqueCircuits`. Le témoin de couverture de
+`carteMonde.js` exige désormais **zéro avenue sans boucle** sur un registre de
+quarante : sur l'ancien code il en compte trois pour un registre de
+vingt-huit, donc rouge par les deux bouts. Le témoin de partage de la v211
+tient sans être touché : la pire paire de Paris tombe de 17 à **13 blocs**.
+Zéro pas dans la Seine, zéro pas au milieu d'une place. Et le relief n'a pas
+bougé d'un octet — une rue est du SOL, pas du terrain : les deux empreintes de
+`plafond.js` sont intactes sans qu'on ait rien à déclarer.
+
+---
+
 ## v215 — Les visages ne font plus peur
 
 **Pourquoi.** Max, capture à l'appui : « personnages are scary ». Le visage

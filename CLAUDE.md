@@ -1166,6 +1166,37 @@ la rue de Rivoli en portait trois, superposés, et 1 524 blocs de tracé sur
   Couvrir une avenue en repassant sur le circuit du voisin n'est pas la
   couvrir.
 
+**ET LE PRIX SE PAIE AVEC DES RUES, PAS AVEC UN SEUIL (v216).** Les trois
+avenues de Paris laissées dehors par la v211 ont retrouvé leurs voitures sans
+qu'on touche aux vingt blocs de partage : douze vraies rues de plus, et huit
+circuits qui couvrent les quarante avenues. Quatre choses en sortent, qui
+valent pour Lille, San Francisco, Washington et Londres quand leur tour
+viendra.
+
+- **UN POINT DE VOIE S'ÉCRIT EN KILOMÈTRES, JAMAIS EN BLOCS.** Les douze rues
+  passent par `de(dx, dz)`, comme la table des lieux. Un `[54, -4]` écrit en
+  blocs serait juste aujourd'hui et faux à la prochaine remise à l'échelle,
+  sans que rien ne rougisse — c'est exactement le piège d'`adresseParis` et de
+  `chercheMer`, par un troisième bout.
+- **TROIS POINTS PRESQUE ALIGNÉS N'ONT PAS DE TRIANGLE.** Bastille, Nation et
+  tout ce qui revient vers le centre le sont : chaque boucle essayée pour le
+  Faubourg Saint-Antoine faisait un demi-tour de 175° à Nation ou à la
+  Bastille. Le tour se fait donc comme dans la vraie ville, en revenant par le
+  SUD — les quais de la rive droite et le boulevard Bourdon. Devant un virage
+  qu'on n'arrive pas à ouvrir, on ne cherche pas un tracé plus malin : on
+  regarde le plan, la vraie ville a déjà répondu.
+- **UNE COUVERTURE GLOUTONNE SOUS CONTRAINTE S'ARRÊTE À n − 1, ET IL FAUT UNE
+  PASSE DE RÉPARATION.** Le tirage au hasard, même à quarante mille tirages,
+  laissait toujours une avenue dehors — pas faute de boucle, mais parce que
+  celles qui la prennent se heurtaient à un circuit déjà choisi. La réparation
+  est simple et elle a suffi : retirer les gêneurs, forcer la boucle manquante,
+  recombler le paquet, garder si la couverture y gagne. 39/40 → 40/40, et la
+  pire paire est tombée de 17 à 13 blocs par la même occasion.
+- **Une rue qu'aucun circuit ne prend ne se livre pas.** La rue Royale
+  (Concorde–Madeleine) a été tracée puis RETIRÉE : elle est réelle, mais aucun
+  des huit circuits n'en avait besoin, et la livrer aurait créé une avenue sans
+  voitures le jour même — la dette qu'on vient de rembourser.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et
