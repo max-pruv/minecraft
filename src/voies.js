@@ -231,22 +231,61 @@ export function circuitSurRue(pts, ancre, estRoulant, seuil = 0.9) {
 // `ajuster`, s'il est donné, retouche le tracé chaîné AVANT qu'on ne le
 // mesure : c'est ainsi que Washington fait contourner ses ronds-points, que
 // la ligne droite d'une avenue à l'autre traverserait en plein jardin.
+// LE PAS DE COTE. Un convoi lit sa cote par interpolation entre deux points du
+// tracé : entre deux sommets distants de trente blocs, la corde traverse tout
+// ce que le terrain fait entre les deux. Mesuré à San Francisco, où la corde
+// coupait les collines : à un point tous les six blocs, 17 % du trajet passe
+// dans la roche ; à quatre blocs, 11,5 % ; à deux blocs, 3,3 %. On densifie
+// donc le tracé à deux blocs — mille points par ville, que la recherche
+// dichotomique du parcours avale sans y penser.
+const PAS_COTE = 2;
+
+// EN PENTE, LA COTE D'UN POINT EST CELLE DE SON PLUS HAUT VOISIN. Sinon la
+// corde entre deux points s'enfonce d'un bloc dans la chaussée qu'elle
+// descend, et la voiture roule dans le bitume : 37 pas à San Francisco,
+// 18 à Nice, 9 à Washington. Quatre lectures de terrain, et il n'en reste
+// aucun.
+function coteEn(solDe, x, z) {
+  let m = solDe(x, z);
+  const v = solDe(x + 1, z); if (v > m) m = v;
+  const w = solDe(x - 1, z); if (w > m) m = w;
+  const n = solDe(x, z + 1); if (n > m) m = n;
+  const s = solDe(x, z - 1); if (s > m) m = s;
+  return m;
+}
+
 export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9, ajuster = null }) {
   return (solDe) => {
     const est = (x, z) => roulant.has(voies.sol ? voies.sol(x, z) : null);
     const out = [];
-    // La cote se prend au centre : la ville est plate, et un convoi qui
-    // suivrait le relief bloc à bloc ferait des montagnes russes.
-    const y = solDe(ancre.x, ancre.z) + 1.05;
     for (const noms of chaines) {
       let pts = chainerVoies(voies.liste, noms);
       if (!pts) continue;
       if (ajuster) pts = ajuster(pts);
+      // La mesure se fait sur le tracé D'AVANT la densification : ajouter des
+      // points alignés ne change pas un pourcentage, et les chiffres écrits
+      // au-dessus de chaque circuit restent ceux qu'on a mesurés.
       const verdict = circuitSurRue(pts, ancre, est, seuil);
       if (!verdict.bon) continue;
+      // LE CONVOI SUIT LE SOL. Il roulait à une cote UNIQUE, prise au centre
+      // de la ville — « la ville est plate », disait le commentaire. San
+      // Francisco a treize collines et Nice le mont Boron : le sol s'écartait
+      // de cette cote de trente-deux blocs à San Francisco, quatorze à Nice,
+      // et les voitures s'enfonçaient dans le relief sur 27 % et 12 % de leur
+      // trajet. Max, sur capture : « les voitures rentrent dans les murs ».
+      const dense = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / PAS_COTE));
+        for (let k = 0; k < n; k++) {
+          const u = a[0] + ((b[0] - a[0]) * k) / n, v = a[1] + ((b[1] - a[1]) * k) / n;
+          const x = ancre.x + u, z = ancre.z + v;
+          dense.push({ x, y: coteEn(solDe, Math.round(x), Math.round(z)) + 1.05, z });
+        }
+      }
       out.push({
         cle, x: ancre.x, z: ancre.z, rang: out.length, part: Math.round(verdict.part * 100),
-        pts: pts.map(([u, v]) => ({ x: ancre.x + u, y, z: ancre.z + v })),
+        pts: dense,
       });
     }
     return out;

@@ -991,6 +991,48 @@ flotte. Deux pièges, tous deux payés :
   où chacune a gagné ses circuits mesurés. On ne déclare pas un circuit qui
   ne valide jamais : ce serait du code mort qui ressemble à de l'avancement.
 
+**UN CONVOI SUIT LE SOL, ET UN TRACÉ QUI NE PORTE QUE SES CARREFOURS NE PEUT
+PAS LE SUIVRE (v210).** Max, après la v209 : « Les voitures rentrent dans les
+murs. » Elles y rentraient, et le tracé des rues n'y était pour rien :
+`fabriqueCircuits` donnait à tout le circuit une cote UNIQUE, celle du sol au
+centre de la ville, avec un commentaire qui l'assumait — « la ville est
+plate ». San Francisco a treize collines, Nice le mont Boron. Quatre choses
+en sortent, et elles valent pour tout ce qui se déplace sur un tracé.
+
+- **Une hypothèse de terrain s'écrit et se MESURE.** « La ville est plate »
+  était vrai à Lille (écart de sol nul) et faux partout ailleurs : trente-deux
+  blocs à San Francisco, seize à Paris, quatorze à Nice, sept à Londres. Une
+  hypothèse commentée mais jamais chiffrée survit à toutes les villes qu'on
+  ajoute ensuite.
+- **La cote se prend PAR POINT, et le tracé se densifie pour cela.** Un convoi
+  interpole sa cote entre deux points ; entre deux carrefours distants de
+  trente blocs, la corde traverse tout ce que le terrain fait entre les deux.
+  Le pas est un résultat, pas un goût : à six blocs, 17 % du trajet de San
+  Francisco reste dans la roche ; à quatre, 11,5 % ; à deux, 3,3 %. On prend
+  deux — mille points par ville, que la recherche dichotomique du parcours
+  avale sans y penser.
+- **En pente, la cote d'un point est celle de son plus haut VOISIN.** Sinon la
+  corde entre deux points s'enfonce d'un bloc dans la chaussée qu'elle
+  descend : trente-sept pas à San Francisco, dix-huit à Nice, neuf à
+  Washington. Quatre lectures de terrain, et il n'en reste aucun.
+- **LE TERRAIN N'EST PAS LA SURFACE ROULABLE.** Sur un pont, `terrainHeight`
+  rend le LIT du fleuve — le tablier, lui, est posé par-dessus l'eau et ne
+  déplace pas le relief (c'est tout l'intérêt, v208). Suivre le terrain a donc
+  fait passer soixante-treize pas de convoi sous la Tamise. `World.coteRoulable`
+  répond « à quelle cote roule-t-on ici », et c'est elle que `main.js` passe
+  aux circuits. Le jour où une autre ville pose un ouvrage au-dessus de l'eau,
+  c'est là qu'il se déclare.
+
+**Et un témoin de circuit doit lire le BLOC à la cote du convoi, pas le sol
+sous lui.** `circuitSurRue` mesure la nature du SOL — de la chaussée, pas de
+l'eau — et ne dit rien de ce qui occupe l'espace où la voiture passe. C'est
+pour cela que huit circuits mesurés à 97-100 % « sur la rue » traversaient
+quand même des collines et des immeubles. Ce qui reste après la v210 est du
+BÂTI, mesuré et déclaré dans `TASKS.md` : à Paris les monuments dont une voie
+a le CENTRE pour point de passage (le Louvre, l'Opéra, la Tour Eiffel), à
+Londres les bus garés aux arrêts et les fontaines de Trafalgar Square, à
+Washington les ormes du Mall.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et

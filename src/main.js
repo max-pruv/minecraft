@@ -429,7 +429,10 @@ function updateChunks() {
   // convoi ne naît qu'à l'approche de l'enfant — trente villes de voitures
   // fabriquées à l'ouverture pèseraient sur la tablette pour des rues
   // lointaines. Une ville visitée garde sa circulation pour la session.
-  const solDe = (x, z) => world.terrainHeight(x, z);
+  // La cote où roule une voiture, pas le relief nu : sur un pont, le tablier.
+  // Voir `World.coteRoulable` — sans lui, les convois de Londres suivaient le
+  // lit de la Tamise.
+  const solDe = (x, z) => world.coteRoulable(x, z);
   // Les villes à trame, les villes bâties à la main (Paris, Londres…), et
   // Manhattan, dont les boucles suivent de vraies avenues.
   //

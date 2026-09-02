@@ -57,6 +57,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   rond-point qu'elle est, et Saint-Michel s'aborde par Port-Royal pour éviter
   le Luxembourg. Huit circuits mesurés couvrent les vingt-huit avenues, le
   plus faible à 97 %.
+- [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
+  depuis la v210). Mesuré en pas de convoi dans un bloc solide, à la cote où
+  la voiture roule : Paris 202 (monuments et façades haussmanniennes — le
+  Louvre, l'Opéra, la Tour Eiffel, l'Arc de Triomphe, les Invalides, tous
+  traversés parce qu'une voie a leur CENTRE pour point de passage), Londres 94
+  (dont 41 sur les bus impériaux garés aux arrêts, et six pas dans les
+  fontaines de Trafalgar Square), Washington 69 (les ormes du Mall compris),
+  San Francisco 60, Lille 10, Nice 0. Deux pistes : contourner les emprises de
+  monument comme on contourne les places rondes (`contournerRonds`), et ne pas
+  poser d'arbre ni de mobilier sur un tracé de circuit.
 - [ ] **La rue de Rivoli traverse le jardin des Tuileries.** `pt('Tuileries')`
   est le CENTRE du jardin, et les places passent avant les rues dans
   `solParis` : la chaussée y disparaît sur une trentaine de blocs, ce qui

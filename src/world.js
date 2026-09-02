@@ -1301,6 +1301,24 @@ export class World {
 
   static index(x, y, z) { return x + z * CHUNK + y * CHUNK * CHUNK; }
 
+  // LA COTE OÙ ROULE UNE VOITURE. C'est le terrain, sauf là où la ville a posé
+  // un OUVRAGE par-dessus l'eau : le tablier d'un pont de Londres est à la
+  // cote des quais, l'eau reste dessous, et le relief ne bouge pas (v208).
+  // Un convoi qui suivait `terrainHeight` sur ces colonnes suivait le LIT DU
+  // FLEUVE — soixante-treize pas de circuit sous la Tamise, mesurés.
+  coteRoulable(x, z) {
+    const h = this.terrainHeight(x, z);
+    const c = this.cityAt(x, z);
+    // Sur un tablier, la cote des quais — et le MAX avec le terrain, jamais
+    // la cote seule : près d'une culée le lit remonte au-dessus du niveau
+    // général de l'eau, et une condition « seulement si c'est profond »
+    // laissait deux colonnes de convoi dans la Tamise.
+    if (c && c.key === 'londres' && pontLondres(x - c.x, z - c.z) !== null) {
+      return h > c.base + 1 ? h : c.base + 1;
+    }
+    return h;
+  }
+
   terrainHeight(x, z) {
     const mountains = fbm(x * 0.0035, z * 0.0035, SEED + 9001);
     const hills = fbm(x * 0.016, z * 0.016, SEED);
