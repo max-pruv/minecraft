@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v213 — La voie ferrée a de vrais rails, et ne fait plus d'escalier
+
+**Pourquoi.** Max, capture à l'appui : « train no rails, holes, no end
+stations ». Le ballast était une bande de gravier posée à la hauteur du
+TERRAIN, colonne par colonne, et le train roulait dessus. Mesuré ligne par
+ligne, la dénivelée entre deux colonnes voisines montait à **vingt-sept
+blocs** sur Cologne-Francfort, treize sur le Shinkansen et le TGV : le train
+sautait les marches et s'enfonçait dans la roche. Ce sont les « trous ». Et
+une bande de gravier n'est pas une voie ferrée.
+
+**Ce que ça change.**
+
+- **La voie se nivelle.** Elle remblaie et elle creuse au lieu de suivre le
+  terrain en escalier : plus une seule marche de plus d'un bloc sur les neuf
+  lignes. Le relief, lui, n'a pas bougé d'un bloc — c'est un ouvrage posé
+  par-dessus, pas un terrassement.
+- **De vrais rails.** Deux files sombres continues, des traverses de bois au
+  milieu, le ballast en bordure. C'est à cela qu'on reconnaît une voie ferrée,
+  et cela tient dans les trois blocs de large qu'elle fait.
+- **Plus rien ne barre la route.** Une ville engendrée traversée par la ligne
+  rebâtissait par-dessus les rails — vingt-sept colonnes d'immeuble en travers
+  du Shinkansen. La voie a désormais le dernier mot sur sa colonne. Et les
+  arbres s'écartent d'un bloc de plus, parce qu'une couronne plantée à trois
+  blocs de l'axe débordait encore sur le train.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, qui mesurent
+bloc par bloc les 4 744 colonnes des neuf lignes. Ils mesurent le MÊME défaut
+des deux côtés — sur l'ancien code ils retombent sur l'ancienne règle plutôt
+que d'échouer faute d'un export. Sur `origin/main` : marche de 27 blocs, **zéro
+rail sur 4 744 colonnes**, 36 pas dans un bloc solide. Sur la branche : marche
+d'un bloc, des rails sur 96 à 99 % des colonnes, et **aucun obstacle**.
+
+Les gares manquent toujours, et c'est déclaré dans `TASKS.md` : le train
+s'arrête aux deux bouts, mais rien n'y est bâti.
+
+---
+
 ## v212 — Au volant, on ne traverse plus les murs
 
 **Pourquoi.** Max, capture à l'appui : « cars crashing into walls » — une

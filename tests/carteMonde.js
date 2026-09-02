@@ -371,25 +371,66 @@ const VRAIES_KM = [
     // real life train lanes ». On sonde le MILIEU de chaque navette : du
     // ballast de gravier sur la terre, un viaduc de pierre au ras des flots
     // sur la mer — l'Eurostar traverse la Manche à découvert.
+    // UNE VOIE FERRÉE A DES RAILS, ET ELLE NE FAIT PAS D'ESCALIER (v213).
+    //
+    // Max, capture à l'appui : « train no rails, holes, no end stations ». Le
+    // ballast était une bande de gravier posée à la hauteur du TERRAIN,
+    // colonne par colonne : mesuré ligne par ligne, la dénivelée entre deux
+    // colonnes voisines montait à VINGT-SEPT blocs sur Cologne-Francfort,
+    // treize sur le Shinkansen et le TGV. Un train qui roule là-dessus saute
+    // et s'enfonce — ce sont les « trous ».
+    //
+    // Trois choses se mesurent, sur les neuf lignes, bloc par bloc :
+    //   - la marche entre deux colonnes voisines ne dépasse pas UN bloc ;
+    //   - il y a des RAILS, c'est-à-dire de l'obsidienne de part et d'autre
+    //     de l'axe, et pas seulement du gravier ;
+    //   - rien de solide n'occupe le gabarit du train au-dessus de la voie.
     const rails = await tab.evaluate(async () => {
       let m2;
       try { m2 = await import('./src/trains.js'); } catch { return { absent: true }; }
-      const { BLOCK } = await import('./src/blocks.js');
-      const { WATER_LEVEL } = await import('./src/world.js');
+      const b = await import('./src/blocks.js');
       const w = window.__game.world;
+      // Sur l'ancien code `voieEn` n'existe pas — mais le témoin doit
+      // mesurer LE MÊME DÉFAUT des deux côtés, pas l'absence d'un export. On
+      // retombe donc sur la règle d'avant : le ballast était posé à la
+      // hauteur du terrain, jamais sous les flots.
+      const voieEn = typeof m2.voieEn === 'function'
+        ? m2.voieEn
+        : (x, z) => (m2.surLaVoie(x, z) ? { d: 0, cote: Math.max(w.terrainHeight(x, z), 30) + 1 } : null);
+      const ancien = typeof m2.voieEn !== 'function';
+      const dur = (id) => id !== 0 && b.BLOCK_INFO[id] && b.BLOCK_INFO[id].solid;
       const segs = m2.segmentsDeTrain();
-      let poses = 0, viaduc = 0;
+      let marche = 0, pas = 0, avecRail = 0, dedans = 0, viaduc = 0;
       for (const s of segs) {
-        const mx = Math.round((s.x0 + s.x1) / 2), mz = Math.round((s.z0 + s.z1) / 2);
-        const h = w.terrainHeight(mx, mz);
-        if (h > WATER_LEVEL) { if (w.getBlock(mx, h, mz) === BLOCK.GRAVEL) poses++; }
-        else if (w.getBlock(mx, WATER_LEVEL, mz) === BLOCK.STONEBRICK) { poses++; viaduc++; }
+        const n = Math.max(2, Math.round(s.longueur));
+        let prec = null;
+        for (let k = 0; k <= n; k++) {
+          const q = k / n;
+          const x = Math.round(s.x0 + (s.x1 - s.x0) * q), z = Math.round(s.z0 + (s.z1 - s.z0) * q);
+          const v = voieEn(x, z);
+          if (!v) continue;
+          pas++;
+          if (prec !== null && Math.abs(v.cote - prec) > marche) marche = Math.abs(v.cote - prec);
+          prec = v.cote;
+          for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            if (w.getBlock(x + dx, v.cote, z + dz) === b.BLOCK.OBSIDIAN) { avecRail++; break; }
+          }
+          if (dur(w.getBlock(x, v.cote + 1, z)) || dur(w.getBlock(x, v.cote + 2, z))) dedans++;
+          if (w.terrainHeight(x, z) < 30) viaduc++;
+        }
       }
-      return { segments: segs.length, poses, viaduc };
+      return { segments: segs.length, pas, marche, avecRail, dedans, viaduc, ancien };
     });
-    verifier('les voies ferrées sont posées — ballast à terre, viaduc sur la mer',
-      !rails.absent && rails.segments === 9 && rails.poses === 9 && rails.viaduc >= 1,
-      JSON.stringify(rails));
+    verifier('les neuf voies ferrées ont de vrais rails, et pas une marche de plus d\'un bloc',
+      !rails.absent && rails.segments === 9 && rails.pas > 4000
+      && rails.marche <= 1 && rails.avecRail >= rails.pas * 0.9,
+      JSON.stringify(rails.absent ? rails : {
+        marche: rails.marche, rails: `${rails.avecRail}/${rails.pas}`, viaduc: rails.viaduc,
+        ancien: rails.ancien || undefined,
+      }));
+    verifier('et rien de solide ne barre la route du train',
+      !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
+      JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
     const villesATerre = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');

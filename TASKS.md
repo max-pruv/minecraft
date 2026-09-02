@@ -74,11 +74,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   travail portaient la même branche ; quand l'un avançait, l'index des autres
   devenait le retrait de la livraison. Les arbres d'appoint sont détachés,
   et la règle est écrite dans `CLAUDE.md`.
-- [ ] **Le train : ni rails, ni gares, et des tranchées dans le terrain.**
-  Signalé par Max en capture : « train no rails, holes, no end stations ». La
-  voie ferrée du tour du monde se rend comme une poutre continue, sans
-  traverses ni ballast visible, elle traverse un plan d'eau creusé en gradins,
-  et aucune gare ne marque ses extrémités.
+- [x] **Le train : ni rails, ni escalier — FAIT en v213.** La voie se nivelle
+  (filtre en cône, remblai et tranchée), elle porte de vrais rails, et plus
+  rien ne barre la route du convoi. Mesuré : marche de 27 blocs → 1, zéro rail
+  → 96-99 % des colonnes, 36 obstacles → 0.
+- [ ] **Il n'y a toujours aucune GARE** — troisième moitié du signalement de
+  Max (« no end stations »). Le train marque bien l'arrêt aux deux bouts de
+  chaque segment, à `rayon + 6` du centre de chaque ville, mais rien n'y est
+  bâti : ni quai, ni auvent, ni bâtiment. À poser dans `world.js` comme le
+  reste, colonne par colonne, en laissant la voie garder le dernier mot sur la
+  sienne.
 - [ ] **Les personnages font peur** — « personnages are scary », capture d'un
   villageois à l'appui. Le visage est un dessin grossier sur un cube, et la
   tête paraît détachée du torse. À reprendre avec les enfants en tête.
