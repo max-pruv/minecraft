@@ -1001,6 +1001,85 @@ const VRAIES_KM = [
       !dc.absent && dc.circuits.length > 0 && dc.circuits.every((c) => c.pas > 0 && c.jardin === 0),
       JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => [c.pas, c.jardin])));
 
+    // --- LONDRES : DES AVENUES QUI SE CROISENT, ET DES BOUCLES QUI COUVRENT
+    // LA VILLE -----------------------------------------------------------------
+    //
+    // Jusqu'en v205 Londres n'avait qu'UN circuit, le triangle de Mayfair à
+    // 96 % : ses avenues étaient tracées bout à bout sans se croiser, et une
+    // chaîne d'avenues ne se referme que sur des CARREFOURS. Quatre témoins,
+    // tous par le bâtisseur pur `solLondres` et par le registre
+    // `VOIES_LONDRES` — jamais par un (u, v) en dur :
+    //   - au moins quatorze circuits, tous à 90 % sur la rue ;
+    //   - presque chaque avenue nommée est sur une boucle (le seul cul-de-sac
+    //     déclaré, Euston Road côté King's Cross, est une dette de TASKS.md) ;
+    //   - aucun circuit ne met un pas dans l'eau ni dans un parc,
+    //     échantillonné bloc par bloc le long de chaque segment ;
+    //   - aucun virage de plus de 150° : une chaîne dont la mesure vaut 100 %
+    //     peut faire DEMI-TOUR au milieu d'un carrefour, et un convoi qui
+    //     se replie sur lui-même n'est pas une circulation.
+    const ldn = await tab.evaluate(async () => {
+      const m = await import('./src/londres.js');
+      const b = await import('./src/blocks.js');
+      const g = window.__game;
+      if (typeof m.circuitsLondres !== 'function' || !Array.isArray(m.VOIES_LONDRES)) return { absent: true };
+      const L = m.LONDRES;
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const PAS_ROUTE = new Set([b.BLOCK.WATER, b.BLOCK.GRASS, b.BLOCK.LEAVES]);
+      const brut = m.circuitsLondres(solDe);
+      const circuits = brut.map((c) => {
+        let mauvais = 0, pas = 0;
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            const x = Math.round(a.x + ((z.x - a.x) * k) / n);
+            const zz = Math.round(a.z + ((z.z - a.z) * k) / n);
+            pas++;
+            const sol = m.solLondres(x, zz);
+            if (PAS_ROUTE.has(sol) || (sol === null && m.distanceTamise(x - L.x, zz - L.z) < 5)) mauvais++;
+          }
+        }
+        // Les virages : on retire les doublons et le point de fermeture,
+        // sinon un segment nul rend un angle NaN.
+        const p = [];
+        for (const q of c.pts) {
+          const d = p[p.length - 1];
+          if (!d || d.x !== q.x || d.z !== q.z) p.push(q);
+        }
+        if (p.length > 1 && p[0].x === p[p.length - 1].x && p[0].z === p[p.length - 1].z) p.pop();
+        let virage = 0;
+        for (let i = 0; i < p.length; i++) {
+          const a = p[(i + p.length - 1) % p.length], o = p[i], z = p[(i + 1) % p.length];
+          const ax = o.x - a.x, az = o.z - a.z, bx = z.x - o.x, bz = z.z - o.z;
+          const n = Math.hypot(ax, az) * Math.hypot(bx, bz);
+          if (!n) continue;
+          const deg = (Math.acos(Math.max(-1, Math.min(1, (ax * bx + az * bz) / n))) * 180) / Math.PI;
+          if (deg > virage) virage = deg;
+        }
+        return { part: c.part, pts: c.pts.length, pas, mauvais, virage: Math.round(virage) };
+      });
+      // Une avenue est couverte si chacun de ses points de passage est un
+      // sommet d'un circuit — c'est ainsi que les circuits sont chaînés.
+      const sommets = new Set(brut.flatMap((c) => c.pts.map((q) => `${Math.round(q.x)},${Math.round(q.z)}`)));
+      const sansBoucle = m.VOIES_LONDRES
+        .filter((v) => !v.pts.every(([u, w]) => sommets.has(`${Math.round(L.x + u)},${Math.round(L.z + w)}`)))
+        .map((v) => v.nom);
+      return { circuits, voies: m.VOIES_LONDRES.length, sansBoucle };
+    });
+    verifier('des voitures font le tour de la City, de Westminster, de Bloomsbury et de la rive sud',
+      !ldn.absent && ldn.circuits.length >= 14 && ldn.circuits.every((c) => c.part >= 90),
+      JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => c.part)));
+    verifier('et presque chaque avenue de Londres est sur une boucle',
+      !ldn.absent && ldn.voies >= 60 && ldn.sansBoucle.length <= 1
+      && ldn.sansBoucle.every((n) => n === "Euston Road, côté King's Cross"),
+      JSON.stringify(ldn.absent ? ldn : { voies: ldn.voies, sansBoucle: ldn.sansBoucle }));
+    verifier('aucun circuit ne met un pas dans la Tamise ni dans un parc',
+      !ldn.absent && ldn.circuits.length > 0 && ldn.circuits.every((c) => c.pas > 0 && c.mauvais === 0),
+      JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => [c.pas, c.mauvais])));
+    verifier('et aucun ne fait demi-tour au milieu d\'un carrefour',
+      !ldn.absent && ldn.circuits.length > 0 && ldn.circuits.every((c) => c.virage <= 150),
+      JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => c.virage)));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

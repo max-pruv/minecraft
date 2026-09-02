@@ -1408,7 +1408,8 @@ const position = (p) => p.evaluate(() => ({
     const londres = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');
       const { DECOR_START } = await import('./src/blocks.js');
-      const { LONDRES } = await import('./src/londres.js');
+      const { CITY_BLOCK } = await import('./src/blocks.js');
+      const { LONDRES, MOBILIER_LONDRES } = await import('./src/londres.js');
       const w = window.__game.world;
       const X = (u) => LONDRES.x + u, Z = (v) => LONDRES.z + v;
       const eau = (u, v) => w.terrainHeight(X(u), Z(v)) < WATER_LEVEL;
@@ -1440,10 +1441,16 @@ const position = (p) => p.evaluate(() => ({
           }
         }
       }
-      let bus = 0;
-      for (const [u, v] of [[-30, -21], [-12, -19], [10, -4], [2, 8], [30, -8]]) {
+      // Les bus se demandent à la ville, jamais ne se recopient : quand les
+      // rues bougent, ils bougent avec (v206). Et un bus est SUR LA CHAUSSÉE —
+      // sur un trottoir ou dans un lot, ce n'est pas un bus, c'est un défaut.
+      const arrets = MOBILIER_LONDRES ? MOBILIER_LONDRES.bus
+        : [[-30, -21], [-12, -19], [10, -4], [2, 8], [30, -8]];
+      let bus = 0, busRue = 0;
+      for (const [u, v] of arrets) {
         const sol = w.terrainHeight(X(u), Z(v));
         for (let y = sol; y < sol + 4; y++) if (w.getBlock(X(u), y, Z(v)) === 23) { bus++; break; }
+        if (w.getBlock(X(u), sol, Z(v)) === CITY_BLOCK.ASPHALT) busRue++;
       }
       return {
         tamiseWestminster: eau(10, 18), tamiseCity: eau(66, -1), coude: eau(13, 3),
@@ -1452,7 +1459,7 @@ const position = (p) => p.evaluate(() => ({
         shard: debout(69, 8, 6), towerBridge: debout(87, 5, 15), sousLePont: eau(87, 5),
         serpentine: eau(-62, 5),
         hydeVert: w.getBlock(X(-72), w.terrainHeight(X(-72), Z(-3)), Z(-3)),
-        mall, briques, bus,
+        mall, briques, bus, busRue, nBus: arrets.length,
       };
     });
     verifier('la Tamise fait son coude : en eau à Westminster, Charing Cross et la City',
@@ -1473,7 +1480,10 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify({ mall: londres.mall, hyde: londres.hydeVert, serpentine: londres.serpentine }));
     verifier('les terrasses de brique victoriennes, et les bus impériaux rouges',
       londres.briques >= 60 && londres.bus >= 3,
-      `${londres.briques} blocs de brique · ${londres.bus}/5 bus`);
+      `${londres.briques} blocs de brique · ${londres.bus}/${londres.nBus} bus`);
+    verifier('et chaque bus est sur la chaussée, pas sur un trottoir ni dans un jardin',
+      londres.bus >= 3 && londres.busRue === londres.nBus,
+      `${londres.busRue}/${londres.nBus} bus sur le bitume`);
 
     // DES ARBRES QUI SONT DES ARBRES, PAS DES CARRÉS VERTS.
     //

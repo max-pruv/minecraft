@@ -20,6 +20,93 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v206 — Londres roule : soixante avenues qui se croisent et quinze circuits mesurés
+
+**Pourquoi.** Depuis la v201 Londres n'avait qu'UN circuit de voitures, le
+triangle de Mayfair à 96 % — et toute la ville autour, de la City à la rive
+sud, n'avait jamais vu une voiture. L'entrée de `TASKS.md` avait d'abord
+accusé l'échelle ; c'était faux, Londres est à vingt-quatre blocs par
+kilomètre comme Paris. Le vrai défaut : neuf avenues nommées, tracées bout à
+bout SANS SE CROISER, et une chaîne d'avenues ne se referme que sur des
+carrefours. La Tamise et les parcs coupaient le reste — chaque combinaison
+des six autres voies plafonnait entre 57 et 85 %.
+
+**Ce que ça change.**
+
+- **Soixante avenues nommées, à leurs vraies coordonnées** (contre neuf) :
+  Whitehall, le Strand et Fleet Street, Cheapside, Cannon Street, King
+  William Street, Moorgate, London Wall, Holborn, Kingsway, Oxford Street en
+  trois tronçons, Regent Street, Portland Place, Baker Street, Marylebone
+  Road, Edgware Road, Park Lane, Knightsbridge, Bayswater Road, West
+  Carriage Drive, Constitution Hill, Birdcage Walk, Buckingham Gate,
+  Victoria Street, l'Embankment, Blackfriars Road, Waterloo Road, Stamford
+  Street, Southwark Street, Borough High Street… — et chacune est posée pour
+  que ses bouts tombent SUR la chaussée d'une autre.
+- **Quinze circuits mesurés, de 92 à 100 %**, couvrent cinquante-neuf des
+  soixante avenues : Westminster et St James's, la City par le nord (Old
+  Bailey, Cheapside, Moorgate) et par le sud (Cannon Street, Queen Victoria
+  Street), la rive sud (Borough, Southwark, Waterloo), le grand tour du Mall
+  par Park Lane et Oxford Street, Fitzrovia et Soho, Victoria et Belgravia,
+  Bloomsbury et Holborn, Marylebone, le tour de Hyde Park, Birdcage Walk,
+  Fleet Street et le Strand, Stamford Street, Baker Street et Portland Place,
+  l'Embankment. Le seul cul-de-sac, Euston Road côté King's Cross, est une
+  dette déclarée.
+- **La City tient à la ville par TROIS carrefours et plus par un seul.** Un
+  îlot accroché par un unique carrefour est un demi-tour garanti : c'est ce
+  qu'était la City avant Old Bailey, Cannon Street et Queen Victoria Street.
+- **Les parcs ont leurs vrais contours** : Hyde Park en rectangle arrondi
+  jusqu'à Marble Arch, Green Park en triangle entre Piccadilly et
+  Constitution Hill, St James's Park et Regent's Park à leur place. Les
+  avenues qui les longent y passent — Park Lane, Bayswater, Knightsbridge,
+  West Carriage Drive — et aucune n'y met un pas.
+- **Le sol ne bouge pas.** Tout se joue dans la NATURE du sol (chaussée,
+  trottoir, pelouse, arbres), jamais dans le relief : `hauteurLondres` ne
+  lit que la Tamise, les lacs des parcs et Primrose Hill, et aucun des trois
+  n'a changé. L'empreinte du relief de `plafond.js` est identique.
+
+**Ce qui le prouve.**
+
+- Quatre témoins neufs de `carteMonde.js`, tous par le bâtisseur pur
+  `solLondres` et par le registre `VOIES_LONDRES`, jamais par un (u, v) en
+  dur : au moins quatorze circuits à 90 % ; presque chaque avenue est sur une
+  boucle (une seule sans, Euston Road côté King's Cross, nommée) ; **aucun
+  circuit ne met un pas dans la Tamise ni dans un parc**, échantillonné bloc
+  par bloc ; et **aucun virage de plus de 150°**. Ce dernier existe parce
+  qu'une chaîne peut mesurer 100 % sur la rue ET faire demi-tour au milieu
+  d'un carrefour — `chainerVoies` accroche chaque avenue par le bout le plus
+  proche, et un cycle du graphe des carrefours qui repasse par le même
+  carrefour se replie sur lui-même. Le banc a éprouvé quarante-trois chaînes :
+  quarante-deux au seuil, dont DIX rejetées pour demi-tour, invisibles à la
+  mesure de rue. Tous quatre `{ absent: true }` sur `origin/main`, où
+  `VOIES_LONDRES` n'existe pas.
+- La fumée compte toujours six villes à circuit : Londres y était déjà, avec
+  son unique triangle.
+- Jugé sur captures (`rr=9`) : aérien la City et Westminster ; rue Cheapside,
+  Whitehall, Oxford Street, Borough High Street vers London Bridge et vers le
+  sud — voitures sur la chaussée et bouton « Conduire cette voiture » à
+  chaque fois. Une capture a révélé un défaut qui n'est PAS de cette
+  livraison : le Shard est un treillis de verre transparent, dette déclarée.
+- **Le premier portail a rendu UN rouge, démonté et non rejoué** : « 0/5
+  bus ». Le témoin de `carte.js` portait les cinq arrêts des bus impériaux
+  EN DUR, relevés sur les rues d'avant ; la passe de rues a déplacé les bus
+  avec les rues, et le témoin les cherchait là où ils n'étaient plus — le
+  piège de `r: 66` à San Francisco, du côté du banc. Le mobilier est
+  désormais EXPORTÉ (`MOBILIER_LONDRES`) et le témoin le demande à la ville.
+  Un témoin neuf en sort, « chaque bus est sur la chaussée, pas sur un
+  trottoir ni dans un jardin » : sur la branche il a attrapé un bus posé sur
+  le trottoir de Trafalgar (4/5), déplacé de deux blocs ; sur `origin/main`
+  il est ROUGE à 4/5 — un bus de la City était planté dans un lot depuis
+  toujours, et l'ancien témoin, qui ne regardait que la couleur, ne le voyait
+  pas.
+
+**Portail** (voie longue) : deux passages. Premier : 182 ✅ / 1 ❌, le rouge
+des bus démonté et non rejoué. Second, sur le code corrigé : **187 ✅ / 0 ❌**
+— fumée, `carte.js` (5/5 bus, 5/5 sur le bitume), `plafond.js` avec ses deux
+empreintes IDENTIQUES à la v205 (relief 218 089 colonnes · c20adb7308ae ;
+hors villes 184 656 · c79c2f3b0135 ; 4 040 colonnes sous les enfants, zéro
+déplacée) et `carteMonde.js`.
+
+
 ## v205 — Washington roule : des ronds-points qui tournent et onze circuits mesurés
 
 **Pourquoi.** Depuis la v201, chaque grande ville a ses voitures — sauf

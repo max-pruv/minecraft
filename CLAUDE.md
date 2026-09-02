@@ -1232,6 +1232,63 @@ choses à savoir.
   circuits met ce chiffre à jour dans la même livraison, sinon la voie
   rapide rougit pour la bonne raison au mauvais moment.
 
+### Londres (`londres.js`) — soixante avenues qui se croisent, et les demi-tours
+
+Londres est à vingt-quatre blocs par kilomètre depuis longtemps — l'échelle
+n'était pas son défaut. Son défaut, c'est qu'elle n'avait que NEUF voies
+nommées, tracées sans jamais se croiser, et que la Tamise et les parcs
+coupaient tout ce qu'on essayait d'enchaîner : un seul circuit, le triangle
+de Mayfair, à 96 %. La v206 lui donne soixante avenues aux vraies
+coordonnées, choisies pour se croiser, et quinze circuits mesurés (92 à
+100 %) qui en couvrent cinquante-neuf. Six choses apprises ici, qui valent
+pour toute ville à qui l'on donne des rues.
+
+- **UN ENCHAÎNEMENT SE VÉRIFIE POINT PAR POINT, PAS SEULEMENT AU SOL.**
+  `chainerVoies` accroche chaque voie par son extrémité la plus proche, et
+  c'est juste — mais deux avenues qui partent du MÊME carrefour dans des
+  directions opposées se chaînent en un aller-retour parfait : cent pour
+  cent sur la chaussée, et un demi-tour de 180° au milieu du carrefour.
+  Dix des quarante-deux chaînes au seuil tombaient là. Un circuit se juge
+  donc aussi à ses VIRAGES : au-delà de 150° on le rejette, et un témoin de
+  `carteMonde.js` le garde. Attention au point de fermeture : le dernier
+  point d'un circuit est souvent le premier, et l'angle entre deux points
+  confondus est NaN — on dédoublonne et l'on retire la fermeture avant de
+  mesurer.
+- **Un îlot en sucette fait un demi-tour garanti.** Tant que la City n'était
+  reliée au reste que par un seul carrefour (Ludgate), tout circuit qui y
+  entrait devait en ressortir par la même porte. Trois carrefours de plus —
+  Old Bailey, Cannon Street, Queen Victoria Street — et la City se boucle
+  d'elle-même. Une impasse, elle, ne va jamais dans un cycle : on ne
+  l'enchaîne pas, on la laisse au décor.
+- **Chaque bout de voie est posé SUR la chaussée d'une autre** — la leçon de
+  Nice, appliquée soixante fois. Et dans `solLondres`, la voie a PRIORITÉ sur
+  le lot : sans cela une avenue qui longe un jardin y perdait un bord et le
+  circuit son seuil.
+- **Les parcs ont été redessinés sur leurs vrais contours, et le sol n'a pas
+  bougé.** `hauteurLondres` ne lit que `distanceTamise`, les ellipses `lac` de
+  chaque parc et `PRIMROSE` ; aucune des trois n'a changé, donc l'empreinte
+  du relief de `plafond.js` est identique — c'est ce qui permet une passe de
+  rues SANS double empreinte, contrairement à Lille. Le jour où un `lac`
+  bouge, c'est la forme canonique qui s'applique.
+- **Les enchaînements se mesurent sur le vrai `solLondres`, pas sur une
+  copie de tête.** Quarante-trois chaînes essayées, quarante-deux au seuil,
+  dix rejetées pour demi-tour, quinze gardées par couverture gloutonne ; le
+  chiffre en commentaire au-dessus de chaque circuit est celui de cette
+  mesure. Euston Road côté King's Cross reste sans boucle — dette déclarée,
+  pas circuit deviné.
+- **Ce qui reste à voir en capture** : le socle du Shard est un treillis de
+  verre — un bloc de `GLASS` dans un mur creux est un trou, même règle qu'à
+  San Francisco — et les ponts routiers sur la Tamise n'existent pas encore,
+  ce qui interdit toute boucle rive à rive. Deux dettes dans `TASKS.md`.
+- **Le mobilier suit les rues, et le témoin le demande à la ville.** Les
+  arrêts des bus impériaux, les cabines et les taxis sont EXPORTÉS
+  (`MOBILIER_LONDRES`) ; `carte.js` les lit là, plus jamais en dur. Le
+  premier portail de la v206 a rendu « 0/5 bus » parce que le témoin
+  portait les cinq arrêts d'avant la passe de rues — le piège de `r: 66` à
+  San Francisco, du côté du banc, une fois de plus. Et un témoin qui ne
+  regarde que la couleur ne voit pas un bus planté dans un lot : celui qui
+  exige le bitume sous chaque bus est rouge à 4/5 sur `origin/main`.
+
 ### Washington (`washington.js`, `dcmonuments.js`)
 
 La sixième ville, la première où **on entre dans les bâtiments** — et la
