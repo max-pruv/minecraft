@@ -666,6 +666,27 @@ leçons, et la première vaut pour tout ce qui se déplace sur un tracé.
   Lus séparément, le train flotterait au-dessus des remblais et s'enfoncerait
   dans les tranchées.
 
+**Et une gare, c'est trois pièces et une échelle (v214).** Le train marquait
+l'arrêt aux deux bouts de chaque ligne depuis la v179 — `traceSegment` le
+déclare — mais rien n'y était bâti : on l'attendait debout dans l'herbe. Un
+arrêt déclaré n'est pas une gare construite, et rien ne le disait.
+
+- **Le quai, l'auvent, le bâtiment.** Le quai est un bloc AU-DESSUS des rails,
+  comme un vrai quai ; l'auvent quatre blocs plus haut, sur des piliers tous
+  les trois blocs ; le bâtiment derrière, avec porte et fenêtres.
+- **La gare est plate même quand le terrain ne l'est pas** : elle comble en
+  dessous et dégage au-dessus, exactement comme la voie. Et elle prend sa cote
+  au BOUT du profil, une seule fois — un quai qui suivrait la pente serait un
+  talus.
+- **Elle est à l'échelle du JOUEUR**, pas du sol. C'est là qu'on marche, qu'on
+  attend et qu'on monte à bord ; quatorze blocs de long, c'est une petite gare,
+  pas un aérodrome.
+- **Le témoin ne demande pas au jeu où chercher.** Il recalcule les
+  emplacements depuis la géométrie des segments, puis lit les blocs — c'est ce
+  qui lui permet de mesurer LA MÊME CHOSE sur l'ancien code, où il trouve zéro.
+  Un témoin qui appellerait `gareEn` échouerait par « fonction absente », ce
+  qui ne prouve rien du fond.
+
 ### Le monde (`world.js`)
 
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).

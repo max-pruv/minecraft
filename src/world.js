@@ -70,7 +70,7 @@ import {
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst, vDuPlan,
 } from './manhattan.js';
 import { positionDe, cielDe, zDeLatitude } from './mondes.js';
-import { surLaVoie, presDeLaVoie, voieEn, brancherSol } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn } from './trains.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
 // le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
@@ -1714,6 +1714,45 @@ export class World {
           // mesurées entre Tokyo et Kyoto. C'est le même piège que les arbres
           // de ville, qui laissaient la trame générique repasser derrière.
           // Trois blocs de large sur quatre mille : la ville ne perd rien.
+          continue;
+        }
+
+        // LA GARE (v214). Max : « no end stations ». Le train marquait l'arrêt
+        // aux deux bouts de chaque ligne depuis la v179, mais on l'attendait
+        // debout dans l'herbe. Un quai un bloc au-dessus des rails, un auvent
+        // quatre blocs plus haut sur ses piliers, et un bâtiment derrière.
+        const gare = gareEn(wx, wz);
+        if (gare) {
+          const y = gare.cote;
+          const pose = (dy, id) => {
+            const wy = y + dy;
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+          };
+          // on comble sous la gare et l'on dégage au-dessus : elle est plate,
+          // le terrain ne l'est pas.
+          for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < y; wy++) {
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
+          }
+          for (let wy = y + 1; wy <= y + 8 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+          if (gare.quoi === 'quai') {
+            pose(0, CITY_BLOCK.GRANITE);
+            pose(1, CITY_BLOCK.GRANITE);              // le quai, un bloc plus haut
+            // L'AUVENT et ses piliers. Un pilier tous les trois blocs, sur le
+            // bord extérieur : sous l'auvent, on marche.
+            const pilier = gare.bord && (((Math.round(gare.l) % 3) + 3) % 3) === 0;
+            if (pilier) { pose(2, BLOCK.STONEBRICK); pose(3, BLOCK.STONEBRICK); pose(4, BLOCK.STONEBRICK); }
+            if (gare.l >= -6 && gare.l <= 6) pose(5, BLOCK.DARKPLANK);
+          } else if (gare.quoi === 'bati') {
+            pose(0, CITY_BLOCK.GRANITE);
+            // Le bâtiment : des murs de brique, une porte au milieu, un toit.
+            const mur = gare.l <= -3.4 || gare.l >= 3.4;
+            const porte = !mur && gare.l > -1 && gare.l < 1;
+            if (mur) { pose(1, BLOCK.BRICK); pose(2, BLOCK.BRICK); pose(3, BLOCK.BRICK); }
+            else if (!porte) { pose(1, BLOCK.BRICK); pose(2, BLOCK.GLASS); pose(3, BLOCK.BRICK); }
+            pose(4, BLOCK.DARKBRICK);
+          } else {
+            pose(0, CITY_BLOCK.GRANITE);              // le parvis
+          }
           continue;
         }
 

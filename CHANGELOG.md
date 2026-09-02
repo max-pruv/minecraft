@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v214 — Chaque bout de ligne a sa gare
+
+**Pourquoi.** Troisième moitié du signalement de Max : « no end stations ». Le
+train marquait bien l'arrêt aux deux bouts de chaque ligne — c'est écrit dans
+le code depuis la v179 — mais rien n'y était bâti. On attendait le train debout
+dans l'herbe, à six blocs des portes de la ville.
+
+**Ce que ça change.** Les dix-huit gares existent : un **quai** de granit, un
+bloc au-dessus des rails comme un vrai quai et de part et d'autre de la voie ;
+un **auvent** quatre blocs plus haut, porté par des piliers tous les trois
+blocs ; un **bâtiment** de brique derrière, avec sa porte et ses fenêtres. La
+gare est plate même quand le terrain ne l'est pas : elle comble en dessous et
+dégage au-dessus, exactement comme la voie.
+
+Elle est à l'échelle du JOUEUR, pas du sol — c'est là qu'on marche, qu'on
+attend et qu'on monte à bord.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, qui ne demande pas
+au jeu où chercher : il calcule lui-même les emplacements depuis la géométrie
+des segments, puis lit les blocs. C'est ce qui lui permet de mesurer la même
+chose sur l'ancien code, où il trouve **zéro gare complète sur dix-huit**, quai
+et auvent à zéro. Sur la branche, les dix-huit sont complètes : 39 à 47
+colonnes de quai, 33 à 39 d'auvent, 29 à 34 de bâtiment. Un second témoin garde
+la régression que le premier rend possible — que l'auvent ou les piliers
+bouchent le quai.
+
+---
+
 ## v213 — La voie ferrée a de vrais rails, et ne fait plus d'escalier
 
 **Pourquoi.** Max, capture à l'appui : « train no rails, holes, no end

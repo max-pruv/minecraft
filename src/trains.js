@@ -168,6 +168,64 @@ export function voieEn(x, z) {
   return best;
 }
 
+// --- LES GARES : le train s'arrêtait devant rien (v214) ----------------------
+//
+// Troisième moitié du signalement de Max : « no end stations ». Le train
+// marquait bien l'arrêt aux deux bouts de chaque ligne — `traceSegment` le
+// déclare depuis la v179 — mais rien n'y était bâti. On attendait le train
+// debout dans l'herbe.
+//
+// Une gare tient en trois pièces, et elle est à l'échelle du JOUEUR, pas du
+// sol : c'est là qu'on marche. Le QUAI, un bloc au-dessus des rails comme un
+// vrai quai, de part et d'autre de la voie. L'AUVENT, quatre blocs plus haut,
+// porté par des piliers. Le BÂTIMENT, derrière le quai, avec sa porte.
+const GARE_LONG = 7;        // demi-longueur du quai, le long de la voie
+const QUAI_DEDANS = 1.9;    // le quai commence où la voie finit
+const QUAI_DEHORS = 3.4;
+const BATI_DEHORS = 7;
+
+// Les points de gare : les deux bouts de chaque segment. Deux segments d'une
+// même ligne qui partagent leur ville-pivot y posent la même gare, et c'est
+// juste — Lyon n'a qu'une gare.
+export function garesDeTrain() {
+  const out = [];
+  for (const s of segmentsDeTrain()) {
+    const dx = s.x1 - s.x0, dz = s.z1 - s.z0;
+    const l = Math.hypot(dx, dz) || 1;
+    const ux = dx / l, uz = dz / l;
+    out.push({ s, ville: s.de, x: s.x0, z: s.z0, ux, uz });
+    out.push({ s, ville: s.vers, x: s.x1, z: s.z1, ux, uz });
+  }
+  return out;
+}
+
+const GARES = garesDeTrain();
+
+// Ce qu'il faut poser à cette colonne, ou null. `l` est la distance le long de
+// la voie, `t` la distance de côté (signée : le bâtiment ne va que d'un côté).
+export function gareEn(x, z) {
+  for (const g of GARES) {
+    const ax = x - g.x, az = z - g.z;
+    const l = ax * g.ux + az * g.uz;
+    if (l < -GARE_LONG || l > GARE_LONG) continue;
+    const t = ax * g.uz - az * g.ux;
+    const at = t < 0 ? -t : t;
+    if (at > BATI_DEHORS) continue;
+    const p = profilDe(g.s);
+    if (!p) continue;
+    // la cote de la gare : celle des rails à son droit, prise une fois pour
+    // que le quai soit PLAT — un quai qui suivrait la pente serait un talus.
+    const k = Math.min(p.length - 1, Math.max(0, Math.round(
+      ((g.x === g.s.x0 && g.z === g.s.z0) ? 0 : p.length - 1))));
+    const cote = Math.round(p[k]);
+    if (at < QUAI_DEDANS) return null;                 // la voie garde sa colonne
+    if (at <= QUAI_DEHORS) return { quoi: 'quai', cote, l, bord: at > QUAI_DEHORS - 0.6 };
+    if (t > 0 && l >= -5 && l <= 5) return { quoi: 'bati', cote, l };
+    return { quoi: 'parvis', cote, l };
+  }
+  return null;
+}
+
 // À moins d'un bloc et demi d'une voie ? C'est le ballast (et la carte le
 // dessine) ; à moins de trois, plus un arbre ne pousse — une voie dégagée.
 export function surLaVoie(x, z) {

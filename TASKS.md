@@ -78,12 +78,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (filtre en cône, remblai et tranchée), elle porte de vrais rails, et plus
   rien ne barre la route du convoi. Mesuré : marche de 27 blocs → 1, zéro rail
   → 96-99 % des colonnes, 36 obstacles → 0.
-- [ ] **Il n'y a toujours aucune GARE** — troisième moitié du signalement de
-  Max (« no end stations »). Le train marque bien l'arrêt aux deux bouts de
-  chaque segment, à `rayon + 6` du centre de chaque ville, mais rien n'y est
-  bâti : ni quai, ni auvent, ni bâtiment. À poser dans `world.js` comme le
-  reste, colonne par colonne, en laissant la voie garder le dernier mot sur la
-  sienne.
+- [x] **Les gares — FAIT en v214.** Quai de granit un bloc au-dessus des
+  rails, auvent sur piliers, bâtiment de brique. Les dix-huit sont complètes ;
+  sur l'ancien code, zéro.
 - [ ] **Les personnages font peur** — « personnages are scary », capture d'un
   villageois à l'appui. Le visage est un dessin grossier sur un cube, et la
   tête paraît détachée du torse. À reprendre avec les enfants en tête.
