@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v210 — Les voitures suivent le sol : plus une seule dans une colline
+
+**Pourquoi.** Max, après avoir visité la v209 : « Les voitures rentrent dans
+les murs. » Elles y rentraient, et ce n'était pas le tracé des rues : chaque
+circuit recevait une cote UNIQUE, celle du sol au centre de la ville. Le
+commentaire l'assumait — « la ville est plate, et un convoi qui suivrait le
+relief ferait des montagnes russes ». San Francisco a treize collines et Nice
+le mont Boron. Mesuré : le sol s'écarte de cette cote de trente-deux blocs à
+San Francisco, seize à Paris, quatorze à Nice, et les convois traversaient la
+roche sur 27 % de leur trajet à San Francisco, 12 % à Nice. Là où le sol
+descendait, les voitures volaient.
+
+**Ce que ça change.**
+
+- **Chaque point du trajet a sa propre cote**, prise sur le sol. Les voitures
+  montent Nob Hill et redescendent sur Market Street, longent la colline du
+  Château à Nice, au lieu de les traverser.
+- **Le tracé est densifié à deux blocs.** Entre deux carrefours distants de
+  trente blocs, la ligne droite passait au travers de tout ce que le terrain
+  fait entre les deux : à six blocs de pas, 17 % du trajet de San Francisco
+  reste dans la roche ; à quatre, 11,5 % ; à deux, 3,3 %.
+- **En pente, la cote est celle du plus haut voisin**, sinon la voiture roule
+  d'un bloc DANS la chaussée qu'elle descend — trente-sept pas à San
+  Francisco, dix-huit à Nice.
+- **Sur un pont, la cote est celle du tablier**, pas du lit du fleuve. Sans
+  cela, suivre le sol faisait passer soixante-treize pas de convoi sous la
+  Tamise, dans les trois ponts livrés en v208.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` avec des chiffres, pas avec une absence : 452 pas dans la roche
+à San Francisco, 167 à Nice, 88 à Paris, et un écart de cote de 32 blocs. Sur
+la branche, **zéro pas dans le relief dans les six villes**, et l'écart au sol
+ne dépasse jamais un bloc. Le relief lui-même n'a pas bougé : les deux
+empreintes de `plafond.js` sont identiques. Ce qui reste sur les trajets est du
+BÂTI — des monuments, des façades, les fontaines de Trafalgar Square — et c'est
+une dette déclarée dans `TASKS.md`, mesurée ville par ville.
+
+---
+
 ## v209 — Les vingt-huit avenues de Paris ont toutes leur boucle
 
 **Pourquoi.** En supprimant les demi-tours (v207), on a laissé la moitié de

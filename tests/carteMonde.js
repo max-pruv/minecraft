@@ -1231,6 +1231,92 @@ const VRAIES_KM = [
       villesVirages.every(([, v]) => !v.absent && v.every((c) => c.part >= 90)),
       JSON.stringify(Object.fromEntries(villesVirages.map(([k, v]) => [k, v.absent ? v : v.map((c) => c.part)]))));
 
+    // --- LES CONVOIS SUIVENT LE SOL (v210) ----------------------------------
+    //
+    // Max, après la v209 : « Les voitures rentrent dans les murs. » Elles y
+    // rentraient, et la cause n'était pas le tracé : `fabriqueCircuits`
+    // donnait à TOUT le circuit une cote unique, celle du sol au centre de la
+    // ville — « la ville est plate », disait le commentaire. San Francisco a
+    // treize collines et Nice le mont Boron. Mesuré sur `origin/main` : le sol
+    // s'écarte de cette cote de 32 blocs à San Francisco, 16 à Paris, 14 à
+    // Nice, et les convois traversaient la roche sur 27 % de leur trajet à San
+    // Francisco, 12 % à Nice.
+    //
+    // Deux témoins, et ils mesurent ce que l'enfant voit — pas une variable :
+    // le BLOC qui se trouve à la cote du convoi, et l'écart entre cette cote
+    // et le sol. Ce qui reste sur le trajet est du BÂTI (des monuments, des
+    // façades, les fontaines de Trafalgar Square) : c'est une autre dette,
+    // déclarée dans `TASKS.md`, et le témoin du relief ne la couvre pas.
+    const cotes = await tab.evaluate(async () => {
+      const b = await import('./src/blocks.js');
+      const w = window.__game.world;
+      // Sur l'ancien code `coteRoulable` n'existe pas : on échoue proprement.
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const RELIEF = new Set([b.BLOCK.STONE, b.BLOCK.DIRT, b.BLOCK.GRASS,
+        b.BLOCK.SAND, b.BLOCK.GRAVEL, b.BLOCK.SNOW]);
+      const sources = [
+        ['paris', './src/paris.js', 'circuitsParis'],
+        ['nice', './src/nice.js', 'circuitsNice'],
+        ['lille', './src/lille.js', 'circuitsLille'],
+        ['sf', './src/sanfrancisco.js', 'circuitsSF'],
+        ['dc', './src/washington.js', 'circuitsWashington'],
+        ['londres', './src/londres.js', 'circuitsLondres'],
+      ];
+      const out = {};
+      for (const [cle, mod, fn] of sources) {
+        const m = await import(mod);
+        if (typeof m[fn] !== 'function') { out[cle] = { absent: true }; continue; }
+        let pas = 0, relief = 0, ecart = 0, pente = 0;
+        for (const c of m[fn](solDe)) {
+          // La DÉNIVELÉE du terrain sous le tracé : c'est elle qui borne
+          // l'écart, et c'est pour cela qu'on la mesure au lieu d'écrire un
+          // chiffre. Une voiture ne peut pas coller au sol au bloc près sur
+          // une pente : on la relève au plus haut voisin (sinon elle roule
+          // DANS la chaussée qu'elle descend), et l'interpolation entre deux
+          // points en ajoute un.
+          for (const p of c.pts) {
+            const px = Math.round(p.x), pz = Math.round(p.z);
+            const h = solDe(px, pz);
+            for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const d2 = solDe(px + dx, pz + dz) - h;
+              if (d2 > pente) pente = d2;
+            }
+          }
+          for (let i = 0; i < c.pts.length; i++) {
+            const a = c.pts[i], e = c.pts[(i + 1) % c.pts.length];
+            const n = Math.max(1, Math.ceil(Math.hypot(e.x - a.x, e.z - a.z)));
+            for (let k = 0; k < n; k++) {
+              const t = k / n;
+              const x = Math.round(a.x + (e.x - a.x) * t);
+              const z = Math.round(a.z + (e.z - a.z) * t);
+              const y = Math.floor(a.y + (e.y - a.y) * t);
+              pas++;
+              const d = Math.abs(y - (solDe(x, z) + 1));
+              if (d > ecart) ecart = d;
+              for (let dy = 0; dy <= 1; dy++) if (RELIEF.has(w.getBlock(x, y + dy, z))) relief++;
+            }
+          }
+        }
+        out[cle] = { pas, relief, ecart, pente };
+      }
+      return out;
+    });
+    const villesCotes = Object.entries(cotes);
+    verifier('aucune voiture ne s\'enfonce dans une colline',
+      villesCotes.length === 6
+      && villesCotes.every(([, v]) => !v.absent && v.pas > 0 && v.relief === 0),
+      JSON.stringify(Object.fromEntries(villesCotes.map(([k, v]) => [k, v.absent ? 'absent' : v.relief]))));
+    // L'ÉCART SE COMPARE À LA PENTE MESURÉE, PAS À UNE CONSTANTE. Un seuil
+    // écrit en dur se met à jour le jour où il gêne ; la dénivelée du terrain
+    // sous le tracé, elle, ne se négocie pas — et c'est exactement ce qui
+    // borne l'écart : la cote d'un point est celle de son plus haut voisin,
+    // plus un bloc pour l'interpolation entre deux points. Sur `origin/main`
+    // l'écart valait 32 blocs à San Francisco pour une pente de 2.
+    verifier('et le convoi suit le sol au lieu de rouler à une cote unique',
+      villesCotes.every(([, v]) => !v.absent && v.ecart <= v.pente + 1),
+      JSON.stringify(Object.fromEntries(villesCotes.map(([k, v]) =>
+        [k, v.absent ? 'absent' : `écart ${v.ecart} pour une pente de ${v.pente}`]))));
+
     // --- PARIS : LES VINGT-HUIT AVENUES ONT TOUTES LEUR BOUCLE (v209) -------
     //
     // La v207 avait supprimé les demi-tours et laissé la moitié de Paris sans
