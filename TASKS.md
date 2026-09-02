@@ -57,6 +57,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   rond-point qu'elle est, et Saint-Michel s'aborde par Port-Royal pour éviter
   le Luxembourg. Huit circuits mesurés couvrent les vingt-huit avenues, le
   plus faible à 97 %.
+- [ ] **Contourner les socles de monument NE MARCHE PAS — mesuré, ne pas
+  refaire.** L'idée évidente est d'ajouter les emprises de monument aux cercles
+  que `contournerRonds` fait éviter. Éprouvé sur les cinq circuits de Paris :
+  cela supprime bien les traversées (183 pas dans un monument → 0) mais fait
+  tomber la tenue de rue de 94 % à 82 %, parce que le tour d'un socle n'est pas
+  roulant — mesuré, 56 % autour du Louvre, 47 % autour de la Tour Eiffel, 42 %
+  autour du Sacré-Cœur. On échange une voiture dans un mur contre une voiture
+  dans la pelouse.
+  La vraie cause est ailleurs : **une voie a le CENTRE d'un monument pour point
+  de passage**. `pt('Louvre')` rend le centre du Louvre, et la rue de Rivoli le
+  traverse donc ; dans la vraie ville elle le LONGE. Idem Haussmann par
+  l'Opéra, Suffren et la Motte-Picquet par la Tour Eiffel. Le remède est de
+  déplacer ces points de passage au bord de l'emprise — c'est une passe de rues
+  comme celle de Londres en v206, avec le sol qui bouge et les bâtiments avec.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
   ne se superpose à aucune autre. Nommément : à Paris l'avenue de l'Opéra, le
   Faubourg Saint-Antoine et le boulevard Haussmann ; à Lille la rue de Paris,
@@ -87,7 +101,7 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   plus hauts, bouche souriante, moustache réduite. Reste à valider en capture
   par Max, comme tout ce qui touche à l'apparence.
 - [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
-  depuis la v210). Mesuré en pas de convoi dans un bloc solide, à la cote où
+  depuis la v210, et la voiture CONDUITE depuis la v212). Mesuré en pas de convoi dans un bloc solide, à la cote où
   la voiture roule : Paris 202 (monuments et façades haussmanniennes — le
   Louvre, l'Opéra, la Tour Eiffel, l'Arc de Triomphe, les Invalides, tous
   traversés parce qu'une voie a leur CENTRE pour point de passage), Londres 94
