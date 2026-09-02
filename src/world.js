@@ -32,7 +32,7 @@ import {
 } from './capitales.js';
 import {
   LONDRES, hauteurLondres, solLondres, lotLondresLibre, batirColonneLondres,
-  MONUMENTS_LONDRES, lieuxDeLondres,
+  MONUMENTS_LONDRES, lieuxDeLondres, pontLondres,
 } from './londres.js';
 import {
   hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
@@ -1763,10 +1763,10 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        for (const [cle, sol, libre, batir] of [
+        for (const [cle, sol, libre, batir, pont] of [
           ['nice', solNice, lotNiceLibre, batirColonneNice],
           ['lille', solLille, lotLilleLibre, batirColonneLille],
-          ['londres', solLondres, lotLondresLibre, batirColonneLondres],
+          ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres],
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);
@@ -1788,8 +1788,16 @@ export class World {
           // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
           // rendait le défaut invisible en capture de rue.
           if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
-          if (ss !== null) data[World.index(x, h, z)] = ss;
-          else if (libre(wx, wz)) {
+          if (ss !== null) {
+            // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT. Sur une
+            // colonne de fleuve, `h` est le lit (base − 7) et l'eau monte
+            // jusqu'à WATER_LEVEL : écrire le sol du tablier à `h`, c'est
+            // paver le fond de la Tamise sous quatre blocs d'eau. Le tablier
+            // va à la cote des quais (base + 1) ; l'eau reste dessous, et le
+            // relief ne bouge pas.
+            const surEau = pont && h < WATER_LEVEL && pont(wx - city.x, wz - city.z) !== null;
+            data[World.index(x, surEau ? city.base + 1 : h, z)] = ss;
+          } else if (libre(wx, wz)) {
             batir(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;

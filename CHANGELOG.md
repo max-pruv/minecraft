@@ -20,6 +20,57 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v208 — Trois ponts routiers sur la Tamise : des voitures changent de rive à Londres
+
+**Pourquoi.** La passe de rues de Londres (v206) a laissé une dette écrite
+noir sur blanc : « les ponts routiers sur la Tamise n'existent pas encore, ce
+qui interdit toute boucle rive à rive ». Quinze circuits, cinquante-neuf voies
+couvertes — et pas une voiture qui traverse le fleuve. La City et Southwark
+étaient deux villes qui se tournaient le dos, à trois blocs d'eau l'une de
+l'autre. Dans la vraie ville, on passe la Tamise tous les cinq cents mètres ;
+c'est ce que voit quiconque regarde une carte de Londres avant de la bâtir.
+
+**Ce que ça change.**
+
+- **Trois ponts routiers aux vraies adresses** — Waterloo Bridge, Blackfriars
+  Bridge et London Bridge — deux blocs d'ouverture chacun, bitume au milieu,
+  granit aux bords comme les quais. Chaque bout est posé SUR la chaussée d'une
+  avenue de la rive (leçon de Nice), et le tablier se pose AU-DESSUS de l'eau,
+  à la cote des quais : le relief ne bouge pas d'un bloc, l'eau reste dessous,
+  et l'on passe en voiture ou à pied d'une rive à l'autre.
+- **Trois circuits rive à rive**, mesurés à 100 % et sans demi-tour : le
+  Strand et l'Embankment vers la rive sud par Blackfriars et Waterloo
+  (128 blocs) ; York Road et Westminster Bridge Road par Waterloo et
+  Blackfriars (111 blocs) ; la City, Southwark et Borough par Blackfriars et
+  London Bridge (85 blocs). Dix-huit circuits couvrent soixante-deux voies sur
+  soixante-trois.
+- **Ce qui manque encore, dit honnêtement** : Westminster Bridge traverserait
+  l'emprise de Big Ben et le pied du London Eye, Hungerford couperait la grande
+  roue, Southwark Bridge tomberait sur le Globe. Ce sont des dettes déclarées
+  dans `TASKS.md`, pas des oublis.
+
+**Ce qui le prouve.**
+
+- Deux témoins neufs dans `carteMonde.js`, par le bâtisseur pur de Londres et
+  le monde chargé, jamais par un (u, v) en dur — la cote du tablier se lit
+  dans le registre des villes, les colonnes se prennent bloc par bloc sur les
+  points des ponts : *trois ponts routiers franchissent la Tamise, et sous
+  chaque tablier il y a de l'eau* (onze colonnes au-dessus du lit par pont,
+  onze roulantes, onze avec de l'eau dessous) ; *et des voitures changent de
+  rive par chacun d'eux* (trois circuits rive à rive, Waterloo emprunté par
+  deux, Blackfriars par trois, London Bridge par un). Les deux sont **ROUGES
+  sur `origin/main`** (rejoués seuls dans `/root/main-ref` : `{"absent":
+  true}`), verts sur la branche.
+- `hauteurLondres` n'a pas changé d'une ligne : l'empreinte du relief de
+  `plafond.js` est identique, et la double empreinte n'est pas requise — même
+  raison qu'en v206. Un pont est du SOL posé au-dessus de l'eau, pas du relief.
+- Enchaînements mesurés sur une copie de `src/` avec le chaînage de
+  carrefour en carrefour, toutes combinaisons de deux à six voies, puis
+  couverture gloutonne ; le chiffre en commentaire au-dessus de chaque circuit
+  est celui de la mesure.
+
+---
+
 ## v207 — Plus aucune voiture ne fait demi-tour : les circuits roulent de carrefour en carrefour
 
 **Pourquoi.** Le témoin de Londres (v206) rejetait tout virage au-delà de

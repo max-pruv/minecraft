@@ -34,10 +34,15 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   C'est un cul-de-sac : rien ne part de King's Cross vers l'est ni vers le
   sud. Il lui manque Pentonville Road et Gray's Inn Road pour refermer sur
   Bloomsbury — deux voies à tracer et à mesurer.
-- [ ] **Pas de pont routier sur la Tamise.** Aucun circuit ne passe d'une rive
-  à l'autre : Westminster Bridge, Waterloo Bridge, London Bridge et Tower
-  Bridge sont des monuments, pas des voies. Il faudrait une chaussée sur le
-  tablier ET que `solLondres` la rende roulante au-dessus de l'eau.
+- [x] **Pas de pont routier sur la Tamise — FAIT en v208.** Waterloo,
+  Blackfriars et London Bridge sont des voies à part entière, tablier à la
+  cote des quais et eau dessous ; trois circuits changent de rive, et
+  dix-huit circuits couvrent soixante-deux voies sur soixante-trois.
+- [ ] **Westminster Bridge, Hungerford et Southwark Bridge n'ont pas de
+  chaussée.** Leurs tabliers traverseraient l'emprise de Big Ben et le pied
+  du London Eye, la grande roue elle-même, et le Globe. À reprendre le jour
+  où ces monuments se déplacent ou se rétrécissent — on ne pose pas un pont
+  dans un monument.
 - [x] **Réauditer les circuits des autres villes pour les demi-tours — FAIT
   en v207.** Vingt-quatre des quarante-et-un circuits hors Londres
   rebroussaient chemin (Paris cinq sur cinq). La cause était dans le chaînage
