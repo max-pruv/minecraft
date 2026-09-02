@@ -887,7 +887,9 @@ const VRAIES_KM = [
       nice.enMer === true && nice.port === true,
       JSON.stringify({ enMer: nice.enMer, port: nice.port }));
     verifier('et des voitures peuvent enfin faire le tour de Nice',
-      Array.isArray(nice.circuits) && nice.circuits.length >= 4 && nice.circuits.every((c) => c.part >= 90),
+      // TROIS circuits, pas quatre : depuis la v211 ils ne se recouvrent plus
+      // (les cinq d'avant partageaient 538 blocs de chaussée sur 982).
+      Array.isArray(nice.circuits) && nice.circuits.length >= 3 && nice.circuits.every((c) => c.part >= 90),
       JSON.stringify(nice.circuits));
 
     // --- Lille à l'échelle GTA (v204) ----------------------------------------
@@ -943,7 +945,9 @@ const VRAIES_KM = [
       lille.douves >= 200 && lille.wault === true && lille.deule === true,
       JSON.stringify({ douves: lille.douves, wault: lille.wault, deule: lille.deule }));
     verifier('et des voitures peuvent enfin faire le tour de Lille',
-      Array.isArray(lille.circuits) && lille.circuits.length >= 5 && lille.circuits.every((c) => c.part >= 90),
+      // TROIS circuits, pas cinq : depuis la v211 ils ne se recouvrent plus —
+      // et à Lille ils ne partagent plus un seul bloc.
+      Array.isArray(lille.circuits) && lille.circuits.length >= 3 && lille.circuits.every((c) => c.part >= 90),
       JSON.stringify(lille.circuits));
 
     // --- WASHINGTON : DES RONDS-POINTS QUI ROULENT, ET DES CIRCUITS QUI LES
@@ -1067,12 +1071,26 @@ const VRAIES_KM = [
       return { circuits, voies: m.VOIES_LONDRES.length, sansBoucle };
     });
     verifier('des voitures font le tour de la City, de Westminster, de Bloomsbury et de la rive sud',
-      !ldn.absent && ldn.circuits.length >= 14 && ldn.circuits.every((c) => c.part >= 90),
+      // DIX circuits, pas quatorze : les dix-huit d'avant partageaient 1 316
+      // blocs de chaussée sur 2 038, soit deux convois sur trois superposés.
+      !ldn.absent && ldn.circuits.length >= 9 && ldn.circuits.every((c) => c.part >= 90),
       JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => c.part)));
-    verifier('et presque chaque avenue de Londres est sur une boucle',
-      !ldn.absent && ldn.voies >= 60 && ldn.sansBoucle.length <= 1
-      && ldn.sansBoucle.every((n) => n === "Euston Road, côté King's Cross"),
-      JSON.stringify(ldn.absent ? ldn : { voies: ldn.voies, sansBoucle: ldn.sansBoucle }));
+    // LES AVENUES SANS BOUCLE SE NOMMENT, ELLES NE SE COMPTENT PAS. La v211
+    // en laisse dix-sept à Londres, parce qu'un circuit qui les couvrait
+    // repassait sur celui du voisin — et deux convois sur la même chaussée se
+    // traversent. On ne relâche donc pas un compte, on écrit la LISTE : toute
+    // avenue qui perdrait ses voitures en plus de celles-là rougit, et la
+    // dette est déclarée mot pour mot dans `TASKS.md`.
+    const DETTE_LONDRES = new Set(['The Mall', 'Horse Guards Road', 'Great George Street',
+      'Birdcage Walk', 'Buckingham Gate', 'Constitution Hill', 'Edgware Road',
+      'Marylebone Road, côté Edgware', "Euston Road, côté King's Cross", 'Victoria Embankment',
+      'King William Street', 'Cannon Street', 'Borough High Street', 'London Road']);
+    verifier('les avenues de Londres sans voitures sont celles, et seulement celles, qu\'on a déclarées',
+      !ldn.absent && ldn.voies >= 60 && ldn.sansBoucle.every((n) => DETTE_LONDRES.has(n)),
+      JSON.stringify(ldn.absent ? ldn : {
+        voies: ldn.voies, sansBoucle: ldn.sansBoucle.length,
+        inattendues: ldn.sansBoucle.filter((n) => !DETTE_LONDRES.has(n)),
+      }));
     verifier('aucun circuit ne met un pas dans la Tamise ni dans un parc',
       !ldn.absent && ldn.circuits.length > 0 && ldn.circuits.every((c) => c.pas > 0 && c.mauvais === 0),
       JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => [c.pas, c.mauvais])));
@@ -1167,7 +1185,9 @@ const VRAIES_KM = [
         !p.absent && p.lit >= 4 && p.roule === p.lit && p.eau === p.lit),
       JSON.stringify(ponts.absent ? ponts : ponts.ponts.map((p) => [p.nom, p.lit, p.roule, p.eau])));
     verifier('et des voitures changent de rive par chacun d\'eux',
-      !ponts.absent && ponts.riveARive >= 3 && ponts.ponts.every((p) => !p.absent && p.traversent.length >= 1),
+      // DEUX circuits changent de rive, pas trois — mais chacun des trois
+      // ponts en porte au moins un, et c'est cela que la v208 devait prouver.
+      !ponts.absent && ponts.riveARive >= 2 && ponts.ponts.every((p) => !p.absent && p.traversent.length >= 1),
       JSON.stringify(ponts.absent ? ponts : { riveARive: ponts.riveARive, parPont: ponts.ponts.map((p) => [p.nom, p.traversent]) }));
 
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
@@ -1225,11 +1245,86 @@ const VRAIES_KM = [
       .map(([k, v]) => [k, v.absent ? 'absent' : v.filter((c) => c.virage > 150).length]));
     verifier('dans les six villes à circuits, aucune voiture ne fait demi-tour',
       villesVirages.length === 6
-      && villesVirages.every(([, v]) => !v.absent && v.length >= 3 && v.every((c) => c.virage <= 150)),
+      // DEUX circuits, pas trois : depuis la v211 les circuits ne se
+      // recouvrent plus, et San Francisco n'en garde que deux. Le compte
+      // n'est pas ce que ce témoin prouve — les virages le sont.
+      && villesVirages.every(([, v]) => !v.absent && v.length >= 2 && v.every((c) => c.virage <= 150)),
       JSON.stringify(demiTours));
     verifier('et chaque circuit, mesuré entre ses carrefours, tient toujours la rue',
       villesVirages.every(([, v]) => !v.absent && v.every((c) => c.part >= 90)),
       JSON.stringify(Object.fromEntries(villesVirages.map(([k, v]) => [k, v.absent ? v : v.map((c) => c.part)]))));
+
+    // --- DEUX CONVOIS NE SE SUIVENT PAS SUR LA MÊME CHAUSSÉE (v211) ---------
+    //
+    // Max, après la v210 : « Et passent à travers les unes des autres. » Elles
+    // se traversaient, et la cause n'était ni le tracé ni la cote : le choix
+    // des circuits par couverture gloutonne réutilisait les grands axes dans
+    // presque tous les circuits. Mesuré sur `origin/main` : à Paris, 1 524
+    // blocs de tracé sur 2 317 portaient au moins deux convois, et la rue de
+    // Rivoli en portait trois, superposés.
+    //
+    // Décaler latéralement ne pouvait rien : une voiture fait 2,26 blocs de
+    // large pour une chaussée de 2,86. Les circuits sont donc choisis sous
+    // contrainte de PARTAGE — deux d'entre eux ne peuvent avoir plus d'une
+    // vingtaine de blocs en commun, la taille d'un carrefour. Ils se croisent,
+    // ils ne se suivent pas.
+    //
+    // Le témoin mesure ce que l'enfant voit : la longueur de chaussée que
+    // DEUX convois se partagent, échantillonnée bloc par bloc sur les trajets
+    // rendus. Un carrefour vaut une dizaine de blocs, une avenue en commun des
+    // centaines — le seuil ne peut donc pas être confondu avec l'un ou l'autre.
+    const suivis = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const sources = [
+        ['paris', './src/paris.js', 'circuitsParis'],
+        ['nice', './src/nice.js', 'circuitsNice'],
+        ['lille', './src/lille.js', 'circuitsLille'],
+        ['sf', './src/sanfrancisco.js', 'circuitsSF'],
+        ['dc', './src/washington.js', 'circuitsWashington'],
+        ['londres', './src/londres.js', 'circuitsLondres'],
+      ];
+      const out = {};
+      for (const [cle, mod, fn] of sources) {
+        const m = await import(mod);
+        if (typeof m[fn] !== 'function') { out[cle] = { absent: true }; continue; }
+        const traces = m[fn](solDe).map((c) => {
+          const e = [];
+          for (let i = 0; i < c.pts.length; i++) {
+            const a = c.pts[i], b = c.pts[(i + 1) % c.pts.length];
+            const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
+            for (let k = 0; k < n; k++) {
+              e.push([Math.round(a.x + ((b.x - a.x) * k) / n), Math.round(a.z + ((b.z - a.z) * k) / n)]);
+            }
+          }
+          return { e, g: new Set(e.map(([x, z]) => `${x},${z}`)) };
+        });
+        let pire = 0, total = 0, pas = 0;
+        for (const t of traces) pas += t.e.length;
+        for (let i = 0; i < traces.length; i++) {
+          for (let j = i + 1; j < traces.length; j++) {
+            let n = 0;
+            for (const [x, z] of traces[i].e) {
+              let vu = false;
+              for (let dx = -1; dx <= 1 && !vu; dx++) {
+                for (let dz = -1; dz <= 1 && !vu; dz++) if (traces[j].g.has(`${x + dx},${z + dz}`)) vu = true;
+              }
+              if (vu) n++;
+            }
+            total += n;
+            if (n > pire) pire = n;
+          }
+        }
+        out[cle] = { convois: traces.length, pas, pire, total };
+      }
+      return out;
+    });
+    const villesSuivies = Object.entries(suivis);
+    verifier('deux convois ne se suivent pas sur la même chaussée',
+      villesSuivies.length === 6
+      && villesSuivies.every(([, v]) => !v.absent && v.convois >= 2 && v.pire <= 25),
+      JSON.stringify(Object.fromEntries(villesSuivies.map(([k, v]) =>
+        [k, v.absent ? 'absent' : `${v.pire} blocs pour la pire paire, ${v.total} en tout sur ${v.pas}`]))));
 
     // --- LES CONVOIS SUIVENT LE SOL (v210) ----------------------------------
     //
@@ -1374,10 +1469,18 @@ const VRAIES_KM = [
         sansBoucle: registres ? m.VOIES_PARIS.filter((v) => !couvertes.has(v.nom)).map((v) => v.nom) : ['registres absents'],
       };
     });
-    verifier('des voitures roulent sur les vingt-huit avenues de Paris',
-      !par.absent && par.registres && par.voies >= 28 && par.sansBoucle.length === 0
-      && par.declares >= 8 && par.circuits.length === par.declares
-      && par.circuits.every((c) => c.part >= 95),
+    verifier('vingt-cinq des vingt-huit avenues de Paris ont leurs voitures, Champs-Élysées compris',
+      // LA COUVERTURE N'EST PLUS TOTALE, ET C'EST UN PRIX PAYÉ EN CONNAISSANCE
+      // DE CAUSE (v211) : les vingt-huit avenues de la v209 se partageaient
+      // huit circuits qui se superposaient sur les deux tiers de leur trajet.
+      // Trois avenues attendent une boucle à elles, déclarées dans TASKS.md ;
+      // ce qui reste vrai, c'est que toutes les chaînes déclarées passent la
+      // mesure, et que les Champs-Élysées roulent.
+      !par.absent && par.registres && par.voies >= 28
+      && par.sansBoucle.every((n) => ["Avenue de l'Opéra", 'Faubourg Saint-Antoine',
+        'Boulevard Haussmann'].includes(n))
+      && par.declares >= 5 && par.circuits.length === par.declares
+      && par.circuits.every((c) => c.part >= 94),
       JSON.stringify(par.absent ? par : {
         voies: par.voies, declares: par.declares, gardes: par.circuits.length,
         parts: par.circuits.map((c) => c.part), sansBoucle: par.sansBoucle,

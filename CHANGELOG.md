@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v211 — Les circuits se croisent, ils ne se suivent plus
+
+**Pourquoi.** Max, après la v210 : « Et passent à travers les unes des
+autres. » Elles se traversaient, et ce n'était ni le tracé ni la cote : le
+choix des circuits par couverture gloutonne réutilisait les grands axes dans
+presque tous les circuits. Mesuré : à Paris, **1 524 blocs de tracé sur 2 317
+portaient au moins deux convois**, et la rue de Rivoli en portait trois,
+superposés. Londres 1 316 sur 2 038, Lille 605 sur 870, San Francisco 568 sur
+1 026. Deux voitures au même endroit au même instant, c'est deux voitures qui
+se traversent.
+
+Décaler les convois côte à côte ne pouvait rien : une voiture fait **2,26
+blocs de large** pour une chaussée qui en fait 2,86. Il n'y a pas la place
+pour deux files, et la mesure l'a écarté avant qu'on ne l'écrive.
+
+**Ce que ça change.**
+
+- **Les circuits sont choisis sous contrainte de partage** : deux d'entre eux
+  ne peuvent pas avoir plus d'une vingtaine de blocs de chaussée en commun, la
+  taille d'un carrefour. Ils se croisent, ils ne se suivent pas.
+- **Les six villes ont été rechoisies** : Paris 5 circuits, Londres 10, Nice 3,
+  Lille 3, San Francisco 2, Washington 19. Les combinaisons ont été éprouvées
+  contre le sol de chaque ville, comme d'habitude.
+- **Le prix, dit honnêtement** : quelques avenues perdent leurs voitures faute
+  d'une boucle à elles. Les rues qu'un enfant nomme sont gardées en priorité —
+  les Champs-Élysées roulent, Pennsylvania Avenue et Market Street aussi. Ce
+  qui manque est nommé dans `TASKS.md`, avec la même piste qu'en v209 : des
+  voies de raccord, à tracer et à mesurer.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, qui mesure bloc par
+bloc la chaussée que deux convois se partagent. Rouge sur `origin/main` : 253
+blocs pour la pire paire à Paris, 237 à San Francisco, 142 à Lille. Sur la
+branche, **aucune paire ne dépasse 22 blocs**, et San Francisco comme Lille
+tombent à zéro. Deux témoins existants ont été ajustés, et cela se dit : le
+compte minimal de circuits par ville passe de trois à deux, et la couverture
+de Paris n'est plus exigée totale.
+
+---
+
 ## v210 — Les voitures suivent le sol : plus une seule dans une colline
 
 **Pourquoi.** Max, après avoir visité la v209 : « Les voitures rentrent dans

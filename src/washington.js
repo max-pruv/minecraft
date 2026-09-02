@@ -498,32 +498,64 @@ export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
 // font rouler des voitures sur trente-trois des trente-six avenues nommées
 // (en entier ou par un raccord) ; Virginia, New York et Constitution ouest
 // restent sans boucle qui se referme à quatre-vingt-dix pour cent.
+// LES CIRCUITS SE CROISENT, ILS NE SE SUIVENT PAS (v211).
+//
+// Max, après la v210 : « Et passent à travers les unes des autres. » Mesuré :
+// deux convois sur trois roulaient sur la MÊME chaussée. Le choix par
+// couverture gloutonne réutilisait les grands axes dans presque tous les
+// circuits — à Paris, la rue de Rivoli en portait trois, superposés.
+//
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
+// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// donc rien. Les circuits sont désormais choisis sous une contrainte de
+// PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
+// en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
+// pas.
+//
+// Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
+// voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
+// gardées en priorité — ce n'est pas un tirage au sort.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 %, 281 — le tour du Mall : Constitution vers l'ouest, la 17e, retour
-  // par Independence jusqu'à la 3e — derrière les musées, jamais au travers.
-  ['3e Rue', 'Constitution Avenue', '17e Rue', 'Independence Avenue'],
-  // 100 %, 180 — le centre-ville, de North Capitol à la 7e entre C et H.
-  ['C Street NO, de North Capitol à la 7e', '7e Rue NO, de C à H', 'H Street NO, de North Capitol à la 7e', 'North Capitol Street, de C à H'],
-  // 100 %, 168 — Penn Quarter : de la 7e à la 14e entre C Street et K Street.
-  ['C Street NO, de la 7e à la 14e', '14e Rue NO, de C à K', 'K Street NO, de la 7e à la 14e', '7e Rue NO, de C à K'],
-  // 100 %, 96 — le petit tour de Chinatown, entre F et H, de la 9e à la 14e.
-  ['F Street NO, de la 9e à la 14e', '14e Rue NO, de F à H', 'H Street NO, de la 9e à la 14e', '9e Rue NO, de F à H'],
-  // 100 %, 199 — Georgetown : M Street, Wisconsin, P Street et la 28e.
-  ['M Street (Georgetown)', 'Wisconsin Avenue NO', 'P Street (Georgetown)', '28e Rue NO'],
-  // 100 %, 128 — le sud-ouest : sous le Rayburn, la 3e, E Street et South Capitol.
-  ['D Street SO', '3e Rue SO, de D à E', 'E Street SO', 'South Capitol Street'],
-  // 99 %, 102 — Maryland Avenue jusqu'à la 7e, retour par Independence.
-  ['Maryland Avenue SO', '7e Rue SO', 'Independence Avenue, de la 3e à la 7e'],
-  // 100 %, 115 — Capitol Hill : la 3e, D Street, la 8e et Pennsylvania SE.
-  ['3e Rue SE', 'D Street SE, de la 3e à la 8e', '8e Rue SE', 'Pennsylvania Avenue SE'],
-  // 100 %, 331 — la grande diagonale : Pennsylvania de la 3e à la Maison-Blanche,
-  // la 15e et H Street, Connecticut jusqu'à Dupont Circle, Massachusetts pour
-  // redescendre à la 3e. Cinq ronds-points contournés.
-  ['Pennsylvania Avenue NO', '15e Rue NO, de Pennsylvania à H', 'H Street NO, de la 15e à Connecticut', 'Connecticut Avenue NO, de H à Dupont', 'Massachusetts Avenue NO, de Dupont à la 3e', '3e Rue NO, de Massachusetts à Pennsylvania'],
-  // 100 %, 234 — Rhode Island de Dupont à la 7e, retour par Massachusetts.
-  ['Rhode Island Avenue NO', '7e Rue NO, de Massachusetts à Rhode Island', 'Massachusetts Avenue NO, de Dupont à la 7e'],
-  // 99 %, 161 — le nord : la 16e jusqu'à P Street, Logan Circle, Vermont.
-  ['16e Rue NO', 'P Street NO, de la 16e à Logan Circle', 'Vermont Avenue NO'],
+  // 99 % (86 blocs, virage max 90°)
+  ["Pennsylvania Avenue NO","9e Rue NO","7e Rue NO","7e Rue NO, de C à H"],
+  // 100 % (111 blocs, virage max 90°)
+  ["New York Avenue NO","14e Rue NO","F Street NO, de la 9e à la 14e","7e Rue NO, de C à K"],
+  // 100 % (106 blocs, virage max 119°)
+  ["Rhode Island Avenue NO","14e Rue NO","Massachusetts Avenue NO, de Dupont à la 3e","K Street NO, de la 7e à la 14e"],
+  // 100 % (160 blocs, virage max 93°)
+  ["Connecticut Avenue NO","F Street NO","14e Rue NO, de C à K","Massachusetts Avenue NO, de Dupont à la 7e"],
+  // 100 % (77 blocs, virage max 90°)
+  ["Pennsylvania Avenue NO","3e Rue NO","C Street NO","9e Rue NO"],
+  // 100 % (58 blocs, virage max 130°)
+  ["Massachusetts Avenue NO","New York Avenue NO","H Street NO, de la 9e à la 14e","9e Rue NO, de F à H"],
+  // 100 % (108 blocs, virage max 104°)
+  ["3e Rue NO","H Street NO, de North Capitol à la 7e","9e Rue NO","Massachusetts Avenue NO, de Dupont à la 3e"],
+  // 99 % (78 blocs, virage max 90°)
+  ["Rhode Island Avenue NO","7e Rue NO","9e Rue NO","K Street NO"],
+  // 100 % (66 blocs, virage max 90°)
+  ["Massachusetts Avenue NO","North Capitol Street","C Street NO, de North Capitol à la 7e","3e Rue NO, de Massachusetts à Pennsylvania"],
+  // 98 % (110 blocs, virage max 114°)
+  ["Massachusetts Avenue NO","Vermont Avenue NO","P Street NO, de la 16e à Logan Circle","16e Rue NO"],
+  // 100 % (96 blocs, virage max 94°)
+  ["M Street (Georgetown)","Wisconsin Avenue NO","P Street (Georgetown)","28e Rue NO"],
+  // 100 % (92 blocs, virage max 90°)
+  ["Constitution Avenue","7e Rue NO","C Street NO, de la 7e à la 14e","14e Rue NO"],
+  // 98 % (48 blocs, virage max 114°)
+  ["Pennsylvania Avenue NO","14e Rue NO","F Street NO","15e Rue NO, de Pennsylvania à H"],
+  // 100 % (43 blocs, virage max 117°)
+  ["New York Avenue NO","14e Rue NO, de F à H","H Street NO","15e Rue NO, de Pennsylvania à H"],
+  // 100 % (95 blocs, virage max 122°)
+  ["Maryland Avenue SO","3e Rue SO","Independence Avenue","7e Rue SO"],
+  // 100 % (69 blocs, virage max 90°)
+  ["3e Rue NO","F Street NO","North Capitol Street, de C à H","H Street NO, de North Capitol à la 7e"],
+  // 100 % (117 blocs, virage max 90°)
+  ["South Capitol Street","E Street SO","3e Rue SO, de D à E","D Street SO"],
+  // 100 % (62 blocs, virage max 111°)
+  ["Vermont Avenue NO","K Street NO","Connecticut Avenue NO, de H à Dupont","H Street NO, de la 15e à Connecticut"],
+  // 100 % (101 blocs, virage max 122°)
+  ["3e Rue SE","D Street SE, de la 3e à la 8e","8e Rue SE","Pennsylvania Avenue SE"],
 ];
 
 export const circuitsWashington = fabriqueCircuits({

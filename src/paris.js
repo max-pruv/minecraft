@@ -447,41 +447,42 @@ const BANDES = rangerVoies(VOIES);
 //    rond-point qu'elle est dans la vraie ville, sans quoi la Grande Armée et
 //    les Ternes s'y croisaient en épingle.
 //
-// Les enchaînements ne se devinent toujours pas : toutes les combinaisons de
-// deux à six avenues ont été éprouvées contre `solParis`, avec le
-// contournement, puis choisies par COUVERTURE GLOUTONNE — à chaque tour, celle
-// qui apporte le plus d'avenues neuves. Cinquante-six boucles tiennent 95 % ;
-// huit suffisent à tout couvrir, et la plus faible tient la rue à 97 %.
+// Les enchaînements ne se devinent toujours pas : toutes les combinaisons
+// d'avenues ont été éprouvées contre `solParis`, avec le contournement. La
+// v209 en avait gardé huit par couverture gloutonne, et les vingt-huit
+// avenues étaient couvertes — au prix d'un recouvrement que personne n'avait
+// mesuré. Voir juste en dessous : c'est ce recouvrement que la v211 a payé.
+//
+// LES CIRCUITS SE CROISENT, ILS NE SE SUIVENT PAS (v211).
+//
+// Max, après la v210 : « Et passent à travers les unes des autres. » Mesuré :
+// deux convois sur trois roulaient sur la MÊME chaussée. Le choix par
+// couverture gloutonne réutilisait les grands axes dans presque tous les
+// circuits — à Paris, la rue de Rivoli en portait trois, superposés.
+//
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
+// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// donc rien. Les circuits sont désormais choisis sous une contrainte de
+// PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
+// en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
+// pas.
+//
+// Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
+// voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
+// gardées en priorité — ce n'est pas un tirage au sort.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 % (311 blocs, virage max 147°) — le grand tour de l'est : Rivoli,
-  // Sébastopol, La Fayette, les Grands Boulevards, Voltaire et le Faubourg.
-  ['Rue de Rivoli', 'Boulevard de Sébastopol', 'Rue La Fayette', 'Grands Boulevards', 'Boulevard Voltaire', 'Faubourg Saint-Antoine'],
-  // 100 % (181 blocs, virage max 107°) — la rive gauche par le sud, et le
-  // boulevard Saint-Michel enfin sur une boucle : on y entre à Port-Royal,
-  // donc au SUD du Luxembourg, dont l'herbe faisait tomber ses tracés à 88 %.
-  ['Boulevard Saint-Michel', 'Boulevard du Montparnasse', 'Boulevard Raspail', 'Boulevard Arago', 'Avenue des Gobelins', 'Boulevard de Port-Royal'],
-  // 100 % (249 blocs, virage max 87°) — le nord : La Fayette, Haussmann,
-  // Wagram, les Batignolles, Clichy et Rochechouart.
-  ['Rue La Fayette', 'Boulevard Haussmann', 'Avenue de Wagram', 'Boulevard des Batignolles', 'Boulevard de Clichy', 'Boulevard de Rochechouart'],
-  // 99 % (192 blocs, virage max 102°) — l'ouest de la rive gauche, du
-  // Champ-de-Mars à Montparnasse par Suffren.
-  ['Boulevard Saint-Germain', 'Rue de Rennes', 'Boulevard du Montparnasse', 'Avenue de Suffren', 'Avenue de la Motte-Picquet'],
-  // 98 % (362 blocs, virage max 117°) — Belleville et les Buttes-Chaumont,
-  // redescendus sur Nation par Ménilmontant.
-  ['Grands Boulevards', 'Rue La Fayette', 'Boulevard de Magenta', 'Rue de Belleville', 'Boulevard de Ménilmontant', 'Faubourg Saint-Antoine'],
-  // 100 % (86 blocs, virage max 135°) — le triangle de l'Étoile à la Porte
-  // Maillot, par Wagram et les Ternes.
-  ['Avenue de la Grande Armée', 'Avenue de Wagram', 'Avenue des Ternes'],
-  // 99 % (307 blocs, virage max 90°) — l'Opéra, Magenta et l'est.
-  ['Rue de Rivoli', "Avenue de l'Opéra", 'Rue La Fayette', 'Boulevard de Magenta', 'Boulevard Voltaire', 'Faubourg Saint-Antoine'],
-  // 97 % (431 blocs, virage max 85°) — LE PLUS LONG, et celui qui porte les
-  // Champs-Élysées : de la Bastille à l'Étoile par les Grands Boulevards et
-  // Haussmann, retour par les Champs et Rivoli. Les trois points perdus sont
-  // le jardin des Tuileries, que la rue de Rivoli traverse depuis toujours
-  // (dette de `TASKS.md` : la vraie Rivoli longe la grille, elle n'entre pas).
-  ['Rue de Rivoli', 'Faubourg Saint-Antoine', 'Boulevard Voltaire', 'Grands Boulevards', 'Boulevard Haussmann', 'Avenue des Champs-Élysées'],
+  // 96 % (312 blocs, virage max 140°)
+  ["Rue de Rivoli","Boulevard de Sébastopol","Boulevard de Rochechouart","Boulevard de Clichy","Boulevard des Batignolles","Avenue de Wagram","Avenue des Champs-Élysées"],
+  // 98 % (354 blocs, virage max 117°)
+  ["Grands Boulevards","Rue La Fayette","Boulevard de Magenta","Boulevard Voltaire","Boulevard de Ménilmontant","Rue de Belleville"],
+  // 94 % (206 blocs, virage max 132°)
+  ["Boulevard Saint-Germain","Boulevard Saint-Michel","Boulevard de Port-Royal","Avenue des Gobelins","Boulevard Arago","Boulevard Raspail","Rue de Rennes"],
+  // 100 % (86 blocs, virage max 135°)
+  ["Avenue de la Grande Armée","Avenue de Wagram","Avenue des Ternes"],
+  // 100 % (198 blocs, virage max 90°)
+  ["Boulevard Saint-Germain","Boulevard Raspail","Rue de Rennes","Boulevard du Montparnasse","Avenue de Suffren","Avenue de la Motte-Picquet"],
 ];
 
 // Les circuits par leurs NOMS : le témoin de `carteMonde.js` vérifie que les

@@ -322,22 +322,32 @@ const BANDES = rangerVoies(VOIES);
 // Londres. Les seize avenues restent toutes couvertes.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+// LES CIRCUITS SE CROISENT, ILS NE SE SUIVENT PAS (v211).
+//
+// Max, après la v210 : « Et passent à travers les unes des autres. » Mesuré :
+// deux convois sur trois roulaient sur la MÊME chaussée. Le choix par
+// couverture gloutonne réutilisait les grands axes dans presque tous les
+// circuits — à Paris, la rue de Rivoli en portait trois, superposés.
+//
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
+// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// donc rien. Les circuits sont désormais choisis sous une contrainte de
+// PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
+// en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
+// pas.
+//
+// Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
+// voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
+// gardées en priorité — ce n'est pas un tirage au sort.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 % (300 blocs, virage max 104°) — le grand tour de l'ouest : la
-  // Promenade, Verdun, Jean-Médecin, Thiers, Gambetta, la Californie et
-  // René-Cassin jusqu'au bout de la Promenade.
-  ['Promenade des Anglais', 'Avenue de Verdun', 'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta', 'Avenue de la Californie', 'Boulevard René-Cassin'],
-  // 100 % (239 blocs, virage max 104°) — le tour du vieux Nice : les quais, le
-  // cap, Carabacel derrière la colline, Dubouchage, Victor-Hugo et Gambetta
-  // pour redescendre à la mer.
-  ['Promenade des Anglais', 'Quai des États-Unis', 'Quai Rauba-Capeu', 'Boulevard Carabacel', 'Boulevard Dubouchage', 'Boulevard Victor-Hugo', 'Boulevard Gambetta'],
-  // 100 % (183 blocs, virage max 90°) — la montée de Cimiez par Malausséna et
-  // les Arènes, retour par Dubouchage.
-  ['Boulevard Dubouchage', 'Boulevard Victor-Hugo', 'Boulevard Gambetta', 'Avenue Thiers', 'Avenue Malausséna', 'Avenue des Arènes de Cimiez', 'Boulevard de Cimiez'],
-  // 100 % (100 blocs, virage max 113°) — la rue de France entre Gambetta et Verdun.
-  ['Promenade des Anglais', 'Boulevard Gambetta', 'Rue de France', 'Avenue de Verdun'],
-  // 100 % (118 blocs, virage max 90°) — le carré de la ville neuve, autour de la gare.
-  ['Boulevard Victor-Hugo', 'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta'],
+  // 99 % (301 blocs, virage max 104°)
+  ["Promenade des Anglais","Boulevard Gambetta","Avenue Thiers","Avenue Jean-Médecin","Rue de France","Avenue de la Californie","Boulevard René-Cassin"],
+  // 100 % (95 blocs, virage max 90°)
+  ["Boulevard Dubouchage","Avenue Jean-Médecin","Avenue Malausséna","Avenue des Arènes de Cimiez","Boulevard de Cimiez"],
+  // 99 % (156 blocs, virage max 102°)
+  ["Promenade des Anglais","Quai des États-Unis","Quai Rauba-Capeu","Boulevard Carabacel","Boulevard Dubouchage","Boulevard Victor-Hugo","Avenue de Verdun"],
 ];
 
 const ROULANT = new Set([BITUME, PAVE]);

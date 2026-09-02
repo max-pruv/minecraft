@@ -57,6 +57,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   rond-point qu'elle est, et Saint-Michel s'aborde par Port-Royal pour éviter
   le Luxembourg. Huit circuits mesurés couvrent les vingt-huit avenues, le
   plus faible à 97 %.
+- [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
+  ne se superpose à aucune autre. Nommément : à Paris l'avenue de l'Opéra, le
+  Faubourg Saint-Antoine et le boulevard Haussmann ; à Lille la rue de Paris,
+  Gustave-Delory, Victor-Hugo et la rue Royale ; à San Francisco Valencia,
+  Fulton, Lincoln Way, la Great Highway, la 19e Avenue et Third Street ; à
+  Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
+  Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
+  piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
+  et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
+  repasser sur celle du voisin.
 - [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
   depuis la v210). Mesuré en pas de convoi dans un bloc solide, à la cote où
   la voiture roule : Paris 202 (monuments et façades haussmanniennes — le
