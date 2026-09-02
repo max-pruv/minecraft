@@ -1231,6 +1231,76 @@ const VRAIES_KM = [
       villesVirages.every(([, v]) => !v.absent && v.every((c) => c.part >= 90)),
       JSON.stringify(Object.fromEntries(villesVirages.map(([k, v]) => [k, v.absent ? v : v.map((c) => c.part)]))));
 
+    // --- PARIS : LES VINGT-HUIT AVENUES ONT TOUTES LEUR BOUCLE (v209) -------
+    //
+    // La v207 avait supprimé les demi-tours et laissé la moitié de Paris sans
+    // voitures : cinq circuits sur DIX des dix-huit avenues. Clichy et la
+    // Grande Armée ne rencontraient aucune autre voie, les Gobelins, la
+    // Motte-Picquet et Belleville étaient des impasses, et le triangle de
+    // l'est faisait 174° à République. Deux remèdes — le contournement des
+    // places rondes, et dix vraies rues de plus — et trois témoins.
+    //
+    // LA COUVERTURE SE LIT SUR LES NOMS, PAS SUR LA GÉOMÉTRIE. C'est la seule
+    // différence avec le témoin de Londres, et elle vient du contournement :
+    // il remplace justement les sommets posés au CENTRE d'une place par un arc
+    // de sa couronne, si bien qu'un test de sommets déclarerait le boulevard
+    // Voltaire — dont les deux bouts sont République et Nation — introuvable.
+    // Ce que `CIRCUITS_PARIS` prouve avec `circuitsParis` : les huit chaînes
+    // déclarées passent TOUTES la mesure (une chaîne sous le seuil est jetée
+    // par `fabriqueCircuits`, le compte le dirait), et leurs noms réunis
+    // couvrent les vingt-huit avenues du registre.
+    const par = await tab.evaluate(async () => {
+      const m = await import('./src/paris.js');
+      const b = await import('./src/blocks.js');
+      const g = window.__game;
+      if (typeof m.circuitsParis !== 'function') return { absent: true };
+      const P = m.PARIS;
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const RONDS = m.LIEUX.filter((p) => p.r);
+      const circuits = m.circuitsParis(solDe).map((c) => {
+        let eau = 0, place = 0, pas = 0;
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            const x = a.x + ((z.x - a.x) * k) / n, zz = a.z + ((z.z - a.z) * k) / n;
+            pas++;
+            if (m.solParis(Math.round(x), Math.round(zz)) === b.BLOCK.WATER) eau++;
+            // « Au milieu d'une place » : bien en dedans de la couronne de
+            // bitume que la voiture est censée suivre (le contour passe à
+            // r − 0,5), donc pas une tolérance déguisée.
+            for (const p of RONDS) {
+              if (Math.hypot(x - P.x - p.u, zz - P.z - p.v) < p.r - 1.5) { place++; break; }
+            }
+          }
+        }
+        return { part: c.part, pas, eau, place };
+      });
+      // La couverture, elle, a besoin des deux registres. Sur l'ancien code
+      // ils n'existent pas : le témoin le dit au lieu de planter.
+      const registres = Array.isArray(m.VOIES_PARIS) && Array.isArray(m.CIRCUITS_PARIS);
+      const couvertes = registres ? new Set(m.CIRCUITS_PARIS.flat()) : null;
+      return {
+        circuits,
+        registres,
+        declares: registres ? m.CIRCUITS_PARIS.length : 0,
+        voies: registres ? m.VOIES_PARIS.length : 0,
+        sansBoucle: registres ? m.VOIES_PARIS.filter((v) => !couvertes.has(v.nom)).map((v) => v.nom) : ['registres absents'],
+      };
+    });
+    verifier('des voitures roulent sur les vingt-huit avenues de Paris',
+      !par.absent && par.registres && par.voies >= 28 && par.sansBoucle.length === 0
+      && par.declares >= 8 && par.circuits.length === par.declares
+      && par.circuits.every((c) => c.part >= 95),
+      JSON.stringify(par.absent ? par : {
+        voies: par.voies, declares: par.declares, gardes: par.circuits.length,
+        parts: par.circuits.map((c) => c.part), sansBoucle: par.sansBoucle,
+      }));
+    verifier('et aucun ne coupe par le milieu d\'une place ni ne met un pas dans la Seine',
+      !par.absent && par.circuits.length > 0
+      && par.circuits.every((c) => c.pas > 0 && c.place === 0 && c.eau === 0),
+      JSON.stringify(par.absent ? par : par.circuits.map((c) => [c.pas, c.place, c.eau])));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses
