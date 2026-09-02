@@ -473,6 +473,12 @@ Trois règles :
   commiter.** S'il retire ce qu'on vient de livrer, c'est un index périmé :
   `git reset -q && git checkout -- .`. On ne pousse jamais un diff qu'on n'a
   pas regardé.
+- **Et le nettoyage se fait avec `git -C <chemin>`, jamais avec un `cd` de la
+  ligne d'avant.** Les lignes d'un même appel au terminal HÉRITENT du
+  répertoire courant : un « nettoyage du répertoire principal » écrit sous un
+  `cd` vers l'arbre d'appoint nettoie l'arbre d'appoint, et l'on croit avoir
+  réglé ce qu'on n'a pas touché. C'est ce qui a fait revenir ce symptôme trois
+  fois de suite.
 
 ### L'ancien réflexe, si le crochet n'a pas tourné
 
@@ -1755,6 +1761,31 @@ témoin. Deux choses de plus qu'ailleurs :
 Le témoin lit ce que l'enfant voit sur la rangée de v = ±4 : un tronc de
 trois blocs une colonne sur deux, de l'air sous la couronne sur l'autre, et
 zéro feuille au sol sur tout le Mall. Rouge sur `origin/main`.
+
+### Les visages (`personnages.js`) — un œil se lit à son BLANC
+
+Max, capture à l'appui : « personnages are scary ». Le visage était construit
+avec soin — crâne, nez, oreilles, menton — et pourtant il faisait peur. Trois
+choses à savoir avant d'y toucher.
+
+- **SAILLIR N'EST PAS SORTIR DE L'ORBITE.** Le commentaire d'origine avait
+  raison sur un point : posés à fleur de la sphère du crâne, les yeux
+  disparaissent et le visage devient un œuf lisse. Mais l'iris était posé PLUS
+  EN AVANT que le blanc, et il occupait 55 % de sa largeur : de face, deux
+  billes sombres globuleuses, sans blanc autour. Un œil se lit à son blanc ;
+  l'iris n'en occupe qu'une petite part et reste EN RETRAIT.
+- **Un sourcil bas et épais fronce, et une barre droite fait la moue.** Ce
+  sont deux détails de trois millièmes de bloc, et ils décident si un enfant
+  de sept ans voit un villageois ou un masque. Le sourcil monte et s'affine ;
+  la bouche gagne deux coins relevés.
+- **L'esthétique se juge en capture, la GÉOMÉTRIE se mesure.** Les couleurs
+  vivent dans les attributs de SOMMETS, pas dans les matériaux : on relève la
+  boîte du blanc et celle de l'iris et l'on compare. Deux pièges y attendent —
+  filtrer sur la seule couleur attrape la ceinture de CUIR, dont le brun est à
+  un cheveu de celui de l'iris (elle rendait un « iris » de 178 % de large, posé
+  devant le nez), et mesurer les DEUX yeux ensemble écrase le rapport, la
+  largeur incluant l'écart entre eux : 89 % contre 82 %, quand l'œil seul dit
+  55 contre 38. On borne donc la lecture à la tête, et à un seul œil.
 
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 
