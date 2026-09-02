@@ -229,6 +229,22 @@ export function createPassants({ scene, world, player, toast, npcs }) {
       // Ceux que l'enfant a distancés reviennent devant lui — la ville reste
       // habitée partout, sans qu'il y ait un seul habitant de plus.
       if (d > site.r + PORTEE_REVEIL) continue;
+      // UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS.
+      //
+      // `dansLaVille` ramène tout candidat DANS la ville : quand l'enfant est
+      // dehors, le point reposé reste à plus de `TROP_LOIN` de lui, et il est
+      // donc repris au tour suivant. Mesuré au point d'apparition, avec le
+      // seuil de 64 : 17 à 18 passants sur 18 replacés toutes les deux
+      // secondes, indéfiniment, et ZÉRO jamais en vue. Douze sondages de
+      // colonne chacun, pour rien — et une page trop occupée pour finir son
+      // rechargement, ce qui a rendu `maj.js` rouge.
+      //
+      // La borne est exacte, pas prudente : un point clampé se retrouve à
+      // `0,9 × r` du centre, donc à au moins `d − 0,9 r` de l'enfant. Si cela
+      // dépasse déjà `TROP_LOIN`, aucun tirage ne peut ramener qui que ce soit
+      // en vue. C'est le prix caché du seuil serré de la v217 : plus il est
+      // petit, plus il faut vérifier que le déplacement SERT.
+      if (d - site.r * 0.9 > TROP_LOIN) continue;
       for (let i = 0; i < site.peuple.length; i++) {
         const h = site.peuple[i];
         if (!h.pos) continue;

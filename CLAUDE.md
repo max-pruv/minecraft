@@ -1077,6 +1077,23 @@ invisible ET pas rapatrié. Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2,
   Dix-huit, et le prix se mesure : 88 à 265 appels de dessin sur la traversée
   de Paris, pour un budget de l'ordre de 450 — un passant ne se dessine que
   sous soixante-deux blocs, les dix-huit ne sont donc jamais tous à l'écran.
+- **UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS — et
+  c'est le prix caché d'un seuil serré.** `dansLaVille` ramène tout candidat
+  DANS la ville : quand l'enfant est DEHORS, le point reposé reste au-delà du
+  seuil, et le passant est repris au tour suivant. Mesuré au point
+  d'apparition : **17 à 18 passants sur 18 replacés toutes les deux secondes,
+  indéfiniment, et zéro jamais en vue** — douze sondages de colonne chacun,
+  pour rien. La page en devenait assez occupée pour ne plus finir son
+  rechargement, et c'est `maj.js` qui l'a dit : rouge sur la branche, VERT sur
+  `origin/main`, donc à moi. La borne est exacte et non prudente : un point
+  clampé se retrouve à `0,9 × r` du centre, donc à au moins `d − 0,9 r` de
+  l'enfant ; si cela dépasse déjà le seuil, aucun tirage ne peut ramener qui
+  que ce soit. Plus le seuil de rapatriement se resserre, plus il faut
+  vérifier que le déplacement SERT.
+- **Et c'est `maj.js` — pas un témoin de vie de rue — qui a attrapé ce
+  défaut-là.** Une régression de PERFORMANCE ne se voit pas là où on l'a
+  écrite : elle se voit là où une durée est un verdict. C'est la raison d'être
+  de la voie longue, et elle vient de la payer une fois de plus.
 
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes

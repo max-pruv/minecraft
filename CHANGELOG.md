@@ -42,6 +42,16 @@ quelqu'un que l'enfant a sous les yeux, personne ne saute d'un bout de la rue
 à l'autre. Et chaque ville passe de dix à **dix-huit** habitants, dont un sur
 cinq est un chien.
 
+**Le piège trouvé en chemin, et qui n'était pas dans le plan.** Resserrer le
+seuil a créé un défaut que le seuil large cachait : `dansLaVille` ramène tout
+candidat DANS la ville, donc quand l'enfant est DEHORS, le passant reposé reste
+hors de portée et se fait reprendre au tour suivant. Mesuré au point
+d'apparition : **dix-sept à dix-huit passants sur dix-huit replacés toutes les
+deux secondes, indéfiniment, et aucun jamais en vue.** La page en devenait assez
+occupée pour ne plus finir son rechargement — et c'est la suite de MISE À JOUR
+qui l'a dit, rouge sur la branche et verte sur `origin/main`. Un déplacement qui
+ne ramène personne dans le champ ne se fait plus : 17-18 par tour → **0**.
+
 **Ce qui le prouve.** Un témoin neuf dans `fumee.js` traverse Paris par bonds
 de vingt-cinq blocs et mesure le **pire** de la traversée — c'est le creux qui
 fait dire à un enfant que la ville est morte, pas la moyenne. Sur
