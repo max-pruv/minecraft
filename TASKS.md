@@ -38,11 +38,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à l'autre : Westminster Bridge, Waterloo Bridge, London Bridge et Tower
   Bridge sont des monuments, pas des voies. Il faudrait une chaussée sur le
   tablier ET que `solLondres` la rende roulante au-dessus de l'eau.
-- [ ] **Réauditer les circuits des autres villes pour les demi-tours.** Le
-  témoin de Londres rejette tout virage au-delà de 150° ; Paris, Nice, Lille,
-  Washington et San Francisco ont été mesurés au sol seulement. Dix des
-  quarante-deux chaînes de Londres au seuil faisaient demi-tour — les autres
-  villes en ont sûrement.
+- [x] **Réauditer les circuits des autres villes pour les demi-tours — FAIT
+  en v207.** Vingt-quatre des quarante-et-un circuits hors Londres
+  rebroussaient chemin (Paris cinq sur cinq). La cause était dans le chaînage
+  partagé de `voies.js`, qui parcourait chaque avenue en entier ; il roule
+  désormais de carrefour en carrefour, et un témoin mesure les virages des six
+  villes.
+- [ ] **Huit avenues de Paris ne sont plus sur aucune boucle** depuis que les
+  circuits ne font plus demi-tour : Clichy et la Grande-Armée ne croisent
+  aucune autre voie ; les Gobelins, la Motte-Picquet et Belleville sont des
+  impasses ; Saint-Michel tombe à 88–89 % à cause du jardin du Luxembourg ; et
+  le triangle de l'est (Grands Boulevards, Faubourg Saint-Antoine, Voltaire)
+  fait 174° à République. Il faudrait des voies de raccord (Wagram, Saint-
+  Jacques, un contournement du Luxembourg), à tracer et à mesurer.
+- [ ] **La rue Royale de Lille n'est plus parcourue** — c'est une impasse
+  depuis que le chaînage refuse les allers-retours ; il lui manque une voie
+  de retour vers la citadelle ou la Grand-Place.
+- [ ] **Valencia Street ne roule plus à San Francisco** — impasse, comme la
+  rue Royale ; elle rejoindrait Mission par une transversale (la 24e ou
+  Cesar Chavez), à tracer.
 - [ ] **Le socle du Shard est un treillis de verre** — un bloc de `GLASS` dans
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
@@ -50,9 +64,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 - [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
   Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune
-  boucle au-dessus du seuil. La ville en a quatre qui la couvrent aux neuf
-  dixièmes ; ces cinq-là bordent le Golden Gate Park et la côte, où il n'y a
-  rien à boucler.
+  boucle au-dessus du seuil. Ces cinq-là bordent le Golden Gate Park et la
+  côte, où il n'y a rien à boucler. Depuis v207, quatre circuits sans
+  demi-tour couvrent huit voies sur quatorze.
 
 - [ ] **Une voiture coûte 32,6 maillages** — mesuré en v201, et c'est ce qui
   borne tout le reste : trois fois un personnage, pour un objet qui n'a ni

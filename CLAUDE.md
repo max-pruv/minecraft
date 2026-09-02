@@ -1038,6 +1038,45 @@ voiture de la rue.
 de 13 sur cinquante modèles revient sur ses pas au bout de cinquante
 (13 × 50 ≡ 0). 17 l'est : cinquante voitures d'affilée, cinquante modèles.
 
+### Un circuit roule de CARREFOUR en carrefour — et un demi-tour est invisible à la mesure de rue
+
+**Vingt-quatre des quarante-et-un circuits hors Londres faisaient demi-tour,
+et tous mesuraient 99 ou 100 % sur la chaussée.** Découvert en v207, à la
+suite du témoin de virage de Londres. Une voiture qui repart d'où elle vient
+roule sur la rue à chaque bloc : le pourcentage au sol ne peut pas le voir.
+Ce qui le voit, c'est l'ANGLE entre deux segments consécutifs — au-delà de
+150°, c'est un demi-tour — et ce témoin vaut désormais pour les six villes,
+pas pour Londres seule.
+
+La cause n'était dans aucune ville, mais dans le chaînage partagé
+(`voies.js`) : `chainerVoies` accrochait chaque avenue par son bout le plus
+proche et la PARCOURAIT EN ENTIER. Une avenue dont le carrefour de sortie est
+au milieu se faisait donc en aller-retour. Quatre règles en sortent :
+
+- **Un circuit se construit entre carrefours.** On calcule où chaque avenue
+  croise la suivante (le point le plus proche entre les deux polylignes, en
+  cycle), et l'on ne parcourt que le tronçon entre l'entrée et la sortie.
+  Les listes de points des avenues (`VOIES`) ne changent pas : elles
+  dessinent la chaussée, et les toucher déplacerait des rues.
+- **Une chaîne qui entre et sort d'une avenue par le même carrefour est une
+  impasse, et elle se REFUSE.** Rien ne la rafistole. C'est ce qui a fait
+  sortir des circuits la rue Royale de Lille, Valencia à San Francisco et
+  trois avenues de Paris : elles n'étaient couvertes qu'en aller-retour, ce
+  qui n'est pas une couverture.
+- **Un carrefour partagé par trois avenues fait un angle de 174°.** Le
+  triangle Grands Boulevards / Faubourg Saint-Antoine / Voltaire tient à
+  République, où les trois se rejoignent au même point : géométriquement
+  c'est un demi-tour. Une avenue qui ne rejoint la boucle que par un seul
+  carrefour ne peut pas y être — même leçon que la City de Londres en v206.
+- **Les enchaînements se remesurent avec le chaînage neuf**, sur une copie de
+  `src/`, toutes combinaisons de deux à sept avenues, puis couverture
+  gloutonne. Washington n'a pas eu à changer ses listes : ses onze circuits
+  passent tels quels, parce qu'ils étaient déjà écrits carrefour par
+  carrefour. Paris, Nice, Lille et San Francisco ont été réécrits.
+
+**`voies.js` a `carteMonde.js` pour gardien**, en plus de `carte.js` et
+`monte.js` : un demi-tour né du chaînage se voit là et nulle part ailleurs.
+
 ### Paris (`paris.js`) — et ce qu'on apprend d'une remise à l'échelle
 
 La sixième ville remise à l'échelle GTA, en v187 : **vingt-quatre blocs par

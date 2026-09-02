@@ -311,18 +311,33 @@ const BANDES = rangerVoies(VOIES);
 // de chaussée, et la même paire tombe à 72 %. Le tour se fait donc comme dans
 // la vraie ville : par le cap, derrière la colline par Carabacel, et retour
 // à la mer par Verdun.
+//
+// ET DEPUIS v207, PLUS AUCUN CIRCUIT NE FAIT DEMI-TOUR. Quatre des cinq
+// circuits d'avant rebroussaient chemin — à cent pour cent sur la chaussée,
+// donc invisibles au pourcentage : l'ancien chaînage parcourait chaque avenue
+// en entier, et quand la suivante débouchait à mi-chemin, le convoi allait
+// jusqu'au bout et revenait sur ses pas. La Californie et René-Cassin, à
+// deux, n'étaient qu'un aller-retour. Les avenues se chaînent désormais entre
+// leurs CARREFOURS, et tout virage au-delà de 150° est rejeté, comme à
+// Londres. Les seize avenues restent toutes couvertes.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // Le grand tour de l'ouest, par la rue de France et la Promenade — 100 %, 486 blocs.
-  ['Boulevard Gambetta', 'Avenue de la Californie', 'Rue de France', 'Avenue de Verdun', 'Promenade des Anglais'],
-  // La montée de Cimiez et le retour par Malausséna — 100 %, 149 blocs.
-  ['Boulevard Dubouchage', 'Boulevard de Cimiez', 'Avenue des Arènes de Cimiez', 'Avenue Malausséna', 'Avenue Jean-Médecin'],
-  // Le carré de la ville neuve, autour de la gare — 100 %, 186 blocs.
+  // 100 % (300 blocs, virage max 104°) — le grand tour de l'ouest : la
+  // Promenade, Verdun, Jean-Médecin, Thiers, Gambetta, la Californie et
+  // René-Cassin jusqu'au bout de la Promenade.
+  ['Promenade des Anglais', 'Avenue de Verdun', 'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta', 'Avenue de la Californie', 'Boulevard René-Cassin'],
+  // 100 % (239 blocs, virage max 104°) — le tour du vieux Nice : les quais, le
+  // cap, Carabacel derrière la colline, Dubouchage, Victor-Hugo et Gambetta
+  // pour redescendre à la mer.
+  ['Promenade des Anglais', 'Quai des États-Unis', 'Quai Rauba-Capeu', 'Boulevard Carabacel', 'Boulevard Dubouchage', 'Boulevard Victor-Hugo', 'Boulevard Gambetta'],
+  // 100 % (183 blocs, virage max 90°) — la montée de Cimiez par Malausséna et
+  // les Arènes, retour par Dubouchage.
+  ['Boulevard Dubouchage', 'Boulevard Victor-Hugo', 'Boulevard Gambetta', 'Avenue Thiers', 'Avenue Malausséna', 'Avenue des Arènes de Cimiez', 'Boulevard de Cimiez'],
+  // 100 % (100 blocs, virage max 113°) — la rue de France entre Gambetta et Verdun.
+  ['Promenade des Anglais', 'Boulevard Gambetta', 'Rue de France', 'Avenue de Verdun'],
+  // 100 % (118 blocs, virage max 90°) — le carré de la ville neuve, autour de la gare.
   ['Boulevard Victor-Hugo', 'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta'],
-  // Le tour du vieux Nice : les quais, le cap, Carabacel derrière la colline
-  // et Verdun pour redescendre à la mer — 99 %, 153 blocs.
-  ['Quai des États-Unis', 'Quai Rauba-Capeu', 'Boulevard Carabacel', 'Boulevard Dubouchage', 'Avenue de Verdun'],
-  // La Californie, jusqu'au bout de la Promenade — 100 %, 160 blocs.
-  ['Boulevard René-Cassin', 'Avenue de la Californie'],
 ];
 
 const ROULANT = new Set([BITUME, PAVE]);

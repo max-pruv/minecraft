@@ -342,15 +342,32 @@ export const __voiesSF = VOIES;
 // bouclent North Beach (94 %, 217 blocs) ; Van Ness et Lombard font le tour
 // du nord (93 %, 289).
 // v201 : quatre au lieu de deux, choisis par couverture — neuf des quatorze
-// voies de la ville sont désormais parcourues, contre trois. Les cinq qui
-// restent (Fulton, Lincoln Way, la Great Highway, la 19e, Third Street) ne
-// referment aucune boucle qui passe le seuil : on ne déclare pas un circuit
-// qui ne valide jamais.
+// voies de la ville étaient parcourues, contre trois.
+//
+// ET DEPUIS v207, PLUS AUCUN CIRCUIT NE FAIT DEMI-TOUR. Les quatre circuits
+// d'avant rebroussaient tous chemin — « Market et Divisadero », à deux,
+// n'était qu'un aller-retour de 468 blocs. L'ancien chaînage parcourait chaque
+// avenue en entier, et quand la suivante débouchait à mi-chemin, le convoi
+// allait jusqu'au bout et revenait sur ses pas ; un demi-tour reste sur la
+// chaussée, le pourcentage ne le voit pas. Les avenues se chaînent désormais
+// entre leurs CARREFOURS, et tout virage au-delà de 150° est rejeté, comme à
+// Londres. Le prix, dit honnêtement : huit voies sur quatorze. Valencia ne
+// rencontre Mission que par son bout — une impasse ; Fulton, Lincoln Way, la
+// Great Highway, la 19e et Third Street ne referment toujours aucune boucle.
+// On ne déclare pas un circuit qui ne valide jamais.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  ['Columbus Avenue', 'Van Ness Avenue', 'Mission Street', 'Valencia Street'],   // 93 %, 548 blocs
-  ['Market Street', 'Divisadero Street'],                                        // 92 %, 468
-  ['The Embarcadero', 'Van Ness Avenue', 'Lombard Street'],                      // 92 %, 427
-  ['Columbus Avenue', 'Van Ness Avenue', 'Geary Boulevard'],                     // 92 %, 769
+  // 100 % (427 blocs, virage max 130°) — le grand tour : Market, l'Embarcadero,
+  // Columbus, Lombard, Van Ness, Geary et Divisadero pour revenir à Market.
+  ['Market Street', 'The Embarcadero', 'Columbus Avenue', 'Lombard Street', 'Van Ness Avenue', 'Geary Boulevard', 'Divisadero Street'],
+  // 100 % (296 blocs, virage max 130°) — le même tour du nord, refermé par Mission.
+  ['Market Street', 'The Embarcadero', 'Columbus Avenue', 'Lombard Street', 'Van Ness Avenue', 'Mission Street'],
+  // 100 % (211 blocs, virage max 116°) — le carré de l'ouest : Market, Van Ness,
+  // Geary et Divisadero.
+  ['Market Street', 'Van Ness Avenue', 'Geary Boulevard', 'Divisadero Street'],
+  // 100 % (54 blocs, virage max 143°) — le triangle de North Beach.
+  ['The Embarcadero', 'Columbus Avenue', 'Lombard Street'],
 ];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
