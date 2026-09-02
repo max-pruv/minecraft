@@ -399,6 +399,43 @@ const VOIES = [
   { nom: 'Boulevard de Port-Royal', l: a(0.8), t: TROTTOIR_AV, pts: [pk(10, 15), pk(6, 17), pk(2.5, 17)] },
   { nom: 'Boulevard Arago', l: a(0.7), t: TROTTOIR_AV, pts: [pk(14, 25), pk(3, 26), pk(-8, 26)] },
   { nom: 'Avenue de Suffren', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Tour Eiffel'), pk(-29, 14), pk(-28, 19), pk(-18, 19)] },
+  // LES RACCORDS (v216). La contrainte de partage de la v211 — deux circuits ne
+  // partagent pas plus de vingt blocs de chaussée — avait laissé trois avenues
+  // sans voitures : l'avenue de l'Opéra, le Faubourg Saint-Antoine et le
+  // boulevard Haussmann. Le remède est celui de la v209, pas un seuil qu'on
+  // rabote : DOUZE vraies rues de plus, prises sur le plan de Paris, pour que
+  // ces quartiers aient une boucle à eux au lieu de repasser sur celle du
+  // voisin.
+  //
+  // Elles sont écrites en KILOMÈTRES RÉELS depuis Notre-Dame, comme la table
+  // des lieux, et jamais en blocs : un point en dur meurt à la prochaine
+  // remise à l'échelle. Chaque bout est posé SUR la chaussée d'une autre voie
+  // (leçon de Nice) — c'est la seule manière qu'un circuit a de se refermer.
+  //
+  // L'est, pour le Faubourg Saint-Antoine. Bastille, Nation et la Bastille
+  // vue de Nation sont presque alignés : toute boucle qui repartait de Nation
+  // vers le centre faisait un demi-tour de 175°. Le tour se fait donc comme
+  // dans la vraie ville — par Diderot, les quais de la rive droite et Bourdon,
+  // qui ramène à la Bastille par le SUD.
+  { nom: 'Boulevard Beaumarchais', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Bastille'), de(1.25, -0.917), pt('République')] },
+  { nom: 'Rue de Turbigo', l: a(0.7), t: TROTTOIR_AV, pts: [pt('République'), de(0.292, -1.083), pt('Châtelet')] },
+  { nom: 'Quais de la rive droite', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Gare de Lyon'), de(1.583, 0.083), de(1, -0.042), de(0.5, -0.292), pt('Hôtel de Ville')] },
+  { nom: 'Boulevard Diderot', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Nation'), de(2.5, 0.125), pt('Gare de Lyon')] },
+  { nom: 'Boulevard Bourdon', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Bastille'), de(1.625, 0.083)] },
+  { nom: 'Avenue Ledru-Rollin', l: a(0.7), t: TROTTOIR_AV, pts: [de(1.75, -0.792), de(1.833, -0.083), de(1.875, 0)] },
+  // Le centre, pour l'avenue de l'Opéra. La rue du Louvre et le
+  // Quatre-Septembre lui donnent le triangle Rivoli / Bourse / Opéra, et la
+  // rue de la Paix par la place Vendôme la seconde boucle, celle qui
+  // redescend sur les Tuileries.
+  { nom: 'Rue du Louvre', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Louvre'), de(-1.5, -1.167), de(-1.417, -1.833)] },
+  { nom: 'Rue du Quatre-Septembre', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Opéra'), de(-1.833, -1.583), de(-1.458, -1.458)] },
+  { nom: 'Rue de la Paix', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Opéra'), de(-2.417, -1.25)] },
+  { nom: 'Rue de Castiglione', l: a(0.6), t: TROTTOIR_AV, pts: [de(-2.417, -1.25), de(-2.375, -0.75)] },
+  // L'ouest, pour Haussmann. Tronchet le referme sur la Madeleine ; Malesherbes
+  // lui donne sa seconde boucle vers les Batignolles, sans reprendre Wagram,
+  // qui roule déjà pour la Grande Armée.
+  { nom: 'Rue Tronchet', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Madeleine'), de(-3.167, -1.917)] },
+  { nom: 'Boulevard Malesherbes', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Madeleine'), de(-3.417, -2.125), de(-3.875, -2.75)] },
 ];
 
 // Les circuits ont besoin de savoir QUELLES avenues ils couvrent : le témoin
@@ -473,17 +510,33 @@ const BANDES = rangerVoies(VOIES);
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 96 % (312 blocs, virage max 140°)
-  ["Rue de Rivoli","Boulevard de Sébastopol","Boulevard de Rochechouart","Boulevard de Clichy","Boulevard des Batignolles","Avenue de Wagram","Avenue des Champs-Élysées"],
-  // 98 % (354 blocs, virage max 117°)
-  ["Grands Boulevards","Rue La Fayette","Boulevard de Magenta","Boulevard Voltaire","Boulevard de Ménilmontant","Rue de Belleville"],
-  // 94 % (206 blocs, virage max 132°)
-  ["Boulevard Saint-Germain","Boulevard Saint-Michel","Boulevard de Port-Royal","Avenue des Gobelins","Boulevard Arago","Boulevard Raspail","Rue de Rennes"],
-  // 100 % (86 blocs, virage max 135°)
-  ["Avenue de la Grande Armée","Avenue de Wagram","Avenue des Ternes"],
-  // 100 % (198 blocs, virage max 90°)
-  ["Boulevard Saint-Germain","Boulevard Raspail","Rue de Rennes","Boulevard du Montparnasse","Avenue de Suffren","Avenue de la Motte-Picquet"],
+  // 95 % (177 blocs, virage max 105°) — l'ouest : les Champs-Élysées,
+  // Haussmann, Tronchet, les Boulevards, la Paix et Castiglione.
+  ['Rue de Rivoli', 'Avenue des Champs-Élysées', 'Boulevard Haussmann', 'Rue Tronchet', 'Grands Boulevards', 'Rue de la Paix', 'Rue de Castiglione'],
+  // 98 % (232 blocs, virage max 140°) — l'avenue de l'Opéra retrouve ses
+  // voitures : elle monte de Rivoli à l'Opéra, redescend par le
+  // Quatre-Septembre et la rue du Louvre.
+  ['Rue de Rivoli', "Avenue de l'Opéra", 'Rue du Quatre-Septembre', 'Rue du Louvre', 'Grands Boulevards', 'Boulevard de Magenta', 'Boulevard de Sébastopol'],
+  // 100 % (198 blocs, virage max 90°) — la rive gauche par l'ouest.
+  ['Boulevard Saint-Germain', 'Boulevard Raspail', 'Rue de Rennes', 'Boulevard du Montparnasse', 'Avenue de Suffren', 'Avenue de la Motte-Picquet'],
+  // 99 % (136 blocs, virage max 139°) — le Faubourg Saint-Antoine, premier
+  // tour : on y entre par Beaumarchais et l'on revient à la Bastille par les
+  // quais et Bourdon, donc par le SUD. Repartir de Nation vers le centre
+  // faisait un demi-tour de 175° — Bastille, Nation et le retour sont presque
+  // alignés.
+  ['Rue de Rivoli', 'Rue de Turbigo', 'Boulevard Beaumarchais', 'Faubourg Saint-Antoine', 'Avenue Ledru-Rollin', 'Quais de la rive droite', 'Boulevard Bourdon'],
+  // 96 % (199 blocs, virage max 117°) — le Faubourg, second tour, par l'est :
+  // Ménilmontant, Diderot et les quais.
+  ['Boulevard Voltaire', 'Rue de Belleville', 'Boulevard de Ménilmontant', 'Boulevard Diderot', 'Faubourg Saint-Antoine', 'Quais de la rive droite', 'Avenue Ledru-Rollin'],
+  // 100 % (86 blocs, virage max 135°) — le triangle de la Porte Maillot.
+  ['Avenue de la Grande Armée', 'Avenue de Wagram', 'Avenue des Ternes'],
+  // 100 % (181 blocs, virage max 107°) — la rive gauche par le sud.
+  ['Boulevard Saint-Michel', 'Boulevard du Montparnasse', 'Boulevard Raspail', 'Boulevard Arago', 'Avenue des Gobelins', 'Boulevard de Port-Royal'],
+  // 100 % (185 blocs, virage max 100°) — le nord : Haussmann par Malesherbes
+  // plutôt que par Wagram, qui roule déjà pour la Grande Armée.
+  ['Rue La Fayette', 'Boulevard Haussmann', 'Boulevard Malesherbes', 'Boulevard des Batignolles', 'Boulevard de Clichy', 'Boulevard de Rochechouart'],
 ];
+
 
 // Les circuits par leurs NOMS : le témoin de `carteMonde.js` vérifie que les
 // vingt-huit avenues sont couvertes, et la couverture ne se lit pas sur la

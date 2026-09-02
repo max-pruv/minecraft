@@ -1571,17 +1571,19 @@ const VRAIES_KM = [
         sansBoucle: registres ? m.VOIES_PARIS.filter((v) => !couvertes.has(v.nom)).map((v) => v.nom) : ['registres absents'],
       };
     });
-    verifier('vingt-cinq des vingt-huit avenues de Paris ont leurs voitures, Champs-Élysées compris',
-      // LA COUVERTURE N'EST PLUS TOTALE, ET C'EST UN PRIX PAYÉ EN CONNAISSANCE
-      // DE CAUSE (v211) : les vingt-huit avenues de la v209 se partageaient
-      // huit circuits qui se superposaient sur les deux tiers de leur trajet.
-      // Trois avenues attendent une boucle à elles, déclarées dans TASKS.md ;
-      // ce qui reste vrai, c'est que toutes les chaînes déclarées passent la
-      // mesure, et que les Champs-Élysées roulent.
-      !par.absent && par.registres && par.voies >= 28
-      && par.sansBoucle.every((n) => ["Avenue de l'Opéra", 'Faubourg Saint-Antoine',
-        'Boulevard Haussmann'].includes(n))
-      && par.declares >= 5 && par.circuits.length === par.declares
+    verifier('les quarante avenues de Paris ont toutes leurs voitures, sans qu\'un convoi en suive un autre',
+      // LA COUVERTURE REDEVIENT TOTALE, ET SOUS LA CONTRAINTE DE LA v211
+      // (v216). La v211 avait choisi les circuits sous contrainte de partage —
+      // deux d'entre eux ne partagent pas plus de vingt blocs de chaussée — et
+      // trois avenues y avaient perdu leurs voitures : l'avenue de l'Opéra, le
+      // Faubourg Saint-Antoine et le boulevard Haussmann. On ne rabote pas le
+      // seuil : douze vraies rues de plus, et huit circuits qui couvrent les
+      // quarante avenues. Sur l'ancien code, `sansBoucle` en compte trois et
+      // le registre n'en porte que vingt-huit : le témoin est rouge par les
+      // deux bouts.
+      !par.absent && par.registres && par.voies >= 40
+      && par.sansBoucle.length === 0
+      && par.declares >= 8 && par.circuits.length === par.declares
       && par.circuits.every((c) => c.part >= 94),
       JSON.stringify(par.absent ? par : {
         voies: par.voies, declares: par.declares, gardes: par.circuits.length,

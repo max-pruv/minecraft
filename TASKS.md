@@ -71,16 +71,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   l'Opéra, Suffren et la Motte-Picquet par la Tour Eiffel. Le remède est de
   déplacer ces points de passage au bord de l'emprise — c'est une passe de rues
   comme celle de Londres en v206, avec le sol qui bouge et les bâtiments avec.
+- [x] **Paris a récupéré ses trois avenues orphelines — FAIT en v216.** Douze
+  vraies rues de raccord (Beaumarchais, Turbigo, les quais de la rive droite,
+  Diderot, Bourdon, Ledru-Rollin, la rue du Louvre, le Quatre-Septembre, la rue
+  de la Paix, Castiglione, Tronchet, Malesherbes), huit circuits mesurés de 95
+  à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
+  la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. Nommément : à Paris l'avenue de l'Opéra, le
-  Faubourg Saint-Antoine et le boulevard Haussmann ; à Lille la rue de Paris,
+  ne se superpose à aucune autre. **Paris est réglé (v216).** Restent : à Lille
+  la rue de Paris,
   Gustave-Delory, Victor-Hugo et la rue Royale ; à San Francisco Valencia,
   Fulton, Lincoln Way, la Great Highway, la 19e Avenue et Third Street ; à
   Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
   Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
   et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
-  repasser sur celle du voisin.
+  repasser sur celle du voisin. **Et la méthode est désormais éprouvée** : à
+  Paris, douze rues ont suffi, et l'optimiseur a eu besoin d'une passe de
+  RÉPARATION — retirer les circuits qui gênent une avenue laissée dehors,
+  forcer sa boucle, recombler — que le tirage au hasard seul n'atteignait pas.
 - [x] **Une voiture conduite traversait les murs — FAIT en v212.** Elle
   empruntait la boîte de collision du joueur, 0,6 bloc de large pour une
   carrosserie de 2,26. La largeur vit désormais dans la fiche de l'espèce.
