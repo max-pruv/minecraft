@@ -13,6 +13,22 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [x] **La ville se vidait dès qu'on marchait — FAIT en v217.** Un passant
+  n'était ramené devant l'enfant qu'au-delà de 150 blocs, quand un personnage
+  cesse d'être dessiné à 62 : entre les deux il est invisible ET pas rapatrié.
+  Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2, 1 piétons dessinés. On
+  rapatrie désormais à 64 blocs — juste au-delà de la portée de rendu, donc
+  jamais sous les yeux de l'enfant — et chaque ville a 18 habitants au lieu de
+  10. Pire de la traversée : 0 → 11.
+- [ ] **La moitié de Paris n'a aucune voiture en vue.** Mesuré : 51 % de la
+  ville est à moins de 45 blocs d'un circuit (la portée de rendu d'une
+  voiture), et sur les 21 lieux où la carte dépose l'enfant, un seul n'en a
+  aucune (le bois de Vincennes). C'est ce qui a fait dire à Max « il a fallu
+  du temps pour voir des voitures ». Deux pistes, aucune gratuite : plus de
+  circuits (la contrainte de partage de la v211 les limite), ou une portée de
+  rendu plus grande (une voiture coûte 32 maillages — c'est ce que la v201 a
+  mesuré pour descendre de 110 à 45).
+
 - [x] **Washington n'a pas de circuit de voitures — FAIT en v205.** Onze
   circuits mesurés à 99–100 % couvrent trente-trois des trente-six avenues
   nommées ; les quatorze ronds-points ont gagné une chaussée et les circuits

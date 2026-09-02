@@ -1052,6 +1052,61 @@ Trois règles en sortent :
   AUCUN point ne passe jamais le test — la sélection tombe alors en silence sur
   son repli, et l'on croit que la règle ne marche pas.
 
+**ON RAPATRIE CELUI QU'ON NE VOIT PLUS, PAS CELUI QUI EST LOIN (v217).** Max,
+après la v216 : « clairement pas de piétons, pas de vie dans les villes. » Deux
+nombres ne se parlaient pas : on ramenait un passant devant l'enfant au-delà de
+CENT CINQUANTE blocs, quand un personnage cesse d'être dessiné à SOIXANTE-DEUX
+(`VU` de `vie.js`, appliqué à tous depuis la v196). Entre les deux, il est
+invisible ET pas rapatrié. Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2,
+1 piétons dessinés. Trois choses en sortent :
+
+- **Le seuil de rapatriement se règle sur la PORTÉE DE RENDU, jamais sur une
+  intuition de distance.** Soixante-quatre, c'est-à-dire juste au-delà de
+  soixante-deux : quiconque sort du champ revient devant, et le déplacement
+  est par construction invisible. Toute autre valeur choisit entre une ville
+  vide (trop grande) et des gens qui sautent sous les yeux de l'enfant (trop
+  petite).
+- **UN TÉMOIN QUI ATTEND NE PEUT PAS VOIR CE QUI SE CASSE EN MARCHANT.**
+  « Loin du centre, la ville est habitée quand même » se posait à
+  quatre-cinquièmes du rayon et attendait — il est VERT sur l'ancien code, et
+  il l'était depuis la v178. Le défaut ne vit que dans le déplacement. Un
+  témoin de vie de rue traverse la ville et mesure le PIRE de la traversée,
+  pas la moyenne : c'est le creux qui fait dire à un enfant que la ville est
+  morte.
+- **Dix habitants par ville, c'était le chiffre d'avant les grandes villes.**
+  Dix-huit, et le prix se mesure : 88 à 265 appels de dessin sur la traversée
+  de Paris, pour un budget de l'ordre de 450 — un passant ne se dessine que
+  sous soixante-deux blocs, les dix-huit ne sont donc jamais tous à l'écran.
+- **UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS — et
+  c'est le prix caché d'un seuil serré.** `dansLaVille` ramène tout candidat
+  DANS la ville : quand l'enfant est DEHORS, le point reposé reste au-delà du
+  seuil, et le passant est repris au tour suivant. Mesuré au point
+  d'apparition : **17 à 18 passants sur 18 replacés toutes les deux secondes,
+  indéfiniment, et zéro jamais en vue** — douze sondages de colonne chacun,
+  pour rien. La page en devenait assez occupée pour ne plus finir son
+  rechargement, et c'est `maj.js` qui l'a dit : rouge sur la branche, VERT sur
+  `origin/main`, donc à moi. La borne est exacte et non prudente : un point
+  clampé se retrouve à `0,9 × r` du centre, donc à au moins `d − 0,9 r` de
+  l'enfant ; si cela dépasse déjà le seuil, aucun tirage ne peut ramener qui
+  que ce soit. Plus le seuil de rapatriement se resserre, plus il faut
+  vérifier que le déplacement SERT.
+- **Et c'est `maj.js` — pas un témoin de vie de rue — qui a attrapé ce
+  défaut-là.** Une régression de PERFORMANCE ne se voit pas là où on l'a
+  écrite : elle se voit là où une durée est un verdict. C'est la raison d'être
+  de la voie longue, et elle vient de la payer une fois de plus.
+
+  **Et cela découvre un angle mort de la table des gardiens, qu'aucune entrée
+  ne peut combler.** `src/passants.js` a `monte.js` pour gardien ; l'empreinte
+  de reprise étant PAR SUITE, une modification de `passants.js` n'invalide donc
+  pas l'acquis de `maj.js`. Si `maj.js` avait été verte au tour d'avant, la
+  régression serait passée en silence — elle n'a rejoué ici que parce qu'elle
+  était déjà rouge. Déclarer `passants.js` gardien de `maj.js` ne réglerait
+  rien : n'importe quel fichier qui alourdit la page a le même effet, et tout
+  déclarer revient à supprimer l'aiguillage. Le remède reste celui qui a
+  marché : **la voie longue tourne de temps en temps même quand rien ne
+  l'exige** — c'est écrit plus haut, et c'est la deuxième fois que cela sauve
+  une livraison.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les

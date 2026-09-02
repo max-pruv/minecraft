@@ -409,6 +409,77 @@ function verifier(nom, ok, detail = '') {
     verifier('loin du centre, la ville est habitée quand même',
       habite.pres >= 3, JSON.stringify(habite));
 
+    // ---- ET ELLE RESTE HABITÉE QUAND ON MARCHE ------------------------------
+    //
+    // Max, après la v216 : « clairement pas de piétons, pas de vie dans les
+    // villes. » Le témoin du dessus ne pouvait pas le voir : il se pose et il
+    // ATTEND. Or le défaut ne se montre qu'en marchant.
+    //
+    // Mesuré sur `origin/main` en traversant Paris d'ouest en est par bonds de
+    // vingt-cinq blocs, en comptant les passants RENDUS (moins de soixante-deux
+    // blocs, la portée de vie.js) : 10, 8, 7, 4, ZÉRO, 2, 1. Les dix existaient
+    // toujours — ils étaient restés derrière. On ne rapatriait qu'au-delà de
+    // cent cinquante blocs, plus du double de la portée de rendu : entre les
+    // deux, un passant est invisible ET pas rapatrié.
+    //
+    // Le témoin mesure donc le PIRE de la traversée, pas la moyenne : c'est le
+    // creux qui fait dire à un enfant que la ville est morte.
+    const traversee = await tab.evaluate(async () => {
+      const m = await import('./src/paris.js');
+      const g = window.__game;
+      // Concorde → Nation, cent cinquante blocs de ville, par bonds de vingt-cinq.
+      const a = [-53, -4], b = [96, 25];
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const compte = [];
+      // COMBIEN DE TEMPS LA VILLE MET-ELLE À SE PEUPLER À L'ARRIVÉE. Le témoin
+      // vient de Londres d'un seul bond ; Paris doit charger ses morceaux et
+      // poser ses habitants. C'est une question à part de la traversée, et
+      // elle se mesure au lieu de se supposer.
+      const x0 = Math.round(m.PARIS.x + a[0]), z0 = Math.round(m.PARIS.z + a[1]);
+      g.player.pos.set(x0 + 0.5, g.world.terrainHeight(x0, z0) + 1.2, z0 + 0.5);
+      g.player.vel.set(0, 0, 0);
+      let arrivee = -1;
+      for (let t = 0; t < 60; t++) {
+        await new Promise((r) => setTimeout(r, 500));
+        let n = 0;
+        for (const p of g.npcs) {
+          if (!p.pos || (p.name !== 'passant' && p.name !== 'chien')) continue;
+          if (Math.hypot(g.player.pos.x - p.pos.x, g.player.pos.z - p.pos.z) >= 62) continue;
+          if (p.mesh && p.mesh.visible) n++;
+        }
+        if (n >= 3) { arrivee = (t + 1) * 0.5; break; }
+      }
+      for (let d = 0; d <= L; d += 25) {
+        const f = d / L;
+        const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
+        const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);
+        g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
+        g.player.vel.set(0, 0, 0);
+        // La boucle des passants passe toutes les deux secondes ; on lui en
+        // laisse trois, le temps qu'elle ramène ceux restés derrière.
+        await new Promise((r) => setTimeout(r, 6000));
+        let vus = 0;
+        for (const n of g.npcs) {
+          if (!n.pos || (n.name !== 'passant' && n.name !== 'chien')) continue;
+          if (Math.hypot(g.player.pos.x - n.pos.x, g.player.pos.z - n.pos.z) >= 62) continue;
+          if (n.mesh && n.mesh.visible) vus++;
+        }
+        compte.push(vus);
+      }
+      return { compte, pire: Math.min(...compte), arrivee };
+    });
+    // Trois, et non neuf : le banc rend en logiciel, la boucle des passants a
+    // sa période, et un bond de vingt-cinq blocs est plus brutal que la marche
+    // d'un enfant. Ce que le témoin doit distinguer, c'est « une rue vide » de
+    // « une rue habitée » — sur l'ancien code le pire vaut ZÉRO.
+    verifier('et elle reste habitée quand on la traverse à pied',
+      traversee.pire >= 3, JSON.stringify(traversee));
+    // `arrivee` EST UNE MESURE, PAS UN VERDICT — et c'est délibéré. Mesuré des
+    // deux côtés : 5,5 s sur la branche COMME sur `origin/main`. Un témoin qui
+    // passe avant et après ne prouve rien ; on garde donc le chiffre dans le
+    // message, où une régression future se verra, sans lui faire dire qu'il
+    // garde quoi que ce soit.
+
     // ---- conduire une voiture qu'on a vue passer ----------------------------
     //
     // Max : « je veux que l'on puisse conduire n'importe quel type de voiture

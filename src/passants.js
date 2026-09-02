@@ -38,10 +38,30 @@ const PORTEE_REVEIL = 150;
 // les rapatrie. Voir la note de `poste()`.
 const AUTOUR_MIN = 14;
 const AUTOUR_MAX = 55;
-const TROP_LOIN = 150;
-// Dix par ville depuis v178 — Max : « much more life… people walking » — et
-// un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
-const PAR_VILLE = 10;
+// ON RAPATRIE CELUI QU'ON NE VOIT PLUS, PAS CELUI QUI EST LOIN.
+//
+// Max, après la v216 : « clairement pas de piétons, pas de vie dans les
+// villes. » Mesuré en traversant Paris d'ouest en est par bonds de vingt-cinq
+// blocs, en comptant les passants RENDUS : 10, 8, 7, 4, **0**, 2, 1. Les dix
+// existaient toujours — ils étaient restés derrière.
+//
+// Le seuil valait CENT CINQUANTE blocs quand un personnage cesse d'être
+// dessiné à SOIXANTE-DEUX (`VU` de vie.js, appliqué à tous depuis la v196).
+// Entre les deux, un passant est invisible ET pas rapatrié : la ville se vide
+// dès que l'enfant marche cent blocs, et se repeuple une minute plus tard.
+//
+// Soixante-quatre, c'est juste au-delà de la portée de rendu — et c'est ce qui
+// rend le déplacement HONNÊTE : on ne déplace jamais quelqu'un qu'on voit.
+// Un passant sort du champ, il revient devant ; l'enfant ne surprend personne
+// en train de sauter d'un bout de la rue à l'autre.
+const TROP_LOIN = 64;
+// Dix-huit par ville depuis la v217 — dix était le chiffre d'avant les
+// grandes villes, et Max : « clairement pas de piétons, pas de vie dans les
+// villes ». Un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
+// Le prix est mesuré : 88 à 265 appels de dessin sur une traversée de Paris,
+// pour un budget de l'ordre de 450 — un passant ne se dessine que sous
+// soixante-deux blocs, les dix-huit ne sont donc jamais tous à l'écran.
+const PAR_VILLE = 18;
 
 // Un petit chien de ville : corps, tête, museau, quatre pattes, la queue en
 // l'air. Quatre robes, stables par graine — le chien roux de Rome y sera
@@ -209,6 +229,22 @@ export function createPassants({ scene, world, player, toast, npcs }) {
       // Ceux que l'enfant a distancés reviennent devant lui — la ville reste
       // habitée partout, sans qu'il y ait un seul habitant de plus.
       if (d > site.r + PORTEE_REVEIL) continue;
+      // UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS.
+      //
+      // `dansLaVille` ramène tout candidat DANS la ville : quand l'enfant est
+      // dehors, le point reposé reste à plus de `TROP_LOIN` de lui, et il est
+      // donc repris au tour suivant. Mesuré au point d'apparition, avec le
+      // seuil de 64 : 17 à 18 passants sur 18 replacés toutes les deux
+      // secondes, indéfiniment, et ZÉRO jamais en vue. Douze sondages de
+      // colonne chacun, pour rien — et une page trop occupée pour finir son
+      // rechargement, ce qui a rendu `maj.js` rouge.
+      //
+      // La borne est exacte, pas prudente : un point clampé se retrouve à
+      // `0,9 × r` du centre, donc à au moins `d − 0,9 r` de l'enfant. Si cela
+      // dépasse déjà `TROP_LOIN`, aucun tirage ne peut ramener qui que ce soit
+      // en vue. C'est le prix caché du seuil serré de la v217 : plus il est
+      // petit, plus il faut vérifier que le déplacement SERT.
+      if (d - site.r * 0.9 > TROP_LOIN) continue;
       for (let i = 0; i < site.peuple.length; i++) {
         const h = site.peuple[i];
         if (!h.pos) continue;
