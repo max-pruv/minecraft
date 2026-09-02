@@ -1033,6 +1033,33 @@ a le CENTRE pour point de passage (le Louvre, l'Opéra, la Tour Eiffel), à
 Londres les bus garés aux arrêts et les fontaines de Trafalgar Square, à
 Washington les ormes du Mall.
 
+**DEUX CONVOIS QUI SE SUIVENT SE TRAVERSENT, ET LE CHOIX GLOUTON LES Y
+CONDAMNAIT (v211).** Max : « Et passent à travers les unes des autres. » La
+couverture gloutonne — à chaque tour la boucle qui apporte le plus d'avenues
+neuves — réutilise les grands axes dans presque tous les circuits : à Paris,
+la rue de Rivoli en portait trois, superposés, et 1 524 blocs de tracé sur
+2 317 portaient au moins deux convois. Trois choses à retenir.
+
+- **ON MESURE LA VOITURE AVANT DE PROPOSER DEUX FILES.** Le premier remède
+  envisagé était le décalage latéral, avec la conduite à droite : très
+  réaliste, et impossible ici. Une voiture fait **2,26 blocs de large** pour
+  une chaussée qui en fait 2,86 — il n'y a la place que pour UNE file. La
+  mesure a écarté le remède avant qu'on n'écrive une ligne. (Elle dit aussi
+  autre chose : les véhicules sont à l'échelle du JOUEUR, les rues à l'échelle
+  du SOL, et les deux ne se rencontrent pas — même tension que « deux échelles
+  dans la même ville ».)
+- **Une couverture se choisit sous CONTRAINTE DE PARTAGE.** Deux circuits ne
+  peuvent avoir plus d'une vingtaine de blocs de chaussée en commun : c'est la
+  taille d'un carrefour, et cela distingue « se croiser » de « se suivre ». La
+  recherche est un empaquetage : on tire des ordres au hasard, on garde le
+  meilleur, et l'on pondère les rues qu'un enfant nomme — les Champs-Élysées
+  et Pennsylvania Avenue ne se perdent pas au tirage.
+- **Le prix se déclare, il ne se cache pas.** Quelques avenues n'ont plus de
+  boucle à elles : elles sont NOMMÉES dans `TASKS.md`, et la piste est celle
+  de la v209 — des voies de raccord, tracées sur le vrai plan et mesurées.
+  Couvrir une avenue en repassant sur le circuit du voisin n'est pas la
+  couvrir.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et

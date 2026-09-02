@@ -353,52 +353,46 @@ const BANDES = rangerVoies(VOIES);
 // Dix-huit circuits mesurés, soixante-deux voies sur soixante-trois. Les
 // trois derniers TRAVERSENT la Tamise (v208) : c'est la première fois qu'une
 // voiture de Londres change de rive.
+// LES CIRCUITS SE CROISENT, ILS NE SE SUIVENT PAS (v211).
+//
+// Max, après la v210 : « Et passent à travers les unes des autres. » Mesuré :
+// deux convois sur trois roulaient sur la MÊME chaussée. Le choix par
+// couverture gloutonne réutilisait les grands axes dans presque tous les
+// circuits — à Paris, la rue de Rivoli en portait trois, superposés.
+//
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
+// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// donc rien. Les circuits sont désormais choisis sous une contrainte de
+// PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
+// en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
+// pas.
+//
+// Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
+// voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
+// gardées en priorité — ce n'est pas un tirage au sort.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 % (82 pas, virage max 101°) — Westminster : le tour de St James's.
-  ['Horse Guards Road', 'Great George Street', 'Whitehall', 'Pall Mall', "St James's Street", 'Piccadilly, côté Circus', 'Haymarket'],
-  // 100 % (87 pas, virage max 139°) — la City par le nord : Holborn Viaduct,
-  // London Wall et retour par Old Bailey.
-  ['Farringdon Street', 'Old Bailey', 'Newgate Street & Cheapside', 'Moorgate', 'London Wall', 'Aldersgate Street', 'Holborn Viaduct'],
-  // 100 % (151 pas, virage max 133°) — la rive sud, de Westminster Bridge à
-  // Borough et retour par Waterloo.
-  ['Westminster Bridge Road', 'Blackfriars Road', 'Southwark Street', 'Borough High Street', 'London Road', 'Waterloo Road', 'York Road'],
-  // 92 % (149 pas, virage max 100°) — le grand tour : le Mall, Park Lane,
-  // Oxford Street entière et Charing Cross Road. Les huit pour cent manquants
-  // sont la traversée de Trafalgar Square et l'arrivée sur le Mall.
-  ['The Mall', 'Constitution Hill', 'Park Lane', 'Oxford Street, côté Marble Arch', 'Oxford Street', 'Oxford Street, côté Soho', 'Charing Cross Road'],
-  // 100 % (122 pas, virage max 138°) — Fitzrovia et Soho.
-  ['Euston Road, côté Marylebone', 'Tottenham Court Road', 'New Oxford Street', 'Shaftesbury Avenue', 'Regent Street', 'Portland Place'],
-  // 100 % (76 pas, virage max 139°) — la City par le sud : Blackfriars, le
-  // Monument, la Banque.
-  ['New Bridge Street', 'Queen Victoria Street', 'Cannon Street', 'King William Street', 'Newgate Street & Cheapside', 'Old Bailey'],
-  // 100 % (122 pas, virage max 107°) — Victoria, Belgravia, Piccadilly.
-  ['Whitehall', 'Victoria Street', 'Buckingham Palace Road', 'Grosvenor Place', 'Piccadilly', "St James's Street", 'Pall Mall'],
-  // 100 % (125 pas, virage max 81°) — Bloomsbury et Holborn.
-  ['Euston Road', 'Southampton Row & Woburn Place', 'Kingsway', 'Strand', 'Charing Cross Road', 'Tottenham Court Road'],
-  // 100 % (75 pas, virage max 109°) — Marylebone.
-  ['Edgware Road', 'Marylebone Road, côté Edgware', 'Baker Street', 'Oxford Street, côté Marble Arch'],
-  // 100 % (126 pas, virage max 103°) — le tour de Hyde Park.
-  ['Park Lane', 'Knightsbridge & Kensington Road', 'West Carriage Drive', 'Bayswater Road'],
-  // 100 % (74 pas, virage max 130°) — Buckingham et Birdcage Walk.
-  ['Horse Guards Road', 'Birdcage Walk', 'Buckingham Gate', 'Victoria Street', 'Whitehall'],
-  // 100 % (114 pas, virage max 119°) — Holborn, Fleet Street et le Strand.
-  ['Charing Cross Road', 'New Oxford Street', 'High Holborn', 'Farringdon Street', 'Fleet Street', 'Strand'],
-  // 100 % (65 pas, virage max 129°) — Waterloo et Stamford Street.
-  ['Waterloo Road', 'Stamford Street', 'Blackfriars Road'],
-  // 100 % (97 pas, virage max 108°) — Baker Street et Portland Place.
-  ['Baker Street', 'Marylebone Road', 'Portland Place', 'Oxford Street'],
-  // 100 % (128 pas, virage max 101°) — l'Embankment, de Westminster à
-  // Blackfriars, retour par Fleet Street et le Strand.
-  ['Horse Guards Road', 'Great George Street', 'Victoria Embankment', 'New Bridge Street', 'Fleet Street', 'Strand'],
-  // 100 % (128 blocs, virage max 129°) — rive à rive par Blackfriars et
-  // Waterloo : le Strand, l'Embankment, la rive sud et retour.
-  ['Strand', 'Victoria Embankment', 'Blackfriars Bridge', 'Blackfriars Road', 'Waterloo Road', 'Waterloo Bridge'],
-  // 100 % (111 blocs, virage max 103°) — rive à rive par Waterloo et
-  // Blackfriars : York Road et Westminster Bridge Road côté sud.
-  ['Victoria Embankment', 'Waterloo Bridge', 'York Road', 'Westminster Bridge Road', 'Blackfriars Road', 'Blackfriars Bridge'],
-  // 100 % (85 blocs, virage max 111°) — rive à rive par Blackfriars et
-  // London Bridge : la City, Southwark et Borough.
-  ['Cannon Street', 'Queen Victoria Street', 'Blackfriars Bridge', 'Southwark Street', 'Borough High Street', 'London Bridge'],
+  // 100 % (124 blocs, virage max 103°)
+  ["Park Lane","Knightsbridge & Kensington Road","West Carriage Drive","Bayswater Road"],
+  // 100 % (96 blocs, virage max 108°)
+  ["Baker Street","Marylebone Road","Portland Place","Oxford Street"],
+  // 100 % (70 blocs, virage max 103°)
+  ["Victoria Embankment","Waterloo Bridge","Stamford Street","Blackfriars Bridge"],
+  // 100 % (121 blocs, virage max 107°)
+  ["Whitehall","Victoria Street","Buckingham Palace Road","Grosvenor Place","Piccadilly","St James's Street","Pall Mall"],
+  // 100 % (123 blocs, virage max 81°)
+  ["Euston Road","Southampton Row & Woburn Place","Kingsway","Strand","Charing Cross Road","Tottenham Court Road"],
+  // 100 % (85 blocs, virage max 111°)
+  ["Cannon Street","Queen Victoria Street","Blackfriars Bridge","Southwark Street","Borough High Street","London Bridge"],
+  // 100 % (85 blocs, virage max 139°)
+  ["Farringdon Street","Old Bailey","Newgate Street & Cheapside","Moorgate","London Wall","Aldersgate Street","Holborn Viaduct"],
+  // 100 % (73 blocs, virage max 138°)
+  ["Oxford Street, côté Soho","Regent Street","Shaftesbury Avenue","New Oxford Street"],
+  // 100 % (67 blocs, virage max 119°)
+  ["High Holborn","Kingsway","Fleet Street","Farringdon Street"],
+  // 100 % (61 blocs, virage max 147°)
+  ["Westminster Bridge Road","York Road","Waterloo Road"],
 ];
 
 // Trafalgar Square est dallée de pierre : une voiture y roule.

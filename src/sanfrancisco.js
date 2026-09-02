@@ -357,17 +357,30 @@ export const __voiesSF = VOIES;
 // On ne déclare pas un circuit qui ne valide jamais.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+// LES CIRCUITS SE CROISENT, ILS NE SE SUIVENT PAS (v211).
+//
+// Max, après la v210 : « Et passent à travers les unes des autres. » Mesuré :
+// deux convois sur trois roulaient sur la MÊME chaussée. Le choix par
+// couverture gloutonne réutilisait les grands axes dans presque tous les
+// circuits — à Paris, la rue de Rivoli en portait trois, superposés.
+//
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
+// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// donc rien. Les circuits sont désormais choisis sous une contrainte de
+// PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
+// en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
+// pas.
+//
+// Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
+// voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
+// gardées en priorité — ce n'est pas un tirage au sort.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 % (427 blocs, virage max 130°) — le grand tour : Market, l'Embarcadero,
-  // Columbus, Lombard, Van Ness, Geary et Divisadero pour revenir à Market.
-  ['Market Street', 'The Embarcadero', 'Columbus Avenue', 'Lombard Street', 'Van Ness Avenue', 'Geary Boulevard', 'Divisadero Street'],
-  // 100 % (296 blocs, virage max 130°) — le même tour du nord, refermé par Mission.
-  ['Market Street', 'The Embarcadero', 'Columbus Avenue', 'Lombard Street', 'Van Ness Avenue', 'Mission Street'],
-  // 100 % (211 blocs, virage max 116°) — le carré de l'ouest : Market, Van Ness,
-  // Geary et Divisadero.
-  ['Market Street', 'Van Ness Avenue', 'Geary Boulevard', 'Divisadero Street'],
-  // 100 % (54 blocs, virage max 143°) — le triangle de North Beach.
-  ['The Embarcadero', 'Columbus Avenue', 'Lombard Street'],
+  // 100 % (275 blocs, virage max 123°)
+  ["Market Street","Divisadero Street","Geary Boulevard","Van Ness Avenue","Mission Street"],
+  // 100 % (54 blocs, virage max 143°)
+  ["The Embarcadero","Columbus Avenue","Lombard Street"],
 ];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
