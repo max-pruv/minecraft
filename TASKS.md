@@ -67,6 +67,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
   et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
   repasser sur celle du voisin.
+- [x] **Une voiture conduite traversait les murs — FAIT en v212.** Elle
+  empruntait la boîte de collision du joueur, 0,6 bloc de large pour une
+  carrosserie de 2,26. La largeur vit désormais dans la fiche de l'espèce.
+- [ ] **Le train : ni rails, ni gares, et des tranchées dans le terrain.**
+  Signalé par Max en capture : « train no rails, holes, no end stations ». La
+  voie ferrée du tour du monde se rend comme une poutre continue, sans
+  traverses ni ballast visible, elle traverse un plan d'eau creusé en gradins,
+  et aucune gare ne marque ses extrémités.
+- [ ] **Les personnages font peur** — « personnages are scary », capture d'un
+  villageois à l'appui. Le visage est un dessin grossier sur un cube, et la
+  tête paraît détachée du torse. À reprendre avec les enfants en tête.
 - [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
   depuis la v210). Mesuré en pas de convoi dans un bloc solide, à la cote où
   la voiture roule : Paris 202 (monuments et façades haussmanniennes — le

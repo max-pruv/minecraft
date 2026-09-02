@@ -161,7 +161,14 @@ async function avancerUnDemiSeconde(p, depart) {
       monture: !!window.__game.animalManager.monture(),
     }));
     let regles = await lire();
-    const finDeBiais = Date.now() + 4000;
+    // QUATRE SECONDES SUFFISAIENT SEUL, PAS SOUS CHARGE. Le portail complet
+    // fait tourner cette suite derrière d'autres, et à quelques images par
+    // seconde la bête avance par à-coups : la fenêtre où elle sort du cône de
+    // visée passait entre deux échantillons. Rouge dans le portail, vert
+    // rejouée seule — c'est le banc qu'on mesurait, pas la règle. On regarde
+    // donc trois fois plus longtemps, ce qui ne coûte rien quand la fenêtre
+    // arrive tout de suite.
+    const finDeBiais = Date.now() + 12000;
     while ((regles.vise || !regles.monture) && Date.now() < finDeBiais) {
       await dormir(200);
       regles = await lire();
@@ -808,6 +815,74 @@ async function avancerUnDemiSeconde(p, depart) {
       + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+
+    // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
+    //
+    // Max, capture à l'appui : « cars crashing into walls » — une voiture
+    // rouge encastrée dans une façade haussmannienne. Conduire, ici, c'est
+    // brancher le véhicule sur la physique du JOUEUR, boîte de collision
+    // comprise : soixante centimètres de large, quand une voiture en fait
+    // 2,26. Tant que le point central restait dans la rue, la carrosserie
+    // passait au travers de tout ce qui la bordait.
+    //
+    // On éprouve le trajet de l'enfant, pas la variable : on dresse un mur,
+    // on fonce dedans à pied puis au volant, et l'on regarde OÙ l'on
+    // s'arrête. À pied on colle au mur ; au volant on doit s'arrêter un
+    // demi-bloc plus loin au moins, parce que la carrosserie est plus large
+    // que les épaules. Sur l'ancien code les deux distances sont les mêmes.
+    const contreLeMur = async (auVolant) => {
+      const scene = await tab.evaluate(() => {
+        const g = window.__game, w = g.world;
+        const x0 = Math.round(g.player.pos.x), z0 = Math.round(g.player.pos.z);
+        const sol = w.terrainHeight(x0, z0);
+        // on dégage un couloir droit, puis on ferme le fond
+        for (let d = -2; d <= 10; d++) {
+          for (let c = -4; c <= 4; c++) {
+            for (let h = 1; h <= 4; h++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
+          }
+        }
+        for (let c = -4; c <= 4; c++) {
+          for (let h = 1; h <= 4; h++) w.setBlock(x0 + c, sol + h, z0 + 11, 1);
+        }
+        return { x: x0 + 0.5, y: sol + 1, z: z0 + 0.5, murZ: z0 + 11 };
+      });
+      // `dz = -cos(yaw)` : c'est yaw = π qui envoie vers les z CROISSANTS,
+      // donc vers le mur. Avec 0 on lui tournait le dos et l'on mesurait
+      // vingt-trois blocs d'écart — le témoin lisait sa propre erreur.
+      await placerA(tab, { x: scene.x, y: scene.y, z: scene.z, yaw: Math.PI });
+      await tab.keyboard.down('KeyW');
+      await tab.evaluate(() => new Promise((fin) => {
+        let sim = 0, prec = performance.now();
+        const tic = (t) => {
+          sim += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+          if (sim >= 4) fin(); else requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+      }));
+      await tab.keyboard.up('KeyW');
+      const z = await tab.evaluate(() => window.__game.player.pos.z);
+      return Math.round((scene.murZ - z) * 100) / 100;
+    };
+    const ecartAPied = await contreLeMur(false);
+    await poserDevant(tab, 'voiture');
+    await dormir(600);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const auVolant = await tab.evaluate(() => !!window.__game.player.volInterdit);
+    const ecartAuVolant = await contreLeMur(true);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(400);
+    const ecartApres = await contreLeMur(false);
+    verifier('au volant, on s\'arrête plus loin du mur qu\'à pied — la voiture a sa carrure',
+      auVolant && ecartAPied > 0 && ecartAuVolant >= ecartAPied + 0.5,
+      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant}`);
+    // Ce second témoin est un GARDE-FOU, pas une preuve : il est vert des deux
+    // côtés, et c'est voulu — il garde la régression que le premier rend
+    // possible, un enfant qui garderait à pied la carrure d'une voiture et
+    // resterait coincé entre deux murs.
+    verifier('et une fois descendu, on repasse partout où un piéton passe',
+      ecartApres > 0 && Math.abs(ecartApres - ecartAPied) < 0.2,
+      `${ecartApres} bloc du mur, contre ${ecartAPied} avant d'être monté`);
 
     // LA VOITURE GARÉE NE BOUGE PLUS TOUTE SEULE (Max : « elles bougent
     // d'une position à une autre de manière radicale et violente, tac tac

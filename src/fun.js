@@ -303,8 +303,11 @@ export function initFun(ctx) {
       const quitte = riding;
       riding = null;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
-      // Le vol redevient permis dès qu'on a les pieds par terre.
+      // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
+      // de collision reprend celle d'un piéton — sinon on garderait à pied le
+      // gabarit d'une voiture et l'on resterait coincé entre deux murs.
       player.interdireVol(false);
+      if (player.prendreGabarit) player.prendreGabarit(0);
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
@@ -314,6 +317,8 @@ export function initFun(ctx) {
     // La fiche décide : une voiture ne décolle pas, un cheval non plus une
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
     player.interdireVol(a.def.vole === false);
+    // Et sa CARRURE : une voiture ne passe pas là où un piéton passe.
+    if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
     a.state = 'idle';
     const allure = a.def.allure || 2;
     toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`

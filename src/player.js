@@ -6,6 +6,22 @@ import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT } from './world.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
+// LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
+// crashing into walls » — une voiture rouge encastrée dans une façade
+// haussmannienne, dans une rue de Paris.
+//
+// Conduire, ici, c'est brancher le véhicule sur les commandes du joueur, donc
+// sur SA physique — y compris sa boîte de collision, qui fait SOIXANTE
+// CENTIMÈTRES de large. Une voiture en fait 2,26 : elle passait donc au
+// travers de tout ce qui la bordait, murs compris, tant que le point central
+// restait dans la rue. La dette était écrite dans `CLAUDE.md` depuis la v155 :
+// « le véhicule a besoin de sa propre boîte de collision ».
+//
+// La boîte prend la LARGEUR du véhicule, pas sa longueur : une AABB ne tourne
+// pas, et une boîte de 4,4 blocs ne passerait dans aucune rue même en roulant
+// droit. Une voiture qui se met en travers mord donc un peu — c'est le prix
+// d'une boîte alignée sur les axes, et il est très inférieur à celui d'une
+// voiture fantôme.
 const PLAYER_HEIGHT = 1.8;
 // Assez bas pour que la tête reste dans le monde, assez haut pour qu'on
 // puisse bâtir jusqu'au dernier étage.
@@ -60,6 +76,9 @@ export class Player {
     // POSÉ par la fiche de l'espèce (`vole: false`), jamais par une liste de
     // véhicules écrite ailleurs — même règle que `montable` et `nourrissable`.
     this.volInterdit = false;
+    // La largeur de la boîte de collision. `WIDTH` à pied ; la fiche de
+    // l'espèce la remplace quand on prend le volant (`gabarit`).
+    this.gabarit = WIDTH;
     this.volDepuis = 0;       // secondes de vol continu, cf. FLY_ELAN_APRES
     this.inWater = false;
     this.keys = new Set();
@@ -86,6 +105,13 @@ export class Player {
     this.volInterdit = !!interdit;
     if (interdit) this.flying = false;
   }
+  // Le gabarit de ce qu'on pilote. Rendu à sa valeur de piéton dès qu'on
+  // descend — sans quoi l'enfant garderait la boîte d'une voiture à pied et
+  // resterait bloqué entre deux murs.
+  prendreGabarit(largeur) {
+    this.gabarit = largeur > 0 ? largeur : WIDTH;
+  }
+
 
   toggleFly() {
     // Refuser en silence serait pire que tout : l'enfant appuierait dix fois.
@@ -122,7 +148,7 @@ export class Player {
 
   // Does the given block position intersect the player's AABB?
   intersectsBlock(bx, by, bz) {
-    const half = WIDTH / 2;
+    const half = this.gabarit / 2;
     return (
       bx + 1 > this.pos.x - half && bx < this.pos.x + half &&
       bz + 1 > this.pos.z - half && bz < this.pos.z + half &&
@@ -219,7 +245,7 @@ export class Player {
     const key = coords[axis];
     p[key] += delta;
 
-    const half = WIDTH / 2;
+    const half = this.gabarit / 2;
     const eps = 1e-4;
     const minX = Math.floor(p.x - half + eps), maxX = Math.floor(p.x + half - eps);
     const minY = Math.floor(p.y + eps), maxY = Math.floor(p.y + PLAYER_HEIGHT - eps);

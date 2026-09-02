@@ -404,5 +404,11 @@ export const MONTURES = [
     assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true,
     // `vole: false` : la fiche interdit le vol, player.js l'applique. Voir la
     // note de `volInterdit` — la règle vit ici, jamais dans fun.js.
-    vole: false, garable: true },
+    vole: false, garable: true,
+    // `gabarit` : la largeur de la boîte de collision quand on la conduit.
+    // Le modèle mesure 2,26 blocs de large ; la boîte du piéton en fait 0,6,
+    // et une voiture qui l'empruntait traversait les murs (Max, capture :
+    // « cars crashing into walls »). Même discipline que `vole` et
+    // `montable` : la règle vit dans la fiche, jamais dans fun.js.
+    gabarit: 2.2 },
 ];

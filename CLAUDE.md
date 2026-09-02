@@ -542,9 +542,24 @@ séparé :
 
 Les deux difficultés réelles, à ne pas découvrir en route :
 
-- **Le véhicule a besoin de sa propre boîte de collision.** Celle du joueur fait
-  0,6 bloc de large ; une voiture qui l'emprunte traverse les murs. Il faut une
-  collision contre le monde à l'échelle du véhicule, sans quoi rien ne tient.
+- **Le véhicule a sa propre boîte de collision — FAIT en v212.** Celle du
+  joueur fait 0,6 bloc de large ; une voiture en fait 2,26, et elle traversait
+  donc les murs tant que son point central restait dans la rue. Max l'a
+  signalé en capture — « cars crashing into walls », une voiture encastrée
+  dans une façade haussmannienne — quatre versions après que cette ligne eut
+  été écrite ici. Trois choses en sortent :
+  **la largeur vit dans la fiche de l'espèce** (`gabarit`), à côté de
+  `montable`, `nourrissable` et `vole`, jamais dans une liste de `fun.js` ;
+  **la boîte prend la LARGEUR, pas la longueur**, parce qu'une AABB ne tourne
+  pas et que 4,4 blocs ne passeraient dans aucune rue même en roulant droit
+  (une voiture en travers mord donc encore un peu, et c'est bien moins cher
+  qu'une voiture fantôme) ; et **on la rend en descendant**, sinon l'enfant
+  garde à pied la carrure d'une voiture et se retrouve coincé entre deux murs
+  — c'est le second témoin de `monte.js`, vert des deux côtés à dessein.
+- **Une dette écrite n'est pas une dette vue.** Celle-ci attendait depuis la
+  v155 dans ce fichier, sous les yeux de chaque session, et c'est une capture
+  d'iPad qui l'a fait remonter. Ce qu'un témoin ne garde pas, personne ne le
+  garde.
 - **Un véhicule conduit doit se voir en ligne.** Le réseau diffuse aujourd'hui
   la position des *joueurs*. Si Marlon conduit et qu'Alice ne voit qu'un enfant
   qui glisse à toute vitesse, la moitié du plaisir est perdue. La position du
