@@ -83,28 +83,118 @@ export function solDesVoies(bandes, u, v, chaussee, trottoir) {
 // comme Manhattan fait rouler ses voitures sur la 5e et la 8e. C'est la ville
 // qui sait quelles avenues se suivent ; ce fichier ne sait que les chaîner.
 
-// Mettre des voies bout à bout, en retournant celles qui sont à l'envers. Le
-// circuit est fermé par le convoi lui-même : on ne répète pas le premier point.
+// --- où deux voies se rencontrent ---------------------------------------------
+//
+// Le point d'une polyligne le plus proche d'un point donné, avec sa position
+// le long d'elle (`s` = numéro du segment + fraction). C'est cette position
+// qui permet ensuite de ne parcourir une avenue QU'ENTRE deux carrefours.
+function plusProche(pts, q) {
+  let best = null;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [u0, v0] = pts[i], [u1, v1] = pts[i + 1];
+    const du = u1 - u0, dv = v1 - v0;
+    const len2 = du * du + dv * dv;
+    let t = len2 > 0 ? ((q[0] - u0) * du + (q[1] - v0) * dv) / len2 : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const pu = u0 + t * du, pv = v0 + t * dv;
+    const d = Math.hypot(q[0] - pu, q[1] - pv);
+    if (!best || d < best.d) best = { d, s: i + t, pt: [pu, pv] };
+  }
+  return best;
+}
+
+// Là où deux segments se croisent, s'ils se croisent.
+function croisement(a0, a1, b0, b1) {
+  const rx = a1[0] - a0[0], rz = a1[1] - a0[1];
+  const sx = b1[0] - b0[0], sz = b1[1] - b0[1];
+  const den = rx * sz - rz * sx;
+  if (Math.abs(den) < 1e-9) return null;
+  const qx = b0[0] - a0[0], qz = b0[1] - a0[1];
+  const t = (qx * sz - qz * sx) / den;
+  const u = (qx * rz - qz * rx) / den;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return { t, u, pt: [a0[0] + t * rx, a0[1] + t * rz] };
+}
+
+// Le carrefour entre deux voies : la paire de points la plus proche entre
+// leurs deux tracés. Un vrai croisement compte pour zéro et gagne toujours ;
+// sinon c'est le sommet de l'une projeté sur l'autre — le bout d'une rue qui
+// débouche au milieu d'une avenue. Rend la position sur chacune (`sa`, `sb`).
+function carrefour(a, b) {
+  let best = null;
+  const garder = (d, sa, sb, pt) => {
+    if (!best || d < best.d - 1e-9) best = { d, sa, sb, pt };
+  };
+  for (let i = 0; i < a.length - 1; i++) {
+    for (let j = 0; j < b.length - 1; j++) {
+      const x = croisement(a[i], a[i + 1], b[j], b[j + 1]);
+      if (x) garder(0, i + x.t, j + x.u, x.pt);
+    }
+  }
+  if (best && best.d === 0) return best;
+  a.forEach((q, i) => { const p = plusProche(b, q); garder(p.d, i, p.s, p.pt); });
+  b.forEach((q, j) => { const p = plusProche(a, q); garder(p.d, p.s, j, p.pt); });
+  return best;
+}
+
+// Le tronçon d'une voie entre deux positions le long d'elle, dans l'ordre où
+// on le parcourt — retourné si l'on entre par le bout le plus loin.
+function troncon(pts, sEntree, sSortie) {
+  const at = (s) => {
+    const i = Math.min(pts.length - 2, Math.floor(s));
+    const t = s - i;
+    return [pts[i][0] + t * (pts[i + 1][0] - pts[i][0]), pts[i][1] + t * (pts[i + 1][1] - pts[i][1])];
+  };
+  const out = [at(sEntree)];
+  if (sEntree < sSortie) {
+    for (let i = Math.floor(sEntree) + 1; i <= Math.min(pts.length - 1, Math.floor(sSortie)); i++) out.push(pts[i]);
+  } else {
+    for (let i = Math.ceil(sEntree) - 1; i >= Math.max(0, Math.ceil(sSortie)); i--) out.push(pts[i]);
+  }
+  out.push(at(sSortie));
+  return out;
+}
+
+// Mettre des voies bout à bout — ENTRE LEURS CARREFOURS. La première version
+// accrochait chaque avenue par celle de ses extrémités qui était la plus
+// proche et la parcourait EN ENTIER : quand la suivante débouchait à mi-chemin,
+// le convoi allait jusqu'au bout de l'avenue et revenait sur ses pas. Mesuré
+// sur les cinq villes qui roulaient ainsi : vingt-quatre circuits sur
+// quarante et un faisaient demi-tour, invisibles au pourcentage de rue — un
+// demi-tour reste à cent pour cent sur la chaussée. Chaque voie n'est donc
+// parcourue que du carrefour par lequel on y entre à celui par lequel on la
+// quitte ; le circuit est fermé par le convoi lui-même, la dernière voie
+// rejoint la première, et l'on ne répète pas le premier point. Une voie qu'on
+// quitterait par le carrefour où l'on est entré — une impasse — ne peut se
+// parcourir qu'en faisant demi-tour : la chaîne est refusée.
 export function chainerVoies(voies, noms) {
-  const pts = [];
+  const liste = [];
   for (const nom of noms) {
     const v = voies.find((w) => w.nom === nom);
     if (!v || !v.pts || v.pts.length < 2) return null;
-    let bout = v.pts;
-    if (pts.length) {
-      const q = pts[pts.length - 1];
-      const d = (a) => (a[0] - q[0]) ** 2 + (a[1] - q[1]) ** 2;
-      // On accroche la voie par celle de ses deux extrémités qui est la plus
-      // proche du point où l'on est : sans cela, une avenue écrite d'est en
-      // ouest ferait faire demi-tour au circuit au milieu du carrefour.
-      if (d(bout[bout.length - 1]) < d(bout[0])) bout = [...bout].reverse();
-    }
-    for (const q of bout) {
+    liste.push(v.pts);
+  }
+  if (liste.length < 2) return null;
+  const n = liste.length;
+  const carrefours = [];
+  for (let i = 0; i < n; i++) {
+    const c = carrefour(liste[i], liste[(i + 1) % n]);
+    if (!c) return null;
+    carrefours.push(c);
+  }
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const entree = carrefours[(i - 1 + n) % n].sb, sortie = carrefours[i].sa;
+    if (Math.abs(entree - sortie) < 1e-6) return null;
+    for (const q of troncon(liste[i], entree, sortie)) {
+      const p = [Math.round(q[0] * 100) / 100, Math.round(q[1] * 100) / 100];
       const dernier = pts[pts.length - 1];
-      if (dernier && dernier[0] === q[0] && dernier[1] === q[1]) continue;
-      pts.push(q);
+      if (dernier && Math.abs(dernier[0] - p[0]) < 0.011 && Math.abs(dernier[1] - p[1]) < 0.011) continue;
+      pts.push(p);
     }
   }
+  const premier = pts[0], dernier = pts[pts.length - 1];
+  if (pts.length > 1 && Math.abs(dernier[0] - premier[0]) < 0.011 && Math.abs(dernier[1] - premier[1]) < 0.011) pts.pop();
   return pts.length >= 3 ? pts : null;
 }
 

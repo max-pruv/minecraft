@@ -123,8 +123,10 @@ const GARDIENS = {
   'src/aeroport.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   'src/circuit.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   // Les voies nommées : elles portent les circuits de voitures de toutes les
-  // villes bâties à la main.
-  'src/voies.js': ['carte.js', 'monte.js'],
+  // villes bâties à la main. C'est `carteMonde.js` qui mesure leurs virages
+  // dans les six villes — un demi-tour né du chaînage se voit là, nulle part
+  // ailleurs.
+  'src/voies.js': ['carte.js', 'monte.js', 'carteMonde.js'],
   // Le garage écrit dans le profil de l'enfant, à côté de ses blocs : c'est
   // de la sauvegarde, et cela doit se prouver comme telle.
   'src/garages.js': ['sauvegarde.js', 'monte.js'],

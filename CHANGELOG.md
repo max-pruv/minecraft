@@ -20,6 +20,77 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v207 — Plus aucune voiture ne fait demi-tour : les circuits roulent de carrefour en carrefour
+
+**Pourquoi.** Le témoin de Londres (v206) rejetait tout virage au-delà de
+150°, et la dette disait : « les autres villes en ont sûrement ». Mesuré le
+jour même sur les cinq autres villes à circuits : **vingt-quatre des
+quarante-et-un circuits rebroussaient chemin** — Paris cinq sur cinq, San
+Francisco quatre sur quatre, Lille cinq sur six, Washington sept sur onze,
+Nice quatre sur cinq. « Market et Divisadero », à deux, n'était qu'un
+aller-retour de 468 blocs ; « l'axe Esquermoise–Royale, aller et retour » de
+Lille l'était littéralement. Personne ne l'avait vu parce qu'un demi-tour est
+INVISIBLE à la mesure de rue : une voiture qui repart d'où elle vient roule à
+100 % sur la chaussée. La cause n'était dans aucune ville — elle était dans le
+chaînage partagé de `voies.js`, qui accrochait chaque avenue par son bout le
+plus proche et la PARCOURAIT EN ENTIER. Une avenue dont le carrefour de sortie
+est au milieu se fait donc en aller-retour, à chaque fois.
+
+**Ce que ça change.**
+
+- **Un circuit roule de carrefour en carrefour.** Le chaînage calcule où
+  chaque avenue croise la suivante et ne parcourt que le tronçon entre son
+  carrefour d'entrée et son carrefour de sortie. Une chaîne qui entre et sort
+  d'une avenue par le même carrefour est une impasse : elle est refusée,
+  jamais rafistolée.
+- **Vingt-cinq circuits remesurés, aucun au-dessus de 146°** : Paris cinq
+  (98–100 %, jusqu'à 241 blocs par Rivoli, les Grands Boulevards, Sébastopol,
+  Magenta, La Fayette et l'Opéra ; deux boucles rive gauche par
+  Saint-Germain, Rennes, Montparnasse et Raspail), Nice cinq (tous à 100 %,
+  le tour par la Californie et René-Cassin, le front de mer par Rauba-Capeu et
+  Carabacel, Cimiez), Lille six (99–100 %, du Vieux-Lille à Vauban, Euralille
+  par Faidherbe et Willy-Brandt), San Francisco quatre (100 %, le grand tour
+  Market–Embarcadero–Columbus–Lombard–Van Ness–Geary–Divisadero à 427 blocs),
+  Washington onze (99–100 %, listes inchangées : le nouveau chaînage suffit).
+  Londres, déjà mesuré au virage, ne bouge pas : quinze circuits.
+- **Ce que la règle coûte, dit honnêtement.** Refuser les allers-retours
+  découvre les voies qui n'avaient AUCUNE boucle : à Paris huit avenues sur
+  dix-huit sortent des circuits (Clichy et la Grande-Armée ne croisent rien ;
+  les Gobelins, la Motte-Picquet et Belleville sont des impasses ;
+  Saint-Michel bute sur le Luxembourg à 88 % ; le triangle de l'est fait 174°
+  à République) ; à Lille la rue Royale ; à San Francisco Valencia. Toutes
+  sont des dettes déclarées, avec les raccords qu'il leur faudrait. Une
+  avenue parcourue en aller-retour n'était pas « couverte » : elle donnait
+  l'illusion de l'être.
+- **Le sol ne bouge pas.** Les listes de points des avenues (`VOIES`), qui
+  dessinent la chaussée, ne changent d'un bloc dans aucune ville : seul
+  l'ordre dans lequel les voitures les enchaînent change.
+
+**Ce qui le prouve.**
+
+- Deux témoins neufs dans `carteMonde.js`, par les bâtisseurs purs
+  (`circuitsParis`, `circuitsNice`, `circuitsLille`, `circuitsSF`,
+  `circuitsWashington`, `circuitsLondres`) et jamais par un (u, v) en dur :
+  **dans les six villes à circuits, aucune voiture ne fait demi-tour** (aucun
+  virage au-delà de 150°, au moins trois circuits par ville) ; et chaque
+  circuit, mesuré entre ses carrefours, tient toujours la rue à 90 %. Le
+  premier est ROUGE sur `origin/main` — c'est lui qui compte, et le compte
+  qu'il rend là-bas est celui de l'audit.
+- Les enchaînements ont été mesurés sur une copie de `src/` avec le nouveau
+  chaînage, toutes combinaisons de deux à sept avenues par ville, puis
+  choisis par couverture gloutonne ; le chiffre en commentaire au-dessus de
+  chaque circuit est celui de cette mesure.
+- `voies.js` gagne `carteMonde.js` comme gardien dans `tests/tout.js` : un
+  demi-tour né du chaînage se voit là et nulle part ailleurs.
+
+**Portail** (voie longue) : un seul passage, **490 ✅ / 0 ❌** — fumée et
+les treize suites, dont `carteMonde.js` (48 témoins, les deux neufs compris),
+`carte.js`, `monte.js`, `plafond.js` avec ses deux empreintes IDENTIQUES à la
+v206 (relief 218 089 colonnes · c20adb7308ae ; hors villes 184 656 ·
+c79c2f3b0135 ; 4 040 colonnes sous les enfants, zéro déplacée). Le rouge
+intermittent de `reseau.js` (« quand le relais répond, on accuse le VPN ») est
+passé vert cette fois ; il reste déclaré dans `TASKS.md`.
+
 ## v206 — Londres roule : soixante avenues qui se croisent et quinze circuits mesurés
 
 **Pourquoi.** Depuis la v201 Londres n'avait qu'UN circuit de voitures, le

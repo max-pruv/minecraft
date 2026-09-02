@@ -1080,6 +1080,67 @@ const VRAIES_KM = [
       !ldn.absent && ldn.circuits.length > 0 && ldn.circuits.every((c) => c.virage <= 150),
       JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => c.virage)));
 
+    // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
+    //
+    // Le témoin ci-dessus ne regardait que Londres. Les cinq autres villes à
+    // circuits avaient été mesurées AU SOL seulement — et au sol, un demi-tour
+    // est invisible : un convoi qui va au bout d'une avenue et revient sur ses
+    // pas est à cent pour cent sur la chaussée. Audité en v207 : vingt-quatre
+    // des quarante-et-un circuits de Paris, Nice, Lille, San Francisco et
+    // Washington rebroussaient chemin, Paris cinq fois sur cinq. « Market et
+    // Divisadero », à San Francisco, n'était qu'un aller-retour de 468 blocs.
+    //
+    // La cause était dans le chaînage partagé (voies.js), qui parcourait
+    // chaque avenue EN ENTIER avant de sauter à la suivante ; il la parcourt
+    // désormais entre ses carrefours. Le même angle que pour Londres, dans
+    // toutes les villes : au-delà de 150°, c'est un demi-tour.
+    const virages = await tab.evaluate(async () => {
+      const g = window.__game;
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const sources = [
+        ['paris', './src/paris.js', 'circuitsParis'],
+        ['nice', './src/nice.js', 'circuitsNice'],
+        ['lille', './src/lille.js', 'circuitsLille'],
+        ['sf', './src/sanfrancisco.js', 'circuitsSF'],
+        ['dc', './src/washington.js', 'circuitsWashington'],
+        ['londres', './src/londres.js', 'circuitsLondres'],
+      ];
+      const out = {};
+      for (const [cle, mod, fn] of sources) {
+        const m = await import(mod);
+        if (typeof m[fn] !== 'function') { out[cle] = { absent: true }; continue; }
+        out[cle] = m[fn](solDe).map((c) => {
+          const p = [];
+          for (const q of c.pts) {
+            const d = p[p.length - 1];
+            if (!d || d.x !== q.x || d.z !== q.z) p.push(q);
+          }
+          if (p.length > 1 && p[0].x === p[p.length - 1].x && p[0].z === p[p.length - 1].z) p.pop();
+          let virage = 0;
+          for (let i = 0; i < p.length; i++) {
+            const a = p[(i + p.length - 1) % p.length], o = p[i], z = p[(i + 1) % p.length];
+            const ax = o.x - a.x, az = o.z - a.z, bx = z.x - o.x, bz = z.z - o.z;
+            const n = Math.hypot(ax, az) * Math.hypot(bx, bz);
+            if (!n) continue;
+            const deg = (Math.acos(Math.max(-1, Math.min(1, (ax * bx + az * bz) / n))) * 180) / Math.PI;
+            if (deg > virage) virage = deg;
+          }
+          return { part: c.part, virage: Math.round(virage) };
+        });
+      }
+      return out;
+    });
+    const villesVirages = Object.entries(virages);
+    const demiTours = Object.fromEntries(villesVirages
+      .map(([k, v]) => [k, v.absent ? 'absent' : v.filter((c) => c.virage > 150).length]));
+    verifier('dans les six villes à circuits, aucune voiture ne fait demi-tour',
+      villesVirages.length === 6
+      && villesVirages.every(([, v]) => !v.absent && v.length >= 3 && v.every((c) => c.virage <= 150)),
+      JSON.stringify(demiTours));
+    verifier('et chaque circuit, mesuré entre ses carrefours, tient toujours la rue',
+      villesVirages.every(([, v]) => !v.absent && v.every((c) => c.part >= 90)),
+      JSON.stringify(Object.fromEntries(villesVirages.map(([k, v]) => [k, v.absent ? v : v.map((c) => c.part)]))));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

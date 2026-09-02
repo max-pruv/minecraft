@@ -392,7 +392,7 @@ const BANDES = rangerVoies(VOIES);
 // terrain brut ne trouvait rien, alors que quarante-quatre pour cent de Paris
 // est de la chaussée.
 //
-// CINQ CIRCUITS, ET ILS COUVRENT LES DIX-HUIT AVENUES DE PARIS.
+// CINQ CIRCUITS, SANS DEMI-TOUR, SUR DIX DES DIX-HUIT AVENUES DE PARIS.
 //
 // Max, après une visite : « je viens d'aller visiter Paris et je n'ai vu aucun
 // véhicule en circulation. » Il n'y en avait bien aucun là où il était. Paris
@@ -402,21 +402,45 @@ const BANDES = rangerVoies(VOIES);
 // voiture. Toute la rive gauche et tout l'ouest étaient vides, et l'on pouvait
 // traverser la ville sans rien croiser.
 //
-// Les enchaînements ne se devinent toujours pas : les 270 combinaisons
-// d'avenues qui tiennent le seuil de 90 % ont été éprouvées contre `solParis`,
-// puis choisies par couverture gloutonne — à chaque tour, celle qui apporte le
-// plus d'avenues neuves. Cinq suffisent pour les couvrir TOUTES.
+// Les enchaînements ne se devinent toujours pas : les combinaisons d'avenues
+// qui tiennent le seuil de 90 % ont été éprouvées contre `solParis`, puis
+// choisies par couverture gloutonne — à chaque tour, celle qui apporte le
+// plus d'avenues neuves.
+//
+// ET DEPUIS v207, PLUS AUCUN CIRCUIT NE FAIT DEMI-TOUR. Les cinq circuits
+// d'avant tenaient la rue de 91 à 99 % — et tous les cinq REBROUSSAIENT
+// CHEMIN : l'ancien chaînage parcourait chaque avenue en entier, et quand la
+// suivante débouchait à mi-chemin, le convoi allait jusqu'au bout et revenait
+// sur ses pas. Un demi-tour reste à cent pour cent sur la chaussée, le
+// pourcentage ne le voit pas. Les avenues se chaînent désormais ENTRE LEURS
+// CARREFOURS, et l'on rejette tout virage au-delà de 150°, comme à Londres.
+//
+// Le prix, dit honnêtement : DIX des dix-huit avenues sont couvertes, pas
+// dix-huit. Clichy et la Grande Armée ne rencontrent aucune autre avenue ;
+// les Gobelins, la Motte-Picquet et Belleville n'en touchent qu'une — des
+// impasses, qui ne se parcourent qu'en faisant demi-tour. Le boulevard
+// Saint-Michel traverse le jardin du Luxembourg, dont l'herbe l'emporte sur
+// la chaussée : ses boucles avec Saint-Germain et Montparnasse tiennent à 88
+// et 89 %, sous le seuil. Et le triangle de l'est — Grands Boulevards,
+// Faubourg Saint-Antoine, Voltaire — est à 100 % sur la rue mais dégénéré :
+// à République, Voltaire et le retour des Grands Boulevards partent dans la
+// même direction, un angle de 174°. On ne déclare pas un circuit qui
+// rebrousse chemin, même à cent pour cent.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // Le cœur de la rive droite — 99 %, 431 blocs.
-  ['Grands Boulevards', "Avenue de l'Opéra", 'Boulevard de Sébastopol', 'Rue La Fayette'],
-  // LA RIVE GAUCHE, qui n'avait rien — 95 %, 350 blocs.
-  ['Boulevard Saint-Germain', 'Boulevard Saint-Michel', 'Rue de Rennes', 'Avenue de la Motte-Picquet'],
-  // L'est populaire, de Magenta à Belleville — 94 %, 328 blocs.
-  ['Boulevard de Magenta', 'Boulevard Voltaire', 'Faubourg Saint-Antoine', 'Rue de Belleville'],
-  // Le sud : Montparnasse, Raspail, les Gobelins — 93 %, 321 blocs.
-  ['Boulevard du Montparnasse', 'Boulevard Raspail', 'Avenue des Gobelins'],
-  // Le grand tour d'ouest en est, par Clichy et l'Étoile — 91 %, 458 blocs.
-  ['Rue de Rivoli', 'Boulevard de Sébastopol', 'Boulevard de Clichy', 'Avenue de la Grande Armée'],
+  // 98 % (241 blocs, virage max 110°) — le grand tour de la rive droite :
+  // Rivoli, les Grands Boulevards, Sébastopol, Magenta, La Fayette et l'Opéra.
+  ['Rue de Rivoli', 'Grands Boulevards', 'Boulevard de Sébastopol', 'Boulevard de Magenta', 'Rue La Fayette', "Avenue de l'Opéra"],
+  // 100 % (162 blocs, virage max 130°) — le carré de l'est, par Magenta.
+  ['Rue de Rivoli', 'Grands Boulevards', 'Boulevard de Magenta', 'Boulevard de Sébastopol'],
+  // 97 % (156 blocs, virage max 90°) — le carré de l'Opéra, par La Fayette.
+  ['Rue de Rivoli', "Avenue de l'Opéra", 'Rue La Fayette', 'Boulevard de Sébastopol'],
+  // 100 % (55 blocs, virage max 102°) — LA RIVE GAUCHE : Saint-Germain,
+  // Rennes, Montparnasse et Raspail.
+  ['Boulevard Saint-Germain', 'Rue de Rennes', 'Boulevard du Montparnasse', 'Boulevard Raspail'],
+  // 100 % (62 blocs, virage max 90°) — le triangle de Montparnasse.
+  ['Rue de Rennes', 'Boulevard du Montparnasse', 'Boulevard Raspail'],
 ];
 
 // Ce qui se roule : la chaussée, les pavés, le trottoir et le granit des

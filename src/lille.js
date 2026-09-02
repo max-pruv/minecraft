@@ -263,22 +263,41 @@ const BANDES = rangerVoies(VOIES);
 // n'a gardé que ce qui tient la rue à quatre-vingt-dix pour cent — puis choisi
 // par couverture gloutonne, chaque circuit apportant le plus d'avenues neuves.
 // Jusqu'en v203 Lille n'avait AUCUN circuit : ses sept rues faisaient dix
-// blocs et aucune ne refermait une boucle. Six circuits couvrent les quinze
-// avenues (mesures : part sur la rue, longueur en blocs).
+// blocs et aucune ne refermait une boucle.
+//
+// ET DEPUIS v207, PLUS AUCUN CIRCUIT NE FAIT DEMI-TOUR. Cinq des six circuits
+// d'avant rebroussaient chemin — à cent pour cent sur la chaussée, donc
+// invisibles au pourcentage : l'ancien chaînage parcourait chaque avenue en
+// entier, et quand la suivante débouchait à mi-chemin, le convoi allait
+// jusqu'au bout et revenait sur ses pas. « L'axe Esquermoise–Royale, aller et
+// retour » était, littéralement, un aller-retour. Les avenues se chaînent
+// désormais entre leurs CARREFOURS, et tout virage au-delà de 150° est
+// rejeté, comme à Londres. Le prix : la rue Royale n'est plus parcourue — elle
+// ne rencontre la Monnaie et Nationale que par son bout, une impasse qui ne se
+// parcourt qu'en faisant demi-tour. Six circuits couvrent quatorze des quinze
+// avenues.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 100 %, 189 — la grande boucle du sud-ouest : Nationale vers l'ouest,
-  // Vauban vers le sud, Gambetta et la Liberté pour revenir à République.
-  ['Rue Nationale', 'Boulevard Vauban', 'Rue Léon-Gambetta', 'Boulevard de la Liberté'],
-  // 100 %, 144 — de la Grand'Place à la Porte de Paris et retour par la Liberté.
+  // 100 % (231 blocs, virage max 146°) — le grand tour : la rue de Paris,
+  // Victor-Hugo, Vauban, Nationale, puis le Vieux-Lille par la Monnaie, le
+  // Peuple-Belge et Esquermoise.
+  ['Rue de Paris', 'Boulevard Victor-Hugo', 'Boulevard Vauban', 'Rue Nationale', 'Rue de la Monnaie', 'Avenue du Peuple-Belge', 'Rue Esquermoise'],
+  // 99 % (96 blocs, virage max 104°) — le quartier des gares : Faidherbe,
+  // Carnot, Euralille, retour par Tournai.
+  ['Rue Faidherbe', 'Boulevard Carnot', 'Avenue Willy-Brandt', 'Rue de Tournai'],
+  // 100 % (167 blocs, virage max 100°) — de la Grand'Place à Wazemmes : Delory,
+  // Gambetta, Vauban et Nationale pour revenir.
+  ['Rue de Paris', 'Rue Gustave-Delory', 'Rue Léon-Gambetta', 'Boulevard Vauban', 'Rue Nationale'],
+  // 100 % (135 blocs, virage max 98°) — la boucle du sud-ouest : la Liberté,
+  // Nationale, Vauban et Victor-Hugo.
+  ['Boulevard de la Liberté', 'Rue Nationale', 'Boulevard Vauban', 'Boulevard Victor-Hugo'],
+  // 100 % (121 blocs, virage max 90°) — de la Grand'Place à la Porte de Paris
+  // et retour par la Liberté.
   ['Rue de Paris', 'Rue Gustave-Delory', 'Boulevard de la Liberté', 'Rue Nationale'],
-  // 99 %, 96 — le quartier des gares : Carnot, Euralille, retour par Faidherbe.
-  ['Boulevard Carnot', 'Avenue Willy-Brandt', 'Rue de Tournai', 'Rue Faidherbe'],
-  // 100 %, 94 — le tour du Vieux-Lille par la Monnaie et le Peuple-Belge.
-  ['Rue de la Monnaie', 'Rue Esquermoise', 'Avenue du Peuple-Belge'],
-  // 100 %, 82 — l'axe Esquermoise–Royale, aller et retour jusqu'à la Citadelle.
-  ['Rue Esquermoise', 'Rue Royale'],
-  // 100 %, 97 — Delory, Victor-Hugo et Gambetta : le triangle de Wazemmes.
-  ['Rue Gustave-Delory', 'Boulevard Victor-Hugo', 'Rue Léon-Gambetta'],
+  // 100 % (59 blocs, virage max 146°) — le tour du Vieux-Lille par le
+  // Peuple-Belge et la Monnaie.
+  ['Rue Esquermoise', 'Avenue du Peuple-Belge', 'Rue de la Monnaie'],
 ];
 // Le damier de la Grand'Place est roulant : les rues y débouchent.
 const ROULANT = new Set([BITUME, PAVE, ROSE]);
