@@ -975,12 +975,15 @@ async function avancerUnDemiSeconde(p, depart) {
 
     const peuple = await tab.waitForFunction(() => {
       const p2 = window.__game.passants;
-      return p2 && p2.effectif() >= 10 ? p2.effectif() : null;
+      return p2 && p2.effectif() >= 18 ? p2.effectif() : null;
     }, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => 0);
-    verifier('les passants peuplent les rues à l\'arrivée — dix par ville',
-      peuple >= 10, `${peuple} promeneur(s)`);
+    // DIX-HUIT DEPUIS LA v217, ET LE LIBELLÉ SUIT LE CHIFFRE. Dix était le
+    // nombre d'avant les grandes villes ; un libellé périmé induit en erreur
+    // plus longtemps qu'il n'informe.
+    verifier('les passants peuplent les rues à l\'arrivée — dix-huit par ville',
+      peuple >= 18, `${peuple} promeneur(s)`);
 
-    // ET LES CHIENS (v178) : « dogs » — deux promeneurs sur dix trottinent à
+    // ET LES CHIENS (v178) : « dogs » — un promeneur sur cinq trottine à
     // quatre pattes.
     const chiens = await tab.evaluate(() => {
       const s2 = window.__game.passants.sites.find((x) => x.peuple);

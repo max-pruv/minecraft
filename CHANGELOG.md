@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v217 — La ville reste habitée quand on la traverse
+
+**Pourquoi.** Max, après la v216 : « clairement pas de piétons, pas de vie
+dans les villes. » Les passants existaient pourtant, et un témoin le
+vérifiait — mais ce témoin se posait quelque part et **attendait**. Or le
+défaut ne se montre qu'en marchant. Mesuré en traversant Paris d'ouest en
+est, en comptant les piétons **réellement dessinés** : 10, 8, 7, 4, **zéro**,
+2, 1. Les dix étaient toujours là ; ils étaient restés derrière.
+
+La cause tient en deux nombres qui ne se parlaient pas. Un passant n'était
+ramené devant l'enfant qu'au-delà de **cent cinquante blocs**, alors qu'un
+personnage cesse d'être dessiné à **soixante-deux**. Entre les deux, il est
+invisible ET pas rapatrié : la ville se vide dès qu'on marche cent blocs, et
+se repeuple une minute plus tard.
+
+**Ce que ça change.** On rapatrie désormais celui qu'on ne VOIT plus, pas
+celui qui est loin : soixante-quatre blocs, juste au-delà de la portée de
+rendu. C'est ce qui rend le déplacement honnête — on ne déplace jamais
+quelqu'un que l'enfant a sous les yeux, personne ne saute d'un bout de la rue
+à l'autre. Et chaque ville passe de dix à **dix-huit** habitants, dont un sur
+cinq est un chien.
+
+**Ce qui le prouve.** Un témoin neuf dans `fumee.js` traverse Paris par bonds
+de vingt-cinq blocs et mesure le **pire** de la traversée — c'est le creux qui
+fait dire à un enfant que la ville est morte, pas la moyenne. Sur
+`origin/main` il rend `[0, 10, 7, 4, 2, 1, 5]`, pire **zéro** : rouge. Sur la
+branche, plus jamais de rue vide. Et le prix est mesuré : 88 à 265 appels de
+dessin sur la traversée, là où le budget d'une ville est de l'ordre de 450 —
+un passant ne se dessine que sous soixante-deux blocs, les dix-huit ne sont
+donc jamais tous à l'écran. L'ancien témoin, lui, reste vert sur l'ancien
+code : c'est la preuve qu'il ne pouvait pas voir ce défaut.
+
+---
+
 ## v216 — Toutes les avenues de Paris ont retrouvé leurs voitures
 
 **Pourquoi.** La v211 avait réglé ce que Max avait vu — « les voitures passent

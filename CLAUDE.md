@@ -1052,6 +1052,32 @@ Trois règles en sortent :
   AUCUN point ne passe jamais le test — la sélection tombe alors en silence sur
   son repli, et l'on croit que la règle ne marche pas.
 
+**ON RAPATRIE CELUI QU'ON NE VOIT PLUS, PAS CELUI QUI EST LOIN (v217).** Max,
+après la v216 : « clairement pas de piétons, pas de vie dans les villes. » Deux
+nombres ne se parlaient pas : on ramenait un passant devant l'enfant au-delà de
+CENT CINQUANTE blocs, quand un personnage cesse d'être dessiné à SOIXANTE-DEUX
+(`VU` de `vie.js`, appliqué à tous depuis la v196). Entre les deux, il est
+invisible ET pas rapatrié. Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2,
+1 piétons dessinés. Trois choses en sortent :
+
+- **Le seuil de rapatriement se règle sur la PORTÉE DE RENDU, jamais sur une
+  intuition de distance.** Soixante-quatre, c'est-à-dire juste au-delà de
+  soixante-deux : quiconque sort du champ revient devant, et le déplacement
+  est par construction invisible. Toute autre valeur choisit entre une ville
+  vide (trop grande) et des gens qui sautent sous les yeux de l'enfant (trop
+  petite).
+- **UN TÉMOIN QUI ATTEND NE PEUT PAS VOIR CE QUI SE CASSE EN MARCHANT.**
+  « Loin du centre, la ville est habitée quand même » se posait à
+  quatre-cinquièmes du rayon et attendait — il est VERT sur l'ancien code, et
+  il l'était depuis la v178. Le défaut ne vit que dans le déplacement. Un
+  témoin de vie de rue traverse la ville et mesure le PIRE de la traversée,
+  pas la moyenne : c'est le creux qui fait dire à un enfant que la ville est
+  morte.
+- **Dix habitants par ville, c'était le chiffre d'avant les grandes villes.**
+  Dix-huit, et le prix se mesure : 88 à 265 appels de dessin sur la traversée
+  de Paris, pour un budget de l'ordre de 450 — un passant ne se dessine que
+  sous soixante-deux blocs, les dix-huit ne sont donc jamais tous à l'écran.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les

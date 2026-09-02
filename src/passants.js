@@ -38,10 +38,30 @@ const PORTEE_REVEIL = 150;
 // les rapatrie. Voir la note de `poste()`.
 const AUTOUR_MIN = 14;
 const AUTOUR_MAX = 55;
-const TROP_LOIN = 150;
-// Dix par ville depuis v178 — Max : « much more life… people walking » — et
-// un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
-const PAR_VILLE = 10;
+// ON RAPATRIE CELUI QU'ON NE VOIT PLUS, PAS CELUI QUI EST LOIN.
+//
+// Max, après la v216 : « clairement pas de piétons, pas de vie dans les
+// villes. » Mesuré en traversant Paris d'ouest en est par bonds de vingt-cinq
+// blocs, en comptant les passants RENDUS : 10, 8, 7, 4, **0**, 2, 1. Les dix
+// existaient toujours — ils étaient restés derrière.
+//
+// Le seuil valait CENT CINQUANTE blocs quand un personnage cesse d'être
+// dessiné à SOIXANTE-DEUX (`VU` de vie.js, appliqué à tous depuis la v196).
+// Entre les deux, un passant est invisible ET pas rapatrié : la ville se vide
+// dès que l'enfant marche cent blocs, et se repeuple une minute plus tard.
+//
+// Soixante-quatre, c'est juste au-delà de la portée de rendu — et c'est ce qui
+// rend le déplacement HONNÊTE : on ne déplace jamais quelqu'un qu'on voit.
+// Un passant sort du champ, il revient devant ; l'enfant ne surprend personne
+// en train de sauter d'un bout de la rue à l'autre.
+const TROP_LOIN = 64;
+// Dix-huit par ville depuis la v217 — dix était le chiffre d'avant les
+// grandes villes, et Max : « clairement pas de piétons, pas de vie dans les
+// villes ». Un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
+// Le prix est mesuré : 88 à 265 appels de dessin sur une traversée de Paris,
+// pour un budget de l'ordre de 450 — un passant ne se dessine que sous
+// soixante-deux blocs, les dix-huit ne sont donc jamais tous à l'écran.
+const PAR_VILLE = 18;
 
 // Un petit chien de ville : corps, tête, museau, quatre pattes, la queue en
 // l'air. Quatre robes, stables par graine — le chien roux de Rome y sera
