@@ -946,6 +946,61 @@ const VRAIES_KM = [
       Array.isArray(lille.circuits) && lille.circuits.length >= 5 && lille.circuits.every((c) => c.part >= 90),
       JSON.stringify(lille.circuits));
 
+    // --- WASHINGTON : DES RONDS-POINTS QUI ROULENT, ET DES CIRCUITS QUI LES
+    // CONTOURNENT --------------------------------------------------------------
+    //
+    // Jusqu'en v204 la capitale n'avait AUCUN circuit : un carré posé au
+    // hasard sur le plan de L'Enfant ne trouve jamais une rue, et ses
+    // diagonales traversent quatorze ronds-points dont l'anneau entier était
+    // un trottoir. Trois témoins, tous par le bâtisseur pur `solWashington`
+    // et par la fiche `CERCLES` — jamais par un (u, v) en dur : chaque cercle a
+    // une chaussée qui en fait le tour (huit points sur huit à r − 2) et un
+    // jardin au milieu ; les circuits déclarés se referment sur la chaussée ;
+    // et aucun d'eux ne coupe un jardin, échantillonné bloc par bloc le long
+    // de chaque segment — un circuit qui passe entre deux points de passage
+    // peut couper ce que ses sommets évitent.
+    const dc = await tab.evaluate(async () => {
+      const m = await import('./src/washington.js');
+      const b = await import('./src/blocks.js');
+      const g = window.__game;
+      if (typeof m.circuitsWashington !== 'function' || !Array.isArray(m.CERCLES)) return { absent: true };
+      const ROULANT = new Set([b.CITY_BLOCK.ASPHALT, b.CITY_BLOCK.ROADLINE, b.CITY_BLOCK.CROSSWALK]);
+      const sol = (u, v) => m.solWashington(Math.round(m.WASHINGTON.x + u), Math.round(m.WASHINGTON.z + v));
+      const anneaux = m.CERCLES.map((c) => {
+        let roule = 0;
+        for (let k = 0; k < 8; k++) {
+          const a = (k * Math.PI) / 4;
+          if (ROULANT.has(sol(c.u + (c.r - 2) * Math.cos(a), c.v + (c.r - 2) * Math.sin(a)))) roule++;
+        }
+        return { nom: c.nom, roule, centre: ROULANT.has(sol(c.u, c.v)) };
+      });
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const circuits = m.circuitsWashington(solDe).map((c) => {
+        let jardin = 0, pas = 0;
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            const u = a.x + ((z.x - a.x) * k) / n - m.WASHINGTON.x;
+            const v = a.z + ((z.z - a.z) * k) / n - m.WASHINGTON.z;
+            pas++;
+            if (m.CERCLES.some((o) => Math.hypot(u - o.u, v - o.v) < o.r - 3)) jardin++;
+          }
+        }
+        return { part: c.part, pts: c.pts.length, pas, jardin };
+      });
+      return { anneaux, circuits };
+    });
+    verifier('chaque rond-point de Washington a une chaussée qui en fait le tour, et un jardin au milieu',
+      !dc.absent && dc.anneaux.length >= 14 && dc.anneaux.every((a) => a.roule === 8 && a.centre === false),
+      JSON.stringify(dc.absent ? dc : dc.anneaux.filter((a) => a.roule < 8 || a.centre)));
+    verifier('des voitures font le tour du Mall, de Penn Quarter, de Georgetown et de Capitol Hill',
+      !dc.absent && dc.circuits.length >= 10 && dc.circuits.every((c) => c.part >= 90),
+      JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => c.part)));
+    verifier('et aucun circuit ne traverse le jardin d\'un rond-point : il en fait le tour',
+      !dc.absent && dc.circuits.length > 0 && dc.circuits.every((c) => c.pas > 0 && c.jardin === 0),
+      JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => [c.pas, c.jardin])));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

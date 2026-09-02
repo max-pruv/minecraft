@@ -57,7 +57,7 @@
 // métro — est à sa place réelle, calculé et non deviné.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -91,6 +91,20 @@ const PASSAGE = CITY_BLOCK.CROSSWALK;
 const HERBE = BLOCK.GRASS;
 const EAU = BLOCK.WATER;
 const ARBRE = BLOCK.LEAVES;
+
+// UN ARBRE NE POUSSE PAS DANS UN MUSÉE. `solWashington` rend ARBRE comme un
+// identifiant de SOL, et c'est `world.js` qui en fait pousser le fût et la
+// couronne (`arbreDeVille`) — jusqu'à la v205 il ne le faisait pas pour
+// Washington, et les ormes du Mall étaient de la pelouse sur le gravier. Mais
+// les monuments se posent APRÈS les colonnes, et n'écrivent que leurs propres
+// blocs : un arbre planté sous l'emprise d'un musée y survit, DEDANS, tronc et
+// feuillage dans la rotonde. Mesuré avant le remède : 892 colonnes d'arbre
+// sous une emprise de monument, 172 rien que sous le Pentagone. Même chose
+// pour une bouche de métro. Là où un arbre ne peut pas pousser, on rend le sol
+// d'à côté.
+function arbreOu(u, v, sinon) {
+  return surMonument(u, v) || surBouche(u, v) ? sinon : ARBRE;
+}
 const GRAVIER = BLOCK.GRAVEL;    // les allées de sable du Mall
 const SABLE = BLOCK.SAND;
 const CERISIER = uni(15);        // les cerisiers du Tidal Basin, en fleur
@@ -324,86 +338,73 @@ export function hauteurWashington(x, z, h) {
 
 const PAS_RUE = 12;              // une rue dessinée tous les douze blocs
 const DEMI_CHAUSSEE = 2;         // trois blocs de chaussée, un trottoir de chaque côté
+const ANNEAU_DEDANS = 3;         // un rond-point : le jardin s'arrête à r − 3…
+const ANNEAU_DEHORS = 1;         // …la chaussée tourne jusqu'à r − 1, puis le trottoir
 
 // Les grandes avenues d'État, chacune par ses points de passage réels.
 // Pennsylvania Avenue relie le Capitole à la Maison-Blanche : c'est la rue des
 // défilés d'investiture, et L'Enfant l'a voulue ainsi pour que le président et
 // le Congrès se voient d'un bout à l'autre.
 const AVENUES = [
-  {
-    nom: 'Pennsylvania Avenue NO', l: 3.4,
-    pts: [[12, -8], [-8, -12], [-30, -16], [-53, -21], [-70, -24], [-88, -30], [-102, -38], [-110, -44]],
-  },
-  {
-    nom: 'Pennsylvania Avenue SE', l: 3,
-    pts: [[14, 12], [30, 22], [46, 32], [62, 42]],
-  },
-  {
-    nom: 'Maryland Avenue SO', l: 3,
-    pts: [[-14, 12], [-28, 20], [-42, 28], [-52, 34]],
-  },
-  {
-    nom: 'Massachusetts Avenue NO', l: 3.2,
-    pts: [[36, -20], [16, -26], [-8, -32], [-32, -38], [-54, -46], [-76, -56], [-100, -68], [-124, -82], [-148, -100], [-160, -109]],
-  },
-  {
-    nom: 'Connecticut Avenue NO', l: 3,
-    pts: [[-115, -50], [-122, -60], [-129, -68], [-140, -84], [-148, -100], [-152, -109]],
-  },
-  {
-    nom: 'New York Avenue NO', l: 3,
-    pts: [[-108, -46], [-92, -54], [-72, -62], [-50, -70], [-28, -78], [-6, -86]],
-  },
-  {
-    nom: 'Vermont Avenue NO', l: 2.6,
-    pts: [[-110, -48], [-104, -62], [-98, -78], [-92, -94], [-88, -106]],
-  },
-  {
-    nom: 'Rhode Island Avenue NO', l: 2.6,
-    pts: [[-148, -102], [-124, -94], [-100, -86], [-76, -78], [-52, -70]],
-  },
-  {
-    nom: 'Virginia Avenue NO', l: 2.6,
-    pts: [[-180, -40], [-160, -34], [-140, -28], [-120, -24], [-104, -22]],
-  },
-  {
-    nom: 'Independence Avenue', l: 3.2,
-    pts: [[26, 13], [0, 13], [-30, 13], [-60, 13], [-90, 13], [-110, 13]],
-  },
-  {
-    nom: 'Constitution Avenue', l: 3.2,
-    pts: [[26, -13], [0, -13], [-30, -13], [-60, -13], [-90, -13], [-110, -13], [-130, -13], [-150, -13], [-166, -13]],
-  },
-  {
-    nom: 'North Capitol Street', l: 2.8, sol: BITUME,
-    pts: [[0, -22], [0, -50], [0, -80], [0, -109]],
-  },
-  {
-    nom: 'South Capitol Street', l: 2.8, sol: BITUME,
-    pts: [[0, 22], [0, 44], [0, 66], [0, 88]],
-  },
-  {
-    // La 16e Rue : l'axe qui monte plein nord depuis la Maison-Blanche, le
-    // seul de la ville d'où l'on voit la façade du président en enfilade.
-    nom: '16e Rue NO', l: 2.8,
-    pts: [[-115, -52], [-115, -70], [-115, -90], [-115, -109]],
-  },
-  {
-    nom: '7e Rue NO', l: 2.8, sol: BITUME,
-    pts: [[-54, -96], [-54, -70], [-54, -44], [-54, -18]],
-  },
-  {
-    nom: 'K Street NO', l: 3,
-    pts: [[-170, -66], [-144, -66], [-118, -66], [-92, -66], [-66, -66], [-40, -66]],
-  },
-  {
-    nom: 'M Street (Georgetown)', l: 2.8,
-    pts: [[-244, -58], [-230, -51], [-216, -45], [-204, -40], [-192, -38]],
-  },
-  {
-    nom: 'Wisconsin Avenue NO', l: 2.6,
-    pts: [[-226, -50], [-230, -66], [-234, -84], [-238, -102], [-240, -109]],
-  },
+  // Pennsylvania part de la 3e Rue, là où elle se détache de Constitution —
+  // dans le parc du Capitole elle n'est qu'une allée — et s'arrête à la 15e :
+  // devant la Maison-Blanche, la vraie est fermée aux voitures depuis 1995.
+  { nom: 'Pennsylvania Avenue NO', l: 3.4, pts: [[-27, -17], [-53, -21], [-70, -24], [-88, -30], [-104, -37]] },
+  { nom: 'Pennsylvania Avenue SE', l: 3, pts: [[20, 16], [30, 22], [46, 32], [62, 42]] },
+  { nom: 'Maryland Avenue SO', l: 3, pts: [[-23, 17], [-28, 20], [-42, 28], [-52, 34], [-58.5, 38]] },   // finit SUR la 7e Rue, pour qu'un circuit s'y referme
+  { nom: 'Massachusetts Avenue NO', l: 3.2, pts: [[36, -20], [16, -26], [-8, -32], [-32, -38], [-54, -46], [-76, -56], [-100, -68], [-124, -82], [-148, -100], [-160, -109]] },
+  { nom: 'Connecticut Avenue NO', l: 3, pts: [[-115, -50], [-122, -60], [-129, -68], [-140, -84], [-148, -100], [-152, -109]] },
+  { nom: 'New York Avenue NO', l: 3, pts: [[-108, -46], [-92, -54], [-72, -62], [-50, -70], [-28, -78], [0, -88]] },
+  { nom: 'Vermont Avenue NO', l: 2.6, pts: [[-110, -48], [-104, -62], [-98, -78], [-92, -94], [-88, -106]] },
+  { nom: 'Rhode Island Avenue NO', l: 2.6, pts: [[-148, -102], [-124, -94], [-100, -86], [-76, -78], [-52, -70]] },
+  // Virginia Avenue finit sur Constitution, à la 21e Rue, comme la vraie ;
+  // son ancien tracé mourait dans l'Ellipse.
+  { nom: 'Virginia Avenue NO', l: 2.6, pts: [[-180, -40], [-166, -31], [-152, -22], [-137, -17]] },
+  // Les deux avenues du Mall, coupées à la 17e : à l'ouest, Constitution
+  // continue seule jusqu'au Lincoln, et c'est une autre voie.
+  //
+  // ELLES PASSENT DERRIÈRE LES MUSÉES, PAS AU TRAVERS. À v = ±13 et sept
+  // blocs de large, chacune traversait la rangée de musées (v ±6 à ±15) : du
+  // bitume sous les galeries, invisible tant que rien n'y roulait — et en
+  // v205 les voitures du tour du Mall auraient traversé l'Air et l'Espace.
+  // Les vraies font trente mètres de large, soit un bloc et demi ici : trois
+  // colonnes de chaussée à v = ±17, le trottoir à ±15 le long des façades.
+  { nom: 'Independence Avenue', l: 1.6, pts: [[-20, 17], [-60, 17], [-100, 17], [-121, 17]] },
+  { nom: 'Constitution Avenue', l: 1.6, pts: [[-20, -17], [-60, -17], [-100, -17], [-121, -17]] },
+  { nom: 'Constitution Avenue (ouest)', l: 1.6, pts: [[-121, -17], [-140, -17], [-166, -17]] },
+  { nom: 'North Capitol Street', l: 2.8, sol: BITUME, pts: [[0, -22], [0, -50], [0, -80], [0, -109]] },
+  { nom: 'South Capitol Street', l: 2.8, sol: BITUME, pts: [[0, 22], [0, 44], [0, 61]] },
+  { nom: '16e Rue NO', l: 2.8, pts: [[-115, -52], [-115, -70], [-115, -90], [-115, -109]] },
+  { nom: '7e Rue NO', l: 2.8, sol: BITUME, pts: [[-54, -96], [-54, -70], [-54, -44], [-54, -18]] },
+  { nom: 'K Street NO', l: 3, pts: [[-170, -66], [-144, -66], [-118, -66], [-92, -66], [-66, -66], [-40, -66]] },
+  // Georgetown, à ses vraies adresses (M Street est à 1,7 km au nord du
+  // Capitole, pas au bord de l'eau) : M Street d'ouest en est jusqu'à Rock
+  // Creek, Wisconsin qui monte vers le nord, P Street et la 28e Rue pour
+  // refermer le tour du quartier.
+  { nom: 'M Street (Georgetown)', l: 2.8, pts: [[-228, -80], [-216, -81], [-200, -82], [-186, -84]] },
+  { nom: 'Wisconsin Avenue NO', l: 2.6, pts: [[-224, -81], [-227, -95], [-231, -109]] },
+  { nom: 'P Street (Georgetown)', l: 2.2, pts: [[-228, -100], [-212, -100], [-197, -101]] },
+  { nom: '28e Rue NO', l: 2.2, pts: [[-197, -101], [-197, -92], [-198, -82]] },
+  // LES RUES DE LIAISON : celles de la grille qu'un circuit emprunte pour se
+  // refermer. Chacune est posée SUR sa rue de la grille (centre à 12k + 1,5 :
+  // la chaussée reste aux colonnes 1 et 2, sans trottoir en plus, pour ne pas
+  // mordre un lot) — sauf la 3e et la 17e, qui longent le Mall à leur vraie
+  // adresse. Une rue déclarée ici existe même là où la grille s'arrête.
+  { nom: '3e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, 17], [-25.5, -17]] },        // vraie adresse u −27,4 : +2, le bord du parc
+  { nom: '17e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-121, 17], [-121, -17]] },         // entre l'obélisque et le mémorial
+  { nom: '3e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, -17], [-22.5, -19], [-22.5, -60], [-22.5, -109]] },
+  { nom: '9e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-58.5, -17], [-58.5, -60], [-58.5, -109]] },
+  { nom: '14e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-94.5, -17], [-94.5, -60], [-94.5, -109]] },
+  { nom: 'C Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -22.5], [-60, -22.5], [-103, -22.5]] },   // s'arrête à l'Ellipse
+  { nom: 'F Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -46.5], [-60, -46.5], [-121, -46.5]] },
+  { nom: 'H Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -58.5], [-60, -58.5], [-121, -58.5], [-170, -58.5]] },
+  { nom: 'D Street SE', l: 1.05, t: 0, sol: BITUME, pts: [[61.5, 25.5], [25.5, 25.5], [1.5, 25.5]] },      // E Street SE est sous l'Anacostia ici
+  { nom: 'E Street SO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, 61.5], [-22.5, 61.5]] },                 // au-delà, les berges du chenal
+  { nom: '3e Rue SE', l: 1.05, t: 0, sol: BITUME, pts: [[25.5, 19], [25.5, 25.5]] },
+  { nom: '8e Rue SE', l: 1.05, t: 0, sol: BITUME, pts: [[61.5, 42], [61.5, 25.5]] },
+  { nom: '3e Rue SO', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, 17], [-22.5, 19], [-22.5, 40], [-22.5, 61.5]] },
+  { nom: '7e Rue SO', l: 1.05, t: 0, sol: BITUME, pts: [[-58.5, 17], [-58.5, 40]] },                    // croise Maryland Avenue
+  { nom: 'D Street SO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, 25.5], [-22.5, 25.5]] },                 // sous le Rayburn, de South Capitol à la 3e
 ];
 
 const BANDES_AVENUES = rangerVoies(AVENUES);
@@ -412,12 +413,12 @@ const BANDES_AVENUES = rangerVoies(AVENUES);
 // elle **crée une place**. Chacune porte une statue, un bassin ou les deux.
 // Logan Circle est rentré de cinq blocs (sa vraie ordonnée sort d'un bloc de
 // l'emprise) — écart déclaré.
-const CERCLES = [
+export const CERCLES = [
   { nom: 'Dupont Circle', u: -148, v: -102, r: 9, fontaine: true },
   { nom: 'Logan Circle', u: -90, v: -104, r: 7, jardin: true },
   { nom: 'Thomas Circle', u: -98, v: -84, r: 6 },
   { nom: 'Scott Circle', u: -121, v: -85, r: 6 },
-  { nom: 'Washington Circle', u: -179, v: -64, r: 7 },
+  { nom: 'Washington Circle', u: -172, v: -66, r: 7 },   // à sa vraie adresse (23e & Pennsylvania) : à −179 il trempait dans Rock Creek
   { nom: 'Mount Vernon Square', u: -54, v: -84, r: 7, jardin: true },
   { nom: 'Farragut Square', u: -129, v: -64, r: 6, jardin: true },
   { nom: 'Lafayette Square', u: -115, v: -56, r: 7, jardin: true },
@@ -429,14 +430,184 @@ const CERCLES = [
   { nom: 'Folger Park', u: 24, v: 30, r: 5, jardin: true },
 ];
 
+// --- les circuits de voitures ---------------------------------------------------
+//
+// UN CIRCUIT DE WASHINGTON CONTOURNE SES RONDS-POINTS. `chainerVoies` joint les
+// avenues en droite ligne, et une droite qui passe par Dupont Circle traverse
+// son jardin et sa fontaine : le tracé mesuré tombait à 80 % sur des pelouses.
+// Chaque rond-point porte donc un anneau de chaussée (`ANNEAU_DEDANS`), et
+// `contournerCercles` remplace tout tronçon qui entre dans un cercle par l'arc
+// de cet anneau — dans le sens le plus court, comme une voiture prend une
+// place. C'est le crochet `ajuster` de `fabriqueCircuits` : on retouche le
+// tracé AVANT de le mesurer, jamais après.
+const RAYON_ANNEAU = ANNEAU_DEDANS - 1;                   // au milieu de la bande roulante
+
+function arcAutour(cu, cv, rr, p1, p2) {
+  const a1 = Math.atan2(p1[1] - cv, p1[0] - cu);
+  let d = Math.atan2(p2[1] - cv, p2[0] - cu) - a1;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d <= -Math.PI) d += 2 * Math.PI;
+  const n = Math.max(1, Math.ceil((Math.abs(d) * rr) / 1.5));
+  const out = [];
+  for (let i = 1; i < n; i++) {
+    const a = a1 + (d * i) / n;
+    out.push([Math.round((cu + rr * Math.cos(a)) * 10) / 10, Math.round((cv + rr * Math.sin(a)) * 10) / 10]);
+  }
+  return out;
+}
+
+function contournerUn(pts, cu, cv, rr) {
+  const n = pts.length;
+  // « Dedans » inclut le bord : un point de passage posé EXACTEMENT sur le
+  // rayon de contournement — le bout de Connecticut sur l'anneau de Farragut
+  // — n'est ni dehors ni dedans, et la corde qui y mène coupait le jardin
+  // sans qu'aucune intersection ne la trahisse. Le témoin qui échantillonne
+  // les segments bloc par bloc l'a vu, pas celui qui ne lisait que les sommets.
+  const dedans = (p) => Math.hypot(p[0] - cu, p[1] - cv) <= rr + 1e-6;
+  const s = pts.findIndex((p) => !dedans(p));
+  if (s < 0) return pts;                                  // tout le tracé est dans la place
+  const rot = [...pts.slice(s), ...pts.slice(0, s)];
+  const out = [];
+  let entree = null;
+  for (let i = 0; i < n; i++) {
+    const a = rot[i], b = rot[(i + 1) % n];
+    if (entree === null) out.push(a);
+    const dx = b[0] - a[0], dy = b[1] - a[1], fx = a[0] - cu, fy = a[1] - cv;
+    const A = dx * dx + dy * dy, B = 2 * (fx * dx + fy * dy), C = fx * fx + fy * fy - rr * rr;
+    let ts = [];
+    if (A > 0) {
+      const disc = B * B - 4 * A * C;
+      if (disc > 0) {
+        const q = Math.sqrt(disc);
+        ts = [(-B - q) / (2 * A), (-B + q) / (2 * A)].filter((t) => t > 0 && t < 1);
+      }
+    }
+    const au = (t) => [a[0] + dx * t, a[1] + dy * t];
+    const aIn = dedans(a), bIn = dedans(b);
+    if (!aIn && !bIn) {
+      if (ts.length === 2) {                              // le tronçon traverse la place
+        const p1 = au(ts[0]), p2 = au(ts[1]);
+        out.push(p1, ...arcAutour(cu, cv, rr, p1, p2), p2);
+      }
+    } else if (!aIn && bIn) {
+      entree = ts.length ? au(ts[0]) : b;                 // sans intersection, b est SUR le bord
+      out.push(entree);
+    } else if (aIn && !bIn) {
+      if (entree) {
+        const p2 = ts.length ? au(ts[ts.length - 1]) : a; // idem : a est sur le bord
+        out.push(...arcAutour(cu, cv, rr, entree, p2), p2);
+      }
+      entree = null;
+    }
+  }
+  return out;
+}
+
+export function contournerCercles(pts) {
+  let out = pts;
+  for (const c of CERCLES) out = contournerUn(out, c.u, c.v, c.r - RAYON_ANNEAU);
+  return out;
+}
+
+export const VOIES_WASHINGTON = AVENUES;
+const ROULANT = new Set([BITUME, LIGNE, PASSAGE]);
+
+// UN CIRCUIT SE REFERME SUR DES CARREFOURS (leçon de Nice) : `chainerVoies`
+// n'accroche une voie que par ses BOUTS, et les rues de la grille traversent
+// le centre d'un bord à l'autre — la 14e Rue va de Constitution à l'emprise
+// nord sans qu'aucun bout ne touche K Street. Les raccords ci-dessous sont des
+// TRONÇONS de ces mêmes rues, coupés au carrefour, pour que les convois
+// puissent tourner. Ils ne posent aucun sol : la chaussée est déjà là.
+const RACCORDS = [
+  // Le centre-ville : de North Capitol à la 7e, puis de la 7e à la 14e.
+  { nom: 'C Street NO, de North Capitol à la 7e', pts: [[0, -22.5], [-54, -22.5]] },
+  { nom: 'C Street NO, de la 7e à la 14e', pts: [[-54, -22.5], [-94.5, -22.5]] },
+  { nom: 'H Street NO, de North Capitol à la 7e', pts: [[0, -58.5], [-54, -58.5]] },
+  { nom: 'K Street NO, de la 7e à la 14e', pts: [[-54, -66], [-94.5, -66]] },
+  { nom: 'North Capitol Street, de C à H', pts: [[0, -22.5], [0, -58.5]] },
+  { nom: '7e Rue NO, de C à H', pts: [[-54, -22.5], [-54, -58.5]] },
+  { nom: '7e Rue NO, de C à K', pts: [[-54, -22.5], [-54, -66]] },
+  { nom: '14e Rue NO, de C à K', pts: [[-94.5, -22.5], [-94.5, -66]] },
+  { nom: 'F Street NO, de la 9e à la 14e', pts: [[-58.5, -46.5], [-94.5, -46.5]] },
+  { nom: 'H Street NO, de la 9e à la 14e', pts: [[-58.5, -58.5], [-94.5, -58.5]] },
+  { nom: '9e Rue NO, de F à H', pts: [[-58.5, -46.5], [-58.5, -58.5]] },
+  { nom: '14e Rue NO, de F à H', pts: [[-94.5, -46.5], [-94.5, -58.5]] },
+  // Les diagonales : de la Maison-Blanche à Dupont Circle et retour par
+  // Massachusetts. Pennsylvania finit sur la 15e ; on remonte à H Street.
+  { nom: '15e Rue NO, de Pennsylvania à H', pts: [[-106.5, -37], [-106.5, -58.5]] },
+  { nom: 'H Street NO, de la 15e à Connecticut', pts: [[-106.5, -58.5], [-121, -58.5]] },
+  { nom: 'Connecticut Avenue NO, de H à Dupont', pts: [[-121, -58.5], [-122, -60], [-129, -68], [-140, -84], [-148, -100]] },
+  { nom: 'Massachusetts Avenue NO, de Dupont à la 3e', pts: [[-148, -100], [-124, -82], [-100, -68], [-76, -56], [-54, -46], [-32, -38], [-22.5, -35.6]] },
+  { nom: 'Massachusetts Avenue NO, de Dupont à la 7e', pts: [[-148, -100], [-124, -82], [-100, -68], [-76, -56], [-54, -46]] },
+  { nom: '3e Rue NO, de Massachusetts à Pennsylvania', pts: [[-22.5, -35.6], [-22.5, -19]] },
+  { nom: '7e Rue NO, de Massachusetts à Rhode Island', pts: [[-54, -46], [-54, -70]] },
+  // Le nord : P Street relie la 16e à Logan Circle.
+  { nom: 'P Street NO, de la 16e à Logan Circle', pts: [[-115, -106.5], [-88, -106.5]] },
+  // Le sud-ouest et Capitol Hill.
+  { nom: 'Independence Avenue, de la 3e à la 7e', pts: [[-25.5, 17], [-58.5, 17]] },
+  { nom: '3e Rue SO, de D à E', pts: [[-22.5, 25.5], [-22.5, 61.5]] },
+  { nom: 'D Street SE, de la 3e à la 8e', pts: [[25.5, 25.5], [61.5, 25.5]] },
+];
+export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
+
+// LES CIRCUITS SE MESURENT, ILS NE SE DEVINENT PAS. Chaque enchaînement
+// ci-dessous a été éprouvé contre `solWashington` (part de chaussée, longueur
+// en blocs) — le chiffre en commentaire est celui de la mesure, prise APRÈS le
+// contournement des ronds-points. Jusqu'en v205 Washington n'avait AUCUN
+// circuit : un carré posé au hasard sur le plan de L'Enfant ne trouve jamais
+// une rue, et ses diagonales traversent quatorze ronds-points. Onze circuits
+// font rouler des voitures sur trente-trois des trente-six avenues nommées
+// (en entier ou par un raccord) ; Virginia, New York et Constitution ouest
+// restent sans boucle qui se referme à quatre-vingt-dix pour cent.
+const CIRCUITS = [
+  // 100 %, 281 — le tour du Mall : Constitution vers l'ouest, la 17e, retour
+  // par Independence jusqu'à la 3e — derrière les musées, jamais au travers.
+  ['3e Rue', 'Constitution Avenue', '17e Rue', 'Independence Avenue'],
+  // 100 %, 180 — le centre-ville, de North Capitol à la 7e entre C et H.
+  ['C Street NO, de North Capitol à la 7e', '7e Rue NO, de C à H', 'H Street NO, de North Capitol à la 7e', 'North Capitol Street, de C à H'],
+  // 100 %, 168 — Penn Quarter : de la 7e à la 14e entre C Street et K Street.
+  ['C Street NO, de la 7e à la 14e', '14e Rue NO, de C à K', 'K Street NO, de la 7e à la 14e', '7e Rue NO, de C à K'],
+  // 100 %, 96 — le petit tour de Chinatown, entre F et H, de la 9e à la 14e.
+  ['F Street NO, de la 9e à la 14e', '14e Rue NO, de F à H', 'H Street NO, de la 9e à la 14e', '9e Rue NO, de F à H'],
+  // 100 %, 199 — Georgetown : M Street, Wisconsin, P Street et la 28e.
+  ['M Street (Georgetown)', 'Wisconsin Avenue NO', 'P Street (Georgetown)', '28e Rue NO'],
+  // 100 %, 128 — le sud-ouest : sous le Rayburn, la 3e, E Street et South Capitol.
+  ['D Street SO', '3e Rue SO, de D à E', 'E Street SO', 'South Capitol Street'],
+  // 99 %, 102 — Maryland Avenue jusqu'à la 7e, retour par Independence.
+  ['Maryland Avenue SO', '7e Rue SO', 'Independence Avenue, de la 3e à la 7e'],
+  // 100 %, 115 — Capitol Hill : la 3e, D Street, la 8e et Pennsylvania SE.
+  ['3e Rue SE', 'D Street SE, de la 3e à la 8e', '8e Rue SE', 'Pennsylvania Avenue SE'],
+  // 100 %, 331 — la grande diagonale : Pennsylvania de la 3e à la Maison-Blanche,
+  // la 15e et H Street, Connecticut jusqu'à Dupont Circle, Massachusetts pour
+  // redescendre à la 3e. Cinq ronds-points contournés.
+  ['Pennsylvania Avenue NO', '15e Rue NO, de Pennsylvania à H', 'H Street NO, de la 15e à Connecticut', 'Connecticut Avenue NO, de H à Dupont', 'Massachusetts Avenue NO, de Dupont à la 3e', '3e Rue NO, de Massachusetts à Pennsylvania'],
+  // 100 %, 234 — Rhode Island de Dupont à la 7e, retour par Massachusetts.
+  ['Rhode Island Avenue NO', '7e Rue NO, de Massachusetts à Rhode Island', 'Massachusetts Avenue NO, de Dupont à la 7e'],
+  // 99 %, 161 — le nord : la 16e jusqu'à P Street, Logan Circle, Vermont.
+  ['16e Rue NO', 'P Street NO, de la 16e à Logan Circle', 'Vermont Avenue NO'],
+];
+
+export const circuitsWashington = fabriqueCircuits({
+  cle: 'dc',
+  ancre: WASHINGTON,
+  chaines: CIRCUITS,
+  roulant: ROULANT,
+  voies: { liste: VOIES_CIRCUITS_DC, sol: solWashington },
+  ajuster: contournerCercles,
+});
+
 // --- le Mall ------------------------------------------------------------------
 //
 // L'axe de la capitale, aux distances exactes : cent dix blocs du Capitole à
-// l'obélisque, cent soixante-douze jusqu'au Lincoln. Constitution Avenue borde
-// la pelouse au nord (v = −13), Independence au sud (v = +13), et les douze
-// musées s'alignent entre les deux, chacun à sa vraie adresse.
+// l'obélisque, cent soixante-douze jusqu'au Lincoln. Constitution Avenue passe
+// au nord (v = −17), Independence au sud (v = +17), et les douze musées
+// s'alignent entre les deux, chacun à sa vraie adresse, façade sur le trottoir.
 
-const MALL = { u0: -100, u1: -22, dv: 5 };            // la pelouse et ses allées
+// La pelouse s'arrête à la 3e Rue (u −27,4), comme dans la vraie ville : v205
+// la ramène de −22 à −27 pour que la 3e Rue passe entre le Mall et le parc du
+// Capitole. Avant, le Mall collait à l'ellipse du parc et AUCUNE rue ne pouvait
+// les séparer — un circuit qui faisait le tour du Mall n'avait pas de retour.
+const MALL = { u0: -100, u1: -27, dv: 5 };            // la pelouse et ses allées
 const OBELISQUE = { u: -110, v: 0, r: 9 };            // le tertre du monument
 const MIROIR = { u0: -166, u1: -136, dv: 3 };         // le miroir d'eau
 const CONSTITUTION_GARDENS = { u: -150, v: -8, ru: 12, rv: 4 };
@@ -538,7 +709,7 @@ function solWashingtonCalcul(x, z) {
   if (dansMall(u, v)) {
     const av = Math.abs(v);
     if (av > MALL.dv - 0.8) return GRAVIER;                        // Jefferson et Madison Drive
-    if (av > MALL.dv - 2) return (u & 1) === 0 ? ARBRE : HERBE;    // les ormes
+    if (av > MALL.dv - 2) return (u & 1) === 0 ? arbreOu(u, v, HERBE) : HERBE;    // les ormes
     return HERBE;
   }
   if (dansObelisque(u, v)) {
@@ -552,34 +723,54 @@ function solWashingtonCalcul(x, z) {
   if (dansParcCapitole(u, v)) {
     if (Math.abs(v) < 1.6 && u < -11) return GRAVIER;              // vers le Mall
     if (Math.abs(u - 20) < 1.2 || Math.abs(u + 19) < 1.2) return GRAVIER;
-    return tirage(u, v, 34) < 0.12 ? ARBRE : HERBE;
+    return tirage(u, v, 34) < 0.12 ? arbreOu(u, v, HERBE) : HERBE;
   }
   if (dansEllipse(u, v)) {
-    return tirage(u, v, 40) < 0.08 ? ARBRE : HERBE;
+    return tirage(u, v, 40) < 0.08 ? arbreOu(u, v, HERBE) : HERBE;
   }
 
   // Le cimetière d'Arlington : l'herbe, et les stèles alignées au cordeau.
   if (dansArlington(u, v)) {
     if ((((u % 3) + 3) % 3) === 0 && (((v % 3) + 3) % 3) === 0) return MARBRE;
-    return tirage(u, v, 35) < 0.06 ? ARBRE : HERBE;
+    return tirage(u, v, 35) < 0.06 ? arbreOu(u, v, HERBE) : HERBE;
   }
 
   if (dansWestPotomacPark(u, v)) {
-    if (tirage(u, v, 41) < 0.1) return ARBRE;
+    // Independence et la 17e Rue traversent le parc — comme dans la vraie
+    // ville, où l'on fait le tour du Mall en voiture.
+    const av = solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR);
+    if (av !== null) return av;
+    if (tirage(u, v, 41) < 0.1) return arbreOu(u, v, HERBE);
     return tirage(u, v, 42) < 0.06 ? GRAVIER : HERBE;
   }
 
-  if (dansRockCreekPark(u, v)) {
-    if (hydroDe(u, v).creek < 1.6) return EAU;
-    return tirage(u, v, 36) < 0.45 ? ARBRE : HERBE;
-  }
+  // Les ronds-points de L'Enfant : un jardin au milieu, une CHAUSSÉE qui en
+  // fait le tour, et le trottoir extérieur percé là où une avenue ou une rue
+  // débouche. Jusqu'à la v204 l'anneau entier était un trottoir : aucune
+  // voiture ne pouvait traverser un cercle, et Dupont, Logan ou Lafayette
+  // coupaient toute boucle qui les touchait. L'anneau roule sur
+  // [r − 3, r − 1) ; c'est le rayon r − 2 que suit `contournerCercles`.
   for (const c of CERCLES) {
     const d = Math.hypot(u - c.u, v - c.v);
     if (d >= c.r) continue;
     if (c.fontaine && d < 2.2) return EAU;
-    if (c.jardin && d < c.r - 2) return tirage(u, v, 37) < 0.3 ? ARBRE : HERBE;
-    if (d < c.r - 2) return tirage(u, v, 38) < 0.22 ? ARBRE : HERBE;
-    return TROTTOIR;                                               // l'anneau qui tourne
+    if (d < c.r - ANNEAU_DEDANS) {
+      return tirage(u, v, c.jardin ? 37 : 38) < (c.jardin ? 0.3 : 0.22) ? arbreOu(u, v, HERBE) : HERBE;
+    }
+    if (d < c.r - ANNEAU_DEHORS) return BITUME;                    // l'anneau qui roule
+    if (solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR) === BITUME) return BITUME;
+    const mu0 = ((u % PAS_RUE) + PAS_RUE) % PAS_RUE, mv0 = ((v % PAS_RUE) + PAS_RUE) % PAS_RUE;
+    if ((mu0 > 0 && mu0 <= DEMI_CHAUSSEE) || (mv0 > 0 && mv0 <= DEMI_CHAUSSEE)) return BITUME;
+    return TROTTOIR;                                               // le trottoir du tour
+  }
+  // Le parc de Rock Creek se lit APRÈS les ronds-points : Washington Circle,
+  // à sa vraie adresse (23e & Pennsylvania), a son bord ouest à sept blocs du
+  // ruisseau, dans la bande boisée du parc — et le sol y est plat (33), le
+  // ravin ne commence qu'à cinq blocs de l'eau. Lu avant, le parc mangeait
+  // deux colonnes de l'anneau et aucune voiture ne pouvait en faire le tour.
+  if (dansRockCreekPark(u, v)) {
+    if (hydroDe(u, v).creek < 1.6) return EAU;
+    return tirage(u, v, 36) < 0.45 ? arbreOu(u, v, HERBE) : HERBE;
   }
 
   const enVille = batiIci(u, v);
@@ -593,7 +784,7 @@ function solWashingtonCalcul(x, z) {
   }
 
   if (!enVille) {
-    return tirage(u, v, 39) < 0.35 ? ARBRE : HERBE;
+    return tirage(u, v, 39) < 0.35 ? arbreOu(u, v, HERBE) : HERBE;
   }
 
   // La grille : rues numérotées nord-sud, rues lettrées est-ouest.
@@ -724,7 +915,7 @@ export const MONUMENTS_DC = [
   { nom: "Musée d'Histoire naturelle", u: -71, v: -10, bu: 8, bv: 5, seuil: 0.3 },
   { nom: "Musée d'Histoire américaine", u: -88, v: -10, bu: 7, bv: 4, seuil: 0.3 },
   { nom: 'Musée afro-américain', u: -100, v: -9, bu: 4, bv: 3, seuil: 0.3 },
-  { nom: "Musée de l'Indien d'Amérique", u: -31, v: 10, bu: 5, bv: 4, seuil: 0.3 },
+  { nom: "Musée de l'Indien d'Amérique", u: -32, v: 10, bu: 5, bv: 4, seuil: 0.3 },   // u −1 : entre la 3e et la 4e Rue, comme le vrai — la 3e passe à l'est
   { nom: "Musée de l'Air et de l'Espace", u: -46, v: 10, bu: 7, bv: 4 },
   { nom: 'Hirshhorn', u: -58, v: 10, bu: 4, bv: 4, seuil: 0.3 },
   { nom: 'Arts et Industries', u: -65, v: 10, bu: 2, bv: 3, seuil: 0.3 },   // u +1, v +1 : mitoyen du Château

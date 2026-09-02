@@ -55,7 +55,10 @@ const autour = (p) => p.evaluate(() => {
   for (let h = y + 2; h < y + 30; h++) if (w.getBlock(x, h, z) !== 0) { plafond = h - y; break; }
   const murs = [[1, 0], [-1, 0], [0, 1], [0, -1]]
     .filter(([dx, dz]) => w.getBlock(x + dx, y, z + dz) !== 0).length;
-  return { plafond, murs, sousLesPieds: w.getBlock(x, y - 1, z) };
+  // On rend aussi OÙ l'on est : « plafond à 2 » sans position recouvre trois
+  // pannes — coincé dans la porte, resté sur le perron, tombé à côté — et
+  // un rouge qui ne les distingue pas ne se démonte pas.
+  return { plafond, murs, sousLesPieds: w.getBlock(x, y - 1, z), x, y, z, px: g.player.pos.x, pz: g.player.pos.z };
 });
 
 // Le cap qui mène dans une direction donnée. Le joueur avance vers
@@ -193,6 +196,39 @@ const descendre = async (p, ms) => {
     verifier('et l\'obélisque domine tout le reste', axe[1] > 60 && axe[1] > axe[0],
       `${axe[1]} blocs contre ${axe[0]} au Capitole`);
     verifier('le Lincoln ferme l\'axe à l\'ouest', axe[2] > 8, `${axe[2]} blocs`);
+
+    // Les ormes du Mall — les deux rangées qui bordent Jefferson et Madison
+    // Drive, une colonne sur deux. `solWashington` rend ARBRE comme un
+    // identifiant de SOL ; jusqu'à la v205, `world.js` ne faisait pas pousser
+    // de fût pour Washington, et l'orme était une feuille posée À PLAT sur le
+    // gravier — vu en capture de rue (Independence Avenue). On lit ce que
+    // l'enfant voit : un tronc de trois blocs qu'on contourne, une couronne
+    // sous laquelle on marche, et pas une seule feuille au sol sur le Mall.
+    // La rangée se déduit du REGISTRE (P) : v = ±4, u pair de -96 à -32.
+    const ormes = await tab.evaluate(({ px, pz }) => {
+      const w = window.__game.world;
+      const LOG = 5, LEAVES = 6, AIR = 0;
+      let arbres = 0, dessous = 0, feuillesAuSol = 0, lus = 0;
+      for (const v of [-4, 4]) for (let u = -96; u <= -32; u++) {
+        const x = px + u, z = pz + v;
+        const sol = w.terrainHeight(x, z);
+        lus++;
+        const b = (dy) => w.getBlock(x, sol + dy, z);
+        const couronne = b(4) === LEAVES || b(5) === LEAVES;
+        if ((u & 1) === 0) {
+          if (b(1) === LOG && b(2) === LOG && b(3) === LOG && couronne) arbres++;
+        } else if (b(1) === AIR && b(2) === AIR && b(3) === AIR && couronne) dessous++;
+      }
+      for (let v = -5; v <= 5; v++) for (let u = -100; u <= -27; u++) {
+        const x = px + u, z = pz + v;
+        if (w.getBlock(x, w.terrainHeight(x, z), z) === LEAVES) feuillesAuSol++;
+      }
+      return { arbres, dessous, feuillesAuSol, lus };
+    }, { px: P.x, pz: P.z });
+    verifier('les ormes du Mall ont un tronc et une couronne',
+      ormes.arbres >= 20 && ormes.dessous >= 20 && ormes.feuillesAuSol === 0,
+      `${ormes.arbres} ormes à tronc · ${ormes.dessous} colonnes où l'on marche sous la couronne `
+      + `· ${ormes.feuillesAuSol} feuillage(s) posé(s) à plat sur le Mall (${ormes.lus} colonnes lues)`);
 
     // La loi de 1910 : aucun immeuble ORDINAIRE ne dépasse le dôme. C'est ce
     // qui fait qu'on voit le Capitole de partout, et ça se vérifie.
@@ -446,7 +482,12 @@ const descendre = async (p, ms) => {
     const musee = D.MONUMENTS_DC.find((m) => m.nom === "Musée de l'Air et de l'Espace");
     const solMusee = await tab.evaluate(({ x, z }) =>
       window.__game.world.terrainHeight(x, z), { x: P.x + musee.u, z: P.z + musee.v });
-    await poserLe(tab, P.x + musee.u, solMusee + 2, P.z + musee.v - 8, capVers(0, 1));
+    // On part d'une colonne IMPAIRE : depuis la v205 les ormes du Mall ont un
+    // tronc, une colonne sur deux (u pair) à v = ±4, et l'axe du musée (u -46)
+    // tombe pile sur l'un d'eux — l'enfant se cognait à l'arbre sur le perron
+    // et le témoin annonçait « plafond à 2, 1 mur ». Entre deux ormes on
+    // marche sous la couronne, et la porte fait trois blocs (u -47 à -45).
+    await poserLe(tab, P.x + musee.u + 1, solMusee + 2, P.z + musee.v - 8, capVers(0, 1));
     await dormir(400);
     // ON MARCHE JUSQU'À ÊTRE ENTRÉ, PAS PENDANT UN NOMBRE DE SECONDES.
     //
@@ -456,10 +497,34 @@ const descendre = async (p, ms) => {
     // « plafond à -1 » comme si le musée n'avait pas de toit. Une durée mesure
     // la vitesse du joueur ; ce qu'on veut mesurer, c'est qu'il y a une porte
     // et une salle derrière.
+    //
+    // ET HUIT PAS DE 700 MS NE SONT PAS HUIT BLOCS NON PLUS. Depuis que des
+    // voitures roulent sur Independence Avenue (v205), le banc rend ici à
+    // quatre images par seconde au lieu de quinze ; comme main.js borne dt à
+    // un vingtième de seconde, le monde avance alors quatre fois moins vite
+    // que l'horloge, et les huit pas ne faisaient plus que quatre blocs :
+    // « plafond à 2 », sur le perron. Le rouge était une mesure du banc, pas
+    // du musée. On marche donc jusqu'à être entré OU jusqu'à ne plus
+    // avancer — un mur, une porte absente — avec un plafond large.
+    //
+    // ET « NE PLUS AVANCER » SE CONSTATE SUR PLUSIEURS PAS, PAS SUR UN SEUL.
+    // Dans le portail complet, un pas de 700 ms peut tomber tout entier dans
+    // un hoquet du banc — un remaillage, un ramasse-miettes — et le joueur n'a
+    // pas bougé d'un centimètre sans qu'aucun mur ne l'arrête : « plafond à
+    // -1, 0 mur(s), à (u -45, v 3) », arrêté sur la pelouse à trois blocs de
+    // la porte. Seul et sur origin/main, le même témoin était vert. Un mur,
+    // lui, arrête le joueur à CHAQUE pas : on n'abandonne qu'après trois pas
+    // consécutifs sans mouvement.
     let dansMusee = await autour(tab);
-    for (let pas = 0; pas < 8 && !(dansMusee.plafond > 3); pas++) {
+    let avant = null;
+    let immobile = 0;
+    for (let pas = 0; pas < 40 && !(dansMusee.plafond > 3); pas++) {
       await avancer(tab, 700);
       dansMusee = await autour(tab);
+      const bouge = !avant || Math.hypot(dansMusee.px - avant.px, dansMusee.pz - avant.pz) >= 0.05;
+      immobile = bouge ? 0 : immobile + 1;
+      if (immobile >= 3) break;
+      avant = dansMusee;
     }
     const suspendus = await tab.evaluate(({ px, pz, u, v }) => {
       const w = window.__game.world;
@@ -475,7 +540,8 @@ const descendre = async (p, ms) => {
       return n;
     }, { px: P.x, pz: P.z, u: musee.u, v: musee.v });
     verifier('on entre dans l\'Air et l\'Espace',
-      dansMusee.plafond > 3, `plafond à ${dansMusee.plafond}`);
+      dansMusee.plafond > 3,
+      `plafond à ${dansMusee.plafond}, ${dansMusee.murs} mur(s), à (u ${dansMusee.x - P.x}, v ${dansMusee.z - P.z}, y ${dansMusee.y}), sol du musée ${solMusee}`);
     verifier('et des avions sont suspendus au-dessus de la tête',
       suspendus >= 4, `${suspendus} colonnes portent quelque chose en l'air`);
   } finally {

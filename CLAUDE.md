@@ -1310,6 +1310,112 @@ Trois autres choses apprises en creusant :
   signalé. Depuis v162, `decouvert` complète la règle : une rame souterraine
   qui SORT de terre — le pont de la Jaune — redevient visible de loin.
 
+**Les circuits de voitures — et pourquoi un rond-point se CONTOURNE (v205).**
+Washington est restée quatre versions sans une seule voiture, alors que toutes
+les autres villes bâties à la main roulaient depuis la v201. Le carré de
+secours n'y trouve jamais une rue — c'est le plan de L'Enfant : la moitié des
+avenues sont des diagonales, et elles se croisent sur des ronds-points. Cinq
+choses à savoir avant d'y toucher.
+
+- **Un rond-point avait un anneau de TROTTOIR.** Rien ne pouvait le traverser,
+  ni le contourner : Dupont, Logan, Lafayette coupaient toute boucle qui les
+  touchait. Il porte désormais trois couronnes : le jardin jusqu'à `r − 3`, la
+  chaussée sur `[r − 3, r − 1)`, le trottoir au-delà, percé là où débouche une
+  avenue ou une rue de la grille. C'est du SOL, pas du relief : le témoin
+  d'empreinte de `plafond.js` n'a pas bougé d'un octet.
+- **`chainerVoies` joint les avenues en droite ligne, et une droite qui passe
+  par Dupont Circle traverse son jardin.** Mesuré : 80 % sur pelouse. D'où le
+  crochet `ajuster` de `fabriqueCircuits` : `contournerCercles` remplace tout
+  tronçon qui entre dans un cercle par l'arc de l'anneau (rayon `r − 2`), dans
+  le sens le plus court — et la retouche se fait AVANT la mesure, jamais
+  après. Un chiffre en commentaire au-dessus d'un circuit est celui du tracé
+  contourné.
+- **« Dedans » inclut le BORD.** Le bout de Connecticut est posé exactement
+  sur l'anneau de Farragut ; avec un `<` strict il n'était ni dehors ni
+  dedans, et la corde qui y menait coupait la place sans qu'aucune
+  intersection ne la trahisse. Le témoin qui ne lisait que les SOMMETS ne
+  voyait rien ; celui qui échantillonne chaque tronçon bloc par bloc l'a vu
+  du premier coup. Un témoin de géométrie lit le trajet, pas ses nœuds.
+- **Un circuit se referme sur des CARREFOURS** (leçon de Nice, valable ici
+  au carré) : les rues de la grille traversent le centre d'un bord à l'autre,
+  et `chainerVoies` n'accroche une voie que par ses BOUTS. Les raccords de
+  `VOIES_CIRCUITS_DC` sont des tronçons de ces mêmes rues, coupés au
+  carrefour, posés SUR la chaussée existante sans un bloc de sol en plus. Et
+  le Mall a dû reculer de cinq blocs (u1 −22 → −27) pour que la 3e Rue passe
+  entre lui et le parc du Capitole : sans cette rue, un tour du Mall n'avait
+  pas de retour.
+- **L'ordre de lecture du sol est une décision.** Washington Circle, à sa
+  vraie adresse (23e & Pennsylvania), a son bord ouest dans la bande boisée
+  de Rock Creek Park ; lu après le parc, l'anneau perdait deux colonnes et
+  six points sur huit roulaient. Les cercles se lisent AVANT le parc — et
+  avant de trancher, on a mesuré que le sol y est plat (33) : le ravin ne
+  commence qu'à cinq blocs de l'eau. On ne déplace pas un ruisseau pour une
+  chaussée.
+
+**Et un témoin qui lit `p[0]` sur des objets `{x, y, z}` compte toujours
+zéro.** `fabriqueCircuits` rend des points-objets ; le premier brouillon du
+compte de jardin les lisait comme des tableaux, et rendait NaN, donc jamais
+« dedans ». Vert, et il ne prouvait rien. La forme des données qu'un témoin
+lit se vérifie avant son verdict.
+
+**UNE CHAUSSÉE SOUS UN MUSÉE EST INVISIBLE TANT QUE RIEN N'Y ROULE.**
+Independence et Constitution Avenue passaient à v = ±13, sept blocs de
+large : chacune traversait la rangée de musées (v ±6 à ±15) — du bitume sous
+les galeries, que les bâtisseurs recouvraient de leur propre plancher. Cinq
+versions sans que personne ne le voie. Le jour où le tour du Mall a roulé,
+les voitures ont traversé l'Air et l'Espace. Les vraies avenues font trente
+mètres, un bloc et demi ici : trois colonnes de chaussée à v = ±17, le
+trottoir à ±15 le long des façades. Une voie qu'on déclare se regarde SUR la
+carte de sol (`mall.mjs` dans le brouillon) avant qu'une voiture ne la
+révèle.
+
+**Et une durée n'est pas un verdict quand des voitures neuves coûtent au
+banc ses images.** « On entre dans l'Air et l'Espace » marchait huit pas de
+700 ms et lisait le plafond : rouge sur la branche, vert sur `origin/main`,
+même code de musée. Mesuré : 4,5 images par seconde au même endroit contre
+14 à 17 — les voitures d'Independence ajoutent cent trente appels de dessin
+au rendu logiciel du banc — et comme `main.js` borne `dt` à un vingtième,
+huit pas ne faisaient plus que quatre blocs : l'enfant restait sur le
+perron. Le témoin marche désormais jusqu'à être entré OU jusqu'à ne plus
+avancer. C'est la leçon du lien muet et des retrouvailles, par un troisième
+bout : quand un rouge dépend du temps, on mesure d'abord le banc.
+
+**Et « ne plus avancer » se constate sur PLUSIEURS pas.** Le premier remède
+abandonnait dès qu'UN pas de 700 ms ne faisait pas bouger le joueur, et le
+portail complet l'a rendu rouge une seconde fois : « plafond à -1, 0 mur(s),
+à (u -45, v 3) », arrêté sur la pelouse à trois blocs de la porte, rien
+autour. Un pas entier tombé dans un hoquet du banc — remaillage,
+ramasse-miettes — à quatre images par seconde. Vert seul, vert sur
+`origin/main`. Un mur arrête le joueur à CHAQUE pas ; un hoquet, à un seul :
+on n'abandonne qu'après trois pas consécutifs sans mouvement, et le message
+dit où l'on s'est arrêté, sinon un rouge de ce genre ne se démonte pas.
+
+**ET LES ORMES DU MALL ÉTAIENT DE LA PELOUSE SUR LE GRAVIER — la CINQUIÈME
+ville à porter le piège des arbres à plat.** Paris (v187), puis Londres, Nice
+et Lille (v198) l'ont payé et écrit : un `sol*` qui rend `LEAVES` pose une
+feuille À PLAT, et c'est `arbreDeVille` (world.js) qui en fait pousser le fût
+et la couronne. Washington a sa propre branche dans la boucle des colonnes
+— elle ne passe pas par la boucle générique — et cette branche n'appelait
+pas `arbreDeVille`. Six mille colonnes d'arbre, aucune avec un tronc, quatre
+versions durant ; vu en capture de rue sur Independence Avenue, PAS par un
+témoin. Deux choses de plus qu'ailleurs :
+
+- **Un arbre ne pousse pas dans un musée.** Les monuments (`LANDMARKS`) se
+  posent APRÈS les colonnes et n'écrivent que leurs propres blocs : un arbre
+  planté sous l'emprise d'un musée y survit, DEDANS — tronc et feuillage dans
+  la rotonde. Mesuré avant le remède : 892 colonnes d'arbre sous une emprise
+  de monument, 172 rien que sous le Pentagone, et des bouches de métro
+  bouchées. Le garde est au niveau du SOL (`arbreOu(u, v, HERBE)` sur les huit
+  sites qui plantent), pas au niveau de l'arbre : là où un arbre ne peut pas
+  pousser, on rend le sol d'à côté. 6 307 → 5 277 colonnes d'arbre.
+- **Le bâtisseur passe QUAND MÊME derrière l'arbre.** C'est lui qui creuse le
+  métro sous les parcs ; `lotWashingtonLibre` est faux sur une colonne
+  d'arbre, donc rien ne s'y bâtit, mais le tunnel, lui, se creuse.
+
+Le témoin lit ce que l'enfant voit sur la rangée de v = ±4 : un tronc de
+trois blocs une colonne sur deux, de l'air sous la couronne sur l'autre, et
+zéro feuille au sol sur tout le Mall. Rouge sur `origin/main`.
+
 ### La monte et les véhicules (`montures.js`, `animals.js`, `fun.js`, `vehicules.js`)
 
 - **Ce qui se monte est une propriété de l'espèce** (`montable`), jamais une

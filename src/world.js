@@ -1700,7 +1700,14 @@ export class World {
         // traversait le fleuve dans un tunnel fantôme jamais creusé.
         if ((city && city.key === 'dc') || dansEauWashington(wx, wz)) {
           const sw = solWashington(wx, wz);
-          if (sw !== null) data[World.index(x, h, z)] = sw;
+          // Les ormes du Mall et les bosquets des parcs poussent ici — fût et
+          // couronne — comme dans toute ville de la boucle générique. Sans cet
+          // appel, ARBRE était posé À PLAT : de la pelouse sur le gravier des
+          // allées, vu en capture de rue (v205). Le bâtisseur passe ENSUITE
+          // quand même : c'est lui qui creuse le métro sous les parcs.
+          if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
+            data[World.index(x, h, z)] = sw;
+          }
           batirColonneWashington(wx, wz, h, (dy, id) => {
             const wy = h + dy;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
