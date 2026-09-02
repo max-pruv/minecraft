@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v215 — Les visages ne font plus peur
+
+**Pourquoi.** Max, capture à l'appui : « personnages are scary ». Le visage
+d'un villageois était construit avec soin — crâne, nez, oreilles, menton — mais
+son regard était faux. L'iris faisait **55 % de la largeur du blanc de l'œil**,
+il était posé **plus en avant que lui**, et il était presque noir : de face, on
+ne voyait que deux billes sombres globuleuses, sans blanc autour. Sous des
+sourcils épais et bas, avec une moustache qui mangeait la bouche, cela donnait
+un masque figé et renfrogné. Pour un enfant de sept ans, ce n'est plus un
+villageois.
+
+**Ce que ça change.** Un œil se lit à son BLANC : l'iris n'en occupe plus
+qu'une petite part (38 % au lieu de 55), il est plus clair, et il reste **en
+retrait dans l'orbite** au lieu de saillir devant. Les sourcils sont plus fins
+et plus hauts — bas et épais, ils froncent. La bouche **sourit** : trois
+petites boîtes suffisent à relever les coins, là où une barre droite faisait la
+moue. Et la moustache se pose au-dessus de la lèvre au lieu de la remplacer.
+
+**Ce qui le prouve.** L'esthétique se juge en capture, et deux gros plans
+comparables sont joints. Mais la GÉOMÉTRIE se mesure, et deux témoins neufs
+dans `monte.js` le font : les couleurs vivent dans les sommets, on relève la
+boîte du blanc et celle de l'iris sur un seul œil, et l'on demande deux choses
+qu'un visage doux respecte toujours. Sur `origin/main` les deux sont rouges —
+iris à 55 % de l'œil, et posé 8 millièmes devant le blanc. Sur la branche,
+38 % et en retrait.
+
+Deux pièges de mesure valent d'être notés : filtrer sur la seule couleur
+attrapait la **ceinture de cuir**, dont le brun est à un cheveu de celui de
+l'iris (elle rendait un « iris » de 178 % de large) ; et mesurer les **deux
+yeux ensemble** écrase le rapport, parce que la largeur inclut l'écart entre
+eux — 89 % contre 82 %, quand l'œil seul dit 55 contre 38.
+
+---
+
 ## v214 — Chaque bout de ligne a sa gare
 
 **Pourquoi.** Troisième moitié du signalement de Max : « no end stations ». Le

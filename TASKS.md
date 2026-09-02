@@ -81,9 +81,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [x] **Les gares — FAIT en v214.** Quai de granit un bloc au-dessus des
   rails, auvent sur piliers, bâtiment de brique. Les dix-huit sont complètes ;
   sur l'ancien code, zéro.
-- [ ] **Les personnages font peur** — « personnages are scary », capture d'un
-  villageois à l'appui. Le visage est un dessin grossier sur un cube, et la
-  tête paraît détachée du torse. À reprendre avec les enfants en tête.
+- [x] **Les personnages faisaient peur — FAIT en v215.** L'iris occupait 55 %
+  du blanc de l'œil et saillait devant lui : deux billes sombres. Blanc
+  agrandi, iris réduit à 38 % et remis dans l'orbite, sourcils plus fins et
+  plus hauts, bouche souriante, moustache réduite. Reste à valider en capture
+  par Max, comme tout ce qui touche à l'apparence.
 - [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
   depuis la v210). Mesuré en pas de convoi dans un bloc solide, à la cote où
   la voiture roule : Paris 202 (monuments et façades haussmanniennes — le

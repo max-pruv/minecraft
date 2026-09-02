@@ -1038,6 +1038,66 @@ async function avancerUnDemiSeconde(p, depart) {
       auLoin.dessinesPres >= 3,
       `${auLoin.dessinesPres} personnage(s) dessinés à moins de 45 blocs`);
 
+    // UN ŒIL SE LIT À SON BLANC (v215) ---------------------------------------
+    //
+    // Max, capture à l'appui : « personnages are scary ». L'iris faisait 55 %
+    // de la largeur du blanc de l'œil, il était posé PLUS EN AVANT que lui, et
+    // il était presque noir : de face on ne voyait que deux billes sombres
+    // globuleuses, sans blanc autour. C'est la recette d'un regard fixe.
+    //
+    // L'esthétique se juge en capture, mais la GÉOMÉTRIE se mesure. Les
+    // couleurs vivent dans les sommets : on relève la boîte du blanc et celle
+    // de l'iris, et l'on demande deux choses qu'un visage doux respecte
+    // toujours — l'iris n'occupe pas la moitié de l'œil, et il reste EN
+    // RETRAIT, dans l'orbite.
+    const oeil = await tab.evaluate(async () => {
+      const P = await import('./src/personnages.js');
+      const m = P.construireHumain({ tenue: 'gaulois', cheveux: 0xe8952c });
+      // ON NE REGARDE QUE LA TÊTE. Le premier jet filtrait sur la seule
+      // couleur et attrapait la ceinture de cuir, dont le brun est à un
+      // cheveu de celui de l'iris : il rendait un « iris » de 178 % de large,
+      // posé plus en avant que le nez.
+      const boite = (test) => {
+        const b = { x0: 1e9, x1: -1e9, z0: 1e9, z1: -1e9, n: 0 };
+        m.traverse((o) => {
+          if (!o.isMesh || !o.geometry.attributes.color) return;
+          const pos = o.geometry.attributes.position, col = o.geometry.attributes.color;
+          for (let i = 0; i < pos.count; i++) {
+            if (pos.getY(i) < 1.45) continue;
+            // UN SEUL ŒIL. Mesurée sur la paire, la largeur inclut l'écart
+            // entre les deux et écrase le rapport : 89 % contre 82 %, quand
+            // l'œil seul dit 55 % contre 36 %. Le témoin ne distinguait plus
+            // rien.
+            if (pos.getX(i) < 0.02) continue;
+            if (!test(col.getX(i), col.getY(i), col.getZ(i))) continue;
+            const x = pos.getX(i), z = pos.getZ(i);
+            if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x;
+            if (z < b.z0) b.z0 = z; if (z > b.z1) b.z1 = z;
+            b.n++;
+          }
+        });
+        return b;
+      };
+      // le blanc de l'œil : très clair et légèrement chaud, unique sur la tête
+      const blanc = boite((r, v, b) => r > 0.88 && v > 0.85 && b > 0.78 && r >= v && v >= b);
+      // l'iris : le brun du regard, plus foncé que la peau et non rougeâtre
+      const iris = boite((r, v, b) => r > 0.06 && r < 0.32 && v > 0.03 && v < 0.24 && b < 0.16 && r > b);
+      return {
+        blancN: blanc.n, irisN: iris.n,
+        largeurBlanc: +(blanc.x1 - blanc.x0).toFixed(4),
+        largeurIris: +(iris.x1 - iris.x0).toFixed(4),
+        avantBlanc: +blanc.z0.toFixed(4), avantIris: +iris.z0.toFixed(4),
+      };
+    });
+    const partIris = oeil.blancN && oeil.irisN
+      ? oeil.largeurIris / oeil.largeurBlanc : null;
+    verifier('l\'iris n\'occupe pas la moitié de l\'œil — un regard, pas deux billes',
+      partIris !== null && partIris < 0.45 && oeil.blancN > 20 && oeil.irisN > 20,
+      `iris ${oeil.largeurIris} pour un œil de ${oeil.largeurBlanc} (${partIris === null ? '—' : Math.round(partIris * 100)} %)`);
+    verifier('et il reste dans l\'orbite, jamais devant le blanc',
+      oeil.blancN > 20 && oeil.irisN > 20 && oeil.avantIris >= oeil.avantBlanc,
+      `iris à ${oeil.avantIris}, blanc à ${oeil.avantBlanc}`);
+
     // --- les poissons : la mer aussi est vivante ------------------------------
     //
     // Max : « add fish swimming ». On se pose au-dessus de la mer de Marseille

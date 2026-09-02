@@ -37,18 +37,35 @@ function tete(a, p) {
   for (const s of [-1, 1]) {
     a.sphere(teint, { p: [s * 0.125, H.tete + 0.01, 0.01], e: [0.05, 0.08, 0.06], seg: 8 });
   }
-  // Yeux, sourcils et bouche doivent saillir franchement de la sphère du crâne :
-  // posés à fleur de surface ils disparaissent sous elle et le visage devient
-  // un œuf lisse — c'est exactement ce qui s'était produit au premier essai.
+  // Yeux, sourcils et bouche doivent saillir de la sphère du crâne : posés à
+  // fleur de surface ils disparaissent sous elle et le visage devient un œuf
+  // lisse — c'est ce qui s'était produit au premier essai.
+  //
+  // MAIS TROP SAILLANTS, ILS FONT PEUR. Max, capture à l'appui : « personnages
+  // are scary ». L'iris faisait 55 % de la largeur du blanc, il était posé un
+  // centimètre PLUS EN AVANT que lui, et il était presque noir : de face on ne
+  // voyait que deux billes sombres globuleuses, sans blanc autour. C'est
+  // exactement la recette d'un regard fixe. Un œil se lit à son BLANC — l'iris
+  // n'en occupe qu'une petite part, et il reste EN RETRAIT, dans l'orbite.
   for (const s of [-1, 1]) {
-    a.sphere(0xf6f2ea, { p: [s * 0.062, H.tete + 0.035, -0.124], e: [0.062, 0.052, 0.035], seg: 8 });
-    a.sphere(p.yeux || 0x4a3b2a, { p: [s * 0.066, H.tete + 0.032, -0.137], e: [0.034, 0.036, 0.024], seg: 8 });
-    a.boite(cheveux, { p: [s * 0.064, H.tete + 0.073, -0.131], r: [0, 0, s * 0.14], e: [0.068, 0.013, 0.026] });
+    a.sphere(0xf6f2ea, { p: [s * 0.062, H.tete + 0.035, -0.122], e: [0.064, 0.050, 0.032], seg: 10 });
+    a.sphere(p.yeux || 0x6b5236, { p: [s * 0.064, H.tete + 0.033, -0.130], e: [0.023, 0.025, 0.016], seg: 8 });
+    // Le sourcil : plus haut et plus fin. Bas et épais, il fronce — et un
+    // sourcil froncé sur un regard fixe, pour un enfant de sept ans, ce n'est
+    // plus un villageois.
+    a.boite(cheveux, { p: [s * 0.064, H.tete + 0.082, -0.126], r: [0, 0, s * 0.10], e: [0.056, 0.010, 0.022] });
   }
-  a.boite(0xa8574c, { p: [0, H.tete - 0.078, -0.134], e: [0.07, 0.018, 0.026] });
+  // La bouche SOURIT : une barre droite fait une moue, et trois petites boîtes
+  // suffisent à relever les coins. C'est le détail qui change tout le visage.
+  a.boite(0xa8574c, { p: [0, H.tete - 0.080, -0.132], e: [0.052, 0.015, 0.024] });
+  for (const s of [-1, 1]) {
+    a.boite(0xa8574c, { p: [s * 0.034, H.tete - 0.072, -0.129], r: [0, 0, s * 0.42], e: [0.026, 0.013, 0.022] });
+  }
 
   if (moustache) {
-    a.boite(barbe || cheveux, { p: [0, H.tete - 0.046, -0.134], e: [0.115, 0.028, 0.036] });
+    // Elle mangeait la bouche : moins haute, moins large, elle se pose
+    // au-dessus de la lèvre au lieu de la remplacer.
+    a.boite(barbe || cheveux, { p: [0, H.tete - 0.050, -0.131], e: [0.092, 0.019, 0.030] });
   }
   if (barbe) {
     // une barbe pleine : une demi-sphère qui épouse la mâchoire
