@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v209 — Les vingt-huit avenues de Paris ont toutes leur boucle
+
+**Pourquoi.** En supprimant les demi-tours (v207), on a laissé la moitié de
+Paris sans voitures. Les avenues se chaînent depuis lors entre leurs
+carrefours, et tout virage au-delà de 150° est rejeté : il ne restait que cinq
+circuits, sur DIX des dix-huit avenues. Le boulevard de Clichy et l'avenue de
+la Grande Armée ne rencontraient aucune autre voie ; les Gobelins, la
+Motte-Picquet et Belleville n'en touchaient qu'une, donc ne se parcouraient
+qu'en rebroussant chemin ; le boulevard Saint-Michel traversait le jardin du
+Luxembourg et tombait à 88 % ; et le triangle de l'est — Grands Boulevards,
+Faubourg Saint-Antoine, Voltaire — était à cent pour cent sur la rue mais
+faisait un angle de 174° à République. Montmartre, l'Étoile, Belleville et
+tout le sud de la rive gauche ne voyaient pas passer une voiture.
+
+**Ce que ça change.**
+
+- **Les places rondes se contournent.** Deux avenues qui se rejoignent sur une
+  place s'y rejoignaient en son CENTRE : ce n'était pas le tracé des rues qui
+  était faux, c'était le raccourci par le milieu de la place. Une voiture fait
+  le tour du rond-point, et c'est désormais ce qu'elle fait — République passe
+  de 174° à 90°, Nation de 161° à 80°.
+- **Dix rues de plus, prises sur le vrai plan de Paris** : les Champs-Élysées
+  et le boulevard Haussmann autour de l'Étoile, l'avenue de Wagram et les
+  Batignolles pour rejoindre Clichy, l'avenue des Ternes pour la Grande Armée,
+  Rochechouart pour redescendre sur la Gare du Nord, Ménilmontant pour
+  Belleville, Port-Royal et Arago pour les Gobelins, l'avenue de Suffren pour
+  la Motte-Picquet. Et la Porte Maillot est devenue le rond-point qu'elle est
+  dans la vraie ville.
+- **Huit circuits au lieu de cinq, et les vingt-huit avenues sont couvertes.**
+  On roule maintenant sur les Champs-Élysées, autour de l'Étoile, à Montmartre,
+  à Belleville, sur le boulevard Saint-Michel et jusqu'à la place d'Italie.
+
+**Ce qui le prouve.** Le portail complet, dix suites. Deux témoins neufs dans
+`carteMonde.js`, tous deux rouges sur `origin/main` — et le second l'est pour
+le fond, pas faute d'un export : les cinq circuits d'avant y mettaient 17, 9,
+12, 1 et 1 pas au milieu d'une place. Les huit chaînes déclarées passent
+toutes la mesure (une chaîne sous le seuil est jetée, le compte le dirait), la
+plus faible tient la rue à 97 %, aucune ne met un pas dans la Seine, aucune ne
+coupe par le milieu d'une place. Le relief, lui, n'a pas bougé : les deux
+empreintes de `plafond.js` sont identiques — une rue est du SOL.
+
+---
+
 ## v208 — Trois ponts routiers sur la Tamise : des voitures changent de rive à Londres
 
 **Pourquoi.** La passe de rues de Londres (v206) a laissé une dette écrite

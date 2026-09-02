@@ -28,7 +28,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
@@ -287,6 +287,12 @@ export const LIEUX = [
   L('Moulin Rouge', -2.1, -3.1, { r: 1.2, sol: PAVE, socle: [4, 4] }),
   L('Gare du Nord', -0.5, -2.4, { discret: true, r: 2.5, sol: PAVE }),
   L('Gare de Lyon', 2.0, 0.0, { discret: true, rive: 'd', r: 2.5, sol: PAVE }),
+  // La Porte Maillot est un ROND-POINT, et c'est pour cela qu'elle est ici :
+  // la Grande Armée et l'avenue des Ternes y arrivent presque parallèles, et
+  // la ligne droite d'un carrefour à l'autre y faisait une épingle de 160°.
+  // Une voiture, elle, fait le tour de la place — encore fallait-il qu'il y
+  // ait une place.
+  L('Porte Maillot', -6.75, -1.875, { discret: true, r: 3, sol: PAVE }),
   // Les deux bois sont les poumons de Paris et se voient du ciel avant tout le
   // reste. Ils débordent l'un et l'autre le disque de la ville : on les montre
   // aux deux tiers de leur étendue vraie plutôt que de les couper en deux.
@@ -379,77 +385,126 @@ const VOIES = [
   { nom: 'Boulevard Raspail', l: a(0.7), t: TROTTOIR_AV, pts: [pk(-4, 12), pk(-7, 20), pk(-8, 26)] },
   { nom: 'Avenue des Gobelins', l: a(0.7), t: TROTTOIR_AV, pts: [pk(10, 15), pk(14, 25)] },
   { nom: "Avenue de la Motte-Picquet", l: a(0.7), t: TROTTOIR_AV, pts: [pt('Tour Eiffel'), pt('Invalides')] },
+  // LES RACCORDS (v209). Huit avenues n'étaient sur aucune boucle faute de se
+  // rencontrer. On ne rabote pas le seuil : on trace les rues qui manquent —
+  // et ce sont de VRAIES rues de Paris, pas des traits de raccommodage. Chaque
+  // bout est posé SUR la chaussée d'une autre voie (leçon de Nice).
+  { nom: 'Avenue des Champs-Élysées', l: a(1.2), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pt('Concorde')] },
+  { nom: 'Boulevard Haussmann', l: a(0.9), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pk(-21, -10), pt('Opéra')] },
+  { nom: 'Avenue de Wagram', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pk(-32, -10), pk(-28, -13)] },
+  { nom: 'Boulevard des Batignolles', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-28, -13), pk(-23, -16), pk(-17, -19)] },
+  { nom: 'Avenue des Ternes', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-32, -10), pk(-39, -10), pk(-46, -9)] },
+  { nom: 'Boulevard de Rochechouart', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-2, -19), pk(1, -17), pt('Gare du Nord')] },
+  { nom: 'Boulevard de Ménilmontant', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Buttes-Chaumont'), pk(31, -11), pk(31, -3), pk(31, 4), pt('Nation')] },
+  { nom: 'Boulevard de Port-Royal', l: a(0.8), t: TROTTOIR_AV, pts: [pk(10, 15), pk(6, 17), pk(2.5, 17)] },
+  { nom: 'Boulevard Arago', l: a(0.7), t: TROTTOIR_AV, pts: [pk(14, 25), pk(3, 26), pk(-8, 26)] },
+  { nom: 'Avenue de Suffren', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Tour Eiffel'), pk(-29, 14), pk(-28, 19), pk(-18, 19)] },
 ];
+
+// Les circuits ont besoin de savoir QUELLES avenues ils couvrent : le témoin
+// de `carteMonde.js` compare la liste des voies à ce que les trajets touchent,
+// et une dimension de ville ne se recopie pas dans un banc d'essai.
+export const VOIES_PARIS = VOIES;
 
 const BANDES = rangerVoies(VOIES);
 
 
 // --- où roulent les voitures -------------------------------------------------
 //
-// Deux circuits, chacun fait de VRAIES avenues mises bout à bout — la seule
+// HUIT CIRCUITS, ET LES VINGT-HUIT AVENUES DE PARIS SONT COUVERTES.
+//
+// Chaque circuit est fait de VRAIES avenues mises bout à bout — la seule
 // manière d'avoir des voitures qui suivent des rues plutôt que de traverser la
 // Seine. Voir la longue note de `voies.js` : le carré cherché au hasard sur le
 // terrain brut ne trouvait rien, alors que quarante-quatre pour cent de Paris
 // est de la chaussée.
 //
-// CINQ CIRCUITS, SANS DEMI-TOUR, SUR DIX DES DIX-HUIT AVENUES DE PARIS.
+// LA v207 AVAIT SUPPRIMÉ LES DEMI-TOURS, ET LAISSÉ LA MOITIÉ DE PARIS SANS
+// VOITURES. Les avenues se chaînent depuis lors entre leurs CARREFOURS, et
+// tout virage au-delà de 150° est rejeté ; il ne restait que cinq circuits sur
+// dix des dix-huit avenues. Clichy et la Grande Armée ne rencontraient aucune
+// autre voie ; les Gobelins, la Motte-Picquet et Belleville n'en touchaient
+// qu'une — des impasses. Deux remèdes, et aucun des deux n'est un seuil qu'on
+// abaisse.
 //
-// Max, après une visite : « je viens d'aller visiter Paris et je n'ai vu aucun
-// véhicule en circulation. » Il n'y en avait bien aucun là où il était. Paris
-// publiait seize avenues et n'en déclarait que deux enchaînements, tous deux
-// sur la RIVE DROITE : Saint-Germain, Saint-Michel, Rennes, Montparnasse,
-// Raspail, les Gobelins, Rivoli, la Grande Armée n'avaient jamais vu une
-// voiture. Toute la rive gauche et tout l'ouest étaient vides, et l'on pouvait
-// traverser la ville sans rien croiser.
+// 1. LES PLACES SE CONTOURNENT. Deux avenues qui se rejoignent sur une place
+//    ronde s'y rejoignaient en son CENTRE : à République, les Grands
+//    Boulevards et Voltaire repartaient dans la même direction — 174°, un
+//    demi-tour — et à Nation, Voltaire et le Faubourg Saint-Antoine faisaient
+//    161°. Ce n'était pas le tracé des rues qui était faux, c'était le
+//    raccourci par le milieu de la place. Une voiture fait le tour du
+//    rond-point : `contournerPlaces` remplace le raccourci par l'arc de la
+//    couronne de bitume. C'est le crochet `ajuster` de `fabriqueCircuits`, et
+//    la retouche se fait AVANT la mesure — un chiffre écrit ci-dessous est
+//    celui du tracé contourné, jamais celui de la corde.
 //
-// Les enchaînements ne se devinent toujours pas : les combinaisons d'avenues
-// qui tiennent le seuil de 90 % ont été éprouvées contre `solParis`, puis
-// choisies par couverture gloutonne — à chaque tour, celle qui apporte le
-// plus d'avenues neuves.
+// 2. LES RUES QUI MANQUAIENT ONT ÉTÉ TRACÉES. Dix avenues de plus, prises sur
+//    le vrai plan de Paris : les Champs-Élysées et Haussmann pour l'Étoile,
+//    Wagram et les Batignolles pour rejoindre Clichy, les Ternes pour la
+//    Grande Armée, Rochechouart pour redescendre sur Gare du Nord,
+//    Ménilmontant pour Belleville, Port-Royal et Arago pour les Gobelins,
+//    Suffren pour la Motte-Picquet. Et la Porte Maillot est devenue le
+//    rond-point qu'elle est dans la vraie ville, sans quoi la Grande Armée et
+//    les Ternes s'y croisaient en épingle.
 //
-// ET DEPUIS v207, PLUS AUCUN CIRCUIT NE FAIT DEMI-TOUR. Les cinq circuits
-// d'avant tenaient la rue de 91 à 99 % — et tous les cinq REBROUSSAIENT
-// CHEMIN : l'ancien chaînage parcourait chaque avenue en entier, et quand la
-// suivante débouchait à mi-chemin, le convoi allait jusqu'au bout et revenait
-// sur ses pas. Un demi-tour reste à cent pour cent sur la chaussée, le
-// pourcentage ne le voit pas. Les avenues se chaînent désormais ENTRE LEURS
-// CARREFOURS, et l'on rejette tout virage au-delà de 150°, comme à Londres.
-//
-// Le prix, dit honnêtement : DIX des dix-huit avenues sont couvertes, pas
-// dix-huit. Clichy et la Grande Armée ne rencontrent aucune autre avenue ;
-// les Gobelins, la Motte-Picquet et Belleville n'en touchent qu'une — des
-// impasses, qui ne se parcourent qu'en faisant demi-tour. Le boulevard
-// Saint-Michel traverse le jardin du Luxembourg, dont l'herbe l'emporte sur
-// la chaussée : ses boucles avec Saint-Germain et Montparnasse tiennent à 88
-// et 89 %, sous le seuil. Et le triangle de l'est — Grands Boulevards,
-// Faubourg Saint-Antoine, Voltaire — est à 100 % sur la rue mais dégénéré :
-// à République, Voltaire et le retour des Grands Boulevards partent dans la
-// même direction, un angle de 174°. On ne déclare pas un circuit qui
-// rebrousse chemin, même à cent pour cent.
+// Les enchaînements ne se devinent toujours pas : toutes les combinaisons de
+// deux à six avenues ont été éprouvées contre `solParis`, avec le
+// contournement, puis choisies par COUVERTURE GLOUTONNE — à chaque tour, celle
+// qui apporte le plus d'avenues neuves. Cinquante-six boucles tiennent 95 % ;
+// huit suffisent à tout couvrir, et la plus faible tient la rue à 97 %.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
-  // 98 % (241 blocs, virage max 110°) — le grand tour de la rive droite :
-  // Rivoli, les Grands Boulevards, Sébastopol, Magenta, La Fayette et l'Opéra.
-  ['Rue de Rivoli', 'Grands Boulevards', 'Boulevard de Sébastopol', 'Boulevard de Magenta', 'Rue La Fayette', "Avenue de l'Opéra"],
-  // 100 % (162 blocs, virage max 130°) — le carré de l'est, par Magenta.
-  ['Rue de Rivoli', 'Grands Boulevards', 'Boulevard de Magenta', 'Boulevard de Sébastopol'],
-  // 97 % (156 blocs, virage max 90°) — le carré de l'Opéra, par La Fayette.
-  ['Rue de Rivoli', "Avenue de l'Opéra", 'Rue La Fayette', 'Boulevard de Sébastopol'],
-  // 100 % (55 blocs, virage max 102°) — LA RIVE GAUCHE : Saint-Germain,
-  // Rennes, Montparnasse et Raspail.
-  ['Boulevard Saint-Germain', 'Rue de Rennes', 'Boulevard du Montparnasse', 'Boulevard Raspail'],
-  // 100 % (62 blocs, virage max 90°) — le triangle de Montparnasse.
-  ['Rue de Rennes', 'Boulevard du Montparnasse', 'Boulevard Raspail'],
+  // 100 % (311 blocs, virage max 147°) — le grand tour de l'est : Rivoli,
+  // Sébastopol, La Fayette, les Grands Boulevards, Voltaire et le Faubourg.
+  ['Rue de Rivoli', 'Boulevard de Sébastopol', 'Rue La Fayette', 'Grands Boulevards', 'Boulevard Voltaire', 'Faubourg Saint-Antoine'],
+  // 100 % (181 blocs, virage max 107°) — la rive gauche par le sud, et le
+  // boulevard Saint-Michel enfin sur une boucle : on y entre à Port-Royal,
+  // donc au SUD du Luxembourg, dont l'herbe faisait tomber ses tracés à 88 %.
+  ['Boulevard Saint-Michel', 'Boulevard du Montparnasse', 'Boulevard Raspail', 'Boulevard Arago', 'Avenue des Gobelins', 'Boulevard de Port-Royal'],
+  // 100 % (249 blocs, virage max 87°) — le nord : La Fayette, Haussmann,
+  // Wagram, les Batignolles, Clichy et Rochechouart.
+  ['Rue La Fayette', 'Boulevard Haussmann', 'Avenue de Wagram', 'Boulevard des Batignolles', 'Boulevard de Clichy', 'Boulevard de Rochechouart'],
+  // 99 % (192 blocs, virage max 102°) — l'ouest de la rive gauche, du
+  // Champ-de-Mars à Montparnasse par Suffren.
+  ['Boulevard Saint-Germain', 'Rue de Rennes', 'Boulevard du Montparnasse', 'Avenue de Suffren', 'Avenue de la Motte-Picquet'],
+  // 98 % (362 blocs, virage max 117°) — Belleville et les Buttes-Chaumont,
+  // redescendus sur Nation par Ménilmontant.
+  ['Grands Boulevards', 'Rue La Fayette', 'Boulevard de Magenta', 'Rue de Belleville', 'Boulevard de Ménilmontant', 'Faubourg Saint-Antoine'],
+  // 100 % (86 blocs, virage max 135°) — le triangle de l'Étoile à la Porte
+  // Maillot, par Wagram et les Ternes.
+  ['Avenue de la Grande Armée', 'Avenue de Wagram', 'Avenue des Ternes'],
+  // 99 % (307 blocs, virage max 90°) — l'Opéra, Magenta et l'est.
+  ['Rue de Rivoli', "Avenue de l'Opéra", 'Rue La Fayette', 'Boulevard de Magenta', 'Boulevard Voltaire', 'Faubourg Saint-Antoine'],
+  // 97 % (431 blocs, virage max 85°) — LE PLUS LONG, et celui qui porte les
+  // Champs-Élysées : de la Bastille à l'Étoile par les Grands Boulevards et
+  // Haussmann, retour par les Champs et Rivoli. Les trois points perdus sont
+  // le jardin des Tuileries, que la rue de Rivoli traverse depuis toujours
+  // (dette de `TASKS.md` : la vraie Rivoli longe la grille, elle n'entre pas).
+  ['Rue de Rivoli', 'Faubourg Saint-Antoine', 'Boulevard Voltaire', 'Grands Boulevards', 'Boulevard Haussmann', 'Avenue des Champs-Élysées'],
 ];
+
+// Les circuits par leurs NOMS : le témoin de `carteMonde.js` vérifie que les
+// vingt-huit avenues sont couvertes, et la couverture ne se lit pas sur la
+// géométrie — le contournement remplace justement les sommets posés au centre
+// des places par des arcs, si bien qu'un test de sommets déclarerait
+// République introuvable.
+export const CIRCUITS_PARIS = CIRCUITS;
 
 // Ce qui se roule : la chaussée, les pavés, le trottoir et le granit des
 // quais. Pas l'eau, pas l'herbe, pas les façades.
 const ROULANT = new Set([BITUME, PAVE, QUAI]);
 
+// Une place ronde de Paris porte une couronne de bitume sur son dernier bloc
+// (`solParis`) : c'est l'anneau du rond-point, et c'est lui que suit la
+// voiture. On contourne un demi-bloc en dedans du bord, donc au milieu de
+// cette couronne.
+const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - 0.5 }));
+export const contournerPlaces = (pts) => contournerRonds(pts, RONDS);
+
 export const circuitsParis = fabriqueCircuits({
   cle: 'paris', ancre: PARIS, chaines: CIRCUITS, roulant: ROULANT,
-  voies: { liste: VOIES, sol: solParis },
+  voies: { liste: VOIES, sol: solParis }, ajuster: contournerPlaces,
 });
 
 // Les ponts. Ils sont donnés par leur abscisse, comme sur un plan : c'est la

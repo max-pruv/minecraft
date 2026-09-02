@@ -49,13 +49,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   partagé de `voies.js`, qui parcourait chaque avenue en entier ; il roule
   désormais de carrefour en carrefour, et un témoin mesure les virages des six
   villes.
-- [ ] **Huit avenues de Paris ne sont plus sur aucune boucle** depuis que les
-  circuits ne font plus demi-tour : Clichy et la Grande-Armée ne croisent
-  aucune autre voie ; les Gobelins, la Motte-Picquet et Belleville sont des
-  impasses ; Saint-Michel tombe à 88–89 % à cause du jardin du Luxembourg ; et
-  le triangle de l'est (Grands Boulevards, Faubourg Saint-Antoine, Voltaire)
-  fait 174° à République. Il faudrait des voies de raccord (Wagram, Saint-
-  Jacques, un contournement du Luxembourg), à tracer et à mesurer.
+- [x] **Huit avenues de Paris n'étaient plus sur aucune boucle — FAIT en
+  v209.** Les places rondes se contournent (`contournerRonds`, partagé avec
+  Washington dans `voies.js`), dix vraies rues de raccord ont été tracées
+  (Champs-Élysées, Haussmann, Wagram, Batignolles, Ternes, Rochechouart,
+  Ménilmontant, Port-Royal, Arago, Suffren), la Porte Maillot est devenue le
+  rond-point qu'elle est, et Saint-Michel s'aborde par Port-Royal pour éviter
+  le Luxembourg. Huit circuits mesurés couvrent les vingt-huit avenues, le
+  plus faible à 97 %.
+- [ ] **La rue de Rivoli traverse le jardin des Tuileries.** `pt('Tuileries')`
+  est le CENTRE du jardin, et les places passent avant les rues dans
+  `solParis` : la chaussée y disparaît sur une trentaine de blocs, ce qui
+  coûte trois points au plus long circuit de Paris (97 % au lieu de 100). La
+  vraie rue de Rivoli longe la grille, elle n'entre pas — mais déplacer un
+  point de `VOIES` déplace une rue, donc cela se mesure avant de se faire.
 - [ ] **La rue Royale de Lille n'est plus parcourue** — c'est une impasse
   depuis que le chaînage refuse les allers-retours ; il lui manque une voie
   de retour vers la citadelle ou la Grand-Place.

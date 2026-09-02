@@ -57,7 +57,7 @@
 // métro — est à sa place réelle, calculé et non deviné.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -442,72 +442,11 @@ export const CERCLES = [
 // tracé AVANT de le mesurer, jamais après.
 const RAYON_ANNEAU = ANNEAU_DEDANS - 1;                   // au milieu de la bande roulante
 
-function arcAutour(cu, cv, rr, p1, p2) {
-  const a1 = Math.atan2(p1[1] - cv, p1[0] - cu);
-  let d = Math.atan2(p2[1] - cv, p2[0] - cu) - a1;
-  while (d > Math.PI) d -= 2 * Math.PI;
-  while (d <= -Math.PI) d += 2 * Math.PI;
-  const n = Math.max(1, Math.ceil((Math.abs(d) * rr) / 1.5));
-  const out = [];
-  for (let i = 1; i < n; i++) {
-    const a = a1 + (d * i) / n;
-    out.push([Math.round((cu + rr * Math.cos(a)) * 10) / 10, Math.round((cv + rr * Math.sin(a)) * 10) / 10]);
-  }
-  return out;
-}
-
-function contournerUn(pts, cu, cv, rr) {
-  const n = pts.length;
-  // « Dedans » inclut le bord : un point de passage posé EXACTEMENT sur le
-  // rayon de contournement — le bout de Connecticut sur l'anneau de Farragut
-  // — n'est ni dehors ni dedans, et la corde qui y mène coupait le jardin
-  // sans qu'aucune intersection ne la trahisse. Le témoin qui échantillonne
-  // les segments bloc par bloc l'a vu, pas celui qui ne lisait que les sommets.
-  const dedans = (p) => Math.hypot(p[0] - cu, p[1] - cv) <= rr + 1e-6;
-  const s = pts.findIndex((p) => !dedans(p));
-  if (s < 0) return pts;                                  // tout le tracé est dans la place
-  const rot = [...pts.slice(s), ...pts.slice(0, s)];
-  const out = [];
-  let entree = null;
-  for (let i = 0; i < n; i++) {
-    const a = rot[i], b = rot[(i + 1) % n];
-    if (entree === null) out.push(a);
-    const dx = b[0] - a[0], dy = b[1] - a[1], fx = a[0] - cu, fy = a[1] - cv;
-    const A = dx * dx + dy * dy, B = 2 * (fx * dx + fy * dy), C = fx * fx + fy * fy - rr * rr;
-    let ts = [];
-    if (A > 0) {
-      const disc = B * B - 4 * A * C;
-      if (disc > 0) {
-        const q = Math.sqrt(disc);
-        ts = [(-B - q) / (2 * A), (-B + q) / (2 * A)].filter((t) => t > 0 && t < 1);
-      }
-    }
-    const au = (t) => [a[0] + dx * t, a[1] + dy * t];
-    const aIn = dedans(a), bIn = dedans(b);
-    if (!aIn && !bIn) {
-      if (ts.length === 2) {                              // le tronçon traverse la place
-        const p1 = au(ts[0]), p2 = au(ts[1]);
-        out.push(p1, ...arcAutour(cu, cv, rr, p1, p2), p2);
-      }
-    } else if (!aIn && bIn) {
-      entree = ts.length ? au(ts[0]) : b;                 // sans intersection, b est SUR le bord
-      out.push(entree);
-    } else if (aIn && !bIn) {
-      if (entree) {
-        const p2 = ts.length ? au(ts[ts.length - 1]) : a; // idem : a est sur le bord
-        out.push(...arcAutour(cu, cv, rr, entree, p2), p2);
-      }
-      entree = null;
-    }
-  }
-  return out;
-}
-
-export function contournerCercles(pts) {
-  let out = pts;
-  for (const c of CERCLES) out = contournerUn(out, c.u, c.v, c.r - RAYON_ANNEAU);
-  return out;
-}
+// Le contournement lui-même vit dans `voies.js` : Paris avait exactement le
+// même besoin — ses places rondes faisaient des épingles de 174° à République
+// — et le remède d'une ville ne doit pas rester dans le fichier d'une ville.
+export const contournerCercles = (pts) =>
+  contournerRonds(pts, CERCLES.map((c) => ({ u: c.u, v: c.v, r: c.r - RAYON_ANNEAU })));
 
 export const VOIES_WASHINGTON = AVENUES;
 const ROULANT = new Set([BITUME, LIGNE, PASSAGE]);

@@ -252,3 +252,91 @@ export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 
     return out;
   };
 }
+
+// --- contourner une place ronde ---------------------------------------------
+//
+// `chainerVoies` joint deux avenues en DROITE LIGNE d'un carrefour à l'autre,
+// et deux avenues qui se rejoignent sur une place ronde s'y rejoignent en son
+// CENTRE : le tracé y entre, y ressort, et l'angle entre les deux vaut ce que
+// la géométrie décide — 174° à République, 161° à Nation. Un demi-tour, donc,
+// alors que les deux avenues sont bien à leur place : ce n'est pas le tracé
+// des rues qui est faux, c'est le raccourci par le milieu de la place.
+//
+// Une voiture, elle, fait le tour du rond-point. On remplace donc tout
+// tronçon qui entre dans un cercle par l'ARC de ce cercle, dans le sens le
+// plus court. Washington l'a payé le premier (ses ronds-points portaient un
+// anneau de trottoir infranchissable) ; la fonction vit ici parce que Paris a
+// exactement le même besoin, et que le remède d'une ville ne doit plus rester
+// dans le fichier d'une ville — c'est la leçon du verre dans les murs.
+//
+// La retouche se fait AVANT la mesure : `fabriqueCircuits` appelle `ajuster`
+// puis mesure. Un chiffre écrit au-dessus d'un circuit est celui du tracé
+// contourné, jamais celui de la corde.
+function arcAutour(cu, cv, rr, p1, p2) {
+  const a1 = Math.atan2(p1[1] - cv, p1[0] - cu);
+  let d = Math.atan2(p2[1] - cv, p2[0] - cu) - a1;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d <= -Math.PI) d += 2 * Math.PI;
+  const n = Math.max(1, Math.ceil((Math.abs(d) * rr) / 1.5));
+  const out = [];
+  for (let i = 1; i < n; i++) {
+    const a = a1 + (d * i) / n;
+    out.push([Math.round((cu + rr * Math.cos(a)) * 10) / 10, Math.round((cv + rr * Math.sin(a)) * 10) / 10]);
+  }
+  return out;
+}
+
+function contournerUn(pts, cu, cv, rr) {
+  const n = pts.length;
+  // « Dedans » inclut le bord : un point de passage posé EXACTEMENT sur le
+  // rayon de contournement n'est ni dehors ni dedans, et la corde qui y mène
+  // coupait la place sans qu'aucune intersection ne la trahisse.
+  const dedans = (p) => Math.hypot(p[0] - cu, p[1] - cv) <= rr + 1e-6;
+  const s = pts.findIndex((p) => !dedans(p));
+  if (s < 0) return pts;                                  // tout le tracé est dans la place
+  const rot = [...pts.slice(s), ...pts.slice(0, s)];
+  const out = [];
+  let entree = null;
+  for (let i = 0; i < n; i++) {
+    const a = rot[i], b = rot[(i + 1) % n];
+    if (entree === null) out.push(a);
+    const dx = b[0] - a[0], dy = b[1] - a[1], fx = a[0] - cu, fy = a[1] - cv;
+    const A = dx * dx + dy * dy, B = 2 * (fx * dx + fy * dy), C = fx * fx + fy * fy - rr * rr;
+    let ts = [];
+    if (A > 0) {
+      const disc = B * B - 4 * A * C;
+      if (disc > 0) {
+        const q = Math.sqrt(disc);
+        ts = [(-B - q) / (2 * A), (-B + q) / (2 * A)].filter((t) => t > 0 && t < 1);
+      }
+    }
+    const au = (t) => [a[0] + dx * t, a[1] + dy * t];
+    const aIn = dedans(a), bIn = dedans(b);
+    if (!aIn && !bIn) {
+      if (ts.length === 2) {                              // le tronçon traverse la place
+        const p1 = au(ts[0]), p2 = au(ts[1]);
+        out.push(p1, ...arcAutour(cu, cv, rr, p1, p2), p2);
+      }
+    } else if (!aIn && bIn) {
+      entree = ts.length ? au(ts[0]) : b;                 // sans intersection, b est SUR le bord
+      out.push(entree);
+    } else if (aIn && !bIn) {
+      if (entree) {
+        const p2 = ts.length ? au(ts[ts.length - 1]) : a; // idem : a est sur le bord
+        out.push(...arcAutour(cu, cv, rr, entree, p2), p2);
+      }
+      entree = null;
+    }
+  }
+  return out;
+}
+
+// `cercles` : des `{ u, v, r }` où `r` est le RAYON DE CONTOURNEMENT — le
+// cercle que la voiture suit, pas le bord de la place. À chaque ville de le
+// donner sur du roulant : l'anneau de chaussée à Washington, la couronne de
+// bitume d'une place parisienne.
+export function contournerRonds(pts, cercles) {
+  let out = pts;
+  for (const c of cercles) out = contournerUn(out, c.u, c.v, c.r);
+  return out;
+}

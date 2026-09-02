@@ -1126,6 +1126,46 @@ Deux pièges de rendu payés en captures :
   générale : **remettre une ville à l'échelle, c'est aussi refaire ses
   monuments.**
 
+**Et les vingt-huit avenues de Paris ont toutes leur boucle (v209) — ce que
+coûte une règle juste appliquée à un plan incomplet.** La v207 a eu raison de
+supprimer les demi-tours ; elle a laissé cinq circuits sur DIX des dix-huit
+avenues, et la moitié de la ville sans une voiture. Trois leçons, et aucune
+n'est « on baisse le seuil ».
+
+- **UNE PLACE RONDE SE CONTOURNE, ELLE NE SE TRAVERSE PAS.** `chainerVoies`
+  joint deux avenues en droite ligne d'un carrefour à l'autre ; deux avenues
+  qui se rejoignent sur une place s'y rejoignent en son CENTRE, et l'angle
+  vaut ce que la géométrie décide — 174° à République, 161° à Nation. Ce
+  n'était pas le tracé des rues qui était faux, c'était le raccourci par le
+  milieu de la place. `contournerPlaces` (le crochet `ajuster`) remplace le
+  raccourci par l'arc de la couronne de bitume, à `r − 0,5`. Comme les places
+  de Paris sont PAVÉES et que `PAVE` est roulant, **le sol n'a pas eu à
+  changer d'un bloc** : le contournement est purement géométrique, et les deux
+  empreintes de `plafond.js` sont intactes.
+- **Une avenue qui ne rencontre personne ne se rattrape pas, elle se
+  raccorde.** Clichy et la Grande Armée ne croisaient AUCUNE autre voie ; les
+  Gobelins, la Motte-Picquet et Belleville n'en croisaient qu'une — une
+  impasse ne va jamais dans un cycle (leçon de la City de Londres). Dix vraies
+  rues de plus, prises sur le plan : Champs-Élysées, Haussmann, Wagram,
+  Batignolles, Ternes, Rochechouart, Ménilmontant, Port-Royal, Arago, Suffren.
+  On ne rafistole pas une impasse, on lui donne sa seconde porte.
+- **UN JARDIN SE CONTOURNE PAR LE CHOIX DU CARREFOUR.** Le boulevard
+  Saint-Michel traverse le Luxembourg, dont l'herbe l'emporte sur la chaussée
+  (les places passent avant les rues dans `solParis`) : toutes ses boucles
+  tombaient à 88-89 %. On n'a pas déplacé le jardin — on entre désormais dans
+  Saint-Michel à Port-Royal, donc AU SUD du Luxembourg, et le tronçon parcouru
+  ne le touche plus. 100 %.
+
+**Et la couverture d'un circuit se lit sur ses NOMS, pas sur sa géométrie.**
+Le témoin de Londres vérifie que chaque point de passage d'une avenue est un
+sommet d'un circuit ; à Paris ce test est FAUX, parce que le contournement
+supprime justement les sommets posés au centre d'une place — le boulevard
+Voltaire, dont les deux bouts sont République et Nation, serait déclaré
+introuvable. `CIRCUITS_PARIS` (les chaînes par leurs noms) et `VOIES_PARIS`
+(le registre) portent donc la preuve, et `circuitsParis` la complète : une
+chaîne sous le seuil est JETÉE par `fabriqueCircuits`, si bien que
+« huit déclarées, huit rendues » prouve que les huit ont passé la mesure.
+
 ### San Francisco (`sanfrancisco.js`) — la septième remise à l'échelle
 
 **Vingt-sept blocs par kilomètre** (v192), contre neuf : un bloc valait CENT
@@ -1266,10 +1306,10 @@ choses à savoir.
   déjà signalées sur Rome, qui ont survécu ici à la remise à l'échelle
   jusqu'à la capture de rue. Rouge, brun, chocolat, jaune-ocre (Kaki) :
   c'est la palette.
-- **Le témoin de la fumée compte les villes à circuit** : cinq désormais
-  (Paris, Londres, San Francisco, Nice, Lille). Une ville qui gagne ses
-  circuits met ce chiffre à jour dans la même livraison, sinon la voie
-  rapide rougit pour la bonne raison au mauvais moment.
+- **Le témoin de la fumée compte les villes à circuit** : six depuis la v205
+  (Paris, Londres, San Francisco, Nice, Lille, Washington). Une ville qui
+  gagne ses circuits met ce chiffre à jour dans la même livraison, sinon la
+  voie rapide rougit pour la bonne raison au mauvais moment.
 
 ### Londres (`londres.js`) — soixante avenues qui se croisent, et les demi-tours
 
@@ -1457,7 +1497,10 @@ choses à savoir avant d'y toucher.
   tronçon qui entre dans un cercle par l'arc de l'anneau (rayon `r − 2`), dans
   le sens le plus court — et la retouche se fait AVANT la mesure, jamais
   après. Un chiffre en commentaire au-dessus d'un circuit est celui du tracé
-  contourné.
+  contourné. **Le contournement lui-même vit dans `voies.js`
+  (`contournerRonds`) depuis la v209** : Paris avait exactement le même
+  besoin, et le remède d'une ville ne doit pas rester dans le fichier d'une
+  ville — c'est la leçon du verre dans les murs, payée quatre fois.
 - **« Dedans » inclut le BORD.** Le bout de Connecticut est posé exactement
   sur l'anneau de Farragut ; avec un `<` strict il n'était ni dehors ni
   dedans, et la corde qui y menait coupait la place sans qu'aucune
