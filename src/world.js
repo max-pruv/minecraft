@@ -70,7 +70,7 @@ import {
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst, vDuPlan,
 } from './manhattan.js';
 import { positionDe, cielDe, zDeLatitude } from './mondes.js';
-import { surLaVoie, presDeLaVoie } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol } from './trains.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
 // le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
@@ -1295,6 +1295,10 @@ export class World {
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
     this.ctx = 'local';           // monde courant : 'local' ou le code du monde en ligne
     this.allDirty = false;        // tout remailler (changement de monde)
+    // Le profil d'une voie ferrée se lisse sur toute sa longueur, donc il a
+    // besoin de la hauteur du terrain BIEN AU-DELÀ de la colonne qu'on est
+    // en train de bâtir. `trains.js` ne la connaît pas : on la lui donne.
+    brancherSol((x, z) => this.terrainHeight(x, z));
   }
 
   static key(cx, cz) { return cx + ',' + cz; }
@@ -1680,9 +1684,37 @@ export class World {
         // VIADUC au ras des flots quand la ligne traverse la mer — l'Eurostar
         // voit la Manche passer sous ses fenêtres. Les rails s'arrêtent aux
         // portes des villes, donc aucune rue n'est jamais éventrée.
-        if (surLaVoie(wx, wz)) {
-          if (h > WATER_LEVEL) data[World.index(x, h, z)] = BLOCK.GRAVEL;
-          else data[World.index(x, WATER_LEVEL, z)] = BLOCK.STONEBRICK;
+        const voie = voieEn(wx, wz);
+        if (voie) {
+          // DE VRAIS RAILS, PAS UNE BANDE DE GRAVIER. Max : « train no
+          // rails ». Deux files sombres continues, des traverses au milieu,
+          // le ballast en bordure : c'est à ça qu'on reconnaît une voie
+          // ferrée, et cela tient dans les trois blocs de large qu'elle fait.
+          const y = voie.cote;
+          // Le REMBLAI et la TRANCHÉE. Le profil ne suit plus le terrain
+          // bloc à bloc — il est lissé — donc il passe tantôt au-dessus,
+          // tantôt en dessous. On comble sous les rails et l'on dégage
+          // au-dessus, sur le gabarit d'un train.
+          for (let wy = Math.max(0, Math.min(h, WATER_LEVEL) ); wy < y; wy++) {
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
+          }
+          for (let wy = y + 1; wy <= y + 5 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+          if (y >= 0 && y < HEIGHT) {
+            // Le motif se tire en coordonnées du MONDE : en coordonnées
+            // locales il se répéterait dans chaque morceau et sauterait au
+            // remaillage.
+            const traverse = (((wx + wz) % 2) + 2) % 2 === 0;
+            data[World.index(x, y, z)] = voie.d < 0.55
+              ? (traverse ? BLOCK.DARKPLANK : BLOCK.GRAVEL)
+              : (voie.d < 1.25 ? BLOCK.OBSIDIAN : BLOCK.GRAVEL);
+          }
+          // LA VOIE A LE DERNIER MOT SUR SA COLONNE. Sans ce `continue`, une
+          // ville engendrée traversée par la ligne rebâtissait par-dessus les
+          // rails : vingt-sept colonnes d'immeuble en travers du Shinkansen,
+          // mesurées entre Tokyo et Kyoto. C'est le même piège que les arbres
+          // de ville, qui laissaient la trame générique repasser derrière.
+          // Trois blocs de large sur quatre mille : la ville ne perd rien.
+          continue;
         }
 
         // Manhattan a son propre dessin de sol : avenues numérotées, rues tous

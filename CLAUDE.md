@@ -631,6 +631,41 @@ que `montable` et `nourrissable`, dont l'oubli a déjà coûté des mois. C'est
 `player.volInterdit` qui l'applique, parce que c'est là que le vol se décide.
 Monter coupe le vol en cours ; descendre le rend.
 
+### La voie ferrée (`trains.js`) — un ouvrage, pas une bande de gravier
+
+Max, capture à l'appui : « train no rails, holes, no end stations ». Trois
+leçons, et la première vaut pour tout ce qui se déplace sur un tracé.
+
+- **UNE VOIE SE NIVELLE, ELLE NE SUIT PAS LE TERRAIN.** Le ballast était posé
+  à la hauteur du terrain, colonne par colonne : mesuré ligne par ligne, la
+  dénivelée entre deux colonnes voisines montait à VINGT-SEPT blocs. Ce sont
+  les « trous » que Max a vus. C'est le même défaut que les convois de la
+  v210, un cran plus loin : là on corrigeait la cote du véhicule, ici c'est
+  l'OUVRAGE qui doit être plat.
+- **Le lissage est un FILTRE EN CÔNE, et il garantit sa pente par
+  construction.** `bas[k] = min sur j de h[j] + pente × |k − j|` se calcule en
+  deux passes et ne descend jamais de plus de `pente` par bloc. Le cône du
+  dessous ne fait que des tranchées, celui du dessus que des remblais ; leur
+  MOYENNE garde la pente bornée et partage l'écart en deux. Mesuré : marche
+  max 1 bloc, écart au terrain 13 au pire, 247 colonnes de remblai et 723 de
+  tranchée sur 4 744. **Et l'ordre compte** : borner l'écart au terrain APRÈS
+  le lissage détruit ce qu'on vient d'obtenir — le premier essai finissait par
+  ce rabotage et rendait des marches de vingt-et-un blocs.
+- **On ne touche PAS `terrainHeight`.** Le remblai et la tranchée sont des
+  blocs écrits dans le morceau de monde, comme le métro de Washington : les
+  deux empreintes de `plafond.js` ne bougent donc pas d'un octet, et
+  l'invariant 1 tient sans qu'on ait rien à déclarer.
+- **LA VOIE A LE DERNIER MOT SUR SA COLONNE.** Sans ce `continue`, une ville
+  engendrée traversée par la ligne rebâtissait par-dessus les rails —
+  vingt-sept colonnes d'immeuble en travers du Shinkansen. C'est mot pour mot
+  le piège des arbres de ville, qui laissaient la trame générique repasser
+  derrière. Et le dégagement des arbres est passé de trois à quatre blocs : une
+  couronne plantée à trois blocs de l'axe déborde encore sur le train.
+- **Le convoi et l'ouvrage lisent le MÊME profil.** `traceSegment` ne calcule
+  plus sa cote depuis le terrain : il demande le profil, comme `world.js`.
+  Lus séparément, le train flotterait au-dessus des remblais et s'enfoncerait
+  dans les tranchées.
+
 ### Le monde (`world.js`)
 
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).

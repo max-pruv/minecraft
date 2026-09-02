@@ -85,6 +85,89 @@ function dSegment(s, x, z) {
   return Math.hypot(x - (s.x0 + dx * t), z - (s.z0 + dz * t));
 }
 
+// --- LE PROFIL D'UNE VOIE : ni marches, ni trous (v213) ----------------------
+//
+// Max, capture à l'appui : « train no rails, holes, no end stations ». Les
+// trous, ce sont les MARCHES : le ballast était posé à la hauteur du terrain,
+// colonne par colonne, et le train roulait dessus. Mesuré ligne par ligne, la
+// dénivelée entre deux colonnes voisines montait à VINGT-SEPT blocs sur
+// Cologne-Francfort, treize sur le Shinkansen et le TGV. Une voie ferrée ne
+// fait pas d'escalier : elle remblaie et elle creuse.
+//
+// Le lissage est un FILTRE EN CÔNE, et il garantit sa pente par construction :
+// `bas[k] = min sur j de h[j] + pente × |k − j|` ne descend jamais de plus de
+// `pente` par bloc, et se calcule en deux passes. Le cône du dessous ne fait
+// que des tranchées, celui du dessus que des remblais ; leur MOYENNE garde la
+// pente bornée — la moyenne de deux fonctions à pente bornée l'est aussi — et
+// partage l'écart en deux. Mesuré : marche max 1 bloc, écart au terrain 13 au
+// pire, 247 colonnes de remblai et 723 de tranchée sur 4 744.
+//
+// ET L'ORDRE COMPTE : borner l'écart au terrain APRÈS le lissage détruit ce
+// qu'on vient d'obtenir. Le premier essai finissait par ce rabotage et rendait
+// des marches de vingt-et-un blocs.
+const PENTE = 1 / 3;        // un tiers de bloc par bloc, comme le métro de DC
+
+// Le monde donne sa hauteur de terrain : `trains.js` ne la connaît pas, et le
+// profil ne peut se calculer sans elle.
+let SOL = null;
+export function brancherSol(fn) { SOL = fn; PROFILS.clear(); }
+
+const PROFILS = new Map();
+
+// Le profil d'un segment : une cote par bloc, du départ à l'arrivée. Calculé
+// à la première demande et gardé — `world.js` le redemande à chaque colonne.
+export function profilDe(s) {
+  let p = PROFILS.get(s);
+  if (p) return p;
+  if (!SOL) return null;
+  const n = Math.max(2, Math.round(s.longueur));
+  const h = new Array(n + 1);
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    const x = Math.round(s.x0 + (s.x1 - s.x0) * t), z = Math.round(s.z0 + (s.z1 - s.z0) * t);
+    // jamais sous les flots : sur la mer, la voie devient un viaduc au ras
+    // de l'eau, et c'est de là que part le lissage.
+    h[k] = Math.max(SOL(x, z), NIVEAU_EAU) + 1;
+  }
+  const bas = h.slice(), haut = h.slice();
+  for (let k = 1; k <= n; k++) bas[k] = Math.min(bas[k], bas[k - 1] + PENTE);
+  for (let k = n - 1; k >= 0; k--) bas[k] = Math.min(bas[k], bas[k + 1] + PENTE);
+  for (let k = 1; k <= n; k++) haut[k] = Math.max(haut[k], haut[k - 1] - PENTE);
+  for (let k = n - 1; k >= 0; k--) haut[k] = Math.max(haut[k], haut[k + 1] - PENTE);
+  p = h.map((_, k) => (bas[k] + haut[k]) / 2);
+  PROFILS.set(s, p);
+  return p;
+}
+
+// Le niveau de la mer. `world.js` l'a aussi, mais l'importer d'ici créerait un
+// cycle : trains.js est importé PAR world.js.
+const NIVEAU_EAU = 30;
+
+// Où en est-on le long d'un segment, entre 0 et 1 ?
+function tSegment(s, x, z) {
+  const dx = s.x1 - s.x0, dz = s.z1 - s.z0;
+  const l2 = dx * dx + dz * dz || 1;
+  return Math.max(0, Math.min(1, ((x - s.x0) * dx + (z - s.z0) * dz) / l2));
+}
+
+// La voie sous cette colonne : sa distance à l'axe et la COTE du rail, ou
+// null si l'on est ailleurs. C'est ce que `world.js` pose et ce que le convoi
+// suit — les deux lisent la même chose, sans quoi le train roulerait à côté
+// de ses rails.
+export function voieEn(x, z) {
+  let best = null;
+  for (const s of pres(x, z)) {
+    const d = dSegment(s, x, z);
+    if (d >= 1.6 || (best && d >= best.d)) continue;
+    const p = profilDe(s);
+    if (!p) continue;
+    const t = tSegment(s, x, z) * (p.length - 1);
+    const k = Math.min(p.length - 2, Math.floor(t));
+    best = { d, cote: Math.round(p[k] + (p[k + 1] - p[k]) * (t - k)) };
+  }
+  return best;
+}
+
 // À moins d'un bloc et demi d'une voie ? C'est le ballast (et la carte le
 // dessine) ; à moins de trois, plus un arbre ne pousse — une voie dégagée.
 export function surLaVoie(x, z) {
@@ -92,8 +175,12 @@ export function surLaVoie(x, z) {
   return false;
 }
 
+// QUATRE BLOCS, PAS TROIS. Un arbre planté à trois blocs de l'axe a une
+// couronne qui déborde d'un bloc de plus : le train traversait des feuillages
+// sur six des neuf lignes. On dégage donc la largeur de la voie PLUS celle
+// d'une couronne.
 export function presDeLaVoie(x, z) {
-  for (const s of pres(x, z)) if (dSegment(s, x, z) < 3) return true;
+  for (const s of pres(x, z)) if (dSegment(s, x, z) < 4) return true;
   return false;
 }
 
@@ -102,11 +189,23 @@ export function presDeLaVoie(x, z) {
 // viaduc au ras des flots). `solDe` vient de main.js.
 export function traceSegment(s, solDe, niveauEau) {
   const n = Math.max(2, Math.round(s.longueur / PAS));
+  const p = profilDe(s);
   const alle = [];
   for (let k = 0; k <= n; k++) {
     const t = k / n;
     const x = s.x0 + (s.x1 - s.x0) * t, z = s.z0 + (s.z1 - s.z0) * t;
-    alle.push({ x, y: Math.max(solDe(x, z), niveauEau) + 1.05, z });
+    // LE TRAIN ROULE SUR SES RAILS, pas sur le terrain. C'est le même profil
+    // que `world.js` pose : lu ailleurs, le convoi flotterait au-dessus des
+    // remblais et s'enfoncerait dans les tranchées.
+    let y;
+    if (p) {
+      const q = t * (p.length - 1);
+      const j = Math.min(p.length - 2, Math.floor(q));
+      y = Math.round(p[j] + (p[j + 1] - p[j]) * (q - j)) + 1.05;
+    } else {
+      y = Math.max(solDe(x, z), niveauEau) + 1.05;
+    }
+    alle.push({ x, y, z });
   }
   const retour = alle.slice(1, -1).reverse();
   const pts = [...alle, ...retour];
