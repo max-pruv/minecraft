@@ -432,6 +432,67 @@ const VRAIES_KM = [
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
+    // CHAQUE BOUT DE LIGNE A SA GARE (v214) ----------------------------------
+    //
+    // Troisième moitié du signalement de Max : « no end stations ». Le train
+    // marquait l'arrêt aux deux bouts de chaque ligne depuis la v179, mais
+    // rien n'y était bâti — on attendait le train debout dans l'herbe.
+    //
+    // Le témoin ne demande PAS à `gareEn` où chercher : il calcule lui-même
+    // les emplacements depuis la géométrie des segments, et lit les blocs.
+    // C'est ce qui lui permet de mesurer la même chose sur l'ancien code, où
+    // la fonction n'existe pas — et d'y trouver zéro.
+    const gares = await tab.evaluate(async () => {
+      let m2;
+      try { m2 = await import('./src/trains.js'); } catch { return { absent: true }; }
+      const b = await import('./src/blocks.js');
+      const w = window.__game.world;
+      const bouts = [];
+      for (const s of m2.segmentsDeTrain()) {
+        const dx = s.x1 - s.x0, dz = s.z1 - s.z0;
+        const l = Math.hypot(dx, dz) || 1;
+        const ux = dx / l, uz = dz / l;
+        bouts.push({ x: s.x0, z: s.z0, ux, uz, ville: s.de });
+        bouts.push({ x: s.x1, z: s.z1, ux, uz, ville: s.vers });
+      }
+      const out = [];
+      for (const g of bouts) {
+        // la cote des rails au droit de la gare
+        const v = typeof m2.voieEn === 'function' ? m2.voieEn(Math.round(g.x), Math.round(g.z)) : null;
+        const cote = v ? v.cote : Math.max(w.terrainHeight(Math.round(g.x), Math.round(g.z)), 30) + 1;
+        let quai = 0, auvent = 0, bati = 0, praticable = 0;
+        for (let dl = -6; dl <= 6; dl++) {
+          for (const dt of [-3, -2.5, 2.5, 3]) {
+            const x = Math.round(g.x + g.ux * dl + g.uz * dt);
+            const z = Math.round(g.z + g.uz * dl - g.ux * dt);
+            if (w.getBlock(x, cote + 1, z) === b.CITY_BLOCK.GRANITE) quai++;
+            if (w.getBlock(x, cote + 5, z) === b.BLOCK.DARKPLANK) auvent++;
+            if (w.getBlock(x, cote + 2, z) === 0 && w.getBlock(x, cote + 3, z) === 0) praticable++;
+          }
+          for (const dt of [4.5, 5.5, 6]) {
+            const x = Math.round(g.x + g.ux * dl + g.uz * dt);
+            const z = Math.round(g.z + g.uz * dl - g.ux * dt);
+            if (w.getBlock(x, cote + 2, z) !== 0) bati++;
+          }
+        }
+        out.push({ ville: g.ville, quai, auvent, bati, praticable });
+      }
+      return { gares: out };
+    });
+    const bonnesGares = gares.absent ? [] : gares.gares.filter((g) => g.quai >= 20 && g.auvent >= 15 && g.bati >= 8);
+    verifier('les dix-huit gares ont leur quai, leur auvent et leur bâtiment',
+      !gares.absent && gares.gares.length === 18 && bonnesGares.length === 18,
+      JSON.stringify(gares.absent ? gares : {
+        gares: gares.gares.length, completes: bonnesGares.length,
+        pire: gares.gares.reduce((a, g) => (g.quai < a.quai ? g : a), gares.gares[0]),
+      }));
+    // Garde-fou assumé, vert des deux côtés : sur l'ancien code tout est
+    // praticable puisqu'il n'y a rien. Il garde la régression que le premier
+    // rend possible — un auvent ou des piliers qui boucheraient le quai.
+    verifier('et l\'on marche sur le quai, sous l\'auvent',
+      !gares.absent && gares.gares.every((g) => g.praticable >= 15),
+      JSON.stringify(gares.absent ? gares : gares.gares.map((g) => g.praticable)));
+
     const villesATerre = await tab.evaluate(async () => {
       const { WATER_LEVEL } = await import('./src/world.js');
       const m = await import('./src/mondes.js');
