@@ -1317,8 +1317,7 @@ pour toute ville à qui l'on donne des rues.
   pas circuit deviné.
 - **Ce qui reste à voir en capture** : le socle du Shard est un treillis de
   verre — un bloc de `GLASS` dans un mur creux est un trou, même règle qu'à
-  San Francisco — et les ponts routiers sur la Tamise n'existent pas encore,
-  ce qui interdit toute boucle rive à rive. Deux dettes dans `TASKS.md`.
+  San Francisco. Dette dans `TASKS.md`.
 - **Le mobilier suit les rues, et le témoin le demande à la ville.** Les
   arrêts des bus impériaux, les cabines et les taxis sont EXPORTÉS
   (`MOBILIER_LONDRES`) ; `carte.js` les lit là, plus jamais en dur. Le
@@ -1327,6 +1326,39 @@ pour toute ville à qui l'on donne des rues.
   San Francisco, du côté du banc, une fois de plus. Et un témoin qui ne
   regarde que la couleur ne voit pas un bus planté dans un lot : celui qui
   exige le bitume sous chaque bus est rouge à 4/5 sur `origin/main`.
+
+**Les ponts sur la Tamise (v208) — et ce qui prouve un pont.** Tant que le
+fleuve n'avait aucun pont routier, la City et Southwark se tournaient le dos
+et aucune boucle ne pouvait changer de rive. Waterloo, Blackfriars et London
+Bridge existent désormais, aux vraies adresses. Cinq choses à savoir avant
+d'en poser un quatrième, ici ou à Paris.
+
+- **Un pont est une VOIE posée par-dessus le fleuve, pas un relief.** `PONTS`
+  est une liste de voies comme les autres (`rangerVoies`, `solDesVoies`),
+  ajoutée à `VOIES` pour que `chainerVoies` puisse l'enchaîner. Ce qui le
+  distingue, c'est la COTE : `world.js` écrit le tablier à `city.base + 1`
+  — la hauteur des quais — au lieu de la hauteur du sol, et SEULEMENT là où
+  ce sol est sous `WATER_LEVEL`. `hauteurLondres` ne bouge pas d'un bloc,
+  l'eau reste sous le tablier, et c'est pour cela qu'une passe de ponts se
+  fait sans double empreinte — même raison que la passe de rues de v206.
+- **Ce qui prouve un pont, c'est l'eau sous son tablier** (leçon du Bay
+  Bridge). Le témoin lit `getBlock` à `WATER_LEVEL` sous chaque colonne
+  roulante : les morceaux s'engendrent à la demande, donc il n'a pas besoin
+  d'y aller. Et il lit la cote du tablier dans `CITIES`, jamais en dur.
+- **Chaque bout du pont est posé SUR la chaussée d'une avenue de la rive**
+  (Victoria Embankment, Waterloo Road, Queen Victoria Street…) — la leçon de
+  Nice, sans quoi le circuit rate son seuil au pied du pont.
+- **Trois ponts seulement, et les absents sont des décisions.** Westminster
+  Bridge traverserait l'emprise de Big Ben et le pied du London Eye,
+  Hungerford couperait la grande roue, Southwark tomberait sur le Globe. On
+  ne pose pas un tablier dans un monument : ce sont des dettes déclarées
+  dans `TASKS.md`, à reprendre le jour où ces emprises bougent.
+- **Un circuit rive à rive se reconnaît à ses points, pas à son nom.** Le
+  témoin (et le mesureur) comptent un circuit comme rive à rive s'il a des
+  points HORS du lit des deux côtés de l'axe (`auNordDeLaTamise`, exporté
+  pour cela). Trois circuits changent de rive, chacun des trois ponts est
+  emprunté, et dix-huit circuits couvrent soixante-deux voies sur
+  soixante-trois — Euston Road côté King's Cross reste la seule sans boucle.
 
 ### Washington (`washington.js`, `dcmonuments.js`)
 

@@ -104,6 +104,36 @@ export function distanceTamise(u, v) {
   return min;
 }
 
+// --- les ponts routiers -------------------------------------------------------
+//
+// Un pont est une VOIE posée par-dessus le fleuve : sa chaussée va d'un quai à
+// l'autre, chaque bout SUR la chaussée d'une avenue de la rive (leçon de Nice,
+// sans quoi le circuit rate son seuil au pied du pont). Le tablier se pose
+// AU-DESSUS de l'eau — `world.js` l'écrit à la cote des quais (base + 1),
+// jamais au fond du lit : le relief (`hauteurLondres`) ne bouge pas d'un bloc,
+// l'eau reste dessous, et c'est elle qui prouve le pont.
+//
+// Trois ponts, tous aux vraies adresses. Pas Westminster Bridge : son tablier
+// traverserait l'emprise de Big Ben (u 2..14, v 12..24) et le pied du London
+// Eye (u 14..15) ; Hungerford aussi couperait la grande roue. Southwark Bridge
+// tomberait sur le Globe. Ce sont des dettes déclarées, pas des oublis.
+const PONTS = [
+  // Waterloo Bridge : du bout de Fleet Street/Kingsway (Aldwych) à York Road.
+  { nom: 'Waterloo Bridge', l: 0.8, pts: [[17, -14], [24, 4]] },
+  // Blackfriars Bridge : du bas de New Bridge Street à Stamford/Blackfriars Road.
+  { nom: 'Blackfriars Bridge', l: 0.8, pts: [[40, -13], [41, 3]] },
+  // London Bridge : de Cannon Street à Southwark Street, deux blocs à l'ouest
+  // du Shard (u 64..74, v 3..13).
+  { nom: 'London Bridge', l: 0.8, pts: [[66, -9], [60, 8]] },
+];
+const BANDES_PONTS = rangerVoies(PONTS);
+
+// Le sol du tablier : bitume au milieu, granit sur les bords comme les quais.
+// Null hors des ponts.
+export function pontLondres(u, v) {
+  return solDesVoies(BANDES_PONTS, u, v, BITUME, PAVE);
+}
+
 // --- les parcs royaux --------------------------------------------------------
 
 const PARCS = [
@@ -289,6 +319,9 @@ const VOIES = [
   // l'ouest.
   { nom: 'Borough High Street', l: 0.8, pts: [[62, 8], [56, 17], [46, 34]] },
   { nom: 'London Road', l: 0.8, pts: [[46, 34], [37, 24]] },
+  // Les ponts sont des voies comme les autres pour le chaînage : c'est ce qui
+  // permet enfin une boucle rive à rive.
+  ...PONTS,
 ];
 
 const BANDES = rangerVoies(VOIES);
@@ -317,7 +350,9 @@ const BANDES = rangerVoies(VOIES);
 //   Victoria Street. Un cul-de-sac (Euston Road côté King's Cross, qui n'a
 //   plus rien à l'est) reste hors des cycles.
 //
-// Quinze circuits mesurés, cinquante-neuf voies sur soixante.
+// Dix-huit circuits mesurés, soixante-deux voies sur soixante-trois. Les
+// trois derniers TRAVERSENT la Tamise (v208) : c'est la première fois qu'une
+// voiture de Londres change de rive.
 const CIRCUITS = [
   // 100 % (82 pas, virage max 101°) — Westminster : le tour de St James's.
   ['Horse Guards Road', 'Great George Street', 'Whitehall', 'Pall Mall', "St James's Street", 'Piccadilly, côté Circus', 'Haymarket'],
@@ -355,6 +390,15 @@ const CIRCUITS = [
   // 100 % (128 pas, virage max 101°) — l'Embankment, de Westminster à
   // Blackfriars, retour par Fleet Street et le Strand.
   ['Horse Guards Road', 'Great George Street', 'Victoria Embankment', 'New Bridge Street', 'Fleet Street', 'Strand'],
+  // 100 % (128 blocs, virage max 129°) — rive à rive par Blackfriars et
+  // Waterloo : le Strand, l'Embankment, la rive sud et retour.
+  ['Strand', 'Victoria Embankment', 'Blackfriars Bridge', 'Blackfriars Road', 'Waterloo Road', 'Waterloo Bridge'],
+  // 100 % (111 blocs, virage max 103°) — rive à rive par Waterloo et
+  // Blackfriars : York Road et Westminster Bridge Road côté sud.
+  ['Victoria Embankment', 'Waterloo Bridge', 'York Road', 'Westminster Bridge Road', 'Blackfriars Road', 'Blackfriars Bridge'],
+  // 100 % (85 blocs, virage max 111°) — rive à rive par Blackfriars et
+  // London Bridge : la City, Southwark et Borough.
+  ['Cannon Street', 'Queen Victoria Street', 'Blackfriars Bridge', 'Southwark Street', 'Borough High Street', 'London Bridge'],
 ];
 
 // Trafalgar Square est dallée de pierre : une voiture y roule.
@@ -387,7 +431,10 @@ const TRAMES = {
   sud: { ang: 0.08, pu: 24, pv: 18, cu: 40, cv: 14, w: 1.7, s: 4.0 },
 };
 
-const auNordDeLaTamise = (u, v) => {
+// Exporté depuis la v208 : c'est ce qui permet à un témoin de dire qu'un
+// circuit TRAVERSE la Tamise (des points des deux côtés), et pas seulement
+// qu'il roule sur la culée d'un pont.
+export const auNordDeLaTamise = (u, v) => {
   // de quel côté du fleuve ? On regarde le point le plus proche du tracé.
   let min = Infinity, cote = 0;
   for (let i = 0; i < TAMISE.length - 1; i++) {
@@ -465,6 +512,10 @@ export function solLondres(x, z) {
   if (Math.hypot(u, v) > LONDRES.r) return null;
 
   const dT = distanceTamise(u, v);
+  // Le tablier d'un pont passe avant le fleuve : sur ces colonnes le sol est
+  // la chaussée, et `world.js` la pose au-dessus de l'eau.
+  const pont = pontLondres(u, v);
+  if (pont !== null) return pont;
   if (dT < LARGEUR_TAMISE) return null;                          // l'eau se remplit seule
   if (dT < LARGEUR_TAMISE + 1.5) return PAVE;                    // le quai de granit
 

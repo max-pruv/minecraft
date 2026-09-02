@@ -1080,6 +1080,96 @@ const VRAIES_KM = [
       !ldn.absent && ldn.circuits.length > 0 && ldn.circuits.every((c) => c.virage <= 150),
       JSON.stringify(ldn.absent ? ldn : ldn.circuits.map((c) => c.virage)));
 
+    // --- LONDRES : TROIS PONTS SUR LA TAMISE, ET DES VOITURES QUI CHANGENT
+    // DE RIVE (v208) ------------------------------------------------------------
+    //
+    // Jusqu'en v207 aucune boucle ne pouvait passer d'une rive à l'autre :
+    // les ponts routiers n'existaient pas, et la Tamise coupait tout. Ce qui
+    // prouve un pont, c'est L'EAU SOUS SON TABLIER (leçon du Bay Bridge) :
+    // on échantillonne chaque pont bloc par bloc d'un quai à l'autre, et sur
+    // chaque colonne du lit (relief sous le niveau de l'eau) on lit le monde
+    // ENGENDRÉ — `getBlock` fabrique le morceau à la demande — à la cote des
+    // quais (`base + 1`, lue dans le registre `CITIES`, jamais en dur) : de la
+    // chaussée, et au niveau de l'eau : de l'eau. Puis on demande aux circuits
+    // eux-mêmes lesquels ont des points sur les DEUX rives (`auNordDeLaTamise`,
+    // hors du lit) et passent sur chaque pont. Le nom des ponts vient de
+    // `VOIES_LONDRES`, leurs bouts aussi.
+    const ponts = await tab.evaluate(async () => {
+      const m = await import('./src/londres.js');
+      const b = await import('./src/blocks.js');
+      const w = await import('./src/world.js');
+      const g = window.__game;
+      if (typeof m.pontLondres !== 'function' || typeof m.auNordDeLaTamise !== 'function'
+        || !Array.isArray(m.VOIES_LONDRES) || !Array.isArray(w.CITIES)) return { absent: true };
+      const L = m.LONDRES;
+      const fiche = w.CITIES.find((c) => c.key === 'londres');
+      if (!fiche) return { absent: true, registre: true };
+      const yTablier = fiche.base + 1;
+      const NOMS = ['Waterloo Bridge', 'Blackfriars Bridge', 'London Bridge'];
+      const PAS_ROUTE = new Set([b.BLOCK.WATER, b.BLOCK.GRASS, b.BLOCK.LEAVES, b.BLOCK.AIR]);
+      const solDe = (x, z) => g.world.terrainHeight(x, z);
+      const circuits = m.circuitsLondres(solDe);
+      // Le lit du fleuve : là où le relief est sous le niveau de l'eau.
+      const dansLit = (x, z) => solDe(x, z) < w.WATER_LEVEL;
+      // Les colonnes de chaque circuit, échantillonnées bloc par bloc.
+      const colonnes = circuits.map((c) => {
+        const out = [];
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            out.push([Math.round(a.x + ((z.x - a.x) * k) / n), Math.round(a.z + ((z.z - a.z) * k) / n)]);
+          }
+        }
+        return out;
+      });
+      // Un circuit change de rive s'il a des points au nord ET au sud, hors du lit.
+      const riveARive = colonnes.map((cols) => {
+        let nord = false, sud = false;
+        for (const [x, z] of cols) {
+          const u = x - L.x, v = z - L.z;
+          if (m.distanceTamise(u, v) < 5) continue;
+          if (m.auNordDeLaTamise(u, v)) nord = true; else sud = true;
+        }
+        return nord && sud;
+      });
+      const resultat = NOMS.map((nom) => {
+        const voie = m.VOIES_LONDRES.find((v) => v.nom === nom);
+        if (!voie) return { nom, absent: true };
+        const [a, z] = [voie.pts[0], voie.pts[voie.pts.length - 1]];
+        const n = Math.max(1, Math.ceil(Math.hypot(z[0] - a[0], z[1] - a[1])));
+        let tablier = 0, lit = 0, roule = 0, eau = 0, secs = 0;
+        const cles = new Set();
+        for (let k = 0; k <= n; k++) {
+          const u = Math.round(a[0] + ((z[0] - a[0]) * k) / n);
+          const v = Math.round(a[1] + ((z[1] - a[1]) * k) / n);
+          const x = L.x + u, zz = L.z + v;
+          if (m.pontLondres(u, v) === null) continue;
+          tablier++;
+          cles.add(`${x},${zz}`);
+          if (!dansLit(x, zz)) { secs++; continue; }
+          lit++;
+          const haut = g.world.getBlock(x, yTablier, zz);
+          const bas = g.world.getBlock(x, w.WATER_LEVEL, zz);
+          if (haut !== null && haut !== undefined && !PAS_ROUTE.has(haut)) roule++;
+          if (bas === b.BLOCK.WATER) eau++;
+        }
+        // Les circuits qui empruntent ce pont ET changent de rive.
+        const traversent = circuits
+          .map((c, i) => (riveARive[i] && colonnes[i].some(([x, zz]) => cles.has(`${x},${zz}`) && dansLit(x, zz)) ? i : -1))
+          .filter((i) => i >= 0);
+        return { nom, tablier, lit, secs, roule, eau, traversent };
+      });
+      return { ponts: resultat, riveARive: riveARive.filter(Boolean).length, circuits: circuits.length };
+    });
+    verifier('trois ponts routiers franchissent la Tamise, et sous chaque tablier il y a de l\'eau',
+      !ponts.absent && ponts.ponts.length === 3 && ponts.ponts.every((p) =>
+        !p.absent && p.lit >= 4 && p.roule === p.lit && p.eau === p.lit),
+      JSON.stringify(ponts.absent ? ponts : ponts.ponts.map((p) => [p.nom, p.lit, p.roule, p.eau])));
+    verifier('et des voitures changent de rive par chacun d\'eux',
+      !ponts.absent && ponts.riveARive >= 3 && ponts.ponts.every((p) => !p.absent && p.traversent.length >= 1),
+      JSON.stringify(ponts.absent ? ponts : { riveARive: ponts.riveARive, parPont: ponts.ponts.map((p) => [p.nom, p.traversent]) }));
+
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
     // Le témoin ci-dessus ne regardait que Londres. Les cinq autres villes à
