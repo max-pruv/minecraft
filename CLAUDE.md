@@ -1095,6 +1095,18 @@ invisible ET pas rapatrié. Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2,
   écrite : elle se voit là où une durée est un verdict. C'est la raison d'être
   de la voie longue, et elle vient de la payer une fois de plus.
 
+  **Et cela découvre un angle mort de la table des gardiens, qu'aucune entrée
+  ne peut combler.** `src/passants.js` a `monte.js` pour gardien ; l'empreinte
+  de reprise étant PAR SUITE, une modification de `passants.js` n'invalide donc
+  pas l'acquis de `maj.js`. Si `maj.js` avait été verte au tour d'avant, la
+  régression serait passée en silence — elle n'a rejoué ici que parce qu'elle
+  était déjà rouge. Déclarer `passants.js` gardien de `maj.js` ne réglerait
+  rien : n'importe quel fichier qui alourdit la page a le même effet, et tout
+  déclarer revient à supprimer l'aiguillage. Le remède reste celui qui a
+  marché : **la voie longue tourne de temps en temps même quand rien ne
+  l'exige** — c'est écrit plus haut, et c'est la deuxième fois que cela sauve
+  une livraison.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les
