@@ -70,6 +70,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [x] **Une voiture conduite traversait les murs — FAIT en v212.** Elle
   empruntait la boîte de collision du joueur, 0,6 bloc de large pour une
   carrosserie de 2,26. La largeur vit désormais dans la fiche de l'espèce.
+- [x] **L'index périmé du conteneur — COMPRIS en v212.** Trois arbres de
+  travail portaient la même branche ; quand l'un avançait, l'index des autres
+  devenait le retrait de la livraison. Les arbres d'appoint sont détachés,
+  et la règle est écrite dans `CLAUDE.md`.
 - [ ] **Le train : ni rails, ni gares, et des tranchées dans le terrain.**
   Signalé par Max en capture : « train no rails, holes, no end stations ». La
   voie ferrée du tour du monde se rend comme une poutre continue, sans

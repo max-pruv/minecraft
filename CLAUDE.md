@@ -445,6 +445,35 @@ filet, pas un remède.
 conteneur et part avec lui. C'est arrivé deux fois. Ce qui compte assez pour
 être suivi va donc dans `TASKS.md`, versionné.
 
+### Deux arbres de travail sur la MÊME branche, et l'index qui ressuscite
+
+Symptôme, vu trois livraisons de suite (v210 à v212) : la livraison est
+fusionnée, la production sert la bonne version, et le crochet de fin annonce
+pourtant « uncommitted changes ». Le `git diff --cached` montre alors le
+RETRAIT de ce qu'on vient de livrer — `CACHE_VERSION` qui redescend d'un cran,
+des centaines de lignes supprimées. **Le pousser aurait annulé la livraison.**
+
+La cause n'est ni le crochet ni un travail oublié : **la même branche était
+extraite dans trois arbres de travail** (`/home/user/minecraft`,
+`/root/v205`, `/root/main-ref`). Quand l'un d'eux avance la branche —
+`git checkout -B <branche> origin/main` après la fusion — les autres gardent
+leur index et leur arbre sur l'ancien contenu. Par rapport au nouveau HEAD,
+cet index périmé EST exactement le retrait de la livraison.
+
+Trois règles :
+
+- **Une branche ne vit que dans UN arbre.** Le répertoire principal la garde,
+  parce que c'est lui que le crochet de fin inspecte. Les arbres d'appoint
+  travaillent en HEAD DÉTACHÉ et poussent explicitement
+  (`git push origin HEAD:refs/heads/<branche>`).
+- **`main-ref` est détaché sur `origin/main`, jamais sur la branche.** C'est sa
+  seule raison d'être : mesurer un témoin sur l'ancien code. S'il porte la
+  branche, il ne mesure plus rien — et il salit l'index des autres.
+- **Devant un « uncommitted changes » de fin de tâche, on LIT le diff avant de
+  commiter.** S'il retire ce qu'on vient de livrer, c'est un index périmé :
+  `git reset -q && git checkout -- .`. On ne pousse jamais un diff qu'on n'a
+  pas regardé.
+
 ### L'ancien réflexe, si le crochet n'a pas tourné
 
 Symptôme : le travail des heures précédentes a « disparu ». Ce n'est pas une
