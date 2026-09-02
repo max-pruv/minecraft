@@ -25,14 +25,28 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Constitution ouest longe le bassin sans rien pour boucler. Il faudrait des
   raccords de plus (la 21e ou la 23e Rue vers K Street), à mesurer.
 
-- [ ] **Londres n'a qu'un circuit de voitures** — remesuré en v201 sur toutes
-  les combinaisons : le triangle de Mayfair passe à 95 %, et les six autres
-  voies (le Mall, Whitehall, le Strand, Victoria Street, le Victoria
-  Embankment, Borough High Street) plafonnent entre 57 % et 85 %. **Ce n'est
-  PAS une affaire d'échelle** — contrairement à ce que cette entrée disait
-  d'abord : Londres est déjà à 24 blocs/km, comme Paris. Ce sont la Tamise et
-  les parcs qui coupent ses avenues. Il lui faut des voies nommées de plus,
-  choisies pour se croiser, pas une remise à l'échelle.
+- [x] **Londres n'a qu'un circuit de voitures — FAIT en v206.** Soixante
+  avenues aux vraies coordonnées, choisies pour se croiser (les bouts posés
+  SUR la chaussée d'une autre), quinze circuits mesurés de 92 à 100 % qui
+  couvrent cinquante-neuf voies. L'échelle n'y était pour rien : c'étaient
+  la Tamise, les parcs et neuf voies qui ne se croisaient pas.
+- [ ] **Euston Road, côté King's Cross, n'est sur aucune boucle de Londres.**
+  C'est un cul-de-sac : rien ne part de King's Cross vers l'est ni vers le
+  sud. Il lui manque Pentonville Road et Gray's Inn Road pour refermer sur
+  Bloomsbury — deux voies à tracer et à mesurer.
+- [ ] **Pas de pont routier sur la Tamise.** Aucun circuit ne passe d'une rive
+  à l'autre : Westminster Bridge, Waterloo Bridge, London Bridge et Tower
+  Bridge sont des monuments, pas des voies. Il faudrait une chaussée sur le
+  tablier ET que `solLondres` la rende roulante au-dessus de l'eau.
+- [ ] **Réauditer les circuits des autres villes pour les demi-tours.** Le
+  témoin de Londres rejette tout virage au-delà de 150° ; Paris, Nice, Lille,
+  Washington et San Francisco ont été mesurés au sol seulement. Dix des
+  quarante-deux chaînes de Londres au seuil faisaient demi-tour — les autres
+  villes en ont sûrement.
+- [ ] **Le socle du Shard est un treillis de verre** — un bloc de `GLASS` dans
+  un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
+  capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
+  de la passe de rues.
 
 - [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
   Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune

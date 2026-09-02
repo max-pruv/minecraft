@@ -108,15 +108,21 @@ export function distanceTamise(u, v) {
 
 const PARCS = [
   // Hyde Park et les jardins de Kensington : 2,5 km d'ouest en est, avec la
-  // Serpentine en travers (51,5057/−0,1650).
-  { nom: 'Hyde Park', cu: -70, cv: 0, ru: 30, rv: 14,
+  // Serpentine en travers (51,5057/−0,1650). Le parc est un RECTANGLE aux
+  // coins arrondis — Park Lane à l'est, Bayswater au nord, Kensington Road au
+  // sud —, pas une ellipse : d'où l'exposant 4 (une superellipse), sans quoi
+  // les quatre coins du parc étaient des îlots bâtis.
+  { nom: 'Hyde Park', cu: -73, cv: 1, ru: 26, rv: 13, n: 4,
     lac: { cu: -62, cv: 5, ru: 10, rv: 2.5 } },
-  { nom: 'Green Park', cu: -27, cv: 7, ru: 8, rv: 6 },
+  // Green Park : le triangle entre Piccadilly, Constitution Hill et le Mall.
+  { nom: 'Green Park', cu: -29, cv: 6, ru: 10, rv: 4 },
   // St James's Park : son lac entre Buckingham et Whitehall, celui des
-  // pélicans — un cadeau de l'ambassadeur de Russie en 1664.
-  { nom: "St James's Park", cu: -12, cv: 14, ru: 11, rv: 4,
+  // pélicans — un cadeau de l'ambassadeur de Russie en 1664. Le parc s'arrête
+  // à Horse Guards Road (u = −4) et à Birdcage Walk (v = 17).
+  { nom: "St James's Park", cu: -8.5, cv: 13, ru: 6.5, rv: 5,
     lac: { cu: -12, cv: 13, ru: 8, rv: 2 } },
-  { nom: "Regent's Park", cu: -48, cv: -64, ru: 14, rv: 10 },
+  // Regent's Park : du cercle intérieur au zoo, borné par Marylebone Road.
+  { nom: "Regent's Park", cu: -47, cv: -62, ru: 16, rv: 18 },
 ];
 
 // Primrose Hill : la butte au nord de Regent's Park d'où toute la ville se
@@ -158,20 +164,131 @@ export const lieuxDeLondres = () => LIEUX_LONDRES
 
 // --- les voies nommées -------------------------------------------------------
 
+// Chaque voie est donnée par ses carrefours réels, et CHAQUE BOUT EST POSÉ SUR
+// LA CHAUSSÉE D'UNE AUTRE VOIE : c'est ce qui permet aux circuits de se
+// refermer (voir la note de `voies.js` — un enchaînement ne tourne qu'aux
+// extrémités, jamais au milieu d'une avenue, donc Oxford Street est coupée en
+// trois — à Baker Street et à Oxford Circus —, Marylebone Road et Euston Road
+// en deux, et Piccadilly, le Strand ou Fleet Street s'arrêtent à leurs
+// carrefours). Une voie dont le bout tombe au MILIEU d'une autre fait faire
+// au circuit un aller-retour jusqu'au bout de celle-ci : c'est le banc de
+// mesure qui l'a montré, et c'est pour cela que les longues avenues sont
+// coupées à chaque carrefour où une rue les rejoint. Les coordonnées sont celles de `de(lat, lon)`, arrondies
+// au bloc, avec les écarts qu'imposent les monuments — la nef de Saint-Paul,
+// la grille de Buckingham, la base du Shard — commentés là où ils existent.
 const VOIES = [
-  // Le Mall : l'avenue rouge de Trafalgar à Buckingham, bordée de platanes.
-  { nom: 'The Mall', l: 1.2, sol: MALL_ROUGE, pts: [[-2, 2], [-21, 14]] },
-  // Whitehall : des ministères de Trafalgar au Parlement.
-  { nom: 'Whitehall', l: 1.1, pts: [[0, 2], [4, 16]] },
-  // Le Strand puis Fleet Street : la couture entre Westminster et la City.
-  { nom: 'Strand & Fleet Street', l: 1.0, pts: [[2, -2], [18, -6], [38, -9], [46, -14]] },
-  { nom: 'Oxford Street', l: 1.0, pts: [[-40, -22], [-23, -21], [-5, -17]] },
-  { nom: 'Regent Street', l: 0.9, pts: [[-10, -7], [-17, -14], [-23, -21]] },
-  { nom: 'Piccadilly', l: 0.9, pts: [[-10, -7], [-27, -1], [-38, 3]] },
-  { nom: 'Victoria Street', l: 0.8, pts: [[1, 21], [-20, 26]] },
-  // L'Embankment : le quai bâti par Bazalgette, qui suit la rive nord.
-  { nom: 'Victoria Embankment', l: 0.7, pts: [[8, 17], [11, 3], [17, -5], [38, -8], [48, -7], [64, -3]] },
-  { nom: 'Borough High Street', l: 0.8, pts: [[66, 2], [69, 10], [70, 18]] },
+  // --- Westminster et St James's ---
+  // Le Mall : l'avenue rouge de Trafalgar au Victoria Memorial, bordée de
+  // platanes.
+  { nom: 'The Mall', l: 1.2, sol: MALL_ROUGE, pts: [[-2, 2], [-14, 10]] },
+  // Horse Guards Road : la bordure est de St James's Park, du Mall à
+  // Birdcage Walk.
+  { nom: 'Horse Guards Road', l: 0.8, pts: [[-4, 3], [-4, 17]] },
+  // Whitehall : des ministères de Trafalgar à Parliament Square.
+  { nom: 'Whitehall', l: 1.1, pts: [[0, 2], [1, 16]] },
+  { nom: 'Great George Street', l: 0.8, pts: [[1, 16], [-4, 17]] },
+  // Birdcage Walk : le sud du parc, jusqu'à la grille de Buckingham.
+  { nom: 'Birdcage Walk', l: 0.8, pts: [[-4, 17], [-14, 17]] },
+  // Buckingham Gate contourne la grille du palais (u = −18) par l'est.
+  { nom: 'Buckingham Gate', l: 0.8, pts: [[-14, 17], [-16, 20], [-17, 27]] },
+  { nom: 'Victoria Street', l: 0.8, pts: [[1, 16], [-17, 27]] },
+  { nom: 'Buckingham Palace Road', l: 0.8, pts: [[-17, 27], [-27, 33]] },
+  // Grosvenor Place : de la gare Victoria à Hyde Park Corner, le long des
+  // jardins du palais.
+  { nom: 'Grosvenor Place', l: 0.9, pts: [[-27, 33], [-33, 22], [-41, 13]] },
+  // Constitution Hill longe le nord du palais — il fait dix-sept blocs de
+  // long ici, six fois sa taille — jusqu'au Victoria Memorial.
+  { nom: 'Constitution Hill', l: 0.9,
+    pts: [[-41, 13], [-33, 11], [-27, 8], [-25, 6], [-17, 6], [-14, 10]] },
+  // Pall Mall : des clubs, de Trafalgar à St James's Street.
+  { nom: 'Pall Mall', l: 0.9, pts: [[-4, -1], [-19, 3]] },
+  { nom: "St James's Street", l: 0.8, pts: [[-19, 3], [-20, -1]] },
+  { nom: 'Haymarket', l: 0.9, pts: [[-10, -7], [-4, -1]] },
+  // Piccadilly : du Circus à Hyde Park Corner, en passant sous le Ritz. Coupée
+  // à St James's Street, qui la rejoint depuis Pall Mall.
+  { nom: 'Piccadilly, côté Circus', l: 0.9, pts: [[-10, -7], [-20, -1]] },
+  { nom: 'Piccadilly', l: 0.9, pts: [[-20, -1], [-25, 2], [-41, 13]] },
+
+  // --- Mayfair, Marylebone et Hyde Park ---
+  { nom: 'Park Lane', l: 1.0, pts: [[-52, -15], [-41, 13]] },
+  { nom: 'Knightsbridge & Kensington Road', l: 0.9,
+    pts: [[-41, 13], [-55, 15], [-80, 16]] },
+  // West Carriage Drive : la seule route qui traverse Hyde Park, sur le pont
+  // de la Serpentine.
+  { nom: 'West Carriage Drive', l: 0.7, pts: [[-79, -12], [-79, 5], [-80, 16]] },
+  { nom: 'Bayswater Road', l: 0.9, pts: [[-52, -15], [-79, -12]] },
+  { nom: 'Edgware Road', l: 0.9, pts: [[-52, -15], [-67, -33]] },
+  { nom: 'Baker Street', l: 0.8, pts: [[-47, -16], [-49, -41]] },
+  // Marylebone Road est coupée à Baker Street, où les circuits tournent.
+  { nom: 'Marylebone Road, côté Edgware', l: 1.0, pts: [[-67, -33], [-49, -41]] },
+  { nom: 'Marylebone Road', l: 1.0, pts: [[-49, -41], [-27, -43]] },
+  // Euston Road : de Great Portland Street à King's Cross, le long des gares.
+  // Coupée à Tottenham Court Road et à Woburn Place ; le dernier tronçon vers
+  // King's Cross est un cul-de-sac, aucun circuit ne le prend.
+  { nom: 'Euston Road, côté Marylebone', l: 1.0, pts: [[-27, -43], [-12, -48]] },
+  { nom: 'Euston Road', l: 1.0, pts: [[-12, -48], [-4, -52]] },
+  { nom: "Euston Road, côté King's Cross", l: 1.0, pts: [[-4, -52], [7, -61]] },
+  { nom: 'Portland Place', l: 0.9, pts: [[-22, -21], [-26, -28], [-27, -43]] },
+  // Oxford Street est coupée à Baker Street et à Oxford Circus, où les
+  // circuits tournent.
+  { nom: 'Oxford Street, côté Marble Arch', l: 1.0, pts: [[-52, -15], [-47, -16]] },
+  { nom: 'Oxford Street', l: 1.0, pts: [[-47, -16], [-22, -21]] },
+  { nom: 'Oxford Street, côté Soho', l: 1.0, pts: [[-22, -21], [-4, -23]] },
+  // Regent Street : la courbe de Nash, du Circus à Oxford Circus.
+  { nom: 'Regent Street', l: 0.9, pts: [[-10, -7], [-16, -10], [-22, -21]] },
+
+  // --- Soho, Bloomsbury et Holborn ---
+  { nom: 'Tottenham Court Road', l: 0.8, pts: [[-4, -23], [-12, -48]] },
+  { nom: 'Charing Cross Road', l: 0.9, pts: [[0, -3], [0, -16], [-4, -23]] },
+  { nom: 'Shaftesbury Avenue', l: 0.8, pts: [[-10, -7], [0, -16], [7, -25]] },
+  { nom: 'New Oxford Street', l: 1.0, pts: [[-4, -23], [7, -25]] },
+  { nom: 'High Holborn', l: 1.0, pts: [[7, -25], [13, -27], [33, -27]] },
+  { nom: 'Southampton Row & Woburn Place', l: 0.8,
+    pts: [[13, -27], [6, -38], [-4, -52]] },
+  { nom: 'Kingsway', l: 0.9, pts: [[13, -27], [17, -14]] },
+  // Le Strand, de Charing Cross à Aldwych ; puis Fleet Street jusqu'à
+  // Ludgate Circus.
+  { nom: 'Strand', l: 1.0, pts: [[3, -1], [10, -7], [17, -14]] },
+  { nom: 'Fleet Street', l: 1.0, pts: [[17, -14], [26, -17], [39, -18]] },
+  { nom: 'Farringdon Street', l: 0.8, pts: [[33, -27], [39, -18]] },
+  { nom: 'New Bridge Street', l: 0.8, pts: [[39, -18], [40, -13]] },
+  // L'Embankment : le quai bâti par Bazalgette, qui suit la rive nord de
+  // Westminster à Blackfriars.
+  { nom: 'Victoria Embankment', l: 0.7,
+    pts: [[1, 16], [6, 3], [9, -4], [17, -10], [38, -13], [40, -13]] },
+
+  // --- la City ---
+  { nom: 'Holborn Viaduct', l: 0.9, pts: [[33, -27], [44, -24]] },
+  // Newgate Street et Cheapside passent au NORD de la nef de Saint-Paul
+  // (v ≤ −20), à la Banque d'Angleterre.
+  { nom: 'Newgate Street & Cheapside', l: 0.9, pts: [[44, -24], [55, -23], [64, -16]] },
+  { nom: 'King William Street', l: 0.8, pts: [[64, -16], [69, -8]] },
+  { nom: 'Moorgate', l: 0.8, pts: [[64, -16], [65, -27]] },
+  { nom: 'London Wall', l: 0.8, pts: [[65, -27], [50, -27]] },
+  { nom: 'Aldersgate Street', l: 0.8, pts: [[50, -27], [44, -24]] },
+  // Old Bailey referme la City : sans elle, l'îlot Newgate–Moorgate–London
+  // Wall–Aldersgate ne tenait à la ville que par Holborn Viaduct, et toute
+  // boucle qui y entrait en ressortait par le même carrefour — un demi-tour.
+  { nom: 'Old Bailey', l: 0.7, pts: [[39, -18], [44, -24]] },
+  // Cannon Street part du Monument vers l'ouest. La vraie monte jusqu'à
+  // Saint-Paul, mais la nef (u 42..54, v −20..−14) barre la route : ici elle
+  // rejoint Queen Victoria Street, qui file au sud de la nef jusqu'à
+  // Blackfriars — dans la vraie ville aussi, c'est elle qui passe au sud de
+  // la cathédrale.
+  { nom: 'Cannon Street', l: 0.8, pts: [[69, -8], [56, -12]] },
+  { nom: 'Queen Victoria Street', l: 0.8, pts: [[56, -12], [40, -13]] },
+
+  // --- la rive sud ---
+  { nom: 'Westminster Bridge Road', l: 0.8, pts: [[17, 18], [37, 24]] },
+  { nom: 'York Road', l: 0.7, pts: [[24, 4], [17, 18]] },
+  { nom: 'Waterloo Road', l: 0.8, pts: [[37, 24], [27, 12], [24, 4]] },
+  { nom: 'Stamford Street', l: 0.7, pts: [[24, 4], [41, 3]] },
+  { nom: 'Blackfriars Road', l: 0.8, pts: [[41, 3], [37, 24]] },
+  { nom: 'Southwark Street', l: 0.7, pts: [[41, 3], [62, 8]] },
+  // Borough High Street contourne la base du Shard (u 64..74, v 3..13) par
+  // l'ouest.
+  { nom: 'Borough High Street', l: 0.8, pts: [[62, 8], [56, 17], [46, 34]] },
+  { nom: 'London Road', l: 0.8, pts: [[46, 34], [37, 24]] },
 ];
 
 const BANDES = rangerVoies(VOIES);
@@ -179,25 +296,79 @@ const BANDES = rangerVoies(VOIES);
 // --- où roulent les voitures -------------------------------------------------
 //
 // Des avenues mises bout à bout, pas un carré posé au hasard : voir la note de
-// `voies.js`. L'enchaînement n'est pas deviné — toutes les combinaisons ont été
-// éprouvées contre le sol de la ville, et voici celle qui passe.
-  // Le triangle de Mayfair : Oxford, Regent, Piccadilly — 96 % du trajet sur
-  // la rue, cent quarante blocs de tour.
-// Londres n'en a toujours qu'UN, et c'est mesuré, pas résigné : les six autres
-// voies (le Mall, Whitehall, le Strand, Victoria Street, le Victoria
-// Embankment, Borough High Street) plafonnent entre 57 % et 85 % du trajet sur
-// la rue — sous le seuil. La Tamise et les parcs les coupent. On ne déclare
-// pas un circuit qui ne valide jamais : ce serait du code mort qui ressemble à
-// de l'avancement. Ce que Londres gagne en v201, c'est la DENSITÉ.
-const CIRCUITS = [['Oxford Street', 'Regent Street', 'Piccadilly']];
+// `voies.js`. Les enchaînements ne sont pas devinés — chaque cycle de trois à
+// sept voies du graphe des carrefours a été éprouvé contre le sol de la ville
+// (`solLondres`, sans charger le monde), et l'on ne garde que ce qui passe le
+// seuil, choisi par couverture gloutonne : à chaque tour, la boucle qui
+// apporte le plus d'avenues neuves. Le chiffre au-dessus de chaque circuit
+// est celui de cette mesure.
+//
+// Deux pièges que le banc a montrés, et que tenir la rue à 100 % NE VOIT PAS :
+//
+// - Un cycle du graphe des carrefours ne suffit pas. `chainerVoies` accroche
+//   chaque voie par son bout le plus proche ; si l'on entre et ressort d'une
+//   avenue par le MÊME carrefour, la voiture roule jusqu'au bout, fait
+//   demi-tour au milieu de la chaussée et revient — sur la rue d'un bout à
+//   l'autre, donc 100 %. Le banc suit la chaîne point par point (on quitte
+//   chaque voie par le bout opposé à celui par lequel on est entré) et rejette
+//   tout virage de plus de 150°. Dix cycles sont tombés là.
+// - Un îlot qui ne tient à la ville que par UN carrefour est un demi-tour
+//   garanti : c'était la City avant Old Bailey, Cannon Street et Queen
+//   Victoria Street. Un cul-de-sac (Euston Road côté King's Cross, qui n'a
+//   plus rien à l'est) reste hors des cycles.
+//
+// Quinze circuits mesurés, cinquante-neuf voies sur soixante.
+const CIRCUITS = [
+  // 100 % (82 pas, virage max 101°) — Westminster : le tour de St James's.
+  ['Horse Guards Road', 'Great George Street', 'Whitehall', 'Pall Mall', "St James's Street", 'Piccadilly, côté Circus', 'Haymarket'],
+  // 100 % (87 pas, virage max 139°) — la City par le nord : Holborn Viaduct,
+  // London Wall et retour par Old Bailey.
+  ['Farringdon Street', 'Old Bailey', 'Newgate Street & Cheapside', 'Moorgate', 'London Wall', 'Aldersgate Street', 'Holborn Viaduct'],
+  // 100 % (151 pas, virage max 133°) — la rive sud, de Westminster Bridge à
+  // Borough et retour par Waterloo.
+  ['Westminster Bridge Road', 'Blackfriars Road', 'Southwark Street', 'Borough High Street', 'London Road', 'Waterloo Road', 'York Road'],
+  // 92 % (149 pas, virage max 100°) — le grand tour : le Mall, Park Lane,
+  // Oxford Street entière et Charing Cross Road. Les huit pour cent manquants
+  // sont la traversée de Trafalgar Square et l'arrivée sur le Mall.
+  ['The Mall', 'Constitution Hill', 'Park Lane', 'Oxford Street, côté Marble Arch', 'Oxford Street', 'Oxford Street, côté Soho', 'Charing Cross Road'],
+  // 100 % (122 pas, virage max 138°) — Fitzrovia et Soho.
+  ['Euston Road, côté Marylebone', 'Tottenham Court Road', 'New Oxford Street', 'Shaftesbury Avenue', 'Regent Street', 'Portland Place'],
+  // 100 % (76 pas, virage max 139°) — la City par le sud : Blackfriars, le
+  // Monument, la Banque.
+  ['New Bridge Street', 'Queen Victoria Street', 'Cannon Street', 'King William Street', 'Newgate Street & Cheapside', 'Old Bailey'],
+  // 100 % (122 pas, virage max 107°) — Victoria, Belgravia, Piccadilly.
+  ['Whitehall', 'Victoria Street', 'Buckingham Palace Road', 'Grosvenor Place', 'Piccadilly', "St James's Street", 'Pall Mall'],
+  // 100 % (125 pas, virage max 81°) — Bloomsbury et Holborn.
+  ['Euston Road', 'Southampton Row & Woburn Place', 'Kingsway', 'Strand', 'Charing Cross Road', 'Tottenham Court Road'],
+  // 100 % (75 pas, virage max 109°) — Marylebone.
+  ['Edgware Road', 'Marylebone Road, côté Edgware', 'Baker Street', 'Oxford Street, côté Marble Arch'],
+  // 100 % (126 pas, virage max 103°) — le tour de Hyde Park.
+  ['Park Lane', 'Knightsbridge & Kensington Road', 'West Carriage Drive', 'Bayswater Road'],
+  // 100 % (74 pas, virage max 130°) — Buckingham et Birdcage Walk.
+  ['Horse Guards Road', 'Birdcage Walk', 'Buckingham Gate', 'Victoria Street', 'Whitehall'],
+  // 100 % (114 pas, virage max 119°) — Holborn, Fleet Street et le Strand.
+  ['Charing Cross Road', 'New Oxford Street', 'High Holborn', 'Farringdon Street', 'Fleet Street', 'Strand'],
+  // 100 % (65 pas, virage max 129°) — Waterloo et Stamford Street.
+  ['Waterloo Road', 'Stamford Street', 'Blackfriars Road'],
+  // 100 % (97 pas, virage max 108°) — Baker Street et Portland Place.
+  ['Baker Street', 'Marylebone Road', 'Portland Place', 'Oxford Street'],
+  // 100 % (128 pas, virage max 101°) — l'Embankment, de Westminster à
+  // Blackfriars, retour par Fleet Street et le Strand.
+  ['Horse Guards Road', 'Great George Street', 'Victoria Embankment', 'New Bridge Street', 'Fleet Street', 'Strand'],
+];
 
+// Trafalgar Square est dallée de pierre : une voiture y roule.
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
-  CITY_BLOCK.GRANITE, ARCHI.PAVE]);
+  CITY_BLOCK.GRANITE, ARCHI.PAVE, PIERRE]);
 
 export const circuitsLondres = fabriqueCircuits({
   cle: 'londres', ancre: LONDRES, chaines: CIRCUITS, roulant: ROULANT_VILLE,
   voies: { liste: VOIES, sol: solLondres },
 });
+
+// Les avenues, pour le témoin qui mesure la couverture des circuits : une
+// voie qui n'est sur aucune boucle est une rue sans voitures.
+export const VOIES_LONDRES = VOIES;
 
 // --- les trames de rues ------------------------------------------------------
 //
@@ -297,22 +468,31 @@ export function solLondres(x, z) {
   if (dT < LARGEUR_TAMISE) return null;                          // l'eau se remplit seule
   if (dT < LARGEUR_TAMISE + 1.5) return PAVE;                    // le quai de granit
 
+  // Les lacs d'abord : ils sont dans le relief (`hauteurLondres`), et rien ne
+  // se pose dessus.
   for (const p of PARCS) {
     if (p.lac && ((u - p.lac.cu) / p.lac.ru) ** 2 + ((v - p.lac.cv) / p.lac.rv) ** 2 < 1) return EAU;
-    if (((u - p.cu) / p.ru) ** 2 + ((v - p.cv) / p.rv) ** 2 < 1) {
+  }
+
+  for (const p of LIEUX_LONDRES) {
+    if (p.sol && Math.hypot(u - p.u, v - p.v) < p.r) return p.sol;
+  }
+
+  // Les voies AVANT les parcs : Park Lane, Bayswater et Kensington Road sont
+  // les bords de Hyde Park, et Birdcage Walk celui de St James's. Un parc
+  // qui passait avant ses rues les mangeait sur cinq blocs de chaque côté.
+  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
+  if (voie !== null) return voie === TROTTOIR && platane(u, v) ? ARBRE : voie;
+
+  for (const p of PARCS) {
+    const n = p.n || 2;
+    if ((Math.abs(u - p.cu) / p.ru) ** n + (Math.abs(v - p.cv) / p.rv) ** n < 1) {
       if (Math.abs(u - p.cu) < 0.6 || Math.abs(v - p.cv) < 0.6) return TROTTOIR;
       return ((u + v) & 3) === 0 ? ARBRE : HERBE;
     }
   }
   const dP = Math.hypot(u - PRIMROSE.cu, v - PRIMROSE.cv);
   if (dP < PRIMROSE.r) return ((u + v) & 3) === 0 ? ARBRE : HERBE;
-
-  for (const p of LIEUX_LONDRES) {
-    if (p.sol && Math.hypot(u - p.u, v - p.v) < p.r) return p.sol;
-  }
-
-  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
-  if (voie !== null) return voie === TROTTOIR && platane(u, v) ? ARBRE : voie;
 
   const t = trameDeLondres(u, v);
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
@@ -608,20 +788,27 @@ function buildGlobe(poser) {
 
 // Le mobilier qui signe la ville : les bus impériaux sur Oxford Street, le
 // Strand et Whitehall, les cabines K2 aux carrefours, les taxis noirs.
+//
+// Les positions sont EXPORTÉES : elles suivent les rues, et quand les rues
+// bougent (v206, soixante avenues), les bus bougent avec. Un témoin qui les
+// recopiait en dur cherchait les bus là où ils n'étaient plus — le même piège
+// que `r: 66` à San Francisco, du côté du banc. Il les demande ici.
+export const MOBILIER_LONDRES = {
+  bus: [[-30, -19], [-12, -22], [10, -7], [-1, 10], [30, -17]],
+  cabines: [[-3, 1], [-24, -22], [44, -13], [-11, -6], [7, -5], [63, -5]],
+  taxis: [[-6, 5], [20, -10], [-25, -20], [58, -21]],
+};
 function buildMobilier(poser) {
-  const BUS = [[-30, -21], [-12, -19], [10, -4], [2, 8], [30, -8]];
-  for (const [du, dv] of BUS) {
+  for (const [du, dv] of MOBILIER_LONDRES.bus) {
     for (let k = 0; k <= 2; k++) {
       poser(du + k, 1, dv, ROUGE);
       poser(du + k, 2, dv, k === 1 ? VERRE : ROUGE);
     }
   }
-  const CABINES = [[-3, 1], [-24, -20], [44, -13], [-11, -6], [7, -12], [63, -5]];
-  for (const [du, dv] of CABINES) {
+  for (const [du, dv] of MOBILIER_LONDRES.cabines) {
     poser(du, 1, dv, ROUGE); poser(du, 2, dv, VERRE); poser(du, 3, dv, ROUGE);
   }
-  const TAXIS = [[-6, 3], [20, -7], [-25, -18], [50, -8]];
-  for (const [du, dv] of TAXIS) { poser(du, 1, dv, NOIR); poser(du + 1, 1, dv, NOIR); }
+  for (const [du, dv] of MOBILIER_LONDRES.taxis) { poser(du, 1, dv, NOIR); poser(du + 1, 1, dv, NOIR); }
 }
 
 // La liste que world.js déroule : chaque monument à ses coordonnées.
