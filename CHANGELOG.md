@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v212 — Au volant, on ne traverse plus les murs
+
+**Pourquoi.** Max, capture à l'appui : « cars crashing into walls » — une
+voiture rouge encastrée dans une façade haussmannienne, dans une rue de Paris.
+Conduire, dans ce jeu, c'est brancher le véhicule sur les commandes du joueur,
+donc sur SA physique — boîte de collision comprise. Celle-ci fait **soixante
+centimètres de large**, quand une voiture en fait **2,26**. Tant que le point
+central restait dans la rue, toute la carrosserie passait au travers de ce qui
+la bordait. La dette était écrite noir sur blanc depuis la v155 : « le véhicule
+a besoin de sa propre boîte de collision ».
+
+**Ce que ça change.** Une voiture conduite a désormais sa carrure. Elle
+s'arrête contre les murs au lieu d'entrer dedans, elle ne passe plus dans une
+ruelle où elle ne tient pas, et l'on retrouve sa taille de piéton en
+descendant. La largeur vit dans la fiche de l'espèce (`gabarit`), à côté de
+`montable`, `nourrissable` et `vole` — jamais dans une liste écrite ailleurs.
+
+La boîte prend la LARGEUR du véhicule, pas sa longueur : une boîte alignée sur
+les axes ne tourne pas, et 4,4 blocs ne passeraient dans aucune rue même en
+roulant droit. Une voiture mise en travers mord donc encore un peu, et c'est un
+prix très inférieur à celui d'une voiture fantôme.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui éprouve le trajet de
+l'enfant et non la variable : on dresse un mur, on fonce dedans à pied puis au
+volant, et l'on regarde où l'on s'arrête. Sur `origin/main` les deux distances
+sont identiques — 0,3 bloc, la demi-largeur d'un piéton. Sur la branche, 0,3 à
+pied et **1,1 au volant**. Un second témoin garde la régression que le premier
+rend possible : une fois descendu, on repasse partout où un piéton passe.
+
+---
+
 ## v211 — Les circuits se croisent, ils ne se suivent plus
 
 **Pourquoi.** Max, après la v210 : « Et passent à travers les unes des
