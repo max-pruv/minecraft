@@ -20,6 +20,93 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v205 — Washington roule : des ronds-points qui tournent et onze circuits mesurés
+
+**Pourquoi.** Depuis la v201, chaque grande ville a ses voitures — sauf
+Washington, la seule sans un seul circuit. Le carré de secours n'y trouvait
+jamais une rue : sur le plan de L'Enfant, la moitié des avenues sont des
+diagonales, et une droite qui va de la Maison-Blanche à Dupont Circle traverse
+quatre ronds-points par le milieu. Pire, les ronds-points eux-mêmes étaient
+infranchissables : leur anneau entier était un TROTTOIR, si bien qu'aucune
+voiture ne pouvait passer Dupont, Logan ou Lafayette, et que toute boucle qui
+les touchait tombait à quatre-vingts pour cent sur des pelouses. Le Mall,
+lui, collait au parc du Capitole sans qu'une rue puisse les séparer — un tour
+du Mall n'avait pas de retour.
+
+**Ce que ça change.**
+
+- **Les quatorze ronds-points de Washington ont une chaussée qui en fait le
+  tour**, un jardin (ou une fontaine) au milieu et un trottoir extérieur percé
+  là où débouche une avenue. Une voiture prend un rond-point comme une
+  voiture : par l'arc le plus court, jamais à travers le jardin.
+- **Onze circuits mesurés, tous à 99 ou 100 %**, font rouler des voitures sur
+  trente-trois des trente-six avenues nommées : le tour du Mall, le
+  centre-ville, Penn Quarter, Chinatown, Georgetown, le sud-ouest, Capitol
+  Hill, la grande diagonale Pennsylvania–Connecticut–Massachusetts (cinq
+  ronds-points contournés), Rhode Island, et le nord par la 16e et Logan
+  Circle. Virginia Avenue, New York Avenue et Constitution ouest restent sans
+  boucle, dette déclarée.
+- La 3e Rue passe entre le Mall et le parc du Capitole, comme dans la vraie
+  ville ; Independence et Constitution passent DERRIÈRE les musées (v ±17,
+  trois colonnes de chaussée comme les vraies trente mètres), plus au travers
+  — à ±13 et sept blocs de large, elles mettaient du bitume sous les galeries
+  depuis cinq versions, et les premières voitures du tour du Mall ont traversé
+  l'Air et l'Espace ; Georgetown est à ses vraies adresses (M Street à 1,7 km au nord du
+  Capitole, pas au bord de l'eau) ; Washington Circle est à la 23e et
+  Pennsylvania, plus dans Rock Creek.
+- **Le sol ne bouge pas** : tout se joue dans la NATURE du sol (chaussée,
+  trottoir, pelouse), jamais dans le relief. L'empreinte du relief de
+  `plafond.js` est identique.
+- **Les ormes du Mall et les bosquets des parcs ont enfin un tronc et une
+  couronne** — on marche dessous. Depuis la v161 ils étaient des feuilles
+  posées À PLAT sur le gravier des allées : Washington bâtit ses colonnes
+  hors de la boucle générique et n'avait jamais reçu le remède de Paris,
+  Londres, Nice et Lille. Et un arbre ne pousse plus dans un musée ni sur
+  une bouche de métro (892 colonnes d'arbre sous des monuments avant, 172
+  sous le Pentagone ; zéro après).
+
+**Ce qui le prouve.**
+
+- Trois témoins neufs de `carteMonde.js` interrogent le bâtisseur
+  `solWashington` directement, sans charger le monde : chaque rond-point a
+  huit points roulants sur son anneau et aucun au centre ; au moins dix
+  circuits passent 90 % ; et **aucun circuit ne met un pas dans un jardin** —
+  échantillonné bloc par bloc sur chaque tronçon, pas seulement aux sommets.
+  C'est ce dernier qui a attrapé un bout de Connecticut posé EXACTEMENT sur
+  l'anneau de Farragut : ni dehors ni dedans, et la corde coupait la place.
+- La fumée compte six villes à circuit. Tous vérifiés ROUGES sur
+  `origin/main`, où `circuitsWashington` et `CERCLES` n'existent pas.
+- Un témoin neuf de `washington.js` lit la rangée d'ormes de v = ±4 dans le
+  monde chargé : un tronc de trois blocs une colonne sur deux, de l'air sous
+  la couronne sur l'autre, zéro feuille au sol sur tout le Mall. Rouge sur
+  `origin/main` (0 orme, 74 feuillages à plat sur 130 colonnes).
+- Jugé sur captures : aérien Dupont Circle, K Street et le Mall ; rue
+  Connecticut, Farragut Square, Pennsylvania et Dupont.
+- Le premier portail a rendu trois rouges, démontés et non rejoués : la boîte
+  du musée des Amérindiens (corrigée) ; « on entre dans l'Air et l'Espace »,
+  rouge sur la branche et vert sur `origin/main` avec le même musée — le banc
+  y rend à 4,5 images par seconde au lieu de 15 depuis que des voitures
+  roulent sur Independence, et huit pas de 700 ms ne faisaient plus que
+  quatre blocs (le témoin marche désormais jusqu'à être entré ou jusqu'à ne
+  plus avancer) ; et les voitures dans les musées, qui ont déplacé les deux
+  avenues. Les onze circuits ont été remesurés après : 99 à 100 %.
+
+- Le second portail a rendu UN rouge : le même « on entre dans l'Air et
+  l'Espace », arrêté sur la pelouse à trois blocs de la porte, rien autour
+  (« plafond à -1, 0 mur(s), à (u -45, v 3) »). Le remède du premier portail
+  abandonnait dès qu'UN pas de 700 ms ne faisait pas bouger le joueur, et un
+  pas entier peut tomber dans un hoquet du banc à quatre images par seconde.
+  Vert seul, vert sur `origin/main`. Le témoin n'abandonne plus qu'après trois
+  pas consécutifs sans mouvement — un mur arrête à chaque pas, un hoquet à un
+  seul.
+
+**Portail** (voie longue) : trois passages. Premier : 268 ✅ / 3 ❌, démontés
+ci-dessus ; second : 217 ✅ / 1 ❌, démonté ci-dessus ; troisième : **vert**,
+52 témoins rejoués (fumée 23, `washington.js` 29, dont l'Air et l'Espace à
+« plafond à 10, (u -45, v 7) ») et cinq suites reprises vertes sur le même
+code — `carte.js`, `monte.js`, `plafond.js` (les deux empreintes), `metro.js`,
+`carteMonde.js` — l'empreinte de reprise étant tenue par suite depuis la v195.
+
 ## v204 — Lille à l'échelle GTA, et la citadelle en étoile
 
 **Pourquoi.** Lille était la dernière grande ville de France à son échelle

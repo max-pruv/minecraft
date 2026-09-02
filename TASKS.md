@@ -13,11 +13,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Washington n'a pas de circuit de voitures** — Lille est faite (v204,
-  16 → 32 blocs/km, disque de 92, six circuits mesurés à 99–100 % qui couvrent
-  ses quinze avenues, double empreinte dans `plafond.js`). Il ne reste que
-  Washington sans voies nommées du tout — son plan de L'Enfant demande
-  sa propre méthode.
+- [x] **Washington n'a pas de circuit de voitures — FAIT en v205.** Onze
+  circuits mesurés à 99–100 % couvrent trente-trois des trente-six avenues
+  nommées ; les quatorze ronds-points ont gagné une chaussée et les circuits
+  les contournent au lieu de les traverser.
+
+- [ ] **Trois avenues de Washington restent sans circuit** — Virginia Avenue
+  NO, New York Avenue NO et Constitution ouest (de la 17e au Lincoln) ne
+  referment aucune boucle au-dessus du seuil : Virginia meurt sur
+  Constitution à la 21e, New York sur la 15e sans rue de retour, et
+  Constitution ouest longe le bassin sans rien pour boucler. Il faudrait des
+  raccords de plus (la 21e ou la 23e Rue vers K Street), à mesurer.
 
 - [ ] **Londres n'a qu'un circuit de voitures** — remesuré en v201 sur toutes
   les combinaisons : le triangle de Mayfair passe à 95 %, et les six autres

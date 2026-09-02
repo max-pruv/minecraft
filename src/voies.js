@@ -137,7 +137,11 @@ export function circuitSurRue(pts, ancre, estRoulant, seuil = 0.9) {
 // toutes les combinaisons d'avenues de chaque ville contre son propre sol, et
 // l'on n'a gardé que ce qui passe. Un circuit qui traverserait la Seine, un
 // jardin ou un pâté d'immeubles ne part pas — le témoin s'en assure.
-export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9 }) {
+//
+// `ajuster`, s'il est donné, retouche le tracé chaîné AVANT qu'on ne le
+// mesure : c'est ainsi que Washington fait contourner ses ronds-points, que
+// la ligne droite d'une avenue à l'autre traverserait en plein jardin.
+export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9, ajuster = null }) {
   return (solDe) => {
     const est = (x, z) => roulant.has(voies.sol ? voies.sol(x, z) : null);
     const out = [];
@@ -145,8 +149,9 @@ export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 
     // suivrait le relief bloc à bloc ferait des montagnes russes.
     const y = solDe(ancre.x, ancre.z) + 1.05;
     for (const noms of chaines) {
-      const pts = chainerVoies(voies.liste, noms);
+      let pts = chainerVoies(voies.liste, noms);
       if (!pts) continue;
+      if (ajuster) pts = ajuster(pts);
       const verdict = circuitSurRue(pts, ancre, est, seuil);
       if (!verdict.bon) continue;
       out.push({

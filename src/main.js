@@ -14,7 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { POLE } from './pole.js';
-import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne } from './washington.js';
+import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { createEffects } from './effects.js';
@@ -439,7 +439,7 @@ function updateChunks() {
   // hasard reste en secours pour celles qui n'en publient pas encore.
   const propres = [
     ...circuitsParis(solDe), ...circuitsLondres(solDe), ...circuitsSF(solDe),
-    ...circuitsNice(solDe), ...circuitsLille(solDe),
+    ...circuitsNice(solDe), ...circuitsLille(solDe), ...circuitsWashington(solDe),
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [
