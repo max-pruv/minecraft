@@ -13,6 +13,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [x] **On ne voyait toujours personne en marchant — FAIT en v218.** Le champ
+  de vision fait 46° : dix-huit passants en couronne n'en donnent que 2,3 dans
+  le cadre. Deux sur trois sont désormais posés devant l'enfant, et l'on
+  replace aussi celui qui est passé derrière la ligne des épaules. Mesuré en
+  marchant, cap devant : moyenne par arrêt 1,5 → 5,25, arrêts vides 1 → 0.
+  Resserrer la couronne, seul, ne changeait rien — c'est mesuré et écrit.
+
 - [x] **La ville se vidait dès qu'on marchait — FAIT en v217.** Un passant
   n'était ramené devant l'enfant qu'au-delà de 150 blocs, quand un personnage
   cesse d'être dessiné à 62 : entre les deux il est invisible ET pas rapatrié.

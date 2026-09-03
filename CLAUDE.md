@@ -1107,6 +1107,42 @@ invisible ET pas rapatrié. Mesuré en traversant Paris : 10, 8, 7, 4, **0**, 2,
   l'exige** — c'est écrit plus haut, et c'est la deuxième fois que cela sauve
   une livraison.
 
+**ON PEUPLE CE QUE L'ENFANT VOIT, ET IL VOIT QUARANTE-SIX DEGRÉS (v218).** La
+v217 avait gardé la ville habitée ; Max ne voyait toujours personne. Le champ
+de vision fait 46°, un huitième du tour d'horizon : dix-huit passants en
+couronne en donnent 18 × 46/360 = **2,3** dans le cadre. Trois choses, dont
+une erreur à ne pas refaire.
+
+- **RESSERRER LA COURONNE NE MULTIPLIE RIEN — et c'était mon conseil.** Une
+  couronne est uniforme en angle : son RAYON ne décide pas combien de gens
+  tombent dans un secteur de 46°. Mesuré 2,3 à 14-55 blocs et 2,33 à 14-34.
+  Ce que le rayon décide, c'est la LISIBILITÉ — à trente-quatre blocs un
+  personnage se voit encore et passe rarement derrière un immeuble. Devant un
+  « il n'y en a pas assez », la première question est : combien en voit-on, et
+  qu'est-ce qui gouverne ce nombre ?
+- **CE QUI GOUVERNE LE NOMBRE, C'EST LA RÉPARTITION, ET ELLE EST GRATUITE.**
+  En acheter plus se paie en appels de dessin (onze maillages par passant) ;
+  les poser là où l'enfant REGARDE ne coûte rien. Deux sur trois dans un cône
+  de ±60° devant lui, le tiers restant partout — sinon un demi-tour donne un
+  désert.
+- **ON REPLACE AUSSI CELUI QUI EST PASSÉ DERRIÈRE, PAS SEULEMENT LE LOINTAIN.**
+  Un seuil de distance seul ne suffit pas : un pas de vingt blocs laisse ceux
+  qu'on vient de dépasser SOUS le seuil, donc immobiles derrière soi, et la rue
+  se vide à mesure qu'on avance — mesuré 6, 0, 0, 0 dans le cadre. Au-delà de
+  la ligne des épaules (90° de l'axe du regard) on est très largement hors d'un
+  champ de 46° : le déplacement reste invisible, c'est la même garantie que
+  `TROP_LOIN`, par l'angle au lieu de la distance.
+- **Et un témoin de vie de rue doit MARCHER, CAP DEVANT, et compter ce qui est
+  DANS LE CADRE.** Compter « à moins de soixante-deux blocs » ne peut pas voir
+  ce défaut : les dix-huit y sont des deux côtés. C'est le troisième témoin de
+  cette famille, et à chaque fois le même piège — celui de la v217 attendait
+  au lieu de marcher, celui-ci comptait la portée au lieu du cadre.
+- **Une mesure isolée n'est pas un fait.** J'ai annoncé « la rue de Rivoli n'a
+  pas un piéton dans le cadre sur tout son parcours », vu une fois : la mesure
+  suivante sur le même code rendait 3, 2, 1, 1. Ce qui tient d'une exécution à
+  l'autre, c'est la MOYENNE (1,5 contre 5,25), pas le creux le plus frappant.
+  Un verdict se pose sur ce qui se reproduit.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les
