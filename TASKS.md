@@ -13,6 +13,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Éteindre sa caméra ne retire ni la vignette ni le son — DETTE DÉJÀ EN
+  PRODUCTION, mesurée des deux côtés (v218).** `visio.js`, rejouée SEULE sur la
+  branche et sur `origin/main` dans un arbre séparé, rend les deux mêmes
+  témoins rouges avec les mêmes valeurs : « quand Alice éteint, sa vignette
+  part » (la piste vidéo reste, `large: 0, haut: 0`, mais présente) et « et son
+  filet de voix aussi » (`pistes: 1, muet: false`). Le cas du NUAGE, lui, est
+  vert des deux côtés — « quand Tom éteint, son portrait disparaît ». C'est
+  donc le chemin DIRECT qui ne retire pas ses pistes à l'extinction, pas le
+  mécanisme d'extinction lui-même.
+
 - [x] **On ne voyait toujours personne en marchant — FAIT en v218.** Le champ
   de vision fait 46° : dix-huit passants en couronne n'en donnent que 2,3 dans
   le cadre. Deux sur trois sont désormais posés devant l'enfant, et l'on
