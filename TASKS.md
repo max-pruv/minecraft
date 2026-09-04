@@ -13,6 +13,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Le portail rougit maintenant sous sa propre charge, et il faut le
+  dire.** Quatorze suites sur quatre cœurs : la v218 a rendu `reseau.js` rouge
+  et la v219 `monte.js` et `maj.js`, toutes VERTES rejouées seules. Le
+  discriminant marche — en v217 `maj.js` était rouge AUSSI seule, et c'était un
+  vrai défaut — mais trois livraisons de suite avec un rouge de charge, cela
+  cesse d'être une exception. Deux pistes, aucune gratuite : faire souffler le
+  banc entre les suites lourdes (`souffler()` existe et n'est pas appelé
+  partout), ou déclarer un budget de temps par suite. À mesurer avant de
+  choisir : combien d'images par seconde le banc rend-il à la quatorzième
+  suite, contre la première ?
+
 - [x] **Éteindre sa caméra ne retirait ni la vignette ni le son — FAIT en
   v219.** Le chemin direct attendait le `close` média de PeerJS, qui ne
   traverse pas ; le chemin du nuage, lui, ANNONÇAIT sa fin — d'où son témoin
