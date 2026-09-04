@@ -1008,6 +1008,71 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils marchent — ce sont des passants, pas des statues',
       bouge >= 2, `${bouge} promeneur(s) sur la place ont bougé en huit secondes`);
 
+    // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
+    //
+    // Max, après la v217 : la ville reste habitée, mais l'enfant ne VOIT
+    // toujours personne. Le chiffre qui l'explique : le champ de vision fait
+    // QUARANTE-SIX degrés, un huitième du tour d'horizon. Dix-huit passants
+    // répartis en couronne en donnent 18 × 46/360 = 2,3 dans le cadre — et
+    // c'est exactement ce qui se mesure. Une couronne étant uniforme en angle,
+    // en resserrer le RAYON n'y change rien : 2,3 à 14-55 blocs, 2,33 à 14-34.
+    //
+    // Deux remèdes, tous deux gratuits en appels de dessin : deux passants sur
+    // trois sont posés DEVANT l'enfant, et l'on replace aussi celui qui est
+    // passé DERRIÈRE la ligne des épaules — sans quoi un bond de vingt blocs
+    // laisse ceux qu'on vient de dépasser sous le seuil de distance, et la rue
+    // se vide à mesure qu'on avance.
+    //
+    // LE TÉMOIN MARCHE, CAP DANS LE SENS DE LA MARCHE, ET COMPTE CE QUI EST
+    // DANS LE CADRE. Un décompte « à moins de soixante-deux blocs » ne peut pas
+    // voir ce défaut : les dix-huit y sont dans les deux cas. Mesuré sur
+    // `origin/main` en remontant la rue de Rivoli : 0, 0, 0, 0, 0, 0 — pas un
+    // piéton dans le cadre sur tout son parcours.
+    const rue = await tab.evaluate(async () => {
+      const m = await import('./src/paris.js');
+      const g = window.__game;
+      const cam = g.player.camera;
+      const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
+      const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
+      const vus = [];
+      for (const [, a, b] of trajets) {
+        const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const yaw = Math.atan2(b[0] - a[0], -(b[1] - a[1]));
+        const dx = Math.sin(yaw), dz = -Math.cos(yaw);
+        for (let d = 0; d <= L; d += 25) {
+          const f = d / L;
+          const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
+          const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);
+          g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
+          g.player.vel.set(0, 0, 0);
+          g.player.yaw = yaw;
+          // La boucle des passants passe toutes les deux secondes ; on lui en
+          // laisse trois, le temps de ramener devant ceux qu'on vient de
+          // dépasser.
+          await new Promise((r) => setTimeout(r, 7000));
+          let n = 0;
+          for (const q of g.npcs) {
+            if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
+            if (!(q.mesh && q.mesh.visible)) continue;
+            const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
+            const dd = Math.hypot(ex, ez);
+            if (dd >= 62 || dd < 1) continue;
+            const cos = (ex * dx + ez * dz) / dd;
+            if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+          }
+          vus.push(n);
+        }
+      }
+      return { vus, vides: vus.filter((n) => n === 0).length,
+        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2) };
+    });
+    // Le verdict porte sur les ARRÊTS VIDES, pas sur la moyenne : c'est de
+    // marcher dans une rue déserte qu'un enfant se plaint, et un creux ne se
+    // rattrape pas par une moyenne. Sur `origin/main`, six arrêts vides sur
+    // dix ; sur la branche, aucun.
+    verifier('et l\'on ne marche pas dans une rue vide',
+      rue.vides <= 1 && rue.moyenne >= 3, JSON.stringify(rue));
+
     // ET CE QU'ON NE VOIT PAS NE SE DESSINE PAS.
     //
     // Max, sur son iPad : « ce n'est pas très fluide, c'est saccadé ». Mesuré

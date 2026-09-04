@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v218 — Les rues sont peuplées là où l'enfant regarde
+
+**Pourquoi.** La v217 avait empêché la ville de se vider : les dix-huit
+habitants restent bien autour de l'enfant quand il marche. Il ne les VOYAIT
+toujours pas. Le chiffre qui l'explique tient en une ligne : **le champ de
+vision fait quarante-six degrés**, un huitième du tour d'horizon. Dix-huit
+passants répartis en couronne en donnent 18 × 46/360 = **2,3** dans le cadre —
+et c'est exactement ce qui se mesure.
+
+Deux fausses pistes écartées par la mesure, et il faut le dire parce que la
+première était la mienne. **Resserrer la couronne ne change rien** : elle est
+uniforme en angle, son rayon ne décide pas combien de gens tombent dans un
+secteur de 46° — mesuré 2,3 à 14-55 blocs, 2,33 à 14-34. Et **en acheter plus
+se paie** : un passant coûte onze maillages, les dix-huit en valent déjà deux
+cents.
+
+**Ce que ça change.** Deux remèdes, tous deux gratuits en appels de dessin.
+Deux passants sur trois sont posés **devant** l'enfant, dans un cône de ±60° —
+le tiers restant garde la rue derrière habitée. Et l'on replace aussi celui qui
+est passé **derrière la ligne des épaules**, pas seulement le lointain : sans
+cela, un pas de vingt blocs laisse ceux qu'on vient de dépasser juste sous le
+seuil de distance, et la rue se vide à mesure qu'on avance. La couronne se
+resserre tout de même à trente-quatre blocs — non pour en voir plus, mais
+parce qu'à cette distance un personnage est encore lisible et rarement caché
+par un immeuble.
+
+Rien de tout cela ne se voit quand on tourne sur place, et c'est voulu : on ne
+déplace jamais quelqu'un que l'enfant a dans son champ.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` **marche**, cap dans le
+sens de la marche, et compte les passants **dans le cadre** — un décompte « à
+moins de soixante-deux blocs » ne peut pas voir ce défaut, les dix-huit y sont
+des deux côtés. Rejoué dans un arbre séparé sur `origin/main` : moyenne **1,5**
+par arrêt, un arrêt vide. Sur la branche : **5,25**, aucun arrêt vide. Le
+verdict porte sur les arrêts VIDES autant que sur la moyenne — c'est de marcher
+dans une rue déserte qu'un enfant se plaint, et un creux ne se rattrape pas par
+une moyenne. Le brassage réglé en v217 n'est pas rouvert (zéro déplacement
+inutile par tour), et la traversée de la v217 tient (pire 11).
+
+---
+
 ## v217 — La ville reste habitée quand on la traverse
 
 **Pourquoi.** Max, après la v216 : « clairement pas de piétons, pas de vie

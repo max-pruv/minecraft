@@ -13,6 +13,23 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Éteindre sa caméra ne retire ni la vignette ni le son — DETTE DÉJÀ EN
+  PRODUCTION, mesurée des deux côtés (v218).** `visio.js`, rejouée SEULE sur la
+  branche et sur `origin/main` dans un arbre séparé, rend les deux mêmes
+  témoins rouges avec les mêmes valeurs : « quand Alice éteint, sa vignette
+  part » (la piste vidéo reste, `large: 0, haut: 0`, mais présente) et « et son
+  filet de voix aussi » (`pistes: 1, muet: false`). Le cas du NUAGE, lui, est
+  vert des deux côtés — « quand Tom éteint, son portrait disparaît ». C'est
+  donc le chemin DIRECT qui ne retire pas ses pistes à l'extinction, pas le
+  mécanisme d'extinction lui-même.
+
+- [x] **On ne voyait toujours personne en marchant — FAIT en v218.** Le champ
+  de vision fait 46° : dix-huit passants en couronne n'en donnent que 2,3 dans
+  le cadre. Deux sur trois sont désormais posés devant l'enfant, et l'on
+  replace aussi celui qui est passé derrière la ligne des épaules. Mesuré en
+  marchant, cap devant : moyenne par arrêt 1,5 → 5,25, arrêts vides 1 → 0.
+  Resserrer la couronne, seul, ne changeait rien — c'est mesuré et écrit.
+
 - [x] **La ville se vidait dès qu'on marchait — FAIT en v217.** Un passant
   n'était ramené devant l'enfant qu'au-delà de 150 blocs, quand un personnage
   cesse d'être dessiné à 62 : entre les deux il est invisible ET pas rapatrié.
