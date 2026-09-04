@@ -13,8 +13,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Éteindre sa caméra ne retire ni la vignette ni le son — DETTE DÉJÀ EN
-  PRODUCTION, mesurée des deux côtés (v218).** `visio.js`, rejouée SEULE sur la
+- [x] **Éteindre sa caméra ne retirait ni la vignette ni le son — FAIT en
+  v219.** Le chemin direct attendait le `close` média de PeerJS, qui ne
+  traverse pas ; le chemin du nuage, lui, ANNONÇAIT sa fin — d'où son témoin
+  vert. L'extinction s'annonce désormais à tous les pairs par le tuyau des
+  blocs. Les deux témoins rendent `[]`, `visio.js` est entièrement verte.
+  Constat d'origine (v218) : `visio.js`, rejouée SEULE sur la
   branche et sur `origin/main` dans un arbre séparé, rend les deux mêmes
   témoins rouges avec les mêmes valeurs : « quand Alice éteint, sa vignette
   part » (la piste vidéo reste, `large: 0, haut: 0`, mais présente) et « et son

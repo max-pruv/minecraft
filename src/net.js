@@ -1519,10 +1519,21 @@ export class NetSession {
         }
         if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
         break;
-      case 'photo-fin':
-        if (this.onPhotoFin) this.onPhotoFin(msg.from || conn.peer);
+      // « J'ai coupé ma caméra. » On retire ce qu'on montrait de ce pair, quel
+      // que soit le chemin par lequel il passait : la photo du nuage ET la
+      // vignette du direct, dont le `close` média ne vient jamais.
+      case 'photo-fin': {
+        const qui = msg.from || conn.peer;
+        if (this.onPhotoFin) this.onPhotoFin(qui);
+        if (this.onRemoteVideoClosed) this.onRemoteVideoClosed(qui);
+        const entrant = this.inboundVideo.get(qui);
+        if (entrant) {
+          this.inboundVideo.delete(qui);
+          try { entrant.close(); } catch { /* déjà fermé */ }
+        }
         if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
         break;
+      }
       // L'heure et le temps qu'il fait. Chaque appareil les tirait au sort de
       // son côté : deux enfants côte à côte pouvaient être l'un sous la pluie
       // en pleine nuit, l'autre au soleil de midi. C'est l'hôte qui décide, et
@@ -1715,7 +1726,7 @@ export class NetSession {
         this.videoStream.getTracks().forEach((t) => t.stop());
         this.videoStream = null;
       }
-      this.annoncerFinDePhoto();
+      this.annoncerCameraCoupee();
       this.hooks.toast('📷 Caméra et micro coupés', 0xcccccc);
       if (this.onCamChange) this.onCamChange(false);
     }
@@ -1838,9 +1849,25 @@ export class NetSession {
 
   // La caméra s'éteint : on le dit, sinon la dernière image resterait affichée
   // comme un portrait au mur.
-  annoncerFinDePhoto() {
+  // ÉTEINDRE SA CAMÉRA S'ANNONCE, CELA NE S'ATTEND PAS D'UN ÉVÉNEMENT DE
+  // TRANSPORT.
+  //
+  // Le chemin du NUAGE l'annonçait déjà — c'est pour cela qu'il était vert —
+  // et le chemin DIRECT s'en remettait au `close` de la connexion média de
+  // PeerJS, qui ne traverse pas jusqu'à l'autre bout quand on ferme de son
+  // côté. Mesuré des deux côtés en v218 : la vignette d'Alice restait chez
+  // Marlon (piste vidéo à 0 × 0, mais présente) et sa piste audio n'était ni
+  // arrêtée ni muette. Un enfant qui coupe sa caméra doit disparaître de
+  // l'écran de l'autre, et son micro avec — c'est le contrat, pas un détail
+  // d'affichage.
+  //
+  // On l'annonce donc à TOUT LE MONDE, par le tuyau des blocs, qui lui arrive
+  // toujours. Le nom du message reste `photo-fin` : une tablette restée sur
+  // l'ancienne version le comprend et retire au moins la vignette photo, là
+  // où un nom neuf ne lui dirait rien du tout.
+  annoncerCameraCoupee() {
     for (const c of this.conns.values()) {
-      if (c.conn && c.conn.parNuage) this.envoyer(c, { t: 'photo-fin' });
+      if (c.conn) this.envoyer(c, { t: 'photo-fin' });
     }
   }
 
