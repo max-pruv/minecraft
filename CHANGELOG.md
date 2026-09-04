@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v219 — Couper sa caméra coupe vraiment l'image et le son
+
+**Pourquoi.** Quand Alice éteignait sa caméra, **Marlon continuait de la voir
+et de l'entendre.** Sa vignette restait à l'écran — la piste vidéo tombait bien
+à 0 × 0, mais elle restait dans la liste — et sa piste audio n'était ni arrêtée
+ni muette. Pour deux enfants qui s'appellent, ce n'est pas un détail
+d'affichage : couper sa caméra, c'est le geste par lequel on décide qu'on n'est
+plus vu ni entendu. Il devait donc être tenu.
+
+Le défaut était déclaré depuis la v218, mesuré des deux côtés dans un arbre
+séparé — il était déjà en production, pas causé par la livraison de ce jour-là.
+
+**Ce que ça change.** La cause était visible dans le verdict lui-même : le
+même témoin, pour le chemin du **nuage**, était VERT. Le nuage ANNONCE la fin
+par le tuyau des blocs ; le chemin **direct**, lui, s'en remettait au `close`
+de la connexion média de PeerJS — un événement qui ne traverse pas jusqu'à
+l'autre bout quand on ferme de son côté. On attendait donc un signal qui
+n'arrivait jamais.
+
+L'extinction s'annonce désormais à **tous** les pairs, par le même tuyau que
+les blocs, qui lui arrive toujours. À la réception, on retire ce qu'on montrait
+de ce pair quel que soit son chemin — la photo du nuage comme la vignette du
+direct — et l'on ferme l'appel entrant. Le nom du message reste `photo-fin` :
+une tablette restée sur l'ancienne version le comprend et retire au moins la
+photo, là où un nom neuf ne lui dirait rien.
+
+**Ce qui le prouve.** Les deux témoins de `visio.js` qui portaient la dette
+rendent désormais `[]` là où ils rendaient une piste vidéo et une piste audio
+survivantes ; la suite est entièrement verte. Aucun témoin n'a été ajouté et
+c'est voulu : ceux qui existaient décrivaient exactement le défaut, ils
+n'attendaient qu'un remède. Le cas du nuage reste vert, comme avant — c'est lui
+qui avait montré la voie.
+
+---
+
 ## v218 — Les rues sont peuplées là où l'enfant regarde
 
 **Pourquoi.** La v217 avait empêché la ville de se vider : les dix-huit

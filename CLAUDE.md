@@ -539,6 +539,19 @@ Décisions qui ont chacune coûté une panne réelle :
   l'inscription.
 - **C'est le receveur qui cède**, pas l'émetteur : le fantôme tourne du vieux
   code et ne peut obéir à une règle qu'il ne connaît pas.
+- **CE QUI S'ARRÊTE S'ANNONCE, CELA NE S'ATTEND PAS D'UN ÉVÉNEMENT DE
+  TRANSPORT (v219).** Éteindre sa caméra fermait les appels sortants et
+  comptait sur le `close` de la connexion média de PeerJS pour prévenir
+  l'autre. Il ne traverse pas : la vignette d'Alice restait chez Marlon, piste
+  vidéo à 0 × 0 mais présente, et sa piste audio ni arrêtée ni muette. Deux
+  choses à retenir. D'abord, **le remède était déjà dans le fichier** : le
+  chemin du NUAGE annonçait sa fin par le tuyau des blocs, et c'est pour cela
+  que son témoin était vert quand celui du direct était rouge — quand deux
+  chemins font la même chose et qu'un seul marche, le bon est écrit à côté.
+  Ensuite, **un message de fin garde son ancien NOM** (`photo-fin`) : une
+  tablette restée sur l'ancienne version le comprend et nettoie au moins ce
+  qu'elle sait, là où un nom neuf tombe dans le vide — c'est la règle du
+  receveur qui cède, appliquée au vocabulaire.
 
 ### Conduire — trois façons d'être porté, un seul jeu de commandes
 
