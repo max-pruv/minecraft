@@ -1050,6 +1050,12 @@ export function createVehicules({ scene, player }) {
     // qu'il fallait pour prouver que le métro est passé sous terre.
     etat: () => convois.map((c) => ({
       nom: c.nom,
+      // La LONGUEUR du tour, et le nombre d'arrêts marqués. C'est ce qui
+      // permet à un témoin de dire combien de temps un enfant attend sur un
+      // quai — et de le dire sur l'ANCIEN code comme sur le neuf, puisque la
+      // géométrie d'une voie ne dépend pas du nom qu'on donne au train.
+      longueur: Math.round(c.parcours.longueur),
+      nbArrets: c.arrets.length,
       y: Math.round((c.elements[0] ? c.elements[0].position.y : 0) * 10) / 10,
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
