@@ -1,2 +1,7 @@
 # captures d'écran des tests : elles se régénèrent, elles n'ont rien à faire ici
 shot_*.png
+
+# sondes de brouillon du banc : elles vivent le temps d'un diagnostic et
+# meurent avec lui — on ne verse pas un instrument de mesure jetable dans le
+# dépôt, il n'a de sens que pour la panne du jour.
+tests/_diag_*.cjs
