@@ -1843,15 +1843,34 @@
       //
       // Les modèles du scanner de visage (8 Mo, immuables) sont épargnés, et
       // localStorage n'est pas touché : les parties restent là où elles sont.
+      //
+      // RIEN NE S'ATTEND ICI SANS BORNE, PARCE QUE C'EST JUSTEMENT CE QUI EST
+      // BLOQUÉ. `unregister()` est une tâche de la MÊME file d'attente que
+      // l'installation en cours : quand celle-ci ne finit pas, l'attendre
+      // bloque le remède écrit pour elle. Mesuré au banc, sur une installation
+      // qui ne finit jamais : le bandeau « 🔄 On va chercher la dernière
+      // version… » s'affichait et plus RIEN ne se passait — ni nettoyage, ni
+      // rechargement, indéfiniment. Le bouton du badge de version, qui est le
+      // dernier recours d'un parent, tombait dans le même trou.
+      //
+      // Chaque étape a donc son délai, et l'on recharge dans tous les cas :
+      // partir avec un cache à moitié nettoyé vaut infiniment mieux que rester
+      // sur un écran qui ne bouge plus.
+      const borne = (p, ms = 2000) => Promise.race([
+        Promise.resolve(p).catch(() => null),
+        new Promise((ok) => setTimeout(() => ok(null), ms)),
+      ]);
       const forcerMaj = async () => {
         showLoader('🔄 On va chercher la dernière version…');
         try {
-          for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+          const regs = await borne(navigator.serviceWorker.getRegistrations()) || [];
+          await borne(Promise.all(regs.map((r) => r.unregister())));
         } catch { /* pas de service worker : tant mieux */ }
         try {
-          for (const k of await caches.keys()) {
-            if (k !== 'web-minecraft-static-v1') await caches.delete(k);
-          }
+          const cles = await borne(caches.keys()) || [];
+          await borne(Promise.all(cles
+            .filter((k) => k !== 'web-minecraft-static-v1')
+            .map((k) => caches.delete(k))));
         } catch { /* pas de cache */ }
         const u = new URL(location.href);
         u.searchParams.set('maj', Date.now().toString(36));
@@ -1970,23 +1989,46 @@
             reloadOnce('✨ Mise à jour installée — on démarre !');
           }
         }, 4000);
-        // Plus tard : on ne retient pas un enfant devant un écran fixe.
-        setTimeout(() => {
-          if (refreshing) return;
+        // Repartir de zéro — une seule fois par session, sinon on tournerait
+        // en rond. Si l'on a déjà essayé, on laisse jouer plutôt que de
+        // retenir un enfant devant un écran qui ne bouge plus.
+        const repartirDeZero = () => {
           sessionStorage.removeItem('wm-updating');
-          // Rien n'est en train de s'installer alors que le serveur annonce
-          // autre chose : le service worker est bloqué, pas lent. C'est ce cas
-          // qui laissait un iPad plusieurs versions en retard sans que
-          // personne ne puisse rien y faire. On repart alors de zéro — une
-          // seule fois par session, sinon on tournerait en rond.
-          const bloque = !reg.installing && !reg.waiting;
-          if (bloque && sessionStorage.getItem('wm-maj-forcee') !== '1') {
-            sessionStorage.setItem('wm-maj-forcee', '1');
-            forcerMaj();
+          if (sessionStorage.getItem('wm-maj-forcee') === '1') {
+            loader.classList.add('hidden');
             return;
           }
-          loader.classList.add('hidden');
+          sessionStorage.setItem('wm-maj-forcee', '1');
+          forcerMaj();
+        };
+        // Vingt secondes : rien n'est en train de s'installer alors que le
+        // serveur annonce autre chose. Le service worker est bloqué, pas lent
+        // — c'est ce cas qui laissait un iPad plusieurs versions en retard.
+        setTimeout(() => {
+          if (refreshing) return;
+          if (reg.installing || reg.waiting) return; // ça avance : on lui laisse sa chance
+          repartirDeZero();
         }, 20000);
+        // QUARANTE-CINQ SECONDES : LE PLANCHER.
+        //
+        // « Ça s'installe » ne veut pas dire « ça va finir ». Une installation
+        // peut démarrer puis rester en suspens sur un fichier qui ne répond
+        // pas — mesuré au banc : soixante-seize fichiers pris, le
+        // soixante-dix-septième jamais. Juger sur `installing` laissait alors
+        // l'enfant sur l'ancienne version, bandeau caché, indéfiniment.
+        //
+        // Le seul critère qui ne se trompe pas est celui de l'enfant : au bout
+        // de quarante-cinq secondes il a la version neuve, ou l'on repart de
+        // zéro. C'est un plafond, pas une norme — une mise à jour ordinaire se
+        // fait en quelques secondes.
+        setTimeout(async () => {
+          if (refreshing) return;
+          if (await versionActive() === attendue) {
+            reloadOnce('✨ Mise à jour installée — on démarre !');
+            return;
+          }
+          repartirDeZero();
+        }, 45000);
       };
 
       // Déclarée après versionActive, dont elle a besoin pour annoncer le

@@ -140,10 +140,22 @@ function verifier(nom, ok, detail = '') {
     await cacher(tab2);
     await dormir(1500);
     await revenir(tab2);
-    const sauve = await jusqua(async () => (await tab2.evaluate(
-      () => !window.__marqueAvantVeille).catch(() => false)), 60000);
+    // CE QU'ON MESURE, C'EST QUE L'ENFANT PEUT REJOUER — pas que la page se
+    // recharge. Le premier brouillon de ce témoin regardait la marque
+    // disparaître, et il était VERT sur l'ancien code : celui-ci rechargeait
+    // bien au bout de quatre secondes, mais sur la MÊME ancienne version, et
+    // repartait aussitôt attendre une installation qui ne viendrait pas. La
+    // page bougeait, l'enfant restait devant le bandeau.
+    const rejouable = await jusqua(async () => (await tab2.evaluate(() => {
+      const b = document.getElementById('boot-loader');
+      return !!document.getElementById('play-btn') && !!b && b.classList.contains('hidden');
+    }).catch(() => false)), 90000);
+    const etat = await tab2.evaluate(() => ({
+      bandeau: (document.getElementById('boot-text') || {}).textContent || '',
+      forcee: sessionStorage.getItem('wm-maj-forcee'),
+    })).catch(() => 'page partie');
     verifier('une installation bloquée ne retient pas l\'enfant devant le bandeau',
-      sauve, sauve ? '' : 'la page attend toujours une installation qui ne viendra pas');
+      rejouable, rejouable ? '' : `le bandeau est toujours là — ${JSON.stringify(etat)}`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
