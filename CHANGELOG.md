@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v222 — Un train toutes les trente secondes sur le quai
+
+**Pourquoi.** Max : « make sure trains arrive and depart from train stations ».
+On pouvait rester une minute devant une gare sans rien voir venir.
+
+Les gares, elles, étaient au bon endroit — mesuré, les **dix-huit arrêts
+déclarés tombent à zéro bloc d'une gare**, et le mécanisme d'arrêt marche
+depuis la v179. Ce qui manquait, ce sont les trains : chaque ligne n'en avait
+que **deux**, pour un tour qui dure jusqu'à cent vingt-sept secondes entre
+Madrid et Barcelone. L'attente sur un quai allait donc de vingt-six à
+**soixante-quatre secondes**, pour un arrêt de quatre.
+
+Et la règle était déjà écrite dans le code, deux versions plus tôt, pour le
+métro de Washington : « trois rames ramènent l'attente sous la demi-minute, ce
+qui est déjà l'intervalle du vrai métro aux heures creuses ». Elle n'avait
+jamais été appliquée aux trains intervilles, qui sont pourtant bien plus longs.
+Six lignes sur neuf la violaient.
+
+**Ce que ça change.** Le nombre de trains d'une ligne devient un **résultat** :
+le tour divisé par la demi-minute, au minimum deux. Et le bouton
+d'embarquement dit désormais où l'on va — « train TGV Paris–Lyon » plutôt que
+« train TGV ».
+
+| | avant | après |
+| --- | --- | --- |
+| Pire attente sur un quai | 64 s (Madrid–Barcelone) | **30 s** |
+| Trains en circulation | 18 | 29 |
+
+**Ce qui le prouve.** Un témoin de `metro.js`, rouge sur `origin/main` (« 64 s
+avec 2 trains ») et vert sur la branche (« 30 s avec 3 trains »). Il ne
+chronomètre RIEN : une durée mesurée sur ce banc mesure le banc. Il lit le
+nombre de convois que le jeu a réellement créés, recalcule le tour depuis la
+géométrie de la voie, et divise. Portail complet vert.
+
+**Et une erreur de témoin, corrigée deux fois.** Le premier jet comptait les
+convois par nom de ligne puis divisait par le nombre de segments : il annonçait
+« 3,5 trains », un chiffre qui n'existe pas. Le second comptait par le nom de
+segment — mais ce nom a changé dans cette même livraison, si bien qu'il
+trouvait **zéro** train sur l'ancien code et rendait le bon verdict pour la
+mauvaise raison. Un témoin doit échouer *proprement*, avec un message vrai. Il
+compte désormais par la LONGUEUR du tour, qui ne dépend d'aucun nom.
+
+---
+
 ## v221 — Chaque monument de Paris a sa rue
 
 **Pourquoi.** Des voitures traversaient l'Opéra, les Invalides, la colonne de

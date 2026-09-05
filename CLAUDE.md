@@ -740,6 +740,36 @@ leçons, et la première vaut pour tout ce qui se déplace sur un tracé.
   Lus séparément, le train flotterait au-dessus des remblais et s'enfoncerait
   dans les tranchées.
 
+**COMBIEN DE TRAINS ? AUTANT QU'IL EN FAUT POUR QU'ON N'ATTENDE PAS (v222).**
+Max : « make sure trains arrive and depart from train stations ». Les gares
+étaient au bon endroit — mesuré, les dix-huit arrêts tombent à ZÉRO bloc d'une
+gare — mais chaque ligne n'avait que DEUX trains pour un tour allant jusqu'à
+cent vingt-sept secondes. L'attente sur un quai : vingt-six à soixante-quatre
+secondes, pour un arrêt de quatre. Trois choses en sortent.
+
+- **La règle existait déjà, à un fichier près.** Le métro de Washington l'avait
+  payée en v161 et écrite : « trois rames ramènent l'attente sous la
+  demi-minute ». Elle n'avait jamais été appliquée aux trains intervilles, qui
+  sont pourtant dix fois plus longs. **Quand une règle de confort est écrite
+  pour un véhicule, on cherche le jour même tous ceux qui la partagent** —
+  c'est la leçon du verre dans les murs, appliquée au temps d'attente.
+- **Le nombre de trains est un RÉSULTAT** : le tour divisé par la demi-minute,
+  au minimum deux. Écrit en dur, il redeviendrait faux à la première ligne
+  qu'on allonge.
+- **Le NOM d'un convoi porte son segment**, pas seulement sa ligne. Pour
+  l'enfant, « train TGV Paris–Lyon » dit où l'on va. Et pour la mesure : deux
+  segments d'une même ligne n'ont ni la même longueur ni le même nombre de
+  trains.
+
+**ET UN TÉMOIN NE SE FIE PAS À UN NOM QUI CHANGE DANS LA MÊME LIVRAISON.**
+Celui-ci a été faux deux fois avant d'être juste. D'abord il comptait par nom
+de LIGNE et divisait par le nombre de segments : « 3,5 trains », un chiffre qui
+n'existe pas. Puis il comptait par nom de SEGMENT — mais ce nom venait de
+changer, donc il trouvait ZÉRO train sur l'ancien code et rendait le bon
+verdict pour la mauvaise raison. Un témoin doit échouer *proprement*, avec un
+message vrai, sinon il n'est pas démontable. Il compte désormais par la
+LONGUEUR du tour, qui ne dépend d'aucun nom — et `etat()` l'expose pour cela.
+
 **Et une gare, c'est trois pièces et une échelle (v214).** Le train marquait
 l'arrêt aux deux bouts de chaque ligne depuis la v179 — `traceSegment` le
 déclare — mais rien n'y était bâti : on l'attendait debout dans l'herbe. Un

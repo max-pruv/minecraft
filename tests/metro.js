@@ -146,6 +146,56 @@ const RAYON = 38;
     verifier('la rame roule sous le niveau de la rue',
       rame && rame.y < rame.sol, JSON.stringify(rame));
 
+    // --- ON N'ATTEND PAS UNE MINUTE SUR UN QUAI -----------------------------
+    //
+    // Max : « make sure trains arrive and depart from train stations ». Les
+    // gares étaient au bon endroit — les dix-huit arrêts tombent à zéro bloc
+    // d'une gare — mais chaque ligne n'avait que DEUX trains pour un tour qui
+    // dure jusqu'à cent vingt-sept secondes. L'attente sur un quai allait de
+    // vingt-six à soixante-quatre secondes.
+    //
+    // La règle existait déjà, écrite pour le métro de Washington : « trois
+    // rames ramènent l'attente sous la demi-minute, ce qui est déjà
+    // l'intervalle du vrai métro aux heures creuses ». Six lignes sur neuf la
+    // violaient.
+    //
+    // Le témoin ne chronomètre RIEN — une durée mesurée sur ce banc mesure le
+    // banc. Il lit le nombre de convois que le jeu a réellement créés par
+    // ligne, recalcule le tour depuis la géométrie de la voie, et divise.
+    // C'est ce que l'enfant obtient : le temps entre deux trains à son quai.
+    const quais = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const t = await import('./src/trains.js');
+      const e = (window.__vehicules && window.__vehicules.etat && window.__vehicules.etat()) || [];
+      const lignes = [];
+      for (const seg of t.segmentsDeTrain()) {
+        const tr = t.traceSegment(seg, (x, z) => w.terrainHeight(x, z), 32);
+        let L = 0;
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          L += Math.hypot(b.x - a.x, b.z - a.z);
+        }
+        // ON COMPTE PAR LA GÉOMÉTRIE, PAS PAR LE NOM. Deux segments d'une même
+        // ligne n'ont ni la même longueur ni le même nombre de trains : les
+        // confondre rendait « 3,5 trains », un chiffre qui n'existe pas. Et
+        // le nom ne peut pas servir d'arbitre, puisqu'il a changé dans cette
+        // même livraison — un témoin qui s'y fierait compterait ZÉRO train sur
+        // l'ancien code et annoncerait le bon verdict pour la mauvaise raison.
+        // La longueur du tour, elle, ne dépend d'aucun nom.
+        const convois = e.filter((v) => v.nom.startsWith(`train ${seg.ligne.nom}`)
+          && Math.abs(v.longueur - L) <= 2).length;
+        const tour = L / 14 + tr.arretsIndex.length * 4;
+        lignes.push({ ligne: seg.ligne.nom, de: seg.de, vers: seg.vers,
+          convois, attente: Math.round(tour / Math.max(1, convois)) });
+      }
+      return lignes;
+    });
+    const pire = quais.reduce((a, b) => (b.attente > a.attente ? b : a), quais[0] || { attente: 999 });
+    verifier('un train se présente au quai au moins toutes les trente secondes',
+      quais.length > 0 && quais.every((l) => l.attente <= 31),
+      `pire : ${pire.ligne} ${pire.de}→${pire.vers} ${pire.attente} s avec ${pire.convois} train(s)`
+      + ` · toutes : ${quais.map((l) => l.attente).join(' ')}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
