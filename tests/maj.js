@@ -114,6 +114,37 @@ function verifier(nom, ok, detail = '') {
       verifier('et le jeu se relance normalement après', rejouable);
     }
 
+    // UNE INSTALLATION QUI NE FINIT JAMAIS NE DOIT PAS RETENIR L'ENFANT.
+    //
+    // Le chemin du retour armait sa minuterie APRÈS `await reg.update()`, et
+    // cette promesse n'est tenue qu'une fois les soixante-treize fichiers du
+    // jeu remis en cache. Mesuré au banc, en comptant les requêtes qui
+    // atteignent vraiment le serveur : l'installation n'en demande pas UNE
+    // pendant cinquante-huit secondes. Et si elle ne finit jamais — un fichier
+    // qui ne répond pas, un Wi-Fi d'hôtel qui avale les requêtes —, alors rien
+    // n'est armé et l'enfant reste devant « 📦 Mise à jour du jeu… »
+    // indéfiniment, sur un jeu qu'il ne peut plus toucher.
+    //
+    // On reproduit exactement cela : une version neuve dont l'un des fichiers
+    // ne répond JAMAIS. Sur l'ancien code, la page ne se recharge pas — quelle
+    // que soit la machine, ce n'est pas une question de lenteur.
+    banc.jeu.publierVersion(null);
+    const tab2 = await banc.joueur('Noé', { avecSW: true });
+    await tab2.evaluate(() => navigator.serviceWorker.ready);
+    const controle2 = await jusqua(async () => tab2.evaluate(
+      () => !!navigator.serviceWorker.controller), 30000);
+    verifier('le second appareil est lui aussi sous service worker', controle2);
+
+    banc.jeu.publierVersion('web-minecraft-v997-essai', { installBloquee: true });
+    await tab2.evaluate(() => { window.__marqueAvantVeille = true; });
+    await cacher(tab2);
+    await dormir(1500);
+    await revenir(tab2);
+    const sauve = await jusqua(async () => (await tab2.evaluate(
+      () => !window.__marqueAvantVeille).catch(() => false)), 60000);
+    verifier('une installation bloquée ne retient pas l\'enfant devant le bandeau',
+      sauve, sauve ? '' : 'la page attend toujours une installation qui ne viendra pas');
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
