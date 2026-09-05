@@ -90,6 +90,17 @@ const JAUNE_MUR = uni(22);
 // carte, elle, disait déjà la bonne couleur depuis toujours dans
 // `couleurToits: [178, 108, 82]` ; le bloc ne la suivait pas.
 const TUILE = brique(17);
+// UNE SOUCHE DE CHEMINÉE N'EST PAS UN DRAPEAU ROUGE. Elle était en
+// `brique(0)` — le rouge de la palette (200, 62, 56), celui-là même que la
+// v200 avait chassé des MURS parce qu'il donnait aux villes cet air de
+// briques de plastique que Max a signalé sur Rome. La souche l'avait gardé,
+// et elle est POSÉE AU-DESSUS DU TOIT : c'est donc elle qu'on voit du ciel.
+// Mesuré sur le sommet de chaque colonne bâtie, avant : Édimbourg 23 % de
+// rouge vif, Séville 23 %, Montréal 16 % — sur des villes d'ardoise et de
+// chaux. La leçon n'est pas la règle, elle était écrite : c'est que la
+// corriger sur les murs a laissé DEUX LIGNES derrière, un cran plus loin
+// dans la même fonction. Vu en capture aérienne, pas par un témoin.
+const SOUCHE = brique(18);
 const ARDOISE = uni(25);
 const ACIER = uni(24);
 const ROUGE_GRES = brique(18);
@@ -926,7 +937,7 @@ const FICHES = {
     // qu'Arthur's Seat — deux kilomètres à l'est — tienne dans le disque.
     lat0: 55.9533, lon0: -3.1883, echelle: 16, rayon: 61,
     collines: [
-      { nom: 'Castle Rock', cu: -12, cv: 8, r: 6, h: 13, roche: true },
+      { nom: 'Castle Rock', cu: -12, cv: 8, r: 6, h: 13, roche: ARDOISE },   // basalte noir, pas du sable
       { nom: "Arthur's Seat", cu: 26, cv: 16, r: 12, h: 22 },
       { nom: 'Calton Hill', cu: 10, cv: -3, r: 4, h: 8 },
     ],
@@ -1133,9 +1144,9 @@ const FICHES = {
     lat0: -33.4489, lon0: -70.6693, echelle: 8, rayon: 68,
     fleuve: { pts: [[-40, -16], [-20, -18], [0, -20], [16, -20], [30, -23], [44, -26], [58, -30]], l: 1.6 },
     collines: [
-      { nom: 'Cerro San Cristóbal', cu: 28, cv: -20, r: 9, h: 24, roche: true },
-      { nom: 'Cerro Santa Lucía', cu: 19, cv: -8, r: 4, h: 9, roche: true },
-      { nom: 'La cordillère', cu: 48, cv: -6, r: 30, h: 40, roche: true },
+      { nom: 'Cerro San Cristóbal', cu: 28, cv: -20, r: 9, h: 24, roche: uni(17) },
+      { nom: 'Cerro Santa Lucía', cu: 19, cv: -8, r: 4, h: 9, roche: uni(17) },
+      { nom: 'La cordillère', cu: 48, cv: -6, r: 30, h: 40, roche: uni(23) },   // la roche claire des Andes
     ],
     trame: { ang: 0.05, pu: 6, pv: 5, tours: 0.85 }, tourMax: 26,
     palette: [CREME, OCRE, uni(23)], toit: TUILE, hMaison: [3, 5],
@@ -2075,7 +2086,14 @@ export function solVillesMonde(x, z) {
     const colline = collineDeVille(f, U, V);
     if (colline > 1) {
       const c = (f.collines || []).find((k) => Math.hypot(U - k.cu, V - k.cv) < k.r);
-      if (c && c.roche) return PIERRE;
+      // LA ROCHE D'UNE COLLINE SE DÉCLARE DANS SA FICHE, comme `montable` et
+      // `vole` : `roche: true` rendait PIERRE, qui est le BEIGE de la palette
+      // (215, 195, 160). C'est juste pour le granit du Pain de Sucre et la
+      // dolomie du Gellért — et c'est du sable pour le basalte noir du
+      // rocher d'Édimbourg, qui rendait une dune au milieu de la ville. Vu
+      // en capture aérienne. Le défaut par défaut reste le beige : aucune
+      // fiche existante ne change.
+      if (c && c.roche) return c.roche === true ? PIERRE : c.roche;
       if (c && c.favela) return 'lot';                             // les maisons s'accrochent
       return ((u + v) & 3) === 0 ? ARBRE : HERBE;
     }
@@ -2284,8 +2302,8 @@ export function batirColonneVillesMonde(x, z, poser) {
       poser(bh2 + 2, toitLot);
       if (Math.abs(ra) > t.pu / 2 - t.s - 0.9 && Math.abs(rb) > t.pv / 2 - t.s - 0.9
         && tirage(a, b, 241) < 0.5) {
-        poser(bh2 + 3, brique(0));
-        poser(bh2 + 4, brique(0));
+        poser(bh2 + 3, SOUCHE);
+        poser(bh2 + 4, SOUCHE);
       }
       return;
     }
@@ -2319,8 +2337,8 @@ export function batirColonneVillesMonde(x, z, poser) {
     // La cheminée, au coin du lot — une maison sur deux en a une.
     if (!tour && !favela && Math.abs(ra) > t.pu / 2 - t.s - 0.9 && Math.abs(rb) > t.pv / 2 - t.s - 0.9
       && tirage(a, b, 241) < 0.5) {
-      poser(bh + 2, brique(0));
-      poser(bh + 3, brique(0));
+      poser(bh + 2, SOUCHE);
+      poser(bh + 3, SOUCHE);
     }
     return;
   }
