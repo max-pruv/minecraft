@@ -13,16 +13,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Le portail rougit maintenant sous sa propre charge, et il faut le
-  dire.** Quatorze suites sur quatre cœurs : la v218 a rendu `reseau.js` rouge
-  et la v219 `monte.js` et `maj.js`, toutes VERTES rejouées seules. Le
-  discriminant marche — en v217 `maj.js` était rouge AUSSI seule, et c'était un
-  vrai défaut — mais trois livraisons de suite avec un rouge de charge, cela
-  cesse d'être une exception. Deux pistes, aucune gratuite : faire souffler le
-  banc entre les suites lourdes (`souffler()` existe et n'est pas appelé
-  partout), ou déclarer un budget de temps par suite. À mesurer avant de
-  choisir : combien d'images par seconde le banc rend-il à la quatorzième
-  suite, contre la première ?
+- [ ] **POURQUOI trois suites rougissent-elles dans le portail et pas seules ?
+  La question est ROUVERTE — ce n'est pas la charge (mesuré en v220).** J'avais
+  écrit « c'est la charge du banc » deux fois ; la mesure l'a démenti : à
+  charge 5,0, juste après `monte.js`, le banc rend 38 à 56 images par seconde,
+  exactement comme au repos, avec 14,7 Go de mémoire libre. Ce qui reste vrai :
+  `reseau.js` (v218), `monte.js` et `maj.js` (v219) sont rouges dans le portail
+  et VERTES rejouées seules, à l'identique. Il y a donc bien quelque chose, et
+  ce n'est ni la vitesse de la machine ni la mémoire. Pistes à éprouver, dans
+  cet ordre : l'état laissé sur le DISQUE par la suite précédente (le nuage de
+  poche, `/tmp`, les profils rangés sous un prénom) ; les ports et les sockets
+  en attente de fermeture ; et le fait que certaines suites appellent
+  `process.exit(0)` sans fermer leur navigateur. La mesure qui trancherait :
+  rejouer `maj.js` seule mais APRÈS avoir joué `sauvegarde.js` juste avant,
+  et voir si le rouge revient.
 
 - [x] **Éteindre sa caméra ne retirait ni la vignette ni le son — FAIT en
   v219.** Le chemin direct attendait le `close` média de PeerJS, qui ne

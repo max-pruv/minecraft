@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v220 — Le portail cesse d'attendre un nombre qui retarde
+
+**Pourquoi.** Trois livraisons de suite ont vu des suites rougir dans le
+portail et redevenir vertes rejouées seules. J'ai écrit deux fois que c'était
+« la charge du banc » — quatorze suites sur quatre cœurs — et je ne l'avais
+jamais mesuré.
+
+Mesuré maintenant, et c'est **faux**. La charge d'une minute est une moyenne
+QUI DÉCROÎT : quand une suite se termine, ses processus sont morts et la
+machine est libre, mais le chiffre met cent secondes à le reconnaître. Même
+navigateur, pendant que la charge laissée par `monte.js` montait de 3,40 à
+5,16 : **58,5 · 43,0 · 43,0 · 45,9 · 43,2 · 47,4 · 38,3 · 55,9** images par
+seconde. Aucune relation, et 14,7 Go de mémoire libre d'un bout à l'autre.
+
+Une charge RÉELLE, elle, se voit tout de suite : deux pages de jeu ouvertes en
+même temps font tomber la cadence de **42,9 à 20,8 puis 14,8** images/s. C'est
+la concurrence DANS une suite qui coûte — pas la trace de la suite d'avant.
+
+**Ce que ça change.** Le portail attendait jusqu'à **trois minutes par suite**
+que ce nombre retombe sous deux. Il n'y avait rien à attendre : la pause tombe
+à trente secondes, ce qui rend **neuf minutes** sur un portail de quatorze
+suites, sans rien perdre. Le chiffre reste affiché — il est gratuit — mais il
+est désormais dit pour ce qu'il est, et la ligne qui le suit prévient qu'il
+n'explique aucun rouge.
+
+**Ce qui le prouve.** Les deux séries de mesures ci-dessus, prises dans un
+seul navigateur pour éliminer la variance d'une ouverture à l'autre : deux
+mesures dans deux processus différents donnaient 42,9 et 53,9 images/s pour la
+même machine, et n'auraient rien prouvé. Le portail complet reste vert.
+
+**Et ce que cela oblige à corriger.** Les rouges que j'avais attribués à la
+charge en v218 et v219 n'ont donc **pas** cette cause. Ce qui justifiait ces
+fusions tient quand même — les suites étaient vertes rejouées seules, un fait
+plus fort que « rouge identique sur `origin/main` » — mais l'explication était
+inventée. La vraie cause est **rouverte** dans `TASKS.md`, avec les trois
+pistes à éprouver et la mesure qui trancherait.
+
+---
+
 ## v219 — Couper sa caméra coupe vraiment l'image et le son
 
 **Pourquoi.** Quand Alice éteignait sa caméra, **Marlon continuait de la voir

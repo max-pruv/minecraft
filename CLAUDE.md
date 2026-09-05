@@ -365,6 +365,28 @@ local, Supabase de poche (`tests/nuage.js`).
   accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
   PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
   un banc qui rend en logiciel, c'est la première moitié qui casse.
+- **LA CHARGE MOYENNE NE MESURE PAS LE BANC — ET J'AI DEUX FOIS EXPLIQUÉ UN
+  ROUGE PAR ELLE À TORT (v220).** La charge d'une minute est une moyenne QUI
+  DÉCROÎT : quand une suite se termine, ses processus sont morts et la machine
+  est libre, mais le chiffre met cent secondes à le reconnaître. Mesuré, même
+  navigateur, pendant que la charge laissée par `monte.js` montait de 3,40 à
+  5,16 : 58,5 · 43,0 · 43,0 · 45,9 · 43,2 · 47,4 · 38,3 · 55,9 images par
+  seconde. **Aucune relation**, et 14,7 Go de mémoire libre d'un bout à
+  l'autre. Trois choses en sortent :
+  - **Une charge RÉELLE, elle, se voit tout de suite** : deux pages de jeu
+    ouvertes EN MÊME TEMPS font tomber la cadence de 42,9 à 20,8 puis 14,8
+    images/s. C'est la concurrence DANS une suite qui coûte, pas la trace de
+    la suite d'avant.
+  - **`attendreLeCalme` attendait jusqu'à trois minutes par suite sur ce
+    nombre-là.** Ramené à trente secondes : neuf minutes rendues par portail,
+    et rien de perdu — il n'y avait rien à attendre.
+  - **Et les rouges que j'ai attribués à « la charge du banc » en v218 et v219
+    n'ont donc PAS cette cause.** Ce qui justifiait la fusion tenait quand
+    même — les suites étaient VERTES rejouées seules, ce qui est un fait plus
+    fort que « rouge identique sur `origin/main` » — mais l'explication était
+    inventée. La vraie cause est ouverte, déclarée dans `TASKS.md`. **Une
+    explication commode qu'on ne mesure pas est une dette, pas un
+    diagnostic.**
 - **Un témoin dont le verdict est une DURÉE mesure le banc si on ne le fait
   pas souffler.** « Un monde bien rempli ne retarde pas les retrouvailles »
   annonçait 55 à 57 s pour une borne de 25 — au-delà même de sa propre limite
