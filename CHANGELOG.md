@@ -20,42 +20,73 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v220 — Le portail cesse d'attendre un nombre qui retarde
+## v220 — Revenir dans le jeu ne laisse plus l'enfant devant le bandeau
 
-**Pourquoi.** Trois livraisons de suite ont vu des suites rougir dans le
-portail et redevenir vertes rejouées seules. J'ai écrit deux fois que c'était
-« la charge du banc » — quatorze suites sur quatre cœurs — et je ne l'avais
-jamais mesuré.
+**Pourquoi.** Sur un iPad, l'application n'est jamais vraiment fermée : elle
+s'endort et l'on y revient. C'est le geste NORMAL, et depuis la v159 le jeu
+vérifie à ce moment-là s'il existe une version plus récente. Quand il en
+trouve une, il pose le bandeau « 📦 Mise à jour du jeu… il faut la dernière
+version pour jouer » et attend.
 
-Mesuré maintenant, et c'est **faux**. La charge d'une minute est une moyenne
-QUI DÉCROÎT : quand une suite se termine, ses processus sont morts et la
-machine est libre, mais le chiffre met cent secondes à le reconnaître. Même
-navigateur, pendant que la charge laissée par `monte.js` montait de 3,40 à
-5,16 : **58,5 · 43,0 · 43,0 · 45,9 · 43,2 · 47,4 · 38,3 · 55,9** images par
-seconde. Aucune relation, et 14,7 Go de mémoire libre d'un bout à l'autre.
+Il pouvait attendre pour toujours. Le minuteur de secours — celui qui devait
+sortir l'enfant de cet écran — n'était armé qu'**après** l'installation
+complète du service worker, c'est-à-dire après la remise en cache des
+soixante-treize fichiers du jeu. Tant que l'installation traîne, rien n'est
+armé ; si elle ne finit jamais, rien n'arrivera jamais. Le commentaire du code
+annonçait pourtant « si l'installation traîne, on laisse jouer plutôt que de
+retenir un enfant devant un écran fixe » : c'était exactement le cas qu'il ne
+couvrait pas.
 
-Une charge RÉELLE, elle, se voit tout de suite : deux pages de jeu ouvertes en
-même temps font tomber la cadence de **42,9 à 20,8 puis 14,8** images/s. C'est
-la concurrence DANS une suite qui coûte — pas la trace de la suite d'avant.
+Et le dernier recours était pris au même piège. `forcerMaj` — « 🔄 On va
+chercher la dernière version… », le bouton qu'un parent touche sur le badge de
+version quand plus rien ne marche — commence par désinscrire le service
+worker. Or cette désinscription fait la queue derrière l'installation en
+cours : le remède écrit pour un service worker bloqué **attendait le service
+worker bloqué**.
 
-**Ce que ça change.** Le portail attendait jusqu'à **trois minutes par suite**
-que ce nombre retombe sous deux. Il n'y avait rien à attendre : la pause tombe
-à trente secondes, ce qui rend **neuf minutes** sur un portail de quatorze
-suites, sans rien perdre. Le chiffre reste affiché — il est gratuit — mais il
-est désormais dit pour ce qu'il est, et la ligne qui le suit prévient qu'il
-n'explique aucun rouge.
+**Ce que ça change.** Le filet est désormais unique, écrit une fois pour les
+deux chemins (le démarrage et le retour), et sa minuterie part à l'instant où
+le jeu décide qu'il y a une mise à jour — plus jamais après l'installation. Il
+a trois étapes : à quatre secondes, recharger si la version neuve a déjà pris
+la main pendant la veille ; à vingt secondes, repartir de zéro si rien ne
+s'installe ; et à quarante-cinq secondes, un plancher — l'enfant a la version
+neuve, ou l'on repart de zéro. « Ça s'installe » ne veut pas dire « ça va
+finir ». Chaque étape de `forcerMaj` a maintenant son délai, et la page se
+recharge dans tous les cas : partir avec un cache à moitié nettoyé vaut
+infiniment mieux qu'un écran qui ne bouge plus.
 
-**Ce qui le prouve.** Les deux séries de mesures ci-dessus, prises dans un
-seul navigateur pour éliminer la variance d'une ouverture à l'autre : deux
-mesures dans deux processus différents donnaient 42,9 et 53,9 images/s pour la
-même machine, et n'auraient rien prouvé. Le portail complet reste vert.
+Mesuré sur une installation qui se bloque : l'enfant peut rejouer à **28,3 s**
+au lieu de 65,9 s, et le chemin qu'il emprunte est un filet, plus un hasard.
 
-**Et ce que cela oblige à corriger.** Les rouges que j'avais attribués à la
-charge en v218 et v219 n'ont donc **pas** cette cause. Ce qui justifiait ces
-fusions tient quand même — les suites étaient vertes rejouées seules, un fait
-plus fort que « rouge identique sur `origin/main` » — mais l'explication était
-inventée. La vraie cause est **rouverte** dans `TASKS.md`, avec les trois
-pistes à éprouver et la mesure qui trancherait.
+**Ce qui le prouve.** Le témoin « revenir dans l'application recharge sur la
+version neuve » était rouge **trois fois sur trois** dès qu'une suite tournait
+avant lui, et vert joué seul — trois portails de suite bloqués dessus. Il est
+vert. La sonde qui compte les requêtes atteignant vraiment le serveur montre
+le mécanisme sans ambiguïté : **huit requêtes pendant cinquante-huit
+secondes**, puis cent quarante-huit d'un coup. Portail complet vert.
+
+**Et ce qui n'est PAS prouvé par un témoin, dit comme tel.** Le blocage de
+`forcerMaj` est établi par la sonde — le filet l'appelle à vingt secondes,
+`wm-maj-forcee` passe à 1, et plus rien pendant vingt-huit secondes — mais
+aucun témoin ne le garde. J'en ai écrit deux, ils étaient verts sur l'ancien
+code comme sur le neuf (27,8 contre 65,9 s, puis 28,3 contre 36,5 s) : l'ancien
+code s'en sort quand même, non par un filet mais parce que l'installation finit
+par échouer. Un témoin vert des deux côtés ne prouve rien, et le borner sur ces
+durées reviendrait à mesurer le banc. Les deux sont retirés, la brique du banc
+qui ne servait qu'à eux aussi, et la dette est déclarée dans `TASKS.md`.
+
+**Au passage, une explication à moi qui était fausse.** J'avais écrit deux fois
+que ces rouges venaient de « la charge du banc ». Mesuré : la charge d'une
+minute est une moyenne QUI DÉCROÎT — quand une suite se termine, la machine est
+libre mais le chiffre met cent secondes à le reconnaître. Même navigateur,
+pendant que la charge montait de 3,40 à 5,16 : **58,5 · 43,0 · 43,0 · 45,9 ·
+43,2 · 47,4 · 38,3 · 55,9** images par seconde, aucune relation, 14,7 Go libres
+d'un bout à l'autre. Une charge RÉELLE se voit tout de suite : deux pages de
+jeu ouvertes en même temps font tomber la cadence de **42,9 à 20,8 puis 14,8**.
+Le portail attendait jusqu'à trois minutes par suite que ce nombre retombe ;
+la pause tombe à trente secondes, ce qui rend **neuf minutes** par portail sans
+rien perdre. Une explication commode qu'on ne mesure pas est une dette, pas un
+diagnostic.
 
 ---
 

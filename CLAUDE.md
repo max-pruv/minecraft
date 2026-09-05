@@ -365,6 +365,39 @@ local, Supabase de poche (`tests/nuage.js`).
   accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
   PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
   un banc qui rend en logiciel, c'est la première moitié qui casse.
+- **UN FILET ARMÉ APRÈS CE QU'IL DOIT SAUVER NE SAUVE RIEN (v220).** Les deux
+  chemins de mise à jour d'`index.html` armaient leur minuterie de secours
+  APRÈS `await reg.update()` — promesse tenue seulement une fois les
+  soixante-treize fichiers du jeu remis en cache. Tant que l'installation
+  traîne, rien n'est armé ; si elle ne finit jamais, rien n'arrive jamais. Le
+  commentaire disait pourtant « si l'installation traîne, on laisse jouer » :
+  c'était exactement le cas qu'il ne couvrait pas. Trois choses en sortent.
+  - **Ce qui est écrit dans un commentaire n'est pas ce que le code fait.**
+    Celui-ci était juste sur l'intention et faux sur le fait, et il a survécu
+    des versions parce qu'il RASSURAIT. Devant un filet, on regarde d'abord ce
+    qui l'arme, pas ce qu'il fait.
+  - **UN REMÈDE NE DOIT RIEN ATTENDRE DE CE QU'IL RÉPARE.** `forcerMaj` — le
+    dernier recours, celui du bouton du badge de version — commence par
+    `unregister()`, tâche de la MÊME file d'attente que l'installation
+    bloquée. Écrit pour un service worker coincé, il attendait le service
+    worker coincé. Mesuré : appelé à vingt secondes, plus rien pendant
+    vingt-huit. Chaque étape a désormais son délai et l'on recharge dans tous
+    les cas.
+  - **« Ça s'installe » ne veut pas dire « ça va finir ».** Juger sur
+    `reg.installing` laisse l'enfant sur l'ancienne version dès qu'une
+    installation démarre puis reste en suspens. Le seul critère qui ne se
+    trompe pas est celui de l'enfant : au bout de quarante-cinq secondes il a
+    la version neuve, ou l'on repart de zéro.
+- **DEUX TÉMOINS ÉCRITS, DEUX TÉMOINS RETIRÉS — et c'est la bonne fin (v220).**
+  Le premier mesurait « la page se recharge » : l'ancien code le satisfaisait
+  en rechargeant sur la MÊME ancienne version. Le second mesurait « l'enfant
+  peut rejouer », et il était vert des deux côtés (27,8 contre 65,9 s, puis
+  28,3 contre 36,5 s) parce que l'ancien code s'en sort quand même — non par un
+  filet, mais parce que l'installation finit par échouer. Borner sur ces
+  durées aurait mesuré le banc. **Un témoin vert des deux côtés se retire, il
+  ne se garde pas au motif qu'il est écrit** ; et la capacité du banc qui ne
+  servait qu'à lui part avec, sinon c'est une brique dont personne ne se sert.
+  Ce qui n'a plus de témoin se déclare dans `TASKS.md`.
 - **LA CHARGE MOYENNE NE MESURE PAS LE BANC — ET J'AI DEUX FOIS EXPLIQUÉ UN
   ROUGE PAR ELLE À TORT (v220).** La charge d'une minute est une moyenne QUI
   DÉCROÎT : quand une suite se termine, ses processus sont morts et la machine
