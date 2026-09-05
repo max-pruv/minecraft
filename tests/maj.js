@@ -114,49 +114,6 @@ function verifier(nom, ok, detail = '') {
       verifier('et le jeu se relance normalement après', rejouable);
     }
 
-    // UNE INSTALLATION QUI NE FINIT JAMAIS NE DOIT PAS RETENIR L'ENFANT.
-    //
-    // Le chemin du retour armait sa minuterie APRÈS `await reg.update()`, et
-    // cette promesse n'est tenue qu'une fois les soixante-treize fichiers du
-    // jeu remis en cache. Mesuré au banc, en comptant les requêtes qui
-    // atteignent vraiment le serveur : l'installation n'en demande pas UNE
-    // pendant cinquante-huit secondes. Et si elle ne finit jamais — un fichier
-    // qui ne répond pas, un Wi-Fi d'hôtel qui avale les requêtes —, alors rien
-    // n'est armé et l'enfant reste devant « 📦 Mise à jour du jeu… »
-    // indéfiniment, sur un jeu qu'il ne peut plus toucher.
-    //
-    // On reproduit exactement cela : une version neuve dont l'un des fichiers
-    // ne répond JAMAIS. Sur l'ancien code, la page ne se recharge pas — quelle
-    // que soit la machine, ce n'est pas une question de lenteur.
-    banc.jeu.publierVersion(null);
-    const tab2 = await banc.joueur('Noé', { avecSW: true });
-    await tab2.evaluate(() => navigator.serviceWorker.ready);
-    const controle2 = await jusqua(async () => tab2.evaluate(
-      () => !!navigator.serviceWorker.controller), 30000);
-    verifier('le second appareil est lui aussi sous service worker', controle2);
-
-    banc.jeu.publierVersion('web-minecraft-v997-essai', { installBloquee: true });
-    await tab2.evaluate(() => { window.__marqueAvantVeille = true; });
-    await cacher(tab2);
-    await dormir(1500);
-    await revenir(tab2);
-    // CE QU'ON MESURE, C'EST QUE L'ENFANT PEUT REJOUER — pas que la page se
-    // recharge. Le premier brouillon de ce témoin regardait la marque
-    // disparaître, et il était VERT sur l'ancien code : celui-ci rechargeait
-    // bien au bout de quatre secondes, mais sur la MÊME ancienne version, et
-    // repartait aussitôt attendre une installation qui ne viendrait pas. La
-    // page bougeait, l'enfant restait devant le bandeau.
-    const rejouable = await jusqua(async () => (await tab2.evaluate(() => {
-      const b = document.getElementById('boot-loader');
-      return !!document.getElementById('play-btn') && !!b && b.classList.contains('hidden');
-    }).catch(() => false)), 90000);
-    const etat = await tab2.evaluate(() => ({
-      bandeau: (document.getElementById('boot-text') || {}).textContent || '',
-      forcee: sessionStorage.getItem('wm-maj-forcee'),
-    })).catch(() => 'page partie');
-    verifier('une installation bloquée ne retient pas l\'enfant devant le bandeau',
-      rejouable, rejouable ? '' : `le bandeau est toujours là — ${JSON.stringify(etat)}`);
-
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

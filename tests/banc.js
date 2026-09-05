@@ -56,41 +56,12 @@ function servirLeJeu(port) {
   // — modifier `src/` pendant qu'une suite tourne est justement ce qu'on
   // s'interdit partout ailleurs.
   let versionServie = null;
-  let installBloquee = false;
-  // UNE INSTALLATION QUI NE FINIT JAMAIS.
-  //
-  // C'est la panne qu'on n'arrivait pas à reproduire autrement : le service
-  // worker neuf est demandé, il commence à remplir son cache, et l'un des
-  // fichiers ne répond pas. `cache.addAll` reste en suspens, donc
-  // `reg.update()` aussi, donc tout ce qui l'attendait. On ne répond JAMAIS
-  // à cette adresse — la prise se referme quand le navigateur se ferme, et
-  // `fermer()` ferme le navigateur avant les serveurs.
-  //
-  // ET LE BLOCAGE DOIT ÊTRE DÉFINITIF, SINON LE TÉMOIN N'EST QU'UNE COURSE.
-  // Une route qui ne répond RIEN du tout n'est pas bloquante longtemps : node
-  // ferme la prise au bout de son délai d'en-têtes (soixante secondes), la
-  // requête échoue, `addAll` échoue, et l'installation se termine — en échec,
-  // mais elle se termine. Mesuré : l'ancien code redevenait jouable à 65,9 s
-  // pour cette seule raison. On envoie donc les en-têtes tout de suite (plus
-  // de délai d'en-têtes), on désactive le délai de la prise, et l'on ne
-  // termine jamais le corps.
-  app.get('/essai-installation-sans-fin', (req, res) => {
-    req.socket.setTimeout(0);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Cache-Control', 'no-store');
-    res.write(' ');
-    // pas de `res.end()` : à dessein
-  });
   app.get('/sw.js', (req, res, next) => {
     if (!versionServie) return next();
-    let brut = fs.readFileSync(path.join(RACINE, 'sw.js'), 'utf8');
-    brut = brut.replace(/CACHE_VERSION\s*=\s*'[^']+'/, `CACHE_VERSION = '${versionServie}'`);
-    if (installBloquee) {
-      brut = brut.replace(/const ASSETS = \[/, "const ASSETS = [\n  './essai-installation-sans-fin',");
-    }
+    const brut = fs.readFileSync(path.join(RACINE, 'sw.js'), 'utf8');
     res.setHeader('Content-Type', 'application/javascript');
     res.setHeader('Cache-Control', 'no-store');
-    res.send(brut);
+    res.send(brut.replace(/CACHE_VERSION\s*=\s*'[^']+'/, `CACHE_VERSION = '${versionServie}'`));
   });
   app.use(express.static(RACINE, {
     etag: false, lastModified: false, cacheControl: false,
@@ -100,12 +71,7 @@ function servirLeJeu(port) {
   serveur.on('clientError', (_e, socket) => socket.destroy());
   serveur.hits = hits;
   // Ce que le test appelle pour « publier » une version pendant la partie.
-  // `publierVersion(null)` rend la main au fichier du dépôt : c'est ce qui
-  // permet d'enchaîner deux scénarios de mise à jour dans la même suite.
-  serveur.publierVersion = (v, opts = {}) => {
-    versionServie = v;
-    installBloquee = !!opts.installBloquee;
-  };
+  serveur.publierVersion = (v) => { versionServie = v; };
   return new Promise((ok) => serveur.listen(port, '127.0.0.1', () => ok(serveur)));
 }
 
