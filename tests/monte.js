@@ -1292,21 +1292,29 @@ async function avancerUnDemiSeconde(p, depart) {
         g.player.flying = true;
         g.player.pilote = def.pilote;
         g.player.vitesseAvion = 0;
-        const depart = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
-        // Plein gaz pendant quatre secondes de JEU.
-        g.player.keys.add('KeyW');
-        await new Promise((fin) => {
+        // LE TEMPS D'ACCÉLÉRATION VIENT DE LA FICHE, PAS D'UN CHIFFRE ROND.
+        // Un avion de ligne pousse à 18 blocs/s² : en quatre secondes il est à
+        // 73, ce qui est juste et ne prouve rien. Chacun a donc le temps que
+        // SA fiche impose pour arriver à sa pointe, plus une seconde de marge.
+        const tenirSecondes = (n) => new Promise((fin) => {
           let cumul = 0, prec = performance.now();
           const pas = (t) => {
             cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
             prec = t;
-            if (cumul >= 4) fin(); else requestAnimationFrame(pas);
+            if (cumul >= n) fin(); else requestAnimationFrame(pas);
           };
           requestAnimationFrame(pas);
         });
+        g.player.keys.add('KeyW');
+        await tenirSecondes(def.pilote.max / def.pilote.poussee + 1);
+        const atteinte = g.player.vitesseAvion;
+        // Puis DEUX secondes à la pointe : c'est là que se lisent les rapports
+        // de vitesse, et c'est ce que l'enfant parcourt vraiment.
+        const depart = { x: g.player.pos.x, z: g.player.pos.z };
+        await tenirSecondes(2);
         g.player.keys.delete('KeyW');
         const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
-        out[key] = { blocs: Math.round(d), vitesse: Math.round(g.player.vitesseAvion), max: def.pilote.max };
+        out[key] = { blocs: Math.round(d), vitesse: Math.round(atteinte), max: def.pilote.max };
         g.player.pilote = null;
         g.player.vitesseAvion = undefined;
         g.player.flying = false;
@@ -1314,9 +1322,9 @@ async function avancerUnDemiSeconde(p, depart) {
       return out;
     });
     const ligne = vols.avionligne || {}, conc = vols.concorde || {}, chas = vols.chasseur || {};
-    verifier('les trois appareils volent, et chacun atteint sa vitesse',
-      ligne.vitesse >= ligne.max * 0.9 && conc.vitesse >= conc.max * 0.9
-      && chas.vitesse >= chas.max * 0.9,
+    verifier('les trois appareils volent, et chacun atteint sa vitesse de pointe',
+      ligne.vitesse >= ligne.max * 0.98 && conc.vitesse >= conc.max * 0.98
+      && chas.vitesse >= chas.max * 0.98,
       JSON.stringify(vols));
     // 88 blocs/s, c'est la croisière d'un enfant en vol libre (player.js) :
     // un avion de ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
@@ -1324,7 +1332,7 @@ async function avancerUnDemiSeconde(p, depart) {
       ligne.vitesse > 88, `${ligne.vitesse} blocs/s contre 88`);
     verifier('et le Concorde comme le chasseur vont deux fois et demie plus vite',
       conc.blocs > ligne.blocs * 1.8 && chas.blocs > ligne.blocs * 1.8,
-      `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 4 s`);
+      `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 2 s de pointe`);
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
