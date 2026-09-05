@@ -1164,12 +1164,44 @@ const VRAIES_KM = [
         }
         return { part: c.part, pts: c.pts.length, pas, mauvais, virage: Math.round(virage) };
       });
-      // Une avenue est couverte si chacun de ses points de passage est un
-      // sommet d'un circuit — c'est ainsi que les circuits sont chaînés.
-      const sommets = new Set(brut.flatMap((c) => c.pts.map((q) => `${Math.round(q.x)},${Math.round(q.z)}`)));
-      const sansBoucle = m.VOIES_LONDRES
-        .filter((v) => !v.pts.every(([u, w]) => sommets.has(`${Math.round(L.x + u)},${Math.round(L.z + w)}`)))
-        .map((v) => v.nom);
+      // « CETTE AVENUE A DES VOITURES » NE SE LIT PAS SUR SES SOMMETS (v223).
+      // La règle d'avant demandait que CHAQUE point de passage d'une avenue
+      // soit un sommet d'un circuit. Elle mesure « parcourue d'un bout à
+      // l'autre », pas « des voitures y roulent », et elle se trompe des deux
+      // côtés : elle nommait « sans voitures » le Strand et Charing Cross
+      // Road, qui en ont, et elle en déclarait couvertes dont deux circuits
+      // ne faisaient que toucher les deux bouts sans jamais les emprunter.
+      // On mesure donc la part de la LONGUEUR de l'avenue qui porte un convoi
+      // à moins de deux blocs — c'est ce qu'un enfant voit depuis le trottoir.
+      const grille = new Set();
+      for (const c of brut) {
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            grille.add(`${Math.round(a.x + ((z.x - a.x) * k) / n)},${Math.round(a.z + ((z.z - a.z) * k) / n)}`);
+          }
+        }
+      }
+      const proche = (x, z) => {
+        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+          if (grille.has(`${Math.round(x) + dx},${Math.round(z) + dz}`)) return true;
+        }
+        return false;
+      };
+      const sansBoucle = [];
+      for (const v of m.VOIES_LONDRES) {
+        let n = 0, vus = 0;
+        for (let i = 0; i < v.pts.length - 1; i++) {
+          const a = v.pts[i], z = v.pts[i + 1];
+          const s = Math.max(1, Math.ceil(Math.hypot(z[0] - a[0], z[1] - a[1])));
+          for (let k = 0; k <= s; k++) {
+            const t = k / s; n++;
+            if (proche(L.x + a[0] + (z[0] - a[0]) * t, L.z + a[1] + (z[1] - a[1]) * t)) vus++;
+          }
+        }
+        if (vus / n < 0.7) sansBoucle.push(v.nom);
+      }
       return { circuits, voies: m.VOIES_LONDRES.length, sansBoucle };
     });
     verifier('des voitures font le tour de la City, de Westminster, de Bloomsbury et de la rive sud',
@@ -1183,10 +1215,15 @@ const VRAIES_KM = [
     // traversent. On ne relâche donc pas un compte, on écrit la LISTE : toute
     // avenue qui perdrait ses voitures en plus de celles-là rougit, et la
     // dette est déclarée mot pour mot dans `TASKS.md`.
-    const DETTE_LONDRES = new Set(['The Mall', 'Horse Guards Road', 'Great George Street',
-      'Birdcage Walk', 'Buckingham Gate', 'Constitution Hill', 'Edgware Road',
-      'Marylebone Road, côté Edgware', "Euston Road, côté King's Cross", 'Victoria Embankment',
-      'King William Street', 'Cannon Street', 'Borough High Street', 'London Road']);
+    //
+    // La liste a été REMESURÉE en v223 avec la règle ci-dessus. Sur
+    // `origin/main` elle rend quatorze noms, dont « Euston Road, côté King's
+    // Cross » : ce témoin est donc ROUGE sur l'ancien code, et c'est la
+    // preuve. Sept vraies rues de raccord plus tard, il en reste treize.
+    const DETTE_LONDRES = new Set(['The Mall', 'Horse Guards Road',
+      'Birdcage Walk', 'Buckingham Gate', 'Constitution Hill', 'Piccadilly, côté Circus',
+      'Edgware Road', 'Marylebone Road, côté Edgware', 'Euston Road, côté Marylebone',
+      "Theobald's Road", 'Blackfriars Road', 'Borough High Street', 'London Road']);
     verifier('les avenues de Londres sans voitures sont celles, et seulement celles, qu\'on a déclarées',
       !ldn.absent && ldn.voies >= 60 && ldn.sansBoucle.every((n) => DETTE_LONDRES.has(n)),
       JSON.stringify(ldn.absent ? ldn : {

@@ -258,6 +258,26 @@ const VOIES = [
   { nom: 'Euston Road, côté Marylebone', l: 1.0, pts: [[-27, -43], [-12, -48]] },
   { nom: 'Euston Road', l: 1.0, pts: [[-12, -48], [-4, -52]] },
   { nom: "Euston Road, côté King's Cross", l: 1.0, pts: [[-4, -52], [7, -61]] },
+  // --- LES RUES DE RACCORD DE BLOOMSBURY, CLERKENWELL ET ISLINGTON (v223) ---
+  //
+  // Euston Road côté King's Cross était un cul-de-sac : rien ne partait de
+  // King's Cross ni vers l'est ni vers le sud, donc aucune boucle ne pouvait
+  // la prendre. Cinq vraies rues, aux vraies adresses, referment le quadrant
+  // nord-est — c'est la piste que `TASKS.md` nommait depuis la v206, mesurée.
+  // Gray's Inn Road et Pentonville Road partent toutes deux du carrefour de
+  // King's Cross, comme les vraies.
+  { nom: "Gray's Inn Road", l: 0.8, pts: [[7, -61], [18, -47], [22, -32], [28, -27]] },
+  { nom: 'Pentonville Road', l: 1.0, pts: [[7, -61], [13, -62], [37, -66]] },
+  { nom: 'Farringdon Road', l: 0.9, pts: [[37, -66], [32, -44], [35, -27]] },
+  { nom: 'Clerkenwell Road', l: 0.8, pts: [[20, -40], [32, -40]] },
+  { nom: "Theobald's Road", l: 0.8, pts: [[10, -32], [22, -32]] },
+  // Bloomsbury n'avait que DEUX liens nord-sud — Euston Road et Woburn Place —
+  // et un seul circuit les prenait tous les deux : mesuré, aucun échange ne
+  // pouvait donner ses voitures à King's Cross sans en retirer à Tottenham
+  // Court Road, au Strand et à Charing Cross Road. Gower Street (celle de
+  // l'University College) et Judd Street sont les deux qui manquaient.
+  { nom: 'Gower Street & Bloomsbury Street', l: 0.8, pts: [[-9, -49], [-6, -36], [-3, -23]] },
+  { nom: 'Judd Street', l: 0.7, pts: [[2, -57], [1, -45]] },
   { nom: 'Portland Place', l: 0.9, pts: [[-22, -21], [-26, -28], [-27, -43]] },
   // Oxford Street est coupée à Baker Street et à Oxford Circus, où les
   // circuits tournent.
@@ -372,6 +392,26 @@ const BANDES = rangerVoies(VOIES);
 // gardées en priorité — ce n'est pas un tirage au sort.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+//
+// ET LE PRIX SE PAIE AVEC DES RUES, PAS AVEC UN SEUIL (v223). Euston Road côté
+// King's Cross était un cul-de-sac depuis la v206 : rien ne partait de King's
+// Cross ni vers l'est ni vers le sud. Sept vraies rues referment le quadrant
+// nord-est — Gray's Inn Road, Pentonville Road, Farringdon Road, Clerkenwell
+// Road, Theobald's Road, Gower Street et Judd Street.
+//
+// ET IL A FALLU MESURER POURQUOI CINQ NE SUFFISAIENT PAS. Avec les cinq
+// premières, AUCUN échange ne donnait ses voitures à King's Cross sans en
+// retirer à Tottenham Court Road, au Strand et à Charing Cross Road — éprouvé
+// en retirant jusqu'à TROIS des dix circuits en place et en recomblant. La
+// cause : Bloomsbury n'avait que deux liens nord-sud, Euston Road et Woburn
+// Place, et un seul circuit les prenait tous les deux. Gower Street (celle de
+// l'University College) est le troisième. Aucune rue ne perd ses voitures pour
+// en donner à une autre : c'est la contrainte sous laquelle l'échange a été
+// cherché.
+//
+// Onze circuits mesurés à 100 %, cinquante-quatre voies parcourues sur
+// soixante-dix, pire paire de convois vingt blocs — le seuil de la v211 est
+// inchangé.
 const CIRCUITS = [
   // 100 % (124 blocs, virage max 103°)
   ["Park Lane","Knightsbridge & Kensington Road","West Carriage Drive","Bayswater Road"],
@@ -383,8 +423,6 @@ const CIRCUITS = [
   ["Whitehall","Victoria Street","Buckingham Palace Road","Grosvenor Place","Piccadilly","St James's Street","Pall Mall"],
   // 100 % (123 blocs, virage max 81°)
   ["Euston Road","Southampton Row & Woburn Place","Kingsway","Strand","Charing Cross Road","Tottenham Court Road"],
-  // 100 % (85 blocs, virage max 111°)
-  ["Cannon Street","Queen Victoria Street","Blackfriars Bridge","Southwark Street","Borough High Street","London Bridge"],
   // 100 % (85 blocs, virage max 139°)
   ["Farringdon Street","Old Bailey","Newgate Street & Cheapside","Moorgate","London Wall","Aldersgate Street","Holborn Viaduct"],
   // 100 % (73 blocs, virage max 138°)
@@ -393,6 +431,20 @@ const CIRCUITS = [
   ["High Holborn","Kingsway","Fleet Street","Farringdon Street"],
   // 100 % (61 blocs, virage max 147°)
   ["Westminster Bridge Road","York Road","Waterloo Road"],
+  // King William Street rejoint la boucle de la City et de Southwark
+  // 100 % (93 blocs, virage max 139°)
+  ["King William Street","Cannon Street","Queen Victoria Street","Blackfriars Bridge","Southwark Street","Borough High Street","London Bridge"],
+  // Islington et Clerkenwell, par Pentonville Road et Farringdon Road
+  // 100 % (95 blocs, virage max 119°)
+  ["Gray's Inn Road","Pentonville Road","Farringdon Road","Clerkenwell Road"],
+  // LE TRIANGLE DE KING'S CROSS — la dette de la v206. C'est le SEUL
+  // enchaînement qui donne ses voitures à Euston Road côté King's Cross sans
+  // en retirer à une autre rue : éprouvé en retirant jusqu'à trois des dix
+  // circuits en place et en recomblant, toutes les autres boucles de King's
+  // Cross prenaient Woburn Place ou High Holborn sur toute leur longueur.
+  // Vingt-huit blocs, c'est court, et c'est la mesure.
+  // 100 % (28 blocs, virage max 140°)
+  ["Euston Road, côté King's Cross","Judd Street","Southampton Row & Woburn Place"],
 ];
 
 // Trafalgar Square est dallée de pierre : une voiture y roule.

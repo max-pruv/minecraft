@@ -115,6 +115,42 @@ blocs**, pas en kilomètres : justes aujourd'hui, faux à la prochaine remise à
 l'échelle, et rien n'aurait rougi. Ils sont convertis, et la conversion est
 prouvée exacte — quarante-et-un points comparés, zéro écart.
 
+### Londres — King's Cross était un cul-de-sac, et le témoin se trompait
+
+**Pourquoi.** Euston Road côté King's Cross n'avait aucune voiture depuis la
+v206 : rien ne partait de King's Cross ni vers l'est ni vers le sud, donc
+aucune boucle ne pouvait la prendre. `TASKS.md` nommait déjà la piste —
+Pentonville Road et Gray's Inn Road — sans qu'elle ait été mesurée.
+
+Elle ne suffisait pas, et il a fallu le mesurer : avec cinq rues de raccord,
+**aucun échange ne donnait ses voitures à King's Cross sans en retirer à
+Tottenham Court Road, au Strand et à Charing Cross Road** — éprouvé en
+retirant jusqu'à trois des dix circuits en place et en recomblant à chaque
+fois. La cause : Bloomsbury n'avait que **deux** liens nord-sud, Euston Road et
+Woburn Place, et un seul circuit les prenait tous les deux.
+
+**Et le témoin qui gardait cette dette se trompait.** Il déclarait une avenue
+« sans voitures » quand l'un de ses points de passage n'était pas un sommet de
+circuit — ce qui mesure « parcourue d'un bout à l'autre », pas « des voitures y
+roulent ». Il nommait ainsi le Strand et Charing Cross Road, qui en ont ; et il
+comptait couvertes des avenues dont deux circuits ne faisaient que toucher les
+deux bouts sans jamais les emprunter.
+
+**Ce que ça change.** Des voitures roulent enfin à King's Cross, à Islington et
+à Clerkenwell. Sept vraies rues de plus, aux vraies adresses : Gray's Inn Road,
+Pentonville Road, Farringdon Road, Clerkenwell Road, Theobald's Road, Gower
+Street (celle de l'University College) et Judd Street. King William Street, à
+la Banque d'Angleterre, en récupère aussi.
+
+**Ce qui le prouve.** Le portail est vert. Douze circuits mesurés à **100 %**,
+**cinquante-sept avenues sur soixante-dix** réellement parcourues, aucun
+demi-tour, pire paire de convois vingt-et-un blocs — le seuil de la v211 est
+inchangé, et **aucune rue ne perd ses voitures** : c'est la contrainte sous
+laquelle l'échange a été cherché. Le témoin remesure désormais la part de la
+LONGUEUR d'une avenue qui porte un convoi à moins de deux blocs ; rejoué sur
+`origin/main`, il est **rouge** et nomme précisément les deux rues que cette
+livraison fait rouler. La dette déclarée passe de quatorze avenues à treize.
+
 ---
 
 ## v226 — Les villes ne sont plus vides quand on y arrive

@@ -2140,6 +2140,30 @@ pour toute ville à qui l'on donne des rues.
   regarde que la couleur ne voit pas un bus planté dans un lot : celui qui
   exige le bitume sous chaque bus est rouge à 4/5 sur `origin/main`.
 
+**UN TÉMOIN DE COUVERTURE DOIT MESURER CE QU'IL ANNONCE (v223).** Celui qui
+garde les avenues sans voitures de Londres déclarait une avenue « sans
+voitures » dès qu'un de ses points de passage n'était pas un SOMMET d'un
+circuit. Cela mesure « parcourue d'un bout à l'autre », pas « des voitures y
+roulent », et cela se trompait des deux côtés : il nommait le Strand et Charing
+Cross Road, qui en ont, et il comptait couvertes des avenues dont deux circuits
+touchaient les deux bouts sans jamais les emprunter — un circuit peut « couvrir »
+une avenue en la manquant entièrement. Il mesure désormais la part de la
+LONGUEUR de l'avenue qui porte un convoi à moins de deux blocs, ce qu'un enfant
+voit depuis le trottoir. Rejoué sur `origin/main`, il est rouge et nomme les
+deux rues que la v223 fait rouler.
+
+**ET LA PISTE ÉCRITE DANS `TASKS.md` NE SUFFISAIT PAS — ce qui se mesure, pas
+se suppose.** La dette annonçait « il lui manque Pentonville Road et Gray's Inn
+Road ». Tracées et mesurées, elles ne suffisent pas : toute boucle de King's
+Cross prenait Woburn Place ou High Holborn sur toute leur longueur, et
+**aucun échange ne donnait ses voitures à King's Cross sans en retirer à
+Tottenham Court Road, au Strand et à Charing Cross Road** — éprouvé en
+retirant jusqu'à TROIS des dix circuits en place et en recomblant. Bloomsbury
+n'avait que deux liens nord-sud ; Gower Street est le troisième, et Judd Street
+donne à King's Cross son triangle. La contrainte à poser dans une passe de ce
+genre est explicite : **aucune rue ne perd ses voitures pour en donner à une
+autre.**
+
 **Les ponts sur la Tamise (v208) — et ce qui prouve un pont.** Tant que le
 fleuve n'avait aucun pont routier, la City et Southwark se tournaient le dos
 et aucune boucle ne pouvait changer de rive. Waterloo, Blackfriars et London

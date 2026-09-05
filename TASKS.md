@@ -151,10 +151,15 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   SUR la chaussée d'une autre), quinze circuits mesurés de 92 à 100 % qui
   couvrent cinquante-neuf voies. L'échelle n'y était pour rien : c'étaient
   la Tamise, les parcs et neuf voies qui ne se croisaient pas.
-- [ ] **Euston Road, côté King's Cross, n'est sur aucune boucle de Londres.**
-  C'est un cul-de-sac : rien ne part de King's Cross vers l'est ni vers le
-  sud. Il lui manque Pentonville Road et Gray's Inn Road pour refermer sur
-  Bloomsbury — deux voies à tracer et à mesurer.
+- [x] **Euston Road, côté King's Cross, n'est sur aucune boucle de Londres —
+  FAIT en v223, mais pas comme annoncé.** Pentonville Road et Gray's Inn Road
+  ne suffisaient pas : mesuré, aucun échange ne donnait ses voitures à King's
+  Cross sans en retirer à Tottenham Court Road, au Strand et à Charing Cross
+  Road, parce que Bloomsbury n'avait que DEUX liens nord-sud et qu'un seul
+  circuit les prenait tous les deux. Sept rues au total — les deux annoncées,
+  plus Farringdon Road, Clerkenwell Road, Theobald's Road, Gower Street et Judd
+  Street — et douze circuits mesurés à 100 % font rouler cinquante-sept avenues
+  sur soixante-dix. King William Street en profite aussi.
 - [x] **Pas de pont routier sur la Tamise — FAIT en v208.** Waterloo,
   Blackfriars et London Bridge sont des voies à part entière, tablier à la
   cote des quais et eau dessous ; trois circuits changent de rive, et
@@ -203,10 +208,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
   la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. **Paris (v216), San Francisco et Lille
-  (v223) sont réglés.** Restent : à
-  Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
-  Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
+  ne se superpose à aucune autre. **Paris (v216), San Francisco, Lille et
+  Londres (v223) sont réglés.** Reste
+  Washington : Virginia Avenue, Constitution ouest et cinq rues de la grille.
+  À Londres il demeure treize avenues déclarées sans voitures — la liste vit
+  dans `carteMonde.js`, remesurée en v223 avec une règle qui mesure enfin ce
+  qu'elle annonce. La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
   et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
   repasser sur celle du voisin. **Et la méthode est désormais éprouvée** : à
@@ -277,7 +284,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   vraie rue de Rivoli longe la grille, elle n'entre pas — mais déplacer un
   point de `VOIES` déplace une rue, donc cela se mesure avant de se faire.
 - [ ] **Les points de voie de Londres et de Washington sont écrits en BLOCS,
-  pas en kilomètres.** `VOIES` de Londres porte `[[-27, -43], [-12, -48]]`, les
+  pas en kilomètres.** (Les sept rues ajoutées à Londres en v223 le sont
+  aussi : elles ont été calculées depuis de vraies latitudes et longitudes,
+  mais posées en blocs comme leurs voisines, pour ne pas mêler deux unités
+  dans la même table. La conversion se fera d'un bloc.) `VOIES` de Londres porte `[[-27, -43], [-12, -48]]`, les
   avenues de Washington de même. C'est le piège nommé dans `CLAUDE.md` en
   v216 : juste aujourd'hui, faux à la prochaine remise à l'échelle, et rien ne
   rougira. Paris, San Francisco et **Lille (fait en v223, conversion prouvée
