@@ -505,8 +505,14 @@ function updateChunks() {
     // Le tour complet : le trajet, plus l'arrêt marqué à chaque bout.
     const tour = longueur / vitesse + t.arretsIndex.length * pause;
     const rames = Math.max(2, Math.ceil(tour / ATTENTE_QUAI));
+    // LE NOM PORTE LE SEGMENT, pas seulement la ligne. Deux raisons : sur le
+    // bouton, « train TGV Paris–Lyon » dit à l'enfant OÙ il va, là où
+    // « train TGV » ne dit rien ; et un témoin qui compte les trains d'un quai
+    // ne peut pas les distinguer autrement — le TGV a deux segments de
+    // longueurs différentes, donc des nombres de trains différents.
     vehicules.metro(t.pts, {
-      nom: `train ${seg.ligne.nom}`, emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
+      nom: `train ${seg.ligne.nom} ${seg.de}–${seg.vers}`,
+      emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
     });
   }

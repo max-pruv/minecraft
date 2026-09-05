@@ -175,11 +175,11 @@ const RAYON = 38;
           const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
           L += Math.hypot(b.x - a.x, b.z - a.z);
         }
-        const nom = `train ${seg.ligne.nom}`;
-        // Un segment par paire de villes : on compte les convois de CETTE
-        // ligne, divisés par le nombre de segments qu'elle porte.
-        const segs = t.segmentsDeTrain().filter((s) => s.ligne.nom === seg.ligne.nom).length;
-        const convois = e.filter((v) => v.nom === nom).length / segs;
+        // Le nom porte le segment : deux segments d'une même ligne n'ont ni la
+        // même longueur ni le même nombre de trains, et les confondre rendait
+        // « 3,5 trains » — un chiffre qui n'existe pas.
+        const nom = `train ${seg.ligne.nom} ${seg.de}–${seg.vers}`;
+        const convois = e.filter((v) => v.nom === nom).length;
         const tour = L / 14 + tr.arretsIndex.length * 4;
         lignes.push({ ligne: seg.ligne.nom, de: seg.de, vers: seg.vers,
           convois, attente: Math.round(tour / Math.max(1, convois)) });
