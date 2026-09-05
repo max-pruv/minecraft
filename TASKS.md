@@ -126,8 +126,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   rond-point qu'elle est, et Saint-Michel s'aborde par Port-Royal pour éviter
   le Luxembourg. Huit circuits mesurés couvrent les vingt-huit avenues, le
   plus faible à 97 %.
-- [ ] **Contourner les socles de monument NE MARCHE PAS — mesuré, ne pas
-  refaire.** L'idée évidente est d'ajouter les emprises de monument aux cercles
+- [x] **Contourner les socles de monument par un CERCLE ne marche pas — et le
+  remède est le PÉRIMÈTRE (v221).** La note ci-dessous reste juste et vaut
+  d'être gardée : le tour d'un socle par un cercle coupe les coins dans le
+  square planté. Ce qui manquait, c'est qu'un rectangle se contourne par son
+  périmètre, et qu'il faut PAVER ce périmètre — c'est ce que fait la v221.
+- [ ] **(la mesure d'origine, gardée)** Contourner les socles par un cercle : L'idée évidente est d'ajouter les emprises de monument aux cercles
   que `contournerRonds` fait éviter. Éprouvé sur les cinq circuits de Paris :
   cela supprime bien les traversées (183 pas dans un monument → 0) mais fait
   tomber la tenue de rue de 94 % à 82 %, parce que le tour d'un socle n'est pas
@@ -178,16 +182,44 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   agrandi, iris réduit à 38 % et remis dans l'orbite, sourcils plus fins et
   plus hauts, bouche souriante, moustache réduite. Reste à valider en capture
   par Max, comme tout ce qui touche à l'apparence.
-- [ ] **Des voitures traversent encore du BÂTI** (le relief, lui, est réglé
-  depuis la v210, et la voiture CONDUITE depuis la v212). Mesuré en pas de convoi dans un bloc solide, à la cote où
-  la voiture roule : Paris 202 (monuments et façades haussmanniennes — le
-  Louvre, l'Opéra, la Tour Eiffel, l'Arc de Triomphe, les Invalides, tous
-  traversés parce qu'une voie a leur CENTRE pour point de passage), Londres 94
-  (dont 41 sur les bus impériaux garés aux arrêts, et six pas dans les
-  fontaines de Trafalgar Square), Washington 69 (les ormes du Mall compris),
-  San Francisco 60, Lille 10, Nice 0. Deux pistes : contourner les emprises de
-  monument comme on contourne les places rondes (`contournerRonds`), et ne pas
-  poser d'arbre ni de mobilier sur un tracé de circuit.
+- [x] **Des voitures traversaient les monuments de Paris — FAIT en v221.** La
+  cause n'était pas seulement « une voie a le centre d'un monument pour point
+  de passage » : les DIX monuments ont un socle plus large que la place
+  déclarée avec eux, si bien que l'anneau de contournement (`r − 0,5`) passe
+  DANS le bâtiment quel que soit le tracé. Chaque monument a désormais sa rue —
+  trois blocs de chaussée sur son pourtour — et `contournerBlocs` suit le
+  PÉRIMÈTRE du socle. Mesuré des deux côtés, carrosserie dans un bloc solide :
+  **49 → 0**. Tenue de rue 95 98 100 99 96 100 100 100 → 94 100 100 100 96 100
+  100 100. Témoin dans `carteMonde.js`, rouge sur `origin/main`.
+
+- [ ] **Onze pas de voiture restent dans la butte** — neuf sous le Sacré-Cœur,
+  deux au Moulin Rouge. Ces deux-là sont déclarés `sansTour` : l'anneau y
+  traverserait douze et dix-huit blocs de dénivelée, et l'essayer a été mesuré
+  PIRE que le défaut (dix-neuf pas de carrosserie dans le coteau). Le vrai
+  Montmartre n'a pas de boulevard autour de la basilique. Deux pistes, aucune
+  gratuite : creuser la rue dans la pente comme la voie ferrée creuse ses
+  tranchées (v213 — des blocs, pas `terrainHeight`), ou faire passer le circuit
+  plus bas, sur les boulevards, et rétrécir le socle du Sacré-Cœur, qui fait
+  seize blocs en v et descend donc jusqu'à Rochechouart.
+
+- [ ] **Le Louvre et l'Opéra bâtissent au-delà de leur socle déclaré.** Mesuré
+  sur l'anneau de chaque monument : vingt-neuf colonnes bâties sur les 192 du
+  tour du Louvre (15 %), six sur les 228 de l'Opéra (3 %) ; les six autres
+  anneaux sont libres à 100 %. Le socle sert à deux choses — rien d'ordinaire
+  ne s'y bâtit, et `world.js` en fait la boîte de rendu — donc un socle qui
+  sous-déclare son monument le fait aussi trancher de loin. C'est le même
+  défaut que l'escalier du Sacré-Cœur, qui descendait à quinze blocs quand sa
+  boîte en annonçait douze.
+
+- [ ] **Des voitures traversent encore du BÂTI ORDINAIRE.** Mesuré en pas de
+  carrosserie dans un bloc solide, à la cote où la voiture roule : Paris 82
+  après la v221 (contre 117 avant), dont 71 dans la ville ordinaire et 11 dans
+  la butte. Ailleurs, non remesuré depuis la v210 : Londres 94 (dont 41 sur les
+  bus impériaux garés aux arrêts, et six pas dans les fontaines de Trafalgar
+  Square), Washington 69 (les ormes du Mall compris), San Francisco 60, Lille
+  10, Nice 0. La piste qui reste est la seconde de la v210 : ne pas poser
+  d'arbre ni de mobilier sur un tracé de circuit.
+
 - [ ] **La rue de Rivoli traverse le jardin des Tuileries.** `pt('Tuileries')`
   est le CENTRE du jardin, et les places passent avant les rues dans
   `solParis` : la chaussée y disparaît sur une trentaine de blocs, ce qui

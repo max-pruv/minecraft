@@ -20,6 +20,58 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v221 — Chaque monument de Paris a sa rue
+
+**Pourquoi.** Des voitures traversaient l'Opéra, les Invalides, la colonne de
+la Bastille et la tour Montparnasse. Quarante-neuf pas de convoi, carrosserie
+dans la pierre, sur les huit circuits de Paris.
+
+La cause est plus générale que ce qu'on croyait. On avait noté « une voie a le
+centre d'un monument pour point de passage » ; c'est vrai, mais partiel. Un
+monument de Paris est **plus grand que la place déclarée avec lui**, et les DIX
+le sont sans exception : le socle de l'Opéra fait 8 × 7 blocs de demi-emprise
+pour une place de rayon 2,2, celui du Louvre 6 × 6 pour une place de 5. Or la
+voiture contourne une place en roulant sur son anneau, à un demi-bloc du bord —
+donc DANS le bâtiment, quel que soit le tracé des rues.
+
+Et rien ne le montrait. Le cœur d'un socle est **dallé** — c'est le parvis — et
+la mesure de tenue de rue annonçait donc 95 à 100 % en lisant le sol SOUS le
+monument. C'est exactement le piège déjà écrit dans `CLAUDE.md` : un témoin de
+circuit lit le BLOC à la cote du convoi, pas le sol sous lui.
+
+**Ce que ça change.** Chaque monument a désormais sa rue : trois blocs de
+chaussée sur son pourtour, comme la rue de Rivoli le long du Louvre ou l'avenue
+de Suffren le long du Champ-de-Mars. Les circuits suivent le **périmètre** du
+socle — pas un cercle, qui est la fausse piste déjà mesurée : le tour d'un socle
+par un cercle coupe les coins dans le square planté et fait tomber la tenue de
+rue de 94 à 82 %.
+
+C'est du SOL, pas du relief : les deux empreintes de `plafond.js` ne bougent pas
+d'un octet, même raison que la passe de rues de Londres.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, mesuré des deux
+côtés avec la même découpe : **quarante-neuf pas dans un monument sur
+`origin/main`, zéro sur la branche.** Il lit le bloc à la cote du convoi et sur
+toute la largeur de la voiture (2,26 blocs) — une aile dans un mur se voit
+autant qu'un capot. La tenue de rue des huit circuits passe de 95 · 98 · 100 ·
+99 · 96 · 100 · 100 · 100 à 94 · **100 · 100 · 100** · 96 · 100 · 100 · 100 :
+deux y gagnent, le pire perd un point. Le virage le plus fermé reste à 140°,
+sous la borne de 150°. L'anneau ne prend que 423 colonnes de lot sur les 2 382
+qu'il couvre — le reste était déjà du parvis ou de la rue. Portail complet vert.
+
+**Et deux erreurs de méthode, dites parce qu'elles se referont.** J'ai d'abord
+compté les pas dans l'EMPRISE d'un monument — cent trente-cinq — et c'était la
+mauvaise mesure : un arc de triomphe est creux, passer sous sa voûte n'est pas
+le traverser. Puis mon premier remède posait la rue autour des DIX monuments,
+butte comprise, et c'était **pire** : dix-neuf pas de carrosserie dans le coteau
+sous le Sacré-Cœur, cinq sous le Moulin Rouge. L'anneau y traverse douze et
+dix-huit blocs de dénivelée. Une rue ne fait pas le tour d'une colline, et le
+vrai Montmartre n'a pas de boulevard autour de la basilique — il a des ruelles
+et un escalier. La butte est donc déclarée sans tour dans la fiche du lieu, avec
+sa mesure en commentaire, et les onze pas qui y restent sont une dette écrite.
+
+---
+
 ## v220 — Revenir dans le jeu ne laisse plus l'enfant devant le bandeau
 
 **Pourquoi.** Sur un iPad, l'application n'est jamais vraiment fermée : elle
