@@ -1594,6 +1594,58 @@ const VRAIES_KM = [
       && par.circuits.every((c) => c.pas > 0 && c.place === 0 && c.eau === 0),
       JSON.stringify(par.absent ? par : par.circuits.map((c) => [c.pas, c.place, c.eau])));
 
+    // --- AUCUNE VOITURE NE ROULE DANS UN MONUMENT ---------------------------
+    //
+    // Un monument de Paris est plus GRAND que la place déclarée avec lui : le
+    // socle de l'Opéra fait 8 × 7 blocs de demi-emprise pour une place de
+    // rayon 2,2, et les dix en sont là sans exception. Or `contournerRonds`
+    // fait rouler la voiture sur l'anneau de la PLACE — donc DANS le bâtiment.
+    //
+    // Et cela ne se voyait dans aucun chiffre : le cœur d'un socle est DALLÉ,
+    // donc « roulant », et la tenue de rue annonçait 95 à 100 %. Le témoin
+    // lisait le parvis, pas le monument posé dessus. Celui-ci lit donc le
+    // BLOC, à la cote du convoi, et sur toute la LARGEUR de la voiture
+    // (2,26 blocs) : une aile dans un mur se voit autant qu'un capot.
+    //
+    // Les huit monuments listés sont ceux qui ont une rue autour d'eux. La
+    // butte — Sacré-Cœur et Moulin Rouge — n'en a pas, et c'est une décision
+    // mesurée : l'anneau y traverserait douze et dix-huit blocs de dénivelée.
+    // La liste est écrite ICI et non demandée au jeu, pour que le témoin
+    // mesure la MÊME chose sur l'ancien code, où elle n'existe pas.
+    const monuments = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const b = await import('./src/blocks.js');
+      const m = await import('./src/paris.js');
+      if (typeof m.circuitsParis !== 'function') return { absent: true };
+      const AVEC_RUE = ['Louvre', 'Opéra', 'Arc de Triomphe', 'Tour Eiffel',
+        'Invalides', 'Montparnasse', 'Panthéon', 'Bastille'];
+      const socles = m.LIEUX.filter((p) => p.socle && AVEC_RUE.includes(p.nom))
+        .map((p) => ({ nom: p.nom, u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const circuits = m.circuitsParis(solDe);
+      const DEMI = 1.13;                       // la demi-largeur d'une voiture
+      const par = {};
+      let dur = 0, pas = 0;
+      for (const c of circuits) for (const p of c.pts) {
+        const u = Math.round(p.x - m.PARIS.x), v = Math.round(p.z - m.PARIS.z);
+        const s = socles.find((q) => Math.abs(u - q.u) <= q.bu && Math.abs(v - q.v) <= q.bv);
+        if (!s) continue;
+        pas++;
+        let bloque = false;
+        for (const dx of [-DEMI, 0, DEMI]) for (const dz of [-DEMI, 0, DEMI]) for (const dy of [0, 1]) {
+          const id = w.getBlock(Math.round(p.x + dx), Math.round(p.y + dy), Math.round(p.z + dz));
+          if (id && b.isSolid(id)) bloque = true;
+        }
+        if (!bloque) continue;
+        dur++;
+        par[s.nom] = (par[s.nom] || 0) + 1;
+      }
+      return { dur, pas, par, circuits: circuits.length, parts: circuits.map((c) => c.part) };
+    });
+    verifier('aucune voiture ne traverse un monument de Paris',
+      !monuments.absent && monuments.circuits === 8 && monuments.dur === 0,
+      JSON.stringify(monuments));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

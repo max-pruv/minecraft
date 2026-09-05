@@ -1288,6 +1288,41 @@ en sortent, et elles valent pour tout ce qui se déplace sur un tracé.
   aux circuits. Le jour où une autre ville pose un ouvrage au-dessus de l'eau,
   c'est là qu'il se déclare.
 
+**UN MONUMENT EST PLUS GRAND QUE SA PLACE, ET SA PLACE EST DANS LUI (v221).**
+Des voitures traversaient l'Opéra, les Invalides, la colonne de la Bastille et
+la tour Montparnasse — quarante-neuf pas de convoi, carrosserie dans la pierre.
+On avait noté la cause comme « une voie a le CENTRE d'un monument pour point de
+passage » : c'est vrai et partiel. Mesuré, les DIX monuments de Paris ont un
+socle plus large que la place déclarée avec eux — l'Opéra 8 × 7 de demi-emprise
+pour une place de rayon 2,2, le Louvre 6 × 6 pour une place de 5. Or
+`contournerRonds` fait rouler la voiture sur l'anneau de la PLACE, à `r − 0,5` :
+cet anneau est DANS le bâtiment, quel que soit le tracé des rues. Quatre choses
+en sortent.
+
+- **UN MONUMENT A UNE RUE AUTOUR DE LUI, et c'est le remède.** Trois blocs de
+  chaussée sur le pourtour du socle (`autourDUnSocle`), et `contournerBlocs`
+  (voies.js) y fait passer les circuits en suivant le PÉRIMÈTRE du rectangle.
+  C'est ce qu'a la vraie ville — la rue de Rivoli le long du Louvre, l'avenue de
+  Suffren le long du Champ-de-Mars. Et c'est du SOL : les deux empreintes de
+  `plafond.js` ne bougent pas, même raison que la passe de rues de Londres.
+- **PAS UN CERCLE — la fausse piste était déjà écrite, et elle est juste.**
+  Ajouter les socles aux cercles évités supprime bien les traversées mais fait
+  tomber la tenue de rue de 94 à 82 % : le tour d'un socle par un cercle coupe
+  les coins dans le square planté. Un rectangle se contourne par son périmètre.
+- **CE QU'ON COMPTE, C'EST LE BLOC, PAS L'EMPRISE.** Mon premier chiffre — 135
+  pas « dans un monument » — comptait l'emprise au sol. Un arc de triomphe est
+  CREUX : passer sous sa voûte n'est pas le traverser. La bonne mesure lit le
+  bloc à la cote du convoi et sur toute la LARGEUR de la voiture (2,26 blocs) :
+  une aile dans un mur se voit autant qu'un capot. Elle rend 49, et zéro après.
+- **UNE RUE NE FAIT PAS LE TOUR D'UNE COLLINE.** Mon premier remède posait
+  l'anneau autour des dix monuments, butte comprise, et c'était PIRE :
+  dix-neuf pas de carrosserie dans le coteau sous le Sacré-Cœur, cinq sous le
+  Moulin Rouge. L'anneau y traverse douze et dix-huit blocs de dénivelée. Le
+  vrai Montmartre n'a pas de boulevard autour de la basilique — il a des
+  ruelles et un escalier. La butte est déclarée `sansTour` DANS LA FICHE DU
+  LIEU, avec sa mesure en commentaire, jamais dans une liste : même discipline
+  que `montable`, `nourrissable` et `vole`.
+
 **Et un témoin de circuit doit lire le BLOC à la cote du convoi, pas le sol
 sous lui.** `circuitSurRue` mesure la nature du SOL — de la chaussée, pas de
 l'eau — et ne dit rien de ce qui occupe l'espace où la voiture passe. C'est
