@@ -174,7 +174,7 @@ const VRAIES_KM = [
     verifier('le terrain existe là où San Francisco a déménagé',
       loin.h > 0 && loin.solide, JSON.stringify(loin));
 
-    // --- LE TOUR DU MONDE : quarante-six villes, pas des esplanades ----------
+    // --- LE TOUR DU MONDE : cinquante-huit villes, pas des esplanades -------
     //
     // Max : « fais pas que Londres, hein — je veux plein de villes iconiques. »
     // Puis : « refais les 50 plus grosses et famous villes mondiales en
@@ -209,7 +209,20 @@ const VRAIES_KM = [
         hongkong: [0, 26],        // le port Victoria
         chicago: [40, 0],         // le lac Michigan
         miami: [20, 0],           // la baie de Biscayne, avant l'île-barrière
-        lecap: [0, -25] };        // la baie de la Table
+        lecap: [0, -25],          // la baie de la Table
+        // v223 — le premier lot des cinquante détaillées : chaque ville qui
+        // gagne une eau gagne son point. C'est ce qui prouve que la
+        // géographie de la fiche est arrivée dans le monde engendré.
+        dublin: [0, 5.7],         // la Liffey, sous O'Connell Bridge
+        budapest: [6, 0],         // le Danube, au pont des Chaînes
+        naples: [0, 26],          // le golfe, au large de Santa Lucia
+        seville: [-26, 0],        // le Guadalquivir, devant Triana
+        montreal: [30, 15],       // le Saint-Laurent
+        boston: [-8, -12],        // la Charles, entre Beacon Hill et Charlestown
+        nouvelleorleans: [16, -2],// le méandre du Mississippi
+        santiago: [0, -20],       // le Mapocho
+        alexandrie: [0, -16],     // la Méditerranée, au nord de la Corniche
+        melbourne: [2, 11] };     // la Yarra, sous Flinders Street
       const monuments = [], eaux = [], centres = [];
       for (const f of VILLES_MONDE) {
         for (const m of f.monuments || []) {
@@ -252,7 +265,17 @@ const VRAIES_KM = [
             fleche = w.getBlock(fx, sol + (sommet[1] - e2.minY), fz) !== 0;
           }
           monuments.push({ nom: m.nom, ville: f.cle, hMax, fleche,
-            attendu: cat ? cat.emprise.h : 3, hMin: m.hmin || 3 });
+            attendu: cat ? cat.emprise.h : 3, hMin: m.hmin || 3,
+            // « CHEZ LUI » SE MESURE, IL NE SE CONSTATE PAS. Un monument
+            // posé hors du disque de sa ville se dresse quand même — rien
+            // ne l'en empêche — mais le terrain sous lui n'est plus celui
+            // que la fiche façonne : la colline sur laquelle il devait être
+            // n'existe pas, et la ville s'arrête avant lui. C'est le défaut
+            // qu'une échelle trop grande produit, et il est INVISIBLE au
+            // témoin de hauteur. Trois monuments sont dehors POUR DE VRAI et
+            // le déclarent (`dehors`) ; tous les autres doivent tenir, boîte
+            // comprise.
+            debord: m.dehors ? 0 : Math.round(Math.hypot(du, dv) + (m.box || 8) - f.rayon) });
         }
         const e = EAU_TEMOIN[f.cle];
         if (e) {
@@ -267,10 +290,15 @@ const VRAIES_KM = [
     // fontaine de Dubaï — porte sa hauteur minimale dans sa fiche (hmin) ;
     // pour tous les autres, moins de trois blocs, c'est un monument couché.
     const couches = tour.monuments.filter((m) => m.hMax < m.hMin);
-    verifier('les cent quarante-deux monuments des quarante-six villes se dressent, chacun chez lui',
-      tour.monuments.length === 142 && couches.length === 0,
+    verifier('les deux cent trois monuments des cinquante-huit villes se dressent, chacun chez lui',
+      tour.monuments.length === 203 && couches.length === 0,
       couches.map((m) => `${m.nom} (${m.ville}) : ${m.hMax}`).join(' · ')
         || `${tour.monuments.length} monuments debout`);
+    const dehors = tour.monuments.filter((m) => m.debord > 0);
+    verifier('et chacun tient dans le disque de sa ville, boîte comprise',
+      dehors.length === 0,
+      dehors.map((m) => `${m.nom} (${m.ville}) déborde de ${m.debord} blocs`).join(' · ')
+        || `${tour.monuments.length} monuments dans leur ville, trois dehors et déclarés`);
     const tronques = tour.monuments.filter((m) => m.attendu > 3 && !m.fleche);
     verifier('et les huit grands du catalogue montent jusqu\'à leur vraie hauteur',
       tronques.length === 0,

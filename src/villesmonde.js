@@ -567,8 +567,216 @@ function buildVoituresCubaines(poser) {
   });
 }
 
+// --- v223 : ce qu'il faut pour faire passer une ville du gabarit à la fiche --
+//
+// Douze villes de plus sortent de leur archétype. Rien de ce qui suit n'est
+// propre à l'une d'elles : un clocher, une cathédrale, un stade, une tour de
+// verre — ce sont les gestes que TOUTE ville partage, et c'est pour cela
+// qu'ils vivent ici et pas dans une fiche. La leçon du verre dans les murs, par
+// l'autre bout : un remède qui reste chez celui qui l'a payé se repaie.
+
+// Deux gestes pour un monument : la halle ET son dôme, l'enceinte ET son
+// donjon. Le monument garde UNE fiche et UNE adresse — ce que le témoin des
+// monuments compte, c'est la fiche, pas le nombre de gestes.
+const combine = (...gestes) => (poser) => { for (const g of gestes) g(poser); };
+
+// Un clocher : le fût carré et creux, la corniche du beffroi, la flèche.
+// La Giralda, le campanile de Trinity, le Scott Monument, la tour de l'Horloge.
+function clocher(h, mur, fleche = PIERRE) {
+  return (poser) => {
+    for (let y = 1; y <= h; y++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          if (Math.abs(dx) === 1 || Math.abs(dz) === 1) poser(dx, y, dz, mur);
+        }
+      }
+    }
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        if (Math.abs(dx) === 2 || Math.abs(dz) === 2) poser(dx, h + 1, dz, mur);
+      }
+    }
+    for (let y = h + 2; y <= h + 5; y++) poser(0, y, 0, fleche);
+    poser(0, h + 6, 0, OR);
+  };
+}
+
+// Une cathédrale : la nef sous son toit à deux pentes, le transept en croix,
+// et les deux tours de façade. Christ Church, Notre-Dame de Montréal,
+// Saint-Louis de La Nouvelle-Orléans, le Duomo de Naples.
+function cathedrale(demi, mur, toit, hTour = 9) {
+  return (poser) => {
+    for (let dz = -demi; dz <= demi; dz++) {
+      for (const dx of [-2, 2]) for (let y = 1; y <= 5; y++) poser(dx, y, dz, mur);
+      for (let dx = -2; dx <= 2; dx++) poser(dx, 6, dz, toit);
+      poser(0, 7, dz, toit);
+    }
+    // le transept : les deux bras qui débordent de la nef
+    for (const dx of [-4, -3, 3, 4]) {
+      for (let y = 1; y <= 5; y++) { poser(dx, y, -1, mur); poser(dx, y, 1, mur); }
+      poser(dx, 6, 0, toit); poser(dx, 6, -1, toit); poser(dx, 6, 1, toit);
+    }
+    for (const dz of [-demi, demi]) {
+      for (let dx = -2; dx <= 2; dx++) for (let y = 1; y <= 5; y++) poser(dx, y, dz, mur);
+    }
+    for (const dx of [-2, 2]) {
+      for (let y = 1; y <= hTour; y++) { poser(dx, y, demi, mur); poser(dx, y, demi - 1, mur); }
+      for (let y = hTour + 1; y <= hTour + 4; y++) poser(dx, y, demi, toit);
+    }
+  };
+}
+
+// Un stade : l'anneau de gradins, sa couronne de pylônes, la pelouse au fond.
+// Le MCG, le Superdome.
+function stade(r, mur) {
+  return (poser) => {
+    for (let a = 0; a < 360; a += 4) {
+      const rad = (a * Math.PI) / 180;
+      const dx = Math.round(Math.cos(rad) * r), dz = Math.round(Math.sin(rad) * r);
+      for (let y = 1; y <= 7; y++) poser(dx, y, dz, mur);
+      const ix = Math.round(Math.cos(rad) * (r - 2)), iz = Math.round(Math.sin(rad) * (r - 2));
+      for (let y = 1; y <= 4; y++) poser(ix, y, iz, mur);
+      if (a % 30 === 0) { poser(dx, 8, dz, ACIER); poser(dx, 9, dz, ACIER); }
+    }
+    for (let dx = -r + 3; dx <= r - 3; dx++) {
+      for (let dz = -r + 3; dz <= r - 3; dz++) {
+        if (dx * dx + dz * dz < (r - 3) * (r - 3)) poser(dx, 1, dz, HERBE);
+      }
+    }
+  };
+}
+
+// Une tour de bureaux. LE MUR EST `CURTAIN`, JAMAIS `GLASS` : un bâtiment est
+// creux, et un bloc de verre dans son mur est un TROU par lequel on voit au
+// travers — la panne payée quatre fois. `CURTAIN` porte ses meneaux dans sa
+// texture, il est opaque, et il s'allume déjà la nuit.
+function gratteciel(h, demi, couronne = ACIER) {
+  return (poser) => {
+    for (let y = 1; y <= h; y++) {
+      for (let dx = -demi; dx <= demi; dx++) {
+        for (let dz = -demi; dz <= demi; dz++) {
+          if (Math.abs(dx) === demi || Math.abs(dz) === demi) {
+            poser(dx, y, dz, y % 8 === 0 ? ACIER : CITY_BLOCK.CURTAIN);
+          }
+        }
+      }
+    }
+    for (let y = h + 1; y <= h + 5; y++) poser(0, y, 0, couronne);
+  };
+}
+
+// Une aiguille : le Spire de Dublin, et rien d'autre qu'elle.
+function aiguille(h, bloc = ACIER) {
+  return (poser) => {
+    for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) poser(a, 1, b, PIERRE);
+    for (let y = 2; y <= h; y++) poser(0, y, 0, bloc);
+  };
+}
+
+// Le Duomo de Milan : le bloc de marbre blanc, et surtout SA FORÊT DE FLÈCHES
+// — cent trente-cinq pinacles. C'est elle qu'on reconnaît de loin, pas la
+// façade ; un Duomo sans ses pinacles est une halle.
+function buildDuomoMilan(poser) {
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dz = -7; dz <= 7; dz++) {
+      if (Math.abs(dx) === 4 || Math.abs(dz) === 7) for (let y = 1; y <= 7; y++) poser(dx, y, dz, BLANC);
+      poser(dx, 8, dz, BLANC);
+    }
+  }
+  for (let dx = -4; dx <= 4; dx += 2) {
+    for (let dz = -6; dz <= 6; dz += 2) {
+      if (Math.abs(dx) !== 4 && Math.abs(dz) !== 6) continue;
+      for (let y = 9; y <= 9 + Math.round(3 * (1 - Math.abs(dz) / 7)); y++) poser(dx, y, dz, BLANC);
+    }
+  }
+  for (let y = 9; y <= 20; y++) poser(0, y, 0, BLANC);
+  poser(0, 21, 0, OR); poser(0, 22, 0, OR);                       // la Madonnina
+}
+
+// Les Setas de Séville : la marquise de bois posée sur ses six troncs. Vue de
+// la rue c'est un auvent géant — c'est exactement ce qu'elle est.
+function buildSetas(poser) {
+  for (const [dx, dz] of [[-4, -3], [0, -4], [4, -2], [-3, 3], [1, 4], [5, 2]]) {
+    for (let y = 1; y <= 6; y++) poser(dx, y, dz, BOIS_PORTE);
+  }
+  for (let dx = -6; dx <= 6; dx++) {
+    for (let dz = -5; dz <= 5; dz++) if (((dx + dz) & 1) === 0) poser(dx, 7, dz, BOIS_BANC);
+  }
+}
+
+// Le cimetière Saint-Louis : à La Nouvelle-Orléans on enterre AU-DESSUS du sol
+// — la nappe affleure à un mètre. Des rangées de caveaux blancs, une ville
+// dans la ville. C'est plat et c'est voulu : `hmin` le dit.
+function buildCimetiere(poser) {
+  for (let dx = -6; dx <= 6; dx += 3) {
+    for (let dz = -6; dz <= 6; dz += 2) {
+      poser(dx, 1, dz, BLANC); poser(dx, 2, dz, BLANC); poser(dx + 1, 1, dz, BLANC);
+      if (((dx + dz) & 3) === 0) poser(dx, 3, dz, PIERRE);
+    }
+  }
+}
+
+// Le vapeur à aubes du Mississippi : la coque, deux ponts blancs, la roue
+// rouge à l'arrière et les deux cheminées. Il est AMARRÉ DANS LE FLEUVE — la
+// coque baigne, les ponts émergent, comme un bateau doit le faire.
+function buildVapeur(poser) {
+  for (let dz = -7; dz <= 7; dz++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      if (Math.abs(dz) === 7 && Math.abs(dx) === 2) continue;      // l'étrave et la poupe s'affinent
+      poser(dx, 1, dz, BOIS_PORTE); poser(dx, 2, dz, BLANC);
+      if (Math.abs(dz) < 6) poser(dx, 5, dz, BLANC);
+    }
+    if (Math.abs(dz) < 6) for (const dx of [-2, 2]) for (let y = 3; y <= 4; y++) poser(dx, y, dz, BLANC);
+  }
+  for (const dz of [-1, 1]) for (let y = 6; y <= 10; y++) poser(0, y, dz, ARDOISE);
+  for (let y = 2; y <= 6; y++) { poser(-2, y, 8, ROUGE_GRES); poser(2, y, 8, ROUGE_GRES); }
+  for (let dx = -2; dx <= 2; dx++) poser(dx, 4, 8, ROUGE_GRES);
+}
+
+// La Bibliotheca Alexandrina : un disque de granit INCLINÉ vers la mer, comme
+// un soleil qui se lève. C'est la pente qu'on reconnaît, pas le rond.
+function buildBibliotheca(poser) {
+  const R = 8;
+  for (let dx = -R; dx <= R; dx++) {
+    for (let dz = -R; dz <= R; dz++) {
+      const d = Math.hypot(dx, dz);
+      if (d > R) continue;
+      const y = 2 + Math.round((dz + R) * 0.45);
+      poser(dx, y, dz, PIERRE);
+      if (d > R - 1) for (let k = 1; k < y; k++) poser(dx, k, dz, CREME);
+    }
+  }
+}
+
+// La croix du Mont-Royal : trente mètres d'acier blanc au-dessus de Montréal.
+function buildCroix(poser) {
+  for (let y = 1; y <= 12; y++) poser(0, y, 0, BLANC);
+  for (let dz = -3; dz <= 3; dz++) poser(0, 9, dz, BLANC);
+}
+
+// Habitat 67 : trois cent cinquante-quatre cubes de béton empilés en escalier
+// — un village posé sur le Saint-Laurent.
+function buildHabitat(poser) {
+  for (let n = 0; n < 5; n++) {
+    for (let dz = -6 + n; dz <= 6 - n; dz += 2) {
+      const dx = ((n + dz) & 2) ? 1 : -2;
+      for (let y = 1 + n * 2; y <= 2 + n * 2; y++) {
+        for (let a = 0; a <= 1; a++) for (let b = 0; b <= 1; b++) poser(dx + a, y, dz + b, uni(23));
+      }
+    }
+  }
+}
+
 const VERMILLON = uni(0);          // le rouge des toriis et des Chevrolet
 const NOIRB = ARDOISE;             // le bronze sombre des statues de pont
+
+// UN MONUMENT HORS DU DISQUE DE SA VILLE SE DÉCLARE (`dehors: true`).
+// Trois le sont pour de vrai — l'Atomium à Heysel, le panneau Hollywood sur
+// sa colline, le Burj al Arab sur son île — et le témoin de `carteMonde.js`
+// refuse tous les autres. Sans ce drapeau, la règle ne se distinguerait pas
+// d'une erreur d'échelle, et c'est exactement l'erreur qu'elle doit attraper :
+// une fiche dont l'échelle est trop grande pousse ses monuments hors de la
+// ville, où rien ne façonne le terrain sous eux.
 
 // --- les fiches ---------------------------------------------------------
 
@@ -692,6 +900,302 @@ const FICHES = {
     lieux: [['Le front de mer', 47.605, -122.34], ['Downtown', 47.608, -122.335]],
     couleurToits: [140, 146, 156],
   },
+  // --- v223 — LE PREMIER LOT DES CINQUANTE : douze villes quittent le gabarit
+  //
+  // Max : « add 50 cities with high details ». Le monde en avait 269 : 46 avec
+  // une fiche, 223 engendrées depuis onze archétypes. Une ville engendrée a
+  // des rues, des devantures et des voitures, mais elle n'a NI SA GÉOGRAPHIE
+  // NI SES MONUMENTS — Édimbourg sans son rocher, Budapest sans le Danube,
+  // Naples sans son golfe. C'est cela que la fiche apporte.
+  //
+  // TROIS RÈGLES TENUES POUR LES DOUZE :
+  // — Le rayon vient du REGISTRE, jamais de la fiche. C'est ce qui garantit
+  //   que la découpe « hors villes » de plafond.js ne bouge pas d'une colonne,
+  //   et qu'aucune ville n'en touche une autre.
+  // — La géométrie se CALCULE depuis de vraies latitudes et longitudes, et
+  //   l'échelle de chaque ville est choisie POUR QUE SES MONUMENTS TOMBENT
+  //   DANS SON DISQUE. Un générateur de brouillon le mesure ; il a écarté le
+  //   MCG de Melbourne, le stade olympique de Montréal et Phoenix Park.
+  // — Aucun bloc de `GLASS` dans un mur. Les tours sont en `CURTAIN`.
+  //
+  // Les douze sont hors de la fenêtre d'empreinte [−700, 700] : mesuré, la
+  // seule ville engendrée qui y tombe est Cologne, laissée générique exprès.
+  edimbourg: {
+    // L'ancre du registre est Princes Street, entre la vieille ville sur son
+    // rocher et la ville neuve géorgienne. L'échelle est descendue à 16 pour
+    // qu'Arthur's Seat — deux kilomètres à l'est — tienne dans le disque.
+    lat0: 55.9533, lon0: -3.1883, echelle: 16, rayon: 61,
+    collines: [
+      { nom: 'Castle Rock', cu: -12, cv: 8, r: 6, h: 13, roche: true },
+      { nom: "Arthur's Seat", cu: 26, cv: 16, r: 12, h: 22 },
+      { nom: 'Calton Hill', cu: 10, cv: -3, r: 4, h: 8 },
+    ],
+    parcs: [{ cu: -6, cv: 5, ru: 7, rv: 2.5 }],                  // Princes Street Gardens, dans la vallée
+    trame: { ang: 0.35, pu: 5, pv: 4 },
+    palette: [JAUNE_MUR, ACIER, uni(17)], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: "Château d'Édimbourg", lat: 55.9486, lon: -3.1999, box: 10,
+        build: combine(muraillesRect(7, 8, ACIER), clocher(6, ACIER, ARDOISE)) },
+      { nom: 'Scott Monument', lat: 55.9522, lon: -3.1934, box: 4, build: clocher(16, ARDOISE, ARDOISE) },
+      { nom: 'Cathédrale St Giles', lat: 55.9495, lon: -3.1907, box: 5, seuil: 0.4, build: clocher(9, JAUNE_MUR, OR) },
+      { nom: 'Palais de Holyrood', lat: 55.9527, lon: -3.1722, box: 8, build: palaisLong(6, ACIER, ARDOISE) },
+      { nom: 'Monument national', lat: 55.9549, lon: -3.1826, box: 5, seuil: 0.4, build: colonnade(4, 2) },
+    ],
+    lieux: [['Royal Mile', 55.9500, -3.1900], ['Princes Street', 55.9518, -3.1950],
+      ['Grassmarket', 55.9472, -3.1957], ['Holyrood', 55.9527, -3.1722], ["Arthur's Seat", 55.9441, -3.1618]],
+    couleurToits: [104, 110, 118],
+  },
+  dublin: {
+    // La Liffey coupe la ville d'ouest en est ; l'ancre du registre est sur la
+    // rive nord, à O'Connell Bridge. Le fleuve passe donc à six unités au sud
+    // du centre — assez pour que la place d'arrivée reste au sec.
+    lat0: 53.3498, lon0: -6.2603, echelle: 16, rayon: 65,
+    fleuve: { pts: [[-46, 8], [-28, 7.6], [-12, 6.6], [-3, 5.9], [10, 5.2], [24, 4.4], [40, 3.2]], l: 2.2 },
+    trame: { ang: 0.15, pu: 5, pv: 5 },
+    palette: [brique(17), brique(18), CREME], toit: ARDOISE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'The Spire', lat: 53.3506, lon: -6.2603, box: 3, build: aiguille(26) },
+      { nom: 'Campanile de Trinity', lat: 53.3438, lon: -6.2546, box: 5, seuil: 0.4, build: clocher(8, ACIER, OR) },
+      { nom: 'Christ Church', lat: 53.3434, lon: -6.2711, box: 8, build: cathedrale(5, ACIER, ARDOISE, 9) },
+      { nom: "Ha'penny Bridge", lat: 53.3465, lon: -6.2632, box: 7, build: pontBati(5, false, false) },
+      { nom: 'Guinness Storehouse', lat: 53.3419, lon: -6.2867, box: 7, build: dome(4, brique(18), ACIER) },
+    ],
+    lieux: [["O'Connell Street", 53.3489, -6.2603], ['Trinity College', 53.3438, -6.2546],
+      ['Temple Bar', 53.3455, -6.2640], ['Dublin Castle', 53.3429, -6.2674], ['St James Gate', 53.3419, -6.2867]],
+    couleurToits: [126, 108, 100],
+  },
+  budapest: {
+    // LE DANUBE EST LA VILLE : Buda sur ses collines à l'ouest, Pest à plat à
+    // l'est. L'ancre du registre tombe sur le quai de Buda, au pied du château
+    // — on arrive donc face au fleuve, le Parlement en vis-à-vis.
+    lat0: 47.4979, lon0: 19.0402, echelle: 14, rayon: 72,
+    fleuve: { pts: [[1, -58], [2, -40], [2.5, -24], [3, -14], [5, -4], [7, 4], [11, 13], [17, 25], [27, 43], [37, 60]], l: 2.4 },
+    collines: [
+      { nom: 'Várhegy nord', cu: -8, cv: -6, r: 5, h: 10 },
+      { nom: 'Várhegy sud', cu: -4, cv: 6, r: 5, h: 10 },
+      { nom: 'Gellért-hegy', cu: 7, cv: 19, r: 7, h: 15, roche: true },
+    ],
+    trame: { ang: 0.1, pu: 6, pv: 5 },
+    palette: [JAUNE_MUR, OCRE, CREME], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Parlement hongrois', lat: 47.5072, lon: 19.0456, box: 12,
+        build: combine(palaisLong(9, CREME, ARDOISE), dome(4, CREME, ARDOISE)) },
+      { nom: 'Château de Buda', lat: 47.4962, lon: 19.0397, box: 9,
+        build: combine(palaisLong(7, CREME, uni(6)), dome(3, CREME, uni(6))) },
+      { nom: 'Bastion des Pêcheurs', lat: 47.5022, lon: 19.0345, box: 6, seuil: 0.4, build: muraillesRect(4, 4, BLANC) },
+      { nom: 'Basilique Saint-Étienne', lat: 47.5008, lon: 19.0537, box: 7, build: dome(5, CREME, ARDOISE) },
+      { nom: 'Pont des Chaînes', lat: 47.4989, lon: 19.0437, box: 9, build: pontBati(7, false, true) },
+    ],
+    lieux: [['Parlement', 47.5072, 19.0456], ['Château de Buda', 47.4962, 19.0397],
+      ['Bastion des Pêcheurs', 47.5022, 19.0345], ['Gellért-hegy', 47.4863, 19.0464],
+      ['Grande Halle', 47.4869, 19.0587]],
+    couleurToits: [124, 120, 116],
+  },
+  milan: {
+    // Milan n'a pas de fleuve : ce qu'on reconnaît d'elle, c'est le Duomo et
+    // sa forêt de flèches, le Castello et le parc derrière.
+    lat0: 45.4642, lon0: 9.1900, echelle: 18, rayon: 76,
+    parcs: [{ cu: -21, cv: -20, ru: 9, rv: 7 }],                 // le parco Sempione, derrière le Castello
+    trame: { ang: 0.25, pu: 6, pv: 5, tours: 0.9 }, tourMax: 22,
+    palette: [OCRE, JAUNE_MUR, uni(23)], toit: TUILE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Duomo de Milan', lat: 45.4642, lon: 9.1918, box: 10, build: buildDuomoMilan },
+      { nom: 'Castello Sforzesco', lat: 45.4707, lon: 9.1795, box: 10,
+        build: combine(muraillesRect(7, 7, brique(17)), clocher(12, brique(17), brique(17))) },
+      { nom: 'Galleria Vittorio Emanuele', lat: 45.4659, lon: 9.1900, box: 5, seuil: 0.4, build: dome(3, CREME, ACIER) },
+      { nom: 'Teatro alla Scala', lat: 45.4674, lon: 9.1895, box: 5, seuil: 0.4, build: palaisLong(4, CREME, ARDOISE) },
+      { nom: "Sant'Ambrogio", lat: 45.4626, lon: 9.1756, box: 8, build: cathedrale(4, brique(17), TUILE, 7) },
+      { nom: 'Porta Nuova', lat: 45.4840, lon: 9.1900, box: 5, build: gratteciel(28, 2, ACIER) },
+    ],
+    lieux: [['Duomo', 45.4642, 9.1918], ['Castello Sforzesco', 45.4707, 9.1795],
+      ['Galleria', 45.4659, 9.1900], ['Navigli', 45.4520, 9.1750], ['Porta Nuova', 45.4840, 9.1900]],
+    couleurToits: [178, 112, 88],
+  },
+  naples: {
+    // LE GOLFE. La ville descend du Vomero jusqu'à la mer, et le Castel
+    // dell'Ovo est posé DANS l'eau sur son îlot — c'est pour cela qu'il tombe
+    // au-delà du rivage, et non par erreur. Le Vésuve, lui, est à douze
+    // kilomètres : hors du disque quelle que soit l'échelle, il reste dehors.
+    lat0: 40.8518, lon0: 14.2681, echelle: 11, rayon: 72,
+    mer: { nx: 0.15, nz: 0.99, d: 18, quais: true },
+    collines: [
+      { nom: 'Vomero', cu: -27, cv: 8, r: 10, h: 16 },
+      { nom: 'Capodimonte', cu: -17, cv: -19, r: 8, h: 12 },
+    ],
+    trame: { ang: 0.25, pu: 5, pv: 4 },
+    palette: [OCRE, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [4, 6],
+    monuments: [
+      { nom: "Castel dell'Ovo", lat: 40.8283, lon: 14.2477, box: 8, build: muraillesRect(5, 7, JAUNE_MUR) },
+      { nom: 'Castel Nuovo', lat: 40.8383, lon: 14.2525, box: 9,
+        build: combine(muraillesRect(6, 8, CREME), clocher(5, CREME, CREME)) },
+      { nom: 'Galleria Umberto I', lat: 40.8380, lon: 14.2490, box: 5, seuil: 0.4, build: dome(3, CREME, ACIER) },
+      { nom: 'Certosa San Martino', lat: 40.8447, lon: 14.2394, box: 8,
+        build: combine(muraillesRect(5, 5, BLANC), dome(3, BLANC, ARDOISE)) },
+      { nom: 'Duomo de Naples', lat: 40.8527, lon: 14.2596, box: 8, build: cathedrale(4, CREME, TUILE, 8) },
+    ],
+    lieux: [['Piazza del Plebiscito', 40.8358, 14.2489], ['Spaccanapoli', 40.8500, 14.2560],
+      ["Castel dell'Ovo", 40.8283, 14.2477], ['Vomero', 40.8447, 14.2394], ['Le port', 40.8400, 14.2700]],
+    couleurToits: [180, 116, 86],
+  },
+  seville: {
+    // Le Guadalquivir passe à l'ouest, Triana sur l'autre rive. La Giralda est
+    // un MINARET almohade devenu clocher : c'est la même tour, et c'est elle
+    // qu'on voit de partout.
+    lat0: 37.3891, lon0: -5.9845, echelle: 18, rayon: 65,
+    fleuve: { pts: [[-28, -40], [-27, -20], [-26, -4], [-26, 6], [-25, 20], [-24, 38], [-24, 56]], l: 2.2 },
+    trame: { ang: 0.2, pu: 5, pv: 4 },
+    palette: [BLANC, CREME, OCRE], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      // La Giralda est ADOSSÉE à la cathédrale : deux fiches se marcheraient
+      // dessus, elles n'en font donc qu'une, avec deux gestes.
+      { nom: 'Cathédrale et Giralda', lat: 37.3861, lon: -5.9925, box: 10,
+        build: combine(cathedrale(7, CREME, ARDOISE, 6), clocher(18, OCRE, OR)) },
+      { nom: 'Torre del Oro', lat: 37.3826, lon: -5.9964, box: 5, seuil: 0.4, build: clocher(12, OCRE, OR) },
+      { nom: 'Alcázar de Séville', lat: 37.3830, lon: -5.9903, box: 9, build: muraillesRect(6, 6, OCRE) },
+      { nom: "Plaza de España", lat: 37.3772, lon: -5.9869, box: 10, seuil: 0.4,
+        build: combine(palaisLong(8, brique(17), TUILE), clocher(10, brique(17), OR)) },
+      { nom: 'Las Setas', lat: 37.3934, lon: -5.9921, box: 7, seuil: 0.4, build: buildSetas },
+    ],
+    lieux: [['Cathédrale', 37.3861, -5.9925], ['Alcázar', 37.3830, -5.9903],
+      ['Triana', 37.3860, -6.0060], ["Plaza de España", 37.3772, -5.9869], ['Torre del Oro', 37.3826, -5.9964]],
+    couleurToits: [184, 110, 84],
+  },
+  montreal: {
+    // Le Saint-Laurent passe au sud-est, le Mont-Royal barre l'ouest, et la
+    // trame tourne de trente degrés — le « nord de Montréal » n'est pas le
+    // nord. Le stade olympique est à quatre kilomètres : hors du disque.
+    lat0: 45.5019, lon0: -73.5674, echelle: 14, rayon: 68,
+    fleuve: { pts: [[-20, 60], [0, 45], [20, 25], [40, 5], [60, -15], [80, -35]], l: 7 },
+    collines: [{ nom: 'Mont-Royal', cu: -22, cv: -5, r: 11, h: 16 }],
+    trame: { ang: 0.55, pu: 6, pv: 5, tours: 0.75 }, tourMax: 24,
+    palette: [ACIER, brique(17), CREME], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Basilique Notre-Dame', lat: 45.5045, lon: -73.5563, box: 8, build: cathedrale(5, ACIER, ARDOISE, 11) },
+      { nom: 'Marché Bonsecours', lat: 45.5085, lon: -73.5520, box: 7, build: dome(4, CREME, ACIER) },
+      { nom: "Tour de l'Horloge", lat: 45.5108, lon: -73.5450, box: 4, seuil: 0.4, build: clocher(12, BLANC, BLANC) },
+      { nom: 'Habitat 67', lat: 45.4977, lon: -73.5426, box: 8, seuil: 0.4, build: buildHabitat },
+      { nom: 'Croix du Mont-Royal', lat: 45.5085, lon: -73.5873, box: 4, build: buildCroix },
+    ],
+    lieux: [['Vieux-Montréal', 45.5060, -73.5540], ['Mont-Royal', 45.5048, -73.5878],
+      ['Vieux-Port', 45.5060, -73.5520], ['Le Plateau', 45.5230, -73.5800], ['Habitat 67', 45.4977, -73.5426]],
+    couleurToits: [118, 120, 126],
+  },
+  boston: {
+    // La Charles au nord, le port à l'est, Beacon Hill au milieu — et sur
+    // Beacon Hill le DÔME DORÉ du State House, qu'on voit de tout le Common.
+    lat0: 42.3601, lon0: -71.0589, echelle: 16, rayon: 65,
+    fleuve: { pts: [[-48, 8], [-30, 2], [-18, -7], [-8, -12], [2, -16], [14, -17], [24, -15]], l: 3 },
+    mer: { nx: 0.94, nz: 0.34, d: 24, quais: true },
+    collines: [
+      { nom: 'Beacon Hill', cu: -7, cv: 1, r: 5, h: 5 },
+      { nom: 'Bunker Hill', cu: -2, cv: -29, r: 5, h: 6 },
+    ],
+    parcs: [{ cu: -9, cv: 9, ru: 6, rv: 5 }],                     // le Boston Common
+    trame: { ang: 0.2, pu: 6, pv: 5, tours: 0.8 }, tourMax: 24,
+    palette: [brique(17), brique(18), CREME], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Massachusetts State House', lat: 42.3588, lon: -71.0638, box: 7, build: dome(4, brique(17), OR) },
+      { nom: 'Bunker Hill Monument', lat: 42.3765, lon: -71.0608, box: 4, build: obelisque(22) },
+      { nom: 'Old North Church', lat: 42.3663, lon: -71.0545, box: 5, seuil: 0.4, build: clocher(14, BLANC, BLANC) },
+      { nom: 'Faneuil Hall', lat: 42.3600, lon: -71.0568, box: 6, seuil: 0.4, build: palaisLong(5, brique(17), ARDOISE) },
+      { nom: 'Custom House Tower', lat: 42.3591, lon: -71.0537, box: 4, build: clocher(20, ACIER, OR) },
+    ],
+    lieux: [['Boston Common', 42.3550, -71.0656], ['Beacon Hill', 42.3588, -71.0638],
+      ['Faneuil Hall', 42.3600, -71.0568], ['North End', 42.3647, -71.0542], ['Charlestown', 42.3765, -71.0608]],
+    couleurToits: [130, 104, 96],
+  },
+  nouvelleorleans: {
+    // LA VILLE CROISSANT. Le Mississippi ne passe pas à côté de La
+    // Nouvelle-Orléans : il l'enlace. C'est ce méandre-là qu'on reconnaît du
+    // ciel, et c'est lui qui a donné son surnom à la ville.
+    lat0: 29.9511, lon0: -90.0715, echelle: 14, rayon: 58,
+    fleuve: { pts: [[36, -42], [29, -29], [22, -16], [16, -2], [12, 10], [3, 20], [-10, 25], [-24, 26], [-38, 24]], l: 5 },
+    trame: { ang: 0.65, pu: 5, pv: 4 },
+    palette: [CREME, ROSE, OCRE], toit: ARDOISE, hMaison: [3, 4],
+    monuments: [
+      { nom: 'Cathédrale Saint-Louis', lat: 29.9578, lon: -90.0642, box: 7, build: cathedrale(4, BLANC, ARDOISE, 12) },
+      { nom: 'Superdome', lat: 29.9509, lon: -90.0815, box: 11, build: stade(9, ACIER) },
+      { nom: 'Marché français', lat: 29.9600, lon: -90.0600, box: 7, seuil: 0.4, build: palaisLong(6, CREME, TUILE) },
+      { nom: 'Cimetière Saint-Louis', lat: 29.9596, lon: -90.0716, box: 8, seuil: 0.4, hmin: 2, build: buildCimetiere },
+      { nom: 'Le vapeur à aubes', lat: 29.9530, lon: -90.0620, box: 8, seuil: 0.4, build: buildVapeur },
+    ],
+    lieux: [['Vieux Carré', 29.9584, -90.0644], ['Jackson Square', 29.9574, -90.0637],
+      ['Superdome', 29.9509, -90.0815], ['Marché français', 29.9600, -90.0600], ['Le Mississippi', 29.9450, -90.0600]],
+    couleurToits: [140, 132, 124],
+  },
+  santiago: {
+    // LES ANDES FONT SANTIAGO. Elles sont à quarante kilomètres — hors de
+    // portée d'un disque de soixante-huit blocs — et pourtant elles ferment
+    // chaque vue de la ville. ENTORSE DÉCLARÉE : la cordillère est ramenée au
+    // bord du disque, à huit kilomètres, pour qu'elle se voie du centre. Sans
+    // elle, Santiago n'est plus Santiago. Le Cerro San Cristóbal et le Cerro
+    // Santa Lucía, eux, sont à leur vraie place.
+    lat0: -33.4489, lon0: -70.6693, echelle: 8, rayon: 68,
+    fleuve: { pts: [[-40, -16], [-20, -18], [0, -20], [16, -20], [30, -23], [44, -26], [58, -30]], l: 1.6 },
+    collines: [
+      { nom: 'Cerro San Cristóbal', cu: 28, cv: -20, r: 9, h: 24, roche: true },
+      { nom: 'Cerro Santa Lucía', cu: 19, cv: -8, r: 4, h: 9, roche: true },
+      { nom: 'La cordillère', cu: 48, cv: -6, r: 30, h: 40, roche: true },
+    ],
+    trame: { ang: 0.05, pu: 6, pv: 5, tours: 0.85 }, tourMax: 26,
+    palette: [CREME, OCRE, uni(23)], toit: TUILE, hMaison: [3, 5],
+    monuments: [
+      { nom: 'Palacio de La Moneda', lat: -33.4429, lon: -70.6539, box: 8, build: palaisLong(6, BLANC, ARDOISE) },
+      { nom: 'Cathédrale de Santiago', lat: -33.4372, lon: -70.6506, box: 8, build: cathedrale(5, CREME, ARDOISE, 9) },
+      { nom: 'Cerro Santa Lucía', lat: -33.4400, lon: -70.6440, box: 6, seuil: 0.4, build: muraillesRect(4, 4, PIERRE) },
+      { nom: 'Vierge du San Cristóbal', lat: -33.4258, lon: -70.6320, box: 4, build: statuette(8, BLANC) },
+      { nom: 'Estación Mapocho', lat: -33.4330, lon: -70.6530, box: 7, seuil: 0.4, build: palaisLong(5, brique(17), ACIER) },
+    ],
+    lieux: [['Plaza de Armas', -33.4372, -70.6506], ['La Moneda', -33.4429, -70.6539],
+      ['Cerro Santa Lucía', -33.4400, -70.6440], ['Cerro San Cristóbal', -33.4258, -70.6320],
+      ['Bellavista', -33.4330, -70.6350]],
+    couleurToits: [176, 116, 92],
+  },
+  alexandrie: {
+    // LE CROISSANT DU PORT EST. Le fort de Qaitbay est bâti SUR les fondations
+    // du phare, à la pointe de la digue : il tombe au-delà du rivage, dans la
+    // mer, et c'est exactement là qu'il est. L'échelle descend à 8 pour que la
+    // pointe et la mosquée du port tiennent dans le disque.
+    lat0: 31.2001, lon0: 29.9187, echelle: 8, rayon: 61,
+    mer: { nx: -0.15, nz: -0.99, d: 14, quais: true },
+    trame: { ang: 0.1, pu: 6, pv: 5 },
+    palette: [CREME, OCRE, BLANC], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Fort de Qaitbay', lat: 31.2139, lon: 29.8853, box: 9,
+        build: combine(muraillesRect(6, 8, CREME), clocher(10, CREME, CREME)) },
+      { nom: 'Bibliotheca Alexandrina', lat: 31.2089, lon: 29.9092, box: 9, seuil: 0.4, build: buildBibliotheca },
+      { nom: 'Colonne de Pompée', lat: 31.1824, lon: 29.8965, box: 3, build: statuette(14, ROUGE_GRES) },
+      { nom: 'Mosquée Abu al-Abbas', lat: 31.2065, lon: 29.8809, box: 6,
+        build: combine(dome(4, CREME, CREME), minaret(14, CREME)) },
+      { nom: 'Théâtre romain', lat: 31.1953, lon: 29.9057, box: 6, seuil: 0.4, build: buildForum },
+    ],
+    lieux: [['La Corniche', 31.2080, 29.9000], ['Fort de Qaitbay', 31.2139, 29.8853],
+      ['Bibliotheca Alexandrina', 31.2089, 29.9092], ['Colonne de Pompée', 31.1824, 29.8965],
+      ['Kom El Dikka', 31.1953, 29.9057]],
+    couleurToits: [186, 178, 160],
+  },
+  melbourne: {
+    // La Yarra passe au sud du damier de Hoddle, tourné de vingt-cinq degrés
+    // — c'est cette obliquité qu'on voit du ciel. Le MCG est de l'autre côté
+    // des jardins, à l'est.
+    lat0: -37.8136, lon0: 144.9631, echelle: 16, rayon: 72,
+    fleuve: { pts: [[-42, 16], [-25, 15], [-10, 14], [2, 11], [16, 13], [32, 18], [50, 24]], l: 1.5 },
+    trame: { ang: 0.42, pu: 6, pv: 5, tours: 0.72 }, tourMax: 30,
+    palette: [brique(17), CREME, ACIER], toit: ARDOISE, hMaison: [4, 6],
+    monuments: [
+      { nom: 'Flinders Street Station', lat: -37.8183, lon: 144.9671, box: 8,
+        build: combine(palaisLong(6, JAUNE_MUR, TUILE), dome(3, JAUNE_MUR, uni(6))) },
+      { nom: 'Melbourne Cricket Ground', lat: -37.8200, lon: 144.9834, box: 13, build: stade(11, CREME) },
+      { nom: 'Eureka Tower', lat: -37.8213, lon: 144.9646, box: 5, build: gratteciel(34, 2, OR) },
+      { nom: 'Shrine of Remembrance', lat: -37.8305, lon: 144.9733, box: 8, seuil: 0.4,
+        build: combine(colonnade(5, 5), pyramide(4, 7, 0)) },
+      { nom: 'Royal Exhibition Building', lat: -37.8047, lon: 144.9717, box: 8,
+        build: combine(palaisLong(5, CREME, ARDOISE), dome(4, CREME, ARDOISE)) },
+    ],
+    lieux: [['Flinders Street', -37.8183, 144.9671], ['Federation Square', -37.8180, 144.9691],
+      ['Le MCG', -37.8200, 144.9834], ['Docklands', -37.8180, 144.9400], ['Carlton Gardens', -37.8047, 144.9717]],
+    couleurToits: [126, 120, 118],
+  },
   // --- LES CINQUANTE GRANDES — l'Europe --------------------------------------
   madrid: {
     lat0: 40.4168, lon0: -3.7038, echelle: 20, rayon: 50,
@@ -749,7 +1253,7 @@ const FICHES = {
       { nom: 'Manneken Pis', lat: 50.845, lon: 4.3499, box: 2, seuil: 0.4, build: statuette(2, OR) },
       // L'Atomium est à Heysel, à cinq vrais kilomètres du centre : hors du
       // rayon de la ville, ses neuf boules posent sur la campagne — comme en vrai.
-      { nom: "L'Atomium", lat: 50.8949, lon: 4.3415, box: 8, build: buildAtomium },
+      { nom: "L'Atomium", lat: 50.8949, lon: 4.3415, box: 8, dehors: true, build: buildAtomium },
     ],
     lieux: [['Grand-Place', 50.8467, 4.3536], ['Le Sablon', 50.8415, 4.3565]],
     couleurToits: [160, 152, 144],
@@ -1070,7 +1574,7 @@ const FICHES = {
       } },
       // Le Burj al Arab est sur son île, à quinze vrais kilomètres au
       // sud-ouest — hors du rayon, sa voile seule au bord du Golfe.
-      { nom: 'Burj al Arab', lat: 25.1412, lon: 55.1853, box: 7, build: buildVoile },
+      { nom: 'Burj al Arab', lat: 25.1412, lon: 55.1853, box: 7, dehors: true, build: buildVoile },
     ],
     lieux: [['Dubai Mall', 25.1985, 55.2796], ['Sheikh Zayed Road', 25.2098, 55.2777]],
     couleurToits: [206, 196, 176],
@@ -1132,7 +1636,7 @@ const FICHES = {
       { nom: 'Walt Disney Hall', lat: 34.0553, lon: -118.25, box: 6, build: dome(4, ACIER, ACIER) },
       // Le panneau est sur le mont Lee, à dix vrais kilomètres — hors du
       // rayon, ses neuf lettres blanches sur la colline, comme en vrai.
-      { nom: 'Hollywood', lat: 34.1341, lon: -118.3215, box: 11, seuil: 0.4, build: buildHollywood },
+      { nom: 'Hollywood', lat: 34.1341, lon: -118.3215, box: 11, seuil: 0.4, dehors: true, build: buildHollywood },
     ],
     lieux: [['Grand Central Market', 34.0508, -118.2489], ['Little Tokyo', 34.0505, -118.24]],
     couleurToits: [188, 184, 176],
@@ -1398,7 +1902,11 @@ function ficheGeneree(v) {
 
 export const VILLES_MONDE = [
   ...Object.entries(FICHES).map(([cle, f]) => fabrique(cle, f)),
-  ...VILLES_GENEREES.map((v) => fabrique(v.cle, ficheGeneree(v))),
+  // UNE VILLE PROMUE NE S'ENGENDRE PLUS. Sans ce filtre, une ville qui reçoit
+  // sa fiche resterait AUSSI dans la liste engendrée : deux villes à la même
+  // ancre, deux trames superposées, et le témoin des monuments comptant deux
+  // fois le même. Le filtre ne coûte rien tant qu'aucune ne l'est.
+  ...VILLES_GENEREES.filter((v) => !FICHES[v.cle]).map((v) => fabrique(v.cle, ficheGeneree(v))),
 ];
 
 // --- l'index spatial ---------------------------------------------------------
