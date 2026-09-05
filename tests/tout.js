@@ -94,6 +94,7 @@ const GARDIENS = {
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
+  'src/avions.js': ['monte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
@@ -120,7 +121,7 @@ const GARDIENS = {
   'src/gaulois.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   'src/villandry.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   'src/parc.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
-  'src/aeroport.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/aeroport.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   'src/circuit.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
   // Les voies nommées : elles portent les circuits de voitures de toutes les
   // villes bâties à la main. C'est `carteMonde.js` qui mesure leurs virages

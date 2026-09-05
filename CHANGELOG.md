@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v223 — On pilote un avion
+## v223 — On pilote un avion, et il y a désormais où atterrir
 
 **Pourquoi.** Max : « add planes, airbus, concord and military jets and allow
 us to fly with them at relevant speed for each ».
@@ -77,6 +77,78 @@ de poussée, quatre secondes font 73 blocs/s — exactement ce que sa fiche
 annonce. C'était la mesure qui était trop courte, pas la physique. Le temps
 d'accélération vient désormais de la fiche (`max / poussee`), jamais d'un
 chiffre rond.
+
+### Et dix-neuf aérodromes, parce qu'un avion sans destination ne sert à rien
+
+**Pourquoi.** Max, capture à l'appui : « il faut que tu refasses l'aéroport de
+Charles-de-Gaulle parce qu'il est maintenant **sur** la ville de Paris et pas à
+côté de la ville de Paris, et j'aimerais bien que tu rajoutes des aéroports
+fidèles aux aéroports originaux, des buildings dans lesquels on peut rentrer,
+se promener avec ses différents terminaux […] Et rajoute des bases militaires
+pour les avions de chasse. »
+
+Roissy était bien sur Paris : **cent vingt et un blocs de chevauchement** avec
+le disque de la capitale, mesurés. La cause est celle qu'on connaît par cœur —
+Paris est passé de 55 à 185 blocs de rayon lors de sa remise à l'échelle
+(v187), et l'aéroport, posé bien avant, n'a jamais suivi. C'est mot pour mot le
+piège du Bay Bridge planté au milieu de San Francisco.
+
+Et il n'y en avait qu'UN sur toute la carte. Un avion qui décolle de Roissy
+n'avait nulle part où se poser.
+
+**Ce que ça change.** Roissy déménage à deux cent quatre-vingt-onze blocs au
+nord de Paris, et **dix-huit aérodromes** s'y ajoutent : quatorze aéroports —
+Orly, Heathrow, JFK, Barajas, El Prat, Schiphol, Francfort, Fiumicino, Haneda,
+Dubaï, Delhi, San Francisco, Los Angeles, Istanbul — et **quatre bases
+aériennes** d'où partent les chasseurs. Ils sont sur la carte, donc on s'y
+téléporte.
+
+**Le terminal se visite.** On entre de plain-pied, on traverse les halls par
+leurs cloisons percées, et l'on ressort côté pistes pour rejoindre son avion.
+Il y a la tour de contrôle, les hangars, les pistes numérotées avec leurs
+seuils en échelle, le tarmac et ses postes de stationnement — et trois
+appareils qui attendent, toujours, à l'aérodrome où l'on se trouve.
+
+**Chaque aéroport est placé dans le cap RÉEL depuis sa ville**, juste au-delà
+de son disque, et l'écart au vrai cap est écrit ligne à ligne quand la carte ne
+l'a pas permis. Quand le cap réel tombe à l'eau — JFK est sur la baie de
+Jamaica, Fiumicino sur la mer, Haneda dans la baie de Tokyo — on prend le cap
+terrestre le plus proche plutôt qu'un aéroport noyé. Le nord-est de Paris, lui,
+tombe pile sur le quartier des enfants et sur le musée : Roissy part donc plein
+nord. **Le sol des enfants passe avant la fidélité du plan, toujours.**
+
+**Ce qui le prouve.** C'est la **septième fois** que l'exception accordée par
+Max sur l'invariant du sol sert, et elle se borne comme en v162, v187 et v204 :
+
+|  | colonnes | empreinte |
+| --- | --- | --- |
+| Le relief entier — **il change, c'est déclaré** | 218 089 | `c20adb73…` → `c50f6714…` |
+| Hors des villes **et des aérodromes**, sur `origin/main` | 172 379 | `fa120ab1…` |
+| Hors des villes et des aérodromes, sur la branche | 172 379 | **`fa120ab1…`** |
+
+La même découpe des deux côtés, colonne pour colonne. On ne met pas un hash à
+jour : on mesure les deux côtés. Et le déménagement **rend son sol** — la
+colonne (−140, 80), aplanie à 35 sous l'ancien tarmac, retrouve sa cote
+naturelle de 34, exactement comme l'avait promis le déménagement de Washington
+en v162.
+
+Trois témoins neufs, rouges sur l'ancien code :
+
+- **on entre dans un terminal, on va d'un hall à l'autre et l'on ressort côté
+  pistes** — le témoin se pose dehors, côté ville, et cherche par où l'on peut
+  MARCHER, de proche en proche. Un bâtiment fermé, un plancher surélevé d'un
+  bloc, une cloison pleine : chacun de ces trois défauts arrête la marche.
+  3 sur 3 (un grand aéroport, un moyen, une base) ; 0 sur 3 avant.
+- **aucun aérodrome ne se pose sur ce que les enfants ont bâti** — le plus
+  proche en reste à cinquante-cinq blocs.
+- **ni sur une ville** — la paire la plus serrée garde quatorze blocs.
+
+**Et la sonde de placement a rattrapé ce que la relecture n'aurait pas vu.**
+Mon premier brouillon posait Roissy à (−102, −100) : à **deux blocs** de la
+maison sauvegardée du témoin de `plafond.js`, celle qui prouve depuis des
+dizaines de versions qu'un plancher d'enfant ne bouge pas. La ligne se lisait
+très bien. Un aérodrome se place en MESURANT ce qu'il recouvre, jamais en
+écrivant deux nombres.
 
 ---
 

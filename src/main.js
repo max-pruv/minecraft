@@ -12,7 +12,8 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, AEROPORT } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { aeroportPres, postesAvion } from './aeroport.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -1114,31 +1115,30 @@ function animerLesVilles(dt) {
     }
   }
 }
-// L'AÉROPORTISTE : trois appareils attendent toujours sur le tarmac.
+// L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
+// appareils attendent toujours.
 //
 // Même mécanisme que le garagiste, et pour la même raison : les bêtes du jeu
-// s'effacent à soixante-dix blocs, donc un avion garé disparaîtrait dès qu'on
+// s'effacent à soixante-deux blocs, donc un avion garé disparaîtrait dès qu'on
 // s'éloigne. On regarnit les postes de stationnement quand un enfant approche,
 // et un avion emmené au loin est remplacé — il « rentre au hangar ».
 //
-// Les trois postes sont alignés le long de l'aérogare, écartés de vingt blocs :
-// un avion de ligne fait seize blocs de long et quinze d'envergure, et deux
-// appareils qui se chevauchent ne se lisent plus.
-const POSTES_AVION = [
-  ['avionligne', -34, 4],
-  ['concorde', -34, 26],
-  ['chasseur', -34, 48],
-];
+// LE PLAN DU TARMAC N'EST PAS RECOPIÉ ICI. `postesAvion` le publie depuis
+// `aeroport.js`, là où le tarmac est dessiné : deux tables qui décrivent le
+// même plan finissent toujours par diverger, et l'on garerait des avions dans
+// l'herbe. Sur une base militaire, ce sont trois chasseurs — c'est de là
+// qu'ils partent.
 let aeroportisteTimer = 0;
 function aeroportiste(dt) {
   aeroportisteTimer -= dt;
   if (aeroportisteTimer > 0) return;
   aeroportisteTimer = 3;
-  if (Math.hypot(player.pos.x - AEROPORT.x, player.pos.z - AEROPORT.z) > 120) return;
-  for (const [espece, du, dv] of POSTES_AVION) {
-    const x = AEROPORT.x + du, z = AEROPORT.z + dv;
-    const dejaLa = animalManager.animals.some((a) => a.def.key === espece
-      && Math.hypot(a.pos.x - x, a.pos.z - z) < 14);
+  const a = aeroportPres(player.pos.x, player.pos.z, 130);
+  if (!a) return;
+  for (const { espece, du, dv } of postesAvion(a.profil)) {
+    const x = a.x + du, z = a.z + dv;
+    const dejaLa = animalManager.animals.some((b) => b.def.key === espece
+      && Math.hypot(b.pos.x - x, b.pos.z - z) < 14);
     if (!dejaLa) animalManager.invoquer(espece, x, z);
   }
 }

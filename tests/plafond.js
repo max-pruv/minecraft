@@ -127,7 +127,23 @@ function verifier(nom, ok, detail = '') {
 // IDENTIQUE des deux côtés, 184 656 colonnes, même découpe sur `origin/main`
 // et sur la branche. C'est la ligne du dessous qui le prouve.
 // v203 (avant Lille) : f0b43c078bb4787599b1762c7d25834cca4a88c5
-const EMPREINTE_RELIEF = 'c20adb7308aec773780185acfa4ecbc88d575f0d';
+// **v223 : LES DIX-NEUF AÉRODROMES.** SEPTIÈME usage de l'exception de Max, et
+// il est né d'un signalement : « il faut que tu refasses l'aéroport de
+// Charles-de-Gaulle parce qu'il est maintenant SUR la ville de Paris ». Mesuré :
+// cent vingt et un blocs de chevauchement avec le disque de la capitale. Roissy
+// déménage à 291 blocs plein nord, et dix-huit aérodromes s'ajoutent — quinze
+// aéroports et quatre bases militaires — dont chacun aplanit son disque.
+//
+// La casse est BORNÉE et la borne est vérifiée juste en dessous : hors des
+// villes ET des aérodromes (l'ancienne place de Roissy comprise), l'empreinte
+// est IDENTIQUE des deux côtés — 172 379 colonnes, fa120ab1…, avec la MÊME
+// découpe sur `origin/main` et sur la branche.
+//
+// Et le déménagement rend son sol : la colonne (−140, 80), qui valait 35 sous
+// l'ancien tarmac, retrouve sa cote naturelle de 34. C'est mot pour mot ce
+// qu'avait promis le déménagement de Washington en v162.
+// v222 (avant les aérodromes) : c20adb7308aec773780185acfa4ecbc88d575f0d
+const EMPREINTE_RELIEF = 'c50f67147c96f6ea6c4ca926b95466db6ba9d634';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -197,7 +213,16 @@ const EMPREINTE_RELIEF = 'c20adb7308aec773780185acfa4ecbc88d575f0d';
 // avec. Ce qui compte : mesuré avec CETTE découpe sur `origin/main` (v203) ET
 // sur la branche, les deux rendent c79c2f3b…, colonne pour colonne.
 // v200 → v203 (découpe à 86) : 5503fd10965064886b1dc6d8dba2800b50d122be
-const EMPREINTE_HORS_VILLES = 'c79c2f3b0135a6077aa49a46eb1f744c26cf6db5';
+// v223 : la découpe s'élargit aux dix-neuf aérodromes ET à l'ancienne place de
+// Roissy — sans cette dernière, le témoin accuserait le déménagement d'avoir
+// bougé le sol là où il l'a précisément RENDU. Le nombre de colonnes change
+// donc (184 656 → 172 379) et le hash avec ; ce qui prouve la borne, c'est que
+// la MÊME découpe mesurée sur `origin/main` (v222) et sur la branche rend le
+// même hash, colonne pour colonne :
+//   origin/main  172 379 colonnes  fa120ab12649fa81656f6293d946c2a11be91bf0
+//   la branche   172 379 colonnes  fa120ab12649fa81656f6293d946c2a11be91bf0
+// v204 → v222 (découpe sans les aérodromes) : c79c2f3b0135a6077aa49a46eb1f744c26cf6db5
+const EMPREINTE_HORS_VILLES = 'fa120ab12649fa81656f6293d946c2a11be91bf0';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -206,8 +231,11 @@ const MARGE_VILLE = 40;
 // Quelques colonnes nommées, pour que l'échec dise quelque chose de lisible.
 const COLONNES = [
   [0, 0, 33], [40, -20, 42], [-240, 200, 34], [400, 110, 35], [112, 210, 34],
-  [-140, 420, 53], [60, -190, 35], [620, 80, 37], [250, 205, 34], [-140, 80, 35],
+  [-140, 420, 53], [60, -190, 35], [620, 80, 37], [250, 205, 34], [-140, 80, 34],
   [-420, 300, 34], [450, 420, 36], [-520, -480, 41],
+  // (-140, 80) : l'ancien tarmac de Roissy l'aplanissait à 35. L'aéroport est
+  // parti plein nord en v223, et la colonne a RETROUVÉ sa cote naturelle, 34 —
+  // la même promesse qu'a tenue le déménagement de Washington en v162.
   [-100, -100, 26], [300, -300, 24], [-64, 16, 46],
   // (100, 100) et (16, 64) : Washington v161 était passée dessus (36 et 37) ;
   // la capitale a déménagé au sud en v162, et elles ont RETROUVÉ leurs cotes
@@ -266,12 +294,24 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // villes » compterait leurs rues comme du paysage qui a bougé.
   const { VILLES_MONDE } = await import('../src/villesmonde.js');
   const VM_POS = VILLES_MONDE.map((f) => ({ x: f.ancre.x, z: f.ancre.z, portee: f.rayon + MARGE_VILLE }));
+  // Les dix-neuf aérodromes aplanissent leur disque comme une ville aplanit le
+  // sien — trois d'entre eux tombent dans la fenêtre observée (Roissy, Orly,
+  // Schiphol) plus la base de Saint-Dizier. ET L'ANCIENNE PLACE DE ROISSY EST
+  // DANS LA DÉCOUPE : le déménagement lui a rendu son relief naturel, ce qui
+  // est un changement voulu ; l'y laisser ferait accuser la livraison d'avoir
+  // cassé ce qu'elle a réparé.
+  const { AEROPORTS } = await import('../src/aeroport.js');
+  const AERO_POS = [
+    { x: -140, z: 80, portee: 92 + 24 },   // Roissy avant v223
+    ...AEROPORTS.map((a) => ({ x: a.x, z: a.z, portee: a.r + 24 })),
+  ];
   // Dans une ville, ou dans le fondu qui la borde ?
   const dansUneVille = (x, z) => {
     if (x >= Z.x0 - MARGE_VILLE && x <= Z.x1 + MARGE_VILLE
       && z >= Z.z0 - MARGE_VILLE && z <= Z.z1 + MARGE_VILLE) return true;
     if (CITIES.some((c) => Math.hypot(x - c.x, z - c.z) <= c.r + MARGE_VILLE)) return true;
     if (VM_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee)) return true;
+    if (AERO_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee)) return true;
     return SITES_POS.some((p) => Math.hypot(x - p.x, z - p.z) <= p.portee);
   };
   const vals = [], hors = [];
@@ -348,6 +388,52 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     prochesDeLille.length ? prochesDeLille.map((a) => a[0]).join(', ')
       : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
         Math.hypot(x - LILLE_CITE.x, z - LILLE_CITE.z) - LILLE_CITE.r - r)))} blocs du bord`);
+
+  // ET MÊME EXIGENCE POUR LES DIX-NEUF AÉRODROMES (v223).
+  //
+  // Un aérodrome est le terrain le plus aplani de la carte — c'est ce qu'exige
+  // une piste — donc le plus dangereux à poser près de ce que les enfants ont
+  // bâti. Et la maison sauvegardée en (−100, −100), celle dont le témoin plus
+  // bas vérifie qu'elle repose toujours sur son sol, en fait partie : le premier
+  // brouillon de cette livraison plaçait Roissy à (−102, −100), c'est-à-dire
+  // DEUX BLOCS de son plancher. C'est la sonde de placement qui l'a dit, pas la
+  // relecture — un aérodrome se place en MESURANT ce qu'il recouvre.
+  //
+  // Le nord-est de Paris, cap réel de Roissy, tombe pile sur le quartier des
+  // enfants : l'aéroport part donc plein nord. Le sol des enfants passe avant
+  // la fidélité du plan.
+  const { AEROPORTS: AERO } = await import('../src/aeroport.js');
+  const SANCTUAIRES_PLUS = [...SANCTUAIRES, ['la maison sauvegardée', MAISON_X, MAISON_Z, 3]];
+  const touches = [];
+  let pireAero = Infinity, pireNom = '';
+  for (const a of AERO) {
+    for (const [nom, x, z, r] of SANCTUAIRES_PLUS) {
+      const marge = Math.hypot(x - a.x, z - a.z) - a.r - r;
+      if (marge < 0) touches.push(`${a.nom} sur ${nom}`);
+      if (marge < pireAero) { pireAero = marge; pireNom = `${nom} / ${a.nom}`; }
+    }
+  }
+  verifier('et aucun aérodrome ne se pose sur ce que les enfants ont bâti',
+    touches.length === 0,
+    touches.length ? touches.join(', ')
+      : `le plus proche est à ${Math.round(pireAero)} blocs du bord — ${pireNom}`);
+
+  // ET AUCUN AÉRODROME NE SE POSE SUR UNE VILLE. C'est le signalement de Max,
+  // mot pour mot : « il est maintenant sur la ville de Paris et pas à côté ».
+  // Mesuré avant : cent vingt et un blocs de chevauchement du disque de Paris.
+  const surUneVille = [];
+  let pireVille = Infinity, pireQui = '';
+  for (const a of AERO) {
+    for (const c of [...CITIES, ...VILLES_MONDE.map((f) => ({ name: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon }))]) {
+      const marge = Math.hypot(a.x - c.x, a.z - c.z) - a.r - c.r;
+      if (marge < 0) surUneVille.push(`${a.nom} sur ${c.name}`);
+      if (marge < pireVille) { pireVille = marge; pireQui = `${a.nom} / ${c.name}`; }
+    }
+  }
+  verifier('ni sur une ville — un aéroport est À CÔTÉ de sa ville',
+    surUneVille.length === 0,
+    surUneVille.length ? surUneVille.join(', ')
+      : `la paire la plus serrée garde ${Math.round(pireVille)} blocs — ${pireQui}`);
 
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.

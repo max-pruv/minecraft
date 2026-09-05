@@ -29,10 +29,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   264 · 264 blocs/s, et 227 · 546 · 541 blocs parcourus en deux secondes de
   croisière.
 
-- [ ] **D'autres aéroports.** Il n'y en a qu'un, Roissy (−140, 80, rayon 92),
-  et il APLATIT le terrain : tout aéroport posé dans la fenêtre [−700, 700]
-  casse l'empreinte de `plafond.js`. Les poser près des villes bâties à la
-  main (Londres, New York, San Francisco, Washington), toutes hors fenêtre.
+- [ ] **Les aérodromes, la suite.** Dix-neuf existent (v223), mais leur cap
+  réel a dû céder cinq fois faute de terre ferme : JFK (115° → 30°), Fiumicino
+  (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
+  (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
+  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Et il
+  manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
+  cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
+
+- [ ] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** Il se
+  traverse (c'est ce que le témoin garde) mais il est vide. Même dette que les
+  intérieurs de monuments.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
   47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),
@@ -466,6 +473,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v223** — On pilote un avion (avion de ligne 110 blocs/s, Concorde et
+  chasseur 264), et dix-neuf aérodromes pour avoir où atterrir : Roissy
+  déménagé hors de Paris, quatorze aéroports de plus, quatre bases aériennes,
+  des terminaux qu'on traverse à pied. Double empreinte refaite — 172 379
+  colonnes, `fa120ab1…` des deux côtés.
 
 - [x] **v187** — Paris à l'échelle GTA : 24 blocs par kilomètre, un disque de
   185, des rues où l'on marche, une rue par quartier, l'Étoile à sa vraie

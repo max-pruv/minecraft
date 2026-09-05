@@ -1697,6 +1697,73 @@ const VRAIES_KM = [
       bois.arbres >= 8 && bois.feuillesAuSol === 0,
       `${bois.arbres} arbres · ${bois.feuillesAuSol} feuillage(s) posé(s) à plat`);
 
+    // --- LES AÉRODROMES -----------------------------------------------------
+    //
+    // Max : « il faut que tu refasses l'aéroport de Charles-de-Gaulle parce
+    // qu'il est maintenant SUR la ville de Paris et pas à côté […] et j'aimerais
+    // bien que tu rajoutes des aéroports fidèles aux aéroports originaux, des
+    // buildings dans lesquels on peut RENTRER, se promener avec ses différents
+    // terminaux […] et rajoute des bases militaires pour les avions de chasse. »
+    //
+    // CE TÉMOIN ÉPROUVE LE TRAJET DE L'ENFANT, pas le bâtisseur. Il se pose
+    // dehors, côté ville, et cherche par où l'on peut MARCHER : une case est
+    // franchissable si le sol y est plein et si deux blocs d'air la surmontent.
+    // De proche en proche, il doit atteindre les deux bouts du hall — c'est
+    // « se promener avec ses différents terminaux » — puis ressortir côté
+    // pistes. Un bâtiment fermé, un plancher surélevé d'un bloc, une cloison
+    // pleine : chacun de ces trois défauts arrête la marche, et le témoin dit
+    // lequel.
+    //
+    // Il demande le nombre d'aérodromes ATTENDU, pas celui que le jeu déclare :
+    // sur l'ancien code il rend « 0 sur 3 visitables » au lieu de passer au
+    // vert en ne prouvant rien.
+    const terminaux = await tab.evaluate(async () => {
+      const g = window.__game;
+      let A = [];
+      try { A = (await import('./src/aeroport.js')).AEROPORTS || []; } catch { A = []; }
+      const w = g.world;
+      const sortes = ['hub', 'ville', 'base'];
+      const resultats = [];
+      for (const sorte of sortes) {
+        const a = A.find((q) => q.profil === sorte
+          && Math.hypot(q.x, q.z) < 4000);           // un qu'on peut atteindre sans traverser la carte
+        if (!a) { resultats.push({ sorte, absent: true }); continue; }
+        const sol = w.terrainHeight(a.x, a.z);
+        const HALL = sorte === 'base' ? 10 : sorte === 'hub' ? 16 : 13;
+        const libre = (du, dv) => {
+          const x = a.x + du, z = a.z + dv;
+          return w.getBlock(x, sol, z) !== 0
+            && w.getBlock(x, sol + 1, z) === 0 && w.getBlock(x, sol + 2, z) === 0;
+        };
+        // on part DEHORS, côté ville, devant la porte de gauche
+        const depart = [-Math.round(HALL / 2), -10];
+        if (!libre(depart[0], depart[1])) { resultats.push({ sorte, dehors: false }); continue; }
+        const vus = new Set([depart.join(',')]);
+        const file = [depart];
+        while (file.length) {
+          const [du, dv] = file.shift();
+          for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nu = du + eu, nv = dv + ev;
+            if (Math.abs(nu) > HALL + 4 || nv < -12 || nv > 14) continue;   // la boîte du terminal
+            const cle = `${nu},${nv}`;
+            if (vus.has(cle) || !libre(nu, nv)) continue;
+            vus.add(cle); file.push([nu, nv]);
+          }
+        }
+        const dedans = (du, dv) => vus.has(`${du},${dv}`);
+        resultats.push({
+          sorte, nom: a.nom,
+          hallGauche: dedans(-HALL + 2, 2),        // le premier hall
+          hallDroit: dedans(HALL - 2, 2),          // le dernier, de l'autre côté des cloisons
+          cotePistes: dedans(0, 12),               // ressorti côté tarmac
+        });
+      }
+      return resultats;
+    });
+    const visitables = terminaux.filter((r) => r.hallGauche && r.hallDroit && r.cotePistes);
+    verifier('on entre dans un terminal, on va d\'un hall à l\'autre et l\'on ressort côté pistes',
+      visitables.length === 3, `${visitables.length} sur 3 visitables — ${JSON.stringify(terminaux)}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

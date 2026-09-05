@@ -75,6 +75,30 @@ travail est irrattrapable.
    prouve pas l'absence : il en donne l'illusion. Toute distance du monde réel
    se redemande à la projection, jamais ne se recopie.
 
+   **Elle a servi une SEPTIÈME fois, en v223, pour les aérodromes** — et
+   celle-ci est née d'un signalement de Max : « il faut que tu refasses
+   l'aéroport de Charles-de-Gaulle parce qu'il est maintenant SUR la ville de
+   Paris et pas à côté ». Mesuré : cent vingt et un blocs de chevauchement avec
+   le disque de la capitale, parce que Paris est passé de 55 à 185 blocs de
+   rayon en v187 et que l'aéroport, posé bien avant, n'a jamais suivi — le
+   piège du Bay Bridge, mot pour mot. Roissy déménage, dix-huit aérodromes
+   s'ajoutent, et la borne prend la forme canonique : l'empreinte du relief
+   change, celle d'hors des villes ET DES AÉRODROMES ne bouge pas — 172 379
+   colonnes, `fa120ab1…` des deux côtés, MÊME découpe sur `origin/main` et sur
+   la branche. **L'ancienne place de Roissy est DANS la découpe** : le
+   déménagement lui a rendu son relief naturel (35 → 34), ce qui est un
+   changement voulu ; l'y laisser ferait accuser la livraison d'avoir cassé ce
+   qu'elle a réparé.
+
+   **Et la leçon vraie de cette livraison n'est pas dans l'empreinte : c'est
+   qu'UN EMPLACEMENT SE MESURE, IL NE S'ÉCRIT PAS.** Mon premier brouillon
+   posait Roissy à (−102, −100) — à DEUX BLOCS de la maison sauvegardée du
+   témoin de `plafond.js`, celle qui prouve depuis des dizaines de versions
+   qu'un plancher d'enfant ne bouge pas. La ligne se lisait très bien. C'est
+   une sonde qui balaie les sanctuaires, les villes et les autres aérodromes
+   qui l'a dit. Tout ce qui aplanit du sol se place par une sonde, et l'on
+   écrit le résultat, pas l'intuition.
+
    **Elle a servi une SIXIÈME fois, en v204, pour Lille** — dans la fenêtre
    d'empreinte, comme Paris, et bornée de la même manière : Lille passe de
    seize à trente-deux blocs par kilomètre et son disque de 46 à 92. La
@@ -828,6 +852,47 @@ arrêt déclaré n'est pas une gare construite, et rien ne le disait.
   qui lui permet de mesurer LA MÊME CHOSE sur l'ancien code, où il trouve zéro.
   Un témoin qui appellerait `gareEn` échouerait par « fonction absente », ce
   qui ne prouve rien du fond.
+
+### Les aérodromes (`aeroport.js`) — dix-neuf, et un seul écrit à la main
+
+Roissy garde son bâtisseur à lui — le tambour de béton de 1974 et ses sept
+satellites ne ressemblent à aucun autre aéroport au monde. Les dix-huit autres
+passent par `buildAerodrome`, qui lit un `profil` (`hub`, `ville`, `base`).
+Quatre choses à savoir avant d'en ajouter un.
+
+- **UN EMPLACEMENT SE MESURE.** On part du cap RÉEL depuis le centre de la
+  ville, et l'on cherche en s'éloignant le premier point qui tienne quatre
+  promesses : au sec, à douze blocs au moins de toute ville et de tout autre
+  aérodrome, à quarante blocs au moins de ce que les enfants ont bâti, et le
+  plus plat possible. **Le cap cède en dernier**, et l'écart est écrit ligne à
+  ligne — JFK est sur la baie de Jamaica, Fiumicino sur la mer, Haneda dans la
+  baie de Tokyo ; le nord-est de Paris, cap réel de Roissy, tombe pile sur le
+  quartier des enfants. Le sol des enfants passe avant la fidélité du plan.
+- **`sol` est une MESURE, pas un goût.** C'est la médiane du relief naturel
+  sous le disque. L'ancien code aplanissait à 35 en dur : appliqué aux
+  dix-neuf, cela ferait une falaise partout où le pays n'est pas à trente-cinq
+  blocs — Francfort est à cinquante, Dubaï à trente-trois.
+- **UN TERMINAL QU'ON NE TRAVERSE PAS EST UN DÉCOR.** Trois choses le rendent
+  praticable, et il en manque une seule pour qu'il redevienne un bloc plein :
+  il est CREUX (murs posés, puis intérieur vidé) ; son plancher est **au
+  niveau du tarmac**, parce qu'une marche d'un bloc sur le seuil laisse un
+  enfant de sept ans dehors sans qu'il comprenne pourquoi ; et il a des portes
+  **sur les deux faces**, côté ville pour arriver et côté pistes pour
+  rejoindre son avion — avec les portes d'un seul côté, on entre dans un
+  cul-de-sac. Les cloisons entre halls sont percées : c'est cela, « se
+  promener avec ses différents terminaux ».
+- **Le témoin ÉPROUVE LA MARCHE, pas le bâtisseur.** Il se pose dehors, côté
+  ville, et cherche de proche en proche par où l'on peut passer — une case est
+  franchissable si le sol y est plein et si deux blocs d'air la surmontent.
+  Compter des blocs de béton ne distinguerait pas un terminal d'un cube.
+- **Le plan du tarmac ne se recopie pas.** `postesAvion(profil)` le publie
+  depuis `aeroport.js`, là où le tarmac est dessiné ; `main.js` le lit. Deux
+  tables qui décrivent le même plan finissent toujours par diverger — c'est la
+  leçon du mobilier de Londres, qui a rendu « 0/5 bus » le jour où la ville a
+  déplacé ses arrêts.
+- **Et quand une ville change d'échelle, on cherche TOUT ce qui la vise.**
+  `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
+  aurait évité que Roissy passe six versions au milieu de Paris.
 
 ### Le monde (`world.js`)
 
