@@ -630,9 +630,47 @@ dans la flotte, elles retiennent désormais lequel. La circulation perd une
 voiture, et c'est honnête : l'enfant vient de la prendre. Le métro et les
 monoplaces gardent l'embarquement : on ne conduit pas un métro.
 
-3. **`pilote`** — **à faire.** Le véhicule a sa propre position et sa propre
-   physique ; les commandes du joueur la pilotent ; le joueur est collé au
-   siège. C'est le seul des trois où l'enfant décide où l'on va.
+3. **`pilote`** — **fait en v223.** C'est le seul des trois où l'enfant décide
+   où l'on va. Et il ne s'est PAS fait comme cette ligne l'annonçait : le
+   véhicule n'a pas sa propre position. Il reste COLLÉ au joueur, comme toute
+   monture, et c'est la MARCHE du joueur qu'on remplace par une physique de
+   vol. Le gain est considérable et c'est la leçon : le réseau (qui diffuse
+   déjà la position des joueurs), la caméra de poursuite, la boîte de
+   collision et le bouton d'embarquement marchent alors sans une ligne de
+   plus. **Une seconde position aurait tout fait payer deux fois.**
+
+   Quatre décisions de physique, chacune pour une raison :
+
+   - **La poussée SE GARDE quand on lâche.** `forward` est une manette des
+     gaz, pas une pédale : c'est ce qui distingue un avion d'une voiture, et
+     ce qui permet à un enfant de lâcher les commandes pour regarder le
+     paysage sans tomber.
+   - **Le roulis ne fait virer qu'EN VOLANT** — un avion à l'arrêt sur le
+     tarmac ne pivote pas sur place, exactement comme le volant d'une voiture.
+   - **La portance dépend de la vitesse.** Sous le décrochage, l'avion
+     descend, d'autant plus vite qu'il est lent : c'est ce qui oblige à
+     prendre son élan sur la piste avant de tirer sur le manche.
+   - **Le nez suit le regard**, l'assiette est le tangage.
+
+   **ET LES VITESSES SONT DES RAPPORTS RÉELS, PAS DES GOÛTS.** 900 km/h pour
+   un avion de ligne, 2 180 pour le Concorde, 2 200 pour un chasseur : le
+   rapport est de 1 à 2,4, et le chasseur se distingue du Concorde par son
+   AGILITÉ — trois fois la poussée, trois fois le taux de virage — pas par sa
+   pointe. L'ancre absolue se mesure DANS LE JEU : un enfant qui vole
+   librement atteint 88 blocs/s en croisière (`player.js`), donc un avion de
+   ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
+
+   **`gabarit` n'est pas l'envergure.** Une boîte de collision ne tourne pas :
+   à quinze blocs de large, un avion resterait coincé entre deux hangars et ne
+   pourrait pas même rouler sur sa piste. On prend la largeur du FUSELAGE, les
+   ailes débordent — c'est la leçon de la voiture (v212), et un avion passe
+   l'essentiel de sa vie là où rien ne le frotte.
+
+   **Et le temps d'accélération d'un témoin vient de la FICHE.** Mon premier
+   jet donnait quatre secondes à tout le monde et concluait que l'avion de
+   ligne n'atteignait pas sa vitesse : à 18 blocs/s², quatre secondes font 73,
+   ce que la fiche annonce exactement. La mesure était trop courte, pas la
+   physique. `max / poussee`, jamais un chiffre rond.
 
 Le caractère de chaque véhicule vient du **branchement**, pas d'un moteur
 séparé :

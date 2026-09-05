@@ -20,15 +20,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   le tour divisé par la demi-minute — la règle déjà écrite pour le métro de
   Washington. Pire attente 64 → 30 s, 18 → 29 trains.
 
-- [ ] **Piloter un avion — le mode `pilote`, le troisième.** Demandé par Max :
-  « add planes, airbus, concord and military jets and allow us to fly with
-  them at relevant speed for each ». Le branchement est déjà écrit dans
-  `CLAUDE.md` depuis la v155 : `forward` = poussée, `strafe` = roulis, le
-  regard = assiette, la portance dépend de la vitesse. Ancre mesurée : un
-  enfant qui vole libre atteint 88 blocs/s en croisière. Rapports réels à
-  tenir — avion de ligne 900 km/h, Concorde 2 180, chasseur 2 200, soit
-  1 : 2,4 : 2,4, le chasseur se distinguant par son agilité et non par sa
-  pointe. Nommer par le TYPE et non par la marque.
+- [x] **Piloter un avion — FAIT en v223.** Le mode `pilote`, le troisième des
+  trois façons d'être porté, prévu depuis la v155. L'avion reste COLLÉ au
+  joueur comme toute monture et c'est la marche qu'on remplace par une
+  physique de vol : le réseau, la caméra de poursuite et la boîte de collision
+  marchent alors sans une ligne de plus. Trois appareils sur le tarmac de
+  Roissy, aux rapports de vitesse réels (1 : 2,4 : 2,4). Mesuré : pointe 110 ·
+  264 · 264 blocs/s, et 227 · 546 · 541 blocs parcourus en deux secondes de
+  croisière.
 
 - [ ] **D'autres aéroports.** Il n'y en a qu'un, Roissy (−140, 80, rayon 92),
   et il APLATIT le terrain : tout aéroport posé dans la fenêtre [−700, 700]

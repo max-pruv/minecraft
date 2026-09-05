@@ -20,6 +20,66 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v223 — On pilote un avion
+
+**Pourquoi.** Max : « add planes, airbus, concord and military jets and allow
+us to fly with them at relevant speed for each ».
+
+Le projet prévoit **trois façons d'être portées** depuis la v155 : la monture
+suit le joueur, le convoi suit son tracé précalculé, et le **pilote** décide où
+l'on va. Les deux premières existaient ; la troisième était déclarée « à
+faire », avec son branchement déjà écrit noir sur blanc. Il ne restait qu'à la
+faire.
+
+**Ce que ça change.** Trois appareils attendent sur le tarmac de Roissy, et
+l'on s'y installe comme on monte à cheval — le bouton dit « ✈️ Piloter », et
+« ⬇️ Se poser » pour redescendre.
+
+| appareil | vitesse de pointe | ce qui le distingue |
+| --- | --- | --- |
+| Avion de ligne | 110 blocs/s | deux réacteurs sous l'aile, des hublots |
+| Concorde | **264** | l'aile delta, le nez fin, quatre réacteurs |
+| Avion de chasse | 264 | des canards, deux dérives, deux missiles |
+
+**Les vitesses sont des rapports réels, pas des goûts** : 900 km/h pour un
+avion de ligne, 2 180 pour le Concorde, 2 200 pour un chasseur — soit
+1 : 2,4 : 2,4. Le chasseur ne se distingue donc pas par sa pointe mais par son
+**agilité** : il grimpe trois fois plus vite et vire trois fois plus court.
+L'ancre absolue, elle, est mesurée dans le jeu : un enfant qui vole librement
+atteint 88 blocs/s, donc un avion de ligne doit faire mieux — sinon prendre
+l'avion ne sert à rien.
+
+**Et le pilotage n'invente aucune commande.** C'est l'idée de Max, et elle
+reste juste : tout se réduit aux trois nombres que le clavier et le joystick
+tactile alimentent déjà. `forward` est la manette des gaz — et la vitesse **se
+garde** quand on lâche, ce qui distingue un avion d'une voiture et permet de
+regarder le paysage sans tomber. `strafe` est le roulis, qui ne fait virer
+qu'en volant : un avion à l'arrêt ne pivote pas sur place. Le regard donne
+l'assiette. Et **la portance dépend de la vitesse** : sous le décrochage,
+l'appareil descend — c'est ce qui oblige à prendre son élan avant de tirer sur
+le manche.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, rouges sur l'ancien code
+(où le mode n'existe pas) :
+
+| appareil | pointe atteinte | parcouru en 2 s de croisière |
+| --- | --- | --- |
+| Avion de ligne | 110 blocs/s | 227 blocs |
+| Concorde | 264 | 546 (× 2,4) |
+| Avion de chasse | 264 | 541 (× 2,4) |
+
+Portail complet vert.
+
+**Et une erreur de témoin, dite parce qu'elle instruit.** Mon premier jet
+donnait quatre secondes d'accélération à tout le monde et concluait que l'avion
+de ligne n'atteignait pas sa vitesse. Il l'atteignait très bien : à 18 blocs/s²
+de poussée, quatre secondes font 73 blocs/s — exactement ce que sa fiche
+annonce. C'était la mesure qui était trop courte, pas la physique. Le temps
+d'accélération vient désormais de la fiche (`max / poussee`), jamais d'un
+chiffre rond.
+
+---
+
 ## v222 — Un train toutes les trente secondes sur le quai
 
 **Pourquoi.** Max : « make sure trains arrive and depart from train stations ».
