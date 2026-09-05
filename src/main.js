@@ -472,14 +472,42 @@ function updateChunks() {
   }
 
   // Les trains intervilles (v179). Max : « add train connecting cities from
-  // real life train lanes ». Chaque segment est une navette : deux rames qui
-  // font l'aller-retour de gare en gare, marquant l'arrêt à chaque bout —
+  // real life train lanes ». Chaque segment est une navette qui fait
+  // l'aller-retour de gare en gare, marquant l'arrêt à chaque bout —
   // « Monter à bord » fait le reste. Les gares sont aux portes des villes.
+  //
+  // COMBIEN DE TRAINS ? AUTANT QU'IL EN FAUT POUR QU'ON N'ATTENDE PAS (v222).
+  //
+  // Max : « make sure trains arrive and depart from train stations ». Les
+  // gares étaient au bon endroit — mesuré, les dix-huit arrêts tombent à ZÉRO
+  // bloc d'une gare — mais chaque ligne n'avait que DEUX trains pour un tour
+  // qui dure jusqu'à cent vingt-sept secondes. Un enfant posté sur un quai
+  // attendait donc de vingt-six à SOIXANTE-QUATRE secondes, et le train ne
+  // restait que quatre. On peut rester une minute devant une gare sans rien
+  // voir venir : c'est ce que Max a vu.
+  //
+  // La règle, elle, était déjà écrite — pour le métro de Washington, deux
+  // versions plus tôt : « trois rames ramènent l'attente sous la demi-minute,
+  // ce qui est déjà l'intervalle du vrai métro aux heures creuses ». Six
+  // lignes sur neuf la violaient. Le nombre de trains est donc un RÉSULTAT et
+  // non un goût : le tour divisé par la demi-minute, jamais moins de deux.
+  //
+  // Mesuré, pire attente : 64 s → 30 s, pour 18 trains devenus 29.
+  const ATTENTE_QUAI = 30;
   for (const seg of segmentsDeTrain()) {
     const t = traceSegment(seg, (x, z) => world.terrainHeight(x, z), WATER_LEVEL);
+    const vitesse = 14, pause = 4;
+    let longueur = 0;
+    for (let i = 0; i < t.pts.length; i++) {
+      const a = t.pts[i], b = t.pts[(i + 1) % t.pts.length];
+      longueur += Math.hypot(b.x - a.x, b.z - a.z);
+    }
+    // Le tour complet : le trajet, plus l'arrêt marqué à chaque bout.
+    const tour = longueur / vitesse + t.arretsIndex.length * pause;
+    const rames = Math.max(2, Math.ceil(tour / ATTENTE_QUAI));
     vehicules.metro(t.pts, {
       nom: `train ${seg.ligne.nom}`, emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
-      nb: 5, vitesse: 14, rames: 2, pause: 4, arretsIndex: t.arretsIndex,
+      nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
     });
   }
 })();
