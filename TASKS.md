@@ -203,9 +203,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
   la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. **Paris est réglé (v216), San Francisco
-  aussi (v223).** Restent : à Lille la rue de Paris,
-  Gustave-Delory, Victor-Hugo et la rue Royale ; à
+  ne se superpose à aucune autre. **Paris (v216), San Francisco et Lille
+  (v223) sont réglés.** Restent : à
   Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
   Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
@@ -277,19 +276,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   coûte trois points au plus long circuit de Paris (97 % au lieu de 100). La
   vraie rue de Rivoli longe la grille, elle n'entre pas — mais déplacer un
   point de `VOIES` déplace une rue, donc cela se mesure avant de se faire.
-- [ ] **Les points de voie de Lille, de Londres et de Washington sont écrits en
-  BLOCS, pas en kilomètres.** `VOIES_LILLE` porte `[[18, -10], [28, 0]]`,
-  `VOIES` de Londres `[[-27, -43], [-12, -48]]`, les avenues de Washington de
-  même. C'est le piège nommé dans `CLAUDE.md` en v216 : juste aujourd'hui, faux
-  à la prochaine remise à l'échelle, et rien ne rougira. San Francisco et Paris
-  passent tous deux par `de(dx, dz)`. À Lille la conversion est EXACTE — les
-  points sont des entiers divisés par trente-deux, qui se réécrivent en
-  kilomètres sans déplacer un bloc ; à Londres et Washington, cela se mesure
-  avant de se faire.
+- [ ] **Les points de voie de Londres et de Washington sont écrits en BLOCS,
+  pas en kilomètres.** `VOIES` de Londres porte `[[-27, -43], [-12, -48]]`, les
+  avenues de Washington de même. C'est le piège nommé dans `CLAUDE.md` en
+  v216 : juste aujourd'hui, faux à la prochaine remise à l'échelle, et rien ne
+  rougira. Paris, San Francisco et **Lille (fait en v223, conversion prouvée
+  exacte : quarante-et-un points comparés, zéro écart)** passent par
+  `de(dx, dz)`.
 
-- [ ] **La rue Royale de Lille n'est plus parcourue** — c'est une impasse
-  depuis que le chaînage refuse les allers-retours ; il lui manque une voie
-  de retour vers la citadelle ou la Grand-Place.
+- [x] **La rue Royale de Lille n'est plus parcourue — FAIT en v223.** L'avenue
+  Mathias-Delobel, le long du Champ de Mars comme la vraie, lui donne sa
+  seconde porte. Quatre circuits mesurés (94 à 100 %) couvrent les dix-huit
+  voies de Lille, et la rue de Paris, la rue Gustave-Delory et le boulevard
+  Victor-Hugo sont repris par la même passe.
 - [x] **Valencia Street ne roulait plus à San Francisco — FAIT en v223.** La
   transversale annoncée existe : la 16e Rue au nord et Cesar Chavez au sud,
   toutes deux réelles. Le tour de la Mission et de Mission Bay les emprunte.

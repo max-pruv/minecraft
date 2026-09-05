@@ -1646,6 +1646,58 @@ const VRAIES_KM = [
       !monuments.absent && monuments.circuits === 8 && monuments.dur === 0,
       JSON.stringify(monuments));
 
+    // ET LILLE, LE JOUR MÊME OÙ ELLE GAGNE DES CIRCUITS (v223) — pas quatre
+    // versions plus tard comme Paris.
+    //
+    // Ce témoin-ci est VERT DES DEUX CÔTÉS, et c'est délibéré : sur l'ancien
+    // code les trois circuits de Lille ne passaient ni par la Porte de Paris
+    // ni par la Colonne de la Déesse, donc il n'y avait rien à traverser. Ce
+    // qui justifie de le garder plutôt que de le retirer (règle de la v220),
+    // c'est qu'il PEUT échouer et qu'il a échoué : désarmé
+    // `contournerSoclesLille` sur cette branche et rejoué, il rend
+    // « dur 5, pas 9, Colonne de la Déesse 5 » — cinq pas de carrosserie dans
+    // la pierre. Un témoin qui a rougi n'est pas un témoin qui ne peut pas
+    // rougir.
+    //
+    // Les demi-emprises sont celles que POSE le bâtisseur à hauteur de
+    // carrosserie, pas la boîte d'affichage : la Porte de Paris est pleine sur
+    // onze blocs de large et cinq de long — on ne passe pas dessous. Elles
+    // sont écrites ICI, comme celles de Paris, pour que le témoin mesure la
+    // même chose sur l'ancien code.
+    const monumentsLille = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const b = await import('./src/blocks.js');
+      const m = await import('./src/lille.js');
+      if (typeof m.circuitsLille !== 'function' || typeof m.adresseLille !== 'function') return { absent: true };
+      const SOCLES = [
+        { nom: 'Porte de Paris', dx: 0.35, dz: 0.85, bu: 6, bv: 3 },
+        { nom: 'Colonne de la Déesse', dx: 0, dz: 0, bu: 2, bv: 2 },
+        { nom: 'Citadelle de Vauban', dx: -1.55, dz: -0.8, bu: 18, bv: 17 },
+      ].map((p) => { const [x, z] = m.adresseLille(p.dx, p.dz); return { ...p, x, z }; });
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const circuits = m.circuitsLille(solDe);
+      const DEMI = 1.13;                       // la demi-largeur d'une voiture
+      const par = {};
+      let dur = 0, pas = 0;
+      for (const c of circuits) for (const p of c.pts) {
+        const s = SOCLES.find((q) => Math.abs(p.x - q.x) <= q.bu && Math.abs(p.z - q.z) <= q.bv);
+        if (!s) continue;
+        pas++;
+        let bloque = false;
+        for (const dx of [-DEMI, 0, DEMI]) for (const dz of [-DEMI, 0, DEMI]) for (const dy of [0, 1]) {
+          const id = w.getBlock(Math.round(p.x + dx), Math.round(p.y + dy), Math.round(p.z + dz));
+          if (id && b.isSolid(id)) bloque = true;
+        }
+        if (!bloque) continue;
+        dur++;
+        par[s.nom] = (par[s.nom] || 0) + 1;
+      }
+      return { dur, pas, par, circuits: circuits.length, parts: circuits.map((c) => c.part) };
+    });
+    verifier('ni un monument de Lille — la Porte de Paris se contourne, la Déesse aussi',
+      !monumentsLille.absent && monumentsLille.circuits === 4 && monumentsLille.dur === 0,
+      JSON.stringify(monumentsLille));
+
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //
     // `solVillesMonde` marque des arbres dans ses parcs, ses oasis et ses

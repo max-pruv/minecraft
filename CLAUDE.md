@@ -2055,6 +2055,35 @@ choses à savoir.
   gagne ses circuits met ce chiffre à jour dans la même livraison, sinon la
   voie rapide rougit pour la bonne raison au mauvais moment.
 
+**QUATRE AVENUES SANS BOUCLE, QUATRE CAUSES DIFFÉRENTES (v223).** Lille a
+récupéré ses quatre avenues orphelines, et aucune ne tombait pour la même
+raison — c'est la leçon : on mesure chacune avant de chercher un remède commun.
+La rue Royale n'avait qu'UNE porte (l'îlot en sucette de la City, v206) ; la rue
+de Paris ne rencontrait personne à moins de dix blocs ; le boulevard
+Victor-Hugo courait à QUATRE blocs ou moins de la rue Léon-Gambetta, si bien que
+toute boucle qui le prenait se superposait de soixante-deux blocs au convoi de
+Gambetta — trois fois le seuil, et c'était le TRACÉ qu'il fallait corriger, pas
+le seuil ; la rue Gustave-Delory a suivi. Trois choses de plus.
+
+- **UN MONUMENT A UNE RUE AUTOUR DE LUI, ET ON L'APPLIQUE LE JOUR MÊME.** Paris
+  a payé cette panne en v221, quatre versions après que la règle eut été
+  écrite. Ici la Porte de Paris est PLEINE à hauteur de carrosserie — onze
+  blocs sur cinq, on ne passe pas dessous — et `chainerVoies` joignait la rue de
+  Paris à la rue Gustave-Delory en droite ligne au travers. `contournerBlocs`
+  et un pourtour pavé règlent les deux, comme à Paris ; c'est du SOL, les
+  empreintes de `plafond.js` ne bougent pas.
+- **CE QU'ON MESURE, C'EST LE BLOC QUE POSE LE BÂTISSEUR, pas la boîte
+  d'affichage.** `MONUMENTS_LILLE` annonce `box: 7` pour la Porte de Paris ;
+  ce qui compte, c'est ce que `buildPorteDeParis` écrit à un et deux blocs
+  au-dessus du sol. Les bâtisseurs sont des fonctions pures : on les appelle,
+  on collecte, on regarde ce que la carrosserie traverse.
+- **UN TÉMOIN VERT DES DEUX CÔTÉS SE GARDE S'IL A RÉELLEMENT ROUGI.** Celui de
+  Lille est vert sur `origin/main` — les trois circuits d'alors ne passaient
+  pas là. Ce qui le distingue d'un témoin inutile (règle de la v220) : désarmé
+  `contournerSoclesLille` sur la branche, il rend cinq pas de carrosserie dans
+  la Colonne de la Déesse. Un témoin qui a rougi n'est pas un témoin qui ne
+  peut pas rougir — et cette vérification-là se FAIT, elle ne se raconte pas.
+
 ### Londres (`londres.js`) — soixante avenues qui se croisent, et les demi-tours
 
 Londres est à vingt-quatre blocs par kilomètre depuis longtemps — l'échelle

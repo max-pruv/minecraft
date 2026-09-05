@@ -20,7 +20,14 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v227 — Six avenues de San Francisco n'étaient pas des rues
+## v227 — Des avenues réelles où aucune voiture n'a jamais roulé
+
+Une passe ville par ville sur la dette déclarée depuis la v211 : des avenues
+qui existent, qu'un enfant peut nommer, et sur lesquelles aucun circuit de
+voitures ne passait. Chaque ville a son entrée ci-dessous ; chacune a été
+livrée séparément, portail vert à chaque fois.
+
+### San Francisco — six avenues qui n'étaient pas des rues
 
 **Pourquoi.** Six des quatorze voies nommées de San Francisco n'avaient aucune
 voiture depuis la v207, et la dette était écrite ainsi dans `TASKS.md` :
@@ -61,6 +68,52 @@ mesuré des deux côtés.
 Et **le sol n'a pas bougé d'un bloc** : `hauteurSF` ne lit ni les lieux ni les
 voies, la livraison ne touche que du SOL, et les deux empreintes de
 `plafond.js` le confirment — vérifié, pas supposé.
+
+### Lille — quatre avenues sans boucle, chacune pour sa propre raison
+
+**Pourquoi.** Quatre des quinze voies de Lille n'avaient aucune voiture depuis
+la v211, et la dette les nommait sans les expliquer. Mesurées, elles ne
+tombaient pas toutes pour la même cause :
+
+- **la rue Royale n'avait qu'UNE porte.** Elle ne rencontrait la rue
+  Esquermoise et l'avenue du Peuple-Belge qu'en un seul point, le Lion d'Or :
+  tout circuit qui y entrait devait en ressortir par là. C'est l'îlot en
+  sucette de la City de Londres, v206.
+- **la rue de Paris ne rencontrait personne** à moins de dix blocs.
+- **le boulevard Victor-Hugo courait à QUATRE BLOCS ou moins de la rue
+  Léon-Gambetta** sur plus de la moitié de sa longueur, et à zéro au bout.
+  Toute boucle qui le prenait se superposait de **soixante-deux blocs** au
+  convoi de Gambetta — trois fois le seuil de partage de la v211. Ce n'était
+  pas le seuil qu'il fallait changer, c'était le tracé : cent vingt-cinq
+  mètres entre deux boulevards que la vraie ville sépare de quatre cents.
+- **la rue Gustave-Delory** suivait, dès que les trois autres avaient de quoi
+  boucler.
+
+**Ce que ça change.** Des voitures roulent dans le Vieux-Lille et jusqu'au
+Champ de Mars, autour de la Porte de Paris, et à Wazemmes — trois quartiers qui
+n'en avaient jamais vu. Trois vraies rues de plus, prises sur le plan :
+l'avenue Mathias-Delobel le long du Champ de Mars, la rue Pierre-Mauroy de la
+Grand'Place à la République, la rue du Molinel de la rue de Paris aux gares. Le
+boulevard Victor-Hugo est revenu à sa place, dans la ceinture de boulevards du
+sud.
+
+Et la Porte de Paris et la Colonne de la Déesse ont désormais **une rue autour
+d'elles** : `chainerVoies` joignait la rue de Paris à la rue Gustave-Delory en
+droite ligne, et cette ligne passait au travers de la Porte — qui est pleine,
+on ne passe pas dessous. C'est la leçon de Paris en v221, appliquée le jour
+même où Lille gagne des circuits plutôt que quatre versions plus tard.
+
+**Ce qui le prouve.** Le portail est vert. Quatre circuits mesurés (94, 99, 100
+et 100 %) couvrent les **dix-huit voies sur dix-huit**, sans demi-tour, pire
+paire de convois vingt-et-un blocs. Un témoin neuf de `carteMonde.js` mesure ce
+qu'aucun ne mesurait à Lille : le BLOC à la cote du convoi, sur toute la
+largeur de la voiture. Désarmé le contournement, il rend cinq pas de
+carrosserie dans la Colonne de la Déesse — il peut rougir, et il a rougi.
+
+Au passage, **les quarante-et-un points de voie de Lille étaient écrits en
+blocs**, pas en kilomètres : justes aujourd'hui, faux à la prochaine remise à
+l'échelle, et rien n'aurait rougi. Ils sont convertis, et la conversion est
+prouvée exacte — quarante-et-un points comparés, zéro écart.
 
 ---
 
