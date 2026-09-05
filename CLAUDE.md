@@ -1629,6 +1629,40 @@ versions. Et un témoin qui cherche « de la pierre grise dans huit blocs » n'e
 garde aucun : il en trouve toujours, celle des immeubles. Ce qui prouve un pont,
 c'est l'eau sous son tablier.
 
+**UNE AVENUE SANS VOITURES : ON MESURE D'ABORD SI C'EST UNE RUE (v223).** Six
+des quatorze voies de San Francisco n'avaient aucun circuit depuis la v207, et
+la dette était écrite ainsi : « elles bordent le parc et la côte, où il n'y a
+rien à boucler ». Mesuré — chaque avenue sur son propre sol, colonne par
+colonne, AVANT de chercher la moindre boucle — c'était faux : **la Great
+Highway tenait la rue à ZÉRO pour cent**, onze blocs de sable et
+quatre-vingt-dix-neuf dans le Pacifique ; Fulton 50 %, Third Street 70 %,
+Lincoln Way 70 %, la 19e Avenue 81 %. Ce n'étaient pas des avenues sans boucle,
+c'étaient des traits d'herbe, d'eau et de sable. Quatre choses en sortent.
+
+- **UN PARC TIENT ENTRE SES RUES DE BORD.** L'ellipse du Golden Gate Park
+  faisait un kilomètre de haut et débordait sur Fulton et Lincoln Way, qui
+  sont pourtant ses deux rues de bord dans la vraie ville ; les parcs passant
+  avant les rues dans `solSF`, ces deux avenues n'étaient pas des rues. Le
+  remède est de rendre au parc sa taille (`rv` 4,5 → 3,0), pas de déplacer les
+  rues.
+- **MAIS UNE AVENUE NOMMÉE TRAVERSE UN PARC EN RESTANT UNE AVENUE.** La 19e
+  Avenue coupe le Golden Gate Park dans la vraie ville — c'est Crossover Drive
+  — et elle y rendait huit blocs d'EAU : une route qui disparaît dans un lac.
+  Les parcs gardent leur priorité sur la trame générique et sur les lots ; ce
+  qui passe avant eux, c'est la voie NOMMÉE, et elle seule. (À Paris, la rue de
+  Rivoli et les Tuileries restent une dette : là c'est le POINT DE PASSAGE qui
+  est au centre du jardin, pas la rue qui le traverse.)
+- **UNE VOIE SE TRACE CONTRE LA RIVE, PAS À CÔTÉ.** La Great Highway était
+  posée sur la plage et au large, Third Street plongeait dans la baie à hauteur
+  d'Islais Creek : le sable et l'eau passent avant les voies dans `solSF`, à
+  dessein. C'est la famille du Bay Bridge et de Karl the Fog, à un fichier
+  près — une géométrie écrite sans qu'on demande au sol s'il est là.
+- **Le prix se paie toujours avec des rues.** Cinq vraies rues de raccord —
+  Stanyan, Sunset Boulevard, Sloat Boulevard, la 16e Rue, Cesar Chavez —, six
+  circuits mesurés à 100 %, dix-neuf avenues sur dix-neuf, et le seuil de
+  partage de la v211 inchangé (pire paire vingt blocs). La méthode est celle
+  de Paris en v216, passe de réparation comprise.
+
 **Et le piège de forme, qui n'existait qu'à petite échelle.** Les Marin
 Headlands montaient par `min(1, marin * 2) * 8` : la saturation aplatissait
 toute la moitié intérieure de l'ellipse. Invisible tant qu'elle faisait vingt

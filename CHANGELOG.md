@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v223 — Six avenues de San Francisco n'étaient pas des rues
+
+**Pourquoi.** Six des quatorze voies nommées de San Francisco n'avaient aucune
+voiture depuis la v207, et la dette était écrite ainsi dans `TASKS.md` :
+« ces cinq-là bordent le Golden Gate Park et la côte, où il n'y a rien à
+boucler ». C'était une explication, pas une mesure.
+
+Mesurée — chaque avenue sur son propre sol, colonne par colonne, avant de
+chercher la moindre boucle — elle est fausse. **La Great Highway tenait la rue
+à ZÉRO pour cent** : onze blocs de sable et quatre-vingt-dix-neuf hors de la
+presqu'île, c'est-à-dire dans le Pacifique. Fulton Street 50 %, Third Street
+70 %, Lincoln Way 70 %, la 19e Avenue 81 % — de l'herbe, du feuillage, et huit
+blocs d'**eau** pour la 19e, qui traversait le lac du parc. Ce n'étaient pas
+des avenues sans boucle : ce n'étaient pas des rues.
+
+La cause tient en une ligne : l'ellipse du Golden Gate Park faisait un
+kilomètre de haut et débordait sur ses deux rues de bord, et les parcs passent
+avant les rues dans `solSF`. Le vrai parc est borné au nord par Fulton et au
+sud par Lincoln Way.
+
+**Ce que ça change.** Les enfants trouvent des voitures dans tout l'ouest et
+tout le sud de la ville — le Richmond, le Sunset, le tour du Golden Gate Park,
+la Mission, Mission Bay et Dogpatch — là où il n'y en avait jamais eu une
+seule. Le parc s'arrête au trottoir de ses deux avenues, la 19e Avenue le
+traverse comme le fait Crossover Drive au lieu de disparaître dans un lac, la
+Great Highway longe Ocean Beach côté ville, et Third Street est revenue à terre.
+Cinq vraies rues de plus, prises sur le plan : Stanyan Street, Sunset
+Boulevard, Sloat Boulevard, la 16e Rue et Cesar Chavez Street.
+
+**Ce qui le prouve.** Le portail est vert. Les dix-neuf voies de la ville
+tiennent la rue à **100 %**, mesuré une par une. Six circuits mesurés à 100 %
+couvrent **dix-neuf avenues sur dix-neuf** — contre huit sur quatorze — sans
+qu'aucun ne fasse demi-tour (virage maximum 143°) et **sans toucher au seuil de
+partage de la v211** : la pire paire de convois se partage vingt blocs, la
+taille d'un carrefour. Aucun des quatre circuits neufs ne traverse un socle de
+monument, et les deux anciens en traversent exactement autant qu'avant —
+mesuré des deux côtés.
+
+Et **le sol n'a pas bougé d'un bloc** : `hauteurSF` ne lit ni les lieux ni les
+voies, la livraison ne touche que du SOL, et les deux empreintes de
+`plafond.js` le confirment — vérifié, pas supposé.
+
+---
+
 ## v222 — Un train toutes les trente secondes sur le quai
 
 **Pourquoi.** Max : « make sure trains arrive and depart from train stations ».

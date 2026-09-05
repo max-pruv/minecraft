@@ -185,10 +185,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
   la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. **Paris est réglé (v216).** Restent : à Lille
-  la rue de Paris,
-  Gustave-Delory, Victor-Hugo et la rue Royale ; à San Francisco Valencia,
-  Fulton, Lincoln Way, la Great Highway, la 19e Avenue et Third Street ; à
+  ne se superpose à aucune autre. **Paris est réglé (v216), San Francisco
+  aussi (v223).** Restent : à Lille la rue de Paris,
+  Gustave-Delory, Victor-Hugo et la rue Royale ; à
   Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
   Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
@@ -260,22 +259,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   coûte trois points au plus long circuit de Paris (97 % au lieu de 100). La
   vraie rue de Rivoli longe la grille, elle n'entre pas — mais déplacer un
   point de `VOIES` déplace une rue, donc cela se mesure avant de se faire.
+- [ ] **Les points de voie de Lille, de Londres et de Washington sont écrits en
+  BLOCS, pas en kilomètres.** `VOIES_LILLE` porte `[[18, -10], [28, 0]]`,
+  `VOIES` de Londres `[[-27, -43], [-12, -48]]`, les avenues de Washington de
+  même. C'est le piège nommé dans `CLAUDE.md` en v216 : juste aujourd'hui, faux
+  à la prochaine remise à l'échelle, et rien ne rougira. San Francisco et Paris
+  passent tous deux par `de(dx, dz)`. À Lille la conversion est EXACTE — les
+  points sont des entiers divisés par trente-deux, qui se réécrivent en
+  kilomètres sans déplacer un bloc ; à Londres et Washington, cela se mesure
+  avant de se faire.
+
 - [ ] **La rue Royale de Lille n'est plus parcourue** — c'est une impasse
   depuis que le chaînage refuse les allers-retours ; il lui manque une voie
   de retour vers la citadelle ou la Grand-Place.
-- [ ] **Valencia Street ne roule plus à San Francisco** — impasse, comme la
-  rue Royale ; elle rejoindrait Mission par une transversale (la 24e ou
-  Cesar Chavez), à tracer.
+- [x] **Valencia Street ne roulait plus à San Francisco — FAIT en v223.** La
+  transversale annoncée existe : la 16e Rue au nord et Cesar Chavez au sud,
+  toutes deux réelles. Le tour de la Mission et de Mission Bay les emprunte.
 - [ ] **Le socle du Shard est un treillis de verre** — un bloc de `GLASS` dans
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
   de la passe de rues.
 
-- [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
-  Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune
-  boucle au-dessus du seuil. Ces cinq-là bordent le Golden Gate Park et la
-  côte, où il n'y a rien à boucler. Depuis v207, quatre circuits sans
-  demi-tour couvrent huit voies sur quatorze.
+- [x] **Cinq voies de San Francisco restaient sans circuit — FAIT en v223, et
+  la cause n'était pas celle qu'on avait notée.** « Elles bordent le parc et la
+  côte, où il n'y a rien à boucler » était une explication, pas une mesure :
+  mesurées sur leur propre sol, la Great Highway tenait la rue à ZÉRO pour
+  cent, Fulton à 50 %, Third Street et Lincoln Way à 70 %, la 19e Avenue à
+  81 %. Ce n'étaient pas des rues. Le parc tient désormais entre Fulton et
+  Lincoln, la 19e le traverse comme Crossover Drive, la Great Highway est
+  passée côté ville et Third Street est revenue à terre ; cinq vraies rues de
+  raccord (Stanyan, Sunset Boulevard, Sloat Boulevard, la 16e Rue, Cesar
+  Chavez) et six circuits mesurés à 100 % couvrent les dix-neuf voies.
 
 - [ ] **Une voiture coûte 32,6 maillages** — mesuré en v201, et c'est ce qui
   borne tout le reste : trois fois un personnage, pour un objet qui n'a ni

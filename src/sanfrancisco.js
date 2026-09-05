@@ -224,7 +224,13 @@ export const LIEUX_SF = [
   L('Castro', -4.6, 1.7, { r: 3 }),
   L('Mission', -3.4, 1.9, { r: 4 }),
   L('Twin Peaks', -5.6, 2.2, { r: 4 }),
-  L('Golden Gate Park', -7.5, 0.4, { ru: 20, rv: 4.5, jardin: true }),
+  // LE PARC TIENT ENTRE SES DEUX RUES DE BORD. À rv 4,5 son ellipse faisait
+  // un kilomètre de haut et AVALAIT Fulton Street (50 % d'herbe et de
+  // feuillage sur toute sa longueur, mesuré) ainsi que la moitié de Lincoln
+  // Way : les places passent avant les rues dans `solSF`, donc ces deux
+  // avenues n'étaient pas des rues. Le vrai Golden Gate Park est borné au
+  // nord par Fulton et au sud par Lincoln Way — huit cents mètres, pas mille.
+  L('Golden Gate Park', -7.5, 0.45, { ru: 20, rv: 3.0, jardin: true }),
   L('Le Presidio', -6.5, -2.6, { ru: 8, rv: 6, jardin: true }),
   L('Ocean Beach', -10, 1, { r: 4 }),
   L('Potrero Hill', -0.6, 2.6, { r: 3 }),
@@ -322,11 +328,35 @@ const VOIES = [
   { nom: 'Mission Street', l: av(0.9), t: TROTTOIR_AV, pts: [de(-1.6, 0.6), de(-3.0, 1.6), de(-3.6, 3.4), de(-3.8, 4.6)] },
   { nom: 'Valencia Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.2, 1.4), de(-3.4, 3.6)] },
   { nom: 'Lombard Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-2.8, -2.0), de(-1.7, -1.6), de(-0.6, -1.5)] },
-  { nom: 'Fulton Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.6, 0.0)] },
-  { nom: 'Lincoln Way', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.6, 0.9), de(-9.6, 0.9)] },
-  { nom: 'Great Highway', l: av(0.8), t: TROTTOIR_AV, pts: [de(-10.1, -0.6), de(-10.2, 1.6), de(-10.0, 3.4)] },
+  // Fulton et Lincoln Way vont jusqu'à l'océan, comme les vraies : elles
+  // s'arrêtaient à 43e Avenue, à neuf blocs de la Great Highway, et aucune
+  // des deux ne pouvait donc refermer le tour du parc.
+  { nom: 'Fulton Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.85, 0.0)] },
+  { nom: 'Lincoln Way', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.33, 0.88), de(-9.85, 0.9)] },
+  // LA GREAT HIGHWAY N'EST PAS SUR LA PLAGE. Mesurée avant : ZÉRO pour cent
+  // de chaussée — onze blocs de sable et quatre-vingt-dix-neuf hors de la
+  // presqu'île, c'est-à-dire dans le Pacifique. Le sable et l'eau passent
+  // avant les voies dans `solSF`, à dessein : ce n'était pas une route, c'était
+  // un trait sur l'océan. La vraie longe Ocean Beach côté ville, une centaine
+  // de mètres en retrait du ressac.
+  { nom: 'Great Highway', l: av(0.8), t: TROTTOIR_AV, pts: [de(-9.85, -0.6), de(-9.85, 1.6), de(-9.78, 3.0), de(-9.7, 3.4)] },
   { nom: '19e Avenue', l: av(0.8), t: TROTTOIR_AV, pts: [de(-7.6, -0.8), de(-7.7, 1.6), de(-7.8, 4.2)] },
-  { nom: 'Third Street', l: av(0.8), t: TROTTOIR_AV, pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.4, 4.4)] },
+  // Third Street suivait la baie de trop près : ses trente derniers blocs
+  // tombaient DANS l'eau, la rive reculant vers l'ouest à hauteur d'Islais
+  // Creek. Elle passe désormais par Dogpatch et Bayview, à terre.
+  { nom: 'Third Street', l: av(0.8), t: TROTTOIR_AV, pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.6, 3.6), de(-1.0, 4.4)] },
+
+  // --- LES RUES DE RACCORD (v223) ---------------------------------------------
+  //
+  // « On ne rafistole pas une impasse, on lui donne sa seconde porte » — la
+  // leçon de Paris en v209 et v216. Cinq vraies rues, prises sur le plan, pour
+  // que le Golden Gate Park, le Sunset et la Mission aient leur propre boucle
+  // au lieu de repasser sur celle du voisin.
+  { nom: 'Stanyan Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.40, 0.02), de(-5.40, 1.05)] },
+  { nom: 'Sunset Boulevard', l: av(0.8), t: TROTTOIR_AV, pts: [de(-8.97, 0.88), de(-8.97, 3.3)] },
+  { nom: 'Sloat Boulevard', l: av(0.8), t: TROTTOIR_AV, pts: [de(-9.75, 3.3), de(-8.97, 3.35), de(-7.0, 3.42)] },
+  { nom: '16e Rue', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.55, 1.85), de(-2.0, 1.9), de(-0.05, 1.95)] },
+  { nom: 'Cesar Chavez Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.85, 3.45), de(-2.0, 3.55), de(-0.55, 3.68)] },
 ];
 
 const BANDES = rangerVoies(VOIES);
@@ -376,11 +406,39 @@ export const __voiesSF = VOIES;
 // gardées en priorité — ce n'est pas un tirage au sort.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+//
+// ET LE PRIX SE PAIE AVEC DES RUES, PAS AVEC UN SEUIL (v223). Six des
+// quatorze voies n'avaient aucun circuit, et l'on avait noté la cause comme
+// « elles bordent le parc et la côte, où il n'y a rien à boucler ». C'était
+// faux, et il suffisait de mesurer chaque voie SUR SON PROPRE SOL pour le
+// voir : Fulton tenait la rue à 50 %, Lincoln Way à 70 %, la 19e Avenue à
+// 81 %, Third Street à 70 %, et la Great Highway à ZÉRO. Ce n'étaient pas des
+// avenues sans boucle, c'étaient des traits d'herbe, d'eau et de sable. Une
+// avenue qu'aucun circuit ne prend, on regarde d'abord si c'est une rue.
+//
+// Corrigé : le parc tient entre Fulton et Lincoln, la 19e le traverse comme
+// Crossover Drive, la Great Highway est passée côté ville, Third Street est
+// revenue à terre. Puis cinq vraies rues de raccord — Stanyan, Sunset
+// Boulevard, Sloat Boulevard, la 16e Rue, Cesar Chavez — et six circuits
+// mesurés couvrent les DIX-NEUF voies, seuil de partage inchangé (pire paire
+// 19 blocs).
 const CIRCUITS = [
-  // 100 % (275 blocs, virage max 123°)
-  ["Market Street","Divisadero Street","Geary Boulevard","Van Ness Avenue","Mission Street"],
+  // 100 % (211 blocs, virage max 116°)
+  ["Market Street","Van Ness Avenue","Geary Boulevard","Divisadero Street"],
   // 100 % (54 blocs, virage max 143°)
   ["The Embarcadero","Columbus Avenue","Lombard Street"],
+  // le tour de la Mission et de Mission Bay
+  // 100 % (261 blocs, virage max 97°)
+  ["Mission Street","Valencia Street","16e Rue","Third Street","Cesar Chavez Street"],
+  // le tour du Golden Gate Park par Stanyan
+  // 100 % (233 blocs, virage max 93°)
+  ["Geary Boulevard","Divisadero Street","Fulton Street","Stanyan Street","Lincoln Way","19e Avenue"],
+  // le Sunset, de Lincoln Way à Sloat
+  // 100 % (200 blocs, virage max 93°)
+  ["Lincoln Way","19e Avenue","Sloat Boulevard","Sunset Boulevard"],
+  // le Richmond et l'océan
+  // 100 % (148 blocs, virage max 92°)
+  ["Geary Boulevard","Great Highway","Fulton Street","19e Avenue"],
 ];
 
 const ROULANT_VILLE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
@@ -407,10 +465,19 @@ export function solSF(x, z) {
   if (u - bordOuest(v) < 3) return SABLE;
   if (bordEst(v) - u < 1.8 || v - bordNord(u) < 1.8) return PAVE;
 
-  // les parcs et les places : ils passent avant les rues.
+  // UNE AVENUE TRAVERSE UN PARC EN RESTANT UNE AVENUE. La 19e Avenue coupe le
+  // Golden Gate Park dans la vraie ville — c'est Crossover Drive — et elle y
+  // rendait de l'herbe, du feuillage et huit blocs d'EAU : une route qui
+  // disparaît dans un lac. Les parcs gardent leur priorité sur la trame
+  // générique et sur les lots ; ce qui passe avant eux, c'est la voie NOMMÉE,
+  // et elle seule.
+  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
+
+  // les parcs et les places : ils passent avant les rues de la trame.
   for (const p of LIEUX_SF) {
     if (p.jardin) {
       if (((u - p.u) / (p.ru * BLOCS_PAR_KM / 9)) ** 2 + ((v - p.v) / (p.rv * BLOCS_PAR_KM / 9)) ** 2 < 1) {
+        if (voie !== null) return voie;
         if (Math.abs(v - p.v) < 1) return TROTTOIR;          // l'allée centrale
         // les deux lacs du Golden Gate Park, et les bosquets du Presidio
         if (p.nom === 'Golden Gate Park'
@@ -423,7 +490,6 @@ export function solSF(x, z) {
       if (Math.hypot(u - p.u, v - p.v) < k(p.r)) return p.sol;
   }
 
-  const voie = solDesVoies(BANDES, u, v, BITUME, TROTTOIR);
   if (voie !== null) return voie;
 
   const t = trameDe(u, v);
