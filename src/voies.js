@@ -374,6 +374,111 @@ function contournerUn(pts, cu, cv, rr) {
 // cercle que la voiture suit, pas le bord de la place. À chaque ville de le
 // donner sur du roulant : l'anneau de chaussée à Washington, la couronne de
 // bitume d'une place parisienne.
+// --- contourner un socle de monument ----------------------------------------
+//
+// Un monument n'est pas un rond-point : son emprise est un RECTANGLE, et la
+// contourner par un cercle coupe les coins dans le square planté — mesuré à
+// Paris, la tenue de rue tombait de 94 à 82 %. On suit donc le PÉRIMÈTRE, dans
+// le sens le plus court, en passant par les coins. C'est ce que fait une rue
+// autour d'un pâté de maisons, et c'est ce que la ville pave pour elle.
+//
+// `blocs` : des `{ u, v, hu, hv }` où hu et hv sont les demi-côtés du tour à
+// suivre — le socle plus la moitié de sa rue, pas le bord du bâtiment.
+const EPS_BLOC = 1e-6;
+
+// Où un tronçon entre et sort du rectangle. Découpage par tranches : deux
+// comparaisons par côté, et l'on sort dès qu'un côté rejette.
+function coupeBloc(a, b, cu, cv, hu, hv) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  let t0 = 0, t1 = 1;
+  const bords = [[-dx, a[0] - (cu - hu)], [dx, (cu + hu) - a[0]],
+    [-dy, a[1] - (cv - hv)], [dy, (cv + hv) - a[1]]];
+  for (const [p, q] of bords) {
+    if (p > -EPS_BLOC && p < EPS_BLOC) { if (q < 0) return null; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return null; if (r > t0) t0 = r; }
+    else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  if (t1 - t0 < EPS_BLOC) return null;
+  return [[a[0] + dx * t0, a[1] + dy * t0], [a[0] + dx * t1, a[1] + dy * t1]];
+}
+
+// Le tour du rectangle d'un point de son bord à l'autre. On paramètre le
+// périmètre par sa longueur d'arc, ce qui rend le « sens le plus court »
+// immédiat et fait tomber les coins tout seuls.
+function tourDuBloc(cu, cv, hu, hv, p1, p2) {
+  const P = 4 * hu + 4 * hv;
+  const arc = (p) => {
+    const du = p[0] - cu, dv = p[1] - cv;
+    if (Math.abs(dv + hv) < 1e-3) return du + hu;
+    if (Math.abs(du - hu) < 1e-3) return 2 * hu + (dv + hv);
+    if (Math.abs(dv - hv) < 1e-3) return 2 * hu + 2 * hv + (hu - du);
+    return 4 * hu + 2 * hv + (hv - dv);
+  };
+  const point = (t) => {
+    let x = ((t % P) + P) % P;
+    if (x <= 2 * hu) return [cu - hu + x, cv - hv];
+    x -= 2 * hu;
+    if (x <= 2 * hv) return [cu + hu, cv - hv + x];
+    x -= 2 * hv;
+    if (x <= 2 * hu) return [cu + hu - x, cv + hv];
+    x -= 2 * hu;
+    return [cu - hu, cv + hv - x];
+  };
+  const s1 = arc(p1);
+  let d = arc(p2) - s1;
+  while (d > P / 2) d -= P;
+  while (d <= -P / 2) d += P;
+  // Un point tous les 1,5 blocs : la mesure de tenue de rue lit le TRAJET, pas
+  // ses seuls nœuds — c'est la leçon de Washington, où un témoin qui ne lisait
+  // que les sommets ne voyait pas une corde qui traversait la place.
+  const n = Math.max(1, Math.ceil(Math.abs(d) / 1.5));
+  const out = [];
+  for (let i = 1; i < n; i++) {
+    const p = point(s1 + (d * i) / n);
+    out.push([Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]);
+  }
+  return out;
+}
+
+function contournerUnBloc(pts, cu, cv, hu, hv) {
+  const n = pts.length;
+  // « Dedans » inclut le bord, pour la même raison qu'aux ronds-points : un
+  // point posé EXACTEMENT sur le tour n'est ni dehors ni dedans, et la corde
+  // qui y mène traverse sans qu'aucune intersection ne la trahisse.
+  const dedans = (p) => Math.abs(p[0] - cu) <= hu + EPS_BLOC && Math.abs(p[1] - cv) <= hv + EPS_BLOC;
+  const s = pts.findIndex((p) => !dedans(p));
+  if (s < 0) return pts;                                  // tout le tracé est dans l'emprise
+  const rot = [...pts.slice(s), ...pts.slice(0, s)];
+  const out = [];
+  let entree = null;
+  for (let i = 0; i < n; i++) {
+    const a = rot[i], b = rot[(i + 1) % n];
+    if (entree === null) out.push(a);
+    const seg = coupeBloc(a, b, cu, cv, hu, hv);
+    const aIn = dedans(a), bIn = dedans(b);
+    if (!aIn && !bIn) {
+      if (seg) out.push(seg[0], ...tourDuBloc(cu, cv, hu, hv, seg[0], seg[1]), seg[1]);
+    } else if (!aIn && bIn) {
+      entree = seg ? seg[0] : b;
+      out.push(entree);
+    } else if (aIn && !bIn) {
+      if (entree) {
+        const p2 = seg ? seg[1] : a;
+        out.push(...tourDuBloc(cu, cv, hu, hv, entree, p2), p2);
+      }
+      entree = null;
+    }
+  }
+  return out;
+}
+
+export function contournerBlocs(pts, blocs) {
+  let out = pts;
+  for (const b of blocs) out = contournerUnBloc(out, b.u, b.v, b.hu, b.hv);
+  return out;
+}
+
 export function contournerRonds(pts, cercles) {
   let out = pts;
   for (const c of cercles) out = contournerUn(out, c.u, c.v, c.r);

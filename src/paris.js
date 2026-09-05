@@ -28,7 +28,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
@@ -283,8 +283,16 @@ export const LIEUX = [
   L('Nation', 3.0, 0.5, { rive: 'd', r: 2.6, sol: PAVE }),
   L('Père-Lachaise', 3.3, -0.6, { ru: 8.5, rv: 7, jardin: true }),
   L('Buttes-Chaumont', 2.8, -2.8, { ru: 7, rv: 5.5, jardin: true }),
-  L('Sacré-Cœur', -1.6, -3.5, { r: 2.5, sol: PAVE, socle: [8, 15] }),
-  L('Moulin Rouge', -2.1, -3.1, { r: 1.2, sol: PAVE, socle: [4, 4] }),
+  // LA BUTTE N'A PAS DE RUE DE CEINTURE, ET C'EST MESURÉ. L'anneau de
+  // chaussée qui fait le tour d'un monument (`autourDUnSocle`) suppose un sol
+  // qui puisse le porter. Sur l'anneau du Sacré-Cœur le terrain va de 37 à 49
+  // — douze blocs de dénivelée — et sur celui du Moulin Rouge de 35 à 53,
+  // dix-huit. Une rue tracée là est une route de montagne : mesuré, la
+  // carrosserie mordait le coteau à dix-neuf pas sous le Sacré-Cœur et cinq
+  // sous le Moulin Rouge, soit PIRE qu'avant. Le vrai Montmartre n'a pas de
+  // boulevard autour de la basilique, il a des ruelles et un escalier.
+  L('Sacré-Cœur', -1.6, -3.5, { r: 2.5, sol: PAVE, socle: [8, 15], sansTour: true }),
+  L('Moulin Rouge', -2.1, -3.1, { r: 1.2, sol: PAVE, socle: [4, 4], sansTour: true }),
   L('Gare du Nord', -0.5, -2.4, { discret: true, r: 2.5, sol: PAVE }),
   L('Gare de Lyon', 2.0, 0.0, { discret: true, rive: 'd', r: 2.5, sol: PAVE }),
   // La Porte Maillot est un ROND-POINT, et c'est pour cela qu'elle est ici :
@@ -325,7 +333,15 @@ const PLACES = LIEUX.filter((p) => p.jardin || p.r).map((p) => ({
   r: p.r || 0, sol: p.sol || 0,
 }));
 const SOCLES = LIEUX.filter((p) => p.socle)
-  .map((p) => ({ u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
+  .map((p) => ({ u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1, tour: !p.sansTour }));
+
+// La largeur de la rue qui fait le tour d'un monument, et l'écart auquel la
+// voiture y roule. Trois blocs, c'est une chaussée et ses deux bordures — la
+// mesure : à trois blocs la tenue de rue des huit circuits est 94 · 100 · 100 ·
+// 100 · 96 · 100 · 100 · 100, et l'anneau ne prend que 423 colonnes de lot sur
+// les 2 382 qu'il couvre (18 %), le reste étant déjà du parvis ou de la rue.
+const LARGE_TOUR = 3;
+export const AXE_TOUR = 1.5;
 export const ETOILE = lieu('Arc de Triomphe');
 export const CONCORDE = lieu('Concorde');
 
@@ -554,7 +570,14 @@ const ROULANT = new Set([BITUME, PAVE, QUAI]);
 // voiture. On contourne un demi-bloc en dedans du bord, donc au milieu de
 // cette couronne.
 const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - 0.5 }));
-export const contournerPlaces = (pts) => contournerRonds(pts, RONDS);
+
+// Et le tour des monuments, qui vient APRÈS les places : l'anneau d'une place
+// est DANS le socle du monument qu'elle porte (c'est le défaut de la v220, et
+// il vaut pour les dix), donc on l'en ressort. Le tour suit le périmètre du
+// socle, à la moitié de la rue qui le longe — là où le sol est du bitume.
+const TOURS = SOCLES.filter((p) => p.tour)
+  .map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR, hv: p.bv + AXE_TOUR }));
+export const contournerPlaces = (pts) => contournerBlocs(contournerRonds(pts, RONDS), TOURS);
 
 export const circuitsParis = fabriqueCircuits({
   cle: 'paris', ancre: PARIS, chaines: CIRCUITS, roulant: ROULANT,
@@ -745,6 +768,34 @@ export function solParis(x, z) {
   // chaque appel alors que les rayons ne changent jamais. Une ville trois fois
   // plus large appelle neuf fois plus de colonnes : ce qui passait inaperçu à
   // huit blocs par kilomètre rendait la carte poisseuse à vingt-quatre.
+  // LA RUE DU MONUMENT — et pourquoi elle n'existait pas.
+  //
+  // Un monument de Paris est plus GRAND que la place déclarée avec lui : le
+  // socle du Louvre fait 6 × 6 blocs de demi-emprise pour une place de rayon 5,
+  // celui de l'Opéra 8 × 7 pour une place de 2,2. Les dix en sont là, sans
+  // exception. Or `contournerRonds` fait rouler la voiture sur l'anneau de la
+  // PLACE, à `r − 0,5` : cet anneau est donc DANS le bâtiment. Mesuré sur les
+  // huit circuits : cent trente-cinq pas de convoi sur sept cent soixante-six
+  // passaient dans un monument — l'Opéra vingt-huit, l'Arc de Triomphe
+  // vingt-cinq, la Tour Eiffel quatorze.
+  //
+  // Et cela ne se voyait pas dans la tenue de rue, qui annonçait 95 à 100 % :
+  // le cœur d'un socle est DALLÉ (ci-dessus), donc roulant. Le témoin lisait le
+  // parvis, pas le monument posé dessus — c'est le piège déjà écrit dans
+  // `CLAUDE.md`, une fois de plus.
+  //
+  // Le remède est celui de la vraie ville : un monument a une rue autour de
+  // lui. La rue de Rivoli longe le Louvre, l'avenue de Suffren le
+  // Champ-de-Mars. On pose donc une chaussée sur le pourtour immédiat du
+  // socle, et `contournerBlocs` y fait passer les circuits. C'est du SOL, pas
+  // du relief : les deux empreintes de `plafond.js` ne bougent pas d'un octet.
+  //
+  // Ce n'est PAS l'idée évidente — ajouter les socles aux cercles évités —,
+  // qui a été mesurée et qui échoue : le tour d'un socle par un CERCLE coupe
+  // les coins dans le square planté, et la tenue de rue tombe de 94 à 82 %. On
+  // suit le PÉRIMÈTRE du rectangle, et l'on pave ce périmètre.
+  if (autourDUnSocle(u, v)) return BITUME;
+
   for (const p of PLACES) {
     const du = u - p.u, dv = v - p.v;
     if (p.jardin) {
@@ -813,6 +864,7 @@ export function solParis(x, z) {
     return ((Math.round(u) * 3 + Math.round(v) * 5) % 7) === 0 ? ARBRE : BLOCK.GRASS;
   }
 
+
   // Et enfin la trame ordinaire du quartier : ses rues, ses pans coupés et le
   // cœur de ses îlots.
   const f = formeParis(u, v);
@@ -872,6 +924,17 @@ function socleDe(u, v) {
   return dn <= 1 ? dn : null;
 }
 const surUnSocle = (u, v) => socleDe(u, v) !== null;
+
+function autourDUnSocle(u, v) {
+  for (const p of SOCLES) {
+    if (!p.tour) continue;
+    const du = (u > p.u ? u - p.u : p.u - u) - p.bu;
+    const dv = (v > p.v ? v - p.v : p.v - v) - p.bv;
+    if (du <= 0 && dv <= 0) continue;                 // dedans : ce n'est pas l'anneau
+    if (du <= LARGE_TOUR && dv <= LARGE_TOUR) return true;
+  }
+  return false;
+}
 
 // --- l'immeuble haussmannien ------------------------------------------------------
 //
