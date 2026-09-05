@@ -1843,15 +1843,34 @@
       //
       // Les modèles du scanner de visage (8 Mo, immuables) sont épargnés, et
       // localStorage n'est pas touché : les parties restent là où elles sont.
+      //
+      // RIEN NE S'ATTEND ICI SANS BORNE, PARCE QUE C'EST JUSTEMENT CE QUI EST
+      // BLOQUÉ. `unregister()` est une tâche de la MÊME file d'attente que
+      // l'installation en cours : quand celle-ci ne finit pas, l'attendre
+      // bloque le remède écrit pour elle. Mesuré au banc, sur une installation
+      // qui ne finit jamais : le bandeau « 🔄 On va chercher la dernière
+      // version… » s'affichait et plus RIEN ne se passait — ni nettoyage, ni
+      // rechargement, indéfiniment. Le bouton du badge de version, qui est le
+      // dernier recours d'un parent, tombait dans le même trou.
+      //
+      // Chaque étape a donc son délai, et l'on recharge dans tous les cas :
+      // partir avec un cache à moitié nettoyé vaut infiniment mieux que rester
+      // sur un écran qui ne bouge plus.
+      const borne = (p, ms = 2000) => Promise.race([
+        Promise.resolve(p).catch(() => null),
+        new Promise((ok) => setTimeout(() => ok(null), ms)),
+      ]);
       const forcerMaj = async () => {
         showLoader('🔄 On va chercher la dernière version…');
         try {
-          for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+          const regs = await borne(navigator.serviceWorker.getRegistrations()) || [];
+          await borne(Promise.all(regs.map((r) => r.unregister())));
         } catch { /* pas de service worker : tant mieux */ }
         try {
-          for (const k of await caches.keys()) {
-            if (k !== 'web-minecraft-static-v1') await caches.delete(k);
-          }
+          const cles = await borne(caches.keys()) || [];
+          await borne(Promise.all(cles
+            .filter((k) => k !== 'web-minecraft-static-v1')
+            .map((k) => caches.delete(k))));
         } catch { /* pas de cache */ }
         const u = new URL(location.href);
         u.searchParams.set('maj', Date.now().toString(36));
@@ -1939,6 +1958,79 @@
         setTimeout(() => resolve(null), 2000);
       });
 
+      // LE FILET S'ARME TOUT DE SUITE, IL N'ATTEND PAS L'INSTALLATION.
+      //
+      // Les deux chemins — le démarrage et le retour dans l'application —
+      // faisaient `await reg.update()` AVANT d'armer leur minuterie. Or cette
+      // promesse ne rend la main qu'une fois le service worker neuf installé,
+      // c'est-à-dire les soixante-treize fichiers du jeu remis en cache. Tant
+      // qu'elle traîne, RIEN n'est armé : le commentaire disait « si
+      // l'installation traîne, on laisse jouer » et c'était précisément le cas
+      // qu'il ne couvrait pas.
+      //
+      // Mesuré au banc, en comptant les requêtes qui atteignent vraiment le
+      // serveur : l'installation ne demande pas un seul fichier pendant
+      // cinquante-huit secondes, puis les demande toutes d'un coup. Pendant
+      // cette minute l'enfant regarde « 📦 Mise à jour du jeu… » sans que rien
+      // ne puisse arriver — et si l'installation ne finit jamais, jamais rien
+      // n'arrivera.
+      //
+      // Le filet est donc UN seul, écrit une fois, appelé par les deux
+      // chemins, et sa minuterie part à l'instant où l'on décide qu'il y a une
+      // mise à jour.
+      const filetDeMiseAJour = (reg, attendue) => {
+        // Tôt : le service worker neuf a peut-être DÉJÀ pris la main — pendant
+        // la veille de l'iPad, ou parce que l'installation vient de finir.
+        // `controllerchange` ne se produira alors pas, et la page continuerait
+        // de faire tourner l'ancien code.
+        setTimeout(async () => {
+          if (refreshing) return;
+          if (await versionActive() === attendue) {
+            reloadOnce('✨ Mise à jour installée — on démarre !');
+          }
+        }, 4000);
+        // Repartir de zéro — une seule fois par session, sinon on tournerait
+        // en rond. Si l'on a déjà essayé, on laisse jouer plutôt que de
+        // retenir un enfant devant un écran qui ne bouge plus.
+        const repartirDeZero = () => {
+          sessionStorage.removeItem('wm-updating');
+          if (sessionStorage.getItem('wm-maj-forcee') === '1') {
+            loader.classList.add('hidden');
+            return;
+          }
+          sessionStorage.setItem('wm-maj-forcee', '1');
+          forcerMaj();
+        };
+        // Vingt secondes : rien n'est en train de s'installer alors que le
+        // serveur annonce autre chose. Le service worker est bloqué, pas lent
+        // — c'est ce cas qui laissait un iPad plusieurs versions en retard.
+        setTimeout(() => {
+          if (refreshing) return;
+          if (reg.installing || reg.waiting) return; // ça avance : on lui laisse sa chance
+          repartirDeZero();
+        }, 20000);
+        // QUARANTE-CINQ SECONDES : LE PLANCHER.
+        //
+        // « Ça s'installe » ne veut pas dire « ça va finir ». Une installation
+        // peut démarrer puis rester en suspens sur un fichier qui ne répond
+        // pas — mesuré au banc : soixante-seize fichiers pris, le
+        // soixante-dix-septième jamais. Juger sur `installing` laissait alors
+        // l'enfant sur l'ancienne version, bandeau caché, indéfiniment.
+        //
+        // Le seul critère qui ne se trompe pas est celui de l'enfant : au bout
+        // de quarante-cinq secondes il a la version neuve, ou l'on repart de
+        // zéro. C'est un plafond, pas une norme — une mise à jour ordinaire se
+        // fait en quelques secondes.
+        setTimeout(async () => {
+          if (refreshing) return;
+          if (await versionActive() === attendue) {
+            reloadOnce('✨ Mise à jour installée — on démarre !');
+            return;
+          }
+          repartirDeZero();
+        }, 45000);
+      };
+
       // Déclarée après versionActive, dont elle a besoin pour annoncer le
       // bon numéro.
       if (sessionStorage.getItem('wm-maj-fete') === '1') {
@@ -1981,13 +2073,8 @@
             if (attendue && courante && courante !== attendue) {
               showLoader('📦 Mise à jour du jeu… il faut la dernière version pour jouer');
               sessionStorage.setItem('wm-updating', '1');
-              await reg.update().catch(() => {});
-              // Le service worker peut avoir DÉJÀ pris la main pendant la
-              // veille : `controllerchange` ne se produira alors jamais, et
-              // l'enfant resterait devant le bandeau sans que rien n'arrive.
-              setTimeout(() => {
-                if (!refreshing) reloadOnce('✨ Mise à jour installée — on démarre !');
-              }, 4000);
+              reg.update().catch(() => {});
+              filetDeMiseAJour(reg, attendue);
             }
           } catch (e) {
             // On garde la raison : un `catch` muet ici a masqué pendant une
@@ -2012,25 +2099,8 @@
 
         showLoader('📦 Mise à jour du jeu… il faut la dernière version pour jouer');
         sessionStorage.setItem('wm-updating', '1');
-        try { await reg.update(); } catch { /* on tente quand même */ }
-        // filet : si l'installation traîne, on laisse jouer plutôt que de
-        // retenir un enfant devant un écran fixe
-        setTimeout(() => {
-          if (refreshing) return;
-          sessionStorage.removeItem('wm-updating');
-          // Rien n'est en train de s'installer alors que le serveur annonce
-          // autre chose : le service worker est bloqué, pas lent. C'est ce cas
-          // qui laissait un iPad plusieurs versions en retard sans que
-          // personne ne puisse rien y faire. On repart alors de zéro — une
-          // seule fois par session, sinon on tournerait en rond.
-          const bloque = !reg.installing && !reg.waiting;
-          if (bloque && sessionStorage.getItem('wm-maj-forcee') !== '1') {
-            sessionStorage.setItem('wm-maj-forcee', '1');
-            forcerMaj();
-            return;
-          }
-          loader.classList.add('hidden');
-        }, 20000);
+        reg.update().catch(() => { /* on tente quand même */ });
+        filetDeMiseAJour(reg, attendue);
       });
     }
   </script>

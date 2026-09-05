@@ -346,7 +346,25 @@ const charge = () => {
   catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
 };
 
-async function attendreLeCalme(limiteMs = 180000) {
+// LA CHARGE MOYENNE NE DÉCRIT PAS CE QUE LE BANC PEUT RENDRE — mesuré.
+//
+// Cette attente pouvait durer TROIS MINUTES par suite, sur un nombre qui ne
+// dit pas ce qu'on croit. La charge d'une minute est une moyenne QUI DÉCROÎT :
+// quand une suite se termine, ses processus sont morts et la machine est
+// libre, mais le chiffre met cent secondes à le reconnaître.
+//
+// Mesuré, même navigateur, pendant que la charge laissée par `monte.js`
+// montait de 3,40 à 5,16 : 58,5 · 43,0 · 43,0 · 45,9 · 43,2 · 47,4 · 38,3 ·
+// 55,9 images par seconde. Aucune relation, et 14,7 Go de mémoire libre d'un
+// bout à l'autre. À titre de comparaison, une charge RÉELLE se voit tout de
+// suite : deux pages de jeu ouvertes en même temps font tomber la cadence de
+// 42,9 à 20,8 puis 14,8 images/s.
+//
+// On garde donc une PAUSE COURTE — les processus de la suite précédente ont
+// besoin d'un instant pour mourir — et l'on cesse d'attendre un nombre qui
+// retarde. Trente secondes au lieu de cent quatre-vingts : c'est neuf minutes
+// rendues sur un portail de quatorze suites.
+async function attendreLeCalme(limiteMs = 30000) {
   const fin = Date.now() + limiteMs;
   while (charge() > CHARGE_MAX && Date.now() < fin) await dormir(5000);
 }
@@ -407,7 +425,11 @@ function lancer(fichier) {
     const avant = charge();
     await attendreLeCalme();
     console.log(`\n════════ ${suite} ════════`);
-    console.log(`   charge ${avant.toFixed(2)} avant l'attente, ${charge().toFixed(2)} au départ\n`);
+    // Le chiffre reste affiché parce qu'il est gratuit, mais il est dit pour
+    // ce qu'il est : un retard, pas un diagnostic. Un rouge ne s'explique
+    // JAMAIS par lui — voir la note d'`attendreLeCalme`.
+    console.log(`   charge ${avant.toFixed(2)} avant l'attente, ${charge().toFixed(2)} au départ`);
+    console.log('   (la charge d\'une minute RETARDE : elle n\'explique aucun rouge)\n');
     const vert = await lancer(suite);
     verdicts.push([suite, vert]);
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.

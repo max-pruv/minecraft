@@ -13,16 +13,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Le portail rougit maintenant sous sa propre charge, et il faut le
-  dire.** Quatorze suites sur quatre cœurs : la v218 a rendu `reseau.js` rouge
-  et la v219 `monte.js` et `maj.js`, toutes VERTES rejouées seules. Le
-  discriminant marche — en v217 `maj.js` était rouge AUSSI seule, et c'était un
-  vrai défaut — mais trois livraisons de suite avec un rouge de charge, cela
-  cesse d'être une exception. Deux pistes, aucune gratuite : faire souffler le
-  banc entre les suites lourdes (`souffler()` existe et n'est pas appelé
-  partout), ou déclarer un budget de temps par suite. À mesurer avant de
-  choisir : combien d'images par seconde le banc rend-il à la quatorzième
-  suite, contre la première ?
+- [x] **POURQUOI `maj.js` rougissait-elle dans le portail et pas seule ? —
+  RÉPONDU en v220, et ce n'était ni la charge ni un état qui traverse.** La
+  mesure que j'avais moi-même écrite ici a tranché : le rouge se reproduit
+  **trois fois sur trois** en rejouant `sauvegarde.js` juste avant, et la
+  suite est verte jouée seule. Rien ne traverse d'une suite à l'autre —
+  navigateurs séparés, contextes éphémères, ports différents, nuage de poche
+  en mémoire. La cause est dans `index.html` : le filet de mise à jour n'était
+  armé qu'APRÈS `await reg.update()`, et l'installation du service worker ne
+  demande pas un seul fichier au serveur pendant cinquante-huit secondes.
+  Corrigé ; le témoin est vert.
+
+- [ ] **Un service worker vraiment coincé n'a aucun témoin.** Le blocage de
+  `forcerMaj` est établi par la sonde — le filet l'appelle à vingt secondes,
+  `wm-maj-forcee` passe à 1, et plus rien pendant vingt-huit secondes — mais
+  rien ne le garde. Deux témoins ont été écrits et retirés : verts des deux
+  côtés (27,8 contre 65,9 s de temps jusqu'à « l'enfant peut rejouer », puis
+  28,3 contre 36,5 s avec un blocage rendu définitif). L'ancien code s'en sort
+  quand même, non par un filet mais parce que l'installation finit par
+  échouer, et borner sur ces durées mesurerait le banc. **Ce qu'il faudrait :
+  un blocage que le navigateur ne peut pas épuiser** — le nôtre finissait
+  toujours par rendre la main, soit par le délai d'en-têtes de node, soit
+  autrement (mesuré : 142 requêtes, `reg.update()` rendue à ~32 s malgré
+  en-têtes envoyés et délai de prise désactivé). Tant qu'on ne sait pas
+  fabriquer ce blocage-là, le remède reste prouvé par la sonde seule.
+
+- [ ] **Les rouges de `reseau.js` (v218) et `monte.js` (v219) restent sans
+  explication.** Ce qui justifiait ces fusions tient — les suites étaient
+  vertes rejouées seules — mais la cause n'est pas connue. `maj.js` avait la
+  sienne, propre à elle ; rien ne dit que celles-là la partagent. La méthode
+  qui a marché se réapplique : instrumenter la suite, compter ce qui atteint
+  vraiment le serveur, et ne rien conclure d'une explication commode.
 
 - [x] **Éteindre sa caméra ne retirait ni la vignette ni le son — FAIT en
   v219.** Le chemin direct attendait le `close` média de PeerJS, qui ne

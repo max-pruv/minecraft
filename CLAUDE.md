@@ -365,6 +365,61 @@ local, Supabase de poche (`tests/nuage.js`).
   accordait quatre-vingt-dix pour que `window.__game` reparaisse SUR LA MÊME
   PAGE. Ce n'est pas une norme, c'est une même attente coupée en deux — et sur
   un banc qui rend en logiciel, c'est la première moitié qui casse.
+- **UN FILET ARMÉ APRÈS CE QU'IL DOIT SAUVER NE SAUVE RIEN (v220).** Les deux
+  chemins de mise à jour d'`index.html` armaient leur minuterie de secours
+  APRÈS `await reg.update()` — promesse tenue seulement une fois les
+  soixante-treize fichiers du jeu remis en cache. Tant que l'installation
+  traîne, rien n'est armé ; si elle ne finit jamais, rien n'arrive jamais. Le
+  commentaire disait pourtant « si l'installation traîne, on laisse jouer » :
+  c'était exactement le cas qu'il ne couvrait pas. Trois choses en sortent.
+  - **Ce qui est écrit dans un commentaire n'est pas ce que le code fait.**
+    Celui-ci était juste sur l'intention et faux sur le fait, et il a survécu
+    des versions parce qu'il RASSURAIT. Devant un filet, on regarde d'abord ce
+    qui l'arme, pas ce qu'il fait.
+  - **UN REMÈDE NE DOIT RIEN ATTENDRE DE CE QU'IL RÉPARE.** `forcerMaj` — le
+    dernier recours, celui du bouton du badge de version — commence par
+    `unregister()`, tâche de la MÊME file d'attente que l'installation
+    bloquée. Écrit pour un service worker coincé, il attendait le service
+    worker coincé. Mesuré : appelé à vingt secondes, plus rien pendant
+    vingt-huit. Chaque étape a désormais son délai et l'on recharge dans tous
+    les cas.
+  - **« Ça s'installe » ne veut pas dire « ça va finir ».** Juger sur
+    `reg.installing` laisse l'enfant sur l'ancienne version dès qu'une
+    installation démarre puis reste en suspens. Le seul critère qui ne se
+    trompe pas est celui de l'enfant : au bout de quarante-cinq secondes il a
+    la version neuve, ou l'on repart de zéro.
+- **DEUX TÉMOINS ÉCRITS, DEUX TÉMOINS RETIRÉS — et c'est la bonne fin (v220).**
+  Le premier mesurait « la page se recharge » : l'ancien code le satisfaisait
+  en rechargeant sur la MÊME ancienne version. Le second mesurait « l'enfant
+  peut rejouer », et il était vert des deux côtés (27,8 contre 65,9 s, puis
+  28,3 contre 36,5 s) parce que l'ancien code s'en sort quand même — non par un
+  filet, mais parce que l'installation finit par échouer. Borner sur ces
+  durées aurait mesuré le banc. **Un témoin vert des deux côtés se retire, il
+  ne se garde pas au motif qu'il est écrit** ; et la capacité du banc qui ne
+  servait qu'à lui part avec, sinon c'est une brique dont personne ne se sert.
+  Ce qui n'a plus de témoin se déclare dans `TASKS.md`.
+- **LA CHARGE MOYENNE NE MESURE PAS LE BANC — ET J'AI DEUX FOIS EXPLIQUÉ UN
+  ROUGE PAR ELLE À TORT (v220).** La charge d'une minute est une moyenne QUI
+  DÉCROÎT : quand une suite se termine, ses processus sont morts et la machine
+  est libre, mais le chiffre met cent secondes à le reconnaître. Mesuré, même
+  navigateur, pendant que la charge laissée par `monte.js` montait de 3,40 à
+  5,16 : 58,5 · 43,0 · 43,0 · 45,9 · 43,2 · 47,4 · 38,3 · 55,9 images par
+  seconde. **Aucune relation**, et 14,7 Go de mémoire libre d'un bout à
+  l'autre. Trois choses en sortent :
+  - **Une charge RÉELLE, elle, se voit tout de suite** : deux pages de jeu
+    ouvertes EN MÊME TEMPS font tomber la cadence de 42,9 à 20,8 puis 14,8
+    images/s. C'est la concurrence DANS une suite qui coûte, pas la trace de
+    la suite d'avant.
+  - **`attendreLeCalme` attendait jusqu'à trois minutes par suite sur ce
+    nombre-là.** Ramené à trente secondes : neuf minutes rendues par portail,
+    et rien de perdu — il n'y avait rien à attendre.
+  - **Et les rouges que j'ai attribués à « la charge du banc » en v218 et v219
+    n'ont donc PAS cette cause.** Ce qui justifiait la fusion tenait quand
+    même — les suites étaient VERTES rejouées seules, ce qui est un fait plus
+    fort que « rouge identique sur `origin/main` » — mais l'explication était
+    inventée. La vraie cause est ouverte, déclarée dans `TASKS.md`. **Une
+    explication commode qu'on ne mesure pas est une dette, pas un
+    diagnostic.**
 - **Un témoin dont le verdict est une DURÉE mesure le banc si on ne le fait
   pas souffler.** « Un monde bien rempli ne retarde pas les retrouvailles »
   annonçait 55 à 57 s pour une borne de 25 — au-delà même de sa propre limite
