@@ -1259,6 +1259,73 @@ async function avancerUnDemiSeconde(p, depart) {
       circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
         : 'moins de huit voitures visibles en trente secondes');
 
+    // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
+    //
+    // Max : « add planes, airbus, concord and military jets and allow us to
+    // fly with them at relevant speed for each ». Le mode `pilote` est le
+    // troisième des trois façons d'être porté, déclaré « à faire » depuis la
+    // v155 : la monture suit le joueur, le convoi suit son tracé, et le
+    // pilote décide où l'on va.
+    //
+    // Le témoin mesure CE QUE L'ENFANT OBTIENT — des blocs parcourus en
+    // secondes de jeu — et non une variable interne. Il accumule le même dt
+    // que `main.js`, borne comprise, comme le fait déjà la mesure au volant :
+    // sous la charge du portail, une seconde murale ne contient parfois que
+    // trois images, et la distance fondrait sans que l'avion y soit pour rien.
+    //
+    // Ce qu'il vérifie : chacun décolle, chacun va plus vite que l'enfant à
+    // pied, et les RAPPORTS sont ceux du monde réel — le Concorde et le
+    // chasseur vont deux fois et demie plus vite que l'avion de ligne, qui va
+    // lui-même plus vite qu'un enfant en vol libre.
+    const vols = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const out = {};
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        if (!def || !def.pilote) { out[key] = { absent: true }; continue; }
+        // On se met aux commandes SANS passer par le bouton : ce témoin
+        // mesure le vol, pas l'interface — celle-ci a ses propres témoins.
+        g.player.pos.set(0, 90, 0);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0;
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.vitesseAvion = 0;
+        const depart = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+        // Plein gaz pendant quatre secondes de JEU.
+        g.player.keys.add('KeyW');
+        await new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+            prec = t;
+            if (cumul >= 4) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        g.player.keys.delete('KeyW');
+        const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
+        out[key] = { blocs: Math.round(d), vitesse: Math.round(g.player.vitesseAvion), max: def.pilote.max };
+        g.player.pilote = null;
+        g.player.vitesseAvion = undefined;
+        g.player.flying = false;
+      }
+      return out;
+    });
+    const ligne = vols.avionligne || {}, conc = vols.concorde || {}, chas = vols.chasseur || {};
+    verifier('les trois appareils volent, et chacun atteint sa vitesse',
+      ligne.vitesse >= ligne.max * 0.9 && conc.vitesse >= conc.max * 0.9
+      && chas.vitesse >= chas.max * 0.9,
+      JSON.stringify(vols));
+    // 88 blocs/s, c'est la croisière d'un enfant en vol libre (player.js) :
+    // un avion de ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
+    verifier('un avion de ligne va plus vite qu\'un enfant qui vole',
+      ligne.vitesse > 88, `${ligne.vitesse} blocs/s contre 88`);
+    verifier('et le Concorde comme le chasseur vont deux fois et demie plus vite',
+      conc.blocs > ligne.blocs * 1.8 && chas.blocs > ligne.blocs * 1.8,
+      `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 4 s`);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

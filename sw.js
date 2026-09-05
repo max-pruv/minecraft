@@ -65,6 +65,7 @@ const ASSETS = [
   './src/props.js',
   './src/animals.js',
   './src/montures.js',
+  './src/avions.js',
   './src/mondes.js',
   './src/capitales.js',
   './src/terre.js',

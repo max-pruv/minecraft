@@ -11,6 +11,7 @@
 // gros — la caméra monte, la bête garde ses pattes par terre.
 
 import * as THREE from 'three';
+import { MODELES_AVION } from './avions.js';
 import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
@@ -45,6 +46,7 @@ function yeux(g, y, z, ecart = 0.11, taille = 0.05) {
 
 export const MODELES_MONTURE = {
   voiture: voitureNeuve,
+  ...MODELES_AVION,
   // L'éléphant : la seule bête du jeu plus haute qu'une maison de plain-pied.
   // Trompe en quatre segments qui descendent en s'affinant, défenses ivoire,
   // et de grandes oreilles plates qu'on voit de loin — c'est la silhouette qui
@@ -411,4 +413,56 @@ export const MONTURES = [
     // « cars crashing into walls »). Même discipline que `vole` et
     // `montable` : la règle vit dans la fiche, jamais dans fun.js.
     gabarit: 2.2 },
+
+  // --- LES AVIONS : le mode `pilote`, le troisième --------------------------
+  //
+  // Max : « add planes, airbus, concord and military jets and allow us to fly
+  // with them at relevant speed for each ».
+  //
+  // LES VITESSES SONT DES RAPPORTS RÉELS, PAS DES GOÛTS. Un avion de ligne
+  // croise à 900 km/h, le Concorde à 2 180, un chasseur à 2 200 : le rapport
+  // est de 1 à 2,4, et le chasseur se distingue du Concorde par son AGILITÉ,
+  // pas par sa pointe. L'ancre est mesurée dans le jeu : un enfant qui vole
+  // librement atteint 88 blocs par seconde en croisière (`player.js`), donc un
+  // avion de ligne doit se sentir plus rapide que cela — 110 — et le Concorde
+  // deux fois et demie plus.
+  //
+  // `pilote` porte les quatre nombres de la physique de vol, et la règle vit
+  // ICI, dans la fiche de l'espèce, jamais dans `fun.js` ni dans `player.js` —
+  // même discipline que `montable`, `nourrissable`, `vole` et `gabarit`, dont
+  // l'oubli a déjà coûté des mois.
+  //
+  //   max         la vitesse de pointe, en blocs par seconde
+  //   poussee     ce que la manette des gaz ajoute par seconde
+  //   decrochage  en dessous, l'avion ne tient plus l'air et descend
+  //   virage      le taux de virage à plein roulis, en radians par seconde
+  //
+  // `gabarit` n'est PAS l'envergure. Une boîte de collision ne tourne pas :
+  // à quinze blocs de large, un avion resterait coincé entre deux hangars et
+  // ne pourrait même pas rouler sur sa piste. On prend la largeur du
+  // FUSELAGE — les ailes débordent, comme le capot d'une voiture en travers
+  // mord un peu (v212). Un avion passe l'essentiel de sa vie en l'air, où
+  // rien ne le frotte.
+  { key: 'avionligne', name: 'Avion de ligne', cry: 'Rrrrrouuuu !', emoji: '✈️', speed: 0.01,
+    height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
+    montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
+    nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
+    pilote: { max: 110, poussee: 18, decrochage: 30, virage: 0.55 } },
+
+  { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
+    height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
+    montable: true, allure: 1, assise: 2.7, poursuite: { recul: 22, hauteur: 8 },
+    nourrissable: false, immobile: true, vole: true, gabarit: 2.0,
+    // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
+    // il décroche haut — c'est pour cela que les vraies pistes du Concorde
+    // étaient les plus longues.
+    pilote: { max: 264, poussee: 34, decrochage: 55, virage: 0.40 } },
+
+  { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
+    height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
+    montable: true, allure: 1, assise: 2.2, poursuite: { recul: 13, hauteur: 5 },
+    nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
+    // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
+    // vire trois fois plus court : c'est ce qui fait un chasseur.
+    pilote: { max: 264, poussee: 90, decrochage: 40, virage: 1.30 } },
 ];
