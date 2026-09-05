@@ -122,9 +122,9 @@ Max sur l'invariant du sol sert, et elle se borne comme en v162, v187 et v204 :
 
 |  | colonnes | empreinte |
 | --- | --- | --- |
-| Le relief entier — **il change, c'est déclaré** | 218 089 | `c20adb73…` → `c50f6714…` |
-| Hors des villes **et des aérodromes**, sur `origin/main` | 172 379 | `fa120ab1…` |
-| Hors des villes et des aérodromes, sur la branche | 172 379 | **`fa120ab1…`** |
+| Le relief entier — **il change, c'est déclaré** | 218 089 | `c20adb73…` → `47fbedd4…` |
+| Hors des villes **et des aérodromes**, sur `origin/main` | 170 278 | `b2566e0e…` |
+| Hors des villes et des aérodromes, sur la branche | 170 278 | **`b2566e0e…`** |
 
 La même découpe des deux côtés, colonne pour colonne. On ne met pas un hash à
 jour : on mesure les deux côtés. Et le déménagement **rend son sol** — la
@@ -142,6 +142,23 @@ Trois témoins neufs, rouges sur l'ancien code :
 - **aucun aérodrome ne se pose sur ce que les enfants ont bâti** — le plus
   proche en reste à cinquante-cinq blocs.
 - **ni sur une ville** — la paire la plus serrée garde quatorze blocs.
+
+**LA CINQUIÈME PROMESSE EST NÉE D'UN ROUGE.** La sonde en avait quatre — au
+sec, à l'écart des villes, à l'écart de ce que les enfants ont bâti, plate — et
+il en manquait une : **pas sur une voie ferrée**. Trois aérodromes se sont posés
+sur une ligne de train (Haneda sur le Shinkansen, quarante-cinq blocs dedans ;
+Fiumicino sur la Frecciarossa ; Francfort sur l'ICE), et un terminal bâti
+par-dessus des rails les mure. C'est un témoin qui existait déjà — « rien de
+solide ne barre la route du train » — qui l'a dit, pas une relecture. Les trois
+sont déplacés, et **seulement les trois** : rejouer les dix-neuf sous une
+promesse de plus les dégradait tous (Roissy repartait au sud-est, JFK sous
+trente-deux pour cent d'eau). Une contrainte neuve se paie là où elle mord.
+
+**Et un lieu ne se renomme pas sous les pieds d'un enfant.** Roissy s'appelait
+« Aéroport Charles-de-Gaulle » sur la carte ; je l'avais renommé
+« Paris–Charles-de-Gaulle » par cohérence avec les dix-huit autres. Le témoin
+des grandes destinations l'a perdu — et un enfant qui cherche son aéroport sur
+la carte l'aurait perdu aussi. Il a repris son nom.
 
 **Et la sonde de placement a rattrapé ce que la relecture n'aurait pas vu.**
 Mon premier brouillon posait Roissy à (−102, −100) : à **deux blocs** de la

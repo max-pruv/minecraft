@@ -136,14 +136,14 @@ function verifier(nom, ok, detail = '') {
 //
 // La casse est BORNÉE et la borne est vérifiée juste en dessous : hors des
 // villes ET des aérodromes (l'ancienne place de Roissy comprise), l'empreinte
-// est IDENTIQUE des deux côtés — 172 379 colonnes, fa120ab1…, avec la MÊME
+// est IDENTIQUE des deux côtés — 170 278 colonnes, b2566e0e…, avec la MÊME
 // découpe sur `origin/main` et sur la branche.
 //
 // Et le déménagement rend son sol : la colonne (−140, 80), qui valait 35 sous
 // l'ancien tarmac, retrouve sa cote naturelle de 34. C'est mot pour mot ce
 // qu'avait promis le déménagement de Washington en v162.
 // v222 (avant les aérodromes) : c20adb7308aec773780185acfa4ecbc88d575f0d
-const EMPREINTE_RELIEF = 'c50f67147c96f6ea6c4ca926b95466db6ba9d634';
+const EMPREINTE_RELIEF = '47fbedd47c47973c9eab0e6b479218f4ac3bd269';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -216,13 +216,13 @@ const EMPREINTE_RELIEF = 'c50f67147c96f6ea6c4ca926b95466db6ba9d634';
 // v223 : la découpe s'élargit aux dix-neuf aérodromes ET à l'ancienne place de
 // Roissy — sans cette dernière, le témoin accuserait le déménagement d'avoir
 // bougé le sol là où il l'a précisément RENDU. Le nombre de colonnes change
-// donc (184 656 → 172 379) et le hash avec ; ce qui prouve la borne, c'est que
+// donc (184 656 → 170 278) et le hash avec ; ce qui prouve la borne, c'est que
 // la MÊME découpe mesurée sur `origin/main` (v222) et sur la branche rend le
 // même hash, colonne pour colonne :
-//   origin/main  172 379 colonnes  fa120ab12649fa81656f6293d946c2a11be91bf0
-//   la branche   172 379 colonnes  fa120ab12649fa81656f6293d946c2a11be91bf0
+//   origin/main  170 278 colonnes  b2566e0ec8e4df10aa1b218d01a52791267d911b
+//   la branche   170 278 colonnes  b2566e0ec8e4df10aa1b218d01a52791267d911b
 // v204 → v222 (découpe sans les aérodromes) : c79c2f3b0135a6077aa49a46eb1f744c26cf6db5
-const EMPREINTE_HORS_VILLES = 'fa120ab12649fa81656f6293d946c2a11be91bf0';
+const EMPREINTE_HORS_VILLES = 'b2566e0ec8e4df10aa1b218d01a52791267d911b';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.

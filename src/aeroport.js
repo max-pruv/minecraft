@@ -60,7 +60,21 @@ const CHIFFRES = {
 // l'on cherche, en s'éloignant, le premier emplacement qui tienne quatre
 // promesses : au sec (moins de six pour cent d'eau sous le disque), à douze
 // blocs au moins de toute ville et de tout autre aérodrome, à quarante blocs
-// au moins de ce que les enfants ont bâti, et le plus plat possible.
+// au moins de ce que les enfants ont bâti, à douze blocs au moins de toute
+// VOIE FERRÉE, et le plus plat possible.
+//
+// LA CINQUIÈME PROMESSE EST NÉE D'UN ROUGE, et c'est la bonne façon d'y venir.
+// La première sonde en avait quatre, et trois aérodromes se sont posés sur une
+// ligne de train — Haneda sur le Shinkansen (quarante-cinq blocs dedans),
+// Fiumicino sur la Frecciarossa, Francfort sur l'ICE. Les rails sont écrits
+// dans le morceau de monde AVANT les monuments : un terminal bâti par-dessus
+// les mure. C'est le témoin « rien de solide ne barre la route du train » de
+// `carteMonde.js` qui l'a dit — il existait déjà, il n'a pas fallu l'écrire.
+//
+// Et la contrainte s'applique aux TROIS en faute, pas aux dix-neuf : rejouer
+// tous les emplacements sous une promesse de plus les dégradait sans raison
+// (Roissy partait au sud-est, JFK sous trente-deux pour cent d'eau). Une
+// contrainte neuve se paie là où elle mord.
 //
 // LE CAP CÈDE EN DERNIER, ET L'ÉCART EST ÉCRIT LIGNE À LIGNE. Quand le vrai
 // cap tombe à l'eau — JFK est sur la baie de Jamaica, Fiumicino sur la mer,
@@ -77,16 +91,16 @@ const CHIFFRES = {
 // et ses satellites ; 'hub' est un grand aéroport à deux pistes ; 'ville' un
 // aéroport à une piste ; 'base' une base militaire — hangars, tour, abris.
 export const AEROPORTS = [
-  { cle: 'cdg', nom: 'Paris–Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris, vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris, vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
   { cle: 'orly', nom: 'Paris–Orly', x: -322, z: 504, r: 62, sol: 41, profil: 'ville' },               // Paris, cap 195° S — exact, 315 blocs
   { cle: 'lhr', nom: 'Londres–Heathrow', x: -926, z: -558, r: 78, sol: 41, profil: 'hub' },           // Londres, cap 262° O — exact, 204 blocs
   { cle: 'jfk', nom: 'New York–JFK', x: -9934, z: 2253, r: 84, sol: 34, profil: 'hub' },              // New York, vrai cap 115° SE → 30° NE (la baie de Jamaica est de l'eau), 418 blocs
   { cle: 'mad', nom: 'Madrid–Barajas', x: -1269, z: 2522, r: 78, sol: 41, profil: 'hub' },            // Madrid, cap 40° NE — exact, 236 blocs
   { cle: 'bcn', nom: 'Barcelone–El Prat', x: -641, z: 2670, r: 66, sol: 34, profil: 'ville' },        // Barcelone, cap 215° SO → 235°, 445 blocs
   { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 4, z: -478, r: 74, sol: 39, profil: 'hub' },            // Amsterdam, cap 215° SO — exact, 443 blocs
-  { cle: 'fra', nom: 'Francfort', x: 885, z: -282, r: 74, sol: 50, profil: 'hub' },                   // Francfort, cap 315° NO — exact, 156 blocs
-  { cle: 'fco', nom: 'Rome–Fiumicino', x: 1566, z: 2015, r: 72, sol: 36, profil: 'ville' },           // Rome, vrai cap 245° SO → 325° NO (la mer Tyrrhénienne), 302 blocs
-  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 26277, z: 4213, r: 76, sol: 38, profil: 'hub' },              // Tokyo, vrai cap 160° S → 250° O (la baie de Tokyo), 311 blocs
+  { cle: 'fra', nom: 'Francfort', x: 659, z: -572, r: 74, sol: 35, profil: 'hub' },                   // Francfort, cap 315° NO → 320°, 522 blocs (l'ICE Cologne–Francfort passait dans le disque)
+  { cle: 'fco', nom: 'Rome–Fiumicino', x: 1676, z: 1905, r: 72, sol: 35, profil: 'ville' },           // Rome, vrai cap 245° SO → 350° N (la mer Tyrrhénienne, puis la Frecciarossa), 362 blocs
+  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 26210, z: 4107, r: 76, sol: 36, profil: 'hub' },              // Tokyo, vrai cap 160° S → 270° O (la baie de Tokyo, puis le Shinkansen), 359 blocs
   { cle: 'dxb', nom: 'Dubaï', x: 9882, z: 7646, r: 80, sol: 33, profil: 'hub' },                      // Dubaï, cap 230° SO → 205°, 478 blocs
   { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 13988, z: 6339, r: 70, sol: 41, profil: 'ville' },     // Delhi, cap 250° O — exact, 400 blocs
   { cle: 'sfo', nom: 'San Francisco', x: -19426, z: 3834, r: 72, sol: 43, profil: 'ville' },          // San Francisco, cap 175° S → 155°, 384 blocs

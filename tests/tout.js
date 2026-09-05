@@ -165,6 +165,49 @@ const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js'];
 // Est anodin : un commentaire, une ligne vide, ou une ligne dont la SEULE
 // différence est un nombre — une temporisation, une borne. Tout le reste — une
 // signature, un appel, une structure — reste du banc qui bouge.
+// ET ÉLARGIR LA TABLE DES GARDIENS EST ANODIN AUSSI — c'est une heure par
+// livraison, mesurée.
+//
+// Déclarer `src/avions.js` et ajouter `monte.js` aux gardiens de
+// `src/aeroport.js` : deux lignes, et le portail entier s'est rejoué, une
+// heure. Or un gardien AJOUTÉ ne peut faire tourner que PLUS de suites, jamais
+// moins : il ne peut donc rien cacher. Un gardien RETIRÉ, si — et c'est
+// exactement ce que cette fonction refuse.
+//
+// La preuve n'est pas dans le diff mais dans les deux TABLES : on lit celle
+// d'`origin/main` et celle d'ici, et l'on exige que la nouvelle soit un
+// SUR-ENSEMBLE de l'ancienne, clé par clé. Une clé neuve est permise, une
+// suite en plus aussi ; une suite en moins ferme la porte.
+function tableGardiens(texte) {
+  const bloc = texte.slice(texte.indexOf('const GARDIENS = {'));
+  const table = new Map();
+  for (const l of bloc.slice(0, bloc.indexOf('\n};')).split('\n')) {
+    const m = l.match(/^\s*'([^']+)':\s*\[([^\]]*)\]/);
+    if (m) table.set(m[1], new Set(m[2].match(/'[^']+'/g)?.map((q) => q.slice(1, -1)) || []));
+  }
+  return table;
+}
+function gardiensElargis(base, fichier) {
+  if (fichier !== 'tests/tout.js') return false;
+  try {
+    const { execSync } = require('child_process');
+    const avant = execSync('git show origin/main:tests/tout.js',
+      { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const apres = fs.readFileSync(path.join(base, 'tests/tout.js'), 'utf8');
+    const a = tableGardiens(avant), b = tableGardiens(apres);
+    if (!a.size || !b.size) return false;
+    for (const [cle, suites] of a) {
+      const neuves = b.get(cle);
+      if (!neuves) return false;                        // une clé disparue
+      for (const s of suites) if (!neuves.has(s)) return false;   // une suite retirée
+    }
+    // Et RIEN d'autre que la table n'a bougé : sinon c'est du banc qui change.
+    const horsTable = (t) => t.slice(0, t.indexOf('const GARDIENS = {'))
+      + t.slice(t.indexOf('\n};', t.indexOf('const GARDIENS = {')));
+    return horsTable(avant) === horsTable(apres);
+  } catch { return false; }
+}
+
 function bancAnodin(base, fichier) {
   try {
     const { execSync } = require('child_process');
@@ -237,6 +280,7 @@ function suitesNecessaires() {
   for (const f of changes) {
     if (BANC.includes(f)) {
       if (bancAnodin(base, f)) { raisons.push(`${f} (délais seulement)`); continue; }
+      if (gardiensElargis(base, f)) { raisons.push(`${f} (gardiens élargis)`); continue; }
       tout = true; raisons.push(`${f} (le banc)`); continue;
     }
     if (GARDIENS[f]) { GARDIENS[f].forEach((s) => besoin.add(s)); raisons.push(f); continue; }
@@ -411,6 +455,8 @@ function lancer(fichier) {
     console.log('   (npm test -- --depuis-zero pour tout rejouer)\n');
   }
   const verdicts = [];
+  const durees = [];
+  const departPortail = Date.now();
   for (const suite of aJouer) {
     if (verts[suite]) {
       console.log(`\n════════ ${suite} ════════\n⏭️  déjà vert sur ce code, on ne le rejoue pas`);
@@ -431,7 +477,14 @@ function lancer(fichier) {
     // JAMAIS par lui — voir la note d'`attendreLeCalme`.
     console.log(`   charge ${avant.toFixed(2)} avant l'attente, ${charge().toFixed(2)} au départ`);
     console.log('   (la charge d\'une minute RETARDE : elle n\'explique aucun rouge)\n');
+    // ON CHRONOMÈTRE, PARCE QU'ON NE PEUT PAS ACCÉLÉRER CE QU'ON NE MESURE PAS.
+    // Le portail dure une heure et n'a jamais dit où elle passe : toute
+    // proposition de gain était donc une intuition. Deux lignes y suffisent.
+    const depart = Date.now();
     const vert = await lancer(suite);
+    const duree = Math.round((Date.now() - depart) / 1000);
+    durees.push([suite, duree]);
+    console.log(`   ⏱️  ${suite} : ${Math.floor(duree / 60)} min ${String(duree % 60).padStart(2, '0')} s`);
     verdicts.push([suite, vert]);
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.
     verts[suite] = vert;
@@ -440,6 +493,17 @@ function lancer(fichier) {
   }
   console.log('\n════════ verdict ════════');
   for (const [suite, vert] of verdicts) console.log(`${vert ? '✅' : '❌'} ${suite}`);
+  if (durees.length) {
+    const total = Math.round((Date.now() - departPortail) / 1000);
+    const joue = durees.reduce((n, [, d]) => n + d, 0);
+    console.log('\n════════ où passe le temps ════════');
+    for (const [suite, d] of [...durees].sort((a, b) => b[1] - a[1])) {
+      console.log(`   ${String(Math.floor(d / 60)).padStart(2)} min ${String(d % 60).padStart(2, '0')} s  ${suite}`);
+    }
+    console.log(`   ─────────────`);
+    console.log(`   ${Math.floor(joue / 60)} min de suites · ${Math.floor((total - joue) / 60)} min `
+      + `d'attente entre elles · ${Math.floor(total / 60)} min en tout`);
+  }
   const tout = verdicts.every(([, v]) => v);
   console.log(tout
     ? '\n✅ toutes les suites sont vertes — on peut publier'
