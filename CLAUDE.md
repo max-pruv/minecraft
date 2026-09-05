@@ -296,6 +296,34 @@ qu'on fait aux témoins, et il vaut pour les mesures de performance. Chaque
 suite affiche donc sa durée, et le portail finit par un classement « où passe
 le temps » : minutes de suites, minutes d'attente entre elles, total.
 
+**UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.** La barrière est
+bonne par défaut — elle évite d'attendre cinquante minutes quand un module ne
+charge pas. Mais un témoin de CONTENU rouge, le jeu démarrant très bien, arrête
+tout : on ne sait plus rien du reste du portail. En v223 la vie de rue de Paris
+était rouge sur `origin/main` DEUX FOIS SUR TROIS, et la livraison en cours n'y
+était pour rien. `npm test -- --malgre-fumee` continue quand même, **et le
+verdict global reste ROUGE** : on ne se donne pas le vert, on se donne la vue.
+À n'employer qu'avec la double mesure en main — la règle de la v195 s'applique
+telle quelle.
+
+**UN TÉMOIN QUI REND UN SEUL NOMBRE POUR TROIS PANNES NE SE DÉMONTE PAS.**
+« La ville reste habitée quand on la traverse » compte les passants VISIBLES à
+moins de soixante-deux blocs. Ce nombre confond trois choses : personne n'a été
+posé, on en a posé mais trop loin, on en a posé près mais ils sont cachés.
+Devant son rouge j'ai fait TROIS hypothèses successives — la portée de
+l'aéroportiste, puis la vitesse de `terrainHeight`, puis le banc — et les trois
+étaient fausses ; chacune a coûté un passage de banc. Une sonde qui sépare les
+trois a tranché en une seule exécution : dix-huit existent, aucun n'est caché,
+ils sont à quarante-deux blocs. **Devant un rouge qu'on n'explique pas du
+premier coup, on n'essaie pas une deuxième hypothèse : on écrit la sonde qui
+distingue les cas.**
+
+*(Une des trois hypothèses a quand même laissé un vrai gain : dix-neuf
+`Math.hypot` par colonne dans `terrainHeight` — le chemin le plus chaud du jeu —
+coûtaient +29 % (2 311 → 2 982 ns). Rejetés par une comparaison de boîte avant
+tout calcul, on revient à 2 431. Une mesure fausse sur la cause peut rester
+juste sur le fait.)*
+
 **Et le portail, c'est `npm test` — jamais une liste de suites choisie à la
 main.** De v176 à v181, les barrières rejouaient six suites nommées une à une
 et jamais la fumée : son témoin de la bibliothèque de monuments est resté

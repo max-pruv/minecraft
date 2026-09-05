@@ -1470,10 +1470,20 @@ export class World {
     // Une cote commune ferait une falaise partout où le pays n'est pas à trente-
     // cinq blocs : le tarmac de Francfort est à cinquante, celui de Dubaï à
     // trente-trois.
+    // ET ON REJETTE PAR LA BOÎTE AVANT DE CALCULER UNE DISTANCE.
+    //
+    // `terrainHeight` est le chemin le plus chaud du jeu — chargement de
+    // morceaux, sondage des rues par les passants, cote des convois. Écrite
+    // en dix-neuf `Math.hypot`, cette boucle l'a fait passer de 2 311 à
+    // 2 982 nanosecondes par colonne (+29 %), et le témoin de vie de rue est
+    // tombé de six piétons au pire creux à deux. Deux comparaisons sur x et z
+    // écartent dix-huit aérodromes sur dix-neuf sans une multiplication.
     for (const a of AEROPORTS) {
-      const ad = Math.hypot(x - a.x, z - a.z);
-      if (ad >= a.r) continue;
-      const m = Math.min(1, (a.r - ad) / 20);
+      if (x < a.x - a.r || x > a.x + a.r || z < a.z - a.r || z > a.z + a.r) continue;
+      const dx = x - a.x, dz = z - a.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= a.r * a.r) continue;
+      const m = Math.min(1, (a.r - Math.sqrt(d2)) / 20);
       h = h * (1 - m) + a.sol * m;
     }
 
@@ -1602,7 +1612,10 @@ export class World {
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
-    if (AEROPORTS.some((a) => Math.hypot(x - a.x, z - a.z) < a.r)) return null;   // pas d'arbre au milieu des pistes
+    // même rejet par la boîte que dans `terrainHeight` : c'est aussi une
+    // fonction appelée par colonne
+    if (AEROPORTS.some((a) => x >= a.x - a.r && x <= a.x + a.r && z >= a.z - a.r
+      && z <= a.z + a.r && (x - a.x) ** 2 + (z - a.z) ** 2 < a.r * a.r)) return null;
     if (dansLUsine(x, z)) return null;                                            // ni sur la chaîne, ni sur le parc
     // au village, les arbres sont plantés par le constructeur, pas au hasard
     if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;

@@ -1133,7 +1133,20 @@ function aeroportiste(dt) {
   aeroportisteTimer -= dt;
   if (aeroportisteTimer > 0) return;
   aeroportisteTimer = 3;
-  const a = aeroportPres(player.pos.x, player.pos.z, 130);
+  // QUATRE-VINGT-DIX BLOCS, ET CE N'EST PAS LE REMÈDE QUE JE CROYAIS.
+  //
+  // J'ai d'abord ramené cette portée de 130 à 90 en accusant les trois
+  // appareils de faire tomber la vie de rue pendant la traversée de Paris.
+  // Mesuré : Roissy est à 291 blocs du centre de Paris, le bord nord de la
+  // ville à 106 de l'aéroport — à 90, l'aéroportiste ne se déclenche JAMAIS
+  // pendant cette traversée, et le témoin rendait exactement les mêmes
+  // chiffres. Il était hors de cause.
+  //
+  // Quatre-vingt-dix reste juste pour sa propre raison : un appareil garé ne
+  // se dessine qu'à soixante-deux blocs, comme toute créature. En faire naître
+  // à cent trente ne montre rien à personne. Le garagiste travaille à
+  // quatre-vingts pour exactement ce motif.
+  const a = aeroportPres(player.pos.x, player.pos.z, 90);
   if (!a) return;
   for (const { espece, du, dv } of postesAvion(a.profil)) {
     const x = a.x + du, z = a.z + dv;

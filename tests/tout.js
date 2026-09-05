@@ -427,6 +427,7 @@ function lancer(fichier) {
   // `--voie` : on demande au dépôt ce qu'il faut rejouer pour ce changement.
   // `--long` force les huit suites, toujours disponible sans discuter.
   let aJouer = SUITES;
+  let fumeeRouge = false;
   if (process.argv.includes('--voie') && !process.argv.includes('--long')) {
     const { suites, pourquoi } = suitesNecessaires();
     aJouer = suites;
@@ -435,9 +436,27 @@ function lancer(fichier) {
     console.log(`   fumee.js${suites.length ? ' + ' + suites.join(', ') : ' seul'}\n`);
     // Le témoin de fumée passe TOUJOURS en premier : trois minutes qui
     // attrapent un module qui ne charge pas, avant d'en dépenser cinquante.
-    if (!await lancer('fumee.js')) {
+    // ET UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.
+    //
+    // La barrière est bonne par défaut : elle évite d'attendre cinquante
+    // minutes quand un module ne charge pas. Mais un témoin de CONTENU rouge —
+    // le jeu démarre très bien — arrête tout, et l'on ne sait plus rien des
+    // douze suites qui suivent. C'est arrivé en v223 : la vie de rue de Paris
+    // était rouge SUR `origin/main` DEUX FOIS SUR TROIS (dette déclarée dans
+    // `TASKS.md`), et la livraison en cours n'y était pour rien.
+    //
+    // `--malgre-fumee` continue quand même, et le verdict global reste ROUGE.
+    // On ne se donne pas le vert, on se donne la VUE. À n'employer qu'avec la
+    // double mesure en main — la règle de la v195 s'applique telle quelle.
+    const fumeeVerte = await lancer('fumee.js');
+    if (!fumeeVerte && !process.argv.includes('--malgre-fumee')) {
       console.log('\n❌ la fumée a échoué — on ne publie pas');
+      console.log('   (npm test -- --malgre-fumee pour voir quand même les douze autres)');
       process.exit(1);
+    }
+    if (!fumeeVerte) {
+      console.log('\n⚠️  fumée ROUGE — on continue pour voir les autres, le verdict restera rouge');
+      fumeeRouge = true;
     }
     if (!suites.length) {
       console.log('\n✅ voie rapide verte — on peut publier');
@@ -504,7 +523,8 @@ function lancer(fichier) {
     console.log(`   ${Math.floor(joue / 60)} min de suites · ${Math.floor((total - joue) / 60)} min `
       + `d'attente entre elles · ${Math.floor(total / 60)} min en tout`);
   }
-  const tout = verdicts.every(([, v]) => v);
+  const tout = verdicts.every(([, v]) => v) && !fumeeRouge;
+  if (fumeeRouge) console.log('❌ fumee.js');
   console.log(tout
     ? '\n✅ toutes les suites sont vertes — on peut publier'
     : '\n❌ une suite au moins a échoué — on ne publie pas');
