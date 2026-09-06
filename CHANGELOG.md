@@ -20,6 +20,74 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v226 — Les villes ne sont plus vides quand on y arrive
+
+**Pourquoi.** Max, deux fois : « clairement pas de piétons, pas de vie dans les
+villes », et « it took a while to see cars in paris ». Le témoin de fumée le
+disait aussi, en rouge et **en production** : trois passants dans les
+soixante-deux blocs au milieu d'une traversée de Paris, au lieu de dix-huit.
+
+Deux versions avaient déjà tenté de le corriger. La **v217** a réglé le seuil
+de rapatriement sur la portée de rendu ; la **v218** a réglé la répartition sur
+le champ de vision. Les deux avaient raison — et aucune ne pouvait suffire,
+**parce que la boucle qui les applique ne tournait pas**.
+
+**Ce que ça change.** `main.js` borne `dt` à un vingtième de seconde. C'est
+juste, et c'est écrit depuis Washington : sans cette borne, une chute de cadence
+fait traverser les murs. Mais un minuteur écrit `minuteur -= dt` **hérite de la
+borne**. Relevé en traversant Paris, arrêt par arrêt :
+
+| arrêt | cadence | tours de rapatriement | passants à moins de 62 blocs |
+| --- | --- | --- | --- |
+| 1 | 6,9 im/s | 18 | 18 |
+| 3 | **2,7** | **0** | 7 |
+| 4 | **2,8** | **0** | 3 |
+| 5 | 3,0 | 18 | 18 |
+
+À 2,75 images par seconde, deux secondes de minuteur réclament quarante images,
+soit **quatorze secondes réelles**. Le tour ne venait jamais. Et la cadence
+s'effondre précisément quand l'enfant **arrive** quelque part et que les
+morceaux de monde se chargent : la ville était vide au moment exact où il la
+regardait, et pleine dès qu'il n'y faisait plus attention.
+
+`src/cadence.js` porte désormais la distinction, et elle vaut au-delà de ce
+défaut-ci : une **animation** suit le temps du jeu — une bête qui fuit, une
+balle qui rebondit, une flamme qui s'éteint ralentissent avec le reste, et
+c'est cohérent. Une cadence de **ménage** — repeupler, faire naître une
+voiture, regarnir un poste de stationnement — décide si le monde *existe*
+autour de l'enfant : elle ne doit rien devoir à la vitesse d'affichage. Les
+quatre cadences de ménage y passent (passants, circulation, garagiste,
+aéroportiste).
+
+| | avant | après |
+| --- | --- | --- |
+| Pire creux d'une traversée de Paris | **3** passants | **16** (seuil du témoin : 3) |
+| Peuplement à l'arrivée dans une ville | 6 à 8,5 s | **1,5 s** |
+
+**Ce qui le prouve.** Voie longue complète, **les treize suites vertes**. Le
+témoin « et elle reste habitée quand on la traverse à pied », rouge en
+production depuis des versions, passe avec cinq fois la marge du seuil — et la
+cadence d'affichage est identique des deux côtés (2,5 à 6,7 images/s), donc
+c'est bien le jeu qui a changé, pas le banc.
+
+**Et le banc avait le même mal, à trente lignes de là.** Le témoin « chaque
+îlot a sa porte » marchait **2,2 secondes de temps réel** pour franchir six
+blocs, quand le joueur avance en `dt` borné : à trois images par seconde, cela
+ne fait plus qu'un bloc, et le témoin rougissait sur le perron. Il marche
+désormais jusqu'à être entré ou jusqu'à ne plus avancer sur trois pas — le
+remède que son voisin « on entre dans l'Air et l'Espace » avait déjà payé — et
+**il dit ce qu'il a vu** : façade essayée, plafond, murs, position. Il ne
+rendait aucun détail, et un rouge muet ne se démonte pas.
+
+**Ce que j'aurais pu faire et n'ai pas fait.** Ce rouge-là était vert rejoué
+seul, deux fois sur la branche et deux fois sur `origin/main` : la règle de la
+v195 autorisait la fusion avec une dette déclarée. Mais j'ai déjà expliqué deux
+rouges par « la charge du banc » sans le mesurer, et `CLAUDE.md` en garde la
+trace. Quand la cause est identifiable et que le remède existe déjà dans le
+fichier, on corrige au lieu de déclarer.
+
+---
+
 ## v225 — Et le portail passe de 59 à 48 minutes
 
 **Pourquoi.** La v224 avait ramené la limite de `souffler()` de deux minutes à
