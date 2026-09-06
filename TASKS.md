@@ -53,17 +53,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   traverse (c'est ce que le témoin garde) mais il est vide. Même dette que les
   intérieurs de monuments.
 
-- [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
-  47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),
-  222 engendrées depuis onze gabarits. Il s'agit d'en faire passer cinquante du
-  gabarit à la fiche. Trois choses établies : seules Bruxelles et Cologne sont
-  dans la fenêtre d'empreinte (laisser Cologne générique suffit à ne rien
-  casser) ; une fiche qui garde le rayon du registre ne change pas la découpe
-  « hors villes » ; et la géométrie se CALCULE depuis de vraies latitudes et
-  longitudes — un générateur de brouillon le fait et vérifie que chaque
-  monument tombe dans le disque de sa ville (il a déjà attrapé quatre erreurs).
-  À livrer par lots d'une douzaine : Max juge sur captures, et une fiche fausse
-  est pire qu'une fiche absente.
+- [ ] **Cinquante villes détaillées — DOUZE FAITES en v227, trente-huit
+  restent.** Demandé par Max : « add 50 cities with high details ». Le monde a
+  269 villes ; elles étaient 47 à avoir une fiche, elles sont 59. Le premier lot :
+  Édimbourg, Dublin, Budapest, Milan, Naples, Séville, Montréal, Boston, La
+  Nouvelle-Orléans, Santiago, Alexandrie, Melbourne. La méthode et ses cinq
+  règles sont écrites dans `CLAUDE.md` (« Faire passer une ville du gabarit à
+  la fiche ») ; ce qui reste à savoir avant le lot suivant :
+  — **Cologne est la SEULE ville engendrée dans la fenêtre [−700, 700]**
+    (659, −417). Tant qu'elle reste générique, aucun lot ne touche l'empreinte :
+    mesuré en v227, les deux empreintes de `plafond.js` sont identiques. Le jour
+    où on la promeut, c'est la double empreinte de l'invariant 1.
+  — **Avant d'ajouter une géographie à une fiche, regarder ce que le monde rend
+    DÉJÀ là.** J'ai fabriqué une cordillère pour Santiago, puis je l'ai retirée :
+    elle cachait les vraies crêtes enneigées de `terre.js`.
+  — **Une entorse se juge en capture, pas en intention.** Celle des Andes était
+    déclarée, argumentée, et fausse : à cette taille une colline est un dôme.
+  — Le générateur de brouillon est à refaire à chaque session (il vit dans le
+    bac à sable, pas dans le dépôt) : il copie `src/`, y exporte `FICHES` et
+    `eauDeVille`, et répond à quatre questions — centre au sec, monument dans le
+    disque, monument au sec, lieu nommé dans la ville.
+
+- [ ] **Ce que le premier lot laisse en dette.**
+  — **Le bord de disque se voit sur les côtes.** Entre la mer d'une ville et
+    l'océan du monde il reste une bande de terre : le fondu de `hauteurVillesMonde`
+    entre `rayon` et `rayon + 14`. Visible à Alexandrie, et sur toutes les villes
+    de côte engendrées depuis toujours. Ce n'est pas propre au lot.
+  — **`muraillesRect` plafonne** : le château d'Édimbourg rend un anneau de mur
+    gris, pas une silhouette. Signalé avant que Max ne le trouve.
+  — **Santiago attend un rayon plus grand pour ses Andes.** À 68 blocs, il n'y a
+    pas la place d'une chaîne de montagnes ; le relief réel du monde fait le
+    travail en attendant.
 
 - [x] **POURQUOI `maj.js` rougissait-elle dans le portail et pas seule ? —
   RÉPONDU en v220, et ce n'était ni la charge ni un état qui traverse.** La

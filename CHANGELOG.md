@@ -20,6 +20,72 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v227 — Douze villes quittent le gabarit
+
+**Pourquoi.** Max : « add 50 cities with high details ». Le monde avait deux
+cent soixante-neuf villes, mais **quarante-sept seulement avaient une fiche** —
+leur fleuve, leurs collines, leur palette, leurs monuments aux vraies
+coordonnées. Les deux cent vingt-deux autres sortaient de onze gabarits : des
+rues, des devantures, des voitures, et rien de ce qui fait qu'on RECONNAÎT une
+ville. Budapest sans le Danube, c'est une ville de plus.
+
+**Ce que ça change.** Douze villes ont leur géographie et leurs monuments,
+choisies parce qu'un enfant les reconnaît à leur FORME, pas à un panneau :
+
+| | ce qu'on y voit maintenant |
+| --- | --- |
+| **Édimbourg** | le château sur son rocher, Arthur's Seat, Calton Hill |
+| **Dublin** | la Liffey, le Spire, Christ Church, le Ha'penny Bridge |
+| **Budapest** | le Danube, Buda boisée à l'ouest, Pest bâtie à l'est |
+| **Milan** | le Duomo et sa forêt de flèches, le Castello et son parc |
+| **Naples** | le golfe, le Vomero, le Castel dell'Ovo debout dans l'eau |
+| **Séville** | le Guadalquivir, la Giralda, la Torre del Oro, les Setas |
+| **Montréal** | le Saint-Laurent, le Mont-Royal et sa croix, Habitat 67 |
+| **Boston** | la Charles, le port, le dôme doré du State House |
+| **La Nouvelle-Orléans** | le méandre du Mississippi qui enlace la ville |
+| **Santiago** | le Cerro San Cristóbal, Santa Lucía, le Mapocho |
+| **Alexandrie** | le port en croissant, le fort de Qaitbay sur le site du Phare |
+| **Melbourne** | la Yarra, le damier de Hoddle en oblique, le MCG |
+
+Soixante et un monuments de plus — cent quarante-deux → **deux cent trois** — et
+les villes à monuments passent de quarante-six à **cinquante-huit**.
+
+**Et deux couleurs fausses, corrigées pour les 269 villes.** La souche de
+cheminée était en rouge de signalisation : le rouge que la v200 avait chassé
+des MURS parce qu'il donnait aux villes cet air de briques de plastique
+signalé sur Rome. Il était resté deux lignes plus loin dans la même fonction,
+sur une construction posée AU-DESSUS du toit — donc celle qu'on voit du ciel.
+Mesuré au sommet de chaque colonne bâtie : Rome 26 %, Édimbourg 23 %,
+Séville 23 %, Montréal 16 %. Et `roche: true` rendait du beige : le basalte
+noir du rocher d'Édimbourg faisait une dune de sable au milieu de la ville.
+
+**Le sol des enfants n'a pas bougé d'une colonne.** Une seule des deux cent
+vingt-trois villes engendrées tombe dans la fenêtre d'empreinte [−700, 700] —
+Cologne — et elle reste générique exprès. Les deux empreintes de `plafond.js`
+sont donc identiques : douze villes détaillées sans une seule colonne de relief
+déplacée, et aucune double mesure à payer.
+
+**Ce qui le prouve.** Portail complet vert, treize suites. Trois témoins de
+`carteMonde.js` : les deux cent trois monuments se dressent chacun chez lui ;
+chaque ville a son eau là où la géographie la met — dix signatures neuves, de
+la Liffey au Mississippi — et son centre au sec ; et **un témoin neuf**, chaque
+monument tient dans le disque de sa ville, boîte comprise.
+
+Ce dernier est le contrôle du générateur de brouillon rendu PERMANENT, et il
+existe parce que ce défaut-là est invisible au témoin de hauteur : un monument
+hors du disque se dresse quand même, mais le terrain sous lui n'est plus celui
+que la fiche façonne — la colline sur laquelle il devait être n'existe pas.
+Vérifié rouge sur le vrai défaut écrit en route (Naples à l'échelle 12 :
+« Castel dell'Ovo déborde de 3 blocs »), vert une fois l'échelle corrigée.
+
+**Et ce que les captures ont trouvé, qu'aucun témoin ne voyait.** Les deux
+couleurs ci-dessus, la note de capture elle-même — `CLAUDE.md` disait de juger
+à `rr=9` quand le jeu rend à seize sur ordinateur et douze sur tablette, si
+bien qu'on jugeait sur MOINS que ce que l'enfant voit — et l'entorse des Andes
+de Santiago, écrite puis RETIRÉE : à cette taille une colline est un dôme, pas
+une chaîne. Une entorse qui ne rend pas ce qu'elle promet est un défaut qu'on a
+écrit exprès. Le dôme parti, la capture montre les crêtes enneigées du relief
+réel : les Andes étaient là depuis toujours.
 ## v226 — Les villes ne sont plus vides quand on y arrive
 
 **Pourquoi.** Max, deux fois : « clairement pas de piétons, pas de vie dans les

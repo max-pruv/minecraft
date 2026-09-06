@@ -1230,6 +1230,75 @@ marge, elle, est en KILOMÈTRES — corrigée au bloc près elle devenait trop
 courte, et Beyrouth, Koweït et Reykjavik perdaient leur rivage, parce que le
 planisphère du jeu a des mailles d'une cinquantaine de kilomètres.
 
+### Faire passer une ville du gabarit à la fiche
+
+Le monde a deux cent soixante-neuf villes. Une **fiche** porte la géographie
+d'une ville — son fleuve, ses collines, sa mer, sa palette, ses monuments aux
+vraies latitudes — ; un **gabarit** (`ARCHETYPES`) ne donne que des rues, des
+devantures et des voitures. La différence, pour un enfant, c'est de reconnaître
+la ville ou pas. La promotion se fait par lots d'une douzaine (v227 pour le
+premier), et cinq règles la gouvernent.
+
+- **LE RAYON VIENT DU REGISTRE, JAMAIS DE LA FICHE.** `fabrique` écrase
+  `f.rayon` par `ancre.r` — c'est déjà le cas, et c'est ce qui garantit qu'une
+  promotion ne change NI la découpe « hors villes » de `plafond.js`, NI les
+  marges entre disques. Une ville promue ne bouge pas d'un bloc sur la carte.
+- **UNE VILLE PROMUE NE S'ENGENDRE PLUS.** `VILLES_MONDE` concaténait les fiches
+  ET toutes les villes de `villes200.js`. Sans filtre, une ville qui reçoit sa
+  fiche resterait AUSSI dans la liste engendrée : deux villes à la même ancre,
+  deux trames superposées, et le témoin des monuments comptant deux fois le
+  même. Le filtre (`.filter((v) => !FICHES[v.cle])`) ne coûte rien tant
+  qu'aucune ne l'est — c'est pour cela qu'il faut le poser AVANT d'en promouvoir
+  une, pas après.
+- **L'ÉCHELLE EST UN RÉSULTAT, PAS UN GOÛT — elle se choisit pour que les
+  monuments TOMBENT DANS LE DISQUE.** À rayon fixé, c'est le seul degré de
+  liberté. Édimbourg est descendue à 16 blocs/km pour qu'Arthur's Seat entre,
+  Alexandrie à 8 pour la pointe de Qaitbay, Naples de 12 à 11 parce que le
+  Castel dell'Ovo débordait de trois blocs. **Le défaut d'une échelle trop
+  grande est INVISIBLE au témoin de hauteur** : le monument se dresse quand
+  même, mais le terrain sous lui n'est plus celui que la fiche façonne — la
+  colline sur laquelle il devait être n'existe pas, et la ville s'arrête avant
+  lui. D'où le témoin « chacun tient dans le disque de sa ville, boîte
+  comprise » (`carteMonde.js`), et le drapeau `dehors: true` pour les trois
+  monuments qui sont dehors POUR DE VRAI (l'Atomium à Heysel, le panneau
+  Hollywood, le Burj al Arab). Sans ce drapeau, la règle ne se distinguerait pas
+  de l'erreur qu'elle doit attraper.
+- **CE QUI TOMBE DANS LA FENÊTRE D'EMPREINTE SE MESURE, IL NE SE SUPPOSE PAS.**
+  Une fiche déplace le sol DANS son disque (fleuve, collines, mer) : toute ville
+  promue à l'intérieur de [−700, 700] exige la double empreinte de l'invariant 1.
+  Mesuré sur les deux cent vingt-trois villes engendrées : **une seule y tombe,
+  Cologne** (659, −417). La laisser générique suffit à ne rien payer — et c'est
+  la seule raison pour laquelle le premier lot n'a pas eu de double empreinte.
+  Le jour où Cologne est promue, la forme canonique s'applique.
+- **AVANT D'AJOUTER UNE GÉOGRAPHIE À UNE FICHE, ON REGARDE CE QUE LE MONDE REND
+  DÉJÀ LÀ.** J'ai fabriqué une « cordillère » pour Santiago et déclaré l'entorse
+  dans la fiche, au motif que sans les Andes Santiago n'est plus Santiago. La
+  capture aérienne a tranché : à un rayon de soixante-huit blocs une colline est
+  un DÔME, pas une chaîne — un dôme gris pelé posé sur le quartier est. **Une
+  entorse qui ne rend pas ce qu'elle promet n'est pas une entorse, c'est un
+  défaut qu'on a écrit exprès**, et elle se retire. Le dôme parti, la capture
+  montre des crêtes enneigées au nord-est : le relief réel de `terre.js`. Les
+  Andes étaient là depuis toujours, et ma colline les CACHAIT.
+- **CE QU'UNE CAPTURE TROUVE, AUCUN TÉMOIN NE LE VOIT.** Le premier lot en a
+  rendu trois d'un coup, toutes dans la grammaire partagée des 269 villes : la
+  souche de cheminée en `brique(0)`, le rouge que la v200 avait chassé des murs
+  et laissé DEUX LIGNES plus loin dans la même fonction (26 % du paysage de
+  toits de Rome, et posé au-dessus du toit, donc c'est lui qu'on voit du ciel) ;
+  `roche: true` qui rendait du beige là où il faut du basalte ; et la note de
+  capture elle-même, qui disait `rr=9`. Aucune des trois n'est visible d'un
+  témoin : celui qui compte le verre compte le verre.
+- **LE BROUILLON MESURE, IL N'ÉCRIT PAS.** Le générateur de brouillon prend les
+  fiches RÉELLES (une copie de `src/` où l'on exporte `FICHES` et `eauDeVille`)
+  et répond à quatre questions : le centre est-il au sec, chaque monument est-il
+  dans le disque, chaque monument est-il au sec, chaque lieu nommé tombe-t-il
+  dans la ville. Il a écarté Phoenix Park (deux fois le rayon de Dublin), le
+  stade olympique de Montréal, San Siro — et il a trouvé deux fleuves qui
+  noyaient un monument : la Charles sur Old North Church, la Yarra sur Flinders
+  Street. **Un monument dans l'eau n'est pas toujours un défaut** — le Rialto,
+  le Ponte Vecchio, le Castel dell'Ovo et le fort de Qaitbay y sont pour de vrai
+  — c'est un point à REGARDER, pas un verdict. Ce qui est un verdict, c'est le
+  débordement du disque.
+
 ### La nuit, et pourquoi elle était noire
 
 Le monde entier partage UN matériau (`solidMaterial`) dont la couleur EST
