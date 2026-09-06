@@ -223,7 +223,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (13 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → **59 min** (v224) |
+| **Complète** (13 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → **48 min** (v225) |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
@@ -315,12 +315,22 @@ Trois choses en sortent, et la troisième est la plus importante.
 - **Une attente qui expire doit LE DIRE.** Chaque appel affiche sa durée et
   signale s'il a atteint sa limite. Sans cela on y remet deux minutes sans que
   personne ne le remarque — c'est ce qui s'est passé pendant deux versions.
-- **Et le relevé neuf montre que ce n'est pas fini** : les trente-huit appels
-  tapent ENCORE leur limite, avec une charge qui reste entre 3,0 et 5,7 et ne
-  repasse jamais sous le seuil de 2,0. Sur une machine à quatre cœurs, une
-  charge de 3 à 4 avec un navigateur ouvert est normale, pas une surcharge :
-  le seuil est faux, donc l'attente est constante par construction. À
-  remesurer avant de toucher — c'est écrit dans `TASKS.md`.
+- **ET LE SEUIL ÉTAIT SOUS LE COÛT D'UNE SEULE PAGE (v225).** La question à
+  poser n'était pas « quel seuil ? » mais « que coûte une page ? » :
+
+  ```
+  machine au repos      0,14
+  UNE page ouverte      1,16 → 2,02 → 3,08 → 3,77 → 4,04   (régime établi)
+  DEUX pages ouvertes   4,13 → 4,66 → 4,83
+  ```
+
+  Sur quatre cœurs, une seule page porte déjà la charge à près de 4. À
+  `chargeMax = 2.0` la condition était donc INATTEIGNABLE dès qu'un navigateur
+  était ouvert. Porté à **4,2**, il sépare ce que les mesures séparent — une
+  page passe, deux pages attendent — et le portail tombe de **59 à 48
+  minutes**, treize suites vertes. Une constante de seuil se règle sur le coût
+  MESURÉ de ce qu'elle est censée laisser passer, jamais sur une intuition de
+  ce qui « paraît chargé ».
 
 **ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ — QUATRE FOIS DE SUITE (v224).**
 Devant « pourquoi ça prend autant de temps », j'ai avancé quatre explications

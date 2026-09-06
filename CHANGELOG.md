@@ -20,6 +20,58 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v225 — Et le portail passe de 59 à 48 minutes
+
+**Pourquoi.** La v224 avait ramené la limite de `souffler()` de deux minutes à
+trente secondes. Le relevé qu'elle a livré du même coup disait que ce n'était
+pas fini : **les trente-huit appels tapaient encore leur limite**, avec une
+charge qui restait entre 3,0 et 5,7 et ne repassait jamais sous le seuil de
+2,0. Une attente qui expire à tous les coups n'est pas une condition.
+
+**Ce que ça change.** La question posée à la machine, plutôt qu'un chiffre
+choisi : **que coûte une page ?**
+
+```
+machine au repos          0,14
+UNE page ouverte          1,16 → 2,02 → 3,08 → 3,77 → 4,04   (régime établi)
+DEUX pages ouvertes       4,13 → 4,66 → 4,83
+```
+
+Sur quatre cœurs, **une seule page de jeu porte déjà la charge à près de 4**.
+Le seuil de 2,0 était donc SOUS le coût d'une page : inatteignable dès qu'un
+navigateur était ouvert, et l'attente était constante *par construction*. Ce
+n'était pas un réglage trop prudent, c'était un délai fixe déguisé en
+condition.
+
+4,2 sépare ce que les mesures séparent : une page passe sans attendre, deux
+pages attendent — et c'est bien la concurrence DANS une suite que la v220
+avait mesurée comme coûteuse (42,9 → 20,8 → 14,8 images/s). Le relevé par
+tablette le montre à l'œuvre : `souffler 0,0 s` quand une seule page est
+ouverte, `30,0 s` quand il y en a plusieurs.
+
+| suite | v223 | v224 | **v225** |
+| --- | --- | --- | --- |
+| `reseau.js` | 29 min 46 s | 26 min 48 s | **18 min 13 s** |
+| `reglages.js` | 19 min 41 s | 7 min 14 s | **6 min 20 s** |
+| `carte.js` | 10 min 49 s | 4 min 17 s | **3 min 43 s** |
+| **le portail** | **83 min** | **59 min** | **≈ 48 min** |
+
+**Ce qui le prouve.** Les treize suites vertes avec le seuil neuf. Le témoin de
+fumée reste rouge sur la vie de rue — dette déclarée dans `TASKS.md`, prouvée
+en production (rouge deux fois sur trois sur `origin/main`, suite rejouée seule
+des deux côtés dans un arbre séparé), et sans rapport avec cette livraison.
+
+**Et le conteneur a redémarré au milieu du portail** — la reprise a fait son
+travail exactement comme elle est écrite : douze verdicts déjà tombés, gardés
+parce que l'empreinte du code n'avait pas bougé d'un octet (`banc.js` est dans
+l'empreinte de CHAQUE suite, ce qui rend la reprise sûre ici), et seule la
+treizième a été rejouée. Une reprise ne vaut que par la finesse de son
+empreinte ; celle-ci le vaut.
+
+Cette version ne change rien au jeu — elle change le banc.
+
+---
+
 ## v224 — Le portail passe de 83 à 59 minutes
 
 **Pourquoi.** Max : « pourquoi ça prend autant de temps de construire, et

@@ -232,7 +232,7 @@ class Banc {
     // couper. On prend donc le seuil au-dessus duquel une suite est vraiment
     // en surcharge (3,0 sur quatre cœurs) et un budget qui ne peut pas coûter
     // la suite : vingt secondes.
-    await souffler(20000, 3.0);
+    await souffler(20000);   // le seuil par défaut : 3,0 était lui aussi sous le coût d'UNE page
     // `tactile` reproduit une tablette : c'est ce que la famille a réellement
     // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
     const ctx = await this.navigateur.newContext({
@@ -631,14 +631,28 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
 // fichier d'à côté, a gardé ses deux minutes deux versions de plus. C'est
 // mot pour mot le piège du verre dans les murs, payé quatre fois.
 //
-// Ce qui compte VRAIMENT reste en place : `banc.joueur()` souffle déjà à
-// 20 s / charge 3, et deux pages ouvertes EN MÊME TEMPS font tomber la
-// cadence de 42,9 à 14,8 images/s — c'est la concurrence DANS une suite qui
-// coûte, pas la trace de la suite d'avant.
+// ET LE SEUIL ÉTAIT SOUS LE COÛT D'UNE SEULE PAGE — mesuré, sur ces quatre
+// cœurs :
 //
-// Chaque appel dit sa durée : une attente qui expire doit se voir, sinon on
-// remet deux minutes sans que personne ne le remarque.
-async function souffler(limiteMs = 30000, chargeMax = 2.0) {
+//   machine au repos      0,14
+//   UNE page ouverte      1,16 → 2,02 → 3,08 → 3,77 → 4,04   (régime établi)
+//   DEUX pages ouvertes   4,13 → 4,66 → 4,83
+//
+// À `chargeMax = 2.0`, la condition était donc INATTEIGNABLE dès qu'un
+// navigateur était ouvert : `souffler` n'attendait pas que la charge
+// redescende, il attendait sa limite. Un délai fixe déguisé en condition, et
+// c'est pour cela qu'il expirait trente-huit fois sur quarante-huit.
+//
+// 4,2 sépare ce que les mesures séparent : une page (≈ 3,8) passe sans
+// attendre, deux pages (≈ 4,7) attendent — et c'est bien la concurrence DANS
+// une suite que la v220 avait mesurée comme coûteuse, 42,9 → 20,8 → 14,8
+// images par seconde. La trace de la suite d'avant, elle, ne coûte rien.
+//
+// La marge est étroite (3,8 contre 4,7) et l'instrument est mauvais — la
+// charge d'une minute RETARDE de cent secondes. C'est pourquoi chaque appel
+// dit sa durée : une attente qui expire doit se voir, sinon on remet deux
+// minutes sans que personne ne le remarque.
+async function souffler(limiteMs = 30000, chargeMax = 4.2) {
   const charge = () => {
     try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
     catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
