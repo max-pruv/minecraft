@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v231 — L'avion penche dans son virage
+
+**Pourquoi.** Max, après avoir volé : « ça serait bien que quand on vole avec
+un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie droite. »
+Depuis la v228 le joystick tient le cap, et l'appareil tournait **à plat** —
+comme une maquette qu'on pousse sur une table. Un virage se sentait aux
+commandes et ne se voyait nulle part.
+
+**Ce que ça change.** Les trois appareils s'inclinent maintenant dans leurs
+virages, jusqu'à trente degrés — le virage d'un avion de ligne en croisière,
+pas de la voltige. On entre dans l'inclinaison et l'on en sort progressivement,
+à la VIVACITÉ de la fiche : le chasseur s'incline sec, le Concorde prend son
+temps, exactement comme ils virent. C'est purement visuel : le cap vient
+toujours du joystick et la trajectoire ne change pas d'un bloc. Lâcher les
+commandes remet les ailes à plat, et descendre aussi.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, tous deux rouges sur
+l'ancien code, et le SIGNE vérifié en capture avant d'être écrit — à gauche
+l'aile gauche descend, à droite c'est le miroir exact. Un témoin qui ne
+mesurerait que l'amplitude laisserait passer une inclinaison à l'envers, ce
+qui est pire que pas d'inclinaison. Le second témoin exige d'abord que
+l'appareil se soit penché avant de vérifier qu'il se redresse : sans cette
+clause il serait vert à vide sur un code qui ne s'incline jamais. Portail
+complet vert.
+
+---
+
 ## v230 — Deux voitures de plus, et le jeu accepte désormais un modèle qu'on lui donne
 
 **Pourquoi.** Max a déposé trois fichiers `.glb` : « ajoute cette voiture ».

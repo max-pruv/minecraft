@@ -308,6 +308,7 @@ export function initFun(ctx) {
       player.pilote = null;
       player.vitesseAvion = undefined;
       player.avionEnVol = false;
+      player.roulisAvion = 0;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -1654,6 +1655,16 @@ export function initFun(ctx) {
     a.state = 'idle'; a.stateTime = 5; a.cryTimer = 99;
     a.mesh.position.copy(a.pos);
     a.mesh.rotation.y = a.yaw + Math.PI;
+    // L'INCLINAISON SE COMPOSE AVANT LE CAP, sinon l'appareil bascule autour
+    // de l'axe du MONDE et non du sien : en virage serré on le verrait pencher
+    // de travers. L'ordre 'YXZ' applique le roulis (z) en premier, dans le
+    // repère du modèle, puis le cap.
+    if (player.pilote) {
+      a.mesh.rotation.order = 'YXZ';
+      a.mesh.rotation.z = player.roulisAvion || 0;
+    } else if (a.mesh.rotation.z) {
+      a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
+    }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;

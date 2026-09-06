@@ -1500,6 +1500,83 @@ async function avancerUnDemiSeconde(p, depart) {
       Object.values(decollage).every((h) => h >= 10),
       `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
 
+    // UN AVION S'INCLINE DANS SON VIRAGE — demande de Max : « quand on vole
+    // avec un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie
+    // droite. »
+    //
+    // ON MONTE PAR LE BOUTON, et c'est indispensable : l'inclinaison est
+    // rendue dans `fun.js`, sur le maillage de la MONTURE. Poser
+    // `player.pilote` à la main — ce que font les témoins de vitesse
+    // ci-dessus — fait voler le joueur sans qu'aucun avion ne soit dessiné :
+    // on mesurerait un nombre que personne ne voit.
+    //
+    // Et l'on éprouve LE SIGNE, pas seulement l'amplitude. Une inclinaison
+    // à l'envers est pire que pas d'inclinaison : l'appareil pencherait vers
+    // l'EXTÉRIEUR du virage, ce qu'aucun avion ne fait. Le signe a été
+    // vérifié en capture avant d'être écrit ici : à gauche l'aile gauche
+    // descend, à droite c'est l'inverse.
+    const roulis = await tab.evaluate(async () => {
+      const g = window.__game;
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      g.player.yaw = 0; g.player.pitch = 0;
+      g.player.pos.set(0, 90, 0);
+      // DEVANT SOI : `animalManager.monture()` — ce que le bouton appelle —
+      // refuse ce qui n'est pas dans l'axe du regard.
+      const d = { x: -Math.sin(g.player.yaw), z: -Math.cos(g.player.yaw) };
+      const avion = g.animalManager.invoquer('avionligne',
+        Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3));
+      if (!avion) return { err: 'aucun avion posé' };
+      document.getElementById('ride-btn').click();
+      await tenirSecondes(0.5);
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes' };
+      g.player.decollerOuSePoser();
+      await tenirSecondes(4);
+      const pencher = async (touche) => {
+        g.player.keys.add(touche);
+        await tenirSecondes(2.5);
+        const z = avion.mesh.rotation.z;
+        g.player.keys.delete(touche);
+        await tenirSecondes(2);
+        return { penche: +z.toFixed(3), rendu: +avion.mesh.rotation.z.toFixed(3) };
+      };
+      const gauche = await pencher('KeyA');
+      const droite = await pencher('KeyD');
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return { gauche, droite, ordre: avion.mesh.rotation.order };
+    });
+    // Un dixième de radian, c'est six degrés : en dessous, personne ne voit
+    // rien. L'ancien code rend zéro des deux côtés.
+    const PENCHE = 0.1;
+    verifier('l\'avion s\'incline dans ses virages, et du bon côté',
+      !roulis.err && !!roulis.gauche && roulis.gauche.penche > PENCHE
+        && roulis.droite.penche < -PENCHE,
+      `virages : ${JSON.stringify(roulis)}`);
+    // ET IL SE REDRESSE QUAND ON LÂCHE. Une aile qui reste penchée sur une
+    // ligne droite est un appareil en perdition, pas un avion.
+    //
+    // ON EXIGE D'ABORD QU'IL SE SOIT PENCHÉ. Sans cette clause le témoin est
+    // VERT À VIDE sur l'ancien code — qui ne s'incline jamais, donc ne reste
+    // jamais penché — et un témoin vert des deux côtés ne prouve rien
+    // (leçon de la v220).
+    verifier('l\'avion se remet à plat quand on lâche les commandes',
+      !roulis.err && !!roulis.gauche
+        && roulis.gauche.penche > PENCHE && roulis.droite.penche < -PENCHE
+        && Math.abs(roulis.gauche.rendu) < PENCHE
+        && Math.abs(roulis.droite.rendu) < PENCHE,
+      `après avoir lâché : ${JSON.stringify(roulis)}`);
+
     // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
     // ROUES (v230).
     //
