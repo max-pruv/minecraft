@@ -1471,6 +1471,56 @@ une erreur à ne pas refaire.
   l'autre, c'est la MOYENNE (1,5 contre 5,25), pas le creux le plus frappant.
   Un verdict se pose sur ce qui se reproduit.
 
+**UNE CADENCE DE MÉNAGE COMPTE EN TEMPS RÉEL, PAS EN `dt` (v226).** C'est la
+cause, enfin trouvée, des « villes vides » que Max a signalées deux fois —
+« clairement pas de piétons, pas de vie dans les villes » et « it took a while
+to see cars in paris ». Elle n'était ni dans un rayon, ni dans un seuil, ni
+dans une répartition : elle était dans le minuteur.
+
+`main.js` borne `dt` à un vingtième de seconde, et c'est JUSTE — sans cette
+borne, une chute de cadence fait traverser les murs (leçon de Washington).
+Mais un minuteur écrit `minuteur -= dt` hérite de la borne. Relevé en
+traversant Paris, arrêt par arrêt :
+
+| arrêt | cadence | tours de rapatriement | passants sous 62 blocs |
+| --- | --- | --- | --- |
+| 1 | 6,9 im/s | 18 | 18 |
+| 3 | **2,7** | **0** | 7 |
+| 4 | **2,8** | **0** | 3 |
+| 5 | 3,0 | 18 | 18 |
+
+À 2,75 images par seconde, deux secondes de minuteur réclament quarante
+images, soit **quatorze secondes réelles**. Et la cadence s'effondre
+précisément quand l'enfant ARRIVE quelque part et que les morceaux se
+chargent : **la ville était vide au moment exact où il la regardait**, et
+pleine dès qu'il n'y faisait plus attention.
+
+Trois choses en sortent.
+
+- **Ce qui suit `dt` et ce qui ne doit pas.** Une ANIMATION suit le temps du
+  jeu — une bête qui fuit, une balle qui rebondit, une flamme qui s'éteint
+  ralentissent avec le reste, et c'est cohérent. Une cadence de MÉNAGE —
+  repeupler, faire naître une voiture, regarnir un poste de stationnement —
+  décide si le monde EXISTE autour de l'enfant : elle ne doit rien devoir à la
+  vitesse d'affichage. `src/cadence.js` porte la distinction, et les quatre
+  cadences de ménage y passent (passants, circulation, garagiste,
+  aéroportiste).
+- **La leçon était déjà écrite, pour autre chose.** « Comme `main.js` borne
+  `dt` à un vingtième, sous cette barre le monde avance moins vite que le
+  temps réel » : noté pour le métro de Washington, à propos du DÉPLACEMENT du
+  joueur. Personne ne l'avait appliquée aux minuteurs. C'est, une fois de
+  plus, la portée du remède et non la règle qui manquait.
+- **Et deux versions de remèdes ont visé à côté avant celui-ci.** La v217 a
+  réglé le seuil de rapatriement sur la portée de rendu, la v218 la
+  répartition sur le champ de vision : les deux étaient justes, et aucune ne
+  pouvait suffire, parce que la boucle qui les applique ne tournait pas.
+  **Devant un symptôme qui revient après deux corrections justes, on cesse de
+  régler et l'on va voir si le code s'exécute.** Un compteur posé dans la
+  boucle l'a dit en une exécution : zéro tour en six secondes.
+
+Mesuré après : le pire de la traversée passe de **3 à 16** passants (seuil 3),
+et la ville se peuple en **une seconde** à l'arrivée au lieu de six à huit.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les

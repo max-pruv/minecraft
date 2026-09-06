@@ -332,15 +332,45 @@ const descendre = async (p, ms) => {
     const [mx, mz] = ilots[0];
     const solM = await tab.evaluate(({ x, z }) =>
       window.__game.world.terrainHeight(x, z), { x: mx, z: mz });
+    // ON MARCHE JUSQU'À ÊTRE ENTRÉ, PAS PENDANT 2,2 SECONDES — même remède
+    // qu'à l'Air et l'Espace trente lignes plus bas, et pour la même raison.
+    //
+    // `avancer(2200)` compte en temps RÉEL, quand le joueur, lui, avance en
+    // `dt` borné à un vingtième de seconde. À trois images par seconde, ces
+    // 2,2 secondes ne valent plus que sept images, soit UN bloc au lieu des
+    // six qui séparent le trottoir de la porte : le témoin rougissait sur le
+    // perron. Vert rejoué seul, deux fois, sur la branche ET sur `origin/main`
+    // — c'était une mesure du banc, pas de la maison.
+    //
+    // Et « ne plus avancer » se constate sur TROIS pas : un mur arrête à
+    // chaque pas, un hoquet du banc à un seul.
+    //
+    // ENFIN, IL DIT CE QU'IL A VU. Ce témoin ne rendait AUCUN détail : son
+    // rouge ne disait ni où l'on s'était arrêté, ni si un mur barrait, ni
+    // quelle façade avait été essayée. Un rouge muet ne se démonte pas.
     let entre = false;
+    let dernier = null;
     for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       await poserLe(tab, mx + dx * 6, solM + 2, mz + dz * 6, capVers(-dx, -dz));
       await dormir(300);
-      await avancer(tab, 2200);
-      const dedansM = await autour(tab);
-      if (dedansM.plafond > 0 && dedansM.plafond < 12) { entre = true; break; }
+      let etat = await autour(tab);
+      let avant = null;
+      let immobile = 0;
+      for (let pas = 0; pas < 12 && !(etat.plafond > 0 && etat.plafond < 12); pas++) {
+        await avancer(tab, 700);
+        etat = await autour(tab);
+        const bouge = !avant || Math.hypot(etat.px - avant.px, etat.pz - avant.pz) >= 0.05;
+        immobile = bouge ? 0 : immobile + 1;
+        if (immobile >= 3) break;
+        avant = etat;
+      }
+      dernier = { face: `${dx},${dz}`, ...etat };
+      if (etat.plafond > 0 && etat.plafond < 12) { entre = true; break; }
     }
-    verifier('et on entre chez les gens : chaque îlot a sa porte', entre);
+    verifier('et on entre chez les gens : chaque îlot a sa porte', entre,
+      dernier ? `façade ${dernier.face}, plafond à ${dernier.plafond}, ${dernier.murs} mur(s),`
+        + ` à (${Math.round(dernier.x)}, ${Math.round(dernier.z)}) pour une maison en (${mx}, ${mz})`
+        : 'aucun îlot bâtissable trouvé');
 
     // --- 3. le métro : de la rue au quai --------------------------------------
     const quai = D.QUAIS_METRO.find((q) => q.nom === 'Smithsonian');

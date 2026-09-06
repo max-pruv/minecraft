@@ -14,6 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
+import { cadence } from './cadence.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -219,7 +220,11 @@ let vehicules = null;
 // ICI, avant le code d'amorçage qui les assigne : déclarés plus bas, c'était
 // la zone morte temporelle, et le jeu ne démarrait plus du tout.
 let circulationsEnAttente = [];
-let circulationTimer = 0;
+// EN TEMPS RÉEL, PAS EN `dt` — voir `cadence.js`. Ces trois cadences décident
+// si le monde est peuplé autour de l'enfant ; écrites `-= dt`, elles
+// ralentissaient exactement quand la cadence d'affichage s'effondre, c'est-à-
+// dire à l'arrivée dans une ville. « It took a while to see cars in paris. »
+const circulationPrete = cadence(2500);
 let passants = null;
 let poissons = null;
 
@@ -1098,13 +1103,11 @@ function emojiBurst(emojis, n = 18) {
 // quand un enfant approche — et une voiture emmenée au loin « rentre à
 // l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
 const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
-let garagisteTimer = 0;
+const garagistePret = cadence(3000);
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   if (poissons) poissons.update(dt);
-  circulationTimer -= dt;
-  if (circulationTimer > 0 || !vehicules) return;
-  circulationTimer = 2.5;
+  if (!vehicules || !circulationPrete()) return;
   for (let i = circulationsEnAttente.length - 1; i >= 0; i--) {
     const tr = circulationsEnAttente[i];
     if (Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z) < 220) {
@@ -1128,11 +1131,9 @@ function animerLesVilles(dt) {
 // même plan finissent toujours par diverger, et l'on garerait des avions dans
 // l'herbe. Sur une base militaire, ce sont trois chasseurs — c'est de là
 // qu'ils partent.
-let aeroportisteTimer = 0;
+const aeroportistePret = cadence(3000);
 function aeroportiste(dt) {
-  aeroportisteTimer -= dt;
-  if (aeroportisteTimer > 0) return;
-  aeroportisteTimer = 3;
+  if (!aeroportistePret()) return;
   // QUATRE-VINGT-DIX BLOCS, ET CE N'EST PAS LE REMÈDE QUE JE CROYAIS.
   //
   // J'ai d'abord ramené cette portée de 130 à 90 en accusant les trois
@@ -1157,9 +1158,7 @@ function aeroportiste(dt) {
 }
 
 function garagiste(dt) {
-  garagisteTimer -= dt;
-  if (garagisteTimer > 0) return;
-  garagisteTimer = 3;
+  if (!garagistePret()) return;
   const pu = USINE();
   if (Math.hypot(player.pos.x - (pu.x + 44), player.pos.z - (pu.z + 7)) > 80) return;
   for (const [du, dv] of PLACES_GARAGE) {

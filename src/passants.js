@@ -20,6 +20,7 @@
 // « passant » de personnages.js — avec quelques robes de la tenue « dame ».
 
 import * as THREE from 'three';
+import { cadence } from './cadence.js';
 import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
@@ -146,7 +147,10 @@ export function createPassants({ scene, world, player, toast, npcs }) {
     ...CITIES.map((c, i) => ({ nom: c.name, x: c.x, z: c.z, r: c.r, graine: i * 53 + 11 })),
   ].map((s) => ({ ...s, peuple: null }));
 
-  let minuteur = 0;
+  // Le rapatriement bat en TEMPS RÉEL : voir `cadence.js`. Écrit `minuteur -= dt`,
+  // il ralentissait avec la cadence d'affichage — donc il ne passait plus du tout
+  // à l'arrivée dans une ville, quand les morceaux se chargent.
+  const cestLHeure = cadence(2000);
 
   // OÙ POSER QUELQU'UN : autour de L'ENFANT, pas autour du centre de la ville.
   //
@@ -239,10 +243,8 @@ export function createPassants({ scene, world, player, toast, npcs }) {
   // personne le doubler en boucle.
   let tour = 0;
 
-  function update(dt) {
-    minuteur -= dt;
-    if (minuteur > 0) return;
-    minuteur = 2;
+  function update() {
+    if (!cestLHeure()) return;
     tour++;
     for (const site of sites) {
       // Le réveil se mesure au BORD de la ville : une ville de deux cents
