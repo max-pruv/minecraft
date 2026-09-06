@@ -24,8 +24,16 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 Une passe ville par ville sur la dette déclarée depuis la v211 : des avenues
 qui existent, qu'un enfant peut nommer, et sur lesquelles aucun circuit de
-voitures ne passait. Chaque ville a son entrée ci-dessous ; chacune a été
-livrée séparément, portail vert à chaque fois.
+voitures ne passait. Les quatre villes que la v211 avait laissées derrière elle
+— San Francisco, Lille, Londres, Washington — ont chacune leur entrée
+ci-dessous ; chacune a été livrée séparément, portail vert à chaque fois.
+
+Et chacune a une cause DIFFÉRENTE, ce qui est la leçon de la passe : à San
+Francisco les avenues n'étaient pas des rues ; à Lille l'une était une impasse
+et l'autre collée à sa voisine ; à Londres Bloomsbury n'avait que deux liens
+nord-sud, et le témoin qui gardait la dette se trompait ; à Washington la
+grille était simplement saturée. On mesure chaque avenue avant de chercher un
+remède commun.
 
 ### San Francisco — six avenues qui n'étaient pas des rues
 
@@ -150,6 +158,47 @@ laquelle l'échange a été cherché. Le témoin remesure désormais la part de 
 LONGUEUR d'une avenue qui porte un convoi à moins de deux blocs ; rejoué sur
 `origin/main`, il est **rouge** et nomme précisément les deux rues que cette
 livraison fait rouler. La dette déclarée passe de quatorze avenues à treize.
+
+### Washington — Virginia Avenue, et une grille saturée
+
+**Pourquoi.** Virginia Avenue NO n'avait aucune boucle depuis la v205 : elle
+meurt sur Constitution à la 21e Rue, comme la vraie, et rien ne remontait de là
+vers K Street. `TASKS.md` nommait la piste — « la 21e ou la 23e Rue » — sans
+qu'elle ait été tracée.
+
+**Et la grille était SATURÉE.** Mesuré : sur vingt-six mille chaînes
+candidates, **zéro** n'était compatible avec les dix-neuf circuits en place sous
+le seuil de partage de vingt blocs. Dix-neuf convois occupent déjà le
+centre-ville de L'Enfant ; on ne peut rien ajouter sans retirer.
+
+**Ce que ça change.** La 23e Rue NO monte de Constitution à Washington Circle en
+croisant Virginia à Foggy Bottom — une rue de la grille, elle ne pose aucun sol
+de plus. Trois voies gagnent des voitures : **Virginia Avenue NO**,
+**Constitution Avenue** et la 23e Rue.
+
+La 17e Rue, elle, a été essayée et **retirée** : entre Constitution et F Street
+elle traverse le parc de la Maison-Blanche, qui passe avant les voies dans
+`solWashington` — mesuré, neuf blocs de pelouse sur quarante. Une rue qu'on ne
+peut pas tracer ne se force pas ; l'Ellipse fait ici trente blocs de large, à
+peu près sa vraie taille.
+
+**Ce qui le prouve.** Le portail est vert, rejoué **depuis zéro**. La boucle de
+Virginia gêne exactement deux circuits, de vingt-cinq et vingt-sept blocs ; on
+les retire, on la force, on recomble — la passe de réparation de la v216 — et le
+recomblement rend à la 15e Rue ses voitures par un autre chemin, si bien
+qu'**aucune rue ne perd les siennes**. Cinquante voies sur soixante portent un
+convoi, contre quarante-sept ; la pire paire reste à vingt-deux blocs. Aucune
+traversée de monument n'est ajoutée : cinquante-neuf pas dans une emprise sur la
+branche comme sur `origin/main`, mêmes monuments, mêmes comptes.
+
+**Et un trou dans la table des gardiens, signalé et non corrigé.**
+`src/washington.js` déclare pour gardiens `washington.js` et `plafond.js`
+seulement — pas `carte.js` ni `carteMonde.js`, alors que les deux l'importent
+et que `carteMonde.js` mesure ses dix-neuf circuits. Toutes les autres villes
+bâties à la main déclarent les trois. Le portail a donc annoncé « déjà vert sur
+ce code » pour les deux suites qui testent précisément ce qui venait de changer.
+`tests/tout.js` est hors de la zone de cette session : la correction est
+déclarée dans `TASKS.md`, et le portail a été rejoué depuis zéro en attendant.
 
 ---
 

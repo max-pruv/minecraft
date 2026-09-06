@@ -2320,6 +2320,35 @@ choses à savoir avant d'y toucher.
   commence qu'à cinq blocs de l'eau. On ne déplace pas un ruisseau pour une
   chaussée.
 
+**UNE GRILLE PEUT ÊTRE SATURÉE, ET CELA SE MESURE (v223).** Virginia Avenue NO
+n'avait aucune boucle depuis la v205. Mesuré : sur **vingt-six mille** chaînes
+candidates, ZÉRO n'était compatible avec les dix-neuf circuits en place sous le
+seuil de partage de vingt blocs. Devant une avenue qu'on n'arrive pas à
+couvrir, la question n'est donc pas seulement « quelle rue manque » mais
+« reste-t-il de la place ». Trois choses en sortent.
+
+- **La passe de réparation se fait par le MINIMUM de gêneurs.** La meilleure
+  boucle de Virginia (223 blocs, 100 %, virage 92°) n'en gêne que DEUX, de
+  vingt-cinq et vingt-sept blocs. On les retire, on la force, on recomble — et
+  le recomblement rend à la 15e Rue ses voitures par un autre chemin, si bien
+  qu'aucune rue ne perd les siennes. Chercher le gêneur le moins nombreux vaut
+  mieux que tirer au hasard.
+- **UNE RUE QU'ON NE PEUT PAS TRACER NE SE FORCE PAS.** La 17e Rue NO a été
+  essayée puis retirée : entre Constitution et F Street elle traverse le parc de
+  la Maison-Blanche, qui passe avant les voies dans `solWashington` — neuf blocs
+  de pelouse sur quarante, mesurés. L'Ellipse fait ici trente blocs de large,
+  à peu près sa vraie taille : c'est le modèle qui a raison, pas la rue.
+- **ET LA TABLE DES GARDIENS AVAIT UN TROU, sur la ville qui en a le plus
+  besoin.** `src/washington.js` déclare `washington.js` et `plafond.js`
+  seulement, quand toutes les autres villes bâties à la main déclarent aussi
+  `carte.js` et `carteMonde.js` — qui l'importent toutes deux et mesurent ses
+  dix-neuf circuits. Le portail annonce donc « déjà vert sur ce code » pour les
+  deux suites qui testent ce qui vient de changer. La v195 avait déjà payé ce
+  genre de trou (le Bay Bridge planté au milieu de San Francisco) ; la
+  vérification « aucun fichier de `src/` sans gardien » ne voit pas un gardien
+  INCOMPLET. Devant un « déjà vert » sur un fichier qu'on vient de changer, on
+  regarde la table avant de croire le portail.
+
 **Et un témoin qui lit `p[0]` sur des objets `{x, y, z}` compte toujours
 zéro.** `fabriqueCircuits` rend des points-objets ; le premier brouillon du
 compte de jardin les lisait comme des tableaux, et rendait NaN, donc jamais

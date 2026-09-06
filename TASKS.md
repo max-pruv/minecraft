@@ -139,12 +139,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   nommées ; les quatorze ronds-points ont gagné une chaussée et les circuits
   les contournent au lieu de les traverser.
 
-- [ ] **Trois avenues de Washington restent sans circuit** — Virginia Avenue
-  NO, New York Avenue NO et Constitution ouest (de la 17e au Lincoln) ne
-  referment aucune boucle au-dessus du seuil : Virginia meurt sur
-  Constitution à la 21e, New York sur la 15e sans rue de retour, et
-  Constitution ouest longe le bassin sans rien pour boucler. Il faudrait des
-  raccords de plus (la 21e ou la 23e Rue vers K Street), à mesurer.
+- [x] **Trois avenues de Washington restaient sans circuit — FAIT en v223.** La
+  23e Rue NO monte de Constitution à Washington Circle en croisant Virginia à
+  Foggy Bottom, et la passe de réparation a fait le reste : Virginia Avenue NO,
+  Constitution Avenue et la 23e Rue gagnent des voitures, aucune rue ne perd les
+  siennes, cinquante voies sur soixante portent un convoi. New York Avenue NO
+  était déjà dans trois circuits — la dette la nommait à tort.
+- [ ] **`src/washington.js` n'a pas tous ses gardiens** — `tests/tout.js:78`
+  déclare `['washington.js', 'plafond.js']`, quand toutes les autres villes
+  bâties à la main déclarent aussi `carte.js` et `carteMonde.js`. Or les deux
+  importent `washington.js`, et `carteMonde.js` mesure ses dix-neuf circuits,
+  ses ronds-points et le partage des convois. Vu en v223 : le portail annonce
+  « déjà vert sur ce code » pour les deux suites qui testent ce qui vient de
+  changer. La ligne à écrire :
+  `'src/washington.js': ['washington.js', 'plafond.js', 'carte.js', 'carteMonde.js'],`
+- [ ] **La 17e Rue NO ne peut pas être tracée** — entre Constitution et F
+  Street elle traverse le parc de la Maison-Blanche, qui passe avant les voies
+  dans `solWashington` : mesuré, neuf blocs de pelouse sur quarante. L'Ellipse
+  fait trente blocs de large, à peu près sa vraie taille. À reprendre le jour
+  où l'on saura faire longer un parc à une rue.
 
 - [x] **Londres n'a qu'un circuit de voitures — FAIT en v206.** Soixante
   avenues aux vraies coordonnées, choisies pour se croiser (les bouts posés
@@ -208,12 +221,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
   la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. **Paris (v216), San Francisco, Lille et
-  Londres (v223) sont réglés.** Reste
-  Washington : Virginia Avenue, Constitution ouest et cinq rues de la grille.
-  À Londres il demeure treize avenues déclarées sans voitures — la liste vit
-  dans `carteMonde.js`, remesurée en v223 avec une règle qui mesure enfin ce
-  qu'elle annonce. La
+  ne se superpose à aucune autre. **Paris (v216), puis San Francisco, Lille,
+  Londres et Washington (v223) sont réglés** — les quatre villes que la v211
+  avait laissées derrière elle.
+  À Londres il demeure treize avenues déclarées sans voitures et à Washington
+  dix, mais ce sont des dettes MESURÉES, pas des oublis : la liste de Londres
+  vit dans `carteMonde.js`, remesurée en v223 avec une règle qui mesure enfin
+  ce qu'elle annonce, et la grille de Washington est saturée (zéro chaîne sur
+  vingt-six mille compatible avec les circuits en place). La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
   et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
   repasser sur celle du voisin. **Et la méthode est désormais éprouvée** : à

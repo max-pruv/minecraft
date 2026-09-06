@@ -390,6 +390,19 @@ const AVENUES = [
   // la chaussée reste aux colonnes 1 et 2, sans trottoir en plus, pour ne pas
   // mordre un lot) — sauf la 3e et la 17e, qui longent le Mall à leur vraie
   // adresse. Une rue déclarée ici existe même là où la grille s'arrête.
+  // LA RUE QUI MANQUAIT À L'OUEST (v223). Virginia Avenue mourait sur
+  // Constitution à la 21e et Constitution ouest longeait le bassin sans rien
+  // pour boucler : `TASKS.md` nommait la piste depuis la v205 — « la 21e ou la
+  // 23e Rue vers K Street » — sans qu'elle ait été tracée. La voici : de
+  // Constitution à Washington Circle, en croisant Virginia à Foggy Bottom.
+  // C'est une rue de la grille, elle ne pose aucun sol de plus.
+  //
+  // La 17e Rue, elle, a été essayée et RETIRÉE : entre Constitution et F
+  // Street elle traverse le parc de la Maison-Blanche, qui passe avant les
+  // voies dans `solWashington` — mesuré, neuf blocs de pelouse sur quarante.
+  // Une rue qu'on ne peut pas tracer ne se force pas ; l'Ellipse fait ici
+  // trente blocs de large, à peu près sa vraie taille.
+  { nom: '23e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-166, -17], [-169, -33], [-170, -58.5]] },
   { nom: '3e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, 17], [-25.5, -17]] },        // vraie adresse u −27,4 : +2, le bord du parc
   { nom: '17e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-121, 17], [-121, -17]] },         // entre l'obélisque et le mémorial
   { nom: '3e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, -17], [-22.5, -19], [-22.5, -60], [-22.5, -109]] },
@@ -517,6 +530,25 @@ export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
 // gardées en priorité — ce n'est pas un tirage au sort.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+//
+// ET LE PRIX SE PAIE AVEC DES RUES, PAS AVEC UN SEUIL (v223). Virginia Avenue
+// NO n'avait aucune boucle depuis la v205 : elle meurt sur Constitution à la
+// 21e, et rien ne remontait de là vers K Street. `TASKS.md` nommait la piste —
+// « la 21e ou la 23e Rue » — sans qu'elle ait été tracée. La voici.
+//
+// ET IL A FALLU LA PASSE DE RÉPARATION (v216), parce que la grille était
+// SATURÉE : mesuré, sur vingt-six mille chaînes candidates, ZÉRO n'était
+// compatible avec les dix-neuf circuits en place sous le seuil de partage de
+// vingt blocs. La boucle de Virginia gêne deux circuits — de vingt-cinq et
+// vingt-sept blocs — ; on les retire, on la force, on recomble. Le
+// recomblement rend à la 15e Rue ses voitures par un autre chemin, si bien
+// qu'AUCUNE rue ne perd les siennes.
+//
+// Trois voies gagnent des voitures : Virginia Avenue NO, Constitution Avenue
+// et la 23e Rue NO. Cinquante voies sur soixante portent un convoi, contre
+// quarante-sept ; la pire paire reste à vingt-deux blocs.
+//
+// Mesures : part sur la rue, longueur en blocs, virage le plus serré.
 const CIRCUITS = [
   // 99 % (86 blocs, virage max 90°)
   ["Pennsylvania Avenue NO","9e Rue NO","7e Rue NO","7e Rue NO, de C à H"],
@@ -544,18 +576,18 @@ const CIRCUITS = [
   ["Constitution Avenue","7e Rue NO","C Street NO, de la 7e à la 14e","14e Rue NO"],
   // 98 % (48 blocs, virage max 114°)
   ["Pennsylvania Avenue NO","14e Rue NO","F Street NO","15e Rue NO, de Pennsylvania à H"],
-  // 100 % (43 blocs, virage max 117°)
-  ["New York Avenue NO","14e Rue NO, de F à H","H Street NO","15e Rue NO, de Pennsylvania à H"],
   // 100 % (95 blocs, virage max 122°)
   ["Maryland Avenue SO","3e Rue SO","Independence Avenue","7e Rue SO"],
   // 100 % (69 blocs, virage max 90°)
   ["3e Rue NO","F Street NO","North Capitol Street, de C à H","H Street NO, de North Capitol à la 7e"],
   // 100 % (117 blocs, virage max 90°)
   ["South Capitol Street","E Street SO","3e Rue SO, de D à E","D Street SO"],
-  // 100 % (62 blocs, virage max 111°)
-  ["Vermont Avenue NO","K Street NO","Connecticut Avenue NO, de H à Dupont","H Street NO, de la 15e à Connecticut"],
   // 100 % (101 blocs, virage max 122°)
   ["3e Rue SE","D Street SE, de la 3e à la 8e","8e Rue SE","Pennsylvania Avenue SE"],
+  // 100 % (223 blocs, virage max 92°)
+  ["Virginia Avenue NO","23e Rue NO","H Street NO","14e Rue NO, de C à K","14e Rue NO","Constitution Avenue","Constitution Avenue (ouest)"],
+  // 100 % (80 blocs, virage max 132°)
+  ["15e Rue NO, de Pennsylvania à H","New York Avenue NO","Massachusetts Avenue NO","14e Rue NO","K Street NO","Vermont Avenue NO"],
 ];
 
 export const circuitsWashington = fabriqueCircuits({
