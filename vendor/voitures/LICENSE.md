@@ -12,6 +12,16 @@ production. »
 
 Usage : privé et familial, non commercial, dans ce jeu uniquement.
 
+**Deux modèles de plus, d'une autre provenance (septembre 2026)** —
+`lucid-gravity.glb` et `bugatti-chiron-stealth.glb`, fournis par Max. Ils NE
+suivent PAS le manifeste ci-dessous : maillages quantifiés
+(`KHR_mesh_quantization`), chaque roue éclatée en huit nœuds — un par
+matériau — aucun matériau nommé `Paint`, et le nez sur un autre axe. C'est
+`normaliserVoiture` (vehicules.js) qui les remet au contrat À L'EXÉCUTION,
+en les MESURANT : elle ne touche à rien quand le manifeste est déjà respecté,
+pour que les cinquante d'origine ne changent pas d'un pixel. Même usage privé
+et familial.
+
 Caractéristiques communes (héritées du manifeste, le code s'y fie) :
 - unités en mètres, +Y vers le haut, **+Z vers le nez**, origine au centre
   du corps, roues posées à y = 0 — d'où la rotation π unique au chargement ;

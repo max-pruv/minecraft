@@ -20,6 +20,62 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v230 — Deux voitures de plus, et le jeu accepte désormais un modèle qu'on lui donne
+
+**Pourquoi.** Max a déposé trois fichiers `.glb` : « ajoute cette voiture ».
+Deux étaient **octet pour octet identiques** — ce sont donc deux voitures, une
+Lucid Gravity et une Bugatti Chiron « white stealth ».
+
+Elles ne suivent pas le manifeste de la flotte
+(`vendor/voitures/LICENSE.md`), auquel trois endroits du jeu se fient :
+maillages quantifiés, chaque roue éclatée en **huit nœuds** — un par matériau
+— aucun matériau nommé `Paint`, et le nez sur un autre axe. Livrées telles
+quelles : voiture en travers, flottant au-dessus du sol, roues figées, pas de
+reflets sur la carrosserie.
+
+**Ce que ça change.** Convertir chaque fichier à la main aurait marché **une**
+fois. Le chargeur MESURE désormais le modèle qu'on lui donne : il retrouve les
+roues par leur lignée de noms, en déduit l'axe de la longueur (un empattement
+est toujours plus long qu'une voie), lit l'avant sur les noms plutôt que sur
+la géométrie, regroupe chaque roue sous un vrai pivot, tourne le modèle par
+quarts de tour et le pose au sol. Les prochains modèles que Max dépose
+marcheront sans conversion.
+
+Et **il ne touche à rien quand le manifeste est respecté** : les cinquante
+d'origine ne changent pas d'un pixel.
+
+La flotte passe de cinquante à cinquante-deux modèles. Le pas de tirage reste
+17, qui est premier avec cinquante-deux — les cinquante-deux défilent donc
+toujours sans se répéter.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, et l'un des deux est un
+**témoin de contrôle**, vert des deux côtés à dessein : les modèles du
+manifeste doivent rester identiques. Mesuré par le vrai chargeur du jeu :
+
+| | forme | roues | rayon | posée au sol | longueur |
+| --- | --- | --- | --- | --- | --- |
+| Lucid Gravity | mesuré | 4 | 0,404 | oui | 5,11 m |
+| Bugatti Chiron Stealth | mesuré | 4 | 0,371 | oui | 4,60 m |
+| Bugatti Chiron (d'origine) | manifeste | 4 | 0,344 | oui | 4,64 m |
+| Audi R8 (d'origine) | manifeste | 4 | 0,344 | oui | 4,53 m |
+
+Les dimensions collent au réel : une Lucid Gravity fait 5,03 m, une Chiron
+4,54 m.
+
+**Un piège évité de justesse.** Un témoin existant vérifie que « le volant
+reste dans l'habitacle, visible par les vitres » sur la voiture que l'enfant
+conduit — tirée au hasard de la flotte. Or ces deux modèles sont des
+carrosseries seules : la Chiron Stealth n'a aucun intérieur, la Lucid une
+planche de bord sans volant. Le témoin aurait basculé **deux fois sur
+cinquante-trois**, soit quatre pour cent des exécutions — le genre de rouge
+intermittent qu'on met des jours à démonter. La règle vit donc dans la FICHE
+(`habitacle: false`), jamais dans une liste écrite dans le témoin — même
+discipline que `montable`, `nourrissable` et `vole`.
+
+Les fichiers ne sont pas dans la liste `ASSETS` du service worker : chaque
+voiture se télécharge à sa première rencontre, donc le premier chargement ne
+s'alourdit pas.
+
 ## v229 — Le monde se charge deux fois plus vite, et les avions ne le dépassent plus
 
 **Pourquoi.** Max : « les jets volent trop vite, la carte n'arrive pas à

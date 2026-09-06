@@ -25,7 +25,7 @@
 //    donc une place de parking invisible — c'est le prix, et il est bien plus
 //    petit que celui d'une voiture qu'on ne retrouve pas.
 //
-// 3. **Le modèle voyage avec la voiture.** La flotte compte cinquante-et-un
+// 3. **Le modèle voyage avec la voiture.** La flotte compte cinquante-trois
 //    modèles tirés au sort à la fabrication. Ranger seulement « une voiture »
 //    rendrait à l'enfant une Twingo à la place de sa Bugatti : on retient donc
 //    le fichier du modèle, et on le réclame au moment de la refabriquer.

@@ -325,7 +325,7 @@ function voitureNeuve(voeu) {
   // manque (ou tant qu'il n'a jamais été téléchargé, hors ligne).
   //
   // DEPUIS LA FLOTTE (Max : « add those cars for better diversity ») chaque
-  // voiture neuve tire son modèle parmi cinquante-et-un : les cinquante de
+  // voiture neuve tire son modèle parmi cinquante-trois : les cinquante-deux de
   // vendor/voitures, plus le Chiron d'artiste historique — l'ajout est
   // additif, il ne remplace pas le cadeau. Deux différences de traitement :
   // les modèles de la flotte apportent leur PROPRE intérieur complet, donc
