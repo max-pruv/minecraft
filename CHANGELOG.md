@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v232 — Les avions ressemblent enfin à des avions
+
+**Pourquoi.** Max, capture à l'appui : « fix plane design, they are not
+realistic ». C'était vrai, et pas pour des raisons de goût — trois défauts se
+mesurent.
+
+Le fuselage n'était pas un tube mais une **planche** : l'atelier met à
+l'échelle une primitive unitaire, si bien que le rayon écrit dans le code était
+en réalité un diamètre. L'avion de ligne avait donc un corps de 1,05 bloc
+d'épaisseur, des hublots posés à ±0,99 — presque le double du rayon, flottant
+dans le vide — et une bande de livrée large de 2,12, deux fois le fuselage :
+c'est elle qu'on voyait, une planche bleue plus grosse que l'avion.
+
+Chaque appareil **débordait de son poste de stationnement** : seize blocs
+réservés, 21,5 rendus ; vingt pour le Concorde, trente et un rendus — à cheval
+sur son voisin, passage compris. Et le train descendait à 0,68 bloc **sous le
+sol** : un avion garé avait les roues enterrées jusqu'à l'essieu.
+
+**Ce que ça change.** Les trois appareils sont redessinés sur les proportions
+réelles de leur type — 37,6 m de long pour 4,0 de fuselage et 35,8 d'envergure
+pour l'avion de ligne, et tout le reste s'en déduit. Le fuselage est un vrai
+tube, à nez arrondi pour les avions civils et pointu pour le chasseur ; les
+ailes s'effilent au lieu d'être des plaques rectangulaires ; les réacteurs
+pendent à un mât au lieu de flotter sous l'aile ; les dérives sont en flèche ;
+les hublots et la livrée sont sur la peau. Chacun tient exactement dans le
+poste que l'aéroport lui réserve, et se pose sur ses roues.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, tous rouges sur
+l'ancien code : chaque appareil tient dans son poste (21,5/16 → 15,92/16), rien
+ne passe sous le sol (−0,68 → +0,01), et le saumon d'une aile est court
+(0,142 de la longueur → 0,040). Ce dernier ne porte que sur deux appareils sur
+trois, et le dit : l'ancien Concorde était déjà bâti en panneaux de corde
+décroissante, aucun seuil ne l'aurait séparé sans le déclarer bon avant la
+correction. Le reste se juge en capture, comme le veut la règle du projet — vue
+de rue et vue aérienne, avant et après. Portail complet vert.
+
+---
+
 ## v231 — L'avion penche dans son virage
 
 **Pourquoi.** Max, après avoir volé : « ça serait bien que quand on vole avec

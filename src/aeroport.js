@@ -650,10 +650,19 @@ export function buildAerodrome(poser, profil, rayon = 68) {
 // `aeroport.js` doit rester lisible SANS elle : c'est ce qui permet au témoin
 // d'interroger le bâtisseur en quelques millisecondes au lieu d'ouvrir un
 // navigateur. Les modèles lisent donc cette table, pas l'inverse.
+//
+// ET UNE TABLE QUI MENT EST UN PIÈGE QUI ATTEND (v232). `long` était respecté
+// par personne : les modèles mesuraient 21,5, 31 et 16,5 blocs pour 16, 20 et
+// 10 réservés — chacun à cheval sur son voisin, passage compris. `larg` et
+// `haut`, eux, n'étaient lus nulle part et annonçaient n'importe quoi (2,4 de
+// large pour un fuselage de 1,05). Les trois valeurs sont désormais MESURÉES
+// sur le modèle rendu, et un témoin de `carteMonde.js` garde `long`. `larg`
+// est la largeur du FUSELAGE, pas l'envergure — les ailes débordent, c'est la
+// règle du gabarit d'une voiture appliquée à un avion.
 export const GABARITS_AVION = {
-  avionligne: { long: 16, larg: 2.4, haut: 4.2 },
-  concorde: { long: 20, larg: 2.0, haut: 4.4 },
-  chasseur: { long: 10, larg: 1.8, haut: 3.2 },
+  avionligne: { long: 16, larg: 1.8, haut: 5.1 },
+  concorde: { long: 20, larg: 1.1, haut: 4.0 },
+  chasseur: { long: 10, larg: 1.4, haut: 3.4 },
 };
 const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 

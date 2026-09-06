@@ -1211,6 +1211,57 @@ Quatre choses à savoir avant d'en ajouter un.
   `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
   aurait évité que Roissy passe six versions au milieu de Paris.
 
+### Le dessin des appareils (`avions.js`) — ce qui se mesure, et ce qui se regarde
+
+Max, capture à l'appui : « fix plane design, they are not realistic ». Trois
+défauts se mesuraient, un quatrième se regardait. Les quatre valent pour tout
+modèle sculpté à venir.
+
+- **UN RAYON N'EST PAS UN DIAMÈTRE, ET L'ATELIER TRANCHE.** `Atelier` met à
+  l'échelle une primitive UNITAIRE : `e: [r, L, r]` sur un cylindre donne un
+  corps de `r` blocs de DIAMÈTRE. Le code écrivait `r` en pensant rayon, si
+  bien que tout ce qui se posait « sur la peau » à `0,94 r` tombait DEHORS —
+  hublots flottant à ±0,99 sur un fuselage de 0,52 de rayon, et une bande de
+  livrée de 2,12 de large, deux fois le fuselage. **C'est elle qu'on voyait** :
+  une planche bleue plus grosse que l'avion. Avant d'accuser une forme, on
+  vérifie l'unité de ce qui la dimensionne.
+- **UNE TABLE QUE PERSONNE NE RESPECTE EST UN PIÈGE QUI ATTEND.**
+  `GABARITS_AVION` déclare seize blocs pour l'avion de ligne et dimensionne les
+  postes dessus ; le modèle en mesurait 21,5, et le Concorde trente et un pour
+  vingt — à cheval sur son voisin, passage compris. Le commentaire disait
+  pourtant « les modèles lisent cette table ». Ils la lisaient et l'ajoutaient
+  à leurs cônes de nez et de queue. `long` est désormais la longueur TOTALE, un
+  témoin la garde, et `larg`/`haut` — que personne ne lisait et qui annonçaient
+  n'importe quoi — sont mesurés sur le modèle rendu.
+- **CE QUI SE POSE AU SOL TOUCHE LE SOL.** Le train descendait à −0,68 sous
+  l'origine : les roues étaient enterrées jusqu'à l'essieu. Rien d'un modèle
+  posé ne passe sous y = 0, et c'est une mesure, pas une intention.
+- **UNE AILE S'EFFILE — et c'est LE signal « jouet » quand elle ne le fait
+  pas.** Les rapports viennent des vrais appareils (corde de saumon de 1,5 m
+  pour 37,6 de long, soit un vingt-cinquième). Une boîte ne s'effile pas : la
+  voilure est une géométrie à part, un prisme à quatre coins, rendue NON
+  INDEXÉE pour que `computeVertexNormals` donne des facettes franches — indexée
+  elle lisserait les arêtes et l'aile aurait l'air d'un coussin. Et l'on ne
+  pose pas une demi-aile deux fois avec une échelle négative en x : une
+  symétrie retourne les faces, et la moitié gauche de l'avion serait éclairée
+  à l'envers.
+
+**Et deux pièges de TÉMOIN, payés dans la même livraison.**
+
+- **UN CYLINDRE N'A DE SOMMETS QU'À SES DEUX BOUTS.** Mon premier témoin
+  mesurait la section du fuselage dans une tranche du milieu pour dire « rond
+  ou plat » : il n'y trouvait aucun sommet de fuselage et ne lisait que la
+  bande de livrée. Il aurait été rouge des deux côtés, pour rien. Une mesure
+  géométrique sur un maillage se vérifie sur les SOMMETS qui existent
+  vraiment.
+- **UN SEUL NOMBRE POUR TROIS APPAREILS NE SE DÉMONTE PAS.** L'effilement rend
+  0,142 → 0,040 sur l'avion de ligne et 0,156 → 0,070 sur le chasseur, mais
+  0,077 → 0,025 sur le Concorde : l'ancien delta était DÉJÀ bâti en panneaux
+  de corde décroissante, et aucun seuil ne le sépare sans le déclarer bon
+  AVANT la correction. Le témoin dit donc lesquels il garde, et le delta du
+  Concorde se juge en capture. Un témoin qui couvre un cas qu'il ne peut pas
+  voir donne l'illusion, pas la preuve.
+
 ### Le monde (`world.js`)
 
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).

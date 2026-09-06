@@ -94,7 +94,7 @@ const GARDIENS = {
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
-  'src/avions.js': ['monte.js'],
+  'src/avions.js': ['monte.js', 'carteMonde.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js'],
