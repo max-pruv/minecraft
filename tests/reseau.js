@@ -37,8 +37,18 @@ const TOLERE = /Could not connect to peer|readyState is not|is taken|Aborting!|L
 const fautes = (p) => p.erreurs.filter((e) => !TOLERE.test(e));
 
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Cette suite est la plus longue du portail — 29 min 46 s sur 83, mesuré en
+// v223 — et personne ne savait pourquoi. Ni les attentes écrites en dur
+// (123 s, soit 7 %), ni le coût d'ouvrir ses dix-sept pages de jeu (6 s
+// pièce, mesuré) ne l'expliquent. Le seul relevé qui tranche est celui-ci,
+// et il ne coûte rien.
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 

@@ -15,8 +15,18 @@ const banc = require('./banc.js');
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Cette suite est la deuxième du portail en durée — 19 min 41 s sur 83,
+// derrière `reseau.js` et ses 29 min 46 s, mesuré en v223 — et personne ne
+// savait pourquoi. Ni les attentes écrites en dur (6 % ici), ni le coût
+// d'ouvrir une page (6 s pièce, mesuré) ne l'expliquent. Le seul relevé qui
+// tranche est celui-ci, et il ne coûte rien.
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 // Attendre qu'une chose devienne vraie plutôt que d'attendre longtemps.
