@@ -672,22 +672,29 @@ async function avancerUnDemiSeconde(p, depart) {
     // cockpit sculpté (son volant en tore) reste dans le modèle, visible à
     // travers les vitres. L'ancien code asseyait l'œil dans l'habitacle, à
     // un tiers de bloc des pieds : rouge garanti sur les trois mesures.
-    const poursuite = await tab.evaluate(() => {
+    const poursuite = await tab.evaluate(async () => {
       const g = window.__game;
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
       let volant = false;
       if (a) a.mesh.traverse((m) => {
         // le tore du cockpit sculpté, ou le SteeringWheel des modèles de la
-        // flotte — chacun des cinquante-et-un a l'un ou l'autre
+        // flotte — chacun des cinquante-trois a l'un ou l'autre
         if ((m.geometry && m.geometry.type === 'TorusGeometry')
           || /steeringwheel/i.test(m.name || '')) volant = true;
       });
+      // Le modèle dit lui-même s'il a un poste de conduite : deux
+      // carrosseries de la flotte n'en ont pas, et c'est déclaré dans leur
+      // fiche. Sans cette lecture, ce témoin bascule deux fois sur
+      // cinquante-trois au hasard du tirage.
+      const fiche = (await import('./src/vehicules.js')).FLOTTE
+        .find((e) => e.fichier === (a && a.mesh.userData.flotte));
+      const attenduVolant = !fiche || fiche.habitacle !== false;
       const dx = g.player.camera.position.x - g.player.pos.x;
       const dz = g.player.camera.position.z - g.player.pos.z;
       // le regard porte vers (-sin, -cos) : un produit scalaire négatif dit
       // que la caméra est bien DERRIÈRE, pas devant
       const devant = dx * -Math.sin(g.player.yaw) + dz * -Math.cos(g.player.yaw);
-      return { volant,
+      return { volant, attenduVolant, modele: a && a.mesh.userData.flotte,
         recul: +Math.hypot(dx, dz).toFixed(2),
         hauteur: +(g.player.camera.position.y - g.player.pos.y).toFixed(2),
         devant: +devant.toFixed(2) };
@@ -701,7 +708,9 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
     verifier('le volant, lui, reste dans l\'habitacle — visible par les vitres',
-      poursuite.volant, poursuite.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
+      poursuite.volant || !poursuite.attenduVolant,
+      poursuite.volant ? 'volant trouvé'
+        : `pas de volant dans ${poursuite.modele}${poursuite.attenduVolant ? '' : ' (carrosserie seule, déclaré dans sa fiche)'}`);
 
     // LA CARROSSERIE DE LA VRAIE VIE (Max, capture à l'appui : « je les veux
     // pas en format minecraft »). Une vraie voiture a des vitres TRANSPARENTES
@@ -735,7 +744,7 @@ async function avancerUnDemiSeconde(p, depart) {
 
     // LA FLOTTE (Max : « add those cars for better diversity »). Huit
     // voitures invoquées ne sortent pas du même moule : au moins trois
-    // modèles différents parmi les cinquante-et-un. Le choix est écrit à la
+    // modèles différents parmi les cinquante-trois. Le choix est écrit à la
     // CONSTRUCTION (userData.flotte), pas au chargement du fichier — le
     // témoin n'attend donc aucun téléchargement. L'ancien code ne
     // connaissait qu'un modèle et n'écrivait rien : un seul « modèle »
@@ -1490,6 +1499,59 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('le bouton ✈️ fait décoller l\'appareil',
       Object.values(decollage).every((h) => h >= 10),
       `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
+
+    // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
+    // ROUES (v230).
+    //
+    // Max a déposé deux modèles d'une autre provenance. Ils ne suivent pas le
+    // manifeste de la flotte (`vendor/voitures/LICENSE.md`) : maillages
+    // quantifiés, chaque roue éclatée en huit nœuds — un par matériau — aucun
+    // matériau nommé `Paint`, et le nez sur un autre axe. Sans mesure, une
+    // voiture pareille arrive en travers, flottant au-dessus du sol, roues
+    // figées.
+    //
+    // ON ÉPROUVE CE QUE L'ENFANT VOIT, par le VRAI chargeur du jeu : quatre
+    // pivots de roue, la voiture posée au sol (`min.y` à zéro, sinon elle
+    // flotte ou s'enterre jusqu'aux moyeux), un rayon de roue plausible, et
+    // une longueur de voiture plus grande que sa largeur — c'est ce qui dit
+    // qu'elle n'est pas en travers.
+    //
+    // ET DEUX MODÈLES D'ORIGINE SERVENT DE TÉMOIN DE CONTRÔLE : ils passent
+    // par le chemin « manifeste », qui ne doit toucher à rien. S'ils bougent,
+    // c'est que j'ai cassé la flotte en voulant l'élargir.
+    const flotte = await tab.evaluate(async () => {
+      const v = await import('./src/vehicules.js');
+      const THREE = await import('three');
+      const out = [];
+      for (const fichier of ['lucid-gravity.glb', 'bugatti-chiron-stealth.glb',
+        'bugatti-chiron.glb', 'audi-r8-v10-performance.glb']) {
+        const entree = v.FLOTTE.find((e) => e.fichier === fichier);
+        if (!entree) { out.push({ fichier, err: 'absente de la flotte' }); continue; }
+        const porteur = await v.chargerVoitureFlotte(entree);
+        if (!porteur) { out.push({ fichier, err: 'chargement échoué' }); continue; }
+        porteur.updateMatrixWorld(true);
+        let pivots = 0;
+        porteur.traverse((o) => { if (/^Wheel_(FL|FR|RL|RR)$/i.test(o.name || '')) pivots++; });
+        const boite = new THREE.Box3().setFromObject(porteur);
+        const t = boite.getSize(new THREE.Vector3());
+        out.push({ fichier, forme: porteur.userData.forme, pivots,
+          rayon: +(porteur.userData.rayonRoue || 0).toFixed(3),
+          sol: +boite.min.y.toFixed(3),
+          long: +t.z.toFixed(2), large: +t.x.toFixed(2) });
+      }
+      return out;
+    });
+    const conforme = (o) => !o.err && o.pivots === 4 && Math.abs(o.sol) < 0.06
+      && o.long > 3.4 && o.long < 6.2 && o.rayon > 0.25 && o.rayon < 0.6
+      && o.long > o.large;
+    const neuves = flotte.filter((o) => /lucid|stealth/.test(o.fichier));
+    const anciennes = flotte.filter((o) => !/lucid|stealth/.test(o.fichier));
+    verifier('une voiture hors manifeste est remise d\'aplomb : posée au sol, quatre roues',
+      neuves.length === 2 && neuves.every(conforme)
+      && neuves.every((o) => o.forme === 'mesuré'), JSON.stringify(neuves));
+    verifier('et les modèles du manifeste ne sont pas touchés',
+      anciennes.length === 2 && anciennes.every(conforme)
+      && anciennes.every((o) => o.forme === 'manifeste'), JSON.stringify(anciennes));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

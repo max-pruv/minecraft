@@ -989,7 +989,7 @@ Trois choses à savoir avant d'y toucher :
   l'emprise.** Les deux diffèrent dès qu'un bâtiment déborde d'un côté — ici
   le seuil goudronné, qui tire l'emprise vers l'avant. Les places, elles, sont
   données par rapport à l'origine.
-- **Le modèle voyage avec la voiture.** La flotte compte cinquante-et-un
+- **Le modèle voyage avec la voiture.** La flotte compte cinquante-trois
   modèles tirés au sort. Ranger « une voiture » rendrait une Twingo à la place
   d'une Bugatti : on retient le fichier du modèle, et `voitureNeuve(voeu)` le
   réclame à la sortie — avec repli sur le tirage si le fichier a disparu.
@@ -2497,6 +2497,28 @@ choses à savoir avant d'y toucher.
   trois espèces montables pendant que le bestiaire s'étoffait. Même règle
   pour **ce qui se nourrit** (`nourrissable: false` sur la voiture) : la
   règle vit dans la fiche, jamais dans `fun.js`.
+- **UN MODÈLE SE MESURE, IL NE SE DÉCLARE PAS (v230).** La flotte avait un
+  manifeste — mètres, +Z vers le nez, roues à y = 0, pivots `Wheel_FL/FR/RL/RR`,
+  laque `Paint_*` — et trois endroits du jeu s'y fiaient. Les modèles que Max
+  dépose ensuite viennent d'ailleurs : roues éclatées en huit nœuds (un par
+  matériau), aucun matériau `Paint`, nez sur un autre axe, maillages quantifiés.
+  Livrés tels quels : voiture en travers, flottante, roues figées.
+  `normaliserVoiture` (vehicules.js) mesure donc ce qu'on lui donne — les roues
+  par leur lignée de noms, l'axe de la longueur par l'écartement (un empattement
+  est plus long qu'une voie), l'avant par les NOMS et non la géométrie — puis
+  regroupe, tourne par quarts de tour et pose au sol. **Et elle ne touche à rien
+  quand le manifeste est respecté** : c'est ce qui garantit que les cinquante
+  d'origine ne bougent pas d'un pixel, et c'est ce que vérifie le témoin de
+  contrôle, vert des deux côtés à dessein.
+- **UNE PROPRIÉTÉ D'UN MODÈLE VIT DANS SA FICHE, PAS DANS UN TÉMOIN.** Les deux
+  modèles de la v230 sont des carrosseries seules : pas de volant. Un témoin
+  existant vérifie que « le volant reste dans l'habitacle » sur la voiture que
+  l'enfant conduit, TIRÉE AU HASARD — il aurait basculé deux fois sur
+  cinquante-trois, quatre pour cent des exécutions, le genre de rouge
+  intermittent qu'on met des jours à démonter. `habitacle: false` dans la
+  fiche, et le témoin le lit : même discipline que `montable`, `nourrissable`
+  et `vole`. **Devant un modèle neuf, on cherche le jour même quels témoins
+  supposent quelque chose de la flotte entière.**
 - **La voiture est un modèle 3D d'artiste, plus jamais une sculpture de
   primitives.** Quatre itérations de coordonnées écrites à l'aveugle
   (verdicts de Max : « très carrée », « low fidelity », « ça ne ressemble
