@@ -1764,6 +1764,90 @@ const VRAIES_KM = [
     verifier('on entre dans un terminal, on va d\'un hall à l\'autre et l\'on ressort côté pistes',
       visitables.length === 3, `${visitables.length} sur 3 visitables — ${JSON.stringify(terminaux)}`);
 
+    // LES CINQUANTE-SEPT POSTES DE STATIONNEMENT SONT SUR LE TARMAC.
+    //
+    // Max, capture à l'appui : « les avions sont moches, posés n'importe où et
+    // inutilisables ». Mesuré : VINGT ET UN postes sur cinquante-sept étaient
+    // DANS un bâtiment — l'avion de ligne de Roissy dans le hall de
+    // l'aérogare 2, les chasseurs des bases dans leurs hangars.
+    //
+    // LE TÉMOIN INTERROGE LE BÂTISSEUR, pas le monde chargé. `buildAeroport` et
+    // `buildAerodrome` sont des fonctions pures : on leur donne un `poser` qui
+    // note tout, et l'on lit la colonne sous chaque poste. C'est instantané, et
+    // surtout cela mesure les dix-neuf aérodromes sans y aller — `getBlock` ne
+    // répond que sur les morceaux déjà engendrés, et un témoin qui les lirait
+    // sans s'y rendre passerait au vert en ne prouvant rien.
+    //
+    // ET L'EMPRISE SUIT LE CAP QUE LE POSTE PUBLIE. Mon premier jet mesurait
+    // l'appareil nez vers -z alors qu'il se gare désormais le long de x : il
+    // comptait un motif au lieu de compter la chose, et il accusait dix postes
+    // parfaitement corrects.
+    const postes = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, postesAvion, buildAeroport, buildAerodrome } = mod;
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER.
+      // `GABARITS_AVION` et le `cap` des postes n'existent pas avant la v228 :
+      // sans ce repli, l'import lèverait et les témoins suivants ne seraient
+      // jamais joués — on ne verrait donc jamais l'étendue du défaut.
+      const GABARITS_AVION = mod.GABARITS_AVION || {
+        avionligne: { long: 16, larg: 2.4, haut: 4.2 },
+        concorde: { long: 20, larg: 2.0, haut: 4.4 },
+        chasseur: { long: 10, larg: 1.8, haut: 3.2 },
+      };
+      const { BLOCK, DECOR_START } = await import('./src/blocks.js');
+      const uni = (c) => DECOR_START + c * 10;
+      // Ce sur quoi un avion peut se poser : asphalte, goudron, béton, gris,
+      // et les marquages blancs et jaunes qui sont peints dessus.
+      const ROULANT = new Set([uni(25), uni(26), uni(23), uni(24), uni(27), uni(2)]);
+      const fautes = [];
+      for (const a of AEROPORTS) {
+        const m = new Map();
+        const poser = (x, y, z, id) => m.set(`${x},${y},${z}`, id);
+        if (a.cle === 'cdg') buildAeroport(poser);
+        else buildAerodrome(poser, a.profil, a.r);
+        for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
+          const g = GABARITS_AVION[espece];
+          // Sans cap publié (avant la v228), l'appareil était posé nez vers
+          // -z : c'est cette emprise-là qu'il faut alors mesurer.
+          const surX = cap !== undefined && Math.abs(Math.sin(cap)) > 0.5;
+          const dX = Math.ceil((surX ? g.long : g.larg) / 2);
+          const dZ = Math.ceil((surX ? g.larg : g.long) / 2);
+          let sansSol = 0, obstacles = 0;
+          for (let dx = -dX; dx <= dX; dx++) {
+            for (let dz = -dZ; dz <= dZ; dz++) {
+              if (!ROULANT.has(m.get(`${du + dx},0,${dv + dz}`))) sansSol++;
+              for (let y = 1; y <= Math.ceil(g.haut); y++) {
+                const b = m.get(`${du + dx},${y},${dv + dz}`);
+                if (b !== undefined && b !== BLOCK.AIR) obstacles++;
+              }
+            }
+          }
+          if (obstacles || sansSol) {
+            fautes.push(`${a.cle}/${espece}(${du},${dv})${obstacles ? ` ${obstacles} blocs de bâti` : ''}${sansSol ? ` ${sansSol} colonnes hors revêtement` : ''}`);
+          }
+        }
+      }
+      return { total: AEROPORTS.reduce((n, a) => n + postesAvion(a.profil).length, 0), fautes };
+    });
+    verifier('aucun avion n\'est garé dans un bâtiment ni hors du revêtement',
+      postes.fautes.length === 0,
+      `${postes.fautes.length}/${postes.total} en faute — ${postes.fautes.slice(0, 4).join(' · ')}`);
+
+    // ET LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne un yaw
+    // aléatoire à toute bête ; l'espèce étant `immobile`, un avion garé gardait
+    // le sien pour toujours. On éprouve ce que l'enfant VOIT : deux appareils
+    // du même aérodrome doivent pointer dans la même direction.
+    verifier('les avions d\'un même poste pointent tous dans le même sens',
+      await tab.evaluate(async () => {
+        const { AEROPORTS, postesAvion } = await import('./src/aeroport.js');
+        return AEROPORTS.every((a) => {
+          const caps = postesAvion(a.profil).map((p) => p.cap);
+          // `undefined` partout, c'est l'ancien code : le cap venait alors du
+          // tirage au sort d'`animals.js`, donc il n'était pas le même.
+          return caps.every((c) => c !== undefined && c === caps[0]);
+        });
+      }));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

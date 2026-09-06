@@ -29,6 +29,12 @@
 // C'est la même convention à deux échelles que les monuments.
 
 import { Atelier } from './modeles.js';
+// LES DIMENSIONS VIENNENT DU PLAN DE L'AÉROPORT, PAS D'ICI. C'est la même
+// table qui dimensionne l'aire de stationnement et qui taille les modèles :
+// deux tables qui décrivent le même appareil finissent toujours par diverger,
+// et l'on se retrouve avec un Concorde plus long que son poste. `aeroport.js`
+// ne tire aucune bibliothèque 3D, l'import est donc gratuit dans les deux sens.
+import { GABARITS_AVION } from './aeroport.js';
 
 const BLANC = 0xf0f0ea;
 const BLEU = 0x1a3a8c;
@@ -86,7 +92,7 @@ function fini(a) {
 // --- l'avion de ligne --------------------------------------------------------
 export function avionDeLigne() {
   const a = new Atelier();
-  const L = 16, r = 1.05, y = 1.9;
+  const L = GABARITS_AVION.avionligne.long, r = 1.05, y = 1.9;
   fuselage(a, { longueur: L, r, couleur: BLANC, nez: 2.2, y });
   // la bande de livrée, qui court sur toute la longueur
   a.boite(BLEU, { p: [0, y - 0.28, 0], e: [r * 2.02, 0.3, L * 0.92] });
@@ -111,7 +117,7 @@ export function avionDeLigne() {
 // --- le Concorde -------------------------------------------------------------
 export function concorde() {
   const a = new Atelier();
-  const L = 20, r = 0.7, y = 2.0;
+  const L = GABARITS_AVION.concorde.long, r = 0.7, y = 2.0;
   fuselage(a, { longueur: L, r, couleur: BLANC, nez: 4.4, y });
   hublots(a, { de: -L / 2 + 2, a: L / 2 - 3, y: y + 0.2, r, pas: 0.8 });
   a.boite(VERRE, { p: [0, y + 0.3, -L / 2 - 2.0], e: [r * 1.1, 0.24, 0.5] });
@@ -143,7 +149,7 @@ export function concorde() {
 // --- l'avion de chasse -------------------------------------------------------
 export function avionDeChasse() {
   const a = new Atelier();
-  const L = 10, r = 0.62, y = 1.6;
+  const L = GABARITS_AVION.chasseur.long, r = 0.62, y = 1.6;
   fuselage(a, { longueur: L, r, couleur: GRIS, nez: 2.6, y });
   // le camouflage : deux taches sombres sur le dos, rien de plus
   a.boite(KAKI, { p: [0, y + r * 0.7, -1.2], e: [r * 1.4, 0.1, 3.0] });

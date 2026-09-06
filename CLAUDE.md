@@ -830,6 +830,33 @@ monoplaces gardent l'embarquement : on ne conduit pas un métro.
    collision et le bouton d'embarquement marchent alors sans une ligne de
    plus. **Une seconde position aurait tout fait payer deux fois.**
 
+   **ET LES COMMANDES ONT CHANGÉ EN v228, SUR VERDICT DE MAX.** « Le bouton
+   avion le fait décoller, et le joystick manage la hauteur, direction,
+   altitude, gauche droite. » La physique ci-dessous — manette des gaz sur
+   `forward`, roulis sur `strafe`, assiette sur le regard — était juste comme
+   physique et **impraticable pour un enfant de sept ans** : trois commandes à
+   deviner, et il fallait comprendre qu'on décolle en prenant son élan puis en
+   levant les yeux. Max, dans le Concorde : « il ne décolle pas ».
+
+   Ce qui vaut désormais : **✈️ décolle** (montée automatique de vingt blocs,
+   au-dessus des terminaux et des tours de contrôle — sinon le bouton ne fait
+   que lancer les moteurs et l'appareil roule au ras du sol), **le joystick
+   tient l'altitude et le cap**, la vitesse est automatique, le regard est
+   libre. Un second appui se pose. Deux leçons :
+
+   - **UN BOUTON QUI NE FAIT RIEN EST PIRE QU'UN BOUTON QUI REFUSE.** Aux
+     commandes, ✈️ appelait `toggleFly()`, qui RÉUSSISSAIT et basculait
+     `player.flying` — un drapeau que la branche de pilotage ignore
+     complètement. Aucun effet, aucun message. J'ai d'abord annoncé à Max que
+     le bouton répondait « une voiture ne vole pas » : c'était faux,
+     `interdireVol` n'est jamais posé pour un appareil (`vole: true`). **Avant
+     d'accuser un message, on vérifie qu'il est atteint.**
+   - **CE QUI REND LE CARACTÈRE, C'EST LA FICHE, PAS LA COMMANDE.** La vitesse
+     devenue automatique, ce sont `max` et `virage` qui distinguent encore les
+     trois appareils : 110 blocs/s contre 264, et un chasseur qui vire trois
+     fois plus court que le Concorde. On peut simplifier les commandes sans
+     effacer les différences.
+
    Quatre décisions de physique, chacune pour une raison :
 
    - **La poussée SE GARDE quand on lâche.** `forward` est une manette des
@@ -1068,6 +1095,46 @@ Quatre choses à savoir avant d'en ajouter un.
   promesse de plus les dégradait sans raison (Roissy partait au sud-est, JFK
   sous trente-deux pour cent d'eau). Une contrainte neuve se paie là où elle
   mord.
+- **UN POSTE DE STATIONNEMENT A UN CAP, ET IL SE PUBLIE (v228).** Max, capture
+  à l'appui : « les avions sont moches, posés n'importe où et inutilisables ».
+  Mesuré à la sonde : **vingt et un postes sur cinquante-sept dans un
+  bâtiment**. Trois causes, trois leçons, et aucune ne se devinait sur l'image.
+  - **UNE TABLE PUBLIÉE PAR LE MAUVAIS BÂTISSEUR MENT AUSSI BIEN QU'UNE TABLE
+    RECOPIÉE.** La règle « le plan du tarmac ne se recopie pas » était écrite
+    et appliquée — aux dix-huit aérodromes GÉNÉRIQUES. Roissy, qui a son
+    bâtisseur à lui, n'avait aucune branche dans `postesAvion` : il tombait
+    dans le cas `ville`, donc à dv = 17, entre `HALL_INT` (8) et `HALL_EXT`
+    (18) — dans le hall. Quand une fonction publie un plan, on vérifie qu'elle
+    le publie pour TOUS ceux qui la lisent.
+  - **UNE AIRE SE DIMENSIONNE SUR CE QUI S'Y GARE.** Elle valait `HALL ± 12`,
+    un chiffre rond ; il manquait quatre blocs de chaque côté. Et surtout, les
+    appareils étaient posés nez vers -z : un Concorde réclame alors vingt
+    blocs de PROFONDEUR pour une aire qui en fait douze — sept à Roissy. Ils
+    se garent désormais **le long de x**, parallèles à l'aérogare, ce que le
+    bâtisseur de Roissy faisait déjà pour ses avions en blocs. Le remède était
+    dessiné à côté, une fois de plus.
+  - **UN CAP NE SE TIRE PAS AU SORT.** `animals.js` donne à toute bête un
+    `yaw` aléatoire ; l'espèce étant `immobile`, un avion garé gardait le sien
+    pour toujours. Tout ce qui se gare — avion, voiture rangée, bus à l'arrêt
+    — reçoit son cap de l'emplacement, jamais du hasard.
+  - **ET LE TÉMOIN INTERROGE LE BÂTISSEUR.** `buildAeroport` et
+    `buildAerodrome` sont des fonctions pures : on leur donne un `poser` qui
+    note tout dans une table, et l'on lit la colonne sous chaque poste. Les
+    dix-neuf aérodromes se mesurent en quelques millisecondes sans ouvrir un
+    navigateur — et sans le piège de `getBlock`, qui ne répond que sur les
+    morceaux déjà engendrés et rendrait un témoin vert qui ne prouve rien.
+  - **MAIS L'EMPRISE DU TÉMOIN SUIT LE CAP QUE LE POSTE PUBLIE.** Mon premier
+    jet mesurait l'appareil nez vers -z alors qu'il se gare désormais le long
+    de x : il accusait dix postes parfaitement corrects. **Compter un motif
+    n'est pas compter la chose**, et un témoin de géométrie doit lire
+    l'orientation, pas la supposer.
+- **UN AVION QU'ON VOIT AU POSTE DOIT ÊTRE CELUI DANS LEQUEL ON MONTE (v228).**
+  Roissy dessinait six avions **en blocs** sur ses postes — du décor qu'un
+  enfant ne peut pas prendre. C'est la moitié de « inutilisables » : on marche
+  vers un avion et l'on trouve de la pierre. Les deux du poste nord ont cédé
+  la place aux montures. Ceux du poste sud restent, et c'est une DÉCISION :
+  une monture ne se dessine qu'à soixante-deux blocs, et sans eux la
+  plate-forme serait vide vue du ciel.
 - **UN LIEU NE SE RENOMME PAS SOUS LES PIEDS D'UN ENFANT.** Roissy s'appelait
   « Aéroport Charles-de-Gaulle » sur la carte ; renommé « Paris–Charles-de-
   Gaulle » par cohérence avec les dix-huit autres, il a disparu du témoin des

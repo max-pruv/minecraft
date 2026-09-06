@@ -56,6 +56,21 @@ const FLY_MONTEE = 2.5;     // secondes de vol pour gagner un cran (+×1)
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
 
+// LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
+//
+// PALIER_DECOLLAGE : la hauteur que le bouton ✈️ fait gagner tout seul. Vingt
+// blocs, c'est au-dessus des terminaux (sept blocs), des tours de contrôle
+// (treize) et des hangars — l'enfant sort du décor sans rien avoir à faire,
+// puis il prend la main.
+// MONTEE_DECOLLAGE : ce palier en une seconde et demie environ. Plus lent, on
+// croit que le bouton n'a pas marché ; plus vif, on rate le décollage des yeux.
+// PART_MONTEE : au manche, on monte au tiers de sa vitesse — un avion qui
+// grimperait aussi vite qu'il avance monterait à la verticale.
+const PALIER_DECOLLAGE = 20;
+const MONTEE_DECOLLAGE = 14;
+const PART_MONTEE = 0.33;
+const DESCENTE = 12;      // la perte d'altitude quand on se pose
+
 export class Player {
   constructor(camera, world) {
     this.camera = camera;
@@ -101,6 +116,18 @@ export class Player {
   // La fiche du véhicule décide, le joueur obéit. Monter dans une voiture
   // pose l'interdit ET coupe le vol en cours — sinon l'enfant déjà en l'air
   // repartirait avec la voiture au plafond du monde.
+  // DÉCOLLER ET SE POSER — le bouton ✈️, quand on est aux commandes.
+  //
+  // Il rend ce qu'il vient de faire pour que l'appelant le DISE à l'enfant :
+  // un bouton qui change tout sans un mot laisse croire qu'il n'a rien fait.
+  decollerOuSePoser() {
+    if (!this.pilote) return null;
+    if (this.avionEnVol) { this.avionEnVol = false; return 'atterrissage'; }
+    this.avionEnVol = true;
+    this.altitudeDecollage = this.pos.y;
+    return 'decollage';
+  }
+
   interdireVol(interdit) {
     this.volInterdit = !!interdit;
     if (interdit) this.flying = false;
@@ -175,30 +202,51 @@ export class Player {
     //   et la portance dépend de la vitesse.
     if (this.pilote) {
       const p = this.pilote;
-      // LA POUSSÉE SE GARDE QUAND ON LÂCHE. `forward` est une manette des
-      // gaz, pas une pédale : c'est ce qui distingue un avion d'une voiture,
-      // et c'est ce qui permet à un enfant de lâcher les commandes pour
-      // regarder le paysage sans tomber.
       if (this.vitesseAvion === undefined) this.vitesseAvion = 0;
-      this.vitesseAvion = Math.max(0,
-        Math.min(p.max, this.vitesseAvion + forward * p.poussee * dt));
-      // LE ROULIS FAIT VIRER, ET SEULEMENT EN VOLANT. Un avion à l'arrêt sur
-      // le tarmac ne pivote pas sur place — c'est la même règle que le volant
-      // d'une voiture, qui n'agit qu'en roulant.
-      const part = this.vitesseAvion / p.max;
-      this.yaw -= strafe * p.virage * dt * part;
-      // LE NEZ SUIT LE REGARD. L'assiette est le tangage : on tire sur le
-      // manche en regardant vers le haut.
-      const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-      this.vel.set(-Math.sin(this.yaw) * cp, sp, -Math.cos(this.yaw) * cp)
+      // LES COMMANDES SONT CELLES QUE MAX A DEMANDÉES (v228) : « le bouton
+      // avion le fait décoller, et le joystick manage la hauteur, direction,
+      // altitude, gauche droite ».
+      //
+      // La version d'avant branchait `forward` sur une manette des gaz,
+      // `strafe` sur le roulis et le REGARD sur l'assiette : trois commandes à
+      // deviner, et il fallait comprendre qu'on décolle en prenant son élan
+      // puis en levant les yeux. Max, dans le Concorde : « il ne décolle
+      // pas ». Un enfant de sept ans a deux axes de joystick et un bouton, et
+      // ce qu'il veut, c'est choisir OÙ IL VA.
+      //
+      //   ✈️ (bouton)     décoller, puis se poser
+      //   joystick ↕      monter et descendre
+      //   joystick ↔      tourner
+      //   le regard       libre — on regarde le paysage sans changer de cap
+      //
+      // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
+      // chaque appareil : 110 blocs/s pour l'avion de ligne, 264 pour le
+      // Concorde et le chasseur (rapport de 1 à 2,4, celui des vrais).
+      const cible = this.avionEnVol ? p.max : 0;
+      const ecart = cible - this.vitesseAvion;
+      this.vitesseAvion += Math.sign(ecart) * Math.min(p.poussee * dt, Math.abs(ecart));
+      // Le taux de virage reste celui de la fiche : le chasseur tourne trois
+      // fois plus court que le Concorde, et c'est ce qui les distingue.
+      this.yaw -= strafe * p.virage * dt;
+      this.vel.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))
         .multiplyScalar(this.vitesseAvion);
-      // LA PORTANCE DÉPEND DE LA VITESSE. Sous la vitesse de décrochage,
-      // l'avion ne tient plus l'air : il descend, d'autant plus vite qu'il
-      // est lent. C'est ce qui oblige à prendre son élan sur la piste avant
-      // de tirer sur le manche — et ce qui fait qu'on ne décolle pas à
-      // l'arrêt.
-      if (this.vitesseAvion < p.decrochage) {
-        this.vel.y -= GRAVITY * (1 - this.vitesseAvion / p.decrochage);
+      if (this.avionEnVol) {
+        // LE DÉCOLLAGE MONTE TOUT SEUL jusqu'à une hauteur où l'on respire.
+        // Sans cela le bouton ne ferait que lancer les moteurs, et l'appareil
+        // roulerait au ras du sol tant que personne ne tire sur le manche —
+        // c'est exactement ce que Max a vécu.
+        if (this.pos.y - this.altitudeDecollage < PALIER_DECOLLAGE) {
+          this.vel.y = MONTEE_DECOLLAGE;
+        } else {
+          this.vel.y = forward * p.max * PART_MONTEE;
+        }
+      } else if (this.vitesseAvion > 0) {
+        // SE POSER, C'EST DESCENDRE JUSQU'AU SOL, pas se téléporter : le
+        // bouton lance l'atterrissage et l'appareil perd de l'altitude tant
+        // qu'il n'a pas retouché le tarmac.
+        this.vel.y = -DESCENTE;
+      } else {
+        this.vel.y = 0;
       }
       // Le ciel a le même toit que pour tout le monde.
       if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);

@@ -975,7 +975,29 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
 // fait rien, sinon il appuiera dix fois en croyant l'écran cassé.
+// LE BOUTON ✈️ — et ce qu'il répondait au pilote du Concorde (v228).
+//
+// Aux commandes d'un avion, `volInterdit` est levé — la règle « un véhicule
+// ne vole pas », écrite pour les voitures — et le bouton REFUSAIT, avec ce
+// message : « 🚗 Une voiture ne vole pas ». Assis dans le Concorde. C'est un
+// message faux, et le projet a une règle là-dessus : un message d'erreur doit
+// dire à un enfant quoi faire, jamais accuser à tort ; un message faux est
+// pire que pas de message. C'est toute la panne « les avions sont
+// inutilisables » que Max a signalée.
+//
+// Le bouton garde donc son dessin et change de SENS selon le contexte : à
+// pied il fait voler, aux commandes il fait décoller puis se poser. Rien de
+// neuf à apprendre — c'est la même discipline que « un seul jeu de commandes ».
 function refuserOuVoler() {
+  const aBord = player.decollerOuSePoser();
+  if (aBord === 'decollage') {
+    creatureManager.toast('✈️ Décollage ! Le joystick monte, descend et tourne.', 0x9fd8ff);
+    return true;
+  }
+  if (aBord === 'atterrissage') {
+    creatureManager.toast('🛬 On se pose — garde le cap jusqu\'au sol.', 0x9fd8ff);
+    return true;
+  }
   if (player.toggleFly()) return true;
   creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
@@ -1149,11 +1171,21 @@ function aeroportiste(dt) {
   // quatre-vingts pour exactement ce motif.
   const a = aeroportPres(player.pos.x, player.pos.z, 90);
   if (!a) return;
-  for (const { espece, du, dv } of postesAvion(a.profil)) {
+  for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
     const x = a.x + du, z = a.z + dv;
+    // HUIT BLOCS, PAS QUATORZE. Sur une base, trois chasseurs se garent à
+    // quatorze blocs l'un de l'autre : à ce rayon-là, le voisin comptait pour
+    // « déjà là » et deux postes sur trois restaient vides.
     const dejaLa = animalManager.animals.some((b) => b.def.key === espece
-      && Math.hypot(b.pos.x - x, b.pos.z - z) < 14);
-    if (!dejaLa) animalManager.invoquer(espece, x, z);
+      && Math.hypot(b.pos.x - x, b.pos.z - z) < 8);
+    if (dejaLa) continue;
+    const ne = animalManager.invoquer(espece, x, z);
+    // LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne à toute bête un
+    // yaw aléatoire ; l'espèce étant `immobile`, un avion garé pointait donc
+    // dans une direction quelconque, pour toujours. Le poste publie son cap,
+    // l'appareil s'y aligne — et il est le long de l'aérogare, comme au large
+    // d'un vrai aéroport.
+    if (ne && cap !== undefined) ne.yaw = cap;
   }
 }
 

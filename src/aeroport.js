@@ -444,13 +444,19 @@ export function buildAeroport(poser) {
   avion(44, STAND, -1, 22); passerelle(40, HALL_EXT, 42, STAND - 2);
   // autour des satellites de l'aérogare 1
   avion(-40, -STAND, 1, 24);
-  avion(-40, STAND, -1, 24);
   avion(-14, -STAND, 1, 20);
   // et un gros porteur qui roule vers la piste nord
   avion(0, -TAXI_B, 1, 30);
-  // Un très gros porteur à deux ponts, au large : c'est le plus grand de la
-  // flotte, et il se voit de toute la plate-forme.
-  avion(-14, STAND, -1, 34);
+  // LE POSTE NORD EST LAISSÉ LIBRE, ET C'EST VOULU (v228). Il portait deux
+  // avions en BLOCS — du décor, qu'un enfant ne peut pas prendre. Max :
+  // « les avions sont […] inutilisables ». Ce sont désormais les trois
+  // appareils qu'on pilote qui s'y garent (`postesAvion('roissy')`), et
+  // l'avion qu'on voit au poste est celui dans lequel on monte.
+  //
+  // Ceux du poste SUD restent, eux : une monture ne se dessine qu'à
+  // soixante-deux blocs, et sans eux la plate-forme serait vide vue du ciel.
+  // Mesuré : le retrait libère soixante-deux blocs de tarmac pour une rangée
+  // qui en réclame cinquante-quatre.
   // Le Concorde, seul sur la voie de circulation sud, bien dégagé : c'est la
   // silhouette la plus reconnaissable de la plate-forme, autant la laisser
   // respirer plutôt que de la coincer contre le parking.
@@ -562,9 +568,23 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   if (PISTE2) piste(PISTE2);
 
   // LE TARMAC et ses postes de stationnement, marqués au jaune.
-  dalle(-HALL - 12, HALL + 12, STAND - 7, STAND + 4, -1, ASPHALTE);
-  for (let x = -HALL - 10; x <= HALL + 10; x += 10) {
-    for (let dz = 0; dz < 6; dz++) set(x, -1, STAND - dz, JAUNE);
+  //
+  // L'AIRE SE RÈGLE SUR CE QUI S'Y GARE. Elle valait `HALL ± 12` — un chiffre
+  // rond — et il manquait quatre blocs de chaque côté à `ville`, un à `hub` :
+  // le Concorde débordait sur le hangar. On demande donc son emprise à
+  // `aireAvions`, qui la tient de la longueur des appareils : le jour où l'un
+  // d'eux grandit, la dalle suit sans qu'on y pense.
+  const aire = aireAvions(profil);
+  dalle(Math.min(-HALL - 12, aire.x0), Math.max(HALL + 12, aire.x1),
+    Math.min(STAND - 7, aire.dv0), Math.max(STAND + 4, aire.dv1), -1, ASPHALTE);
+  // Le marquage tombe SOUS chaque appareil, pas tous les dix blocs : c'est ce
+  // qui fait qu'un poste se lit comme un poste.
+  for (const p of postesAvion(profil)) {
+    const g = GABARITS_AVION[p.espece];
+    for (let dx = -Math.round(g.long / 2); dx <= Math.round(g.long / 2); dx += 2) {
+      set(p.du + dx, -1, p.dv - 3, JAUNE);
+    }
+    for (let dz = -3; dz <= 3; dz++) set(p.du, -1, p.dv + dz, JAUNE);
   }
 
   // LE TERMINAL — creux, de plain-pied, avec ses portes des deux côtés.
@@ -622,6 +642,21 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   if (base) { hangar(-HALL - 9); hangar(HALL + 9); } else hangar(HALL + 14);
 }
 
+// L'ENCOMBREMENT DES APPAREILS — et pourquoi il vit ICI.
+//
+// C'est lui qui dimensionne l'aire de stationnement : une aire se règle sur ce
+// qui s'y gare, jamais sur un chiffre rond. Il pourrait vivre dans `avions.js`,
+// à côté des modèles — mais `avions.js` tire une bibliothèque 3D, et
+// `aeroport.js` doit rester lisible SANS elle : c'est ce qui permet au témoin
+// d'interroger le bâtisseur en quelques millisecondes au lieu d'ouvrir un
+// navigateur. Les modèles lisent donc cette table, pas l'inverse.
+export const GABARITS_AVION = {
+  avionligne: { long: 16, larg: 2.4, haut: 4.2 },
+  concorde: { long: 20, larg: 2.0, haut: 4.4 },
+  chasseur: { long: 10, larg: 1.8, haut: 3.2 },
+};
+const PASSAGE = 4;            // de quoi passer entre deux appareils garés
+
 // LES POSTES DE STATIONNEMENT, publiés ici et pas dans `main.js`.
 //
 // Le tarmac est dessiné là ; l'aéroportiste qui vient y garer les appareils
@@ -629,12 +664,78 @@ export function buildAerodrome(poser, profil, rayon = 68) {
 // toujours par diverger — c'est la leçon du mobilier de Londres, qui a rendu
 // « 0/5 bus » le jour où la ville a déplacé ses arrêts.
 //
-// Les trois postes sont écartés de vingt blocs : un avion de ligne fait seize
-// blocs de long et quinze d'envergure, et deux appareils qui se chevauchent ne
-// se lisent plus. Sur une base militaire, ce sont trois chasseurs.
+// TROIS PANNES MESURÉES, TROIS CORRECTIONS (v228). Max, capture à l'appui :
+// « les avions sont moches, posés n'importe où et inutilisables ». La sonde a
+// trouvé VINGT ET UN postes sur cinquante-sept DANS un bâtiment.
+//
+//  - LE CAP ÉTAIT UN TIRAGE AU SORT. `animals.js` donne à toute bête un yaw
+//    aléatoire, et l'espèce est `immobile` : un avion au poste pointait donc
+//    dans une direction quelconque, pour toujours. Le poste publie son cap.
+//  - ILS ÉTAIENT EN TRAVERS. Nez vers -z, un Concorde réclame vingt blocs de
+//    PROFONDEUR ; l'aire en fait douze, et sept à Roissy. Ce qui est de
+//    l'autre côté, c'est le terminal. Ils se garent désormais LE LONG DE X,
+//    parallèles à l'aérogare — ce que le bâtisseur de Roissy fait déjà pour
+//    ses avions en blocs, et ce qu'on voit sur tout poste au large.
+//  - ROISSY N'AVAIT PAS DE BRANCHE. Il tombait dans le cas `ville`, donc à
+//    dv = 17, entre HALL_INT (8) et HALL_EXT (18) : dans le hall. Une table
+//    publiée par le mauvais bâtisseur ment aussi bien qu'une table recopiée.
+//
+// Les positions sont un RÉSULTAT : chaque appareil prend sa propre longueur
+// plus un passage, et la rangée est centrée sur un point cherché — pas choisi.
+// Les valeurs ci-dessous sont celles de cette recherche, la rangée la plus
+// proche de l'axe que chaque plan déclare.
+// LE CAP EST VÉRIFIÉ EN CAPTURE, PAS DÉDUIT. Le modèle a le nez vers -z et
+// `animals.js` rend `mesh.rotation.y = yaw + π` : yaw = π/2 met donc le nez
+// vers +x, le long de l'aérogare.
+const CAP_LE_LONG_DE_X = Math.PI / 2;
+
+// Les aérodromes engendrés se garent EN RANGÉE : leur aire est dessinée pour
+// cela, et elle s'élargit avec eux (`aireAvions`). Les valeurs sont celles de
+// la recherche — la rangée libre la plus proche de l'axe déclaré par le plan.
+const RANGEES = {
+  hub: { dv: 22, centre: 0 },
+  ville: { dv: 19, centre: -7 },     // décalé : le hangar occupe x = HALL+8…HALL+20
+  base: { dv: 10, centre: 0 },       // devant les hangars, qui tiennent z = 12…20
+};
+
+// ROISSY EST BÂTI À LA MAIN, ET SES POSTES AUSSI. Sa plus longue plage libre
+// sur l'axe nord fait TRENTE ET UN blocs pour une rangée qui en réclame
+// cinquante-quatre : les trois appareils y prennent chacun leur poste, comme
+// aux vraies portes. Ces trois emplacements sortent de la sonde qui balaie
+// l'axe bloc par bloc — les mâts d'éclairage sont à z = ±24, ce qui interdit
+// le poste 22 à un avion de ligne (2,4 blocs de large).
+const POSTES_ROISSY = [
+  { espece: 'concorde', du: -34, dv: 23 },
+  { espece: 'avionligne', du: -13, dv: 21 },
+  { espece: 'chasseur', du: 3, dv: 21 },
+];
+
 export function postesAvion(profil) {
+  if (profil === 'roissy') {
+    return POSTES_ROISSY.map((p) => ({ ...p, cap: CAP_LE_LONG_DE_X }));
+  }
   const base = profil === 'base';
-  const stand = base ? 16 : profil === 'hub' ? 22 : 19;
   const especes = base ? ['chasseur', 'chasseur', 'chasseur'] : ['avionligne', 'concorde', 'chasseur'];
-  return especes.map((espece, i) => ({ espece, du: (i - 1) * 20, dv: stand - 2 }));
+  const plan = RANGEES[profil] || RANGEES.ville;
+  const total = especes.reduce((s, e) => s + GABARITS_AVION[e].long, 0)
+    + PASSAGE * (especes.length - 1);
+  let x = plan.centre - total / 2;
+  return especes.map((espece) => {
+    const g = GABARITS_AVION[espece];
+    const du = Math.round(x + g.long / 2);
+    x += g.long + PASSAGE;
+    return { espece, du, dv: plan.dv, cap: CAP_LE_LONG_DE_X };
+  });
+}
+
+// L'EMPRISE que la rangée réclame sur le tarmac. `buildAerodrome` l'utilise
+// pour dimensionner sa dalle : l'aire se règle sur ce qui s'y gare, et elle
+// suivra toute seule le jour où un appareil changera de taille.
+export function aireAvions(profil) {
+  const postes = postesAvion(profil);
+  const x0 = Math.min(...postes.map((p) => p.du - GABARITS_AVION[p.espece].long / 2));
+  const x1 = Math.max(...postes.map((p) => p.du + GABARITS_AVION[p.espece].long / 2));
+  const dv0 = Math.min(...postes.map((p) => p.dv));
+  const dv1 = Math.max(...postes.map((p) => p.dv));
+  return { x0: Math.floor(x0) - 2, x1: Math.ceil(x1) + 2, dv0: dv0 - 3, dv1: dv1 + 3 };
 }

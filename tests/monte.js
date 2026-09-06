@@ -1305,17 +1305,21 @@ async function avancerUnDemiSeconde(p, depart) {
           };
           requestAnimationFrame(pas);
         });
-        g.player.keys.add('KeyW');
+        // ON DÉCOLLE COMME L'ENFANT : par le bouton. Depuis la v228, la
+        // vitesse est automatique et le joystick tient l'altitude et le cap —
+        // tenir « avant » ferait monter, pas accélérer. Un témoin qui garderait
+        // l'ancienne commande mesurerait un jeu qui n'existe plus.
+        g.player.decollerOuSePoser();
         await tenirSecondes(def.pilote.max / def.pilote.poussee + 1);
         const atteinte = g.player.vitesseAvion;
         // Puis DEUX secondes à la pointe : c'est là que se lisent les rapports
         // de vitesse, et c'est ce que l'enfant parcourt vraiment.
         const depart = { x: g.player.pos.x, z: g.player.pos.z };
         await tenirSecondes(2);
-        g.player.keys.delete('KeyW');
         const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
         out[key] = { blocs: Math.round(d), vitesse: Math.round(atteinte), max: def.pilote.max };
         g.player.pilote = null;
+        g.player.avionEnVol = false;
         g.player.vitesseAvion = undefined;
         g.player.flying = false;
       }
@@ -1333,6 +1337,53 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et le Concorde comme le chasseur vont deux fois et demie plus vite',
       conc.blocs > ligne.blocs * 1.8 && chas.blocs > ligne.blocs * 1.8,
       `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 2 s de pointe`);
+
+    // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
+    //
+    // Max, dans le Concorde : « il ne décolle pas ». Aux commandes, le bouton
+    // appelait `toggleFly()`, qui réussissait et basculait `player.flying` —
+    // un drapeau que la branche de pilotage ignore complètement. Aucun effet,
+    // aucun message. Pour un enfant, c'est pire qu'un refus : il appuie dix
+    // fois et conclut que le jeu est cassé.
+    //
+    // ON ÉPROUVE LE TRAJET DE L'ENFANT : on se met aux commandes, on appuie
+    // sur la touche que le bouton déclenche (`KeyF`), et l'on regarde si
+    // l'appareil PREND DE L'ALTITUDE. Pas si un drapeau a changé.
+    const decollage = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const out = {};
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        g.player.pos.set(0, 90, 0);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0;
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.vitesseAvion = 0;
+        g.player.avionEnVol = false;
+        const y0 = g.player.pos.y;
+        // La touche du bouton, pas la méthode : c'est le chemin de l'enfant.
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+        await new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            if (cumul >= 3) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        out[key] = Math.round((g.player.pos.y - y0) * 10) / 10;
+        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.vitesseAvion = undefined; g.player.flying = false;
+      }
+      return out;
+    });
+    // Vingt blocs de palier en trois secondes : on demande au moins la moitié,
+    // pour ne pas mesurer la cadence du banc.
+    verifier('le bouton ✈️ fait décoller l\'appareil',
+      Object.values(decollage).every((h) => h >= 10),
+      `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

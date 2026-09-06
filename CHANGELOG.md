@@ -20,6 +20,58 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v228 — Les avions sont garés au poste, et le bouton les fait décoller
+
+**Pourquoi.** Max, trois captures à l'appui : « les avions sont moches, posés
+n'importe où et inutilisables », puis « le Concorde, il ne décolle pas ».
+Trois défauts distincts, et la sonde en a trouvé les trois causes — dont
+aucune n'était celle qu'on aurait devinée en regardant l'image.
+
+*Posés n'importe où.* Vingt et un postes de stationnement sur cinquante-sept
+étaient **dans un bâtiment**. Roissy n'avait aucune branche dans le plan des
+postes : il tombait dans le cas des villes moyennes, donc à vingt-deux blocs
+du centre — entre `HALL_INT` (8) et `HALL_EXT` (18), c'est-à-dire dans le hall
+de l'aérogare 2. Et les appareils étaient posés nez vers le nord, ce qui
+réclame vingt blocs de profondeur pour une aire qui en fait douze — sept à
+Roissy. Enfin le cap venait d'un `Math.random()` : l'espèce étant `immobile`,
+un avion garé pointait dans une direction quelconque, pour toujours.
+
+*Inutilisables.* Le bouton ✈️ appelait `toggleFly()`, qui réussissait et
+basculait un drapeau que la physique de vol **ignore complètement**. Aucun
+effet, aucun message : l'enfant appuie et il ne se passe rien. Et pour
+décoller il fallait deviner qu'on tient « avant » pour les gaz, qu'on lève les
+yeux pour l'assiette, et qu'il faut d'abord dépasser la vitesse de décrochage.
+
+**Ce que ça change.** Les cinquante-sept appareils sont au poste, sur le
+revêtement, alignés le long de l'aérogare comme au large d'un vrai aéroport.
+À Roissy, les deux avions **en blocs** du poste nord ont cédé la place aux
+trois qu'on pilote : l'avion qu'un enfant voit à la porte est celui dans
+lequel il monte.
+
+Et les commandes sont celles que Max a demandées : **le bouton ✈️ décolle**
+(l'appareil monte tout seul de vingt blocs, au-dessus des terminaux et des
+tours de contrôle), **le joystick tient l'altitude et le cap**, la vitesse est
+automatique, et le regard reste libre pour le paysage. Un second appui se
+pose. Trois commandes à deviner sont devenues deux axes et un bouton.
+
+**Ce qui le prouve.** Trois témoins neufs. Celui des postes interroge le
+**bâtisseur** — `buildAeroport` et `buildAerodrome` sont des fonctions pures,
+on leur donne un `poser` qui note tout — et il mesure les dix-neuf aérodromes
+en quelques millisecondes sans y aller : **21 en faute sur `origin/main`, zéro
+ici**, la même mesure des deux côtés. Un deuxième vérifie que les appareils
+d'un même aérodrome pointent tous dans le même sens. Le troisième éprouve le
+trajet de l'enfant : on se met aux commandes, on appuie sur la touche du
+bouton, et l'on regarde si l'appareil **prend de l'altitude** — pas si un
+drapeau a changé.
+
+**Ce qui n'est pas fait, et pourquoi.** Les modèles restent sculptés à la
+main, et la capture montre qu'un avion **en blocs** posé à côté se lit mieux
+qu'eux : fuselage trop fin, ailes en plaques plates. C'est le plafond que la
+voiture avait atteint avant `voiture.glb`. Le chargeur de modèles pour les
+avions n'est pas écrit : ce serait une brique dont rien ne se sert tant qu'il
+n'y a pas de fichier — la panne de `monuments.js`, livré sans un seul
+`import`. Dette déclarée.
+
 ## v227 — Le premier chargement ne télécharge plus ce qui ne sert pas à jouer
 
 **Pourquoi.** Max : « Le jeu lag, on peut pas l'alléger… ? » puis, tout de
