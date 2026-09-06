@@ -74,6 +74,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
     `eauDeVille`, et répond à quatre questions — centre au sec, monument dans le
     disque, monument au sec, lieu nommé dans la ville.
 
+- [ ] **`monte.js` a DEUX témoins instables, et je n'ai pas trouvé pourquoi
+  (v227).** Le portail l'a rendue rouge une fois, verte la fois d'après, sur le
+  MÊME code — et pas sur le même témoin. Six mesures, jointes ici pour que
+  personne ne les refasse :
+
+  | exécution | où | verdict |
+  | --- | --- | --- |
+  | portail complet | branche | ❌ « chacun est dans l'eau » — 1 poisson hors |
+  | `monte` seul | branche | ❌ « la monte la voit » — `vise:true`, un AUTRE témoin |
+  | `monte` seul (2ᵉ) | branche | ✅ |
+  | `monte` seul | `origin/main`, arbre détaché | ✅ |
+  | 20 échantillons, régime établi | branche | 0 poisson hors de l'eau |
+  | 40 échantillons denses PENDANT le remplissage du banc | branche | 0 poisson hors de l'eau |
+
+  Ce qui est ÉCARTÉ par la mesure, et qu'il ne faut donc pas resoupçonner : ce
+  n'est pas une régression du lot (les deux empreintes de relief sont
+  identiques à celles de `main`, et les deux témoins visent Marseille et le
+  point d'apparition, pas une ville à fiche) ; et ce n'est PAS le banc de
+  poissons lu pendant qu'il se remplit — il passe de 3 à 22 en neuf secondes,
+  le témoin tire dès `effectif() >= 3`, et quarante échantillons denses dans
+  cette fenêtre exacte rendent zéro poisson hors de l'eau.
+
+  Ce qui reste : la charge du portail — `monte.js` passe en sixième position
+  après cinq suites lourdes. **Et c'est justement l'explication qu'il ne faut
+  PAS écrire sans la mesurer** : « la charge du banc » a servi deux fois, en
+  v218 et v219, à expliquer des rouges qu'elle ne causait pas. La piste à
+  éprouver est le PAS DE SIMULATION : sous charge, une image dure longtemps,
+  un poisson avance d'un grand pas et peut franchir la frontière de l'eau
+  avant que la physique ne le rattrape. Cela se mesure en forçant un `dt`
+  long, pas en relançant le portail.
+
 - [ ] **Ce que le premier lot laisse en dette.**
   — **Le bord de disque se voit sur les côtes.** Entre la mer d'une ville et
     l'océan du monde il reste une bande de terre : le fondu de `hauteurVillesMonde`

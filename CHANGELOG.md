@@ -78,6 +78,15 @@ que la fiche façonne — la colline sur laquelle il devait être n'existe pas.
 Vérifié rouge sur le vrai défaut écrit en route (Naples à l'échelle 12 :
 « Castel dell'Ovo déborde de 3 blocs »), vert une fois l'échelle corrigée.
 
+**Une dette déclarée, pas cachée.** `monte.js` a rendu le portail rouge une
+fois et vert la fois d'après, sur le MÊME code et pas sur le même témoin. Six
+mesures écartent la régression — les deux empreintes de relief sont identiques
+à celles de `main`, `origin/main` rejouée seule est verte, et le banc de
+poissons échantillonné quarante fois pendant qu'il se remplit ne rend jamais un
+poisson hors de l'eau. Ce qui reste est la charge du portail, et c'est
+précisément l'explication qu'on n'écrit pas sans la mesurer : elle a servi deux
+fois à tort, en v218 et v219. La piste et la méthode sont dans `TASKS.md`.
+
 **Et ce que les captures ont trouvé, qu'aucun témoin ne voyait.** Les deux
 couleurs ci-dessus, la note de capture elle-même — `CLAUDE.md` disait de juger
 à `rr=9` quand le jeu rend à seize sur ordinateur et douze sur tablette, si
