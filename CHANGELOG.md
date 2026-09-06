@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v227 — Le premier chargement ne télécharge plus ce qui ne sert pas à jouer
+
+**Pourquoi.** Max : « Le jeu lag, on peut pas l'alléger… ? » puis, tout de
+suite après, la vraie phrase : « En fait c'est just long à load le first
+time. » Mesuré sur la production, fichier par fichier : le premier
+chargement pèse **5,79 Mo compressés**, dont **4,67 Mo pour le seul scanner
+de visages** — contre **1,12 Mo pour le jeu ENTIER, ses 78 fichiers**.
+Quatre-vingts pour cent du premier chargement partaient donc dans une
+bibliothèque de reconnaissance faciale dont l'enfant n'a pas besoin pour
+jouer.
+
+Et ils partaient au pire moment. Le préchargement s'annonçait « pendant que
+l'enfant lit l'accueil » ; il était armé par `requestIdleCallback`, qui rend
+la main dès que la boucle respire — c'est-à-dire **pendant que le monde
+s'engendre**, juste après que l'enfant a appuyé sur « Jouer ». Ce n'est pas
+seulement un téléchargement : il charge aussi trois réseaux de neurones en
+mémoire, sur le processeur dont le monde a besoin.
+
+**Ce que ça change.** Le premier lancement ne prend plus que ce qu'il faut
+pour jouer. Le scanner attend que la page ait autre chose à faire : l'enfant
+qui reste sur l'accueil l'obtient comme avant, celui qui part jouer l'obtient
+à sa première pause, et celui qui touche « Reconnais-moi » sans attendre a
+toujours sa barre de progression, qui dit ce qu'elle fait. Rien n'est retiré ;
+c'est l'ordre qui change.
+
+**Ce qui le prouve.** Onze témoins, dont deux neufs dans `maj.js`. Le premier
+regarde les REQUÊTES, pas une variable : l'enfant ouvre le jeu, appuie sur
+« Jouer », joue vingt-cinq secondes, et pas un octet de scanner ne doit passer
+sur le fil. Rouge sur `origin/main` — quatorze fichiers — vert ici. Le second
+est vert des deux côtés à dessein : il vérifie que le remède ne va PAS trop
+loin, en gardant le préchargement pour l'enfant qui reste sur l'accueil.
+
+Ce qui est **établi**, c'est le poids : quatorze requêtes de scanner pendant
+qu'on joue sur `origin/main`, zéro ici. Le temps, lui, se dit avec prudence —
+le banc rend en logiciel et il bouge beaucoup. Quatre passages de chaque côté
+à 12 Mb/s : **10,9 s de moyenne avant de pouvoir jouer contre 8,2**, et
+surtout un écart entre passages qui tombe de 7,7–15,8 s à 7,5–9,3. À 4 Mb/s,
+deux passages chacun, aucune différence mesurable. **On ne promet donc pas de
+secondes sur l'iPad de Max** : on promet 4,67 Mo qui ne partent plus pendant
+qu'il attend.
+
 ## v226 — Les villes ne sont plus vides quand on y arrive
 
 **Pourquoi.** Max, deux fois : « clairement pas de piétons, pas de vie dans les
