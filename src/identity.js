@@ -171,14 +171,46 @@ function loadFaceApi(onProgress, onPercent) {
 // encore sur l'accueil : quand il touchera « Reconnais-moi », tout sera prêt.
 // On s'abstient hors-ligne, en mode économie de données, et sur une connexion
 // lente ou facturée — 8 Mo à l'insu du parent ne sont pas un cadeau.
-export function prefetchScanner() {
+//
+// ET SURTOUT : JAMAIS PENDANT QUE L'ENFANT ATTEND DE JOUER. Mesuré sur la
+// production, le premier chargement pèse 5,79 Mo compressés — dont 4,67 pour
+// ce scanner seul, contre 1,12 pour le jeu ENTIER. Quatre-vingts pour cent du
+// premier chargement partaient donc dans une bibliothèque dont l'enfant n'a
+// pas besoin pour jouer, et ils partaient au pire moment : `requestIdleCallback`
+// rend la main dès que la boucle respire, c'est-à-dire pendant que le monde
+// s'engendre. Mesuré à 4 Mb/s, deux passages chacun : 15,3 s avant de pouvoir
+// jouer contre 13,0 s sans, et l'écart entre deux passages tombe de 2,7 s à
+// 0,3 s. Le préchargement n'est pas un service quand il vole la bande passante
+// de ce qu'il précède.
+//
+// D'où la forme : c'est une cadence de MÉNAGE, pas une animation — elle compte
+// en temps réel, elle regarde si la page a autre chose à faire, et elle
+// RÉESSAIE au lieu d'abandonner. Un enfant qui reste sur l'accueil l'obtient
+// comme avant ; un enfant qui appuie sur « Jouer » l'obtient à sa première
+// pause. Et celui qui touche « Reconnais-moi » sans attendre a déjà sa barre
+// de progression, qui dit ce qu'elle fait.
+// ET UN INSTANT DE CALME N'EST PAS UN ÉTAT CALME. `running` retombe à faux le
+// temps d'un changement de verrouillage du pointeur ; un seul coup d'œil
+// tombait donc parfois dans ce trou et lançait les quatre mégaoctets et demi
+// EN PLEINE PARTIE — mesuré une fois sur six au banc, 221 s pour retrouver
+// vingt images par seconde là où il en faut huit. On exige le calme DEUX fois
+// de suite : une secousse n'y survit pas, un vrai retour au menu si.
+const REPIT_MS = 8000;      // le temps que le premier monde s'installe
+const REESSAI_MS = 5000;
+const CALMES_DAFFILEE = 2;
+export function prefetchScanner(pageCalme = () => true) {
   if (faceapiPromise || scannerCached()) return;
   if (!navigator.onLine) return;
   const c = navigator.connection;
   if (c && (c.saveData || /^(slow-)?2g$/.test(c.effectiveType || ''))) return;
-  const start = () => { loadFaceApi().catch(() => {}); };
-  if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 8000 });
-  else setTimeout(start, 3000);
+  let calmes = 0;
+  const essayer = () => {
+    if (faceapiPromise || scannerCached()) return;
+    calmes = pageCalme() ? calmes + 1 : 0;
+    if (calmes < CALMES_DAFFILEE) { setTimeout(essayer, REESSAI_MS); return; }
+    loadFaceApi().catch(() => {});
+  };
+  setTimeout(essayer, REPIT_MS);
 }
 
 // Conseils qui montent en précision quand ça traîne. Sur un iPad tenu à bout

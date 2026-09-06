@@ -381,6 +381,62 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Le premier chargement — ce qui part, et QUAND
+
+**Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
+scanner de visages pèse **4,67 Mo compressés** ; le jeu entier, ses 78
+fichiers, en pèse **1,12**. Quatre-vingts pour cent du premier chargement
+partaient donc dans une bibliothèque dont on n'a pas besoin pour jouer, et
+personne ne l'avait jamais mesuré — la ligne se lisait très bien : « pendant
+que l'enfant lit l'accueil ». Trois choses en sortent, et les trois se
+reprennent telles quelles la prochaine fois.
+
+- **`requestIdleCallback` NE VEUT PAS DIRE « quand la page n'a rien à
+  faire ».** Il rend la main dès que la boucle respire — donc pendant que le
+  monde s'engendre, juste après « Jouer ». C'est exactement le piège de
+  `souffler()` et du minuteur en `dt`, par un troisième bout : **une attente
+  qui n'observe pas la bonne chose n'attend rien.** Ce qui décide qu'une page
+  est calme, c'est un fait du jeu (`running`), jamais une primitive du
+  navigateur.
+- **UN PRÉCHARGEMENT EST UNE CADENCE DE MÉNAGE.** Il compte en temps réel, il
+  regarde si la page a autre chose à faire, et il RÉESSAIE au lieu
+  d'abandonner. Même famille que `cadence.js` : ce qui décide si le monde
+  existe autour de l'enfant ne doit rien devoir à ce que l'enfant est en train
+  de faire, et réciproquement.
+- **UN INSTANT DE CALME N'EST PAS UN ÉTAT CALME.** Première version : un seul
+  coup d'œil à `running`. Il retombe à faux le temps d'un changement de
+  verrouillage du pointeur, et le préchargement partait alors EN PLEINE
+  PARTIE — vu une fois sur six au banc, 221 s pour retrouver vingt images par
+  seconde là où il en faut huit. On exige désormais le calme **deux fois de
+  suite**. Un chiffre aberrant dans une série se démonte : c'était un défaut
+  de ma propre livraison, pas du bruit de banc.
+- **ET LE REMÈDE NE DOIT PAS ALLER PLUS LOIN QUE LA PANNE.** Supprimer le
+  préchargement était plus simple, et cela aurait rendu à l'enfant qui touche
+  « Reconnais-moi » les quatre mégaoctets et demi d'attente. Le second témoin
+  de `maj.js` est vert des deux côtés à dessein : il garde ce qu'on ne veut pas
+  casser. Un témoin vert des deux côtés se retire quand il ne mesure rien —
+  celui-ci mesure une CAPACITÉ qu'on vient de frôler.
+
+**Et une mesure de premier chargement se fait sur ce que la PRODUCTION sert,
+pas sur le disque.** Le banc sert sans compression : 15,6 Mo. Vercel sert en
+brotli : 5,79. `curl -s -o /dev/null -w '%{size_download}' -H 'Accept-Encoding:
+br, gzip'` sur la liste `ASSETS` de `sw.js` donne le vrai chiffre en une
+minute. Sans lui, on optimise un poids qui n'existe nulle part.
+
+**Ce que le banc ne peut PAS mesurer du premier chargement, et qu'il faut
+savoir avant de conclure.** Le conteneur rend en logiciel (SwiftShader). Le
+profil du premier chargement y donne **2,65 s dans `three.module.min.js`**,
+dont 1,84 imputées à `makeCharPortraits` — et la mesure séparée montre que ce
+n'est pas le rendu (29 ms pour huit portraits) ni la conversion en image
+(71 ms), **c'est la création du premier contexte WebGL de la page** (379 ms
+pour le SECOND, une fois le pilote chaud). Sur un iPad ce coût est de l'ordre
+de la dizaine de millisecondes. **Un chiffre de processeur mesuré sur ce banc
+ne se transpose pas à la tablette** ; seuls les octets et l'ordre des
+téléchargements se transposent. C'est la même leçon que « devant un rouge de
+durée, on mesure d'abord le banc », appliquée à une mesure de performance.
+
+---
+
 ## Ne jamais livrer un fichier que personne n'importe
 
 `src/monuments.js` est parti en production dans v157 : 803 lignes, 21 monuments,

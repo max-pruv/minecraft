@@ -1896,8 +1896,12 @@ const identity = new Identity(cloud, raw);
 })();
 identity.syncFromCloud();
 // Le scanner se charge pendant que l'enfant lit l'accueil, pour qu'il n'ait
-// plus à l'attendre au moment où il veut se faire reconnaître.
-prefetchScanner();
+// plus à l'attendre au moment où il veut se faire reconnaître — mais JAMAIS
+// pendant qu'il attend de jouer : ses 4,67 Mo font quatre-vingts pour cent du
+// premier chargement. `running` dit exactement ce qu'il faut savoir : il passe
+// à vrai dès que l'enfant entre dans le monde, donc pendant que les morceaux
+// s'engendrent, et il redevient faux à la pause et sur les menus.
+prefetchScanner(() => !running);
 
 // Sampled from the enrolment photo: the child's character gets their skin
 // and hair colour. Stored with the profile and synced, so it follows them.
