@@ -13,6 +13,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Le seuil de `souffler()` est faux pour quatre cœurs.** La v224 a ramené
+  sa limite de 120 à 30 s (portail 83 → 59 min). Mais le relevé neuf montre que
+  **les trente-huit appels tapent encore leur limite** : la charge reste entre
+  3,0 et 5,7 et ne repasse jamais sous `chargeMax = 2.0`. L'attente est donc
+  constante par construction — ce n'est pas une condition, c'est un délai. Sur
+  une machine à quatre cœurs, une charge de 3 à 4 avec un navigateur ouvert est
+  normale. Deux pistes, à MESURER et non à choisir : relever `chargeMax` (4,0
+  ferait un cœur chargé par cœur), ou remplacer la charge d'une minute par une
+  mesure qui, elle, prédit la cadence — la v220 a montré que celle-ci ne la
+  prédit pas. Gain en jeu : trente-huit appels × 20 s ≈ **12 min sur les 51**.
+  Ne rien couper sans rejouer le portail complet : c'est la seule preuve que
+  l'attente ne protégeait rien.
+
+
 - [ ] **LA BANDE MORTE DES PIÉTONS — rouge EN PRODUCTION, mesuré (v223).** Le
   témoin de fumée « et elle reste habitée quand on la traverse à pied » est
   rouge sur `origin/main` **deux fois sur trois** (pire 2, 2, 6 ; seuil 3), et
@@ -508,6 +522,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v224** — Le portail passe de 83 à 59 minutes. `souffler()` expirait à
+  deux minutes cinq fois sur six ; ramené à trente secondes, treize suites
+  vertes et rien de perdu. Plus le chronomètre par suite et par témoin, et
+  l'élargissement de la table des gardiens reconnu comme anodin.
 
 - [x] **v223** — On pilote un avion (avion de ligne 110 blocs/s, Concorde et
   chasseur 264), et dix-neuf aérodromes pour avoir où atterrir : Roissy
