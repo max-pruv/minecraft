@@ -1968,9 +1968,20 @@ suit la taille de la ville, il n'est pas une constante de la carte.
 `rr=2` — deux morceaux de distance d'affichage, pour que les suites tiennent
 sur quatre cœurs. Une capture prise sur cette page montre un mur gris à
 trente blocs et fait croire à une ville vide. Pour juger sur captures, on
-rouvre la page avec `rr=9`. Et un script de banc (`sonde.js`, `captures.js`)
+rouvre la page avec **`rr=16`, qui est le DÉFAUT DU JEU sur ordinateur** (12
+sur tablette, `main.js`). Cette ligne disait `rr=9` : on jugeait donc sur
+MOINS que ce que l'enfant voit, et la moitié lointaine de chaque grande ville
+partait dans le gris. Un réglage de capture se lit dans le jeu, il ne
+s'invente pas. Et un script de banc (`sonde.js`, `captures.js`)
 NE SE TERMINE PAS après avoir imprimé son résultat — express et le courtier
 restent ouverts ; on lit le journal, puis on tue le processus par son pid.
+
+**Et la caméra aérienne se pose PLUS HAUT ET PLUS PRÈS que l'intuition.** Le
+brouillard commence à `0,55 × rr × 16` blocs et ferme à `rr × 16` : à rr=16,
+141 et 256. Une caméra reculée pour « tenir la ville entière » met sa moitié
+lointaine derrière le voile, et l'on croit la ville vide alors qu'on regarde
+du gris. On monte à une fois et demie le rayon, on recule d'un rayon, et l'on
+pique à cinquante degrés.
 
 **Hors de la fenêtre d'empreinte.** Nice est à (718, 1726) ; `plafond.js`
 échantillonne [−700, 700]. Comme Manhattan et San Francisco, la refonte

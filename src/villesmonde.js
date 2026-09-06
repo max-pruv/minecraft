@@ -984,7 +984,7 @@ const FICHES = {
     collines: [
       { nom: 'Várhegy nord', cu: -8, cv: -6, r: 5, h: 10 },
       { nom: 'Várhegy sud', cu: -4, cv: 6, r: 5, h: 10 },
-      { nom: 'Gellért-hegy', cu: 7, cv: 19, r: 7, h: 15, roche: true },
+      { nom: 'Gellért-hegy', cu: 7, cv: 19, r: 7, h: 15 },   // boisée, comme la vraie
     ],
     trame: { ang: 0.1, pu: 6, pv: 5 },
     palette: [JAUNE_MUR, OCRE, CREME], toit: ARDOISE, hMaison: [4, 6],
