@@ -49,10 +49,20 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
-// Millisecondes maximum consacrées par frame à construire des chunks. À 60 fps
-// une frame dure 16,7 ms : en laisser 6 au terrain garde de la marge pour le
-// reste du jeu et rend les gels structurellement impossibles.
-const MESH_BUDGET_MS = 6;
+// Millisecondes maximum consacrées par frame à construire des chunks.
+//
+// LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
+// du jeu : 5,4 ms pour mailler un morceau. À six millisecondes, la boucle en
+// maillait un, regardait l'heure, en maillait un second et s'arrêtait — le
+// budget ne bornait donc rien, il fixait le débit à deux par image. C'est
+// exactement la forme du seuil de charge du banc en v225 : une constante se
+// règle sur le coût MESURÉ de ce qu'elle est censée laisser passer.
+//
+// Mesuré à 264 blocs/s, même page et même point : 6 ms → 76 morceaux/s pour 45
+// images ; 12 ms → 154 morceaux/s pour 44 images ; 20 ms → 178 morceaux/s pour
+// 30 images. Douze double le débit sans coûter une image, vingt gagne 15 % de
+// plus et coûte un tiers de la cadence. On prend douze.
+const MESH_BUDGET_MS = 12;
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 // Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de

@@ -20,6 +20,62 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v229 — Le monde se charge deux fois plus vite, et les avions ne le dépassent plus
+
+**Pourquoi.** Max : « les jets volent trop vite, la carte n'arrive pas à
+suivre et ça rame. Améliore l'efficacité de la carte et réduis un peu la
+vitesse. » Mesuré à 264 blocs par seconde : **quatre à sept pour cent** du
+paysage devant l'enfant était réellement construit, le premier trou à
+trente-deux blocs, et **deux appels de dessin par image** — il n'y avait
+littéralement rien à afficher. L'avion volait devant son monde.
+
+La cause n'était pas celle qu'on devine. Ce n'était pas la file d'attente des
+morceaux, que je soupçonnais : elle coûte trois millisecondes par seconde,
+mesuré. C'était le budget. `MESH_BUDGET_MS` valait **six** millisecondes quand
+construire un morceau en coûte **5,4** : la boucle en construisait un,
+regardait l'heure, en construisait un second et s'arrêtait. Le budget ne
+bornait donc rien — il figeait le débit à deux morceaux par image, quoi qu'on
+écrive.
+
+**Ce que ça change.** Le monde se construit **deux fois plus vite** — 76 à 154
+morceaux par seconde, sans coûter une image — et les avions volent à une
+vitesse que ce monde sait servir. Concrètement, à quelle distance devant soi
+commence le paysage pas encore construit :
+
+| | avant | après |
+| --- | --- | --- |
+| avion de ligne | 96 blocs | **132–137** |
+| Concorde et chasseur | 32–51 blocs | **125–138** |
+
+Le brouillard commence à 106 blocs : le trou est désormais **derrière** lui,
+donc invisible. L'enfant ne rattrape plus le bord du monde.
+
+**Ce qu'on perd, et c'est une décision de Max.** Le plafond du chargement est
+cent dix blocs par seconde. Garder le rapport réel — 900 km/h contre 2 180,
+soit 1 à 2,4 — voulait dire un Concorde qui vole toujours devant le monde.
+Devant le choix, Max a tranché : **tout le monde autour de cent.** 95 pour
+l'avion de ligne (juste au-dessus des 88 du vol libre, sinon prendre l'avion
+ne sert à rien), 110 pour le Concorde et le chasseur, qui ne se distinguent
+plus que par leur agilité. Le rapport tombe à 1,16 ; c'est déclaré dans
+`TASKS.md`, et le seul moyen de le reprendre est de construire encore plus
+vite.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, et il a fallu le
+corriger **deux fois** avant qu'il ne prouve quoi que ce soit.
+
+- D'abord il était **vert sur `origin/main` à 264 blocs par seconde** : le
+  banc ouvre le jeu avec une distance d'affichage de deux morceaux, où le
+  brouillard commence à dix-huit blocs et où rien ne peut manquer. Il mesurait
+  le banc. Il demande désormais la distance de l'iPad.
+- Ensuite il lisait **un instantané**, et un front de chargement est
+  irrégulier : le même code rendait 68, 91 puis 101 blocs. J'ai failli
+  descendre les avions pour poursuivre un chiffre qui bougeait tout seul — à
+  140 il rendait moins qu'à 170. Six relevés et la médiane : les
+  distributions se séparent alors nettement.
+
+Rouge sur `origin/main` (trou à trente-deux blocs), vert ici, la même mesure
+des deux côtés.
+
 ## v228 — Les avions sont garés au poste, et le bouton les fait décoller
 
 **Pourquoi.** Max, trois captures à l'appui : « les avions sont moches, posés

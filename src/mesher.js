@@ -197,6 +197,10 @@ class GeomBuffer {
 
 // Returns { solid, water, props } — geometries plus the prop cells found in
 // this chunk (props render as separate 3D meshes, not cube faces).
+// Le tampon de travail du maillage, partagé par tous les morceaux : il ne sert
+// que DANS un appel, et il est effacé au début de chaque tranche.
+const masqueReserve = [];
+
 export function buildChunkGeometry(world, cx, cz) {
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
@@ -241,7 +245,13 @@ export function buildChunkGeometry(world, cx, cz) {
     const nU = dims[uAxis], nV = dims[vAxis], nS = dims[sAxis];
     // le masque décrit une tranche : chaque case porte la face à émettre, ou
     // null. Réutilisé d'une tranche à l'autre pour ne rien allouer en boucle.
-    const masque = new Array(nU * nV);
+    // LE MASQUE SE RÉUTILISE D'UN MORCEAU À L'AUTRE. Six tableaux de deux mille
+    // cinq cents cases par morceau, vingt-quatre morceaux par seconde : le
+    // ramasse-miettes prenait 24 % du temps de maillage (profil, v229). Il est
+    // toujours rempli de `null` avant usage, donc rien ne fuit d'un morceau au
+    // suivant — et il ne rétrécit jamais, ce qui évite de le réallouer.
+    if (masqueReserve.length < nU * nV) masqueReserve.length = nU * nV;
+    const masque = masqueReserve;
 
     for (let s = 0; s < nS; s++) {
       masque.fill(null);
