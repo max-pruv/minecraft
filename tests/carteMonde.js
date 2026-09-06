@@ -1848,6 +1848,86 @@ const VRAIES_KM = [
         });
       }));
 
+    // LE DESSIN DES APPAREILS — trois défauts mesurés, aucun affaire de goût.
+    //
+    // Max, capture à l'appui : « fix plane design, they are not realistic ».
+    // On ne mesure pas « c'est joli » — cela se juge en capture, et c'est la
+    // règle du projet. On mesure trois choses que le modèle PROMETTAIT et ne
+    // tenait pas. Les modèles sont des fonctions pures : on les appelle et
+    // l'on lit ce qu'elles rendent, sans avoir besoin d'aller sur un tarmac.
+    const dessin = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const av = await import('./src/avions.js');
+      const aero = await import('./src/aeroport.js');
+      const GAB = aero.GABARITS_AVION || {};
+      const out = {};
+      for (const [nom, faire] of Object.entries(av.MODELES_AVION || {})) {
+        const g = faire();
+        const bb = new THREE.Box3().setFromObject(g);
+        const sommets = [];
+        g.traverse((o) => {
+          const pos = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+          if (!pos) return;
+          for (let i = 0; i < pos.count; i++) sommets.push([pos.getX(i), pos.getY(i), pos.getZ(i)]);
+        });
+        // L'EFFILEMENT DE L'AILE. On ne cherche pas l'aile par son nom — le
+        // maillage est fusionné, il n'y a plus de nom. On la trouve par le
+        // FAIT qu'elle est la pièce la plus large : le saumon, c'est le dixième
+        // extérieur de l'envergure. On compare sa corde à celle prise à 30 %
+        // d'envergure. Une aile réelle s'effile de 3 à 4 fois ; une plaque
+        // rectangulaire rend 1.
+        const xm = Math.max(...sommets.map((v) => Math.abs(v[0])));
+        // ON PREND LES DEUX PAIRES DE COINS DU SAUMON, pas une seule. Une aile
+        // en flèche est un prisme tourné : ses quatre coins de bout n'ont pas
+        // le même x, et une tranche trop mince n'en attrape qu'une paire —
+        // deux points de même z, donc une corde nulle. Mon premier jet rendait
+        // « 0/0 » sur l'ancien code : un témoin qui ne mesure rien n'échoue pas
+        // proprement, il s'effondre.
+        const bout = sommets.filter((v) => Math.abs(v[0]) >= 0.85 * xm).map((v) => v[2]);
+        out[nom] = {
+          long: +(bb.max.z - bb.min.z).toFixed(2),
+          reserve: GAB[nom] ? GAB[nom].long : null,
+          sous: +bb.min.y.toFixed(2),
+          saumon: bout.length ? +(Math.max(...bout) - Math.min(...bout)).toFixed(2) : null,
+        };
+      }
+      return out;
+    });
+    const appareils = Object.entries(dessin);
+    // 1. IL TIENT DANS SON POSTE. `aeroport.js` réserve seize blocs à l'avion
+    //    de ligne et dimensionne les postes dessus ; le modèle en mesurait
+    //    21,5, et le Concorde trente et un pour vingt réservés — à cheval sur
+    //    le voisin, passage compris. Les cônes de nez et de queue s'ajoutaient
+    //    à `long` au lieu d'être dedans.
+    verifier('chaque appareil tient dans le poste que l\'aéroport lui réserve',
+      appareils.length === 3
+        && appareils.every(([, d]) => d.reserve && d.long <= d.reserve + 0.05),
+      `longueurs : ${appareils.map(([n, d]) => `${n} ${d.long}/${d.reserve}`).join(' · ')}`);
+    // 2. IL EST POSÉ SUR SES ROUES. Le train descendait à −0,68 sous
+    //    l'origine : un avion garé avait les roues enterrées jusqu'à l'essieu.
+    verifier('un avion garé est posé sur ses roues, pas enfoncé dans le sol',
+      appareils.length === 3 && appareils.every(([, d]) => d.sous >= -0.02),
+      `plus bas point : ${appareils.map(([n, d]) => `${n} ${d.sous}`).join(' · ')}`);
+    // 3. UNE AILE S'EFFILE. Une plaque à corde constante est LE signal
+    //    « jouet », et c'est ce que Max voyait du ciel. On l'éprouve par la
+    //    corde au SAUMON rapportée à la longueur de l'appareil — la seule
+    //    mesure qui ne demande pas de savoir où est l'aile dans un maillage
+    //    fusionné. Le vrai chiffre : 1,5 m de corde en bout d'aile pour 37,6 m
+    //    de long, soit un vingt-cinquième.
+    //
+    //    ET IL NE PORTE QUE SUR DEUX DES TROIS, à dessein. Mesuré des deux
+    //    côtés : avion de ligne 0,142 → 0,040, chasseur 0,156 → 0,070, mais
+    //    Concorde 0,077 → 0,025. L'ancien Concorde était déjà bâti en trois
+    //    panneaux de corde décroissante : aucun seuil ne le sépare des deux
+    //    autres sans le déclarer bon avant la correction. Un témoin qui rend
+    //    un seul nombre pour trois cas ne se démonte pas — celui-ci dit lequel
+    //    il garde, et le delta du Concorde se juge en capture.
+    const gardes = appareils.filter(([n]) => n !== 'concorde');
+    verifier('une aile s\'effile — le saumon est court, pas une planche',
+      gardes.length === 2
+        && gardes.every(([, d]) => d.saumon !== null && d.saumon <= d.long * 0.10),
+      `saumon/longueur : ${appareils.map(([n, d]) => `${n} ${d.saumon}/${d.long}`).join(' · ')}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
