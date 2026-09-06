@@ -307,6 +307,7 @@ export function initFun(ctx) {
       // se rend aussi en descendant (v212).
       player.pilote = null;
       player.vitesseAvion = undefined;
+      player.avionEnVol = false;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -1626,7 +1627,8 @@ export function initFun(ctx) {
     }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
-      riding = null; player.boost = undefined; player.pilote = null; return;
+      riding = null; player.boost = undefined; player.pilote = null;
+      player.avionEnVol = false; return;
     }
     player.boost = riding.def.allure || 2.0;
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
@@ -1636,6 +1638,10 @@ export function initFun(ctx) {
     // collision marchent sans une ligne de plus.
     player.pilote = riding.def.pilote || null;
     if (player.pilote) player.flying = true;
+    // ON MONTE À BORD AU SOL, MOTEURS COUPÉS. C'est le bouton ✈️ qui décolle
+    // — sinon l'appareil s'arracherait sous les pieds de l'enfant à l'instant
+    // où il s'assied, et « monter dedans » deviendrait « tomber du ciel ».
+    if (player.pilote && player.avionEnVol === undefined) player.avionEnVol = false;
     const a = riding;
     // La bête pose ses pattes là où l'enfant a les pieds, et c'est le regard
     // qu'on élève à la hauteur de son dos. C'est l'inverse de ce qu'on faisait :
