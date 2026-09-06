@@ -71,6 +71,14 @@ const MONTEE_DECOLLAGE = 14;
 const PART_MONTEE = 0.33;
 const DESCENTE = 12;      // la perte d'altitude quand on se pose
 
+// L'INCLINAISON EN VIRAGE — demande de Max (v231) : « quand on va à gauche,
+// il tilte un peu ». Trente degrés, c'est le virage d'un avion de ligne en
+// croisière ; au-delà on ne joue plus, on fait de la voltige. C'est PUREMENT
+// visuel : le cap vient toujours du joystick, et la trajectoire ne change pas
+// d'un bloc. Ce que ça change, c'est qu'un virage se VOIT — un avion qui
+// tourne à plat ressemble à une maquette qu'on pousse sur une table.
+const ROULIS_MAX = 0.52;          // ~30°
+
 export class Player {
   constructor(camera, world) {
     this.camera = camera;
@@ -228,6 +236,14 @@ export class Player {
       // Le taux de virage reste celui de la fiche : le chasseur tourne trois
       // fois plus court que le Concorde, et c'est ce qui les distingue.
       this.yaw -= strafe * p.virage * dt;
+      // ON ENTRE DANS L'INCLINAISON ET L'ON EN SORT, on n'y saute pas : une
+      // aile qui claque d'un coup n'est pas un avion, c'est un interrupteur.
+      // Et la VIVACITÉ vient de la fiche — un chasseur s'incline sec, un
+      // Concorde prend son temps — comme le reste de son caractère.
+      const cibleRoulis = this.avionEnVol ? -strafe * ROULIS_MAX : 0;
+      const vif = Math.min(1, dt * 3 * (p.virage / 0.55));
+      if (this.roulisAvion === undefined) this.roulisAvion = 0;
+      this.roulisAvion += (cibleRoulis - this.roulisAvion) * vif;
       this.vel.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))
         .multiplyScalar(this.vitesseAvion);
       if (this.avionEnVol) {

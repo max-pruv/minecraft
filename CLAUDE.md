@@ -870,6 +870,28 @@ monoplaces gardent l'embarquement : on ne conduit pas un métro.
      prendre son élan sur la piste avant de tirer sur le manche.
    - **Le nez suit le regard**, l'assiette est le tangage.
 
+   **ET UN VIRAGE SE VOIT, SINON IL N'EXISTE PAS (v231).** Max : « quand on
+   va à gauche, il tilte un peu ». L'appareil tournait à plat — le cap
+   changeait, rien ne le montrait, et un virage ressemblait à une maquette
+   qu'on pousse sur une table. L'inclinaison est PUREMENT visuelle : elle ne
+   touche ni au cap ni à la trajectoire, et elle s'installe et se rend
+   progressivement, à la VIVACITÉ de la fiche — un chasseur s'incline sec, un
+   Concorde prend son temps. Trois choses à savoir avant d'y toucher :
+
+   - **L'inclinaison se compose AVANT le cap** (`rotation.order = 'YXZ'`),
+     sinon l'appareil bascule autour de l'axe du MONDE et non du sien : en
+     virage serré on le verrait pencher de travers.
+   - **Elle vit sur le maillage de la MONTURE, dans `fun.js`**, pas sur le
+     joueur. C'est pour cela qu'un témoin qui pose `player.pilote` à la main —
+     ce que font les témoins de vitesse — ne peut RIEN en voir : il fait voler
+     le joueur sans qu'aucun avion ne soit dessiné. On monte par le bouton.
+   - **UN SIGNE SE REGARDE, IL NE SE DÉDUIT PAS.** Une inclinaison à l'envers
+     — l'appareil penché vers l'EXTÉRIEUR du virage — est pire que pas
+     d'inclinaison, et aucune mesure d'amplitude ne la distingue de la bonne.
+     Deux captures, un virage à gauche et un à droite, AVANT d'écrire le
+     témoin. Même discipline que la voiture, qui a roulé phares vers
+     l'arrière toute une version.
+
    **LES VITESSES ÉTAIENT DES RAPPORTS RÉELS — LE STREAMING A EU RAISON D'EUX
    (v229).** 900 km/h pour un avion de ligne, 2 180 pour le Concorde : le
    rapport est de 1 à 2,4, et il a gouverné les vitesses jusqu'à ce que Max
