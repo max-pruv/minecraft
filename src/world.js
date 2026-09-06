@@ -2,7 +2,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
-import { buildAeroport } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -585,10 +585,10 @@ export const MARS = { name: 'Planète Mars', x: -520, z: -480, r: 90 };
 // le vrai site aménagé au-dessus du Cher.
 export const VILLANDRY = { name: 'Château de Villandry', x: 250, z: 205, r: 92 };
 
-// L'aéroport Charles-de-Gaulle, au nord-est de Paris — comme le vrai Roissy.
-// Un aérodrome exige une planéité absolue : c'est le terrain le plus aplani de
-// toute la carte, et il lui faut de la place, deux doublets de pistes obligent.
-export const AEROPORT = { name: 'Aéroport Charles-de-Gaulle', x: -140, z: 80, r: 92 };
+// Les aérodromes ne sont plus nommés ici : leur place, leur rayon et la cote à
+// laquelle ils aplanissent le sol vivent dans `src/aeroport.js` (`AEROPORTS`),
+// parce qu'ils s'y MESURENT. Un aérodrome exige une planéité absolue — c'est
+// le terrain le plus aplani de toute la carte — et il lui faut de la place.
 
 // Le village gaulois et, à portée de vue, le camp romain qui le surveille.
 // Posés sur la côte ouest, comme en Armorique.
@@ -626,7 +626,7 @@ const CACTUS = DECOR_START + 5 * 10; // Uni vert
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
-  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, AEROPORT, GAULOIS, ESPACE, CIRCUIT,
+  PARK, DESERT, VOLCANO, ISLAND, CASTLE, MARS, VILLANDRY, GAULOIS, ESPACE, CIRCUIT,
   // La Giga-usine d'Austin, Texas : le nom vient du registre des mondes.
   { name: USINE().nom, x: USINE().x, z: USINE().z, r: USINE().r },
   // La Chine : une région culturelle entière — muraille, Cité interdite,
@@ -1062,7 +1062,13 @@ const LANDMARKS = [
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
-  { name: 'Aéroport Charles-de-Gaulle', x: AEROPORT.x, z: AEROPORT.z, box: 70, build: buildAeroport },
+  // Les dix-neuf aérodromes. Roissy garde son bâtisseur à lui — le tambour de
+  // 1974 et ses sept satellites ne ressemblent à aucun autre aéroport au monde ;
+  // les dix-huit autres passent par le bâtisseur générique, qui lit leur profil.
+  ...AEROPORTS.map((a) => ({
+    name: a.nom, x: a.x, z: a.z, box: a.r - 18,
+    build: a.cle === 'cdg' ? buildAeroport : (poser) => buildAerodrome(poser, a.profil, a.r),
+  })),
   // La Giga-usine d'Austin : le hall et sa chaîne d'un côté, le parc des
   // voitures neuves de l'autre — deux tampons, parce qu'une seule boîte assez
   // grande pour les deux ferait rejouer tout le site à chaque morceau voisin.
@@ -1459,10 +1465,26 @@ export class World {
     // seulement : tout l'intérieur, jusqu'au rayon 72, est rigoureusement plat.
     // Avec un raccord plus long, les bouts de piste retombaient dans la pente
     // et le tarmac flottait au-dessus du vide.
-    const ad = Math.hypot(x - AEROPORT.x, z - AEROPORT.z);
-    if (ad < AEROPORT.r) {
-      const m = Math.min(1, (AEROPORT.r - ad) / 20);
-      h = h * (1 - m) + 35 * m;
+    // ET IL Y EN A DIX-NEUF, PAS UN. Chacun aplanit son disque à SA cote — la
+    // médiane du relief naturel qu'il recouvre, mesurée et écrite dans sa fiche.
+    // Une cote commune ferait une falaise partout où le pays n'est pas à trente-
+    // cinq blocs : le tarmac de Francfort est à cinquante, celui de Dubaï à
+    // trente-trois.
+    // ET ON REJETTE PAR LA BOÎTE AVANT DE CALCULER UNE DISTANCE.
+    //
+    // `terrainHeight` est le chemin le plus chaud du jeu — chargement de
+    // morceaux, sondage des rues par les passants, cote des convois. Écrite
+    // en dix-neuf `Math.hypot`, cette boucle l'a fait passer de 2 311 à
+    // 2 982 nanosecondes par colonne (+29 %), et le témoin de vie de rue est
+    // tombé de six piétons au pire creux à deux. Deux comparaisons sur x et z
+    // écartent dix-huit aérodromes sur dix-neuf sans une multiplication.
+    for (const a of AEROPORTS) {
+      if (x < a.x - a.r || x > a.x + a.r || z < a.z - a.r || z > a.z + a.r) continue;
+      const dx = x - a.x, dz = z - a.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= a.r * a.r) continue;
+      const m = Math.min(1, (a.r - Math.sqrt(d2)) / 20);
+      h = h * (1 - m) + a.sol * m;
     }
 
     // Le village gaulois et le camp romain : une clairière plate au bord de la
@@ -1590,7 +1612,10 @@ export class World {
     if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
-    if (Math.hypot(x - AEROPORT.x, z - AEROPORT.z) < AEROPORT.r) return null;     // pas d'arbre au milieu des pistes
+    // même rejet par la boîte que dans `terrainHeight` : c'est aussi une
+    // fonction appelée par colonne
+    if (AEROPORTS.some((a) => x >= a.x - a.r && x <= a.x + a.r && z >= a.z - a.r
+      && z <= a.z + a.r && (x - a.x) ** 2 + (z - a.z) ** 2 < a.r * a.r)) return null;
     if (dansLUsine(x, z)) return null;                                            // ni sur la chaîne, ni sur le parc
     // au village, les arbres sont plantés par le constructeur, pas au hasard
     if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;

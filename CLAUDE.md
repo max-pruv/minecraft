@@ -75,6 +75,30 @@ travail est irrattrapable.
    prouve pas l'absence : il en donne l'illusion. Toute distance du monde réel
    se redemande à la projection, jamais ne se recopie.
 
+   **Elle a servi une SEPTIÈME fois, en v223, pour les aérodromes** — et
+   celle-ci est née d'un signalement de Max : « il faut que tu refasses
+   l'aéroport de Charles-de-Gaulle parce qu'il est maintenant SUR la ville de
+   Paris et pas à côté ». Mesuré : cent vingt et un blocs de chevauchement avec
+   le disque de la capitale, parce que Paris est passé de 55 à 185 blocs de
+   rayon en v187 et que l'aéroport, posé bien avant, n'a jamais suivi — le
+   piège du Bay Bridge, mot pour mot. Roissy déménage, dix-huit aérodromes
+   s'ajoutent, et la borne prend la forme canonique : l'empreinte du relief
+   change, celle d'hors des villes ET DES AÉRODROMES ne bouge pas — 170 278
+   colonnes, `b2566e0e…` des deux côtés, MÊME découpe sur `origin/main` et sur
+   la branche. **L'ancienne place de Roissy est DANS la découpe** : le
+   déménagement lui a rendu son relief naturel (35 → 34), ce qui est un
+   changement voulu ; l'y laisser ferait accuser la livraison d'avoir cassé ce
+   qu'elle a réparé.
+
+   **Et la leçon vraie de cette livraison n'est pas dans l'empreinte : c'est
+   qu'UN EMPLACEMENT SE MESURE, IL NE S'ÉCRIT PAS.** Mon premier brouillon
+   posait Roissy à (−102, −100) — à DEUX BLOCS de la maison sauvegardée du
+   témoin de `plafond.js`, celle qui prouve depuis des dizaines de versions
+   qu'un plancher d'enfant ne bouge pas. La ligne se lisait très bien. C'est
+   une sonde qui balaie les sanctuaires, les villes et les autres aérodromes
+   qui l'a dit. Tout ce qui aplanit du sol se place par une sonde, et l'on
+   écrit le résultat, pas l'intuition.
+
    **Elle a servi une SIXIÈME fois, en v204, pour Lille** — dans la fenêtre
    d'empreinte, comme Paris, et bornée de la même manière : Lille passe de
    seize à trente-deux blocs par kilomètre et son disque de 46 à 92. La
@@ -248,6 +272,58 @@ réflexe devant un rouge inattendu est de le rejouer SUR `origin/main` : c'est
 la seule mesure qui distingue « je viens de casser ça » de « c'était déjà
 cassé ».
 
+**ÉLARGIR LA TABLE DES GARDIENS EST ANODIN — et cela coûtait une heure par
+livraison.** Déclarer `src/avions.js` et ajouter `monte.js` aux gardiens de
+`src/aeroport.js` : deux lignes dans `tests/tout.js`, et le portail entier se
+rejouait, parce que `tout.js` est le banc. Or **un gardien AJOUTÉ ne peut faire
+tourner que PLUS de suites, jamais moins** : il ne peut rien cacher. Un gardien
+RETIRÉ, si. `gardiensElargis` lit donc les deux TABLES — celle d'`origin/main`
+et celle d'ici — et exige que la nouvelle soit un SUR-ENSEMBLE de l'ancienne,
+clé par clé, et que rien d'autre du banc n'ait bougé. La preuve n'est pas dans
+le diff, elle est dans les deux tables.
+
+**ET LE PORTAIL SE CHRONOMÈTRE, PARCE QU'ON N'ACCÉLÈRE PAS CE QU'ON NE MESURE
+PAS.** Il durait une heure et n'avait jamais dit où elle passait. Max :
+« pourquoi ça prend autant de temps… que ça aille dix fois plus vite. » J'ai
+proposé trois pistes chiffrées, **et deux des trois chiffres étaient faux** :
+« 290 s d'attentes fixes » (vrai, mais 8 % du total, pas le gros morceau) et
+surtout « 43 ouvertures de jeu, dont 16 pour `carte.js` » — mon motif de
+recherche confondait `ouvrirLaCarte`, qui ouvre un panneau sur une page déjà
+là, avec `jouerSeul`, qui démarre le jeu. Le vrai compte est **seize
+démarrages pour treize suites**, soit un par suite : il n'y avait rien à
+couper. **Compter un motif n'est pas compter la chose** — c'est le reproche
+qu'on fait aux témoins, et il vaut pour les mesures de performance. Chaque
+suite affiche donc sa durée, et le portail finit par un classement « où passe
+le temps » : minutes de suites, minutes d'attente entre elles, total.
+
+**UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.** La barrière est
+bonne par défaut — elle évite d'attendre cinquante minutes quand un module ne
+charge pas. Mais un témoin de CONTENU rouge, le jeu démarrant très bien, arrête
+tout : on ne sait plus rien du reste du portail. En v223 la vie de rue de Paris
+était rouge sur `origin/main` DEUX FOIS SUR TROIS, et la livraison en cours n'y
+était pour rien. `npm test -- --malgre-fumee` continue quand même, **et le
+verdict global reste ROUGE** : on ne se donne pas le vert, on se donne la vue.
+À n'employer qu'avec la double mesure en main — la règle de la v195 s'applique
+telle quelle.
+
+**UN TÉMOIN QUI REND UN SEUL NOMBRE POUR TROIS PANNES NE SE DÉMONTE PAS.**
+« La ville reste habitée quand on la traverse » compte les passants VISIBLES à
+moins de soixante-deux blocs. Ce nombre confond trois choses : personne n'a été
+posé, on en a posé mais trop loin, on en a posé près mais ils sont cachés.
+Devant son rouge j'ai fait TROIS hypothèses successives — la portée de
+l'aéroportiste, puis la vitesse de `terrainHeight`, puis le banc — et les trois
+étaient fausses ; chacune a coûté un passage de banc. Une sonde qui sépare les
+trois a tranché en une seule exécution : dix-huit existent, aucun n'est caché,
+ils sont à quarante-deux blocs. **Devant un rouge qu'on n'explique pas du
+premier coup, on n'essaie pas une deuxième hypothèse : on écrit la sonde qui
+distingue les cas.**
+
+*(Une des trois hypothèses a quand même laissé un vrai gain : dix-neuf
+`Math.hypot` par colonne dans `terrainHeight` — le chemin le plus chaud du jeu —
+coûtaient +29 % (2 311 → 2 982 ns). Rejetés par une comparaison de boîte avant
+tout calcul, on revient à 2 431. Une mesure fausse sur la cause peut rester
+juste sur le fait.)*
+
 **Et le portail, c'est `npm test` — jamais une liste de suites choisie à la
 main.** De v176 à v181, les barrières rejouaient six suites nommées une à une
 et jamais la fumée : son témoin de la bibliothèque de monuments est resté
@@ -310,6 +386,17 @@ touchent presque pas :
 
 `main.js` est le point de friction : presque tout y passe. Deux sessions qui y
 touchent en même temps auront un conflit — surmontable, mais à savoir.
+
+**Trois sessions tournent depuis la v223**, et le découpage est celui-ci :
+
+| session | branche | zone |
+| --- | --- | --- |
+| principale | `claude/web-minecraft-replica-f0wk4b` | `main.js`, `world.js`, `aeroport.js`, le banc |
+| cinquante villes | `claude/cinquante-villes` | `villesmonde.js`, fiches de ville |
+| avenues orphelines | `claude/avenues-orphelines` | `voies.js`, villes bâties à la main |
+
+Chacune reçoit sa zone **et la liste de ce qu'elle ne touche pas** : une zone
+sans interdits explicites finit toujours par déborder sur `main.js`.
 
 **Ce qui ne collisionne PAS**, contrairement à l'intuition : le banc d'essai.
 Chaque session a sa propre machine à quatre cœurs, donc deux portails
@@ -630,9 +717,47 @@ dans la flotte, elles retiennent désormais lequel. La circulation perd une
 voiture, et c'est honnête : l'enfant vient de la prendre. Le métro et les
 monoplaces gardent l'embarquement : on ne conduit pas un métro.
 
-3. **`pilote`** — **à faire.** Le véhicule a sa propre position et sa propre
-   physique ; les commandes du joueur la pilotent ; le joueur est collé au
-   siège. C'est le seul des trois où l'enfant décide où l'on va.
+3. **`pilote`** — **fait en v223.** C'est le seul des trois où l'enfant décide
+   où l'on va. Et il ne s'est PAS fait comme cette ligne l'annonçait : le
+   véhicule n'a pas sa propre position. Il reste COLLÉ au joueur, comme toute
+   monture, et c'est la MARCHE du joueur qu'on remplace par une physique de
+   vol. Le gain est considérable et c'est la leçon : le réseau (qui diffuse
+   déjà la position des joueurs), la caméra de poursuite, la boîte de
+   collision et le bouton d'embarquement marchent alors sans une ligne de
+   plus. **Une seconde position aurait tout fait payer deux fois.**
+
+   Quatre décisions de physique, chacune pour une raison :
+
+   - **La poussée SE GARDE quand on lâche.** `forward` est une manette des
+     gaz, pas une pédale : c'est ce qui distingue un avion d'une voiture, et
+     ce qui permet à un enfant de lâcher les commandes pour regarder le
+     paysage sans tomber.
+   - **Le roulis ne fait virer qu'EN VOLANT** — un avion à l'arrêt sur le
+     tarmac ne pivote pas sur place, exactement comme le volant d'une voiture.
+   - **La portance dépend de la vitesse.** Sous le décrochage, l'avion
+     descend, d'autant plus vite qu'il est lent : c'est ce qui oblige à
+     prendre son élan sur la piste avant de tirer sur le manche.
+   - **Le nez suit le regard**, l'assiette est le tangage.
+
+   **ET LES VITESSES SONT DES RAPPORTS RÉELS, PAS DES GOÛTS.** 900 km/h pour
+   un avion de ligne, 2 180 pour le Concorde, 2 200 pour un chasseur : le
+   rapport est de 1 à 2,4, et le chasseur se distingue du Concorde par son
+   AGILITÉ — trois fois la poussée, trois fois le taux de virage — pas par sa
+   pointe. L'ancre absolue se mesure DANS LE JEU : un enfant qui vole
+   librement atteint 88 blocs/s en croisière (`player.js`), donc un avion de
+   ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
+
+   **`gabarit` n'est pas l'envergure.** Une boîte de collision ne tourne pas :
+   à quinze blocs de large, un avion resterait coincé entre deux hangars et ne
+   pourrait pas même rouler sur sa piste. On prend la largeur du FUSELAGE, les
+   ailes débordent — c'est la leçon de la voiture (v212), et un avion passe
+   l'essentiel de sa vie là où rien ne le frotte.
+
+   **Et le temps d'accélération d'un témoin vient de la FICHE.** Mon premier
+   jet donnait quatre secondes à tout le monde et concluait que l'avion de
+   ligne n'atteignait pas sa vitesse : à 18 blocs/s², quatre secondes font 73,
+   ce que la fiche annonce exactement. La mesure était trop courte, pas la
+   physique. `max / poussee`, jamais un chiffre rond.
 
 Le caractère de chaque véhicule vient du **branchement**, pas d'un moteur
 séparé :
@@ -790,6 +915,63 @@ arrêt déclaré n'est pas une gare construite, et rien ne le disait.
   qui lui permet de mesurer LA MÊME CHOSE sur l'ancien code, où il trouve zéro.
   Un témoin qui appellerait `gareEn` échouerait par « fonction absente », ce
   qui ne prouve rien du fond.
+
+### Les aérodromes (`aeroport.js`) — dix-neuf, et un seul écrit à la main
+
+Roissy garde son bâtisseur à lui — le tambour de béton de 1974 et ses sept
+satellites ne ressemblent à aucun autre aéroport au monde. Les dix-huit autres
+passent par `buildAerodrome`, qui lit un `profil` (`hub`, `ville`, `base`).
+Quatre choses à savoir avant d'en ajouter un.
+
+- **UN EMPLACEMENT SE MESURE.** On part du cap RÉEL depuis le centre de la
+  ville, et l'on cherche en s'éloignant le premier point qui tienne CINQ
+  promesses : au sec, à douze blocs au moins de toute ville et de tout autre
+  aérodrome, à quarante blocs au moins de ce que les enfants ont bâti, **à
+  douze blocs au moins de toute voie ferrée**, et le plus plat possible. **Le cap cède en dernier**, et l'écart est écrit ligne à
+  ligne — JFK est sur la baie de Jamaica, Fiumicino sur la mer, Haneda dans la
+  baie de Tokyo ; le nord-est de Paris, cap réel de Roissy, tombe pile sur le
+  quartier des enfants. Le sol des enfants passe avant la fidélité du plan.
+- **`sol` est une MESURE, pas un goût.** C'est la médiane du relief naturel
+  sous le disque. L'ancien code aplanissait à 35 en dur : appliqué aux
+  dix-neuf, cela ferait une falaise partout où le pays n'est pas à trente-cinq
+  blocs — Francfort est à cinquante, Dubaï à trente-trois.
+- **UN TERMINAL QU'ON NE TRAVERSE PAS EST UN DÉCOR.** Trois choses le rendent
+  praticable, et il en manque une seule pour qu'il redevienne un bloc plein :
+  il est CREUX (murs posés, puis intérieur vidé) ; son plancher est **au
+  niveau du tarmac**, parce qu'une marche d'un bloc sur le seuil laisse un
+  enfant de sept ans dehors sans qu'il comprenne pourquoi ; et il a des portes
+  **sur les deux faces**, côté ville pour arriver et côté pistes pour
+  rejoindre son avion — avec les portes d'un seul côté, on entre dans un
+  cul-de-sac. Les cloisons entre halls sont percées : c'est cela, « se
+  promener avec ses différents terminaux ».
+- **Le témoin ÉPROUVE LA MARCHE, pas le bâtisseur.** Il se pose dehors, côté
+  ville, et cherche de proche en proche par où l'on peut passer — une case est
+  franchissable si le sol y est plein et si deux blocs d'air la surmontent.
+  Compter des blocs de béton ne distinguerait pas un terminal d'un cube.
+- **Le plan du tarmac ne se recopie pas.** `postesAvion(profil)` le publie
+  depuis `aeroport.js`, là où le tarmac est dessiné ; `main.js` le lit. Deux
+  tables qui décrivent le même plan finissent toujours par diverger — c'est la
+  leçon du mobilier de Londres, qui a rendu « 0/5 bus » le jour où la ville a
+  déplacé ses arrêts.
+- **LA CINQUIÈME PROMESSE EST NÉE D'UN ROUGE, et c'est la bonne façon d'y
+  venir.** La sonde en avait quatre, et trois aérodromes se sont posés sur une
+  ligne de train — Haneda sur le Shinkansen (quarante-cinq blocs dedans),
+  Fiumicino sur la Frecciarossa, Francfort sur l'ICE. Les rails sont écrits
+  dans le morceau de monde AVANT les monuments : un terminal bâti par-dessus
+  les mure. Le témoin « rien de solide ne barre la route du train » de
+  `carteMonde.js` l'a dit — il existait déjà. **Et la contrainte s'applique aux
+  TROIS en faute, pas aux dix-neuf** : rejouer tous les emplacements sous une
+  promesse de plus les dégradait sans raison (Roissy partait au sud-est, JFK
+  sous trente-deux pour cent d'eau). Une contrainte neuve se paie là où elle
+  mord.
+- **UN LIEU NE SE RENOMME PAS SOUS LES PIEDS D'UN ENFANT.** Roissy s'appelait
+  « Aéroport Charles-de-Gaulle » sur la carte ; renommé « Paris–Charles-de-
+  Gaulle » par cohérence avec les dix-huit autres, il a disparu du témoin des
+  grandes destinations — et il aurait disparu de la recherche d'un enfant. La
+  cohérence d'une table ne vaut pas un repère qu'on perd.
+- **Et quand une ville change d'échelle, on cherche TOUT ce qui la vise.**
+  `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
+  aurait évité que Roissy passe six versions au milieu de Paris.
 
 ### Le monde (`world.js`)
 

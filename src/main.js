@@ -13,6 +13,7 @@ import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } 
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { aeroportPres, postesAvion } from './aeroport.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -1114,6 +1115,47 @@ function animerLesVilles(dt) {
     }
   }
 }
+// L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
+// appareils attendent toujours.
+//
+// Même mécanisme que le garagiste, et pour la même raison : les bêtes du jeu
+// s'effacent à soixante-deux blocs, donc un avion garé disparaîtrait dès qu'on
+// s'éloigne. On regarnit les postes de stationnement quand un enfant approche,
+// et un avion emmené au loin est remplacé — il « rentre au hangar ».
+//
+// LE PLAN DU TARMAC N'EST PAS RECOPIÉ ICI. `postesAvion` le publie depuis
+// `aeroport.js`, là où le tarmac est dessiné : deux tables qui décrivent le
+// même plan finissent toujours par diverger, et l'on garerait des avions dans
+// l'herbe. Sur une base militaire, ce sont trois chasseurs — c'est de là
+// qu'ils partent.
+let aeroportisteTimer = 0;
+function aeroportiste(dt) {
+  aeroportisteTimer -= dt;
+  if (aeroportisteTimer > 0) return;
+  aeroportisteTimer = 3;
+  // QUATRE-VINGT-DIX BLOCS, ET CE N'EST PAS LE REMÈDE QUE JE CROYAIS.
+  //
+  // J'ai d'abord ramené cette portée de 130 à 90 en accusant les trois
+  // appareils de faire tomber la vie de rue pendant la traversée de Paris.
+  // Mesuré : Roissy est à 291 blocs du centre de Paris, le bord nord de la
+  // ville à 106 de l'aéroport — à 90, l'aéroportiste ne se déclenche JAMAIS
+  // pendant cette traversée, et le témoin rendait exactement les mêmes
+  // chiffres. Il était hors de cause.
+  //
+  // Quatre-vingt-dix reste juste pour sa propre raison : un appareil garé ne
+  // se dessine qu'à soixante-deux blocs, comme toute créature. En faire naître
+  // à cent trente ne montre rien à personne. Le garagiste travaille à
+  // quatre-vingts pour exactement ce motif.
+  const a = aeroportPres(player.pos.x, player.pos.z, 90);
+  if (!a) return;
+  for (const { espece, du, dv } of postesAvion(a.profil)) {
+    const x = a.x + du, z = a.z + dv;
+    const dejaLa = animalManager.animals.some((b) => b.def.key === espece
+      && Math.hypot(b.pos.x - x, b.pos.z - z) < 14);
+    if (!dejaLa) animalManager.invoquer(espece, x, z);
+  }
+}
+
 function garagiste(dt) {
   garagisteTimer -= dt;
   if (garagisteTimer > 0) return;
@@ -5062,6 +5104,7 @@ function frame(now) {
     creatureManager.update(dt);
     animalManager.update(dt);
     garagiste(dt);
+    aeroportiste(dt);
     animerLesVilles(dt);
     // Les personnages lointains — la garnison du château, les astronautes de
     // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur

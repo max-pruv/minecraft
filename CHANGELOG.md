@@ -20,6 +20,155 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v223 — On pilote un avion, et il y a désormais où atterrir
+
+**Pourquoi.** Max : « add planes, airbus, concord and military jets and allow
+us to fly with them at relevant speed for each ».
+
+Le projet prévoit **trois façons d'être portées** depuis la v155 : la monture
+suit le joueur, le convoi suit son tracé précalculé, et le **pilote** décide où
+l'on va. Les deux premières existaient ; la troisième était déclarée « à
+faire », avec son branchement déjà écrit noir sur blanc. Il ne restait qu'à la
+faire.
+
+**Ce que ça change.** Trois appareils attendent sur le tarmac de Roissy, et
+l'on s'y installe comme on monte à cheval — le bouton dit « ✈️ Piloter », et
+« ⬇️ Se poser » pour redescendre.
+
+| appareil | vitesse de pointe | ce qui le distingue |
+| --- | --- | --- |
+| Avion de ligne | 110 blocs/s | deux réacteurs sous l'aile, des hublots |
+| Concorde | **264** | l'aile delta, le nez fin, quatre réacteurs |
+| Avion de chasse | 264 | des canards, deux dérives, deux missiles |
+
+**Les vitesses sont des rapports réels, pas des goûts** : 900 km/h pour un
+avion de ligne, 2 180 pour le Concorde, 2 200 pour un chasseur — soit
+1 : 2,4 : 2,4. Le chasseur ne se distingue donc pas par sa pointe mais par son
+**agilité** : il grimpe trois fois plus vite et vire trois fois plus court.
+L'ancre absolue, elle, est mesurée dans le jeu : un enfant qui vole librement
+atteint 88 blocs/s, donc un avion de ligne doit faire mieux — sinon prendre
+l'avion ne sert à rien.
+
+**Et le pilotage n'invente aucune commande.** C'est l'idée de Max, et elle
+reste juste : tout se réduit aux trois nombres que le clavier et le joystick
+tactile alimentent déjà. `forward` est la manette des gaz — et la vitesse **se
+garde** quand on lâche, ce qui distingue un avion d'une voiture et permet de
+regarder le paysage sans tomber. `strafe` est le roulis, qui ne fait virer
+qu'en volant : un avion à l'arrêt ne pivote pas sur place. Le regard donne
+l'assiette. Et **la portance dépend de la vitesse** : sous le décrochage,
+l'appareil descend — c'est ce qui oblige à prendre son élan avant de tirer sur
+le manche.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, rouges sur l'ancien code
+(où le mode n'existe pas) :
+
+| appareil | pointe atteinte | parcouru en 2 s de croisière |
+| --- | --- | --- |
+| Avion de ligne | 110 blocs/s | 227 blocs |
+| Concorde | 264 | 546 (× 2,4) |
+| Avion de chasse | 264 | 541 (× 2,4) |
+
+Portail complet vert.
+
+**Et une erreur de témoin, dite parce qu'elle instruit.** Mon premier jet
+donnait quatre secondes d'accélération à tout le monde et concluait que l'avion
+de ligne n'atteignait pas sa vitesse. Il l'atteignait très bien : à 18 blocs/s²
+de poussée, quatre secondes font 73 blocs/s — exactement ce que sa fiche
+annonce. C'était la mesure qui était trop courte, pas la physique. Le temps
+d'accélération vient désormais de la fiche (`max / poussee`), jamais d'un
+chiffre rond.
+
+### Et dix-neuf aérodromes, parce qu'un avion sans destination ne sert à rien
+
+**Pourquoi.** Max, capture à l'appui : « il faut que tu refasses l'aéroport de
+Charles-de-Gaulle parce qu'il est maintenant **sur** la ville de Paris et pas à
+côté de la ville de Paris, et j'aimerais bien que tu rajoutes des aéroports
+fidèles aux aéroports originaux, des buildings dans lesquels on peut rentrer,
+se promener avec ses différents terminaux […] Et rajoute des bases militaires
+pour les avions de chasse. »
+
+Roissy était bien sur Paris : **cent vingt et un blocs de chevauchement** avec
+le disque de la capitale, mesurés. La cause est celle qu'on connaît par cœur —
+Paris est passé de 55 à 185 blocs de rayon lors de sa remise à l'échelle
+(v187), et l'aéroport, posé bien avant, n'a jamais suivi. C'est mot pour mot le
+piège du Bay Bridge planté au milieu de San Francisco.
+
+Et il n'y en avait qu'UN sur toute la carte. Un avion qui décolle de Roissy
+n'avait nulle part où se poser.
+
+**Ce que ça change.** Roissy déménage à deux cent quatre-vingt-onze blocs au
+nord de Paris, et **dix-huit aérodromes** s'y ajoutent : quatorze aéroports —
+Orly, Heathrow, JFK, Barajas, El Prat, Schiphol, Francfort, Fiumicino, Haneda,
+Dubaï, Delhi, San Francisco, Los Angeles, Istanbul — et **quatre bases
+aériennes** d'où partent les chasseurs. Ils sont sur la carte, donc on s'y
+téléporte.
+
+**Le terminal se visite.** On entre de plain-pied, on traverse les halls par
+leurs cloisons percées, et l'on ressort côté pistes pour rejoindre son avion.
+Il y a la tour de contrôle, les hangars, les pistes numérotées avec leurs
+seuils en échelle, le tarmac et ses postes de stationnement — et trois
+appareils qui attendent, toujours, à l'aérodrome où l'on se trouve.
+
+**Chaque aéroport est placé dans le cap RÉEL depuis sa ville**, juste au-delà
+de son disque, et l'écart au vrai cap est écrit ligne à ligne quand la carte ne
+l'a pas permis. Quand le cap réel tombe à l'eau — JFK est sur la baie de
+Jamaica, Fiumicino sur la mer, Haneda dans la baie de Tokyo — on prend le cap
+terrestre le plus proche plutôt qu'un aéroport noyé. Le nord-est de Paris, lui,
+tombe pile sur le quartier des enfants et sur le musée : Roissy part donc plein
+nord. **Le sol des enfants passe avant la fidélité du plan, toujours.**
+
+**Ce qui le prouve.** C'est la **septième fois** que l'exception accordée par
+Max sur l'invariant du sol sert, et elle se borne comme en v162, v187 et v204 :
+
+|  | colonnes | empreinte |
+| --- | --- | --- |
+| Le relief entier — **il change, c'est déclaré** | 218 089 | `c20adb73…` → `47fbedd4…` |
+| Hors des villes **et des aérodromes**, sur `origin/main` | 170 278 | `b2566e0e…` |
+| Hors des villes et des aérodromes, sur la branche | 170 278 | **`b2566e0e…`** |
+
+La même découpe des deux côtés, colonne pour colonne. On ne met pas un hash à
+jour : on mesure les deux côtés. Et le déménagement **rend son sol** — la
+colonne (−140, 80), aplanie à 35 sous l'ancien tarmac, retrouve sa cote
+naturelle de 34, exactement comme l'avait promis le déménagement de Washington
+en v162.
+
+Trois témoins neufs, rouges sur l'ancien code :
+
+- **on entre dans un terminal, on va d'un hall à l'autre et l'on ressort côté
+  pistes** — le témoin se pose dehors, côté ville, et cherche par où l'on peut
+  MARCHER, de proche en proche. Un bâtiment fermé, un plancher surélevé d'un
+  bloc, une cloison pleine : chacun de ces trois défauts arrête la marche.
+  3 sur 3 (un grand aéroport, un moyen, une base) ; 0 sur 3 avant.
+- **aucun aérodrome ne se pose sur ce que les enfants ont bâti** — le plus
+  proche en reste à cinquante-cinq blocs.
+- **ni sur une ville** — la paire la plus serrée garde quatorze blocs.
+
+**LA CINQUIÈME PROMESSE EST NÉE D'UN ROUGE.** La sonde en avait quatre — au
+sec, à l'écart des villes, à l'écart de ce que les enfants ont bâti, plate — et
+il en manquait une : **pas sur une voie ferrée**. Trois aérodromes se sont posés
+sur une ligne de train (Haneda sur le Shinkansen, quarante-cinq blocs dedans ;
+Fiumicino sur la Frecciarossa ; Francfort sur l'ICE), et un terminal bâti
+par-dessus des rails les mure. C'est un témoin qui existait déjà — « rien de
+solide ne barre la route du train » — qui l'a dit, pas une relecture. Les trois
+sont déplacés, et **seulement les trois** : rejouer les dix-neuf sous une
+promesse de plus les dégradait tous (Roissy repartait au sud-est, JFK sous
+trente-deux pour cent d'eau). Une contrainte neuve se paie là où elle mord.
+
+**Et un lieu ne se renomme pas sous les pieds d'un enfant.** Roissy s'appelait
+« Aéroport Charles-de-Gaulle » sur la carte ; je l'avais renommé
+« Paris–Charles-de-Gaulle » par cohérence avec les dix-huit autres. Le témoin
+des grandes destinations l'a perdu — et un enfant qui cherche son aéroport sur
+la carte l'aurait perdu aussi. Il a repris son nom.
+
+**Et la sonde de placement a rattrapé ce que la relecture n'aurait pas vu.**
+Mon premier brouillon posait Roissy à (−102, −100) : à **deux blocs** de la
+maison sauvegardée du témoin de `plafond.js`, celle qui prouve depuis des
+dizaines de versions qu'un plancher d'enfant ne bouge pas. La ligne se lisait
+très bien. Un aérodrome se place en MESURANT ce qu'il recouvre, jamais en
+écrivant deux nombres.
+
+---
+
 ## v222 — Un train toutes les trente secondes sur le quai
 
 **Pourquoi.** Max : « make sure trains arrive and depart from train stations ».

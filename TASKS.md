@@ -13,6 +13,41 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LA BANDE MORTE DES PIÉTONS — rouge EN PRODUCTION, mesuré (v223).** Le
+  témoin de fumée « et elle reste habitée quand on la traverse à pied » est
+  rouge sur `origin/main` **deux fois sur trois** (pire 2, 2, 6 ; seuil 3), et
+  quatre fois sur quatre sur la branche. La livraison des aérodromes n'y est
+  pour rien — double mesure faite dans un arbre séparé (`/root/main-ref`),
+  suite rejouée SEULE des deux côtés.
+
+  **Le mécanisme est mesuré, pas supposé.** Une sonde qui sépare les trois
+  pannes que le témoin confond (pas posé / trop loin / caché) rend, au 4ᵉ bond
+  de la traversée, au centre de Paris :
+
+  | | total | à moins de 62 | visibles | cachés | les 5 plus proches |
+  | --- | --- | --- | --- | --- | --- |
+  | branche | 18 | 3 | 3 | 0 | 42, 55, 60, 67, 74 |
+  | `origin/main` | 18 | 11 | 11 | 0 | 32, 33, 36, 38, 39 |
+
+  Les dix-huit existent toujours, aucun n'est caché : ils sont simplement
+  **trop loin**. Un personnage cesse d'être dessiné à 62 blocs (`VU` de
+  `vie.js`) et n'est rapatrié qu'au-delà de **64** — la v217 avait choisi
+  « juste au-delà de soixante-deux ». Il reste donc une bande de deux blocs où
+  l'on est invisible ET non rapatrié, et un enfant qui traverse le centre de
+  Paris tombe dedans.
+
+  **Ce qu'il ne faut PAS faire** : baisser le seuil sans mesurer. La v217 l'a
+  déjà payé — un seuil trop serré fait replacer dix-sept passants sur dix-huit
+  toutes les deux secondes sans jamais en ramener un seul dans le champ, et
+  c'est `maj.js` qui l'avait signalé. Toute correction se mesure avec la sonde
+  ci-dessus ET avec `maj.js`.
+
+  **Et le témoin lui-même est à revoir** : un seul nombre pour trois pannes
+  très différentes ne se démonte pas. Il devrait dire « dix-huit existent,
+  trois à portée, zéro caché » — c'est ce qui a permis de trancher ici en une
+  exécution après trois hypothèses fausses.
+
+
 - [x] **Les trains n'arrivaient pas en gare — FAIT en v222.** Les gares étaient
   au bon endroit (les dix-huit arrêts tombent à zéro bloc d'une gare) mais
   chaque ligne n'avait que deux trains pour un tour allant jusqu'à 127 s :
@@ -20,20 +55,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   le tour divisé par la demi-minute — la règle déjà écrite pour le métro de
   Washington. Pire attente 64 → 30 s, 18 → 29 trains.
 
-- [ ] **Piloter un avion — le mode `pilote`, le troisième.** Demandé par Max :
-  « add planes, airbus, concord and military jets and allow us to fly with
-  them at relevant speed for each ». Le branchement est déjà écrit dans
-  `CLAUDE.md` depuis la v155 : `forward` = poussée, `strafe` = roulis, le
-  regard = assiette, la portance dépend de la vitesse. Ancre mesurée : un
-  enfant qui vole libre atteint 88 blocs/s en croisière. Rapports réels à
-  tenir — avion de ligne 900 km/h, Concorde 2 180, chasseur 2 200, soit
-  1 : 2,4 : 2,4, le chasseur se distinguant par son agilité et non par sa
-  pointe. Nommer par le TYPE et non par la marque.
+- [x] **Piloter un avion — FAIT en v223.** Le mode `pilote`, le troisième des
+  trois façons d'être porté, prévu depuis la v155. L'avion reste COLLÉ au
+  joueur comme toute monture et c'est la marche qu'on remplace par une
+  physique de vol : le réseau, la caméra de poursuite et la boîte de collision
+  marchent alors sans une ligne de plus. Trois appareils sur le tarmac de
+  Roissy, aux rapports de vitesse réels (1 : 2,4 : 2,4). Mesuré : pointe 110 ·
+  264 · 264 blocs/s, et 227 · 546 · 541 blocs parcourus en deux secondes de
+  croisière.
 
-- [ ] **D'autres aéroports.** Il n'y en a qu'un, Roissy (−140, 80, rayon 92),
-  et il APLATIT le terrain : tout aéroport posé dans la fenêtre [−700, 700]
-  casse l'empreinte de `plafond.js`. Les poser près des villes bâties à la
-  main (Londres, New York, San Francisco, Washington), toutes hors fenêtre.
+- [ ] **Les aérodromes, la suite.** Dix-neuf existent (v223), mais leur cap
+  réel a dû céder cinq fois faute de terre ferme : JFK (115° → 30°), Fiumicino
+  (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
+  (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
+  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Et il
+  manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
+  cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
+
+- [ ] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** Il se
+  traverse (c'est ce que le témoin garde) mais il est vide. Même dette que les
+  intérieurs de monuments.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
   47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),
@@ -467,6 +508,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v223** — On pilote un avion (avion de ligne 110 blocs/s, Concorde et
+  chasseur 264), et dix-neuf aérodromes pour avoir où atterrir : Roissy
+  déménagé hors de Paris, quatorze aéroports de plus, quatre bases aériennes,
+  des terminaux qu'on traverse à pied. Double empreinte refaite — 172 379
+  colonnes, `fa120ab1…` des deux côtés.
 
 - [x] **v187** — Paris à l'échelle GTA : 24 blocs par kilomètre, un disque de
   185, des rues où l'on marche, une rue par quartier, l'Étoile à sa vraie

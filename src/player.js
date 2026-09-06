@@ -161,6 +161,59 @@ export class Player {
     const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0) + this.touchMove.f;
     const strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0) + this.touchMove.s;
 
+    // PILOTER — LE TROISIÈME MODE, ET IL N'INVENTE AUCUNE COMMANDE.
+    //
+    // Trois façons d'être porté, et celle-ci manquait depuis la v155 : la
+    // monture suit le joueur, le convoi suit son tracé, et le PILOTE décide
+    // où l'on va. Comme les deux autres, elle se réduit aux trois nombres que
+    // le clavier et le joystick tactile alimentent déjà — `forward`, `strafe`
+    // et le regard. Rien de neuf à apprendre pour un enfant, et l'iPad marche
+    // sans une ligne de plus.
+    //
+    // Le branchement est celui que le projet a écrit avant de l'implanter :
+    //   forward → la poussée      strafe → le roulis      le regard → l'assiette
+    //   et la portance dépend de la vitesse.
+    if (this.pilote) {
+      const p = this.pilote;
+      // LA POUSSÉE SE GARDE QUAND ON LÂCHE. `forward` est une manette des
+      // gaz, pas une pédale : c'est ce qui distingue un avion d'une voiture,
+      // et c'est ce qui permet à un enfant de lâcher les commandes pour
+      // regarder le paysage sans tomber.
+      if (this.vitesseAvion === undefined) this.vitesseAvion = 0;
+      this.vitesseAvion = Math.max(0,
+        Math.min(p.max, this.vitesseAvion + forward * p.poussee * dt));
+      // LE ROULIS FAIT VIRER, ET SEULEMENT EN VOLANT. Un avion à l'arrêt sur
+      // le tarmac ne pivote pas sur place — c'est la même règle que le volant
+      // d'une voiture, qui n'agit qu'en roulant.
+      const part = this.vitesseAvion / p.max;
+      this.yaw -= strafe * p.virage * dt * part;
+      // LE NEZ SUIT LE REGARD. L'assiette est le tangage : on tire sur le
+      // manche en regardant vers le haut.
+      const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+      this.vel.set(-Math.sin(this.yaw) * cp, sp, -Math.cos(this.yaw) * cp)
+        .multiplyScalar(this.vitesseAvion);
+      // LA PORTANCE DÉPEND DE LA VITESSE. Sous la vitesse de décrochage,
+      // l'avion ne tient plus l'air : il descend, d'autant plus vite qu'il
+      // est lent. C'est ce qui oblige à prendre son élan sur la piste avant
+      // de tirer sur le manche — et ce qui fait qu'on ne décolle pas à
+      // l'arrêt.
+      if (this.vitesseAvion < p.decrochage) {
+        this.vel.y -= GRAVITY * (1 - this.vitesseAvion / p.decrochage);
+      }
+      // Le ciel a le même toit que pour tout le monde.
+      if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);
+      const vol = this.vel.clone().multiplyScalar(dt);
+      const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
+      this.onGround = false;
+      for (let i = 0; i < pas; i++) {
+        this.sweepAxis(0, vol.x / pas);
+        this.sweepAxis(1, vol.y / pas);
+        this.sweepAxis(2, vol.z / pas);
+      }
+      this.syncCamera();
+      return;
+    }
+
     const bodyBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + 0.4), Math.floor(this.pos.z));
     const headBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + EYE_HEIGHT), Math.floor(this.pos.z));
     this.inWater = bodyBlock === BLOCK.WATER || headBlock === BLOCK.WATER;

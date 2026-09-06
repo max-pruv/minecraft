@@ -16,8 +16,9 @@
 
 import {
   CHUNK, HEIGHT, WATER_LEVEL, CITIES, PLACES, REPERES,
-  MARS, VILLANDRY, AEROPORT, ESPACE, GAULOIS, CIRCUIT,
+  MARS, VILLANDRY, ESPACE, GAULOIS, CIRCUIT,
 } from './world.js';
+import { AEROPORTS } from './aeroport.js';
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
 import { couleurCarteUsine } from './usine.js';
 import { couleurCarteParis, lieuxDeParis } from './paris.js';
@@ -321,7 +322,9 @@ export class Carte {
     // ressortirait vert comme une prairie.
     if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) return [176, 96, 62];
     if (Math.hypot(wx - VILLANDRY.x, wz - VILLANDRY.z) < VILLANDRY.r - 2) return [176, 186, 138];
-    if (Math.hypot(wx - AEROPORT.x, wz - AEROPORT.z) < AEROPORT.r - 6) return [108, 112, 118];
+    // LES DIX-NEUF AÉRODROMES, pas le seul Roissy. La carte lisait un aéroport
+    // écrit en dur ; dix-huit autres seraient restés verts comme des prés.
+    if (AEROPORTS.some((a) => Math.hypot(wx - a.x, wz - a.z) < a.r - 6)) return [108, 112, 118];
     // La Giga-usine : le hall blanc, l'asphalte du parc, la pelouse du site.
     {
       const cu = couleurCarteUsine(wx, wz);

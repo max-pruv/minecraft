@@ -302,6 +302,11 @@ export function initFun(ctx) {
     if (riding) {
       const quitte = riding;
       riding = null;
+      // On rend la marche en descendant : sans cela l'enfant garderait la
+      // physique de vol à pied. Même règle que le gabarit de la voiture, qui
+      // se rend aussi en descendant (v212).
+      player.pilote = null;
+      player.vitesseAvion = undefined;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -321,8 +326,16 @@ export function initFun(ctx) {
     if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
     a.state = 'idle';
     const allure = a.def.allure || 2;
-    toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
-      + ' — refais pareil pour descendre.', 0xffe07a);
+    if (a.def.pilote) {
+      // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
+      // calcule. Trois gestes, dans l'ordre où on s'en sert.
+      toast(`${a.def.emoji} Aux commandes du ${a.def.name.toLowerCase()} !`
+        + ' Pousse en avant pour accélérer, regarde en haut pour monter'
+        + ' — refais pareil pour te poser.', 0xa8d8ff);
+    } else {
+      toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
+        + ' — refais pareil pour descendre.', 0xffe07a);
+    }
     emojiBurst([a.def.emoji, '💨'], 8);
   }
 
@@ -1612,8 +1625,17 @@ export function initFun(ctx) {
       if (juiceTimer <= 0 && !riding) { player.boost = undefined; toast('🧃 Le jus de baies ne fait plus effet.', 0xcccccc); }
     }
     if (!riding) return;
-    if (riding.dying > 0 || !animalManager.animals.includes(riding)) { riding = null; player.boost = undefined; return; }
+    if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
+      riding = null; player.boost = undefined; player.pilote = null; return;
+    }
     player.boost = riding.def.allure || 2.0;
+    // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
+    // remplace alors la marche par la physique de vol — poussée, roulis,
+    // assiette — et l'avion reste collé au joueur comme toute monture. C'est
+    // ce qui fait que le réseau, la caméra de poursuite et la boîte de
+    // collision marchent sans une ligne de plus.
+    player.pilote = riding.def.pilote || null;
+    if (player.pilote) player.flying = true;
     const a = riding;
     // La bête pose ses pattes là où l'enfant a les pieds, et c'est le regard
     // qu'on élève à la hauteur de son dos. C'est l'inverse de ce qu'on faisait :
@@ -1740,7 +1762,13 @@ export function initFun(ctx) {
     if (!montrer) return;
 
     feedB.style.display = nourrissable && !riding && !bord ? 'block' : 'none';
-    rideB.textContent = riding ? '⬇️ Descendre' : `${m ? m.def.emoji : '🐴'} Monter`;
+    // ON NE « MONTE » PAS DANS UN AVION, ON LE PILOTE. Le mot compte : c'est
+    // le bouton qui dit à l'enfant ce qui va se passer, et piloter n'est pas
+    // se faire porter. La règle vit dans la fiche (`pilote`), comme le reste.
+    const verbe = (d) => (d && d.pilote ? 'Piloter' : 'Monter');
+    rideB.textContent = riding
+      ? (riding.def.pilote ? '⬇️ Se poser' : '⬇️ Descendre')
+      : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
     rideB.style.display = riding || m ? 'block' : 'none';
     // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
     // deux se contrediraient quatre fois par seconde.
