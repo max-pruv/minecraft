@@ -604,13 +604,54 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
 // d'ouvrir les scénarios qui empilent trois navigateurs et des délais de
 // vingt secondes, exactement comme la porte de sortie le fait entre deux
 // suites.
-async function souffler(limiteMs = 120000, chargeMax = 2.0) {
+// TRENTE SECONDES, PAS DEUX MINUTES — ET LE REMÈDE ÉTAIT DÉJÀ ÉCRIT À CÔTÉ.
+//
+// Mesuré en v223, tablette par tablette dans `reglages.js` :
+//
+//   souffler   0,0 s · chargement  5,1 s · __game 0,0 s
+//   souffler 120,0 s · chargement  9,4 s · __game 1,3 s
+//   souffler 120,0 s · chargement 10,1 s · __game 0,1 s
+//   souffler 120,0 s · chargement 13,7 s · __game 0,1 s   (et ainsi de suite)
+//
+// Cinq appels sur six tapent la limite EXACTE : ils ne convergent pas, ils
+// expirent. Six cents secondes sur les mille quatre-vingts de la suite —
+// la moitié — passées à regarder un nombre qui ne descendra pas.
+//
+// La raison est celle que la v220 avait déjà mesurée et écrite dans
+// `CLAUDE.md` : **la charge d'une minute est une moyenne QUI DÉCROÎT.** Quand
+// une suite se termine, ses processus sont morts et la machine est libre,
+// mais le chiffre met cent secondes à le reconnaître. Mesuré alors, même
+// navigateur, pendant que la charge montait de 3,40 à 5,16 : 58,5 · 43,0 ·
+// 45,9 · 47,4 · 55,9 images par seconde — AUCUNE relation, et 14,7 Go de
+// mémoire libre d'un bout à l'autre.
+//
+// `attendreLeCalme` (tout.js) était passé de 180 à 30 s pour cette raison —
+// « neuf minutes rendues par portail, et rien de perdu ». **Le remède était
+// resté dans le fichier qu'on regardait** : `souffler`, la même idée dans le
+// fichier d'à côté, a gardé ses deux minutes deux versions de plus. C'est
+// mot pour mot le piège du verre dans les murs, payé quatre fois.
+//
+// Ce qui compte VRAIMENT reste en place : `banc.joueur()` souffle déjà à
+// 20 s / charge 3, et deux pages ouvertes EN MÊME TEMPS font tomber la
+// cadence de 42,9 à 14,8 images/s — c'est la concurrence DANS une suite qui
+// coûte, pas la trace de la suite d'avant.
+//
+// Chaque appel dit sa durée : une attente qui expire doit se voir, sinon on
+// remet deux minutes sans que personne ne le remarque.
+async function souffler(limiteMs = 30000, chargeMax = 2.0) {
   const charge = () => {
     try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
     catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
   };
-  const fin = Date.now() + limiteMs;
+  const depart = Date.now();
+  const fin = depart + limiteMs;
   while (charge() > chargeMax && Date.now() < fin) await dormir(5000);
+  const dt = Date.now() - depart;
+  if (dt >= 5000) {
+    console.log(`   💨 souffler : ${(dt / 1000).toFixed(0)} s`
+      + `${dt >= limiteMs ? ' (limite atteinte — la charge n\'est jamais redescendue)' : ''}`
+      + ` · charge ${charge().toFixed(2)}`);
+  }
 }
 
 module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer, souffler,

@@ -20,6 +20,68 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v224 — Le portail passe de 83 à 59 minutes
+
+**Pourquoi.** Max : « pourquoi ça prend autant de temps de construire, et
+trouve des solutions pour que ça aille dix fois plus vite. » Le portail durait
+une heure et demie et **n'avait jamais dit où elle passait** : chaque
+proposition d'accélération était donc une intuition. J'en ai formulé quatre.
+Les quatre étaient fausses.
+
+| j'ai annoncé | la mesure |
+| --- | --- |
+| « les attentes fixes sont le gros morceau » | 7 % de `reseau.js` |
+| « 43 ouvertures de jeu, 16 pour `carte.js` » | mauvais motif : c'était le *panneau* de la carte |
+| « 16 démarrages pour 13 suites, rien à couper » | mauvais motif encore : il y en a 37 |
+| « donc ~100 s par page » | **4,7 à 8,7 s** — une division, pas une mesure |
+
+**Ce que ça change.** Le portail se chronomètre, suite par suite et témoin par
+témoin, et il finit par un classement « où passe le temps ». C'est ce relevé
+qui a montré la cause en une exécution, là où quatre hypothèses avaient échoué :
+
+```
+souffler   0,0 s · chargement  5,1 s · __game 0,0 s
+souffler 120,0 s · chargement  9,4 s · __game 1,3 s
+souffler 120,0 s · chargement 10,1 s · __game 1,9 s
+souffler 120,0 s · chargement 13,7 s · __game 0,1 s
+```
+
+**`souffler()` avait un défaut de deux minutes et l'atteignait cinq fois sur
+six.** Ce n'est pas une attente qui converge, c'est une attente qui expire :
+six cents secondes sur les mille quatre-vingts de `reglages.js` — la moitié de
+la suite — à regarder un nombre qui ne redescendra pas.
+
+| suite | avant | après | |
+| --- | --- | --- | --- |
+| `reglages.js` | 19 min 41 s | **7 min 14 s** | −63 % |
+| `carte.js` | 10 min 49 s | **4 min 17 s** | −60 % |
+| `monte.js` | 5 min 50 s | 4 min 05 s | −30 % |
+| `reseau.js` | 29 min 46 s | 26 min 48 s | −10 % |
+| **le portail** | **83 min** | **59 min** | **−29 %** |
+
+**Et une heure de plus était rendue en amont** : élargir la table des gardiens
+est désormais reconnu comme anodin. Déclarer un module neuf coûtait le portail
+entier — deux lignes, soixante minutes — alors qu'un gardien AJOUTÉ ne peut
+faire tourner que *plus* de suites, jamais moins. La preuve n'est pas dans le
+diff mais dans les deux tables : la nouvelle doit être un sur-ensemble de celle
+d'`origin/main`, clé par clé.
+
+**Ce qui le prouve.** Portail complet vert, les treize suites, **après** la
+coupe : rien n'a rougi d'avoir moins attendu, ce qui est la seule façon de
+savoir que ces deux minutes ne protégeaient rien. Et la raison était déjà
+mesurée et écrite dans `CLAUDE.md` depuis la v220 — la charge d'une minute est
+une moyenne **qui décroît**, sans relation avec la cadence réelle (58,5 · 43,0 ·
+45,9 · 47,4 · 55,9 images/s pendant qu'elle montait de 3,40 à 5,16, 14,7 Go
+libres d'un bout à l'autre). `attendreLeCalme` était passé de 180 à 30 s pour
+ce motif exact. **Le remède était resté dans le fichier qu'on regardait** :
+`souffler`, la même idée dans le fichier d'à côté, a gardé ses deux minutes
+deux versions de plus.
+
+Cette version ne change rien au jeu — elle change le banc. Le numéro monte
+quand même, parce que c'est lui qui fait foi.
+
+---
+
 ## v223 — On pilote un avion, et il y a désormais où atterrir
 
 **Pourquoi.** Max : « add planes, airbus, concord and military jets and allow

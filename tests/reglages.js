@@ -15,8 +15,18 @@ const banc = require('./banc.js');
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Cette suite est la deuxième du portail en durée — 19 min 41 s sur 83,
+// derrière `reseau.js` et ses 29 min 46 s, mesuré en v223 — et personne ne
+// savait pourquoi. Ni les attentes écrites en dur (6 % ici), ni le coût
+// d'ouvrir une page (6 s pièce, mesuré) ne l'expliquent. Le seul relevé qui
+// tranche est celui-ci, et il ne coûte rien.
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 // Attendre qu'une chose devienne vraie plutôt que d'attendre longtemps.
@@ -70,7 +80,18 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // vert, puis rouge, puis vert. Ce n'est pas le jeu qu'un tel portail
     // accuse, c'est le banc qui manque d'air — la leçon est déjà écrite dans
     // `CLAUDE.md`, elle n'avait simplement pas été appliquée ici.
+    //
+    // OUVRIR UNE TABLETTE COÛTE, ET ON DIT COMBIEN.
+    //
+    // Cette suite ouvre six tablettes et pèse vingt minutes ; le relevé par
+    // témoin de la v223 montre SEPT blocs de ~130 s, chacun ne contenant
+    // qu'un `joueur()`. Trois attentes s'y empilent — la respiration du banc,
+    // le chargement complet de la page, l'apparition de `window.__game` — et
+    // aucune ne disait sa part. On ne rabote pas une attente qu'on n'a pas
+    // pesée : les trois s'affichent maintenant.
+    const _t = [Date.now()];
     await banc.souffler();
+    _t.push(Date.now());
     const ctx = await navigateur.newContext({ viewport: { width: 420, height: 760 } });
     const p = await ctx.newPage();
     p.erreurs = [];
@@ -89,7 +110,12 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // d'accorder quatre-vingt-dix secondes à `window.__game` et trente au
     // chargement qui le précède : c'est la même attente, coupée en deux.
     await p.goto(adresse, { waitUntil: 'load', timeout: 90000 });
+    _t.push(Date.now());
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    _t.push(Date.now());
+    console.log(`   ⏱️  tablette « ${prenom} » : souffler ${((_t[1] - _t[0]) / 1000).toFixed(1)} s`
+      + ` · chargement ${((_t[2] - _t[1]) / 1000).toFixed(1)} s`
+      + ` · __game ${((_t[3] - _t[2]) / 1000).toFixed(1)} s`);
     return p;
   }
 

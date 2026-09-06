@@ -223,7 +223,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (10 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h |
+| **Complète** (13 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → **59 min** (v224) |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
@@ -295,6 +295,44 @@ couper. **Compter un motif n'est pas compter la chose** — c'est le reproche
 qu'on fait aux témoins, et il vaut pour les mesures de performance. Chaque
 suite affiche donc sa durée, et le portail finit par un classement « où passe
 le temps » : minutes de suites, minutes d'attente entre elles, total.
+
+**`souffler()` N'ÉTAIT PAS UNE CONDITION, C'ÉTAIT UN DÉLAI FIXE DÉGUISÉ
+(v224).** Son défaut était de deux minutes, et il l'atteignait **cinq fois sur
+six** : six cents secondes sur les mille quatre-vingts de `reglages.js`. Une
+attente qui tape sa limite n'attend pas que quelque chose arrive, elle expire.
+Ramenée à trente secondes — le chiffre que `tout.js` utilise déjà — le portail
+passe de **83 à 59 minutes**, treize suites vertes, rien de perdu.
+
+Trois choses en sortent, et la troisième est la plus importante.
+
+- **Le remède était déjà écrit dans le fichier d'à côté.** La v220 avait
+  mesuré que la charge d'une minute est une moyenne QUI DÉCROÎT, sans relation
+  avec la cadence, et `attendreLeCalme` était passé de 180 à 30 s pour ce
+  motif. `souffler`, la même idée dans `banc.js`, a gardé ses deux minutes
+  deux versions de plus. C'est mot pour mot le piège du verre dans les murs :
+  **quand une panne touche une grammaire partagée, on cherche TOUTES ses
+  occurrences le jour même.**
+- **Une attente qui expire doit LE DIRE.** Chaque appel affiche sa durée et
+  signale s'il a atteint sa limite. Sans cela on y remet deux minutes sans que
+  personne ne le remarque — c'est ce qui s'est passé pendant deux versions.
+- **Et le relevé neuf montre que ce n'est pas fini** : les trente-huit appels
+  tapent ENCORE leur limite, avec une charge qui reste entre 3,0 et 5,7 et ne
+  repasse jamais sous le seuil de 2,0. Sur une machine à quatre cœurs, une
+  charge de 3 à 4 avec un navigateur ouvert est normale, pas une surcharge :
+  le seuil est faux, donc l'attente est constante par construction. À
+  remesurer avant de toucher — c'est écrit dans `TASKS.md`.
+
+**ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ — QUATRE FOIS DE SUITE (v224).**
+Devant « pourquoi ça prend autant de temps », j'ai avancé quatre explications
+chiffrées avant d'instrumenter quoi que ce soit, et les quatre étaient
+fausses : les attentes fixes (7 % en réalité), « 43 ouvertures de jeu » (mon
+motif attrapait le PANNEAU de la carte, pas une page), « 16 démarrages, rien à
+couper » (mauvais motif encore : il y en a 37), puis « ~100 s par page » (une
+division, jamais une mesure — c'est 6 s). **Compter un motif n'est pas compter
+la chose** : c'est le reproche qu'on fait aux témoins, et il vaut d'abord pour
+les mesures de performance. Le portail se chronomètre désormais suite par
+suite, et `reseau.js` et `reglages.js` témoin par témoin ; ce relevé a trouvé
+la cause en UNE exécution.
 
 **UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.** La barrière est
 bonne par défaut — elle évite d'attendre cinquante minutes quand un module ne
