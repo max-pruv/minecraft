@@ -1135,18 +1135,23 @@ const FICHES = {
     couleurToits: [140, 132, 124],
   },
   santiago: {
-    // LES ANDES FONT SANTIAGO. Elles sont à quarante kilomètres — hors de
-    // portée d'un disque de soixante-huit blocs — et pourtant elles ferment
-    // chaque vue de la ville. ENTORSE DÉCLARÉE : la cordillère est ramenée au
-    // bord du disque, à huit kilomètres, pour qu'elle se voie du centre. Sans
-    // elle, Santiago n'est plus Santiago. Le Cerro San Cristóbal et le Cerro
-    // Santa Lucía, eux, sont à leur vraie place.
+    // LES ANDES SONT DEHORS, ET L'ENTORSE A ÉTÉ RETIRÉE APRÈS CAPTURE. Elles
+    // sont à quarante kilomètres, hors de portée d'un disque de soixante-huit
+    // blocs, et j'avais d'abord ramené une « cordillère » à son bord en
+    // déclarant l'entorse. La capture aérienne a tranché : à cette taille une
+    // colline est un DÔME, pas une chaîne — un dôme gris pelé posé sur le
+    // quartier est, qui ne se reconnaît pas et qui mange la ville. Une entorse
+    // qui ne rend pas ce qu'elle promet n'est pas une entorse, c'est un défaut
+    // qu'on a écrit exprès. Santiago garde ses deux cerros, qui sont réels, à
+    // leur vraie place, et qui se lisent. Les Andes attendent un rayon plus
+    // grand — déclaré dans TASKS.md.
     lat0: -33.4489, lon0: -70.6693, echelle: 8, rayon: 68,
     fleuve: { pts: [[-40, -16], [-20, -18], [0, -20], [16, -20], [30, -23], [44, -26], [58, -30]], l: 1.6 },
     collines: [
-      { nom: 'Cerro San Cristóbal', cu: 28, cv: -20, r: 9, h: 24, roche: uni(17) },
+      // Boisé, comme le vrai — c'est un parc, avec la Vierge à son sommet.
+      { nom: 'Cerro San Cristóbal', cu: 28, cv: -20, r: 9, h: 24 },
+      // Celui-là est bien un affleurement nu au milieu de la ville.
       { nom: 'Cerro Santa Lucía', cu: 19, cv: -8, r: 4, h: 9, roche: uni(17) },
-      { nom: 'La cordillère', cu: 48, cv: -6, r: 30, h: 40, roche: uni(23) },   // la roche claire des Andes
     ],
     trame: { ang: 0.05, pu: 6, pv: 5, tours: 0.85 }, tourMax: 26,
     palette: [CREME, OCRE, uni(23)], toit: TUILE, hMaison: [3, 5],
