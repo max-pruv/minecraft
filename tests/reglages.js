@@ -80,7 +80,18 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // vert, puis rouge, puis vert. Ce n'est pas le jeu qu'un tel portail
     // accuse, c'est le banc qui manque d'air — la leçon est déjà écrite dans
     // `CLAUDE.md`, elle n'avait simplement pas été appliquée ici.
+    //
+    // OUVRIR UNE TABLETTE COÛTE, ET ON DIT COMBIEN.
+    //
+    // Cette suite ouvre six tablettes et pèse vingt minutes ; le relevé par
+    // témoin de la v223 montre SEPT blocs de ~130 s, chacun ne contenant
+    // qu'un `joueur()`. Trois attentes s'y empilent — la respiration du banc,
+    // le chargement complet de la page, l'apparition de `window.__game` — et
+    // aucune ne disait sa part. On ne rabote pas une attente qu'on n'a pas
+    // pesée : les trois s'affichent maintenant.
+    const _t = [Date.now()];
     await banc.souffler();
+    _t.push(Date.now());
     const ctx = await navigateur.newContext({ viewport: { width: 420, height: 760 } });
     const p = await ctx.newPage();
     p.erreurs = [];
@@ -99,7 +110,12 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // d'accorder quatre-vingt-dix secondes à `window.__game` et trente au
     // chargement qui le précède : c'est la même attente, coupée en deux.
     await p.goto(adresse, { waitUntil: 'load', timeout: 90000 });
+    _t.push(Date.now());
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    _t.push(Date.now());
+    console.log(`   ⏱️  tablette « ${prenom} » : souffler ${((_t[1] - _t[0]) / 1000).toFixed(1)} s`
+      + ` · chargement ${((_t[2] - _t[1]) / 1000).toFixed(1)} s`
+      + ` · __game ${((_t[3] - _t[2]) / 1000).toFixed(1)} s`);
     return p;
   }
 
