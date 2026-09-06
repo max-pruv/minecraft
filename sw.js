@@ -47,6 +47,7 @@ const ASSETS = [
   './src/siege.js',
   './src/villandry.js',
   './src/aeroport.js',
+  './src/cadence.js',
   './src/gaulois.js',
   './src/espace.js',
   './src/ville.js',

@@ -13,40 +13,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Les minuteurs de `education.js` comptent aussi en `dt`.**
+  `this.remaining -= dt` et `this.saveTimer -= dt` : sur une tablette qui
+  rame, le temps libre d'un enfant s'écoule moins vite que le temps réel, et
+  la sauvegarde s'espace. Même cause que la v226, mais cela touche
+  l'invariant 2 (mode éducatif) — à regarder avec soin, pas à corriger d'un
+  revers de main : il faut d'abord décider ce qui est JUSTE (le temps d'écran
+  se compte sûrement en temps réel, mais la question mérite d'être posée à
+  Max).
 
-- [ ] **LA BANDE MORTE DES PIÉTONS — rouge EN PRODUCTION, mesuré (v223).** Le
-  témoin de fumée « et elle reste habitée quand on la traverse à pied » est
-  rouge sur `origin/main` **deux fois sur trois** (pire 2, 2, 6 ; seuil 3), et
-  quatre fois sur quatre sur la branche. La livraison des aérodromes n'y est
-  pour rien — double mesure faite dans un arbre séparé (`/root/main-ref`),
-  suite rejouée SEULE des deux côtés.
 
-  **Le mécanisme est mesuré, pas supposé.** Une sonde qui sépare les trois
-  pannes que le témoin confond (pas posé / trop loin / caché) rend, au 4ᵉ bond
-  de la traversée, au centre de Paris :
-
-  | | total | à moins de 62 | visibles | cachés | les 5 plus proches |
-  | --- | --- | --- | --- | --- | --- |
-  | branche | 18 | 3 | 3 | 0 | 42, 55, 60, 67, 74 |
-  | `origin/main` | 18 | 11 | 11 | 0 | 32, 33, 36, 38, 39 |
-
-  Les dix-huit existent toujours, aucun n'est caché : ils sont simplement
-  **trop loin**. Un personnage cesse d'être dessiné à 62 blocs (`VU` de
-  `vie.js`) et n'est rapatrié qu'au-delà de **64** — la v217 avait choisi
-  « juste au-delà de soixante-deux ». Il reste donc une bande de deux blocs où
-  l'on est invisible ET non rapatrié, et un enfant qui traverse le centre de
-  Paris tombe dedans.
-
-  **Ce qu'il ne faut PAS faire** : baisser le seuil sans mesurer. La v217 l'a
-  déjà payé — un seuil trop serré fait replacer dix-sept passants sur dix-huit
-  toutes les deux secondes sans jamais en ramener un seul dans le champ, et
-  c'est `maj.js` qui l'avait signalé. Toute correction se mesure avec la sonde
-  ci-dessus ET avec `maj.js`.
-
-  **Et le témoin lui-même est à revoir** : un seul nombre pour trois pannes
-  très différentes ne se démonte pas. Il devrait dire « dix-huit existent,
-  trois à portée, zéro caché » — c'est ce qui a permis de trancher ici en une
-  exécution après trois hypothèses fausses.
 
 
 - [x] **Les trains n'arrivaient pas en gare — FAIT en v222.** Les gares étaient
@@ -509,6 +485,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v226** — Les villes ne sont plus vides quand on y arrive. Les cadences
+  de ménage (passants, circulation, garagiste, aéroportiste) comptaient en
+  `dt`, borné à 1/20 s : à 2,7 images par seconde, un minuteur de deux
+  secondes demandait quatorze secondes réelles. Pire de la traversée 3 → 16,
+  peuplement à l'arrivée 6-8 s → 1 s.
 
 - [x] **v225** — Le portail passe de 59 à 48 minutes. Le seuil de `souffler()`
   était SOUS le coût d'une seule page (mesuré : une page ouverte = 3,8 sur

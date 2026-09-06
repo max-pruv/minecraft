@@ -95,6 +95,9 @@ const GARDIENS = {
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
   'src/avions.js': ['monte.js'],
+  // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
+  // vie de rue (fumée + monte) et dans les durées (maj).
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js'],
   'src/fun.js': ['monte.js', 'carte.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
