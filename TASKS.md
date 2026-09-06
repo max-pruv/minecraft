@@ -1,5 +1,14 @@
 # Ce qui est en cours
 
+- **Les avions ont perdu leur rapport de vitesse réel (v229).** Le plafond du
+  chargement du monde est 110 blocs/s ; les vitesses sont donc 95 (avion de
+  ligne) et 110 (Concorde, chasseur), soit un rapport de 1,16 au lieu du 1 à
+  2,4 du réel. Décision de Max, « tout le monde autour de cent ». Pour le
+  reprendre il faut mailler plus vite : 45 % du coût est la génération du
+  relief (`fbm`, `terrainHeight`, `treeAt`, `cityAt`), qui est le chemin le
+  plus chaud du jeu et voisin de l'invariant 1 — donc un chantier à part, avec
+  sa double empreinte.
+
 **Pourquoi ce fichier est dans le dépôt.** La liste de tâches de la session vit
 dans le conteneur, et le conteneur a été recyclé sept fois en deux jours. Deux
 entrées ont disparu avec lui — la refonte de la sauvegarde et la géographie —

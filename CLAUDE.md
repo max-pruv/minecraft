@@ -870,13 +870,58 @@ monoplaces gardent l'embarquement : on ne conduit pas un métro.
      prendre son élan sur la piste avant de tirer sur le manche.
    - **Le nez suit le regard**, l'assiette est le tangage.
 
-   **ET LES VITESSES SONT DES RAPPORTS RÉELS, PAS DES GOÛTS.** 900 km/h pour
-   un avion de ligne, 2 180 pour le Concorde, 2 200 pour un chasseur : le
-   rapport est de 1 à 2,4, et le chasseur se distingue du Concorde par son
-   AGILITÉ — trois fois la poussée, trois fois le taux de virage — pas par sa
-   pointe. L'ancre absolue se mesure DANS LE JEU : un enfant qui vole
-   librement atteint 88 blocs/s en croisière (`player.js`), donc un avion de
-   ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
+   **LES VITESSES ÉTAIENT DES RAPPORTS RÉELS — LE STREAMING A EU RAISON D'EUX
+   (v229).** 900 km/h pour un avion de ligne, 2 180 pour le Concorde : le
+   rapport est de 1 à 2,4, et il a gouverné les vitesses jusqu'à ce que Max
+   signale « les jets volent trop vite, la carte n'arrive pas à suivre et ça
+   rame ».
+
+   **CE QUI PLAFONNE UN MONDE QUI SE CHARGE, C'EST SON DÉBIT DE MAILLAGE, ET
+   IL SE MESURE.** Le monde maille 154 morceaux par seconde ; voler à la
+   vitesse v en réclame `1,5 × v` — la largeur du front de chargement
+   (`2 × RENDER_RADIUS`) multipliée par les morceaux franchis par seconde. À
+   264 blocs/s il manquait un facteur cinq, et l'enfant volait littéralement
+   dans le vide : deux appels de dessin par image.
+
+   Le critère ne se lit pas en pourcentage mais en BLOCS, devant soi — à
+   quelle distance commence le paysage pas encore maillé. Médiane sur six
+   relevés, à la distance d'affichage de l'iPad : **95 b/s → 132-137 blocs ·
+   110 → 125-138 · 170 → 51-86 · 264 → 32-51**. Le plafond est cent dix.
+
+   **Décision de Max, devant le choix : tout le monde autour de cent.** 95
+   pour l'avion de ligne — l'ancre absolue reste le vol libre de l'enfant,
+   88 blocs/s, sinon prendre l'avion ne sert à rien — et 110 pour le Concorde
+   et le chasseur, qui se distinguent désormais par leur AGILITÉ seule (trois
+   fois la poussée, trois fois le taux de virage). Le rapport tombe à 1,16 :
+   c'est une perte réelle, déclarée dans `TASKS.md`, et **le seul moyen de la
+   reprendre est de mailler plus vite** — 45 % du coût est la génération du
+   relief — jamais de réécrire ce paragraphe.
+
+   Trois choses apprises en le mesurant, et les trois se reprennent :
+
+   - **UN BUDGET SOUS LE COÛT D'UNE SEULE UNITÉ NE BORNE RIEN.**
+     `MESH_BUDGET_MS` valait 6 quand un morceau en coûte 5,4 : la boucle en
+     maillait un, regardait l'heure, en maillait un second et s'arrêtait. Le
+     débit était donc figé à deux par image, quoi qu'on écrive. Porté à 12 —
+     mesuré, même page, même point : 76 → 154 morceaux/s **sans coûter une
+     image** ; 20 en rend 178 et coûte un tiers de la cadence. C'est mot pour
+     mot le seuil de charge du banc en v225, et c'est la troisième fois : une
+     constante de seuil se règle sur le coût MESURÉ de ce qu'elle laisse
+     passer.
+   - **LE BANC OUVRE LE JEU À `rr=2`, ET UN TÉMOIN DE CHARGEMENT Y EST VERT
+     QUOI QU'IL ARRIVE.** Le brouillard y commence à dix-huit blocs et le
+     disque à charger fait douze cases : mon premier jet du témoin était vert
+     sur `origin/main` à 264 blocs/s. `banc.joueur({ rr: 12 })` demande la
+     valeur de l'iPad ; tout témoin qui éprouve le CHARGEMENT du monde doit
+     la demander.
+   - **UN FRONT DE CHARGEMENT EST IRRÉGULIER : UN INSTANTANÉ NE LE MESURE
+     PAS.** Le même code m'a rendu 68, 91 puis 101 blocs sur trois lectures,
+     et j'ai failli descendre les avions pour poursuivre un chiffre qui
+     bougeait tout seul — à 140 il rendait MOINS qu'à 170. Six relevés à une
+     seconde d'intervalle et la médiane : la distribution se sépare alors
+     nettement (51-86 à 170 contre 125-138 à 110). C'est la règle « un témoin
+     qui mesure une durée observe toute la fenêtre », appliquée à une
+     distance.
 
    **`gabarit` n'est pas l'envergure.** Une boîte de collision ne tourne pas :
    à quinze blocs de large, un avion resterait coincé entre deux hangars et ne

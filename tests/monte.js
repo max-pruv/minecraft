@@ -1334,9 +1334,115 @@ async function avancerUnDemiSeconde(p, depart) {
     // un avion de ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
     verifier('un avion de ligne va plus vite qu\'un enfant qui vole',
       ligne.vitesse > 88, `${ligne.vitesse} blocs/s contre 88`);
-    verifier('et le Concorde comme le chasseur vont deux fois et demie plus vite',
-      conc.blocs > ligne.blocs * 1.8 && chas.blocs > ligne.blocs * 1.8,
+    // LE RAPPORT DE 1 À 2,4 A ÉTÉ ABANDONNÉ, ET C'EST UNE DÉCISION DE MAX
+    // (v229). Le vrai rapport est celui des vitesses réelles — 900 km/h contre
+    // 2 180 — mais la carte ne se maille qu'à 154 morceaux par seconde et voler
+    // à v en réclame 1,5 × v : au-delà de cent dix blocs par seconde, l'enfant
+    // rattrape le bord du monde qui se charge. Devant le choix « garder le
+    // rapport et voler dans le vide » ou « tout ramener autour de cent », Max a
+    // tranché : tout autour de cent.
+    //
+    // Ce qui reste à garder, et que ce témoin garde : les rapides restent
+    // NOTABLEMENT plus rapides — sinon choisir le Concorde ne veut plus rien
+    // dire — et tous battent le vol libre de l'enfant.
+    verifier('et le Concorde comme le chasseur restent les plus rapides',
+      conc.blocs > ligne.blocs * 1.1 && chas.blocs > ligne.blocs * 1.1,
       `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 2 s de pointe`);
+
+    // LA CARTE SUIT L'AVION — le trou reste dans le brouillard.
+    //
+    // Max : « les jets volent trop vite, la carte n'arrive pas à suivre et ça
+    // rame ». Mesuré à 264 blocs/s : quatre à sept pour cent du disque devant
+    // soi était maillé, premier trou à QUATRE-VINGTS blocs, et deux appels de
+    // dessin par image — il n'y avait littéralement rien à afficher.
+    //
+    // LA BARRE EST À QUATRE-VINGTS BLOCS, ET ELLE N'EST PAS LE BROUILLARD.
+    //
+    // Mon premier jet exigeait que le trou soit au-delà de `scene.fog.near`
+    // (106 blocs). C'était le bon critère en théorie et un mauvais témoin en
+    // pratique : à 170 blocs/s le banc rend 101, à 140 il rend 91 — NON
+    // MONOTONE. Un bruit de dix blocs ne peut pas arbitrer une vitesse à dix
+    // blocs près, et j'ai failli descendre les avions pour poursuivre un
+    // chiffre qui bougeait tout seul.
+    //
+    // Ce que la mesure sait tenir, c'est l'ÉCART : trente-six blocs sur
+    // `origin/main` contre quatre-vingt-dix à cent trente ici. La barre est
+    // donc à quatre-vingts — au-delà d'une demi-seconde de vol même pour le
+    // plus rapide — et le brouillard est REPORTÉ à côté, pour qu'on sache
+    // toujours de combien il reste à gagner. Ce qui manque encore est une
+    // dette déclarée, pas un témoin desserré.
+    // UNE PAGE À LA DISTANCE D'AFFICHAGE DE L'IPAD. Le banc ouvre tout à
+    // `rr=2` pour que le monde se charge vite : le brouillard y est alors à
+    // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
+    // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
+    // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
+    const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
+    const suivi = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      let scene = g.npcs && g.npcs[0] ? g.npcs[0].mesh : null;
+      while (scene && scene.parent) scene = scene.parent;
+      if (!scene || !scene.fog) return { err: 'ni scène ni brouillard' };
+      const CHUNK = 16, R = 12;
+      const out = { brouillard: Math.round(scene.fog.near) };
+      for (const key of ['avionligne', 'concorde']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        // Un couloir vierge, loin de tout : on éprouve le STREAMING, pas le
+        // coût d'une ville.
+        g.player.pos.set(30000 + (key === 'concorde' ? 4000 : 0), 100, 30000);
+        g.player.vel.set(0, 0, 0); g.player.yaw = 0; g.player.pitch = 0;
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.vitesseAvion = def.pilote.max;
+        g.player.avionEnVol = true;
+        g.player.altitudeDecollage = -999;
+        // ON OBSERVE PENDANT TOUTE LA FENÊTRE, PAS SEULEMENT À LA FIN. Un
+        // front de chargement est irrégulier : le même code m'a rendu 68, 91
+        // puis 101 blocs sur trois instantanés. Quatre secondes pour établir
+        // le régime, puis six relevés à une seconde d'intervalle, et l'on
+        // garde la MÉDIANE — ce qui se reproduit, pas le creux le plus
+        // frappant.
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        await patienter(4000);
+        const releves = [];
+        for (let n = 0; n < 6; n++) {
+          await patienter(1000);
+          const poses = new Set();
+          scene.traverse((o) => {
+            if (o.isMesh && o.position.y === 0
+              && o.position.x % CHUNK === 0 && o.position.z % CHUNK === 0) {
+              poses.add(`${o.position.x / CHUNK},${o.position.z / CHUNK}`);
+            }
+          });
+          const pcx = Math.floor(g.player.pos.x / CHUNK), pcz = Math.floor(g.player.pos.z / CHUNK);
+          const vx = -Math.sin(g.player.yaw), vz = -Math.cos(g.player.yaw);
+          let trou = R;
+          for (let dz = -R; dz <= R; dz++) {
+            for (let dx = -R; dx <= R; dx++) {
+              const len = Math.hypot(dx, dz);
+              if (len > R || len < 0.5) continue;
+              if ((dx / len) * vx + (dz / len) * vz < 0.3) continue;   // pas devant
+              if (!poses.has(`${pcx + dx},${pcz + dz}`)) trou = Math.min(trou, len);
+            }
+          }
+          releves.push(Math.round(trou * CHUNK));
+        }
+        releves.sort((x, y) => x - y);
+        out[key] = { vitesse: def.pilote.max, trou: releves[3], releves };
+        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.vitesseAvion = undefined; g.player.flying = false;
+      }
+      return out;
+    });
+    const BARRE = 80;
+    verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
+      !suivi.err && suivi.avionligne && suivi.concorde
+      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
+      `barre ${BARRE} · ${JSON.stringify(suivi)}`);
 
     // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
     //
