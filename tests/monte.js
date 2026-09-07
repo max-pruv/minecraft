@@ -1619,6 +1619,96 @@ async function avancerUnDemiSeconde(p, depart) {
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
+    // VOLER NE REMPLIT PLUS LA MÉMOIRE DE LA TABLETTE (v236).
+    //
+    // Max, après la v235 : « Lag is very bad avec les avions fix it for
+    // real ». J'avais corrigé des symptômes ; il fallait décomposer. Image par
+    // image puis au profil, le vol ne coûte presque rien là où je cherchais :
+    // le RENDU fait 4,6 % du temps, la caméra cubique des reflets ne tourne
+    // JAMAIS en vol (mesuré : zéro image sur cent huit — le rayon de 45 blocs
+    // ignore l'altitude, mais le convoi, lui, n'existe plus si loin), le
+    // maillage tient son budget, et couper le contrôle des shaders ne rend
+    // rien (pire image 1 800 → 1 633, dans le bruit).
+    //
+    // La cause est ailleurs, et elle est arithmétique : `world.chunks` ne rend
+    // JAMAIS un morceau. `main.js` défait bien les MAILLAGES dépassés ; les
+    // quatre-vingts kilo-octets de blocs de chaque morceau, eux, restaient
+    // pour toujours. Mesuré, même vol, même distance parcourue :
+    //
+    //             30 s          90 s            5 min
+    //   avant   245 Mo      693 Mo (tas 918)   2 328 Mo (tas 2 616)
+    //   après    27 Mo       27 Mo (tas 256)      35 Mo (tas 233)
+    //
+    // ET LE VERDICT EST EN MÉGAOCTETS, PAS EN MILLISECONDES. Sur ce conteneur
+    // la cadence est IDENTIQUE des deux côtés (35,6 contre 34,5 sur cinq
+    // minutes) et le temps de ramasse-miettes aussi (4,3 s contre 4,2 sur
+    // quatre-vingt-dix) : la machine a de la mémoire à revendre, elle ne
+    // souffre pas. Un iPad, si — et il ferme l'onglet. C'est la leçon de la
+    // minicarte par un autre bout : une DURÉE mesure le banc, une QUANTITÉ
+    // non.
+    //
+    // ET LE TÉMOIN VÉRIFIE QU'IL A VOLÉ. Mes trois premières sondes ont mesuré
+    // un jeu à l'ARRÊT : `banc.joueur` ouvre la page, il faut `jouerSeul` pour
+    // que `running` passe à vrai — sans quoi `player.update` n'est jamais
+    // appelé et l'avion reste sur place. Tous mes chiffres étaient faux et
+    // rien ne le disait. Un témoin de déplacement mesure d'abord le
+    // déplacement.
+    await souffler();
+    const memoire = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'chasseur');
+      if (!def || !def.pilote) return { err: 'pas de chasseur' };
+      const V = positionDe('paris');
+      const depart = V.x - 700;
+      g.player.pos.set(depart, 96, V.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      await new Promise((f) => setTimeout(f, 30000));
+      const morceaux = g.world.chunks.size;
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return { morceaux, moBlocs: Math.round(morceaux * 80 / 1024),
+        parcouru: Math.round(g.player.pos.x - depart) };
+    });
+    // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
+    // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
+    verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
+      !memoire.err && memoire.parcouru > 2000 && memoire.moBlocs <= 100,
+      `barre 100 Mo · ${JSON.stringify(memoire)}`);
+
+    // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
+    //
+    // C'est l'invariant 1 appliqué à ma propre correction : oublier les blocs
+    // d'un morceau serait irrattrapable s'ils portaient le travail d'un
+    // enfant. Ils ne le portent pas — le terrain est DÉTERMINISTE et `edits`
+    // est la source, que `generateChunk` réapplique — mais cela se PROUVE.
+    // Sur l'ancien code, `oublierLoinDe` n'existe pas : le témoin le dit au
+    // lieu de planter.
+    const survie = await ciel.evaluate(() => {
+      const g = window.__game, w = g.world;
+      if (!w.oublierLoinDe) return { err: 'oublierLoinDe absente' };
+      const x = 4321, y = 90, z = -1234;
+      const avant = w.getBlock(x - 1, y, z);            // engendre le morceau
+      w.setBlock(x, y, z, 1);                           // « une brique de Marlon »
+      const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
+      const tenait = w.chunks.has(cx + ',' + cz);
+      w.oublierLoinDe(cx + 9999, cz, 16);               // on oublie tout
+      const vide = !w.chunks.has(cx + ',' + cz);
+      return { tenait, vide, avant, apres: w.getBlock(x - 1, y, z),
+        brique: w.getBlock(x, y, z) };
+    });
+    verifier('un bloc posé par un enfant survit à l\'oubli de son morceau',
+      !survie.err && survie.tenait && survie.vide
+        && survie.brique === 1 && survie.apres === survie.avant,
+      JSON.stringify(survie));
+
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //
     // Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la

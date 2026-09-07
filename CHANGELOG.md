@@ -20,6 +20,61 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v236 — Le monde oublie enfin ce que l'avion a dépassé
+
+**Pourquoi.** Max, après la v235 : « Lag is very bad avec les avions fix it
+for real. » Il avait raison : la v235 avait corrigé un symptôme réel — les
+voitures d'une ville qui naissaient toutes dans la même image — et le gel
+revenait quand même.
+
+Cette fois j'ai décomposé avant de toucher quoi que ce soit, et **les trois
+coupables que je soupçonnais sont innocents**. Le rendu fait **4,6 %** du temps
+d'un vol. La caméra cubique qui fabrique les reflets de carrosserie ne tourne
+**jamais** en vol — zéro image sur cent huit. Couper le contrôle des shaders ne
+rend rien de mesurable. Le maillage tient son budget.
+
+Le vrai défaut ne se voyait pas en millisecondes, parce qu'il ne coûte pas de
+temps : **le jeu n'a jamais rendu un seul morceau de monde.** `main.js` défait
+bien les MAILLAGES des morceaux qu'on laisse derrière soi — c'est écrit depuis
+toujours — mais les **blocs**, quatre-vingts kilo-octets par morceau,
+restaient dans la mémoire pour la partie entière. À cent dix blocs par seconde,
+l'avion en engendre **quatre-vingt-sept par seconde**. Mesuré sur le même vol,
+à la même distance parcourue :
+
+|  | après 30 s | après 90 s | après 5 min |
+| --- | --- | --- | --- |
+| avant | 245 Mo | 693 Mo | **2 328 Mo** |
+| après | 27 Mo | 27 Mo | **35 Mo** |
+
+Deux gigaoctets et demi de blocs après cinq minutes de vol : un iPad ferme
+l'onglet bien avant, et **longtemps avant de le fermer, il se fige pour faire
+de la place**. Trois secondes d'arrêt, une seconde de jeu.
+
+**Ce que ça change.** Marlon et Alice peuvent voler aussi longtemps qu'ils
+veulent. La mémoire du jeu ne monte plus : elle se stabilise autour de trente
+mégaoctets de blocs, quelle que soit la distance parcourue. Rien n'est perdu au
+passage — le relief se recalcule à l'identique, et les blocs posés à la main
+sont réappliqués depuis leur propre registre. Voler dix minutes coûte
+désormais autant que voler dix secondes.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, et le portail complet
+en vert.
+
+Le premier vole trente secondes au-dessus de Paris et pèse les blocs retenus :
+**245 Mo sur `origin/main`, 27 ici**, pour une barre à cent. Et **son verdict
+est en mégaoctets, pas en millisecondes** : sur ce conteneur, qui a de la
+mémoire à revendre, la cadence est identique des deux côtés (35,6 contre 34,5
+sur cinq minutes) et le temps de ramasse-miettes aussi (4,3 s contre 4,2). Le
+banc ne souffre pas de ce défaut ; un iPad, si. Une durée aurait mesuré la
+machine.
+
+Le second garde l'invariant du sol contre ma propre correction : on pose une
+brique, on force l'oubli du morceau qui la porte, et l'on vérifie qu'elle est
+toujours là quand le morceau revient — avec le terrain d'à côté inchangé, bloc
+pour bloc.
+
+---
+
 ## v235 — L'écran ne se fige plus en arrivant sur une ville
 
 **Pourquoi.** Max, en vol : « il y a vraiment un lag, il n'est pas capable de

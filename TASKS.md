@@ -22,6 +22,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Trois non-résultats MESURÉS en v236 — ne pas les reprendre à
+  l'aveugle.** En cherchant la cause du gel en vol : le **rendu** ne fait que
+  4,6 % du temps (834 ms sur 18 s) ; la **caméra cubique des reflets** ne
+  tourne JAMAIS en vol (zéro image sur cent huit — son rayon de 45 blocs ignore
+  pourtant l'altitude, mais un convoi n'existe plus si loin) ; couper
+  `renderer.debug.checkShaderErrors` ne rend rien (pire image 1 800 → 1 633,
+  dans le bruit) parce qu'il n'y a que SIX programmes dans tout le jeu. Le
+  rayon des reflets mériterait quand même de compter l'altitude — c'est une
+  ligne, et cela évitera qu'un futur changement de portée le réveille en vol.
+
+- [ ] **`generateChunk` parcourt TOUS les blocs de l'enfant à chaque morceau
+  engendré.** `for (const [k, id] of this.edits)` avec un `split(',').map(Number)`
+  par entrée, pour chacun des quatre-vingt-sept morceaux engendrés par seconde
+  en vol. Gratuit au banc (zéro bloc posé), mais Marlon en a des milliers :
+  ~435 000 découpages de chaîne par seconde. Un index `edits` par morceau le
+  supprime ; les points d'écriture sont `setBlock`, le chargement, la fusion et
+  les deux effacements. Pas mesuré sur un vrai profil d'enfant — à chiffrer
+  avant de le faire.
+
 - [ ] **Figer les matrices des morceaux de monde n'apporte RIEN — mesuré en
   v235, à ne pas reprendre à l'aveugle.** Le profil d'un vol au-dessus de Paris
   accuse `updateMatrixWorld` (849 ms), `compose` (599), `multiplyMatrices`
