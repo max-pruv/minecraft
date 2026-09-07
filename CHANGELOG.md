@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v235 — L'écran ne se fige plus en arrivant sur une ville
+
+**Pourquoi.** Max, en vol : « il y a vraiment un lag, il n'est pas capable de
+naviguer avec fluidité. L'écran s'arrête pendant trois secondes, il redémarre
+pendant une seconde. »
+
+Ce n'était **ni le maillage du monde ni le rendu**. Profilé et mesuré, vingt
+secondes de vol au-dessus de Paris : le maillage tient son budget (16 ms par
+image), le rendu en coûte 4 — et une seule image en prenait **557**. Tout était
+dans `animerLesVilles`. Les huit circuits de voitures de Paris naissaient
+**ensemble**, dans la même image, à l'instant où l'avion franchissait leur
+rayon de deux cent vingt blocs. Chacun fabrique une vingtaine de voitures, et
+une voiture coûte trente-deux maillages : cinq mille maillages d'un coup, pour
+des voitures que personne ne peut voir avant deux secondes de vol — un convoi
+ne se montre qu'à quarante-cinq blocs.
+
+**Ce que ça change.** Deux choses, et la seconde est la vraie. On **étale** :
+un circuit par tour, le plus proche d'abord, le tour passant de deux secondes
+et demie à un huitième de seconde. Et surtout, **un convoi ne fabrique plus ce
+que personne ne voit** : chaque place reste vide jusqu'à ce qu'elle entre dans
+le champ. Une ville survolée de loin ne coûte plus rien du tout.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien code.
+Il mesure ce que l'enfant subit — la durée de chaque image pendant qu'on
+survole Paris en chasseur — sans aucune instrumentation dans le jeu, donc à
+l'identique des deux côtés :
+
+| | avant | après |
+| --- | --- | --- |
+| pire image | 800 ms | **233 ms** |
+| part du temps en images de plus de 300 ms | 10,3 % | **0 %** |
+| cadence moyenne | 17 im/s | 20,3 im/s |
+
+**Et une piste mesurée qui n'a rien donné, écrite pour qu'on ne la reprenne
+pas à l'aveugle.** Le profil accusait aussi les matrices de three.js — dix pour
+cent du vol à replacer des morceaux de monde qui ne bougent jamais. Les figer
+n'a **rien changé de mesurable** (28,5 → 27,7 images par seconde, gel 683 →
+667) : ce coût vient des personnages, qui bougent. La correction a été retirée.
+
+---
+
 ## v234 — Une minute de jeu compte pour une minute
 
 **Pourquoi.** `main.js` borne `dt` à un vingtième de seconde, et c'est juste

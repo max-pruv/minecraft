@@ -1211,6 +1211,52 @@ Quatre choses à savoir avant d'en ajouter un.
   `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
   aurait évité que Roissy passe six versions au milieu de Paris.
 
+### La fluidité en vol — et ce que le profil a démenti
+
+Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
+secondes, il redémarre pendant une seconde. » Six choses en sortent, et la
+première est une méthode.
+
+- **UN GEL NE SE DEVINE PAS, IL SE DÉCOUPE.** J'ai chronométré l'image phase
+  par phase, puis profilé le moteur JavaScript, avant de toucher une ligne. Le
+  découpage a écarté d'emblée les deux coupables évidents : le maillage tenait
+  son budget (16 ms par image) et le rendu coûtait 4. Le temps était dans
+  « autre » — 619 ms sur une image de 639. Un second découpage a nommé
+  `animerLesVilles`, un troisième a nommé la ligne exacte.
+- **HUIT CIRCUITS NÉS DANS LA MÊME IMAGE, C'EST 557 ms D'ÉCRAN FIGÉ.** Les
+  circuits de voitures d'une ville s'instanciaient tous ensemble au
+  franchissement de leur rayon de 220 blocs. Une vingtaine de voitures par
+  circuit, trente-deux maillages par voiture (v201) : cinq mille maillages
+  d'un coup. **Une file qui se vide d'un coup n'est pas une file, c'est une
+  bombe** — le maillage des morceaux de monde avait résolu exactement cela un
+  fichier plus loin, avec un budget de temps ; la circulation ne l'avait
+  jamais fait.
+- **ET LE VRAI REMÈDE EST DE NE PAS FABRIQUER.** Étaler ramène le pic de 557 à
+  200 ms ; ce n'est qu'un tiers du chemin. Un convoi ne se MONTRE qu'à
+  quarante-cinq blocs — il n'a donc aucune raison de fabriquer ses voitures à
+  deux cent vingt. Chaque place reste vide jusqu'à entrer dans le champ, et
+  une ville survolée de loin ne coûte plus rien. **Avant d'étaler un coût, on
+  regarde s'il faut le payer.**
+- **UNE PLACE VIDE SE PROPAGE PARTOUT OÙ L'ON LISAIT UN MAILLAGE.**
+  `elements` porte désormais des trous : `etat()` a planté le banc au premier
+  passage (`m.visible` sur `null`), et `emprunter` devait décrémenter le
+  compte, sans quoi le convoi se refabriquait une voiture pour remplacer celle
+  que l'enfant venait de prendre. **Un tableau qui gagne des trous se
+  cherche : `grep -n "\.elements"` prend dix secondes.**
+- **ET LE PROFIL M'A MENTI SUR UN POINT, CE QUI VAUT D'ÊTRE ÉCRIT.** Il
+  accusait aussi les matrices de three.js — `updateMatrixWorld`, `compose`,
+  `multiplyMatrices` : deux secondes, **dix pour cent du vol**, à replacer des
+  morceaux de monde qui ne bougent jamais. Les figer
+  (`matrixAutoUpdate = false`) était juste, sûr, et n'a **rien changé de
+  mesurable** : 28,5 → 27,7 images par seconde, gel 683 → 667. Ce coût vient
+  des personnages, qui bougent, pas des chunks. La correction a été retirée.
+  **Un poste lourd dans un profil n'est pas une économie possible** : ce qui
+  compte est la part qu'on peut réellement supprimer, et elle se mesure APRÈS.
+- **Et la cadence moyenne ne dit rien d'un gel.** 28,5 avant, 29,6 après :
+  presque identique, alors que la pire image passait de 567 à 217. Ce que
+  l'enfant subit, c'est la PIRE image et la part du temps passée dans les
+  images très longues — jamais la moyenne. Le témoin mesure ces deux-là.
+
 ### Le temps d'écran — et la QUATRIÈME occurrence du piège de `dt`
 
 **L'invariant 2 tombait tout seul, sans que personne ne contourne rien

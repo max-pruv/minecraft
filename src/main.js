@@ -234,7 +234,24 @@ let circulationsEnAttente = [];
 // si le monde est peuplé autour de l'enfant ; écrites `-= dt`, elles
 // ralentissaient exactement quand la cadence d'affichage s'effondre, c'est-à-
 // dire à l'arrivée dans une ville. « It took a while to see cars in paris. »
-const circulationPrete = cadence(2500);
+// UNE SEULE CIRCULATION PAR TOUR, ET LE TOUR EST COURT (v235).
+//
+// Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
+// secondes, il redémarre pendant une seconde ». Profilé et mesuré, vingt
+// secondes de vol au-dessus de Paris : ce n'était NI le maillage (16 ms par
+// image, le budget est respecté) NI le rendu (4 ms), mais `animerLesVilles` —
+// **557 ms dans une seule image**, où HUIT circuits de Paris naissaient
+// ensemble parce que l'avion venait de franchir leur rayon de 220 blocs.
+// Chaque circuit fait naître une vingtaine de voitures, et une voiture coûte
+// trente-deux maillages (v201) : cinq mille maillages d'un coup.
+//
+// Le remède est celui du maillage des morceaux de monde, un fichier plus
+// loin : on étale. Un circuit par tour, le PLUS PROCHE d'abord, et le tour
+// passe de deux secondes et demie à un huitième de seconde — les huit circuits
+// de Paris sont donc tous là en une seconde, au lieu d'arriver en bloc. Rien
+// ne se perd : un convoi qui apparaît un dixième de seconde plus tard, à deux
+// cents blocs, ne se voit pas.
+const circulationPrete = cadence(125);
 let passants = null;
 let poissons = null;
 
@@ -1140,15 +1157,19 @@ function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   if (poissons) poissons.update(dt);
   if (!vehicules || !circulationPrete()) return;
-  for (let i = circulationsEnAttente.length - 1; i >= 0; i--) {
+  // Le plus proche d'abord : c'est celui que l'enfant va voir en premier.
+  let choisi = -1, plusPres = 220;
+  for (let i = 0; i < circulationsEnAttente.length; i++) {
     const tr = circulationsEnAttente[i];
-    if (Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z) < 220) {
-      vehicules.circulation(tr.pts, tr.pts.length + i);
-      // le bus dessert le grand anneau — un par ville, à sa couleur
-      if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
-      circulationsEnAttente.splice(i, 1);
-    }
+    const d = Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z);
+    if (d < plusPres) { plusPres = d; choisi = i; }
   }
+  if (choisi < 0) return;
+  const tr = circulationsEnAttente[choisi];
+  vehicules.circulation(tr.pts, tr.pts.length + choisi);
+  // le bus dessert le grand anneau — un par ville, à sa couleur
+  if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
+  circulationsEnAttente.splice(choisi, 1);
 }
 // L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
 // appareils attendent toujours.

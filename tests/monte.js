@@ -10,7 +10,7 @@
 //
 //     cd tests && npm install && npm run monte
 
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -1548,6 +1548,76 @@ async function avancerUnDemiSeconde(p, depart) {
       !suivi.err && suivi.avionligne && suivi.concorde
       && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
       `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+
+    // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
+    //
+    // Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
+    // secondes, il redémarre pendant une seconde ». Profilé et mesuré, vingt
+    // secondes de vol au-dessus de Paris : ce n'était NI le maillage (16 ms
+    // par image, le budget est respecté) NI le rendu (4 ms), mais
+    // `animerLesVilles` — 557 ms dans UNE SEULE image. Les huit circuits de
+    // Paris naissaient ensemble au franchissement de leur rayon de 220 blocs,
+    // et chacun fabriquait une vingtaine de voitures à trente-deux maillages.
+    //
+    // ON MESURE CE QUE L'ENFANT SUBIT : la durée de chaque image, sans aucune
+    // instrumentation dans le jeu — donc à l'identique sur l'ancien code. Ce
+    // qui compte n'est pas la cadence MOYENNE (28,5 avant, 29,6 après : elle
+    // ne dit rien) mais la PIRE image et la part du temps passée dans les
+    // images très longues.
+    // ON FAIT SOUFFLER LE BANC AVANT DE CHRONOMÉTRER. Ce témoin rend un
+    // verdict en DURÉE : joué seul il mesure le jeu, joué derrière dix suites
+    // il mesure la machine. Vérifié à mes dépens — 233 ms rejoué seul, 400 au
+    // milieu du portail complet, sur le même code.
+    await souffler();
+    const secousses = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'chasseur');
+      if (!def || !def.pilote) return { err: 'pas de chasseur' };
+      const V = positionDe('paris');
+      g.player.pos.set(V.x - 700, 96, V.z);       // en amont, cap sur la ville
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      await new Promise((f) => setTimeout(f, 3000));
+      const durees = [];
+      let prec = performance.now(), actif = true;
+      const tic = (t) => { durees.push(t - prec); prec = t; if (actif) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      await new Promise((f) => setTimeout(f, 18000));
+      actif = false;
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      const total = durees.reduce((a, c) => a + c, 0);
+      const partAuDela = (s) => +(durees.filter((d) => d > s)
+        .reduce((a, c) => a + c, 0) / total * 100).toFixed(1);
+      return {
+        images: durees.length,
+        pireImage: Math.round(Math.max(...durees)),
+        partAuDela300: partAuDela(300),
+        cadence: +(durees.length / (total / 1000)).toFixed(1),
+      };
+    });
+    // LES BORNES SÉPARENT LES QUATRE MESURES, PAS UNE SEULE. Mon premier jet
+    // les avait réglées sur une exécution solitaire (350 ms et 1 %) et il est
+    // tombé au milieu du portail complet, sur du code sain. Relevé :
+    //
+    //   ancien code, seul      800 ms   10,3 %
+    //   code neuf, seul        233 ms    0 %
+    //   code neuf, au portail  400 ms    2,2 %
+    //
+    // Cinq cent cinquante et cinq pour cent laissent donc passer le portail
+    // chargé et refusent l'ancien code de loin. Une borne se règle sur la
+    // dispersion mesurée, jamais sur le meilleur relevé.
+    verifier('l\'écran ne se fige pas en arrivant sur une ville',
+      !secousses.err && secousses.images > 200
+        && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
+      JSON.stringify(secousses));
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //
