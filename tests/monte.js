@@ -10,7 +10,7 @@
 //
 //     cd tests && npm install && npm run monte
 
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -1568,7 +1568,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // verdict en DURÉE : joué seul il mesure le jeu, joué derrière dix suites
     // il mesure la machine. Vérifié à mes dépens — 233 ms rejoué seul, 400 au
     // milieu du portail complet, sur le même code.
-    await banc.souffler();
+    await souffler();
     const secousses = await ciel.evaluate(async () => {
       const g = window.__game;
       const m = await import('./src/montures.js');
