@@ -22,6 +22,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Figer les matrices des morceaux de monde n'apporte RIEN — mesuré en
+  v235, à ne pas reprendre à l'aveugle.** Le profil d'un vol au-dessus de Paris
+  accuse `updateMatrixWorld` (849 ms), `compose` (599), `multiplyMatrices`
+  (295) et `updateMatrix` (293) : deux secondes sur vingt, dix pour cent, pour
+  replacer des objets qui ne bougent jamais. Poser `matrixAutoUpdate = false`
+  sur les maillages de chunk et leurs décors est juste et sans risque — et le
+  gain mesuré est NUL (28,5 → 27,7 im/s, pire gel 683 → 667). Ce coût vient
+  des personnages et des véhicules, qui bougent. La piste reste ouverte de ce
+  côté-là : onze maillages par personnage, chacun avec sa matrice, recalculés
+  à chaque image.
+
 - [ ] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
   (relevé fait en v234).** Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
   src/*.js` — rend **quarante-neuf** minuteurs hors `education.js`. La grande

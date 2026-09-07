@@ -764,13 +764,37 @@ class Convoi {
     this.arrets = (opts.arrets || []).slice().sort((a, b) => a - b);
     this.pause = opts.pause ?? 5;
     this.attente = 0;
-    this.elements = [];
-    for (let i = 0; i < opts.nb; i++) {
-      const m = opts.modele(i);
+    // UN CONVOI NE FABRIQUE PAS CE QUE PERSONNE NE VOIT (v235).
+    //
+    // Il naissait avec ses vingt voitures d'un coup — et une voiture coûte
+    // TRENTE-DEUX MAILLAGES (v201). Or un convoi ne se montre qu'à
+    // quarante-cinq blocs : les huit circuits de Paris, instanciés quand
+    // l'avion franchit leur rayon de deux cent vingt blocs, fabriquaient donc
+    // cinq mille maillages que personne ne pouvait voir avant deux secondes
+    // de vol. Mesuré au profil : **557 ms dans une seule image**, l'écran
+    // figé — « il y a vraiment un lag », signalé par Max.
+    //
+    // Chaque place reste donc VIDE jusqu'à ce qu'elle entre dans le champ.
+    // Rien ne change à l'écran : on fabrique au moment exact où l'on aurait
+    // rendu le modèle visible. Et `place(i)` continue de répondre pour une
+    // place vide, parce qu'elle se calcule sur le TRACÉ et jamais sur le
+    // maillage — c'est ce qui permet de monter dans un convoi qu'on rejoint.
+    this.scene = scene;
+    this.nb = opts.nb;
+    this.faireModele = opts.modele;
+    this.elements = new Array(opts.nb).fill(null);
+  }
+
+  // La voiture numéro i, fabriquée si c'est la première fois qu'on la voit.
+  element(i) {
+    let m = this.elements[i];
+    if (!m) {
+      m = this.faireModele(i);
       m.visible = false;
-      scene.add(m);
-      this.elements.push(m);
+      this.scene.add(m);
+      this.elements[i] = m;
     }
+    return m;
   }
 
   // Où se trouve la place assise de l'élément i, en ce moment même.
@@ -852,21 +876,27 @@ class Convoi {
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
-    const trainee = this.ecart * (this.elements.length - 1);
+    const trainee = this.ecart * (this.nb - 1);
     if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
-      if (this.elements[0].visible) for (const m of this.elements) m.visible = false;
+      for (const m of this.elements) if (m && m.visible) m.visible = false;
       return;
     }
     const portee2 = portee * portee;
-    this.elements.forEach((m, i) => {
+    for (let i = 0; i < this.nb; i++) {
       const p = this.parcours.a(this.distance - i * this.ecart);
+      const dedans = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 < portee2;
+      // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà.
+      if (!dedans) {
+        const dejaLa = this.elements[i];
+        if (dejaLa && dejaLa.visible) dejaLa.visible = false;
+        continue;
+      }
+      const m = this.element(i);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
       // marche, il faut donc le retourner d'un demi-tour.
       m.rotation.y = p.cap + Math.PI;
-      const dx = p.x - joueur.x, dz = p.z - joueur.z;
-      m.visible = dx * dx + dz * dz < portee2;
-      if (!m.visible) return;
+      m.visible = true;
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
       // découle sans rien mesurer. Une voiture qui glisse sans que ses roues
@@ -880,7 +910,7 @@ class Convoi {
         const L = this.parcours.longueur;
         this.relooke(m, (((this.distance - i * this.ecart) % L) + L) % L, i);
       }
-    });
+    }
   }
 }
 
@@ -1141,6 +1171,13 @@ export function createVehicules({ scene, player }) {
     const nom = mesh.userData ? mesh.userData.nomVoiture : null;
     scene.remove(mesh);
     c.elements.splice(i, 1);
+    // ET LE COMPTE SUIT LA PLACE RETIRÉE (v235). Depuis que les voitures
+    // naissent à la demande, `nb` dit combien de places le convoi a ; sans
+    // cette ligne il en resterait une de trop, et le convoi se fabriquerait
+    // une voiture neuve pour remplacer celle que l'enfant vient de prendre.
+    // La circulation perd une voiture, et c'est honnête : il vient de la
+    // prendre (v194).
+    c.nb = c.elements.length;
     // Un convoi vidé de tous ses éléments n'a plus rien à animer ; on le
     // laisse en place, `place()` rendra null et l'appelant descendra proprement.
     return { x: p.x, y: p.y, z: p.z, cap: p.cap, flotte, nom };
@@ -1177,12 +1214,14 @@ export function createVehicules({ scene, player }) {
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
       attente: Math.round((c.attente || 0) * 10) / 10,
-      visibles: c.elements.filter((m) => m.visible).length,
+      // Une place encore VIDE (v235) n'est ni visible ni peinte : depuis que
+      // les voitures naissent à la demande, `elements` porte des trous.
+      visibles: c.elements.filter((m) => m && m.visible).length,
       total: c.elements.length,
       // les teintes de carrosserie des éléments visibles — la preuve, pour un
       // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
       // tunnel, des couleurs APRÈS, dans le même convoi au même instant
-      couleurs: c.elements.filter((m) => m.visible && m.userData.carrosserie)
+      couleurs: c.elements.filter((m) => m && m.visible && m.userData.carrosserie)
         .map((m) => m.userData.carrosserie.color.getHex()),
     })),
   };
