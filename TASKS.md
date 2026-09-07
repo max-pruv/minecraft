@@ -22,14 +22,46 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Les minuteurs de `education.js` comptent aussi en `dt`.**
-  `this.remaining -= dt` et `this.saveTimer -= dt` : sur une tablette qui
-  rame, le temps libre d'un enfant s'écoule moins vite que le temps réel, et
-  la sauvegarde s'espace. Même cause que la v226, mais cela touche
-  l'invariant 2 (mode éducatif) — à regarder avec soin, pas à corriger d'un
-  revers de main : il faut d'abord décider ce qui est JUSTE (le temps d'écran
-  se compte sûrement en temps réel, mais la question mérite d'être posée à
-  Max).
+- [ ] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
+  (relevé fait en v234).** Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
+  src/*.js` — rend **quarante-neuf** minuteurs hors `education.js`. La grande
+  majorité sont des ANIMATIONS et doivent rester en temps de jeu (une bête qui
+  fuit, une balle qui rebondit, une flamme qui s'éteint). Quatre ne le doivent
+  pas :
+
+  - `animals.js:466` et `creatures.js:542` — `spawnTimer`, la cadence
+    d'apparition des bêtes autour de l'enfant. C'est EXACTEMENT la famille des
+    quatre cadences de ménage de la v226, et elles ont été oubliées : à
+    2,7 im/s, un minuteur de 1,5 s met onze secondes réelles. Le bestiaire se
+    peuple donc lentement au moment précis où l'enfant arrive quelque part —
+    le symptôme « villes vides » que Max a signalé deux fois, appliqué aux
+    animaux.
+  - `fun.js:1465` — `raceTime`, le CHRONOMÈTRE de la course, qui écrit
+    `records.bestRace` dans le profil. Compté en temps de jeu, il récompense
+    la tablette qui rame : plus ça saccade, meilleur le record. Et ces records
+    se comparent entre Marlon et Alice dans le tableau.
+  - `fun.js:1458` — `raceCooldown`, le délai avant de pouvoir relancer.
+
+  Chacun se corrige par `chronoReel` (cadence.js) et demande son témoin. À
+  faire en une livraison à part : trois fichiers de plus, et le record de la
+  course mérite d'être regardé avec Max avant d'être remis à zéro ou pas.
+
+- [x] **Les minuteurs de `education.js` comptaient en `dt` — FAIT en v234.**
+  La question posée était « qu'est-ce qui est JUSTE ». Réponse : tout ce que
+  cette classe compte est une durée de la vraie vie — un parent qui règle
+  quarante-cinq minutes parle de minutes de pendule. Mesuré à la sonde sur
+  douze secondes réelles : à 5 images par seconde le compteur n'en retenait
+  que TROIS, soit près de trois heures accordées pour une limite de
+  quarante-cinq minutes. `chronoReel` (cadence.js) sert le temps réel BORNÉ à
+  deux secondes — sans cette borne, un onglet à l'arrière-plan ferait compter
+  une absence comme du jeu, ce que le plafond de `dt` empêchait par accident.
+  Témoin dans `parent.js`, 0,25 → 0,98.
+
+  **Reste à trancher avec Max, et cela ne bloquait pas la correction :** faut-il
+  que le temps d'écran continue de courir pendant un quiz et pendant un arrêt
+  forcé ? Aujourd'hui oui, compté à part (`today().quiz`). C'est défendable —
+  répondre au Professeur Cornichon est du temps devant l'écran — mais c'est une
+  décision de parent, pas de programmeur.
 
 
 

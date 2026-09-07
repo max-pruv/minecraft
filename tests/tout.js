@@ -97,7 +97,9 @@ const GARDIENS = {
   'src/avions.js': ['monte.js', 'carteMonde.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
-  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js'],
+  // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
+  // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   'src/fun.js': ['monte.js', 'carte.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
