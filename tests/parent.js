@@ -172,6 +172,53 @@ async function panneau(p) {
       !!partiel && partiel.lignes.length >= 3 && /illisible/.test(partiel.sub),
       partiel ? `${partiel.lignes.length} ligne(s) · ${JSON.stringify(partiel.sub)}` : 'panneau absent');
 
+    // LE TEMPS D'ÉCRAN D'UN ENFANT COMPTE EN TEMPS RÉEL (v234).
+    //
+    // C'est l'invariant 2 qui est en jeu : le mode éducatif doit être « toujours
+    // actif et non contournable ». Or `main.js` borne `dt` à un vingtième de
+    // seconde — juste pour la physique — et `education.js` comptait la journée
+    // de l'enfant avec ce `dt`. Mesuré à la sonde sur douze secondes réelles :
+    // à 24 images par seconde le compteur en retient 11, à 5 il n'en retient
+    // que TROIS. Une tablette qui rame multipliait donc par quatre la limite du
+    // jour — sans que personne ne contourne quoi que ce soit.
+    //
+    // ON MESURE CE QUE LE PARENT A RÉGLÉ : des minutes de pendule. On alourdit
+    // chaque image pour retrouver la cadence d'une tablette fatiguée, et l'on
+    // regarde ce que le compteur retient d'une fenêtre de temps réel connue.
+    const ecran = await p.evaluate(async () => {
+      const g = window.__game;
+      if (!g.edu || !g.edu.today) return { err: 'pas de mode éducatif' };
+      g.edu.today().libreJusqua = 86400;          // pas de quiz au milieu de la mesure
+      // On occupe le fil d'affichage à chaque image : c'est ce que fait un iPad
+      // qui charge une ville, et c'est la seule façon d'éprouver la cadence
+      // basse sans attendre qu'elle arrive.
+      window.__lest = () => {
+        const t0 = performance.now();
+        while (performance.now() - t0 < 190) { /* on occupe le fil */ }
+        if (window.__lestActif) requestAnimationFrame(window.__lest);
+      };
+      window.__lestActif = true;
+      requestAnimationFrame(window.__lest);
+      const im0 = g.renderer.info.render.frame;
+      const joue0 = g.edu.today().play;
+      const t0 = performance.now();
+      await new Promise((f) => setTimeout(f, 12000));
+      const reel = (performance.now() - t0) / 1000;
+      const compte = g.edu.today().play - joue0;
+      const cadence = (g.renderer.info.render.frame - im0) / reel;
+      window.__lestActif = false;
+      return {
+        reel: +reel.toFixed(1), compte: +compte.toFixed(1),
+        cadence: +cadence.toFixed(1), part: +(compte / reel).toFixed(2),
+      };
+    });
+    // Neuf dixièmes : on laisse la marge d'une image ou deux perdues au
+    // démarrage de la mesure, pas celle d'un facteur quatre. L'ancien code rend
+    // 0,25 à cinq images par seconde.
+    verifier('une minute de jeu compte pour une minute, même quand ça rame',
+      !ecran.err && ecran.cadence < 12 && ecran.part >= 0.9,
+      JSON.stringify(ecran));
+
     verifier('aucune faute de page dans l’espace parent', p.erreurs.length === 0,
       JSON.stringify(p.erreurs));
   } catch (e) {

@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v234 — Une minute de jeu compte pour une minute
+
+**Pourquoi.** `main.js` borne `dt` à un vingtième de seconde, et c'est juste
+pour la physique : sans cette borne, une chute de cadence fait traverser les
+murs. Mais `education.js` comptait la journée de l'enfant avec ce `dt`. Mesuré
+à la sonde, sur douze secondes réelles : à vingt-quatre images par seconde le
+compteur en retient onze ; **à cinq, il n'en retient que trois**.
+
+Autrement dit, sur une tablette qui rame — c'est-à-dire précisément quand un
+enfant arrive dans une ville et que le monde se charge — une limite de
+quarante-cinq minutes par jour en laissait passer près de trois heures. Personne
+ne contournait rien : l'invariant 2 tombait tout seul. Et le même `dt` gouvernait
+le compte à rebours du prochain quiz et la cadence de sauvegarde, qui s'espaçait
+d'autant.
+
+**Ce que ça change.** Le temps d'écran, le prochain quiz et la sauvegarde
+comptent en temps réel. Un parent qui règle quarante-cinq minutes obtient
+quarante-cinq minutes de pendule, quelle que soit la tablette.
+
+**Et le plafond n'est pas une précaution, c'est le cœur de la chose.** Quand
+l'onglet passe à l'arrière-plan ou que l'appareil s'endort, le navigateur cesse
+d'appeler la boucle : au réveil, l'écart réel vaut des minutes. C'est la borne
+de `dt` qui protégeait de cela par accident ; `chronoReel` le fait exprès, à
+deux secondes — de quoi laisser passer en entier l'image la plus lente qu'on ait
+mesurée, et couper net tout ce qui ressemble à une absence.
+
+**Et l'horloge vit chez l'appelant.** Mon premier montage la mettait dans
+`education.js`, qui ignorait alors le `dt` qu'on lui passe. Le portail l'a
+refusé : `reglages.js` simule le temps en appelant `update` deux cents fois
+pour éprouver que le quiz se cumule d'un mode de jeu à l'autre, et ce témoin
+est tombé aussitôt. `main.js` sert désormais le temps réel, `education.js` le
+compte — une classe qui va lire l'horloge du monde ne se met plus à l'heure
+qu'on veut.
+
+**Ce qui le prouve.** Un témoin neuf dans `parent.js`, rouge sur l'ancien code.
+Il alourdit chaque image pour retrouver la cadence d'une tablette fatiguée, puis
+regarde ce que le compteur retient d'une fenêtre de temps réel connue : **0,25
+avant, 0,98 après**, à 5,1 images par seconde. Et la table des gardiens gagne
+deux entrées : `cadence.js` a désormais `education.js` pour client, donc
+`parent.js` et `reglages.js` doivent se réveiller quand l'horloge change.
+Portail complet vert.
+
+---
+
 ## v233 — La minicarte suit l'avion au lieu de le regarder partir
 
 **Pourquoi.** Max, capture en vol : « pas dingue la carte en retard ». Mesuré à

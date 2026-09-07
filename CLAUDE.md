@@ -1211,6 +1211,65 @@ Quatre choses à savoir avant d'en ajouter un.
   `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
   aurait évité que Roissy passe six versions au milieu de Paris.
 
+### Le temps d'écran — et la QUATRIÈME occurrence du piège de `dt`
+
+**L'invariant 2 tombait tout seul, sans que personne ne contourne rien
+(v234).** `education.js` comptait la journée de l'enfant avec le `dt` de
+`main.js`, borné à un vingtième de seconde. Mesuré sur douze secondes réelles :
+à 24 images par seconde le compteur en retient 11, **à 5 il n'en retient que
+3**. Une limite de quarante-cinq minutes en laissait donc passer près de trois
+heures sur une tablette qui rame — c'est-à-dire précisément quand l'enfant
+arrive dans une ville.
+
+- **CE QUI SE RÈGLE SUR UNE PENDULE SE COMPTE SUR UNE PENDULE.** Un parent qui
+  écrit « quarante-cinq minutes » ne parle pas de minutes pondérées par la
+  cadence d'affichage. Le temps joué, le temps de quiz, le prochain quiz et la
+  prochaine sauvegarde sont tous des durées de la vraie vie.
+- **ET L'HORLOGE VIT CHEZ L'APPELANT, PAS DANS LA CLASSE.** Mon premier jet
+  mettait `chronoReel` DANS `education.js` et faisait ignorer à `update` son
+  paramètre. Le portail l'a refusé sur-le-champ : `reglages.js` simule le temps
+  en appelant `update(1, true)` deux cents fois — la seule façon d'éprouver que
+  le quiz se cumule du local à l'en ligne — et ce témoin est tombé. **Une
+  classe qui va lire l'horloge du monde ne se met plus à l'heure qu'on veut.**
+  `main.js` sert le temps (`dtEcran`, à côté de `dt`, là où l'on sait ce que
+  `dt` vaut), `education.js` le compte. Le contrat tient en une ligne : `dt`
+  est en secondes RÉELLES, et c'est à l'appelant de le tenir.
+- **Et j'avais affirmé le contraire avant de vérifier.** « Aucun témoin ne
+  pilote `edu.update` avec un `dt` fabriqué » : mon grep cherchait `edu.update`
+  alors que le témoin écrit `e.update`. Quarante-trois minutes de portail pour
+  l'apprendre. Un grep sur un NOM D'APPELANT ne trouve pas les alias ; on
+  cherche le nom de la MÉTHODE.
+- **ET LE PLAFOND N'EST PAS UNE PRÉCAUTION, C'EST LE CŒUR DE LA CHOSE.** Un
+  onglet à l'arrière-plan ou un appareil endormi arrête la boucle
+  d'affichage : au réveil, l'écart réel vaut des minutes, voire des heures. La
+  borne de `dt` protégeait de cela PAR ACCIDENT ; en la retirant on ouvrirait
+  un trou pire que celui qu'on ferme. Deux secondes : de quoi laisser passer
+  en entier l'image la plus lente jamais mesurée (2 im/s à l'arrivée dans
+  Paris) et couper net toute absence.
+- **QUATRE FOIS LA MÊME PANNE, ET LA LISTE N'AVAIT TOUJOURS PAS ÉTÉ FAITE.**
+  v226 : les quatre cadences de ménage. v233 : la minicarte. v234 : les quatre
+  minuteurs de l'espace éducatif. À chaque fois la règle était écrite et le
+  remède connu ; ce qui manquait, c'était la LISTE. Elle se fait en dix
+  secondes — `grep -rn -- "-= dt\|+= dt" src/*.js` — et je l'ai enfin faite :
+  **quarante-neuf minuteurs restent**. La grande majorité sont des ANIMATIONS,
+  et elles doivent suivre le temps du jeu. Mais au moins quatre ne le doivent
+  pas, et ils sont NOMMÉS dans `TASKS.md` avec ce qu'ils coûtent — dont le
+  chronomètre de la course, qui écrit un RECORD sauvegardé : compté en temps de
+  jeu, il récompense la tablette qui rame. **Écrire « on cherche toutes les
+  occurrences » ne vaut rien tant qu'on ne les a pas comptées** ; trois
+  livraisons ont répété la règle sans jamais passer le grep.
+- **UNE TABLE DE GARDIENS SUIT LES IMPORTS.** `src/cadence.js` n'avait que
+  `monte.js`, `maj.js`, `carte.js`. `education.js` en est devenu client : ses
+  deux gardiens (`parent.js`, `reglages.js`) rejoignent la liste, sinon un
+  changement d'horloge ne réveille pas l'espace parent. **Quand un module
+  gagne un client, la table des gardiens du module gagne les gardiens du
+  client.**
+- **Et le témoin PROVOQUE la cadence basse.** Attendre qu'une tablette rame ne
+  se fait pas au banc : on alourdit chaque image d'un travail synchrone
+  jusqu'à retomber à cinq images par seconde, puis l'on regarde ce que le
+  compteur retient d'une fenêtre de temps réel connue. 0,25 contre 0,98 —
+  c'est la leçon des poissons de la v233, appliquée à une durée.
+
 ### La minicarte — ce qui se rafraîchit, et à quel prix
 
 Max, capture en vol : « pas dingue la carte en retard ». Trois choses en

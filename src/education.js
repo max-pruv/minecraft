@@ -1594,6 +1594,19 @@ export class EducationMode {
 
   // ---------- timer ----------
 
+  // `dt` EST DU TEMPS RÉEL, EN SECONDES — c'est le contrat, et il est à
+  // l'appelant de le tenir (v234). Tout ce que cette méthode compte est une
+  // durée que l'enfant et le parent lisent sur une pendule : la limite du
+  // jour, le temps de quiz, le prochain quiz, la prochaine sauvegarde. Un
+  // parent qui règle « quarante-cinq minutes » parle de minutes de pendule,
+  // jamais de minutes pondérées par la cadence d'affichage.
+  //
+  // ET L'HORLOGE NE VIT PAS ICI, À DESSEIN. Mon premier jet la mettait dans
+  // cette classe et ignorait le paramètre : `reglages.js` simule alors le
+  // temps en appelant `update(1, true)` deux cents fois — la seule façon
+  // d'éprouver que le quiz se cumule d'un mode à l'autre — et ce témoin est
+  // tombé aussitôt. Une classe qui lit l'horloge du monde ne se met plus à
+  // l'heure qu'on veut. `main.js` sert le temps, `education.js` le compte.
   update(dt, running) {
     if (running) {
       this.today().play += dt;

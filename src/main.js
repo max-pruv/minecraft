@@ -14,7 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
-import { cadence } from './cadence.js';
+import { cadence, chronoReel } from './cadence.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
@@ -4370,6 +4370,14 @@ const carteSuivre = cadence(120);
 const carteFond = cadence(2000);
 let carteVue = null;
 let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
+// L'horloge du TEMPS D'ÉCRAN : des secondes réelles, bornées à deux. La borne
+// n'est pas une précaution — c'est elle qui empêche un onglet passé à
+// l'arrière-plan, ou un appareil endormi, de compter des minutes d'absence
+// comme du jeu au premier réveil. Le plafond de `dt` le faisait par accident ;
+// ici c'est exprès. Deux secondes laissent passer en entier l'image la plus
+// lente qu'on ait mesurée (2 im/s à l'arrivée dans Paris).
+const dtEcran = chronoReel(2);
+
 
 // La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
 // monde s'arrêtait là. Elle reste fixe : c'est un choix de dessin, pas une
@@ -5309,7 +5317,14 @@ function frame(now) {
   updateHud(dt);
   updateCreatureLabel();
   updateRemotePlayers(dt);
-  edu.update(dt, running);
+  // LE MODE ÉDUCATIF REÇOIT DU TEMPS RÉEL, PAS LE `dt` DE LA PHYSIQUE (v234).
+  // `dt` est borné à un vingtième de seconde — juste pour que la chute de
+  // cadence ne fasse pas traverser les murs — et compter la journée d'un
+  // enfant avec lui la multipliait par quatre sur une tablette qui rame.
+  // Mesuré : douze secondes réelles retenues comme trois à cinq images par
+  // seconde. C'est ici que le choix d'horloge se fait, parce que c'est ici
+  // qu'on sait ce que `dt` vaut.
+  edu.update(dtEcran(), running);
   fun.update(dt);
   effects.update(dt);
 
