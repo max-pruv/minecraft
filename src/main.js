@@ -49,6 +49,9 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
+// Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
+// qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
+const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -360,6 +363,10 @@ function updateChunks() {
         chunkMeshes.delete(key);
       }
     }
+    // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
+    // la carte graphique ; les quatre-vingts kilo-octets de blocs, eux,
+    // restaient dans `world.chunks` pour toujours. Voir `oublierLoinDe`.
+    world.oublierLoinDe(pcx, pcz, OUBLI_RADIUS);
   }
 
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé

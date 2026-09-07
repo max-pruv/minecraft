@@ -1452,6 +1452,54 @@ modèle sculpté à venir.
 
 ### Le monde (`world.js`)
 
+**CE QUI S'ENGENDRE S'OUBLIE — et cela avait échappé à tout le monde (v236).**
+`main.js` défait les MAILLAGES des morceaux dépassés depuis toujours ;
+`world.chunks`, lui, n'a jamais rendu un seul octet. Un morceau pèse
+`16 × 16 × 160 × 2` = **quatre-vingts kilo-octets**, et un avion à cent dix
+blocs par seconde en engendre **quatre-vingt-sept par seconde**. Mesuré sur le
+même vol, à la même distance : 245 Mo après trente secondes, 693 après
+quatre-vingt-dix, **2 328 Mo après cinq minutes**. L'iPad ferme l'onglet bien
+avant — et longtemps avant de le fermer, il se fige pour faire de la place.
+C'est le « trois secondes d'arrêt, une seconde de jeu » de Max.
+
+`oublierLoinDe(pcx, pcz, rayon)` jette blocs, plafond de maillage et drapeau
+sale au-delà du rayon ; `main.js` l'appelle là où il défait déjà les maillages,
+à `UNLOAD_RADIUS + 4` — **plus loin qu'on ne démaille**, pour qu'un demi-tour
+ne réengendre pas ce qu'on vient de quitter. Trois choses à savoir avant d'y
+toucher.
+
+- **RIEN NE SE PERD, ET C'EST CE QUI REND L'OUBLI COMPATIBLE AVEC L'INVARIANT
+  1.** Le terrain est DÉTERMINISTE et les blocs des enfants vivent dans
+  `edits`, que `generateChunk` réapplique. Un morceau oublié se réengendre à
+  l'identique. Cela se PROUVE — le second témoin pose une brique, force
+  l'oubli, et vérifie qu'elle revient avec le terrain d'à côté inchangé — cela
+  ne se raisonne pas.
+- **UN VERDICT EN QUANTITÉ, PAS EN DURÉE.** Ce conteneur a de la mémoire à
+  revendre : la cadence est IDENTIQUE des deux côtés (35,6 contre 34,5 images
+  par seconde sur cinq minutes) et le temps de ramasse-miettes aussi (4,3 s
+  contre 4,2 sur quatre-vingt-dix). **Le banc ne peut pas souffrir de ce
+  défaut.** Un témoin en millisecondes aurait été vert des deux côtés et
+  n'aurait rien prouvé ; le mégaoctet, lui, sépare 245 de 27. C'est la leçon de
+  la minicarte (une distance plutôt qu'une durée) par un troisième bout, et
+  elle se généralise : **quand le banc ne peut pas subir la panne, on mesure la
+  CAUSE et non l'effet.**
+- **LES TROIS COUPABLES ÉVIDENTS ÉTAIENT INNOCENTS, ET C'EST MESURÉ.** Le
+  rendu fait **4,6 %** du temps d'un vol (834 ms sur 18 s). La caméra cubique
+  des reflets ne tourne **JAMAIS** en vol — zéro image sur cent huit — malgré
+  son rayon de 45 blocs qui ignore l'altitude, parce qu'un convoi n'existe plus
+  si loin. Couper `renderer.debug.checkShaderErrors` ne rend rien (pire image
+  1 800 → 1 633, dans le bruit) : il n'y a que SIX programmes dans tout le jeu.
+  Ces trois-là sont des non-résultats mesurés ; on ne les réessaie pas.
+
+**ET UNE SONDE DE DÉPLACEMENT VÉRIFIE D'ABORD QU'ELLE S'EST DÉPLACÉE.** Mes
+trois premières sondes ont mesuré un jeu **à l'arrêt** : `banc.joueur` ouvre la
+page, mais c'est `banc.jouerSeul` qui clique sur « Jouer » — sans quoi
+`running` reste faux, `player.update` n'est jamais appelé, et l'avion ne bouge
+pas d'un bloc. Trois profils, trois conclusions, et le joueur n'avait pas
+avancé. **Le premier champ que doit rendre une sonde de déplacement, c'est la
+distance parcourue** ; les témoins de vol la vérifient désormais
+(`parcouru > 2000`).
+
 - Plafond `HEIGHT = 160`, sol figé à `SOMMET_TERRAIN = 80` (voir invariant 1).
 - `sommetColonne(x, z)` part du sommet réel du morceau de monde, jamais du
   plafond : relever le ciel ne doit rien coûter aux recherches de sol.

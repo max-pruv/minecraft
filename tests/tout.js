@@ -48,7 +48,9 @@ const GARDIENS = {
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js'],
+  // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
+  // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
