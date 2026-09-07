@@ -1211,6 +1211,89 @@ Quatre choses à savoir avant d'en ajouter un.
   `grep -n "AEROPORT\|VILLE\.x" src/*.js` prend dix secondes ; c'est ce qui
   aurait évité que Roissy passe six versions au milieu de Paris.
 
+### La minicarte — ce qui se rafraîchit, et à quel prix
+
+Max, capture en vol : « pas dingue la carte en retard ». Trois choses en
+sortent, et la troisième vaut pour tout ce qui se redessine.
+
+- **LA MINICARTE ÉTAIT LA DERNIÈRE CADENCE DE MÉNAGE EN `dt` (v233).** La v226
+  avait fait passer les quatre autres (passants, circulation, garagiste,
+  aéroportiste) en temps réel ; celle-ci a été oubliée. Le jeu borne `dt` à un
+  vingtième, donc une seconde de minuteur en réclame 2,4 réelles dès que la
+  cadence tombe — c'est-à-dire en vol, quand le monde se charge. **Quand une
+  panne touche une grammaire partagée, on cherche TOUTES ses occurrences le
+  jour même** : `cadence.js` existe depuis la v226 et la liste de ses clients
+  n'avait jamais été vérifiée.
+- **ON SE RAFRAÎCHIT SUR UN DÉPLACEMENT, PAS SUR UNE HORLOGE.** Debout sans
+  bouger, l'ancien code redessinait la carte chaque seconde pour rien ; en vol,
+  une seconde valait soixante-quatorze blocs de retard. Le déclencheur est la
+  DISTANCE (huit blocs), bornée par une cadence en temps réel.
+- **UNE CARTE QUI SE DÉPLACE SE FAIT DÉFILER.** Redessiner dix fois plus
+  souvent était impossible à 30,8 ms le redessin. Le fond est tenu à UN POINT
+  PAR BLOC — à l'échelle d'affichage (0,83 point par bloc) le décalage devrait
+  s'arrondir, et l'image dériverait d'un demi-point à chaque tour — puis
+  recopié d'un tour à l'autre, seule la bande neuve étant calculée. Le coût ne
+  dépend plus de la TAILLE de la carte mais de la DISTANCE parcourue : 5,6 ms.
+  Et le fond entier se refait lentement (deux secondes), sinon un bloc que
+  l'enfant vient de poser tombe dans la partie recopiée et n'y apparaît jamais.
+
+**Et deux leçons de témoin, l'une déjà écrite et l'autre neuve.**
+
+- **UN VERDICT EN DURÉE MESURE LE BANC ; UNE DISTANCE, NON.** Mon premier
+  témoin comptait le plus long moment sans changement : 1,01 s sur l'ancien
+  code contre une barre d'une seconde, soit un pour cent de marge — et le
+  chiffre bouge avec la cadence de la machine. Reformulé en BLOCS de retard, il
+  rend 97,3 contre 12 : la même panne, une marge de deux fois et demie, et une
+  mesure que la cadence du banc ne touche pas.
+- **UNE OPTIMISATION QUI RECOPIE DOIT PROUVER QU'ELLE NE MENT PAS.** Un
+  défilement qui dériverait d'un point afficherait un paysage faux, et personne
+  ne le verrait — c'est plus grave que le retard qu'on vient de corriger. Le
+  second témoin compare le fond défilé à un fond entièrement recalculé au même
+  endroit : 37 249 points, zéro écart. Sans lui, la performance serait gagnée
+  contre la justesse, en silence.
+
+### Les poissons — et un témoin qu'il a fallu écrire cinq fois
+
+Un poisson pouvait finir **enterré dans la roche**, à la cote de l'eau avec le
+terrain quatorze blocs au-dessus. Mesuré sur `origin/main`, donc en production :
+vingt-quatre relevés hors de l'eau sur cent vingt à un rivage donné.
+
+- **UN DEMI-TOUR PROGRESSIF NE PROTÈGE PAS D'UN MUR.** Le poisson regarde
+  1,1 bloc devant son museau et vire — mais il CONTINUE D'AVANCER pendant qu'il
+  vire, et dans une crique le virage n'aboutit pas. Le clampage de profondeur
+  `min(surface, max(fond + 1.1, y))` ne le rattrape pas : dès que le fond
+  dépasse la surface, il rend la SURFACE, c'est-à-dire qu'il maintient le
+  poisson à la cote de l'eau à l'intérieur de la colline. **Le remède n'est pas
+  un meilleur clampage, c'est de ne pas y aller** : on calcule le pas, on
+  regarde si l'arrivée est de l'eau, et sinon on reste où l'on est.
+- **ET L'ÉTAT EST ABSORBANT, ce qui explique tout le reste.** L'entrée est rare
+  — un poisson sur soixante-deux lancé sur un mur — mais une fois dedans il n'en
+  sort plus, et il compte dans TOUS les relevés suivants. Un défaut rare à
+  l'entrée et permanent à l'arrivée se voit beaucoup en production et très mal
+  au banc.
+
+**Et le témoin a été écrit CINQ fois avant d'être franc. C'est la vraie leçon.**
+
+| version du témoin | sur `origin/main` |
+| --- | --- |
+| un seul instantané | pile ou face — vert seul, rouge au portail |
+| douze relevés au large | vert (0/12) |
+| au large + première eau venue | 1 faute sur 24 |
+| au large + rivage à falaise | vert (0/40) |
+| **quatre poissons lancés sur un mur** | 1 sur 4 |
+| **le banc entier, trois fois, au plus près** | **23 sur 42** |
+
+- **UN INSTANTANÉ SUR CE QUI BOUGE EST UN PILE OU FACE.** C'est la règle déjà
+  écrite pour les durées, et elle vaut pour les positions : ce témoin passait
+  seul et cassait le portail complet.
+- **ON N'ATTEND PAS UN ÉVÉNEMENT RARE, ON ÉPROUVE LE MÉCANISME.** Trois
+  tentatives ont couru après un poisson qui va se jeter sur la côte de
+  lui-même, et les trois ont donné des chiffres qui bougent avec l'endroit et
+  le hasard. Envoyer le banc DROIT sur un mur rend le même défaut avec une
+  marge de vingt-trois contre zéro. Quand un témoin qu'on règle change de
+  verdict d'une exécution à l'autre, ce n'est pas le seuil qu'il faut bouger :
+  c'est la situation qu'il faut cesser d'attendre et commencer à provoquer.
+
 ### Le dessin des appareils (`avions.js`) — ce qui se mesure, et ce qui se regarde
 
 Max, capture à l'appui : « fix plane design, they are not realistic ». Trois

@@ -4359,7 +4359,16 @@ const minimapCanvas = document.getElementById('minimap');
 const mapModal = document.getElementById('map-modal');
 const mapModalCanvas = document.getElementById('map-modal-canvas');
 let minimapVisible = false;
-let minimapTimer = 0;
+// Le pas de rafraîchissement : huit blocs, soit sept points de la minicarte.
+// En dessous, on paie un défilement pour un déplacement qui ne se voit pas ;
+// au-dessus, la carte redevient en retard. La cadence de 120 ms est la borne
+// haute — à 95 blocs/s elle donne onze blocs de retard, contre soixante-quatorze.
+const CARTE_PAS = 8;
+const carteSuivre = cadence(120);
+// Et le fond entier de temps en temps : un bloc que l'enfant vient de poser
+// tombe dans la partie RECOPIÉE, que le défilement ne recalcule jamais.
+const carteFond = cadence(2000);
+let carteVue = null;
 let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 
 // La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
@@ -4367,44 +4376,135 @@ let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 // dimension du monde.
 const RELIEF_CARTE = 96;
 
-function drawMap(mapCanvas, radius) {
-  const ctx = mapCanvas.getContext('2d');
-  const size = mapCanvas.width;
-  const scale = size / (radius * 2 + 1);
-  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
-  const img = ctx.createImageData(size, size);
+// UNE CARTE QUI SE DÉPLACE SE FAIT DÉFILER, ELLE NE SE RECALCULE PAS (v233).
+//
+// Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la sonde,
+// en vol à 95 blocs/s avec la distance d'affichage de l'iPad :
+//
+//   écart réel entre deux redessins    2,4 s en moyenne, 4,23 s au pire
+//   distance parcourue entre les deux  74 blocs en moyenne, 99,7 au pire
+//   rayon de la minicarte              96 blocs
+//   coût d'un redessin                 30,8 ms
+//
+// La carte montrait donc, en moyenne, un paysage laissé aux trois quarts
+// derrière soi — et au pire un paysage entièrement sorti du cadre. Deux causes
+// se cumulaient, et la seconde interdisait de corriger la première.
+//
+//  - LE MINUTEUR COMPTAIT EN `dt`. C'est le piège de la v226, et la minicarte
+//    est la SEULE cadence de ménage à ne pas y être passée : `main.js` borne
+//    `dt` à un vingtième, si bien qu'une seconde de minuteur en réclame
+//    2,4 réelles dès que la cadence tombe — c'est-à-dire précisément en vol,
+//    quand le monde se charge.
+//  - REDESSINER PLUS SOUVENT COÛTAIT TROP CHER. 30,8 ms pour vingt-cinq mille
+//    points dont chacun descend une colonne du monde : à dix fois par seconde,
+//    c'est un tiers du temps de la machine.
+//
+// D'où le fond qui DÉFILE. Le raster est tenu à UN POINT PAR BLOC, ce qui rend
+// le décalage exact et entier — à l'échelle d'affichage (0,83 point par bloc),
+// il faudrait arrondir, et l'image dériverait d'un demi-point à chaque tour.
+// Entre deux redessins on recopie ce qui reste à l'écran et l'on ne calcule que
+// la bande neuve : le coût ne dépend plus de la taille de la carte mais de la
+// DISTANCE parcourue.
+//
+// ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
+// tombe dans la partie recopiée, que rien ne recalculerait jamais.
+let carteRaster = null;         // le fond, un point par bloc
+let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
+let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
 
-  for (let py = 0; py < size; py++) {
-    const wz = pcz + Math.floor(py / scale) - radius;
-    for (let pxx = 0; pxx < size; pxx++) {
-      const wx = pcx + Math.floor(pxx / scale) - radius;
-      let color = [20, 26, 40], h = 0;
-      // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
-      // chaque point de la carte traverserait d'abord tout le ciel vide, et la
-      // carte coûterait de plus en plus cher à chaque fois qu'on relève le
-      // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
-      // vitres comprises — pas le premier bloc plein.
-      const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
-      for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
-        const id = world.getBlock(wx, y, wz);
-        if (id !== BLOCK.AIR) {
-          color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
-          h = y;
-          break;
-        }
-      }
-      // Le relief lit plus clair en altitude. La référence est figée à la
-      // hauteur du monde d'avant : indexée sur le plafond, elle aurait
-      // assombri toute la carte d'un coup le jour où le ciel a monté.
-      const shade = 0.65 + (Math.min(h, RELIEF_CARTE) / RELIEF_CARTE) * 0.6;
-      const o = (py * size + pxx) * 4;
-      img.data[o] = Math.min(255, color[0] * shade);
-      img.data[o + 1] = Math.min(255, color[1] * shade);
-      img.data[o + 2] = Math.min(255, color[2] * shade);
-      img.data[o + 3] = 255;
+// UNE SONDE, PAS UN TÉMOIN. Elle compare le fond DÉFILÉ à un fond entièrement
+// recalculé au même endroit : c'est ce qui prouve qu'une recopie ne montre pas
+// un paysage périmé. Posée une seule fois, hors du chemin de chaque image.
+window.__carteControle = () => {
+  if (!carteRaster) return null;
+  const N = carteRasterR * 2 + 1;
+  const t = new Uint8ClampedArray(N * N * 4);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR);
+  }
+  let ecarts = 0;
+  for (let k = 0; k < t.length; k += 4) {
+    if (t[k] !== carteRaster[k] || t[k + 1] !== carteRaster[k + 1] || t[k + 2] !== carteRaster[k + 2]) ecarts++;
+  }
+  return { points: N * N, ecarts };
+};
+
+// Un point du fond : la couleur du premier bloc NON VIDE de sa colonne.
+function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
+  const wx = pcx + i - radius, wz = pcz + j - radius;
+  let color = [20, 26, 40], h = 0;
+  // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
+  // chaque point de la carte traverserait d'abord tout le ciel vide, et la
+  // carte coûterait de plus en plus cher à chaque fois qu'on relève le
+  // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
+  // vitres comprises — pas le premier bloc plein.
+  const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
+  for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
+    const id = world.getBlock(wx, y, wz);
+    if (id !== BLOCK.AIR) {
+      color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
+      h = y;
+      break;
     }
   }
-  ctx.putImageData(img, 0, 0);
+  // Le relief lit plus clair en altitude. La référence est figée à la
+  // hauteur du monde d'avant : indexée sur le plafond, elle aurait
+  // assombri toute la carte d'un coup le jour où le ciel a monté.
+  const shade = 0.65 + (Math.min(h, RELIEF_CARTE) / RELIEF_CARTE) * 0.6;
+  const o = (j * N + i) * 4;
+  buf[o] = Math.min(255, color[0] * shade);
+  buf[o + 1] = Math.min(255, color[1] * shade);
+  buf[o + 2] = Math.min(255, color[2] * shade);
+  buf[o + 3] = 255;
+}
+
+// Le contenu se déplace de (−dx, −dz) points. Les lignes se parcourent dans le
+// sens qui évite d'écraser ce qu'on n'a pas encore lu ; `copyWithin` fait le
+// reste, y compris quand la source et la cible se chevauchent dans la ligne.
+function decalerCarte(buf, N, dx, dz) {
+  const ligne = N * 4;
+  const montant = dz > 0;
+  for (let k = 0; k < N; k++) {
+    const j = montant ? k : N - 1 - k;
+    const src = j + dz;
+    if (src < 0 || src >= N) continue;
+    const de = src * ligne, vers = j * ligne;
+    if (dx === 0) buf.copyWithin(vers, de, de + ligne);
+    else if (dx > 0) buf.copyWithin(vers, de + dx * 4, de + ligne);
+    else buf.copyWithin(vers - dx * 4, de, de + ligne + dx * 4);
+  }
+}
+
+function drawMap(mapCanvas, radius, fondEntier = false) {
+  const ctx = mapCanvas.getContext('2d');
+  const size = mapCanvas.width;
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  const N = radius * 2 + 1;
+  if (!carteRaster || carteRasterR !== radius) {
+    carteRaster = new Uint8ClampedArray(N * N * 4);
+    carteRasterR = radius;
+    carteHorsSol = document.createElement('canvas');
+    carteHorsSol.width = N; carteHorsSol.height = N;
+    fondEntier = true;
+  }
+  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
+  if (fondEntier || Math.abs(dx) >= N || Math.abs(dz) >= N) {
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+  } else if (dx !== 0 || dz !== 0) {
+    decalerCarte(carteRaster, N, dx, dz);
+    // la bande neuve, et elle seule : c'est tout le gain
+    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
+    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
+    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+  }
+  carteRasterCx = pcx; carteRasterCz = pcz;
+  const hctx = carteHorsSol.getContext('2d');
+  const img = hctx.createImageData(N, N);
+  img.data.set(carteRaster);
+  hctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(carteHorsSol, 0, 0, N, N, 0, 0, size, size);
 
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2 + 1)) * size, ((z - pcz + radius) / (radius * 2 + 1)) * size];
 
@@ -4703,7 +4803,10 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  if (minimapVisible) drawMap(minimapCanvas, 96);
+  if (minimapVisible) {
+    drawMap(minimapCanvas, 96, true);
+    carteVue = { x: player.pos.x, z: player.pos.z };
+  }
 });
 minimapCanvas.addEventListener('click', ouvrirCarte);
 document.getElementById('map-modal-close').addEventListener('click', fermerCarte);
@@ -5210,11 +5313,18 @@ function frame(now) {
   fun.update(dt);
   effects.update(dt);
 
+  // LA CARTE SE RAFRAÎCHIT QUAND ON A BOUGÉ, PAS QUAND UNE HORLOGE SONNE.
+  // Debout sans bouger, il n'y a rien à redessiner et l'ancien code le faisait
+  // quand même ; en vol, une seconde d'horloge valait soixante-quatorze blocs
+  // de retard. Le déclencheur est donc la DISTANCE, bornée par une cadence en
+  // temps réel — jamais en `dt`, qui ralentit avec l'affichage (leçon v226).
   if (minimapVisible) {
-    minimapTimer -= dt;
-    if (minimapTimer <= 0) {
-      minimapTimer = 1;
-      drawMap(minimapCanvas, 96);
+    const bouge = !carteVue
+      || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
+    const fond = carteFond();
+    if (fond || (bouge && carteSuivre())) {
+      drawMap(minimapCanvas, 96, fond);
+      carteVue = { x: player.pos.x, z: player.pos.z };
     }
   }
 

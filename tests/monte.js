@@ -1209,17 +1209,113 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('des poissons peuplent la mer devant l\'enfant',
       banc2 !== 'absent' && banc2 >= 3, `${banc2} poisson(s)`);
 
+    // UN INSTANTANÉ SUR UN BANC QUI NAGE EST UN PILE OU FACE (v233). Ce
+    // témoin ne regardait qu'une fois : il était vert quand il tombait au bon
+    // moment et rouge sinon, si bien qu'il passait seul et cassait le portail
+    // complet. Mesuré à la sonde sur `origin/main` : vingt-quatre relevés hors
+    // de l'eau sur cent vingt. On observe donc toute la fenêtre, comme pour
+    // tout ce qui bouge.
     const dansLEau = await tab.evaluate(async () => {
       const { BLOCK } = await import('./src/blocks.js');
       const g = window.__game;
       if (!g.poissons) return null;
-      return g.poissons.banc.filter((p2) => {
-        const m3 = p2.mesh.position;
-        return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
-      }).length;
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const compter = async (tours) => {
+        let pire = 0, releves = 0, fautifs = 0;
+        for (let k = 0; k < tours; k++) {
+          await new Promise((f) => setTimeout(f, 250));
+          const banc = g.poissons.banc || [];
+          if (!banc.length) continue;
+          releves++;
+          const n = banc.filter((p2) => {
+            const m3 = p2.mesh.position;
+            return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
+          }).length;
+          fautifs += n;
+          pire = Math.max(pire, n);
+        }
+        return { pire, fautifs, releves };
+      };
+      const large = await compter(12);
+      // ET PRÈS D'UNE CÔTE, LÀ OÙ LE DÉFAUT VIT. Au large il ne se voit
+      // presque jamais : c'est le RIVAGE qui le déclenche, parce que le
+      // clampage de profondeur rend la cote de l'eau alors que le terrain est
+      // monté bien au-dessus. Un témoin qui n'éprouve que le large est vert
+      // sur l'ancien code et ne prouve rien — vérifié.
+      // ET L'ON N'ATTEND PAS QU'UN POISSON AILLE SE JETER SUR LA CÔTE : ON L'Y
+      // ENVOIE. Le défaut est réel — mesuré à la sonde sur `origin/main`,
+      // vingt-quatre relevés hors de l'eau sur cent vingt à un rivage donné —
+      // mais il dépend de l'endroit et du hasard de la promenade : à un autre
+      // rivage, quarante relevés n'en montrent aucun. Deux témoins successifs
+      // écrits pour l'attraper en flânant ont rendu l'un 1 faute sur 24,
+      // l'autre 0 sur 40. **Un témoin ne se règle pas sur un événement rare :
+      // on éprouve le MÉCANISME.** On pose donc un poisson face à un mur, on
+      // le pointe dessus, et l'on regarde s'il le traverse.
+      let mur = null;
+      for (let d = 4; d < 400 && !mur; d += 2) {
+        for (const [sx, sz] of [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+          const x = Math.round(g.player.pos.x + sx * d), z = Math.round(g.player.pos.z + sz * d);
+          if (g.world.terrainHeight(x, z) < WATER_LEVEL + 2) continue;      // pas une berge
+          // de l'eau juste à côté, du côté d'où l'on vient
+          const ex = x - sx * 3, ez = z - sz * 3;
+          if (g.world.getBlock(ex, WATER_LEVEL - 2, ez) === BLOCK.WATER) {
+            mur = { x, z, ex, ez, cap: Math.atan2(sz, sx) };
+            break;
+          }
+        }
+      }
+      // AU PLUS PRÈS DU MUR. Lancé à trois blocs, le poisson a le temps de
+      // finir son demi-tour : l'ancien code n'en perdait qu'un sur soixante-
+      // deux. Ce qu'on veut éprouver, c'est le cas où le virage NE PEUT PAS
+      // aboutir — c'est celui qui se produit dans une crique, et c'est lui qui
+      // laisse un poisson dans la roche pour de bon.
+      if (mur) {
+        const dx0 = Math.cos(mur.cap), dz0 = Math.sin(mur.cap);
+        for (const recul of [1.3, 1.7, 2.1, 2.5, 3.0]) {
+          const cx = mur.x - dx0 * recul, cz = mur.z - dz0 * recul;
+          if (g.world.getBlock(Math.floor(cx), WATER_LEVEL - 2, Math.floor(cz)) === BLOCK.WATER) {
+            mur.ex = cx; mur.ez = cz; mur.recul = recul;
+            break;
+          }
+        }
+      }
+      let charge = { absent: true };
+      if (mur) {
+        g.player.pos.set(mur.ex, WATER_LEVEL + 4, mur.ez);
+        g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 3000));
+        // ON EN LANCE BEAUCOUP, ET PLUSIEURS FOIS. Un seul poisson lancé sur
+        // le mur s'en sort souvent : son demi-tour a le temps d'aboutir. Sur
+        // quatre, l'ancien code n'en laissait passer qu'un — une chance sur
+        // trois de ne rien voir. Le banc entier, trois fois, rend le verdict
+        // sûr des deux côtés : le code neuf en refuse zéro par construction.
+        let dedans = 0, lances = 0;
+        for (let tour = 0; tour < 3; tour++) {
+          const vises = (g.poissons.banc || []).slice();
+          if (!vises.length) break;
+          for (const p2 of vises) {
+            p2.mesh.position.set(mur.ex, WATER_LEVEL - 2, mur.ez);
+            p2.cap = mur.cap;                       // droit sur le mur
+          }
+          lances += vises.length;
+          await new Promise((f) => setTimeout(f, 2500));
+          dedans += vises.filter((p2) => {
+            const m3 = p2.mesh.position;
+            return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
+          }).length;
+        }
+        charge = { lances, dansLeMur: dedans, mur: { x: mur.x, z: mur.z, recul: mur.recul || 3 } };
+      }
+      return {
+        large, charge,
+        fautifs: large.fautifs + (charge.dansLeMur || 0),
+        releves: large.releves,
+      };
     });
-    verifier('et chacun est dans l\'eau — pas dans le pré, pas dans le ciel',
-      dansLEau === 0, `${dansLEau} hors de l'eau`);
+    verifier('et chacun reste dans l\'eau, même lancé droit sur la côte',
+      !!dansLEau && dansLEau.releves >= 8 && dansLEau.fautifs === 0
+        && dansLEau.charge && dansLEau.charge.lances >= 1,
+      JSON.stringify(dansLEau));
 
     const nage0 = await tab.evaluate(() => ({
       sim: window.__simPoissons,
@@ -1452,6 +1548,92 @@ async function avancerUnDemiSeconde(p, depart) {
       !suivi.err && suivi.avionligne && suivi.concorde
       && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
       `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+
+    // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
+    //
+    // Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la
+    // sonde, à 95 blocs/s et à la distance d'affichage de l'iPad : 74 blocs
+    // parcourus entre deux redessins en moyenne, 99,7 au pire — pour une carte
+    // de 96 blocs de RAYON. Elle montrait un paysage sorti du cadre.
+    //
+    // ON MESURE UNE DISTANCE, PAS UNE DURÉE. Mon premier jet comptait le plus
+    // long moment sans changement : 1,01 s sur l'ancien code contre une barre
+    // d'une seconde — un pour cent de marge, et le chiffre bouge avec la
+    // cadence du banc. C'est le reproche fait à tout témoin dont le verdict
+    // est une durée. Ce que l'enfant subit, c'est le nombre de BLOCS que la
+    // carte a de retard, et il ne dépend pas de la vitesse d'affichage.
+    //
+    // ET SANS AUCUN CROCHET : on photographie la minicarte, et à chaque fois
+    // qu'elle change d'un point on note la distance parcourue depuis le
+    // changement d'avant. C'est la seule façon de mesurer LA MÊME CHOSE sur
+    // l'ancien code, qui ne publie rien.
+    const retard = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const toile = document.getElementById('minimap');
+      if (!toile) return { err: 'pas de minicarte' };
+      if (toile.style.display !== 'block') {
+        const bouton = document.getElementById('map-btn');
+        if (bouton && bouton.click) bouton.click();
+      }
+      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
+      g.player.pos.set(-40000, 96, 40000);      // un couloir vierge, loin de tout
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = 0; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      const ctx = toile.getContext('2d');
+      const empreinte = () => {
+        const d = ctx.getImageData(0, 0, toile.width, toile.height).data;
+        let h = 0;
+        for (let i = 0; i < d.length; i += 61) h = (h * 31 + d[i]) | 0;
+        return h;
+      };
+      const sauts = [];
+      const t0 = performance.now();
+      let precedent = null;
+      let depuis = { x: g.player.pos.x, z: g.player.pos.z };
+      while (performance.now() - t0 < 14000) {
+        await new Promise((f) => setTimeout(f, 60));
+        const h = empreinte();
+        if (precedent !== null && h !== precedent) {
+          sauts.push(+Math.hypot(g.player.pos.x - depuis.x, g.player.pos.z - depuis.z).toFixed(1));
+        }
+        if (precedent === null || h !== precedent) {
+          depuis = { x: g.player.pos.x, z: g.player.pos.z };
+          precedent = h;
+        }
+      }
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      const moy = sauts.length
+        ? +(sauts.reduce((a, b) => a + b, 0) / sauts.length).toFixed(1) : null;
+      return { pire: sauts.length ? Math.max(...sauts) : null, moyen: moy, changements: sauts.length };
+    });
+    // QUARANTE BLOCS. La carte fait 96 blocs de rayon : au-delà de quarante de
+    // retard, ce qu'on voit sous l'avion n'est plus au milieu de la carte.
+    // Mesuré : 74 blocs en moyenne sur l'ancien code, 9,7 sur celui-ci.
+    const RETARD = 40;
+    verifier('la minicarte ne reste pas en arrière quand on vole',
+      !retard.err && retard.changements >= 8 && retard.pire !== null
+        && retard.moyen <= RETARD && retard.pire <= RETARD * 2,
+      `retard en blocs (barre ${RETARD}) · ${JSON.stringify(retard)}`);
+
+    // ET CE QU'ELLE MONTRE EST JUSTE. Faire DÉFILER un fond au lieu de le
+    // recalculer est le seul moyen de le rafraîchir dix fois plus souvent sans
+    // le payer — mais une recopie qui dériverait d'un point montrerait un
+    // paysage faux, et personne ne le verrait. On compare donc le fond défilé
+    // à un fond entièrement recalculé au même endroit.
+    const controle = await ciel.evaluate(() => (window.__carteControle
+      ? window.__carteControle() : { absent: true }));
+    verifier('le fond défilé montre exactement ce qu\'un calcul entier montrerait',
+      !!controle && controle.ecarts === 0 && controle.points > 1000,
+      JSON.stringify(controle));
 
     // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
     //
