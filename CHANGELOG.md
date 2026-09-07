@@ -20,6 +20,54 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v233 — La minicarte suit l'avion au lieu de le regarder partir
+
+**Pourquoi.** Max, capture en vol : « pas dingue la carte en retard ». Mesuré à
+la sonde, à 95 blocs/s et à la distance d'affichage de l'iPad : **soixante-
+quatorze blocs parcourus entre deux redessins en moyenne, 99,7 au pire** — pour
+une minicarte qui fait 96 blocs de rayon. Elle montrait donc, en moyenne, un
+paysage laissé aux trois quarts derrière soi, et au pire un paysage entièrement
+sorti du cadre.
+
+Deux causes se cumulaient, et la seconde interdisait de corriger la première.
+Le minuteur comptait en `dt` — c'est le piège de la v226, et la minicarte est
+la **seule** cadence de ménage à ne pas y être passée : le jeu borne `dt` à un
+vingtième de seconde, si bien qu'une seconde de minuteur en réclame 2,4 réelles
+dès que la cadence tombe, c'est-à-dire précisément en vol. Et redessiner plus
+souvent coûtait trop cher : 30,8 ms pour vingt-cinq mille points dont chacun
+descend une colonne du monde.
+
+**Ce que ça change.** La carte se rafraîchit quand l'enfant a **bougé**, pas
+quand une horloge sonne — debout sans bouger, elle ne coûte plus rien. Et le
+fond **défile** au lieu d'être recalculé : entre deux rafraîchissements on
+recopie ce qui reste à l'écran et l'on ne calcule que la bande neuve. Le retard
+tombe de 74 blocs à 9,7, pour le même coût total.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, rouges sur l'ancien
+code. Le premier mesure une **distance**, pas une durée : mon premier jet
+comptait le plus long moment sans changement et rendait 1,01 s contre une barre
+d'une seconde — un pour cent de marge, un chiffre qui bouge avec la cadence du
+banc. Ce que l'enfant subit, c'est le nombre de blocs de retard, et il ne dépend
+pas de la vitesse d'affichage : 97,3 en moyenne sur l'ancien code, 12 sur
+celui-ci. Le second vérifie que le fond défilé montre **exactement** ce qu'un
+calcul entier montrerait — 37 249 points, zéro écart —, sans quoi une recopie
+qui dérive d'un point afficherait un paysage faux sans que personne ne le voie.
+**Et un poisson ne se retrouve plus enterré dans la roche.** Le portail a rendu
+rouge un témoin sans rapport avec la carte : « chacun est dans l'eau ». La sonde
+l'a démonté sur `origin/main`, donc en production — vingt-quatre relevés hors de
+l'eau sur cent vingt à un rivage donné, des poissons à la cote de l'eau avec le
+terrain quatorze blocs plus haut. Le demi-tour devant un obstacle est
+progressif : le poisson continue d'avancer pendant qu'il vire, et il lui arrive
+de franchir le rivage avant d'avoir fini ; le clampage de profondeur ne le
+rattrape pas, il le maintient à la cote de l'eau **dans** la colline. Le remède
+n'est pas un meilleur clampage, c'est de ne pas y aller : on calcule le pas, on
+regarde si l'arrivée est de l'eau, sinon on reste où l'on est en virant plus
+franchement.
+
+Portail complet vert.
+
+---
+
 ## v232 — Les avions ressemblent enfin à des avions
 
 **Pourquoi.** Max, capture à l'appui : « fix plane design, they are not
