@@ -1450,6 +1450,75 @@ modèle sculpté à venir.
   Concorde se juge en capture. Un témoin qui couvre un cas qu'il ne peut pas
   voir donne l'illusion, pas la preuve.
 
+### Le paysage lointain (`horizon.js`) — ce que les morceaux n'auront jamais le temps de bâtir
+
+**UN TÉMOIN QUI VOLE AU-DESSUS D'UN DÉSERT NE PEUT PAS VOIR CE QUI CASSE
+AU-DESSUS D'UNE VILLE (v237).** Max, capture à l'appui : du ciel vide entouré
+au feutre rouge, et « 0 improvement ». Mesuré dans le champ de la caméra en vol
+au-dessus de Paris : **trente et un maillages, le plus lointain à cinquante-neuf
+blocs**, pour un brouillard qui portait à 188.
+
+La cause est arithmétique, et **aucune micro-optimisation ne la règle** :
+
+| | coût d'un morceau | morceaux/s |
+| --- | --- | --- |
+| campagne vide | 6,6 ms | 153 |
+| **couloir du témoin** (30 000, 30 000) | 6,8 ms | **147** |
+| **Paris** | 23,5 ms | **42** |
+| **Londres** | 22,6 ms | **44** |
+
+Voler à 110 blocs/s en réclame **165**. Le « 154 morceaux/s » de la v229 — le
+chiffre sur lequel les VITESSES DES AVIONS ont été réglées — avait été mesuré
+dans un couloir vide, et c'est là que vole encore le témoin qui le garde. **Un
+témoin de chargement doit voler là où l'enfant vole** : au-dessus des villes.
+
+**LE REMÈDE EST DE NE PAS PAYER CE PRIX-LÀ.** `terrainHeight` est PURE : elle
+rend la cote d'une colonne sans engendrer le morceau ni mailler une face.
+Vingt-cinq mille colonnes coûtent 120 ms ; la même surface en vrais morceaux en
+coûterait **cent cinquante secondes**. Cinq choses à savoir avant d'y toucher,
+et chacune a coûté un passage de banc.
+
+- **ON NE DESSINE QUE CE QUI N'EST PAS DESSINÉ.** La découpe demande si le
+  morceau est **MAILLÉ**, jamais s'il est engendré. Mon premier jet interrogeait
+  `world.chunks` : or `getBlock` engendre des morceaux bien au-delà du front de
+  maillage (collisions, passants, convois), si bien que le paysage se retirait
+  devant un monde qui n'était pas encore dessiné — un trou de ciel vide de
+  soixante à cent quatre-vingt-dix blocs, exactement là où Max l'avait entouré.
+  Et cette règle évite d'un seul coup les trois artefacts d'un « sol de
+  secours » posé partout : la fausse dalle au fond d'un trou creusé, le plafond
+  coloré d'une grotte, la bataille de profondeur au ras du vrai terrain.
+- **UN SENS DE PARCOURS SE CALCULE, IL NE SE DEVINE PAS.** Écrits (a, c, b) —
+  l'ordre qui vient sous les doigts — les triangles ont leur normale vers le
+  BAS : un avion les regarde par leur face arrière, éliminée au rendu, et l'on
+  ne voit **rien du tout**. Une heure de captures avant de faire le produit
+  vectoriel à la main. C'est le piège du roulis de la v231 par un autre bout.
+- **IL SE FAIT DÉFILER, IL NE SE REFAIT PAS** — et cela vaut pour les SOMMETS
+  autant que pour les hauteurs. Mon premier jet réécrivait les 25 921 sommets à
+  chaque image où quelque chose bougeait : huit millisecondes et trois cents
+  kilo-octets envoyés à la carte graphique par image, le maillage du monde
+  proche privé de budget, et le paysage lointain qui AVALAIT le monde — sept
+  appels de dessin au lieu de quarante. Les coordonnées étant ABSOLUES, les
+  décaler les laisse justes : c'est `decalerCarte` de la minicarte, mot pour
+  mot.
+- **LA PORTÉE SUIT LA DISTANCE D'AFFICHAGE, et ce n'est pas un réglage de
+  confort.** Un joueur qui demande deux morceaux ne demande pas un panorama de
+  six cents blocs. Écrite en dur à 640, elle coûtait **vingt-neuf pour cent** de
+  la cadence du banc — qui ouvre TOUTES ses suites à `rr=2` — pour un paysage
+  que personne n'avait demandé. Mise à l'échelle : 32,0 images/s contre 31,6.
+- **ET CE QUI RESTE COÛTEUX AU BANC EST DE LA SURFACE, PAS DES TRIANGLES.** À
+  `rr=12` le paysage coûte encore la moitié de la cadence du conteneur ; passer
+  de 39 000 à 17 000 triangles n'a rien changé, mais diviser les pixels par
+  quatre a ramené la perte de 45 % à 27 %. C'est du remplissage, payé en
+  LOGICIEL par SwiftShader ; un vrai GPU le paie en matériel — une passe opaque
+  de 3,9 Mpx (l'iPad, plafonné à deux pixels par point) est de l'ordre du
+  dixième de milliseconde. **C'est le seul chiffre de cette livraison qui ne se
+  transpose pas**, et le remède, s'il le fallait, tient dans une constante : le
+  facteur 3,3 de `rayonHorizon`.
+
+**Et il ne touche à rien.** Il LIT `terrainHeight` et n'écrit pas un bloc : les
+deux empreintes de `plafond.js` ne bougent pas, et l'invariant 1 tient sans
+qu'on ait rien à déclarer.
+
 ### Le monde (`world.js`)
 
 **CE QUI S'ENGENDRE S'OUBLIE — et cela avait échappé à tout le monde (v236).**

@@ -50,6 +50,10 @@ const GARDIENS = {
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
   // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
+  // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
+  // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
+  // rendu, `plafond.js` garde le sol qu'il lit.
+  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
   'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.

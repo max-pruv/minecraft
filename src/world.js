@@ -80,7 +80,7 @@ import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn } from './trains.j
 // z, la lisière se calcule une fois et le test par colonne est gratuit.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
 const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
-const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
+export const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
 import { surTerreReelle, reliefReel } from './terre.js';
 
 export const CHUNK = 16;

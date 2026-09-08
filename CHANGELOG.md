@@ -20,6 +20,65 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v237 — En vol, on voit enfin un paysage
+
+**Pourquoi.** Max, capture à l'appui après la v236 : du ciel bleu entouré au
+feutre rouge, et « 0 improvement ». La v236 avait corrigé une vraie fuite de
+mémoire — deux gigaoctets et demi après cinq minutes de vol — mais ce n'était
+pas ce qu'il voyait.
+
+Mesuré dans le champ de la caméra, en vol au-dessus de Paris : **trente et un
+maillages, et le plus lointain à cinquante-neuf blocs**, pour un brouillard qui
+portait à cent quatre-vingt-huit. L'enfant survolait un disque de monde qui
+durait une demi-seconde.
+
+**Et la cause est arithmétique, pas une lenteur qu'on optimise.** Un morceau de
+monde coûte :
+
+| | coût d'un morceau | morceaux par seconde |
+| --- | --- | --- |
+| campagne vide | 6,6 ms | 153 |
+| **couloir du témoin** (30 000, 30 000) | 6,8 ms | **147** |
+| **Paris** | 23,5 ms | **42** |
+| **Londres** | 22,6 ms | **44** |
+
+Voler à cent dix blocs par seconde en réclame **cent soixante-cinq**. Au-dessus
+d'une ville on en produit quarante-deux : il manque un facteur quatre. Et le
+« 154 morceaux/s » de la v229, sur lequel les vitesses des avions ont été
+réglées, avait été mesuré **dans un couloir vide** — c'est aussi là que vole le
+témoin censé garder le chargement du monde. Il ne pouvait pas voir ce que Max
+voyait.
+
+**Ce que ça change.** Le monde a un **paysage lointain**. Il ne se bâtit pas
+bloc à bloc : il lit `terrainHeight`, une fonction **pure**, qui rend la cote
+d'une colonne sans engendrer un morceau ni mailler une seule face. Vingt-cinq
+mille colonnes — un carré de plus d'un kilomètre de côté — coûtent 120 ms ; la
+même surface en vrais morceaux en coûterait **cent cinquante secondes**.
+
+Marlon et Alice voient donc, en vol, le relief, les fleuves, les plages et les
+côtes s'étendre jusqu'à l'horizon, et les vrais blocs prendre la place du
+paysage à mesure qu'ils approchent. Le brouillard, qui s'arrêtait au bord du
+monde chargé, porte maintenant jusque-là.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, et le portail complet en
+vert. Il mesure ce que l'enfant VOIT, pas ce que le moteur charge : vingt-cinq
+lignes de visée réparties sur la moitié basse de l'écran, et l'on compte celles
+qui rencontrent quelque chose. Cinq relevés, même vol, même endroit :
+
+```
+origin/main    0 ·  8 ·  9 ·  1 · 11   sur 25     (portée médiane  86 blocs)
+ici           25 · 25 · 25 · 25 · 25              (portée médiane 120, jusqu'à 244)
+```
+
+Et **la portée du paysage suit la distance d'affichage**, ce qui n'est pas un
+réglage de confort : un joueur qui demande un monde de deux morceaux ne demande
+pas un panorama de six cents blocs. Écrite en dur, elle coûtait vingt-neuf pour
+cent de la cadence du banc — qui ouvre toutes ses suites à cette distance-là —
+pour un paysage que personne n'avait demandé. Remise à l'échelle : **32,0
+images par seconde contre 31,6 sans**, c'est-à-dire rien.
+
+---
+
 ## v236 — Le monde oublie enfin ce que l'avion a dépassé
 
 **Pourquoi.** Max, après la v235 : « Lag is very bad avec les avions fix it
