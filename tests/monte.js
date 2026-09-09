@@ -1615,7 +1615,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // chargé et refusent l'ancien code de loin. Une borne se règle sur la
     // dispersion mesurée, jamais sur le meilleur relevé.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 200
+      !secousses.err && secousses.images > 60
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
@@ -1680,7 +1680,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
     // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 2000 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
@@ -1783,6 +1783,13 @@ async function avancerUnDemiSeconde(p, depart) {
         parcouru, releves };
     });
     // LA BORNE DE DISTANCE SE POSE LOIN DE LA VALEUR, PAS JUSTE EN DESSOUS.
+    // ET LA LEÇON VAUT POUR LES DEUX TÉMOINS D'AU-DESSUS, que j'ai laissés tels
+    // quels en l'écrivant ici : « images > 200 » (rendu 186) et « parcouru >
+    // 2000 » (rendu 1963) sont tombés au portail SUIVANT, sur du code sain.
+    // Trois bornes de garde, la même faute, corrigée une à la fois — c'est le
+    // piège du verre dans les murs, dans un seul fichier. Une borne de GARDE —
+    // celle qui vérifie que la mesure a bien eu lieu — n'est pas un seuil : on
+    // la pose à la moitié, jamais à quatre-vingt-dix pour cent.
     // Mon premier jet exigeait 800 blocs parcourus, mesurés à 880 à la sonde
     // sur une machine qui respirait : au portail il en a rendu 796, et le
     // témoin est tombé pour quatre blocs — sur du code sain. Ce chiffre dépend
