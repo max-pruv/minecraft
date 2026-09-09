@@ -1519,6 +1519,39 @@ et chacune a coûté un passage de banc.
 deux empreintes de `plafond.js` ne bougent pas, et l'invariant 1 tient sans
 qu'on ait rien à déclarer.
 
+**ET LE PORTAIL ROUGE A FAIT TROUVER PLUS GROS QUE LE PAYSAGE : LE BUDGET DE
+MAILLAGE ÉTAIT COMPTÉ PAR IMAGE.** Le témoin « on ne rattrape pas le bout du
+monde qui se charge » est tombé (trou 66 pour une barre de 80), et la sonde —
+même page, même vol, seul `visible` change — a montré pourquoi : 36 im/s et
+143 blocs sans le paysage, 25 im/s et 86 avec. Le coût PROCESSEUR du paysage
+est de 0,1 ms par image ; c'est donc le RENDU qui prend les images, et le
+maillage, dont le budget était par IMAGE, en perdait d'autant.
+
+**La bonne question n'était pas « comment rendre le paysage moins cher » mais
+« pourquoi le chargement du monde dépend-il de la cadence d'affichage ».**
+Douze millisecondes par image font 1 200 ms par seconde à cent images et
+**TRENTE-SIX** à trois images par seconde — c'est-à-dire l'état exact d'une
+tablette qui ARRIVE dans une ville. Le monde se chargeait vingt fois plus
+lentement au moment précis où l'enfant en a besoin. C'est le piège de `dt` de
+la v226, un étage plus haut, sur le chemin le plus chaud du jeu, et il y était
+depuis toujours.
+
+Le budget vise donc un DÉBIT (`MESH_MS_PAR_SECONDE = 720`, exactement les douze
+millisecondes d'avant à soixante images) réparti sur les images telles qu'elles
+viennent, plafonné à vingt-deux — la valeur que la v229 avait déjà mesurée
+comme la limite au-delà de laquelle on paie un tiers de la cadence. **À cadence
+haute rien ne change : la correction ne fait qu'AJOUTER du budget quand les
+images s'allongent**, ce qui interdit l'emballement. Mesuré : trou 86 → 129
+avec le paysage, 143 → 167 sans. **Un budget par image est une cadence de
+ménage déguisée en horloge d'affichage** ; on cherche les autres le jour même.
+
+**Et une borne de distance se pose LOIN de la valeur, pas juste en dessous.**
+Mon témoin exigeait 800 blocs parcourus, mesurés à 880 à la sonde sur une
+machine qui respirait : au portail il en a rendu 796 et il est tombé pour
+quatre blocs, sur du code sain. Ce chiffre dépend de la cadence du banc — comme
+`main.js` borne `dt`, une machine lente parcourt moins. Quatre cents sépare
+toujours « il a volé » de « il n'a pas bougé », qui rend zéro.
+
 ### Le monde (`world.js`)
 
 **CE QUI S'ENGENDRE S'OUBLIE — et cela avait échappé à tout le monde (v236).**

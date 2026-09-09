@@ -60,6 +60,26 @@ côtes s'étendre jusqu'à l'horizon, et les vrais blocs prendre la place du
 paysage à mesure qu'ils approchent. Le brouillard, qui s'arrêtait au bord du
 monde chargé, porte maintenant jusque-là.
 
+**Et le portail rouge a fait trouver plus gros que le paysage.** Le témoin de
+chargement du monde est tombé : le paysage lointain coûte des images au banc
+(qui rend en logiciel), et **le budget de maillage était compté PAR IMAGE**.
+Douze millisecondes par image, c'est mille deux cents par seconde à cent
+images — mais **trente-six** à trois images par seconde. Or trois images par
+seconde, c'est exactement l'état d'une tablette qui ARRIVE dans une ville : le
+monde se chargeait vingt fois plus lentement au moment précis où l'enfant en a
+besoin. C'est le piège de `dt` de la v226, un étage plus haut, sur le chemin le
+plus chaud du jeu. Le budget vise désormais un DÉBIT — des millisecondes par
+seconde RÉELLE — plafonné pour qu'une image ne soit jamais dominée par le
+maillage. À cadence haute rien ne change ; la correction ne fait qu'AJOUTER du
+budget quand les images s'allongent. Mesuré, même vol, même page :
+
+| | monde chargé devant soi |
+| --- | --- |
+| avant, avec le paysage | 86 blocs |
+| **après** | **129 blocs** |
+| avant, sans le paysage | 143 |
+| après, sans le paysage | **167** |
+
 **Ce qui le prouve.** Un témoin neuf dans `monte.js`, et le portail complet en
 vert. Il mesure ce que l'enfant VOIT, pas ce que le moteur charge : vingt-cinq
 lignes de visée réparties sur la moitié basse de l'écran, et l'on compte celles

@@ -1782,9 +1782,15 @@ async function avancerUnDemiSeconde(p, depart) {
         portee: med(releves.map((x) => x.mediane)),
         parcouru, releves };
     });
+    // LA BORNE DE DISTANCE SE POSE LOIN DE LA VALEUR, PAS JUSTE EN DESSOUS.
+    // Mon premier jet exigeait 800 blocs parcourus, mesurés à 880 à la sonde
+    // sur une machine qui respirait : au portail il en a rendu 796, et le
+    // témoin est tombé pour quatre blocs — sur du code sain. Ce chiffre dépend
+    // de la cadence du banc (`main.js` borne `dt`), pas du jeu. Quatre cents
+    // sépare toujours « il a volé » de « il n'a pas bougé », qui rend ZÉRO.
     verifier('en vol, l\'enfant voit un paysage et plus du ciel vide',
-      !vue.err && vue.parcouru > 800 && vue.pire >= 22,
-      `barre 22/25 · ${JSON.stringify(vue)}`);
+      !vue.err && vue.parcouru > 400 && vue.pire >= 22,
+      `barre 22/25 et 400 blocs · ${JSON.stringify(vue)}`);
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //

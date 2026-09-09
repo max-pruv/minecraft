@@ -69,6 +69,27 @@ const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // 30 images. Douze double le débit sans coûter une image, vingt gagne 15 % de
 // plus et coûte un tiers de la cadence. On prend douze.
 const MESH_BUDGET_MS = 12;
+// LE MAILLAGE EST UNE CADENCE DE MÉNAGE, ET SON BUDGET ÉTAIT EN IMAGES (v237).
+//
+// Douze millisecondes PAR IMAGE, c'est douze cents millisecondes par seconde à
+// cent images — mais seulement TRENTE-SIX à trois images par seconde. Or trois
+// images par seconde, c'est exactement l'état d'une tablette qui ARRIVE dans
+// une ville : le monde se charge vingt fois plus lentement au moment précis où
+// l'enfant en a besoin. C'est le piège de `dt` de la v226, un étage plus haut,
+// et sur le chemin le plus chaud du jeu.
+//
+// Le budget vise donc un DÉBIT — des millisecondes de maillage par seconde
+// RÉELLE — et se répartit sur les images telles qu'elles viennent. Sept cent
+// vingt, c'est exactement les douze millisecondes d'avant à soixante images :
+// à cadence haute RIEN NE CHANGE, la correction ne fait qu'AJOUTER du budget
+// quand les images s'allongent. Le plafond de vingt-deux empêche l'emballement
+// (une image plus longue donnerait plus de budget, qui l'allongerait encore) et
+// c'est le chiffre que la v229 avait déjà mesuré comme la limite au-delà de
+// laquelle on paie un tiers de la cadence.
+const MESH_MS_PAR_SECONDE = 720;
+const MESH_BUDGET_MAX = 22;
+// L'horloge du maillage : son propre chronomètre, appelé une fois par image.
+const dtMaillage = chronoReel(0.5);
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 // Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de
@@ -391,12 +412,19 @@ function updateChunks() {
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
   // (château, forêt dense) ne peut plus geler la frame à lui tout seul. Au pire
   // le paysage lointain arrive une frame plus tard, derrière le brouillard.
+  // Le budget de CETTE image : ce que le débit visé accorde pour le temps réel
+  // écoulé, jamais moins que l'ancien budget fixe, jamais plus que le plafond.
+  // L'écart est borné à un dixième de seconde — au réveil d'un onglet endormi
+  // il vaut des minutes, et une image ne se laisse pas remplir avec cela.
+  const ecart = Math.min(dtMaillage(), 0.1);
+  const budget = Math.min(MESH_BUDGET_MAX,
+    Math.max(MESH_BUDGET_MS, MESH_MS_PAR_SECONDE * ecart));
   const debut = performance.now();
   do {
     const suivant = meshQueue.pop();
     if (!suivant) break;
     meshChunk(suivant.cx, suivant.cz);
-  } while (performance.now() - debut < MESH_BUDGET_MS);
+  } while (performance.now() - debut < budget);
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
