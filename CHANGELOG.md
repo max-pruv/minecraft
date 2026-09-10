@@ -20,6 +20,83 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v238 — Le jeu ne ralentit plus à mesure qu'on y joue
+
+**Pourquoi.** Max : « le jeu lague de plus en plus depuis un moment », et
+« l'avion avance une seconde, il reste une seconde » — hors pilotage aussi, et
+notamment juste après une mise à jour.
+
+Deux mesures ont écarté les suspects évidents, qui étaient mes propres
+changements de la veille. Debout au centre de Paris, à la distance d'affichage
+de l'iPad, la **v236 rend 3,7 images par seconde et la v237 3,3** : le paysage
+lointain et le budget de maillage en temps réel ne sont pas la cause. Et le
+profil renverse la question — **le fil principal est inactif 81 % du temps**. Le
+banc rend en logiciel : sa cadence mesure SwiftShader, pas le jeu, et il ne peut
+donc pas *subir* la panne de Max.
+
+**On mesure alors la cause, pas l'effet** — la leçon de la v236, reprise telle
+quelle. Elle tient dans une ligne : **une créature coûte dix-neuf géométries et
+demie sur la carte graphique, et le jeu n'en rendait aucune quand elle
+disparaissait de l'écran.** `scene.remove()` détache un objet de l'affichage ;
+il ne rend pas un octet au pilote graphique. Le jeu fait naître une créature
+toutes les 1,2 seconde, et chacune emporte ses vingt géométries pour toujours.
+Sur un iPad, dont la mémoire graphique est partagée avec le système, cela
+s'accumule pendant toute la partie et la tablette finit par se figer pour faire
+de la place.
+
+C'est la fuite de la v236 **par l'autre bout** : là, `world.chunks` gardait les
+blocs en mémoire vive. La règle « ce qui s'engendre s'oublie » n'avait jamais
+été cherchée ailleurs que dans le monde — et le bon remède était **déjà écrit
+dans le fichier d'à côté**, `poissons.js` libérant les siens depuis toujours.
+Quatrième fois que ce dépôt paie la *portée* d'un remède et non la règle.
+
+**Ce que ça change.** Une partie d'une demi-heure reste aussi fluide qu'à la
+première minute.
+
+Le remède vit dans un module commun, `liberer.js`, et non en cinq copies. Il est
+branché aux cinq endroits où le jeu retire vraiment quelque chose qui se
+renouvelle : les deux d'`animals.js`, les deux de `creatures.js`, la mascotte
+refabriquée de `fun.js`, et le corps d'un ami qui quitte la partie.
+
+**Et une ressource partagée ne se libère pas — c'est tout le piège.** Les
+personnages humains partagent deux matériaux pour tout le jeu ; le mobilier de
+rue clone un modèle unique, donc partage sa géométrie. Un `dispose()` aveugle
+n'aurait pas fait fuir le jeu : il aurait fait **disparaître** tous les
+personnages du monde et le décor avec. La règle vit désormais dans la ressource
+elle-même (`userData.partagee`), à côté de `montable`, `nourrissable` et `vole`.
+
+**Ce qui le prouve.** Un témoin neuf, qui compte des **géométries et non des
+millisecondes** : ce conteneur a de la mémoire à revendre, un verdict en durée
+serait vert des deux côtés sans rien prouver. Dix créatures nées puis retirées,
+mesuré séparément des deux côtés :
+
+| | `origin/main` | ici |
+| --- | --- | --- |
+| géométries prises | 166 | 157 |
+| **rendues** | **0** | **157** |
+| **perdues** | **166** | **0** |
+
+**Et il a fallu quatre sondes avant celle-là.** Joueur immobile, aucune créature
+n'était retirée — elles remplissaient seulement leur plafond de seize, ce qui
+s'arrête tout seul. À pied, un enfant avance à **15 % du temps réel** sur ce
+banc (`dt` borné, trois images par seconde) : six blocs en trente secondes,
+jamais les soixante-dix qui déclenchent un retrait. Dix allers-retours
+provoquaient bien le renouvellement, mais le disque de morceaux ne revenait pas
+au même endroit des deux côtés : le verdict aurait mesuré le banc. Et la
+première mesure unitaire rendait « 96 avant, 96 pendant, 96 après » — les bêtes
+naissaient derrière la caméra, et **le compteur du moteur n'enregistre que ce
+qui est dessiné**. Elle ne mesurait rien et serait passée au vert des deux
+côtés : le pire des témoins.
+
+**Ce que cette version ne règle pas, et qui est déclaré dans `TASKS.md`.** Une
+pousse résiduelle subsiste, qui ne vient **pas** des créatures — c'est prouvé à
+l'unité. Le suspect est nommé : les voitures de convoi, trente-deux maillages
+chacune, fabriquées à la demande et jamais détruites, seulement rendues
+invisibles. Et une cinquième occurrence du piège de `dt` a été trouvée en
+chemin : les cadences de naissance des bêtes comptent en temps d'affichage.
+
+---
+
 ## v237 — En vol, on voit enfin un paysage
 
 **Pourquoi.** Max, capture à l'appui après la v236 : du ciel bleu entouré au
