@@ -22,6 +22,30 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
+  PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
+  forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
+  +348. Le remède de la v238 est pourtant COMPLET pour les bêtes — à l'unité,
+  dix créatures prennent 157 géométries et en rendent 157, zéro perdue. Le
+  reliquat est donc ailleurs, et le suspect principal est écrit : **les voitures
+  de convoi** (`vehicules.js`) sont fabriquées à la demande, trente-deux
+  maillages chacune, et ne sont JAMAIS détruites — seulement rendues invisibles
+  (`m.visible = false`). Les passants, eux, sont gardés pour la session par
+  ville visitée, ce qui est voulu mais s'accumule aussi. À mesurer avant de
+  corriger : quelle part chacun représente, et ce qu'il est légitime de rendre.
+  **Ne pas conclure sur la cadence du banc** : il rend en logiciel, son fil
+  principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
+  mesure des géométries.
+
+- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
+  images par seconde, 1,2 s de minuteur en réclame 2,4 réelles. C'est la
+  cinquième occurrence du piège de `dt`, et elle est NOMMÉE ici plutôt que
+  laissée à un futur grep — `src/cadence.js` porte déjà le remède
+  (`chronoReel`), il suffit de le brancher. Coût mesuré : au banc, un enfant à
+  pied avance à **15 % du temps réel** (six blocs en trente secondes au lieu de
+  quatre-vingt-dix), ce qui a fait échouer trois sondes avant qu'on le voie.
+
 - [ ] **Le témoin de chargement du monde vole au-dessus d'un désert.** « En vol,
   on ne rattrape pas le bout du monde qui se charge » (`monte.js`) se place à
   (30 000, 30 000), un couloir vierge où un morceau coûte 6,8 ms. Au-dessus de
