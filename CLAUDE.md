@@ -1545,12 +1545,25 @@ images s'allongent**, ce qui interdit l'emballement. Mesuré : trou 86 → 129
 avec le paysage, 143 → 167 sans. **Un budget par image est une cadence de
 ménage déguisée en horloge d'affichage** ; on cherche les autres le jour même.
 
-**Et une borne de distance se pose LOIN de la valeur, pas juste en dessous.**
-Mon témoin exigeait 800 blocs parcourus, mesurés à 880 à la sonde sur une
-machine qui respirait : au portail il en a rendu 796 et il est tombé pour
-quatre blocs, sur du code sain. Ce chiffre dépend de la cadence du banc — comme
-`main.js` borne `dt`, une machine lente parcourt moins. Quatre cents sépare
-toujours « il a volé » de « il n'a pas bougé », qui rend zéro.
+**ET UNE BORNE DE GARDE SE POSE À LA MOITIÉ, JAMAIS À QUATRE-VINGT-DIX POUR
+CENT — TROIS FOIS DANS LE MÊME FICHIER.** Une borne de garde n'est pas un
+seuil : elle vérifie que la MESURE A EU LIEU, et elle sépare « ça s'est passé »
+de « rien ne s'est passé », pas deux régimes voisins. Les trois de `monte.js`
+étaient posées juste sous une valeur relevée sur une machine qui respirait, et
+le paysage lointain — qui coûte des images au banc en logiciel — a suffi à les
+faire passer dessous, sur du code sain :
+
+| | exigeait | a rendu | vaut désormais |
+| --- | --- | --- | --- |
+| images enregistrées | > 200 | **186** | > 60 |
+| blocs parcourus (mémoire) | > 2 000 | **1 963** | > 1 000 |
+| blocs parcourus (paysage) | > 800 | **796** | > 400 |
+
+**Et j'ai écrit la leçon pour la troisième en laissant les deux autres
+intactes**, à quinze lignes de là : elles sont tombées au portail SUIVANT.
+C'est le piège du verre dans les murs à l'échelle d'un seul fichier, et il a
+coûté deux portails. Quand une borne se révèle mal posée, on relit toutes
+celles du fichier dans la même passe.
 
 ### Le monde (`world.js`)
 
