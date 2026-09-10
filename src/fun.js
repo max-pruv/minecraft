@@ -5,6 +5,7 @@
 // shim; world-scoped data (signs, chest) is keyed by the world code.
 
 import * as THREE from 'three';
+import { liberer } from './liberer.js';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
@@ -213,7 +214,10 @@ export function initFun(ctx) {
   }
 
   function refreshPet() {
-    if (petMesh) { scene.remove(petMesh); petMesh = null; }
+    // ET L'ANCIENNE SE REND (v238) : `refreshPet` en refabrique une neuve, avec
+    // ses sphères, ses matériaux ET l'étiquette dessinée sur une toile. Sans
+    // cette ligne chaque changement de mascotte en abandonnait un jeu complet.
+    if (petMesh) { scene.remove(petMesh); liberer(petMesh); petMesh = null; }
     if (!pet) return;
     const sp = creatureManager.species.find((s) => s.id === pet.id);
     if (!sp) return;

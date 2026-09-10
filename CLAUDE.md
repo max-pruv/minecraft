@@ -1565,6 +1565,50 @@ C'est le piège du verre dans les murs à l'échelle d'un seul fichier, et il a
 coûté deux portails. Quand une borne se révèle mal posée, on relit toutes
 celles du fichier dans la même passe.
 
+### Ce qu'on retire de la scène se rend (`liberer.js`)
+
+**`scene.remove()` NE REND PAS UN OCTET AU PILOTE GRAPHIQUE (v238).** Max : « le
+jeu lague de plus en plus depuis un moment. » Une créature coûte **dix-neuf
+géométries et demie**, le jeu en fait naître une toutes les 1,2 s, et
+`removeCreature` faisait `scene.remove()` et rien d'autre. Mesuré à l'unité, dix
+créatures nées puis retirées : **166 géométries prises, ZÉRO rendue** sur
+`origin/main` ; 157 prises, 157 rendues ici. Sur un iPad, dont la mémoire
+graphique est partagée avec le système, cela s'accumule toute la partie.
+
+C'est la fuite de la v236 **par l'autre bout** — là c'étaient les blocs en
+mémoire vive — et **le bon remède était déjà écrit dans le fichier d'à côté** :
+`poissons.js` libère les siens depuis toujours. Quatrième fois que ce dépôt paie
+la PORTÉE d'un remède et non la règle (le verre dans les murs, les arbres à
+plat, les cadences de ménage). D'où un module COMMUN et non cinq copies.
+
+- **UNE RESSOURCE PARTAGÉE NE SE LIBÈRE PAS, et c'est tout le piège.** Les
+  personnages humains partagent DEUX matériaux pour tout le jeu
+  (`matiereVivante`, `matiereVerre`) ; le mobilier de rue de `props.js` clone un
+  modèle unique, donc partage sa géométrie. Un `dispose()` aveugle n'aurait pas
+  fait fuir le jeu : il aurait fait **DISPARAÎTRE** tous les personnages du monde
+  et le décor avec. La règle vit dans la ressource elle-même
+  (`userData.partagee`, posé par `partager`), à côté de `montable`,
+  `nourrissable` et `vole` — jamais dans une liste écrite ailleurs.
+- **LE COMPTEUR DU MOTEUR N'ENREGISTRE QUE CE QUI EST DESSINÉ.**
+  `renderer.info.memory.geometries` ne compte une géométrie qu'une fois
+  RASTERISÉE. Ma première mesure unitaire rendait « 96 avant, 96 pendant, 96
+  après » : les bêtes naissaient derrière la caméra. Elle ne mesurait RIEN et
+  serait passée au vert des deux côtés. On pose `frustumCulled = false` avant de
+  compter.
+- **ON N'ATTEND PAS LE RENOUVELLEMENT, ON LE PROVOQUE — et trois sondes l'ont
+  appris.** Joueur immobile, ZÉRO créature retirée : elles remplissent seulement
+  leur plafond de seize, ce qui s'arrête tout seul, et j'ai pris ce remplissage
+  pour la fuite. À pied, **un enfant avance à 15 % du temps réel sur ce banc**
+  (`dt` borné, trois images par seconde) : six blocs en trente secondes, jamais
+  les soixante-dix qui déclenchent un retrait. Dix allers-retours provoquent bien
+  le renouvellement, mais le disque de morceaux ne revient pas au même endroit
+  des deux côtés (92 contre 99, soit vingt géométries) : le verdict mesurerait le
+  banc. **La mesure qui tranche est unitaire** — dix bêtes, prises et rendues.
+- **Et le banc NE PEUT PAS subir cette panne** : il a de la mémoire à revendre,
+  son fil principal est inactif 81 % du temps, sa cadence mesure SwiftShader. On
+  mesure la CAUSE (des géométries) et jamais l'effet (des images par seconde) —
+  leçon de la v236, deuxième application.
+
 ### Le monde (`world.js`)
 
 **CE QUI S'ENGENDRE S'OUBLIE — et cela avait échappé à tout le monde (v236).**

@@ -20,6 +20,7 @@ import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { Horizon, rayonHorizon } from './horizon.js';
+import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
@@ -2442,7 +2443,11 @@ function updateNetFx(dt) {
   for (const l of [...leaving]) {
     l.life -= dt;
     if (l.life <= 0) {
+      // CE QU'ON RETIRE SE REND (v238). Le corps d'un ami qui s'en va porte ses
+      // onze géométries en propre ; ses matériaux, eux, sont ceux de tout le
+      // monde et `liberer` les épargne — voir `liberer.js`.
       scene.remove(l.mesh);
+      liberer(l.mesh);
       leaving.splice(leaving.indexOf(l), 1);
       continue;
     }
