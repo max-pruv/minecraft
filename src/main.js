@@ -19,6 +19,7 @@ import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
+import { Horizon, rayonHorizon } from './horizon.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
@@ -52,6 +53,8 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
+// La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
+const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -66,6 +69,27 @@ const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
 // 30 images. Douze double le débit sans coûter une image, vingt gagne 15 % de
 // plus et coûte un tiers de la cadence. On prend douze.
 const MESH_BUDGET_MS = 12;
+// LE MAILLAGE EST UNE CADENCE DE MÉNAGE, ET SON BUDGET ÉTAIT EN IMAGES (v237).
+//
+// Douze millisecondes PAR IMAGE, c'est douze cents millisecondes par seconde à
+// cent images — mais seulement TRENTE-SIX à trois images par seconde. Or trois
+// images par seconde, c'est exactement l'état d'une tablette qui ARRIVE dans
+// une ville : le monde se charge vingt fois plus lentement au moment précis où
+// l'enfant en a besoin. C'est le piège de `dt` de la v226, un étage plus haut,
+// et sur le chemin le plus chaud du jeu.
+//
+// Le budget vise donc un DÉBIT — des millisecondes de maillage par seconde
+// RÉELLE — et se répartit sur les images telles qu'elles viennent. Sept cent
+// vingt, c'est exactement les douze millisecondes d'avant à soixante images :
+// à cadence haute RIEN NE CHANGE, la correction ne fait qu'AJOUTER du budget
+// quand les images s'allongent. Le plafond de vingt-deux empêche l'emballement
+// (une image plus longue donnerait plus de budget, qui l'allongerait encore) et
+// c'est le chiffre que la v229 avait déjà mesuré comme la limite au-delà de
+// laquelle on paie un tiers de la cadence.
+const MESH_MS_PAR_SECONDE = 720;
+const MESH_BUDGET_MAX = 22;
+// L'horloge du maillage : son propre chronomètre, appelé une fois par image.
+const dtMaillage = chronoReel(0.5);
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 // Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de
@@ -88,7 +112,16 @@ const scene = new THREE.Scene();
 const DAY_SKY = new THREE.Color(0x87ceeb);
 const NIGHT_SKY = new THREE.Color(0x0b1026);
 scene.background = DAY_SKY.clone();
-scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK * 0.55, RENDER_RADIUS * CHUNK - 4);
+// LE BROUILLARD PORTE JUSQU'AU PAYSAGE LOINTAIN (v237). Il s'arrêtait à
+// `RENDER_RADIUS * CHUNK − 4` — cent quatre-vingt-huit blocs — parce qu'au-delà
+// il n'y avait rien à cacher que du vide. Depuis que `horizon.js` remplit ce
+// vide, une brume à cent quatre-vingt-huit blocs EFFACERAIT le paysage qu'on
+// vient de dessiner. Le début, lui, ne bouge pas : c'est le monde proche.
+// Et le DÉBUT recule aussi : il valait `RENDER_RADIUS * CHUNK * 0.55` — cent
+// six blocs — pour fondre le bord du monde chargé dans le ciel. Il n'y a plus
+// de bord à fondre, et à cent six blocs le paysage lointain arrivait déjà
+// délavé. Il commence au bout du monde proche et fond jusqu'à l'horizon.
+scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
 
@@ -205,6 +238,13 @@ activerTuilage(litMaterial);
 })();
 
 const world = new World();
+
+// LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
+// exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
+// `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
+// morceaux par seconde quand voler en réclame cent soixante-cinq.
+const horizon = new Horizon(world, RAYON_HORIZON);
+scene.add(horizon.objet());
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
 // Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
@@ -372,12 +412,19 @@ function updateChunks() {
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
   // (château, forêt dense) ne peut plus geler la frame à lui tout seul. Au pire
   // le paysage lointain arrive une frame plus tard, derrière le brouillard.
+  // Le budget de CETTE image : ce que le débit visé accorde pour le temps réel
+  // écoulé, jamais moins que l'ancien budget fixe, jamais plus que le plafond.
+  // L'écart est borné à un dixième de seconde — au réveil d'un onglet endormi
+  // il vaut des minutes, et une image ne se laisse pas remplir avec cela.
+  const ecart = Math.min(dtMaillage(), 0.1);
+  const budget = Math.min(MESH_BUDGET_MAX,
+    Math.max(MESH_BUDGET_MS, MESH_MS_PAR_SECONDE * ecart));
   const debut = performance.now();
   do {
     const suivant = meshQueue.pop();
     if (!suivant) break;
     meshChunk(suivant.cx, suivant.cz);
-  } while (performance.now() - debut < MESH_BUDGET_MS);
+  } while (performance.now() - debut < budget);
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
@@ -4392,6 +4439,8 @@ let minimapVisible = false;
 // au-dessus, la carte redevient en retard. La cadence de 120 ms est la borne
 // haute — à 95 blocs/s elle donne onze blocs de retard, contre soixante-quatorze.
 const CARTE_PAS = 8;
+const horizonDecoupe = cadence(250);
+let horizonCap = 0;
 const carteSuivre = cadence(120);
 // Et le fond entier de temps en temps : un bloc que l'enfant vient de poser
 // tombe dans la partie RECOPIÉE, que le défilement ne recalcule jamais.
@@ -4887,6 +4936,7 @@ function updateSky(dt) {
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
   solidMaterial.color.copy(lightColor);
   waterMaterial.color.copy(lightColor);
+  horizon.majLumiere(lightColor);
   // Les vitres allumées prennent le plus lumineux des deux : la lumière du
   // jour quand il fait jour, la leur quand la nuit tombe. Elles ne
   // s'allument donc pas au crépuscule — elles cessent simplement de
@@ -5243,7 +5293,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, fun, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5336,6 +5386,21 @@ function frame(now) {
   }
 
   updateChunks();
+
+  // LE PAYSAGE LOINTAIN SE DÉFILE, IL NE SE REFAIT PAS (leçon de la minicarte).
+  // Le remplissage est borné en temps, comme le maillage ; la découpe — les
+  // cases qu'on retire parce que le vrai monde les couvre — se refait à une
+  // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
+  horizon.maj(player.pos.x, player.pos.z, 6);
+  // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
+  // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
+  // un quart de seconde de ciel vide au milieu d'un virage.
+  const vise = -Math.sin(player.yaw), viseZ = -Math.cos(player.yaw);
+  if (horizonDecoupe() || Math.abs(player.yaw - horizonCap) > 0.5) {
+    horizonCap = player.yaw;
+    horizon.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+      player.pos.x, player.pos.z, vise, viseZ);
+  }
   updateSky(dt);
   updateWeather(dt);
   updateClouds(dt);

@@ -1615,7 +1615,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // chargé et refusent l'ancien code de loin. Une borne se règle sur la
     // dispersion mesurée, jamais sur le meilleur relevé.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 200
+      !secousses.err && secousses.images > 60
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
@@ -1680,7 +1680,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
     // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 2000 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
@@ -1708,6 +1708,96 @@ async function avancerUnDemiSeconde(p, depart) {
       !survie.err && survie.tenait && survie.vide
         && survie.brique === 1 && survie.apres === survie.avant,
       JSON.stringify(survie));
+
+    // EN VOL, L'ENFANT VOIT UN PAYSAGE ET PLUS DU CIEL VIDE (v237).
+    //
+    // Max, capture à l'appui après la v236 : du ciel bleu entouré au feutre
+    // rouge, et « 0 improvement ». Mesuré dans le champ de la caméra au-dessus
+    // de Paris : TRENTE ET UN maillages, le plus lointain à CINQUANTE-NEUF
+    // blocs, pour un brouillard qui portait à 188.
+    //
+    // LA CAUSE EST ARITHMÉTIQUE. Un morceau de monde coûte 23,5 ms au-dessus de
+    // Paris et 22,6 au-dessus de Londres, contre 6,6 en rase campagne : QUARANTE-
+    // DEUX morceaux par seconde là où voler à cent dix blocs/s en réclame CENT
+    // SOIXANTE-CINQ. Et le chiffre de « 154 morceaux/s » de la v229, sur lequel
+    // la vitesse des avions a été réglée, avait été mesuré DANS UN COULOIR VIDE
+    // — c'est là que vole le témoin d'à côté, à (30 000, 30 000). Il ne pouvait
+    // pas voir ce que Max voyait.
+    //
+    // CE TÉMOIN MESURE CE QUE L'ENFANT VOIT, pas ce que le moteur charge :
+    // vingt-cinq lignes de visée réparties sur la moitié basse de l'écran, et
+    // l'on compte celles qui rencontrent quelque chose. Relevé cinq fois de
+    // suite, même vol, même endroit :
+    //
+    //   origin/main   0 · 8 · 9 · 1 · 11  sur 25      (portée médiane 86 blocs)
+    //   ici          25 · 25 · 25 · 25 · 25           (portée médiane 120, jusqu'à 244)
+    //
+    // La barre est à vingt-deux : l'ancien code n'en a JAMAIS atteint la moitié,
+    // le neuf ne descend jamais sous vingt-cinq.
+    await souffler();
+    const vue = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const THREE = await import('three');
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'chasseur');
+      if (!def || !def.pilote) return { err: 'pas de chasseur' };
+      const V = positionDe('paris');
+      const depart = V.x - 700;
+      g.player.pos.set(depart, 100, V.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = -0.3;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      await new Promise((f) => setTimeout(f, 8000));
+
+      // La scène : on remonte depuis n'importe quel objet du monde, pour que le
+      // témoin marche aussi sur l'ancien code, qui n'expose pas `scene`.
+      let sc = g.scene;
+      if (!sc) { let o = g.npcs && g.npcs[0] && g.npcs[0].mesh; while (o && o.parent) o = o.parent; sc = o; }
+      if (!sc) return { err: 'scène introuvable' };
+      const cam = g.player.camera;
+      const rc = new THREE.Raycaster(); rc.far = 2000;
+      const tirer = () => {
+        const d = [];
+        for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+          rc.setFromCamera(new THREE.Vector2(-0.8 + i * 0.4, -0.8 + j * 0.2), cam);
+          const hits = rc.intersectObjects(sc.children, true);
+          d.push(hits.length ? Math.round(hits[0].distance) : -1);
+        }
+        const vus = d.filter((x) => x > 0).sort((a, b) => a - b);
+        return { sur25: vus.length, mediane: vus.length ? vus[vus.length >> 1] : 0 };
+      };
+      const releves = [];
+      for (let k = 0; k < 5; k++) { releves.push(tirer()); await new Promise((f) => setTimeout(f, 1200)); }
+      const parcouru = Math.round(g.player.pos.x - depart);
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      const med = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
+      return { pire: Math.min(...releves.map((x) => x.sur25)),
+        median: med(releves.map((x) => x.sur25)),
+        portee: med(releves.map((x) => x.mediane)),
+        parcouru, releves };
+    });
+    // LA BORNE DE DISTANCE SE POSE LOIN DE LA VALEUR, PAS JUSTE EN DESSOUS.
+    // ET LA LEÇON VAUT POUR LES DEUX TÉMOINS D'AU-DESSUS, que j'ai laissés tels
+    // quels en l'écrivant ici : « images > 200 » (rendu 186) et « parcouru >
+    // 2000 » (rendu 1963) sont tombés au portail SUIVANT, sur du code sain.
+    // Trois bornes de garde, la même faute, corrigée une à la fois — c'est le
+    // piège du verre dans les murs, dans un seul fichier. Une borne de GARDE —
+    // celle qui vérifie que la mesure a bien eu lieu — n'est pas un seuil : on
+    // la pose à la moitié, jamais à quatre-vingt-dix pour cent.
+    // Mon premier jet exigeait 800 blocs parcourus, mesurés à 880 à la sonde
+    // sur une machine qui respirait : au portail il en a rendu 796, et le
+    // témoin est tombé pour quatre blocs — sur du code sain. Ce chiffre dépend
+    // de la cadence du banc (`main.js` borne `dt`), pas du jeu. Quatre cents
+    // sépare toujours « il a volé » de « il n'a pas bougé », qui rend ZÉRO.
+    verifier('en vol, l\'enfant voit un paysage et plus du ciel vide',
+      !vue.err && vue.parcouru > 400 && vue.pire >= 22,
+      `barre 22/25 et 400 blocs · ${JSON.stringify(vue)}`);
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //

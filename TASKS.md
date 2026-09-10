@@ -22,6 +22,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Le témoin de chargement du monde vole au-dessus d'un désert.** « En vol,
+  on ne rattrape pas le bout du monde qui se charge » (`monte.js`) se place à
+  (30 000, 30 000), un couloir vierge où un morceau coûte 6,8 ms. Au-dessus de
+  Paris il en coûte 23,5. Le témoin est donc vert alors que l'enfant, lui, ne
+  voit rien — c'est ce qui a laissé passer la v229 à la v236. Le paysage
+  lointain de la v237 rend le symptôme invisible ; le déficit de maillage, lui,
+  est intact. À reprendre : le faire voler au-dessus d'une ville, et remesurer
+  les vitesses des avions sur le VRAI débit (42 morceaux/s, pas 154).
+
+- [ ] **Le paysage lointain montre le relief, pas les villes.** `terrainHeight`
+  ne sait rien des immeubles : au-delà des morceaux chargés, Paris apparaît en
+  prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
+  quelques microsecondes par colonne — non mesuré, non fait.
+
+- [ ] **Des cubes orange isolés flottent dans le ciel**, visibles sur les
+  captures de Max comme sur celles du banc, avant comme après la v237. Ma sonde
+  de scène ne les a pas trouvés (aucun petit maillage loin dans le champ) :
+  c'est donc que je n'ai pas cherché au bon endroit. À reprendre par un lancer
+  de rayon à travers leur position à l'écran, qui répondra en une exécution.
+
 - [ ] **Trois non-résultats MESURÉS en v236 — ne pas les reprendre à
   l'aveugle.** En cherchant la cause du gel en vol : le **rendu** ne fait que
   4,6 % du temps (834 ms sur 18 s) ; la **caméra cubique des reflets** ne
