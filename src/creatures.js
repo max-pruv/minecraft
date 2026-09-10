@@ -2,6 +2,7 @@
 // spawn in the world by biome; throw catch-balls to add them to your collection.
 
 import * as THREE from 'three';
+import { liberer } from './liberer.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
 
@@ -414,7 +415,13 @@ export class CreatureManager {
   }
 
   removeCreature(c) {
+    // CE QU'ON RETIRE SE REND (v238). Une créature naît toutes les 1,2 s et
+    // disparaît à soixante-dix blocs ; elle porte SES sphères et SES matériaux,
+    // fabriqués pour elle seule. Sans cette ligne, le renouvellement enflait la
+    // mémoire graphique indéfiniment — cent cinquante géométries par minute,
+    // mesurées joueur immobile. Voir `liberer.js`.
     this.scene.remove(c.mesh);
+    liberer(c.mesh);
     this.creatures = this.creatures.filter((o) => o !== c);
   }
 
@@ -437,6 +444,7 @@ export class CreatureManager {
 
   removeBall(ball) {
     this.scene.remove(ball.mesh);
+    liberer(ball.mesh);
     this.balls = this.balls.filter((b) => b !== ball);
   }
 

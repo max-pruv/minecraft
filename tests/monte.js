@@ -1709,6 +1709,69 @@ async function avancerUnDemiSeconde(p, depart) {
         && survie.brique === 1 && survie.apres === survie.avant,
       JSON.stringify(survie));
 
+    // LE RENOUVELLEMENT DES BÊTES NE REMPLIT PLUS LA MÉMOIRE GRAPHIQUE (v238).
+    //
+    // Max : « le jeu lague de plus en plus depuis un moment. » Ce n'était ni le
+    // vol, ni le chargement, ni le paysage lointain — la v236 et la v237 rendent
+    // la MÊME cadence debout au centre de Paris (3,7 contre 3,3 im/s). Mesuré
+    // joueur IMMOBILE, monde entièrement figé (169 morceaux maillés, plus une
+    // seule libération après la trentième seconde) :
+    //
+    //     t          30 s   60 s   90 s   120 s
+    //     géométries  398    474    509    543
+    //     libérées    205    205    205    205
+    //
+    // Les créatures sont pourtant plafonnées à seize et disparaissent à
+    // soixante-dix blocs : elles ne s'ACCUMULENT pas, elles se RENOUVELLENT —
+    // une naît toutes les 1,2 s — et `scene.remove()` ne rend rien au pilote
+    // graphique. Sur un iPad, dont la mémoire graphique est partagée avec le
+    // système, c'est le figement d'une seconde toutes les secondes.
+    //
+    // ON MESURE LA CAUSE, PAS L'EFFET — et c'est la leçon de la v236 reprise
+    // telle quelle. Ce conteneur a de la mémoire à revendre : il ne PEUT PAS
+    // subir cette panne, et un témoin en millisecondes serait vert des deux
+    // côtés sans rien prouver. Le compte de géométries, lui, sépare 145 de zéro.
+    //
+    // LE MONDE DOIT ÊTRE FIGÉ, sinon on mesure le maillage et non les bêtes :
+    // le joueur ne bouge pas, et le témoin VÉRIFIE que le nombre de morceaux
+    // maillés n'a pas changé. La borne de garde exige que le renouvellement ait
+    // vraiment eu lieu (des créatures retirées) — posée à la moitié de ce qui a
+    // été relevé, jamais à quatre-vingt-dix pour cent.
+    await souffler();
+    const graphique = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const { positionDe } = await import('./src/mondes.js');
+      const V = positionDe('paris');
+      g.player.pilote = null; g.player.flying = false; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(V.x, g.world.terrainHeight(V.x, V.z) + 2, V.z);
+      g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      const cm = g.creatureManager;
+      if (!cm) return { err: 'pas de gestionnaire de créatures' };
+      let retirees = 0;
+      const vrai = cm.removeCreature.bind(cm);
+      cm.removeCreature = (c) => { retirees++; return vrai(c); };
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      await dormir(25000);                       // le monde autour finit d'arriver
+      const geo0 = g.renderer.info.memory.geometries;
+      const maill0 = g.chunkMeshes.size;
+      retirees = 0;
+      await dormir(90000);                       // quatre-vingt-dix secondes de vie
+      cm.removeCreature = vrai;
+      return { geo0, geo1: g.renderer.info.memory.geometries,
+        pousse: g.renderer.info.memory.geometries - geo0,
+        maill0, maill1: g.chunkMeshes.size, retirees,
+        creatures: cm.creatures.length };
+    });
+    // La barre est mesurée : +145 géométries en quatre-vingt-dix secondes sur
+    // `origin/main`, zéro attendu ici. Quarante les sépare largement des deux
+    // côtés, et laisse la place à un remaillage isolé que le monde figé
+    // n'exclut pas tout à fait.
+    verifier('le renouvellement des bêtes ne remplit pas la mémoire graphique',
+      !graphique.err && graphique.retirees >= 3
+        && Math.abs(graphique.maill1 - graphique.maill0) <= 8
+        && graphique.pousse <= 40,
+      `barre 40 géométries · ${JSON.stringify(graphique)}`);
+
     // EN VOL, L'ENFANT VOIT UN PAYSAGE ET PLUS DU CIEL VIDE (v237).
     //
     // Max, capture à l'appui après la v236 : du ciel bleu entouré au feutre

@@ -3,6 +3,7 @@
 // Some spawn as babies. They are ambience — catch-balls ignore them.
 
 import * as THREE from 'three';
+import { liberer } from './liberer.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
@@ -473,13 +474,19 @@ export class AnimalManager {
         a.update(dt, this.world, this.player, this.toast);
         if (a.dying <= 0) { // poof finished: award the meat
           this.scene.remove(a.mesh);
+          liberer(a.mesh);
           this.animals = this.animals.filter((o) => o !== a);
           if (this.onHarvest) this.onHarvest(a.def);
         }
         continue;
       }
       if (a.pos.distanceTo(this.player.pos) > 70) {
+        // CE QU'ON RETIRE SE REND (v238). Une bête naît toutes les secondes et
+        // demie et s'en va à soixante-dix blocs : sans cette ligne, chaque
+        // renouvellement laissait ses géométries au pilote graphique pour
+        // toujours. Voir `liberer.js`.
         this.scene.remove(a.mesh);
+        liberer(a.mesh);
         this.animals = this.animals.filter((o) => o !== a);
         continue;
       }

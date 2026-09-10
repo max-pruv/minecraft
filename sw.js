@@ -29,6 +29,7 @@ const ASSETS = [
   './src/mesher.js',
   './src/carte.js',
   './src/horizon.js',
+  './src/liberer.js',
   './src/manhattan.js',
   './src/pole.js',
   './src/paris.js',

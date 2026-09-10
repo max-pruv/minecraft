@@ -54,6 +54,11 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
+  // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
+  // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
+  // libération de trop passerait sans réveiller la suite qui la verrait.
+  'src/liberer.js': ['monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
   'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
