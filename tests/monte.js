@@ -1101,6 +1101,63 @@ async function avancerUnDemiSeconde(p, depart) {
       voiles.guimpe === 0 && voiles.voile === 0,
       `sommets de linge au-dessus du cou : ${voiles.guimpe} · sommets de voile au-dessus de la tête : ${voiles.voile}`);
 
+    // ---- LES VOITURES NE SE TRAVERSENT PLUS, ET ELLES TOURNENT (v244) ---------
+    //
+    // Max : « évite que les voitures puissent se chevaucher et fait en sorte
+    // que quand la voiture tourne, ce soit beaucoup plus naturel, avec une
+    // vraie inclinaison ». Trois mesures sur trente secondes à Paris, sur les
+    // voitures VISIBLES du convoi routier :
+    //   · un chevauchement est l'intersection VRAIE des deux rectangles
+    //     (4,4 × 2,26, orientés), par séparation d'axes — « à moins de
+    //     3,5 blocs » comptait deux files en sens inverse qui se frôlent ;
+    //   · un saut de cap est plus de trente-quatre degrés entre deux relevés
+    //     à deux cents millisecondes — un carrefour pris en une image ;
+    //   · le roulis se lit sur la MATRICE de la voiture : le haut du corps
+    //     penche du côté que le roulis annonce, et le roulis est posé vers
+    //     l'extérieur du virage.
+    // Mesuré : 78 chevauchements et 59 sauts sur l'ancien code ; 17 à 25
+    // et 1 à 2 ici, roulis 0,078 au pire coin. Les bornes se posent entre les
+    // deux dispersions, pas au meilleur relevé.
+    const voitures = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      const visibles = () => { const out = []; g.scene.traverse((o) => { if (o.userData && (o.userData.roues || o.userData.flotte) && o.visible && o.parent === g.scene) out.push(o); }); return out; };
+      const rect = (m) => { const cap = m.rotation.y - Math.PI, ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux, x = m.position.x, z = m.position.z;
+        return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let chevauchements = 0, sauts = 0, mesures = 0, penchees = 0, bonCote = 0, contraire = 0, maxRoulis = 0, maxVues = 0;
+      const derniers = new Map();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const v = visibles(); maxVues = Math.max(maxVues, v.length);
+        for (let i = 0; i < v.length; i++) {
+          const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
+          if (prev !== undefined) { let e = Math.abs(cap - prev); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e > 0.6) sauts++; }
+          derniers.set(v[i], cap);
+          const r = v[i].rotation.z || 0;
+          if (Math.abs(r) >= 0.01 && Math.abs(v[i].position.y - g.player.pos.y) < 40) {
+            penchees++; maxRoulis = Math.max(maxRoulis, Math.abs(r));
+            const c = v[i].rotation.y - Math.PI, gauche = new THREE.Vector3(Math.cos(c), 0, -Math.sin(c));
+            const haut = new THREE.Vector3(0, 1, 0).applyQuaternion(v[i].quaternion);
+            if ((r < 0) === (haut.dot(gauche) < 0)) bonCote++; else contraire++;
+          }
+          for (let j = i + 1; j < v.length; j++) {
+            if (Math.abs(v[i].position.y - v[j].position.y) > 2.5) continue;
+            if (v[i].position.distanceTo(v[j].position) < 5 && !separes(rect(v[i]), rect(v[j]))) chevauchements++;
+          }
+        }
+      }
+      return { maxVues, chevauchements, mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
+    });
+    verifier('les voitures ne se traversent plus',
+      voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
+    verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
+      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} saut(s) de cap sur ${voitures.mesures} relevés`);
+    verifier('et elles s\'inclinent dans le virage, du bon côté',
+      voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
+      `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
+
     // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
     //
     // Max, après la v217 : la ville reste habitée, mais l'enfant ne VOIT

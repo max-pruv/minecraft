@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v244 — Les voitures ne se traversent plus, et elles prennent leurs virages en s'inclinant
+
+**Pourquoi.** Max : « évite que les voitures puissent se chevaucher et fait
+en sorte que quand la voiture tourne, ce soit beaucoup plus naturel, avec un
+vrai virage, une vraie inclinaison ». Mesuré à Paris sur trente secondes :
+soixante-dix-huit relevés de deux voitures l'une dans l'autre — là où deux
+circuits se croisent, en équerre ou en biais, et sur les tronçons qu'ils
+partagent — et cinquante-neuf sauts de cap de plus de trente-quatre degrés :
+une voiture prenait le carrefour en UNE image, pivotant sur place comme une
+maquette qu'on tourne sur une table.
+
+**Ce que ça change.** Le cap d'une voiture est celui de son empattement, pas
+du segment sous ses roues : elle pivote en franchissant le coin, sur la
+longueur de son châssis. Son corps roule vers l'extérieur du virage, de ce que
+lui impose la force centrifuge — quatre degrés au pire coin, rien en ligne
+droite — et cette inclinaison est purement visuelle, composée avant le cap
+comme celle de l'avion. Et chaque voiture cède le passage pour elle-même :
+elle regarde où son tracé la mène dans les huit blocs qui viennent, et si son
+rectangle y toucherait une autre voiture, elle attend — le convoi est
+élastique, celles qui suivent font la queue derrière elle, et dans une paire
+mutuelle la plus engagée passe. Métro et trains, sur rails, ne font ni l'un ni
+l'autre.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, sur les voitures visibles
+du convoi routier à Paris pendant trente secondes. « Les voitures ne se
+traversent plus » compte les intersections VRAIES des rectangles (4,4 × 2,26,
+orientés, par séparation d'axes) : 78 sur l'ancien code, 17 à 25 ici. « Elles
+tournent progressivement » : 59 sauts de cap → 1 ou 2. « Elles s'inclinent du
+bon côté » lit la MATRICE de la voiture — le haut du corps penche du côté que
+le roulis annonce, 239 relevés sur 239, roulis maximal 0,078 — et rien ne
+penche sur l'ancien code. Quatre jets ont précédé celui-ci, chacun mesuré :
+arrêter le convoi entier (78 → 65), un couloir devant soi (→ 61), un balayage
+chemin contre chemin (17 → 77). Le reliquat est un raccord à cent soixante
+degrés entre deux circuits de Rivoli : une affaire de tracé, déclarée dans
+`TASKS.md`.
+
+---
+
 ## v243 — Les passants se promènent pour eux-mêmes, et la dame n'a plus de voile
 
 **Pourquoi.** Max : « elles regardent le joueur principal au lieu de continuer

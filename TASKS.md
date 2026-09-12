@@ -24,6 +24,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Deux circuits de Paris se raccordent à cent soixante degrés sur la rue
+  de Rivoli, et les voitures s'y frôlent encore.** Après la v244, il reste
+  dix-sept à vingt-cinq relevés de chevauchement sur trente secondes (contre
+  soixante-dix-huit), tous au même endroit — autour de (−190, 188) et
+  (−175, 215) : une voiture qui attend est frôlée par celle qui passe en biais,
+  parce que les deux tracés s'y rejoignent presque parallèles. Céder le passage
+  ne peut rien contre un tracé qui met deux files dans le même couloir : c'est
+  dans `voies.js` / `paris.js` que cela se règle (un carrefour franc, ou une
+  seule file sur le tronçon partagé), et cela se remesure avec la sonde des
+  rectangles, jamais avec « à moins de 3,5 blocs ».
+
 - [ ] **L'arrivée en ville fige l'écran depuis la v241 (#244), et le témoin le
   dit des deux côtés.** « L'écran ne se fige pas en arrivant sur une ville »
   (monte.js, barre 550 ms et 5 % du temps au-delà de 300 ms), rejoué SEUL sur

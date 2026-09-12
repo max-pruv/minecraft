@@ -2470,6 +2470,47 @@ viendra.
   des huit circuits n'en avait besoin, et la livrer aurait créé une avenue sans
   voitures le jour même — la dette qu'on vient de rembourser.
 
+### Une voiture cède le passage pour elle-même, et tourne sur son empattement (v244)
+
+Max : « évite que les voitures puissent se chevaucher, et quand la voiture
+tourne, une vraie inclinaison ». Mesuré à Paris : 78 relevés de voitures l'une
+dans l'autre en trente secondes, 59 sauts de cap de plus de 34° — un carrefour
+pris en une image. Cinq choses à savoir avant d'y toucher.
+
+- **UN CHEVAUCHEMENT SE MESURE EN RECTANGLES, PAS EN DISTANCE.** « À moins de
+  3,5 blocs » comptait deux files en sens inverse sur la même avenue, qui se
+  frôlent sans se toucher. L'intersection vraie de deux rectangles orientés
+  (4,4 × 2,26), par séparation d'axes, distingue ce qui se traverse de ce qui
+  se croise — et la même sonde a classé les paires : face à face, même sens,
+  en travers. Devant un rouge qu'on n'explique pas, la sonde qui distingue les
+  cas, encore.
+- **PAR VOITURE, PAS PAR CONVOI.** Un convoi n'a qu'une distance ; arrêter le
+  convoi entier laissait celle qui était déjà dans le carrefour en travers de
+  l'autre voie (78 → 65). Le convoi est ÉLASTIQUE : `retard[i]` est ce que la
+  voiture i a laissé filer en attendant, elle rattrape à une fois et demie
+  l'allure, et celle qui suit fait la queue derrière elle. Toute position se
+  demande à `dElement(i)`, jamais à `distance − i × ecart`.
+- **ON REGARDE OÙ L'AUTRE EST, PAS OÙ ELLE SERA.** Un couloir « devant moi »
+  ratait la voiture qui arrive de trois quarts (→ 61) ; comparer les deux
+  chemins à venir mettait presque toutes les paires en conflit mutuel et la
+  patience de quatre secondes les relâchait ensemble (17 → 77). Le balayage
+  de MON tracé sur huit blocs contre SON rectangle actuel est ce qui a tenu
+  (78 → 17-25). Dans une paire mutuelle, la plus engagée passe.
+- **LE CAP EST CELUI DE L'EMPATTEMENT.** `Parcours.capLisse(d)` prend la corde
+  entre les points sous les deux essieux : la voiture pivote en franchissant
+  le coin, sur la longueur de son châssis (59 sauts → 1). `courbure(d)` en
+  dérive le roulis — vitesse au carré fois courbure, borné à 0,08 —
+  purement visuel, composé avant le cap (`YXZ`) comme pour l'avion.
+- **LE SIGNE DU ROULIS SE LIT DANS LA MATRICE.** La capture de dos ne montre
+  pas quatre degrés ; ce qui fait foi, c'est le haut du corps rendu
+  (`(0,1,0)` par le quaternion) contre la gauche de la voiture : il penche
+  vers l'extérieur du virage sur 239 relevés, zéro à contresens. Ce test est
+  dans le témoin, et il rougit si quelqu'un inverse le signe.
+
+Le reliquat — deux circuits qui se raccordent à 160° sur Rivoli — est une
+affaire de TRACÉ, déclarée dans `TASKS.md` : céder le passage ne peut rien
+contre deux files dans le même couloir.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et
