@@ -1473,16 +1473,25 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     // les convois naissent à l'approche du joueur, par paquets de deux
     // secondes et demie : on les attend, on ne les suppose pas
+    // SIX À LA FOIS, PAS HUIT (v244). Vingt voitures sur une boucle de six
+    // cents blocs, c'est une tous les trente blocs : à quarante-cinq blocs du
+    // centre, deux anneaux en donnent six au plus, et c'est ce que la sonde
+    // mesure des deux côtés, sur `origin/main` comme ici — quatre à six,
+    // jamais huit. Le « huit » ne tenait qu'à la PHASE des convois au moment
+    // où l'enfant arrive : un pile ou face qui a gagné pendant des versions et
+    // qui a perdu le jour où trois témoins de plus l'ont précédé. Rouge
+    // garanti sur l'ancien code tout de même : là, Moscou n'avait AUCUNE
+    // voiture.
     const circulation = await tab.waitForFunction(() => {
       const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
       const autos = etat.filter((c) => c.nom === 'voiture');
       const visibles = autos.reduce((n, c) => n + c.visibles, 0);
-      return visibles >= 8 ? { anneaux: autos.length, visibles } : null;
-    }, null, { timeout: 30000 }).then((h) => h.jsonValue()).catch(() => null);
+      return visibles >= 6 ? { anneaux: autos.length, visibles } : null;
+    }, null, { timeout: 45000 }).then((h) => h.jsonValue()).catch(() => null);
     verifier('à Moscou, traversée par son fleuve, les rues sont pleines de voitures',
       !!circulation,
       circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
-        : 'moins de huit voitures visibles en trente secondes');
+        : 'moins de six voitures visibles en quarante-cinq secondes');
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
