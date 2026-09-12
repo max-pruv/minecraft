@@ -277,7 +277,7 @@ export class Marlon extends BaseNPC {
   }
 }
 
-// Wanders around a home point; faces the player when approached.
+// Wanders around a home point; keeps wandering when the player approaches.
 export class Wanderer extends BaseNPC {
   constructor(scene, world, player, toast, opts, homeX, homeZ) {
     super(scene, world, player, toast, opts);
@@ -288,15 +288,9 @@ export class Wanderer extends BaseNPC {
   }
 
   think(dt) {
-    const toPlayer = this.player.pos.clone().sub(this.pos);
-    toPlayer.y = 0;
-    const playerDist = toPlayer.length();
-
-    // face the player when they come close
-    if (playerDist < 5) {
-      return { speed: 0, yaw: Math.atan2(toPlayer.x, toPlayer.z) + Math.PI };
-    }
-
+    // Plus de « face the player when they come close » (v243) : le promeneur
+    // se figeait à moins de cinq blocs et fixait l'enfant. Il continue sa
+    // promenade ; ses phrases, elles, partent toujours quand on est près.
     this.stateTime -= dt;
     if (this.stateTime <= 0) {
       this.state = this.state === 'idle' ? 'walk' : 'idle';

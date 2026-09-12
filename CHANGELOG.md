@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v243 — Les passants se promènent pour eux-mêmes, et la dame n'a plus de voile
+
+**Pourquoi.** Max : « elles regardent le joueur principal au lieu de continuer
+à se promener ». À moins de cinq blocs et demi, tout habitant se figeait et se
+tournait vers l'enfant — « on salue celui qui vient à soi », écrit pour trois
+gardes de château et hérité par les dix-huit passants de chaque ville. Une rue
+entière s'immobilisait et fixait l'enfant. Et Max a demandé de retirer « la
+femme avec le voile » : la dame du château portait une guimpe, le linge qui
+entoure le cou, le menton et le sommet de la tête, et la dame Renaissance un
+voile derrière son attifet.
+
+Il a aussi demandé de s'assurer que les corps réalistes de la v241 sont
+déployés dans toutes les villes du monde. Lecture faite, ils le sont par
+construction — ils se chargent pour tout le jeu et s'appliquent à toute tenue
+de passant — mais une phrase ne garde rien : un témoin le prouve désormais.
+
+**Ce que ça change.** Chacun garde son propre programme — pause, marche, geste
+de métier — que l'enfant soit là ou non ; les phrases partent toujours quand
+on passe près. La dame du château montre ses cheveux sous son touret, la dame
+Renaissance son attifet sans voile. La lavandière garde son fichu noué, qui
+est un foulard de travail.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`. « Un passant qu'on approche
+continue son chemin » : rouge sur l'ancien code (zéro bloc en douze secondes,
+l'enfant posé à trois blocs), 1,6 bloc en 1,6 s ici. « La dame n'a plus de
+guimpe, la Renaissance plus de voile », mesuré sur les SOMMETS colorés
+au-dessus du cou : 129 et 30 sur l'ancien code, zéro et zéro ici. « Les
+passants ont des corps réalistes ailleurs qu'à New York » : 18 sur 18 à Paris,
+vert des deux côtés à dessein — c'est une capacité que Max a demandé de
+garantir.
+
+---
+
 ## v242 — Le monde ×2 : New York respire, et les blocs suivent leur ville
 
 **Pourquoi.** Max : « la ville de New York touche quasiment Montréal ». Depuis

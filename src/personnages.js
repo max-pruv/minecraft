@@ -301,10 +301,10 @@ const TENUES = {
     a.sphere(drap, { p: [0, H.cou - 0.02, 0.16], e: [0.28, 0.26, 0.24], seg: 12 });
   },
 
-  // La dame du château, XIIIᵉ : robe longue à manches pendantes, guimpe et
+  // La dame du château, XIIIᵉ : robe longue à manches pendantes, cheveux nus et
   // touret. Rien de la raideur Renaissance — tout tombe droit.
   dame(a, p) {
-    const { drap = 0x7a2a4a, drap2 = 0xd8c48a, guimpe = LIN } = p;
+    const { drap = 0x7a2a4a, drap2 = 0xd8c48a } = p;
     torse(a, p, drap);
     jambes(a, p, { bas: drap, chaussure: 0x3a2a2a });
     bras(a, p, { manche: drap, main: p.teint });
@@ -320,13 +320,12 @@ const TENUES = {
       });
     }
     ceinture(a, drap2, H.taille - 0.02, OR);
-    // guimpe : le linge qui entoure le cou et le menton
+    // PLUS DE GUIMPE (v243). Le linge qui entourait le cou, le menton et le
+    // sommet de la tête faisait de la dame « la femme avec le voile » ; Max a
+    // demandé de le retirer. Reste le touret, le bandeau rigide posé sur les
+    // cheveux — et les cheveux, qu'on voit enfin.
     a.membre('tronc');
-    a.cylindre(guimpe, { p: [0, H.cou - 0.04, 0], e: [0.28, 0.2, 0.26], haut: 0.55, bas: 0.5, seg: 12 });
-    a.sphere(guimpe, { p: [0, H.tete - 0.06, 0.05], e: [0.29, 0.26, 0.29], seg: 12 });
-    // touret : le bandeau rigide posé sur les cheveux
     a.tore(drap2, { p: [0, H.tete + 0.12, 0.02], r: [Math.PI / 2, 0, 0], tube: 0.13, e: [0.4, 0.4, 0.4], seg: 14 });
-    a.sphere(guimpe, { p: [0, H.tete + 0.03, 0.14], e: [0.29, 0.32, 0.24], seg: 12 });
   },
 
   // Le Gaulois : braies rayées serrées aux chevilles, tunique courte, large
@@ -539,10 +538,10 @@ const TENUES = {
       a.sphere(drap, { p: [s * (ECART_BRAS + 0.03), H.epaule - 0.3, 0], e: [0.2, 0.2, 0.2], seg: 10 });
     }
     fraise(a, LIN);
-    // coiffe à l'attifet et voile
+    // coiffe à l'attifet — sans le voile qui tombait derrière (v243, demande
+    // de Max : « retire le voile »)
     a.membre('tronc');
     a.tore(drap2, { p: [0, H.tete + 0.15, 0.01], r: [Math.PI / 2, 0, 0], tube: 0.14, e: [0.4, 0.4, 0.4], seg: 14 });
-    a.sphere(drap, { p: [0, H.tete + 0.02, 0.14], e: [0.28, 0.3, 0.24], seg: 12 });
   },
 
   // Pourpoint, haut-de-chausses en bouffant, bas de soie : le gentilhomme.

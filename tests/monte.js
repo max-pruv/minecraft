@@ -1017,6 +1017,90 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils marchent — ce sont des passants, pas des statues',
       bouge >= 2, `${bouge} promeneur(s) sur la place ont bougé en huit secondes`);
 
+    // ---- UN PASSANT QU'ON APPROCHE CONTINUE SON CHEMIN (v243) --------------
+    //
+    // Max : « elles regardent le joueur principal au lieu de continuer à se
+    // promener ». `Habitant.think` se figeait à moins de cinq blocs et demi et
+    // se tournait vers l'enfant — dix-huit fois par ville. On met un passant
+    // en marche, on pose l'enfant à trois blocs de lui, et l'on regarde s'il
+    // avance quand même. Sur l'ancien code il ne bouge pas d'un bloc.
+    //
+    // Ce banc avance à quinze pour cent du temps réel (`dt` borné, trois
+    // images par seconde) : on attend le premier bloc et demi jusqu'à douze
+    // secondes, et l'on rend l'enfant à sa place après.
+    const suit = await tab.evaluate(async () => {
+      const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
+      const h = s2.peuple.find((q) => q.name === 'passant');
+      if (!h) return { err: 'aucun passant' };
+      const sauve = g.player.pos.clone();
+      h.etat = 'marche'; h.minuteur = 8; h.capYaw = 0; h.pas = h.walkSpeed;
+      g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
+      const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
+      let d = 0;
+      while (performance.now() - t0 < 12000 && d < 1.5) {
+        await new Promise((f) => setTimeout(f, 250));
+        d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+      }
+      const dJoueur = Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z);
+      g.player.pos.copy(sauve);
+      return { d: +d.toFixed(2), dJoueur: +dJoueur.toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
+      !suit.err && suit.d >= 1.5, JSON.stringify(suit));
+
+    // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
+    //
+    // Max : « s'assurer de le déployer sur l'ensemble des villes ». Les corps
+    // Rocketbox de la v241 se chargent pour tout le jeu et s'appliquent à toute
+    // tenue « passant » ; on le PROUVE ici, sur Paris, ville bâtie à la main et
+    // pas New York. Vert des deux côtés à dessein : c'est une capacité que
+    // Max a demandé de garantir, et un témoin la garde mieux qu'une phrase.
+    const corps = await tab.evaluate(() => {
+      const s2 = window.__game.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant');
+      const realistes = gens.filter((q) => q.mesh?.userData?.anatomie === 'rocketbox-v241').length;
+      return { ville: s2.nom, humains: gens.length, realistes };
+    });
+    verifier('les passants ont des corps réalistes ailleurs qu\'à New York',
+      corps.humains >= 10 && corps.realistes === corps.humains, JSON.stringify(corps));
+
+    // ---- NI GUIMPE NI VOILE (v243) ---------------------------------------------
+    //
+    // Max : « enlève la femme avec le voile, ou retire le voile ». La dame du
+    // château (`dame`) portait une guimpe — le linge qui entoure le cou, le
+    // menton et le sommet de la tête — et la dame Renaissance (`robeRen`) un
+    // voile derrière son attifet. Les couleurs vivent dans les SOMMETS (leçon
+    // des visages, v215) : on compte, au-dessus du cou, les sommets de la
+    // couleur du linge, puis ceux de la couleur de la robe. Zéro des deux.
+    const voiles = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const { construireHumain } = await import('./src/personnages.js');
+      const compter = (profil, hex, yMin) => {
+        const g = construireHumain(profil);
+        g.updateMatrixWorld(true);
+        const cible = new THREE.Color(hex);
+        const v = new THREE.Vector3();
+        let n = 0;
+        g.traverse((o) => {
+          if (!o.isMesh || !o.geometry?.attributes?.color) return;
+          const pos = o.geometry.attributes.position, col = o.geometry.attributes.color;
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i); o.localToWorld(v);
+            if (v.y < yMin) continue;
+            if (Math.abs(col.getX(i) - cible.r) < 0.03 && Math.abs(col.getY(i) - cible.g) < 0.03 && Math.abs(col.getZ(i) - cible.b) < 0.03) n++;
+          }
+        });
+        return n;
+      };
+      return {
+        guimpe: compter({ tenue: 'dame', coupe: 'chignon', drap: 0x6a3a7a }, 0xe6dcc4, 1.38),
+        voile: compter({ tenue: 'robeRen', coupe: 'chignon', drap: 0x6a2f5a }, 0x6a2f5a, 1.59),
+      };
+    });
+    verifier('la dame du château n\'a plus de guimpe, et la dame Renaissance plus de voile',
+      voiles.guimpe === 0 && voiles.voile === 0,
+      `sommets de linge au-dessus du cou : ${voiles.guimpe} · sommets de voile au-dessus de la tête : ${voiles.voile}`);
+
     // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
     //
     // Max, après la v217 : la ville reste habitée, mais l'enfant ne VOIT

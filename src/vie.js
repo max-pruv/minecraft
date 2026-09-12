@@ -27,8 +27,8 @@ const CHEVEUX = [0x3a2a1a, 0x6a4a26, 0x1c1814, 0x8a6a3a, 0x9a9a94, 0x4a3524];
 
 // --- les gens ----------------------------------------------------------------
 
-// Un habitant tient un poste : il s'en écarte un peu, y revient, se tourne vers
-// l'enfant qui approche, et fait son geste de métier quand il est à l'arrêt.
+// Un habitant tient un poste : il s'en écarte un peu, y revient, et fait son
+// geste de métier quand il est à l'arrêt. Il ne se tourne PAS vers l'enfant.
 export class Habitant extends BaseNPC {
   constructor(scene, world, player, toast, opts, x, z) {
     super(scene, world, player, toast, opts);
@@ -43,14 +43,14 @@ export class Habitant extends BaseNPC {
     this.placeAt(x, z, 40);
   }
 
+  // ON NE S'ARRÊTE PAS POUR L'ENFANT (v243). Jusqu'ici, à moins de cinq blocs
+  // et demi, l'habitant se figeait et se tournait vers celui qui approchait —
+  // « on salue celui qui vient à soi ». Multiplié par dix-huit passants par
+  // ville, cela faisait une rue entière qui s'immobilise et fixe l'enfant.
+  // Max : « elles regardent le joueur principal au lieu de continuer à se
+  // promener ». Chacun garde donc son propre programme — pause, marche, geste
+  // de métier — et ses phrases restent : on parle en passant, sans s'arrêter.
   think(dt) {
-    const vers = this.player.pos.clone().sub(this.pos);
-    vers.y = 0;
-    const d = vers.length();
-    if (d < 5.5) {                       // on salue celui qui vient à soi
-      this.pas = 0;
-      return { speed: 0, yaw: Math.atan2(vers.x, vers.z) + Math.PI };
-    }
     this.minuteur -= dt;
     if (this.minuteur <= 0) {
       this.etat = this.etat === 'pause' ? 'marche' : 'pause';
@@ -448,7 +448,7 @@ const GAULOIS_GENS = [
   },
   {
     nom: 'Bonnemine', role: 'femme du chef', dx: -18, dz: -8, rayon: 4,
-    profil: { tenue: 'dame', drap: 0x6a3a7a, coupe: 'chignon', guimpe: 0xf0ece0, objets: ['panier'] },
+    profil: { tenue: 'dame', drap: 0x6a3a7a, coupe: 'chignon', objets: ['panier'] },
     mots: ['Range un peu cette hutte !', 'Le banquet, c\'est encore moi qui le prépare.',
       'Nos huttes sont les plus belles d\'Armorique.'],
   },
