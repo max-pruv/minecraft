@@ -1155,8 +1155,16 @@ async function avancerUnDemiSeconde(p, depart) {
           // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
           // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
           // que si la voiture a roulé moins de deux blocs entre deux relevés.
+          // Et l'on juge en DEGRÉS PAR BLOC PARCOURU, pas par relevé : une
+          // voiture qui rattrape son retard à une fois et demie l'allure
+          // tourne plus vite par seconde, pas par mètre. L'empattement borne
+          // le cap à vingt-huit degrés par bloc ; l'ancien code pivotait de
+          // quatre-vingt-dix en moins d'un bloc.
           const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
-          if (prev !== undefined && v[i].position.distanceTo(prev.pos) < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e > 0.6) sauts++; }
+          if (prev !== undefined) {
+            const roule = v[i].position.distanceTo(prev.pos);
+            if (roule >= 0.3 && roule < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e / roule > 0.79) sauts++; }
+          }
           derniers.set(v[i], { cap, pos: v[i].position.clone() });
           const r = v[i].rotation.z || 0;
           if (Math.abs(r) >= 0.01 && Math.abs(v[i].position.y - g.player.pos.y) < 40) {
@@ -1176,7 +1184,7 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
     verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
-      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} saut(s) de cap sur ${voitures.mesures} relevés`);
+      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 45° par bloc sur ${voitures.mesures}`);
     verifier('et elles s\'inclinent dans le virage, du bon côté',
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
