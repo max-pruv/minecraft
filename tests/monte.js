@@ -1152,9 +1152,12 @@ async function avancerUnDemiSeconde(p, depart) {
         await new Promise((f) => setTimeout(f, 200));
         const v = visibles(); maxVues = Math.max(maxVues, v.length);
         for (let i = 0; i < v.length; i++) {
+          // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
+          // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
+          // que si la voiture a roulé moins de deux blocs entre deux relevés.
           const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
-          if (prev !== undefined) { let e = Math.abs(cap - prev); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e > 0.6) sauts++; }
-          derniers.set(v[i], cap);
+          if (prev !== undefined && v[i].position.distanceTo(prev.pos) < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e > 0.6) sauts++; }
+          derniers.set(v[i], { cap, pos: v[i].position.clone() });
           const r = v[i].rotation.z || 0;
           if (Math.abs(r) >= 0.01 && Math.abs(v[i].position.y - g.player.pos.y) < 40) {
             penchees++; maxRoulis = Math.max(maxRoulis, Math.abs(r));
