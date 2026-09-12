@@ -1558,7 +1558,7 @@ export class NetSession {
         break;
       }
       case 'op':
-        if (this.hooks.world.mergeEdits({ [msg.k]: [msg.id, msg.ts] }) > 0) {
+        if (this.hooks.world.mergeEdits({ [msg.k]: [msg.id, msg.ts, msg.provenance??0] }) > 0) {
           this.scheduleRemoteSave();
         }
         if (this.isHost) this.relay(conn.peer, msg);
@@ -1571,7 +1571,7 @@ export class NetSession {
       // découpé en tranches assez petites pour tenir dans un canal WebRTC.
       case 'lot': {
         const carte = {};
-        for (const [k, id, ts] of msg.blocs || []) carte[k] = [id, ts];
+        for (const [k, id, ts, provenance=0] of msg.blocs || []) carte[k] = [id, ts, provenance];
         if (this.hooks.world.mergeEdits(carte) > 0) this.scheduleRemoteSave();
         if (this.isHost) this.relay(conn.peer, msg);
         break;
@@ -1622,7 +1622,7 @@ export class NetSession {
   }
 
   sendOp(k, id, ts) {
-    for (const c of this.conns.values()) this.envoyer(c, { t: 'op', k, id, ts });
+    for (const c of this.conns.values()) this.envoyer(c, { t: 'op', k, id, ts, provenance:this.hooks.world.provenance?.get(k)??0 });
   }
 
   // Un lot de blocs, en tranches : mille blocs par message tiennent
@@ -1630,7 +1630,7 @@ export class NetSession {
   // passerait pas d'un coup.
   sendLot(blocs, parTranche = 1000) {
     for (let i = 0; i < blocs.length; i += parTranche) {
-      const tranche = blocs.slice(i, i + parTranche);
+      const tranche = blocs.slice(i, i + parTranche).map(([k,id,ts])=>[k,id,ts,this.hooks.world.provenance?.get(k)??0]);
       for (const c of this.conns.values()) this.envoyer(c, { t: 'lot', blocs: tranche });
     }
   }

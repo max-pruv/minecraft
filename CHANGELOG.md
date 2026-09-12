@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v240 — Une seule Terre, Manhattan et ses habitants
+
+**Pourquoi.** La carte Manhattan séparée compliquait l'exploration du monde.
+Ses monuments restaient peu reconnaissables, Times Square manquait d'activité
+et les avatars cubiques limitaient le réalisme dans toutes les villes.
+
+**Ce que ça change.** Manhattan rejoint la Terre et son code de partie. Les
+constructions existantes gardent leurs supports ; les anciens journaux Manhattan
+sont repris par translation, sans réduire leurs blocs ni supprimer les archives.
+Empire State reçoit dix retraits, une terrasse et son mât ; Chrysler une couronne
+métallique. Times Square réunit écrans, marches rouges, espace piéton et foule.
+Les humains et avatars ont une anatomie galbée et des habits contemporains.
+Des taxis jaunes inspirés de la Crown Victoria et des berlines circulent à New
+York ; ils restent conduisibles. Cache PWA v240, budgets ordinateur/tablette.
+
+**Ce qui le prouve.** Le témoin Manhattan éprouve terrain hors zone, supports
+anciens, conflits et répétitions d'import, priorité du cloud, édition visible,
+conduite tactile, partage Terre/New York, archive cloud et fonctionnement hors
+ligne. Les captures couvrent Times Square jour/nuit, Empire State au sol/en
+hauteur, Midtown, Central Park et taxis. Le guide documente les références,
+licences et limites : géographie comprimée, style encore simplifié, publicités
+fixes et validation iPad physique restante. **Portail complet vert : 14 suites
+et la fumée ; 30 contrôles Manhattan.** Les 79 circuits, dont 20 au sud de la
+14e Rue, ont zéro collision avec les bâtiments et restent sur la chaussée sur
+2,2 m de largeur. Les empreintes historiques du terrain restent inchangées,
+avec 4 040 colonnes de constructions de référence intactes et une sauvegarde
+de 40 000 blocs récupérée intégralement sur un second appareil.
+
+---
+
 ## v239 — Manhattan à l'échelle du joueur, sans déplacer les constructions
 
 **Pourquoi.** La Manhattan de la Terre est trop comprimée pour accueillir des

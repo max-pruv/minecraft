@@ -95,6 +95,7 @@ const GARDIENS = {
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
+  'src/taxis.js': ['monte.js', 'sauvegarde.js', 'manhattan.js'],
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
@@ -126,8 +127,8 @@ const GARDIENS = {
   // Les villes bâties à la main : elles dessinent leur relief et leurs
   // destinations, exactement comme Nice et Londres, déjà listées.
   'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js'],
-  'src/manhattan-plan.js': ['manhattan.js', 'plafond.js'],
-  'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js'],
+  'src/manhattan-plan.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
+  'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js', 'plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'reseau.js', 'hote.js'],
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
@@ -165,9 +166,9 @@ const GARDIENS = {
   'src/modeles.js': ['monte.js'],
   'src/betes.js': ['monte.js'],
   'src/creatures.js': ['monte.js'],
-  'src/personnages.js': ['monte.js'],
-  'src/vie.js': ['monte.js'],
-  'src/marlon.js': ['monte.js'],
+  'src/personnages.js': ['monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/vie.js': ['monte.js', 'manhattan.js'],
+  'src/marlon.js': ['monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/face-worker.js': ['parent.js'],
 };
 

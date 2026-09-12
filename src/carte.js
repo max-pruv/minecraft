@@ -312,7 +312,7 @@ export class Carte {
   // Couleur d'un point du monde, à n'importe quelle échelle.
   couleur(wx, wz, h, fin, rues) {
     const w = this.world;
-    if (w.mapColor) return w.mapColor(wx,wz);
+    const urbain=w.urbanColor?.(wx,wz);if(urbain)return urbain;
 
     if (fin) {
       const id = this.blocDeSurface(wx, wz);
@@ -610,16 +610,19 @@ export class Carte {
     if (this.world.mapPlaces) return this.world.mapPlaces.map(c=>({c,fort:true,seuil:99}));
     if (this._catalogue) return this._catalogue;
     const majeur = (c) => (c.r || 0) >= 30;
+    const nouveauxLieux = new Map((this.world.mapPlacesExtra || []).map(c => [c.name, c]));
+    const nomsExistants = new Set(PLACES.map(c => c.name));
     this._catalogue = [
 
       ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
-      ...PLACES.map((c) => ({ c, fort: true, seuil: majeur(c) ? 99 : 1.9 })),
+      ...PLACES.map((ancien) => { const c = nouveauxLieux.get(ancien.name) || ancien;
+        return { c, fort: true, seuil: majeur(c) ? 99 : 1.9 }; }),
       ...REPERES.map((c) => ({ c, fort: false, seuil: c.seuil || 1.6 })),
       // Les quartiers de Manhattan, à courte distance seulement. Sur un plan
       // de New York, ce sont eux qu'on lit avant les noms de rue — et ils
       // disent que l'île n'est pas une ville uniforme mais une file de
       // villages soudés.
-      ...quartiersDuMonde().map((c) => ({ c, fort: false, seuil: 0.7 })),
+      ...(this.world.mapPlacesExtra || quartiersDuMonde()).filter(c => !nouveauxLieux.size || !nomsExistants.has(c.name)).map((c) => ({ c, fort: false, seuil: 1.8 })),
       // Et les places de Paris : l'Étoile, la Concorde, la Bastille, le
       // Luxembourg, Montmartre. Un plan de Paris se lit par ses places, comme
       // New York par ses quartiers.

@@ -526,82 +526,48 @@ const position = (p) => p.evaluate(() => ({
     // uns sur les autres. On vérifie donc les deux choses qu'il verrait :
     // qu'on peut y aller, et qu'une fois là-bas ce n'est pas la même ville
     // qu'au nord.
-    const NY = V.ny;
-    const sonder = (us, v0, v1) => tab.evaluate(({ ny, us: cols, v0: a, v1: b }) => {
-      const w = window.__game.world;
-      const RUE = [562, 563, 564, 566, 569];   // bitume, ligne, trottoir, pavé, passage
-      return cols.map((u) => {
-        const rues = [];
-        let terre = 0;
-        for (let v = a; v <= b; v++) {
-          const x = ny.x + u, z = ny.z + v;
-          const h = w.terrainHeight(x, z);
-          if (h < 31) continue;                // le fleuve
-          // Les deux voies rapides suivent la rive en diagonale : près du bord,
-          // toutes les rangées finissent par être de la rue, quel que soit le
-          // plan. On sonde donc l'intérieur de l'île, et lui seul.
-          if (w.terrainHeight(x + 4, z) < 31 || w.terrainHeight(x - 4, z) < 31) continue;
-          terre++;
-          const sol = w.getBlock(x, h, z);
-          let sommet = h;
-          for (let y = h + 60; y > h; y--) if (w.getBlock(x, y, z)) { sommet = y; break; }
-          if (RUE.includes(sol) && sommet === h) rues.push(v);
-        }
-        return { u, terre, rues };
-      });
-    }, { ny: NY, us, v0, v1 });
-
-    // Les quartiers du bas ont enfin la place d'exister. Tout le bas de l'île
-    // tenait dans quinze blocs — moins qu'un pâté de Midtown — et TriBeCa,
-    // SoHo, Chinatown, le Village et Wall Street s'y superposaient. On regarde
-    // donc ce qu'un enfant regarde : la carte, zoomée sur la pointe de l'île.
+    // La v240 change l'échelle de Manhattan : le cadrage et les sondes se
+    // calculent depuis le plan joué, jamais avec les anciennes coordonnées.
+    const attendus = ['Wall Street', 'SoHo', 'TriBeCa', 'Chinatown', 'Greenwich Village'];
     await banc.ouvrirLaCarte(tab);
-    await tab.evaluate(({ ny }) => {
-      const c2 = window.__carte;
-      c2.vue.cx = ny.x; c2.vue.cz = ny.z + 86; c2.vue.bpp = 0.4;
-      c2.limiter(); c2.peindre();
-    }, { ny: NY });
+    await tab.evaluate(async (noms) => {
+      const { lieuxManhattan } = await import('/src/manhattan-world.js');
+      const lieux = lieuxManhattan.filter(l => noms.includes(l.name));
+      const xs = lieux.map(l=>l.x), zs = lieux.map(l=>l.z), c = __carte;
+      c.vue.cx = (Math.min(...xs)+Math.max(...xs))/2;
+      c.vue.cz = (Math.min(...zs)+Math.max(...zs))/2;
+      c.vue.bpp = 1.2; c.limiter(); c.peindre();
+    }, attendus);
     await dormir(600);
     const quartiers = await tab.evaluate(() =>
-      Object.fromEntries(window.__carte.etiquettes.map((e) => [e.lieu.name, [e.lieu.x, e.lieu.z]])));
-    const attendus = ['Wall Street', 'SoHo', 'TriBeCa', 'Chinatown', 'Greenwich Village'];
-    const manquants = attendus.filter((n) => !quartiers[n]);
-    const zs = attendus.filter((n) => quartiers[n]).map((n) => quartiers[n][1]);
-    const etendue = zs.length ? Math.max(...zs) - Math.min(...zs) : 0;
+      Object.fromEntries(__carte.etiquettes.map(e=>[e.lieu.name,[e.lieu.x,e.lieu.z]])));
+    const manquants = attendus.filter(n=>!quartiers[n]);
+    const zs = attendus.filter(n=>quartiers[n]).map(n=>quartiers[n][1]);
+    const etendue = zs.length ? Math.max(...zs)-Math.min(...zs) : 0;
     verifier('les quartiers du bas de l\'île ont la place d\'exister',
-      manquants.length === 0 && etendue > 25,
+      manquants.length === 0 && etendue > 100,
       manquants.length ? `absents : ${manquants.join(', ')}` : `${etendue} blocs entre Wall Street et le Village`);
     await tab.evaluate(() => document.getElementById('map-modal-close').click());
-    await dormir(300);
-
-    // Au nord de la 14e Rue, une rue tous les six blocs : c'est le plan des
-    // commissaires de 1811, et presque toutes les rangées de rue tombent sur un
-    // multiple de six. Au sud, chaque quartier a sa propre trame, à son propre
-    // angle — la proportion s'effondre. C'est ce contraste qu'on mesure, et lui
-    // seul dit que le bas de l'île a un plan à lui : mesuré 0,63 quand la
-    // grille descendait jusqu'à la mer, 0,28 avec le vrai plan.
-    // On écarte les colonnes qui tombent sur une avenue : une avenue est de la
-    // rue du haut en bas, elle ne dirait rien.
-    // Le pas de la grille et les coordonnées suivent l'ÉCHELLE de la ville :
-    // depuis la refonte, une rue tous les CINQ blocs, l'île va de la pointe
-    // (v +142) à la 68e Rue (v −141), et la 14e Rue — la frontière du plan de
-    // 1811 — tombe à v +6. Le témoin lisait encore l'ancienne unité : ses deux
-    // fenêtres, +20..+50 et +66..+100, étaient toutes les deux DANS le bas de
-    // l'île, et il comparait le bas au bas.
-    const surLaGrille = (colonnes) => {
-      let n = 0, dessus = 0;
-      for (const c of colonnes) {
-        if (!c.terre || c.rues.length > c.terre * 0.5) continue;
-        for (const v of c.rues) { n++; if (((v % 5) + 5) % 5 === 0) dessus++; }
-      }
-      return n ? dessus / n : -1;
-    };
-    const colonnes = [6, -12, 18, -26, 38, 50];
-    const haut = surLaGrille(await sonder(colonnes, -110, -40));
-    const bas = surLaGrille(await sonder(colonnes, 40, 110));
+    const trames = await tab.evaluate(async () => {
+      const { distanceRue, distanceAvenue, RUE_14, SOL } = await import('/src/manhattan-plan.js');
+      const { ORIGINE_MANHATTAN: o } = await import('/src/manhattan-world.js');
+      const { CITY_BLOCK } = await import('/src/blocks.js');
+      const lire = (de, a) => {
+        let rues=0, alignees=0;
+        for (let x=-95;x<=110;x+=7) for(let z=de;z<a;z++) {
+          if(distanceAvenue(x)<6) continue;
+          const wx=o.x+x,wz=o.z+z;
+          if(__game.world.getBlock(wx,SOL,wz)!==CITY_BLOCK.ASPHALT) continue;
+          if(__game.world.getBlock(wx,SOL+1,wz)!==0) continue;
+          rues++; if(distanceRue(z)<2.5) alignees++;
+        }
+        return {rues, ratio:alignees/rues};
+      };
+      return {haut:lire(-320,-80),bas:lire(Math.ceil(RUE_14)+30,850)};
+    });
     verifier('la grille de 1811 s\'arrête bien à la 14e Rue',
-      haut > 0.4 && bas < 0.4 && bas < haut * 0.8,
-      `sur la grille : au nord ${haut.toFixed(2)}, au sud ${bas.toFixed(2)}`);
+      trames.haut.rues>100 && trames.bas.rues>100 && trames.haut.ratio>0.7 && trames.bas.ratio<0.4,
+      JSON.stringify(trames));
 
     // --- Paris et ses deux rives ---------------------------------------------
     //

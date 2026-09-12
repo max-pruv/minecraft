@@ -814,52 +814,51 @@ const VRAIES_KM = [
     // un mur d'écrans. À l'ancienne échelle l'île tenait dans un quart de
     // cette emprise : rouge garanti sur les cinq sondes du nord.
     const manhattan = await tab.evaluate(async () => {
-      const m = await import('./src/manhattan.js');
-      const g = window.__game;
-      const sol = (u, v) => g.world.terrainHeight(Math.round(m.NY.x + u), Math.round(m.NY.z + v));
-      const lieux = {
-        battery: sol(0, m.vDeKm(0.35) - 6),
-        wallStreet: sol(0, 128),
-        washingtonSq: sol(-6, 17),
-        empire: sol(3, m.vDeRue(34)),
-        timesSquare: sol(-32, m.vDeRue(45)),
-        parc59e: sol(-20, m.vDeRue(62)),
-      };
-      return {
-        lieux,
-        surLIle: Object.values(lieux).every((h) => h === m.NY_SOL),
-        hudson: sol(-95, 0), eastRiver: sol(95, 0),
-        largeur: Math.round(m.demiLargeur(6) * 2),
-      };
+      const { ORIGINE_MANHATTAN:o, lieuxManhattan } = await import('/src/manhattan-world.js');
+      const { largeurIle,SOL } = await import('/src/manhattan-plan.js');
+      const { WATER_LEVEL } = await import('/src/world.js');
+      const { BLOCK } = await import('/src/blocks.js');
+      const noms=['Battery Park','Wall Street','Greenwich Village','Empire State Building','Times Square','Central Park'];
+      const lieux=Object.fromEntries(noms.map(n=>{const l=lieuxManhattan.find(l=>l.name===n);return [n,l ? __game.world.terrainHeight(Math.round(l.x),Math.round(l.z)) : -1];}));
+      const demi=largeurIle(0), fleuves=[Math.floor(o.x-demi-5),Math.ceil(o.x+demi+5)];
+      return {lieux,surLIle:Object.values(lieux).every(h=>h===SOL),largeur:demi*2,
+        niveauEau:WATER_LEVEL,
+        eauPresente:fleuves.every(x=>__game.world.getBlock(x,WATER_LEVEL,o.z)===BLOCK.WATER),
+        hudson:__game.world.terrainHeight(fleuves[0],o.z),
+        eastRiver:__game.world.terrainHeight(fleuves[1],o.z)};
     });
-    verifier('Manhattan tient de Battery à la 68e Rue, plate comme la vraie',
-      manhattan.surLIle, JSON.stringify(manhattan.lieux));
+    verifier('Manhattan tient de Battery à Central Park, plate comme la vraie',
+      manhattan.surLIle,JSON.stringify(manhattan.lieux));
     verifier('et ses deux fleuves l\'entourent toujours',
-      manhattan.hudson < 26 && manhattan.eastRiver < 26,
+      manhattan.eauPresente && manhattan.hudson<manhattan.niveauEau && manhattan.eastRiver<manhattan.niveauEau,
       `Hudson ${manhattan.hudson} · East River ${manhattan.eastRiver} · île large de ${manhattan.largeur}`);
 
-    // Times Square : ce qu'on vient y voir, ce sont les écrans. On les
-    // compte au-dessus du niveau de la rue, dans les trente blocs autour de
-    // la place — des aplats de couleur vive, pas du verre ni de la pierre.
-    const ecrans = await tab.evaluate(async () => {
-      const m = await import('./src/manhattan.js');
-      const { DECOR_START } = await import('./src/blocks.js');
-      const g = window.__game;
-      const cx = Math.round(m.NY.x - 32), cz = Math.round(m.NY.z + m.vDeRue(45));
-      let n = 0;
-      for (let dx = -20; dx <= 20; dx++) {
-        for (let dz = -24; dz <= 20; dz++) {
-          for (let y = m.NY_SOL + 6; y < m.NY_SOL + 50; y++) {
-            const id = g.world.getBlock(cx + dx, y, cz + dz);
-            // les aplats de pub : des blocs de décor unis et vifs
-            if (id >= DECOR_START && (id - DECOR_START) % 10 === 0) n++;
-          }
+    // Compter les panneaux réellement rendus dans le jeu, plutôt que les
+    // anciens blocs colorés qui ont laissé place à une géométrie d'écrans.
+    await tab.evaluate(async () => {
+      const {lieuxManhattan}=await import('/src/manhattan-world.js');
+      const l=lieuxManhattan.find(l=>l.name==='Times Square');
+      __game.player.pos.set(l.x,34,l.z); __game.player.vel.set(0,0,0);
+      __game.player.flying=true; __game.player.syncCamera();
+    });
+    const compterEcrans = () => tab.evaluate(() => {
+      const v=__game.villeRealiste;
+      let n=0;
+      for(const g of v.buildings.values())g.traverse(o=>{
+        if(o.material!==v.signage.material)return;
+        const p=o.geometry.getAttribute('position');
+        for(let i=0;i<p.count;i+=4) {
+          const w=Math.hypot(p.getX(i+1)-p.getX(i),p.getZ(i+1)-p.getZ(i));
+          const h=p.getY(i+2)-p.getY(i+1);
+          if(w>4&&h>3&&p.getY(i)>38)n++;
         }
-      }
+      });
       return n;
     });
+    let ecrans=0;
+    for(let i=0;i<40&&ecrans<8;i++){await dormir(500);ecrans=await compterEcrans();}
     verifier('Times Square est un mur d\'écrans, et ça se compte',
-      ecrans >= 300, `${ecrans} blocs d'écran au-dessus de la rue`);
+      ecrans>=8,`${ecrans} grands panneaux présents dans le rendu`);
 
     // ================= LA VILLE ÉCLAIRÉE LA NUIT ============================
     //

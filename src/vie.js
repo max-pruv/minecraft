@@ -62,6 +62,11 @@ export class Habitant extends BaseNPC {
           : Math.random() * Math.PI * 2;
       }
     }
+    if(this.rueUrbaine && this.etat==='marche'){
+      const x=this.pos.x-Math.sin(this.capYaw)*1.2,z=this.pos.z-Math.cos(this.capYaw)*1.2;
+      const s=this.world.urbanColor?.(x,z);
+      if(this.world.piedPieton?.(x,z)!==33 || this.world.ruePietonne?.(x,z)===false){this.capYaw+=Math.PI*.6;this.etat='pause';this.minuteur=.3;}
+    }
     this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
     return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
   }

@@ -2,6 +2,7 @@
 // player) and Professeur Cornichon (the creature expert who hosts the quiz).
 
 import * as THREE from 'three';
+import { construireHumain } from './personnages.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 
 const GRAVITY = 24;
@@ -9,60 +10,26 @@ const WIDTH = 0.5;
 const NPC_HEIGHT = 1.5;
 
 function box(w, h, d, color) {
-  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
+  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: .78 }));
 }
 
 // look: { skin, hair, torsoSlabs[5], sleeveSegs[3], pants, shoes, hairstyle,
 //         glasses, cape, mask } — cape/mask take a color, for superheroes
 //         casque : bulle vitrée + sac à dos, pour les astronautes
 export function buildKidMesh(look) {
-  const g = new THREE.Group(); // faces -z, feet at y=0
-
-  const legs = [];
-  for (const sx of [-1, 1]) {
-    const leg = new THREE.Group();
-    const pant = box(0.15, 0.45, 0.17, look.pants);
-    pant.position.y = -0.225;
-    const shoe = box(0.16, 0.09, 0.2, look.shoes);
-    shoe.position.set(0, -0.475, -0.02);
-    leg.add(pant, shoe);
-    leg.position.set(sx * 0.1, 0.53, 0);
-    g.add(leg);
-    legs.push(leg);
-  }
-
-  look.torsoSlabs.forEach((color, i) => {
-    const slab = box(0.46, 0.1, 0.25, color);
-    slab.position.y = 0.58 + i * 0.1;
-    g.add(slab);
-  });
-
-  const arms = [];
-  for (const sx of [-1, 1]) {
-    const arm = new THREE.Group();
-    look.sleeveSegs.forEach((color, i) => {
-      const seg = box(0.13, 0.12, 0.14, color);
-      seg.position.y = -0.06 - i * 0.12;
-      arm.add(seg);
-    });
-    const hand = box(0.12, 0.14, 0.13, look.skin);
-    hand.position.y = -0.43;
-    arm.add(hand);
-    arm.position.set(sx * 0.3, 1.03, 0);
-    g.add(arm);
-    arms.push(arm);
-  }
-
+  const g=construireHumain({tenue:'enfant',teint:look.skin,cheveux:look.hair,
+    coupe:look.hairstyle==='bun'?'chignon':'court',rayures:look.torsoSlabs,
+    haut:look.torsoSlabs[2],bas:look.pants,baskets:look.shoes});
+  // Les coordonnées du modèle restent celles de l'enfant : les accessoires,
+  // les pivots réseau et les animations gardent un repère stable sans scale parent.
+  g.traverse(o=>{o.position.multiplyScalar(.84);if(o.isMesh)o.geometry.scale(.84,.84,.84);});
+  const {legs,arms}=g.userData;
   if (look.cape) {
     const cape = box(0.44, 0.6, 0.05, look.cape);
     cape.position.set(0, 0.78, 0.17);
     cape.rotation.x = 0.12;
     g.add(cape);
   }
-
-  const head = box(0.36, 0.36, 0.36, look.skin);
-  head.position.y = 1.26;
-  g.add(head);
 
   if (look.casque) {
     // Bulle vitrée : une sphère translucide plutôt qu'un cube, sinon la tête
@@ -84,72 +51,23 @@ export function buildKidMesh(look) {
     g.add(bulle, visiere, col, sac, tuyau);
   }
 
-  if (look.hat) { // construction hard hat
-    const hatTop = box(0.42, 0.14, 0.42, look.hat);
-    hatTop.position.y = 1.5;
-    const brim = box(0.5, 0.05, 0.5, look.hat);
-    brim.position.y = 1.44;
-    g.add(hatTop, brim);
-  } else if (!look.casque) {
-    const hairTop = box(0.4, 0.1, 0.4, look.hair);
-    hairTop.position.y = 1.47;
-    g.add(hairTop);
+  if (look.hat) {
+    const top=new THREE.Mesh(new THREE.SphereGeometry(.155,20,12,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:look.hat,roughness:.65}));
+    top.position.set(0,1.49,0);
+    const brim=box(.35,.026,.35,look.hat);brim.position.set(0,1.49,-.015);g.add(top,brim);
   }
-  // Sous un casque, la chevelure est plaquée : on ne garde qu'une mèche sur le
-  // front, sinon les cheveux traversent la bulle et le casque ne se lit plus.
-  const fringe = box(look.casque ? 0.3 : 0.4, look.casque ? 0.07 : 0.12, 0.04, look.hair);
-  fringe.position.set(0, look.casque ? 1.4 : 1.38, -0.17);
-  g.add(fringe);
-  if (look.casque) {
-    // rien d'autre : ni natte, ni mèches latérales
-  } else if (look.hairstyle === 'bun') {
-    const back = box(0.4, 0.3, 0.06, look.hair);
-    back.position.set(0, 1.3, 0.2);
-    const bun = box(0.16, 0.16, 0.14, look.hair);
-    bun.position.set(0, 1.5, 0.24);
-    g.add(back, bun);
-  } else {
-    const back = box(0.4, 0.22, 0.04, look.hair);
-    back.position.set(0, 1.33, 0.19);
-    g.add(back);
-  }
-  if (!look.casque) {
-    for (const sx of [-1, 1]) {
-      const side = box(0.04, 0.16, 0.4, look.hair);
-      side.position.set(sx * 0.19, 1.36, 0);
-      g.add(side);
-    }
-  }
-
   if (look.mask) {
-    const band = box(0.4, 0.13, 0.02, look.mask);
-    band.position.set(0, 1.28, -0.19);
+    const band = box(0.2, 0.045, 0.015, look.mask);
+    band.position.set(0, 1.4, -0.116);
     g.add(band);
   }
-  for (const sx of [-1, 1]) {
-    const eye = box(0.06, 0.07, 0.02, look.mask ? 0xffffff : 0x3d2f23);
-    eye.position.set(sx * 0.09, 1.28, look.mask ? -0.2 : -0.185);
-    g.add(eye);
-    if (look.glasses) {
-      const rim = box(0.12, 0.11, 0.015, 0x222222);
-      rim.position.set(sx * 0.09, 1.28, -0.19);
-      const lens = box(0.09, 0.08, 0.02, 0xbcd8e8);
-      lens.position.set(sx * 0.09, 1.28, -0.195);
-      g.add(rim, lens);
-      const eye2 = box(0.05, 0.06, 0.02, 0x3d2f23);
-      eye2.position.set(sx * 0.09, 1.28, -0.2);
-      g.add(eye2);
+  if(look.glasses){
+    for(const side of [-1,1]){
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(.035,.005,6,16),new THREE.MeshStandardMaterial({color:0x343434,roughness:.45}));
+      rim.position.set(side*.053,1.405,-.119);g.add(rim);
     }
+    const bridge=box(.035,.007,.009,0x343434);bridge.position.set(0,1.405,-.119);g.add(bridge);
   }
-  if (look.glasses) {
-    const bridge = box(0.06, 0.03, 0.015, 0x222222);
-    bridge.position.set(0, 1.29, -0.19);
-    g.add(bridge);
-  }
-  const mouth = box(0.1, 0.03, 0.02, 0xc98a6d);
-  mouth.position.set(0, 1.16, -0.185);
-  g.add(mouth);
-
   // Épée au bras droit, bouclier au bras gauche : ils suivent le balancement
   // des bras puisqu'ils sont accrochés aux mêmes groupes.
   if (look.epee) {
@@ -209,6 +127,8 @@ export class BaseNPC {
   }
 
   surfaceY(x, z) {
+    const urbain=this.world.piedPieton?.(x,z);
+    if(urbain!==undefined)return urbain;
     for (let y = 95; y > 0; y--) {
       if (this.world.isSolid(Math.floor(x), y, Math.floor(z))) return y + 1;
     }
