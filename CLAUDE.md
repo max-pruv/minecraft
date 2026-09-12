@@ -2275,6 +2275,21 @@ Trois choses en sortent.
 Mesuré après : le pire de la traversée passe de **3 à 16** passants (seuil 3),
 et la ville se peuple en **une seconde** à l'arrivée au lieu de six à huit.
 
+**UN PASSANT NE S'ARRÊTE PAS POUR L'ENFANT (v243).** Max : « elles regardent
+le joueur principal au lieu de continuer à se promener ». `Habitant.think`
+(vie.js) et `Wanderer.think` (marlon.js) se figeaient à moins de cinq blocs et
+se tournaient vers l'enfant — écrit pour trois gardes de château, hérité par
+dix-huit passants par ville : une rue entière qui s'immobilise et fixe
+l'enfant. Chacun garde son propre programme ; les phrases partent en passant.
+Le témoin pose l'enfant à trois blocs d'un passant en marche et exige qu'il
+avance quand même — sur l'ancien code, zéro bloc en douze secondes. Toute
+attitude « sociale » d'un PNJ (se tourner, s'arrêter, suivre) se déclare dans
+sa classe et se mesure par ce que l'enfant voit, jamais ne se généralise à la
+foule. **Et les corps réalistes (Rocketbox, v241) se chargent pour tout le jeu
+et s'appliquent à toute tenue « passant », donc à toutes les villes** — un
+témoin le garde sur Paris, parce que Max l'a demandé et qu'une phrase ne garde
+rien.
+
 **Et la marche.** 4,3 m/s était la valeur de Minecraft, où un bloc fait un
 mètre. Ici un pâté d'immeubles en fait quarante : à cette vitesse les villes
 défilent au lieu de se parcourir. 3,2 m/s à pied, 5,4 en courant — les
@@ -3168,6 +3183,13 @@ trois blocs une colonne sur deux, de l'air sous la couronne sur l'autre, et
 zéro feuille au sol sur tout le Mall. Rouge sur `origin/main`.
 
 ### Les visages (`personnages.js`) — un œil se lit à son BLANC
+
+**Ni guimpe ni voile (v243).** Max : « enlève la femme avec le voile, ou retire
+le voile ». La dame du château (`dame`) portait une guimpe — cou, menton et
+sommet de la tête couverts de lin — et la dame Renaissance (`robeRen`) un voile
+derrière son attifet ; les deux sont retirés, le touret et l'attifet restent, la
+lavandière garde son fichu noué. Un couvre-chef se mesure comme un œil : par les
+sommets colorés au-dessus du cou (129 et 30 sur l'ancien code, zéro ici).
 
 Max, capture à l'appui : « personnages are scary ». Le visage était construit
 avec soin — crâne, nez, oreilles, menton — et pourtant il faisait peur. Trois
