@@ -10,6 +10,11 @@ function verifier(nom, ok, detail = "") {
 (async () => {
   const banc = new Banc({ portJeu: 8359, portPairs: 9359 });
   await banc.ouvrir();
+  // L'origine de New York se DEMANDE au registre, jamais ne se recopie : la
+  // carte a doublé deux fois (v199, v242) et chaque fois les littéraux d'un
+  // témoin ont menti sans rougir.
+  const { positionDe } = await import("../src/mondes.js");
+  const NY = positionDe("ny");
   let nuage;
   try {
     const p = await banc.joueur("TerreUrbaineTest", {
@@ -34,7 +39,8 @@ function verifier(nom, ok, detail = "") {
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
       await p.evaluate(
-        () => __game.player.pos.x < -10000 && __game.player.pos.z > 2000,
+        (NY) => Math.hypot(__game.player.pos.x - NY.x, __game.player.pos.z - NY.z) < 1400,
+        NY,
       ),
     );
     const preuves = await p.evaluate(async () => {
@@ -208,24 +214,43 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
-    await p.evaluate(() => {
+    await p.evaluate((NY) => {
       const j = __game.player;
-      j.pos.set(-10138.5, 33.01, 2622.5);
+      j.pos.set(NY.x + 4.5, 33.01, NY.z + 7.5);
       j.vel.set(0, 0, 0);
       j.yaw = -Math.PI / 2;
       j.pitch = 0;
       j.flying = false;
       j.syncCamera();
-    });
+    }, NY);
+    // ON MARCHE JUSQU'À S'ARRÊTER, PAS PENDANT 1,2 s (v242). Pendant que les
+    // façades se construisent, le banc en rendu logiciel tombe à une image
+    // par seconde : 1,2 s de touche enfoncée ne valaient qu'UN pas de 0,16
+    // bloc, et la barre est à 0,1 — un pile ou face qui mesurait le banc,
+    // pas le mur. On tient la touche jusqu'à ce que trois relevés d'affilée
+    // ne bougent plus (leçon de l'Air et l'Espace, washington.js).
+    // Et l'immobilité ne compte qu'APRÈS le premier pas : à une image par
+    // seconde, trois relevés sans mouvement arrivent avant que la touche n'ait
+    // produit une seule image — le témoin annonçait « arrêt à 4,5 », le point
+    // de départ. Trente secondes au plus, ce qui laisse le temps de démarrer.
     await p.keyboard.down("KeyW");
-    await dormir(1200);
+    const departX = await p.evaluate(() => __game.player.pos.x);
+    let figee = 0,
+      dernierX = departX,
+      parti = false;
+    for (let i = 0; i < 60 && figee < 3; i++) {
+      await dormir(500);
+      const x = await p.evaluate(() => __game.player.pos.x);
+      if (!parti) parti = Math.abs(x - departX) > 0.05;
+      else figee = Math.abs(x - dernierX) < 0.01 ? figee + 1 : 0;
+      dernierX = x;
+    }
     await p.keyboard.up("KeyW");
+    const arret = await p.evaluate((NY) => +(__game.player.pos.x - NY.x).toFixed(2), NY);
     verifier(
       "le déplacement s’arrête devant la façade à l’est du trottoir",
-      await p.evaluate(
-        () =>
-          __game.player.pos.x > -10138.4 && __game.player.pos.x <= -10137.29,
-      ),
+      arret > 4.6 && arret <= 5.71,
+      `arrêt à ${arret} blocs de l'origine (façade à 6)`,
     );
     const hit = await p.evaluate(async () => {
       const { raycastBlocks } = await import("/src/player.js");
@@ -271,13 +296,13 @@ function verifier(nom, ok, detail = "") {
         `${geometrieAvant} → ${geometrieApres}`,
       );
     }
-    await p.evaluate(() => {
+    await p.evaluate((NY) => {
       const j = __game.player;
-      j.pos.set(-10141.5, 33.01, 2622.5);
+      j.pos.set(NY.x + 1.5, 33.01, NY.z + 7.5);
       j.yaw = 0;
       j.pitch = -0.8;
       j.syncCamera();
-    });
+    }, NY);
     const avant = await p.evaluate(() => __game.world.edits.size);
     await p.locator("#mode-btn").tap();
     await p.touchscreen.tap(350, 230);
@@ -375,16 +400,16 @@ function verifier(nom, ok, detail = "") {
         modeles.arms === 2 &&
         modeles.legs === 2,
     );
-    await p.evaluate(() => {
+    await p.evaluate((NY) => {
       const g = __game;
-      g.player.pos.set(-10143, 33.01, 2640);
+      g.player.pos.set(NY.x, 33.01, NY.z + 25);
       g.player.yaw = 0;
       g.player.pitch = 0;
       g.player.vel.set(0, 0, 0);
-      g.animalManager.invoquer("voiture", -10143, 2637, false, {
+      g.animalManager.invoquer("voiture", NY.x, NY.z + 22, false, {
         flotte: "ny-crown-victoria",
       });
-    });
+    }, NY);
     await p.locator("#ride-btn").waitFor({ state: "visible", timeout: 15000 });
     await p.locator("#ride-btn").tap();
     const depart = await p.evaluate(() => __game.player.pos.z),
@@ -486,31 +511,33 @@ function verifier(nom, ok, detail = "") {
       tactile: true,
       portNuage: 9360,
     });
-    await hote.evaluate(() =>
-      __game.world.setBlock(-10140, 36, 2630, 20, Date.now()),
+    const BLOC = { x: NY.x + 3, y: 36, z: NY.z + 15 };
+    await hote.evaluate(
+      (B) => __game.world.setBlock(B.x, B.y, B.z, 20, Date.now()),
+      BLOC,
     );
     await invite.waitForFunction(
-      () => __game.world.getBlock(-10140, 36, 2630) === 20,
-      null,
+      (B) => __game.world.getBlock(B.x, B.y, B.z) === 20,
+      BLOC,
       { timeout: 30000 },
     );
     verifier(
       "New York et le reste de la Terre partagent blocs, avatars et code",
       await invite.evaluate(
-        (code) =>
+        ({ code, B }) =>
           __game.world.ctx === code &&
           __game.remotePlayers.size > 0 &&
-          !__game.world.protectedColumns.has("-10140,2630"),
-        code,
+          !__game.world.protectedColumns.has(`${B.x},${B.z}`),
+        { code, B: BLOC },
       ),
     );
     await hote.evaluate(() => __game.cloud.push());
     verifier(
       "le cloud utilise le code Terre unique",
-      nuage.monde(code)?.blocks?.["-10140,36,2630"]?.[0] === 20 &&
+      nuage.monde(code)?.blocks?.[`${BLOC.x},${BLOC.y},${BLOC.z}`]?.[0] === 20 &&
         !nuage.monde("manhattan-v1:" + code),
     );
-    const importe = await hote.evaluate(async (code) => {
+    const importe = await hote.evaluate(async ({ code, NY }) => {
       await fetch("http://127.0.0.1:9360/rest/v1/world_saves", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -519,8 +546,8 @@ function verifier(nom, ok, detail = "") {
         ]),
       });
       await __game.cloud.attach(code);
-      return __game.world.getBlock(-10093, 35, 2665) === 21;
-    }, code);
+      return __game.world.getBlock(NY.x + 50, 35, NY.z + 50) === 21;
+    }, { code, NY });
     verifier(
       "une archive Manhattan uniquement dans le cloud est reprise sur la Terre",
       importe,

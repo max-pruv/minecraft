@@ -82,6 +82,36 @@ const VRAIES_KM = [
       chevauchements.length ? chevauchements.join(' · ')
         : `marge la plus faible ${Math.round(margeMin)} blocs (${paireMin})`);
 
+    // NEW YORK N'EST PAS UN DISQUE, ET LE REGISTRE MENT SUR ELLE (v242).
+    //
+    // Le témoin du dessus juge sur `r`, et `r` vaut 152 pour New York : c'est
+    // le disque de l'ancienne ville voxel. Manhattan, depuis la v240, est un
+    // rectangle de 480 × 2 300 blocs (`BORNES` de manhattan-plan.js) ; mesuré
+    // bord à bord sur la carte de v240, il restait 41 blocs avant Boston, 52
+    // avant Montréal, et JFK tombait DEDANS — un vert du disque, un rouge du
+    // rectangle. On demande donc le rectangle à son plan et l'origine au
+    // registre, jamais un chiffre recopié, et l'on exige de la place autour :
+    // deux cents blocs, pour que les villes voisines aient à leur tour de quoi
+    // grandir (c'est la raison même du monde ×2).
+    const rectNY = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const { BORNES } = await import('./src/manhattan-plan.js');
+      const { AEROPORTS } = await import('./src/aeroport.js');
+      const ny = m.positionDe('ny');
+      const R = { x0: ny.x + BORNES.x0, x1: ny.x + BORNES.x1, z0: ny.z + BORNES.z0, z1: ny.z + BORNES.z1 };
+      const dRect = (x, z) => Math.hypot(Math.max(R.x0 - x, 0, x - R.x1), Math.max(R.z0 - z, 0, z - R.z1));
+      const villes = m.lieuxDuMonde('terre').filter((l) => l.cle !== 'ny')
+        .map((l) => ({ nom: l.nom, marge: Math.round(dRect(l.x, l.z) - l.r) })).sort((a, b) => a.marge - b.marge);
+      const aeros = AEROPORTS.map((a) => ({ nom: a.nom, marge: Math.round(dRect(a.x, a.z) - a.r) })).sort((a, b) => a.marge - b.marge);
+      return { rect: `${R.x1 - R.x0} × ${R.z1 - R.z0}`, villes: villes.slice(0, 3), aeros: aeros.slice(0, 2) };
+    });
+    verifier('le rectangle de Manhattan laisse deux cents blocs à chaque ville voisine',
+      rectNY.villes.length > 0 && rectNY.villes[0].marge >= 200,
+      `${rectNY.rect} blocs · les plus proches : ${rectNY.villes.map((v) => `${v.nom} ${v.marge}`).join(' · ')}`);
+    verifier('et aucun aérodrome ne tombe dedans',
+      rectNY.aeros.length > 0 && rectNY.aeros[0].marge >= 12,
+      `les plus proches : ${rectNY.aeros.map((v) => `${v.nom} ${v.marge}`).join(' · ')}`);
+
     // La géographie est respectée : les distances sur la carte sont les vraies
     // distances, à l'échelle près. Sauf l'Atlantique, resserré par décision de
     // Max — donc Paris/New York est volontairement plus court.

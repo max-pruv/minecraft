@@ -66,6 +66,22 @@ travail est irrattrapable.
    décale chaque bloc de la différence de sol sous sa colonne, bornée à
    vingt-quatre blocs ; et le témoin ci-dessus.
 
+   **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
+   — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
+   refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
+   blocs à Boston, 52 à Montréal, et JFK tombait dedans ; le registre disait
+   pourtant `r: 152`, et le témoin des chevauchements jugeait sur lui. Comme
+   en v199 la casse ne se BORNE pas — 0,375 → 0,1875 km par bloc, les deux
+   empreintes changent — et c'est le témoin des 4 040 colonnes qui la garde
+   (zéro déplacée, mesuré). Ce qui est NEUF, et qui fait règle : **la
+   migration des blocs est une chaîne, un bloc suit sa ville, et la migration
+   est pure** — appliquée au stockage de l'appareil une fois, et à chaque
+   document reçu du nuage avant la fusion. Voir « La migration de la carte »
+   plus bas. Et une seconde copie d'avant se prend SUR LE NUAGE, avant d'y
+   toucher : celle de v199 se prenait sur l'appareil, douze secondes après le
+   lancement, donc APRÈS la migration — une copie d'après, que rien n'avait
+   trahie parce que rien ne bougeait là où les enfants ont bâti.
+
    **Et une casse de cette taille révèle les témoins qui ne prouvaient rien.**
    Quatre témoins de `carteMonde.js` portaient l'échelle écrite en dur —
    `/ 0.75`, l'ancre `200`, des rayons de recherche en blocs qui valaient des
@@ -746,7 +762,10 @@ Si la version ne correspond pas à la dernière publiée :
 
 ### Manhattan dans la Terre (`manhattan-*.js`, v240)
 
-Max demande explicitement une seule carte. `TerreUrbaine` remplace
+Max demande explicitement une seule carte — et pas de raccourci qui en ait
+l'air : le bouton « Explorer New York » de l'accueil a été retiré en v242 (« il
+n'y a qu'une seule carte et ça doit rester le cas »). On rejoint New York par
+la carte du monde, comme toute ville. `TerreUrbaine` remplace
 `ManhattanWorld` dans main et étend le générateur historique `World` sans
 modifier ses empreintes. Le plan local est ancré par `positionDe('ny')` et
 comprimé horizontalement à 40 %. Son influence est bornée par `BORNES` ;
@@ -1760,9 +1779,50 @@ Tailler reste le dernier recours, et **jamais en silence** : `onTrim` le dit.
 Ce qu'on sacrifie, ce sont les blocs les plus anciens, tous mondes confondus —
 tailler monde par monde en effacerait un entier.
 
+### La migration de la carte (`world.js`, `sync.js`) — une chaîne, pure, qui suit les villes
+
+Trois cartes ont existé : 0,75 km par bloc (`terreAvant`), 0,375 (`terreV2`,
+v199 à v240) et 0,1875 (`terre`, v242). Chacune reste figée dans `mondes.js`
+et se demande à `positionDe(cle, mondeId)` : c'est ce qui permet de savoir
+**où était New York avant**, et donc de combien un bloc doit suivre.
+
+- **UN BLOC SUIT SA VILLE.** La migration de v199 ne déplaçait les blocs qu'en
+  hauteur ; celle de v242 est une chaîne (`CARTE_VERSION` 1 → 2 → 3) dont la
+  seconde marche translate un bloc posé dans une ville — le rectangle de
+  Manhattan (`BORNES` + marge) ou le disque d'une ville du registre — du
+  déplacement de cette ville, SANS changer sa hauteur : sous une ville, c'est
+  la ville qui décide du sol. Un bloc de campagne ne bouge qu'en hauteur,
+  borné à `ECART_MAX`. La position sauvegardée de l'enfant suit de même, et
+  les marques d'import de Manhattan suivent comme un bloc posé à leur origine.
+- **LA MIGRATION EST PURE, PARCE QUE LA FUSION EST UNE UNION.** Migrer le
+  stockage de l'appareil ne suffit pas : une tablette restée sur l'ancienne
+  version republie ses clés d'avant, et la fusion les rapportait pour
+  toujours — la maison dans New York ET son fantôme en mer. `migrerCarte3`
+  est donc appliquée à chaque document reçu du nuage avant la fusion
+  (`sync.js`, `merge`). C'est la règle du receveur qui cède, appliquée à la
+  carte.
+- **CE QUI LA REND IDEMPOTENTE, C'EST LA DATE.** Un bloc daté d'avant
+  `DATE_CARTE_3` a été posé sur l'ancienne carte ; un bloc déplacé PREND la
+  date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
+  l'emporte sur sa copie d'avant. Le prix est déclaré dans `TASKS.md` : une
+  tablette qui joue encore sur l'ancienne version après cette heure pose des
+  blocs que la migration laissera où ils sont.
+- **Un témoin de migration interroge la fonction PURE sur un document
+  fabriqué** (`plafond.js`), et un second passe par `profileSync.merge` avec
+  un document tel que l'ancienne version l'écrirait (`sauvegarde.js`). Les
+  deux sont rouges sur l'ancien code parce que la fonction n'existe pas — et
+  ils le disent, au lieu de s'effondrer.
+- **Quand une ville change d'échelle ou de place, on cherche TOUT ce qui la
+  vise** — et un registre qui ment se voit à ses lecteurs : `passants.js`
+  écrit 1 200 pour New York là où le registre dit 152. Le témoin du
+  rectangle (`carteMonde.js`) demande le rectangle au plan et l'origine au
+  registre, jamais un chiffre recopié.
+
 ### La refonte de la carte — ce que Max a tranché
 
-- **L'échelle.** Équirectangulaire centrée sur Paris, **1 bloc = 4 km**. Une
+- **L'échelle.** Équirectangulaire centrée sur Paris, **1 bloc = 4 km** —
+  remesurée depuis, parce que les villes ne sont pas à l'échelle de la carte :
+  0,75 km par bloc, puis 0,375 (v199), puis 0,1875 (v242). Une
   seule entorse : la traversée de l'Atlantique (−74° à −10°) ramenée à **60 %**.
   L'Europe, l'Afrique et l'Asie gardent leur échelle exacte au bloc près, et
   Paris-Tokyo aussi — c'est de la terre ferme d'un bout à l'autre, pas un

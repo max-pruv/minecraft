@@ -20,6 +20,95 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v242 — Le monde ×2 : New York respire, et les blocs suivent leur ville
+
+**Pourquoi.** Max : « la ville de New York touche quasiment Montréal ». Depuis
+la v240, Manhattan n'est plus un disque de 152 blocs mais un rectangle de
+480 × 2 300 blocs, et à 0,375 km par bloc il ne lui restait, bord à bord, que
+41 blocs avant Boston, 52 avant Montréal, 82 avant Ottawa, 164 avant
+Washington — et l'aéroport JFK tombait DEDANS. Le registre disait pourtant
+tout va bien : son `r: 152` est celui de l'ancienne ville voxel, et le témoin
+« aucune ville n'en chevauche une autre » jugeait sur lui. Un vert du disque,
+un rouge du rectangle.
+
+Et la carte suivante ne pouvait pas se faire comme la précédente. La migration
+de v199 ne déplaçait les blocs qu'en HAUTEUR : quand une ville s'éloignait de
+Paris, ce qu'un enfant y avait bâti restait à l'ancienne adresse, en pleine
+campagne. Personne n'y avait bâti — c'est ce qui l'avait rendu acceptable.
+New York vient d'être refaite, on y bâtit ; ses blocs DOIVENT partir avec elle.
+
+**Ce que ça change.** Le monde double une seconde fois — 0,1875 km par bloc,
+86 000 blocs de large — Paris restant l'ancre qui ne bouge pas. Manhattan
+laisse désormais 386 blocs à Boston, 759 à Washington, 1 472 à Montréal, et
+JFK est ressorti du rectangle. Les dix-neuf aérodromes ont suivi leur ville :
+onze gardent exactement leur écart d'avant, huit sont recherchés depuis leur
+cap réel parce qu'à l'échelle neuve le même écart tombait dans l'eau (Dubaï à
+89 % dans le golfe) ou sur une voisine ; le sol de chacun est remesuré.
+
+Et la migration des blocs est une CHAÎNE : un bloc posé dans une ville — le
+rectangle de Manhattan, le disque de Lille ou de Rome — se déplace de ce que
+sa ville se déplace, en entier, sans changer de hauteur ; un bloc de campagne
+ne bouge qu'en hauteur, comme en v199. La position où l'enfant s'était arrêté
+suit de même : endormi à Times Square, il ne se réveille pas en mer. Une
+copie des blocs et des positions d'avant est prise sur le nuage, sur son
+propre document (`prénom~avant-carte-2`), avant qu'une tablette à jour n'y
+pousse quoi que ce soit.
+
+Ce que cela n'attrape pas, et c'est déclaré : une tablette qui continuerait de
+jouer sur la v241 après l'heure de la refonte poserait des blocs que la
+migration laissera où ils sont.
+
+Et le bouton « Explorer New York » de l'accueil disparaît, sur demande de Max
+— « il n'y a qu'une seule carte et ça doit rester le cas ». Il ne faisait que
+recharger la page pour poser l'enfant à New York, ce que la carte du monde
+fait déjà pour toute ville.
+
+**Ce qui le prouve.** Le témoin qui porte l'invariant numéro un est vert :
+sous le point d'apparition et sous Paris, la carte d'AVANT (figée) et celle
+d'APRÈS rendent le même sol — **4 040 colonnes, zéro déplacée** —, les
+dix-huit colonnes de référence et le Mall gardent leur cote, et la maison
+sauvegardée avant le changement repose toujours sur le sol. Les deux
+empreintes de `plafond.js` changent, comme en v199 : la casse ne se borne pas,
+et c'est ce témoin-là, pas un hash, qui la garde.
+
+Sept témoins neufs, tous rouges sur `origin/main` : les blocs suivent leur
+ville (Manhattan par son rectangle, Lille par son disque, une marque d'import
+comme un bloc) sans toucher à Paris, au point d'apparition ni à ce qui est
+posé sur la carte neuve, et repasser la migration ne change rien ; le
+rectangle de Manhattan laisse deux cents blocs à chaque voisine et aucun
+aérodrome ne tombe dedans ; un bloc d'avant reçu du nuage arrive à la nouvelle
+adresse de sa ville SANS fantôme à l'ancienne — la fusion est une union, et
+c'est le receveur qui cède ; la copie d'avant existe, dit de quelle carte elle
+vient, et ne se réécrit pas. Les cinq promesses des aérodromes sont
+remesurées à la sonde : voie ferrée la plus proche à 12 blocs (Haneda), ville
+la plus serrée à 14 (Los Angeles), sanctuaire le plus proche à 55 (Roissy).
+
+Et le portail a trouvé ce que la carte neuve révélait : l'index des rails
+rangeait chaque ligne par un point tous les 256 blocs, si bien qu'une
+diagonale qui coupe le coin d'une case y passait sans être vue — sur l'ICE
+Amsterdam–Cologne, soixante blocs de voie sans rails, une marche de cinq et un
+arbre planté dessus. Le segment se range désormais bloc par bloc. Et le témoin
+de la minicarte volait au-dessus d'un couloir devenu Pacifique, où une carte
+uniformément bleue ne change jamais : il vole au-dessus du Sahara.
+
+Quatre témoins de `manhattan.js` restent rouges sur ce banc — géométrie
+retirée, nuit, ombres, taxi tactile — et ils le sont À L'IDENTIQUE sur
+`origin/main`, rejoués seuls des deux côtés dans un arbre séparé : c'est la
+règle de la v195, la dette est déclarée dans `TASKS.md` (le portail de la v240
+avait été mesuré en rendu matériel). La marche devant la façade, elle, était
+un pile ou face à une image par seconde ; elle marche désormais jusqu'à
+l'arrêt.
+Et depuis la fusion de la v241 (#244), « l'écran ne se fige pas en arrivant
+sur une ville » est rouge des deux côtés, rejoué seul : 1 233 ms sur
+`origin/main`, 2 117 sur la branche, pour une barre à 550 — dette déclarée,
+cause probable la naissance des corps Rocketbox à l'arrivée.
+**Portail : voie longue, dix suites, huit vertes ; `manhattan.js` et le gel
+d'arrivée de `monte.js` rouges à l'identique sur `origin/main`.**
+
+---
+
+---
+
 ## v241 — Des visages, des berlines et des voisins qui restent
 
 **Pourquoi.** Les personnages et voitures restaient trop rudimentaires. Les

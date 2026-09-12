@@ -69,7 +69,8 @@ import {
   buildGrandCentral, buildTimesSquare, buildBourse, buildTrinity, buildLiberte, buildBrooklyn,
   buildArcheWashington, buildPontAcier, WALL, PARC, vDeRue, bordEst, vDuPlan,
 } from './manhattan.js';
-import { positionDe, cielDe, zDeLatitude } from './mondes.js';
+import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
+import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn } from './trains.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
@@ -1243,8 +1244,8 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // Agrandir la carte déplace le relief. `CLAUDE.md` dit comment s'y prendre :
 // « versionner le générateur de terrain et migrer chaque bloc de la différence
 // de hauteur de sa colonne — pas régénérer et espérer ». `MONDES.terreAvant`
-// garde la projection d'avant, figée ; `hauteurBase` répond sur l'une ou
-// l'autre. Il ne reste qu'à décaler.
+// et `MONDES.terreV2` gardent les projections d'avant, figées ; `hauteurBase`
+// répond sur l'une ou l'autre. Il ne reste qu'à décaler.
 //
 // CE QUE ÇA RATTRAPE, ET CE QUE ÇA NE RATTRAPE PAS. Une maison enterrée de
 // deux blocs remonte de deux blocs : c'est le cas courant, et c'est réglé. Une
@@ -1257,39 +1258,209 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // L'ancre de la projection est plantée sur Paris exprès, et le bruit du
 // terrain ne dépend que de la position. C'est la campagne lointaine qui se
 // réécrit : douze blocs d'écart médian à six cents blocs à l'ouest.
-export const CARTE_VERSION = 2;
+//
+// LA MIGRATION EST UNE CHAÎNE (v242). La v199 doublait la carte et ne
+// déplaçait les blocs qu'en HAUTEUR : les villes s'éloignaient de Paris et
+// ce qu'un enfant avait bâti dans une ville restait à l'ancienne adresse, en
+// pleine campagne. Personne n'y avait bâti — c'est ce qui l'a rendu
+// acceptable. En v242 la carte double encore, et cette fois New York vient
+// d'être refaite : ce qu'on y a bâti DOIT partir avec elle. D'où deux
+// marches, dans l'ordre :
+//
+//   1. carte 1 → 2 : la migration de v199, telle quelle (hauteur seulement),
+//      mesurée entre `terreAvant` et `terreV2` ;
+//   2. carte 2 → 3 : UN BLOC SUIT SA VILLE. Un bloc posé dans le disque
+//      d'une ville (ou dans le rectangle de Manhattan, marge comprise) se
+//      déplace de ce que la ville se déplace — en entier, sans changer de
+//      hauteur, puisque sous une ville c'est la ville qui décide du sol. Un
+//      bloc de campagne ne bouge qu'en hauteur, comme en v199.
+//
+// ET LA MIGRATION EST PURE, PARCE QUE LE NUAGE RAPPORTE DES BLOCS D'AVANT.
+// Migrer le stockage de l'appareil ne suffit pas : une tablette restée sur
+// l'ancienne version republie ses clés d'avant dans le nuage, et la fusion —
+// qui est une union — les rapportait ici pour toujours : une maison dans New
+// York ET son fantôme là où New York était. `migrerCarte3` est donc une
+// fonction pure, appliquée au stockage local une fois, et à CHAQUE document
+// reçu du nuage avant la fusion (`sync.js`). Ce qui la rend idempotente, c'est
+// la DATE : un bloc posé avant `DATE_CARTE_3` l'a été sur l'ancienne carte,
+// un bloc daté d'après l'a été sur la neuve — et un bloc qu'on déplace prend
+// la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
+// l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
+// l'ancienne version ne peut pas apprendre la règle neuve.
+export const CARTE_VERSION = 3;
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
+// L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
+// v199 ; un bloc daté d'après, sur celle-ci. Une tablette qui continuerait de
+// jouer sur l'ancienne version APRÈS cette heure poserait des blocs que la
+// migration ne suivra pas — c'est la limite déclarée dans TASKS.md.
+export const DATE_CARTE_3 = Date.UTC(2026, 8, 12, 19, 0, 0);
+const MARGE_SUIVI = 24;        // le fondu d'une ville : ce qui est bâti sur le bord suit aussi
 
-export function migrerLesBlocs(lire, ecrire) {
+// Les villes qui bougent entre la carte 2 et la carte 3 : leur zone SUR
+// L'ANCIENNE CARTE, et de combien elles se déplacent. Paris, l'ancre, ne bouge
+// pas et n'y figure donc pas. Manhattan n'est pas un disque : c'est le
+// rectangle de son plan, autour de l'ancienne origine.
+let villesQuiBougent = null;
+function lesVillesQuiBougent() {
+  if (villesQuiBougent) return villesQuiBougent;
+  villesQuiBougent = [];
+  for (const l of lieuxDuMonde('terreV2')) {
+    const apres = positionDe(l.cle, 'terre');
+    const dx = apres.x - l.x, dz = apres.z - l.z;
+    if (!dx && !dz) continue;
+    if (l.cle === 'ny') {
+      const x0 = l.x + BORNES_MANHATTAN.x0 - MARGE_SUIVI, x1 = l.x + BORNES_MANHATTAN.x1 + MARGE_SUIVI;
+      const z0 = l.z + BORNES_MANHATTAN.z0 - MARGE_SUIVI, z1 = l.z + BORNES_MANHATTAN.z1 + MARGE_SUIVI;
+      villesQuiBougent.push({ cle: l.cle, dx, dz, x0, x1, z0, z1,
+        dedans: (x, z) => x >= x0 && x < x1 && z >= z0 && z < z1 });
+    } else {
+      const r = l.r + MARGE_SUIVI;
+      villesQuiBougent.push({ cle: l.cle, dx, dz, x0: l.x - r, x1: l.x + r, z0: l.z - r, z1: l.z + r,
+        dedans: (x, z) => Math.hypot(x - l.x, z - l.z) <= r });
+    }
+  }
+  return villesQuiBougent;
+}
+
+// Sur la carte COURANTE, une colonne dont le sol est décidé par une ville ne
+// se compare pas : la ville aplanit, la projection n'y change rien.
+function solDecideParUneVille(x, z) {
+  if (dansUneZoneATerre(x, z)) return true;
+  const ny = positionDe('ny');
+  return x >= ny.x + BORNES_MANHATTAN.x0 && x < ny.x + BORNES_MANHATTAN.x1
+    && z >= ny.z + BORNES_MANHATTAN.z0 && z < ny.z + BORNES_MANHATTAN.z1;
+}
+
+// Où va une colonne (x, z) de la carte 2 ? `null` : elle reste. Sinon un
+// déplacement { dx, dz, dy } — ou { laisse: true } quand la hauteur a trop
+// changé pour qu'on ose. Une colonne se calcule une fois : la fusion du nuage
+// repasse sur les mêmes blocs à chaque lecture.
+const destinations = new Map();
+function destinationCarte3(x, z) {
+  const cle = x * 262144 + z;   // les deux tiennent dans 18 bits chacun
+  let d = destinations.get(cle);
+  if (d !== undefined) return d;
+  d = null;
+  const ville = lesVillesQuiBougent().find((v) => x >= v.x0 && x <= v.x1 && z >= v.z0 && z <= v.z1 && v.dedans(x, z));
+  if (ville) d = { dx: ville.dx, dz: ville.dz, dy: 0, ville: ville.cle };
+  else if (!solDecideParUneVille(x, z)) {
+    const dy = hauteurBase(x, z, 'terre') - hauteurBase(x, z, 'terreV2');
+    if (dy !== 0) d = Math.abs(dy) > ECART_MAX ? { laisse: true } : { dx: 0, dz: 0, dy };
+  }
+  if (destinations.size > 400000) destinations.clear();
+  destinations.set(cle, d);
+  return d;
+}
+
+const num = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+
+// La carte 2 → 3, sur UNE carte de blocs { "x,y,z": [id, date, ...] }. Pure :
+// rend une carte neuve et le bilan. Les marques d'import de Manhattan
+// (`@manhattan-v240:x,y,z` → [id, date, dx, dz]) suivent comme un bloc posé
+// en (dx, dz) — c'est leur origine d'import, et une archive relue plus tard
+// doit retomber au même endroit que ce qui en a déjà été importé.
+export function migrerCarte3(map) {
+  const neuf = {};
+  let deplaces = 0, laisses = 0, intacts = 0;
+  const poser = (k, e) => {
+    const p = neuf[k];
+    if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[k] = e;
+  };
+  for (const [k, e] of Object.entries(map || {})) {
+    if (!Array.isArray(e) || !(num(e[1]) < DATE_CARTE_3)) { poser(k, e); intacts++; continue; }
+    if (k.startsWith('@')) {
+      // une marque d'import : [id, date, dx, dz]
+      if (e.length === 4 && Number.isFinite(e[2]) && Number.isFinite(e[3])) {
+        const d = destinationCarte3(e[2], e[3]);
+        if (d && !d.laisse && (d.dx || d.dz)) { neuf[k] = [e[0], DATE_CARTE_3, e[2] + d.dx, e[3] + d.dz]; deplaces++; continue; }
+      }
+      neuf[k] = e; intacts++; continue;
+    }
+    const [x, y, z] = k.split(',').map(Number);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) { poser(k, e); intacts++; continue; }
+    const d = destinationCarte3(x, z);
+    if (!d) { poser(k, e); intacts++; continue; }
+    if (d.laisse) { poser(k, e); laisses++; continue; }
+    poser(`${x + d.dx},${y + d.dy},${z + d.dz}`, [e[0], DATE_CARTE_3, ...e.slice(2)]);
+    deplaces++;
+  }
+  return { carte: neuf, deplaces, laisses, intacts };
+}
+
+// Toutes les cartes d'un document { contexte: carte }. Les contextes avec un
+// « : » sont des archives de cartes autonomes (l'ancienne Manhattan) : elles
+// ont leur propre repère et se reprennent par `reunirSauvegardes`, jamais ici.
+export function migrerBlocsCarte3(tout) {
+  const out = {};
+  let deplaces = 0, laisses = 0, intacts = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = migrerCarte3(map);
+    out[ctx] = r.carte; deplaces += r.deplaces; laisses += r.laisses; intacts += r.intacts;
+  }
+  return { tout: out, deplaces, laisses, intacts };
+}
+
+// Et la position où l'enfant s'était arrêté, par monde : elle suit sa ville
+// comme un bloc. Sinon un enfant endormi à Times Square se réveille en mer.
+export function migrerPositionsCarte3(pos) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.z].every(Number.isFinite) || !(num(p.t) < DATE_CARTE_3)) continue;
+    const d = destinationCarte3(Math.floor(p.x), Math.floor(p.z));
+    if (!d || d.laisse || (!d.dx && !d.dz)) continue;
+    out[ctx] = { ...p, x: p.x + d.dx, z: p.z + d.dz, t: DATE_CARTE_3 };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
+// La migration du STOCKAGE DE L'APPAREIL, une fois par version de carte.
+// `lire`/`ecrire` portent les blocs, `lirePos`/`ecrirePos` les positions.
+export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   let version = 0;
   try { version = Number(localStorage.getItem(CLE_CARTE)) || 0; } catch { /* ignore */ }
   if (version >= CARTE_VERSION) return null;
-  const tout = lire() || {};
+  let tout = lire() || {};
   let deplaces = 0, laisses = 0, intacts = 0;
-  const sols = new Map();       // une colonne se calcule une fois, pas par bloc
-  for (const [ctx, map] of Object.entries(tout)) {
-    // Les cartes autonomes ont leur propre terrain ; la migration historique
-    // de la Terre ne doit jamais déplacer leurs constructions.
-    if (ctx.includes(':')) continue;
-    const neuf = {};
-    for (const [k, entry] of Object.entries(map || {})) {
-      const [x, y, z] = k.split(',').map(Number);
-      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) { neuf[k] = entry; continue; }
-      const cle = `${x},${z}`;
-      let d = sols.get(cle);
-      if (d === undefined) {
-        d = hauteurBase(x, z, 'terre') - hauteurBase(x, z, 'terreAvant');
-        sols.set(cle, d);
+
+  // 1 → 2 : la migration de v199, en hauteur seulement.
+  if (version < 2) {
+    const sols = new Map();       // une colonne se calcule une fois, pas par bloc
+    for (const [ctx, map] of Object.entries(tout)) {
+      // Les cartes autonomes ont leur propre terrain ; la migration historique
+      // de la Terre ne doit jamais déplacer leurs constructions.
+      if (ctx.includes(':')) continue;
+      const neuf = {};
+      for (const [k, entry] of Object.entries(map || {})) {
+        const [x, y, z] = k.split(',').map(Number);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) { neuf[k] = entry; continue; }
+        const cle = `${x},${z}`;
+        let d = sols.get(cle);
+        if (d === undefined) {
+          d = hauteurBase(x, z, 'terreV2') - hauteurBase(x, z, 'terreAvant');
+          sols.set(cle, d);
+        }
+        if (d === 0) { neuf[k] = entry; intacts++; continue; }
+        if (Math.abs(d) > ECART_MAX) { neuf[k] = entry; laisses++; continue; }
+        neuf[`${x},${y + d},${z}`] = entry;
+        deplaces++;
       }
-      if (d === 0) { neuf[k] = entry; intacts++; continue; }
-      if (Math.abs(d) > ECART_MAX) { neuf[k] = entry; laisses++; continue; }
-      neuf[`${x},${y + d},${z}`] = entry;
-      deplaces++;
+      tout[ctx] = neuf;
     }
-    tout[ctx] = neuf;
   }
+
+  // 2 → 3 : un bloc suit sa ville.
+  const r = migrerBlocsCarte3(tout);
+  tout = r.tout; deplaces += r.deplaces; laisses += r.laisses; intacts += r.intacts;
   ecrire(tout);
+  if (lirePos && ecrirePos) {
+    const p = migrerPositionsCarte3(lirePos() || {});
+    if (p.deplaces) ecrirePos(p.pos);
+  }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts };
 }

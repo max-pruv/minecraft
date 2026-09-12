@@ -91,26 +91,33 @@ const CHIFFRES = {
 // et ses satellites ; 'hub' est un grand aéroport à deux pistes ; 'ville' un
 // aéroport à une piste ; 'base' une base militaire — hangars, tour, abris.
 export const AEROPORTS = [
-  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris, vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
+  // v242, LE MONDE ×2 : chaque aérodrome a d'abord GARDÉ son écart à sa ville
+  // (la ville a bougé, il l'a suivie), puis la sonde a revérifié les cinq
+  // promesses sur la carte neuve. Onze tiennent tels quels ; huit sont
+  // recherchés depuis leur cap réel, parce qu'à l'échelle neuve le même écart
+  // tombait dans l'eau (Dubaï à 89 % dans le golfe, Francfort 14 %, Yokota
+  // 12 %) ou sur une voisine. Le chiffre `sol` est REMESURÉ partout : c'est
+  // la médiane du relief, et le relief a changé.
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
   { cle: 'orly', nom: 'Paris–Orly', x: -322, z: 504, r: 62, sol: 41, profil: 'ville' },               // Paris, cap 195° S — exact, 315 blocs
-  { cle: 'lhr', nom: 'Londres–Heathrow', x: -926, z: -558, r: 78, sol: 41, profil: 'hub' },           // Londres, cap 262° O — exact, 204 blocs
-  { cle: 'jfk', nom: 'New York–JFK', x: -9934, z: 2253, r: 84, sol: 34, profil: 'hub' },              // New York, vrai cap 115° SE → 30° NE (la baie de Jamaica est de l'eau), 418 blocs
-  { cle: 'mad', nom: 'Madrid–Barajas', x: -1269, z: 2522, r: 78, sol: 41, profil: 'hub' },            // Madrid, cap 40° NE — exact, 236 blocs
-  { cle: 'bcn', nom: 'Barcelone–El Prat', x: -641, z: 2670, r: 66, sol: 34, profil: 'ville' },        // Barcelone, cap 215° SO → 235°, 445 blocs
-  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 4, z: -478, r: 74, sol: 39, profil: 'hub' },            // Amsterdam, cap 215° SO — exact, 443 blocs
-  { cle: 'fra', nom: 'Francfort', x: 659, z: -572, r: 74, sol: 35, profil: 'hub' },                   // Francfort, cap 315° NO → 320°, 522 blocs (l'ICE Cologne–Francfort passait dans le disque)
-  { cle: 'fco', nom: 'Rome–Fiumicino', x: 1676, z: 1905, r: 72, sol: 35, profil: 'ville' },           // Rome, vrai cap 245° SO → 350° N (la mer Tyrrhénienne, puis la Frecciarossa), 362 blocs
-  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 26210, z: 4107, r: 76, sol: 36, profil: 'hub' },              // Tokyo, vrai cap 160° S → 270° O (la baie de Tokyo, puis le Shinkansen), 359 blocs
-  { cle: 'dxb', nom: 'Dubaï', x: 9882, z: 7646, r: 80, sol: 33, profil: 'hub' },                      // Dubaï, cap 230° SO → 205°, 478 blocs
-  { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 13988, z: 6339, r: 70, sol: 41, profil: 'ville' },     // Delhi, cap 250° O — exact, 400 blocs
-  { cle: 'sfo', nom: 'San Francisco', x: -19426, z: 3834, r: 72, sol: 43, profil: 'ville' },          // San Francisco, cap 175° S → 155°, 384 blocs
-  { cle: 'lax', nom: 'Los Angeles', x: -19035, z: 4406, r: 78, sol: 37, profil: 'hub' },              // Los Angeles, vrai cap 245° SO → 305° NO (le Pacifique), 320 blocs
-  { cle: 'ist', nom: 'Istanbul', x: 4832, z: 2313, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 247 blocs
+  { cle: 'lhr', nom: 'Londres–Heathrow', x: -1410, z: -1344, r: 78, sol: 40, profil: 'hub' },         // Londres, cap 262° O — même écart qu'en v223, 204 blocs
+  { cle: 'jfk', nom: 'New York–JFK', x: -19708, z: 4747, r: 84, sol: 38, profil: 'hub' },             // New York, vrai cap 115° SE → 50° NE (la baie de Jamaica est de l'eau, et le SE est le rectangle de Manhattan), 440 blocs · 13 blocs du rectangle
+  { cle: 'mad', nom: 'Madrid–Barajas', x: -2409, z: 4974, r: 78, sol: 36, profil: 'hub' },            // Madrid, cap 40° NE — exact, 302 blocs · eau 5 %
+  { cle: 'bcn', nom: 'Barcelone–El Prat', x: -677, z: 4885, r: 66, sol: 51, profil: 'ville' },        // Barcelone, cap 235° — même écart qu'en v223, 445 blocs
+  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 502, z: -1519, r: 74, sol: 36, profil: 'hub' },         // Amsterdam, cap 215° SO — même écart qu'en v223, 443 blocs
+  { cle: 'fra', nom: 'Francfort', x: 1734, z: -1040, r: 74, sol: 41, profil: 'hub' },                 // Francfort, cap 315° NO — exact, 702 blocs (le même écart qu'avant tombait à 14 % dans le Rhin)
+  { cle: 'fco', nom: 'Rome–Fiumicino', x: 3655, z: 3967, r: 72, sol: 33, profil: 'ville' },           // Rome, cap 350° N — même écart qu'en v223, 362 blocs
+  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 53019, z: 8014, r: 76, sol: 39, profil: 'hub' },              // Tokyo, cap 270° O — même écart qu'en v223, 359 blocs · 12 blocs du Shinkansen
+  { cle: 'dxb', nom: 'Dubaï', x: 19742, z: 15020, r: 80, sol: 33, profil: 'hub' },                    // Dubaï, vrai cap 230° SO → 220°, 1 036 blocs (le même écart qu'avant tombait à 89 % dans le golfe)
+  { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 28564, z: 12352, r: 70, sol: 47, profil: 'ville' },    // Delhi, cap 250° O — exact, 430 blocs · eau 4 %
+  { cle: 'sfo', nom: 'San Francisco', x: -38774, z: 7120, r: 72, sol: 44, profil: 'ville' },          // San Francisco, cap 155° — même écart qu'en v223, 384 blocs
+  { cle: 'lax', nom: 'Los Angeles', x: -37536, z: 9087, r: 78, sol: 38, profil: 'hub' },              // Los Angeles, cap 245° SO — exact, 254 blocs · 14 blocs du disque de la ville
+  { cle: 'ist', nom: 'Istanbul', x: 9945, z: 4500, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 409 blocs · eau 5 %
   // Les bases militaires : c'est de là que partent les chasseurs.
   { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 33, z: 300, r: 56, sol: 33, profil: 'base' },      // à l'est de Paris, cap 110° — exact
-  { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -10632, z: 3431, r: 56, sol: 35, profil: 'base' },      // au sud de Washington, cap 160° — exact
-  { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -18484, z: 4423, r: 56, sol: 36, profil: 'base' },      // au nord-est de Los Angeles, cap 60° — exact
-  { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 26335, z: 4022, r: 56, sol: 32, profil: 'base' },       // à l'ouest de Tokyo, cap 285° → 290°
+  { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -21126, z: 6381, r: 56, sol: 36, profil: 'base' },      // au sud de Washington, cap 160° — même écart qu'en v223
+  { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -37017, z: 8813, r: 56, sol: 42, profil: 'base' },      // au nord-est de Los Angeles, cap 60° — même écart qu'en v223
+  { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 52871, z: 7878, r: 56, sol: 51, profil: 'base' },       // à l'ouest de Tokyo, cap 285° — exact, 525 blocs (le même écart qu'avant tombait à 12 % dans la baie)
 ];
 
 // L'aéroport le plus proche d'un point, s'il est à portée.
