@@ -744,7 +744,50 @@ Si la version ne correspond pas à la dernière publiée :
 
 ## Architecture — décisions et raisons
 
+### Manhattan indépendante (`manhattan-*.js`, v239)
+
+La refonte réaliste demandée dans la PR #226 ne déplace aucun bloc de la
+Terre. `?carte=manhattan` charge `ManhattanWorld`, un générateur autonome qui
+hérite du journal d'opérations de `World`. `manhattan-v1:` préfixe les
+contextes de blocs, positions, parties récentes, sauvegardes cloud et canaux
+réseau ; le code court montré à l'enfant reste inchangé. Une invitation
+porte la carte. Ne jamais retirer ce préfixe pour « simplifier » le stockage.
+L'ancienne Manhattan reste accessible sur la Terre. La migration historique
+de la Terre ignore les contextes nommés avec `:` ; elle ne doit pas appliquer
+une différence de relief terrestre à une carte autonome.
+
+Le plan urbain est commun aux collisions et à la géométrie. Le mailleur
+ordinaire se réactive autour des éditions (voisins compris pour les
+excavations) et dessine les blocs posés ; le sol intact ne se dessine jamais
+en double sous le maillage urbain. Par ailleurs, le renderer urbain dessine les originaux
+non modifiés. Une édition invalide la façade et son secteur de sol ; un
+changement de contexte ou une réinitialisation invalide aussi les travaux
+progressifs en cours. Les trames publiées de `manhattan-v1` sont désormais
+figées comme toute carte sauvegardable.
+
+Les détails sont instanciés, remplacés par des silhouettes à distance et
+chargés progressivement. Libérer un lot rend ses tampons d'instances sans
+détruire les primitives communes. Le budget tablette borne densité de
+pixels, ombres et portée. Mesurer le GPU natif séparément de SwiftShader :
+une cadence de banc logiciel n'est pas une promesse de performance iPad.
+
+Les assets urbains sont originaux et procéduraux, sans contenu de GTA. Le
+guide `docs/manhattan.md` porte la portée exacte et les limites. Les quatre
+modules entrent dans le cache PWA et dans les gardiens de `tests/tout.js`.
+`tests/manhattan.js` éprouve isolation, édition visible et partage de carte.
+
+Le paramètre de banc `cloud=` doit désactiver le cloud même avec une valeur
+vide : tester sa présence (`has`), pas la vérité de sa valeur (`get`). Sans
+cela un essai local utilise à tort le backend public.
+
 ### Le jeu à plusieurs (`net.js`, `relaisnuage.js`, `cloud.js`)
+
+Le diagnostic de relais reste acquis pendant une `NetSession`. Il ne se
+réinitialise pas dans `connectToHost` : à vingt secondes, le battement peut
+ouvrir une reconnexion avant l’expiration de la tentative initiale et effacer
+la preuve qu’un relais avait répondu. Le scénario VPN de `reseau.js` couvre
+cette course. Une nouvelle ouverture construit une nouvelle session.
+
 
 Trois chemins, du plus rapide au plus obstiné :
 
@@ -2545,6 +2588,40 @@ versions. Et un témoin qui cherche « de la pierre grise dans huit blocs » n'e
 garde aucun : il en trouve toujours, celle des immeubles. Ce qui prouve un pont,
 c'est l'eau sous son tablier.
 
+**UNE AVENUE SANS VOITURES : ON MESURE D'ABORD SI C'EST UNE RUE (v223).** Six
+des quatorze voies de San Francisco n'avaient aucun circuit depuis la v207, et
+la dette était écrite ainsi : « elles bordent le parc et la côte, où il n'y a
+rien à boucler ». Mesuré — chaque avenue sur son propre sol, colonne par
+colonne, AVANT de chercher la moindre boucle — c'était faux : **la Great
+Highway tenait la rue à ZÉRO pour cent**, onze blocs de sable et
+quatre-vingt-dix-neuf dans le Pacifique ; Fulton 50 %, Third Street 70 %,
+Lincoln Way 70 %, la 19e Avenue 81 %. Ce n'étaient pas des avenues sans boucle,
+c'étaient des traits d'herbe, d'eau et de sable. Quatre choses en sortent.
+
+- **UN PARC TIENT ENTRE SES RUES DE BORD.** L'ellipse du Golden Gate Park
+  faisait un kilomètre de haut et débordait sur Fulton et Lincoln Way, qui
+  sont pourtant ses deux rues de bord dans la vraie ville ; les parcs passant
+  avant les rues dans `solSF`, ces deux avenues n'étaient pas des rues. Le
+  remède est de rendre au parc sa taille (`rv` 4,5 → 3,0), pas de déplacer les
+  rues.
+- **MAIS UNE AVENUE NOMMÉE TRAVERSE UN PARC EN RESTANT UNE AVENUE.** La 19e
+  Avenue coupe le Golden Gate Park dans la vraie ville — c'est Crossover Drive
+  — et elle y rendait huit blocs d'EAU : une route qui disparaît dans un lac.
+  Les parcs gardent leur priorité sur la trame générique et sur les lots ; ce
+  qui passe avant eux, c'est la voie NOMMÉE, et elle seule. (À Paris, la rue de
+  Rivoli et les Tuileries restent une dette : là c'est le POINT DE PASSAGE qui
+  est au centre du jardin, pas la rue qui le traverse.)
+- **UNE VOIE SE TRACE CONTRE LA RIVE, PAS À CÔTÉ.** La Great Highway était
+  posée sur la plage et au large, Third Street plongeait dans la baie à hauteur
+  d'Islais Creek : le sable et l'eau passent avant les voies dans `solSF`, à
+  dessein. C'est la famille du Bay Bridge et de Karl the Fog, à un fichier
+  près — une géométrie écrite sans qu'on demande au sol s'il est là.
+- **Le prix se paie toujours avec des rues.** Cinq vraies rues de raccord —
+  Stanyan, Sunset Boulevard, Sloat Boulevard, la 16e Rue, Cesar Chavez —, six
+  circuits mesurés à 100 %, dix-neuf avenues sur dix-neuf, et le seuil de
+  partage de la v211 inchangé (pire paire vingt blocs). La méthode est celle
+  de Paris en v216, passe de réparation comprise.
+
 **Et le piège de forme, qui n'existait qu'à petite échelle.** Les Marin
 Headlands montaient par `min(1, marin * 2) * 8` : la saturation aplatissait
 toute la moitié intérieure de l'ellipse. Invisible tant qu'elle faisait vingt
@@ -2657,6 +2734,35 @@ choses à savoir.
   gagne ses circuits met ce chiffre à jour dans la même livraison, sinon la
   voie rapide rougit pour la bonne raison au mauvais moment.
 
+**QUATRE AVENUES SANS BOUCLE, QUATRE CAUSES DIFFÉRENTES (v223).** Lille a
+récupéré ses quatre avenues orphelines, et aucune ne tombait pour la même
+raison — c'est la leçon : on mesure chacune avant de chercher un remède commun.
+La rue Royale n'avait qu'UNE porte (l'îlot en sucette de la City, v206) ; la rue
+de Paris ne rencontrait personne à moins de dix blocs ; le boulevard
+Victor-Hugo courait à QUATRE blocs ou moins de la rue Léon-Gambetta, si bien que
+toute boucle qui le prenait se superposait de soixante-deux blocs au convoi de
+Gambetta — trois fois le seuil, et c'était le TRACÉ qu'il fallait corriger, pas
+le seuil ; la rue Gustave-Delory a suivi. Trois choses de plus.
+
+- **UN MONUMENT A UNE RUE AUTOUR DE LUI, ET ON L'APPLIQUE LE JOUR MÊME.** Paris
+  a payé cette panne en v221, quatre versions après que la règle eut été
+  écrite. Ici la Porte de Paris est PLEINE à hauteur de carrosserie — onze
+  blocs sur cinq, on ne passe pas dessous — et `chainerVoies` joignait la rue de
+  Paris à la rue Gustave-Delory en droite ligne au travers. `contournerBlocs`
+  et un pourtour pavé règlent les deux, comme à Paris ; c'est du SOL, les
+  empreintes de `plafond.js` ne bougent pas.
+- **CE QU'ON MESURE, C'EST LE BLOC QUE POSE LE BÂTISSEUR, pas la boîte
+  d'affichage.** `MONUMENTS_LILLE` annonce `box: 7` pour la Porte de Paris ;
+  ce qui compte, c'est ce que `buildPorteDeParis` écrit à un et deux blocs
+  au-dessus du sol. Les bâtisseurs sont des fonctions pures : on les appelle,
+  on collecte, on regarde ce que la carrosserie traverse.
+- **UN TÉMOIN VERT DES DEUX CÔTÉS SE GARDE S'IL A RÉELLEMENT ROUGI.** Celui de
+  Lille est vert sur `origin/main` — les trois circuits d'alors ne passaient
+  pas là. Ce qui le distingue d'un témoin inutile (règle de la v220) : désarmé
+  `contournerSoclesLille` sur la branche, il rend cinq pas de carrosserie dans
+  la Colonne de la Déesse. Un témoin qui a rougi n'est pas un témoin qui ne
+  peut pas rougir — et cette vérification-là se FAIT, elle ne se raconte pas.
+
 ### Londres (`londres.js`) — soixante avenues qui se croisent, et les demi-tours
 
 Londres est à vingt-quatre blocs par kilomètre depuis longtemps — l'échelle
@@ -2712,6 +2818,30 @@ pour toute ville à qui l'on donne des rues.
   San Francisco, du côté du banc, une fois de plus. Et un témoin qui ne
   regarde que la couleur ne voit pas un bus planté dans un lot : celui qui
   exige le bitume sous chaque bus est rouge à 4/5 sur `origin/main`.
+
+**UN TÉMOIN DE COUVERTURE DOIT MESURER CE QU'IL ANNONCE (v223).** Celui qui
+garde les avenues sans voitures de Londres déclarait une avenue « sans
+voitures » dès qu'un de ses points de passage n'était pas un SOMMET d'un
+circuit. Cela mesure « parcourue d'un bout à l'autre », pas « des voitures y
+roulent », et cela se trompait des deux côtés : il nommait le Strand et Charing
+Cross Road, qui en ont, et il comptait couvertes des avenues dont deux circuits
+touchaient les deux bouts sans jamais les emprunter — un circuit peut « couvrir »
+une avenue en la manquant entièrement. Il mesure désormais la part de la
+LONGUEUR de l'avenue qui porte un convoi à moins de deux blocs, ce qu'un enfant
+voit depuis le trottoir. Rejoué sur `origin/main`, il est rouge et nomme les
+deux rues que la v223 fait rouler.
+
+**ET LA PISTE ÉCRITE DANS `TASKS.md` NE SUFFISAIT PAS — ce qui se mesure, pas
+se suppose.** La dette annonçait « il lui manque Pentonville Road et Gray's Inn
+Road ». Tracées et mesurées, elles ne suffisent pas : toute boucle de King's
+Cross prenait Woburn Place ou High Holborn sur toute leur longueur, et
+**aucun échange ne donnait ses voitures à King's Cross sans en retirer à
+Tottenham Court Road, au Strand et à Charing Cross Road** — éprouvé en
+retirant jusqu'à TROIS des dix circuits en place et en recomblant. Bloomsbury
+n'avait que deux liens nord-sud ; Gower Street est le troisième, et Judd Street
+donne à King's Cross son triangle. La contrainte à poser dans une passe de ce
+genre est explicite : **aucune rue ne perd ses voitures pour en donner à une
+autre.**
 
 **Les ponts sur la Tamise (v208) — et ce qui prouve un pont.** Tant que le
 fleuve n'avait aucun pont routier, la City et Southwark se tournaient le dos
@@ -2868,6 +2998,35 @@ choses à savoir avant d'y toucher.
   avant de trancher, on a mesuré que le sol y est plat (33) : le ravin ne
   commence qu'à cinq blocs de l'eau. On ne déplace pas un ruisseau pour une
   chaussée.
+
+**UNE GRILLE PEUT ÊTRE SATURÉE, ET CELA SE MESURE (v223).** Virginia Avenue NO
+n'avait aucune boucle depuis la v205. Mesuré : sur **vingt-six mille** chaînes
+candidates, ZÉRO n'était compatible avec les dix-neuf circuits en place sous le
+seuil de partage de vingt blocs. Devant une avenue qu'on n'arrive pas à
+couvrir, la question n'est donc pas seulement « quelle rue manque » mais
+« reste-t-il de la place ». Trois choses en sortent.
+
+- **La passe de réparation se fait par le MINIMUM de gêneurs.** La meilleure
+  boucle de Virginia (223 blocs, 100 %, virage 92°) n'en gêne que DEUX, de
+  vingt-cinq et vingt-sept blocs. On les retire, on la force, on recomble — et
+  le recomblement rend à la 15e Rue ses voitures par un autre chemin, si bien
+  qu'aucune rue ne perd les siennes. Chercher le gêneur le moins nombreux vaut
+  mieux que tirer au hasard.
+- **UNE RUE QU'ON NE PEUT PAS TRACER NE SE FORCE PAS.** La 17e Rue NO a été
+  essayée puis retirée : entre Constitution et F Street elle traverse le parc de
+  la Maison-Blanche, qui passe avant les voies dans `solWashington` — neuf blocs
+  de pelouse sur quarante, mesurés. L'Ellipse fait ici trente blocs de large,
+  à peu près sa vraie taille : c'est le modèle qui a raison, pas la rue.
+- **ET LA TABLE DES GARDIENS AVAIT UN TROU, sur la ville qui en a le plus
+  besoin.** `src/washington.js` déclare `washington.js` et `plafond.js`
+  seulement, quand toutes les autres villes bâties à la main déclarent aussi
+  `carte.js` et `carteMonde.js` — qui l'importent toutes deux et mesurent ses
+  dix-neuf circuits. Le portail annonce donc « déjà vert sur ce code » pour les
+  deux suites qui testent ce qui vient de changer. La v195 avait déjà payé ce
+  genre de trou (le Bay Bridge planté au milieu de San Francisco) ; la
+  vérification « aucun fichier de `src/` sans gardien » ne voit pas un gardien
+  INCOMPLET. Devant un « déjà vert » sur un fichier qu'on vient de changer, on
+  regarde la table avant de croire le portail.
 
 **Et un témoin qui lit `p[0]` sur des objets `{x, y, z}` compte toujours
 zéro.** `fabriqueCircuits` rend des points-objets ; le premier brouillon du

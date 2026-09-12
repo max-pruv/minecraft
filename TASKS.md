@@ -22,6 +22,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Manhattan indépendante : approfondir le réalisme après validation de
+  la version jouable.** Priorités : circulation qui répond aux feux,
+  intérieurs aménagés, berges et ponts, Statue de la Liberté, transitions de
+  détail moins visibles et diversité de façades. Les reflets sont statiques.
+  Une validation sur iPad physique reste nécessaire ; l'émulation tactile
+  Chromium ne mesure pas le pilote ni la mémoire de Safari iOS. Voir
+  `docs/manhattan.md`. Ne pas déplacer les sauvegardes pour agrandir l'île.
+
 - [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
   PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
   forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
@@ -254,22 +262,40 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   nommées ; les quatorze ronds-points ont gagné une chaussée et les circuits
   les contournent au lieu de les traverser.
 
-- [ ] **Trois avenues de Washington restent sans circuit** — Virginia Avenue
-  NO, New York Avenue NO et Constitution ouest (de la 17e au Lincoln) ne
-  referment aucune boucle au-dessus du seuil : Virginia meurt sur
-  Constitution à la 21e, New York sur la 15e sans rue de retour, et
-  Constitution ouest longe le bassin sans rien pour boucler. Il faudrait des
-  raccords de plus (la 21e ou la 23e Rue vers K Street), à mesurer.
+- [x] **Trois avenues de Washington restaient sans circuit — FAIT en v223.** La
+  23e Rue NO monte de Constitution à Washington Circle en croisant Virginia à
+  Foggy Bottom, et la passe de réparation a fait le reste : Virginia Avenue NO,
+  Constitution Avenue et la 23e Rue gagnent des voitures, aucune rue ne perd les
+  siennes, cinquante voies sur soixante portent un convoi. New York Avenue NO
+  était déjà dans trois circuits — la dette la nommait à tort.
+- [ ] **`src/washington.js` n'a pas tous ses gardiens** — `tests/tout.js:78`
+  déclare `['washington.js', 'plafond.js']`, quand toutes les autres villes
+  bâties à la main déclarent aussi `carte.js` et `carteMonde.js`. Or les deux
+  importent `washington.js`, et `carteMonde.js` mesure ses dix-neuf circuits,
+  ses ronds-points et le partage des convois. Vu en v223 : le portail annonce
+  « déjà vert sur ce code » pour les deux suites qui testent ce qui vient de
+  changer. La ligne à écrire :
+  `'src/washington.js': ['washington.js', 'plafond.js', 'carte.js', 'carteMonde.js'],`
+- [ ] **La 17e Rue NO ne peut pas être tracée** — entre Constitution et F
+  Street elle traverse le parc de la Maison-Blanche, qui passe avant les voies
+  dans `solWashington` : mesuré, neuf blocs de pelouse sur quarante. L'Ellipse
+  fait trente blocs de large, à peu près sa vraie taille. À reprendre le jour
+  où l'on saura faire longer un parc à une rue.
 
 - [x] **Londres n'a qu'un circuit de voitures — FAIT en v206.** Soixante
   avenues aux vraies coordonnées, choisies pour se croiser (les bouts posés
   SUR la chaussée d'une autre), quinze circuits mesurés de 92 à 100 % qui
   couvrent cinquante-neuf voies. L'échelle n'y était pour rien : c'étaient
   la Tamise, les parcs et neuf voies qui ne se croisaient pas.
-- [ ] **Euston Road, côté King's Cross, n'est sur aucune boucle de Londres.**
-  C'est un cul-de-sac : rien ne part de King's Cross vers l'est ni vers le
-  sud. Il lui manque Pentonville Road et Gray's Inn Road pour refermer sur
-  Bloomsbury — deux voies à tracer et à mesurer.
+- [x] **Euston Road, côté King's Cross, n'est sur aucune boucle de Londres —
+  FAIT en v223, mais pas comme annoncé.** Pentonville Road et Gray's Inn Road
+  ne suffisaient pas : mesuré, aucun échange ne donnait ses voitures à King's
+  Cross sans en retirer à Tottenham Court Road, au Strand et à Charing Cross
+  Road, parce que Bloomsbury n'avait que DEUX liens nord-sud et qu'un seul
+  circuit les prenait tous les deux. Sept rues au total — les deux annoncées,
+  plus Farringdon Road, Clerkenwell Road, Theobald's Road, Gower Street et Judd
+  Street — et douze circuits mesurés à 100 % font rouler cinquante-sept avenues
+  sur soixante-dix. King William Street en profite aussi.
 - [x] **Pas de pont routier sur la Tamise — FAIT en v208.** Waterloo,
   Blackfriars et London Bridge sont des voies à part entière, tablier à la
   cote des quais et eau dessous ; trois circuits changent de rive, et
@@ -318,12 +344,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   à 100 %, quarante avenues sur quarante parcourues — et le seuil de partage de
   la v211 inchangé : la pire paire tombe de 17 à 13 blocs.
 - [ ] **Des avenues ont perdu leurs voitures en v211**, faute d'une boucle qui
-  ne se superpose à aucune autre. **Paris est réglé (v216).** Restent : à Lille
-  la rue de Paris,
-  Gustave-Delory, Victor-Hugo et la rue Royale ; à San Francisco Valencia,
-  Fulton, Lincoln Way, la Great Highway, la 19e Avenue et Third Street ; à
-  Washington Virginia Avenue, Constitution ouest et cinq rues de la grille ; à
-  Londres dix-sept voies, dont The Mall, Piccadilly et Marylebone Road. La
+  ne se superpose à aucune autre. **Paris (v216), puis San Francisco, Lille,
+  Londres et Washington (v223) sont réglés** — les quatre villes que la v211
+  avait laissées derrière elle.
+  À Londres il demeure treize avenues déclarées sans voitures et à Washington
+  dix, mais ce sont des dettes MESURÉES, pas des oublis : la liste de Londres
+  vit dans `carteMonde.js`, remesurée en v223 avec une règle qui mesure enfin
+  ce qu'elle annonce, et la grille de Washington est saturée (zéro chaîne sur
+  vingt-six mille compatible avec les circuits en place). La
   piste est la même qu'en v209 : des voies de RACCORD, tracées sur le vrai plan
   et mesurées, pour que ces quartiers aient leur propre boucle plutôt que de
   repasser sur celle du voisin. **Et la méthode est désormais éprouvée** : à
@@ -393,22 +421,40 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   coûte trois points au plus long circuit de Paris (97 % au lieu de 100). La
   vraie rue de Rivoli longe la grille, elle n'entre pas — mais déplacer un
   point de `VOIES` déplace une rue, donc cela se mesure avant de se faire.
-- [ ] **La rue Royale de Lille n'est plus parcourue** — c'est une impasse
-  depuis que le chaînage refuse les allers-retours ; il lui manque une voie
-  de retour vers la citadelle ou la Grand-Place.
-- [ ] **Valencia Street ne roule plus à San Francisco** — impasse, comme la
-  rue Royale ; elle rejoindrait Mission par une transversale (la 24e ou
-  Cesar Chavez), à tracer.
+- [ ] **Les points de voie de Londres et de Washington sont écrits en BLOCS,
+  pas en kilomètres.** (Les sept rues ajoutées à Londres en v223 le sont
+  aussi : elles ont été calculées depuis de vraies latitudes et longitudes,
+  mais posées en blocs comme leurs voisines, pour ne pas mêler deux unités
+  dans la même table. La conversion se fera d'un bloc.) `VOIES` de Londres porte `[[-27, -43], [-12, -48]]`, les
+  avenues de Washington de même. C'est le piège nommé dans `CLAUDE.md` en
+  v216 : juste aujourd'hui, faux à la prochaine remise à l'échelle, et rien ne
+  rougira. Paris, San Francisco et **Lille (fait en v223, conversion prouvée
+  exacte : quarante-et-un points comparés, zéro écart)** passent par
+  `de(dx, dz)`.
+
+- [x] **La rue Royale de Lille n'est plus parcourue — FAIT en v223.** L'avenue
+  Mathias-Delobel, le long du Champ de Mars comme la vraie, lui donne sa
+  seconde porte. Quatre circuits mesurés (94 à 100 %) couvrent les dix-huit
+  voies de Lille, et la rue de Paris, la rue Gustave-Delory et le boulevard
+  Victor-Hugo sont repris par la même passe.
+- [x] **Valencia Street ne roulait plus à San Francisco — FAIT en v223.** La
+  transversale annoncée existe : la 16e Rue au nord et Cesar Chavez au sud,
+  toutes deux réelles. Le tour de la Mission et de Mission Bay les emprunte.
 - [ ] **Le socle du Shard est un treillis de verre** — un bloc de `GLASS` dans
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
   de la passe de rues.
 
-- [ ] **Cinq voies de San Francisco restent sans circuit** — Fulton, Lincoln
-  Way, la Great Highway, la 19e Avenue et Third Street ne referment aucune
-  boucle au-dessus du seuil. Ces cinq-là bordent le Golden Gate Park et la
-  côte, où il n'y a rien à boucler. Depuis v207, quatre circuits sans
-  demi-tour couvrent huit voies sur quatorze.
+- [x] **Cinq voies de San Francisco restaient sans circuit — FAIT en v223, et
+  la cause n'était pas celle qu'on avait notée.** « Elles bordent le parc et la
+  côte, où il n'y a rien à boucler » était une explication, pas une mesure :
+  mesurées sur leur propre sol, la Great Highway tenait la rue à ZÉRO pour
+  cent, Fulton à 50 %, Third Street et Lincoln Way à 70 %, la 19e Avenue à
+  81 %. Ce n'étaient pas des rues. Le parc tient désormais entre Fulton et
+  Lincoln, la 19e le traverse comme Crossover Drive, la Great Highway est
+  passée côté ville et Third Street est revenue à terre ; cinq vraies rues de
+  raccord (Stanyan, Sunset Boulevard, Sloat Boulevard, la 16e Rue, Cesar
+  Chavez) et six circuits mesurés à 100 % couvrent les dix-neuf voies.
 
 - [ ] **Une voiture coûte 32,6 maillages** — mesuré en v201, et c'est ce qui
   borne tout le reste : trois fois un personnage, pour un objet qui n'a ni

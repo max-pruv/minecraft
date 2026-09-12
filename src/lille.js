@@ -34,7 +34,7 @@
 // quatre blocs ne l'est plus à côté de maisons de sept.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerBlocs } from './voies.js';
 import { positionDe } from './mondes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -233,26 +233,55 @@ const TROTTOIR_AV = 1.2;
 // voit la gare, de l'autre le beffroi de la Chambre de commerce.
 // Exportées pour que les témoins suivent la rue Faidherbe d'un bout à l'autre
 // par sa voie déclarée, plutôt que par des blocs écrits en dur.
+// UN POINT DE VOIE S'ÉCRIT EN KILOMÈTRES, JAMAIS EN BLOCS (v223). Toute cette
+// table était écrite en blocs de l'échelle du jour — `[[18, -10], [28, 0]]` —
+// c'est-à-dire juste aujourd'hui et faux à la prochaine remise à l'échelle,
+// sans que rien ne rougisse : exactement le piège d'`adresseParis` et de
+// `chercheMer`. La conversion est EXACTE et ne déplace pas un bloc : les
+// points étaient des entiers, et `de(u / 32, v / 32)` rend le même entier.
 export const VOIES_LILLE = [
   // le centre, entre la Grand'Place et les gares
-  { nom: 'Rue Faidherbe', l: a(0.9), t: TROTTOIR_AV, pts: [[18, -10], [28, 0]] },
-  { nom: 'Boulevard Carnot', l: a(0.7), t: TROTTOIR_AV, pts: [[18, -14], [30, -21], [42, -24]] },
-  { nom: 'Avenue Willy-Brandt', l: a(0.8), t: TROTTOIR_AV, pts: [[42, -24], [42, 7]] },
-  { nom: 'Rue de Tournai', l: a(0.7), t: TROTTOIR_AV, pts: [[42, 7], [28, 7]] },
+  { nom: 'Rue Faidherbe', l: a(0.9), t: TROTTOIR_AV, pts: [de(0.5625, -0.3125), de(0.875, 0)] },
+  { nom: 'Boulevard Carnot', l: a(0.7), t: TROTTOIR_AV, pts: [de(0.5625, -0.4375), de(0.9375, -0.65625), de(1.3125, -0.75)] },
+  { nom: 'Avenue Willy-Brandt', l: a(0.8), t: TROTTOIR_AV, pts: [de(1.3125, -0.75), de(1.3125, 0.21875)] },
+  { nom: 'Rue de Tournai', l: a(0.7), t: TROTTOIR_AV, pts: [de(1.3125, 0.21875), de(0.875, 0.21875)] },
   // vers le sud : la Porte de Paris, l'hôtel de ville, la République
-  { nom: 'Rue de Paris', l: a(0.7), t: TROTTOIR_AV, pts: [[2, 4], [6, 15], [11, 22]] },
-  { nom: 'Rue Gustave-Delory', l: a(0.7), t: TROTTOIR_AV, pts: [[-2, 32], [11, 32]] },
-  { nom: 'Boulevard de la Liberté', l: a(1.0), t: TROTTOIR_AV, pts: [[-32, 3], [-16, 19], [-2, 32]] },
-  { nom: 'Rue Nationale', l: a(0.9), t: TROTTOIR_AV, pts: [[-2, 0], [-19, 2], [-43, 3]] },
+  { nom: 'Rue de Paris', l: a(0.7), t: TROTTOIR_AV, pts: [de(0.0625, 0.125), de(0.1875, 0.46875), de(0.34375, 0.6875)] },
+  { nom: 'Rue Gustave-Delory', l: a(0.7), t: TROTTOIR_AV, pts: [de(-0.0625, 1), de(0.34375, 1)] },
+  { nom: 'Boulevard de la Liberté', l: a(1.0), t: TROTTOIR_AV, pts: [de(-1, 0.09375), de(-0.5, 0.59375), de(-0.0625, 1)] },
+  { nom: 'Rue Nationale', l: a(0.9), t: TROTTOIR_AV, pts: [de(-0.0625, 0), de(-0.59375, 0.0625), de(-1.34375, 0.09375)] },
   // l'ouest et Wazemmes
-  { nom: 'Boulevard Vauban', l: a(0.8), t: TROTTOIR_AV, pts: [[-43, 3], [-40, 20], [-36, 36], [-35, 44]] },
-  { nom: 'Rue Léon-Gambetta', l: a(0.7), t: TROTTOIR_AV, pts: [[-2, 32], [-15, 38], [-35, 44]] },
-  { nom: 'Boulevard Victor-Hugo', l: a(0.8), t: TROTTOIR_AV, pts: [[11, 32], [-10, 40], [-35, 44]] },
+  { nom: 'Boulevard Vauban', l: a(0.8), t: TROTTOIR_AV, pts: [de(-1.34375, 0.09375), de(-1.25, 0.625), de(-1.125, 1.125), de(-1.09375, 1.375)] },
+  { nom: 'Rue Léon-Gambetta', l: a(0.7), t: TROTTOIR_AV, pts: [de(-0.0625, 1), de(-0.46875, 1.1875), de(-1.09375, 1.375)] },
+  // LE BOULEVARD VICTOR-HUGO ÉTAIT COLLÉ À LA RUE GAMBETTA. Mesuré bloc par
+  // bloc : quatre blocs ou moins sur plus de la moitié de sa longueur, zéro
+  // au bout — cent vingt-cinq mètres là où les vrais boulevards sont à quatre
+  // cents. Toute boucle qui le prenait se superposait de SOIXANTE-DEUX blocs
+  // au convoi de Gambetta, trois fois le seuil de partage de la v211 : c'est
+  // pour cela qu'il n'avait pas de voitures, et c'est le TRACÉ qu'il fallait
+  // corriger, pas le seuil. Le vrai fait partie de la ceinture de boulevards
+  // du sud, de la Porte de Paris à la Porte des Postes en passant bien au sud
+  // du centre.
+  { nom: 'Boulevard Victor-Hugo', l: a(0.8), t: TROTTOIR_AV, pts: [de(0.34375, 1), de(-0.15, 1.3), de(-0.65, 1.48), de(-1.02, 1.42), de(-1.09375, 1.375)] },
   // le Vieux-Lille
-  { nom: 'Rue Esquermoise', l: a(0.6), t: TROTTOIR_AV, pts: [[-1, -3], [-11, -11]] },
-  { nom: 'Rue Royale', l: a(0.6), t: TROTTOIR_AV, pts: [[-11, -11], [-26, -22], [-34, -27]] },
-  { nom: 'Avenue du Peuple-Belge', l: a(0.8), t: TROTTOIR_AV, pts: [[-11, -11], [-12, -28], [-16, -45]] },
-  { nom: 'Rue de la Monnaie', l: a(0.6), t: TROTTOIR_AV, pts: [[-12, -28], [-3, -16], [1, -6]] },
+  { nom: 'Rue Esquermoise', l: a(0.6), t: TROTTOIR_AV, pts: [de(-0.03125, -0.09375), de(-0.34375, -0.34375)] },
+  { nom: 'Rue Royale', l: a(0.6), t: TROTTOIR_AV, pts: [de(-0.34375, -0.34375), de(-0.8125, -0.6875), de(-0.97, -0.8)] },
+  { nom: 'Avenue du Peuple-Belge', l: a(0.8), t: TROTTOIR_AV, pts: [de(-0.34375, -0.34375), de(-0.375, -0.875), de(-0.5, -1.40625)] },
+  { nom: 'Rue de la Monnaie', l: a(0.6), t: TROTTOIR_AV, pts: [de(-0.375, -0.875), de(-0.09375, -0.5), de(0.03125, -0.1875)] },
+
+  // --- LES RUES DE RACCORD (v223) ---------------------------------------------
+  //
+  // « On ne rafistole pas une impasse, on lui donne sa seconde porte » — Paris
+  // v209 et v216, San Francisco v223. La rue Royale n'avait qu'une porte : elle
+  // ne rencontrait l'Esquermoise et le Peuple-Belge qu'en un seul point, le
+  // Lion d'Or, donc tout circuit qui y entrait devait en ressortir par là.
+  // L'avenue Mathias-Delobel longe le Champ de Mars, comme la vraie, et lui
+  // donne son autre bout ; la rue Pierre-Mauroy et la rue du Molinel donnent au
+  // sud et aux gares des boucles à eux plutôt que de repasser sur celle du
+  // voisin.
+  { nom: 'Avenue Mathias-Delobel', l: a(0.7), t: TROTTOIR_AV, pts: [de(-0.97, -0.8), de(-0.72, -1.0), de(-0.42, -1.1)] },
+  { nom: 'Rue Pierre-Mauroy', l: a(0.7), t: TROTTOIR_AV, pts: [de(0.03125, 0.0625), de(0, 0.5), de(-0.0625, 0.96875)] },
+  { nom: 'Rue du Molinel', l: a(0.7), t: TROTTOIR_AV, pts: [de(0.09, 0.3), de(0.5, 0.28125), de(0.9375, 0.21875)] },
 ];
 
 const VOIES = VOIES_LILLE;
@@ -297,20 +326,85 @@ const BANDES = rangerVoies(VOIES);
 // gardées en priorité — ce n'est pas un tirage au sort.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
+//
+// ET LE PRIX SE PAIE AVEC DES RUES, PAS AVEC UN SEUIL (v223). Quatre avenues
+// sur quinze n'avaient aucune voiture. Chacune pour sa propre raison, mesurée :
+//
+//   - la rue ROYALE n'avait qu'UNE porte. Elle ne rencontrait l'Esquermoise et
+//     le Peuple-Belge qu'en un seul point, le Lion d'Or, donc tout circuit qui
+//     y entrait devait en ressortir par là — l'îlot en sucette de la City de
+//     Londres, v206. L'avenue Mathias-Delobel, le long du Champ de Mars comme
+//     la vraie, lui donne son autre bout.
+//   - la rue de PARIS ne rencontrait personne à moins de dix blocs : la rue
+//     Pierre-Mauroy (Grand'Place → République) et la rue du Molinel (rue de
+//     Paris → les gares) la raccrochent au reste de la ville.
+//   - le boulevard VICTOR-HUGO courait à QUATRE BLOCS ou moins de la rue
+//     Léon-Gambetta sur plus de la moitié de sa longueur, et à zéro au bout :
+//     toute boucle qui le prenait se superposait de SOIXANTE-DEUX blocs au
+//     convoi de Gambetta, trois fois le seuil de la v211. C'était le tracé,
+//     pas le seuil — le vrai fait partie de la ceinture de boulevards du sud.
+//   - la rue GUSTAVE-DELORY suivait, dès que les trois autres avaient de quoi
+//     boucler.
+//
+// Quatre circuits mesurés couvrent les DIX-HUIT voies, seuil de partage
+// inchangé : la pire paire de convois se partage vingt blocs.
 const CIRCUITS = [
-  // 100 % (130 blocs, virage max 112°)
-  ["Boulevard de la Liberté","Rue Nationale","Boulevard Vauban","Rue Léon-Gambetta"],
-  // 100 % (59 blocs, virage max 146°)
-  ["Rue Esquermoise","Avenue du Peuple-Belge","Rue de la Monnaie"],
+  // le tour du Vieux-Lille, de la Grand'Place au Champ de Mars
+  // 94 % (105 blocs, virage max 104°)
+  ["Rue Nationale","Rue Esquermoise","Rue de la Monnaie","Avenue du Peuple-Belge","Avenue Mathias-Delobel","Rue Royale"],
+  // la perspective Faidherbe et les gares
   // 99 % (96 blocs, virage max 104°)
-  ["Rue Faidherbe","Boulevard Carnot","Avenue Willy-Brandt","Rue de Tournai"],
+  ["Rue Faidherbe","Boulevard Carnot","Avenue Willy-Brandt","Rue de Tournai","Rue du Molinel"],
+  // le grand tour de l'ouest, de la Porte de Paris à Wazemmes
+  // 100 % (166 blocs, virage max 98°)
+  ["Rue de Paris","Boulevard Victor-Hugo","Boulevard de la Liberté","Boulevard Vauban","Rue Nationale","Rue Pierre-Mauroy"],
+  // Wazemmes, entre la République et la Porte des Postes
+  // 100 % (98 blocs, virage max 148°)
+  ["Rue Gustave-Delory","Rue Léon-Gambetta","Boulevard Victor-Hugo"],
 ];
 // Le damier de la Grand'Place est roulant : les rues y débouchent.
 const ROULANT = new Set([BITUME, PAVE, ROSE]);
 
+// UN MONUMENT A UNE RUE AUTOUR DE LUI — la leçon de Paris en v221, appliquée
+// ici le jour même où Lille gagne des circuits, et pas quatre versions plus
+// tard. Mesuré à hauteur de CARROSSERIE (les blocs que POSE le bâtisseur, pas
+// l'emprise déclarée) : la Porte de Paris est PLEINE sur onze blocs de large
+// et cinq de long — on ne passe pas dessous —, et la Colonne de la Déesse tient
+// trois blocs au milieu de la Grand'Place. Or `chainerVoies` joint la rue de
+// Paris à la rue Gustave-Delory en droite ligne, et cette ligne passe par la
+// Porte ; deux autres circuits passaient par la Colonne. Quatre pas de convoi
+// dans la Déesse, deux dans la Porte, mesurés.
+//
+// Le tour suit le PÉRIMÈTRE du socle, jamais un cercle (v221 : un cercle coupe
+// les coins). La Grand'Place est pavée d'un bout à l'autre, le tour de la
+// Déesse n'a donc rien à poser ; la Porte de Paris, elle, reçoit trois blocs de
+// chaussée sur son pourtour, comme la place Simon Vollant qui l'entoure
+// vraiment. C'est du SOL, pas du relief : les deux empreintes de `plafond.js`
+// ne bougent pas.
+const AXE_TOUR = 1.5;        // la voiture roule au milieu de la rue du tour
+const LARGE_TOUR = 3;        // trois blocs de chaussée sur le pourtour
+const SOCLES_LILLE = [
+  { nom: 'Porte de Paris', dx: 0.35, dz: 0.85, bu: 6, bv: 3, pave: true },
+  { nom: 'Colonne de la Déesse', dx: 0, dz: 0, bu: 2, bv: 2, pave: false },
+].map((p) => { const [u, v] = de(p.dx, p.dz); return { ...p, u, v }; });
+
+const TOURS_LILLE = SOCLES_LILLE.map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR, hv: p.bv + AXE_TOUR }));
+export const contournerSoclesLille = (pts) => contournerBlocs(pts, TOURS_LILLE);
+
+function autourDunSocleLille(u, v) {
+  for (const p of SOCLES_LILLE) {
+    if (!p.pave) continue;
+    const du = (u > p.u ? u - p.u : p.u - u) - p.bu;
+    const dv = (v > p.v ? v - p.v : p.v - v) - p.bv;
+    if (du <= 0 && dv <= 0) continue;                       // dedans : ce n'est pas l'anneau
+    if (du <= LARGE_TOUR && dv <= LARGE_TOUR) return true;
+  }
+  return false;
+}
+
 export const circuitsLille = fabriqueCircuits({
   cle: 'lille', ancre: LILLE, chaines: CIRCUITS, roulant: ROULANT,
-  voies: { liste: VOIES, sol: solLille },
+  voies: { liste: VOIES, sol: solLille }, ajuster: contournerSoclesLille,
 });
 
 export function solLille(x, z) {
@@ -330,6 +424,8 @@ export function solLille(x, z) {
       return ((u + v) & 3) === 0 ? ARBRE : HERBE;
     }
   }
+
+  if (autourDunSocleLille(u, v)) return BITUME;
 
   for (const p of LIEUX_LILLE) {
     if (p.jardin) {

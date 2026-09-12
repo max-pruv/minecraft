@@ -1357,7 +1357,15 @@
       #map-outils button.zoom { min-width: 48px; font-size: 22px; }
       #map-legend, #map-astuce { font-size: 11px; margin-top: 4px; max-width: none; }
     }
-  </style>
+
+#cartes-choix{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:18px auto 8px;font:12px system-ui;color:#bbc6c9;max-width:460px}
+#cartes-choix span{letter-spacing:2px;font-size:10px}
+#cartes-choix button{padding:10px 14px;border:1px solid #59636a;border-radius:8px;background:#202a30;color:#fff;font:inherit;cursor:pointer}
+#cartes-choix button[aria-pressed=true]{background:#294e4b;border-color:#8ec9b1}
+#manhattan-adresse{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:9px 16px;border:1px solid #ffffff22;border-radius:4px;background:#17242acc;color:#eee8dc;font:11px system-ui;letter-spacing:2px;text-transform:uppercase;pointer-events:none;max-width:45vw;text-align:center}
+.carte-ouverte #manhattan-adresse{display:none}
+@media(max-width:700px){#manhattan-adresse{top:8px;font-size:9px;padding:6px 8px}}
+</style>
 </head>
 <body>
   <div id="boot-loader">

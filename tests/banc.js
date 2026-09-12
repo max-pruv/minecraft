@@ -19,7 +19,7 @@ const RACINE = path.resolve(__dirname, '..');
 // rangent pas au même endroit.
 function trouverChromium() {
   if (process.env.CHROMIUM) return process.env.CHROMIUM;
-  const pistes = [];
+  const pistes = [chromium.executablePath()];
   const parc = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   try {
     for (const d of fs.readdirSync(parc)) {
@@ -160,7 +160,7 @@ class Banc {
     this.pairs = await servirLesPairs(this.portPairs);
     this.navigateur = await chromium.launch({
       executablePath: exe,
-      args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader',
+      args: ['--no-sandbox', '--use-gl=angle', `--use-angle=${process.env.CHROMIUM_ANGLE || 'swiftshader'}`,
         // Une caméra et un micro simulés, toujours présents et toujours
         // autorisés. Sans eux, le chemin vidéo n'était éprouvé nulle part :
         // c'est précisément là qu'un carré noir a pu passer inaperçu.
@@ -381,7 +381,7 @@ class Banc {
     // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
     // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
     // sur un défaut.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

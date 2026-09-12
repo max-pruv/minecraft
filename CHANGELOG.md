@@ -20,6 +20,234 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v239 — Manhattan à l'échelle du joueur, sans déplacer les constructions
+
+**Pourquoi.** La Manhattan de la Terre est trop comprimée pour accueillir des
+rues à la largeur des voitures, des vitrines et une architecture détaillée.
+Un remplacement de ses blocs déplacerait les constructions sauvegardées.
+La PR #226 avait par ailleurs divergé de `main` et devait conserver ses
+corrections de voirie tout en intégrant les améliorations de mémoire et de vol
+de la v238.
+
+**Ce que ça change.** Le menu propose une carte Manhattan indépendante :
+2 353 bâtiments, treize quartiers, Broadway, Central Park et sept monuments
+aux volumes spécifiques. Les façades proches ont fenêtres en retrait,
+encadrements, corniches, commerces et équipements de toiture. Les matériaux
+physiques, ombres, reflets d'environnement, lumières nocturnes, mobilier,
+arbres, passants et 84 circuits de voitures sont intégrés au jeu existant.
+On peut se déplacer, construire, détruire, conduire, jouer au toucher et
+rejoindre ses amis ; l'éducation reste active. La Terre garde ses blocs et ses
+positions. Les contextes de sauvegarde, le cloud et le réseau sont séparés
+par carte. Les ressources urbaines sont originales et procédurales.
+
+Le rendu combine instancing, façades proches et silhouettes lointaines,
+chargement progressif et budgets ordinateur/tablette. Les quatre nouveaux
+modules entrent dans le cache PWA v239. La migration historique du relief
+ignore les cartes autonomes et `cloud=` désactive effectivement les services
+distants dans le banc d'essai. Le portail a aussi révélé une course déjà
+présente sur `main` : une reconnexion à vingt secondes effaçait la réponse du
+relais et affichait un conseil Wi-Fi erroné. Le diagnostic conserve désormais
+cette preuve pendant la session.
+
+**Ce qui le prouve.** Le scénario `tests/manhattan.js` vérifie les sauvegardes
+séparées, le mur qui bloque puis se détruit visiblement, la construction,
+la conduite au joystick, les destinations, les circuits sans obstacle, les
+lumières de nuit, le quiz, deux joueurs échangeant blocs et avatars, la clé
+de sauvegarde cloud et le redémarrage hors ligne. Son contrôle d'entrée est
+rouge sur `main` v238. Le portail est vert : démarrage et quatorze suites, dont les 24 témoins
+Manhattan. Onze captures de jeu ont été inspectées, au sol et en hauteur,
+de jour comme de nuit, sans erreur JavaScript/WebGL dans ce parcours.
+Les résultats et conditions sont consignés dans `docs/manhattan-validation.md`.
+
+La portée exacte et les limites se lisent dans `docs/manhattan.md` : ville
+interprétée et comprimée, intérieurs sommaires, reflets statiques, transitions
+de détail visibles et circulation qui ne répond pas encore aux feux. Aucune
+fidélité AAA ni validation sur iPad physique n'est revendiquée.
+
+---
+
+## PR #226 — Des avenues réelles où aucune voiture n'a jamais roulé
+
+Une passe ville par ville sur la dette déclarée depuis la v211 : des avenues
+qui existent, qu'un enfant peut nommer, et sur lesquelles aucun circuit de
+voitures ne passait. Les quatre villes que la v211 avait laissées derrière elle
+— San Francisco, Lille, Londres, Washington — ont chacune leur entrée
+ci-dessous ; ces changements attendaient la fusion de la PR #226.
+
+Et chacune a une cause DIFFÉRENTE, ce qui est la leçon de la passe : à San
+Francisco les avenues n'étaient pas des rues ; à Lille l'une était une impasse
+et l'autre collée à sa voisine ; à Londres Bloomsbury n'avait que deux liens
+nord-sud, et le témoin qui gardait la dette se trompait ; à Washington la
+grille était simplement saturée. On mesure chaque avenue avant de chercher un
+remède commun.
+
+### San Francisco — six avenues qui n'étaient pas des rues
+
+**Pourquoi.** Six des quatorze voies nommées de San Francisco n'avaient aucune
+voiture depuis la v207, et la dette était écrite ainsi dans `TASKS.md` :
+« ces cinq-là bordent le Golden Gate Park et la côte, où il n'y a rien à
+boucler ». C'était une explication, pas une mesure.
+
+Mesurée — chaque avenue sur son propre sol, colonne par colonne, avant de
+chercher la moindre boucle — elle est fausse. **La Great Highway tenait la rue
+à ZÉRO pour cent** : onze blocs de sable et quatre-vingt-dix-neuf hors de la
+presqu'île, c'est-à-dire dans le Pacifique. Fulton Street 50 %, Third Street
+70 %, Lincoln Way 70 %, la 19e Avenue 81 % — de l'herbe, du feuillage, et huit
+blocs d'**eau** pour la 19e, qui traversait le lac du parc. Ce n'étaient pas
+des avenues sans boucle : ce n'étaient pas des rues.
+
+La cause tient en une ligne : l'ellipse du Golden Gate Park faisait un
+kilomètre de haut et débordait sur ses deux rues de bord, et les parcs passent
+avant les rues dans `solSF`. Le vrai parc est borné au nord par Fulton et au
+sud par Lincoln Way.
+
+**Ce que ça change.** Les enfants trouvent des voitures dans tout l'ouest et
+tout le sud de la ville — le Richmond, le Sunset, le tour du Golden Gate Park,
+la Mission, Mission Bay et Dogpatch — là où il n'y en avait jamais eu une
+seule. Le parc s'arrête au trottoir de ses deux avenues, la 19e Avenue le
+traverse comme le fait Crossover Drive au lieu de disparaître dans un lac, la
+Great Highway longe Ocean Beach côté ville, et Third Street est revenue à terre.
+Cinq vraies rues de plus, prises sur le plan : Stanyan Street, Sunset
+Boulevard, Sloat Boulevard, la 16e Rue et Cesar Chavez Street.
+
+**Ce qui le prouve.** Le portail est vert. Les dix-neuf voies de la ville
+tiennent la rue à **100 %**, mesuré une par une. Six circuits mesurés à 100 %
+couvrent **dix-neuf avenues sur dix-neuf** — contre huit sur quatorze — sans
+qu'aucun ne fasse demi-tour (virage maximum 143°) et **sans toucher au seuil de
+partage de la v211** : la pire paire de convois se partage vingt blocs, la
+taille d'un carrefour. Aucun des quatre circuits neufs ne traverse un socle de
+monument, et les deux anciens en traversent exactement autant qu'avant —
+mesuré des deux côtés.
+
+Et **le sol n'a pas bougé d'un bloc** : `hauteurSF` ne lit ni les lieux ni les
+voies, la livraison ne touche que du SOL, et les deux empreintes de
+`plafond.js` le confirment — vérifié, pas supposé.
+
+### Lille — quatre avenues sans boucle, chacune pour sa propre raison
+
+**Pourquoi.** Quatre des quinze voies de Lille n'avaient aucune voiture depuis
+la v211, et la dette les nommait sans les expliquer. Mesurées, elles ne
+tombaient pas toutes pour la même cause :
+
+- **la rue Royale n'avait qu'UNE porte.** Elle ne rencontrait la rue
+  Esquermoise et l'avenue du Peuple-Belge qu'en un seul point, le Lion d'Or :
+  tout circuit qui y entrait devait en ressortir par là. C'est l'îlot en
+  sucette de la City de Londres, v206.
+- **la rue de Paris ne rencontrait personne** à moins de dix blocs.
+- **le boulevard Victor-Hugo courait à QUATRE BLOCS ou moins de la rue
+  Léon-Gambetta** sur plus de la moitié de sa longueur, et à zéro au bout.
+  Toute boucle qui le prenait se superposait de **soixante-deux blocs** au
+  convoi de Gambetta — trois fois le seuil de partage de la v211. Ce n'était
+  pas le seuil qu'il fallait changer, c'était le tracé : cent vingt-cinq
+  mètres entre deux boulevards que la vraie ville sépare de quatre cents.
+- **la rue Gustave-Delory** suivait, dès que les trois autres avaient de quoi
+  boucler.
+
+**Ce que ça change.** Des voitures roulent dans le Vieux-Lille et jusqu'au
+Champ de Mars, autour de la Porte de Paris, et à Wazemmes — trois quartiers qui
+n'en avaient jamais vu. Trois vraies rues de plus, prises sur le plan :
+l'avenue Mathias-Delobel le long du Champ de Mars, la rue Pierre-Mauroy de la
+Grand'Place à la République, la rue du Molinel de la rue de Paris aux gares. Le
+boulevard Victor-Hugo est revenu à sa place, dans la ceinture de boulevards du
+sud.
+
+Et la Porte de Paris et la Colonne de la Déesse ont désormais **une rue autour
+d'elles** : `chainerVoies` joignait la rue de Paris à la rue Gustave-Delory en
+droite ligne, et cette ligne passait au travers de la Porte — qui est pleine,
+on ne passe pas dessous. C'est la leçon de Paris en v221, appliquée le jour
+même où Lille gagne des circuits plutôt que quatre versions plus tard.
+
+**Ce qui le prouve.** Le portail est vert. Quatre circuits mesurés (94, 99, 100
+et 100 %) couvrent les **dix-huit voies sur dix-huit**, sans demi-tour, pire
+paire de convois vingt-et-un blocs. Un témoin neuf de `carteMonde.js` mesure ce
+qu'aucun ne mesurait à Lille : le BLOC à la cote du convoi, sur toute la
+largeur de la voiture. Désarmé le contournement, il rend cinq pas de
+carrosserie dans la Colonne de la Déesse — il peut rougir, et il a rougi.
+
+Au passage, **les quarante-et-un points de voie de Lille étaient écrits en
+blocs**, pas en kilomètres : justes aujourd'hui, faux à la prochaine remise à
+l'échelle, et rien n'aurait rougi. Ils sont convertis, et la conversion est
+prouvée exacte — quarante-et-un points comparés, zéro écart.
+
+### Londres — King's Cross était un cul-de-sac, et le témoin se trompait
+
+**Pourquoi.** Euston Road côté King's Cross n'avait aucune voiture depuis la
+v206 : rien ne partait de King's Cross ni vers l'est ni vers le sud, donc
+aucune boucle ne pouvait la prendre. `TASKS.md` nommait déjà la piste —
+Pentonville Road et Gray's Inn Road — sans qu'elle ait été mesurée.
+
+Elle ne suffisait pas, et il a fallu le mesurer : avec cinq rues de raccord,
+**aucun échange ne donnait ses voitures à King's Cross sans en retirer à
+Tottenham Court Road, au Strand et à Charing Cross Road** — éprouvé en
+retirant jusqu'à trois des dix circuits en place et en recomblant à chaque
+fois. La cause : Bloomsbury n'avait que **deux** liens nord-sud, Euston Road et
+Woburn Place, et un seul circuit les prenait tous les deux.
+
+**Et le témoin qui gardait cette dette se trompait.** Il déclarait une avenue
+« sans voitures » quand l'un de ses points de passage n'était pas un sommet de
+circuit — ce qui mesure « parcourue d'un bout à l'autre », pas « des voitures y
+roulent ». Il nommait ainsi le Strand et Charing Cross Road, qui en ont ; et il
+comptait couvertes des avenues dont deux circuits ne faisaient que toucher les
+deux bouts sans jamais les emprunter.
+
+**Ce que ça change.** Des voitures roulent enfin à King's Cross, à Islington et
+à Clerkenwell. Sept vraies rues de plus, aux vraies adresses : Gray's Inn Road,
+Pentonville Road, Farringdon Road, Clerkenwell Road, Theobald's Road, Gower
+Street (celle de l'University College) et Judd Street. King William Street, à
+la Banque d'Angleterre, en récupère aussi.
+
+**Ce qui le prouve.** Le portail est vert. Douze circuits mesurés à **100 %**,
+**cinquante-sept avenues sur soixante-dix** réellement parcourues, aucun
+demi-tour, pire paire de convois vingt-et-un blocs — le seuil de la v211 est
+inchangé, et **aucune rue ne perd ses voitures** : c'est la contrainte sous
+laquelle l'échange a été cherché. Le témoin remesure désormais la part de la
+LONGUEUR d'une avenue qui porte un convoi à moins de deux blocs ; rejoué sur
+`origin/main`, il est **rouge** et nomme précisément les deux rues que cette
+livraison fait rouler. La dette déclarée passe de quatorze avenues à treize.
+
+### Washington — Virginia Avenue, et une grille saturée
+
+**Pourquoi.** Virginia Avenue NO n'avait aucune boucle depuis la v205 : elle
+meurt sur Constitution à la 21e Rue, comme la vraie, et rien ne remontait de là
+vers K Street. `TASKS.md` nommait la piste — « la 21e ou la 23e Rue » — sans
+qu'elle ait été tracée.
+
+**Et la grille était SATURÉE.** Mesuré : sur vingt-six mille chaînes
+candidates, **zéro** n'était compatible avec les dix-neuf circuits en place sous
+le seuil de partage de vingt blocs. Dix-neuf convois occupent déjà le
+centre-ville de L'Enfant ; on ne peut rien ajouter sans retirer.
+
+**Ce que ça change.** La 23e Rue NO monte de Constitution à Washington Circle en
+croisant Virginia à Foggy Bottom — une rue de la grille, elle ne pose aucun sol
+de plus. Trois voies gagnent des voitures : **Virginia Avenue NO**,
+**Constitution Avenue** et la 23e Rue.
+
+La 17e Rue, elle, a été essayée et **retirée** : entre Constitution et F Street
+elle traverse le parc de la Maison-Blanche, qui passe avant les voies dans
+`solWashington` — mesuré, neuf blocs de pelouse sur quarante. Une rue qu'on ne
+peut pas tracer ne se force pas ; l'Ellipse fait ici trente blocs de large, à
+peu près sa vraie taille.
+
+**Ce qui le prouve.** Le portail est vert, rejoué **depuis zéro**. La boucle de
+Virginia gêne exactement deux circuits, de vingt-cinq et vingt-sept blocs ; on
+les retire, on la force, on recomble — la passe de réparation de la v216 — et le
+recomblement rend à la 15e Rue ses voitures par un autre chemin, si bien
+qu'**aucune rue ne perd les siennes**. Cinquante voies sur soixante portent un
+convoi, contre quarante-sept ; la pire paire reste à vingt-deux blocs. Aucune
+traversée de monument n'est ajoutée : cinquante-neuf pas dans une emprise sur la
+branche comme sur `origin/main`, mêmes monuments, mêmes comptes.
+
+**Et un trou dans la table des gardiens, signalé et non corrigé.**
+`src/washington.js` déclare pour gardiens `washington.js` et `plafond.js`
+seulement — pas `carte.js` ni `carteMonde.js`, alors que les deux l'importent
+et que `carteMonde.js` mesure ses dix-neuf circuits. Toutes les autres villes
+bâties à la main déclarent les trois. Le portail a donc annoncé « déjà vert sur
+ce code » pour les deux suites qui testent précisément ce qui venait de changer.
+`tests/tout.js` est hors de la zone de cette session : la correction est
+déclarée dans `TASKS.md`, et le portail a été rejoué depuis zéro en attendant.
+
+---
+
 ## v238 — Le jeu ne ralentit plus à mesure qu'on y joue
 
 **Pourquoi.** Max : « le jeu lague de plus en plus depuis un moment », et

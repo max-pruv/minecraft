@@ -1,9 +1,15 @@
 # Web Minecraft
 
-A Minecraft replica that runs entirely in the browser — no build step, no server
-logic, no external assets. Terrain, textures, physics and rendering are all
-generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://threejs.org)
-(vendored in `vendor/`).
+A building and exploration game that runs in the browser, with no build step.
+Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
+creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
+optional network services provide multiplayer and cloud saves.
+
+**New Manhattan map:** choose **Manhattan · ville réaliste** in the menu, or
+open `/?carte=manhattan`. Detailed architecture, Broadway, Central Park and
+landmarks use the same playable game, with independent saves that preserve
+all existing Earth constructions. See [the map guide](docs/manhattan.md) for
+scope, controls, rendering budgets, licensing and limitations.
 
 ## Features
 
@@ -22,8 +28,9 @@ generated in ~1,500 lines of vanilla JavaScript on top of [Three.js](https://thr
   gravity, swimming with buoyancy, and a fly mode for building.
 - **Voxel physics** — AABB collision against the world, tunnel-proof substepping,
   and DDA raycasting for block targeting.
-- **Procedural pixel-art textures** — the whole texture atlas is painted onto a
-  canvas at startup; the repo ships zero image files.
+- **Procedural textures** — the block atlas is painted onto a canvas at
+  startup. The independent Manhattan map adds procedural physical materials
+  and geometric facade details; existing vehicle assets keep their licenses.
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Creature catching** — 32 procedurally generated original species with
   elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn

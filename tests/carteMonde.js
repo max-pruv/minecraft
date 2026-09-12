@@ -1164,12 +1164,44 @@ const VRAIES_KM = [
         }
         return { part: c.part, pts: c.pts.length, pas, mauvais, virage: Math.round(virage) };
       });
-      // Une avenue est couverte si chacun de ses points de passage est un
-      // sommet d'un circuit — c'est ainsi que les circuits sont chaînés.
-      const sommets = new Set(brut.flatMap((c) => c.pts.map((q) => `${Math.round(q.x)},${Math.round(q.z)}`)));
-      const sansBoucle = m.VOIES_LONDRES
-        .filter((v) => !v.pts.every(([u, w]) => sommets.has(`${Math.round(L.x + u)},${Math.round(L.z + w)}`)))
-        .map((v) => v.nom);
+      // « CETTE AVENUE A DES VOITURES » NE SE LIT PAS SUR SES SOMMETS (v223).
+      // La règle d'avant demandait que CHAQUE point de passage d'une avenue
+      // soit un sommet d'un circuit. Elle mesure « parcourue d'un bout à
+      // l'autre », pas « des voitures y roulent », et elle se trompe des deux
+      // côtés : elle nommait « sans voitures » le Strand et Charing Cross
+      // Road, qui en ont, et elle en déclarait couvertes dont deux circuits
+      // ne faisaient que toucher les deux bouts sans jamais les emprunter.
+      // On mesure donc la part de la LONGUEUR de l'avenue qui porte un convoi
+      // à moins de deux blocs — c'est ce qu'un enfant voit depuis le trottoir.
+      const grille = new Set();
+      for (const c of brut) {
+        for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], z = c.pts[(i + 1) % c.pts.length];
+          const n = Math.max(1, Math.ceil(Math.hypot(z.x - a.x, z.z - a.z)));
+          for (let k = 0; k < n; k++) {
+            grille.add(`${Math.round(a.x + ((z.x - a.x) * k) / n)},${Math.round(a.z + ((z.z - a.z) * k) / n)}`);
+          }
+        }
+      }
+      const proche = (x, z) => {
+        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+          if (grille.has(`${Math.round(x) + dx},${Math.round(z) + dz}`)) return true;
+        }
+        return false;
+      };
+      const sansBoucle = [];
+      for (const v of m.VOIES_LONDRES) {
+        let n = 0, vus = 0;
+        for (let i = 0; i < v.pts.length - 1; i++) {
+          const a = v.pts[i], z = v.pts[i + 1];
+          const s = Math.max(1, Math.ceil(Math.hypot(z[0] - a[0], z[1] - a[1])));
+          for (let k = 0; k <= s; k++) {
+            const t = k / s; n++;
+            if (proche(L.x + a[0] + (z[0] - a[0]) * t, L.z + a[1] + (z[1] - a[1]) * t)) vus++;
+          }
+        }
+        if (vus / n < 0.7) sansBoucle.push(v.nom);
+      }
       return { circuits, voies: m.VOIES_LONDRES.length, sansBoucle };
     });
     verifier('des voitures font le tour de la City, de Westminster, de Bloomsbury et de la rive sud',
@@ -1183,10 +1215,15 @@ const VRAIES_KM = [
     // traversent. On ne relâche donc pas un compte, on écrit la LISTE : toute
     // avenue qui perdrait ses voitures en plus de celles-là rougit, et la
     // dette est déclarée mot pour mot dans `TASKS.md`.
-    const DETTE_LONDRES = new Set(['The Mall', 'Horse Guards Road', 'Great George Street',
-      'Birdcage Walk', 'Buckingham Gate', 'Constitution Hill', 'Edgware Road',
-      'Marylebone Road, côté Edgware', "Euston Road, côté King's Cross", 'Victoria Embankment',
-      'King William Street', 'Cannon Street', 'Borough High Street', 'London Road']);
+    //
+    // La liste a été REMESURÉE en v223 avec la règle ci-dessus. Sur
+    // `origin/main` elle rend quatorze noms, dont « Euston Road, côté King's
+    // Cross » : ce témoin est donc ROUGE sur l'ancien code, et c'est la
+    // preuve. Sept vraies rues de raccord plus tard, il en reste treize.
+    const DETTE_LONDRES = new Set(['The Mall', 'Horse Guards Road',
+      'Birdcage Walk', 'Buckingham Gate', 'Constitution Hill', 'Piccadilly, côté Circus',
+      'Edgware Road', 'Marylebone Road, côté Edgware', 'Euston Road, côté Marylebone',
+      "Theobald's Road", 'Blackfriars Road', 'Borough High Street', 'London Road']);
     verifier('les avenues de Londres sans voitures sont celles, et seulement celles, qu\'on a déclarées',
       !ldn.absent && ldn.voies >= 60 && ldn.sansBoucle.every((n) => DETTE_LONDRES.has(n)),
       JSON.stringify(ldn.absent ? ldn : {
@@ -1645,6 +1682,58 @@ const VRAIES_KM = [
     verifier('aucune voiture ne traverse un monument de Paris',
       !monuments.absent && monuments.circuits === 8 && monuments.dur === 0,
       JSON.stringify(monuments));
+
+    // ET LILLE, LE JOUR MÊME OÙ ELLE GAGNE DES CIRCUITS (v223) — pas quatre
+    // versions plus tard comme Paris.
+    //
+    // Ce témoin-ci est VERT DES DEUX CÔTÉS, et c'est délibéré : sur l'ancien
+    // code les trois circuits de Lille ne passaient ni par la Porte de Paris
+    // ni par la Colonne de la Déesse, donc il n'y avait rien à traverser. Ce
+    // qui justifie de le garder plutôt que de le retirer (règle de la v220),
+    // c'est qu'il PEUT échouer et qu'il a échoué : désarmé
+    // `contournerSoclesLille` sur cette branche et rejoué, il rend
+    // « dur 5, pas 9, Colonne de la Déesse 5 » — cinq pas de carrosserie dans
+    // la pierre. Un témoin qui a rougi n'est pas un témoin qui ne peut pas
+    // rougir.
+    //
+    // Les demi-emprises sont celles que POSE le bâtisseur à hauteur de
+    // carrosserie, pas la boîte d'affichage : la Porte de Paris est pleine sur
+    // onze blocs de large et cinq de long — on ne passe pas dessous. Elles
+    // sont écrites ICI, comme celles de Paris, pour que le témoin mesure la
+    // même chose sur l'ancien code.
+    const monumentsLille = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const b = await import('./src/blocks.js');
+      const m = await import('./src/lille.js');
+      if (typeof m.circuitsLille !== 'function' || typeof m.adresseLille !== 'function') return { absent: true };
+      const SOCLES = [
+        { nom: 'Porte de Paris', dx: 0.35, dz: 0.85, bu: 6, bv: 3 },
+        { nom: 'Colonne de la Déesse', dx: 0, dz: 0, bu: 2, bv: 2 },
+        { nom: 'Citadelle de Vauban', dx: -1.55, dz: -0.8, bu: 18, bv: 17 },
+      ].map((p) => { const [x, z] = m.adresseLille(p.dx, p.dz); return { ...p, x, z }; });
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const circuits = m.circuitsLille(solDe);
+      const DEMI = 1.13;                       // la demi-largeur d'une voiture
+      const par = {};
+      let dur = 0, pas = 0;
+      for (const c of circuits) for (const p of c.pts) {
+        const s = SOCLES.find((q) => Math.abs(p.x - q.x) <= q.bu && Math.abs(p.z - q.z) <= q.bv);
+        if (!s) continue;
+        pas++;
+        let bloque = false;
+        for (const dx of [-DEMI, 0, DEMI]) for (const dz of [-DEMI, 0, DEMI]) for (const dy of [0, 1]) {
+          const id = w.getBlock(Math.round(p.x + dx), Math.round(p.y + dy), Math.round(p.z + dz));
+          if (id && b.isSolid(id)) bloque = true;
+        }
+        if (!bloque) continue;
+        dur++;
+        par[s.nom] = (par[s.nom] || 0) + 1;
+      }
+      return { dur, pas, par, circuits: circuits.length, parts: circuits.map((c) => c.part) };
+    });
+    verifier('ni un monument de Lille — la Porte de Paris se contourne, la Déesse aussi',
+      !monumentsLille.absent && monumentsLille.circuits === 4 && monumentsLille.dur === 0,
+      JSON.stringify(monumentsLille));
 
     // --- LES PARCS DU TOUR DU MONDE ONT DE VRAIS ARBRES ---------------------
     //

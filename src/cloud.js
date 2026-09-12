@@ -40,7 +40,8 @@ export class CloudSave {
       if (saved && saved.url && saved.key) { url = saved.url; key = saved.key; }
     } catch { /* ignore */ }
     const qs = new URLSearchParams(location.search);
-    if (qs.get('cloud')) { url = qs.get('cloud'); key = qs.get('cloudkey') || 'anon'; }
+    // Une valeur vide coupe explicitement le nuage pour les essais locaux.
+    if (qs.has('cloud')) { url = qs.get('cloud'); key = qs.get('cloudkey') || 'anon'; }
     this.url = url;
     this.key = key;
   }

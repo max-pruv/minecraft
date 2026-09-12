@@ -6,14 +6,20 @@ jouer par de vrais navigateurs.
 
 ```sh
 cd tests
-npm install
-npm test          # les trois suites
+npm ci
+npx playwright-core install chromium  # si aucun Chromium n'est installé
+npm test          # le portail sélectionne les suites pertinentes
 npm run reseau    # le monde partagé
 npm run reglages  # les réglages, enfant et parent
 npm run carte     # la carte : glisser, zoomer, voyager
+npm run manhattan # édition, sauvegardes, réseau, conduite tactile et PWA
 ```
 
-Compter environ deux minutes. C'est normal et voulu : les attentes doivent
+Sur macOS, `CHROMIUM_ANGLE=metal npm test` utilise le GPU natif. Le défaut
+reste SwiftShader ; `CHROMIUM` permet de choisir un exécutable. Une mesure de
+cadence doit toujours préciser le moteur et l'appareil utilisés.
+
+Le portail peut prendre plusieurs dizaines de minutes. C'est normal : les attentes doivent
 dépasser les seuils réels du jeu — vingt secondes de silence toléré avant de
 couper un lien, cinq secondes entre deux battements de cœur. Un test plus
 rapide ne prouverait rien de ce qu'on cherche à prouver.

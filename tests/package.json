@@ -21,7 +21,8 @@
     "maj": "node maj.js",
     "metro": "node metro.js",
     "carteMonde": "node carteMonde.js",
-    "hote": "node hote.js"
+    "hote": "node hote.js",
+    "manhattan": "node manhattan.js"
   },
   "devDependencies": {
     "express": "^4.19.2",
