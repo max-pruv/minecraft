@@ -58,10 +58,19 @@ export function segmentsDeTrain() {
 // blocs qu'il traverse — la question « suis-je près d'un rail ? » se pose à
 // chaque colonne de terrain et à chaque pixel de carte, elle doit être
 // gratuite loin des lignes.
+//
+// ET LE SEGMENT SE RANGE BLOC PAR BLOC, PAS TOUS LES 256 (v242). Le premier
+// index échantillonnait un point tous les 256 blocs, avec quatre blocs de
+// marge : une diagonale qui COUPE LE COIN d'une case y passe sur soixante
+// blocs sans qu'aucun échantillon n'y tombe, et la case ignore le rail. Vu
+// sur l'ICE Amsterdam–Cologne, le monde ×2 ayant déplacé la ligne sur un tel
+// coin : soixante blocs de voie sans rails ni ballast, une marche de cinq, et
+// un arbre planté dessus — `presDeLaVoie` ne voyait pas la voie non plus.
+// Cent cinquante mille pas au démarrage coûtent quelques millisecondes.
 const CASE = 512;
 const INDEX_RAILS = new Map();
 for (const s of segmentsDeTrain()) {
-  const n = Math.ceil(s.longueur / (CASE / 2)) + 1;
+  const n = Math.ceil(s.longueur) + 1;
   for (let k = 0; k <= n; k++) {
     const t = k / n;
     const x = s.x0 + (s.x1 - s.x0) * t, z = s.z0 + (s.z1 - s.z0) * t;

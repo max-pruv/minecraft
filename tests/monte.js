@@ -1705,10 +1705,19 @@ async function avancerUnDemiSeconde(p, depart) {
     const rendu = await ciel.evaluate(() => {
       const g = window.__game, cm = g.creatureManager, R = g.renderer;
       if (!cm || !cm.trySpawn) return { err: 'pas de gestionnaire de créatures' };
+      // `trySpawn` refuse dès que le plafond de bêtes sauvages est atteint —
+      // et sur une page qui a volé, il l'est : deux naissances en quatre-vingts
+      // essais. On fait de la place AVANT de compter, sinon les bêtes qu'on
+      // retire ici passeraient pour des géométries rendues par le témoin.
+      while (cm.creatures.length > 4) cm.removeCreature(cm.creatures[0]);
       R.render(g.scene, g.camera);
       const avant = R.info.memory.geometries;
+      // `trySpawn` tire une position et peut ne rien poser (eau, pente,
+      // plafond) : dix essais n'en faisaient naître que quatre sur la carte
+      // ×2. On insiste jusqu'à dix bêtes — c'est le mécanisme qu'on éprouve,
+      // pas le hasard du tirage.
       const nees = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 80 && nees.length < 10; i++) {
         const n = cm.creatures.length;
         cm.trySpawn();
         if (cm.creatures.length > n) nees.push(cm.creatures[cm.creatures.length - 1]);
@@ -1761,7 +1770,12 @@ async function avancerUnDemiSeconde(p, depart) {
       if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
       const def = m.MONTURES.find((d) => d.key === 'avionligne');
       if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
-      g.player.pos.set(-40000, 96, 40000);      // un couloir vierge, loin de tout
+      // Un couloir vierge, loin de tout — ET SUR TERRE. À (−40 000, 40 000)
+      // le monde ×2 (v242) ne rend plus que du Pacifique : une minicarte
+      // uniformément bleue ne change jamais d'empreinte, et le témoin
+      // comptait zéro changement sans rien mesurer. Le Sahara, au sud de
+      // Tombouctou (2 300 blocs de la ville la plus proche), a du relief.
+      g.player.pos.set(0, 96, 20000);
       g.player.vel.set(0, 0, 0);
       g.player.yaw = 0; g.player.pitch = 0;
       g.player.flying = true;

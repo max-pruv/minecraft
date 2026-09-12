@@ -259,7 +259,11 @@ scene.add(horizon.objet());
 // Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
 // sauvegarde suivante grave l'erreur.
 {
-  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t));
+  // Et la position où l'enfant s'était arrêté suit sa ville comme ses blocs
+  // (v242) : sans cela, endormi à Times Square, il se réveillait en mer.
+  const lirePos = () => { try { return JSON.parse(localStorage.getItem('web-minecraft-pos-v1')) || {}; } catch { return {}; } };
+  const ecrirePos = (p) => { try { localStorage.setItem('web-minecraft-pos-v1', JSON.stringify(p)); } catch { /* ignore */ } };
+  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t), lirePos, ecrirePos);
   if (bilan && bilan.deplaces) {
     console.log(`carte agrandie : ${bilan.deplaces} blocs suivis, `
       + `${bilan.laisses} laissés, ${bilan.intacts} intacts`);
@@ -5514,12 +5518,12 @@ requestAnimationFrame(() => {
   document.getElementById('boot-loader').classList.add('hidden');
 });
 
-// Un seul monde, un raccourci vers une destination de la carte.
-const visiteNY=document.createElement('button');
-visiteNY.id='visiter-manhattan';visiteNY.textContent='🗽 Explorer New York';
-visiteNY.style.cssText='margin:12px auto;padding:12px 20px;border:1px solid #819aab;border-radius:9px;color:#eaf0f2;background:#243743;cursor:pointer';
-visiteNY.onclick=()=>{world.saveEdits();savePosition();const u=new URL(location.href);u.searchParams.delete('carte');u.searchParams.set('lieu','manhattan');location.href=u.href;};
-document.getElementById('overlay').appendChild(visiteNY);
+// UN SEUL MONDE, ET PAS DE BOUTON « EXPLORER NEW YORK » SUR L'ACCUEIL (v242).
+// Il rechargeait la page avec `?lieu=manhattan` pour poser l'enfant à New
+// York — un point d'arrivée que la carte offre déjà par téléportation, comme
+// pour toute autre ville. Max : « il n'y a qu'une seule carte et ça doit
+// rester le cas ». L'adresse `?lieu=manhattan` reste comprise pour les
+// anciens liens ; elle ne s'affiche plus nulle part.
 const badge=document.createElement('div');badge.id='manhattan-adresse';document.body.appendChild(badge);
 villeRealiste.onAdresse=texte=>{badge.textContent=texte;badge.style.display=texte?'':'none';};
 const invitationCarte=new URLSearchParams(location.search).get('rejoindre');

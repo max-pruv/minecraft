@@ -147,6 +147,66 @@ const BLOCS = 40000;
       (apres.editsz || JSON.stringify(apres.edits || {})) === empreinteUn,
       'la copie d\'avant reste la copie d\'avant');
 
+    // LE SECOND AGRANDISSEMENT (v242) A SA PROPRE COPIE, PRISE SUR LE NUAGE.
+    //
+    // La copie de v199 se faisait depuis l'appareil, après la migration : une
+    // copie d'APRÈS, et cela ne se voyait pas parce que rien ne bougeait là où
+    // les enfants ont bâti. Celle de v242 déplace New York : elle se prend sur
+    // le document du nuage TEL QU'IL EST, avant d'y pousser une clé migrée, et
+    // elle porte les positions avec les blocs.
+    const copie2Faite = await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-carte-2');
+      return !!(a && (a.editsz || a.edits) && a.carte === 2);
+    }, 30000);
+    const copie2 = nuage.etatDe('Marlon~avant-carte-2') || {};
+    verifier('la copie d\'avant le monde ×2 existe, sur son propre document, et dit de quelle carte elle vient',
+      copie2Faite, JSON.stringify(Object.keys(copie2)));
+    const empreinteDeux = copie2.editsz || JSON.stringify(copie2.edits || {});
+    await tab.evaluate(() => window.__game.world.setBlock(72, 40, 72, 1));
+    await tab.evaluate(async () => {
+      const s = window.__game.profileSync;
+      if (!s.mettreALAbriAvantCarte3) return null;
+      s.copieCarte3 = null;   // comme une tablette qui vient de s'ouvrir
+      return s.mettreALAbriAvantCarte3(s.getName(), { edits: { local: { '72,40,72': [1, Date.now()] } } });
+    });
+    await dormir(1500);
+    const apres2 = nuage.etatDe('Marlon~avant-carte-2') || {};
+    verifier('et elle ne se réécrit pas non plus',
+      copie2Faite && (apres2.editsz || JSON.stringify(apres2.edits || {})) === empreinteDeux,
+      'la copie d\'avant reste la copie d\'avant');
+
+    // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
+    //
+    // La fusion est une union. Une tablette restée sur la v240 republie les
+    // clés d'AVANT le monde ×2 — une maison là où New York était — et sans
+    // cette marche, la fusion les rapporterait ici pour toujours, à côté de
+    // la maison migrée : deux maisons, dont une en mer. On fabrique donc un
+    // document tel que l'ancienne version l'écrirait, et l'on regarde où la
+    // fusion pose le bloc : à la nouvelle adresse de sa ville, et nulle part
+    // ailleurs. C'est le receveur qui cède.
+    const fantome = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const m = await import('./src/mondes.js');
+      if (!m.MONDES.terreV2) return { absent: true };
+      const nyA = m.positionDe('ny', 'terreV2'), ny = m.positionDe('ny');
+      const vieux = `${nyA.x + 20},40,${nyA.z - 400}`, neuf = `${ny.x + 20},40,${ny.z - 400}`;
+      const local = ps.snapshot();
+      // La position, elle, se juge sur un monde où CETTE tablette n'en a pas :
+      // sur `local`, la sienne est plus récente et l'emporte, à bon droit.
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [vieux]: [7, Date.UTC(2026, 7, 1)] } },
+        pos: { 24680: { x: nyA.x + 20.5, y: 34, z: nyA.z - 400.5, yaw: 0, pitch: 0, t: Date.UTC(2026, 7, 1) } } };
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      const p = (r.state.pos || {})[24680] || {};
+      // La position garde sa demi-fraction : on compare au centième, sans arrondir.
+      return { vieux: !!e[vieux], neuf: e[neuf]?.[0] === 7, pos: Math.abs(p.x - (ny.x + 20.5)) < 0.01 && Math.abs(p.z - (ny.z - 400.5)) < 0.01, x: p.x, z: p.z };
+    });
+    verifier('un bloc d\'avant le monde ×2 reçu du nuage arrive à la nouvelle adresse de sa ville, sans fantôme',
+      !fantome.absent && fantome.neuf && !fantome.vieux,
+      fantome.absent ? 'la carte d\'avant n\'est pas gardée' : JSON.stringify(fantome));
+    verifier('et la position où l\'enfant s\'était arrêté suit aussi',
+      !fantome.absent && fantome.pos, JSON.stringify(fantome));
+
     // Et le retour : un autre appareil doit retrouver la construction entière.
     // C'est le témoin qui compte pour l'enfant — pas le contenu du document,
     // mais ce qu'il retrouve en ouvrant le jeu sur la tablette de la maison.

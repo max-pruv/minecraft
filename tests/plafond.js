@@ -143,7 +143,21 @@ function verifier(nom, ok, detail = '') {
 // l'ancien tarmac, retrouve sa cote naturelle de 34. C'est mot pour mot ce
 // qu'avait promis le déménagement de Washington en v162.
 // v222 (avant les aérodromes) : c20adb7308aec773780185acfa4ecbc88d575f0d
-const EMPREINTE_RELIEF = '47fbedd47c47973c9eab0e6b479218f4ac3bd269';
+// **v242 : LE MONDE ×2, POUR NEW YORK.** HUITIÈME usage de l'exception, et le
+// second qui ne se BORNE pas : comme en v199, l'échelle passe de 0,375 à
+// 0,1875 km par bloc et le relief se réécrit partout où la projection décide
+// de la géographie. Décision de Max : Manhattan, refaite en v240, est un
+// rectangle de 480 × 2 300 blocs qui touchait presque Boston (41 blocs) et
+// Montréal (52), et JFK tombait dedans. Ce qui garde l'invariant est donc, à
+// nouveau, le témoin « le sol n'a pas bougé là où les enfants ont bâti » — et
+// cette fois un second, « les blocs suivent leur ville », parce que la
+// migration de v242 déplace ce qu'un enfant a bâti dans une ville AVEC la
+// ville, ce que celle de v199 ne faisait pas.
+//
+// Les dix-huit colonnes de référence et le Mall gardent leur cote au bloc
+// près, et la maison sauvegardée avant le changement repose toujours sur le sol.
+// v240 (avant le monde ×2) : 47fbedd47c47973c9eab0e6b479218f4ac3bd269
+const EMPREINTE_RELIEF = 'aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -222,7 +236,15 @@ const EMPREINTE_RELIEF = '47fbedd47c47973c9eab0e6b479218f4ac3bd269';
 //   origin/main  170 278 colonnes  b2566e0ec8e4df10aa1b218d01a52791267d911b
 //   la branche   170 278 colonnes  b2566e0ec8e4df10aa1b218d01a52791267d911b
 // v204 → v222 (découpe sans les aérodromes) : c79c2f3b0135a6077aa49a46eb1f744c26cf6db5
-const EMPREINTE_HORS_VILLES = 'b2566e0ec8e4df10aa1b218d01a52791267d911b';
+// v242 : le monde ×2 n'est PAS une casse bornée — les villes s'écartent de
+// Paris et le relief se réécrit dans toute la fenêtre. La découpe change
+// (Lille, Bruxelles, Londres et leurs aérodromes en sortent : 170 278 →
+// 190 816 colonnes) et le hash avec. Ce qui porte la preuve, comme en v199,
+// c'est le témoin des 4 040 colonnes : sous le point d'apparition et sous
+// Paris, la carte d'AVANT et celle d'APRÈS rendent le même sol, colonne pour
+// colonne — mesuré à la livraison, zéro déplacée.
+// v223 → v240 : b2566e0ec8e4df10aa1b218d01a52791267d911b
+const EMPREINTE_HORS_VILLES = '23e5ce82956ab83322ef7b56dd1f9a5b68cc92b7';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -503,6 +525,56 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     chezLesEnfants.absent ? 'la carte d\'avant n\'est pas gardée'
       : `${chezLesEnfants.n} colonnes · ${chezLesEnfants.total} déplacée(s)`
         + (chezLesEnfants.total ? ` · ${JSON.stringify(chezLesEnfants.bouge)}` : ''));
+
+  // LES BLOCS SUIVENT LEUR VILLE (v242).
+  //
+  // La migration de v199 ne déplaçait les blocs qu'en hauteur : une maison
+  // bâtie dans une ville restait à l'ancienne adresse quand la ville partait.
+  // Celle de v242 est une chaîne, et sa seconde marche fait suivre à un bloc
+  // le déplacement de sa ville — Manhattan par son rectangle, les autres par
+  // leur disque — sans changer sa hauteur. Ce témoin interroge la fonction
+  // PURE, sur un document fabriqué : c'est ce que le nuage lui donnera.
+  //
+  // Et il vérifie ce qui rend la chose sûre : Paris et le point d'apparition
+  // ne bougent pas, un bloc daté d'APRÈS la refonte ne bouge pas, une marque
+  // d'import suit comme un bloc, et repasser la migration ne change rien.
+  const suivi = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    const { BORNES } = await import('../src/manhattan-plan.js');
+    if (!W.migrerBlocsCarte3 || !M.MONDES.terreV2) return { absent: true };
+    const nyA = M.positionDe('ny', 'terreV2'), ny = M.positionDe('ny');
+    const liA = M.positionDe('lille', 'terreV2'), li = M.positionDe('lille');
+    const t = Date.UTC(2026, 7, 1);
+    const doc = { local: {
+      [`${nyA.x + 10},40,${nyA.z - 500}`]: [3, t, 1],       // Manhattan, ancienne origine
+      [`${liA.x + 50},40,${liA.z + 20}`]: [4, t],           // le disque de Lille
+      '-230,40,210': [5, t],                                // Paris
+      '10,40,10': [6, t],                                   // le point d'apparition
+      [`${nyA.x + 10},41,${nyA.z - 500}`]: [3, W.DATE_CARTE_3 + 1000],  // posé sur la carte neuve
+      '@manhattan-v240:1,2,3': [3, t, nyA.x, nyA.z],
+    }, 'manhattan-v1:local': { '1,2,3': [3, t] } };
+    const un = W.migrerBlocsCarte3(doc), deux = W.migrerBlocsCarte3(un.tout);
+    const L = un.tout.local;
+    const dedans = (k) => { const [x, , z] = k.split(',').map(Number);
+      return x >= ny.x + BORNES.x0 && x < ny.x + BORNES.x1 && z >= ny.z + BORNES.z0 && z < ny.z + BORNES.z1; };
+    return {
+      manhattan: L[`${ny.x + 10},40,${ny.z - 500}`]?.[0] === 3 && dedans(`${ny.x + 10},40,${ny.z - 500}`),
+      lille: L[`${li.x + 50},40,${li.z + 20}`]?.[0] === 4,
+      paris: L['-230,40,210']?.[1] === t, apparition: L['10,40,10']?.[1] === t,
+      neuf: L[`${nyA.x + 10},41,${nyA.z - 500}`]?.[0] === 3,
+      marque: L['@manhattan-v240:1,2,3']?.[2] === ny.x && L['@manhattan-v240:1,2,3']?.[3] === ny.z,
+      archive: un.tout['manhattan-v1:local']['1,2,3'][1] === t,
+      idempotent: JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      bilan: `${un.deplaces} déplacés, ${un.laisses} laissés, ${un.intacts} intacts`,
+    };
+  })();
+  verifier('et les blocs suivent leur ville — Manhattan par son rectangle, Lille par son disque',
+    !suivi.absent && suivi.manhattan && suivi.lille && suivi.marque,
+    suivi.absent ? 'la migration de carte 3 n\'existe pas' : JSON.stringify(suivi));
+  verifier('sans toucher à Paris, au point d\'apparition, ni à ce qui est posé sur la carte neuve',
+    !suivi.absent && suivi.paris && suivi.apparition && suivi.neuf && suivi.archive && suivi.idempotent,
+    suivi.absent ? 'la migration de carte 3 n\'existe pas' : suivi.bilan);
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {

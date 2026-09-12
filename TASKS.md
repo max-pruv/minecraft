@@ -24,6 +24,61 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **L'arrivée en ville fige l'écran depuis la v241 (#244), et le témoin le
+  dit des deux côtés.** « L'écran ne se fige pas en arrivant sur une ville »
+  (monte.js, barre 550 ms et 5 % du temps au-delà de 300 ms), rejoué SEUL sur
+  `origin/main` (v241) : pire image **1 233 ms, 6,9 %** ; sur la branche v242 :
+  2 117 ms, 20,8 % — une mesure chacun, sur un banc en rendu logiciel, et le
+  trajet de la branche survole MOINS de villes (Paris seule ; Strasbourg et
+  Stuttgart en sortent avec le monde ×2). La cause probable est la naissance
+  des dix-huit passants Rocketbox (clone de squelette) à l'arrivée ; à
+  mesurer image par image (leçon de la v-fluidité : « un gel ne se devine
+  pas, il se découpe »), puis étaler ou différer. La validation de #244 en
+  rendu matériel était verte.
+
+- [ ] **Quatre témoins de `manhattan.js` sont rouges sur ce banc, des deux
+  côtés.** Rejoués SEULS sur la branche v242 et sur `origin/main` (v240),
+  dans un arbre séparé, même conteneur en rendu logiciel : « le trou enlève
+  aussi la géométrie visible » (9 203 → 54 969 sur main, 17 102 → 54 969 sur
+  la branche — le compte MONTE parce que la ville se construit encore),
+  « fenêtres et éclairage public la nuit », « les ombres suivent le soleil et
+  la lune » (`[1, -1]`), « le taxi roule avec les contrôles tactiles », et un
+  délai de quatre-vingt-dix secondes au rechargement qui fait lâcher la fin de
+  la suite une fois sur deux. Le journal de la v240 annonce ce portail vert :
+  il a été mesuré avec `CHROMIUM_ANGLE=metal`, pas en logiciel. À démonter
+  sur une machine qui rend en matériel avant d'accuser le jeu — et à
+  remesurer ici témoin par témoin (la géométrie qui monte dit que le témoin
+  attend la fin d'une construction qui n'est pas finie).
+
+- [ ] **Paris au niveau de New York, sur captures.** Décision de Max après la
+  v242 : s'inspirer de ce qui a été fait sur Manhattan (façades en maillage
+  PBR, volumes réels, éclairage, foule) pour remonter les autres villes, Paris
+  d'abord. Règle de jugement inchangée : vue de rue et vue aérienne à côté
+  d'une vraie photo, AVANT de fusionner. Le rectangle de Paris se borne comme
+  celui de Manhattan (`BORNES`), et la double empreinte de `plafond.js`
+  s'applique — Paris est DANS la fenêtre.
+
+- [ ] **Le registre ment encore sur New York.** `r: 152` est le disque de
+  l'ancienne ville voxel ; Manhattan est un rectangle de 480 × 2 300. Trois
+  lecteurs s'en accommodent chacun à leur manière — `passants.js` écrit 1 200
+  en dur, `dansUneZoneATerre` prend le disque plus vingt-quatre, et le témoin
+  « aucune ville n'en chevauche une autre » juge sur le disque (c'est le
+  témoin du rectangle, v242, qui garde la vraie marge). Une emprise dans le
+  registre, lue par tous, remplacerait ces trois arrangements.
+
+- [ ] **La fenêtre déclarée de la migration ×2.** Un bloc est jugé « posé sur
+  l'ancienne carte » par sa DATE (`DATE_CARTE_3`, world.js). Une tablette qui
+  jouerait encore sur la v241 après cette heure poserait des blocs que la
+  migration laisse où ils sont — à l'ancienne adresse de leur ville. Si cela
+  se voit (une construction de Marlon ou d'Alice à l'ancienne place de New
+  York, autour de (−10 143, 2 615)), la copie `prénom~avant-carte-2` et la
+  fonction pure `migrerCarte3` permettent de la ramener à la main.
+
+- [ ] **JFK est au nord-est de Manhattan.** Son vrai cap est le sud-est ; là
+  c'est la baie de Jamaica, de l'eau, et le rectangle de la ville. Le cap
+  cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
+  gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
+
 - [ ] **Manhattan sur la Terre : suite du réalisme.** Priorités : circulation
   commandée par les feux, berges et ponts raccordés au relief, intérieurs,
   Statue de la Liberté, diversité des façades et transitions LOD plus douces.
