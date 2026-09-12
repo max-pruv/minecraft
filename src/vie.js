@@ -982,7 +982,7 @@ export function createVie({ scene, world, player, toast }) {
       if (!siteOuvert) {
         if (site.endormi) continue;
         for (const b of site.troupeau) b.mesh.visible = false;
-        for (const h of site.npcs) h.mesh.visible = false;
+        for (const h of site.npcs) h.sommeilForce = sommeilForce;
         site.endormi = true;
         continue;
       }
@@ -994,9 +994,7 @@ export function createVie({ scene, world, player, toast }) {
         if (proche) b.update(dt, world, player, toast);
       }
       for (const h of site.npcs) {
-        const dx = h.pos.x - px, dz = h.pos.z - pz;
-        const proche = dx * dx + dz * dz < VU2;
-        if (h.mesh.visible !== proche) h.mesh.visible = proche;
+        h.sommeilForce = sommeilForce;
       }
     }
   }

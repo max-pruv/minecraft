@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "three": "0.160.0",
+    "sharp": "0.34.3"
+  }
+}

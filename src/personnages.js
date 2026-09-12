@@ -8,6 +8,7 @@
 
 import * as THREE from 'three';
 import { Atelier } from './modeles.js';
+import { construireCorpsRealiste, ajouterTeteRealiste, tetesDisponibles } from './humains.js';
 
 // Hauteurs de référence d'un adulte, pieds à y = 0, visage tourné vers -z.
 const H = {
@@ -24,6 +25,7 @@ const OR = 0xd4a83c, LIN = 0xe6dcc4, CORDE = 0xb8a274;
 // --- pièces communes ---------------------------------------------------------
 
 function tete(a, p) {
+  if (tetesDisponibles()) return;
   const { teint, cheveux, coupe, barbe, moustache } = p;
   a.membre('tronc');
   // cou
@@ -1014,6 +1016,10 @@ export function construireHumain(profil) {
     teint: 0xe0b48c, cheveux: 0x4a3524, coupe: 'court',
     barbe: null, moustache: false, ...profil,
   };
+  if (p.tenue === 'passant' || p.tenue === 'enfant') {
+    const corps = construireCorpsRealiste(p);
+    if (corps) return corps;
+  }
   const a = new Atelier();
   // les membres articulés d'abord, pour fixer l'ordre des groupes
   a.membre('jambeG', [-ECART_JAMBE, H.hanche, 0]);
@@ -1030,7 +1036,7 @@ export function construireHumain(profil) {
   // le contrat attendu par BaseNPC : deux jambes, deux bras, animés en rotation
   g.userData.legs = [m.jambeG, m.jambeD];
   g.userData.arms = [m.brasG, m.brasD];
-  g.userData.anatomie='humaine-v2';
+  g.userData.anatomie=ajouterTeteRealiste(g,p)?'anatomie-costume-v241':'humaine-v2';
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   if (p.taille && p.taille !== 1) g.scale.setScalar(p.taille);
   return g;

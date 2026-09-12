@@ -57,7 +57,9 @@ export function partagerTout(objet) {
 export function liberer(objet) {
   if (!objet) return 0;
   let rendues = 0;
+  const squelettes = new Set();
   objet.traverse((o) => {
+    if(o.isSkinnedMesh && o.skeleton && !squelettes.has(o.skeleton)){squelettes.add(o.skeleton);o.skeleton.dispose();}
     const g = o.geometry;
     if (g && !g.userData.partagee) { g.dispose(); rendues++; }
     const m = o.material;

@@ -7,7 +7,9 @@ optional network services provide multiplayer and cloud saves.
 
 **Manhattan on Earth:** choose **Explorer New York**, or open
 `/?lieu=manhattan`. One map, one shared-world code: detailed landmarks, Times
-Square, yellow taxis and improved human characters. Existing Earth buildings
+Square, yellow taxis and rigged human characters with textured faces and clothing.
+Pedestrians keep their positions when you turn around and fade with distance.
+See [characters and vehicles](docs/personnages-v241.md) for assets and rendering budgets. Existing Earth buildings
 keep their terrain support; v239 Manhattan journals are imported without
 scaling their blocks. See [the urban guide](docs/manhattan.md) for migration,
 rendering budgets, licensing and limitations.
@@ -39,7 +41,7 @@ rendering budgets, licensing and limitations.
   ball shake, and fill your Creature Dex (B). Rarer species are harder to catch.
 - **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
   ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
-- **Friendly NPCs** — Marlon, a kid in a striped sailor shirt who follows you
+- **Friendly NPCs** — Marlon, a child with a rigged, textured model who follows you
   around and chats in French, and Professeur Cornichon, the creature expert.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
   Cornichon's quiz starts every play session, and pops up again after each

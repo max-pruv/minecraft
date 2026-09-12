@@ -21,6 +21,7 @@
 
 import * as THREE from 'three';
 import { cadence } from './cadence.js';
+import { DISTANCE_PRESENCE } from './presence.js';
 import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
@@ -64,23 +65,9 @@ const AUTOUR_MAX = 34;
 // Et le déplacement reste invisible : on ne replace que quelqu'un qui est
 // DÉJÀ hors de portée de rendu (voir `TROP_LOIN`).
 const CONE_DEVANT = Math.PI / 3;
-// ON RAPATRIE CELUI QU'ON NE VOIT PLUS, PAS CELUI QUI EST LOIN.
-//
-// Max, après la v216 : « clairement pas de piétons, pas de vie dans les
-// villes. » Mesuré en traversant Paris d'ouest en est par bonds de vingt-cinq
-// blocs, en comptant les passants RENDUS : 10, 8, 7, 4, **0**, 2, 1. Les dix
-// existaient toujours — ils étaient restés derrière.
-//
-// Le seuil valait CENT CINQUANTE blocs quand un personnage cesse d'être
-// dessiné à SOIXANTE-DEUX (`VU` de vie.js, appliqué à tous depuis la v196).
-// Entre les deux, un passant est invisible ET pas rapatrié : la ville se vide
-// dès que l'enfant marche cent blocs, et se repeuple une minute plus tard.
-//
-// Soixante-quatre, c'est juste au-delà de la portée de rendu — et c'est ce qui
-// rend le déplacement HONNÊTE : on ne déplace jamais quelqu'un qu'on voit.
-// Un passant sort du champ, il revient devant ; l'enfant ne surprend personne
-// en train de sauter d'un bout de la rue à l'autre.
-const TROP_LOIN = 64;
+// Aucun rapatriement lié au regard : un demi-tour doit retrouver les mêmes
+// voisins. On ne recycle que très loin, après la fin effective du fondu.
+const TROP_LOIN = DISTANCE_PRESENCE.recyclage;
 // Dix-huit par ville depuis la v217 — dix était le chiffre d'avant les
 // grandes villes, et Max : « clairement pas de piétons, pas de vie dans les
 // villes ». Un sur cinq est un CHIEN qui trottine : la rue a ses promeneurs.
@@ -181,17 +168,22 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   // seul : nul besoin de connaître la ville, il suffit de regarder le bloc du
   // dessus. Faute de rue, on garde le premier point — mieux vaut un passant
   // dans une cour que pas de passant du tout.
-  function posteAutour(site, g, devant = false) {
+  function demiVue() {
+    const cam = player.camera;
+    return Math.min(CONE_DEVANT, Math.atan(Math.tan(cam.fov * Math.PI / 360) * cam.aspect));
+  }
+
+  function posteAutour(site, g, devant = false, recycle = false) {
     let repli = null;
-    for (let essai = 0; essai < (site.urbain?80:12); essai++) {
-      // Le cap du regard, dans le repère du jeu : dx = sin(yaw), dz = −cos(yaw),
-      // donc l'angle de `Math.cos/sin` employé plus bas vaut yaw − π/2.
-      const vise = player.yaw - Math.PI / 2;
+    for (let essai = 0; essai < 80; essai++) {
+      // Le cap du regard, dans le repère du jeu : dx = −sin(yaw), dz = −cos(yaw),
+      // donc l'angle de `Math.cos/sin` employé plus bas vaut −yaw − π/2.
+      const vise = -player.yaw - Math.PI / 2;
       const t = tirage(g + essai * 7, 23, 43);
       const a = devant
-        ? vise + (t - 0.5) * 2 * CONE_DEVANT
+        ? vise + (t - 0.5) * 2 * demiVue() * 0.9
         : t * Math.PI * 2;
-      const d = AUTOUR_MIN + (AUTOUR_MAX - AUTOUR_MIN) * tirage(g + essai * 7, 29, 47);
+      const d = recycle ? 40 + 20 * tirage(g + essai * 7, 29, 47) : AUTOUR_MIN + (AUTOUR_MAX - AUTOUR_MIN) * tirage(g + essai * 7, 29, 47);
       const [x, z] = dansLaVille(site, player.pos.x + Math.cos(a) * d, player.pos.z + Math.sin(a) * d);
       if(site.urbain){
         const lx=x-ORIGINE_MANHATTAN.x,lz=z-ORIGINE_MANHATTAN.z;
@@ -210,9 +202,9 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
     return repli || [site.x+5,site.z+7];
   }
 
-  function peupler(site) {
-    const gens = [];
-    for (let k = 0; k < (site.urbain?44:PAR_VILLE); k++) {
+  function peupler(site, debut = 0, nombre = site.urbain ? 44 : PAR_VILLE) {
+    const gens = site.peuple || [];
+    for (let k = debut; k < debut + nombre; k++) {
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
       if (k % (site.urbain?16:5) === 4) {
@@ -222,13 +214,14 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
           walkSpeed: 2.2, rayon: 10, largeur: 0.4, hauteur: 0.7,
           build: () => construireChien(ROBES_CHIEN[Math.floor(tirage(g, 31, 53) * ROBES_CHIEN.length)]),
         }, cx, cz);
+        chien.apparitionDouce = true;
         gens.push(chien);
         npcs.push(chien);
         continue;
       }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
-        tenue: 'passant', veste: k%3===0, sac:k%4===0?0x4a4139:null,
+        tenue: 'passant', modeleHumain: ['homme-chemise','femme-tailleur','homme-denim','femme-chemise','homme-costume','femme-manteau','homme-veste'][k%7], veste: k%3===0, sac:k%4===0?0x4a4139:null,
         teint: parmi(TEINTS, tirage(g, 5, 19)),
         cheveux: parmi(CHEVEUX, tirage(g, 7, 23)),
         coupe: tirage(g, 11, 29) < 0.5 ? 'court' : 'long',
@@ -236,13 +229,14 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         bas: parmi(BAS, tirage(g, 17, 37)),
         drap: parmi(ROBES, tirage(g, 19, 41)),
       };
-      const [x, z] = posteAutour(site, g, k % 3 !== 2);
+      const [x, z] = posteAutour(site, g + tour * 131, debut > 0 || k % 3 !== 2);
       const h = new Habitant(scene, world, player, toast, {
         name: 'passant', label: '🚶 Un passant', phrases: ['Bonjour !', 'Belle journée, non ?'],
         walkSpeed: 1.6, rayon: 8, largeur: 0.5, hauteur: 1.72,
         build: () => construireHumain(profil),
       }, x, z);
       h.rueUrbaine=site.urbain;
+      h.apparitionDouce = true;
       gens.push(h);
       npcs.push(h);
     }
@@ -286,29 +280,24 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // en vue. C'est le prix caché du seuil serré de la v217 : plus il est
       // petit, plus il faut vérifier que le déplacement SERT.
       if (d - site.r * 0.9 > TROP_LOIN) continue;
-      // L'AXE DU REGARD, pour savoir qui est passé DERRIÈRE.
-      const cap = player.yaw - Math.PI / 2;
-      const vx = Math.cos(cap), vz = Math.sin(cap);
+      // On ouvre quelques places devant en avançant, au lieu de voler les
+      // personnes encore proches derrière. Le plafond reste borné par ville.
+      const vx = -Math.sin(player.yaw), vz = -Math.cos(player.yaw);
+      const cosVue = Math.cos(demiVue());
+      const devant = site.peuple.filter(h => {
+        const x = h.pos.x-player.pos.x, z = h.pos.z-player.pos.z, d = Math.hypot(x,z);
+        return d > 4 && d < 50 && (x*vx+z*vz)/d > cosVue;
+      }).length;
+      // Les corps partagés permettent une réserve pour les rues suivantes,
+      // sans déplacer les voisins encore proches quand le cadre se vide.
+      const plafond = 88;
+      if (devant < 6 && site.peuple.length < plafond) peupler(site, site.peuple.length, Math.min(4, plafond-site.peuple.length));
       for (let i = 0; i < site.peuple.length; i++) {
         const h = site.peuple[i];
         if (!h.pos) continue;
-        const ex = h.pos.x - player.pos.x, ez = h.pos.z - player.pos.z;
-        const dh = Math.hypot(ex, ez);
-        // ON REPLACE AUSSI CELUI QUI EST PASSÉ DERRIÈRE, PAS SEULEMENT LE
-        // LOINTAIN — c'est ce qui vide la rue quand on MARCHE.
-        //
-        // Mesuré en remontant trois avenues de Paris, cap dans le sens de la
-        // marche : 6, 0, 0, 0 passants dans le cadre. Un bond de vingt blocs
-        // laisse ceux qu'on vient de dépasser à moins de soixante-quatre : ils
-        // ne sont donc pas rapatriés, et l'enfant marche dans le vide jusqu'à
-        // les avoir distancés de trente blocs de plus.
-        //
-        // Le champ de vision fait QUARANTE-SIX degrés. Quelqu'un au-delà de la
-        // ligne des épaules — plus de 90° de l'axe du regard — est donc très
-        // largement hors du cadre, et le déplacer reste invisible : c'est la
-        // même garantie que `TROP_LOIN`, par l'angle au lieu de la distance.
-        if (dh < TROP_LOIN && (dh < 1 || (ex * vx + ez * vz) / dh > 0)) continue;
-        const [nx, nz] = posteAutour(site, site.graine + i + tour * 131, i % 3 !== 2);
+        const dh = Math.hypot(h.pos.x - player.pos.x, h.pos.z - player.pos.z);
+        if (dh < TROP_LOIN || !h.presence || h.presence.valeur > 0) continue;
+        const [nx, nz] = posteAutour(site, site.graine + i + tour * 131, i % 3 !== 2, true);
         // `poste` est le point autour duquel il flâne, `placeAt` le pose au sol
         // — c'est le même chemin que sa naissance, donc rien à réinventer.
         h.poste.set(nx, nz);

@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
+import { animerHumain } from './humains.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 
 const GRAVITY = 24;
@@ -22,7 +23,7 @@ export function buildKidMesh(look) {
     haut:look.torsoSlabs[2],bas:look.pants,baskets:look.shoes});
   // Les coordonnées du modèle restent celles de l'enfant : les accessoires,
   // les pivots réseau et les animations gardent un repère stable sans scale parent.
-  g.traverse(o=>{o.position.multiplyScalar(.84);if(o.isMesh)o.geometry.scale(.84,.84,.84);});
+  if(!g.userData.rig) g.traverse(o=>{o.position.multiplyScalar(.84);if(o.isMesh)o.geometry.scale(.84,.84,.84);});
   const {legs,arms}=g.userData;
   if (look.cape) {
     const cape = box(0.44, 0.6, 0.05, look.cape);
@@ -172,6 +173,7 @@ export class BaseNPC {
     // Après le balancement de la marche, l'artisan peut plaquer son propre
     // geste — frapper l'enclume, ratisser — par-dessus les mêmes bras.
     if (this.geste) this.geste(dt, speed);
+    animerHumain(this.mesh, this.animTime, speed);
 
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {

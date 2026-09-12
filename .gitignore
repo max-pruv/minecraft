@@ -5,3 +5,6 @@ shot_*.png
 # meurent avec lui — on ne verse pas un instrument de mesure jetable dans le
 # dépôt, il n'a de sens que pour la panne du jour.
 tests/_diag_*.cjs
+
+# Dépendances locales des outils de conversion et du banc.
+**/node_modules/
