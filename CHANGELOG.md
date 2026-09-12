@@ -56,6 +56,15 @@ chemin contre chemin (17 → 77). Le reliquat est un raccord à cent soixante
 degrés entre deux circuits de Rivoli : une affaire de tracé, déclarée dans
 `TASKS.md`.
 
+Et le portail a démasqué un pile ou face : « à Moscou, les rues sont pleines
+de voitures » exigeait huit voitures visibles à la fois, quand la densité des
+anneaux — une voiture tous les trente blocs — n'en garantit que six à
+quarante-cinq blocs du centre. Mesuré des deux côtés avec la même séquence :
+quatre à six, jamais huit ; le huit tenait à l'heure d'arrivée, et trois
+témoins de plus avant lui ont déplacé la phase. Il exige six, en quarante-cinq
+secondes — rouge tout de même sur l'ancien code, où Moscou n'avait aucune
+voiture.
+
 ---
 
 ## v243 — Les passants se promènent pour eux-mêmes, et la dame n'a plus de voile
