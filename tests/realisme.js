@@ -183,6 +183,36 @@ const verifier = (nom, ok, detail) => {
       "un déplacement très rapide ne coupe pas le modèle en une image",
       fade.apresVoyage > 0.8,
     );
+    const murs = await p.evaluate(async () => {
+      const { BaseNPC } = await import('/src/marlon.js');
+      const { construireHumain } = await import('/src/personnages.js');
+      const { liberer } = await import('/src/liberer.js');
+      const T = await import('three');
+      const npc = new BaseNPC(new T.Scene(), __game.world, __game.player, () => {}, {
+        name: 'CollisionTest', phrases: [''], hauteur: 1.72,
+        build: () => construireHumain({ tenue: 'passant' }),
+      });
+      let fautifs = 0, pic = 33, cas = 0;
+      for (const [x, z] of [[-10148.844, 2604.094], [-10130.729, 2604], [-10159.179, 2627]]) {
+        for (let cap = 0; cap < 16; cap++) {
+          npc.pos.set(x, 33.001, z); npc.vel.set(0, 0, 0); npc.onGround = true;
+          npc.think = () => ({ speed: 1.6, yaw: cap * Math.PI / 8 });
+          let haut = 33;
+          for (let frame = 0; frame < 1200; frame++) {
+            npc.update(1 / 60); haut = Math.max(haut, npc.pos.y);
+          }
+          if (haut > 35.1) fautifs++;
+          pic = Math.max(pic, haut); cas++;
+        }
+      }
+      liberer(npc.mesh);
+      return { cas, fautifs, pic };
+    });
+    verifier(
+      "un mur ne réarme pas le saut à chaque image et ne fait pas grimper la façade",
+      murs.cas === 48 && murs.fautifs === 0,
+      murs,
+    );
     const car = await p.evaluate(async () => {
       const { construireTaxi } = await import("/src/taxis.js"),
         T = await import("three");

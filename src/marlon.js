@@ -157,7 +157,12 @@ export class BaseNPC {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0) this.vel.y = 7.5;
+    if ((blockedX || blockedZ) && this.onGround && speed > 0) {
+      this.vel.y = 7.5;
+      // Le saut consomme l’appui au sol. Sans cela, le contact avec un mur
+      // réarmait l’impulsion à chaque image et faisait voler le personnage.
+      this.onGround = false;
+    }
 
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;

@@ -243,9 +243,11 @@ vérifiez qu'il le voit. Un test vert des deux côtés ne prouve rien.
 
 ## Personnages et voitures (`npm run realisme`)
 
-Treize contrôles gardent les proportions adulte/enfant, le partage des ressources,
+Quatorze contrôles gardent les proportions adulte/enfant, le partage des ressources,
 le genou articulé, les volumes de visibilité sur une foulée, les visages des
 costumes, les voisins au demi-tour, le fondu spatial et temporel, les dimensions
 de la berline, son budget et quatre renouvellements des reflets sans erreur WebGL.
+Le contrôle ajouté en v242 suit 48 trajectoires contre les murs de Midtown :
+un saut ne doit jamais se réarmer en plein vol pour grimper une façade.
 Les captures rapprochées complètent ces contrats : les tests ne décident pas à
 eux seuls de la fidélité visuelle.

@@ -10,7 +10,7 @@ Les berlines new-yorkaises ont des surfaces cintrées, des passages de roue ouve
 
 `src/presence.js` possède la visibilité des personnages : présence complète jusqu’à 80 m, fondu spatial entre 80 et 112 m, transitions temporelles sur 0,8 s. Un fondu alpha lisse évite les points de tramage visibles de près. Les corps pleinement présents retrouvent leur profondeur opaque. Chaque personnage possède son matériau de présence ; les textures restent partagées.
 
-Tourner la tête ne recycle personne. Un passant ne peut être replacé qu’au-delà de 136 m, lorsque son fondu est complètement terminé. L’approche des rues suivantes ajoute progressivement des habitants, au plus quatre toutes les deux secondes, sans retirer les voisins proches. Le plafond est de 88 par ville visitée. Le peuplement compte les personnes dans le champ horizontal réel de la caméra ; celles hors du cadre ne font pas croire que la rue visible est déjà habitée. Les personnages continuent donc d’exister derrière le joueur lors d’un demi-tour.
+Tourner la tête ne recycle personne. Un passant ne peut être replacé qu’au-delà de 136 m, lorsque son fondu est complètement terminé. L’approche des rues suivantes ajoute progressivement des habitants, au plus quatre toutes les deux secondes, sans retirer les voisins proches. Le plafond est de 88 par ville visitée. Le peuplement compte les personnes dans le champ horizontal réel de la caméra ; celles hors du cadre ne font pas croire que la rue visible est déjà habitée. Les personnages continuent donc d’exister derrière le joueur lors d’un demi-tour. Depuis v242, un saut consomme immédiatement l’appui au sol ; le contact avec une façade ne répète plus l’impulsion en plein vol. Ce défaut est reproduit par 48 trajectoires, dont 15 grimpaient avant correction.
 
 Les volumes de visibilité sont calculés sur les corps articulés puis élargis de 40 cm pour couvrir leur foulée. Les boîtes statiques trop serrées des modèles importés ne coupent plus leurs membres animés. La simulation reste à chaque image près du joueur, à 15 Hz au-delà de 35 m et à 10 Hz au-delà de 80 m ; la présence est actualisée à chaque image.
 
@@ -47,12 +47,19 @@ Les instances partagent textures et géométries ; leurs squelettes sont indépe
 
 `cd tests && CHROMIUM_ANGLE=metal npm test` lance le portail. `realisme.js` couvre le demi-tour, le fondu, le voyage rapide, l’anatomie articulée, les genoux, les proportions enfant/adulte, le partage des ressources, les visages des costumes, les dimensions automobiles et la console. `manhattan.js` garde les interactions, les sauvegardes, les deux clients et le mode hors ligne. `monte.js` garde la vie des rues et la conduite.
 
-Validation du 12 septembre 2026 sur Mac M3 Pro, Chromium avec ANGLE Metal :
+Validation de v241 avant la correction du saut, le 12 septembre 2026 sur Mac M3 Pro, Chromium avec ANGLE Metal :
 portail complet vert (15 suites, plus la fumée). Les deux écarts initiaux de
 variété automobile et de densité ont été corrigés puis leur suite rejouée :
 11 modèles automobiles visibles et zéro arrêt vide, avec 9,13 passants dans le
 cadre en moyenne sur le parcours. Les autres suites sont reprises par les
 empreintes du portail quand leurs fichiers gardiens sont inchangés.
+
+La correction v242 ajoute le quatorzième contrôle : les 48 trajectoires passent,
+ainsi que les 13 contrôles de réalisme existants. Sa nouvelle passe du portail
+reste rouge dans `reseau.js`, `visio.js`, `monte.js` et `manhattan.js`.
+L’invité du diagnostic isolé n’entre pas dans la partie ; la caméra n’est donc
+pas appelée. Le parcours d’arrivée en ville mesure 5,8 images/s sur cette
+passe. Ces résultats ne sont pas une validation complète de v242.
 
 `tests/vitrine.html` présente les personnages ; `?taxi` présente la berline et `?walk` anime la marche. C’est un atelier de contrôle dans le même moteur, pas une carte distincte du jeu. Les captures de livraison incluent aussi le vrai jeu à hauteur de joueur.
 
