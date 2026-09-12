@@ -370,8 +370,8 @@ function verifier(nom, ok, detail = "") {
     );
     verifier(
       "adultes et avatars partagent l’anatomie nouvelle avec leurs membres animés",
-      modeles.human === "humaine-v2" &&
-        modeles.kid === "humaine-v2" &&
+      modeles.human === "rocketbox-v241" &&
+        modeles.kid === "rocketbox-v241" &&
         modeles.arms === 2 &&
         modeles.legs === 2,
     );

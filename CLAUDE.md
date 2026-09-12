@@ -176,7 +176,7 @@ n'est pas une étape de fin, c'est une partie de la livraison** — au même tit
 que le code. Une version qu'on ne sait plus expliquer six mois plus tard est
 une version qu'on ne saura pas déboguer.
 
-1. **Portail complet vert obligatoire** : `cd tests && npm test`. Sept suites.
+1. **Portail complet vert obligatoire** : `cd tests && npm test`. Quinze suites, précédées de la fumée.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
@@ -223,7 +223,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (13 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → **48 min** (v225) |
+| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → **48 min** (v225) |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
@@ -3226,3 +3226,32 @@ Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
   conduit**. Voir la section « Conduire » ci-dessous : c'est là qu'est le
   travail, pas dans la chaîne de production.
 - Intérieurs visitables, guides dans les villes, notifications push.
+
+
+### Présence et anatomies v241
+
+Max a signalé des voitures et personnages trop rudimentaires et des personnes
+qui disparaissaient en avançant. La portée de 62 m et le rapatriement dès le
+passage derrière la caméra produisaient ces ruptures. Désormais `presence.js`
+est l’unique propriétaire de la visibilité humaine : 80–112 m en fondu,
+transition complète sur 0,8 s, aucun recyclage proche ou lié au regard. La
+relocalisation exige une présence nulle et une distance de 136 m. Pour garder
+les rues habitées, la population s’ouvre progressivement, plafonnée à 88 par ville. Ne pas réintroduire un `visible=false` dans `vie.js`.
+
+Les modèles Rocketbox MIT partagent leur géométrie et leurs textures ; chaque
+personne possède son squelette. Ne jamais réduire la géométrie en place pour
+faire un enfant : l’adulte voisin utilise la même. Les matériaux de présence
+sont privés ; leurs textures restent partagées. Libérer aussi les textures du
+squelette quand une instance disparaît, notamment dans les portraits.
+
+Les yeux des nouveaux modèles sont texturés. Le témoin qui cherchait les
+anciennes billes blanches en couleurs de sommets est remplacé par les contrôles
+du visage rendu, des cartes chargées et des proportions ; `realisme.js`
+éprouve les régressions de présence et d’anatomie. Les neuf GLB et tous leurs
+modules doivent rester dans le cache PWA. Provenance, limites et commande de
+conversion : `docs/personnages-v241.md`.
+
+Les matériaux automobiles qui lisent la sonde cubique doivent être masqués
+pendant sa capture et restaurés ensuite : lire sa propre cible de rendu produit
+`GL_INVALID_OPERATION`. `realisme.js` renouvelle les reflets quatre fois dans
+la vraie scène et vérifie le code WebGL ainsi que la restauration des maillages.

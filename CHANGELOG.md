@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v241 — Des visages, des berlines et des voisins qui restent
+
+**Pourquoi.** Les personnages et voitures restaient trop rudimentaires. Les
+passants disparaissaient au seuil de distance ou étaient replacés derrière
+la caméra, ce qu’un demi-tour rendait visible.
+
+**Ce que ça change.** Anatomies humaines articulées et texturées, mains et
+vêtements détaillés, marche avec genoux et coudes fléchis. Les costumes
+historiques gardent leurs rôles et reçoivent des visages texturés. Berlines à
+surfaces galbées, vrais passages de roue, vitrage, habitacle et optiques ; taxis
+jaunes à New York et berlines citadines dans les autres villes. Les voisins
+proches gardent leur place ; l’éloignement s’efface progressivement. Ressources
+partagées, population bornée et cache PWA v241.
+
+**Ce qui le prouve.** Les treize contrôles de `realisme.js` reproduisent le demi-tour,
+le seuil de visibilité, le voyage rapide, la déformation des genoux et la
+création d’un enfant sans modifier l’adulte. Les reflets renouvelés ne génèrent
+plus de boucle WebGL. Le portail garde aussi sauvegardes,
+multijoueur, édition, conduite tactile, mode éducatif et fonctionnement hors
+ligne. Portail complet vert (15 suites et fumée). La traversée de rue garde
+zéro arrêt vide et 9,13 passants dans le cadre en moyenne ; le trafic montre
+11 modèles différents autour du joueur. Captures rapprochées et vues en
+mouvement dans le moteur et dans le jeu.
+
 ## v240 — Une seule Terre, Manhattan et ses habitants
 
 **Pourquoi.** La carte Manhattan séparée compliquait l'exploration du monde.

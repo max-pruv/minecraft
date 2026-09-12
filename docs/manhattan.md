@@ -28,7 +28,7 @@ de la carte sont recalées sur le nouveau plan.
 Times Square réunit One Times Square couvert d'écrans, une place piétonne,
 les marches rouges de Duffy Square, tables et chaises, enseignes orientées vers
 la place et une voie de circulation à l'ouest. Les campagnes publicitaires
-sont fictives et dessinées dans le jeu. Jusqu'à 44 passants sont distribués
+sont fictives et dessinées dans le jeu. Jusqu'à 88 passants sont distribués
 sur les trottoirs et dans les places de New York. Leur marche respecte les
 espaces piétons ; le modèle des humains et des avatars est amélioré partout,
 avec membres galbés, visages, chemises, vestes et sacs.
@@ -147,3 +147,5 @@ Un iPad physique reste nécessaire pour mesurer Safari et la pression mémoire.
 Deux imports simultanés hors ligne dont les journaux Terre diffèrent peuvent
 choisir des emplacements de secours différents ; les archives conservées
 permettent la récupération, mais ces chantiers nécessitent une réconciliation.
+
+Les modèles humains, les voitures et les transitions de présence ont été repris en v241 : voir [le guide personnages et voitures](personnages-v241.md).

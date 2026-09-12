@@ -1,5 +1,7 @@
 # Ce qui est en cours
 
+- **Personnages et véhicules v241 :** compléter la variété des anatomies et vêtements, les expressions faciales et la validation Safari/iPad physique. Les costumes historiques et plusieurs voitures du catalogue restent plus simples ; ne pas les présenter comme photoréalistes.
+
 - **Les avions ont perdu leur rapport de vitesse réel (v229).** Le plafond du
   chargement du monde est 110 blocs/s ; les vitesses sont donc 95 (avion de
   ligne) et 110 (Concorde, chasseur), soit un rapport de 1,16 au lieu du 1 à

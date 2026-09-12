@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js', 'manhattan.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js', 'manhattan.js', 'realisme.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -44,6 +44,18 @@ const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js',
 // créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
+  'src/humains.js': ['realisme.js', 'monte.js', 'reglages.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/presence.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'vendor/SkeletonUtils.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/homme-denim.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/homme-costume.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/femme-tailleur.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/homme-chemise.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/homme-veste.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/femme-chemise.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
@@ -58,7 +70,7 @@ const GARDIENS = {
   // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
   // libération de trop passerait sans réveiller la suite qui la verrait.
-  'src/liberer.js': ['monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
+  'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
   'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
@@ -95,13 +107,13 @@ const GARDIENS = {
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
-  'src/taxis.js': ['monte.js', 'sauvegarde.js', 'manhattan.js'],
+  'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Les passants des villes : la vie des rues se prouve dans monte.js.
-  'src/passants.js': ['monte.js', 'manhattan.js'],
+  'src/passants.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   // Les poissons : la vie de la mer se prouve au même endroit.
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js', 'manhattan.js'],
@@ -166,9 +178,9 @@ const GARDIENS = {
   'src/modeles.js': ['monte.js'],
   'src/betes.js': ['monte.js'],
   'src/creatures.js': ['monte.js'],
-  'src/personnages.js': ['monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/vie.js': ['monte.js', 'manhattan.js'],
-  'src/marlon.js': ['monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/face-worker.js': ['parent.js'],
 };
 

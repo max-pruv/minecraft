@@ -36,7 +36,20 @@ export function refletsVoiture() {
 export function majRefletsVoiture(renderer, scene, pos) {
   if (!refletsRT) return;
   refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
-  refletsCamera.update(renderer, scene);
+  // Un matériau ne peut lire la texture cubique pendant qu’on l’écrit :
+  // WebGL signale alors une boucle de rétroaction. Les surfaces qui utilisent
+  // cette sonde sont exclues de sa capture, puis restaurées pour la vue joueur.
+  const masques = [];
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.visible) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (mats.some((m) => m.envMap === refletsRT.texture)) {
+      masques.push(o);
+      o.visible = false;
+    }
+  });
+  try { refletsCamera.update(renderer, scene); }
+  finally { for (const o of masques) o.visible = true; }
 }
 
 // --- la vraie voiture ---------------------------------------------------------
@@ -157,6 +170,7 @@ export function chargerVraieVoiture() {
 // La règle vit donc dans la FICHE, jamais dans une liste écrite dans le
 // témoin — même discipline que `montable`, `nourrissable` et `vole`.
 export const FLOTTE = [
+  {fichier:'berline-citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
   {fichier:'ny-crown-victoria',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
   {fichier:'ny-town-sedan',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
   { fichier: 'acura-nsx-type-s.glb', nom: 'Acura NSX Type S' },
@@ -312,7 +326,11 @@ function normaliserVoiture(scene) {
 export function chargerVoitureFlotte(entree) {
   if (typeof document === 'undefined') return null;
   if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
-  if(entree.fabrique){const p=Promise.resolve(entree.fabrique());chargementsFlotte.set(entree.fichier,p);return p;}
+  if(entree.fabrique){
+    const modele=entree.fabrique(),rt=refletsVoiture();
+    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial)){o.material.envMap=rt.texture;o.material.envMapIntensity=.75;}});
+    const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
+  }
   const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
     .then((gltf) => {
       const cadre = new THREE.Group();
@@ -1011,7 +1029,7 @@ export function createVehicules({ scene, player }) {
   function voitureDeVille(n, teinte, ville) {
     const g = construireVoitureRoute(teinte);
     const choix = FLOTTE.filter(e=>ville==='ny'?e.ville==='ny':e.ville!=='ny');
-    const entree = choix[((n % choix.length) + choix.length) % choix.length];
+    const entree = ville !== 'ny' && n % 4 === 0 ? FLOTTE.find(e=>e.fichier==='berline-citadine') : choix[((n % choix.length) + choix.length) % choix.length];
     // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
     // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
     // flotte — c'est le même soin que pour la voiture garée.
@@ -1026,6 +1044,11 @@ export function createVehicules({ scene, player }) {
           if (membre) g.remove(membre);
         }
         const modele = proto.clone(true);
+        if(entree.fichier==='berline-citadine')modele.traverse(o=>{
+          if(o.isMesh&&o.material.name==='Paint_NYC'){
+            o.material=o.material.clone();o.material.userData.partagee=false;o.material.color.set(teinte);
+          }
+        });
         g.add(modele);
         const roues = [];
         modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });

@@ -34,6 +34,8 @@ import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
+import { actualiserPresence } from './presence.js';
+import { animerHumain } from './humains.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
@@ -101,9 +103,6 @@ const MESH_BUDGET_MAX = 22;
 const dtMaillage = chronoReel(0.5);
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
-// Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de
-// `vie.js`, qui applique la règle aux siens depuis longtemps.
-const PORTEE_PERSONNAGES = 62;
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
 // --- renderer / scene -------------------------------------------------------
@@ -2556,6 +2555,7 @@ function updateRemotePlayers(dt) {
     const swing = rp.moving ? Math.sin(rp.animTime * 9) * 0.6 : 0;
     rp.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
     rp.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = i % 2 ? swing * 0.7 : -swing * 0.7; });
+    animerHumain(rp.mesh, rp.animTime, rp.moving ? 1.6 : 0);
   }
 }
 
@@ -2798,13 +2798,18 @@ function makeCharPortraits() {
   cam2.lookAt(0, 0.85, 0);
   const urls = NET_CHARACTERS.map((c) => {
     const sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xffffff,0x556071,2.2));
+    const key = new THREE.DirectionalLight(0xffeddb,2);key.position.set(-2,3,-3);sc.add(key);
     const mesh = buildKidMesh(withOwnLook(c.look));
     mesh.rotation.y = -0.35; // three-quarter pose
     sc.add(mesh);
     r.render(sc, cam2);
-    return r.domElement.toDataURL();
+    const image = r.domElement.toDataURL();
+    liberer(mesh);
+    return image;
   });
   r.dispose();
+  r.forceContextLoss();
   return urls;
 }
 
@@ -5408,24 +5413,15 @@ function frame(now) {
     // d'une marche qui se voit ; à quatre-vingt-dix blocs, il fait quatorze
     // pixels de haut et personne ne regarde ses jambes.
     //
-    // La distance est celle que `vie.js` applique DÉJÀ aux siens depuis des
-    // versions (`VU = 62`) : la garnison du château s'efface à soixante-deux
-    // blocs et personne ne l'a jamais signalé. Ce qui manquait, c'est que la
-    // règle vaille pour TOUS les personnages, pas seulement les siens.
-    //
-    // On n'allume jamais ce qu'on n'a pas éteint : `vie.js` cache les siens
-    // pour ses propres raisons, et les rallumer sous ses pieds les ferait
-    // clignoter. D'où le drapeau.
-    const LOIN2 = PORTEE_PERSONNAGES * PORTEE_PERSONNAGES;
+    // Un seul propriétaire de la visibilité : la présence se fond en distance
+    // et en temps. Ni le site ni le recyclage ne coupe un personnage visible.
     for (const npc of npcs) {
-      const d2 = npc.pos.distanceToSquared(player.pos);
-      if (d2 > LOIN2) {
-        if (npc.mesh.visible) { npc.mesh.visible = false; npc.__cachePourLoin = true; }
-      } else if (npc.__cachePourLoin) {
-        npc.mesh.visible = true; npc.__cachePourLoin = false;
+      const distance = npc.pos.distanceTo(player.pos);
+      if (!actualiserPresence(npc, distance, dt, !npc.sommeilForce)) continue;
+      npc.__tempsAnimation = (npc.__tempsAnimation || 0) + dt;
+      if(distance < 35 || npc.__tempsAnimation >= (distance < 80 ? .066 : .1)){
+        npc.update(npc.__tempsAnimation); npc.__tempsAnimation = 0;
       }
-      if (!npc.mesh.visible) continue;
-      npc.update(dt);
     }
     siege?.update(dt);
     vie?.update(dt);

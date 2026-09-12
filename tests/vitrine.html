@@ -1,0 +1,87 @@
+<!doctype html><meta charset="utf-8" /><title>Atelier de validation v241</title
+><style>
+  body {
+    margin: 0;
+    background: #adb2b5;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+<script type="importmap">
+  { "imports": { "three": "/vendor/three.module.min.js" } }
+</script>
+<script type="module">
+  import * as T from "three";
+  import { construireHumain } from "/src/personnages.js";
+  import { animerHumain } from "/src/humains.js";
+  import { construireTaxi } from "/src/taxis.js";
+  const renderer = new T.WebGLRenderer({ antialias: true });
+  renderer.setSize(1500, 950);
+  renderer.setPixelRatio(1);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.outputColorSpace = T.SRGBColorSpace;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  document.body.appendChild(renderer.domElement);
+  const scene = new T.Scene();
+  scene.background = new T.Color("#bbc4c9");
+  const camera = new T.PerspectiveCamera(38, 1500 / 950, 0.05, 100);
+  camera.position.set(3, 2.4, -6);
+  camera.lookAt(0, 1, 0);
+  scene.add(new T.HemisphereLight(0xdce8ff, 0x494536, 2));
+  const sun = new T.DirectionalLight(0xffead3, 3.4);
+  sun.position.set(-3, 8, -4);
+  sun.castShadow = true;
+  sun.shadow.normalBias = 0.035;
+  sun.shadow.bias = -0.0002;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -7;
+  sun.shadow.camera.right = 7;
+  sun.shadow.camera.top = 7;
+  sun.shadow.camera.bottom = -7;
+  scene.add(sun);
+  const floor = new T.Mesh(
+    new T.PlaneGeometry(200, 200),
+    new T.MeshStandardMaterial({ color: 0x7f8583, roughness: 0.9 }),
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+  const params = new URLSearchParams(location.search);
+  const models = [];
+  if (params.has("taxi")) {
+    const taxi = construireTaxi();
+    scene.add(taxi);
+    models.push(taxi);
+    camera.position.set(-5, 2.4, -7);
+    camera.lookAt(0, 0.8, 0);
+  } else {
+    for (let i = 0; i < 4; i++) {
+      const g = construireHumain({
+        tenue: "passant",
+        modeleHumain: [
+          "homme-chemise",
+          "femme-chemise",
+          "homme-veste",
+          "femme-manteau",
+        ][i],
+      });
+      g.position.x = (i - 1.5) * 0.8;
+      scene.add(g);
+      models.push(g);
+    }
+  }
+  window.vitrine = { scene, camera, renderer, models };
+  let frame = 0;
+  function tick() {
+    requestAnimationFrame(tick);
+    for (const g of models)
+      animerHumain(g, frame / 60, params.has("walk") ? 1.6 : 0);
+    frame++;
+    renderer.render(scene, camera);
+  }
+  tick();
+  window.ready = true;
+</script>

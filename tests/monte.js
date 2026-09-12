@@ -1026,11 +1026,9 @@ async function avancerUnDemiSeconde(p, depart) {
     // c'est exactement ce qui se mesure. Une couronne étant uniforme en angle,
     // en resserrer le RAYON n'y change rien : 2,3 à 14-55 blocs, 2,33 à 14-34.
     //
-    // Deux remèdes, tous deux gratuits en appels de dessin : deux passants sur
-    // trois sont posés DEVANT l'enfant, et l'on replace aussi celui qui est
-    // passé DERRIÈRE la ligne des épaules — sans quoi un bond de vingt blocs
-    // laisse ceux qu'on vient de dépasser sous le seuil de distance, et la rue
-    // se vide à mesure qu'on avance.
+    // Les nouveaux passants privilégient la rue devant l’enfant. Depuis
+    // v241, les voisins dépassés restent à leur place ; les rues suivantes
+    // se peuplent progressivement, sous un plafond global.
     //
     // LE TÉMOIN MARCHE, CAP DANS LE SENS DE LA MARCHE, ET COMPTE CE QUI EST
     // DANS LE CADRE. Un décompte « à moins de soixante-deux blocs » ne peut pas
@@ -1046,8 +1044,8 @@ async function avancerUnDemiSeconde(p, depart) {
       const vus = [];
       for (const [, a, b] of trajets) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        const yaw = Math.atan2(b[0] - a[0], -(b[1] - a[1]));
-        const dx = Math.sin(yaw), dz = -Math.cos(yaw);
+        const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
+        const dx = -Math.sin(yaw), dz = -Math.cos(yaw);
         for (let d = 0; d <= L; d += 25) {
           const f = d / L;
           const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
@@ -1056,8 +1054,7 @@ async function avancerUnDemiSeconde(p, depart) {
           g.player.vel.set(0, 0, 0);
           g.player.yaw = yaw;
           // La boucle des passants passe toutes les deux secondes ; on lui en
-          // laisse trois, le temps de ramener devant ceux qu'on vient de
-          // dépasser.
+          // laisse sept, le temps de peupler progressivement la rue suivante.
           await new Promise((r) => setTimeout(r, 7000));
           let n = 0;
           for (const q of g.npcs) {
@@ -1096,84 +1093,43 @@ async function avancerUnDemiSeconde(p, depart) {
     // Ce que le témoin éprouve, c'est le fait, pas la conséquence : aucun
     // personnage au-delà de la portée ne doit rester dessiné. Le nombre
     // d'appels dépend d'où l'on regarde ; celui-ci, non.
-    const auLoin = await tab.evaluate(() => {
+    const auLoin = await tab.evaluate(async () => {
+      const { DISTANCE_PRESENCE } = await import('./src/presence.js');
       const g = window.__game;
       const px = g.player.pos.x, pz = g.player.pos.z;
       let dessinesLoin = 0, dessinesPres = 0, loin = 0;
       for (const n of g.npcs || []) {
         const d = Math.hypot(n.pos.x - px, n.pos.z - pz);
-        if (d > 75) { loin++; if (n.mesh.visible) dessinesLoin++; }
+        if (d > DISTANCE_PRESENCE.fin + 4) { loin++; if (n.mesh.visible) dessinesLoin++; }
         else if (d < 45 && n.mesh.visible) dessinesPres++;
       }
       return { dessinesLoin, dessinesPres, loin, total: (g.npcs || []).length };
     });
     verifier('et les personnages lointains ne sont plus dessinés du tout',
       auLoin.loin >= 20 && auLoin.dessinesLoin === 0,
-      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} à plus de 75 blocs`);
+      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`);
     // L'autre moitié de la promesse : on n'a pas vidé la rue pour autant.
     verifier('mais ceux d\'à côté sont toujours là',
       auLoin.dessinesPres >= 3,
       `${auLoin.dessinesPres} personnage(s) dessinés à moins de 45 blocs`);
 
-    // UN ŒIL SE LIT À SON BLANC (v215) ---------------------------------------
-    //
-    // Max, capture à l'appui : « personnages are scary ». L'iris faisait 55 %
-    // de la largeur du blanc de l'œil, il était posé PLUS EN AVANT que lui, et
-    // il était presque noir : de face on ne voyait que deux billes sombres
-    // globuleuses, sans blanc autour. C'est la recette d'un regard fixe.
-    //
-    // L'esthétique se juge en capture, mais la GÉOMÉTRIE se mesure. Les
-    // couleurs vivent dans les sommets : on relève la boîte du blanc et celle
-    // de l'iris, et l'on demande deux choses qu'un visage doux respecte
-    // toujours — l'iris n'occupe pas la moitié de l'œil, et il reste EN
-    // RETRAIT, dans l'orbite.
-    const oeil = await tab.evaluate(async () => {
-      const P = await import('./src/personnages.js');
+    // Les nouveaux visages portent leurs yeux dans une texture anatomique.
+    // Un comptage des anciennes sphères blanches n'aurait plus de sens : on
+    // vérifie le vrai visage rendu, sa hauteur et ses textures résidentes.
+    const visage = await tab.evaluate(async () => {
+      const P = await import('./src/personnages.js'), T = await import('three');
       const m = P.construireHumain({ tenue: 'gaulois', cheveux: 0xe8952c });
-      // ON NE REGARDE QUE LA TÊTE. Le premier jet filtrait sur la seule
-      // couleur et attrapait la ceinture de cuir, dont le brun est à un
-      // cheveu de celui de l'iris : il rendait un « iris » de 178 % de large,
-      // posé plus en avant que le nez.
-      const boite = (test) => {
-        const b = { x0: 1e9, x1: -1e9, z0: 1e9, z1: -1e9, n: 0 };
-        m.traverse((o) => {
-          if (!o.isMesh || !o.geometry.attributes.color) return;
-          const pos = o.geometry.attributes.position, col = o.geometry.attributes.color;
-          for (let i = 0; i < pos.count; i++) {
-            if (pos.getY(i) < 1.45) continue;
-            // UN SEUL ŒIL. Mesurée sur la paire, la largeur inclut l'écart
-            // entre les deux et écrase le rapport : 89 % contre 82 %, quand
-            // l'œil seul dit 55 % contre 36 %. Le témoin ne distinguait plus
-            // rien.
-            if (pos.getX(i) < 0.02) continue;
-            if (!test(col.getX(i), col.getY(i), col.getZ(i))) continue;
-            const x = pos.getX(i), z = pos.getZ(i);
-            if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x;
-            if (z < b.z0) b.z0 = z; if (z > b.z1) b.z1 = z;
-            b.n++;
-          }
-        });
-        return b;
-      };
-      // le blanc de l'œil : très clair et légèrement chaud, unique sur la tête
-      const blanc = boite((r, v, b) => r > 0.88 && v > 0.85 && b > 0.78 && r >= v && v >= b);
-      // l'iris : le brun du regard, plus foncé que la peau et non rougeâtre
-      const iris = boite((r, v, b) => r > 0.06 && r < 0.32 && v > 0.03 && v < 0.24 && b < 0.16 && r > b);
-      return {
-        blancN: blanc.n, irisN: iris.n,
-        largeurBlanc: +(blanc.x1 - blanc.x0).toFixed(4),
-        largeurIris: +(iris.x1 - iris.x0).toFixed(4),
-        avantBlanc: +blanc.z0.toFixed(4), avantIris: +iris.z0.toFixed(4),
-      };
+      m.updateMatrixWorld(true); const faces=[];
+      m.traverse(o=>{if(o.isMesh&&/head/.test(o.material?.name)) {
+        const box=new T.Box3().setFromObject(o);
+        faces.push({hauteur:box.max.y,bas:box.min.y,texture:o.material.map?.image?.width||0,relief:!!o.material.normalMap});
+      }});
+      return faces;
     });
-    const partIris = oeil.blancN && oeil.irisN
-      ? oeil.largeurIris / oeil.largeurBlanc : null;
-    verifier('l\'iris n\'occupe pas la moitié de l\'œil — un regard, pas deux billes',
-      partIris !== null && partIris < 0.45 && oeil.blancN > 20 && oeil.irisN > 20,
-      `iris ${oeil.largeurIris} pour un œil de ${oeil.largeurBlanc} (${partIris === null ? '—' : Math.round(partIris * 100)} %)`);
-    verifier('et il reste dans l\'orbite, jamais devant le blanc',
-      oeil.blancN > 20 && oeil.irisN > 20 && oeil.avantIris >= oeil.avantBlanc,
-      `iris à ${oeil.avantIris}, blanc à ${oeil.avantBlanc}`);
+    verifier('les costumes historiques portent un visage complet à hauteur humaine',
+      visage.length>0 && visage.every(v=>v.hauteur>1.65&&v.hauteur<1.9&&v.bas>1.35),visage);
+    verifier('la peau et les yeux du visage ont leurs textures et leur relief chargés',
+      visage.length>0 && visage.every(v=>v.texture>=512&&v.relief),visage);
 
     // --- les poissons : la mer aussi est vivante ------------------------------
     //

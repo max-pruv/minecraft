@@ -13,6 +13,7 @@ npm run reseau    # le monde partagé
 npm run reglages  # les réglages, enfant et parent
 npm run carte     # la carte : glisser, zoomer, voyager
 npm run manhattan # édition, sauvegardes, réseau, conduite tactile et PWA
+npm run realisme  # anatomies, demi-tour, fondu et reflets automobiles
 ```
 
 Sur macOS, `CHROMIUM_ANGLE=metal npm test` utilise le GPU natif. Le défaut
@@ -239,3 +240,12 @@ quelque chose de vrai sur autre chose que ce qu'on éprouvait.
 
 Et avant de croire un test qui passe, faites-le échouer : remettez le défaut,
 vérifiez qu'il le voit. Un test vert des deux côtés ne prouve rien.
+
+## Personnages et voitures (`npm run realisme`)
+
+Treize contrôles gardent les proportions adulte/enfant, le partage des ressources,
+le genou articulé, les volumes de visibilité sur une foulée, les visages des
+costumes, les voisins au demi-tour, le fondu spatial et temporel, les dimensions
+de la berline, son budget et quatre renouvellements des reflets sans erreur WebGL.
+Les captures rapprochées complètent ces contrats : les tests ne décident pas à
+eux seuls de la fidélité visuelle.

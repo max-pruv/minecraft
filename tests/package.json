@@ -2,7 +2,7 @@
   "name": "web-minecraft-tests",
   "private": true,
   "version": "1.0.0",
-  "description": "Tests de bout en bout du monde partagé : plusieurs navigateurs réels qui jouent ensemble.",
+  "description": "Tests de bout en bout du monde partag\u00e9 : plusieurs navigateurs r\u00e9els qui jouent ensemble.",
   "type": "commonjs",
   "scripts": {
     "test": "node tout.js --voie",
@@ -22,7 +22,8 @@
     "metro": "node metro.js",
     "carteMonde": "node carteMonde.js",
     "hote": "node hote.js",
-    "manhattan": "node manhattan.js"
+    "manhattan": "node manhattan.js",
+    "realisme": "node realisme.js"
   },
   "devDependencies": {
     "express": "^4.19.2",
