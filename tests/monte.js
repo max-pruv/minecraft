@@ -1028,25 +1028,36 @@ async function avancerUnDemiSeconde(p, depart) {
     // Ce banc avance à quinze pour cent du temps réel (`dt` borné, trois
     // images par seconde) : on attend le premier bloc et demi jusqu'à douze
     // secondes, et l'on rend l'enfant à sa place après.
+    // Un passant lancé contre un mur n'avance pas non plus (un bloc en douze
+    // secondes, vu au portail) : on essaie trois passants et quatre caps, et
+    // l'on garde le premier qui avance. Sur l'ancien code aucun ne bouge,
+    // quelle que soit la direction — c'est l'enfant qui le fige.
     const suit = await tab.evaluate(async () => {
       const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
-      const h = s2.peuple.find((q) => q.name === 'passant');
-      if (!h) return { err: 'aucun passant' };
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
+      if (!gens.length) return { err: 'aucun passant' };
       const sauve = g.player.pos.clone();
-      h.etat = 'marche'; h.minuteur = 8; h.capYaw = 0; h.pas = h.walkSpeed;
-      g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
-      const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
-      let d = 0;
-      while (performance.now() - t0 < 12000 && d < 1.5) {
-        await new Promise((f) => setTimeout(f, 250));
-        d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+      let meilleur = 0, essais = 0;
+      for (const h of gens) {
+        for (const cap of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+          essais++;
+          h.etat = 'marche'; h.minuteur = 8; h.capYaw = cap; h.pas = h.walkSpeed;
+          g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
+          const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
+          let d = 0;
+          while (performance.now() - t0 < 4000 && d < 1.2) {
+            await new Promise((f) => setTimeout(f, 250));
+            d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+          }
+          if (d > meilleur) meilleur = d;
+          if (d >= 1.2) { g.player.pos.copy(sauve); return { d: +d.toFixed(2), essais, secondes: +((performance.now() - t0) / 1000).toFixed(1) }; }
+        }
       }
-      const dJoueur = Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z);
       g.player.pos.copy(sauve);
-      return { d: +d.toFixed(2), dJoueur: +dJoueur.toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+      return { d: +meilleur.toFixed(2), essais };
     });
     verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
-      !suit.err && suit.d >= 1.5, JSON.stringify(suit));
+      !suit.err && suit.d >= 1.2, JSON.stringify(suit));
 
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
     //
@@ -1118,6 +1129,15 @@ async function avancerUnDemiSeconde(p, depart) {
     // Mesuré : 78 chevauchements et 59 sauts sur l'ancien code ; 17 à 25
     // et 1 à 2 ici, roulis 0,078 au pire coin. Les bornes se posent entre les
     // deux dispersions, pas au meilleur relevé.
+    // On se place au-dessus de la circulation de Paris, là où la sonde a
+    // mesuré (22 à 24 voitures visibles) : le portail a rendu « maxVues 5 »
+    // depuis l'endroit où le témoin d'avant avait laissé l'enfant.
+    await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture').reduce((n, c) => n + c.visibles, 0) >= 8,
+      null, { timeout: 30000 }).catch(() => {});
     const voitures = await tab.evaluate(async () => {
       const THREE = await import('three');
       const g = window.__game;

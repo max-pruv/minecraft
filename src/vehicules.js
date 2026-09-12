@@ -1447,8 +1447,10 @@ export function createVehicules({ scene, player }) {
       // Où sont les voitures visibles, et vers où elles vont (v244) : c'est ce
       // qui permet à une sonde de dire QUI chevauche QUI — même convoi, ou deux.
       places: c.elements.map((m, i) => (m && m.visible
-        ? [Math.round(m.position.x * 10) / 10, Math.round(m.position.z * 10) / 10, Math.round((m.rotation.y - Math.PI) * 100) / 100, i]
+        ? [Math.round(m.position.x * 10) / 10, Math.round(m.position.z * 10) / 10, Math.round((m.rotation.y - Math.PI) * 100) / 100, i,
+          c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0]
         : null)).filter(Boolean),
+      retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
       attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
       // les teintes de carrosserie des éléments visibles — la preuve, pour un
       // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
