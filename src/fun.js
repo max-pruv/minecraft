@@ -5,6 +5,7 @@
 // shim; world-scoped data (signs, chest) is keyed by the world code.
 
 import * as THREE from 'three';
+import { liberer } from './liberer.js';
 import { buildCreatureMesh, TYPES } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
@@ -213,7 +214,10 @@ export function initFun(ctx) {
   }
 
   function refreshPet() {
-    if (petMesh) { scene.remove(petMesh); petMesh = null; }
+    // ET L'ANCIENNE SE REND (v238) : `refreshPet` en refabrique une neuve, avec
+    // ses sphères, ses matériaux ET l'étiquette dessinée sur une toile. Sans
+    // cette ligne chaque changement de mascotte en abandonnait un jeu complet.
+    if (petMesh) { scene.remove(petMesh); liberer(petMesh); petMesh = null; }
     if (!pet) return;
     const sp = creatureManager.species.find((s) => s.id === pet.id);
     if (!sp) return;
@@ -307,6 +311,8 @@ export function initFun(ctx) {
       // se rend aussi en descendant (v212).
       player.pilote = null;
       player.vitesseAvion = undefined;
+      player.avionEnVol = false;
+      player.roulisAvion = 0;
       player.boost = juiceTimer > 0 ? 1.45 : undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -1626,7 +1632,8 @@ export function initFun(ctx) {
     }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
-      riding = null; player.boost = undefined; player.pilote = null; return;
+      riding = null; player.boost = undefined; player.pilote = null;
+      player.avionEnVol = false; return;
     }
     player.boost = riding.def.allure || 2.0;
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
@@ -1636,6 +1643,10 @@ export function initFun(ctx) {
     // collision marchent sans une ligne de plus.
     player.pilote = riding.def.pilote || null;
     if (player.pilote) player.flying = true;
+    // ON MONTE À BORD AU SOL, MOTEURS COUPÉS. C'est le bouton ✈️ qui décolle
+    // — sinon l'appareil s'arracherait sous les pieds de l'enfant à l'instant
+    // où il s'assied, et « monter dedans » deviendrait « tomber du ciel ».
+    if (player.pilote && player.avionEnVol === undefined) player.avionEnVol = false;
     const a = riding;
     // La bête pose ses pattes là où l'enfant a les pieds, et c'est le regard
     // qu'on élève à la hauteur de son dos. C'est l'inverse de ce qu'on faisait :
@@ -1648,6 +1659,16 @@ export function initFun(ctx) {
     a.state = 'idle'; a.stateTime = 5; a.cryTimer = 99;
     a.mesh.position.copy(a.pos);
     a.mesh.rotation.y = a.yaw + Math.PI;
+    // L'INCLINAISON SE COMPOSE AVANT LE CAP, sinon l'appareil bascule autour
+    // de l'axe du MONDE et non du sien : en virage serré on le verrait pencher
+    // de travers. L'ordre 'YXZ' applique le roulis (z) en premier, dans le
+    // repère du modèle, puis le cap.
+    if (player.pilote) {
+      a.mesh.rotation.order = 'YXZ';
+      a.mesh.rotation.z = player.roulisAvion || 0;
+    } else if (a.mesh.rotation.z) {
+      a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
+    }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;

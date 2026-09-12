@@ -13,6 +13,7 @@
 // mêmes proportions ne pèsent qu'une fois en mémoire, seule leur matrice change.
 
 import * as THREE from 'three';
+import { partager } from './liberer.js';
 
 // --- géométries de base, partagées -------------------------------------------
 
@@ -99,18 +100,22 @@ class Tas {
 // Un seul matériau pour toute la population du jeu : la couleur vient des
 // sommets. C'est ce qui permet de fusionner des morceaux de teintes différentes
 // dans le même maillage.
+// ET IL EST DÉCLARÉ PARTAGÉ (v238). Un personnage qui sort de la scène rend
+// ses géométries — elles lui appartiennent — mais surtout PAS ce matériau-ci,
+// qui est le même pour tout le monde : le libérer ferait disparaître d'un coup
+// tous les habitants du jeu. Voir `liberer.js`.
 let matiere = null;
 export function matiereVivante() {
-  if (!matiere) matiere = new THREE.MeshLambertMaterial({ vertexColors: true });
+  if (!matiere) matiere = partager(new THREE.MeshLambertMaterial({ vertexColors: true }));
   return matiere;
 }
 
 let matiereVitre = null;
 function matiereVerre() {
   if (!matiereVitre) {
-    matiereVitre = new THREE.MeshLambertMaterial({
+    matiereVitre = partager(new THREE.MeshLambertMaterial({
       vertexColors: true, transparent: true, opacity: 0.42, depthWrite: false,
-    });
+    }));
   }
   return matiereVitre;
 }

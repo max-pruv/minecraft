@@ -14,11 +14,13 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
-import { cadence } from './cadence.js';
+import { cadence, chronoReel } from './cadence.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkGeometry } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
+import { Horizon, rayonHorizon } from './horizon.js';
+import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
@@ -49,10 +51,46 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
-// Millisecondes maximum consacrées par frame à construire des chunks. À 60 fps
-// une frame dure 16,7 ms : en laisser 6 au terrain garde de la marge pour le
-// reste du jeu et rend les gels structurellement impossibles.
-const MESH_BUDGET_MS = 6;
+// Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
+// qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
+const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
+// La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
+const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
+// Millisecondes maximum consacrées par frame à construire des chunks.
+//
+// LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
+// du jeu : 5,4 ms pour mailler un morceau. À six millisecondes, la boucle en
+// maillait un, regardait l'heure, en maillait un second et s'arrêtait — le
+// budget ne bornait donc rien, il fixait le débit à deux par image. C'est
+// exactement la forme du seuil de charge du banc en v225 : une constante se
+// règle sur le coût MESURÉ de ce qu'elle est censée laisser passer.
+//
+// Mesuré à 264 blocs/s, même page et même point : 6 ms → 76 morceaux/s pour 45
+// images ; 12 ms → 154 morceaux/s pour 44 images ; 20 ms → 178 morceaux/s pour
+// 30 images. Douze double le débit sans coûter une image, vingt gagne 15 % de
+// plus et coûte un tiers de la cadence. On prend douze.
+const MESH_BUDGET_MS = 12;
+// LE MAILLAGE EST UNE CADENCE DE MÉNAGE, ET SON BUDGET ÉTAIT EN IMAGES (v237).
+//
+// Douze millisecondes PAR IMAGE, c'est douze cents millisecondes par seconde à
+// cent images — mais seulement TRENTE-SIX à trois images par seconde. Or trois
+// images par seconde, c'est exactement l'état d'une tablette qui ARRIVE dans
+// une ville : le monde se charge vingt fois plus lentement au moment précis où
+// l'enfant en a besoin. C'est le piège de `dt` de la v226, un étage plus haut,
+// et sur le chemin le plus chaud du jeu.
+//
+// Le budget vise donc un DÉBIT — des millisecondes de maillage par seconde
+// RÉELLE — et se répartit sur les images telles qu'elles viennent. Sept cent
+// vingt, c'est exactement les douze millisecondes d'avant à soixante images :
+// à cadence haute RIEN NE CHANGE, la correction ne fait qu'AJOUTER du budget
+// quand les images s'allongent. Le plafond de vingt-deux empêche l'emballement
+// (une image plus longue donnerait plus de budget, qui l'allongerait encore) et
+// c'est le chiffre que la v229 avait déjà mesuré comme la limite au-delà de
+// laquelle on paie un tiers de la cadence.
+const MESH_MS_PAR_SECONDE = 720;
+const MESH_BUDGET_MAX = 22;
+// L'horloge du maillage : son propre chronomètre, appelé une fois par image.
+const dtMaillage = chronoReel(0.5);
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 // Au-delà, un personnage cesse d'être dessiné. Même valeur que le `VU` de
@@ -75,7 +113,16 @@ const scene = new THREE.Scene();
 const DAY_SKY = new THREE.Color(0x87ceeb);
 const NIGHT_SKY = new THREE.Color(0x0b1026);
 scene.background = DAY_SKY.clone();
-scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK * 0.55, RENDER_RADIUS * CHUNK - 4);
+// LE BROUILLARD PORTE JUSQU'AU PAYSAGE LOINTAIN (v237). Il s'arrêtait à
+// `RENDER_RADIUS * CHUNK − 4` — cent quatre-vingt-huit blocs — parce qu'au-delà
+// il n'y avait rien à cacher que du vide. Depuis que `horizon.js` remplit ce
+// vide, une brume à cent quatre-vingt-huit blocs EFFACERAIT le paysage qu'on
+// vient de dessiner. Le début, lui, ne bouge pas : c'est le monde proche.
+// Et le DÉBUT recule aussi : il valait `RENDER_RADIUS * CHUNK * 0.55` — cent
+// six blocs — pour fondre le bord du monde chargé dans le ciel. Il n'y a plus
+// de bord à fondre, et à cent six blocs le paysage lointain arrivait déjà
+// délavé. Il commence au bout du monde proche et fond jusqu'à l'horizon.
+scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
 
@@ -192,6 +239,13 @@ activerTuilage(litMaterial);
 })();
 
 const world = new World();
+
+// LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
+// exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
+// `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
+// morceaux par seconde quand voler en réclame cent soixante-cinq.
+const horizon = new Horizon(world, RAYON_HORIZON);
+scene.add(horizon.objet());
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
 // Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
@@ -224,7 +278,24 @@ let circulationsEnAttente = [];
 // si le monde est peuplé autour de l'enfant ; écrites `-= dt`, elles
 // ralentissaient exactement quand la cadence d'affichage s'effondre, c'est-à-
 // dire à l'arrivée dans une ville. « It took a while to see cars in paris. »
-const circulationPrete = cadence(2500);
+// UNE SEULE CIRCULATION PAR TOUR, ET LE TOUR EST COURT (v235).
+//
+// Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
+// secondes, il redémarre pendant une seconde ». Profilé et mesuré, vingt
+// secondes de vol au-dessus de Paris : ce n'était NI le maillage (16 ms par
+// image, le budget est respecté) NI le rendu (4 ms), mais `animerLesVilles` —
+// **557 ms dans une seule image**, où HUIT circuits de Paris naissaient
+// ensemble parce que l'avion venait de franchir leur rayon de 220 blocs.
+// Chaque circuit fait naître une vingtaine de voitures, et une voiture coûte
+// trente-deux maillages (v201) : cinq mille maillages d'un coup.
+//
+// Le remède est celui du maillage des morceaux de monde, un fichier plus
+// loin : on étale. Un circuit par tour, le PLUS PROCHE d'abord, et le tour
+// passe de deux secondes et demie à un huitième de seconde — les huit circuits
+// de Paris sont donc tous là en une seconde, au lieu d'arriver en bloc. Rien
+// ne se perd : un convoi qui apparaît un dixième de seconde plus tard, à deux
+// cents blocs, ne se voit pas.
+const circulationPrete = cadence(125);
 let passants = null;
 let poissons = null;
 
@@ -333,17 +404,28 @@ function updateChunks() {
         chunkMeshes.delete(key);
       }
     }
+    // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
+    // la carte graphique ; les quatre-vingts kilo-octets de blocs, eux,
+    // restaient dans `world.chunks` pour toujours. Voir `oublierLoinDe`.
+    world.oublierLoinDe(pcx, pcz, OUBLI_RADIUS);
   }
 
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
   // (château, forêt dense) ne peut plus geler la frame à lui tout seul. Au pire
   // le paysage lointain arrive une frame plus tard, derrière le brouillard.
+  // Le budget de CETTE image : ce que le débit visé accorde pour le temps réel
+  // écoulé, jamais moins que l'ancien budget fixe, jamais plus que le plafond.
+  // L'écart est borné à un dixième de seconde — au réveil d'un onglet endormi
+  // il vaut des minutes, et une image ne se laisse pas remplir avec cela.
+  const ecart = Math.min(dtMaillage(), 0.1);
+  const budget = Math.min(MESH_BUDGET_MAX,
+    Math.max(MESH_BUDGET_MS, MESH_MS_PAR_SECONDE * ecart));
   const debut = performance.now();
   do {
     const suivant = meshQueue.pop();
     if (!suivant) break;
     meshChunk(suivant.cx, suivant.cz);
-  } while (performance.now() - debut < MESH_BUDGET_MS);
+  } while (performance.now() - debut < budget);
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
@@ -975,7 +1057,29 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
 // fait rien, sinon il appuiera dix fois en croyant l'écran cassé.
+// LE BOUTON ✈️ — et ce qu'il répondait au pilote du Concorde (v228).
+//
+// Aux commandes d'un avion, `volInterdit` est levé — la règle « un véhicule
+// ne vole pas », écrite pour les voitures — et le bouton REFUSAIT, avec ce
+// message : « 🚗 Une voiture ne vole pas ». Assis dans le Concorde. C'est un
+// message faux, et le projet a une règle là-dessus : un message d'erreur doit
+// dire à un enfant quoi faire, jamais accuser à tort ; un message faux est
+// pire que pas de message. C'est toute la panne « les avions sont
+// inutilisables » que Max a signalée.
+//
+// Le bouton garde donc son dessin et change de SENS selon le contexte : à
+// pied il fait voler, aux commandes il fait décoller puis se poser. Rien de
+// neuf à apprendre — c'est la même discipline que « un seul jeu de commandes ».
 function refuserOuVoler() {
+  const aBord = player.decollerOuSePoser();
+  if (aBord === 'decollage') {
+    creatureManager.toast('✈️ Décollage ! Le joystick monte, descend et tourne.', 0x9fd8ff);
+    return true;
+  }
+  if (aBord === 'atterrissage') {
+    creatureManager.toast('🛬 On se pose — garde le cap jusqu\'au sol.', 0x9fd8ff);
+    return true;
+  }
   if (player.toggleFly()) return true;
   creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
@@ -1108,15 +1212,19 @@ function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   if (poissons) poissons.update(dt);
   if (!vehicules || !circulationPrete()) return;
-  for (let i = circulationsEnAttente.length - 1; i >= 0; i--) {
+  // Le plus proche d'abord : c'est celui que l'enfant va voir en premier.
+  let choisi = -1, plusPres = 220;
+  for (let i = 0; i < circulationsEnAttente.length; i++) {
     const tr = circulationsEnAttente[i];
-    if (Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z) < 220) {
-      vehicules.circulation(tr.pts, tr.pts.length + i);
-      // le bus dessert le grand anneau — un par ville, à sa couleur
-      if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
-      circulationsEnAttente.splice(i, 1);
-    }
+    const d = Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z);
+    if (d < plusPres) { plusPres = d; choisi = i; }
   }
+  if (choisi < 0) return;
+  const tr = circulationsEnAttente[choisi];
+  vehicules.circulation(tr.pts, tr.pts.length + choisi);
+  // le bus dessert le grand anneau — un par ville, à sa couleur
+  if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
+  circulationsEnAttente.splice(choisi, 1);
 }
 // L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
 // appareils attendent toujours.
@@ -1149,11 +1257,21 @@ function aeroportiste(dt) {
   // quatre-vingts pour exactement ce motif.
   const a = aeroportPres(player.pos.x, player.pos.z, 90);
   if (!a) return;
-  for (const { espece, du, dv } of postesAvion(a.profil)) {
+  for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
     const x = a.x + du, z = a.z + dv;
+    // HUIT BLOCS, PAS QUATORZE. Sur une base, trois chasseurs se garent à
+    // quatorze blocs l'un de l'autre : à ce rayon-là, le voisin comptait pour
+    // « déjà là » et deux postes sur trois restaient vides.
     const dejaLa = animalManager.animals.some((b) => b.def.key === espece
-      && Math.hypot(b.pos.x - x, b.pos.z - z) < 14);
-    if (!dejaLa) animalManager.invoquer(espece, x, z);
+      && Math.hypot(b.pos.x - x, b.pos.z - z) < 8);
+    if (dejaLa) continue;
+    const ne = animalManager.invoquer(espece, x, z);
+    // LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne à toute bête un
+    // yaw aléatoire ; l'espèce étant `immobile`, un avion garé pointait donc
+    // dans une direction quelconque, pour toujours. Le poste publie son cap,
+    // l'appareil s'y aligne — et il est le long de l'aérogare, comme au large
+    // d'un vrai aéroport.
+    if (ne && cap !== undefined) ne.yaw = cap;
   }
 }
 
@@ -1896,8 +2014,12 @@ const identity = new Identity(cloud, raw);
 })();
 identity.syncFromCloud();
 // Le scanner se charge pendant que l'enfant lit l'accueil, pour qu'il n'ait
-// plus à l'attendre au moment où il veut se faire reconnaître.
-prefetchScanner();
+// plus à l'attendre au moment où il veut se faire reconnaître — mais JAMAIS
+// pendant qu'il attend de jouer : ses 4,67 Mo font quatre-vingts pour cent du
+// premier chargement. `running` dit exactement ce qu'il faut savoir : il passe
+// à vrai dès que l'enfant entre dans le monde, donc pendant que les morceaux
+// s'engendrent, et il redevient faux à la pause et sur les menus.
+prefetchScanner(() => !running);
 
 // Sampled from the enrolment photo: the child's character gets their skin
 // and hair colour. Stored with the profile and synced, so it follows them.
@@ -2321,7 +2443,11 @@ function updateNetFx(dt) {
   for (const l of [...leaving]) {
     l.life -= dt;
     if (l.life <= 0) {
+      // CE QU'ON RETIRE SE REND (v238). Le corps d'un ami qui s'en va porte ses
+      // onze géométries en propre ; ses matériaux, eux, sont ceux de tout le
+      // monde et `liberer` les épargne — voir `liberer.js`.
       scene.remove(l.mesh);
+      liberer(l.mesh);
       leaving.splice(leaving.indexOf(l), 1);
       continue;
     }
@@ -4313,52 +4439,162 @@ const minimapCanvas = document.getElementById('minimap');
 const mapModal = document.getElementById('map-modal');
 const mapModalCanvas = document.getElementById('map-modal-canvas');
 let minimapVisible = false;
-let minimapTimer = 0;
+// Le pas de rafraîchissement : huit blocs, soit sept points de la minicarte.
+// En dessous, on paie un défilement pour un déplacement qui ne se voit pas ;
+// au-dessus, la carte redevient en retard. La cadence de 120 ms est la borne
+// haute — à 95 blocs/s elle donne onze blocs de retard, contre soixante-quatorze.
+const CARTE_PAS = 8;
+const horizonDecoupe = cadence(250);
+let horizonCap = 0;
+const carteSuivre = cadence(120);
+// Et le fond entier de temps en temps : un bloc que l'enfant vient de poser
+// tombe dans la partie RECOPIÉE, que le défilement ne recalcule jamais.
+const carteFond = cadence(2000);
+let carteVue = null;
 let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
+// L'horloge du TEMPS D'ÉCRAN : des secondes réelles, bornées à deux. La borne
+// n'est pas une précaution — c'est elle qui empêche un onglet passé à
+// l'arrière-plan, ou un appareil endormi, de compter des minutes d'absence
+// comme du jeu au premier réveil. Le plafond de `dt` le faisait par accident ;
+// ici c'est exprès. Deux secondes laissent passer en entier l'image la plus
+// lente qu'on ait mesurée (2 im/s à l'arrivée dans Paris).
+const dtEcran = chronoReel(2);
+
 
 // La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
 // monde s'arrêtait là. Elle reste fixe : c'est un choix de dessin, pas une
 // dimension du monde.
 const RELIEF_CARTE = 96;
 
-function drawMap(mapCanvas, radius) {
-  const ctx = mapCanvas.getContext('2d');
-  const size = mapCanvas.width;
-  const scale = size / (radius * 2 + 1);
-  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
-  const img = ctx.createImageData(size, size);
+// UNE CARTE QUI SE DÉPLACE SE FAIT DÉFILER, ELLE NE SE RECALCULE PAS (v233).
+//
+// Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la sonde,
+// en vol à 95 blocs/s avec la distance d'affichage de l'iPad :
+//
+//   écart réel entre deux redessins    2,4 s en moyenne, 4,23 s au pire
+//   distance parcourue entre les deux  74 blocs en moyenne, 99,7 au pire
+//   rayon de la minicarte              96 blocs
+//   coût d'un redessin                 30,8 ms
+//
+// La carte montrait donc, en moyenne, un paysage laissé aux trois quarts
+// derrière soi — et au pire un paysage entièrement sorti du cadre. Deux causes
+// se cumulaient, et la seconde interdisait de corriger la première.
+//
+//  - LE MINUTEUR COMPTAIT EN `dt`. C'est le piège de la v226, et la minicarte
+//    est la SEULE cadence de ménage à ne pas y être passée : `main.js` borne
+//    `dt` à un vingtième, si bien qu'une seconde de minuteur en réclame
+//    2,4 réelles dès que la cadence tombe — c'est-à-dire précisément en vol,
+//    quand le monde se charge.
+//  - REDESSINER PLUS SOUVENT COÛTAIT TROP CHER. 30,8 ms pour vingt-cinq mille
+//    points dont chacun descend une colonne du monde : à dix fois par seconde,
+//    c'est un tiers du temps de la machine.
+//
+// D'où le fond qui DÉFILE. Le raster est tenu à UN POINT PAR BLOC, ce qui rend
+// le décalage exact et entier — à l'échelle d'affichage (0,83 point par bloc),
+// il faudrait arrondir, et l'image dériverait d'un demi-point à chaque tour.
+// Entre deux redessins on recopie ce qui reste à l'écran et l'on ne calcule que
+// la bande neuve : le coût ne dépend plus de la taille de la carte mais de la
+// DISTANCE parcourue.
+//
+// ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
+// tombe dans la partie recopiée, que rien ne recalculerait jamais.
+let carteRaster = null;         // le fond, un point par bloc
+let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
+let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
 
-  for (let py = 0; py < size; py++) {
-    const wz = pcz + Math.floor(py / scale) - radius;
-    for (let pxx = 0; pxx < size; pxx++) {
-      const wx = pcx + Math.floor(pxx / scale) - radius;
-      let color = [20, 26, 40], h = 0;
-      // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
-      // chaque point de la carte traverserait d'abord tout le ciel vide, et la
-      // carte coûterait de plus en plus cher à chaque fois qu'on relève le
-      // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
-      // vitres comprises — pas le premier bloc plein.
-      const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
-      for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
-        const id = world.getBlock(wx, y, wz);
-        if (id !== BLOCK.AIR) {
-          color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
-          h = y;
-          break;
-        }
-      }
-      // Le relief lit plus clair en altitude. La référence est figée à la
-      // hauteur du monde d'avant : indexée sur le plafond, elle aurait
-      // assombri toute la carte d'un coup le jour où le ciel a monté.
-      const shade = 0.65 + (Math.min(h, RELIEF_CARTE) / RELIEF_CARTE) * 0.6;
-      const o = (py * size + pxx) * 4;
-      img.data[o] = Math.min(255, color[0] * shade);
-      img.data[o + 1] = Math.min(255, color[1] * shade);
-      img.data[o + 2] = Math.min(255, color[2] * shade);
-      img.data[o + 3] = 255;
+// UNE SONDE, PAS UN TÉMOIN. Elle compare le fond DÉFILÉ à un fond entièrement
+// recalculé au même endroit : c'est ce qui prouve qu'une recopie ne montre pas
+// un paysage périmé. Posée une seule fois, hors du chemin de chaque image.
+window.__carteControle = () => {
+  if (!carteRaster) return null;
+  const N = carteRasterR * 2 + 1;
+  const t = new Uint8ClampedArray(N * N * 4);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR);
+  }
+  let ecarts = 0;
+  for (let k = 0; k < t.length; k += 4) {
+    if (t[k] !== carteRaster[k] || t[k + 1] !== carteRaster[k + 1] || t[k + 2] !== carteRaster[k + 2]) ecarts++;
+  }
+  return { points: N * N, ecarts };
+};
+
+// Un point du fond : la couleur du premier bloc NON VIDE de sa colonne.
+function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
+  const wx = pcx + i - radius, wz = pcz + j - radius;
+  let color = [20, 26, 40], h = 0;
+  // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
+  // chaque point de la carte traverserait d'abord tout le ciel vide, et la
+  // carte coûterait de plus en plus cher à chaque fois qu'on relève le
+  // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
+  // vitres comprises — pas le premier bloc plein.
+  const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
+  for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
+    const id = world.getBlock(wx, y, wz);
+    if (id !== BLOCK.AIR) {
+      color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
+      h = y;
+      break;
     }
   }
-  ctx.putImageData(img, 0, 0);
+  // Le relief lit plus clair en altitude. La référence est figée à la
+  // hauteur du monde d'avant : indexée sur le plafond, elle aurait
+  // assombri toute la carte d'un coup le jour où le ciel a monté.
+  const shade = 0.65 + (Math.min(h, RELIEF_CARTE) / RELIEF_CARTE) * 0.6;
+  const o = (j * N + i) * 4;
+  buf[o] = Math.min(255, color[0] * shade);
+  buf[o + 1] = Math.min(255, color[1] * shade);
+  buf[o + 2] = Math.min(255, color[2] * shade);
+  buf[o + 3] = 255;
+}
+
+// Le contenu se déplace de (−dx, −dz) points. Les lignes se parcourent dans le
+// sens qui évite d'écraser ce qu'on n'a pas encore lu ; `copyWithin` fait le
+// reste, y compris quand la source et la cible se chevauchent dans la ligne.
+function decalerCarte(buf, N, dx, dz) {
+  const ligne = N * 4;
+  const montant = dz > 0;
+  for (let k = 0; k < N; k++) {
+    const j = montant ? k : N - 1 - k;
+    const src = j + dz;
+    if (src < 0 || src >= N) continue;
+    const de = src * ligne, vers = j * ligne;
+    if (dx === 0) buf.copyWithin(vers, de, de + ligne);
+    else if (dx > 0) buf.copyWithin(vers, de + dx * 4, de + ligne);
+    else buf.copyWithin(vers - dx * 4, de, de + ligne + dx * 4);
+  }
+}
+
+function drawMap(mapCanvas, radius, fondEntier = false) {
+  const ctx = mapCanvas.getContext('2d');
+  const size = mapCanvas.width;
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  const N = radius * 2 + 1;
+  if (!carteRaster || carteRasterR !== radius) {
+    carteRaster = new Uint8ClampedArray(N * N * 4);
+    carteRasterR = radius;
+    carteHorsSol = document.createElement('canvas');
+    carteHorsSol.width = N; carteHorsSol.height = N;
+    fondEntier = true;
+  }
+  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
+  if (fondEntier || Math.abs(dx) >= N || Math.abs(dz) >= N) {
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+  } else if (dx !== 0 || dz !== 0) {
+    decalerCarte(carteRaster, N, dx, dz);
+    // la bande neuve, et elle seule : c'est tout le gain
+    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
+    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
+    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+  }
+  carteRasterCx = pcx; carteRasterCz = pcz;
+  const hctx = carteHorsSol.getContext('2d');
+  const img = hctx.createImageData(N, N);
+  img.data.set(carteRaster);
+  hctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(carteHorsSol, 0, 0, N, N, 0, 0, size, size);
 
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2 + 1)) * size, ((z - pcz + radius) / (radius * 2 + 1)) * size];
 
@@ -4657,7 +4893,10 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  if (minimapVisible) drawMap(minimapCanvas, 96);
+  if (minimapVisible) {
+    drawMap(minimapCanvas, 96, true);
+    carteVue = { x: player.pos.x, z: player.pos.z };
+  }
 });
 minimapCanvas.addEventListener('click', ouvrirCarte);
 document.getElementById('map-modal-close').addEventListener('click', fermerCarte);
@@ -4702,6 +4941,7 @@ function updateSky(dt) {
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
   solidMaterial.color.copy(lightColor);
   waterMaterial.color.copy(lightColor);
+  horizon.majLumiere(lightColor);
   // Les vitres allumées prennent le plus lumineux des deux : la lumière du
   // jour quand il fait jour, la leur quand la nuit tombe. Elles ne
   // s'allument donc pas au crépuscule — elles cessent simplement de
@@ -5058,7 +5298,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, fun, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5151,6 +5391,21 @@ function frame(now) {
   }
 
   updateChunks();
+
+  // LE PAYSAGE LOINTAIN SE DÉFILE, IL NE SE REFAIT PAS (leçon de la minicarte).
+  // Le remplissage est borné en temps, comme le maillage ; la découpe — les
+  // cases qu'on retire parce que le vrai monde les couvre — se refait à une
+  // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
+  horizon.maj(player.pos.x, player.pos.z, 6);
+  // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
+  // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
+  // un quart de seconde de ciel vide au milieu d'un virage.
+  const vise = -Math.sin(player.yaw), viseZ = -Math.cos(player.yaw);
+  if (horizonDecoupe() || Math.abs(player.yaw - horizonCap) > 0.5) {
+    horizonCap = player.yaw;
+    horizon.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+      player.pos.x, player.pos.z, vise, viseZ);
+  }
   updateSky(dt);
   updateWeather(dt);
   updateClouds(dt);
@@ -5160,15 +5415,29 @@ function frame(now) {
   updateHud(dt);
   updateCreatureLabel();
   updateRemotePlayers(dt);
-  edu.update(dt, running);
+  // LE MODE ÉDUCATIF REÇOIT DU TEMPS RÉEL, PAS LE `dt` DE LA PHYSIQUE (v234).
+  // `dt` est borné à un vingtième de seconde — juste pour que la chute de
+  // cadence ne fasse pas traverser les murs — et compter la journée d'un
+  // enfant avec lui la multipliait par quatre sur une tablette qui rame.
+  // Mesuré : douze secondes réelles retenues comme trois à cinq images par
+  // seconde. C'est ici que le choix d'horloge se fait, parce que c'est ici
+  // qu'on sait ce que `dt` vaut.
+  edu.update(dtEcran(), running);
   fun.update(dt);
   effects.update(dt);
 
+  // LA CARTE SE RAFRAÎCHIT QUAND ON A BOUGÉ, PAS QUAND UNE HORLOGE SONNE.
+  // Debout sans bouger, il n'y a rien à redessiner et l'ancien code le faisait
+  // quand même ; en vol, une seconde d'horloge valait soixante-quatorze blocs
+  // de retard. Le déclencheur est donc la DISTANCE, bornée par une cadence en
+  // temps réel — jamais en `dt`, qui ralentit avec l'affichage (leçon v226).
   if (minimapVisible) {
-    minimapTimer -= dt;
-    if (minimapTimer <= 0) {
-      minimapTimer = 1;
-      drawMap(minimapCanvas, 96);
+    const bouge = !carteVue
+      || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
+    const fond = carteFond();
+    if (fond || (bouge && carteSuivre())) {
+      drawMap(minimapCanvas, 96, fond);
+      carteVue = { x: player.pos.x, z: player.pos.z };
     }
   }
 

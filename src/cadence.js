@@ -48,3 +48,33 @@ export function cadence(periodeMs, dabord = true) {
     return true;
   };
 }
+
+// LE TEMPS RÉEL ÉCOULÉ, BORNÉ — pour ce qui se compte en secondes de la vraie
+// vie, pas en secondes de jeu (v234).
+//
+// `main.js` borne `dt` à un vingtième de seconde, et c'est juste pour la
+// physique. Mais le TEMPS D'ÉCRAN d'un enfant est du temps réel : un parent
+// qui règle « quarante-cinq minutes par jour » parle de minutes de pendule,
+// pas de minutes pondérées par la cadence d'affichage. Mesuré au banc, sur
+// douze secondes réelles : à 24 images par seconde le compteur en retient 11 ;
+// à 5, il n'en retient que **3**. Une tablette qui rame multipliait donc par
+// quatre la journée d'un enfant.
+//
+// ET LE PLAFOND N'EST PAS UNE PRÉCAUTION, C'EST LE CŒUR DE LA CHOSE. Quand
+// l'onglet passe à l'arrière-plan ou que l'appareil s'endort, le navigateur
+// cesse d'appeler la boucle : au réveil, l'écart réel vaut des minutes, voire
+// des heures. Sans borne, elles compteraient toutes comme du jeu. C'est le
+// plafond de `dt` qui protégeait de cela par accident ; ici il le fait
+// exprès. Deux secondes laissent passer en entier l'image la plus lente qu'on
+// ait mesurée (2 im/s en pleine arrivée dans Paris) et coupent net tout ce qui
+// ressemble à une absence.
+export function chronoReel(plafondS = 2) {
+  let precedent = null;
+  return () => {
+    const t = maintenant();
+    if (precedent === null) { precedent = t; return 0; }
+    const ecart = (t - precedent) / 1000;
+    precedent = t;
+    return Math.min(Math.max(ecart, 0), plafondS);
+  };
+}

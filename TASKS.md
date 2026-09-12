@@ -1,5 +1,14 @@
 # Ce qui est en cours
 
+- **Les avions ont perdu leur rapport de vitesse réel (v229).** Le plafond du
+  chargement du monde est 110 blocs/s ; les vitesses sont donc 95 (avion de
+  ligne) et 110 (Concorde, chasseur), soit un rapport de 1,16 au lieu du 1 à
+  2,4 du réel. Décision de Max, « tout le monde autour de cent ». Pour le
+  reprendre il faut mailler plus vite : 45 % du coût est la génération du
+  relief (`fbm`, `terrainHeight`, `treeAt`, `cityAt`), qui est le chemin le
+  plus chaud du jeu et voisin de l'invariant 1 — donc un chantier à part, avec
+  sa double empreinte.
+
 **Pourquoi ce fichier est dans le dépôt.** La liste de tâches de la session vit
 dans le conteneur, et le conteneur a été recyclé sept fois en deux jours. Deux
 entrées ont disparu avec lui — la refonte de la sauvegarde et la géographie —
@@ -13,14 +22,120 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Les minuteurs de `education.js` comptent aussi en `dt`.**
-  `this.remaining -= dt` et `this.saveTimer -= dt` : sur une tablette qui
-  rame, le temps libre d'un enfant s'écoule moins vite que le temps réel, et
-  la sauvegarde s'espace. Même cause que la v226, mais cela touche
-  l'invariant 2 (mode éducatif) — à regarder avec soin, pas à corriger d'un
-  revers de main : il faut d'abord décider ce qui est JUSTE (le temps d'écran
-  se compte sûrement en temps réel, mais la question mérite d'être posée à
-  Max).
+- [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
+  PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
+  forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
+  +348. Le remède de la v238 est pourtant COMPLET pour les bêtes — à l'unité,
+  dix créatures prennent 157 géométries et en rendent 157, zéro perdue. Le
+  reliquat est donc ailleurs, et le suspect principal est écrit : **les voitures
+  de convoi** (`vehicules.js`) sont fabriquées à la demande, trente-deux
+  maillages chacune, et ne sont JAMAIS détruites — seulement rendues invisibles
+  (`m.visible = false`). Les passants, eux, sont gardés pour la session par
+  ville visitée, ce qui est voulu mais s'accumule aussi. À mesurer avant de
+  corriger : quelle part chacun représente, et ce qu'il est légitime de rendre.
+  **Ne pas conclure sur la cadence du banc** : il rend en logiciel, son fil
+  principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
+  mesure des géométries.
+
+- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
+  images par seconde, 1,2 s de minuteur en réclame 2,4 réelles. C'est la
+  cinquième occurrence du piège de `dt`, et elle est NOMMÉE ici plutôt que
+  laissée à un futur grep — `src/cadence.js` porte déjà le remède
+  (`chronoReel`), il suffit de le brancher. Coût mesuré : au banc, un enfant à
+  pied avance à **15 % du temps réel** (six blocs en trente secondes au lieu de
+  quatre-vingt-dix), ce qui a fait échouer trois sondes avant qu'on le voie.
+
+- [ ] **Le témoin de chargement du monde vole au-dessus d'un désert.** « En vol,
+  on ne rattrape pas le bout du monde qui se charge » (`monte.js`) se place à
+  (30 000, 30 000), un couloir vierge où un morceau coûte 6,8 ms. Au-dessus de
+  Paris il en coûte 23,5. Le témoin est donc vert alors que l'enfant, lui, ne
+  voit rien — c'est ce qui a laissé passer la v229 à la v236. Le paysage
+  lointain de la v237 rend le symptôme invisible ; le déficit de maillage, lui,
+  est intact. À reprendre : le faire voler au-dessus d'une ville, et remesurer
+  les vitesses des avions sur le VRAI débit (42 morceaux/s, pas 154).
+
+- [ ] **Le paysage lointain montre le relief, pas les villes.** `terrainHeight`
+  ne sait rien des immeubles : au-delà des morceaux chargés, Paris apparaît en
+  prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
+  quelques microsecondes par colonne — non mesuré, non fait.
+
+- [ ] **Des cubes orange isolés flottent dans le ciel**, visibles sur les
+  captures de Max comme sur celles du banc, avant comme après la v237. Ma sonde
+  de scène ne les a pas trouvés (aucun petit maillage loin dans le champ) :
+  c'est donc que je n'ai pas cherché au bon endroit. À reprendre par un lancer
+  de rayon à travers leur position à l'écran, qui répondra en une exécution.
+
+- [ ] **Trois non-résultats MESURÉS en v236 — ne pas les reprendre à
+  l'aveugle.** En cherchant la cause du gel en vol : le **rendu** ne fait que
+  4,6 % du temps (834 ms sur 18 s) ; la **caméra cubique des reflets** ne
+  tourne JAMAIS en vol (zéro image sur cent huit — son rayon de 45 blocs ignore
+  pourtant l'altitude, mais un convoi n'existe plus si loin) ; couper
+  `renderer.debug.checkShaderErrors` ne rend rien (pire image 1 800 → 1 633,
+  dans le bruit) parce qu'il n'y a que SIX programmes dans tout le jeu. Le
+  rayon des reflets mériterait quand même de compter l'altitude — c'est une
+  ligne, et cela évitera qu'un futur changement de portée le réveille en vol.
+
+- [ ] **`generateChunk` parcourt TOUS les blocs de l'enfant à chaque morceau
+  engendré.** `for (const [k, id] of this.edits)` avec un `split(',').map(Number)`
+  par entrée, pour chacun des quatre-vingt-sept morceaux engendrés par seconde
+  en vol. Gratuit au banc (zéro bloc posé), mais Marlon en a des milliers :
+  ~435 000 découpages de chaîne par seconde. Un index `edits` par morceau le
+  supprime ; les points d'écriture sont `setBlock`, le chargement, la fusion et
+  les deux effacements. Pas mesuré sur un vrai profil d'enfant — à chiffrer
+  avant de le faire.
+
+- [ ] **Figer les matrices des morceaux de monde n'apporte RIEN — mesuré en
+  v235, à ne pas reprendre à l'aveugle.** Le profil d'un vol au-dessus de Paris
+  accuse `updateMatrixWorld` (849 ms), `compose` (599), `multiplyMatrices`
+  (295) et `updateMatrix` (293) : deux secondes sur vingt, dix pour cent, pour
+  replacer des objets qui ne bougent jamais. Poser `matrixAutoUpdate = false`
+  sur les maillages de chunk et leurs décors est juste et sans risque — et le
+  gain mesuré est NUL (28,5 → 27,7 im/s, pire gel 683 → 667). Ce coût vient
+  des personnages et des véhicules, qui bougent. La piste reste ouverte de ce
+  côté-là : onze maillages par personnage, chacun avec sa matrice, recalculés
+  à chaque image.
+
+- [ ] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
+  (relevé fait en v234).** Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
+  src/*.js` — rend **quarante-neuf** minuteurs hors `education.js`. La grande
+  majorité sont des ANIMATIONS et doivent rester en temps de jeu (une bête qui
+  fuit, une balle qui rebondit, une flamme qui s'éteint). Quatre ne le doivent
+  pas :
+
+  - `animals.js:466` et `creatures.js:542` — `spawnTimer`, la cadence
+    d'apparition des bêtes autour de l'enfant. C'est EXACTEMENT la famille des
+    quatre cadences de ménage de la v226, et elles ont été oubliées : à
+    2,7 im/s, un minuteur de 1,5 s met onze secondes réelles. Le bestiaire se
+    peuple donc lentement au moment précis où l'enfant arrive quelque part —
+    le symptôme « villes vides » que Max a signalé deux fois, appliqué aux
+    animaux.
+  - `fun.js:1465` — `raceTime`, le CHRONOMÈTRE de la course, qui écrit
+    `records.bestRace` dans le profil. Compté en temps de jeu, il récompense
+    la tablette qui rame : plus ça saccade, meilleur le record. Et ces records
+    se comparent entre Marlon et Alice dans le tableau.
+  - `fun.js:1458` — `raceCooldown`, le délai avant de pouvoir relancer.
+
+  Chacun se corrige par `chronoReel` (cadence.js) et demande son témoin. À
+  faire en une livraison à part : trois fichiers de plus, et le record de la
+  course mérite d'être regardé avec Max avant d'être remis à zéro ou pas.
+
+- [x] **Les minuteurs de `education.js` comptaient en `dt` — FAIT en v234.**
+  La question posée était « qu'est-ce qui est JUSTE ». Réponse : tout ce que
+  cette classe compte est une durée de la vraie vie — un parent qui règle
+  quarante-cinq minutes parle de minutes de pendule. Mesuré à la sonde sur
+  douze secondes réelles : à 5 images par seconde le compteur n'en retenait
+  que TROIS, soit près de trois heures accordées pour une limite de
+  quarante-cinq minutes. `chronoReel` (cadence.js) sert le temps réel BORNÉ à
+  deux secondes — sans cette borne, un onglet à l'arrière-plan ferait compter
+  une absence comme du jeu, ce que le plafond de `dt` empêchait par accident.
+  Témoin dans `parent.js`, 0,25 → 0,98.
+
+  **Reste à trancher avec Max, et cela ne bloquait pas la correction :** faut-il
+  que le temps d'écran continue de courir pendant un quiz et pendant un arrêt
+  forcé ? Aujourd'hui oui, compté à part (`today().quiz`). C'est défendable —
+  répondre au Professeur Cornichon est du temps devant l'écran — mais c'est une
+  décision de parent, pas de programmeur.
 
 
 

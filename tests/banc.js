@@ -136,9 +136,15 @@ async function relaisSourd(portEcoute, portVrai) {
 // pour que le monde se charge vite.
 // `portNuage` : quand un scénario a besoin du nuage — le relais de secours du
 // jeu à plusieurs en a besoin, puisque c'est justement par là qu'il passe.
-const adresse = (portJeu, portPairs, portNuage) =>
+//
+// ET `rr` SE DÉCLARE, PARCE QU'À DEUX ON NE VOIT PAS CE QUI CASSE À DOUZE
+// (v229). Le brouillard commence à `rr × 16 × 0,55` : à rr=2 il est à DIX-HUIT
+// blocs, et le disque à charger fait douze cases. Un témoin de streaming y est
+// vert quoi qu'il arrive — il ne peut pas voir le défaut. Le scénario qui
+// éprouve le chargement du monde demande donc la valeur de l'iPad.
+const adresse = (portJeu, portPairs, portNuage, rr = 2) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=2`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}`;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -375,7 +381,7 @@ class Banc {
     // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
     // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
     // sur un défaut.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

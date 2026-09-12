@@ -2,6 +2,7 @@
 // Group built from boxes; chunks clone the template (geometry is shared).
 
 import * as THREE from 'three';
+import { partagerTout } from './liberer.js';
 import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue } from './blocks.js';
 
 const WOOD = 0x6b4a2a, DARKWOOD = 0x4a3218, TRUNK = 0x67513a, LEG = 0x2c2c2c;
@@ -282,6 +283,11 @@ export function buildPropMesh(id) {
     if (!item || !BUILDERS[item.type]) return null;
     template = BUILDERS[item.type](rgbToHex(item.rgb));
     template.scale.setScalar(SCALE[item.type] || 1.5);
+    // ET LE MODÈLE EST DÉCLARÉ PARTAGÉ (v238). `clone()` ne copie pas la
+    // géométrie : les cent lampadaires d'une avenue pointent tous sur celle-ci.
+    // Un morceau de monde qu'on démaille ne doit donc pas la rendre, sinon le
+    // mobilier de toute la ville disparaît d'un coup. Voir `liberer.js`.
+    partagerTout(template);
     templates.set(id, template);
   }
   return template.clone();

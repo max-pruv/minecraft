@@ -48,7 +48,18 @@ const GARDIENS = {
   'src/cloud.js': ['reseau.js', 'reglages.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js'],
+  // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
+  // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
+  // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
+  // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
+  // rendu, `plafond.js` garde le sol qu'il lit.
+  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
+  // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
+  // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
+  // libération de trop passerait sans réveiller la suite qui la verrait.
+  'src/liberer.js': ['monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
@@ -94,10 +105,12 @@ const GARDIENS = {
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js'],
   'src/montures.js': ['monte.js'],
-  'src/avions.js': ['monte.js'],
+  'src/avions.js': ['monte.js', 'carteMonde.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
-  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js'],
+  // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
+  // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   'src/fun.js': ['monte.js', 'carte.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.

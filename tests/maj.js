@@ -114,6 +114,46 @@ function verifier(nom, ok, detail = '') {
       verifier('et le jeu se relance normalement après', rejouable);
     }
 
+    // LE PREMIER CHARGEMENT NE TÉLÉCHARGE PAS CE QUI NE SERT PAS À JOUER.
+    //
+    // Mesuré sur la production : 1,12 Mo compressés pour le jeu entier, et
+    // 4,67 Mo pour le seul scanner de visages — quatre-vingts pour cent du
+    // premier chargement. Il partait pendant que le monde s'engendre, parce
+    // que `requestIdleCallback` rend la main dès que la boucle respire.
+    //
+    // On ÉPROUVE LE TRAJET DE L'ENFANT : il ouvre le jeu, il appuie sur
+    // « Jouer », il joue. Pendant tout ce temps-là, aucun octet de scanner ne
+    // doit passer sur le fil. On regarde les requêtes, pas une variable
+    // interne — c'est la bande passante de la famille qui est en jeu.
+    const onglet = await banc.joueur('Timothée');
+    const scanner = [];
+    onglet.on('request', (r) => {
+      if (/\/vendor\/face/.test(r.url())) scanner.push(new URL(r.url()).pathname);
+    });
+    await onglet.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById('play-btn').click();
+    });
+    await onglet.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    await dormir(25000);   // trois fois le répit du préchargement
+    verifier('le premier chargement ne télécharge pas le scanner de visages pendant qu\'on joue',
+      scanner.length === 0, scanner.length ? `${scanner.length} fichier(s) : ${scanner.slice(0, 3).join(', ')}` : '');
+
+    // ET LE REMÈDE NE VA PAS TROP LOIN. Retirer le préchargement tout court
+    // serait plus simple — et l'enfant qui touche « Reconnais-moi » depuis
+    // l'accueil attendrait alors ses quatre mégaoctets et demi derrière une
+    // barre de progression. Celui qui RESTE sur l'accueil doit donc l'obtenir
+    // comme avant. Ce témoin-là est vert des deux côtés à dessein : c'est ce
+    // qu'on ne veut pas casser, pas ce qu'on vient de réparer.
+    const accueil = await banc.joueur('Bérénice');
+    const surAccueil = [];
+    accueil.on('request', (r) => {
+      if (/\/vendor\/face/.test(r.url())) surAccueil.push(1);
+    });
+    await dormir(25000);   // on ne touche à rien : l'enfant lit l'accueil
+    verifier('mais l\'enfant qui reste sur l\'accueil l\'obtient quand même',
+      surAccueil.length > 0, `${surAccueil.length} requête(s)`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

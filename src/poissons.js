@@ -139,12 +139,32 @@ export function createPoissons({ scene, world, player }) {
       } else {
         p.cap += Math.sin(t * 0.6 + p.phase) * 0.5 * dt;        // flânerie
       }
-      m.x += Math.cos(p.cap) * p.allure * dt;
-      m.z += Math.sin(p.cap) * p.allure * dt;
+      // UN POISSON NE SORT JAMAIS DE L'EAU — et le regard devant le museau ne
+      // suffit pas à le garantir (v233). Le demi-tour est PROGRESSIF : le
+      // poisson continue d'avancer pendant qu'il vire, et il lui arrive de
+      // franchir le rivage avant d'avoir fini. Le clampage de profondeur ne le
+      // rattrape pas, au contraire : `min(surface, max(fond + 1.1, y))` rend
+      // la SURFACE dès que le fond la dépasse, c'est-à-dire qu'il maintient le
+      // poisson à la cote de l'eau alors que le terrain est monté de quinze
+      // blocs au-dessus. Mesuré sur `origin/main`, donc en production : 24
+      // relevés hors de l'eau sur 120, et les vingt-quatre dans ce cas —
+      // poissons à y = 29,3 avec le terrain à 44, enterrés dans la roche.
+      //
+      // Le remède n'est pas un meilleur clampage, c'est de ne pas y aller : on
+      // calcule le pas, on regarde si l'arrivée est de l'eau, et sinon on
+      // reste où l'on est en virant plus franchement. Un poisson né dans l'eau
+      // y reste alors par construction.
+      const nx = m.x + Math.cos(p.cap) * p.allure * dt;
+      const nz = m.z + Math.sin(p.cap) * p.allure * dt;
       // La profondeur respire, sans jamais crever la surface ni racler le fond.
-      const fond = world.terrainHeight(Math.floor(m.x), Math.floor(m.z));
+      const fond = world.terrainHeight(Math.floor(nx), Math.floor(nz));
       const y = m.y + Math.sin(t * 0.9 + p.phase) * 0.25 * dt * 3;
-      m.y = Math.min(WATER_LEVEL - 0.7, Math.max(fond + 1.1, y));
+      const ny = Math.min(WATER_LEVEL - 0.7, Math.max(fond + 1.1, y));
+      if (estEau(world, nx, ny, nz)) {
+        m.x = nx; m.z = nz; m.y = ny;
+      } else {
+        p.cap += 1.9 * dt * (p.phase > Math.PI ? -1 : 1) * 6;
+      }
 
       p.mesh.rotation.y = -p.cap;
       p.mesh.userData.queue.rotation.y = Math.sin(t * 9 + p.phase) * 0.6;

@@ -325,7 +325,7 @@ function voitureNeuve(voeu) {
   // manque (ou tant qu'il n'a jamais été téléchargé, hors ligne).
   //
   // DEPUIS LA FLOTTE (Max : « add those cars for better diversity ») chaque
-  // voiture neuve tire son modèle parmi cinquante-et-un : les cinquante de
+  // voiture neuve tire son modèle parmi cinquante-trois : les cinquante-deux de
   // vendor/voitures, plus le Chiron d'artiste historique — l'ajout est
   // additif, il ne remplace pas le cadeau. Deux différences de traitement :
   // les modèles de la flotte apportent leur PROPRE intérieur complet, donc
@@ -437,6 +437,31 @@ export const MONTURES = [
   //   decrochage  en dessous, l'avion ne tient plus l'air et descend
   //   virage      le taux de virage à plein roulis, en radians par seconde
   //
+  // ET LA CARTE DOIT POUVOIR SUIVRE — LE RAPPORT RÉEL A CÉDÉ (v229).
+  //
+  // Max : « les jets volent trop vite, la carte n'arrive pas à suivre et ça
+  // rame. » Mesuré dans la boucle du jeu : le monde se maille à 154 morceaux
+  // par seconde, et voler à la vitesse v en réclame 1,5 × v. À 264 il en
+  // manquait un facteur cinq — l'enfant volait dans le vide, deux appels de
+  // dessin par image.
+  //
+  // Le critère se lit dans le monde, pas dans un pourcentage : à quelle
+  // distance devant soi commence le paysage qui n'est pas encore maillé.
+  // Médiane sur six relevés, distance d'affichage de l'iPad :
+  //
+  //     95 b/s → 132-137 blocs      110 → 125-138      170 → 51-86      264 → 32-51
+  //
+  // Le plafond est donc à cent dix. Garder les 1 à 2,4 du réel (900 km/h
+  // contre 2 180) voulait dire un Concorde qui vole devant le monde ; Max a
+  // tranché pour l'autre branche : TOUT LE MONDE AUTOUR DE CENT. 95 pour
+  // l'avion de ligne — juste au-dessus des 88 du vol libre, sinon prendre
+  // l'avion ne sert à rien — et 110 pour les deux rapides.
+  //
+  // Ce qu'on perd est réel et se déclare : le Concorde n'est plus que 1,16
+  // fois plus rapide. Le seul moyen de reprendre le rapport est de MAILLER
+  // PLUS VITE — 45 % du coût est la génération du relief — pas de réécrire ce
+  // commentaire. C'est une dette, elle est dans `TASKS.md`.
+  //
   // `gabarit` n'est PAS l'envergure. Une boîte de collision ne tourne pas :
   // à quinze blocs de large, un avion resterait coincé entre deux hangars et
   // ne pourrait même pas rouler sur sa piste. On prend la largeur du
@@ -447,7 +472,7 @@ export const MONTURES = [
     height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
-    pilote: { max: 110, poussee: 18, decrochage: 30, virage: 0.55 } },
+    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55 } },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
     height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
@@ -456,7 +481,7 @@ export const MONTURES = [
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
-    pilote: { max: 264, poussee: 34, decrochage: 55, virage: 0.40 } },
+    pilote: { max: 110, poussee: 34, decrochage: 55, virage: 0.40 } },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
     height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
@@ -464,5 +489,5 @@ export const MONTURES = [
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
-    pilote: { max: 264, poussee: 90, decrochage: 40, virage: 1.30 } },
+    pilote: { max: 110, poussee: 90, decrochage: 40, virage: 1.30 } },
 ];

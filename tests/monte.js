@@ -10,7 +10,7 @@
 //
 //     cd tests && npm install && npm run monte
 
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -672,22 +672,29 @@ async function avancerUnDemiSeconde(p, depart) {
     // cockpit sculpté (son volant en tore) reste dans le modèle, visible à
     // travers les vitres. L'ancien code asseyait l'œil dans l'habitacle, à
     // un tiers de bloc des pieds : rouge garanti sur les trois mesures.
-    const poursuite = await tab.evaluate(() => {
+    const poursuite = await tab.evaluate(async () => {
       const g = window.__game;
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
       let volant = false;
       if (a) a.mesh.traverse((m) => {
         // le tore du cockpit sculpté, ou le SteeringWheel des modèles de la
-        // flotte — chacun des cinquante-et-un a l'un ou l'autre
+        // flotte — chacun des cinquante-trois a l'un ou l'autre
         if ((m.geometry && m.geometry.type === 'TorusGeometry')
           || /steeringwheel/i.test(m.name || '')) volant = true;
       });
+      // Le modèle dit lui-même s'il a un poste de conduite : deux
+      // carrosseries de la flotte n'en ont pas, et c'est déclaré dans leur
+      // fiche. Sans cette lecture, ce témoin bascule deux fois sur
+      // cinquante-trois au hasard du tirage.
+      const fiche = (await import('./src/vehicules.js')).FLOTTE
+        .find((e) => e.fichier === (a && a.mesh.userData.flotte));
+      const attenduVolant = !fiche || fiche.habitacle !== false;
       const dx = g.player.camera.position.x - g.player.pos.x;
       const dz = g.player.camera.position.z - g.player.pos.z;
       // le regard porte vers (-sin, -cos) : un produit scalaire négatif dit
       // que la caméra est bien DERRIÈRE, pas devant
       const devant = dx * -Math.sin(g.player.yaw) + dz * -Math.cos(g.player.yaw);
-      return { volant,
+      return { volant, attenduVolant, modele: a && a.mesh.userData.flotte,
         recul: +Math.hypot(dx, dz).toFixed(2),
         hauteur: +(g.player.camera.position.y - g.player.pos.y).toFixed(2),
         devant: +devant.toFixed(2) };
@@ -701,7 +708,9 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
     verifier('le volant, lui, reste dans l\'habitacle — visible par les vitres',
-      poursuite.volant, poursuite.volant ? 'volant trouvé' : 'pas de volant dans le modèle');
+      poursuite.volant || !poursuite.attenduVolant,
+      poursuite.volant ? 'volant trouvé'
+        : `pas de volant dans ${poursuite.modele}${poursuite.attenduVolant ? '' : ' (carrosserie seule, déclaré dans sa fiche)'}`);
 
     // LA CARROSSERIE DE LA VRAIE VIE (Max, capture à l'appui : « je les veux
     // pas en format minecraft »). Une vraie voiture a des vitres TRANSPARENTES
@@ -735,7 +744,7 @@ async function avancerUnDemiSeconde(p, depart) {
 
     // LA FLOTTE (Max : « add those cars for better diversity »). Huit
     // voitures invoquées ne sortent pas du même moule : au moins trois
-    // modèles différents parmi les cinquante-et-un. Le choix est écrit à la
+    // modèles différents parmi les cinquante-trois. Le choix est écrit à la
     // CONSTRUCTION (userData.flotte), pas au chargement du fichier — le
     // témoin n'attend donc aucun téléchargement. L'ancien code ne
     // connaissait qu'un modèle et n'écrivait rien : un seul « modèle »
@@ -1200,17 +1209,113 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('des poissons peuplent la mer devant l\'enfant',
       banc2 !== 'absent' && banc2 >= 3, `${banc2} poisson(s)`);
 
+    // UN INSTANTANÉ SUR UN BANC QUI NAGE EST UN PILE OU FACE (v233). Ce
+    // témoin ne regardait qu'une fois : il était vert quand il tombait au bon
+    // moment et rouge sinon, si bien qu'il passait seul et cassait le portail
+    // complet. Mesuré à la sonde sur `origin/main` : vingt-quatre relevés hors
+    // de l'eau sur cent vingt. On observe donc toute la fenêtre, comme pour
+    // tout ce qui bouge.
     const dansLEau = await tab.evaluate(async () => {
       const { BLOCK } = await import('./src/blocks.js');
       const g = window.__game;
       if (!g.poissons) return null;
-      return g.poissons.banc.filter((p2) => {
-        const m3 = p2.mesh.position;
-        return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
-      }).length;
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const compter = async (tours) => {
+        let pire = 0, releves = 0, fautifs = 0;
+        for (let k = 0; k < tours; k++) {
+          await new Promise((f) => setTimeout(f, 250));
+          const banc = g.poissons.banc || [];
+          if (!banc.length) continue;
+          releves++;
+          const n = banc.filter((p2) => {
+            const m3 = p2.mesh.position;
+            return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
+          }).length;
+          fautifs += n;
+          pire = Math.max(pire, n);
+        }
+        return { pire, fautifs, releves };
+      };
+      const large = await compter(12);
+      // ET PRÈS D'UNE CÔTE, LÀ OÙ LE DÉFAUT VIT. Au large il ne se voit
+      // presque jamais : c'est le RIVAGE qui le déclenche, parce que le
+      // clampage de profondeur rend la cote de l'eau alors que le terrain est
+      // monté bien au-dessus. Un témoin qui n'éprouve que le large est vert
+      // sur l'ancien code et ne prouve rien — vérifié.
+      // ET L'ON N'ATTEND PAS QU'UN POISSON AILLE SE JETER SUR LA CÔTE : ON L'Y
+      // ENVOIE. Le défaut est réel — mesuré à la sonde sur `origin/main`,
+      // vingt-quatre relevés hors de l'eau sur cent vingt à un rivage donné —
+      // mais il dépend de l'endroit et du hasard de la promenade : à un autre
+      // rivage, quarante relevés n'en montrent aucun. Deux témoins successifs
+      // écrits pour l'attraper en flânant ont rendu l'un 1 faute sur 24,
+      // l'autre 0 sur 40. **Un témoin ne se règle pas sur un événement rare :
+      // on éprouve le MÉCANISME.** On pose donc un poisson face à un mur, on
+      // le pointe dessus, et l'on regarde s'il le traverse.
+      let mur = null;
+      for (let d = 4; d < 400 && !mur; d += 2) {
+        for (const [sx, sz] of [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+          const x = Math.round(g.player.pos.x + sx * d), z = Math.round(g.player.pos.z + sz * d);
+          if (g.world.terrainHeight(x, z) < WATER_LEVEL + 2) continue;      // pas une berge
+          // de l'eau juste à côté, du côté d'où l'on vient
+          const ex = x - sx * 3, ez = z - sz * 3;
+          if (g.world.getBlock(ex, WATER_LEVEL - 2, ez) === BLOCK.WATER) {
+            mur = { x, z, ex, ez, cap: Math.atan2(sz, sx) };
+            break;
+          }
+        }
+      }
+      // AU PLUS PRÈS DU MUR. Lancé à trois blocs, le poisson a le temps de
+      // finir son demi-tour : l'ancien code n'en perdait qu'un sur soixante-
+      // deux. Ce qu'on veut éprouver, c'est le cas où le virage NE PEUT PAS
+      // aboutir — c'est celui qui se produit dans une crique, et c'est lui qui
+      // laisse un poisson dans la roche pour de bon.
+      if (mur) {
+        const dx0 = Math.cos(mur.cap), dz0 = Math.sin(mur.cap);
+        for (const recul of [1.3, 1.7, 2.1, 2.5, 3.0]) {
+          const cx = mur.x - dx0 * recul, cz = mur.z - dz0 * recul;
+          if (g.world.getBlock(Math.floor(cx), WATER_LEVEL - 2, Math.floor(cz)) === BLOCK.WATER) {
+            mur.ex = cx; mur.ez = cz; mur.recul = recul;
+            break;
+          }
+        }
+      }
+      let charge = { absent: true };
+      if (mur) {
+        g.player.pos.set(mur.ex, WATER_LEVEL + 4, mur.ez);
+        g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 3000));
+        // ON EN LANCE BEAUCOUP, ET PLUSIEURS FOIS. Un seul poisson lancé sur
+        // le mur s'en sort souvent : son demi-tour a le temps d'aboutir. Sur
+        // quatre, l'ancien code n'en laissait passer qu'un — une chance sur
+        // trois de ne rien voir. Le banc entier, trois fois, rend le verdict
+        // sûr des deux côtés : le code neuf en refuse zéro par construction.
+        let dedans = 0, lances = 0;
+        for (let tour = 0; tour < 3; tour++) {
+          const vises = (g.poissons.banc || []).slice();
+          if (!vises.length) break;
+          for (const p2 of vises) {
+            p2.mesh.position.set(mur.ex, WATER_LEVEL - 2, mur.ez);
+            p2.cap = mur.cap;                       // droit sur le mur
+          }
+          lances += vises.length;
+          await new Promise((f) => setTimeout(f, 2500));
+          dedans += vises.filter((p2) => {
+            const m3 = p2.mesh.position;
+            return g.world.getBlock(Math.floor(m3.x), Math.floor(m3.y), Math.floor(m3.z)) !== BLOCK.WATER;
+          }).length;
+        }
+        charge = { lances, dansLeMur: dedans, mur: { x: mur.x, z: mur.z, recul: mur.recul || 3 } };
+      }
+      return {
+        large, charge,
+        fautifs: large.fautifs + (charge.dansLeMur || 0),
+        releves: large.releves,
+      };
     });
-    verifier('et chacun est dans l\'eau — pas dans le pré, pas dans le ciel',
-      dansLEau === 0, `${dansLEau} hors de l'eau`);
+    verifier('et chacun reste dans l\'eau, même lancé droit sur la côte',
+      !!dansLEau && dansLEau.releves >= 8 && dansLEau.fautifs === 0
+        && dansLEau.charge && dansLEau.charge.lances >= 1,
+      JSON.stringify(dansLEau));
 
     const nage0 = await tab.evaluate(() => ({
       sim: window.__simPoissons,
@@ -1305,17 +1410,21 @@ async function avancerUnDemiSeconde(p, depart) {
           };
           requestAnimationFrame(pas);
         });
-        g.player.keys.add('KeyW');
+        // ON DÉCOLLE COMME L'ENFANT : par le bouton. Depuis la v228, la
+        // vitesse est automatique et le joystick tient l'altitude et le cap —
+        // tenir « avant » ferait monter, pas accélérer. Un témoin qui garderait
+        // l'ancienne commande mesurerait un jeu qui n'existe plus.
+        g.player.decollerOuSePoser();
         await tenirSecondes(def.pilote.max / def.pilote.poussee + 1);
         const atteinte = g.player.vitesseAvion;
         // Puis DEUX secondes à la pointe : c'est là que se lisent les rapports
         // de vitesse, et c'est ce que l'enfant parcourt vraiment.
         const depart = { x: g.player.pos.x, z: g.player.pos.z };
         await tenirSecondes(2);
-        g.player.keys.delete('KeyW');
         const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
         out[key] = { blocs: Math.round(d), vitesse: Math.round(atteinte), max: def.pilote.max };
         g.player.pilote = null;
+        g.player.avionEnVol = false;
         g.player.vitesseAvion = undefined;
         g.player.flying = false;
       }
@@ -1330,9 +1439,604 @@ async function avancerUnDemiSeconde(p, depart) {
     // un avion de ligne doit faire mieux, sinon prendre l'avion ne sert à rien.
     verifier('un avion de ligne va plus vite qu\'un enfant qui vole',
       ligne.vitesse > 88, `${ligne.vitesse} blocs/s contre 88`);
-    verifier('et le Concorde comme le chasseur vont deux fois et demie plus vite',
-      conc.blocs > ligne.blocs * 1.8 && chas.blocs > ligne.blocs * 1.8,
+    // LE RAPPORT DE 1 À 2,4 A ÉTÉ ABANDONNÉ, ET C'EST UNE DÉCISION DE MAX
+    // (v229). Le vrai rapport est celui des vitesses réelles — 900 km/h contre
+    // 2 180 — mais la carte ne se maille qu'à 154 morceaux par seconde et voler
+    // à v en réclame 1,5 × v : au-delà de cent dix blocs par seconde, l'enfant
+    // rattrape le bord du monde qui se charge. Devant le choix « garder le
+    // rapport et voler dans le vide » ou « tout ramener autour de cent », Max a
+    // tranché : tout autour de cent.
+    //
+    // Ce qui reste à garder, et que ce témoin garde : les rapides restent
+    // NOTABLEMENT plus rapides — sinon choisir le Concorde ne veut plus rien
+    // dire — et tous battent le vol libre de l'enfant.
+    verifier('et le Concorde comme le chasseur restent les plus rapides',
+      conc.blocs > ligne.blocs * 1.1 && chas.blocs > ligne.blocs * 1.1,
       `ligne ${ligne.blocs} · concorde ${conc.blocs} · chasseur ${chas.blocs} blocs en 2 s de pointe`);
+
+    // LA CARTE SUIT L'AVION — le trou reste dans le brouillard.
+    //
+    // Max : « les jets volent trop vite, la carte n'arrive pas à suivre et ça
+    // rame ». Mesuré à 264 blocs/s : quatre à sept pour cent du disque devant
+    // soi était maillé, premier trou à QUATRE-VINGTS blocs, et deux appels de
+    // dessin par image — il n'y avait littéralement rien à afficher.
+    //
+    // LA BARRE EST À QUATRE-VINGTS BLOCS, ET ELLE N'EST PAS LE BROUILLARD.
+    //
+    // Mon premier jet exigeait que le trou soit au-delà de `scene.fog.near`
+    // (106 blocs). C'était le bon critère en théorie et un mauvais témoin en
+    // pratique : à 170 blocs/s le banc rend 101, à 140 il rend 91 — NON
+    // MONOTONE. Un bruit de dix blocs ne peut pas arbitrer une vitesse à dix
+    // blocs près, et j'ai failli descendre les avions pour poursuivre un
+    // chiffre qui bougeait tout seul.
+    //
+    // Ce que la mesure sait tenir, c'est l'ÉCART : trente-six blocs sur
+    // `origin/main` contre quatre-vingt-dix à cent trente ici. La barre est
+    // donc à quatre-vingts — au-delà d'une demi-seconde de vol même pour le
+    // plus rapide — et le brouillard est REPORTÉ à côté, pour qu'on sache
+    // toujours de combien il reste à gagner. Ce qui manque encore est une
+    // dette déclarée, pas un témoin desserré.
+    // UNE PAGE À LA DISTANCE D'AFFICHAGE DE L'IPAD. Le banc ouvre tout à
+    // `rr=2` pour que le monde se charge vite : le brouillard y est alors à
+    // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
+    // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
+    // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
+    const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
+    const suivi = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      let scene = g.npcs && g.npcs[0] ? g.npcs[0].mesh : null;
+      while (scene && scene.parent) scene = scene.parent;
+      if (!scene || !scene.fog) return { err: 'ni scène ni brouillard' };
+      const CHUNK = 16, R = 12;
+      const out = { brouillard: Math.round(scene.fog.near) };
+      for (const key of ['avionligne', 'concorde']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        // Un couloir vierge, loin de tout : on éprouve le STREAMING, pas le
+        // coût d'une ville.
+        g.player.pos.set(30000 + (key === 'concorde' ? 4000 : 0), 100, 30000);
+        g.player.vel.set(0, 0, 0); g.player.yaw = 0; g.player.pitch = 0;
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.vitesseAvion = def.pilote.max;
+        g.player.avionEnVol = true;
+        g.player.altitudeDecollage = -999;
+        // ON OBSERVE PENDANT TOUTE LA FENÊTRE, PAS SEULEMENT À LA FIN. Un
+        // front de chargement est irrégulier : le même code m'a rendu 68, 91
+        // puis 101 blocs sur trois instantanés. Quatre secondes pour établir
+        // le régime, puis six relevés à une seconde d'intervalle, et l'on
+        // garde la MÉDIANE — ce qui se reproduit, pas le creux le plus
+        // frappant.
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        await patienter(4000);
+        const releves = [];
+        for (let n = 0; n < 6; n++) {
+          await patienter(1000);
+          const poses = new Set();
+          scene.traverse((o) => {
+            if (o.isMesh && o.position.y === 0
+              && o.position.x % CHUNK === 0 && o.position.z % CHUNK === 0) {
+              poses.add(`${o.position.x / CHUNK},${o.position.z / CHUNK}`);
+            }
+          });
+          const pcx = Math.floor(g.player.pos.x / CHUNK), pcz = Math.floor(g.player.pos.z / CHUNK);
+          const vx = -Math.sin(g.player.yaw), vz = -Math.cos(g.player.yaw);
+          let trou = R;
+          for (let dz = -R; dz <= R; dz++) {
+            for (let dx = -R; dx <= R; dx++) {
+              const len = Math.hypot(dx, dz);
+              if (len > R || len < 0.5) continue;
+              if ((dx / len) * vx + (dz / len) * vz < 0.3) continue;   // pas devant
+              if (!poses.has(`${pcx + dx},${pcz + dz}`)) trou = Math.min(trou, len);
+            }
+          }
+          releves.push(Math.round(trou * CHUNK));
+        }
+        releves.sort((x, y) => x - y);
+        out[key] = { vitesse: def.pilote.max, trou: releves[3], releves };
+        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.vitesseAvion = undefined; g.player.flying = false;
+      }
+      return out;
+    });
+    const BARRE = 80;
+    verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
+      !suivi.err && suivi.avionligne && suivi.concorde
+      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
+      `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+
+    // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
+    //
+    // Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
+    // secondes, il redémarre pendant une seconde ». Profilé et mesuré, vingt
+    // secondes de vol au-dessus de Paris : ce n'était NI le maillage (16 ms
+    // par image, le budget est respecté) NI le rendu (4 ms), mais
+    // `animerLesVilles` — 557 ms dans UNE SEULE image. Les huit circuits de
+    // Paris naissaient ensemble au franchissement de leur rayon de 220 blocs,
+    // et chacun fabriquait une vingtaine de voitures à trente-deux maillages.
+    //
+    // ON MESURE CE QUE L'ENFANT SUBIT : la durée de chaque image, sans aucune
+    // instrumentation dans le jeu — donc à l'identique sur l'ancien code. Ce
+    // qui compte n'est pas la cadence MOYENNE (28,5 avant, 29,6 après : elle
+    // ne dit rien) mais la PIRE image et la part du temps passée dans les
+    // images très longues.
+    // ON FAIT SOUFFLER LE BANC AVANT DE CHRONOMÉTRER. Ce témoin rend un
+    // verdict en DURÉE : joué seul il mesure le jeu, joué derrière dix suites
+    // il mesure la machine. Vérifié à mes dépens — 233 ms rejoué seul, 400 au
+    // milieu du portail complet, sur le même code.
+    await souffler();
+    const secousses = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'chasseur');
+      if (!def || !def.pilote) return { err: 'pas de chasseur' };
+      const V = positionDe('paris');
+      g.player.pos.set(V.x - 700, 96, V.z);       // en amont, cap sur la ville
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      await new Promise((f) => setTimeout(f, 3000));
+      const durees = [];
+      let prec = performance.now(), actif = true;
+      const tic = (t) => { durees.push(t - prec); prec = t; if (actif) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      await new Promise((f) => setTimeout(f, 18000));
+      actif = false;
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      const total = durees.reduce((a, c) => a + c, 0);
+      const partAuDela = (s) => +(durees.filter((d) => d > s)
+        .reduce((a, c) => a + c, 0) / total * 100).toFixed(1);
+      return {
+        images: durees.length,
+        pireImage: Math.round(Math.max(...durees)),
+        partAuDela300: partAuDela(300),
+        cadence: +(durees.length / (total / 1000)).toFixed(1),
+      };
+    });
+    // LES BORNES SÉPARENT LES QUATRE MESURES, PAS UNE SEULE. Mon premier jet
+    // les avait réglées sur une exécution solitaire (350 ms et 1 %) et il est
+    // tombé au milieu du portail complet, sur du code sain. Relevé :
+    //
+    //   ancien code, seul      800 ms   10,3 %
+    //   code neuf, seul        233 ms    0 %
+    //   code neuf, au portail  400 ms    2,2 %
+    //
+    // Cinq cent cinquante et cinq pour cent laissent donc passer le portail
+    // chargé et refusent l'ancien code de loin. Une borne se règle sur la
+    // dispersion mesurée, jamais sur le meilleur relevé.
+    verifier('l\'écran ne se fige pas en arrivant sur une ville',
+      !secousses.err && secousses.images > 60
+        && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
+      JSON.stringify(secousses));
+
+    // VOLER NE REMPLIT PLUS LA MÉMOIRE DE LA TABLETTE (v236).
+    //
+    // Max, après la v235 : « Lag is very bad avec les avions fix it for
+    // real ». J'avais corrigé des symptômes ; il fallait décomposer. Image par
+    // image puis au profil, le vol ne coûte presque rien là où je cherchais :
+    // le RENDU fait 4,6 % du temps, la caméra cubique des reflets ne tourne
+    // JAMAIS en vol (mesuré : zéro image sur cent huit — le rayon de 45 blocs
+    // ignore l'altitude, mais le convoi, lui, n'existe plus si loin), le
+    // maillage tient son budget, et couper le contrôle des shaders ne rend
+    // rien (pire image 1 800 → 1 633, dans le bruit).
+    //
+    // La cause est ailleurs, et elle est arithmétique : `world.chunks` ne rend
+    // JAMAIS un morceau. `main.js` défait bien les MAILLAGES dépassés ; les
+    // quatre-vingts kilo-octets de blocs de chaque morceau, eux, restaient
+    // pour toujours. Mesuré, même vol, même distance parcourue :
+    //
+    //             30 s          90 s            5 min
+    //   avant   245 Mo      693 Mo (tas 918)   2 328 Mo (tas 2 616)
+    //   après    27 Mo       27 Mo (tas 256)      35 Mo (tas 233)
+    //
+    // ET LE VERDICT EST EN MÉGAOCTETS, PAS EN MILLISECONDES. Sur ce conteneur
+    // la cadence est IDENTIQUE des deux côtés (35,6 contre 34,5 sur cinq
+    // minutes) et le temps de ramasse-miettes aussi (4,3 s contre 4,2 sur
+    // quatre-vingt-dix) : la machine a de la mémoire à revendre, elle ne
+    // souffre pas. Un iPad, si — et il ferme l'onglet. C'est la leçon de la
+    // minicarte par un autre bout : une DURÉE mesure le banc, une QUANTITÉ
+    // non.
+    //
+    // ET LE TÉMOIN VÉRIFIE QU'IL A VOLÉ. Mes trois premières sondes ont mesuré
+    // un jeu à l'ARRÊT : `banc.joueur` ouvre la page, il faut `jouerSeul` pour
+    // que `running` passe à vrai — sans quoi `player.update` n'est jamais
+    // appelé et l'avion reste sur place. Tous mes chiffres étaient faux et
+    // rien ne le disait. Un témoin de déplacement mesure d'abord le
+    // déplacement.
+    await souffler();
+    const memoire = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'chasseur');
+      if (!def || !def.pilote) return { err: 'pas de chasseur' };
+      const V = positionDe('paris');
+      const depart = V.x - 700;
+      g.player.pos.set(depart, 96, V.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      await new Promise((f) => setTimeout(f, 30000));
+      const morceaux = g.world.chunks.size;
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return { morceaux, moBlocs: Math.round(morceaux * 80 / 1024),
+        parcouru: Math.round(g.player.pos.x - depart) };
+    });
+    // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
+    // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
+    verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
+      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
+      `barre 100 Mo · ${JSON.stringify(memoire)}`);
+
+    // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
+    //
+    // C'est l'invariant 1 appliqué à ma propre correction : oublier les blocs
+    // d'un morceau serait irrattrapable s'ils portaient le travail d'un
+    // enfant. Ils ne le portent pas — le terrain est DÉTERMINISTE et `edits`
+    // est la source, que `generateChunk` réapplique — mais cela se PROUVE.
+    // Sur l'ancien code, `oublierLoinDe` n'existe pas : le témoin le dit au
+    // lieu de planter.
+    const survie = await ciel.evaluate(() => {
+      const g = window.__game, w = g.world;
+      if (!w.oublierLoinDe) return { err: 'oublierLoinDe absente' };
+      const x = 4321, y = 90, z = -1234;
+      const avant = w.getBlock(x - 1, y, z);            // engendre le morceau
+      w.setBlock(x, y, z, 1);                           // « une brique de Marlon »
+      const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
+      const tenait = w.chunks.has(cx + ',' + cz);
+      w.oublierLoinDe(cx + 9999, cz, 16);               // on oublie tout
+      const vide = !w.chunks.has(cx + ',' + cz);
+      return { tenait, vide, avant, apres: w.getBlock(x - 1, y, z),
+        brique: w.getBlock(x, y, z) };
+    });
+    verifier('un bloc posé par un enfant survit à l\'oubli de son morceau',
+      !survie.err && survie.tenait && survie.vide
+        && survie.brique === 1 && survie.apres === survie.avant,
+      JSON.stringify(survie));
+
+    // CE QU'ON RETIRE DE LA SCÈNE SE REND À LA CARTE GRAPHIQUE (v238).
+    //
+    // Max : « le jeu lague de plus en plus depuis un moment. » Ce n'était ni le
+    // vol, ni le chargement, ni le paysage lointain — la v236 et la v237 rendent
+    // la MÊME cadence debout au centre de Paris (3,7 contre 3,3 im/s). Et le
+    // profil renverse la question : le fil principal est INACTIF 81 % du temps.
+    // Ce conteneur rend en LOGICIEL ; sa cadence mesure SwiftShader, pas le jeu,
+    // et il ne peut donc pas SUBIR la panne de Max. On mesure la CAUSE et non
+    // l'effet — la leçon de la v236, reprise telle quelle.
+    //
+    // La cause : une créature coûte DIX-NEUF GÉOMÉTRIES ET DEMIE, `removeCreature`
+    // faisait `scene.remove()` et rien d'autre, et `scene.remove()` ne rend pas
+    // un octet au pilote graphique. Le jeu en fait naître une toutes les 1,2 s.
+    //
+    // ON N'ATTEND PAS UN ÉVÉNEMENT RARE, ON ÉPROUVE LE MÉCANISME (leçon des
+    // poissons). Trois sondes ont échoué avant celle-ci, et chacune pour une
+    // raison qui vaut d'être écrite :
+    //   · joueur immobile, `retirees` valait ZÉRO — les créatures remplissaient
+    //     seulement leur plafond de seize, ce qui s'arrête tout seul ;
+    //   · à pied, l'enfant avance à 15 % du temps réel sur ce banc (`dt` borné,
+    //     trois images par seconde) : six blocs en trente secondes, jamais les
+    //     soixante-dix qui déclenchent un retrait ;
+    //   · dix allers-retours de cent cinquante blocs provoquaient bien le
+    //     renouvellement, mais le disque de morceaux ne revenait pas au même
+    //     endroit d'un côté et de l'autre (92 contre 99), ce qui vaut vingt
+    //     géométries d'écart : le verdict aurait mesuré le banc.
+    //
+    // ET LE COMPTEUR DU MOTEUR N'ENREGISTRE QUE CE QUI EST DESSINÉ. La première
+    // version de cette mesure rendait 96 avant, 96 pendant et 96 après : les
+    // bêtes naissaient derrière la caméra et n'y figuraient jamais. Elle ne
+    // mesurait RIEN et serait passée au vert des deux côtés. D'où `frustumCulled
+    // = false` : on force le dessin avant de compter.
+    //
+    // Mesuré, dix créatures nées puis retirées :
+    //   origin/main   195 géométries prises, 0 rendues, 195 PERDUES
+    //   ici           193 géométries prises, 193 rendues, 0 perdue
+    await souffler();
+    const rendu = await ciel.evaluate(() => {
+      const g = window.__game, cm = g.creatureManager, R = g.renderer;
+      if (!cm || !cm.trySpawn) return { err: 'pas de gestionnaire de créatures' };
+      R.render(g.scene, g.camera);
+      const avant = R.info.memory.geometries;
+      const nees = [];
+      for (let i = 0; i < 10; i++) {
+        const n = cm.creatures.length;
+        cm.trySpawn();
+        if (cm.creatures.length > n) nees.push(cm.creatures[cm.creatures.length - 1]);
+      }
+      for (const c of nees) c.mesh.traverse((o) => { o.frustumCulled = false; });
+      R.render(g.scene, g.camera);
+      const pleine = R.info.memory.geometries;
+      for (const c of nees) cm.removeCreature(c);
+      R.render(g.scene, g.camera);
+      const apres = R.info.memory.geometries;
+      return { avant, pleine, apres, nees: nees.length,
+        prises: pleine - avant, rendues: pleine - apres, perdues: apres - avant };
+    });
+    // La borne de GARDE vérifie que la mesure a EU LIEU — au moins cinq bêtes
+    // nées et cent géométries prises — et se pose à la moitié de ce qui a été
+    // relevé (dix bêtes, 193), jamais à quatre-vingt-dix pour cent. Le verdict,
+    // lui, est exact : ce qu'on a pris, on le rend. Dix de tolérance pour un
+    // remaillage qui tomberait entre deux comptes.
+    verifier('ce qu\'on retire de la scène se rend à la carte graphique',
+      !rendu.err && rendu.nees >= 5 && rendu.prises >= 100 && rendu.perdues <= 10,
+      `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
+
+    // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
+    //
+    // Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la
+    // sonde, à 95 blocs/s et à la distance d'affichage de l'iPad : 74 blocs
+    // parcourus entre deux redessins en moyenne, 99,7 au pire — pour une carte
+    // de 96 blocs de RAYON. Elle montrait un paysage sorti du cadre.
+    //
+    // ON MESURE UNE DISTANCE, PAS UNE DURÉE. Mon premier jet comptait le plus
+    // long moment sans changement : 1,01 s sur l'ancien code contre une barre
+    // d'une seconde — un pour cent de marge, et le chiffre bouge avec la
+    // cadence du banc. C'est le reproche fait à tout témoin dont le verdict
+    // est une durée. Ce que l'enfant subit, c'est le nombre de BLOCS que la
+    // carte a de retard, et il ne dépend pas de la vitesse d'affichage.
+    //
+    // ET SANS AUCUN CROCHET : on photographie la minicarte, et à chaque fois
+    // qu'elle change d'un point on note la distance parcourue depuis le
+    // changement d'avant. C'est la seule façon de mesurer LA MÊME CHOSE sur
+    // l'ancien code, qui ne publie rien.
+    const retard = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const toile = document.getElementById('minimap');
+      if (!toile) return { err: 'pas de minicarte' };
+      if (toile.style.display !== 'block') {
+        const bouton = document.getElementById('map-btn');
+        if (bouton && bouton.click) bouton.click();
+      }
+      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
+      g.player.pos.set(-40000, 96, 40000);      // un couloir vierge, loin de tout
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = 0; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max;
+      g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -9999;
+      const ctx = toile.getContext('2d');
+      const empreinte = () => {
+        const d = ctx.getImageData(0, 0, toile.width, toile.height).data;
+        let h = 0;
+        for (let i = 0; i < d.length; i += 61) h = (h * 31 + d[i]) | 0;
+        return h;
+      };
+      const sauts = [];
+      const t0 = performance.now();
+      let precedent = null;
+      let depuis = { x: g.player.pos.x, z: g.player.pos.z };
+      while (performance.now() - t0 < 14000) {
+        await new Promise((f) => setTimeout(f, 60));
+        const h = empreinte();
+        if (precedent !== null && h !== precedent) {
+          sauts.push(+Math.hypot(g.player.pos.x - depuis.x, g.player.pos.z - depuis.z).toFixed(1));
+        }
+        if (precedent === null || h !== precedent) {
+          depuis = { x: g.player.pos.x, z: g.player.pos.z };
+          precedent = h;
+        }
+      }
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      const moy = sauts.length
+        ? +(sauts.reduce((a, b) => a + b, 0) / sauts.length).toFixed(1) : null;
+      return { pire: sauts.length ? Math.max(...sauts) : null, moyen: moy, changements: sauts.length };
+    });
+    // QUARANTE BLOCS. La carte fait 96 blocs de rayon : au-delà de quarante de
+    // retard, ce qu'on voit sous l'avion n'est plus au milieu de la carte.
+    // Mesuré : 74 blocs en moyenne sur l'ancien code, 9,7 sur celui-ci.
+    const RETARD = 40;
+    verifier('la minicarte ne reste pas en arrière quand on vole',
+      !retard.err && retard.changements >= 8 && retard.pire !== null
+        && retard.moyen <= RETARD && retard.pire <= RETARD * 2,
+      `retard en blocs (barre ${RETARD}) · ${JSON.stringify(retard)}`);
+
+    // ET CE QU'ELLE MONTRE EST JUSTE. Faire DÉFILER un fond au lieu de le
+    // recalculer est le seul moyen de le rafraîchir dix fois plus souvent sans
+    // le payer — mais une recopie qui dériverait d'un point montrerait un
+    // paysage faux, et personne ne le verrait. On compare donc le fond défilé
+    // à un fond entièrement recalculé au même endroit.
+    const controle = await ciel.evaluate(() => (window.__carteControle
+      ? window.__carteControle() : { absent: true }));
+    verifier('le fond défilé montre exactement ce qu\'un calcul entier montrerait',
+      !!controle && controle.ecarts === 0 && controle.points > 1000,
+      JSON.stringify(controle));
+
+    // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
+    //
+    // Max, dans le Concorde : « il ne décolle pas ». Aux commandes, le bouton
+    // appelait `toggleFly()`, qui réussissait et basculait `player.flying` —
+    // un drapeau que la branche de pilotage ignore complètement. Aucun effet,
+    // aucun message. Pour un enfant, c'est pire qu'un refus : il appuie dix
+    // fois et conclut que le jeu est cassé.
+    //
+    // ON ÉPROUVE LE TRAJET DE L'ENFANT : on se met aux commandes, on appuie
+    // sur la touche que le bouton déclenche (`KeyF`), et l'on regarde si
+    // l'appareil PREND DE L'ALTITUDE. Pas si un drapeau a changé.
+    const decollage = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const out = {};
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        g.player.pos.set(0, 90, 0);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0;
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.vitesseAvion = 0;
+        g.player.avionEnVol = false;
+        const y0 = g.player.pos.y;
+        // La touche du bouton, pas la méthode : c'est le chemin de l'enfant.
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+        await new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            if (cumul >= 3) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        out[key] = Math.round((g.player.pos.y - y0) * 10) / 10;
+        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.vitesseAvion = undefined; g.player.flying = false;
+      }
+      return out;
+    });
+    // Vingt blocs de palier en trois secondes : on demande au moins la moitié,
+    // pour ne pas mesurer la cadence du banc.
+    verifier('le bouton ✈️ fait décoller l\'appareil',
+      Object.values(decollage).every((h) => h >= 10),
+      `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
+
+    // UN AVION S'INCLINE DANS SON VIRAGE — demande de Max : « quand on vole
+    // avec un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie
+    // droite. »
+    //
+    // ON MONTE PAR LE BOUTON, et c'est indispensable : l'inclinaison est
+    // rendue dans `fun.js`, sur le maillage de la MONTURE. Poser
+    // `player.pilote` à la main — ce que font les témoins de vitesse
+    // ci-dessus — fait voler le joueur sans qu'aucun avion ne soit dessiné :
+    // on mesurerait un nombre que personne ne voit.
+    //
+    // Et l'on éprouve LE SIGNE, pas seulement l'amplitude. Une inclinaison
+    // à l'envers est pire que pas d'inclinaison : l'appareil pencherait vers
+    // l'EXTÉRIEUR du virage, ce qu'aucun avion ne fait. Le signe a été
+    // vérifié en capture avant d'être écrit ici : à gauche l'aile gauche
+    // descend, à droite c'est l'inverse.
+    const roulis = await tab.evaluate(async () => {
+      const g = window.__game;
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      g.player.yaw = 0; g.player.pitch = 0;
+      g.player.pos.set(0, 90, 0);
+      // DEVANT SOI : `animalManager.monture()` — ce que le bouton appelle —
+      // refuse ce qui n'est pas dans l'axe du regard.
+      const d = { x: -Math.sin(g.player.yaw), z: -Math.cos(g.player.yaw) };
+      const avion = g.animalManager.invoquer('avionligne',
+        Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3));
+      if (!avion) return { err: 'aucun avion posé' };
+      document.getElementById('ride-btn').click();
+      await tenirSecondes(0.5);
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes' };
+      g.player.decollerOuSePoser();
+      await tenirSecondes(4);
+      const pencher = async (touche) => {
+        g.player.keys.add(touche);
+        await tenirSecondes(2.5);
+        const z = avion.mesh.rotation.z;
+        g.player.keys.delete(touche);
+        await tenirSecondes(2);
+        return { penche: +z.toFixed(3), rendu: +avion.mesh.rotation.z.toFixed(3) };
+      };
+      const gauche = await pencher('KeyA');
+      const droite = await pencher('KeyD');
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return { gauche, droite, ordre: avion.mesh.rotation.order };
+    });
+    // Un dixième de radian, c'est six degrés : en dessous, personne ne voit
+    // rien. L'ancien code rend zéro des deux côtés.
+    const PENCHE = 0.1;
+    verifier('l\'avion s\'incline dans ses virages, et du bon côté',
+      !roulis.err && !!roulis.gauche && roulis.gauche.penche > PENCHE
+        && roulis.droite.penche < -PENCHE,
+      `virages : ${JSON.stringify(roulis)}`);
+    // ET IL SE REDRESSE QUAND ON LÂCHE. Une aile qui reste penchée sur une
+    // ligne droite est un appareil en perdition, pas un avion.
+    //
+    // ON EXIGE D'ABORD QU'IL SE SOIT PENCHÉ. Sans cette clause le témoin est
+    // VERT À VIDE sur l'ancien code — qui ne s'incline jamais, donc ne reste
+    // jamais penché — et un témoin vert des deux côtés ne prouve rien
+    // (leçon de la v220).
+    verifier('l\'avion se remet à plat quand on lâche les commandes',
+      !roulis.err && !!roulis.gauche
+        && roulis.gauche.penche > PENCHE && roulis.droite.penche < -PENCHE
+        && Math.abs(roulis.gauche.rendu) < PENCHE
+        && Math.abs(roulis.droite.rendu) < PENCHE,
+      `après avoir lâché : ${JSON.stringify(roulis)}`);
+
+    // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
+    // ROUES (v230).
+    //
+    // Max a déposé deux modèles d'une autre provenance. Ils ne suivent pas le
+    // manifeste de la flotte (`vendor/voitures/LICENSE.md`) : maillages
+    // quantifiés, chaque roue éclatée en huit nœuds — un par matériau — aucun
+    // matériau nommé `Paint`, et le nez sur un autre axe. Sans mesure, une
+    // voiture pareille arrive en travers, flottant au-dessus du sol, roues
+    // figées.
+    //
+    // ON ÉPROUVE CE QUE L'ENFANT VOIT, par le VRAI chargeur du jeu : quatre
+    // pivots de roue, la voiture posée au sol (`min.y` à zéro, sinon elle
+    // flotte ou s'enterre jusqu'aux moyeux), un rayon de roue plausible, et
+    // une longueur de voiture plus grande que sa largeur — c'est ce qui dit
+    // qu'elle n'est pas en travers.
+    //
+    // ET DEUX MODÈLES D'ORIGINE SERVENT DE TÉMOIN DE CONTRÔLE : ils passent
+    // par le chemin « manifeste », qui ne doit toucher à rien. S'ils bougent,
+    // c'est que j'ai cassé la flotte en voulant l'élargir.
+    const flotte = await tab.evaluate(async () => {
+      const v = await import('./src/vehicules.js');
+      const THREE = await import('three');
+      const out = [];
+      for (const fichier of ['lucid-gravity.glb', 'bugatti-chiron-stealth.glb',
+        'bugatti-chiron.glb', 'audi-r8-v10-performance.glb']) {
+        const entree = v.FLOTTE.find((e) => e.fichier === fichier);
+        if (!entree) { out.push({ fichier, err: 'absente de la flotte' }); continue; }
+        const porteur = await v.chargerVoitureFlotte(entree);
+        if (!porteur) { out.push({ fichier, err: 'chargement échoué' }); continue; }
+        porteur.updateMatrixWorld(true);
+        let pivots = 0;
+        porteur.traverse((o) => { if (/^Wheel_(FL|FR|RL|RR)$/i.test(o.name || '')) pivots++; });
+        const boite = new THREE.Box3().setFromObject(porteur);
+        const t = boite.getSize(new THREE.Vector3());
+        out.push({ fichier, forme: porteur.userData.forme, pivots,
+          rayon: +(porteur.userData.rayonRoue || 0).toFixed(3),
+          sol: +boite.min.y.toFixed(3),
+          long: +t.z.toFixed(2), large: +t.x.toFixed(2) });
+      }
+      return out;
+    });
+    const conforme = (o) => !o.err && o.pivots === 4 && Math.abs(o.sol) < 0.06
+      && o.long > 3.4 && o.long < 6.2 && o.rayon > 0.25 && o.rayon < 0.6
+      && o.long > o.large;
+    const neuves = flotte.filter((o) => /lucid|stealth/.test(o.fichier));
+    const anciennes = flotte.filter((o) => !/lucid|stealth/.test(o.fichier));
+    verifier('une voiture hors manifeste est remise d\'aplomb : posée au sol, quatre roues',
+      neuves.length === 2 && neuves.every(conforme)
+      && neuves.every((o) => o.forme === 'mesuré'), JSON.stringify(neuves));
+    verifier('et les modèles du manifeste ne sont pas touchés',
+      anciennes.length === 2 && anciennes.every(conforme)
+      && anciennes.every((o) => o.forme === 'manifeste'), JSON.stringify(anciennes));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

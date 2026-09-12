@@ -20,13 +20,13 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v227 — Des avenues réelles où aucune voiture n'a jamais roulé
+## PR #226 — Des avenues réelles où aucune voiture n'a jamais roulé
 
 Une passe ville par ville sur la dette déclarée depuis la v211 : des avenues
 qui existent, qu'un enfant peut nommer, et sur lesquelles aucun circuit de
 voitures ne passait. Les quatre villes que la v211 avait laissées derrière elle
 — San Francisco, Lille, Londres, Washington — ont chacune leur entrée
-ci-dessous ; chacune a été livrée séparément, portail vert à chaque fois.
+ci-dessous ; ces changements attendaient la fusion de la PR #226.
 
 Et chacune a une cause DIFFÉRENTE, ce qui est la leçon de la passe : à San
 Francisco les avenues n'étaient pas des rues ; à Lille l'une était une impasse
@@ -201,6 +201,620 @@ ce code » pour les deux suites qui testent précisément ce qui venait de chang
 déclarée dans `TASKS.md`, et le portail a été rejoué depuis zéro en attendant.
 
 ---
+
+## v238 — Le jeu ne ralentit plus à mesure qu'on y joue
+
+**Pourquoi.** Max : « le jeu lague de plus en plus depuis un moment », et
+« l'avion avance une seconde, il reste une seconde » — hors pilotage aussi, et
+notamment juste après une mise à jour.
+
+Deux mesures ont écarté les suspects évidents, qui étaient mes propres
+changements de la veille. Debout au centre de Paris, à la distance d'affichage
+de l'iPad, la **v236 rend 3,7 images par seconde et la v237 3,3** : le paysage
+lointain et le budget de maillage en temps réel ne sont pas la cause. Et le
+profil renverse la question — **le fil principal est inactif 81 % du temps**. Le
+banc rend en logiciel : sa cadence mesure SwiftShader, pas le jeu, et il ne peut
+donc pas *subir* la panne de Max.
+
+**On mesure alors la cause, pas l'effet** — la leçon de la v236, reprise telle
+quelle. Elle tient dans une ligne : **une créature coûte dix-neuf géométries et
+demie sur la carte graphique, et le jeu n'en rendait aucune quand elle
+disparaissait de l'écran.** `scene.remove()` détache un objet de l'affichage ;
+il ne rend pas un octet au pilote graphique. Le jeu fait naître une créature
+toutes les 1,2 seconde, et chacune emporte ses vingt géométries pour toujours.
+Sur un iPad, dont la mémoire graphique est partagée avec le système, cela
+s'accumule pendant toute la partie et la tablette finit par se figer pour faire
+de la place.
+
+C'est la fuite de la v236 **par l'autre bout** : là, `world.chunks` gardait les
+blocs en mémoire vive. La règle « ce qui s'engendre s'oublie » n'avait jamais
+été cherchée ailleurs que dans le monde — et le bon remède était **déjà écrit
+dans le fichier d'à côté**, `poissons.js` libérant les siens depuis toujours.
+Quatrième fois que ce dépôt paie la *portée* d'un remède et non la règle.
+
+**Ce que ça change.** Une partie d'une demi-heure reste aussi fluide qu'à la
+première minute.
+
+Le remède vit dans un module commun, `liberer.js`, et non en cinq copies. Il est
+branché aux cinq endroits où le jeu retire vraiment quelque chose qui se
+renouvelle : les deux d'`animals.js`, les deux de `creatures.js`, la mascotte
+refabriquée de `fun.js`, et le corps d'un ami qui quitte la partie.
+
+**Et une ressource partagée ne se libère pas — c'est tout le piège.** Les
+personnages humains partagent deux matériaux pour tout le jeu ; le mobilier de
+rue clone un modèle unique, donc partage sa géométrie. Un `dispose()` aveugle
+n'aurait pas fait fuir le jeu : il aurait fait **disparaître** tous les
+personnages du monde et le décor avec. La règle vit désormais dans la ressource
+elle-même (`userData.partagee`), à côté de `montable`, `nourrissable` et `vole`.
+
+**Ce qui le prouve.** Un témoin neuf, qui compte des **géométries et non des
+millisecondes** : ce conteneur a de la mémoire à revendre, un verdict en durée
+serait vert des deux côtés sans rien prouver. Dix créatures nées puis retirées,
+mesuré séparément des deux côtés :
+
+| | `origin/main` | ici |
+| --- | --- | --- |
+| géométries prises | 166 | 157 |
+| **rendues** | **0** | **157** |
+| **perdues** | **166** | **0** |
+
+**Et il a fallu quatre sondes avant celle-là.** Joueur immobile, aucune créature
+n'était retirée — elles remplissaient seulement leur plafond de seize, ce qui
+s'arrête tout seul. À pied, un enfant avance à **15 % du temps réel** sur ce
+banc (`dt` borné, trois images par seconde) : six blocs en trente secondes,
+jamais les soixante-dix qui déclenchent un retrait. Dix allers-retours
+provoquaient bien le renouvellement, mais le disque de morceaux ne revenait pas
+au même endroit des deux côtés : le verdict aurait mesuré le banc. Et la
+première mesure unitaire rendait « 96 avant, 96 pendant, 96 après » — les bêtes
+naissaient derrière la caméra, et **le compteur du moteur n'enregistre que ce
+qui est dessiné**. Elle ne mesurait rien et serait passée au vert des deux
+côtés : le pire des témoins.
+
+**Ce que cette version ne règle pas, et qui est déclaré dans `TASKS.md`.** Une
+pousse résiduelle subsiste, qui ne vient **pas** des créatures — c'est prouvé à
+l'unité. Le suspect est nommé : les voitures de convoi, trente-deux maillages
+chacune, fabriquées à la demande et jamais détruites, seulement rendues
+invisibles. Et une cinquième occurrence du piège de `dt` a été trouvée en
+chemin : les cadences de naissance des bêtes comptent en temps d'affichage.
+
+---
+
+## v237 — En vol, on voit enfin un paysage
+
+**Pourquoi.** Max, capture à l'appui après la v236 : du ciel bleu entouré au
+feutre rouge, et « 0 improvement ». La v236 avait corrigé une vraie fuite de
+mémoire — deux gigaoctets et demi après cinq minutes de vol — mais ce n'était
+pas ce qu'il voyait.
+
+Mesuré dans le champ de la caméra, en vol au-dessus de Paris : **trente et un
+maillages, et le plus lointain à cinquante-neuf blocs**, pour un brouillard qui
+portait à cent quatre-vingt-huit. L'enfant survolait un disque de monde qui
+durait une demi-seconde.
+
+**Et la cause est arithmétique, pas une lenteur qu'on optimise.** Un morceau de
+monde coûte :
+
+| | coût d'un morceau | morceaux par seconde |
+| --- | --- | --- |
+| campagne vide | 6,6 ms | 153 |
+| **couloir du témoin** (30 000, 30 000) | 6,8 ms | **147** |
+| **Paris** | 23,5 ms | **42** |
+| **Londres** | 22,6 ms | **44** |
+
+Voler à cent dix blocs par seconde en réclame **cent soixante-cinq**. Au-dessus
+d'une ville on en produit quarante-deux : il manque un facteur quatre. Et le
+« 154 morceaux/s » de la v229, sur lequel les vitesses des avions ont été
+réglées, avait été mesuré **dans un couloir vide** — c'est aussi là que vole le
+témoin censé garder le chargement du monde. Il ne pouvait pas voir ce que Max
+voyait.
+
+**Ce que ça change.** Le monde a un **paysage lointain**. Il ne se bâtit pas
+bloc à bloc : il lit `terrainHeight`, une fonction **pure**, qui rend la cote
+d'une colonne sans engendrer un morceau ni mailler une seule face. Vingt-cinq
+mille colonnes — un carré de plus d'un kilomètre de côté — coûtent 120 ms ; la
+même surface en vrais morceaux en coûterait **cent cinquante secondes**.
+
+Marlon et Alice voient donc, en vol, le relief, les fleuves, les plages et les
+côtes s'étendre jusqu'à l'horizon, et les vrais blocs prendre la place du
+paysage à mesure qu'ils approchent. Le brouillard, qui s'arrêtait au bord du
+monde chargé, porte maintenant jusque-là.
+
+**Et le portail rouge a fait trouver plus gros que le paysage.** Le témoin de
+chargement du monde est tombé : le paysage lointain coûte des images au banc
+(qui rend en logiciel), et **le budget de maillage était compté PAR IMAGE**.
+Douze millisecondes par image, c'est mille deux cents par seconde à cent
+images — mais **trente-six** à trois images par seconde. Or trois images par
+seconde, c'est exactement l'état d'une tablette qui ARRIVE dans une ville : le
+monde se chargeait vingt fois plus lentement au moment précis où l'enfant en a
+besoin. C'est le piège de `dt` de la v226, un étage plus haut, sur le chemin le
+plus chaud du jeu. Le budget vise désormais un DÉBIT — des millisecondes par
+seconde RÉELLE — plafonné pour qu'une image ne soit jamais dominée par le
+maillage. À cadence haute rien ne change ; la correction ne fait qu'AJOUTER du
+budget quand les images s'allongent. Mesuré, même vol, même page :
+
+| | monde chargé devant soi |
+| --- | --- |
+| avant, avec le paysage | 86 blocs |
+| **après** | **129 blocs** |
+| avant, sans le paysage | 143 |
+| après, sans le paysage | **167** |
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, et le portail complet en
+vert. Il mesure ce que l'enfant VOIT, pas ce que le moteur charge : vingt-cinq
+lignes de visée réparties sur la moitié basse de l'écran, et l'on compte celles
+qui rencontrent quelque chose. Cinq relevés, même vol, même endroit :
+
+```
+origin/main    0 ·  8 ·  9 ·  1 · 11   sur 25     (portée médiane  86 blocs)
+ici           25 · 25 · 25 · 25 · 25              (portée médiane 120, jusqu'à 244)
+```
+
+Et **la portée du paysage suit la distance d'affichage**, ce qui n'est pas un
+réglage de confort : un joueur qui demande un monde de deux morceaux ne demande
+pas un panorama de six cents blocs. Écrite en dur, elle coûtait vingt-neuf pour
+cent de la cadence du banc — qui ouvre toutes ses suites à cette distance-là —
+pour un paysage que personne n'avait demandé. Remise à l'échelle : **32,0
+images par seconde contre 31,6 sans**, c'est-à-dire rien.
+
+---
+
+## v236 — Le monde oublie enfin ce que l'avion a dépassé
+
+**Pourquoi.** Max, après la v235 : « Lag is very bad avec les avions fix it
+for real. » Il avait raison : la v235 avait corrigé un symptôme réel — les
+voitures d'une ville qui naissaient toutes dans la même image — et le gel
+revenait quand même.
+
+Cette fois j'ai décomposé avant de toucher quoi que ce soit, et **les trois
+coupables que je soupçonnais sont innocents**. Le rendu fait **4,6 %** du temps
+d'un vol. La caméra cubique qui fabrique les reflets de carrosserie ne tourne
+**jamais** en vol — zéro image sur cent huit. Couper le contrôle des shaders ne
+rend rien de mesurable. Le maillage tient son budget.
+
+Le vrai défaut ne se voyait pas en millisecondes, parce qu'il ne coûte pas de
+temps : **le jeu n'a jamais rendu un seul morceau de monde.** `main.js` défait
+bien les MAILLAGES des morceaux qu'on laisse derrière soi — c'est écrit depuis
+toujours — mais les **blocs**, quatre-vingts kilo-octets par morceau,
+restaient dans la mémoire pour la partie entière. À cent dix blocs par seconde,
+l'avion en engendre **quatre-vingt-sept par seconde**. Mesuré sur le même vol,
+à la même distance parcourue :
+
+|  | après 30 s | après 90 s | après 5 min |
+| --- | --- | --- | --- |
+| avant | 245 Mo | 693 Mo | **2 328 Mo** |
+| après | 27 Mo | 27 Mo | **35 Mo** |
+
+Deux gigaoctets et demi de blocs après cinq minutes de vol : un iPad ferme
+l'onglet bien avant, et **longtemps avant de le fermer, il se fige pour faire
+de la place**. Trois secondes d'arrêt, une seconde de jeu.
+
+**Ce que ça change.** Marlon et Alice peuvent voler aussi longtemps qu'ils
+veulent. La mémoire du jeu ne monte plus : elle se stabilise autour de trente
+mégaoctets de blocs, quelle que soit la distance parcourue. Rien n'est perdu au
+passage — le relief se recalcule à l'identique, et les blocs posés à la main
+sont réappliqués depuis leur propre registre. Voler dix minutes coûte
+désormais autant que voler dix secondes.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, et le portail complet
+en vert.
+
+Le premier vole trente secondes au-dessus de Paris et pèse les blocs retenus :
+**245 Mo sur `origin/main`, 27 ici**, pour une barre à cent. Et **son verdict
+est en mégaoctets, pas en millisecondes** : sur ce conteneur, qui a de la
+mémoire à revendre, la cadence est identique des deux côtés (35,6 contre 34,5
+sur cinq minutes) et le temps de ramasse-miettes aussi (4,3 s contre 4,2). Le
+banc ne souffre pas de ce défaut ; un iPad, si. Une durée aurait mesuré la
+machine.
+
+Le second garde l'invariant du sol contre ma propre correction : on pose une
+brique, on force l'oubli du morceau qui la porte, et l'on vérifie qu'elle est
+toujours là quand le morceau revient — avec le terrain d'à côté inchangé, bloc
+pour bloc.
+
+---
+
+## v235 — L'écran ne se fige plus en arrivant sur une ville
+
+**Pourquoi.** Max, en vol : « il y a vraiment un lag, il n'est pas capable de
+naviguer avec fluidité. L'écran s'arrête pendant trois secondes, il redémarre
+pendant une seconde. »
+
+Ce n'était **ni le maillage du monde ni le rendu**. Profilé et mesuré, vingt
+secondes de vol au-dessus de Paris : le maillage tient son budget (16 ms par
+image), le rendu en coûte 4 — et une seule image en prenait **557**. Tout était
+dans `animerLesVilles`. Les huit circuits de voitures de Paris naissaient
+**ensemble**, dans la même image, à l'instant où l'avion franchissait leur
+rayon de deux cent vingt blocs. Chacun fabrique une vingtaine de voitures, et
+une voiture coûte trente-deux maillages : cinq mille maillages d'un coup, pour
+des voitures que personne ne peut voir avant deux secondes de vol — un convoi
+ne se montre qu'à quarante-cinq blocs.
+
+**Ce que ça change.** Deux choses, et la seconde est la vraie. On **étale** :
+un circuit par tour, le plus proche d'abord, le tour passant de deux secondes
+et demie à un huitième de seconde. Et surtout, **un convoi ne fabrique plus ce
+que personne ne voit** : chaque place reste vide jusqu'à ce qu'elle entre dans
+le champ. Une ville survolée de loin ne coûte plus rien du tout.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien code.
+Il mesure ce que l'enfant subit — la durée de chaque image pendant qu'on
+survole Paris en chasseur — sans aucune instrumentation dans le jeu, donc à
+l'identique des deux côtés :
+
+| | avant | après |
+| --- | --- | --- |
+| pire image | 800 ms | **233 ms** |
+| part du temps en images de plus de 300 ms | 10,3 % | **0 %** |
+| cadence moyenne | 17 im/s | 20,3 im/s |
+
+**Et une piste mesurée qui n'a rien donné, écrite pour qu'on ne la reprenne
+pas à l'aveugle.** Le profil accusait aussi les matrices de three.js — dix pour
+cent du vol à replacer des morceaux de monde qui ne bougent jamais. Les figer
+n'a **rien changé de mesurable** (28,5 → 27,7 images par seconde, gel 683 →
+667) : ce coût vient des personnages, qui bougent. La correction a été retirée.
+
+---
+
+## v234 — Une minute de jeu compte pour une minute
+
+**Pourquoi.** `main.js` borne `dt` à un vingtième de seconde, et c'est juste
+pour la physique : sans cette borne, une chute de cadence fait traverser les
+murs. Mais `education.js` comptait la journée de l'enfant avec ce `dt`. Mesuré
+à la sonde, sur douze secondes réelles : à vingt-quatre images par seconde le
+compteur en retient onze ; **à cinq, il n'en retient que trois**.
+
+Autrement dit, sur une tablette qui rame — c'est-à-dire précisément quand un
+enfant arrive dans une ville et que le monde se charge — une limite de
+quarante-cinq minutes par jour en laissait passer près de trois heures. Personne
+ne contournait rien : l'invariant 2 tombait tout seul. Et le même `dt` gouvernait
+le compte à rebours du prochain quiz et la cadence de sauvegarde, qui s'espaçait
+d'autant.
+
+**Ce que ça change.** Le temps d'écran, le prochain quiz et la sauvegarde
+comptent en temps réel. Un parent qui règle quarante-cinq minutes obtient
+quarante-cinq minutes de pendule, quelle que soit la tablette.
+
+**Et le plafond n'est pas une précaution, c'est le cœur de la chose.** Quand
+l'onglet passe à l'arrière-plan ou que l'appareil s'endort, le navigateur cesse
+d'appeler la boucle : au réveil, l'écart réel vaut des minutes. C'est la borne
+de `dt` qui protégeait de cela par accident ; `chronoReel` le fait exprès, à
+deux secondes — de quoi laisser passer en entier l'image la plus lente qu'on ait
+mesurée, et couper net tout ce qui ressemble à une absence.
+
+**Et l'horloge vit chez l'appelant.** Mon premier montage la mettait dans
+`education.js`, qui ignorait alors le `dt` qu'on lui passe. Le portail l'a
+refusé : `reglages.js` simule le temps en appelant `update` deux cents fois
+pour éprouver que le quiz se cumule d'un mode de jeu à l'autre, et ce témoin
+est tombé aussitôt. `main.js` sert désormais le temps réel, `education.js` le
+compte — une classe qui va lire l'horloge du monde ne se met plus à l'heure
+qu'on veut.
+
+**Ce qui le prouve.** Un témoin neuf dans `parent.js`, rouge sur l'ancien code.
+Il alourdit chaque image pour retrouver la cadence d'une tablette fatiguée, puis
+regarde ce que le compteur retient d'une fenêtre de temps réel connue : **0,25
+avant, 0,98 après**, à 5,1 images par seconde. Et la table des gardiens gagne
+deux entrées : `cadence.js` a désormais `education.js` pour client, donc
+`parent.js` et `reglages.js` doivent se réveiller quand l'horloge change.
+Portail complet vert.
+
+---
+
+## v233 — La minicarte suit l'avion au lieu de le regarder partir
+
+**Pourquoi.** Max, capture en vol : « pas dingue la carte en retard ». Mesuré à
+la sonde, à 95 blocs/s et à la distance d'affichage de l'iPad : **soixante-
+quatorze blocs parcourus entre deux redessins en moyenne, 99,7 au pire** — pour
+une minicarte qui fait 96 blocs de rayon. Elle montrait donc, en moyenne, un
+paysage laissé aux trois quarts derrière soi, et au pire un paysage entièrement
+sorti du cadre.
+
+Deux causes se cumulaient, et la seconde interdisait de corriger la première.
+Le minuteur comptait en `dt` — c'est le piège de la v226, et la minicarte est
+la **seule** cadence de ménage à ne pas y être passée : le jeu borne `dt` à un
+vingtième de seconde, si bien qu'une seconde de minuteur en réclame 2,4 réelles
+dès que la cadence tombe, c'est-à-dire précisément en vol. Et redessiner plus
+souvent coûtait trop cher : 30,8 ms pour vingt-cinq mille points dont chacun
+descend une colonne du monde.
+
+**Ce que ça change.** La carte se rafraîchit quand l'enfant a **bougé**, pas
+quand une horloge sonne — debout sans bouger, elle ne coûte plus rien. Et le
+fond **défile** au lieu d'être recalculé : entre deux rafraîchissements on
+recopie ce qui reste à l'écran et l'on ne calcule que la bande neuve. Le retard
+tombe de 74 blocs à 9,7, pour le même coût total.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, rouges sur l'ancien
+code. Le premier mesure une **distance**, pas une durée : mon premier jet
+comptait le plus long moment sans changement et rendait 1,01 s contre une barre
+d'une seconde — un pour cent de marge, un chiffre qui bouge avec la cadence du
+banc. Ce que l'enfant subit, c'est le nombre de blocs de retard, et il ne dépend
+pas de la vitesse d'affichage : 97,3 en moyenne sur l'ancien code, 12 sur
+celui-ci. Le second vérifie que le fond défilé montre **exactement** ce qu'un
+calcul entier montrerait — 37 249 points, zéro écart —, sans quoi une recopie
+qui dérive d'un point afficherait un paysage faux sans que personne ne le voie.
+**Et un poisson ne se retrouve plus enterré dans la roche.** Le portail a rendu
+rouge un témoin sans rapport avec la carte : « chacun est dans l'eau ». La sonde
+l'a démonté sur `origin/main`, donc en production — vingt-quatre relevés hors de
+l'eau sur cent vingt à un rivage donné, des poissons à la cote de l'eau avec le
+terrain quatorze blocs plus haut. Le demi-tour devant un obstacle est
+progressif : le poisson continue d'avancer pendant qu'il vire, et il lui arrive
+de franchir le rivage avant d'avoir fini ; le clampage de profondeur ne le
+rattrape pas, il le maintient à la cote de l'eau **dans** la colline. Le remède
+n'est pas un meilleur clampage, c'est de ne pas y aller : on calcule le pas, on
+regarde si l'arrivée est de l'eau, sinon on reste où l'on est en virant plus
+franchement.
+
+Portail complet vert.
+
+---
+
+## v232 — Les avions ressemblent enfin à des avions
+
+**Pourquoi.** Max, capture à l'appui : « fix plane design, they are not
+realistic ». C'était vrai, et pas pour des raisons de goût — trois défauts se
+mesurent.
+
+Le fuselage n'était pas un tube mais une **planche** : l'atelier met à
+l'échelle une primitive unitaire, si bien que le rayon écrit dans le code était
+en réalité un diamètre. L'avion de ligne avait donc un corps de 1,05 bloc
+d'épaisseur, des hublots posés à ±0,99 — presque le double du rayon, flottant
+dans le vide — et une bande de livrée large de 2,12, deux fois le fuselage :
+c'est elle qu'on voyait, une planche bleue plus grosse que l'avion.
+
+Chaque appareil **débordait de son poste de stationnement** : seize blocs
+réservés, 21,5 rendus ; vingt pour le Concorde, trente et un rendus — à cheval
+sur son voisin, passage compris. Et le train descendait à 0,68 bloc **sous le
+sol** : un avion garé avait les roues enterrées jusqu'à l'essieu.
+
+**Ce que ça change.** Les trois appareils sont redessinés sur les proportions
+réelles de leur type — 37,6 m de long pour 4,0 de fuselage et 35,8 d'envergure
+pour l'avion de ligne, et tout le reste s'en déduit. Le fuselage est un vrai
+tube, à nez arrondi pour les avions civils et pointu pour le chasseur ; les
+ailes s'effilent au lieu d'être des plaques rectangulaires ; les réacteurs
+pendent à un mât au lieu de flotter sous l'aile ; les dérives sont en flèche ;
+les hublots et la livrée sont sur la peau. Chacun tient exactement dans le
+poste que l'aéroport lui réserve, et se pose sur ses roues.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, tous rouges sur
+l'ancien code : chaque appareil tient dans son poste (21,5/16 → 15,92/16), rien
+ne passe sous le sol (−0,68 → +0,01), et le saumon d'une aile est court
+(0,142 de la longueur → 0,040). Ce dernier ne porte que sur deux appareils sur
+trois, et le dit : l'ancien Concorde était déjà bâti en panneaux de corde
+décroissante, aucun seuil ne l'aurait séparé sans le déclarer bon avant la
+correction. Le reste se juge en capture, comme le veut la règle du projet — vue
+de rue et vue aérienne, avant et après. Portail complet vert.
+
+---
+
+## v231 — L'avion penche dans son virage
+
+**Pourquoi.** Max, après avoir volé : « ça serait bien que quand on vole avec
+un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie droite. »
+Depuis la v228 le joystick tient le cap, et l'appareil tournait **à plat** —
+comme une maquette qu'on pousse sur une table. Un virage se sentait aux
+commandes et ne se voyait nulle part.
+
+**Ce que ça change.** Les trois appareils s'inclinent maintenant dans leurs
+virages, jusqu'à trente degrés — le virage d'un avion de ligne en croisière,
+pas de la voltige. On entre dans l'inclinaison et l'on en sort progressivement,
+à la VIVACITÉ de la fiche : le chasseur s'incline sec, le Concorde prend son
+temps, exactement comme ils virent. C'est purement visuel : le cap vient
+toujours du joystick et la trajectoire ne change pas d'un bloc. Lâcher les
+commandes remet les ailes à plat, et descendre aussi.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, tous deux rouges sur
+l'ancien code, et le SIGNE vérifié en capture avant d'être écrit — à gauche
+l'aile gauche descend, à droite c'est le miroir exact. Un témoin qui ne
+mesurerait que l'amplitude laisserait passer une inclinaison à l'envers, ce
+qui est pire que pas d'inclinaison. Le second témoin exige d'abord que
+l'appareil se soit penché avant de vérifier qu'il se redresse : sans cette
+clause il serait vert à vide sur un code qui ne s'incline jamais. Portail
+complet vert.
+
+---
+
+## v230 — Deux voitures de plus, et le jeu accepte désormais un modèle qu'on lui donne
+
+**Pourquoi.** Max a déposé trois fichiers `.glb` : « ajoute cette voiture ».
+Deux étaient **octet pour octet identiques** — ce sont donc deux voitures, une
+Lucid Gravity et une Bugatti Chiron « white stealth ».
+
+Elles ne suivent pas le manifeste de la flotte
+(`vendor/voitures/LICENSE.md`), auquel trois endroits du jeu se fient :
+maillages quantifiés, chaque roue éclatée en **huit nœuds** — un par matériau
+— aucun matériau nommé `Paint`, et le nez sur un autre axe. Livrées telles
+quelles : voiture en travers, flottant au-dessus du sol, roues figées, pas de
+reflets sur la carrosserie.
+
+**Ce que ça change.** Convertir chaque fichier à la main aurait marché **une**
+fois. Le chargeur MESURE désormais le modèle qu'on lui donne : il retrouve les
+roues par leur lignée de noms, en déduit l'axe de la longueur (un empattement
+est toujours plus long qu'une voie), lit l'avant sur les noms plutôt que sur
+la géométrie, regroupe chaque roue sous un vrai pivot, tourne le modèle par
+quarts de tour et le pose au sol. Les prochains modèles que Max dépose
+marcheront sans conversion.
+
+Et **il ne touche à rien quand le manifeste est respecté** : les cinquante
+d'origine ne changent pas d'un pixel.
+
+La flotte passe de cinquante à cinquante-deux modèles. Le pas de tirage reste
+17, qui est premier avec cinquante-deux — les cinquante-deux défilent donc
+toujours sans se répéter.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, et l'un des deux est un
+**témoin de contrôle**, vert des deux côtés à dessein : les modèles du
+manifeste doivent rester identiques. Mesuré par le vrai chargeur du jeu :
+
+| | forme | roues | rayon | posée au sol | longueur |
+| --- | --- | --- | --- | --- | --- |
+| Lucid Gravity | mesuré | 4 | 0,404 | oui | 5,11 m |
+| Bugatti Chiron Stealth | mesuré | 4 | 0,371 | oui | 4,60 m |
+| Bugatti Chiron (d'origine) | manifeste | 4 | 0,344 | oui | 4,64 m |
+| Audi R8 (d'origine) | manifeste | 4 | 0,344 | oui | 4,53 m |
+
+Les dimensions collent au réel : une Lucid Gravity fait 5,03 m, une Chiron
+4,54 m.
+
+**Un piège évité de justesse.** Un témoin existant vérifie que « le volant
+reste dans l'habitacle, visible par les vitres » sur la voiture que l'enfant
+conduit — tirée au hasard de la flotte. Or ces deux modèles sont des
+carrosseries seules : la Chiron Stealth n'a aucun intérieur, la Lucid une
+planche de bord sans volant. Le témoin aurait basculé **deux fois sur
+cinquante-trois**, soit quatre pour cent des exécutions — le genre de rouge
+intermittent qu'on met des jours à démonter. La règle vit donc dans la FICHE
+(`habitacle: false`), jamais dans une liste écrite dans le témoin — même
+discipline que `montable`, `nourrissable` et `vole`.
+
+Les fichiers ne sont pas dans la liste `ASSETS` du service worker : chaque
+voiture se télécharge à sa première rencontre, donc le premier chargement ne
+s'alourdit pas.
+
+## v229 — Le monde se charge deux fois plus vite, et les avions ne le dépassent plus
+
+**Pourquoi.** Max : « les jets volent trop vite, la carte n'arrive pas à
+suivre et ça rame. Améliore l'efficacité de la carte et réduis un peu la
+vitesse. » Mesuré à 264 blocs par seconde : **quatre à sept pour cent** du
+paysage devant l'enfant était réellement construit, le premier trou à
+trente-deux blocs, et **deux appels de dessin par image** — il n'y avait
+littéralement rien à afficher. L'avion volait devant son monde.
+
+La cause n'était pas celle qu'on devine. Ce n'était pas la file d'attente des
+morceaux, que je soupçonnais : elle coûte trois millisecondes par seconde,
+mesuré. C'était le budget. `MESH_BUDGET_MS` valait **six** millisecondes quand
+construire un morceau en coûte **5,4** : la boucle en construisait un,
+regardait l'heure, en construisait un second et s'arrêtait. Le budget ne
+bornait donc rien — il figeait le débit à deux morceaux par image, quoi qu'on
+écrive.
+
+**Ce que ça change.** Le monde se construit **deux fois plus vite** — 76 à 154
+morceaux par seconde, sans coûter une image — et les avions volent à une
+vitesse que ce monde sait servir. Concrètement, à quelle distance devant soi
+commence le paysage pas encore construit :
+
+| | avant | après |
+| --- | --- | --- |
+| avion de ligne | 96 blocs | **132–137** |
+| Concorde et chasseur | 32–51 blocs | **125–138** |
+
+Le brouillard commence à 106 blocs : le trou est désormais **derrière** lui,
+donc invisible. L'enfant ne rattrape plus le bord du monde.
+
+**Ce qu'on perd, et c'est une décision de Max.** Le plafond du chargement est
+cent dix blocs par seconde. Garder le rapport réel — 900 km/h contre 2 180,
+soit 1 à 2,4 — voulait dire un Concorde qui vole toujours devant le monde.
+Devant le choix, Max a tranché : **tout le monde autour de cent.** 95 pour
+l'avion de ligne (juste au-dessus des 88 du vol libre, sinon prendre l'avion
+ne sert à rien), 110 pour le Concorde et le chasseur, qui ne se distinguent
+plus que par leur agilité. Le rapport tombe à 1,16 ; c'est déclaré dans
+`TASKS.md`, et le seul moyen de le reprendre est de construire encore plus
+vite.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, et il a fallu le
+corriger **deux fois** avant qu'il ne prouve quoi que ce soit.
+
+- D'abord il était **vert sur `origin/main` à 264 blocs par seconde** : le
+  banc ouvre le jeu avec une distance d'affichage de deux morceaux, où le
+  brouillard commence à dix-huit blocs et où rien ne peut manquer. Il mesurait
+  le banc. Il demande désormais la distance de l'iPad.
+- Ensuite il lisait **un instantané**, et un front de chargement est
+  irrégulier : le même code rendait 68, 91 puis 101 blocs. J'ai failli
+  descendre les avions pour poursuivre un chiffre qui bougeait tout seul — à
+  140 il rendait moins qu'à 170. Six relevés et la médiane : les
+  distributions se séparent alors nettement.
+
+Rouge sur `origin/main` (trou à trente-deux blocs), vert ici, la même mesure
+des deux côtés.
+
+## v228 — Les avions sont garés au poste, et le bouton les fait décoller
+
+**Pourquoi.** Max, trois captures à l'appui : « les avions sont moches, posés
+n'importe où et inutilisables », puis « le Concorde, il ne décolle pas ».
+Trois défauts distincts, et la sonde en a trouvé les trois causes — dont
+aucune n'était celle qu'on aurait devinée en regardant l'image.
+
+*Posés n'importe où.* Vingt et un postes de stationnement sur cinquante-sept
+étaient **dans un bâtiment**. Roissy n'avait aucune branche dans le plan des
+postes : il tombait dans le cas des villes moyennes, donc à vingt-deux blocs
+du centre — entre `HALL_INT` (8) et `HALL_EXT` (18), c'est-à-dire dans le hall
+de l'aérogare 2. Et les appareils étaient posés nez vers le nord, ce qui
+réclame vingt blocs de profondeur pour une aire qui en fait douze — sept à
+Roissy. Enfin le cap venait d'un `Math.random()` : l'espèce étant `immobile`,
+un avion garé pointait dans une direction quelconque, pour toujours.
+
+*Inutilisables.* Le bouton ✈️ appelait `toggleFly()`, qui réussissait et
+basculait un drapeau que la physique de vol **ignore complètement**. Aucun
+effet, aucun message : l'enfant appuie et il ne se passe rien. Et pour
+décoller il fallait deviner qu'on tient « avant » pour les gaz, qu'on lève les
+yeux pour l'assiette, et qu'il faut d'abord dépasser la vitesse de décrochage.
+
+**Ce que ça change.** Les cinquante-sept appareils sont au poste, sur le
+revêtement, alignés le long de l'aérogare comme au large d'un vrai aéroport.
+À Roissy, les deux avions **en blocs** du poste nord ont cédé la place aux
+trois qu'on pilote : l'avion qu'un enfant voit à la porte est celui dans
+lequel il monte.
+
+Et les commandes sont celles que Max a demandées : **le bouton ✈️ décolle**
+(l'appareil monte tout seul de vingt blocs, au-dessus des terminaux et des
+tours de contrôle), **le joystick tient l'altitude et le cap**, la vitesse est
+automatique, et le regard reste libre pour le paysage. Un second appui se
+pose. Trois commandes à deviner sont devenues deux axes et un bouton.
+
+**Ce qui le prouve.** Trois témoins neufs. Celui des postes interroge le
+**bâtisseur** — `buildAeroport` et `buildAerodrome` sont des fonctions pures,
+on leur donne un `poser` qui note tout — et il mesure les dix-neuf aérodromes
+en quelques millisecondes sans y aller : **21 en faute sur `origin/main`, zéro
+ici**, la même mesure des deux côtés. Un deuxième vérifie que les appareils
+d'un même aérodrome pointent tous dans le même sens. Le troisième éprouve le
+trajet de l'enfant : on se met aux commandes, on appuie sur la touche du
+bouton, et l'on regarde si l'appareil **prend de l'altitude** — pas si un
+drapeau a changé.
+
+**Ce qui n'est pas fait, et pourquoi.** Les modèles restent sculptés à la
+main, et la capture montre qu'un avion **en blocs** posé à côté se lit mieux
+qu'eux : fuselage trop fin, ailes en plaques plates. C'est le plafond que la
+voiture avait atteint avant `voiture.glb`. Le chargeur de modèles pour les
+avions n'est pas écrit : ce serait une brique dont rien ne se sert tant qu'il
+n'y a pas de fichier — la panne de `monuments.js`, livré sans un seul
+`import`. Dette déclarée.
+
+## v227 — Le premier chargement ne télécharge plus ce qui ne sert pas à jouer
+
+**Pourquoi.** Max : « Le jeu lag, on peut pas l'alléger… ? » puis, tout de
+suite après, la vraie phrase : « En fait c'est just long à load le first
+time. » Mesuré sur la production, fichier par fichier : le premier
+chargement pèse **5,79 Mo compressés**, dont **4,67 Mo pour le seul scanner
+de visages** — contre **1,12 Mo pour le jeu ENTIER, ses 78 fichiers**.
+Quatre-vingts pour cent du premier chargement partaient donc dans une
+bibliothèque de reconnaissance faciale dont l'enfant n'a pas besoin pour
+jouer.
+
+Et ils partaient au pire moment. Le préchargement s'annonçait « pendant que
+l'enfant lit l'accueil » ; il était armé par `requestIdleCallback`, qui rend
+la main dès que la boucle respire — c'est-à-dire **pendant que le monde
+s'engendre**, juste après que l'enfant a appuyé sur « Jouer ». Ce n'est pas
+seulement un téléchargement : il charge aussi trois réseaux de neurones en
+mémoire, sur le processeur dont le monde a besoin.
+
+**Ce que ça change.** Le premier lancement ne prend plus que ce qu'il faut
+pour jouer. Le scanner attend que la page ait autre chose à faire : l'enfant
+qui reste sur l'accueil l'obtient comme avant, celui qui part jouer l'obtient
+à sa première pause, et celui qui touche « Reconnais-moi » sans attendre a
+toujours sa barre de progression, qui dit ce qu'elle fait. Rien n'est retiré ;
+c'est l'ordre qui change.
+
+**Ce qui le prouve.** Onze témoins, dont deux neufs dans `maj.js`. Le premier
+regarde les REQUÊTES, pas une variable : l'enfant ouvre le jeu, appuie sur
+« Jouer », joue vingt-cinq secondes, et pas un octet de scanner ne doit passer
+sur le fil. Rouge sur `origin/main` — quatorze fichiers — vert ici. Le second
+est vert des deux côtés à dessein : il vérifie que le remède ne va PAS trop
+loin, en gardant le préchargement pour l'enfant qui reste sur l'accueil.
+
+Ce qui est **établi**, c'est le poids : quatorze requêtes de scanner pendant
+qu'on joue sur `origin/main`, zéro ici. Le temps, lui, se dit avec prudence —
+le banc rend en logiciel et il bouge beaucoup. Quatre passages de chaque côté
+à 12 Mb/s : **10,9 s de moyenne avant de pouvoir jouer contre 8,2**, et
+surtout un écart entre passages qui tombe de 7,7–15,8 s à 7,5–9,3. À 4 Mb/s,
+deux passages chacun, aucune différence mesurable. **On ne promet donc pas de
+secondes sur l'iPad de Max** : on promet 4,67 Mo qui ne partent plus pendant
+qu'il attend.
 
 ## v226 — Les villes ne sont plus vides quand on y arrive
 

@@ -80,7 +80,7 @@ import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn } from './trains.j
 // z, la lisière se calcule une fois et le test par colonne est gratuit.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
 const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
-const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
+export const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
 import { surTerreReelle, reliefReel } from './terre.js';
 
 export const CHUNK = 16;
@@ -1301,6 +1301,7 @@ export class World {
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
     this.ctx = 'local';           // monde courant : 'local' ou le code du monde en ligne
     this.allDirty = false;        // tout remailler (changement de monde)
+    this.engendres = 0;       // combien de morceaux ont été engendrés (sonde et témoins)
     // Le profil d'une voie ferrée se lisse sur toute sa longueur, donc il a
     // besoin de la hauteur du terrain BIEN AU-DELÀ de la colonne qu'on est
     // en train de bâtir. `trains.js` ne la connaît pas : on la lui donne.
@@ -2277,10 +2278,45 @@ export class World {
     const key = World.key(cx, cz);
     let data = this.chunks.get(key);
     if (!data) {
+      this.engendres++;
       data = this.generateChunk(cx, cz);
       this.chunks.set(key, data);
     }
     return data;
+  }
+
+  // OUBLIER CE QU'ON A DÉPASSÉ — sinon voler remplit la mémoire de la tablette.
+  //
+  // Max, en vol : « l'écran s'arrête pendant trois secondes, il redémarre
+  // pendant une seconde ». `main.js` défaisait bien les MAILLAGES des morceaux
+  // dépassés, mais personne n'a jamais retiré les BLOCS : `chunks` est un
+  // dictionnaire qui ne fait que grandir. Mesuré en vol, à cent dix blocs par
+  // seconde : quatre-vingt-sept morceaux engendrés par seconde, quatre-vingts
+  // kilo-octets chacun. Soixante-cinq secondes de vol = six mille morceaux,
+  // 489 Mo de blocs, et un tas qui monte de 99 à 712 Mo sans jamais
+  // redescendre. Le gel de trois secondes, c'est le ramasse-miettes ; ce qui
+  // vient après, c'est l'onglet que Safari tue.
+  //
+  // Rien ne se perd : le terrain est DÉTERMINISTE et les blocs des enfants
+  // vivent dans `edits`, que `generateChunk` réapplique. Un morceau oublié se
+  // réengendre à l'identique, bloc pour bloc — c'est ce qui rend cet oubli
+  // compatible avec l'invariant 1, et un témoin le vérifie.
+  //
+  // ON OUBLIE PLUS LOIN QU'ON NE DÉMAILLE. Le rayon est celui du démaillage
+  // avec de la marge : un morceau dont on vient de jeter le maillage garde ses
+  // blocs encore un moment, sinon un demi-tour le fait réengendrer aussitôt.
+  oublierLoinDe(pcx, pcz, rayon) {
+    let oublies = 0;
+    for (const cle of this.chunks.keys()) {
+      const v = cle.indexOf(',');
+      const cx = +cle.slice(0, v), cz = +cle.slice(v + 1);
+      if (Math.abs(cx - pcx) <= rayon && Math.abs(cz - pcz) <= rayon) continue;
+      this.chunks.delete(cle);
+      this.tops.delete(cle);
+      this.dirty.delete(cle);
+      oublies++;
+    }
+    return oublies;
   }
 
   // Le terrain n'occupe qu'une fraction des 96 niveaux : au-dessus, c'est de
