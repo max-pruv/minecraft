@@ -20,6 +20,20 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v242 — Les personnages ne grimpent plus aux façades
+
+**Pourquoi.** En sautant contre un mur, un personnage conservait son appui
+au sol et relançait le saut à chaque image. Il pouvait remonter un immeuble.
+
+**Ce que ça change.** Le saut consomme immédiatement l’appui au sol. Il faut
+atterrir avant de pouvoir sauter à nouveau ; les modèles v241, la marche et
+la présence progressive restent identiques. Le cache PWA passe en v242.
+
+**Ce qui le prouve.** Un contrôle traverse 48 trajectoires autour de trois
+angles de Midtown : 15 trajectoires grimpaient avant correction, aucune
+après, avec un sommet de saut à 34,11 pour un sol à 33. Il rejoint les
+13 contrôles des anatomies, des véhicules et de la présence.
+
 ## v241 — Des visages, des berlines et des voisins qui restent
 
 **Pourquoi.** Les personnages et voitures restaient trop rudimentaires. Les

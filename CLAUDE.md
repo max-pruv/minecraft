@@ -3255,3 +3255,9 @@ Les matériaux automobiles qui lisent la sonde cubique doivent être masqués
 pendant sa capture et restaurés ensuite : lire sa propre cible de rendu produit
 `GL_INVALID_OPERATION`. `realisme.js` renouvelle les reflets quatre fois dans
 la vraie scène et vérifie le code WebGL ainsi que la restauration des maillages.
+
+Le saut d’un NPC consomme immédiatement son appui au sol (`onGround=false`).
+Sans cela, le contact horizontal réarme l’impulsion à chaque image et le
+personnage remonte toute une façade. `realisme.js` garde 48 trajectoires près
+des angles de Midtown : un obstacle reste franchissable, un mur ne fait pas
+voler. La correction vaut pour les compagnons comme pour les passants.
