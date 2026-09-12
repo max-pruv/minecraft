@@ -22,6 +22,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Manhattan indépendante : approfondir le réalisme après validation de
+  la version jouable.** Priorités : circulation qui répond aux feux,
+  intérieurs aménagés, berges et ponts, Statue de la Liberté, transitions de
+  détail moins visibles et diversité de façades. Les reflets sont statiques.
+  Une validation sur iPad physique reste nécessaire ; l'émulation tactile
+  Chromium ne mesure pas le pilote ni la mémoire de Safari iOS. Voir
+  `docs/manhattan.md`. Ne pas déplacer les sauvegardes pour agrandir l'île.
+
 - [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
   PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
   forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée

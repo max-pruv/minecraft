@@ -238,6 +238,7 @@ export class Carte {
   // Le monde tient dans cette boîte : au-delà, il n'y a plus que de l'océan
   // procédural, et un enfant qui glisse trop loin ne saurait plus revenir.
   bornesMonde() {
+    if (this.world.mapBounds) return this.world.mapBounds;
     let x0 = -700, x1 = 760, z0 = -700, z1 = 620;
     for (const c of [...CITIES, ...PLACES]) {
       const m = (c.r || 40) + 120;
@@ -311,6 +312,7 @@ export class Carte {
   // Couleur d'un point du monde, à n'importe quelle échelle.
   couleur(wx, wz, h, fin, rues) {
     const w = this.world;
+    if (w.mapColor) return w.mapColor(wx,wz);
 
     if (fin) {
       const id = this.blocDeSurface(wx, wz);
@@ -605,6 +607,7 @@ export class Carte {
   // exprimé en blocs par pixel, donc plus il est grand, plus le nom résiste au
   // dézoom. La recherche, elle, l'ignore : elle voit tout.
   catalogueDesLieux() {
+    if (this.world.mapPlaces) return this.world.mapPlaces.map(c=>({c,fort:true,seuil:99}));
     if (this._catalogue) return this._catalogue;
     const majeur = (c) => (c.r || 0) >= 30;
     this._catalogue = [

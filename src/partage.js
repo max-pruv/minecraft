@@ -26,8 +26,10 @@ export function lienDuJeu() {
   const h = (typeof location !== 'undefined' && location.hostname) || '';
   const local = !h || h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local')
     || h.endsWith('.localhost') || location.protocol === 'file:';
-  if (local) return ADRESSE_CANONIQUE;
-  return location.origin + location.pathname.replace(/index\.html$/, '');
+  const base = local ? ADRESSE_CANONIQUE : location.origin + location.pathname.replace(/index\.html$/, '');
+  // Le lien et le QR conservent la carte, sans partager les paramètres du banc.
+  return typeof location !== 'undefined' && new URLSearchParams(location.search).get('carte') === 'manhattan'
+    ? base + '?carte=manhattan' : base;
 }
 
 const MESSAGE = 'Viens jouer avec moi ! On construit, on explore et on apprend :';

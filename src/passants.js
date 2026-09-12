@@ -28,6 +28,7 @@ import { CITIES } from './world.js';
 import { CITY_BLOCK, ARCHI } from './blocks.js';
 
 // Ce sur quoi un passant se tient : la chaussée, le trottoir, les pavés.
+const SOLS_TROTTOIR = new Set([CITY_BLOCK.SIDEWALK,CITY_BLOCK.GRANITE]);
 const SOLS_DE_RUE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
   CITY_BLOCK.GRANITE, CITY_BLOCK.CROSSWALK, ARCHI.PAVE, ARCHI.BORDURE]);
 
@@ -129,10 +130,10 @@ function tirage(a, b, sel) {
 }
 const parmi = (liste, t) => liste[Math.floor(t * liste.length) % liste.length];
 
-export function createPassants({ scene, world, player, toast, npcs }) {
+export function createPassants({ scene, world, player, toast, npcs, sitesCarte = null, seulementTrottoir = false }) {
   // Toutes les villes à rues : les cinquante grandes qui ont une trame, et
   // les villes historiques (Paris, New York, Nice, Lille, Londres…).
-  const sites = [
+  const sites = (sitesCarte || [
     // LE RAYON DE LA VILLE, PAS QUARANTE BLOCS.
     //
     // `Math.min(r, 40)` datait du temps où les villes étaient petites. Depuis,
@@ -145,7 +146,7 @@ export function createPassants({ scene, world, player, toast, npcs }) {
       nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon, graine: f.rayon * 31 + 7,
     })),
     ...CITIES.map((c, i) => ({ nom: c.name, x: c.x, z: c.z, r: c.r, graine: i * 53 + 11 })),
-  ].map((s) => ({ ...s, peuple: null }));
+  ]).map((s) => ({ ...s, peuple: null }));
 
   // Le rapatriement bat en TEMPS RÉEL : voir `cadence.js`. Écrit `minuteur -= dt`,
   // il ralentissait avec la cadence d'affichage — donc il ne passait plus du tout
@@ -195,7 +196,7 @@ export function createPassants({ scene, world, player, toast, npcs }) {
       // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
       // passant ne trouvait jamais de rue, et tous retombaient sur le repli.
       const y = world.sommetColonne(bx, bz);
-      if (SOLS_DE_RUE.has(world.getBlock(bx, y, bz))) return [x, z];
+      if ((seulementTrottoir ? SOLS_TROTTOIR : SOLS_DE_RUE).has(world.getBlock(bx, y, bz))) return [x, z];
     }
     return repli;
   }

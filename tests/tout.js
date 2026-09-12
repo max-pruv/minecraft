@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js'];
+const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js', 'manhattan.js'];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -44,10 +44,10 @@ const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js',
 // créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
-  'src/net.js': ['reseau.js', 'visio.js', 'hote.js'],
-  'src/cloud.js': ['reseau.js', 'reglages.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
+  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
-  'src/sync.js': ['sauvegarde.js', 'reglages.js'],
+  'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
   // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
   // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
@@ -59,7 +59,7 @@ const GARDIENS = {
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
   // libération de trop passerait sans réveiller la suite qui la verrait.
   'src/liberer.js': ['monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js'],
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
@@ -83,28 +83,28 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/carte.js': ['carte.js', 'carteMonde.js'],
+  'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
-  'src/washington.js': ['washington.js', 'plafond.js'],
+  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js'],
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js'],
-  'src/player.js': ['plafond.js', 'monte.js'],
+  'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
-  'src/education.js': ['reglages.js', 'parent.js'],
-  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js'],
+  'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
+  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Les passants des villes : la vie des rues se prouve dans monte.js.
-  'src/passants.js': ['monte.js'],
+  'src/passants.js': ['monte.js', 'manhattan.js'],
   // Les poissons : la vie de la mer se prouve au même endroit.
   'src/poissons.js': ['monte.js'],
-  'src/animals.js': ['monte.js'],
-  'src/montures.js': ['monte.js'],
+  'src/animals.js': ['monte.js', 'manhattan.js'],
+  'src/montures.js': ['monte.js', 'manhattan.js'],
   'src/avions.js': ['monte.js', 'carteMonde.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
@@ -114,8 +114,8 @@ const GARDIENS = {
   'src/fun.js': ['monte.js', 'carte.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js'],
-  'index.html': ['carte.js', 'reglages.js', 'maj.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js'],
+  'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
   // trous, pas des oublis de confort. `src/visio.js` ne lançait pas
@@ -126,6 +126,10 @@ const GARDIENS = {
   // Les villes bâties à la main : elles dessinent leur relief et leurs
   // destinations, exactement comme Nice et Londres, déjà listées.
   'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js'],
+  'src/manhattan-plan.js': ['manhattan.js', 'plafond.js'],
+  'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js'],
+  'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
+  'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
@@ -148,14 +152,14 @@ const GARDIENS = {
   // de la sauvegarde, et cela doit se prouver comme telle.
   'src/garages.js': ['sauvegarde.js', 'monte.js'],
   'src/visio.js': ['visio.js', 'reseau.js'],
-  'src/partage.js': ['reseau.js', 'parent.js'],
+  'src/partage.js': ['reseau.js', 'parent.js', 'manhattan.js'],
   'src/siege.js': ['monte.js', 'washington.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,
   'src/mesher.js': SUITES,
   'src/textures.js': SUITES,
-  'src/sky.js': ['carte.js', 'monte.js'],
+  'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],
   'src/modeles.js': ['monte.js'],

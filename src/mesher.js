@@ -202,6 +202,9 @@ class GeomBuffer {
 const masqueReserve = [];
 
 export function buildChunkGeometry(world, cx, cz) {
+  if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
+    return { solid: null, water: null, lumineux: null, props: [] };
+  }
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
   const lumineux = new GeomBuffer();
@@ -210,18 +213,20 @@ export function buildChunkGeometry(world, cx, cz) {
   const ox = cx * CHUNK, oz = cz * CHUNK;
   const props = [];
   const baseX = cx * CHUNK, baseZ = cz * CHUNK;
-  const data = world.ensureChunk(cx, cz);
+  const source = world.ensureChunk(cx, cz);
+  const data = world.visualChunk ? world.visualChunk(cx,cz,source) : source;
 
   // inutile de monter plus haut que le bloc le plus haut du chunk :
   // au-dessus, c'est de l'air, qui n'émet aucune face
-  const topY = Math.min(world.chunkTop(cx, cz), HEIGHT - 1);
+  const topY = Math.min(world.visualTop ? world.visualTop(cx,cz) : world.chunkTop(cx, cz), HEIGHT - 1);
 
   const localGet = (x, y, z) => {
     if (y < 0 || y >= HEIGHT) return BLOCK.AIR;
     if (x >= 0 && x < CHUNK && z >= 0 && z < CHUNK) {
       return data[x + z * CHUNK + y * CHUNK * CHUNK];
     }
-    return world.getBlock(baseX + x, y, baseZ + z);
+    const id=world.getBlock(baseX + x, y, baseZ + z);
+    return world.visualBlock ? world.visualBlock(baseX+x,y,baseZ+z,id) : id;
   };
 
   // Les objets décoratifs sont de vrais maillages 3D, pas des cubes : on les

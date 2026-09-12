@@ -47,6 +47,13 @@ import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe } from './visio.js';
 
+// Carte urbaine indépendante : chargement à la demande, sans modifier la Terre.
+const EN_MANHATTAN = new URLSearchParams(location.search).get('carte') === 'manhattan';
+const urbain = EN_MANHATTAN ? await import('./manhattan-world.js') : null;
+const planUrbain = EN_MANHATTAN ? await import('./manhattan-plan.js') : null;
+const renduUrbain = EN_MANHATTAN ? await import('./manhattan-render.js') : null;
+const contexteCarte = ctx => EN_MANHATTAN ? planUrbain.contexteManhattan(ctx) : ctx;
+
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
@@ -161,7 +168,7 @@ function ajusterLaVue() {
   const l = canvas.clientWidth || window.innerWidth;
   const h = canvas.clientHeight || window.innerHeight;
   if (!l || !h) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, EN_MANHATTAN ? ((new URLSearchParams(location.search).get('qualite') || (IS_TOUCH ? 'tablette' : 'haute')) === 'tablette' ? 1.25 : 1.75) : 2);
   // On compare à ce que le canvas PORTE, jamais à ce qu'on croit lui avoir
   // donné. La nuance décide de tout : une surface abîmée par autre chose que
   // nous — une suspension d'iOS — laisse notre mémoire intacte et fausse, et
@@ -238,7 +245,7 @@ activerTuilage(litMaterial);
   World.migrate(dernier);
 })();
 
-const world = new World();
+const world = EN_MANHATTAN ? new urbain.ManhattanWorld() : new World();
 
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
 // exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
@@ -246,6 +253,7 @@ const world = new World();
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
 scene.add(horizon.objet());
+horizon.objet().visible = !EN_MANHATTAN;
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
 // Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
@@ -260,6 +268,7 @@ scene.add(horizon.objet());
 world.loadEdits();
 
 const player = new Player(camera, world);
+const villeRealiste = EN_MANHATTAN ? new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS}) : null;
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const creatureManager = new CreatureManager(scene, world, player);
@@ -301,6 +310,9 @@ let poissons = null;
 
 // Spawn on land near the origin.
 (function findSpawn() {
+  if (EN_MANHATTAN) {
+    const p = planUrbain.DEPART; player.setSpawn(p.x,p.y,p.z); player.yaw=p.yaw; return;
+  }
   let best = null;
   for (let z = -48; z <= 48; z += 2) {
     for (let x = -48; x <= 48; x += 2) {
@@ -360,6 +372,7 @@ function meshChunk(cx, cz) {
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
+    entry.solid.castShadow = EN_MANHATTAN; entry.solid.receiveShadow = EN_MANHATTAN;
     scene.add(entry.solid);
   }
   if (water) {
@@ -469,6 +482,14 @@ function updateChunks() {
   const say = (msg, color) => creatureManager.toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
+  if (EN_MANHATTAN) {
+    npcs = [marlon, cornichon];
+    passants = createPassants({scene,world,player,toast:say,npcs, sitesCarte:[{nom:'Manhattan',x:0,z:-500,r:3300,graine:226}], seulementTrottoir:true});
+    poissons = createPoissons({scene,world,player});
+    vehicules = createVehicules({scene,player});
+    circulationsEnAttente = planUrbain.circuitsManhattan();
+    return;
+  }
   npcs = [
     marlon, cornichon,
     ...createHeroes(scene, world, player, say, player.pos.x, player.pos.z),
@@ -636,7 +657,7 @@ let saveTimer = null;
 // One saved position per context ('local' or a world code), per profile.
 
 const POS_KEY = 'web-minecraft-pos-v1';
-let posCtx = 'local';
+let posCtx = contexteCarte('local');
 const posRestored = new Set();
 const posAppliquee = new Map(); // contexte -> horodatage de la position posée
 let posEntree = 0;              // instant d'entrée dans le contexte courant
@@ -808,7 +829,7 @@ resumeBtn.addEventListener('click', () => {
 
 document.getElementById('play-btn').addEventListener('click', () => {
   world.switchContext('local');
-  posCtx = 'local';
+  posCtx = contexteCarte('local');
   restorePosition();
   startGame();
 });
@@ -1424,7 +1445,7 @@ async function listerLesAmis() {
     .filter((p) => estUnJoueur(p.nom) && p.nom.toLowerCase() !== moi)
     .filter((p) => maintenant - (p.live.at || 0) < AMI_EN_LIGNE_MS)
     // ceux qui sont déjà dans NOTRE monde n'ont pas besoin d'invitation
-    .filter((p) => !(net && net.active && p.live.monde === net.code));
+    .filter((p) => !(net && net.active && p.live.monde === net.code && (p.live.carte === 'manhattan') === EN_MANHATTAN));
 
   zone.innerHTML = '';
   if (!amis.length) {
@@ -1462,7 +1483,7 @@ document.getElementById('pp-amis-btn').addEventListener('click', listerLesAmis);
 async function inviter(nom) {
   if (!net || !net.active) return false;
   try {
-    await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, at: Date.now() });
+    await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, carte: EN_MANHATTAN ? 'manhattan' : 'terre', at: Date.now() });
     creatureManager.toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
     return true;
   } catch {
@@ -1485,7 +1506,7 @@ function recevoirInvitation(inv) {
   if (inv.at <= vue) return;
   try { localStorage.setItem(INVIT_VUE, String(inv.at)); } catch { /* ignore */ }
   // Déjà dedans : l'invitation est arrivée après coup, il n'y a rien à faire.
-  if (net && net.active && net.code === inv.code) return;
+  if (net && net.active && net.code === inv.code && (inv.carte === 'manhattan') === EN_MANHATTAN) return;
   montrerInvitation(inv);
   notifierSysteme(`🎉 ${inv.de} t'invite !`,
     `Rejoins son monde ${inv.code} — ouvre le jeu et clique sur « Rejoindre ».`, 'wm-invit');
@@ -1495,6 +1516,7 @@ function montrerInvitation(inv) {
   document.getElementById('invit-txt').textContent =
     `${inv.de} t'invite à jouer dans son monde !`;
   document.getElementById('invit-code').textContent = inv.code;
+  document.getElementById('invit-code').dataset.carte = inv.carte || 'terre';
   document.getElementById('invit-panel').style.display = 'flex';
 }
 
@@ -1510,6 +1532,11 @@ document.getElementById('invit-rejoindre').addEventListener('click', () => {
 // celui-ci avant d'ouvrir l'autre — sans cela, deux sessions se disputaient le
 // même joueur et les avatars de l'ancien monde restaient plantés là.
 async function accepterInvitation(code) {
+  const destination = document.getElementById('invit-code').dataset.carte || 'terre';
+  if ((destination === 'manhattan') !== EN_MANHATTAN) {
+    world.saveEdits(); savePosition();
+    const url=new URL(location.href); url.searchParams.set('carte',destination); url.searchParams.set('rejoindre',code); location.href=url.href; return;
+  }
   fermerInvitation();
   document.getElementById('players-panel').style.display = 'none';
   if (net) {
@@ -1715,6 +1742,7 @@ function presenceNow() {
   return {
     at: Date.now(),
     device: deviceId,
+    carte: EN_MANHATTAN ? 'manhattan' : 'terre',
     monde: net && net.active ? net.code : null,   // null = monde local
     joue: !!running,
     joueurs: net && net.active ? net.playerCount() : 0,
@@ -2217,6 +2245,7 @@ function loadRetraits() {
   try { return JSON.parse(localStorage.getItem(WORLDS_DEL_KEY) || '{}'); } catch { return {}; }
 }
 function rememberWorld(code) {
+  code = contexteCarte(code);
   const worlds = loadWorlds().filter((w) => w.code !== code);
   worlds.unshift({ code, t: Date.now() });
   try { localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds.slice(0, 5))); } catch { /* ignore */ }
@@ -2261,7 +2290,7 @@ function oublierMonde(code) {
 function renderRecentWorlds() {
   const row = document.getElementById('recent-worlds');
   row.innerHTML = '';
-  const worlds = loadWorlds();
+  const worlds = loadWorlds().filter(w => EN_MANHATTAN ? w.code.startsWith(planUrbain.MANHATTAN_ID + ':') : !w.code.includes(':'));
   if (worlds.length === 0) {
     const hint = document.createElement('div');
     hint.style.cssText = 'font-size:13px;color:#8894b0;';
@@ -2270,17 +2299,18 @@ function renderRecentWorlds() {
     return;
   }
   for (const w of worlds) {
+    const roomCode = EN_MANHATTAN ? w.code.split(':').at(-1) : w.code;
     const chip = document.createElement('div');
     chip.className = 'world-chip';
     const btn = document.createElement('button');
     btn.className = 'world-btn';
-    btn.textContent = `🌍 Monde ${w.code}`;
-    btn.addEventListener('click', () => openWorld(w.code));
+    btn.textContent = `${EN_MANHATTAN ? '🏙' : '🌍'} Monde ${roomCode}`;
+    btn.addEventListener('click', () => openWorld(roomCode));
     const open = document.createElement('button');
     open.className = 'world-open';
     open.textContent = 'Jouer ➜';
     open.title = 'Entrer dans ce monde';
-    open.addEventListener('click', () => openWorld(w.code));
+    open.addEventListener('click', () => openWorld(roomCode));
     const del = document.createElement('button');
     del.className = 'world-del';
     del.textContent = '✕';
@@ -2719,11 +2749,11 @@ async function openWorld(code) {
     grandBandeau('🚪 MONDE OUVERT !', `Personne n'est encore là. Donne le code ${code} à ton ami·e !`, 5200);
   }
   rememberWorld(code);
-  cloud.attach(code);
+  cloud.attach(contexteCarte(code));
   onlineStatus.textContent = '';
   onlineMenu.style.display = 'none';
   showOnlineUI();
-  posCtx = code;
+  posCtx = contexteCarte(code);
   restorePosition();
   startGame();
 }
@@ -2947,10 +2977,10 @@ document.getElementById('online-play-btn').addEventListener('click', () => {
   // devant un menu qui ne répondait plus.
   if (!net || !net.active) return;
   rememberWorld(net.code);
-  cloud.attach(net.code);
+  cloud.attach(contexteCarte(net.code));
   onlineMenu.style.display = 'none';
   showOnlineUI();
-  posCtx = net.code;
+  posCtx = contexteCarte(net.code);
   restorePosition();
   startGame();
 });
@@ -4523,6 +4553,7 @@ window.__carteControle = () => {
 function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
   const wx = pcx + i - radius, wz = pcz + j - radius;
   let color = [20, 26, 40], h = 0;
+  if (world.mapColor) { const c=world.mapColor(wx,wz); const o=(j*N+i)*4; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2];buf[o+3]=255;return; }
   // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
   // chaque point de la carte traverserait d'abord tout le ciel vide, et la
   // carte coûterait de plus en plus cher à chaque fois qu'on relève le
@@ -4662,7 +4693,7 @@ function drawMap(mapCanvas, radius, fondEntier = false) {
   if (radius >= 60) {
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    for (const c of [...CITIES, ...PLACES]) {
+    for (const c of (world.mapPlaces || [...CITIES, ...PLACES])) {
       const [mx, my] = toMap(c.x, c.z);
       if (mx < 24 || mx > size - 24 || my < 12 || my > size - 6) continue;
       ctx.lineWidth = 3;
@@ -5084,6 +5115,7 @@ const seasonPoints = new THREE.Points(seasonGeo, new THREE.PointsMaterial({
   color: SEASON.color, size: 0.24, transparent: true, opacity: 0.75, sizeAttenuation: true,
 }));
 scene.add(seasonPoints);
+seasonPoints.visible = !EN_MANHATTAN;
 let seasonTime = 0, seasonToastShown = false;
 
 function updateSeasons(dt) {
@@ -5298,7 +5330,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5342,8 +5374,8 @@ function frame(now) {
     signalerElanDeVol();
     creatureManager.update(dt);
     animalManager.update(dt);
-    garagiste(dt);
-    aeroportiste(dt);
+    if (!EN_MANHATTAN) garagiste(dt);
+    if (!EN_MANHATTAN) aeroportiste(dt);
     animerLesVilles(dt);
     // Les personnages lointains — la garnison du château, les astronautes de
     // Mars — n'ont pas besoin d'être animés : personne ne les voit, et leur
@@ -5396,12 +5428,12 @@ function frame(now) {
   // Le remplissage est borné en temps, comme le maillage ; la découpe — les
   // cases qu'on retire parce que le vrai monde les couvre — se refait à une
   // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
-  horizon.maj(player.pos.x, player.pos.z, 6);
+  if (!EN_MANHATTAN) horizon.maj(player.pos.x, player.pos.z, 6);
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
   // un quart de seconde de ciel vide au milieu d'un virage.
   const vise = -Math.sin(player.yaw), viseZ = -Math.cos(player.yaw);
-  if (horizonDecoupe() || Math.abs(player.yaw - horizonCap) > 0.5) {
+  if (!EN_MANHATTAN && (horizonDecoupe() || Math.abs(player.yaw - horizonCap) > 0.5)) {
     horizonCap = player.yaw;
     horizon.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
       player.pos.x, player.pos.z, vise, viseZ);
@@ -5411,7 +5443,7 @@ function frame(now) {
   updateClouds(dt);
   updateBirds(dt);
   updatePlane(dt);
-  updateSeasons(dt);
+  if (!EN_MANHATTAN) updateSeasons(dt);
   updateHud(dt);
   updateCreatureLabel();
   updateRemotePlayers(dt);
@@ -5458,6 +5490,7 @@ function frame(now) {
     }
   }
 
+  if (villeRealiste) villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -5469,3 +5502,21 @@ requestAnimationFrame(frame);
 requestAnimationFrame(() => {
   document.getElementById('boot-loader').classList.add('hidden');
 });
+
+const carteChoix=document.createElement('nav');
+carteChoix.id='cartes-choix'; carteChoix.setAttribute('aria-label','Choisir une carte');
+carteChoix.innerHTML=`<span>CARTE</span><button data-carte="terre" aria-pressed="${!EN_MANHATTAN}">🌍 La Terre</button><button data-carte="manhattan" aria-pressed="${EN_MANHATTAN}">🏙 Manhattan · ville réaliste</button>`;
+document.getElementById('overlay').appendChild(carteChoix);
+for(const b of carteChoix.querySelectorAll('button')) b.onclick=()=>{
+  world.saveEdits();savePosition();const u=new URL(location.href);u.searchParams.set('carte',b.dataset.carte);u.searchParams.delete('rejoindre');location.href=u.href;
+};
+if(EN_MANHATTAN) {
+  document.body.classList.add('manhattan');
+  const badge=document.createElement('div');badge.id='manhattan-adresse';document.body.appendChild(badge);
+  villeRealiste.onAdresse=texte=>{badge.textContent=texte;};
+}
+const invitationCarte=new URLSearchParams(location.search).get('rejoindre');
+if(invitationCarte && /^\d{5}$/.test(invitationCarte)) {
+  document.getElementById('invit-code').dataset.carte=EN_MANHATTAN?'manhattan':'terre';
+  montrerInvitation({de:'Un ami',code:invitationCarte,carte:EN_MANHATTAN?'manhattan':'terre'});
+}

@@ -744,7 +744,50 @@ Si la version ne correspond pas à la dernière publiée :
 
 ## Architecture — décisions et raisons
 
+### Manhattan indépendante (`manhattan-*.js`, v239)
+
+La refonte réaliste demandée dans la PR #226 ne déplace aucun bloc de la
+Terre. `?carte=manhattan` charge `ManhattanWorld`, un générateur autonome qui
+hérite du journal d'opérations de `World`. `manhattan-v1:` préfixe les
+contextes de blocs, positions, parties récentes, sauvegardes cloud et canaux
+réseau ; le code court montré à l'enfant reste inchangé. Une invitation
+porte la carte. Ne jamais retirer ce préfixe pour « simplifier » le stockage.
+L'ancienne Manhattan reste accessible sur la Terre. La migration historique
+de la Terre ignore les contextes nommés avec `:` ; elle ne doit pas appliquer
+une différence de relief terrestre à une carte autonome.
+
+Le plan urbain est commun aux collisions et à la géométrie. Le mailleur
+ordinaire se réactive autour des éditions (voisins compris pour les
+excavations) et dessine les blocs posés ; le sol intact ne se dessine jamais
+en double sous le maillage urbain. Par ailleurs, le renderer urbain dessine les originaux
+non modifiés. Une édition invalide la façade et son secteur de sol ; un
+changement de contexte ou une réinitialisation invalide aussi les travaux
+progressifs en cours. Les trames publiées de `manhattan-v1` sont désormais
+figées comme toute carte sauvegardable.
+
+Les détails sont instanciés, remplacés par des silhouettes à distance et
+chargés progressivement. Libérer un lot rend ses tampons d'instances sans
+détruire les primitives communes. Le budget tablette borne densité de
+pixels, ombres et portée. Mesurer le GPU natif séparément de SwiftShader :
+une cadence de banc logiciel n'est pas une promesse de performance iPad.
+
+Les assets urbains sont originaux et procéduraux, sans contenu de GTA. Le
+guide `docs/manhattan.md` porte la portée exacte et les limites. Les quatre
+modules entrent dans le cache PWA et dans les gardiens de `tests/tout.js`.
+`tests/manhattan.js` éprouve isolation, édition visible et partage de carte.
+
+Le paramètre de banc `cloud=` doit désactiver le cloud même avec une valeur
+vide : tester sa présence (`has`), pas la vérité de sa valeur (`get`). Sans
+cela un essai local utilise à tort le backend public.
+
 ### Le jeu à plusieurs (`net.js`, `relaisnuage.js`, `cloud.js`)
+
+Le diagnostic de relais reste acquis pendant une `NetSession`. Il ne se
+réinitialise pas dans `connectToHost` : à vingt secondes, le battement peut
+ouvrir une reconnexion avant l’expiration de la tentative initiale et effacer
+la preuve qu’un relais avait répondu. Le scénario VPN de `reseau.js` couvre
+cette course. Une nouvelle ouverture construit une nouvelle session.
+
 
 Trois chemins, du plus rapide au plus obstiné :
 

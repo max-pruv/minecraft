@@ -144,6 +144,7 @@ export class NetSession {
   start(code, isHost, profile, patience) {
     this.patience = patience;
     this.code = code.toUpperCase();
+    this.channel = this.hooks.world.mapId ? this.hooks.world.mapId + ':' + this.code : this.code;
     this.isHost = isHost;
     this.profile = profile;
     this.active = true;
@@ -174,7 +175,7 @@ export class NetSession {
         const [h, p] = decodeURIComponent(m[1]).split(':');
         Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
       }
-      this.peer = isHost ? new Peer(ID_PREFIX + this.code, peerOpts) : new Peer(peerOpts);
+      this.peer = isHost ? new Peer(ID_PREFIX + this.channel.replace(':','-'), peerOpts) : new Peer(peerOpts);
       let settled = false;
       const abandon = setTimeout(() => {
         if (settled) return;
@@ -310,7 +311,7 @@ export class NetSession {
             // monde… » sans verdict. Trois secondes, puis on tranche comme
             // avant : introuvable.
             Promise.race([
-              cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code),
+              cloud.relaisHoteRecent(this.channel, ID_PREFIX + this.channel.replace(':','-')),
               new Promise((ok) => setTimeout(() => ok(false), 3000)),
             ])
               .then((tenu) => {
@@ -409,9 +410,9 @@ export class NetSession {
     // exactement quelles lignes du relais sont les siennes et peut les
     // effacer. L'hôte, lui, reconnaît son écho sans même avoir besoin de la
     // présentation.
-    const monId = this.isHost ? ID_PREFIX + this.code
+    const monId = this.isHost ? ID_PREFIX + this.channel.replace(':','-')
       : `${this.prefixeAppareil()}${Math.random().toString(36).slice(2, 8)}`;
-    this.bus = new BusNuage(this.hooks.cloud, this.code, monId, {
+    this.bus = new BusNuage(this.hooks.cloud, this.channel, monId, {
       surPair: (conn) => {
         // Un pair arrivé par le nuage est un pair comme un autre : on
         // l'inscrit et on se présente. Tout ce qui suit l'ignore.
@@ -468,7 +469,7 @@ export class NetSession {
   purgerMesFantomes(monId) {
     const cloud = this.hooks.cloud;
     if (!cloud || !cloud.configured || !this.deviceId) return;
-    cloud.relaisPurgerMesFantomes(this.code, this.prefixeAppareil(), monId).catch(() => {});
+    cloud.relaisPurgerMesFantomes(this.channel, this.prefixeAppareil(), monId).catch(() => {});
   }
 
   // Jouer sans courtier du tout : le nuage porte la présentation ET la partie.
@@ -488,7 +489,7 @@ export class NetSession {
     // mène nulle part, sans un mot, au lieu de lire une phrase honnête. Un
     // aller-retour tranche, et quatre secondes suffisent à le savoir.
     const repond = await Promise.race([
-      cloud.relaisDernier(this.code).then(() => true).catch(() => false),
+      cloud.relaisDernier(this.channel).then(() => true).catch(() => false),
       new Promise((ok) => setTimeout(() => ok(false), 4000)),
     ]);
     if (!repond || !this.active) return false;
@@ -497,7 +498,7 @@ export class NetSession {
     if (!bus) return false;
     this.link('nuage');
     if (!this.isHost) {
-      const conn = bus.connecter(ID_PREFIX + this.code);
+      const conn = bus.connecter(ID_PREFIX + this.channel.replace(':','-'));
       this.inscrireSiNouveau(conn);
       this.greet(conn);
     }
@@ -516,7 +517,7 @@ export class NetSession {
     const bus = this.ouvrirRelaisNuage();
     if (!bus) return false;
     bus.reveiller();
-    const conn = bus.connecter(ID_PREFIX + this.code);
+    const conn = bus.connecter(ID_PREFIX + this.channel.replace(':','-'));
     this.inscrireSiNouveau(conn);
     this.greet(conn);
     return true;
@@ -599,7 +600,7 @@ export class NetSession {
       }
     };
     this.link('signal', 'Passage par le nuage…');
-    const conn = bus.connecter(ID_PREFIX + this.code);
+    const conn = bus.connecter(ID_PREFIX + this.channel.replace(':','-'));
     this.registerConn(conn);
     this.greet(conn);
     // On laisse à l'hôte le temps de relever sa boîte et de répondre. Deux
@@ -637,7 +638,11 @@ export class NetSession {
   }
 
   connectToHost(done) {
-    this.relaisVu = false;
+    // La preuve qu'un relais répond appartient à cette session. Le battement
+    // peut relancer le lien après vingt secondes, juste avant que la patience
+    // de l'ouverture expire : la remettre à zéro ici faisait alors accuser
+    // le Wi-Fi malgré un relais reçu. Une nouvelle ouverture crée sa propre
+    // NetSession, donc un diagnostic neuf, sans hériter du réseau précédent.
     // UNE SEULE TENTATIVE VIVANTE À LA FOIS.
     //
     // Chaque essai fabrique un canal WebRTC, et un canal jamais refermé garde
@@ -655,7 +660,7 @@ export class NetSession {
     if (this._essai && !this._essai.open) {
       try { this._essai.close(); } catch { /* déjà refermée */ }
     }
-    const conn = this.peer.connect(ID_PREFIX + this.code, { reliable: true });
+    const conn = this.peer.connect(ID_PREFIX + this.channel.replace(':','-'), { reliable: true });
     if (!conn) { done?.(new Error('Connexion impossible')); return; }
     this._essai = conn;
     this.surveillerLesChemins(conn);
@@ -797,7 +802,7 @@ export class NetSession {
     let tenu;
     try {
       tenu = await Promise.race([
-        cloud.relaisHoteRecent(this.code, ID_PREFIX + this.code),
+        cloud.relaisHoteRecent(this.channel, ID_PREFIX + this.channel.replace(':','-')),
         new Promise((ok) => setTimeout(() => ok(true), 3000)), // verdict pas clair -> on ne bouscule rien
       ]);
     } catch { tenu = true; }
@@ -810,7 +815,7 @@ export class NetSession {
       const [h, p] = decodeURIComponent(m[1]).split(':');
       Object.assign(peerOpts, { host: h, port: Number(p) || 443, path: '/', secure: false, key: 'peerjs' });
     }
-    const candidat = new Peer(ID_PREFIX + this.code, peerOpts);
+    const candidat = new Peer(ID_PREFIX + this.channel.replace(':','-'), peerOpts);
     let tranche = false;
     const renoncer = () => {
       if (tranche) return;
@@ -842,7 +847,7 @@ export class NetSession {
     // Le lien vers l'ancien maître n'a plus de sens ; les invités que lui
     // seul reliait n'étaient de toute façon connus de nous que par son
     // intermédiaire — il n'y a rien d'autre à emporter.
-    this.conns.delete(ID_PREFIX + this.code);
+    this.conns.delete(ID_PREFIX + this.channel.replace(':','-'));
     for (const a of this.audios.values()) a.remove();
     this.audios.clear();
     this.calls.clear();
@@ -924,14 +929,14 @@ export class NetSession {
         // tout de suite et on se re-annonce, plutôt que d'attendre un tour de
         // sondage qui peut tarder après une longue veille.
         if (this.bus) this.reprendreParLeNuage();
-        if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
+        if (!this.isHost && !this.conns.has(ID_PREFIX + this.channel.replace(':','-'))) this.rejoinHost();
       }
     };
     this._auRetourDuReseau = () => {
       if (!this.active) return;
       this._reveilA = Date.now();
       if (this.peer && this.peer.disconnected) { try { this.peer.reconnect(); } catch { /* au tour suivant */ } }
-      if (!this.isHost && !this.conns.has(ID_PREFIX + this.code)) this.rejoinHost();
+      if (!this.isHost && !this.conns.has(ID_PREFIX + this.channel.replace(':','-'))) this.rejoinHost();
     };
     document.addEventListener('visibilitychange', this._veille);
     window.addEventListener('online', this._auRetourDuReseau);
@@ -993,7 +998,7 @@ export class NetSession {
       // et il y en aura d'autres. On rétablit donc l'invariant à chaque
       // battement plutôt que de courir après chacun d'eux.
       if (!this.isHost && this.active && !this._rejoining
-        && !this.conns.has(ID_PREFIX + this.code)) {
+        && !this.conns.has(ID_PREFIX + this.channel.replace(':','-'))) {
         this.rejoinHost();
       }
       for (const [id, c] of [...this.conns]) {
@@ -1198,7 +1203,7 @@ export class NetSession {
     this.conns.delete(id);
     // Pour un invité, perdre ce lien-là, c'est perdre le monde entier :
     // tout passe par l'hôte.
-    if (!this.isHost && this.active && id === ID_PREFIX + this.code) this.rejoinHost();
+    if (!this.isHost && this.active && id === ID_PREFIX + this.channel.replace(':','-')) this.rejoinHost();
     if (this.isHost && c.pret) { // tell the other guests this player is gone
       for (const o of this.conns.values()) this.envoyer(o, { t: 'bye', from: id });
     }
@@ -1910,7 +1915,7 @@ export class NetSession {
     // L'hôte qui part éteint son phare : sans cela, son propre monde lui
     // semblait « tenu » à son retour, et il ne pouvait plus le rouvrir.
     if (this.isHost && this.hooks.cloud && this.hooks.cloud.configured) {
-      this.hooks.cloud.relaisEteindre(this.code, ID_PREFIX + this.code).catch(() => {});
+      this.hooks.cloud.relaisEteindre(this.channel, ID_PREFIX + this.channel.replace(':','-')).catch(() => {});
     }
     this._basculeAbonnes = null;   // plus personne à prévenir : la session est close
     if (this.bus) { try { this.bus.arreter(); } catch { /* déjà arrêté */ } this.bus = null; }

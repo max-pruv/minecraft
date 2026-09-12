@@ -1269,6 +1269,9 @@ export function migrerLesBlocs(lire, ecrire) {
   let deplaces = 0, laisses = 0, intacts = 0;
   const sols = new Map();       // une colonne se calcule une fois, pas par bloc
   for (const [ctx, map] of Object.entries(tout)) {
+    // Les cartes autonomes ont leur propre terrain ; la migration historique
+    // de la Terre ne doit jamais déplacer leurs constructions.
+    if (ctx.includes(':')) continue;
     const neuf = {};
     for (const [k, entry] of Object.entries(map || {})) {
       const [x, y, z] = k.split(',').map(Number);

@@ -20,6 +20,52 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v239 — Manhattan à l'échelle du joueur, sans déplacer les constructions
+
+**Pourquoi.** La Manhattan de la Terre est trop comprimée pour accueillir des
+rues à la largeur des voitures, des vitrines et une architecture détaillée.
+Un remplacement de ses blocs déplacerait les constructions sauvegardées.
+La PR #226 avait par ailleurs divergé de `main` et devait conserver ses
+corrections de voirie tout en intégrant les améliorations de mémoire et de vol
+de la v238.
+
+**Ce que ça change.** Le menu propose une carte Manhattan indépendante :
+2 353 bâtiments, treize quartiers, Broadway, Central Park et sept monuments
+aux volumes spécifiques. Les façades proches ont fenêtres en retrait,
+encadrements, corniches, commerces et équipements de toiture. Les matériaux
+physiques, ombres, reflets d'environnement, lumières nocturnes, mobilier,
+arbres, passants et 84 circuits de voitures sont intégrés au jeu existant.
+On peut se déplacer, construire, détruire, conduire, jouer au toucher et
+rejoindre ses amis ; l'éducation reste active. La Terre garde ses blocs et ses
+positions. Les contextes de sauvegarde, le cloud et le réseau sont séparés
+par carte. Les ressources urbaines sont originales et procédurales.
+
+Le rendu combine instancing, façades proches et silhouettes lointaines,
+chargement progressif et budgets ordinateur/tablette. Les quatre nouveaux
+modules entrent dans le cache PWA v239. La migration historique du relief
+ignore les cartes autonomes et `cloud=` désactive effectivement les services
+distants dans le banc d'essai. Le portail a aussi révélé une course déjà
+présente sur `main` : une reconnexion à vingt secondes effaçait la réponse du
+relais et affichait un conseil Wi-Fi erroné. Le diagnostic conserve désormais
+cette preuve pendant la session.
+
+**Ce qui le prouve.** Le scénario `tests/manhattan.js` vérifie les sauvegardes
+séparées, le mur qui bloque puis se détruit visiblement, la construction,
+la conduite au joystick, les destinations, les circuits sans obstacle, les
+lumières de nuit, le quiz, deux joueurs échangeant blocs et avatars, la clé
+de sauvegarde cloud et le redémarrage hors ligne. Son contrôle d'entrée est
+rouge sur `main` v238. Le portail est vert : démarrage et quatorze suites, dont les 24 témoins
+Manhattan. Onze captures de jeu ont été inspectées, au sol et en hauteur,
+de jour comme de nuit, sans erreur JavaScript/WebGL dans ce parcours.
+Les résultats et conditions sont consignés dans `docs/manhattan-validation.md`.
+
+La portée exacte et les limites se lisent dans `docs/manhattan.md` : ville
+interprétée et comprimée, intérieurs sommaires, reflets statiques, transitions
+de détail visibles et circulation qui ne répond pas encore aux feux. Aucune
+fidélité AAA ni validation sur iPad physique n'est revendiquée.
+
+---
+
 ## PR #226 — Des avenues réelles où aucune voiture n'a jamais roulé
 
 Une passe ville par ville sur la dette déclarée depuis la v211 : des avenues
