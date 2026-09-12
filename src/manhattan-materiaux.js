@@ -1,18 +1,18 @@
 // Matériaux originaux générés localement : aucun téléchargement ni licence
 // tierce supplémentaire. Les motifs sont en mètres du monde, pas étirés par
 // la taille des cubes instanciés. PBR Three.js r160, reflets PMREM.
-import * as THREE from 'three';
-import { ALEA } from './manhattan-plan.js';
+import * as THREE from "three";
+import { ALEA } from "./manhattan-plan.js";
 function texture(type) {
-  const c = document.createElement('canvas');
+  const c = document.createElement("canvas");
   c.width = c.height = 256;
-  const ctx = c.getContext('2d');
+  const ctx = c.getContext("2d");
   const img = ctx.createImageData(256, 256);
   for (let y = 0; y < 256; y++)
     for (let x = 0; x < 256; x++) {
       let n = ALEA(x, y),
         v = 180 + (n - 0.5) * 35;
-      if (type === 'brick') {
+      if (type === "brick") {
         const row = Math.floor(y / 24),
           dx = (x + (row % 2) * 32) % 64;
         v =
@@ -22,12 +22,12 @@ function texture(type) {
               (ALEA(Math.floor((x + (row % 2) * 32) / 64), row) - 0.5) * 44 +
               (n - 0.5) * 20;
       }
-      if (type === 'stone')
+      if (type === "stone")
         v = x % 128 < 2 || y % 64 < 2 ? 142 : 210 + (n - 0.5) * 15;
-      if (type === 'paving')
+      if (type === "paving")
         v = x % 128 < 2 || y % 128 < 2 ? 113 : 195 + (n - 0.5) * 25;
-      if (type === 'asphalt') v = 100 + (n - 0.5) * 44 + (n > 0.96 ? 30 : 0);
-      if (type.startsWith('facade')) {
+      if (type === "asphalt") v = 100 + (n - 0.5) * 44 + (n > 0.96 ? 30 : 0);
+      if (type.startsWith("facade")) {
         const px = x % 64,
           py = y % 64;
         const win = px > 18 && px < 44 && py > 9 && py < 49;
@@ -35,13 +35,13 @@ function texture(type) {
           ? 68 + ((Math.floor(x / 64) + Math.floor(y / 64)) % 3) * 16
           : 196 + (n - 0.5) * 12;
         if (py < 3) v = 145;
-        if (type === 'facadeglass')
+        if (type === "facadeglass")
           v =
             px < 3 || py < 3
               ? 102
               : 120 + ALEA(Math.floor(x / 64), Math.floor(y / 64)) * 65;
       }
-      if (type === 'facadelights')
+      if (type === "facadelights")
         v =
           x % 64 > 18 &&
           x % 64 < 44 &&
@@ -50,7 +50,7 @@ function texture(type) {
           ALEA(Math.floor(x / 64) + 11, Math.floor(y / 64)) > 0.42
             ? 255
             : 0;
-      if (type === 'metal') v = 180 + (n - 0.5) * 9 + (y % 8 === 0 ? -28 : 0);
+      if (type === "metal") v = 180 + (n - 0.5) * 9 + (y % 8 === 0 ? -28 : 0);
       const i = (y * 256 + x) * 4;
       img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
       img.data[i + 3] = 255;
@@ -74,50 +74,50 @@ function physique(color, map, taille, roughness = 0.8, metalness = 0) {
   if (map) {
     m.onBeforeCompile = (s) => {
       s.vertexShader = s.vertexShader.replace(
-        '#include <common>',
-        '#include <common>\nvarying vec3 villePosition; varying vec3 villeNormale;'
+        "#include <common>",
+        "#include <common>\nvarying vec3 villePosition; varying vec3 villeNormale;",
       );
       s.vertexShader = s.vertexShader.replace(
-        '#include <begin_vertex>',
+        "#include <begin_vertex>",
         `#include <begin_vertex>
         vec4 vp=vec4(position,1.0); vec3 vn=normal;
         #ifdef USE_INSTANCING
           vp=instanceMatrix*vp; vn=mat3(instanceMatrix)*vn;
         #endif
-        villePosition=(modelMatrix*vp).xyz; villeNormale=normalize(mat3(modelMatrix)*vn);`
+        villePosition=(modelMatrix*vp).xyz; villeNormale=normalize(mat3(modelMatrix)*vn);`,
       );
       s.fragmentShader = s.fragmentShader.replace(
-        '#include <common>',
-        '#include <common>\nvarying vec3 villePosition; varying vec3 villeNormale;'
+        "#include <common>",
+        "#include <common>\nvarying vec3 villePosition; varying vec3 villeNormale;",
       );
       s.fragmentShader = s.fragmentShader.replace(
-        '#include <map_fragment>',
+        "#include <map_fragment>",
         `
         vec3 poids=abs(normalize(villeNormale));
         vec2 coord=poids.y>.5 ? villePosition.xz : (poids.x>.5 ? villePosition.zy : villePosition.xy);
         vec4 texel=texture2D(map,coord/${taille.toFixed(2)});
         diffuseColor*=texel;
         // Micro-relief optique conservant les normales et les ombres du bâti.
-      `
+      `,
       );
       s.fragmentShader = s.fragmentShader.replace(
-        '#include <emissivemap_fragment>',
+        "#include <emissivemap_fragment>",
         `
         #ifdef USE_EMISSIVEMAP
           totalEmissiveRadiance *= texture2D(emissiveMap,coord/${taille.toFixed(2)}).rgb;
         #endif
-      `
+      `,
       );
       s.fragmentShader = s.fragmentShader.replace(
-        '#include <bumpmap_pars_fragment>',
+        "#include <bumpmap_pars_fragment>",
         THREE.ShaderChunk.bumpmap_pars_fragment.replaceAll(
-          'vBumpMapUv',
-          `(abs(villeNormale.y)>.5?villePosition.xz:(abs(villeNormale.x)>.5?villePosition.zy:villePosition.xy))/${taille.toFixed(2)}`
-        )
+          "vBumpMapUv",
+          `(abs(villeNormale.y)>.5?villePosition.xz:(abs(villeNormale.x)>.5?villePosition.zy:villePosition.xy))/${taille.toFixed(2)}`,
+        ),
       );
       s.fragmentShader = s.fragmentShader.replace(
-        '#include <roughnessmap_fragment>',
-        `#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor+(texel.r-.5)*.14,.08,1.0);`
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor+(texel.r-.5)*.14,.08,1.0);`,
       );
     };
     m.customProgramCacheKey = () => `manhattan-pbr-${taille}`;
@@ -125,14 +125,14 @@ function physique(color, map, taille, roughness = 0.8, metalness = 0) {
   return m;
 }
 export function materiauxManhattan(renderer) {
-  const brick = texture('brick'),
-    stone = texture('stone'),
-    paving = texture('paving'),
-    asphalt = texture('asphalt'),
-    metal = texture('metal');
-  const facade = texture('facade'),
-    facadeglass = texture('facadeglass'),
-    lights = texture('facadelights');
+  const brick = texture("brick"),
+    stone = texture("stone"),
+    paving = texture("paving"),
+    asphalt = texture("asphalt"),
+    metal = texture("metal");
+  const facade = texture("facade"),
+    facadeglass = texture("facadeglass"),
+    lights = texture("facadelights");
   const mats = {
     farBrick: physique(0xbfa18d, facade, 12, 0.86),
     farLimestone: physique(0xd7d1c0, facade, 12, 0.82),
@@ -147,6 +147,8 @@ export function materiauxManhattan(renderer) {
     path: physique(0xbcb393, paving, 4, 0.95),
     grass: physique(0x647347, asphalt, 3, 1),
     metal: physique(0x555e63, metal, 1, 0.44, 0.65),
+    steel: physique(0xaab3bb, metal, 1, 0.24, 0.85),
+    red: physique(0xb92329, null, 1, 0.36, 0.15),
     roof: physique(0x545958, asphalt, 4, 0.94),
     glass: physique(0x65818b, null, 1, 0.19, 0.55),
     glassDark: physique(0x304a55, null, 1, 0.22, 0.5),
@@ -184,10 +186,10 @@ export function materiauxManhattan(renderer) {
     new THREE.ShaderMaterial({
       side: THREE.BackSide,
       vertexShader:
-        'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+        "varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
       fragmentShader:
-        'varying vec3 p;void main(){float h=normalize(p).y;vec3 c=mix(vec3(.18,.22,.23),vec3(.58,.72,.82),smoothstep(-.2,.65,h));gl_FragColor=vec4(c,1.);}',
-    })
+        "varying vec3 p;void main(){float h=normalize(p).y;vec3 c=mix(vec3(.18,.22,.23),vec3(.58,.72,.82),smoothstep(-.2,.65,h));gl_FragColor=vec4(c,1.);}",
+    }),
   );
   env.add(room);
   const blocks = new THREE.BoxGeometry(1, 1, 1),
@@ -229,43 +231,74 @@ export function materiauxManhattan(renderer) {
   };
 }
 export function enseignesManhattan() {
-  const c = document.createElement('canvas');
+  const c = document.createElement("canvas");
   c.width = 2048;
-  c.height = 1024;
-  const ctx = c.getContext('2d');
+  c.height = 1536;
+  const ctx = c.getContext("2d");
   const labels = [
-    ['FIFTH AVENUE', '#193d36'],
-    ['W 42 ST', '#193d36'],
-    ['BROADWAY', '#193d36'],
-    ['MADISON AVE', '#193d36'],
-    ['HUDSON COFFEE', '#343c39'],
-    ['MIDTOWN BOOKS', '#5a3431'],
-    ['DELI & GROCERY', '#2c4136'],
-    ['THE ATELIER', '#303c48'],
-    ['NEW YORK / 42', '#132a3b'],
-    ['GRAND CENTRAL', '#716652'],
-    ['RADIO CITY', '#493431'],
-    ['CENTRAL PARK', '#283e32'],
-    ['ONE WAY  →', '#ece7d7'],
-    ['PARK AVENUE', '#193d36'],
-    ['BROADWAY\nLIVE TONIGHT', '#682f39'],
-    ['MANHATTAN\nAFTER HOURS', '#264455'],
+    ["FIFTH AVENUE", "#193d36"],
+    ["W 42 ST", "#193d36"],
+    ["BROADWAY", "#193d36"],
+    ["MADISON AVE", "#193d36"],
+    ["HUDSON COFFEE", "#343c39"],
+    ["MIDTOWN BOOKS", "#5a3431"],
+    ["DELI & GROCERY", "#2c4136"],
+    ["THE ATELIER", "#303c48"],
+    ["NEW YORK / 42", "#132a3b"],
+    ["GRAND CENTRAL", "#716652"],
+    ["RADIO CITY", "#493431"],
+    ["CENTRAL PARK", "#283e32"],
+    ["ONE WAY  →", "#ece7d7"],
+    ["PARK AVENUE", "#193d36"],
+    ["BROADWAY\nLIVE TONIGHT", "#682f39"],
+    ["MANHATTAN\nAFTER HOURS", "#264455"],
+    ["CITY / LIGHT", "#005bb9"],
+    ["HELLO\nNEW YORK", "#ee392e"],
+    ["THE NEXT\nWAVE", "#33267f"],
+    ["BROADWAY\nTONIGHT", "#ce9d35"],
+    ["MOVE\nTOGETHER", "#14615a"],
+    ["NEW YORK\n24 / 7", "#1b2b45"],
+    ["LIVE\nMUSIC", "#b83880"],
+    ["TIMES SQUARE", "#151b25"],
   ];
   labels.forEach(([txt, bg], i) => {
     const x = (i % 4) * 512,
       y = Math.floor(i / 4) * 256;
     ctx.fillStyle = bg;
     ctx.fillRect(x, y, 512, 256);
-    ctx.strokeStyle = '#e7dfc066';
+    ctx.strokeStyle = "#e7dfc066";
     ctx.lineWidth = 4;
     ctx.strokeRect(x + 8, y + 8, 496, 240);
-    ctx.fillStyle = i === 12 ? '#202727' : '#f3eddb';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const lines = txt.split('\n');
-    ctx.font = '500 ' + (lines.length > 1 ? 58 : 110) + 'px Arial';
+    if (i >= 16) {
+      const grad = ctx.createLinearGradient(x, y, x + 512, y + 256);
+      grad.addColorStop(0, bg);
+      grad.addColorStop(1, i % 2 ? "#101631" : "#83ddec");
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, 512, 256);
+      ctx.strokeStyle = "#ffffff35";
+      ctx.lineWidth = 16;
+      for (let j = 0; j < 4; j++) {
+        ctx.beginPath();
+        ctx.arc(x + 430, y + 70, 40 + j * 35, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#ffffffb0";
+      ctx.font = "18px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("NEW YORK  •  EXPERIENCE THE CITY", x + 24, y + 235);
+    }
+    ctx.fillStyle = i === 12 ? "#202727" : "#f3eddb";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const lines = txt.split("\n");
+    ctx.font = "500 " + (lines.length > 1 ? 58 : 110) + "px Arial";
     lines.forEach((s, j) =>
-      ctx.fillText(s, x + 256, y + 128 + (j - (lines.length - 1) / 2) * 62, 470)
+      ctx.fillText(
+        s,
+        x + 256,
+        y + 128 + (j - (lines.length - 1) / 2) * 62,
+        470,
+      ),
     );
   });
   const t = new THREE.CanvasTexture(c);

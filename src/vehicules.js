@@ -10,6 +10,7 @@
 // hors de vue ne coûte ni animation, ni appel de rendu.
 
 import * as THREE from 'three';
+import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
@@ -156,6 +157,8 @@ export function chargerVraieVoiture() {
 // La règle vit donc dans la FICHE, jamais dans une liste écrite dans le
 // témoin — même discipline que `montable`, `nourrissable` et `vole`.
 export const FLOTTE = [
+  {fichier:'ny-crown-victoria',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
+  {fichier:'ny-town-sedan',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
   { fichier: 'acura-nsx-type-s.glb', nom: 'Acura NSX Type S' },
   { fichier: 'amg-gt-black-series.glb', nom: 'Mercedes-AMG GT Black Series' },
   { fichier: 'aston-martin-dbs-superleggera.glb', nom: 'Aston Martin DBS Superleggera' },
@@ -309,6 +312,7 @@ function normaliserVoiture(scene) {
 export function chargerVoitureFlotte(entree) {
   if (typeof document === 'undefined') return null;
   if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
+  if(entree.fabrique){const p=Promise.resolve(entree.fabrique());chargementsFlotte.set(entree.fichier,p);return p;}
   const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
     .then((gltf) => {
       const cadre = new THREE.Group();
@@ -1004,9 +1008,10 @@ export function createVehicules({ scene, player }) {
   // remplace dès qu'il arrive du réseau. C'est le même échange qu'aux
   // montures, à un détail près : ici on garde une trace des pivots de roue,
   // parce que c'est le convoi qui les fait tourner.
-  function voitureDeVille(n, teinte) {
+  function voitureDeVille(n, teinte, ville) {
     const g = construireVoitureRoute(teinte);
-    const entree = FLOTTE[((n % FLOTTE.length) + FLOTTE.length) % FLOTTE.length];
+    const choix = FLOTTE.filter(e=>ville==='ny'?e.ville==='ny':e.ville!=='ny');
+    const entree = choix[((n % choix.length) + choix.length) % choix.length];
     // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
     // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
     // flotte — c'est le même soin que pour la voiture garée.
@@ -1062,7 +1067,7 @@ export function createVehicules({ scene, player }) {
     0x8a2b3a, 0x2f7f8f, 0xc86a2a, 0x5a4a8a, 0x1f4a2f, 0xb0b4bc,
     0x7a1f1f, 0x2a3f7a, 0xd8a83a, 0x3f7a5a, 0x6a2f6a, 0x8a8a6a,
   ];
-  function circulation(pts, graine = 0) {
+  function circulation(pts, graine = 0, options = {}) {
     const p = new Parcours(pts);
     const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
     return ajouter(pts, {
@@ -1086,7 +1091,7 @@ export function createVehicules({ scene, player }) {
       // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille
       // de la flotte, et 17 l'est aussi de cinquante-deux — cinquante-deux
       // modèles différents.
-      modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length]),
+      modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
     });
   }
 

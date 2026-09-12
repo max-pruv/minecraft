@@ -29,8 +29,8 @@ function tete(a, p) {
   // cou
   a.cylindre(teint, { p: [0, H.cou - 0.05, 0], e: [0.13, 0.16, 0.13], haut: 0.5, bas: 0.58, seg: 10 });
   // crâne : une sphère un peu allongée, plus un menton pour que le profil se lise
-  a.sphere(teint, { p: [0, H.tete, 0], e: [0.25, 0.29, 0.27], seg: 14 });
-  a.sphere(teint, { p: [0, H.tete - 0.11, -0.03], e: [0.19, 0.15, 0.2], seg: 10 });
+  a.sphere(teint, { p: [0, H.tete, 0], e: [0.25, 0.30, 0.27], seg: 24 });
+  a.sphere(teint, { p: [0, H.tete - 0.11, -0.03], e: [0.19, 0.14, 0.2], seg: 18 });
   // nez : c'est lui qui donne un visage plutôt qu'un ballon
   a.cone(teint, { p: [0, H.tete - 0.02, -0.13], r: [-Math.PI / 2, 0, 0], e: [0.055, 0.07, 0.05], seg: 8 });
   // oreilles
@@ -48,8 +48,8 @@ function tete(a, p) {
   // exactement la recette d'un regard fixe. Un œil se lit à son BLANC — l'iris
   // n'en occupe qu'une petite part, et il reste EN RETRAIT, dans l'orbite.
   for (const s of [-1, 1]) {
-    a.sphere(0xf6f2ea, { p: [s * 0.062, H.tete + 0.035, -0.122], e: [0.064, 0.050, 0.032], seg: 10 });
-    a.sphere(p.yeux || 0x6b5236, { p: [s * 0.064, H.tete + 0.033, -0.130], e: [0.023, 0.025, 0.016], seg: 8 });
+    a.sphere(0xf6f2ea, { p: [s * 0.062, H.tete + 0.035, -0.122], e: [0.054, 0.026, 0.021], seg: 10 });
+    a.sphere(p.yeux || 0x6b5236, { p: [s * 0.064, H.tete + 0.033, -0.127], e: [0.018, 0.019, 0.010], seg: 8 });
     // Le sourcil : plus haut et plus fin. Bas et épais, il fronce — et un
     // sourcil froncé sur un regard fixe, pour un enfant de sept ans, ce n'est
     // plus un villageois.
@@ -87,7 +87,7 @@ function chevelure(a, p) {
   // devant les yeux et il fallait la percer avec une sphère de peau, qui
   // ressortait alors en museau. Décalée, elle ne déborde que là où il faut —
   // nuque, tempes, sommet — et le visage reste dégagé.
-  a.sphere(cheveux, { p: [0, H.tete + 0.03, 0.035], e: [0.272, 0.3, 0.272], seg: 14 });
+  a.sphere(cheveux, { p: [0, H.tete + 0.03, 0.035], e: [0.265, 0.29, 0.266], seg: 24 });
   if (coupe === 'long' || coupe === 'nattes') {
     a.sphere(cheveux, { p: [0, H.tete - 0.09, 0.075], e: [0.25, 0.3, 0.19], seg: 12 });
     if (coupe === 'nattes') {
@@ -106,13 +106,10 @@ function chevelure(a, p) {
 function torse(a, p, couleur) {
   a.membre('tronc');
   const c = couleur ?? p.teint;
-  a.sphere(c, { p: [0, H.poitrine, 0], e: [0.42, 0.34, 0.27], seg: 14 });
-  a.cylindre(c, { p: [0, H.taille, 0], e: [0.33, 0.3, 0.23], haut: 0.5, bas: 0.55, seg: 12 });
-  a.sphere(c, { p: [0, H.hanche + 0.03, 0], e: [0.37, 0.26, 0.26], seg: 12 });
-  // épaules
-  for (const s of [-1, 1]) {
-    a.sphere(c, { p: [s * 0.19, H.epaule - 0.02, 0], e: [0.19, 0.18, 0.22], seg: 10 });
-  }
+  const profil=[[.165,.9],[.176,.97],[.16,1.07],[.172,1.2],[.205,1.34],[.19,1.395],[.075,1.45]];
+  const geo=new THREE.LatheGeometry(profil.map(([r,y])=>new THREE.Vector2(r,y)),24);
+  geo.scale(1,1,.68);a._poser(geo,c,{});
+
 }
 
 function bras(a, p, { manche, main, poignet = 0.05 }) {
@@ -121,8 +118,8 @@ function bras(a, p, { manche, main, poignet = 0.05 }) {
     const ep = [s * ECART_BRAS, H.epaule, 0];
     const coude = [s * (ECART_BRAS + 0.035), H.epaule - 0.32, 0.01];
     const poing = [s * (ECART_BRAS + 0.055), H.epaule - 0.62, 0.02];
-    a.membreGalbe(manche, { de: ep, a: coude, r1: 0.085, r2: 0.062, seg: 8 });
-    a.membreGalbe(manche, { de: coude, a: poing, r1: 0.062, r2: poignet, seg: 8 });
+    a.membreGalbe(manche, { de: ep, a: coude, r1: 0.085, r2: 0.062, seg: 14 });
+    a.membreGalbe(manche, { de: coude, a: poing, r1: 0.062, r2: poignet, seg: 14 });
     a.sphere(main, { p: poing, e: [0.095, 0.11, 0.085], seg: 8 });
   }
 }
@@ -133,9 +130,9 @@ function jambes(a, p, { bas, chaussure, hauteurBotte = 0 }) {
     const hanche = [s * ECART_JAMBE, H.hanche, 0];
     const genou = [s * ECART_JAMBE, H.genou, 0];
     const cheville = [s * ECART_JAMBE, H.cheville, 0.01];
-    a.membreGalbe(bas, { de: hanche, a: genou, r1: 0.105, r2: 0.075, seg: 8 });
+    a.membreGalbe(bas, { de: hanche, a: genou, r1: 0.105, r2: 0.075, seg: 14 });
     a.membreGalbe(hauteurBotte > H.cheville ? chaussure : bas,
-      { de: genou, a: cheville, r1: 0.075, r2: 0.055, seg: 8 });
+      { de: genou, a: cheville, r1: 0.075, r2: 0.055, seg: 14 });
     // pied : une boîte arrondie qui dépasse vers l'avant
     a.sphere(chaussure, { p: [s * ECART_JAMBE, 0.055, -0.045], e: [0.115, 0.11, 0.28], seg: 10 });
     a.sphere(chaussure, { p: [s * ECART_JAMBE, 0.04, -0.12], e: [0.1, 0.075, 0.12], seg: 8 });
@@ -173,6 +170,26 @@ const TENUES = {
     torse(a, p, haut);
     jambes(a, p, { bas, chaussure: baskets });
     bras(a, p, { manche: haut, main: p.teint });
+    a.membre('tronc');
+    // Chemise, revers, couture centrale et poches : des habits, pas une peau colorée.
+    for(const s of [-1,1]){
+      a.boite(p.chemise||0xe7e4db,{p:[s*.055,1.425,-.075],r:[.25,0,s*.5],e:[.085,.105,.035]});
+      if(p.veste)a.boite(haut,{p:[s*.085,1.28,-.132],r:[0,0,s*.17],e:[.085,.3,.035],t:.8});
+    }
+    a.boite(p.chemise||haut,{p:[0,1.25,-.139],e:[.025,.34,.016],t:.82});
+    for(let i=0;i<4;i++)a.sphere(0xccc9bc,{p:[0,1.1+i*.075,-.15],e:[.012,.012,.008],seg:6});
+    if(p.sac){
+      a.sphere(p.sac,{p:[0,1.2,.175],e:[.3,.38,.15],seg:14});
+      for(const s of [-1,1])a.membreGalbe(p.sac,{de:[s*.135,1.44,-.01],a:[s*.14,1.1,-.105],r1:.021,r2:.018,seg:8});
+    }
+  },
+  enfant(a,p){
+    const couleurs=p.rayures||[p.haut,p.haut,p.haut,p.haut,p.haut];
+    torse(a,p,couleurs[2]);
+    jambes(a,p,{bas:p.bas,chaussure:p.baskets});
+    bras(a,p,{manche:couleurs[4],main:p.teint});
+    a.membre('tronc');
+    for(let i=0;i<5;i++)a.cylindre(couleurs[i],{p:[0,1.02+i*.076,0],e:[i<2?.333:.382,.079,i<2?.228:.261],haut:.5,bas:.5,seg:20});
   },
 
   tunique(a, p) {
@@ -1013,6 +1030,8 @@ export function construireHumain(profil) {
   // le contrat attendu par BaseNPC : deux jambes, deux bras, animés en rotation
   g.userData.legs = [m.jambeG, m.jambeD];
   g.userData.arms = [m.brasG, m.brasD];
+  g.userData.anatomie='humaine-v2';
+  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   if (p.taille && p.taille !== 1) g.scale.setScalar(p.taille);
   return g;
 }

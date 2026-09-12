@@ -57,9 +57,9 @@ export class CloudSave {
     };
   }
 
-  async pull() {
+  async pull(code = this.code) {
     const res = await fetch(
-      `${this.url}/rest/v1/world_saves?code=eq.${encodeURIComponent(this.code)}&select=blocks`,
+      `${this.url}/rest/v1/world_saves?code=eq.${encodeURIComponent(code)}&select=blocks`,
       { headers: this.headers() }
     );
     if (!res.ok) throw new Error(`cloud pull ${res.status}`);
@@ -437,6 +437,12 @@ export class CloudSave {
       if (blocks) {
         const applied = this.world.mergeEdits(blocks);
         if (applied > 0) this.world.saveEdits();
+      }
+      if(this.world.importerAncienneManhattan){
+        try{
+          const anciens=await this.pull('manhattan-v1:'+code);
+          if(anciens && this.world.importerAncienneManhattan(anciens)>0)this.world.saveEdits();
+        }catch{ /* Le monde courant reste accessible si l'archive est indisponible. */ }
       }
       await this.push();
       this.toast('☁️ Sauvegarde cloud active — rien ne sera perdu !', 0x9fd8e8);

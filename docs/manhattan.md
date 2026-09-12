@@ -1,130 +1,149 @@
-# Manhattan : une seconde carte jouable
+# Manhattan appartient à la Terre
 
-Depuis le menu, choisir **Manhattan · ville réaliste**, puis son profil et
-« Jouer en local » ou une partie en ligne. L'adresse directe est
-`/?carte=manhattan`. Le bouton **La Terre** ramène au monde existant.
+Il existe une seule carte. **Explorer New York** ouvre Manhattan dans la Terre,
+avec les mêmes outils, personnages, créatures, véhicules et règles éducatives.
+L'adresse `/?lieu=manhattan` choisit simplement le point d'arrivée. Les anciens
+liens `?carte=manhattan` sont encore compris. Une partie partagée utilise un seul
+code, que les joueurs soient à New York, Paris ou ailleurs.
 
-## Ce qui est construit
+## Architecture et vie urbaine
 
-La nouvelle île comprend 2 353 bâtiments procéduraux, treize destinations de
-quartier, une grille d'avenues et de rues, Broadway en diagonale et Central
-Park avec lac, promenades et arbres. Empire State, Chrysler, Grand Central,
-Rockefeller, Flatiron, One World Trade Center et Trinity ont des volumes
-spécifiques. La carte permet de voyager vers leurs abords.
+L'île comprend environ 2 000 bâtiments, des quartiers de Battery à Washington Heights, Broadway, Central
+Park et ses promenades. Le plan est comprimé horizontalement à 40 % de celui de
+v239 pour tenir à New York sans atteindre les disques de Boston, Montréal ou
+Washington. Les hauteurs gardent leur échelle jouable. L'origine terrestre est
+calculée par `positionDe('ny')`, jamais recopiée dans les systèmes du jeu.
 
-Les façades proches sont des géométries : verre en retrait de 27 cm, appuis,
-encadrements, meneaux, corniches, portes ouvertes, devantures, auvents,
-escaliers de secours et équipements de toiture. Le verre utilise un
-environnement de réflexion préfiltré ; brique, pierre, métal, asphalte et
-trottoirs ont des matériaux physiques avec micro-relief procédural.
-Le cycle du jeu commande soleil, ombres, fenêtres, enseignes et lampadaires.
-La pluie réduit la rugosité de la chaussée.
+L'Empire State a une base à retraits, une longue tour centrale, une terrasse
+au 86e, un couronnement et une antenne. Dix volumes sont partagés entre ses
+collisions et ses deux niveaux de rendu. Chrysler a une couronne métallique
+à sept arcs et une flèche ; Rockefeller conserve sa silhouette en dalle.
+Grand Central, Flatiron, One World Trade Center et Trinity restent visitables.
 
-La circulation réutilise les voitures du jeu sur 84 boucles mesurées. Les
-passants utilisent ses personnages et ses animations. Les créatures,
-l'inventaire, le vol, la conduite, les commandes tactiles et les quiz restent
-ceux du jeu existant. Le mode éducatif est toujours actif.
+Au sud de la 14e Rue, le Village, SoHo, TriBeCa et Chinatown retrouvent des
+trames distinctes. Leurs rues tournent avec le quartier et les trajets suivent
+ces rotations ; vingt circuits desservent le sud de Manhattan. Les destinations
+de la carte sont recalées sur le nouveau plan.
 
-## Sauvegardes : aucune migration du terrain existant
+Times Square réunit One Times Square couvert d'écrans, une place piétonne,
+les marches rouges de Duffy Square, tables et chaises, enseignes orientées vers
+la place et une voie de circulation à l'ouest. Les campagnes publicitaires
+sont fictives et dessinées dans le jeu. Jusqu'à 44 passants sont distribués
+sur les trottoirs et dans les places de New York. Leur marche respecte les
+espaces piétons ; le modèle des humains et des avatars est amélioré partout,
+avec membres galbés, visages, chemises, vestes et sacs.
 
-La Manhattan de la Terre est trop comprimée pour des voies et des façades à
-l'échelle du joueur. L'agrandir à sa place déplacerait les constructions.
-La nouvelle géométrie est donc dans **une carte indépendante**.
+Les 79 circuits automobiles ont été sondés sur toute la largeur de la
+carrosserie. À New York, ils utilisent une berline noire et un taxi jaune
+inspiré des proportions de la Ford Crown Victoria : pavillon, quatre roues,
+arches, calandre, feux, vitres, habitacle, marquages et voyant de toit. Le modèle
+reste le même après la prise du volant et le rangement dans un garage.
+Il s'agit d'une interprétation originale, pas d'un modèle constructeur ou
+d'une flotte contemporaine exhaustive : la Crown Victoria est un taxi historique.
 
-| Donnée | Terre | Nouvelle Manhattan |
-| --- | --- | --- |
-| Partie locale | `local` | `manhattan-v1:local` |
-| Exemple de partie partagée | `12345` | `manhattan-v1:12345` |
-| Position du joueur | clé existante | clé préfixée de la carte |
-| Canal des pairs et relais | code existant | code préfixé de la carte |
+## Façades, matériaux et éclairage
 
-Les blocs de l'ancienne Manhattan restent sur la Terre, à leurs coordonnées
-actuelles. Ils ne sont ni déplacés, ni copiés automatiquement dans la nouvelle
-île. Les deux cartes partagent le profil, l'éducation et les outils du jeu,
-mais pas leurs constructions ni leurs positions. Le code court reste visible
-dans l'interface ; une invitation transporte aussi la carte à rejoindre.
+Les fenêtres ont des embrasures géométriques, encadrements et appuis. Corniches,
+portes, commerces, escaliers de secours, ventilation et réservoirs occupent de
+vrais volumes. Les matériaux de brique, pierre, verre, métal, asphalte et
+pavage utilisent rugosité, micro-relief et éclairage physique. Les tours
+lointaines sont simplifiées ; les bâtiments proches restent éditables.
 
-`ManhattanWorld` hérite du journal d'opérations, des horodatages de fusion et
-du stockage de `World`. Le plan du bâtiment sert à la fois aux collisions et
-aux façades. Détruire un bloc retire ses détails architecturaux ; placer un
-bloc utilise le mailleur ordinaire. Les planchers intérieurs suivent la même
-grille de collision. Les changements de partie et les réinitialisations
-invalident les géométries urbaines.
+Le cycle du jeu commande l'éclairage, les ombres et les fenêtres. La nuit,
+lampadaires et écrans éclairent les abords de Times Square. Les reflets des
+façades utilisent un environnement préfiltré ; les voitures conservent le
+système de reflet du jeu. La pluie modifie la rugosité des chaussées. En
+quittant Manhattan, le rendu restaure les réglages de la Terre.
 
-## Rendu et budgets
+## Protection et reprise des constructions
 
-Les détails sont regroupés dans des `InstancedMesh` par matériau, primitive
-et bâtiment. Le sol intact est rendu une seule fois : le mailleur voxel se réactive autour
-des éditions, notamment pour les excavations aux frontières de morceaux.
-Le sol urbain est fusionné par rangée et chargé par secteurs de
-64 unités. Au-delà, des secteurs de 256 unités portent le sol et des
-silhouettes avec façades texturées. Les façades détaillées se construisent
-progressivement, puis remplacent leur silhouette. Les groupes retirés rendent
-leurs tampons d'instances ; les primitives sont partagées.
+`TerreUrbaine` étend `World` sans modifier son générateur historique. Le nouveau
+terrain est limité au rectangle local x ∈ [−240,240), z ∈ [−1300,1000).
+Hors de cette zone, la Terre conserve son relief. Une construction ancienne
+sur la Terre conserve ses coordonnées et les colonnes du terrain historique
+sous elle, avec une marge de deux blocs ; les bâtiments procéduraux qui
+recouvriraient ces colonnes sont retirés.
 
-| Réglage | Ordinateur | Tablette |
-| --- | --- | --- |
-| Architecture détaillée, rayon maximal | 145 unités | 95 unités |
-| Horizon avec brouillard | 1 600 unités | 900 unités |
-| Secteurs de sol proches, maximum | 28 (25 candidats actuels) | 16 |
-| Densité de pixels maximale | 1,75 | 1,25 |
-| Carte d'ombres | 2 048² | 1 024² |
-| Lampes ponctuelles réutilisées | 4 | 4 |
+Les journaux `manhattan-v1:local` et `manhattan-v1:<code>` sont repris par
+translation entière vers New York, sans réduire les blocs. Si une case cible
+est occupée, tout le journal est décalé ensemble de 4096 blocs vers l'est
+jusqu'à trouver un emplacement libre (256 essais au maximum). Si aucun n'est
+libre, l'archive demeure intacte et n'est pas importée. Les anciens journaux
+sont conservés. Les blocs importés reçoivent un support à la cote 32 ; cette
+protection peut donc aussi créer des colonnes de support hors de Manhattan.
+Les volumes procéduraux de l'ancienne ville ne sont pas intégralement copiés.
 
-`?qualite=tablette` permet de demander le budget tablette sur ordinateur.
-`?rr=` borne aussi le détail et la portée, utile au banc. Le constructeur
-vise des tranches de 4 ms ; cette cible n'est pas une garantie de durée
-maximale pour le transfert d'un lot au pilote graphique.
+La provenance `[bloc, date, type]` voyage avec les blocs : type 0 pour la
+nouvelle Terre, 1 pour l'ancienne Terre, 2 pour l'ancienne Manhattan. Les
+marques d'import sont stockées dans le même document, dans la même écriture
+atomique. Elles survivent à l'effacement explicite d'une partie pour éviter
+qu'un ancien journal ressuscite. Un quota local dépassé laisse les archives
+originales intactes ; l'import peut être recommencé sans journal partiellement
+validé. Les profils restent isolés par le stockage existant.
 
-## Assets et droits
+Les archives du profil et du cloud de partie sont reprises. Les positions
+anciennes locales ou reçues du cloud sont translatées ; un voyage explicite vers New York a
+priorité sur la restauration initiale. Les versions antérieures à v240
+continuent de voir leur propre carte : mettre à jour tous les appareils avant
+de construire ensemble dans Manhattan.
 
-Le plan, les géométries architecturales, les textures de matériaux, le
-feuillage et l'atlas d'enseignes ajoutés dans les quatre modules
-`manhattan-*.js` sont générés par le code du projet. Aucun asset, texture,
-logo ou fichier issu de GTA n'est utilisé. Les noms des monuments servent
-à identifier les lieux ; les enseignes commerciales dessinées sont fictives.
-Ces nouveaux éléments procéduraux sont proposés sous licence MIT, voir
-[licence des assets Manhattan](manhattan-assets-license.txt).
+## Budgets et vérifications
 
-Les voitures fournies précédemment par Max conservent leur restriction
-d’usage privé et familial, non commercial, dans ce jeu. Elles ne sont pas
-relicenciées MIT par cette refonte : voir `vendor/voitures/LICENSE.md` et
-`vendor/VOITURE_LICENSE`. Les bibliothèques gardent leurs licences dans
-`vendor/`. Aucun nouveau modèle tiers n’a été ajouté.
+| Réglage | Détails proches | Silhouettes | Secteurs proches | Ombres | DPR maximum |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Ordinateur | 78 blocs | 1400 blocs | 20 | 2048 | 1,75 |
+| Tablette | 52 blocs | 780 blocs | 12 | 1024 | 1,25 |
 
-## Limites assumées
+La distance choisie dans le jeu peut réduire ces budgets. Les primitives et
+matériaux sont partagés, les détails instanciés, les façades construites par
+tranches de 4 ms et remplacées progressivement par les silhouettes.
 
-- C'est une interprétation comprimée de Manhattan, pas une reconstruction
-  cadastrale ni une fidélité AAA. Les monuments sont reconnaissables par leur
-  implantation et leurs volumes, avec des détails simplifiés.
-- Les personnages et créatures conservent le style du jeu existant.
-- Les quartiers réutilisent des familles de façades ; les intérieurs ont
-  portes et planchers, mais pas d'aménagement pièce par pièce ni d'escaliers
-  intérieurs complets. Le vol et l'édition permettent l'accès aux étages.
-- Les silhouettes distantes simplifient les ouvertures et les modifications
-  fines. Les détails reviennent à l'approche. Le changement de niveau de
-  détail reste perceptible.
-- Les reflets proviennent d'un environnement statique, sans ray tracing ni
-  réflexion dynamique complète des voitures ou du joueur.
-- Les voitures gardent le comportement de convoi existant : elles ne
-  réagissent pas encore aux feux. Le mobilier et les feuilles sont décoratifs.
-- La statue de la Liberté, Brooklyn Bridge et une reconstruction détaillée
-  des berges restent à faire.
-- L'émulation tactile sur Mac ne remplace pas une validation sur iPad
-  physique. Le coût mémoire cumulé des populations du jeu reste une dette
-  documentée dans `TASKS.md`.
+Validation reproductible :
 
-## Vérifier
+```sh
+cd tests
+CHROMIUM_ANGLE=metal node manhattan.js
+CHROMIUM_ANGLE=metal npm test
+```
 
-Depuis `tests/`, `npm ci`, puis `npx playwright-core install chromium` si
-nécessaire. Le banc trouve aussi le navigateur installé par Playwright. Sur
-macOS, `CHROMIUM_ANGLE=metal npm test` utilise le GPU natif ; sans cette
-variable, le banc conserve SwiftShader. `npm run manhattan` vérifie la carte et `npm test` constitue le
-portail de non-régression du dépôt. Les mesures de performances doivent
-indiquer le moteur graphique : SwiftShader est un rendu logiciel, distinct
-du GPU natif utilisé pour les captures.
+Les 30 contrôles Manhattan couvrent le relief hors zone, les supports sauvegardés,
+les conflits et répétitions d'import, la position d'un chantier déplacé, le cloud ancien, les échanges Terre/New
+York, les collisions, l'édition visible, les contrôles tactiles, les taxis,
+l'anatomie, le rechargement, les quiz, l'alignement soleil/ombres et la PWA hors ligne. Le portail conserve
+les empreintes historiques : elles ne sont pas remplacées pour accepter la refonte.
+Le portail complet est vert : quatorze suites et la fumée. Les contrôles
+réseau, visio, parental, réglages, carte, conduite/vol, Washington, terrain,
+sauvegarde, PWA, métro, géographie, hôte et Manhattan passent. Les 4 040 colonnes
+historiques de référence restent intactes ; une sauvegarde de 40 000 blocs est
+récupérée intégralement sur un second appareil.
+Les captures au sol et en hauteur servent à juger l'aspect ; un portail vert
+ne démontre jamais à lui seul la qualité graphique.
 
-Les captures requises sont Midtown au sol et en hauteur, de jour et de nuit,
-puis une vue de Central Park. Il faut aussi vérifier un mur détruit, une
-construction rechargée, le déplacement, la conduite, les gestes tactiles,
-les quiz et deux joueurs partageant la même carte.
+## Références et licences
+
+Références consultées et inspectées visuellement :
+
+- [Empire State Building, site officiel](https://www.esbnyc.com/about/facts-figures) : silhouette, retraits, terrasse, mât ; 443 m avec antenne, toit vers 381 m.
+- [Times Square Alliance, écrans et place](https://www.timessquarenyc.org/business-community/advertisement-sponsorships) : One Times Square face au nord, écrans enveloppants, place et abords des marches rouges.
+
+Les photographies de référence restent la propriété de leurs auteurs. Elles
+ne sont pas distribuées comme assets du jeu. Architecture, matériaux,
+publicités fictives et nouvelles berlines sont originaux et couverts par
+[la licence des assets urbains](manhattan-assets-license.txt). Les assets
+existants gardent leurs licences, notamment l'usage privé/familial des voitures
+fournies dans `vendor/voitures/LICENSE.md`. Aucun asset de GTA n'est utilisé.
+
+## Limites connues
+
+Cette version reste stylisée, avec une géographie comprimée et des collisions
+voxelisées ; elle ne revendique pas une fidélité AAA. Les tours génériques se
+répètent, le passage au détail distant est perceptible, les berges rencontrent
+le terrain mondial à une limite visible et les intérieurs sont peu aménagés.
+Les feux ne commandent pas encore les convois ; les voitures ralentissent
+selon le système existant et ne négocient pas toutes les priorités. Les écrans
+sont lumineux mais leurs publicités sont fixes. Les monuments secondaires,
+les ponts et la Statue de la Liberté demandent une passe supplémentaire.
+Un iPad physique reste nécessaire pour mesurer Safari et la pression mémoire.
+Deux imports simultanés hors ligne dont les journaux Terre diffèrent peuvent
+choisir des emplacements de secours différents ; les archives conservées
+permettent la récupération, mais ces chantiers nécessitent une réconciliation.

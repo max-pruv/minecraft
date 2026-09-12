@@ -744,37 +744,52 @@ Si la version ne correspond pas à la dernière publiée :
 
 ## Architecture — décisions et raisons
 
-### Manhattan indépendante (`manhattan-*.js`, v239)
+### Manhattan dans la Terre (`manhattan-*.js`, v240)
 
-La refonte réaliste demandée dans la PR #226 ne déplace aucun bloc de la
-Terre. `?carte=manhattan` charge `ManhattanWorld`, un générateur autonome qui
-hérite du journal d'opérations de `World`. `manhattan-v1:` préfixe les
-contextes de blocs, positions, parties récentes, sauvegardes cloud et canaux
-réseau ; le code court montré à l'enfant reste inchangé. Une invitation
-porte la carte. Ne jamais retirer ce préfixe pour « simplifier » le stockage.
-L'ancienne Manhattan reste accessible sur la Terre. La migration historique
-de la Terre ignore les contextes nommés avec `:` ; elle ne doit pas appliquer
-une différence de relief terrestre à une carte autonome.
+Max demande explicitement une seule carte. `TerreUrbaine` remplace
+`ManhattanWorld` dans main et étend le générateur historique `World` sans
+modifier ses empreintes. Le plan local est ancré par `positionDe('ny')` et
+comprimé horizontalement à 40 %. Son influence est bornée par `BORNES` ;
+Boston, Montréal et Washington restent hors de son emprise. Rendu local,
+physique, réseau et sauvegardes en coordonnées absolues de la Terre.
 
-Le plan urbain est commun aux collisions et à la géométrie. Le mailleur
-ordinaire se réactive autour des éditions (voisins compris pour les
-excavations) et dessine les blocs posés ; le sol intact ne se dessine jamais
-en double sous le maillage urbain. Par ailleurs, le renderer urbain dessine les originaux
-non modifiés. Une édition invalide la façade et son secteur de sol ; un
-changement de contexte ou une réinitialisation invalide aussi les travaux
-progressifs en cours. Les trames publiées de `manhattan-v1` sont désormais
-figées comme toute carte sauvegardable.
+Les contextes et canaux de jeu sont désormais `local` / code court, sans
+préfixe de carte. Les anciens journaux restent en archive et sont importés
+par translation rigide. Ne jamais les réduire à l'échelle du plan : une
+construction est un assemblage de blocs entiers. Les conflits déplacent le
+journal entier ; aucune case de Terre n'est écrasée. Les supports historiques
+et les marques d'import voyagent DANS le journal, pas dans une clé locale
+qui serait perdue sur un autre appareil. Le troisième élément des entrées
+porte la provenance ; les messages réseau d'opération et de lot la gardent.
+Un bloc neuf ne doit jamais être pris pour un bloc historique et faire
+disparaître les bâtiments autour. `tests/manhattan.js` garde ces invariants,
+l'idempotence, les archives cloud et l'absence de résurrection après effacement.
 
-Les détails sont instanciés, remplacés par des silhouettes à distance et
-chargés progressivement. Libérer un lot rend ses tampons d'instances sans
-détruire les primitives communes. Le budget tablette borne densité de
-pixels, ombres et portée. Mesurer le GPU natif séparément de SwiftShader :
-une cadence de banc logiciel n'est pas une promesse de performance iPad.
+Un changement de contexte invalide façades et sol. Les bâtiments superposés
+aux supports anciens sont retirés des deux niveaux de détail. Les blocs
+posés passent par le mailleur ordinaire, les originaux intacts par le renderer
+urbain ; retirer un bloc doit retirer aussi sa géométrie visible. Les niveaux
+de retraits sont partagés entre collisions et rendu. L’éclairage reprend exactement l’orbite de `sky.update`, puis place la
+lumière par rapport au joueur ; la direction du disque solaire et celle des
+ombres doivent rester identiques. Importer le journal cloud avant de restaurer
+une position ancienne : les marques choisissent le décalage du chantier.
 
-Les assets urbains sont originaux et procéduraux, sans contenu de GTA. Le
-guide `docs/manhattan.md` porte la portée exacte et les limites. Les quatre
-modules entrent dans le cache PWA et dans les gardiens de `tests/tout.js`.
-`tests/manhattan.js` éprouve isolation, édition visible et partage de carte.
+Les humains modernes et les avatars partagent les formes de `personnages.js`.
+Conserver les pivots `arms` / `legs`, les personnalisations et accessoires.
+Les modèles de taxi sont originaux (`taxis.js`) et leur fabrique est déclarée
+dans FLOTTE : un identifiant local n'est pas un fichier GLB à télécharger.
+Le chargeur conserve l'identité du modèle en circulation, conduite et garage.
+
+Le budget tablette réduit détails, secteurs, ombres et pixels. Les silhouettes
+sont instanciées ; les façades sont construites par tranches. Les ressources
+partagées restent marquées comme telles. Mesurer Chromium natif séparément du
+rendu logiciel ; ne jamais présenter l'émulation comme une mesure Safari iPad.
+Le catalogue de la carte recale ses anciens repères nommés depuis `LIEUX`.
+Les témoins géographiques se calculent depuis le plan courant : aucun pas de
+rue, cadrage ou point de fleuve recopié de la carte précédente. La grille de
+1811 s’arrête à la 14e Rue ; les trames du sud et les circuits tournent ensemble.
+Les gardiens du plan incluent `carte.js` et `carteMonde.js`.
+Voir `docs/manhattan.md` pour les limites, les archives et les licences.
 
 Le paramètre de banc `cloud=` doit désactiver le cloud même avec une valeur
 vide : tester sa présence (`has`), pas la vérité de sa valeur (`get`). Sans

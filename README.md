@@ -5,11 +5,12 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
-**New Manhattan map:** choose **Manhattan · ville réaliste** in the menu, or
-open `/?carte=manhattan`. Detailed architecture, Broadway, Central Park and
-landmarks use the same playable game, with independent saves that preserve
-all existing Earth constructions. See [the map guide](docs/manhattan.md) for
-scope, controls, rendering budgets, licensing and limitations.
+**Manhattan on Earth:** choose **Explorer New York**, or open
+`/?lieu=manhattan`. One map, one shared-world code: detailed landmarks, Times
+Square, yellow taxis and improved human characters. Existing Earth buildings
+keep their terrain support; v239 Manhattan journals are imported without
+scaling their blocks. See [the urban guide](docs/manhattan.md) for migration,
+rendering budgets, licensing and limitations.
 
 ## Features
 
@@ -29,7 +30,7 @@ scope, controls, rendering budgets, licensing and limitations.
 - **Voxel physics** — AABB collision against the world, tunnel-proof substepping,
   and DDA raycasting for block targeting.
 - **Procedural textures** — the block atlas is painted onto a canvas at
-  startup. The independent Manhattan map adds procedural physical materials
+  startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Creature catching** — 32 procedurally generated original species with

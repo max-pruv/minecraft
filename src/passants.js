@@ -24,6 +24,8 @@ import { cadence } from './cadence.js';
 import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
+import { dansManhattan, ORIGINE_MANHATTAN } from './manhattan-world.js';
+import { surface as surfaceManhattan, batimentA } from './manhattan-plan.js';
 import { CITIES } from './world.js';
 import { CITY_BLOCK, ARCHI } from './blocks.js';
 
@@ -118,7 +120,7 @@ function construireChien(robe) {
 
 const TEINTS = [0xe0b48c, 0xc9905e, 0xa9713f, 0xf0c9a4, 0xd8a878, 0x8a5a30];
 const CHEVEUX = [0x3a2a1a, 0x6a4a26, 0x1c1814, 0x8a6a3a, 0x9a9a94, 0xb8b8b2];
-const HAUTS = [0x4a78c8, 0xd84a3a, 0x3a9a4a, 0xe8c83a, 0x8a4ac8, 0xf0f0ea, 0x2a2a30, 0xe88a3a];
+const HAUTS = [0x4a78c8, 0x914e48, 0x586654, 0xa29372, 0x665772, 0xf0f0ea, 0x2a2a30, 0xe88a3a];
 const BAS = [0x2e3038, 0x3a4a6a, 0x5a4a38, 0x23262c];
 const ROBES = [0xd85a8a, 0x4a9ac8, 0xe8b83a, 0x8a5ac8];
 
@@ -145,7 +147,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
     ...VILLES_MONDE.filter((f) => f.trame).map((f) => ({
       nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon, graine: f.rayon * 31 + 7,
     })),
-    ...CITIES.map((c, i) => ({ nom: c.name, x: c.x, z: c.z, r: c.r, graine: i * 53 + 11 })),
+    ...CITIES.map((c, i) => ({ urbain:c.key==='ny', nom: c.name, x: c.x, z: c.z, r: c.key==='ny'?1200:c.r, graine: i * 53 + 11 })),
   ]).map((s) => ({ ...s, peuple: null }));
 
   // Le rapatriement bat en TEMPS RÉEL : voir `cadence.js`. Écrit `minuteur -= dt`,
@@ -161,6 +163,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   // pour ne pas apparaître sous son nez, assez près pour qu'il les croise — et
   // toujours à l'intérieur de la ville, sinon on peuplerait la campagne.
   function dansLaVille(site, x, z) {
+    if(site.urbain)return [x,z];
     const du = x - site.x, dv = z - site.z;
     const dist = Math.hypot(du, dv);
     if (dist <= site.r) return [x, z];
@@ -180,7 +183,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   // dans une cour que pas de passant du tout.
   function posteAutour(site, g, devant = false) {
     let repli = null;
-    for (let essai = 0; essai < 12; essai++) {
+    for (let essai = 0; essai < (site.urbain?80:12); essai++) {
       // Le cap du regard, dans le repère du jeu : dx = sin(yaw), dz = −cos(yaw),
       // donc l'angle de `Math.cos/sin` employé plus bas vaut yaw − π/2.
       const vise = player.yaw - Math.PI / 2;
@@ -190,6 +193,12 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         : t * Math.PI * 2;
       const d = AUTOUR_MIN + (AUTOUR_MAX - AUTOUR_MIN) * tirage(g + essai * 7, 29, 47);
       const [x, z] = dansLaVille(site, player.pos.x + Math.cos(a) * d, player.pos.z + Math.sin(a) * d);
+      if(site.urbain){
+        const lx=x-ORIGINE_MANHATTAN.x,lz=z-ORIGINE_MANHATTAN.z;
+        if(!dansManhattan(x,z)||!['sidewalk','plaza','path'].includes(surfaceManhattan(lx,lz))||batimentA(lx,lz))continue;
+        if(world.piedPieton(x,z)===33)return [x,z];
+        continue;
+      }
       if (!repli) repli = [x, z];
       const bx = Math.floor(x), bz = Math.floor(z);
       // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
@@ -198,15 +207,15 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       const y = world.sommetColonne(bx, bz);
       if ((seulementTrottoir ? SOLS_TROTTOIR : SOLS_DE_RUE).has(world.getBlock(bx, y, bz))) return [x, z];
     }
-    return repli;
+    return repli || [site.x+5,site.z+7];
   }
 
   function peupler(site) {
     const gens = [];
-    for (let k = 0; k < PAR_VILLE; k++) {
+    for (let k = 0; k < (site.urbain?44:PAR_VILLE); k++) {
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
-      if (k % 5 === 4) {
+      if (k % (site.urbain?16:5) === 4) {
         const [cx, cz] = posteAutour(site, g + 7777, k % 3 !== 2);
         const chien = new Habitant(scene, world, player, toast, {
           name: 'chien', label: '🐕 Un chien', phrases: ['Wouf !', 'Wouf wouf !'],
@@ -219,7 +228,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
-        tenue: robe ? 'dame' : 'passant',
+        tenue: 'passant', veste: k%3===0, sac:k%4===0?0x4a4139:null,
         teint: parmi(TEINTS, tirage(g, 5, 19)),
         cheveux: parmi(CHEVEUX, tirage(g, 7, 23)),
         coupe: tirage(g, 11, 29) < 0.5 ? 'court' : 'long',
@@ -233,6 +242,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         walkSpeed: 1.6, rayon: 8, largeur: 0.5, hauteur: 1.72,
         build: () => construireHumain(profil),
       }, x, z);
+      h.rueUrbaine=site.urbain;
       gens.push(h);
       npcs.push(h);
     }
@@ -252,14 +262,14 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // blocs de rayon se peuplait sinon seulement depuis son cœur.
       const d = Math.hypot(player.pos.x - site.x, player.pos.z - site.z);
       if (!site.peuple) {
-        if (d < site.r + PORTEE_REVEIL) peupler(site);
+        if (site.urbain?dansManhattan(player.pos.x,player.pos.z):d < site.r + PORTEE_REVEIL) peupler(site);
         continue;
       }
       // ON RAPATRIE CEUX QUI SONT RESTÉS DERRIÈRE. Dix passants posés une fois
       // pour toutes, c'est une ville vide dès qu'on s'éloigne de cent mètres.
       // Ceux que l'enfant a distancés reviennent devant lui — la ville reste
       // habitée partout, sans qu'il y ait un seul habitant de plus.
-      if (d > site.r + PORTEE_REVEIL) continue;
+      if (site.urbain?!dansManhattan(player.pos.x,player.pos.z):d > site.r + PORTEE_REVEIL) continue;
       // UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS.
       //
       // `dansLaVille` ramène tout candidat DANS la ville : quand l'enfant est
