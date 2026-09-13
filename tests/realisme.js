@@ -265,14 +265,18 @@ const verifier = (nom, ok, detail) => {
     // neuf sur l'ancien code. Puis on joue, et les gens nés en attendant —
     // le château, l'avatar — doivent recevoir leur corps réaliste SUR PLACE,
     // sans changer d'objet ni sortir de la scène.
+    // LA PAGE DE MANHATTAN SE FERME D'ABORD. Ouverte à côté, elle fait durer
+    // le démarrage de celle-ci cinq à onze MINUTES sur ce banc — un seul
+    // processus graphique en rendu logiciel, que la ville accapare — contre
+    // quatre secondes et sept dixièmes une fois fermée ; mesuré en trois
+    // variantes, avec et sans route. Ce n'est pas le jeu, c'est le banc, et
+    // c'est de toute façon la fin de la suite.
+    await p.close();
     const lent = await banc.navigateur.newContext();
     const q = await lent.newPage();
     const fautes = [];
     q.on("pageerror", (e) => fautes.push(e.message));
-    // Le service worker est coupé, comme partout au banc sauf dans maj.js :
-    // actif, il s'installe, prend la main et fait RECHARGER la page — sur un
-    // banc qui porte déjà la page de Manhattan, avant même que le jeu ne se
-    // soit attaché. Le portail l'a dit : cent vingt secondes sans `__game`.
+    // Le service worker est coupé, comme partout au banc sauf dans maj.js.
     await q.addInitScript(() => {
       if (navigator.serviceWorker)
         navigator.serviceWorker.register = () =>
