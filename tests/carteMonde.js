@@ -897,31 +897,70 @@ const VRAIES_KM = [
     // entier partageait UN matériau dont la couleur est le niveau du jour :
     // à minuit tout tombait à trente pour cent, fenêtres comprises. Une
     // ville la nuit, c'est pourtant d'abord des carrés de lumière.
+    // UN TÉMOIN DE RENDU LIT DES PIXELS (v251). Celui-ci comparait le NIVEAU
+    // des lampes (`__lumiere().solide`, la moyenne de l'hémisphère et de la
+    // lune) à la COULEUR du matériau des fenêtres : deux grandeurs qui ne se
+    // comparent pas, et la v249 — qui a monté les planchers de nuit à 1,7 et
+    // 0,45 pour que Paris ne soit plus dans le noir — l'a rendu rouge pour
+    // toujours (« murs à 1,07 ») sans que rien ne le dise, cette suite ne
+    // gardant pas main.js. On bâtit un mur de pierre percé de fenêtres
+    // d'étage loin de tout, à minuit, et l'on lit la luminance rendue d'une
+    // fenêtre allumée contre celle du mur d'à côté — ce que l'enfant voit.
     const nuit = await tab.evaluate(async () => {
-      const { positionDe } = await import('./src/mondes.js');
-      const g = window.__game;
-      const c = positionDe('moscou');
-      g.player.pos.set(c.x, g.world.terrainHeight(c.x, c.z) + 20, c.z + 20);
-      g.player.vel.set(0, 0, 0);
-      window.__setDayTime(0.75);                 // minuit
-      // ON ATTEND QUE LA VILLE SOIT LÀ, PAS DEUX SECONDES ET DEMIE.
-      //
-      // Ce que ce témoin promet, c'est que les fenêtres restent allumées la
-      // nuit — pas que trois morceaux de monde se maillent en 2,5 s. Le
-      // compte de morceaux ÉCLAIRÉS est un compte de morceaux CHARGÉS : sur
-      // un conteneur chargé il tombe à un, et le témoin accuse l'éclairage
-      // alors que ses deux autres mesures sont justes (murs à 0,31, fenêtres
-      // à 0,92). On attend le résultat, borné dans le temps.
-      let vu = window.__lumiere();
-      for (let i = 0; i < 30 && vu.morceauxEclaires < 3; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        vu = window.__lumiere();
+      const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
+      const THREE = await import('three');
+      const { ARCHI } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // le même tirage que le mailleur (30 % des vitres s'allument)
+      const allumee = (x, y, z) => {
+        let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2246822519);
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return (((h ^ (h >>> 16)) >>> 0) % 100) < 30;
+      };
+      let x0 = 0, z0 = 20000, sol = 0;
+      for (let k = 0; k < 40; k++) { sol = w.terrainHeight(x0, z0); if (sol >= 36) break; x0 += 60; }
+      // un mur de 9 × 6 face au sud, de l'air devant, deux rangées de fenêtres
+      for (let c = -4; c <= 4; c++) for (let h = 1; h <= 6; h++) {
+        w.setBlock(x0 + c, sol + h, z0, 3);
+        for (let d = 1; d <= 9; d++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
       }
-      return vu;
+      const fenetres = [];
+      for (const h of [3, 5]) for (let c = -3; c <= 3; c++) {
+        w.setBlock(x0 + c, sol + h, z0, ARCHI.ETAGE);
+        fenetres.push({ x: x0 + c, y: sol + h, allumee: allumee(x0 + c, sol + h, z0) });
+      }
+      g.player.flying = true; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(x0 + 0.5, sol + 4, z0 + 7);
+      window.__setDayTime(0.75);                                  // minuit
+      await dodo(3000);                                           // le morceau se remaille, les lampes suivent
+      const gl = r.getContext();
+      const lire = (X, Y, Z) => {
+        const v = new THREE.Vector3(X, Y, Z).project(cam);
+        const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+        const sx = Math.round((v.x + 1) / 2 * W), sy = Math.round((1 - v.y) / 2 * H);
+        if (sx < 3 || sy < 3 || sx > W - 4 || sy > H - 4) return -1;
+        const buf = new Uint8Array(4 * 25);
+        gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        let l = 0;
+        for (let i = 0; i < 25; i++) l += 0.2126 * buf[i * 4] + 0.7152 * buf[i * 4 + 1] + 0.0722 * buf[i * 4 + 2];
+        return +(l / 25).toFixed(1);
+      };
+      cam.position.set(x0 + 0.5, sol + 3.5, z0 + 6.5);
+      cam.lookAt(x0 + 0.5, sol + 3.5, z0 + 0.5);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const face = z0 + 1.001;
+      const allumees = fenetres.filter((f) => f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
+      const eteintes = fenetres.filter((f) => !f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
+      const murs = [];
+      for (const c of [-4, 4]) for (const h of [2, 4]) murs.push(lire(x0 + c + 0.5, sol + h + 0.5, face));
+      const med = (t) => { const s = [...t].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : -1; };
+      return { allumees, eteintes, murs, fenetre: med(allumees), mur: med(murs),
+        morceauxEclaires: [...g.chunkMeshes.values()].filter((e) => e.lumineux).length };
     });
     verifier('à minuit, les fenêtres de la ville restent allumées',
-      nuit.fenetres > nuit.solide * 1.8 && nuit.morceauxEclaires >= 3,
-      `murs à ${nuit.solide}, fenêtres à ${nuit.fenetres} · ${nuit.morceauxEclaires} morceaux éclairés`);
+      nuit.allumees.length >= 2 && nuit.mur >= 0 && nuit.fenetre > nuit.mur * 1.8 && nuit.morceauxEclaires >= 1,
+      `fenêtre allumée à ${nuit.fenetre}, mur à ${nuit.mur} (éteintes ${JSON.stringify(nuit.eteintes)}) · ${nuit.morceauxEclaires} morceau(x) éclairé(s)`);
 
     // --- San Francisco à l'échelle GTA (v192) --------------------------------
     //

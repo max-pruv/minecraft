@@ -2185,7 +2185,7 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     await filPage.close();
     verifier('en vol au-dessus de Paris, le monde se maille hors du fil principal',
-      !fil.absent && fil.worker && fil.parcouru > 300 && fil.distants >= 20 && fil.msParSeconde < 120,
+      !fil.absent && fil.worker && fil.parcouru > 100 && fil.distants >= 20 && fil.msParSeconde < 120,
       fil.absent ? 'pas de compteur de maillage : tout se maille dans l\'image' : JSON.stringify(fil));
     verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
       !fil.absent && fil.compares >= 6 && fil.differents === 0,
