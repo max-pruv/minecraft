@@ -239,6 +239,37 @@ async function avancerUnDemiSeconde(p, depart) {
       Math.abs((aTerre.oeil - aTerre.y) - (aPied.oeil - aPied.y)) < 0.2,
       `${(aTerre.oeil - aTerre.y).toFixed(2)} m`);
 
+    // --- ON VOIT LE PERSONNAGE CONDUIRE (v249) ------------------------------
+    // Max : « fais en sorte qu'on voit le personnage conduire quand on
+    // conduit une voiture ». La vue de poursuite montrait une voiture vide.
+    // On monte par le bouton, comme l'enfant, et l'on vérifie ce qu'il
+    // voit : son avatar est enfant du maillage de la voiture, dans
+    // l'habitacle (repère du véhicule), et sa tête tombe dans le cadre de la
+    // caméra ; à la descente, il n'est plus dans la scène. Sur l'ancien code
+    // il n'y a pas d'avatar local du tout — et le témoin le dit.
+    await poserDevant(tab, 'voiture');
+    await dormir(900);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(900);
+    const conduite = await tab.evaluate(async () => {
+      const g = window.__game, av = g.avatarLocal, a = g.fun.montureConduite ? g.fun.montureConduite() : null;
+      if (!av || !a) return { avatar: !!av, monture: !!a };
+      const THREE = await import('three');
+      const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0));
+      const v = tete.clone().project(g.camera);
+      return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
+        x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1 };
+    });
+    verifier('au volant, le personnage de l\'enfant est assis dans la voiture et dans le cadre',
+      !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre,
+      JSON.stringify(conduite));
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const aLaDescente = await tab.evaluate(() => { const av = window.__game.avatarLocal; return { avatar: !!av, dansLaScene: !!(av && av.parent) }; });
+    verifier('et il descend avec l\'enfant : plus d\'avatar dans la scène à pied',
+      aLaDescente.avatar && !aLaDescente.dansLaScene, JSON.stringify(aLaDescente));
+
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
     await dormir(600);
@@ -1928,9 +1959,26 @@ async function avancerUnDemiSeconde(p, depart) {
       r.render(g.scene, cam);
       const lampe = { pied: +lire(lx + 1, sol + 1, lz + 0.5).toFixed(1), loin: +lire(lx + 0.5, sol + 1, lz + 8.5).toFixed(1),
         allumees: (g.lampesRue || []).filter((l) => l.intensity > 0).length };
+      // ---- LA NUIT, UNE RUE DANS L'OMBRE DE LA LUNE RESTE LISIBLE (v249) ---
+      // Max, capture d'iPad : « Paris est dans le noir ». Un mur de pierre de
+      // huit blocs fait une façade ; le sol dans son ombre de lune est la rue
+      // entre deux immeubles, celle que l'enfant voit sur sa tablette — où
+      // les ombres existent, contrairement au banc. On lit ce sol, et le mur
+      // lui-même du côté de l'ombre. Sur l'ancien code : 5,7 et 2,6 sur 255.
+      w.setBlock(lx, sol + 1, lz, 0);                     // le réverbère s'en va, sa lampe aussi
+      for (let c = -4; c <= 4; c++) for (let h = 1; h <= 8; h++) w.setBlock(x0 + c, sol + h, z0 + 8, 3);
+      await dodo(2500);
+      const sun = g.scene.children.find((o) => o.isDirectionalLight);
+      const dLune = sun.position.clone().sub(sun.target.position).normalize();
+      const cote = dLune.z > 0 ? -1 : 1;                  // l'ombre tombe à l'opposé de la lune
+      cam.position.set(x0 + 0.5, sol + 12, z0 + 8 + cote * 3);
+      cam.lookAt(x0 + 0.5, sol + 1, z0 + 8 + cote * 2);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const nuit = { rue: +lire(x0 + 0.5, sol + 1, z0 + 8 + cote * 2.5).toFixed(1), mur: +lire(x0 + 0.5, sol + 4, z0 + 8 + cote * 0.5).toFixed(1) };
       window.__setDayTime(0.3);
       g.player.flying = false;
-      return { sol, ombre, soleil, matin, soir, ciel, lampe, ombres: r.shadowMap.enabled };
+      return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, ombres: r.shadowMap.enabled };
     });
     await regardPage.close();
     const ok = (v) => typeof v === 'number' && v > 0;
@@ -1961,6 +2009,11 @@ async function avancerUnDemiSeconde(p, depart) {
     // cent pour cent : à Paris, trois réverbères sur vingt-neuf ont pour
     // voisin une chaussée que la culée d'un pont ou le socle d'un monument
     // recouvre APRÈS le sol — le réverbère est juste, la rue est dessous.
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 41,5 et 28,2 mesurés ici, 5,7 et
+    // 2,6 sur l'ancien code.
+    verifier('la nuit, une rue dans l\'ombre de la lune reste lisible',
+      ok(regard.nuit && regard.nuit.rue) && ok(regard.nuit.mur) && regard.nuit.rue >= 22 && regard.nuit.mur >= 14,
+      JSON.stringify(regard.nuit));
     verifier('la nuit, un réverbère éclaire le sol à son pied',
       ok(regard.lampe.pied) && ok(regard.lampe.loin) && regard.lampe.pied / regard.lampe.loin > 1.6,
       JSON.stringify(regard.lampe));

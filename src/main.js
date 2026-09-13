@@ -5129,10 +5129,16 @@ function updateSky(dt) {
     // jet, calqué sur Manhattan) les textures des blocs, plus claires que
     // les matériaux physiques de New York, sortaient délavées par la
     // correspondance tonale — ciel blanc, toits blancs.
-    hemiLight.intensity = (0.26 + 0.62 * daylight) * wDim;
+    // ET LA NUIT SE RÈGLE AVEC LES OMBRES (v249). Max, capture d'iPad :
+    // « Paris est dans le noir ». Le banc coupe ses ombres, donc mes captures
+    // de nuit étaient éclairées par la lune partout ; sur l'iPad la rue est
+    // dans l'ombre des immeubles et il ne reste que la lueur du ciel —
+    // mesurée à 5,7/255 au sol, 2,6 sur un mur. Le plancher de nuit se lit
+    // sur une page à ombres forcées ; le jour (daylight = 1) ne bouge pas.
+    hemiLight.intensity = (HEMI_NUIT + (0.88 - HEMI_NUIT) * daylight) * wDim;
     hemiLight.color.setRGB(1, 1, 1).lerp(NUIT_CIEL_LAMPE, 1 - daylight);
     hemiLight.groundColor.copy(SOL_LAMPE);
-    sunLight.intensity = (0.14 + 1.0 * daylight) * wDim;
+    sunLight.intensity = (LUNE_NUIT + (1.14 - LUNE_NUIT) * daylight) * wDim;
     sunLight.color.copy(daylight > 0.5 ? SOLEIL_LAMPE : LUNE_LAMPE);
     sunLight.color.lerp(SUNSET_SKY, rasant * 0.45);
   }
@@ -5152,6 +5158,9 @@ let tempsEau = 0;
 const SUNSET_SKY = new THREE.Color(0xff8a4a);
 const SOLEIL_LAMPE = new THREE.Color(0xffefd6);
 const LUNE_LAMPE = new THREE.Color(0x8fa8d8);
+// Les planchers de nuit (v249), mesurés ombres forcées : voir `updateSky`.
+const HEMI_NUIT = 1.7;
+const LUNE_NUIT = 0.45;
 const NUIT_CIEL_LAMPE = new THREE.Color(0x7d93b8);
 const SOL_LAMPE = new THREE.Color(0x6e6a5e);
 const MARS_SKY = new THREE.Color(0xd9a184);
@@ -5193,6 +5202,41 @@ scene.add(rainPoints);
 // Il ne décide simplement plus rien.
 const invite = () => !!(net && net.active && !net.isHost);
 const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
+
+// ON VOIT LE PERSONNAGE CONDUIRE (v249). Max : « fais en sorte qu'on voie le
+// personnage conduire quand on conduit une voiture ». La vue de poursuite
+// montrait une voiture vide. L'avatar de l'enfant — le même personnage que
+// les autres joueurs voient de lui — est assis sur le `siege` que la fiche
+// de la monture déclare, dans le repère du véhicule, cuisses en avant et
+// bras vers le volant ; il descend avec lui. Une monture sans siège (un
+// cheval, un avion sculpté) ne le montre pas : la règle vit dans la fiche.
+let avatarLocal = null, avatarLocalChar = -1, avatarTemps = 0;
+const POSE_AU_VOLANT = { cuisses: 1.35, genoux: 1.25, bras: 0.95, coudes: -0.55 };
+function obtenirAvatarLocal() {
+  if (!avatarLocal || avatarLocalChar !== selectedChar) {
+    if (avatarLocal) { avatarLocal.removeFromParent(); liberer(avatarLocal); }
+    avatarLocal = buildKidMesh(withOwnLook((NET_CHARACTERS[selectedChar] || NET_CHARACTERS[0]).look));
+    avatarLocalChar = selectedChar;
+  }
+  return avatarLocal;
+}
+function asseoirLeConducteur(dt) {
+  const a = fun.montureConduite ? fun.montureConduite() : null;
+  const siege = a && a.def && a.def.siege;
+  if (!siege || !a.mesh) {
+    if (avatarLocal && avatarLocal.parent) avatarLocal.removeFromParent();
+    return;
+  }
+  const av = obtenirAvatarLocal();
+  if (av.parent !== a.mesh) a.mesh.add(av);
+  // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
+  av.position.set(siege.x, siege.y - 0.77, siege.z);
+  av.rotation.y = Math.PI;                       // le personnage regarde en +z, la voiture en −z
+  avatarTemps += dt;
+  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
+  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
+  animerHumain(av, avatarTemps, 0, POSE_AU_VOLANT);
+}
 
 // LES RÉVERBÈRES ÉCLAIRENT VRAIMENT LA RUE, LA NUIT (v248). Manhattan pose
 // ses quatre lampes sur la grille de ses avenues ; partout ailleurs, on les
@@ -5530,7 +5574,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5648,6 +5692,7 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
+  asseoirLeConducteur(dt);
   effects.update(dt);
 
   // LA CARTE SE RAFRAÎCHIT QUAND ON A BOUGÉ, PAS QUAND UNE HORLOGE SONNE.

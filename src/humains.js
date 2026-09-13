@@ -221,9 +221,26 @@ export function construireCorpsRealiste(p) {
   return g;
 }
 
-export function animerHumain(g, temps, vitesse = 0) {
+// `pose` (v249) : une posture tenue à la place de la marche — l'enfant assis
+// au volant : cuisses en avant, genoux pliés, bras tendus vers le volant. Les
+// angles sont ceux des pivots de l'atelier (le même signe que `swing`).
+export function animerHumain(g, temps, vitesse = 0, pose = null) {
   const { rig, arms, legs, corps } = g.userData;
   if (!rig) return;
+  if (pose) {
+    for (const cote of ["L", "R"]) {
+      rotation(rig, cote + "_Thigh", pose.cuisses);
+      rotation(rig, cote + "_Calf", pose.genoux);
+      rotation(rig, cote + "_Foot", 0);
+      rotation(rig, cote + "_UpperArm", pose.bras);
+      rotation(rig, cote + "_Forearm", pose.coudes);
+    }
+    legs[0].rotation.x = legs[1].rotation.x = pose.cuisses;
+    rotation(rig, "Spine1", 0);
+    rotation(rig, "Head", Math.sin(temps * 0.55) * 0.018);
+    corps.position.y = 0;
+    return;
+  }
   // Une marche à genoux et coudes fléchis, pas quatre barres qui cisaillent.
   const marche = Math.min(1, vitesse / 1.6),
     phase = temps * 6.2;

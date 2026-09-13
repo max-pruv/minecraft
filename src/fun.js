@@ -1878,6 +1878,9 @@ export function initFun(ctx) {
     onLeave,
     attachNet,
     ouvrirOnglet,
+    // La monture que l'enfant est en train de conduire (ou null) : main.js
+    // y assied son avatar quand la fiche déclare un `siege` (v249).
+    montureConduite: () => riding,
     // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
     // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
     // lot réseau — reste ici : c'est fun qui connaît le monde et le réseau.

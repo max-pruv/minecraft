@@ -49,6 +49,23 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
+- [ ] **v250 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
+  qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
+  suffisant. En avion le lag est fort. En voiture lag et aussi la
+  définition des bâtiments (voir les détails) s'affiche trop tard. » À
+  mesurer d'abord — découper l'image en vol et en voiture à Paris à
+  `rr=12` (génération, maillage, rendu, passants, convois), et le coût des
+  ombres de la v247 sur tablette, jamais mesuré. Piste principale : sortir
+  la génération et le maillage des morceaux du fil principal (Web Worker),
+  parce qu'à cent dix blocs par seconde au-dessus d'une ville le maillage
+  réclame déjà les trois quarts de chaque seconde ; les détails qui
+  arrivent tard sont les morceaux pas encore maillés que le paysage
+  lointain remplace.
+
+- [x] **v249 — Paris n'est plus dans le noir, on voit le personnage
+  conduire.** Faits : planchers de nuit réglés ombres forcées, avatar
+  assis sur le `siege` de la fiche.
+
 - [ ] **v248 et suivantes — « regarde les améliorations qu'il y a encore eu
   dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
   La v247 a livré la première étape, le regard (soleil, ombres, ACES, voûte
