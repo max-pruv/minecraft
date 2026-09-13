@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v254 — Le badge de version raconte les nouveautés
+
+**Pourquoi.** Max : « quand l'utilisateur clique sur le logo de mise à jour,
+ça lui affiche une modale, il peut la fermer, pour voir tout ce qui est
+nouveau sur chaque version. Du contenu extrêmement court, des bullet points,
+des phrases de quelques mots. Et un backfill complet des anciennes mises à
+jour. » Jusqu'ici, toucher le badge forçait une mise à jour — un geste de
+parent, pas de curiosité — et rien dans le jeu ne disait ce qu'une version
+apportait ; le journal complet vit dans le dépôt, pas sur l'iPad.
+
+**Ce que ça change.** Toucher le badge de version, sur l'accueil, ouvre
+« ✨ Quoi de neuf ? » : chaque version, de la plus récente à la première,
+avec un titre de quelques mots et deux à cinq puces d'au plus huit mots,
+écrites pour un enfant ; la version installée est marquée « ← ta version ».
+La croix, un toucher à côté ou Échap la ferment. La mise à jour forcée
+reste possible : c'est le bouton « 🔄 Mettre à jour » en bas de la modale.
+Cent deux entrées reprennent tout le journal depuis les débuts.
+
+**Ce qui le prouve.** Deux témoins de plus dans `maj.js`, rouges sur
+l'ancien code (pas de modale ; pas de fichier) : sur l'accueil, le badge
+ouvre le journal, la version servie par `sw.js` est en tête avec au moins
+une puce, la version installée est marquée, la croix le ferme ; et, sous
+node sans navigateur, chaque « ## vNNN » de `CHANGELOG.md` a son entrée dans
+`src/nouveautes.js`, aucune puce ne dépasse huit mots, aucun titre six.
+Et un troisième rouge attrapé AVANT la fusion par le portail lui-même :
+fermée, la modale couvrait tout l'écran (`display: flex` l'emportait sur
+`hidden`) et avalait les gestes de la carte — `carte.js` l'a dit, le témoin
+vérifie désormais par `elementFromPoint` qu'aucun voile ne reste.
+Portail : fumée verte, puis `reglages.js`, `carte.js`, `maj.js` vertes (220
+témoins) ; `manhattan.js` rouge sur exactement les quatre témoins déclarés en
+dette dans `TASKS.md` depuis la v242 (rendu logiciel), rien d'autre.
+
 ## v253 — À plusieurs, on voit l'ami dans sa voiture, et l'on monte avec lui
 
 **Pourquoi.** Max, après la v249 : « En multijoueur, on ne voit pas si un

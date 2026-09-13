@@ -57,6 +57,7 @@ const GARDIENS = {
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
+  'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],

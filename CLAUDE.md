@@ -711,6 +711,29 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Le journal des nouveautés vit dans le jeu (v254)
+
+Max : « une modale au clic sur le logo de mise à jour, tout ce qui est
+nouveau sur chaque version, extrêmement court, bullet points ». Trois
+règles.
+
+- **LE JOURNAL EST UNE DONNÉE, PAS UNE PROSE.** `src/nouveautes.js` :
+  `{ v, titre, puces }` par version, sans import, lu par la modale
+  (import dynamique au premier clic — rien de chargé avant) ET par un témoin
+  sous node. Une entrée se rédige pour un enfant : le titre en deux à six
+  mots, chaque puce en huit mots au plus, ce que la famille VOIT, jamais la
+  technique. **Toute livraison ajoute son entrée dans le même commit que
+  `CHANGELOG.md`** : le témoin de `maj.js` rougit sur une version du journal
+  sans entrée dans le jeu.
+- **LA MISE À JOUR FORCÉE NE DISPARAÎT PAS, ELLE DÉMÉNAGE.** Le badge
+  ouvrait `forcerMaj` ; il ouvre la modale, et `forcerMaj` est le bouton en
+  bas. Le dernier recours d'un parent (v220) reste à un toucher du badge —
+  deux, désormais.
+- **LA VERSION MARQUÉE EST CELLE DU BADGE**, lue dans son texte, parce que le
+  badge demande la sienne au service worker et qu'une page sans service
+  worker n'en a pas : sans numéro, rien n'est marqué et la plus récente est
+  en tête. Le témoin compare la tête à `sw.js`, la marque au badge.
+
 ## À plusieurs, le véhicule voyage avec la position (v253)
 
 Max : « on ne voit pas si un user est dans une voiture… permets que
