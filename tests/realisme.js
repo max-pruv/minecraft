@@ -269,6 +269,15 @@ const verifier = (nom, ok, detail) => {
     const q = await lent.newPage();
     const fautes = [];
     q.on("pageerror", (e) => fautes.push(e.message));
+    // Le service worker est coupé, comme partout au banc sauf dans maj.js :
+    // actif, il s'installe, prend la main et fait RECHARGER la page — sur un
+    // banc qui porte déjà la page de Manhattan, avant même que le jeu ne se
+    // soit attaché. Le portail l'a dit : cent vingt secondes sans `__game`.
+    await q.addInitScript(() => {
+      if (navigator.serviceWorker)
+        navigator.serviceWorker.register = () =>
+          Promise.reject(new Error("désactivé pour les tests"));
+    });
     let servis = 0;
     await q.route("**/vendor/humains/*.glb", async (r) => {
       await dormir(5000);
