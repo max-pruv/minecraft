@@ -60,8 +60,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (`reseau.js`, hôte 1 · Alice 2 après vingt-cinq secondes) — vert seul sur
   la branche une heure avant (74 témoins), tombé juste après un `souffler`
   à sa limite (charge 4,49) et un retour d'Alice à 58 s au lieu de 25 ; le
-  code réseau de v253 n'ajoute que deux champs au message de position. À
-  rejouer seul avant fusion ; si vert, rouge de portail déclaré ici. Et
+  code réseau de v253 n'ajoute que deux champs au message de position. Vert
+  à la passe suivante du portail (hôte 2 · Alice 2, 25 s) : rouge de
+  charge, déclaré ici. Et
   « sous le toit » (`monte.js`) : le témoin lisait `plafondSiege.y` comme un
   nombre, devenu une case par siège en v253 — corrigé dans le banc (il lit
   la case du siège conducteur), le jeu asseyait bien l'enfant (crâne 1,19).

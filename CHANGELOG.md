@@ -49,6 +49,13 @@ dans une voiture dessinée (enfant de son maillage) ; Alice se place à trois
 blocs, appuie sur « Monter avec Marlon », Marlon roule trois secondes sans
 qu'elle touche à rien — elle a suivi de 3.54 blocs (lui : 3.81), à
 0.59 bloc de lui ; et chez Marlon, Alice est assise dans sa voiture.
+Portail : voie longue, sept suites ; `reseau.js` (74 témoins), `visio.js`,
+`carte.js`, `washington.js` et `hote.js` vertes, `monte.js` sur le seul gel
+de téléportation déclaré, `manhattan.js` sur ses quatre rouges déclarés de
+ce banc. Deux rouges de charge démontés en route : « la reprise tient dans
+la durée » (rouge après un `souffler` à sa limite, vert à la passe
+suivante et seul), et un témoin du banc qui lisait le cache du plafond
+comme un nombre — corrigé dans le banc, pas dans le jeu.
 
 ## v252 — La voiture de l'enfant ne traverse plus le mobilier des rues
 
