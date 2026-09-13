@@ -1912,9 +1912,25 @@ async function avancerUnDemiSeconde(p, depart) {
       const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
       const pix = (sx, sy) => { const b = new Uint8Array(4 * 25); gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, b); let l = 0; for (let i = 0; i < 25; i++) l += 0.2126 * b[i * 4] + 0.7152 * b[i * 4 + 1] + 0.0722 * b[i * 4 + 2]; return +(l / 25).toFixed(1); };
       const ciel = { zenith: pix(Math.round(W / 2), 6), bas: pix(Math.round(W / 2), H - Math.round(H / 6)) };
+      // ---- UN RÉVERBÈRE ÉCLAIRE SON SOL LA NUIT (v248) --------------------
+      // L'enfant pose un réverbère (le prop 🛞 de l'inventaire, le même que
+      // les villes plantent) sur la dalle, et la nuit tombe. On lit le sol à
+      // son pied et le sol huit blocs plus loin, sur la même dalle, depuis la
+      // même caméra. Sur l'ancien code la lanterne est un bloc peint, et les
+      // deux points ont la même luminance : rapport un.
+      const lx = x0 + 6, lz = z0 - 5;
+      w.setBlock(lx, sol + 1, lz, 700);
+      window.__setDayTime(0.76);
+      await dodo(3000);                                   // remaillage, puis la cadence des lampes
+      cam.position.set(lx + 0.5, sol + 14, lz + 4);
+      cam.lookAt(lx + 0.5, sol + 1, lz + 4);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const lampe = { pied: +lire(lx + 1, sol + 1, lz + 0.5).toFixed(1), loin: +lire(lx + 0.5, sol + 1, lz + 8.5).toFixed(1),
+        allumees: (g.lampesRue || []).filter((l) => l.intensity > 0).length };
       window.__setDayTime(0.3);
       g.player.flying = false;
-      return { sol, ombre, soleil, matin, soir, ciel, ombres: r.shadowMap.enabled };
+      return { sol, ombre, soleil, matin, soir, ciel, lampe, ombres: r.shadowMap.enabled };
     });
     await regardPage.close();
     const ok = (v) => typeof v === 'number' && v > 0;
@@ -1930,6 +1946,49 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('le ciel est une voûte : plus profond au zénith qu\'à l\'horizon',
       ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,
       JSON.stringify(regard.ciel));
+    // ---- LES RÉVERBÈRES ÉCLAIRENT LA RUE, PARTOUT (v248) ------------------
+    //
+    // Deuxième étape du programme : Manhattan a des lampes de rue la nuit ;
+    // les villes engendrées plantaient des réverbères qui n'éclairaient rien,
+    // et les six villes bâties à la main n'en avaient AUCUN. Deux témoins :
+    // la lanterne éclaire le sol à son pied (mesuré en pixels, ci-dessus), et
+    // Paris, Londres, San Francisco et Washington ont des réverbères au bord
+    // de leurs rues — lus dans les BLOCS que le générateur pose, sur un
+    // carré de soixante-quatre blocs autour du centre de chaque ville, et
+    // chacun avec de la chaussée pour voisin — lue au SOMMET de la colonne
+    // voisine, parce que San Francisco est en pente et que la chaussée d'à
+    // côté est souvent un bloc plus haut ou plus bas que le trottoir. Et pas
+    // cent pour cent : à Paris, trois réverbères sur vingt-neuf ont pour
+    // voisin une chaussée que la culée d'un pont ou le socle d'un monument
+    // recouvre APRÈS le sol — le réverbère est juste, la rue est dessous.
+    verifier('la nuit, un réverbère éclaire le sol à son pied',
+      ok(regard.lampe.pied) && ok(regard.lampe.loin) && regard.lampe.pied / regard.lampe.loin > 1.6,
+      JSON.stringify(regard.lampe));
+    const reverberes = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { CHAUSSEE } = await import('./src/world.js');
+      const w = window.__game.world;
+      const out = {};
+      for (const ville of ['paris', 'londres', 'sf', 'washington']) {
+        const P = positionDe(ville);
+        let total = 0, auBord = 0;
+        for (let x = P.x - 32; x < P.x + 32; x++) {
+          for (let z = P.z - 32; z < P.z + 32; z++) {
+            const sol = w.sommetColonne(x, z);
+            if (w.getBlock(x, sol + 1, z) !== 700) continue;
+            total++;
+            const rue = CHAUSSEE && [[1, 0], [-1, 0], [0, 1], [0, -1]]
+              .some(([dx, dz]) => CHAUSSEE.has(w.getBlock(x + dx, w.sommetColonne(x + dx, z + dz), z + dz)));
+            if (rue) auBord++;
+          }
+        }
+        out[ville] = { total, auBord };
+      }
+      return out;
+    });
+    verifier('Paris, Londres, San Francisco et Washington ont des réverbères au bord de leurs rues',
+      Object.values(reverberes).every((v) => v.total >= 8 && v.auBord >= 0.85 * v.total),
+      JSON.stringify(reverberes));
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //

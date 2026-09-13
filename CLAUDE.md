@@ -644,6 +644,47 @@ des trois témoins du regard (`banc.jouerSeul(…, { ombres: 1 })`). Toute
 suite qui ne mesure pas le regard tourne donc sans ombres, comme avant ; les
 trois témoins tournent avec. Sur l'iPad, la carte graphique est là.
 
+## Les réverbères, partout, et quatre lampes pour tout le monde (v248)
+
+Deuxième étape de « New York partout ». Manhattan a quatre lampes de rue ;
+les villes engendrées plantaient des réverbères dont la lanterne était un
+bloc peint, et les six villes bâties à la main n'en avaient AUCUN — mesuré
+sur captures de nuit à Paris, Londres et Rome : des vitres allumées, des rues
+noires. Quatre règles.
+
+- **LE MONDE RÉPOND TOUT SEUL, ON NE CONNAÎT PAS LA TRAME.** `lampadaireDeVille`
+  (world.js, à côté d'`arbreDeVille`) regarde le SOL : une colonne de trottoir
+  dont un voisin est de la chaussée est au bord du caniveau, la rue court le
+  long de l'axe sans chaussée, et l'on compte les crans le long de cet axe.
+  Un coin de carrefour — chaussée sur les deux axes — ne reçoit rien. Le même
+  crochet sert Paris, Washington, San Francisco et la boucle Nice/Lille/
+  Londres ; les villes engendrées gardent `mobilierVillesMonde`. **Et « la
+  chaussée » se DEMANDE, elle ne se recopie pas** : `CHAUSSEE` est exportée
+  de `world.js` ; `main.js` la lit pour tourner la crosse vers la rue. Paris
+  y a fait entrer `ARCHI.PAVE` — sa rue est en pavés, et mon premier jet ne
+  posait pas un réverbère à Paris.
+- **QUATRE LAMPES, ET PAS UNE DE PLUS, POUR TOUT LE JEU.** Le nombre de
+  lumières ponctuelles fait partie de la clé de chaque programme de shader :
+  en créer d'autres recompilerait TOUS les matériaux à l'entrée et à la
+  sortie de Manhattan — le gel de la v246, ramené par la petite porte.
+  `main.js` possède les quatre (`lampesRue`) et les PRÊTE à `ManhattanRenderer`
+  (option `lamps`) ; hors de Manhattan, `eclairerLaRue` les pose sous les
+  quatre lanternes les plus proches de l'enfant, à moins de quarante blocs,
+  sur une cadence de ménage en temps réel (une demi-seconde), et les éteint
+  le jour. Les lanternes sont notées par `meshChunk` (`entry.lanternes`) en
+  dessinant les réverbères — un réverbère posé par l'enfant éclaire donc
+  aussi.
+- **LA PART DE NUIT N'EST PAS `daylight`.** `daylight` ne descend jamais sous
+  0,08 : `nuitDehors` en fait un lissage de 0 à 1, et c'est lui qui allume.
+- **UN TÉMOIN DE LUMIÈRE LIT DES PIXELS, UN TÉMOIN DE MOBILIER LIT DES
+  BLOCS.** Le premier pose un réverbère sur la dalle des témoins du regard
+  et compare le sol à son pied au sol huit blocs plus loin (132 contre 19 ;
+  rapport un sur l'ancien code). Le second lit `getBlock` autour du centre
+  de quatre villes — et lit la chaussée voisine au SOMMET de sa colonne,
+  parce que San Francisco est en pente ; et il tolère quinze pour cent de
+  réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
+  ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le

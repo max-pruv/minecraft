@@ -58,12 +58,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   éclairent la rue la nuit, marquages au sol, reflets préfiltrés, pluie sur
   la chaussée (rugosité). Sa chaîne est une liste de bâtiments (rectangle,
   matériau, style, hauteur, graine) et une fonction de surface, avec le
-  monde voxel qui garde les collisions (`TerreUrbaine`). Étapes suivantes,
-  chacune sur captures rue + ciel : les lampadaires qui éclairent vraiment
-  (lumières ponctuelles près de l'enfant, comme les `lamps` de Manhattan) et
-  les marquages, dans toutes les villes ; Paris sur la chaîne de façades ;
-  les autres villes bâties à la main ; les villes engendrées par leurs
-  îlots.
+  monde voxel qui garde les collisions (`TerreUrbaine`). **La v248 a livré
+  la deuxième étape : les réverbères dans les six villes bâties à la main,
+  et les quatre lampes de Manhattan prêtées au monde entier, posées sous les
+  lanternes les plus proches de l'enfant la nuit.** Les marquages au sol
+  existent déjà partout (`ROUTE_BLOCK`, `ROADLINE`, `CROSSWALK`). Étapes
+  suivantes, chacune sur captures rue + ciel : Paris sur la chaîne de
+  façades ; les autres villes bâties à la main ; les villes engendrées par
+  leurs îlots.
 
 - [ ] **Le coût des ombres sur l'iPad n'est pas mesuré.** La v247 ajoute une
   passe d'ombre par image : les morceaux à moins de six morceaux de l'enfant
