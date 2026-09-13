@@ -3556,7 +3556,12 @@ choses à savoir avant d'y toucher.
   intermittent qu'on met des jours à démonter. `habitacle: false` dans la
   fiche, et le témoin le lit : même discipline que `montable`, `nourrissable`
   et `vole`. **Devant un modèle neuf, on cherche le jour même quels témoins
-  supposent quelque chose de la flotte entière.**
+  supposent quelque chose de la flotte entière** — et cette recherche n'avait
+  pas été complète : « la voiture a de vraies vitres » supposait un matériau
+  nommé « glass » ou une opacité sous 0,8, et il est tombé au portail de la
+  v247 sur un tirage (le pare-brise de la Lucid s'appelle « windshield », la
+  Chiron Stealth n'en a pas). Il lit désormais `habitacle` et plusieurs
+  langues de vitrage.
 - **La voiture est un modèle 3D d'artiste, plus jamais une sculpture de
   primitives.** Quatre itérations de coordonnées écrites à l'aveugle
   (verdicts de Max : « très carrée », « low fidelity », « ça ne ressemble
