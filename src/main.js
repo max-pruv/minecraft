@@ -25,7 +25,8 @@ import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules, majRefletsVoiture, refletsVoiture } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture } from './vehicules.js';
+import { decor, voirTout } from './couches.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -35,7 +36,7 @@ import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
-import { animerHumain } from './humains.js';
+import { animerHumain, chargerHumains } from './humains.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
@@ -132,6 +133,9 @@ scene.background = DAY_SKY.clone();
 scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
+// La caméra de l'enfant voit toutes les couches (couches.js) : le décor que
+// la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
+voirTout(camera);
 
 // Lights only affect Lambert materials (the high-fidelity creatures);
 // blocks keep their baked flat look via MeshBasic + vertex AO.
@@ -252,7 +256,7 @@ const world = new urbain.TerreUrbaine();
 // `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
-scene.add(horizon.objet());
+scene.add(decor(horizon.objet()));
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
@@ -377,17 +381,17 @@ function meshChunk(cx, cz) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
     entry.solid.castShadow = true; entry.solid.receiveShadow = true;
-    scene.add(entry.solid);
+    scene.add(decor(entry.solid));
   }
   if (water) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
-    scene.add(entry.water);
+    scene.add(decor(entry.water));
   }
   if (lumineux) {
     entry.lumineux = new THREE.Mesh(lumineux, litMaterial);
     entry.lumineux.position.set(cx * CHUNK, 0, cz * CHUNK);
-    scene.add(entry.lumineux);
+    scene.add(decor(entry.lumineux));
   }
   if (props.length > 0) {
     const group = new THREE.Group();
@@ -398,7 +402,7 @@ function meshChunk(cx, cz) {
       group.add(mesh);
     }
     entry.props = group;
-    scene.add(group);
+    scene.add(decor(group));
   }
   chunkMeshes.set(key, entry);
 }
@@ -5493,16 +5497,17 @@ function frame(now) {
 
   // Les reflets de la carrosserie : la caméra cubique ne tourne que quand une
   // voiture est à portée de regard, et deux fois par seconde — six rendus de
-  // 128 px, rien quand on est à pied loin de tout.
+  // 128 px, rien quand on est à pied loin de tout. Et depuis la v245, UNE
+  // face par image : les six faces dans la même image faisaient l'à-coup
+  // que Max sentait au volant (voir `avancerReflets`).
   refletsHorloge -= dt;
   if (refletsHorloge <= 0) {
     refletsHorloge = 0.5;
     const voitureProche = animalManager.animals.find((a) => a.def.key === 'voiture'
       && Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 45);
-    if (voitureProche && refletsVoiture()) {
-      majRefletsVoiture(renderer, scene, voitureProche.pos);
-    }
+    if (voitureProche && refletsVoiture()) lancerReflets(voitureProche.pos);
   }
+  avancerReflets(renderer, scene);
 
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
@@ -5516,6 +5521,17 @@ requestAnimationFrame(frame);
 // bring it back if a new version starts downloading)
 requestAnimationFrame(() => {
   document.getElementById('boot-loader').classList.add('hidden');
+  // Les corps réalistes (8 Mo) arrivent MAINTENANT, pas avant : l'accueil
+  // répond déjà, et les gens nés en attendant se mettent à niveau sur place
+  // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
+  // de Max sur l'iPad de quatre ans.
+  chargerHumains();
+  // Et l'on chauffe la sonde des reflets ici, au point d'apparition : ses six
+  // faces compilent les programmes du décor vu depuis une cible cubique —
+  // mesuré au banc, vingt-six programmes de plus à l'arrivée de la première
+  // voiture, une seconde d'image figée. Compilés pendant l'accueil, ils ne
+  // coûtent rien à l'enfant qui monte en voiture.
+  if (refletsVoiture()) lancerReflets(player.pos);
 });
 
 // UN SEUL MONDE, ET PAS DE BOUTON « EXPLORER NEW YORK » SUR L'ACCUEIL (v242).

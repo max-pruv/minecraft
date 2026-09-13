@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v245 — L'accueil répond tout de suite, et la voiture ne saccade plus sur un vieil iPad
+
+**Pourquoi.** Max, sur l'iPad de quatre ans : « quand on allume le jeu, il
+faut attendre quasiment vingt secondes le temps de pouvoir cliquer sur le
+bouton », et « quand on essaie de conduire une voiture, la voiture avance de
+manière hyper saccadée. La marche, c'est ok. » Mesuré : les neuf corps
+réalistes des personnages (8,2 Mo, quatre-vingts pour cent de tout ce que le
+jeu télécharge) étaient attendus par `humains.js` AVANT que `main.js` ne
+s'exécute — aucun bouton n'était attaché tant qu'ils n'étaient pas arrivés
+et analysés — et ils se re-téléchargeaient à CHAQUE livraison, c'est-à-dire
+tous les jours. Au volant, assis dans une voiture à l'arrêt, une image sur
+quatre durait trois fois la médiane, par paires à une demi-seconde d'écart :
+la sonde des reflets de carrosserie rendait ses six faces dans la même
+image, et chaque face soumettait au pilote autant d'appels de dessin que la
+vue de l'enfant (jusqu'à 455). À pied elle ne tourne pas — c'est exactement
+« la marche, c'est ok ».
+
+**Ce que ça change.** L'accueil s'attache dès que le code est là ; les corps
+réalistes arrivent pendant qu'on lit l'accueil, un par un, sans bloquer, et
+les gens nés en attendant — le château, l'avatar, les passants — reçoivent
+leur corps réaliste sur place, sans changer d'objet, épée et torche
+comprises. Rien n'est perdu : les mêmes personnages, les mêmes corps. Les
+neuf modèles vivent dans le cache immuable avec le scanner et la flotte : une
+mise à jour ne les reprend plus. Au volant, la sonde des reflets rend UNE
+face par image et ne dessine que le décor (ciel, façades, rue, eau) : un
+reflet complet six images plus tard, ce qu'aucun œil ne voit sur un
+pare-brise, pour un coût par face passé de 15-455 appels de dessin à 8-39.
+Et ses programmes se compilent pendant l'accueil, au point d'apparition,
+plutôt qu'à l'arrivée de la première voiture (vingt-six programmes, une
+seconde d'image figée, mesurés).
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code. Dans
+`realisme.js`, on ralentit chaque modèle de cinq secondes et l'on compte
+combien sont arrivés quand le jeu s'attache : zéro ici, neuf avant ; puis on
+joue, et les 123 personnes nées avant les modèles doivent être mises à niveau
+sur place — même objet, même scène, présence cohérente, aucune erreur. Dans
+`monte.js`, au volant, le compteur d'images du moteur ne doit pas avancer de
+plus de deux par tour d'affichage (sept avant), et d'au moins deux une fois
+(les reflets vivent). Dans `maj.js`, un corps demandé se range dans le cache
+immuable. Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
+arrivent en trente millisecondes depuis le disque et la première image y
+coûte 2,9 s de contexte WebGL en logiciel — donc chaque témoin mesure la
+CAUSE : le nombre de fichiers attendus, le nombre de rendus par image, le
+cache où va un fichier.
+
 ## v244 — Les voitures ne se traversent plus, et elles prennent leurs virages en s'inclinant
 
 **Pourquoi.** Max : « évite que les voitures puissent se chevaucher et fait

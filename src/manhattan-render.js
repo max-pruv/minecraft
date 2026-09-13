@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { WATER_LEVEL } from "./world.js";
+import { decor } from "./couches.js";
 import { ORIGINE_MANHATTAN, dansManhattan } from "./manhattan-world.js";
 import {
   SOL,
@@ -263,7 +264,7 @@ export class ManhattanRenderer {
       (BORNES.z0 + BORNES.z1) / 2,
     );
     ocean.userData.ownedGeometry = true;
-    this.root.add(ocean);
+    this.root.add(decor(ocean));
     this.skyDome = new THREE.Mesh(
       new THREE.SphereGeometry(1, 24, 12),
       new THREE.ShaderMaterial({
@@ -281,7 +282,7 @@ export class ManhattanRenderer {
     );
     this.skyDome.scale.setScalar(this.budget.far + 40);
     this.skyDome.renderOrder = -10;
-    this.root.add(this.skyDome);
+    this.root.add(decor(this.skyDome));
     this.mats.foliage.side = THREE.DoubleSide;
     this.lamps = [];
     for (let i = 0; i < 4; i++) {
@@ -450,7 +451,7 @@ export class ManhattanRenderer {
     }
     const g = lot.finish();
     g.userData.key = key;
-    this.root.add(g);
+    this.root.add(decor(g));
     this.far.set(key, g);
   }
   // Tester chaque bloc d'une baie permet de creuser un trou qui se VOIT, sans
@@ -1261,7 +1262,7 @@ export class ManhattanRenderer {
         key = `${cx},${cz}`;
       if (this.ground.has(key)) disposeGroup(this.ground.get(key));
       const g = this.groundSector(cx, cz);
-      this.root.add(g);
+      this.root.add(decor(g));
       this.ground.set(key, g);
       this.dirtyGround.delete(key);
       this.rebuildFar(`${Math.floor(cx / 4)},${Math.floor(cz / 4)}`);
@@ -1289,7 +1290,7 @@ export class ManhattanRenderer {
             const old = this.buildings.get(b.id);
             if (old) disposeGroup(old);
             const g = step.value;
-            this.root.add(g);
+            this.root.add(decor(g));
             this.buildings.set(b.id, g);
             this.nearSet.add(b.id);
             this.rebuildFar(

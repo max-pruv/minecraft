@@ -24,6 +24,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Le premier chargement d'une VOITURE compile encore ses programmes sur
+  la tablette (v245).** Les variantes « cible cubique » du décor sont
+  chauffées à l'accueil ; les matériaux de la flotte, eux, se compilent à la
+  première voiture vue (trois à quatre programmes mesurés au banc, plus par
+  modèle exotique). Piste : `renderer.compile()` sur le premier modèle de
+  flotte chargé, hors écran, dans `chargerVoitureFlotte`.
+
+- [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
+  lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est
+  ni la sonde des reflets (une face coûte 2 à 5 ms depuis la v245) ni du
+  JavaScript : c'est la rastérisation logicielle de la carrosserie
+  réfléchissante en gros plan. Non transposable à l'iPad ; à vérifier UNE
+  fois en rendu matériel avant de chercher plus loin.
+
+- [ ] **Les passants nés à l'ARRIVÉE en ville se clonent encore dans la même
+  image.** La mise à niveau de la v245 étale les clones de squelette sur
+  six millisecondes par image, mais seulement pour ceux nés avant les
+  modèles ; c'est la piste déjà écrite ci-dessous pour « l'arrivée en ville
+  fige l'écran ».
+
 - [ ] **Deux circuits de Paris se raccordent à cent soixante degrés sur la rue
   de Rivoli, et les voitures s'y frôlent encore.** Après la v244, il reste
   dix-sept à vingt-cinq relevés de chevauchement sur trente secondes (contre

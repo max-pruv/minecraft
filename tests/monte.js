@@ -822,6 +822,37 @@ async function avancerUnDemiSeconde(p, depart) {
       && tourne > attendu * 0.7 && tourne < attendu * 1.4,
       `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
       + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+
+    // LES REFLETS NE FIGENT PLUS L'IMAGE (v245) -------------------------------
+    //
+    // Max, sur l'iPad de quatre ans : « la voiture avance de manière hyper
+    // saccadée ». La sonde des reflets rendait ses SIX faces dans la même
+    // image, deux fois par seconde : au banc, assis dans une voiture à
+    // l'arrêt, une image sur quatre durait trois fois la médiane, par paires à
+    // une demi-seconde d'écart. On mesure la CAUSE et non l'effet — le banc
+    // rend en logiciel, sa cadence ne dit rien de l'iPad : le compteur
+    // d'images du moteur avance d'un cran par `render()`, donc de 1 + faces
+    // rendues à chaque tour d'affichage. Sept sur l'ancien code ; deux au
+    // plus ici, et au moins un tour à deux, sinon les reflets sont morts.
+    const rendus = await tab.evaluate(async () => {
+      const g = window.__game;
+      const deltas = [];
+      let prec = g.renderer.info.render.frame;
+      await new Promise((fin) => {
+        const t0 = performance.now();
+        const tour = () => {
+          const f = g.renderer.info.render.frame;
+          deltas.push(f - prec); prec = f;
+          if (performance.now() - t0 < 4000) requestAnimationFrame(tour); else fin();
+        };
+        requestAnimationFrame(tour);
+      });
+      const d = deltas.slice(1);
+      return { tours: d.length, max: Math.max(...d), aDeux: d.filter((x) => x === 2).length };
+    });
+    verifier('au volant, aucune image ne rend plus d\'une face de reflet à la fois',
+      rendus.tours > 8 && rendus.max <= 2 && rendus.aDeux >= 1,
+      `${rendus.tours} tours · au plus ${rendus.max} rendus par tour · ${rendus.aDeux} tours à deux`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 

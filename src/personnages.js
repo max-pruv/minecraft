@@ -8,7 +8,8 @@
 
 import * as THREE from 'three';
 import { Atelier } from './modeles.js';
-import { construireCorpsRealiste, ajouterTeteRealiste, tetesDisponibles } from './humains.js';
+import { construireCorpsRealiste, ajouterTeteRealiste, tetesDisponibles, humainsCharges, quandLesHumainsArrivent } from './humains.js';
+import { liberer } from './liberer.js';
 
 // Hauteurs de référence d'un adulte, pieds à y = 0, visage tourné vers -z.
 const H = {
@@ -1010,11 +1011,78 @@ const OBJETS = {
 // --- assemblage --------------------------------------------------------------
 
 // profil : { tenue, teint, cheveux, coupe, barbe, moustache, objets:[…], taille }
+//
+// UN CORPS BÂTI AVANT L'ARRIVÉE DES MODÈLES SE MET À NIVEAU SUR PLACE (v245).
+// Les corps réalistes (humains.js) n'arrivent plus avant l'accueil : ils se
+// chargent pendant que l'enfant joue. Un passant, un garde du château ou
+// l'avatar né avant reçoit d'abord le corps sculpté de l'atelier, et — le
+// même objet, dans la même scène, avec les mêmes pivots — se voit remplacer
+// ses pièces quand les modèles sont là. Ce qui a été accroché aux pivots
+// entre-temps (l'épée d'un chevalier, la torche d'une troupe) passe sur les
+// pivots neufs. C'est ce qui permet de rendre l'accueil sans attendre huit
+// mégaoctets SANS que personne ne garde un corps de secours pour la partie.
+const provisoires = new Set();
 export function construireHumain(profil) {
   const p = {
     teint: 0xe0b48c, cheveux: 0x4a3524, coupe: 'court',
     barbe: null, moustache: false, ...profil,
   };
+  const g = batirHumain(p);
+  noterLesPieces(g);
+  if (!humainsCharges()) {
+    g.userData.profil = p;
+    g.userData.provisoire = true;
+    provisoires.add(g);
+  }
+  return g;
+}
+function noterLesPieces(g) {
+  g.userData.pieces = [...g.children];
+  for (const k of ['arms', 'legs']) {
+    for (const pivot of g.userData[k] || []) pivot.userData.corps = [...pivot.children];
+  }
+}
+export function mettreANiveau(g) {
+  const p = g.userData.profil;
+  if (!p || !g.userData.provisoire) return false;
+  const neuf = batirHumain(p);
+  // les accessoires accrochés aux pivots suivent : c'est ce qui n'est pas au corps
+  for (const k of ['arms', 'legs']) {
+    const anciens = g.userData[k] || [], nouveaux = neuf.userData[k] || [];
+    anciens.forEach((pivot, i) => {
+      const corps = pivot.userData.corps || [];
+      for (const o of [...pivot.children]) if (!corps.includes(o) && nouveaux[i]) nouveaux[i].add(o);
+    });
+  }
+  for (const o of g.userData.pieces || []) { g.remove(o); liberer(o); }
+  for (const o of [...neuf.children]) g.add(o);
+  // ce qui décrivait l'ancien corps ne doit pas survivre à côté du nouveau
+  for (const k of ['membres', 'rig', 'corps', 'enfant', 'hauteur']) delete g.userData[k];
+  Object.assign(g.userData, neuf.userData);
+  delete g.userData.profil;
+  delete g.userData.provisoire;
+  noterLesPieces(g);
+  g.userData.miseANiveau = (g.userData.miseANiveau || 0) + 1;
+  provisoires.delete(g);
+  return true;
+}
+export const corpsEnAttente = () => provisoires.size;
+// Quand les modèles arrivent, on met à niveau par tranches de six
+// millisecondes par image : cinquante corps d'un coup seraient un à-coup.
+if (typeof requestAnimationFrame === 'function') {
+  quandLesHumainsArrivent(() => {
+    // rien n'est arrivé (hors ligne, premier lancement) : rien à mettre à niveau
+    if (!tetesDisponibles()) { provisoires.clear(); return; }
+    const file = [...provisoires];
+    const pas = () => {
+      const t0 = performance.now();
+      while (file.length && performance.now() - t0 < 6) mettreANiveau(file.shift());
+      if (file.length) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  });
+}
+function batirHumain(p) {
   if (p.tenue === 'passant' || p.tenue === 'enfant') {
     const corps = construireCorpsRealiste(p);
     if (corps) return corps;

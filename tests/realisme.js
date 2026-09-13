@@ -27,8 +27,10 @@ const verifier = (nom, ok, detail) => {
     const anatomie = await p.evaluate(async () => {
       const { construireHumain } = await import("/src/personnages.js"),
         { buildKidMesh } = await import("/src/marlon.js"),
-        { animerHumain } = await import("/src/humains.js"),
+        { animerHumain, chargerHumains } = await import("/src/humains.js"),
         T = await import("three");
+      // les modèles arrivent après l'accueil (v245) : on bâtit quand ils sont là
+      if (chargerHumains) await chargerHumains();
       const adulte = construireHumain({ tenue: "passant" });
       adulte.updateMatrixWorld(true);
       const avant = new T.Box3().setFromObject(adulte);
@@ -250,6 +252,106 @@ const verifier = (nom, ok, detail) => {
       "aucune erreur de jeu pendant les contrôles",
       p.erreurs.length === 0,
       p.erreurs,
+    );
+
+    // ---- L'ACCUEIL RÉPOND AVANT LES CORPS RÉALISTES (v245) -------------------
+    //
+    // Max, sur l'iPad de quatre ans : « il faut attendre quasiment vingt
+    // secondes le temps de pouvoir cliquer sur le bouton ». Les neuf modèles
+    // (8,2 Mo) étaient attendus par `humains.js` AVANT que `main.js` ne
+    // s'exécute : aucun bouton n'était attaché tant qu'ils n'étaient pas là.
+    // On ralentit chaque modèle de cinq secondes, comme un Wi-Fi d'hôtel, et
+    // l'on regarde combien sont arrivés quand le jeu s'attache : zéro ici,
+    // neuf sur l'ancien code. Puis on joue, et les gens nés en attendant —
+    // le château, l'avatar — doivent recevoir leur corps réaliste SUR PLACE,
+    // sans changer d'objet ni sortir de la scène.
+    const lent = await banc.navigateur.newContext();
+    const q = await lent.newPage();
+    const fautes = [];
+    q.on("pageerror", (e) => fautes.push(e.message));
+    let servis = 0;
+    await q.route("**/vendor/humains/*.glb", async (r) => {
+      await dormir(5000);
+      servis++;
+      r.continue();
+    });
+    const depart = Date.now();
+    await q.goto(
+      "http://127.0.0.1:8361/index.html?peerhost=127.0.0.1:9361&cloud=&stay=1&rr=2",
+      { waitUntil: "load", timeout: 120000 },
+    );
+    await q.waitForFunction(() => window.__game, null, { timeout: 120000 });
+    const attache = { secondes: +((Date.now() - depart) / 1000).toFixed(1), servis };
+    verifier(
+      "le jeu attache ses boutons sans attendre les modèles de personnages",
+      attache.servis === 0,
+      attache,
+    );
+    const avant = await q.evaluate(async () => {
+      const g = window.__game,
+        m = await import("/src/personnages.js");
+      const npcs = g.npcs || [];
+      window.__corpsAvant = new Map(npcs.map((n) => [n, n.mesh]));
+      return {
+        npcs: npcs.length,
+        enAttente: m.corpsEnAttente ? m.corpsEnAttente() : -1,
+      };
+    });
+    await q.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById("play-btn").click();
+    });
+    await q.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    // `waitForFunction` ne suit pas une promesse : on interroge à la main
+    let arrives = false;
+    for (const fin = Date.now() + 90000; !arrives && Date.now() < fin; ) {
+      await dormir(500);
+      arrives = await q.evaluate(async () => {
+        const m = await import("/src/humains.js");
+        return m.humainsCharges ? m.humainsCharges() : true;
+      });
+    }
+    await dormir(4000);
+    const apres = await q.evaluate(async () => {
+      const g = window.__game,
+        m = await import("/src/personnages.js");
+      const npcs = g.npcs || [];
+      const compte = {};
+      let memeObjet = 0,
+        dansScene = 0,
+        presenceFausse = 0;
+      for (const n of npcs) {
+        const a = n.mesh?.userData?.anatomie || "?";
+        compte[a] = (compte[a] || 0) + 1;
+        if (window.__corpsAvant.get(n) === n.mesh) memeObjet++;
+        if (n.mesh.parent) dansScene++;
+        if (n.presence && n.presence.version !== (n.mesh.userData.miseANiveau || 0))
+          presenceFausse++;
+      }
+      return {
+        npcs: npcs.length,
+        compte,
+        memeObjet,
+        dansScene,
+        presenceFausse,
+        enAttente: m.corpsEnAttente ? m.corpsEnAttente() : -1,
+        avatar: g.marlon?.mesh?.userData?.anatomie,
+      };
+    });
+    await lent.close();
+    verifier(
+      "les gens nés avant les modèles reçoivent leur corps réaliste sur place",
+      arrives &&
+        avant.enAttente > 0 &&
+        apres.enAttente === 0 &&
+        apres.npcs > 0 &&
+        apres.memeObjet === apres.npcs &&
+        apres.dansScene === apres.npcs &&
+        apres.presenceFausse === 0 &&
+        !apres.compte["humaine-v2"] &&
+        apres.avatar === "rocketbox-v241" &&
+        fautes.length === 0,
+      { avant, apres, fautes },
     );
   } finally {
     await banc.fermer();

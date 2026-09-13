@@ -10,6 +10,7 @@
 // hors de vue ne coûte ni animation, ni appel de rendu.
 
 import * as THREE from 'three';
+import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
@@ -24,32 +25,85 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 // la voiture ; une cible de rendu GPU, elle, est valide par construction.
 let refletsRT = null;
 let refletsCamera = null;
+// LA CARROSSERIE VIT SUR SA PROPRE COUCHE (v245). Un matériau ne peut pas lire
+// la texture cubique pendant qu'on l'écrit — WebGL signale une boucle de
+// rétroaction — et l'ancien code parcourait TOUTE la scène à chaque capture
+// pour cacher les maillages qui la lisent, puis les rendre. Cinq mille objets
+// deux fois par seconde. Une couche règle cela sans un parcours : la caméra
+// de l'enfant (main.js) voit la couche 2, les six caméras de la sonde ne
+// voient que la couche 0, et une carrosserie n'est jamais dans sa propre
+// réflexion. `Object3D.clone()` recopie la couche : une voiture de la flotte
+// clonée cinquante fois la garde.
+export { COUCHE_CARROSSERIE };
+function refleter(o, m, intensite) {
+  m.envMap = refletsRT.texture;
+  m.envMapIntensity = intensite;
+  o.layers.set(COUCHE_CARROSSERIE);
+}
 export function refletsVoiture() {
   if (!refletsRT && typeof document !== 'undefined') {
     refletsRT = new THREE.WebGLCubeRenderTarget(128, {
       generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
     });
     refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);
+    // ses six caméras partagent cet objet de couches : le décor, rien d'autre
+    voirLeDecor(refletsCamera);
   }
   return refletsRT;
 }
+// UNE FACE PAR IMAGE, JAMAIS SIX (v245). Max, sur l'iPad de quatre ans : « la
+// voiture avance de manière hyper saccadée ». Mesuré au banc, assis dans une
+// voiture à l'arrêt : une image sur quatre durait TROIS fois la médiane, par
+// paires à une demi-seconde d'écart — la cadence exacte de cette sonde, qui
+// rendait ses six faces dans la même image. Chaque face soumet au pilote
+// tous les appels de dessin de la scène ; six faces d'un coup, c'est six
+// images de travail processeur dans une seule, et sur une tablette limitée
+// par ses appels de dessin, c'est un à-coup toutes les demi-secondes. La
+// capture s'étale désormais : `lancerReflets` note où regarder, et
+// `avancerReflets`, appelée à chaque image, rend UNE face. La réflexion est
+// complète six images plus tard, ce qu'aucun œil ne voit sur un pare-brise.
+let faceEnCours = -1;
+const positionSonde = new THREE.Vector3();
+export function lancerReflets(pos) {
+  if (!refletsRT || faceEnCours >= 0) return false;
+  positionSonde.set(pos.x, pos.y + 1.1, pos.z);
+  faceEnCours = 0;
+  return true;
+}
+export function refletsEnCours() { return faceEnCours >= 0; }
+export function avancerReflets(renderer, scene) {
+  if (faceEnCours < 0) return false;
+  const cam = refletsCamera;
+  cam.position.copy(positionSonde);
+  cam.updateMatrixWorld();
+  if (cam.coordinateSystem !== renderer.coordinateSystem) {
+    cam.coordinateSystem = renderer.coordinateSystem;
+    cam.updateCoordinateSystem();
+  }
+  const face = cam.children[faceEnCours];
+  const cible = renderer.getRenderTarget();
+  const xr = renderer.xr.enabled;
+  renderer.xr.enabled = false;
+  // les mipmaps se calculent une fois la sixième face écrite, pas six fois
+  const mipmaps = refletsRT.texture.generateMipmaps;
+  refletsRT.texture.generateMipmaps = faceEnCours === 5 && mipmaps;
+  try {
+    renderer.setRenderTarget(refletsRT, faceEnCours);
+    renderer.render(scene, face);
+  } finally {
+    refletsRT.texture.generateMipmaps = mipmaps;
+    renderer.setRenderTarget(cible);
+    renderer.xr.enabled = xr;
+  }
+  faceEnCours = faceEnCours === 5 ? -1 : faceEnCours + 1;
+  return true;
+}
+// L'ancienne entrée, gardée pour ce qui la lit encore : une capture complète
+// dans la même image. Le jeu ne l'appelle plus.
 export function majRefletsVoiture(renderer, scene, pos) {
   if (!refletsRT) return;
-  refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
-  // Un matériau ne peut lire la texture cubique pendant qu’on l’écrit :
-  // WebGL signale alors une boucle de rétroaction. Les surfaces qui utilisent
-  // cette sonde sont exclues de sa capture, puis restaurées pour la vue joueur.
-  const masques = [];
-  scene.traverse((o) => {
-    if (!o.isMesh || !o.visible) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    if (mats.some((m) => m.envMap === refletsRT.texture)) {
-      masques.push(o);
-      o.visible = false;
-    }
-  });
-  try { refletsCamera.update(renderer, scene); }
-  finally { for (const o of masques) o.visible = true; }
+  lancerReflets(pos);
+  while (faceEnCours >= 0) avancerReflets(renderer, scene);
 }
 
 // --- la vraie voiture ---------------------------------------------------------
@@ -134,7 +188,7 @@ export function chargerVraieVoiture() {
         o.material.transparent = true;
         o.material.opacity = 0.35;
       }
-      if (rt) { o.material.envMap = rt.texture; o.material.envMapIntensity = 1.0; }
+      if (rt) refleter(o, o.material, 1.0);
       o.material.needsUpdate = true;
     });
     return porteur;
@@ -328,7 +382,7 @@ export function chargerVoitureFlotte(entree) {
   if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
-    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial)){o.material.envMap=rt.texture;o.material.envMapIntensity=.75;}});
+    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
@@ -351,8 +405,7 @@ export function chargerVoitureFlotte(entree) {
           // bodywork ». On reconnaît les deux, sinon la carrosserie neuve
           // reste mate au milieu d'une flotte qui brille.
           if (/paint|bodywork|\bbody\b/i.test(o.material.name || '')) {
-            o.material.envMap = rt.texture;
-            o.material.envMapIntensity = 1.0;
+            refleter(o, o.material, 1.0);
             o.material.needsUpdate = true;
           }
         });
@@ -731,11 +784,13 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   });
   mc.material = peint;
   g.userData.carrosserie = peint;
-  g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
+  const verriere = g.userData.membres.verriere.children[0];
+  verriere.material = new THREE.MeshPhongMaterial({
     color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
     envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.4,
     transparent: true, opacity: 0.78,
   });
+  if (rt) { mc.layers.set(COUCHE_CARROSSERIE); verriere.layers.set(COUCHE_CARROSSERIE); }
   return g;
 }
 
