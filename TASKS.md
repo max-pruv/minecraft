@@ -59,6 +59,21 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
   Cause ouverte, pas expliquée.
 
+- [ ] **Multijoueur : l'ami au volant est vu à pied, et un véhicule ne
+  prend qu'un joueur.** Max, après la v249 : « En multijoueur, on ne voit
+  pas si un user est dans une voiture, il est piéton alors qu'il est dans
+  une voiture. Aussi permets que plusieurs joueurs rentrent dans un moyen de
+  transport : le premier conduit, les autres restent passagers. » C'est la
+  dette de la v155 (« un véhicule conduit doit se voir en ligne »). Piste :
+  la position diffusée porte la monture (espèce, modèle de flotte, cap) ;
+  chez le receveur, l'ami est assis dans une voiture dessinée — le même
+  mécanisme que l'avatar local de la v249 (`siege` de la fiche, pose au
+  volant) ; et des sièges passagers dans la fiche (`sieges`), où un joueur
+  monte par le bouton quand le véhicule d'un ami est devant lui, collé au
+  siège tant que le conducteur roule, libre de descendre. Témoins à deux
+  pages en réseau : l'une conduit, l'autre voit une voiture avec un avatar
+  dedans ; la seconde monte en passager et suit.
+
 - [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
   « les voitures peuvent aussi passer à travers des fois le mobilier urbain
   comme les tables de Times Square ». À mesurer : les trajets des taxis de
