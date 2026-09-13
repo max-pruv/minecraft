@@ -126,6 +126,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
   Cause ouverte, pas expliquée.
 
+- [x] **v254 — Le badge de version ouvre le journal des nouveautés.** Max.
+  `src/nouveautes.js` (102 entrées, 294 puces, rédigées depuis
+  `CHANGELOG.md`), modale « Quoi de neuf ? », mise à jour forcée en bas.
+  Deux témoins dans `maj.js`, rouges sur l'ancien code. Règle : chaque
+  livraison ajoute son entrée au journal du jeu dans le même commit.
+
 - [x] **v253 — À plusieurs, l'ami est vu dans sa voiture et l'on monte avec
   lui.** Max, après la v249. `v`/`p` dans le message de position, l'ami
   dessiné avec la fabrique de la monture et assis, passagers collés au siège

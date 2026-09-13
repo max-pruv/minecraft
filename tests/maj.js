@@ -15,6 +15,8 @@
 //     cd tests && npm run maj
 
 const { Banc, dormir, jusqua } = require('./banc.js');
+const fs = require('fs');
+const path = require('path');
 
 // La veille d'un iPad, vue de la page : elle se déclare cachée, puis revient.
 // On n'emprunte pas `endormir` du banc — il gèle aussi le réseau du jeu à
@@ -169,6 +171,58 @@ function verifier(nom, ok, detail = '') {
     await dormir(25000);   // on ne touche à rien : l'enfant lit l'accueil
     verifier('mais l\'enfant qui reste sur l\'accueil l\'obtient quand même',
       surAccueil.length > 0, `${surAccueil.length} requête(s)`);
+
+    // --- le badge de version ouvre le journal des nouveautés (v254) --------
+    //
+    // Max : « quand l'utilisateur clique sur le logo de mise à jour, une
+    // modale, qu'il peut fermer, pour voir tout ce qui est nouveau sur chaque
+    // version ». Sur l'accueil de Bérénice : le badge, la modale, la version
+    // installée en tête et marquée, une puce au moins, et la croix la ferme.
+    // Sur l'ancien code il n'y a pas de modale : le témoin le dit, sans
+    // s'effondrer.
+    const journal = await accueil.evaluate(async () => {
+      const badge = document.getElementById('app-version');
+      const modale = document.getElementById('nouveautes-modale');
+      if (!badge || !modale) return { badge: !!badge, modale: !!modale };
+      badge.click();
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (let i = 0; i < 40 && !document.querySelector('#nouveautes-liste section'); i++) await dodo(250);
+      const sections = [...document.querySelectorAll('#nouveautes-liste section')];
+      const ouverte = !modale.hidden && getComputedStyle(modale).display !== 'none';
+      const courante = document.querySelector('#nouveautes-liste section.courante');
+      const res = { badge: true, modale: true, ouverte, sections: sections.length,
+        premiere: sections[0] ? +sections[0].dataset.v : null,
+        premierePuces: sections[0] ? sections[0].querySelectorAll('li').length : 0,
+        marquee: courante ? +courante.dataset.v : null,
+        versionBadge: +((badge.textContent.match(/v(\d+)/) || [])[1] || 0) };
+      document.getElementById('nouveautes-fermer').click();
+      await dodo(100);
+      res.fermee = modale.hidden;
+      return res;
+    });
+    const versionServie = +((fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8').match(/CACHE_VERSION = 'web-minecraft-v(\d+)'/) || [])[1] || 0);
+    verifier('le badge de version ouvre le journal des nouveautés, la version installée en tête, et la croix le ferme',
+      journal.modale && journal.ouverte && journal.sections > 50 && journal.premiere === versionServie
+        && journal.premierePuces >= 1 && (journal.marquee === journal.versionBadge || journal.versionBadge === 0) && journal.fermee,
+      `${JSON.stringify(journal)} · version servie v${versionServie}`);
+    // ET LE JOURNAL COUVRE TOUTES LES VERSIONS, EN QUELQUES MOTS. Lu sous
+    // node, sans navigateur : chaque « ## vNNN » de CHANGELOG.md a son entrée,
+    // chaque puce fait huit mots au plus, chaque titre six.
+    let couverture;
+    try {
+      const { NOUVEAUTES } = await import(path.join(__dirname, '..', 'src', 'nouveautes.js'));
+      const versions = [...fs.readFileSync(path.join(__dirname, '..', 'CHANGELOG.md'), 'utf8').matchAll(/^## v(\d+)/gm)].map((m) => +m[1]);
+      const connues = new Set(NOUVEAUTES.map((n) => n.v));
+      const manquantes = versions.filter((v) => !connues.has(v));
+      const longues = NOUVEAUTES.flatMap((n) => n.puces.filter((p) => p.trim().split(/\s+/).length > 8).map((p) => `v${n.v}: ${p}`));
+      const titresLongs = NOUVEAUTES.filter((n) => n.titre.trim().split(/\s+/).length > 6).map((n) => `v${n.v}`);
+      const vides = NOUVEAUTES.filter((n) => !n.puces || !n.puces.length).map((n) => `v${n.v}`);
+      couverture = { entrees: NOUVEAUTES.length, versions: versions.length, manquantes, longues, titresLongs, vides };
+    } catch (e) { couverture = { erreur: String(e.message || e) }; }
+    verifier('et il couvre toutes les versions du journal, en quelques mots par puce',
+      !couverture.erreur && couverture.manquantes.length === 0 && couverture.longues.length === 0
+        && couverture.titresLongs.length === 0 && couverture.vides.length === 0,
+      JSON.stringify(couverture).slice(0, 400));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
