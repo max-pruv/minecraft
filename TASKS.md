@@ -24,6 +24,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Rouge de portail de `washington.js`, « on pousse la porte et on est
+  dans la Rotonde », mesuré des deux côtés (v255).** Au portail complet du
+  banc accéléré (onzième suite, après `hote.js`) : plafond 11, x = −5,7 du
+  centre — l'enfant s'est arrêté sous le porche, à un bloc par seconde. Rejouée
+  SEULE sur la branche, même code : plafond 21, x = −4,9, verte. C'est le rouge
+  déjà démonté en v215 pour ce témoin (une durée qui dépend de la cadence du
+  banc) ; l'ordre des suites l'a déplacé, pas créé. Piste : le témoin marche
+  quatorze pas de 700 ms ; à quatre images par seconde, dix blocs ne suffisent
+  pas — remplacer la borne en PAS par une borne en BLOCS parcourus, comme
+  « ne plus avancer » l'a déjà fait.
+
 - [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
   minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
   banc — instrument de charge instantané, repos en condition, suites
