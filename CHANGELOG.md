@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v249 — Paris n'est plus dans le noir, et l'on voit le personnage conduire
+
+**Pourquoi.** Deux signalements de Max, capture d'iPad à l'appui. « Paris est
+dans le noir » : une rue de nuit noire, des façades noires, seules les
+fenêtres allumées se devinaient. La cause est une erreur de mesure : le banc
+coupe ses ombres (rendu logiciel), donc les captures de nuit de la v247
+étaient éclairées par la lune partout ; sur l'iPad les ombres existent, la
+rue est dans l'ombre des immeubles, et il n'y restait que la lueur du ciel,
+réglée à 5,7 sur 255 au sol et 2,6 sur un mur. Et « fais en sorte qu'on voit
+le personnage conduire » : la vue de poursuite montrait une voiture vide.
+
+**Ce que ça change.** La nuit, une rue dans l'ombre de la lune reste lisible
+— la lueur du ciel et la lune sont réglées sur une page à ombres forcées,
+comme sur la tablette ; le jour ne change pas d'un cran. Et quand l'enfant
+conduit, son personnage — le même que les autres joueurs voient de lui,
+avec sa tenue choisie et sa propre peau — est assis au volant, cuisses en
+avant, bras tendus vers le volant, visible à travers le pare-brise et la
+lunette arrière, la tête sous le pavillon — mesuré dans la carrosserie de
+chaque modèle, une voiture basse assied l'enfant plus bas (Max : « le
+personnage passe à travers la carrosserie ») ; il descend avec lui. Le siège est déclaré dans la fiche
+de la voiture (`siege`), à côté de `montable` et `gabarit` : un cheval ou un
+avion sculpté n'en a pas et ne le montre pas.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier lit des pixels sur la page à ombres forcées : un
+mur de pierre de huit blocs fait une façade, et le sol dans son ombre de
+lune passe de 5,7 à 41,5, le mur de 2,6 à 28,2 (bornes à la moitié : 22 et
+14). Le second monte dans une voiture par le bouton et vérifie que
+l'avatar de l'enfant est enfant du maillage de la voiture, dans son
+habitacle, dans le cadre de la caméra, le visage tourné vers la route
+(Max a attrapé le premier jet, assis de dos), et qu'il en sort quand on
+descend — absent sur l'ancien code. Captures rue et ciel, jour et nuit, à Paris.
+
 ## v248 — Les réverbères éclairent la rue la nuit, dans toutes les villes
 
 **Pourquoi.** Deuxième étape du programme « New York partout » (Max : « sois

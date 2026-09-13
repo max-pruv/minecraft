@@ -369,6 +369,22 @@ const verifier = (nom, ok, detail) => {
       });
     }
     await dormir(4000);
+    // ON MESURE APRÈS LA DERNIÈRE TRANCHE, ET APRÈS L'IMAGE QUI LA SUIT. La
+    // mise à niveau se fait par tranches dans un `requestAnimationFrame` à
+    // part ; la présence se recopie dans la boucle du jeu, à l'image
+    // d'après. Lue entre les deux, elle est « fausse » pour les derniers
+    // corps montés — deux sur cent quarante et un au portail de la v249,
+    // zéro sur la même page rejouée seule. On attend que la file soit vide,
+    // puis deux images.
+    for (const fin = Date.now() + 30000; Date.now() < fin; ) {
+      const reste = await q.evaluate(async () => {
+        const m = await import("/src/personnages.js");
+        return m.corpsEnAttente ? m.corpsEnAttente() : 0;
+      });
+      if (reste === 0) break;
+      await dormir(300);
+    }
+    await q.evaluate(() => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(() => f()))));
     const apres = await q.evaluate(async () => {
       const g = window.__game,
         m = await import("/src/personnages.js");

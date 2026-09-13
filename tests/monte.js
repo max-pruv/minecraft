@@ -239,6 +239,49 @@ async function avancerUnDemiSeconde(p, depart) {
       Math.abs((aTerre.oeil - aTerre.y) - (aPied.oeil - aPied.y)) < 0.2,
       `${(aTerre.oeil - aTerre.y).toFixed(2)} m`);
 
+    // --- ON VOIT LE PERSONNAGE CONDUIRE (v249) ------------------------------
+    // Max : « fais en sorte qu'on voit le personnage conduire quand on
+    // conduit une voiture ». La vue de poursuite montrait une voiture vide.
+    // On monte par le bouton, comme l'enfant, et l'on vérifie ce qu'il
+    // voit : son avatar est enfant du maillage de la voiture, dans
+    // l'habitacle (repère du véhicule), et sa tête tombe dans le cadre de la
+    // caméra ; à la descente, il n'est plus dans la scène. Sur l'ancien code
+    // il n'y a pas d'avatar local du tout — et le témoin le dit.
+    await poserDevant(tab, 'voiture');
+    await dormir(900);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(900);
+    const conduite = await tab.evaluate(async () => {
+      const g = window.__game, av = g.avatarLocal, a = g.fun.montureConduite ? g.fun.montureConduite() : null;
+      if (!av || !a) return { avatar: !!av, monture: !!a };
+      const THREE = await import('three');
+      const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0));
+      const v = tete.clone().project(g.camera);
+      // LE VISAGE REGARDE LA ROUTE : le modèle a le visage en −z ; on compare
+      // cette direction, dans le monde, au cap de la voiture (Max a vu le
+      // premier jet assis de dos).
+      const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+      const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+      const regardeLaRoute = +visage.dot(route).toFixed(2);
+      // ET SOUS LE TOIT : le sommet du crâne (0,706 au-dessus des hanches, à
+      // l'échelle de l'avatar) reste sous le pavillon mesuré de ce modèle
+      // (Max : « le personnage passe à travers la carrosserie »).
+      const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+      const sousLeToit = !a.plafondSiege || a.plafondSiege.y === null || crane < a.plafondSiege.y;
+      return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
+        x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute, sousLeToit, crane: +crane.toFixed(2), toit: a.plafondSiege ? a.plafondSiege.y : null };
+    });
+    verifier('au volant, le personnage de l\'enfant est assis dans la voiture, sous le toit, dans le cadre, et regarde la route',
+      !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
+        && conduite.regardeLaRoute > 0.9 && conduite.sousLeToit,
+      JSON.stringify(conduite));
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const aLaDescente = await tab.evaluate(() => { const av = window.__game.avatarLocal; return { avatar: !!av, dansLaScene: !!(av && av.parent) }; });
+    verifier('et il descend avec l\'enfant : plus d\'avatar dans la scène à pied',
+      aLaDescente.avatar && !aLaDescente.dansLaScene, JSON.stringify(aLaDescente));
+
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
     await dormir(600);
@@ -989,10 +1032,23 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
       chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+    // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
+    // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
+    // d'une voiture : l'enfant était encore au volant. On lit l'état avant le
+    // clic, après le clic, et après le retour, pour savoir où il remonte.
+    const etatVolant = () => tab.evaluate(() => { const g = window.__game; return { gabarit: g.player.gabarit,
+      monture: !!(g.fun.montureConduite && g.fun.montureConduite()), bouton: document.getElementById('ride-btn').textContent,
+      animaux: g.animalManager.animals.map((a) => a.def.key + (a.montee ? '*' : '')).join(',') }; });
+    const avantClic = await etatVolant();
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+    const apresClic = await etatVolant();
     await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
     await dormir(1500);
+    const apresRetour = await etatVolant();
+    verifier('et l\'on est descendu de la voiture de Paris, à pied au retour',
+      !apresClic.monture && !apresRetour.monture && apresRetour.gabarit < 1,
+      `avant le clic ${JSON.stringify(avantClic)} · après ${JSON.stringify(apresClic)} · au retour ${JSON.stringify(apresRetour)}`);
 
     // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
     //
@@ -1041,6 +1097,12 @@ async function avancerUnDemiSeconde(p, depart) {
       const z = await tab.evaluate(() => window.__game.player.pos.z);
       return Math.round((scene.murZ - z) * 100) / 100;
     };
+    // UN ROUGE QUI NE DIT PAS DANS QUEL ÉTAT IL A MESURÉ NE SE DÉMONTE PAS :
+    // « à pied 1,1 bloc du mur » au portail de la v249, c'est-à-dire à pied
+    // avec la carrure d'une voiture — l'état laissé par le témoin d'avant.
+    const etatAPied = await tab.evaluate(() => ({ gabarit: window.__game.player.gabarit,
+      auVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️'),
+      monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()) }));
     const ecartAPied = await contreLeMur(false);
     await poserDevant(tab, 'voiture');
     await dormir(600);
@@ -1053,7 +1115,7 @@ async function avancerUnDemiSeconde(p, depart) {
     const ecartApres = await contreLeMur(false);
     verifier('au volant, on s\'arrête plus loin du mur qu\'à pied — la voiture a sa carrure',
       auVolant && ecartAPied > 0 && ecartAuVolant >= ecartAPied + 0.5,
-      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant}`);
+      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant} · état à pied ${JSON.stringify(etatAPied)}`);
     // Ce second témoin est un GARDE-FOU, pas une preuve : il est vert des deux
     // côtés, et c'est voulu — il garde la régression que le premier rend
     // possible, un enfant qui garderait à pied la carrure d'une voiture et
@@ -1928,9 +1990,26 @@ async function avancerUnDemiSeconde(p, depart) {
       r.render(g.scene, cam);
       const lampe = { pied: +lire(lx + 1, sol + 1, lz + 0.5).toFixed(1), loin: +lire(lx + 0.5, sol + 1, lz + 8.5).toFixed(1),
         allumees: (g.lampesRue || []).filter((l) => l.intensity > 0).length };
+      // ---- LA NUIT, UNE RUE DANS L'OMBRE DE LA LUNE RESTE LISIBLE (v249) ---
+      // Max, capture d'iPad : « Paris est dans le noir ». Un mur de pierre de
+      // huit blocs fait une façade ; le sol dans son ombre de lune est la rue
+      // entre deux immeubles, celle que l'enfant voit sur sa tablette — où
+      // les ombres existent, contrairement au banc. On lit ce sol, et le mur
+      // lui-même du côté de l'ombre. Sur l'ancien code : 5,7 et 2,6 sur 255.
+      w.setBlock(lx, sol + 1, lz, 0);                     // le réverbère s'en va, sa lampe aussi
+      for (let c = -4; c <= 4; c++) for (let h = 1; h <= 8; h++) w.setBlock(x0 + c, sol + h, z0 + 8, 3);
+      await dodo(2500);
+      const sun = g.scene.children.find((o) => o.isDirectionalLight);
+      const dLune = sun.position.clone().sub(sun.target.position).normalize();
+      const cote = dLune.z > 0 ? -1 : 1;                  // l'ombre tombe à l'opposé de la lune
+      cam.position.set(x0 + 0.5, sol + 12, z0 + 8 + cote * 3);
+      cam.lookAt(x0 + 0.5, sol + 1, z0 + 8 + cote * 2);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const nuit = { rue: +lire(x0 + 0.5, sol + 1, z0 + 8 + cote * 2.5).toFixed(1), mur: +lire(x0 + 0.5, sol + 4, z0 + 8 + cote * 0.5).toFixed(1) };
       window.__setDayTime(0.3);
       g.player.flying = false;
-      return { sol, ombre, soleil, matin, soir, ciel, lampe, ombres: r.shadowMap.enabled };
+      return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, ombres: r.shadowMap.enabled };
     });
     await regardPage.close();
     const ok = (v) => typeof v === 'number' && v > 0;
@@ -1961,6 +2040,11 @@ async function avancerUnDemiSeconde(p, depart) {
     // cent pour cent : à Paris, trois réverbères sur vingt-neuf ont pour
     // voisin une chaussée que la culée d'un pont ou le socle d'un monument
     // recouvre APRÈS le sol — le réverbère est juste, la rue est dessous.
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 41,5 et 28,2 mesurés ici, 5,7 et
+    // 2,6 sur l'ancien code.
+    verifier('la nuit, une rue dans l\'ombre de la lune reste lisible',
+      ok(regard.nuit && regard.nuit.rue) && ok(regard.nuit.mur) && regard.nuit.rue >= 22 && regard.nuit.mur >= 14,
+      JSON.stringify(regard.nuit));
     verifier('la nuit, un réverbère éclaire le sol à son pied',
       ok(regard.lampe.pied) && ok(regard.lampe.loin) && regard.lampe.pied / regard.lampe.loin > 1.6,
       JSON.stringify(regard.lampe));
@@ -2305,8 +2389,13 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
     // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
+    // ET LA BORNE DE GARDE SUR LES BLOCS PARCOURUS SE POSE À LA MOITIÉ : le
+    // banc rend en logiciel et chaque lampe de rue (v248) coûte à chacun de
+    // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
+    // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
+    // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.

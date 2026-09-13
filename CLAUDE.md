@@ -685,6 +685,56 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## La nuit se règle avec les ombres, et le conducteur se voit (v249)
+
+**LE BANC NE VOIT PAS LA NUIT DE L'IPAD.** Max, capture : « Paris est dans le
+noir ». Les intensités de nuit de la v247 avaient été réglées sur des captures
+du banc — où les ombres sont COUPÉES (rendu logiciel). La lune y éclairait
+donc toute rue ; sur l'iPad, la rue est dans l'ombre des immeubles et il ne
+reste que la lueur du ciel : mesuré 5,7/255 au sol, 2,6 sur un mur. Deux
+règles.
+
+- **TOUT RÉGLAGE DE NUIT SE FAIT SUR UNE PAGE À OMBRES FORCÉES** (`ombres=1`),
+  et se mesure dans l'ombre d'un mur, pas au clair de lune. `HEMI_NUIT` et
+  `LUNE_NUIT` (main.js) sont les planchers ; le jour (`daylight = 1`) garde
+  ses valeurs à l'identique. Le témoin bâtit un mur de huit blocs sur la
+  dalle du regard et lit le sol dans son ombre de lune (41,5 ; 28,2 sur le
+  mur).
+- **UNE CAPTURE DE BANC QUI CONTREDIT L'IPAD DIT QUE LE BANC NE MESURE PAS LA
+  MÊME CHOSE.** Avant de retoucher une valeur, on cherche ce que la tablette
+  a et que le banc n'a pas — ici la passe d'ombre.
+
+**ET LE PERSONNAGE SE VOIT AU VOLANT.** Max : « fais en sorte qu'on voit le
+personnage conduire ». L'avatar local est bâti comme celui que les autres
+joueurs voient (`buildKidMesh` + `withOwnLook`), assis par `main.js`
+(`asseoirLeConducteur`) sur le `siege` que la FICHE de la monture déclare,
+dans le repère du véhicule — le nez est en −z, le volant du cockpit à
+x = −0,33, l'assise plus basse que le baquet sculpté pour que la tête reste
+sous le toit. La posture est une `pose` d'`animerHumain` (cuisses, genoux,
+bras, coudes : même signe que `swing`) ; le corps sculpté de secours n'a que
+ses pivots. Sans `siege` dans la fiche, pas d'avatar : même discipline que
+`montable` et `gabarit`. Le témoin monte par le bouton et vérifie l'avatar
+enfant du maillage de la voiture, dans l'habitacle et dans le cadre, puis
+parti à la descente.
+
+**ET J'AI LIVRÉ LE PREMIER JET ASSIS DE DOS.** J'avais DÉDUIT que le modèle
+regardait en +z (« les autres joueurs tournent de yaw + π ») ; il regarde en
+−z, c'est écrit en tête de `personnages.js`, et la capture de trois quarts le
+montrait — l'arrière de la tête à travers le pare-brise. Max l'a vu, pas moi :
+« une erreur que tu devrais catch ». Un signe se REGARDE, il ne se déduit pas
+(c'est déjà la règle du roulis et du paysage lointain), et **un témoin de
+posture lit une DIRECTION** : le visage (−z de l'avatar, dans le monde) contre
+le cap de la voiture, produit scalaire > 0,9. Rouge sur le premier jet (−1).
+
+**ET LE SIÈGE DE LA FICHE VAUT POUR UNE BERLINE.** Max, sur la capture de
+dos : « le personnage passe à travers la carrosserie » — le crâne sortait par
+le pavillon d'une voiture basse. `plafondAuSiege` (main.js) mesure le toit
+DANS la carrosserie de chaque modèle : parmi les maillages de la voiture, le
+plus bas de ceux qui passent au-dessus du siège ; les hanches descendent
+sous lui, et l'avatar rapetisse un peu si cela ne suffit pas. Le témoin
+compare le sommet du crâne au pavillon mesuré. Ce qui ne se mesure pas se
+lit sur la capture, et ce qui se lit sur la capture se met dans le témoin.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
@@ -944,6 +994,14 @@ local, Supabase de poche (`tests/nuage.js`).
   cinq pannes très différentes — élément absent, invisible, dans une fiche
   fermée, hors écran, désactivé — sous un seul message ; un rouge qui ne les
   distingue pas ne se démonte pas.
+- **UN TÉMOIN QUI LIT L'EFFET D'UNE IMAGE ATTEND L'IMAGE (v249).** « Les gens
+  nés avant les modèles reçoivent leur corps réaliste sur place » lisait la
+  présence de chaque personnage quatre secondes après l'arrivée des modèles ;
+  la mise à niveau se fait par tranches dans un `requestAnimationFrame` à
+  part, la présence se recopie dans la boucle du jeu à l'image d'APRÈS. Lue
+  entre les deux : deux présences « fausses » sur cent quarante et une au
+  portail, zéro sur la même page rejouée seule. Une lecture qui dépend d'une
+  image attend que la file soit vide, puis deux images — jamais un délai fixe.
 - **Un témoin doit échouer *proprement* sur l'ancien code, pas s'effondrer.**
   Une méthode neuve appelée sans garde fait planter le banc au premier témoin
   et masque les quatre suivants — on ne voit donc jamais l'étendue réelle du

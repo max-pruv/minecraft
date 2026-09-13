@@ -404,6 +404,12 @@ export const MONTURES = [
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
     assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true,
+    // LE SIÈGE DU CONDUCTEUR (v249), dans le repère du véhicule (le nez est
+    // en −z, le volant du cockpit à x = −0,33) : c'est là que main.js assied
+    // l'avatar de l'enfant quand il conduit — Max : « qu'on voie le
+    // personnage conduire ». `y` est le dessus de l'assise, plus bas que le
+    // baquet sculpté pour que la tête reste sous le toit des modèles.
+    siege: { x: -0.33, y: 0.52, z: 0.22 },
     // `vole: false` : la fiche interdit le vol, player.js l'applique. Voir la
     // note de `volInterdit` — la règle vit ici, jamais dans fun.js.
     vole: false, garable: true,

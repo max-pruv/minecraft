@@ -49,6 +49,58 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
+- [ ] **Le témoin du mur a mesuré « à pied » au volant, deux fois, au
+  portail de la v249** (à pied 1,1 bloc du mur, gabarit 2,2, monture
+  présente) — et pas une troisième, `monte.js` rejouée seule avec le clic de
+  descente vérifié (descendu : carrure 0,6, aucune monture). Le témoin de
+  circulation qui précède dit désormais l'état avant le clic, après le clic
+  et au retour : si cela revient, le message dira si l'enfant est remonté
+  par ce clic (un clic sur « Descendre » quand on n'est plus au volant fait
+  MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
+  Cause ouverte, pas expliquée.
+
+- [ ] **Multijoueur : l'ami au volant est vu à pied, et un véhicule ne
+  prend qu'un joueur.** Max, après la v249 : « En multijoueur, on ne voit
+  pas si un user est dans une voiture, il est piéton alors qu'il est dans
+  une voiture. Aussi permets que plusieurs joueurs rentrent dans un moyen de
+  transport : le premier conduit, les autres restent passagers. » C'est la
+  dette de la v155 (« un véhicule conduit doit se voir en ligne »). Piste :
+  la position diffusée porte la monture (espèce, modèle de flotte, cap) ;
+  chez le receveur, l'ami est assis dans une voiture dessinée — le même
+  mécanisme que l'avatar local de la v249 (`siege` de la fiche, pose au
+  volant) ; et des sièges passagers dans la fiche (`sieges`), où un joueur
+  monte par le bouton quand le véhicule d'un ami est devant lui, collé au
+  siège tant que le conducteur roule, libre de descendre. Témoins à deux
+  pages en réseau : l'une conduit, l'autre voit une voiture avec un avatar
+  dedans ; la seconde monte en passager et suit.
+
+- [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
+  « les voitures peuvent aussi passer à travers des fois le mobilier urbain
+  comme les tables de Times Square ». À mesurer : les trajets des taxis de
+  Manhattan contre la zone piétonne de Broadway (`plaza`, où les tables sont
+  posées), et la voiture de l'enfant, dont la boîte de collision ne connaît
+  que les blocs solides — un réverbère, un banc, une table sont des props
+  non solides, et à Manhattan le mobilier est un maillage sans collision.
+  Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
+  convois par `cederLePassage`), et des trajets qui évitent la plaza.
+
+- [ ] **v250 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
+  qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
+  suffisant. En avion le lag est fort. En voiture lag et aussi la
+  définition des bâtiments (voir les détails) s'affiche trop tard. » À
+  mesurer d'abord — découper l'image en vol et en voiture à Paris à
+  `rr=12` (génération, maillage, rendu, passants, convois), et le coût des
+  ombres de la v247 sur tablette, jamais mesuré. Piste principale : sortir
+  la génération et le maillage des morceaux du fil principal (Web Worker),
+  parce qu'à cent dix blocs par seconde au-dessus d'une ville le maillage
+  réclame déjà les trois quarts de chaque seconde ; les détails qui
+  arrivent tard sont les morceaux pas encore maillés que le paysage
+  lointain remplace.
+
+- [x] **v249 — Paris n'est plus dans le noir, on voit le personnage
+  conduire.** Faits : planchers de nuit réglés ombres forcées, avatar
+  assis sur le `siege` de la fiche.
+
 - [ ] **v248 et suivantes — « regarde les améliorations qu'il y a encore eu
   dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
   La v247 a livré la première étape, le regard (soleil, ombres, ACES, voûte
