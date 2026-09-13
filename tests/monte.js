@@ -922,9 +922,19 @@ async function avancerUnDemiSeconde(p, depart) {
       return m;
     });
     if (poseParis) {
-      await tab.waitForFunction(() => { const b = document.getElementById('ride-btn'); return b && getComputedStyle(b).display !== 'none'; }, null, { timeout: 15000 }).catch(() => {});
-      await tab.evaluate(() => document.getElementById('ride-btn').click());
-      await dormir(800);
+      // Le bouton garde son `display` d'avant tant que sa ligne est cachée :
+      // on attend la LIGNE, puis le « ⬇️ » qui prouve qu'on est monté — et
+      // l'on réessaie, parce qu'un clic trop tôt ne monte dans rien.
+      await tab.waitForFunction(() => {
+        const b = document.getElementById('ride-btn');
+        return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+      }, null, { timeout: 20000 }).catch(() => {});
+      for (let essai = 0; essai < 6; essai++) {
+        await tab.evaluate(() => document.getElementById('ride-btn').click());
+        const monte = await tab.waitForFunction(() => document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000 }).then(() => true).catch(() => false);
+        if (monte) break;
+        await dormir(700);
+      }
     }
     const chaussee = await tab.evaluate(async () => {
       const g = window.__game, et = window.__vehicules.etat();
