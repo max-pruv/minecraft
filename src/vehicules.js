@@ -1377,6 +1377,10 @@ export function createVehicules({ scene, player }) {
         const ex = b.x - a.x, ez = b.z - a.z;
         if (ex * ex + ez * ez > 12 * 12) continue;
         if (ex * a.ux + ez * a.uz < -DEMI_LONG) continue;          // derrière moi : pas mon affaire
+        // Déjà DANS la voiture de l'enfant (il s'est posé dessus, ou l'a
+        // rattrapée) : continuer est la seule façon d'en sortir ; y attendre
+        // sans limite, c'est rester dedans pour toujours.
+        if (b.enfant && seTouchent(a.rect, b.rect)) continue;
         // Là où elle EST, pas là où elle sera : comparer les deux chemins des
         // huit prochains blocs mettait presque toutes les paires en conflit
         // mutuel, et la patience de quatre secondes les relâchait ensemble —

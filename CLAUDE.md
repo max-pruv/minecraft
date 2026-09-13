@@ -2613,6 +2613,10 @@ n'est pas un convoi, n'existait pas pour eux. Trois choses :
   personne, et devant lui seul la rue attend SANS LIMITE — douze secondes de
   patience faisaient revenir la traversée au bout de douze secondes, mesuré.
   Une voiture qui finit par passer au travers de la sienne, c'est la panne.
+  Une seule exception : une voiture DÉJÀ dans la sienne (il s'est posé
+  dessus, ou l'a rattrapée) continue pour en sortir — attendre là, c'est y
+  rester pour toujours ; le portail l'a rendu : quatre-vingts relevés « au
+  travers » dès la première image, le témoin s'étant posé sur une file.
 - **Et la réciproque se règle chez le JOUEUR**, dont la boîte de collision ne
   connaît que les blocs : `player.obstacleVehicule` (branché par main.js sur
   `vehicules.obstacleDevant`) bloque un pas qui ferait entrer sa voiture dans

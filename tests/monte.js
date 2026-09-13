@@ -905,11 +905,19 @@ async function avancerUnDemiSeconde(p, depart) {
       null, { timeout: 60000 }).catch(() => {});
     const poseParis = await tab.evaluate(() => {
       const g = window.__game, et = window.__vehicules.etat();
+      // toutes les places des convois routiers ; on se pose douze blocs devant
+      // l'une d'elles, à un point LIBRE — aucune voiture à moins de sept blocs,
+      // sinon on naît dans une voiture de la file (au portail : quatre-vingts
+      // relevés « au travers », dès la première image)
+      const places = [];
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => places.push({ x: q[0], z: q[1], cap: q[2] })));
       let m = null;
-      et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
-        const d = Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z);
-        if (!m || d < m.d) m = { d, x: q[0], z: q[1], cap: q[2] };
-      }));
+      for (const q of places) {
+        const x = q.x + Math.sin(q.cap) * 12, z = q.z + Math.cos(q.cap) * 12;
+        if (places.some((o) => Math.hypot(o.x - x, o.z - z) < 7)) continue;
+        const d = Math.hypot(x - g.player.pos.x, z - g.player.pos.z);
+        if (!m || d < m.d) m = { d, x: q.x, z: q.z, cap: q.cap };
+      }
       if (!m) return null;
       const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
       g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
