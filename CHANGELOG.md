@@ -20,6 +20,55 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v251 — Le monde se maille hors du fil principal : moins de lag en avion et en voiture
+
+**Pourquoi.** Max, sur l'iPad, après la v248 : « Lag mieux mais pas
+suffisant. En avion le lag est fort. En voiture lag et aussi la définition
+des bâtiments s'affiche trop tard. » Mesuré : engendrer et mailler un
+morceau de Paris coûte 24 ms, et cela se faisait DANS l'image, sur le fil
+qui anime et dessine. Le budget de maillage (720 ms par seconde, v237)
+prenait aux images tout ce qu'il pouvait — c'est le lag — et ne suffisait
+même pas à suivre une voiture : 27 morceaux par seconde pour 30 réclamés,
+d'où les bâtiments qui arrivent tard. En vol au-dessus de Paris, le fil
+principal passait 324 ms de chaque seconde à mailler.
+
+**Ce que ça change.** Un monde jumeau — le même générateur, les mêmes blocs
+de l'enfant — engendre et maille les morceaux sur son propre fil (un Web
+Worker) et rend au jeu des tampons prêts pour la carte graphique, plus les
+blocs pour les collisions ; le fil principal ne fait plus que les installer.
+Les images ne paient plus le maillage, et le monde se charge à la vitesse
+du worker, quelle que soit la cadence d'affichage. Manhattan (ses façades,
+ses journaux importés) reste maillée comme avant ; poser un bloc se voit
+toujours dans l'image. Un navigateur sans worker de module retombe sur
+l'ancien chemin. Ce qui n'a pas bougé : les blocs eux-mêmes, bloc pour
+bloc — un témoin le garde.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code (qui n'a pas le compteur et le dit). En vol au-dessus de
+Paris à la distance d'affichage de l'iPad, le fil principal passe
+0 ms par seconde à mailler (324 avant) et 428 morceaux
+arrivent du worker en huit secondes ; et 12 morceaux adoptés du
+worker, comparés à ce que le fil principal engendrerait, sont identiques
+bloc pour bloc. Sur le même vol, le fil principal n'engendre plus que
+vingt-neuf morceaux en huit secondes (41 ms, pour les bras des réverbères
+et un passant) contre quatre cent soixante-neuf. La pire image de ce banc,
+elle, ne tranche pas (202 ms sur l'ancien code, 252 avec le worker, 457 sur
+le repli local de la branche : une seule fenêtre de huit secondes, en rendu
+logiciel) — on mesure la cause, pas l'effet. Et ce que ce banc ne peut pas
+montrer : ses quatre cœurs font tourner le worker À CÔTÉ du rendu logiciel,
+et le front de chargement y recule un peu (144 → 120 blocs devant l'avion)
+— sur l'iPad, le rendu est sur la carte graphique et le worker a un cœur à
+lui. Les témoins de
+chargement en vol (« on ne rattrape pas le bout du monde qui se charge »)
+restent verts. Les gardiens du mailleur sont toutes les suites : portail
+complet — et ce portail complet a trouvé une dette de la v249 : « à minuit,
+les fenêtres de la ville restent allumées » (`carteMonde.js`) comparait le
+NIVEAU des lampes à la COULEUR du matériau des fenêtres, et les planchers
+de nuit de la v249 l'avaient rendu rouge pour toujours sans que personne ne
+le voie (cette suite ne garde pas `main.js`). Il lit désormais des pixels :
+un mur de pierre percé de fenêtres d'étage, à minuit, fenêtre allumée à
+178 contre 33 pour le mur (fenêtre éteinte à 73).
+
 ## v250 — Les roues de la Lucid tournent autour de leur essieu, et toute la flotte est passée en revue
 
 **Pourquoi.** Max, capture d'iPhone : « Gravity design ko, wheels ». Les

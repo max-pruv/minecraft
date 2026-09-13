@@ -1508,6 +1508,7 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
+    this.onBloc = null;           // hook(x, y, z, id) — TOUT bloc écrit, local ou reçu (v251)
     this.ctx = 'local';           // monde courant : 'local' ou le code du monde en ligne
     this.allDirty = false;        // tout remailler (changement de monde)
     this.engendres = 0;       // combien de morceaux ont été engendrés (sonde et témoins)
@@ -1520,6 +1521,12 @@ export class World {
   static key(cx, cz) { return cx + ',' + cz; }
 
   static index(x, y, z) { return x + z * CHUNK + y * CHUNK * CHUNK; }
+
+  // QUI MAILLE CE MORCEAU (v251) : le worker (maillage-worker.js), qui ne
+  // connaît que `World`, ou le fil principal. La Terre ordinaire est
+  // déterministe et ses blocs vivent dans `edits` : tout peut partir au
+  // worker. Manhattan (TerreUrbaine) répond autrement.
+  maillageLocal(cx, cz) { return false; }
 
   // LA COTE OÙ ROULE UNE VOITURE. C'est le terrain, sauf là où la ville a posé
   // un OUVRAGE par-dessus l'eau : le tablier d'un pont de Londres est à la
@@ -2586,6 +2593,7 @@ export class World {
     this.edits.set(k, id);
     this.editTimes.set(k, t);
     if (!remote && this.onOp) this.onOp(k, id, t);
+    if (this.onBloc) this.onBloc(x, y, z, id);
 
     // maintien du plafond de maillage : on le relève tout de suite quand on
     // pose plus haut, on l'oublie (recalcul paresseux) quand on creuse au sommet

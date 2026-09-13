@@ -17,7 +17,7 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
-import { buildChunkGeometry } from './mesher.js';
+import { buildChunkTampons } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { liberer } from './liberer.js';
@@ -333,6 +333,79 @@ scene.add(decor(horizon.objet()));
 }
 world.loadEdits();
 
+// --- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) --------------------------------
+//
+// Max, iPad : « en avion le lag est fort ; en voiture, lag, et la définition
+// des bâtiments s'affiche trop tard ». Engendrer et mailler un morceau de
+// Paris coûte 24 ms, et le budget de maillage (720 ms par seconde) prenait
+// aux images tout ce qu'il pouvait sans même suivre une voiture (27 morceaux
+// par seconde pour 30 réclamés). Un worker (maillage-worker.js) porte un
+// monde jumeau — même générateur, mêmes blocs de l'enfant — et rend des
+// tampons prêts pour la carte graphique, plus les blocs pour les collisions.
+// Le fil principal ne fait plus que les installer. `?maillage=local` rend
+// l'ancien chemin, pour mesurer et pour les témoins.
+const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [] };
+const EN_ATTENTE_MAX = 8;             // morceaux confiés d'avance au worker
+const enAttente = new Map();          // key -> { cx, cz, sale }
+let generationDistante = 0;           // monte à chaque resynchronisation des blocs
+let maillageDistant = null;
+function synchroniserLeWorker() {
+  if (!maillageDistant) return;
+  generationDistante++;
+  enAttente.clear();
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx });
+}
+function recevoirMorceau(m) {
+  const key = World.key(m.cx, m.cz);
+  const attente = enAttente.get(key);
+  enAttente.delete(key);
+  if (m.generation !== generationDistante) { statsMaillage.refuses++; return; }
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  if (Math.abs(m.cx - pcx) > UNLOAD_RADIUS || Math.abs(m.cz - pcz) > UNLOAD_RADIUS) { statsMaillage.refuses++; return; }
+  // Les blocs : ceux du worker si le fil principal n'a pas déjà engendré ce
+  // morceau (collisions, passants) — les deux sont identiques, un témoin le
+  // vérifie. Un bloc posé pendant que le worker maillait rend le morceau
+  // sale : il se remaille ici, tout de suite après.
+  if (!world.chunks.has(key)) {
+    world.chunks.set(key, m.data);
+    if (m.top !== undefined) world.tops.set(key, m.top);
+    statsMaillage.recus.push(key);                                  // blocs adoptés du worker
+    if (statsMaillage.recus.length > 64) statsMaillage.recus.shift();  // fenêtre glissante : les derniers sont encore en mémoire
+  }
+  installerMorceau(m.cx, m.cz, m);
+  statsMaillage.distants++;
+  if (attente && attente.sale) world.dirty.add(key);
+}
+(function creerMaillageDistant() {
+  if (new URLSearchParams(location.search).get('maillage') === 'local') return;
+  if (typeof Worker === 'undefined') return;
+  try {
+    const w = new Worker(new URL('./maillage-worker.js', import.meta.url), { type: 'module' });
+    w.onmessage = (e) => { if (e.data && e.data.type === 'morceau') recevoirMorceau(e.data); };
+    // UN WORKER QUI MEURT REND LA MAIN AU FIL PRINCIPAL : un navigateur sans
+    // workers de module doit voir le monde quand même.
+    w.onerror = (err) => {
+      console.warn('maillage hors fil principal indisponible, on maille ici :', err && err.message);
+      maillageDistant = null;
+      for (const a of enAttente.values()) meshQueue.push({ cx: a.cx, cz: a.cz, d: 0 });
+      enAttente.clear();
+    };
+    maillageDistant = w;
+    synchroniserLeWorker();
+  } catch (e) {
+    maillageDistant = null;
+  }
+})();
+// Tout bloc écrit — posé par l'enfant, reçu d'un ami, fusionné du nuage —
+// part au worker ; si le morceau était en cours de maillage là-bas, il se
+// remaillera ici à l'arrivée.
+world.onBloc = (x, y, z, id) => {
+  if (!maillageDistant) return;
+  maillageDistant.postMessage({ type: 'bloc', x, y, z, id });
+  const a = enAttente.get(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
+  if (a) a.sale = true;
+};
+
 const player = new Player(camera, world);
 // LES LAMPES DE RUE (v248) : quatre lumières ponctuelles, posées la nuit
 // sous les réverbères les plus proches de l'enfant (`eclairerLaRue`), et
@@ -438,12 +511,40 @@ function disposeChunkMesh(entry) {
   if (entry.props) scene.remove(entry.props);
 }
 
+// Une BufferGeometry depuis les tampons du mailleur (v251) : une
+// milliseconde, sur le fil principal, quel que soit le fil qui a maillé.
+function geometrieDepuisTampons(t) {
+  if (!t) return null;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(t.positions, 3));
+  geom.setAttribute('normal', new THREE.BufferAttribute(t.normals, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(t.uvs, 2));
+  geom.setAttribute('color', new THREE.BufferAttribute(t.colors, 3));
+  geom.setAttribute('tuile', new THREE.BufferAttribute(t.tiles, 4));
+  geom.setIndex(new THREE.BufferAttribute(t.indices, 1));
+  geom.computeBoundingSphere();
+  return geom;
+}
+
+// Le maillage sur le fil principal — Manhattan, les remaillages d'un bloc
+// posé (qui doivent se voir tout de suite), et le secours si le worker
+// manque. `statsMaillage.principalMs` compte ce que cela coûte à l'image.
 function meshChunk(cx, cz) {
+  const t0 = performance.now();
+  installerMorceau(cx, cz, buildChunkTampons(world, cx, cz));
+  statsMaillage.principalMs += performance.now() - t0;
+  statsMaillage.locaux++;
+}
+
+function installerMorceau(cx, cz, tampons) {
   const key = World.key(cx, cz);
   const old = chunkMeshes.get(key);
   if (old) disposeChunkMesh(old);
 
-  const { solid, water, lumineux, props } = buildChunkGeometry(world, cx, cz);
+  const { props } = tampons;
+  const solid = geometrieDepuisTampons(tampons.solid);
+  const water = geometrieDepuisTampons(tampons.water);
+  const lumineux = geometrieDepuisTampons(tampons.lumineux);
   const entry = { solid: null, water: null, lumineux: null, props: null };
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
@@ -544,18 +645,38 @@ function updateChunks() {
   const ecart = Math.min(dtMaillage(), 0.1);
   const budget = Math.min(MESH_BUDGET_MAX,
     Math.max(MESH_BUDGET_MS, MESH_MS_PAR_SECONDE * ecart));
-  const debut = performance.now();
-  do {
-    const suivant = meshQueue.pop();
-    if (!suivant) break;
-    meshChunk(suivant.cx, suivant.cz);
-  } while (performance.now() - debut < budget);
+  // LE MAILLAGE PART AU WORKER (v251) : on lui confie les morceaux les plus
+  // proches, quelques-uns d'avance, et l'on ne garde pour cette image que ce
+  // que lui ne sait pas faire (Manhattan). Sans worker, l'ancien budget.
+  if (maillageDistant) {
+    const lot = [];
+    while (enAttente.size + lot.length < EN_ATTENTE_MAX && meshQueue.length) {
+      const suivant = meshQueue.pop();
+      const key = World.key(suivant.cx, suivant.cz);
+      if (enAttente.has(key) || chunkMeshes.has(key)) continue;
+      if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); continue; }
+      enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false });
+      lot.push({ cx: suivant.cx, cz: suivant.cz });
+    }
+    if (lot.length) {
+      maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
+        pcx, pcz, rayon: RENDER_RADIUS + 2 });
+    }
+  } else {
+    const debut = performance.now();
+    do {
+      const suivant = meshQueue.pop();
+      if (!suivant) break;
+      meshChunk(suivant.cx, suivant.cz);
+    } while (performance.now() - debut < budget);
+  }
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
   if (world.allDirty) {
     world.allDirty = false;
     for (const key of chunkMeshes.keys()) world.dirty.add(key);
+    synchroniserLeWorker();
   }
 
   // Remesh chunks whose blocks changed. Poser un bloc n'en salit qu'un ou deux,
@@ -5623,7 +5744,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;

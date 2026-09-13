@@ -24,6 +24,33 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Trois rouges du portail complet de la v251, verts rejoués seuls,
+  cause ouverte.** (1) `reseau.js`, « à trois, chacun voit les deux autres »
+  (hôte ["Alice"], Alice ["Marlon"], Nina les deux, en 79 s) — trois pages
+  de jeu en même temps, donc trois workers de maillage de plus sur quatre
+  cœurs ; à remesurer avec le worker et sans (`&maillage=local`) si le rouge
+  revient. (2) `carte.js`, `page.click('#map-tout')` jamais « stable » en
+  trente secondes — mesuré ensuite sur la page bureau, carte ouverte :
+  médiane 60 ms par image avec le worker, 55 sans, 53 sur `origin/main`,
+  clic en 155 / 120 / 135 ms ; le symptôme de la v247 (banc lent), pas le
+  worker. (3) `plafond.js`, « THREE.GLTFLoader: Couldn't load texture
+  blob: » × 4 au rechargement — jamais vu avant, pas reproduit seul ni par
+  une sonde qui recharge 300 ms après l'ouverture, corps réalistes en cours
+  de chargement, avec et sans worker. Piste : l'ordre des fetch de blob
+  quand la page est déchargée pendant `parseAsync` ; dater les erreurs par
+  rapport au `pagehide`.
+
+- [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
+  foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
+  (neuf corps Rocketbox, vingt-quatre tenues sculptées) et des trois
+  appareils, planche-contact de face et de côté avec mesures (pieds au sol,
+  hauteur, symétrie) : rien de cassé. Mais Max a demandé en v243 « enlève la
+  femme avec le voile, ou retire le voile » pour la dame du château ; ce
+  modèle-ci, un des neuf corps de passants, couvre la tête d'un dupatta. Le
+  retirer de la liste `noms` de `humains.js` (les femmes tirent alors parmi
+  trois corps au lieu de quatre) ou le garder : décision de contenu, pas de
+  géométrie. Sonde : `revue/planche-humains.cjs` dans le brouillon.
+
 - [ ] **« On entre chez les gens : chaque îlot a sa porte » (washington.js)
   est tombé UNE fois au portail de la v250** — « façade 0,1, plafond à −1,
   1 mur, à (−21197, 6100) pour une maison en (−21197, 6095) » : sur les
@@ -97,18 +124,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
   convois par `cederLePassage`), et des trajets qui évitent la plaza.
 
-- [ ] **v251 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
-  qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
-  suffisant. En avion le lag est fort. En voiture lag et aussi la
-  définition des bâtiments (voir les détails) s'affiche trop tard. » À
-  mesurer d'abord — découper l'image en vol et en voiture à Paris à
-  `rr=12` (génération, maillage, rendu, passants, convois), et le coût des
-  ombres de la v247 sur tablette, jamais mesuré. Piste principale : sortir
-  la génération et le maillage des morceaux du fil principal (Web Worker),
-  parce qu'à cent dix blocs par seconde au-dessus d'une ville le maillage
-  réclame déjà les trois quarts de chaque seconde ; les détails qui
-  arrivent tard sont les morceaux pas encore maillés que le paysage
-  lointain remplace.
+- [x] **v251 — Le maillage hors du fil principal.** Fait : un worker
+  engendre et maille, le fil principal installe (324 → 0 ms
+  de maillage par seconde en vol au-dessus de Paris). Reste à mesurer sur
+  l'iPad de Max ; si le lag persiste, les pistes suivantes sont le coût des
+  ombres (v247, jamais mesuré sur tablette) et un second worker.
 
 - [x] **v250 — Les roues de la Lucid Gravity tournent autour de leur essieu,
   et la flotte entière est passée en revue.** Max, capture d'iPhone :

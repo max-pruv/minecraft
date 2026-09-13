@@ -383,7 +383,7 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : ''),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

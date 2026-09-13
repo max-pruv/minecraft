@@ -173,6 +173,8 @@ const GARDIENS = {
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,
   'src/mesher.js': SUITES,
+  'src/tuiles.js': SUITES,
+  'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js'],
   'src/textures.js': SUITES,
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
