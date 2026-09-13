@@ -298,7 +298,15 @@ const chargementsFlotte = new Map();
 // Convertir chaque fichier à la main marcherait UNE fois. On mesure donc le
 // modèle qu'on reçoit — et l'on ne touche à RIEN quand le manifeste est
 // respecté, pour que les cinquante-et-un ne bougent pas d'un pixel.
-const EST_ROUE = /wheel|tire|tyre|rim|roue|pneu/i;
+// UN MOT ENTIER, PAS UNE SOUS-CHAÎNE (v246). `/rim/` attrapait « t-rim » :
+// les bandes « Gloss black | stealth trim » de la Chiron Stealth — toute la
+// voiture, 5,13 × 4,04 blocs — étaient accrochées au pivot de la roue arrière
+// droite et tournaient avec elle. Max : « des trucs noirs qui bougent autour ».
+// Sur la Lucid, le trim aérodynamique et le trim de cabine faisaient pareil.
+// Un souligné ou un espace ne sont pas des lettres : « Wheel_FL » passe,
+// « trim » ne passe plus. Et la GÉOMÉTRIE tranche ensuite (voir plus bas).
+const EST_ROUE = /(?<![a-z])(wheel|tire|tyre|rim|roue|pneu)(?![a-z])/i;
+const EST_PNEU = /(?<![a-z])(tire|tyre|pneu|rubber)(?![a-z])/i;
 const EST_AVANT = /front|\bFW\b|^FW\||avant/i;
 const EST_ARRIERE = /rear|back|\bRW\b|^RW\||arri/i;
 
@@ -323,8 +331,9 @@ function normaliserVoiture(scene) {
     if (!o.isMesh) return;
     const nom = lignee(o);
     if (!EST_ROUE.test(nom)) return;
-    const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
-    morceaux.push({ o, nom, c });
+    const boite = new THREE.Box3().setFromObject(o);
+    const t = boite.getSize(new THREE.Vector3());
+    morceaux.push({ o, nom, c: boite.getCenter(new THREE.Vector3()), etendue: Math.max(t.x, t.z), pneu: EST_PNEU.test(nom) });
   });
   if (morceaux.length < 4) return 'sans roues';
 
@@ -354,14 +363,23 @@ function normaliserVoiture(scene) {
   }
   for (const [cle, liste] of Object.entries(familles)) {
     if (!liste.length) continue;
+    // LA GÉOMÉTRIE TRANCHE, PAS LE NOM SEUL. Le pneu donne la mesure de la
+    // roue ; ce qui ne tient pas dans une fois et demie le pneu, ou dont le
+    // centre en est à plus de six dixièmes, n'est pas une pièce de roue —
+    // les jantes réunies des quatre roues de la Lucid (1,56 bloc) restent au
+    // corps plutôt que d'orbiter autour d'une seule. Et le pivot se pose au
+    // centre du PNEU, jamais de la boîte de tout ce qui porte le mot.
+    const pneus = liste.filter((m) => m.pneu);
+    const ref = pneus.length ? pneus.reduce((a, b) => (b.etendue > a.etendue ? b : a))
+      : liste.filter((m) => m.etendue < 1.3).reduce((a, b) => (!a || b.etendue > a.etendue ? b : a), null);
+    if (!ref) continue;
+    const pieces = liste.filter((m) => m.etendue <= ref.etendue * 1.5 && m.c.distanceTo(ref.c) <= ref.etendue * 0.6);
     const pivot = new THREE.Group();
     pivot.name = 'Wheel_' + cle;
-    const boite = new THREE.Box3();
-    for (const m of liste) boite.union(new THREE.Box3().setFromObject(m.o));
-    pivot.position.copy(boite.getCenter(new THREE.Vector3()));
+    pivot.position.copy(ref.c);
     scene.add(pivot);
     scene.updateMatrixWorld(true);
-    for (const m of liste) pivot.attach(m.o);
+    for (const m of pieces) pivot.attach(m.o);
   }
 
   // 5. LE NEZ VERS +Z, comme le manifeste. On tourne par quarts de tour :
