@@ -51,11 +51,14 @@ arrivent du worker en huit secondes ; et 12 morceaux adoptés du
 worker, comparés à ce que le fil principal engendrerait, sont identiques
 bloc pour bloc. Sur le même vol, le fil principal n'engendre plus que
 vingt-neuf morceaux en huit secondes (41 ms, pour les bras des réverbères
-et un passant) contre quatre cent soixante-neuf ; la pire image passe de
-457 à 252 ms. Ce que ce banc ne peut pas montrer : ses quatre cœurs font
-tourner le worker À CÔTÉ du rendu logiciel, et le front de chargement y
-recule un peu (136 → 120 blocs devant l'avion) — sur l'iPad, le rendu est
-sur la carte graphique et le worker a un cœur à lui. Les témoins de
+et un passant) contre quatre cent soixante-neuf. La pire image de ce banc,
+elle, ne tranche pas (202 ms sur l'ancien code, 252 avec le worker, 457 sur
+le repli local de la branche : une seule fenêtre de huit secondes, en rendu
+logiciel) — on mesure la cause, pas l'effet. Et ce que ce banc ne peut pas
+montrer : ses quatre cœurs font tourner le worker À CÔTÉ du rendu logiciel,
+et le front de chargement y recule un peu (144 → 120 blocs devant l'avion)
+— sur l'iPad, le rendu est sur la carte graphique et le worker a un cœur à
+lui. Les témoins de
 chargement en vol (« on ne rattrape pas le bout du monde qui se charge »)
 restent verts. Les gardiens du mailleur sont toutes les suites : portail
 complet.
