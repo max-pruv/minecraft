@@ -170,6 +170,7 @@ export class ManhattanRenderer {
     hemiLight,
     touch,
     renderRadius = 16,
+    lamps = null,
   }) {
     this.realPlayer = player;
     this.earthWorld = world;
@@ -290,11 +291,20 @@ export class ManhattanRenderer {
     this.skyDome.renderOrder = -10;
     this.root.add(decor(this.skyDome));
     this.mats.foliage.side = THREE.DoubleSide;
-    this.lamps = [];
-    for (let i = 0; i < 4; i++) {
-      const l = new THREE.PointLight(0xffc989, 0, 19, 2);
-      scene.add(l);
-      this.lamps.push(l);
+    // LES QUATRE LAMPES DE RUE SONT PARTAGÉES AVEC LE MONDE (v248). Hors de
+    // Manhattan, `main.js` les pose sous les réverbères les plus proches de
+    // l'enfant ; ici, sur la grille des avenues. Un seul jeu, parce que le
+    // NOMBRE de lampes ponctuelles fait partie de la clé de chaque programme
+    // de shader : en créer d'autres recompilerait tous les matériaux à
+    // l'entrée et à la sortie de la ville.
+    this.ownsLamps = !lamps;
+    this.lamps = lamps || [];
+    if (this.ownsLamps) {
+      for (let i = 0; i < 4; i++) {
+        const l = new THREE.PointLight(0xffc989, 0, 19, 2);
+        scene.add(l);
+        this.lamps.push(l);
+      }
     }
     this.frames = [];
     this.lastFrame = 0;
@@ -1131,9 +1141,7 @@ export class ManhattanRenderer {
     this.player.yaw = this.realPlayer.yaw;
     const active = dansManhattan(actual.x, actual.z, 180);
     this.root.visible = active;
-    this.lamps.forEach((l) => {
-      l.visible = active;
-    });
+    if (this.ownsLamps) this.lamps.forEach((l) => { l.visible = active; });
     if (active !== this.active) {
       this.active = active;
       this.renderer.toneMapping = active
@@ -1426,7 +1434,7 @@ export class ManhattanRenderer {
     this.resources.dispose();
     this.signage.material.dispose();
     this.signage.texture.dispose();
-    this.lamps.forEach((l) => l.removeFromParent());
+    if (this.ownsLamps) this.lamps.forEach((l) => l.removeFromParent());
     this.root.traverse((o) => {
       if (o.userData.ownedGeometry) o.geometry.dispose();
     });

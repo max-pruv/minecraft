@@ -1,6 +1,6 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, isSolid as blockIsSolid } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { buildAeroport, buildAerodrome, AEROPORTS } from './aeroport.js';
 import {
@@ -903,6 +903,41 @@ function arbreDeVille(data, x, z, h, wx, wz, sol, ss) {
     const wy = h + dy;
     if (wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.LEAVES;
   }
+  return true;
+}
+
+// UN RÉVERBÈRE AU BORD DU CANIVEAU, UN TOUS LES NEUF BLOCS (v248).
+//
+// Max : « regarde les améliorations qu'il y a encore eu dans la ville de New
+// York et reproduis-les sur l'ensemble de la carte ». Manhattan a des lampes
+// qui éclairent la rue la nuit ; les deux cent soixante-neuf villes engendrées
+// plantent un réverbère tous les neuf blocs (`mobilierVillesMonde`) ; les six
+// villes bâties à la main — Paris, Londres, Nice, Lille, San Francisco,
+// Washington — n'en avaient AUCUN. Le remède d'une ville ne doit pas rester
+// dans le fichier d'une ville : le crochet est partagé, comme `arbreDeVille`.
+//
+// Le monde répond tout seul : on ne connaît rien de la trame de la ville, on
+// regarde le sol. Une colonne de trottoir dont un voisin est de la chaussée
+// est au bord du caniveau ; la rue court alors le long de l'axe où il n'y a
+// pas de chaussée, et l'on compte les crans le long de cet axe-là. Un coin de
+// carrefour — de la chaussée sur les deux axes — ne reçoit rien.
+//
+// Rend `true` si la colonne a été traitée (le sol ET le réverbère posés).
+// Ce qu'une ville pose comme chaussée : le bitume et ses marquages partout,
+// et le pavé en éventail de Paris (`ARCHI.PAVE`), qui est SA rue.
+export const CHAUSSEE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.CROSSWALK,
+  ROUTE_BLOCK.LIGNE_NS, ROUTE_BLOCK.LIGNE_EO, ROUTE_BLOCK.PASSAGE_NS, ARCHI.PAVE]);
+const PAS_REVERBERE = 9;
+function lampadaireDeVille(data, x, z, h, wx, wz, sol, ss) {
+  if (ss !== CITY_BLOCK.SIDEWALK || h < WATER_LEVEL || h + 1 >= HEIGHT) return false;
+  const routeX = CHAUSSEE.has(sol(wx + 1, wz)) || CHAUSSEE.has(sol(wx - 1, wz));
+  const routeZ = CHAUSSEE.has(sol(wx, wz + 1)) || CHAUSSEE.has(sol(wx, wz - 1));
+  if (routeX === routeZ) return false;                 // ni au bord, ni un coin
+  // La rue passe en ±x : elle court le long de z, et c'est z qui compte.
+  const long = routeX ? wz : wx;
+  if (((long % PAS_REVERBERE) + PAS_REVERBERE) % PAS_REVERBERE !== 4) return false;
+  data[World.index(x, h, z)] = ss;
+  data[World.index(x, h + 1, z)] = RUE.REVERBERE;
   return true;
 }
 
@@ -1994,7 +2029,8 @@ export class World {
           // appel, ARBRE était posé À PLAT : de la pelouse sur le gravier des
           // allées, vu en capture de rue (v205). Le bâtisseur passe ENSUITE
           // quand même : c'est lui qui creuse le métro sous les parcs.
-          if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
+          if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw)
+            && !lampadaireDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
             data[World.index(x, h, z)] = sw;
           }
           batirColonneWashington(wx, wz, h, (dy, id) => {
@@ -2038,6 +2074,8 @@ export class World {
               const wy = h + dy;
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }
+          } else if (lampadaireDeVille(data, x, z, h, wx, wz, solParis, sp)) {
+            // le trottoir et son réverbère sont posés (v248)
           } else if (sp !== null) data[World.index(x, h, z)] = sp;
           else if (lotParisLibre(wx, wz)) {
             batirColonneParis(wx, wz, (dy, id) => {
@@ -2077,6 +2115,7 @@ export class World {
           // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
           // rendait le défaut invisible en capture de rue.
           if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
+          if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
           if (ss !== null) {
             // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT. Sur une
             // colonne de fleuve, `h` est le lit (base − 7) et l'eau monte
@@ -2098,7 +2137,9 @@ export class World {
 
         if (city && city.key === 'sf') {
           const ss = solSF(wx, wz);
-          if (ss !== null) data[World.index(x, h, z)] = ss;
+          if (lampadaireDeVille(data, x, z, h, wx, wz, solSF, ss)) {
+            // le trottoir et son réverbère sont posés (v248)
+          } else if (ss !== null) data[World.index(x, h, z)] = ss;
           else if (lotSFLibre(wx, wz)) {
             batirColonneSF(wx, wz, (dy, id) => {
               const wy = h + dy - 1;

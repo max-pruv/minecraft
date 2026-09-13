@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
 import { PARIS as PARIS_ANCRE, circuitsParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -12,7 +12,7 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { POLE } from './pole.js';
@@ -66,6 +66,11 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
 const RAYON_OMBRE = 6;   // en morceaux : l'emprise de la caméra d'ombre (95 blocs), v247
+// Les lampes de rue (v248) : la couleur des lanternes de Manhattan, une
+// portée de dix-huit blocs, et une intensité MESURÉE sur captures de nuit.
+const LAMPE_RUE = 0xffc989;
+const PORTEE_LAMPE_RUE = 18;
+const INTENSITE_LAMPE_RUE = 28;
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // Millisecondes maximum consacrées par frame à construire des chunks.
@@ -329,7 +334,17 @@ scene.add(decor(horizon.objet()));
 world.loadEdits();
 
 const player = new Player(camera, world);
-const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS});
+// LES LAMPES DE RUE (v248) : quatre lumières ponctuelles, posées la nuit
+// sous les réverbères les plus proches de l'enfant (`eclairerLaRue`), et
+// prêtées à Manhattan quand il y est. Quatre et pas plus : le nombre de
+// lampes fait partie de la clé de chaque programme de shader.
+const lampesRue = [];
+for (let i = 0; i < 4; i++) {
+  const l = new THREE.PointLight(LAMPE_RUE, 0, PORTEE_LAMPE_RUE, 2);
+  scene.add(l);
+  lampesRue.push(l);
+}
+const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const creatureManager = new CreatureManager(scene, world, player);
@@ -454,16 +469,43 @@ function meshChunk(cx, cz) {
   }
   if (props.length > 0) {
     const group = new THREE.Group();
+    const lanternes = [];
     for (const p of props) {
       const mesh = buildPropMesh(p.id);
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
+      // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
+      // est celle du bloc de lanterne du modèle (props.js), un demi-bloc en
+      // avant du fût et à trois blocs du sol. `eclairerLaRue` y pose une des
+      // quatre lumières de rue quand l'enfant passe à côté, la nuit. Et la
+      // crosse se tourne VERS LA RUE : le modèle la porte en +x, on regarde
+      // de quel côté du fût est la chaussée.
+      if (p.id === RUE.REVERBERE) {
+        mesh.rotation.y = versLaRue(cx * CHUNK + p.x, p.y - 1, cz * CHUNK + p.z);
+        lanternes.push(new THREE.Vector3(
+          mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
+          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y)));
+      }
     }
     entry.props = group;
+    if (lanternes.length) entry.lanternes = lanternes;
     scene.add(decor(group));
   }
   chunkMeshes.set(key, entry);
+}
+
+// De quel côté d'un réverbère est la rue : le cap (autour de y) qui tourne
+// la crosse du modèle, portée en +x, vers la première chaussée voisine. Sans
+// chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
+// reste en +x.
+function versLaRue(wx, wy, wz) {
+  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
+  if (rue(wx + 1, wz)) return 0;
+  if (rue(wx - 1, wz)) return Math.PI;
+  if (rue(wx, wz + 1)) return -Math.PI / 2;
+  if (rue(wx, wz - 1)) return Math.PI / 2;
+  return 0;
 }
 
 let lastPlayerChunk = null;
@@ -5030,12 +5072,16 @@ mapModal.addEventListener('click', (e) => {
 const skyColor = new THREE.Color();
 const lightColor = new THREE.Color();
 let dayTime = DAY_LENGTH * 0.3; // start mid-morning
+// La part de nuit, 0 le jour et 1 en pleine nuit : c'est elle qui allume les
+// lampes de rue (v248), pas `daylight` brut, qui ne tombe jamais sous 0,08.
+let nuitDehors = 0;
 
 function updateSky(dt) {
   dayTime = (dayTime + dt) % DAY_LENGTH;
   const angle = (dayTime / DAY_LENGTH) * Math.PI * 2;
   // daylight: 1 at noon, 0 at midnight, smooth transitions
   const daylight = THREE.MathUtils.clamp(Math.sin(angle) * 1.6 + 0.5, 0.08, 1);
+  nuitDehors = 1 - THREE.MathUtils.smoothstep(daylight, 0.1, 0.55);
 
   skyColor.lerpColors(NIGHT_SKY, DAY_SKY, daylight);
   // Lueur chaude du lever et du coucher. Elle se règle sur la hauteur du
@@ -5147,6 +5193,42 @@ scene.add(rainPoints);
 // Il ne décide simplement plus rien.
 const invite = () => !!(net && net.active && !net.isHost);
 const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
+
+// LES RÉVERBÈRES ÉCLAIRENT VRAIMENT LA RUE, LA NUIT (v248). Manhattan pose
+// ses quatre lampes sur la grille de ses avenues ; partout ailleurs, on les
+// pose sous les quatre lanternes les plus proches de l'enfant — celles que
+// `meshChunk` a notées en dessinant les réverbères — à moins de quarante
+// blocs. Une cadence de MÉNAGE, en temps réel : deux fois par seconde, ce
+// qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
+// faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
+const lampesPretes = cadence(500);
+function eclairerLaRue() {
+  if (renduDansManhattan || !lampesPretes()) return;
+  const px = player.pos.x, pz = player.pos.z;
+  const proches = [];
+  if (nuitDehors > 0.02) {
+    const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dz = -3; dz <= 3; dz++) {
+        const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+        if (!e || !e.lanternes) continue;
+        for (const l of e.lanternes) {
+          const d = (l.x - px) * (l.x - px) + (l.z - pz) * (l.z - pz);
+          if (d < 40 * 40) proches.push({ l, d });
+        }
+      }
+    }
+    proches.sort((a, b) => a.d - b.d);
+  }
+  lampesRue.forEach((lampe, i) => {
+    const c = proches[i];
+    if (!c) { lampe.intensity = 0; return; }
+    lampe.position.copy(c.l);
+    lampe.color.set(LAMPE_RUE);
+    lampe.distance = PORTEE_LAMPE_RUE;
+    lampe.intensity = nuitDehors * INTENSITE_LAMPE_RUE;
+  });
+}
 
 // Trois secondes entre deux annonces : le message est minuscule, et c'est le
 // délai maximum pendant lequel une tablette peut afficher autre chose que ce
@@ -5448,7 +5530,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5601,6 +5683,7 @@ function frame(now) {
   }
   avancerReflets(renderer, scene);
 
+  eclairerLaRue();
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   renderer.render(scene, camera);

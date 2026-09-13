@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v248 — Les réverbères éclairent la rue la nuit, dans toutes les villes
+
+**Pourquoi.** Deuxième étape du programme « New York partout » (Max : « sois
+autonome, améliore la carte, le réalisme partout »). Manhattan a quatre
+lampes de rue qui font des flaques de lumière chaude sur ses avenues la
+nuit. Ailleurs, mesuré à Paris, Londres et Rome sur captures de nuit : les
+deux cent soixante-neuf villes engendrées plantent bien un réverbère tous
+les neuf blocs, mais sa lanterne est un bloc peint qui n'éclaire rien — la
+rue sous lui est aussi noire qu'à côté ; et les six villes bâties à la main
+(Paris, Londres, Nice, Lille, San Francisco, Washington) n'avaient AUCUN
+réverbère, pas un seul. Une ville la nuit, c'était des vitres allumées et
+des rues noires.
+
+**Ce que ça change.** Chaque ville bâtie à la main a désormais ses
+réverbères au bord du caniveau, un tous les neuf blocs, la crosse tournée
+vers la rue — sans rien connaître de la trame de la ville : le monde regarde
+de quel côté du trottoir est la chaussée. Et la nuit, les quatre réverbères
+les plus proches de l'enfant éclairent vraiment : une flaque de lumière
+chaude sur le trottoir et la chaussée, qui suit l'enfant de lanterne en
+lanterne quand il marche. Cela vaut pour les villes engendrées aussi, dont
+les réverbères existaient déjà, et pour un réverbère que l'enfant pose
+lui-même (l'objet 🛞 de l'inventaire) devant sa maison. Le jour, rien ne
+change. Et New York garde ses lampes : ce sont les MÊMES quatre lumières,
+prêtées à Manhattan quand l'enfant y est — parce qu'en ajouter d'autres
+aurait recompilé tous les programmes de shaders à chaque entrée et sortie de
+la ville, c'est-à-dire rendu le gel de téléportation que la v246 vient
+d'enlever.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier lit des PIXELS : l'enfant pose un réverbère sur
+une dalle de pierre, la nuit tombe, et le sol à son pied est mesuré contre
+le sol huit blocs plus loin — 132 contre 19 ici, 12,9 contre 12,4 sur
+l'ancien code (rapport un : la lanterne ne faisait rien). Le second lit les
+BLOCS que le générateur pose autour du centre de Paris, Londres, San
+Francisco et Washington : 29, 48, 141 et 12 réverbères, chacun (à trois
+près, sous les culées des ponts de Paris) avec de la chaussée pour voisin ;
+zéro partout sur l'ancien code. Le témoin des villes engendrées de
+`carteMonde.js`, qui compte déjà leurs réverbères, ne bouge pas.
+L'intensité (28, portée dix-huit blocs) est réglée sur captures de nuit à
+Paris et à Rome, rue et ciel.
+
 ## v247 — Le regard de New York partout : le soleil éclaire le monde, les ombres se portent, le ciel est une voûte
 
 **Pourquoi.** Max : « regarde les améliorations qu'il y a encore eu dans la
