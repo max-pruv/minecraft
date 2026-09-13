@@ -25,7 +25,7 @@ import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules, lancerReflets, avancerReflets, refletsVoiture } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, graineDeVille } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
@@ -1266,7 +1266,8 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
-  vehicules.circulation(tr.pts, tr.pts.length + choisi, {ville:tr.ville});
+  // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
+  vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
   // le bus dessert le grand anneau — un par ville, à sa couleur
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
   circulationsEnAttente.splice(choisi, 1);
@@ -5534,6 +5535,12 @@ requestAnimationFrame(() => {
   // voiture, une seconde d'image figée. Compilés pendant l'accueil, ils ne
   // coûtent rien à l'enfant qui monte en voiture.
   if (refletsVoiture()) lancerReflets(player.pos);
+  // Et les programmes de la flotte, une signature par image, pendant l'accueil
+  // (v246) : vingt compilations à l'arrivée en ville, c'était le gel de la
+  // téléportation.
+  const chauffe = chaufferLesProgrammes(renderer, scene, camera);
+  const pas = () => { if (chauffe()) requestAnimationFrame(pas); };
+  requestAnimationFrame(pas);
 });
 
 // UN SEUL MONDE, ET PAS DE BOUTON « EXPLORER NEW YORK » SUR L'ACCUEIL (v242).

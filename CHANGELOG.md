@@ -20,6 +20,56 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v246 — La téléportation ne fige plus l'écran, la Bugatti roule sans traînées, et chaque ville a ses propres voitures
+
+**Pourquoi.** Max, capture d'iPad à l'appui, le 12 septembre : « Le lag est
+bien présent quand on fait une téléportation, à peu près dix secondes », « la
+Bugatti quand elle avance, il y a des trucs noirs qui bougent autour, pas très
+propres », « assure-toi que toutes les villes ont de la diversité dans les
+voitures », « améliore le design de la Lucid Gravity ». Mesuré : à l'arrivée à
+Paris, la carte graphique compilait VINGT programmes de shaders dans les
+images où les premières voitures apparaissaient — seize avant, trente-six
+après, une seconde et demie au banc, et sur une tablette c'est l'écran qui se
+fige — et les dix-huit passants naissaient dans la MÊME image, chacun avec son
+clone de squelette. Les « trucs noirs » de la Chiron Stealth étaient ses
+bandes de carrosserie accrochées au pivot de la roue arrière droite : le
+chargeur reconnaissait une pièce de roue à la sous-chaîne « rim », et
+« trim » — la garniture — en contient une ; la garniture tournait donc avec
+la roue, jusqu'au toit. Le MÊME défaut déformait la Lucid Gravity, dont des
+panneaux entiers tournaient sur eux-mêmes. Et la graine d'un convoi valait
+« nombre de points du tracé + rang dans la file » : les villes engendrées,
+aux anneaux semblables, tiraient les mêmes vingt modèles dans le même
+ordre, et chaque modèle arrivait toujours dans sa couleur cuite dans le
+fichier — vingt Bugatti bleues dans vingt villes.
+
+**Ce que ça change.** Les programmes de la flotte, des corps humains et du
+chien se compilent pendant que l'enfant lit l'accueil, une signature par
+image, à partir d'une table LUE dans les fichiers (dix-neuf signatures, pas
+les onze que mon premier relevé des matériaux annonçait : la plupart des
+carrosseries arrivent sans normales et se rendent en ombrage plat, un
+programme à part) ; à l'arrivée en ville, plus rien ne se compile. Les
+passants naissent par tranches de cinq millisecondes par image. Une pièce
+de roue est un mot entier (`wheel`, `tire`, `rim`…) ET une géométrie qui
+tient dans le pneu : la Bugatti roule propre, la Lucid retrouve sa forme —
+quatre pivots de trois pièces chacun. Chaque convoi tire sa graine de la
+position de sa ville, et deux voitures sur trois reçoivent une laque à elles
+(la troisième garde sa livrée d'origine, pour qu'une Ferrari rouge reste
+rouge) : à Moscou, douze voitures visibles, sept modèles, huit couleurs.
+
+**Ce qui le prouve.** Six témoins de plus dans `monte.js`, tous rouges sur
+l'ancien code : rien de la carrosserie ne tourne avec une roue sur les deux
+modèles déposés ; les passants naissent par tranches, jamais tous dans la
+même image ; à Moscou, les voitures visibles sont de modèles et de couleurs
+différents ; deux villes aux anneaux semblables ne tirent pas la même file ;
+se téléporter à Paris, sur une page neuve, ne compile plus les programmes des
+voitures sur place (zéro programme neuf, vingt avant — et le témoin vérifie
+que le RENDU a tourné : une boucle morte rend zéro programme et ne prouve
+rien, vu au banc sur une erreur de ma propre livraison) ; et la table des
+programmes à chauffer est exactement ce que les soixante et un fichiers de
+voitures et d'humains contiennent, ni signature manquante ni signature morte
+— le jour où Max dépose un modèle d'une autre facture, c'est ce témoin qui
+le dit.
+
 ## v245 — L'accueil répond tout de suite, la voiture ne saccade plus, et la rue s'arrête devant l'enfant
 
 **Pourquoi.** Max, sur l'iPad de quatre ans : « quand on allume le jeu, il

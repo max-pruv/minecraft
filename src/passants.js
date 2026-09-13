@@ -202,9 +202,28 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
     return repli || [site.x+5,site.z+7];
   }
 
+  // LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants — quarante-
+  // quatre à New York — naissaient dans la MÊME image à l'arrivée en ville,
+  // chacun avec un clone de squelette : c'est une part du gel que Max sent à
+  // la téléportation. `peupler` ne fait plus que PRÉVOIR ; `naitre`, appelé à
+  // chaque image, en fait naître pour cinq millisecondes au plus.
+  const naissances = [];
   function peupler(site, debut = 0, nombre = site.urbain ? 44 : PAR_VILLE) {
-    const gens = site.peuple || [];
-    for (let k = debut; k < debut + nombre; k++) {
+    if (!site.peuple) site.peuple = [];
+    site.prevus = site.prevus || 0;
+    for (let k = site.prevus; k < site.prevus + nombre; k++) naissances.push({ site, k, debut });
+    site.prevus += nombre;
+  }
+  function naitre() {
+    const t0 = performance.now();
+    while (naissances.length && performance.now() - t0 < 5) {
+      const { site, k, debut } = naissances.shift();
+      faireNaitre(site, k, debut);
+    }
+  }
+  function faireNaitre(site, k, debut) {
+    const gens = site.peuple;
+    {
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
       if (k % (site.urbain?16:5) === 4) {
@@ -217,7 +236,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         chien.apparitionDouce = true;
         gens.push(chien);
         npcs.push(chien);
-        continue;
+        return;
       }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
@@ -240,7 +259,6 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       gens.push(h);
       npcs.push(h);
     }
-    site.peuple = gens;
   }
 
   // Un compteur qui ne se répète pas : sans lui, un passant rapatrié
@@ -249,6 +267,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   let tour = 0;
 
   function update() {
+    naitre();
     if (!cestLHeure()) return;
     tour++;
     for (const site of sites) {
@@ -291,7 +310,8 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // Les corps partagés permettent une réserve pour les rues suivantes,
       // sans déplacer les voisins encore proches quand le cadre se vide.
       const plafond = 88;
-      if (devant < 6 && site.peuple.length < plafond) peupler(site, site.peuple.length, Math.min(4, plafond-site.peuple.length));
+      // `prevus` et non `peuple.length` : des naissances peuvent être en attente
+      if (devant < 6 && (site.prevus || 0) < plafond) peupler(site, site.prevus, Math.min(4, plafond - (site.prevus || 0)));
       for (let i = 0; i < site.peuple.length; i++) {
         const h = site.peuple[i];
         if (!h.pos) continue;

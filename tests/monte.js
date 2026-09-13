@@ -1089,14 +1089,42 @@ async function avancerUnDemiSeconde(p, depart) {
     // qui suivent l'arrivée, l'anneau de circulation naît et ses voitures se
     // montrent, et six passants peuplent les rues — puis on vérifie qu'ils
     // MARCHENT, pas qu'ils posent.
-    await tab.evaluate(async () => {
+    // ET LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants
+    // naissaient dans la MÊME image à l'arrivée — quarante-quatre à New York
+    // — chacun avec son clone de squelette : une part du gel que Max sent à
+    // la téléportation. On compte, image par image, combien de passants
+    // apparaissent : dix-huit d'un coup sur l'ancien code, jamais plus de
+    // quelques-uns par image ici. On mesure ce que l'enfant subit (une
+    // image qui fait tout) et non le mécanisme (une file), sur `effectif()`
+    // que l'ancien code publie aussi.
+    const naissances = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
       const g = window.__game;
       const p = positionDe('rome');
+      const effectif = () => (g.passants && g.passants.effectif && g.passants.effectif()) || 0;
+      const base = effectif();
+      const parImage = [];
+      let prec = base, actif = true;
+      const tic = () => {
+        const e = effectif();
+        if (e > prec) parImage.push(e - prec);
+        prec = e;
+        if (actif) requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
       g.player.flying = true;
       g.player.pos.set(p.x, g.world.terrainHeight(p.x, p.z) + 6, p.z);
       g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      while (effectif() - base < 18 && performance.now() - t0 < 15000) {
+        await new Promise((f) => setTimeout(f, 100));
+      }
+      actif = false;
+      return { nees: effectif() - base, images: parImage.length, maxParImage: Math.max(0, ...parImage) };
     });
+    verifier('les passants naissent par tranches, jamais tous dans la même image',
+      naissances.nees >= 18 && naissances.images >= 3 && naissances.maxParImage <= 9,
+      JSON.stringify(naissances));
     await dormir(3000);
     const circule = await tab.waitForFunction(() => {
       const conv = (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture');
@@ -1661,6 +1689,136 @@ async function avancerUnDemiSeconde(p, depart) {
       !!circulation,
       circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
         : 'moins de six voitures visibles en quarante-cinq secondes');
+
+    // ---- LA DIVERSITÉ DES VOITURES, DANS TOUTES LES VILLES (v246) -----------
+    //
+    // Max : « assure-toi que toutes les villes ont de la diversité dans les
+    // voitures ». Deux défauts : la graine d'un convoi valait « nombre de
+    // points du tracé + rang », si bien que les villes engendrées, aux
+    // anneaux semblables, tiraient les MÊMES vingt modèles dans le même
+    // ordre ; et un modèle de la flotte arrivait toujours dans SA couleur
+    // cuite dans le fichier — vingt Bugatti bleues dans vingt villes.
+    //
+    // ON LIT CE QUE L'ENFANT VOIT À MOSCOU : la livrée (modèle + laque) de
+    // chaque voiture visible. Au moins six voitures, au moins quatre modèles
+    // et trois laques différentes. L'ancien code ne publie pas ses livrées :
+    // rouge, et le message le dit.
+    const livrees = await tab.waitForFunction(() => {
+      const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
+      const l = [];
+      etat.forEach((c) => c.routier && (c.livrees || []).forEach((x) => l.push(x)));
+      return l.length >= 6 ? l : null;
+    }, null, { timeout: 30000, polling: 500 }).then((h) => h.jsonValue()).catch(() => null);
+    const diversiteVilles = livrees ? {
+      visibles: livrees.length,
+      modeles: new Set(livrees.map((x) => x.split(':')[0])).size,
+      laques: new Set(livrees.map((x) => x.split(':')[1])).size,
+      exemples: livrees.slice(0, 6),
+    } : null;
+    verifier('à Moscou, les voitures visibles sont de modèles ET de couleurs différents',
+      !!diversiteVilles && diversiteVilles.modeles >= 4 && diversiteVilles.laques >= 3,
+      diversiteVilles ? JSON.stringify(diversiteVilles) : 'le jeu ne publie pas la livrée de ses voitures');
+
+    // ET LA RÈGLE PURE : deux villes engendrées aux anneaux semblables — même
+    // nombre de points, même rang — reçoivent deux graines différentes, donc
+    // deux files de modèles différentes. On la calcule sur les vraies tracés
+    // du monde, sans rien bâtir.
+    const graines = await tab.evaluate(async () => {
+      const v = await import('./src/vehicules.js');
+      const vm = await import('./src/villesmonde.js');
+      if (!v.graineDeVille || !v.choixFlotte) return { err: 'graineDeVille absente : la graine vient encore de la file' };
+      const g = window.__game;
+      const traces = vm.tracesCirculation((x, z) => g.world.terrainHeight(x, z));
+      const parForme = {};
+      for (const t of traces) (parForme[`${t.pts.length}:${t.rang}`] ||= []).push(t);
+      const paire = Object.values(parForme).find((l) => l.length >= 2);
+      if (!paire) return { err: 'aucune paire de villes aux anneaux semblables' };
+      const fiche = (t) => {
+        const graine = v.graineDeVille(t);
+        return { ville: t.cle, graine, modeles: Array.from({ length: 6 }, (_, i) => v.choixFlotte(graine * 7 + i * 17, t.ville).fichier) };
+      };
+      return { a: fiche(paire[0]), b: fiche(paire[1]) };
+    });
+    verifier('deux villes aux anneaux semblables ne tirent pas la même file de voitures',
+      !graines.err && graines.a.graine !== graines.b.graine
+        && graines.a.modeles.join() !== graines.b.modeles.join(),
+      JSON.stringify(graines));
+
+    // ---- LES PROGRAMMES DE LA FLOTTE SE COMPILENT À L'ACCUEIL (v246) --------
+    //
+    // Max : « le lag est bien présent quand on fait une téléportation, à peu
+    // près dix secondes ». Profil de l'arrivée à Paris : seize programmes
+    // avant, trente-six après — chaque modèle de voiture rencontré pour la
+    // première fois apporte ses matériaux, chaque signature son programme,
+    // compilé DANS l'image où la voiture apparaît. Une seconde et demie au
+    // banc ; sur une tablette, l'écran qui se fige.
+    //
+    // ON MESURE LA CAUSE, PAS L'EFFET : le nombre de programmes que la carte
+    // graphique compile APRÈS la téléportation. Le banc rend en logiciel et
+    // ne peut pas subir le gel comme l'iPad ; le compte de programmes, lui,
+    // sépare vingt de zéro. Et sur une PAGE NEUVE : sur celle-ci les voitures
+    // ont déjà été vues à Rome et à Moscou, et le témoin serait vert des
+    // deux côtés. On attend que le compte se stabilise (la chauffe comprise),
+    // on se téléporte à Paris, on compte vingt secondes plus tard — et l'on
+    // vérifie que le RENDU a tourné : une boucle morte rend zéro programme
+    // neuf et ne prouve rien (vu au banc, sur une erreur de ma livraison).
+    await souffler();
+    const arrivee = await banc.jouerSeul('MonteArrivee', { rr: 6 });
+    const programmes = await arrivee.evaluate(async () => {
+      const g = window.__game;
+      const info = g.renderer.info;
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      let n = info.programs.length, stable = 0;
+      const t0 = performance.now();
+      while (stable < 3 && performance.now() - t0 < 40000) {
+        await dodo(1000);
+        if (info.programs.length === n) stable++; else { stable = 0; n = info.programs.length; }
+      }
+      const avant = info.programs.length;
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      const f0 = info.render.frame;
+      window.__carte.surTeleport(P.x + 20, P.z - 30);
+      await dodo(20000);
+      return { avant, neufs: info.programs.length - avant, images: info.render.frame - f0,
+        chunks: g.world.chunks.size, arrive: Math.hypot(g.player.pos.x - P.x, g.player.pos.z - P.z) < 60 };
+    });
+    await arrivee.close();
+    verifier('se téléporter à Paris ne compile plus les programmes des voitures sur place',
+      programmes.arrive && programmes.images > 30 && programmes.neufs <= 4,
+      JSON.stringify(programmes));
+
+    // ET LA TABLE DES SIGNATURES DIT CE QUE LES FICHIERS CONTIENNENT. La
+    // chauffe compile les signatures de `src/signatures.js` ; ce témoin LIT
+    // les soixante et un fichiers .glb du dépôt avec la même règle et exige
+    // l'égalité des deux ensembles — ni signature manquante (elle se
+    // compilerait à l'arrivée en ville), ni signature morte (un programme
+    // chauffé pour rien). Le jour où Max dépose un modèle d'une autre
+    // facture, c'est ici que cela se voit, et le message nomme la signature.
+    const signatures = await (async () => {
+      let mod;
+      try { mod = await import('../src/signatures.js'); } catch (e) {
+        return { err: 'src/signatures.js absent : les programmes ne sont pas chauffés à l\'accueil' };
+      }
+      const fs = require('fs');
+      const path = require('path');
+      const lues = new Set();
+      for (const [dossier, env] of [['../vendor/voitures', true], ['../vendor/humains', false]]) {
+        const d = path.join(__dirname, dossier);
+        for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.glb'))) {
+          const sigs = mod.signaturesDuGlb(mod.jsonDuGlb(fs.readFileSync(path.join(d, f))), { env });
+          for (const sg of sigs) lues.add(sg);
+        }
+      }
+      const table = new Set(mod.SIGNATURES_GLB);
+      return { lues: lues.size,
+        manquantes: [...lues].filter((sg) => !table.has(sg)),
+        mortes: [...table].filter((sg) => !lues.has(sg)) };
+    })();
+    verifier('la table des programmes à chauffer est exactement ce que les fichiers des voitures et des humains contiennent',
+      !signatures.err && signatures.lues >= 15
+        && signatures.manquantes.length === 0 && signatures.mortes.length === 0,
+      JSON.stringify(signatures));
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
