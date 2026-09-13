@@ -24,6 +24,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
+  foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
+  (neuf corps Rocketbox, vingt-quatre tenues sculptées) et des trois
+  appareils, planche-contact de face et de côté avec mesures (pieds au sol,
+  hauteur, symétrie) : rien de cassé. Mais Max a demandé en v243 « enlève la
+  femme avec le voile, ou retire le voile » pour la dame du château ; ce
+  modèle-ci, un des neuf corps de passants, couvre la tête d'un dupatta. Le
+  retirer de la liste `noms` de `humains.js` (les femmes tirent alors parmi
+  trois corps au lieu de quatre) ou le garder : décision de contenu, pas de
+  géométrie. Sonde : `revue/planche-humains.cjs` dans le brouillon.
+
 - [ ] **« On entre chez les gens : chaque îlot a sa porte » (washington.js)
   est tombé UNE fois au portail de la v250** — « façade 0,1, plafond à −1,
   1 mur, à (−21197, 6100) pour une maison en (−21197, 6095) » : sur les
