@@ -24,6 +24,33 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **v246 — les quatre points de Max du 12 septembre (capture iPad).** (1) « Le
+  lag est bien présent quand on fait une téléportation, à peu près dix
+  secondes » — c'est la dette « l'arrivée en ville fige l'écran » ci-dessous,
+  à découper image par image (sonde `teleport.cjs` et profil écrits). (2) « La
+  Bugatti quand elle avance, il y a des trucs noirs qui bougent autour » —
+  la Chiron Stealth déposée en v230 : ses nœuds « Front wheel −1 | Satin
+  black | aerodynamic surfaces » sont regroupés dans le pivot de roue par
+  leur NOM et tournent avec elle ; à mesurer sur la boîte de chaque morceau
+  contre celle du pneu avant de trancher. (3) « Assure-toi que toutes les
+  villes ont de la diversité dans les voitures » — la graine d'un convoi est
+  `tr.pts.length + choisi` (main.js), donc les villes engendrées, aux anneaux
+  semblables, tirent les MÊMES vingt modèles ; une graine par ville (sa
+  position) et des teintes par voiture. (4) « Améliore le design de la Lucid
+  Gravity » — à juger sur captures avant de toucher au modèle.
+
+- [ ] **v247 et suivantes — « regarde les améliorations qu'il y a encore eu
+  dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
+  Ce que New York a de plus (docs/manhattan.md) : façades en maillages à
+  matériaux physiques (embrasures, corniches, escaliers de secours,
+  réservoirs), éclairage par le cycle du jour avec ombres, lampadaires et
+  fenêtres la nuit, ciel et brouillard, reflets préfiltrés, pluie sur la
+  chaussée. Sa chaîne est une liste de bâtiments (rectangle, matériau, style,
+  hauteur, graine) et une fonction de surface, avec le monde voxel qui garde
+  les collisions (`TerreUrbaine`). Étapes, chacune sur captures rue + ciel :
+  le regard (ton, ombres, ciel) partout ; Paris sur la chaîne ; les autres
+  villes bâties à la main ; les villes engendrées par leurs îlots.
+
 - [ ] **Le premier chargement d'une VOITURE compile encore ses programmes sur
   la tablette (v245).** Les variantes « cible cubique » du décor sont
   chauffées à l'accueil ; les matériaux de la flotte, eux, se compilent à la
