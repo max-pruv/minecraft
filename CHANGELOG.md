@@ -44,7 +44,13 @@ ouvre le journal, la version servie par `sw.js` est en tête avec au moins
 une puce, la version installée est marquée, la croix le ferme ; et, sous
 node sans navigateur, chaque « ## vNNN » de `CHANGELOG.md` a son entrée dans
 `src/nouveautes.js`, aucune puce ne dépasse huit mots, aucun titre six.
-Portail : à venir.
+Et un troisième rouge attrapé AVANT la fusion par le portail lui-même :
+fermée, la modale couvrait tout l'écran (`display: flex` l'emportait sur
+`hidden`) et avalait les gestes de la carte — `carte.js` l'a dit, le témoin
+vérifie désormais par `elementFromPoint` qu'aucun voile ne reste.
+Portail : fumée verte, puis `reglages.js`, `carte.js`, `maj.js` vertes (220
+témoins) ; `manhattan.js` rouge sur exactement les quatre témoins déclarés en
+dette dans `TASKS.md` depuis la v242 (rendu logiciel), rien d'autre.
 
 ## v253 — À plusieurs, on voit l'ami dans sa voiture, et l'on monte avec lui
 
