@@ -860,7 +860,7 @@ async function avancerUnDemiSeconde(p, depart) {
     // chaussée : un convoi entier lui passait AU TRAVERS. Les convois cédaient
     // entre eux, jamais à l'enfant. On se pose au volant sur le tracé d'un
     // convoi, douze blocs devant sa tête, on attend qu'une voiture arrive à
-    // moins de six blocs, puis l'on compte pendant douze secondes les
+    // moins de douze blocs, puis l'on compte pendant douze secondes les
     // rectangles de la rue qui touchent le nôtre. À L'ARRÊT, pas en roulant :
     // rouler droit sur une rue courbe avec une carrure de 2,2 blocs finit
     // dans le trottoir (0,7 bloc roulé, vitesse x à zéro — mesuré), et le
@@ -946,7 +946,11 @@ async function avancerUnDemiSeconde(p, depart) {
       const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       let releves = 0, traverses = 0, proches = 0, arretees = 0, attenteSecondes = 0;
-      const uneVoiturePres = () => { let n = 0; window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => { if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) <= 6) n++; })); return n; };
+      // douze blocs, pas six : une voiture qui cède s'arrête dès que son
+      // balayage de huit blocs touche notre rectangle, donc à six ou huit
+      // blocs de notre centre — à six, le témoin ne la voyait jamais arriver
+      const PORTEE = 12;
+      const uneVoiturePres = () => { let n = 0; window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => { if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) <= PORTEE) n++; })); return n; };
       // on attend la première voiture : jusqu'à quarante secondes
       const tAttente = performance.now();
       while (performance.now() - tAttente < 40000 && !uneVoiturePres()) await new Promise((f) => setTimeout(f, 200));
@@ -957,7 +961,7 @@ async function avancerUnDemiSeconde(p, depart) {
         releves++;
         const moi = rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI);
         window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => {
-          if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > 6) return;
+          if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > PORTEE) return;
           proches++; if (q[5]) arretees++;
           if (!separes(moi, rect(q[0], q[1], q[2]))) traverses++;
         }));
@@ -966,7 +970,7 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
-      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de six blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
     await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
