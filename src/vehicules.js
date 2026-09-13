@@ -431,6 +431,29 @@ export class Parcours {
     };
   }
 
+  // LE CAP D'UNE VOITURE EST CELUI DE SON EMPATTEMENT, PAS DU SEGMENT (v244).
+  //
+  // `a(d).cap` est la direction du segment sous la voiture : à un carrefour,
+  // elle pivotait de quatre-vingt-dix degrés en une image — mesuré, cinquante-
+  // neuf sauts de plus de trente-quatre degrés en trente secondes à Paris. Max :
+  // « quand la voiture tourne, ce soit beaucoup plus naturel ». Une vraie
+  // voiture tourne sur la longueur de son empattement : on prend la corde
+  // entre le point sous l'essieu arrière et celui sous l'essieu avant, et le
+  // corps pivote progressivement pendant qu'il franchit le coin.
+  capLisse(distance, demi = 1.6) {
+    const ar = this.a(distance - demi), av = this.a(distance + demi);
+    return Math.atan2(av.x - ar.x, av.z - ar.z);
+  }
+
+  // La courbure ici, en radians par bloc : ce que le cap change sur un bloc de
+  // trajet. Positive à gauche (le cap augmente), négative à droite.
+  courbure(distance) {
+    let e = this.capLisse(distance + 0.5) - this.capLisse(distance - 0.5);
+    while (e > Math.PI) e -= Math.PI * 2;
+    while (e < -Math.PI) e += Math.PI * 2;
+    return e;
+  }
+
   // De combien le tracé tourne dans les prochains mètres, en radians.
   //
   // C'est ce qui manquait pour que la monoplace ressemble à une monoplace :
@@ -772,6 +795,20 @@ class Convoi {
     this.decouvert = opts.decouvert || null;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
+    // UN VÉHICULE ROUTIER CÈDE LE PASSAGE ET S'INCLINE DANS LE VIRAGE (v244).
+    // Un métro et un train roulent sur des rails : ils ne font ni l'un ni
+    // l'autre. `routier` déclare la voiture, le bus, la monoplace.
+    this.routier = !!opts.routier;
+    // CHAQUE VOITURE CÈDE POUR ELLE-MÊME, ET LE CONVOI EST ÉLASTIQUE. Un convoi
+    // n'a qu'une distance pour toutes ses voitures ; arrêter le convoi entier
+    // laissait celle qui était déjà dans le carrefour en travers de la voie de
+    // l'autre. `retard[i]` est ce que la voiture i a laissé filer en attendant :
+    // elle reste sur place pendant que le convoi avance, puis rattrape à une
+    // fois et demie l'allure. Celle qui suit fait la queue derrière elle.
+    this.retard = new Float64Array(opts.nb);
+    this.attend = new Uint8Array(opts.nb);       // ce tour-ci, quelqu'un est devant
+    this.attenteDepuis = new Float32Array(opts.nb);
+    this.repart = new Float32Array(opts.nb);     // secondes pendant lesquelles on n'attend plus
     // `relooke(mesh, distanceAbsolue, rang)` : appelé à chaque image sur
     // chaque élément visible. C'est lui qui peint les voitures de la chaîne
     // de la Giga-usine — grises avant le tunnel de peinture, colorées après.
@@ -825,8 +862,20 @@ class Convoi {
   // joueur les modèles sont cachés et leur position est périmée, alors que le
   // convoi, lui, continue de rouler. On peut donc demander « où est la rame ? »
   // même quand elle est à l'autre bout de la ville.
+  // Où en est la voiture i le long du tracé : sa place dans le convoi, moins
+  // ce qu'elle a laissé filer en cédant le passage.
+  dElement(i) { return this.distance - i * this.ecart - (this.retard ? this.retard[i] : 0); }
+
+  // La queue peut traîner plus loin que `ecart × (n − 1)` : de tout ce que ses
+  // voitures ont laissé filer en cédant le passage.
+  retardMax() {
+    let m = 0;
+    if (this.retard) for (let i = 0; i < this.retard.length; i++) if (this.retard[i] > m) m = this.retard[i];
+    return m;
+  }
+
   place(i, avance = 0) {
-    const p = this.parcours.a(this.distance + avance - i * this.ecart);
+    const p = this.parcours.a(this.dElement(i) + avance);
     return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap };
   }
 
@@ -839,6 +888,7 @@ class Convoi {
       this.montrer(joueur);
       return;
     }
+    const avantTout = this.distance;
     if (this.freine) {
       // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
       // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
@@ -876,6 +926,15 @@ class Convoi {
         }
       }
     }
+    // Ce que le convoi vient d'avancer ; une voiture qui attend le laisse
+    // filer, une voiture en retard le rattrape à une fois et demie l'allure.
+    const pas = this.distance - avantTout;
+    if (this.routier && pas > 0) {
+      for (let i = 0; i < this.nb; i++) {
+        if (this.attend[i]) this.retard[i] += pas;
+        else if (this.retard[i] > 0) this.retard[i] = Math.max(0, this.retard[i] - pas * 0.5);
+      }
+    }
     this.montrer(joueur);
   }
 
@@ -898,14 +957,14 @@ class Convoi {
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
-    const trainee = this.ecart * (this.nb - 1);
+    const trainee = this.ecart * (this.nb - 1) + this.retardMax();
     if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
       for (const m of this.elements) if (m && m.visible) m.visible = false;
       return;
     }
     const portee2 = portee * portee;
     for (let i = 0; i < this.nb; i++) {
-      const p = this.parcours.a(this.distance - i * this.ecart);
+      const p = this.parcours.a(this.dElement(i));
       const dedans = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 < portee2;
       // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà.
       if (!dedans) {
@@ -916,8 +975,27 @@ class Convoi {
       const m = this.element(i);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
-      // marche, il faut donc le retourner d'un demi-tour.
-      m.rotation.y = p.cap + Math.PI;
+      // marche, il faut donc le retourner d'un demi-tour. Le cap est celui de
+      // l'empattement (v244) : la voiture pivote en franchissant le coin.
+      const d = this.dElement(i);
+      m.rotation.y = this.parcours.capLisse(d) + Math.PI;
+      // l'allure de CETTE voiture : arrêtée si elle attend, pressée si elle rattrape
+      const allure = this.routier && this.attend[i] ? 0 : (this.routier && this.retard[i] > 0 ? 1.5 : 1);
+      if (this.routier) {
+        // L'INCLINAISON DANS LE VIRAGE, purement visuelle (v244). Comme pour
+        // l'avion (v231), elle se compose AVANT le cap — ordre YXZ — sinon la
+        // voiture basculerait autour de l'axe du MONDE. Le corps d'une voiture
+        // roule vers l'EXTÉRIEUR du virage, de ce que lui impose la force
+        // centrifuge : vitesse au carré fois courbure, à l'échelle de ce qu'un
+        // enfant voit — quatre degrés au pire coin, rien en ligne droite.
+        // Le signe a été REGARDÉ sur capture, pas déduit.
+        const v = this.vitesseActuelle * allure;
+        const vise = Math.max(-0.08, Math.min(0.08, -this.parcours.courbure(d) * v * v * 0.012));
+        const roulis = m.userData.roulis === undefined ? vise : m.userData.roulis + (vise - m.userData.roulis) * Math.min(1, this.dernierDt * 6);
+        m.userData.roulis = roulis;
+        m.rotation.order = 'YXZ';
+        m.rotation.z = roulis;
+      }
       m.visible = true;
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
@@ -925,12 +1003,12 @@ class Convoi {
       // tournent, un enfant de sept ans le voit au premier mètre.
       const roues = m.userData.roues;
       if (roues && roues.length) {
-        const angle = (this.vitesseActuelle * this.dernierDt) / (m.userData.rayonRoue || 0.34);
+        const angle = (this.vitesseActuelle * allure * this.dernierDt) / (m.userData.rayonRoue || 0.34);
         for (const r of roues) r.rotation.x += angle;
       }
       if (this.relooke) {
         const L = this.parcours.longueur;
-        this.relooke(m, (((this.distance - i * this.ecart) % L) + L) % L, i);
+        this.relooke(m, ((d % L) + L) % L, i);
       }
     }
   }
@@ -992,7 +1070,7 @@ export function createVehicules({ scene, player }) {
       const [c1, c2] = teintes[i % teintes.length];
       ajouter(points, {
         nb: 1, vitesse: 17 + (i % 3) * 1.6, depart: -i * (p.longueur / nb) * 0.55,
-        nom: 'formule 1', emoji: '🏎️', assise: 0.75, freine: true, allureMin: 0.2,
+        nom: 'formule 1', emoji: '🏎️', assise: 0.75, freine: true, allureMin: 0.2, routier: true,
         modele: () => construireF1(c1, c2),
       });
     }
@@ -1094,7 +1172,7 @@ export function createVehicules({ scene, player }) {
     const p = new Parcours(pts);
     const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
     return ajouter(pts, {
-      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4,
+      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4, routier: true,
       // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
       // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
       // personne ne l'avait jamais compté. À cent dix blocs de portée, les
@@ -1130,14 +1208,134 @@ export function createVehicules({ scene, player }) {
     // constante (c'est le mécanisme du métro), et un bus qui ne s'arrête
     // jamais n'est pas un bus.
     return ajouter(pts, {
-      nb: 1, vitesse: 5,
+      nb: 1, vitesse: 5, routier: true,
       nom: 'bus', emoji: '🚌', assise: 1.7,
       arrets, pause: 2,
       modele: () => construireBus(teintes[graine % teintes.length]),
     });
   }
 
+  // QUI CÈDE LE PASSAGE À QUI (v244). Max : « évite que les voitures puissent
+  // se chevaucher ». Mesuré à Paris, trente secondes : soixante-quinze relevés
+  // de paires de voitures à moins de 3,5 blocs, la pire à 1,38 — l'une dans
+  // l'autre, là où deux circuits se croisent, en équerre ou en biais, et sur
+  // les tronçons qu'ils partagent.
+  //
+  // TROIS JETS AVANT CELUI-CI, et chacun a coûté une mesure. Arrêter le CONVOI
+  // entier laissait celle qui était déjà dans le carrefour en travers de
+  // l'autre voie (75 → 65). Un couloir « devant moi » de six blocs ratait la
+  // voiture qui arrive de trois quarts — les deux circuits de la rue de Rivoli
+  // se coupent à cent soixante degrés, pas cent quatre-vingts (65 → 61). Et
+  // départager une paire mutuelle par le rang de convoi faisait passer la
+  // voiture de derrière AU TRAVERS de celle qui attendait devant elle.
+  //
+  // D'où ceci. Une voiture regarde où SON tracé la mène dans les cinq blocs qui
+  // viennent, et demande si son rectangle (4,4 × 2,26) y toucherait celui d'une
+  // autre voiture, de son convoi ou d'un autre. Si oui, elle attend — elle
+  // seule : le convoi est élastique (`retard`), celles qui suivent font la
+  // queue derrière elle. Dans une paire mutuelle, LA PLUS ENGAGÉE PASSE : celle
+  // que l'autre voit le plus loin devant elle. Et l'on n'attend jamais plus de
+  // quatre secondes d'affilée : à trois, on finit par y aller.
+  //
+  // Seules les voitures à portée de l'enfant se regardent : ce qui se
+  // chevauche hors de vue ne coûte à personne, et mille circuits n'ont pas à
+  // se comparer à chaque image.
+  const PORTEE_CEDE = 90, DEMI_LONG = 2.2, DEMI_LARG = 1.13, PAS_BALAYAGE = [0.5, 2, 3.5, 5, 6.5, 8];
+  const rectangle = (x, z, ux, uz) => {
+    const vx = uz, vz = -ux;
+    return [
+      [x + ux * DEMI_LONG + vx * DEMI_LARG, z + uz * DEMI_LONG + vz * DEMI_LARG],
+      [x + ux * DEMI_LONG - vx * DEMI_LARG, z + uz * DEMI_LONG - vz * DEMI_LARG],
+      [x - ux * DEMI_LONG - vx * DEMI_LARG, z - uz * DEMI_LONG - vz * DEMI_LARG],
+      [x - ux * DEMI_LONG + vx * DEMI_LARG, z - uz * DEMI_LONG + vz * DEMI_LARG],
+    ];
+  };
+  // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
+  // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
+  // pas, ils sont disjoints.
+  const seTouchent = (P, Q) => {
+    for (const R of [P, Q]) {
+      for (let k = 0; k < 4; k++) {
+        const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+        let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+        for (let j = 0; j < 4; j++) {
+          const p = P[j][0] * ax + P[j][1] * az, q = Q[j][0] * ax + Q[j][1] * az;
+          if (p < p0) p0 = p; if (p > p1) p1 = p; if (q < q0) q0 = q; if (q > q1) q1 = q;
+        }
+        if (p1 < q0 || q1 < p0) return false;
+      }
+    }
+    return true;
+  };
+  function cederLePassage(dt) {
+    const px = player.pos.x, pz = player.pos.z;
+    const voitures = [];
+    for (let ci = 0; ci < convois.length; ci++) {
+      const c = convois[ci];
+      if (!c.routier) continue;
+      const tete = c.parcours.a(c.distance);
+      const trainee = c.ecart * (c.nb - 1) + c.retardMax();
+      if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + trainee) { c.attend.fill(0); continue; }
+      for (let i = 0; i < c.nb; i++) {
+        const d = c.dElement(i);
+        const q = c.parcours.a(d);
+        if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) { c.attend[i] = 0; continue; }
+        const cap = c.parcours.capLisse(d), ux = Math.sin(cap), uz = Math.cos(cap);
+        voitures.push({ c, ci, i, cle: ci * 1000 + i, d, x: q.x, y: q.y, z: q.z, ux, uz,
+          rect: rectangle(q.x, q.z, ux, uz), balayage: null, veut: null });
+      }
+    }
+    // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
+    for (const a of voitures) {
+      a.balayage = PAS_BALAYAGE.map((pas) => {
+        const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
+        return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
+      });
+    }
+    for (const a of voitures) {
+      for (const b of voitures) {
+        if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
+        const ex = b.x - a.x, ez = b.z - a.z;
+        if (ex * ex + ez * ez > 12 * 12) continue;
+        if (ex * a.ux + ez * a.uz < -DEMI_LONG) continue;          // derrière moi : pas mon affaire
+        // Là où elle EST, pas là où elle sera : comparer les deux chemins des
+        // huit prochains blocs mettait presque toutes les paires en conflit
+        // mutuel, et la patience de quatre secondes les relâchait ensemble —
+        // 17 → 77, mesuré. Le reliquat (dix-sept relevés sur trente secondes,
+        // un raccord à cent soixante degrés entre deux circuits de Rivoli) est
+        // une affaire de tracé, déclarée dans TASKS.md.
+        let gene = false;
+        for (const R of a.balayage) if (seTouchent(R, b.rect)) { gene = true; break; }
+        if (gene) (a.veut || (a.veut = new Map())).set(b.cle, ex * a.ux + ez * a.uz);
+      }
+    }
+    const parCle = new Map(voitures.map((v) => [v.cle, v]));
+    for (const a of voitures) {
+      let attend = false;
+      if (a.veut) {
+        for (const [cle, devantMoi] of a.veut) {
+          const b = parCle.get(cle);
+          if (b && b.veut && b.veut.has(a.cle)) {
+            // paire mutuelle : la plus engagée passe — celle que l'autre voit le
+            // plus loin devant elle ; à égalité, la plus petite
+            const devantLui = b.veut.get(a.cle);
+            if (devantLui > devantMoi || (devantLui === devantMoi && a.cle < cle)) continue;
+          }
+          attend = true; break;
+        }
+      }
+      const c = a.c, i = a.i;
+      if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
+      else if (attend) {
+        c.attenteDepuis[i] += dt;
+        if (c.attenteDepuis[i] > 4) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
+      } else c.attenteDepuis[i] = 0;
+      c.attend[i] = attend ? 1 : 0;
+    }
+  }
+
   function update(dt) {
+    cederLePassage(dt);
     for (const c of convois) c.update(dt, player.pos);
   }
 
@@ -1165,7 +1363,7 @@ export function createVehicules({ scene, player }) {
       // longue que sa corde : si la tête est plus loin que ça plus le rayon,
       // aucun wagon ne peut être à portée.
       const tete = c.place(0);
-      const trainee = c.ecart * (c.elements.length - 1);
+      const trainee = c.ecart * (c.elements.length - 1) + c.retardMax();
       if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
         const p = c.place(i);
@@ -1246,6 +1444,14 @@ export function createVehicules({ scene, player }) {
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,
       total: c.elements.length,
+      // Où sont les voitures visibles, et vers où elles vont (v244) : c'est ce
+      // qui permet à une sonde de dire QUI chevauche QUI — même convoi, ou deux.
+      places: c.elements.map((m, i) => (m && m.visible
+        ? [Math.round(m.position.x * 10) / 10, Math.round(m.position.z * 10) / 10, Math.round((m.rotation.y - Math.PI) * 100) / 100, i,
+          c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0]
+        : null)).filter(Boolean),
+      retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
+      attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
       // les teintes de carrosserie des éléments visibles — la preuve, pour un
       // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
       // tunnel, des couleurs APRÈS, dans le même convoi au même instant

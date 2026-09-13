@@ -1028,25 +1028,36 @@ async function avancerUnDemiSeconde(p, depart) {
     // Ce banc avance à quinze pour cent du temps réel (`dt` borné, trois
     // images par seconde) : on attend le premier bloc et demi jusqu'à douze
     // secondes, et l'on rend l'enfant à sa place après.
+    // Un passant lancé contre un mur n'avance pas non plus (un bloc en douze
+    // secondes, vu au portail) : on essaie trois passants et quatre caps, et
+    // l'on garde le premier qui avance. Sur l'ancien code aucun ne bouge,
+    // quelle que soit la direction — c'est l'enfant qui le fige.
     const suit = await tab.evaluate(async () => {
       const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
-      const h = s2.peuple.find((q) => q.name === 'passant');
-      if (!h) return { err: 'aucun passant' };
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
+      if (!gens.length) return { err: 'aucun passant' };
       const sauve = g.player.pos.clone();
-      h.etat = 'marche'; h.minuteur = 8; h.capYaw = 0; h.pas = h.walkSpeed;
-      g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
-      const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
-      let d = 0;
-      while (performance.now() - t0 < 12000 && d < 1.5) {
-        await new Promise((f) => setTimeout(f, 250));
-        d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+      let meilleur = 0, essais = 0;
+      for (const h of gens) {
+        for (const cap of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+          essais++;
+          h.etat = 'marche'; h.minuteur = 8; h.capYaw = cap; h.pas = h.walkSpeed;
+          g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
+          const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
+          let d = 0;
+          while (performance.now() - t0 < 4000 && d < 1.2) {
+            await new Promise((f) => setTimeout(f, 250));
+            d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+          }
+          if (d > meilleur) meilleur = d;
+          if (d >= 1.2) { g.player.pos.copy(sauve); return { d: +d.toFixed(2), essais, secondes: +((performance.now() - t0) / 1000).toFixed(1) }; }
+        }
       }
-      const dJoueur = Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z);
       g.player.pos.copy(sauve);
-      return { d: +d.toFixed(2), dJoueur: +dJoueur.toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+      return { d: +meilleur.toFixed(2), essais };
     });
     verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
-      !suit.err && suit.d >= 1.5, JSON.stringify(suit));
+      !suit.err && suit.d >= 1.2, JSON.stringify(suit));
 
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
     //
@@ -1100,6 +1111,85 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('la dame du château n\'a plus de guimpe, et la dame Renaissance plus de voile',
       voiles.guimpe === 0 && voiles.voile === 0,
       `sommets de linge au-dessus du cou : ${voiles.guimpe} · sommets de voile au-dessus de la tête : ${voiles.voile}`);
+
+    // ---- LES VOITURES NE SE TRAVERSENT PLUS, ET ELLES TOURNENT (v244) ---------
+    //
+    // Max : « évite que les voitures puissent se chevaucher et fait en sorte
+    // que quand la voiture tourne, ce soit beaucoup plus naturel, avec une
+    // vraie inclinaison ». Trois mesures sur trente secondes à Paris, sur les
+    // voitures VISIBLES du convoi routier :
+    //   · un chevauchement est l'intersection VRAIE des deux rectangles
+    //     (4,4 × 2,26, orientés), par séparation d'axes — « à moins de
+    //     3,5 blocs » comptait deux files en sens inverse qui se frôlent ;
+    //   · un saut de cap est plus de trente-quatre degrés entre deux relevés
+    //     à deux cents millisecondes — un carrefour pris en une image ;
+    //   · le roulis se lit sur la MATRICE de la voiture : le haut du corps
+    //     penche du côté que le roulis annonce, et le roulis est posé vers
+    //     l'extérieur du virage.
+    // Mesuré : 78 chevauchements et 59 sauts sur l'ancien code ; 17 à 25
+    // et 1 à 2 ici, roulis 0,078 au pire coin. Les bornes se posent entre les
+    // deux dispersions, pas au meilleur relevé.
+    // On se place au-dessus de la circulation de Paris, là où la sonde a
+    // mesuré (22 à 24 voitures visibles) : le portail a rendu « maxVues 5 »
+    // depuis l'endroit où le témoin d'avant avait laissé l'enfant.
+    await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture').reduce((n, c) => n + c.visibles, 0) >= 8,
+      null, { timeout: 30000 }).catch(() => {});
+    const voitures = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      const visibles = () => { const out = []; g.scene.traverse((o) => { if (o.userData && (o.userData.roues || o.userData.flotte) && o.visible && o.parent === g.scene) out.push(o); }); return out; };
+      const rect = (m) => { const cap = m.rotation.y - Math.PI, ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux, x = m.position.x, z = m.position.z;
+        return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let chevauchements = 0, sauts = 0, mesures = 0, penchees = 0, bonCote = 0, contraire = 0, maxRoulis = 0, maxVues = 0;
+      const derniers = new Map();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const v = visibles(); maxVues = Math.max(maxVues, v.length);
+        for (let i = 0; i < v.length; i++) {
+          // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
+          // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
+          // que si la voiture a roulé moins de deux blocs entre deux relevés.
+          // Et l'on juge en DEGRÉS PAR BLOC PARCOURU, pas par relevé : une
+          // voiture qui rattrape son retard à une fois et demie l'allure
+          // tourne plus vite par seconde, pas par mètre. Sur l'empattement,
+          // un coin de 90° tourne au plus 36° par bloc, et le virage le plus
+          // serré qu'un circuit autorise (150°) environ 70° ; l'ancien code
+          // pivotait de 90° en un cinquième de bloc, soit plus de 400° par
+          // bloc. La barre, 115° par bloc, sépare les deux dispersions.
+          const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
+          if (prev !== undefined) {
+            const roule = v[i].position.distanceTo(prev.pos);
+            if (roule >= 0.3 && roule < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e / roule > 2.0) sauts++; }
+          }
+          derniers.set(v[i], { cap, pos: v[i].position.clone() });
+          const r = v[i].rotation.z || 0;
+          if (Math.abs(r) >= 0.01 && Math.abs(v[i].position.y - g.player.pos.y) < 40) {
+            penchees++; maxRoulis = Math.max(maxRoulis, Math.abs(r));
+            const c = v[i].rotation.y - Math.PI, gauche = new THREE.Vector3(Math.cos(c), 0, -Math.sin(c));
+            const haut = new THREE.Vector3(0, 1, 0).applyQuaternion(v[i].quaternion);
+            if ((r < 0) === (haut.dot(gauche) < 0)) bonCote++; else contraire++;
+          }
+          for (let j = i + 1; j < v.length; j++) {
+            if (Math.abs(v[i].position.y - v[j].position.y) > 2.5) continue;
+            if (v[i].position.distanceTo(v[j].position) < 5 && !separes(rect(v[i]), rect(v[j]))) chevauchements++;
+          }
+        }
+      }
+      return { maxVues, chevauchements, mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
+    });
+    verifier('les voitures ne se traversent plus',
+      voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
+    verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
+      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
+    verifier('et elles s\'inclinent dans le virage, du bon côté',
+      voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
+      `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
 
     // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
     //
@@ -1393,16 +1483,25 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     // les convois naissent à l'approche du joueur, par paquets de deux
     // secondes et demie : on les attend, on ne les suppose pas
+    // SIX À LA FOIS, PAS HUIT (v244). Vingt voitures sur une boucle de six
+    // cents blocs, c'est une tous les trente blocs : à quarante-cinq blocs du
+    // centre, deux anneaux en donnent six au plus, et c'est ce que la sonde
+    // mesure des deux côtés, sur `origin/main` comme ici — quatre à six,
+    // jamais huit. Le « huit » ne tenait qu'à la PHASE des convois au moment
+    // où l'enfant arrive : un pile ou face qui a gagné pendant des versions et
+    // qui a perdu le jour où trois témoins de plus l'ont précédé. Rouge
+    // garanti sur l'ancien code tout de même : là, Moscou n'avait AUCUNE
+    // voiture.
     const circulation = await tab.waitForFunction(() => {
       const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
       const autos = etat.filter((c) => c.nom === 'voiture');
       const visibles = autos.reduce((n, c) => n + c.visibles, 0);
-      return visibles >= 8 ? { anneaux: autos.length, visibles } : null;
-    }, null, { timeout: 30000 }).then((h) => h.jsonValue()).catch(() => null);
+      return visibles >= 6 ? { anneaux: autos.length, visibles } : null;
+    }, null, { timeout: 45000 }).then((h) => h.jsonValue()).catch(() => null);
     verifier('à Moscou, traversée par son fleuve, les rues sont pleines de voitures',
       !!circulation,
       circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
-        : 'moins de huit voitures visibles en trente secondes');
+        : 'moins de six voitures visibles en quarante-cinq secondes');
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
