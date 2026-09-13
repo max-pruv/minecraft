@@ -994,6 +994,14 @@ local, Supabase de poche (`tests/nuage.js`).
   cinq pannes très différentes — élément absent, invisible, dans une fiche
   fermée, hors écran, désactivé — sous un seul message ; un rouge qui ne les
   distingue pas ne se démonte pas.
+- **UN TÉMOIN QUI LIT L'EFFET D'UNE IMAGE ATTEND L'IMAGE (v249).** « Les gens
+  nés avant les modèles reçoivent leur corps réaliste sur place » lisait la
+  présence de chaque personnage quatre secondes après l'arrivée des modèles ;
+  la mise à niveau se fait par tranches dans un `requestAnimationFrame` à
+  part, la présence se recopie dans la boucle du jeu à l'image d'APRÈS. Lue
+  entre les deux : deux présences « fausses » sur cent quarante et une au
+  portail, zéro sur la même page rejouée seule. Une lecture qui dépend d'une
+  image attend que la file soit vide, puis deux images — jamais un délai fixe.
 - **Un témoin doit échouer *proprement* sur l'ancien code, pas s'effondrer.**
   Une méthode neuve appelée sans garde fait planter le banc au premier témoin
   et masque les quatre suivants — on ne voit donc jamais l'étendue réelle du
