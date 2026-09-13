@@ -76,8 +76,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   par image et retiré deux des causes — les programmes de la flotte et des
   humains compilés sur place, et les dix-huit passants nés dans la même
   image ; ce qui reste est le maillage (voir « ce qui reste du gel de
-  téléportation » ci-dessus). La validation de #244 en rendu matériel était
-  verte ; à remesurer sur l'iPad.
+  téléportation » ci-dessus). Remesuré à la v246, `monte.js` rejoué SEUL des
+  deux côtés, même fichier de témoins : `origin/main` (v245) **1 267 ms,
+  9,3 %** ; branche **2 033 ms, 18,9 %** — même écart entre les deux arbres
+  qu'à la v242 (1 233 contre 2 117) sur du code qui a depuis été fusionné,
+  donc un écart de BANC, pas de code ; rouge des deux côtés, dette maintenue.
+  La validation de #244 en rendu matériel était verte ; à remesurer sur
+  l'iPad.
 
 - [ ] **Quatre témoins de `manhattan.js` sont rouges sur ce banc, des deux
   côtés.** Rejoués SEULS sur la branche v242 et sur `origin/main` (v240),
