@@ -1032,10 +1032,23 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
       chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+    // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
+    // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
+    // d'une voiture : l'enfant était encore au volant. On lit l'état avant le
+    // clic, après le clic, et après le retour, pour savoir où il remonte.
+    const etatVolant = () => tab.evaluate(() => { const g = window.__game; return { gabarit: g.player.gabarit,
+      monture: !!(g.fun.montureConduite && g.fun.montureConduite()), bouton: document.getElementById('ride-btn').textContent,
+      animaux: g.animalManager.animals.map((a) => a.def.key + (a.montee ? '*' : '')).join(',') }; });
+    const avantClic = await etatVolant();
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+    const apresClic = await etatVolant();
     await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
     await dormir(1500);
+    const apresRetour = await etatVolant();
+    verifier('et l\'on est descendu de la voiture de Paris, à pied au retour',
+      !apresClic.monture && !apresRetour.monture && apresRetour.gabarit < 1,
+      `avant le clic ${JSON.stringify(avantClic)} · après ${JSON.stringify(apresClic)} · au retour ${JSON.stringify(apresRetour)}`);
 
     // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
     //
