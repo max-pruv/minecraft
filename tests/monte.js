@@ -864,6 +864,18 @@ async function avancerUnDemiSeconde(p, depart) {
     // rue qui touchent le nôtre. En roulant, pas à l'arrêt : immobile, on ne
     // rencontre un convoi que si son tour tombe dans la fenêtre — une
     // traversée sur l'ancien code en dix secondes, un pile ou face.
+    // On va d'abord à Paris, où roulent des convois routiers — ici, au point
+    // d'apparition, il n'y en a aucun, et le témoin le disait : « aucun
+    // convoi routier trouvé ». La position d'avant est rendue à la fin,
+    // parce que le témoin suivant bâtit son mur là où l'enfant se trouve.
+    const avantParis = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      const sauve = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw, flying: g.player.flying };
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+      return sauve;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.routier).reduce((n, c) => n + c.visibles, 0) >= 4,
+      null, { timeout: 60000 }).catch(() => {});
     const chaussee = await tab.evaluate(async () => {
       const g = window.__game, et = window.__vehicules.etat();
       let m = null;
@@ -874,7 +886,7 @@ async function avancerUnDemiSeconde(p, depart) {
       if (!m) return null;
       const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
       g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
-      g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0;
+      g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
       const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       let releves = 0, traverses = 0, proches = 0, arretees = 0;
@@ -900,6 +912,8 @@ async function avancerUnDemiSeconde(p, depart) {
       chaussee ? `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} voiture(s) croisées à moins de six blocs, ${chaussee.arretees} arrêtée(s) · ${chaussee.parcouru} blocs roulés` : 'aucun convoi routier trouvé');
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+    await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
+    await dormir(1500);
 
     // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
     //
