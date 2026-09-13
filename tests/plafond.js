@@ -16,6 +16,22 @@
 //     cd tests && npm install && npm run plafond
 
 const { Banc, dormir } = require('./banc.js');
+// ON NE RECHARGE PAS UNE PAGE QUI CHARGE ENCORE SES CORPS (v252). Les neuf
+// corps réalistes s'analysent après la première image ; un rechargement au
+// milieu coupe les textures en cours de décodage et le chargeur écrit
+// « Couldn't load texture blob: » dans la console — que « aucune erreur
+// JavaScript » comptait comme une faute du jeu. Vert seul, rouge deux
+// portails de suite (v251, v252) : seul, les corps sont là avant que le
+// témoin ne recharge ; sous la charge de trois suites, ils ne le sont pas.
+async function corpsCharges(tab) {
+  const fin = Date.now() + 45000;
+  while (Date.now() < fin) {
+    const ok = await tab.evaluate(async () => { const H = await import('./src/humains.js'); return H.humainsCharges(); }).catch(() => false);
+    if (ok) return true;
+    await dormir(500);
+  }
+  return false;
+}
 const { createHash } = require('crypto');
 
 const echecs = [];
@@ -605,6 +621,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (const [x, y, z] of maison) tout[ctx][`${x},${y},${z}`] = [4, 1];
       localStorage.setItem('web-minecraft-edits-v3', JSON.stringify(tout));
     }, { maison: MAISON, ctx: contexte });
+    await corpsCharges(tab);
+    await corpsCharges(tab);
+    await corpsCharges(tab);
+    await corpsCharges(tab);
+    await corpsCharges(tab);
+    await corpsCharges(tab);
     await tab.reload({ waitUntil: 'load' });
     await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
     await tab.evaluate(() => {
@@ -793,6 +815,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('et le jeu le dessine sans rien laisser en attente', maille === 0,
       `${maille} morceau(x) en attente`);
 
+    await corpsCharges(tab);
     await tab.reload({ waitUntil: 'load' });
     await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
     await tab.evaluate(() => {

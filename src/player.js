@@ -345,10 +345,13 @@ export class Player {
     // loin, toucherait une voiture de la rue. On ne bloque que si l'on n'est
     // pas DÉJÀ dedans — sinon une voiture arrivée au travers de la nôtre nous
     // clouerait sur place.
+    // Le crochet reçoit AUSSI la position actuelle (v252) : c'est lui qui
+    // applique « pas si l'on est déjà dedans », FAMILLE PAR FAMILLE — une
+    // voiture de la rue collée à la nôtre ne doit pas nous laisser traverser
+    // un réverbère.
     if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && (move.x !== 0 || move.z !== 0)) {
       const cap = this.yaw + Math.PI;
-      if (this.obstacleVehicule(this.pos.x + move.x, this.pos.z + move.z, cap)
-        && !this.obstacleVehicule(this.pos.x, this.pos.z, cap)) {
+      if (this.obstacleVehicule(this.pos.x + move.x, this.pos.z + move.z, cap, this.pos.x, this.pos.z)) {
         move.x = 0; move.z = 0; this.vel.x = 0; this.vel.z = 0;
       }
     }

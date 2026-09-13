@@ -34,11 +34,29 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   médiane 60 ms par image avec le worker, 55 sans, 53 sur `origin/main`,
   clic en 155 / 120 / 135 ms ; le symptôme de la v247 (banc lent), pas le
   worker. (3) `plafond.js`, « THREE.GLTFLoader: Couldn't load texture
-  blob: » × 4 au rechargement — jamais vu avant, pas reproduit seul ni par
-  une sonde qui recharge 300 ms après l'ouverture, corps réalistes en cours
-  de chargement, avec et sans worker. Piste : l'ordre des fetch de blob
-  quand la page est déchargée pendant `parseAsync` ; dater les erreurs par
-  rapport au `pagehide`.
+  blob: » × 4 au rechargement — revenu à l'identique au portail de la v252,
+  toujours vert seul : le témoin rechargeait la page tout de suite après
+  l'ouverture, et sous la charge de trois suites les neuf corps réalistes
+  étaient encore en cours d'analyse ; la navigation coupe leurs textures et
+  le chargeur l'écrit en erreur de console. Réglé dans le BANC (v252) :
+  `plafond.js` attend `humainsCharges()` avant chaque rechargement — et
+  c'est PROUVÉ sous charge : rejouée en cinquième position au portail de la
+  v252 (relance), 28 témoins verts, zéro erreur de console. (4) `monte.js`,
+  au même portail : « descendu de la voiture de Paris » et les deux témoins
+  de mur qui suivent, l'enfant à PIED avant le clic de descente — la boucle
+  de montée recliquait sur un bouton-BASCULE quand le « ⬇️ » (écrit à l'image
+  suivante, sondé par rAF) n'arrivait pas en trois secondes, à une image par
+  seconde dans Paris : premier clic monté, second descendu. Réglé dans le
+  banc (v252) : l'état se lit dans `montureConduite()`, on ne reclique
+  jamais sur un enfant déjà monté. (5) `monte.js`, troisième passe : « la
+  circulation s'arrête devant la voiture de l'enfant » — 97 relevés à moins
+  de douze blocs, ZÉRO arrêtée, ZÉRO au travers : les voitures passaient à
+  côté, le point « douze blocs devant » en droite ligne n'étant pas sur le
+  tracé quand la rue tourne (vert aux deux passes d'avant, 76 arrêtées ;
+  `vehicules.js` n'a pas bougé depuis la v246). Réglé dans le banc : de la
+  chaussée sous toute la ligne, candidats classés, et l'on se repose ailleurs
+  si personne ne vient — une mesure où aucune voiture n'arrive n'est pas une
+  mesure.
 
 - [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
   foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
@@ -114,15 +132,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   pages en réseau : l'une conduit, l'autre voit une voiture avec un avatar
   dedans ; la seconde monte en passager et suit.
 
-- [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
-  « les voitures peuvent aussi passer à travers des fois le mobilier urbain
-  comme les tables de Times Square ». À mesurer : les trajets des taxis de
-  Manhattan contre la zone piétonne de Broadway (`plaza`, où les tables sont
-  posées), et la voiture de l'enfant, dont la boîte de collision ne connaît
-  que les blocs solides — un réverbère, un banc, une table sont des props
-  non solides, et à Manhattan le mobilier est un maillage sans collision.
-  Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
-  convois par `cederLePassage`), et des trajets qui évitent la plaza.
+- [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,
+  après la v249. Mesuré : les taxis de Manhattan restent à neuf blocs des
+  tables ; c'était la voiture de l'enfant. `mobilierDevant` (props du monde
+  + registre du renderer de Manhattan), exception « déjà dedans » par
+  famille. Deux témoins dans `monte.js`, rouges sur l'ancien code.
 
 - [x] **v251 — Le maillage hors du fil principal.** Fait : un worker
   engendre et maille, le fil principal installe (324 → 0 ms

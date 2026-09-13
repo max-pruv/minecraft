@@ -956,30 +956,46 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.routier).reduce((n, c) => n + c.visibles, 0) >= 4,
       null, { timeout: 60000 }).catch(() => {});
-    const poseParis = await tab.evaluate(() => {
+    // UNE MESURE OÙ AUCUNE VOITURE NE VIENT N'EST PAS UNE MESURE. Au portail
+    // de la v252 (troisième passe) : 97 relevés de voitures à moins de douze
+    // blocs, ZÉRO arrêtée, ZÉRO au travers — les voitures passaient À CÔTÉ,
+    // parce que douze blocs « devant » une voiture en droite ligne ne sont pas
+    // sur son tracé quand la rue tourne. On exige donc de la chaussée sous
+    // toute la ligne, on classe les candidats par distance, et si personne ne
+    // vient à nous en douze secondes, on se repose sur le candidat suivant :
+    // le verdict porte sur ce que fait une voiture qui ARRIVE, pas sur la
+    // chance qu'une voiture arrive.
+    const poserAParis = (rang) => tab.evaluate(async (rang) => {
       const g = window.__game, et = window.__vehicules.etat();
+      const { CHAUSSEE } = await import('./src/world.js');
+      const surChaussee = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); const y = g.world.sommetColonne(bx, bz); return CHAUSSEE.has(g.world.getBlock(bx, y, bz)); };
       // toutes les places des convois routiers ; on se pose douze blocs devant
       // l'une d'elles, à un point LIBRE — aucune voiture à moins de sept blocs,
       // sinon on naît dans une voiture de la file (au portail : quatre-vingts
       // relevés « au travers », dès la première image)
       const places = [];
       et.forEach((c) => c.routier && (c.places || []).forEach((q) => places.push({ x: q[0], z: q[1], cap: q[2] })));
-      let m = null;
+      const candidats = [];
       for (const q of places) {
         const x = q.x + Math.sin(q.cap) * 12, z = q.z + Math.cos(q.cap) * 12;
         if (places.some((o) => Math.hypot(o.x - x, o.z - z) < 7)) continue;
+        let route = true;
+        for (let t = 2; t <= 12; t += 2) if (!surChaussee(q.x + Math.sin(q.cap) * t, q.z + Math.cos(q.cap) * t)) { route = false; break; }
+        if (!route) continue;
         const d = Math.hypot(x - g.player.pos.x, z - g.player.pos.z);
-        if (!m || d < m.d) m = { d, x: q.x, z: q.z, cap: q.cap };
+        candidats.push({ d, x: q.x, z: q.z, cap: q.cap });
       }
+      candidats.sort((p, q) => p.d - q.d);
+      const m = candidats[Math.min(rang, candidats.length - 1)] || null;
       if (!m) return null;
       const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
       g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
       g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
       for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
       g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);
-      return m;
-    });
-    if (poseParis) {
+      return { ...m, candidats: candidats.length };
+    }, rang);
+    const monterAParis = async () => {
       // Le bouton garde son `display` d'avant tant que sa ligne est cachée :
       // on attend la LIGNE, puis le « ⬇️ » qui prouve qu'on est monté — et
       // l'on réessaie, parce qu'un clic trop tôt ne monte dans rien.
@@ -987,14 +1003,23 @@ async function avancerUnDemiSeconde(p, depart) {
         const b = document.getElementById('ride-btn');
         return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b.closest('.fun-target')).display !== 'none';
       }, null, { timeout: 20000 }).catch(() => {});
+      // ET ON NE RECLIQUE PAS SUR UN ENFANT DÉJÀ MONTÉ : le bouton est une
+      // BASCULE, un second clic le fait descendre. Ce jet-ci attendait le
+      // « ⬇️ » du bouton — écrit à l'image suivante, sondé par rAF — pendant
+      // trois secondes puis recliquait : au portail de la v252, à une image
+      // par seconde dans Paris, le premier clic avait monté, le second a fait
+      // descendre, et trois témoins ont mesuré « au volant » à pied. L'état
+      // se lit dans le jeu, jamais dans le texte d'un bouton.
+      const auVolantMaintenant = () => tab.evaluate(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()));
       for (let essai = 0; essai < 6; essai++) {
-        await tab.evaluate(() => document.getElementById('ride-btn').click());
-        const monte = await tab.waitForFunction(() => document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000 }).then(() => true).catch(() => false);
+        if (!(await auVolantMaintenant())) await tab.evaluate(() => document.getElementById('ride-btn').click());
+        const monte = await tab.waitForFunction(() => (window.__game.fun.montureConduite && window.__game.fun.montureConduite())
+          && document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000, polling: 200 }).then(() => true).catch(() => false);
         if (monte) break;
         await dormir(700);
       }
-    }
-    const chaussee = await tab.evaluate(async () => {
+    };
+    const mesurerChaussee = () => tab.evaluate(async () => {
       const g = window.__game, et = window.__vehicules.etat();
       let m = null;
       et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
@@ -1029,9 +1054,20 @@ async function avancerUnDemiSeconde(p, depart) {
       }
       return { releves, proches, arretees, traverses, attenteSecondes };
     });
+    let poseParis = null, chaussee = null, poses = 0;
+    for (let rang = 0; rang < 3; rang++) {
+      poseParis = await poserAParis(rang);
+      if (!poseParis) break;
+      poses++;
+      await monterAParis();
+      chaussee = await mesurerChaussee();
+      // personne n'est venu : on ne conclut pas, on se repose ailleurs
+      if (!chaussee || chaussee.auVolant === false || chaussee.arretees > 0 || chaussee.traverses > 0) break;
+    }
+    if (chaussee) chaussee.poses = poses;
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
-      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s · ${chaussee.poses} pose(s)`) : 'aucun convoi routier trouvé');
     // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
     // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
     // d'une voiture : l'enfant était encore au volant. On lit l'état avant le
@@ -2190,6 +2226,123 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
       !fil.absent && fil.compares >= 6 && fil.differents === 0,
       fil.absent ? 'pas de worker' : `${fil.compares} comparés · ${fil.differents} différent(s)`);
+
+    // ---- LA VOITURE DE L'ENFANT NE TRAVERSE PAS LE MOBILIER (v252) ----------
+    //
+    // Max : « les voitures peuvent aussi passer à travers des fois le
+    // mobilier urbain comme les tables de Times Square ». Mesuré : les
+    // soixante-dix-neuf tracés de taxis restent à neuf blocs des tables —
+    // c'est la voiture de l'ENFANT, dont la boîte de collision ne connaît
+    // que les blocs solides, et un réverbère, une table sont des props non
+    // solides. On prend le volant sur une rue de Paris, on pose un réverbère
+    // six blocs devant, on accélère trois secondes : la voiture s'arrête
+    // avant le poteau. Puis la même chose sur Broadway piéton, face à une
+    // table de Times Square. Sur l'ancien code on passe au travers.
+    await souffler();
+    const mobPage = await banc.jouerSeul('MonteMobilier', { rr: 4 });
+    // le scénario part en TEXTE : Playwright ne sérialise pas une fonction
+    const conduireVers = async (page, poser) => page.evaluate(async (source) => {
+      const poser = new Function('return (' + source + ')')();
+      const g = window.__game, w = g.world;
+      const { RUE } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const cible = await poser(g, w, RUE);
+      // la voiture, montée par le bouton
+      for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); }
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+      await dodo(1500);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const depart = { x: g.player.pos.x, z: g.player.pos.z };
+      const d0 = Math.hypot(cible.x - depart.x, cible.z - depart.z);
+      g.player.keys.add('KeyW');                       // la touche, comme le clavier la pose
+      // ON ROULE JUSQU'À L'ARRÊT, PAS TROIS SECONDES : à dt borné le banc
+      // n'atteint pas un poteau à neuf blocs en trois secondes, et le témoin
+      // était vert des deux côtés en ne mesurant rien.
+      let plusPres = d0, immobile = 0, dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      for (let i = 0; i < 400 && immobile < 10; i++) {
+        await dodo(100);
+        plusPres = Math.min(plusPres, Math.hypot(cible.x - g.player.pos.x, cible.z - g.player.pos.z));
+        const bouge = Math.hypot(g.player.pos.x - dernier.x, g.player.pos.z - dernier.z) > 0.02;
+        immobile = bouge ? 0 : immobile + 1; dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      }
+      g.player.keys.delete('KeyW');
+      const parcouru = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
+      return { auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), gabarit: g.player.gabarit, d0: +d0.toFixed(2), plusPres: +plusPres.toFixed(2), parcouru: +parcouru.toFixed(2), cible };
+    }, poser.toString());
+    // 1. un réverbère sur une rue de Paris
+    const poteau = await conduireVers(mobPage, async (g, w, RUE) => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { CHAUSSEE } = await import('./src/world.js');
+      const P = positionDe('paris');
+      window.__carte.surTeleport(P.x + 40, P.z + 60);
+      await new Promise((f) => setTimeout(f, 9000));
+      const px = Math.round(g.player.pos.x), pz = Math.round(g.player.pos.z);
+      const sol = (x, z) => w.sommetColonne(x, z);
+      const route = (x, z) => CHAUSSEE.has(w.getBlock(x, sol(x, z), z));
+      for (let r = 0; r < 40; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = px + dx, z = pz + dz;
+        if (!route(x, z)) continue;
+        for (const [ax, az, yaw] of [[1, 0, -Math.PI / 2], [0, 1, Math.PI], [-1, 0, Math.PI / 2], [0, -1, 0]]) {
+          let ok = true;
+          for (let k = -4; k <= 14 && ok; k++) if (!route(x + ax * k, z + az * k) || Math.abs(sol(x + ax * k, z + az * k) - sol(x, z)) > 1) ok = false;
+          if (!ok) continue;
+          // pas de voiture de la rue à portée : elle serait « déjà dedans »
+          // ou en travers, et l'on mesurerait la circulation
+          if (g.vehicules.placeProche({ x: x + 0.5, y: sol(x, z) + 1, z: z + 0.5 }, 12)) continue;
+          g.player.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); g.player.vel.set(0, 0, 0);
+          g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
+          const cx = x + ax * 6, cz = z + az * 6;
+          w.setBlock(cx, sol(cx, cz) + 1, cz, RUE.REVERBERE);
+          return { x: cx + 0.5, z: cz + 0.5 };
+        }
+      }
+      return null;
+    });
+    verifier('au volant, la voiture de l\'enfant s\'arrête devant un réverbère',
+      poteau && poteau.cible && poteau.auVolant && poteau.parcouru > 2 && poteau.plusPres >= 1.0 && poteau.plusPres < 4,
+      JSON.stringify(poteau));
+    // 2. une table de Times Square. La place ne se CONDUIT pas sur ce banc —
+    // Manhattan en rendu logiciel tombe à une image par seconde, et à dt
+    // borné la voiture n'avance pas (0,3 bloc en deux secondes, à pied) — la
+    // conduite est prouvée à Paris ci-dessus. Ici l'on vérifie ce qui la
+    // rend possible : une fois le lot de Broadway bâti, la table est notée
+    // dans le registre du renderer, et le crochet du joueur (le même que
+    // pour le réverbère) refuse le pas qui l'atteindrait, pas celui qui en
+    // reste à six blocs. Sur l'ancien code, ni registre ni refus.
+    const table = await mobPage.evaluate(async () => {
+      const g = window.__game;
+      const { ORIGINE_MANHATTAN } = await import('./src/manhattan-world.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const tx = ORIGINE_MANHATTAN.x - 91 + 0.5, tz = ORIGINE_MANHATTAN.z - 60 + 0.5;   // la table du plan (−91, −60)
+      window.__carte.surTeleport(tx + 11, tz);
+      const vr = g.villeRealiste;
+      let notee = false, attente = 0, construitIci = false;
+      for (; attente < 20 && !notee; attente++) { await dodo(1000); notee = !!(vr.obstacleA && vr.obstacleA(tx, tz)); }
+      // À une image par seconde, le secteur de sol qui porte la table peut
+      // ne jamais arriver en tête de file : on le bâtit alors comme le
+      // renderer le ferait (`groundSector`, secteurs de 64 blocs du plan),
+      // ce qui note ses tables — et l'on jette le maillage rendu.
+      if (!notee && vr.groundSector) {
+        const grp = vr.groundSector(Math.floor(-91 / 64), Math.floor(-60 / 64));
+        grp.traverse((o) => { if (o.geometry && !o.geometry.userData?.partagee) o.geometry.dispose(); });
+        construitIci = true;
+        notee = !!(vr.obstacleA && vr.obstacleA(tx, tz));
+      }
+      g.player.gabarit = 2.2;                       // la carrure d'une voiture, comme au volant
+      const cap = Math.PI / 2 + Math.PI;            // cap vers −x, la table devant
+      const hook = g.player.obstacleVehicule;
+      const contre = hook ? hook(tx + 1.6, tz, cap, tx + 6, tz) : null;
+      const libre = hook ? hook(tx + 6, tz, cap, tx + 7, tz) : null;
+      return { notee, attente, construitIci, contre, libre, registre: vr.obstacles ? vr.obstacles.size : 'absent' };
+    });
+    verifier('et une table de Times Square est un obstacle pour sa voiture',
+      table.notee && table.contre === true && table.libre === false,
+      JSON.stringify(table));
+    await mobPage.close();
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
