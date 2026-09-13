@@ -195,6 +195,11 @@ function verifier(nom, ok, detail = '') {
         premierePuces: sections[0] ? sections[0].querySelectorAll('li').length : 0,
         marquee: courante ? +courante.dataset.v : null,
         versionBadge: +((badge.textContent.match(/v(\d+)/) || [])[1] || 0) };
+      // Dans cette suite, le service worker finit sur la version fabriquée
+      // « v999-essai » : le badge la porte, et le journal n'a pas d'entrée
+      // pour elle — rien à marquer, c'est juste. On n'exige la marque que
+      // quand le journal connaît la version du badge.
+      res.entreePourBadge = !!document.querySelector(`#nouveautes-liste section[data-v="${res.versionBadge}"]`);
       document.getElementById('nouveautes-fermer').click();
       await dodo(100);
       res.fermee = modale.hidden;
@@ -203,7 +208,7 @@ function verifier(nom, ok, detail = '') {
     const versionServie = +((fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8').match(/CACHE_VERSION = 'web-minecraft-v(\d+)'/) || [])[1] || 0);
     verifier('le badge de version ouvre le journal des nouveautés, la version installée en tête, et la croix le ferme',
       journal.modale && journal.ouverte && journal.sections > 50 && journal.premiere === versionServie
-        && journal.premierePuces >= 1 && (journal.marquee === journal.versionBadge || journal.versionBadge === 0) && journal.fermee,
+        && journal.premierePuces >= 1 && (!journal.entreePourBadge || journal.marquee === journal.versionBadge) && journal.fermee,
       `${JSON.stringify(journal)} · version servie v${versionServie}`);
     // ET LE JOURNAL COUVRE TOUTES LES VERSIONS, EN QUELQUES MOTS. Lu sous
     // node, sans navigateur : chaque « ## vNNN » de CHANGELOG.md a son entrée,
