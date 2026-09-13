@@ -223,6 +223,50 @@ const verifier = (nom, ok, detail) => {
       "le détail automobile reste dans un budget de géométrie borné",
       car.tris < 70000,
     );
+
+    // ---- RIEN DE LA CARROSSERIE NE TOURNE AVEC UNE ROUE (v246) ----------------
+    //
+    // Max, capture à l'appui : « la Bugatti quand elle avance, il y a des
+    // trucs noirs qui bougent autour ». Mesuré : les bandes « Gloss black |
+    // stealth trim » de la Chiron Stealth — 5,13 × 4,04 blocs, toute la
+    // voiture — étaient accrochées au pivot de la roue arrière droite et
+    // tournaient avec elle, parce que la lignée de roue attrapait « t-rim ».
+    // Sur la Lucid, le trim aérodynamique, le trim de cabine et les jantes
+    // réunies des quatre roues tournaient avec la même roue. On charge les
+    // deux modèles déposés en v230 et l'on mesure chaque pièce de chaque
+    // pivot : elle tient dans une fois et demie le pneu, et son centre est à
+    // moins de 0,6 bloc du pivot.
+    const pivots = await p.evaluate(async () => {
+      const { chargerVoitureFlotte, FLOTTE } = await import("/src/vehicules.js");
+      const THREE = await import("three");
+      const fautes = [];
+      for (const fichier of ["bugatti-chiron-stealth.glb", "lucid-gravity.glb"]) {
+        const proto = await chargerVoitureFlotte(FLOTTE.find((e) => e.fichier === fichier));
+        if (!proto) { fautes.push(`${fichier} : modèle absent`); continue; }
+        proto.updateMatrixWorld(true);
+        const roues = [];
+        proto.traverse((o) => { if (/^Wheel_/i.test(o.name || "")) roues.push(o); });
+        if (roues.length !== 4) { fautes.push(`${fichier} : ${roues.length} pivot(s) de roue`); continue; }
+        for (const r of roues) {
+          const centre = r.getWorldPosition(new THREE.Vector3());
+          let pneu = 0;
+          for (const ch of r.children) { const t = new THREE.Box3().setFromObject(ch).getSize(new THREE.Vector3()); if (/tire|tyre|pneu|rubber/i.test(ch.name || "")) pneu = Math.max(pneu, t.x, t.z); }
+          if (!pneu) pneu = 0.9;
+          for (const ch of r.children) {
+            const b = new THREE.Box3().setFromObject(ch);
+            const t = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+            if (Math.max(t.x, t.z) > pneu * 1.5 || c.distanceTo(centre) > 0.6)
+              fautes.push(`${fichier} ${r.name} : ${(ch.name || "?").slice(0, 36)} ${t.x.toFixed(2)}×${t.z.toFixed(2)} à ${c.distanceTo(centre).toFixed(2)}`);
+          }
+        }
+      }
+      return fautes;
+    });
+    verifier(
+      "rien de la carrosserie ne tourne avec une roue sur les modèles déposés",
+      pivots.length === 0,
+      pivots.slice(0, 6),
+    );
     const reflets = await p.evaluate(async () => {
       const { chargerVoitureFlotte, FLOTTE, majRefletsVoiture } = await import('/src/vehicules.js');
       const { scene, renderer, player } = __game;
