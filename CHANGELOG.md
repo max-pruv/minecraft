@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v245 — L'accueil répond tout de suite, et la voiture ne saccade plus sur un vieil iPad
+## v245 — L'accueil répond tout de suite, la voiture ne saccade plus, et la rue s'arrête devant l'enfant
 
 **Pourquoi.** Max, sur l'iPad de quatre ans : « quand on allume le jeu, il
 faut attendre quasiment vingt secondes le temps de pouvoir cliquer sur le
@@ -35,7 +35,12 @@ quatre durait trois fois la médiane, par paires à une demi-seconde d'écart :
 la sonde des reflets de carrosserie rendait ses six faces dans la même
 image, et chaque face soumettait au pilote autant d'appels de dessin que la
 vue de l'enfant (jusqu'à 455). À pied elle ne tourne pas — c'est exactement
-« la marche, c'est ok ».
+« la marche, c'est ok ». Et Max, dans la foulée : « les voitures passent les
+unes sur les autres ». Mesuré sur la rue de Rivoli, l'enfant au volant : à
+l'arrêt sur la chaussée, un convoi entier lui passait AU TRAVERS (79 relevés
+sur 100 avec une voiture de la rue dans la sienne ; 71 sur 94 en roulant). Les
+convois cédaient entre eux depuis la v244 — jamais à l'enfant, qui n'était pas
+dans la liste.
 
 **Ce que ça change.** L'accueil s'attache dès que le code est là ; les corps
 réalistes arrivent pendant qu'on lit l'accueil, un par un, sans bloquer, et
@@ -49,9 +54,13 @@ reflet complet six images plus tard, ce qu'aucun œil ne voit sur un
 pare-brise, pour un coût par face passé de 15-455 appels de dessin à 8-39.
 Et ses programmes se compilent pendant l'accueil, au point d'apparition,
 plutôt qu'à l'arrivée de la première voiture (vingt-six programmes, une
-seconde d'image figée, mesurés).
+seconde d'image figée, mesurés). Enfin la rue s'arrête devant l'enfant, à pied
+comme au volant : sa voiture — ou lui-même, à sa carrure — est un obstacle que
+la circulation respecte comme toute voiture, avec douze secondes de patience
+au lieu de quatre ; et sa propre voiture s'arrête contre une voiture de la
+rue au lieu d'entrer dedans.
 
-**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code. Dans
+**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
 `realisme.js`, on ralentit chaque modèle de cinq secondes et l'on compte
 combien sont arrivés quand le jeu s'attache : zéro ici, neuf avant ; puis on
 joue, et les 123 personnes nées avant les modèles doivent être mises à niveau
@@ -59,7 +68,10 @@ sur place — même objet, même scène, présence cohérente, aucune erreur. Da
 `monte.js`, au volant, le compteur d'images du moteur ne doit pas avancer de
 plus de deux par tour d'affichage (sept avant), et d'au moins deux une fois
 (les reflets vivent). Dans `maj.js`, un corps demandé se range dans le cache
-immuable. Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
+immuable. Dans `monte.js` encore, posé au volant sur le tracé d'un convoi de
+Rivoli : zéro voiture de la rue dans la sienne en dix secondes (79 sur 100
+avant), et en fonçant sur la voiture arrêtée devant lui il s'arrête contre
+elle au lieu de la traverser. Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
 arrivent en trente millisecondes depuis le disque et la première image y
 coûte 2,9 s de contexte WebGL en logiciel — donc chaque témoin mesure la
 CAUSE : le nombre de fichiers attendus, le nombre de rendus par image, le

@@ -2600,6 +2600,28 @@ Le reliquat — deux circuits qui se raccordent à 160° sur Rivoli — est une
 affaire de TRACÉ, déclarée dans `TASKS.md` : céder le passage ne peut rien
 contre deux files dans le même couloir.
 
+**ET L'ENFANT N'ÉTAIT PAS DANS LA LISTE (v245).** Max, le lendemain : « les
+voitures passent les unes sur les autres ». Ce n'était pas Rivoli (six
+relevés en trente secondes) : c'était la circulation qui traversait LA
+VOITURE DE L'ENFANT — à l'arrêt sur la chaussée, un convoi entier lui passait
+au travers, 79 relevés sur 100. Les convois cédaient entre eux ; l'enfant, qui
+n'est pas un convoi, n'existait pas pour eux. Trois choses :
+
+- **Tout ce qui occupe la rue est dans la liste de `cederLePassage`**, pas
+  seulement ce qui y roule tout seul : l'enfant y entre avec le rectangle de
+  sa voiture (cap du regard) ou un carré à sa carrure à pied. Il ne cède à
+  personne ; la patience devant lui seul est de douze secondes, pas quatre —
+  une voiture qui finit par passer au travers de la sienne, c'est la panne.
+- **Et la réciproque se règle chez le JOUEUR**, dont la boîte de collision ne
+  connaît que les blocs : `player.obstacleVehicule` (branché par main.js sur
+  `vehicules.obstacleDevant`) bloque un pas qui ferait entrer sa voiture dans
+  une voiture de la rue — sauf si l'on est DÉJÀ dedans, sinon une voiture
+  arrivée au travers de la nôtre nous clouerait sur place.
+- **Une sonde de conduite se pose SUR le tracé d'un convoi**, douze blocs
+  devant sa tête, cap du convoi. Posée « quelque part dans Paris », elle ne
+  rencontre pas une voiture en trente secondes et rend un vert qui ne prouve
+  rien.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et
@@ -3461,11 +3483,17 @@ squelette quand une instance disparaît, notamment dans les portraits.
 Les yeux des nouveaux modèles sont texturés. Le témoin qui cherchait les
 anciennes billes blanches en couleurs de sommets est remplacé par les contrôles
 du visage rendu, des cartes chargées et des proportions ; `realisme.js`
-éprouve les régressions de présence et d’anatomie. Les neuf GLB et tous leurs
-modules doivent rester dans le cache PWA. Provenance, limites et commande de
-conversion : `docs/personnages-v241.md`.
+éprouve les régressions de présence et d’anatomie. Les neuf GLB vivent dans le
+cache IMMUABLE de la PWA depuis la v245 (avec le scanner et la flotte), leurs
+modules dans le cache versionné ; ils se chargent APRÈS l'accueil et les corps
+nés avant se mettent à niveau sur place (voir « Le démarrage et la conduite sur
+un vieil iPad »). Provenance, limites et commande de conversion :
+`docs/personnages-v241.md`.
 
-Les matériaux automobiles qui lisent la sonde cubique doivent être masqués
-pendant sa capture et restaurés ensuite : lire sa propre cible de rendu produit
-`GL_INVALID_OPERATION`. `realisme.js` renouvelle les reflets quatre fois dans
-la vraie scène et vérifie le code WebGL ainsi que la restauration des maillages.
+Les matériaux automobiles qui lisent la sonde cubique ne peuvent pas être dans
+sa capture : lire sa propre cible de rendu produit `GL_INVALID_OPERATION`.
+Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
+(`couches.js`) : la carrosserie vit sur la couche 2, que les six caméras de la
+sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
+vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
+caché.

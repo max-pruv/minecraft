@@ -526,6 +526,8 @@ function updateChunks() {
   // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
   // eux-mêmes, si bien qu'un train ne peut pas rouler à côté de sa voie.
   vehicules = createVehicules({ scene, player });
+  // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
+  player.obstacleVehicule = (x, z, cap) => vehicules.obstacleDevant(x, z, cap);
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste

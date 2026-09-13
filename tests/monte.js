@@ -853,6 +853,57 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('au volant, aucune image ne rend plus d\'une face de reflet à la fois',
       rendus.tours > 8 && rendus.max <= 2 && rendus.aDeux >= 1,
       `${rendus.tours} tours · au plus ${rendus.max} rendus par tour · ${rendus.aDeux} tours à deux`);
+    // LA RUE S'ARRÊTE DEVANT LA VOITURE DE L'ENFANT (v245) --------------------
+    //
+    // Max, après la v244 : « les voitures passent les unes sur les autres ».
+    // Mesuré sur la rue de Rivoli, l'enfant au volant : à l'arrêt sur la
+    // chaussée, un convoi entier lui passait AU TRAVERS — 79 relevés sur 100
+    // avec une voiture de la rue dans la sienne. Les convois cédaient entre
+    // eux, jamais à l'enfant. On se pose sur le tracé d'un convoi, douze blocs
+    // devant sa tête, et l'on compte les rectangles de la rue qui touchent le
+    // nôtre pendant dix secondes ; puis on appuie sur l'accélérateur vers la
+    // voiture arrêtée devant nous, et l'on ne doit pas la traverser.
+    const chaussee = await tab.evaluate(async () => {
+      const g = window.__game, et = window.__vehicules.etat();
+      let m = null;
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
+        const d = Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z);
+        if (!m || d < m.d) m = { d, x: q[0], z: q[1], cap: q[2] };
+      }));
+      if (!m) return null;
+      const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
+      g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
+      g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0;
+      const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let releves = 0, traverses = 0, proches = 0, arretees = 0;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 10000) {
+        await new Promise((f) => setTimeout(f, 150));
+        releves++;
+        const moi = rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI);
+        window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => {
+          if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > 6) return;
+          proches++; if (q[5]) arretees++;
+          if (!separes(moi, rect(q[0], q[1], q[2]))) traverses++;
+        }));
+      }
+      return { releves, proches, arretees, traverses };
+    });
+    verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
+      !!chaussee && chaussee.proches > 0 && chaussee.traverses === 0,
+      chaussee ? `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} voiture(s) à moins de six blocs, ${chaussee.arretees} arrêtée(s)` : 'aucun convoi routier trouvé');
+    // et dans l'autre sens : on accélère vers la voiture arrêtée devant nous
+    const fonce = await tab.evaluate(async () => {
+      const g = window.__game; const x0 = g.player.pos.x, z0 = g.player.pos.z;
+      g.player.keys.add('KeyW');
+      await new Promise((f) => setTimeout(f, 5000));
+      g.player.keys.delete('KeyW');
+      return { parcouru: +Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0).toFixed(1) };
+    });
+    verifier('et l\'enfant qui fonce dans la voiture arrêtée devant lui s\'arrête contre elle',
+      !!chaussee && chaussee.arretees > 0 && fonce.parcouru < 8.5,
+      `${fonce.parcouru} bloc(s) parcourus vers une voiture arrêtée à douze`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
 

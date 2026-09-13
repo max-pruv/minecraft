@@ -339,6 +339,19 @@ export class Player {
 
     // Move with collision, in substeps so we never tunnel through blocks.
     const move = this.vel.clone().multiplyScalar(dt);
+    // AU VOLANT, ON NE RENTRE PAS DANS UNE VOITURE DE LA RUE (v245). La boîte
+    // de collision ne connaît que les blocs ; `obstacleVehicule` (branché par
+    // main.js sur la circulation) dit si la voiture de l'enfant, un pas plus
+    // loin, toucherait une voiture de la rue. On ne bloque que si l'on n'est
+    // pas DÉJÀ dedans — sinon une voiture arrivée au travers de la nôtre nous
+    // clouerait sur place.
+    if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && (move.x !== 0 || move.z !== 0)) {
+      const cap = this.yaw + Math.PI;
+      if (this.obstacleVehicule(this.pos.x + move.x, this.pos.z + move.z, cap)
+        && !this.obstacleVehicule(this.pos.x, this.pos.z, cap)) {
+        move.x = 0; move.z = 0; this.vel.x = 0; this.vel.z = 0;
+      }
+    }
     const steps = Math.max(1, Math.ceil(move.length() / MAX_STEP));
     this.onGround = false;
     for (let i = 0; i < steps; i++) {

@@ -1322,9 +1322,31 @@ export function createVehicules({ scene, player }) {
     }
     return true;
   };
+  // Ce que `cederLePassage` a regardé à la dernière image : `obstacleDevant`
+  // s'en sert pour la voiture de l'enfant, sans refaire la collecte.
+  let dernieres = [];
+  const CLE_ENFANT = -1;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
+    // L'ENFANT AUSSI, À PIED OU AU VOLANT (v245). Max, après la v244 : « les
+    // voitures passent les unes sur les autres ». Mesuré en roulant sur la rue
+    // de Rivoli : soixante et onze relevés sur quatre-vingt-quatorze où une
+    // voiture de la rue était DANS la voiture de l'enfant, et à l'arrêt sur la
+    // chaussée un convoi entier lui passait au travers. Les convois cédaient
+    // entre eux depuis la v244 — jamais à l'enfant, qui n'était pas dans la
+    // liste. Il y est : sa voiture (4,4 × 2,26, cap du regard) ou lui-même à
+    // pied (un carré à sa carrure). Il ne cède à personne ; la rue s'arrête
+    // devant lui, comme devant tout ce qui est sur son chemin.
+    const enVehicule = player.gabarit > 1;
+    const capJ = player.yaw + Math.PI, uxJ = Math.sin(capJ), uzJ = Math.cos(capJ);
+    const demi = player.gabarit / 2;
+    voitures.push({
+      c: null, i: -1, cle: CLE_ENFANT, x: px, y: player.pos.y, z: pz, ux: uxJ, uz: uzJ, enfant: true,
+      rect: enVehicule ? rectangle(px, pz, uxJ, uzJ)
+        : [[px - demi, pz - demi], [px + demi, pz - demi], [px + demi, pz + demi], [px - demi, pz + demi]],
+      balayage: null, veut: null,
+    });
     for (let ci = 0; ci < convois.length; ci++) {
       const c = convois[ci];
       if (!c.routier) continue;
@@ -1342,12 +1364,14 @@ export function createVehicules({ scene, player }) {
     }
     // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
     for (const a of voitures) {
+      if (a.enfant) continue;
       a.balayage = PAS_BALAYAGE.map((pas) => {
         const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
         return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
       });
     }
     for (const a of voitures) {
+      if (a.enfant) continue;
       for (const b of voitures) {
         if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
         const ex = b.x - a.x, ez = b.z - a.z;
@@ -1365,7 +1389,9 @@ export function createVehicules({ scene, player }) {
       }
     }
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
+    dernieres = voitures;
     for (const a of voitures) {
+      if (a.enfant) continue;
       let attend = false;
       if (a.veut) {
         for (const [cle, devantMoi] of a.veut) {
@@ -1380,13 +1406,33 @@ export function createVehicules({ scene, player }) {
         }
       }
       const c = a.c, i = a.i;
+      // Devant l'enfant seul, on patiente plus longtemps : une voiture qui
+      // finit par passer au travers de la sienne, c'est la panne qu'on répare.
+      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? 12 : 4;
       if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
       else if (attend) {
         c.attenteDepuis[i] += dt;
-        if (c.attenteDepuis[i] > 4) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
+        if (c.attenteDepuis[i] > patience) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
       } else c.attenteDepuis[i] = 0;
       c.attend[i] = attend ? 1 : 0;
     }
+  }
+
+  // ET L'ENFANT NE TRAVERSE PAS LA RUE NON PLUS (v245). Sa voiture, posée à
+  // (x, z) avec ce cap, toucherait-elle une voiture de la circulation ? C'est
+  // `player.js` qui le demande avant d'avancer — la boîte de collision du
+  // joueur ne connaît que les blocs. On relit la collecte de la dernière
+  // image : les voitures de la rue avancent de quelques centimètres entre
+  // deux images, c'est sans conséquence pour un arrêt.
+  function obstacleDevant(x, z, cap) {
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const moi = rectangle(x, z, ux, uz);
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (seTouchent(moi, b.rect)) return true;
+    }
+    return false;
   }
 
   function update(dt) {
@@ -1475,7 +1521,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
