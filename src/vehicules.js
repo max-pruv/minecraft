@@ -1406,9 +1406,12 @@ export function createVehicules({ scene, player }) {
         }
       }
       const c = a.c, i = a.i;
-      // Devant l'enfant seul, on patiente plus longtemps : une voiture qui
-      // finit par passer au travers de la sienne, c'est la panne qu'on répare.
-      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? 12 : 4;
+      // Devant l'enfant seul, on attend SANS LIMITE : une voiture qui finit
+      // par lui passer au travers, c'est la panne qu'on répare — mesuré, la
+      // patience de douze secondes la faisait revenir au bout de douze
+      // secondes. La rue attend que l'enfant reparte ; les autres voitures
+      // gardent leurs quatre secondes entre elles.
+      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? Infinity : 4;
       if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
       else if (attend) {
         c.attenteDepuis[i] += dt;

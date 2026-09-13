@@ -2610,17 +2610,20 @@ n'est pas un convoi, n'existait pas pour eux. Trois choses :
 - **Tout ce qui occupe la rue est dans la liste de `cederLePassage`**, pas
   seulement ce qui y roule tout seul : l'enfant y entre avec le rectangle de
   sa voiture (cap du regard) ou un carré à sa carrure à pied. Il ne cède à
-  personne ; la patience devant lui seul est de douze secondes, pas quatre —
-  une voiture qui finit par passer au travers de la sienne, c'est la panne.
+  personne, et devant lui seul la rue attend SANS LIMITE — douze secondes de
+  patience faisaient revenir la traversée au bout de douze secondes, mesuré.
+  Une voiture qui finit par passer au travers de la sienne, c'est la panne.
 - **Et la réciproque se règle chez le JOUEUR**, dont la boîte de collision ne
   connaît que les blocs : `player.obstacleVehicule` (branché par main.js sur
   `vehicules.obstacleDevant`) bloque un pas qui ferait entrer sa voiture dans
   une voiture de la rue — sauf si l'on est DÉJÀ dedans, sinon une voiture
   arrivée au travers de la nôtre nous clouerait sur place.
 - **Une sonde de conduite se pose SUR le tracé d'un convoi**, douze blocs
-  devant sa tête, cap du convoi. Posée « quelque part dans Paris », elle ne
-  rencontre pas une voiture en trente secondes et rend un vert qui ne prouve
-  rien.
+  devant sa tête, cap du convoi, et elle MESURE À L'ARRÊT après l'arrivée de
+  la première voiture. Posée « quelque part dans Paris », elle ne rencontre
+  pas une voiture en trente secondes ; et roulant droit sur une rue courbe
+  avec une carrure de 2,2 blocs, elle finit dans le trottoir (0,7 bloc roulé,
+  vitesse x à zéro) et juge la géométrie de Rivoli au lieu de la circulation.
 
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 

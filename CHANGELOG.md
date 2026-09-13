@@ -56,9 +56,9 @@ Et ses programmes se compilent pendant l'accueil, au point d'apparition,
 plutôt qu'à l'arrivée de la première voiture (vingt-six programmes, une
 seconde d'image figée, mesurés). Enfin la rue s'arrête devant l'enfant, à pied
 comme au volant : sa voiture — ou lui-même, à sa carrure — est un obstacle que
-la circulation respecte comme toute voiture, avec douze secondes de patience
-au lieu de quatre ; et sa propre voiture s'arrête contre une voiture de la
-rue au lieu d'entrer dedans. Et un voyage par la carte au volant garde la
+la circulation respecte comme toute voiture — et devant lui seul, elle
+attend sans limite ; sa propre voiture s'arrête contre une voiture de la rue
+au lieu d'entrer dedans. Et un voyage par la carte au volant garde la
 voiture : le gestionnaire d'animaux la retirait avant qu'elle ne rejoigne
 l'enfant, qui restait à pied avec la carrure d'une voiture — coincé entre
 deux murs sans comprendre pourquoi.
@@ -72,9 +72,11 @@ sur place — même objet, même scène, présence cohérente, aucune erreur. Da
 plus de deux par tour d'affichage (sept avant), et d'au moins deux une fois
 (les reflets vivent). Dans `maj.js`, un corps demandé se range dans le cache
 immuable. Dans `monte.js` encore, au volant sur le tracé d'un convoi de
-Rivoli, douze secondes en roulant : zéro voiture de la rue dans la sienne
-(64 à 71 sur une centaine avant) — et à la sonde, en fonçant sur une voiture
-arrêtée, il s'arrête contre elle (3,6 blocs) au lieu de la traverser (10,7).
+Rivoli, à l'arrêt, douze secondes après l'arrivée de la première voiture :
+zéro voiture de la rue dans la sienne et au moins une qui attend derrière
+(avant, elles passaient au travers) — et à la sonde, en fonçant sur une
+voiture arrêtée, il s'arrête contre elle (3,6 blocs) au lieu de la traverser
+(10,7).
 Et un saut de trois cents blocs au volant doit laisser l'enfant au volant :
 c'est ce témoin-là qui a trouvé la voiture retirée sous lui.
 Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers

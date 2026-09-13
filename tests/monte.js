@@ -856,18 +856,15 @@ async function avancerUnDemiSeconde(p, depart) {
     // LA RUE S'ARRÊTE DEVANT LA VOITURE DE L'ENFANT (v245) --------------------
     //
     // Max, après la v244 : « les voitures passent les unes sur les autres ».
-    // Mesuré sur la rue de Rivoli, l'enfant au volant : soixante-quatre à
-    // soixante et onze relevés sur une centaine avec une voiture de la rue
-    // DANS la sienne. Les convois cédaient entre eux, jamais à l'enfant. On se
-    // pose sur le tracé d'un convoi, douze blocs devant sa tête, cap du
-    // convoi, et l'on ROULE douze secondes en comptant les rectangles de la
-    // rue qui touchent le nôtre. En roulant, pas à l'arrêt : immobile, on ne
-    // rencontre un convoi que si son tour tombe dans la fenêtre — une
-    // traversée sur l'ancien code en dix secondes, un pile ou face.
-    // On va d'abord à Paris, où roulent des convois routiers — ici, au point
-    // d'apparition, il n'y en a aucun, et le témoin le disait : « aucun
-    // convoi routier trouvé ». La position d'avant est rendue à la fin,
-    // parce que le témoin suivant bâtit son mur là où l'enfant se trouve.
+    // Mesuré sur la rue de Rivoli, l'enfant au volant à l'arrêt sur la
+    // chaussée : un convoi entier lui passait AU TRAVERS. Les convois cédaient
+    // entre eux, jamais à l'enfant. On se pose au volant sur le tracé d'un
+    // convoi, douze blocs devant sa tête, on attend qu'une voiture arrive à
+    // moins de six blocs, puis l'on compte pendant douze secondes les
+    // rectangles de la rue qui touchent le nôtre. À L'ARRÊT, pas en roulant :
+    // rouler droit sur une rue courbe avec une carrure de 2,2 blocs finit
+    // dans le trottoir (0,7 bloc roulé, vitesse x à zéro — mesuré), et le
+    // témoin jugeait alors la géométrie de Rivoli, pas la circulation.
     // TÉLÉPORTÉ EN VOITURE, ON GARDE SA VOITURE (v245). Le gestionnaire
     // d'animaux retire tout ce qui est à plus de soixante-dix blocs de
     // l'enfant, et il passe AVANT que la monture ne le rejoigne : un voyage
@@ -945,12 +942,15 @@ async function avancerUnDemiSeconde(p, depart) {
       }));
       if (!m) return null;
       if (!document.getElementById('ride-btn').textContent.startsWith('⬇️')) return { auVolant: false };
+      g.player.keys.delete('KeyW');
       const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
-      let releves = 0, traverses = 0, proches = 0, arretees = 0;
-      const x0 = g.player.pos.x, z0 = g.player.pos.z;
-      await new Promise((f) => setTimeout(f, 1500));
-      g.player.keys.add('KeyW');
+      let releves = 0, traverses = 0, proches = 0, arretees = 0, attenteSecondes = 0;
+      const uneVoiturePres = () => { let n = 0; window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => { if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) <= 6) n++; })); return n; };
+      // on attend la première voiture : jusqu'à quarante secondes
+      const tAttente = performance.now();
+      while (performance.now() - tAttente < 40000 && !uneVoiturePres()) await new Promise((f) => setTimeout(f, 200));
+      attenteSecondes = +((performance.now() - tAttente) / 1000).toFixed(1);
       const t0 = performance.now();
       while (performance.now() - t0 < 12000) {
         await new Promise((f) => setTimeout(f, 150));
@@ -962,12 +962,11 @@ async function avancerUnDemiSeconde(p, depart) {
           if (!separes(moi, rect(q[0], q[1], q[2]))) traverses++;
         }));
       }
-      g.player.keys.delete('KeyW');
-      return { releves, proches, arretees, traverses, parcouru: +Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0).toFixed(1) };
+      return { releves, proches, arretees, traverses, attenteSecondes };
     });
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
-      !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.parcouru > 3 && chaussee.traverses === 0,
-      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} voiture(s) croisées à moins de six blocs, ${chaussee.arretees} arrêtée(s) · ${chaussee.parcouru} blocs roulés`) : 'aucun convoi routier trouvé');
+      !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de six blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
     await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
