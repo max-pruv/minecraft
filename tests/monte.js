@@ -267,10 +267,14 @@ async function avancerUnDemiSeconde(p, depart) {
       // l'échelle de l'avatar) reste sous le pavillon mesuré de ce modèle
       // (Max : « le personnage passe à travers la carrosserie »).
       const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
-      const sousLeToit = !a.plafondSiege || a.plafondSiege.y === null || crane < a.plafondSiege.y;
+      // Depuis la v253 le cache du plafond est PAR SIÈGE (une Map) : on lit
+      // celui du siège du conducteur ; sur l'ancien code, `y` est le nombre.
+      const cache = a.plafondSiege ? a.plafondSiege.y : null;
+      const toit = cache instanceof Map ? (cache.get(`${a.def.siege.x}|${a.def.siege.z}`) ?? null) : cache;
+      const sousLeToit = toit === null || crane < toit;
       return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
         x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
-        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute, sousLeToit, crane: +crane.toFixed(2), toit: a.plafondSiege ? a.plafondSiege.y : null };
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute, sousLeToit, crane: +crane.toFixed(2), toit };
     });
     verifier('au volant, le personnage de l\'enfant est assis dans la voiture, sous le toit, dans le cadre, et regarde la route',
       !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
