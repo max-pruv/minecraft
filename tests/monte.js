@@ -2376,8 +2376,13 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
     // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
+    // ET LA BORNE DE GARDE SUR LES BLOCS PARCOURUS SE POSE À LA MOITIÉ : le
+    // banc rend en logiciel et chaque lampe de rue (v248) coûte à chacun de
+    // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
+    // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
+    // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
