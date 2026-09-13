@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v253 — À plusieurs, on voit l'ami dans sa voiture, et l'on monte avec lui
+
+**Pourquoi.** Max, après la v249 : « En multijoueur, on ne voit pas si un
+user est dans une voiture, il est piéton alors qu'il est dans une voiture.
+Aussi permets que plusieurs joueurs rentrent dans un moyen de transport : le
+premier conduit, les autres restent passagers. » Le réseau ne diffusait que
+la position des joueurs : Marlon au volant, Alice voyait un enfant à pied
+qui glisse à toute vitesse. C'est la dette de la v155 (« un véhicule conduit
+doit se voir en ligne »).
+
+**Ce que ça change.** La position d'un joueur emporte désormais son
+véhicule (l'espèce et, pour une voiture, son modèle de flotte) : chez les
+autres, l'ami est assis dans SA voiture — dessinée avec la même fabrique
+que la monture, l'avatar assis au volant comme le sien depuis la v249 — et
+redescend à pied quand il descend. Et l'on monte avec lui : à moins de neuf
+blocs de la voiture d'un ami, le bouton dit « Monter avec Marlon » ; on est
+assis sur un siège passager (trois sièges par voiture, dans la fiche), la
+voiture nous emmène, les commandes ne servent à rien, un appui descend.
+Chez le conducteur comme chez les autres, le passager est vu assis dans la
+voiture. Une tablette restée sur l'ancienne version ignore les deux
+nouveaux champs et voit l'ami à pied, comme avant.
+
+**Ce qui le prouve.** Trois témoins de plus dans `reseau.js`, rouges sur
+l'ancien code, sur la partie à trois qui ouvre la suite : Marlon prend le
+volant d'une voiture posée devant lui, et chez Alice son avatar est assis
+dans une voiture dessinée (enfant de son maillage) ; Alice se place à trois
+blocs, appuie sur « Monter avec Marlon », Marlon roule trois secondes sans
+qu'elle touche à rien — elle a suivi de 3.54 blocs (lui : 3.81), à
+0.59 bloc de lui ; et chez Marlon, Alice est assise dans sa voiture.
+
 ## v252 — La voiture de l'enfant ne traverse plus le mobilier des rues
 
 **Pourquoi.** Max, après la v249 : « les voitures peuvent aussi passer à

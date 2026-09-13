@@ -41,7 +41,7 @@ function saveJson(key, v) {
 export function initFun(ctx) {
   const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
     renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
-    isNight, getWeather, getPosCtx, getProfiles, getVehicules, photos: photosNuage } = ctx;
+    isNight, getWeather, getPosCtx, getProfiles, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
 
   // ---- persistent state -----------------------------------------------------
   const bag = loadJson(BAG_KEY, {});
@@ -353,6 +353,56 @@ export function initFun(ctx) {
   // laisser porter par la place qu'on occupe — le convoi suit son tracé, on
   // suit le convoi.
   let bord = null;
+  // PASSAGER CHEZ UN AMI (v253). Max : « permets que plusieurs joueurs
+  // rentrent dans un moyen de transport : le premier conduit, les autres
+  // restent passagers ». Comme `bord` : on est collé au siège, les commandes
+  // ne servent à rien, un appui descend. Le véhicule, lui, est celui que
+  // main.js dessine pour l'ami (`vehiculeDistant`).
+  let passager = null;   // { de: identifiant de l'ami, s: numéro de siège, nom }
+  function vehiculeAmiProche() {
+    const rps = remotePlayers ? remotePlayers() : null;
+    if (!rps || !isRunning()) return null;
+    let meilleur = null;
+    for (const [id, rp] of rps) {
+      if (!rp.vehicule || !rp.vehicule.def || !rp.vehicule.def.sieges) continue;
+      const d = rp.vehicule.mesh.position.distanceTo(player.pos);
+      if (d < RAYON_BORD && (!meilleur || d < meilleur.d)) meilleur = { id, d, nom: rp.name || 'un ami', def: rp.vehicule.def };
+    }
+    return meilleur;
+  }
+  function monterAvec(ami) {
+    if (riding) toggleRide(null);
+    debarquer(true);
+    // le premier siège libre : les autres passagers de cette voiture sont
+    // connus par leur position réseau (`passager.de`)
+    const rps = remotePlayers ? remotePlayers() : null;
+    let occupes = 0;
+    if (rps) for (const rp of rps.values()) if (rp.passager && rp.passager.de === ami.id) occupes++;
+    const s = Math.min(occupes, ami.def.sieges.length - 1);
+    passager = { de: ami.id, s, nom: ami.nom };
+    player.vel.set(0, 0, 0);
+    toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
+    emojiBurst(['🚗', '💨'], 8);
+  }
+  function descendreDePassager(silencieux = false) {
+    if (!passager) return;
+    const nom = passager.nom;
+    passager = null;
+    player.vel.set(0, 0, 0);
+    if (!silencieux) toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+  }
+  function updatePassager() {
+    if (!passager) return;
+    const veh = vehiculeDistant ? vehiculeDistant(passager.de) : null;
+    if (!veh) { descendreDePassager(true); return; }
+    const sieges = veh.def.sieges || [];
+    const siege = sieges[Math.min(passager.s, sieges.length - 1)] || veh.def.siege;
+    veh.mesh.updateMatrixWorld(true);
+    const monde = veh.mesh.localToWorld(new THREE.Vector3(siege.x, 0, siege.z));
+    player.pos.set(monde.x, veh.mesh.position.y, monde.z);
+    player.vel.set(0, 0, 0);
+    player.camera.position.copy(player.eyePosition());
+  }
 
   // NEUF BLOCS, PAS CINQ — et c'est la réponse à « on ne peut pas monter dans
   // les véhicules en déplacement ». Le code pour conduire une voiture de ville
@@ -438,7 +488,8 @@ export function initFun(ctx) {
     // Une seule touche pour « monter » : sur ce qui vit s'il y a une bête
     // devant soi, à bord sinon. L'enfant n'a pas à savoir laquelle des deux.
     if (e.code === 'KeyM') {
-      if (riding) toggleRide(null);
+      if (passager) descendreDePassager();
+      else if (riding) toggleRide(null);
       else if (bord) debarquer();
       else if (animalManager.monture()) toggleRide(animalManager.monture());
       else embarquer();
@@ -446,7 +497,14 @@ export function initFun(ctx) {
     if (e.code === 'KeyG') launchFirework();
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
-  document.getElementById('ride-btn').addEventListener('click', () => toggleRide(riding ? null : animalManager.monture()));
+  document.getElementById('ride-btn').addEventListener('click', () => {
+    if (passager) { descendreDePassager(); return; }
+    if (riding) { toggleRide(null); return; }
+    const m = animalManager.monture();
+    if (m) { toggleRide(m); return; }
+    const ami = vehiculeAmiProche();
+    if (ami) monterAvec(ami);
+  });
   document.getElementById('board-btn').addEventListener('click', () => embarquer());
 
   // ---- fireworks ------------------------------------------------------------
@@ -1784,11 +1842,12 @@ export function initFun(ctx) {
     // montable la plus proche devant soi, même de biais. C'est tout l'écart
     // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.
     const m = isRunning() && !bord ? animalManager.monture() : null;
+    const ami = !riding && !bord && !passager && !m ? vehiculeAmiProche() : null;
 
     const feedB = document.getElementById('feed-btn');
     const rideB = document.getElementById('ride-btn');
 
-    const montrer = nourrissable || m || v || riding || bord;
+    const montrer = nourrissable || m || v || riding || bord || ami || passager;
     targetRow.style.display = montrer ? 'flex' : 'none';
     if (!montrer) return;
 
@@ -1797,10 +1856,11 @@ export function initFun(ctx) {
     // le bouton qui dit à l'enfant ce qui va se passer, et piloter n'est pas
     // se faire porter. La règle vit dans la fiche (`pilote`), comme le reste.
     const verbe = (d) => (d && d.pilote ? 'Piloter' : 'Monter');
-    rideB.textContent = riding
-      ? (riding.def.pilote ? '⬇️ Se poser' : '⬇️ Descendre')
-      : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
-    rideB.style.display = riding || m ? 'block' : 'none';
+    rideB.textContent = passager ? '⬇️ Descendre'
+      : riding ? (riding.def.pilote ? '⬇️ Se poser' : '⬇️ Descendre')
+        : ami ? `🚗 Monter avec ${ami.nom}`
+          : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
+    rideB.style.display = riding || m || ami || passager ? 'block' : 'none';
     // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
     // deux se contrediraient quatre fois par seconde.
     dernierBord = '';
@@ -1831,6 +1891,7 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     updateBord();
+    updatePassager();
     updatePet(dt);
     updateTargetButtons(dt);
     updateTreasure(dt);
@@ -1881,6 +1942,10 @@ export function initFun(ctx) {
     // La monture que l'enfant est en train de conduire (ou null) : main.js
     // y assied son avatar quand la fiche déclare un `siege` (v249).
     montureConduite: () => riding,
+    // Chez qui l'enfant est passager (ou null) : la position réseau
+    // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
+    passagerDe: () => passager,
+    monterAvec, vehiculeAmiProche,
     // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
     // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
     // lot réseau — reste ici : c'est fun qui connaît le monde et le réseau.
