@@ -5226,6 +5226,36 @@ function obtenirAvatarLocal() {
   }
   return avatarLocal;
 }
+// Le plafond au-dessus du siège : parmi les maillages de la voiture (jamais
+// l'avatar), ceux qui ont des sommets dans la colonne du siège au-dessus de
+// l'assise ; le plus bas de leurs sommets les plus hauts est le pavillon —
+// celui du modèle d'artiste ou le ciel de toit du cockpit sculpté. Mesuré
+// une fois par voiture, et refait quand son modèle arrive (le nombre de
+// pièces change). `null` : une voiture sans toit.
+const _plafondInv = new THREE.Matrix4(), _plafondM = new THREE.Matrix4(), _plafondV = new THREE.Vector3();
+function plafondAuSiege(a, siege) {
+  const pieces = a.mesh.children.length;
+  if (a.plafondSiege && a.plafondSiege.pieces === pieces) return a.plafondSiege.y;
+  a.mesh.updateMatrixWorld(true);
+  _plafondInv.copy(a.mesh.matrixWorld).invert();
+  let plafond = Infinity;
+  a.mesh.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    for (let p = o; p; p = p.parent) if (p === avatarLocal) return;
+    const pos = o.geometry.attributes.position;
+    _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
+    let haut = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      _plafondV.fromBufferAttribute(pos, i).applyMatrix4(_plafondM);
+      if (Math.abs(_plafondV.x - siege.x) < 0.3 && Math.abs(_plafondV.z - siege.z) < 0.3
+        && _plafondV.y > siege.y + 0.3 && _plafondV.y > haut) haut = _plafondV.y;
+    }
+    if (haut > -Infinity && haut < plafond) plafond = haut;
+  });
+  const y = plafond === Infinity ? null : plafond;
+  a.plafondSiege = { pieces, y };
+  return y;
+}
 function asseoirLeConducteur(dt) {
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
@@ -5235,8 +5265,21 @@ function asseoirLeConducteur(dt) {
   }
   const av = obtenirAvatarLocal();
   if (av.parent !== a.mesh) a.mesh.add(av);
+  // LA TÊTE RESTE SOUS LE TOIT (Max : « le personnage passe à travers la
+  // carrosserie »). Le siège de la fiche vaut pour une berline ; une voiture
+  // basse a son toit plus bas, et le sommet du crâne — 0,71 au-dessus des
+  // hanches — sortait par le pavillon. On MESURE le plafond au-dessus du
+  // siège, dans la carrosserie de chaque modèle, et l'on descend les
+  // hanches ; si cela ne suffit pas, l'avatar rapetisse un peu.
+  const plafond = plafondAuSiege(a, siege);
+  let hanches = siege.y, echelle = 1;
+  if (plafond !== null) {
+    if (hanches + 0.706 > plafond - 0.06) hanches = Math.max(0.3, plafond - 0.06 - 0.706);
+    if (hanches + 0.706 > plafond - 0.06) echelle = Math.max(0.7, Math.min(1, (plafond - 0.06 - hanches) / 0.706));
+  }
+  av.scale.setScalar(echelle);
   // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
-  av.position.set(siege.x, siege.y - 0.77, siege.z);
+  av.position.set(siege.x, hanches - 0.77 * echelle, siege.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
   avatarTemps += dt;
   av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });

@@ -49,6 +49,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
+- [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
+  « les voitures peuvent aussi passer à travers des fois le mobilier urbain
+  comme les tables de Times Square ». À mesurer : les trajets des taxis de
+  Manhattan contre la zone piétonne de Broadway (`plaza`, où les tables sont
+  posées), et la voiture de l'enfant, dont la boîte de collision ne connaît
+  que les blocs solides — un réverbère, un banc, une table sont des props
+  non solides, et à Manhattan le mobilier est un maillage sans collision.
+  Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
+  convois par `cederLePassage`), et des trajets qui évitent la plaza.
+
 - [ ] **v250 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
   qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
   suffisant. En avion le lag est fort. En voiture lag et aussi la

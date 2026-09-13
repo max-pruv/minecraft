@@ -37,7 +37,9 @@ comme sur la tablette ; le jour ne change pas d'un cran. Et quand l'enfant
 conduit, son personnage — le même que les autres joueurs voient de lui,
 avec sa tenue choisie et sa propre peau — est assis au volant, cuisses en
 avant, bras tendus vers le volant, visible à travers le pare-brise et la
-lunette arrière ; il descend avec lui. Le siège est déclaré dans la fiche
+lunette arrière, la tête sous le pavillon — mesuré dans la carrosserie de
+chaque modèle, une voiture basse assied l'enfant plus bas (Max : « le
+personnage passe à travers la carrosserie ») ; il descend avec lui. Le siège est déclaré dans la fiche
 de la voiture (`siege`), à côté de `montable` et `gabarit` : un cheval ou un
 avion sculpté n'en a pas et ne le montre pas.
 

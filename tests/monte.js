@@ -263,13 +263,18 @@ async function avancerUnDemiSeconde(p, depart) {
       const visage = av.getWorldDirection(new THREE.Vector3()).negate();
       const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
       const regardeLaRoute = +visage.dot(route).toFixed(2);
+      // ET SOUS LE TOIT : le sommet du crâne (0,706 au-dessus des hanches, à
+      // l'échelle de l'avatar) reste sous le pavillon mesuré de ce modèle
+      // (Max : « le personnage passe à travers la carrosserie »).
+      const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+      const sousLeToit = !a.plafondSiege || a.plafondSiege.y === null || crane < a.plafondSiege.y;
       return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
         x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
-        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute };
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute, sousLeToit, crane: +crane.toFixed(2), toit: a.plafondSiege ? a.plafondSiege.y : null };
     });
-    verifier('au volant, le personnage de l\'enfant est assis dans la voiture, dans le cadre, et regarde la route',
+    verifier('au volant, le personnage de l\'enfant est assis dans la voiture, sous le toit, dans le cadre, et regarde la route',
       !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
-        && conduite.regardeLaRoute > 0.9,
+        && conduite.regardeLaRoute > 0.9 && conduite.sousLeToit,
       JSON.stringify(conduite));
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);

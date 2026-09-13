@@ -726,6 +726,15 @@ montrait — l'arrière de la tête à travers le pare-brise. Max l'a vu, pas mo
 posture lit une DIRECTION** : le visage (−z de l'avatar, dans le monde) contre
 le cap de la voiture, produit scalaire > 0,9. Rouge sur le premier jet (−1).
 
+**ET LE SIÈGE DE LA FICHE VAUT POUR UNE BERLINE.** Max, sur la capture de
+dos : « le personnage passe à travers la carrosserie » — le crâne sortait par
+le pavillon d'une voiture basse. `plafondAuSiege` (main.js) mesure le toit
+DANS la carrosserie de chaque modèle : parmi les maillages de la voiture, le
+plus bas de ceux qui passent au-dessus du siège ; les hanches descendent
+sous lui, et l'avatar rapetisse un peu si cela ne suffit pas. Le témoin
+compare le sommet du crâne au pavillon mesuré. Ce qui ne se mesure pas se
+lit sur la capture, et ce qui se lit sur la capture se met dans le témoin.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
