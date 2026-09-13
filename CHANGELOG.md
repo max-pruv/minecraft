@@ -60,7 +60,7 @@ la circulation respecte comme toute voiture, avec douze secondes de patience
 au lieu de quatre ; et sa propre voiture s'arrête contre une voiture de la
 rue au lieu d'entrer dedans.
 
-**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
+**Ce qui le prouve.** Cinq témoins neufs, rouges sur l'ancien code. Dans
 `realisme.js`, on ralentit chaque modèle de cinq secondes et l'on compte
 combien sont arrivés quand le jeu s'attache : zéro ici, neuf avant ; puis on
 joue, et les 123 personnes nées avant les modèles doivent être mises à niveau
@@ -68,10 +68,11 @@ sur place — même objet, même scène, présence cohérente, aucune erreur. Da
 `monte.js`, au volant, le compteur d'images du moteur ne doit pas avancer de
 plus de deux par tour d'affichage (sept avant), et d'au moins deux une fois
 (les reflets vivent). Dans `maj.js`, un corps demandé se range dans le cache
-immuable. Dans `monte.js` encore, posé au volant sur le tracé d'un convoi de
-Rivoli : zéro voiture de la rue dans la sienne en dix secondes (79 sur 100
-avant), et en fonçant sur la voiture arrêtée devant lui il s'arrête contre
-elle au lieu de la traverser. Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
+immuable. Dans `monte.js` encore, au volant sur le tracé d'un convoi de
+Rivoli, douze secondes en roulant : zéro voiture de la rue dans la sienne
+(64 à 71 sur une centaine avant) — et à la sonde, en fonçant sur une voiture
+arrêtée, il s'arrête contre elle (3,6 blocs) au lieu de la traverser (10,7).
+Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
 arrivent en trente millisecondes depuis le disque et la première image y
 coûte 2,9 s de contexte WebGL en logiciel — donc chaque témoin mesure la
 CAUSE : le nombre de fichiers attendus, le nombre de rendus par image, le
