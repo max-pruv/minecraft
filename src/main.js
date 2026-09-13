@@ -5048,10 +5048,14 @@ function updateSky(dt) {
   // ville garde ses vitres allumées. Manhattan règle les siennes quand
   // l'enfant y est (manhattan-render.js) ; on ne se marche pas dessus.
   if (!renduDansManhattan) {
-    hemiLight.intensity = (0.32 + 0.95 * daylight) * wDim;
+    // Les intensités sont MESURÉES sur captures : à 1,27 + 1,66 (mon premier
+    // jet, calqué sur Manhattan) les textures des blocs, plus claires que
+    // les matériaux physiques de New York, sortaient délavées par la
+    // correspondance tonale — ciel blanc, toits blancs.
+    hemiLight.intensity = (0.26 + 0.62 * daylight) * wDim;
     hemiLight.color.setRGB(1, 1, 1).lerp(NUIT_CIEL_LAMPE, 1 - daylight);
     hemiLight.groundColor.copy(SOL_LAMPE);
-    sunLight.intensity = (0.16 + 1.5 * daylight) * wDim;
+    sunLight.intensity = (0.14 + 1.0 * daylight) * wDim;
     sunLight.color.copy(daylight > 0.5 ? SOLEIL_LAMPE : LUNE_LAMPE);
     sunLight.color.lerp(SUNSET_SKY, rasant * 0.45);
   }

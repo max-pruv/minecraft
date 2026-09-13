@@ -1906,8 +1906,10 @@ async function avancerUnDemiSeconde(p, depart) {
       ok(regard.matin.est) && ok(regard.matin.ouest) && ok(regard.soir.est) && ok(regard.soir.ouest)
         && regard.matin.est / regard.matin.ouest > 1.25 && regard.soir.est / regard.soir.ouest < 0.8,
       `matin ${JSON.stringify(regard.matin)} · soir ${JSON.stringify(regard.soir)}`);
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 0,86 mesuré ici, 1,00 sur
+    // l'ancien code — 0,93, pas 0,9 collé sous la mesure.
     verifier('le ciel est une voûte : plus profond au zénith qu\'à l\'horizon',
-      ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.9,
+      ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,
       JSON.stringify(regard.ciel));
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------

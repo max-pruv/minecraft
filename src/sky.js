@@ -102,8 +102,11 @@ export function createSky({ scene, camera, sunLight }) {
       dome.material.uniforms.horizon.value.copy(couleurCiel);
       // le zénith est plus profond que l'horizon : bleu franc le jour, presque
       // noir la nuit — c'est ce qui donne au ciel sa voûte
-      zenith.copy(couleurCiel).multiplyScalar(0.55 + 0.2 * daylight);
-      zenith.b = Math.min(1, zenith.b * 1.15);
+      // Mesuré au banc : à 0,75 fois l'horizon le zénith rendait 187 pour 194
+      // après correspondance tonale — une voûte invisible. Il lui faut la
+      // moitié de la luminance de l'horizon et un bleu plus franc.
+      zenith.copy(couleurCiel).multiplyScalar(0.34 + 0.12 * daylight);
+      zenith.b = Math.min(1, zenith.b * 1.45);
       dome.material.uniforms.zenith.value.copy(zenith);
     }
 

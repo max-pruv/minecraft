@@ -559,6 +559,57 @@ sa livrée d'origine : une voiture dont la couleur fait l'identité ne doit pas
 disparaître de la rue. La laque seule se repeint (`EST_LAQUE`) : vitres,
 chromes et carbone gardent leur rendu.
 
+## Le regard de New York, partout (v247)
+
+Max : « regarde les améliorations qu'il y a encore eu dans la ville de New
+York et reproduis-les sur l'ensemble de la carte. Sois autonome, améliore la
+carte, le réalisme partout. » Mesuré sur captures, rue et ciel, jour et nuit,
+à Paris et à New York : Manhattan était éclairée par le soleil, portait des
+ombres et passait par une correspondance tonale ACES ; le reste du monde
+était un `MeshBasicMaterial` dont la COULEUR servait de lumière — une façade
+au soleil et une façade à l'ombre avaient la même teinte, rien ne portait
+d'ombre, le ciel était une couleur unie, et la nuit n'était qu'un jour
+assombri. Première étape du programme : le regard, sur tout le monde.
+
+- **LE JOUR ET LA NUIT SONT DES LAMPES, PAS UNE TEINTE.** Les blocs, l'eau
+  et le paysage lointain sont Lambert ; le ciel (hémisphère) porte la
+  lumière diffuse, le soleil la lumière directe et ses ombres, la lune prend
+  sa place la nuit, bleutée et faible. `lightColor` ne sert plus qu'aux
+  vitres allumées. Manhattan règle ses lampes quand l'enfant y est
+  (`renduDansManhattan`) ; le monde ne les touche pas pendant ce temps.
+- **LES INTENSITÉS SE MESURENT SUR CAPTURES, ELLES NE SE RECOPIENT PAS DE
+  MANHATTAN.** Mon premier jet calquait les siennes (soleil 0,16 + 1,5,
+  ciel 0,32 + 0,95) : les textures des blocs sont plus claires que ses
+  matériaux physiques, et la correspondance tonale rendait un ciel blanc et
+  des toits blancs. Ramenées à 0,14 + 1,0 et 0,26 + 0,62 sur captures.
+- **LE ZÉNITH SE MESURE AUSSI.** À 0,75 fois l'horizon, le dôme rendait
+  187 pour 194 de luminance après ACES : une voûte invisible, et le témoin
+  l'a dit (rapport 0,96 pour une barre de 0,9). Il lui faut la moitié.
+- **L'OMBRAGE PAR FACE DU MAILLEUR N'EST PLUS QU'UN RÉSIDU** (0,62 → 0,88 sur
+  les côtés) : cuit dans les couleurs de sommets, il s'ajoutait à
+  l'éclairage réel et noircissait deux fois. L'occlusion ambiante, elle,
+  reste cuite — une lampe ne la remplace pas.
+- **EN QUITTANT MANHATTAN, ON REND AU MONDE SES OMBRES.** `earthLook`
+  retient `shadowMap.enabled`, `castShadow` et la taille de la carte
+  d'ombre ; la sortie les RESTAURE au lieu d'écrire `false`. Sans cela, la
+  première visite à New York éteignait les ombres de toute la carte.
+- **LE SOLEIL VISE L'ENFANT** (`suivreLeSoleil`) : sa caméra d'ombre fait
+  cent quatre-vingt-dix blocs de côté et se déplace avec lui, comme à
+  Manhattan. La direction vient de `sky.js`, déjà retournée la nuit.
+- **UN TÉMOIN DE RENDU LIT DES PIXELS, JAMAIS UN TYPE DE MATÉRIAU.** Un
+  pilier de pierre sur une dalle de pierre, loin de tout : le sol dans son
+  ombre contre le sol au soleil (78 contre 130), sa face est contre sa face
+  ouest le matin (95 contre 44) et le soir (l'inverse), le zénith contre
+  l'horizon. Sur l'ancien code les trois rapports valent un. La lecture se
+  fait par `gl.readPixels` juste après un `render()` dans la même tâche, et
+  la caméra se pose à la main (`lookAt`) pour ne pas dépendre de la
+  convention de cap du joueur.
+
+**Ce que ça coûte, et où** : une passe d'ombre par image — le monde proche
+rendu une seconde fois depuis le soleil. Mesuré au banc en rendu logiciel,
+non transposable en durée ; ce qui se transpose est le nombre d'appels de
+dessin, relevé dans le journal de la version.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le

@@ -36,17 +36,29 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
-- [ ] **v247 et suivantes — « regarde les améliorations qu'il y a encore eu
+- [ ] **v248 et suivantes — « regarde les améliorations qu'il y a encore eu
   dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
-  Ce que New York a de plus (docs/manhattan.md) : façades en maillages à
-  matériaux physiques (embrasures, corniches, escaliers de secours,
-  réservoirs), éclairage par le cycle du jour avec ombres, lampadaires et
-  fenêtres la nuit, ciel et brouillard, reflets préfiltrés, pluie sur la
-  chaussée. Sa chaîne est une liste de bâtiments (rectangle, matériau, style,
-  hauteur, graine) et une fonction de surface, avec le monde voxel qui garde
-  les collisions (`TerreUrbaine`). Étapes, chacune sur captures rue + ciel :
-  le regard (ton, ombres, ciel) partout ; Paris sur la chaîne ; les autres
-  villes bâties à la main ; les villes engendrées par leurs îlots.
+  La v247 a livré la première étape, le regard (soleil, ombres, ACES, voûte
+  du ciel, nuit) sur tout le monde. Ce que New York a encore de plus
+  (docs/manhattan.md) : façades en maillages à matériaux physiques
+  (embrasures, corniches, escaliers de secours, réservoirs), lampadaires qui
+  éclairent la rue la nuit, marquages au sol, reflets préfiltrés, pluie sur
+  la chaussée (rugosité). Sa chaîne est une liste de bâtiments (rectangle,
+  matériau, style, hauteur, graine) et une fonction de surface, avec le
+  monde voxel qui garde les collisions (`TerreUrbaine`). Étapes suivantes,
+  chacune sur captures rue + ciel : les lampadaires qui éclairent vraiment
+  (lumières ponctuelles près de l'enfant, comme les `lamps` de Manhattan) et
+  les marquages, dans toutes les villes ; Paris sur la chaîne de façades ;
+  les autres villes bâties à la main ; les villes engendrées par leurs
+  îlots.
+
+- [ ] **Le coût des ombres sur l'iPad n'est pas mesuré.** La v247 ajoute une
+  passe d'ombre par image (le monde proche rendu une seconde fois depuis le
+  soleil, carte de 1 024 sur tablette). Au banc en rendu logiciel la durée
+  ne se transpose pas ; les appels de dessin sont dans le journal. Si Max
+  signale un ralentissement, le premier réglage est la taille de la carte
+  d'ombre et l'emprise de la caméra d'ombre (95 blocs de demi-côté), puis
+  `castShadow` sur les seuls morceaux proches.
 
 - [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
   lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est
