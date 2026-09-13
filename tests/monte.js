@@ -2128,6 +2128,69 @@ async function avancerUnDemiSeconde(p, depart) {
       roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
       `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
 
+    // ---- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) ---------------------------
+    //
+    // Max, iPad : « en avion le lag est fort ; en voiture, lag, et la
+    // définition des bâtiments s'affiche trop tard ». Un morceau de Paris
+    // coûte 24 ms à engendrer et mailler, et cela se faisait DANS l'image.
+    // On vole au-dessus de Paris à la distance d'affichage de l'iPad et l'on
+    // mesure la CAUSE, pas l'effet (le banc rend en logiciel, sa cadence
+    // mesure SwiftShader) : les millisecondes que le fil principal passe à
+    // mailler par seconde de vol — six cents et plus sur l'ancien code, qui
+    // n'a d'ailleurs pas le compteur et le dit — et le nombre de morceaux
+    // arrivés du worker. Puis les blocs eux-mêmes : un morceau adopté du
+    // worker doit être le même, bloc pour bloc, que celui que le fil
+    // principal engendrerait — c'est ce qui garde l'invariant 1 quand deux
+    // mondes jumeaux se partagent le travail.
+    await souffler();
+    const filPage = await banc.jouerSeul('MonteFil', { rr: 12 });
+    const fil = await filPage.evaluate(async () => {
+      const g = window.__game;
+      if (!g.statsMaillage) return { absent: true };
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      g.player.pos.set(P.x - 160, 96, P.z); g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;          // cap vers +x, Paris devant
+      g.player.flying = true; g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true;
+      g.player.altitudeDecollage = -999;
+      const patienter = (ms) => new Promise((fin) => {
+        const t0 = performance.now();
+        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+        requestAnimationFrame(tic);
+      });
+      await patienter(2000);
+      const s0 = { ms: g.statsMaillage.principalMs, distants: g.statsMaillage.distants, locaux: g.statsMaillage.locaux };
+      const t0 = performance.now(), x0 = g.player.pos.x;
+      await patienter(8000);
+      const dt = (performance.now() - t0) / 1000;
+      const out = { worker: g.maillageDistant, parcouru: Math.round(g.player.pos.x - x0),
+        msParSeconde: Math.round((g.statsMaillage.principalMs - s0.ms) / dt),
+        distants: g.statsMaillage.distants - s0.distants, locaux: g.statsMaillage.locaux - s0.locaux };
+      let compares = 0, differents = 0;
+      for (const key of g.statsMaillage.recus.slice(-12)) {
+        const [cx, cz] = key.split(',').map(Number);
+        const a = g.world.chunks.get(key);
+        if (!a) continue;
+        const b = g.world.generateChunk(cx, cz);
+        compares++;
+        for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { differents++; break; }
+      }
+      out.compares = compares; out.differents = differents;
+      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return out;
+    });
+    await filPage.close();
+    verifier('en vol au-dessus de Paris, le monde se maille hors du fil principal',
+      !fil.absent && fil.worker && fil.parcouru > 300 && fil.distants >= 20 && fil.msParSeconde < 120,
+      fil.absent ? 'pas de compteur de maillage : tout se maille dans l\'image' : JSON.stringify(fil));
+    verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
+      !fil.absent && fil.compares >= 6 && fil.differents === 0,
+      fil.absent ? 'pas de worker' : `${fil.compares} comparés · ${fil.differents} différent(s)`);
+
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
     // Max : « add planes, airbus, concord and military jets and allow us to

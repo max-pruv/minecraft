@@ -108,18 +108,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
   convois par `cederLePassage`), et des trajets qui évitent la plaza.
 
-- [ ] **v251 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
-  qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
-  suffisant. En avion le lag est fort. En voiture lag et aussi la
-  définition des bâtiments (voir les détails) s'affiche trop tard. » À
-  mesurer d'abord — découper l'image en vol et en voiture à Paris à
-  `rr=12` (génération, maillage, rendu, passants, convois), et le coût des
-  ombres de la v247 sur tablette, jamais mesuré. Piste principale : sortir
-  la génération et le maillage des morceaux du fil principal (Web Worker),
-  parce qu'à cent dix blocs par seconde au-dessus d'une ville le maillage
-  réclame déjà les trois quarts de chaque seconde ; les détails qui
-  arrivent tard sont les morceaux pas encore maillés que le paysage
-  lointain remplace.
+- [x] **v251 — Le maillage hors du fil principal.** Fait : un worker
+  engendre et maille, le fil principal installe (324 → 0 ms
+  de maillage par seconde en vol au-dessus de Paris). Reste à mesurer sur
+  l'iPad de Max ; si le lag persiste, les pistes suivantes sont le coût des
+  ombres (v247, jamais mesuré sur tablette) et un second worker.
 
 - [x] **v250 — Les roues de la Lucid Gravity tournent autour de leur essieu,
   et la flotte entière est passée en revue.** Max, capture d'iPhone :

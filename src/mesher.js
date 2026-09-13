@@ -7,9 +7,8 @@
 // ambiante coïncident, sans quoi le dégradé des coins serait détruit. Mesuré
 // sur du terrain, de la forêt et le château : 3,2 fois moins de triangles.
 
-import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
-import { tileUV, tileRect } from './textures.js';
+import { tileUV, tileRect } from './tuiles.js';
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
@@ -187,17 +186,22 @@ class GeomBuffer {
     }
   }
 
-  toGeometry() {
+  // DES TAMPONS, PAS UNE GÉOMÉTRIE (v251) : le mailleur tourne dans un worker,
+  // qui ne connaît pas three. Il rend des tableaux typés, transférables sans
+  // copie ; c'est `main.js` qui en fait une BufferGeometry, en une
+  // milliseconde. Les indices tiennent sur seize bits tant que le morceau a
+  // moins de 65 536 sommets — une ville dense en a davantage.
+  toTampons() {
     if (this.indices.length === 0) return null;
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3));
-    geom.setAttribute('normal', new THREE.Float32BufferAttribute(this.normals, 3));
-    geom.setAttribute('uv', new THREE.Float32BufferAttribute(this.uvs, 2));
-    geom.setAttribute('color', new THREE.Float32BufferAttribute(this.colors, 3));
-    geom.setAttribute('tuile', new THREE.Float32BufferAttribute(this.tiles, 4));
-    geom.setIndex(this.indices);
-    geom.computeBoundingSphere();
-    return geom;
+    const sommets = this.positions.length / 3;
+    return {
+      positions: new Float32Array(this.positions),
+      normals: new Float32Array(this.normals),
+      uvs: new Float32Array(this.uvs),
+      colors: new Float32Array(this.colors),
+      tiles: new Float32Array(this.tiles),
+      indices: sommets > 65535 ? new Uint32Array(this.indices) : new Uint16Array(this.indices),
+    };
   }
 }
 
@@ -207,7 +211,7 @@ class GeomBuffer {
 // que DANS un appel, et il est effacé au début de chaque tranche.
 const masqueReserve = [];
 
-export function buildChunkGeometry(world, cx, cz) {
+export function buildChunkTampons(world, cx, cz) {
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
     return { solid: null, water: null, lumineux: null, props: [] };
   }
@@ -349,9 +353,9 @@ export function buildChunkGeometry(world, cx, cz) {
   }
 
   return {
-    solid: solid.toGeometry(),
-    water: water.toGeometry(),
-    lumineux: lumineux.toGeometry(),
+    solid: solid.toTampons(),
+    water: water.toTampons(),
+    lumineux: lumineux.toTampons(),
     props,
   };
 }

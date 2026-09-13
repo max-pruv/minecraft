@@ -711,6 +711,56 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Le maillage hors du fil principal (v251)
+
+Max, iPad : « en avion le lag est fort ; en voiture, lag, et la définition
+des bâtiments s'affiche trop tard ». Un morceau de Paris coûte 24 ms à
+engendrer et mailler, DANS l'image ; le budget de 720 ms par seconde (v237)
+était donc le lag lui-même, et il ne suivait pas une voiture (27 morceaux
+par seconde pour 30 réclamés). Le remède n'est pas un budget de plus : c'est
+un autre FIL. Six règles.
+
+- **UN MONDE JUMEAU DANS UN WORKER** (`maillage-worker.js`) : le même
+  `World`, les mêmes `edits`, et il rend des TAMPONS (`buildChunkTampons`,
+  mesher.js — plus de three dans le mailleur) que `main.js` transforme en
+  BufferGeometry en une milliseconde, plus les blocs (transférés) pour les
+  collisions. Mesuré en vol au-dessus de Paris : 324 → 0 ms de
+  maillage par seconde sur le fil principal.
+- **UN WORKER DE MODULE N'A PAS L'IMPORT MAP DE LA PAGE.** Le premier
+  `import 'three'` de son graphe le tue sans un mot. D'où `tuiles.js` : la
+  partie PURE de textures.js (colonnes, rangées, UV), que le mailleur importe
+  à la place. Avant de faire entrer un module dans le worker, on vérifie son
+  graphe d'imports (`node -e` sur les `from './…'`) : world.js en a
+  trente-deux, aucun ne touche three ni au document.
+- **QUI MAILLE SE DEMANDE À LA CLASSE DU MONDE** (`maillageLocal(cx, cz)`) :
+  `World` dit non ; `TerreUrbaine` dit oui dans Manhattan et sur ses colonnes
+  protégées, parce que le worker ne connaît ni le plan ni les journaux
+  importés. Les remaillages d'un bloc posé restent sur le fil principal —
+  poser un bloc doit se voir dans l'image.
+- **TOUT BLOC ÉCRIT PART AU WORKER** (`world.onBloc`, appelé par `setBlock`
+  pour un bloc local OU reçu), et un changement de monde resynchronise tout
+  (`generation` : une réponse d'une génération passée est refusée). Un bloc
+  posé pendant que le worker maillait rend le morceau `sale` : il se remaille
+  ici à l'arrivée.
+- **LE FIL PRINCIPAL GARDE SES PROPRES BLOCS S'IL LES A DÉJÀ.** `getBlock`
+  engendre des morceaux pour les collisions et les passants avant que le
+  worker n'arrive ; on n'écrase jamais ce que le jeu tient. Les deux sont
+  identiques, et c'est un TÉMOIN qui le dit (bloc pour bloc, sur les morceaux
+  adoptés du worker), pas un raisonnement — c'est ce qui garde l'invariant 1
+  quand deux mondes se partagent le travail. **Et la liste des morceaux
+  adoptés est une FENÊTRE GLISSANTE** (`statsMaillage.recus`, les
+  soixante-quatre derniers) : mon premier compteur gardait les soixante-quatre
+  PREMIERS, oubliés depuis longtemps quand le témoin les compare en vol — il
+  comparait zéro morceau et aurait été vert sans rien prouver.
+- **ET LE FIL PRINCIPAL N'ENGENDRE PRESQUE PLUS.** Enveloppé `generateChunk`
+  en vol : 29 appels en huit secondes (41 ms) — `versLaRue` qui lit la
+  chaussée voisine d'une lanterne, un passant qui sonde le sol — contre 469
+  sur l'ancien chemin. La génération (45 % du coût d'un morceau) part avec le
+  maillage ; un compteur qui ne mesure que `meshChunk` ne l'aurait pas dit.
+- **UN WORKER QUI MEURT REND LA MAIN** : `onerror` remet les morceaux en
+  attente dans la file et l'ancien chemin reprend. `?maillage=local` force
+  ce chemin, pour mesurer et pour les témoins.
+
 ## La nuit se règle avec les ombres, et le conducteur se voit (v249)
 
 **LE BANC NE VOIT PAS LA NUIT DE L'IPAD.** Max, capture : « Paris est dans le
