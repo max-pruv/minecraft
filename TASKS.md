@@ -84,7 +84,7 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
   convois par `cederLePassage`), et des trajets qui évitent la plaza.
 
-- [ ] **v250 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
+- [ ] **v251 — Lag en avion et en voiture sur l'iPad, détails des bâtiments
   qui arrivent trop tard.** Max, après v248 : « Lag mieux mais pas
   suffisant. En avion le lag est fort. En voiture lag et aussi la
   définition des bâtiments (voir les détails) s'affiche trop tard. » À
@@ -96,6 +96,15 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   réclame déjà les trois quarts de chaque seconde ; les détails qui
   arrivent tard sont les morceaux pas encore maillés que le paysage
   lointain remplace.
+
+- [x] **v250 — Les roues de la Lucid Gravity tournent autour de leur essieu,
+  et la flotte entière est passée en revue.** Max, capture d'iPhone :
+  « Gravity design ko, wheels », puis « sois proactif sur ce genre de bug ».
+  `rotation.x += angle` tourne autour du x du PARENT (Euler XYZ) ; les pivots
+  fabriqués naissent désormais dans un groupe-essieu. Témoin de flotte dans
+  `monte.js` (208 roues, 8 fausses sur `origin/main`, 0 ici), planche-contact
+  des 52 modèles regardée. Reste à faire la même revue pour les humains et
+  les appareils (planche par modèle, mesures de géométrie), promise à Max.
 
 - [x] **v249 — Paris n'est plus dans le noir, on voit le personnage
   conduire.** Faits : planchers de nuit réglés ombres forcées, avatar

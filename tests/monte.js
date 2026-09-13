@@ -2074,6 +2074,60 @@ async function avancerUnDemiSeconde(p, depart) {
       Object.values(reverberes).every((v) => v.total >= 8 && v.auBord >= 0.85 * v.total),
       JSON.stringify(reverberes));
 
+    // ---- CHAQUE ROUE DE LA FLOTTE TOURNE AUTOUR DE SON ESSIEU (v250) --------
+    //
+    // Max, capture de la Lucid Gravity : « Gravity design ko, wheels ». Les
+    // roues sortaient des passages de roue, de biais. `normaliserVoiture`
+    // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
+    // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
+    // de l'axe avant-arrière. On charge les cinquante-deux modèles et l'on
+    // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
+    // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
+    // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
+    // tombent au premier test.
+    const roues = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const v = await import('./src/vehicules.js');
+      const out = { modeles: 0, roues: 0, essieuxFaux: [], sensFaux: [], sansRoue: [] };
+      for (const entree of v.FLOTTE) {
+        if (entree.fabrique) continue;
+        const porteur = await v.chargerVoitureFlotte(entree);
+        if (!porteur) { out.sansRoue.push(entree.fichier + ' (chargement)'); continue; }
+        out.modeles++;
+        porteur.updateMatrixWorld(true);
+        const invP = new THREE.Matrix4().copy(porteur.matrixWorld).invert();
+        const qP = new THREE.Quaternion().setFromRotationMatrix(porteur.matrixWorld);
+        const qPinv = qP.clone().invert();
+        let n = 0;
+        porteur.traverse((r) => {
+          if (!/^Wheel_(FL|FR|RL|RR)$/i.test(r.name || '')) return;
+          n++; out.roues++;
+          // L'axe de `rotation.x += angle` est le x du PARENT (Euler XYZ) ; on
+          // le lit dans le repère du porteur, et l'on suit un point posé au
+          // sommet du pneu pendant un tiers de tour.
+          const qPar = new THREE.Quaternion(); r.parent.getWorldQuaternion(qPar);
+          const axe = new THREE.Vector3(1, 0, 0).applyQuaternion(qPar).applyQuaternion(qPinv);
+          const rayon = porteur.userData.rayonRoue || 0.34;
+          const centre = r.getWorldPosition(new THREE.Vector3());
+          const haut0 = centre.clone().add(new THREE.Vector3(0, rayon, 0).applyQuaternion(qP));
+          const local = r.worldToLocal(haut0.clone());
+          const sauve = r.rotation.x;
+          r.rotation.x = sauve + 0.3; r.updateMatrixWorld(true);
+          const haut1 = r.localToWorld(local.clone());
+          r.rotation.x = sauve; r.updateMatrixWorld(true);
+          const d0 = haut0.applyMatrix4(invP), d1 = haut1.applyMatrix4(invP);
+          if (Math.abs(axe.x) < 0.99) out.essieuxFaux.push(`${entree.fichier} ${r.name} axe=${axe.toArray().map((k) => k.toFixed(2))}`);
+          // le nez est en −z dans le repère du porteur (cadre.rotation.y = π)
+          if (!(d1.z < d0.z - 0.01 && Math.abs(d1.x - d0.x) < 0.01)) out.sensFaux.push(`${entree.fichier} ${r.name} d=${[d1.x - d0.x, d1.y - d0.y, d1.z - d0.z].map((k) => k.toFixed(3))}`);
+        });
+        if (n < 4) out.sansRoue.push(entree.fichier + ` (${n} roues)`);
+      }
+      return out;
+    });
+    verifier('chaque roue de la flotte tourne autour de son essieu, le haut du pneu vers le nez',
+      roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
+      `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
+
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
     // Max : « add planes, airbus, concord and military jets and allow us to
