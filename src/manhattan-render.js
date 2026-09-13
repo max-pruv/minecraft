@@ -183,6 +183,12 @@ export class ManhattanRenderer {
       hemi: hemiLight.color.clone(),
       ground: hemiLight.groundColor.clone(),
       sunPos: sunLight.position.clone(),
+      // Depuis la v247 le monde entier porte des ombres et la correspondance
+      // tonale ACES : en quittant Manhattan on lui rend SES réglages, pas
+      // « éteint ».
+      shadows: renderer.shadowMap.enabled,
+      castShadow: sunLight.castShadow,
+      shadowSize: sunLight.shadow.mapSize.x,
     };
     world = world.urbanView;
     player = { pos: new THREE.Vector3(), yaw: 0 };
@@ -1143,8 +1149,9 @@ export class ManhattanRenderer {
         this.sunLight.position.copy(this.earthLook.sunPos);
         this.lastFrame = 0;
       }
-      this.renderer.shadowMap.enabled = active;
-      this.sunLight.castShadow = active;
+      this.renderer.shadowMap.enabled = active || this.earthLook.shadows;
+      this.sunLight.castShadow = active || this.earthLook.castShadow;
+      if (!active) this.sunLight.shadow.mapSize.set(this.earthLook.shadowSize, this.earthLook.shadowSize);
       this.camera.far = active ? this.budget.far + 120 : this.earthLook.far;
       this.camera.updateProjectionMatrix();
       if (!active) {

@@ -718,25 +718,35 @@ async function avancerUnDemiSeconde(p, depart) {
     // un maillage fusionné de centaines de sommets (galbe, capot plongeant,
     // montants), pas huit boîtes. L'ancien modèle : vitres opaques, zéro
     // maillage fusionné — rouge garanti.
-    const carrosserie = await tab.evaluate(() => {
+    // ET LE MODÈLE DIT S'IL A DES VITRES (v247). Ce témoin est tombé au
+    // portail sur un tirage : les deux modèles déposés en v230 n'ont ni
+    // matériau nommé « glass » ni opacité sous 0,8 — la Lucid appelle son
+    // pare-brise « Lightly tinted panoramic windshield », la Chiron Stealth
+    // est une carrosserie seule sans vitrage. Le nom se lit en plusieurs
+    // langues, et une carrosserie sans habitacle (`habitacle: false` dans
+    // sa fiche) n'a rien à laisser voir — même lecture que le volant.
+    const carrosserie = await tab.evaluate(async () => {
       const g = window.__game;
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      const fiche = (await import('./src/vehicules.js')).FLOTTE
+        .find((e) => e.fichier === (a && a.mesh.userData.flotte));
       let vitresTransparentes = false, sommetsFusionnes = 0;
       if (a) a.mesh.traverse((m) => {
         if (!m.isMesh) return;
         // opacité basse (Chiron d'artiste) ou vitrage nommé de la flotte,
         // déjà en alpha BLEND — l'un comme l'autre laisse voir l'habitacle
         if (m.material && m.material.transparent
-          && (m.material.opacity < 0.8 || /glass/i.test(m.material.name || ''))) vitresTransparentes = true;
+          && (m.material.opacity < 0.8 || /glass|windshield|window|vitr|pare-brise/i.test(m.material.name || ''))) vitresTransparentes = true;
         if (m.geometry && m.geometry.attributes && m.geometry.attributes.position
           && m.geometry.attributes.position.count > sommetsFusionnes) {
           sommetsFusionnes = m.geometry.attributes.position.count;
         }
       });
-      return { vitresTransparentes, sommetsFusionnes };
+      return { vitresTransparentes, sommetsFusionnes, modele: a && a.mesh.userData.flotte,
+        attenduVitres: !fiche || fiche.habitacle !== false };
     });
     verifier('la voiture a de vraies vitres — on voit l\'habitacle à travers',
-      carrosserie.vitresTransparentes, JSON.stringify(carrosserie));
+      carrosserie.vitresTransparentes || !carrosserie.attenduVitres, JSON.stringify(carrosserie));
     verifier('et une carrosserie sculptée, fusionnée — pas un empilement de cubes',
       carrosserie.sommetsFusionnes >= 300, `${carrosserie.sommetsFusionnes} sommets`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
@@ -1819,6 +1829,107 @@ async function avancerUnDemiSeconde(p, depart) {
       !signatures.err && signatures.lues >= 15
         && signatures.manquantes.length === 0 && signatures.mortes.length === 0,
       JSON.stringify(signatures));
+
+    // ---- LE REGARD DE NEW YORK, PARTOUT (v247) --------------------------------
+    //
+    // Max : « regarde les améliorations qu'il y a encore eu dans la ville de
+    // New York et reproduis-les sur l'ensemble de la carte ». Manhattan était
+    // éclairée par le soleil, portait des ombres et passait par une
+    // correspondance tonale ; le reste du monde était un matériau NON
+    // ÉCLAIRÉ, dont la teinte servait de lumière : une façade au soleil et une
+    // façade à l'ombre avaient la même couleur, rien ne portait d'ombre, et le
+    // ciel était une couleur unie.
+    //
+    // ON MESURE CE QUE L'ENFANT VOIT : des PIXELS, lus dans l'image rendue,
+    // jamais un type de matériau. On dresse un pilier de pierre sur une dalle
+    // de pierre, loin de tout, et l'on compare la luminance du sol dans son
+    // ombre à celle du sol au soleil ; puis sa face est à sa face ouest, le
+    // matin et le soir ; puis le zénith à l'horizon. Sur l'ancien code les
+    // trois rapports valent un.
+    //
+    // SUR UNE PAGE À PART, OMBRES FORCÉES. Le jeu coupe ses ombres en rendu
+    // logiciel — le banc — parce que la passe d'ombre y double le temps
+    // d'image et faisait tomber quatre bornes de garde d'autres témoins
+    // (blocs parcourus en vol, relevés de virage). `ombres=1` les rallume
+    // ici, et ici seulement ; l'ancien code ignore le paramètre.
+    await souffler();
+    const regardPage = await banc.jouerSeul('MonteRegard', { rr: 4, ombres: 1 });
+    const regard = await regardPage.evaluate(async () => {
+      const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
+      const THREE = await import('three');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // une dalle au sec, loin des villes et de ce que les enfants ont bâti
+      let x0 = 0, z0 = 20000, sol = 0;
+      for (let k = 0; k < 40; k++) { sol = w.terrainHeight(x0, z0); if (sol >= 36) break; x0 += 60; }
+      for (let c = -7; c <= 7; c++) for (let d = -7; d <= 7; d++) {
+        for (let h = -4; h <= 0; h++) w.setBlock(x0 + c, sol + h, z0 + d, 3);
+        for (let h = 1; h <= 18; h++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
+      }
+      for (let h = 1; h <= 12; h++) w.setBlock(x0, sol + h, z0, 3);
+      g.player.flying = true; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(x0 + 2.5, sol + 12, z0 + 6);
+      await dodo(2500);                                   // le morceau se remaille
+      const gl = r.getContext();
+      const lire = (X, Y, Z) => {
+        const v = new THREE.Vector3(X, Y, Z).project(cam);
+        const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+        const sx = Math.round((v.x + 1) / 2 * W), sy = Math.round((1 - v.y) / 2 * H);
+        if (sx < 3 || sy < 3 || sx > W - 4 || sy > H - 4) return -1;
+        const buf = new Uint8Array(4 * 25);
+        gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        let l = 0;
+        for (let i = 0; i < 25; i++) l += 0.2126 * buf[i * 4] + 0.7152 * buf[i * 4 + 1] + 0.0722 * buf[i * 4 + 2];
+        return l / 25;
+      };
+      const vue = async (heure, de, vers, points) => {
+        window.__setDayTime(heure);
+        await dodo(400);
+        cam.position.set(de[0], de[1], de[2]);
+        cam.lookAt(vers[0], vers[1], vers[2]);
+        cam.updateMatrixWorld(true);
+        r.render(g.scene, cam);
+        return points.map((pt) => +lire(pt[0], pt[1], pt[2]).toFixed(1));
+      };
+      // midi : le soleil est haut, légèrement vers −z ; l'ombre du pilier
+      // tombe vers +z. Sol dans l'ombre à trois blocs, sol au soleil quatre
+      // blocs plus à l'est, même dalle, même occlusion (loin du pilier).
+      const [ombre, soleil] = await vue(0.25, [x0 + 2.5, sol + 17, z0 + 5.5], [x0 + 2.5, sol + 1, z0 + 3],
+        [[x0 + 0.5, sol + 1, z0 + 3.5], [x0 + 4.5, sol + 1, z0 + 3.5]]);
+      // matin : le soleil est à l'est, la face +x du pilier est au soleil ;
+      // soir : à l'ouest, c'est la face −x. Une caméra de chaque côté.
+      const est = async (heure) => (await vue(heure, [x0 + 7, sol + 7, z0 + 0.5], [x0 + 1, sol + 7, z0 + 0.5], [[x0 + 1, sol + 7, z0 + 0.5]]))[0];
+      const ouest = async (heure) => (await vue(heure, [x0 - 6, sol + 7, z0 + 0.5], [x0, sol + 7, z0 + 0.5], [[x0, sol + 7, z0 + 0.5]]))[0];
+      const matin = { est: await est(0.08), ouest: await ouest(0.08) };
+      const soir = { est: await est(0.42), ouest: await ouest(0.42) };
+      // midi, regard vers le haut, dos au soleil : le haut de l'écran est
+      // presque au zénith, le bas à une quinzaine de degrés sur l'horizon
+      window.__setDayTime(0.25);
+      await dodo(400);
+      cam.position.set(x0 + 0.5, sol + 30, z0 + 0.5);
+      cam.lookAt(x0 + 0.5, sol + 40, z0 + 8);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const pix = (sx, sy) => { const b = new Uint8Array(4 * 25); gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, b); let l = 0; for (let i = 0; i < 25; i++) l += 0.2126 * b[i * 4] + 0.7152 * b[i * 4 + 1] + 0.0722 * b[i * 4 + 2]; return +(l / 25).toFixed(1); };
+      const ciel = { zenith: pix(Math.round(W / 2), 6), bas: pix(Math.round(W / 2), H - Math.round(H / 6)) };
+      window.__setDayTime(0.3);
+      g.player.flying = false;
+      return { sol, ombre, soleil, matin, soir, ciel, ombres: r.shadowMap.enabled };
+    });
+    await regardPage.close();
+    const ok = (v) => typeof v === 'number' && v > 0;
+    verifier('à midi, le sol dans l\'ombre d\'un pilier est plus sombre que le sol au soleil',
+      ok(regard.ombre) && ok(regard.soleil) && regard.ombre / regard.soleil < 0.8,
+      `ombre ${regard.ombre} · soleil ${regard.soleil} (dalle à y=${regard.sol})`);
+    verifier('le matin la face est d\'un pilier est au soleil, le soir c\'est sa face ouest',
+      ok(regard.matin.est) && ok(regard.matin.ouest) && ok(regard.soir.est) && ok(regard.soir.ouest)
+        && regard.matin.est / regard.matin.ouest > 1.25 && regard.soir.est / regard.soir.ouest < 0.8,
+      `matin ${JSON.stringify(regard.matin)} · soir ${JSON.stringify(regard.soir)}`);
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 0,86 mesuré ici, 1,00 sur
+    // l'ancien code — 0,93, pas 0,9 collé sous la mesure.
+    verifier('le ciel est une voûte : plus profond au zénith qu\'à l\'horizon',
+      ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,
+      JSON.stringify(regard.ciel));
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //

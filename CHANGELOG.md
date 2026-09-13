@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v247 — Le regard de New York partout : le soleil éclaire le monde, les ombres se portent, le ciel est une voûte
+
+**Pourquoi.** Max : « regarde les améliorations qu'il y a encore eu dans la
+ville de New York et reproduis-les sur l'ensemble de la carte. Sois
+autonome, améliore la carte, le réalisme partout. » Mesuré sur captures, rue
+et ciel, jour et nuit, à Paris et à New York : Manhattan était éclairée par
+le soleil, portait des ombres et passait par une correspondance tonale ; le
+reste du monde était un matériau NON éclairé dont la couleur servait de
+lumière. Une façade au soleil et une façade à l'ombre avaient la même
+teinte, rien ne portait d'ombre, le ciel était une couleur unie, et la nuit
+n'était qu'un jour assombri — Paris à minuit ressemblait à Paris à midi en
+gris. C'est la première étape du programme « New York partout » : le
+regard.
+
+**Ce que ça change.** Sur toute la carte, les blocs, l'eau et le paysage
+lointain sont éclairés par le ciel et par le soleil, qui porte des ombres
+autour de l'enfant (une caméra d'ombre de cent quatre-vingt-dix blocs qui le
+suit, comme à Manhattan) ; le rendu passe par la même correspondance tonale
+que New York ; le ciel est une voûte dégradée, plus profonde au zénith ; la
+nuit, la lune éclaire bleu et faible, le ciel est noir d'étoiles et les
+villes gardent leurs vitres allumées. Le matin, la face est d'un immeuble
+est au soleil ; le soir, sa face ouest. En quittant New York, le monde garde
+ses ombres. Ce qui n'a pas bougé : les blocs, les textures, l'occlusion
+ambiante cuite dans les sommets, les villes elles-mêmes.
+
+**Ce qui le prouve.** Trois témoins de plus dans `monte.js`, lus dans les
+PIXELS rendus et rouges sur l'ancien code (les trois rapports y valent un) :
+à midi, le sol dans l'ombre d'un pilier est plus sombre que le sol au soleil
+(58 contre 104) ; le matin la face est du pilier est au soleil (72 contre
+31), le soir sa face ouest ; le ciel est plus profond au zénith qu'à
+l'horizon (156 contre 181). Les intensités ont été réglées sur captures — le
+premier jet, calqué sur Manhattan, rendait un ciel blanc et des toits
+blancs. Et le coût est mesuré : au banc en rendu logiciel, à Paris, une image
+passe de 217 ms sans ombres à 383 avec (carte de 1 024, filtre simple, seuls
+les morceaux proches portent une ombre) — assez pour faire tomber quatre
+bornes de garde d'autres témoins au premier portail, sur du code sain. Le jeu
+coupe donc ses ombres de lui-même quand il rend en logiciel, sans carte
+graphique ; les trois témoins du regard les forcent sur leur propre page. Le
+coût sur l'iPad, qui a sa carte graphique, est déclaré dans `TASKS.md` avec
+ses leviers.
+
 ## v246 — La téléportation ne fige plus l'écran, la Bugatti roule sans traînées, et chaque ville a ses propres voitures
 
 **Pourquoi.** Max, capture d'iPad à l'appui, le 12 septembre : « Le lag est

@@ -65,6 +65,7 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
+const RAYON_OMBRE = 6;   // en morceaux : l'emprise de la caméra d'ombre (95 blocs), v247
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // Millisecondes maximum consacrées par frame à construire des chunks.
@@ -111,6 +112,32 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
+// qu'il y a encore eu dans la ville de New York et reproduis-les sur
+// l'ensemble de la carte ». Manhattan rendait avec une correspondance tonale
+// ACES et des ombres portées ; le reste du monde, en matériau non éclairé,
+// avec un niveau de gris global pour tout soleil. Le monde entier prend le
+// même regard : ACES, ombres du soleil (voir `sunLight`), blocs Lambert.
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+// LES OMBRES DEMANDENT UNE CARTE GRAPHIQUE. Sans accélération matérielle
+// (SwiftShader, llvmpipe — le banc, ou un navigateur sans GPU), la passe
+// d'ombre double le temps d'image (217 → 383 ms mesurés à Paris) et le monde
+// se charge deux fois moins vite : mieux vaut un monde sans ombres qu'un
+// monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
+// `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
+function renduLogiciel() {
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const nom = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
+  } catch { return false; }
+}
+const OMBRES_DEMANDEES = new URLSearchParams(location.search).get('ombres');
+const OMBRES = OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : !renduLogiciel();
+renderer.shadowMap.enabled = OMBRES;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 // Sans le troisième argument, setSize écrit la taille en dur dans le style du
 // canvas et l'emporte sur la feuille de style — c'est ainsi qu'une mesure
 // fausse devenait une bande noire. La vraie taille est posée par
@@ -137,13 +164,36 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 // la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
 voirTout(camera);
 
-// Lights only affect Lambert materials (the high-fidelity creatures);
-// blocks keep their baked flat look via MeshBasic + vertex AO.
+// Le ciel et le soleil éclairent TOUT depuis la v247 : les blocs (Lambert,
+// occlusion ambiante cuite dans les sommets), les créatures, les gens et les
+// voitures. Le soleil porte des ombres : sa caméra d'ombre suit l'enfant
+// (`suivreLeSoleil`), cent quatre-vingt-dix blocs de côté, comme à Manhattan.
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.0);
 scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
 sunLight.position.set(0.6, 1, 0.4);
+sunLight.castShadow = OMBRES;
+// MILLE VINGT-QUATRE PARTOUT, ET LE FILTRE SIMPLE. Mesuré au banc à Paris
+// (rendu logiciel, médiane par image) : sans ombres 217 ms · basique 512
+// 350 · PCF 1024 400 · PCF doux 2048 467. La passe elle-même est le gros du
+// coût, la taille et le filtre le reste ; sur 190 blocs d'emprise, 1024 fait
+// cinq texels par bloc, ce qu'un bloc de trente mètres n'a pas besoin de
+// dépasser. Manhattan garde son propre budget quand l'enfant y est.
+sunLight.shadow.mapSize.set(1024, 1024);
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 380;
+Object.assign(sunLight.shadow.camera, { left: -95, right: 95, top: 95, bottom: -95 });
+sunLight.shadow.bias = -0.00015;
+sunLight.shadow.normalBias = 0.045;
 scene.add(sunLight);
+scene.add(sunLight.target);
+// Le soleil vise l'enfant : c'est autour de lui que les ombres se dessinent.
+// `dir` est la direction du soleil (sky.js), déjà retournée la nuit (lune).
+function suivreLeSoleil(dir) {
+  sunLight.target.position.copy(player.pos);
+  sunLight.target.updateMatrixWorld();
+  sunLight.position.copy(player.pos).addScaledVector(dir, 160);
+}
 
 // LA MOITIÉ DE L'ÉCRAN RESTÉE NOIRE.
 //
@@ -206,9 +256,12 @@ ajusterLaVue();
 
 const { texture: atlasTexture, canvas: atlasCanvas } = createAtlas();
 
-// Basic materials + baked per-face shading = the classic flat Minecraft look.
-// material.color doubles as the global light level for day/night.
-const solidMaterial = new THREE.MeshBasicMaterial({
+// LES BLOCS SONT ÉCLAIRÉS (v247). Ils étaient en `MeshBasicMaterial`, la
+// couleur du matériau servant de niveau de lumière global : une façade au
+// soleil et une façade à l'ombre avaient exactement la même teinte, et rien
+// ne portait d'ombre. Lambert reçoit le ciel (hémisphère), le soleil et ses
+// ombres ; l'occlusion ambiante reste cuite dans les couleurs de sommets.
+const solidMaterial = new THREE.MeshLambertMaterial({
   map: atlasTexture, vertexColors: true, alphaTest: 0.25,
 });
 
@@ -220,7 +273,7 @@ const litMaterial = new THREE.MeshBasicMaterial({
   map: atlasTexture, vertexColors: true, alphaTest: 0.25,
 });
 const LUMIERE_FENETRE = new THREE.Color(1, 0.9, 0.66);
-const waterMaterial = new THREE.MeshBasicMaterial({
+const waterMaterial = new THREE.MeshLambertMaterial({
   map: atlasTexture, vertexColors: true, transparent: true, opacity: 0.7,
   depthWrite: false, side: THREE.DoubleSide,
 });
@@ -380,7 +433,13 @@ function meshChunk(cx, cz) {
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
-    entry.solid.castShadow = true; entry.solid.receiveShadow = true;
+    // Un morceau ne PORTE d'ombre qu'à portée de la caméra d'ombre (six
+    // morceaux, quatre-vingt-quinze blocs) ; au-delà il en reçoit seulement.
+    // La passe d'ombre ne rend ainsi que le monde proche, pas les 900
+    // morceaux chargés — `updateChunks` remet le drapeau quand on bouge.
+    entry.solid.castShadow = Math.abs(cx - Math.floor(player.pos.x / CHUNK)) <= RAYON_OMBRE
+      && Math.abs(cz - Math.floor(player.pos.z / CHUNK)) <= RAYON_OMBRE;
+    entry.solid.receiveShadow = true;
     scene.add(decor(entry.solid));
   }
   if (water) {
@@ -423,6 +482,8 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
+      } else if (entry.solid) {
+        entry.solid.castShadow = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
       }
     }
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
@@ -4999,9 +5060,10 @@ function updateSky(dt) {
   const wDim = weather === 'rain' ? 0.8 : 1;
   const level = (0.25 + 0.75 * daylight) * wDim;
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
-  solidMaterial.color.copy(lightColor);
-  waterMaterial.color.copy(lightColor);
-  horizon.majLumiere(lightColor);
+  // Les blocs, l'eau et le paysage lointain sont ÉCLAIRÉS (v247) : ce sont
+  // les lampes ci-dessous qui font le jour et la nuit, plus une teinte de
+  // matériau. `lightColor` ne sert plus qu'aux vitres allumées, qui gardent
+  // le plus lumineux du jour et de leur propre lumière.
   // Les vitres allumées prennent le plus lumineux des deux : la lumière du
   // jour quand il fait jour, la leur quand la nuit tombe. Elles ne
   // s'allument donc pas au crépuscule — elles cessent simplement de
@@ -5011,11 +5073,29 @@ function updateSky(dt) {
     Math.max(lightColor.g, LUMIERE_FENETRE.g * 0.92),
     Math.max(lightColor.b, LUMIERE_FENETRE.b * 0.92),
   );
-  hemiLight.intensity = (0.3 + 0.8 * daylight) * wDim;
-  sunLight.intensity = 0.15 + 0.75 * daylight * wDim;
+  // LE JOUR ET LA NUIT SONT DES LAMPES, PAS UNE TEINTE (v247). Le ciel
+  // (hémisphère) porte la lumière diffuse, le soleil la lumière directe et
+  // les ombres ; la nuit, la lune prend sa place, bleutée et faible, et la
+  // ville garde ses vitres allumées. Manhattan règle les siennes quand
+  // l'enfant y est (manhattan-render.js) ; on ne se marche pas dessus.
+  if (!renduDansManhattan) {
+    // Les intensités sont MESURÉES sur captures : à 1,27 + 1,66 (mon premier
+    // jet, calqué sur Manhattan) les textures des blocs, plus claires que
+    // les matériaux physiques de New York, sortaient délavées par la
+    // correspondance tonale — ciel blanc, toits blancs.
+    hemiLight.intensity = (0.26 + 0.62 * daylight) * wDim;
+    hemiLight.color.setRGB(1, 1, 1).lerp(NUIT_CIEL_LAMPE, 1 - daylight);
+    hemiLight.groundColor.copy(SOL_LAMPE);
+    sunLight.intensity = (0.14 + 1.0 * daylight) * wDim;
+    sunLight.color.copy(daylight > 0.5 ? SOLEIL_LAMPE : LUNE_LAMPE);
+    sunLight.color.lerp(SUNSET_SKY, rasant * 0.45);
+  }
 
-  // le soleil, la lune et les étoiles suivent le même cycle
-  sky.update(angle, daylight, camera.position);
+  // le soleil, la lune et les étoiles suivent le même cycle — et le dôme du
+  // ciel : l'horizon prend la couleur du ciel, le zénith plus profond
+  sky.update(angle, daylight, camera.position, skyColor);
+  sky.dome.visible = !renduDansManhattan;
+  if (!renduDansManhattan) suivreLeSoleil(sky.direction);
 
   // L'eau avance sur son propre compteur : dayTime revient à zéro toutes les
   // dix minutes, ce qui ferait sauter les vagues d'un coup.
@@ -5024,6 +5104,10 @@ function updateSky(dt) {
 }
 let tempsEau = 0;
 const SUNSET_SKY = new THREE.Color(0xff8a4a);
+const SOLEIL_LAMPE = new THREE.Color(0xffefd6);
+const LUNE_LAMPE = new THREE.Color(0x8fa8d8);
+const NUIT_CIEL_LAMPE = new THREE.Color(0x7d93b8);
+const SOL_LAMPE = new THREE.Color(0x6e6a5e);
 const MARS_SKY = new THREE.Color(0xd9a184);
 // Mis à jour par updateSky : sert aussi à faire taire la faune terrestre.
 let dansMars = false;
@@ -5351,8 +5435,13 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
 // de lumière du monde, `fenetres` celui des vitres allumées — la nuit, le
 // second doit dominer, sinon la ville est éteinte.
+// Depuis la v247 les murs sont ÉCLAIRÉS et non teintés : leur niveau de
+// lumière est celui que reçoit un mur VERTICAL — la moitié de l'hémisphère
+// (un mur voit moitié ciel, moitié sol) et la moitié du soleil ou de la lune
+// (en moyenne sur les orientations) — pas la couleur du matériau, qui reste
+// blanche. À minuit : 0,27 ; à midi : 1,0.
 window.__lumiere = () => ({
-  solide: Math.round(solidMaterial.color.r * 100) / 100,
+  solide: Math.round((hemiLight.intensity * 0.5 + sunLight.intensity * 0.5) * 100) / 100,
   fenetres: Math.round(litMaterial.color.r * 100) / 100,
   morceauxEclaires: [...chunkMeshes.values()].filter((e) => e.lumineux).length,
 });

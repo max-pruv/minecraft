@@ -24,6 +24,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« La circulation s'arrête devant la voiture de l'enfant » est un
+  témoin qui dépend de l'état du banc.** Rouge à deux portails de la v247
+  (« première voiture après 0 s, 206 relevés à moins de douze blocs, zéro
+  arrêtée, zéro au travers »), VERT rejoué seul sur la branche ET sur
+  `origin/main`, et rouge une fois sur l'ancien code rejoué seul pendant la
+  v246. Il se pose douze blocs devant une voiture visible et attend qu'elle
+  vienne s'arrêter ; rien ne garantit que cette voiture vienne à lui — celle
+  qui est déjà à douze blocs peut tourner avant, ou faire la queue derrière
+  une autre. Un rouge sans traversée n'est pas la panne que le témoin garde.
+  Piste : choisir une voiture dont le tracé PASSE par le point posé (lire le
+  parcours du convoi, pas seulement son cap), et dire dans le message si la
+  voiture la plus proche s'est éloignée ou rapprochée.
+
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
   des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
   se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt
@@ -36,17 +49,31 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
-- [ ] **v247 et suivantes — « regarde les améliorations qu'il y a encore eu
+- [ ] **v248 et suivantes — « regarde les améliorations qu'il y a encore eu
   dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
-  Ce que New York a de plus (docs/manhattan.md) : façades en maillages à
-  matériaux physiques (embrasures, corniches, escaliers de secours,
-  réservoirs), éclairage par le cycle du jour avec ombres, lampadaires et
-  fenêtres la nuit, ciel et brouillard, reflets préfiltrés, pluie sur la
-  chaussée. Sa chaîne est une liste de bâtiments (rectangle, matériau, style,
-  hauteur, graine) et une fonction de surface, avec le monde voxel qui garde
-  les collisions (`TerreUrbaine`). Étapes, chacune sur captures rue + ciel :
-  le regard (ton, ombres, ciel) partout ; Paris sur la chaîne ; les autres
-  villes bâties à la main ; les villes engendrées par leurs îlots.
+  La v247 a livré la première étape, le regard (soleil, ombres, ACES, voûte
+  du ciel, nuit) sur tout le monde. Ce que New York a encore de plus
+  (docs/manhattan.md) : façades en maillages à matériaux physiques
+  (embrasures, corniches, escaliers de secours, réservoirs), lampadaires qui
+  éclairent la rue la nuit, marquages au sol, reflets préfiltrés, pluie sur
+  la chaussée (rugosité). Sa chaîne est une liste de bâtiments (rectangle,
+  matériau, style, hauteur, graine) et une fonction de surface, avec le
+  monde voxel qui garde les collisions (`TerreUrbaine`). Étapes suivantes,
+  chacune sur captures rue + ciel : les lampadaires qui éclairent vraiment
+  (lumières ponctuelles près de l'enfant, comme les `lamps` de Manhattan) et
+  les marquages, dans toutes les villes ; Paris sur la chaîne de façades ;
+  les autres villes bâties à la main ; les villes engendrées par leurs
+  îlots.
+
+- [ ] **Le coût des ombres sur l'iPad n'est pas mesuré.** La v247 ajoute une
+  passe d'ombre par image : les morceaux à moins de six morceaux de l'enfant
+  rendus une seconde fois depuis le soleil, carte de 1 024, filtre PCF
+  simple. Au banc en rendu logiciel, à Paris : 217 ms sans ombres, 400 avec
+  (350 en ombre basique 512, 467 en PCF doux 2 048) — des millisecondes de
+  SwiftShader, non transposables — et suffisantes pour que le jeu coupe ses
+  ombres de lui-même en rendu logiciel. Si Max signale un ralentissement, les
+  leviers dans l'ordre : `RAYON_OMBRE` (6 → 4), la carte (1 024 → 512),
+  `BasicShadowMap`, et en dernier `?ombres=0` / `renderer.shadowMap.enabled`.
 
 - [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
   lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est
