@@ -184,13 +184,19 @@ function verifier(nom, ok, detail = '') {
       const badge = document.getElementById('app-version');
       const modale = document.getElementById('nouveautes-modale');
       if (!badge || !modale) return { badge: !!badge, modale: !!modale };
+      // FERMÉE, LA MODALE NE COUVRE RIEN : `hidden` perd contre un
+      // `display: flex` d'auteur, et le voile avalait tous les gestes du jeu
+      // (portail de la v254 : la carte ne glissait plus). Ce qui fait foi,
+      // c'est l'élément sous le doigt au milieu de l'écran.
+      const sous = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+      const voileAvant = getComputedStyle(modale).display !== 'none' || (sous && modale.contains(sous));
       badge.click();
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       for (let i = 0; i < 40 && !document.querySelector('#nouveautes-liste section'); i++) await dodo(250);
       const sections = [...document.querySelectorAll('#nouveautes-liste section')];
       const ouverte = !modale.hidden && getComputedStyle(modale).display !== 'none';
       const courante = document.querySelector('#nouveautes-liste section.courante');
-      const res = { badge: true, modale: true, ouverte, sections: sections.length,
+      const res = { badge: true, modale: true, voileAvant, ouverte, sections: sections.length,
         premiere: sections[0] ? +sections[0].dataset.v : null,
         premierePuces: sections[0] ? sections[0].querySelectorAll('li').length : 0,
         marquee: courante ? +courante.dataset.v : null,
@@ -207,7 +213,7 @@ function verifier(nom, ok, detail = '') {
     });
     const versionServie = +((fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8').match(/CACHE_VERSION = 'web-minecraft-v(\d+)'/) || [])[1] || 0);
     verifier('le badge de version ouvre le journal des nouveautés, la version installée en tête, et la croix le ferme',
-      journal.modale && journal.ouverte && journal.sections > 50 && journal.premiere === versionServie
+      journal.modale && !journal.voileAvant && journal.ouverte && journal.sections > 50 && journal.premiere === versionServie
         && journal.premierePuces >= 1 && (!journal.entreePourBadge || journal.marquee === journal.versionBadge) && journal.fermee,
       `${JSON.stringify(journal)} · version servie v${versionServie}`);
     // ET LE JOURNAL COUVRE TOUTES LES VERSIONS, EN QUELQUES MOTS. Lu sous
