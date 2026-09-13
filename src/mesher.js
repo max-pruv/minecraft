@@ -18,18 +18,24 @@ import { CHUNK, HEIGHT } from './world.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
+// LE MONDE EST ÉCLAIRÉ PAR LE SOLEIL DEPUIS LA v247 (matériau Lambert, ombres
+// portées, voir main.js) : le `shade` par face n'est plus la lumière, c'est un
+// RÉSIDU qui garde aux arêtes leur lisibilité quand le soleil est dans l'axe.
+// Il valait 0,62 sur les côtés et 0,5 dessous — cuit dans les couleurs de
+// sommets, il s'ajoutait à l'éclairage réel et noircissait deux fois.
+//
 // uAxis / vAxis désignent les deux axes du monde que parcourent les coordonnées
 // de texture de cette face. Ce sont eux que la fusion étire : un rectangle de
 // w × h blocs multiplie les décalages de coin et les UV par w et h.
 const FACES = [
   { // +x
     dir: [1, 0, 0], corners: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.62,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.88,
     uAxis: 2, vAxis: 1,
   },
   { // -x
     dir: [-1, 0, 0], corners: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.62,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.88,
     uAxis: 2, vAxis: 1,
   },
   { // +y (top)
@@ -39,17 +45,17 @@ const FACES = [
   },
   { // -y (bottom)
     dir: [0, -1, 0], corners: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 2, shade: 0.5,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 2, shade: 0.72,
     uAxis: 0, vAxis: 2,
   },
   { // +z
     dir: [0, 0, 1], corners: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.8,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.94,
     uAxis: 0, vAxis: 1,
   },
   { // -z
     dir: [0, 0, -1], corners: [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.8,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.94,
     uAxis: 0, vAxis: 1,
   },
 ];
