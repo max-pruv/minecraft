@@ -480,7 +480,13 @@ export class AnimalManager {
         }
         continue;
       }
-      if (a.pos.distanceTo(this.player.pos) > 70) {
+      // LA MONTURE DE L'ENFANT NE SE RETIRE JAMAIS (v245). Téléporté au volant
+      // par la carte, l'enfant arrive avant que sa voiture ne le rejoigne — elle
+      // le suit à l'image suivante (fun.js), mais cette boucle passe AVANT et
+      // la trouvait à des milliers de blocs : retirée, l'enfant restait à pied
+      // avec la carrure d'une voiture, coincé entre deux murs. La règle vit
+      // sur la bête (`montee`, posé par fun.js), comme `montable` dans sa fiche.
+      if (!a.montee && a.pos.distanceTo(this.player.pos) > 70) {
         // CE QU'ON RETIRE SE REND (v238). Une bête naît toutes les secondes et
         // demie et s'en va à soixante-dix blocs : sans cette ligne, chaque
         // renouvellement laissait ses géométries au pilote graphique pour

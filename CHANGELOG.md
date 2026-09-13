@@ -58,9 +58,12 @@ seconde d'image figée, mesurés). Enfin la rue s'arrête devant l'enfant, à pi
 comme au volant : sa voiture — ou lui-même, à sa carrure — est un obstacle que
 la circulation respecte comme toute voiture, avec douze secondes de patience
 au lieu de quatre ; et sa propre voiture s'arrête contre une voiture de la
-rue au lieu d'entrer dedans.
+rue au lieu d'entrer dedans. Et un voyage par la carte au volant garde la
+voiture : le gestionnaire d'animaux la retirait avant qu'elle ne rejoigne
+l'enfant, qui restait à pied avec la carrure d'une voiture — coincé entre
+deux murs sans comprendre pourquoi.
 
-**Ce qui le prouve.** Cinq témoins neufs, rouges sur l'ancien code. Dans
+**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
 `realisme.js`, on ralentit chaque modèle de cinq secondes et l'on compte
 combien sont arrivés quand le jeu s'attache : zéro ici, neuf avant ; puis on
 joue, et les 123 personnes nées avant les modèles doivent être mises à niveau
@@ -72,6 +75,8 @@ immuable. Dans `monte.js` encore, au volant sur le tracé d'un convoi de
 Rivoli, douze secondes en roulant : zéro voiture de la rue dans la sienne
 (64 à 71 sur une centaine avant) — et à la sonde, en fonçant sur une voiture
 arrêtée, il s'arrête contre elle (3,6 blocs) au lieu de la traverser (10,7).
+Et un saut de trois cents blocs au volant doit laisser l'enfant au volant :
+c'est ce témoin-là qui a trouvé la voiture retirée sous lui.
 Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
 arrivent en trente millisecondes depuis le disque et la première image y
 coûte 2,9 s de contexte WebGL en logiciel — donc chaque témoin mesure la

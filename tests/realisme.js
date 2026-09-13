@@ -358,7 +358,9 @@ const verifier = (nom, ok, detail) => {
         avant.enAttente > 0 &&
         apres.enAttente === 0 &&
         apres.npcs > 0 &&
-        apres.memeObjet === apres.npcs &&
+        // ceux qui existaient avant sont les mêmes objets ; les passants nés
+        // entre-temps ne comptent pas (141 à la fin pour 123 au départ, au portail)
+        apres.memeObjet === avant.npcs &&
         apres.dansScene === apres.npcs &&
         apres.presenceFausse === 0 &&
         !apres.compte["humaine-v2"] &&

@@ -3423,6 +3423,16 @@ choses à savoir avant d'y toucher.
   au-dessus du toit. Un rétroviseur central est interdit de séjour : dans un
   habitacle aussi bas il flotte au milieu du pare-brise, trois captures
   l'ont montré.
+- **LA MONTURE NE SE RETIRE JAMAIS, ET SI ELLE DISPARAÎT ON DESCEND POUR DE
+  BON (v245).** `animals.js` retire toute bête à plus de soixante-dix blocs de
+  l'enfant, et cette boucle passe AVANT que `fun.js` ne colle la monture au
+  joueur : téléporté au volant par la carte, l'enfant perdait sa voiture et
+  gardait à pied sa carrure (1,1 bloc du mur au lieu de 0,3). La bête montée
+  porte `montee` (posé par fun.js, comme `montable` dans sa fiche) et la
+  boucle la saute ; et le chemin « la monture a disparu » de `updateRide`
+  rend tout ce que descendre rend — marche, vol, gabarit — au lieu de seulement
+  oublier `riding`. C'est un témoin de `monte.js` (un saut de trois cents
+  blocs au volant) qui l'a trouvé, pas une capture.
 - Le bouton « Monter » prend la monture **la plus proche devant soi**, pas celle
   visée au degré près. Viser reste la règle pour *nourrir*, où l'on choisit
   vraiment un animal parmi d'autres.
