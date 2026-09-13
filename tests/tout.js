@@ -72,6 +72,7 @@ const GARDIENS = {
   // libération de trop passerait sans réveiller la suite qui la verrait.
   'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
   'src/couches.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'src/signatures.js': ['monte.js'],
   'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.

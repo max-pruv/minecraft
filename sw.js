@@ -37,6 +37,7 @@ const ASSETS = [
   './src/horizon.js',
   './src/liberer.js',
   './src/couches.js',
+  './src/signatures.js',
   './src/manhattan.js',
   './src/manhattan-plan.js',
   './src/manhattan-world.js',

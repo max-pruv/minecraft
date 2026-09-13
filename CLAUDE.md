@@ -486,6 +486,79 @@ c'est exactement « la marche, c'est ok ». Trois choses en sortent.
   d'image figée qui va avec. Une capture est lancée au point d'apparition à
   la première image, pendant que l'enfant lit l'accueil.
 
+## La téléportation, et ce qui se compile à l'arrivée (v246)
+
+Max, capture d'iPad : « le lag est bien présent quand on fait une
+téléportation, à peu près dix secondes ». Découpé image par image à
+l'arrivée à Paris, comme la fluidité en vol : le maillage tient son budget ;
+ce qui prend les images, c'est **vingt programmes de shaders compilés dans
+les images où les premières voitures apparaissent** (seize avant, trente-six
+après, 1,5 s dans `getProgramInfoLog` au banc) et **dix-huit passants nés
+dans la même image**, chacun avec son clone de squelette. Quatre règles.
+
+- **UNE SIGNATURE DE PROGRAMME N'EST PAS UN MATÉRIAU.** C'est le matériau
+  (cartes, vernis, verre, double face) CROISÉ avec la géométrie (couleurs de
+  sommets, absence de normales → ombrage plat, tangentes, second jeu d'UV) et
+  avec le maillage (squelette). Mon premier relevé, fait sur les matériaux,
+  trouvait onze signatures pour la flotte et en manquait la moitié : la
+  plupart des carrosseries arrivent SANS normales et le chargeur GLTF les
+  passe en ombrage plat. La chauffe compilait donc treize programmes que
+  personne n'utilisait et laissait sept vrais programmes à l'arrivée — un
+  témoin qui aurait compté « la chauffe a tourné » aurait été vert. **La
+  table se LIT dans les fichiers** (`src/signatures.js`, sans import, chargé
+  par le banc sous node) et le témoin exige l'égalité des deux ensembles :
+  ni signature manquante, ni signature morte. Un modèle déposé demain d'une
+  autre facture rougit ce témoin et nomme sa signature.
+- **ET LES HUMAINS ONT DEUX PROGRAMMES PAR SIGNATURE.** `presence.js` les
+  fait apparaître en fondu, donc bascule `transparent` — et `opaque` fait
+  partie de la clé de programme. On chauffe les deux variantes.
+- **UNE SONDE DE FLUIDITÉ VÉRIFIE D'ABORD QUE LE JEU TOURNE.** Ma première
+  mesure du remède rendait 60 images par seconde, zéro image figée, zéro
+  programme neuf — sur une boucle de rendu MORTE : `faireNaitre` lisait une
+  variable qui n'existait plus, l'erreur tuait l'`animate` à la
+  cinquante-huitième image, et la sonde comptait ses propres `rAF` sur une
+  page vide. Le compteur qui fait foi est `renderer.info.render.frame`, qui
+  n'avance que si `render()` est appelé ; le témoin de téléportation l'exige
+  (`images > 30`), et c'est la sœur de « une sonde de déplacement vérifie
+  d'abord qu'elle s'est déplacée ». Un chiffre trop beau se démonte avant de
+  se célébrer.
+- **LES NAISSANCES SE FONT PAR TRANCHES.** `peupler` (passants.js) ne fait
+  plus que prévoir ; `naitre`, appelé à chaque image, en fait naître pour
+  cinq millisecondes au plus. C'est la file du maillage des morceaux, encore
+  une fois : une file qui se vide d'un coup n'est pas une file.
+
+### Une pièce de roue est un mot entier et une géométrie
+
+Max : « la Bugatti quand elle avance, il y a des trucs noirs qui bougent
+autour ». `normaliserVoiture` regroupait les pièces de roue par leur NOM, et
+`/rim/` attrapait « trim » — la garniture : les bandes de carrosserie de la
+Chiron Stealth tournaient avec la roue arrière droite, jusqu'au toit, et la
+Lucid Gravity était déformée par le même défaut. Deux choses :
+
+- **Le nom se lit en mots entiers** (`(?<![a-z])rim(?![a-z])`), **et la
+  géométrie tranche** : une pièce qui ne tient pas dans une fois et demie
+  l'emprise du pneu, ou dont le centre est à plus de six dixièmes de bloc du
+  sien, n'est pas une pièce de roue, quel que soit son nom. Le pivot se pose
+  au centre du PNEU, pas au centre du groupe. Témoin : sur les deux modèles
+  déposés, rien de la carrosserie ne tourne avec une roue.
+- **« Améliore le design de la Lucid Gravity » était la même panne**, vue
+  d'un autre siège : des panneaux entiers qui tournent sur eux-mêmes, ce
+  n'est pas un modèle laid, c'est un modèle cassé. Avant de resculpter ce
+  qu'un enfant trouve moche, on mesure si c'est ce que l'auteur a livré.
+
+### Chaque ville a ses voitures, et chaque voiture sa laque
+
+La graine d'un convoi valait « nombre de points du tracé + rang » : les
+villes engendrées, aux anneaux semblables, tiraient les MÊMES vingt modèles
+dans le même ordre. `graineDeVille(tr)` la prend dans la position de la
+ville ; `choixFlotte(n, ville)` est pure et publiée, et `etat()` expose
+`graine`, `modeles` et `livrees` (modèle + laque de chaque voiture visible)
+pour qu'un témoin lise ce que l'enfant voit sans rien fabriquer. Deux
+voitures sur trois reçoivent la teinte tirée pour elles, la troisième garde
+sa livrée d'origine : une voiture dont la couleur fait l'identité ne doit pas
+disparaître de la rue. La laque seule se repeint (`EST_LAQUE`) : vitres,
+chromes et carbone gardent leur rendu.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
@@ -3380,6 +3453,8 @@ choses à savoir avant d'y toucher.
   trois espèces montables pendant que le bestiaire s'étoffait. Même règle
   pour **ce qui se nourrit** (`nourrissable: false` sur la voiture) : la
   règle vit dans la fiche, jamais dans `fun.js`.
+- **Et une pièce de roue est un mot entier ET une géométrie (v246)** — voir
+  « Une pièce de roue est un mot entier et une géométrie » plus haut.
 - **UN MODÈLE SE MESURE, IL NE SE DÉCLARE PAS (v230).** La flotte avait un
   manifeste — mètres, +Z vers le nez, roues à y = 0, pivots `Wheel_FL/FR/RL/RR`,
   laque `Paint_*` — et trois endroits du jeu s'y fiaient. Les modèles que Max

@@ -24,20 +24,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **v246 — les quatre points de Max du 12 septembre (capture iPad).** (1) « Le
-  lag est bien présent quand on fait une téléportation, à peu près dix
-  secondes » — c'est la dette « l'arrivée en ville fige l'écran » ci-dessous,
-  à découper image par image (sonde `teleport.cjs` et profil écrits). (2) « La
-  Bugatti quand elle avance, il y a des trucs noirs qui bougent autour » —
-  la Chiron Stealth déposée en v230 : ses nœuds « Front wheel −1 | Satin
-  black | aerodynamic surfaces » sont regroupés dans le pivot de roue par
-  leur NOM et tournent avec elle ; à mesurer sur la boîte de chaque morceau
-  contre celle du pneu avant de trancher. (3) « Assure-toi que toutes les
-  villes ont de la diversité dans les voitures » — la graine d'un convoi est
-  `tr.pts.length + choisi` (main.js), donc les villes engendrées, aux anneaux
-  semblables, tirent les MÊMES vingt modèles ; une graine par ville (sa
-  position) et des teintes par voiture. (4) « Améliore le design de la Lucid
-  Gravity » — à juger sur captures avant de toucher au modèle.
+- [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
+  des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
+  se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt
+  avant) et les passants naissent par tranches ; sur le banc en rendu
+  logiciel la pire image de la téléportation passe de 550 à 450 ms et le
+  temps figé de 3,9 à 2,6 s (`teleport.cjs`, une mesure chacun) — ce qui
+  reste est le maillage de deux cent quatre-vingt-quatorze morceaux de ville
+  à 23 ms pièce, que le budget de `MESH_MS_PAR_SECONDE` étale déjà. La
+  mesure qui compte est sur l'iPad de Max ; si le lag y persiste, la piste
+  est de mailler moins à l'arrivée (rayon réduit les deux premières
+  secondes) ou plus vite (45 % du coût est la génération du relief).
 
 - [ ] **v247 et suivantes — « regarde les améliorations qu'il y a encore eu
   dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
@@ -51,25 +48,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   le regard (ton, ombres, ciel) partout ; Paris sur la chaîne ; les autres
   villes bâties à la main ; les villes engendrées par leurs îlots.
 
-- [ ] **Le premier chargement d'une VOITURE compile encore ses programmes sur
-  la tablette (v245).** Les variantes « cible cubique » du décor sont
-  chauffées à l'accueil ; les matériaux de la flotte, eux, se compilent à la
-  première voiture vue (trois à quatre programmes mesurés au banc, plus par
-  modèle exotique). Piste : `renderer.compile()` sur le premier modèle de
-  flotte chargé, hors écran, dans `chargerVoitureFlotte`.
-
 - [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
   lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est
   ni la sonde des reflets (une face coûte 2 à 5 ms depuis la v245) ni du
   JavaScript : c'est la rastérisation logicielle de la carrosserie
   réfléchissante en gros plan. Non transposable à l'iPad ; à vérifier UNE
   fois en rendu matériel avant de chercher plus loin.
-
-- [ ] **Les passants nés à l'ARRIVÉE en ville se clonent encore dans la même
-  image.** La mise à niveau de la v245 étale les clones de squelette sur
-  six millisecondes par image, mais seulement pour ceux nés avant les
-  modèles ; c'est la piste déjà écrite ci-dessous pour « l'arrivée en ville
-  fige l'écran ».
 
 - [ ] **Deux circuits de Paris se raccordent à cent soixante degrés sur la rue
   de Rivoli, et les voitures s'y frôlent encore.** Après la v244, il reste
@@ -88,11 +72,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   `origin/main` (v241) : pire image **1 233 ms, 6,9 %** ; sur la branche v242 :
   2 117 ms, 20,8 % — une mesure chacun, sur un banc en rendu logiciel, et le
   trajet de la branche survole MOINS de villes (Paris seule ; Strasbourg et
-  Stuttgart en sortent avec le monde ×2). La cause probable est la naissance
-  des dix-huit passants Rocketbox (clone de squelette) à l'arrivée ; à
-  mesurer image par image (leçon de la v-fluidité : « un gel ne se devine
-  pas, il se découpe »), puis étaler ou différer. La validation de #244 en
-  rendu matériel était verte.
+  Stuttgart en sortent avec le monde ×2). La v246 a découpé l'arrivée image
+  par image et retiré deux des causes — les programmes de la flotte et des
+  humains compilés sur place, et les dix-huit passants nés dans la même
+  image ; ce qui reste est le maillage (voir « ce qui reste du gel de
+  téléportation » ci-dessus). La validation de #244 en rendu matériel était
+  verte ; à remesurer sur l'iPad.
 
 - [ ] **Quatre témoins de `manhattan.js` sont rouges sur ce banc, des deux
   côtés.** Rejoués SEULS sur la branche v242 et sur `origin/main` (v240),
@@ -766,6 +751,15 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v246** — La téléportation ne fige plus l'écran (les dix-neuf
+  signatures de programme de la flotte et des humains, lues dans les fichiers,
+  se compilent à l'accueil ; zéro programme neuf à l'arrivée à Paris, vingt
+  avant ; les passants naissent par tranches), la Bugatti roule sans traînées
+  et la Lucid retrouve sa forme (une pièce de roue est un mot entier et une
+  géométrie : `/rim/` attrapait « trim »), et chaque ville a ses voitures
+  (graine par ville, laque par voiture : Moscou, sept modèles et huit couleurs
+  sur douze voitures visibles).
 
 - [x] **v226** — Les villes ne sont plus vides quand on y arrive. Les cadences
   de ménage (passants, circulation, garagiste, aéroportiste) comptaient en

@@ -11,6 +11,7 @@
 
 import * as THREE from 'three';
 import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
+import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
@@ -105,6 +106,103 @@ export function majRefletsVoiture(renderer, scene, pos) {
   lancerReflets(pos);
   while (faceEnCours >= 0) avancerReflets(renderer, scene);
 }
+
+// LES PROGRAMMES DE LA FLOTTE ET DES HUMAINS SE COMPILENT À L'ACCUEIL (v246).
+// Max : « le lag est bien présent quand on fait une téléportation, à peu près
+// dix secondes ». Profil de l'arrivée à Paris : 1,5 s dans getProgramInfoLog
+// et getShaderInfoLog, seize programmes avant, trente-six après — chaque
+// modèle de voiture rencontré pour la première fois apporte ses matériaux,
+// chaque signature son programme, compilé DANS l'image où la voiture
+// apparaît ; les corps humains font pareil dès que le premier passant les
+// reçoit. Sur une tablette, un programme se compile en dizaines de
+// millisecondes ; vingt d'un coup, c'est l'écran qui se fige.
+//
+// Les signatures viennent de `signatures.js`, LUES dans les fichiers — pas
+// devinées : mon premier jet en écrivait treize à la main, d'après les
+// matériaux, et il en manquait la moitié, parce qu'une signature est aussi
+// faite de la géométrie (ombrage plat, couleurs de sommets, squelette). Le
+// banc vérifie que la table et les fichiers disent la même chose. On compile
+// UNE signature par image pendant que l'enfant lit l'accueil, avec des
+// matériaux témoins qui restent EN VIE — three.js détruit un programme dont
+// plus aucun matériau ne se sert.
+//
+// ET LES HUMAINS ONT DEUX PROGRAMMES PAR SIGNATURE : `presence.js` les fait
+// apparaître en fondu, donc passe leurs matériaux en `transparent` — un
+// programme à part (`opaque` fait partie de la clé). On chauffe les deux.
+const temoinsProgrammes = [];
+export function signaturesAChauffer() {
+  const out = [];
+  for (const sig of SIGNATURES_GLB) {
+    out.push(sig);
+    if (sig.includes('+skin') && !sig.includes('+alpha')) out.push(sig + '+alpha');
+  }
+  return out.concat(SIGNATURES_JEU);
+}
+function materielDeSignature(sig, rt, uni, normale) {
+  const f = new Set(sig.split('+'));
+  const params = {};
+  if (f.has('map')) params.map = uni;
+  if (f.has('nrm')) params.normalMap = normale;
+  if (f.has('mr')) { params.metalnessMap = uni; params.roughnessMap = uni; }
+  if (f.has('ao')) params.aoMap = uni;
+  if (f.has('emap')) params.emissiveMap = uni;
+  if (f.has('cc')) params.clearcoat = 1;
+  if (f.has('ccmap')) params.clearcoatMap = uni;
+  if (f.has('ccrough')) params.clearcoatRoughnessMap = uni;
+  if (f.has('ccnrm')) params.clearcoatNormalMap = normale;
+  if (f.has('trans')) params.transmission = 0.5;
+  if (f.has('sheen')) params.sheen = 1;
+  if (f.has('specmap')) params.specularColorMap = uni;
+  if (f.has('atest')) params.alphaTest = 0.5;
+  if (f.has('alpha')) { params.transparent = true; params.opacity = 0.5; }
+  if (f.has('DS')) params.side = THREE.DoubleSide;
+  if (f.has('vc') || f.has('vc4')) params.vertexColors = true;
+  if (f.has('flat')) params.flatShading = true;
+  if (f.has('env') && rt) params.envMap = rt.texture;
+  const mat = f.has('Basic') ? new THREE.MeshBasicMaterial(params)
+    : f.has('Lambert') ? new THREE.MeshLambertMaterial(params)
+      : f.has('Physical') ? new THREE.MeshPhysicalMaterial(params)
+        : new THREE.MeshStandardMaterial(params);
+  const geo = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+  const n = geo.attributes.position.count;
+  if (f.has('vc') || f.has('vc4')) {
+    const k = f.has('vc4') ? 4 : 3;
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * k).fill(1), k));
+  }
+  if (f.has('tan')) geo.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array(n * 4), 4));
+  if (f.has('uv1')) geo.setAttribute('uv1', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+  if (!f.has('skin')) return new THREE.Mesh(geo, mat);
+  geo.setAttribute('skinIndex', new THREE.BufferAttribute(new Uint16Array(n * 4), 4));
+  const poids = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) poids[i * 4] = 1;
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(poids, 4));
+  const m = new THREE.SkinnedMesh(geo, mat);
+  const os = new THREE.Bone();
+  m.add(os);
+  m.bind(new THREE.Skeleton([os]));
+  return m;
+}
+export function chaufferLesProgrammes(renderer, scene, camera) {
+  if (temoinsProgrammes.length) return () => false;
+  const rt = refletsVoiture();
+  const uni = new THREE.DataTexture(new Uint8Array([200, 200, 200, 255]), 1, 1);
+  uni.needsUpdate = true;
+  const normale = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+  normale.needsUpdate = true;
+  const liste = signaturesAChauffer();
+  let k = 0;
+  // Une signature par appel ; rend vrai tant qu'il en reste.
+  return () => {
+    if (k >= liste.length) return false;
+    const m = materielDeSignature(liste[k++], rt, uni, normale);
+    temoinsProgrammes.push(m.material);
+    m.position.set(camera.position.x, -500, camera.position.z);
+    scene.add(m);
+    try { renderer.compile(scene, camera); } finally { scene.remove(m); }
+    return k < liste.length;
+  };
+}
+export const programmesChauffes = () => temoinsProgrammes.length;
 
 // --- la vraie voiture ---------------------------------------------------------
 //
@@ -223,6 +321,32 @@ export function chargerVraieVoiture() {
 //
 // La règle vit donc dans la FICHE, jamais dans une liste écrite dans le
 // témoin — même discipline que `montable`, `nourrissable` et `vole`.
+// LA LAQUE D'UN MODÈLE, par le nom de son matériau : `Paint_*` chez les
+// cinquante d'origine, « Pearl white body », « clear-coated bodywork » chez
+// ceux déposés ensuite. Pas `Paint_Secondary` ni les accents : on repeint la
+// carrosserie, pas la livrée.
+const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
+
+// LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
+// New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
+// est la berline citadine, les autres viennent de la flotte au pas de 17.
+export function choixFlotte(n, ville) {
+  const choix = FLOTTE.filter((e) => (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
+  if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
+  return choix[((n % choix.length) + choix.length) % choix.length];
+}
+
+// LA GRAINE D'UN CONVOI VIENT DE SA VILLE (v246). Elle valait « nombre de
+// points du tracé + rang dans la file » : les villes engendrées, dont les
+// anneaux se ressemblent, tiraient les MÊMES vingt modèles dans le même
+// ordre — Max : « assure-toi que toutes les villes ont de la diversité ».
+// La position de l'ancre est propre à chaque ville ; le rang distingue ses
+// anneaux. Exportée pour qu'un témoin la calcule sur deux villes.
+export function graineDeVille(tr) {
+  const h = Math.round(Math.abs(tr.x) * 31 + Math.abs(tr.z) * 17 + (tr.rang || 0) * 101 + (tr.x < 0 ? 7 : 0) + (tr.z < 0 ? 13 : 0));
+  return h % 100003;
+}
+
 export const FLOTTE = [
   {fichier:'berline-citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
   {fichier:'ny-crown-victoria',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
@@ -422,7 +546,7 @@ export function chargerVoitureFlotte(entree) {
           // appellent leur laque « Pearl white body » ou « clear-coated
           // bodywork ». On reconnaît les deux, sinon la carrosserie neuve
           // reste mate au milieu d'une flotte qui brille.
-          if (/paint|bodywork|\bbody\b/i.test(o.material.name || '')) {
+          if (EST_PEINTURE.test(o.material.name || '')) {
             refleter(o, o.material, 1.0);
             o.material.needsUpdate = true;
           }
@@ -1179,8 +1303,7 @@ export function createVehicules({ scene, player }) {
   // parce que c'est le convoi qui les fait tourner.
   function voitureDeVille(n, teinte, ville) {
     const g = construireVoitureRoute(teinte);
-    const choix = FLOTTE.filter(e=>ville==='ny'?e.ville==='ny':e.ville!=='ny');
-    const entree = ville !== 'ny' && n % 4 === 0 ? FLOTTE.find(e=>e.fichier==='berline-citadine') : choix[((n % choix.length) + choix.length) % choix.length];
+    const entree = choixFlotte(n, ville);
     // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
     // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
     // flotte — c'est le même soin que pour la voiture garée.
@@ -1200,6 +1323,22 @@ export function createVehicules({ scene, player }) {
             o.material=o.material.clone();o.material.userData.partagee=false;o.material.color.set(teinte);
           }
         });
+        // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
+        // villes ont de la diversité dans les voitures ». Un modèle de la
+        // flotte arrivait toujours dans SA couleur cuite dans le fichier :
+        // vingt Bugatti bleues dans vingt villes. Deux voitures sur trois
+        // prennent la teinte tirée pour elles, la troisième garde sa livrée
+        // d'origine — une voiture dont la couleur fait l'identité (un taxi,
+        // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
+        // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
+        if (entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0) {
+          modele.traverse((o) => {
+            if (!o.isMesh || !o.material || !EST_LAQUE.test(o.material.name || '')) return;
+            o.material = o.material.clone(); o.material.userData.partagee = false;
+            o.material.color.set(teinte);
+          });
+        }
+        g.userData.laque = entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0 ? teinte : null;
         g.add(modele);
         const roues = [];
         modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
@@ -1244,7 +1383,7 @@ export function createVehicules({ scene, player }) {
   function circulation(pts, graine = 0, options = {}) {
     const p = new Parcours(pts);
     const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
-    return ajouter(pts, {
+    const c = ajouter(pts, {
       nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4, routier: true,
       // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
       // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
@@ -1267,6 +1406,11 @@ export function createVehicules({ scene, player }) {
       // modèles différents.
       modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
     });
+    // Ce que ce convoi VA montrer, sans rien fabriquer : un témoin de
+    // diversité le lit avant que la moindre voiture ne soit née.
+    c.graine = graine;
+    c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville).fichier);
+    return c;
   }
 
   // Le bus de la ville : un seul par anneau, plus lent que les voitures, et
@@ -1578,6 +1722,11 @@ export function createVehicules({ scene, player }) {
         : null)).filter(Boolean),
       retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
       attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
+      // la diversité (v246) : les modèles que le convoi va montrer, sa graine,
+      // et la livrée — modèle + laque — de chaque voiture visible
+      graine: c.graine, modeles: c.modeles || [],
+      livrees: c.elements.filter((m) => m && m.visible && m.userData.flotte)
+        .map((m) => `${m.userData.flotte}:${m.userData.laque == null ? 'origine' : m.userData.laque.toString(16)}`),
       // les teintes de carrosserie des éléments visibles — la preuve, pour un
       // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
       // tunnel, des couleurs APRÈS, dans le même convoi au même instant
