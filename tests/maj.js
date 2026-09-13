@@ -49,6 +49,22 @@ function verifier(nom, ok, detail = '') {
       () => !!navigator.serviceWorker.controller), 30000);
     verifier('le service worker contrôle la page', controle);
 
+    // LES CORPS RÉALISTES NE SE RE-TÉLÉCHARGENT PAS À CHAQUE VERSION (v245).
+    // Huit mégaoctets immuables étaient dans la liste des ASSETS : chaque
+    // livraison — c'est-à-dire chaque jour — les faisait reprendre en entier
+    // sur l'iPad, et le premier lancement après une mise à jour se les
+    // disputait avec la page. Ils vivent dans le cache immuable, comme le
+    // scanner et la flotte : on en demande un, et c'est là qu'il doit être.
+    const immuable = await tab.evaluate(async () => {
+      const u = './vendor/humains/garcon.glb';
+      const r = await fetch(u);
+      const statique = await caches.open('web-minecraft-static-v1');
+      return { ok: r.ok, octets: (await r.arrayBuffer()).byteLength,
+        dansLImmuable: !!(await statique.match(new Request(u))) };
+    });
+    verifier('un corps réaliste demandé se range dans le cache immuable, pas dans celui de la version',
+      immuable.ok && immuable.octets > 100000 && immuable.dansLImmuable, JSON.stringify(immuable));
+
     // On publie une version neuve PENDANT qu'il joue. C'est exactement ce qui
     // s'est passé : la livraison part alors que l'iPad est en veille.
     banc.jeu.publierVersion('web-minecraft-v999-essai');

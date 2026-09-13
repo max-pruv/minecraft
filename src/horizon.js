@@ -49,6 +49,7 @@
 import * as THREE from 'three';
 import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK } from './world.js';
 import { BLOCK } from './blocks.js';
+import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
 
 export const PAS_HORIZON = 8;   // un sommet tous les huit blocs
@@ -130,6 +131,7 @@ export class Horizon {
 
     this.materiau = new THREE.MeshBasicMaterial({ vertexColors: true, fog: true });
     this.mesh = new THREE.Mesh(geo, this.materiau);
+    decor(this.mesh);   // le paysage lointain se reflète dans les carrosseries
     this.mesh.frustumCulled = false;         // il entoure toujours le joueur
     // IL SE DESSINE EN DERNIER, ET CE N'EST PAS UN DÉTAIL. three.js trie les
     // opaques du plus PRÈS au plus loin pour que le tampon de profondeur

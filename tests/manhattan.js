@@ -353,7 +353,10 @@ function verifier(nom, ok, detail = "") {
       const v = await import("/src/vehicules.js"),
         { buildKidMesh } = await import("/src/marlon.js"),
         { construireHumain } = await import("/src/personnages.js"),
+        { chargerHumains } = await import("/src/humains.js"),
         THREE = await import("three");
+      // les modèles arrivent après l'accueil (v245) : on bâtit quand ils sont là
+      if (chargerHumains) await chargerHumains();
       const car = await v.chargerVoitureFlotte(
         v.FLOTTE.find((e) => e.fichier === "ny-crown-victoria"),
       );

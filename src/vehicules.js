@@ -10,6 +10,7 @@
 // hors de vue ne coûte ni animation, ni appel de rendu.
 
 import * as THREE from 'three';
+import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
@@ -24,32 +25,85 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 // la voiture ; une cible de rendu GPU, elle, est valide par construction.
 let refletsRT = null;
 let refletsCamera = null;
+// LA CARROSSERIE VIT SUR SA PROPRE COUCHE (v245). Un matériau ne peut pas lire
+// la texture cubique pendant qu'on l'écrit — WebGL signale une boucle de
+// rétroaction — et l'ancien code parcourait TOUTE la scène à chaque capture
+// pour cacher les maillages qui la lisent, puis les rendre. Cinq mille objets
+// deux fois par seconde. Une couche règle cela sans un parcours : la caméra
+// de l'enfant (main.js) voit la couche 2, les six caméras de la sonde ne
+// voient que la couche 0, et une carrosserie n'est jamais dans sa propre
+// réflexion. `Object3D.clone()` recopie la couche : une voiture de la flotte
+// clonée cinquante fois la garde.
+export { COUCHE_CARROSSERIE };
+function refleter(o, m, intensite) {
+  m.envMap = refletsRT.texture;
+  m.envMapIntensity = intensite;
+  o.layers.set(COUCHE_CARROSSERIE);
+}
 export function refletsVoiture() {
   if (!refletsRT && typeof document !== 'undefined') {
     refletsRT = new THREE.WebGLCubeRenderTarget(128, {
       generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
     });
     refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);
+    // ses six caméras partagent cet objet de couches : le décor, rien d'autre
+    voirLeDecor(refletsCamera);
   }
   return refletsRT;
 }
+// UNE FACE PAR IMAGE, JAMAIS SIX (v245). Max, sur l'iPad de quatre ans : « la
+// voiture avance de manière hyper saccadée ». Mesuré au banc, assis dans une
+// voiture à l'arrêt : une image sur quatre durait TROIS fois la médiane, par
+// paires à une demi-seconde d'écart — la cadence exacte de cette sonde, qui
+// rendait ses six faces dans la même image. Chaque face soumet au pilote
+// tous les appels de dessin de la scène ; six faces d'un coup, c'est six
+// images de travail processeur dans une seule, et sur une tablette limitée
+// par ses appels de dessin, c'est un à-coup toutes les demi-secondes. La
+// capture s'étale désormais : `lancerReflets` note où regarder, et
+// `avancerReflets`, appelée à chaque image, rend UNE face. La réflexion est
+// complète six images plus tard, ce qu'aucun œil ne voit sur un pare-brise.
+let faceEnCours = -1;
+const positionSonde = new THREE.Vector3();
+export function lancerReflets(pos) {
+  if (!refletsRT || faceEnCours >= 0) return false;
+  positionSonde.set(pos.x, pos.y + 1.1, pos.z);
+  faceEnCours = 0;
+  return true;
+}
+export function refletsEnCours() { return faceEnCours >= 0; }
+export function avancerReflets(renderer, scene) {
+  if (faceEnCours < 0) return false;
+  const cam = refletsCamera;
+  cam.position.copy(positionSonde);
+  cam.updateMatrixWorld();
+  if (cam.coordinateSystem !== renderer.coordinateSystem) {
+    cam.coordinateSystem = renderer.coordinateSystem;
+    cam.updateCoordinateSystem();
+  }
+  const face = cam.children[faceEnCours];
+  const cible = renderer.getRenderTarget();
+  const xr = renderer.xr.enabled;
+  renderer.xr.enabled = false;
+  // les mipmaps se calculent une fois la sixième face écrite, pas six fois
+  const mipmaps = refletsRT.texture.generateMipmaps;
+  refletsRT.texture.generateMipmaps = faceEnCours === 5 && mipmaps;
+  try {
+    renderer.setRenderTarget(refletsRT, faceEnCours);
+    renderer.render(scene, face);
+  } finally {
+    refletsRT.texture.generateMipmaps = mipmaps;
+    renderer.setRenderTarget(cible);
+    renderer.xr.enabled = xr;
+  }
+  faceEnCours = faceEnCours === 5 ? -1 : faceEnCours + 1;
+  return true;
+}
+// L'ancienne entrée, gardée pour ce qui la lit encore : une capture complète
+// dans la même image. Le jeu ne l'appelle plus.
 export function majRefletsVoiture(renderer, scene, pos) {
   if (!refletsRT) return;
-  refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
-  // Un matériau ne peut lire la texture cubique pendant qu’on l’écrit :
-  // WebGL signale alors une boucle de rétroaction. Les surfaces qui utilisent
-  // cette sonde sont exclues de sa capture, puis restaurées pour la vue joueur.
-  const masques = [];
-  scene.traverse((o) => {
-    if (!o.isMesh || !o.visible) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    if (mats.some((m) => m.envMap === refletsRT.texture)) {
-      masques.push(o);
-      o.visible = false;
-    }
-  });
-  try { refletsCamera.update(renderer, scene); }
-  finally { for (const o of masques) o.visible = true; }
+  lancerReflets(pos);
+  while (faceEnCours >= 0) avancerReflets(renderer, scene);
 }
 
 // --- la vraie voiture ---------------------------------------------------------
@@ -134,7 +188,7 @@ export function chargerVraieVoiture() {
         o.material.transparent = true;
         o.material.opacity = 0.35;
       }
-      if (rt) { o.material.envMap = rt.texture; o.material.envMapIntensity = 1.0; }
+      if (rt) refleter(o, o.material, 1.0);
       o.material.needsUpdate = true;
     });
     return porteur;
@@ -328,7 +382,7 @@ export function chargerVoitureFlotte(entree) {
   if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
-    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial)){o.material.envMap=rt.texture;o.material.envMapIntensity=.75;}});
+    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
@@ -351,8 +405,7 @@ export function chargerVoitureFlotte(entree) {
           // bodywork ». On reconnaît les deux, sinon la carrosserie neuve
           // reste mate au milieu d'une flotte qui brille.
           if (/paint|bodywork|\bbody\b/i.test(o.material.name || '')) {
-            o.material.envMap = rt.texture;
-            o.material.envMapIntensity = 1.0;
+            refleter(o, o.material, 1.0);
             o.material.needsUpdate = true;
           }
         });
@@ -731,11 +784,13 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   });
   mc.material = peint;
   g.userData.carrosserie = peint;
-  g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
+  const verriere = g.userData.membres.verriere.children[0];
+  verriere.material = new THREE.MeshPhongMaterial({
     color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
     envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.4,
     transparent: true, opacity: 0.78,
   });
+  if (rt) { mc.layers.set(COUCHE_CARROSSERIE); verriere.layers.set(COUCHE_CARROSSERIE); }
   return g;
 }
 
@@ -1267,9 +1322,31 @@ export function createVehicules({ scene, player }) {
     }
     return true;
   };
+  // Ce que `cederLePassage` a regardé à la dernière image : `obstacleDevant`
+  // s'en sert pour la voiture de l'enfant, sans refaire la collecte.
+  let dernieres = [];
+  const CLE_ENFANT = -1;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
+    // L'ENFANT AUSSI, À PIED OU AU VOLANT (v245). Max, après la v244 : « les
+    // voitures passent les unes sur les autres ». Mesuré en roulant sur la rue
+    // de Rivoli : soixante et onze relevés sur quatre-vingt-quatorze où une
+    // voiture de la rue était DANS la voiture de l'enfant, et à l'arrêt sur la
+    // chaussée un convoi entier lui passait au travers. Les convois cédaient
+    // entre eux depuis la v244 — jamais à l'enfant, qui n'était pas dans la
+    // liste. Il y est : sa voiture (4,4 × 2,26, cap du regard) ou lui-même à
+    // pied (un carré à sa carrure). Il ne cède à personne ; la rue s'arrête
+    // devant lui, comme devant tout ce qui est sur son chemin.
+    const enVehicule = player.gabarit > 1;
+    const capJ = player.yaw + Math.PI, uxJ = Math.sin(capJ), uzJ = Math.cos(capJ);
+    const demi = player.gabarit / 2;
+    voitures.push({
+      c: null, i: -1, cle: CLE_ENFANT, x: px, y: player.pos.y, z: pz, ux: uxJ, uz: uzJ, enfant: true,
+      rect: enVehicule ? rectangle(px, pz, uxJ, uzJ)
+        : [[px - demi, pz - demi], [px + demi, pz - demi], [px + demi, pz + demi], [px - demi, pz + demi]],
+      balayage: null, veut: null,
+    });
     for (let ci = 0; ci < convois.length; ci++) {
       const c = convois[ci];
       if (!c.routier) continue;
@@ -1287,17 +1364,23 @@ export function createVehicules({ scene, player }) {
     }
     // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
     for (const a of voitures) {
+      if (a.enfant) continue;
       a.balayage = PAS_BALAYAGE.map((pas) => {
         const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
         return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
       });
     }
     for (const a of voitures) {
+      if (a.enfant) continue;
       for (const b of voitures) {
         if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
         const ex = b.x - a.x, ez = b.z - a.z;
         if (ex * ex + ez * ez > 12 * 12) continue;
         if (ex * a.ux + ez * a.uz < -DEMI_LONG) continue;          // derrière moi : pas mon affaire
+        // Déjà DANS la voiture de l'enfant (il s'est posé dessus, ou l'a
+        // rattrapée) : continuer est la seule façon d'en sortir ; y attendre
+        // sans limite, c'est rester dedans pour toujours.
+        if (b.enfant && seTouchent(a.rect, b.rect)) continue;
         // Là où elle EST, pas là où elle sera : comparer les deux chemins des
         // huit prochains blocs mettait presque toutes les paires en conflit
         // mutuel, et la patience de quatre secondes les relâchait ensemble —
@@ -1310,7 +1393,9 @@ export function createVehicules({ scene, player }) {
       }
     }
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
+    dernieres = voitures;
     for (const a of voitures) {
+      if (a.enfant) continue;
       let attend = false;
       if (a.veut) {
         for (const [cle, devantMoi] of a.veut) {
@@ -1325,13 +1410,36 @@ export function createVehicules({ scene, player }) {
         }
       }
       const c = a.c, i = a.i;
+      // Devant l'enfant seul, on attend SANS LIMITE : une voiture qui finit
+      // par lui passer au travers, c'est la panne qu'on répare — mesuré, la
+      // patience de douze secondes la faisait revenir au bout de douze
+      // secondes. La rue attend que l'enfant reparte ; les autres voitures
+      // gardent leurs quatre secondes entre elles.
+      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? Infinity : 4;
       if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
       else if (attend) {
         c.attenteDepuis[i] += dt;
-        if (c.attenteDepuis[i] > 4) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
+        if (c.attenteDepuis[i] > patience) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
       } else c.attenteDepuis[i] = 0;
       c.attend[i] = attend ? 1 : 0;
     }
+  }
+
+  // ET L'ENFANT NE TRAVERSE PAS LA RUE NON PLUS (v245). Sa voiture, posée à
+  // (x, z) avec ce cap, toucherait-elle une voiture de la circulation ? C'est
+  // `player.js` qui le demande avant d'avancer — la boîte de collision du
+  // joueur ne connaît que les blocs. On relit la collecte de la dernière
+  // image : les voitures de la rue avancent de quelques centimètres entre
+  // deux images, c'est sans conséquence pour un arrêt.
+  function obstacleDevant(x, z, cap) {
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const moi = rectangle(x, z, ux, uz);
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (seTouchent(moi, b.rect)) return true;
+    }
+    return false;
   }
 
   function update(dt) {
@@ -1420,7 +1528,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

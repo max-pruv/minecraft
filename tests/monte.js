@@ -822,8 +822,167 @@ async function avancerUnDemiSeconde(p, depart) {
       && tourne > attendu * 0.7 && tourne < attendu * 1.4,
       `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
       + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+
+    // LES REFLETS NE FIGENT PLUS L'IMAGE (v245) -------------------------------
+    //
+    // Max, sur l'iPad de quatre ans : « la voiture avance de manière hyper
+    // saccadée ». La sonde des reflets rendait ses SIX faces dans la même
+    // image, deux fois par seconde : au banc, assis dans une voiture à
+    // l'arrêt, une image sur quatre durait trois fois la médiane, par paires à
+    // une demi-seconde d'écart. On mesure la CAUSE et non l'effet — le banc
+    // rend en logiciel, sa cadence ne dit rien de l'iPad : le compteur
+    // d'images du moteur avance d'un cran par `render()`, donc de 1 + faces
+    // rendues à chaque tour d'affichage. Sept sur l'ancien code ; deux au
+    // plus ici, et au moins un tour à deux, sinon les reflets sont morts.
+    const rendus = await tab.evaluate(async () => {
+      const g = window.__game;
+      const deltas = [];
+      let prec = g.renderer.info.render.frame;
+      await new Promise((fin) => {
+        const t0 = performance.now();
+        const tour = () => {
+          const f = g.renderer.info.render.frame;
+          deltas.push(f - prec); prec = f;
+          if (performance.now() - t0 < 4000) requestAnimationFrame(tour); else fin();
+        };
+        requestAnimationFrame(tour);
+      });
+      const d = deltas.slice(1);
+      return { tours: d.length, max: Math.max(...d), aDeux: d.filter((x) => x === 2).length };
+    });
+    verifier('au volant, aucune image ne rend plus d\'une face de reflet à la fois',
+      rendus.tours > 8 && rendus.max <= 2 && rendus.aDeux >= 1,
+      `${rendus.tours} tours · au plus ${rendus.max} rendus par tour · ${rendus.aDeux} tours à deux`);
+    // LA RUE S'ARRÊTE DEVANT LA VOITURE DE L'ENFANT (v245) --------------------
+    //
+    // Max, après la v244 : « les voitures passent les unes sur les autres ».
+    // Mesuré sur la rue de Rivoli, l'enfant au volant à l'arrêt sur la
+    // chaussée : un convoi entier lui passait AU TRAVERS. Les convois cédaient
+    // entre eux, jamais à l'enfant. On se pose au volant sur le tracé d'un
+    // convoi, douze blocs devant sa tête, on attend qu'une voiture arrive à
+    // moins de douze blocs, puis l'on compte pendant douze secondes les
+    // rectangles de la rue qui touchent le nôtre. À L'ARRÊT, pas en roulant :
+    // rouler droit sur une rue courbe avec une carrure de 2,2 blocs finit
+    // dans le trottoir (0,7 bloc roulé, vitesse x à zéro — mesuré), et le
+    // témoin jugeait alors la géométrie de Rivoli, pas la circulation.
+    // TÉLÉPORTÉ EN VOITURE, ON GARDE SA VOITURE (v245). Le gestionnaire
+    // d'animaux retire tout ce qui est à plus de soixante-dix blocs de
+    // l'enfant, et il passe AVANT que la monture ne le rejoigne : un voyage
+    // par la carte au volant faisait disparaître la voiture et laissait
+    // l'enfant à pied avec la carrure d'une voiture — coincé entre deux murs.
+    // On saute de trois cents blocs avec la voiture, et l'on doit être encore
+    // au volant deux secondes plus tard.
+    const saut = await tab.evaluate(async () => {
+      const g = window.__game;
+      const depart = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+      g.player.pos.set(depart.x + 300, g.world.terrainHeight(Math.floor(depart.x + 300), Math.floor(depart.z)) + 1.5, depart.z);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 2000));
+      const auVolant = document.getElementById('ride-btn').textContent.startsWith('⬇️');
+      const gabarit = g.player.gabarit;
+      g.player.pos.set(depart.x, depart.y, depart.z); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1000));
+      return { auVolant, gabarit, encoreAuVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️') };
+    });
+    verifier('téléporté de trois cents blocs au volant, on est encore au volant, et la voiture a suivi',
+      saut.auVolant && saut.encoreAuVolant && saut.gabarit > 1, JSON.stringify(saut));
+
+    // ON DESCEND AVANT DE PARTIR. Téléporté en voiture, l'enfant arrive à
+    // Paris pendant que sa monture est encore au point d'apparition : le
+    // gestionnaire d'animaux la retire (plus de soixante-dix blocs) avant
+    // qu'elle ne le rejoigne, et l'enfant se retrouve à pied avec la carrure
+    // d'une voiture — c'est ce qu'a rendu le portail (0,9 bloc roulé, puis
+    // 1,1 bloc du mur à pied). On descend ici, on prend une voiture là-bas.
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+    const avantParis = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      const sauve = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw, flying: g.player.flying };
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+      return sauve;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.routier).reduce((n, c) => n + c.visibles, 0) >= 4,
+      null, { timeout: 60000 }).catch(() => {});
+    const poseParis = await tab.evaluate(() => {
+      const g = window.__game, et = window.__vehicules.etat();
+      // toutes les places des convois routiers ; on se pose douze blocs devant
+      // l'une d'elles, à un point LIBRE — aucune voiture à moins de sept blocs,
+      // sinon on naît dans une voiture de la file (au portail : quatre-vingts
+      // relevés « au travers », dès la première image)
+      const places = [];
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => places.push({ x: q[0], z: q[1], cap: q[2] })));
+      let m = null;
+      for (const q of places) {
+        const x = q.x + Math.sin(q.cap) * 12, z = q.z + Math.cos(q.cap) * 12;
+        if (places.some((o) => Math.hypot(o.x - x, o.z - z) < 7)) continue;
+        const d = Math.hypot(x - g.player.pos.x, z - g.player.pos.z);
+        if (!m || d < m.d) m = { d, x: q.x, z: q.z, cap: q.cap };
+      }
+      if (!m) return null;
+      const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
+      g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
+      g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);
+      return m;
+    });
+    if (poseParis) {
+      // Le bouton garde son `display` d'avant tant que sa ligne est cachée :
+      // on attend la LIGNE, puis le « ⬇️ » qui prouve qu'on est monté — et
+      // l'on réessaie, parce qu'un clic trop tôt ne monte dans rien.
+      await tab.waitForFunction(() => {
+        const b = document.getElementById('ride-btn');
+        return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+      }, null, { timeout: 20000 }).catch(() => {});
+      for (let essai = 0; essai < 6; essai++) {
+        await tab.evaluate(() => document.getElementById('ride-btn').click());
+        const monte = await tab.waitForFunction(() => document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000 }).then(() => true).catch(() => false);
+        if (monte) break;
+        await dormir(700);
+      }
+    }
+    const chaussee = await tab.evaluate(async () => {
+      const g = window.__game, et = window.__vehicules.etat();
+      let m = null;
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
+        const d = Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z);
+        if (!m || d < m.d) m = { d, x: q[0], z: q[1], cap: q[2] };
+      }));
+      if (!m) return null;
+      if (!document.getElementById('ride-btn').textContent.startsWith('⬇️')) return { auVolant: false };
+      g.player.keys.delete('KeyW');
+      const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let releves = 0, traverses = 0, proches = 0, arretees = 0, attenteSecondes = 0;
+      // douze blocs, pas six : une voiture qui cède s'arrête dès que son
+      // balayage de huit blocs touche notre rectangle, donc à six ou huit
+      // blocs de notre centre — à six, le témoin ne la voyait jamais arriver
+      const PORTEE = 12;
+      const uneVoiturePres = () => { let n = 0; window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => { if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) <= PORTEE) n++; })); return n; };
+      // on attend la première voiture : jusqu'à quarante secondes
+      const tAttente = performance.now();
+      while (performance.now() - tAttente < 40000 && !uneVoiturePres()) await new Promise((f) => setTimeout(f, 200));
+      attenteSecondes = +((performance.now() - tAttente) / 1000).toFixed(1);
+      const t0 = performance.now();
+      while (performance.now() - t0 < 12000) {
+        await new Promise((f) => setTimeout(f, 150));
+        releves++;
+        const moi = rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI);
+        window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => {
+          if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > PORTEE) return;
+          proches++; if (q[5]) arretees++;
+          if (!separes(moi, rect(q[0], q[1], q[2]))) traverses++;
+        }));
+      }
+      return { releves, proches, arretees, traverses, attenteSecondes };
+    });
+    verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
+      !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(400);
+    await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
+    await dormir(1500);
 
     // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
     //

@@ -397,6 +397,95 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Le démarrage et la conduite sur un vieil iPad (v245)
+
+Max, sur l'iPad de quatre ans : « il faut attendre quasiment vingt secondes le
+temps de pouvoir cliquer sur le bouton », et « la voiture avance de manière
+hyper saccadée. La marche, c'est ok. » Deux pannes, deux causes, aucune n'était
+là où l'intuition la mettait, et les deux se reprennent telles quelles.
+
+### L'accueil attendait huit mégaoctets — et rien ne le disait
+
+`humains.js` chargeait ses neuf corps Rocketbox par un **`await` de premier
+niveau**. Comme `main.js` l'importe, l'évaluation de `main.js` — donc
+l'attachement de TOUS les boutons — attendait que 8,2 Mo soient arrivés ET
+analysés. Quatre-vingts pour cent de tout ce que le jeu télécharge, avant la
+première ligne de l'accueil ; et comme ces neuf fichiers étaient dans la
+liste des ASSETS de `sw.js`, **chaque livraison les faisait re-télécharger**,
+c'est-à-dire tous les jours, en concurrence avec la page qui les demandait
+aussi. Sur un Wi-Fi ordinaire, c'est vingt secondes. Quatre règles :
+
+- **UN `await` DE PREMIER NIVEAU DANS UN MODULE IMPORTÉ PAR `main.js` EST UN
+  ÉCRAN D'ATTENTE.** Il retient tout le graphe. Ce qui est lourd se charge
+  APRÈS la première image (`chargerHumains()` dans le `requestAnimationFrame`
+  qui cache le loader), jamais à l'import. Le banc ne pouvait PAS le voir :
+  les fichiers y arrivent en trente millisecondes depuis le disque, et le
+  bridage du processeur (`Emulation.setCPUThrottlingRate`) ne touche ni le
+  réseau ni le rendu logiciel. Le témoin RALENTIT donc les neuf fichiers de
+  cinq secondes chacun (`page.route`) et compte combien sont arrivés quand
+  `window.__game` apparaît : zéro ici, neuf sur l'ancien code.
+- **CE QUI NAÎT AVANT LES MODÈLES SE MET À NIVEAU SUR PLACE.** Un passant, un
+  garde du château ou l'avatar bâti pendant le chargement reçoit le corps
+  sculpté de l'atelier, puis — le MÊME objet, dans la même scène, avec les
+  mêmes pivots — se voit remplacer ses pièces quand les modèles sont là
+  (`mettreANiveau`, personnages.js), par tranches de six millisecondes par
+  image. Les accessoires accrochés aux pivots (l'épée, la torche, le
+  bouclier) passent sur les pivots neufs ; ce qui décrivait l'ancien corps
+  (`membres`, `rig`) est effacé de `userData`, sinon il survit à côté du
+  nouveau. Et **`presence.js` doit le savoir** : ses copies privées de
+  matériaux pilotaient l'ancien corps ; il recopie quand `miseANiveau`
+  change, en gardant la présence acquise, sinon les partagés seraient fondus
+  et tout le monde pâlirait. Mesuré au banc avec des modèles retardés :
+  123 personnes nées avant, 123 mises à niveau, même objet, zéro erreur, et
+  53 géométries RENDUES au pilote (les corps sculptés partent).
+- **LES FICHIERS IMMUABLES VIVENT DANS LE CACHE IMMUABLE.** `sw.js` les range
+  avec le scanner et la flotte (`isStaticAsset`), et l'installation les y
+  ajoute EN ARRIÈRE-PLAN s'ils manquent, sans retenir la version. Un fichier
+  qui ne change jamais n'a rien à faire dans la liste versionnée.
+- **`waitForFunction` NE SUIT PAS UNE PROMESSE.** Une fonction `async` rend
+  une promesse, qui est vraie : le témoin passait tout de suite et disait que
+  les modèles étaient là cinq secondes avant qu'ils n'arrivent. On interroge
+  en boucle par `evaluate`. Une heure pour le voir.
+
+Ce que le banc a mesuré et qui NE se transpose PAS : la première image y
+arrive à 8-11 secondes quel que soit le bridage, parce que 2,9 des 5,5
+secondes de processeur sont dans three.js — création du contexte WebGL et
+compilation des programmes en logiciel — et 0,4 dans `makeCharPortraits`
+(un second contexte). Sur l'iPad, c'est de l'ordre de la dizaine de
+millisecondes. Ce qui se transpose, c'est ce que le témoin mesure : le
+NOMBRE de fichiers attendus avant l'accueil.
+
+### La conduite saccadée : six rendus dans la même image
+
+Mesuré au banc, assis dans une voiture à l'arrêt : une image sur quatre durait
+TROIS fois la médiane, **par paires à une demi-seconde d'écart** — la cadence
+de la sonde des reflets, qui rendait ses six faces dans la même image, et
+chaque face soumettait au pilote autant d'appels de dessin que la vue de
+l'enfant (200, 455, 15, 149, 240, 282 pour les six, contre 239). À pied, rien :
+la sonde ne tourne qu'à moins de quarante-cinq blocs d'une voiture montable —
+c'est exactement « la marche, c'est ok ». Trois choses en sortent.
+
+- **UNE FACE PAR IMAGE.** `lancerReflets` note où regarder, `avancerReflets`
+  rend une face par tour d'affichage, les mipmaps se calculent à la sixième.
+  Un reflet complet six images plus tard, ce qu'aucun œil ne voit sur un
+  pare-brise. Le témoin lit `renderer.info.render.frame`, qui avance d'un cran
+  par `render()` : sept par tour sur l'ancien code, deux au plus ici.
+- **LA SONDE NE DESSINE QUE LE DÉCOR** (`couches.js`). À 128 px un passant
+  fait trois pixels sur un capot ; ce qui se voit dans une carrosserie, c'est
+  le ciel, les façades et la rue. Le décor — morceaux, eau, ciel, paysage
+  lointain, Manhattan — porte la couche 4 **là où il entre dans la scène**,
+  les six caméras ne voient qu'elle, la caméra de l'enfant voit tout. Et la
+  carrosserie porte la couche 2 pour la même raison qu'avant (une surface ne
+  peut pas lire la texture qu'on écrit) : c'est ce qui remplace le PARCOURS
+  de la scène entière que faisait l'ancien masquage, cinq mille objets deux
+  fois par seconde.
+- **LES PROGRAMMES SE COMPILENT PENDANT L'ACCUEIL.** Un matériau rendu vers
+  une cible cubique a son PROPRE programme (espace de couleur et
+  correspondance tonale changent) : vingt-six programmes de plus à l'arrivée
+  de la première voiture, mesuré par `renderer.info.programs`, et la seconde
+  d'image figée qui va avec. Une capture est lancée au point d'apparition à
+  la première image, pendant que l'enfant lit l'accueil.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
@@ -2511,6 +2600,35 @@ Le reliquat — deux circuits qui se raccordent à 160° sur Rivoli — est une
 affaire de TRACÉ, déclarée dans `TASKS.md` : céder le passage ne peut rien
 contre deux files dans le même couloir.
 
+**ET L'ENFANT N'ÉTAIT PAS DANS LA LISTE (v245).** Max, le lendemain : « les
+voitures passent les unes sur les autres ». Ce n'était pas Rivoli (six
+relevés en trente secondes) : c'était la circulation qui traversait LA
+VOITURE DE L'ENFANT — à l'arrêt sur la chaussée, un convoi entier lui passait
+au travers, 79 relevés sur 100. Les convois cédaient entre eux ; l'enfant, qui
+n'est pas un convoi, n'existait pas pour eux. Trois choses :
+
+- **Tout ce qui occupe la rue est dans la liste de `cederLePassage`**, pas
+  seulement ce qui y roule tout seul : l'enfant y entre avec le rectangle de
+  sa voiture (cap du regard) ou un carré à sa carrure à pied. Il ne cède à
+  personne, et devant lui seul la rue attend SANS LIMITE — douze secondes de
+  patience faisaient revenir la traversée au bout de douze secondes, mesuré.
+  Une voiture qui finit par passer au travers de la sienne, c'est la panne.
+  Une seule exception : une voiture DÉJÀ dans la sienne (il s'est posé
+  dessus, ou l'a rattrapée) continue pour en sortir — attendre là, c'est y
+  rester pour toujours ; le portail l'a rendu : quatre-vingts relevés « au
+  travers » dès la première image, le témoin s'étant posé sur une file.
+- **Et la réciproque se règle chez le JOUEUR**, dont la boîte de collision ne
+  connaît que les blocs : `player.obstacleVehicule` (branché par main.js sur
+  `vehicules.obstacleDevant`) bloque un pas qui ferait entrer sa voiture dans
+  une voiture de la rue — sauf si l'on est DÉJÀ dedans, sinon une voiture
+  arrivée au travers de la nôtre nous clouerait sur place.
+- **Une sonde de conduite se pose SUR le tracé d'un convoi**, douze blocs
+  devant sa tête, cap du convoi, et elle MESURE À L'ARRÊT après l'arrivée de
+  la première voiture. Posée « quelque part dans Paris », elle ne rencontre
+  pas une voiture en trente secondes ; et roulant droit sur une rue courbe
+  avec une carrure de 2,2 blocs, elle finit dans le trottoir (0,7 bloc roulé,
+  vitesse x à zéro) et juge la géométrie de Rivoli au lieu de la circulation.
+
 ### Ce que coûte une voiture, et pourquoi les villes semblaient vides
 
 **Une voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage**, et
@@ -3299,9 +3417,11 @@ choses à savoir avant d'y toucher.
   caméra s'asseye dans le vrai cockpit, sinon on voyait le dos des sièges.
   L'allègement se fait HORS LIGNE (881 794 → 98 959 triangles, 12,4 →
   1,3 Mo) : jamais de décodeur Draco embarqué dans la PWA.
-- **Les reflets de carrosserie sont une caméra cubique** (`refletsVoiture`/
-  `majRefletsVoiture`, cadencés par main.js : 128 px, deux fois par seconde,
-  seulement à moins de 45 blocs d'une voiture). Ne JAMAIS fabriquer de
+- **Les reflets de carrosserie sont une caméra cubique** (`refletsVoiture`,
+  `lancerReflets`/`avancerReflets`, cadencés par main.js : 128 px, une
+  capture toutes les demi-secondes, seulement à moins de 45 blocs d'une
+  voiture — et depuis la v245 **UNE face par image**, sur la couche du DÉCOR
+  seulement ; voir « La conduite saccadée » plus bas). Ne JAMAIS fabriquer de
   CubeTexture depuis des canvases : l'échantillonnage casse et blanchit
   toute la voiture, teinte et couleurs de sommets comprises — une heure de
   bissection de matériaux pour le voir.
@@ -3310,6 +3430,16 @@ choses à savoir avant d'y toucher.
   au-dessus du toit. Un rétroviseur central est interdit de séjour : dans un
   habitacle aussi bas il flotte au milieu du pare-brise, trois captures
   l'ont montré.
+- **LA MONTURE NE SE RETIRE JAMAIS, ET SI ELLE DISPARAÎT ON DESCEND POUR DE
+  BON (v245).** `animals.js` retire toute bête à plus de soixante-dix blocs de
+  l'enfant, et cette boucle passe AVANT que `fun.js` ne colle la monture au
+  joueur : téléporté au volant par la carte, l'enfant perdait sa voiture et
+  gardait à pied sa carrure (1,1 bloc du mur au lieu de 0,3). La bête montée
+  porte `montee` (posé par fun.js, comme `montable` dans sa fiche) et la
+  boucle la saute ; et le chemin « la monture a disparu » de `updateRide`
+  rend tout ce que descendre rend — marche, vol, gabarit — au lieu de seulement
+  oublier `riding`. C'est un témoin de `monte.js` (un saut de trois cents
+  blocs au volant) qui l'a trouvé, pas une capture.
 - Le bouton « Monter » prend la monture **la plus proche devant soi**, pas celle
   visée au degré près. Viser reste la règle pour *nourrir*, où l'on choisit
   vraiment un animal parmi d'autres.
@@ -3370,11 +3500,17 @@ squelette quand une instance disparaît, notamment dans les portraits.
 Les yeux des nouveaux modèles sont texturés. Le témoin qui cherchait les
 anciennes billes blanches en couleurs de sommets est remplacé par les contrôles
 du visage rendu, des cartes chargées et des proportions ; `realisme.js`
-éprouve les régressions de présence et d’anatomie. Les neuf GLB et tous leurs
-modules doivent rester dans le cache PWA. Provenance, limites et commande de
-conversion : `docs/personnages-v241.md`.
+éprouve les régressions de présence et d’anatomie. Les neuf GLB vivent dans le
+cache IMMUABLE de la PWA depuis la v245 (avec le scanner et la flotte), leurs
+modules dans le cache versionné ; ils se chargent APRÈS l'accueil et les corps
+nés avant se mettent à niveau sur place (voir « Le démarrage et la conduite sur
+un vieil iPad »). Provenance, limites et commande de conversion :
+`docs/personnages-v241.md`.
 
-Les matériaux automobiles qui lisent la sonde cubique doivent être masqués
-pendant sa capture et restaurés ensuite : lire sa propre cible de rendu produit
-`GL_INVALID_OPERATION`. `realisme.js` renouvelle les reflets quatre fois dans
-la vraie scène et vérifie le code WebGL ainsi que la restauration des maillages.
+Les matériaux automobiles qui lisent la sonde cubique ne peuvent pas être dans
+sa capture : lire sa propre cible de rendu produit `GL_INVALID_OPERATION`.
+Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
+(`couches.js`) : la carrosserie vit sur la couche 2, que les six caméras de la
+sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
+vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
+caché.

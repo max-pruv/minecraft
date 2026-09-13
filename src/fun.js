@@ -319,12 +319,14 @@ export function initFun(ctx) {
       // gabarit d'une voiture et l'on resterait coincé entre deux murs.
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
+      quitte.montee = false;
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
     if (!montable(a)) return;
     debarquer();
     riding = a;
+    a.montee = true;   // le gestionnaire d'animaux ne la retire jamais (animals.js)
     // La fiche décide : une voiture ne décolle pas, un cheval non plus une
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
     player.interdireVol(a.def.vole === false);
@@ -1632,8 +1634,16 @@ export function initFun(ctx) {
     }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
-      riding = null; player.boost = undefined; player.pilote = null;
-      player.avionEnVol = false; return;
+      // La monture a disparu sous l'enfant : on descend POUR DE BON, avec tout
+      // ce que descendre rend — la marche, le vol, et la carrure de piéton.
+      // Sans cela il gardait à pied la boîte d'une voiture (v245).
+      const quitte = riding;
+      riding = null; quitte.montee = false;
+      player.boost = juiceTimer > 0 ? 1.45 : undefined; player.pilote = null;
+      player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
+      player.interdireVol(false);
+      if (player.prendreGabarit) player.prendreGabarit(0);
+      return;
     }
     player.boost = riding.def.allure || 2.0;
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`

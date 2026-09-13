@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v244';
+const CACHE_VERSION = 'web-minecraft-v245';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -13,9 +13,15 @@ const STATIC_CACHE = 'web-minecraft-static-v1';
 // La flotte de voitures suit le même canal que les modèles du scanner :
 // 83 Mo re-téléchargés à chaque livraison auraient tué la cadence — chaque
 // voiture se télécharge à sa PREMIÈRE rencontre, une fois par appareil.
+// Et les corps réalistes des personnages (v245) : 8,2 Mo immuables, qui se
+// re-téléchargeaient à CHAQUE livraison — c'est-à-dire tous les jours — parce
+// qu'ils étaient dans la liste des ASSETS. Ils vivent ici, une fois par
+// appareil ; l'installation les y met s'ils manquent, sans bloquer le reste.
 const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
-  || url.includes('/vendor/voitures/');
+  || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/');
+const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
+  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 
 const ASSETS = [
   './',
@@ -30,6 +36,7 @@ const ASSETS = [
   './src/carte.js',
   './src/horizon.js',
   './src/liberer.js',
+  './src/couches.js',
   './src/manhattan.js',
   './src/manhattan-plan.js',
   './src/manhattan-world.js',
@@ -59,9 +66,7 @@ const ASSETS = [
   './src/ville.js',
   './src/circuit.js',
   './src/vehicules.js',
-  './vendor/humains/homme-denim.glb', './vendor/humains/homme-costume.glb', './vendor/humains/femme-tailleur.glb',
   './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
-  './vendor/humains/homme-chemise.glb', './vendor/humains/homme-veste.glb', './vendor/humains/femme-chemise.glb', './vendor/humains/femme-manteau.glb', './vendor/humains/garcon.glb', './vendor/humains/fille.glb',
   './src/taxis.js',
   './src/modeles.js',
   './src/personnages.js',
@@ -110,6 +115,16 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
+  // Les corps réalistes : dans le cache immuable, seulement ceux qui manquent,
+  // et EN ARRIÈRE-PLAN — ni un échec ni leur lenteur ne retiennent la version.
+  // Le chemin de lecture ci-dessous les met de toute façon en cache à la
+  // première demande.
+  caches.open(STATIC_CACHE).then(async (cache) => {
+    for (const u of HUMAINS) {
+      if (await cache.match(u)) continue;
+      await cache.add(u).catch(() => {});
+    }
+  }).catch(() => {});
 });
 
 self.addEventListener('activate', (event) => {

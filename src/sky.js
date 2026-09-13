@@ -4,6 +4,7 @@
 // suivent la caméra, et le brouillard les épargne.
 
 import * as THREE from 'three';
+import { decor } from './couches.js';
 
 const RAYON = 420;        // distance des astres : loin devant, mais bien avant le plan lointain (900)
 const NB_ETOILES = 420;
@@ -115,6 +116,7 @@ export function createSky({ scene, camera, sunLight }) {
     }
   }
 
+  decor(groupe);   // le ciel se reflète dans les carrosseries (couches.js)
   return { update, soleil, lune, etoiles, halo };
 }
 

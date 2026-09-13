@@ -6,7 +6,16 @@ export const DISTANCE_PRESENCE = { pleine: 80, fin: 112, recyclage: 136 };
 
 export function actualiserPresence(npc, distance, dt, autorise = true) {
   const mesh = npc.mesh;
-  if (!npc.presence) {
+  // Un corps mis à niveau sur place (personnages.js, v245) porte des maillages
+  // neufs aux matériaux PARTAGÉS : les copies privées d'avant ne pilotent plus
+  // rien, et fondre les partagés ferait pâlir tout le monde. On recopie, en
+  // gardant la présence acquise — la personne ne réapparaît pas.
+  const version = mesh.userData.miseANiveau || 0;
+  if (npc.presence && npc.presence.version !== version) {
+    npc.presence = { valeur: npc.presence.valeur, materiaux: null, version };
+  }
+  if (!npc.presence || !npc.presence.materiaux) {
+    const acquise = npc.presence ? npc.presence.valeur : null;
     const copies = new Map();
     mesh.traverse((o) => {
       if (!o.isMesh) return;
@@ -34,8 +43,9 @@ export function actualiserPresence(npc, distance, dt, autorise = true) {
     for (const original of copies.keys())
       if (!original.userData.partagee) original.dispose();
     npc.presence = {
-      valeur: npc.apparitionDouce ? 0 : 1,
+      valeur: acquise ?? (npc.apparitionDouce ? 0 : 1),
       materiaux: [...copies.values()],
+      version,
     };
   }
   const p = npc.presence;
