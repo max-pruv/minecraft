@@ -95,8 +95,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   la suite une fois sur deux — en v245, sur six portails, la fin réseau de
   la suite a lâché trois fois (« partagent blocs, avatars et code » rouge sans
   détail, le bloc de l'hôte jamais reçu par l'invité, « Lost connection to
-  server » du courtier local), verte les autres fois sur le MÊME code. Le
-  journal de la v240 annonce ce portail vert :
+  server » du courtier local), verte les autres fois sur le MÊME code ; au
+  portail de la v246, `page.waitForFunction` a expiré après « la reprise
+  cloud place l'enfant près du chantier déplacé », les quatre rouges
+  ci-dessus identiques. Le journal de la v240 annonce ce portail vert :
   il a été mesuré avec `CHROMIUM_ANGLE=metal`, pas en logiciel. À démonter
   sur une machine qui rend en matériel avant d'accuser le jeu — et à
   remesurer ici témoin par témoin (la géométrie qui monte dit que le témoin
