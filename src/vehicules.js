@@ -498,10 +498,26 @@ function normaliserVoiture(scene) {
       : liste.filter((m) => m.etendue < 1.3).reduce((a, b) => (!a || b.etendue > a.etendue ? b : a), null);
     if (!ref) continue;
     const pieces = liste.filter((m) => m.etendue <= ref.etendue * 1.5 && m.c.distanceTo(ref.c) <= ref.etendue * 0.6);
+    // L'ESSIEU EST LE x DU PARENT DU PIVOT. `rotation.x += angle` (animals.js,
+    // vehicules.js) est un Euler XYZ : la rotation en x s'applique EN DERNIER,
+    // donc autour du x du parent, quelle que soit l'orientation propre du
+    // nœud — les pivots du manifeste portent d'ailleurs une rotation de −90°
+    // et tournent très bien. Or ce pivot-ci naissait directement sous le
+    // modèle, AVANT le quart de tour du pas 5 : sur un modèle dont la longueur
+    // est x, le x du parent était l'axe avant-arrière, et la roue basculait
+    // comme une pièce qu'on fait tourner sur la tranche — hors de son passage
+    // de roue (Max, capture de la Lucid Gravity : « wheels »). Le pivot naît
+    // donc dans un groupe-essieu dont le x est la voie, orienté pour qu'un
+    // angle positif avance le haut du pneu vers le nez, comme le manifeste.
+    const essieu = new THREE.Group();
+    essieu.name = 'Essieu_' + cle;
+    essieu.position.copy(ref.c);
+    essieu.rotation.y = axeLong === 'z' ? (versAvant > 0 ? 0 : Math.PI)
+      : (versAvant > 0 ? Math.PI / 2 : -Math.PI / 2);
     const pivot = new THREE.Group();
     pivot.name = 'Wheel_' + cle;
-    pivot.position.copy(ref.c);
-    scene.add(pivot);
+    essieu.add(pivot);
+    scene.add(essieu);
     scene.updateMatrixWorld(true);
     for (const m of pieces) pivot.attach(m.o);
   }

@@ -546,6 +546,32 @@ Lucid Gravity était déformée par le même défaut. Deux choses :
   n'est pas un modèle laid, c'est un modèle cassé. Avant de resculpter ce
   qu'un enfant trouve moche, on mesure si c'est ce que l'auteur a livré.
 
+**ET UNE ROUE TOURNE AUTOUR DU x DE SON PARENT, PAS DU SIEN (v250).** Max,
+capture d'iPhone : « Gravity design ko, wheels » — les roues de la Lucid
+sortaient de leurs arches, de biais. `rotation.x += angle` est un Euler
+XYZ : la rotation en x s'applique en dernier, donc autour du x du PARENT,
+quelle que soit l'orientation propre du nœud (les pivots du manifeste
+portent une rotation de −90° et tournent très bien). Les pivots fabriqués
+par `normaliserVoiture` naissaient sous le modèle AVANT son quart de tour :
+sur un modèle dont la longueur est x, le x du parent était l'axe
+avant-arrière. Le pivot naît donc dans un groupe-essieu (`Essieu_*`) dont
+le x est la voie. Trois choses de plus :
+
+- **Mon premier remède tournait le PIVOT lui-même** (`pivot.rotation.y`) :
+  juste sur le papier, sans effet, parce que l'orientation propre du nœud
+  ne change pas l'axe de son Euler x. Un signe se regarde, et un AXE aussi.
+- **Le témoin mesure ce que fait l'animation**, pas ce que le nœud déclare :
+  le x du parent dans le repère de la voiture, et le déplacement RÉEL d'un
+  point posé au sommet du pneu après un tiers de tour — vers le nez, pas de
+  côté. Mon premier témoin lisait le x local du nœud : il accusait les
+  cinquante modèles du manifeste et blanchissait la Lucid.
+- **UNE SONDE DE RENDU VOIT TOUTES LES COUCHES.** La carrosserie laquée vit
+  sur la couche 2 depuis la v245 (`couches.js`) ; une caméra neuve ne voit
+  que la couche 0, et mes premières vignettes montraient des voitures
+  éclatées — sièges à travers le toit, lame avant « détachée » —, sur les
+  deux arbres, Rimac comprise. J'ai failli accuser le modèle. Toute caméra
+  de sonde fait `layers.enableAll()`.
+
 ### Chaque ville a ses voitures, et chaque voiture sa laque
 
 La graine d'un convoi valait « nombre de points du tracé + rang » : les

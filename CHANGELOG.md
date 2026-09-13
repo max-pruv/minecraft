@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v250 — Les roues de la Lucid tournent autour de leur essieu, et toute la flotte est passée en revue
+
+**Pourquoi.** Max, capture d'iPhone : « Gravity design ko, wheels ». Les
+roues de la Lucid Gravity sortaient de leurs passages de roue, de biais,
+comme des assiettes qu'on fait tourner sur la tranche. La cause n'était pas
+dans le modèle : `rotation.x += angle`, qui fait tourner toute roue du jeu,
+est un Euler XYZ dont la rotation en x s'applique EN DERNIER, donc autour du
+x du PARENT du pivot. Les pivots que le jeu fabrique pour un modèle hors
+manifeste naissaient directement sous le modèle, avant qu'il ne soit tourné
+d'un quart de tour ; sur un modèle dont la longueur est x — la Lucid, la
+Chiron Stealth — ce x était l'axe avant-arrière. Les cinquante modèles du
+manifeste, dont les pivots sont ceux de l'auteur, n'ont jamais eu ce défaut.
+
+**Ce que ça change.** Chaque pivot fabriqué naît dans un groupe-essieu dont
+le x est la voie, orienté pour qu'un angle positif avance le haut du pneu
+vers le nez comme sur le manifeste : la Lucid Gravity et la Chiron Stealth
+roulent roues dans leurs arches. Et, comme Max l'a demandé (« sois proactif
+sur ce genre de bug »), la flotte entière a été passée en revue : une sonde
+rend les cinquante-deux modèles de trois quarts et de côté, roues tournées
+d'un tiers de tour, et mesure pour chacune des deux cent huit roues l'axe
+autour duquel elle tourne et où part le haut du pneu.
+
+**Ce qui le prouve.** Un témoin de plus dans `monte.js` : il charge les
+cinquante-deux modèles et exige, pour chaque roue, que l'axe de
+`rotation.x` soit la voie et qu'un tiers de tour avance le haut du pneu vers
+le nez sans le déplacer de côté. Le même bloc de mesure, rejoué sur
+`origin/main` et sur la branche : huit roues fausses sur deux cent huit
+(les deux modèles hors manifeste, axe (0, 0, 1) et pneu qui part de côté)
+contre zéro. Planche-contact des cinquante-deux modèles, avant et après,
+regardée à la main.
+
 ## v249 — Paris n'est plus dans le noir, et l'on voit le personnage conduire
 
 **Pourquoi.** Deux signalements de Max, capture d'iPad à l'appui. « Paris est
