@@ -24,6 +24,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« On entre chez les gens : chaque îlot a sa porte » (washington.js)
+  est tombé UNE fois au portail de la v250** — « façade 0,1, plafond à −1,
+  1 mur, à (−21197, 6100) pour une maison en (−21197, 6095) » : sur les
+  quatre façades, la marche s'est arrêtée à un bloc du point de départ, trois
+  pas immobiles de suite — et pas sur la façade nord, celle qui a la porte et
+  par laquelle il entre partout ailleurs. VERT rejoué seul sur la branche dans
+  la foulée, même code ; vert dans dix-neuf portails auparavant (v248, v249d
+  compris). La livraison v250 ne touche que les pivots de roue des deux
+  modèles hors manifeste. Cause ouverte : ce que le témoin ne dit pas, c'est
+  ce qui l'a arrêté (une voiture d'Independence à l'arrêt devant lui ? un
+  hoquet de banc à trois pas ?). Piste : faire dire au message la cadence et
+  ce qui occupe le bloc devant le joueur à chaque pas immobile.
+
 - [ ] **« La circulation s'arrête devant la voiture de l'enfant » est un
   témoin qui dépend de l'état du banc.** Rouge à deux portails de la v247
   (« première voiture après 0 s, 206 relevés à moins de douze blocs, zéro
