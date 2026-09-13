@@ -24,6 +24,49 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
+  minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
+  banc — instrument de charge instantané, repos en condition, suites
+  courtes d'abord. Le poste qui reste est dans le JEU : `reseau.js` (19 min)
+  et `reglages.js` (7 min) attendent des minuteries de production — 167 s de
+  `dormir` de seuil et 3 486 s de bornes `jusqua` adossées à `STALE_MS`
+  20 000 (net.js:59), `HEARTBEAT_MS` 5 000 (:58), `SOMMEIL_MAX_MS` 300 000
+  (:62), `GRACE_REVEIL_MS` 15 000 (:64), `RELANCE_MS` 3 000 (:68),
+  `PRESENTATION_MS` 20 000 (:69), `OUVERTURE_MS` 9 000 (:75), le renoncement
+  du relais nuage 12 000 (net.js:626), la sonde nuage 4 000 (:494), le phare
+  15 000 (:456), `onCodePris` 1 500 (:1482), `_veilleVideo` 2 000 (:1843), la
+  republication 15 000 (main.js:4106), **`pullPlayTime` 60 000** (:4108),
+  `prefsPush` 20 000 (:2199), `refreshEduMenuBtn` 10 000 (:2622),
+  `savePosition` 3 000 (:1032), le retour au sol 4 000 (:1021), le garagiste
+  et l'aéroportiste `cadence(3000)` (:1508/:1541), `REPIT_MS` 8 000 et
+  `REESSAI_MS` 5 000 (identity.js:201-202). Forme : `src/tempo.js`, qui lit
+  `tempo` dans l'adresse, REFUSE toute valeur ≠ 1 hors `127.0.0.1`/
+  `localhost`, et expose `t(ms) = ms / TEMPO` ; le banc passe `&tempo=4`.
+  **Ne passent JAMAIS sous tempo** : l'horloge scolaire (`SESSION_MIN_USINE`,
+  `DAILY_LIMIT_SECONDS`, `MIN_ANSWER_DELAY`, `FAST_WRONG_DELAY`,
+  `FREEZE_SECONDS` — `reglages.js` affirme « dix minutes » mot pour mot),
+  `chronoReel` et tout `cadence.js` (c'est un défaut de comptage du temps qui
+  a motivé le module), la borne de `dt` (physique), `passants.js:143
+  cadence(2000)` et `vehicules.js:1596 patience = 4` tant que `monte.js`
+  affirme des débits en temps réel, et `CALMES_DAFFILEE` (un compte, pas un
+  délai). Garde-fou obligatoire : un témoin sous node par constante,
+  `STALE_MS === 20000`, `REPIT_MS === 8000`…, sinon un tempo mal câblé
+  publie un jeu qui coupe les liens en cinq secondes. Gain estimé sur les
+  comptes : huit à douze minutes ; à mesurer, jamais à annoncer avant.
+  Et l'on garde un `npm run long -- --tempo=1` pour la nuit : une course
+  révélée à tempo 4 peut ne pas exister dans le vrai jeu.
+
+- [ ] **Accélérer le portail, étape 3 : deux machines.** Partition écrite en
+  dur à côté de `SUITES` (part A ≈ reseau + carte + hote + visio + metro +
+  parent, part B ≈ monte + manhattan + washington + plafond + sauvegarde +
+  carteMonde + realisme ; reglages en A, maj en B), `--part=A|B`,
+  `--fusionner a.json b.json` (union des acquis, chaque empreinte revalidée
+  à la lecture), et un contrôle de couverture OBLIGATOIRE : le verdict
+  fusionné n'est vert que si A ∪ B === SUITES, aucune suite deux fois avec
+  des verdicts contraires, même commit et même état sale des deux côtés.
+  Plancher : la plus longue suite seule (`reseau.js`, 19 min). Une seule
+  machine dans cette session : à faire le jour où une seconde existe.
+
 - [ ] **Trois rouges du portail complet de la v251, verts rejoués seuls,
   cause ouverte.** (1) `reseau.js`, « à trois, chacun voit les deux autres »
   (hôte ["Alice"], Alice ["Marlon"], Nina les deux, en 79 s) — trois pages
