@@ -18,8 +18,32 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { attendreLaCharge } = require('./charge.js');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js', 'manhattan.js', 'realisme.js'];
+// LES COURTES D'ABORD (v255). L'ordre ne change rien au total — chaque suite
+// monte son propre banc, ses propres ports, et aucune ne dépend d'une autre —
+// mais il change TOUT au temps qu'on attend un premier rouge : `reseau.js` en
+// tête, un rouge de `metro.js` se découvrait à la cinquante-neuvième minute.
+// Rangées par durée mesurée sur le portail complet de la v251 (de 14 s à
+// 19 min 46 s), le rouge d'une petite suite arrive dans les cinq minutes qui
+// suivent la fumée. On remesure l'ordre quand une suite change de poids.
+const SUITES = [
+  'metro.js',        //  0 min 14 s
+  'parent.js',       //  0 min 30 s
+  'carteMonde.js',   //  0 min 34 s
+  'sauvegarde.js',   //  0 min 34 s
+  'plafond.js',      //  0 min 51 s
+  'visio.js',        //  1 min 03 s
+  'maj.js',          //  1 min 34 s
+  'realisme.js',     //  1 min 37 s
+  'carte.js',        //  1 min 56 s
+  'hote.js',         //  2 min 20 s
+  'washington.js',   //  2 min 41 s
+  'reglages.js',     //  7 min 02 s
+  'manhattan.js',    //  8 min 35 s
+  'monte.js',        // 15 min 21 s
+  'reseau.js',       // 19 min 46 s
+];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -190,7 +214,7 @@ const GARDIENS = {
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
-const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js'];
+const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js', 'tests/charge.js'];
 
 // SAUF QUAND CE QUI BOUGE EST UN DÉLAI OU UN COMMENTAIRE.
 //
@@ -346,8 +370,8 @@ function suitesNecessaires() {
     pourquoi: raisons.length ? raisons.join(', ') : `${changes.length} fichier(s) de contenu`,
   };
 }
-const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
-const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
+const REPOS_MS = 20000;        // BORNE du repos entre deux suites — voir `reposer`
+const CHARGE_MAX = 2.0;        // cœurs occupés au-delà desquels on attend encore
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -396,11 +420,23 @@ function gardiensDe(suite) {
   return [...fichiers].sort();
 }
 
+// LE BANC ENTRE DANS L'EMPREINTE PAR SA FORME, PAS PAR SES NOMBRES (v255).
+//
+// `bancAnodin` juge depuis la v195 qu'un banc dont seuls des nombres ont bougé
+// — des délais, des bornes — ne change rien à ce qu'il éprouve, et l'aiguillage
+// ne rejoue rien pour cela. L'empreinte de reprise, elle, prenait `banc.js`
+// BRUT : régler une borne annulait les quinze acquis, trois quarts d'heure
+// pour un chiffre. La même règle vaut aux deux endroits : les fichiers du banc
+// s'empreignent chiffres effacés — la forme de chaque ligne, comme
+// `bancAnodin` la lit. Le code du jeu, lui, entre brut : un nombre y est une
+// règle.
 function empreinteDe(fichiers) {
   const h = crypto.createHash('sha1');
   for (const f of fichiers) {
-    try { h.update(f).update(fs.readFileSync(path.join(RACINE, f))); }
-    catch { h.update(f).update('absent'); }
+    try {
+      const brut = fs.readFileSync(path.join(RACINE, f));
+      h.update(f).update(BANC.includes(f) ? brut.toString('utf8').replace(/\d+/g, '#') : brut);
+    } catch { h.update(f).update('absent'); }
   }
   return h.digest('hex');
 }
@@ -447,9 +483,22 @@ const charge = () => {
 // besoin d'un instant pour mourir — et l'on cesse d'attendre un nombre qui
 // retarde. Trente secondes au lieu de cent quatre-vingts : c'est neuf minutes
 // rendues sur un portail de quatorze suites.
+//
+// v255 : LA PAUSE COURTE ÉTAIT ENCORE UN DÉLAI FIXE. `REPOS_MS` dormait vingt
+// secondes entre chaque paire de suites, quoi qu'il arrive — cinq minutes par
+// portail —, et `attendreLeCalme` lisait le même nombre qui retarde. Les deux
+// lisent désormais l'occupation RÉELLE des cœurs (`charge.js`) : quand la
+// suite d'avant a rendu la main, ses navigateurs sont morts et la machine est
+// à 0,2 en moins d'une seconde. Le repos attend que la machine soit presque
+// vide (un cœur), l'attente de calme qu'elle soit sous CHARGE_MAX ; chacun
+// garde son ancienne durée comme BORNE et dit ce qu'il a vu.
 async function attendreLeCalme(limiteMs = 30000) {
-  const fin = Date.now() + limiteMs;
-  while (charge() > CHARGE_MAX && Date.now() < fin) await dormir(5000);
+  const r = await attendreLaCharge(limiteMs, CHARGE_MAX);
+  if (r.ms >= 2000) console.log(`   🧘 calme : ${(r.ms / 1000).toFixed(1)} s · ${r.motif} · ${r.occupation.toFixed(2)} cœur(s)`);
+}
+async function reposer() {
+  const r = await attendreLaCharge(REPOS_MS, 1.0);
+  if (r.motif !== 'libre') console.log(`   🧘 repos : ${(r.ms / 1000).toFixed(1)} s · ${r.motif} · ${r.occupation.toFixed(2)} cœur(s) encore occupé(s)`);
 }
 
 function lancer(fichier) {
@@ -500,7 +549,7 @@ function lancer(fichier) {
       console.log('\n✅ voie rapide verte — on peut publier');
       process.exit(0);
     }
-    await dormir(REPOS_MS);
+    await reposer();
   }
 
   const empreinte = null;      // l'empreinte est désormais tenue par suite
@@ -546,7 +595,7 @@ function lancer(fichier) {
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.
     verts[suite] = vert;
     acquisEcrits(empreinte, verts);
-    if (suite !== aJouer[aJouer.length - 1]) await dormir(REPOS_MS);
+    if (suite !== aJouer[aJouer.length - 1]) await reposer();
   }
   console.log('\n════════ verdict ════════');
   for (const [suite, vert] of verdicts) console.log(`${vert ? '✅' : '❌'} ${suite}`);
