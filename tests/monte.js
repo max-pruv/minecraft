@@ -1084,6 +1084,12 @@ async function avancerUnDemiSeconde(p, depart) {
       const z = await tab.evaluate(() => window.__game.player.pos.z);
       return Math.round((scene.murZ - z) * 100) / 100;
     };
+    // UN ROUGE QUI NE DIT PAS DANS QUEL ÉTAT IL A MESURÉ NE SE DÉMONTE PAS :
+    // « à pied 1,1 bloc du mur » au portail de la v249, c'est-à-dire à pied
+    // avec la carrure d'une voiture — l'état laissé par le témoin d'avant.
+    const etatAPied = await tab.evaluate(() => ({ gabarit: window.__game.player.gabarit,
+      auVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️'),
+      monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()) }));
     const ecartAPied = await contreLeMur(false);
     await poserDevant(tab, 'voiture');
     await dormir(600);
@@ -1096,7 +1102,7 @@ async function avancerUnDemiSeconde(p, depart) {
     const ecartApres = await contreLeMur(false);
     verifier('au volant, on s\'arrête plus loin du mur qu\'à pied — la voiture a sa carrure',
       auVolant && ecartAPied > 0 && ecartAuVolant >= ecartAPied + 0.5,
-      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant}`);
+      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant} · état à pied ${JSON.stringify(etatAPied)}`);
     // Ce second témoin est un GARDE-FOU, pas une preuve : il est vert des deux
     // côtés, et c'est voulu — il garde la régression que le premier rend
     // possible, un enfant qui garderait à pied la carrure d'une voiture et
