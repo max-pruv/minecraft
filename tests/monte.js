@@ -2191,6 +2191,123 @@ async function avancerUnDemiSeconde(p, depart) {
       !fil.absent && fil.compares >= 6 && fil.differents === 0,
       fil.absent ? 'pas de worker' : `${fil.compares} comparés · ${fil.differents} différent(s)`);
 
+    // ---- LA VOITURE DE L'ENFANT NE TRAVERSE PAS LE MOBILIER (v252) ----------
+    //
+    // Max : « les voitures peuvent aussi passer à travers des fois le
+    // mobilier urbain comme les tables de Times Square ». Mesuré : les
+    // soixante-dix-neuf tracés de taxis restent à neuf blocs des tables —
+    // c'est la voiture de l'ENFANT, dont la boîte de collision ne connaît
+    // que les blocs solides, et un réverbère, une table sont des props non
+    // solides. On prend le volant sur une rue de Paris, on pose un réverbère
+    // six blocs devant, on accélère trois secondes : la voiture s'arrête
+    // avant le poteau. Puis la même chose sur Broadway piéton, face à une
+    // table de Times Square. Sur l'ancien code on passe au travers.
+    await souffler();
+    const mobPage = await banc.jouerSeul('MonteMobilier', { rr: 4 });
+    // le scénario part en TEXTE : Playwright ne sérialise pas une fonction
+    const conduireVers = async (page, poser) => page.evaluate(async (source) => {
+      const poser = new Function('return (' + source + ')')();
+      const g = window.__game, w = g.world;
+      const { RUE } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const cible = await poser(g, w, RUE);
+      // la voiture, montée par le bouton
+      for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); }
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+      await dodo(1500);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const depart = { x: g.player.pos.x, z: g.player.pos.z };
+      const d0 = Math.hypot(cible.x - depart.x, cible.z - depart.z);
+      g.player.keys.add('KeyW');                       // la touche, comme le clavier la pose
+      // ON ROULE JUSQU'À L'ARRÊT, PAS TROIS SECONDES : à dt borné le banc
+      // n'atteint pas un poteau à neuf blocs en trois secondes, et le témoin
+      // était vert des deux côtés en ne mesurant rien.
+      let plusPres = d0, immobile = 0, dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      for (let i = 0; i < 400 && immobile < 10; i++) {
+        await dodo(100);
+        plusPres = Math.min(plusPres, Math.hypot(cible.x - g.player.pos.x, cible.z - g.player.pos.z));
+        const bouge = Math.hypot(g.player.pos.x - dernier.x, g.player.pos.z - dernier.z) > 0.02;
+        immobile = bouge ? 0 : immobile + 1; dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      }
+      g.player.keys.delete('KeyW');
+      const parcouru = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
+      return { auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), gabarit: g.player.gabarit, d0: +d0.toFixed(2), plusPres: +plusPres.toFixed(2), parcouru: +parcouru.toFixed(2), cible };
+    }, poser.toString());
+    // 1. un réverbère sur une rue de Paris
+    const poteau = await conduireVers(mobPage, async (g, w, RUE) => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { CHAUSSEE } = await import('./src/world.js');
+      const P = positionDe('paris');
+      window.__carte.surTeleport(P.x + 40, P.z + 60);
+      await new Promise((f) => setTimeout(f, 9000));
+      const px = Math.round(g.player.pos.x), pz = Math.round(g.player.pos.z);
+      const sol = (x, z) => w.sommetColonne(x, z);
+      const route = (x, z) => CHAUSSEE.has(w.getBlock(x, sol(x, z), z));
+      for (let r = 0; r < 40; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = px + dx, z = pz + dz;
+        if (!route(x, z)) continue;
+        for (const [ax, az, yaw] of [[1, 0, -Math.PI / 2], [0, 1, Math.PI], [-1, 0, Math.PI / 2], [0, -1, 0]]) {
+          let ok = true;
+          for (let k = -4; k <= 14 && ok; k++) if (!route(x + ax * k, z + az * k) || Math.abs(sol(x + ax * k, z + az * k) - sol(x, z)) > 1) ok = false;
+          if (!ok) continue;
+          // pas de voiture de la rue à portée : elle serait « déjà dedans »
+          // ou en travers, et l'on mesurerait la circulation
+          if (g.vehicules.placeProche({ x: x + 0.5, y: sol(x, z) + 1, z: z + 0.5 }, 12)) continue;
+          g.player.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); g.player.vel.set(0, 0, 0);
+          g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
+          const cx = x + ax * 6, cz = z + az * 6;
+          w.setBlock(cx, sol(cx, cz) + 1, cz, RUE.REVERBERE);
+          return { x: cx + 0.5, z: cz + 0.5 };
+        }
+      }
+      return null;
+    });
+    verifier('au volant, la voiture de l\'enfant s\'arrête devant un réverbère',
+      poteau && poteau.cible && poteau.auVolant && poteau.parcouru > 2 && poteau.plusPres >= 1.0 && poteau.plusPres < 4,
+      JSON.stringify(poteau));
+    // 2. une table de Times Square. La place ne se CONDUIT pas sur ce banc —
+    // Manhattan en rendu logiciel tombe à une image par seconde, et à dt
+    // borné la voiture n'avance pas (0,3 bloc en deux secondes, à pied) — la
+    // conduite est prouvée à Paris ci-dessus. Ici l'on vérifie ce qui la
+    // rend possible : une fois le lot de Broadway bâti, la table est notée
+    // dans le registre du renderer, et le crochet du joueur (le même que
+    // pour le réverbère) refuse le pas qui l'atteindrait, pas celui qui en
+    // reste à six blocs. Sur l'ancien code, ni registre ni refus.
+    const table = await mobPage.evaluate(async () => {
+      const g = window.__game;
+      const { ORIGINE_MANHATTAN } = await import('./src/manhattan-world.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const tx = ORIGINE_MANHATTAN.x - 91 + 0.5, tz = ORIGINE_MANHATTAN.z - 60 + 0.5;   // la table du plan (−91, −60)
+      window.__carte.surTeleport(tx + 11, tz);
+      const vr = g.villeRealiste;
+      let notee = false, attente = 0, construitIci = false;
+      for (; attente < 20 && !notee; attente++) { await dodo(1000); notee = !!(vr.obstacleA && vr.obstacleA(tx, tz)); }
+      // À une image par seconde, le secteur de sol qui porte la table peut
+      // ne jamais arriver en tête de file : on le bâtit alors comme le
+      // renderer le ferait (`groundSector`, secteurs de 64 blocs du plan),
+      // ce qui note ses tables — et l'on jette le maillage rendu.
+      if (!notee && vr.groundSector) {
+        const grp = vr.groundSector(Math.floor(-91 / 64), Math.floor(-60 / 64));
+        grp.traverse((o) => { if (o.geometry && !o.geometry.userData?.partagee) o.geometry.dispose(); });
+        construitIci = true;
+        notee = !!(vr.obstacleA && vr.obstacleA(tx, tz));
+      }
+      g.player.gabarit = 2.2;                       // la carrure d'une voiture, comme au volant
+      const cap = Math.PI / 2 + Math.PI;            // cap vers −x, la table devant
+      const hook = g.player.obstacleVehicule;
+      const contre = hook ? hook(tx + 1.6, tz, cap, tx + 6, tz) : null;
+      const libre = hook ? hook(tx + 6, tz, cap, tx + 7, tz) : null;
+      return { notee, attente, construitIci, contre, libre, registre: vr.obstacles ? vr.obstacles.size : 'absent' };
+    });
+    verifier('et une table de Times Square est un obstacle pour sa voiture',
+      table.notee && table.contre === true && table.libre === false,
+      JSON.stringify(table));
+    await mobPage.close();
+
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
     // Max : « add planes, airbus, concord and military jets and allow us to

@@ -191,6 +191,13 @@ export class ManhattanRenderer {
       castShadow: sunLight.castShadow,
       shadowSize: sunLight.shadow.mapSize.x,
     };
+    // LE MOBILIER QUE LA VOITURE DE L'ENFANT NE TRAVERSE PAS (v252). Les
+    // tables de Times Square, les bancs, les réverbères et les arbres sont
+    // des maillages sans bloc : la boîte de collision du joueur ne les voit
+    // pas, et Max a vu sa voiture passer à travers les tables. Chaque pièce
+    // de mobilier posée note les cases au sol qu'elle occupe (coordonnées du
+    // plan) ; `obstacleA(wx, wz)` répond pour un point du monde.
+    this.obstacles = new Set();
     world = world.urbanView;
     player = { pos: new THREE.Vector3(), yaw: 0 };
     Object.assign(this, {
@@ -1072,6 +1079,7 @@ export class ManhattanRenderer {
         if (surface(x, z) !== "sidewalk" || batimentA(x, z)) continue;
         this.tree(lot, x, z, 7);
         this.bench(lot, x + 2, z + 4);
+        this.noterObstacle(x, z + 5, 0.31);
         lot.put("metal", x, NIVEAU + 0.6, z + 5, 0.62, 1.2, 0.62, "cylinder");
         lot.put("metal", x, NIVEAU + 0.05, z, 3, 0.07, 3);
       }
@@ -1087,6 +1095,8 @@ export class ManhattanRenderer {
           batimentA(x, z)
         )
           continue;
+        this.noterObstacle(x, z, 0.45, 1.0);          // la table et ses deux chaises
+        this.noterObstacle(x + 2, z, 0.15);            // la borne
         lot.put("metal", x, NIVEAU + 0.38, z, 0.09, 0.76, 0.09, "cylinder");
         lot.put("white", x, NIVEAU + 0.78, z, 0.9, 0.06, 0.9, "cylinder");
         for (const dz of [-0.8, 0.8]) {
@@ -1100,6 +1110,7 @@ export class ManhattanRenderer {
     return lot.finish();
   }
   lamp(lot, x, z, side) {
+    this.noterObstacle(x, z, 0.2);
     lot.put("metal", x, NIVEAU + 3.5, z, 0.14, 7, 0.14, "cylinder");
     lot.put("metal", x - side * 1.2, NIVEAU + 6.9, z, 2.5, 0.14, 0.14);
     lot.put("metal", x - side * 2.3, NIVEAU + 6.8, z, 0.95, 0.18, 0.42);
@@ -1107,6 +1118,7 @@ export class ManhattanRenderer {
     lot.put("metal", x, NIVEAU + 0.18, z, 0.35, 0.36, 0.35, "cylinder");
   }
   tree(lot, x, z, h) {
+    this.noterObstacle(x, z, 0.25);
     lot.put("wood", x, NIVEAU + h * 0.36, z, 0.32, h * 0.72, 0.32, "cylinder");
     for (let k = 0; k < 9; k++) {
       const a = k * 2.4,
@@ -1125,7 +1137,19 @@ export class ManhattanRenderer {
       );
     }
   }
+  noterObstacle(x, z, rx, rz = rx) {
+    for (let a = Math.floor(x - rx); a <= Math.floor(x + rx); a++)
+      for (let c = Math.floor(z - rz); c <= Math.floor(z + rz); c++)
+        this.obstacles.add(`${a},${c}`);
+  }
+  obstacleA(wx, wz) {
+    if (!this.obstacles.size) return false;
+    return this.obstacles.has(
+      `${Math.floor(wx - ORIGINE_MANHATTAN.x)},${Math.floor(wz - ORIGINE_MANHATTAN.z)}`,
+    );
+  }
   bench(lot, x, z) {
+    this.noterObstacle(x, z, 1.05, 0.35);
     lot.put("wood", x, NIVEAU + 0.52, z, 2.1, 0.12, 0.6);
     lot.put("wood", x, NIVEAU + 0.94, z + 0.25, 2.1, 0.75, 0.1);
     for (const dx of [-0.8, 0.8])

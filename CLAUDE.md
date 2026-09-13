@@ -711,6 +711,43 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Le mobilier des rues, et une exception qui se juge par famille (v252)
+
+Max : « les voitures peuvent aussi passer à travers des fois le mobilier
+urbain comme les tables de Times Square ». Mesuré AVANT d'accuser la
+circulation : les soixante-dix-neuf tracés de taxis restent à neuf blocs des
+tables. C'est la voiture de l'enfant — sa boîte ne connaît que les blocs
+solides, et le mobilier est non solide (props) ou sans bloc (Manhattan).
+Trois règles.
+
+- **LE MOBILIER EST UN OBSTACLE POUR CE QUI ROULE, PAS POUR CE QUI MARCHE.**
+  `mobilierDevant` (main.js) échantillonne les cases au sol du rectangle de
+  la voiture : un bloc `isProp` dans le monde, ou une case notée par le
+  renderer de Manhattan (`noterObstacle` dans `bench`, `lamp`, `tree`, les
+  tables et les bornes de Broadway ; `obstacleA(wx, wz)` pour un point du
+  monde). La marche ne change pas : un enfant passe entre les chaises.
+- **« PAS SI L'ON EST DÉJÀ DEDANS » SE JUGE PAR FAMILLE.** Mon premier jet
+  ajoutait le mobilier au crochet existant (`circulation || mobilier`) et
+  laissait `player.js` appliquer l'exception sur le tout. Sonde : au point
+  de départ du témoin, une voiture du convoi 89 était à 0,67 bloc — donc
+  « déjà dedans » — et la nôtre traversait un réverbère six blocs plus loin.
+  Le crochet reçoit désormais la position actuelle et rend
+  `(circulation devant ET pas ici) OU (mobilier devant ET pas ici)`. Toute
+  famille d'obstacle qu'on ajoutera se juge de la même façon, chez elle.
+- **UN TÉMOIN DE CONDUITE PART D'UN POINT SANS VOITURE DE RUE À PORTÉE**
+  (`placeProche` à douze blocs), sinon il mesure la circulation ; et il roule
+  JUSQU'À L'ARRÊT, pas trois secondes : à dt borné, trois secondes de banc
+  ne mènent pas à un poteau à neuf blocs, et le témoin était vert des deux
+  côtés en ne mesurant rien.
+
+**Et Manhattan ne se conduit pas sur ce banc.** Une image par seconde en
+rendu logiciel : à pied, 0,3 bloc en deux secondes ; le secteur de sol qui
+porte la table n'arrive jamais en tête de file. Le témoin bâtit alors ce
+secteur comme le renderer le ferait (`groundSector`) et vérifie le registre
+et le crochet — la conduite elle-même est prouvée à Paris. Une preuve qui
+attend une cadence que le banc n'a pas n'est pas une preuve, c'est une
+attente.
+
 ## Le maillage hors du fil principal (v251)
 
 Max, iPad : « en avion le lag est fort ; en voiture, lag, et la définition

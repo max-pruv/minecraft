@@ -114,15 +114,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   pages en réseau : l'une conduit, l'autre voit une voiture avec un avatar
   dedans ; la seconde monte en passager et suit.
 
-- [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
-  « les voitures peuvent aussi passer à travers des fois le mobilier urbain
-  comme les tables de Times Square ». À mesurer : les trajets des taxis de
-  Manhattan contre la zone piétonne de Broadway (`plaza`, où les tables sont
-  posées), et la voiture de l'enfant, dont la boîte de collision ne connaît
-  que les blocs solides — un réverbère, un banc, une table sont des props
-  non solides, et à Manhattan le mobilier est un maillage sans collision.
-  Piste : du mobilier solide pour ce qui roule (le joueur au volant, les
-  convois par `cederLePassage`), et des trajets qui évitent la plaza.
+- [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,
+  après la v249. Mesuré : les taxis de Manhattan restent à neuf blocs des
+  tables ; c'était la voiture de l'enfant. `mobilierDevant` (props du monde
+  + registre du renderer de Manhattan), exception « déjà dedans » par
+  famille. Deux témoins dans `monte.js`, rouges sur l'ancien code.
 
 - [x] **v251 — Le maillage hors du fil principal.** Fait : un worker
   engendre et maille, le fil principal installe (324 → 0 ms

@@ -751,7 +751,35 @@ function updateChunks() {
   // eux-mêmes, si bien qu'un train ne peut pas rouler à côté de sa voie.
   vehicules = createVehicules({ scene, player });
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
-  player.obstacleVehicule = (x, z, cap) => vehicules.obstacleDevant(x, z, cap);
+  // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
+  // une table de Times Square sont des props NON SOLIDES pour la marche —
+  // c'est voulu, un enfant passe entre — mais une voiture ne les traverse
+  // pas. On lit les cases au sol que couvre le rectangle de la voiture : un
+  // bloc de mobilier dans le monde, ou une pièce notée par le renderer de
+  // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
+  // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
+  // banc ne repartirait plus.
+  const mobilierDevant = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const y0 = Math.floor(player.pos.y + 0.1);
+    for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
+      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
+        const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
+        if (villeRealiste.obstacleA(sx, sz)) return true;
+        const bx = Math.floor(sx), bz = Math.floor(sz);
+        if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+      }
+    return false;
+  };
+  // « Pas si l'on est déjà dedans » se juge PAR FAMILLE : une voiture de la
+  // rue collée à la nôtre (obstacleDevant vrai ici ET là) ne désarme pas le
+  // mobilier, et réciproquement. Mesuré avant cette règle : au départ sur
+  // une rue de Paris, une voiture du convoi 89 à 0,67 bloc, et la nôtre
+  // traversait un réverbère six blocs plus loin.
+  player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) =>
+    (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap))
+    || (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap));
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste

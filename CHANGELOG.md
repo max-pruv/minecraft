@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v252 — La voiture de l'enfant ne traverse plus le mobilier des rues
+
+**Pourquoi.** Max, après la v249 : « les voitures peuvent aussi passer à
+travers des fois le mobilier urbain comme les tables de Times Square ».
+Mesuré d'abord : les soixante-dix-neuf tracés de taxis de Manhattan restent
+à neuf blocs des trente-deux tables — la circulation ne les touche jamais.
+C'est la voiture de l'ENFANT : sa boîte de collision ne connaît que les
+blocs solides, et un réverbère, une jardinière, un banc, une table sont des
+props non solides (c'est voulu pour la marche, un enfant passe entre), et à
+Manhattan le mobilier est un maillage sans bloc du tout. Sur une rue de
+Paris, un réverbère posé six blocs devant la voiture : elle passait dessus à
+0,2 bloc du poteau.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant le mobilier —
+réverbères, feux, jardinières, meubles et objets posés par les enfants dans
+toutes les villes, et à Manhattan les tables et chaises de Broadway piéton,
+les bancs, les réverbères, les arbres et les bornes. À pied, rien ne change.
+Une voiture garée contre un banc repart quand même : on ne bloque que le pas
+qui ENTRE dans le mobilier, pas celui qui en sort. Et une voiture de la rue
+collée à la nôtre ne nous laisse plus traverser un réverbère pour autant :
+l'exception « déjà dedans » se juge famille par famille (circulation d'un
+côté, mobilier de l'autre).
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier prend le volant sur une rue de Paris sans voiture
+de rue à portée, pose un réverbère six blocs devant et roule jusqu'à
+l'arrêt : la voiture s'immobilise à 2,5 blocs du poteau (0,2 sur l'ancien
+code, 15 blocs parcourus au travers). Le second vérifie ce qui rend la même
+chose possible à Times Square, où ce banc ne conduit pas (une image par
+seconde à Manhattan en rendu logiciel) : le secteur de Broadway bâti, la
+table du plan (−91, −60) est notée au registre du renderer et le crochet du
+joueur refuse le pas qui l'atteindrait, pas celui qui en reste à six blocs
+(pas de registre sur l'ancien code).
+
 ## v251 — Le monde se maille hors du fil principal : moins de lag en avion et en voiture
 
 **Pourquoi.** Max, sur l'iPad, après la v248 : « Lag mieux mais pas
