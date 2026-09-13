@@ -97,6 +97,85 @@ function verifier(nom, ok, detail = '') {
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
 
+    // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
+    //
+    // Max : « en multijoueur, on ne voit pas si un user est dans une voiture,
+    // il est piéton alors qu'il est dans une voiture. Aussi permets que
+    // plusieurs joueurs rentrent dans un moyen de transport : le premier
+    // conduit, les autres restent passagers. » Marlon prend le volant d'une
+    // voiture posée devant lui ; chez Alice, l'avatar de Marlon doit être
+    // ASSIS dans une voiture dessinée (enfant de son maillage), pas debout.
+    // Puis Alice se place à côté, appuie sur « Monter avec Marlon », et quand
+    // Marlon roule trois secondes sans qu'elle touche à rien, elle suit.
+    // Sur l'ancien code, pas de voiture chez Alice, pas de bouton.
+    const idDe = (page, nom) => page.evaluate((nom) => {
+      for (const [id, rp] of window.__game.remotePlayers) if (rp.name === nom) return id;
+      return null;
+    }, nom);
+    const volant = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+      await dodo(1500);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const a = g.fun.montureConduite && g.fun.montureConduite();
+      return { auVolant: !!a, flotte: a && a.mesh && a.mesh.userData ? a.mesh.userData.flotte : null };
+    });
+    const marlonChezAlice = await idDe(alice, 'Marlon');
+    const dansSaVoiture = (id) => alice.evaluate((id) => {
+      const rp = window.__game.remotePlayers.get(id);
+      if (!rp) return { absent: true };
+      return { vehicule: !!rp.vehicule, cle: rp.vehicule ? rp.vehicule.cle : null,
+        assis: !!(rp.vehicule && rp.mesh.parent === rp.vehicule.mesh) };
+    }, id);
+    await jusqua(async () => (await dansSaVoiture(marlonChezAlice)).assis === true, 20000);
+    const vuParAlice = await dansSaVoiture(marlonChezAlice);
+    verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
+      volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
+
+    const chezHote = await hote.evaluate(() => ({ x: window.__game.player.pos.x, y: window.__game.player.pos.y, z: window.__game.player.pos.z }));
+    await alice.evaluate((p) => { const g = window.__game; g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0); }, chezHote);
+    const boutonPassager = () => alice.evaluate(() => {
+      const b = document.getElementById('ride-btn');
+      return { texte: b.textContent, visible: b.style.display !== 'none' };
+    });
+    await jusqua(async () => { const b = await boutonPassager(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
+    const bouton = await boutonPassager();
+    await alice.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(1000);
+    const passagere = await alice.evaluate(() => {
+      const g = window.__game; const p = g.fun.passagerDe ? g.fun.passagerDe() : null;
+      return p ? { de: p.de, s: p.s } : null;
+    });
+    const aliceAvant = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    await hote.evaluate(async () => {
+      const g = window.__game; g.player.keys.add('KeyW');
+      await new Promise((f) => setTimeout(f, 3000));
+      g.player.keys.delete('KeyW');
+    });
+    await dormir(800);
+    const aliceApres = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    const hoteApres = await hote.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    const suivi = +Math.hypot(aliceApres.x - aliceAvant.x, aliceApres.z - aliceAvant.z).toFixed(2);
+    const ecart = +Math.hypot(aliceApres.x - hoteApres.x, aliceApres.z - hoteApres.z).toFixed(2);
+    const roule = +Math.hypot(hoteApres.x - chezHote.x, hoteApres.z - chezHote.z).toFixed(2);
+    verifier('et l\'on monte en passager : la voiture de l\'ami nous emmène',
+      /Monter avec/.test(bouton.texte) && !!passagere && roule > 1 && suivi > 1 && ecart < 4,
+      JSON.stringify({ bouton: bouton.texte, passagere, roule, suivi, ecart }));
+    const aliceChezHote = await idDe(hote, 'Alice');
+    const assise = await hote.evaluate((id) => {
+      const g = window.__game; const rp = g.remotePlayers.get(id); const a = g.fun.montureConduite && g.fun.montureConduite();
+      return { passager: rp ? rp.passager : null, assise: !!(rp && a && rp.mesh.parent === a.mesh) };
+    }, aliceChezHote);
+    verifier('et le conducteur voit son passager assis dans sa voiture', assise.assise === true, JSON.stringify(assise));
+    // on redescend, on range : la suite continue à pied
+    await alice.evaluate(() => { const g = window.__game; if (g.fun.passagerDe && g.fun.passagerDe()) document.getElementById('ride-btn').click(); });
+    await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    await dormir(500);
+
     // --- un seul ciel pour tout le monde --------------------------------------
     //
     // Chaque tablette tirait son heure et sa météo au sort. Deux enfants dans le

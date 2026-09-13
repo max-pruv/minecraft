@@ -130,6 +130,7 @@ export class NetSession {
     if (this.hooks.onPlayers) {
       this.hooks.onPlayers(this.presents().map(([id, c]) => ({
         id, name: c.name, lookIdx: c.lookIdx, look: c.look, pos: c.pos, yaw: c.yaw, moving: c.moving,
+        v: c.v || null, p: c.p || null,
       })));
     }
   }
@@ -1580,6 +1581,12 @@ export class NetSession {
         entry.pos = { x: msg.x, y: msg.y, z: msg.z };
         entry.yaw = msg.yaw;
         entry.moving = !!msg.m;
+        // LE VÉHICULE VOYAGE AVEC LA POSITION (v253) : `v` dit dans quoi
+        // l'ami est assis (espèce, modèle de flotte), `p` chez qui il est
+        // passager. Une tablette restée sur l'ancienne version ignore les
+        // deux champs et voit l'ami à pied, comme avant — le receveur cède.
+        entry.v = msg.v || null;
+        entry.p = msg.p || null;
         this.playersChanged();
         if (this.isHost) {
           this.relay(conn.peer, { ...msg, from: conn.peer, name: entry.name, lookIdx: entry.lookIdx, look: entry.look });
@@ -1600,6 +1607,7 @@ export class NetSession {
         const e2 = this.conns.get(msg.from);
         if (e2) {
           e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
+          e2.v = msg.v || null; e2.p = msg.p || null;
           e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
         }
         this.playersChanged();
@@ -1657,6 +1665,8 @@ export class NetSession {
       if (!this.getPos || this.conns.size === 0) return;
       const p = this.getPos();
       const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
+      if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
+      if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }

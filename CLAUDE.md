@@ -711,6 +711,46 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## À plusieurs, le véhicule voyage avec la position (v253)
+
+Max : « on ne voit pas si un user est dans une voiture… permets que
+plusieurs joueurs rentrent dans un moyen de transport : le premier conduit,
+les autres restent passagers ». Quatre règles.
+
+- **LA POSITION EMPORTE LE VÉHICULE, PAS UNE SECONDE POSITION.** Le message
+  `pos` gagne `v` (espèce, modèle de flotte) au volant et `p` (chez qui, quel
+  siège) en passager. C'est la leçon du mode `pilote` (v223) : une position
+  de véhicule à part aurait tout fait payer deux fois. Une tablette sur
+  l'ancienne version ignore les deux champs — le receveur cède.
+- **L'AMI EST DESSINÉ AVEC LA FABRIQUE DE LA MONTURE** (`MODELES_MONTURE`,
+  montures.js) et assis par le MÊME geste que l'enfant au volant
+  (`asseoir`, main.js — siège de la fiche, plafond mesuré). La position
+  vraie d'un joueur distant vit dans `rp.pos` ; son maillage, lui, peut être
+  enfant d'un véhicule, en coordonnées du siège. Quand il descend, quand
+  son véhicule disparaît, quand il part : `poserDebout`.
+- **PASSAGER, C'EST `bord` CHEZ UN AMI.** `passager` (fun.js) colle
+  l'enfant au siège de la voiture de l'ami (`sieges` de la fiche, le premier
+  libre d'après les positions réseau des autres passagers), rend ses
+  commandes inertes, et un appui descend — exactement le métro. Le
+  conducteur reconnaît ses passagers à `p.de === net.peer.id` ; sans
+  courtier (partie par le nuage seul) il n'a pas d'identifiant de pair, et
+  les passagers sont vus assis chez les autres mais debout chez lui — dette
+  déclarée dans `TASKS.md`.
+- **UNE TÊTE N'EST PAS UN TOIT, ET LE CACHE DU PLAFOND EST PAR SIÈGE.**
+  `plafondAuSiege` mesure le pavillon parmi les maillages du véhicule ; il
+  n'excluait que `avatarLocal`. Assis dans la voiture d'un ami, c'est SA
+  tête qui aurait servi de toit — tout corps aux bras articulés
+  (`userData.arms`, `buildKidMesh`) est exclu. Et le conducteur et ses
+  passagers n'ont pas le même toit au-dessus d'eux : une case par siège,
+  invalidée quand une pièce (un avatar) s'ajoute au véhicule ; à une seule
+  case, deux sièges se seraient remesurés à chaque image, cent mille
+  sommets. Le véhicule qu'on rend pour asseoir un passager est la monture
+  ELLE-MÊME, jamais une copie : une copie par image perd ce cache.
+- **LE TÉMOIN LIT LA PARENTÉ DU MAILLAGE**, pas une variable : l'avatar de
+  l'ami est enfant du maillage de sa voiture, ou il ne l'est pas. Et il
+  mesure ce que l'enfant obtient : Alice, sans toucher à rien, a SUIVI la
+  voiture de Marlon.
+
 ## Le mobilier des rues, et une exception qui se juge par famille (v252)
 
 Max : « les voitures peuvent aussi passer à travers des fois le mobilier

@@ -56,7 +56,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   `vehicules.js` n'a pas bougé depuis la v246). Réglé dans le banc : de la
   chaussée sous toute la ligne, candidats classés, et l'on se repose ailleurs
   si personne ne vient — une mesure où aucune voiture n'arrive n'est pas une
-  mesure.
+  mesure. (6) Portail de la v253 : « la reprise tient dans la durée »
+  (`reseau.js`, hôte 1 · Alice 2 après vingt-cinq secondes) — vert seul sur
+  la branche une heure avant (74 témoins), tombé juste après un `souffler`
+  à sa limite (charge 4,49) et un retour d'Alice à 58 s au lieu de 25 ; le
+  code réseau de v253 n'ajoute que deux champs au message de position. Vert
+  à la passe suivante du portail (hôte 2 · Alice 2, 25 s) : rouge de
+  charge, déclaré ici. Et
+  « sous le toit » (`monte.js`) : le témoin lisait `plafondSiege.y` comme un
+  nombre, devenu une case par siège en v253 — corrigé dans le banc (il lit
+  la case du siège conducteur), le jeu asseyait bien l'enfant (crâne 1,19).
 
 - [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
   foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
@@ -117,20 +126,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
   Cause ouverte, pas expliquée.
 
-- [ ] **Multijoueur : l'ami au volant est vu à pied, et un véhicule ne
-  prend qu'un joueur.** Max, après la v249 : « En multijoueur, on ne voit
-  pas si un user est dans une voiture, il est piéton alors qu'il est dans
-  une voiture. Aussi permets que plusieurs joueurs rentrent dans un moyen de
-  transport : le premier conduit, les autres restent passagers. » C'est la
-  dette de la v155 (« un véhicule conduit doit se voir en ligne »). Piste :
-  la position diffusée porte la monture (espèce, modèle de flotte, cap) ;
-  chez le receveur, l'ami est assis dans une voiture dessinée — le même
-  mécanisme que l'avatar local de la v249 (`siege` de la fiche, pose au
-  volant) ; et des sièges passagers dans la fiche (`sieges`), où un joueur
-  monte par le bouton quand le véhicule d'un ami est devant lui, collé au
-  siège tant que le conducteur roule, libre de descendre. Témoins à deux
-  pages en réseau : l'une conduit, l'autre voit une voiture avec un avatar
-  dedans ; la seconde monte en passager et suit.
+- [x] **v253 — À plusieurs, l'ami est vu dans sa voiture et l'on monte avec
+  lui.** Max, après la v249. `v`/`p` dans le message de position, l'ami
+  dessiné avec la fabrique de la monture et assis, passagers collés au siège
+  (`sieges` de la fiche). Trois témoins dans `reseau.js`, rouges sur
+  l'ancien code. Reste : sans courtier (partie par le nuage seul) le
+  conducteur n'a pas d'identifiant de pair et voit ses passagers debout ;
+  et les montures sans `siege` (cheval, avion) se voient encore à pied chez
+  les autres — le champ `v` part, il manque leur `siege` et leur pose.
 
 - [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,
   après la v249. Mesuré : les taxis de Manhattan restent à neuf blocs des

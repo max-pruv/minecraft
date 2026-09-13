@@ -410,6 +410,10 @@ export const MONTURES = [
     // personnage conduire ». `y` est le dessus de l'assise, plus bas que le
     // baquet sculpté pour que la tête reste sous le toit des modèles.
     siege: { x: -0.33, y: 0.52, z: 0.22 },
+    // LES SIÈGES DES PASSAGERS (v253) : le premier conduit, les autres
+    // montent ici — à droite devant, puis la banquette. Max : « permets que
+    // plusieurs joueurs rentrent dans un moyen de transport ».
+    sieges: [{ x: 0.33, y: 0.52, z: 0.22 }, { x: -0.33, y: 0.52, z: -0.75 }, { x: 0.33, y: 0.52, z: -0.75 }],
     // `vole: false` : la fiche interdit le vol, player.js l'applique. Voir la
     // note de `volInterdit` — la règle vit ici, jamais dans fun.js.
     vole: false, garable: true,

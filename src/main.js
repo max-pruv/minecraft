@@ -37,6 +37,7 @@ import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains } from './humains.js';
+import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
@@ -2774,23 +2775,74 @@ function syncRemotePlayers(list) {
       const mesh = buildKidMesh(withOwnLook(base, p.look || {}));
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
-      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5 };
+      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5,
+        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null };
       remotePlayers.set(p.id, rp);
-      if (p.pos) mesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+      if (p.pos) { mesh.position.set(p.pos.x, p.pos.y, p.pos.z); rp.pos.set(p.pos.x, p.pos.y, p.pos.z); }
       mesh.scale.setScalar(0.01); // grandit depuis rien, cf. updateRemotePlayers
       joinEffect(mesh.position, p.name || 'Un ami');
     }
     if (p.pos) rp.target = p.pos;
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
+    synchroniserVehiculeDistant(rp, p.v || null);
+    rp.passager = p.p || null;
   }
   for (const [id, rp] of remotePlayers) {
     if (!seen.has(id)) {
       // on ne retire pas tout de suite : leaveEffect fait disparaître le corps
+      poserDebout(rp);
+      synchroniserVehiculeDistant(rp, null);
       leaveEffect(rp.mesh, rp.name || 'Un ami');
       remotePlayers.delete(id);
     }
   }
+}
+
+// L'AMI AU VOLANT EST VU DANS SA VOITURE (v253). La position d'un joueur
+// emporte désormais son véhicule (`v` : espèce, modèle de flotte) ; on le
+// dessine avec la MÊME fabrique que la monture locale (`MODELES_MONTURE`),
+// on l'assied dedans comme l'avatar de l'enfant (`asseoir`, siège de la
+// fiche), et quand il descend on le remet debout à côté.
+function synchroniserVehiculeDistant(rp, v) {
+  const cle = v ? `${v.k}|${v.f || ''}` : '';
+  if ((rp.vehicule ? rp.vehicule.cle : '') === cle) return;
+  if (rp.vehicule) {
+    poserDebout(rp);
+    scene.remove(rp.vehicule.mesh);
+    liberer(rp.vehicule.mesh);
+    rp.vehicule = null;
+  }
+  if (!v) return;
+  const fabrique = MODELES_MONTURE[v.k];
+  const def = MONTURES.find((d) => d.key === v.k);
+  if (!fabrique || !def || !def.siege) return;
+  const mesh = fabrique(v.f ? { flotte: v.f } : undefined);
+  mesh.position.copy(rp.pos);
+  scene.add(mesh);
+  rp.vehicule = { cle, mesh, def };
+}
+// L'avatar d'un ami revient dans la scène, debout, à sa taille : c'est ce
+// qu'on fait quand il descend, quand son véhicule disparaît, quand il part.
+function poserDebout(rp) {
+  if (rp.mesh.parent && rp.mesh.parent !== scene) {
+    scene.add(rp.mesh);
+    rp.mesh.position.copy(rp.pos);
+    rp.mesh.scale.setScalar(1);
+    rp.mesh.rotation.set(0, rp.yaw + Math.PI, 0);
+  }
+}
+// Le véhicule dans lequel un joueur (distant) est passager : celui d'un
+// autre ami, ou le nôtre si c'est chez nous qu'il est monté.
+function vehiculeDuConducteur(de) {
+  const monId = net && net.peer ? net.peer.id : null;
+  if (monId && de === monId) {
+    const a = fun.montureConduite ? fun.montureConduite() : null;
+    // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
+    return a && a.def && a.def.sieges ? a : null;
+  }
+  const rp = remotePlayers.get(de);
+  return rp && rp.vehicule ? rp.vehicule : null;
 }
 
 function updateRemotePlayers(dt) {
@@ -2804,17 +2856,37 @@ function updateRemotePlayers(dt) {
       rp.mesh.scale.setScalar(Math.max(0.01, k < 1 ? k * (1.25 - 0.25 * k) : 1));
       if (rp.pop === 0) rp.mesh.scale.setScalar(1);
     }
+    // La position VRAIE vit dans `rp.pos` (v253) : le maillage, lui, peut
+    // être assis dans un véhicule, en coordonnées du siège.
     if (rp.target) {
       const t = Math.min(1, dt * 10);
-      rp.mesh.position.x += (rp.target.x - rp.mesh.position.x) * t;
-      rp.mesh.position.y += (rp.target.y - rp.mesh.position.y) * t;
-      rp.mesh.position.z += (rp.target.z - rp.mesh.position.z) * t;
+      rp.pos.x += (rp.target.x - rp.pos.x) * t;
+      rp.pos.y += (rp.target.y - rp.pos.y) * t;
+      rp.pos.z += (rp.target.z - rp.pos.z) * t;
     }
-    let dy = rp.yaw + Math.PI - rp.mesh.rotation.y;
+    let dy = rp.yaw - rp.cap;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
-    rp.mesh.rotation.y += dy * Math.min(1, dt * 10);
+    rp.cap += dy * Math.min(1, dt * 10);
     rp.animTime += dt;
+    if (rp.vehicule) {
+      // au volant : la voiture suit la position, le cap suit le regard
+      // (comme `updateRide`, fun.js : rotation.y = yaw), l'ami est assis
+      const vm = rp.vehicule.mesh;
+      vm.position.copy(rp.pos);
+      vm.rotation.y = rp.cap;
+      asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
+      continue;
+    }
+    const chez = rp.passager ? vehiculeDuConducteur(rp.passager.de) : null;
+    if (chez) {
+      const sieges = chez.def.sieges || [];
+      asseoir(rp.mesh, chez, sieges[Math.min(rp.passager.s || 0, sieges.length - 1)] || chez.def.siege, rp.animTime);
+      continue;
+    }
+    poserDebout(rp);
+    rp.mesh.position.copy(rp.pos);
+    rp.mesh.rotation.y = rp.cap + Math.PI;
     const swing = rp.moving ? Math.sin(rp.animTime * 9) * 0.6 : 0;
     rp.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
     rp.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = i % 2 ? swing * 0.7 : -swing * 0.7; });
@@ -2874,10 +2946,20 @@ function startNetSession(code, isHost, patience) {
   // Notre reflet nous rend la main : on rouvre le monde sans un mot. Pour
   // l'enfant, il a simplement rejoint sa partie.
   net.onCeder = () => { leaveToMainMenu(); };
-  net.getPos = () => ({
-    x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
-    moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
-  });
+  net.getPos = () => {
+    const p = {
+      x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
+      moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
+    };
+    // AU VOLANT, LA POSITION EMPORTE LE VÉHICULE (v253) : sans cela l'ami
+    // était vu à pied, glissant à toute vitesse (Max). Le modèle de flotte
+    // voyage aussi, pour que ce soit SA voiture qu'on voit.
+    const a = fun.montureConduite ? fun.montureConduite() : null;
+    if (a && a.def && a.def.siege) p.v = { k: a.def.key, f: (a.mesh && a.mesh.userData && a.mesh.userData.flotte) || null };
+    const pa = fun.passagerDe ? fun.passagerDe() : null;
+    if (pa) p.p = { de: pa.de, s: pa.s };
+    return p;
+  };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
   // Le réseau raconte ce qui lui arrive ; le bandeau le montre.
   net.onLink = (etat, detail) => {
@@ -5383,14 +5465,23 @@ function obtenirAvatarLocal() {
 // pièces change). `null` : une voiture sans toit.
 const _plafondInv = new THREE.Matrix4(), _plafondM = new THREE.Matrix4(), _plafondV = new THREE.Vector3();
 function plafondAuSiege(a, siege) {
+  // UN CACHE PAR SIÈGE (v253) : le conducteur et ses passagers n'ont pas le
+  // même toit au-dessus d'eux (un pavillon descend vers l'arrière), et deux
+  // sièges qui se partageraient une seule case se remesureraient à chaque
+  // image — cent mille sommets. Toute pièce ajoutée au véhicule (un avatar
+  // qui s'assied) invalide tout.
   const pieces = a.mesh.children.length;
-  if (a.plafondSiege && a.plafondSiege.pieces === pieces) return a.plafondSiege.y;
+  const cleSiege = `${siege.x}|${siege.z}`;
+  if (!a.plafondSiege || a.plafondSiege.pieces !== pieces) a.plafondSiege = { pieces, y: new Map() };
+  if (a.plafondSiege.y.has(cleSiege)) return a.plafondSiege.y.get(cleSiege);
   a.mesh.updateMatrixWorld(true);
   _plafondInv.copy(a.mesh.matrixWorld).invert();
   let plafond = Infinity;
   a.mesh.traverse((o) => {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-    for (let p = o; p; p = p.parent) if (p === avatarLocal) return;
+    // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
+    // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
+    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && p.userData.arms)) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
     let haut = -Infinity;
@@ -5402,17 +5493,32 @@ function plafondAuSiege(a, siege) {
     if (haut > -Infinity && haut < plafond) plafond = haut;
   });
   const y = plafond === Infinity ? null : plafond;
-  a.plafondSiege = { pieces, y };
+  a.plafondSiege.y.set(cleSiege, y);
   return y;
 }
 function asseoirLeConducteur(dt) {
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
+  avatarTemps += dt;
   if (!siege || !a.mesh) {
+    // PASSAGER CHEZ UN AMI (v253) : assis sur le siège de SA voiture
+    const pa = fun.passagerDe ? fun.passagerDe() : null;
+    const chez = pa ? vehiculeDuConducteur(pa.de) : null;
+    if (chez) {
+      const sieges = chez.def.sieges || [];
+      asseoir(obtenirAvatarLocal(), chez, sieges[Math.min(pa.s || 0, sieges.length - 1)] || chez.def.siege, avatarTemps);
+      return;
+    }
     if (avatarLocal && avatarLocal.parent) avatarLocal.removeFromParent();
     return;
   }
-  const av = obtenirAvatarLocal();
+  asseoir(obtenirAvatarLocal(), a, siege, avatarTemps);
+}
+// ASSEOIR UN PERSONNAGE SUR UN SIÈGE, dans le repère du véhicule — le même
+// geste pour l'enfant au volant (v249), l'ami vu dans sa voiture et les
+// passagers (v253). `a` : { mesh, def } ; le plafond se mesure une fois par
+// véhicule (`plafondAuSiege`).
+function asseoir(av, a, siege, temps) {
   if (av.parent !== a.mesh) a.mesh.add(av);
   // LA TÊTE RESTE SOUS LE TOIT (Max : « le personnage passe à travers la
   // carrosserie »). Le siège de la fiche vaut pour une berline ; une voiture
@@ -5430,10 +5536,9 @@ function asseoirLeConducteur(dt) {
   // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
   av.position.set(siege.x, hanches - 0.77 * echelle, siege.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  avatarTemps += dt;
   av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
   av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
-  animerHumain(av, avatarTemps, 0, POSE_AU_VOLANT);
+  animerHumain(av, temps, 0, POSE_AU_VOLANT);
 }
 
 // LES RÉVERBÈRES ÉCLAIRENT VRAIMENT LA RUE, LA NUIT (v248). Manhattan pose
@@ -5714,6 +5819,7 @@ const fun = initFun({
   // Les convois n'existent qu'une fois le monde bâti : on les demande au
   // moment de s'en servir, pas au moment de brancher les boutons.
   getVehicules: () => vehicules,
+  vehiculeDistant: (id) => { const rp = remotePlayers.get(id); return rp && rp.vehicule ? rp.vehicule : null; },
   // Les photos voyagent sur leur propre document depuis qu'elles pesaient un
   // tiers du profil et faisaient jeter les blocs de l'enfant.
   photos: {
