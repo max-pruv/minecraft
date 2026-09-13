@@ -956,30 +956,46 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.routier).reduce((n, c) => n + c.visibles, 0) >= 4,
       null, { timeout: 60000 }).catch(() => {});
-    const poseParis = await tab.evaluate(() => {
+    // UNE MESURE OÙ AUCUNE VOITURE NE VIENT N'EST PAS UNE MESURE. Au portail
+    // de la v252 (troisième passe) : 97 relevés de voitures à moins de douze
+    // blocs, ZÉRO arrêtée, ZÉRO au travers — les voitures passaient À CÔTÉ,
+    // parce que douze blocs « devant » une voiture en droite ligne ne sont pas
+    // sur son tracé quand la rue tourne. On exige donc de la chaussée sous
+    // toute la ligne, on classe les candidats par distance, et si personne ne
+    // vient à nous en douze secondes, on se repose sur le candidat suivant :
+    // le verdict porte sur ce que fait une voiture qui ARRIVE, pas sur la
+    // chance qu'une voiture arrive.
+    const poserAParis = (rang) => tab.evaluate(async (rang) => {
       const g = window.__game, et = window.__vehicules.etat();
+      const { CHAUSSEE } = await import('./src/world.js');
+      const surChaussee = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); const y = g.world.sommetColonne(bx, bz); return CHAUSSEE.has(g.world.getBlock(bx, y, bz)); };
       // toutes les places des convois routiers ; on se pose douze blocs devant
       // l'une d'elles, à un point LIBRE — aucune voiture à moins de sept blocs,
       // sinon on naît dans une voiture de la file (au portail : quatre-vingts
       // relevés « au travers », dès la première image)
       const places = [];
       et.forEach((c) => c.routier && (c.places || []).forEach((q) => places.push({ x: q[0], z: q[1], cap: q[2] })));
-      let m = null;
+      const candidats = [];
       for (const q of places) {
         const x = q.x + Math.sin(q.cap) * 12, z = q.z + Math.cos(q.cap) * 12;
         if (places.some((o) => Math.hypot(o.x - x, o.z - z) < 7)) continue;
+        let route = true;
+        for (let t = 2; t <= 12; t += 2) if (!surChaussee(q.x + Math.sin(q.cap) * t, q.z + Math.cos(q.cap) * t)) { route = false; break; }
+        if (!route) continue;
         const d = Math.hypot(x - g.player.pos.x, z - g.player.pos.z);
-        if (!m || d < m.d) m = { d, x: q.x, z: q.z, cap: q.cap };
+        candidats.push({ d, x: q.x, z: q.z, cap: q.cap });
       }
+      candidats.sort((p, q) => p.d - q.d);
+      const m = candidats[Math.min(rang, candidats.length - 1)] || null;
       if (!m) return null;
       const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
       g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
       g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
       for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
       g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);
-      return m;
-    });
-    if (poseParis) {
+      return { ...m, candidats: candidats.length };
+    }, rang);
+    const monterAParis = async () => {
       // Le bouton garde son `display` d'avant tant que sa ligne est cachée :
       // on attend la LIGNE, puis le « ⬇️ » qui prouve qu'on est monté — et
       // l'on réessaie, parce qu'un clic trop tôt ne monte dans rien.
@@ -987,14 +1003,23 @@ async function avancerUnDemiSeconde(p, depart) {
         const b = document.getElementById('ride-btn');
         return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b.closest('.fun-target')).display !== 'none';
       }, null, { timeout: 20000 }).catch(() => {});
+      // ET ON NE RECLIQUE PAS SUR UN ENFANT DÉJÀ MONTÉ : le bouton est une
+      // BASCULE, un second clic le fait descendre. Ce jet-ci attendait le
+      // « ⬇️ » du bouton — écrit à l'image suivante, sondé par rAF — pendant
+      // trois secondes puis recliquait : au portail de la v252, à une image
+      // par seconde dans Paris, le premier clic avait monté, le second a fait
+      // descendre, et trois témoins ont mesuré « au volant » à pied. L'état
+      // se lit dans le jeu, jamais dans le texte d'un bouton.
+      const auVolantMaintenant = () => tab.evaluate(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()));
       for (let essai = 0; essai < 6; essai++) {
-        await tab.evaluate(() => document.getElementById('ride-btn').click());
-        const monte = await tab.waitForFunction(() => document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000 }).then(() => true).catch(() => false);
+        if (!(await auVolantMaintenant())) await tab.evaluate(() => document.getElementById('ride-btn').click());
+        const monte = await tab.waitForFunction(() => (window.__game.fun.montureConduite && window.__game.fun.montureConduite())
+          && document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000, polling: 200 }).then(() => true).catch(() => false);
         if (monte) break;
         await dormir(700);
       }
-    }
-    const chaussee = await tab.evaluate(async () => {
+    };
+    const mesurerChaussee = () => tab.evaluate(async () => {
       const g = window.__game, et = window.__vehicules.etat();
       let m = null;
       et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
@@ -1029,9 +1054,20 @@ async function avancerUnDemiSeconde(p, depart) {
       }
       return { releves, proches, arretees, traverses, attenteSecondes };
     });
+    let poseParis = null, chaussee = null, poses = 0;
+    for (let rang = 0; rang < 3; rang++) {
+      poseParis = await poserAParis(rang);
+      if (!poseParis) break;
+      poses++;
+      await monterAParis();
+      chaussee = await mesurerChaussee();
+      // personne n'est venu : on ne conclut pas, on se repose ailleurs
+      if (!chaussee || chaussee.auVolant === false || chaussee.arretees > 0 || chaussee.traverses > 0) break;
+    }
+    if (chaussee) chaussee.poses = poses;
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
-      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s`) : 'aucun convoi routier trouvé');
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s · ${chaussee.poses} pose(s)`) : 'aucun convoi routier trouvé');
     // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
     // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
     // d'une voiture : l'enfant était encore au volant. On lit l'état avant le

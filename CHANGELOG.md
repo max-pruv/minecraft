@@ -52,7 +52,14 @@ chose possible à Times Square, où ce banc ne conduit pas (une image par
 seconde à Manhattan en rendu logiciel) : le secteur de Broadway bâti, la
 table du plan (−91, −60) est notée au registre du renderer et le crochet du
 joueur refuse le pas qui l'atteindrait, pas celui qui en reste à six blocs
-(pas de registre sur l'ancien code).
+(pas de registre sur l'ancien code). Portail : voie longue, cinq suites ;
+`carte.js`, `washington.js` et `plafond.js` vertes, `monte.js` sur le seul
+gel de téléportation déclaré, `manhattan.js` sur ses quatre rouges déclarés
+de ce banc. Trois rouges de banc démontés en route et corrigés dans le banc,
+pas dans le jeu : `plafond.js` rechargeait pendant l'analyse des corps
+réalistes ; la boucle de montée de `monte.js` recliquait sur un bouton-bascule ;
+et le témoin de circulation posait l'enfant hors du tracé sur une rue qui
+tourne.
 
 ## v251 — Le monde se maille hors du fil principal : moins de lag en avion et en voiture
 

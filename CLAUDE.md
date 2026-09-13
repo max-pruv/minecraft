@@ -740,6 +740,25 @@ Trois règles.
   ne mènent pas à un poteau à neuf blocs, et le témoin était vert des deux
   côtés en ne mesurant rien.
 
+**UN BOUTON-BASCULE NE SE RECLIQUE PAS.** La boucle de montée de `monte.js`
+cliquait « Monter », attendait le « ⬇️ » du bouton trois secondes, et
+recliquait ; le texte s'écrit à l'image SUIVANTE et `waitForFunction` sonde
+par rAF — à une image par seconde dans Paris, le premier clic avait monté,
+le second a fait DESCENDRE, et trois témoins ont mesuré « au volant » à
+pied. L'état se lit dans le jeu (`montureConduite()`), jamais dans le texte
+d'un bouton, et l'on ne renvoie pas une commande dont l'effet est une
+bascule sans avoir lu l'état d'abord.
+
+**ET UNE MESURE OÙ PERSONNE NE VIENT N'EST PAS UNE MESURE.** « La circulation
+s'arrête devant la voiture de l'enfant » posait l'enfant douze blocs
+« devant » une voiture, en droite ligne ; sur une rue qui tourne, ce point
+n'est pas sur le tracé, les voitures passent à côté, et le témoin rend
+« zéro arrêtée, zéro au travers » — rouge, sans qu'aucune voiture n'ait eu
+l'occasion de céder ou de traverser. Un verdict de comportement exige que
+la SITUATION ait eu lieu : de la chaussée sous toute la ligne, et si
+personne ne vient en douze secondes, on se repose sur le candidat suivant
+au lieu de conclure.
+
 **Et Manhattan ne se conduit pas sur ce banc.** Une image par seconde en
 rendu logiciel : à pied, 0,3 bloc en deux secondes ; le secteur de sol qui
 porte la table n'arrive jamais en tête de file. Le témoin bâtit alors ce
