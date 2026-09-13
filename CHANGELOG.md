@@ -47,8 +47,9 @@ mur de pierre de huit blocs fait une façade, et le sol dans son ombre de
 lune passe de 5,7 à 41,5, le mur de 2,6 à 28,2 (bornes à la moitié : 22 et
 14). Le second monte dans une voiture par le bouton et vérifie que
 l'avatar de l'enfant est enfant du maillage de la voiture, dans son
-habitacle, dans le cadre de la caméra, et qu'il en sort quand on descend —
-absent sur l'ancien code. Captures rue et ciel, jour et nuit, à Paris.
+habitacle, dans le cadre de la caméra, le visage tourné vers la route
+(Max a attrapé le premier jet, assis de dos), et qu'il en sort quand on
+descend — absent sur l'ancien code. Captures rue et ciel, jour et nuit, à Paris.
 
 ## v248 — Les réverbères éclairent la rue la nuit, dans toutes les villes
 

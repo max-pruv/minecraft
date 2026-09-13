@@ -717,6 +717,15 @@ ses pivots. Sans `siege` dans la fiche, pas d'avatar : même discipline que
 enfant du maillage de la voiture, dans l'habitacle et dans le cadre, puis
 parti à la descente.
 
+**ET J'AI LIVRÉ LE PREMIER JET ASSIS DE DOS.** J'avais DÉDUIT que le modèle
+regardait en +z (« les autres joueurs tournent de yaw + π ») ; il regarde en
+−z, c'est écrit en tête de `personnages.js`, et la capture de trois quarts le
+montrait — l'arrière de la tête à travers le pare-brise. Max l'a vu, pas moi :
+« une erreur que tu devrais catch ». Un signe se REGARDE, il ne se déduit pas
+(c'est déjà la règle du roulis et du paysage lointain), et **un témoin de
+posture lit une DIRECTION** : le visage (−z de l'avatar, dans le monde) contre
+le cap de la voiture, produit scalaire > 0,9. Rouge sur le premier jet (−1).
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le

@@ -5211,7 +5211,13 @@ const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
 // bras vers le volant ; il descend avec lui. Une monture sans siège (un
 // cheval, un avion sculpté) ne le montre pas : la règle vit dans la fiche.
 let avatarLocal = null, avatarLocalChar = -1, avatarTemps = 0;
-const POSE_AU_VOLANT = { cuisses: 1.35, genoux: 1.25, bras: 0.95, coudes: -0.55 };
+// LE VISAGE EST TOURNÉ VERS −z, COMME LE NEZ DE LA VOITURE (personnages.js :
+// « visage tourné vers −z »). Mon premier jet le tournait de 180° en
+// « déduisant » que le modèle regardait en +z ; Max l'a vu sur la capture,
+// de dos au volant. Un signe se regarde, il ne se déduit pas — et le témoin
+// lit désormais la direction du visage contre le cap de la voiture. Les
+// cuisses et les bras vont en avant, donc vers −z : angles négatifs.
+const POSE_AU_VOLANT = { cuisses: -1.35, genoux: 1.25, bras: -0.95, coudes: -0.55 };
 function obtenirAvatarLocal() {
   if (!avatarLocal || avatarLocalChar !== selectedChar) {
     if (avatarLocal) { avatarLocal.removeFromParent(); liberer(avatarLocal); }
@@ -5231,7 +5237,7 @@ function asseoirLeConducteur(dt) {
   if (av.parent !== a.mesh) a.mesh.add(av);
   // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
   av.position.set(siege.x, siege.y - 0.77, siege.z);
-  av.rotation.y = Math.PI;                       // le personnage regarde en +z, la voiture en −z
+  av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
   avatarTemps += dt;
   av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
   av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });

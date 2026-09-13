@@ -257,12 +257,19 @@ async function avancerUnDemiSeconde(p, depart) {
       const THREE = await import('three');
       const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0));
       const v = tete.clone().project(g.camera);
+      // LE VISAGE REGARDE LA ROUTE : le modèle a le visage en −z ; on compare
+      // cette direction, dans le monde, au cap de la voiture (Max a vu le
+      // premier jet assis de dos).
+      const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+      const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+      const regardeLaRoute = +visage.dot(route).toFixed(2);
       return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
         x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
-        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1 };
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute };
     });
-    verifier('au volant, le personnage de l\'enfant est assis dans la voiture et dans le cadre',
-      !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre,
+    verifier('au volant, le personnage de l\'enfant est assis dans la voiture, dans le cadre, et regarde la route',
+      !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
+        && conduite.regardeLaRoute > 0.9,
       JSON.stringify(conduite));
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);
