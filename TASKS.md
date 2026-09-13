@@ -49,6 +49,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
 
+- [ ] **Le témoin du mur a mesuré « à pied » au volant, deux fois, au
+  portail de la v249** (à pied 1,1 bloc du mur, gabarit 2,2, monture
+  présente) — et pas une troisième, `monte.js` rejouée seule avec le clic de
+  descente vérifié (descendu : carrure 0,6, aucune monture). Le témoin de
+  circulation qui précède dit désormais l'état avant le clic, après le clic
+  et au retour : si cela revient, le message dira si l'enfant est remonté
+  par ce clic (un clic sur « Descendre » quand on n'est plus au volant fait
+  MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
+  Cause ouverte, pas expliquée.
+
 - [ ] **Les voitures traversent le mobilier urbain.** Max, après la v249 :
   « les voitures peuvent aussi passer à travers des fois le mobilier urbain
   comme les tables de Times Square ». À mesurer : les trajets des taxis de
