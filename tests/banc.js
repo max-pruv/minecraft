@@ -414,13 +414,18 @@ class Banc {
     // morceau sous l'enfant et ses huit voisins sont maillés. On l'attend, et
     // l'on garde les 3,5 s comme borne — jamais plus long qu'avant, plus court
     // dès que le monde est là (mesuré : 1 à 2 s sur ce banc).
+    // (`player.pos`, pas `position` : le premier jet a lu un champ absent, et
+    // l'exception dans la page a rougi « aucune erreur JavaScript » — une
+    // condition de banc ne doit JAMAIS pouvoir jeter dans la page.)
     await p.waitForFunction(() => {
-      const g = window.__game; if (!g || !g.player || !g.chunkMeshes) return false;
-      const cx = Math.floor(g.player.position.x / 16), cz = Math.floor(g.player.position.z / 16);
-      for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
-        if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) return false;
-      }
-      return true;
+      try {
+        const g = window.__game; if (!g || !g.player || !g.player.pos || !g.chunkMeshes) return false;
+        const cx = Math.floor(g.player.pos.x / 16), cz = Math.floor(g.player.pos.z / 16);
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) return false;
+        }
+        return true;
+      } catch { return false; }
     }, null, { timeout: 3500, polling: 100 }).catch(() => { /* la borne d'avant : on avance */ });
     return p;
   }
