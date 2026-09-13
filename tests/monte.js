@@ -1157,13 +1157,15 @@ async function avancerUnDemiSeconde(p, depart) {
           // que si la voiture a roulé moins de deux blocs entre deux relevés.
           // Et l'on juge en DEGRÉS PAR BLOC PARCOURU, pas par relevé : une
           // voiture qui rattrape son retard à une fois et demie l'allure
-          // tourne plus vite par seconde, pas par mètre. L'empattement borne
-          // le cap à vingt-huit degrés par bloc ; l'ancien code pivotait de
-          // quatre-vingt-dix en moins d'un bloc.
+          // tourne plus vite par seconde, pas par mètre. Sur l'empattement,
+          // un coin de 90° tourne au plus 36° par bloc, et le virage le plus
+          // serré qu'un circuit autorise (150°) environ 70° ; l'ancien code
+          // pivotait de 90° en un cinquième de bloc, soit plus de 400° par
+          // bloc. La barre, 115° par bloc, sépare les deux dispersions.
           const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
           if (prev !== undefined) {
             const roule = v[i].position.distanceTo(prev.pos);
-            if (roule >= 0.3 && roule < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e / roule > 0.79) sauts++; }
+            if (roule >= 0.3 && roule < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e / roule > 2.0) sauts++; }
           }
           derniers.set(v[i], { cap, pos: v[i].position.clone() });
           const r = v[i].rotation.z || 0;
@@ -1184,7 +1186,7 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
     verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
-      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 45° par bloc sur ${voitures.mesures}`);
+      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
     verifier('et elles s\'inclinent dans le virage, du bon côté',
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
