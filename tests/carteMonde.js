@@ -925,7 +925,9 @@ const VRAIES_KM = [
         for (let d = 1; d <= 9; d++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
       }
       const fenetres = [];
-      for (const h of [3, 5]) for (let c = -3; c <= 3; c++) {
+      // dix fenêtres au centre du mur (c ∈ [−2, 2]) : à six blocs, le bord du
+      // mur sort du cadre, et un point hors écran rend −1
+      for (const h of [3, 5]) for (let c = -2; c <= 2; c++) {
         w.setBlock(x0 + c, sol + h, z0, ARCHI.ETAGE);
         fenetres.push({ x: x0 + c, y: sol + h, allumee: allumee(x0 + c, sol + h, z0) });
       }
@@ -953,7 +955,7 @@ const VRAIES_KM = [
       const allumees = fenetres.filter((f) => f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
       const eteintes = fenetres.filter((f) => !f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
       const murs = [];
-      for (const c of [-4, 4]) for (const h of [2, 4]) murs.push(lire(x0 + c + 0.5, sol + h + 0.5, face));
+      for (const c of [-1, 0, 1]) for (const h of [2, 4]) murs.push(lire(x0 + c + 0.5, sol + h + 0.5, face));
       const med = (t) => { const s = [...t].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : -1; };
       return { allumees, eteintes, murs, fenetre: med(allumees), mur: med(murs),
         morceauxEclaires: [...g.chunkMeshes.values()].filter((e) => e.lumineux).length };

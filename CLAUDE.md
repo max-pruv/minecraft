@@ -761,6 +761,33 @@ un autre FIL. Six règles.
   attente dans la file et l'ancien chemin reprend. `?maillage=local` force
   ce chemin, pour mesurer et pour les témoins.
 
+**Et ce portail complet a rendu trois rouges qui n'étaient pas à lui, plus
+une dette de la v249 — chacun démonté par une mesure, pas par un rejeu.**
+
+- **`__lumiere()` A TUÉ SON TÉMOIN UNE SECONDE FOIS.** La v247 avait écrit
+  « une sonde qui lit un mécanisme meurt avec lui » en la faisant publier
+  le niveau des lampes ; la v249 a monté les planchers de nuit à 1,7 et
+  0,45, et « à minuit, les fenêtres restent allumées » comparait ce niveau
+  (1,07) à la couleur d'un matériau (0,92) — rouge pour toujours, invisible
+  parce que `carteMonde.js` ne garde pas `main.js`. Le témoin lit désormais
+  des pixels (mur de pierre percé de fenêtres d'étage, à minuit : 178 contre
+  33). **Un témoin qui compare deux grandeurs d'unités différentes n'a
+  jamais mesuré** ; et une suite qui ne garde pas le fichier dont elle
+  dépend rougit en silence — c'est la leçon de la v187, une fois de plus.
+- **UNE BORNE DE GARDE À 60 % EST UNE BORNE À 90 %.** `parcouru > 300`
+  pour 497 mesurés seul : 249 au portail, sur du code sain. La moitié —
+  et encore, la moitié d'une mesure faite sur une machine qui respire ne
+  vaut pas la moitié au portail : 100.
+- **Le trio de `reseau.js`, le clic de `carte.js`, les textures de
+  `plafond.js`** : rejoués SEULS sur la branche, verts tous les trois ; la
+  page bureau est aussi calme avec le worker, sans, et sur `origin/main`
+  (médiane 53 à 60 ms par image, clic en 120 à 155 ms) ; et les « Couldn't
+  load texture blob: » ne reviennent pas, même en rechargeant pendant que
+  les corps se chargent. Ce sont des rouges de portail, déclarés dans
+  `TASKS.md` avec leurs mesures — et ce qui les distingue d'une régression,
+  c'est qu'on a MESURÉ les trois configurations, pas qu'on a rejoué jusqu'au
+  vert.
+
 ## La nuit se règle avec les ombres, et le conducteur se voit (v249)
 
 **LE BANC NE VOIT PAS LA NUIT DE L'IPAD.** Max, capture : « Paris est dans le

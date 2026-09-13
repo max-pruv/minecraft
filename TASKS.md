@@ -24,6 +24,22 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Trois rouges du portail complet de la v251, verts rejoués seuls,
+  cause ouverte.** (1) `reseau.js`, « à trois, chacun voit les deux autres »
+  (hôte ["Alice"], Alice ["Marlon"], Nina les deux, en 79 s) — trois pages
+  de jeu en même temps, donc trois workers de maillage de plus sur quatre
+  cœurs ; à remesurer avec le worker et sans (`&maillage=local`) si le rouge
+  revient. (2) `carte.js`, `page.click('#map-tout')` jamais « stable » en
+  trente secondes — mesuré ensuite sur la page bureau, carte ouverte :
+  médiane 60 ms par image avec le worker, 55 sans, 53 sur `origin/main`,
+  clic en 155 / 120 / 135 ms ; le symptôme de la v247 (banc lent), pas le
+  worker. (3) `plafond.js`, « THREE.GLTFLoader: Couldn't load texture
+  blob: » × 4 au rechargement — jamais vu avant, pas reproduit seul ni par
+  une sonde qui recharge 300 ms après l'ouverture, corps réalistes en cours
+  de chargement, avec et sans worker. Piste : l'ordre des fetch de blob
+  quand la page est déchargée pendant `parseAsync` ; dater les erreurs par
+  rapport au `pagehide`.
+
 - [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
   foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
   (neuf corps Rocketbox, vingt-quatre tenues sculptées) et des trois

@@ -61,7 +61,13 @@ et le front de chargement y recule un peu (144 → 120 blocs devant l'avion)
 lui. Les témoins de
 chargement en vol (« on ne rattrape pas le bout du monde qui se charge »)
 restent verts. Les gardiens du mailleur sont toutes les suites : portail
-complet.
+complet — et ce portail complet a trouvé une dette de la v249 : « à minuit,
+les fenêtres de la ville restent allumées » (`carteMonde.js`) comparait le
+NIVEAU des lampes à la COULEUR du matériau des fenêtres, et les planchers
+de nuit de la v249 l'avaient rendu rouge pour toujours sans que personne ne
+le voie (cette suite ne garde pas `main.js`). Il lit désormais des pixels :
+un mur de pierre percé de fenêtres d'étage, à minuit, fenêtre allumée à
+178 contre 33 pour le mur (fenêtre éteinte à 73).
 
 ## v250 — Les roues de la Lucid tournent autour de leur essieu, et toute la flotte est passée en revue
 
