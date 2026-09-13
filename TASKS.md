@@ -24,6 +24,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« La circulation s'arrête devant la voiture de l'enfant » est un
+  témoin qui dépend de l'état du banc.** Rouge à deux portails de la v247
+  (« première voiture après 0 s, 206 relevés à moins de douze blocs, zéro
+  arrêtée, zéro au travers »), VERT rejoué seul sur la branche ET sur
+  `origin/main`, et rouge une fois sur l'ancien code rejoué seul pendant la
+  v246. Il se pose douze blocs devant une voiture visible et attend qu'elle
+  vienne s'arrêter ; rien ne garantit que cette voiture vienne à lui — celle
+  qui est déjà à douze blocs peut tourner avant, ou faire la queue derrière
+  une autre. Un rouge sans traversée n'est pas la panne que le témoin garde.
+  Piste : choisir une voiture dont le tracé PASSE par le point posé (lire le
+  parcours du convoi, pas seulement son cap), et dire dans le message si la
+  voiture la plus proche s'est éloignée ou rapprochée.
+
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
   des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
   se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt

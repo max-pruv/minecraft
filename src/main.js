@@ -5436,10 +5436,12 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // de lumière du monde, `fenetres` celui des vitres allumées — la nuit, le
 // second doit dominer, sinon la ville est éteinte.
 // Depuis la v247 les murs sont ÉCLAIRÉS et non teintés : leur niveau de
-// lumière est celui des lampes — le ciel (hémisphère) plus le soleil ou la
-// lune — pas la couleur du matériau, qui reste blanche.
+// lumière est celui que reçoit un mur VERTICAL — la moitié de l'hémisphère
+// (un mur voit moitié ciel, moitié sol) et la moitié du soleil ou de la lune
+// (en moyenne sur les orientations) — pas la couleur du matériau, qui reste
+// blanche. À minuit : 0,27 ; à midi : 1,0.
 window.__lumiere = () => ({
-  solide: Math.round((hemiLight.intensity + sunLight.intensity) * 100) / 100,
+  solide: Math.round((hemiLight.intensity * 0.5 + sunLight.intensity * 0.5) * 100) / 100,
   fenetres: Math.round(litMaterial.color.r * 100) / 100,
   morceauxEclaires: [...chunkMeshes.values()].filter((e) => e.lumineux).length,
 });
