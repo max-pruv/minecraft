@@ -34,11 +34,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   médiane 60 ms par image avec le worker, 55 sans, 53 sur `origin/main`,
   clic en 155 / 120 / 135 ms ; le symptôme de la v247 (banc lent), pas le
   worker. (3) `plafond.js`, « THREE.GLTFLoader: Couldn't load texture
-  blob: » × 4 au rechargement — jamais vu avant, pas reproduit seul ni par
-  une sonde qui recharge 300 ms après l'ouverture, corps réalistes en cours
-  de chargement, avec et sans worker. Piste : l'ordre des fetch de blob
-  quand la page est déchargée pendant `parseAsync` ; dater les erreurs par
-  rapport au `pagehide`.
+  blob: » × 4 au rechargement — revenu à l'identique au portail de la v252,
+  toujours vert seul : le témoin rechargeait la page tout de suite après
+  l'ouverture, et sous la charge de trois suites les neuf corps réalistes
+  étaient encore en cours d'analyse ; la navigation coupe leurs textures et
+  le chargeur l'écrit en erreur de console. Réglé dans le BANC (v252) :
+  `plafond.js` attend `humainsCharges()` avant chaque rechargement.
 
 - [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
   foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
