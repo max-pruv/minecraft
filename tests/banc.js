@@ -381,7 +381,9 @@ class Banc {
     // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
     // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
     // sur un défaut.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : ''),
+    // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
+    // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

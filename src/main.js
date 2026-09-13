@@ -120,7 +120,23 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // même regard : ACES, ombres du soleil (voir `sunLight`), blocs Lambert.
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true;
+// LES OMBRES DEMANDENT UNE CARTE GRAPHIQUE. Sans accélération matérielle
+// (SwiftShader, llvmpipe — le banc, ou un navigateur sans GPU), la passe
+// d'ombre double le temps d'image (217 → 383 ms mesurés à Paris) et le monde
+// se charge deux fois moins vite : mieux vaut un monde sans ombres qu'un
+// monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
+// `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
+function renduLogiciel() {
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const nom = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
+  } catch { return false; }
+}
+const OMBRES_DEMANDEES = new URLSearchParams(location.search).get('ombres');
+const OMBRES = OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : !renduLogiciel();
+renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Sans le troisième argument, setSize écrit la taille en dur dans le style du
 // canvas et l'emporte sur la feuille de style — c'est ainsi qu'une mesure
@@ -156,7 +172,7 @@ const hemiLight = new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.0);
 scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
 sunLight.position.set(0.6, 1, 0.4);
-sunLight.castShadow = true;
+sunLight.castShadow = OMBRES;
 // MILLE VINGT-QUATRE PARTOUT, ET LE FILTRE SIMPLE. Mesuré au banc à Paris
 // (rendu logiciel, médiane par image) : sans ombres 217 ms · basique 512
 // 350 · PCF 1024 400 · PCF doux 2048 467. La passe elle-même est le gros du

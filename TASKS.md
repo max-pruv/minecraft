@@ -57,9 +57,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   rendus une seconde fois depuis le soleil, carte de 1 024, filtre PCF
   simple. Au banc en rendu logiciel, à Paris : 217 ms sans ombres, 400 avec
   (350 en ombre basique 512, 467 en PCF doux 2 048) — des millisecondes de
-  SwiftShader, non transposables. Si Max signale un ralentissement, les
+  SwiftShader, non transposables — et suffisantes pour que le jeu coupe ses
+  ombres de lui-même en rendu logiciel. Si Max signale un ralentissement, les
   leviers dans l'ordre : `RAYON_OMBRE` (6 → 4), la carte (1 024 → 512),
-  `BasicShadowMap`, et en dernier `renderer.shadowMap.enabled`.
+  `BasicShadowMap`, et en dernier `?ombres=0` / `renderer.shadowMap.enabled`.
 
 - [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
   lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est

@@ -54,9 +54,12 @@ l'horizon (156 contre 181). Les intensités ont été réglées sur captures —
 premier jet, calqué sur Manhattan, rendait un ciel blanc et des toits
 blancs. Et le coût est mesuré : au banc en rendu logiciel, à Paris, une image
 passe de 217 ms sans ombres à 383 avec (carte de 1 024, filtre simple, seuls
-les morceaux proches portent une ombre) ; ces millisecondes sont celles du
-banc, pas de la tablette, et le coût sur l'iPad est déclaré dans `TASKS.md`
-avec ses leviers.
+les morceaux proches portent une ombre) — assez pour faire tomber quatre
+bornes de garde d'autres témoins au premier portail, sur du code sain. Le jeu
+coupe donc ses ombres de lui-même quand il rend en logiciel, sans carte
+graphique ; les trois témoins du regard les forcent sur leur propre page. Le
+coût sur l'iPad, qui a sa carte graphique, est déclaré dans `TASKS.md` avec
+ses leviers.
 
 ## v246 — La téléportation ne fige plus l'écran, la Bugatti roule sans traînées, et chaque ville a ses propres voitures
 

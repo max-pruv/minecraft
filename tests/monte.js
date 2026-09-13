@@ -1836,7 +1836,15 @@ async function avancerUnDemiSeconde(p, depart) {
     // ombre à celle du sol au soleil ; puis sa face est à sa face ouest, le
     // matin et le soir ; puis le zénith à l'horizon. Sur l'ancien code les
     // trois rapports valent un.
-    const regard = await tab.evaluate(async () => {
+    //
+    // SUR UNE PAGE À PART, OMBRES FORCÉES. Le jeu coupe ses ombres en rendu
+    // logiciel — le banc — parce que la passe d'ombre y double le temps
+    // d'image et faisait tomber quatre bornes de garde d'autres témoins
+    // (blocs parcourus en vol, relevés de virage). `ombres=1` les rallume
+    // ici, et ici seulement ; l'ancien code ignore le paramètre.
+    await souffler();
+    const regardPage = await banc.jouerSeul('MonteRegard', { rr: 4, ombres: 1 });
+    const regard = await regardPage.evaluate(async () => {
       const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
       const THREE = await import('three');
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
@@ -1896,8 +1904,9 @@ async function avancerUnDemiSeconde(p, depart) {
       const ciel = { zenith: pix(Math.round(W / 2), 6), bas: pix(Math.round(W / 2), H - Math.round(H / 6)) };
       window.__setDayTime(0.3);
       g.player.flying = false;
-      return { sol, ombre, soleil, matin, soir, ciel };
+      return { sol, ombre, soleil, matin, soir, ciel, ombres: r.shadowMap.enabled };
     });
+    await regardPage.close();
     const ok = (v) => typeof v === 'number' && v > 0;
     verifier('à midi, le sol dans l\'ombre d\'un pilier est plus sombre que le sol au soleil',
       ok(regard.ombre) && ok(regard.soleil) && regard.ombre / regard.soleil < 0.8,

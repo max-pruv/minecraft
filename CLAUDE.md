@@ -625,6 +625,20 @@ millisecondes sont celles de SwiftShader et ne se transposent pas à la
 tablette ; ce qui se transpose, c'est que la passe existe et ce qu'elle
 dessine. Le coût sur l'iPad est une dette déclarée, avec ses leviers.
 
+**ET LES OMBRES DEMANDENT UNE CARTE GRAPHIQUE — le premier portail l'a
+dit.** Même à 383 ms l'image, le banc en rendu logiciel volait deux fois
+moins vite et relevait deux fois moins : quatre bornes de garde sont tombées
+sur du code sain (667 blocs parcourus pour une borne de 1 000, 59 relevés de
+virage pour 500, un clic de carte jamais « stable » en trente secondes, une
+partie à trois qui ne se voit plus). Régler ces bornes aurait mesuré le
+banc. Le jeu coupe donc lui-même ses ombres quand le rendu est LOGICIEL
+(`renduLogiciel`, par le nom du pilote : SwiftShader, llvmpipe) — un
+navigateur sans carte graphique préfère un monde sans ombres à un monde qui
+n'arrive pas — et `?ombres=1` les force : c'est ce que fait la page à part
+des trois témoins du regard (`banc.jouerSeul(…, { ombres: 1 })`). Toute
+suite qui ne mesure pas le regard tourne donc sans ombres, comme avant ; les
+trois témoins tournent avec. Sur l'iPad, la carte graphique est là.
+
 ## Le premier chargement — ce qui part, et QUAND
 
 **Un préchargement qui rend service à l'un se paie sur tous les autres.** Le
