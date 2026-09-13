@@ -605,10 +605,25 @@ assombri. Première étape du programme : le regard, sur tout le monde.
   la caméra se pose à la main (`lookAt`) pour ne pas dépendre de la
   convention de cap du joueur.
 
-**Ce que ça coûte, et où** : une passe d'ombre par image — le monde proche
-rendu une seconde fois depuis le soleil. Mesuré au banc en rendu logiciel,
-non transposable en durée ; ce qui se transpose est le nombre d'appels de
-dessin, relevé dans le journal de la version.
+**Ce que ça coûte, et où — MESURÉ, PAS DEVINÉ.** Une passe d'ombre par
+image : le monde proche rendu une seconde fois depuis le soleil. Au banc, à
+Paris, à la distance de l'iPad (médiane par image, rendu logiciel) :
+
+| | ms |
+| --- | --- |
+| sans ombres | 217 |
+| ombre basique, carte 512 | 350 |
+| PCF, carte 1 024 | 400 |
+| PCF doux, carte 2 048 (premier jet) | 467 |
+
+La PASSE est le gros du coût, la taille et le filtre le reste. D'où trois
+choix : carte de 1 024 partout (cinq texels par bloc sur 190 blocs
+d'emprise), filtre PCF simple, et **seuls les morceaux à portée de la caméra
+d'ombre PORTENT une ombre** (`RAYON_OMBRE`, six morceaux ; les autres en
+reçoivent) — la passe ne rend pas les neuf cents morceaux chargés. Ces
+millisecondes sont celles de SwiftShader et ne se transposent pas à la
+tablette ; ce qui se transpose, c'est que la passe existe et ce qu'elle
+dessine. Le coût sur l'iPad est une dette déclarée, avec ses leviers.
 
 ## Le premier chargement — ce qui part, et QUAND
 

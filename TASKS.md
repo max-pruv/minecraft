@@ -53,12 +53,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   îlots.
 
 - [ ] **Le coût des ombres sur l'iPad n'est pas mesuré.** La v247 ajoute une
-  passe d'ombre par image (le monde proche rendu une seconde fois depuis le
-  soleil, carte de 1 024 sur tablette). Au banc en rendu logiciel la durée
-  ne se transpose pas ; les appels de dessin sont dans le journal. Si Max
-  signale un ralentissement, le premier réglage est la taille de la carte
-  d'ombre et l'emprise de la caméra d'ombre (95 blocs de demi-côté), puis
-  `castShadow` sur les seuls morceaux proches.
+  passe d'ombre par image : les morceaux à moins de six morceaux de l'enfant
+  rendus une seconde fois depuis le soleil, carte de 1 024, filtre PCF
+  simple. Au banc en rendu logiciel, à Paris : 217 ms sans ombres, 400 avec
+  (350 en ombre basique 512, 467 en PCF doux 2 048) — des millisecondes de
+  SwiftShader, non transposables. Si Max signale un ralentissement, les
+  leviers dans l'ordre : `RAYON_OMBRE` (6 → 4), la carte (1 024 → 512),
+  `BasicShadowMap`, et en dernier `renderer.shadowMap.enabled`.
 
 - [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
   lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est

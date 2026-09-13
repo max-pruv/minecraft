@@ -65,6 +65,7 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
+const RAYON_OMBRE = 6;   // en morceaux : l'emprise de la caméra d'ombre (95 blocs), v247
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // Millisecondes maximum consacrées par frame à construire des chunks.
@@ -120,7 +121,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 // Sans le troisième argument, setSize écrit la taille en dur dans le style du
 // canvas et l'emporte sur la feuille de style — c'est ainsi qu'une mesure
 // fausse devenait une bande noire. La vraie taille est posée par
@@ -156,7 +157,13 @@ scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
 sunLight.position.set(0.6, 1, 0.4);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
+// MILLE VINGT-QUATRE PARTOUT, ET LE FILTRE SIMPLE. Mesuré au banc à Paris
+// (rendu logiciel, médiane par image) : sans ombres 217 ms · basique 512
+// 350 · PCF 1024 400 · PCF doux 2048 467. La passe elle-même est le gros du
+// coût, la taille et le filtre le reste ; sur 190 blocs d'emprise, 1024 fait
+// cinq texels par bloc, ce qu'un bloc de trente mètres n'a pas besoin de
+// dépasser. Manhattan garde son propre budget quand l'enfant y est.
+sunLight.shadow.mapSize.set(1024, 1024);
 sunLight.shadow.camera.near = 0.5;
 sunLight.shadow.camera.far = 380;
 Object.assign(sunLight.shadow.camera, { left: -95, right: 95, top: 95, bottom: -95 });
@@ -410,7 +417,13 @@ function meshChunk(cx, cz) {
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
-    entry.solid.castShadow = true; entry.solid.receiveShadow = true;
+    // Un morceau ne PORTE d'ombre qu'à portée de la caméra d'ombre (six
+    // morceaux, quatre-vingt-quinze blocs) ; au-delà il en reçoit seulement.
+    // La passe d'ombre ne rend ainsi que le monde proche, pas les 900
+    // morceaux chargés — `updateChunks` remet le drapeau quand on bouge.
+    entry.solid.castShadow = Math.abs(cx - Math.floor(player.pos.x / CHUNK)) <= RAYON_OMBRE
+      && Math.abs(cz - Math.floor(player.pos.z / CHUNK)) <= RAYON_OMBRE;
+    entry.solid.receiveShadow = true;
     scene.add(decor(entry.solid));
   }
   if (water) {
@@ -453,6 +466,8 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
+      } else if (entry.solid) {
+        entry.solid.castShadow = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
       }
     }
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait

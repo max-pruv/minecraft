@@ -52,7 +52,11 @@ PIXELS rendus et rouges sur l'ancien code (les trois rapports y valent un) :
 31), le soir sa face ouest ; le ciel est plus profond au zénith qu'à
 l'horizon (156 contre 181). Les intensités ont été réglées sur captures — le
 premier jet, calqué sur Manhattan, rendait un ciel blanc et des toits
-blancs.
+blancs. Et le coût est mesuré : au banc en rendu logiciel, à Paris, une image
+passe de 217 ms sans ombres à 400 avec (carte de 1 024, filtre simple, seuls
+les morceaux proches portent une ombre) ; ces millisecondes sont celles du
+banc, pas de la tablette, et le coût sur l'iPad est déclaré dans `TASKS.md`
+avec ses leviers.
 
 ## v246 — La téléportation ne fige plus l'écran, la Bugatti roule sans traînées, et chaque ville a ses propres voitures
 
