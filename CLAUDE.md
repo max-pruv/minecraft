@@ -577,6 +577,11 @@ assombri. Première étape du programme : le regard, sur tout le monde.
   sa place la nuit, bleutée et faible. `lightColor` ne sert plus qu'aux
   vitres allumées. Manhattan règle ses lampes quand l'enfant y est
   (`renduDansManhattan`) ; le monde ne les touche pas pendant ce temps.
+- **ET LA SONDE `__lumiere()` PUBLIE LE NIVEAU DES LAMPES**, non plus la
+  couleur du matériau des murs (toujours blanche désormais) : le témoin « à
+  minuit, les fenêtres restent allumées » de `carteMonde.js` est tombé au
+  portail avec « murs à 1 » avant cette correction. Une sonde qui lit un
+  mécanisme meurt avec lui ; celle-ci lit ce qui éclaire.
 - **LES INTENSITÉS SE MESURENT SUR CAPTURES, ELLES NE SE RECOPIENT PAS DE
   MANHATTAN.** Mon premier jet calquait les siennes (soleil 0,16 + 1,5,
   ciel 0,32 + 0,95) : les textures des blocs sont plus claires que ses
