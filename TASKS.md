@@ -24,6 +24,29 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Vitesse des voitures par modèle (Max, après la v259).** « Les
+  voitures devraient aller plus vite et surtout une vitesse en fonction du
+  modèle (sportive faster than sedan basic). » Toute voiture conduite a
+  aujourd'hui `allure: 3.4` (montures.js), quel que soit le modèle de la
+  flotte. Piste : une classe par modèle dans le manifeste de la flotte
+  (citadine, berline, SUV, sportive, hypercar) et une allure par classe, lue
+  à la monte ; plafond réglé sur le débit de maillage MESURÉ en voiture dans
+  une ville (v229 : le monde ne suit plus au-delà de ~110 blocs/s en vol).
+  Témoin : deux modèles de classes différentes, vitesse mesurée en roulant.
+- [ ] **Avions : vrai décollage, vrai atterrissage, roulage (Max, après la
+  v259).** « Accélération sur la piste puis décollage en levant le nez ;
+  à l'atterrissage, baisser l'altitude et ouvrir le train ; et le roulage
+  sur la piste. » Aujourd'hui ✈️ fait une montée automatique de vingt blocs
+  (v228) et un second appui pose. À faire dans `player.js` (mode `pilote`),
+  `fun.js`, `avions.js` : phase ROULAGE (au sol, le joystick dirige, allure
+  de roulage), DÉCOLLAGE (accélération jusqu'à la vitesse de rotation de la
+  fiche, nez qui se lève progressivement, train qui rentre), ATTERRISSAGE
+  (assiette de descente, train qui sort sous une altitude, toucher, freinage).
+  Le train doit exister sur les modèles et s'animer. Garder les commandes
+  d'enfant de la v228. Témoins : distance de roulage avant décollage, tangage
+  au décollage, train rentré en vol et sorti sous l'altitude, vitesse nulle
+  après l'atterrissage. Fiches par appareil, comme `max` et `virage`.
+
 - [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
   dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
   (v256) : il marche jusqu'à être entré, ressorti ou figé trois pas, plus en
