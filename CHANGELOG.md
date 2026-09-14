@@ -50,7 +50,13 @@ blocs en trois secondes de jeu ; un quart de tour à droite, le cap affiché
 passe de 152° à 062° et une autre ville passe devant, et vers +x il dit
 090° E — le signe se regarde ; à pied le cadran est `display: none`, et il
 l'est de nouveau une fois descendu. Rouges sur l'ancien code (le cadran
-n'existe pas, et le témoin le dit).
+n'existe pas, et le témoin le dit). Captures en vol dans
+`scratchpad/v263/captures`. Portail rejoué depuis zéro sur les sept suites
+que l'aiguillage retient (fumée, `maj`, `carte`, `washington`, `reglages`,
+`manhattan`, `monte`) : 387 témoins verts ; cinq rouges, tous dettes
+déclarées dans `TASKS.md` aux mêmes valeurs qu'aux v261 et v262 — les
+quatre de `manhattan.js` (11684 → 51734, [1,−1]) et le gel du premier
+survol de Paris (`monte.js`, 3 283 ms / 37,3 %).
 
 ## v262 — Une manette des gaz à droite, le joystick pour le volant
 
