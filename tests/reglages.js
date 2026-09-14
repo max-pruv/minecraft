@@ -62,7 +62,11 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
   });
 
   const adresse = `http://127.0.0.1:${PORT_JEU}/index.html`
-    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2`
+    // `prep=0` (v258) : cette suite ouvre ses pages elle-même, et le jeu
+    // grise « Jouer » jusqu'à ce que corps et programmes soient prêts — sans
+    // ce paramètre, le clic sur un bouton grisé ne fait rien, et l'attente de
+    // `running` a tué le portail (30 s). Même règle que `banc.joueur`.
+    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2&prep=0`
     + `&peerhost=127.0.0.1:${PORT_PAIRS}`;
 
   async function joueur(prenom) {

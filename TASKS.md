@@ -37,20 +37,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   pas — remplacer la borne en PAS par une borne en BLOCS parcourus, comme
   « ne plus avancer » l'a déjà fait.
 
-- [ ] **La carte du monde bloque le fil principal à l'ouverture et à chaque
-  déplacement (Max, v255 : « beaucoup de lag au début »).** Mesuré au banc,
-  processeur bridé ×4, page 420 × 760 : ouverture en 2,1 s avec UNE tâche de
-  1 637 ms (le fond : `terrainHeight` et couleur pour un échantillon sur deux
-  pixels, quel que soit le dpr), puis 90 à 240 ms toutes les deux secondes
-  dès que la vue bouge — 2,1 s bloquées sur les trente secondes qui suivent.
-  Un iPad en paysage a 2,4 fois plus d'échantillons et un processeur plus
-  lent : cinq à dix secondes pour le premier fond, une à deux à chaque
-  déplacement. Pistes : rendre le fond par tranches sous un budget par image
-  (comme la mise à niveau des corps), ou dans le worker de maillage qui a
-  déjà un `World` ; ne re-rendre que quand la vue a bougé de plus de N blocs
-  (la leçon de la minicarte, v233) ; et préparer le premier fond AVANT
-  « Jouer », derrière le loader. Prévu v258, avec la préparation avant Jouer.
-
 - [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
   minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
   banc — instrument de charge instantané, repos en condition, suites
@@ -981,6 +967,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
+  boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
+  position restaurée dès l'accueil) ; la carte du monde calcule son fond par
+  tranches de 8 ms et ne le recalcule que quand la vue en sort ; la minicarte
+  se repeint deux lignes par image, se remplit après un saut et n'engendre
+  plus jamais un morceau. Banc : `?prep=0`, `{ prep: 1 }`, `{ pret: true }`.
 - [x] **v257** — L'installation se voit : le loader compte les fichiers
   rangés pendant la mise à jour, puis reste après le rechargement jusqu'à ce
   que corps et programmes soient prêts ; une version ne se revalide plus ;

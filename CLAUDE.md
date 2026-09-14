@@ -764,6 +764,92 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Le jeu se prépare avant « Jouer », et une carte se calcule par tranches (v258)
+
+Max : « quand on ouvre la carte, beaucoup de lag au début » ; « le temps de
+télécharger tous les fichiers nécessaires avant de permettre de démarrer le
+jeu ». Mesuré AVANT une ligne (bridé ×4) : minicarte 690 ms au premier fond
+puis 90 à 240 ms toutes les deux secondes, carte du monde 1 637 ms. Et
+un profil qui a failli accuser le mauvais coupable. Cinq règles.
+
+- **CE QUI LAGUE AU DÉBUT N'EST PAS UN FICHIER, C'EST UN PREMIER USAGE.** Le
+  service worker a tous les fichiers ; ce qui coûte, c'est ce qui se calcule
+  la première fois — corps, programmes, monde autour de l'enfant, fonds de
+  carte. « Télécharger avant de jouer » se traduit donc par PRÉPARER avant
+  de jouer : la position locale se restaure à l'accueil (le monde se charge
+  là où il jouera, pas au point d'apparition), les deux cartes préparent leur
+  fond, et « Jouer » reste grisé jusqu'à ce que tout soit là — borné à
+  quarante-cinq secondes. La fenêtre de quarante secondes pendant laquelle le
+  nuage peut remettre l'enfant à sa place se compte depuis le clic
+  (`posEntree`), pas depuis la restauration.
+- **UN FOND SE CALCULE PAR TRANCHES, ET VAUT TANT QU'IL COUVRE LA FENÊTRE.**
+  `commencerFond` / `avancerFond(budget)` (carte.js) : le même calcul, ligne
+  par ligne, huit millisecondes par image, l'ancien fond étiré en attendant.
+  Un fond calculé sur 1,3 fois la vue n'a rien à recalculer pour un glisser
+  d'un dixième de l'écran — `couvre()` remplace « la vue a changé ». Le
+  niveau 2 (un échantillon pour huit pixels) est l'esquisse d'un seul tenant
+  quand il n'y a RIEN à étirer. `rendreFond` reste, pour le banc.
+- **LA MINICARTE SE REPEINT PAR BANDES — DEUX LIGNES PAR IMAGE, PAS « PENDANT
+  QUATRE MILLISECONDES ».** Le « fond entier toutes les deux secondes » de la
+  v233 était l'à-coup régulier ; deux lignes par image font le même tour en
+  deux secondes sans jamais payer une image. Un raster neuf ou un grand saut
+  se REMPLIT (fond de nuit, puis quatre lignes par image) au lieu d'être
+  calculé d'un bloc — la téléportation ne paie plus 37 000 colonnes. Mon
+  premier jet repeignait « pendant 4 ms » à chaque image : deux millions de
+  lectures de blocs par seconde, dix fois la cadence d'avant — **un budget en
+  temps par image est un TAUX, et un taux se compare à celui qu'il remplace.**
+- **LA MINICARTE N'ENGENDRE JAMAIS UN MORCEAU.** `getBlock` engendre ce
+  qu'on lui demande, sur le fil principal ; après une téléportation, la
+  minicarte faisait naître un à un les cent soixante-neuf morceaux de son
+  raster (vingt-quatre millisecondes chacun dans une ville) pendant que le
+  worker les engendrait de son côté — et « un appui long dépose n'importe
+  où » (carte.js) est tombé deux fois sur quatre, le minuteur de l'appui
+  tirant plus de cent vingt millisecondes en retard. Un morceau absent se
+  peint d'après le relief (`terrainHeight`, pure) et se MARQUE (`carteReel`) ;
+  la bande suivante le repeint avec ses blocs. La sonde `__carteControle`
+  ne compare que les points dont la nature n'a pas changé entre le raster et
+  le recalcul — sinon un morceau livré entre les deux accuserait la recopie.
+- **UNE BOUCLE SANS FIN À L'ACCUEIL A RETENU LE SERVICE WORKER CINQUANTE
+  SECONDES.** Le portail l'a dit par `maj.js` : la mise à jour partait par
+  le chemin forcé (« On va chercher la dernière version… ») parce que
+  `reg.update()` ne trouvait rien en vingt secondes. Mesuré : résolu en 50 s
+  avec la préparation, 1 s sans ; bissection par `?prepmini=0` /
+  `?prepcarte=0` (gardés, comme `?reflets=0`) : c'est la minicarte, qui
+  repeignait ses bandes à chaque image de l'accueil, indéfiniment — le fil
+  principal respirait pourtant (latence des minuteurs 4 ms), et la requête
+  de `sw.js` n'atteignait le serveur qu'à la cinquantième seconde. Le
+  mécanisme exact est dans le navigateur ; la règle, elle, est claire : **à
+  l'accueil, une préparation fait UN tour et s'arrête** (`carteTours`), et
+  le scénario de mise à jour de `maj.js` se joue désormais PENDANT la
+  préparation (`prep: 1`), sinon il ne mesure pas le trajet de l'enfant.
+- **LE PROFIL ACCUSAIT LA CARTE DU MONDE ; LA TRACE A NOMMÉ LA MINICARTE.**
+  Le premier fond de la carte du monde corrigé, l'ouverture bloquait ENCORE
+  800 ms — `(program)` dans le profil, donc « le navigateur ». La trace par
+  événements (`Tracing.start`) a mis les 830 ms dans le clic sur le BOUTON de
+  la minicarte, pas sur la carte : c'était son premier fond à elle, et les
+  morceaux qu'il fait engendrer. Deux clics dans une sonde, deux coûts ; on
+  les mesure séparément avant de conclure.
+- **ET LE BANC A MESURÉ CE QUE LA CHAUFFE COÛTE EN JEU.** `carte.js` est
+  tombée trois fois sur six sur deux symptômes — « #map-tout jamais stable »
+  (la dette de la v251) et l'appui long refusé — et le profil de la page
+  bureau, carte ouverte, deux pages ouvertes, l'a nommé : 17 s de
+  `getProgramParameter` / `getShaderParameter`, des images de 1,5 à 2,4 s.
+  C'est la chauffe des programmes (v246), une compilation par image, que le
+  banc fait EN JEU parce qu'il appuie sur « Jouer » tout de suite — l'enfant,
+  lui, attend derrière les boutons grisés. `jouerSeul(…, { pret: true })`
+  attend la chauffe avant d'appuyer ; les trois pages de `carte.js` le
+  demandent. Ce n'était pas le jeu qui était lent, c'était le banc qui
+  jouait pendant la préparation.
+- **ET TOUTE PAGE QUE LE BANC OUVRE LUI-MÊME LE DEMANDE AUSSI.** `reglages.js`
+  et `realisme.js` construisent leur adresse sans passer par `banc.joueur` ;
+  la première a tué le portail (clic sur un « Jouer » grisé, trente secondes
+  d'attente de `running`). Un paramètre que le banc ajoute se cherche dans
+  TOUTES les adresses du banc le jour même : `grep -n "stay=1" tests/*.js`.
+- **LE BANC DEMANDE `?prep=0`**, comme il demande `rr=2` : trente-sept
+  démarrages en rendu logiciel auraient payé dix secondes de corps chacun
+  sans rien mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la
+  demande par `{ prep: 1 }` — même discipline que `ombres: 1`.
+
 ## L'installation se voit, et la tablette mesure elle-même (v257)
 
 Max, après la v255 : « après chaque mise à jour, le jeu reste quasiment

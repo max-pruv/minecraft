@@ -20,6 +20,66 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v258 — Le jeu se prépare avant « Jouer », et la carte ne fige plus l'image
+
+**Pourquoi.** Max, après la v255 : « quand on ouvre la carte, beaucoup de
+lag au début, sur les premières minutes » et « ne devrait-il pas y avoir le
+temps de télécharger tous les fichiers nécessaires avant de permettre à
+l'utilisateur de démarrer le jeu, pour éviter une expérience de lag ? ».
+Mesuré au banc, processeur bridé ×4 comme une tablette : le premier fond de
+la minicarte bloquait le fil principal 690 ms — 37 000 colonnes d'un coup,
+et le fond entier refait toutes les deux secondes, 90 à 240 ms chaque fois
+tant qu'elle est affichée ; le fond de la carte du monde, 1 637 ms à
+l'ouverture (les deux tiers en hauteurs de terrain, le tiers en couleurs).
+Et ce qui lague dans les premières minutes n'est pas un fichier qui manque
+— le service worker les a tous — mais ce qui se calcule au premier usage :
+les corps réalistes, les programmes de la flotte, le monde autour de
+l'enfant (qui se chargeait au point d'apparition pendant l'accueil, puis se
+rechargeait là où « Jouer » le téléportait) et les deux fonds de carte.
+
+**Ce que ça change.** Sur l'accueil, une ligne sous les boutons dit ce que
+le jeu prépare — « ⏳ Préparation du jeu… personnages 3/9 · programmes
+12/25 · carte … » — et « Jouer » comme « Jouer en ligne » restent grisés
+jusqu'à ce que tout soit là, borné à quarante-cinq secondes. La position
+locale est restaurée dès l'accueil : le monde se charge là où l'enfant va
+jouer. La minicarte et la carte du monde préparent leur premier fond
+pendant ce temps. Ouverte, la carte du monde calcule son fond par tranches
+de huit millisecondes par image, en étirant l'ancien en attendant, et ne le
+recalcule que quand la vue en sort ou que le zoom a changé — un glisser
+d'un dixième de l'écran n'a plus rien à recalculer. La minicarte repeint
+son fond deux lignes par image, en tournant sans fin — le tour en deux
+secondes, la cadence d'avant sans son à-coup : un bloc posé apparaît dans
+les deux secondes et aucune image ne le paie en entier ; après une téléportation, elle se remplit au lieu de se calculer
+d'un bloc, et elle n'engendre plus jamais un morceau sur le fil principal :
+un morceau que le worker n'a pas encore livré se peint d'après le relief,
+puis se repeint avec ses blocs. Le banc, lui, demande `?prep=0`.
+
+**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
+`maj.js` : « avant « Jouer », le bouton attend que le jeu soit prêt, et une
+ligne dit ce qu'il prépare », « et quand il se libère, corps, programmes et
+fond de carte sont vraiment là » (sur l'ancien code, le bouton n'attend
+jamais et la ligne n'existe pas). Dans `carte.js`, bridés ×4 : « allumer la
+minicarte ne fige pas l'image », « ouvrir la carte du monde ne fige pas
+l'image », « et la faire glisser non plus » (barre 700 ms ; mesuré 67, 158
+et moins de 160 ms ici, 690 et 1 637 sur l'ancien code) ; et « le fond par
+tranches est identique au fond d'un seul tenant », octet pour octet — une
+optimisation qui découpe doit prouver qu'elle ne ment pas. Et le premier
+portail a rendu `maj.js` rouge : la préparation de la minicarte, en boucle
+sans fin sur l'accueil, retenait la mise à jour du service worker cinquante
+secondes (mesuré, bissection par `?prepmini=0`) — un tour puis l'arrêt, et
+le scénario de mise à jour se joue désormais pendant la préparation. Le
+deuxième a rendu `carte.js` rouge par intermittence (l'appui long refusé,
+« #map-tout jamais stable ») : profil à l'appui, c'était la chauffe des
+programmes que le banc faisait EN JEU en appuyant sur « Jouer » tout de
+suite — une compilation par image, 1,5 à 2,4 s chacune en rendu logiciel ;
+les pages de `carte.js` attendent désormais la chauffe (`pret: true`),
+comme l'enfant derrière ses boutons grisés. Portail complet : 639 témoins
+verts sur les quinze suites (dix rejouées vertes sur ce code exact, cinq
+rejouées après les corrections du banc), 76 minutes en tout ; seuls rouges,
+ceux déjà déclarés de `manhattan.js` (quatre, plus sa fin instable) et de
+`monte.js` (un). Au portail, allumer la minicarte coûte 10 ms et ouvrir la
+carte 37, contre 964 et 872 sur l'ancien code rejoué seul.
+
 ## v257 — L'installation se voit, et la tablette dit où passe le temps
 
 **Pourquoi.** Max, après la v255 : « comme dernièrement après chaque mise à

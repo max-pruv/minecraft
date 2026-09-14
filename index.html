@@ -387,6 +387,9 @@
     }
     /* la durée du jour reste lisible sans peser sur la taille du bouton */
     #edu-today { font-size: 13px; opacity: .82; font-weight: normal; }
+    /* le jeu se prépare (v258) : les boutons attendent, et la ligne dit quoi */
+    #mode-row button:disabled { opacity: .45; cursor: wait; }
+    #prep-line { display: none; font-size: 14px; color: #9fd8e8; margin-top: 8px; text-align: center; }
     #online-menu {
       display: none; flex-direction: column; align-items: center; gap: 10px;
       background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 16px;
@@ -1663,6 +1666,9 @@
       <button id="admin-btn" style="display: none;">🛠️ Espace parent</button>
       <button id="switch-player-btn">🔄 Changer de joueur</button>
     </div>
+    <!-- Ce que le jeu prépare avant « Jouer » (v258) : corps, programmes,
+         carte. Les boutons restent grisés tant que ce n'est pas prêt. -->
+    <div id="prep-line"></div>
     <div id="profile-menu">
       <div class="menu-head">
         <button id="profile-back-top" title="Retour au menu">←</button>

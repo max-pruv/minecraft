@@ -49,7 +49,7 @@ const position = (p) => p.evaluate(() => ({
   await banc.ouvrir();
   try {
     // --- une tablette, comme à la maison -------------------------------------
-    const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true });
     await banc.ouvrirLaCarte(tab);
 
     // OÙ SONT LES VILLES : ON LE DEMANDE, ON NE LE SUPPOSE PAS.
@@ -1613,7 +1613,7 @@ const position = (p) => p.evaluate(() => ({
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
     await souffler();
-    const bureau = await banc.jouerSeul('Alice');
+    const bureau = await banc.jouerSeul('Alice', { pret: true });
     await banc.ouvrirLaCarte(bureau);
     const boutonRecoit = await bureau.evaluate(() => {
       const b = document.getElementById('map-tout');
@@ -1641,6 +1641,99 @@ const position = (p) => p.evaluate(() => ({
 
     verifier('aucune erreur JavaScript sur l\'ordinateur', bureau.erreurs.length === 0,
       JSON.stringify(bureau.erreurs));
+    await bureau.close();
+
+    // --- LA CARTE NE FIGE PLUS L'IMAGE (v258) ---------------------------------
+    //
+    // Max : « quand on ouvre la carte, beaucoup de lag au début ». Mesuré au
+    // banc, processeur bridé ×4 : le premier fond de la MINICARTE bloquait le
+    // fil principal 690 ms (37 000 colonnes d'un coup, refaites entières
+    // toutes les deux secondes), et celui de la carte du monde 1 637 ms.
+    // Les deux se font désormais par tranches sous un budget par image, et
+    // le premier fond se prépare avant « Jouer ». On éprouve le TRAJET : le
+    // jeu préparé, on allume la minicarte, on ouvre la carte, on la fait
+    // glisser trois secondes — et l'on relève la plus longue tâche du fil
+    // principal. Bridé ×4 comme une tablette, et c'est à ce bridage que le
+    // gel se voit : à ×1 le banc avale le fond en un quart de seconde.
+    await souffler();
+    const nino = await banc.joueur('Nino', { prep: 1 });
+    await nino.waitForFunction(() => !document.getElementById('play-btn').disabled, null, { timeout: 60000 }).catch(() => {});
+    await nino.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+    await nino.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    const cdpNino = await nino.context().newCDPSession(nino);
+    await cdpNino.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await dormir(1500);
+    await nino.evaluate(() => {
+      window.__longues = [];
+      try {
+        new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__longues.push([Math.round(e.startTime), Math.round(e.duration)]); })
+          .observe({ entryTypes: ['longtask'] });
+      } catch { /* pas d'observateur : le témoin le dira */ }
+    });
+    // LE COÛT D'UN CLIC SE MESURE DANS LE CLIC. Le premier jet relevait la
+    // plus longue tâche des deux secondes qui suivent : au portail, une tâche
+    // de 2 038 ms tombée dans la fenêtre — un ramasse-miettes, une adoption de
+    // morceaux, rien qui soit à la minicarte — a rougi « allumer la minicarte »
+    // alors que seul, rien ne dépassait 76 ms. Le clic est dispatché de façon
+    // synchrone : ce que coûte « allumer » et « ouvrir », c'est la durée de
+    // `click()`, premier dessin compris. Le glisser, lui, se mesure sur sa
+    // fenêtre, parce qu'il n'y a pas d'autre façon.
+    const allumer = await nino.evaluate(() => {
+      const t0 = performance.now();
+      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
+      return Math.round(performance.now() - t0);
+    });
+    await dormir(2500);
+    const minicarte = await nino.evaluate(() => window.__longues.splice(0));
+    const ouvrir = await nino.evaluate(() => { const t0 = performance.now(); document.getElementById('minimap').click(); return Math.round(performance.now() - t0); });
+    await nino.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
+    await dormir(2500);
+    const ouverture = await nino.evaluate(() => window.__longues.splice(0));
+    // le glisser : la vue avance de deux blocs par image pendant trois secondes
+    await nino.evaluate(() => new Promise((fin) => {
+      const c = window.__carte; const t0 = performance.now();
+      const pas = () => { c.vue.cx += 2; c.vue.cz += 1; if (performance.now() - t0 < 3000) requestAnimationFrame(pas); else fin(); };
+      requestAnimationFrame(pas);
+    }));
+    await dormir(1500);
+    const glisser = await nino.evaluate(() => window.__longues.splice(0));
+    await cdpNino.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const pire = (l) => Math.max(0, ...l.map(([, d]) => d));
+    console.log(`   🔎 clics (ms) : allumer ${allumer} · ouvrir ${ouvrir} · tâches longues (ms) · après la minicarte ${JSON.stringify(minicarte)} · après l'ouverture ${JSON.stringify(ouverture)} · glisser ${JSON.stringify(glisser)}`);
+    // Quatre cents millisecondes. Mesuré seul, sur l'ancien code : 695 pour
+    // la minicarte, 764 à l'ouverture, 1 136 au glisser ; sur celui-ci, le
+    // clic coûte quelques dizaines de millisecondes et la plus longue tâche
+    // du glisser est une image de jeu bridée ×4 (50 à 160). Mon premier jet
+    // mettait la barre à 700 : la minicarte de l'ancien code passait dessous
+    // de cinq millisecondes, vert des deux côtés.
+    const BARRE = 400;
+    verifier('allumer la minicarte ne fige pas l\'image (bridé ×4)', allumer < BARRE, `le clic a coûté ${allumer} ms (barre ${BARRE})`);
+    verifier('ouvrir la carte du monde ne fige pas l\'image (bridé ×4)', ouvrir < BARRE, `le clic a coûté ${ouvrir} ms (barre ${BARRE})`);
+    verifier('et la faire glisser non plus (bridé ×4)', pire(glisser) < BARRE, `pire tâche ${pire(glisser)} ms (barre ${BARRE})`);
+
+    // ET UNE OPTIMISATION QUI DÉCOUPE DOIT PROUVER QU'ELLE NE MENT PAS : le
+    // fond calculé par tranches est identique, octet pour octet, au fond
+    // calculé d'un seul tenant pour la même vue.
+    const identite = await nino.evaluate(() => {
+      const c = window.__carte;
+      if (!c.commencerFond || !c.avancerFond) return { absent: true };
+      c.travail = null;
+      c.rendreFond(false);
+      const a = c.fond.getContext('2d').getImageData(0, 0, c.fond.width, c.fond.height).data.slice();
+      c.commencerFond(0);
+      let tranches = 0;
+      while (!c.avancerFond(0.3)) tranches++;
+      const b = c.fond.getContext('2d').getImageData(0, 0, c.fond.width, c.fond.height).data;
+      let ecarts = 0;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) ecarts++;
+      return { points: a.length / 4, ecarts, tranches };
+    });
+    verifier('le fond par tranches est identique au fond d\'un seul tenant',
+      !identite.absent && identite.ecarts === 0 && identite.points > 1000 && identite.tranches > 5,
+      JSON.stringify(identite));
+    verifier('aucune erreur JavaScript pendant la carte bridée', nino.erreurs.length === 0,
+      JSON.stringify(nino.erreurs));
+    await nino.close();
 
     // --- LE TÉLÉPHONE COUCHÉ, ET LA CARTE QUI S'ÉTIRAIT --------------------
     //
@@ -1662,7 +1755,7 @@ const position = (p) => p.evaluate(() => ({
     // écart par le facteur d'échelle de son axe, celui-là même que la feuille
     // de style applique.
     await souffler();
-    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
+    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 }, pret: true });
     await banc.ouvrirLaCarte(couche);
     // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
     //
