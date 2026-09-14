@@ -112,11 +112,12 @@ const ROULIS_MAX = 0.52;          // ~30°
 // vitesse ; accélérer et ralentir les voitures, idem pour les avions ».
 // `gaz` est la consigne de la manette (0 à 1), ou null tant qu'elle n'a pas
 // été touchée — alors l'avant du joystick reste l'accélérateur, comme avant.
-// Une voiture a désormais de l'INERTIE : elle prend sa vitesse en une seconde
-// environ et freine deux fois et demie plus fort ; et c'est le joystick ↔
-// qui la fait tourner, d'autant plus qu'elle roule — à l'arrêt, un volant ne
-// fait rien.
-const ACCEL_VOITURE = 1.1;        // fraction de l'allure gagnée par seconde
+// Une voiture a désormais de l'INERTIE : elle prend sa vitesse en une
+// demi-seconde et freine plus fort encore ; et c'est le joystick ↔ qui la
+// fait tourner, d'autant plus qu'elle roule — à l'arrêt, un volant ne fait
+// rien. La demi-seconde est un choix d'enfant : assez pour qu'un départ se
+// voie, pas assez pour qu'on croie la voiture en panne.
+const ACCEL_VOITURE = 2.0;        // fraction de l'allure gagnée par seconde
 const FREIN_VOITURE = 2.5;        // fraction de l'allure perdue par seconde
 const BRAQUAGE = 1.3;             // radians par seconde à plein volant
 const RECUL = 0.35;               // la marche arrière, part de l'allure

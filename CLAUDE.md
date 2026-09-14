@@ -786,8 +786,8 @@ règles.
   elle RESTE où on l'a laissée — c'est une manette, pas une pédale. Elle
   repart de nul à chaque montée (`fun.js`).
 - **UNE VOITURE A DE L'INERTIE ET UN VOLANT.** `vitesseVoiture` prend
-  l'allure de la classe en une seconde (`ACCEL_VOITURE`) et la perd deux fois
-  et demie plus vite (`FREIN_VOITURE`) ; le joystick ↔ tourne le cap
+  l'allure de la classe en une demi-seconde (`ACCEL_VOITURE`) et la perd plus
+  vite encore (`FREIN_VOITURE`) ; le joystick ↔ tourne le cap
   (`BRAQUAGE`, proportionnel à la vitesse jusqu'à trois blocs par seconde — à
   l'arrêt un volant ne fait rien), plus jamais un pas de côté. `pousse`, ce
   que lisent les piétons (v259), reste la vitesse demandée avant obstacle.

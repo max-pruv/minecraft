@@ -36,7 +36,7 @@ pioche, la capture et la barre de blocs pendant qu'on conduisait.
 seulement : on le monte et on le baisse, en même temps que le joystick à
 gauche, et il affiche la vitesse en km/h. En voiture il fixe la vitesse
 visée — 60 % du cadran, c'est 60 % de l'allure du modèle —, la voiture
-prend sa vitesse en une seconde et freine plus fort qu'elle n'accélère, et
+prend sa vitesse en une demi-seconde et freine plus fort qu'elle n'accélère, et
 le joystick ↔ tourne le volant, d'autant plus qu'elle roule. Tant qu'on
 n'a pas touché le cadran, l'avant du joystick reste l'accélérateur : rien
 de ce qu'un enfant sait ne cesse de marcher ; tiré vers soi à l'arrêt, il

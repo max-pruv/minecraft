@@ -90,10 +90,24 @@ async function placerA(p, depart) {
   await dormir(250);
 }
 
-async function avancerUnDemiSeconde(p, depart) {
+// `elan` : des secondes de jeu d'ÉLAN avant de mesurer — une voiture a de
+// l'inertie depuis la v262, et l'on mesure ce qu'elle fait une fois lancée,
+// pas la demi-seconde où elle prend sa vitesse.
+async function avancerUnDemiSeconde(p, depart, elan = 0) {
   if (depart) await placerA(p, depart);
-  const avant = await pose(p);
   await p.keyboard.down('KeyW');
+  if (elan > 0) {
+    await p.evaluate((n) => new Promise((fin) => {
+      let cumul = 0, prec = performance.now();
+      const pas = (t) => {
+        cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+        prec = t;
+        if (cumul >= n) fin(); else requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    }), elan);
+  }
+  const avant = await pose(p);
   // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
   // la charge du portail, une demi-seconde murale ne contient parfois que
   // trois images à dt plafonné (1/20 s) — la distance fondait, et le témoin
@@ -660,7 +674,7 @@ async function avancerUnDemiSeconde(p, depart) {
     await dormir(600);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);
-    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto);
+    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto, 0.8);
     verifier('au volant, on file bien plus vite qu\'à pied — c\'est une voiture',
       distanceAuVolant > distanceAPiedTexas * 2.2,
       `${distanceAPiedTexas.toFixed(1)} m à pied · ${distanceAuVolant.toFixed(1)} m au volant`);
@@ -1580,6 +1594,12 @@ async function avancerUnDemiSeconde(p, depart) {
         if (!auVolant()) { out[flotte] = { err: 'pas monté' }; continue; }
         const monture = g.fun.montureConduite();
         g.player.keys.add('KeyW');
+        // UNE VOITURE A DE L'INERTIE (v262) : on attend qu'elle ait pris sa
+        // vitesse — bornée en temps mural, le banc vivant au ralenti — avant
+        // de relever, sinon on mesure la rampe et non l'allure.
+        const visee = 3.2 * (g.player.boost || 1) * 0.9;
+        const tAttente = performance.now();
+        while (performance.now() - tAttente < 20000 && Math.hypot(g.player.vel.x, g.player.vel.z) < visee) await dormir(150);
         const vitesses = [];
         const t0 = performance.now();
         while (performance.now() - t0 < 3000) { await dormir(150); vitesses.push(Math.hypot(g.player.vel.x, g.player.vel.z)); }
@@ -3464,9 +3484,13 @@ async function avancerUnDemiSeconde(p, depart) {
         await new Promise((f) => setTimeout(f, 800));
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
-        // en croisière, trente blocs au-dessus de la piste, train rentré
-        g.player.pos.set(P.x0 + 20, P.y0 + 31, P.z0 + 0.5);
-        g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 60; g.player.trainSorti = 0;
+        // en croisière au-dessus du DÉBUT de la piste, quinze blocs de haut,
+        // train rentré, manette déjà à zéro (le cadran la reprendra à zéro
+        // aussi) — sinon l'appareil file à sa pointe le temps que le doigt
+        // arrive, et se pose au-delà des trois cents blocs de pierre
+        g.player.pos.set(P.x0, P.y0 + 16, P.z0 + 0.5);
+        g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 50; g.player.trainSorti = 0;
+        g.player.gaz = 0;
         await new Promise((f) => setTimeout(f, 800));
         const r = document.getElementById('gaz-base').getBoundingClientRect();
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
