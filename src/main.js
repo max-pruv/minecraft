@@ -15,6 +15,7 @@ import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
+import { cadran } from './cap.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
@@ -1585,9 +1586,39 @@ function majBoutonsVehicule() {
   gazFill.style.height = `${Math.round(niveau * 100)}%`;
   gazKnob.style.bottom = `calc(${(niveau * 100).toFixed(1)}% - ${Math.round(niveau * 22)}px)`;
   gazVal.textContent = `${Math.round(v * 3.6)} km/h`;
-  if (enAvion) trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+  if (enAvion) {
+    trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+    majCadranDeCap();
+  }
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
+
+// LE CADRAN DE CAP (v263). Le calcul est pur (`cap.js`), le DOM ne s'écrit
+// que quand ce qu'il dit change : deux cent soixante distances par image
+// ne coûtent rien, une réécriture de texte par image coûte un reflow.
+const capDegresEl = document.getElementById('cap-degres');
+const capVilleEl = document.getElementById('cap-ville');
+const capRepereEl = document.getElementById('cap-repere');
+let capTexte = '';
+let dernierCadran = null;
+function majCadranDeCap() {
+  const c = cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
+  dernierCadran = c;
+  const fleche = c.ville == null ? '' : c.dansLeCone ? '' : (c.ecart > 0 ? ' ◀' : ' ▶');
+  const texte = `${c.degres}|${c.ville || ''}|${c.lisible || ''}|${fleche}`;
+  if (texte !== capTexte) {
+    capTexte = texte;
+    capDegresEl.textContent = `${String(c.degres).padStart(3, '0')}° ${c.point}`;
+    capVilleEl.innerHTML = c.ville
+      ? `${c.ville}${fleche} <small>${c.lisible}</small>`
+      : '<small>aucune ville en vue</small>';
+  }
+  if (c.ville) {
+    capRepereEl.style.left = `${(50 + c.repere * 50).toFixed(1)}%`;
+    capRepereEl.classList.toggle('dehors', !c.dansLeCone);
+  }
+}
+window.__cadranDeCap = () => dernierCadran;
 
 document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();

@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v263 — Le cadran de cap : la ville visée au loin
+
+**Pourquoi.** Max : « un cadran de pilote en avion : la ville visée au
+loin ». Aux commandes, l'enfant tient l'altitude et le cap au joystick
+(v228) ; rien ne lui disait vers QUOI il volait. Le monde fait des milliers
+de blocs de large, à cent blocs par seconde on ne reconnaît rien avant d'y
+être, et un enfant qui a décollé de Roissy pour aller à Lyon partait au
+jugé, souvent vers la mer.
+
+**Ce que ça change.** Aux commandes, et seulement là, un cadran en haut de
+l'écran : le cap en degrés et sa lettre (152° SE), la ville la plus proche
+dans le cône devant l'appareil — les villes bâties comme les deux cents
+engendrées, toutes celles du registre — avec sa distance en kilomètres, et
+un repère jaune qui glisse sur une règle quand on tourne : au centre, la
+ville est pile devant. Si aucune ville n'est devant, la plus proche est
+nommée quand même, avec une flèche du côté où tourner, le repère orange au
+bord. Deux villes à distance presque égale ne se relaient pas à chaque
+image : celle qu'on nomme reste tant qu'elle est devant et à moins de
+quinze pour cent de plus. À pied et en voiture, rien : le cadran s'efface
+avec le mode pilote.
+
+**Ce qui le prouve.** Le calcul est pur (`src/cap.js`, lu sous node par la
+sonde) et demande son échelle à la projection : depuis Paris cap sur Lyon,
+il nomme Lyon à 389 km — 392 dans la vraie vie. Trois témoins neufs dans
+`monte.js`, qui lisent le TEXTE du cadran : aux commandes cap sur Lyon,
+il nomme Lyon avec sa distance, et la distance diminue de plus de cent
+blocs en trois secondes de jeu ; un quart de tour à droite, le cap affiché
+passe de 152° à 062° et une autre ville passe devant, et vers +x il dit
+090° E — le signe se regarde ; à pied le cadran est `display: none`, et il
+l'est de nouveau une fois descendu. Rouges sur l'ancien code (le cadran
+n'existe pas, et le témoin le dit).
+
 ## v262 — Une manette des gaz à droite, le joystick pour le volant
 
 **Pourquoi.** Max, capture en vol : « une vraie option pour faire un vrai
