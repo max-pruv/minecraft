@@ -764,6 +764,47 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## La manette des gaz, et le volant au joystick (v262)
+
+Max : « le joystick à gauche pour la direction et, en multitouch, à droite
+un cadran qu'on monte/baisse pour la vitesse ; accélérer et ralentir les
+voitures, idem pour les avions » ; « au volant, nettoyer les boutons
+inutiles ». **Cette décision remplace celle de la v228 (vitesse automatique
+en avion)** : en croisière, c'est le cadran qui fixe la vitesse ; ✈️ garde
+ses deux trajets assistés (v261) et y tient lui-même la manette. Quatre
+règles.
+
+- **LE CADRAN EST UN POINTEUR À PART, LE JOYSTICK RESTE SUR LE CANVAS.**
+  `#gaz-base` (index.html) vit au-dessus du canvas et écoute les événements
+  de POINTEUR avec capture ; le joystick écoute les événements TACTILES du
+  canvas. Deux doigts, deux cibles, aucun arbitrage à écrire — et le banc
+  les simule par `Input.dispatchTouchEvent` à deux points, comme `pincer`.
+- **`gaz` NUL, C'EST « PAS ENCORE TOUCHÉ », ET L'ANCIEN GESTE MARCHE.** Tant
+  que le cadran n'a pas servi, l'avant du joystick reste l'accélérateur de
+  la voiture et l'avion vole à sa pointe : rien de ce qu'un enfant sait ne
+  cesse de marcher. Dès le premier toucher la consigne est la sienne, et
+  elle RESTE où on l'a laissée — c'est une manette, pas une pédale. Elle
+  repart de nul à chaque montée (`fun.js`).
+- **UNE VOITURE A DE L'INERTIE ET UN VOLANT.** `vitesseVoiture` prend
+  l'allure de la classe en une demi-seconde (`ACCEL_VOITURE`) et la perd plus
+  vite encore (`FREIN_VOITURE`) ; le joystick ↔ tourne le cap
+  (`BRAQUAGE`, proportionnel à la vitesse jusqu'à trois blocs par seconde — à
+  l'arrêt un volant ne fait rien), plus jamais un pas de côté. `pousse`, ce
+  que lisent les piétons (v259), reste la vitesse demandée avant obstacle.
+- **SOUS LE DÉCROCHAGE, L'AVION DESCEND — c'est l'atterrissage manuel.** En
+  `vol`, gaz réduits, la vitesse tombe sous `decrochage` et l'appareil perd
+  de la hauteur d'autant plus vite qu'il est lent ; toucher en `vol` mène au
+  `freinage` comme en `atterrissage`. Le train, en vol, obéit au bouton 🛞
+  (`trainVoulu`, rentré par défaut) ; sur le ventre (`trainSorti < 0,5`) le
+  freinage double et le jeu le dit. Les deux trajets assistés forcent le
+  train comme en v261.
+
+**Et les boutons de la marche s'effacent en véhicule par une classe du
+`body`** (`en-vehicule`, `en-avion` — `majBoutonsVehicule`, main.js, à
+chaque image, ne touche au DOM que si l'état change) : saut, pioche,
+capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
+`getComputedStyle(...).display`, en véhicule et à pied.
+
 ## Un avion décolle de sa piste, et il s'y pose (v261)
 
 Max : « une vraie motion de décollage-atterrissage, accélération sur la

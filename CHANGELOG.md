@@ -20,6 +20,55 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v262 — Une manette des gaz à droite, le joystick pour le volant
+
+**Pourquoi.** Max, capture en vol : « une vraie option pour faire un vrai
+atterrissage, un bouton pour gérer la vitesse : le joystick à gauche pour
+la direction et, en multitouch, à droite un cadran qu'on monte/baisse pour
+la vitesse. Accélérer et ralentir les voitures, idem pour les avions » ; et
+« au volant ou aux commandes, nettoyer les boutons inutiles ». Sur la
+tablette une voiture partait à son allure maximale dès que le joystick
+touchait l'avant, sans inertie, et tournait de côté comme un piéton ; en
+avion la vitesse était automatique (v228) ; et l'écran gardait le saut, la
+pioche, la capture et la barre de blocs pendant qu'on conduisait.
+
+**Ce que ça change.** Un cadran vertical à droite de l'écran, en véhicule
+seulement : on le monte et on le baisse, en même temps que le joystick à
+gauche, et il affiche la vitesse en km/h. En voiture il fixe la vitesse
+visée — 60 % du cadran, c'est 60 % de l'allure du modèle —, la voiture
+prend sa vitesse en une demi-seconde et freine plus fort qu'elle n'accélère, et
+le joystick ↔ tourne le volant, d'autant plus qu'elle roule. Tant qu'on
+n'a pas touché le cadran, l'avant du joystick reste l'accélérateur : rien
+de ce qu'un enfant sait ne cesse de marcher ; tiré vers soi à l'arrêt, il
+fait reculer lentement. En avion le cadran est la manette des gaz : en
+croisière il fixe la vitesse, et sous la vitesse de décrochage l'appareil
+descend — gaz en bas et manche en avant, on se pose soi-même sur la piste,
+train sorti par son bouton 🛞 (rentré par défaut en vol) ; sans le train,
+c'est sur le ventre, ça freine deux fois plus fort et le jeu le dit. ✈️
+garde ses deux trajets assistés (v261), et le cadran les suit. Au volant,
+le saut, la pioche, la capture, le coffre et la barre de blocs s'effacent
+et reviennent à pied ; en voiture ✈️ s'efface aussi.
+
+**Ce qui le prouve.** Six témoins neufs dans `monte.js`, sur la page
+tactile, à deux doigts par le protocole du navigateur : le cadran à 60 %
+fait rouler la citadine à 60 % de son allure (médiane lue sur quatre
+secondes, la consigne tenue après avoir lâché) ; le joystick à droite
+tourne le volant pendant que le cadran tient la vitesse, sans quitter la
+piste ; au volant les cinq boutons de la marche sont `display: none` et le
+cadran `block`, et ils reviennent à pied ; aux commandes 🛞 sort et rentre
+le train (les trois jambes) et n'existe qu'en avion ; gaz à zéro et manche
+en avant, l'appareil touche la piste train sorti, sans ✈️, freine jusqu'à
+zéro. Deux témoins de vitesse anciens comptent désormais en secondes de jeu :
+le banc rend deux images par seconde et l'inertie se joue par image (une
+sonde l'a tracé, `scratchpad/v262/sonde-vitesse.cjs`). Captures du cadran
+au volant et en vol (`scratchpad/v262/captures`). Portail complet rejoué :
+482 témoins verts ; six rouges, tous dettes déclarées dans `TASKS.md` — les
+quatre de `manhattan.js` (mêmes valeurs), le gel du premier survol de Paris
+(`monte.js`) et « la reprise tient dans la durée » (`reseau.js`, le même
+délai de silence qu'à la v261, `seen` à 20 295 ms) — et la fin de
+`manhattan.js` qui a PENDU seize minutes sur un `evaluate` sans délai, deux
+Manhattan rendues en logiciel, terminée à la main et déclarée.
+
 ## v261 — L'avion décolle de sa piste, et s'y pose
 
 **Pourquoi.** Max : « les avions devraient avoir une vraie motion de

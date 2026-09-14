@@ -101,7 +101,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
   comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
 - [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
-  des deux côtés (v259).** Quatre témoins — « le trou enlève aussi la
+  des deux côtés (v259).** ET LA FIN DE LA SUITE PEND, AU LIEU D'EXPIRER
+  (portail de la v262) : après « la reprise cloud place l'enfant… » et un
+  `souffler` « libre », plus une ligne pendant douze minutes ; `node
+  manhattan.js` endormi (0,8 % de processeur), ses deux pages de Manhattan
+  (l'hôte et l'invité de la fin de suite) vivantes depuis douze minutes, et
+  le PROCESSUS GPU à 351 % — SwiftShader qui rend deux Manhattan à la fois.
+  Un `page.evaluate` n'a pas de délai : quand le fil principal d'une page
+  attend le rendu logiciel, le banc attend avec lui, sans borne. Tuée à la
+  main pour que le portail enchaîne (la suite était déjà rouge, dette
+  ci-dessus). À faire : borner la fin de suite (un `Promise.race` avec un
+  délai autour de `creerMonde`/`rejoindre`/`evaluate` de cette scène, ou
+  `rr=1` et une seule page de Manhattan à la fois), et lire dans
+  `renderer.info.render.frame` que la page rend avant d'y évaluer quoi que
+  ce soit. Quatre témoins — « le trou enlève aussi la
   géométrie visible de la façade » (l'« avant » lu pendant que les façades
   se construisent encore : 22 326, 9 203, 14 460 pour un « après » toujours à
   51 734), « fenêtres et éclairage public fonctionnent la nuit » (lu 350 ms
@@ -1067,6 +1080,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v262** — La manette des gaz (cadran à droite, pointeur à part) pour
+  voitures et avions ; inertie et volant au joystick pour la voiture ;
+  décrochage et atterrissage manuel, bouton 🛞 du train, atterrissage sur
+  le ventre dit ; boutons de la marche effacés en véhicule (classes
+  `en-vehicule`/`en-avion`). Six témoins tactiles à deux doigts dans
+  `monte.js`. Reste de #36 : rien ; #39 (cadran de cap vers la ville visée)
+  et #37 (flammes du réacteur) à suivre.
 - [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
   `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
   `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le

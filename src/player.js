@@ -107,6 +107,21 @@ const RENTRER_TRAIN_A = 8;        // hauteur gagnée au-dessus de la piste où l
 // tourne à plat ressemble à une maquette qu'on pousse sur une table.
 const ROULIS_MAX = 0.52;          // ~30°
 
+// LA MANETTE DES GAZ ET LE VOLANT (v262). Max : « le joystick à gauche pour la
+// direction et, en multitouch, à droite un cadran qu'on monte/baisse pour la
+// vitesse ; accélérer et ralentir les voitures, idem pour les avions ».
+// `gaz` est la consigne de la manette (0 à 1), ou null tant qu'elle n'a pas
+// été touchée — alors l'avant du joystick reste l'accélérateur, comme avant.
+// Une voiture a désormais de l'INERTIE : elle prend sa vitesse en une
+// demi-seconde et freine plus fort encore ; et c'est le joystick ↔ qui la
+// fait tourner, d'autant plus qu'elle roule — à l'arrêt, un volant ne fait
+// rien. La demi-seconde est un choix d'enfant : assez pour qu'un départ se
+// voie, pas assez pour qu'on croie la voiture en panne.
+const ACCEL_VOITURE = 2.0;        // fraction de l'allure gagnée par seconde
+const FREIN_VOITURE = 2.5;        // fraction de l'allure perdue par seconde
+const BRAQUAGE = 1.3;             // radians par seconde à plein volant
+const RECUL = 0.35;               // la marche arrière, part de l'allure
+
 export class Player {
   constructor(camera, world) {
     this.camera = camera;
@@ -288,16 +303,24 @@ export class Player {
       // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
       // chaque appareil : la pointe, la poussée, la vitesse de rotation et
       // l'approche viennent de la fiche.
+      // ET LA MANETTE DES GAZ (v262) : en vol elle fixe la vitesse, au sol
+      // l'allure de roulage ; les deux trajets assistés (décollage,
+      // atterrissage) la tiennent eux-mêmes — pleins gaz, puis l'approche —
+      // et le cadran suit.
       let cible, accel = p.poussee;
       if (etat === 'sol') {
-        cible = Math.max(0, forward) * (p.roulage || 6);
+        cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
         accel = Math.max(p.frein || 0, p.poussee);
-      } else if (etat === 'decollage' || etat === 'vol') {
-        cible = p.max;
+      } else if (etat === 'decollage') {
+        cible = p.max; if (this.gaz != null) this.gaz = 1;
+      } else if (etat === 'vol') {
+        cible = this.gaz != null ? this.gaz * p.max : p.max;
       } else if (etat === 'atterrissage') {
         cible = p.approche || Math.max(p.decrochage * 1.3, p.max * 0.5);
+        if (this.gaz != null) this.gaz = cible / p.max;
       } else {
         cible = 0; accel = p.frein || p.poussee * 1.5;   // freinage
+        if (this.ventre) accel *= 2;
       }
       const ecart = cible - this.vitesseAvion;
       this.vitesseAvion += Math.sign(ecart) * Math.min(accel * dt, Math.abs(ecart));
@@ -341,6 +364,10 @@ export class Player {
         }
       } else if (etat === 'vol') {
         this.vel.y = forward * p.max * PART_MONTEE;
+        // SOUS LA VITESSE DE DÉCROCHAGE, L'AVION NE TIENT PLUS L'AIR : gaz
+        // réduits, il descend, d'autant plus vite qu'il est lent — c'est ce
+        // qui permet de se poser soi-même, manette en bas et manche en avant.
+        if (v < p.decrochage) this.vel.y = Math.min(this.vel.y, -(1 - v / p.decrochage) * DESCENTE);
         cibleAssiette = Math.max(-ASSIETTE_MAX, Math.min(ASSIETTE_MAX,
           Math.atan2(this.vel.y, Math.max(1, v)) * 1.4));
       } else if (etat === 'atterrissage') {
@@ -360,8 +387,11 @@ export class Player {
       this.assietteAvion += (cibleAssiette - this.assietteAvion) * Math.min(1, dt * 2.5);
       // LE TRAIN : sorti au sol, en finale et jusqu'à huit blocs au-dessus de
       // la piste ; rentré au-delà. Il rentre et sort en une seconde et demie.
+      // En vol, c'est le bouton 🛞 qui décide (`trainVoulu`) : rentré par
+      // défaut, sorti pour se poser soi-même.
       const trainDehors = auSol || etat === 'atterrissage'
-        || (etat === 'decollage' && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A);
+        || (etat === 'decollage' && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A)
+        || (etat === 'vol' && this.trainVoulu === true);
       this.trainSorti = Math.max(0, Math.min(1,
         this.trainSorti + (trainDehors ? 1 : -1) * dt / TRAIN_SECONDES));
       // Le ciel a le même toit que pour tout le monde.
@@ -381,11 +411,14 @@ export class Player {
         this.franchirUneMarche(-Math.sin(this.yaw) * 0.8, -Math.cos(this.yaw) * 0.8);
       }
       // LES ROUES TOUCHENT : on freine. Et à l'arrêt, on roule au joystick.
-      if (etat === 'atterrissage' && this.onGround) {
+      if ((etat === 'atterrissage' || etat === 'vol') && this.onGround) {
+        // Posé soi-même sans sortir le train, c'est sur le ventre : ça
+        // freine deux fois plus fort, et on le dit.
+        this.ventre = this.trainSorti < 0.5;
         this.avionEtat = 'freinage'; this.avionEnVol = false;
-        if (this.surAvion) this.surAvion('touche');
+        if (this.surAvion) this.surAvion(this.ventre ? 'ventre' : 'touche');
       } else if (etat === 'freinage' && this.vitesseAvion < 0.5) {
-        this.avionEtat = 'sol'; this.vitesseAvion = 0;
+        this.avionEtat = 'sol'; this.vitesseAvion = 0; this.ventre = false; this.trainVoulu = undefined;
         if (this.surAvion) this.surAvion('arret');
       }
       this.syncCamera();
@@ -421,8 +454,32 @@ export class Player {
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
-    this.vel.x = dx * speed;
-    this.vel.z = dz * speed;
+    if (this.gabarit > 1) {
+      // AU VOLANT (v262) : la manette des gaz — ou l'avant du joystick tant
+      // qu'elle n'a pas servi — fixe la vitesse visée, l'inertie fait le
+      // reste, et le joystick ↔ tourne le volant. La marche arrière, lente,
+      // se prend en tirant le joystick à l'arrêt.
+      if (this.vitesseVoiture === undefined) this.vitesseVoiture = 0;
+      const max = speed;
+      let consigne;
+      if (this.gaz != null) {
+        consigne = this.gaz * max;
+        if (forward < -0.5 && this.gaz < 0.05 && this.vitesseVoiture < 0.5) consigne = -max * RECUL;
+      } else {
+        consigne = forward >= 0 ? forward * max : forward * max * RECUL;
+      }
+      const ecart = consigne - this.vitesseVoiture;
+      const taux = Math.abs(consigne) > Math.abs(this.vitesseVoiture) ? ACCEL_VOITURE : FREIN_VOITURE;
+      this.vitesseVoiture += Math.sign(ecart) * Math.min(max * taux * dt, Math.abs(ecart));
+      const v = this.vitesseVoiture;
+      this.yaw -= strafe * BRAQUAGE * Math.min(1, Math.abs(v) / 3) * (v < 0 ? -1 : 1) * dt;
+      this.vel.x = -Math.sin(this.yaw) * v;
+      this.vel.z = -Math.cos(this.yaw) * v;
+    } else {
+      this.vitesseVoiture = 0;
+      this.vel.x = dx * speed;
+      this.vel.z = dz * speed;
+    }
     // ce que l'enfant DEMANDE, avant qu'un obstacle ne l'arrête : c'est ce
     // qu'un piéton lit pour s'écarter d'une voiture qui veut passer (v259)
     this.pousse = { x: this.vel.x, z: this.vel.z };
