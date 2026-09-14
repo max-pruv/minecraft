@@ -62,8 +62,10 @@ qui s'écarte, et elle repart sans lui passer au travers » — trois passants
 plantés sur l'axe de la voiture, douze secondes d'accélérateur, zéro relevé
 dedans et la voiture a avancé (seize blocs mesurés à la sonde, freinage de
 deux secondes pendant que le piéton sort du couloir) ; sur l'ancien code
-elle les traverse. Il part d'une rue sans voiture de la rue à portée, sinon
-il mesure deux voitures nez à nez. Le portail complet rejoué.
+elle les traverse. Il part d'une rue sans voiture de la rue à portée, sans
+mobilier ni marche sur le couloir, sinon il mesure deux voitures nez à nez
+ou un réverbère. Et Marlon ne se replace plus dans le nez de la voiture
+quand l'enfant conduit. Le portail complet rejoué.
 
 ## v258 — Le jeu se prépare avant « Jouer », et la carte ne fige plus l'image
 

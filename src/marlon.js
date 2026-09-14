@@ -301,8 +301,18 @@ export class Marlon extends BaseNPC {
 
   placeNearPlayer() {
     const p = this.player.pos;
-    const angle = Math.random() * Math.PI * 2;
-    this.placeAt(p.x + Math.sin(angle) * 2.5, p.z + Math.cos(angle) * 2.5, p.y);
+    let angle = Math.random() * Math.PI * 2, d = 2.5;
+    // L'ENFANT CONDUIT : on ne se replace pas dans le nez de sa voiture
+    // (v259). Rappelé à 2,5 blocs sous un angle au hasard, Marlon tombait une
+    // fois sur huit devant le capot, et la voiture — qui freine désormais
+    // devant un piéton — s'arrêtait net. Derrière ou à côté, et un peu plus
+    // loin : hors du rectangle de la voiture (2,2 de demi-longueur).
+    if (this.player.gabarit > 1) {
+      const cap = this.player.yaw + Math.PI;                 // le nez de la voiture
+      angle = cap + Math.PI + (Math.random() - 0.5) * Math.PI; // ±90° autour de l'arrière
+      d = 4;
+    }
+    this.placeAt(p.x + Math.sin(angle) * d, p.z + Math.cos(angle) * d, p.y);
   }
 
   think() {
@@ -310,6 +320,8 @@ export class Marlon extends BaseNPC {
     toPlayer.y = 0;
     const dist = toPlayer.length();
     if (dist > 26) this.placeNearPlayer();
+    // et l'on ne vient pas se coller à une voiture : à cinq blocs, on attend
+    if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
     const yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
     return { speed: dist > 3.2 ? this.walkSpeed : 0, yaw };
   }

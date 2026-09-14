@@ -24,6 +24,34 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
+  passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
+  branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 %), et le témoin extrait
+  dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
+  chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
+  (v258) 1 367 ms / 9,7 % puis 300 / 0. Le PREMIER survol de Paris paie la
+  compilation des programmes que le banc, ouvert avec `?prep=0`, n'a pas
+  chauffés (v246, v258) ; le second est sous les barres des deux côtés.
+  Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
+  comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
+- [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
+  des deux côtés (v259).** Quatre témoins — « le trou enlève aussi la
+  géométrie visible de la façade » (l'« avant » lu pendant que les façades
+  se construisent encore : 22 326, 9 203, 14 460 pour un « après » toujours à
+  51 734), « fenêtres et éclairage public fonctionnent la nuit » (lu 350 ms
+  après `__setDayTime`, sans image entre les deux), « les ombres suivent le
+  soleil et la lune visibles » ([1, −1], même cause) et « le taxi roule avec
+  les contrôles tactiles » (huit blocs exigés en quinze secondes, à 0,55 bloc
+  par image : mesuré à la sonde, le taxi ROULE à 10,9 blocs/s, personne
+  devant) — plus le rechargement qui dépasse ses 90 s. Rejouée SEULE sur
+  `origin/main` (v258) : les mêmes quatre rouges et le même délai. Sonde :
+  Manhattan rend 2 images toutes les 5 s sur ce banc, sur les deux arbres,
+  zéro erreur de page (`scratchpad/v259/manhattan-*.log`). Piste : ces
+  quatre témoins doivent ATTENDRE UNE IMAGE (compteur `renderer.info.render.frame`)
+  avant de lire, et le taxi se mesurer en blocs par image plutôt qu'en blocs
+  par seconde — leçon « un témoin qui lit l'effet d'une image attend l'image »
+  (v249), à appliquer à `manhattan.js`.
+
 - [ ] **Vitesse des voitures par modèle (Max, après la v259).** « Les
   voitures devraient aller plus vite et surtout une vitesse en fonction du
   modèle (sportive faster than sedan basic). » Toute voiture conduite a

@@ -1443,7 +1443,7 @@ async function avancerUnDemiSeconde(p, depart) {
       // et sans voiture de la rue à portée du trajet (leçon de la v252) : une
       // voiture de la circulation qui arrive en face cède devant l'enfant sans
       // limite, et l'on mesurerait deux voitures nez à nez, pas les piétons
-      const rueLibre = (x, z, y) => !g.vehicules.placeProche({ x, y, z }, 14);
+      const rueLibre = (x, z, y) => !g.vehicules.placeProche({ x, y, z }, 10);
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       const retirerVoiture = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
       const descendre = async () => { for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); } };
@@ -1458,7 +1458,7 @@ async function avancerUnDemiSeconde(p, depart) {
       const { isProp } = await import('./src/blocks.js');
       const couloirLibre = (h, x0, z0, y0, ux, uz) => {
         const cap = Math.atan2(ux, uz), vx = uz, vz = -ux;
-        for (let d = 1; d <= 16; d++) {
+        for (let d = 1; d <= 14; d++) {
           for (const w of [-1.2, 0, 1.2]) {
             const x = x0 + ux * d + vx * w, z = z0 + uz * d + vz * w;
             const y = h.surfaceY(x, z);
@@ -1470,22 +1470,30 @@ async function avancerUnDemiSeconde(p, depart) {
         }
         return true;
       };
+      // Seize caps, et trois départs par cap (sur le passant, quatre blocs en
+      // arrière, quatre en avant) : au portail de la v259, huit caps depuis
+      // les seuls postes des passants n'ont trouvé aucun couloir (56 essais),
+      // alors que trois tours à la sonde en trouvaient dès le premier passant.
       let ancre = null, candidats = 0;
       for (const h of s2.peuple.filter((q) => q.name === 'passant')) {
-        if (!rueLibre(h.pos.x, h.pos.z, h.pos.y)) continue;
-        for (let k = 0; k < 8 && !ancre; k++) {
-          const a = k * Math.PI / 4, ux = Math.cos(a), uz = Math.sin(a);
-          candidats++;
-          if (couloirLibre(h, h.pos.x, h.pos.z, h.pos.y, ux, uz) && rueLibre(h.pos.x + ux * 14, h.pos.z + uz * 14, h.pos.y)) ancre = { h, ux, uz };
+        for (let k = 0; k < 16 && !ancre; k++) {
+          const a = k * Math.PI / 8, ux = Math.cos(a), uz = Math.sin(a);
+          for (const recul of [0, -4, 4]) {
+            const x0 = h.pos.x + ux * recul, z0 = h.pos.z + uz * recul, y0 = h.surfaceY(x0, z0);
+            candidats++;
+            if (y0 === null || Math.abs(y0 - h.pos.y) > 0.01) continue;
+            if (!rueLibre(x0, z0, y0) || !rueLibre(x0 + ux * 12, z0 + uz * 12, y0)) continue;
+            if (couloirLibre(h, x0, z0, y0, ux, uz)) { ancre = { h, x0, z0, y0, ux, uz }; break; }
+          }
         }
         if (ancre) break;
       }
-      if (!ancre) return { err: `aucun couloir libre de seize blocs (${candidats} essayés)` };
+      if (!ancre) return { err: `aucun couloir libre de quatorze blocs (${candidats} essayés)` };
       {
-        const { h: h0, ux, uz } = ancre;
+        const { y0, ux, uz } = ancre;
         // l'avant du joueur est (−sin yaw, −cos yaw) : on vise (ux, uz)
         g.player.yaw = Math.atan2(-ux, -uz); g.player.pitch = 0;
-        g.player.pos.set(h0.pos.x, h0.pos.y + 0.1, h0.pos.z); g.player.vel.set(0, 0, 0); g.player.flying = false;
+        g.player.pos.set(ancre.x0, y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0); g.player.flying = false;
         retirerVoiture();
         g.animalManager.invoquer('voiture', g.player.pos.x + ux * 3, g.player.pos.z + uz * 3);
         for (let essai = 0; essai < 8 && !auVolant(); essai++) {

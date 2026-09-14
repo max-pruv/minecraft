@@ -796,6 +796,26 @@ l'enfant au volant, ni une voiture garée. Trois règles.
   famille de `player.obstacleVehicule`, jugée chez elle comme les deux
   autres. Mesuré à la sonde : la voiture s'arrête deux secondes, le piéton
   sort à 1,5 bloc de côté, elle repart — seize blocs en douze secondes.
+- **CE QU'UN PIÉTON DEMANDE À CHAQUE IMAGE NE SE FABRIQUE PAS À CHAQUE
+  APPEL.** Mon premier `vehiculeApproche` refaisait la liste des voitures en
+  marche à chaque appel — cent quarante piétons à Manhattan, deux appels
+  chacun, des centaines de voitures à portée. `vehicules.enMarche()` fige sa
+  liste jusqu'à la collecte suivante de `cederLePassage`, en lecture seule
+  (jamais copiée ni complétée : la voiture de l'enfant se regarde à part),
+  avec une borne de distance avant tout calcul. Et **Manhattan tourne à 0,4
+  image par seconde sur ce banc, sur l'ancien code comme sur le neuf** —
+  mesuré à la sonde, mêmes compteurs des deux côtés, zéro erreur de page :
+  quatre témoins de `manhattan.js` qui lisent un effet « 350 ms après » ou
+  « huit blocs en quinze secondes » y sont un pile ou face, et le taxi qui
+  « ne roule pas » roulait à 10,9 blocs par seconde, personne devant, 0,55
+  bloc par image. Devant trois suites rouges d'un coup, la première sonde
+  est « la boucle vit-elle ? » (compteur d'images, erreurs de page), la
+  seconde « l'ancien code fait-il pareil ? ».
+- **MARLON NE SE REPLACE PAS DANS LE NEZ DE LA VOITURE.** Il se rappelle à
+  2,5 blocs sous un angle au hasard dès que l'enfant s'éloigne de 26 blocs —
+  toutes les deux secondes et demie en voiture, une fois sur huit devant le
+  capot, et la voiture freine désormais devant lui. Au volant, il se replace
+  derrière ou à côté, à quatre blocs, et n'approche pas à moins de cinq.
 - **UN TÉMOIN DE CONDUITE PART D'UNE RUE SANS VOITURE DE LA RUE À PORTÉE,
   ENCORE.** Mes trois premiers tours rendaient 0,4 bloc d'avance avec zéro
   traversée : une voiture de la circulation arrivait en face, cédait devant
