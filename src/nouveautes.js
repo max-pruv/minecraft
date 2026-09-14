@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: "Chaque voiture a sa vitesse",
     puces: [
       "🏎️ Une hypercar file deux fois plus vite",
-      "🚗 La citadine va un peu plus vite aussi",
+      "🚗 La citadine accélère un peu aussi",
       "Le message En selle dit la vitesse",
     ],
   },
