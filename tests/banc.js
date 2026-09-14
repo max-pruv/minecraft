@@ -11,6 +11,7 @@ const path = require('path');
 const express = require('express');
 const { ExpressPeerServer } = require('peer');
 const { chromium } = require('playwright-core');
+const { attendreLaCharge } = require('./charge.js');
 
 const RACINE = path.resolve(__dirname, '..');
 
@@ -238,7 +239,7 @@ class Banc {
     // couper. On prend donc le seuil au-dessus duquel une suite est vraiment
     // en surcharge (3,0 sur quatre cœurs) et un budget qui ne peut pas coûter
     // la suite : vingt secondes.
-    await souffler(20000);   // le seuil par défaut : 3,0 était lui aussi sous le coût d'UNE page
+    await souffler(20000);   // v255 : occupation réelle, pas charge d'une minute — voir charge.js
     // `tactile` reproduit une tablette : c'est ce que la famille a réellement
     // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
     const ctx = await this.navigateur.newContext({
@@ -408,7 +409,24 @@ class Banc {
       document.getElementById('play-btn').click();
     });
     await p.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
-    await dormir(3500);   // le temps que les morceaux du monde autour arrivent
+    // « Le temps que les morceaux du monde autour arrivent » était un délai fixe
+    // de 3,5 s, payé à chaque ouverture de partie. C'est un FAIT du jeu : le
+    // morceau sous l'enfant et ses huit voisins sont maillés. On l'attend, et
+    // l'on garde les 3,5 s comme borne — jamais plus long qu'avant, plus court
+    // dès que le monde est là (mesuré : 1 à 2 s sur ce banc).
+    // (`player.pos`, pas `position` : le premier jet a lu un champ absent, et
+    // l'exception dans la page a rougi « aucune erreur JavaScript » — une
+    // condition de banc ne doit JAMAIS pouvoir jeter dans la page.)
+    await p.waitForFunction(() => {
+      try {
+        const g = window.__game; if (!g || !g.player || !g.player.pos || !g.chunkMeshes) return false;
+        const cx = Math.floor(g.player.pos.x / 16), cz = Math.floor(g.player.pos.z / 16);
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) return false;
+        }
+        return true;
+      } catch { return false; }
+    }, null, { timeout: 3500, polling: 100 }).catch(() => { /* la borne d'avant : on avance */ });
     return p;
   }
 
@@ -660,19 +678,26 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
 // charge d'une minute RETARDE de cent secondes. C'est pourquoi chaque appel
 // dit sa durée : une attente qui expire doit se voir, sinon on remet deux
 // minutes sans que personne ne le remarque.
-async function souffler(limiteMs = 30000, chargeMax = 4.2) {
-  const charge = () => {
-    try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
-    catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
-  };
-  const depart = Date.now();
-  const fin = depart + limiteMs;
-  while (charge() > chargeMax && Date.now() < fin) await dormir(5000);
-  const dt = Date.now() - depart;
-  if (dt >= 5000) {
-    console.log(`   💨 souffler : ${(dt / 1000).toFixed(0)} s`
-      + `${dt >= limiteMs ? ' (limite atteinte — la charge n\'est jamais redescendue)' : ''}`
-      + ` · charge ${charge().toFixed(2)}`);
+//
+// v255 : L'INSTRUMENT ÉTAIT FAUX, PAS LE SEUIL. Même à 4,2 le portail de la
+// v253 a passé six cent quatre-vingt-dix secondes dans cette fonction, dont
+// vingt-deux appels au bout de leur budget — ONZE MINUTES sur cinquante-neuf.
+// La charge d'une minute ne peut pas voir qu'une page vient de mourir. On lit
+// désormais l'occupation RÉELLE des cœurs sur la dernière demi-seconde
+// (`charge.js`) : une page fermée retombe sous 0,3 en moins d'une seconde, et
+// une page qui reste ouverte — l'hôte qu'un invité va rejoindre — donne une
+// occupation STABLE (3,7 sur quatre cœurs) que rien ne fera baisser : on
+// n'attend pas ce qui ne redescendra pas, on le dit et l'on avance.
+//
+// `coeursMax` est en cœurs occupés : 2,5 laisse passer une page à l'accueil et
+// le banc lui-même, jamais une page de jeu en régime établi (3,7).
+async function souffler(limiteMs = 30000, coeursMax = 2.5) {
+  const r = await attendreLaCharge(limiteMs, coeursMax);
+  if (r.ms >= 2000) {
+    const pourquoi = r.motif === 'libre' ? 'libre'
+      : r.motif === 'stable' ? 'charge stable — quelque chose tourne encore, et ne redescendra pas'
+        : 'limite atteinte';
+    console.log(`   💨 souffler : ${(r.ms / 1000).toFixed(1)} s · ${pourquoi} · ${r.occupation.toFixed(2)} cœur(s) sur ${r.coeurs}`);
   }
 }
 

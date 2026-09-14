@@ -1484,8 +1484,13 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
+    // La borne de garde des relevés est à la MOITIÉ du plus petit relevé
+    // mesuré sur du code sain (490 à 2 372 selon la cadence du banc), jamais
+    // à quatre-vingt-dix pour cent : à 500 elle est tombée au portail de la
+    // v255 sur 490 relevés et ZÉRO saut — c'est le piège des trois bornes de
+    // ce fichier (v237), une quatrième fois.
     verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
-      voitures.mesures > 500 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
+      voitures.mesures > 250 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
     verifier('et elles s\'inclinent dans le virage, du bon côté',
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);

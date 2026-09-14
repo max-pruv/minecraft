@@ -239,7 +239,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → **48 min** (v225) |
+| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255) |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
@@ -347,6 +347,59 @@ Trois choses en sortent, et la troisième est la plus importante.
   minutes**, treize suites vertes. Une constante de seuil se règle sur le coût
   MESURÉ de ce qu'elle est censée laisser passer, jamais sur une intuition de
   ce qui « paraît chargé ».
+
+**LA CHARGE D'UNE MINUTE NE VOIT PAS MOURIR UNE PAGE — ET `souffler` LA
+LISAIT ENCORE (v255).** Max : « accélérer la partie testing, même qualité,
+beaucoup plus vite. » Un inventaire de TOUTES les attentes du banc, poste
+par poste, avant de toucher une ligne. Le premier poste n'était pas une
+suite, c'était l'instrument : `souffler`, appelé avant chaque page, lisait
+`/proc/loadavg`, dont le dépôt avait déjà mesuré deux fois qu'il retarde de
+cent secondes. Sur le portail de la v253 : trente-huit appels, six cent
+quatre-vingt-dix secondes, vingt-deux au bout de leur budget — dix minutes
+sur cinquante-neuf à attendre un nombre qui ne pouvait pas descendre. Quatre
+règles, dans `tests/charge.js`.
+
+- **ON LIT L'OCCUPATION RÉELLE, SUR UNE DEMI-SECONDE** (`/proc/stat`, deux
+  relevés). Mesuré sur ces quatre cœurs : repos 0,1 ; une page de jeu
+  ouverte 3,7 à 3,8, stable ; une page fermée retombe à 0,2 en moins d'une
+  seconde. C'est la grandeur que la v220 avait mesurée comme coûteuse — des
+  pages VIVANTES en même temps — et non la trace de ce qui est mort.
+- **UNE CHARGE QUI NE REDESCEND PAS NE S'ATTEND PAS, ELLE SE DIT.** Une
+  page qu'une suite garde ouverte exprès (l'hôte qu'un invité va rejoindre)
+  donne une occupation STABLE que rien ne fera baisser ; l'ancien `souffler`
+  y brûlait tout son budget. Quatre relevés à moins de 0,3 cœur d'écart, et
+  l'on avance en imprimant ce qu'on a vu (« charge stable — quelque chose
+  tourne encore »). Une attente qui ne peut pas aboutir n'est pas une
+  condition, et l'on ne remet pas un délai fixe sous un autre nom.
+- **LE REPOS ENTRE DEUX SUITES EST UNE CONDITION BORNÉE.** `REPOS_MS`
+  dormait vingt secondes quinze fois par portail — cinq minutes — pour
+  laisser mourir des processus qui meurent en une seconde. `reposer()`
+  attend un cœur occupé au plus, borné aux vingt secondes d'avant.
+- **LES SUITES COURTES PASSENT D'ABORD.** L'ordre ne change rien au total,
+  et tout au temps jusqu'au premier rouge : `reseau.js` en tête, un rouge de
+  `metro.js` se découvrait à la cinquante-neuvième minute. `SUITES` est
+  rangée par durée mesurée (v251), la durée en commentaire ; on remesure
+  l'ordre quand une suite change de poids.
+
+Et deux choses de plus. **`jouerSeul` attendait 3,5 s « le temps que les
+morceaux arrivent »** : c'est un fait du jeu — les neuf morceaux autour de
+l'enfant sont maillés — et on l'attend, borné aux 3,5 s d'avant, jamais
+plus long. **L'empreinte de reprise prend la FORME des fichiers du banc**,
+chiffres effacés, la règle que `bancAnodin` appliquait déjà à l'aiguillage
+depuis la v195 : régler une borne n'annule plus quinze acquis, trois quarts
+d'heure pour un chiffre. Le code du jeu, lui, entre brut — un nombre y est
+une règle.
+
+**Ce que l'inventaire a écarté, et pourquoi.** Sortir les témoins purs du
+navigateur (`carteMonde.js`, `plafond.js`) : ces deux suites font 34 et
+51 s au portail — le gain se compterait en secondes, et deux témoins qui se
+ressemblent dans deux fichiers finissent par n'être corrigés qu'une fois.
+Une cadence de banc (`?tempo=`) sur les minuteries du jeu (STALE 20 s,
+REPIT 8 s, `pullPlayTime` 60 s) : c'est le second poste, huit à douze
+minutes, mais il touche `src/` et il exige qu'un témoin par constante reste
+à l'échelle réelle — dette déclarée dans `TASKS.md`, avec la liste des vingt
+minuteries et celle de ce qui ne doit JAMAIS passer sous tempo (l'horloge
+scolaire, `chronoReel`, la borne de `dt`, les débits que `monte.js` mesure).
 
 **ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ — QUATRE FOIS DE SUITE (v224).**
 Devant « pourquoi ça prend autant de temps », j'ai avancé quatre explications

@@ -20,6 +20,58 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v255 — Le portail d'essai attend ce qui compte, plus le temps
+
+**Pourquoi.** Max : « je veux que tu trouves des solutions pour accélérer la
+partie testing, en garantissant le même niveau de qualité, mais beaucoup
+plus vite. » Mesuré sur le portail complet de la v251 : 64 minutes de suites
+et NEUF minutes d'attente entre elles, 74 en tout. Un inventaire de chaque
+attente du banc a nommé les postes : `souffler`, appelé avant chaque page,
+lisait la charge MOYENNE d'une minute — un instrument qui retarde de cent
+secondes et ne peut pas voir qu'une page vient de mourir : dix minutes par
+portail à regarder un nombre qui ne descendait pas, vingt-deux appels sur
+trente-huit au bout de leur budget. Entre deux suites, vingt secondes de
+sommeil inconditionnel, quinze fois. Et `reseau.js`, la plus longue, passait
+en premier : un rouge de `metro.js` se découvrait à la cinquante-neuvième
+minute.
+
+**Ce que ça change.** Rien dans le jeu. Le banc lit l'occupation RÉELLE des
+cœurs sur la dernière demi-seconde (`tests/charge.js`) : une page fermée
+rend la main en moins d'une seconde, une page qu'on garde ouverte exprès
+(l'hôte d'une partie) donne une charge stable que rien ne fera baisser, et
+l'on cesse de l'attendre en le disant. Le repos entre suites est une
+condition bornée, plus un sommeil. `jouerSeul` attend que les neuf morceaux
+autour de l'enfant soient maillés, jamais plus que les 3,5 s d'avant. Les
+suites courtes passent d'abord : un rouge de géométrie arrive dans les cinq
+minutes qui suivent la fumée. Et régler une borne du banc n'annule plus les
+quinze acquis de reprise — l'empreinte prend la forme des fichiers du banc,
+chiffres effacés, la règle que `bancAnodin` appliquait déjà à l'aiguillage.
+
+**Ce qui le prouve.** Les mêmes quinze suites, les mêmes témoins, et le
+portail se chronomètre lui-même : voir « Portail » ci-dessous.
+Portail complet, les quinze suites depuis zéro, même machine, même
+rendu logiciel, avant et après :
+
+| | v251 (ancien banc) | v255 |
+| --- | --- | --- |
+| suites | 64 min | 50 min |
+| attente entre suites | 9 min | 0 min |
+| respiration (`souffler`) | ≈ 615 s | 119 s |
+| total | **74 min** | **51 min** |
+| premier rouge possible | 20e minute | 4e minute |
+
+Treize suites vertes dont `reseau.js` (15 min 03 s contre 19 min 46 s) ;
+`manhattan.js` rouge sur ses quatre témoins déclarés en dette, `monte.js`
+sur le seul témoin déclaré des deux côtés (« l'écran ne se fige pas »), rien
+d'autre. Deux rouges de portail attrapés et démontés en route : une borne
+de garde de `monte.js` posée à 98 % d'une mesure de banc (500 pour 490
+relevés, zéro saut — ramenée à la moitié, 568 relevés au rejeu) et la
+Rotonde de `washington.js`, verte rejouée seule (plafond 21, x = −4,9),
+déclarée dans `TASKS.md` avec ses deux mesures. Et un rouge de fumée qui
+était à moi : la première condition de `jouerSeul` lisait un champ absent
+et jetait dans la page — une condition de banc ne doit jamais pouvoir
+jeter dans la page.
+
 ## v254 — Le badge de version raconte les nouveautés
 
 **Pourquoi.** Max : « quand l'utilisateur clique sur le logo de mise à jour,
