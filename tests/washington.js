@@ -276,15 +276,28 @@ const descendre = async (p, ms) => {
     // Rotonde et ressortir sous le porche est (plafond 4, x = +7). On avance
     // donc par petits pas, et on s'arrête quand on est dans la salle : sous un
     // vrai plafond, à moins de cinq blocs du centre.
+    // ET LE NOMBRE DE PAS N'EST PAS UNE BORNE (v256). Quatorze pas de 700 ms
+    // font onze blocs à un bloc par seconde — la cadence d'un portail chargé,
+    // mesurée deux fois de suite après `hote.js` (arrêté à x = −5,7 puis
+    // −6,2, sous le porche) ; rejoué seul, le même code fait x = −4,9. On
+    // marche donc jusqu'à être entré, ou ressorti, ou jusqu'à ne plus avancer
+    // sur trois pas — exactement comme les musées plus bas — avec une borne
+    // large qui ne peut pas mesurer le banc.
     let dedans = await autour(tab);
     let ou = await pose(tab);
-    for (let pas = 0; pas < 14; pas++) {
+    let avantOu = null;
+    let figeRotonde = 0;
+    for (let pas = 0; pas < 60; pas++) {
       const centre = ou.x - (P.x + capitole.u);
       if (dedans.plafond > 4 && Math.abs(centre) < 5) break;
       if (centre > 5) break;                      // ressorti côté est : constat
       await avancer(tab, 700);
       dedans = await autour(tab);
       ou = await pose(tab);
+      const bouge = !avantOu || Math.hypot(ou.x - avantOu.x, ou.z - avantOu.z) >= 0.05;
+      figeRotonde = bouge ? 0 : figeRotonde + 1;
+      if (figeRotonde >= 3) break;                // un mur, pas un hoquet
+      avantOu = ou;
     }
     // Dans la salle ET sous un vrai plafond : l'un sans l'autre ne prouve
     // rien — sous les deux porches aussi, on a quelque chose au-dessus de la
