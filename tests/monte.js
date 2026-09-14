@@ -1538,6 +1538,66 @@ async function avancerUnDemiSeconde(p, depart) {
       !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6,
       JSON.stringify(roulant));
 
+    // ---- UNE HYPERCAR VA PLUS VITE QU'UNE CITADINE (v260) ------------------------
+    //
+    // Max : « les voitures devraient aller plus vite et surtout une vitesse en
+    // fonction du modèle (sportive faster than sedan basic) ». Toute voiture
+    // conduite roulait à ×3,4, quel que soit le modèle. On invoque une
+    // citadine et une Koenigsegg Jesko sur un terrain plat, loin des villes,
+    // on monte, on appuie, et l'on lit la VITESSE que l'enfant obtient
+    // (`player.vel`, avant collision) : la Jesko au moins 1,8 fois plus vite,
+    // et la citadine elle-même plus vite qu'avant (×3,4 = 10,9). Sur l'ancien
+    // code, les deux rendent 10,9. Le terrain plat se cherche à la lecture de
+    // `terrainHeight`, pure, sur trente blocs de ligne droite.
+    const alluresModeles = await tab.evaluate(async () => {
+      const g = window.__game;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const retirerVoitures = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
+      const descendre = async () => { for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(500); } };
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      // UNE DALLE, PAS UN CHAMP. Le relief naturel n'est jamais plat sur
+      // quarante blocs (« pas de champ plat » à la sonde, quatre cents
+      // essais) : on pose une dalle de pierre au-dessus du relief, loin de
+      // tout, comme les témoins du regard, et on la retire après.
+      const { BLOCK } = await import('./src/blocks.js');
+      const x0 = 30000, z0 = 30000;
+      let y0 = 0;
+      for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 3;
+      const dalle = [];
+      for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) { g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]); }
+      const champ = { x0, z0, y0 };
+      await dormir(1500);
+      const out = {};
+      for (const flotte of ['berline-citadine', 'koenigsegg-jesko.glb']) {
+        retirerVoitures();
+        g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;           // avant = +x
+        g.player.pos.set(champ.x0, champ.y0 + 1.5, champ.z0 + 0.5); g.player.vel.set(0, 0, 0);
+        g.animalManager.invoquer('voiture', champ.x0 + 3, champ.z0 + 0.5, false, { flotte });
+        await dormir(800);
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(200); }
+        if (!auVolant()) { out[flotte] = { err: 'pas monté' }; continue; }
+        const monture = g.fun.montureConduite();
+        g.player.keys.add('KeyW');
+        const vitesses = [];
+        const t0 = performance.now();
+        while (performance.now() - t0 < 3000) { await dormir(150); vitesses.push(Math.hypot(g.player.vel.x, g.player.vel.z)); }
+        g.player.keys.delete('KeyW');
+        vitesses.sort((a, b) => a - b);
+        out[flotte] = { vitesse: +vitesses[Math.floor(vitesses.length / 2)].toFixed(1), max: +vitesses[vitesses.length - 1].toFixed(1), modele: monture.mesh && monture.mesh.userData ? monture.mesh.userData.flotte : null, boost: g.player.boost };
+        await descendre();
+      }
+      retirerVoitures();
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+      return out;
+    });
+    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
+    verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
+      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse >= cit.vitesse * 1.8,
+      JSON.stringify(alluresModeles));
+
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
     //
     // Max : « s'assurer de le déployer sur l'ensemble des villes ». Les corps

@@ -764,6 +764,26 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Chaque voiture roule à l'allure de sa classe (v260)
+
+Max : « une vitesse en fonction du modèle ». Deux règles.
+
+- **LA CLASSE VIT DANS LE MANIFESTE DE LA FLOTTE** (`classe` sur chaque entrée
+  de `FLOTTE`, vehicules.js), l'allure dans `ALLURES` par classe, et
+  `allureDe(fichier)` les lit ; `fun.js` (`allureMonture`) l'applique à la
+  monte et à chaque image, la fiche `voiture` de montures.js ne servant que
+  de secours. Même discipline que `montable`, `gabarit`, `habitacle` : une
+  propriété d'un modèle vit à côté du modèle, jamais dans une liste ailleurs.
+- **LE PLAFOND EST CELUI DU MONDE QUI SE CHARGE, ET IL SE CALCULE, PAS
+  ENCORE NE SE MESURE.** 42 morceaux par seconde à Paris (v237), 1,5 × v
+  réclamés (v229) : 28 blocs/s en ville, l'hypercar à 25,6. Le banc ne peut
+  pas le mesurer en voiture : à `rr=12` dans Paris il rend UNE image par
+  seconde, et une sonde qui fait avancer la position à 11 comme à 40 blocs/s
+  parcourt 72 à 85 blocs dans les deux cas — le chargement y est cadencé par
+  l'image. Une première sonde n'avait pas bougé du tout (posée dans un
+  immeuble) : `parcouru` est le premier champ à lire, encore. La mesure
+  vraie se fait sur la tablette avec `?diag=1`, dette déclarée.
+
 ## Un piéton regarde devant lui, et une voiture n'est pas un bloc (v259)
 
 Max, capture à la Bastille : « les passants traversent la voiture de

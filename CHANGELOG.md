@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v260 — Chaque voiture roule à l'allure de son modèle
+
+**Pourquoi.** Max : « les voitures devraient aller plus vite et surtout une
+vitesse en fonction du modèle (sportive faster than sedan basic) ». Toute
+voiture conduite roulait à la même allure, ×3,4 de la marche (10,9 blocs par
+seconde), qu'on soit dans la citadine ou dans une Koenigsegg Jesko, et sur
+la tablette — où le joystick ne court pas — c'était le maximum absolu.
+
+**Ce que ça change.** Chaque modèle de la flotte a une classe, et chaque
+classe son allure : citadine ×3,8 (12 blocs/s), berline et SUV ×4,4 (14),
+GT ×5,4 (17), sportive ×6,4 (20), hypercar ×8 (26). La citadine elle-même
+va un peu plus vite qu'avant ; une Bugatti, une Koenigsegg, une Rimac vont
+plus de deux fois plus vite qu'une berline. Le message « En selle ! Vitesse
+×N » dit l'allure du modèle. Le plafond n'est pas un goût : Paris se maille
+à 42 morceaux par seconde et une vitesse v en réclame 1,5 × v (v229, v237),
+soit 28 blocs par seconde en ville ; l'hypercar reste dessous. À remesurer
+sur la tablette.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien
+code : « une hypercar va plus vite qu'une citadine, et la citadine plus vite
+qu'avant » — une citadine et une Jesko invoquées sur un champ plat, montées,
+accélérateur enfoncé trois secondes, et l'on lit la vitesse que l'enfant
+obtient : la Jesko au moins 1,8 fois la citadine, la citadine au-dessus de
+11 — mesuré à la sonde : 11,4 et 24,0 ici, 10,2 et 10,2 sur l'ancien code,
+deux tours chacun. Portail complet rejoué.
+
 ## v259 — Les passants ne traversent plus la voiture de l'enfant
 
 **Pourquoi.** Max, deux captures : à la Bastille, des passants qui marchent

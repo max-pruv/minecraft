@@ -64,15 +64,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   par seconde — leçon « un témoin qui lit l'effet d'une image attend l'image »
   (v249), à appliquer à `manhattan.js`.
 
-- [ ] **Vitesse des voitures par modèle (Max, après la v259).** « Les
-  voitures devraient aller plus vite et surtout une vitesse en fonction du
-  modèle (sportive faster than sedan basic). » Toute voiture conduite a
-  aujourd'hui `allure: 3.4` (montures.js), quel que soit le modèle de la
-  flotte. Piste : une classe par modèle dans le manifeste de la flotte
-  (citadine, berline, SUV, sportive, hypercar) et une allure par classe, lue
-  à la monte ; plafond réglé sur le débit de maillage MESURÉ en voiture dans
-  une ville (v229 : le monde ne suit plus au-delà de ~110 blocs/s en vol).
-  Témoin : deux modèles de classes différentes, vitesse mesurée en roulant.
+- [x] **Vitesse des voitures par modèle (Max, après la v259) — FAIT en v260**
+  (classe par modèle dans `FLOTTE`, `ALLURES` par classe, `allureMonture`
+  dans fun.js). Reste à MESURER sur la tablette (`?diag=1`) le front de
+  chargement en ville à 25,6 blocs/s : le banc n'y voit qu'une cadence
+  d'image (une par seconde à `rr=12` dans Paris).
 - [ ] **Avions : vrai décollage, vrai atterrissage, roulage (Max, après la
   v259).** « Accélération sur la piste puis décollage en levant le nez ;
   à l'atterrissage, baisser l'altitude et ouvrir le train ; et le roulage
@@ -1030,6 +1026,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v260** — Chaque voiture roule à l'allure de sa classe (citadine ×3,8,
+  berline/SUV ×4,4, GT ×5,4, sportive ×6,4, hypercar ×8 ; plafond 28 blocs/s
+  en ville par l'arithmétique de la v237). Témoin de `monte.js`.
 - [x] **v259** — Les passants ne traversent plus la voiture de l'enfant
   (ni celles de la rue, ni les véhicules posés) : regard-devant d'un pas
   dans `BaseNPC.update`, `contourner()` chez `Habitant` et `Wanderer`,
