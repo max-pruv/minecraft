@@ -840,6 +840,11 @@ un profil qui a failli accuser le mauvais coupable. Cinq règles.
   attend la chauffe avant d'appuyer ; les trois pages de `carte.js` le
   demandent. Ce n'était pas le jeu qui était lent, c'était le banc qui
   jouait pendant la préparation.
+- **ET TOUTE PAGE QUE LE BANC OUVRE LUI-MÊME LE DEMANDE AUSSI.** `reglages.js`
+  et `realisme.js` construisent leur adresse sans passer par `banc.joueur` ;
+  la première a tué le portail (clic sur un « Jouer » grisé, trente secondes
+  d'attente de `running`). Un paramètre que le banc ajoute se cherche dans
+  TOUTES les adresses du banc le jour même : `grep -n "stay=1" tests/*.js`.
 - **LE BANC DEMANDE `?prep=0`**, comme il demande `rr=2` : trente-sept
   démarrages en rendu logiciel auraient payé dix secondes de corps chacun
   sans rien mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la

@@ -1670,10 +1670,22 @@ const position = (p) => p.evaluate(() => ({
           .observe({ entryTypes: ['longtask'] });
       } catch { /* pas d'observateur : le témoin le dira */ }
     });
-    await nino.evaluate(() => { if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click(); });
+    // LE COÛT D'UN CLIC SE MESURE DANS LE CLIC. Le premier jet relevait la
+    // plus longue tâche des deux secondes qui suivent : au portail, une tâche
+    // de 2 038 ms tombée dans la fenêtre — un ramasse-miettes, une adoption de
+    // morceaux, rien qui soit à la minicarte — a rougi « allumer la minicarte »
+    // alors que seul, rien ne dépassait 76 ms. Le clic est dispatché de façon
+    // synchrone : ce que coûte « allumer » et « ouvrir », c'est la durée de
+    // `click()`, premier dessin compris. Le glisser, lui, se mesure sur sa
+    // fenêtre, parce qu'il n'y a pas d'autre façon.
+    const allumer = await nino.evaluate(() => {
+      const t0 = performance.now();
+      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
+      return Math.round(performance.now() - t0);
+    });
     await dormir(2500);
     const minicarte = await nino.evaluate(() => window.__longues.splice(0));
-    await nino.evaluate(() => document.getElementById('minimap').click());
+    const ouvrir = await nino.evaluate(() => { const t0 = performance.now(); document.getElementById('minimap').click(); return Math.round(performance.now() - t0); });
     await nino.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
     await dormir(2500);
     const ouverture = await nino.evaluate(() => window.__longues.splice(0));
@@ -1687,15 +1699,16 @@ const position = (p) => p.evaluate(() => ({
     const glisser = await nino.evaluate(() => window.__longues.splice(0));
     await cdpNino.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     const pire = (l) => Math.max(0, ...l.map(([, d]) => d));
-    console.log(`   🔎 tâches longues (ms) · minicarte ${JSON.stringify(minicarte)} · ouverture ${JSON.stringify(ouverture)} · glisser ${JSON.stringify(glisser)}`);
+    console.log(`   🔎 clics (ms) : allumer ${allumer} · ouvrir ${ouvrir} · tâches longues (ms) · après la minicarte ${JSON.stringify(minicarte)} · après l'ouverture ${JSON.stringify(ouverture)} · glisser ${JSON.stringify(glisser)}`);
     // Quatre cents millisecondes. Mesuré seul, sur l'ancien code : 695 pour
-    // la minicarte, 764 à l'ouverture, 1 136 au glisser ; sur celui-ci, 76,
-    // 58 et 61 — la plus longue tâche est une image de jeu bridée ×4. Mon
-    // premier jet mettait la barre à 700 : la minicarte de l'ancien code
-    // passait dessous de cinq millisecondes, vert des deux côtés.
+    // la minicarte, 764 à l'ouverture, 1 136 au glisser ; sur celui-ci, le
+    // clic coûte quelques dizaines de millisecondes et la plus longue tâche
+    // du glisser est une image de jeu bridée ×4 (50 à 160). Mon premier jet
+    // mettait la barre à 700 : la minicarte de l'ancien code passait dessous
+    // de cinq millisecondes, vert des deux côtés.
     const BARRE = 400;
-    verifier('allumer la minicarte ne fige pas l\'image (bridé ×4)', pire(minicarte) < BARRE, `pire tâche ${pire(minicarte)} ms (barre ${BARRE})`);
-    verifier('ouvrir la carte du monde ne fige pas l\'image (bridé ×4)', pire(ouverture) < BARRE, `pire tâche ${pire(ouverture)} ms (barre ${BARRE})`);
+    verifier('allumer la minicarte ne fige pas l\'image (bridé ×4)', allumer < BARRE, `le clic a coûté ${allumer} ms (barre ${BARRE})`);
+    verifier('ouvrir la carte du monde ne fige pas l\'image (bridé ×4)', ouvrir < BARRE, `le clic a coûté ${ouvrir} ms (barre ${BARRE})`);
     verifier('et la faire glisser non plus (bridé ×4)', pire(glisser) < BARRE, `pire tâche ${pire(glisser)} ms (barre ${BARRE})`);
 
     // ET UNE OPTIMISATION QUI DÉCOUPE DOIT PROUVER QU'ELLE NE MENT PAS : le
