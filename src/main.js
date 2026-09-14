@@ -1523,8 +1523,71 @@ function refuserOuVoler() {
 // Ce que l'avion fait tout seul se DIT : les roues qui touchent, l'arrêt.
 player.surAvion = (quoi) => {
   if (quoi === 'touche') creatureManager.toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
+  else if (quoi === 'ventre') creatureManager.toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
   else if (quoi === 'arret') creatureManager.toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
 };
+
+// LA MANETTE DES GAZ (v262). Max : « le joystick à gauche pour la direction
+// et, en multitouch, à droite un cadran qu'on monte/baisse pour la vitesse ».
+// Un curseur vertical à droite, en événements de pointeur — un doigt sur le
+// joystick (le canvas, à gauche) et un doigt ici ne se gênent pas, chacun a
+// son pointeur. Il fixe `player.gaz` (0 à 1) ; `player.js` en fait la
+// vitesse d'une voiture ou d'un avion. Tant qu'on ne l'a pas touché, l'avant
+// du joystick reste l'accélérateur : rien de ce qu'un enfant sait ne cesse
+// de marcher. Et il AFFICHE la vitesse, en km/h, que la manette serve ou non.
+const gazBase = document.getElementById('gaz-base');
+const gazFill = document.getElementById('gaz-fill');
+const gazKnob = document.getElementById('gaz-knob');
+const gazVal = document.getElementById('gaz-val');
+const trainBtn = document.getElementById('train-btn');
+function reglerGaz(e) {
+  const r = gazBase.getBoundingClientRect();
+  const marge = 14;
+  const n = 1 - (e.clientY - r.top - marge) / (r.height - marge * 2);
+  player.gaz = Math.max(0, Math.min(1, n));
+}
+gazBase.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  try { gazBase.setPointerCapture(e.pointerId); } catch { /* un pointeur déjà parti */ }
+  reglerGaz(e);
+});
+gazBase.addEventListener('pointermove', (e) => {
+  if (e.buttons === 0 && e.pointerType === 'mouse') return;
+  if (player.gaz == null) return;
+  reglerGaz(e);
+});
+gazBase.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+trainBtn.addEventListener('click', () => {
+  if (!player.pilote) return;
+  player.trainVoulu = !((player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+  creatureManager.toast(player.trainVoulu ? '🛞 Train sorti.' : '🛞 Train rentré.', 0x9fd8ff);
+});
+// LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
+// coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
+let etatVehicule = '';
+function majBoutonsVehicule() {
+  const enAvion = running && !!player.pilote;
+  const enVehicule = running && (enAvion || player.gabarit > 1);
+  const cle = `${enVehicule}|${enAvion}`;
+  if (cle !== etatVehicule) {
+    etatVehicule = cle;
+    document.body.classList.toggle('en-vehicule', enVehicule);
+    document.body.classList.toggle('en-avion', enAvion);
+  }
+  if (!enVehicule) return;
+  const v = enAvion ? (player.vitesseAvion || 0) : Math.abs(player.vitesseVoiture || 0);
+  let niveau = player.gaz;
+  if (niveau == null) {
+    if (enAvion) niveau = player.pilote.max ? v / player.pilote.max : 0;
+    else niveau = Math.max(0, player.touchMove.f, player.keys.has('KeyW') ? 1 : 0);
+  }
+  niveau = Math.max(0, Math.min(1, niveau));
+  gazFill.style.height = `${Math.round(niveau * 100)}%`;
+  gazKnob.style.bottom = `calc(${(niveau * 100).toFixed(1)}% - ${Math.round(niveau * 22)}px)`;
+  gazVal.textContent = `${Math.round(v * 3.6)} km/h`;
+  if (enAvion) trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+}
+window.__majBoutonsVehicule = majBoutonsVehicule;
 
 document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -6251,6 +6314,7 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
+  majBoutonsVehicule();
   asseoirLeConducteur(dt);
   effects.update(dt);
 

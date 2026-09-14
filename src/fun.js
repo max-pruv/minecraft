@@ -299,6 +299,7 @@ export function initFun(ctx) {
       player.avionEnVol = false;
       player.roulisAvion = 0;
       player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
+      player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;
       player.boost = undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -313,6 +314,7 @@ export function initFun(ctx) {
     debarquer();
     riding = a;
     a.montee = true;   // le gestionnaire d'animaux ne la retire jamais (animals.js)
+    player.gaz = null; player.vitesseVoiture = 0;   // la manette des gaz part de zéro, le joystick reste l'accélérateur tant qu'elle n'a pas servi
     // La fiche décide : une voiture ne décolle pas, un cheval non plus une
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
     player.interdireVol(a.def.vole === false);
@@ -1142,6 +1144,7 @@ export function initFun(ctx) {
       player.boost = undefined; player.pilote = null;
       player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
       player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
+      player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
       return;

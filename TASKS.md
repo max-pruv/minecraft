@@ -1067,6 +1067,13 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v262** — La manette des gaz (cadran à droite, pointeur à part) pour
+  voitures et avions ; inertie et volant au joystick pour la voiture ;
+  décrochage et atterrissage manuel, bouton 🛞 du train, atterrissage sur
+  le ventre dit ; boutons de la marche effacés en véhicule (classes
+  `en-vehicule`/`en-avion`). Six témoins tactiles à deux doigts dans
+  `monte.js`. Reste de #36 : rien ; #39 (cadran de cap vers la ville visée)
+  et #37 (flammes du réacteur) à suivre.
 - [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
   `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
   `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le

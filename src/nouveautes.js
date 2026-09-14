@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 262,
+    titre: "Une manette des gaz à droite",
+    puces: [
+      "🎚️ Monte le cadran pour accélérer",
+      "🕹️ Le joystick tourne le volant",
+      "🛞 En avion, un bouton pour le train",
+      "Au volant, moins de boutons à l'écran",
+    ],
+  },
+  {
     v: 261,
     titre: "L'avion décolle de sa piste",
     puces: [
