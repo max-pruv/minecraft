@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 256,
+    titre: "Moins de boutons, plus de jeu",
+    puces: [
+      "🖼️ Le bouton Souvenirs ouvre tes photos",
+      "Plus de feux d'artifice ni d'atelier",
+      "Tes panneaux déjà écrits restent là",
+    ],
+  },
+  {
     v: 255,
     titre: "Rien de neuf à l'écran",
     puces: [

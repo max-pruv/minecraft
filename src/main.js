@@ -1476,12 +1476,10 @@ function renderMeat() {
   meatCounter.textContent = `🍖 × ${meatCount}`;
 }
 renderMeat();
-// Toucher le garde-manger ouvre l'atelier : c'est là qu'on dépense la viande
-// (recettes, nourrir les bêtes). `fun` n'existe pas encore à cette ligne — on
-// le lit au moment du clic, pas au chargement.
-meatCounter.addEventListener('click', () => {
-  try { fun.ouvrirOnglet('craft'); } catch { /* l'atelier n'est pas encore né */ }
-});
+// Le garde-manger ouvrait l'atelier, où la viande se dépensait en recettes ;
+// l'atelier n'existe plus (v255), la pastille ne fait plus que compter ce
+// que l'enfant a récolté. Elle ne se touche plus — un bouton qui ne ferait
+// rien serait pire qu'une pastille qui compte.
 
 function emojiBurst(emojis, n = 18) {
   const container = document.getElementById('confetti');
@@ -1592,7 +1590,6 @@ animalManager.onHarvest = (def) => {
   renderMeat();
   creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
-  fun.onHarvest(def); // the item also goes into the bag (crafting, quests, chest)
 };
 
 // --- catch celebration ------------------------------------------------------------
@@ -3244,7 +3241,7 @@ function showOnlineUI() {
   // enfant tient désormais le monde. On le rejoint au lieu de rester chacun
   // dans sa bulle — sans quoi les deux jouent seuls sous le même code.
   net.onCodePris = (c) => { reprendreLeMonde(c); };
-  fun.attachNet(net); // duels, emotes, signs and the shared chest
+  fun.attachNet(net); // duels, émotes, panneaux reçus
 }
 
 // Leaves any session (local or online) and restores the full main menu.
@@ -5802,7 +5799,7 @@ function updateHud(dt) {
     ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
 }
 
-// --- fun & social systems (breeding, riding, duels, quests, records…) -------------
+// --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
 
 const fun = initFun({
   scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
@@ -5825,15 +5822,6 @@ const fun = initFun({
   photos: {
     pousser: () => profileSync.photosPousser().catch(() => {}),
     tirer: () => profileSync.photosTirer().catch(() => []),
-  },
-  getProfiles: () => loadRegistry().list.map((p) => ({ id: p.id, name: p.name })),
-  getMeat: () => meatCount,
-  takeMeat: (n) => {
-    if (meatCount < n) return false;
-    meatCount -= n;
-    try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
-    renderMeat();
-    return true;
   },
 });
 

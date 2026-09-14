@@ -700,7 +700,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // Deux retours d'écran de téléphone. « 🎨 Temps libre » s'affichait en
     // permanence quand les quiz sont arrêtés — une pastille qui n'apprend
     // jamais rien. Et le toast de la photo montrait « (menu 🏆) », un bouton
-    // qui n'existe plus depuis que les records ont déménagé dans l'atelier.
+    // qui n'existait plus. Depuis la v255 l'atelier non plus : le toast doit
+    // montrer le seul chemin qui reste, le bouton 🖼️ Souvenirs.
     nuage.poserReglages('Alice~parent', { sessionMin: 10, quizStopMin: 0 });
     await jusqua(async () => (await alice.evaluate(
       () => window.__game.edu.arretApresSecondes)) === 0, 30000);
@@ -717,10 +718,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       return document.getElementById('toast').textContent;
     });
     verifier('le toast de la photo montre le vrai chemin',
-      /Atelier/.test(photo) && !/🏆/.test(photo), photo);
+      /Souvenirs/.test(photo) && !/🏆|Atelier/.test(photo), photo);
     const galerie = await alice.evaluate(async () => {
-      document.querySelector('.fun-btn[title="Atelier"]').click();
-      document.querySelector('.fun-tab[data-t="photos"]').click();
+      // Plus d'onglet à choisir : le bouton 🖼️ ouvre l'album directement (v255).
+      document.querySelector('.fun-btn[title="Souvenirs"]').click();
       await new Promise((r) => setTimeout(r, 300));
       return {
         photos: document.querySelectorAll('.photo-grid .ph').length,

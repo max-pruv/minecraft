@@ -1260,21 +1260,18 @@
     .toggle.on { background: #2d6a2d; border-color: #58b04c; }
     .toggle.on::after { transform: translateX(24px); background: #fff; }
 
-    /* Le garde-manger et la jauge du chantier : deux pastilles qui OUVRENT
-       l'atelier quand on les touche. Max, devant les deux jauges muettes qui
-       flottaient en plein champ de vision : « je ne comprends pas à quoi
-       servent ces boutons, quand on clique il ne se passe rien — et replace-
-       les, c'est pas bien fait ». Si ça ressemble à un bouton, ça doit en
-       être un ; et un bouton vit dans un rail, pas au milieu de l'écran.
-       Elles habitent donc le rail bas-gauche : en flux, comme tout le bord
-       gauche — plus aucune coordonnée à la main. */
-    #meat-counter, #chantier-hud {
+    /* Le garde-manger : une pastille qui COMPTE ce que l'enfant a récolté.
+       Elle ouvrait l'atelier, où la viande se dépensait ; l'atelier et la
+       jauge du chantier n'existent plus (v255). Elle habite le rail
+       bas-gauche : en flux, comme tout le bord gauche — plus aucune
+       coordonnée à la main. Et comme elle ne s'ouvre plus, elle ne se
+       présente pas comme un bouton : pas de curseur de main. */
+    #meat-counter {
       display: none; white-space: nowrap;
       font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
       background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px;
-      cursor: pointer; border: 1px solid rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.25);
     }
-    #chantier-hud { color: #9fd8ff; border-color: rgba(159,216,255,0.35); }
 
     /* catch celebration */
     #catch-banner {
@@ -1429,7 +1426,6 @@
   <div id="left-rail"><button id="map-btn" title="Mini-carte">🗺️</button></div>
   <div id="left-rail-bottom">
     <div id="meat-counter"></div>
-    <div id="chantier-hud"></div>
   </div>
   <button id="settings-btn" title="Réglages">⚙️</button>
   <button id="cam-btn" title="Caméra (mini visio)">📷</button>

@@ -764,6 +764,32 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Ce qu'on retire garde ses données, et le receveur cède (v256)
+
+Max : « supprime les feux d'artifice, et tout ça — Atelier, Coffre, Quête,
+Panneau, Chantier, Records, Chapeaux — à part les souvenirs photos. » Trois
+règles pour tout retrait de fonctionnalité.
+
+- **ON RETIRE L'ÉCRAN ET LES COMMANDES, JAMAIS LES DONNÉES.** Records, sac,
+  quête, coffre, chantier, panneaux, photos : toutes les clés restent dans le
+  stockage et dans `sync.js`, telles quelles. Un enfant qui reviendrait sur
+  une ancienne version retrouverait tout ; et l'on ne sait jamais ce qu'un
+  retrait rendra un jour.
+- **UN MESSAGE RÉSEAU RETIRÉ SE REÇOIT ENCORE.** `chest` et `chantier`
+  n'ont plus de lecteur, mais une tablette restée sur l'ancienne version les
+  envoie toujours : le receveur les ignore sans casse, et l'hôte RELAIE, pour
+  que deux anciennes tablettes sous un hôte à jour continuent de se voir le
+  coffre. C'est la règle du receveur qui cède, appliquée au retrait.
+- **CE QU'UN ENFANT A ÉCRIT RESTE VISIBLE.** On ne plante plus de panneau ;
+  ceux qui existent se relisent et se dessinent. Effacer ce qu'un enfant a
+  écrit n'est pas un retrait de fonctionnalité, c'est une perte, et c'est à
+  Max de la décider.
+
+Et **un témoin de retrait lit ce que l'enfant voit ET ce qui s'écrit** : la
+touche G ne doit ni ajouter un nuage de points à la scène, ni compter un
+feu dans les records — l'un sans l'autre laisserait passer une fusée
+invisible ou un compteur fantôme.
+
 ## Le journal des nouveautés vit dans le jeu (v254)
 
 Max : « une modale au clic sur le logo de mise à jour, tout ce qui est
