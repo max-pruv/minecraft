@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 261,
+    titre: "L'avion décolle de sa piste",
+    puces: [
+      "✈️ Pleins gaz, puis le nez se lève",
+      "🛬 Il se pose, train sorti, et freine",
+      "🕹️ Au sol, le joystick fait rouler",
+    ],
+  },
+  {
     v: 260,
     titre: "Chaque voiture a sa vitesse",
     puces: [

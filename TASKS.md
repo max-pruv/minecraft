@@ -26,7 +26,24 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 - [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
   DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
-  v259.** À la v260 : rouge aux deux portails (dont « à trois, chacun voit
+  v259.** FAIT le soir de la v261 : `reseau.js` rejouée SEULE sur un arbre
+  v258 (`/root/v258`, `7c9163c`) le même soir, 71 témoins VERTS dont
+  celle-ci (« hôte 2 · Alice 2 », `scratchpad/v260/reseau-seule-v258.log`),
+  cinq minutes après le rouge sur `origin/main` en v259. Puis deux sondes
+  qui rejouent CE scénario seul (`scratchpad/v261/sonde-reprise*.cjs`) :
+  la courte (hôte, Alice, sommeil, Alice revenue) et la longue (trio, Nina
+  part, Alice dort 26 s et se réveille, se rendort, revient) — VERTES sur
+  la branche ET sur v258, avec le journal des retraits côté hôte : après
+  la présentation d'Alice revenue, l'ancienne page se rebranche huit à dix
+  fois en quatre secondes (`remplace` + fermeture à 400 ms, chemins
+  `_evinces` et « présentation d'un fantôme »), puis se tait ; Alice
+  revenue n'est jamais retirée. La panne a donc besoin du contexte de la
+  suite (les scénarios de véhicules et de météo entre les deux, trois
+  pages ouvertes plus longtemps) et n'est PAS prouvée introduite par la
+  v259 — un rouge de suite contre un vert de sonde, sur le même code. Le
+  témoin imprime désormais les retraits de l'hôte quand il rougit : le
+  prochain rouge de portail dira qui a retiré Alice, quand, par quel
+  chemin. Suite au prochain portail rouge. À la v260 : rouge aux deux portails (dont « à trois, chacun voit
   les deux autres » une fois), puis rejouée SEULE : rouge sur la branche
   (69 verts) ET rouge sur `origin/main` en v259 (69 verts), « hôte 1 ·
   Alice 2 » les deux fois. Le matin, seule sur `origin/main` en v258 et sur
@@ -81,19 +98,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   dans fun.js). Reste à MESURER sur la tablette (`?diag=1`) le front de
   chargement en ville à 25,6 blocs/s : le banc n'y voit qu'une cadence
   d'image (une par seconde à `rr=12` dans Paris).
-- [ ] **Avions : vrai décollage, vrai atterrissage, roulage (Max, après la
-  v259).** « Accélération sur la piste puis décollage en levant le nez ;
-  à l'atterrissage, baisser l'altitude et ouvrir le train ; et le roulage
-  sur la piste. » Aujourd'hui ✈️ fait une montée automatique de vingt blocs
-  (v228) et un second appui pose. À faire dans `player.js` (mode `pilote`),
-  `fun.js`, `avions.js` : phase ROULAGE (au sol, le joystick dirige, allure
-  de roulage), DÉCOLLAGE (accélération jusqu'à la vitesse de rotation de la
-  fiche, nez qui se lève progressivement, train qui rentre), ATTERRISSAGE
-  (assiette de descente, train qui sort sous une altitude, toucher, freinage).
-  Le train doit exister sur les modèles et s'animer. Garder les commandes
-  d'enfant de la v228. Témoins : distance de roulage avant décollage, tangage
-  au décollage, train rentré en vol et sorti sous l'altitude, vitesse nulle
-  après l'atterrissage. Fiches par appareil, comme `max` et `virage`.
 
 - [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
   dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
@@ -1038,6 +1042,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
+  `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
+  `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le
+  train principal, jambes du train en membres qui rentrent et sortent,
+  arrondi, marche d'un bloc franchie au roulage. Cinq témoins de `monte.js`
+  sur une piste de pierre, captures de côté.
 - [x] **v260** — Chaque voiture roule à l'allure de sa classe (citadine ×3,8,
   berline/SUV ×4,4, GT ×5,4, sportive ×6,4, hypercar ×8 ; plafond 28 blocs/s
   en ville par l'arithmétique de la v237). Témoin de `monte.js`.
