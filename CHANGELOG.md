@@ -59,7 +59,13 @@ train sorti, touche, freine jusqu'à zéro sur la piste (arrêt à 271 blocs) ;
 radian en une seconde et demie). L'ancien témoin « le bouton ✈️ fait
 décoller » est remplacé : il mesurait un appareil qui monte sur place, ce
 qui est devenu le défaut. Captures de côté et vue de l'enfant à chaque
-étape (`scratchpad/v261/captures`). Portail complet rejoué.
+étape (`scratchpad/v261/captures`). Portail complet rejoué : 542 témoins
+verts ; neuf rouges, tous dettes déclarées dans `TASKS.md` — les quatre de
+`manhattan.js` (mêmes valeurs que les deux portails précédents), le gel du
+premier survol de Paris (`monte.js`), et `reseau.js` sous charge, dont « la
+reprise tient dans la durée » qui dit enfin POURQUOI grâce au journal des
+retraits posé dans cette livraison : un délai de silence (`STALE`), l'hôte
+n'entendant plus un invité neuf qui, lui, l'entend.
 
 ## v260 — Chaque voiture roule à l'allure de son modèle
 
