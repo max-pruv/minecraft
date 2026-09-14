@@ -959,6 +959,24 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v255** — Le portail d'essai attend ce qui compte, plus le temps :
+  instrument de charge instantané (`tests/charge.js`, `/proc/stat` sur une
+  demi-seconde) pour `souffler` et le repos entre suites, une charge stable
+  se dit au lieu de s'attendre, `jouerSeul` en condition bornée, suites
+  courtes d'abord, empreinte de reprise sur la forme du banc. Quinze suites
+  depuis zéro : 74 → 51 minutes, 9 → 0 minutes d'attente entre suites,
+  respiration 615 → 119 s, mêmes témoins. Étapes 2 (tempo) et 3 (deux
+  machines) déclarées ci-dessus.
+
+- [x] **v254** — Le badge de version ouvre « Quoi de neuf ? » : cent deux
+  entrées écrites pour un enfant (`src/nouveautes.js`), la version installée
+  marquée, la mise à jour forcée en bouton ; et fermée, la modale ne couvre
+  rien (`hidden` perdait contre `display: flex` — attrapé par `carte.js`).
+
+- [x] **v253** — À plusieurs, le véhicule voyage avec la position : on voit
+  l'ami dans sa voiture, on monte avec lui comme passager, le premier
+  conduit.
+
 - [x] **v246** — La téléportation ne fige plus l'écran (les dix-neuf
   signatures de programme de la flotte et des humains, lues dans les fichiers,
   se compilent à l'accueil ; zéro programme neuf à l'arrivée à Paris, vingt
