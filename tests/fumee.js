@@ -62,6 +62,55 @@ function verifier(nom, ok, detail = '') {
     });
     verifier('poser un bloc marche encore', pose.pose, JSON.stringify(pose));
 
+    // L'ATELIER ET LES FEUX D'ARTIFICE SONT PARTIS (v255). Max : « supprime la
+    // fonctionnalité de pouvoir faire les feux d'artifice, et tout ça
+    // (Atelier, Coffre, Quête, Panneau, Chantier, Records, Chapeaux) à part
+    // les souvenirs photos. » Trois témoins, rouges sur l'ancien code : le
+    // bouton 🎆 y est, le panneau y a huit onglets, et la touche G y lance
+    // une fusée.
+    const rail = await tab.evaluate(() => ({
+      feu: !!document.querySelector('.fun-btn[title="Feu d\'artifice"]'),
+      boutons: [...document.querySelectorAll('.fun-btn')].map((b) => b.title),
+    }));
+    verifier('le feu d\'artifice n\'a plus de bouton', !rail.feu, JSON.stringify(rail.boutons));
+
+    const album = await tab.evaluate(async () => {
+      const b = document.querySelector('.fun-btn[title="Souvenirs"]');
+      if (!b) return { bouton: false };
+      b.click();
+      await new Promise((r) => setTimeout(r, 200));
+      const panneau = document.getElementById('fun-main-panel');
+      const titre = panneau.querySelector('#fun-tab-body h3');
+      const out = { bouton: true,
+        ouvert: getComputedStyle(panneau).display === 'block',
+        onglets: panneau.querySelectorAll('.fun-tab').length,
+        titre: titre ? titre.textContent : '' };
+      panneau.querySelector('.fun-close').click();
+      return out;
+    });
+    verifier('le bouton 🖼️ ouvre les Souvenirs, sans autre onglet',
+      album.bouton && album.ouvert && album.onglets === 0 && /Souvenirs/.test(album.titre),
+      JSON.stringify(album));
+
+    // La touche G : sur l'ancien code elle ajoute un nuage de points à la
+    // scène ET compte un feu dans les records. On lit les deux — ce que
+    // l'enfant voit, et ce qui s'écrit — et ni l'un ni l'autre ne doit bouger.
+    const toucheG = await tab.evaluate(async () => {
+      const g = window.__game;
+      const points = () => g.scene.children.filter((o) => o.isPoints).length;
+      const feux = () => {
+        try { return JSON.parse(localStorage.getItem('web-minecraft-records-v1') || '{}').fireworks || 0; }
+        catch { return 0; }
+      };
+      const avant = { points: points(), feux: feux() };
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true }));
+      await new Promise((r) => requestAnimationFrame(r));
+      return { avant, apres: { points: points(), feux: feux() } };
+    });
+    verifier('la touche G ne lance plus de fusée',
+      toucheG.apres.points <= toucheG.avant.points && toucheG.apres.feux === toucheG.avant.feux,
+      JSON.stringify(toucheG));
+
     // La bibliothèque de monuments : elle se feuillette et elle pose.
     //
     // DEPUIS v176 elle vit dans l'inventaire (bouton +), onglet Bâtiments,

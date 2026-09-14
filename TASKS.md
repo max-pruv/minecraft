@@ -24,8 +24,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Rouge de portail de `washington.js`, « on pousse la porte et on est
-  dans la Rotonde », mesuré des deux côtés (v255).** Au portail complet du
+- [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
+  dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
+  (v256) : il marche jusqu'à être entré, ressorti ou figé trois pas, plus en
+  quatorze pas ; vert seul (plafond 22, x = −4,0) et au portail suivant.** Au portail complet du
   banc accéléré (onzième suite, après `hote.js`) : plafond 11, x = −5,7 du
   centre — l'enfant s'est arrêté sous le porche, à un bloc par seconde. Rejouée
   SEULE sur la branche, même code : plafond 21, x = −4,9, verte. C'est le rouge
@@ -34,6 +36,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   quatorze pas de 700 ms ; à quatre images par seconde, dix blocs ne suffisent
   pas — remplacer la borne en PAS par une borne en BLOCS parcourus, comme
   « ne plus avancer » l'a déjà fait.
+
+- [ ] **La carte du monde bloque le fil principal à l'ouverture et à chaque
+  déplacement (Max, v255 : « beaucoup de lag au début »).** Mesuré au banc,
+  processeur bridé ×4, page 420 × 760 : ouverture en 2,1 s avec UNE tâche de
+  1 637 ms (le fond : `terrainHeight` et couleur pour un échantillon sur deux
+  pixels, quel que soit le dpr), puis 90 à 240 ms toutes les deux secondes
+  dès que la vue bouge — 2,1 s bloquées sur les trente secondes qui suivent.
+  Un iPad en paysage a 2,4 fois plus d'échantillons et un processeur plus
+  lent : cinq à dix secondes pour le premier fond, une à deux à chaque
+  déplacement. Pistes : rendre le fond par tranches sous un budget par image
+  (comme la mise à niveau des corps), ou dans le worker de maillage qui a
+  déjà un `World` ; ne re-rendre que quand la vue a bougé de plus de N blocs
+  (la leçon de la minicarte, v233) ; et préparer le premier fond AVANT
+  « Jouer », derrière le loader. Prévu v258, avec la préparation avant Jouer.
 
 - [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
   minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
@@ -298,7 +314,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   server » du courtier local), verte les autres fois sur le MÊME code ; au
   portail de la v246, `page.waitForFunction` a expiré après « la reprise
   cloud place l'enfant près du chantier déplacé », les quatre rouges
-  ci-dessus identiques. Le journal de la v240 annonce ce portail vert :
+  ci-dessus identiques ; au portail de la v256, une SIXIÈME forme de la même
+  fin instable : `#ride-btn` jamais visible en quinze secondes après
+  l'invocation du taxi (la suite s'arrête là, vingt-quatre témoins de moins),
+  et rejouée seule le bouton apparaît, le taxi rend son rouge déclaré et la
+  fin réseau lâche (« Lost connection to server »). Le journal de la v240 annonce ce portail vert :
   il a été mesuré avec `CHROMIUM_ANGLE=metal`, pas en logiciel. À démonter
   sur une machine qui rend en matériel avant d'accuser le jeu — et à
   remesurer ici témoin par témoin (la géométrie qui monte dit que le témoin
@@ -958,6 +978,24 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v255** — Le portail d'essai attend ce qui compte, plus le temps :
+  instrument de charge instantané (`tests/charge.js`, `/proc/stat` sur une
+  demi-seconde) pour `souffler` et le repos entre suites, une charge stable
+  se dit au lieu de s'attendre, `jouerSeul` en condition bornée, suites
+  courtes d'abord, empreinte de reprise sur la forme du banc. Quinze suites
+  depuis zéro : 74 → 51 minutes, 9 → 0 minutes d'attente entre suites,
+  respiration 615 → 119 s, mêmes témoins. Étapes 2 (tempo) et 3 (deux
+  machines) déclarées ci-dessus.
+
+- [x] **v254** — Le badge de version ouvre « Quoi de neuf ? » : cent deux
+  entrées écrites pour un enfant (`src/nouveautes.js`), la version installée
+  marquée, la mise à jour forcée en bouton ; et fermée, la modale ne couvre
+  rien (`hidden` perdait contre `display: flex` — attrapé par `carte.js`).
+
+- [x] **v253** — À plusieurs, le véhicule voyage avec la position : on voit
+  l'ami dans sa voiture, on monte avec lui comme passager, le premier
+  conduit.
 
 - [x] **v246** — La téléportation ne fige plus l'écran (les dix-neuf
   signatures de programme de la flotte et des humains, lues dans les fichiers,

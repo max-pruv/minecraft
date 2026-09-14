@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v256 — Le panneau 🛠️ s'en va, les Souvenirs restent
+
+**Pourquoi.** Max : « je veux que tu supprimes la fonctionnalité de pouvoir
+faire les feux d'artifice, et tout ça — Atelier, Coffre, Quête, Panneau,
+Chantier, Records, Chapeaux — à part les souvenirs photos. » Sept onglets
+que personne n'ouvrait, une pastille de garde-manger et une jauge de
+chantier « qui ne font rien quand on clique » (déjà reproché en v190), une
+touche G qui lançait une fusée. Du bruit à l'écran, pour un enfant de sept
+ans qui cherche la carte.
+
+**Ce que ça change.** Le bouton 🛠️ devient 🖼️ « Souvenirs » et ouvre
+directement l'album photo, sans onglet. Le bouton 🎆 et la touche G ne
+lancent plus rien ; le coffre commun, le chantier partagé, la quête, les
+records, les chapeaux et l'atelier n'ont plus d'écran ; on ne plante plus
+de panneau, mais ceux qu'un enfant a déjà écrits restent dans le monde. Le
+garde-manger 🍖 compte encore ce qu'on récolte, sans s'ouvrir. **Aucune
+donnée n'est effacée** : records, sac, quête, coffre, chantier, panneaux et
+photos restent dans le stockage et dans le nuage, sous leurs clés, tels
+quels. Et une tablette restée sur l'ancienne version peut encore envoyer un
+coffre ou un chantier : le receveur l'ignore sans casse, et l'hôte relaie
+pour que deux anciennes tablettes continuent de se comprendre.
+
+**Ce qui le prouve.** Huit cent cinquante-deux lignes retirées, deux cent
+vingt-trois ajoutées, onze fichiers. Huit témoins retirés avec ce qu'ils
+gardaient (la pastille touchable, le 🍖 qui ouvre l'atelier, la jauge du
+chantier, le chantier commun de bout en bout), trois reformulés, quatre
+ajoutés : « le feu d'artifice n'a plus de bouton », « le bouton 🖼️ ouvre
+les Souvenirs, sans autre onglet », « la touche G ne lance plus de fusée »
+(ni nuage de points dans la scène, ni compteur dans les records) dans
+`fumee.js`, et « un chantier ou un coffre envoyé par une ancienne version
+est ignoré sans casse » dans `reseau.js`.
+Les trois témoins de la fumée sont ROUGES sur l'ancien code, mesurés (le
+bouton 🎆 présent, pas de bouton Souvenirs, la touche G ajoute un nuage de
+points et compte un feu). Portail : fumée verte, puis onze suites rejouées
+en 45 minutes ; sept vertes (parent, visio, maj, carte, hote, reglages,
+`reseau.js` au portail suivant seule : 71 témoins verts, la reprise dans la
+durée comprise — son rouge de portail est celui de charge déclaré en v253) ;
+`manhattan.js` et `monte.js` sur leurs seuls témoins déclarés en dette ;
+et la Rotonde de `washington.js`, rouge deux portails de suite au même
+endroit et verte seule, corrigée dans le témoin (il marche jusqu'à être
+entré, ressorti ou figé trois pas, plus en quatorze pas : plafond 22,
+x = −4,0, verte).
+
 ## v255 — Le portail d'essai attend ce qui compte, plus le temps
 
 **Pourquoi.** Max : « je veux que tu trouves des solutions pour accélérer la

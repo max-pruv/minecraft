@@ -151,7 +151,7 @@ const GARDIENS = {
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
-  'src/fun.js': ['monte.js', 'carte.js'],
+  'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js'],

@@ -1449,12 +1449,7 @@ export class NetSession {
           // Le lien vient de lâcher ? Le battement de cœur le verra, et
           // `envoyerLeMonde` réessaiera : ce message-ci porte tout le monde
           // bâti, c'est le dernier qu'on veut perdre en silence.
-          this.envoyerBrut(conn, {
-            t: 'sync', blocks: this.hooks.world.exportEdits(),
-            // le chantier en cours part avec le monde : un arrivant voit le
-            // fantôme et la jauge sans que personne n'ait rien à refaire
-            chantier: this.chantierActuel ? this.chantierActuel() : undefined,
-          });
+          this.envoyerBrut(conn, { t: 'sync', blocks: this.hooks.world.exportEdits() });
         }
         if (this.onJoin) this.onJoin(entry.name);
         else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
@@ -1507,12 +1502,12 @@ export class NetSession {
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
-      case 'chest': // the shared world chest changed
-        if (this.onChest) this.onChest(msg.items);
-        if (this.isHost) this.relay(conn.peer, msg);
-        break;
-      case 'chantier': // le plan commun posé ou retiré
-        if (this.onChantier) this.onChantier(msg.c);
+      // Le coffre commun et le chantier n'existent plus (v255), mais une
+      // tablette restée sur l'ancienne version peut encore les envoyer. Le
+      // receveur cède : on ne fait rien — et l'hôte relaie quand même, pour
+      // que deux anciennes tablettes continuent de se comprendre entre elles.
+      case 'chest':
+      case 'chantier':
         if (this.isHost) this.relay(conn.peer, msg);
         break;
       // La caméra lente. Sur un Wi-Fi public, le flux vidéo ne passe pas :
@@ -1548,9 +1543,7 @@ export class NetSession {
         if (!this.isHost && this.onCiel) this.onCiel(msg);
         break;
       case 'sync': {
-        if (msg.chantier !== undefined && msg.chantier !== null && this.onChantier) {
-          this.onChantier(msg.chantier);
-        }
+        // `msg.chantier`, qu'un ancien hôte envoie encore, est ignoré.
         const applied = this.hooks.world.mergeEdits(msg.blocks);
         if (applied > 0) {
           this.hooks.world.saveEdits(); // remote history must survive a reload

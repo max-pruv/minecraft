@@ -1,29 +1,33 @@
-// Fun & social systems: item bag, breeding, riding, companions, duels,
-// crafting, shared chest, text signs, fireworks, emotes, photos, daily
-// treasure, park mini-games, quests, records & hats, museum statues and
-// little math challenges. Everything persists per profile via the storage
-// shim; world-scoped data (signs, chest) is keyed by the world code.
+// Fun & social systems: breeding, riding, companions, duels, text signs
+// (those already planted), emotes, photos, daily treasure, park mini-games,
+// records, museum statues and little math challenges. Everything persists per
+// profile via the storage shim; world-scoped data (signs) is keyed by the
+// world code.
+//
+// L'ATELIER, LE COFFRE, LA QUÊTE, LE PANNEAU, LE CHANTIER, LES RECORDS ET LES
+// CHAPEAUX N'ONT PLUS D'ÉCRAN, ET LE FEU D'ARTIFICE PLUS DE BOUTON (v255).
+// Décision de Max : « supprime la fonctionnalité de pouvoir faire les feux
+// d'artifice, et tout ça à part les souvenirs photos. » On retire l'écran et
+// les commandes, jamais ce qu'un enfant a gagné : les records, le sac, la
+// quête, le coffre, les chapeaux et les panneaux plantés restent dans le
+// stockage et dans le nuage, sous leurs clés, tels quels. Le panneau 🖼️
+// n'ouvre plus que les Souvenirs.
 
 import * as THREE from 'three';
 import { liberer } from './liberer.js';
-import { buildCreatureMesh, TYPES } from './creatures.js';
+import { buildCreatureMesh } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
 
-const BAG_KEY = 'web-minecraft-bag-v1';
+// Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
+// coffre (`web-minecraft-chest-v1::…`) et le chantier
+// (`web-minecraft-chantier-v1::…`) ne sont plus ni lus ni écrits depuis la
+// v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
+// sac et la quête tels quels. On n'efface rien.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 const PET_KEY = 'web-minecraft-pet-v1';
-const QUEST_KEY = 'web-minecraft-quest-v1';
-
-const HATS = [
-  { emoji: '🧢', name: 'Casquette', need: 10 },
-  { emoji: '👑', name: 'Couronne', need: 25 },
-  { emoji: '🎩', name: 'Chapeau magique', need: 50 },
-];
-
-const QUEST_ITEMS = ['🍓 Baies', '🌰 Noisette', '🥚 Œuf', '🍗 Poulet', '🦀 Pince de crabe'];
 
 function hashStr(s) {
   let h = 5381;
@@ -41,21 +45,16 @@ function saveJson(key, v) {
 export function initFun(ctx) {
   const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
     renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
-    isNight, getWeather, getPosCtx, getProfiles, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
+    isNight, getWeather, getPosCtx, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
 
   // ---- persistent state -----------------------------------------------------
-  const bag = loadJson(BAG_KEY, {});
-  const records = { blocks: 0, quizCorrect: 0, treasures: 0, quests: 0, duels: 0,
-    fireworks: 0, mathWins: 0, parkour: 0, bestRace: 0, feasts: 0, hats: [], hat: '', ...loadJson(RECORDS_KEY, {}) };
+  // Les records ne s'affichent plus (v255) mais se COMPTENT toujours. Ce
+  // qu'un enfant a déjà gagné — quêtes finies, feux lancés, chapeaux — reste
+  // dans le document tel quel : l'étalement de `loadJson` ne jette rien, on
+  // ne fait que ne plus y toucher.
+  const records = { blocks: 0, quizCorrect: 0, treasures: 0, duels: 0,
+    mathWins: 0, parkour: 0, bestRace: 0, ...loadJson(RECORDS_KEY, {}) };
   const saveRecords = () => saveJson(RECORDS_KEY, records);
-  const bagAdd = (label, n = 1) => { bag[label] = (bag[label] || 0) + n; saveJson(BAG_KEY, bag); };
-  const bagTake = (label, n = 1) => {
-    if ((bag[label] || 0) < n) return false;
-    bag[label] -= n;
-    if (bag[label] <= 0) delete bag[label];
-    saveJson(BAG_KEY, bag);
-    return true;
-  };
 
   creatureManager.legendaryOk = () => isNight() || getWeather() === 'rain';
 
@@ -75,10 +74,6 @@ export function initFun(ctx) {
     .fun-panel h3 { margin:4px 0 10px; font-size:17px; }
     .fun-close { position:absolute; top:8px; right:10px; background:none; border:none;
       color:#889; font-size:22px; }
-    .fun-tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-    .fun-tab { flex:1; padding:7px 4px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
-      background:rgba(255,255,255,.06); color:#cdf; font-size:14px; white-space:nowrap; }
-    .fun-tab.on { background:#3a6ad0; color:#fff; }
     .fun-row { display:flex; align-items:center; gap:8px; padding:7px 6px;
       border-bottom:1px solid rgba(255,255,255,.08); }
     .fun-row button { margin-left:auto; padding:6px 12px; border-radius:9px; border:none;
@@ -132,8 +127,11 @@ export function initFun(ctx) {
   const rail = document.getElementById('left-rail') || document.body;
   const railBottom = document.getElementById('left-rail-bottom') || document.body;
   const mkBtn = (emoji, title) => el(`<button class="fun-btn" title="${title}">${emoji}</button>`, rail);
-  const atelierBtn = mkBtn('🛠️', 'Atelier');
-  const fwBtn = mkBtn('🎆', "Feu d'artifice");
+  // Un seul bouton pour l'album. L'atelier, le coffre, la quête, le panneau,
+  // le chantier, les records et les chapeaux sont partis (v255, décision de
+  // Max), et le feu d'artifice avec eux. Ce qui reste, c'est l'album des
+  // photos — et un bouton qui dit ce qu'il ouvre, pas une clé à molette.
+  const souvenirsBtn = mkBtn('🖼️', 'Souvenirs');
   const photoBtn = mkBtn('📸', 'Photo');
 
   // Un seul bouton, qui se déplie. Trois émotes en permanence à l'écran d'un
@@ -155,25 +153,11 @@ export function initFun(ctx) {
     <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button><button id="board-btn">🚇 Monter à bord</button>
   </div>`);
 
+  // Un seul corps, plus d'onglets : le panneau n'a plus que les Souvenirs.
   const panel = el(`<div class="fun-panel" id="fun-main-panel">
     <button class="fun-close">✕</button>
-    <div class="fun-tabs">
-      <button class="fun-tab on" data-t="craft">🛠️ Atelier</button>
-      <button class="fun-tab" data-t="chest">📦 Coffre</button>
-      <button class="fun-tab" data-t="quest">📜 Quête</button>
-      <button class="fun-tab" data-t="sign">🪧 Panneau</button>
-      <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
-      <button class="fun-tab" data-t="records">🏆 Records</button>
-      <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
-      <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
-    </div>
     <div id="fun-tab-body"></div>
   </div>`);
-
-  // Le tableau des scores avait son propre bouton flottant : minuscule et
-  // inexploitable en jeu. Records, chapeaux et souvenirs sont désormais des
-  // onglets de l'atelier — un bouton de moins à l'écran, rien de perdu.
-  const recordsPanel = panel;
 
   const duelOverlay = el(`<div id="duel-overlay">
     <h2>⚔️ Défi amical !</h2>
@@ -313,7 +297,7 @@ export function initFun(ctx) {
       player.vitesseAvion = undefined;
       player.avionEnVol = false;
       player.roulisAvion = 0;
-      player.boost = juiceTimer > 0 ? 1.45 : undefined;
+      player.boost = undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
       // gabarit d'une voiture et l'on resterait coincé entre deux murs.
@@ -480,8 +464,6 @@ export function initFun(ctx) {
     player.camera.position.copy(player.eyePosition());
   }
 
-  let juiceTimer = 0;
-
   document.addEventListener('keydown', (e) => {
     if (!isRunning()) return;
     if (e.code === 'KeyN') feed(animalManager.targeted());
@@ -494,7 +476,6 @@ export function initFun(ctx) {
       else if (animalManager.monture()) toggleRide(animalManager.monture());
       else embarquer();
     }
-    if (e.code === 'KeyG') launchFirework();
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
   document.getElementById('ride-btn').addEventListener('click', () => {
@@ -506,248 +487,6 @@ export function initFun(ctx) {
     if (ami) monterAvec(ami);
   });
   document.getElementById('board-btn').addEventListener('click', () => embarquer());
-
-  // ---- fireworks ------------------------------------------------------------
-  const fireworks = [];
-  function launchFirework(mega = false) {
-    if (fireworks.length > 5) return;
-    records.fireworks++; saveRecords();
-    const bursts = mega ? 3 : 1;
-    for (let b = 0; b < bursts; b++) {
-      const N = 90;
-      const geo = new THREE.BufferGeometry();
-      const pts = new Float32Array(N * 3);
-      const vels = [];
-      for (let i = 0; i < N; i++) {
-        const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
-        const sp2 = 4 + Math.random() * 5;
-        vels.push(new THREE.Vector3(Math.sin(ph) * Math.cos(th) * sp2, Math.cos(ph) * sp2, Math.sin(ph) * Math.sin(th) * sp2));
-      }
-      geo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-      const colors = [0xff5a5a, 0x5ad0ff, 0xffe05a, 0x8aff5a, 0xd05aff];
-      const mesh = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: colors[(Math.random() * colors.length) | 0], size: 0.3, transparent: true, opacity: 1,
-      }));
-      mesh.position.set(player.pos.x + (b - 1) * 5, player.pos.y + 14 + b * 3, player.pos.z + 4);
-      scene.add(mesh);
-      fireworks.push({ mesh, vels, life: 1.6 });
-    }
-    emojiBurst(['🎆', '✨'], 8);
-  }
-  fwBtn.addEventListener('click', () => launchFirework());
-
-  // ---- le chantier commun ----------------------------------------------------
-  //
-  // Le multijoueur était « côte à côte » : chacun construit dans son coin du
-  // même monde. Le chantier donne un but COMMUN : un plan fantôme posé dans le
-  // monde, une jauge partagée, et une célébration quand la dernière brique est
-  // à sa place — peu importe qui l'a posée.
-  //
-  // L'avancement n'est jamais synchronisé : il se DÉRIVE du monde. Une cellule
-  // est accomplie quand le bloc attendu est à sa place, et le journal de blocs
-  // voyage déjà entre les joueurs. Seule la pose du plan (nom + origine)
-  // s'échange, par le même chemin que les panneaux et le coffre.
-  const B_PLANCHE = 8, B_BUCHE = 5, B_VERRE = 10, B_BRIQUE = 11, B_NEIGE = 12, B_LAINE_ROUGE = 23;
-
-  function planCabane() {
-    const c = [];
-    for (let x = 0; x <= 4; x++) {
-      for (let z = 0; z <= 4; z++) {
-        const mur = x === 0 || x === 4 || z === 0 || z === 4;
-        for (let y = 0; y <= 2; y++) {
-          if (!mur) continue;
-          if (z === 4 && (x === 2) && y <= 1) continue;          // la porte
-          if (y === 1 && ((x === 0 && z === 2) || (x === 4 && z === 2))) { c.push([x, y, z, B_VERRE]); continue; }
-          c.push([x, y, z, B_PLANCHE]);
-        }
-        c.push([x, 3, z, B_BUCHE]);                              // le toit
-      }
-    }
-    return c;
-  }
-  function planPhare() {
-    const c = [];
-    for (let y = 0; y <= 6; y++) {
-      for (let x = 0; x <= 2; x++) {
-        for (let z = 0; z <= 2; z++) {
-          if (x === 1 && z === 1) continue;                      // creux
-          c.push([x, y, z, y % 2 === 0 ? B_BRIQUE : B_NEIGE]);   // rayures
-        }
-      }
-    }
-    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) {
-      if (!(x === 1 && z === 1)) c.push([x, 7, z, B_VERRE]);     // la lanterne
-      c.push([x, 8, z, B_BUCHE]);                                // le chapeau
-    }
-    return c;
-  }
-  function planFusee() {
-    const c = [];
-    for (let y = 0; y <= 5; y++) {
-      for (let x = 0; x <= 2; x++) {
-        for (let z = 0; z <= 2; z++) {
-          if (x === 1 && z === 1) continue;
-          c.push([x, y, z, B_NEIGE]);                            // le fuselage
-        }
-      }
-    }
-    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) c.push([x, 6, z, B_LAINE_ROUGE]);
-    c.push([1, 7, 1, B_LAINE_ROUGE]);                            // la pointe
-    for (const [fx, fz] of [[-1, 1], [3, 1], [1, -1], [1, 3]]) {
-      c.push([fx, 0, fz, B_BUCHE]);                              // les ailerons
-    }
-    return c;
-  }
-  const PLANS_CHANTIER = {
-    cabane: { nom: 'Cabane', emoji: '🏡', cellules: planCabane },
-    phare: { nom: 'Phare rayé', emoji: '🗼', cellules: planPhare },
-    fusee: { nom: 'Fusée', emoji: '🚀', cellules: planFusee },
-  };
-
-  let chantier = null;       // { plan, x, y, z, t }
-  let chantierFantome = null;   // le groupe de blocs translucides
-  let chantierTimer = 0;
-  let chantierDernier = -1;  // dernier « faits » annoncé, pour ne parler qu'aux changements
-  const chantierKey = () => `web-minecraft-chantier-v1::${getPosCtx() || 'local'}`;
-  const chantierHud = document.getElementById('chantier-hud');
-
-  function cellulesDe(ch) {
-    const p = PLANS_CHANTIER[ch.plan];
-    return p ? p.cellules() : [];
-  }
-  function avancementChantier() {
-    if (!chantier) return null;
-    const cellules = cellulesDe(chantier);
-    let faits = 0;
-    for (const [dx, dy, dz, id] of cellules) {
-      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) faits++;
-    }
-    return { faits, total: cellules.length };
-  }
-
-  const fantomeGeo = new THREE.BoxGeometry(0.86, 0.86, 0.86);
-  const fantomeMat = new THREE.MeshBasicMaterial({ color: 0x6ec8ff, transparent: true, opacity: 0.3 });
-  function redessinerFantome() {
-    if (chantierFantome) { scene.remove(chantierFantome); chantierFantome = null; }
-    if (!chantier) return;
-    const g = new THREE.Group();
-    for (const [dx, dy, dz, id] of cellulesDe(chantier)) {
-      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) continue;
-      const m = new THREE.Mesh(fantomeGeo, fantomeMat);
-      m.position.set(chantier.x + dx + 0.5, chantier.y + dy + 0.5, chantier.z + dz + 0.5);
-      g.add(m);
-    }
-    scene.add(g);
-    chantierFantome = g;
-  }
-
-  function adopterChantier(c, { save = true, annonce = false } = {}) {
-    if (c && chantier && c.t <= chantier.t) return;   // le plus récent fait foi
-    chantier = c || null;
-    chantierDernier = -1;
-    if (save) saveJson(chantierKey(), chantier);
-    redessinerFantome();
-    majChantierHud();
-    if (annonce && chantier) {
-      const p = PLANS_CHANTIER[chantier.plan];
-      toast(`🏗️ Chantier ouvert : ${p.emoji} ${p.nom} — construisez-le ensemble !`, 0x6ec8ff);
-    }
-  }
-
-  function majChantierHud() {
-    if (!chantierHud) return;
-    const a = avancementChantier();
-    if (!a) { chantierHud.style.display = 'none'; return; }
-    const p = PLANS_CHANTIER[chantier.plan];
-    chantierHud.style.display = 'block';
-    chantierHud.textContent = `${p.emoji} ${a.faits}/${a.total}`;
-  }
-
-  function poserChantier(nomPlan) {
-    if (!PLANS_CHANTIER[nomPlan]) return null;
-    // Quatre blocs devant le joueur, au niveau du sol : on voit ce qu'on pose.
-    const dx = -Math.sin(player.yaw), dz = -Math.cos(player.yaw);
-    const x = Math.round(player.pos.x + dx * 5) - 2;
-    const z = Math.round(player.pos.z + dz * 5) - 2;
-    const y = world.terrainHeight(x + 1, z + 1) + 1;
-    const c = { plan: nomPlan, x, y, z, t: Date.now() };
-    adopterChantier(c, { annonce: true });
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chantier', c });
-    return c;
-  }
-  function retirerChantier() {
-    adopterChantier(null);
-    saveJson(chantierKey(), null);
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chantier', c: null });
-  }
-
-  function suivreChantier(dt) {
-    if (!chantier) return;
-    chantierTimer -= dt;
-    if (chantierTimer > 0) return;
-    chantierTimer = 1;
-    const a = avancementChantier();
-    if (a.faits !== chantierDernier) {
-      chantierDernier = a.faits;
-      redessinerFantome();
-      majChantierHud();
-      if (a.faits >= a.total && a.total > 0) {
-        // Fini ! La célébration part chez tout le monde : chacun constate la
-        // même chose dans son propre monde, personne n'a de message à croire.
-        records.chantiers = (records.chantiers || 0) + 1;
-        saveRecords();
-        launchFirework(true);
-        toast('🏗️✨ CHANTIER TERMINÉ ! Bravo les bâtisseurs !', 0xffe05a);
-        emojiBurst(['🏗️', '🎉', '⭐'], 18);
-        chantier = null;
-        saveJson(chantierKey(), null);
-        redessinerFantome();
-        majChantierHud();
-      }
-    }
-  }
-  // au chargement : le chantier du monde où l'on est
-  adopterChantier(loadJson(chantierKey(), null), { save: false });
-
-  // Les tests suivent le parcours entier : poser, voir, compter, célébrer.
-  if (typeof window !== 'undefined') {
-    window.__chantier = {
-      poser: poserChantier,
-      retirer: retirerChantier,
-      etat: () => (chantier ? { ...chantier, ...avancementChantier() } : null),
-      chantiers: () => records.chantiers || 0,
-      hud: () => (chantierHud && chantierHud.style.display !== 'none' ? chantierHud.textContent : ''),
-      // Le bloc attendu à une cellule relative, ou null : le banc s'en sert
-      // pour bâtir par le vrai chemin de pose, sans copie du plan dans le test.
-      attendu: (dx, dy, dz) => {
-        if (!chantier) return null;
-        for (const [x, y, z, id] of cellulesDe(chantier)) {
-          if (x === dx && y === dy && z === dz) return id;
-        }
-        return null;
-      },
-    };
-  }
-
-  function updateFireworks(dt) {
-    for (const f of [...fireworks]) {
-      f.life -= dt;
-      if (f.life <= 0) {
-        scene.remove(f.mesh);
-        fireworks.splice(fireworks.indexOf(f), 1);
-        continue;
-      }
-      const pos = f.mesh.geometry.attributes.position;
-      for (let i = 0; i < f.vels.length; i++) {
-        f.vels[i].y -= 3.5 * dt;
-        pos.setXYZ(i, pos.getX(i) + f.vels[i].x * dt, pos.getY(i) + f.vels[i].y * dt, pos.getZ(i) + f.vels[i].z * dt);
-      }
-      pos.needsUpdate = true;
-      f.mesh.material.opacity = Math.min(1, f.life / 0.8);
-    }
-  }
 
   // ---- emotes ---------------------------------------------------------------
   const emoteSprites = new Map(); // peerId -> { sprite, t }
@@ -914,16 +653,16 @@ export function initFun(ctx) {
     signMeshes.clear();
   }
 
-  function addSign(s, { save = true, send = false, broadcast = false } = {}) {
+  // ON NE PLANTE PLUS DE PANNEAU (v255) : l'onglet est parti. Ceux qui sont
+  // déjà plantés restent dans le monde — c'est ce qu'un enfant a écrit — et
+  // un panneau posé depuis une tablette restée sur l'ancienne version arrive
+  // encore par le réseau ou par le nuage : le receveur cède, il l'affiche et
+  // le garde. Il ne renvoie rien.
+  function addSign(s, { save = true } = {}) {
     if (!s || signs.some((o) => o.x === s.x && o.y === s.y && o.z === s.z)) return;
     signs.push(s);
     renderSign(s);
     if (save) saveJson(signsKey(), signs);
-    if (send) cloud.signSend(s).catch?.(() => {}); // only the author uploads
-    if (broadcast) {
-      const net = getNet();
-      if (net && net.active) net.broadcast({ t: 'sign', sign: s });
-    }
   }
 
   async function loadSigns(ctxKey) {
@@ -937,121 +676,6 @@ export function initFun(ctx) {
         saveJson(signsKey(), signs);
       } catch { /* offline */ }
     }
-  }
-
-  function plantSign() {
-    const text = (window.prompt('Ton message sur le panneau :') || '').trim().slice(0, 40);
-    if (!text) return;
-    const dirX = -Math.sin(player.yaw), dirZ = -Math.cos(player.yaw);
-    const x = Math.floor(player.pos.x + dirX * 2), z = Math.floor(player.pos.z + dirZ * 2);
-    let y = Math.floor(player.pos.y);
-    while (y > 1 && !world.isSolid(x, y - 1, z)) y--;
-    addSign({ x, y, z, text, author: myName(), yaw: player.yaw + Math.PI }, { save: true, send: true, broadcast: true });
-    toast('🪧 Panneau planté !', 0xd8c9a4);
-    panel.style.display = 'none';
-  }
-
-  // ---- shared chest ---------------------------------------------------------
-  // the chest is shared by every profile on the device: raw (unsuffixed) storage
-  const raw = window.__rawStorage || { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v) };
-  const chestKey = () => `web-minecraft-chest-v1::${signsCtx || 'local'}`;
-  const loadChest = () => { try { return JSON.parse(raw.get(chestKey())) || {}; } catch { return {}; } };
-  const saveChest = (c) => { try { raw.set(chestKey(), JSON.stringify(c)); } catch { /* ignore */ } };
-
-  function chestChanged(items) { // remote update
-    saveChest(items);
-    if (panel.style.display === 'block' && currentTab === 'chest') renderTab();
-  }
-
-  function broadcastChest(c) {
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chest', items: c });
-  }
-
-  // ---- crafting -------------------------------------------------------------
-  const RECIPES = [
-    { name: '🎂 Festin de fête', needMeat: 3, gives: null,
-      effect: () => { records.feasts++; saveRecords(); emojiBurst(['🎂', '🎉', '🥳'], 26); toast('🎂 Festin ! Tout le monde fait la fête !', 0xffd75e); } },
-    { name: '🧃 Jus de baies (vitesse ×1,5 pendant 40 s)', need: { '🍓 Baies': 2 }, gives: null,
-      effect: () => { juiceTimer = 40; if (!riding) player.boost = 1.45; toast('🧃 Slurp ! Tu cours plus vite !', 0xff9dbb); } },
-    { name: '🍪 Cookie géant', need: { '🌰 Noisette': 1, '🥚 Œuf': 1 }, gives: '🍪 Cookie géant',
-      effect: () => emojiBurst(['🍪'], 10) },
-    { name: '🎆 Fusée de feu d\'artifice (triple !)', need: { '🦀 Pince de crabe': 2 }, gives: '🎆 Fusée',
-      effect: () => toast('🎆 Fusée prête ! Elle partira toute seule… BOOM !', 0xffe07a) },
-  ];
-
-  // ---- quests ---------------------------------------------------------------
-  const today = () => new Date().toISOString().slice(0, 10);
-  let quest = loadJson(QUEST_KEY, null);
-
-  function ensureQuest() {
-    if (quest && quest.date === today()) return quest;
-    const h = hashStr(today() + myName());
-    const kind = ['collect', 'catch', 'visit', 'build'][h % 4];
-    quest = { date: today(), kind, done: false, progress: 0 };
-    if (kind === 'collect') {
-      quest.item = QUEST_ITEMS[h % QUEST_ITEMS.length];
-      quest.n = 2 + (h % 3);
-      quest.text = `Rapporte ${quest.n} × ${quest.item} (chasse les animaux !)`;
-    } else if (kind === 'catch') {
-      const types = Object.keys(TYPES).filter((t) => t !== 'FELIN');
-      quest.type = types[h % types.length];
-      quest.text = `Attrape 1 créature de type ${quest.type} avec une balle !`;
-    } else if (kind === 'visit') {
-      const p = PLACES[h % PLACES.length];
-      quest.place = p.name;
-      quest.text = `Va visiter : ${p.name} (regarde la carte !)`;
-    } else {
-      quest.n = 15;
-      quest.text = `Pose ${quest.n} blocs pour construire quelque chose !`;
-    }
-    saveJson(QUEST_KEY, quest);
-    return quest;
-  }
-
-  function questReward() {
-    quest.done = true;
-    saveJson(QUEST_KEY, quest);
-    records.quests++; saveRecords();
-    bagAdd('🎆 Fusée', 2);
-    toast('📜 Quête accomplie ! +2 🎆 Fusées dans ton sac !', 0x6ee06e);
-    emojiBurst(['📜', '🎉', '⭐'], 22);
-  }
-
-  function questCheck() {
-    ensureQuest();
-    if (quest.done) return false;
-    if (quest.kind === 'collect') {
-      if ((bag[quest.item] || 0) >= quest.n) { bagTake(quest.item, quest.n); questReward(); return true; }
-    } else if (quest.kind === 'build') {
-      if (quest.progress >= quest.n) { questReward(); return true; }
-    } else if (quest.kind === 'visit') {
-      const p = PLACES.find((o) => o.name === quest.place);
-      if (p && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < (p.r || 25)) { questReward(); return true; }
-    } else if (quest.kind === 'catch' && quest.progress > 0) { questReward(); return true; }
-    return false;
-  }
-
-  // ---- atelier panel rendering ----------------------------------------------
-  // Sept onglets, un seul corps : les trois derniers (records, chapeaux,
-  // souvenirs) viennent du panneau séparé qu'on a supprimé.
-  const REC_TABS = ['records', 'hats', 'photos'];
-  let currentTab = 'craft';
-  const tabBody = panel.querySelector('#fun-tab-body');
-  panel.querySelectorAll('.fun-tab').forEach((t) => {
-    t.addEventListener('click', () => {
-      currentTab = t.dataset.t;
-      panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o === t));
-      if (REC_TABS.includes(currentTab)) { recTab = currentTab; renderRecords(); }
-      else renderTab();
-    });
-  });
-
-  function bagSummary(target) {
-    const entries = Object.entries(bag);
-    return entries.length
-      ? entries.map(([k, v]) => `${k} ×${v}`).join(' · ')
-      : 'Ton sac est vide — chasse des animaux pour trouver des trésors !';
   }
 
   // ---- la bibliothèque de monuments ------------------------------------------
@@ -1152,260 +776,77 @@ export function initFun(ctx) {
     panel.style.display = 'none';
   }
 
-  function renderTab() {
-    if (currentTab === 'craft') {
-      let html = `<h3>🛠️ Atelier</h3><div class="fun-note">Sac : ${bagSummary()}</div>
-        <div class="fun-note">🍖 Garde-manger : ${ctx.getMeat()} viandes</div>`;
-      tabBody.innerHTML = html;
-      RECIPES.forEach((r, i) => {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        const needTxt = r.needMeat ? `${r.needMeat} viandes` :
-          Object.entries(r.need).map(([k, v]) => `${v} × ${k}`).join(' + ');
-        row.innerHTML = `<span>${r.name}<br><small style="color:#8894b0">${needTxt}</small></span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Fabriquer';
-        const can = r.needMeat ? ctx.getMeat() >= r.needMeat :
-          Object.entries(r.need).every(([k, v]) => (bag[k] || 0) >= v);
-        b.disabled = !can;
-        b.addEventListener('click', () => {
-          if (r.needMeat) { if (!ctx.takeMeat(r.needMeat)) return; }
-          else for (const [k, v] of Object.entries(r.need)) bagTake(k, v);
-          if (r.gives) bagAdd(r.gives);
-          if (r.gives === '🎆 Fusée') { bagTake('🎆 Fusée'); launchFirework(true); }
-          r.effect?.();
-          renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
+  // ---- les souvenirs ---------------------------------------------------------
+  //
+  // Le seul écran qui reste du panneau (v255) : l'album des photos. Le bouton
+  // 🖼️ l'ouvre directement — plus d'onglet à choisir.
+  const tabBody = panel.querySelector('#fun-tab-body');
+
+  function renderSouvenirs(tirerDuNuage = true) {
+    const photos = loadJson(PHOTOS_KEY, []);
+    // On va chercher celles prises sur les autres appareils : c'est le seul
+    // moment où l'album coûte quelque chose, et c'est celui où l'enfant le
+    // regarde. Une seule redessinée, s'il y a du neuf — et sans redemander
+    // le nuage, sinon on tournerait en rond.
+    if (tirerDuNuage) {
+      photosNuage?.tirer().then((tout) => {
+        if (tout && tout.length !== photos.length && panel.style.display === 'block') renderSouvenirs(false);
       });
-    } else if (currentTab === 'chest') {
-      const chest = loadChest();
-      tabBody.innerHTML = `<h3>📦 Coffre commun du monde</h3>
-        <div class="fun-note">Dépose des objets pour les partager — tout le monde peut les reprendre.</div>
-        <div class="fun-note">Ton sac : ${bagSummary()}</div><h3 style="margin-top:10px">Dans le coffre :</h3>`;
-      const entries = Object.entries(chest);
-      if (!entries.length) tabBody.insertAdjacentHTML('beforeend', '<div class="fun-note">Le coffre est vide.</div>');
-      for (const [k, v] of entries) {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${k} ×${v}</span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Prendre';
-        b.addEventListener('click', () => {
-          const c2 = loadChest();
-          if ((c2[k] || 0) <= 0) return;
-          c2[k]--; if (c2[k] <= 0) delete c2[k];
-          saveChest(c2); bagAdd(k); broadcastChest(c2); renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
-      }
-      tabBody.insertAdjacentHTML('beforeend', '<h3 style="margin-top:10px">Déposer :</h3>');
-      for (const [k, v] of Object.entries(bag)) {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${k} ×${v}</span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Déposer';
-        b.addEventListener('click', () => {
-          if (!bagTake(k)) return;
-          const c2 = loadChest();
-          c2[k] = (c2[k] || 0) + 1;
-          saveChest(c2); broadcastChest(c2); renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
-      }
-    } else if (currentTab === 'quest') {
-      ensureQuest();
-      tabBody.innerHTML = `<h3>📜 Quête du jour</h3>
-        <div class="fun-row"><span>${quest.done ? '✅ ' : ''}${quest.text}</span></div>
-        <div class="fun-note">${quest.done ? 'Bravo, reviens demain pour une nouvelle quête !' : 'Récompense : 2 🎆 Fusées'}</div>`;
-      if (!quest.done) {
-        const b = document.createElement('button');
-        b.className = 'fun-tab';
-        b.textContent = 'Vérifier ma quête';
-        b.addEventListener('click', () => { if (!questCheck()) toast('Pas encore… continue !', 0xcccccc); renderTab(); });
-        tabBody.appendChild(b);
-      }
-    } else if (currentTab === 'sign') {
-      tabBody.innerHTML = `<h3>🪧 Panneaux</h3>
-        <div class="fun-note">Écris un message sur un panneau planté devant toi — les autres joueurs le verront aussi !</div>`;
-      const b = document.createElement('button');
-      b.className = 'fun-tab';
-      b.textContent = '🪧 Planter un panneau ici';
-      b.addEventListener('click', plantSign);
-      tabBody.appendChild(b);
-    } else if (currentTab === 'chantier') {
-      const a = avancementChantier();
-      tabBody.innerHTML = `<h3>🏗️ Chantier commun</h3>
-        <div class="fun-note">Pose un plan fantôme devant toi, et construisez-le ensemble :
-        chaque bloc posé au bon endroit — par n'importe qui — fait avancer la jauge !</div>`;
-      if (chantier) {
-        const p2 = PLANS_CHANTIER[chantier.plan];
-        const enCours = document.createElement('div');
-        enCours.className = 'fun-note';
-        enCours.textContent = `${p2.emoji} ${p2.nom} en cours : ${a.faits}/${a.total} blocs posés.`;
-        tabBody.appendChild(enCours);
-        // Où est-il ? Une jauge à 0/71 ne sert à rien si on ne trouve pas le
-        // fantôme bleu. Distance et direction, comme pour un ami.
-        const du2 = chantier.x + 2 - player.pos.x, dv2 = chantier.z + 2 - player.pos.z;
-        const dist = Math.round(Math.hypot(du2, dv2));
-        const FLECHES = ['↑ nord', '↗ nord-est', '→ est', '↘ sud-est', '↓ sud', '↙ sud-ouest', '← ouest', '↖ nord-ouest'];
-        const oct = ((Math.round(Math.atan2(du2, -dv2) / (Math.PI / 4)) % 8) + 8) % 8;
-        const où = document.createElement('div');
-        où.className = 'fun-note';
-        où.textContent = dist <= 6
-          ? '📍 Tu es dessus : les blocs bleus translucides montrent ce qui manque.'
-          : `📍 À ${dist} blocs, direction ${FLECHES[oct]}. Cherche les blocs bleus translucides.`;
-        tabBody.appendChild(où);
-        const arreter = document.createElement('button');
-        arreter.className = 'fun-tab';
-        arreter.textContent = '🗑️ Abandonner ce chantier';
-        arreter.addEventListener('click', () => { retirerChantier(); renderTab(); });
-        tabBody.appendChild(arreter);
-      } else {
-        for (const [cle, p2] of Object.entries(PLANS_CHANTIER)) {
-          const b2 = document.createElement('button');
-          b2.className = 'fun-tab';
-          b2.textContent = `${p2.emoji} Poser : ${p2.nom} (${p2.cellules().length} blocs)`;
-          b2.addEventListener('click', () => { poserChantier(cle); panel.style.display = 'none'; });
-          tabBody.appendChild(b2);
-        }
-      }
     }
+    tabBody.innerHTML = `<h3>📸 Souvenirs</h3>
+      <div class="fun-note">${photos.length ? 'Tes plus belles photos du monde !' : 'Appuie sur 📸 en jeu pour prendre une photo !'}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid';
+    photos.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'ph';
+      d.innerHTML = `<img src="${p}">`;
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '🗑';
+      del.addEventListener('click', () => {
+        photos.splice(i, 1);
+        saveJson(PHOTOS_KEY, photos);
+        renderSouvenirs(false);
+      });
+      d.appendChild(del);
+      // « Récupérer » la photo : le partage natif — vers Photos, Messages —
+      // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
+      const garder = document.createElement('button');
+      garder.className = 'garder';
+      garder.textContent = '📤';
+      garder.title = 'Garder la photo';
+      garder.addEventListener('click', async () => {
+        try {
+          const blob = await (await fetch(p)).blob();
+          const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
+          if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+            await navigator.share({ files: [fichier] });
+            return;
+          }
+        } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
+        const a = document.createElement('a');
+        a.href = p;
+        a.download = `minecraft-${i + 1}.jpg`;
+        a.click();
+      });
+      d.appendChild(garder);
+      grid.appendChild(d);
+    });
+    tabBody.appendChild(grid);
   }
 
-  atelierBtn.addEventListener('click', () => {
+  souvenirsBtn.addEventListener('click', () => {
     if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
-    renderTab();
+    renderSouvenirs();
   });
 
-  // Ouvrir l'atelier directement sur un onglet : c'est ce que font les
-  // pastilles de l'écran (le garde-manger, la jauge du chantier). Max :
-  // « quand on clique, il ne se passe rien » — maintenant, il se passe ça.
-  function ouvrirOnglet(t) {
-    currentTab = t;
-    panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o.dataset.t === t));
-    panel.style.display = 'block';
-    if (REC_TABS.includes(t)) { recTab = t; renderRecords(); } else renderTab();
-  }
-  if (chantierHud) chantierHud.addEventListener('click', () => ouvrirOnglet('chantier'));
-
-  // ---- records, hats & photos ----------------------------------------------
-  let recTab = 'records';
-  const recBody = tabBody;
-
-  const REC_LABELS = [
-    ['blocks', '🧱 Blocs posés'], ['quizCorrect', '✅ Bonnes réponses'], ['treasures', '💰 Trésors trouvés'],
-    ['quests', '📜 Quêtes finies'], ['duels', '⚔️ Duels gagnés'], ['fireworks', '🎆 Feux lancés'],
-    ['mathWins', '🧮 Défis maths'], ['parkour', '🤸 Parkours réussis'], ['bestRace', '🏁 Meilleure course (s)'],
-  ];
-
-  function profileRecords(id) {
-    const suffix = id === 1 ? '' : `::p${id}`;
-    try { return JSON.parse(raw.get(RECORDS_KEY + suffix)) || {}; } catch { return {}; }
-  }
-
-  function renderRecords() {
-    if (recTab === 'records') {
-      const profiles = getProfiles();
-      let html = `<h3>🏆 Tableau des records</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr><td></td>${profiles.map((p) => `<th style="padding:4px">${p.name}</th>`).join('')}</tr>`;
-      for (const [key, label] of REC_LABELS) {
-        html += `<tr><td style="padding:4px;color:#aab">${label}</td>` + profiles.map((p) => {
-          const r = profileRecords(p.id);
-          let v = r[key] || 0;
-          if (key === 'bestRace') v = v ? v.toFixed(1) : '—';
-          return `<td style="text-align:center">${v}</td>`;
-        }).join('') + '</tr>';
-      }
-      recBody.innerHTML = html + '</table></div>';
-    } else if (recTab === 'hats') {
-      recBody.innerHTML = `<h3>🎩 Chapeaux</h3>
-        <div class="fun-note">Gagne des chapeaux en répondant juste aux quiz ! (${records.quizCorrect} bonnes réponses)</div>`;
-      for (const h of HATS) {
-        const unlocked = records.hats.includes(h.emoji);
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${unlocked ? h.emoji : '🔒'} ${h.name}<br><small style="color:#8894b0">${h.need} bonnes réponses</small></span>`;
-        const b = document.createElement('button');
-        if (unlocked) {
-          b.textContent = records.hat === h.emoji ? 'Porté !' : 'Porter';
-          b.addEventListener('click', () => {
-            records.hat = records.hat === h.emoji ? '' : h.emoji;
-            saveRecords();
-            toast(records.hat ? `${records.hat} Tu portes ta ${h.name.toLowerCase()} !` : 'Chapeau rangé.', 0xffe07a);
-            renderRecords();
-          });
-        } else { b.textContent = '🔒'; b.disabled = true; }
-        row.appendChild(b);
-        recBody.appendChild(row);
-      }
-    } else {
-      const photos = loadJson(PHOTOS_KEY, []);
-      // On va chercher celles prises sur les autres appareils : c'est le seul
-      // moment où l'album coûte quelque chose, et c'est celui où l'enfant le
-      // regarde. Une seule redessinée, s'il y a du neuf.
-      photosNuage?.tirer().then((tout) => {
-        if (tout && tout.length !== photos.length) renderTab();
-      });
-      recBody.innerHTML = `<h3>📸 Souvenirs</h3>
-        <div class="fun-note">${photos.length ? 'Tes plus belles photos du monde !' : 'Appuie sur 📸 en jeu pour prendre une photo !'}</div>`;
-      const grid = document.createElement('div');
-      grid.className = 'photo-grid';
-      photos.forEach((p, i) => {
-        const d = document.createElement('div');
-        d.className = 'ph';
-        d.innerHTML = `<img src="${p}">`;
-        const del = document.createElement('button');
-        del.className = 'del';
-        del.textContent = '🗑';
-        del.addEventListener('click', () => {
-          photos.splice(i, 1);
-          saveJson(PHOTOS_KEY, photos);
-          renderRecords();
-        });
-        d.appendChild(del);
-        // « Récupérer » la photo : le partage natif — vers Photos, Messages —
-        // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
-        const garder = document.createElement('button');
-        garder.className = 'garder';
-        garder.textContent = '📤';
-        garder.title = 'Garder la photo';
-        garder.addEventListener('click', async () => {
-          try {
-            const blob = await (await fetch(p)).blob();
-            const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
-            if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
-              await navigator.share({ files: [fichier] });
-              return;
-            }
-          } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
-          const a = document.createElement('a');
-          a.href = p;
-          a.download = `minecraft-${i + 1}.jpg`;
-          a.click();
-        });
-        d.appendChild(garder);
-        grid.appendChild(d);
-      });
-      recBody.appendChild(grid);
-    }
-  }
-
-
+  // Les bonnes réponses se comptent toujours : c'est un record de l'enfant.
+  // Les chapeaux, eux, ne se débloquent plus (v255) — ceux déjà gagnés
+  // restent dans `records.hats`, intouchés.
   edu.onCorrect = () => {
     records.quizCorrect++;
-    for (const h of HATS) {
-      if (records.quizCorrect >= h.need && !records.hats.includes(h.emoji)) {
-        records.hats.push(h.emoji);
-        toast(`${h.emoji} BRAVO ! Tu as débloqué : ${h.name} ! (menu 🏆)`, 0xffe07a);
-        emojiBurst([h.emoji, '🎉'], 20);
-      }
-    }
     saveRecords();
   };
 
@@ -1428,12 +869,12 @@ export function initFun(ctx) {
     photosNuage?.pousser();
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
-    // Le « menu 🏆 » n'existe plus depuis que les records ont déménagé dans
-    // l'atelier : le toast montrait un chemin qui ne menait nulle part.
-    toast('📸 Photo rangée dans 🛠️ Atelier → 📸 Souvenirs !', 0x9fd8e8);
+    // Le chemin dit dans le toast est le vrai : un bouton, l'album.
+    toast('📸 Photo rangée dans 🖼️ Souvenirs !', 0x9fd8e8);
   });
 
   // ---- daily treasure -------------------------------------------------------
+  const today = () => new Date().toISOString().slice(0, 10);
   let treasure = null, treasureMesh = null;
   function ensureTreasure() {
     if (records.treasureDate === today()) { treasure = null; return; }
@@ -1472,12 +913,10 @@ export function initFun(ctx) {
       records.treasureDate = today();
       scene.remove(treasureMesh); treasureMesh = null; treasure = null;
       records.treasures++; saveRecords();
-      const h = hashStr(today() + myName());
-      for (let i = 0; i < 3; i++) bagAdd(QUEST_ITEMS[(h + i) % QUEST_ITEMS.length]);
-      bagAdd('🎆 Fusée');
-      toast('💰 TRÉSOR DU JOUR trouvé ! +4 objets dans ton sac !', 0xffd75e);
+      // Le sac et le feu d'artifice sont partis avec l'atelier (v255) : la
+      // récompense, c'est la fête — et un trésor de plus au compteur.
+      toast('💰 TRÉSOR DU JOUR trouvé ! Bravo !', 0xffd75e);
       emojiBurst(['💰', '🪙', '🎉', '⭐'], 30);
-      launchFirework();
     }
   }
 
@@ -1544,7 +983,6 @@ export function initFun(ctx) {
       records.parkour++; saveRecords();
       toast('🤸 PARKOUR RÉUSSI ! Champion·ne !', 0xffd75e);
       emojiBurst(['🤸', '🏆', '🎉'], 20);
-      launchFirework();
     }
   }
 
@@ -1599,8 +1037,7 @@ export function initFun(ctx) {
         mathPop.style.display = 'none';
         if (v === f.ans) {
           records.mathWins++; saveRecords();
-          bagAdd(QUEST_ITEMS[Math.floor(Math.random() * QUEST_ITEMS.length)]);
-          toast('🧮 Exact ! +1 objet surprise dans ton sac !', 0x6ee06e);
+          toast('🧮 Exact ! Bravo !', 0x6ee06e);
           emojiBurst(['🧮', '✅'], 10);
         } else {
           toast(`🥒 Presque ! C'était ${f.ans}.`, 0xcccccc);
@@ -1686,10 +1123,6 @@ export function initFun(ctx) {
 
   // ---- riding & pet update --------------------------------------------------
   function updateRide(dt) {
-    if (juiceTimer > 0) {
-      juiceTimer -= dt;
-      if (juiceTimer <= 0 && !riding) { player.boost = undefined; toast('🧃 Le jus de baies ne fait plus effet.', 0xcccccc); }
-    }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
       // La monture a disparu sous l'enfant : on descend POUR DE BON, avec tout
@@ -1697,7 +1130,7 @@ export function initFun(ctx) {
       // Sans cela il gardait à pied la boîte d'une voiture (v245).
       const quitte = riding;
       riding = null; quitte.montee = false;
-      player.boost = juiceTimer > 0 ? 1.45 : undefined; player.pilote = null;
+      player.boost = undefined; player.pilote = null;
       player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
@@ -1871,14 +1304,12 @@ export function initFun(ctx) {
   let lastCtxKey = null;
 
   function update(dt) {
-    updateFireworks(dt);
     updateEmotes(dt);
-    suivreChantier(dt);
     if (isRunning()) veillerLesGarages(dt);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
-      for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+      for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'none';
       emoteToggle.style.display = 'none';
       emoteRow.style.display = 'none';
       targetRow.style.display = 'none';
@@ -1903,7 +1334,7 @@ export function initFun(ctx) {
       if (Math.random() < 0.55) showMathPop();
     }
     // buttons only make sense in-game
-    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'flex';
+    for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'flex';
     const net = getNet();
     const amisLa = net && net.active && net.playerCount() > 1;
     emoteToggle.style.display = amisLa ? 'flex' : 'none';
@@ -1912,13 +1343,12 @@ export function initFun(ctx) {
   }
 
   function onLeave() {
-    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+    for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'none';
     emoteToggle.style.display = 'none';
     emotesDepliees = false;
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';
-    recordsPanel.style.display = 'none';
     if (riding) { riding = null; player.boost = undefined; }
     debarquer(true);
   }
@@ -1926,19 +1356,13 @@ export function initFun(ctx) {
   function attachNet(net) {
     net.onDuel = onDuelMsg;
     net.onEmote = (peerId, k) => showRemoteEmote(peerId, k);
-    net.onSign = (s) => addSign(s); // save locally, never re-upload
-    // Le chantier voyage comme les panneaux : la pose s'échange, l'avancement
-    // se dérive du monde. À l'arrivée dans un monde, celui de l'hôte fait foi.
-    net.onChantier = (c) => adopterChantier(c, { annonce: !!c });
-    net.chantierActuel = () => chantier;
-    net.onChest = (items) => chestChanged(items || {});
+    net.onSign = (s) => addSign(s); // un panneau reçu s'affiche et se garde, jamais ne se renvoie
   }
 
   return {
     update,
     onLeave,
     attachNet,
-    ouvrirOnglet,
     // La monture que l'enfant est en train de conduire (ou null) : main.js
     // y assied son avatar quand la fiche déclare un `siege` (v249).
     montureConduite: () => riding,
@@ -1954,21 +1378,12 @@ export function initFun(ctx) {
     decoratePlayersPanel,
     onBlockPlaced() {
       records.blocks++;
-      if (quest && quest.kind === 'build' && !quest.done) { quest.progress++; saveJson(QUEST_KEY, quest); }
       saveRecords();
     },
-    onCatch(sp) {
-      if (quest && quest.kind === 'catch' && !quest.done && sp.type === quest.type) {
-        quest.progress++;
-        saveJson(QUEST_KEY, quest);
-        toast('📜 Créature de la quête attrapée ! Va valider dans 🛠️ → Quête !', 0x6ee06e);
-      }
+    onCatch() {
       if (petMesh) { // the companion celebrates with you
         petMesh.rotation.y += Math.PI * 2;
       }
-    },
-    onHarvest(def) {
-      bagAdd(def.meat);
     },
   };
 }
