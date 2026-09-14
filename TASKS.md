@@ -24,8 +24,10 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **Rouge de portail de `washington.js`, « on pousse la porte et on est
-  dans la Rotonde », mesuré des deux côtés (v255).** Au portail complet du
+- [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
+  dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
+  (v256) : il marche jusqu'à être entré, ressorti ou figé trois pas, plus en
+  quatorze pas ; vert seul (plafond 22, x = −4,0) et au portail suivant.** Au portail complet du
   banc accéléré (onzième suite, après `hote.js`) : plafond 11, x = −5,7 du
   centre — l'enfant s'est arrêté sous le porche, à un bloc par seconde. Rejouée
   SEULE sur la branche, même code : plafond 21, x = −4,9, verte. C'est le rouge
@@ -298,7 +300,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   server » du courtier local), verte les autres fois sur le MÊME code ; au
   portail de la v246, `page.waitForFunction` a expiré après « la reprise
   cloud place l'enfant près du chantier déplacé », les quatre rouges
-  ci-dessus identiques. Le journal de la v240 annonce ce portail vert :
+  ci-dessus identiques ; au portail de la v256, une SIXIÈME forme de la même
+  fin instable : `#ride-btn` jamais visible en quinze secondes après
+  l'invocation du taxi (la suite s'arrête là, vingt-quatre témoins de moins),
+  et rejouée seule le bouton apparaît, le taxi rend son rouge déclaré et la
+  fin réseau lâche (« Lost connection to server »). Le journal de la v240 annonce ce portail vert :
   il a été mesuré avec `CHROMIUM_ANGLE=metal`, pas en logiciel. À démonter
   sur une machine qui rend en matériel avant d'accuser le jeu — et à
   remesurer ici témoin par témoin (la géométrie qui monte dit que le témoin
