@@ -43,7 +43,32 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   v259 — un rouge de suite contre un vert de sonde, sur le même code. Le
   témoin imprime désormais les retraits de l'hôte quand il rougit : le
   prochain rouge de portail dira qui a retiré Alice, quand, par quel
-  chemin. Suite au prochain portail rouge. À la v260 : rouge aux deux portails (dont « à trois, chacun voit
+  chemin. ET IL L'A DIT, au portail de la v261 (`scratchpad/v261/portail-v261.log`,
+  l. 618) : `{"dt":20114,"id":"d629c7","nom":"Alice","pret":true,"seen":20142,
+  "quoi":"drop","pile":"net.js:1014"}` — c'est le DÉLAI DE SILENCE (`STALE_MS`,
+  vingt secondes) : la présentation d'Alice revenue est arrivée (`pret`, son
+  nom), puis PLUS AUCUN message d'elle n'a atteint l'hôte en vingt secondes
+  (`seen` jamais rafraîchi après la présentation), alors qu'elle recevait
+  ceux de l'hôte (elle voit Marlon, compteur 2). Ce n'est ni un `remplace`,
+  ni un fantôme, ni un lien fermé. Et le MÊME symptôme ouvre cette suite au
+  portail : « à trois, chacun voit les deux autres » rouge —
+  `[["Alice"],["Marlon"],["Alice","Marlon"]]` — l'hôte ne reçoit rien de
+  Nina, qui reçoit tout. Sous charge (trois pages, une image par seconde),
+  un invité neuf est donc entendu une fois (sa présentation) puis plus
+  jamais, tout en entendant l'hôte. Pistes, dans l'ordre : (1) l'invité
+  envoie `pos` par `envoyer(c)` sur `c.conn`, la case de l'hôte — si la
+  patience de cinq secondes a expiré et fait basculer sur le nuage, puis que
+  le direct s'est ouvert (`promouvoirSiDirect`), la présentation et les
+  positions ne partent pas forcément par le même chemin ; l'hôte, lui, peut
+  tenir une case DIRECTE présentée et ne plus rien recevoir dessus si
+  l'invité écrit sur un autre lien ; (2) `conn.open` vrai côté hôte et faux
+  côté invité sur le même canal. La sonde à écrire journalise, chez
+  l'invité, par QUEL lien partent la présentation et chaque `pos`
+  (`conn.peer`, `parNuage`, `open`, `dataChannel.readyState`) et, chez
+  l'hôte, chaque lien reçu par pair — et elle provoque la lenteur (bridage
+  ×4 ou deux pages de plus) au lieu de l'attendre. Vert seule, rouge sous
+  charge : c'est un rouge de production possible sur un Wi-Fi lent, pas
+  seulement un rouge de banc. À la v260 : rouge aux deux portails (dont « à trois, chacun voit
   les deux autres » une fois), puis rejouée SEULE : rouge sur la branche
   (69 verts) ET rouge sur `origin/main` en v259 (69 verts), « hôte 1 ·
   Alice 2 » les deux fois. Le matin, seule sur `origin/main` en v258 et sur
