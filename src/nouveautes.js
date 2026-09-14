@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 257,
+    titre: "On voit l'installation",
+    puces: [
+      "📦 La mise à jour compte ses fichiers",
+      "Le jeu s'ouvre quand il est vraiment prêt",
+      "⚙️ Réglages : graphismes normal ou avancé",
+    ],
+  },
+  {
     v: 256,
     titre: "Moins de boutons, plus de jeu",
     puces: [

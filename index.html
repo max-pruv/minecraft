@@ -1487,6 +1487,12 @@
         </div>
         <div class="toggle" id="gyro-toggle"></div>
       </div>
+      <div class="setting-row" id="graph-row">
+        <div class="setting-label">✨ Graphismes avancés
+          <div class="setting-hint">Ombres et pleine résolution. Si le jeu rame sur ta tablette, laisse-le éteint.</div>
+        </div>
+        <div class="toggle" id="graph-toggle"></div>
+      </div>
       <div class="setting-row" id="notif-row">
         <div class="setting-label">🔔 Me prévenir quand un ami arrive
           <div class="setting-hint" id="notif-hint">Reçois une alerte même si le jeu n'est pas à l'écran.</div>
@@ -1984,7 +1990,9 @@
         refreshing = true;
         // La fête se joue APRÈS le rechargement : c'est là que la nouvelle
         // version est réellement à l'écran, et donc là que l'annonce est vraie.
-        try { sessionStorage.setItem('wm-maj-fete', '1'); } catch { /* mode privé */ }
+        // Et la page rechargée garde son loader jusqu'à être prête (v257,
+        // `wm-maj-installe`, lu par main.js).
+        try { sessionStorage.setItem('wm-maj-fete', '1'); sessionStorage.setItem('wm-maj-installe', '1'); } catch { /* mode privé */ }
         showLoader(raison);
         location.reload();
       };
@@ -2028,6 +2036,17 @@
           sessionStorage.removeItem('wm-updating');
           reloadOnce('✨ Mise à jour installée — on démarre !');
         }
+      });
+      // L'AVANCEMENT DE L'INSTALLATION, FICHIER PAR FICHIER (v257). Le service
+      // worker neuf annonce chaque fichier rangé ; tant que l'on attend une
+      // mise à jour, le loader le montre au lieu d'un texte fixe. Le compte se
+      // lit aussi depuis un témoin (`window.__majInstallation`).
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        const d = e.data;
+        if (!d || d.type !== 'installation') return;
+        window.__majInstallation = d;
+        if (refreshing || sessionStorage.getItem('wm-updating') !== '1') return;
+        showLoader(`📦 Mise à jour du jeu… ${d.fait} / ${d.total} fichiers`);
       });
 
       // version annoncée par le serveur / version réellement en train de tourner
@@ -2121,7 +2140,16 @@
       // bon numéro.
       if (sessionStorage.getItem('wm-maj-fete') === '1') {
         sessionStorage.removeItem('wm-maj-fete');
-        versionActive().then(feteMiseAJour).catch(() => feteMiseAJour(null));
+        // La fête attend que le loader d'installation se soit effacé (v257) :
+        // annoncer « mis à jour ! » derrière un loader n'annonce rien.
+        const feter = () => versionActive().then(feteMiseAJour).catch(() => feteMiseAJour(null));
+        let fait = false;
+        const uneFois = () => { if (fait) return; fait = true; feter(); };
+        document.addEventListener('maj-installee', uneFois, { once: true });
+        setTimeout(() => {
+          if (sessionStorage.getItem('wm-maj-installe') !== '1') uneFois();
+        }, 1500);
+        setTimeout(uneFois, 100000);
       }
 
       window.addEventListener('load', async () => {

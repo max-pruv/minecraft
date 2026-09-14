@@ -137,7 +137,19 @@ function verifier(nom, ok, detail = '') {
       volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
 
     const chezHote = await hote.evaluate(() => ({ x: window.__game.player.pos.x, y: window.__game.player.pos.y, z: window.__game.player.pos.z }));
-    await alice.evaluate((p) => { const g = window.__game; g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0); }, chezHote);
+    // Les bêtes ne voyagent pas par le réseau : chaque page a les siennes, et
+    // une bête montable à moins de huit blocs devant Alice PASSE AVANT la
+    // voiture de l'ami (c'est le choix de `fun.js`, et il est juste). Au
+    // portail de la v257, un cerf né près du point d'apparition a rendu
+    // « 🦌 Monter » à la place de « Monter avec Marlon » — un rouge de hasard,
+    // pas de code. On vide donc AUSSI les bêtes de la page d'Alice, comme on
+    // l'a fait chez l'hôte, avant de la poser à côté de la voiture.
+    await alice.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0);
+    }, chezHote);
     const boutonPassager = () => alice.evaluate(() => {
       const b = document.getElementById('ride-btn');
       return { texte: b.textContent, visible: b.style.display !== 'none' };
@@ -542,6 +554,15 @@ function verifier(nom, ok, detail = '') {
     const revenant = await banc.joueur('Milo', AVEC_NUAGE);
     await revenant.evaluate((d) => localStorage.setItem('web-minecraft-device-id-v1', d),
       'fantomedemax');
+    // Recharger pendant que les neuf corps réalistes s'analysent coupe leurs
+    // textures, et le chargeur l'écrit en erreur de console (« Couldn't load
+    // texture blob: ») — la panne de `plafond.js` en v251, rejouée ici SEUL
+    // à la v257 (cinq erreurs chez Milo). Même remède : les corps d'abord.
+    for (let fin = Date.now() + 45000; Date.now() < fin;) {
+      const ok = await revenant.evaluate(async () => { const H = await import('./src/humains.js'); return H.humainsCharges(); }).catch(() => false);
+      if (ok) break;
+      await dormir(500);
+    }
     await revenant.reload({ waitUntil: 'load' });
     await revenant.waitForFunction(() => window.__game, null, { timeout: 90000 });
     await revenant.evaluate(() => document.getElementById('online-btn').click());
