@@ -3502,12 +3502,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
         // en croisière au-dessus du DÉBUT de la piste, quinze blocs de haut,
-        // train rentré, manette déjà à zéro (le cadran la reprendra à zéro
-        // aussi) — sinon l'appareil file à sa pointe le temps que le doigt
-        // arrive, et se pose au-delà des trois cents blocs de pierre
+        // train rentré, manette à MI-COURSE : au-dessus du décrochage (47
+        // contre 30), l'appareil tient l'air pendant les deux cycles de
+        // train sans filer à sa pointe — à zéro il se posait tout seul avant
+        // la phase mesurée, à vide il dépassait les trois cents blocs de pierre
         g.player.pos.set(P.x0, P.y0 + 16, P.z0 + 0.5);
-        g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 50; g.player.trainSorti = 0;
-        g.player.gaz = 0;
+        g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 47; g.player.trainSorti = 0;
+        g.player.gaz = 0.5;
         await new Promise((f) => setTimeout(f, 800));
         const r = document.getElementById('gaz-base').getBoundingClientRect();
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
@@ -3527,6 +3528,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const trainRentre = await attendreTrain(0);
       await tab.evaluate(() => document.getElementById('train-btn').click());
       await attendreTrain(1);
+      // les deux cycles de train ont fait deux cents blocs : on se remet
+      // au-dessus du début de la piste pour la descente
+      await tab.evaluate(() => { const g = window.__game, P = window.__piste262; g.player.pos.set(P.x0, P.y0 + 16, P.z0 + 0.5); g.player.vitesseAvion = 47; });
       // gaz à zéro et manche en avant (joystick tiré vers soi = descendre)
       const joy = { x: 70, y: 640, id: 1 };
       await toucher('touchStart', [joy]);
