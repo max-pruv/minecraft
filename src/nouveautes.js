@@ -10,8 +10,8 @@ export const NOUVEAUTES = [
     titre: "Les passants contournent ta voiture",
     puces: [
       "🚶 Un passant s'arrête devant une voiture",
-      "Il repart de biais, sans la traverser",
-      "Personne ne naît dans ta voiture",
+      "Il s'écarte quand ta voiture arrive",
+      "🚗 Ta voiture freine devant un piéton",
     ],
   },
   {

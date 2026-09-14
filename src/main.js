@@ -811,9 +811,68 @@ function updateChunks() {
   // mobilier, et réciproquement. Mesuré avant cette règle : au départ sur
   // une rue de Paris, une voiture du convoi 89 à 0,67 bloc, et la nôtre
   // traversait un réverbère six blocs plus loin.
+  // ET UN PIÉTON NON PLUS (v259). Max, capture à New York : une passante au
+  // travers de son taxi. « Pas un mode violent comme GTA » : la voiture de
+  // l'enfant FREINE devant un piéton, elle ne l'écrase pas — et le piéton,
+  // lui, s'écarte (`world.vehiculeApproche`, plus bas), si bien qu'on ne
+  // reste pas bloqué derrière lui. On ne bloque que l'entrée, jamais quand
+  // un piéton est déjà dans la voiture.
+  //
+  // Qui a les pieds dans la voiture posée là ? Le CENTRE du piéton dans sa
+  // largeur — pas de marge de côté : dans une ruelle de trois blocs, un
+  // piéton plaqué contre le mur a le centre à 1,25 bloc de l'axe, et la
+  // voiture (1,13 de demi-largeur) doit pouvoir passer le long de lui, sinon
+  // les deux s'attendent pour toujours (mesuré : douze secondes sur place).
+  const pietonsDans = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2 + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const dedans = [];
+    for (const n of npcs) {
+      const dx = n.pos.x - x, dz = n.pos.z - z;
+      if (dx * dx + dz * dz > 8 * 8 || Math.abs(n.pos.y - player.pos.y) > 2.5) continue;
+      if (Math.abs(dx * ux + dz * uz) <= demiLong && Math.abs(dx * vx + dz * vz) <= demiLarg) dedans.push(n);
+    }
+    return dedans;
+  };
+  // « Pas si l'on est déjà dedans » se juge PAR PERSONNE, pas par famille :
+  // jugé sur la famille, un piéton déjà contre la portière laissait la
+  // voiture traverser celui qui est devant (neuf relevés à la sonde).
+  const pietonDevant = (x, z, cap, x0, z0) => {
+    const apres = pietonsDans(x, z, cap);
+    if (!apres.length) return false;
+    const avant = pietonsDans(x0, z0, cap);
+    return apres.some((n) => !avant.includes(n));
+  };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) =>
     (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap))
-    || (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap));
+    || (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap))
+    || pietonDevant(x, z, cap, x0, z0);
+  // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
+  // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
+  // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
+  // route devant elle plus quatre blocs, trente au plus — couvre le point.
+  // Rend la direction de la voiture et le côté où s'écarter (celui où le
+  // piéton est déjà), ou null. `marge` : la marge latérale, plus large quand
+  // on est déjà en train de s'écarter, pour ne pas s'arrêter au bord même.
+  world.vehiculeApproche = (x, z, y, marge = 1.0) => {
+    const roulent = vehicules.enMarche();
+    // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il
+    // obtient — arrêtée devant un piéton, elle veut encore passer, et c'est
+    // ce qui fait que le piéton s'écarte au lieu de la bloquer pour toujours
+    if (player.gabarit > 1 && !player.pilote && player.pousse) {
+      const v = Math.hypot(player.pousse.x, player.pousse.z);
+      if (v > 0.5) roulent.push({ x: player.pos.x, y: player.pos.y, z: player.pos.z, ux: player.pousse.x / v, uz: player.pousse.z / v, v, demiLarg: player.gabarit / 2 });
+    }
+    for (const r of roulent) {
+      if (r.v <= 0.5 || Math.abs(r.y - y) > 2.5) continue;
+      const dx = x - r.x, dz = z - r.z;
+      const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
+      if (devant < -2.2 || devant > Math.min(30, r.v * 2 + 4)) continue;
+      if (Math.abs(cote) > r.demiLarg + marge) continue;
+      return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote };
+    }
+    return null;
+  };
   // ET LES PIÉTONS NE TRAVERSENT PAS LES VOITURES (v259). Max, capture à la
   // Bastille : des passants au travers de sa voiture. Un piéton (marlon.js)
   // regarde un pas devant lui avant d'avancer : une voiture de la rue, celle

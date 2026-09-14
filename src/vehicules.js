@@ -1636,6 +1636,20 @@ export function createVehicules({ scene, player }) {
     }
     return false;
   }
+  // CE QUI ROULE, ET À QUELLE ALLURE (v259) : les voitures de la rue à portée
+  // de l'enfant, telles que `cederLePassage` les a vues, avec leur vitesse
+  // du moment (zéro si elles attendent). C'est ce qu'un piéton lit pour
+  // s'écarter d'une voiture qui arrive (`world.vehiculeApproche`, main.js).
+  function enMarche() {
+    const out = [];
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      const c = b.c;
+      const allure = c.attend[b.i] ? 0 : (c.retard[b.i] > 0 ? 1.5 : 1);
+      out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
+    }
+    return out;
+  }
   // Un point est-il dans un rectangle orienté (quatre sommets dans l'ordre) ?
   // Du même côté de chacune des quatre arêtes.
   function dansRectangle(R, x, z) {
@@ -1736,7 +1750,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle, enMarche,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

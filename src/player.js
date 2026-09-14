@@ -309,6 +309,9 @@ export class Player {
 
     this.vel.x = dx * speed;
     this.vel.z = dz * speed;
+    // ce que l'enfant DEMANDE, avant qu'un obstacle ne l'arrête : c'est ce
+    // qu'un piéton lit pour s'écarter d'une voiture qui veut passer (v259)
+    this.pousse = { x: this.vel.x, z: this.vel.z };
 
     if (this.flying) {
       const v = this.vitesseVol();

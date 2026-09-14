@@ -155,6 +155,29 @@ export class BaseNPC {
     // on ne fait pas ce pas et l'on se retourne (`contourner`). Sauf si l'on
     // est DÉJÀ dedans — une voiture qui a roulé sur nous — : sortir est la
     // seule façon d'en sortir, même règle que la voiture de l'enfant (v245).
+    // ET ON S'ÉCARTE D'UNE VOITURE QUI ARRIVE (v259). Max : « pas un mode
+    // violent comme GTA ». Un piéton dans le couloir d'une voiture en marche
+    // (`world.vehiculeApproche`) fait ce que fait un vrai piéton : il presse
+    // le pas de côté, du côté où il est déjà, jusqu'à être hors du couloir
+    // avec de la marge, puis il souffle un instant et reprend son programme.
+    // Deux secondes au plus : contre un mur, on ne piétine pas sans fin.
+    if (this.world.vehiculeApproche) {
+      if (!this.ecart && !(this.repos > 0)) {
+        const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
+        if (v) this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false };
+      }
+      if (this.ecart) {
+        const e = this.ecart; e.t += dt;
+        const ex = e.uz * e.cote, ez = -e.ux * e.cote;   // perpendiculaire, vers l'extérieur
+        yaw = Math.atan2(-ex, -ez); this.yaw = yaw;
+        speed = this.walkSpeed * 1.6;
+        const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
+        // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
+        // seconde) : on essaie l'autre côté, une fois
+        if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
+        if (!encore || e.t > 2) { this.ecart = null; this.repos = 0.8; speed = 0; }
+      } else if (this.repos > 0) { this.repos -= dt; speed = 0; }
+    }
     if (speed > 0 && this.world.obstaclePieton) {
       const pas = 0.9 + this.largeur / 2;
       const ax = this.pos.x - Math.sin(this.yaw) * pas, az = this.pos.z - Math.cos(this.yaw) * pas;
@@ -172,7 +195,7 @@ export class BaseNPC {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0) this.vel.y = 7.5;
+    if ((blockedX || blockedZ) && this.onGround && speed > 0 && !this.ecart) this.vel.y = 7.5;
 
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;

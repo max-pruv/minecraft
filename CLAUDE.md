@@ -779,6 +779,29 @@ l'enfant au volant, ni une voiture garée. Trois règles.
   `cederLePassage` a collecté à la dernière image (`vehicules.voitureA`, la
   voiture de l'enfant comprise quand `player.gabarit > 1`) et les bêtes dont
   la fiche porte un `gabarit`. L'enfant à pied n'est pas une voiture.
+- **DEVANT UNE VOITURE QUI ARRIVE, ON S'ÉCARTE ; ET LA VOITURE DE L'ENFANT
+  FREINE.** Max, capture à New York : « pas un mode violent comme GTA où ils
+  sont écrasés ». Le regard-devant ne règle que la voiture à l'arrêt ; en
+  roulant, c'est elle qui va sur les gens. `world.vehiculeApproche(x, z, y)`
+  (main.js) dit si le point est dans le COULOIR d'une voiture en marche —
+  celles de la rue (`vehicules.enMarche`, vitesse du moment) et celle de
+  l'enfant, lue sur ce qu'il DEMANDE (`player.pousse`, avant tout obstacle)
+  et non sur ce qu'il obtient : arrêtée devant un piéton, elle veut encore
+  passer, et c'est ce qui fait que le piéton s'écarte au lieu de la bloquer
+  pour toujours. Le piéton (`BaseNPC.update`, état `ecart`) presse le pas de
+  côté, du côté où il est déjà, jusqu'à sortir du couloir avec de la marge
+  (1,0 bloc pour entrer dans l'état, 1,8 pour en sortir — sinon il s'arrête
+  au bord même), deux secondes au plus (contre un mur, on ne piétine pas, et
+  on ne saute pas), puis `repos` 0,8 s. Et `pietonDevant` est la TROISIÈME
+  famille de `player.obstacleVehicule`, jugée chez elle comme les deux
+  autres. Mesuré à la sonde : la voiture s'arrête deux secondes, le piéton
+  sort à 1,5 bloc de côté, elle repart — seize blocs en douze secondes.
+- **UN TÉMOIN DE CONDUITE PART D'UNE RUE SANS VOITURE DE LA RUE À PORTÉE,
+  ENCORE.** Mes trois premiers tours rendaient 0,4 bloc d'avance avec zéro
+  traversée : une voiture de la circulation arrivait en face, cédait devant
+  l'enfant sans limite (v245), et les deux se regardaient. C'est la leçon de
+  la v252 mot pour mot ; `placeProche` à quatorze blocs, au départ et
+  quatorze blocs plus loin.
 - **« PAS SI L'ON EST DÉJÀ DEDANS », UNE FOIS DE PLUS.** Une voiture qui a
   roulé sur un passant le laisse sortir : on ne bloque que l'ENTRÉE. Et une
   place tirée pour un passant n'est retenue que si elle est libre

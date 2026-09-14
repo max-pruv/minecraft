@@ -971,8 +971,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (ni celles de la rue, ni les véhicules posés) : regard-devant d'un pas
   dans `BaseNPC.update`, `contourner()` chez `Habitant` et `Wanderer`,
   `world.obstaclePieton` branché par `main.js` sur `vehicules.voitureA` et
-  les bêtes à `gabarit` ; et `posteAutour` ne tire plus une place dans une
-  voiture. Témoin de `monte.js`, 287 à 449 relevés dedans sur l'ancien code.
+  les bêtes à `gabarit` ; `posteAutour` ne tire plus une place dans une
+  voiture ; devant une voiture qui arrive (`world.vehiculeApproche`, sur
+  `player.pousse` et `vehicules.enMarche`) le piéton s'écarte (`ecart`), et
+  la voiture de l'enfant freine devant un piéton (`pietonDevant`, troisième
+  famille d'`obstacleVehicule`). Deux témoins de `monte.js`, rouges sur
+  l'ancien code (287 à 449 relevés dedans à l'arrêt ; traversée en roulant).
 - [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
   boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
   position restaurée dès l'accueil) ; la carte du monde calcule son fond par
