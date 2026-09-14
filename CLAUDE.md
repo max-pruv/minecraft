@@ -764,6 +764,79 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Un piéton regarde devant lui, et une voiture n'est pas un bloc (v259)
+
+Max, capture à la Bastille : « les passants traversent la voiture de
+l'enfant ». Un piéton (`BaseNPC.sweep`, marlon.js) ne connaît que les blocs
+solides ; une voiture n'en est pas un — ni celle de la rue, ni celle de
+l'enfant au volant, ni une voiture garée. Trois règles.
+
+- **UN OBSTACLE QUI N'EST PAS UN BLOC SE REGARDE UN PAS DEVANT.** `update`
+  demande `world.obstaclePieton(x, z, y)` (branché par `main.js`) au point
+  qu'il s'apprête à atteindre ; si c'est une voiture, il ne fait pas ce pas
+  et `contourner()` le fait repartir de biais — le geste du bord de rue de
+  Manhattan, un peu plus haut dans `Habitant.think`. Le crochet lit ce que
+  `cederLePassage` a collecté à la dernière image (`vehicules.voitureA`, la
+  voiture de l'enfant comprise quand `player.gabarit > 1`) et les bêtes dont
+  la fiche porte un `gabarit`. L'enfant à pied n'est pas une voiture.
+- **DEVANT UNE VOITURE QUI ARRIVE, ON S'ÉCARTE ; ET LA VOITURE DE L'ENFANT
+  FREINE.** Max, capture à New York : « pas un mode violent comme GTA où ils
+  sont écrasés ». Le regard-devant ne règle que la voiture à l'arrêt ; en
+  roulant, c'est elle qui va sur les gens. `world.vehiculeApproche(x, z, y)`
+  (main.js) dit si le point est dans le COULOIR d'une voiture en marche —
+  celles de la rue (`vehicules.enMarche`, vitesse du moment) et celle de
+  l'enfant, lue sur ce qu'il DEMANDE (`player.pousse`, avant tout obstacle)
+  et non sur ce qu'il obtient : arrêtée devant un piéton, elle veut encore
+  passer, et c'est ce qui fait que le piéton s'écarte au lieu de la bloquer
+  pour toujours. Le piéton (`BaseNPC.update`, état `ecart`) presse le pas de
+  côté, du côté où il est déjà, jusqu'à sortir du couloir avec de la marge
+  (1,0 bloc pour entrer dans l'état, 1,8 pour en sortir — sinon il s'arrête
+  au bord même), deux secondes au plus (contre un mur, on ne piétine pas, et
+  on ne saute pas), puis `repos` 0,8 s. Et `pietonDevant` est la TROISIÈME
+  famille de `player.obstacleVehicule`, jugée chez elle comme les deux
+  autres. Mesuré à la sonde : la voiture s'arrête deux secondes, le piéton
+  sort à 1,5 bloc de côté, elle repart — seize blocs en douze secondes.
+- **CE QU'UN PIÉTON DEMANDE À CHAQUE IMAGE NE SE FABRIQUE PAS À CHAQUE
+  APPEL.** Mon premier `vehiculeApproche` refaisait la liste des voitures en
+  marche à chaque appel — cent quarante piétons à Manhattan, deux appels
+  chacun, des centaines de voitures à portée. `vehicules.enMarche()` fige sa
+  liste jusqu'à la collecte suivante de `cederLePassage`, en lecture seule
+  (jamais copiée ni complétée : la voiture de l'enfant se regarde à part),
+  avec une borne de distance avant tout calcul. Et **Manhattan tourne à 0,4
+  image par seconde sur ce banc, sur l'ancien code comme sur le neuf** —
+  mesuré à la sonde, mêmes compteurs des deux côtés, zéro erreur de page :
+  quatre témoins de `manhattan.js` qui lisent un effet « 350 ms après » ou
+  « huit blocs en quinze secondes » y sont un pile ou face, et le taxi qui
+  « ne roule pas » roulait à 10,9 blocs par seconde, personne devant, 0,55
+  bloc par image. Devant trois suites rouges d'un coup, la première sonde
+  est « la boucle vit-elle ? » (compteur d'images, erreurs de page), la
+  seconde « l'ancien code fait-il pareil ? ».
+- **MARLON NE SE REPLACE PAS DANS LE NEZ DE LA VOITURE.** Il se rappelle à
+  2,5 blocs sous un angle au hasard dès que l'enfant s'éloigne de 26 blocs —
+  toutes les deux secondes et demie en voiture, une fois sur huit devant le
+  capot, et la voiture freine désormais devant lui. Au volant, il se replace
+  derrière ou à côté, à quatre blocs, et n'approche pas à moins de cinq.
+- **UN TÉMOIN DE CONDUITE PART D'UNE RUE SANS VOITURE DE LA RUE À PORTÉE,
+  ENCORE.** Mes trois premiers tours rendaient 0,4 bloc d'avance avec zéro
+  traversée : une voiture de la circulation arrivait en face, cédait devant
+  l'enfant sans limite (v245), et les deux se regardaient. C'est la leçon de
+  la v252 mot pour mot ; `placeProche` à quatorze blocs, au départ et
+  quatorze blocs plus loin.
+- **« PAS SI L'ON EST DÉJÀ DEDANS », UNE FOIS DE PLUS.** Une voiture qui a
+  roulé sur un passant le laisse sortir : on ne bloque que l'ENTRÉE. Et une
+  place tirée pour un passant n'est retenue que si elle est libre
+  (`posteAutour`) — un passant né dans la voiture y serait, quoi que fasse
+  ensuite son regard.
+- **UN TÉMOIN QUI LANCE DES GENS LES LANCE DEPUIS LA RUE, ET « DEDANS » A
+  UNE HAUTEUR.** Mon premier témoin tirait ses départs sur un cercle sans
+  regarder le sol : un point tombé dans un immeuble posait le passant SUR LE
+  TOIT (`surfaceY` prend le plus haut solide), d'où il retombait dans la
+  voiture — et un rectangle sans y comptait « dedans » un passant à seize
+  blocs au-dessus de la rue. Soixante-dix relevés sur cent sur du code SAIN,
+  zéro au tour suivant : un rouge qui va et vient sur le même code accuse le
+  témoin, et c'est une sonde qui distingue les cas (hauteurs relevées, crochet
+  vrai ou faux au moment du « dedans ») qui l'a dit en une exécution.
+
 ## Le jeu se prépare avant « Jouer », et une carte se calcule par tranches (v258)
 
 Max : « quand on ouvre la carte, beaucoup de lag au début » ; « le temps de

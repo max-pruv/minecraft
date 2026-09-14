@@ -1572,7 +1572,7 @@ export function createVehicules({ scene, player }) {
       }
     }
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
-    dernieres = voitures;
+    dernieres = voitures; enMarcheCache = null;
     for (const a of voitures) {
       if (a.enfant) continue;
       let attend = false;
@@ -1619,6 +1619,61 @@ export function createVehicules({ scene, player }) {
       if (seTouchent(moi, b.rect)) return true;
     }
     return false;
+  }
+
+  // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la
+  // Bastille : « les passants traversent la voiture de l'enfant ». Un passant
+  // ne connaît que les blocs solides (`sweep`, marlon.js) ; une voiture n'en
+  // est pas un. Ce point (les pieds d'un piéton) est-il DANS une voiture de
+  // la rue, ou dans celle de l'enfant quand il est au volant ? On relit la
+  // collecte de la dernière image, comme `obstacleDevant`. L'enfant à pied
+  // n'est pas une voiture : on passe à côté de lui comme avant.
+  function voitureA(x, z, y) {
+    for (const b of dernieres) {
+      if (b.enfant && !(player.gabarit > 1)) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 6 * 6 || Math.abs(b.y - y) > 2.5) continue;
+      if (dansRectangle(b.rect, x, z)) return true;
+    }
+    return false;
+  }
+  // CE QUI ROULE, ET À QUELLE ALLURE (v259) : les voitures de la rue à portée
+  // de l'enfant, telles que `cederLePassage` les a vues, avec leur vitesse
+  // du moment (zéro si elles attendent). C'est ce qu'un piéton lit pour
+  // s'écarter d'une voiture qui arrive (`world.vehiculeApproche`, main.js).
+  //
+  // UNE FOIS PAR IMAGE, PAS UNE FOIS PAR PIÉTON. Mon premier jet refaisait
+  // cette liste à chaque appel : à Manhattan, des centaines de voitures à
+  // portée, cent quarante piétons, deux appels chacun par image — la page
+  // tombait à 0,4 image par seconde (mesuré à la sonde), et quatre suites du
+  // portail mesuraient une boucle d'affichage moribonde. La liste est figée
+  // tant que `cederLePassage` n'a pas refait sa collecte, et l'on ne rend
+  // JAMAIS ce tableau à quelqu'un qui pourrait le modifier : lecture seule.
+  let enMarcheCache = null;
+  function enMarche() {
+    if (enMarcheCache) return enMarcheCache;
+    const out = [];
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      const c = b.c;
+      if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
+      const allure = c.retard[b.i] > 0 ? 1.5 : 1;
+      out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
+    }
+    enMarcheCache = out;
+    return out;
+  }
+  // Un point est-il dans un rectangle orienté (quatre sommets dans l'ordre) ?
+  // Du même côté de chacune des quatre arêtes.
+  function dansRectangle(R, x, z) {
+    let signe = 0;
+    for (let k = 0; k < 4; k++) {
+      const a = R[k], b = R[(k + 1) % 4];
+      const c = (b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (x - a[0]);
+      if (c === 0) continue;
+      if (signe === 0) signe = c > 0 ? 1 : -1;
+      else if ((c > 0 ? 1 : -1) !== signe) return false;
+    }
+    return true;
   }
 
   function update(dt) {
@@ -1707,7 +1762,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle, enMarche,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

@@ -24,6 +24,69 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« La reprise tient dans la durée » (`reseau.js`) rouge au portail
+  complet, verte seule des deux côtés (v259).** Deux portails de suite sur
+  la branche : « hôte 1 · Alice 2 » (l'hôte ne voit plus qu'un joueur
+  vingt-cinq secondes après le retour d'Alice sur la même tablette). Rejouée
+  SEULE : verte sur `origin/main` (v258) ET sur la branche, « hôte 2 ·
+  Alice 2 », 71 témoins des deux côtés (`scratchpad/v259/reseau-suite-*.log`).
+  Le code réseau n'a pas bougé en v259. C'est la famille des rouges de
+  portail de la v220 : une suite verte seule est un fait plus fort qu'un
+  rouge derrière dix suites. Cause ouverte ; piste : ce témoin arrive
+  derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
+  vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
+  (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
+- [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
+  passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
+  branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 %), et le témoin extrait
+  dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
+  chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
+  (v258) 1 367 ms / 9,7 % puis 300 / 0. Le PREMIER survol de Paris paie la
+  compilation des programmes que le banc, ouvert avec `?prep=0`, n'a pas
+  chauffés (v246, v258) ; le second est sous les barres des deux côtés.
+  Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
+  comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
+- [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
+  des deux côtés (v259).** Quatre témoins — « le trou enlève aussi la
+  géométrie visible de la façade » (l'« avant » lu pendant que les façades
+  se construisent encore : 22 326, 9 203, 14 460 pour un « après » toujours à
+  51 734), « fenêtres et éclairage public fonctionnent la nuit » (lu 350 ms
+  après `__setDayTime`, sans image entre les deux), « les ombres suivent le
+  soleil et la lune visibles » ([1, −1], même cause) et « le taxi roule avec
+  les contrôles tactiles » (huit blocs exigés en quinze secondes, à 0,55 bloc
+  par image : mesuré à la sonde, le taxi ROULE à 10,9 blocs/s, personne
+  devant) — plus le rechargement qui dépasse ses 90 s. Rejouée SEULE sur
+  `origin/main` (v258) : les mêmes quatre rouges et le même délai. Sonde :
+  Manhattan rend 2 images toutes les 5 s sur ce banc, sur les deux arbres,
+  zéro erreur de page (`scratchpad/v259/manhattan-*.log`). Piste : ces
+  quatre témoins doivent ATTENDRE UNE IMAGE (compteur `renderer.info.render.frame`)
+  avant de lire, et le taxi se mesurer en blocs par image plutôt qu'en blocs
+  par seconde — leçon « un témoin qui lit l'effet d'une image attend l'image »
+  (v249), à appliquer à `manhattan.js`.
+
+- [ ] **Vitesse des voitures par modèle (Max, après la v259).** « Les
+  voitures devraient aller plus vite et surtout une vitesse en fonction du
+  modèle (sportive faster than sedan basic). » Toute voiture conduite a
+  aujourd'hui `allure: 3.4` (montures.js), quel que soit le modèle de la
+  flotte. Piste : une classe par modèle dans le manifeste de la flotte
+  (citadine, berline, SUV, sportive, hypercar) et une allure par classe, lue
+  à la monte ; plafond réglé sur le débit de maillage MESURÉ en voiture dans
+  une ville (v229 : le monde ne suit plus au-delà de ~110 blocs/s en vol).
+  Témoin : deux modèles de classes différentes, vitesse mesurée en roulant.
+- [ ] **Avions : vrai décollage, vrai atterrissage, roulage (Max, après la
+  v259).** « Accélération sur la piste puis décollage en levant le nez ;
+  à l'atterrissage, baisser l'altitude et ouvrir le train ; et le roulage
+  sur la piste. » Aujourd'hui ✈️ fait une montée automatique de vingt blocs
+  (v228) et un second appui pose. À faire dans `player.js` (mode `pilote`),
+  `fun.js`, `avions.js` : phase ROULAGE (au sol, le joystick dirige, allure
+  de roulage), DÉCOLLAGE (accélération jusqu'à la vitesse de rotation de la
+  fiche, nez qui se lève progressivement, train qui rentre), ATTERRISSAGE
+  (assiette de descente, train qui sort sous une altitude, toucher, freinage).
+  Le train doit exister sur les modèles et s'animer. Garder les commandes
+  d'enfant de la v228. Témoins : distance de roulage avant décollage, tangage
+  au décollage, train rentré en vol et sorti sous l'altitude, vitesse nulle
+  après l'atterrissage. Fiches par appareil, comme `max` et `virage`.
+
 - [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
   dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
   (v256) : il marche jusqu'à être entré, ressorti ou figé trois pas, plus en
@@ -967,6 +1030,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v259** — Les passants ne traversent plus la voiture de l'enfant
+  (ni celles de la rue, ni les véhicules posés) : regard-devant d'un pas
+  dans `BaseNPC.update`, `contourner()` chez `Habitant` et `Wanderer`,
+  `world.obstaclePieton` branché par `main.js` sur `vehicules.voitureA` et
+  les bêtes à `gabarit` ; `posteAutour` ne tire plus une place dans une
+  voiture ; devant une voiture qui arrive (`world.vehiculeApproche`, sur
+  `player.pousse` et `vehicules.enMarche`) le piéton s'écarte (`ecart`), et
+  la voiture de l'enfant freine devant un piéton (`pietonDevant`, troisième
+  famille d'`obstacleVehicule`). Deux témoins de `monte.js`, rouges sur
+  l'ancien code (287 à 449 relevés dedans à l'arrêt ; traversée en roulant).
 - [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
   boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
   position restaurée dès l'accueil) ; la carte du monde calcule son fond par

@@ -20,6 +20,53 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v259 — Les passants ne traversent plus la voiture de l'enfant
+
+**Pourquoi.** Max, deux captures : à la Bastille, des passants qui marchent
+AU TRAVERS de sa voiture à l'arrêt ; à New York, une passante au travers de
+son taxi — « trouve une solution élégante, je ne veux pas un mode violent
+comme GTA où ils sont écrasés ». Un piéton ne connaît que les blocs solides
+— c'est ainsi qu'il évite les murs et monte les marches — et une voiture n'en
+est pas un : ni celle de la rue, ni celle de l'enfant au volant, ni une
+voiture garée. Mesuré au banc, huit passants lancés sur la voiture de
+l'enfant à l'arrêt pendant douze secondes : entre 287 et 449 relevés sur 120
+avec un passant les pieds dans la carrosserie — ils y entraient et y
+restaient. Et en roulant sur trois passants plantés dans la rue, la voiture
+leur passait au travers.
+
+**Ce que ça change.** Trois gestes de piéton, aucun de GTA. Un passant regarde
+un pas devant lui avant d'avancer : si c'est une voiture — de la rue, celle
+de l'enfant au volant, une voiture garée ou un avion au poste —, il ne fait
+pas ce pas, marque une courte pause et repart de biais, comme il le fait déjà
+au bord d'une rue de Manhattan. Devant une voiture qui ARRIVE — de la rue,
+ou celle de l'enfant quand il appuie sur l'accélérateur —, il presse le pas
+de côté, du côté où il est déjà, sort de son chemin avec de la marge, souffle
+un instant et reprend sa promenade. Et la voiture de l'enfant FREINE devant
+un piéton au lieu de le traverser, puis repart dès qu'il s'est écarté : on
+ne reste pas coincé derrière lui, on ne l'écrase jamais. Une voiture qui a
+roulé sur un passant le laisse sortir, même règle que pour la voiture de
+l'enfant. Un passant ne NAÎT plus dans une voiture : la place qu'on lui tire
+n'est retenue que si elle est libre. L'enfant à pied n'est pas une voiture :
+on passe toujours à côté de lui.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien
+code : « un passant lancé sur la voiture de l'enfant s'arrête et la
+contourne au lieu de la traverser » — l'enfant monte dans une voiture à
+Rome, huit passants partent droit dessus depuis des points AU NIVEAU DE LA
+RUE (un départ tombé dans un immeuble posait le passant sur son toit, d'où il
+retombait dans la voiture : vu à la sonde, corrigé dans le témoin), relancés
+toutes les deux secondes ; zéro relevé dedans sur trois tours ici, 287 à 449
+sur l'ancien code, et les huit marchent des deux côtés. Un second, rouge
+aussi sur l'ancien code : « la voiture de l'enfant freine devant un piéton,
+qui s'écarte, et elle repart sans lui passer au travers » — trois passants
+plantés sur l'axe de la voiture, douze secondes d'accélérateur, zéro relevé
+dedans et la voiture a avancé (seize blocs mesurés à la sonde, freinage de
+deux secondes pendant que le piéton sort du couloir) ; sur l'ancien code
+elle les traverse. Il part d'une rue sans voiture de la rue à portée, sans
+mobilier ni marche sur le couloir, sinon il mesure deux voitures nez à nez
+ou un réverbère. Et Marlon ne se replace plus dans le nez de la voiture
+quand l'enfant conduit. Le portail complet rejoué.
+
 ## v258 — Le jeu se prépare avant « Jouer », et la carte ne fige plus l'image
 
 **Pourquoi.** Max, après la v255 : « quand on ouvre la carte, beaucoup de

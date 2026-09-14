@@ -71,6 +71,13 @@ export class Habitant extends BaseNPC {
     return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
   }
 
+  // Une voiture devant (v259) : on marque le pas et l'on repart de biais —
+  // le même geste qu'au bord d'une rue de Manhattan, un peu plus haut.
+  contourner() {
+    this.capYaw += Math.PI * 0.6;
+    this.etat = 'pause'; this.minuteur = 0.3; this.pas = 0;
+  }
+
   // Le geste de métier : il n'a lieu qu'à l'arrêt, sinon il se bat avec le
   // balancement de la marche et le personnage part en vrille.
   geste(dt, vitesse) {

@@ -146,8 +146,46 @@ export class BaseNPC {
   think() { return { speed: 0, yaw: this.yaw }; }
 
   update(dt) {
-    const { speed, yaw } = this.think(dt);
+    let { speed, yaw } = this.think(dt);
     this.yaw = yaw;
+    // UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). `sweep` ne connaît que
+    // les blocs ; une voiture — de la rue, celle de l'enfant au volant, une
+    // voiture garée — n'en est pas un. On regarde un pas devant soi
+    // (`world.obstaclePieton`, branché par main.js) : si c'est une voiture,
+    // on ne fait pas ce pas et l'on se retourne (`contourner`). Sauf si l'on
+    // est DÉJÀ dedans — une voiture qui a roulé sur nous — : sortir est la
+    // seule façon d'en sortir, même règle que la voiture de l'enfant (v245).
+    // ET ON S'ÉCARTE D'UNE VOITURE QUI ARRIVE (v259). Max : « pas un mode
+    // violent comme GTA ». Un piéton dans le couloir d'une voiture en marche
+    // (`world.vehiculeApproche`) fait ce que fait un vrai piéton : il presse
+    // le pas de côté, du côté où il est déjà, jusqu'à être hors du couloir
+    // avec de la marge, puis il souffle un instant et reprend son programme.
+    // Deux secondes au plus : contre un mur, on ne piétine pas sans fin.
+    if (this.world.vehiculeApproche) {
+      if (!this.ecart && !(this.repos > 0)) {
+        const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
+        if (v) this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false };
+      }
+      if (this.ecart) {
+        const e = this.ecart; e.t += dt;
+        const ex = e.uz * e.cote, ez = -e.ux * e.cote;   // perpendiculaire, vers l'extérieur
+        yaw = Math.atan2(-ex, -ez); this.yaw = yaw;
+        speed = this.walkSpeed * 1.6;
+        const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
+        // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
+        // seconde) : on essaie l'autre côté, une fois
+        if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
+        if (!encore || e.t > 2) { this.ecart = null; this.repos = 0.8; speed = 0; }
+      } else if (this.repos > 0) { this.repos -= dt; speed = 0; }
+    }
+    if (speed > 0 && this.world.obstaclePieton) {
+      const pas = 0.9 + this.largeur / 2;
+      const ax = this.pos.x - Math.sin(this.yaw) * pas, az = this.pos.z - Math.cos(this.yaw) * pas;
+      if (this.world.obstaclePieton(ax, az, this.pos.y) && !this.world.obstaclePieton(this.pos.x, this.pos.z, this.pos.y)) {
+        speed = 0;
+        if (this.contourner) this.contourner();
+      }
+    }
 
     this.vel.x = -Math.sin(this.yaw) * speed;
     this.vel.z = -Math.cos(this.yaw) * speed;
@@ -157,7 +195,7 @@ export class BaseNPC {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0) this.vel.y = 7.5;
+    if ((blockedX || blockedZ) && this.onGround && speed > 0 && !this.ecart) this.vel.y = 7.5;
 
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;
@@ -263,8 +301,18 @@ export class Marlon extends BaseNPC {
 
   placeNearPlayer() {
     const p = this.player.pos;
-    const angle = Math.random() * Math.PI * 2;
-    this.placeAt(p.x + Math.sin(angle) * 2.5, p.z + Math.cos(angle) * 2.5, p.y);
+    let angle = Math.random() * Math.PI * 2, d = 2.5;
+    // L'ENFANT CONDUIT : on ne se replace pas dans le nez de sa voiture
+    // (v259). Rappelé à 2,5 blocs sous un angle au hasard, Marlon tombait une
+    // fois sur huit devant le capot, et la voiture — qui freine désormais
+    // devant un piéton — s'arrêtait net. Derrière ou à côté, et un peu plus
+    // loin : hors du rectangle de la voiture (2,2 de demi-longueur).
+    if (this.player.gabarit > 1) {
+      const cap = this.player.yaw + Math.PI;                 // le nez de la voiture
+      angle = cap + Math.PI + (Math.random() - 0.5) * Math.PI; // ±90° autour de l'arrière
+      d = 4;
+    }
+    this.placeAt(p.x + Math.sin(angle) * d, p.z + Math.cos(angle) * d, p.y);
   }
 
   think() {
@@ -272,6 +320,8 @@ export class Marlon extends BaseNPC {
     toPlayer.y = 0;
     const dist = toPlayer.length();
     if (dist > 26) this.placeNearPlayer();
+    // et l'on ne vient pas se coller à une voiture : à cinq blocs, on attend
+    if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
     const yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
     return { speed: dist > 3.2 ? this.walkSpeed : 0, yaw };
   }
@@ -306,6 +356,12 @@ export class Wanderer extends BaseNPC {
       speed: this.state === 'walk' ? this.walkSpeed : 0,
       yaw: this.state === 'walk' ? this.wanderYaw : this.yaw,
     };
+  }
+
+  // Une voiture devant : on marque le pas et l'on repart de biais (v259).
+  contourner() {
+    this.wanderYaw = (this.wanderYaw ?? this.yaw) + Math.PI * 0.6;
+    this.state = 'idle'; this.stateTime = 0.3;
   }
 }
 
