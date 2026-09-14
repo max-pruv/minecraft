@@ -805,6 +805,26 @@ chaque image, ne touche au DOM que si l'état change) : saut, pioche,
 capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
 `getComputedStyle(...).display`, en véhicule et à pied.
 
+## Les flammes des réacteurs (v264)
+
+Max, capture du chasseur : « voir les flammes sortir du réacteur quand
+l'avion se déplace ». Trois règles.
+
+- **LA TUYÈRE SE DÉCLARE LÀ OÙ LE RÉACTEUR SE DESSINE.** `reacteur()` et la
+  tuyère du chasseur appellent `tuyere(a, …)` (avions.js) avec le point
+  d'échappement et le rayon de sortie ; `fini` y accroche une flamme par
+  tuyère et publie `userData.tuyeres`. Jamais une liste à part : c'est la
+  discipline de `postesAvion` et du plan du tarmac — deux tables qui
+  décrivent la même chose finissent par diverger.
+- **ÉMISSIF SEULEMENT, AUCUNE LAMPE.** Deux cônes `MeshBasicMaterial`
+  additifs, `toneMapped: false`, `depthWrite: false`. Une lumière ponctuelle
+  de plus changerait la clé de TOUS les programmes de shaders (quatre lampes
+  pour tout le jeu, v248) : le gel de la v246 par la petite porte.
+- **LA FLAMME SUIT LA MANETTE, PAS LA VITESSE.** `player.gaz` quand il est
+  touché, la vitesse rapportée à la pointe sinon ; éteinte sous deux pour
+  cent de gaz à l'arrêt, et éteinte à la descente par `fun.js` — la monture
+  quittée n'est plus mise à jour, elle garderait sa dernière flamme.
+
 ## Le cadran de cap : la ville visée au loin (v263)
 
 Max : « un cadran de pilote en avion : la ville visée au loin ». Aux

@@ -209,6 +209,10 @@ function fuselage(a, { longueur, rayon, couleur, nez, queue, y = 0, nezPointu = 
 // c'est ce qu'on voyait, et c'est ce qui fait « maquette ».
 function reacteur(a, { x, y, z, longueur, rayon, yAile, couleur = GRIS }) {
   const d = rayon * 2;
+  // LA TUYÈRE SE NOTE (v264) : c'est là que `fini` accroche la flamme. Le
+  // point d'échappement est le bout de la nacelle, au rayon de l'anneau
+  // sombre de sortie (0,62 du diamètre).
+  tuyere(a, { x, y, z: z + longueur / 2 + 0.02, rayon: rayon * 0.62 });
   a.cylindre(couleur, { p: [x, y, z], r: [Math.PI / 2, 0, 0], e: [d, longueur, d], haut: 0.46, bas: 0.5, seg: 12 });
   a.cylindre(SOMBRE, { p: [x, y, z - longueur / 2 - 0.03], r: [Math.PI / 2, 0, 0], e: [d * 0.84, 0.14, d * 0.84], haut: 0.5, bas: 0.5, seg: 12 });
   a.cylindre(SOMBRE, { p: [x, y, z + longueur / 2 - 0.06], r: [Math.PI / 2, 0, 0], e: [d * 0.62, 0.2, d * 0.62], haut: 0.5, bas: 0.5, seg: 10 });
@@ -259,8 +263,51 @@ function trains(a, { nez, principal, zPrincipal, ventre }) {
   return zPrincipal;
 }
 
+// Les tuyères : un point d'échappement par réacteur, en coordonnées du
+// modèle, avec le rayon de la sortie. C'est le bâtisseur qui les déclare,
+// là où il dessine le réacteur — jamais une liste à part.
+function tuyere(a, t) {
+  (a.tuyeres = a.tuyeres || []).push(t);
+}
+
+// LES FLAMMES (v264). Max, capture du chasseur : « voir les flammes sortir
+// du réacteur quand l'avion se déplace ». Une flamme par tuyère : un cœur
+// clair et court, une gaine orange plus longue, deux cônes dont la base est
+// à la sortie et la pointe vers la queue (+z). Le maillage a une longueur
+// UNITAIRE : `fun.js` règle `scale.z` sur la manette à chaque image, et
+// cache la flamme à l'arrêt. Matériau ADDITIF et non éclairé, `toneMapped`
+// à faux pour qu'elle reste vive sous la correspondance tonale — et AUCUNE
+// lumière ponctuelle : quatre lampes pour tout le jeu (v248), une de plus
+// recompilerait tous les programmes.
+function flamme(t) {
+  const groupe = new THREE.Group();
+  groupe.position.set(t.x, t.y, t.z);
+  const cone = (rayon, couleur, opacite) => {
+    const geo = new THREE.ConeGeometry(rayon, 1, 10, 1, true);
+    geo.translate(0, 0.5, 0);            // base en 0, pointe en +1
+    geo.rotateX(Math.PI / 2);            // la pointe part vers +z, la queue
+    const mat = new THREE.MeshBasicMaterial({
+      color: couleur, transparent: true, opacity: opacite, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.frustumCulled = false;
+    return m;
+  };
+  groupe.add(cone(t.rayon * 1.05, 0xff6a12, 0.55));
+  const coeur = cone(t.rayon * 0.55, 0xfff1b8, 0.9);
+  coeur.scale.z = 0.6;
+  groupe.add(coeur);
+  groupe.scale.z = 0.001;
+  groupe.visible = false;
+  groupe.userData.rayon = t.rayon;
+  return groupe;
+}
+
 function fini(a, zPrincipal = 0) {
   const g = a.finir();
+  // une flamme par tuyère déclarée, enfant de la racine
+  g.userData.tuyeres = (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; });
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
   // balancer les pattes, et un avion n'en a pas. Même contrat que la voiture.
   g.userData.legs = [];
@@ -421,11 +468,12 @@ export function avionDeChasse() {
       inclinaison: s * 0.34,
     }), GRIS);
   }
-  // la tuyère
+  // la tuyère — et son point d'échappement, au bout du cône de sortie
   a.cylindre(SOMBRE, {
     p: [0, y, L / 2 - 0.26], r: [Math.PI / 2, 0, 0],
     e: [rayon * 1.5, 0.5, rayon * 1.5], haut: 0.5, bas: 0.42, seg: 12,
   });
+  tuyere(a, { x: 0, y, z: L / 2 + 0.01, rayon: rayon * 0.6 });
   // deux missiles sous l'aile, pas en bout d'aile : ils y dépassaient
   // Le missile est porté SOUS l'aile et DANS sa corde : posé devant elle il
   // pendait dans le vide, ce que la capture a montré tout de suite.

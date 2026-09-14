@@ -291,6 +291,9 @@ export function initFun(ctx) {
     if (riding) {
       const quitte = riding;
       riding = null;
+      // Les flammes s'éteignent avec le mode pilote : la monture quittée
+      // n'est plus mise à jour, elle garderait sa dernière flamme (v264).
+      for (const f of (quitte && quitte.mesh && quitte.mesh.userData.tuyeres) || []) f.visible = false;
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
       // se rend aussi en descendant (v212).
@@ -1209,9 +1212,26 @@ export function initFun(ctx) {
           t.visible = sorti > 0.03;
         }
       }
+      // LES FLAMMES DES RÉACTEURS (v264) suivent la MANETTE : ce que
+      // l'enfant demande, pas ce que l'appareil fait. Manette non touchée,
+      // c'est la vitesse rapportée à la pointe qui tient lieu de poussée.
+      // À l'arrêt, moteurs coupés, rien ne sort. La longueur va d'un rayon
+      // et demi à dix rayons de tuyère, et vacille un peu.
+      const tuyeres = a.mesh.userData.tuyeres;
+      if (tuyeres && tuyeres.length) {
+        const v = player.vitesseAvion || 0, max = player.pilote.max || 1;
+        const poussee = player.gaz != null ? player.gaz : Math.min(1, v / max);
+        const allumee = poussee > 0.02 || v > 0.5;
+        const vacille = 0.92 + 0.08 * Math.sin(a.animTime * 41);
+        for (const f of tuyeres) {
+          f.visible = allumee;
+          f.scale.z = allumee ? Math.max(0.05, (1.5 + 8.5 * poussee) * f.userData.rayon * vacille) : 0.001;
+        }
+      }
     } else if (a.mesh.rotation.z || a.mesh.rotation.x) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
       a.mesh.rotation.x = 0;
+      for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
     }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;

@@ -1081,6 +1081,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v264** — Les flammes des réacteurs : une par tuyère déclarée par le
+  bâtisseur (`tuyere()` dans `reacteur()` et à la tuyère du chasseur), deux
+  cônes additifs non éclairés dont `fun.js` règle la longueur sur la manette
+  à chaque image, éteintes à l'arrêt et à la descente. Trois témoins de
+  `monte.js`.
 - [x] **v263** — Le cadran de cap aux commandes (`src/cap.js`, pur) : cap en
   degrés, ville la plus proche dans le cône de ±45° devant l'appareil (tout
   le registre, villes engendrées comprises) et sa distance en km, repère qui
