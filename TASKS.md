@@ -967,6 +967,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
+  boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
+  position restaurée dès l'accueil) ; la carte du monde calcule son fond par
+  tranches de 8 ms et ne le recalcule que quand la vue en sort ; la minicarte
+  se repeint deux lignes par image, se remplit après un saut et n'engendre
+  plus jamais un morceau. Banc : `?prep=0`, `{ prep: 1 }`, `{ pret: true }`.
 - [x] **v257** — L'installation se voit : le loader compte les fichiers
   rangés pendant la mise à jour, puis reste après le rechargement jusqu'à ce
   que corps et programmes soient prêts ; une version ne se revalide plus ;

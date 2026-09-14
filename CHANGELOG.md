@@ -67,8 +67,18 @@ optimisation qui découpe doit prouver qu'elle ne ment pas. Et le premier
 portail a rendu `maj.js` rouge : la préparation de la minicarte, en boucle
 sans fin sur l'accueil, retenait la mise à jour du service worker cinquante
 secondes (mesuré, bissection par `?prepmini=0`) — un tour puis l'arrêt, et
-le scénario de mise à jour se joue désormais pendant la préparation.
-Portail : à venir.
+le scénario de mise à jour se joue désormais pendant la préparation. Le
+deuxième a rendu `carte.js` rouge par intermittence (l'appui long refusé,
+« #map-tout jamais stable ») : profil à l'appui, c'était la chauffe des
+programmes que le banc faisait EN JEU en appuyant sur « Jouer » tout de
+suite — une compilation par image, 1,5 à 2,4 s chacune en rendu logiciel ;
+les pages de `carte.js` attendent désormais la chauffe (`pret: true`),
+comme l'enfant derrière ses boutons grisés. Portail complet : 639 témoins
+verts sur les quinze suites (dix rejouées vertes sur ce code exact, cinq
+rejouées après les corrections du banc), 76 minutes en tout ; seuls rouges,
+ceux déjà déclarés de `manhattan.js` (quatre, plus sa fin instable) et de
+`monte.js` (un). Au portail, allumer la minicarte coûte 10 ms et ouvrir la
+carte 37, contre 964 et 872 sur l'ancien code rejoué seul.
 
 ## v257 — L'installation se voit, et la tablette dit où passe le temps
 
