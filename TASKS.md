@@ -24,7 +24,19 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **« La reprise tient dans la durée » (`reseau.js`) rouge au portail
+- [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
+  DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
+  v259.** À la v260 : rouge aux deux portails (dont « à trois, chacun voit
+  les deux autres » une fois), puis rejouée SEULE : rouge sur la branche
+  (69 verts) ET rouge sur `origin/main` en v259 (69 verts), « hôte 1 ·
+  Alice 2 » les deux fois. Le matin, seule sur `origin/main` en v258 et sur
+  la branche v259 : verte. Deux lectures possibles — le banc, ou la v259
+  fusionnée entre les deux (rien de réseau dans son diff, mais un rouge
+  qui suit une fusion se vérifie) : rejouer `reseau.js` seule sur un arbre
+  v258 (`7c9163c`, `git worktree`) le même jour tranche. À FAIRE EN
+  PREMIER — c'est du réseau, et l'hôte qui ne voit plus qu'un joueur est
+  ce qu'un enfant vit comme « il a disparu ».
+- [ ] **(historique v259) « La reprise tient dans la durée » rouge au portail
   complet, verte seule des deux côtés (v259).** Deux portails de suite sur
   la branche : « hôte 1 · Alice 2 » (l'hôte ne voit plus qu'un joueur
   vingt-cinq secondes après le retour d'Alice sur la même tablette). Rejouée
