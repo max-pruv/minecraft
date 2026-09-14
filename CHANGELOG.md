@@ -50,7 +50,9 @@ d'un dixième de l'écran n'a plus rien à recalculer. La minicarte repeint
 son fond deux lignes par image, en tournant sans fin — le tour en deux
 secondes, la cadence d'avant sans son à-coup : un bloc posé apparaît dans
 les deux secondes et aucune image ne le paie en entier ; après une téléportation, elle se remplit au lieu de se calculer
-d'un bloc. Le banc, lui, demande `?prep=0`.
+d'un bloc, et elle n'engendre plus jamais un morceau sur le fil principal :
+un morceau que le worker n'a pas encore livré se peint d'après le relief,
+puis se repeint avec ses blocs. Le banc, lui, demande `?prep=0`.
 
 **Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
 `maj.js` : « avant « Jouer », le bouton attend que le jeu soit prêt, et une

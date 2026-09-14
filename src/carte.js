@@ -1063,7 +1063,11 @@ export class Carte {
     const r = cv.getBoundingClientRect();
     const m = this.versMonde(e.clientX - r.left, e.clientY - r.top);
     const prevu = performance.now() + 550;
+    // `dernierAppui` : ce que le minuteur a vu — un appui refusé se démonte
+    // avec, jamais sans (v258 : trois rouges avant de l'écrire).
+    this.dernierAppui = { arme: performance.now() };
     this.appuiLong = setTimeout(() => {
+      this.dernierAppui.retard = Math.round(performance.now() - prevu);
       // UN MINUTEUR EN RETARD N'A PAS LE DROIT DE TÉLÉPORTER. S'il tire très
       // au-delà de son heure, c'est que le fil principal était bloqué — et
       // les gestes du doigt pendant ce blocage sont peut-être ENCORE en
@@ -1072,7 +1076,7 @@ export class Carte {
       // pèse plus lourd qu'un appui long à refaire. Vécu au banc de v173 :
       // la carte alourdie de deux cents villes a élargi la fenêtre de la
       // course de v169, et le correctif d'alors ne suffisait plus.
-      if (performance.now() - prevu > 120) { this.annulerAppui(); return; }
+      if (performance.now() - prevu > 120) { this.dernierAppui.decline = 'retard'; this.annulerAppui(); return; }
       // LA COURSE DU MINUTEUR. Sur une machine chargée, le doigt a bougé mais
       // ses évènements attendent encore leur tour dans la file : le minuteur
       // tire AVANT que l'annulation n'ait été traitée, et l'enfant qui
@@ -1083,7 +1087,12 @@ export class Carte {
       // doigt n'a VRAIMENT pas bougé, est toujours posé, et que rien n'a
       // annulé l'appui entre-temps.
       requestAnimationFrame(() => {
-        if (this.aBouge || this.pointeurs.size !== 1 || !this.appuiLong) return;
+        this.dernierAppui.image = Math.round(performance.now() - prevu);
+        if (this.aBouge || this.pointeurs.size !== 1 || !this.appuiLong) {
+          this.dernierAppui.decline = this.aBouge ? 'bouge' : this.pointeurs.size !== 1 ? `pointeurs ${this.pointeurs.size}` : 'annule';
+          return;
+        }
+        this.dernierAppui.decline = null;
         this.annulerAppui();
         this.teleporte = true;
         this.surTeleport(m.x, m.z);

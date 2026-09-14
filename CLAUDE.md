@@ -798,6 +798,17 @@ un profil qui a failli accuser le mauvais coupable. Cinq règles.
   premier jet repeignait « pendant 4 ms » à chaque image : deux millions de
   lectures de blocs par seconde, dix fois la cadence d'avant — **un budget en
   temps par image est un TAUX, et un taux se compare à celui qu'il remplace.**
+- **LA MINICARTE N'ENGENDRE JAMAIS UN MORCEAU.** `getBlock` engendre ce
+  qu'on lui demande, sur le fil principal ; après une téléportation, la
+  minicarte faisait naître un à un les cent soixante-neuf morceaux de son
+  raster (vingt-quatre millisecondes chacun dans une ville) pendant que le
+  worker les engendrait de son côté — et « un appui long dépose n'importe
+  où » (carte.js) est tombé deux fois sur quatre, le minuteur de l'appui
+  tirant plus de cent vingt millisecondes en retard. Un morceau absent se
+  peint d'après le relief (`terrainHeight`, pure) et se MARQUE (`carteReel`) ;
+  la bande suivante le repeint avec ses blocs. La sonde `__carteControle`
+  ne compare que les points dont la nature n'a pas changé entre le raster et
+  le recalcul — sinon un morceau livré entre les deux accuserait la recopie.
 - **UNE BOUCLE SANS FIN À L'ACCUEIL A RETENU LE SERVICE WORKER CINQUANTE
   SECONDES.** Le portail l'a dit par `maj.js` : la mise à jour partait par
   le chemin forcé (« On va chercher la dernière version… ») parce que

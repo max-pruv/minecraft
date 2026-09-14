@@ -4946,6 +4946,7 @@ const RELIEF_CARTE = 96;
 // ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
 // tombe dans la partie recopiée, que rien ne recalculerait jamais.
 let carteRaster = null;         // le fond, un point par bloc
+let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent)
 let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
 let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
 let carteBande = 0;             // la prochaine ligne du raster à repeindre
@@ -4970,6 +4971,7 @@ function assurerRasterCarte(radius) {
   let neuf = false;
   if (!carteRaster || carteRasterR !== radius) {
     carteRaster = new Uint8ClampedArray(N * N * 4);
+    carteReel = new Uint8Array(N * N);
     carteRasterR = radius;
     carteHorsSol = document.createElement('canvas');
     carteHorsSol.width = N; carteHorsSol.height = N;
@@ -4979,14 +4981,16 @@ function assurerRasterCarte(radius) {
   if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
     // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
     for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
+    carteReel.fill(0);
     carteBande = 0; carteBandeI = 0; carteTours = 0;
   } else if (dx !== 0 || dz !== 0) {
     decalerCarte(carteRaster, N, dx, dz);
+    decalerCarte(carteReel, N, dx, dz, 1);
     // la bande neuve, et elle seule : c'est tout le gain
     const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
     const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
-    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
   }
   carteRasterCx = pcx; carteRasterCz = pcz;
 }
@@ -5008,7 +5012,7 @@ function repeindreBandeCarte(lignes, budgetMs) {
   const fin = performance.now() + budgetMs;
   let faites = 0;
   for (;;) {
-    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR);
+    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
     if (++carteBandeI >= N) {
       carteBandeI = 0; carteBande = (carteBande + 1) % N;
       if (carteBande === 0) carteTours++;
@@ -5021,38 +5025,65 @@ function repeindreBandeCarte(lignes, budgetMs) {
 // UNE SONDE, PAS UN TÉMOIN. Elle compare le fond DÉFILÉ à un fond entièrement
 // recalculé au même endroit : c'est ce qui prouve qu'une recopie ne montre pas
 // un paysage périmé. Posée une seule fois, hors du chemin de chaque image.
+// Depuis la v258 un point peint d'après le relief (morceau pas encore livré)
+// n'est pas comparable à ce que le même point rend une fois le morceau là :
+// on compare les points dont la nature n'a pas changé entre les deux, et
+// `points` compte ceux-là — c'est encore la recopie qu'on éprouve.
 window.__carteControle = () => {
   if (!carteRaster) return null;
   const N = carteRasterR * 2 + 1;
   const t = new Uint8ClampedArray(N * N * 4);
+  const reel = new Uint8Array(N * N);
   for (let j = 0; j < N; j++) {
-    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR);
+    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR, reel);
   }
-  let ecarts = 0;
-  for (let k = 0; k < t.length; k += 4) {
+  let ecarts = 0, points = 0;
+  for (let p = 0; p < N * N; p++) {
+    if (reel[p] !== carteReel[p]) continue;
+    points++;
+    const k = p * 4;
     if (t[k] !== carteRaster[k] || t[k + 1] !== carteRaster[k + 1] || t[k + 2] !== carteRaster[k + 2]) ecarts++;
   }
-  return { points: N * N, ecarts };
+  return { points, ecarts, total: N * N };
 };
 
 // Un point du fond : la couleur du premier bloc NON VIDE de sa colonne.
-function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
+// LA MINICARTE N'ENGENDRE JAMAIS UN MORCEAU (v258). `getBlock` engendre le
+// morceau qu'on lui demande, sur le fil principal : après une téléportation,
+// les cent soixante-neuf morceaux du raster n'y étaient pas encore, et la
+// minicarte les faisait naître un à un dans l'image — vingt-quatre
+// millisecondes chacun dans une ville, pendant que le worker les engendrait
+// de son côté. C'est ce qui a rendu « un appui long dépose n'importe où »
+// rouge deux fois sur quatre : le minuteur de l'appui tirait plus de cent
+// vingt millisecondes en retard, et la carte déclinait, à bon droit. Un
+// morceau absent se peint d'après le RELIEF (`terrainHeight`, pure) et se
+// marque comme tel (`carteReel` à 0) ; la bande suivante le repeint avec
+// ses vrais blocs dès que le worker les a livrés.
+function peindreCarte(buf, N, i, j, pcx, pcz, radius, reel = null) {
   const wx = pcx + i - radius, wz = pcz + j - radius;
   let color = [20, 26, 40], h = 0;
   const couleurUrbaine=world.urbanColor?.(wx,wz);
-  if (couleurUrbaine) { const c=couleurUrbaine; const o=(j*N+i)*4; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2];buf[o+3]=255;return; }
-  // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
-  // chaque point de la carte traverserait d'abord tout le ciel vide, et la
-  // carte coûterait de plus en plus cher à chaque fois qu'on relève le
-  // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
-  // vitres comprises — pas le premier bloc plein.
+  if (couleurUrbaine) { const c=couleurUrbaine; const o=(j*N+i)*4; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2];buf[o+3]=255; if (reel) reel[j * N + i] = 1; return; }
   const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
-  for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
-    const id = world.getBlock(wx, y, wz);
-    if (id !== BLOCK.AIR) {
-      color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
-      h = y;
-      break;
+  const morceau = world.chunks.get(cxm + ',' + czm);
+  if (!morceau) {
+    h = world.terrainHeight(wx, wz);
+    color = carte.couleur(wx, wz, h, false, false);
+    if (reel) reel[j * N + i] = 0;
+  } else {
+    if (reel) reel[j * N + i] = 1;
+    // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
+    // chaque point de la carte traverserait d'abord tout le ciel vide, et la
+    // carte coûterait de plus en plus cher à chaque fois qu'on relève le
+    // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
+    // vitres comprises — pas le premier bloc plein.
+    for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
+      const id = world.getBlock(wx, y, wz);
+      if (id !== BLOCK.AIR) {
+        color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
+        h = y;
+        break;
+      }
     }
   }
   // Le relief lit plus clair en altitude. La référence est figée à la
@@ -5069,8 +5100,8 @@ function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
 // Le contenu se déplace de (−dx, −dz) points. Les lignes se parcourent dans le
 // sens qui évite d'écraser ce qu'on n'a pas encore lu ; `copyWithin` fait le
 // reste, y compris quand la source et la cible se chevauchent dans la ligne.
-function decalerCarte(buf, N, dx, dz) {
-  const ligne = N * 4;
+function decalerCarte(buf, N, dx, dz, canaux = 4) {
+  const ligne = N * canaux;
   const montant = dz > 0;
   for (let k = 0; k < N; k++) {
     const j = montant ? k : N - 1 - k;
@@ -5078,8 +5109,8 @@ function decalerCarte(buf, N, dx, dz) {
     if (src < 0 || src >= N) continue;
     const de = src * ligne, vers = j * ligne;
     if (dx === 0) buf.copyWithin(vers, de, de + ligne);
-    else if (dx > 0) buf.copyWithin(vers, de + dx * 4, de + ligne);
-    else buf.copyWithin(vers - dx * 4, de, de + ligne + dx * 4);
+    else if (dx > 0) buf.copyWithin(vers, de + dx * canaux, de + ligne);
+    else buf.copyWithin(vers - dx * canaux, de, de + ligne + dx * canaux);
   }
 }
 
