@@ -3568,6 +3568,106 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && !!manuel.arret && manuel.arret.v === 0 && Math.abs(manuel.arret.y) < 0.3,
       `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} · gaz min ${manuel.gazMin}`);
 
+    // LE CADRAN DE CAP : LA VILLE VISÉE AU LOIN (v263).
+    //
+    // Max : « un cadran de pilote en avion : la ville visée au loin ». Aux
+    // commandes, l'enfant tient le cap au joystick ; rien ne lui disait vers
+    // quoi. Le cadran, en haut de l'écran et seulement aux commandes, donne
+    // le cap en degrés, la ville la plus proche dans le cône devant
+    // l'appareil avec sa distance, et un repère qui glisse quand on tourne.
+    //
+    // ON LIT CE QUE L'ENFANT VOIT — le texte du cadran — et l'on mesure ce
+    // qu'il obtient : cap sur Lyon, le cadran nomme Lyon et la distance
+    // DIMINUE en trois secondes de jeu (le banc rend deux images par seconde,
+    // on compte en secondes de jeu, jamais au mur). Un quart de tour à
+    // droite, la ville devant change et le cap affiché avance de quatre-vingt-
+    // dix degrés : LE SIGNE SE REGARDE — yaw = −π/2 doit dire l'est, sinon la
+    // règle glisserait à l'envers. À pied, le cadran est caché.
+    //
+    // Le mode pilote est posé à la main (aucun rendu de monture à mesurer
+    // ici) — et comme le veut la v261, `avionEtat` est déclaré puis remis.
+    const capAvion = await tab.evaluate(async () => {
+      const g = window.__game;
+      const lire = () => {
+        const el = document.getElementById('cap-avion');
+        if (!el) return { absent: true };
+        const c = window.__cadranDeCap ? window.__cadranDeCap() : null;
+        return {
+          affiche: getComputedStyle(el).display !== 'none',
+          degres: el.querySelector('#cap-degres').textContent,
+          ville: el.querySelector('#cap-ville').textContent,
+          repere: el.querySelector('#cap-repere').style.left,
+          dehors: el.querySelector('#cap-repere').classList.contains('dehors'),
+          distance: c && c.distance != null ? +c.distance.toFixed(1) : null,
+          cle: c ? c.cle : null,
+        };
+      };
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const deuxImages = () => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(f)));
+      try {
+        const m = await import('./src/montures.js');
+        const { positionDe } = await import('./src/mondes.js');
+        const def = m.MONTURES.find((d) => d.key === 'avionligne');
+        const P = positionDe('paris'), L = positionDe('lyon');
+        const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+        g.player.keys.clear();
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        await deuxImages();
+        const aPied = lire();
+        // Sur la ligne Paris–Lyon, aux six dixièmes du chemin, cap sur Lyon.
+        const f = 0.6, x = P.x + (L.x - P.x) * f, z = P.z + (L.z - P.z) * f;
+        const yawLyon = Math.atan2(-(L.x - x), -(L.z - z));
+        g.player.pos.set(x, 120, z); g.player.vel.set(0, 0, 0);
+        g.player.yaw = yawLyon; g.player.pitch = 0;
+        g.player.flying = true; g.player.pilote = def.pilote;
+        g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true; g.player.avionEtat = 'vol';
+        g.player.altitudeDecollage = -999; g.player.gaz = 1;
+        await deuxImages();
+        const depart = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
+        await tenirSecondes(3);
+        const apres = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
+        // un quart de tour à droite : le nez passe de 152° à 62°
+        g.player.yaw = yawLyon + Math.PI / 2;
+        await deuxImages();
+        const tourne = lire();
+        // et l'est, pour le signe : yaw = −π/2 regarde +x
+        g.player.yaw = -Math.PI / 2;
+        await deuxImages();
+        const est = lire();
+        // on rend tout
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        g.player.vitesseAvion = undefined; g.player.gaz = null; g.player.flying = false;
+        g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+        await deuxImages();
+        const rendu = lire();
+        return { aPied, depart, apres, tourne, est, rendu, parcouru: +Math.hypot(apres.x - depart.x, apres.z - depart.z).toFixed(1) };
+      } catch (e) { return { err: String(e && e.message || e) }; }
+    });
+    const cadranOk = (r) => r && !r.absent && r.affiche;
+    verifier('aux commandes, cap sur Lyon, le cadran nomme Lyon avec sa distance — et la distance diminue en volant',
+      !capAvion.err && cadranOk(capAvion.depart) && capAvion.depart.cle === 'lyon' && /Lyon/.test(capAvion.depart.ville)
+        && /km/.test(capAvion.depart.ville) && !capAvion.depart.dehors
+        && cadranOk(capAvion.apres) && capAvion.apres.cle === 'lyon'
+        && capAvion.parcouru > 100 && capAvion.apres.distance < capAvion.depart.distance - 100,
+      `${capAvion.err || ''} départ ${JSON.stringify(capAvion.depart)} · après ${JSON.stringify(capAvion.apres)} · parcouru ${capAvion.parcouru}`);
+    verifier('un quart de tour à droite : le cap avance de 90° et une autre ville passe devant ; vers +x le cadran dit l\'est',
+      !capAvion.err && cadranOk(capAvion.tourne) && capAvion.tourne.cle !== 'lyon'
+        && /^152°/.test(capAvion.depart.degres) && /^062°/.test(capAvion.tourne.degres)
+        && /^090° E/.test(capAvion.est.degres),
+      `${capAvion.err || ''} départ ${capAvion.depart && capAvion.depart.degres} · tourné ${JSON.stringify(capAvion.tourne)} · est ${JSON.stringify(capAvion.est)}`);
+    verifier('à pied, le cadran de cap est caché',
+      !capAvion.err && capAvion.aPied && !capAvion.aPied.absent && !capAvion.aPied.affiche
+        && capAvion.rendu && !capAvion.rendu.affiche,
+      `${capAvion.err || ''} à pied ${JSON.stringify(capAvion.aPied)} · rendu ${JSON.stringify(capAvion.rendu)}`);
+
     // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
     // ROUES (v230).
     //

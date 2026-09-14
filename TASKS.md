@@ -92,7 +92,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
-  branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 %), et le témoin extrait
+  branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
+  3 017 / 34,6 ; v263 3 283 / 37,3 — le même premier survol), et le témoin extrait
   dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
   chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
   (v258) 1 367 ms / 9,7 % puis 300 / 0. Le PREMIER survol de Paris paie la
@@ -1080,13 +1081,17 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v263** — Le cadran de cap aux commandes (`src/cap.js`, pur) : cap en
+  degrés, ville la plus proche dans le cône de ±45° devant l'appareil (tout
+  le registre, villes engendrées comprises) et sa distance en km, repère qui
+  glisse sur une règle, flèche et plus proche ville quand rien n'est devant.
+  Trois témoins de `monte.js` lisent le texte du cadran.
 - [x] **v262** — La manette des gaz (cadran à droite, pointeur à part) pour
   voitures et avions ; inertie et volant au joystick pour la voiture ;
   décrochage et atterrissage manuel, bouton 🛞 du train, atterrissage sur
   le ventre dit ; boutons de la marche effacés en véhicule (classes
   `en-vehicule`/`en-avion`). Six témoins tactiles à deux doigts dans
-  `monte.js`. Reste de #36 : rien ; #39 (cadran de cap vers la ville visée)
-  et #37 (flammes du réacteur) à suivre.
+  `monte.js`. Reste de #36 : rien ; #37 (flammes du réacteur) à suivre.
 - [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
   `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
   `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le

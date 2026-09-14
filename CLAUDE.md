@@ -805,6 +805,38 @@ chaque image, ne touche au DOM que si l'état change) : saut, pioche,
 capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
 `getComputedStyle(...).display`, en véhicule et à pied.
 
+## Le cadran de cap : la ville visée au loin (v263)
+
+Max : « un cadran de pilote en avion : la ville visée au loin ». Aux
+commandes seulement, un badge en haut : cap en degrés, la ville la plus
+proche dans le cône de ±45° devant l'appareil et sa distance, un repère qui
+glisse. Trois règles.
+
+- **LE CALCUL EST PUR ET LIT LE REGISTRE** (`src/cap.js`, sans three ni
+  document) : `lieuxDuMonde()` porte les villes bâties ET les deux cents
+  engendrées, et l'échelle se demande à la projection (`kmParBloc`), jamais
+  ne se recopie. Depuis Paris cap sur Lyon, 389 km pour 392 réels — c'est
+  la mesure sous node qui le dit, avant le banc.
+- **LA CONVENTION DE CAP EST CELLE DU JOUEUR, ET LE SIGNE SE REGARDE.**
+  `player.js` avance en (−sin yaw, −cos yaw), le nord de la carte est −z :
+  le cap vaut (−yaw) en degrés. Une règle qui glisserait à l'envers passerait
+  toute mesure d'amplitude ; le témoin exige que yaw = −π/2 affiche
+  « 090° E » et qu'un quart de tour à droite fasse passer 152° à 062°.
+- **LA PLUS PROCHE, PAS LA MIEUX ALIGNÉE.** Dans le cône, on nomme la ville
+  la plus proche : à un enfant, une ville à dix kilomètres à vingt degrés
+  vaut plus qu'une capitale à mille kilomètres pile devant. Sans ville
+  devant, la plus proche tout court, avec la flèche du côté où tourner.
+
+- **ET IL NE PAPILLONNE PAS.** Lyon et Genève à cent kilomètres l'une
+  comme l'autre, mesuré en sonde : sans mémoire, le cadran les relaierait à
+  chaque image. La ville déjà nommée est gardée tant qu'elle reste dans le
+  cône et à moins de quinze pour cent de plus que la plus proche
+  (`TOLERANCE`). L'état est PASSÉ à la fonction, qui reste pure.
+
+Et le DOM ne s'écrit que quand le texte change : deux cent soixante
+distances par image ne coûtent rien, une réécriture par image coûte un
+reflow.
+
 ## Un avion décolle de sa piste, et il s'y pose (v261)
 
 Max : « une vraie motion de décollage-atterrissage, accélération sur la

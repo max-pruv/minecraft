@@ -718,6 +718,30 @@
     body.en-vehicule:not(.en-avion) #fly-btn { display: none !important; }
     body.en-avion #fly-btn { right: 24px; bottom: calc(340px + var(--safe-bottom)); }
     body.en-avion #train-btn { display: flex; }
+    /* LE CADRAN DE CAP (v263) : aux commandes seulement, en haut au milieu —
+       le cap en degrés, la ville devant et sa distance, et un repère qui
+       glisse sur la règle quand on tourne. Sous le compteur du temps de
+       jeu, pour que les deux se lisent. */
+    #cap-avion {
+      display: none; position: fixed; top: calc(52px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      min-width: 200px; text-align: center; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.42); border-radius: 10px; padding: 5px 14px 7px; z-index: 6;
+      pointer-events: none; font-weight: bold;
+    }
+    body.en-avion #cap-avion { display: block; }
+    #cap-degres { font-size: 13px; letter-spacing: 1px; opacity: 0.85; }
+    #cap-ville { font-size: 17px; line-height: 1.25; }
+    #cap-ville small { font-size: 13px; font-weight: normal; opacity: 0.9; }
+    #cap-regle {
+      position: relative; height: 6px; margin: 5px 6px 0; border-radius: 3px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.55), rgba(255,255,255,0.15));
+    }
+    #cap-regle::before { content: ''; position: absolute; left: 50%; top: -3px; width: 2px; height: 12px; margin-left: -1px; background: #fff; }
+    #cap-repere {
+      position: absolute; top: -5px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+      background: #ffd54a; border: 2px solid #000; box-sizing: border-box; transition: left 0.15s linear;
+    }
+    #cap-repere.dehors { background: #ff8a5e; }
     #pause-btn {
       display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 8px; z-index: 7;
       width: 40px; height: 40px; border-radius: 8px;
@@ -1395,6 +1419,8 @@
       #left-rail { top: calc(8px + var(--safe-top)); }
       #minimap { width: 120px; height: 120px; }
       #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 10px; }
+      #cap-avion { top: calc(92px + var(--safe-top)); min-width: 170px; padding: 4px 10px 6px; }
+      #cap-ville { font-size: 15px; }
       #quiz-card { padding: 16px 14px; max-height: 88vh; overflow-y: auto; }
       #quiz-prof { font-size: 12px; }
       #quiz-question { font-size: 17px; margin: 12px 2px 14px; min-height: 44px; }
@@ -1601,6 +1627,8 @@
   </div>
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
+  <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
+  <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
   <div id="notif-carte">
     <button class="fermer-msg" id="notif-carte-close" aria-label="Fermer">✕</button>
     <b id="notif-carte-titre">🔔 Être prévenu quand un ami arrive ?</b>

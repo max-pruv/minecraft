@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 263,
+    titre: "Le cadran de cap en avion",
+    puces: [
+      "🧭 En haut, le cap en degrés",
+      "🏙️ La ville devant toi et sa distance",
+      "🟡 Le repère glisse quand tu tournes",
+    ],
+  },
+  {
     v: 262,
     titre: "Une manette des gaz à droite",
     puces: [

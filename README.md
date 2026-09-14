@@ -184,6 +184,7 @@ src/visio.js      camera tiles and sound, split so autoplay can't mute both
 src/creatures.js  creature species/AI/meshes, catch-balls, collection
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
+src/cap.js        the pilot's heading dial: bearing, the city ahead, its distance
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
                   stations) and F1 cars
