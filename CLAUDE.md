@@ -239,7 +239,7 @@ qu'il ne faut pas casser**.
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → **48 min** (v225) |
+| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255) |
 
 Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
 nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
