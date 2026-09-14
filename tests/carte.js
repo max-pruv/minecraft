@@ -324,6 +324,7 @@ const position = (p) => p.evaluate(() => ({
     // et l'on laisse la machine respirer entre deux essais.
     let pose = await position(tab);
     let arrive = false;
+    const appuis = [];
     for (let essai = 0; essai < 4 && !arrive; essai++) {
       if (essai) {
         await souffler();
@@ -338,9 +339,12 @@ const position = (p) => p.evaluate(() => ({
       pose = await position(tab);
       arrive = Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
         && !(await carteOuverte(tab));
+      // ce que le minuteur a vu (v258) : un appui décliné se démonte, il ne
+      // se rejoue pas — sans ce relevé, quatre essais rouges ne disent rien
+      appuis.push(await tab.evaluate(() => (window.__carte && window.__carte.dernierAppui) || null).catch(() => null));
     }
     verifier('un appui long dépose n\'importe où', arrive,
-      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z] }));
+      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z], appuis }));
 
     // --- plus on s'approche, plus la carte montre ----------------------------
     await banc.ouvrirLaCarte(tab);

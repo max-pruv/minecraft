@@ -1572,7 +1572,7 @@ export function createVehicules({ scene, player }) {
       }
     }
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
-    dernieres = voitures;
+    dernieres = voitures; enMarcheCache = null;
     for (const a of voitures) {
       if (a.enfant) continue;
       let attend = false;
@@ -1640,14 +1640,26 @@ export function createVehicules({ scene, player }) {
   // de l'enfant, telles que `cederLePassage` les a vues, avec leur vitesse
   // du moment (zéro si elles attendent). C'est ce qu'un piéton lit pour
   // s'écarter d'une voiture qui arrive (`world.vehiculeApproche`, main.js).
+  //
+  // UNE FOIS PAR IMAGE, PAS UNE FOIS PAR PIÉTON. Mon premier jet refaisait
+  // cette liste à chaque appel : à Manhattan, des centaines de voitures à
+  // portée, cent quarante piétons, deux appels chacun par image — la page
+  // tombait à 0,4 image par seconde (mesuré à la sonde), et quatre suites du
+  // portail mesuraient une boucle d'affichage moribonde. La liste est figée
+  // tant que `cederLePassage` n'a pas refait sa collecte, et l'on ne rend
+  // JAMAIS ce tableau à quelqu'un qui pourrait le modifier : lecture seule.
+  let enMarcheCache = null;
   function enMarche() {
+    if (enMarcheCache) return enMarcheCache;
     const out = [];
     for (const b of dernieres) {
       if (b.enfant) continue;
       const c = b.c;
-      const allure = c.attend[b.i] ? 0 : (c.retard[b.i] > 0 ? 1.5 : 1);
+      if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
+      const allure = c.retard[b.i] > 0 ? 1.5 : 1;
       out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
     }
+    enMarcheCache = out;
     return out;
   }
   // Un point est-il dans un rectangle orienté (quatre sommets dans l'ordre) ?

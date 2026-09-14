@@ -854,22 +854,38 @@ function updateChunks() {
   // Rend la direction de la voiture et le côté où s'écarter (celui où le
   // piéton est déjà), ou null. `marge` : la marge latérale, plus large quand
   // on est déjà en train de s'écarter, pour ne pas s'arrêter au bord même.
+  // Ce crochet est appelé par CHAQUE piéton en marche à CHAQUE image : il ne
+  // fabrique rien — la liste des voitures en marche est celle que
+  // `vehicules.enMarche()` a figée pour l'image (lecture seule, jamais
+  // copiée ni complétée), et la voiture de l'enfant se regarde à part.
+  const dansLeCouloir = (r, x, z, y, marge) => {
+    if (r.v <= 0.5 || Math.abs(r.y - y) > 2.5) return null;
+    const dx = x - r.x, dz = z - r.z;
+    if (dx * dx + dz * dz > 34 * 34) return null;
+    const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
+    if (devant < -2.2 || devant > Math.min(30, r.v * 2 + 4)) return null;
+    if (Math.abs(cote) > r.demiLarg + marge) return null;
+    return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote };
+  };
+  const voitureEnfant = { x: 0, y: 0, z: 0, ux: 0, uz: 1, v: 0, demiLarg: 1.1 };
   world.vehiculeApproche = (x, z, y, marge = 1.0) => {
-    const roulent = vehicules.enMarche();
     // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il
     // obtient — arrêtée devant un piéton, elle veut encore passer, et c'est
     // ce qui fait que le piéton s'écarte au lieu de la bloquer pour toujours
     if (player.gabarit > 1 && !player.pilote && player.pousse) {
       const v = Math.hypot(player.pousse.x, player.pousse.z);
-      if (v > 0.5) roulent.push({ x: player.pos.x, y: player.pos.y, z: player.pos.z, ux: player.pousse.x / v, uz: player.pousse.z / v, v, demiLarg: player.gabarit / 2 });
+      if (v > 0.5) {
+        const e = voitureEnfant;
+        e.x = player.pos.x; e.y = player.pos.y; e.z = player.pos.z;
+        e.ux = player.pousse.x / v; e.uz = player.pousse.z / v; e.v = v; e.demiLarg = player.gabarit / 2;
+        const r = dansLeCouloir(e, x, z, y, marge);
+        if (r) return r;
+      }
     }
-    for (const r of roulent) {
-      if (r.v <= 0.5 || Math.abs(r.y - y) > 2.5) continue;
-      const dx = x - r.x, dz = z - r.z;
-      const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
-      if (devant < -2.2 || devant > Math.min(30, r.v * 2 + 4)) continue;
-      if (Math.abs(cote) > r.demiLarg + marge) continue;
-      return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote };
+    const roulent = vehicules.enMarche();
+    for (let i = 0; i < roulent.length; i++) {
+      const r = dansLeCouloir(roulent[i], x, z, y, marge);
+      if (r) return r;
     }
     return null;
   };
