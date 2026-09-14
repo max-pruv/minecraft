@@ -829,6 +829,17 @@ un profil qui a failli accuser le mauvais coupable. Cinq règles.
   la minicarte, pas sur la carte : c'était son premier fond à elle, et les
   morceaux qu'il fait engendrer. Deux clics dans une sonde, deux coûts ; on
   les mesure séparément avant de conclure.
+- **ET LE BANC A MESURÉ CE QUE LA CHAUFFE COÛTE EN JEU.** `carte.js` est
+  tombée trois fois sur six sur deux symptômes — « #map-tout jamais stable »
+  (la dette de la v251) et l'appui long refusé — et le profil de la page
+  bureau, carte ouverte, deux pages ouvertes, l'a nommé : 17 s de
+  `getProgramParameter` / `getShaderParameter`, des images de 1,5 à 2,4 s.
+  C'est la chauffe des programmes (v246), une compilation par image, que le
+  banc fait EN JEU parce qu'il appuie sur « Jouer » tout de suite — l'enfant,
+  lui, attend derrière les boutons grisés. `jouerSeul(…, { pret: true })`
+  attend la chauffe avant d'appuyer ; les trois pages de `carte.js` le
+  demandent. Ce n'était pas le jeu qui était lent, c'était le banc qui
+  jouait pendant la préparation.
 - **LE BANC DEMANDE `?prep=0`**, comme il demande `rr=2` : trente-sept
   démarrages en rendu logiciel auraient payé dix secondes de corps chacun
   sans rien mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la

@@ -49,7 +49,7 @@ const position = (p) => p.evaluate(() => ({
   await banc.ouvrir();
   try {
     // --- une tablette, comme à la maison -------------------------------------
-    const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true });
     await banc.ouvrirLaCarte(tab);
 
     // OÙ SONT LES VILLES : ON LE DEMANDE, ON NE LE SUPPOSE PAS.
@@ -1613,7 +1613,7 @@ const position = (p) => p.evaluate(() => ({
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
     await souffler();
-    const bureau = await banc.jouerSeul('Alice');
+    const bureau = await banc.jouerSeul('Alice', { pret: true });
     await banc.ouvrirLaCarte(bureau);
     const boutonRecoit = await bureau.evaluate(() => {
       const b = document.getElementById('map-tout');
@@ -1742,7 +1742,7 @@ const position = (p) => p.evaluate(() => ({
     // écart par le facteur d'échelle de son axe, celui-là même que la feuille
     // de style applique.
     await souffler();
-    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
+    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 }, pret: true });
     await banc.ouvrirLaCarte(couche);
     // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
     //

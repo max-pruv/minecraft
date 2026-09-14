@@ -411,6 +411,19 @@ class Banc {
   // méthode : un test qui débranche le code qu'il traverse ne prouve rien.
   async jouerSeul(prenom, opts = {}) {
     const p = await this.joueur(prenom, opts);
+    // `pret: true` (v258) : on n'appuie sur « Jouer » qu'une fois les
+    // programmes de la flotte chauffés — ce que le jeu impose à l'enfant par
+    // ses boutons grisés (`?prep=0` les libère ici). Sans cela, la chauffe se
+    // fait EN JEU, une compilation par image, et en rendu logiciel une
+    // compilation dure de 0,5 à 2,4 s dès que deux pages sont ouvertes :
+    // c'est ce qui rendait « #map-tout jamais stable » et l'appui long
+    // refusé (minuteur en retard) dans `carte.js`. Une suite qui mesure la
+    // réactivité d'une page le demande ; les autres n'en paient pas le prix.
+    if (opts.pret) {
+      await p.waitForFunction(() => {
+        try { const e = window.__preparation && window.__preparation(); return !!e && e.programmes >= e.aChauffer; } catch { return false; }
+      }, null, { timeout: 45000, polling: 250 }).catch(() => { /* borné : on joue quand même */ });
+    }
     await p.evaluate(() => {
       window.__game.edu.today().libreJusqua = 86400;
       document.getElementById('play-btn').click();
