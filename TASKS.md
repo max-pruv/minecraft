@@ -24,6 +24,18 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« La reprise tient dans la durée » (`reseau.js`) rouge au portail
+  complet, verte seule des deux côtés (v259).** Deux portails de suite sur
+  la branche : « hôte 1 · Alice 2 » (l'hôte ne voit plus qu'un joueur
+  vingt-cinq secondes après le retour d'Alice sur la même tablette). Rejouée
+  SEULE : verte sur `origin/main` (v258) ET sur la branche, « hôte 2 ·
+  Alice 2 », 71 témoins des deux côtés (`scratchpad/v259/reseau-suite-*.log`).
+  Le code réseau n'a pas bougé en v259. C'est la famille des rouges de
+  portail de la v220 : une suite verte seule est un fait plus fort qu'un
+  rouge derrière dix suites. Cause ouverte ; piste : ce témoin arrive
+  derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
+  vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
+  (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 %), et le témoin extrait
