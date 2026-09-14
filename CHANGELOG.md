@@ -38,7 +38,7 @@ pixels par point, ombres et quatre lampes comprises, sur une tablette dont
 personne ne pouvait lire la cadence.
 
 **Ce que ça change.** Pendant une mise à jour, le loader compte les
-fichiers rangés (« 📦 Mise à jour du jeu… 34 / 78 fichiers »). Après le
+fichiers rangés (« 📦 Mise à jour du jeu… 24 / 90 fichiers »). Après le
 rechargement sur la version neuve, il reste — « ✨ Installation de la
 nouvelle version… personnages 3 / 9, programmes 12 / 38 » — jusqu'à ce que
 corps et programmes soient prêts, borné à quatre-vingt-dix secondes ; puis
@@ -60,7 +60,20 @@ corps et les programmes prêts » ; dans `fumee.js`, « les Réglages ont une
 ligne Graphismes qui bascule entre normal et avancé, mémorisée sur
 l'appareil ». Trois sondes mesurées avant d'écrire une ligne (mise à jour,
 accueil bridé ×1 et ×4, carte bridée ×4), consignées dans `TASKS.md`.
-Portail : à venir.
+Portail complet : 621 témoins verts en 52 minutes, quinze suites ; les
+rouges déclarés de `manhattan.js` (quatre) et de `monte.js` (un), rien
+d'autre — et un rouge de HASARD sur le témoin passager de `reseau.js` : un
+cerf né près du point d'apparition sur la page d'Alice passait avant la
+voiture de l'ami (« 🦌 Monter »). Le témoin vide désormais les bêtes des
+deux pages ; rejoué seul sur la branche, il est vert (« 🚗 Monter avec
+Marlon », suivi 3,54 blocs, écart 0,59) — et ce rejeu seul a rendu à son
+tour la panne de `plafond.js` en v251, cinq « Couldn't load texture blob: »
+chez Milo, dont la page se recharge pendant que les corps s'analysent ; même
+remède dans le banc, les corps d'abord, et la suite rejouée seule est verte
+de bout en bout. Les trois témoins neufs, rejoués
+sur `origin/main` (v256) : rouges tous les trois — le loader n'y dit que
+« il faut la dernière version pour jouer », s'efface avec 3 programmes sur
+25 et les corps absents, et les Réglages n'ont pas de ligne Graphismes.
 
 ## v256 — Le panneau 🛠️ s'en va, les Souvenirs restent
 

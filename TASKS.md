@@ -111,7 +111,9 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   le chargeur l'écrit en erreur de console. Réglé dans le BANC (v252) :
   `plafond.js` attend `humainsCharges()` avant chaque rechargement — et
   c'est PROUVÉ sous charge : rejouée en cinquième position au portail de la
-  v252 (relance), 28 témoins verts, zéro erreur de console. (4) `monte.js`,
+  v252 (relance), 28 témoins verts, zéro erreur de console — et la même
+  panne dans `reseau.js` (le revenant Milo, rechargé tout de suite après
+  l'ouverture : cinq erreurs, seul, à la v257), même remède. (4) `monte.js`,
   au même portail : « descendu de la voiture de Paris » et les deux témoins
   de mur qui suivent, l'enfant à PIED avant le clic de descente — la boucle
   de montée recliquait sur un bouton-BASCULE quand le « ⬇️ » (écrit à l'image
@@ -979,6 +981,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v257** — L'installation se voit : le loader compte les fichiers
+  rangés pendant la mise à jour, puis reste après le rechargement jusqu'à ce
+  que corps et programmes soient prêts ; une version ne se revalide plus ;
+  « Graphismes avancés » dans les Réglages (normal par défaut sur tablette) ;
+  `?diag=1` et les paramètres d'isolement pour mesurer sur l'appareil. Et
+  deux témoins de `reseau.js` rendus robustes (bêtes d'Alice, corps de Milo).
 - [x] **v256** — Le panneau 🛠️ s'en va (atelier, coffre, quête, panneaux,
   chantier, records, chapeaux, feux d'artifice), le bouton devient 🖼️
   Souvenirs ; aucune donnée effacée, les messages d'une ancienne tablette

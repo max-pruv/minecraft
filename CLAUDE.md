@@ -815,6 +815,19 @@ que la vue bouge — dette déclarée dans `TASKS.md` avec ses pistes (fond par
 tranches ou dans le worker, re-rendu sur déplacement réel, premier fond
 avant « Jouer »).
 
+**ET LES BÊTES NE VOYAGENT PAS PAR LE RÉSEAU : UN TÉMOIN DE MONTE VIDE
+CELLES DE CHAQUE PAGE.** Le témoin passager de `reseau.js` vidait les bêtes
+de l'hôte, posait Alice à trois blocs de sa voiture et attendait « Monter
+avec Marlon » ; au portail de la v257 il a rendu « 🦌 Monter » — un cerf
+né près du point d'apparition SUR LA PAGE D'ALICE, à moins de huit blocs
+devant elle, passe avant la voiture de l'ami (`fun.js`, et c'est juste :
+la bête qu'on touche avant la voiture qu'on regarde). Chaque page pond
+ses propres bêtes ; ce qu'on nettoie chez l'un se nettoie chez l'autre.
+Vert au portail de la v255 et de la v256, rouge à celui de la v257, vert
+rejoué seul : un rouge qui va et vient sans qu'une ligne du jeu ait bougé
+est un hasard qu'on identifie et qu'on retire du témoin, jamais un rejeu
+jusqu'au vert.
+
 ## Ce qu'on retire garde ses données, et le receveur cède (v256)
 
 Max : « supprime les feux d'artifice, et tout ça — Atelier, Coffre, Quête,
