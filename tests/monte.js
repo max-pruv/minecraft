@@ -52,7 +52,9 @@ const poserDevant = (p, espece, distance = 3) => p.evaluate(({ espece, distance 
 // devant, rien à hauteur de tête, aucun trou. Sans cela on ne compare pas
 // deux vitesses mais deux obstacles — à pied on n'atteignait pas l'arbre, en
 // selle on le percutait, et la monture semblait plus lente.
-const capDegage = (p) => p.evaluate(() => {
+// `portee` : sur combien de blocs le cap doit être libre — six pour un pas
+// de marche, davantage pour une voiture lancée (v262 : élan puis mesure).
+const capDegage = (p, portee = 6) => p.evaluate((portee) => {
   const g = window.__game;
   const w = g.world;
   const pos = g.player.pos;
@@ -60,7 +62,7 @@ const capDegage = (p) => p.evaluate(() => {
   for (let i = 0; i < 32; i++) {
     const yaw = (i * Math.PI) / 16;
     let libre = true;
-    for (let d = 1; d <= 6 && libre; d++) {
+    for (let d = 1; d <= portee && libre; d++) {
       const x = Math.floor(pos.x - Math.sin(yaw) * d);
       const z = Math.floor(pos.z - Math.cos(yaw) * d);
       // le terrain ondule : un creux d'un bloc se traverse, une bosse non
@@ -70,7 +72,7 @@ const capDegage = (p) => p.evaluate(() => {
     if (libre) return yaw;
   }
   return null;
-});
+}, portee);
 
 // Combien de mètres on parcourt en tenant la touche « avance » une demi-seconde,
 // toujours depuis le même point et dans la même direction : comparer un
@@ -664,7 +666,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       proposeAuto.visible && proposeAuto.texte.includes('🚗'), JSON.stringify(proposeAuto));
 
     await tab.evaluate(() => { window.__game.player.flying = false; });
-    const capAuto = await capDegage(tab);
+    const capAuto = await capDegage(tab, 14);
     const departAuto = await tab.evaluate((yaw) => {
       const g = window.__game;
       return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: yaw ?? g.player.yaw };
@@ -674,7 +676,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     await dormir(600);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);
-    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto, 0.8);
+    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto, 0.5);
     verifier('au volant, on file bien plus vite qu\'à pied — c\'est une voiture',
       distanceAuVolant > distanceAPiedTexas * 2.2,
       `${distanceAPiedTexas.toFixed(1)} m à pied · ${distanceAuVolant.toFixed(1)} m au volant`);
@@ -1594,15 +1596,30 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (!auVolant()) { out[flotte] = { err: 'pas monté' }; continue; }
         const monture = g.fun.montureConduite();
         g.player.keys.add('KeyW');
-        // UNE VOITURE A DE L'INERTIE (v262) : on attend qu'elle ait pris sa
-        // vitesse — bornée en temps mural, le banc vivant au ralenti — avant
-        // de relever, sinon on mesure la rampe et non l'allure.
-        const visee = 3.2 * (g.player.boost || 1) * 0.9;
-        const tAttente = performance.now();
-        while (performance.now() - tAttente < 20000 && Math.hypot(g.player.vel.x, g.player.vel.z) < visee) await dormir(150);
+        // UNE VOITURE A DE L'INERTIE (v262), ET ELLE SE JOUE PAR IMAGE (dt
+        // borné) : au banc, deux images par seconde, la citadine met douze
+        // images — cinq secondes murales — à prendre son allure. On compte
+        // donc en SECONDES DE JEU, comme `avancerUnDemiSeconde` : une seconde
+        // et demie d'élan, puis les relevés sur une demi-seconde de jeu.
+        const enJeu = (n) => new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            if (cumul >= n) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        await enJeu(1.5);
         const vitesses = [];
-        const t0 = performance.now();
-        while (performance.now() - t0 < 3000) { await dormir(150); vitesses.push(Math.hypot(g.player.vel.x, g.player.vel.z)); }
+        await new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            vitesses.push(Math.hypot(g.player.vel.x, g.player.vel.z));
+            if (cumul >= 0.5) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
         g.player.keys.delete('KeyW');
         vitesses.sort((a, b) => a - b);
         out[flotte] = { vitesse: +vitesses[Math.floor(vitesses.length / 2)].toFixed(1), max: +vitesses[vitesses.length - 1].toFixed(1), modele: monture.mesh && monture.mesh.userData ? monture.mesh.userData.flotte : null, boost: g.player.boost };
