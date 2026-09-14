@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v256';
+const CACHE_VERSION = 'web-minecraft-v257';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -115,10 +115,39 @@ const ASSETS = [
   './vendor/voiture.glb',
 ];
 
+// L'INSTALLATION DIT OÙ ELLE EN EST (v257). Max, sur l'iPad : « le jeu reste
+// quasiment bloqué une ou deux minutes sur l'accueil après chaque mise à
+// jour » — et « s'il y a une installation nécessaire qui prend une minute,
+// mets un loader ». `cache.addAll` prenait les soixante-dix-huit fichiers en
+// silence : la page ne pouvait dire à l'enfant qu'un texte fixe. Chaque
+// fichier rangé est annoncé aux pages ouvertes (`installation`, fait / total),
+// six à la fois pour ne pas être plus lent qu'`addAll`, et une réponse qui
+// n'est pas `ok` fait échouer l'installation exactement comme avant.
+async function installer() {
+  const cache = await caches.open(CACHE_VERSION);
+  const total = ASSETS.length;
+  let fait = 0;
+  const dire = async () => {
+    const pages = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    for (const p of pages) p.postMessage({ type: 'installation', fait, total, version: CACHE_VERSION });
+  };
+  await dire();
+  const file = [...ASSETS];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (file.length) {
+      const u = file.shift();
+      const r = await fetch(u);
+      if (!r || !r.ok) throw new Error(`${u} : HTTP ${r && r.status}`);
+      await cache.put(u, r);
+      fait++;
+      if (fait % 3 === 0 || fait === total) await dire();
+    }
+  }));
+  await self.skipWaiting();
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(installer());
   // Les corps réalistes : dans le cache immuable, seulement ceux qui manquent,
   // et EN ARRIÈRE-PLAN — ni un échec ni leur lenteur ne retiennent la version.
   // Le chemin de lecture ci-dessous les met de toute façon en cache à la
@@ -227,22 +256,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // UNE VERSION NE CHANGE JAMAIS : SON CACHE SE SERT SANS REVALIDATION (v257).
+  //
+  // C'était du « stale-while-revalidate » : chaque fichier servi depuis le
+  // cache repartait AUSSI au réseau, à chaque démarrage — soixante-dix-huit
+  // requêtes pour rien, et surtout pendant la mise à jour, en concurrence
+  // avec le service worker neuf qui télécharge les mêmes soixante-dix-huit.
+  // Or `CACHE_VERSION` monte à chaque livraison : ce qu'un cache versionné
+  // contient est exact pour toujours. Cache d'abord, réseau seulement pour ce
+  // qui manque. `index.html` (réseau d'abord, plus haut) et `sw.js` (réseau)
+  // gardent leur chemin : ce sont eux qui découvrent une version neuve.
   event.respondWith(
     caches.open(CACHE_VERSION).then(async (cache) => {
       const cached = await cache.match(request, { ignoreSearch: true });
-      const network = fetch(request)
-        .then((response) => {
-          if (response && response.ok) cache.put(request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
       if (cached) return cached;
-      const response = await network;
-      // offline navigation to an uncached URL falls back to the app shell
-      if (!response && request.mode === 'navigate') {
-        return cache.match('./index.html');
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) cache.put(request, response.clone());
+        return response;
+      } catch {
+        return Response.error();
       }
-      return response;
     })
   );
 });

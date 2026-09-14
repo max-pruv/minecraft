@@ -89,6 +89,8 @@ export function chargerHumains() {
   return chargement;
 }
 export const humainsCharges = () => charges;
+// Combien de corps sont déjà prêts, pour le loader d'installation (v257).
+export const humainsPrets = () => ({ prets: prototypes.size, total: noms.length });
 // Ce qui doit se faire quand les modèles sont là — tout de suite s'ils le sont.
 export function quandLesHumainsArrivent(cb) {
   if (charges) cb();

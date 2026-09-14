@@ -111,6 +111,28 @@ function verifier(nom, ok, detail = '') {
       toucheG.apres.points <= toucheG.avant.points && toucheG.apres.feux === toucheG.avant.feux,
       JSON.stringify(toucheG));
 
+    // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
+    // normal ou un mode avancé ». Le réglage est une ligne des Réglages, il
+    // bascule au toucher, il vit sur l'appareil, et le jeu le lit (ombres,
+    // résolution). Le banc rend en logiciel : les ombres y restent coupées quoi
+    // qu'on choisisse, et sa résolution est de un pixel par point — on éprouve
+    // donc ce qu'il peut voir : la ligne, la bascule, la persistance, et ce
+    // que le jeu annonce lire. Rouge sur l'ancien code : pas de ligne.
+    const graph = await tab.evaluate(() => {
+      const t = document.getElementById('graph-toggle');
+      const g = window.__graphismes;
+      if (!t || !g) return { ligne: !!t, api: !!g };
+      const avant = g.lire();
+      t.click();
+      const apres = g.lire();
+      let stocke = null;
+      try { stocke = localStorage.getItem('web-minecraft-graphismes-v1'); } catch {}
+      return { ligne: true, api: true, avant, apres, stocke, allume: t.classList.contains('on') };
+    });
+    verifier('les Réglages ont une ligne Graphismes qui bascule entre normal et avancé, mémorisée sur l\'appareil',
+      graph.ligne && graph.api && graph.avant !== graph.apres && graph.stocke === graph.apres
+      && graph.allume === (graph.apres === 'avance'), JSON.stringify(graph));
+
     // La bibliothèque de monuments : elle se feuillette et elle pose.
     //
     // DEPUIS v176 elle vit dans l'inventaire (bouton +), onglet Bâtiments,

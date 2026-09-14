@@ -25,7 +25,7 @@ import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, graineDeVille } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
@@ -36,7 +36,7 @@ import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
-import { animerHumain, chargerHumains } from './humains.js';
+import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
@@ -140,8 +140,32 @@ function renduLogiciel() {
     return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
   } catch { return false; }
 }
-const OMBRES_DEMANDEES = new URLSearchParams(location.search).get('ombres');
-const OMBRES = OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : !renduLogiciel();
+// LA TABLETTE DIT ELLE-MÊME OÙ PASSE LE TEMPS (v257). Max : « le jeu lag
+// énormément sur iPad » — et le banc ne peut pas mesurer la carte graphique
+// d'un iPad. `?diag=1` affiche en haut de l'écran la cadence médiane, la pire
+// image, les appels de dessin, la résolution et les réglages actifs ;
+// `?ombres=0`, `?reflets=0`, `?lampes=0`, `?qualite=tablette|haute` et
+// `?dpr=1.5` permettent d'isoler un poste en trente secondes, sur l'appareil.
+const PARAMS_JEU = new URLSearchParams(location.search);
+const DIAG = PARAMS_JEU.get('diag') === '1';
+const REFLETS_ACTIFS = PARAMS_JEU.get('reflets') !== '0';
+const LAMPES_ACTIVES = PARAMS_JEU.get('lampes') !== '0';
+// GRAPHISMES NORMAL OU AVANCÉ, DANS LES RÉGLAGES (v257). Max : « dans les
+// settings, un mode normal ou un mode avancé du point de vue qualité de
+// graphisme ». Normal : 1,25 pixel par point et pas d'ombres — c'est le
+// réglage d'une tablette qui rame. Avancé : pleine résolution, ombres. Le
+// choix vit sur l'APPAREIL (pas dans le profil de l'enfant : c'est une
+// capacité de la machine, pas un goût), et par défaut une tablette ou un
+// téléphone est en normal, un ordinateur en avancé. `?ombres=` et
+// `?qualite=` gardent la main, pour mesurer.
+const GRAPHISMES_CLE = 'web-minecraft-graphismes-v1';
+function graphismes() {
+  try { const v = localStorage.getItem(GRAPHISMES_CLE); if (v === 'normal' || v === 'avance') return v; } catch { /* mode privé */ }
+  return IS_TOUCH ? 'normal' : 'avance';
+}
+const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
+const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
+const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Sans le troisième argument, setSize écrit la taille en dur dans le style du
@@ -228,7 +252,14 @@ function ajusterLaVue() {
   const l = canvas.clientWidth || window.innerWidth;
   const h = canvas.clientHeight || window.innerHeight;
   if (!l || !h) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, renduDansManhattan ? ((new URLSearchParams(location.search).get('qualite') || (IS_TOUCH ? 'tablette' : 'haute')) === 'tablette' ? 1.25 : 1.75) : 2);
+  // La qualité demandée vaut PARTOUT (v257) ; sans demande, New York garde
+  // son réglage (tablette : 1,25) et le reste du monde deux pixels par point,
+  // comme avant. `?dpr=` l'emporte, pour mesurer.
+  const qualite = PARAMS_JEU.get('qualite');
+  const plafondDpr = qualite === 'tablette' ? 1.25 : qualite === 'haute' ? 1.75
+    : graphismes() === 'normal' ? 1.25
+      : (renduDansManhattan ? (IS_TOUCH ? 1.25 : 1.75) : 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, Number(PARAMS_JEU.get('dpr')) || plafondDpr);
   // On compare à ce que le canvas PORTE, jamais à ce qu'on croit lui avoir
   // donné. La nuance décide de tout : une surface abîmée par autre chose que
   // nous — une suspension d'iOS — laisse notre mémoire intacte et fausse, et
@@ -1406,8 +1437,31 @@ function saveSettings() {
 
 const settingsPanel = document.getElementById('settings-panel');
 const gyroToggle = document.getElementById('gyro-toggle');
-function renderSettings() { gyroToggle.classList.toggle('on', !!settings.gyro); }
+const graphToggle = document.getElementById('graph-toggle');
+function renderSettings() {
+  gyroToggle.classList.toggle('on', !!settings.gyro);
+  if (graphToggle) graphToggle.classList.toggle('on', graphismes() === 'avance');
+}
 renderSettings();
+// Le changement s'applique sur place : les ombres se rallument ou s'éteignent
+// (les matériaux se recompilent une fois), et la résolution suit au prochain
+// passage d'`ajusterLaVue`, qui compare le canvas à ce qu'il devrait porter.
+function appliquerGraphismes() {
+  const voulues = ombresVoulues();
+  if (renderer.shadowMap.enabled !== voulues) {
+    renderer.shadowMap.enabled = voulues;
+    scene.traverse((o) => {
+      if (!o.material) return;
+      for (const m of (Array.isArray(o.material) ? o.material : [o.material])) m.needsUpdate = true;
+    });
+  }
+}
+window.__graphismes = { lire: graphismes, choisir: (v) => { try { localStorage.setItem(GRAPHISMES_CLE, v); } catch { /* mode privé */ } appliquerGraphismes(); renderSettings(); } };
+if (graphToggle) {
+  graphToggle.addEventListener('click', () => {
+    window.__graphismes.choisir(graphismes() === 'avance' ? 'normal' : 'avance');
+  });
+}
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -5548,6 +5602,7 @@ function asseoir(av, a, siege, temps) {
 const lampesPretes = cadence(500);
 function eclairerLaRue() {
   if (renduDansManhattan || !lampesPretes()) return;
+  if (!LAMPES_ACTIVES) { for (const l of lampesRue) l.intensity = 0; return; }
   const px = player.pos.x, pz = player.pos.z;
   const proches = [];
   if (nuitDehors > 0.02) {
@@ -5785,6 +5840,11 @@ function updatePlane(dt) {
 const waterTint = document.getElementById('water-tint');
 const debugEl = document.getElementById('debug');
 let fpsSamples = [];
+// Le diagnostic lit le temps RÉEL entre deux images, pas `dt` : `dt` est borné
+// à un vingtième de seconde, et une image de 300 ms y compterait pour 20 i/s.
+let diagDerniere = 0;
+const diagImages = [];   // durées réelles des deux dernières secondes, en ms
+if (DIAG) debugEl.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;z-index:60;font:12px/1.35 monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;white-space:pre-wrap;pointer-events:none';
 
 function updateHud(dt) {
   const eye = player.eyePosition();
@@ -5794,9 +5854,25 @@ function updateHud(dt) {
   fpsSamples.push(1 / dt);
   if (fpsSamples.length > 30) fpsSamples.shift();
   const fps = Math.round(fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length);
+  if (!DIAG) {
+    debugEl.textContent =
+      `${fps} fps | xyz: ${player.pos.x.toFixed(1)} ${player.pos.y.toFixed(1)} ${player.pos.z.toFixed(1)}` +
+      ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
+    return;
+  }
+  const now = performance.now();
+  if (diagDerniere) diagImages.push([now, now - diagDerniere]);
+  diagDerniere = now;
+  while (diagImages.length && diagImages[0][0] < now - 2000) diagImages.shift();
+  const durees = diagImages.map((d) => d[1]).sort((a, b) => a - b);
+  const mediane = durees.length ? durees[Math.floor(durees.length / 2)] : 0;
+  const pire = durees.length ? durees[durees.length - 1] : 0;
+  const info = renderer.info;
+  const h = humainsPrets();
   debugEl.textContent =
-    `${fps} fps | xyz: ${player.pos.x.toFixed(1)} ${player.pos.y.toFixed(1)} ${player.pos.z.toFixed(1)}` +
-    ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
+    `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
+    + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
+    + `morceaux ${chunkMeshes.size} · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}`;
 }
 
 // --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
@@ -6016,7 +6092,7 @@ function frame(now) {
     refletsHorloge = 0.5;
     const voitureProche = animalManager.animals.find((a) => a.def.key === 'voiture'
       && Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 45);
-    if (voitureProche && refletsVoiture()) lancerReflets(voitureProche.pos);
+    if (REFLETS_ACTIFS && voitureProche && refletsVoiture()) lancerReflets(voitureProche.pos);
   }
   avancerReflets(renderer, scene);
 
@@ -6032,7 +6108,23 @@ requestAnimationFrame(frame);
 // the game is ready: fade out the boot loader (the SW update script may
 // bring it back if a new version starts downloading)
 requestAnimationFrame(() => {
-  document.getElementById('boot-loader').classList.add('hidden');
+  // APRÈS UNE MISE À JOUR, LE LOADER RESTE JUSQU'À CE QUE LE JEU RÉPONDE (v257).
+  //
+  // Max : « le jeu reste quasiment bloqué une ou deux minutes sur l'accueil
+  // après chaque mise à jour » ; « s'il y a une installation nécessaire qui
+  // prend une minute, mets un loader ». À la première image le loader
+  // disparaissait, et l'accueil se montrait pendant que le fil principal
+  // analysait huit mégaoctets de corps et compilait quarante programmes : un
+  // accueil qu'on voit et qui ne répond pas. Sur une page qui vient d'être
+  // rechargée pour une version neuve (`wm-maj-installe`, posé par index.html
+  // avant le rechargement), le loader dit « installation… » avec l'avancement
+  // et ne s'efface que quand corps et programmes sont là — borné à quatre-vingt-
+  // dix secondes, pour ne jamais retenir un enfant. Un démarrage ordinaire ne
+  // change pas.
+  const loader = document.getElementById('boot-loader');
+  let apresMaj = false;
+  try { apresMaj = sessionStorage.getItem('wm-maj-installe') === '1'; } catch { /* mode privé */ }
+  if (!apresMaj) loader.classList.add('hidden');
   // Les corps réalistes (8 Mo) arrivent MAINTENANT, pas avant : l'accueil
   // répond déjà, et les gens nés en attendant se mettent à niveau sur place
   // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
@@ -6043,13 +6135,31 @@ requestAnimationFrame(() => {
   // mesuré au banc, vingt-six programmes de plus à l'arrivée de la première
   // voiture, une seconde d'image figée. Compilés pendant l'accueil, ils ne
   // coûtent rien à l'enfant qui monte en voiture.
-  if (refletsVoiture()) lancerReflets(player.pos);
+  if (REFLETS_ACTIFS && refletsVoiture()) lancerReflets(player.pos);
   // Et les programmes de la flotte, une signature par image, pendant l'accueil
   // (v246) : vingt compilations à l'arrivée en ville, c'était le gel de la
   // téléportation.
   const chauffe = chaufferLesProgrammes(renderer, scene, camera);
-  const pas = () => { if (chauffe()) requestAnimationFrame(pas); };
+  let chauffeFinie = false;
+  const pas = () => { if (chauffe()) requestAnimationFrame(pas); else chauffeFinie = true; };
   requestAnimationFrame(pas);
+  if (apresMaj) {
+    const texte = document.getElementById('boot-text');
+    const depart = performance.now();
+    const attendre = () => {
+      const h = humainsPrets();
+      const pret = humainsCharges() && chauffeFinie;
+      if (pret || performance.now() - depart > 90000) {
+        loader.classList.add('hidden');
+        try { sessionStorage.removeItem('wm-maj-installe'); } catch { /* mode privé */ }
+        document.dispatchEvent(new Event('maj-installee'));
+        return;
+      }
+      texte.textContent = `✨ Installation de la nouvelle version… personnages ${h.prets} / ${h.total}, programmes ${programmesChauffes()} / ${programmesAChauffer()}`;
+      setTimeout(attendre, 250);
+    };
+    attendre();
+  }
 });
 
 // UN SEUL MONDE, ET PAS DE BOUTON « EXPLORER NEW YORK » SUR L'ACCUEIL (v242).

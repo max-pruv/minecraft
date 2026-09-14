@@ -203,6 +203,7 @@ export function chaufferLesProgrammes(renderer, scene, camera) {
   };
 }
 export const programmesChauffes = () => temoinsProgrammes.length;
+export const programmesAChauffer = () => signaturesAChauffer().length;
 
 // --- la vraie voiture ---------------------------------------------------------
 //

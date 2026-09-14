@@ -764,6 +764,57 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## L'installation se voit, et la tablette mesure elle-même (v257)
+
+Max, après la v255 : « après chaque mise à jour, le jeu reste quasiment
+bloqué une ou deux minutes sur la home » ; « s'il y a une installation
+nécessaire qui prend une minute, mets un loader » ; « le jeu lag énormément
+sur iPad ». Trois sondes AVANT une ligne de code, et cinq règles.
+
+- **CE QUE LE BANC A MESURÉ, ET CE QU'IL NE PEUT PAS MESURER.** La mise à
+  jour (le geste de Max : version publiée pendant que la page tourne,
+  application cachée puis rouverte) prend 6 s au banc, installation 0,4 s —
+  les « 58 s sans requête » de la v220 ne se reproduisent pas. L'accueil
+  bloque le fil principal 4,8 s (10,5 s bridé ×4) : une tâche de 3,5 s au
+  démarrage (modules et contextes WebGL, non transposable), puis les corps
+  et les 25 programmes, un par image de 60 à 100 ms. Ce qui ne se mesure
+  pas ici : Safari compile un programme en centaines de millisecondes ;
+  cinquante programmes pendant l'accueil, c'est la minute de Max. La
+  tablette doit donc mesurer elle-même : `?diag=1` (cadence médiane RÉELLE,
+  lue sur `performance.now()` et non sur `dt`, qui est borné ; pire image ;
+  appels ; résolution ; réglages), `?ombres=0`, `?reflets=0`, `?lampes=0`,
+  `?qualite=`, `?dpr=`. Un réglage par défaut se décide sur SES chiffres.
+- **UNE INSTALLATION QUI DURE SE MONTRE, AVEC SON AVANCEMENT.** Le service
+  worker range ses fichiers six à la fois et annonce chaque fichier aux
+  pages (`installation`, fait / total) ; `index.html` l'écrit dans le
+  loader. Une réponse qui n'est pas `ok` fait échouer l'installation comme
+  `addAll` le faisait.
+- **APRÈS LE RECHARGEMENT, LE LOADER RESTE JUSQU'À CE QUE LE JEU RÉPONDE.**
+  `wm-maj-installe` (posé par `reloadOnce`) fait attendre la première image :
+  corps chargés ET programmes chauffés, avancement écrit, borné à
+  quatre-vingt-dix secondes ; la fête de mise à jour attend `maj-installee`.
+  Un démarrage ordinaire ne change pas. Un accueil qu'on voit et qui ne
+  répond pas est pire qu'un loader qui dit pourquoi.
+- **UNE VERSION NE SE REVALIDE PAS.** Le cache versionné se sert tel quel :
+  `CACHE_VERSION` monte à chaque livraison, donc son contenu est exact pour
+  toujours. Le « stale-while-revalidate » redemandait 78 fichiers à chaque
+  démarrage (36 requêtes mesurées après un rechargement, 225 au premier
+  chargement) et se disputait le réseau avec l'installation. `index.html`
+  (réseau d'abord) et `sw.js` (réseau) restent ce qui découvre une version.
+- **LA QUALITÉ EST UN RÉGLAGE DE L'APPAREIL, PAS DU PROFIL.** « Graphismes
+  avancés » dans les Réglages : normal = 1,25 pixel par point, pas d'ombres
+  (tablette et téléphone par défaut) ; avancé = pleine résolution, ombres
+  (ordinateur). Clé `web-minecraft-graphismes-v1` sur l'appareil, appliqué
+  sur place (les matériaux se recompilent une fois). Les paramètres d'adresse
+  gardent la main, pour mesurer.
+
+Et **la carte du monde est mesurée, pas encore réglée** : 2,1 s pour
+s'ouvrir bridée ×4, une tâche de 1,6 s (le fond, un échantillon pour deux
+pixels quel que soit le dpr), puis 90 à 240 ms toutes les deux secondes dès
+que la vue bouge — dette déclarée dans `TASKS.md` avec ses pistes (fond par
+tranches ou dans le worker, re-rendu sur déplacement réel, premier fond
+avant « Jouer »).
+
 ## Ce qu'on retire garde ses données, et le receveur cède (v256)
 
 Max : « supprime les feux d'artifice, et tout ça — Atelier, Coffre, Quête,

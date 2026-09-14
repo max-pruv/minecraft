@@ -120,13 +120,58 @@ function verifier(nom, ok, detail = '') {
     // après, en supposant qu'un rechargement remet l'horloge à zéro. Il rendait
     // rouge alors que le correctif marchait — une heure passée à soupçonner le
     // code à cause d'une mesure. La marque, elle, ne s'interprète pas.
+    // L'INSTALLATION SE VOIT (v257). Pendant qu'on attend le rechargement, on
+    // lit le loader dix fois par seconde : le service worker neuf annonce
+    // chaque fichier rangé, et le texte doit porter un compte « n / total ».
+    // Sur l'ancien code il ne dit qu'une phrase fixe.
+    const textesLoader = new Set();
+    let finSondage = false;
+    const sondageLoader = (async () => {
+      while (!finSondage) {
+        const t = await tab.evaluate(() => {
+          const l = document.getElementById('boot-loader');
+          return l && !l.classList.contains('hidden') ? document.getElementById('boot-text').textContent : '';
+        }).catch(() => '');
+        if (t) textesLoader.add(t);
+        await dormir(100);
+      }
+    })();
     const recharge = await jusqua(async () => (await tab.evaluate(
       () => !window.__marqueAvantVeille).catch(() => false)), 45000);
+    finSondage = true; await sondageLoader;
     verifier('revenir dans l\'application recharge sur la version neuve',
       recharge, recharge ? '' : 'la page tourne toujours sur l\'ancienne');
+    const avancement = [...textesLoader].filter((t) => /\d+ \/ \d+ fichiers/.test(t));
+    verifier('pendant l\'installation, le loader dit combien de fichiers sont rangés',
+      avancement.length > 0, `textes vus : ${JSON.stringify([...textesLoader].slice(0, 6))}`);
 
-    // Et l'enfant n'est pas laissé devant un écran figé : le jeu revient.
+    // ET APRÈS LE RECHARGEMENT, LE LOADER RESTE JUSQU'À CE QUE LE JEU SOIT PRÊT
+    // (v257) : à l'instant où il s'efface, les corps réalistes sont chargés et
+    // les programmes chauffés. Sur l'ancien code il s'effaçait à la première
+    // image, corps pas encore là — l'accueil « quasiment bloqué » de Max.
     if (recharge) {
+      let aLEffacement = null;
+      const textesApres = new Set();
+      const debutAttente = Date.now();
+      while (!aLEffacement && Date.now() - debutAttente < 120000) {
+        const e = await tab.evaluate(async () => {
+          const l = document.getElementById('boot-loader');
+          if (!l) return null;
+          const cache = l.classList.contains('hidden');
+          let humains = null, programmes = null, aChauffer = null;
+          try { humains = (await import('./src/humains.js')).humainsCharges(); } catch { /* ancien code */ }
+          try { const v = await import('./src/vehicules.js'); programmes = v.programmesChauffes(); aChauffer = v.programmesAChauffer ? v.programmesAChauffer() : null; } catch { /* ancien code */ }
+          return { cache, texte: document.getElementById('boot-text').textContent, humains, programmes, aChauffer };
+        }).catch(() => null);
+        if (e && !e.cache) textesApres.add(e.texte);
+        if (e && e.cache) aLEffacement = e;
+        await dormir(100);
+      }
+      console.log(`   🔎 loader après rechargement : ${JSON.stringify([...textesApres].slice(0, 3))} · à l'effacement ${JSON.stringify(aLEffacement)}`);
+      verifier('après le rechargement, le loader ne s\'efface qu\'une fois les corps et les programmes prêts',
+        !!aLEffacement && aLEffacement.humains === true && aLEffacement.programmes !== null
+        && aLEffacement.aChauffer !== null && aLEffacement.programmes >= aLEffacement.aChauffer,
+        JSON.stringify(aLEffacement));
       const rejouable = await jusqua(async () => tab.evaluate(
         () => !!document.getElementById('play-btn')).catch(() => false), 45000);
       verifier('et le jeu se relance normalement après', rejouable);

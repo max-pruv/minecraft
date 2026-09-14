@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v257 — L'installation se voit, et la tablette dit où passe le temps
+
+**Pourquoi.** Max, après la v255 : « comme dernièrement après chaque mise à
+jour, le jeu reste quasiment bloqué pendant une ou deux minutes sur la
+home », « s'il y a une installation nécessaire et qu'elle prend une minute,
+mets un loader », « le jeu lag énormément sur iPad », et « dans les
+réglages, un mode normal ou un mode avancé de qualité de graphisme ».
+Mesuré au banc : la mise à jour elle-même se fait en 6 s (installation
+0,4 s), mais la page redemandait au réseau ses 78 fichiers à chaque
+démarrage pendant que le service worker téléchargeait les mêmes 78 ; le
+loader s'effaçait à la première image alors que le fil principal analysait
+huit mégaoctets de corps et compilait une cinquantaine de programmes (4,8 s
+bloquées au banc, 10,5 s bridé ×4 — et sur Safari une compilation coûte
+des centaines de millisecondes, pas dix) ; et le monde était rendu à deux
+pixels par point, ombres et quatre lampes comprises, sur une tablette dont
+personne ne pouvait lire la cadence.
+
+**Ce que ça change.** Pendant une mise à jour, le loader compte les
+fichiers rangés (« 📦 Mise à jour du jeu… 34 / 78 fichiers »). Après le
+rechargement sur la version neuve, il reste — « ✨ Installation de la
+nouvelle version… personnages 3 / 9, programmes 12 / 38 » — jusqu'à ce que
+corps et programmes soient prêts, borné à quatre-vingt-dix secondes ; puis
+la fête de mise à jour. Une version ne se revalide plus : son cache se sert
+tel quel, et le réseau ne sert qu'à découvrir la suivante. Dans ⚙️
+Réglages, « ✨ Graphismes avancés » : éteint, 1,25 pixel par point et pas
+d'ombres — le réglage par défaut d'une tablette ou d'un téléphone ; allumé,
+pleine résolution et ombres — le réglage d'un ordinateur. Mémorisé sur
+l'appareil, appliqué sur place. Et `?diag=1` affiche en haut de l'écran la
+cadence médiane réelle, la pire image, les appels de dessin, la résolution
+et les réglages actifs ; `?ombres=0`, `?reflets=0`, `?lampes=0`,
+`?qualite=tablette` et `?dpr=` isolent un poste en trente secondes, sur
+l'appareil.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur l'ancien code : dans
+`maj.js`, « pendant l'installation, le loader dit combien de fichiers sont
+rangés » et « après le rechargement, le loader ne s'efface qu'une fois les
+corps et les programmes prêts » ; dans `fumee.js`, « les Réglages ont une
+ligne Graphismes qui bascule entre normal et avancé, mémorisée sur
+l'appareil ». Trois sondes mesurées avant d'écrire une ligne (mise à jour,
+accueil bridé ×1 et ×4, carte bridée ×4), consignées dans `TASKS.md`.
+Portail : à venir.
+
 ## v256 — Le panneau 🛠️ s'en va, les Souvenirs restent
 
 **Pourquoi.** Max : « je veux que tu supprimes la fonctionnalité de pouvoir
