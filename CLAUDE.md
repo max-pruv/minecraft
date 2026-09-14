@@ -789,12 +789,28 @@ un profil qui a failli accuser le mauvais coupable. Cinq règles.
   d'un dixième de l'écran — `couvre()` remplace « la vue a changé ». Le
   niveau 2 (un échantillon pour huit pixels) est l'esquisse d'un seul tenant
   quand il n'y a RIEN à étirer. `rendreFond` reste, pour le banc.
-- **LA MINICARTE SE REPEINT PAR BANDES, EN TOURNANT SANS FIN.** Le « fond
-  entier toutes les deux secondes » de la v233 était l'à-coup régulier ;
-  `repeindreBandeCarte(4)` à chaque image fait la même chose sans jamais
-  payer une image. Un raster neuf ou un grand saut se REMPLIT (fond de nuit
-  puis bandes) au lieu d'être calculé d'un bloc — la téléportation ne paie
-  plus 37 000 colonnes.
+- **LA MINICARTE SE REPEINT PAR BANDES — DEUX LIGNES PAR IMAGE, PAS « PENDANT
+  QUATRE MILLISECONDES ».** Le « fond entier toutes les deux secondes » de la
+  v233 était l'à-coup régulier ; deux lignes par image font le même tour en
+  deux secondes sans jamais payer une image. Un raster neuf ou un grand saut
+  se REMPLIT (fond de nuit, puis quatre lignes par image) au lieu d'être
+  calculé d'un bloc — la téléportation ne paie plus 37 000 colonnes. Mon
+  premier jet repeignait « pendant 4 ms » à chaque image : deux millions de
+  lectures de blocs par seconde, dix fois la cadence d'avant — **un budget en
+  temps par image est un TAUX, et un taux se compare à celui qu'il remplace.**
+- **UNE BOUCLE SANS FIN À L'ACCUEIL A RETENU LE SERVICE WORKER CINQUANTE
+  SECONDES.** Le portail l'a dit par `maj.js` : la mise à jour partait par
+  le chemin forcé (« On va chercher la dernière version… ») parce que
+  `reg.update()` ne trouvait rien en vingt secondes. Mesuré : résolu en 50 s
+  avec la préparation, 1 s sans ; bissection par `?prepmini=0` /
+  `?prepcarte=0` (gardés, comme `?reflets=0`) : c'est la minicarte, qui
+  repeignait ses bandes à chaque image de l'accueil, indéfiniment — le fil
+  principal respirait pourtant (latence des minuteurs 4 ms), et la requête
+  de `sw.js` n'atteignait le serveur qu'à la cinquantième seconde. Le
+  mécanisme exact est dans le navigateur ; la règle, elle, est claire : **à
+  l'accueil, une préparation fait UN tour et s'arrête** (`carteTours`), et
+  le scénario de mise à jour de `maj.js` se joue désormais PENDANT la
+  préparation (`prep: 1`), sinon il ne mesure pas le trajet de l'enfant.
 - **LE PROFIL ACCUSAIT LA CARTE DU MONDE ; LA TRACE A NOMMÉ LA MINICARTE.**
   Le premier fond de la carte du monde corrigé, l'ouverture bloquait ENCORE
   800 ms — `(program)` dans le profil, donc « le navigateur ». La trace par

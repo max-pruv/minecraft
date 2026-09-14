@@ -47,9 +47,9 @@ pendant ce temps. Ouverte, la carte du monde calcule son fond par tranches
 de huit millisecondes par image, en étirant l'ancien en attendant, et ne le
 recalcule que quand la vue en sort ou que le zoom a changé — un glisser
 d'un dixième de l'écran n'a plus rien à recalculer. La minicarte repeint
-son fond ligne par ligne, quatre millisecondes par image, en tournant sans
-fin : un bloc posé apparaît dans la seconde et aucune image ne le paie en
-entier ; après une téléportation, elle se remplit au lieu de se calculer
+son fond deux lignes par image, en tournant sans fin — le tour en deux
+secondes, la cadence d'avant sans son à-coup : un bloc posé apparaît dans
+les deux secondes et aucune image ne le paie en entier ; après une téléportation, elle se remplit au lieu de se calculer
 d'un bloc. Le banc, lui, demande `?prep=0`.
 
 **Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
@@ -61,8 +61,12 @@ minicarte ne fige pas l'image », « ouvrir la carte du monde ne fige pas
 l'image », « et la faire glisser non plus » (barre 700 ms ; mesuré 67, 158
 et moins de 160 ms ici, 690 et 1 637 sur l'ancien code) ; et « le fond par
 tranches est identique au fond d'un seul tenant », octet pour octet — une
-optimisation qui découpe doit prouver qu'elle ne ment pas. Portail : à
-venir.
+optimisation qui découpe doit prouver qu'elle ne ment pas. Et le premier
+portail a rendu `maj.js` rouge : la préparation de la minicarte, en boucle
+sans fin sur l'accueil, retenait la mise à jour du service worker cinquante
+secondes (mesuré, bissection par `?prepmini=0`) — un tour puis l'arrêt, et
+le scénario de mise à jour se joue désormais pendant la préparation.
+Portail : à venir.
 
 ## v257 — L'installation se voit, et la tablette dit où passe le temps
 

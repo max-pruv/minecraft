@@ -4979,7 +4979,7 @@ function assurerRasterCarte(radius) {
   if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
     // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
     for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
-    carteBande = 0; carteBandeI = 0;
+    carteBande = 0; carteBandeI = 0; carteTours = 0;
   } else if (dx !== 0 || dz !== 0) {
     decalerCarte(carteRaster, N, dx, dz);
     // la bande neuve, et elle seule : c'est tout le gain
@@ -4990,19 +4990,30 @@ function assurerRasterCarte(radius) {
   }
   carteRasterCx = pcx; carteRasterCz = pcz;
 }
-// Le budget se vérifie tous les huit POINTS, pas par ligne : une colonne
-// dont le morceau n'est pas encore engendré le fait engendrer (`getBlock`),
-// et une ligne de 193 points peut en traverser treize — trois cents
-// millisecondes dans une « bande de quatre ». Une ligne entamée se reprend
-// où elle en était.
+// LA BANDE SE COMPTE EN LIGNES, ET LE BUDGET N'EST QU'UN PLAFOND. Mon
+// premier jet repeignait « pendant quatre millisecondes » à chaque image :
+// deux millions de lectures de blocs par seconde, dix fois la cadence de la
+// v233, et à l'accueil une boucle sans fin qui a retardé de CINQUANTE
+// secondes la mise à jour du service worker (mesuré : `reg.update()` résolu
+// en 50 s avec, 1 s sans). Deux lignes par image font le tour du raster en
+// deux secondes à soixante images — la cadence d'avant, sans son à-coup ;
+// quatre quand le raster se remplit. Le budget en temps ne sert qu'à borner
+// une colonne qui fait engendrer un morceau (`getBlock`) : il se vérifie
+// tous les huit points, et une ligne entamée se reprend où elle en était.
 let carteBandeI = 0;
-function repeindreBandeCarte(budgetMs) {
+let carteTours = 0;             // tours complets du raster depuis son remplissage
+function repeindreBandeCarte(lignes, budgetMs) {
   if (!carteRaster) return;
   const N = carteRasterR * 2 + 1;
   const fin = performance.now() + budgetMs;
+  let faites = 0;
   for (;;) {
     peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR);
-    if (++carteBandeI >= N) { carteBandeI = 0; carteBande = (carteBande + 1) % N; }
+    if (++carteBandeI >= N) {
+      carteBandeI = 0; carteBande = (carteBande + 1) % N;
+      if (carteBande === 0) carteTours++;
+      if (++faites >= lignes) return;
+    }
     if ((carteBandeI & 7) === 0 && performance.now() >= fin) return;
   }
 }
@@ -6118,16 +6129,18 @@ function frame(now) {
     // le fond se repeint par bandes à chaque image (v258), et l'affichage se
     // refait toutes les 120 ms — le raster défile de lui-même quand l'enfant
     // a changé de bloc, et les bandes repeintes se montrent
-    repeindreBandeCarte(4);
+    repeindreBandeCarte(carteTours ? 2 : 4, 4);
     if (bouge || carteSuivre()) {
       drawMap(minimapCanvas, 96);
       carteVue = { x: player.pos.x, z: player.pos.z };
     }
-  } else if (!running && PREPARER) {
+  } else if (!running && PREPARER && PARAMS_JEU.get('prepmini') !== '0') {
     // à l'accueil, la minicarte se prépare autour de l'enfant (v258) : son
-    // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume
+    // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume.
+    // UN tour, puis on s'arrête : une boucle sans fin à l'accueil retenait
+    // la mise à jour du service worker (voir `repeindreBandeCarte`).
     assurerRasterCarte(96);
-    repeindreBandeCarte(8);
+    if (!carteTours) repeindreBandeCarte(4, 8);
   }
 
   const hit = running ? getTarget() : null;
@@ -6224,7 +6237,7 @@ requestAnimationFrame(() => {
   const boutonsPrep = ['play-btn', 'online-btn'].map((id) => document.getElementById(id)).filter(Boolean);
   // la taille que la fiche de la carte aura (sa feuille de style) : préparer
   // à cette taille, c'est ne rien avoir à recalculer à l'ouverture
-  if (PREPARER) {
+  if (PREPARER && PARAMS_JEU.get('prepcarte') !== '0') {
     carte.preparer(player.pos.x, player.pos.z, 0.7,
       Math.min(560, 0.88 * window.innerWidth), Math.min(560, 0.62 * window.innerHeight));
   }
@@ -6233,6 +6246,8 @@ requestAnimationFrame(() => {
   window.__preparation = () => ({
     gate: PREPARER, prete: prepPrete, humains: humainsCharges(), programmes: programmesChauffes(),
     aChauffer: programmesAChauffer(), carte: carte.prete(), depuis: Math.round(performance.now() - departPrep),
+    // ce que la préparation de la carte a fait — un rouge « carte … » se démonte avec
+    cartePas: carte.prepPas, carteErreur: carte.prepErreur, carteTravail: !!carte.travail,
   });
   const veillerPrep = () => {
     const h = humainsPrets();

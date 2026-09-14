@@ -582,9 +582,15 @@ export class Carte {
     if (this.ouverte || this.fondVue || this.travail) return;
     this.vue = { cx, cz, bpp };
     this.commencerFond(0, this.vue, l, h);
+    // `prepPas` et `prepErreur` : ce que la préparation a fait, lisible par
+    // une sonde — une boucle d'images qui meurt en silence ne se démonte pas.
+    this.prepPas = 0; this.prepErreur = null;
     const pas = () => {
       if (this.ouverte || !this.travail) return;
-      if (!this.avancerFond(6)) requestAnimationFrame(pas);
+      this.prepPas++;
+      let fini = true;
+      try { fini = this.avancerFond(6); } catch (e) { this.prepErreur = String(e && e.message || e); return; }
+      if (!fini) requestAnimationFrame(pas);
     };
     requestAnimationFrame(pas);
   }
