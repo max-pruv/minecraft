@@ -298,6 +298,7 @@ export function initFun(ctx) {
       player.vitesseAvion = undefined;
       player.avionEnVol = false;
       player.roulisAvion = 0;
+      player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
       player.boost = undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
@@ -323,8 +324,7 @@ export function initFun(ctx) {
       // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
       // calcule. Trois gestes, dans l'ordre où on s'en sert.
       toast(`${a.def.emoji} Aux commandes du ${a.def.name.toLowerCase()} !`
-        + ' Pousse en avant pour accélérer, regarde en haut pour monter'
-        + ' — refais pareil pour te poser.', 0xa8d8ff);
+        + ' Le joystick fait rouler, ✈️ met les gaz — le nez se lève tout seul.', 0xa8d8ff);
     } else {
       toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
         + ' — refais pareil pour descendre.', 0xffe07a);
@@ -1141,6 +1141,7 @@ export function initFun(ctx) {
       riding = null; quitte.montee = false;
       player.boost = undefined; player.pilote = null;
       player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
+      player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
       return;
@@ -1176,8 +1177,38 @@ export function initFun(ctx) {
     if (player.pilote) {
       a.mesh.rotation.order = 'YXZ';
       a.mesh.rotation.z = player.roulisAvion || 0;
-    } else if (a.mesh.rotation.z) {
+      // L'ASSIETTE (v261) : le nez qui se lève à la rotation, qui pique un
+      // peu en finale, qui suit le manche en vol. Rotation autour de l'axe x
+      // du modèle, APRÈS le roulis et AVANT le cap (l'ordre YXZ) — un angle
+      // positif lève le nez, qui regarde en −z ; le signe est mesuré par un
+      // témoin sur la position rendue du nez, pas déduit.
+      const assiette = player.assietteAvion || 0;
+      a.mesh.rotation.x = assiette;
+      // ET L'APPAREIL PIVOTE SUR SON TRAIN PRINCIPAL, pas sur son origine :
+      // l'origine est au sol sous le milieu du fuselage, et un nez qui se
+      // lèverait autour d'elle enfoncerait la queue dans la piste. On
+      // déplace le maillage pour que les roues arrière restent où elles sont.
+      const zg = a.mesh.userData.trainPrincipal || 0;
+      if (assiette && zg) {
+        const dy = zg * Math.sin(assiette), dz = zg * (1 - Math.cos(assiette));
+        const ry = a.mesh.rotation.y;
+        a.mesh.position.x += Math.sin(ry) * dz;
+        a.mesh.position.z += Math.cos(ry) * dz;
+        a.mesh.position.y += dy;
+      }
+      // LE TRAIN rentre et sort : chaque jambe se replie vers la queue
+      // autour de son pivot sur le ventre, et disparaît une fois rentrée.
+      const train = a.mesh.userData.train;
+      if (train) {
+        const sorti = player.trainSorti === undefined ? 1 : player.trainSorti;
+        for (const t of train) {
+          t.rotation.x = -(Math.PI / 2) * (1 - sorti);
+          t.visible = sorti > 0.03;
+        }
+      }
+    } else if (a.mesh.rotation.z || a.mesh.rotation.x) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
+      a.mesh.rotation.x = 0;
     }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
@@ -1299,7 +1330,7 @@ export function initFun(ctx) {
     // se faire porter. La règle vit dans la fiche (`pilote`), comme le reste.
     const verbe = (d) => (d && d.pilote ? 'Piloter' : 'Monter');
     rideB.textContent = passager ? '⬇️ Descendre'
-      : riding ? (riding.def.pilote ? '⬇️ Se poser' : '⬇️ Descendre')
+      : riding ? '⬇️ Descendre'
         : ami ? `🚗 Monter avec ${ami.nom}`
           : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
     rideB.style.display = riding || m || ami || passager ? 'block' : 'none';

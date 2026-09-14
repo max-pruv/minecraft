@@ -26,7 +26,49 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 - [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
   DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
-  v259.** À la v260 : rouge aux deux portails (dont « à trois, chacun voit
+  v259.** FAIT le soir de la v261 : `reseau.js` rejouée SEULE sur un arbre
+  v258 (`/root/v258`, `7c9163c`) le même soir, 71 témoins VERTS dont
+  celle-ci (« hôte 2 · Alice 2 », `scratchpad/v260/reseau-seule-v258.log`),
+  cinq minutes après le rouge sur `origin/main` en v259. Puis deux sondes
+  qui rejouent CE scénario seul (`scratchpad/v261/sonde-reprise*.cjs`) :
+  la courte (hôte, Alice, sommeil, Alice revenue) et la longue (trio, Nina
+  part, Alice dort 26 s et se réveille, se rendort, revient) — VERTES sur
+  la branche ET sur v258, avec le journal des retraits côté hôte : après
+  la présentation d'Alice revenue, l'ancienne page se rebranche huit à dix
+  fois en quatre secondes (`remplace` + fermeture à 400 ms, chemins
+  `_evinces` et « présentation d'un fantôme »), puis se tait ; Alice
+  revenue n'est jamais retirée. La panne a donc besoin du contexte de la
+  suite (les scénarios de véhicules et de météo entre les deux, trois
+  pages ouvertes plus longtemps) et n'est PAS prouvée introduite par la
+  v259 — un rouge de suite contre un vert de sonde, sur le même code. Le
+  témoin imprime désormais les retraits de l'hôte quand il rougit : le
+  prochain rouge de portail dira qui a retiré Alice, quand, par quel
+  chemin. ET IL L'A DIT, au portail de la v261 (`scratchpad/v261/portail-v261.log`,
+  l. 618) : `{"dt":20114,"id":"d629c7","nom":"Alice","pret":true,"seen":20142,
+  "quoi":"drop","pile":"net.js:1014"}` — c'est le DÉLAI DE SILENCE (`STALE_MS`,
+  vingt secondes) : la présentation d'Alice revenue est arrivée (`pret`, son
+  nom), puis PLUS AUCUN message d'elle n'a atteint l'hôte en vingt secondes
+  (`seen` jamais rafraîchi après la présentation), alors qu'elle recevait
+  ceux de l'hôte (elle voit Marlon, compteur 2). Ce n'est ni un `remplace`,
+  ni un fantôme, ni un lien fermé. Et le MÊME symptôme ouvre cette suite au
+  portail : « à trois, chacun voit les deux autres » rouge —
+  `[["Alice"],["Marlon"],["Alice","Marlon"]]` — l'hôte ne reçoit rien de
+  Nina, qui reçoit tout. Sous charge (trois pages, une image par seconde),
+  un invité neuf est donc entendu une fois (sa présentation) puis plus
+  jamais, tout en entendant l'hôte. Pistes, dans l'ordre : (1) l'invité
+  envoie `pos` par `envoyer(c)` sur `c.conn`, la case de l'hôte — si la
+  patience de cinq secondes a expiré et fait basculer sur le nuage, puis que
+  le direct s'est ouvert (`promouvoirSiDirect`), la présentation et les
+  positions ne partent pas forcément par le même chemin ; l'hôte, lui, peut
+  tenir une case DIRECTE présentée et ne plus rien recevoir dessus si
+  l'invité écrit sur un autre lien ; (2) `conn.open` vrai côté hôte et faux
+  côté invité sur le même canal. La sonde à écrire journalise, chez
+  l'invité, par QUEL lien partent la présentation et chaque `pos`
+  (`conn.peer`, `parNuage`, `open`, `dataChannel.readyState`) et, chez
+  l'hôte, chaque lien reçu par pair — et elle provoque la lenteur (bridage
+  ×4 ou deux pages de plus) au lieu de l'attendre. Vert seule, rouge sous
+  charge : c'est un rouge de production possible sur un Wi-Fi lent, pas
+  seulement un rouge de banc. À la v260 : rouge aux deux portails (dont « à trois, chacun voit
   les deux autres » une fois), puis rejouée SEULE : rouge sur la branche
   (69 verts) ET rouge sur `origin/main` en v259 (69 verts), « hôte 1 ·
   Alice 2 » les deux fois. Le matin, seule sur `origin/main` en v258 et sur
@@ -81,19 +123,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   dans fun.js). Reste à MESURER sur la tablette (`?diag=1`) le front de
   chargement en ville à 25,6 blocs/s : le banc n'y voit qu'une cadence
   d'image (une par seconde à `rr=12` dans Paris).
-- [ ] **Avions : vrai décollage, vrai atterrissage, roulage (Max, après la
-  v259).** « Accélération sur la piste puis décollage en levant le nez ;
-  à l'atterrissage, baisser l'altitude et ouvrir le train ; et le roulage
-  sur la piste. » Aujourd'hui ✈️ fait une montée automatique de vingt blocs
-  (v228) et un second appui pose. À faire dans `player.js` (mode `pilote`),
-  `fun.js`, `avions.js` : phase ROULAGE (au sol, le joystick dirige, allure
-  de roulage), DÉCOLLAGE (accélération jusqu'à la vitesse de rotation de la
-  fiche, nez qui se lève progressivement, train qui rentre), ATTERRISSAGE
-  (assiette de descente, train qui sort sous une altitude, toucher, freinage).
-  Le train doit exister sur les modèles et s'animer. Garder les commandes
-  d'enfant de la v228. Témoins : distance de roulage avant décollage, tangage
-  au décollage, train rentré en vol et sorti sous l'altitude, vitesse nulle
-  après l'atterrissage. Fiches par appareil, comme `max` et `virage`.
 
 - [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
   dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
@@ -1038,6 +1067,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
+  `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
+  `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le
+  train principal, jambes du train en membres qui rentrent et sortent,
+  arrondi, marche d'un bloc franchie au roulage. Cinq témoins de `monte.js`
+  sur une piste de pierre, captures de côté.
 - [x] **v260** — Chaque voiture roule à l'allure de sa classe (citadine ×3,8,
   berline/SUV ×4,4, GT ×5,4, sportive ×6,4, hypercar ×8 ; plafond 28 blocs/s
   en ville par l'arithmétique de la v237). Témoin de `monte.js`.

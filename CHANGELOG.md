@@ -20,6 +20,53 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v261 — L'avion décolle de sa piste, et s'y pose
+
+**Pourquoi.** Max : « les avions devraient avoir une vraie motion de
+décollage-atterrissage, avec accélération sur la piste puis décollage en
+levant le nez ; idem à l'atterrissage, baisser l'altitude et ouvrir le
+train ; et aussi le roulage sur la piste. » Depuis la v228 le bouton ✈️
+arrachait l'appareil du sol sur place, à plat, et « se poser » était une
+descente à l'aveugle jusqu'au sol, train jamais rentré ; au sol, un avion
+ne roulait pas — on montait dedans et l'on partait à la verticale.
+
+**Ce que ça change.** Un vol se fait comme un vrai. Au sol, le joystick
+fait rouler l'appareil (six blocs par seconde) et la roue avant le fait
+tourner — seulement s'il roule. ✈️ met les gaz : l'appareil accélère sur la
+piste, nez au sol, et à sa vitesse de rotation le nez se lève et il monte
+au palier ; le train rentre huit blocs plus haut. En vol, rien ne change
+(joystick pour la hauteur et le cap, regard libre). ✈️ à nouveau : la
+vitesse tombe à l'approche, le train sort, l'appareil descend nez un peu
+bas, s'arrondit sous six blocs, touche, freine jusqu'à l'arrêt — et l'on
+roule à nouveau au joystick. Un second ✈️ en finale remet les gaz. Chaque
+appareil garde son caractère, dans sa fiche : l'avion de ligne roule 49
+blocs avant de lever le nez, le Concorde 57, le chasseur 13 ; ils freinent
+sur 34, 43 et 21. Les messages disent chaque étape (« Pleins gaz ! Le nez
+se lève tout seul », « Posé·e ! On freine… », « À l'arrêt. Le joystick
+fait rouler, ✈️ redécolle »), et le bouton de la monture dit « Descendre »
+au lieu de « Se poser », qui est désormais le travail de ✈️.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `monte.js`, sur une piste de
+pierre de trois cents blocs posée au-dessus du relief, aux commandes PAR LE
+BOUTON, un relevé tous les dixièmes de seconde : ✈️ accélère sur la piste
+et le nez ne se lève qu'à la vitesse de rotation (roulement mesuré 49
+blocs, entre 20 et 90 exigés, assiette nulle au sol) ; à la rotation le nez
+du MAILLAGE est plus haut que sa queue (2,7 blocs, lus dans la matrice
+monde — le signe est mesuré, pas déduit) ; l'appareil monte au palier et le
+train est rentré en croisière (les trois jambes invisibles) ; 🛬 descend
+train sorti, touche, freine jusqu'à zéro sur la piste (arrêt à 271 blocs) ;
+à l'arrêt le joystick fait rouler sans quitter la piste et tourne (0,87
+radian en une seconde et demie). L'ancien témoin « le bouton ✈️ fait
+décoller » est remplacé : il mesurait un appareil qui monte sur place, ce
+qui est devenu le défaut. Captures de côté et vue de l'enfant à chaque
+étape (`scratchpad/v261/captures`). Portail complet rejoué : 542 témoins
+verts ; neuf rouges, tous dettes déclarées dans `TASKS.md` — les quatre de
+`manhattan.js` (mêmes valeurs que les deux portails précédents), le gel du
+premier survol de Paris (`monte.js`), et `reseau.js` sous charge, dont « la
+reprise tient dans la durée » qui dit enfin POURQUOI grâce au journal des
+retraits posé dans cette livraison : un délai de silence (`STALE`), l'hôte
+n'entendant plus un invité neuf qui, lui, l'entend.
+
 ## v260 — Chaque voiture roule à l'allure de son modèle
 
 **Pourquoi.** Max : « les voitures devraient aller plus vite et surtout une

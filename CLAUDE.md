@@ -764,6 +764,61 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Un avion décolle de sa piste, et il s'y pose (v261)
+
+Max : « une vraie motion de décollage-atterrissage, accélération sur la
+piste puis décollage en levant le nez ; idem à l'atterrissage, baisser
+l'altitude et ouvrir le train ; et le roulage sur la piste. » Le mode
+`pilote` (player.js) a désormais CINQ ÉTATS — `sol`, `decollage`, `vol`,
+`atterrissage`, `freinage` — et le seul bouton ✈️ fait tout le trajet, le
+joystick gardant les commandes de la v228. Cinq règles.
+
+- **LE CARACTÈRE D'UN APPAREIL EST DANS SA FICHE, LA MÉCANIQUE EST COMMUNE.**
+  `rotation` (la vitesse où le nez se lève), `approche`, `roulage`, `frein`
+  rejoignent `max`, `poussee`, `decrochage`, `virage` dans `pilote`
+  (montures.js). Le roulement avant la rotation VAUT `rotation² / (2 ×
+  poussée)` — 49, 57 et 13 blocs — et le freinage `approche² / (2 × frein)` :
+  ces chiffres se recalculent, ils ne se recopient pas. Ce qui est commun
+  vit en constantes de `player.js` (l'appui au sol, la roue avant,
+  l'assiette de rotation, l'arrondi, le train en une seconde et demie).
+- **L'APPAREIL PIVOTE SUR SON TRAIN PRINCIPAL, PAS SUR SON ORIGINE.** Le
+  modèle a son origine au sol sous le milieu du fuselage ; un nez qui se
+  lève autour d'elle enfonce la queue dans la piste. `fun.js` déplace le
+  maillage de `zg·sin θ` en hauteur (et `zg·(1 − cos θ)` vers l'avant, dans
+  le repère du cap) pour que les roues arrière restent où elles sont ; `zg`
+  vient du modèle (`userData.trainPrincipal`, avions.js). L'assiette se
+  compose en x, après le roulis (z) et avant le cap (y) : l'ordre `YXZ` de
+  la v231 était déjà celui d'un avion.
+- **UN SIGNE SE MESURE SUR CE QUI EST RENDU.** Un angle positif en x lève un
+  nez qui regarde en −z — c'est vrai sur le papier, et le témoin le lit
+  quand même dans la MATRICE MONDE du maillage : la hauteur du nez contre
+  celle de la queue, 2,7 blocs à la rotation. Un nez levé à l'envers
+  passerait toute mesure d'amplitude (leçons du roulis, v231, et du
+  conducteur assis de dos, v249).
+- **CHAQUE JAMBE DU TRAIN EST UN MEMBRE DE L'ATELIER**, pivot au sommet de
+  la jambe sur le ventre (`train(a, …, nom)`, avions.js) : fusionnée dans le
+  tronc elle ne pourrait pas bouger. Elle se replie vers la queue autour de
+  son pivot et disparaît une fois rentrée ; trois maillages de plus par
+  appareil, qu'on ne paie qu'à moins de soixante-deux blocs. Le témoin de
+  `carteMonde.js` qui lit les sommets bruts n'y voit rien : les jambes sont
+  près de l'axe et l'aile reste la pièce la plus large.
+- **UN AVION QUI NE PEUT PLUS ROULER NE PEUT PLUS DÉCOLLER.** Bloqué par une
+  marche d'UN bloc en roulant — un bord de dalle, une bordure —, il la
+  franchit (`franchirUneMarche`) ; deux blocs, c'est un mur. Sans cela un
+  enfant posé dans un champ restait planté là, la seule issue étant de
+  descendre à pied.
+
+**Et les témoins qui posent `player.pilote` à la main déclarent leur
+état.** `avionEtat` est déduit d'`avionEnVol` quand il manque, mais un état
+laissé par un témoin précédent (`vol`) faisait prendre le ✈️ suivant pour
+un atterrissage : tout témoin qui met ou retire le mode pilote sans passer
+par `fun.js` remet `avionEtat` (`undefined`, ou `'vol'` avec `avionEnVol`).
+Le trajet lui-même s'éprouve sur une piste de pierre de trois cents blocs
+posée au-dessus du relief (le relief naturel n'est jamais plat sur cette
+longueur), PAR LE BOUTON, un relevé tous les dixièmes de seconde — et une
+sonde de captures (`sonde-captures-avion.cjs`) rend une vue de côté par une
+caméra à part, `layers.enableAll()` comme le veut la v250.
+
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 Max : « une vitesse en fonction du modèle ». Deux règles.

@@ -273,10 +273,36 @@ function verifier(nom, ok, detail = '') {
 
     // L'ancien appareil relance sa propre reconnexion : il ne doit pas
     // reprendre la place de l'enfant qui vient de rentrer.
+    // UN ROUGE DE CE TÉMOIN NE SE DÉMONTE QU'AVEC LES RETRAITS DE L'HÔTE
+    // (v261) : qui a été retiré, quand, par quel chemin (battement, lien
+    // fermé, présentation d'un fantôme). Rouge seule sur v259 et v260 un
+    // soir, verte seule sur v258 le même soir, et deux sondes qui rejouent
+    // ce scénario seul — jusqu'au trio, au sommeil et au réveil d'Alice —
+    // vertes des deux côtés : la panne a besoin du contexte de la suite, et
+    // « hôte 1 · Alice 2 » tout seul ne dit pas lequel.
+    await hote.evaluate(() => {
+      const n = window.__game.net;
+      window.__drops = [];
+      const t0 = Date.now();
+      const trace = (id, quoi) => {
+        const c = n.conns.get(id);
+        window.__drops.push({ dt: Date.now() - t0, id: String(id).slice(-6), nom: c && c.name,
+          pret: !!(c && c.pret), seen: c && c.seen ? Date.now() - c.seen : null, quoi,
+          pile: new Error().stack.split('\n').slice(3, 6)
+            .map((l) => l.trim().replace(/^at /, '').replace(/https?:\/\/\S+\//, '')).join(' | ') });
+      };
+      const o = n.dropPeer.bind(n);
+      n.dropPeer = (id, conn) => { trace(id, conn ? 'drop(lien)' : 'drop'); return o(id, conn); };
+      const d = n.conns.delete.bind(n.conns);
+      n.conns.delete = (id) => { trace(id, 'delete'); return d(id); };
+    });
     await dormir(25000);
+    const reprise = { hote: (await vu(hote)).compteur, alice: (await vu(alice2)).compteur };
+    const retraits = reprise.hote === 2 ? '' : ` · retraits côté hôte : ${JSON.stringify(
+      await hote.evaluate(() => window.__drops.filter((r) => r.pret || r.quoi !== 'delete')))}`;
     verifier('la reprise tient dans la durée',
-      (await vu(hote)).compteur === 2 && (await vu(alice2)).compteur === 2,
-      `hôte ${(await vu(hote)).compteur} · Alice ${(await vu(alice2)).compteur}`);
+      reprise.hote === 2 && reprise.alice === 2,
+      `hôte ${reprise.hote} · Alice ${reprise.alice}${retraits}`);
 
     // ENDORMIE N'EST PAS ÉTEINTE, et c'est ce qui faussait la fin de la suite.
     //

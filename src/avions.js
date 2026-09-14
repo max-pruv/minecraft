@@ -230,7 +230,13 @@ function hublots(a, { de, a: jusqua, y, rayon, pas = 0.62 }) {
 // Le train : une jambe et une roue, POSÉE SUR LE SOL. `sol` est la cote du
 // terrain sous l'appareil (zéro), et c'est elle qui décide du reste : rien du
 // modèle ne descend en dessous.
-function train(a, { x, z, ventre, rayonRoue = 0.26 }) {
+//
+// CHAQUE JAMBE EST UN MEMBRE À PART (v261), pivot au sommet de la jambe, sur
+// le ventre : c'est autour de ce point qu'elle se replie vers la queue quand
+// le train rentre (`fun.js`, `trainSorti`). Fusionnée dans le tronc, elle ne
+// pourrait pas bouger. Le nom dit quelle jambe c'est.
+function train(a, { x, z, ventre, rayonRoue = 0.26 }, nom) {
+  a.membre(nom, [x, ventre, z]);
   a.cylindre(SOMBRE, {
     p: [x, (ventre + rayonRoue) / 2, z],
     e: [0.13, Math.max(0.05, ventre - rayonRoue), 0.13], haut: 0.5, bas: 0.5, seg: 6,
@@ -239,13 +245,29 @@ function train(a, { x, z, ventre, rayonRoue = 0.26 }) {
     p: [x, rayonRoue, z], r: [0, 0, Math.PI / 2],
     e: [rayonRoue * 2, 0.22, rayonRoue * 2], haut: 0.5, bas: 0.5, seg: 10,
   });
+  a.membre('tronc');
+}
+// Les trois jambes d'un appareil : la roulette de nez, puis les deux du train
+// principal, à `zPrincipal` derrière l'origine — c'est sur elles que
+// l'appareil pivote quand le nez se lève.
+function trains(a, { nez, principal, zPrincipal, ventre }) {
+  train(a, { x: 0, z: nez.z, ventre, rayonRoue: nez.r }, 'train_nez');
+  for (const s of [-1, 1]) {
+    train(a, { x: s * principal.x, z: zPrincipal, ventre, rayonRoue: principal.r },
+      s < 0 ? 'train_gauche' : 'train_droit');
+  }
+  return zPrincipal;
 }
 
-function fini(a) {
+function fini(a, zPrincipal = 0) {
   const g = a.finir();
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
   // balancer les pattes, et un avion n'en a pas. Même contrat que la voiture.
   g.userData.legs = [];
+  // les jambes du train, et l'essieu principal autour duquel le nez se lève
+  g.userData.train = ['train_nez', 'train_gauche', 'train_droit']
+    .map((n) => g.userData.membres[n]).filter(Boolean);
+  g.userData.trainPrincipal = zPrincipal;
   return g;
 }
 
@@ -301,9 +323,8 @@ export function avionDeLigne() {
   }), BLANC);
   // le train, sorti : un avion garé est posé sur ses roues, pas enterré
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 1.8, ventre, rayonRoue: 0.22 });
-  for (const s of [-1, 1]) train(a, { x: s * 1.1, z: 0.9, ventre, rayonRoue: 0.28 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 1.8, r: 0.22 }, principal: { x: 1.1, r: 0.28 }, zPrincipal: 0.9, ventre });
+  return fini(a, zp);
 }
 
 // --- le Concorde -------------------------------------------------------------
@@ -356,9 +377,8 @@ export function concorde() {
     fleche: 2.4, z: L / 2 - 5.0, y: y + rayon * 0.3, ep: 0.20,
   }), BLANC);
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 4.4, ventre, rayonRoue: 0.20 });
-  for (const s of [-1, 1]) train(a, { x: s * 1.05, z: 3.6, ventre, rayonRoue: 0.24 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 4.4, r: 0.20 }, principal: { x: 1.05, r: 0.24 }, zPrincipal: 3.6, ventre });
+  return fini(a, zp);
 }
 
 // --- l'avion de chasse -------------------------------------------------------
@@ -422,9 +442,8 @@ export function avionDeChasse() {
     });
   }
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 2.2, ventre, rayonRoue: 0.18 });
-  for (const s of [-1, 1]) train(a, { x: s * 0.8, z: 1.1, ventre, rayonRoue: 0.2 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 2.2, r: 0.18 }, principal: { x: 0.8, r: 0.2 }, zPrincipal: 1.1, ventre });
+  return fini(a, zp);
 }
 
 export const MODELES_AVION = {

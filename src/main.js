@@ -1504,17 +1504,27 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 function refuserOuVoler() {
   const aBord = player.decollerOuSePoser();
   if (aBord === 'decollage') {
-    creatureManager.toast('✈️ Décollage ! Le joystick monte, descend et tourne.', 0x9fd8ff);
+    creatureManager.toast('✈️ Pleins gaz ! Le nez se lève tout seul — le joystick tient le cap.', 0x9fd8ff);
+    return true;
+  }
+  if (aBord === 'remise') {
+    creatureManager.toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
     return true;
   }
   if (aBord === 'atterrissage') {
-    creatureManager.toast('🛬 On se pose — garde le cap jusqu\'au sol.', 0x9fd8ff);
+    creatureManager.toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
     return true;
   }
   if (player.toggleFly()) return true;
   creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
 }
+
+// Ce que l'avion fait tout seul se DIT : les roues qui touchent, l'arrêt.
+player.surAvion = (quoi) => {
+  if (quoi === 'touche') creatureManager.toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
+  else if (quoi === 'arret') creatureManager.toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
+};
 
 document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();

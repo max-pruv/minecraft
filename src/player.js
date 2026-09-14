@@ -70,6 +70,34 @@ const PALIER_DECOLLAGE = 20;
 const MONTEE_DECOLLAGE = 14;
 const PART_MONTEE = 0.33;
 const DESCENTE = 12;      // la perte d'altitude quand on se pose
+// UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261). Max : « une vraie
+// motion de décollage, accélération sur la piste puis décollage en levant le
+// nez ; idem à l'atterrissage, baisser l'altitude et ouvrir le train ; et le
+// roulage sur la piste. » Cinq états, dans l'ordre où l'enfant les vit :
+//
+//   sol           on roule au joystick (vitesse de roulage de la fiche), la
+//                 roue avant tourne — et seulement si l'on roule
+//   decollage     ✈️ : pleins gaz, nez au sol jusqu'à la vitesse de ROTATION
+//                 de la fiche, puis le nez se lève et l'on monte au palier ;
+//                 le train rentre passé RENTRER_TRAIN_A
+//   vol           le joystick tient l'altitude et le cap, comme avant (v228)
+//   atterrissage  ✈️ : vitesse d'approche, train sorti, descente jusqu'à
+//                 toucher — et un second ✈️ remet les gaz
+//   freinage      les roues ont touché : on freine jusqu'à l'arrêt, puis `sol`
+//
+// Les nombres qui font le caractère de chaque appareil (rotation, approche,
+// roulage, frein) vivent dans la FICHE (`pilote`, montures.js) ; ceux-ci sont
+// communs à tout ce qui vole.
+const APPUI_SOL = 10;             // ce qui plaque l'appareil au sol quand il roule (blocs/s)
+const VIRAGE_SOL = 0.6;           // la roue avant, en radians par seconde à vitesse de roulage
+const ASSIETTE_ROTATION = 0.22;   // ~12,5° : le nez qui se lève au décollage
+const ASSIETTE_APPROCHE = -0.06;  // le nez un peu bas en finale
+const HAUTEUR_ARRONDI = 6;        // sous cette hauteur, l'arrondi : on adoucit la descente
+const DESCENTE_ARRONDI = 5;       // ... à cinq blocs par seconde
+const ASSIETTE_ARRONDI = 0.05;    // ... et le nez se relève un peu
+const ASSIETTE_MAX = 0.35;        // ce que le manche donne au plus, en vol
+const TRAIN_SECONDES = 1.6;       // rentrer ou sortir le train
+const RENTRER_TRAIN_A = 8;        // hauteur gagnée au-dessus de la piste où le train rentre
 
 // L'INCLINAISON EN VIRAGE — demande de Max (v231) : « quand on va à gauche,
 // il tilte un peu ». Trente degrés, c'est le virage d'un avion de ligne en
@@ -130,10 +158,38 @@ export class Player {
   // un bouton qui change tout sans un mot laisse croire qu'il n'a rien fait.
   decollerOuSePoser() {
     if (!this.pilote) return null;
-    if (this.avionEnVol) { this.avionEnVol = false; return 'atterrissage'; }
-    this.avionEnVol = true;
+    const etat = this.avionEtat || (this.avionEnVol ? 'vol' : 'sol');
+    if (etat === 'vol' || (etat === 'decollage' && this.rotationFaite)) {
+      this.avionEtat = 'atterrissage';
+      return 'atterrissage';
+    }
+    if (etat === 'atterrissage') {
+      // remise des gaz : on repart d'où l'on est, nez en l'air
+      this.avionEtat = 'decollage'; this.rotationFaite = true; this.avionEnVol = true;
+      this.altitudeDecollage = this.pos.y;
+      return 'remise';
+    }
+    // au sol, ou encore en train de freiner : pleins gaz, le nez se lèvera
+    // tout seul à la vitesse de rotation
+    this.avionEtat = 'decollage'; this.rotationFaite = false;
     this.altitudeDecollage = this.pos.y;
     return 'decollage';
+  }
+
+  // Le sol sous un appareil qui roule : la cote du bloc plein sous l'origine.
+  // Un saut d'UN bloc se franchit — un bord de dalle, une bordure — parce
+  // qu'un avion qui ne peut plus rouler ne peut plus décoller, et l'enfant
+  // resterait planté là. Deux blocs, c'est un mur.
+  franchirUneMarche(dx, dz) {
+    const w = this.world;
+    const x = Math.floor(this.pos.x + dx), z = Math.floor(this.pos.z + dz);
+    const y = Math.floor(this.pos.y + 0.01);
+    if (!blockIsSolid(w.getBlock(x, y, z))) return false;
+    for (let h = 1; h <= 3; h++) if (blockIsSolid(w.getBlock(x, y + h, z))) return false;
+    const xi = Math.floor(this.pos.x), zi = Math.floor(this.pos.z);
+    for (let h = 1; h <= 3; h++) if (blockIsSolid(w.getBlock(xi, y + h, zi))) return false;
+    this.pos.y = y + 1 + 1e-3;
+    return true;
   }
 
   interdireVol(interdit) {
@@ -211,68 +267,126 @@ export class Player {
     if (this.pilote) {
       const p = this.pilote;
       if (this.vitesseAvion === undefined) this.vitesseAvion = 0;
+      if (!this.avionEtat) this.avionEtat = this.avionEnVol ? 'vol' : 'sol';
+      if (this.assietteAvion === undefined) this.assietteAvion = 0;
+      if (this.trainSorti === undefined) this.trainSorti = 1;
+      if (this.roulisAvion === undefined) this.roulisAvion = 0;
       // LES COMMANDES SONT CELLES QUE MAX A DEMANDÉES (v228) : « le bouton
       // avion le fait décoller, et le joystick manage la hauteur, direction,
-      // altitude, gauche droite ».
+      // altitude, gauche droite ». Et depuis la v261 le même bouton fait
+      // TOUT le trajet d'un vol : pleins gaz sur la piste, rotation, montée ;
+      // approche, train sorti, toucher, freinage ; et le joystick fait rouler
+      // au sol. Un enfant de sept ans a deux axes et un bouton, et ce qu'il
+      // veut, c'est choisir OÙ IL VA.
       //
-      // La version d'avant branchait `forward` sur une manette des gaz,
-      // `strafe` sur le roulis et le REGARD sur l'assiette : trois commandes à
-      // deviner, et il fallait comprendre qu'on décolle en prenant son élan
-      // puis en levant les yeux. Max, dans le Concorde : « il ne décolle
-      // pas ». Un enfant de sept ans a deux axes de joystick et un bouton, et
-      // ce qu'il veut, c'est choisir OÙ IL VA.
-      //
-      //   ✈️ (bouton)     décoller, puis se poser
-      //   joystick ↕      monter et descendre
-      //   joystick ↔      tourner
+      //   ✈️ (bouton)     décoller ; se poser ; remettre les gaz
+      //   joystick ↕      au sol : rouler · en vol : monter et descendre
+      //   joystick ↔      au sol : la roue avant · en vol : tourner
       //   le regard       libre — on regarde le paysage sans changer de cap
-      //
+      const etat = this.avionEtat;
+      const auSol = etat === 'sol' || etat === 'freinage' || (etat === 'decollage' && !this.rotationFaite);
       // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
-      // chaque appareil : 110 blocs/s pour l'avion de ligne, 264 pour le
-      // Concorde et le chasseur (rapport de 1 à 2,4, celui des vrais).
-      const cible = this.avionEnVol ? p.max : 0;
+      // chaque appareil : la pointe, la poussée, la vitesse de rotation et
+      // l'approche viennent de la fiche.
+      let cible, accel = p.poussee;
+      if (etat === 'sol') {
+        cible = Math.max(0, forward) * (p.roulage || 6);
+        accel = Math.max(p.frein || 0, p.poussee);
+      } else if (etat === 'decollage' || etat === 'vol') {
+        cible = p.max;
+      } else if (etat === 'atterrissage') {
+        cible = p.approche || Math.max(p.decrochage * 1.3, p.max * 0.5);
+      } else {
+        cible = 0; accel = p.frein || p.poussee * 1.5;   // freinage
+      }
       const ecart = cible - this.vitesseAvion;
-      this.vitesseAvion += Math.sign(ecart) * Math.min(p.poussee * dt, Math.abs(ecart));
-      // Le taux de virage reste celui de la fiche : le chasseur tourne trois
-      // fois plus court que le Concorde, et c'est ce qui les distingue.
-      this.yaw -= strafe * p.virage * dt;
+      this.vitesseAvion += Math.sign(ecart) * Math.min(accel * dt, Math.abs(ecart));
+      const v = this.vitesseAvion;
+      // LE CAP. En vol, le taux de virage de la fiche : le chasseur tourne
+      // trois fois plus court que le Concorde. Au sol, la ROUE AVANT : elle
+      // ne tourne que si l'on roule, et de moins en moins à mesure qu'on va
+      // vite — à pleine vitesse sur la piste on ne fait pas de tête-à-queue.
+      if (auSol) {
+        this.yaw -= strafe * VIRAGE_SOL * Math.min(1, v / 4) * Math.max(0.3, 1 - v / 80) * dt;
+      } else {
+        this.yaw -= strafe * p.virage * dt;
+      }
       // ON ENTRE DANS L'INCLINAISON ET L'ON EN SORT, on n'y saute pas : une
       // aile qui claque d'un coup n'est pas un avion, c'est un interrupteur.
       // Et la VIVACITÉ vient de la fiche — un chasseur s'incline sec, un
-      // Concorde prend son temps — comme le reste de son caractère.
-      const cibleRoulis = this.avionEnVol ? -strafe * ROULIS_MAX : 0;
+      // Concorde prend son temps — comme le reste de son caractère. Au sol,
+      // les ailes restent à plat.
+      const cibleRoulis = auSol ? 0 : -strafe * ROULIS_MAX;
       const vif = Math.min(1, dt * 3 * (p.virage / 0.55));
-      if (this.roulisAvion === undefined) this.roulisAvion = 0;
       this.roulisAvion += (cibleRoulis - this.roulisAvion) * vif;
-      this.vel.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw))
-        .multiplyScalar(this.vitesseAvion);
-      if (this.avionEnVol) {
-        // LE DÉCOLLAGE MONTE TOUT SEUL jusqu'à une hauteur où l'on respire.
-        // Sans cela le bouton ne ferait que lancer les moteurs, et l'appareil
-        // roulerait au ras du sol tant que personne ne tire sur le manche —
-        // c'est exactement ce que Max a vécu.
-        if (this.pos.y - this.altitudeDecollage < PALIER_DECOLLAGE) {
-          this.vel.y = MONTEE_DECOLLAGE;
-        } else {
-          this.vel.y = forward * p.max * PART_MONTEE;
+      this.vel.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).multiplyScalar(v);
+      // LA HAUTEUR, ET L'ASSIETTE QUI VA AVEC. L'assiette est purement
+      // visuelle — c'est le nez que l'enfant voit se lever —, la trajectoire
+      // ne lui doit rien.
+      let cibleAssiette = 0;
+      if (etat === 'decollage') {
+        if (!this.rotationFaite) {
+          this.vel.y = -APPUI_SOL;
+          if (v >= (p.rotation || p.decrochage * 1.4)) {
+            this.rotationFaite = true; this.avionEnVol = true;
+            this.altitudeDecollage = this.pos.y;
+          }
         }
-      } else if (this.vitesseAvion > 0) {
+        if (this.rotationFaite) {
+          // LE DÉCOLLAGE MONTE TOUT SEUL jusqu'à une hauteur où l'on respire
+          // (v228) : au-dessus des terminaux et des tours de contrôle.
+          this.vel.y = MONTEE_DECOLLAGE;
+          cibleAssiette = ASSIETTE_ROTATION;
+          if (this.pos.y - this.altitudeDecollage >= PALIER_DECOLLAGE) this.avionEtat = 'vol';
+        }
+      } else if (etat === 'vol') {
+        this.vel.y = forward * p.max * PART_MONTEE;
+        cibleAssiette = Math.max(-ASSIETTE_MAX, Math.min(ASSIETTE_MAX,
+          Math.atan2(this.vel.y, Math.max(1, v)) * 1.4));
+      } else if (etat === 'atterrissage') {
         // SE POSER, C'EST DESCENDRE JUSQU'AU SOL, pas se téléporter : le
         // bouton lance l'atterrissage et l'appareil perd de l'altitude tant
-        // qu'il n'a pas retouché le tarmac.
-        this.vel.y = -DESCENTE;
+        // qu'il n'a pas retouché la piste — train sorti, nez un peu bas. Et
+        // L'ARRONDI : sous six blocs, la descente s'adoucit et le nez se
+        // relève un peu, comme un vrai appareil juste avant de toucher.
+        const sol = this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z));
+        const hauteur = this.pos.y - (sol + 1);
+        const arrondi = hauteur < HAUTEUR_ARRONDI;
+        this.vel.y = arrondi ? -DESCENTE_ARRONDI : -DESCENTE;
+        cibleAssiette = arrondi ? ASSIETTE_ARRONDI : ASSIETTE_APPROCHE;
       } else {
-        this.vel.y = 0;
+        this.vel.y = -APPUI_SOL;   // sol, freinage : plaqué à la piste
       }
+      this.assietteAvion += (cibleAssiette - this.assietteAvion) * Math.min(1, dt * 2.5);
+      // LE TRAIN : sorti au sol, en finale et jusqu'à huit blocs au-dessus de
+      // la piste ; rentré au-delà. Il rentre et sort en une seconde et demie.
+      const trainDehors = auSol || etat === 'atterrissage'
+        || (etat === 'decollage' && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A);
+      this.trainSorti = Math.max(0, Math.min(1,
+        this.trainSorti + (trainDehors ? 1 : -1) * dt / TRAIN_SECONDES));
       // Le ciel a le même toit que pour tout le monde.
       if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);
       const vol = this.vel.clone().multiplyScalar(dt);
       const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
+      const vx0 = this.vel.x, vz0 = this.vel.z;
       this.onGround = false;
       for (let i = 0; i < pas; i++) {
         this.sweepAxis(0, vol.x / pas);
         this.sweepAxis(1, vol.y / pas);
         this.sweepAxis(2, vol.z / pas);
+      }
+      // Bloqué par une marche en roulant : on la franchit si elle ne fait
+      // qu'un bloc.
+      if (auSol && v > 0.5 && ((vx0 !== 0 && this.vel.x === 0) || (vz0 !== 0 && this.vel.z === 0))) {
+        this.franchirUneMarche(-Math.sin(this.yaw) * 0.8, -Math.cos(this.yaw) * 0.8);
+      }
+      // LES ROUES TOUCHENT : on freine. Et à l'arrêt, on roule au joystick.
+      if (etat === 'atterrissage' && this.onGround) {
+        this.avionEtat = 'freinage'; this.avionEnVol = false;
+        if (this.surAvion) this.surAvion('touche');
+      } else if (etat === 'freinage' && this.vitesseAvion < 0.5) {
+        this.avionEtat = 'sol'; this.vitesseAvion = 0;
+        if (this.surAvion) this.surAvion('arret');
       }
       this.syncCamera();
       return;

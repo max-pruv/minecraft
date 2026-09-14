@@ -446,6 +446,15 @@ export const MONTURES = [
   //   poussee     ce que la manette des gaz ajoute par seconde
   //   decrochage  en dessous, l'avion ne tient plus l'air et descend
   //   virage      le taux de virage à plein roulis, en radians par seconde
+  //   rotation    la vitesse à laquelle le nez se lève sur la piste (v261)
+  //   approche    la vitesse tenue en finale, jusqu'au toucher des roues
+  //   roulage     l'allure au sol, au joystick
+  //   frein       ce que les freins retirent par seconde, roues au sol
+  //
+  // Le roulement avant la rotation vaut rotation² / (2 × poussée) : 49 blocs
+  // pour l'avion de ligne, 57 pour le Concorde, 13 pour le chasseur — sur
+  // des pistes de 140 blocs à Roissy. Le freinage, approche² / (2 × frein) :
+  // 34, 43 et 21 blocs. C'est ce qu'un témoin de `monte.js` mesure.
   //
   // ET LA CARTE DOIT POUVOIR SUIVRE — LE RAPPORT RÉEL A CÉDÉ (v229).
   //
@@ -482,7 +491,8 @@ export const MONTURES = [
     height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
-    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55 } },
+    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
+      rotation: 42, approche: 45, roulage: 6, frein: 30 } },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
     height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
@@ -491,7 +501,8 @@ export const MONTURES = [
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
-    pilote: { max: 110, poussee: 34, decrochage: 55, virage: 0.40 } },
+    pilote: { max: 110, poussee: 34, decrochage: 55, virage: 0.40,
+      rotation: 62, approche: 62, roulage: 6, frein: 45 } },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
     height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
@@ -499,5 +510,6 @@ export const MONTURES = [
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
-    pilote: { max: 110, poussee: 90, decrochage: 40, virage: 1.30 } },
+    pilote: { max: 110, poussee: 90, decrochage: 40, virage: 1.30,
+      rotation: 48, approche: 50, roulage: 7, frein: 60 } },
 ];

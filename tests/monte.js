@@ -2439,7 +2439,7 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.pos.set(P.x - 160, 96, P.z); g.player.vel.set(0, 0, 0);
       g.player.yaw = -Math.PI / 2; g.player.pitch = 0;          // cap vers +x, Paris devant
       g.player.flying = true; g.player.pilote = def.pilote;
-      g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true;
+      g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -999;
       const patienter = (ms) => new Promise((fin) => {
         const t0 = performance.now();
@@ -2464,7 +2464,7 @@ async function avancerUnDemiSeconde(p, depart) {
         for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { differents++; break; }
       }
       out.compares = compares; out.differents = differents;
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       return out;
     });
@@ -2653,7 +2653,7 @@ async function avancerUnDemiSeconde(p, depart) {
         const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
         out[key] = { blocs: Math.round(d), vitesse: Math.round(atteinte), max: def.pilote.max };
         g.player.pilote = null;
-        g.player.avionEnVol = false;
+        g.player.avionEnVol = false; g.player.avionEtat = undefined;
         g.player.vitesseAvion = undefined;
         g.player.flying = false;
       }
@@ -2728,7 +2728,7 @@ async function avancerUnDemiSeconde(p, depart) {
         g.player.flying = true;
         g.player.pilote = def.pilote;
         g.player.vitesseAvion = def.pilote.max;
-        g.player.avionEnVol = true;
+        g.player.avionEnVol = true; g.player.avionEtat = 'vol';
         g.player.altitudeDecollage = -999;
         // ON OBSERVE PENDANT TOUTE LA FENÊTRE, PAS SEULEMENT À LA FIN. Un
         // front de chargement est irrégulier : le même code m'a rendu 68, 91
@@ -2767,7 +2767,7 @@ async function avancerUnDemiSeconde(p, depart) {
         }
         releves.sort((x, y) => x - y);
         out[key] = { vitesse: def.pilote.max, trou: releves[3], releves };
-        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
         g.player.vitesseAvion = undefined; g.player.flying = false;
       }
       return out;
@@ -2811,7 +2811,7 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       await new Promise((f) => setTimeout(f, 3000));
       const durees = [];
@@ -2820,7 +2820,7 @@ async function avancerUnDemiSeconde(p, depart) {
       requestAnimationFrame(tic);
       await new Promise((f) => setTimeout(f, 18000));
       actif = false;
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const total = durees.reduce((a, c) => a + c, 0);
       const partAuDela = (s) => +(durees.filter((d) => d > s)
@@ -2897,11 +2897,11 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       await new Promise((f) => setTimeout(f, 30000));
       const morceaux = g.world.chunks.size;
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       return { morceaux, moBlocs: Math.round(morceaux * 80 / 1024),
         parcouru: Math.round(g.player.pos.x - depart) };
@@ -3059,7 +3059,7 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       const ctx = toile.getContext('2d');
       const empreinte = () => {
@@ -3083,7 +3083,7 @@ async function avancerUnDemiSeconde(p, depart) {
           precedent = h;
         }
       }
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const moy = sauts.length
         ? +(sauts.reduce((a, b) => a + b, 0) / sauts.length).toFixed(1) : null;
@@ -3109,52 +3109,158 @@ async function avancerUnDemiSeconde(p, depart) {
       !!controle && controle.ecarts === 0 && controle.points > 1000,
       JSON.stringify(controle));
 
-    // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
+    // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
-    // Max, dans le Concorde : « il ne décolle pas ». Aux commandes, le bouton
-    // appelait `toggleFly()`, qui réussissait et basculait `player.flying` —
-    // un drapeau que la branche de pilotage ignore complètement. Aucun effet,
-    // aucun message. Pour un enfant, c'est pire qu'un refus : il appuie dix
-    // fois et conclut que le jeu est cassé.
+    // Max : « une vraie motion de décollage : accélération sur la piste puis
+    // décollage en levant le nez ; idem à l'atterrissage, baisser l'altitude
+    // et ouvrir le train ; et le roulage sur la piste. » Avant, le bouton ✈️
+    // arrachait l'appareil du sol sur place (v228 : « il ne décolle pas »,
+    // puis la montée automatique) et se poser était une descente à
+    // l'aveugle jusqu'au sol, train jamais rentré.
     //
-    // ON ÉPROUVE LE TRAJET DE L'ENFANT : on se met aux commandes, on appuie
-    // sur la touche que le bouton déclenche (`KeyF`), et l'on regarde si
-    // l'appareil PREND DE L'ALTITUDE. Pas si un drapeau a changé.
-    const decollage = await tab.evaluate(async () => {
+    // ON ÉPROUVE LE TRAJET DE L'ENFANT, sur une piste : une dalle de pierre
+    // au-dessus du relief, loin de tout (le relief naturel n'est jamais plat
+    // sur trois cents blocs). On monte PAR LE BOUTON — l'assiette et le train
+    // sont rendus sur le maillage de la monture, dans `fun.js` ; poser
+    // `player.pilote` à la main ferait voler un joueur sans avion. Puis la
+    // touche du bouton ✈️, et l'on relève dix fois par seconde ce que
+    // l'appareil fait : où il est, à quelle vitesse, nez levé ou non, train
+    // sorti ou non, roues au sol ou non.
+    //
+    // ET LE SIGNE DE L'ASSIETTE SE MESURE SUR CE QUI EST RENDU : la hauteur
+    // du nez contre celle de la queue, lues dans la matrice monde du
+    // maillage. Un nez qui se lève à l'envers passerait toute mesure
+    // d'amplitude — c'est la leçon du roulis (v231) et du conducteur assis
+    // de dos (v249).
+    const trajet = await tab.evaluate(async () => {
       const g = window.__game;
-      const m = await import('./src/montures.js');
-      const out = {};
-      for (const key of ['avionligne', 'concorde', 'chasseur']) {
-        const def = m.MONTURES.find((d) => d.key === key);
-        g.player.pos.set(0, 90, 0);
-        g.player.vel.set(0, 0, 0);
-        g.player.yaw = 0; g.player.pitch = 0;
-        g.player.flying = true;
-        g.player.pilote = def.pilote;
-        g.player.vitesseAvion = 0;
-        g.player.avionEnVol = false;
-        const y0 = g.player.pos.y;
-        // La touche du bouton, pas la méthode : c'est le chemin de l'enfant.
-        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
-        await new Promise((fin) => {
-          let cumul = 0, prec = performance.now();
-          const pas = (t) => {
-            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
-            if (cumul >= 3) fin(); else requestAnimationFrame(pas);
-          };
-          requestAnimationFrame(pas);
-        });
-        out[key] = Math.round((g.player.pos.y - y0) * 10) / 10;
-        g.player.pilote = null; g.player.avionEnVol = false;
-        g.player.vitesseAvion = undefined; g.player.flying = false;
+      const THREE = await import('three');
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      // LA PISTE : trois cents blocs de pierre, un roulement de cinquante
+      // blocs, une montée, une descente et un freinage tiennent dedans.
+      const x0 = 30000, z0 = 30300, L = 300;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -4; w <= 4; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const dalle = [];
+      for (let d = -6; d <= L; d++) for (let w = -4; w <= 4; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
       }
-      return out;
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x, le long de la piste
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenirSecondes(1);
+      const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
+      if (!avion) return { err: 'aucun avion posé' };
+      await tenirSecondes(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes' };
+      await tenirSecondes(0.6);
+      const nezMoinsQueue = () => {
+        avion.mesh.updateMatrixWorld(true);
+        const n = new THREE.Vector3(0, 1.5, -8).applyMatrix4(avion.mesh.matrixWorld);
+        const q = new THREE.Vector3(0, 1.5, 8).applyMatrix4(avion.mesh.matrixWorld);
+        return +(n.y - q.y).toFixed(2);
+      };
+      const train = () => (avion.mesh.userData.train || []).map((t) => (t.visible ? +t.rotation.x.toFixed(2) : 'rentré'));
+      const releve = (t) => ({
+        t: +t.toFixed(1), x: +(g.player.pos.x - x0).toFixed(1), y: +(g.player.pos.y - y0 - 1).toFixed(2),
+        v: +(g.player.vitesseAvion || 0).toFixed(1), etat: g.player.avionEtat,
+        assiette: +(g.player.assietteAvion || 0).toFixed(3), train: +(g.player.trainSorti ?? 1).toFixed(2),
+        sol: !!g.player.onGround, nez: nezMoinsQueue(), jambes: train(),
+      });
+      const releves = [];
+      let t = 0;
+      const jusqua = async (fini, limite) => {
+        while (t < limite) { await tenirSecondes(0.1); t += 0.1; const r = releve(t); releves.push(r); if (fini(r)) return r; }
+        return null;
+      };
+      const depart = releve(0);
+      // ✈️ : pleins gaz
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      const enVol = await jusqua((r) => r.etat === 'vol', 20);
+      const decollage = releves.slice();
+      // ✈️ : on se pose
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      const arret = await jusqua((r) => r.etat === 'sol', 25);
+      const atterrissage = releves.slice(decollage.length);
+      // puis on roule, et l'on tourne
+      const avantRoulage = releve(t);
+      g.player.keys.add('KeyW');
+      await tenirSecondes(2);
+      const roule = releve(t);
+      g.player.keys.add('KeyA');
+      await tenirSecondes(1.5);
+      const tourne = { yaw: +(g.player.yaw - (-Math.PI / 2)).toFixed(3), ...releve(t) };
+      g.player.keys.clear();
+      // et le train en vol, à part : rentré en croisière, sorti dès qu'on se pose
+      g.player.pos.set(x0, y0 + 60, z0 + 0.5); g.player.vitesseAvion = 60;
+      g.player.avionEtat = 'vol'; g.player.avionEnVol = true;
+      await tenirSecondes(2.2);
+      const croisiere = releve(t);
+      g.player.decollerOuSePoser();
+      await tenirSecondes(2.2);
+      const finale = releve(t);
+      // on redescend de l'avion, et l'on range la piste
+      g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0;
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      return { depart, decollage, enVol, atterrissage, arret, avantRoulage, roule, tourne, croisiere, finale };
     });
-    // Vingt blocs de palier en trois secondes : on demande au moins la moitié,
-    // pour ne pas mesurer la cadence du banc.
-    verifier('le bouton ✈️ fait décoller l\'appareil',
-      Object.values(decollage).every((h) => h >= 10),
-      `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
+    const dec = trajet.decollage || [];
+    const auSol = dec.filter((r) => r.sol && r.etat === 'decollage');
+    const leve = dec.find((r) => !r.sol && r.etat === 'decollage' && r.v >= 40);
+    const roulement = auSol.length ? auSol[auSol.length - 1].x - (trajet.depart ? trajet.depart.x : 0) : 0;
+    // 42² / (2 × 18) = 49 blocs de roulement : on en demande au moins vingt
+    // (le banc échantillonne à dix images par seconde de jeu) et moins de
+    // quatre-vingt-dix — au-delà, l'appareil ne décolle pas, il roule.
+    verifier('✈️ accélère sur la piste, et le nez ne se lève qu\'à la vitesse de rotation',
+      !trajet.err && !!leve && roulement >= 20 && roulement <= 90
+        && auSol.every((r) => r.assiette < 0.06),
+      `${trajet.err || ''} roulement ${roulement} blocs, levé à ${JSON.stringify(leve)}`);
+    // Douze degrés de rotation : on en demande la moitié à la lecture, ET le
+    // nez rendu plus haut que la queue — c'est le signe.
+    const apresLever = leve ? dec.slice(dec.indexOf(leve)) : [];
+    const cabre = apresLever.find((r) => r.assiette >= 0.11);
+    verifier('à la rotation le nez se lève — celui du maillage, pas un nombre',
+      !!cabre && cabre.nez > 1.0,
+      `nez levé : ${JSON.stringify(cabre || apresLever[apresLever.length - 1] || null)}`);
+    verifier('puis l\'appareil monte au palier, train rentré en croisière',
+      !!trajet.enVol && trajet.enVol.y >= 18
+        && !!trajet.croisiere && trajet.croisiere.train === 0
+        && trajet.croisiere.jambes.length === 3 && trajet.croisiere.jambes.every((j) => j === 'rentré'),
+      `palier ${JSON.stringify(trajet.enVol)} · croisière ${JSON.stringify(trajet.croisiere)}`);
+    const att = trajet.atterrissage || [];
+    const touche = att.find((r) => r.etat === 'freinage');
+    const avantToucher = touche ? att.slice(0, att.indexOf(touche)) : att;
+    verifier('🛬 descend train sorti, touche la piste et freine jusqu\'à l\'arrêt',
+      !!touche && avantToucher.length > 2 && avantToucher.every((r) => r.etat === 'atterrissage')
+        && avantToucher[avantToucher.length - 1].train >= 0.97
+        && !!trajet.finale && trajet.finale.train >= 0.97 && trajet.finale.jambes.every((j) => j !== 'rentré')
+        && !!trajet.arret && trajet.arret.v === 0 && Math.abs(trajet.arret.y) < 0.3
+        && trajet.arret.x <= 300,
+      `toucher ${JSON.stringify(touche)} · arrêt ${JSON.stringify(trajet.arret)} · finale ${JSON.stringify(trajet.finale)}`);
+    // Au sol, le joystick fait rouler — sans quitter la piste — et tourne.
+    verifier('à l\'arrêt, le joystick fait rouler l\'appareil sur la piste et le fait tourner',
+      !!trajet.roule && !!trajet.avantRoulage && trajet.roule.x - trajet.avantRoulage.x >= 4
+        && Math.abs(trajet.roule.y) < 0.3 && trajet.roule.etat === 'sol'
+        && !!trajet.tourne && Math.abs(trajet.tourne.yaw) > 0.15,
+      `roulage ${JSON.stringify(trajet.avantRoulage)} → ${JSON.stringify(trajet.roule)} · virage ${JSON.stringify(trajet.tourne)}`);
 
     // UN AVION S'INCLINE DANS SON VIRAGE — demande de Max : « quand on vole
     // avec un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie
@@ -3182,7 +3288,7 @@ async function avancerUnDemiSeconde(p, depart) {
         };
         requestAnimationFrame(pas);
       });
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       g.player.yaw = 0; g.player.pitch = 0;
       g.player.pos.set(0, 90, 0);
@@ -3208,7 +3314,7 @@ async function avancerUnDemiSeconde(p, depart) {
       const gauche = await pencher('KeyA');
       const droite = await pencher('KeyD');
       g.player.keys.clear();
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       return { gauche, droite, ordre: avion.mesh.rotation.order };
     });
