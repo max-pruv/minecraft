@@ -19,6 +19,7 @@ import { buildCreatureMesh } from './creatures.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
+import { allureDe } from './vehicules.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -317,7 +318,7 @@ export function initFun(ctx) {
     // Et sa CARRURE : une voiture ne passe pas là où un piéton passe.
     if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
     a.state = 'idle';
-    const allure = a.def.allure || 2;
+    const allure = allureMonture(a);
     if (a.def.pilote) {
       // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
       // calcule. Trois gestes, dans l'ordre où on s'en sert.
@@ -1122,6 +1123,14 @@ export function initFun(ctx) {
   }
 
   // ---- riding & pet update --------------------------------------------------
+  // L'ALLURE D'UNE MONTURE (v260) : une voiture roule à l'allure de la CLASSE
+  // de son modèle (`allureDe`, vehicules.js — citadine, berline, SUV, GT,
+  // sportive, hypercar) ; toute autre bête garde l'allure de sa fiche.
+  function allureMonture(a) {
+    const flotte = a.mesh && a.mesh.userData ? a.mesh.userData.flotte : null;
+    if (a.def.key === 'voiture' && flotte) return allureDe(flotte, a.def.allure || 3.4);
+    return a.def.allure || 2;
+  }
   function updateRide(dt) {
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
@@ -1136,7 +1145,7 @@ export function initFun(ctx) {
       if (player.prendreGabarit) player.prendreGabarit(0);
       return;
     }
-    player.boost = riding.def.allure || 2.0;
+    player.boost = allureMonture(riding);
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
     // remplace alors la marche par la physique de vol — poussée, roulis,
     // assiette — et l'avion reste collé au joueur comme toute monture. C'est

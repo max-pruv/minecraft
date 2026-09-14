@@ -349,62 +349,81 @@ export function graineDeVille(tr) {
 }
 
 export const FLOTTE = [
-  {fichier:'berline-citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
-  {fichier:'ny-crown-victoria',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
-  {fichier:'ny-town-sedan',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
-  { fichier: 'acura-nsx-type-s.glb', nom: 'Acura NSX Type S' },
-  { fichier: 'amg-gt-black-series.glb', nom: 'Mercedes-AMG GT Black Series' },
-  { fichier: 'aston-martin-dbs-superleggera.glb', nom: 'Aston Martin DBS Superleggera' },
-  { fichier: 'aston-martin-one-77.glb', nom: 'Aston Martin One-77' },
-  { fichier: 'aston-martin-valkyrie.glb', nom: 'Aston Martin Valkyrie' },
-  { fichier: 'audi-r8-v10-performance.glb', nom: 'Audi R8 V10 Performance' },
-  { fichier: 'bentley-continental-gt-speed.glb', nom: 'Bentley Continental GT Speed' },
-  { fichier: 'bmw-i8.glb', nom: 'BMW i8' },
-  { fichier: 'bmw-m8-competition.glb', nom: 'BMW M8 Competition' },
-  { fichier: 'bugatti-bolide.glb', nom: 'Bugatti Bolide' },
-  { fichier: 'bugatti-chiron.glb', nom: 'Bugatti Chiron' },
-  { fichier: 'bugatti-chiron-stealth.glb', nom: 'Bugatti Chiron Stealth', habitacle: false },
-  { fichier: 'bugatti-veyron.glb', nom: 'Bugatti Veyron 16.4' },
-  { fichier: 'bugatti-w16-mistral.glb', nom: 'Bugatti W16 Mistral' },
-  { fichier: 'ferrari-812-competizione.glb', nom: 'Ferrari 812 Competizione' },
-  { fichier: 'ferrari-daytona-sp3.glb', nom: 'Ferrari Daytona SP3' },
-  { fichier: 'ferrari-f40.glb', nom: 'Ferrari F40' },
-  { fichier: 'ferrari-laferrari.glb', nom: 'Ferrari LaFerrari' },
-  { fichier: 'ferrari-sf90.glb', nom: 'Ferrari SF90 Stradale' },
-  { fichier: 'ford-gt.glb', nom: 'Ford GT' },
-  { fichier: 'koenigsegg-cc850.glb', nom: 'Koenigsegg CC850' },
-  { fichier: 'koenigsegg-gemera.glb', nom: 'Koenigsegg Gemera' },
-  { fichier: 'koenigsegg-jesko.glb', nom: 'Koenigsegg Jesko' },
-  { fichier: 'koenigsegg-regera.glb', nom: 'Koenigsegg Regera' },
-  { fichier: 'lamborghini-aventador-svj.glb', nom: 'Lamborghini Aventador SVJ' },
-  { fichier: 'lamborghini-countach-lpi-800-4.glb', nom: 'Lamborghini Countach LPI 800-4' },
-  { fichier: 'lamborghini-huracan-sto.glb', nom: 'Lamborghini Huracan STO' },
-  { fichier: 'lamborghini-revuelto.glb', nom: 'Lamborghini Revuelto' },
-  { fichier: 'lamborghini-sian-fkp-37.glb', nom: 'Lamborghini Sian FKP 37' },
-  { fichier: 'lexus-lfa.glb', nom: 'Lexus LFA' },
-  { fichier: 'lotus-evija.glb', nom: 'Lotus Evija' },
-  { fichier: 'lucid-gravity.glb', nom: 'Lucid Gravity', habitacle: false },
-  { fichier: 'maserati-mc20.glb', nom: 'Maserati MC20' },
-  { fichier: 'mclaren-765lt.glb', nom: 'McLaren 765LT' },
-  { fichier: 'mclaren-artura.glb', nom: 'McLaren Artura' },
-  { fichier: 'mclaren-p1.glb', nom: 'McLaren P1' },
-  { fichier: 'mclaren-senna.glb', nom: 'McLaren Senna' },
-  { fichier: 'mclaren-speedtail.glb', nom: 'McLaren Speedtail' },
-  { fichier: 'mercedes-amg-one.glb', nom: 'Mercedes-AMG One' },
-  { fichier: 'nissan-gtr-nismo.glb', nom: 'Nissan GT-R Nismo' },
-  { fichier: 'pagani-huayra-bc.glb', nom: 'Pagani Huayra BC' },
-  { fichier: 'pagani-utopia.glb', nom: 'Pagani Utopia' },
-  { fichier: 'pagani-zonda-cinque.glb', nom: 'Pagani Zonda Cinque' },
-  { fichier: 'pininfarina-battista.glb', nom: 'Automobili Pininfarina Battista' },
-  { fichier: 'porsche-718-cayman-gt4-rs.glb', nom: 'Porsche 718 Cayman GT4 RS' },
-  { fichier: 'porsche-911-gt3-rs.glb', nom: 'Porsche 911 GT3 RS (992)' },
-  { fichier: 'porsche-918-spyder.glb', nom: 'Porsche 918 Spyder' },
-  { fichier: 'porsche-carrera-gt.glb', nom: 'Porsche Carrera GT' },
-  { fichier: 'porsche-taycan-turbo-s.glb', nom: 'Porsche Taycan Turbo S' },
-  { fichier: 'rimac-nevera.glb', nom: 'Rimac Nevera' },
-  { fichier: 'rolls-royce-spectre.glb', nom: 'Rolls-Royce Spectre' },
-  { fichier: 'sls-amg-black-series.glb', nom: 'Mercedes-Benz SLS AMG Black Series' },
+  {fichier:'berline-citadine', classe: 'citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
+  {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
+  {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
+  { fichier: 'acura-nsx-type-s.glb', classe: 'gt', nom: 'Acura NSX Type S' },
+  { fichier: 'amg-gt-black-series.glb', classe: 'sportive', nom: 'Mercedes-AMG GT Black Series' },
+  { fichier: 'aston-martin-dbs-superleggera.glb', classe: 'gt', nom: 'Aston Martin DBS Superleggera' },
+  { fichier: 'aston-martin-one-77.glb', classe: 'sportive', nom: 'Aston Martin One-77' },
+  { fichier: 'aston-martin-valkyrie.glb', classe: 'hypercar', nom: 'Aston Martin Valkyrie' },
+  { fichier: 'audi-r8-v10-performance.glb', classe: 'gt', nom: 'Audi R8 V10 Performance' },
+  { fichier: 'bentley-continental-gt-speed.glb', classe: 'gt', nom: 'Bentley Continental GT Speed' },
+  { fichier: 'bmw-i8.glb', classe: 'gt', nom: 'BMW i8' },
+  { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
+  { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
+  { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
+  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false },
+  { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
+  { fichier: 'bugatti-w16-mistral.glb', classe: 'hypercar', nom: 'Bugatti W16 Mistral' },
+  { fichier: 'ferrari-812-competizione.glb', classe: 'sportive', nom: 'Ferrari 812 Competizione' },
+  { fichier: 'ferrari-daytona-sp3.glb', classe: 'sportive', nom: 'Ferrari Daytona SP3' },
+  { fichier: 'ferrari-f40.glb', classe: 'sportive', nom: 'Ferrari F40' },
+  { fichier: 'ferrari-laferrari.glb', classe: 'hypercar', nom: 'Ferrari LaFerrari' },
+  { fichier: 'ferrari-sf90.glb', classe: 'sportive', nom: 'Ferrari SF90 Stradale' },
+  { fichier: 'ford-gt.glb', classe: 'sportive', nom: 'Ford GT' },
+  { fichier: 'koenigsegg-cc850.glb', classe: 'hypercar', nom: 'Koenigsegg CC850' },
+  { fichier: 'koenigsegg-gemera.glb', classe: 'hypercar', nom: 'Koenigsegg Gemera' },
+  { fichier: 'koenigsegg-jesko.glb', classe: 'hypercar', nom: 'Koenigsegg Jesko' },
+  { fichier: 'koenigsegg-regera.glb', classe: 'hypercar', nom: 'Koenigsegg Regera' },
+  { fichier: 'lamborghini-aventador-svj.glb', classe: 'sportive', nom: 'Lamborghini Aventador SVJ' },
+  { fichier: 'lamborghini-countach-lpi-800-4.glb', classe: 'sportive', nom: 'Lamborghini Countach LPI 800-4' },
+  { fichier: 'lamborghini-huracan-sto.glb', classe: 'sportive', nom: 'Lamborghini Huracan STO' },
+  { fichier: 'lamborghini-revuelto.glb', classe: 'sportive', nom: 'Lamborghini Revuelto' },
+  { fichier: 'lamborghini-sian-fkp-37.glb', classe: 'hypercar', nom: 'Lamborghini Sian FKP 37' },
+  { fichier: 'lexus-lfa.glb', classe: 'gt', nom: 'Lexus LFA' },
+  { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },
+  { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
+  { fichier: 'maserati-mc20.glb', classe: 'sportive', nom: 'Maserati MC20' },
+  { fichier: 'mclaren-765lt.glb', classe: 'sportive', nom: 'McLaren 765LT' },
+  { fichier: 'mclaren-artura.glb', classe: 'sportive', nom: 'McLaren Artura' },
+  { fichier: 'mclaren-p1.glb', classe: 'hypercar', nom: 'McLaren P1' },
+  { fichier: 'mclaren-senna.glb', classe: 'sportive', nom: 'McLaren Senna' },
+  { fichier: 'mclaren-speedtail.glb', classe: 'hypercar', nom: 'McLaren Speedtail' },
+  { fichier: 'mercedes-amg-one.glb', classe: 'hypercar', nom: 'Mercedes-AMG One' },
+  { fichier: 'nissan-gtr-nismo.glb', classe: 'gt', nom: 'Nissan GT-R Nismo' },
+  { fichier: 'pagani-huayra-bc.glb', classe: 'sportive', nom: 'Pagani Huayra BC' },
+  { fichier: 'pagani-utopia.glb', classe: 'sportive', nom: 'Pagani Utopia' },
+  { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
+  { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
+  { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
+  { fichier: 'porsche-911-gt3-rs.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
+  { fichier: 'porsche-918-spyder.glb', classe: 'hypercar', nom: 'Porsche 918 Spyder' },
+  { fichier: 'porsche-carrera-gt.glb', classe: 'sportive', nom: 'Porsche Carrera GT' },
+  { fichier: 'porsche-taycan-turbo-s.glb', classe: 'gt', nom: 'Porsche Taycan Turbo S' },
+  { fichier: 'rimac-nevera.glb', classe: 'hypercar', nom: 'Rimac Nevera' },
+  { fichier: 'rolls-royce-spectre.glb', classe: 'berline', nom: 'Rolls-Royce Spectre' },
+  { fichier: 'sls-amg-black-series.glb', classe: 'gt', nom: 'Mercedes-Benz SLS AMG Black Series' },
 ];
+
+// UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :
+// « les voitures devraient aller plus vite et surtout une vitesse en fonction
+// du modèle (sportive faster than sedan basic) ». Multiplicateur de la marche
+// (3,2 blocs/s) ; la fiche `voiture` de montures.js garde 3,4 en secours.
+// LE PLAFOND EST CELUI DU MONDE QUI SE CHARGE : Paris se maille à 42 morceaux
+// par seconde au banc (v237) et une vitesse v en réclame 1,5 × v (v229), soit
+// 28 blocs/s au plus en ville — l'hypercar reste dessous (8 × 3,2 = 25,6).
+// À remesurer sur la tablette (`?diag=1`) : le banc à `rr=12` rend une image
+// par seconde dans Paris et n'y voit qu'une cadence d'image, pas une vitesse.
+export const ALLURES = { citadine: 3.8, berline: 4.4, suv: 4.4, gt: 5.4, sportive: 6.4, hypercar: 8 };
+export function classeDe(fichier) {
+  const e = FLOTTE.find((f) => f.fichier === fichier);
+  return e ? e.classe || null : null;
+}
+export function allureDe(fichier, secours = 3.4) {
+  const c = classeDe(fichier);
+  return (c && ALLURES[c]) || secours;
+}
 
 const chargementsFlotte = new Map();
 // UN MODÈLE SE MESURE, IL NE SE DÉCLARE PAS.
