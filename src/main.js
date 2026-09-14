@@ -814,6 +814,26 @@ function updateChunks() {
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) =>
     (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap))
     || (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap));
+  // ET LES PIÉTONS NE TRAVERSENT PAS LES VOITURES (v259). Max, capture à la
+  // Bastille : des passants au travers de sa voiture. Un piéton (marlon.js)
+  // regarde un pas devant lui avant d'avancer : une voiture de la rue, celle
+  // de l'enfant au volant (`vehicules.voitureA`), ou un véhicule posé là —
+  // voiture garée, avion au poste — dont la fiche porte un `gabarit`. Le
+  // rectangle d'un véhicule posé se prend sur son cap, comme celui d'une
+  // voiture de la rue ; sa longueur est celle d'une voiture.
+  world.obstaclePieton = (x, z, y) => {
+    if (vehicules.voitureA(x, z, y)) return true;
+    for (const a of animalManager.animals) {
+      const g = a.def.gabarit;
+      if (!(g > 1) || Math.abs(a.pos.y - y) > 2.5) continue;
+      const dx = x - a.pos.x, dz = z - a.pos.z;
+      if (dx * dx + dz * dz > 6 * 6) continue;
+      const ux = Math.sin(a.yaw), uz = Math.cos(a.yaw);
+      // le long de l'axe, puis en travers
+      if (Math.abs(dx * ux + dz * uz) <= 2.2 && Math.abs(dx * uz - dz * ux) <= g / 2) return true;
+    }
+    return false;
+  };
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste

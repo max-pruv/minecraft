@@ -764,6 +764,36 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Un piéton regarde devant lui, et une voiture n'est pas un bloc (v259)
+
+Max, capture à la Bastille : « les passants traversent la voiture de
+l'enfant ». Un piéton (`BaseNPC.sweep`, marlon.js) ne connaît que les blocs
+solides ; une voiture n'en est pas un — ni celle de la rue, ni celle de
+l'enfant au volant, ni une voiture garée. Trois règles.
+
+- **UN OBSTACLE QUI N'EST PAS UN BLOC SE REGARDE UN PAS DEVANT.** `update`
+  demande `world.obstaclePieton(x, z, y)` (branché par `main.js`) au point
+  qu'il s'apprête à atteindre ; si c'est une voiture, il ne fait pas ce pas
+  et `contourner()` le fait repartir de biais — le geste du bord de rue de
+  Manhattan, un peu plus haut dans `Habitant.think`. Le crochet lit ce que
+  `cederLePassage` a collecté à la dernière image (`vehicules.voitureA`, la
+  voiture de l'enfant comprise quand `player.gabarit > 1`) et les bêtes dont
+  la fiche porte un `gabarit`. L'enfant à pied n'est pas une voiture.
+- **« PAS SI L'ON EST DÉJÀ DEDANS », UNE FOIS DE PLUS.** Une voiture qui a
+  roulé sur un passant le laisse sortir : on ne bloque que l'ENTRÉE. Et une
+  place tirée pour un passant n'est retenue que si elle est libre
+  (`posteAutour`) — un passant né dans la voiture y serait, quoi que fasse
+  ensuite son regard.
+- **UN TÉMOIN QUI LANCE DES GENS LES LANCE DEPUIS LA RUE, ET « DEDANS » A
+  UNE HAUTEUR.** Mon premier témoin tirait ses départs sur un cercle sans
+  regarder le sol : un point tombé dans un immeuble posait le passant SUR LE
+  TOIT (`surfaceY` prend le plus haut solide), d'où il retombait dans la
+  voiture — et un rectangle sans y comptait « dedans » un passant à seize
+  blocs au-dessus de la rue. Soixante-dix relevés sur cent sur du code SAIN,
+  zéro au tour suivant : un rouge qui va et vient sur le même code accuse le
+  témoin, et c'est une sonde qui distingue les cas (hauteurs relevées, crochet
+  vrai ou faux au moment du « dedans ») qui l'a dit en une exécution.
+
 ## Le jeu se prépare avant « Jouer », et une carte se calcule par tranches (v258)
 
 Max : « quand on ouvre la carte, beaucoup de lag au début » ; « le temps de

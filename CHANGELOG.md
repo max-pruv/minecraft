@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v259 — Les passants ne traversent plus la voiture de l'enfant
+
+**Pourquoi.** Max, capture à la Bastille : des passants qui marchent AU
+TRAVERS de sa voiture, à l'arrêt sur la rue. Un piéton ne connaît que les
+blocs solides — c'est ainsi qu'il évite les murs et monte les marches — et
+une voiture n'en est pas un : ni celle de la rue, ni celle de l'enfant au
+volant, ni une voiture garée. Mesuré au banc, huit passants lancés sur la
+voiture de l'enfant pendant douze secondes : entre 287 et 449 relevés sur
+120 avec un passant les pieds dans la carrosserie — ils y entraient et y
+restaient.
+
+**Ce que ça change.** Un passant regarde un pas devant lui avant d'avancer :
+si c'est une voiture — de la rue, celle de l'enfant au volant, une voiture
+garée ou un avion au poste —, il ne fait pas ce pas, marque une courte pause
+et repart de biais, comme il le fait déjà au bord d'une rue de Manhattan.
+Une voiture qui lui a roulé dessus le laisse sortir, même règle que pour la
+voiture de l'enfant. Et un passant ne NAÎT plus dans une voiture : la place
+qu'on lui tire n'est retenue que si elle est libre. L'enfant à pied n'est pas
+une voiture : on passe toujours à côté de lui.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien
+code : « un passant lancé sur la voiture de l'enfant s'arrête et la
+contourne au lieu de la traverser » — l'enfant monte dans une voiture à
+Rome, huit passants partent droit dessus depuis des points AU NIVEAU DE LA
+RUE (un départ tombé dans un immeuble posait le passant sur son toit, d'où il
+retombait dans la voiture : vu à la sonde, corrigé dans le témoin), relancés
+toutes les deux secondes ; zéro relevé dedans sur trois tours ici, 287 à 449
+sur l'ancien code, et les huit marchent des deux côtés. Le portail complet
+rejoué.
+
 ## v258 — Le jeu se prépare avant « Jouer », et la carte ne fige plus l'image
 
 **Pourquoi.** Max, après la v255 : « quand on ouvre la carte, beaucoup de

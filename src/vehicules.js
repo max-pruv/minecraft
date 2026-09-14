@@ -1621,6 +1621,35 @@ export function createVehicules({ scene, player }) {
     return false;
   }
 
+  // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la
+  // Bastille : « les passants traversent la voiture de l'enfant ». Un passant
+  // ne connaît que les blocs solides (`sweep`, marlon.js) ; une voiture n'en
+  // est pas un. Ce point (les pieds d'un piéton) est-il DANS une voiture de
+  // la rue, ou dans celle de l'enfant quand il est au volant ? On relit la
+  // collecte de la dernière image, comme `obstacleDevant`. L'enfant à pied
+  // n'est pas une voiture : on passe à côté de lui comme avant.
+  function voitureA(x, z, y) {
+    for (const b of dernieres) {
+      if (b.enfant && !(player.gabarit > 1)) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 6 * 6 || Math.abs(b.y - y) > 2.5) continue;
+      if (dansRectangle(b.rect, x, z)) return true;
+    }
+    return false;
+  }
+  // Un point est-il dans un rectangle orienté (quatre sommets dans l'ordre) ?
+  // Du même côté de chacune des quatre arêtes.
+  function dansRectangle(R, x, z) {
+    let signe = 0;
+    for (let k = 0; k < 4; k++) {
+      const a = R[k], b = R[(k + 1) % 4];
+      const c = (b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (x - a[0]);
+      if (c === 0) continue;
+      if (signe === 0) signe = c > 0 ? 1 : -1;
+      else if ((c > 0 ? 1 : -1) !== signe) return false;
+    }
+    return true;
+  }
+
   function update(dt) {
     cederLePassage(dt);
     for (const c of convois) c.update(dt, player.pos);
@@ -1707,7 +1736,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

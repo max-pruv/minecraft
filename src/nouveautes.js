@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 259,
+    titre: "Les passants contournent ta voiture",
+    puces: [
+      "🚶 Un passant s'arrête devant une voiture",
+      "Il repart de biais, sans la traverser",
+      "Personne ne naît dans ta voiture",
+    ],
+  },
+  {
     v: 258,
     titre: "Le jeu se prépare avant Jouer",
     puces: [

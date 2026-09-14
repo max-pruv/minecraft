@@ -146,8 +146,23 @@ export class BaseNPC {
   think() { return { speed: 0, yaw: this.yaw }; }
 
   update(dt) {
-    const { speed, yaw } = this.think(dt);
+    let { speed, yaw } = this.think(dt);
     this.yaw = yaw;
+    // UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). `sweep` ne connaît que
+    // les blocs ; une voiture — de la rue, celle de l'enfant au volant, une
+    // voiture garée — n'en est pas un. On regarde un pas devant soi
+    // (`world.obstaclePieton`, branché par main.js) : si c'est une voiture,
+    // on ne fait pas ce pas et l'on se retourne (`contourner`). Sauf si l'on
+    // est DÉJÀ dedans — une voiture qui a roulé sur nous — : sortir est la
+    // seule façon d'en sortir, même règle que la voiture de l'enfant (v245).
+    if (speed > 0 && this.world.obstaclePieton) {
+      const pas = 0.9 + this.largeur / 2;
+      const ax = this.pos.x - Math.sin(this.yaw) * pas, az = this.pos.z - Math.cos(this.yaw) * pas;
+      if (this.world.obstaclePieton(ax, az, this.pos.y) && !this.world.obstaclePieton(this.pos.x, this.pos.z, this.pos.y)) {
+        speed = 0;
+        if (this.contourner) this.contourner();
+      }
+    }
 
     this.vel.x = -Math.sin(this.yaw) * speed;
     this.vel.z = -Math.cos(this.yaw) * speed;
@@ -306,6 +321,12 @@ export class Wanderer extends BaseNPC {
       speed: this.state === 'walk' ? this.walkSpeed : 0,
       yaw: this.state === 'walk' ? this.wanderYaw : this.yaw,
     };
+  }
+
+  // Une voiture devant : on marque le pas et l'on repart de biais (v259).
+  contourner() {
+    this.wanderYaw = (this.wanderYaw ?? this.yaw) + Math.PI * 0.6;
+    this.state = 'idle'; this.stateTime = 0.3;
   }
 }
 

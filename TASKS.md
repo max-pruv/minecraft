@@ -967,6 +967,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v259** — Les passants ne traversent plus la voiture de l'enfant
+  (ni celles de la rue, ni les véhicules posés) : regard-devant d'un pas
+  dans `BaseNPC.update`, `contourner()` chez `Habitant` et `Wanderer`,
+  `world.obstaclePieton` branché par `main.js` sur `vehicules.voitureA` et
+  les bêtes à `gabarit` ; et `posteAutour` ne tire plus une place dans une
+  voiture. Témoin de `monte.js`, 287 à 449 relevés dedans sur l'ancien code.
 - [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
   boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
   position restaurée dès l'accueil) ; la carte du monde calcule son fond par

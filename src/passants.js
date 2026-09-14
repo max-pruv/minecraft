@@ -191,12 +191,16 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         if(world.piedPieton(x,z)===33)return [x,z];
         continue;
       }
-      if (!repli) repli = [x, z];
       const bx = Math.floor(x), bz = Math.floor(z);
       // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
       // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
       // passant ne trouvait jamais de rue, et tous retombaient sur le repli.
       const y = world.sommetColonne(bx, bz);
+      // et pas DANS une voiture (v259) : un passant né dans la voiture de
+      // l'enfant y est, quoi que fasse ensuite son regard-devant — ni comme
+      // rue, ni comme repli
+      if (world.obstaclePieton?.(x, z, y + 1)) continue;
+      if (!repli) repli = [x, z];
       if ((seulementTrottoir ? SOLS_TROTTOIR : SOLS_DE_RUE).has(world.getBlock(bx, y, bz))) return [x, z];
     }
     return repli || [site.x+5,site.z+7];

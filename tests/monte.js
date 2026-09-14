@@ -1318,6 +1318,110 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
       !suit.err && suit.d >= 1.2, JSON.stringify(suit));
 
+    // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
+    //
+    // Max, capture à la Bastille : des passants au travers de sa voiture. Un
+    // piéton ne connaît que les blocs solides ; une voiture n'en est pas un.
+    // On monte dans une voiture, à l'arrêt sur la rue, et l'on lance huit
+    // passants droit dessus, depuis trois ou quatre blocs — on PROVOQUE la
+    // situation au lieu d'attendre qu'un passant vienne de lui-même (leçon des
+    // poissons). Dix relevés par seconde pendant douze secondes : combien de
+    // fois un passant a-t-il les pieds DANS le rectangle de la voiture
+    // (4,4 × 2,26, cap de l'enfant) ? Sur l'ancien code, des dizaines ; ici,
+    // zéro — et ils marchent quand même, sinon le vert serait celui de huit
+    // statues. Ceux qui s'éloignent sont relancés vers la voiture toutes les
+    // deux secondes, pour que la pression ne tombe pas. Le rectangle est
+    // recopié ici, pas demandé au jeu : l'ancien code ne le publie pas.
+    const traversee = await tab.evaluate(async () => {
+      const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 8);
+      if (gens.length < 6) return { err: `${gens.length} passant(s)` };
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      // LES DÉPARTS SONT AU NIVEAU DE LA RUE. Seize points sur un cercle de
+      // trois à quatre blocs et demi autour de l'ancre ; on ne garde que ceux
+      // dont le sol est à moins d'un bloc et demi de celui de l'ancre — un
+      // point tombé dans un immeuble poserait le passant SUR SON TOIT, d'où
+      // il retomberait dans la voiture (vu à la sonde : des passants à
+      // seize blocs de haut, comptés « dedans » par un rectangle sans y).
+      // L'ancre est le premier passant qui offre au moins six départs.
+      const departsAutour = (h, x0, z0, y0) => {
+        const pts = [];
+        for (let k = 0; k < 16; k++) {
+          const a = k * Math.PI / 8, r = k % 2 ? 3.4 : 4.4;
+          const x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r, y = h.surfaceY(x, z);
+          if (y !== null && Math.abs(y - y0) <= 1.5) pts.push([x, z]);
+        }
+        return pts;
+      };
+      let h0 = null, departs = [];
+      for (const h of gens) {
+        const pts = departsAutour(h, h.pos.x, h.pos.z, h.pos.y);
+        if (pts.length >= 6) { h0 = h; departs = pts; break; }
+      }
+      if (!h0) return { err: 'aucun passant avec six départs au niveau de la rue' };
+      // la voiture, devant l'enfant, sur la rue où marche ce passant
+      g.player.pos.set(h0.pos.x, h0.pos.y + 0.1, h0.pos.z); g.player.vel.set(0, 0, 0); g.player.flying = false;
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.animalManager.invoquer('voiture', g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.z - Math.cos(g.player.yaw) * 3);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let essai = 0; essai < 8 && !auVolant(); essai++) {
+        await dormir(600);
+        if (!auVolant()) document.getElementById('ride-btn').click();
+        const t = performance.now();
+        while (!auVolant() && performance.now() - t < 2500) await dormir(200);
+      }
+      if (!auVolant()) { g.player.pos.copy(sauve); return { err: 'pas monté' }; }
+      g.player.vel.set(0, 0, 0);
+      await dormir(400);
+      const px = g.player.pos.x, pz = g.player.pos.z, cap = g.player.yaw + Math.PI;
+      const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+      // dans la voiture : dans son rectangle ET à sa hauteur — un passant sur
+      // un balcon au-dessus de la rue n'est pas dedans
+      const dedans = (h) => { const dx = h.pos.x - px, dz = h.pos.z - pz; return Math.abs(dx * ux + dz * uz) <= 2.2 && Math.abs(dx * vx + dz * vz) <= 1.13 && Math.abs(h.pos.y - g.player.pos.y) <= 2.5; };
+      // on écarte les départs que la voiture recouvre désormais
+      departs = departs.filter(([x, z]) => !dedans({ pos: { x, z, y: g.player.pos.y } }));
+      if (departs.length < 4) { g.player.pos.copy(sauve); return { err: `${departs.length} départ(s) hors de la voiture` }; }
+      const lancer = (h, k) => {
+        const [x, z] = departs[k % departs.length];
+        h.placeAt(x, z, g.player.pos.y);
+        h.poste.set(px, pz); h.rayon = 0;
+        h.etat = 'marche'; h.minuteur = 30; h.pas = h.walkSpeed;
+        h.capYaw = Math.atan2(px - h.pos.x, pz - h.pos.z) + Math.PI;
+      };
+      gens.forEach(lancer);
+      const parcouru = gens.map(() => 0), prec = gens.map((h) => [h.pos.x, h.pos.z]);
+      let releves = 0, traverses = 0, relances = 0;
+      const t0 = performance.now();
+      let dernierRelance = t0;
+      while (performance.now() - t0 < 12000) {
+        await dormir(100);
+        releves++;
+        gens.forEach((h, k) => {
+          if (dedans(h)) traverses++;
+          parcouru[k] += Math.hypot(h.pos.x - prec[k][0], h.pos.z - prec[k][1]);
+          prec[k] = [h.pos.x, h.pos.z];
+        });
+        if (performance.now() - dernierRelance > 2000) {
+          dernierRelance = performance.now();
+          gens.forEach((h, k) => {
+            const d = Math.hypot(h.pos.x - px, h.pos.z - pz);
+            if (d > 5.5 || h.etat !== 'marche') { lancer(h, k + relances); relances++; }
+          });
+        }
+      }
+      const bougent = parcouru.filter((d) => d > 0.5).length;
+      // on rend tout : on descend, la voiture s'en va, l'enfant retrouve sa place
+      for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+      if (g.player.prendreGabarit && auVolant()) g.player.prendreGabarit(0);
+      return { departs: departs.length, releves, traverses, bougent, relances, parcouru: parcouru.map((d) => +d.toFixed(1)), encoreAuVolant: auVolant() };
+    });
+    verifier('un passant lancé sur la voiture de l\'enfant s\'arrête et la contourne au lieu de la traverser',
+      !traversee.err && traversee.releves >= 60 && traversee.traverses === 0 && traversee.bougent >= 4,
+      JSON.stringify(traversee));
+
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
     //
     // Max : « s'assurer de le déployer sur l'ensemble des villes ». Les corps
