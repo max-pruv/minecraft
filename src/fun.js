@@ -1214,13 +1214,17 @@ export function initFun(ctx) {
       }
       // LES FLAMMES DES RÉACTEURS (v264) suivent la MANETTE : ce que
       // l'enfant demande, pas ce que l'appareil fait. Manette non touchée,
-      // c'est la vitesse rapportée à la pointe qui tient lieu de poussée.
-      // À l'arrêt, moteurs coupés, rien ne sort. La longueur va d'un rayon
-      // et demi à dix rayons de tuyère, et vacille un peu.
+      // c'est le trajet assisté qui la tient (✈️ : pleins gaz au décollage,
+      // l'approche en finale, ralenti au freinage), sinon la vitesse
+      // rapportée à la pointe. À l'arrêt, moteurs coupés, rien ne sort. La
+      // longueur va d'un rayon et demi à dix rayons de tuyère, et vacille.
       const tuyeres = a.mesh.userData.tuyeres;
       if (tuyeres && tuyeres.length) {
-        const v = player.vitesseAvion || 0, max = player.pilote.max || 1;
-        const poussee = player.gaz != null ? player.gaz : Math.min(1, v / max);
+        const v = player.vitesseAvion || 0, p = player.pilote, max = p.max || 1, etat = player.avionEtat;
+        const assistee = etat === 'decollage' ? 1
+          : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
+          : etat === 'freinage' ? 0 : Math.min(1, v / max);
+        const poussee = player.gaz != null ? player.gaz : assistee;
         const allumee = poussee > 0.02 || v > 0.5;
         const vacille = 0.92 + 0.08 * Math.sin(a.animTime * 41);
         for (const f of tuyeres) {

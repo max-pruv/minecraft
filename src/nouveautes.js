@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 264,
+    titre: "Les réacteurs crachent des flammes",
+    puces: [
+      "🔥 Une flamme derrière chaque réacteur",
+      "🎚️ Plus de gaz, plus longue la flamme",
+      "✈️ Rien à l'arrêt, moteurs coupés",
+    ],
+  },
+  {
     v: 263,
     titre: "Le cadran de cap en avion",
     puces: [

@@ -30,9 +30,10 @@ rien ne disait que les moteurs tournaient, ni combien la manette demandait.
 **Ce que ça change.** Chaque réacteur a sa flamme — deux sur l'avion de
 ligne, quatre sur le Concorde, une à la tuyère du chasseur — un cœur clair
 et une gaine orange qui sortent de la sortie du réacteur, vers la queue. La
-longueur suit la manette des gaz (v262) : rien à l'arrêt moteurs coupés,
-courte au roulage, longue à pleins gaz, plus courte dès qu'on réduit ; elle
-vacille un peu. Les flammes s'éteignent quand on descend. Aucune lampe en
+longueur suit la manette des gaz (v262) — et, manette non touchée, le
+trajet assisté de ✈️ : à fond au décollage, l'approche en finale, ralenti
+au freinage — rien à l'arrêt moteurs coupés, longue à pleins gaz, plus
+courte dès qu'on réduit ; elle vacille un peu. Les flammes s'éteignent quand on descend. Aucune lampe en
 plus (quatre pour tout le jeu), l'éclairage du monde ne change pas.
 
 **Ce qui le prouve.** Trois témoins neufs dans `monte.js`, qui lisent les
