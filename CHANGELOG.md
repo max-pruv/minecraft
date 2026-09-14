@@ -51,7 +51,17 @@ les Souvenirs, sans autre onglet », « la touche G ne lance plus de fusée »
 (ni nuage de points dans la scène, ni compteur dans les records) dans
 `fumee.js`, et « un chantier ou un coffre envoyé par une ancienne version
 est ignoré sans casse » dans `reseau.js`.
-Portail : à venir.
+Les trois témoins de la fumée sont ROUGES sur l'ancien code, mesurés (le
+bouton 🎆 présent, pas de bouton Souvenirs, la touche G ajoute un nuage de
+points et compte un feu). Portail : fumée verte, puis onze suites rejouées
+en 45 minutes ; sept vertes (parent, visio, maj, carte, hote, reglages,
+`reseau.js` au portail suivant seule : 71 témoins verts, la reprise dans la
+durée comprise — son rouge de portail est celui de charge déclaré en v253) ;
+`manhattan.js` et `monte.js` sur leurs seuls témoins déclarés en dette ;
+et la Rotonde de `washington.js`, rouge deux portails de suite au même
+endroit et verte seule, corrigée dans le témoin (il marche jusqu'à être
+entré, ressorti ou figé trois pas, plus en quatorze pas : plafond 22,
+x = −4,0, verte).
 
 ## v255 — Le portail d'essai attend ce qui compte, plus le temps
 
