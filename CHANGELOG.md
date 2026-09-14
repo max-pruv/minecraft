@@ -58,7 +58,16 @@ piste ; au volant les cinq boutons de la marche sont `display: none` et le
 cadran `block`, et ils reviennent à pied ; aux commandes 🛞 sort et rentre
 le train (les trois jambes) et n'existe qu'en avion ; gaz à zéro et manche
 en avant, l'appareil touche la piste train sorti, sans ✈️, freine jusqu'à
-zéro. Portail complet rejoué.
+zéro. Deux témoins de vitesse anciens comptent désormais en secondes de jeu :
+le banc rend deux images par seconde et l'inertie se joue par image (une
+sonde l'a tracé, `scratchpad/v262/sonde-vitesse.cjs`). Captures du cadran
+au volant et en vol (`scratchpad/v262/captures`). Portail complet rejoué :
+482 témoins verts ; six rouges, tous dettes déclarées dans `TASKS.md` — les
+quatre de `manhattan.js` (mêmes valeurs), le gel du premier survol de Paris
+(`monte.js`) et « la reprise tient dans la durée » (`reseau.js`, le même
+délai de silence qu'à la v261, `seen` à 20 295 ms) — et la fin de
+`manhattan.js` qui a PENDU seize minutes sur un `evaluate` sans délai, deux
+Manhattan rendues en logiciel, terminée à la main et déclarée.
 
 ## v261 — L'avion décolle de sa piste, et s'y pose
 
