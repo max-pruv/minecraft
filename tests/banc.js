@@ -143,9 +143,16 @@ async function relaisSourd(portEcoute, portVrai) {
 // blocs, et le disque à charger fait douze cases. Un témoin de streaming y est
 // vert quoi qu'il arrive — il ne peut pas voir le défaut. Le scénario qui
 // éprouve le chargement du monde demande donc la valeur de l'iPad.
-const adresse = (portJeu, portPairs, portNuage, rr = 2) =>
+//
+// ET `prep=0` : LE BANC N'ATTEND PAS LA PRÉPARATION D'AVANT « JOUER » (v258).
+// Le jeu grise ses boutons jusqu'à ce que corps, programmes et fond de carte
+// soient prêts ; en rendu logiciel les corps s'analysent en dix secondes, et
+// trente-sept démarrages l'auraient payé six minutes par portail sans rien
+// mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la demande par
+// `{ prep: 1 }`, comme `ombres: 1` pour le regard.
+const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}`;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -384,7 +391,7 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

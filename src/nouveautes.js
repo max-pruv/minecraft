@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 258,
+    titre: "Le jeu se prépare avant Jouer",
+    puces: [
+      "⏳ Une ligne dit ce qui se prépare",
+      "Le bouton Jouer attend que tout soit prêt",
+      "🗺️ La carte ne fige plus l'image",
+    ],
+  },
+  {
     v: 257,
     titre: "On voit l'installation",
     puces: [

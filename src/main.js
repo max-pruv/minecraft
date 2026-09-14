@@ -148,6 +148,8 @@ function renduLogiciel() {
 // `?dpr=1.5` permettent d'isoler un poste en trente secondes, sur l'appareil.
 const PARAMS_JEU = new URLSearchParams(location.search);
 const DIAG = PARAMS_JEU.get('diag') === '1';
+// La préparation avant « Jouer » (v258) : le banc la coupe par `?prep=0`.
+const PREPARER = PARAMS_JEU.get('prep') !== '0';
 const REFLETS_ACTIFS = PARAMS_JEU.get('reflets') !== '0';
 const LAMPES_ACTIVES = PARAMS_JEU.get('lampes') !== '0';
 // GRAPHISMES NORMAL OU AVANCÉ, DANS LES RÉGLAGES (v257). Max : « dans les
@@ -1139,6 +1141,11 @@ document.getElementById('play-btn').addEventListener('click', () => {
   world.switchContext('local');
   posCtx = contexteCarte('local');
   restorePosition();
+  // La position locale est restaurée dès l'accueil (v258, pour préparer le
+  // monde autour de l'enfant avant « Jouer ») : la fenêtre de quarante
+  // secondes pendant laquelle le nuage peut le remettre où il s'était arrêté
+  // se compte donc à partir d'ICI, pas du chargement de la page.
+  posEntree = Date.now();
   startGame();
 });
 pauseBtn.addEventListener('click', pauseGame);
@@ -4890,9 +4897,6 @@ const CARTE_PAS = 8;
 const horizonDecoupe = cadence(250);
 let horizonCap = 0;
 const carteSuivre = cadence(120);
-// Et le fond entier de temps en temps : un bloc que l'enfant vient de poser
-// tombe dans la partie RECOPIÉE, que le défilement ne recalcule jamais.
-const carteFond = cadence(2000);
 let carteVue = null;
 let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 // L'horloge du TEMPS D'ÉCRAN : des secondes réelles, bornées à deux. La borne
@@ -4944,6 +4948,64 @@ const RELIEF_CARTE = 96;
 let carteRaster = null;         // le fond, un point par bloc
 let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
 let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
+let carteBande = 0;             // la prochaine ligne du raster à repeindre
+
+// ET LE FOND ENTIER SE REFAIT PAR BANDES, JAMAIS D'UN COUP (v258).
+//
+// La v233 refaisait le fond ENTIER toutes les deux secondes, pour qu'un bloc
+// posé par l'enfant finisse par apparaître dans la partie recopiée. Mesuré au
+// banc, processeur bridé ×4 : 690 ms pour le premier fond (37 249 colonnes,
+// et les morceaux qu'elles font engendrer), puis 90 à 240 ms toutes les deux
+// secondes tant que la minicarte est affichée — un à-coup régulier que Max
+// sentait « dès qu'on ouvre la carte ». Le fond se repeint désormais ligne
+// par ligne, quelques millisecondes par image, en tournant sans fin : le
+// même bloc posé apparaît dans la seconde, et aucune image ne le paie en
+// entier. Un raster neuf, ou un grand saut (téléportation), se REMPLIT de
+// la même façon au lieu d'être calculé d'un seul tenant — et il se prépare
+// pendant l'accueil, avant « Jouer », pour que la minicarte soit là quand
+// l'enfant l'allume.
+function assurerRasterCarte(radius) {
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  const N = radius * 2 + 1;
+  let neuf = false;
+  if (!carteRaster || carteRasterR !== radius) {
+    carteRaster = new Uint8ClampedArray(N * N * 4);
+    carteRasterR = radius;
+    carteHorsSol = document.createElement('canvas');
+    carteHorsSol.width = N; carteHorsSol.height = N;
+    neuf = true;
+  }
+  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
+  if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
+    // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
+    for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
+    carteBande = 0; carteBandeI = 0;
+  } else if (dx !== 0 || dz !== 0) {
+    decalerCarte(carteRaster, N, dx, dz);
+    // la bande neuve, et elle seule : c'est tout le gain
+    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
+    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
+    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
+  }
+  carteRasterCx = pcx; carteRasterCz = pcz;
+}
+// Le budget se vérifie tous les huit POINTS, pas par ligne : une colonne
+// dont le morceau n'est pas encore engendré le fait engendrer (`getBlock`),
+// et une ligne de 193 points peut en traverser treize — trois cents
+// millisecondes dans une « bande de quatre ». Une ligne entamée se reprend
+// où elle en était.
+let carteBandeI = 0;
+function repeindreBandeCarte(budgetMs) {
+  if (!carteRaster) return;
+  const N = carteRasterR * 2 + 1;
+  const fin = performance.now() + budgetMs;
+  for (;;) {
+    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR);
+    if (++carteBandeI >= N) { carteBandeI = 0; carteBande = (carteBande + 1) % N; }
+    if ((carteBandeI & 7) === 0 && performance.now() >= fin) return;
+  }
+}
 
 // UNE SONDE, PAS UN TÉMOIN. Elle compare le fond DÉFILÉ à un fond entièrement
 // recalculé au même endroit : c'est ce qui prouve qu'une recopie ne montre pas
@@ -5010,30 +5072,12 @@ function decalerCarte(buf, N, dx, dz) {
   }
 }
 
-function drawMap(mapCanvas, radius, fondEntier = false) {
+function drawMap(mapCanvas, radius) {
   const ctx = mapCanvas.getContext('2d');
   const size = mapCanvas.width;
   const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
   const N = radius * 2 + 1;
-  if (!carteRaster || carteRasterR !== radius) {
-    carteRaster = new Uint8ClampedArray(N * N * 4);
-    carteRasterR = radius;
-    carteHorsSol = document.createElement('canvas');
-    carteHorsSol.width = N; carteHorsSol.height = N;
-    fondEntier = true;
-  }
-  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
-  if (fondEntier || Math.abs(dx) >= N || Math.abs(dz) >= N) {
-    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-  } else if (dx !== 0 || dz !== 0) {
-    decalerCarte(carteRaster, N, dx, dz);
-    // la bande neuve, et elle seule : c'est tout le gain
-    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
-    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
-    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-  }
-  carteRasterCx = pcx; carteRasterCz = pcz;
+  assurerRasterCarte(radius);
   const hctx = carteHorsSol.getContext('2d');
   const img = hctx.createImageData(N, N);
   img.data.set(carteRaster);
@@ -5339,7 +5383,7 @@ document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
   if (minimapVisible) {
-    drawMap(minimapCanvas, 96, true);
+    drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
   }
 });
@@ -6071,11 +6115,19 @@ function frame(now) {
   if (minimapVisible) {
     const bouge = !carteVue
       || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
-    const fond = carteFond();
-    if (fond || (bouge && carteSuivre())) {
-      drawMap(minimapCanvas, 96, fond);
+    // le fond se repeint par bandes à chaque image (v258), et l'affichage se
+    // refait toutes les 120 ms — le raster défile de lui-même quand l'enfant
+    // a changé de bloc, et les bandes repeintes se montrent
+    repeindreBandeCarte(4);
+    if (bouge || carteSuivre()) {
+      drawMap(minimapCanvas, 96);
       carteVue = { x: player.pos.x, z: player.pos.z };
     }
+  } else if (!running && PREPARER) {
+    // à l'accueil, la minicarte se prépare autour de l'enfant (v258) : son
+    // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume
+    assurerRasterCarte(96);
+    repeindreBandeCarte(8);
   }
 
   const hit = running ? getTarget() : null;
@@ -6122,6 +6174,12 @@ requestAnimationFrame(() => {
   // dix secondes, pour ne jamais retenir un enfant. Un démarrage ordinaire ne
   // change pas.
   const loader = document.getElementById('boot-loader');
+  // LA POSITION LOCALE SE RESTAURE À L'ACCUEIL, PAS AU CLIC (v258). Le monde
+  // se chargeait autour du point d'apparition pendant que l'enfant lisait
+  // l'accueil, puis « Jouer » le téléportait là où il s'était arrêté — et
+  // tout se rechargeait sous ses yeux. Restauré ici, le monde autour de lui
+  // (et le fond de la carte) se préparent pendant l'accueil.
+  if (world.ctx === 'local') restorePosition();
   let apresMaj = false;
   try { apresMaj = sessionStorage.getItem('wm-maj-installe') === '1'; } catch { /* mode privé */ }
   if (!apresMaj) loader.classList.add('hidden');
@@ -6143,6 +6201,55 @@ requestAnimationFrame(() => {
   let chauffeFinie = false;
   const pas = () => { if (chauffe()) requestAnimationFrame(pas); else chauffeFinie = true; };
   requestAnimationFrame(pas);
+
+  // LE JEU SE PRÉPARE AVANT « JOUER », ET LE BOUTON ATTEND (v258).
+  //
+  // Max : « ne devrait-il pas y avoir le temps de télécharger tous les
+  // fichiers nécessaires avant de permettre à l'utilisateur de démarrer le
+  // jeu, pour éviter une expérience de lag ? » Ce qui lague dans les
+  // premières minutes n'est pas un fichier qui manque — le service worker
+  // les a tous — mais ce qui se CALCULE au premier usage : les corps
+  // réalistes (8 Mo à analyser, à la première visite à télécharger), les
+  // programmes de la flotte, les morceaux du monde autour de l'enfant et le
+  // premier fond de la carte. Tout cela se fait maintenant, pendant
+  // l'accueil : la position locale est déjà restaurée (le monde se charge
+  // là où il jouera, pas au point d'apparition), la carte prépare son fond
+  // par tranches, et une ligne sous les boutons dit où l'on en est. « Jouer »
+  // et « Jouer en ligne » sont grisés jusqu'à ce que tout soit prêt — borné
+  // à quarante-cinq secondes, pour ne jamais retenir un enfant. Le banc
+  // demande `?prep=0` (les suites ne mesurent pas la préparation, et leur
+  // rendu logiciel analyse les corps en dix secondes) ; le témoin de `maj.js`
+  // la demande, elle.
+  const lignePrep = document.getElementById('prep-line');
+  const boutonsPrep = ['play-btn', 'online-btn'].map((id) => document.getElementById(id)).filter(Boolean);
+  // la taille que la fiche de la carte aura (sa feuille de style) : préparer
+  // à cette taille, c'est ne rien avoir à recalculer à l'ouverture
+  if (PREPARER) {
+    carte.preparer(player.pos.x, player.pos.z, 0.7,
+      Math.min(560, 0.88 * window.innerWidth), Math.min(560, 0.62 * window.innerHeight));
+  }
+  const departPrep = performance.now();
+  let prepPrete = !PREPARER;
+  window.__preparation = () => ({
+    gate: PREPARER, prete: prepPrete, humains: humainsCharges(), programmes: programmesChauffes(),
+    aChauffer: programmesAChauffer(), carte: carte.prete(), depuis: Math.round(performance.now() - departPrep),
+  });
+  const veillerPrep = () => {
+    const h = humainsPrets();
+    const pret = humainsCharges() && chauffeFinie && carte.prete();
+    if (pret || performance.now() - departPrep > 45000) {
+      prepPrete = true;
+      for (const b of boutonsPrep) b.disabled = false;
+      if (lignePrep) lignePrep.style.display = 'none';
+      return;
+    }
+    if (lignePrep) {
+      lignePrep.style.display = 'block';
+      lignePrep.textContent = `⏳ Préparation du jeu… personnages ${h.prets}/${h.total} · programmes ${programmesChauffes()}/${programmesAChauffer()} · carte ${carte.prete() ? '✓' : '…'}`;
+    }
+    setTimeout(veillerPrep, 250);
+  };
+  if (PREPARER) { for (const b of boutonsPrep) b.disabled = true; veillerPrep(); }
   if (apresMaj) {
     const texte = document.getElementById('boot-text');
     const depart = performance.now();

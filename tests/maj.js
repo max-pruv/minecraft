@@ -42,7 +42,11 @@ function verifier(nom, ok, detail = '') {
   try {
     // Le service worker doit être VIVANT : c'est lui tout le sujet. Le banc le
     // débranche partout ailleurs, à raison — ici on le garde.
-    const tab = await banc.joueur('Camille', { avecSW: true });
+    // `prep: 1` (v258) : le geste de Max se fait sur l'accueil, pendant que
+    // le jeu SE PRÉPARE — corps, programmes, monde et cartes. La mise à jour
+    // doit passer au travers ; sans préparation elle ne mesurerait pas le
+    // trajet de l'enfant.
+    const tab = await banc.joueur('Camille', { avecSW: true, prep: 1 });
     await tab.evaluate(() => navigator.serviceWorker.ready);
 
     // Le service worker a pris la main : sans lui, rien de ce qui suit n'a de
@@ -216,6 +220,50 @@ function verifier(nom, ok, detail = '') {
     await dormir(25000);   // on ne touche à rien : l'enfant lit l'accueil
     verifier('mais l\'enfant qui reste sur l\'accueil l\'obtient quand même',
       surAccueil.length > 0, `${surAccueil.length} requête(s)`);
+
+    // --- le jeu se prépare AVANT « Jouer », et le bouton attend (v258) --------
+    //
+    // Max : « ne devrait-il pas y avoir le temps de télécharger tous les
+    // fichiers nécessaires avant de permettre à l'utilisateur de démarrer le
+    // jeu, pour éviter une expérience de lag ? » Ce qui lague au début n'est
+    // pas un fichier mais ce qui se calcule au premier usage : les corps, les
+    // programmes, le fond de la carte. La page se prépare derrière l'accueil,
+    // une ligne dit où elle en est, et « Jouer » reste grisé jusque-là. On
+    // ÉPROUVE LE TRAJET DE L'ENFANT : il ouvre le jeu, le bouton attend, la
+    // ligne compte, et quand le bouton se libère tout est vraiment prêt. Sur
+    // l'ancien code, le bouton n'attend jamais et la ligne n'existe pas.
+    // (`prep: 1` : le banc demande d'ordinaire `?prep=0`.)
+    const prune = await banc.joueur('Prune', { prep: 1 });
+    const debutPrep = Date.now();
+    let premier = null, liberation = null;
+    const lignes = new Set();
+    while (!liberation && Date.now() - debutPrep < 60000) {
+      const e = await prune.evaluate(() => {
+        const b = document.getElementById('play-btn');
+        const l = document.getElementById('prep-line');
+        return { grise: !!(b && b.disabled), ligne: l ? l.textContent : null,
+          prep: window.__preparation ? window.__preparation() : null };
+      }).catch(() => null);
+      if (e) {
+        if (!premier) premier = e;
+        if (e.ligne) lignes.add(e.ligne);
+        if (!e.grise) liberation = { ...e, apres: Date.now() - debutPrep };
+      }
+      await dormir(100);
+    }
+    console.log(`   🔎 préparation : ${[...lignes].slice(0, 3).join(' | ')} · libération ${JSON.stringify(liberation)}`);
+    verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
+      !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
+      JSON.stringify(premier));
+    verifier('et quand il se libère, corps, programmes et fond de carte sont vraiment là',
+      !!liberation && !!liberation.prep && liberation.prep.humains === true
+      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true
+      && liberation.apres < 45000,
+      JSON.stringify(liberation));
+    await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+    const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    verifier('et « Jouer » lance bien la partie une fois libéré', lance);
+    await prune.close();
 
     // --- le badge de version ouvre le journal des nouveautés (v254) --------
     //
