@@ -93,7 +93,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
-  3 017 / 34,6 ; v263 3 283 / 37,3 — le même premier survol), et le témoin extrait
+  3 017 / 34,6 ; v263 3 283 / 37,3 ; v264 3 183 / 37,7 — le même premier survol),
+  et le témoin extrait
   dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
   chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
   (v258) 1 367 ms / 9,7 % puis 300 / 0. Le PREMIER survol de Paris paie la
