@@ -979,6 +979,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## Fait récemment
 
+- [x] **v256** — Le panneau 🛠️ s'en va (atelier, coffre, quête, panneaux,
+  chantier, records, chapeaux, feux d'artifice), le bouton devient 🖼️
+  Souvenirs ; aucune donnée effacée, les messages d'une ancienne tablette
+  ignorés sans casse et relayés. Et la Rotonde de `washington.js` se rejoint
+  jusqu'à être entré, plus en quatorze pas.
+
 - [x] **v255** — Le portail d'essai attend ce qui compte, plus le temps :
   instrument de charge instantané (`tests/charge.js`, `/proc/stat` sur une
   demi-seconde) pour `souffler` et le repos entre suites, une charge stable
