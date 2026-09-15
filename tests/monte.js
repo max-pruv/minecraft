@@ -1766,8 +1766,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // à quatre-vingt-dix pour cent : à 500 elle est tombée au portail de la
     // v255 sur 490 relevés et ZÉRO saut — c'est le piège des trois bornes de
     // ce fichier (v237), une quatrième fois.
+    //
+    // ET LE BANC A ENCORE RALENTI : 250 est tombée aux portails de la v264
+    // (73 relevés) et de la v265 (92, puis 203), toujours avec ZÉRO saut.
+    // C'est la CINQUIÈME fois, et la leçon ne change pas : une borne de
+    // garde ne dit pas « la mesure est bonne », elle dit « la mesure a eu
+    // lieu ». Cent : à deux cents relevés on verrait un saut s'il y en avait
+    // un, et une sonde qui n'a rien mesuré rend zéro.
     verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
-      voitures.mesures > 250 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
+      voitures.mesures > 100 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
     verifier('et elles s\'inclinent dans le virage, du bon côté',
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
@@ -2506,8 +2513,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     await filPage.close();
+    // La borne de garde des blocs parcourus passe de 100 à 40 (v265, même
+    // passe que celle des relevés de virage) : elle est tombée au portail de
+    // la v264 sur 66 blocs et à celui de la v265 sur 90, alors que le
+    // VERDICT — zéro milliseconde de maillage sur le fil principal, 118
+    // morceaux venus du worker — était vert des deux côtés. Une borne à
+    // quatre-vingt-dix pour cent du relevé mesure le banc.
     verifier('en vol au-dessus de Paris, le monde se maille hors du fil principal',
-      !fil.absent && fil.worker && fil.parcouru > 100 && fil.distants >= 20 && fil.msParSeconde < 120,
+      !fil.absent && fil.worker && fil.parcouru > 40 && fil.distants >= 20 && fil.msParSeconde < 120,
       fil.absent ? 'pas de compteur de maillage : tout se maille dans l\'image' : JSON.stringify(fil));
     verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
       !fil.absent && fil.compares >= 6 && fil.differents === 0,
@@ -2900,8 +2913,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Cinq cent cinquante et cinq pour cent laissent donc passer le portail
     // chargé et refusent l'ancien code de loin. Une borne se règle sur la
     // dispersion mesurée, jamais sur le meilleur relevé.
+    // `images > 60` est une borne de GARDE — « la boucle de rendu vit » — et
+    // elle est tombée au portail de la v265 sur 56 images pendant que le
+    // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
+    // `programmes.images` utilise déjà pour dire la même chose (v246) : une
+    // page morte rend zéro.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 60
+      !secousses.err && secousses.images > 30
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
