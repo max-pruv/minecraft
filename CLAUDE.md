@@ -805,6 +805,77 @@ chaque image, ne touche au DOM que si l'état change) : saut, pioche,
 capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
 `getComputedStyle(...).display`, en véhicule et à pied.
 
+## La file du mailleur, le plateau de vitesse, et les commandes de bord (v265)
+
+Max, capture d'iPhone du chasseur de nuit : « Jet should fly faster, button
+pour les roues mal placé, pas élégant ». Trois règles, et la première
+rembourse une dette que la v229 avait écrite elle-même.
+
+- **UNE FILE D'AVANCE EST UN TEMPS, PAS UN COMPTE — et c'est le piège de
+  `dt` à un troisième étage.** Le mailleur du worker (v251) recevait HUIT
+  morceaux d'avance, réapprovisionnés une fois par IMAGE. À Paris un morceau
+  coûte 24 ms : huit occupent le worker 192 ms, la file tient jusqu'à l'image
+  suivante. En campagne un morceau coûte 6,6 ms : huit ne font que 53 ms, et
+  sur une tablette à cinq images par seconde le worker passe les quatre
+  cinquièmes de son temps À SEC — au moment précis où l'enfant arrive quelque
+  part. C'est le budget par image de la v237, déplacé d'un cran. Mesuré par
+  saturation (une téléportation met tout le disque à mailler d'un coup), débit
+  de POINTE en morceaux par seconde à rr=12 : file de 8 → 57 campagne / 41
+  Paris ; 24 → 147 / 76 ; **48 → 200 / 99** ; 64 → 209 / 105 ; 200 → 188 /
+  123. Quarante-huit prend quatre-vingt-quinze pour cent du gain et garde la
+  file fraîche ; au-delà on maille des morceaux que l'enfant a déjà dépassés.
+  `?attente=` la force, pour remesurer.
+- **ET DEUX MAILLEURS N'AJOUTENT RIEN : un non-résultat MESURÉ, on ne le
+  réessaie pas.** Avec la file à quarante-huit : un mailleur 200/99 à 11,6/4,9
+  images par seconde ; deux 206/125 mais 10,5/3,8 images ; trois 198/100 à
+  8,6/3,4. Passé la file, le goulot n'est plus le mailleur — c'est le fil
+  principal, qui doit INSTALLER les géométries. Un mailleur de plus ne fait
+  que lui en envoyer plus, en payant un monde jumeau de mémoire et la
+  génération des morceaux de bord deux fois. Le pool a été écrit, mesuré,
+  puis RETIRÉ ; ce paragraphe est là pour qu'on ne le réécrive pas.
+- **LA DETTE DE LA v229 SE REMBOURSE COMME ELLE L'AVAIT ANNONCÉ.** Elle
+  écrivait : « le seul moyen de reprendre le rapport est de MAILLER PLUS
+  VITE, pas de réécrire ce commentaire. » On remesure donc au MÊME critère —
+  le trou devant soi, médiane sur six relevés, rr=12, campagne ET couloir de
+  villes ; 192 est le maximum lisible (le rayon d'affichage, donc « aucun
+  trou ») : file de 8, 110 → 82 · 93 ; file de 48, 110 → 192 · 192, 160 → 192
+  · 192, **190 → 192 · 192**, 240 → 148 · 192, 300 → 112 · 51. Le plateau est
+  à cent quatre-vingt-dix : la dernière vitesse où le monde est entier des
+  deux côtés. Avion de ligne 95 → 120, Concorde et chasseur 110 → 190 ; le
+  rapport remonte de 1,16 à 1,58, le réel (2,4) reste une dette. Décollage,
+  approche et freinage ne changent pas — la fiche ne touche que `max`.
+- **UNE VITESSE D'ESSAI SE MET DANS LA FICHE, JAMAIS DANS LA VARIABLE DU
+  MOMENT.** Ma première sonde posait `player.vitesseAvion = v` ; en état
+  `vol`, `player.js` vise `p.max` et l'avion y retombait en une seconde.
+  Parcouru 495 blocs à 110 et 506 à 300 — le même vol quatre fois, et j'ai
+  failli conclure que la vitesse ne changeait rien. C'est la sœur de « une
+  sonde de déplacement vérifie d'abord qu'elle s'est déplacée » : on vérifie
+  que la CONSIGNE a été prise avant de lire l'effet.
+- **UN ÉCRAN DE COMMANDES SE MESURE, ET IL SE JUGE EN CAPTURE.** Relevé sur
+  un iPhone de 430 × 932, aux commandes : ✈️ et 🛞 flottaient à 340 px du bas,
+  en plein ciel, VINGT pixels au-dessus de la manette et dans DEUX colonnes
+  (x 346 et x 270) ; le compteur « 684 km/h » vivait DANS la manette, replié
+  sur deux lignes de onze pixels sous le curseur blanc. Deux colonnes
+  jumelles dans le coin bas-droit règlent les deux : la manette à l'extrême
+  droite, à sa gauche ✈️, 🛞 et la vitesse. **Le fond de la colonne
+  (`#cmd-vol`) n'est JAMAIS le parent des boutons ni de la manette** : la
+  manette lit `getBoundingClientRect` et capture son pointeur, on ne met rien
+  entre elle et le doigt.
+- **CHAQUE BOUTON PORTE SON MOT, ET LE MOT DIT L'ÉTAT.** Un pictogramme de
+  roue ne se devine pas à sept ans, et ✈️ ne dit pas s'il décolle ou s'il
+  pose : DÉCOLLER / SE POSER, train SORTI / RENTRÉ, écrits seulement quand le
+  mot change — une réécriture par image coûte un reflow (leçon du cadran de
+  cap, v263).
+- **UN TÉMOIN DE MISE EN PAGE SE FORMULE SANS LA TAILLE DE L'ÉCRAN.** Mon
+  première formulation exigeait les boutons « dans le tiers du bas » : juste
+  sur l'iPhone de Max (932 de haut), FAUSSE sur le 420 × 760 du banc, où la
+  colonne occupe une plus grande part de la hauteur — le code NEUF y serait
+  rouge, 460 contre une barre à 507. Le calcul l'a écartée avant le banc,
+  parce que le relevé des deux tailles était sous les yeux. Ce qui se dit
+  sans dimension, c'est « aucune commande ne dépasse le HAUT de la
+  manette » et « les deux boutons ont le même x ». C'est la formulation
+  exacte de « rien ne flotte ».
+
 ## Les flammes des réacteurs (v264)
 
 Max, capture du chasseur : « voir les flammes sortir du réacteur quand

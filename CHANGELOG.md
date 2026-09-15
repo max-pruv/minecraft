@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v265 — Les jets volent bien plus vite, et les commandes de vol tiennent ensemble
+
+**Pourquoi.** Max, capture d'iPhone du chasseur en vol de nuit : « Jet should
+fly faster, button pour les roues mal placé, pas élégant ». Les trois avions
+volaient à 95 et 110 blocs par seconde depuis la v229, et ce n'était pas un
+goût : le monde ne se maillait pas assez vite pour suivre plus rapide. La
+v229 l'avait écrit noir sur blanc — « le seul moyen de reprendre est de
+mailler plus vite ». Et sur la capture, les deux boutons du vol flottaient en
+plein ciel, dans deux colonnes différentes, au-dessus d'une manette qu'ils ne
+touchaient pas, pendant que le compteur « 684 km/h » se repliait sur deux
+lignes sous le curseur blanc.
+
+**Ce que ça change.** Le chasseur et le Concorde passent de 110 à 190 blocs
+par seconde — 684 km/h au compteur, sept dixièmes de plus — et l'avion de
+ligne de 95 à 120. Le paysage arrive quand même : il est même plus complet
+qu'avant, parce que le mailleur ne travaille plus à sec. Décollage, approche
+et atterrissage ne bougent pas d'un chiffre : ce qu'un enfant a appris
+continue de marcher. Et les commandes de vol deviennent un seul instrument
+dans le coin bas-droit : deux colonnes jumelles, la manette des gaz à
+l'extrême droite, à sa gauche ✈️ et 🛞 l'un sous l'autre avec la vitesse
+dessous. Chaque bouton porte son mot, et le mot dit l'état — DÉCOLLER ou SE
+POSER, train SORTI ou RENTRÉ. Le bandeau de message ne déborde plus de
+l'écran et passe sous le cadran de cap.
+
+**Ce qui le prouve.** La vitesse a été remesurée au même critère que la v229 —
+le trou devant soi, médiane sur six relevés, à la distance d'affichage de
+l'iPad, en campagne et sur un couloir de villes. Avec l'ancienne file de
+huit morceaux, voler à 110 laissait un trou à 82 et 93 blocs ; avec la file
+de quarante-huit, 190 blocs par seconde rend le monde ENTIER jusqu'au bord de
+la vue des deux côtés, et c'est la dernière vitesse où c'est vrai — 240 casse
+en campagne, 300 casse partout. Le témoin du chargement en vol monte sa barre
+de 80 à 140 blocs et prend le chasseur, qui n'y était pas. Trois témoins neufs
+mesurent les commandes sur l'écran rendu : une seule colonne collée à la
+manette, la vitesse hors de la manette et sur une ligne, rien qui recouvre
+« Descendre », et le mot de chaque bouton. Captures au sol et en vol, à la
+taille d'un iPhone.
+
+---
+
 ## v264 — Les flammes des réacteurs
 
 **Pourquoi.** Max, capture du chasseur en vol : « j'aimerais qu'on puisse

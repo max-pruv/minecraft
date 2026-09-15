@@ -1571,6 +1571,9 @@ const gazFill = document.getElementById('gaz-fill');
 const gazKnob = document.getElementById('gaz-knob');
 const gazVal = document.getElementById('gaz-val');
 const trainBtn = document.getElementById('train-btn');
+const flyLb = document.getElementById('fly-lb');
+const trainLb = document.getElementById('train-lb');
+let dernierKmh = null, dernierMotVol = '', dernierMotTrain = '';
 function reglerGaz(e) {
   const r = gazBase.getBoundingClientRect();
   const marge = 14;
@@ -1615,10 +1618,30 @@ function majBoutonsVehicule() {
   niveau = Math.max(0, Math.min(1, niveau));
   gazFill.style.height = `${Math.round(niveau * 100)}%`;
   gazKnob.style.bottom = `calc(${(niveau * 100).toFixed(1)}% - ${Math.round(niveau * 22)}px)`;
-  gazVal.textContent = `${Math.round(v * 3.6)} km/h`;
+  // LE COMPTEUR A DEUX LIGNES VOULUES, PLUS UN REPLI SUBI (v265). Écrit
+  // « 684 km/h » d'un seul tenant dans une manette de soixante pixels, il se
+  // repliait sur deux lignes de onze, sous le curseur blanc : mesuré
+  // illisible sur capture d'iPhone. Le nombre est gros, l'unité petite, et
+  // le tout vit à côté de la manette, plus dedans.
+  const kmh = Math.round(v * 3.6);
+  if (kmh !== dernierKmh) {
+    dernierKmh = kmh;
+    gazVal.innerHTML = `<b>${kmh}</b><small>km/h</small>`;
+  }
   if (enAvion) {
     trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+    // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
+    // pas à sept ans, et ✈️ ne dit pas s'il décolle ou s'il pose. Le DOM ne
+    // s'écrit que quand le mot change — une réécriture par image coûte un
+    // reflow (leçon du cadran de cap, v263).
+    const etat = player.avionEtat || (player.avionEnVol ? 'vol' : 'sol');
+    const motVol = etat === 'sol' || etat === 'freinage' ? 'DÉCOLLER' : 'SE POSER';
+    const motTrain = (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5 ? 'SORTI' : 'RENTRÉ';
+    if (motVol !== dernierMotVol) { dernierMotVol = motVol; flyLb.textContent = motVol; }
+    if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
     majCadranDeCap();
+  } else if (dernierMotVol !== 'VOLER') {
+    dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER';
   }
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;

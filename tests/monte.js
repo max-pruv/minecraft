@@ -3834,6 +3834,100 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       anciennes.length === 2 && anciennes.every(conforme)
       && anciennes.every((o) => o.forme === 'manifeste'), JSON.stringify(anciennes));
 
+    // LES COMMANDES DE BORD SONT UN SEUL INSTRUMENT (v265).
+    //
+    // Max, capture d'iPhone : « button pour les roues mal placé, pas
+    // élégant ». Mesuré sur la capture, écran de 430 × 932 : ✈️ et 🛞
+    // flottaient en plein ciel à 340 px du bas, VINGT PIXELS AU-DESSUS de la
+    // manette et dans DEUX colonnes différentes (x 346 et x 270) ; et le
+    // compteur « 684 km/h » vivait DANS la manette, replié sur deux lignes
+    // sous le curseur blanc.
+    //
+    // Ce que le témoin dit, et pourquoi c'est formulé ainsi :
+    //   — les deux boutons partagent une colonne (même x) ;
+    //   — aucune commande ne dépasse le HAUT de la manette : c'est la façon
+    //     exacte de dire « rien ne flotte », et elle ne dépend pas de la
+    //     taille de l'écran, contrairement à « dans le tiers du bas » — que
+    //     le code neuf aurait raté sur le 420 × 760 du banc ;
+    //   — le compteur est HORS de la manette, donc jamais sous le curseur ;
+    //   — chaque bouton porte un mot, et le mot dit l'état (un pictogramme
+    //     de roue ne se devine pas à sept ans) ;
+    //   — rien ne recouvre « Descendre ».
+    const bord = await (async () => {
+      const prep = await tab.evaluate(async () => {
+        const g = window.__game;
+        const { BLOCK } = await import('./src/blocks.js');
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+        const x0 = 30000, z0 = 31600;
+        let y0 = 0;
+        for (let d = -6; d <= 40; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+        y0 += 2;
+        const dalle = [];
+        for (let d = -6; d <= 40; d++) for (let w = -6; w <= 6; w++) {
+          g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+          for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+        }
+        window.__dalle265 = { x0, y0, z0, dalle, sauve: g.player.pos.clone(), yaw0: g.player.yaw };
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 1200));
+        g.animalManager.invoquer('chasseur', x0 + 3, z0);
+        await new Promise((f) => setTimeout(f, 800));
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        if (!g.player.pilote) return { err: 'pas aux commandes' };
+        await new Promise((f) => setTimeout(f, 700));
+        const boite = (id) => {
+          const e = document.getElementById(id);
+          if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
+        const mot = (id) => { const e = document.getElementById(id); return e && getComputedStyle(e).display !== 'none' ? e.textContent : null; };
+        const gv = document.getElementById('gaz-val');
+        const nb = gv ? gv.querySelector('b') : null;
+        return {
+          vue: { w: innerWidth, h: innerHeight },
+          gaz: boite('gaz-base'), val: boite('gaz-val'), vol: boite('fly-btn'),
+          train: boite('train-btn'), cible: boite('fun-target'),
+          mots: { vol: mot('fly-lb'), train: mot('train-lb') },
+          nombre: nb ? { texte: nb.textContent, deborde: nb.scrollWidth > nb.clientWidth + 1 } : null,
+        };
+      });
+      await tab.evaluate(async () => {
+        const g = window.__game, P = window.__dalle265;
+        if (!P) return;
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      });
+      return prep;
+    })();
+    const croise = (a, b) => !!a && !!b
+      && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x)
+      && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+    const hautGaz = bord.gaz ? bord.gaz.y : 0;
+    verifier('aux commandes, ✈️ et 🛞 tiennent dans une seule colonne collée à la manette — rien ne flotte',
+      !bord.err && !!bord.gaz && !!bord.vol && !!bord.train
+      && bord.vol.x === bord.train.x
+      && bord.vol.y >= hautGaz && bord.train.y >= hautGaz
+      && bord.vol.y + bord.vol.h <= bord.gaz.y + bord.gaz.h
+      && bord.train.y + bord.train.h <= bord.gaz.y + bord.gaz.h
+      && bord.gaz.x - (bord.vol.x + bord.vol.w) < 30 && bord.gaz.x > bord.vol.x,
+      `${bord.err || ''} ${JSON.stringify({ vue: bord.vue, gaz: bord.gaz, vol: bord.vol, train: bord.train })}`);
+    verifier('la vitesse se lit hors de la manette, sur une ligne, et rien ne recouvre « Descendre »',
+      !bord.err && !!bord.val && !croise(bord.val, bord.gaz)
+      && !!bord.nombre && !bord.nombre.deborde
+      && !croise(bord.cible, bord.gaz) && !croise(bord.cible, bord.vol) && !croise(bord.cible, bord.train)
+      && !croise(bord.cible, bord.val),
+      `${bord.err || ''} ${JSON.stringify({ val: bord.val, gaz: bord.gaz, cible: bord.cible, nombre: bord.nombre })}`);
+    verifier('et chaque bouton dit ce qu\'il fait : au sol on DÉCOLLE, et le train est SORTI',
+      !bord.err && bord.mots && bord.mots.vol === 'DÉCOLLER' && bord.mots.train === 'SORTI',
+      `${bord.err || ''} ${JSON.stringify(bord.mots)}`);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {
