@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v264 — Les flammes des réacteurs
+
+**Pourquoi.** Max, capture du chasseur en vol : « j'aimerais qu'on puisse
+voir les flammes sortir du réacteur quand l'avion se déplace ». Un avion à
+pleins gaz sur la piste et un avion garé se ressemblaient trait pour trait :
+rien ne disait que les moteurs tournaient, ni combien la manette demandait.
+
+**Ce que ça change.** Chaque réacteur a sa flamme — deux sur l'avion de
+ligne, quatre sur le Concorde, une à la tuyère du chasseur — un cœur clair
+et une gaine orange qui sortent de la sortie du réacteur, vers la queue. La
+longueur suit la manette des gaz (v262) — et, manette non touchée, le
+trajet assisté de ✈️ : à fond au décollage, l'approche en finale, ralenti
+au freinage — rien à l'arrêt moteurs coupés, longue à pleins gaz, plus
+courte dès qu'on réduit ; elle vacille un peu. Les flammes s'éteignent quand on descend. Aucune lampe en
+plus (quatre pour tout le jeu), l'éclairage du monde ne change pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js`, qui lisent les
+maillages de flamme du modèle (`userData.tuyeres`) : les trois fabriques
+comptent 2, 4 et 1 tuyère ; monté par le bouton sur une piste, à l'arrêt
+aucune flamme n'est dessinée, et en vol après ✈️ chacune est visible et
+longue ; manette à fond puis réduite à 20 %, la flamme raccourcit de plus de
+moitié, et elle est éteinte une fois descendu. Rouges sur l'ancien code
+(pas de tuyère). Captures de derrière, avion de ligne et chasseur, dans
+`scratchpad/v264/captures`.
+
+Portail complet, sept suites : `carteMonde`, `maj`, `carte` et `reglages`
+vertes. Les rouges de `monte.js` et de `reseau.js` ont été rejoués SEULS
+dans les deux arbres et sont déclarés dans `TASKS.md` — le gel du premier
+survol de Paris (branche 4 133 ms, `origin/main` 4 117), le maillage en vol
+dont la borne de garde n'est pas atteinte (66 blocs parcourus contre 76), et
+surtout un défaut de PRODUCTION que cette livraison n'a pas causé : à trois
+joueurs, le second invité voit les deux autres et n'est vu de personne —
+même relevé au caractère près sur `origin/main`. Le conteneur du banc a
+redémarré en cours de route et rend 4,4 images par seconde là où il en
+rendait 5,4 : deux bornes de garde de `monte.js` tombent sous ce régime en
+ne mesurant rien, ce qui est noté comme une passe à faire.
+
 ## v263 — Le cadran de cap : la ville visée au loin
 
 **Pourquoi.** Max : « un cadran de pilote en avion : la ville visée au

@@ -3668,6 +3668,97 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && capAvion.rendu && !capAvion.rendu.affiche,
       `${capAvion.err || ''} à pied ${JSON.stringify(capAvion.aPied)} · rendu ${JSON.stringify(capAvion.rendu)}`);
 
+    // LES FLAMMES DES RÉACTEURS (v264).
+    //
+    // Max, capture du chasseur en vol : « voir les flammes sortir du réacteur
+    // quand l'avion se déplace ». Une flamme par tuyère — deux pour l'avion
+    // de ligne, quatre pour le Concorde, une pour le chasseur — dont la
+    // longueur suit la MANETTE : rien à l'arrêt moteurs coupés, longue à
+    // pleins gaz, plus courte quand on réduit.
+    //
+    // On lit CE QUI EST DESSINÉ : les maillages de flamme du modèle
+    // (`userData.tuyeres`, visibles ou non, et leur longueur rendue). Le
+    // compte se lit sur les trois fabriques sans page ; le reste se monte
+    // PAR LE BOUTON sur une piste, comme le trajet de la v261, parce que la
+    // flamme est réglée par `fun.js` sur la monture dessinée.
+    const flammes = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const m = await import('./src/montures.js');
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const comptes = {};
+      for (const k of ['avionligne', 'concorde', 'chasseur']) {
+        const mesh = m.MODELES_MONTURE[k]();
+        comptes[k] = (mesh.userData.tuyeres || []).length;
+      }
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+      const x0 = 30000, z0 = 30900, L = 300;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -4; w <= 4; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const dalle = [];
+      for (let d = -6; d <= L; d++) for (let w = -4; w <= 4; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+      }
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenirSecondes(1);
+      const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
+      if (!avion) return { err: 'aucun avion posé', comptes };
+      await tenirSecondes(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes', comptes };
+      const lire = () => (avion.mesh.userData.tuyeres || []).map((f) => ({ visible: f.visible, long: +f.scale.z.toFixed(2) }));
+      await tenirSecondes(0.6);
+      const arret = { v: +(g.player.vitesseAvion || 0).toFixed(1), gaz: g.player.gaz, flammes: lire() };
+      // ✈️ : pleins gaz, et l'on monte
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      let t = 0, vol = null;
+      while (t < 20 && !vol) { await tenirSecondes(0.2); t += 0.2; if (g.player.avionEtat === 'vol') vol = { t: +t.toFixed(1), v: +(g.player.vitesseAvion || 0).toFixed(1), flammes: lire() }; }
+      // la manette : pleins gaz, puis réduits
+      g.player.gaz = 1; await tenirSecondes(0.4);
+      const pleinsGaz = lire();
+      g.player.gaz = 0.2; await tenirSecondes(0.4);
+      const reduits = lire();
+      // on redescend : les flammes s'éteignent avec le mode pilote
+      g.player.pos.set(x0 + 40, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0; g.player.gaz = null;
+      await tenirSecondes(0.3);
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      await tenirSecondes(0.3);
+      const descendu = { auVolant: auVolant(), flammes: lire() };
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      g.player.avionEtat = undefined; g.player.gaz = null;
+      return { comptes, arret, vol, pleinsGaz, reduits, descendu };
+    });
+    const toutes = (l, f) => Array.isArray(l) && l.length > 0 && l.every(f);
+    verifier('chaque réacteur a sa tuyère : deux sur l\'avion de ligne, quatre sur le Concorde, une sur le chasseur',
+      !flammes.err && flammes.comptes && flammes.comptes.avionligne === 2 && flammes.comptes.concorde === 4 && flammes.comptes.chasseur === 1,
+      `${flammes.err || ''} ${JSON.stringify(flammes.comptes)}`);
+    verifier('à l\'arrêt moteurs coupés, aucune flamme ; en vol, une flamme derrière chaque tuyère',
+      !flammes.err && flammes.arret && flammes.arret.flammes.length === 2 && flammes.arret.flammes.every((f) => !f.visible)
+        && !!flammes.vol && toutes(flammes.vol.flammes, (f) => f.visible && f.long > 0.5),
+      `${flammes.err || ''} arrêt ${JSON.stringify(flammes.arret)} · vol ${JSON.stringify(flammes.vol)}`);
+    verifier('la flamme suit la manette — plus longue à pleins gaz, plus courte réduite — et s\'éteint quand on descend',
+      !flammes.err && toutes(flammes.pleinsGaz, (f) => f.visible) && toutes(flammes.reduits, (f) => f.visible)
+        && flammes.pleinsGaz[0].long > flammes.reduits[0].long * 1.8
+        && flammes.descendu && !flammes.descendu.auVolant && toutes(flammes.descendu.flammes, (f) => !f.visible),
+      `${flammes.err || ''} pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · réduits ${JSON.stringify(flammes.reduits)} · descendu ${JSON.stringify(flammes.descendu)}`);
+
     // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
     // ROUES (v230).
     //
