@@ -48,6 +48,16 @@ pas sous la surface (46,2 contre 26) et la remise des gaz a bien eu lieu ; et
 le compteur RENDU — celui que l'enfant lit, pas la fiche — affiche 900 km/h,
 Mach 1,8 et Mach 1,8, là où la version publiée affichait 432, 576 et 576.
 
+Portail complet, quinze suites, soixante-huit minutes : les deux témoins neufs
+verts, et quatre suites rouges dont AUCUNE ne vient d'ici. Trois sont des
+dettes déjà écrites (le métro de Washington, le délai de `manhattan.js`, la
+poule et le gel du premier survol de Paris). La quatrième est neuve au
+registre et vieille en production : le fond de la carte du monde ne finit pas
+son calcul dans les quarante-cinq secondes de la préparation. Rejouée SEULE
+dans les deux arbres le même jour, elle rend le même verdict — 45 121 ms ici,
+45 128 sur la version publiée, la carte encore au travail des deux côtés. Elle
+part dans `TASKS.md` avec ce qu'il faut mesurer avant d'y toucher.
+
 ---
 
 ## v266 — Un enfant qui charge son monde n'est pas un enfant parti
