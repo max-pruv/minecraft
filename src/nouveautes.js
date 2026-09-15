@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 266,
+    titre: "Un ami ne disparaît plus",
+    puces: [
+      "👧 Le troisième joueur reste visible",
+      "⏳ Même si sa tablette charge longtemps",
+      "🌍 Plus besoin de revenir dans le monde",
+    ],
+  },
+  {
     v: 265,
     titre: "Les jets volent bien plus vite",
     puces: [

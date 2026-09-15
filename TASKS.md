@@ -96,8 +96,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
   vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
   (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
-- [ ] **UN TROISIÈME JOUEUR N'EST PAS VU DES DEUX AUTRES — mesuré des deux
-  côtés (v264).** « À trois, chacun voit les deux autres » (`reseau.js`) rend
+- [x] **UN TROISIÈME JOUEUR N'EST PAS VU DES DEUX AUTRES — mesuré des deux
+  côtés (v264).** TROUVÉ ET CORRIGÉ en v266. La cause n'était ni le lien, ni
+  la veille : **le fil principal du nouvel arrivant est bloqué vingt-neuf
+  secondes dans une SEULE tâche** pendant que son monde se charge (pas médian
+  de son minuteur de 100 ms : 100 ms ; pire tour : 29 128 ms). Il n'émet rien,
+  ne reçoit rien, et l'hôte le retire à 22 s de silence — lien `open`, canal
+  `open`. La règle des vingt secondes avait été écrite pour les pairs RELAYÉS
+  et s'appliquait à tout le monde ; elle ne juge plus que ceux qu'on ne peut
+  pas sonder, et l'hôte annonce `dodo_de` à la moitié du délai pour que
+  l'autre invité ne conclue pas avant lui. Témoin neuf qui GÈLE la page du
+  troisième joueur vingt-cinq secondes : rouge sur `origin/main`, vert deux
+  fois de suite ici. Sondes : `scratchpad/v266/sonde-trio.cjs`,
+  `sonde-veille.cjs`, `sonde-famine.cjs`, `sonde-gel.cjs`.
+  Le texte d'origine : « À trois, chacun voit les deux autres » (`reseau.js`) rend
   exactement `[["Alice"],["Marlon"],["Alice","Marlon"]]` et le compteur
   `2/2/3` : **Nina voit l'hôte et Alice, mais ni l'hôte ni Alice ne la
   voient.** Elle arrive, elle reçoit, et ce qu'elle émet ne parvient à
@@ -155,6 +167,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   géométries sur le fil principal comme le maillage l'est déjà
   (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
   l'image où il arrive. Non fait, non mesuré.
+- [ ] **`reglages.js` : « elle s'aligne même dessus » va et vient (v266).**
+  Rouge au portail complet de la v265 ET de la v266, VERTE rejouée seule sur
+  la branche ET sur `origin/main` le même jour. Rien de `reglages.js` ni de
+  l'espace parent n'a bougé depuis. C'est un rouge de portail, pas un défaut :
+  à reprendre comme la poule, par une attente bornée sur ce que l'enfant
+  obtient au lieu d'une lecture après un délai.
 - [ ] **`reseau.js` : le témoin du passager va et vient (v265).** « Et l'on
   monte en passager : la voiture de l'ami nous emmène » est rouge une fois
   sur deux quand la suite est rejouée SEULE sur la branche (`roule 1,14 ·
