@@ -2742,6 +2742,27 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // plus rapide — et le brouillard est REPORTÉ à côté, pour qu'on sache
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
+    //
+    // ET LA BARRE MONTE À CENT QUARANTE (v265), parce que la mesure a bougé.
+    // La file du mailleur est passée de huit morceaux d'avance à
+    // quarante-huit et le débit a triplé ; les avions sont montés à 120 et
+    // 190 blocs par seconde. Relevé sur la sonde du plateau, trou médian sur
+    // six relevés, campagne et couloir de villes :
+    //
+    //     file de huit          110 → 82 · 93
+    //     file de quarante-huit 190 → 192 · 192      240 → 148 · 192
+    //                                                300 → 112 ·  51
+    //
+    // Cent quatre-vingt-douze est le maximum lisible (le rayon d'affichage,
+    // donc « aucun trou »). Cent quarante sépare donc ce que la file neuve
+    // rend À LA VITESSE DE LA FICHE de ce que l'ancien code rendait à une
+    // vitesse presque deux fois moindre — le témoin est rouge sur
+    // `origin/main`, et il le serait aussi si quelqu'un remontait les
+    // vitesses au-delà du plateau.
+    //
+    // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
+    // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
+    // chargement éprouve la plus grande vitesse du jeu, pas une moyenne.
     // UNE PAGE À LA DISTANCE D'AFFICHAGE DE L'IPAD. Le banc ouvre tout à
     // `rr=2` pour que le monde se charge vite : le brouillard y est alors à
     // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
@@ -2756,11 +2777,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!scene || !scene.fog) return { err: 'ni scène ni brouillard' };
       const CHUNK = 16, R = 12;
       const out = { brouillard: Math.round(scene.fog.near) };
-      for (const key of ['avionligne', 'concorde']) {
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
         const def = m.MONTURES.find((d) => d.key === key);
         // Un couloir vierge, loin de tout : on éprouve le STREAMING, pas le
         // coût d'une ville.
-        g.player.pos.set(30000 + (key === 'concorde' ? 4000 : 0), 100, 30000);
+        g.player.pos.set(30000 + ['avionligne', 'concorde', 'chasseur'].indexOf(key) * 4000, 100, 30000);
         g.player.vel.set(0, 0, 0); g.player.yaw = 0; g.player.pitch = 0;
         g.player.flying = true;
         g.player.pilote = def.pilote;
@@ -2809,10 +2830,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return out;
     });
-    const BARRE = 80;
+    const BARRE = 140;
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
-      !suivi.err && suivi.avionligne && suivi.concorde
-      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
+      !suivi.err && suivi.avionligne && suivi.concorde && suivi.chasseur
+      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE
+      && suivi.chasseur.trou >= BARRE,
       `barre ${BARRE} · ${JSON.stringify(suivi)}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
