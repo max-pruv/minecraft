@@ -2,14 +2,20 @@
 
 - **Personnages et véhicules v241 :** compléter la variété des anatomies et vêtements, les expressions faciales et la validation Safari/iPad physique. Les costumes historiques et plusieurs voitures du catalogue restent plus simples ; ne pas les présenter comme photoréalistes.
 
-- **Les avions ont perdu leur rapport de vitesse réel (v229).** Le plafond du
-  chargement du monde est 110 blocs/s ; les vitesses sont donc 95 (avion de
-  ligne) et 110 (Concorde, chasseur), soit un rapport de 1,16 au lieu du 1 à
-  2,4 du réel. Décision de Max, « tout le monde autour de cent ». Pour le
-  reprendre il faut mailler plus vite : 45 % du coût est la génération du
-  relief (`fbm`, `terrainHeight`, `treeAt`, `cityAt`), qui est le chemin le
-  plus chaud du jeu et voisin de l'invariant 1 — donc un chantier à part, avec
-  sa double empreinte.
+- **Les avions ont repris une partie de leur rapport de vitesse (v229 →
+  v265).** La v229 écrivait que le seul moyen de reprendre le rapport était
+  de mailler plus vite ; c'est fait à moitié. La file du mailleur est passée
+  de huit morceaux d'avance à seize (`EN_ATTENTE_MAX`, main.js — le genou
+  mesuré : le débit de pointe double, la cadence ne bouge pas), le plateau
+  remesuré est à 160 blocs/s au lieu de 110, et les vitesses sont désormais
+  120 (avion de ligne) et 160 (Concorde, chasseur) : rapport 1,33 au lieu de
+  1,16. **Le réel est à 2,4 et reste hors de portée**, et la piste n'a pas
+  changé : 45 % du coût d'un morceau est la génération du relief (`fbm`,
+  `terrainHeight`, `treeAt`, `cityAt`), le chemin le plus chaud du jeu et
+  voisin de l'invariant 1 — donc un chantier à part, avec sa double
+  empreinte. Au-delà du genou, le goulot n'est plus le mailleur mais le fil
+  principal, qui INSTALLE les géométries : un pool de mailleurs a été écrit,
+  mesuré et retiré (non-résultat, voir `CLAUDE.md`).
 
 **Pourquoi ce fichier est dans le dépôt.** La liste de tâches de la session vit
 dans le conteneur, et le conteneur a été recyclé sept fois en deux jours. Deux
@@ -100,8 +106,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   lâche pour le SECOND invité.
   Mesuré, la suite rejouée SEULE dans les deux arbres : branche trois tours,
   rouge trois fois ; `origin/main` deux tours, un vert (93 s) puis un rouge
-  aux MÊMES valeurs (104 s). Ce n'est donc pas la livraison en cours — c'est
-  en production, et cela touche Marlon, Alice et un ami. À reprendre en
+  aux MÊMES valeurs (104 s). REMESURÉ en v265, toujours SEULE des deux
+  côtés : `origin/main` un vert puis un rouge (116 s, mêmes valeurs au
+  caractère près), branche un vert puis un rouge (121 s). Il va et vient sur
+  les DEUX arbres, à la même fréquence. Ce n'est donc pas la livraison en
+  cours — c'est en production, et cela touche Marlon, Alice et un ami. À reprendre en
   propre : une sonde qui distingue les cas plutôt qu'une hypothèse — Nina
   est-elle inscrite chez l'hôte, ses messages arrivent-ils, l'hôte les
   relaie-t-il ? — et non le témoin qu'on rejoue.
@@ -114,8 +123,18 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   (`chaufferLesProgrammes`, vehicules.js) comme les quatorze de la flotte.
   À faire dans la livraison qui touchera déjà aux avions, avec la mesure de
   `renderer.info.programs` avant et après le premier décollage.
-- [ ] **LES BORNES DE GARDE DE `monte.js` SONT POSÉES SUR UNE MACHINE PLUS
-  RAPIDE QUE CELLE-CI (v264).** Après le redémarrage du conteneur, la cadence
+- [x] **LES BORNES DE GARDE DE `monte.js` SONT POSÉES SUR UNE MACHINE PLUS
+  RAPIDE QUE CELLE-CI (v264).** FAIT en v265, en une passe sur le fichier :
+  relevés de virage 250 → 100 (tombée à 92 puis 203, toujours ZÉRO saut),
+  blocs parcourus en vol 100 → 40 (tombée à 66 en v264, 90 en v265, le
+  verdict vert des deux côtés), images du gel de Paris 60 → 30 (tombée à 56
+  pendant que le verdict tombait pour sa propre raison ; trente est la valeur
+  que `programmes.images` emploie déjà pour dire « la boucle de rendu vit »).
+  Reste « une poule ne propose pas de monter dessus », qui va et vient sur le
+  même code — verte au portail de la v265 et sur `origin/main` seule, rouge
+  au portail précédent et sur la branche seule : c'est une lecture de bouton
+  600 ms après la pose, à remplacer par une attente bornée.
+  Le texte d'origine : Après le redémarrage du conteneur, la cadence
   du banc est tombée de 5,4 à 4,4 images par seconde au même endroit, et deux
   témoins de `monte.js` ont rougi sur la BRANCHE en ne mesurant rien : « elles
   tournent progressivement » exige 250 relevés et n'en a eu que 73 — avec ZÉRO
@@ -125,6 +144,24 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   écrit trois fois : une borne de garde se pose à la MOITIÉ de ce qu'une
   machine qui respire a rendu, jamais juste en dessous. À reprendre en une
   passe sur TOUTES les bornes du fichier, comme la v237 l'a fait.
+- [ ] **UNE FILE DE MAILLEUR AU-DELÀ DU GENOU FAIT ROUGIR LE PORTAIL ENTIER
+  (v265) — mesure faite, à rejouer le jour où l'installation d'une géométrie
+  changera de prix.** Posée à quarante-huit sur le seul DÉBIT, elle a rendu
+  SEPT suites rouges dont QUATRE vertes la veille, toutes de cadence.
+  Ramenée au genou mesuré (seize), le portail retombe aux rouges de fond.
+  Le chiffre à remesurer est le couple (débit de pointe, images par
+  seconde) — sonde `scratchpad/v265/sonde-genou.cjs`, `?attente=` le règle.
+  Le vrai remède, si l'on veut aller plus loin : BORNER l'installation des
+  géométries sur le fil principal comme le maillage l'est déjà
+  (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
+  l'image où il arrive. Non fait, non mesuré.
+- [ ] **`reseau.js` : le témoin du passager va et vient (v265).** « Et l'on
+  monte en passager : la voiture de l'ami nous emmène » est rouge une fois
+  sur deux quand la suite est rejouée SEULE sur la branche (`roule 1,14 ·
+  suivi 0,67 · écart 0,77`), et vert au portail et sur `origin/main`. Rien
+  de `net.js` ni de `fun.js` n'a bougé en v265. À reprendre comme la poule :
+  une attente bornée sur ce que l'enfant obtient, pas une lecture après un
+  délai fixe.
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262

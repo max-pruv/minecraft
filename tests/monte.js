@@ -1766,8 +1766,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // à quatre-vingt-dix pour cent : à 500 elle est tombée au portail de la
     // v255 sur 490 relevés et ZÉRO saut — c'est le piège des trois bornes de
     // ce fichier (v237), une quatrième fois.
+    //
+    // ET LE BANC A ENCORE RALENTI : 250 est tombée aux portails de la v264
+    // (73 relevés) et de la v265 (92, puis 203), toujours avec ZÉRO saut.
+    // C'est la CINQUIÈME fois, et la leçon ne change pas : une borne de
+    // garde ne dit pas « la mesure est bonne », elle dit « la mesure a eu
+    // lieu ». Cent : à deux cents relevés on verrait un saut s'il y en avait
+    // un, et une sonde qui n'a rien mesuré rend zéro.
     verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
-      voitures.mesures > 250 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
+      voitures.mesures > 100 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
     verifier('et elles s\'inclinent dans le virage, du bon côté',
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
@@ -2506,8 +2513,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     await filPage.close();
+    // La borne de garde des blocs parcourus passe de 100 à 40 (v265, même
+    // passe que celle des relevés de virage) : elle est tombée au portail de
+    // la v264 sur 66 blocs et à celui de la v265 sur 90, alors que le
+    // VERDICT — zéro milliseconde de maillage sur le fil principal, 118
+    // morceaux venus du worker — était vert des deux côtés. Une borne à
+    // quatre-vingt-dix pour cent du relevé mesure le banc.
     verifier('en vol au-dessus de Paris, le monde se maille hors du fil principal',
-      !fil.absent && fil.worker && fil.parcouru > 100 && fil.distants >= 20 && fil.msParSeconde < 120,
+      !fil.absent && fil.worker && fil.parcouru > 40 && fil.distants >= 20 && fil.msParSeconde < 120,
       fil.absent ? 'pas de compteur de maillage : tout se maille dans l\'image' : JSON.stringify(fil));
     verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
       !fil.absent && fil.compares >= 6 && fil.differents === 0,
@@ -2742,6 +2755,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // plus rapide — et le brouillard est REPORTÉ à côté, pour qu'on sache
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
+    //
+    // ET LA BARRE RESTE À QUATRE-VINGTS EN v265, alors que la mesure s'est
+    // améliorée — parce que la règle qui l'a posée n'a pas changé : « au-delà
+    // d'une demi-seconde de vol même pour le plus rapide ». Le plus rapide
+    // fait désormais 160 blocs par seconde, donc une demi-seconde vaut
+    // toujours quatre-vingts blocs. Ce que la livraison gagne se lit dans le
+    // RELEVÉ, pas dans la barre : la file du mailleur est passée de huit
+    // morceaux d'avance à seize, et le trou médian (sonde du plateau, six
+    // relevés, campagne et couloir de villes) va de 91 · 82 à la vitesse
+    // d'avant, à 122 · 125 à la vitesse neuve — un monde PLUS complet en
+    // volant plus vite.
+    //
+    // Serrer la barre aurait mesuré le banc : la même sonde rend 192 seule
+    // et 163 au plus bas sous charge de portail. Une borne se pose sur la
+    // règle, pas sur le meilleur chiffre qu'on vient de voir.
+    //
+    // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
+    // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
+    // chargement éprouve la plus grande vitesse du jeu, pas une moyenne.
     // UNE PAGE À LA DISTANCE D'AFFICHAGE DE L'IPAD. Le banc ouvre tout à
     // `rr=2` pour que le monde se charge vite : le brouillard y est alors à
     // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
@@ -2756,11 +2788,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!scene || !scene.fog) return { err: 'ni scène ni brouillard' };
       const CHUNK = 16, R = 12;
       const out = { brouillard: Math.round(scene.fog.near) };
-      for (const key of ['avionligne', 'concorde']) {
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
         const def = m.MONTURES.find((d) => d.key === key);
         // Un couloir vierge, loin de tout : on éprouve le STREAMING, pas le
         // coût d'une ville.
-        g.player.pos.set(30000 + (key === 'concorde' ? 4000 : 0), 100, 30000);
+        g.player.pos.set(30000 + ['avionligne', 'concorde', 'chasseur'].indexOf(key) * 4000, 100, 30000);
         g.player.vel.set(0, 0, 0); g.player.yaw = 0; g.player.pitch = 0;
         g.player.flying = true;
         g.player.pilote = def.pilote;
@@ -2811,8 +2843,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const BARRE = 80;
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
-      !suivi.err && suivi.avionligne && suivi.concorde
-      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
+      !suivi.err && suivi.avionligne && suivi.concorde && suivi.chasseur
+      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE
+      && suivi.chasseur.trou >= BARRE,
       `barre ${BARRE} · ${JSON.stringify(suivi)}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
@@ -2880,8 +2913,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Cinq cent cinquante et cinq pour cent laissent donc passer le portail
     // chargé et refusent l'ancien code de loin. Une borne se règle sur la
     // dispersion mesurée, jamais sur le meilleur relevé.
+    // `images > 60` est une borne de GARDE — « la boucle de rendu vit » — et
+    // elle est tombée au portail de la v265 sur 56 images pendant que le
+    // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
+    // `programmes.images` utilise déjà pour dire la même chose (v246) : une
+    // page morte rend zéro.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 60
+      !secousses.err && secousses.images > 30
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
@@ -3811,6 +3849,100 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et les modèles du manifeste ne sont pas touchés',
       anciennes.length === 2 && anciennes.every(conforme)
       && anciennes.every((o) => o.forme === 'manifeste'), JSON.stringify(anciennes));
+
+    // LES COMMANDES DE BORD SONT UN SEUL INSTRUMENT (v265).
+    //
+    // Max, capture d'iPhone : « button pour les roues mal placé, pas
+    // élégant ». Mesuré sur la capture, écran de 430 × 932 : ✈️ et 🛞
+    // flottaient en plein ciel à 340 px du bas, VINGT PIXELS AU-DESSUS de la
+    // manette et dans DEUX colonnes différentes (x 346 et x 270) ; et le
+    // compteur « 684 km/h » vivait DANS la manette, replié sur deux lignes
+    // sous le curseur blanc.
+    //
+    // Ce que le témoin dit, et pourquoi c'est formulé ainsi :
+    //   — les deux boutons partagent une colonne (même x) ;
+    //   — aucune commande ne dépasse le HAUT de la manette : c'est la façon
+    //     exacte de dire « rien ne flotte », et elle ne dépend pas de la
+    //     taille de l'écran, contrairement à « dans le tiers du bas » — que
+    //     le code neuf aurait raté sur le 420 × 760 du banc ;
+    //   — le compteur est HORS de la manette, donc jamais sous le curseur ;
+    //   — chaque bouton porte un mot, et le mot dit l'état (un pictogramme
+    //     de roue ne se devine pas à sept ans) ;
+    //   — rien ne recouvre « Descendre ».
+    const bord = await (async () => {
+      const prep = await tab.evaluate(async () => {
+        const g = window.__game;
+        const { BLOCK } = await import('./src/blocks.js');
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+        const x0 = 30000, z0 = 31600;
+        let y0 = 0;
+        for (let d = -6; d <= 40; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+        y0 += 2;
+        const dalle = [];
+        for (let d = -6; d <= 40; d++) for (let w = -6; w <= 6; w++) {
+          g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+          for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+        }
+        window.__dalle265 = { x0, y0, z0, dalle, sauve: g.player.pos.clone(), yaw0: g.player.yaw };
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 1200));
+        g.animalManager.invoquer('chasseur', x0 + 3, z0);
+        await new Promise((f) => setTimeout(f, 800));
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        if (!g.player.pilote) return { err: 'pas aux commandes' };
+        await new Promise((f) => setTimeout(f, 700));
+        const boite = (id) => {
+          const e = document.getElementById(id);
+          if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
+        const mot = (id) => { const e = document.getElementById(id); return e && getComputedStyle(e).display !== 'none' ? e.textContent : null; };
+        const gv = document.getElementById('gaz-val');
+        const nb = gv ? gv.querySelector('b') : null;
+        return {
+          vue: { w: innerWidth, h: innerHeight },
+          gaz: boite('gaz-base'), val: boite('gaz-val'), vol: boite('fly-btn'),
+          train: boite('train-btn'), cible: boite('fun-target'),
+          mots: { vol: mot('fly-lb'), train: mot('train-lb') },
+          nombre: nb ? { texte: nb.textContent, deborde: nb.scrollWidth > nb.clientWidth + 1 } : null,
+        };
+      });
+      await tab.evaluate(async () => {
+        const g = window.__game, P = window.__dalle265;
+        if (!P) return;
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      });
+      return prep;
+    })();
+    const croise = (a, b) => !!a && !!b
+      && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x)
+      && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+    const hautGaz = bord.gaz ? bord.gaz.y : 0;
+    verifier('aux commandes, ✈️ et 🛞 tiennent dans une seule colonne collée à la manette — rien ne flotte',
+      !bord.err && !!bord.gaz && !!bord.vol && !!bord.train
+      && bord.vol.x === bord.train.x
+      && bord.vol.y >= hautGaz && bord.train.y >= hautGaz
+      && bord.vol.y + bord.vol.h <= bord.gaz.y + bord.gaz.h
+      && bord.train.y + bord.train.h <= bord.gaz.y + bord.gaz.h
+      && bord.gaz.x - (bord.vol.x + bord.vol.w) < 30 && bord.gaz.x > bord.vol.x,
+      `${bord.err || ''} ${JSON.stringify({ vue: bord.vue, gaz: bord.gaz, vol: bord.vol, train: bord.train })}`);
+    verifier('la vitesse se lit hors de la manette, sur une ligne, et rien ne recouvre « Descendre »',
+      !bord.err && !!bord.val && !croise(bord.val, bord.gaz)
+      && !!bord.nombre && !bord.nombre.deborde
+      && !croise(bord.cible, bord.gaz) && !croise(bord.cible, bord.vol) && !croise(bord.cible, bord.train)
+      && !croise(bord.cible, bord.val),
+      `${bord.err || ''} ${JSON.stringify({ val: bord.val, gaz: bord.gaz, cible: bord.cible, nombre: bord.nombre })}`);
+    verifier('et chaque bouton dit ce qu\'il fait : au sol on DÉCOLLE, et le train est SORTI',
+      !bord.err && bord.mots && bord.mots.vol === 'DÉCOLLER' && bord.mots.train === 'SORTI',
+      `${bord.err || ''} ${JSON.stringify(bord.mots)}`);
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

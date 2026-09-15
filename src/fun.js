@@ -83,6 +83,11 @@ export function initFun(ctx) {
     .fun-note { color:#8894b0; font-size:13px; margin:6px 2px; }
     .fun-target { position:fixed; left:50%; transform:translateX(-50%); bottom:96px;
       display:none; gap:8px; z-index:30; }
+    /* EN VÉHICULE, « Descendre » S'ÉCARTE DES COMMANDES DE BORD (v265). La
+       colonne de vol commence à 272 px du bord gauche sur un iPhone de 430,
+       et le bouton centré s'arrête à 277 : sept pixels de recouvrement,
+       mesurés. Il se recentre sur ce qui reste à gauche. */
+    body.en-vehicule .fun-target { left:40%; }
     .fun-target button { padding:9px 14px; border-radius:12px; border:none; font-size:15px;
       background:rgba(20,26,40,.85); color:#fff; border:1px solid rgba(255,255,255,.25); }
     .emote-row { position:static; display:none; flex-direction:column; gap:8px; }
