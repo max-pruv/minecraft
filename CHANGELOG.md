@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v267 — Les jets passent le mur du son, et on ne se pose plus dans la mer
+
+**Pourquoi.** Max : « un avion ne peut pas atterrir dans l'eau. Et peut-être
+fake la vraie vitesse, mais quand ton avion de chasse vole, il devrait voler à
+une vitesse supersonique. Idem, un Concorde, ça ne vole pas à 500 km/h. » Les
+deux étaient vrais. En finale au-dessus de la mer, l'appareil traversait la
+surface et se posait sur le fond, puis roulait sous l'eau. Et le compteur
+annonçait 576 km/h pour un Concorde, qui volait à 2 180.
+
+**Ce que ça change.** Devant de l'eau, l'avion ne descend plus : il remet les
+gaz, remonte, et le jeu dit à l'enfant d'aller vers la terre — c'est le geste
+qu'un vrai pilote fait devant une piste impraticable. Et le compteur dit
+enfin la vitesse de l'appareil qu'on pilote : 900 km/h pour l'avion de ligne,
+2 180 pour le Concorde, 2 200 pour le chasseur. Passé le mur du son, la petite
+ligne troque ses km/h contre le nombre de Mach — « Mach 1,8 ». Ce que l'avion
+PARCOURT ne change pas d'un bloc : c'est ce que le monde sait charger, mesuré
+en v265, et ça reste.
+
+**Ce qui le prouve.** La sonde a d'abord menti, et c'est noté : elle volait
+vers la côte, l'appareil rejoignait la terre en descendant, et elle concluait
+que tout allait bien sans avoir jamais mesuré d'eau. Cap au large, elle a rendu
+le vrai chiffre — posé à y = 25, sous cinq blocs d'eau, à rouler au fond de la
+Méditerranée. Deux témoins neufs dans `monte.js`, tous deux rouges sur la
+version publiée et verts ici : en finale au large de Nice l'appareil ne descend
+pas sous la surface (46,2 contre 26) et la remise des gaz a bien eu lieu ; et
+le compteur RENDU — celui que l'enfant lit, pas la fiche — affiche 900 km/h,
+Mach 1,8 et Mach 1,8, là où la version publiée affichait 432, 576 et 576.
+
+Portail complet, quinze suites, soixante-huit minutes : les deux témoins neufs
+verts, et quatre suites rouges dont AUCUNE ne vient d'ici. Trois sont des
+dettes déjà écrites (le métro de Washington, le délai de `manhattan.js`, la
+poule et le gel du premier survol de Paris). La quatrième est neuve au
+registre et vieille en production : le fond de la carte du monde ne finit pas
+son calcul dans les quarante-cinq secondes de la préparation. Rejouée SEULE
+dans les deux arbres le même jour, elle rend le même verdict — 45 121 ms ici,
+45 128 sur la version publiée, la carte encore au travail des deux côtés. Elle
+part dans `TASKS.md` avec ce qu'il faut mesurer avant d'y toucher.
+
+---
+
 ## v266 — Un enfant qui charge son monde n'est pas un enfant parti
 
 **Pourquoi.** À trois joueurs, le dernier arrivé disparaissait pour les deux

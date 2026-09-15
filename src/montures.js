@@ -522,6 +522,27 @@ export const MONTURES = [
   // gardent la MÊME pointe : ce qui les sépare est l'agilité, comme depuis
   // la v229.
   //
+  // ET CE QU'ON AFFICHE N'EST PAS CE QU'ON PARCOURT (v267). Max : « peut-être
+  // fake la vraie vitesse, mais quand ton avion de chasse vole il devrait
+  // voler à une vitesse supersonique ; idem, un Concorde ça ne vole pas à
+  // 500 km/h ». Il a raison sur les deux bouts, et il a lui-même donné la
+  // sortie : le compteur faisait `blocs par seconde × 3,6`, c'est-à-dire un
+  // bloc pour un mètre, et rendait 576 km/h pour un Concorde.
+  //
+  // Un bloc ne vaut UN MÈTRE nulle part dans ce jeu. Au sol il en vaut trente
+  // à quarante dans une ville ; sur la carte du monde, 187 (`kmParBloc`). Le
+  // compteur mentait donc DÉJÀ, et dans le sens qui rapetisse tout. `kmh` est
+  // la vraie vitesse de croisière de l'appareil, et l'affichage la rapporte à
+  // la fraction de `max` réellement atteinte : la manette à mi-course montre
+  // la moitié. Ce qui se DÉPLACE reste borné par ce que le monde sait mailler
+  // — c'est `max`, mesuré, et ce paragraphe-là ne bouge pas.
+  //
+  // Les chiffres sont ceux des vrais appareils, pas des goûts : un long
+  // courrier croise à Mach 0,85 (900 km/h), le Concorde volait à Mach 2,04
+  // (2 180), un chasseur moderne tient Mach 1,8 (2 200). Le Concorde et le
+  // chasseur se retrouvent donc à égalité DANS LE RÉEL AUSSI — ce que la
+  // v229 avait décidé pour de tout autres raisons.
+  //
   // `gabarit` n'est PAS l'envergure. Une boîte de collision ne tourne pas :
   // à quinze blocs de large, un avion resterait coincé entre deux hangars et
   // ne pourrait même pas rouler sur sa piste. On prend la largeur du
@@ -533,7 +554,7 @@ export const MONTURES = [
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
     pilote: { max: 120, poussee: 18, decrochage: 30, virage: 0.55,
-      rotation: 42, approche: 45, roulage: 6, frein: 30 } },
+      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 } },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
     height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
@@ -543,7 +564,7 @@ export const MONTURES = [
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
     pilote: { max: 160, poussee: 34, decrochage: 55, virage: 0.40,
-      rotation: 62, approche: 62, roulage: 6, frein: 45 } },
+      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 } },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
     height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
@@ -552,5 +573,5 @@ export const MONTURES = [
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
     pilote: { max: 160, poussee: 90, decrochage: 40, virage: 1.30,
-      rotation: 48, approche: 50, roulage: 7, frein: 60 } },
+      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 } },
 ];

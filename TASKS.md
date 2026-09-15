@@ -167,6 +167,38 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   géométries sur le fil principal comme le maillage l'est déjà
   (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
   l'image où il arrive. Non fait, non mesuré.
+- [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
+  ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la
+  v263, rouge à ceux de la v265, v266 et v267 : c'est donc EN PRODUCTION
+  depuis la v265 (le portail de la v264 ne l'a pas jouée). Rejouée SEULE le
+  même jour, `maj.js` entière, dans les deux arbres :
+  branche `{carte:false, depuis:45121, cartePas:40, carteErreur:null,
+  carteTravail:true}` ; `origin/main` (v266) `{carte:false, depuis:45128,
+  cartePas:25, carteErreur:null, carteTravail:true}`. Corps 9/9 et programmes
+  25/25 sont prêts des deux côtés ; **seul le fond de la carte du monde n'a
+  pas fini en quarante-cinq secondes**, et il TRAVAILLE ENCORE — ce n'est
+  donc ni une panne ni une erreur, c'est un calcul trop lent pour sa borne.
+  Le bouton « Jouer » se libère quand même (c'est la borne de la v258 qui
+  fait son travail) : l'enfant joue, la carte du monde arrive après.
+  Ce qui reste à faire, dans l'ordre :
+  (1) **MESURER AVANT D'ACCUSER.** Le fond avance par tranches de 8 ms par
+  image (v258) ; à trois images par seconde en rendu logiciel, cela fait
+  24 ms de calcul par seconde. Il faut savoir combien de PAS le fond
+  demande en tout — `cartePas` va de 25 à 40 sur quarante-cinq secondes,
+  mais le total n'est pas publié. Sans ce dénominateur on ne sait pas si
+  l'on est à 10 % ou à 90 %, et l'on réglerait une borne au hasard.
+  (2) La v265 a doublé la file du mailleur (8 → 16) : le fil principal
+  INSTALLE deux fois plus de géométries par seconde, et le fond de carte
+  prend ses 8 ms dans ce qui reste. C'est la dette de la v265 vue par un
+  autre bout, et c'est la piste la plus probable — à confirmer par
+  `?attente=8` sur cette page AVANT de toucher au fond.
+  (3) Sur l'iPad, qui a une carte graphique, le rapport n'est pas celui du
+  banc : ce chiffre ne se transpose pas (règle de la v245). À remesurer
+  avec `?diag=1`.
+  Le témoin, lui, ne se relâche pas : quarante-cinq secondes de boutons
+  grisés sont la promesse faite à Max en v258, et la tenir est la
+  correction.
+
 - [ ] **`reglages.js` : « elle s'aligne même dessus » va et vient (v266).**
   Rouge au portail complet de la v265 ET de la v266, VERTE rejouée seule sur
   la branche ET sur `origin/main` le même jour. Rien de `reglages.js` ni de

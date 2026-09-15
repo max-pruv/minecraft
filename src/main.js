@@ -1567,6 +1567,9 @@ player.surAvion = (quoi) => {
   if (quoi === 'touche') creatureManager.toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
   else if (quoi === 'ventre') creatureManager.toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
   else if (quoi === 'arret') creatureManager.toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
+  // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
+  // jamais seulement ce qui est refusé — la règle de la maison.
+  else if (quoi === 'remiseDesGaz') creatureManager.toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
 };
 
 // LA MANETTE DES GAZ (v262). Max : « le joystick à gauche pour la direction
@@ -1585,6 +1588,8 @@ const trainBtn = document.getElementById('train-btn');
 const flyLb = document.getElementById('fly-lb');
 const trainLb = document.getElementById('train-lb');
 let dernierKmh = null, dernierMotVol = '', dernierMotTrain = '';
+// Le mur du son, à l'altitude où volent les avions de ligne.
+const MACH_KMH = 1235;
 function reglerGaz(e) {
   const r = gazBase.getBoundingClientRect();
   const marge = 14;
@@ -1634,10 +1639,24 @@ function majBoutonsVehicule() {
   // repliait sur deux lignes de onze, sous le curseur blanc : mesuré
   // illisible sur capture d'iPhone. Le nombre est gros, l'unité petite, et
   // le tout vit à côté de la manette, plus dedans.
-  const kmh = Math.round(v * 3.6);
+  //
+  // ET LA VITESSE D'UN AVION EST CELLE DE SA FICHE (v267). `v * 3,6` traite
+  // un bloc comme un mètre : un bloc n'en vaut un nulle part ici — trente à
+  // quarante au sol dans une ville, cent quatre-vingt-sept sur la carte du
+  // monde. Le compteur rendait donc 576 km/h pour un Concorde. `kmh` porte la
+  // vraie croisière de l'appareil, et l'on affiche la fraction de `max`
+  // réellement atteinte. Une voiture, elle, n'a pas de `kmh` : elle garde
+  // `v × 3,6`, qui lui va bien (une hypercar à 25 blocs/s montre 90 km/h).
+  const fiche = enAvion ? player.pilote : null;
+  const kmh = fiche && fiche.kmh && fiche.max
+    ? Math.round(v / fiche.max * fiche.kmh) : Math.round(v * 3.6);
   if (kmh !== dernierKmh) {
     dernierKmh = kmh;
-    gazVal.innerHTML = `<b>${kmh}</b><small>km/h</small>`;
+    // PASSÉ LE MUR DU SON, ON LE DIT. Mach 1 vaut 1 235 km/h en altitude de
+    // croisière ; la petite ligne troque son unité contre le nombre de Mach,
+    // ce qu'un enfant retient bien mieux qu'un grand nombre de plus.
+    const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
+    gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
   }
   if (enAvion) {
     trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
