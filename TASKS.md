@@ -90,6 +90,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
   vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
   (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
+- [ ] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** Les deux
+  cônes additifs de `flamme()` (avions.js) naissent invisibles : three ne
+  compile leur programme qu'à la première image où ils sont RENDUS, c'est-à-
+  dire quand l'enfant appuie sur ✈️. Un seul programme, mais c'est une
+  compilation dans l'image d'un geste — la famille du gel de la v246. Le
+  remède est celui de la maison : chauffer cette signature à l'accueil
+  (`chaufferLesProgrammes`, vehicules.js) comme les quatorze de la flotte.
+  À faire dans la livraison qui touchera déjà aux avions, avec la mesure de
+  `renderer.info.programs` avant et après le premier décollage.
+- [ ] **LES BORNES DE GARDE DE `monte.js` SONT POSÉES SUR UNE MACHINE PLUS
+  RAPIDE QUE CELLE-CI (v264).** Après le redémarrage du conteneur, la cadence
+  du banc est tombée de 5,4 à 4,4 images par seconde au même endroit, et deux
+  témoins de `monte.js` ont rougi sur la BRANCHE en ne mesurant rien : « elles
+  tournent progressivement » exige 250 relevés et n'en a eu que 73 — avec ZÉRO
+  saut, donc le comportement est bon — et « une poule ne propose pas de monter
+  dessus » lit le bouton 600 ms après la pose. Les deux sont verts au tour
+  d'avant sur le même code, et verts sur `origin/main`. C'est le piège déjà
+  écrit trois fois : une borne de garde se pose à la MOITIÉ de ce qu'une
+  machine qui respire a rendu, jamais juste en dessous. À reprendre en une
+  passe sur TOUTES les bornes du fichier, comme la v237 l'a fait.
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
