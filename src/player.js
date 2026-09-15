@@ -508,6 +508,12 @@ export class Player {
       // se prend en tirant le joystick à l'arrêt.
       if (this.vitesseVoiture === undefined) this.vitesseVoiture = 0;
       const max = speed;
+      // LE PLAFOND SE PUBLIE LÀ OÙ IL SE CALCULE (v268). Le bruit du moteur
+      // suit le régime, c'est-à-dire la vitesse rapportée à ce que la voiture
+      // sait faire — et cette allure vient de la classe du modèle (v260).
+      // Le recopier dans `fun.js` le rendrait faux à la première classe qu'on
+      // ajoute, sans que rien ne rougisse : c'est le piège de l'échelle.
+      this.vitesseVoitureMax = max;
       let consigne;
       if (this.gaz != null) {
         consigne = this.gaz * max;

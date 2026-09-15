@@ -196,6 +196,11 @@ const GARDIENS = {
   'src/visio.js': ['visio.js', 'reseau.js'],
   'src/partage.js': ['reseau.js', 'parent.js', 'manhattan.js'],
   'src/siege.js': ['monte.js', 'washington.js'],
+  // `sons.js` possède le contexte audio de TOUT le jeu depuis la v268 : le
+  // moteur et la radio se prennent dans `monte.js` (c'est là qu'on monte),
+  // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
+  // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
+  'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,

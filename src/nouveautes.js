@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 268,
+    titre: "Les véhicules font du bruit",
+    puces: [
+      "🔊 Le moteur ronronne et monte en régime",
+      "📻 La radio s'allume quand tu montes",
+      "✈️ Les réacteurs sifflent en vol",
+      "⚙️ Réglages : tu peux tout couper",
+    ],
+  },
+  {
     v: 267,
     titre: "Le mur du son",
     puces: [

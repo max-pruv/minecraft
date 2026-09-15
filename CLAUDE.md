@@ -891,6 +891,78 @@ rembourse une dette que la v229 avait écrite elle-même.
   manette » et « les deux boutons ont le même x ». C'est la formulation
   exacte de « rien ne flotte ».
 
+## Le son du jeu (`sons.js`, v268) — un seul contexte, et rien de téléchargé
+
+Max : « les véhicules, on devrait avoir un bruit ambiant ; quand on rentre
+dans une voiture, un bruit de radio, un peu comme dans GTA. » Cinq règles.
+
+- **UN SEUL CONTEXTE AUDIO POUR TOUT LE JEU, ET C'EST `sons.js` QUI LE
+  POSSÈDE.** `main.js` avait le sien pour le carillon du chat et les bruits
+  de blocs ; en créer un second aurait eu deux prix, et le premier n'est pas
+  la performance : **un réglage « couper le son » n'aurait éteint que la
+  moitié du jeu** — le moteur se tait, le marteau continue. Le second est
+  qu'iOS compte les contextes audio. C'est la leçon des deux contextes WebGL
+  de la v245, à un fichier près. `carillon` et `bruitBloc` sont devenus des
+  clients de `contexteAudio()` / `sortieAudio()`.
+- **TOUT EST SYNTHÉTISÉ, RIEN N'EST TÉLÉCHARGÉ.** Le jeu entier pèse 1,12 Mo
+  compressé (v245) ; une seule boucle de moteur en MP3 pèse davantage. Un
+  moteur est un souffle filtré plus deux dents de scie dont la fréquence suit
+  le régime ; un réacteur, l'inverse — presque tout est souffle, plus un
+  sifflement de compresseur. Les trois stations de radio sont écrites ici, en
+  degrés de gamme : invariant 4, aucune propriété intellectuelle.
+- **RIEN NE SE CRÉE PAR IMAGE.** Le graphe du moteur se monte à la montée et
+  se démonte à la descente ; le régime se règle par `setTargetAtTime`, dont
+  l'interpolation vit dans le fil audio. L'ordonnanceur de la radio programme
+  un quart de seconde d'avance toutes les cent millisecondes, **contre
+  l'horloge du CONTEXTE** et jamais contre `dt` : le son n'a pas à ralentir
+  quand la tablette rame (piège de la v226, et ici il s'entendrait).
+- **COUPER LE SON SUSPEND LE CONTEXTE, IL NE FERME PAS QUE LE ROBINET.** Mon
+  premier jet ne baissait que le gain général : mesuré, avec `?son=0`,
+  `etat()` annonçait encore « moteur voiture, radio Nuit Cubique » — tous les
+  oscillateurs vivants pour un silence. Un enfant qui coupe le son parce que
+  sa tablette rame doit y gagner quelque chose. On ne DÉTRUIT pas le graphe
+  pour autant : rallumer en roulant doit s'entendre tout de suite.
+- **LE SILENCE SE REND EN DESCENDANT**, comme la marche, le vol et le
+  gabarit — quatre chemins de sortie (`toggleRide`, monture disparue,
+  `debarquer`, remise à zéro), et la monture quittée n'est plus mise à jour :
+  elle garderait son dernier régime pour toujours. C'est le piège des flammes
+  de la v264, mot pour mot. Et **la poussée se calcule UNE fois** dans
+  `updateRide` : les flammes et le bruit la lisent, parce que deux formules
+  qui décrivent la même manette finissent par diverger.
+- **CE QUI A UN MOTEUR SE DIT DANS LA FICHE** (`moteur: 'voiture' | 'avion'`,
+  `radio: true`), jamais dans une liste de `fun.js` — même discipline que
+  `montable`, `vole`, `gabarit` et `habitacle`. Un cheval n'a pas de moteur,
+  et cela s'écrit en ne l'écrivant pas. Le plafond de vitesse d'une voiture,
+  lui, se demande à `player.js` (`vitesseVoitureMax`, publié là où il se
+  calcule) : la classe du modèle le fixe (v260), et le recopier le rendrait
+  faux à la première classe qu'on ajoute, sans que rien ne rougisse.
+
+**UN TÉMOIN DE SON LIT DES ÉCHANTILLONS, JAMAIS UN DRAPEAU.** `etatSon()`
+dirait « radio : Nuit Cubique » même si plus un seul oscillateur n'était
+branché — c'est exactement la mort de `__lumiere()`, deux fois (v247, v251),
+pour avoir publié un mécanisme au lieu de ce qui se voit. `window.__sons`
+publie donc la SORTIE, et le témoin y accroche son propre `AnalyserNode` :
+zéro à pied, 0,024 au ralenti au volant, 0,051 à pleins gaz, zéro à la
+descente. On prend **le pire d'une fenêtre**, pas un instantané — la radio a
+des silences entre deux notes (leçon des poissons).
+
+**ET L'HORLOGE AUDIO DU BANC SE MESURE AVANT D'ÉCRIRE LE TÉMOIN.** Chromium
+y tourne sans périphérique de son : si `currentTime` restait figé,
+l'ordonnanceur ne programmerait rien et le témoin mesurerait le banc. Sonde
+d'abord : contexte `running`, 1,25 s d'avance en 1,2 s de vraie vie, et un
+analyseur qui rend 0,212 pour une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au
+millième près.
+
+**ET UNE MESURE DE COÛT REFERME SES PAGES.** Ma première sonde du prix du son
+gardait ses quatre pages ouvertes en même temps et rendait 7,3 · 3,5 · 2,6 ·
+2,1 images par seconde : une décroissance monotone qui suivait le NOMBRE de
+pages, pas le traitement. Refermées, et l'ordre alterné (off, on, on, off) :
+7,78 · 7,71 · 8,00 · 7,24, médiane à 200 ms des quatre côtés — le son ne
+coûte rien de mesurable. La leçon de la v220 (« deux pages ouvertes EN MÊME
+TEMPS font tomber la cadence de 42,9 à 20,8 ») vaut pour les sondes autant
+que pour les suites, et **l'ordre alterné est ce qui sépare le traitement de
+la place dans la série**.
+
 ## Les flammes des réacteurs (v264)
 
 Max, capture du chasseur : « voir les flammes sortir du réacteur quand

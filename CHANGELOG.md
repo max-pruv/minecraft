@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v268 — Les véhicules font du bruit, et la voiture a une radio
+
+**Pourquoi.** Max : « les véhicules, on devrait avoir un bruit ambiant. Quand
+on rentre dans une voiture, on devrait avoir un bruit de radio, un petit peu
+comme dans GTA. » Le jeu savait faire un carillon à l'arrivée d'un message et
+un coup mat quand on casse un bloc, et c'est tout : on conduisait une Bugatti
+dans un silence complet, et un réacteur à Mach 1,8 ne faisait pas plus de
+bruit qu'un cheval.
+
+**Ce que ça change.** Quand on monte dans une voiture, le moteur démarre et
+tourne au ralenti ; il monte en régime avec l'allure, et redescend au frein.
+Une station de radio s'allume dans la foulée, avec le petit grésillement d'un
+poste qu'on met en marche — trois stations, tirées au sort, écrites pour ce
+jeu et pour lui seul. Aux commandes d'un avion, c'est le souffle d'un
+réacteur qui suit la manette des gaz, avec le sifflement de compresseur qui
+monte quand on pousse. On descend : tout se tait. Et dans les Réglages, une
+ligne 🔊 coupe absolument tout, la radio comme le marteau — c'est un réglage
+de l'appareil, pas du profil : on joue avec le son dans sa chambre et sans
+dans le train.
+
+**Ce qui le prouve.** Rien n'est téléchargé : tout est fabriqué dans la page,
+comme les carillons, parce que le jeu entier pèse 1,12 Mo compressé et qu'une
+seule boucle de moteur en MP3 pèserait davantage. Deux témoins neufs dans
+`monte.js`, et ils lisent des ÉCHANTILLONS, jamais un drapeau — un état qui
+dit « radio : Nuit Cubique » le dirait encore si plus un oscillateur n'était
+branché, et c'est exactement ainsi qu'un témoin du jeu est mort deux fois.
+Un analyseur accroché à la sortie du jeu mesure l'énergie qui y passe : zéro
+à pied, 0,024 au ralenti au volant, 0,051 à pleins gaz, zéro de nouveau à la
+descente. Mesuré à la sonde avant d'écrire quoi que ce soit : sur le banc,
+sans haut-parleur, l'horloge audio avance bien et un analyseur rend 0,212
+pour une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au millième près ; sans
+cette vérification, le témoin aurait mesuré le banc.
+
+**Ce que ça coûte, mesuré.** Au volant, douze secondes de conduite, quatre
+pages successives en alternant l'ordre : 7,78 · 7,71 · 8,00 · 7,24 images par
+seconde, image médiane à 200 ms des quatre côtés. Le son ne coûte rien de
+mesurable. La première version de cette mesure disait le contraire — 7,3 puis
+3,5 puis 2,6 puis 2,1 — parce qu'elle gardait ses quatre pages ouvertes en
+même temps : c'était le nombre de pages qu'elle mesurait, pas le son.
+
+---
+
 ## v267 — Les jets passent le mur du son, et on ne se pose plus dans la mer
 
 **Pourquoi.** Max : « un avion ne peut pas atterrir dans l'eau. Et peut-être

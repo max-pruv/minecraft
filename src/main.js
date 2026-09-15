@@ -28,6 +28,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -166,6 +167,18 @@ function graphismes() {
   try { const v = localStorage.getItem(GRAPHISMES_CLE); if (v === 'normal' || v === 'avance') return v; } catch { /* mode privé */ }
   return IS_TOUCH ? 'normal' : 'avance';
 }
+// LE SON EST UN RÉGLAGE DE L'APPAREIL, PAS DU PROFIL (v268) — même raison
+// que les graphismes : on joue avec le son dans sa chambre et sans dans le
+// train, et cela n'a rien à voir avec l'enfant qui joue. Allumé par défaut ;
+// `?son=0` garde la main, pour le banc et pour mesurer.
+const SON_CLE = 'web-minecraft-son-v1';
+function sonVoulu() {
+  const p = PARAMS_JEU.get('son');
+  if (p != null) return p !== '0';
+  try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
+}
+reglerSon(sonVoulu());
+
 const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
 const OMBRES = ombresVoulues();
@@ -1727,9 +1740,11 @@ function saveSettings() {
 const settingsPanel = document.getElementById('settings-panel');
 const gyroToggle = document.getElementById('gyro-toggle');
 const graphToggle = document.getElementById('graph-toggle');
+const sonToggle = document.getElementById('son-toggle');
 function renderSettings() {
   gyroToggle.classList.toggle('on', !!settings.gyro);
   if (graphToggle) graphToggle.classList.toggle('on', graphismes() === 'avance');
+  if (sonToggle) sonToggle.classList.toggle('on', sonActif());
 }
 renderSettings();
 // Le changement s'applique sur place : les ombres se rallument ou s'éteignent
@@ -1751,6 +1766,21 @@ if (graphToggle) {
     window.__graphismes.choisir(graphismes() === 'avance' ? 'normal' : 'avance');
   });
 }
+if (sonToggle) {
+  sonToggle.addEventListener('click', () => {
+    const veut = !sonActif();
+    try { localStorage.setItem(SON_CLE, veut ? 'on' : 'off'); } catch { /* mode privé */ }
+    reglerSon(veut);
+    renderSettings();
+  });
+}
+// La sonde du son. ELLE PUBLIE LA SORTIE, pas un drapeau : un témoin de son
+// lit des ÉCHANTILLONS (il accroche son propre analyseur ici), jamais
+// `etatSon()`, qui dirait « radio : Nuit Cubique » même si plus un seul
+// oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
+// fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
+window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
+  station: radioEnCours, regler: reglerSon, actif: sonActif };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -3708,13 +3738,17 @@ const chatBadge = document.getElementById('chat-badge');
 // volée plutôt qu'un fichier à télécharger. Le contexte audio se crée au
 // premier besoin — les navigateurs mobiles refusent le son tant que l'enfant
 // n'a rien touché, et il a forcément touché l'écran pour jouer.
-let audioCtx = null;
+// UN SEUL CONTEXTE AUDIO POUR TOUT LE JEU (v268). Il vivait ici ; il vit
+// maintenant dans `sons.js`, qui porte aussi le gain général. Deux contextes
+// auraient deux prix : un réglage « couper le son » n'aurait éteint que la
+// moitié du jeu — le moteur se tait, le marteau continue —, et iOS compte les
+// contextes audio et les fait payer. C'est la leçon des deux contextes WebGL
+// de la v245, à un fichier près.
 function carillon(notes = [880, 1320]) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     for (const [i, freq] of notes.entries()) {
       const osc = audioCtx.createOscillator();
@@ -3725,7 +3759,7 @@ function carillon(notes = [880, 1320]) {
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(0.14, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(sortie);
       osc.start(start);
       osc.stop(start + 0.24);
     }
@@ -3738,10 +3772,9 @@ const chatDing = () => carillon([880, 1320]);
 // casse, un petit clic qui monte pour la pose.
 function bruitBloc(f0, f1, duree, type, volume) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -3751,7 +3784,7 @@ function bruitBloc(f0, f1, duree, type, volume) {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
-    osc.connect(gain).connect(audioCtx.destination);
+    osc.connect(gain).connect(sortie);
     osc.start(t0);
     osc.stop(t0 + duree + 0.02);
   } catch { /* pas de son : les éclats suffisent au retour */ }

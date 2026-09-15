@@ -422,7 +422,13 @@ export const MONTURES = [
     // et une voiture qui l'empruntait traversait les murs (Max, capture :
     // « cars crashing into walls »). Même discipline que `vole` et
     // `montable` : la règle vit dans la fiche, jamais dans fun.js.
-    gabarit: 2.2 },
+    gabarit: 2.2,
+    // LE SON (v268) : `moteur` nomme la recette de bruit de fond, `radio`
+    // dit qu'une station s'allume à la montée — Max : « quand on rentre
+    // dans une voiture, on devrait avoir un bruit de radio ». Un cheval n'a
+    // ni l'un ni l'autre, et cela s'écrit en ne l'écrivant pas. Même
+    // discipline que `montable`, `vole`, `gabarit` et `habitacle`.
+    moteur: 'voiture', radio: true },
 
   // --- LES AVIONS : le mode `pilote`, le troisième --------------------------
   //
@@ -554,7 +560,8 @@ export const MONTURES = [
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
     pilote: { max: 120, poussee: 18, decrochage: 30, virage: 0.55,
-      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 } },
+      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 },
+    moteur: 'avion' },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
     height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
@@ -564,7 +571,8 @@ export const MONTURES = [
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
     pilote: { max: 160, poussee: 34, decrochage: 55, virage: 0.40,
-      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 } },
+      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 },
+    moteur: 'avion' },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
     height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
@@ -573,5 +581,6 @@ export const MONTURES = [
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
     pilote: { max: 160, poussee: 90, decrochage: 40, virage: 1.30,
-      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 } },
+      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 },
+    moteur: 'avion' },
 ];

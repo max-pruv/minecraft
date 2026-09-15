@@ -4062,6 +4062,104 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       && compteurs.avionligne.unite === 'km/h',
       JSON.stringify(compteurs));
 
+    // LE BRUIT DU MOTEUR ET LA RADIO (v268).
+    //
+    // Max : « les véhicules, on devrait avoir un bruit ambiant. Quand on
+    // rentre dans une voiture, on devrait avoir un bruit de radio, un petit
+    // peu comme dans GTA. »
+    //
+    // UN TÉMOIN DE SON LIT DES ÉCHANTILLONS, JAMAIS UN DRAPEAU. `etatSon()`
+    // dirait « radio : Nuit Cubique » même si plus un seul oscillateur
+    // n'était branché — c'est exactement la mort de `__lumiere()`, deux fois
+    // (v247, v251), pour avoir publié un mécanisme au lieu de ce qui
+    // s'entend. On accroche donc un analyseur à la SORTIE du jeu et l'on
+    // mesure l'énergie qui y passe : silence à pied, énergie au volant,
+    // silence de nouveau à la descente.
+    //
+    // Mesuré à la sonde AVANT d'écrire ce témoin : sur ce banc, sans
+    // périphérique de son, le contexte est bien `running`, son horloge
+    // avance (1,25 s en 1,2 s de vraie vie) et un analyseur rend 0,212 pour
+    // une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au millième près. Sans
+    // cette mesure, un témoin d'énergie aurait mesuré le banc.
+    const sons = await tab.evaluate(async () => {
+      const g = window.__game;
+      if (!window.__sons) return { err: 'pas de module de son' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const ctx = window.__sons.contexte();
+      const sortie = window.__sons.sortie();
+      if (!ctx || !sortie) return { err: 'pas de contexte audio' };
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      sortie.connect(an);                 // une prise, pas un passage
+      const buf = new Float32Array(an.fftSize);
+      // LE PIRE D'UNE FENÊTRE, PAS UN INSTANTANÉ : la radio a des silences
+      // entre deux notes, et un instantané sur ce qui bouge est un pile ou
+      // face (leçon des poissons, v233).
+      const energie = async (secondes) => {
+        let fort = 0;
+        for (let t = 0; t < secondes; t += 0.1) {
+          an.getFloatTimeDomainData(buf);
+          let somme = 0;
+          for (const v of buf) somme += v * v;
+          fort = Math.max(fort, Math.sqrt(somme / buf.length));
+          await tenir(0.1);
+        }
+        return +fort.toFixed(4);
+      };
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle de pierre bien à l'écart, comme les témoins de vol
+      const x0 = 30000, z0 = 31400;
+      let y0 = 0;
+      for (let d = -6; d <= 10; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -6; d <= 10; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 4; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenir(1);
+      const aPied = await energie(1.2);
+      const voiture = g.animalManager.invoquer('voiture', x0 + 3, z0);
+      if (!voiture) return { err: 'aucune voiture posée', aPied };
+      await tenir(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      if (!auVolant()) return { err: 'on n\'est pas au volant', aPied };
+      await tenir(0.8);
+      const auRalenti = await energie(1.5);
+      const station = window.__sons.station();
+      // pleins gaz : le régime monte, donc l'énergie aussi
+      g.player.gaz = 1;
+      await tenir(1.5);
+      const pleinsGaz = await energie(1.5);
+      // on descend : tout doit se taire
+      document.getElementById('ride-btn').click();
+      await tenir(1.2);
+      const apresDescente = await energie(1.2);
+      const descendu = !auVolant();
+      try { sortie.disconnect(an); } catch { /* déjà */ }
+      g.player.gaz = null;
+      return { aPied, auRalenti, pleinsGaz, apresDescente, station, descendu,
+        etat: window.__sons.etat() };
+    });
+    // La barre est posée à la MOITIÉ de ce que le silence et le moteur
+    // séparent, jamais juste au-dessus de l'un des deux : à pied on mesure
+    // zéro, au ralenti quelques centièmes. Ce qui compte est le RAPPORT.
+    verifier('en montant dans une voiture, on entend le moteur — et une station de radio',
+      !sons.err && sons.auRalenti > 0.01 && sons.aPied < sons.auRalenti / 4 && !!sons.station,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+    verifier('et en descendant, le silence revient',
+      !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {
