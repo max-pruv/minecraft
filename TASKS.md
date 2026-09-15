@@ -167,6 +167,12 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   géométries sur le fil principal comme le maillage l'est déjà
   (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
   l'image où il arrive. Non fait, non mesuré.
+- [ ] **`reglages.js` : « elle s'aligne même dessus » va et vient (v266).**
+  Rouge au portail complet de la v265 ET de la v266, VERTE rejouée seule sur
+  la branche ET sur `origin/main` le même jour. Rien de `reglages.js` ni de
+  l'espace parent n'a bougé depuis. C'est un rouge de portail, pas un défaut :
+  à reprendre comme la poule, par une attente bornée sur ce que l'enfant
+  obtient au lieu d'une lecture après un délai.
 - [ ] **`reseau.js` : le témoin du passager va et vient (v265).** « Et l'on
   monte en passager : la voiture de l'ami nous emmène » est rouge une fois
   sur deux quand la suite est rejouée SEULE sur la branche (`roule 1,14 ·
