@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v266 — Un enfant qui charge son monde n'est pas un enfant parti
+
+**Pourquoi.** À trois joueurs, le dernier arrivé disparaissait pour les deux
+autres une vingtaine de secondes après être entré, puis revenait. Le défaut
+allait et venait depuis la v259 et résistait à six livraisons : rouge une fois
+sur deux, à l'identique sur la version publiée comme sur la branche, donc
+impossible à mettre sur le dos de ce qu'on venait d'écrire. C'est Marlon,
+Alice et un ami qui le vivaient.
+
+**Ce que ça change.** Le troisième enfant reste là. Sa tablette peut mettre une
+demi-minute à charger le monde : les deux autres continuent de le voir, à sa
+place, et quand elle a fini il n'a rien à refaire — il n'est jamais parti.
+Avant la correction, dans la même situation, il disparaissait pour tout le
+monde et se retrouvait lui-même seul dans un monde vide.
+
+**Ce qui le prouve.** Trois sondes successives, chacune répondant à une seule
+question, parce qu'une hypothèse de plus aurait coûté une livraison de plus.
+La première : son lien est direct, ouvert, sain, et l'hôte reçoit bien ce
+qu'il envoie — ce n'est pas un problème de tuyau. La deuxième : les trois
+pages sont éveillées d'un bout à l'autre, aucune ne dort — ce n'est pas la
+mise en veille. La troisième a nommé la cause : **le fil principal du nouvel
+arrivant est bloqué vingt-neuf secondes dans une seule tâche** pendant que son
+monde se charge. Il n'émet rien, ne reçoit rien, et l'hôte le retire à
+vingt-deux secondes de silence alors que son canal est grand ouvert. Le témoin
+neuf ne l'attend plus : il GÈLE la page du troisième joueur vingt-cinq
+secondes et vérifie que les deux autres le voient toujours. Rouge sur la
+version publiée (le joueur disparaît pour les deux autres, et lui-même perd
+tout le monde), vert deux fois de suite sur la correction.
+
+---
+
 ## v265 — Les jets volent bien plus vite, et les commandes de vol tiennent ensemble
 
 **Pourquoi.** Max, capture d'iPhone du chasseur en vol de nuit : « Jet should

@@ -2000,6 +2000,57 @@ Décisions qui ont chacune coûté une panne réelle :
   qu'elle sait, là où un nom neuf tombe dans le vide — c'est la règle du
   receveur qui cède, appliquée au vocabulaire.
 
+### Le silence ne prouve le départ que d'un pair qu'on ne peut pas sonder (v266)
+
+Le défaut allait et venait sur les DEUX arbres depuis la v259 : « à trois,
+chacun voit les deux autres » rendait `[["Alice"],["Marlon"],["Alice","Marlon"]]`
+une fois sur deux. Six livraisons l'ont déclaré sans le trouver. Quatre règles
+en sortent, et la première est une méthode.
+
+- **UNE SONDE PAR QUESTION, ET L'ON NE PASSE À LA SUIVANTE QU'APRÈS AVOIR
+  RÉPONDU.** Trois sondes, trois questions : (1) le lien de l'arrivant est-il
+  vivant et l'hôte reçoit-il ce qu'il envoie ? — oui, direct, `open`, canal
+  `open` ; (2) une page dort-elle ? — non, les trois sont `visible` d'un bout
+  à l'autre, zéro `dodo` ; (3) alors pourquoi n'émet-il rien ? — **son fil
+  principal est bloqué VINGT-NEUF SECONDES dans une SEULE tâche** pendant que
+  son monde se charge. Pas médian de son minuteur de 100 ms : 100 ms. Pire
+  tour : 29 128 ms. Chacune des deux premières réponses a écarté une
+  explication qui « se lisait très bien » ; aucune ne se déduisait de l'autre.
+- **UNE SÉRIE DE RELEVÉS MENT SUR SON PROPRE PAS.** Ma deuxième sonde
+  échantillonnait « une fois par seconde » et rendait une courbe qui
+  contredisait ses propres compteurs. L'échantillonneur était affamé lui
+  aussi : ses relevés étaient espacés de cinq à quinze secondes. **Un
+  échantillonneur posé dans la page qu'on soupçonne de ramer horodate chaque
+  relevé** — sinon « il n'envoie rien » et « son minuteur ne tourne pas » ne
+  se distinguent pas.
+- **UN CANAL DIRECT OUVERT EST UNE SONDE ; LE SILENCE N'EN EST PAS UNE.** La
+  règle des vingt secondes (`STALE_MS`) avait été écrite POUR les pairs
+  relayés — son commentaire le dit — puis appliquée à tout le monde, y compris
+  à un pair dont le canal est grand ouvert sous les yeux de celui qui le juge.
+  Le silence ne retire donc plus qu'un pair qu'on ne peut pas sonder : un
+  relayé, ou un lien de nuage. Pour les autres, le ping reste le filet — son
+  échec retire le pair tout de suite — doublé d'une borne courte
+  (`MUET_MAX_MS`, 90 s : le double des 45 s que le jeu s'accorde pour préparer
+  une partie, trois fois le blocage mesuré). Cinq minutes, le délai d'un
+  enfant endormi, serait trop long dans l'autre sens : un invité dont l'hôte
+  est mort doit repartir en chercher un autre, pas attendre.
+- **L'HÔTE ANNONCE AVANT QUE LES AUTRES NE CONCLUENT.** Mon premier jet
+  marquait le pair « muet » au même seuil que celui du retrait : les deux
+  horloges se déclenchaient ensemble et l'autre invité perdait la course une
+  fois sur deux — mesuré, l'hôte gardait Nina et Alice la retirait quand même.
+  L'annonce se fait à la MOITIÉ du délai. Et elle se fait avec le mot que les
+  tablettes connaissent DÉJÀ (`dodo_de` / `coucou_de`, « il est là, ne comptez
+  plus son silence ») : une tablette restée sur l'ancienne version le comprend,
+  c'est la règle du receveur qui cède appliquée au vocabulaire.
+- **ET LE TÉMOIN GÈLE LA PAGE AU LIEU D'ATTENDRE QU'ELLE RAME.** Vingt-cinq
+  secondes de boucle synchrone lancées par un minuteur — `evaluate` ne peut
+  pas attendre une page qu'il vient de geler — rendent la MÊME situation à
+  tous les coups. C'est la leçon des poissons de la v233 : quand un témoin
+  change de verdict d'une exécution à l'autre, on cesse d'attendre la
+  situation et l'on se met à la provoquer. Rouge sur `origin/main` (le joueur
+  disparaît pour les deux autres, ET lui-même perd tout le monde), vert deux
+  fois de suite sur la correction.
+
 ### Conduire — trois façons d'être porté, un seul jeu de commandes
 
 Idée de Max, et elle est juste : **ne pas inventer de commandes**. Tout ce qui

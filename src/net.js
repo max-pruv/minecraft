@@ -60,6 +60,11 @@ const STALE_MS = 20000;
 // Un pair qui s'est annoncé endormi est épargné par le silence — mais pas
 // indéfiniment : au-delà, l'application a été fermée pour de bon.
 const SOMMEIL_MAX_MS = 300000;
+// Combien de temps on garde un pair VIVANT MAIS MUET — canal ouvert, rien
+// qui arrive (v266). Le double des quarante-cinq secondes que le jeu
+// s'accorde pour préparer une partie, et trois fois le blocage mesuré du fil
+// principal d'un invité qui charge son monde (29 s).
+const MUET_MAX_MS = 90000;
 // Après un réveil, on laisse au lien le temps de se rétablir avant de juger.
 const GRACE_REVEIL_MS = 15000;
 // La présentation entre deux pairs : on la relance à ce rythme, et on renonce
@@ -1007,11 +1012,68 @@ export class NetSession {
           if (now - c.dodo > SOMMEIL_MAX_MS) this.dropPeer(id);
           continue;
         }
+        // LE SILENCE NE PROUVE LE DÉPART QUE D'UN PAIR QU'ON NE PEUT PAS
+        // SONDER (v266).
+        //
         // Un pair relayé n'a pas de lien direct à sonder, mais l'hôte nous
         // renvoie sa position dix fois par seconde : son silence prolongé
         // prouve son départ aussi sûrement qu'un lien coupé. Sans cela, un
         // « au revoir » perdu laissait son avatar planté là pour toujours.
-        if (c.seen && now - c.seen > STALE_MS) { this.dropPeer(id); continue; }
+        // La règle a été écrite POUR CE CAS-LÀ, puis appliquée à tout le
+        // monde — y compris à un pair dont le canal est grand ouvert sous
+        // les yeux de celui qui le juge.
+        //
+        // Ce que ça coûtait, mesuré : un troisième enfant qui rejoint une
+        // partie voit sa page bloquée VINGT-NEUF SECONDES dans une seule
+        // tâche pendant que son monde se charge (sonde `v266/sonde-famine`,
+        // pas médian d'un minuteur de 100 ms : 100 ms, pire tour :
+        // 29 128 ms). Elle n'émet rien, elle ne reçoit rien, et l'hôte la
+        // retire à 22 s de silence — lien `open`, canal `open`. Elle
+        // disparaît alors pour l'hôte ET pour l'autre invité, puis revient
+        // vingt secondes plus tard. C'est ce que le témoin « à trois,
+        // chacun voit les deux autres » attrapait une fois sur deux.
+        //
+        // Un canal direct ouvert EST une sonde : le ping ci-dessous en est
+        // la preuve, et son échec retire le pair. Le silence seul ne
+        // retire donc plus qu'un pair qu'on ne peut pas sonder — un relayé,
+        // ou un lien de nuage, qui n'a pas de canal.
+        const sondable = !!(c.conn && !c.conn.parNuage && this.lienVivant(c.conn));
+        const silence = c.seen ? now - c.seen : 0;
+        // VIVANT MAIS MUET — ET ON LE DIT AUX AUTRES, avec le mot qu'ils
+        // connaissent déjà. `dodo_de` veut dire « il est là, ne comptez plus
+        // son silence » : c'est exactement ce qu'il faut ici, et une tablette
+        // restée sur l'ancienne version le comprend (le receveur cède).
+        //
+        // ET L'HÔTE ANNONCE AVANT QUE LES AUTRES NE CONCLUENT — à la MOITIÉ
+        // du délai. Mon premier jet annonçait au même seuil que celui du
+        // retrait : les deux horloges se déclenchaient ensemble, et l'invité
+        // perdait la course une fois sur deux. Mesuré : l'hôte gardait Nina,
+        // Alice la retirait quand même (`[["Alice","Nina"],["Marlon"]]`).
+        // Celui qui tient le lien direct s'en aperçoit le premier ; c'est à
+        // lui de parler avant que les autres ne jugent sur un silence dont il
+        // connaît, lui, la vraie raison.
+        if (sondable && silence > STALE_MS / 2) {
+          if (!c.muet) {
+            c.muet = now;
+            if (this.isHost) this.relay(id, { t: 'dodo_de', from: id });
+          }
+        } else if (c.muet) {
+          c.muet = 0;
+          if (this.isHost) this.relay(id, { t: 'coucou_de', from: id });
+        }
+        if (silence > STALE_MS) {
+          if (!sondable) { this.dropPeer(id); continue; }
+          // LE FILET RESTE, ET IL EST COURT. Cinq minutes — le délai d'un
+          // enfant endormi — serait trop long dans l'autre sens : un invité
+          // dont l'hôte est mort sans que son canal se referme doit repartir
+          // en chercher un autre (`rejoinHost`, plus haut), pas attendre.
+          // Quatre-vingt-dix secondes, c'est le DOUBLE de la borne que le jeu
+          // s'impose déjà pour préparer une partie (quarante-cinq secondes,
+          // v258) et trois fois le blocage mesuré. Le vrai filet, lui, reste
+          // le ping ci-dessous : un canal qui se referme le fait échouer, et
+          // le pair part tout de suite.
+          if (c.muet && now - c.muet > MUET_MAX_MS) { this.dropPeer(id); continue; }
+        }
         if (!c.conn) continue;
         if (!this.envoyer(c, { t: 'ping' }) && c.pret) this.dropPeer(id);
       }

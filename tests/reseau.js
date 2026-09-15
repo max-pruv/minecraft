@@ -92,6 +92,46 @@ function verifier(nom, ok, detail = '') {
       && ['Alice', 'Nina'].every((n) => surLaCarte.includes(n)),
       JSON.stringify(surLaCarte));
 
+    // UN ENFANT QUI CHARGE SON MONDE N'EST PAS UN ENFANT PARTI (v266).
+    //
+    // C'est la cause, enfin mesurée, du rouge qui allait et venait sur les
+    // DEUX arbres depuis la v259 : « à trois, chacun voit les deux autres »
+    // rendait [["Alice"],["Marlon"],["Alice","Marlon"]] une fois sur deux.
+    // Relevé à la sonde (`scratchpad/v266/sonde-famine.cjs`) : le fil
+    // principal du troisième invité est bloqué VINGT-NEUF SECONDES dans une
+    // SEULE tâche pendant que son monde se charge — pas médian de son
+    // minuteur de 100 ms : 100 ms, pire tour : 29 128 ms. Il n'émet rien,
+    // il ne reçoit rien, et l'hôte le retire à 22 s de silence alors que son
+    // lien est `open` et son canal `open`.
+    //
+    // ON PROVOQUE LE BLOCAGE AU LIEU DE L'ATTENDRE. Attendre qu'une page
+    // rame, c'est le pile ou face qui a coûté six versions ; une boucle
+    // synchrone de vingt-cinq secondes rend la MÊME situation à tous les
+    // coups, et elle est plus courte que ce que la sonde a mesuré. Le
+    // minuteur la lance et rend la main tout de suite : `evaluate` ne peut
+    // pas attendre une page qu'il vient de geler.
+    //
+    // Ce que le témoin exige est ce qu'un enfant voit : Nina reste là,
+    // pour l'hôte ET pour Alice, pendant tout le gel — et elle n'a jamais
+    // eu besoin de revenir.
+    const geler = (p, ms) => p.evaluate((ms) => {
+      setTimeout(() => { const t = Date.now(); while (Date.now() - t < ms) { /* le fil est pris */ } }, 0);
+    }, ms);
+    await geler(nina, 25000);
+    // On relève PENDANT le gel, après la fenêtre de vingt secondes qui
+    // décidait du retrait : c'est le seul instant où le défaut existe.
+    await dormir(24000);
+    const pendantLeGel = [await nomsVus(hote), await nomsVus(alice)];
+    verifier('un enfant dont la tablette charge son monde n\'est pas retiré de la partie',
+      JSON.stringify(pendantLeGel) === JSON.stringify([['Alice', 'Nina'], ['Marlon', 'Nina']]),
+      JSON.stringify(pendantLeGel));
+    // Et quand il rend la main, rien n'a à se reconstruire : il était là.
+    await jusqua(async () => JSON.stringify(
+      [await nomsVus(hote), await nomsVus(alice), await nomsVus(nina)]) === attendu, 30000);
+    const apresLeGel = [await nomsVus(hote), await nomsVus(alice), await nomsVus(nina)];
+    verifier('et il retrouve les deux autres sans avoir eu à revenir',
+      JSON.stringify(apresLeGel) === attendu, JSON.stringify(apresLeGel));
+
     // Un lien en cours d'ouverture n'est pas un joueur : il ne doit jamais
     // apparaître sous la forme d'un bonhomme nommé « … » à l'origine du monde.
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
