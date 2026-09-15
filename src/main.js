@@ -389,28 +389,39 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 // SEC — au moment précis où l'enfant arrive quelque part. C'est le piège du
 // budget par image de la v237, déplacé d'un cran : une file par image est
 // une cadence de ménage déguisée en horloge d'affichage.
+// ET ELLE SE CHOISIT SUR DEUX MESURES, PAS UNE : LE DÉBIT **ET** LA
+// CADENCE. Mon premier jet la posait à quarante-huit sur le seul débit, et
+// le portail complet a rendu SEPT suites rouges dont quatre étaient vertes
+// la veille — « programmes 8/25 après 48 s », « 0 m en 31 s de jeu »,
+// « 0 relevé sur 92 », « cadence 1,7 ». Que des symptômes de CADENCE : le
+// mailleur rendait deux fois plus de morceaux, et le fil principal devait
+// les INSTALLER. C'est mot pour mot le genou que la v229 avait mesuré sur
+// `MESH_BUDGET_MS` — douze rendaient 154 morceaux/s SANS coûter une image,
+// vingt en rendaient 178 et coûtaient un tiers de la cadence.
+//
 // Mesuré par saturation (une téléportation met tout le disque à mailler
-// d'un coup), à rr=12, débit de POINTE en morceaux par seconde :
+// d'un coup), à rr=12 — débit de POINTE en morceaux par seconde, et images
+// par seconde sur la même fenêtre :
 //
-//   file      campagne   Paris
-//      8         57        41
-//     24        147        76
-//     48        200        99
-//     64        209       105
-//    200        188       123
+//   file     campagne      Paris        Londres
+//      8    60 · 11,4    53 · 6,2      54 · 8,4
+//     16   117 · 12,1    75 · 5,3      83 · 7,9
+//     24   132 · 10,1   104 · 4,0     103 · 6,4
+//     32   154 · 10,1   104 · 3,9     120 · 6,2
+//     48   215 · 10,5   103 · 3,9     131 · 6,3
 //
-// Quarante-huit prend quatre-vingt-quinze pour cent du gain et garde la
-// file fraîche — au-delà, on maille des morceaux que l'enfant a déjà
-// dépassés. `?attente=` la force, pour remesurer.
+// SEIZE est le genou : le débit de pointe DOUBLE et la cadence ne bouge
+// pas. À vingt-quatre elle tombe d'un quart à Paris, et au-delà on paie
+// sans rien gagner de plus sur la cadence. `?attente=` la force, pour
+// remesurer le jour où l'installation d'une géométrie changera de prix.
 //
 // ET DEUX MAILLEURS N'AJOUTENT RIEN — c'est un non-résultat MESURÉ, on ne
 // le réessaie pas. Avec la file à quarante-huit : un mailleur 200/99, deux
 // 206/125 mais la cadence tombe de 4,9 à 3,8 images par seconde à Paris,
 // trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
-// mailleur : c'est le fil principal, qui doit INSTALLER deux cents
-// géométries par seconde. Ajouter des mailleurs ne fait que lui en envoyer
-// plus.
-const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 48;
+// mailleur : c'est le fil principal, qui doit INSTALLER les géométries.
+// Ajouter des mailleurs ne fait que lui en envoyer plus.
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 16;
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;

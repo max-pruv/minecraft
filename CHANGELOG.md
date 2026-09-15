@@ -32,8 +32,8 @@ plein ciel, dans deux colonnes différentes, au-dessus d'une manette qu'ils ne
 touchaient pas, pendant que le compteur « 684 km/h » se repliait sur deux
 lignes sous le curseur blanc.
 
-**Ce que ça change.** Le chasseur et le Concorde passent de 110 à 190 blocs
-par seconde — 684 km/h au compteur, sept dixièmes de plus — et l'avion de
+**Ce que ça change.** Le chasseur et le Concorde passent de 110 à 160 blocs
+par seconde — 576 km/h au compteur, presque la moitié en plus — et l'avion de
 ligne de 95 à 120. Le paysage arrive quand même : il est même plus complet
 qu'avant, parce que le mailleur ne travaille plus à sec. Décollage, approche
 et atterrissage ne bougent pas d'un chiffre : ce qu'un enfant a appris
@@ -46,12 +46,16 @@ l'écran et passe sous le cadran de cap.
 
 **Ce qui le prouve.** La vitesse a été remesurée au même critère que la v229 —
 le trou devant soi, médiane sur six relevés, à la distance d'affichage de
-l'iPad, en campagne et sur un couloir de villes. Avec l'ancienne file de
-huit morceaux, voler à 110 laissait un trou à 82 et 93 blocs ; avec la file
-de quarante-huit, 190 blocs par seconde rend le monde ENTIER jusqu'au bord de
-la vue des deux côtés, et c'est la dernière vitesse où c'est vrai — 240 casse
-en campagne, 300 casse partout. Le témoin du chargement en vol monte sa barre
-de 80 à 140 blocs et prend le chasseur, qui n'y était pas. Trois témoins neufs
+l'iPad, en campagne et sur un couloir de villes. Avec l'ancienne file de huit
+morceaux, voler à 110 laissait un trou à 91 et 82 blocs, et 160 l'aurait
+laissé à 51 ; avec la file de seize, 160 blocs par seconde rend 125 et 122 —
+exactement la qualité que la v229 avait retenue pour fixer son plafond, et
+bien mieux que ce que la famille a aujourd'hui. Et le premier jet de cette
+livraison, qui poussait la file à quarante-huit et les avions à 190, a été
+REFUSÉ par le portail : sept suites rouges, toutes de cadence, parce que le
+fil principal passait son temps à installer les géométries. La file se choisit
+sur deux chiffres, le débit et la cadence ; seize est le genou mesuré. Le
+témoin du chargement en vol prend le chasseur, qui n'y était pas. Trois témoins neufs
 mesurent les commandes sur l'écran rendu : une seule colonne collée à la
 manette, la vitesse hors de la manette et sur une ligne, rien qui recouvre
 « Descendre », et le mot de chaque bouton. Captures au sol et en vol, à la

@@ -482,27 +482,32 @@ export const MONTURES = [
   // ce commentaire » — c'est exactement ce qui vient d'arriver. Le mailleur
   // est sorti du fil principal en v251, et la v265 a trouvé qu'on ne lui
   // confiait que HUIT morceaux d'avance, réapprovisionnés une fois par
-  // image : il passait l'essentiel de son temps à sec. La file à
-  // quarante-huit (`EN_ATTENTE_MAX`, main.js) triple le débit en campagne et
-  // le double sur une ville.
+  // image : il passait l'essentiel de son temps à sec. La file à SEIZE
+  // (`EN_ATTENTE_MAX`, main.js) double le débit de pointe sans coûter une
+  // image — le genou est mesuré là-bas, et il ne se déplace pas ici.
   //
   // ON REMESURE DONC LE PLATEAU AVEC LE MÊME CRITÈRE, jamais on ne le
   // déduit du débit : le TROU devant soi, médiane sur six relevés, à rr=12,
-  // en campagne et sur un couloir de villes. Cent quatre-vingt-douze est le
-  // maximum lisible — c'est le rayon d'affichage, donc « aucun trou ».
+  // en campagne et sur un couloir de villes.
   //
-  //     file de huit (l'ancien code)       110 → 82 · 93
-  //     file de quarante-huit              110 → 192 · 192
-  //                                        160 → 192 · 192
-  //                                        190 → 192 · 192
-  //                                        240 → 148 · 192
-  //                                        300 → 112 ·  51
+  //     file de huit (l'ancien code)       110 →  91 ·  82
+  //                                        160 →  51 ·  58
+  //     file de seize                      110 → 165 · 165
+  //                                        160 → 125 · 122
+  //                                        190 → 107 · 107
+  //                                        240 →  72 ·  72
   //
-  // Le plateau est à CENT QUATRE-VINGT-DIX : c'est la dernière vitesse où le
-  // monde est entier jusqu'au bord de la vue, des deux côtés, et la suivante
-  // casse. On le prend tel quel — c'est ce que la v229 avait fait avec cent
-  // dix. Et l'on est plus au large qu'avant : à 190 le trou vaut 192, quand
-  // l'ancien code en rendait 82 à 110.
+  // Le plateau est à CENT SOIXANTE, et c'est la barre de la v229 elle-même
+  // qui le dit : elle acceptait 125-138 blocs de trou et rejetait 51-86. À
+  // 160 on rend 122-125 — la qualité qu'elle avait retenue — quand 240 rend
+  // 72, dans sa bande de refus. Et l'on est plus au large qu'avant : à 160
+  // le trou vaut 122, quand l'ancien code en rendait 82 à 110, et 51 à 160.
+  //
+  // CE QUE MON PREMIER JET AVAIT MANQUÉ, et qui vaut pour la prochaine fois :
+  // une file de quarante-huit rend bien 192 de trou à 190 blocs par seconde,
+  // et le portail complet l'a REFUSÉ — sept suites rouges de cadence. On ne
+  // règle pas une vitesse sur un seul chiffre quand un second chiffre paie
+  // la note.
   //
   // MA PREMIÈRE SONDE NE MESURAIT RIEN, et c'est à savoir avant de
   // remesurer : elle posait `vitesseAvion = v` et l'avion redescendait à
@@ -511,9 +516,9 @@ export const MONTURES = [
   // vitesse d'essai se met dans la FICHE, jamais dans la variable du moment.
   //
   // Ce qu'on reprend, et ce qu'on ne reprend pas : l'avion de ligne passe de
-  // 95 à 120, les deux rapides de 110 à 190 — le rapport remonte de 1,16 à
-  // 1,58. Le réel est à 2,4 ; il reste hors de portée tant que le plateau
-  // est à 190, et cela reste une dette déclarée. Le chasseur et le Concorde
+  // 95 à 120, les deux rapides de 110 à 160 — le rapport remonte de 1,16 à
+  // 1,33. Le réel est à 2,4 ; il reste hors de portée tant que le plateau
+  // est à 160, et cela reste une dette déclarée. Le chasseur et le Concorde
   // gardent la MÊME pointe : ce qui les sépare est l'agilité, comme depuis
   // la v229.
   //
@@ -537,7 +542,7 @@ export const MONTURES = [
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
-    pilote: { max: 190, poussee: 34, decrochage: 55, virage: 0.40,
+    pilote: { max: 160, poussee: 34, decrochage: 55, virage: 0.40,
       rotation: 62, approche: 62, roulage: 6, frein: 45 } },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
@@ -546,6 +551,6 @@ export const MONTURES = [
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
-    pilote: { max: 190, poussee: 90, decrochage: 40, virage: 1.30,
+    pilote: { max: 160, poussee: 90, decrochage: 40, virage: 1.30,
       rotation: 48, approche: 50, roulage: 7, frein: 60 } },
 ];

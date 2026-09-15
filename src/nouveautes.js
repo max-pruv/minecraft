@@ -9,7 +9,7 @@ export const NOUVEAUTES = [
     v: 265,
     titre: "Les jets volent bien plus vite",
     puces: [
-      "🚀 Le chasseur et le Concorde : 684 km/h",
+      "🚀 Chasseur et Concorde : 576 km/h",
       "🗺️ Le paysage arrive quand même",
       "🎛️ Les boutons du vol rangés à droite",
       "🛞 Chaque bouton dit ce qu'il fait",

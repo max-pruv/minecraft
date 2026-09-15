@@ -2743,22 +2743,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
     //
-    // ET LA BARRE MONTE À CENT QUARANTE (v265), parce que la mesure a bougé.
-    // La file du mailleur est passée de huit morceaux d'avance à
-    // quarante-huit et le débit a triplé ; les avions sont montés à 120 et
-    // 190 blocs par seconde. Relevé sur la sonde du plateau, trou médian sur
-    // six relevés, campagne et couloir de villes :
+    // ET LA BARRE RESTE À QUATRE-VINGTS EN v265, alors que la mesure s'est
+    // améliorée — parce que la règle qui l'a posée n'a pas changé : « au-delà
+    // d'une demi-seconde de vol même pour le plus rapide ». Le plus rapide
+    // fait désormais 160 blocs par seconde, donc une demi-seconde vaut
+    // toujours quatre-vingts blocs. Ce que la livraison gagne se lit dans le
+    // RELEVÉ, pas dans la barre : la file du mailleur est passée de huit
+    // morceaux d'avance à seize, et le trou médian (sonde du plateau, six
+    // relevés, campagne et couloir de villes) va de 91 · 82 à la vitesse
+    // d'avant, à 122 · 125 à la vitesse neuve — un monde PLUS complet en
+    // volant plus vite.
     //
-    //     file de huit          110 → 82 · 93
-    //     file de quarante-huit 190 → 192 · 192      240 → 148 · 192
-    //                                                300 → 112 ·  51
-    //
-    // Cent quatre-vingt-douze est le maximum lisible (le rayon d'affichage,
-    // donc « aucun trou »). Cent quarante sépare donc ce que la file neuve
-    // rend À LA VITESSE DE LA FICHE de ce que l'ancien code rendait à une
-    // vitesse presque deux fois moindre — le témoin est rouge sur
-    // `origin/main`, et il le serait aussi si quelqu'un remontait les
-    // vitesses au-delà du plateau.
+    // Serrer la barre aurait mesuré le banc : la même sonde rend 192 seule
+    // et 163 au plus bas sous charge de portail. Une borne se pose sur la
+    // règle, pas sur le meilleur chiffre qu'on vient de voir.
     //
     // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
     // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
@@ -2830,7 +2828,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return out;
     });
-    const BARRE = 140;
+    const BARRE = 80;
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
       !suivi.err && suivi.avionligne && suivi.concorde && suivi.chasseur
       && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE

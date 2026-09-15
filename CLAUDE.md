@@ -833,17 +833,32 @@ rembourse une dette que la v229 avait écrite elle-même.
   que lui en envoyer plus, en payant un monde jumeau de mémoire et la
   génération des morceaux de bord deux fois. Le pool a été écrit, mesuré,
   puis RETIRÉ ; ce paragraphe est là pour qu'on ne le réécrive pas.
+- **ET UNE FILE SE CHOISIT SUR DEUX CHIFFRES : LE DÉBIT ET LA CADENCE.** Mon
+  premier jet la posait à quarante-huit sur le seul débit. Le portail complet
+  a rendu SEPT suites rouges dont QUATRE étaient vertes la veille, et tous
+  les symptômes étaient de cadence : « programmes 8/25 après 48 s » dans
+  `maj.js` (la chauffe compile un programme par image), « 0 m en 31 s de
+  jeu » au métro, « 0 relevé sur 92 » aux virages, « cadence 1,7 » à
+  l'arrivée sur Paris. Le mailleur rendait deux fois plus de morceaux et le
+  fil principal devait les INSTALLER. Mesuré, débit de pointe · images par
+  seconde, à rr=12 : file 8 → 60·11,4 campagne, 53·6,2 Paris ; 16 →
+  117·12,1 et 75·5,3 ; 24 → 132·10,1 et 104·4,0 ; 48 → 215·10,5 et
+  103·3,9. **Seize est le genou** — le débit double, la cadence ne bouge pas
+  — et c'est mot pour mot le genou que la v229 avait mesuré sur
+  `MESH_BUDGET_MS`. **Un portail rouge en cascade n'est pas un accident de
+  banc : c'est une mesure qu'on n'a pas faite.**
 - **LA DETTE DE LA v229 SE REMBOURSE COMME ELLE L'AVAIT ANNONCÉ.** Elle
   écrivait : « le seul moyen de reprendre le rapport est de MAILLER PLUS
   VITE, pas de réécrire ce commentaire. » On remesure donc au MÊME critère —
   le trou devant soi, médiane sur six relevés, rr=12, campagne ET couloir de
-  villes ; 192 est le maximum lisible (le rayon d'affichage, donc « aucun
-  trou ») : file de 8, 110 → 82 · 93 ; file de 48, 110 → 192 · 192, 160 → 192
-  · 192, **190 → 192 · 192**, 240 → 148 · 192, 300 → 112 · 51. Le plateau est
-  à cent quatre-vingt-dix : la dernière vitesse où le monde est entier des
-  deux côtés. Avion de ligne 95 → 120, Concorde et chasseur 110 → 190 ; le
-  rapport remonte de 1,16 à 1,58, le réel (2,4) reste une dette. Décollage,
-  approche et freinage ne changent pas — la fiche ne touche que `max`.
+  villes : file de huit, 110
+  → 91 · 82 et 160 → 51 · 58 ; file de seize, 110 → 165 · 165, **160 → 125 ·
+  122**, 190 → 107 · 107, 240 → 72 · 72. Le plateau est à CENT SOIXANTE, et
+  c'est la barre de la v229 elle-même qui le dit : elle acceptait 125-138 de
+  trou et rejetait 51-86. Avion de ligne 95 → 120, Concorde et chasseur
+  110 → 160 ; le rapport remonte de 1,16 à 1,33, le réel (2,4) reste une
+  dette. Décollage, approche et freinage ne changent pas — la fiche ne
+  touche que `max`.
 - **UNE VITESSE D'ESSAI SE MET DANS LA FICHE, JAMAIS DANS LA VARIABLE DU
   MOMENT.** Ma première sonde posait `player.vitesseAvion = v` ; en état
   `vol`, `player.js` vise `p.max` et l'avion y retombait en une seconde.
