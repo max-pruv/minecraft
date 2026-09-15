@@ -380,7 +380,18 @@ world.loadEdits();
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
 const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [] };
-const EN_ATTENTE_MAX = 8;             // morceaux confiés d'avance au worker
+// COMBIEN DE MORCEAUX LE WORKER A-T-IL D'AVANCE — et c'est un TEMPS, pas un
+// compte (v265). Huit, réapprovisionnés une fois par IMAGE, c'est une file
+// par image : à Paris un morceau coûte 24 ms, donc huit occupent le worker
+// 192 ms et la file tient jusqu'à l'image suivante ; en campagne un morceau
+// coûte 6,6 ms, huit ne font que 53 ms, et sur une tablette qui rame à cinq
+// images par seconde le worker passe les quatre cinquièmes de son temps À
+// SEC — au moment précis où l'enfant arrive quelque part. C'est le piège du
+// budget par image de la v237, déplacé d'un cran : une file par image est
+// une cadence de ménage déguisée en horloge d'affichage.
+// La valeur se règle sur la MESURE (sonde `v265/sonde-debit.cjs`), et
+// `?attente=` la force pour mesurer.
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 8;
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
