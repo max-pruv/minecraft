@@ -389,18 +389,36 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 // SEC — au moment précis où l'enfant arrive quelque part. C'est le piège du
 // budget par image de la v237, déplacé d'un cran : une file par image est
 // une cadence de ménage déguisée en horloge d'affichage.
-// La valeur se règle sur la MESURE (sonde `v265/sonde-debit.cjs`), et
-// `?attente=` la force pour mesurer.
-const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 8;
+// Mesuré par saturation (une téléportation met tout le disque à mailler
+// d'un coup), à rr=12, débit de POINTE en morceaux par seconde :
+//
+//   file      campagne   Paris
+//      8         57        41
+//     24        147        76
+//     48        200        99
+//     64        209       105
+//    200        188       123
+//
+// Quarante-huit prend quatre-vingt-quinze pour cent du gain et garde la
+// file fraîche — au-delà, on maille des morceaux que l'enfant a déjà
+// dépassés. `?attente=` la force, pour remesurer.
+//
+// ET DEUX MAILLEURS N'AJOUTENT RIEN — c'est un non-résultat MESURÉ, on ne
+// le réessaie pas. Avec la file à quarante-huit : un mailleur 200/99, deux
+// 206/125 mais la cadence tombe de 4,9 à 3,8 images par seconde à Paris,
+// trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
+// mailleur : c'est le fil principal, qui doit INSTALLER deux cents
+// géométries par seconde. Ajouter des mailleurs ne fait que lui en envoyer
+// plus.
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 48;
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
-let maillageDistant = null;          // le premier du pool, ou rien
-const mailleurs = [];                // le pool lui-même
+let maillageDistant = null;
 function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  auxMailleurs({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx });
 }
 function recevoirMorceau(m) {
   const key = World.key(m.cx, m.cz);
@@ -423,40 +441,23 @@ function recevoirMorceau(m) {
   statsMaillage.distants++;
   if (attente && attente.sale) world.dirty.add(key);
 }
-// COMBIEN DE MAILLEURS (v265). Chacun porte son propre monde jumeau : deux
-// mailleurs, c'est deux fois la mémoire des morceaux engendrés, et la
-// génération des morceaux de BORD se fait deux fois (chacun a besoin des
-// voisins de ce qu'il maille pour en fermer les faces). Le gain n'est donc
-// pas linéaire, et il se MESURE — `?mailleurs=` le règle pour cela.
-const MAILLEURS = Math.max(1, Number(new URLSearchParams(location.search).get('mailleurs')) || 1);
-let prochainMailleur = 0;
-function auxMailleurs(msg) {           // ce que TOUS doivent savoir : les blocs
-  for (const w of mailleurs) w.postMessage(msg);
-}
 (function creerMaillageDistant() {
   if (new URLSearchParams(location.search).get('maillage') === 'local') return;
   if (typeof Worker === 'undefined') return;
   try {
-    for (let i = 0; i < MAILLEURS; i++) {
-      const w = new Worker(new URL('./maillage-worker.js', import.meta.url), { type: 'module' });
-      w.onmessage = (e) => { if (e.data && e.data.type === 'morceau') recevoirMorceau(e.data); };
-      // UN WORKER QUI MEURT REND LA MAIN AU FIL PRINCIPAL : un navigateur sans
-      // workers de module doit voir le monde quand même. Le premier qui tombe
-      // emporte le pool entier — un maillage à moitié distant serait plus dur
-      // à tenir qu'un maillage local franc.
-      w.onerror = (err) => {
-        console.warn('maillage hors fil principal indisponible, on maille ici :', err && err.message);
-        mailleurs.length = 0;
-        maillageDistant = null;
-        for (const a of enAttente.values()) meshQueue.push({ cx: a.cx, cz: a.cz, d: 0 });
-        enAttente.clear();
-      };
-      mailleurs.push(w);
-    }
-    maillageDistant = mailleurs[0] || null;
+    const w = new Worker(new URL('./maillage-worker.js', import.meta.url), { type: 'module' });
+    w.onmessage = (e) => { if (e.data && e.data.type === 'morceau') recevoirMorceau(e.data); };
+    // UN WORKER QUI MEURT REND LA MAIN AU FIL PRINCIPAL : un navigateur sans
+    // workers de module doit voir le monde quand même.
+    w.onerror = (err) => {
+      console.warn('maillage hors fil principal indisponible, on maille ici :', err && err.message);
+      maillageDistant = null;
+      for (const a of enAttente.values()) meshQueue.push({ cx: a.cx, cz: a.cz, d: 0 });
+      enAttente.clear();
+    };
+    maillageDistant = w;
     synchroniserLeWorker();
   } catch (e) {
-    mailleurs.length = 0;
     maillageDistant = null;
   }
 })();
@@ -465,7 +466,7 @@ function auxMailleurs(msg) {           // ce que TOUS doivent savoir : les blocs
 // remaillera ici à l'arrivée.
 world.onBloc = (x, y, z, id) => {
   if (!maillageDistant) return;
-  auxMailleurs({ type: 'bloc', x, y, z, id });
+  maillageDistant.postMessage({ type: 'bloc', x, y, z, id });
   const a = enAttente.get(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
   if (a) a.sale = true;
 };
@@ -722,23 +723,9 @@ function updateChunks() {
       enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false });
       lot.push({ cx: suivant.cx, cz: suivant.cz });
     }
-    // LE LOT SE RÉPARTIT ENTRE LES MAILLEURS, à tour de rôle : chacun en
-    // reçoit une tranche, et le tour de départ avance pour qu'un lot court
-    // ne retombe pas toujours sur le même.
     if (lot.length) {
-      if (mailleurs.length === 1) {
-        mailleurs[0].postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
-          pcx, pcz, rayon: RENDER_RADIUS + 2 });
-      } else {
-        const parts = mailleurs.map(() => []);
-        lot.forEach((m, i) => parts[(prochainMailleur + i) % mailleurs.length].push(m));
-        prochainMailleur = (prochainMailleur + lot.length) % mailleurs.length;
-        mailleurs.forEach((w, i) => {
-          if (!parts[i].length) return;
-          w.postMessage({ type: 'mailler', liste: parts[i], generation: generationDistante,
-            pcx, pcz, rayon: RENDER_RADIUS + 2 });
-        });
-      }
+      maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
+        pcx, pcz, rayon: RENDER_RADIUS + 2 });
     }
   } else {
     const debut = performance.now();
