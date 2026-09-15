@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 267,
+    titre: "Le mur du son",
+    puces: [
+      "🚀 Le chasseur vole à Mach 1,8",
+      "🛩️ Le Concorde aussi : 2180 km/h",
+      "🌊 Plus d'atterrissage dans la mer",
+      "✈️ De l'eau dessous ? On remonte",
+    ],
+  },
+  {
     v: 266,
     titre: "Un ami ne disparaît plus",
     puces: [

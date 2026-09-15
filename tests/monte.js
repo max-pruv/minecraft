@@ -3944,6 +3944,124 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !bord.err && bord.mots && bord.mots.vol === 'DÉCOLLER' && bord.mots.train === 'SORTI',
       `${bord.err || ''} ${JSON.stringify(bord.mots)}`);
 
+    // UN AVION NE SE POSE PAS DANS L'EAU (v267).
+    //
+    // Max : « un avion ne peut pas atterrir dans l'eau ». `sommetColonne`
+    // cherche le premier bloc SOLIDE en descendant, et l'eau n'en est pas
+    // un : au-dessus de la mer elle rend le FOND. Mesuré au large de Nice
+    // (sonde `v267/sonde-eau`), avion de ligne en finale : posé à y = 25,
+    // SOUS CINQ BLOCS D'EAU, état `sol`, à rouler au fond de la
+    // Méditerranée.
+    //
+    // ET LA SONDE A MENTI AU PREMIER TOUR, ce qui vaut d'être écrit : elle
+    // volait vers -z, c'est-à-dire vers Nice, et l'appareil rejoignait la
+    // côte en descendant — elle concluait « tout va bien » en ne mesurant
+    // pas l'eau, et elle ne relevait même pas sa position. Une sonde qui
+    // juge un terrain dit OÙ elle était quand elle l'a jugé.
+    //
+    // Le témoin part donc au large, cap au SUD, et vérifie ce qu'un enfant
+    // voit : l'appareil ne descend pas sous la surface, il repasse en vol.
+    const surLEau = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      const patienter = (ms) => new Promise((fin) => {
+        const t0 = performance.now();
+        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+        requestAnimationFrame(tic);
+      });
+      const eauEn = (x, z) => {
+        const sol = g.world.sommetColonne(Math.floor(x), Math.floor(z));
+        return g.world.getBlock(Math.floor(x), sol + 1, Math.floor(z)) === BLOCK.WATER;
+      };
+      const N = positionDe('nice');
+      let mer = null;
+      for (let d = 20; d < 400 && !mer; d += 10) {
+        if (eauEn(N.x, N.z + d)) mer = { x: Math.round(N.x), z: Math.round(N.z + d) };
+      }
+      if (!mer) return { err: 'pas de mer au sud de Nice' };
+      g.player.pos.set(mer.x, 60, mer.z);
+      g.player.vel.set(0, 0, 0); g.player.yaw = Math.PI; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.approche;
+      g.player.avionEnVol = true; g.player.avionEtat = 'atterrissage';
+      g.player.trainVoulu = true; g.player.trainSorti = 1;
+      g.player.altitudeDecollage = -999;
+      let plusBas = Infinity, pose = null, remise = false;
+      const surAvion = g.player.surAvion;
+      g.player.surAvion = (quoi) => { if (quoi === 'remiseDesGaz') remise = true; if (surAvion) surAvion(quoi); };
+      for (let n = 0; n < 30 && !pose; n++) {
+        await patienter(500);
+        plusBas = Math.min(plusBas, g.player.pos.y);
+        if (g.player.avionEtat === 'sol' || g.player.avionEtat === 'freinage') {
+          pose = { y: +g.player.pos.y.toFixed(1), x: Math.round(g.player.pos.x), z: Math.round(g.player.pos.z),
+            surEau: eauEn(g.player.pos.x, g.player.pos.z) };
+        }
+      }
+      const out = {
+        mer, WATER_LEVEL, plusBas: +plusBas.toFixed(1), pose, remise,
+        etat: g.player.avionEtat,
+        finSurEau: eauEn(g.player.pos.x, g.player.pos.z),
+        x: Math.round(g.player.pos.x), z: Math.round(g.player.pos.z),
+      };
+      g.player.surAvion = surAvion;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return out;
+    });
+    verifier('en finale au-dessus de la mer, l\'avion ne se pose pas dans l\'eau — il remet les gaz',
+      !surLEau.err && surLEau.finSurEau && !surLEau.pose
+      && surLEau.plusBas > surLEau.WATER_LEVEL && surLEau.remise,
+      `${surLEau.err || ''} ${JSON.stringify(surLEau)}`);
+
+    // LE COMPTEUR DIT LA VRAIE VITESSE DE L'APPAREIL (v267).
+    //
+    // Max : « peut-être fake la vraie vitesse, mais quand ton avion de chasse
+    // vole il devrait voler à une vitesse supersonique ; idem, un Concorde ça
+    // ne vole pas à 500 km/h ». Il faisait `blocs par seconde × 3,6`, soit un
+    // bloc pour un mètre — ce qu'un bloc ne vaut nulle part ici : 432 km/h
+    // pour un long courrier, 576 pour un Concorde. La vraie croisière vit
+    // dans la fiche (`kmh`) et l'affichage en prend la fraction atteinte ;
+    // ce qui se DÉPLACE ne change pas d'un bloc.
+    //
+    // On lit le COMPTEUR RENDU, pas la fiche : c'est ce que l'enfant voit,
+    // et c'est ce qui rougit si quelqu'un débranche l'affichage.
+    const compteurs = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const lire = () => {
+        const e = document.getElementById('gaz-val');
+        const b = e && e.querySelector('b'), s = e && e.querySelector('small');
+        return { n: b ? +b.textContent : null, unite: s ? s.textContent : null };
+      };
+      const out = {};
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.avionEnVol = true; g.player.avionEtat = 'vol';
+        g.player.vitesseAvion = def.pilote.max;      // pleins gaz
+        g.player.gaz = 1;
+        if (window.__majBoutonsVehicule) window.__majBoutonsVehicule();
+        out[key] = lire();
+      }
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.gaz = null; g.player.flying = false;
+      return out;
+    });
+    const MACH = 1235;
+    verifier('à pleins gaz, le Concorde et le chasseur passent le mur du son, l\'avion de ligne non',
+      compteurs.concorde && compteurs.chasseur && compteurs.avionligne
+      && compteurs.concorde.n > MACH && /^Mach /.test(compteurs.concorde.unite)
+      && compteurs.chasseur.n > MACH && /^Mach /.test(compteurs.chasseur.unite)
+      && compteurs.avionligne.n > 800 && compteurs.avionligne.n < MACH
+      && compteurs.avionligne.unite === 'km/h',
+      JSON.stringify(compteurs));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

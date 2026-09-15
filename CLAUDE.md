@@ -2000,6 +2000,48 @@ Décisions qui ont chacune coûté une panne réelle :
   qu'elle sait, là où un nom neuf tombe dans le vide — c'est la règle du
   receveur qui cède, appliquée au vocabulaire.
 
+### Un avion ne se pose pas dans l'eau, et ce qu'on affiche n'est pas ce qu'on parcourt (v267)
+
+Max : « un avion ne peut pas atterrir dans l'eau. Et peut-être fake la vraie
+vitesse, mais quand ton avion de chasse vole, il devrait voler à une vitesse
+supersonique ; idem, un Concorde, ça ne vole pas à 500 km/h. » Quatre règles.
+
+- **`sommetColonne` REND LE PREMIER BLOC SOLIDE, ET L'EAU N'EN EST PAS UN.**
+  Au-dessus de la mer, elle rend donc le FOND, et l'atterrissage y descendait
+  tranquillement. Mesuré au large de Nice : posé à y = 25 sous CINQ blocs
+  d'eau, état `sol`, à rouler au fond de la Méditerranée. Toute logique qui
+  cherche « le sol » pour y poser quelque chose doit demander en plus ce qu'il
+  y a JUSTE AU-DESSUS — `getBlock(x, sommet + 1, z)`. C'est la sœur du piège
+  des arbres à plat : une fonction qui répond juste à une autre question.
+- **DEVANT UNE PISTE IMPRATICABLE, ON REMET LES GAZ.** C'est le geste réel, il
+  n'a rien de violent, et il donne à l'enfant quelque chose à faire — la règle
+  des messages de la maison. L'appareil repasse en `vol`, remonte, et le jeu
+  dit d'aller vers la terre. L'atterrissage MANUEL a son propre plancher
+  (`PLANCHER_EAU`, trois blocs au-dessus de la surface) : manche en avant
+  au-dessus de la mer, on ne coule pas. Et la recherche du fond est bornée en
+  altitude (`GARDE_EAU`) — `sommetColonne` descend colonne par colonne, c'est
+  inutile à cent blocs.
+- **CE QU'ON AFFICHE N'EST PAS CE QU'ON PARCOURT, ET C'EST HONNÊTE.** Le
+  compteur faisait `blocs par seconde × 3,6`, c'est-à-dire un bloc pour un
+  mètre. **Un bloc ne vaut un mètre nulle part dans ce jeu** : trente à
+  quarante au sol dans une ville, cent quatre-vingt-sept sur la carte du
+  monde. Le compteur mentait donc DÉJÀ, dans le sens qui rapetisse tout. La
+  vraie croisière vit dans la fiche (`pilote.kmh`) et l'affichage en prend la
+  fraction de `max` atteinte. Ce qui se DÉPLACE reste borné par ce que le
+  monde sait mailler — `max`, mesuré en v265 — et cette borne-là ne se
+  contourne pas.
+- **LES CHIFFRES SONT CEUX DES VRAIS APPAREILS.** Long courrier Mach 0,85
+  (900 km/h), Concorde Mach 2,04 (2 180), chasseur moderne Mach 1,8 (2 200) :
+  les deux rapides se retrouvent à égalité DANS LE RÉEL AUSSI, ce que la v229
+  avait décidé pour de tout autres raisons. Passé Mach 1 (1 235 km/h), la
+  petite ligne du compteur troque son unité contre le nombre de Mach.
+- **ET UNE SONDE QUI JUGE UN TERRAIN DIT OÙ ELLE ÉTAIT.** Mon premier jet
+  volait vers -z, c'est-à-dire vers Nice : l'appareil rejoignait la côte en
+  descendant et s'y posait très bien, et la sonde concluait « tout va bien »
+  sans avoir jamais mesuré d'eau — elle ne relevait même pas sa position.
+  C'est « une sonde de déplacement vérifie d'abord qu'elle s'est déplacée »,
+  vue de l'autre bout : le point de DÉPART ne dit rien du point d'ARRIVÉE.
+
 ### Le silence ne prouve le départ que d'un pair qu'on ne peut pas sonder (v266)
 
 Le défaut allait et venait sur les DEUX arbres depuis la v259 : « à trois,

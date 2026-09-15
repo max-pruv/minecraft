@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
-import { HEIGHT } from './world.js';
+import { HEIGHT, WATER_LEVEL } from './world.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -93,6 +93,13 @@ const VIRAGE_SOL = 0.6;           // la roue avant, en radians par seconde à vi
 const ASSIETTE_ROTATION = 0.22;   // ~12,5° : le nez qui se lève au décollage
 const ASSIETTE_APPROCHE = -0.06;  // le nez un peu bas en finale
 const HAUTEUR_ARRONDI = 6;        // sous cette hauteur, l'arrondi : on adoucit la descente
+// UN AVION NE SE POSE PAS DANS L'EAU (v267). Trois blocs au-dessus de la
+// surface : la hauteur à laquelle un appareil tient encore l'air, et sous
+// laquelle il n'a plus rien à faire au-dessus de la mer.
+const PLANCHER_EAU = WATER_LEVEL + 3;
+// Et l'on ne va chercher le fond que quand on s'en approche : `sommetColonne`
+// descend colonne par colonne, et c'est inutile à cent blocs d'altitude.
+const GARDE_EAU = WATER_LEVEL + 16;
 const DESCENTE_ARRONDI = 5;       // ... à cinq blocs par seconde
 const ASSIETTE_ARRONDI = 0.05;    // ... et le nez se relève un peu
 const ASSIETTE_MAX = 0.35;        // ce que le manche donne au plus, en vol
@@ -195,6 +202,17 @@ export class Player {
   // Un saut d'UN bloc se franchit — un bord de dalle, une bordure — parce
   // qu'un avion qui ne peut plus rouler ne peut plus décoller, et l'enfant
   // resterait planté là. Deux blocs, c'est un mur.
+  // Y A-T-IL DE L'EAU SOUS L'APPAREIL ? La question se pose au sommet SOLIDE
+  // de la colonne — au-dessus de la mer, c'est le fond — et l'on regarde ce
+  // qu'il y a juste au-dessus : de l'eau, ou de l'air. Bornée en altitude :
+  // à cent blocs on ne va pas chercher le fond de l'océan à chaque image.
+  eauSousLAppareil() {
+    if (this.pos.y > GARDE_EAU) return false;
+    const fx = Math.floor(this.pos.x), fz = Math.floor(this.pos.z);
+    const sol = this.world.sommetColonne(fx, fz);
+    return this.world.getBlock(fx, sol + 1, fz) === BLOCK.WATER;
+  }
+
   franchirUneMarche(dx, dz) {
     const w = this.world;
     const x = Math.floor(this.pos.x + dx), z = Math.floor(this.pos.z + dz);
@@ -368,6 +386,15 @@ export class Player {
         // réduits, il descend, d'autant plus vite qu'il est lent — c'est ce
         // qui permet de se poser soi-même, manette en bas et manche en avant.
         if (v < p.decrochage) this.vel.y = Math.min(this.vel.y, -(1 - v / p.decrochage) * DESCENTE);
+        // ET L'ATTERRISSAGE MANUEL NE PLONGE PAS NON PLUS (v267) : manche en
+        // avant au-dessus de la mer, l'appareil s'arrête à trois blocs de la
+        // surface au lieu de couler. Le décrochage continue de le faire
+        // descendre partout ailleurs — c'est ce qui permet de se poser
+        // soi-même sur une vraie piste.
+        if (this.pos.y <= PLANCHER_EAU && this.vel.y < 0 && this.eauSousLAppareil()) {
+          this.vel.y = 0;
+          this.pos.y = Math.max(this.pos.y, PLANCHER_EAU);
+        }
         cibleAssiette = Math.max(-ASSIETTE_MAX, Math.min(ASSIETTE_MAX,
           Math.atan2(this.vel.y, Math.max(1, v)) * 1.4));
       } else if (etat === 'atterrissage') {
@@ -376,11 +403,31 @@ export class Player {
         // qu'il n'a pas retouché la piste — train sorti, nez un peu bas. Et
         // L'ARRONDI : sous six blocs, la descente s'adoucit et le nez se
         // relève un peu, comme un vrai appareil juste avant de toucher.
-        const sol = this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z));
-        const hauteur = this.pos.y - (sol + 1);
-        const arrondi = hauteur < HAUTEUR_ARRONDI;
-        this.vel.y = arrondi ? -DESCENTE_ARRONDI : -DESCENTE;
-        cibleAssiette = arrondi ? ASSIETTE_ARRONDI : ASSIETTE_APPROCHE;
+        //
+        // MAIS PAS DANS L'EAU (v267). Max : « un avion ne peut pas atterrir
+        // dans l'eau ». `sommetColonne` cherche le premier bloc SOLIDE en
+        // descendant, et l'eau n'en est pas un : au-dessus de la mer elle
+        // rend le FOND, et l'appareil descendait tranquillement jusque-là.
+        // Mesuré au large de Nice (sonde `v267/sonde-eau`) : posé à y = 25,
+        // sous CINQ blocs d'eau, à rouler au fond de la Méditerranée.
+        //
+        // Ce qu'un vrai pilote fait devant une piste impraticable, c'est une
+        // REMISE DES GAZ : on ne force pas, on remonte et l'on va chercher
+        // la terre. C'est le geste réel, et il n'a rien de violent — le jeu
+        // dit à l'enfant quoi faire.
+        if (this.eauSousLAppareil()) {
+          this.avionEtat = 'vol'; this.avionEnVol = true;
+          if (this.gaz != null) this.gaz = 1;
+          this.vel.y = Math.max(this.vel.y, MONTEE_DECOLLAGE * 0.6);
+          cibleAssiette = ASSIETTE_ROTATION;
+          if (this.surAvion) this.surAvion('remiseDesGaz');
+        } else {
+          const sol = this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z));
+          const hauteur = this.pos.y - (sol + 1);
+          const arrondi = hauteur < HAUTEUR_ARRONDI;
+          this.vel.y = arrondi ? -DESCENTE_ARRONDI : -DESCENTE;
+          cibleAssiette = arrondi ? ASSIETTE_ARRONDI : ASSIETTE_APPROCHE;
+        }
       } else {
         this.vel.y = -APPUI_SOL;   // sol, freinage : plaqué à la piste
       }
