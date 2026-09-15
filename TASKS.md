@@ -90,6 +90,21 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
   vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
   (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
+- [ ] **UN TROISIÈME JOUEUR N'EST PAS VU DES DEUX AUTRES — mesuré des deux
+  côtés (v264).** « À trois, chacun voit les deux autres » (`reseau.js`) rend
+  exactement `[["Alice"],["Marlon"],["Alice","Marlon"]]` et le compteur
+  `2/2/3` : **Nina voit l'hôte et Alice, mais ni l'hôte ni Alice ne la
+  voient.** Elle arrive, elle reçoit, et ce qu'elle émet ne parvient à
+  personne — ou l'hôte ne la relaie pas. Les invités ne sont pas reliés entre
+  eux : leurs positions transitent par l'hôte, et c'est ce chemin-là qui
+  lâche pour le SECOND invité.
+  Mesuré, la suite rejouée SEULE dans les deux arbres : branche trois tours,
+  rouge trois fois ; `origin/main` deux tours, un vert (93 s) puis un rouge
+  aux MÊMES valeurs (104 s). Ce n'est donc pas la livraison en cours — c'est
+  en production, et cela touche Marlon, Alice et un ami. À reprendre en
+  propre : une sonde qui distingue les cas plutôt qu'une hypothèse — Nina
+  est-elle inscrite chez l'hôte, ses messages arrivent-ils, l'hôte les
+  relaie-t-il ? — et non le témoin qu'on rejoue.
 - [ ] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** Les deux
   cônes additifs de `flamme()` (avions.js) naissent invisibles : three ne
   compile leur programme qu'à la première image où ils sont RENDUS, c'est-à-

@@ -45,6 +45,18 @@ moitié, et elle est éteinte une fois descendu. Rouges sur l'ancien code
 (pas de tuyère). Captures de derrière, avion de ligne et chasseur, dans
 `scratchpad/v264/captures`.
 
+Portail complet, sept suites : `carteMonde`, `maj`, `carte` et `reglages`
+vertes. Les rouges de `monte.js` et de `reseau.js` ont été rejoués SEULS
+dans les deux arbres et sont déclarés dans `TASKS.md` — le gel du premier
+survol de Paris (branche 4 133 ms, `origin/main` 4 117), le maillage en vol
+dont la borne de garde n'est pas atteinte (66 blocs parcourus contre 76), et
+surtout un défaut de PRODUCTION que cette livraison n'a pas causé : à trois
+joueurs, le second invité voit les deux autres et n'est vu de personne —
+même relevé au caractère près sur `origin/main`. Le conteneur du banc a
+redémarré en cours de route et rend 4,4 images par seconde là où il en
+rendait 5,4 : deux bornes de garde de `monte.js` tombent sous ce régime en
+ne mesurant rien, ce qui est noté comme une passe à faire.
+
 ## v263 — Le cadran de cap : la ville visée au loin
 
 **Pourquoi.** Max : « un cadran de pilote en avion : la ville visée au
