@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 269,
+    titre: "Le jeu redevient fluide",
+    puces: [
+      "🚀 Plus de blocages de plusieurs secondes",
+      "◀️ Joystick tiré en arrière : tu recules",
+      "🔊 Le moteur ronronne et monte en régime",
+      "📻 La radio s'allume quand tu montes",
+      "⚙️ Réglages : tu peux couper le son",
+    ],
+  },
+  {
     v: 267,
     titre: "Le mur du son",
     puces: [

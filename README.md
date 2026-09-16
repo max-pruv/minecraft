@@ -35,6 +35,11 @@ rendering budgets, licensing and limitations.
   startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
 - **Day/night cycle** with sky, fog and light level transitions.
+- **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
+  plus harmonics that track the throttle), jet spool-up, block and chime sounds
+  are all built with the Web Audio API, and the car radio plays three original
+  stations written in scale degrees. One audio context for the whole game; the
+  🔊 setting suspends it outright.
 - **Creature catching** — 32 procedurally generated original species with
   elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn
   in matching biomes. Throw catch-balls (Q or the ◓ button) at them, watch the

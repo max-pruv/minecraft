@@ -2756,20 +2756,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
     //
-    // ET LA BARRE RESTE À QUATRE-VINGTS EN v265, alors que la mesure s'est
-    // améliorée — parce que la règle qui l'a posée n'a pas changé : « au-delà
-    // d'une demi-seconde de vol même pour le plus rapide ». Le plus rapide
-    // fait désormais 160 blocs par seconde, donc une demi-seconde vaut
-    // toujours quatre-vingts blocs. Ce que la livraison gagne se lit dans le
-    // RELEVÉ, pas dans la barre : la file du mailleur est passée de huit
-    // morceaux d'avance à seize, et le trou médian (sonde du plateau, six
-    // relevés, campagne et couloir de villes) va de 91 · 82 à la vitesse
-    // d'avant, à 122 · 125 à la vitesse neuve — un monde PLUS complet en
-    // volant plus vite.
+    // ET LA BARRE SE CALCULE DÉSORMAIS, ELLE NE S'ÉCRIT PLUS (v269). Elle a
+    // valu QUATRE-VINGTS de la v229 à la v268, pendant que la vitesse du plus
+    // rapide passait de 110 à 160 : le chiffre était juste par accident en
+    // v265 (160 ÷ 2 = 80) et il l'aurait cessé à la vitesse suivante sans que
+    // personne ne le voie. La règle, elle, n'a jamais bougé — « le bout du
+    // monde ne doit pas arriver avant une demi-seconde de vol » — et une
+    // demi-seconde se calcule. Chaque appareil est donc jugé sur SA vitesse :
+    // `trou >= max / 2`, la fiche étant la seule source.
+    //
+    // C'EST CE TÉMOIN QUI A RATTRAPÉ LA v269. La file du mailleur est revenue
+    // de seize à huit (le jeu était impraticable sur l'iPad à seize), donc le
+    // monde ne maille plus au même débit, donc les 160 blocs par seconde de
+    // la v265 ne tenaient plus : 51 et 58 de trou pour une barre de 80. Une
+    // vitesse mesurée sur une file donnée ne vaut que pour elle, et sans ce
+    // témoin la livraison aurait fait voler l'enfant dans le vide. Les
+    // vitesses sont remesurées (montures.js, tableau du plateau) : 95 pour
+    // l'avion de ligne, 120 pour les deux rapides.
     //
     // Serrer la barre aurait mesuré le banc : la même sonde rend 192 seule
     // et 163 au plus bas sous charge de portail. Une borne se pose sur la
-    // règle, pas sur le meilleur chiffre qu'on vient de voir.
+    // règle, pas sur le meilleur chiffre qu'on vient de voir — et c'est aussi
+    // pourquoi la vitesse retenue est 120 et non 130 : mesurées SEULES les
+    // deux passent (80 de trou pour 65 de barre à 130), mais le portail
+    // complet coûte quinze pour cent du trou, ce qui ne laisserait à 130 que
+    // trois blocs de marge et ferait battre ce témoin d'une exécution à
+    // l'autre.
     //
     // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
     // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
@@ -2841,12 +2853,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return out;
     });
-    const BARRE = 80;
+    // Une demi-seconde de vol, pour CHAQUE appareil et d'après SA fiche.
+    const demiSeconde = (a) => Math.round(a.vitesse / 2);
+    const tenus = ['avionligne', 'concorde', 'chasseur']
+      .map((k) => suivi[k] && { k, ...suivi[k], barre: demiSeconde(suivi[k]) });
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
-      !suivi.err && suivi.avionligne && suivi.concorde && suivi.chasseur
-      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE
-      && suivi.chasseur.trou >= BARRE,
-      `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+      !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
+      `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
@@ -4061,6 +4074,203 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       && compteurs.avionligne.n > 800 && compteurs.avionligne.n < MACH
       && compteurs.avionligne.unite === 'km/h',
       JSON.stringify(compteurs));
+
+    // LE BRUIT DU MOTEUR ET LA RADIO (v268).
+    //
+    // Max : « les véhicules, on devrait avoir un bruit ambiant. Quand on
+    // rentre dans une voiture, on devrait avoir un bruit de radio, un petit
+    // peu comme dans GTA. »
+    //
+    // UN TÉMOIN DE SON LIT DES ÉCHANTILLONS, JAMAIS UN DRAPEAU. `etatSon()`
+    // dirait « radio : Nuit Cubique » même si plus un seul oscillateur
+    // n'était branché — c'est exactement la mort de `__lumiere()`, deux fois
+    // (v247, v251), pour avoir publié un mécanisme au lieu de ce qui
+    // s'entend. On accroche donc un analyseur à la SORTIE du jeu et l'on
+    // mesure l'énergie qui y passe : silence à pied, énergie au volant,
+    // silence de nouveau à la descente.
+    //
+    // Mesuré à la sonde AVANT d'écrire ce témoin : sur ce banc, sans
+    // périphérique de son, le contexte est bien `running`, son horloge
+    // avance (1,25 s en 1,2 s de vraie vie) et un analyseur rend 0,212 pour
+    // une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au millième près. Sans
+    // cette mesure, un témoin d'énergie aurait mesuré le banc.
+    const sons = await tab.evaluate(async () => {
+      const g = window.__game;
+      if (!window.__sons) return { err: 'pas de module de son' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const ctx = window.__sons.contexte();
+      const sortie = window.__sons.sortie();
+      if (!ctx || !sortie) return { err: 'pas de contexte audio' };
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      sortie.connect(an);                 // une prise, pas un passage
+      const buf = new Float32Array(an.fftSize);
+      // LE PIRE D'UNE FENÊTRE, PAS UN INSTANTANÉ : la radio a des silences
+      // entre deux notes, et un instantané sur ce qui bouge est un pile ou
+      // face (leçon des poissons, v233).
+      const energie = async (secondes) => {
+        let fort = 0;
+        for (let t = 0; t < secondes; t += 0.1) {
+          an.getFloatTimeDomainData(buf);
+          let somme = 0;
+          for (const v of buf) somme += v * v;
+          fort = Math.max(fort, Math.sqrt(somme / buf.length));
+          await tenir(0.1);
+        }
+        return +fort.toFixed(4);
+      };
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle de pierre bien à l'écart, comme les témoins de vol
+      const x0 = 30000, z0 = 31400;
+      let y0 = 0;
+      for (let d = -6; d <= 10; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -6; d <= 10; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 4; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenir(1);
+      const aPied = await energie(1.2);
+      const voiture = g.animalManager.invoquer('voiture', x0 + 3, z0);
+      if (!voiture) return { err: 'aucune voiture posée', aPied };
+      await tenir(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      if (!auVolant()) return { err: 'on n\'est pas au volant', aPied };
+      await tenir(0.8);
+      const auRalenti = await energie(1.5);
+      const station = window.__sons.station();
+      // pleins gaz : le régime monte, donc l'énergie aussi
+      g.player.gaz = 1;
+      await tenir(1.5);
+      const pleinsGaz = await energie(1.5);
+      // on descend : tout doit se taire
+      document.getElementById('ride-btn').click();
+      await tenir(1.2);
+      const apresDescente = await energie(1.2);
+      const descendu = !auVolant();
+      try { sortie.disconnect(an); } catch { /* déjà */ }
+      g.player.gaz = null;
+      return { aPied, auRalenti, pleinsGaz, apresDescente, station, descendu,
+        etat: window.__sons.etat() };
+    });
+    // La barre est posée à la MOITIÉ de ce que le silence et le moteur
+    // séparent, jamais juste au-dessus de l'un des deux : à pied on mesure
+    // zéro, au ralenti quelques centièmes. Ce qui compte est le RAPPORT.
+    verifier('en montant dans une voiture, on entend le moteur — et une station de radio',
+      !sons.err && sons.auRalenti > 0.01 && sons.aPied < sons.auRalenti / 4 && !!sons.station,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+    verifier('et en descendant, le silence revient',
+      !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+
+    // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
+    //
+    // Max : « aussi impossible de faire marche arrière avec un avion ou une
+    // voiture. » L'avion ignorait purement le geste (`Math.max(0, forward)`
+    // écrasait tout négatif) ; la voiture exigeait trois conditions à la
+    // fois, dont ramener le cadran des gaz à zéro d'un second doigt.
+    //
+    // ON MESURE CE QUE L'ENFANT OBTIENT : des blocs parcourus VERS L'ARRIÈRE,
+    // le cadran à sa main gauche poussé à fond d'abord — c'est la situation
+    // qui ne marchait pas. Et l'on monte PAR LE BOUTON : un témoin qui pose
+    // `player.pilote` à la main ne fait voler personne (v231).
+    const recul = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle à l'écart, assez longue pour reculer sans rien toucher
+      const x0 = 30000, z0 = 32400, L = 120;
+      let y0 = 0;
+      for (let d = -L; d <= L; d += 4) for (let w = -6; w <= 6; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -L; d <= L; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      const out = {};
+      const essai = async (espece) => {
+        g.player.keys.clear();
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await tenir(1);
+        if (!g.animalManager.invoquer(espece, x0 + 3, z0)) return { err: `pas de ${espece}` };
+        await tenir(0.5);
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+        if (!auVolant()) return { err: `pas monté sur ${espece}` };
+        await tenir(0.6);
+        // LE CADRAN À FOND — c'est la situation de Max : il a servi, il reste
+        // où on l'a laissé, et la marche arrière devenait impossible.
+        g.player.gaz = 1;
+        await tenir(1.2);
+        // ON SÉPARE LE FREINAGE DU RECUL. Tirer le joystick depuis pleins gaz
+        // freine d'abord — c'est voulu, on ne passe pas la marche arrière à
+        // vingt blocs par seconde — et quatre secondes n'y suffisaient pas :
+        // mesuré 1,28 bloc, ce qui accusait une physique juste. « La mesure
+        // était trop courte, pas la physique » (v229).
+        g.player.touchMove = { f: -1, s: 0 };
+        const vitesse = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
+        let arret = 0;
+        while (arret < 8 && vitesse() > 0) { await tenir(0.2); arret += 0.2; }
+        const xAvant = g.player.pos.x;
+        await tenir(3);
+        const recule = xAvant - g.player.pos.x;   // le nez est vers +x : reculer, c'est x qui baisse
+        const gazApres = g.player.gaz;
+        const arretEn = +arret.toFixed(1);
+        g.player.touchMove = { f: 0, s: 0 };
+        await tenir(0.4);
+        document.getElementById('ride-btn').click();
+        await tenir(0.8);
+        return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant() };
+      };
+      out.voiture = await essai('voiture');
+      out.avion = await essai('avionligne');
+      g.player.keys.clear(); g.player.gaz = null;
+      return out;
+    });
+    // LA MOITIÉ D'UNE MESURE FAITE SUR UNE MACHINE QUI RESPIRE NE VAUT PAS LA
+    // MOITIÉ AU PORTAIL — et ces bornes viennent de l'apprendre. Mon premier
+    // jet appliquait bien la règle de la v237 (la moitié du mesuré) sur une
+    // sonde jouée SEULE, machine au repos : 6,91 blocs pour la voiture, donc
+    // barre à 3. La même voiture rend 3,90 au portail complet et 2,51 rejouée
+    // seule après un portail — trois mesures de la MÊME physique, dans un
+    // rapport de un à trois, parce que ce qui varie est la cadence du banc et
+    // que le recul se mesure sur trois secondes de temps réel. Barre à 3 :
+    // rouge sur du code sain.
+    //
+    // CE QUE CE TÉMOIN DOIT SÉPARER, C'EST UN SIGNE, PAS UNE AMPLITUDE. Sur
+    // la version publiée la voiture AVANCE de 18,43 blocs et l'avion de 12,5,
+    // cadran resté à fond, l'attente de l'arrêt expirant à ses huit secondes.
+    // Entre « recule d'un bloc » et « avance de dix-huit », aucune cadence de
+    // banc ne peut se tromper. Ce qui prouve que la MESURE A EU LIEU, ce n'est
+    // pas la distance : c'est `arretEn` (l'attente n'a pas expiré) et
+    // `gazApres === 0` (le geste a bien repris la main sur le cadran). La
+    // borne de distance, elle, ne fait que vérifier le sens — un bloc, soit la
+    // moitié de la PIRE des trois mesures, et non la moitié de la meilleure.
+    verifier('le cadran à fond, tirer le joystick en arrière fait RECULER la voiture',
+      !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres === 0
+      && recul.voiture.arretEn < 8,
+      JSON.stringify(recul.voiture));
+    verifier('et un avion se repousse au sol au lieu de rester planté',
+      !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0
+      && recul.avion.arretEn < 8,
+      JSON.stringify(recul.avion));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

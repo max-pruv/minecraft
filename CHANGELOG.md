@@ -20,6 +20,95 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v269 — Le jeu remarche sur l'iPad, on recule, et les véhicules font du bruit
+
+**Pourquoi.** Max, sur la version publiée : « le lag est absolument énorme,
+alors qu'avant il était pas mal réduit. C'est quasiment impraticable. En
+avion, on voit l'image bouger pendant une seconde, elle s'arrête pendant
+quasiment cinq secondes. À pied, quand on ouvre la carte, le personnage est
+figé dix secondes avant de pouvoir faire un pas. » Et, séparément : « aussi
+impossible de faire marche arrière avec un avion ou une voiture. »
+
+**Ce que ça change.** Le jeu redevient jouable. La file d'avance du mailleur
+revient de seize morceaux à huit : c'est la v265 qui l'avait doublée, et
+c'est elle qui produisait les gels. Tirer le joystick en arrière freine puis
+fait reculer — la voiture comme l'avion, quoi que dise le cadran des gaz. Et
+les véhicules font enfin du bruit : le moteur tourne au ralenti dès qu'on
+monte et monte en régime avec l'allure, une radio s'allume dans la voiture
+(trois stations écrites pour ce jeu), les réacteurs soufflent en vol, et une
+ligne 🔊 dans les Réglages coupe absolument tout.
+
+**Ce qui le prouve — le lag.** Mesuré au-dessus de PARIS, à la distance
+d'affichage de l'iPad, vingt secondes de vol, sur les deux critères qui
+comptent : la cadence que l'enfant subit et le trou qu'il voit devant lui.
+
+| file | cadence | image médiane | pire image | > 300 ms | trou devant |
+| --- | --- | --- | --- | --- | --- |
+| 4 | 20,1 | 50 ms | 317 | 1,3 % | 36 |
+| **8** | **18,3** | **50 ms** | **150** | **0 %** | 66 |
+| 12 | 15,0 | 67 ms | 183 | 0 % | 93 |
+| 16 | 9,1 | 100 ms | 383 | 3,1 % | 132 |
+
+La file de seize est la seule à produire des images de plus de trois cents
+millisecondes : ce sont les gels. Et comme le pas de temps du jeu est borné,
+elle faisait tourner le jeu **au ralenti** — à vitesse demandée identique,
+l'avion parcourait 1 757 blocs au lieu de 3 303. Le prix du retour se
+déclare : les bâtiments se dessinent plus tard (trou 132 → 66 blocs). Entre
+« les détails arrivent en retard » et « le jeu s'arrête cinq secondes »,
+c'est Max qui a tranché.
+
+**Et deux remèdes ont été écrits, mesurés, puis retirés.** Borner la pose des
+géométries image par image — la dette que la v265 avait elle-même déclarée —
+ne change rien : 10,63 images par seconde contre 10,20, du bruit. La raison
+est arithmétique : borner le travail par IMAGE ne réduit pas le travail par
+SECONDE, puisque le mailleur continue de produire. Et faire de la file un
+TEMPS plutôt qu'un compte, la règle que la v265 avait écrite en titre et
+codée à l'envers, ne marche pas non plus : mesuré, le coût d'un morceau ne
+sépare pas la ville de la campagne en vol (4,4 à 12,2 ms à Paris, 3,4 à 8,3
+en campagne), la file partait à son plafond partout et rendait 6,0 images par
+seconde — pire que seize.
+
+**Et les avions reviennent à la vitesse que le monde sait charger.** C'est
+le témoin du chargement qui l'a dit, et c'est la vraie leçon de cette
+livraison : la v265 avait monté les jets de 110 à 160 blocs par seconde
+**parce que** la file de seize le permettait. La file revenue à huit, 160
+ne tient plus — l'enfant volait littéralement dans le vide. Remesuré au
+même critère (le trou devant soi, médiane de six relevés) :
+
+| vitesse | trou devant soi | il en faut (une demi-seconde de vol) |
+| --- | --- | --- |
+| 95 | 115 | 48 |
+| **120** | **93** | **60** |
+| 130 | 80 | 65 |
+| 160 | 64 | 80 |
+
+L'avion de ligne repasse à 95, le Concorde et le chasseur à 120 — toujours
+au-dessus des 110 d'avant la demande de Max. **Le compteur, lui, ne bouge
+pas d'un kilomètre-heure** : il affiche toujours Mach 1,8, parce que la v267
+a séparé ce qu'on affiche de ce qu'on parcourt. Et la barre du témoin ne
+s'écrit plus, elle se CALCULE d'après la fiche : elle valait quatre-vingts
+depuis la v229 et n'était juste que par accident.
+
+**Ce qui le prouve — la marche arrière.** Deux témoins neufs qui montent par
+le bouton, poussent le cadran à fond, puis tirent le joystick en arrière —
+la situation exacte qui ne marchait pas. Sur la version publiée la voiture
+**avance** de 18,4 blocs et l'avion de 12,5, le cadran reste à fond, et
+l'attente de l'arrêt expire à ses huit secondes. Ici la voiture s'arrête en
+0,8 s puis recule de 6,9 blocs, l'avion en 0,4 s puis de 2,1, et le cadran
+est retombé à zéro.
+
+**Ce qui le prouve — les sons.** Rien n'est téléchargé : tout est fabriqué
+dans la page, parce que le jeu entier pèse 1,12 Mo compressé et qu'une seule
+boucle de moteur en MP3 pèserait davantage. Deux témoins neufs qui lisent des
+ÉCHANTILLONS, jamais un drapeau — un analyseur accroché à la sortie du jeu :
+zéro à pied, 0,028 au ralenti au volant, 0,048 à pleins gaz, zéro à la
+descente. L'horloge audio du banc a été mesurée avant d'écrire le témoin
+(0,212 pour une sinusoïde d'amplitude 0,3, soit 0,3/√2), sans quoi il aurait
+mesuré le banc. Et le son ne coûte rien de mesurable : 7,78 · 7,71 · 8,00 ·
+7,24 images par seconde, ordre alterné, pages refermées entre chaque.
+
+---
+
 ## v267 — Les jets passent le mur du son, et on ne se pose plus dans la mer
 
 **Pourquoi.** Max : « un avion ne peut pas atterrir dans l'eau. Et peut-être

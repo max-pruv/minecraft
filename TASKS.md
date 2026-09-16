@@ -167,6 +167,92 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   géométries sur le fil principal comme le maillage l'est déjà
   (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
   l'image où il arrive. Non fait, non mesuré.
+- [ ] **LA FILE DU MAILLEUR EST REVENUE À HUIT (v269) — ET LE VRAI REMÈDE
+  RESTE À TROUVER.** Seize rendait le jeu impraticable sur l'iPad de Max
+  (mesuré au-dessus de Paris à rr=12 : 9,1 images par seconde contre 18,3, et
+  3,1 % du temps en images de plus de trois cents millisecondes). Le prix du
+  retour est réel et se voit : le trou devant soi tombe de 132 à 66 blocs,
+  donc les bâtiments se dessinent plus tard — la panne que la v251 avait
+  corrigée. Ce qu'on VOUDRAIT, c'est le trou de seize avec la fluidité de
+  huit, et DEUX pistes ont été écrites, mesurées et RETIRÉES ; on ne les
+  réessaie pas :
+  (a) borner la pose des géométries par image — 10,63 images/s contre 10,20,
+  du bruit, parce que borner le travail par IMAGE ne réduit pas le travail
+  par SECONDE ;
+  (b) faire de la file un TEMPS — le coût d'un morceau ne sépare pas la ville
+  de la campagne en vol (4,4-12,2 ms contre 3,4-8,3), la file part à son
+  plafond partout et rend 6,0 images/s, pire que seize.
+  **La prochaine étape est une MESURE SUR LA TABLETTE, pas sur ce banc** :
+  `?attente=4|8|12|16` avec `?diag=1`, en vol au-dessus de Paris et en
+  campagne, parce que le rapport entre maillage, installation et rendu n'est
+  pas celui d'un rendu logiciel — c'est la règle de la v245, et c'est
+  précisément ce qui a fait choisir seize à tort. Le vrai suspect restant est
+  l'INSTALLATION d'une géométrie (upload au pilote), que SwiftShader ne
+  modélise pas comme un vrai GPU.
+
+- [x] **LE PLATEAU DE VITESSE DES AVIONS A ÉTÉ MESURÉ SUR UNE FILE QUI
+  N'EXISTE PLUS — REMESURÉ ET CORRIGÉ DANS LA MÊME LIVRAISON (v269).** La
+  v265 avait porté les avions de 110 à 160 blocs par seconde sur une file de
+  seize ; la file revenue à huit, 160 ne tient plus. Ce n'est pas resté une
+  dette : **le témoin du trou de `monte.js` l'a rendu rouge au portail**
+  (51 et 58 pour une barre de 80), et une dette qu'un témoin rougit n'est
+  pas une dette, c'est une régression. Remesuré au même critère, file de
+  huit, seul : 95 → 115 · 110 → 112 · 120 → 93 · 130 → 80 · 145 → 80 ·
+  160 → 64. Retenu 95 (avion de ligne) et 120 (Concorde, chasseur) ; le
+  portail complet coûte quinze pour cent du trou, ce qui écarte 130 (trois
+  blocs de marge). `kmh` est intact : le compteur affiche toujours Mach 1,8.
+  Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
+  lieu des quatre-vingts écrits en dur depuis la v229.
+
+- [ ] **`manhattan.js` : QUATRE ROUGES, TOUS MESURÉS IDENTIQUES SUR
+  `origin/main` (v269).** Le portail de la v269 a rendu quatre échecs :
+  « le trou enlève aussi la géométrie visible de la façade » (9 203 →
+  51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
+  ombres suivent le soleil et la lune visibles » (`[1, -1]`), et un délai sur
+  `#ride-btn` (ligne 416). Rejouée SEULE des deux côtés, cinq passages :
+
+  | passage | `origin/main` (v267) | branche (v269) |
+  | --- | --- | --- |
+  | au portail | — | 4 échecs : les 3 nommés + `:416` |
+  | seule, 1 | 4 échecs : les 3 nommés + `:416` | délai `:282` |
+  | seule, 2 | 5 échecs : les 3 nommés + taxi tactile + PeerJS | délai `:282` |
+  | seule, 3 | délai `:282` | — |
+
+  Les trois témoins nommés sont rouges à l'identique sur `origin/main` chaque
+  fois qu'ils sont ATTEINTS (3 fois sur 3), avec les mêmes valeurs — donc en
+  production. Et le délai de la ligne 282 (la file de construction de
+  Manhattan qui ne se vide pas en soixante secondes) tombe DES DEUX CÔTÉS :
+  deux fois sur deux sur la branche, une fois sur trois sur `origin/main`.
+  **C'est ce troisième passage qui a tranché** : sans lui j'aurais conclu que
+  la branche l'avait introduit. Une intermittence ne se juge pas sur un
+  passage de chaque côté.
+
+  Ce qui reste à faire : Manhattan tourne à 0,4 image par seconde sur ce banc
+  en rendu logiciel (mesuré v259), et ces témoins lisent des effets à
+  quelques centaines de millisecondes — ils sont un pile ou face. Avant
+  d'accuser le jeu, il faut soit leur donner une page qui tourne (`?ombres=0`
+  est déjà le cas, `rr` plus bas ne suffit pas), soit les reformuler pour
+  qu'ils PROVOQUENT la situation au lieu de l'attendre (règle des poissons,
+  v233).
+
+- [ ] **`carte.js` : « un appui long dépose n'importe où » — VERTE DES DEUX
+  CÔTÉS REJOUÉE SEULE (v269).** Rouge au portail de la v269 (les quatre
+  appuis déclinés par « pointeurs 0 », des images de 432 à 919 ms), verte
+  rejouée SEULE sur la branche ET sur `origin/main` — la suite entière passe
+  des deux côtés. C'est la famille de rouges de charge déjà connue de cette
+  suite (v251, v258) : le minuteur de l'appui long tire en retard quand
+  l'image dure presque une seconde. Le remède n'est pas de desserrer le
+  témoin mais de lui donner une page qui respire, ou de provoquer l'appui
+  sans dépendre d'un minuteur du navigateur.
+
+- [ ] **LE RAPPORT DE VITESSE ENTRE LES AVIONS RESTE LOIN DU RÉEL (v269).**
+  95 et 120 blocs par seconde font un rapport de 1,26, quand le réel (900 et
+  2 180 km/h) est à 2,4. Le seul remède est de MAILLER PLUS VITE — 45 % du
+  coût d'un morceau est la génération du relief — jamais de remonter la
+  vitesse sans remonter le débit : c'est exactement l'erreur que la v265 a
+  faite et que la v269 a payée. À reprendre après la mesure sur tablette
+  ci-dessus, qui dira si la file peut remonter sans les gels.
+
 - [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la
   v263, rouge à ceux de la v265, v266 et v267 : c'est donc EN PRODUCTION

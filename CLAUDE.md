@@ -413,6 +413,20 @@ les mesures de performance. Le portail se chronomètre désormais suite par
 suite, et `reseau.js` et `reglages.js` témoin par témoin ; ce relevé a trouvé
 la cause en UNE exécution.
 
+**UNE INTERMITTENCE NE SE JUGE PAS SUR UN PASSAGE DE CHAQUE CÔTÉ (v269).**
+La double mesure de la v195 dit « rejouée SEULE des deux côtés » ; appliquée
+à la lettre, UN passage de chaque côté, elle m'a fait conclure l'inverse de
+la vérité. `manhattan.js` rendait un délai sur la ligne 282 deux fois sur
+deux sur la branche et zéro fois sur le premier passage d'`origin/main` :
+tout désignait la livraison. Au TROISIÈME passage sur `origin/main`, le même
+délai. Et les trois témoins de contenu, eux, sont rouges à l'identique sur
+`origin/main` chaque fois qu'ils sont atteints — la suite s'arrêtant plus
+tôt quand le délai tombe, elle ne les atteint pas toujours. **Quand un rouge
+est un DÉLAI, ou qu'il ne se reproduit pas à l'identique, on rejoue jusqu'à
+voir la MÊME distribution des deux côtés, pas jusqu'à voir un vert** — c'est
+exactement l'inverse de « relancer jusqu'au vert », et cela se distingue par
+ce qu'on cherche : la fréquence, pas le succès.
+
 **UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.** La barrière est
 bonne par défaut — elle évite d'attendre cinquante minutes quand un module ne
 charge pas. Mais un témoin de CONTENU rouge, le jeu démarrant très bien, arrête
@@ -807,6 +821,13 @@ capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
 
 ## La file du mailleur, le plateau de vitesse, et les commandes de bord (v265)
 
+> **⚠️ La file est revenue à HUIT en v269** : seize rendait le jeu
+> impraticable sur l'iPad, et le « genou » ci-dessous avait été mesuré par
+> SATURATION, pas en régime établi. Lire « La file du mailleur : SEIZE A
+> RENDU LE JEU IMPRATICABLE » plus bas avant de croire les chiffres de cette
+> section. Ce qui reste vrai ici : la méthode (on choisit sur DEUX chiffres),
+> et le non-résultat des deux mailleurs.
+
 Max, capture d'iPhone du chasseur de nuit : « Jet should fly faster, button
 pour les roues mal placé, pas élégant ». Trois règles, et la première
 rembourse une dette que la v229 avait écrite elle-même.
@@ -890,6 +911,176 @@ rembourse une dette que la v229 avait écrite elle-même.
   sans dimension, c'est « aucune commande ne dépasse le HAUT de la
   manette » et « les deux boutons ont le même x ». C'est la formulation
   exacte de « rien ne flotte ».
+
+## La file du mailleur : SEIZE A RENDU LE JEU IMPRATICABLE (v269)
+
+Max, iPad, sur la version publiée : « le lag est absolument énorme, alors
+qu'avant il était pas mal réduit. C'est quasiment impraticable. En avion,
+l'image bouge une seconde, elle s'arrête cinq. À pied, ouvrir la carte fige
+dix secondes. » Quatre règles, et les trois premières sont des mesures.
+
+- **UN GENOU DE DÉBIT N'EST PAS UN GENOU DE CONFORT.** La v265 avait mesuré
+  la file par SATURATION (une téléportation met tout le disque à mailler) et
+  lu « seize : le débit de pointe double, la cadence ne bouge pas » (6,2 →
+  5,3 à Paris). Remesuré EN VOL au-dessus de Paris, à la distance
+  d'affichage de l'iPad, vingt secondes, sur les DEUX critères :
+
+  | file | cadence | médiane | pire image | > 300 ms | trou devant |
+  | --- | --- | --- | --- | --- | --- |
+  | 4 | 20,1 | 50 ms | 317 | 1,3 % | 36 |
+  | **8** | **18,3** | **50 ms** | **150** | **0 %** | 66 |
+  | 12 | 15,0 | 67 ms | 183 | 0 % | 93 |
+  | 16 | 9,1 | 100 ms | 383 | 3,1 % | 132 |
+
+  Le coût est d'un facteur DEUX, pas de quinze pour cent. La file de seize
+  est la seule à produire des images de plus de trois cents millisecondes —
+  les gels de Max — et comme `dt` est borné à un vingtième, elle fait tourner
+  le jeu AU RALENTI : à vitesse demandée identique, l'avion parcourt 1 757
+  blocs au lieu de 3 303. **Une mesure de saturation ne dit rien du régime
+  établi**, et c'est le régime établi que l'enfant vit.
+- **BORNER LA POSE PAR IMAGE EST UN NON-RÉSULTAT MESURÉ.** C'était la dette
+  que la v265 avait elle-même déclarée (« le vrai remède : BORNER
+  l'installation des géométries sur le fil principal comme le maillage l'est
+  déjà »). Écrit, mesuré, RETIRÉ : 10,63 images par seconde contre 10,20
+  sans, 17,45 contre 17,07 à file de huit. Du bruit. La raison est
+  arithmétique et se retient : **borner le travail PAR IMAGE ne réduit pas
+  le travail PAR SECONDE**, puisque le worker continue de produire. Ce qui
+  fixe le débit, c'est la profondeur de la file, et rien d'autre.
+- **ET « UNE FILE EST UN TEMPS, PAS UN COMPTE » NE MARCHE PAS NON PLUS —
+  MESURÉ.** C'était le titre de la v265, codé à l'envers ; on l'a codé à
+  l'endroit (le worker rapporte ce que chaque morceau lui coûte, la
+  profondeur suit). Le coût NE SÉPARE PAS la ville de la campagne en vol :
+  4,4 à 12,2 ms à Paris, 3,4 à 8,3 en campagne. Le rapport 24 contre 6,6 de
+  la v237 avait été mesuré par SATURATION, pas en vol — même piège que
+  ci-dessus, un étage plus bas. La file partait donc à son plafond partout :
+  6,0 images par seconde à Paris, 9,9 % du temps au-delà de trois cents
+  millisecondes, PIRE que seize. Écrit, mesuré, retiré.
+- **ET UNE VITESSE MESURÉE SUR UNE FILE NE VAUT QUE POUR CETTE FILE.** La
+  v265 avait monté les jets de 110 à 160 blocs par seconde PARCE QUE la file
+  de seize le permettait ; la file revenue à huit, 160 ne tient plus, et
+  l'enfant vole dans le vide. C'est le témoin du trou de `monte.js` qui l'a
+  dit, et sans lui la livraison serait partie ainsi. Remesuré au même
+  critère, file de huit : 95 → 115 · 110 → 112 · 120 → 93 · 130 → 80 ·
+  145 → 80 · 160 → 64, pour une barre d'une demi-seconde de vol (v/2). **Le
+  genou est entre 120 et 130, et c'est la CHARGE qui tranche** : ces chiffres
+  sont mesurés seuls, et le portail complet coûte quinze pour cent du trou
+  (il a rendu 80 à 120 et 51-58 à 160). À 130 il ne resterait que trois blocs
+  de marge et le témoin battrait ; à 120 il en reste vingt. On retient 95 et
+  120 — toujours au-dessus des 110 de la v229 — et **`kmh` ne bouge pas** :
+  le compteur affiche toujours Mach 1,8, ce que la v267 a construit
+  exactement pour ce cas.
+- **ET UNE BARRE DE TÉMOIN QUI SUIT UNE GRANDEUR SE CALCULE, ELLE NE S'ÉCRIT
+  PAS.** Celle du trou valait QUATRE-VINGTS depuis la v229, pendant que la
+  vitesse du plus rapide passait de 110 à 160 : elle n'était juste par
+  accident qu'en v265 (160 ÷ 2 = 80), et elle aurait cessé de l'être à la
+  vitesse suivante sans que personne ne le voie. Elle vaut désormais
+  `max / 2` par appareil, lu dans la fiche — la règle, pas le chiffre.
+- **LE PRIX SE DÉCLARE, IL NE SE CACHE PAS.** À vitesse INCHANGÉE le trou
+  devant soi tombait de 132 à 66 blocs — les bâtiments se dessinent plus
+  tard, la panne même que la v251 avait corrigée. Entre « les détails
+  arrivent en retard » et « le jeu s'arrête cinq secondes », c'est Max qui
+  tranche, et il a tranché. La vitesse ayant suivi (120 au lieu de 160), le
+  trou revient à 93 seul et 80 sous charge de portail : ce que la livraison
+  coûte vraiment, c'est vingt-cinq pour cent de vitesse de pointe, pas un
+  monde en retard. Ce qui reste à faire est déclaré dans `TASKS.md` : mesurer
+  sur la TABLETTE (`?attente=`, `?diag=1`), là où le rapport entre maillage,
+  installation et rendu n'est pas celui d'un rendu logiciel.
+
+**ET LA MARCHE ARRIÈRE N'EXISTAIT PAS (v269).** Max : « aussi impossible de
+faire marche arrière avec un avion ou une voiture. » Deux causes distinctes.
+L'avion ignorait purement le geste — `Math.max(0, forward)` écrase tout
+négatif, donc tirer le joystick en arrière au sol ne faisait rien, et un
+appareil nez contre un hangar y restait pour toujours. La voiture exigeait
+TROIS conditions simultanées, dont ramener le cadran des gaz sous cinq pour
+cent : or il RESTE où on l'a laissé (v262, et c'est la bonne décision pour
+une manette), donc il fallait un second doigt. **Le geste prime désormais
+sur la consigne**, comme une pédale de frein annule un régulateur : on
+freine d'abord, puis on recule, **et le cadran suit le geste** (`gaz = 0`) —
+sinon il afficherait pleins gaz pendant qu'on recule et le véhicule
+bondirait en avant au relâchement. Le virage de la roue avant de l'avion
+prend enfin `Math.abs(v)` pour l'amplitude et le signe pour le sens, comme
+la voiture le fait depuis la v212 : sans cela il s'inversait ET s'amplifiait
+en reculant.
+
+**Et le témoin a d'abord accusé une physique juste.** Quatre secondes après
+avoir tiré le joystick depuis pleins gaz : 1,28 bloc reculé, sous la barre.
+Ces quatre secondes étaient presque entièrement du FREINAGE. On sépare donc
+les deux phases — on attend que la vitesse passe à zéro, PUIS on mesure — et
+l'attente qui expire est elle-même le rouge de l'ancien code (huit secondes,
+la voiture ne s'arrête jamais). « La mesure était trop courte, pas la
+physique » (v229), une fois de plus.
+
+## Le son du jeu (`sons.js`, v268) — un seul contexte, et rien de téléchargé
+
+Max : « les véhicules, on devrait avoir un bruit ambiant ; quand on rentre
+dans une voiture, un bruit de radio, un peu comme dans GTA. » Cinq règles.
+
+- **UN SEUL CONTEXTE AUDIO POUR TOUT LE JEU, ET C'EST `sons.js` QUI LE
+  POSSÈDE.** `main.js` avait le sien pour le carillon du chat et les bruits
+  de blocs ; en créer un second aurait eu deux prix, et le premier n'est pas
+  la performance : **un réglage « couper le son » n'aurait éteint que la
+  moitié du jeu** — le moteur se tait, le marteau continue. Le second est
+  qu'iOS compte les contextes audio. C'est la leçon des deux contextes WebGL
+  de la v245, à un fichier près. `carillon` et `bruitBloc` sont devenus des
+  clients de `contexteAudio()` / `sortieAudio()`.
+- **TOUT EST SYNTHÉTISÉ, RIEN N'EST TÉLÉCHARGÉ.** Le jeu entier pèse 1,12 Mo
+  compressé (v245) ; une seule boucle de moteur en MP3 pèse davantage. Un
+  moteur est un souffle filtré plus deux dents de scie dont la fréquence suit
+  le régime ; un réacteur, l'inverse — presque tout est souffle, plus un
+  sifflement de compresseur. Les trois stations de radio sont écrites ici, en
+  degrés de gamme : invariant 4, aucune propriété intellectuelle.
+- **RIEN NE SE CRÉE PAR IMAGE.** Le graphe du moteur se monte à la montée et
+  se démonte à la descente ; le régime se règle par `setTargetAtTime`, dont
+  l'interpolation vit dans le fil audio. L'ordonnanceur de la radio programme
+  un quart de seconde d'avance toutes les cent millisecondes, **contre
+  l'horloge du CONTEXTE** et jamais contre `dt` : le son n'a pas à ralentir
+  quand la tablette rame (piège de la v226, et ici il s'entendrait).
+- **COUPER LE SON SUSPEND LE CONTEXTE, IL NE FERME PAS QUE LE ROBINET.** Mon
+  premier jet ne baissait que le gain général : mesuré, avec `?son=0`,
+  `etat()` annonçait encore « moteur voiture, radio Nuit Cubique » — tous les
+  oscillateurs vivants pour un silence. Un enfant qui coupe le son parce que
+  sa tablette rame doit y gagner quelque chose. On ne DÉTRUIT pas le graphe
+  pour autant : rallumer en roulant doit s'entendre tout de suite.
+- **LE SILENCE SE REND EN DESCENDANT**, comme la marche, le vol et le
+  gabarit — quatre chemins de sortie (`toggleRide`, monture disparue,
+  `debarquer`, remise à zéro), et la monture quittée n'est plus mise à jour :
+  elle garderait son dernier régime pour toujours. C'est le piège des flammes
+  de la v264, mot pour mot. Et **la poussée se calcule UNE fois** dans
+  `updateRide` : les flammes et le bruit la lisent, parce que deux formules
+  qui décrivent la même manette finissent par diverger.
+- **CE QUI A UN MOTEUR SE DIT DANS LA FICHE** (`moteur: 'voiture' | 'avion'`,
+  `radio: true`), jamais dans une liste de `fun.js` — même discipline que
+  `montable`, `vole`, `gabarit` et `habitacle`. Un cheval n'a pas de moteur,
+  et cela s'écrit en ne l'écrivant pas. Le plafond de vitesse d'une voiture,
+  lui, se demande à `player.js` (`vitesseVoitureMax`, publié là où il se
+  calcule) : la classe du modèle le fixe (v260), et le recopier le rendrait
+  faux à la première classe qu'on ajoute, sans que rien ne rougisse.
+
+**UN TÉMOIN DE SON LIT DES ÉCHANTILLONS, JAMAIS UN DRAPEAU.** `etatSon()`
+dirait « radio : Nuit Cubique » même si plus un seul oscillateur n'était
+branché — c'est exactement la mort de `__lumiere()`, deux fois (v247, v251),
+pour avoir publié un mécanisme au lieu de ce qui se voit. `window.__sons`
+publie donc la SORTIE, et le témoin y accroche son propre `AnalyserNode` :
+zéro à pied, 0,024 au ralenti au volant, 0,051 à pleins gaz, zéro à la
+descente. On prend **le pire d'une fenêtre**, pas un instantané — la radio a
+des silences entre deux notes (leçon des poissons).
+
+**ET L'HORLOGE AUDIO DU BANC SE MESURE AVANT D'ÉCRIRE LE TÉMOIN.** Chromium
+y tourne sans périphérique de son : si `currentTime` restait figé,
+l'ordonnanceur ne programmerait rien et le témoin mesurerait le banc. Sonde
+d'abord : contexte `running`, 1,25 s d'avance en 1,2 s de vraie vie, et un
+analyseur qui rend 0,212 pour une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au
+millième près.
+
+**ET UNE MESURE DE COÛT REFERME SES PAGES.** Ma première sonde du prix du son
+gardait ses quatre pages ouvertes en même temps et rendait 7,3 · 3,5 · 2,6 ·
+2,1 images par seconde : une décroissance monotone qui suivait le NOMBRE de
+pages, pas le traitement. Refermées, et l'ordre alterné (off, on, on, off) :
+7,78 · 7,71 · 8,00 · 7,24, médiane à 200 ms des quatre côtés — le son ne
+coûte rien de mesurable. La leçon de la v220 (« deux pages ouvertes EN MÊME
+TEMPS font tomber la cadence de 42,9 à 20,8 ») vaut pour les sondes autant
+que pour les suites, et **l'ordre alterné est ce qui sépare le traitement de
+la place dans la série**.
 
 ## Les flammes des réacteurs (v264)
 

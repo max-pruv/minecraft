@@ -20,6 +20,7 @@ import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
 import { allureDe } from './vehicules.js';
+import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -314,6 +315,10 @@ export function initFun(ctx) {
       // gabarit d'une voiture et l'on resterait coincé entre deux murs.
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
+      // LE SILENCE SE REND EN DESCENDANT, comme la marche et le gabarit : la
+      // monture quittée n'est plus mise à jour, elle garderait son dernier
+      // régime pour toujours (v264, le même piège que les flammes).
+      moteurCoupe(); radioCoupe();
       quitte.montee = false;
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
@@ -329,6 +334,12 @@ export function initFun(ctx) {
     // Et sa CARRURE : une voiture ne passe pas là où un piéton passe.
     if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
     a.state = 'idle';
+    // LE BRUIT DE FOND ET LA RADIO (v268). La FICHE décide : `moteur` nomme
+    // la recette, `radio` allume une station. Rien n'est écrit ici sur ce
+    // qui a un moteur — un cheval n'en a pas, et il suffit que sa fiche se
+    // taise. Même discipline que `montable` et `vole`.
+    if (a.def.moteur) moteurDemarre(a.def.moteur);
+    if (a.def.radio) radioDemarre();
     const allure = allureMonture(a);
     if (a.def.pilote) {
       // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
@@ -1155,6 +1166,7 @@ export function initFun(ctx) {
       player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
+      moteurCoupe(); radioCoupe();
       return;
     }
     player.boost = allureMonture(riding);
@@ -1223,13 +1235,18 @@ export function initFun(ctx) {
       // l'approche en finale, ralenti au freinage), sinon la vitesse
       // rapportée à la pointe. À l'arrêt, moteurs coupés, rien ne sort. La
       // longueur va d'un rayon et demi à dix rayons de tuyère, et vacille.
+      // LA POUSSÉE SE CALCULE UNE FOIS, et les flammes comme le bruit la
+      // lisent (v268). Deux formules qui décrivent la même manette finiraient
+      // par diverger — c'est la discipline de `postesAvion` et du plan du
+      // tarmac, appliquée au régime des réacteurs.
+      const v = player.vitesseAvion || 0, p = player.pilote, max = p.max || 1, etat = player.avionEtat;
+      const assistee = etat === 'decollage' ? 1
+        : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
+        : etat === 'freinage' ? 0 : Math.min(1, v / max);
+      const poussee = player.gaz != null ? player.gaz : assistee;
+      moteurRegime(poussee);
       const tuyeres = a.mesh.userData.tuyeres;
       if (tuyeres && tuyeres.length) {
-        const v = player.vitesseAvion || 0, p = player.pilote, max = p.max || 1, etat = player.avionEtat;
-        const assistee = etat === 'decollage' ? 1
-          : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
-          : etat === 'freinage' ? 0 : Math.min(1, v / max);
-        const poussee = player.gaz != null ? player.gaz : assistee;
         const allumee = poussee > 0.02 || v > 0.5;
         const vacille = 0.92 + 0.08 * Math.sin(a.animTime * 41);
         for (const f of tuyeres) {
@@ -1241,6 +1258,14 @@ export function initFun(ctx) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
       a.mesh.rotation.x = 0;
       for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
+    }
+    // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
+    // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient
+    // de `player.js`, là où il se calcule — la classe du modèle le fixe
+    // (v260) et le recopier ici le rendrait faux à la première qu'on ajoute.
+    if (!player.pilote && a.def.moteur) {
+      const plafond = player.vitesseVoitureMax || 1;
+      moteurRegime(Math.abs(player.vitesseVoiture || 0) / plafond);
     }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
@@ -1422,6 +1447,7 @@ export function initFun(ctx) {
     targetRow.style.display = 'none';
     panel.style.display = 'none';
     if (riding) { riding = null; player.boost = undefined; }
+    moteurCoupe(); radioCoupe();
     debarquer(true);
   }
 

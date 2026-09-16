@@ -28,6 +28,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -166,6 +167,18 @@ function graphismes() {
   try { const v = localStorage.getItem(GRAPHISMES_CLE); if (v === 'normal' || v === 'avance') return v; } catch { /* mode privé */ }
   return IS_TOUCH ? 'normal' : 'avance';
 }
+// LE SON EST UN RÉGLAGE DE L'APPAREIL, PAS DU PROFIL (v268) — même raison
+// que les graphismes : on joue avec le son dans sa chambre et sans dans le
+// train, et cela n'a rien à voir avec l'enfant qui joue. Allumé par défaut ;
+// `?son=0` garde la main, pour le banc et pour mesurer.
+const SON_CLE = 'web-minecraft-son-v1';
+function sonVoulu() {
+  const p = PARAMS_JEU.get('son');
+  if (p != null) return p !== '0';
+  try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
+}
+reglerSon(sonVoulu());
+
 const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
 const OMBRES = ombresVoulues();
@@ -410,10 +423,59 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 //     32   154 · 10,1   104 · 3,9     120 · 6,2
 //     48   215 · 10,5   103 · 3,9     131 · 6,3
 //
-// SEIZE est le genou : le débit de pointe DOUBLE et la cadence ne bouge
-// pas. À vingt-quatre elle tombe d'un quart à Paris, et au-delà on paie
-// sans rien gagner de plus sur la cadence. `?attente=` la force, pour
-// remesurer le jour où l'installation d'une géométrie changera de prix.
+// SEIZE ÉTAIT LE GENOU DU DÉBIT DE POINTE, ET C'EST LA MAUVAISE MESURE —
+// ELLE A RENDU LE JEU IMPRATICABLE SUR L'IPAD (v269).
+//
+// Max, sur la version publiée : « le lag est absolument énorme, alors
+// qu'avant il était pas mal réduit ; en avion on voit l'image bouger
+// pendant une seconde, elle s'arrête pendant quasiment cinq secondes ; à
+// pied, ouvrir la carte fige dix secondes. » Remesuré au-dessus de PARIS à
+// la distance d'affichage de l'iPad, vingt secondes de vol, sur les DEUX
+// critères — la cadence que l'enfant subit ET le trou qu'il voit devant
+// lui (v229) :
+//
+//   file   cadence   médiane   pire image   >300 ms   trou devant
+//      4    20,1      50 ms       317        1,3 %        36
+//      8    18,3      50 ms       150        0 %          66
+//     12    15,0      67 ms       183        0 %          93
+//     16     9,1     100 ms       383        3,1 %       132
+//
+// La file de seize est la SEULE à produire des images de plus de trois
+// cents millisecondes : ce sont les gels. Et comme `dt` est borné à un
+// vingtième, elle fait tourner le jeu AU RALENTI — à vitesse demandée
+// identique, l'avion parcourt 1 757 blocs au lieu de 3 303. Elle coûte donc
+// la moitié du temps de jeu, ce que le « débit de pointe » ne dit pas.
+//
+// Le prix de ce retour est réel et se déclare : le trou devant soi tombe de
+// 132 à 66 blocs, c'est-à-dire que les bâtiments se dessinent plus tard —
+// la panne même que la v251 avait corrigée. Entre « les détails arrivent en
+// retard » et « le jeu s'arrête cinq secondes », c'est le second qui rend
+// le jeu injouable, et c'est Max qui tranche.
+//
+// DEUX REMÈDES ONT ÉTÉ ÉCRITS, MESURÉS, PUIS RETIRÉS. On ne les réessaie
+// pas.
+//
+//   1. BORNER LA POSE DES GÉOMÉTRIES PAR IMAGE, comme le maillage l'est
+//      depuis la v237 — la dette que la v265 avait elle-même déclarée.
+//      Empiler les morceaux arrivés et n'en installer que pour le budget du
+//      maillage rend 10,63 images par seconde contre 10,20 sans, et 17,45
+//      contre 17,07 à file de huit : du bruit. La raison est arithmétique —
+//      borner le travail PAR IMAGE ne réduit pas le travail PAR SECONDE,
+//      puisque le worker continue de produire. Ce qui fixe le débit, c'est
+//      la profondeur de la file, et rien d'autre.
+//   2. FAIRE DE LA FILE UN TEMPS PLUTÔT QU'UN COMPTE — la règle que la
+//      v265 avait écrite en titre et codée à l'envers. Le worker rapporte
+//      ce que chaque morceau lui a coûté, la profondeur suit. Mesuré, le
+//      coût NE SÉPARE PAS la ville de la campagne : un morceau de Paris
+//      vaut 4,4 à 12,2 ms en vol sur ce banc, la campagne 3,4 à 8,3. Le
+//      rapport 24 contre 6,6 de la v237 avait été mesuré par SATURATION
+//      après une téléportation, pas en vol. La file partait donc à son
+//      plafond partout : 6,0 images par seconde à Paris et 9,9 % du temps
+//      au-delà de trois cents millisecondes, PIRE que seize.
+//
+// Ce qui reste à faire est donc ailleurs, et c'est déclaré dans `TASKS.md` :
+// mesurer sur la TABLETTE (`?attente=`, `?diag=1`), là où le rapport entre
+// maillage, installation et rendu n'est pas celui d'un rendu logiciel.
 //
 // ET DEUX MAILLEURS N'AJOUTENT RIEN — c'est un non-résultat MESURÉ, on ne
 // le réessaie pas. Avec la file à quarante-huit : un mailleur 200/99, deux
@@ -421,7 +483,7 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 // trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
 // mailleur : c'est le fil principal, qui doit INSTALLER les géométries.
 // Ajouter des mailleurs ne fait que lui en envoyer plus.
-const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 16;
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 8;
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
@@ -1625,7 +1687,7 @@ function majBoutonsVehicule() {
     document.body.classList.toggle('en-avion', enAvion);
   }
   if (!enVehicule) return;
-  const v = enAvion ? (player.vitesseAvion || 0) : Math.abs(player.vitesseVoiture || 0);
+  const v = Math.abs(enAvion ? (player.vitesseAvion || 0) : (player.vitesseVoiture || 0));
   let niveau = player.gaz;
   if (niveau == null) {
     if (enAvion) niveau = player.pilote.max ? v / player.pilote.max : 0;
@@ -1727,9 +1789,11 @@ function saveSettings() {
 const settingsPanel = document.getElementById('settings-panel');
 const gyroToggle = document.getElementById('gyro-toggle');
 const graphToggle = document.getElementById('graph-toggle');
+const sonToggle = document.getElementById('son-toggle');
 function renderSettings() {
   gyroToggle.classList.toggle('on', !!settings.gyro);
   if (graphToggle) graphToggle.classList.toggle('on', graphismes() === 'avance');
+  if (sonToggle) sonToggle.classList.toggle('on', sonActif());
 }
 renderSettings();
 // Le changement s'applique sur place : les ombres se rallument ou s'éteignent
@@ -1751,6 +1815,21 @@ if (graphToggle) {
     window.__graphismes.choisir(graphismes() === 'avance' ? 'normal' : 'avance');
   });
 }
+if (sonToggle) {
+  sonToggle.addEventListener('click', () => {
+    const veut = !sonActif();
+    try { localStorage.setItem(SON_CLE, veut ? 'on' : 'off'); } catch { /* mode privé */ }
+    reglerSon(veut);
+    renderSettings();
+  });
+}
+// La sonde du son. ELLE PUBLIE LA SORTIE, pas un drapeau : un témoin de son
+// lit des ÉCHANTILLONS (il accroche son propre analyseur ici), jamais
+// `etatSon()`, qui dirait « radio : Nuit Cubique » même si plus un seul
+// oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
+// fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
+window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
+  station: radioEnCours, regler: reglerSon, actif: sonActif };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -3708,13 +3787,17 @@ const chatBadge = document.getElementById('chat-badge');
 // volée plutôt qu'un fichier à télécharger. Le contexte audio se crée au
 // premier besoin — les navigateurs mobiles refusent le son tant que l'enfant
 // n'a rien touché, et il a forcément touché l'écran pour jouer.
-let audioCtx = null;
+// UN SEUL CONTEXTE AUDIO POUR TOUT LE JEU (v268). Il vivait ici ; il vit
+// maintenant dans `sons.js`, qui porte aussi le gain général. Deux contextes
+// auraient deux prix : un réglage « couper le son » n'aurait éteint que la
+// moitié du jeu — le moteur se tait, le marteau continue —, et iOS compte les
+// contextes audio et les fait payer. C'est la leçon des deux contextes WebGL
+// de la v245, à un fichier près.
 function carillon(notes = [880, 1320]) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     for (const [i, freq] of notes.entries()) {
       const osc = audioCtx.createOscillator();
@@ -3725,7 +3808,7 @@ function carillon(notes = [880, 1320]) {
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(0.14, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(sortie);
       osc.start(start);
       osc.stop(start + 0.24);
     }
@@ -3738,10 +3821,9 @@ const chatDing = () => carillon([880, 1320]);
 // casse, un petit clic qui monte pour la pose.
 function bruitBloc(f0, f1, duree, type, volume) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -3751,7 +3833,7 @@ function bruitBloc(f0, f1, duree, type, volume) {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
-    osc.connect(gain).connect(audioCtx.destination);
+    osc.connect(gain).connect(sortie);
     osc.start(t0);
     osc.stop(t0 + duree + 0.02);
   } catch { /* pas de son : les éclats suffisent au retour */ }
