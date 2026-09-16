@@ -489,8 +489,17 @@ export const MONTURES = [
   // est sorti du fil principal en v251, et la v265 a trouvé qu'on ne lui
   // confiait que HUIT morceaux d'avance, réapprovisionnés une fois par
   // image : il passait l'essentiel de son temps à sec. La file à SEIZE
-  // (`EN_ATTENTE_MAX`, main.js) double le débit de pointe sans coûter une
-  // image — le genou est mesuré là-bas, et il ne se déplace pas ici.
+  // (`EN_ATTENTE_MAX`, main.js) doublait le débit de pointe sans coûter une
+  // image — c'est ce qu'on croyait alors.
+  //
+  // ET C'ÉTAIT FAUX : LA FILE EST REVENUE À HUIT EN v269, parce que seize
+  // rendait le jeu impraticable sur l'iPad (9,1 images par seconde à Paris
+  // contre 18,3, et 3,1 % du temps en images de plus de trois cents
+  // millisecondes). Le plateau de vitesse ci-dessous a donc été mesuré sur
+  // une file qui n'existe plus. Les vitesses RESTENT telles quelles — Max
+  // les a demandées, et c'est le trou devant soi qui paie (132 → 66 blocs),
+  // pas la fluidité — mais le jour où l'on retouchera ce plateau, on le
+  // remesurera sur la file du moment et non sur ce tableau.
   //
   // ON REMESURE DONC LE PLATEAU AVEC LE MÊME CRITÈRE, jamais on ne le
   // déduit du débit : le TROU devant soi, médiane sur six relevés, à rr=12,

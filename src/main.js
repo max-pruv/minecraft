@@ -423,10 +423,59 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 //     32   154 · 10,1   104 · 3,9     120 · 6,2
 //     48   215 · 10,5   103 · 3,9     131 · 6,3
 //
-// SEIZE est le genou : le débit de pointe DOUBLE et la cadence ne bouge
-// pas. À vingt-quatre elle tombe d'un quart à Paris, et au-delà on paie
-// sans rien gagner de plus sur la cadence. `?attente=` la force, pour
-// remesurer le jour où l'installation d'une géométrie changera de prix.
+// SEIZE ÉTAIT LE GENOU DU DÉBIT DE POINTE, ET C'EST LA MAUVAISE MESURE —
+// ELLE A RENDU LE JEU IMPRATICABLE SUR L'IPAD (v269).
+//
+// Max, sur la version publiée : « le lag est absolument énorme, alors
+// qu'avant il était pas mal réduit ; en avion on voit l'image bouger
+// pendant une seconde, elle s'arrête pendant quasiment cinq secondes ; à
+// pied, ouvrir la carte fige dix secondes. » Remesuré au-dessus de PARIS à
+// la distance d'affichage de l'iPad, vingt secondes de vol, sur les DEUX
+// critères — la cadence que l'enfant subit ET le trou qu'il voit devant
+// lui (v229) :
+//
+//   file   cadence   médiane   pire image   >300 ms   trou devant
+//      4    20,1      50 ms       317        1,3 %        36
+//      8    18,3      50 ms       150        0 %          66
+//     12    15,0      67 ms       183        0 %          93
+//     16     9,1     100 ms       383        3,1 %       132
+//
+// La file de seize est la SEULE à produire des images de plus de trois
+// cents millisecondes : ce sont les gels. Et comme `dt` est borné à un
+// vingtième, elle fait tourner le jeu AU RALENTI — à vitesse demandée
+// identique, l'avion parcourt 1 757 blocs au lieu de 3 303. Elle coûte donc
+// la moitié du temps de jeu, ce que le « débit de pointe » ne dit pas.
+//
+// Le prix de ce retour est réel et se déclare : le trou devant soi tombe de
+// 132 à 66 blocs, c'est-à-dire que les bâtiments se dessinent plus tard —
+// la panne même que la v251 avait corrigée. Entre « les détails arrivent en
+// retard » et « le jeu s'arrête cinq secondes », c'est le second qui rend
+// le jeu injouable, et c'est Max qui tranche.
+//
+// DEUX REMÈDES ONT ÉTÉ ÉCRITS, MESURÉS, PUIS RETIRÉS. On ne les réessaie
+// pas.
+//
+//   1. BORNER LA POSE DES GÉOMÉTRIES PAR IMAGE, comme le maillage l'est
+//      depuis la v237 — la dette que la v265 avait elle-même déclarée.
+//      Empiler les morceaux arrivés et n'en installer que pour le budget du
+//      maillage rend 10,63 images par seconde contre 10,20 sans, et 17,45
+//      contre 17,07 à file de huit : du bruit. La raison est arithmétique —
+//      borner le travail PAR IMAGE ne réduit pas le travail PAR SECONDE,
+//      puisque le worker continue de produire. Ce qui fixe le débit, c'est
+//      la profondeur de la file, et rien d'autre.
+//   2. FAIRE DE LA FILE UN TEMPS PLUTÔT QU'UN COMPTE — la règle que la
+//      v265 avait écrite en titre et codée à l'envers. Le worker rapporte
+//      ce que chaque morceau lui a coûté, la profondeur suit. Mesuré, le
+//      coût NE SÉPARE PAS la ville de la campagne : un morceau de Paris
+//      vaut 4,4 à 12,2 ms en vol sur ce banc, la campagne 3,4 à 8,3. Le
+//      rapport 24 contre 6,6 de la v237 avait été mesuré par SATURATION
+//      après une téléportation, pas en vol. La file partait donc à son
+//      plafond partout : 6,0 images par seconde à Paris et 9,9 % du temps
+//      au-delà de trois cents millisecondes, PIRE que seize.
+//
+// Ce qui reste à faire est donc ailleurs, et c'est déclaré dans `TASKS.md` :
+// mesurer sur la TABLETTE (`?attente=`, `?diag=1`), là où le rapport entre
+// maillage, installation et rendu n'est pas celui d'un rendu logiciel.
 //
 // ET DEUX MAILLEURS N'AJOUTENT RIEN — c'est un non-résultat MESURÉ, on ne
 // le réessaie pas. Avec la file à quarante-huit : un mailleur 200/99, deux
@@ -434,7 +483,7 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 // trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
 // mailleur : c'est le fil principal, qui doit INSTALLER les géométries.
 // Ajouter des mailleurs ne fait que lui en envoyer plus.
-const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 16;
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 8;
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;

@@ -167,6 +167,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   géométries sur le fil principal comme le maillage l'est déjà
   (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
   l'image où il arrive. Non fait, non mesuré.
+- [ ] **LA FILE DU MAILLEUR EST REVENUE À HUIT (v269) — ET LE VRAI REMÈDE
+  RESTE À TROUVER.** Seize rendait le jeu impraticable sur l'iPad de Max
+  (mesuré au-dessus de Paris à rr=12 : 9,1 images par seconde contre 18,3, et
+  3,1 % du temps en images de plus de trois cents millisecondes). Le prix du
+  retour est réel et se voit : le trou devant soi tombe de 132 à 66 blocs,
+  donc les bâtiments se dessinent plus tard — la panne que la v251 avait
+  corrigée. Ce qu'on VOUDRAIT, c'est le trou de seize avec la fluidité de
+  huit, et DEUX pistes ont été écrites, mesurées et RETIRÉES ; on ne les
+  réessaie pas :
+  (a) borner la pose des géométries par image — 10,63 images/s contre 10,20,
+  du bruit, parce que borner le travail par IMAGE ne réduit pas le travail
+  par SECONDE ;
+  (b) faire de la file un TEMPS — le coût d'un morceau ne sépare pas la ville
+  de la campagne en vol (4,4-12,2 ms contre 3,4-8,3), la file part à son
+  plafond partout et rend 6,0 images/s, pire que seize.
+  **La prochaine étape est une MESURE SUR LA TABLETTE, pas sur ce banc** :
+  `?attente=4|8|12|16` avec `?diag=1`, en vol au-dessus de Paris et en
+  campagne, parce que le rapport entre maillage, installation et rendu n'est
+  pas celui d'un rendu logiciel — c'est la règle de la v245, et c'est
+  précisément ce qui a fait choisir seize à tort. Le vrai suspect restant est
+  l'INSTALLATION d'une géométrie (upload au pilote), que SwiftShader ne
+  modélise pas comme un vrai GPU.
+
+- [ ] **LE PLATEAU DE VITESSE DES AVIONS A ÉTÉ MESURÉ SUR UNE FILE QUI
+  N'EXISTE PLUS (v269).** La v265 a porté les avions de 110 à 160 blocs par
+  seconde sur une file de seize. Les vitesses restent — Max les a demandées,
+  et la mesure dit que la vitesse ne pèse pas sur la cadence (à file de huit,
+  voler à 160 rend 16,9 images/s contre 18,3 à 110) — mais le TROU devant soi
+  à 160 avec la file de huit vaut 66 blocs, dans la bande que la v229
+  rejetait. À remesurer sur la tablette avec le plateau, pas avant.
+
 - [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la
   v263, rouge à ceux de la v265, v266 et v267 : c'est donc EN PRODUCTION

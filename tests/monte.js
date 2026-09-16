@@ -4160,6 +4160,90 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
+    // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
+    //
+    // Max : « aussi impossible de faire marche arrière avec un avion ou une
+    // voiture. » L'avion ignorait purement le geste (`Math.max(0, forward)`
+    // écrasait tout négatif) ; la voiture exigeait trois conditions à la
+    // fois, dont ramener le cadran des gaz à zéro d'un second doigt.
+    //
+    // ON MESURE CE QUE L'ENFANT OBTIENT : des blocs parcourus VERS L'ARRIÈRE,
+    // le cadran à sa main gauche poussé à fond d'abord — c'est la situation
+    // qui ne marchait pas. Et l'on monte PAR LE BOUTON : un témoin qui pose
+    // `player.pilote` à la main ne fait voler personne (v231).
+    const recul = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle à l'écart, assez longue pour reculer sans rien toucher
+      const x0 = 30000, z0 = 32400, L = 120;
+      let y0 = 0;
+      for (let d = -L; d <= L; d += 4) for (let w = -6; w <= 6; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -L; d <= L; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      const out = {};
+      const essai = async (espece) => {
+        g.player.keys.clear();
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await tenir(1);
+        if (!g.animalManager.invoquer(espece, x0 + 3, z0)) return { err: `pas de ${espece}` };
+        await tenir(0.5);
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+        if (!auVolant()) return { err: `pas monté sur ${espece}` };
+        await tenir(0.6);
+        // LE CADRAN À FOND — c'est la situation de Max : il a servi, il reste
+        // où on l'a laissé, et la marche arrière devenait impossible.
+        g.player.gaz = 1;
+        await tenir(1.2);
+        // ON SÉPARE LE FREINAGE DU RECUL. Tirer le joystick depuis pleins gaz
+        // freine d'abord — c'est voulu, on ne passe pas la marche arrière à
+        // vingt blocs par seconde — et quatre secondes n'y suffisaient pas :
+        // mesuré 1,28 bloc, ce qui accusait une physique juste. « La mesure
+        // était trop courte, pas la physique » (v229).
+        g.player.touchMove = { f: -1, s: 0 };
+        const vitesse = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
+        let arret = 0;
+        while (arret < 8 && vitesse() > 0) { await tenir(0.2); arret += 0.2; }
+        const xAvant = g.player.pos.x;
+        await tenir(3);
+        const recule = xAvant - g.player.pos.x;   // le nez est vers +x : reculer, c'est x qui baisse
+        const gazApres = g.player.gaz;
+        const arretEn = +arret.toFixed(1);
+        g.player.touchMove = { f: 0, s: 0 };
+        await tenir(0.4);
+        document.getElementById('ride-btn').click();
+        await tenir(0.8);
+        return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant() };
+      };
+      out.voiture = await essai('voiture');
+      out.avion = await essai('avionligne');
+      g.player.keys.clear(); g.player.gaz = null;
+      return out;
+    });
+    // LES BORNES SONT À LA MOITIÉ DU MESURÉ, jamais juste en dessous (v237,
+    // quatre fois dans ce fichier) : 6,91 blocs pour la voiture, 2,07 pour
+    // l'avion, qui se repousse au pas. Et le SIGNE suffit à séparer les deux
+    // codes — sur la version publiée la voiture AVANCE de 18,43 blocs et
+    // l'avion de 12,5, cadran resté à fond, l'attente de l'arrêt expirant à
+    // ses huit secondes.
+    verifier('le cadran à fond, tirer le joystick en arrière fait RECULER la voiture',
+      !recul.voiture.err && recul.voiture.recule > 3 && recul.voiture.gazApres === 0,
+      JSON.stringify(recul.voiture));
+    verifier('et un avion se repousse au sol au lieu de rester planté',
+      !recul.avion.err && recul.avion.recule > 1 && recul.avion.gazApres === 0,
+      JSON.stringify(recul.avion));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

@@ -807,6 +807,13 @@ capture, coffre, barre de blocs, et ✈️ en voiture. Un témoin lit
 
 ## La file du mailleur, le plateau de vitesse, et les commandes de bord (v265)
 
+> **⚠️ La file est revenue à HUIT en v269** : seize rendait le jeu
+> impraticable sur l'iPad, et le « genou » ci-dessous avait été mesuré par
+> SATURATION, pas en régime établi. Lire « La file du mailleur : SEIZE A
+> RENDU LE JEU IMPRATICABLE » plus bas avant de croire les chiffres de cette
+> section. Ce qui reste vrai ici : la méthode (on choisit sur DEUX chiffres),
+> et le non-résultat des deux mailleurs.
+
 Max, capture d'iPhone du chasseur de nuit : « Jet should fly faster, button
 pour les roues mal placé, pas élégant ». Trois règles, et la première
 rembourse une dette que la v229 avait écrite elle-même.
@@ -890,6 +897,81 @@ rembourse une dette que la v229 avait écrite elle-même.
   sans dimension, c'est « aucune commande ne dépasse le HAUT de la
   manette » et « les deux boutons ont le même x ». C'est la formulation
   exacte de « rien ne flotte ».
+
+## La file du mailleur : SEIZE A RENDU LE JEU IMPRATICABLE (v269)
+
+Max, iPad, sur la version publiée : « le lag est absolument énorme, alors
+qu'avant il était pas mal réduit. C'est quasiment impraticable. En avion,
+l'image bouge une seconde, elle s'arrête cinq. À pied, ouvrir la carte fige
+dix secondes. » Quatre règles, et les trois premières sont des mesures.
+
+- **UN GENOU DE DÉBIT N'EST PAS UN GENOU DE CONFORT.** La v265 avait mesuré
+  la file par SATURATION (une téléportation met tout le disque à mailler) et
+  lu « seize : le débit de pointe double, la cadence ne bouge pas » (6,2 →
+  5,3 à Paris). Remesuré EN VOL au-dessus de Paris, à la distance
+  d'affichage de l'iPad, vingt secondes, sur les DEUX critères :
+
+  | file | cadence | médiane | pire image | > 300 ms | trou devant |
+  | --- | --- | --- | --- | --- | --- |
+  | 4 | 20,1 | 50 ms | 317 | 1,3 % | 36 |
+  | **8** | **18,3** | **50 ms** | **150** | **0 %** | 66 |
+  | 12 | 15,0 | 67 ms | 183 | 0 % | 93 |
+  | 16 | 9,1 | 100 ms | 383 | 3,1 % | 132 |
+
+  Le coût est d'un facteur DEUX, pas de quinze pour cent. La file de seize
+  est la seule à produire des images de plus de trois cents millisecondes —
+  les gels de Max — et comme `dt` est borné à un vingtième, elle fait tourner
+  le jeu AU RALENTI : à vitesse demandée identique, l'avion parcourt 1 757
+  blocs au lieu de 3 303. **Une mesure de saturation ne dit rien du régime
+  établi**, et c'est le régime établi que l'enfant vit.
+- **BORNER LA POSE PAR IMAGE EST UN NON-RÉSULTAT MESURÉ.** C'était la dette
+  que la v265 avait elle-même déclarée (« le vrai remède : BORNER
+  l'installation des géométries sur le fil principal comme le maillage l'est
+  déjà »). Écrit, mesuré, RETIRÉ : 10,63 images par seconde contre 10,20
+  sans, 17,45 contre 17,07 à file de huit. Du bruit. La raison est
+  arithmétique et se retient : **borner le travail PAR IMAGE ne réduit pas
+  le travail PAR SECONDE**, puisque le worker continue de produire. Ce qui
+  fixe le débit, c'est la profondeur de la file, et rien d'autre.
+- **ET « UNE FILE EST UN TEMPS, PAS UN COMPTE » NE MARCHE PAS NON PLUS —
+  MESURÉ.** C'était le titre de la v265, codé à l'envers ; on l'a codé à
+  l'endroit (le worker rapporte ce que chaque morceau lui coûte, la
+  profondeur suit). Le coût NE SÉPARE PAS la ville de la campagne en vol :
+  4,4 à 12,2 ms à Paris, 3,4 à 8,3 en campagne. Le rapport 24 contre 6,6 de
+  la v237 avait été mesuré par SATURATION, pas en vol — même piège que
+  ci-dessus, un étage plus bas. La file partait donc à son plafond partout :
+  6,0 images par seconde à Paris, 9,9 % du temps au-delà de trois cents
+  millisecondes, PIRE que seize. Écrit, mesuré, retiré.
+- **LE PRIX SE DÉCLARE, IL NE SE CACHE PAS.** Le trou devant soi tombe de 132
+  à 66 blocs : les bâtiments se dessinent plus tard, la panne même que la
+  v251 avait corrigée. Entre « les détails arrivent en retard » et « le jeu
+  s'arrête cinq secondes », c'est Max qui tranche, et il a tranché. Ce qui
+  reste à faire est déclaré dans `TASKS.md` : mesurer sur la TABLETTE
+  (`?attente=`, `?diag=1`), là où le rapport entre maillage, installation et
+  rendu n'est pas celui d'un rendu logiciel.
+
+**ET LA MARCHE ARRIÈRE N'EXISTAIT PAS (v269).** Max : « aussi impossible de
+faire marche arrière avec un avion ou une voiture. » Deux causes distinctes.
+L'avion ignorait purement le geste — `Math.max(0, forward)` écrase tout
+négatif, donc tirer le joystick en arrière au sol ne faisait rien, et un
+appareil nez contre un hangar y restait pour toujours. La voiture exigeait
+TROIS conditions simultanées, dont ramener le cadran des gaz sous cinq pour
+cent : or il RESTE où on l'a laissé (v262, et c'est la bonne décision pour
+une manette), donc il fallait un second doigt. **Le geste prime désormais
+sur la consigne**, comme une pédale de frein annule un régulateur : on
+freine d'abord, puis on recule, **et le cadran suit le geste** (`gaz = 0`) —
+sinon il afficherait pleins gaz pendant qu'on recule et le véhicule
+bondirait en avant au relâchement. Le virage de la roue avant de l'avion
+prend enfin `Math.abs(v)` pour l'amplitude et le signe pour le sens, comme
+la voiture le fait depuis la v212 : sans cela il s'inversait ET s'amplifiait
+en reculant.
+
+**Et le témoin a d'abord accusé une physique juste.** Quatre secondes après
+avoir tiré le joystick depuis pleins gaz : 1,28 bloc reculé, sous la barre.
+Ces quatre secondes étaient presque entièrement du FREINAGE. On sépare donc
+les deux phases — on attend que la vitesse passe à zéro, PUIS on mesure — et
+l'attente qui expire est elle-même le rouge de l'ancien code (huit secondes,
+la voiture ne s'arrête jamais). « La mesure était trop courte, pas la
+physique » (v229), une fois de plus.
 
 ## Le son du jeu (`sons.js`, v268) — un seul contexte, et rien de téléchargé
 

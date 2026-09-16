@@ -6,13 +6,14 @@
 
 export const NOUVEAUTES = [
   {
-    v: 268,
-    titre: "Les véhicules font du bruit",
+    v: 269,
+    titre: "Le jeu redevient fluide",
     puces: [
+      "🚀 Plus de blocages de plusieurs secondes",
+      "◀️ Joystick tiré en arrière : tu recules",
       "🔊 Le moteur ronronne et monte en régime",
       "📻 La radio s'allume quand tu montes",
-      "✈️ Les réacteurs sifflent en vol",
-      "⚙️ Réglages : tu peux tout couper",
+      "⚙️ Réglages : tu peux couper le son",
     ],
   },
   {
