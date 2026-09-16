@@ -327,7 +327,17 @@ export class Player {
       // et le cadran suit.
       let cible, accel = p.poussee;
       if (etat === 'sol') {
-        cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
+        // ET UN AVION SE REPOUSSE (v269). `Math.max(0, forward)` écrasait le
+        // geste : tirer le joystick en arrière ne faisait rien du tout, et un
+        // appareil nez contre un hangar y restait pour toujours. On recule au
+        // pas — la moitié de l'allure de roulage, c'est un repoussage, pas
+        // une marche arrière de voiture — et le cadran suit le geste.
+        if (forward < -0.5) {
+          if (this.gaz != null) this.gaz = 0;
+          cible = this.vitesseAvion > 0.5 ? 0 : forward * (p.roulage || 6) * RECUL;
+        } else {
+          cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
+        }
         accel = Math.max(p.frein || 0, p.poussee);
       } else if (etat === 'decollage') {
         cible = p.max; if (this.gaz != null) this.gaz = 1;
@@ -348,7 +358,14 @@ export class Player {
       // ne tourne que si l'on roule, et de moins en moins à mesure qu'on va
       // vite — à pleine vitesse sur la piste on ne fait pas de tête-à-queue.
       if (auSol) {
-        this.yaw -= strafe * VIRAGE_SOL * Math.min(1, v / 4) * Math.max(0.3, 1 - v / 80) * dt;
+        // L'AMPLITUDE VIENT DE |v|, LE SENS DU SIGNE — en reculant, la roue
+        // avant fait tourner l'appareil dans l'autre sens, exactement comme
+        // le volant d'une voiture (v212). Sans `abs`, un `v` négatif rendait
+        // `Math.min(1, v/4)` négatif ET `1 − v/80` supérieur à un : le
+        // virage s'inversait puis s'amplifiait.
+        const av = Math.abs(v);
+        this.yaw -= strafe * VIRAGE_SOL * Math.min(1, av / 4) * Math.max(0.3, 1 - av / 80)
+          * (v < 0 ? -1 : 1) * dt;
       } else {
         this.yaw -= strafe * p.virage * dt;
       }
@@ -514,12 +531,29 @@ export class Player {
       // Le recopier dans `fun.js` le rendrait faux à la première classe qu'on
       // ajoute, sans que rien ne rougisse : c'est le piège de l'échelle.
       this.vitesseVoitureMax = max;
+      // TIRER LE JOYSTICK EN ARRIÈRE FREINE, PUIS RECULE — QUOI QUE DISE LE
+      // CADRAN (v269). Max : « impossible de faire marche arrière avec un
+      // avion ou une voiture. » La marche arrière exigeait TROIS conditions
+      // à la fois : cadran sous cinq pour cent, voiture à l'arrêt, joystick
+      // tiré. Or le cadran RESTE où on l'a laissé (v262) : dès qu'un enfant
+      // y avait touché, il lui fallait un second doigt pour le ramener à
+      // zéro avant de pouvoir reculer. À sept ans, la marche arrière
+      // n'existait pas.
+      //
+      // Le geste prime donc sur la consigne, comme une pédale de frein
+      // annule un régulateur de vitesse — et LE CADRAN SUIT LE GESTE, sinon
+      // il afficherait pleins gaz pendant qu'on recule, et la voiture
+      // bondirait en avant au relâchement.
       let consigne;
-      if (this.gaz != null) {
+      if (forward < -0.5) {
+        if (this.gaz != null) this.gaz = 0;
+        // on freine d'abord : on ne passe pas la marche arrière à vingt
+        // blocs par seconde
+        consigne = this.vitesseVoiture > 0.5 ? 0 : forward * max * RECUL;
+      } else if (this.gaz != null) {
         consigne = this.gaz * max;
-        if (forward < -0.5 && this.gaz < 0.05 && this.vitesseVoiture < 0.5) consigne = -max * RECUL;
       } else {
-        consigne = forward >= 0 ? forward * max : forward * max * RECUL;
+        consigne = Math.max(0, forward) * max;
       }
       const ecart = consigne - this.vitesseVoiture;
       const taux = Math.abs(consigne) > Math.abs(this.vitesseVoiture) ? ACCEL_VOITURE : FREIN_VOITURE;

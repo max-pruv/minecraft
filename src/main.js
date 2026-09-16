@@ -1638,7 +1638,7 @@ function majBoutonsVehicule() {
     document.body.classList.toggle('en-avion', enAvion);
   }
   if (!enVehicule) return;
-  const v = enAvion ? (player.vitesseAvion || 0) : Math.abs(player.vitesseVoiture || 0);
+  const v = Math.abs(enAvion ? (player.vitesseAvion || 0) : (player.vitesseVoiture || 0));
   let niveau = player.gaz;
   if (niveau == null) {
     if (enAvion) niveau = player.pilote.max ? v / player.pilote.max : 0;
