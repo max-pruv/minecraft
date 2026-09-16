@@ -496,10 +496,13 @@ export const MONTURES = [
   // rendait le jeu impraticable sur l'iPad (9,1 images par seconde à Paris
   // contre 18,3, et 3,1 % du temps en images de plus de trois cents
   // millisecondes). Le plateau de vitesse ci-dessous a donc été mesuré sur
-  // une file qui n'existe plus. Les vitesses RESTENT telles quelles — Max
-  // les a demandées, et c'est le trou devant soi qui paie (132 → 66 blocs),
-  // pas la fluidité — mais le jour où l'on retouchera ce plateau, on le
-  // remesurera sur la file du moment et non sur ce tableau.
+  // une file qui n'existe plus, et il a été REMESURÉ le jour même — le
+  // tableau qui fait foi est celui du bas, « ET LE PLATEAU SE REMESURE QUAND
+  // LA FILE CHANGE ». Ce qui suit reste écrit parce qu'il dit COMMENT on
+  // mesure, et parce qu'un plateau mesuré sur une file donnée ne vaut que
+  // pour elle : **une vitesse qu'on ne remesure pas quand le mailleur change
+  // est une vitesse fausse qui ne rougit nulle part** — celle-ci a rougi,
+  // par le témoin du trou de `monte.js`, et c'est ce qui l'a rattrapée.
   //
   // ON REMESURE DONC LE PLATEAU AVEC LE MÊME CRITÈRE, jamais on ne le
   // déduit du débit : le TROU devant soi, médiane sur six relevés, à rr=12,
@@ -530,12 +533,42 @@ export const MONTURES = [
   // Parcouru 495 blocs à 110 et 506 à 300 — le même vol quatre fois. La
   // vitesse d'essai se met dans la FICHE, jamais dans la variable du moment.
   //
-  // Ce qu'on reprend, et ce qu'on ne reprend pas : l'avion de ligne passe de
-  // 95 à 120, les deux rapides de 110 à 160 — le rapport remonte de 1,16 à
-  // 1,33. Le réel est à 2,4 ; il reste hors de portée tant que le plateau
-  // est à 160, et cela reste une dette déclarée. Le chasseur et le Concorde
-  // gardent la MÊME pointe : ce qui les sépare est l'agilité, comme depuis
-  // la v229.
+  // ET LE PLATEAU SE REMESURE QUAND LA FILE CHANGE (v269). La file du
+  // mailleur est revenue de seize à huit — seize rendait le jeu impraticable
+  // sur l'iPad — donc le monde ne maille plus au même débit, donc les
+  // 160 blocs par seconde de la v265 ne tiennent plus. Remesuré au MÊME
+  // critère (trou devant soi, médiane de six relevés, rr=12, couloir
+  // vierge), file de huit :
+  //
+  //     v   | trou | barre v/2 |
+  //     95  | 115  |    48     |
+  //     110 | 112  |    55     |
+  //     120 |  93  |    60     |   ← retenu pour les deux rapides
+  //     130 |  80  |    65     |
+  //     145 |  80  |    73     |
+  //     160 |  64  |    80     |   ← la règle tombe
+  //
+  // LE GENOU EST ENTRE 120 ET 130, ET C'EST LA CHARGE QUI TRANCHE. Ces
+  // chiffres sont mesurés SEULS ; le portail complet, lui, a rendu 80 à 120
+  // et 51-58 à 160 — quinze pour cent de moins. À 130 la marge tomberait à
+  // trois blocs et le témoin battrait d'une exécution à l'autre ; à 120 elle
+  // reste de vingt. Une vitesse se choisit sur la mesure SOUS CHARGE, pas
+  // sur la meilleure qu'on vient de voir — c'est la règle des bornes de
+  // garde, appliquée à une constante de jeu.
+  //
+  // Ce qu'on garde donc : l'avion de ligne à 95 (le chiffre que la v229
+  // avait mesuré pour lui, et qui reste au-dessus du vol libre de l'enfant,
+  // 88 — sinon prendre l'avion ne sert à rien), les deux rapides à 120,
+  // c'est-à-dire AU-DESSUS des 110 d'avant la demande de Max. Le rapport est
+  // de 1,26, meilleur que les 1,16 de la v229. Le réel est à 2,4 : il reste
+  // hors de portée, et c'est une dette déclarée dont le seul remède est de
+  // mailler plus vite. Le chasseur et le Concorde gardent la MÊME pointe :
+  // ce qui les sépare est l'agilité, comme depuis la v229.
+  //
+  // ET LE COMPTEUR NE BOUGE PAS D'UN KILOMÈTRE-HEURE : `kmh` est intact, et
+  // l'affichage en prend la fraction de `max` atteinte (main.js). Pleins gaz,
+  // le chasseur affiche toujours Mach 1,8. C'est exactement ce que la v267 a
+  // construit pour ce cas : ce qu'on affiche n'est pas ce qu'on parcourt.
   //
   // ET CE QU'ON AFFICHE N'EST PAS CE QU'ON PARCOURT (v267). Max : « peut-être
   // fake la vraie vitesse, mais quand ton avion de chasse vole il devrait
@@ -568,7 +601,7 @@ export const MONTURES = [
     height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
-    pilote: { max: 120, poussee: 18, decrochage: 30, virage: 0.55,
+    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
       rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 },
     moteur: 'avion' },
 
@@ -579,7 +612,7 @@ export const MONTURES = [
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
-    pilote: { max: 160, poussee: 34, decrochage: 55, virage: 0.40,
+    pilote: { max: 120, poussee: 34, decrochage: 55, virage: 0.40,
       rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 },
     moteur: 'avion' },
 
@@ -589,7 +622,7 @@ export const MONTURES = [
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
-    pilote: { max: 160, poussee: 90, decrochage: 40, virage: 1.30,
+    pilote: { max: 120, poussee: 90, decrochage: 40, virage: 1.30,
       rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 },
     moteur: 'avion' },
 ];

@@ -190,13 +190,27 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   l'INSTALLATION d'une géométrie (upload au pilote), que SwiftShader ne
   modélise pas comme un vrai GPU.
 
-- [ ] **LE PLATEAU DE VITESSE DES AVIONS A ÉTÉ MESURÉ SUR UNE FILE QUI
-  N'EXISTE PLUS (v269).** La v265 a porté les avions de 110 à 160 blocs par
-  seconde sur une file de seize. Les vitesses restent — Max les a demandées,
-  et la mesure dit que la vitesse ne pèse pas sur la cadence (à file de huit,
-  voler à 160 rend 16,9 images/s contre 18,3 à 110) — mais le TROU devant soi
-  à 160 avec la file de huit vaut 66 blocs, dans la bande que la v229
-  rejetait. À remesurer sur la tablette avec le plateau, pas avant.
+- [x] **LE PLATEAU DE VITESSE DES AVIONS A ÉTÉ MESURÉ SUR UNE FILE QUI
+  N'EXISTE PLUS — REMESURÉ ET CORRIGÉ DANS LA MÊME LIVRAISON (v269).** La
+  v265 avait porté les avions de 110 à 160 blocs par seconde sur une file de
+  seize ; la file revenue à huit, 160 ne tient plus. Ce n'est pas resté une
+  dette : **le témoin du trou de `monte.js` l'a rendu rouge au portail**
+  (51 et 58 pour une barre de 80), et une dette qu'un témoin rougit n'est
+  pas une dette, c'est une régression. Remesuré au même critère, file de
+  huit, seul : 95 → 115 · 110 → 112 · 120 → 93 · 130 → 80 · 145 → 80 ·
+  160 → 64. Retenu 95 (avion de ligne) et 120 (Concorde, chasseur) ; le
+  portail complet coûte quinze pour cent du trou, ce qui écarte 130 (trois
+  blocs de marge). `kmh` est intact : le compteur affiche toujours Mach 1,8.
+  Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
+  lieu des quatre-vingts écrits en dur depuis la v229.
+
+- [ ] **LE RAPPORT DE VITESSE ENTRE LES AVIONS RESTE LOIN DU RÉEL (v269).**
+  95 et 120 blocs par seconde font un rapport de 1,26, quand le réel (900 et
+  2 180 km/h) est à 2,4. Le seul remède est de MAILLER PLUS VITE — 45 % du
+  coût d'un morceau est la génération du relief — jamais de remonter la
+  vitesse sans remonter le débit : c'est exactement l'erreur que la v265 a
+  faite et que la v269 a payée. À reprendre après la mesure sur tablette
+  ci-dessus, qui dira si la file peut remonter sans les gels.
 
 - [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la

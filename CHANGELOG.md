@@ -68,6 +68,27 @@ sépare pas la ville de la campagne en vol (4,4 à 12,2 ms à Paris, 3,4 à 8,3
 en campagne), la file partait à son plafond partout et rendait 6,0 images par
 seconde — pire que seize.
 
+**Et les avions reviennent à la vitesse que le monde sait charger.** C'est
+le témoin du chargement qui l'a dit, et c'est la vraie leçon de cette
+livraison : la v265 avait monté les jets de 110 à 160 blocs par seconde
+**parce que** la file de seize le permettait. La file revenue à huit, 160
+ne tient plus — l'enfant volait littéralement dans le vide. Remesuré au
+même critère (le trou devant soi, médiane de six relevés) :
+
+| vitesse | trou devant soi | il en faut (une demi-seconde de vol) |
+| --- | --- | --- |
+| 95 | 115 | 48 |
+| **120** | **93** | **60** |
+| 130 | 80 | 65 |
+| 160 | 64 | 80 |
+
+L'avion de ligne repasse à 95, le Concorde et le chasseur à 120 — toujours
+au-dessus des 110 d'avant la demande de Max. **Le compteur, lui, ne bouge
+pas d'un kilomètre-heure** : il affiche toujours Mach 1,8, parce que la v267
+a séparé ce qu'on affiche de ce qu'on parcourt. Et la barre du témoin ne
+s'écrit plus, elle se CALCULE d'après la fiche : elle valait quatre-vingts
+depuis la v229 et n'était juste que par accident.
+
 **Ce qui le prouve — la marche arrière.** Deux témoins neufs qui montent par
 le bouton, poussent le cadran à fond, puis tirent le joystick en arrière —
 la situation exacte qui ne marchait pas. Sur la version publiée la voiture

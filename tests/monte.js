@@ -2756,20 +2756,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
     //
-    // ET LA BARRE RESTE À QUATRE-VINGTS EN v265, alors que la mesure s'est
-    // améliorée — parce que la règle qui l'a posée n'a pas changé : « au-delà
-    // d'une demi-seconde de vol même pour le plus rapide ». Le plus rapide
-    // fait désormais 160 blocs par seconde, donc une demi-seconde vaut
-    // toujours quatre-vingts blocs. Ce que la livraison gagne se lit dans le
-    // RELEVÉ, pas dans la barre : la file du mailleur est passée de huit
-    // morceaux d'avance à seize, et le trou médian (sonde du plateau, six
-    // relevés, campagne et couloir de villes) va de 91 · 82 à la vitesse
-    // d'avant, à 122 · 125 à la vitesse neuve — un monde PLUS complet en
-    // volant plus vite.
+    // ET LA BARRE SE CALCULE DÉSORMAIS, ELLE NE S'ÉCRIT PLUS (v269). Elle a
+    // valu QUATRE-VINGTS de la v229 à la v268, pendant que la vitesse du plus
+    // rapide passait de 110 à 160 : le chiffre était juste par accident en
+    // v265 (160 ÷ 2 = 80) et il l'aurait cessé à la vitesse suivante sans que
+    // personne ne le voie. La règle, elle, n'a jamais bougé — « le bout du
+    // monde ne doit pas arriver avant une demi-seconde de vol » — et une
+    // demi-seconde se calcule. Chaque appareil est donc jugé sur SA vitesse :
+    // `trou >= max / 2`, la fiche étant la seule source.
+    //
+    // C'EST CE TÉMOIN QUI A RATTRAPÉ LA v269. La file du mailleur est revenue
+    // de seize à huit (le jeu était impraticable sur l'iPad à seize), donc le
+    // monde ne maille plus au même débit, donc les 160 blocs par seconde de
+    // la v265 ne tenaient plus : 51 et 58 de trou pour une barre de 80. Une
+    // vitesse mesurée sur une file donnée ne vaut que pour elle, et sans ce
+    // témoin la livraison aurait fait voler l'enfant dans le vide. Les
+    // vitesses sont remesurées (montures.js, tableau du plateau) : 95 pour
+    // l'avion de ligne, 120 pour les deux rapides.
     //
     // Serrer la barre aurait mesuré le banc : la même sonde rend 192 seule
     // et 163 au plus bas sous charge de portail. Une borne se pose sur la
-    // règle, pas sur le meilleur chiffre qu'on vient de voir.
+    // règle, pas sur le meilleur chiffre qu'on vient de voir — et c'est aussi
+    // pourquoi la vitesse retenue est 120 et non 130 : mesurées SEULES les
+    // deux passent (80 de trou pour 65 de barre à 130), mais le portail
+    // complet coûte quinze pour cent du trou, ce qui ne laisserait à 130 que
+    // trois blocs de marge et ferait battre ce témoin d'une exécution à
+    // l'autre.
     //
     // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
     // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
@@ -2841,12 +2853,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return out;
     });
-    const BARRE = 80;
+    // Une demi-seconde de vol, pour CHAQUE appareil et d'après SA fiche.
+    const demiSeconde = (a) => Math.round(a.vitesse / 2);
+    const tenus = ['avionligne', 'concorde', 'chasseur']
+      .map((k) => suivi[k] && { k, ...suivi[k], barre: demiSeconde(suivi[k]) });
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
-      !suivi.err && suivi.avionligne && suivi.concorde && suivi.chasseur
-      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE
-      && suivi.chasseur.trou >= BARRE,
-      `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+      !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
+      `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //

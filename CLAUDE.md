@@ -941,13 +941,36 @@ dix secondes. » Quatre règles, et les trois premières sont des mesures.
   ci-dessus, un étage plus bas. La file partait donc à son plafond partout :
   6,0 images par seconde à Paris, 9,9 % du temps au-delà de trois cents
   millisecondes, PIRE que seize. Écrit, mesuré, retiré.
-- **LE PRIX SE DÉCLARE, IL NE SE CACHE PAS.** Le trou devant soi tombe de 132
-  à 66 blocs : les bâtiments se dessinent plus tard, la panne même que la
-  v251 avait corrigée. Entre « les détails arrivent en retard » et « le jeu
-  s'arrête cinq secondes », c'est Max qui tranche, et il a tranché. Ce qui
-  reste à faire est déclaré dans `TASKS.md` : mesurer sur la TABLETTE
-  (`?attente=`, `?diag=1`), là où le rapport entre maillage, installation et
-  rendu n'est pas celui d'un rendu logiciel.
+- **ET UNE VITESSE MESURÉE SUR UNE FILE NE VAUT QUE POUR CETTE FILE.** La
+  v265 avait monté les jets de 110 à 160 blocs par seconde PARCE QUE la file
+  de seize le permettait ; la file revenue à huit, 160 ne tient plus, et
+  l'enfant vole dans le vide. C'est le témoin du trou de `monte.js` qui l'a
+  dit, et sans lui la livraison serait partie ainsi. Remesuré au même
+  critère, file de huit : 95 → 115 · 110 → 112 · 120 → 93 · 130 → 80 ·
+  145 → 80 · 160 → 64, pour une barre d'une demi-seconde de vol (v/2). **Le
+  genou est entre 120 et 130, et c'est la CHARGE qui tranche** : ces chiffres
+  sont mesurés seuls, et le portail complet coûte quinze pour cent du trou
+  (il a rendu 80 à 120 et 51-58 à 160). À 130 il ne resterait que trois blocs
+  de marge et le témoin battrait ; à 120 il en reste vingt. On retient 95 et
+  120 — toujours au-dessus des 110 de la v229 — et **`kmh` ne bouge pas** :
+  le compteur affiche toujours Mach 1,8, ce que la v267 a construit
+  exactement pour ce cas.
+- **ET UNE BARRE DE TÉMOIN QUI SUIT UNE GRANDEUR SE CALCULE, ELLE NE S'ÉCRIT
+  PAS.** Celle du trou valait QUATRE-VINGTS depuis la v229, pendant que la
+  vitesse du plus rapide passait de 110 à 160 : elle n'était juste par
+  accident qu'en v265 (160 ÷ 2 = 80), et elle aurait cessé de l'être à la
+  vitesse suivante sans que personne ne le voie. Elle vaut désormais
+  `max / 2` par appareil, lu dans la fiche — la règle, pas le chiffre.
+- **LE PRIX SE DÉCLARE, IL NE SE CACHE PAS.** À vitesse INCHANGÉE le trou
+  devant soi tombait de 132 à 66 blocs — les bâtiments se dessinent plus
+  tard, la panne même que la v251 avait corrigée. Entre « les détails
+  arrivent en retard » et « le jeu s'arrête cinq secondes », c'est Max qui
+  tranche, et il a tranché. La vitesse ayant suivi (120 au lieu de 160), le
+  trou revient à 93 seul et 80 sous charge de portail : ce que la livraison
+  coûte vraiment, c'est vingt-cinq pour cent de vitesse de pointe, pas un
+  monde en retard. Ce qui reste à faire est déclaré dans `TASKS.md` : mesurer
+  sur la TABLETTE (`?attente=`, `?diag=1`), là où le rapport entre maillage,
+  installation et rendu n'est pas celui d'un rendu logiciel.
 
 **ET LA MARCHE ARRIÈRE N'EXISTAIT PAS (v269).** Max : « aussi impossible de
 faire marche arrière avec un avion ou une voiture. » Deux causes distinctes.
