@@ -4244,17 +4244,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.keys.clear(); g.player.gaz = null;
       return out;
     });
-    // LES BORNES SONT À LA MOITIÉ DU MESURÉ, jamais juste en dessous (v237,
-    // quatre fois dans ce fichier) : 6,91 blocs pour la voiture, 2,07 pour
-    // l'avion, qui se repousse au pas. Et le SIGNE suffit à séparer les deux
-    // codes — sur la version publiée la voiture AVANCE de 18,43 blocs et
-    // l'avion de 12,5, cadran resté à fond, l'attente de l'arrêt expirant à
-    // ses huit secondes.
+    // LA MOITIÉ D'UNE MESURE FAITE SUR UNE MACHINE QUI RESPIRE NE VAUT PAS LA
+    // MOITIÉ AU PORTAIL — et ces bornes viennent de l'apprendre. Mon premier
+    // jet appliquait bien la règle de la v237 (la moitié du mesuré) sur une
+    // sonde jouée SEULE, machine au repos : 6,91 blocs pour la voiture, donc
+    // barre à 3. La même voiture rend 3,90 au portail complet et 2,51 rejouée
+    // seule après un portail — trois mesures de la MÊME physique, dans un
+    // rapport de un à trois, parce que ce qui varie est la cadence du banc et
+    // que le recul se mesure sur trois secondes de temps réel. Barre à 3 :
+    // rouge sur du code sain.
+    //
+    // CE QUE CE TÉMOIN DOIT SÉPARER, C'EST UN SIGNE, PAS UNE AMPLITUDE. Sur
+    // la version publiée la voiture AVANCE de 18,43 blocs et l'avion de 12,5,
+    // cadran resté à fond, l'attente de l'arrêt expirant à ses huit secondes.
+    // Entre « recule d'un bloc » et « avance de dix-huit », aucune cadence de
+    // banc ne peut se tromper. Ce qui prouve que la MESURE A EU LIEU, ce n'est
+    // pas la distance : c'est `arretEn` (l'attente n'a pas expiré) et
+    // `gazApres === 0` (le geste a bien repris la main sur le cadran). La
+    // borne de distance, elle, ne fait que vérifier le sens — un bloc, soit la
+    // moitié de la PIRE des trois mesures, et non la moitié de la meilleure.
     verifier('le cadran à fond, tirer le joystick en arrière fait RECULER la voiture',
-      !recul.voiture.err && recul.voiture.recule > 3 && recul.voiture.gazApres === 0,
+      !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres === 0
+      && recul.voiture.arretEn < 8,
       JSON.stringify(recul.voiture));
     verifier('et un avion se repousse au sol au lieu de rester planté',
-      !recul.avion.err && recul.avion.recule > 1 && recul.avion.gazApres === 0,
+      !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0
+      && recul.avion.arretEn < 8,
       JSON.stringify(recul.avion));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
