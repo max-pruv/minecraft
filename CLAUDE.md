@@ -413,6 +413,20 @@ les mesures de performance. Le portail se chronomètre désormais suite par
 suite, et `reseau.js` et `reglages.js` témoin par témoin ; ce relevé a trouvé
 la cause en UNE exécution.
 
+**UNE INTERMITTENCE NE SE JUGE PAS SUR UN PASSAGE DE CHAQUE CÔTÉ (v269).**
+La double mesure de la v195 dit « rejouée SEULE des deux côtés » ; appliquée
+à la lettre, UN passage de chaque côté, elle m'a fait conclure l'inverse de
+la vérité. `manhattan.js` rendait un délai sur la ligne 282 deux fois sur
+deux sur la branche et zéro fois sur le premier passage d'`origin/main` :
+tout désignait la livraison. Au TROISIÈME passage sur `origin/main`, le même
+délai. Et les trois témoins de contenu, eux, sont rouges à l'identique sur
+`origin/main` chaque fois qu'ils sont atteints — la suite s'arrêtant plus
+tôt quand le délai tombe, elle ne les atteint pas toujours. **Quand un rouge
+est un DÉLAI, ou qu'il ne se reproduit pas à l'identique, on rejoue jusqu'à
+voir la MÊME distribution des deux côtés, pas jusqu'à voir un vert** — c'est
+exactement l'inverse de « relancer jusqu'au vert », et cela se distingue par
+ce qu'on cherche : la fréquence, pas le succès.
+
 **UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.** La barrière est
 bonne par défaut — elle évite d'attendre cinquante minutes quand un module ne
 charge pas. Mais un témoin de CONTENU rouge, le jeu démarrant très bien, arrête

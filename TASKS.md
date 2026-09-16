@@ -204,6 +204,47 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
   lieu des quatre-vingts écrits en dur depuis la v229.
 
+- [ ] **`manhattan.js` : QUATRE ROUGES, TOUS MESURÉS IDENTIQUES SUR
+  `origin/main` (v269).** Le portail de la v269 a rendu quatre échecs :
+  « le trou enlève aussi la géométrie visible de la façade » (9 203 →
+  51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
+  ombres suivent le soleil et la lune visibles » (`[1, -1]`), et un délai sur
+  `#ride-btn` (ligne 416). Rejouée SEULE des deux côtés, cinq passages :
+
+  | passage | `origin/main` (v267) | branche (v269) |
+  | --- | --- | --- |
+  | au portail | — | 4 échecs : les 3 nommés + `:416` |
+  | seule, 1 | 4 échecs : les 3 nommés + `:416` | délai `:282` |
+  | seule, 2 | 5 échecs : les 3 nommés + taxi tactile + PeerJS | délai `:282` |
+  | seule, 3 | délai `:282` | — |
+
+  Les trois témoins nommés sont rouges à l'identique sur `origin/main` chaque
+  fois qu'ils sont ATTEINTS (3 fois sur 3), avec les mêmes valeurs — donc en
+  production. Et le délai de la ligne 282 (la file de construction de
+  Manhattan qui ne se vide pas en soixante secondes) tombe DES DEUX CÔTÉS :
+  deux fois sur deux sur la branche, une fois sur trois sur `origin/main`.
+  **C'est ce troisième passage qui a tranché** : sans lui j'aurais conclu que
+  la branche l'avait introduit. Une intermittence ne se juge pas sur un
+  passage de chaque côté.
+
+  Ce qui reste à faire : Manhattan tourne à 0,4 image par seconde sur ce banc
+  en rendu logiciel (mesuré v259), et ces témoins lisent des effets à
+  quelques centaines de millisecondes — ils sont un pile ou face. Avant
+  d'accuser le jeu, il faut soit leur donner une page qui tourne (`?ombres=0`
+  est déjà le cas, `rr` plus bas ne suffit pas), soit les reformuler pour
+  qu'ils PROVOQUENT la situation au lieu de l'attendre (règle des poissons,
+  v233).
+
+- [ ] **`carte.js` : « un appui long dépose n'importe où » — VERTE DES DEUX
+  CÔTÉS REJOUÉE SEULE (v269).** Rouge au portail de la v269 (les quatre
+  appuis déclinés par « pointeurs 0 », des images de 432 à 919 ms), verte
+  rejouée SEULE sur la branche ET sur `origin/main` — la suite entière passe
+  des deux côtés. C'est la famille de rouges de charge déjà connue de cette
+  suite (v251, v258) : le minuteur de l'appui long tire en retard quand
+  l'image dure presque une seconde. Le remède n'est pas de desserrer le
+  témoin mais de lui donner une page qui respire, ou de provoquer l'appui
+  sans dépendre d'un minuteur du navigateur.
+
 - [ ] **LE RAPPORT DE VITESSE ENTRE LES AVIONS RESTE LOIN DU RÉEL (v269).**
   95 et 120 blocs par seconde font un rapport de 1,26, quand le réel (900 et
   2 180 km/h) est à 2,4. Le seul remède est de MAILLER PLUS VITE — 45 % du
