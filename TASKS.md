@@ -204,19 +204,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
   lieu des quatre-vingts écrits en dur depuis la v229.
 
-- [ ] **LE MÉTRO DE WASHINGTON : TROIS ROUGES DE PORTAIL, VERTS REJOUÉS SEULS
-  (v268, v269, v270).** « Une rame passe, et on propose de monter dedans »
-  (`{"existe":true,"visible":false}`), « la pastille dit de quelle ligne il
-  s'agit » (🚇 au lieu de 🔵) et « le métro nous emmène à la station suivante »
-  (Smithsonian → Smithsonian, 0 m) tombent aux trois derniers portails, avec
-  les MÊMES valeurs, et sont verts quand la suite est rejouée seule (mesuré
-  v256 : rame visible, pastille 🔵, Smithsonian → Federal Triangle, 17 m en
-  6 s). Donc en production, et pas de la livraison en cours. Une rame
-  souterraine ne se dessine qu'à quarante blocs (`VU_SOUTERRAIN`) et doit
-  arriver jusqu'au quai : à trois images par seconde et `dt` borné, elle n'y
-  est pas en trente-six secondes de banc. C'est la MÊME famille que les trois
-  témoins corrigés en v270 (compter des pas au lieu d'attendre le résultat) —
-  piste : attendre que la rame soit LÀ, borné, et dire ce qu'on a vu.
+- [ ] **LE MÉTRO DE WASHINGTON NE PASSE PLUS EN STATION — DÉFAUT DE
+  PRODUCTION, MESURÉ DES DEUX CÔTÉS (v270).** « Une rame passe, et on propose
+  de monter dedans » (`{"existe":true,"visible":false}`), « la pastille dit de
+  quelle ligne il s'agit » (🚇 au lieu de 🔵) et « le métro nous emmène à la
+  station suivante » (Smithsonian → Smithsonian, 0 m) tombent aux portails des
+  v268, v269 et v270.
+
+  **Rejoués SEULS des deux côtés, deux passages chacun — rouges 4 fois sur 4,
+  avec les MÊMES valeurs :**
+
+  | passage | `origin/main` (v269) | branche (v270) |
+  | --- | --- | --- |
+  | seule, 1 | 3 échecs, 0 m en 36 s | 3 échecs, 0 m en 34 s |
+  | seule, 2 | 3 échecs, 0 m en 33 s | 3 échecs, 0 m en 34 s |
+
+  Donc EN PRODUCTION, et pas de la livraison en cours. **Et la supposition
+  « verts rejoués seuls » était FAUSSE** : elle venait d'un relevé de la v256
+  (rame visible, pastille 🔵, Smithsonian → Federal Triangle, 17 m en 6 s),
+  donc d'un autre code. Une mesure vieille de quatorze versions n'est pas une
+  mesure de l'état d'aujourd'hui — c'est exactement le reproche qu'on fait à
+  un témoin qui ne peut pas voir un changement.
+
+  Ce n'est donc PAS de la charge de banc : la rame n'arrive vraiment plus au
+  quai de Smithsonian. Ce qui a changé entre la v256 et la v268 est à
+  chercher ; pistes, dans l'ordre : le nombre de rames par ligne et leur
+  cadence (v222 : « le tour divisé par la demi-minute »), la portée
+  souterraine (`VU_SOUTERRAIN`, quarante blocs) contre la position du quai, et
+  le fait que la boucle du témoin attende trente-six secondes de JEU quand le
+  banc tourne à trois images par seconde. La sonde à écrire est celle qui
+  DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
+  quai, et avance-t-elle.
 
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265

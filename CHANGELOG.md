@@ -109,6 +109,14 @@ toute la fenêtre au lieu d'être lue une fois à la fin ; et la marche arrière
 `monte.js` recule jusqu'à avoir reculé (0,26 bloc en trois secondes de banc,
 pour une physique qui en rendait le double la veille).
 
+**Ce qui reste rouge, et qui ne vient pas d'ici.** Trois défauts du métro de
+Washington et un délai de `manhattan.js` : rejoués SEULS des deux côtés, ils
+sont rouges à l'identique sur la version publiée — quatre passages sur quatre
+pour le métro, avec les mêmes valeurs. Ils partent en dette déclarée dans
+`TASKS.md` avec leurs mesures. Et une supposition de ma part y est corrigée :
+je les croyais verts rejoués seuls, sur la foi d'un relevé vieux de quatorze
+versions. Une mesure d'hier n'est pas une mesure d'aujourd'hui.
+
 **Ce qui le prouve — le banc.** Cinq témoins neufs dans `carteMonde.js`,
 rouges sur la version publiée (265 villes au-dessus de la barre, 32 410 cases
 traversées, dégagement absent), verts ici — et le cinquième, celui de la vue,
