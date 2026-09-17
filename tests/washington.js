@@ -403,10 +403,36 @@ const descendre = async (p, ms) => {
     verifier('la bouche de métro débouche bien dans la rue',
       Math.abs(enRue.y - (solBouche + 1)) < 2.5, `y=${enRue.y.toFixed(1)} pour un sol à ${solBouche}`);
 
-    for (let i = 0; i < 12; i++) await descendre(tab, 1400);
-    const enBas = await pose(tab);
+    // ON DESCEND JUSQU'À ÊTRE EN BAS, PAS PENDANT DOUZE PAS (v270). Le
+    // verdict était une DURÉE déguisée : douze pas de 1,4 s, et comme
+    // `main.js` borne `dt` à un vingtième, l'enfant descend d'autant moins
+    // que la cadence du banc est basse. Mesuré sur le MÊME code de jeu —
+    // 13,0 blocs la suite rejouée seule, 9,0 aux portails des v268 et v269,
+    // et 7,0 à celui de la v270, pour une barre à 8. Douze pour cent de
+    // marge : la borne était condamnée, et c'est le banc qu'elle mesurait.
+    //
+    // Le remède était écrit QUINZE LIGNES PLUS HAUT, dans ce fichier : le
+    // témoin des portes marche « jusqu'à être entré OU jusqu'à ne plus
+    // avancer », depuis qu'il est tombé pour la même raison. Il n'avait
+    // jamais été appliqué à l'escalier. C'est le piège des bornes de
+    // `monte.js` (v237) à l'échelle d'un autre fichier : quand une borne se
+    // révèle mal posée, on relit TOUTES celles du fichier dans la même passe.
+    //
+    // « Ne plus descendre » se constate sur TROIS pas, comme « ne plus
+    // avancer » : un mur arrête à chaque pas, un hoquet de banc à un seul.
+    let enBas = await pose(tab);
+    let immobileBas = 0;
+    for (let i = 0; i < 24 && enBas.y >= solBouche - 8; i++) {
+      const avantPas = enBas.y;
+      await descendre(tab, 1400);
+      enBas = await pose(tab);
+      immobileBas = avantPas - enBas.y >= 0.2 ? 0 : immobileBas + 1;
+      if (immobileBas >= 3) break;
+    }
     verifier('en descendant l\'escalier, on arrive sur le quai',
-      enBas.y < solBouche - 8, `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`);
+      enBas.y < solBouche - 8,
+      `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`
+      + (immobileBas >= 3 ? ' · bloqué : trois pas sans descendre' : ''));
     // On laisse l'enfant se poser avant de regarder en l'air : mesuré en pleine
     // chute, le plafond change d'un bloc d'une exécution à l'autre.
     await dormir(900);

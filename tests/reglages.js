@@ -217,8 +217,21 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'autre tablette ne le défait pas',
       (nuage.reglages('Marlon') || {}).lang === 'en',
       `serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).lang)}`);
-    verifier('elle s\'aligne même dessus',
-      (await autreIpad.evaluate(() => window.__game.edu.__prefs().lang)) === 'en',
+    // ON OBSERVE TOUTE LA FENÊTRE, ON NE REGARDE PAS À LA FIN (v270). Ce
+    // témoin lisait la seconde tablette UNE SEULE FOIS, juste après les vingt
+    // secondes d'attente ci-dessus — alors que sa relève de réglages tourne
+    // toutes les quinze secondes : il suffit qu'un tour tombe une seconde
+    // trop tard, sur un banc chargé, pour qu'il rende « fr ». Vert aux
+    // portails des v268 et v269, rouge à celui de la v270, sans qu'une ligne
+    // de réglages ait bougé. C'est la règle déjà écrite pour le lien muet —
+    // « un témoin qui mesure une durée observe pendant TOUTE la fenêtre » —
+    // et elle n'avait pas été appliquée ici. Ce qu'on prouve ne change pas :
+    // la seconde tablette finit par adopter le choix de la première, et le
+    // verdict d'au-dessus (« elle ne le défait pas ») garde, lui, son
+    // instantané à vingt secondes.
+    const alignee = await jusqua(async () => (await autreIpad.evaluate(
+      () => window.__game.edu.__prefs().lang)) === 'en', 45000);
+    verifier('elle s\'aligne même dessus', alignee,
       await autreIpad.evaluate(() => window.__game.edu.__prefs().lang));
     await autreIpad.close();
 

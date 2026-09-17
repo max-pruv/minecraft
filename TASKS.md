@@ -204,6 +204,20 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
   lieu des quatre-vingts écrits en dur depuis la v229.
 
+- [ ] **LE MÉTRO DE WASHINGTON : TROIS ROUGES DE PORTAIL, VERTS REJOUÉS SEULS
+  (v268, v269, v270).** « Une rame passe, et on propose de monter dedans »
+  (`{"existe":true,"visible":false}`), « la pastille dit de quelle ligne il
+  s'agit » (🚇 au lieu de 🔵) et « le métro nous emmène à la station suivante »
+  (Smithsonian → Smithsonian, 0 m) tombent aux trois derniers portails, avec
+  les MÊMES valeurs, et sont verts quand la suite est rejouée seule (mesuré
+  v256 : rame visible, pastille 🔵, Smithsonian → Federal Triangle, 17 m en
+  6 s). Donc en production, et pas de la livraison en cours. Une rame
+  souterraine ne se dessine qu'à quarante blocs (`VU_SOUTERRAIN`) et doit
+  arriver jusqu'au quai : à trois images par seconde et `dt` borné, elle n'y
+  est pas en trente-six secondes de banc. C'est la MÊME famille que les trois
+  témoins corrigés en v270 (compter des pas au lieu d'attendre le résultat) —
+  piste : attendre que la rame soit LÀ, borné, et dire ce qu'on a vu.
+
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)

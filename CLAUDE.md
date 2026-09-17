@@ -3960,6 +3960,54 @@ correction de placement se mesure AVANT/APRÈS, poste par poste et ville par
 ville** — le total ne suffit pas : ici il montait pendant que les feux
 triplaient.
 
+**UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT.** Mes quatre témoins
+de la v270 comptaient des ANNEAUX, et ils étaient tous verts ; le portail, lui,
+a rendu rouge « la circulation naît à l'approche » (`monte.js`), qui se
+téléporte à Rome et exige une voiture EN VUE. La contrainte de partage trie les
+candidats par taille et sacrifiait les anneaux DÉCALÉS — ceux dont un côté
+passe près du centre : Rome gardait ses quatre anneaux, mais le plus proche
+passait de douze blocs du centre à quarante-cinq, **pile la portée
+d'affichage** (`vu: 45`), et un enfant posé sur la place ne voyait plus une
+seule voiture. C'est la panne que la v201 avait corrigée sur signalement de
+Max, ramenée par un témoin qui mesurait la mauvaise grandeur. Trois choses.
+
+- **CE QUI DOIT ÊTRE VRAI SE GARANTIT PAR CONSTRUCTION, PAS PAR L'ORDRE DE
+  TRI.** Le premier anneau retenu est désormais celui que l'enfant voit
+  (`VU_ANNEAU`), et le reste de la sélection ne change pas. Un tri qui « se
+  trouve » donner le bon résultat le perd à la première contrainte qu'on
+  ajoute.
+- **ET LA BARRE DE L'ANNEAU N'EST PAS LA PORTÉE.** Les voitures sont espacées
+  le long du tracé (jusqu'à vingt-cinq blocs) : un anneau qui frôle le centre à
+  quarante-quatre blocs peut n'avoir aucune voiture à portée. Trente blocs, de
+  sorte qu'une voiture décalée de douze le long du tracé reste dans les
+  quarante-cinq. Une portée d'affichage n'est pas une portée d'OBJET.
+- **La portée se demande là où elle se calcule** (`VU_VOITURE`, publié par
+  `vehicules.js`), recopiée dans `villesmonde.js` comme la demi-largeur, et un
+  témoin garde les deux d'accord.
+
+**UN VERDICT QUI COMPTE DES PAS, OU QUI DORT UN TEMPS FIXE, MESURE LA CADENCE
+DU BANC — TROIS FICHIERS DANS LE MÊME PORTAIL (v270).** `main.js` borne `dt` à
+un vingtième de seconde : sous cette barre, le monde avance moins vite que le
+temps réel, et tout témoin dont le verdict est une distance parcourue pendant
+une durée FIXE change de réponse avec la charge. Les trois étaient verts au
+portail de la veille, sur le même code de jeu.
+
+| témoin | mesuré | barre | seul |
+| --- | --- | --- | --- |
+| l'escalier du métro (`washington.js`) | 7,0 blocs | 8 | 13,0 |
+| la marche arrière de l'avion (`monte.js`) | 0,26 bloc en 3 s | 0,5 | le double la veille |
+| la seconde tablette (`reglages.js`) | lue UNE fois à 20 s | — | verte deux portails de suite |
+
+Le remède est le même pour les trois, et **il était déjà écrit à quinze lignes
+de l'un d'eux** : le témoin des portes de `washington.js` marche « jusqu'à être
+entré OU jusqu'à ne plus avancer » depuis qu'il est tombé pour cette raison, et
+personne ne l'avait appliqué à l'escalier du même fichier. **On attend le
+RÉSULTAT, borné, jamais une durée** — et le temps qu'il a pris entre dans le
+message, sinon le rouge suivant ne se démonte pas. C'est le piège des bornes de
+`monte.js` (v237) à l'échelle de trois fichiers : quand une borne se révèle mal
+posée, on relit toutes celles de sa FAMILLE dans la même passe, pas seulement
+celles de son fichier.
+
 **Et le chiffre partagé se garde par un TÉMOIN, jamais par un commentaire.**
 `villesmonde.js` a besoin de la demi-largeur d'une voiture et ne peut pas
 l'importer de `vehicules.js` : il est lu par le mailleur du worker, qui meurt

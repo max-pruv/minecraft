@@ -2111,6 +2111,8 @@ const VRAIES_KM = [
       const DEGAGEMENT_VOITURE = vm.DEGAGEMENT_VOITURE ?? null;
       const DEMI_LONG_VOITURE = veh.DEMI_LONG_VOITURE ?? 2.2;
       const DEMI_LARG_VOITURE = veh.DEMI_LARG_VOITURE ?? 1.13;
+      const VU_VOITURE = veh.VU_VOITURE ?? 45;          // la portée d'affichage
+      const VU_ANNEAU = vm.VU_ANNEAU ?? null;
       const traces = tracesCirculation(() => 35);
 
       // 1. DEUX ANNEAUX NE SE PARTAGENT PAS UNE RUE. Le partage se calcule sur
@@ -2146,6 +2148,33 @@ const VRAIES_KM = [
         if (!parVille.has(tr.cle)) parVille.set(tr.cle, []);
         parVille.get(tr.cle).push(tr);
       }
+      // 1 bis. ET CE QUE L'ENFANT VOIT EN ARRIVANT. Une voiture ne se
+      // DESSINE qu'à `VU_VOITURE` blocs : une ville dont tous les anneaux
+      // passent plus loin de son centre est MORTE quand on s'y pose, et
+      // pourtant elle a ses convois. C'est la régression que la première
+      // version de cette livraison a produite — Rome passait de DOUZE blocs
+      // à quarante-cinq, pile la portée — et qu'aucun des témoins
+      // ci-dessus ne pouvait voir, parce qu'ils comptent des ANNEAUX.
+      const dAuCentre = (tr) => {
+        let d = Infinity;
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const L = Math.hypot(b.x - a.x, b.z - a.z);
+          if (L < 1e-6) continue;
+          const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+          let q = (tr.x - a.x) * ux + (tr.z - a.z) * uz;
+          q = Math.max(0, Math.min(L, q));
+          d = Math.min(d, Math.hypot(a.x + ux * q - tr.x, a.z + uz * q - tr.z));
+        }
+        return d;
+      };
+      let aveugles = 0, pireVue = 0, villeAveugle = '';
+      for (const [cle, g] of parVille) {
+        if (!g.length) continue;
+        const d = Math.min(...g.map(dAuCentre));
+        if (d >= VU_VOITURE) { aveugles++; if (d > pireVue) { pireVue = d; villeAveugle = cle; } }
+      }
+
       let pire = 0, villePire = '', fautives = 0, sansAnneau = 0;
       for (const [cle, g] of parVille) {
         if (!g.length) sansAnneau++;
@@ -2216,6 +2245,7 @@ const VRAIES_KM = [
         villes: parVille.size, anneaux: traces.length, sansAnneau,
         fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
         meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
+        aveugles, pireVue: Math.round(pireVue), villeAveugle, vu: VU_VOITURE, vuAnneau: VU_ANNEAU,
       };
     });
 
@@ -2226,6 +2256,19 @@ const VRAIES_KM = [
     verifier('et aucune ville ne perd tous ses convois au passage',
       !rues.err && rues.sansAnneau === 0 && rues.anneaux > 600,
       `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`);
+
+    // UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT. Ce témoin-ci est
+    // né d'une régression de la livraison elle-même : la contrainte de partage
+    // trie par taille et sacrifiait les anneaux DÉCALÉS, ceux dont un côté
+    // passe près du centre. Rome gardait ses quatre anneaux et n'en montrait
+    // plus un seul. Vert sur `origin/main` À DESSEIN — il garde une capacité
+    // qu'on vient de frôler (règle v220) — et vérifié ROUGE sur la première
+    // version de cette branche : « 1 ville(s) aveugle(s) · pire 45 (rome) ».
+    verifier('et chaque ville montre une voiture depuis son centre',
+      !rues.err && rues.aveugles === 0,
+      `portée ${rues.vu} blocs · ${rues.aveugles} ville(s) aveugle(s)`
+      + (rues.aveugles ? ` · pire ${rues.pireVue} (${rues.villeAveugle})` : '')
+      + ` · anneau visé à ${rues.vuAnneau ?? '—'} blocs`);
 
     verifier('la carrosserie ne traverse plus le mobilier des rues',
       !rues.err && rues.meubles === 0,

@@ -81,9 +81,38 @@ unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de son centre. Éc
 ainsi, la règle a réglé d'un coup les trois médinas que le chiffre rond
 laissait en faute.
 
-**Ce qui le prouve — le banc.** Quatre témoins neufs dans `carteMonde.js`,
-rouges sur la version publiée (265 villes, 32 410 cases, dégagement absent),
-verts ici. Ils interrogent les fonctions PURES et jamais le monde chargé :
+**ET LE PORTAIL A TROUVÉ UNE RÉGRESSION QUE MES QUATRE TÉMOINS NE POUVAIENT
+PAS VOIR.** La contrainte de partage trie les anneaux par taille, et elle
+sacrifiait les anneaux DÉCALÉS — ceux dont un côté passe près du centre. Rome
+gardait bien ses quatre anneaux, mais le plus proche passait de **douze blocs
+du centre à quarante-cinq**, pile la portée à laquelle une voiture cesse
+d'être dessinée : un enfant qui se pose sur la place ne voyait plus une seule
+voiture. C'est exactement la panne que la v201 avait corrigée sur signalement
+de Max (« les villes n'ont pas de vie »).
+
+Un seul témoin l'a dit — « la circulation naît à l'approche » (`monte.js`),
+qui se téléporte à Rome et exige une voiture EN VUE. Les miens comptaient des
+ANNEAUX, et ils étaient tous verts. **Le premier anneau retenu est désormais
+celui que l'enfant voit** : 788 anneaux au lieu de 764, zéro ville aveugle sur
+les 264 qui ont des convois, partage inchangé (pire 18), et le calcul est même
+plus rapide qu'avant la livraison (104 ms contre 117). Un témoin neuf le garde,
+vérifié rouge sur la version fautive.
+
+**ET TROIS TÉMOINS SONT TOMBÉS POUR LA MÊME RAISON, DANS TROIS FICHIERS.** Un
+verdict qui compte des PAS ou qui dort un temps FIXE mesure la cadence du banc,
+pas le jeu — parce que `main.js` borne `dt` à un vingtième de seconde. Les
+trois sont réécrits pour attendre le RÉSULTAT, borné, au lieu d'un temps :
+l'escalier du métro de Washington descend jusqu'au quai ou jusqu'à ne plus
+descendre (7,0 blocs mesurés pour une barre à 8, quand la même suite rejouée
+seule en rend 13,0) ; la seconde tablette de `reglages.js` est observée pendant
+toute la fenêtre au lieu d'être lue une fois à la fin ; et la marche arrière de
+`monte.js` recule jusqu'à avoir reculé (0,26 bloc en trois secondes de banc,
+pour une physique qui en rendait le double la veille).
+
+**Ce qui le prouve — le banc.** Cinq témoins neufs dans `carteMonde.js`,
+rouges sur la version publiée (265 villes au-dessus de la barre, 32 410 cases
+traversées, dégagement absent), verts ici — et le cinquième, celui de la vue,
+rouge sur la première version de cette branche. Ils interrogent les fonctions PURES et jamais le monde chargé :
 `getBlock` ne répond que sur les morceaux déjà engendrés, et lire deux cent
 soixante villes sans y aller rendrait zéro partout — un vert qui ne prouve
 rien.

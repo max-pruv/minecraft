@@ -433,6 +433,14 @@ export const ALLURES = { citadine: 3.8, berline: 4.4, suv: 4.4, gt: 5.4, sportiv
 // donc recopié, et c'est un TÉMOIN qui garde les deux d'accord — jamais un
 // commentaire : deux tables qui décrivent la même chose finissent par
 // diverger.
+// LA PORTÉE D'AFFICHAGE D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SE CALCULE (v270).
+// `villesmonde.js` doit savoir à quelle distance une voiture se DESSINE pour
+// garantir qu'une ville engendrée en montre une depuis son centre — et il ne
+// peut pas importer ce fichier, qui amènerait `three` dans le graphe du
+// mailleur du worker (v251). Le chiffre y est donc recopié, celui-ci fait
+// foi, et un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
 export const DEMI_LONG_VOITURE = 2.2;
 export const DEMI_LARG_VOITURE = 1.13;
 export function classeDe(fichier) {
@@ -1453,7 +1461,7 @@ export function createVehicules({ scene, player }) {
       // depuis longtemps. Les personnages s'effacent à soixante-deux blocs
       // depuis des versions sans que personne ne l'ait jamais signalé ; une
       // voiture, plus petite et plus basse, tient largement à quarante-cinq.
-      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 45,
+      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
       // LE PAS DE 13 SUR UNE FLOTTE DE 50 REVIENT SUR SES PAS AU BOUT DE
       // CINQUANTE : `13 × 50 ≡ 0`. Avec vingt voitures par circuit c'était
       // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille

@@ -1985,6 +1985,43 @@ function partageDeRue(a, b) {
 // un chiffre recopié.
 export const PARTAGE_MAX = 20;
 
+// CE QUE L'ENFANT VOIT EN ARRIVANT, ET NON UN COMPTE D'ANNEAUX (v270).
+// Une voiture ne se DESSINE qu'à quarante-cinq blocs (`vu: 45` du convoi,
+// vehicules.js) : un anneau plus loin que cela existe sans se voir. Or la
+// contrainte de partage ci-dessus, qui trie par taille, sacrifiait justement
+// les anneaux DÉCALÉS — ceux dont un côté passe près du centre. Mesuré au
+// premier portail : Rome gardait ses quatre anneaux, mais le plus proche
+// passait de DOUZE blocs du centre à quarante-cinq — PILE la portée — et
+// l'enfant posé sur la place ne voyait plus une seule voiture. C'est le
+// témoin « la circulation naît à l'approche » de `monte.js` qui l'a dit, et
+// lui seul : « aucune ville ne perd tous ses convois » était vert, parce
+// qu'il comptait des ANNEAUX et non ce qui se dessine.
+//
+// D'où la règle : LE PREMIER ANNEAU RETENU EST CELUI QUE L'ENFANT VOIT. Le
+// reste de la sélection ne change pas.
+//
+// Le chiffre est recopié de `vehicules.js`, qui le PUBLIE : villesmonde.js
+// est lu par le mailleur du worker et mourrait au premier `import 'three'`
+// de son graphe (v251). Un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
+// PLUS PRÈS QUE LA PORTÉE, PARCE QU'UNE VOITURE N'EST PAS UN ANNEAU. Les
+// voitures sont espacées le long du tracé (jusqu'à vingt-cinq blocs entre
+// deux) : un anneau qui frôle le centre à quarante-quatre blocs peut n'avoir
+// aucune voiture à portée. À trente blocs, même une voiture décalée de douze
+// blocs le long du tracé reste dans les quarante-cinq (√(30² + 12²) = 32).
+export const VU_ANNEAU = 30;
+
+// La distance de l'ANCRE au périmètre d'un anneau, dans le repère de la
+// trame — une rotation ne change pas une distance à l'origine, donc c'est
+// aussi la distance dans le monde. Exacte et en temps constant : on ne
+// balaie pas un périmètre pour répondre à cela.
+function distanceAuCentre(c) {
+  const px = Math.abs(c.cU), py = Math.abs(c.cV);
+  if (px <= c.Ru && py <= c.Rv) return Math.min(c.Ru - px, c.Rv - py);
+  return Math.hypot(Math.max(px - c.Ru, 0), Math.max(py - c.Rv, 0));
+}
+
 export function tracesCirculation(solDe) {
   const traces = [];
   for (const f of VILLES_MONDE) {
@@ -2037,24 +2074,32 @@ export function tracesCirculation(solDe) {
     // du monde entier, et les refiltrer à chaque candidat coûtait six cents
     // millisecondes au démarrage pour une réponse qu'on a sous la main.
     const gardes = [];
-    for (const [part, decU, decV, ku, kv] of candidats) {
-      if (gardes.length >= MAX_ANNEAUX) break;
+    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+    // Un candidat validé, ou `null` — sans rien retenir. `exigerProche` est
+    // la phase 1 : elle réclame en plus que l'anneau passe à portée de vue du
+    // centre. La condition est testée AVANT l'eau, parce qu'elle coûte mille
+    // fois moins — la règle que cette même livraison a payée plus haut.
+    const valider = ([part, decU, decV, ku, kv], exigerProche) => {
       const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
       const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
       const Ru = Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
       const Rv = Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
+      const candidat = { cU, cV, Ru, Rv };
+      if (exigerProche && distanceAuCentre(candidat) > VU_ANNEAU) return null;
       // LE PARTAGE SE JUGE AVANT L'EAU, parce qu'il coûte mille fois moins.
       // Mis APRÈS, il faisait tourner le test d'eau — quarante points et un
       // appel de géographie chacun — sur tous les candidats qu'il allait
       // rejeter : `tracesCirculation` passait de 82 à 380 ms au démarrage,
       // et le jeu attend ce calcul derrière son bouton « Jouer » (v258). Une
       // condition bon marché passe devant une condition chère, toujours.
-      const candidat = { cU, cV, Ru, Rv };
-      if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) continue;
+      //
+      // Un anneau DÉJÀ retenu se rejette ici tout seul : son partage avec
+      // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
+      // toute la liste sans se dédoubler.
+      if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
       // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
       // de la trame, puis on tourne vers le monde.
-      let sec = true;
-      for (let k = 0; k < 40 && sec; k++) {
+      for (let k = 0; k < 40; k++) {
         const c2 = k / 40;
         let A, B;
         if (c2 < 0.25) { A = Ru; B = Rv * (c2 * 8 - 1); }
@@ -2062,35 +2107,46 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
         const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
-        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) sec = false;
-        if (t.sud && v / f.K > t.sud) sec = false;
+        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) return null;
+        if (t.sud && v / f.K > t.sud) return null;
       }
-      if (!sec) continue;
-      // ET IL NE DOIT PAS SUIVRE UN ANNEAU DÉJÀ RETENU. Le prix se déclare :
-      // 1 068 anneaux deviennent 801, et les 296 524 blocs de rue portant un
-      // convoi tombent à 226 540 — un quart de moins. Mais ces blocs-là
-      // portaient DEUX convois superposés : ce qu'on retire, ce sont des
-      // doublons qui se traversaient, pas de la variété. Aucune ville ne perd
-      // tous ses anneaux (une seule n'en garde qu'un), et le pire partage
-      // passe de 540 blocs à 18.
-      //
-      // ET LE JEU DE CANDIDATS ÉLARGI EST UN NON-RÉSULTAT MESURÉ : sept fois
-      // plus de candidats (quatorze tailles, vingt-cinq décalages, sept
-      // formes) ne rendent que DIX-SEPT anneaux sur les deux cent
-      // soixante-sept perdus. « Le prix se paie avec des rues » (v216) ne
-      // marche pas ici : un rectangle posé sur une trame n'a pas assez de
-      // places distinctes. Écrit, mesuré, retiré — qu'on ne le réécrive pas.
-      const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
-      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
-        x: f.ancre.x + (A + cU) * co + (B + cV) * si,
+      return candidat;
+    };
+    const retenir = (c) => {
+      const pts = [[c.Ru, c.Rv], [-c.Ru, c.Rv], [-c.Ru, -c.Rv], [c.Ru, -c.Rv]].map(([A, B]) => ({
+        x: f.ancre.x + (A + c.cU) * co + (B + c.cV) * si,
         y,
-        z: f.ancre.z + (-(A + cU) * si + (B + cV) * co),
+        z: f.ancre.z + (-(A + c.cU) * si + (B + c.cV) * co),
       }));
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
-      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, forme: candidat, rang: gardes.length });
-      gardes.push(candidat);
+      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, forme: c, rang: gardes.length });
+      gardes.push(c);
+    };
+
+    // PHASE 1 — L'ANNEAU QUE L'ENFANT VOIT EN ARRIVANT. Il passe en premier,
+    // donc rien ne peut le lui prendre : c'est le seul moyen de garantir par
+    // CONSTRUCTION qu'une ville est vivante quand on s'y pose, et non par
+    // chance de l'ordre de tri. Voir VU_ANNEAU.
+    for (const spec of candidats) {
+      if (gardes.length) break;
+      const c = valider(spec, true);
+      if (c) retenir(c);
+    }
+
+    // PHASE 2 — le reste, dans l'ordre habituel : du plus grand au plus petit.
+    //
+    // ET LE JEU DE CANDIDATS ÉLARGI EST UN NON-RÉSULTAT MESURÉ : sept fois
+    // plus de candidats (quatorze tailles, vingt-cinq décalages, sept
+    // formes) ne rendent que DIX-SEPT anneaux sur les deux cent
+    // soixante-sept perdus. « Le prix se paie avec des rues » (v216) ne
+    // marche pas ici : un rectangle posé sur une trame n'a pas assez de
+    // places distinctes. Écrit, mesuré, retiré — qu'on ne le réécrive pas.
+    for (const spec of candidats) {
+      if (gardes.length >= MAX_ANNEAUX) break;
+      const c = valider(spec, false);
+      if (c) retenir(c);
     }
   }
   return traces;
