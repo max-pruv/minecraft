@@ -20,6 +20,78 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v271 — Les rues sont deux fois plus larges, et on roule à droite
+
+**Pourquoi.** Max, après la v270 : « increase les routes ». La chaussée des
+deux cent soixante-quatre villes du tour du monde faisait **3,4 blocs** pour une
+voiture de 2,26 : une seule file. C'est ce que la v211 avait mesuré, et c'est ce
+qui l'avait fait écarter la conduite à droite — « il n'y a la place que pour UNE
+file ». Une voiture roulait donc au milieu de la rue, et deux ne pouvaient pas
+se croiser.
+
+**Ce que ça change.** Les rues font **5,6 blocs**, deux voitures s'y croisent
+avec un demi-bloc entre elles, et **la circulation roule à droite** au lieu du
+milieu — il reste donc toujours une voie libre pour la voiture de l'enfant. Et
+les immeubles y ont gagné : plus un seul îlot sous cinq blocs de large, quand il
+y en avait 196 sur 528.
+
+**Ce qui le prouve — le chiffre est un résultat, pas un goût.** Élargir touche
+trois choses à la fois, et il fallait les regarder ensemble, parce que l'îlot est
+ce qui reste (`pas de trame − 2 × emprise`) :
+
+| facteur de trame | chaussée | trottoir | îlot min · médian | îlots sous 5 blocs |
+| --- | --- | --- | --- | --- |
+| 3,00 (v270) | 3,4 | 2,30 | 4,0 · 7,0 | **196 sur 528** |
+| 3,00 | 5,2 | 1,40 | 4,0 · 7,0 | 196 |
+| 3,00 | 5,2 | 2,00 | **2,8** · 5,8 | 196 (dont 196 sous 3) |
+| **3,75** | **5,6** | **2,00** | **5,4 · 9,4** | **0** |
+
+À emprise constante, la chaussée mange le trottoir — donc le mobilier, donc
+l'éclairage de nuit de la v248. En élargissant l'emprise sans toucher au pas de
+la trame, l'îlot tombe à 2,8 blocs sur les villes à trame serrée : des cloisons,
+pas des immeubles. Le pas est donc le troisième levier, et il rend la ville
+**meilleure** qu'avant.
+
+**ET LE COMPTE BRUT DE MOBILIER N'ÉTAIT PAS LA BONNE GRANDEUR.** Il tombe d'un
+tiers, et c'est sans intérêt : la ville a moins de rues, plus larges. Ce qu'un
+enfant voit, c'est l'espacement des réverbères **le long** de la rue, et il ne
+bouge pas — 123 → 138 pour mille blocs de rue à Zurich, 130 → 116 à Rome,
+172 → 130 à Tokyo, pour un voisin le plus proche à 3 à 5 blocs. C'est le
+reproche qu'on fait aux témoins — compter un motif n'est pas compter la chose —
+appliqué à une mesure de contenu.
+
+**Ce qui le prouve — la conduite à droite.** Le signe se **mesure**, il ne se
+déduit pas : dans three.js la caméra regarde vers −Z et sa droite est +X, donc
+pour une direction (fx, fz) la droite vaut (−fz, fx) — et relevée sur les quatre
+côtés d'un anneau réel, elle pointe vers le **centre** du rectangle. Rouler à
+droite, c'est donc rétrécir l'anneau d'une demi-chaussée.
+
+| mesuré sur cinq villes | v270 | v271 |
+| --- | --- | --- |
+| écart du convoi à l'axe de la rue | 0,00 — au milieu | **1,40 = une demi-chaussée** |
+| la voiture du convoi est sur la chaussée | 66,3 % | **76,9 %** |
+| **il reste la place d'une voiture dans l'autre voie** | **52,7 %** | **94,5 %** |
+
+**Ce qui le prouve — le banc.** Quatre témoins neufs dans `carteMonde.js`,
+**rouges tous les quatre sur la version publiée**. Et les cinq de la v270 —
+partage, convois, voiture en vue du centre, mobilier traversé, dégagement —
+restent verts : zéro case de mobilier traversée, zéro ville aveugle, pire partage
+19 pour une barre de 20. Le dégagement du mobilier a dû suivre la voie décalée
+(la voiture n'est plus centrée sur l'axe, son flanc est à 2,53 blocs) ; la bande
+garde 1,56 bloc, plus large qu'avant.
+
+**Et c'est du sol, pas du relief.** `hauteurVillesMonde` ne lit ni le pas de la
+trame ni la largeur de chaussée : les deux empreintes de `plafond.js` ne bougent
+pas, et l'invariant du terrain tient sans rien avoir à déclarer — même raison que
+la passe de rues de Londres en v206.
+
+**Le prix, déclaré.** 16 % de rue portant un convoi en moins (195 060 → 163 036
+blocs) et 788 → 628 anneaux, parce que la ville a moins de rues mais plus
+larges. Les six villes bâties à la main gardent leurs largeurs relevées sur de
+vrais plans — leur élargissement est la livraison suivante.
+
+---
+
 ## v270 — Les voitures des villes ne se traversent plus, ni elles ni les trottoirs
 
 **Pourquoi.** Max, deux captures. À Stuttgart, une voiture posée DANS le

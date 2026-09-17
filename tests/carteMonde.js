@@ -2241,7 +2241,86 @@ const VRAIES_KM = [
           nommees[tr.cle] = (nommees[tr.cle] || 0) + vus.size;
         }
       }
+      // 3. LA CHAUSSÉE TIENT DEUX VOITURES, ET LE CONVOI ROULE DANS SA VOIE
+      // (v271). Max : « increase les routes ». Trois grandeurs, et chacune se
+      // lit là où elle se décide — la trame pour la chaussée et l'îlot, le
+      // TRACÉ RÉEL pour la voie. On ne suppose rien de la largeur : elle vient
+      // de `vehicules.js`.
+      let chausseeMin = Infinity, ilotMin = Infinity, ilotsEtroits = 0;
+      for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles) continue;
+        const t = f.trame;
+        chausseeMin = Math.min(chausseeMin, t.w * 2);
+        for (const pas of [t.pu, t.pv]) {
+          const ilot = pas - 2 * t.s;
+          ilotMin = Math.min(ilotMin, ilot);
+          if (ilot < 5) ilotsEtroits++;
+        }
+      }
+
+      // LA VOIE SE MESURE SUR LE TRACÉ, PAS SUR UNE CONSTANTE. L'écart du
+      // convoi à l'AXE de la rue doit valoir une demi-chaussée, et du bon
+      // CÔTÉ — la droite, qui dans three.js vaut (−fz, fx) pour une direction
+      // (fx, fz). Un décalage à gauche passerait toute mesure d'amplitude :
+      // c'est la leçon du roulis (v231) et du conducteur assis de dos (v249).
+      // ON ÉCHANTILLONNE LE LONG DU CÔTÉ, PAS EN SON MILIEU — et l'on lit la
+      // PERPENDICULAIRE à la marche. Deux pièges de mesure payés tout de
+      // suite : au milieu d'un côté d'anneau le point tombe exactement sur
+      // l'axe de la rue PERPENDICULAIRE, si bien que `min(|ra|, |rb|)` rend
+      // zéro et que tout autour est de la chaussée — le témoin lisait 0,00
+      // d'écart et 100 % de place sur le code NEUF comme sur l'ancien. Ce
+      // qu'on veut, c'est l'écart à l'axe de la rue qu'on SUIT.
+      let ecarts = [], aDroite = 0, aGauche = 0, place = 0, serre = 0;
+      for (const cle of ['zurich', 'rome', 'tokyo', 'stuttgart', 'munich']) {
+        const f = vm.VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f || !f.trame) continue;
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        for (const tr of (parVille.get(cle) || [])) {
+          const cxR = tr.pts.reduce((q, p) => q + p.x, 0) / tr.pts.length;
+          const czR = tr.pts.reduce((q, p) => q + p.z, 0) / tr.pts.length;
+          for (let i = 0; i < tr.pts.length; i++) {
+            const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+            const L = Math.hypot(b.x - a.x, b.z - a.z);
+            if (L < 16) continue;
+            const fx = (b.x - a.x) / L, fz = (b.z - a.z) / L;
+            const rx = -fz, rz = fx;
+            // la marche, dans le repère de la trame : le long de A, ou de B ?
+            const dA = fx * co - fz * si, dB = fx * si + fz * co;
+            const leLongDeA = Math.abs(dA) > Math.abs(dB);
+            for (let d = 5; d < L - 5; d += 3) {
+              const mx = a.x + fx * d, mz = a.z + fz * d;
+              const u = mx - f.ancre.x, v = mz - f.ancre.z;
+              const A = u * co - v * si, B = u * si + v * co;
+              const ra = A - Math.round(A / t.pu) * t.pu;
+              const rb = B - Math.round(B / t.pv) * t.pv;
+              ecarts.push(Math.abs(leLongDeA ? rb : ra));   // la PERPENDICULAIRE
+              // la droite de la marche pointe-t-elle vers le centre du
+              // rectangle ? C'est ce sens-là qui met la voiture dans sa voie
+              // (mesuré v271) — un décalage à gauche passerait toute mesure
+              // d'amplitude.
+              const versCentre = Math.hypot(mx + rx - cxR, mz + rz - czR)
+                < Math.hypot(mx - cxR, mz - czR);
+              if (versCentre) aDroite++; else aGauche++;
+              // et il reste la place d'une voiture dans l'autre voie, à gauche
+              let libre = true;
+              for (const k of [-DEMI_LARG_VOITURE, 0, DEMI_LARG_VOITURE]) {
+                const gx = mx - rx * (t.w / 2) + rx * k, gz = mz - rz * (t.w / 2) + rz * k;
+                const sol = solVillesMonde(Math.floor(gx), Math.floor(gz));
+                if (sol === CITY_BLOCK.SIDEWALK || sol === 'lot' || sol === null) libre = false;
+              }
+              if (libre) place++; else serre++;
+            }
+          }
+        }
+      }
+      ecarts.sort((a, b) => a - b);
+      const ecartMed = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : -1;
+      const voieVoulue = vm.VILLES_MONDE.find((v) => v.trame && !v.trame.ruelles).trame.w / 2;
+
       return {
+        chausseeMin, ilotMin, ilotsEtroits,
+        ecartMed, voieVoulue, aDroite, aGauche,
+        place, serre, releves: ecarts.length,
         villes: parVille.size, anneaux: traces.length, sansAnneau,
         fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
         meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
@@ -2283,6 +2362,36 @@ const VRAIES_KM = [
     verifier('et il se dégage exactement la largeur d\'une voiture',
       !rues.err && rues.degagement !== null && rues.degagement === rues.demiLarg,
       `villesmonde ${rues.degagement} · vehicules ${rues.demiLarg}`);
+
+    // LES ROUTES S'ÉLARGISSENT, ET LES TROIS CHIFFRES SE GARDENT ENSEMBLE
+    // (v271). Max : « increase les routes ». Élargir la chaussée seule mange
+    // le trottoir — donc le mobilier, donc l'éclairage de nuit ; élargir
+    // l'emprise seule mange l'îlot — des cloisons au lieu d'immeubles. Les
+    // trois témoins qui suivent tiennent les trois bouts, et le quatrième
+    // mesure ce que l'enfant obtient : de la place dans l'autre voie.
+    verifier('la chaussée d\'une ville engendrée tient deux voitures côte à côte',
+      !rues.err && rues.chausseeMin >= 4 * DEMI_LARG_VOITURE + 0.6,
+      `chaussée la plus étroite ${rues.chausseeMin} blocs · deux voitures en font`
+      + ` ${(4 * DEMI_LARG_VOITURE).toFixed(2)} · marge`
+      + ` ${(rues.chausseeMin - 4 * DEMI_LARG_VOITURE).toFixed(2)}`);
+
+    verifier('et aucun îlot ne tombe sous cinq blocs — un immeuble y tient encore',
+      !rues.err && rues.ilotsEtroits === 0 && rues.ilotMin >= 5,
+      `îlot le plus étroit ${rues.ilotMin.toFixed(1)} blocs · ${rues.ilotsEtroits} sous cinq`);
+
+    // UN DÉCALAGE À GAUCHE PASSERAIT TOUTE MESURE D'AMPLITUDE. Le témoin lit
+    // donc les deux : la distance à l'axe (une demi-chaussée) ET le côté.
+    verifier('le convoi roule dans sa voie de droite, pas au milieu de la rue',
+      !rues.err && rues.releves > 20 && rues.aGauche === 0
+      && Math.abs(rues.ecartMed - rues.voieVoulue) < 0.2,
+      `écart médian à l'axe ${rues.ecartMed.toFixed(2)} pour une demi-chaussée de`
+      + ` ${rues.voieVoulue} · ${rues.aDroite} relevé(s) à droite, ${rues.aGauche} à gauche`
+      + ` · ${rues.releves} relevés`);
+
+    verifier('et il reste la place d\'une voiture dans l\'autre voie',
+      !rues.err && rues.releves > 20 && rues.place / (rues.place + rues.serre) > 0.85,
+      `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
+      + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

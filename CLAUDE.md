@@ -4016,6 +4016,61 @@ recopié, `vehicules.js` le PUBLIE (`DEMI_LARG_VOITURE`, `DEMI_LONG_VOITURE`)
 là où il sert, et un témoin exige que les deux disent la même chose. Deux
 tables qui décrivent la même chose finissent par diverger.
 
+### Les rues s'élargissent, et l'on roule à droite (v271)
+
+Max, après la v270 : « increase les routes ». La chaussée des villes engendrées
+faisait 3,4 blocs pour une voiture de 2,26 — UNE file, et c'est exactement ce
+que la v211 avait mesuré pour écarter la conduite à droite. Cinq règles.
+
+- **ÉLARGIR TOUCHE TROIS CHOSES, ON LES REGARDE ENSEMBLE.** L'îlot est ce qui
+  RESTE (`pas de trame − 2 × emprise`), donc on ne peut pas choisir la chaussée
+  sans choisir le pas :
+
+  | facteur | chaussée | trottoir | îlot min · médian | îlots < 5 blocs |
+  | --- | --- | --- | --- | --- |
+  | 3,00 (v270) | 3,4 | 2,30 | 4,0 · 7,0 | **196 sur 528** |
+  | 3,00 | 5,2 | 1,40 | 4,0 · 7,0 | 196 |
+  | 3,00 | 5,2 | 2,00 | **2,8** · 5,8 | 196 (dont 196 < 3) |
+  | **3,75** | **5,6** | **2,00** | **5,4 · 9,4** | **0** |
+
+  À emprise constante la chaussée mange le TROTTOIR, donc le mobilier, donc
+  l'éclairage de nuit (v248) ; à pas constant elle mange l'ÎLOT, et 2,8 blocs
+  n'est plus un immeuble, c'est une cloison. Le pas est le troisième levier, et
+  il rend la ville meilleure qu'avant — plus un seul îlot sous cinq blocs.
+- **ET LE COMPTE BRUT DE MOBILIER N'EST PAS LA BONNE GRANDEUR.** Il tombe d'un
+  tiers, et c'est sans intérêt : la ville a moins de rues, plus larges. Ce que
+  l'enfant voit, c'est l'espacement des réverbères LE LONG de la rue — 123 →
+  138 pour mille blocs de rue à Zurich, 130 → 116 à Rome, 172 → 130 à Tokyo,
+  voisin le plus proche à 3 à 5 blocs. **Compter un motif n'est pas compter la
+  chose**, et cela vaut pour une mesure de CONTENU autant que pour un témoin :
+  j'avais d'abord conclu « un tiers de mobilier perdu, donc des rues noires »,
+  ce qui était vrai et faux.
+- **LA DROITE SE MESURE.** Dans three.js la caméra regarde vers −Z et sa droite
+  est +X : pour une direction (fx, fz) la droite vaut (−fz, fx). Relevée sur
+  les QUATRE côtés d'un anneau réel, elle pointe vers le CENTRE du rectangle —
+  rouler à droite, c'est donc RÉTRÉCIR l'anneau d'une demi-chaussée, pas
+  l'élargir. L'anneau retenu reste l'AXE de la rue : c'est lui que juge la
+  contrainte de partage (v270), parce que deux convois qui se suivent se
+  suivent sur une RUE, pas sur une trajectoire.
+- **ET LA VOIE DÉCALÉE DÉPLACE LE DÉGAGEMENT DU MOBILIER.** Une voiture n'est
+  plus centrée sur l'axe : son flanc extérieur est à `w/2 + demi-largeur`, soit
+  2,53 blocs pour une chaussée de 5,6. Le mobilier doit être au-delà, débord de
+  la case compris (3,24) ; la bande garde 1,56 bloc, plus large qu'avant. Toute
+  décision qui déplace une trajectoire se cherche dans ce qui borde la rue.
+- **DEUX PIÈGES DE MESURE, PAYÉS TOUT DE SUITE.** Mon témoin échantillonnait le
+  MILIEU de chaque côté d'anneau : c'est exactement un carrefour — le point
+  tombe sur l'axe de la rue PERPENDICULAIRE, `min(|ra|, |rb|)` rend zéro, et
+  tout autour est de la chaussée. Il lisait donc « écart 0,00 » et « 100 % de
+  place » sur le code NEUF comme sur l'ancien. On échantillonne LE LONG du
+  côté, et l'on lit la perpendiculaire à la MARCHE, jamais le plus petit des
+  deux résidus.
+- **Le prix se déclare** : 16 % de rue portant un convoi en moins (195 060 →
+  163 036 blocs), 788 → 628 anneaux. Et c'est du SOL : `hauteurVillesMonde` ne
+  lit ni `pu`, ni `pv`, ni `w`, ni `s`, donc les deux empreintes de
+  `plafond.js` ne bougent pas — même raison que la passe de rues de Londres
+  (v206). Les six villes bâties à la main gardent leurs largeurs relevées sur
+  de vrais plans : leur élargissement est une passe à part.
+
 ### Une voiture cède le passage pour elle-même, et tourne sur son empattement (v244)
 
 Max : « évite que les voitures puissent se chevaucher, et quand la voiture
