@@ -2087,6 +2087,160 @@ const VRAIES_KM = [
         && gardes.every(([, d]) => d.saumon !== null && d.saumon <= d.long * 0.10),
       `saumon/longueur : ${appareils.map(([n, d]) => `${n} ${d.saumon}/${d.long}`).join(' · ')}`);
 
+    // ─── LES VOITURES DES VILLES ENGENDRÉES (v270) ───────────────────────
+    //
+    // Max, deux captures : « une voiture posée DANS le mobilier » (Stuttgart),
+    // « deux voitures de la rue l'une dans l'autre, et des caisses du marché
+    // sur la chaussée » (Zurich).
+    //
+    // ON INTERROGE LES FONCTIONS PURES, JAMAIS LE MONDE CHARGÉ. `getBlock` ne
+    // répond que sur les morceaux déjà engendrés : lire deux cent soixante
+    // villes sans y aller rendrait zéro partout et le témoin passerait au vert
+    // en ne prouvant rien (leçon v202).
+    const rues = await tab.evaluate(async () => {
+      // ON IMPORTE L'ESPACE DE NOMS, PAS DES NOMS. Sur l'ancien code
+      // `PARTAGE_MAX`, `DEGAGEMENT_VOITURE` et `DEMI_LARG_VOITURE` n'existent
+      // pas, et un import nommé qui manque fait échouer le MODULE au lien :
+      // le témoin s'effondrerait au lieu d'échouer proprement, et masquerait
+      // les suivants.
+      const vm = await import('./src/villesmonde.js');
+      const veh = await import('./src/vehicules.js');
+      const { CITY_BLOCK } = await import('./src/blocks.js');
+      const { tracesCirculation, solVillesMonde, mobilierVillesMonde } = vm;
+      const PARTAGE_MAX = vm.PARTAGE_MAX ?? 20;         // la barre de la v211
+      const DEGAGEMENT_VOITURE = vm.DEGAGEMENT_VOITURE ?? null;
+      const DEMI_LONG_VOITURE = veh.DEMI_LONG_VOITURE ?? 2.2;
+      const DEMI_LARG_VOITURE = veh.DEMI_LARG_VOITURE ?? 1.13;
+      const traces = tracesCirculation(() => 35);
+
+      // 1. DEUX ANNEAUX NE SE PARTAGENT PAS UNE RUE. Le partage se calcule sur
+      // les QUATRE COINS de l'anneau — la seule chose que les deux codes
+      // publient. Deux côtés se suivent quand ils sont parallèles et à moins
+      // de deux blocs l'un de l'autre ; ce qu'ils partagent est le
+      // recouvrement de leurs projections. Deux côtés qui se CROISENT ne
+      // partagent rien, et c'est exactement la distinction de la v211.
+      const cotes = (tr) => tr.pts.map((a, i) => [a, tr.pts[(i + 1) % tr.pts.length]]);
+      const partage = (A, B) => {
+        let t = 0;
+        for (const [a1, a2] of cotes(A)) {
+          const L = Math.hypot(a2.x - a1.x, a2.z - a1.z);
+          if (L < 1e-6) continue;
+          const ux = (a2.x - a1.x) / L, uz = (a2.z - a1.z) / L;
+          for (const [b1, b2] of cotes(B)) {
+            const M = Math.hypot(b2.x - b1.x, b2.z - b1.z);
+            if (M < 1e-6) continue;
+            const vx = (b2.x - b1.x) / M, vz = (b2.z - b1.z) / M;
+            if (Math.abs(ux * vz - uz * vx) > 0.02) continue;          // pas parallèles
+            const ecart = Math.abs((b1.x - a1.x) * (-uz) + (b1.z - a1.z) * ux);
+            if (ecart > 2) continue;                                   // pas la même rue
+            const p1 = 0, p2 = L;
+            const q1 = (b1.x - a1.x) * ux + (b1.z - a1.z) * uz;
+            const q2 = (b2.x - a1.x) * ux + (b2.z - a1.z) * uz;
+            t += Math.max(0, Math.min(p2, Math.max(q1, q2)) - Math.max(p1, Math.min(q1, q2)));
+          }
+        }
+        return t;
+      };
+      const parVille = new Map();
+      for (const tr of traces) {
+        if (!parVille.has(tr.cle)) parVille.set(tr.cle, []);
+        parVille.get(tr.cle).push(tr);
+      }
+      let pire = 0, villePire = '', fautives = 0, sansAnneau = 0;
+      for (const [cle, g] of parVille) {
+        if (!g.length) sansAnneau++;
+        let p = 0;
+        for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+          p = Math.max(p, partage(g[i], g[j]));
+        }
+        if (p > PARTAGE_MAX) fautives++;
+        if (p > pire) { pire = p; villePire = cle; }
+      }
+
+      // 2. LA CARROSSERIE NE TRAVERSE PLUS DE MOBILIER. Recouvrement EXACT du
+      // rectangle orienté contre la case du meuble (séparation d'axes) — pas
+      // un point échantillonné : un chevauchement se mesure en rectangles.
+      const meuble = (X, Z) => {
+        if (solVillesMonde(X, Z) !== CITY_BLOCK.SIDEWALK) return 0;
+        let id = 0;
+        mobilierVillesMonde(X, Z, (dy, q) => { if (dy === 1) id = q; });
+        return id;
+      };
+      const touche = (cx, cz, ux, uz, X, Z) => {
+        const vx = -uz, vz = ux;
+        const coins = [[X, Z], [X + 1, Z], [X + 1, Z + 1], [X, Z + 1]];
+        for (const [ax, az, demi] of [[ux, uz, DEMI_LONG_VOITURE], [vx, vz, DEMI_LARG_VOITURE]]) {
+          let mn = Infinity, mx = -Infinity;
+          for (const [px, pz] of coins) {
+            const q = (px - cx) * ax + (pz - cz) * az;
+            mn = Math.min(mn, q); mx = Math.max(mx, q);
+          }
+          if (mn > demi || mx < -demi) return false;
+        }
+        const som = [[DEMI_LONG_VOITURE, DEMI_LARG_VOITURE], [DEMI_LONG_VOITURE, -DEMI_LARG_VOITURE],
+          [-DEMI_LONG_VOITURE, -DEMI_LARG_VOITURE], [-DEMI_LONG_VOITURE, DEMI_LARG_VOITURE]]
+          .map(([l, w]) => [cx + ux * l + vx * w, cz + uz * l + vz * w]);
+        for (const [ax, az, lo, hi] of [[1, 0, X, X + 1], [0, 1, Z, Z + 1]]) {
+          let mn = Infinity, mx = -Infinity;
+          for (const [px, pz] of som) {
+            const q = px * ax + pz * az;
+            mn = Math.min(mn, q); mx = Math.max(mx, q);
+          }
+          if (mn > hi || mx < lo) return false;
+        }
+        return true;
+      };
+      let meubles = 0;
+      const nommees = {};
+      for (const tr of traces) {
+        const vus = new Set();
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const L = Math.hypot(b.x - a.x, b.z - a.z);
+          const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+          for (let d = 0; d < L; d += 0.5) {
+            const cx = a.x + ux * d, cz = a.z + uz * d;
+            for (let X = Math.floor(cx - 2.6); X <= Math.floor(cx + 2.6); X++) {
+              for (let Z = Math.floor(cz - 2.6); Z <= Math.floor(cz + 2.6); Z++) {
+                if (touche(cx, cz, ux, uz, X, Z) && meuble(X, Z)) vus.add(`${X},${Z}`);
+              }
+            }
+          }
+        }
+        meubles += vus.size;
+        if (tr.cle === 'zurich' || tr.cle === 'stuttgart') {
+          nommees[tr.cle] = (nommees[tr.cle] || 0) + vus.size;
+        }
+      }
+      return {
+        villes: parVille.size, anneaux: traces.length, sansAnneau,
+        fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
+        meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
+      };
+    });
+
+    verifier('deux convois d\'une ville engendrée ne se suivent plus sur la même rue',
+      !rues.err && rues.fautives === 0,
+      `barre ${rues.barre} blocs · ${rues.fautives} ville(s) au-dessus · pire ${rues.pire} (${rues.villePire}) · ${rues.anneaux} anneaux sur ${rues.villes} villes`);
+
+    verifier('et aucune ville ne perd tous ses convois au passage',
+      !rues.err && rues.sansAnneau === 0 && rues.anneaux > 600,
+      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`);
+
+    verifier('la carrosserie ne traverse plus le mobilier des rues',
+      !rues.err && rues.meubles === 0,
+      `${rues.meubles} case(s) de mobilier traversée(s) · Zurich ${rues.nommees.zurich ?? '—'} · Stuttgart ${rues.nommees.stuttgart ?? '—'}`);
+
+    // ET LE DÉGAGEMENT EST BIEN LA DEMI-LARGEUR D'UNE VOITURE. `villesmonde.js`
+    // ne peut pas importer `vehicules.js` — il est lu par le mailleur du
+    // worker, qui meurt au premier `import 'three'` de son graphe (v251) —
+    // donc le chiffre y est recopié. Deux tables qui décrivent la même chose
+    // finissent par diverger : c'est un témoin qui les garde d'accord, jamais
+    // un commentaire.
+    verifier('et il se dégage exactement la largeur d\'une voiture',
+      !rues.err && rues.degagement !== null && rues.degagement === rues.demiLarg,
+      `villesmonde ${rues.degagement} · vehicules ${rues.demiLarg}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

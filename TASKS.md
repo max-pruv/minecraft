@@ -204,6 +204,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
   lieu des quatre-vingts écrits en dur depuis la v229.
 
+- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
+  contrainte de la v211 est désormais appliquée aux villes engendrées : 265
+  villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
+  à 18 (São Paulo). Dix-huit, c'est SOUS la barre d'un carrefour, donc ce
+  n'est pas un défaut — mais c'est la limite, et deux voitures peuvent s'y
+  croiser de près. Le remède, s'il en faut un, n'est pas de serrer la barre
+  (mesuré : à 12, le nombre d'anneaux ne bouge pas, les candidats partagent
+  beaucoup ou presque rien) mais de donner à ces villes des tracés qui ne
+  soient pas des rectangles — ce qui est le même chantier que « de vraies
+  rues partout, à deux voies ».
+
+- [ ] **LE JEU DE CANDIDATS ÉLARGI POUR LES ANNEAUX : NON-RÉSULTAT MESURÉ
+  (v270).** Sept fois plus de candidats (quatorze tailles au lieu de sept,
+  vingt-cinq décalages au lieu de neuf, sept formes au lieu de trois) ne
+  rendent que 17 anneaux sur les 298 que la contrainte de partage retire.
+  « Le prix se paie avec des rues » (v216) ne marche pas sur une trame
+  rectangulaire : il n'y a pas assez de places distinctes. Écrit, mesuré,
+  retiré — qu'on ne le réécrive pas.
+
 - [ ] **`manhattan.js` : QUATRE ROUGES, TOUS MESURÉS IDENTIQUES SUR
   `origin/main` (v269).** Le portail de la v269 a rendu quatre échecs :
   « le trou enlève aussi la géométrie visible de la façade » (9 203 →

@@ -20,6 +20,76 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v270 — Les voitures des villes ne se traversent plus, ni elles ni les trottoirs
+
+**Pourquoi.** Max, deux captures. À Stuttgart, une voiture posée DANS le
+mobilier de la rue. À Zurich, « deux voitures de la rue l'une dans l'autre,
+et des caisses du marché sur la chaussée ». La « caisse », c'est la
+jardinière — et le banc.
+
+**Ce que ça change.** Dans les deux cent soixante-quatre villes du tour du
+monde, deux files de voitures ne roulent plus l'une dans l'autre, et aucune
+carrosserie ne traverse plus un réverbère, un banc, une jardinière ou un feu.
+Les rues ont même PLUS de mobilier qu'avant. Et les trois médinas — Venise,
+Jérusalem, Marrakech — n'ont plus de voitures du tout : leurs ruelles font
+1,8 bloc et une voiture en fait 2,26, elle n'y tenait pas.
+
+**Ce qui le prouve — deux files dans la même rue.** La règle existait depuis
+la v211 : « deux circuits ne peuvent avoir plus d'une vingtaine de blocs de
+chaussée en commun — c'est la taille d'un carrefour, et cela distingue se
+CROISER de se SUIVRE. » Elle avait été écrite pour les six villes bâties à
+la main et **n'a jamais atteint les villes engendrées**. Mesuré sur les
+fonctions pures, avant d'accuser quoi que ce soit :
+
+| | avant | après |
+| --- | --- | --- |
+| villes au-dessus de la barre | **265 sur 267** | 0 sur 264 |
+| pire partage | 576 blocs (Shanghai) | 18 blocs |
+| Zurich | 106 blocs | 0 |
+
+Le prix se déclare : 1 062 anneaux de circulation deviennent 764, et la
+longueur de rue portant un convoi tombe d'un quart. Mais ces blocs-là
+portaient DEUX convois superposés — ce qu'on retire, ce sont des doublons qui
+se traversaient, pas de la variété. Aucune ville ne perd tous ses convois, et
+un témoin le garde.
+
+**Ce qui le prouve — le mobilier sous la carrosserie.** Mesuré au recouvrement
+exact du rectangle de la voiture contre la case du meuble : **32 410 cases,
+267 villes sur 267**. La cause est géométrique et ne se devinait pas. La
+chaussée fait 3,4 blocs et la voiture 2,26 — 0,57 de marge par côté — mais le
+mobilier était posé sur la PREMIÈRE colonne de trottoir, et comme la trame
+d'une ville est tournée par rapport au monde (24° à Zurich), une case entière
+mord jusqu'à 1,13 bloc dans la chaussée, c'est-à-dire jusqu'à l'axe de la rue.
+
+La bande du mobilier se DÉCALE désormais, elle ne se rogne pas : un simple
+plancher dégageait tout mais coûtait 47 % des réverbères, donc des rues
+noires. Résultat mesuré : **0 case traversée**, et plus de mobilier qu'avant
+— Zurich 490 → 541, Rome 917 → 934, Marrakech 669 → 783.
+
+**Et deux régressions de ma propre correction, trouvées par la mesure.** Mon
+premier jet élargissait la fenêtre du feu tricolore à toute la bande : Zurich
+passait de 110 feux à 277, Rome de 235 à 563 — un carrefour hérissé. Et il
+décalait l'échantillon d'un demi-bloc À CHAQUE TOUR de la boucle sur les
+villes voisines, donc d'un bloc entier pour la seconde. Aucune capture ne les
+aurait montrés ; c'est le comptage avant/après, ville par ville, qui les a
+dits.
+
+**Et le dégagement se CALCULE, il ne se mesure pas sur une ville.** Mon
+premier chiffre — 0,3 bloc de marge — était réglé sur Zurich : juste là, faux
+ailleurs, parce que ce qui déborde dépend de l'ANGLE de la trame. Une case
+unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de son centre. Écrite
+ainsi, la règle a réglé d'un coup les trois médinas que le chiffre rond
+laissait en faute.
+
+**Ce qui le prouve — le banc.** Quatre témoins neufs dans `carteMonde.js`,
+rouges sur la version publiée (265 villes, 32 410 cases, dégagement absent),
+verts ici. Ils interrogent les fonctions PURES et jamais le monde chargé :
+`getBlock` ne répond que sur les morceaux déjà engendrés, et lire deux cent
+soixante villes sans y aller rendrait zéro partout — un vert qui ne prouve
+rien.
+
+---
+
 ## v269 — Le jeu remarche sur l'iPad, on recule, et les véhicules font du bruit
 
 **Pourquoi.** Max, sur la version publiée : « le lag est absolument énorme,
