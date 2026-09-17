@@ -1822,12 +1822,53 @@ export function batirColonneVillesMonde(x, z, poser) {
 // passant, le lampadaire au bord du caniveau, le banc et le bac à fleurs.
 // Appelé par world.js pour chaque colonne de trottoir des villes machine —
 // tout est déterministe : le même trottoir, les mêmes lampadaires, toujours.
+// LE CANIVEAU N'EST PAS UN TROTTOIR (v270). Max, deux captures : une voiture
+// posée DANS une caisse du marché à Stuttgart, des caisses sur la chaussée à
+// Zurich. La « caisse », c'est la jardinière — et le banc.
+//
+// Mesuré au recouvrement exact du rectangle de la voiture contre la case du
+// meuble, sur les fonctions pures : **267 villes sur 267**, 32 410 cases de
+// mobilier traversées. La cause est géométrique et elle ne se devine pas : la
+// chaussée fait 3,4 blocs et la voiture 2,26, donc 0,57 bloc de marge par
+// côté — mais le mobilier est posé sur la PREMIÈRE colonne de trottoir, et
+// comme la trame est tournée par rapport au monde (24° à Zurich), une case
+// ENTIÈRE mord jusqu'à 1,13 bloc dans la chaussée, c'est-à-dire jusqu'à l'axe
+// de la rue. Quarante et un pour cent des cases de mobilier étaient dans le
+// couloir de la voiture.
+//
+// DEUX CHOSES CHANGENT, ET LA SECONDE EST CELLE QUI COMPTE.
+//
+// D'abord on mesure la distance à la rue au CENTRE de la case, pas à son coin
+// entier : une case s'étend d'un bloc vers +x et +z, et la juger par son coin
+// revient à ignorer la moitié de ce qu'elle occupe.
+//
+// Ensuite la bande se DÉCALE, elle ne se rogne pas. Mesuré sur Zurich, 1 780
+// cases de mobilier possibles : un simple plancher à 1,90 dégage tout mais
+// coûte 47 % du mobilier — donc de l'éclairage de nuit (v248). La bande
+// [w + 0,3 ; w + 1,5) en garde CENT POUR CENT et ne mord plus nulle part. Un
+// réverbère se plante sur le trottoir, pas dans le caniveau ; ce qu'on lui
+// retire d'un côté, on le lui rend de l'autre.
+//
+// LE DÉGAGEMENT EST LA DEMI-LARGEUR D'UNE VOITURE, et ce fichier ne peut pas
+// l'importer : il est lu par le mailleur du worker, qui meurt au premier
+// `import 'three'` de son graphe (v251). Le chiffre est donc recopié de
+// `vehicules.js` (`DEMI_LARG_VOITURE`), et c'est un TÉMOIN qui garde les deux
+// d'accord — jamais un commentaire.
+export const DEGAGEMENT_VOITURE = 1.13;
+
 export function mobilierVillesMonde(x, z, poser) {
   for (const f of villesPres(x, z)) {
-    const u = x - f.ancre.x, v = z - f.ancre.z;
-    if (Math.hypot(u, v) > f.rayon) continue;
+    if (Math.hypot(x - f.ancre.x, z - f.ancre.z) > f.rayon) continue;
     if (!f.trame) return;
     const t = f.trame;
+    // LE CENTRE DE LA CASE, PAS SON COIN : c'est la case entière qui occupe le
+    // sol, et c'est elle que la carrosserie rencontre. On ne le fait QUE là où
+    // une voiture roule — dans une médina le trottoir ne fait qu'un bloc et un
+    // dixième, et décaler d'un demi-bloc en écartait un tiers pour rien.
+    // (Et jamais sur `x` lui-même : la boucle passe sur plusieurs villes, un
+    // `x += 0.5` par tour décalerait la seconde d'un bloc entier.)
+    const dec = t.ruelles ? 0 : 0.5;
+    const u = x + dec - f.ancre.x, v = z + dec - f.ancre.z;
     if (t.sud && v / f.K > t.sud) return;                         // `sud` est en unités de fiche
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     const A = u * co - v * si, B = u * si + v * co;
@@ -1854,11 +1895,37 @@ export function mobilierVillesMonde(x, z, poser) {
     // la rue. `long` est la coordonnée LE LONG de la rue la plus proche.
     const long = Math.abs(ra) < Math.abs(rb) ? B : A;
     const cran = ((Math.round(long) % 9) + 9) % 9;
-    if (dRue - t.w < 0.9) {
-      // LE FEU TRICOLORE, un par coin de carrefour : la colonne du caniveau
+    // La bande du mobilier : elle commence au-delà du couloir de la voiture,
+    // et elle fait un bloc et demi de large — décalée, pas rognée.
+    //
+    // LE DÉGAGEMENT SE CALCULE, IL NE SE MESURE PAS SUR UNE VILLE. Mon premier
+    // jet posait 0,3 bloc de marge, réglé sur Zurich : juste là, et faux
+    // ailleurs, parce que ce qui déborde dépend de l'ANGLE de la trame. Une
+    // case unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de part et
+    // d'autre de son centre le long d'un axe de la trame — 0,50 bloc pour une
+    // trame alignée, 0,71 à quarante-cinq degrés. La case ne doit pas mordre
+    // le couloir : son centre est donc au-delà de `DEGAGEMENT_VOITURE + ce
+    // débord`, et jamais en deçà du caniveau.
+    //
+    // ET LÀ OÙ RIEN NE ROULE, RIEN NE SE DÉGAGE : une médina n'a pas de
+    // convoi (voir `tracesCirculation`), donc son mobilier reste au bord de
+    // la ruelle, comme dans la vraie. Sans cette clause Marrakech perdait
+    // quatre-vingt-quatre pour cent de ses réverbères — des ruelles noires
+    // pour dégager une chaussée que personne n'emprunte.
+    const debord = (Math.abs(co) + Math.abs(si)) / 2;
+    const degage = t.ruelles ? t.w : Math.max(t.w, DEGAGEMENT_VOITURE + debord);
+    // Dans une médina, la bande est TOUT le trottoir : il ne fait qu'un bloc
+    // et un dixième, rien n'y roule, et le mesurer au centre de la case en
+    // écartait un tiers pour rien.
+    if (dRue >= degage && dRue < (t.ruelles ? t.s : degage + 1.5)) {
+      // LE FEU TRICOLORE, un par coin de carrefour : la colonne du trottoir
       // qui touche le croisement en diagonale — une seule par coin.
-      if (!t.ruelles && Math.abs(ra) > t.w + 0.4 && Math.abs(ra) < t.w + 1.3
-        && Math.abs(rb) > t.w + 0.4 && Math.abs(rb) < t.w + 1.3) {
+      // UN FEU PAR COIN, ET PAS UN DE PLUS. Mon premier jet donnait à sa
+      // fenêtre la largeur de toute la bande : Zurich passait de 110 feux à
+      // 277, Rome de 235 à 563 — un carrefour hérissé. La fenêtre garde donc
+      // les 0,9 bloc qu'elle avait, décalée avec le reste.
+      if (!t.ruelles && Math.abs(ra) > degage && Math.abs(ra) < degage + 0.9
+        && Math.abs(rb) > degage && Math.abs(rb) < degage + 0.9) {
         poser(1, RUE.FEUX);
         return;
       }
@@ -1882,10 +1949,94 @@ export function mobilierVillesMonde(x, z, poser) {
 // dans les virages (vehicules.js). L'anneau évite l'eau : on le mesure sur
 // la géographie de la fiche, et s'il trempe, on essaie plus petit — Venise,
 // elle, n'aura jamais de voitures, et c'est très bien comme ça.
+// DEUX CONVOIS NE SE SUIVENT PAS SUR LA MÊME CHAUSSÉE — ET LA RÈGLE N'AVAIT
+// JAMAIS ATTEINT LES VILLES ENGENDRÉES (v270). Max, capture de Zurich :
+// « deux voitures de la rue l'une dans l'autre ». La v211 avait posé la règle
+// pour les villes bâties à la main — « deux circuits ne peuvent avoir plus
+// d'une vingtaine de blocs de chaussée en commun : c'est la taille d'un
+// carrefour, et cela distingue se CROISER de se SUIVRE » — et les deux cent
+// soixante-sept villes à trame ne l'ont jamais vue passer. Mesuré sur les
+// fonctions pures : **265 villes sur 267** au-dessus de la barre, Shanghai à
+// 576 blocs partagés, Zurich à 106.
+//
+// LE PARTAGE SE CALCULE, IL NE S'ÉCHANTILLONNE PAS. Deux anneaux d'une même
+// ville sont des RECTANGLES du repère de la trame : ils ne peuvent partager
+// une rue que par des côtés COLINÉAIRES. La somme des recouvrements de ces
+// côtés est exacte et immédiate, là où un balayage par points coûterait des
+// secondes au démarrage. Vérifié contre le balayage sur cent cinquante
+// paires : d'accord partout — et il vaut MIEUX que lui sur un point, un
+// croisement de coins (deux anneaux qui se touchent sur vingt blocs sans
+// partager une rue) que le balayage comptait et que la formule ignore.
+function partageDeRue(a, b) {
+  let total = 0;
+  for (const A1 of [a.cU + a.Ru, a.cU - a.Ru]) for (const A2 of [b.cU + b.Ru, b.cU - b.Ru]) {
+    if (Math.abs(A1 - A2) > 2) continue;                       // pas la même rue
+    total += Math.max(0, Math.min(a.cV + a.Rv, b.cV + b.Rv) - Math.max(a.cV - a.Rv, b.cV - b.Rv));
+  }
+  for (const B1 of [a.cV + a.Rv, a.cV - a.Rv]) for (const B2 of [b.cV + b.Rv, b.cV - b.Rv]) {
+    if (Math.abs(B1 - B2) > 2) continue;
+    total += Math.max(0, Math.min(a.cU + a.Ru, b.cU + b.Ru) - Math.max(a.cU - a.Ru, b.cU - b.Ru));
+  }
+  return total;
+}
+
+// La barre de la v211, telle quelle : une vingtaine de blocs, la taille d'un
+// carrefour. Publiée pour que le témoin mesure CE QUE LE JEU APPLIQUE, jamais
+// un chiffre recopié.
+export const PARTAGE_MAX = 20;
+
+// CE QUE L'ENFANT VOIT EN ARRIVANT, ET NON UN COMPTE D'ANNEAUX (v270).
+// Une voiture ne se DESSINE qu'à quarante-cinq blocs (`vu: 45` du convoi,
+// vehicules.js) : un anneau plus loin que cela existe sans se voir. Or la
+// contrainte de partage ci-dessus, qui trie par taille, sacrifiait justement
+// les anneaux DÉCALÉS — ceux dont un côté passe près du centre. Mesuré au
+// premier portail : Rome gardait ses quatre anneaux, mais le plus proche
+// passait de DOUZE blocs du centre à quarante-cinq — PILE la portée — et
+// l'enfant posé sur la place ne voyait plus une seule voiture. C'est le
+// témoin « la circulation naît à l'approche » de `monte.js` qui l'a dit, et
+// lui seul : « aucune ville ne perd tous ses convois » était vert, parce
+// qu'il comptait des ANNEAUX et non ce qui se dessine.
+//
+// D'où la règle : LE PREMIER ANNEAU RETENU EST CELUI QUE L'ENFANT VOIT. Le
+// reste de la sélection ne change pas.
+//
+// Le chiffre est recopié de `vehicules.js`, qui le PUBLIE : villesmonde.js
+// est lu par le mailleur du worker et mourrait au premier `import 'three'`
+// de son graphe (v251). Un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
+// PLUS PRÈS QUE LA PORTÉE, PARCE QU'UNE VOITURE N'EST PAS UN ANNEAU. Les
+// voitures sont espacées le long du tracé (jusqu'à vingt-cinq blocs entre
+// deux) : un anneau qui frôle le centre à quarante-quatre blocs peut n'avoir
+// aucune voiture à portée. À trente blocs, même une voiture décalée de douze
+// blocs le long du tracé reste dans les quarante-cinq (√(30² + 12²) = 32).
+export const VU_ANNEAU = 30;
+
+// La distance de l'ANCRE au périmètre d'un anneau, dans le repère de la
+// trame — une rotation ne change pas une distance à l'origine, donc c'est
+// aussi la distance dans le monde. Exacte et en temps constant : on ne
+// balaie pas un périmètre pour répondre à cela.
+function distanceAuCentre(c) {
+  const px = Math.abs(c.cU), py = Math.abs(c.cV);
+  if (px <= c.Ru && py <= c.Rv) return Math.min(c.Ru - px, c.Rv - py);
+  return Math.hypot(Math.max(px - c.Ru, 0), Math.max(py - c.Rv, 0));
+}
+
 export function tracesCirculation(solDe) {
   const traces = [];
   for (const f of VILLES_MONDE) {
     if (!f.trame) continue;
+    // ON NE FAIT PAS ROULER UNE BERLINE DANS UNE RUELLE DE MÉDINA (v270).
+    // Venise, Jérusalem et Marrakech ont des ruelles de 1,8 bloc, et une
+    // voiture en fait 2,26 : elle n'y tient pas — elle roulait donc sur les
+    // deux trottoirs à la fois, et dans tout ce qu'ils portent. Ce fichier
+    // écrivait déjà « Venise n'aura jamais de voitures, et c'est très bien
+    // comme ça » à propos de l'eau ; c'est vrai de ses ruelles aussi, et de
+    // la médina de Marrakech comme de la vieille ville de Jérusalem. Une
+    // ville sans voitures est une DÉCISION quand la vraie ville n'en a pas ;
+    // et elle rend à ces trois-là tout leur mobilier de rue, qu'aucun
+    // dégagement n'a plus à repousser.
+    if (f.trame.ruelles) continue;
     const t = f.trame;
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     // UNE VILLE COUPÉE PAR UN FLEUVE N'AVAIT AUCUNE VOITURE. On essayait
@@ -1919,16 +2070,36 @@ export function tracesCirculation(solDe) {
       }
     }
     const MAX_ANNEAUX = 4;
-    for (const [part, decU, decV, ku, kv] of candidats) {
-      if (traces.filter((t2) => t2.cle === f.cle).length >= MAX_ANNEAUX) break;
+    // Les anneaux DE CETTE VILLE, tenus à part : `traces` porte les huit cents
+    // du monde entier, et les refiltrer à chaque candidat coûtait six cents
+    // millisecondes au démarrage pour une réponse qu'on a sous la main.
+    const gardes = [];
+    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+    // Un candidat validé, ou `null` — sans rien retenir. `exigerProche` est
+    // la phase 1 : elle réclame en plus que l'anneau passe à portée de vue du
+    // centre. La condition est testée AVANT l'eau, parce qu'elle coûte mille
+    // fois moins — la règle que cette même livraison a payée plus haut.
+    const valider = ([part, decU, decV, ku, kv], exigerProche) => {
       const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
       const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
       const Ru = Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
       const Rv = Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
+      const candidat = { cU, cV, Ru, Rv };
+      if (exigerProche && distanceAuCentre(candidat) > VU_ANNEAU) return null;
+      // LE PARTAGE SE JUGE AVANT L'EAU, parce qu'il coûte mille fois moins.
+      // Mis APRÈS, il faisait tourner le test d'eau — quarante points et un
+      // appel de géographie chacun — sur tous les candidats qu'il allait
+      // rejeter : `tracesCirculation` passait de 82 à 380 ms au démarrage,
+      // et le jeu attend ce calcul derrière son bouton « Jouer » (v258). Une
+      // condition bon marché passe devant une condition chère, toujours.
+      //
+      // Un anneau DÉJÀ retenu se rejette ici tout seul : son partage avec
+      // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
+      // toute la liste sans se dédoubler.
+      if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
       // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
       // de la trame, puis on tourne vers le monde.
-      let sec = true;
-      for (let k = 0; k < 40 && sec; k++) {
+      for (let k = 0; k < 40; k++) {
         const c2 = k / 40;
         let A, B;
         if (c2 < 0.25) { A = Ru; B = Rv * (c2 * 8 - 1); }
@@ -1936,20 +2107,46 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
         const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
-        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) sec = false;
-        if (t.sud && v / f.K > t.sud) sec = false;
+        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) return null;
+        if (t.sud && v / f.K > t.sud) return null;
       }
-      if (!sec) continue;
-      const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
-      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
-        x: f.ancre.x + (A + cU) * co + (B + cV) * si,
+      return candidat;
+    };
+    const retenir = (c) => {
+      const pts = [[c.Ru, c.Rv], [-c.Ru, c.Rv], [-c.Ru, -c.Rv], [c.Ru, -c.Rv]].map(([A, B]) => ({
+        x: f.ancre.x + (A + c.cU) * co + (B + c.cV) * si,
         y,
-        z: f.ancre.z + (-(A + cU) * si + (B + cV) * co),
+        z: f.ancre.z + (-(A + c.cU) * si + (B + c.cV) * co),
       }));
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
-      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, rang: traces.filter((t2) => t2.cle === f.cle).length });
+      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, forme: c, rang: gardes.length });
+      gardes.push(c);
+    };
+
+    // PHASE 1 — L'ANNEAU QUE L'ENFANT VOIT EN ARRIVANT. Il passe en premier,
+    // donc rien ne peut le lui prendre : c'est le seul moyen de garantir par
+    // CONSTRUCTION qu'une ville est vivante quand on s'y pose, et non par
+    // chance de l'ordre de tri. Voir VU_ANNEAU.
+    for (const spec of candidats) {
+      if (gardes.length) break;
+      const c = valider(spec, true);
+      if (c) retenir(c);
+    }
+
+    // PHASE 2 — le reste, dans l'ordre habituel : du plus grand au plus petit.
+    //
+    // ET LE JEU DE CANDIDATS ÉLARGI EST UN NON-RÉSULTAT MESURÉ : sept fois
+    // plus de candidats (quatorze tailles, vingt-cinq décalages, sept
+    // formes) ne rendent que DIX-SEPT anneaux sur les deux cent
+    // soixante-sept perdus. « Le prix se paie avec des rues » (v216) ne
+    // marche pas ici : un rectangle posé sur une trame n'a pas assez de
+    // places distinctes. Écrit, mesuré, retiré — qu'on ne le réécrive pas.
+    for (const spec of candidats) {
+      if (gardes.length >= MAX_ANNEAUX) break;
+      const c = valider(spec, false);
+      if (c) retenir(c);
     }
   }
   return traces;

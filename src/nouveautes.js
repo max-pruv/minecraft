@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 270,
+    titre: "Les voitures restent sur la route",
+    puces: [
+      "🚗 Les voitures ne se rentrent plus dedans",
+      "🪴 Plus de voiture dans les bancs",
+      "🏮 Encore plus de réverbères en ville",
+      "🕌 Les médinas redeviennent piétonnes",
+    ],
+  },
+  {
     v: 269,
     titre: "Le jeu redevient fluide",
     puces: [

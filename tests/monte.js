@@ -4228,16 +4228,33 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const vitesse = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
         let arret = 0;
         while (arret < 8 && vitesse() > 0) { await tenir(0.2); arret += 0.2; }
+        // ON RECULE JUSQU'À AVOIR RECULÉ, PAS PENDANT TROIS SECONDES (v270).
+        // `tenir` compte du temps RÉEL ; le jeu, lui, borne `dt` à un
+        // vingtième, si bien qu'à trois images par seconde trois secondes de
+        // banc ne font qu'un demi-quart de seconde de jeu. Mesuré au portail
+        // de la v270 : l'avion recule de 0,26 bloc pour une barre à 0,5, sur
+        // la MÊME physique qui en rendait plus du double quelques heures
+        // plus tôt. Ce n'était pas la marche arrière, c'était l'horloge.
+        // Le sens, lui, ne dépend d'aucune cadence : sur la version publiée
+        // l'appareil AVANCE de 12,5 blocs. On laisse donc au recul le temps
+        // d'arriver — borné, et le temps qu'il a pris part dans le verdict.
         const xAvant = g.player.pos.x;
-        await tenir(3);
-        const recule = xAvant - g.player.pos.x;   // le nez est vers +x : reculer, c'est x qui baisse
+        let recule = 0, attente = 0;
+        while (attente < 12 && recule <= 1.2) {
+          await tenir(0.3);
+          attente += 0.3;
+          recule = xAvant - g.player.pos.x;
+          if (recule < -2) break;             // il AVANCE : inutile d'attendre
+        }
+        recule = xAvant - g.player.pos.x;     // le nez est vers +x : reculer, c'est x qui baisse
         const gazApres = g.player.gaz;
         const arretEn = +arret.toFixed(1);
         g.player.touchMove = { f: 0, s: 0 };
         await tenir(0.4);
         document.getElementById('ride-btn').click();
         await tenir(0.8);
-        return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant() };
+        return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant(),
+          attente: +attente.toFixed(1) };
       };
       out.voiture = await essai('voiture');
       out.avion = await essai('avionligne');

@@ -3878,6 +3878,144 @@ viendra.
   des huit circuits n'en avait besoin, et la livrer aurait créé une avenue sans
   voitures le jour même — la dette qu'on vient de rembourser.
 
+### Les villes engendrées : une règle écrite ne vaut que là où elle est APPLIQUÉE (v270)
+
+Max, deux captures : une voiture posée DANS le mobilier à Stuttgart, « deux
+voitures de la rue l'une dans l'autre, et des caisses du marché sur la
+chaussée » à Zurich. La « caisse », c'est la jardinière — et le banc. Quatre
+règles, et la première est la leçon de fond.
+
+- **UNE RÈGLE ÉCRITE POUR SIX VILLES NE COUVRE PAS LES DEUX CENT
+  SOIXANTE-SEPT AUTRES.** La v211 avait posé la contrainte de partage —
+  « deux circuits ne peuvent avoir plus d'une vingtaine de blocs de chaussée
+  en commun : c'est la taille d'un carrefour, et cela distingue se CROISER de
+  se SUIVRE » — et l'avait appliquée aux villes bâties à la main. Les villes
+  ENGENDRÉES, qui ont leur propre fabrique d'anneaux dans `villesmonde.js`,
+  ne l'ont jamais vue passer : **265 villes sur 267** au-dessus de la barre,
+  Shanghai à 576 blocs partagés. C'est le piège du verre dans les murs, une
+  cinquième fois — la PORTÉE du remède, jamais la règle. Quand une règle de
+  circulation, de confort ou de sol est écrite pour une famille de villes, on
+  cherche le jour même l'autre fabrique.
+- **LE PARTAGE SE CALCULE, IL NE S'ÉCHANTILLONNE PAS.** Deux anneaux d'une
+  même ville sont des RECTANGLES du repère de la trame : ils ne peuvent se
+  suivre que par des côtés COLINÉAIRES, et la somme de leurs recouvrements
+  est exacte et immédiate. Un balayage par points coûtait des secondes au
+  démarrage et comptait en plus les croisements de coins — vingt blocs de
+  voisinage sans une rue partagée — que la formule ignore à juste titre.
+  Vérifié contre le balayage sur cent cinquante paires.
+- **ET UNE CONDITION BON MARCHÉ PASSE DEVANT UNE CONDITION CHÈRE.** Mise
+  APRÈS le test d'eau, la contrainte faisait tourner quarante points de
+  géographie sur chaque candidat qu'elle allait rejeter : `tracesCirculation`
+  passait de 82 à 380 ms au démarrage — et le jeu attend ce calcul derrière
+  son bouton « Jouer » (v258). Placée AVANT : 86 ms, résultat identique. La
+  réorganisation paie la contrainte entière.
+- **LE PRIX SE DÉCLARE, ET LE JEU DE CANDIDATS ÉLARGI EST UN NON-RÉSULTAT
+  MESURÉ.** 1 062 anneaux deviennent 764, un quart de rue en moins. « Le prix
+  se paie avec des rues » (v216) ne marche PAS ici : sept fois plus de
+  candidats (quatorze tailles, vingt-cinq décalages, sept formes) ne rendent
+  que dix-sept anneaux sur les deux cent soixante-sept perdus — un rectangle
+  posé sur une trame n'a pas assez de places distinctes. Écrit, mesuré,
+  retiré. Ce qu'on retire, ce sont des convois SUPERPOSÉS qui se
+  traversaient, pas de la variété, et un témoin garde qu'aucune ville ne
+  perd tous les siens.
+
+**ET LE CANIVEAU N'EST PAS UN TROTTOIR.** Le second signalement a une cause
+géométrique qui ne se devine sur aucune capture. La chaussée fait 3,4 blocs
+et la voiture 2,26 — 0,57 de marge par côté — mais le mobilier était posé sur
+la PREMIÈRE colonne de trottoir, et la trame d'une ville est TOURNÉE par
+rapport au monde (24° à Zurich) : une case entière mord alors jusqu'à 1,13
+bloc dans la chaussée, c'est-à-dire jusqu'à l'axe de la rue. Mesuré au
+recouvrement exact du rectangle contre la case : **32 410 cases, 267 villes
+sur 267**. Quatre règles.
+
+- **ON MESURE AU CENTRE DE LA CASE, PAS À SON COIN.** `mobilierVillesMonde`
+  reçoit un coin entier ; la case s'étend d'un bloc vers +x et +z, et la
+  juger par son coin revient à ignorer la moitié de ce qu'elle occupe.
+- **LE DÉGAGEMENT SE CALCULE, IL NE SE MESURE PAS SUR UNE VILLE.** Mon
+  premier chiffre — 0,3 bloc de marge — était réglé sur Zurich : juste là,
+  faux ailleurs, parce que ce qui déborde dépend de l'ANGLE de la trame. Une
+  case unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de son centre
+  le long d'un axe de la trame. Écrite ainsi, la règle a réglé d'un coup les
+  trois médinas que le chiffre rond laissait en faute.
+- **LA BANDE SE DÉCALE, ELLE NE SE ROGNE PAS.** Un simple plancher dégageait
+  tout mais coûtait 47 % du mobilier — donc l'éclairage de nuit (v248). La
+  bande décalée en garde CENT POUR CENT : mesuré, Zurich 490 → 541 meubles,
+  Rome 917 → 934, Marrakech 669 → 783. On dégage la chaussée ET on gagne des
+  réverbères.
+- **ON NE FAIT PAS ROULER UNE BERLINE DANS UNE RUELLE DE MÉDINA.** Venise,
+  Jérusalem et Marrakech ont des ruelles de 1,8 bloc pour une voiture de
+  2,26 : elle roulait sur les deux trottoirs à la fois. Ce fichier écrivait
+  déjà « Venise n'aura jamais de voitures, et c'est très bien comme ça » à
+  propos de l'eau — c'est vrai de ses ruelles aussi. Une ville sans voitures
+  est une DÉCISION quand la vraie ville n'en a pas, et elle rend à ces
+  trois-là tout leur mobilier, qu'aucun dégagement n'a plus à repousser.
+
+**ET DEUX RÉGRESSIONS DE MA PROPRE CORRECTION, TROUVÉES PAR LE COMPTAGE.**
+Mon premier jet élargissait la fenêtre du feu tricolore à toute la bande —
+Zurich passait de 110 feux à 277, Rome de 235 à 563, un carrefour hérissé —
+et décalait l'échantillon d'un demi-bloc À CHAQUE TOUR de la boucle sur les
+villes voisines (`x += 0.5` sur la variable de boucle), donc d'un bloc entier
+pour la seconde ville. Aucune capture ne les aurait montrées. **Une
+correction de placement se mesure AVANT/APRÈS, poste par poste et ville par
+ville** — le total ne suffit pas : ici il montait pendant que les feux
+triplaient.
+
+**UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT.** Mes quatre témoins
+de la v270 comptaient des ANNEAUX, et ils étaient tous verts ; le portail, lui,
+a rendu rouge « la circulation naît à l'approche » (`monte.js`), qui se
+téléporte à Rome et exige une voiture EN VUE. La contrainte de partage trie les
+candidats par taille et sacrifiait les anneaux DÉCALÉS — ceux dont un côté
+passe près du centre : Rome gardait ses quatre anneaux, mais le plus proche
+passait de douze blocs du centre à quarante-cinq, **pile la portée
+d'affichage** (`vu: 45`), et un enfant posé sur la place ne voyait plus une
+seule voiture. C'est la panne que la v201 avait corrigée sur signalement de
+Max, ramenée par un témoin qui mesurait la mauvaise grandeur. Trois choses.
+
+- **CE QUI DOIT ÊTRE VRAI SE GARANTIT PAR CONSTRUCTION, PAS PAR L'ORDRE DE
+  TRI.** Le premier anneau retenu est désormais celui que l'enfant voit
+  (`VU_ANNEAU`), et le reste de la sélection ne change pas. Un tri qui « se
+  trouve » donner le bon résultat le perd à la première contrainte qu'on
+  ajoute.
+- **ET LA BARRE DE L'ANNEAU N'EST PAS LA PORTÉE.** Les voitures sont espacées
+  le long du tracé (jusqu'à vingt-cinq blocs) : un anneau qui frôle le centre à
+  quarante-quatre blocs peut n'avoir aucune voiture à portée. Trente blocs, de
+  sorte qu'une voiture décalée de douze le long du tracé reste dans les
+  quarante-cinq. Une portée d'affichage n'est pas une portée d'OBJET.
+- **La portée se demande là où elle se calcule** (`VU_VOITURE`, publié par
+  `vehicules.js`), recopiée dans `villesmonde.js` comme la demi-largeur, et un
+  témoin garde les deux d'accord.
+
+**UN VERDICT QUI COMPTE DES PAS, OU QUI DORT UN TEMPS FIXE, MESURE LA CADENCE
+DU BANC — TROIS FICHIERS DANS LE MÊME PORTAIL (v270).** `main.js` borne `dt` à
+un vingtième de seconde : sous cette barre, le monde avance moins vite que le
+temps réel, et tout témoin dont le verdict est une distance parcourue pendant
+une durée FIXE change de réponse avec la charge. Les trois étaient verts au
+portail de la veille, sur le même code de jeu.
+
+| témoin | mesuré | barre | seul |
+| --- | --- | --- | --- |
+| l'escalier du métro (`washington.js`) | 7,0 blocs | 8 | 13,0 |
+| la marche arrière de l'avion (`monte.js`) | 0,26 bloc en 3 s | 0,5 | le double la veille |
+| la seconde tablette (`reglages.js`) | lue UNE fois à 20 s | — | verte deux portails de suite |
+
+Le remède est le même pour les trois, et **il était déjà écrit à quinze lignes
+de l'un d'eux** : le témoin des portes de `washington.js` marche « jusqu'à être
+entré OU jusqu'à ne plus avancer » depuis qu'il est tombé pour cette raison, et
+personne ne l'avait appliqué à l'escalier du même fichier. **On attend le
+RÉSULTAT, borné, jamais une durée** — et le temps qu'il a pris entre dans le
+message, sinon le rouge suivant ne se démonte pas. C'est le piège des bornes de
+`monte.js` (v237) à l'échelle de trois fichiers : quand une borne se révèle mal
+posée, on relit toutes celles de sa FAMILLE dans la même passe, pas seulement
+celles de son fichier.
+
+**Et le chiffre partagé se garde par un TÉMOIN, jamais par un commentaire.**
+`villesmonde.js` a besoin de la demi-largeur d'une voiture et ne peut pas
+l'importer de `vehicules.js` : il est lu par le mailleur du worker, qui meurt
+au premier `import 'three'` de son graphe (v251). Le chiffre y est donc
+recopié, `vehicules.js` le PUBLIE (`DEMI_LARG_VOITURE`, `DEMI_LONG_VOITURE`)
+là où il sert, et un témoin exige que les deux disent la même chose. Deux
+tables qui décrivent la même chose finissent par diverger.
+
 ### Une voiture cède le passage pour elle-même, et tourne sur son empattement (v244)
 
 Max : « évite que les voitures puissent se chevaucher, et quand la voiture

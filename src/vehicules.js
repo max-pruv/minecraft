@@ -416,6 +416,33 @@ export const FLOTTE = [
 // À remesurer sur la tablette (`?diag=1`) : le banc à `rr=12` rend une image
 // par seconde dans Paris et n'y voit qu'une cadence d'image, pas une vitesse.
 export const ALLURES = { citadine: 3.8, berline: 4.4, suv: 4.4, gt: 5.4, sportive: 6.4, hypercar: 8 };
+
+// L'EMPRISE AU SOL D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SERT (v270). 4,4 × 2,26 :
+// c'est le rectangle que `cederLePassage` fait se regarder (v244), celui que
+// `player.obstacleVehicule` refuse de faire entrer dans un autre (v245), et
+// c'est aussi la largeur du COULOIR qu'un convoi balaie dans la rue.
+//
+// Max, deux captures : une voiture posée DANS une caisse du marché à
+// Stuttgart, des caisses sur la chaussée à Zurich. Mesuré : le mobilier des
+// villes engendrées est posé sur la PREMIÈRE colonne de trottoir, et comme
+// la trame est tournée par rapport au monde, une case entière mord jusqu'à
+// 1,13 bloc dans la chaussée — 32 410 cases traversées, 267 villes sur 267.
+// `villesmonde.js` a donc besoin de ce chiffre pour dégager le caniveau, et
+// il ne peut PAS l'importer d'ici : il est lu par le mailleur du worker, qui
+// meurt au premier `import 'three'` de son graphe (v251). Le chiffre y est
+// donc recopié, et c'est un TÉMOIN qui garde les deux d'accord — jamais un
+// commentaire : deux tables qui décrivent la même chose finissent par
+// diverger.
+// LA PORTÉE D'AFFICHAGE D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SE CALCULE (v270).
+// `villesmonde.js` doit savoir à quelle distance une voiture se DESSINE pour
+// garantir qu'une ville engendrée en montre une depuis son centre — et il ne
+// peut pas importer ce fichier, qui amènerait `three` dans le graphe du
+// mailleur du worker (v251). Le chiffre y est donc recopié, celui-ci fait
+// foi, et un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
+export const DEMI_LONG_VOITURE = 2.2;
+export const DEMI_LARG_VOITURE = 1.13;
 export function classeDe(fichier) {
   const e = FLOTTE.find((f) => f.fichier === fichier);
   return e ? e.classe || null : null;
@@ -1434,7 +1461,7 @@ export function createVehicules({ scene, player }) {
       // depuis longtemps. Les personnages s'effacent à soixante-deux blocs
       // depuis des versions sans que personne ne l'ait jamais signalé ; une
       // voiture, plus petite et plus basse, tient largement à quarante-cinq.
-      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 45,
+      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
       // LE PAS DE 13 SUR UNE FLOTTE DE 50 REVIENT SUR SES PAS AU BOUT DE
       // CINQUANTE : `13 × 50 ≡ 0`. Avec vingt voitures par circuit c'était
       // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille
@@ -1493,7 +1520,8 @@ export function createVehicules({ scene, player }) {
   // Seules les voitures à portée de l'enfant se regardent : ce qui se
   // chevauche hors de vue ne coûte à personne, et mille circuits n'ont pas à
   // se comparer à chaque image.
-  const PORTEE_CEDE = 90, DEMI_LONG = 2.2, DEMI_LARG = 1.13, PAS_BALAYAGE = [0.5, 2, 3.5, 5, 6.5, 8];
+  const PORTEE_CEDE = 90, DEMI_LONG = DEMI_LONG_VOITURE, DEMI_LARG = DEMI_LARG_VOITURE;
+  const PAS_BALAYAGE = [0.5, 2, 3.5, 5, 6.5, 8];
   const rectangle = (x, z, ux, uz) => {
     const vx = uz, vz = -ux;
     return [
