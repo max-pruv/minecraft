@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v274 — Les feux arrivent à Paris, Londres et les quatre autres
+
+**Pourquoi.** La v273 a donné aux feux leur horloge et fait s'arrêter la
+circulation — mais seulement dans les villes ENGENDRÉES. Paris, Londres, Nice,
+Lille, San Francisco et Washington n'avaient pas **un seul feu**, et ce sont
+justement celles où les enfants conduisent le plus. Mesuré à la livraison
+précédente : 167 coins de carrefour à Paris, 622 à Lille, zéro feu.
+
+**Ce que ça change.**
+
+- **Les six villes bâties à la main ont leurs feux tricolores**, aux vrais
+  carrefours : Paris 118, Londres 130, Washington 158, San Francisco 74, Nice
+  55, Lille 36. Ils s'allument et la circulation s'y arrête, exactement comme
+  ailleurs.
+- **Quatre feux par carrefour, un par coin** — et c'est le carrefour qui les
+  choisit, pas la colonne qui se déclare.
+
+**Ce qui le prouve.**
+
+Deux témoins neufs dans `carteMonde.js`, qui LISENT LES BLOCS posés et non une
+table : les six villes ont leurs feux, chacun au coin d'un carrefour, et aucun
+collé à un autre (zéro dans les six villes). Rouges sur l'ancien code, où le
+compte est zéro partout.
+
+Et trois mesures ont décidé du dessin, chacune contre une intuition :
+
+| ce qu'on croyait | ce que la mesure a dit |
+| --- | --- |
+| un coin de trottoir = un carrefour | c'est un caniveau en DIAGONALE : une grappe de 28 colonnes à Lille |
+| deux croisements distincts = deux carrefours | les doublons sont à 1,0–2,0 bloc, les vrais voisins à 3,0 et plus |
+| écarter l'emprise des monuments | Paris ET Londres tombent à zéro feu — écrit, mesuré, retiré |
+
+Sur le disque entier, 97 % des feux de Paris et 99 % de ceux de Londres sont
+au coin d'un carrefour ; les trois pour cent restants sont sous un monument qui
+pave la rue par-dessus, et c'est déclaré.
+
 ## v273 — Les feux tricolores s'allument, et la circulation s'y arrête
 
 **Pourquoi.** Le programme de réalisme écrit dans `CLAUDE.md` avait un point 4

@@ -1031,6 +1031,95 @@ const VRAIES_KM = [
       !arrets.err && arrets.auRouge >= 10 && arrets.redemarrages >= 1,
       JSON.stringify(arrets));
 
+    // ===== LES FEUX DES VILLES BÂTIES À LA MAIN (v274) ======================
+    //
+    // La v273 a donné aux feux leur horloge et fait s'arrêter la circulation,
+    // mais `RUE.FEUX` n'était posé que par `villesmonde.js` : les six villes
+    // bâties à la main n'en avaient PAS UN SEUL, et ce sont celles où l'enfant
+    // conduit le plus. Mesuré alors, fenêtre de 81 × 81 blocs au centre :
+    // Paris 167 coins de carrefour et zéro feu, Lille 622 et zéro.
+    //
+    // ON LIT LES BLOCS, PAS UNE TABLE. Un feu déclaré quelque part et jamais
+    // écrit dans le morceau de monde ne se voit pas ; ce témoin lit ce que le
+    // générateur a posé, et vérifie DEUX choses que la seule présence ne dit
+    // pas : que chaque feu est bien au COIN d'un carrefour (de la chaussée sur
+    // les deux axes), et qu'aucun n'a de voisin immédiat — un carrefour
+    // hérissé est le défaut que la v270 a déjà payé.
+    //
+    // ET LE SOL D'UNE VILLE N'EST PAS TOUJOURS À `terrainHeight`. Premier jet
+    // rouge sur Paris SEUL — 11 feux « au coin » sur 14 — et la sonde a
+    // distingué les cas en une exécution : `solParis` disait « carrefour »
+    // pour les trois, c'est la LECTURE qui se trompait. Sur les quais et au
+    // pied des ponts, Paris écrit sa chaussée un bloc PLUS HAUT que le relief
+    // (terrain 34, surface 35), et lire `getBlock(x, terrainHeight, z)` y rend
+    // la terre d'en dessous. `sommetColonne` rend le premier bloc SOLIDE en
+    // descendant — donc la chaussée, et le trottoir SOUS un feu, qui est un
+    // prop non solide. C'est la note de la v248 sur les réverbères de Paris,
+    // par l'autre bout : elle tolérait quinze pour cent de voisins sans
+    // chaussée au lieu de lire à la bonne hauteur.
+    const feuxMain = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const { positionDe } = await import('./src/mondes.js');
+      const { RUE } = await import('./src/blocks.js');
+      const monde = await import('./src/world.js');
+      const CHAUSSEE = monde.CHAUSSEE;
+      if (!CHAUSSEE) return { err: 'world.js ne publie pas CHAUSSEE' };
+      const out = {};
+      for (const cle of ['paris', 'londres', 'nice', 'lille', 'sf', 'washington']) {
+        const p = positionDe(cle);
+        const pos = [];
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            const x = Math.round(p.x) + du, z = Math.round(p.z) + dv;
+            const sol = w.sommetColonne(x, z);
+            if (w.getBlock(x, sol + 1, z) === RUE.FEUX) pos.push([x, z]);
+          }
+        }
+        const estRue = (x, z) => CHAUSSEE.has(w.getBlock(x, w.sommetColonne(x, z), z));
+        let auCoin = 0;
+        for (const [x, z] of pos) {
+          const rx = estRue(x + 1, z) || estRue(x - 1, z);
+          const rz = estRue(x, z + 1) || estRue(x, z - 1);
+          if (rx && rz) auCoin++;
+        }
+        const ens = new Set(pos.map(([x, z]) => x + ':' + z));
+        let colles = 0;
+        for (const [x, z] of pos) {
+          let voisin = false;
+          for (let a = -1; a <= 1 && !voisin; a++) {
+            for (let b = -1; b <= 1; b++) {
+              if (!a && !b) continue;
+              if (ens.has((x + a) + ':' + (z + b))) { voisin = true; break; }
+            }
+          }
+          if (voisin) colles++;
+        }
+        out[cle] = { feux: pos.length, auCoin, colles };
+      }
+      return out;
+    });
+    const villesFeux = ['paris', 'londres', 'nice', 'lille', 'sf', 'washington'];
+    verifier('les six villes bâties à la main ont enfin leurs feux tricolores',
+      !feuxMain.err && villesFeux.every((v) => feuxMain[v] && feuxMain[v].feux >= 8),
+      `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+    // ET LA BARRE SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE. Premier jet à
+    // quatre-vingt-dix pour cent : rouge sur Paris seul, onze sur quatorze. La
+    // sonde a nommé les trois accusés — tous dans l'emprise de la Caserne &
+    // Commissariat, un repère qui se pose APRÈS les colonnes et PAVE la rue
+    // que `solParis` promettait. Mesuré sur le DISQUE entier de la ville, le
+    // vrai dénominateur : Paris 88 feux au coin sur 91 (97 %), Londres 116 sur
+    // 117 (99 %). La fenêtre de ±40 blocs du centre contenait justement ce
+    // repère-là — c'est le piège de « un témoin qui porte une dimension de
+    // ville ne l'écrit pas » (v203, v271) vu par la fraction au lieu du rayon.
+    // On garde la fenêtre, qui coûte cent fois moins que le disque, et la
+    // barre dit ce qu'elle garde : une grossière panne de pose, pas les trois
+    // pour cent qu'un monument recouvre. Ceux-là sont déclarés dans TASKS.md.
+    verifier('et chacun est au coin d\'un carrefour, aucun collé à un autre',
+      !feuxMain.err && villesFeux.every((v) => feuxMain[v]
+        && feuxMain[v].auCoin >= feuxMain[v].feux * 0.75
+        && feuxMain[v].colles === 0),
+      `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+
     // ================= LA VILLE ÉCLAIRÉE LA NUIT ============================
     //
     // Max, capture de Moscou à minuit : des réverbères allumés, des feux

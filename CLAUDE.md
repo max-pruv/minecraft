@@ -778,6 +778,73 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Les feux des villes bâties à la main (v274) — un carrefour n'est pas un coin
+
+La v273 avait laissé les six villes bâties à la main sans un seul feu. Quatre
+règles, et les quatre sont des mesures qui ont contredit une intuition.
+
+- **UN CARREFOUR NE SE DEVINE PAS À LA FORME DU CANIVEAU.** Le test qui vient
+  sous les doigts — « une colonne de trottoir avec de la chaussée sur les DEUX
+  axes » — teste en réalité un caniveau NON ALIGNÉ sur les axes du monde. Une
+  rue en diagonale a un caniveau en escalier, et chaque marche le passe :
+  mesuré à Lille, une grappe de **vingt-huit** colonnes voisines, et 622 feux
+  là où Rome, ville engendrée, en a 49. Ce qui SAIT où sont les carrefours,
+  c'est le réseau d'avenues NOMMÉES — celui que `chainerVoies` enchaîne déjà
+  pour faire rouler les convois, donc des croisements où une voiture passe par
+  construction (`carrefoursDeVoies`, voies.js, pur). Paris 44, Londres 52,
+  Washington 89, Lille 12.
+- **ET C'EST LE CARREFOUR QUI CHOISIT SES QUATRE COINS.** Dans chacun de ses
+  quatre quadrants, la colonne de trottoir au bord du caniveau la plus proche
+  de lui : quatre feux au plus, jamais une grappe. Une sélection faite PAR
+  CARREFOUR ne peut pas produire d'escalier ; une sélection faite colonne par
+  colonne le peut toujours.
+- **UN CARREFOUR N'EST PAS UN POINT, C'EST UN ENDROIT — et le seuil se lit dans
+  la distribution.** Trois avenues concourantes donnent trois croisements. Les
+  distances entre croisements distincts montrent un trou net : Washington
+  1,0 · 1,0 · 1,0 · 1,4 · 1,4 · 2,0 puis rien avant 3 ; Paris 1,4 · 1,4 · 2,0
+  puis 3,0 ; Nice, Lille et San Francisco rien sous 4. Trois blocs tombent dans
+  ce trou. **Et regrouper les carrefours ne suffit pas** : il restait des
+  paires de feux à 1,0 bloc, les coins CHOISIS par deux croisements voisins.
+  On filtre aussi les feux — la paire la plus proche passe de 1,0 à 3,0 dans
+  les six villes.
+- **ÉCARTER L'EMPRISE DES MONUMENTS EST UN NON-RÉSULTAT MESURÉ.** Trois feux de
+  Paris ont leurs quatre voisins en `STONEBRICK` : les repères se posent APRÈS
+  les colonnes et pavent la rue que `sol()` promettait (piège des ormes du
+  Mall, v205). Le garde évident — écarter tout candidat dans une `box` de
+  repère — fait tomber Paris ET Londres à **zéro feu** : la `box` est une zone
+  d'interdiction de BÂTIR, bien plus large que ce que le repère pave. Écrit,
+  mesuré, retiré ; la dette est déclarée avec la vraie question, qui est un
+  conflit de PLAN (une avenue qu'un monument recouvre), pas un feu à cacher.
+
+**ET UNE FENÊTRE DE MESURE SE POSE SUR LA GRANDEUR MESURÉE, PAS SUR UN CHIFFRE
+ROND.** Le portail de la v274 a rendu rouge « un passant qu'on approche continue
+son chemin », vert aux deux versions précédentes DU PREMIER ESSAI (1,25 bloc en
+3,5 s) et ici douze essais pour 0,99 au mieux. La sonde a séparé les cas en une
+exécution : le passant n'était pas bloqué du tout — état `marche` et crochet
+d'obstacle FAUX d'un bout à l'autre, 0,32 bloc par seconde, 3,93 blocs en vingt
+secondes. Il franchit la barre de 1,2 vers 3,5 s, c'est-à-dire AU BORD d'une
+fenêtre de quatre secondes ; et le même relevé montre un gel de SEPT secondes au
+milieu (la distance figée à 2,77 de la neuvième à la quinzième), le banc rendant
+quatre images par seconde. **Le témoin mesurait la cadence du banc.** Et son
+propre commentaire annonçait « jusqu'à douze secondes » quand le code en
+accordait quatre — *ce qui est écrit dans un commentaire n'est pas ce que le
+code fait* (v220), une fois de plus. La fenêtre vaut désormais les douze
+secondes promises, et le temps pris entre dans le message, réussite comme échec.
+
+**ET UNE FRACTION SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE.** Le témoin était
+rouge sur Paris seul — onze feux « au coin » sur quatorze — et la sonde qui
+distingue les cas a répondu en une exécution : `solParis` disait « carrefour »
+pour les trois accusés. Mesuré sur le DISQUE entier, le vrai dénominateur :
+Paris 88 sur 91 (97 %), Londres 116 sur 117 (99 %). La fenêtre de ±40 blocs du
+centre contenait justement le monument fautif. C'est « un témoin qui porte une
+dimension de ville ne l'écrit pas, il la demande » (v203, v271), vu par la
+FRACTION au lieu du rayon.
+
+**Et le sol d'une ville n'est pas toujours à `terrainHeight`** : sur les quais
+et au pied des ponts, Paris écrit sa chaussée un bloc plus haut. Un témoin qui
+lit le sol lit par `sommetColonne`, qui rend le premier bloc SOLIDE — donc la
+chaussée, et le trottoir SOUS un feu, qui est un prop non solide.
+
 ## Les feux tricolores, et ce qu'une sonde aveugle ne peut pas voir (v273)
 
 Le point 4 du programme de réalisme — « la vie dense : voitures qui s'arrêtent

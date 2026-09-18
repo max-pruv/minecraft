@@ -484,3 +484,39 @@ export function contournerRonds(pts, cercles) {
   for (const c of cercles) out = contournerUn(out, c.u, c.v, c.r);
   return out;
 }
+
+// LES CARREFOURS DU RÉSEAU D'AVENUES — et pourquoi ce sont EUX, et pas la
+// géométrie du caniveau (v274).
+//
+// Un feu tricolore se pose à un carrefour. Le premier test qui vient sous les
+// doigts — « une colonne de trottoir avec de la chaussée sur les DEUX axes » —
+// n'est pas un test de carrefour : c'est un test de caniveau NON ALIGNÉ sur
+// les axes du monde. Une rue en diagonale a un caniveau en escalier, et chaque
+// marche le passe. Mesuré à Lille, autour du centre : une seule grappe de
+// colonnes voisines en comptait VINGT-HUIT, et la ville en aurait reçu 622 là
+// où Rome, ville engendrée, en a 49. C'est le carrefour hérissé de la v270,
+// par une autre porte.
+//
+// Ce qui sait où sont les carrefours, c'est le réseau d'avenues NOMMÉES — le
+// même que `chainerVoies` enchaîne pour faire rouler les convois. Un vrai
+// croisement de deux avenues est un endroit où une voiture passe, par
+// construction. Mesuré : Paris 44, Londres 52, Washington 89, Lille 12.
+//
+// Les points sont dans les unités de la ville, comme `VOIES` : c'est à
+// l'appelant d'ajouter son ancre.
+export function carrefoursDeVoies(voies) {
+  const out = [];
+  for (let i = 0; i < voies.length; i++) {
+    for (let j = i + 1; j < voies.length; j++) {
+      const a = voies[i].pts, b = voies[j].pts;
+      if (!a || !b || a.length < 2 || b.length < 2) continue;
+      for (let k = 0; k < a.length - 1; k++) {
+        for (let l = 0; l < b.length - 1; l++) {
+          const x = croisement(a[k], a[k + 1], b[l], b[l + 1]);
+          if (x) out.push({ u: x.pt[0], v: x.pt[1] });
+        }
+      }
+    }
+  }
+  return out;
+}

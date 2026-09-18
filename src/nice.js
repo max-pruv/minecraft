@@ -712,3 +712,6 @@ export function buildCollineChateau(poser) {
   for (let y = 1; y <= 8; y++) set(0, y, 0, PAVE);
   set(0, 9, 0, uni(0));
 }
+
+// Les avenues nommées, pour les carrefours des feux tricolores (v274).
+export const VOIES_NICE = VOIES;

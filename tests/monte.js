@@ -1313,6 +1313,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!gens.length) return { err: 'aucun passant' };
       const sauve = g.player.pos.clone();
       let meilleur = 0, essais = 0;
+      const dernieres = [];
       for (const h of gens) {
         for (const cap of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
           essais++;
@@ -1320,16 +1321,33 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
           const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
           let d = 0;
-          while (performance.now() - t0 < 4000 && d < 1.2) {
+          // LA FENÊTRE EST CELLE QUE LE COMMENTAIRE ANNONÇAIT — DOUZE SECONDES,
+          // PAS QUATRE. Elle valait 4 000 ms, et le témoin est tombé au portail
+          // de la v274 : douze essais, 0,99 bloc au mieux, pour une barre à 1,2.
+          // La sonde a séparé les cas en une exécution — le passant n'était pas
+          // bloqué du tout : état `marche` et crochet d'obstacle FAUX d'un bout
+          // à l'autre, 0,32 bloc par seconde, 3,93 blocs en vingt secondes. Il
+          // franchit la barre vers 3,5 s, c'est-à-dire AU BORD de la fenêtre —
+          // et le même relevé montre un gel de SEPT secondes au milieu (d figé
+          // à 2,77 de la neuvième à la quinzième), le banc rendant quatre
+          // images par seconde. Le témoin mesurait donc la cadence du banc.
+          // On attend le RÉSULTAT, borné (v270), et un passant sain sort en
+          // trois secondes et demie : les douze ne se paient que sur l'ancien
+          // code, qui est un rouge de toute façon.
+          while (performance.now() - t0 < 12000 && d < 1.2) {
             await new Promise((f) => setTimeout(f, 250));
             d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
           }
-          if (d > meilleur) meilleur = d;
-          if (d >= 1.2) { g.player.pos.copy(sauve); return { d: +d.toFixed(2), essais, secondes: +((performance.now() - t0) / 1000).toFixed(1) }; }
+          const mis = +((performance.now() - t0) / 1000).toFixed(1);
+          if (d > meilleur) { meilleur = d; }
+          if (d >= 1.2) { g.player.pos.copy(sauve); return { d: +d.toFixed(2), essais, secondes: mis }; }
+          dernieres.push(mis);
         }
       }
       g.player.pos.copy(sauve);
-      return { d: +meilleur.toFixed(2), essais };
+      // ET LE TEMPS QU'IL A PRIS ENTRE DANS LE MESSAGE, sinon le rouge suivant
+      // ne se démonte pas.
+      return { d: +meilleur.toFixed(2), essais, secondes: dernieres };
     });
     verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
       !suit.err && suit.d >= 1.2, JSON.stringify(suit));

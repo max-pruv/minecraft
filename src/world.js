@@ -2,6 +2,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
+import { carrefoursDeVoies } from './voies.js';
 import { buildAeroport, buildAerodrome, AEROPORTS } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
@@ -17,11 +18,13 @@ import {
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
   buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate, adresseSF,
+  VOIES_SF,
 } from './sanfrancisco.js';
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
   MONUMENTS_NICE, buildMassena, buildCathedraleRusse, buildCollineChateau,
   buildNegresco, buildPortLympia, buildSaleya, buildBaleine, buildPromenade,
+  VOIES_NICE,
 } from './nice.js';
 import {
   CHINE, hauteurChine, solChine, LIEUX_CHINE,
@@ -33,6 +36,7 @@ import {
 import {
   LONDRES, hauteurLondres, solLondres, lotLondresLibre, batirColonneLondres,
   MONUMENTS_LONDRES, lieuxDeLondres, pontLondres,
+  VOIES_LONDRES,
 } from './londres.js';
 import {
   hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
@@ -43,15 +47,18 @@ import {
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
   buildTourDeLille, buildTreille,
+  VOIES_LILLE,
 } from './lille.js';
 import {
   PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
+  VOIES_PARIS,
 } from './paris.js';
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
   batirColonneWashington, MONUMENTS_DC, QUAIS_METRO,
+  VOIES_CIRCUITS_DC,
 } from './washington.js';
 import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
@@ -938,6 +945,108 @@ function lampadaireDeVille(data, x, z, h, wx, wz, sol, ss) {
   if (((long % PAS_REVERBERE) + PAS_REVERBERE) % PAS_REVERBERE !== 4) return false;
   data[World.index(x, h, z)] = ss;
   data[World.index(x, h + 1, z)] = RUE.REVERBERE;
+  return true;
+}
+
+// --- LES FEUX TRICOLORES DES VILLES BÂTIES À LA MAIN (v274) -----------------
+//
+// La v273 a donné aux feux leur horloge et fait s'arrêter la circulation — mais
+// `RUE.FEUX` n'était posé que par `villesmonde.js`. Paris, Londres, Nice,
+// Lille, San Francisco et Washington n'en avaient pas UN SEUL, et ce sont
+// justement les villes où l'enfant conduit le plus. C'est le piège du verre
+// dans les murs, une fois de plus : la PORTÉE du remède, jamais la règle.
+//
+// UN CARREFOUR NE SE DEVINE PAS À LA FORME DU CANIVEAU. Le test qui vient sous
+// les doigts — « une colonne de trottoir avec de la chaussée sur les DEUX
+// axes » — teste en réalité un caniveau NON ALIGNÉ sur les axes du monde : une
+// rue en diagonale a un caniveau en escalier, et chaque marche le passe.
+// Mesuré à Lille : une grappe de VINGT-HUIT colonnes voisines, et 622 feux
+// pour une fenêtre où Rome en a 49. Ce qui sait où sont les carrefours, c'est
+// le réseau d'avenues NOMMÉES — celui-là même que `chainerVoies` enchaîne pour
+// faire rouler les convois, donc des croisements où une voiture passe par
+// construction.
+//
+// ET C'EST LE CARREFOUR QUI CHOISIT SES QUATRE COINS, pas la colonne qui se
+// déclare. Dans chacun de ses quatre quadrants, on garde la colonne de
+// trottoir au bord du caniveau LA PLUS PROCHE de lui : quatre feux au plus,
+// jamais une grappe. Mesuré : Paris 44 carrefours → 117 feux, Londres 52 →
+// 154, Washington 89 → 155, Lille 12 → 40. Rome, ville engendrée, en a 235
+// pour toute la ville : on est dans le même ordre, sans hérisser un seul
+// carrefour.
+//
+// LE CALCUL EST PUR ET IL NE LIT PAS LE MONDE. `sol*(x, z)` rend la nature du
+// sol sans engendrer un morceau — c'est ce qui permet de le faire ici, dans le
+// générateur, sans que le mailleur du worker ait à connaître quoi que ce soit
+// du jeu. Cinquante mille appels à `solParis` coûtent 2,5 ms ; la table d'une
+// ville se calcule donc une fois, à son premier morceau, et se garde.
+const FEUX_VILLE = new Map();
+const PORTEE_CARREFOUR = 7;   // le rayon où l'on cherche les coins d'un carrefour
+// UN CARREFOUR N'EST PAS UN POINT, C'EST UN ENDROIT. Trois avenues qui
+// concourent donnent TROIS croisements ; une place où deux avenues se coupent
+// deux fois en donne deux. La première version n'écartait que les points
+// IDENTIQUES au bloc près, et l'on obtenait des feux à deux blocs l'un de
+// l'autre — vu en sonde à Paris, 46 feux dessinés dont plusieurs paires à 2.
+// Le seuil est un RÉSULTAT : la distribution des distances entre croisements
+// distincts montre un trou net entre les doublons et les vrais voisins —
+// Washington 1,0 · 1,0 · 1,0 · 1,4 · 1,4 · 2,0 puis rien avant 3 ; Paris
+// 1,4 · 1,4 · 2,0 puis 3,0 ; Londres 1,0 · 2,0 puis 3,2 ; Nice, Lille et San
+// Francisco n'ont aucune paire sous 4. Trois blocs tombent dans ce trou.
+// Mesuré : Washington 89 → 70 carrefours, Paris 44 → 42, Londres 52 → 50, et
+// les trois autres inchangées.
+const MEME_CARREFOUR = 3;
+const ECART_FEUX = 3;         // deux feux ne se touchent pas (voir plus bas)
+function feuxDeVille(cle, ancre, voies, sol) {
+  let table = FEUX_VILLE.get(cle);
+  if (table) return table;
+  table = new Set();
+  const pris = [], candidats = [];
+  const estRue = (x, z) => CHAUSSEE.has(sol(x, z));
+  for (const q of carrefoursDeVoies(voies)) {
+    const cx = Math.round(ancre.x + q.u), cz = Math.round(ancre.z + q.v);
+    if (pris.some(([px, pz]) => Math.hypot(px - cx, pz - cz) < MEME_CARREFOUR)) continue;
+    pris.push([cx, cz]);
+    const meilleur = [null, null, null, null];
+    for (let dx = -PORTEE_CARREFOUR; dx <= PORTEE_CARREFOUR; dx++) {
+      for (let dz = -PORTEE_CARREFOUR; dz <= PORTEE_CARREFOUR; dz++) {
+        if (!dx || !dz) continue;         // un feu est à un COIN, pas sur l'axe
+        const d2 = dx * dx + dz * dz;
+        if (d2 > PORTEE_CARREFOUR * PORTEE_CARREFOUR) continue;
+        const x = cx + dx, z = cz + dz;
+        if (sol(x, z) !== CITY_BLOCK.SIDEWALK) continue;
+        if (!((estRue(x + 1, z) || estRue(x - 1, z))
+          && (estRue(x, z + 1) || estRue(x, z - 1)))) continue;
+
+        const i = (dx > 0 ? 1 : 0) + (dz > 0 ? 2 : 0);
+        if (!meilleur[i] || d2 < meilleur[i].d2) meilleur[i] = { x, z, d2 };
+      }
+    }
+    for (const m of meilleur) if (m) candidats.push(m);
+  }
+  // ET DEUX FEUX NE SE TOUCHENT PAS. Regrouper les CARREFOURS ne suffisait
+  // pas : mesuré après, il restait des paires de feux à 1,0 bloc — ce ne sont
+  // pas deux points du même croisement, ce sont les coins CHOISIS par deux
+  // croisements voisins qui tombent côte à côte. On filtre donc là où le
+  // défaut se voit, sur les feux eux-mêmes. Trois blocs : les quatre coins
+  // d'un vrai carrefour sont séparés par la largeur de la chaussée (quatre à
+  // six blocs), ils passent tous ; ce qui tombe, c'est la paire collée.
+  const gardes = [];
+  for (const c of candidats) {
+    if (gardes.some((g) => Math.hypot(g.x - c.x, g.z - c.z) < ECART_FEUX)) continue;
+    gardes.push(c);
+    table.add(c.x + ':' + c.z);
+  }
+  FEUX_VILLE.set(cle, table);
+  return table;
+}
+
+// Rend `true` si la colonne a été traitée (le sol ET le feu posés). Le feu
+// tient sur trois blocs — c'est le gabarit de `props.js` — et l'on ne le pose
+// jamais dans l'eau ni sous le plafond du monde.
+function feuDeVille(data, x, z, h, wx, wz, ss, feux) {
+  if (ss !== CITY_BLOCK.SIDEWALK || h < WATER_LEVEL || h + 3 >= HEIGHT) return false;
+  if (!feux.has(wx + ':' + wz)) return false;
+  data[World.index(x, h, z)] = ss;
+  data[World.index(x, h + 1, z)] = RUE.FEUX;
   return true;
 }
 
@@ -2036,7 +2145,12 @@ export class World {
           // appel, ARBRE était posé À PLAT : de la pelouse sur le gravier des
           // allées, vu en capture de rue (v205). Le bâtisseur passe ENSUITE
           // quand même : c'est lui qui creuse le métro sous les parcs.
+          // LE FEU PASSE AVANT LE RÉVERBÈRE : un coin de carrefour n'en reçoit
+          // jamais un (`lampadaireDeVille` écarte les coins), mais l'ordre dit
+          // ce qui compte quand les deux pourraient répondre.
           if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw)
+            && !feuDeVille(data, x, z, h, wx, wz, sw,
+              feuxDeVille('dc', WASHINGTON, VOIES_CIRCUITS_DC, solWashington))
             && !lampadaireDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
             data[World.index(x, h, z)] = sw;
           }
@@ -2081,6 +2195,9 @@ export class World {
               const wy = h + dy;
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }
+          } else if (feuDeVille(data, x, z, h, wx, wz, sp,
+            feuxDeVille('paris', PARIS, VOIES_PARIS, solParis))) {
+            // le trottoir et son feu tricolore sont posés (v274)
           } else if (lampadaireDeVille(data, x, z, h, wx, wz, solParis, sp)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (sp !== null) data[World.index(x, h, z)] = sp;
@@ -2097,10 +2214,10 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        for (const [cle, sol, libre, batir, pont] of [
-          ['nice', solNice, lotNiceLibre, batirColonneNice],
-          ['lille', solLille, lotLilleLibre, batirColonneLille],
-          ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres],
+        for (const [cle, sol, libre, batir, pont, ancre, voies] of [
+          ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE],
+          ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE],
+          ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres, LONDRES, VOIES_LONDRES],
         ]) {
           if (!city || city.key !== cle) continue;
           const ss = sol(wx, wz);
@@ -2122,6 +2239,7 @@ export class World {
           // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
           // rendait le défaut invisible en capture de rue.
           if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
+          if (feuDeVille(data, x, z, h, wx, wz, ss, feuxDeVille(cle, ancre, voies, sol))) { fait = true; continue; }
           if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
           if (ss !== null) {
             // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT. Sur une
@@ -2144,7 +2262,9 @@ export class World {
 
         if (city && city.key === 'sf') {
           const ss = solSF(wx, wz);
-          if (lampadaireDeVille(data, x, z, h, wx, wz, solSF, ss)) {
+          if (feuDeVille(data, x, z, h, wx, wz, ss, feuxDeVille('sf', SF, VOIES_SF, solSF))) {
+            // le trottoir et son feu tricolore sont posés (v274)
+          } else if (lampadaireDeVille(data, x, z, h, wx, wz, solSF, ss)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (ss !== null) data[World.index(x, h, z)] = ss;
           else if (lotSFLibre(wx, wz)) {
