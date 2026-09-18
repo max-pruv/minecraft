@@ -981,17 +981,30 @@ function lampadaireDeVille(data, x, z, h, wx, wz, sol, ss) {
 // ville se calcule donc une fois, à son premier morceau, et se garde.
 const FEUX_VILLE = new Map();
 const PORTEE_CARREFOUR = 7;   // le rayon où l'on cherche les coins d'un carrefour
+// UN CARREFOUR N'EST PAS UN POINT, C'EST UN ENDROIT. Trois avenues qui
+// concourent donnent TROIS croisements ; une place où deux avenues se coupent
+// deux fois en donne deux. La première version n'écartait que les points
+// IDENTIQUES au bloc près, et l'on obtenait des feux à deux blocs l'un de
+// l'autre — vu en sonde à Paris, 46 feux dessinés dont plusieurs paires à 2.
+// Le seuil est un RÉSULTAT : la distribution des distances entre croisements
+// distincts montre un trou net entre les doublons et les vrais voisins —
+// Washington 1,0 · 1,0 · 1,0 · 1,4 · 1,4 · 2,0 puis rien avant 3 ; Paris
+// 1,4 · 1,4 · 2,0 puis 3,0 ; Londres 1,0 · 2,0 puis 3,2 ; Nice, Lille et San
+// Francisco n'ont aucune paire sous 4. Trois blocs tombent dans ce trou.
+// Mesuré : Washington 89 → 70 carrefours, Paris 44 → 42, Londres 52 → 50, et
+// les trois autres inchangées.
+const MEME_CARREFOUR = 3;
+const ECART_FEUX = 3;         // deux feux ne se touchent pas (voir plus bas)
 function feuxDeVille(cle, ancre, voies, sol) {
   let table = FEUX_VILLE.get(cle);
   if (table) return table;
   table = new Set();
-  const dejaVu = new Set();
+  const pris = [], candidats = [];
   const estRue = (x, z) => CHAUSSEE.has(sol(x, z));
   for (const q of carrefoursDeVoies(voies)) {
     const cx = Math.round(ancre.x + q.u), cz = Math.round(ancre.z + q.v);
-    const k = cx + ':' + cz;
-    if (dejaVu.has(k)) continue;         // deux segments voisins croisent au même point
-    dejaVu.add(k);
+    if (pris.some(([px, pz]) => Math.hypot(px - cx, pz - cz) < MEME_CARREFOUR)) continue;
+    pris.push([cx, cz]);
     const meilleur = [null, null, null, null];
     for (let dx = -PORTEE_CARREFOUR; dx <= PORTEE_CARREFOUR; dx++) {
       for (let dz = -PORTEE_CARREFOUR; dz <= PORTEE_CARREFOUR; dz++) {
@@ -1006,7 +1019,20 @@ function feuxDeVille(cle, ancre, voies, sol) {
         if (!meilleur[i] || d2 < meilleur[i].d2) meilleur[i] = { x, z, d2 };
       }
     }
-    for (const m of meilleur) if (m) table.add(m.x + ':' + m.z);
+    for (const m of meilleur) if (m) candidats.push(m);
+  }
+  // ET DEUX FEUX NE SE TOUCHENT PAS. Regrouper les CARREFOURS ne suffisait
+  // pas : mesuré après, il restait des paires de feux à 1,0 bloc — ce ne sont
+  // pas deux points du même croisement, ce sont les coins CHOISIS par deux
+  // croisements voisins qui tombent côte à côte. On filtre donc là où le
+  // défaut se voit, sur les feux eux-mêmes. Trois blocs : les quatre coins
+  // d'un vrai carrefour sont séparés par la largeur de la chaussée (quatre à
+  // six blocs), ils passent tous ; ce qui tombe, c'est la paire collée.
+  const gardes = [];
+  for (const c of candidats) {
+    if (gardes.some((g) => Math.hypot(g.x - c.x, g.z - c.z) < ECART_FEUX)) continue;
+    gardes.push(c);
+    table.add(c.x + ':' + c.z);
   }
   FEUX_VILLE.set(cle, table);
   return table;

@@ -1045,6 +1045,18 @@ const VRAIES_KM = [
     // pas : que chaque feu est bien au COIN d'un carrefour (de la chaussée sur
     // les deux axes), et qu'aucun n'a de voisin immédiat — un carrefour
     // hérissé est le défaut que la v270 a déjà payé.
+    //
+    // ET LE SOL D'UNE VILLE N'EST PAS TOUJOURS À `terrainHeight`. Premier jet
+    // rouge sur Paris SEUL — 11 feux « au coin » sur 14 — et la sonde a
+    // distingué les cas en une exécution : `solParis` disait « carrefour »
+    // pour les trois, c'est la LECTURE qui se trompait. Sur les quais et au
+    // pied des ponts, Paris écrit sa chaussée un bloc PLUS HAUT que le relief
+    // (terrain 34, surface 35), et lire `getBlock(x, terrainHeight, z)` y rend
+    // la terre d'en dessous. `sommetColonne` rend le premier bloc SOLIDE en
+    // descendant — donc la chaussée, et le trottoir SOUS un feu, qui est un
+    // prop non solide. C'est la note de la v248 sur les réverbères de Paris,
+    // par l'autre bout : elle tolérait quinze pour cent de voisins sans
+    // chaussée au lieu de lire à la bonne hauteur.
     const feuxMain = await tab.evaluate(async () => {
       const w = window.__game.world;
       const { positionDe } = await import('./src/mondes.js');
@@ -1059,11 +1071,11 @@ const VRAIES_KM = [
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
             const x = Math.round(p.x) + du, z = Math.round(p.z) + dv;
-            const sol = w.terrainHeight(x, z);
+            const sol = w.sommetColonne(x, z);
             if (w.getBlock(x, sol + 1, z) === RUE.FEUX) pos.push([x, z]);
           }
         }
-        const estRue = (x, z) => CHAUSSEE.has(w.getBlock(x, w.terrainHeight(x, z), z));
+        const estRue = (x, z) => CHAUSSEE.has(w.getBlock(x, w.sommetColonne(x, z), z));
         let auCoin = 0;
         for (const [x, z] of pos) {
           const rx = estRue(x + 1, z) || estRue(x - 1, z);
