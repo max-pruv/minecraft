@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 274,
+    titre: "Des feux à Paris aussi",
+    puces: [
+      "🚦 Paris et Londres ont leurs feux",
+      "🗼 Et Nice, Lille, San Francisco, Washington",
+      "🚗 Les voitures s'y arrêtent au rouge",
+    ],
+  },
+  {
     v: 273,
     titre: "Les feux passent au vert",
     puces: [
