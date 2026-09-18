@@ -816,6 +816,21 @@ règles, et les quatre sont des mesures qui ont contredit une intuition.
   mesuré, retiré ; la dette est déclarée avec la vraie question, qui est un
   conflit de PLAN (une avenue qu'un monument recouvre), pas un feu à cacher.
 
+**ET UNE FENÊTRE DE MESURE SE POSE SUR LA GRANDEUR MESURÉE, PAS SUR UN CHIFFRE
+ROND.** Le portail de la v274 a rendu rouge « un passant qu'on approche continue
+son chemin », vert aux deux versions précédentes DU PREMIER ESSAI (1,25 bloc en
+3,5 s) et ici douze essais pour 0,99 au mieux. La sonde a séparé les cas en une
+exécution : le passant n'était pas bloqué du tout — état `marche` et crochet
+d'obstacle FAUX d'un bout à l'autre, 0,32 bloc par seconde, 3,93 blocs en vingt
+secondes. Il franchit la barre de 1,2 vers 3,5 s, c'est-à-dire AU BORD d'une
+fenêtre de quatre secondes ; et le même relevé montre un gel de SEPT secondes au
+milieu (la distance figée à 2,77 de la neuvième à la quinzième), le banc rendant
+quatre images par seconde. **Le témoin mesurait la cadence du banc.** Et son
+propre commentaire annonçait « jusqu'à douze secondes » quand le code en
+accordait quatre — *ce qui est écrit dans un commentaire n'est pas ce que le
+code fait* (v220), une fois de plus. La fenêtre vaut désormais les douze
+secondes promises, et le temps pris entre dans le message, réussite comme échec.
+
 **ET UNE FRACTION SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE.** Le témoin était
 rouge sur Paris seul — onze feux « au coin » sur quatorze — et la sonde qui
 distingue les cas a répondu en une exécution : `solParis` disait « carrefour »
