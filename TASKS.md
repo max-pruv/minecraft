@@ -30,6 +30,53 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Quatre témoins de `manhattan.js` sont rouges EN PRODUCTION (double mesure
+  de la v272).** Rejoués SEULS des deux côtés, dans deux arbres séparés :
+
+  | témoin | sur la branche | sur `origin/main` |
+  | --- | --- | --- |
+  | le trou enlève aussi la géométrie visible de la façade | 22 326 → 51 734 | 14 460 → 51 734 |
+  | fenêtres et éclairage public fonctionnent la nuit | rouge | rouge |
+  | les ombres suivent le soleil et la lune visibles | [1, −1] | [1, −1] |
+  | le taxi roule avec les contrôles tactiles | rouge | rouge |
+
+  `origin/main` en rend même DEUX de plus (New York partage blocs et code,
+  et une perte de connexion PeerJS). Aucune ligne du domaine de Manhattan n'a
+  bougé en v272 : ces quatre-là sont une dette déclarée, pas une régression. Et
+  ce sont exactement ceux que la v259 a nommés : à **0,4 image par seconde** sur
+  ce banc, un témoin qui lit un effet « 350 ms après » est un pile ou face. La
+  piste est donc la même que pour le reste du banc — provoquer la situation au
+  lieu de l'attendre — et elle vaut un chantier à part.
+
+- [ ] **`washington.js` : « on entre chez les gens » ne rougit qu'en charge.**
+  Rouge au portail de la v272 (« façade 0,1, plafond à −1, 1 mur(s) »), **vert
+  rejoué SEUL sur la branche ET sur `origin/main`** (29 témoins verts des deux
+  côtés). C'est la famille que le fichier documente déjà : le témoin marche par
+  pas de 700 ms et `dt` est borné à un vingtième, donc sous quatre images par
+  seconde huit pas ne font plus quatre blocs. Il abandonne après trois pas sans
+  mouvement ; sous la charge d'un portail entier, trois pas consécutifs peuvent
+  tomber dans des hoquets. À reprendre comme les autres : on attend le
+  RÉSULTAT (être entré), borné, jamais un nombre de pas.
+
+- [ ] **Le compteur de vitesse d'une voiture (v272) — retiré, pas remplacé.**
+  Max : « la jauge de vitesse, je ne veux pas qu'elle soit existante pour une
+  voiture ». La manette et le compteur sont devenus des instruments d'avion, et
+  une voiture n'affiche donc plus rien. Si l'on veut un jour lui rendre un
+  chiffre, il faut d'abord décider ce qu'il dit : **un bloc ne vaut un mètre
+  nulle part dans ce jeu** — trente à quarante au sol dans une ville — et
+  `v × 3,6` mentait déjà dans le sens qui rapetisse tout (v267). La piste est
+  celle de l'avion : une croisière déclarée dans la fiche (`ALLURES`,
+  vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
+  à faire tant que Max ne le redemande pas.
+
+- [ ] **La physique d'un choc de voiture reste un arrêt net (v272).** La
+  vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
+  régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
+  choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la
+  tâche #38 de la session (« dégâts visibles sur les voitures et choc naturel
+  entre voitures »), et le clamp est le socle sur lequel elle se posera.
+
+
 - [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
   DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
   v259.** FAIT le soir de la v261 : `reseau.js` rejouée SEULE sur un arbre

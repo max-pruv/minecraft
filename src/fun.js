@@ -84,11 +84,21 @@ export function initFun(ctx) {
     .fun-note { color:#8894b0; font-size:13px; margin:6px 2px; }
     .fun-target { position:fixed; left:50%; transform:translateX(-50%); bottom:96px;
       display:none; gap:8px; z-index:30; }
-    /* EN VÉHICULE, « Descendre » S'ÉCARTE DES COMMANDES DE BORD (v265). La
-       colonne de vol commence à 272 px du bord gauche sur un iPhone de 430,
-       et le bouton centré s'arrête à 277 : sept pixels de recouvrement,
-       mesurés. Il se recentre sur ce qui reste à gauche. */
-    body.en-vehicule .fun-target { left:40%; }
+    /* EN VÉHICULE, « DESCENDRE » REJOINT LA COLONNE DE DROITE (v272). La v265
+       l'avait écarté des commandes de bord en le poussant vers la GAUCHE
+       (left:40 %) — et il est tombé en plein dans la zone du joystick, qui
+       n'est pas un cercle dessiné mais TOUT le quart bas-gauche de l'écran :
+       le canvas ne prend le doigt que si clientX est sous 45 % et clientY
+       au-delà de 40 % de la vue (main.js). Un bouton posé là intercepte le
+       doigt avant le canvas : on ne peut plus prendre le volant à cet
+       endroit, et l'on DESCEND en croyant tourner. C'est ce que Max a vu sur
+       sa capture de Hambourg.
+       La règle se dit donc sans dimension d'écran, comme le veut la v265 :
+       aucune commande de véhicule dans la zone du joystick. Le bouton va à
+       l'extrême droite, au-dessus des instruments de bord quand il y en a. */
+    body.en-vehicule .fun-target { left:auto; right:20px; transform:none;
+      bottom:calc(96px + var(--safe-bottom)); }
+    body.en-avion .fun-target { bottom:calc(314px + var(--safe-bottom)); }
     .fun-target button { padding:9px 14px; border-radius:12px; border:none; font-size:15px;
       background:rgba(20,26,40,.85); color:#fff; border:1px solid rgba(255,255,255,.25); }
     .emote-row { position:static; display:none; flex-direction:column; gap:8px; }

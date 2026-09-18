@@ -738,7 +738,15 @@
     body.en-avion #fly-btn, body.en-avion #train-btn { flex-direction: column; }
     #train-btn { display: none; }
     #train-btn.sorti { background: rgba(45, 106, 45, 0.8); border-color: #58b04c; }
-    body.en-vehicule #gaz-base, body.en-vehicule #cmd-vol, body.en-vehicule #gaz-val { display: block; }
+    /* LA MANETTE ET LE COMPTEUR SONT DES INSTRUMENTS D'AVION (v272). Max,
+       capture de Hambourg : « la jauge de vitesse, je ne veux pas qu'elle
+       soit existante pour une voiture ». Une voiture se conduit au joystick
+       — l'avant accélère, l'arrière freine puis recule — et c'est ce qui
+       marchait avant la v262 ; un enfant de sept ans n'a pas deux doigts à
+       consacrer à un cadran pour rouler dans une rue. L'avion, lui, garde
+       les deux : une manette des gaz est ce qui distingue un avion d'une
+       voiture (v228), et le compteur en Mach a été bâti pour lui (v267). */
+    body.en-avion #gaz-base, body.en-avion #cmd-vol, body.en-avion #gaz-val { display: block; }
     body.en-vehicule #jump-btn, body.en-vehicule #mode-btn, body.en-vehicule #ball-btn,
     body.en-vehicule #down-btn, body.en-vehicule #dex-btn, body.en-vehicule #hotbar { display: none !important; }
     body.en-vehicule:not(.en-avion) #fly-btn { display: none !important; }
@@ -1358,8 +1366,19 @@
        bas-gauche : en flux, comme tout le bord gauche — plus aucune
        coordonnée à la main. Et comme elle ne s'ouvre plus, elle ne se
        présente pas comme un bouton : pas de curseur de main. */
+    /* LA PASTILLE DE VIANDE NE SE TOUCHE PAS — ET ELLE VOLAIT LE DOIGT (v272).
+       `#left-rail-bottom > *` rend TOUS ses enfants cliquables, boutons
+       compris ; mais celle-ci ne fait que compter (main.js le dit : « elle ne
+       se touche plus »), et elle est posée à gauche, à 150 px du bas — DANS la
+       zone du joystick. Un enfant qui a ramassé de la viande ne pouvait donc
+       plus prendre le volant à cet endroit : la pastille mangeait le doigt
+       avant le canvas. Même défaut que le bouton « Descendre » de la capture
+       de Max, à un élément près. Trouvé par l'instrumentation du témoin, qui
+       relève `elementFromPoint` : elle a répondu « meat-counter ».
+       RÈGLE : tout ce qui n'est QUE de l'affichage porte
+       `pointer-events: none`, et ce qui se touche le déclare. */
     #meat-counter {
-      display: none; white-space: nowrap;
+      display: none; white-space: nowrap; pointer-events: none;
       font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
       background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.25);

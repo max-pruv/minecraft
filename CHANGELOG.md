@@ -20,6 +20,54 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v272 — Une voiture n'est pas un avion : ni jauge, ni eau sous les roues
+
+**Pourquoi.** Max, capture d'iPhone à Hambourg, quatre défauts sur une seule
+image : sa voiture au milieu du port, « il est marqué 86 km/h » alors qu'elle ne
+bougeait pas, le bouton « Descendre » posé en plein milieu du bas de l'écran, et
+« la jauge de vitesse, je ne veux pas qu'elle soit existante pour une voiture ».
+Les quatre avaient des causes différentes, et aucune n'était là où l'image la
+mettait. Un cinquième, de la même famille que le bouton mal placé, a été trouvé
+en instrumentant le témoin : la pastille de viande volait le doigt.
+
+**Ce que ça change.**
+
+- **Une voiture s'arrête au bord de l'eau** au lieu d'aller rouler au fond du
+  port, et le jeu dit quoi faire : « fais demi-tour ». Une voiture déjà tombée à
+  l'eau peut en ressortir — on ne bloque que l'entrée.
+- **Plus de cadran ni de compteur en voiture.** Elle se conduit au joystick,
+  d'un seul doigt : l'avant accélère, l'arrière freine puis recule, le côté
+  tourne le volant. La manette des gaz et le compteur redeviennent ce qu'ils
+  étaient — des instruments d'avion. Le chiffre en km/h disparaît donc aussi de
+  la voiture : un bloc ne vaut un mètre nulle part dans ce jeu, et ce compteur
+  mentait depuis toujours.
+- **Le bouton « Descendre » rejoint le bord droit.** Il était dans la zone du
+  joystick, qui n'est pas le cercle qu'on voit mais tout le quart bas-gauche de
+  l'écran : un doigt posé là ne prenait plus le volant, il faisait descendre. La
+  pastille de viande, au même endroit, faisait la même chose.
+- **Et une voiture arrêtée par un mur perd sa vitesse** : le moteur se calme et
+  les roues s'arrêtent, au lieu de tourner dans le vide à pleine allure.
+
+**Ce qui le prouve.**
+
+Cent trente-sept témoins de `monte.js`, dont **sept neufs pour cette
+livraison**, chacun mesuré :
+
+| ce qu'il mesure | ce qu'il rend |
+| --- | --- |
+| une voiture n'entre pas dans l'eau | s'arrête à 10,8 blocs, bord du quai à 12, zéro colonne d'eau — et elle recule de 1,04 pour en sortir |
+| un mur arrête le compteur | lancée à 10,94 blocs/s, contre le mur **vitesse 0**, quatre relevés immobiles d'affilée |
+| la jauge n'existe pas en voiture | cadran, compteur et socle tous à `none`, `player.gaz` resté nul |
+| « Descendre » hors de la zone du joystick | bouton en (300, 626), zone du joystick x < 189 et y > 304 |
+| rien d'autre ne vole le doigt | `elementFromPoint` rend le canvas du jeu au **premier** essai, pastille de viande affichée exprès |
+| le joystick accélère, et relâché ralentit | médiane **12,16** blocs/s pour 12,2 d'allure de la classe |
+| le joystick tourne le volant | le cap passe de −1,571 à −1,901 en accélérant |
+
+Et deux témoins anciens ont été corrigés parce qu'ils mesuraient le banc et non
+le jeu : celui du piéton recommence quand une voiture de la rue est venue
+pendant la mesure, et celui de la marche arrière mesure le recul **depuis le
+point de rebroussement** — freiner, c'est encore avancer.
+
 ## v271 — Les rues sont deux fois plus larges, et on roule à droite
 
 **Pourquoi.** Max, après la v270 : « increase les routes ». La chaussée des

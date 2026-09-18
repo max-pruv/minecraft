@@ -778,7 +778,118 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Une voiture n'est pas un avion : ni jauge, ni eau sous les roues (v272)
+
+Max, capture d'iPhone à Hambourg, quatre défauts sur une seule image : la
+voiture au milieu du port, « il est marqué 86 km/h » sur une voiture immobile,
+le bouton « Descendre » en plein milieu de l'écran, et « la jauge de vitesse,
+je ne veux pas qu'elle soit existante pour une voiture ». **Aucun des quatre
+n'était là où l'image le mettait**, et les quatre remèdes sont ailleurs que
+dans la pièce qu'on voit.
+
+**CETTE DÉCISION ANNULE CELLE DE LA v262 POUR LA VOITURE.** La manette des gaz
+et le compteur restent des instruments d'AVION — une poussée qui se garde quand
+on lâche est ce qui distingue un avion d'une voiture (v228), et le compteur en
+Mach a été bâti pour lui (v267). Une voiture se conduit au joystick, d'un seul
+doigt, comme avant la v262 : l'avant accélère, l'arrière freine puis recule
+(v269), le côté tourne le volant. `player.gaz` reste à `null` en voiture, et
+c'est ce chemin-là — celui du repli, écrit en v262 « rien de ce qu'un enfant
+sait ne cesse de marcher » — qui redevient le seul.
+
+- **LA ZONE DU JOYSTICK N'EST PAS LE CERCLE QU'ON VOIT : C'EST LE QUART
+  BAS-GAUCHE DE L'ÉCRAN.** Le cercle se dessine là où le doigt tombe ; ce qui
+  décide, c'est `clientX < 45 %` et `clientY > 40 %` de la vue, dans le
+  `touchstart` du canvas (main.js). **Un élément du DOM posé là intercepte le
+  doigt avant le canvas** : on ne peut plus prendre le volant à cet endroit, et
+  l'on DESCEND en croyant tourner. La v265 avait poussé « Descendre » vers la
+  GAUCHE (`left:40 %`) pour l'écarter des commandes de bord — elle l'a mis
+  dedans. Toute commande de véhicule vit désormais dans la colonne de droite,
+  et la règle se dit en FRACTIONS de la vue, jamais en pixels : c'est la même
+  discipline que « un témoin de mise en page se formule sans la taille de
+  l'écran » (v265), appliquée cette fois au code et non au témoin.
+- **`vitesseVoiture` ÉTAIT LA VITESSE DEMANDÉE, ET RIEN NE LA RAMENAIT.** Ni la
+  boîte de collision ni le crochet d'obstacle ne la touchaient : une voiture
+  plaquée contre un mur gardait vingt-quatre blocs par seconde pour toujours —
+  le compteur l'affichait, le régime du moteur (v268) le chantait, les roues
+  tournaient. Elle se borne au déplacement RÉELLEMENT obtenu, mesuré après les
+  sous-pas de collision. **Et `pousse` ne change pas** : relevé AVANT le
+  déplacement, il reste la vitesse demandée, parce que c'est lui qu'un piéton
+  lit pour s'écarter (v259) — une voiture arrêtée devant quelqu'un veut encore
+  passer, et c'est ce qui l'empêche de rester bloquée pour toujours.
+- **MAIS ON NE BORNE QUE CE QUI EST BLOQUÉ, PAS CE QUI FROTTE — UNE BORNE QUI
+  SE MORD LA QUEUE N'EST PAS UNE BORNE.** Mon premier jet ramenait la vitesse
+  au déplacement réel À CHAQUE image, quel qu'il soit. Or la voiture repart de
+  CETTE valeur : une qui rase un mur, ou dont le pas est rogné par une bordure,
+  tombait à presque rien et y restait. Mesuré à la sonde, accélérateur tenu
+  trois secondes au point d'apparition : vitesse demandée montée à 17,9 puis
+  **zéro pendant 1,2 seconde** alors que l'enfant appuyait toujours. On ne
+  borne donc que le cas de Max — le nez CONTRE quelque chose, où l'on obtient
+  un quart au plus de ce qu'on demandait ; entre les deux, la voiture garde sa
+  consigne et ralentit d'elle-même. Et c'est une SONDE qui l'a montré, pas le
+  raisonnement : le même protocole, avec et sans la borne, rend 4,4 blocs des
+  deux côtés — la distance était plafonnée par un obstacle, et sans la mesure
+  j'aurais « corrigé » la mauvaise chose.
+- **UNE VOITURE N'ENTRE PAS DANS L'EAU, ET C'EST LA QUATRIÈME FAMILLE
+  D'OBSTACLE** (`eauDevant`, main.js), jugée chez elle comme les trois autres,
+  avec « pas si l'on est déjà dedans » — une voiture tombée au port doit
+  pouvoir en sortir. C'est le piège de `sommetColonne` du v267 une famille plus
+  bas : elle rend le premier bloc SOLIDE, donc le FOND sous la mer, et rien
+  n'arrêtait la voiture. **Mais « de l'eau dans cette colonne » n'est pas « la
+  voiture est dans l'eau »** : un pont passe AU-DESSUS du fleuve, et les trois
+  tabliers de la Tamise (v208) seraient devenus infranchissables. Ce qu'une
+  voiture demande, c'est un PLANCHER sous ses roues — s'il y en a un, on roule,
+  quoi qu'il y ait plus bas. Et cette question-là est la PREMIÈRE, ce qui rend
+  la famille gratuite : sur une rue, la chaussée est sous les roues, on sort
+  sans descendre aucune colonne. Une borne d'altitude aurait été une constante
+  de plus à régler pour un coût qui n'existe pas.
+- **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
+  toutes les quatre secondes, comptées en temps RÉEL : un bandeau ne doit pas se
+  répéter plus souvent parce que la tablette rame (piège de `dt`, v226).
+
+**ET LE PORTAIL A RENDU TROIS ROUGES DE LA MÊME FAMILLE — LA QUATRIÈME FOIS
+(v272).** Aucun ne venait du jeu, les trois mesuraient le banc, et les trois se
+corrigent de la même manière : **on attend le RÉSULTAT, borné, et le temps qu'il
+a pris entre dans le message** (v270).
+
+| témoin | ce qu'il a rendu | ce qu'il attend désormais |
+| --- | --- | --- |
+| le piéton (`monte.js`) | 5,4 blocs d'avance, zéro traversée, DOUZE relevés d'une voiture de la rue | il recommence, au plus trois fois, quand la circulation est venue |
+| la marche arrière (`monte.js`) | « recule −2,2 » sur une physique juste | le recul depuis le point de REBROUSSEMENT — freiner, c'est encore avancer |
+| « Descendre » (`monte.js`) | `bouton null` — display à `none` | il attend la boîte, huit secondes au plus |
+| le passager (`reseau.js`) | 0,58 bloc en trois secondes, à DEUX pages | il conduit jusqu'à 2,5 blocs, vingt secondes au plus |
+
+Et la leçon neuve, celle du panneau « Descendre » : **`null` n'est pas un
+verdict, c'est une absence de mesure.** Il ne distingue pas « le bouton est mal
+placé » de « le bouton n'était pas encore affiché » — et c'est le second qui
+s'est produit, sur la MÊME page où le joystick prenait le doigt à l'instant
+d'avant. Un témoin qui lit une position lit d'abord qu'il y a quelque chose à
+lire.
+
+**UN ACCENT GRAVE DANS UN COMMENTAIRE DE CSS A TUÉ LE JEU ENTIER — et le banc
+n'a pas su le dire.** Le style de `fun.js` vit dans un littéral de gabarit
+(`style.textContent = \`…\``) : le premier accent grave écrit dans un
+commentaire À L'INTÉRIEUR le referme, et le module ne se charge plus. `node
+--check` passe — le fichier reste syntaxiquement valide, il ne dit simplement
+plus la même chose — et le banc ne rend que
+« page.waitForFunction: Timeout 90000ms exceeded » : ni la ligne, ni le
+fichier, ni même le mot « SyntaxError ». Deux règles.
+
+- **ON N'ÉCRIT PAS D'ACCENT GRAVE DANS UN COMMENTAIRE DE STYLE.** Ces
+  commentaires-là parlent du code comme les autres ; ils le citent sans le
+  citer (« le canvas ne prend le doigt que si clientX est sous 45 % »).
+- **DEVANT UN JEU QUI NE DÉMARRE PLUS, LA SONDE EST UNE PAGE NUE.** `banc.joueur`
+  lève son délai AVANT qu'on ait pu accrocher quoi que ce soit : les écouteurs
+  `pageerror` et `console` doivent être posés sur une page ouverte à la main,
+  avant la navigation. Dix lignes, et le message exact tombe en douze
+  secondes — « SyntaxError: Unexpected identifier 'canvas' » nommait la ligne
+  fautive à un mot près.
+
 ## La manette des gaz, et le volant au joystick (v262)
+
+> **⚠️ En VOITURE, la manette et le compteur ont été retirés en v272**
+> — décision de Max sur capture de Hambourg. Lire « Une voiture n'est pas un
+> avion » juste au-dessus. Ce qui reste vrai ici vaut pour l'AVION, et le
+> repli au joystick décrit plus bas est redevenu le seul chemin de la voiture.
 
 Max : « le joystick à gauche pour la direction et, en multitouch, à droite
 un cadran qu'on monte/baisse pour la vitesse ; accélérer et ralentir les
