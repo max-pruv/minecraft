@@ -3508,11 +3508,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           if (st.display === 'none' || b.width === 0) return null;
           return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
         };
+        // ET LE PANNEAU « DESCENDRE » SE LIT QUAND IL EST LÀ, PAS À L'INSTANT
+        // OÙ L'ON REGARDE (v272). Au portail il a rendu `null` — display à
+        // `none` — alors que le joystick du MÊME relevé prenait le doigt et
+        // que les boutons de la marche étaient bien effacés : `fun.js`
+        // réévalue la cible à chaque image, et à deux images par seconde on
+        // tombe entre deux. `null` ne distingue pas « mal placé » de « pas
+        // encore affiché » : on attend la boîte, borné, et l'attente entre
+        // dans le message.
+        let descendre = null, attenduDescendre = 0;
+        while (attenduDescendre < 8000 && !descendre) {
+          descendre = boite('fun-target');
+          if (!descendre) { await new Promise((f) => setTimeout(f, 250)); attenduDescendre += 250; }
+        }
         return {
           vue: { w: innerWidth, h: innerHeight }, zone,
           canvas: (document.querySelector('canvas') || {}).id || 'game',
           pastille: pastille ? getComputedStyle(pastille).display : 'absente',
-          descendre: boite('fun-target'),
+          descendre, attenduDescendre,
           boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), capture: vis('ball-btn'), coffre: vis('dex-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
           boost: g.player.boost, max: 3.2 * (g.player.boost || 1),
         };
@@ -3615,7 +3628,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const d = manette.descendre, zn = manette.zone;
     verifier('et le bouton pour descendre est hors de la zone du joystick — on ne descend pas en croyant tourner',
       !manette.err && !!d && !!zn && (d.x >= zn.x || d.y + d.h <= zn.y),
-      `bouton ${JSON.stringify(d)} · zone du joystick x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
+      `bouton ${JSON.stringify(d)} après ${((manette.attenduDescendre || 0) / 1000).toFixed(1)} s d'attente`
+      + ` · zone du joystick x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
     // ET RIEN D'AUTRE NE VOLE LE DOIGT (v272). C'est l'instrumentation du
     // témoin ci-dessus qui l'a trouvé : `elementFromPoint` répondait
     // « meat-counter ». La pastille de viande (🍖 × N) est posée à gauche, à

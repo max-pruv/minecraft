@@ -816,6 +816,19 @@ sait ne cesse de marcher » — qui redevient le seul.
   déplacement, il reste la vitesse demandée, parce que c'est lui qu'un piéton
   lit pour s'écarter (v259) — une voiture arrêtée devant quelqu'un veut encore
   passer, et c'est ce qui l'empêche de rester bloquée pour toujours.
+- **MAIS ON NE BORNE QUE CE QUI EST BLOQUÉ, PAS CE QUI FROTTE — UNE BORNE QUI
+  SE MORD LA QUEUE N'EST PAS UNE BORNE.** Mon premier jet ramenait la vitesse
+  au déplacement réel À CHAQUE image, quel qu'il soit. Or la voiture repart de
+  CETTE valeur : une qui rase un mur, ou dont le pas est rogné par une bordure,
+  tombait à presque rien et y restait. Mesuré à la sonde, accélérateur tenu
+  trois secondes au point d'apparition : vitesse demandée montée à 17,9 puis
+  **zéro pendant 1,2 seconde** alors que l'enfant appuyait toujours. On ne
+  borne donc que le cas de Max — le nez CONTRE quelque chose, où l'on obtient
+  un quart au plus de ce qu'on demandait ; entre les deux, la voiture garde sa
+  consigne et ralentit d'elle-même. Et c'est une SONDE qui l'a montré, pas le
+  raisonnement : le même protocole, avec et sans la borne, rend 4,4 blocs des
+  deux côtés — la distance était plafonnée par un obstacle, et sans la mesure
+  j'aurais « corrigé » la mauvaise chose.
 - **UNE VOITURE N'ENTRE PAS DANS L'EAU, ET C'EST LA QUATRIÈME FAMILLE
   D'OBSTACLE** (`eauDevant`, main.js), jugée chez elle comme les trois autres,
   avec « pas si l'on est déjà dedans » — une voiture tombée au port doit
@@ -832,6 +845,25 @@ sait ne cesse de marcher » — qui redevient le seul.
 - **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
   toutes les quatre secondes, comptées en temps RÉEL : un bandeau ne doit pas se
   répéter plus souvent parce que la tablette rame (piège de `dt`, v226).
+
+**ET LE PORTAIL A RENDU TROIS ROUGES DE LA MÊME FAMILLE — LA QUATRIÈME FOIS
+(v272).** Aucun ne venait du jeu, les trois mesuraient le banc, et les trois se
+corrigent de la même manière : **on attend le RÉSULTAT, borné, et le temps qu'il
+a pris entre dans le message** (v270).
+
+| témoin | ce qu'il a rendu | ce qu'il attend désormais |
+| --- | --- | --- |
+| le piéton (`monte.js`) | 5,4 blocs d'avance, zéro traversée, DOUZE relevés d'une voiture de la rue | il recommence, au plus trois fois, quand la circulation est venue |
+| la marche arrière (`monte.js`) | « recule −2,2 » sur une physique juste | le recul depuis le point de REBROUSSEMENT — freiner, c'est encore avancer |
+| « Descendre » (`monte.js`) | `bouton null` — display à `none` | il attend la boîte, huit secondes au plus |
+| le passager (`reseau.js`) | 0,58 bloc en trois secondes, à DEUX pages | il conduit jusqu'à 2,5 blocs, vingt secondes au plus |
+
+Et la leçon neuve, celle du panneau « Descendre » : **`null` n'est pas un
+verdict, c'est une absence de mesure.** Il ne distingue pas « le bouton est mal
+placé » de « le bouton n'était pas encore affiché » — et c'est le second qui
+s'est produit, sur la MÊME page où le joystick prenait le doigt à l'instant
+d'avant. Un témoin qui lit une position lit d'abord qu'il y a quelque chose à
+lire.
 
 **UN ACCENT GRAVE DANS UN COMMENTAIRE DE CSS A TUÉ LE JEU ENTIER — et le banc
 n'a pas su le dire.** Le style de `fun.js` vit dans un littéral de gabarit

@@ -203,10 +203,26 @@ function verifier(nom, ok, detail = '') {
       return p ? { de: p.de, s: p.s } : null;
     });
     const aliceAvant = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
-    await hote.evaluate(async () => {
-      const g = window.__game; g.player.keys.add('KeyW');
-      await new Promise((f) => setTimeout(f, 3000));
+    // ON CONDUIT JUSQU'À AVOIR ROULÉ, PAS PENDANT TROIS SECONDES (v272).
+    // `main.js` borne `dt` à un vingtième : avec DEUX pages ouvertes le banc
+    // rend deux images par seconde, donc trois secondes de temps réel font un
+    // tiers de seconde de jeu — la voiture n'a pas fini d'accélérer. Mesuré au
+    // portail de la v272 : 0,58 bloc pour une barre à un, là où la sonde en
+    // mesure 4,4 sur une page seule, même code. C'est le piège de la v270, une
+    // troisième fois : un verdict qui compte des blocs pendant une durée FIXE
+    // mesure la cadence du banc. On attend le RÉSULTAT, borné, et le temps
+    // qu'il a pris entre dans le message.
+    const conduite = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const x0 = g.player.pos.x, z0 = g.player.pos.z;
+      g.player.keys.add('KeyW');
+      let ms = 0, parcouru = 0;
+      while (ms < 20000 && parcouru < 2.5) {
+        await dodo(250); ms += 250;
+        parcouru = Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0);
+      }
       g.player.keys.delete('KeyW');
+      return { ms, parcouru: +parcouru.toFixed(2) };
     });
     await dormir(800);
     const aliceApres = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
@@ -216,7 +232,7 @@ function verifier(nom, ok, detail = '') {
     const roule = +Math.hypot(hoteApres.x - chezHote.x, hoteApres.z - chezHote.z).toFixed(2);
     verifier('et l\'on monte en passager : la voiture de l\'ami nous emmène',
       /Monter avec/.test(bouton.texte) && !!passagere && roule > 1 && suivi > 1 && ecart < 4,
-      JSON.stringify({ bouton: bouton.texte, passagere, roule, suivi, ecart }));
+      JSON.stringify({ bouton: bouton.texte, passagere, roule, suivi, ecart, conduite }));
     const aliceChezHote = await idDe(hote, 'Alice');
     const assise = await hote.evaluate((id) => {
       const g = window.__game; const rp = g.remotePlayers.get(id); const a = g.fun.montureConduite && g.fun.montureConduite();
