@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 276,
+    titre: "Un jeu tout clair",
+    puces: [
+      "Fond clair et panneaux en verre",
+      "De vraies lettres, plus de machine à écrire",
+      "Plus un seul emoji : des signes dessinés",
+      "Les commandes parlent enfin français",
+    ],
+  },
+  {
     v: 275,
     titre: "Le jeu s'appelle Grand Tour",
     puces: [

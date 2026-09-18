@@ -2754,6 +2754,11 @@ function refreshAdminBtn() {
 // Le prénom sur l'accueil : en allumant le jeu, la première question est
 // « suis-je bien sur mon compte ? ». Elle se répondait jusqu'ici en ouvrant
 // « Mon personnage ».
+// Les signes dessinés de l'accueil (v276). Écrits ici une fois : deux
+// copies du même dessin finissent par diverger.
+const CROIX_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+const PLUS_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
 function refreshHello() {
   const el = document.getElementById('player-hello');
   if (!el) return;
@@ -2947,7 +2952,8 @@ function renderProfiles() {
     { // toujours supprimable, y compris le dernier : plus de profil obligatoire
       const del = document.createElement('button');
       del.className = 'who-del';
-      del.textContent = '✕';
+      del.innerHTML = '';
+      del.insertAdjacentHTML('beforeend', CROIX_SVG);
       del.title = 'Supprimer ce joueur (code parental)';
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -2977,7 +2983,9 @@ function renderProfiles() {
   }
   const add = document.createElement('button');
   add.className = 'who-add';
-  add.textContent = '➕ Nouveau joueur';
+  add.innerHTML = '';
+  add.insertAdjacentHTML('beforeend', PLUS_SVG);
+  add.append('Nouveau joueur');
   add.addEventListener('click', () => {
     // name -> school grade -> face & code, then into the game
     identity.createAccount({
@@ -3123,7 +3131,8 @@ function renderRecentWorlds() {
     open.addEventListener('click', () => openWorld(roomCode));
     const del = document.createElement('button');
     del.className = 'world-del';
-    del.textContent = '✕';
+    del.innerHTML = '';
+    del.insertAdjacentHTML('beforeend', CROIX_SVG);
     del.title = 'Retirer ce monde de la liste';
     del.addEventListener('click', async () => {
       const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
