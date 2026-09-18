@@ -426,7 +426,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
   3 017 / 34,6 ; v263 3 283 / 37,3 ; v264 3 183 / 37,7 ; v273 3 167 / 32,5 au
-  portail et 3 483 / 37,6 rejouée seule — le même premier survol),
+  portail et 3 483 / 37,6 rejouée seule ; v274 3 517 / 38,9 au portail et
+  3 117 / 34,7 seule — le même premier survol),
   et le témoin extrait
   dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
   chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
