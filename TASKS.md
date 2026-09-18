@@ -30,6 +30,39 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
+  ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
+  au vert » (`carteMonde.js`) exige `redemarrages >= 1`. Or il ne compte un
+  redémarrage que si la MÊME voiture est relevée sur deux échantillons
+  CONSÉCUTIFS de 500 ms — l'un pendant qu'elle attend, l'autre après le
+  passage au vert — **et qu'elle est encore dans la fenêtre de 2 à 7 blocs
+  devant le feu au second**. Or une voiture qui repart en sort : c'est
+  exactement le cas qu'on veut voir qui échappe à la mesure. Le compte est
+  donc un tirage, et il tombe à zéro dès que la cadence du banc baisse.
+
+  Mesuré, la suite rejouée SEULE trois fois de chaque côté (la livraison v275
+  ne touche ni `feux.js`, ni `vehicules.js`, ni `main.js` sur ce chemin) :
+
+  | | branche | `origin/main` |
+  | --- | --- | --- |
+  | redémarrages | 2 · 5 · 3 | 4 · 4 · 2 |
+  | voitures relevées | 1 448 · 1 451 · 1 461 | 1 466 · 1 445 · 1 439 |
+  | arrêtées au rouge | 170 · 175 · 137 | 151 · 154 · 169 |
+
+  Même distribution, même moyenne (3,3 des deux côtés). Au portail complet,
+  sous charge, il a rendu **0** — et 193 arrêts au rouge, donc le mécanisme
+  du jeu marche. C'est le banc que le témoin mesure.
+
+  **Le remède n'est pas de baisser la borne à zéro** (elle ne prouverait plus
+  rien) **ni de rejouer jusqu'au vert.** C'est de compter l'ÉVÉNEMENT au lieu
+  de l'instant : retenir, par voiture, qu'elle a attendu devant un feu non
+  vert, et compter le redémarrage la première fois qu'on la revoit sans son
+  drapeau d'attente — qu'elle soit encore devant le feu ou non. `auRouge >= 10`
+  reste la borne qui garde le fond. À faire en v276, et à éprouver en
+  désarmant l'arrêt aux feux dans une copie de `src` (la vérification se FAIT,
+  elle ne se raconte pas).
+
+
 - [ ] **TROIS FEUX DE PARIS SONT SOUS L'EMPRISE D'UN MONUMENT (v274).** Les
   repères (`LANDMARKS`, world.js) se posent APRÈS les colonnes et écrivent
   leurs propres blocs : un feu planté là y survit, DEDANS, et la rue que
