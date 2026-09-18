@@ -1935,9 +1935,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // tout ce qui bouge.
     const dansLEau = await tab.evaluate(async () => {
       const { BLOCK } = await import('./src/blocks.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
       const g = window.__game;
       if (!g.poissons) return null;
-      const { WATER_LEVEL } = await import('./src/world.js');
       const compter = async (tours) => {
         let pire = 0, releves = 0, fautifs = 0;
         for (let k = 0; k < tours; k++) {
@@ -3427,16 +3427,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && Math.abs(roulis.droite.rendu) < PENCHE,
       `après avoir lâché : ${JSON.stringify(roulis)}`);
 
-    // LA MANETTE DES GAZ, ET LES BOUTONS QUI S'EFFACENT EN VÉHICULE (v262).
+    // AU VOLANT, LE JOYSTICK EST LE VOLANT ET L'ACCÉLÉRATEUR — NI MANETTE NI
+    // COMPTEUR (v272, qui remplace le témoin de cadran de la v262).
     //
-    // Max : « le joystick à gauche pour la direction et, en multitouch, à
-    // droite un cadran qu'on monte/baisse pour la vitesse ; accélérer et
-    // ralentir les voitures, idem pour les avions » ; et « au volant, nettoyer
-    // les boutons inutiles ». ON ÉPROUVE LE GESTE DE L'ENFANT : deux doigts
-    // par le protocole du navigateur (Playwright ne sait taper qu'à un doigt,
-    // cf. `pincer`), l'un sur le joystick à gauche, l'autre sur le cadran à
-    // droite, et l'on lit la vitesse que la voiture PREND et le cap qu'elle
-    // prend quand le joystick va à droite.
+    // Max, capture de Hambourg : « il est marqué 86 km/h » sur une voiture
+    // immobile dans le port, et « la jauge de vitesse, je ne veux pas qu'elle
+    // soit existante pour une voiture ». Le cadran redevient ce qu'il a
+    // toujours été : une manette des gaz d'AVION. Une voiture se conduit au
+    // joystick — l'avant accélère, l'arrière freine puis recule (v269), le
+    // côté tourne le volant (v262) — ce qui ne demande qu'un doigt.
+    //
+    // ON ÉPROUVE LE GESTE DE L'ENFANT, UN SEUL DOIGT : on pose le joystick
+    // dans sa zone (le quart bas-gauche du canvas), on le pousse vers l'avant,
+    // et l'on lit la vitesse que la voiture PREND, puis le cap qu'elle prend
+    // quand on va à droite.
     const manette = await (async () => {
       const cdp = await tab.context().newCDPSession(tab);
       const dormirIci = (ms) => new Promise((f) => setTimeout(f, ms));
@@ -3467,41 +3471,99 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!auVolant()) return { err: 'pas monté dans la voiture' };
         await new Promise((f) => setTimeout(f, 600));
-        const r = document.getElementById('gaz-base').getBoundingClientRect();
+        // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (v272) : la pastille de
+        // viande n'apparaît qu'à partir d'un morceau ramassé, et c'est elle
+        // qui volait le doigt dans la zone du joystick. On la montre donc
+        // exprès, comme un enfant qui a chassé — sinon le témoin dépend de ce
+        // que les cent trente témoins d'avant ont laissé traîner.
+        const pastille = document.getElementById('meat-counter');
+        if (pastille) { pastille.style.display = 'block'; pastille.textContent = '🍖 × 3'; }
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
+        // LA ZONE DU JOYSTICK SE DEMANDE AU JEU, ELLE NE S'ÉCRIT PAS EN
+        // PIXELS : c'est une FRACTION de la vue (main.js : `clientX <
+        // innerWidth * 0,45 && clientY > innerHeight * 0,4`). Écrite en
+        // pixels, la règle serait juste sur l'iPhone de Max et fausse sur le
+        // 420 × 760 du banc — c'est exactement le piège de la v265.
+        const zone = { x: innerWidth * 0.45, y: innerHeight * 0.4 };
+        const boite = (id) => {
+          const e = document.getElementById(id);
+          if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
         return {
-          cadran: { x: r.left + r.width / 2, haut: r.top + 14, bas: r.bottom - 14 },
-          boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), capture: vis('ball-btn'), coffre: vis('dex-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), train: vis('train-btn'), vol: vis('fly-btn') },
+          vue: { w: innerWidth, h: innerHeight }, zone,
+          canvas: (document.querySelector('canvas') || {}).id || 'game',
+          pastille: pastille ? getComputedStyle(pastille).display : 'absente',
+          descendre: boite('fun-target'),
+          boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), capture: vis('ball-btn'), coffre: vis('dex-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
           boost: g.player.boost, max: 3.2 * (g.player.boost || 1),
         };
       });
       if (prep.err) return prep;
-      const joy = { x: 70, y: 640, id: 1 };
-      const gazA = (n) => ({ x: prep.cadran.x, y: prep.cadran.bas - (prep.cadran.bas - prep.cadran.haut) * n, id: 2 });
-      // les deux doigts : le joystick au repos, le cadran en bas
-      await toucher('touchStart', [joy]);
-      await toucher('touchStart', [joy, gazA(0)]);
-      await dormirIci(200);
-      // on monte le cadran à 60 %, en quatre pas
-      for (const n of [0.15, 0.3, 0.45, 0.6]) { await toucher('touchMove', [joy, gazA(n)]); await dormirIci(80); }
-      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1) }; });
+      // LE DOIGT SE POSE DANS LA ZONE DU JOYSTICK, EN FRACTION DE LA VUE.
+      //
+      // ET UN GESTE QUI NE PREND PAS SE DIT (v272). Le premier jet posait le
+      // doigt une fois et mesurait : au portail, `f` est resté à zéro et le
+      // témoin a accusé une physique JUSTE — sonde faite, même dalle, même
+      // voiture, même protocole : `f = 1`, la voiture monte à son allure.
+      // Le geste ne prend donc pas TOUJOURS sur une page qui a cent trente
+      // témoins derrière elle. On relève donc ce que la sonde relevait — la
+      // branche qui a pris le doigt (`joy` paraît-il ?), et ce que
+      // `elementFromPoint` voit — et l'on repose le doigt tant qu'il n'a pas
+      // pris, trois fois au plus, le NOMBRE D'ESSAIS entrant dans le verdict :
+      // un geste qui demande trois essais est un fait qu'on veut voir.
+      const base = { x: Math.round(prep.vue.w * 0.18), y: Math.round(prep.vue.h * 0.8) };
+      const JOY = 50;   // JOY_RADIUS (main.js)
+      const joy = (dx, dy) => ({ x: base.x + dx, y: base.y + dy, id: 1 });
+      const doigt = () => tab.evaluate((b) => {
+        const e = document.elementFromPoint(b.x, b.y);
+        return {
+          joy: getComputedStyle(document.getElementById('joy-base')).display,
+          knob: document.getElementById('joy-knob').style.transform,
+          cible: e ? (e.id || `${e.tagName}.${e.className}`) : 'rien',
+          f: +window.__game.player.touchMove.f.toFixed(2),
+        };
+      }, base);
+      // ET LE PROTOCOLE DES DOIGTS EST STRICT : `touchEnd` sans doigt posé rend
+      // « Must send a TouchStart first to start a new touch » et TUE la suite
+      // (mesuré). On lève donc le doigt sans exiger qu'il y en ait un.
+      const lever = () => toucher('touchEnd', [joy(0, 0)]).catch(() => {});
+      let essais = 0, pose = null;
+      while (essais < 3) {
+        essais++;
+        if (essais > 1) { await lever(); await dormirIci(120); }
+        await toucher('touchStart', [joy(0, 0)]);
+        await dormirIci(250);
+        // plein avant : le doigt monte d'un rayon de joystick
+        await toucher('touchMove', [joy(0, -JOY)]);
+        await dormirIci(350);
+        pose = await doigt();
+        if (pose.f > 0.8) break;
+      }
+      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1) }; });
       // LE BANC NE VIT PAS EN TEMPS RÉEL (dt borné, trois images par seconde) :
       // on attend que la voiture AIT pris sa vitesse, bornée en temps mural,
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      const viseeV = prep.max * 0.6;
-      while (Date.now() - t0 < 20000) { const r = await lire(); if (r.v >= viseeV * 0.9) break; await dormirIci(200); }
+      while (Date.now() - t0 < 20000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
       for (let i = 0; i < 8; i++) { await dormirIci(200); vitesses.push(await lire()); }
-      // puis le joystick à droite, le cadran ne bouge pas
+      // puis le joystick à droite, toujours plein avant
       const avantVirage = await lire();
-      for (const dx of [15, 30, 45]) { await toucher('touchMove', [{ ...joy, x: joy.x + dx }, gazA(0.6)]); await dormirIci(60); }
+      for (const dx of [15, 30, 45]) { await toucher('touchMove', [joy(dx, -JOY)]); await dormirIci(60); }
       let apresVirage = avantVirage;
       const t1 = Date.now();
       while (Date.now() - t1 < 8000) { apresVirage = await lire(); if (Math.abs(apresVirage.yaw - avantVirage.yaw) > 0.3) break; await dormirIci(150); }
-      await toucher('touchEnd', []);
+      await lever();
       await dormirIci(300);
-      const apresLacher = await lire();
+      // ON LÂCHE : SANS MANETTE, UNE VOITURE RALENTIT — c'est la différence
+      // avec l'avion, dont la poussée SE GARDE (v228). On attend le résultat,
+      // borné, jamais un délai fixe.
+      let apresLacher = await lire();
+      const t2 = Date.now();
+      while (Date.now() - t2 < 10000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
@@ -3512,29 +3574,230 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
       const tri = vitesses.map((r) => r.v).sort((a, b) => a - b);
-      return { ...prep, gazTenu: vitesses[vitesses.length - 1].gaz, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
+      return { ...prep, essais, pose, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
     })();
-    const attenduGaz = manette.max ? manette.max * 0.6 : 0;
-    verifier('au volant, le cadran de droite fixe la vitesse — à 60 %, la voiture roule à 60 % de son allure',
-      !manette.err && manette.gazTenu >= 0.5 && manette.gazTenu <= 0.7
-        && manette.mediane >= attenduGaz * 0.75 && manette.pointe <= manette.max * 1.05
-        && manette.apresLacher && manette.apresLacher.gaz === manette.gazTenu,
-      `${manette.err || ''} gaz ${manette.gazTenu} · médiane ${manette.mediane} pour ${attenduGaz.toFixed(1)} attendus (allure ${manette.max && manette.max.toFixed(1)}) · lâché ${JSON.stringify(manette.apresLacher)}`);
-    verifier('et le joystick à gauche tourne le volant pendant que le cadran tient la vitesse',
+    verifier('au volant, l\'avant du joystick est l\'accélérateur — poussé à fond, la voiture prend son allure, et elle ralentit quand on lâche',
+      !manette.err && manette.mediane >= manette.max * 0.75 && manette.pointe <= manette.max * 1.05
+        && manette.apresLacher && manette.apresLacher.v < manette.max * 0.3
+        && manette.apresLacher.gaz == null,
+      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)}`);
+    verifier('et le côté du joystick tourne le volant pendant qu\'on accélère',
       !manette.err && manette.avantVirage && manette.apresVirage
         && Math.abs(manette.apresVirage.yaw - manette.avantVirage.yaw) > 0.25
-        && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > attenduGaz * 0.5,
-      `avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
+        && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > manette.max * 0.5,
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
     const b = manette.boutons || {};
-    verifier('au volant, les boutons de la marche s\'effacent — saut, pioche, capture, coffre, barre — et le cadran paraît',
+    verifier('au volant, les boutons de la marche s\'effacent — saut, pioche, capture, coffre, barre — ET LA JAUGE DE VITESSE N\'EXISTE PAS',
       !manette.err && b.saut === 'none' && b.pioche === 'none' && b.capture === 'none' && b.coffre === 'none'
-        && b.barre === 'none' && b.vol === 'none' && b.train === 'none' && b.gaz === 'block',
+        && b.barre === 'none' && b.vol === 'none' && b.train === 'none'
+        && b.gaz === 'none' && b.val === 'none' && b.socle === 'none',
       JSON.stringify(b));
+    // LE BOUTON POUR DESCENDRE N'EST PAS DANS LA ZONE DU JOYSTICK. La v265
+    // l'avait poussé vers la GAUCHE pour l'écarter des commandes de bord, et
+    // il est tombé dedans : un doigt posé là ne prend plus le volant, il
+    // DESCEND. La règle se dit en fractions de la vue, jamais en pixels.
+    const d = manette.descendre, zn = manette.zone;
+    verifier('et le bouton pour descendre est hors de la zone du joystick — on ne descend pas en croyant tourner',
+      !manette.err && !!d && !!zn && (d.x >= zn.x || d.y + d.h <= zn.y),
+      `bouton ${JSON.stringify(d)} · zone du joystick x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
+    // ET RIEN D'AUTRE NE VOLE LE DOIGT (v272). C'est l'instrumentation du
+    // témoin ci-dessus qui l'a trouvé : `elementFromPoint` répondait
+    // « meat-counter ». La pastille de viande (🍖 × N) est posée à gauche, à
+    // 150 px du bas — DANS la zone du joystick — et `#left-rail-bottom > *`
+    // la rendait cliquable alors que `main.js` écrit qu'« elle ne se touche
+    // plus ». Un enfant qui a ramassé de la viande ne pouvait plus prendre le
+    // volant à cet endroit. Le témoin la MONTRE exprès (voir `prep`) et exige
+    // que le doigt atteigne le canvas du PREMIER coup.
+    verifier('et rien d\'autre ne vole le doigt dans la zone du joystick — la pastille de viande ne se touche pas',
+      !manette.err && !!manette.pose && manette.pose.cible === manette.canvas
+        && manette.pose.f > 0.8 && manette.essais === 1 && manette.pastille === 'block',
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · canvas « ${manette.canvas} » · pastille ${manette.pastille}`);
     verifier('et ils reviennent à pied',
       !manette.err && manette.apres && !manette.apres.auVolant && manette.apres.saut !== 'none'
         && manette.apres.pioche !== 'none' && manette.apres.barre !== 'none' && manette.apres.gaz === 'none'
         && manette.apres.gazJoueur == null,
       JSON.stringify(manette.apres));
+
+    // « IL EST MARQUÉ 86 KM/H » — UNE VOITURE À L'ARRÊT NE ROULE PAS (v272).
+    //
+    // Max, capture de Hambourg : le compteur annonçait 86 km/h sur une
+    // voiture immobile. `vitesseVoiture` était la vitesse DEMANDÉE : ni la
+    // boîte de collision ni le crochet d'obstacle ne la touchaient, si bien
+    // qu'une voiture plaquée contre un mur gardait son allure pour toujours —
+    // le compteur le disait, le bruit du moteur le disait, et les roues
+    // tournaient dans le vide.
+    //
+    // ON MESURE LA CAUSE, PAS L'AFFICHAGE : le compteur n'existe plus en
+    // voiture (témoin ci-dessus), mais `vitesseVoiture` alimente encore le
+    // régime du moteur (v268) et la rotation des roues. C'est elle qu'on lit.
+    //
+    // ET L'ON ATTEND LE RÉSULTAT, JAMAIS UNE DURÉE : « il ne bouge plus »,
+    // borné en temps mural, parce qu'à `dt` borné trois secondes de banc ne
+    // mènent nulle part (v270, trois fichiers dans le même portail).
+    const mur = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+      const x0 = 30400, z0 = 30900, L = 60, W = 8;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const pose = [];
+      for (let d = -6; d <= L; d++) for (let w = -W; w <= W; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); pose.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); pose.push([x0 + d, y0 + h, z0 + w]); }
+      }
+      // un mur en travers, à trente blocs : de quoi prendre toute son allure
+      for (let w = -W; w <= W; w++) for (let h = 1; h <= 4; h++) {
+        g.world.setBlock(x0 + 30, y0 + h, z0 + w, BLOCK.STONE); pose.push([x0 + 30, y0 + h, z0 + w]);
+      }
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1200));
+      g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+      await new Promise((f) => setTimeout(f, 800));
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+      const rendre = async () => {
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        g.player.keys.clear();
+        for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0);
+      };
+      if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
+      g.player.keys.add('KeyW');
+      // on roule jusqu'à ce que la voiture ait pris son allure
+      const t0 = performance.now();
+      let lance = 0;
+      while (performance.now() - t0 < 20000) {
+        await new Promise((f) => setTimeout(f, 200));
+        lance = Math.abs(g.player.vitesseVoiture || 0);
+        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85) break;
+      }
+      // puis jusqu'à ce qu'elle ne bouge plus — le mur l'arrête
+      const t1 = performance.now();
+      let immobile = 0, xAvant = g.player.pos.x, arret = performance.now();
+      while (performance.now() - t1 < 25000 && immobile < 4) {
+        await new Promise((f) => setTimeout(f, 250));
+        const bouge = Math.abs(g.player.pos.x - xAvant);
+        xAvant = g.player.pos.x;
+        immobile = bouge < 0.02 ? immobile + 1 : 0;
+      }
+      arret = Math.round(performance.now() - t1);
+      const contreLeMur = {
+        vitesse: +Math.abs(g.player.vitesseVoiture || 0).toFixed(2),
+        x: +(g.player.pos.x - x0).toFixed(1),
+        immobile, arret,
+      };
+      // on lâche le mur : la voiture doit repartir en arrière
+      g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
+      const t2 = performance.now();
+      let recule = 0;
+      while (performance.now() - t2 < 15000 && recule < 1) {
+        await new Promise((f) => setTimeout(f, 250));
+        recule = (x0 + contreLeMur.x) - g.player.pos.x;
+      }
+      await rendre();
+      return { lance: +lance.toFixed(2), max: +(g.player.vitesseVoitureMax || 3.2).toFixed(2), contreLeMur, recule: +recule.toFixed(2) };
+    });
+    verifier('une voiture arrêtée par un mur n\'annonce plus de vitesse — et elle repart quand on recule',
+      !mur.err && mur.lance > 1 && !!mur.contreLeMur && mur.contreLeMur.immobile >= 4
+        && mur.contreLeMur.vitesse < mur.lance * 0.2 && mur.recule >= 1,
+      `${mur.err || ''} lancée ${mur.lance} (allure ${mur.max}) · contre le mur ${JSON.stringify(mur.contreLeMur)} · reculé ${mur.recule}`);
+
+    // UNE VOITURE N'ENTRE PAS DANS L'EAU (v272).
+    //
+    // Max, capture de Hambourg : sa voiture au milieu du port. C'est le piège
+    // de `sommetColonne` du v267, une famille plus bas — elle rend le premier
+    // bloc SOLIDE en descendant, et l'eau n'en est pas un : au-dessus de la
+    // mer elle rend le FOND, si bien que rien n'arrêtait la voiture et
+    // qu'elle roulait au fond.
+    //
+    // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (leçon des poissons, v233) :
+    // un quai de pierre posé au ras de l'eau, cap droit sur la mer. Et la
+    // sonde DIT OÙ ELLE EST (v267) : sans la position et la hauteur d'eau, un
+    // « tout va bien » ne prouve rien.
+    const eau = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+      // UN PORT FABRIQUÉ : un quai de pierre jusqu'à douze blocs, puis un
+      // bassin en eau. On ne cherche pas un vrai rivage — il faut la MÊME
+      // situation à tous les coups (leçon des poissons, v233). Et il se bâtit
+      // AU-DESSUS du relief, comme la piste des témoins d'avion : le relief
+      // naturel n'est jamais plat sur cinquante blocs.
+      const x0 = 31200, z0 = 31500, W = 8, QUAI = 12;
+      let y0 = 0;
+      for (let d = -8; d <= 44; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;                       // le quai
+      const surface = y0 - 1;        // la surface de l'eau, un bloc plus bas
+      const fond = y0 - 5;
+      const pose = [];
+      const mettre = (x, y, z, id) => { g.world.setBlock(x, y, z, id); pose.push([x, y, z]); };
+      for (let d = -8; d <= 44; d++) for (let w = -W; w <= W; w++) {
+        if (d <= QUAI) for (let y = fond; y <= y0; y++) mettre(x0 + d, y, z0 + w, BLOCK.STONE);
+        else {
+          mettre(x0 + d, fond, z0 + w, BLOCK.STONE);
+          for (let y = fond + 1; y <= surface; y++) mettre(x0 + d, y, z0 + w, BLOCK.WATER);
+          mettre(x0 + d, y0, z0 + w, 0);
+        }
+        for (let h = 1; h <= 8; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) mettre(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x, vers la mer
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1200));
+      g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+      await new Promise((f) => setTimeout(f, 800));
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+      const rendre = async () => {
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        g.player.keys.clear();
+        for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0);
+      };
+      // LA SONDE DIT OÙ ELLE EST (v267) : la distance au départ, la hauteur,
+      // et surtout COMBIEN de blocs d'eau la voiture a au-dessus d'elle. Sans
+      // ce dernier chiffre, un « tout va bien » ne prouve rien.
+      const ou = () => {
+        const bx = Math.floor(g.player.pos.x), bz = Math.floor(g.player.pos.z);
+        let eau = 0;
+        for (let y = Math.floor(g.player.pos.y); y <= surface; y++) if (g.world.getBlock(bx, y, bz) === BLOCK.WATER) eau++;
+        return { d: +(g.player.pos.x - x0).toFixed(1), y: +g.player.pos.y.toFixed(1), eau, surface };
+      };
+      if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
+      const depart = ou();
+      g.player.keys.add('KeyW');
+      // on pousse vers la mer jusqu'à ne plus avancer, borné en temps mural
+      const t0 = performance.now();
+      let immobile = 0, xAvant = g.player.pos.x;
+      while (performance.now() - t0 < 30000 && immobile < 4) {
+        await new Promise((f) => setTimeout(f, 250));
+        const bouge = Math.abs(g.player.pos.x - xAvant);
+        xAvant = g.player.pos.x;
+        immobile = bouge < 0.02 ? immobile + 1 : 0;
+      }
+      const arrive = ou();
+      // ET L'ON DOIT POUVOIR RECULER : « pas si l'on est déjà dedans » vaut
+      // aussi pour l'eau, sinon une voiture tombée au port y reste à jamais.
+      g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
+      const t1 = performance.now();
+      let recule = 0;
+      while (performance.now() - t1 < 15000 && recule < 1) {
+        await new Promise((f) => setTimeout(f, 250));
+        recule = arrive.d - (g.player.pos.x - x0);
+      }
+      await rendre();
+      return { depart, arrive, quai: QUAI, recule: +recule.toFixed(2), duree: Math.round(performance.now() - t0) };
+    });
+    verifier('une voiture n\'entre pas dans l\'eau — elle s\'arrête sur le quai, et elle peut reculer',
+      !eau.err && !!eau.arrive && eau.arrive.eau === 0 && eau.arrive.y > eau.arrive.surface
+        && eau.arrive.d > 2 && eau.arrive.d <= eau.quai + 2 && eau.recule >= 1,
+      `${eau.err || ''} départ ${JSON.stringify(eau.depart)} → arrivée ${JSON.stringify(eau.arrive)} (quai jusqu'à ${eau.quai}) · reculé ${eau.recule} · ${eau.duree} ms`);
 
     // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
     // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
@@ -4215,10 +4478,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
         if (!auVolant()) return { err: `pas monté sur ${espece}` };
         await tenir(0.6);
-        // LE CADRAN À FOND — c'est la situation de Max : il a servi, il reste
-        // où on l'a laissé, et la marche arrière devenait impossible.
-        g.player.gaz = 1;
+        // ON LANCE L'APPAREIL PAR LA COMMANDE QU'IL A VRAIMENT (v272). Une
+        // voiture n'a plus de cadran — décision de Max — donc on la lance au
+        // JOYSTICK, ce qu'un enfant fait. L'avion, lui, garde la situation de
+        // Max : le cadran a servi, il reste où on l'a laissé, et la marche
+        // arrière devenait impossible.
+        const auCadran = espece !== 'voiture';
+        if (auCadran) g.player.gaz = 1;
+        else g.player.touchMove = { f: 1, s: 0 };
         await tenir(1.2);
+        const vitesse0 = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
+        let lance = 0, monte = 0;
+        while (monte < 8 && lance < 1) { await tenir(0.3); monte += 0.3; lance = Math.abs(vitesse0()); }
         // ON SÉPARE LE FREINAGE DU RECUL. Tirer le joystick depuis pleins gaz
         // freine d'abord — c'est voulu, on ne passe pas la marche arrière à
         // vingt blocs par seconde — et quatre secondes n'y suffisaient pas :
@@ -4254,7 +4525,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         document.getElementById('ride-btn').click();
         await tenir(0.8);
         return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant(),
-          attente: +attente.toFixed(1) };
+          lance: +lance.toFixed(2), attente: +attente.toFixed(1) };
       };
       out.voiture = await essai('voiture');
       out.avion = await essai('avionligne');
@@ -4280,9 +4551,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // `gazApres === 0` (le geste a bien repris la main sur le cadran). La
     // borne de distance, elle, ne fait que vérifier le sens — un bloc, soit la
     // moitié de la PIRE des trois mesures, et non la moitié de la meilleure.
-    verifier('le cadran à fond, tirer le joystick en arrière fait RECULER la voiture',
-      !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres === 0
-      && recul.voiture.arretEn < 8,
+    //
+    // CE QUI PROUVE QUE LA MESURE A EU LIEU DÉPEND DE LA COMMANDE (v272). Pour
+    // l'avion c'est `gazApres === 0` : le geste a repris la main sur le
+    // cadran. Une voiture n'en a plus — son cadran reste donc à `null` — et ce
+    // qui prouve la mesure, c'est qu'elle ait été LANCÉE (`lance`) puis
+    // ARRÊTÉE (`arretEn` n'a pas expiré) avant de reculer.
+    verifier('lancée au joystick, tirer le joystick en arrière fait RECULER la voiture',
+      !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres == null
+      && recul.voiture.lance > 1 && recul.voiture.arretEn < 8,
       JSON.stringify(recul.voiture));
     verifier('et un avion se repousse au sol au lieu de rester planté',
       !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0

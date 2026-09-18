@@ -166,6 +166,12 @@ On touch devices: left thumb summons a joystick, right thumb looks around,
 tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
 handle jumping, flying, and throwing catch-balls.
 
+In a car the joystick is both accelerator and steering wheel — push forward to
+speed up, pull back to brake and then reverse — and the walking buttons step
+aside. A plane additionally gets a throttle dial and a speed readout on the
+right, because a throttle that holds when you let go is what makes an aircraft
+an aircraft.
+
 ## Code layout
 
 ```

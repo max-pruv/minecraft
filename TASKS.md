@@ -30,6 +30,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **Le compteur de vitesse d'une voiture (v272) — retiré, pas remplacé.**
+  Max : « la jauge de vitesse, je ne veux pas qu'elle soit existante pour une
+  voiture ». La manette et le compteur sont devenus des instruments d'avion, et
+  une voiture n'affiche donc plus rien. Si l'on veut un jour lui rendre un
+  chiffre, il faut d'abord décider ce qu'il dit : **un bloc ne vaut un mètre
+  nulle part dans ce jeu** — trente à quarante au sol dans une ville — et
+  `v × 3,6` mentait déjà dans le sens qui rapetisse tout (v267). La piste est
+  celle de l'avion : une croisière déclarée dans la fiche (`ALLURES`,
+  vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
+  à faire tant que Max ne le redemande pas.
+
+- [ ] **La physique d'un choc de voiture reste un arrêt net (v272).** La
+  vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
+  régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
+  choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la
+  tâche #38 de la session (« dégâts visibles sur les voitures et choc naturel
+  entre voitures »), et le clamp est le socle sur lequel elle se posera.
+
+
 - [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
   DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
   v259.** FAIT le soir de la v261 : `reseau.js` rejouée SEULE sur un arbre

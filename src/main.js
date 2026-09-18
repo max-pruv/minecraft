@@ -947,10 +947,64 @@ function updateChunks() {
     const avant = pietonsDans(x0, z0, cap);
     return apres.some((n) => !avant.includes(n));
   };
-  player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) =>
-    (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap))
-    || (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap))
-    || pietonDevant(x, z, cap, x0, z0);
+  // ET UNE VOITURE N'ENTRE PAS DANS L'EAU (v272). Max, capture de Hambourg :
+  // sa voiture au milieu du port. C'est le piège de `sommetColonne` du v267,
+  // une famille plus bas — elle rend le premier bloc SOLIDE en descendant, et
+  // l'eau n'en est pas un : au-dessus de la mer elle rend le FOND, et la
+  // voiture y roulait tranquillement. On demande donc ce qu'il y a JUSTE
+  // AU-DESSUS du sol.
+  //
+  // MAIS « DE L'EAU DANS CETTE COLONNE » N'EST PAS « LA VOITURE EST DANS
+  // L'EAU » : un pont passe AU-DESSUS du fleuve, et les trois tabliers de la
+  // Tamise (v208) seraient devenus infranchissables. Ce qu'une voiture
+  // demande, c'est un PLANCHER sous ses roues — s'il y en a un, on roule,
+  // quoi qu'il y ait plus bas. Sinon, et si la colonne est en eau, on refuse.
+  //
+  // Et l'on regarde le RECTANGLE, pas le centre : à vingt blocs par seconde
+  // le capot est dans l'eau deux blocs avant le milieu de la voiture.
+  //
+  // ET CE N'EST PAS CHER, PARCE QUE LE PLANCHER EST LA PREMIÈRE QUESTION :
+  // sur une rue, la chaussée est sous les roues, on sort par `continue` et
+  // l'on ne descend AUCUNE colonne. La recherche de fond ne coûte que là où
+  // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
+  // d'altitude serait une constante de plus à régler pour un coût qui
+  // n'existe pas.
+  const eauDevant = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const y0 = Math.floor(player.pos.y + 0.1);
+    for (let a = -demiLong; a <= demiLong + 1e-6; a += 1.1)
+      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
+        const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
+        if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
+        const sol = world.sommetColonne(bx, bz);
+        if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
+      }
+    return false;
+  };
+  // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
+  // crochet est appelé soixante fois par seconde tant que l'enfant pousse
+  // vers la mer : un bandeau par image serait illisible.
+  let ditEau = 0;
+  const direLEau = () => {
+    // en temps RÉEL, jamais en `dt` : un bandeau ne doit pas se répéter plus
+    // souvent parce que la tablette rame (piège de `dt`, v226)
+    if (performance.now() - ditEau < 4000) return;
+    ditEau = performance.now();
+    creatureManager.toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
+  };
+  // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
+  // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
+  // colonne, les autres lisent des listes déjà figées.
+  player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
+    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return true;
+    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return true;
+    if (pietonDevant(x, z, cap, x0, z0)) return true;
+    // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
+    // pouvoir en ressortir, sinon elle y reste pour toujours.
+    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { direLEau(); return true; }
+    return false;
+  };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
   // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
   // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
@@ -1639,9 +1693,13 @@ player.surAvion = (quoi) => {
 // Un curseur vertical à droite, en événements de pointeur — un doigt sur le
 // joystick (le canvas, à gauche) et un doigt ici ne se gênent pas, chacun a
 // son pointeur. Il fixe `player.gaz` (0 à 1) ; `player.js` en fait la
-// vitesse d'une voiture ou d'un avion. Tant qu'on ne l'a pas touché, l'avant
-// du joystick reste l'accélérateur : rien de ce qu'un enfant sait ne cesse
-// de marcher. Et il AFFICHE la vitesse, en km/h, que la manette serve ou non.
+// vitesse de l'avion. Tant qu'on ne l'a pas touché, l'avant du joystick reste
+// l'accélérateur : rien de ce qu'un enfant sait ne cesse de marcher. Et il
+// AFFICHE la vitesse, en km/h, que la manette serve ou non.
+//
+// EN VOITURE, PLUS DE MANETTE NI DE COMPTEUR (v272) — décision de Max sur
+// capture de Hambourg. Le cadran reste ce qu'il a toujours voulu être : une
+// manette des gaz d'AVION, celle qui se garde quand on lâche.
 const gazBase = document.getElementById('gaz-base');
 const gazFill = document.getElementById('gaz-fill');
 const gazKnob = document.getElementById('gaz-knob');
@@ -1687,12 +1745,19 @@ function majBoutonsVehicule() {
     document.body.classList.toggle('en-avion', enAvion);
   }
   if (!enVehicule) return;
-  const v = Math.abs(enAvion ? (player.vitesseAvion || 0) : (player.vitesseVoiture || 0));
-  let niveau = player.gaz;
-  if (niveau == null) {
-    if (enAvion) niveau = player.pilote.max ? v / player.pilote.max : 0;
-    else niveau = Math.max(0, player.touchMove.f, player.keys.has('KeyW') ? 1 : 0);
+  // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
+  // plus affichés en voiture — décision de Max — et l'on n'écrit pas dans un
+  // DOM caché : c'est autant de travail par image pour rien, et un compteur
+  // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
+  // remarque.
+  if (!enAvion) {
+    if (dernierMotVol !== 'VOLER') { dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER'; }
+    dernierKmh = null;
+    return;
   }
+  const v = Math.abs(player.vitesseAvion || 0);
+  let niveau = player.gaz;
+  if (niveau == null) niveau = player.pilote.max ? v / player.pilote.max : 0;
   niveau = Math.max(0, Math.min(1, niveau));
   gazFill.style.height = `${Math.round(niveau * 100)}%`;
   gazKnob.style.bottom = `calc(${(niveau * 100).toFixed(1)}% - ${Math.round(niveau * 22)}px)`;
@@ -1707,9 +1772,8 @@ function majBoutonsVehicule() {
   // quarante au sol dans une ville, cent quatre-vingt-sept sur la carte du
   // monde. Le compteur rendait donc 576 km/h pour un Concorde. `kmh` porte la
   // vraie croisière de l'appareil, et l'on affiche la fraction de `max`
-  // réellement atteinte. Une voiture, elle, n'a pas de `kmh` : elle garde
-  // `v × 3,6`, qui lui va bien (une hypercar à 25 blocs/s montre 90 km/h).
-  const fiche = enAvion ? player.pilote : null;
+  // réellement atteinte.
+  const fiche = player.pilote;
   const kmh = fiche && fiche.kmh && fiche.max
     ? Math.round(v / fiche.max * fiche.kmh) : Math.round(v * 3.6);
   if (kmh !== dernierKmh) {
@@ -1720,21 +1784,17 @@ function majBoutonsVehicule() {
     const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
     gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
   }
-  if (enAvion) {
-    trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
-    // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
-    // pas à sept ans, et ✈️ ne dit pas s'il décolle ou s'il pose. Le DOM ne
-    // s'écrit que quand le mot change — une réécriture par image coûte un
-    // reflow (leçon du cadran de cap, v263).
-    const etat = player.avionEtat || (player.avionEnVol ? 'vol' : 'sol');
-    const motVol = etat === 'sol' || etat === 'freinage' ? 'DÉCOLLER' : 'SE POSER';
-    const motTrain = (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5 ? 'SORTI' : 'RENTRÉ';
-    if (motVol !== dernierMotVol) { dernierMotVol = motVol; flyLb.textContent = motVol; }
-    if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
-    majCadranDeCap();
-  } else if (dernierMotVol !== 'VOLER') {
-    dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER';
-  }
+  trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+  // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
+  // pas à sept ans, et ✈️ ne dit pas s'il décolle ou s'il pose. Le DOM ne
+  // s'écrit que quand le mot change — une réécriture par image coûte un
+  // reflow (leçon du cadran de cap, v263).
+  const etat = player.avionEtat || (player.avionEnVol ? 'vol' : 'sol');
+  const motVol = etat === 'sol' || etat === 'freinage' ? 'DÉCOLLER' : 'SE POSER';
+  const motTrain = (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5 ? 'SORTI' : 'RENTRÉ';
+  if (motVol !== dernierMotVol) { dernierMotVol = motVol; flyLb.textContent = motVol; }
+  if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
+  majCadranDeCap();
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 

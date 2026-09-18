@@ -618,10 +618,32 @@ export class Player {
     }
     const steps = Math.max(1, Math.ceil(move.length() / MAX_STEP));
     this.onGround = false;
+    const avantX = this.pos.x, avantZ = this.pos.z;
     for (let i = 0; i < steps; i++) {
       this.sweepAxis(0, move.x / steps);
       this.sweepAxis(1, move.y / steps);
       this.sweepAxis(2, move.z / steps);
+    }
+    // UNE VOITURE QUI TOUCHE QUELQUE CHOSE PERD SA VITESSE (v272). Max,
+    // capture de Hambourg : « il est marqué 86 km/h », voiture immobile dans
+    // le port. `vitesseVoiture` était la vitesse DEMANDÉE : ni la boîte de
+    // collision ni le crochet d'obstacle ne la touchaient, si bien qu'une
+    // voiture plaquée contre un mur gardait vingt-quatre blocs par seconde
+    // pour toujours — le compteur le disait, le bruit du moteur le disait,
+    // les roues tournaient. On la borne donc au déplacement RÉELLEMENT
+    // obtenu, c'est-à-dire à ce que la voiture FAIT : contre un mur elle
+    // tombe à zéro, et elle reprend son allure en une demi-seconde
+    // (`ACCEL_VOITURE`) dès que la voie est libre.
+    //
+    // `pousse` — ce qu'un piéton lit pour s'écarter (v259) — est relevé plus
+    // haut, AVANT le déplacement, et reste donc la vitesse demandée : une
+    // voiture arrêtée devant quelqu'un veut encore passer, et c'est ce qui
+    // fait que le piéton s'écarte au lieu de la bloquer pour toujours.
+    if (this.gabarit > 1 && !this.pilote && dt > 0 && this.vitesseVoiture) {
+      const vraie = Math.hypot(this.pos.x - avantX, this.pos.z - avantZ) / dt;
+      if (vraie < Math.abs(this.vitesseVoiture)) {
+        this.vitesseVoiture = Math.sign(this.vitesseVoiture) * vraie;
+      }
     }
 
     this.syncCamera();
