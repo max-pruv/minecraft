@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v276 — Un jeu tout clair
+
+**Pourquoi.** Max, devant la proposition de design : « je trouve qu'ils
+ressemblent trop aux précédents ; j'aurais une interface beaucoup plus
+moderne, beaucoup plus light, avec beaucoup plus de glass design ». Le jeu
+était bleu nuit depuis le premier jour, écrit dans la police d'une machine à
+écrire, et parsemé d'emojis qui ne sont pas les mêmes d'un appareil à l'autre.
+
+**Ce que ça change.**
+
+- **L'accueil est clair.** Un fond gris-bleu très doux, deux nappes de lumière,
+  et les méridiens d'un globe au trait fin — on y fait le tour du monde.
+- **Les panneaux sont en verre dépoli**, comme sur un téléphone récent : on
+  voit la couleur à travers.
+- **Deux vraies polices** : un titre large et serré, un texte rond et lisible.
+- **Plus un seul emoji sur l'accueil.** Chaque signe est dessiné au trait, à la
+  même épaisseur, et il est le même partout.
+- **Les commandes du clavier parlent enfin français.** Elles étaient en anglais
+  depuis les tout premiers jours.
+
+**Ce qui le prouve.** Quatre témoins dans `maj.js`. Le fond se lit par sa
+**luminance calculée** — « clair » est une grandeur mesurable, « la classe est
+posée » n'en est pas une. Les polices se comptent dans ce que la page a
+**réellement demandé** : zéro requête chez Google, deux fichiers depuis le
+dépôt. L'accueil ne doit plus porter un seul point de code d'emoji dans le
+texte que l'enfant voit. Et le quatrième calcule le **contraste** de dix textes
+en composant les fonds translucides — c'est lui qui a trouvé, dans ma propre
+livraison, que la pastille de version tombait à 3,77 pour une barre de 4,5.
+
+**Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records. La
+refonte est une couche de peinture posée par-dessus la mise en page : elle ne
+change que les couleurs, les bords et les lettres.
+
 ## v275 — Grand Tour
 
 **Pourquoi.** Le jeu s'appelait « Web Minecraft » — un nom d'atelier, emprunté,

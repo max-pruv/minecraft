@@ -464,6 +464,70 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## La matière claire (v276)
+
+Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus
+light, avec beaucoup plus de glass design ». Première des quatre livraisons de
+la refonte. Cinq règles, et deux d'entre elles sont nées d'une mesure qui m'a
+contredit.
+
+- **UNE POLICE DE JEU HORS LIGNE VIT DANS LE DÉPÔT, JAMAIS CHEZ GOOGLE.** Un
+  `<link>` vers `fonts.googleapis.com` casserait l'accueil dans l'avion, à
+  l'école ou sur le Wi-Fi d'un hôtel — c'est-à-dire la moitié des endroits où
+  ces deux enfants jouent. Bricolage Grotesque (76 Ko) et Plus Jakarta Sans
+  (27 Ko), variables, sous-ensemble **latin**, dans le cache IMMUABLE
+  (`isStaticAsset`, sw.js) avec le scanner, la flotte et les corps : elles ne
+  changent jamais, donc elles ne doivent pas se re-télécharger à chaque
+  livraison (leçon des 8,2 Mo de la v245). **Et le sous-ensemble se vérifie
+  avant de se choisir** : la plage `latin` contient `U+0152-0153`, donc le
+  « œ » de « cœur » et « nœud », que le jeu emploie dans une vingtaine de
+  fichiers. Sans cette vérification, une lettre sur mille serait tombée dans
+  une police de secours.
+- **UNE REFONTE D'APPARENCE EST UNE COUCHE DE SURCHARGE, PAS UNE RÉÉCRITURE.**
+  Elle se pose en FIN de feuille et ne touche qu'à la peau — couleurs, fonds,
+  bords, rayons, ombres, lettres. Les mille lignes de mise en page au-dessus ne
+  bougent pas d'un pixel. C'est ce qui rend le changement relisible et
+  réversible, et ce qui évite de casser une marge en voulant changer une
+  couleur. Les `!important` d'origine obligent à répondre en `!important` —
+  c'est la seule raison d'en écrire.
+- **UN TÉMOIN D'APPARENCE LIT UNE GRANDEUR, PAS UN NOM DE CLASSE.** « Clair »
+  se mesure en LUMINANCE calculée du fond ; « la classe `.clair` est posée »
+  ne mesure rien. De même, les polices se comptent dans ce que la page a
+  RÉELLEMENT demandé (`performance.getEntriesByType('resource')`) : zéro chez
+  Google, deux depuis le dépôt. C'est la règle de la v247 (« un témoin de
+  rendu lit des pixels, jamais un type de matériau »), appliquée au DOM.
+- **UNE COULEUR QUI REMPLIT ET UNE COULEUR QUI ÉCRIT NE SONT PAS LA MÊME
+  COULEUR.** Les deux accents vifs — corail `#E8562A`, vert `#0E9268` —
+  tiennent très bien en aplat avec du blanc dessus ; posés en TEXTE sur le
+  verre clair ils rendent 3,44 et 3,74 pour une barre de 4,5. D'où
+  `--corail-texte` (#B83B16, 5,42) et `--vert-texte` (#0A6B4C, 6,18). **Je les
+  avais crus bons** : c'est le témoin de contraste qui l'a dit, et à l'œil la
+  pastille de version paraissait parfaitement lisible.
+- **ET UN TÉMOIN DE CONTRASTE COMPOSE LES FONDS TRANSLUCIDES.** Lire le seul
+  `background-color` d'un élément de verre rend « transparent » : le témoin
+  passerait au vert sans rien mesurer. On empile les fonds des ancêtres
+  jusqu'à l'opacité pleine, en partant de l'élément. Il est VERT DES DEUX
+  CÔTÉS et se garde quand même (règle de la v220) : il garde une CAPACITÉ —
+  renverser une palette est exactement ce qui casse un contraste, et il reste
+  trois renversements à faire. Qu'il PUISSE rougir se vérifie et ne se raconte
+  pas : désarmé dans une copie d'`index.html`, il rend 2,41 et nomme le bouton.
+
+**ET J'AI ANNONCÉ UN DÉFAUT DE CONTRASTE QUI N'EXISTAIT PAS.** J'ai écrit, dans
+un commit et à Max, que le bouton « Me connecter à mon compte » portait du
+`#cdd` sur du `#2c3a58`, « 2,9 pour une barre de 4,5 ». Mesuré : **8,07**. Le
+bouton était parfaitement lisible ; ce qui clochait était sa COULEUR — un bleu
+nuit hors palette au milieu du verre clair. **Un défaut de palette et un défaut
+de lisibilité ne sont pas la même chose, et seul le second se mesure en
+ratio.** C'est le témoin que je venais d'écrire qui a démonté ma propre phrase,
+en étant vert là où je l'annonçais rouge — et c'est la meilleure raison de
+l'écrire AVANT de décrire ce qu'on a corrigé.
+
+**Et le thème de l'application suit le loader.** La v275 avait posé la règle
+(« le thème suit le LOADER, pas le ciel ») avec un loader sombre ; le loader
+devenu clair, `theme-color` et le manifeste passent à `#EFF3FA`. Sans cela le
+lancement clignoterait en noir avant de devenir blanc — exactement le défaut
+que la v275 avait corrigé, dans l'autre sens.
+
 ## Le jeu s'appelle Grand Tour (v275)
 
 Max a validé le nom et le logo. Quatre règles, et la première vaut bien plus

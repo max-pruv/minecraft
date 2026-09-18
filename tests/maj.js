@@ -468,10 +468,22 @@ function verifier(nom, ok, detail = '') {
       reseauPolices.chezGoogle === 0 && reseauPolices.duDepot === 2,
       JSON.stringify(reseauPolices));
 
-    // LE CONTRASTE SE CALCULE, IL NE SE REGARDE PAS — et c'est ce témoin qui a
-    // trouvé le défaut avant Max. Le bouton « Me connecter à mon compte »
-    // portait du #cdd sur du #2c3a58 : 2,9 pour une barre de 4,5. Personne ne
-    // l'avait vu tant que le fond du menu était sombre lui aussi.
+    // LE CONTRASTE SE CALCULE, IL NE SE REGARDE PAS — ET IL A DÉMONTÉ MA PROPRE
+    // PHRASE. J'avais annoncé que le bouton « Me connecter à mon compte »
+    // portait du #cdd sur du #2c3a58, « 2,9 pour une barre de 4,5 ». Ce témoin
+    // rend 8,07 sur l'ancien code : le bouton était parfaitement lisible, et ce
+    // qui clochait était sa COULEUR, pas son contraste. Un défaut de palette et
+    // un défaut de lisibilité ne sont pas la même chose ; seul le second se
+    // mesure en ratio, et je l'ai affirmé avant de le mesurer.
+    //
+    // CE TÉMOIN EST DONC VERT DES DEUX CÔTÉS, et il se garde quand même — comme
+    // le témoin des clés de la v275, et pour la même raison (v220) : il ne
+    // garde pas une correction, il garde une CAPACITÉ qu'on vient de frôler.
+    // Renverser une palette est exactement ce qui casse un contraste, et il
+    // reste trois renversements à faire (v277, v278, v279). Qu'il PUISSE rougir
+    // se vérifie, cela ne se raconte pas : désarmé dans une copie d'index.html
+    // (`#account-login-btn { color: #9AA6BC }` sur le verre clair), il rend
+    // 2,26 et nomme le bouton.
     //
     // Le fond EFFECTIF se compose : les panneaux de verre sont translucides,
     // donc on empile les fonds des ancêtres jusqu'à l'opacité pleine. Lire le

@@ -1558,6 +1558,13 @@
       --corail: #FF7A4D;
       --corail-fonce: #E8562A;
       --vert: #0E9268;
+      /* UNE COULEUR QUI REMPLIT ET UNE COULEUR QUI ÉCRIT NE SONT PAS LA MÊME
+         COULEUR. Les deux accents vifs tiennent très bien en aplat, avec du
+         blanc dessus ; posés en TEXTE sur le verre clair ils tombent à 3,44
+         (corail) et 3,74 (vert) pour une barre de 4,5. Mesuré par le témoin
+         de contraste, pas deviné — je les avais crus bons. */
+      --corail-texte: #B83B16;
+      --vert-texte: #0A6B4C;
       --brume: #5A6782;
       --encre: #111A2E;
       --titre: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
@@ -1649,7 +1656,7 @@
     #overlay button:hover { background: rgba(255,255,255,0.78); }
     #overlay button:active { transform: translateY(1px); }
     #overlay button.danger {
-      background: rgba(255,122,77,0.14); border-color: rgba(255,122,77,0.42); color: var(--corail-fonce);
+      background: rgba(255,122,77,0.14); border-color: rgba(255,122,77,0.42); color: var(--corail-texte);
     }
     /* Le bouton principal : celui qu'un enfant cherche en allumant le jeu. */
     #overlay #play-btn, #overlay #resume-btn {
@@ -1701,7 +1708,7 @@
       border: 1px solid var(--trait); border-radius: 12px;
     }
     #overlay input::placeholder { color: #9AA6BC; }
-    #online-status { color: var(--corail-fonce); font-weight: 600; }
+    #online-status { color: var(--corail-texte); font-weight: 600; }
     #overlay .controls { color: var(--brume); line-height: 1.8; }
     #overlay .controls b { color: var(--encre); font-weight: 700; }
 
@@ -1714,8 +1721,8 @@
       box-shadow: 0 6px 18px rgba(17,26,46,0.07);
     }
     #overlay #partage-btn:hover { color: var(--encre); }
-    #app-version.ok { color: var(--vert); border-color: rgba(14,146,104,0.28); }
-    #app-version.old { color: var(--corail-fonce); border-color: rgba(232,86,42,0.34); }
+    #app-version.ok { color: var(--vert-texte); border-color: rgba(14,146,104,0.32); }
+    #app-version.old { color: var(--corail-texte); border-color: rgba(232,86,42,0.38); }
 
     /* ── Les cartes de « Qui joue ? » ────────────────────────────────── */
     /* Elles portaient un vert et un bleu nuit qui ne sont dans aucune des
@@ -1744,11 +1751,14 @@
       border: 1px solid var(--trait) !important;
       color: var(--brume); box-shadow: 0 3px 10px rgba(17,26,46,0.14);
     }
-    #overlay .who-del:hover { color: var(--corail-fonce); border-color: rgba(232,86,42,0.5) !important; }
+    #overlay .who-del:hover { color: var(--corail-texte); border-color: rgba(232,86,42,0.5) !important; }
 
-    /* UN BOUTON SE JUGE SUR SON CONTRASTE, PAS SUR SON INTENTION. Le bouton
-       de compte était en #cdd sur #2c3a58 — 2,9:1, sous la barre de 4,5 —
-       et personne ne l'avait mesuré tant que le fond était sombre lui aussi. */
+    /* Le bouton de compte gardait son bleu nuit (#2c3a58) au milieu du verre :
+       parfaitement LISIBLE — 8,07 de contraste, mesuré — mais d'une couleur
+       qui n'est dans aucune des deux palettes. J'ai d'abord annoncé un défaut
+       de contraste ; c'est le témoin qui a démonté ma phrase. Un défaut de
+       PALETTE et un défaut de LISIBILITÉ ne sont pas la même chose, et seul
+       le second se mesure en ratio. */
     #overlay #face-login-btn {
       background: var(--encre) !important; border: none !important; color: #fff;
     }
