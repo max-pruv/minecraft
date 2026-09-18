@@ -328,6 +328,93 @@ function verifier(nom, ok, detail = '') {
         && couverture.titresLongs.length === 0 && couverture.vides.length === 0,
       JSON.stringify(couverture).slice(0, 400));
 
+    // ================= GRAND TOUR (v275) ====================================
+    //
+    // Max a validé le nom et le logo. Le jeu s'appelle Grand Tour : l'onglet,
+    // l'accueil, le manifeste et les icônes le disent.
+    //
+    // ET LE NOM SE DIT UNE FOIS. `index.html` porte la valeur de départ dans
+    // son `<h1>`, mais `main.js` la RÉÉCRIVAIT en dur à deux endroits — au
+    // « Reprendre » d'une pause et au retour au menu principal. Le témoin ne
+    // lit donc pas le titre au chargement, ce qui ne prouverait rien : il
+    // revient au menu et RELIT. Sur l'ancien code le titre reprend l'ancien
+    // nom à cet instant précis, l'onglet disant déjà le nouveau.
+    const nom = await tab.evaluate(async () => {
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const lire = () => (document.getElementById('overlay-title') || {}).textContent || '';
+      const depart = lire().trim();
+      // on entre en jeu, on met en pause, on revient au menu — le chemin qui
+      // réécrivait le titre
+      const jouer = document.getElementById('play-btn');
+      if (jouer && !jouer.disabled) { jouer.click(); await dodo(2500); }
+      // 🏠 est le trajet de l'enfant vers le menu (`home-btn` → `leaveToMainMenu`),
+      // et c'est là que le titre était réécrit en dur.
+      const maison = document.getElementById('home-btn');
+      if (maison) { maison.click(); await dodo(1200); }
+      return { depart, apresRetour: lire().trim(), titreOnglet: document.title,
+        bouton: !!maison };
+    });
+    verifier('l\'accueil porte le nom du jeu, et il le garde en revenant au menu',
+      nom.depart === 'GRAND TOUR' && nom.titreOnglet === 'Grand Tour'
+        && (!nom.bouton || nom.apresRetour === 'GRAND TOUR'),
+      JSON.stringify(nom));
+
+    // LE MANIFESTE ET LES ICÔNES. C'est lui qui donne son nom et son image à
+    // l'application posée sur l'écran d'accueil de l'iPad — le seul endroit où
+    // le nom se voit quand le jeu est fermé. Et les trois PNG sont RENDUS
+    // depuis `icone.svg` : on vérifie que les quatre fichiers arrivent et
+    // pèsent quelque chose, pas seulement que le manifeste les cite.
+    const marque = await tab.evaluate(async () => {
+      const m = await (await fetch('./manifest.webmanifest')).json();
+      const fichiers = {};
+      for (const f of ['icone.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) {
+        try {
+          const r = await fetch('./' + f);
+          fichiers[f] = r.ok ? (await r.blob()).size : 0;
+        } catch { fichiers[f] = 0; }
+      }
+      return { nom: m.name, court: m.short_name, langue: m.lang, icones: (m.icons || []).length, fichiers };
+    });
+    verifier('le manifeste et les quatre icônes portent Grand Tour',
+      marque.nom === 'Grand Tour' && marque.court === 'Grand Tour' && marque.langue === 'fr'
+        && marque.icones >= 3
+        && Object.values(marque.fichiers).every((o) => o > 1000),
+      JSON.stringify(marque));
+
+    // ET LES MONDES DES ENFANTS NE BOUGENT PAS D'UN OCTET.
+    //
+    // C'est la règle de ce rebranding, et elle vaut plus que le nom : sur les
+    // soixante-dix-neuf mentions de l'ancien nom dans le code, la grande
+    // majorité ne sont pas du nom affiché — ce sont les CLÉS qui portent les
+    // données (`web-minecraft-worlds-v1`, `web-minecraft-edits-v3`, leurs
+    // blocs ; `-pos-`, `-photos-`, `-records-`). Les renommer effacerait les
+    // mondes de Marlon et d'Alice, et `web-minecraft-static-v1` ferait
+    // re-télécharger treize mégaoctets à chaque iPad pour un nom que personne
+    // ne voit. On renomme ce que l'enfant VOIT, jamais ce qui porte ses
+    // données.
+    //
+    // Ce témoin est VERT DES DEUX CÔTÉS à dessein — comme le second témoin de
+    // cette suite (v220) : il ne garde pas une correction, il garde une
+    // capacité qu'on vient de frôler, et que la prochaine passe de
+    // rebranding frôlera encore.
+    let cles;
+    try {
+      const dir = path.join(__dirname, '..', 'src');
+      const vus = new Set();
+      for (const f of fs.readdirSync(dir)) {
+        if (!f.endsWith('.js')) continue;
+        for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/['"`](web-minecraft-[a-z0-9-]+)['"`]/g)) vus.add(m[1]);
+      }
+      const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+      cles = { stockage: vus.size,
+        essentielles: ['web-minecraft-worlds-v1', 'web-minecraft-edits-v3', 'web-minecraft-pos-v1',
+          'web-minecraft-photos-v1', 'web-minecraft-profile-v1'].filter((k) => !vus.has(k)),
+        cacheImmuable: /web-minecraft-static-v1/.test(sw) };
+    } catch (e) { cles = { erreur: String(e.message || e) }; }
+    verifier('et les clés qui portent les mondes des enfants n\'ont pas bougé',
+      !cles.erreur && cles.stockage >= 25 && cles.essentielles.length === 0 && cles.cacheImmuable,
+      JSON.stringify(cles));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

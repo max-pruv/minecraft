@@ -1220,7 +1220,13 @@ function getTarget() {
 // --- input ---------------------------------------------------------------------
 
 const overlay = document.getElementById('overlay');
+// LE NOM DU JEU SE DIT UNE FOIS (v275). Deux endroits le réécrivaient en dur —
+// au « Reprendre » d'une pause et au retour au menu principal — si bien que
+// l'onglet et le manifeste pouvaient dire Grand Tour pendant que l'accueil
+// reprenait l'ancien nom au premier retour. `index.html` porte la valeur de
+// départ dans son `<h1>`, et c'est ELLE qu'on relit : rien à tenir d'accord.
 const overlayTitle = document.getElementById('overlay-title');
+const NOM_DU_JEU = (overlayTitle && overlayTitle.textContent.trim()) || 'Grand Tour';
 const touchUI = document.getElementById('touch-ui');
 const pauseBtn = document.getElementById('pause-btn');
 let locked = false;   // pointer lock held (desktop)
@@ -1420,7 +1426,7 @@ function pauseGame() {
 }
 
 resumeBtn.addEventListener('click', () => {
-  overlayTitle.textContent = 'WEB MINECRAFT';
+  overlayTitle.textContent = NOM_DU_JEU;
   startGame();
 });
 
@@ -1532,7 +1538,7 @@ function pickBlock() {
   const idx = hotbarBlocks.indexOf(hit.id);
   if (idx >= 0) {
     selectSlot(idx);
-  } else { // not in the hotbar: assign it to the current slot, Minecraft-style
+  } else { // pas dans la barre : on l'affecte à la case courante
     hotbarBlocks[selectedSlot] = hit.id;
     buildHotbar();
     selectSlot(selectedSlot);
@@ -3785,7 +3791,7 @@ function leaveToMainMenu() {
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
   // restore the full main menu, not the pause screen
-  document.getElementById('overlay-title').textContent = 'WEB MINECRAFT';
+  document.getElementById('overlay-title').textContent = NOM_DU_JEU;
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
   document.getElementById('online-actions').style.display = 'flex';
