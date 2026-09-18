@@ -30,6 +30,21 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LES FEUX N'EXISTENT QUE DANS LES VILLES ENGENDRÉES (v273).** `RUE.FEUX`
+  n'est posé que par `villesmonde.js` : les six villes bâties à la main (Paris,
+  Londres, Nice, Lille, San Francisco, Washington) et Manhattan n'ont **pas un
+  seul feu**, donc rien ne les y arrête — alors que ce sont justement les villes
+  où l'enfant conduit le plus. La règle (`src/feux.js`) est prête et ne connaît
+  rien des villes : elle lit une position. Ce qui manque, c'est de POSER les
+  feux. Le chemin est écrit : `lampadaireDeVille` (v248) a partagé les
+  réverbères en demandant au SOL — une colonne de trottoir dont un voisin est de
+  la chaussée SUR LES DEUX AXES est un coin de carrefour, et c'est exactement là
+  qu'un feu se pose ; `CHAUSSEE` est déjà exportée de `world.js` pour cela, et
+  `ARCHI.PAVE` y est déjà entré pour Paris. **C'est la cinquième occurrence
+  possible du verre dans les murs** : une règle écrite pour une famille de
+  villes qui ne franchit pas la seconde fabrique. Elle est déclarée ici pour
+  qu'elle ne se découvre pas en capture.
+
 - [ ] **Quatre témoins de `manhattan.js` sont rouges EN PRODUCTION (double mesure
   de la v272).** Rejoués SEULS des deux côtés, dans deux arbres séparés :
 
@@ -409,7 +424,8 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 - [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
   passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
   branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
-  3 017 / 34,6 ; v263 3 283 / 37,3 ; v264 3 183 / 37,7 — le même premier survol),
+  3 017 / 34,6 ; v263 3 283 / 37,3 ; v264 3 183 / 37,7 ; v273 3 167 / 32,5 au
+  portail et 3 483 / 37,6 rejouée seule — le même premier survol),
   et le témoin extrait
   dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
   chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
@@ -1240,8 +1256,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Fait : 1) mobilier (v180), 2) routes (v181), 3) façades partout, matériaux
   par ville, médinas préservées (v181) — et LA voiture : le modèle 3D
   d'artiste fourni par Max, reflets par caméra cubique, vue cockpit (v181).
-  À venir : 4) vie dense — voitures arrêtées aux feux, enseignes lumineuses
-  la nuit.
+  4) vie dense : **les feux tricolores s'allument une couleur à la fois et la
+  circulation s'y arrête (v273)** — la règle est pure (`src/feux.js`), lue par
+  celui qui allume les lentilles comme par celle qui freine ; deux rues d'un
+  carrefour ne sont jamais vertes ensemble. **À venir : les enseignes
+  lumineuses la nuit.**
 
 - [ ] **Moderniser les villes bâties à la main** — New York est faite (v186,
   validée par Max : « Manhattan est mieux, je valide fort ») et **Paris aussi

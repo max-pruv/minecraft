@@ -3303,6 +3303,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const arret = await jusqua((r) => r.etat === 'sol', 25);
       const atterrissage = releves.slice(decollage.length);
       // puis on roule, et l'on tourne
+      // LE ROULAGE EST UNE MESURE À PART, ET IL LUI FAUT DE LA PISTE DEVANT.
+      // L'atterrissage consomme presque toute la dalle : rejoué seul, il
+      // s'arrête à x = 291 pour trois cents blocs de pierre, et deux secondes
+      // de roulage à six blocs par seconde faisaient alors SORTIR l'appareil
+      // par le bout (x 303, y −1,5 : il tombe, `sol` faux). Le témoin était
+      // vert au portail et rouge seul — il mesurait où l'atterrissage s'était
+      // arrêté, pas le roulage. On ramène l'appareil au début de la piste,
+      // immobile, avant de mesurer ce qu'on annonce.
+      g.player.pos.set(x0 + 10, y0 + 1.01, z0 + 0.5);
+      g.player.yaw = -Math.PI / 2; g.player.vel.set(0, 0, 0); g.player.vitesseAvion = 0;
+      await tenirSecondes(0.4);
       const avantRoulage = releve(t);
       g.player.keys.add('KeyW');
       await tenirSecondes(2);
@@ -3890,7 +3901,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (!toucheLaPiste && r.etat === 'freinage') toucheLaPiste = r;
         if (r.etat === 'sol') { arret = r; break; }
       }
+      // LE DOIGT TENU EN ARRIÈRE FAIT RECULER DÈS QUE L'APPAREIL EST ARRÊTÉ
+      // (v269, « le geste prime sur la consigne ») — c'est voulu, et c'est
+      // ce que mesure le témoin de la marche arrière quinze lignes plus bas.
+      // Lire la vitesse à l'instant où l'état passe à `sol`, doigt encore
+      // posé, c'est donc un COUP DE DÉ sur un pas d'échantillonnage de deux
+      // cents millisecondes : v = 0 au portail de la v272, v = −1,5 à celui
+      // de la v273, sur la même physique et au même bloc de piste (x 56
+      // contre 57). On relâche le joystick, on ATTEND que la vitesse se
+      // pose, bornée, et l'on mesure ce qu'on annonce : l'appareil s'arrête
+      // sur la piste.
       await toucher('touchEnd', []);
+      let arretMs = 0;
+      if (arret) {
+        const t1 = Date.now();
+        let r = await lire();
+        while (Date.now() - t1 < 8000 && Math.abs(r.v) > 0.05) { await dormirIci(200); r = await lire(); }
+        arretMs = Date.now() - t1;
+        arret = r;
+      }
       const avantToucher = toucheLaPiste ? releves.slice(0, releves.indexOf(toucheLaPiste)) : releves;
       await tab.evaluate(async () => {
         const g = window.__game, P = window.__piste262;
@@ -3900,7 +3929,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
         g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
       });
-      return { ...prep, trainSorti, trainRentre, toucheLaPiste, arret, descendu: avantToucher.length, gazMin: Math.min(...avantToucher.map((r) => r.gaz == null ? 9 : r.gaz)) };
+      return { ...prep, trainSorti, trainRentre, toucheLaPiste, arret, arretMs, descendu: avantToucher.length, gazMin: Math.min(...avantToucher.map((r) => r.gaz == null ? 9 : r.gaz)) };
     })();
     verifier('aux commandes, 🛞 sort et rentre le train — et le bouton n\'existe qu\'en avion',
       !manuel.err && manuel.boutons && manuel.boutons.train === 'flex' && manuel.boutons.vol !== 'none'
@@ -3909,8 +3938,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('gaz réduits et manche en avant, on se pose soi-même sur la piste — sans ✈️, train sorti, jusqu\'à l\'arrêt',
       !manuel.err && manuel.gazMin === 0 && manuel.descendu >= 2 && !!manuel.toucheLaPiste
         && manuel.toucheLaPiste.train >= 0.9 && !manuel.toucheLaPiste.ventre
-        && !!manuel.arret && manuel.arret.v === 0 && Math.abs(manuel.arret.y) < 0.3,
-      `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} · gaz min ${manuel.gazMin}`);
+        && !!manuel.arret && Math.abs(manuel.arret.v) < 0.1 && Math.abs(manuel.arret.y) < 0.3,
+      `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} en ${manuel.arretMs} ms après le relâcher · gaz min ${manuel.gazMin}`);
 
     // LE CADRAN DE CAP : LA VILLE VISÉE AU LOIN (v263).
     //

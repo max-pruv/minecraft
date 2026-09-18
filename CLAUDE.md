@@ -778,6 +778,92 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Les feux tricolores, et ce qu'une sonde aveugle ne peut pas voir (v273)
+
+Le point 4 du programme de réalisme — « la vie dense : voitures qui s'arrêtent
+aux feux » — attendait depuis des mois. Mesuré en capture à Zurich AVANT d'y
+toucher : les feux étaient là, un par coin de carrefour, et leur boîtier
+montrait ses **trois lentilles allumées ensemble**. Quatre règles.
+
+- **LA RÈGLE D'UN FEU EST PURE, ET UNE SEULE** (`src/feux.js`, sans import, lu
+  sous node par un témoin) : le cycle (vert 9 s, orange 2, puis l'autre axe),
+  et l'AXE qu'un feu commande. Celui qui allume les lentilles (`main.js`) et
+  celle qui s'arrête devant (`vehicules.js`, par un crochet branché depuis
+  `main.js`) lisent la MÊME fonction. Deux tables qui décrivent le même feu
+  finissent par diverger — c'est la discipline de `postesAvion` et de la
+  tuyère, appliquée au carrefour.
+- **L'HORLOGE EST EN TEMPS RÉEL, ET LE CYCLE VAUT DEUX DEMI-CYCLES EXACTEMENT.**
+  En `dt` (borné à un vingtième), un feu passerait au vert deux fois plus tard
+  sur une tablette qui rame : un feu est une cadence de MÉNAGE (v226), il
+  décide de ce que le monde fait. Et si le tour ne vaut pas exactement deux
+  fois `vert + orange`, l'orange d'un axe déborde sur le vert de l'autre et
+  deux files démarrent ensemble — mesuré sur tout le cycle, par pas de cent
+  millisecondes.
+- **L'AXE SE LIT DANS LA POSITION, PAS DANS UN IDENTIFIANT DE BLOC.** La parité
+  de (x + z) met les quatre coins d'un carrefour en diagonale deux à deux —
+  exactement la paire qui, dans une vraie ville, regarde la même file. Aucun
+  bloc neuf, aucune migration, et la règle est la même des deux côtés. Le feu
+  TOURNE ensuite vers la rue de son axe (`versLaRueAxe`) : il est à un coin,
+  donc DEUX rues le touchent, et celle qui compte est celle qu'il arrête.
+- **L'ÉTAT VIT DANS LE NOM DU MAILLAGE, PAS DANS `userData`.** Chaque feu de la
+  ville est un CLONE du gabarit de `props.js`, et `Object3D.copy` recopie
+  `userData` par JSON — un maillage n'y survit pas. Les trois lentilles vives
+  sont donc NOMMÉES (`feu-rouge`…), cachées, et `main.js` n'en montre qu'une.
+  Émissif seulement, aucune lampe : quatre lumières ponctuelles pour tout le
+  jeu (v248, v264).
+- **ET LE FEU N'EXISTE QUE DANS LES VILLES ENGENDRÉES — c'est déclaré, pas
+  oublié.** `RUE.FEUX` n'est posé que par `villesmonde.js` : les six villes
+  bâties à la main et Manhattan n'ont pas un seul feu, donc rien ne les y
+  arrête. La règle, elle, est prête et ne connaît rien des villes — elle lit
+  une position. Le remède est de POSER des feux aux carrefours de ces
+  villes-là, comme `lampadaireDeVille` (v248) a partagé les réverbères : le
+  monde répond tout seul, on ne connaît pas la trame. Dette nommée dans
+  `TASKS.md` ; l'écrire ici est ce qui empêche la cinquième occurrence du verre
+  dans les murs.
+
+**ET UN VERDICT LU À L'INSTANT D'UNE TRANSITION EST UN COUP DE DÉ (v273).**
+Le portail a rendu rouge « gaz réduits et manche en avant, on se pose soi-même
+sur la piste », VERT au portail de la v272, sur une physique qui n'a pas bougé
+d'une ligne : `arrêt {v: 0}` la veille, `{v: −1,5}` ici, au même bloc de piste
+(x 56 contre 57). La cause n'est pas un défaut, c'est une FONCTIONNALITÉ : le
+témoin garde le doigt sur le joystick, tiré vers l'arrière, et depuis la v269
+« le geste prime sur la consigne » — une fois l'appareil arrêté, ce même doigt
+le fait RECULER. Le témoin s'arrêtait au premier relevé où l'état passe à
+`sol`, à deux cents millisecondes près : il lisait tantôt l'arrêt, tantôt le
+début de la marche arrière. Il RELÂCHE désormais le joystick, attend que la
+vitesse se pose (borné à huit secondes, la durée entrant dans le message), et
+mesure alors ce qu'il annonce. **Quand un témoin lit une grandeur AU MOMENT
+d'un changement d'état, il ne mesure pas l'état : il mesure la date de son
+échantillon** — c'est la famille des verdicts en durée (v270), du côté de
+l'instant au lieu de la durée. Et un rouge qui apparaît sur un code de jeu
+INCHANGÉ accuse le témoin : on cherche ce que la livraison d'avant avait rendu,
+et pourquoi.
+
+**ET UNE MESURE DE DÉPLACEMENT S'ASSURE QU'ELLE A LA PLACE DE SE DÉPLACER.**
+Le rejeu SEUL de `monte.js` a rendu un second rouge, vert au portail :
+« à l'arrêt, le joystick fait rouler l'appareil sur la piste ». La piste des
+témoins fait trois cents blocs de pierre ; l'atterrissage assisté en consomme
+presque tout — 291 blocs rejoué seul, moins au portail — et les deux secondes
+de roulage à six blocs par seconde faisaient alors SORTIR l'appareil par le
+bout (x 303, y −1,5 : il tombe, `sol` faux). Le témoin ne mesurait donc pas le
+roulage, il mesurait **où l'atterrissage s'était arrêté**, ce qui dépend de la
+cadence du banc. Le roulage est une mesure À PART : on ramène l'appareil au
+début de la piste, immobile, puis on mesure. C'est la sœur de « un témoin de
+conduite part d'une rue sans voiture à portée » (v252, v259) — avant de
+mesurer un déplacement, on lui donne de quoi se déplacer.
+
+**ET UNE SONDE QUI INTERROGE LA MAUVAISE LISTE NE PEUT RIEN VOIR.** Ma première
+mesure de « les voitures s'arrêtent-elles ? » lisait `vehicules.enMarche()` et
+rendait **zéro arrêtée sur 128 relevés** — sur un code qui s'arrêtait très
+bien. `enMarche()` EXCLUT par construction les voitures qui attendent (c'est sa
+raison d'être : un piéton ne s'écarte pas devant une voiture à l'arrêt). La
+sonde ne pouvait donc PAS voir un arrêt, quel que soit le code. Relue sur
+`etat().places`, qui publie la pose ET le drapeau d'attente de chaque voiture :
+140 arrêts au rouge sur 1 455 relevés, et quatre redémarrages au vert. C'est
+« compter un motif n'est pas compter la chose » (v224), du côté de la SONDE :
+avant de conclure qu'un mécanisme ne marche pas, on vérifie que l'instrument
+peut le voir.
+
 ## Une voiture n'est pas un avion : ni jauge, ni eau sous les roues (v272)
 
 Max, capture d'iPhone à Hambourg, quatre défauts sur une seule image : la

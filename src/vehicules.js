@@ -1551,6 +1551,10 @@ export function createVehicules({ scene, player }) {
   // Ce que `cederLePassage` a regardé à la dernière image : `obstacleDevant`
   // s'en sert pour la voiture de l'enfant, sans refaire la collecte.
   let dernieres = [];
+  // LE FEU ROUGE EST BRANCHÉ PAR `main.js` (v273) : c'est lui qui dessine les
+  // feux et connaît leur état. Comme `obstaclePieton` et `vehiculeApproche`,
+  // la règle vit là où elle se calcule, et la circulation la DEMANDE.
+  let feuRouge = null;
   const CLE_ENFANT = -1;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
@@ -1636,6 +1640,15 @@ export function createVehicules({ scene, player }) {
         }
       }
       const c = a.c, i = a.i;
+      // ET UN FEU ROUGE ARRÊTE AUSSI (v273) — devant la ligne, jamais dans le
+      // carrefour, et sans patience : un feu ne se force pas, il passe au
+      // vert. C'est la même exception que devant l'enfant (v245), pour la même
+      // raison : une voiture qui finit par démarrer au rouge, c'est la panne
+      // qu'on répare. L'orange arrête comme le rouge — c'est le dégagement.
+      if (feuRouge && feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz))) {
+        c.attend[i] = 1; c.attenteDepuis[i] = 0; c.repart[i] = 0;
+        continue;
+      }
       // Devant l'enfant seul, on attend SANS LIMITE : une voiture qui finit
       // par lui passer au travers, c'est la panne qu'on répare — mesuré, la
       // patience de douze secondes la faisait revenir au bout de douze
@@ -1810,6 +1823,8 @@ export function createVehicules({ scene, player }) {
 
   return {
     metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle, enMarche,
+    // le crochet des feux tricolores (v273), branché par main.js
+    brancherFeux: (f) => { feuRouge = f; },
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
