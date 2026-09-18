@@ -4064,6 +4064,27 @@ que la v211 avait mesuré pour écarter la conduite à droite. Cinq règles.
   place » sur le code NEUF comme sur l'ancien. On échantillonne LE LONG du
   côté, et l'on lit la perpendiculaire à la MARCHE, jamais le plus petit des
   deux résidus.
+- **UNE DEVANTURE SE COMPTE EN DENSITÉ, PAS EN NOMBRE — et c'est le portail
+  qui l'a dit.** « Les rues ont des devantures » comparait des comptes ABSOLUS
+  dans une fenêtre de ±40 blocs (vitrines ≥ 80, portes ≥ 5, enseignes ≥ 120,
+  auvents ≥ 60), seuils qui avaient DÉJÀ dû être « recalés au grand
+  recalibrage » de la v172. Le pas de trame passant de 15 à 19, la même fenêtre
+  contient moins de rues : Rome tombe de 124 vitrines à 71 sans qu'une ligne de
+  la grammaire des devantures ait bougé. C'est le piège de `r: 66` à San
+  Francisco et du rayon 44 de `releveVilles` à Nice, pour la troisième fois :
+  **un témoin qui porte une dimension de ville ne l'écrit pas, il la demande.**
+  La grandeur qui survit est la densité par colonne de TROTTOIR, et les barres
+  se posent sous le plus faible des deux côtés. Désarmé `commerce` dans une
+  copie de `src`, Rome et Marrakech tombent à zéro vitrine et zéro porte — la
+  vérification se FAIT, elle ne se raconte pas (règle v223).
+- **ET UN TÉMOIN QUI LIT UNE CONSTANTE DE LA PAGE CÔTÉ NODE S'EFFONDRE.** Mes
+  quatre verdicts lisaient `DEMI_LARG_VOITURE`, qui n'existe que dans le
+  navigateur : `ReferenceError` à la ligne 2373, la suite morte, et les TROIS
+  verdicts suivants jamais atteints — on ne voyait donc pas l'étendue de ce qui
+  allait. Tout ce que la page mesure revient dans son objet de retour. C'est la
+  règle « un témoin doit échouer PROPREMENT sur l'ancien code, pas
+  s'effondrer », par l'autre bout : il doit aussi échouer proprement sur le
+  NEUF.
 - **Le prix se déclare** : 16 % de rue portant un convoi en moins (195 060 →
   163 036 blocs), 788 → 628 anneaux. Et c'est du SOL : `hauteurVillesMonde` ne
   lit ni `pu`, ni `pv`, ni `w`, ni `s`, donc les deux empreintes de

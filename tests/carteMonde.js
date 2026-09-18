@@ -641,7 +641,7 @@ const VRAIES_KM = [
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
         const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0,
-          bancs: 0, verre: 0, batis: 0 };
+          bancs: 0, verre: 0, batis: 0, trottoir: 0 };
         const ids = new Set();
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
@@ -662,6 +662,7 @@ const VRAIES_KM = [
             // dans sa texture, elle est opaque, et elle s'allume la nuit.
             if (s0 === ARCHI.VITRINE) c.vitrines++;
             if (s0 === CITY_BLOCK.SIDEWALK) {
+              c.trottoir++;                      // la longueur de rue de la fenêtre
               if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
               // v180 : le lampadaire est un mesh (RUE.REVERBERE), plus un
               // monolithe à chapeau d'or — et les carrefours ont leurs feux.
@@ -675,16 +676,45 @@ const VRAIES_KM = [
       }
       return villes;
     });
-    // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
-    // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
-    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075. Les auvents ont
-    // rebaissé au réalisme v2 : par segments de trois blocs sur cinq, comme de
-    // vrais stores de devanture — le seuil suit (×0,6 sur la mesure de v180).
-    const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 60));
+    // UNE DEVANTURE SE COMPTE EN DENSITÉ, PAS EN NOMBRE (v271). Ces quatre
+    // seuils étaient ABSOLUS dans une fenêtre de ±40 blocs — donc ils
+    // comptaient des RUES, et ils avaient déjà dû être « recalés au grand
+    // recalibrage » de la v172. La v271 élargit la trame (pas 15 → 19) : la
+    // même fenêtre contient moins de rues, et Rome est tombée de 124 vitrines
+    // à 71 pour une barre à 80, sans qu'une seule ligne de la grammaire des
+    // devantures ait bougé. C'est le piège de `r: 66` à San Francisco et du
+    // rayon 44 de `releveVilles` à Nice : **un témoin qui porte une dimension
+    // de ville ne l'écrit pas, il la demande.**
+    //
+    // La grandeur qui survit est la densité par colonne de TROTTOIR — c'est
+    // ce qui borde la chaussée, donc la longueur de rue de la fenêtre. Mesuré
+    // pour mille colonnes de trottoir, des deux côtés :
+    //
+    //             vitrines  portes  enseignes  auvents
+    //   Rome v270    54,7     12,8     83,8      63,5
+    //   Rome v271    42,4      7,2     60,9      38,2
+    //   Tokyo v270  208,0      5,5    213,5      45,7
+    //   Tokyo v271  231,6      3,4    235,0      34,1
+    //   Marrakech   190,9     81,5    266,0     283,4
+    //
+    // Les barres sont posées sous le plus faible des deux côtés, avec la marge
+    // de la règle : ce qu'elles doivent séparer, c'est « il y a des boutiques »
+    // de « il n'y en a aucune ». Désarmé `commerce` dans une copie de `src`,
+    // les quatre postes tombent à zéro — cette vérification-là se FAIT.
+    const POUR_MILLE = { vitrines: 25, portes: 2, enseignes: 35, auvents: 20 };
+    const densites = {};
+    const sansDevanture = Object.entries(facades).filter(([cle, c]) => {
+      const mille = (n) => (1000 * n) / Math.max(1, c.trottoir || 0);
+      densites[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +mille(c[k]).toFixed(1)]));
+      return !(c.trottoir > 400 && Object.entries(POUR_MILLE)
+        .every(([k, barre]) => mille(c[k]) >= barre));
+    });
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
-      sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
+      `pour mille colonnes de trottoir, barres ${JSON.stringify(POUR_MILLE)} · `
+      + (sansDevanture.length ? `EN FAUTE ${sansDevanture.map(([v]) => v).join(' · ')} · ` : '')
+      + JSON.stringify(densites));
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
     // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
@@ -2369,11 +2399,17 @@ const VRAIES_KM = [
     // l'emprise seule mange l'îlot — des cloisons au lieu d'immeubles. Les
     // trois témoins qui suivent tiennent les trois bouts, et le quatrième
     // mesure ce que l'enfant obtient : de la place dans l'autre voie.
+    // LA LARGEUR VIENT DU JEU, PAS DU BANC. `DEMI_LARG_VOITURE` n'existe que
+    // dans la page : lu ici, côté node, il fait s'EFFONDRER la suite au lieu
+    // de la faire échouer — et il a emporté les trois verdicts suivants au
+    // premier portail de la v271 (`ReferenceError`, ligne 2373). Le chiffre
+    // revient donc dans `rues`, comme tout ce que la page mesure.
+    const demiLarg = rues.demiLarg ?? 1.13;
     verifier('la chaussée d\'une ville engendrée tient deux voitures côte à côte',
-      !rues.err && rues.chausseeMin >= 4 * DEMI_LARG_VOITURE + 0.6,
+      !rues.err && rues.chausseeMin >= 4 * demiLarg + 0.6,
       `chaussée la plus étroite ${rues.chausseeMin} blocs · deux voitures en font`
-      + ` ${(4 * DEMI_LARG_VOITURE).toFixed(2)} · marge`
-      + ` ${(rues.chausseeMin - 4 * DEMI_LARG_VOITURE).toFixed(2)}`);
+      + ` ${(4 * demiLarg).toFixed(2)} · marge`
+      + ` ${(rues.chausseeMin - 4 * demiLarg).toFixed(2)}`);
 
     verifier('et aucun îlot ne tombe sous cinq blocs — un immeuble y tient encore',
       !rues.err && rues.ilotsEtroits === 0 && rues.ilotMin >= 5,
