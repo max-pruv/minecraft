@@ -1586,9 +1586,6 @@
       --verre-bord: rgba(255,255,255,0.86);
       --verre-flou: blur(24px) saturate(1.5);
       --verre-ombre: 0 14px 38px rgba(17,26,46,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
-      --cmd: rgba(255,255,255,0.44);
-      --cmd-bord: rgba(255,255,255,0.76);
-      --cmd-flou: blur(18px) saturate(1.4);
       --cmd-ombre: 0 10px 28px rgba(17,26,46,0.14);
       --trait: rgba(17,26,46,0.10);
     }
@@ -1789,6 +1786,23 @@
       padding: 18px 22px; max-width: min(560px, 92vw); font-size: 13px;
     }
 
+    /* LE FLOU ATTEND QUE L'ACCUEIL AIT FINI DE TRAVAILLER.
+       Un `backdrop-filter` est un calque que le navigateur relit et refloute ;
+       mesuré, il coûte LA MOITIÉ des images de l'accueil, et ce sont celles
+       dont la chauffe des programmes et le fond de carte ont besoin (une
+       compilation par image, v246). `body.prepare` est posée dans la balise
+       `<body>`, donc active dès la première image ; `main.js` la retire quand
+       les corps sont là, la chauffe finie et « Jouer » libéré. Le verre se
+       dépolit alors en une demi-seconde — l'enfant voit le jeu devenir prêt.
+       La transition ne vit que sur les panneaux : animer un flou coûte cher, et
+       une fois seulement, quand plus rien ne calcule. */
+    body.prepare *, body.prepare *::before, body.prepare *::after {
+      -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    }
+    #who-screen, #profile-menu, #online-menu, #players-panel, #overlay .controls {
+      transition: -webkit-backdrop-filter .5s ease, backdrop-filter .5s ease;
+    }
+
     /* LA PARURE COUPÉE, POUR LA MESURE. `?verre=0` retire TOUT ce que la
        refonte ajoute à peindre : le flou des panneaux ET les deux calques
        plein écran (l'aurore et les méridiens). Ma première version ne coupait
@@ -1868,6 +1882,10 @@
         animation: none !important;
       }
       #overlay button, #overlay .who-card { transition: none !important; }
+      /* le verre se dépolit d'un coup au lieu de fondre */
+      #who-screen, #profile-menu, #online-menu, #players-panel, #overlay .controls {
+        transition: none !important;
+      }
     }
     /* La parure coupée coupe aussi ce qui bouge : on mesure une page nue. */
     :root.sans-verre * { animation: none !important; }
@@ -1878,7 +1896,10 @@
 
 </style>
 </head>
-<body>
+<!-- `prepare` : pas de flou tant que l'accueil travaille — voir `verreQuandPret`
+     dans main.js, qui la retire. Posée ICI, et pas depuis le script, pour
+     qu'aucune image ne soit floutée, pas même la première. -->
+<body class="prepare">
   <div id="boot-loader">
     <div class="boot-cube"><svg viewBox="0 0 24 24" fill="none" stroke="#2B59FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.8 8.2 9.9 9.9 8.2 15.8l5.9-1.7z" fill="#FF7A4D" stroke="#FF7A4D"/></svg></div>
     <div id="boot-text">Chargement du monde…</div>

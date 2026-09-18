@@ -235,18 +235,37 @@ function verifier(nom, ok, detail = '') {
     // (`prep: 1` : le banc demande d'ordinaire `?prep=0`.)
     const prune = await banc.joueur('Prune', { prep: 1 });
     const debutPrep = Date.now();
-    let premier = null, liberation = null;
+    let premier = null, liberation = null, tours = 0;
     const lignes = new Set();
+    const floutesEnPreparant = new Set();
     while (!liberation && Date.now() - debutPrep < 60000) {
       const e = await prune.evaluate(() => {
         const b = document.getElementById('play-btn');
         const l = document.getElementById('prep-line');
+        // LE VERRE DÉPOLI PENDANT LA PRÉPARATION, C'EST DES IMAGES EN MOINS.
+        // Un `backdrop-filter` est un calque que le navigateur relit et
+        // refloute ; mesuré, il coûte la moitié des images de l'accueil, et ce
+        // sont celles dont la chauffe des programmes (une compilation par
+        // image, v246) et le fond de carte ont besoin. On ne compte que les
+        // quelques éléments qui portent le verre : parcourir la page entière à
+        // chaque tour, c'est le témoin qui ralentirait la page qu'il mesure.
+        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
+          '#overlay .controls', '#profile-menu', '#online-menu'];
+        const flous = PORTEURS.filter((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return false;
+          const f = getComputedStyle(el);
+          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
+          return v !== 'none' && v !== '';
+        });
         return { grise: !!(b && b.disabled), ligne: l ? l.textContent : null,
+          flous, prepare: document.body.classList.contains('prepare'),
           prep: window.__preparation ? window.__preparation() : null };
       }).catch(() => null);
       if (e) {
         if (!premier) premier = e;
         if (e.ligne) lignes.add(e.ligne);
+        if (e.grise) { for (const f of e.flous) floutesEnPreparant.add(f); tours++; }
         if (!e.grise) liberation = { ...e, apres: Date.now() - debutPrep };
       }
       await dormir(100);
@@ -260,6 +279,20 @@ function verifier(nom, ok, detail = '') {
       && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true
       && liberation.apres < 45000,
       JSON.stringify(liberation));
+    // PENDANT QU'IL PRÉPARE, IL NE FLOUTE RIEN — ET UNE FOIS PRÊT, SI.
+    //
+    // Ce témoin est vert sur `origin/main` par une autre raison qu'ici : là-bas
+    // il n'y a pas de verre du tout. Il est gardé quand même, et la règle de la
+    // v220 dit laquelle : il garde une CAPACITÉ qu'on vient de frôler, et que
+    // les passes de rebranding suivantes — qui posent du verre sur les
+    // Réglages, le journal, le HUD — frôleront encore. Vérifié rouge en
+    // désarmant la suspension : « floutés en préparant: #who-screen, #play-btn,
+    // #app-version, #overlay .controls ».
+    verifier('et pendant qu\'il prépare, la page ne floute rien — les images vont au jeu',
+      tours >= 3 && floutesEnPreparant.size === 0
+      && !!liberation && liberation.prepare === false && liberation.flous.length > 0,
+      `${tours} relevé(s) grisés · floutés en préparant : ${[...floutesEnPreparant].join(', ') || 'aucun'}`
+      + ` · à la libération : ${liberation ? liberation.flous.join(', ') : '?'}`);
     await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
     const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
     verifier('et « Jouer » lance bien la partie une fois libéré', lance);

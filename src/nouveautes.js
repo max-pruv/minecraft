@@ -13,6 +13,7 @@ export const NOUVEAUTES = [
       "De vraies lettres, plus de machine à écrire",
       "Plus un seul emoji : des signes dessinés",
       "Les commandes parlent enfin français",
+      "L'accueil s'anime, le verre se dépolit",
     ],
   },
   {

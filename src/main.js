@@ -6858,6 +6858,42 @@ requestAnimationFrame(() => {
     setTimeout(veillerPrep, 250);
   };
   if (PREPARER) { for (const b of boutonsPrep) b.disabled = true; veillerPrep(); }
+
+  // LE VERRE NE SE DÉPOLIT QU'UNE FOIS L'ACCUEIL AU REPOS (v276).
+  //
+  // Un `backdrop-filter` est un CALQUE : le navigateur relit le fond sous
+  // l'élément et le floute, à chaque image où ce fond a pu changer. Mesuré sur
+  // l'accueil, deux séries de deux tours en ordre alterné : 5,7 · 8,3 · 8,3
+  // images par seconde avec le flou contre 15,3 · 15,7 · 15,2 sans — la moitié.
+  // Et l'accueil a précisément besoin de ses images : la chauffe compile UN
+  // programme de shader par image (v246) et le fond de carte avance par
+  // tranches, aussi par image. Le flou prenait donc les images de la
+  // préparation, et le portail l'a dit par trois bornes de durée qui expirent
+  // — `maj.js` libérait « Jouer » à la borne des quarante-cinq secondes avec
+  // huit programmes sur vingt-cinq, là où `origin/main` finissait à 36,9 s
+  // avec les vingt-cinq.
+  //
+  // Les deux autres pièces de la parure ne coûtent RIEN, et c'est mesuré :
+  // couper la dérive de l'aurore rend 12,2 · 12,2 et cacher les deux calques
+  // plein écran 14,2 · 13,0, contre 15,2 · 11,2 pour la parure entière. Seul
+  // le flou se sépare. On ne touche donc qu'à lui — et seulement pendant que
+  // l'accueil travaille : la classe est posée par `index.html` dès la première
+  // image, et elle se retire ici, le verre se dépolissant alors en une
+  // demi-seconde. L'enfant voit le jeu devenir prêt.
+  //
+  // La borne de soixante secondes est là pour la raison de la v220 : un remède
+  // ne doit rien attendre de ce qu'il répare. Si la chauffe ne finissait
+  // jamais, le verre arriverait quand même.
+  const departVerre = performance.now();
+  const verreQuandPret = () => {
+    if ((humainsCharges() && chauffeFinie && prepPrete)
+        || performance.now() - departVerre > 60000) {
+      document.body.classList.remove('prepare');
+      return;
+    }
+    setTimeout(verreQuandPret, 250);
+  };
+  verreQuandPret();
   if (apresMaj) {
     const texte = document.getElementById('boot-text');
     const depart = performance.now();

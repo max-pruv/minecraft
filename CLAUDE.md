@@ -468,8 +468,57 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus
 light, avec beaucoup plus de glass design ». Première des quatre livraisons de
-la refonte. Cinq règles, et deux d'entre elles sont nées d'une mesure qui m'a
+la refonte. Sept règles, et trois d'entre elles sont nées d'une mesure qui m'a
 contredit.
+
+- **UN `backdrop-filter` EST UN CALQUE, ET L'ACCUEIL N'A PAS D'IMAGES À LUI
+  DONNER.** Le premier jet a fait tomber le portail sur TROIS bornes de durée —
+  `maj.js` libérait « Jouer » à la borne des quarante-cinq secondes avec huit
+  programmes de shaders sur vingt-cinq, `sauvegarde.js` n'attendait pas sa copie
+  de nuage, `carte.js` refusait un appui long — et toutes les suites de
+  navigateur avaient ralenti : **carte.js 4 min 39 s → 11 min 33 s**,
+  sauvegarde.js 39 s → 1 min 11, hote.js 1 min 41 → 2 min 37. Mesuré sur
+  l'accueil, deux séries en ordre alterné : **5,7 · 8,3 · 8,3 images par seconde
+  avec le flou contre 15,3 · 15,7 · 15,2 sans.** La moitié. Et l'accueil a
+  précisément besoin de ses images : la chauffe compile UN programme par image
+  (v246) et le fond de carte avance par tranches, aussi par image. Le flou
+  prenait les images de la préparation. Il est donc suspendu tant que l'accueil
+  travaille (`body.prepare`, posée dans la balise `<body>` pour qu'aucune image
+  ne soit floutée, pas même la première ; retirée par `verreQuandPret` dans
+  main.js, bornée à soixante secondes parce qu'un remède ne doit rien attendre
+  de ce qu'il répare, v220). Le verre se dépolit alors en une demi-seconde :
+  l'enfant VOIT le jeu devenir prêt.
+  - **Et le A/B est sur la même machine, dans le même passage** : suspension en
+    place, 25/25 programmes, fond de carte ✓, libéré à 41,3 s ; suspension
+    désarmée, 7/25, fond ✗, 53,6 s.
+  - **LES DEUX AUTRES PIÈCES DE LA PARURE NE COÛTENT RIEN, ET C'EST MESURÉ
+    TROIS FOIS.** Couper la dérive de l'aurore rend 12,2 · 12,2 · 16,3 · 16,4 et
+    cacher les deux calques plein écran 14,2 · 13,0, contre 15,2 · 11,2 · 16,8 ·
+    17,3 pour la parure entière. Seul le flou se sépare. On ne touche qu'à lui —
+    et le partage plus fin (le flou des BOUTONS contre celui des PANNEAUX) ne
+    sort PAS du bruit à deux relevés par bras : je ne l'ai donc pas changé. On ne
+    retouche pas ce que Max a validé sur la foi d'une mesure qui ne tranche pas.
+  - **ET EN JEU, LA PARURE NE COÛTE RIEN** — `#overlay` est en `display: none`.
+    Mes deux premiers relevés donnaient « pire image 260 et 267 ms avec, 123 et
+    132 sans » : à six relevés, 282 · 242 · 145 contre 161 · 280 · 220, et
+    0 à 1,2 % d'images au-delà de 150 ms des deux côtés. **J'ai failli déclarer
+    une régression de jeu qui n'existe pas** — une mesure isolée n'est pas un
+    fait (v218), et la pire image est par construction la statistique la moins
+    stable.
+
+- **UN BUDGET PAR IMAGE EST UN TAUX — LE PIÈGE DE LA v237, UN ÉTAGE PLUS
+  HAUT.** Le fond de carte demande une quarantaine de tranches et
+  `preparer()` lui accordait six millisecondes par image, soit une tranche par
+  image : sur un accueil qui rend une à deux images par seconde, quarante images
+  valent vingt à quarante secondes de vraie vie. Or **pendant ce temps-là il n'y
+  a aucune partie à protéger** — le bouton est grisé, personne ne joue : ce
+  n'est pas le même arbitrage que l'`avancerFond(8)` de la boucle de jeu, qui
+  dispute ses millisecondes au monde qui tourne. `BUDGET_PREP` vaut trente
+  millisecondes, et le chiffre se mesure (`?fondms=`) : tranches nécessaires
+  37 → 16 → 9 → 5 pour 6 → 15 → 30 → 60 ms. **Le temps de libération, lui, ne
+  bouge pas** (24,6 · 20,5 à 6 ms contre 23,3 · 21,2 à 30) parce que sous cette
+  charge-là c'est la charge des corps qui commande — ce qu'on achète, c'est la
+  MARGE en images, et c'est elle qui manquait au portail.
 
 - **UNE POLICE DE JEU HORS LIGNE VIT DANS LE DÉPÔT, JAMAIS CHEZ GOOGLE.** Un
   `<link>` vers `fonts.googleapis.com` casserait l'accueil dans l'avion, à

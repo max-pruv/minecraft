@@ -39,8 +39,18 @@ moderne, beaucoup plus light, avec beaucoup plus de glass design ». Le jeu
   même épaisseur, et il est le même partout.
 - **Les commandes du clavier parlent enfin français.** Elles étaient en anglais
   depuis les tout premiers jours.
+- **Ça bouge.** Les blocs de l'accueil se posent l'un après l'autre, la lumière
+  du fond dérive lentement, et le cube du chargement balaie comme une boussole.
+  Rien ne s'anime pendant la partie : le jeu garde ses images pour le monde.
+- **Le jeu dit ce qu'on y fait.** « Explore le monde entier. Construis le
+  tien. » — parce qu'on y bâtit autant qu'on y voyage. L'ancienne phrase se
+  vantait que tout était sauvegardé, ce qui va de soi.
+- **Et le verre se dépolit quand le jeu est prêt.** Pendant que l'accueil
+  charge ses personnages et ses couleurs, les panneaux sont clairs et nets ;
+  au moment où « Jouer » s'allume, ils se dépolissent en une demi-seconde. On
+  voit le jeu devenir prêt.
 
-**Ce qui le prouve.** Quatre témoins dans `maj.js`. Le fond se lit par sa
+**Ce qui le prouve.** Cinq témoins dans `maj.js`. Le fond se lit par sa
 **luminance calculée** — « clair » est une grandeur mesurable, « la classe est
 posée » n'en est pas une. Les polices se comptent dans ce que la page a
 **réellement demandé** : zéro requête chez Google, deux fichiers depuis le
@@ -48,6 +58,22 @@ dépôt. L'accueil ne doit plus porter un seul point de code d'emoji dans le
 texte que l'enfant voit. Et le quatrième calcule le **contraste** de dix textes
 en composant les fonds translucides — c'est lui qui a trouvé, dans ma propre
 livraison, que la pastille de version tombait à 3,77 pour une barre de 4,5.
+Les animations, elles, ne portent que sur `transform` et `opacity` — ce qui se
+calcule sur la carte graphique, jamais sur la mise en page — et
+`prefers-reduced-motion` les coupe toutes.
+
+**Et ce que le portail a trouvé, parce que c'est le plus utile de la
+livraison.** Le premier jet a rendu trois suites rouges et ralenti toutes les
+autres — `carte.js` passait de 4 min 39 s à 11 min 33 s. La cause : le verre
+dépoli coûte **la moitié des images de l'accueil** (5,7 · 8,3 · 8,3 contre
+15,3 · 15,7 · 15,2 par seconde, mesuré en ordre alterné), et ce sont justement
+celles dont la préparation a besoin — le jeu compile une couleur de shader par
+image. Le verre attend donc que l'accueil ait fini : mêmes machine et même
+passage, la préparation passe de 7 couleurs sur 25 à 25 sur 25. Deux fausses
+pistes écartées par la mesure, et il faut le dire : les animations et les deux
+nappes de lumière ne coûtent **rien** (vérifié trois fois), et en jeu la
+refonte ne coûte rien non plus — j'avais failli déclarer une régression qui
+n'existait pas, sur deux relevés au lieu de six.
 
 **Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records. La
 refonte est une couche de peinture posée par-dessus la mise en page : elle ne
