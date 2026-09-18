@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 275,
+    titre: "Le jeu s'appelle Grand Tour",
+    puces: [
+      "🧭 Nouveau nom et nouveau logo",
+      "🌍 Une boussole et le tour du monde",
+      "💾 Tes mondes sont exactement là où ils étaient",
+    ],
+  },
+  {
     v: 274,
     titre: "Des feux à Paris aussi",
     puces: [

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v275 — Grand Tour
+
+**Pourquoi.** Le jeu s'appelait « Web Minecraft » — un nom d'atelier, emprunté,
+qui ne dit pas ce qu'on y fait. Max a validé le nom et le logo : on y fait le
+tour du monde.
+
+**Ce que ça change.**
+
+- **Le jeu s'appelle Grand Tour** : l'onglet, le grand titre de l'accueil, et
+  surtout le nom sous l'icône sur l'écran d'accueil de l'iPad.
+- **Une icône neuve** — une boussole graduée dont le globe porte une route en
+  pointillé — aux trois tailles que réclament la tablette.
+- **La page parle enfin français** (`lang="fr"`), et l'écran de lancement ne
+  clignote plus en bleu avant de devenir noir.
+- **Rien d'autre ne bouge.** Les mondes, les blocs, les photos, les records :
+  tout est exactement là où il était.
+
+**Ce qui le prouve.**
+
+Trois témoins dans `maj.js`. Le premier n'est pas satisfait par le titre au
+chargement — il entre en jeu, revient au menu par 🏠 et RELIT, parce que c'est
+là que `main.js` réécrivait l'ancien nom par-dessus. Le deuxième vérifie que le
+manifeste et les **quatre** fichiers d'icône arrivent et pèsent quelque chose.
+Le troisième garde les clés qui portent les mondes des enfants : trente clés de
+stockage intactes, dont les cinq qui comptent, et le cache immuable inchangé.
+
+**Ce qu'on n'a pas renommé, et pourquoi.** Sur les soixante-dix-neuf mentions
+de l'ancien nom dans le code, la grande majorité sont des **clés de données**.
+Les renommer effacerait les mondes de Marlon et d'Alice ; renommer le cache
+immuable ferait re-télécharger treize mégaoctets à chaque iPad pour un nom que
+personne ne voit. On renomme ce que l'enfant voit, jamais ce qui porte ses
+données.
+
 ## v274 — Les feux arrivent à Paris, Londres et les quatre autres
 
 **Pourquoi.** La v273 a donné aux feux leur horloge et fait s'arrêter la

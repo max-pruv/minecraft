@@ -1457,12 +1457,19 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 let carteOuverte = false;
 
 document.addEventListener('pointerlockchange', () => {
+  // ON NE MET EN PAUSE QUE CE QUI TOURNAIT (v275). `leaveToMainMenu` relâche le
+  // pointeur, puis affiche le menu principal ; l'événement, lui, arrive APRÈS —
+  // et il écrasait le titre par « Pause » avec un bouton « Reprendre », sur un
+  // menu qu'on venait justement de restaurer. On retient donc l'état d'AVANT :
+  // à ce moment-là `pauseGame()` a déjà posé `running` à faux, il n'y a rien à
+  // mettre en pause. Un Échap en pleine partie, lui, arrive avec `running` vrai.
+  const tournait = running;
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
     if (edu.quizActive || invOpen || carteOuverte) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
-    if (!locked) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
+    if (!locked && tournait) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
   }
 });
 document.addEventListener('pointerlockerror', () => enableDragFallback());
@@ -3787,9 +3794,15 @@ function leaveToMainMenu() {
   world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
-  montrerReprise(false);   // il n'y a plus de partie où revenir
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
+  // ET L'ON RANGE LE BOUTON APRÈS, PAS AVANT (v275). `montrerReprise(false)`
+  // était posé ici DEUX LIGNES PLUS HAUT, et `pauseGame()` le défaisait aussitôt
+  // en rappelant `montrerReprise(true)` : le menu principal offrait « Reprendre
+  // la partie » pour un monde qu'on venait de quitter. Le commentaire disait
+  // pourtant « il n'y a plus de partie où revenir » — ce qui est écrit dans un
+  // commentaire n'est pas ce que le code fait.
+  montrerReprise(false);   // il n'y a plus de partie où revenir
   // restore the full main menu, not the pause screen
   document.getElementById('overlay-title').textContent = NOM_DU_JEU;
   onlineMenu.style.display = 'none';
