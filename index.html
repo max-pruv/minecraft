@@ -6,6 +6,17 @@
   <title>Grand Tour</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <meta name="theme-color" content="#EFF3FA" />
+  <script>
+    /* DU VERRE NE SERT QUE S'IL Y A QUELQUE CHOSE DERRIÈRE (v276).
+       `?verre=0` coupe tous les flous, pour MESURER ce qu'ils coûtent — même
+       discipline que `?ombres=0`, `?reflets=0` et `?lampes=0`. Posé ici, avant
+       la feuille de style, pour que la première image soit déjà sans flou. */
+    try {
+      if (new URLSearchParams(location.search).get('verre') === '0') {
+        document.documentElement.classList.add('sans-verre');
+      }
+    } catch (e) {}
+  </script>
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -1776,6 +1787,13 @@
       border-radius: 22px; box-shadow: var(--verre-ombre);
       -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
       padding: 18px 22px; max-width: min(560px, 92vw); font-size: 13px;
+    }
+
+    /* Le flou coupé pour la mesure. `!important` parce qu'il doit gagner sur
+       chacune des règles ci-dessus, y compris celles qui portent déjà un
+       `!important` hérité. */
+    :root.sans-verre *, :root.sans-verre *::before, :root.sans-verre *::after {
+      -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
     }
 
     @media (max-width: 700px) {
