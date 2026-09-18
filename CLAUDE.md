@@ -811,6 +811,15 @@ montrait ses **trois lentilles allumées ensemble**. Quatre règles.
   sont donc NOMMÉES (`feu-rouge`…), cachées, et `main.js` n'en montre qu'une.
   Émissif seulement, aucune lampe : quatre lumières ponctuelles pour tout le
   jeu (v248, v264).
+- **ET LE FEU N'EXISTE QUE DANS LES VILLES ENGENDRÉES — c'est déclaré, pas
+  oublié.** `RUE.FEUX` n'est posé que par `villesmonde.js` : les six villes
+  bâties à la main et Manhattan n'ont pas un seul feu, donc rien ne les y
+  arrête. La règle, elle, est prête et ne connaît rien des villes — elle lit
+  une position. Le remède est de POSER des feux aux carrefours de ces
+  villes-là, comme `lampadaireDeVille` (v248) a partagé les réverbères : le
+  monde répond tout seul, on ne connaît pas la trame. Dette nommée dans
+  `TASKS.md` ; l'écrire ici est ce qui empêche la cinquième occurrence du verre
+  dans les murs.
 
 **ET UNE SONDE QUI INTERROGE LA MAUVAISE LISTE NE PEUT RIEN VOIR.** Ma première
 mesure de « les voitures s'arrêtent-elles ? » lisait `vehicules.enMarche()` et
