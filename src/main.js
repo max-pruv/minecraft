@@ -2760,7 +2760,16 @@ function refreshHello() {
   const nom = (playerProfile.name || '').trim();
   if (!nom) { el.style.display = 'none'; return; }
   el.innerHTML = '';
-  el.append('👋 Salut ');
+  // Un signe dessiné, jamais un emoji (v276) : à sept ans un pictogramme se
+  // reconnaît, un emoji se devine — et il change de dessin d'un appareil à
+  // l'autre. `innerHTML` vient d'être vidé juste au-dessus, et la main est
+  // écrite ici, pas reçue : rien d'extérieur n'entre dans cette ligne.
+  el.insertAdjacentHTML('beforeend', '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M11 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/>'
+    + '<path d="M14.2 10.4V3.4a1.6 1.6 0 0 1 3.2 0V12"/>'
+    + '<path d="M17.4 11.6V6.4a1.6 1.6 0 0 1 3.2 0v8.2a6.4 6.4 0 0 1-6.4 6.4h-1.6'
+    + 'a6 6 0 0 1-4.5-2L4 14.2a1.7 1.7 0 0 1 2.5-2.2L11 16"/></svg>');
+  el.append(' Salut ');
   const qui = document.createElement('span');
   qui.className = 'qui';
   qui.textContent = nom;

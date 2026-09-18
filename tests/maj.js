@@ -415,6 +415,131 @@ function verifier(nom, ok, detail = '') {
       !cles.erreur && cles.stockage >= 25 && cles.essentielles.length === 0 && cles.cacheImmuable,
       JSON.stringify(cles));
 
+    // ================= LA MATIÈRE CLAIRE (v276) ==============================
+    //
+    // Max, sur la proposition de design : « beaucoup plus light, beaucoup plus
+    // de glass design ». Trois choses se mesurent, et la troisième est celle
+    // qui a trouvé un vrai défaut avant la livraison.
+
+    // UN TÉMOIN D'APPARENCE LIT DES PIXELS, PAS UN NOM DE CLASSE (v247). Le
+    // fond de l'accueil se lit par sa LUMINANCE calculée : « clair » est une
+    // grandeur, « la classe .clair est posée » n'en est pas une. Et la police
+    // de titre se demande à `document.fonts`, qui ne répond vrai que si le
+    // fichier est arrivé ET analysé.
+    const matiere = await tab.evaluate(async () => {
+      await document.fonts.ready;
+      const lum = (c) => {
+        const m = (c || '').match(/[\d.]+/g) || [];
+        const [r, g, b] = m.slice(0, 3).map((v) => {
+          const x = +v / 255;
+          return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const ov = document.getElementById('overlay');
+      const fond = getComputedStyle(ov).backgroundColor;
+      const h1 = document.getElementById('overlay-title');
+      return {
+        fond, fondLum: +lum(fond).toFixed(3),
+        titrePolice: getComputedStyle(h1).fontFamily,
+        corpsPolice: getComputedStyle(document.body).fontFamily,
+        titreChargee: document.fonts.check('800 40px "Bricolage Grotesque"'),
+        corpsChargee: document.fonts.check('600 16px "Plus Jakarta Sans"'),
+      };
+    });
+    verifier('l\'accueil est clair, et il porte les lettres du jeu',
+      matiere.fondLum > 0.7 && matiere.titreChargee && matiere.corpsChargee
+        && /Bricolage/.test(matiere.titrePolice) && /Jakarta/.test(matiere.corpsPolice),
+      JSON.stringify(matiere));
+
+    // ET LES POLICES VIENNENT DU DÉPÔT, PAS DU RÉSEAU. Le jeu marche hors
+    // ligne : un `<link>` vers fonts.googleapis.com casserait l'accueil dans
+    // l'avion, à l'école ou sur le Wi-Fi d'un hôtel — et ce n'est pas une
+    // hypothèse, c'est la moitié des endroits où ces deux enfants jouent. On
+    // compte donc ce que la page a RÉELLEMENT demandé.
+    const reseauPolices = await tab.evaluate(() => {
+      const r = performance.getEntriesByType('resource').map((e) => e.name);
+      return {
+        chezGoogle: r.filter((n) => /fonts\.(googleapis|gstatic)\.com/.test(n)).length,
+        duDepot: r.filter((n) => /\/vendor\/polices\/.*\.woff2/.test(n)).length,
+      };
+    });
+    verifier('et ses deux polices viennent du dépôt, jamais du réseau',
+      reseauPolices.chezGoogle === 0 && reseauPolices.duDepot === 2,
+      JSON.stringify(reseauPolices));
+
+    // LE CONTRASTE SE CALCULE, IL NE SE REGARDE PAS — et c'est ce témoin qui a
+    // trouvé le défaut avant Max. Le bouton « Me connecter à mon compte »
+    // portait du #cdd sur du #2c3a58 : 2,9 pour une barre de 4,5. Personne ne
+    // l'avait vu tant que le fond du menu était sombre lui aussi.
+    //
+    // Le fond EFFECTIF se compose : les panneaux de verre sont translucides,
+    // donc on empile les fonds des ancêtres jusqu'à l'opacité pleine. Lire le
+    // seul `background-color` de l'élément rendrait « transparent » et le
+    // témoin passerait au vert sans rien mesurer.
+    const contraste = await tab.evaluate(() => {
+      const nb = (c) => {
+        const m = (c || '').match(/[\d.]+/g) || [];
+        if (m.length < 3) return null;
+        return { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 };
+      };
+      const lum = (c) => {
+        const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+      };
+      const fondEffectif = (el) => {
+        let acc = null;
+        for (let n = el; n; n = n.parentElement) {
+          const c = nb(getComputedStyle(n).backgroundColor);
+          if (!c || c.a === 0) continue;
+          acc = acc === null
+            ? { r: c.r, g: c.g, b: c.b, a: c.a }
+            : { r: acc.r + (c.r - acc.r) * (1 - acc.a), g: acc.g + (c.g - acc.g) * (1 - acc.a),
+                b: acc.b + (c.b - acc.b) * (1 - acc.a), a: acc.a + c.a * (1 - acc.a) };
+          if (acc.a >= 0.99) break;
+        }
+        return acc;
+      };
+      const cibles = ['#overlay-title', '#overlay .subtitle', '#play-btn', '#online-btn',
+        '#face-login-btn', '#account-login-btn', '#switch-player-btn', '#app-version',
+        '#overlay .controls div', '.online-title'];
+      const faibles = [];
+      const mesures = {};
+      for (const sel of cibles) {
+        const el = document.querySelector(sel);
+        if (!el || !el.offsetParent) continue;
+        const texte = nb(getComputedStyle(el).color);
+        const fond = fondEffectif(el);
+        if (!texte || !fond) continue;
+        const a = lum(texte), b = lum(fond);
+        const ratio = +(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05))).toFixed(2);
+        mesures[sel] = ratio;
+        if (ratio < 4.5) faibles.push(sel + ' ' + ratio);
+      }
+      return { mesures, faibles, lus: Object.keys(mesures).length };
+    });
+    verifier('et chaque texte de l\'accueil se lit — quatre et demi de contraste au moins',
+      contraste.lus >= 6 && contraste.faibles.length === 0,
+      JSON.stringify(contraste));
+
+    // PLUS UN SEUL EMOJI SUR L'ACCUEIL. Un pictogramme dessiné se reconnaît à
+    // sept ans ; un emoji se devine, et il change de dessin d'un appareil à
+    // l'autre — la fusée de « Mon personnage » n'était pas la même sur l'iPad
+    // et sur le portable. On lit le TEXTE que l'enfant voit, pas le source.
+    const signes = await tab.evaluate(() => {
+      const ov = document.getElementById('overlay');
+      const txt = ov ? ov.innerText || '' : '';
+      const emojis = [...txt].filter((c) => {
+        const p = c.codePointAt(0);
+        return (p >= 0x1F000 && p <= 0x1FAFF) || (p >= 0x2600 && p <= 0x27BF)
+          || p === 0x25D3 || p === 0x2B50;
+      });
+      return { emojis: [...new Set(emojis)], icones: ov ? ov.querySelectorAll('svg.ic').length : 0 };
+    });
+    verifier('et l\'accueil ne porte plus un seul emoji : des signes dessinés',
+      signes.emojis.length === 0 && signes.icones >= 8,
+      JSON.stringify(signes));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

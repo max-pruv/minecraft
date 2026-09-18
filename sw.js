@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v275';
+const CACHE_VERSION = 'web-minecraft-v276';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -17,11 +17,17 @@ const STATIC_CACHE = 'web-minecraft-static-v1';
 // re-téléchargeaient à CHAQUE livraison — c'est-à-dire tous les jours — parce
 // qu'ils étaient dans la liste des ASSETS. Ils vivent ici, une fois par
 // appareil ; l'installation les y met s'ils manquent, sans bloquer le reste.
+// Et les deux polices (v276) : 104 Ko qui ne changeront jamais. Elles sont
+// dans le dépôt et non chez Google parce que le jeu marche HORS LIGNE — un
+// `<link>` vers fonts.googleapis.com casserait l'accueil dans l'avion, à
+// l'école ou sur le Wi-Fi d'un hôtel.
 const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
-  || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/');
+  || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/')
+  || url.includes('/vendor/polices/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
+const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 
 const ASSETS = [
   './',
@@ -157,7 +163,8 @@ self.addEventListener('install', (event) => {
   // Le chemin de lecture ci-dessous les met de toute façon en cache à la
   // première demande.
   caches.open(STATIC_CACHE).then(async (cache) => {
-    for (const u of HUMAINS) {
+    // Les polices d'abord : l'accueil les attend, les corps non (v245).
+    for (const u of [...POLICES, ...HUMAINS]) {
       if (await cache.match(u)) continue;
       await cache.add(u).catch(() => {});
     }
