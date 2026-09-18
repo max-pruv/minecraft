@@ -11,7 +11,7 @@ export const NOUVEAUTES = [
     puces: [
       "🧭 Nouveau nom et nouveau logo",
       "🌍 Une boussole et le tour du monde",
-      "💾 Tes mondes sont exactement là où ils étaient",
+      "💾 Tes mondes n'ont pas bougé",
     ],
   },
   {
