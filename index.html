@@ -1789,11 +1789,17 @@
       padding: 18px 22px; max-width: min(560px, 92vw); font-size: 13px;
     }
 
-    /* Le flou coupé pour la mesure. `!important` parce qu'il doit gagner sur
-       chacune des règles ci-dessus, y compris celles qui portent déjà un
-       `!important` hérité. */
+    /* LA PARURE COUPÉE, POUR LA MESURE. `?verre=0` retire TOUT ce que la
+       refonte ajoute à peindre : le flou des panneaux ET les deux calques
+       plein écran (l'aurore et les méridiens). Ma première version ne coupait
+       que le flou — et la mesure a montré qu'il ne coûte rien ; couper une
+       moitié de ce qu'on soupçonne ne permet pas de conclure sur l'autre.
+       `!important` parce qu'il doit gagner sur chacune des règles ci-dessus. */
     :root.sans-verre *, :root.sans-verre *::before, :root.sans-verre *::after {
       -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    }
+    :root.sans-verre #overlay::before, :root.sans-verre #overlay::after {
+      display: none !important;
     }
 
     @media (max-width: 700px) {
