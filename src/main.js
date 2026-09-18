@@ -15,6 +15,7 @@ import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
+import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
@@ -709,6 +710,7 @@ function installerMorceau(cx, cz, tampons) {
   if (props.length > 0) {
     const group = new THREE.Group();
     const lanternes = [];
+    const feux = [];
     for (const p of props) {
       const mesh = buildPropMesh(p.id);
       if (!mesh) continue;
@@ -726,9 +728,21 @@ function installerMorceau(cx, cz, tampons) {
           mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
           mesh.position.z - 0.5 * Math.sin(mesh.rotation.y)));
       }
+      // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
+      // ses trois lentilles vives pour n'en montrer qu'une. Elles se
+      // retrouvent par leur NOM : `clone()` recopie `userData` par JSON, et un
+      // maillage n'y survit pas (props.js).
+      if (p.id === RUE.FEUX) {
+        const wx = cx * CHUNK + p.x, wz = cz * CHUNK + p.z;
+        const axe = axeDuFeu(wx, wz);
+        mesh.rotation.y = versLaRueAxe(wx, p.y - 1, wz, axe);
+        const lampes = ['feu-rouge', 'feu-orange', 'feu-vert'].map((n) => mesh.getObjectByName(n));
+        if (lampes.every(Boolean)) feux.push({ x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null });
+      }
     }
     entry.props = group;
     if (lanternes.length) entry.lanternes = lanternes;
+    if (feux.length) entry.feux = feux;
     scene.add(decor(group));
   }
   chunkMeshes.set(key, entry);
@@ -745,6 +759,24 @@ function versLaRue(wx, wy, wz) {
   if (rue(wx, wz + 1)) return -Math.PI / 2;
   if (rue(wx, wz - 1)) return Math.PI / 2;
   return 0;
+}
+
+// ET UN FEU REGARDE LA FILE QU'IL ARRÊTE, PAS LA PREMIÈRE RUE VENUE (v273).
+// Il est posé au coin d'un carrefour, donc DEUX rues le touchent ; celle qui
+// compte est celle de son axe — les voitures qu'il commande arrivent par
+// là. Ses lentilles sont portées en −z par le modèle (props.js), d'où le
+// quart de tour par rapport à la crosse d'un réverbère, qui est en +x.
+function versLaRueAxe(wx, wy, wz, axe) {
+  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
+  const q = Math.PI / 2;
+  if (axe === 0) {
+    if (rue(wx + 1, wz)) return -q;
+    if (rue(wx - 1, wz)) return q;
+  } else {
+    if (rue(wx, wz + 1)) return Math.PI;
+    if (rue(wx, wz - 1)) return 0;
+  }
+  return versLaRue(wx, wy, wz) - q;
 }
 
 let lastPlayerChunk = null;
@@ -888,6 +920,8 @@ function updateChunks() {
   // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
   // eux-mêmes, si bien qu'un train ne peut pas rouler à côté de sa voie.
   vehicules = createVehicules({ scene, player });
+  // et la circulation s'arrête aux feux (v273)
+  vehicules.brancherFeux(feuRougeDevant);
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -6139,6 +6173,71 @@ function eclairerLaRue() {
   });
 }
 
+// LES FEUX CHANGENT, ET EN TEMPS RÉEL (v273). Deux fois par seconde — la même
+// cadence de ménage que les lampes de rue — chaque feu dessiné autour de
+// l'enfant prend l'état que `feux.js` donne à son axe, et l'on n'écrit les
+// trois `visible` QUE s'il a changé : sinon ce serait trois écritures par feu
+// et par tour pour rien.
+//
+// Et la liste des feux proches est FIGÉE ici, pour la circulation : ce qu'un
+// convoi demande à chaque image ne se refabrique pas à chaque appel (leçon de
+// `enMarche`, v259).
+const feuxPrets = cadence(500);
+let feuxProches = [];
+function reglerLesFeux() {
+  if (renduDansManhattan || !feuxPrets()) return;
+  const t = performance.now();
+  const px = player.pos.x, pz = player.pos.z;
+  const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
+  const proches = [];
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dz = -4; dz <= 4; dz++) {
+      const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+      if (!e || !e.feux) continue;
+      for (const f of e.feux) {
+        const etat = etatFeu(f.axe, t);
+        if (etat !== f.etat) {
+          f.etat = etat;
+          f.lampes[0].visible = etat === 'rouge';
+          f.lampes[1].visible = etat === 'orange';
+          f.lampes[2].visible = etat === 'vert';
+        }
+        if ((f.x - px) * (f.x - px) + (f.z - pz) * (f.z - pz) < PORTEE_FEU * PORTEE_FEU) proches.push(f);
+      }
+    }
+  }
+  feuxProches = proches;
+}
+// Un feu ne commande rien au-delà de la portée d'affichage d'une voiture
+// (`VU_VOITURE`, 45) : plus loin, il n'y a personne à arrêter.
+const PORTEE_FEU = 60;
+// On s'arrête AVANT le carrefour, jamais dedans : au-delà de deux blocs
+// derrière soi le feu est passé, et au-delà de sept il est trop loin pour
+// qu'un enfant comprenne pourquoi la voiture freine.
+const ARRET_FEU_MIN = 2, ARRET_FEU_MAX = 7, ARRET_FEU_COTE = 5;
+
+// UNE VOITURE S'ARRÊTE AU ROUGE (v273). `vehicules.js` demande, pour une
+// voiture à (x, z) de cap `cap` : un feu de SON axe est-il au rouge (ou à
+// l'orange, qui est le dégagement) juste devant ? L'orange arrête comme le
+// rouge — c'est ce que fait un conducteur, et cela vide le carrefour avant
+// que l'autre file ne démarre.
+function feuRougeDevant(x, z, cap) {
+  if (!feuxProches.length) return false;
+  const ux = Math.sin(cap), uz = Math.cos(cap);
+  const axe = axeDuCap(ux, uz);
+  for (const f of feuxProches) {
+    if (f.axe !== axe || f.etat === 'vert' || f.etat === null) continue;
+    const ex = f.x - x, ez = f.z - z;
+    const devant = ex * ux + ez * uz;
+    if (devant < ARRET_FEU_MIN || devant > ARRET_FEU_MAX) continue;
+    if (Math.abs(ex * uz - ez * ux) > ARRET_FEU_COTE) continue;
+    return true;
+  }
+  return false;
+}
+window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
+  vives: f.lampes.map((l) => l.visible) }));
+
 // Trois secondes entre deux annonces : le message est minuscule, et c'est le
 // délai maximum pendant lequel une tablette peut afficher autre chose que ce
 // que voit l'enfant d'à côté.
@@ -6618,6 +6717,7 @@ function frame(now) {
   avancerReflets(renderer, scene);
 
   eclairerLaRue();
+  reglerLesFeux();
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   renderer.render(scene, camera);

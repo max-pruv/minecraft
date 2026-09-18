@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v273 — Les feux tricolores s'allument, et la circulation s'y arrête
+
+**Pourquoi.** Le programme de réalisme écrit dans `CLAUDE.md` avait un point 4
+resté ouvert depuis des mois : « la vie dense — voitures qui s'arrêtent aux
+feux ». Mesuré en capture à Zurich avant d'y toucher : les feux existaient bien,
+un par coin de carrefour, mais leur boîtier montrait ses **trois lentilles
+allumées en même temps** — rouge, orange et vert. Ce n'est pas un feu, c'est une
+guirlande. Et les voitures leur passaient devant sans les voir.
+
+**Ce que ça change.**
+
+- **Un feu montre une couleur à la fois, et il change.** Vert neuf secondes,
+  orange deux, puis rouge pendant que l'autre rue passe : un tour complet de
+  vingt-deux secondes, compté en temps réel — un feu ne ralentit pas parce que
+  la tablette rame.
+- **Les deux rues d'un carrefour ne sont jamais vertes ensemble.** Les feux se
+  répondent en diagonale, comme dans une vraie ville.
+- **Le feu regarde la file qu'il arrête**, et plus la première rue venue.
+- **Les voitures s'arrêtent au rouge et repartent au vert** — sans patience :
+  un feu ne se force pas, on attend qu'il passe. Une voiture déjà engagée dans
+  le carrefour le traverse, elle ne s'y arrête pas.
+
+**Ce qui le prouve.**
+
+Trois témoins neufs dans `carteMonde.js`, rouges sur l'ancien code parce que
+rien n'y publie l'état d'un feu :
+
+| témoin | ce qu'il rend |
+| --- | --- |
+| un feu ne montre qu'une couleur, et il change | **53 feux** autour de l'enfant, **zéro** dont le compte de lentilles vives soit différent de un, et le feu suivi change d'état en 1,5 s |
+| les deux axes ne sont jamais verts ensemble | sur tout le cycle (22 s, lu par pas de 100 ms) : zéro instant à deux verts, zéro vert pendant l'orange de l'autre |
+| la circulation s'arrête au rouge, puis repart | 1 455 relevés de voitures : **140** à l'arrêt devant un feu non vert, **112** qui roulent au vert, et **4 redémarrages** au passage au vert |
+
+La règle du feu est PURE (`src/feux.js`, sans import) : c'est elle que lisent
+celui qui allume les lentilles et celle qui s'arrête devant. Deux tables qui
+décrivent le même feu finissent par diverger.
+
 ## v272 — Une voiture n'est pas un avion : ni jauge, ni eau sous les roues
 
 **Pourquoi.** Max, capture d'iPhone à Hambourg, quatre défauts sur une seule

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 273,
+    titre: "Les feux passent au vert",
+    puces: [
+      "🚦 Les feux changent vraiment de couleur",
+      "🚗 Les voitures s'arrêtent au rouge",
+      "🟢 Elles repartent quand ça passe au vert",
+    ],
+  },
+  {
     v: 272,
     titre: "La voiture ne nage pas",
     puces: [

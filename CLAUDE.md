@@ -778,6 +778,52 @@ noires. Quatre règles.
   réverbères sans chaussée à côté, parce qu'à Paris trois sur vingt-neuf
   ont pour voisin une rue que la culée d'un pont recouvre APRÈS le sol.
 
+## Les feux tricolores, et ce qu'une sonde aveugle ne peut pas voir (v273)
+
+Le point 4 du programme de réalisme — « la vie dense : voitures qui s'arrêtent
+aux feux » — attendait depuis des mois. Mesuré en capture à Zurich AVANT d'y
+toucher : les feux étaient là, un par coin de carrefour, et leur boîtier
+montrait ses **trois lentilles allumées ensemble**. Quatre règles.
+
+- **LA RÈGLE D'UN FEU EST PURE, ET UNE SEULE** (`src/feux.js`, sans import, lu
+  sous node par un témoin) : le cycle (vert 9 s, orange 2, puis l'autre axe),
+  et l'AXE qu'un feu commande. Celui qui allume les lentilles (`main.js`) et
+  celle qui s'arrête devant (`vehicules.js`, par un crochet branché depuis
+  `main.js`) lisent la MÊME fonction. Deux tables qui décrivent le même feu
+  finissent par diverger — c'est la discipline de `postesAvion` et de la
+  tuyère, appliquée au carrefour.
+- **L'HORLOGE EST EN TEMPS RÉEL, ET LE CYCLE VAUT DEUX DEMI-CYCLES EXACTEMENT.**
+  En `dt` (borné à un vingtième), un feu passerait au vert deux fois plus tard
+  sur une tablette qui rame : un feu est une cadence de MÉNAGE (v226), il
+  décide de ce que le monde fait. Et si le tour ne vaut pas exactement deux
+  fois `vert + orange`, l'orange d'un axe déborde sur le vert de l'autre et
+  deux files démarrent ensemble — mesuré sur tout le cycle, par pas de cent
+  millisecondes.
+- **L'AXE SE LIT DANS LA POSITION, PAS DANS UN IDENTIFIANT DE BLOC.** La parité
+  de (x + z) met les quatre coins d'un carrefour en diagonale deux à deux —
+  exactement la paire qui, dans une vraie ville, regarde la même file. Aucun
+  bloc neuf, aucune migration, et la règle est la même des deux côtés. Le feu
+  TOURNE ensuite vers la rue de son axe (`versLaRueAxe`) : il est à un coin,
+  donc DEUX rues le touchent, et celle qui compte est celle qu'il arrête.
+- **L'ÉTAT VIT DANS LE NOM DU MAILLAGE, PAS DANS `userData`.** Chaque feu de la
+  ville est un CLONE du gabarit de `props.js`, et `Object3D.copy` recopie
+  `userData` par JSON — un maillage n'y survit pas. Les trois lentilles vives
+  sont donc NOMMÉES (`feu-rouge`…), cachées, et `main.js` n'en montre qu'une.
+  Émissif seulement, aucune lampe : quatre lumières ponctuelles pour tout le
+  jeu (v248, v264).
+
+**ET UNE SONDE QUI INTERROGE LA MAUVAISE LISTE NE PEUT RIEN VOIR.** Ma première
+mesure de « les voitures s'arrêtent-elles ? » lisait `vehicules.enMarche()` et
+rendait **zéro arrêtée sur 128 relevés** — sur un code qui s'arrêtait très
+bien. `enMarche()` EXCLUT par construction les voitures qui attendent (c'est sa
+raison d'être : un piéton ne s'écarte pas devant une voiture à l'arrêt). La
+sonde ne pouvait donc PAS voir un arrêt, quel que soit le code. Relue sur
+`etat().places`, qui publie la pose ET le drapeau d'attente de chaque voiture :
+140 arrêts au rouge sur 1 455 relevés, et quatre redémarrages au vert. C'est
+« compter un motif n'est pas compter la chose » (v224), du côté de la SONDE :
+avant de conclure qu'un mécanisme ne marche pas, on vérifie que l'instrument
+peut le voir.
+
 ## Une voiture n'est pas un avion : ni jauge, ni eau sous les roues (v272)
 
 Max, capture d'iPhone à Hambourg, quatre défauts sur une seule image : la

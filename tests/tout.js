@@ -136,6 +136,10 @@ const GARDIENS = {
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js'],
+  // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
+  // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
+  // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
+  'src/feux.js': ['carteMonde.js', 'monte.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],

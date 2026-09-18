@@ -240,14 +240,37 @@ Object.assign(BUILDERS, {
     g.add(box(0.3, 0.04, 0.24, DARK, 0.5, 2.95, 0));        // son chapeau
     return g;
   },
+  // LE FEU N'EN MONTRE QU'UNE À LA FOIS (v273). Les trois lentilles étaient
+  // allumées ensemble — vu en capture à Zurich, rouge, orange et vert sur le
+  // même boîtier : ce n'est pas un feu, c'est une guirlande. Chaque lentille
+  // est donc DOUBLE : une pastille sombre, toujours là, et la même en vif un
+  // cheveu devant, NOMMÉE et cachée. `main.js` n'en montre qu'une, sur
+  // l'horloge de `feux.js`.
+  //
+  // C'est le NOM qui porte l'information, pas `userData` : `Object3D.copy`
+  // recopie `userData` par JSON, et un maillage n'y survit pas — or chaque
+  // feu de la ville est un CLONE de ce gabarit.
+  //
+  // ÉMISSIF SEULEMENT, AUCUNE LAMPE (v248, v264) : quatre lumières ponctuelles
+  // pour tout le jeu, et une de plus recompilerait tous les programmes de
+  // shaders à l'entrée d'une ville.
   feux() {
     const g = new THREE.Group();
     g.add(box(0.3, 0.05, 0.3, DARK, 0, 0.02, 0));
     g.add(box(0.09, 2.4, 0.09, DARK, 0, 1.2, 0));
     g.add(box(0.26, 0.72, 0.18, 0x2a2a30, 0, 2.35, 0));     // le boîtier
-    g.add(box(0.14, 0.14, 0.05, 0xd83a2a, 0, 2.58, -0.09)); // rouge
-    g.add(box(0.14, 0.14, 0.05, 0xf0a83a, 0, 2.35, -0.09)); // orange
-    g.add(box(0.14, 0.14, 0.05, 0x3ac862, 0, 2.12, -0.09)); // vert
+    const hauteur = [2.58, 2.35, 2.12];
+    const eteint = [0x4a1a14, 0x4a3410, 0x14401f];          // la lentille, feu éteint
+    const vif = [0xff5038, 0xffc84e, 0x54ff8e];
+    const nom = ['rouge', 'orange', 'vert'];
+    for (let i = 0; i < 3; i++) {
+      g.add(box(0.14, 0.14, 0.05, eteint[i], 0, hauteur[i], -0.09));
+      const l = box(0.18, 0.18, 0.06, vif[i], 0, hauteur[i], -0.12);
+      l.name = 'feu-' + nom[i];
+      l.visible = false;
+      l.material.toneMapped = false;    // une lampe ne passe pas par la correspondance tonale
+      g.add(l);
+    }
     return g;
   },
   jardiniere(c) {

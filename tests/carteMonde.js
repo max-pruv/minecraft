@@ -920,6 +920,117 @@ const VRAIES_KM = [
     verifier('Times Square est un mur d\'écrans, et ça se compte',
       ecrans>=8,`${ecrans} grands panneaux présents dans le rendu`);
 
+    // ================= LES FEUX TRICOLORES (v273) ===========================
+    //
+    // Mesuré en capture à Zurich AVANT d'y toucher : le boîtier montrait ses
+    // TROIS lentilles allumées en même temps — rouge, orange et vert. Ce n'est
+    // pas un feu, c'est une guirlande. Et la circulation ne les voyait pas.
+    //
+    // Le premier témoin lit ce que le jeu PUBLIE de chaque feu dessiné autour
+    // de l'enfant (`window.__feux`) : combien de lentilles vives, quel état,
+    // quel axe. Sur l'ancien code la sonde n'existe pas — il le dit, il ne
+    // s'effondre pas.
+    await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('zurich');
+      window.__carte.surTeleport(P.x, P.z);
+    });
+    await dormir(14000);
+    const feux = await tab.evaluate(async () => {
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!window.__feux) return { err: 'aucune sonde de feux' };
+      const lire = () => window.__feux();
+      let f0 = lire();
+      for (let k = 0; k < 20 && f0.length < 8; k++) { await dodo(1000); f0 = lire(); }
+      if (!f0.length) return { err: 'aucun feu dessiné autour de l\'enfant' };
+      const mauvais = f0.filter((f) => f.vives.filter(Boolean).length !== 1).length;
+      const etats = {};
+      for (const f of f0) etats[f.etat] = (etats[f.etat] || 0) + 1;
+      // ET IL CHANGE : le même feu, suivi jusqu'à ce qu'il change d'état.
+      // Borné, et le temps qu'il a pris entre dans le message — le cycle fait
+      // vingt-deux secondes, donc un feu change en onze au plus.
+      const cible = f0[0];
+      const etatDe = () => (lire().find((q) => q.x === cible.x && q.z === cible.z) || {}).etat;
+      const depart = etatDe();
+      let ms = 0, apres = depart;
+      while (ms < 16000 && apres === depart) { await dodo(500); ms += 500; apres = etatDe(); }
+      return { total: f0.length, mauvais, etats, depart, apres, ms,
+        axes: { 0: f0.filter((f) => f.axe === 0).length, 1: f0.filter((f) => f.axe === 1).length } };
+    });
+    verifier('un feu tricolore ne montre qu\'une couleur à la fois, et il change',
+      !feux.err && feux.total >= 8 && feux.mauvais === 0 && feux.apres !== feux.depart
+      && feux.axes[0] > 0 && feux.axes[1] > 0,
+      JSON.stringify(feux));
+    // ET LES DEUX AXES NE SONT JAMAIS VERTS ENSEMBLE : un carrefour où deux
+    // files partent en même temps n'est pas un carrefour. La règle est PURE
+    // (`src/feux.js`), donc on l'interroge directement, sur tout un cycle.
+    const horloge = await tab.evaluate(async () => {
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
+      // `src/feux.js` n'y existe pas, et l'import jetait — la suite mourait
+      // ici, et le troisième témoin n'était jamais atteint. On ne voyait donc
+      // pas l'étendue de ce qui manque.
+      let f;
+      try { f = await import('./src/feux.js'); } catch (e) { return { err: 'src/feux.js absent (' + e.message + ')' }; }
+      let deuxVerts = 0, vertEtOrange = 0, vus = {};
+      for (let t = 0; t < f.CYCLE; t += 100) {
+        const a = f.etatFeu(0, t), b = f.etatFeu(1, t);
+        vus[a] = 1; vus[b] = 1;
+        if (a === 'vert' && b === 'vert') deuxVerts++;
+        if ((a === 'vert' && b === 'orange') || (a === 'orange' && b === 'vert')) vertEtOrange++;
+      }
+      return { cycle: f.CYCLE, deuxVerts, vertEtOrange, couleurs: Object.keys(vus).sort(),
+        axeParite: [f.axeDuFeu(0, 0), f.axeDuFeu(1, 0), f.axeDuFeu(2176, 1089)] };
+    });
+    verifier('et les deux axes d\'un carrefour ne sont jamais verts ensemble',
+      !horloge.err && horloge.deuxVerts === 0 && horloge.vertEtOrange === 0 && horloge.couleurs.length === 3,
+      JSON.stringify(horloge));
+
+    // ET LA CIRCULATION S'Y ARRÊTE, PUIS REPART AU VERT. On lit la pose et le
+    // drapeau d'attente de CHAQUE voiture visible (`etat().places`), jamais
+    // `enMarche()` : celui-ci EXCLUT les voitures qui attendent, si bien qu'une
+    // sonde qui l'interroge ne peut par construction voir aucun arrêt — c'est
+    // ce qu'elle a rendu au premier jet, « zéro arrêtée » sur du code qui
+    // s'arrêtait très bien. Compter un motif n'est pas compter la chose.
+    const arrets = await tab.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!window.__feux) return { err: 'aucune sonde de feux' };
+      const axeDuCap = (ux, uz) => (Math.abs(ux) >= Math.abs(uz) ? 0 : 1);
+      const devantMoi = (feux, x, z, cap) => {
+        const ux = Math.sin(cap), uz = Math.cos(cap), axe = axeDuCap(ux, uz);
+        let meilleur = null;
+        for (const f of feux) {
+          if (f.axe !== axe) continue;
+          const ex = f.x - x, ez = f.z - z;
+          const devant = ex * ux + ez * uz;
+          if (devant < 2 || devant > 7 || Math.abs(ex * uz - ez * ux) > 5) continue;
+          if (!meilleur || devant < meilleur.devant) meilleur = { devant, etat: f.etat };
+        }
+        return meilleur;
+      };
+      let auRouge = 0, auVert = 0, redemarrages = 0, voitures = 0;
+      const avant = new Map();
+      for (let k = 0; k < 60; k++) {
+        await dodo(500);
+        const feux = window.__feux();
+        g.vehicules.etat().forEach((c, ci) => {
+          if (!c.routier) return;
+          for (const [x, z, cap, i, retard, attend] of c.places) {
+            voitures++;
+            const f = devantMoi(feux, x, z, cap);
+            const cle = ci + ':' + i;
+            if (f && f.etat !== 'vert' && attend) auRouge++;
+            if (f && f.etat === 'vert' && !attend) auVert++;
+            const p = avant.get(cle);
+            if (p && p.attend && p.etat !== 'vert' && !attend && f && f.etat === 'vert') redemarrages++;
+            avant.set(cle, { attend, etat: f ? f.etat : null });
+          }
+        });
+      }
+      return { voitures, auRouge, auVert, redemarrages };
+    });
+    verifier('et la circulation s\'arrête au feu rouge, puis repart au vert',
+      !arrets.err && arrets.auRouge >= 10 && arrets.redemarrages >= 1,
+      JSON.stringify(arrets));
+
     // ================= LA VILLE ÉCLAIRÉE LA NUIT ============================
     //
     // Max, capture de Moscou à minuit : des réverbères allumés, des feux
