@@ -1523,32 +1523,48 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await dormir(400);
       }
       const { ux, uz } = ancre;
-      const x0 = g.player.pos.x, z0 = g.player.pos.z;
-      gens.forEach((h, k) => {
-        h.placeAt(x0 + ux * (5 + 3 * k), z0 + uz * (5 + 3 * k), g.player.pos.y);
-        h.poste.set(h.pos.x, h.pos.z); h.etat = 'pause'; h.minuteur = 30; h.pas = 0;
-      });
       const dedans = (h) => {
         const cap = g.player.yaw + Math.PI, cx = Math.sin(cap), cz = Math.cos(cap), vx = cz, vz = -cx;
         const dx = h.pos.x - g.player.pos.x, dz = h.pos.z - g.player.pos.z;
         return Math.abs(dx * cx + dz * cz) <= 2.2 && Math.abs(dx * vx + dz * vz) <= 1.13 && Math.abs(h.pos.y - g.player.pos.y) <= 2.5;
       };
-      g.player.keys.add('KeyW');
-      let releves = 0, traverses = 0, ecartes = 0, voituresRue = 0;
-      const t0 = performance.now();
-      while (performance.now() - t0 < 12000) {
-        await dormir(100);
-        releves++;
-        for (const h of gens) { if (dedans(h)) traverses++; if (h.ecart) ecartes++; }
-        if (g.vehicules.placeProche(g.player.pos, 8)) voituresRue++;
+      // ET L'ON NE CONCLUT PAS SUR UNE MESURE OÙ LA CIRCULATION EST VENUE
+      // (v272). Au portail : douze relevés avec une voiture de la rue à moins
+      // de huit blocs, 5,4 blocs d'avance pour une barre à six, ZÉRO traversée
+      // — la voiture de l'enfant s'est arrêtée devant une voiture de la rue
+      // (v245), pas devant un piéton, et le verdict jugeait une situation qui
+      // n'a pas eu lieu. `rueLibre` regarde le départ et l'arrivée AVANT de
+      // partir ; il ne peut rien contre un convoi qui arrive pendant les douze
+      // secondes. On recommence donc, au plus trois fois, et le nombre de
+      // tours part dans le message. Une traversée, elle, arrête tout de suite :
+      // un vrai défaut ne se rejoue pas jusqu'au vert.
+      let releves = 0, traverses = 0, ecartes = 0, voituresRue = 0, avance = 0, ecartMax = 0, tours = 0;
+      for (tours = 1; tours <= 3; tours++) {
+        g.player.pos.set(ancre.x0, ancre.y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0);
+        await dormir(400);
+        const xd = g.player.pos.x, zd = g.player.pos.z;
+        gens.forEach((h, k) => {
+          h.placeAt(xd + ux * (5 + 3 * k), zd + uz * (5 + 3 * k), g.player.pos.y);
+          h.poste.set(h.pos.x, h.pos.z); h.etat = 'pause'; h.minuteur = 30; h.pas = 0;
+        });
+        releves = 0; traverses = 0; ecartes = 0; voituresRue = 0;
+        g.player.keys.add('KeyW');
+        const t0 = performance.now();
+        while (performance.now() - t0 < 12000) {
+          await dormir(100);
+          releves++;
+          for (const h of gens) { if (dedans(h)) traverses++; if (h.ecart) ecartes++; }
+          if (g.vehicules.placeProche(g.player.pos, 8)) voituresRue++;
+        }
+        g.player.keys.delete('KeyW');
+        avance = +Math.hypot(g.player.pos.x - xd, g.player.pos.z - zd).toFixed(1);
+        ecartMax = +Math.max(...gens.map((h) => Math.abs((h.pos.x - xd) * uz - (h.pos.z - zd) * ux))).toFixed(2);
+        if (traverses > 0 || voituresRue === 0 || avance >= 6) break;
       }
-      g.player.keys.delete('KeyW');
-      const avance = Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0);
-      const ecartMax = Math.max(...gens.map((h) => Math.abs((h.pos.x - x0) * uz - (h.pos.z - z0) * ux)));
       await descendre(); retirerVoiture();
       g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
       if (g.player.prendreGabarit && auVolant()) g.player.prendreGabarit(0);
-      return { candidats, releves, traverses, ecartes, voituresRue, avance: +avance.toFixed(1), ecartMax: +ecartMax.toFixed(2), encoreAuVolant: auVolant() };
+      return { candidats, tours, releves, traverses, ecartes, voituresRue, avance, ecartMax, encoreAuVolant: auVolant() };
     });
     verifier('la voiture de l\'enfant freine devant un piéton, qui s\'écarte, et elle repart sans lui passer au travers',
       !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6,
@@ -4490,41 +4506,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const vitesse0 = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
         let lance = 0, monte = 0;
         while (monte < 8 && lance < 1) { await tenir(0.3); monte += 0.3; lance = Math.abs(vitesse0()); }
-        // ON SÉPARE LE FREINAGE DU RECUL. Tirer le joystick depuis pleins gaz
-        // freine d'abord — c'est voulu, on ne passe pas la marche arrière à
-        // vingt blocs par seconde — et quatre secondes n'y suffisaient pas :
-        // mesuré 1,28 bloc, ce qui accusait une physique juste. « La mesure
-        // était trop courte, pas la physique » (v229).
+        // LE RECUL SE MESURE DEPUIS LE POINT DE REBROUSSEMENT — FREINER,
+        // C'EST ENCORE AVANCER (v272). Le premier jet séparait les deux phases
+        // en attendant l'arrêt sur `vitesseAvion` : au portail elle est
+        // retombée à zéro alors que l'appareil bougeait encore, l'attente est
+        // sortie tout de suite, et le témoin a relevé « recule −2,2 » sur une
+        // physique juste — verte au portail d'avant, sur le même code. Un SENS
+        // ne se lit pas entre deux instants choisis : il se lit entre le point
+        // le plus AVANCÉ atteint et le point final. Aucune cadence de banc ne
+        // peut le fausser, et sur la version publiée — qui ne recule jamais —
+        // ce point est toujours le point courant, donc le recul reste nul.
         g.player.touchMove = { f: -1, s: 0 };
-        const vitesse = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
-        let arret = 0;
-        while (arret < 8 && vitesse() > 0) { await tenir(0.2); arret += 0.2; }
-        // ON RECULE JUSQU'À AVOIR RECULÉ, PAS PENDANT TROIS SECONDES (v270).
-        // `tenir` compte du temps RÉEL ; le jeu, lui, borne `dt` à un
-        // vingtième, si bien qu'à trois images par seconde trois secondes de
-        // banc ne font qu'un demi-quart de seconde de jeu. Mesuré au portail
-        // de la v270 : l'avion recule de 0,26 bloc pour une barre à 0,5, sur
-        // la MÊME physique qui en rendait plus du double quelques heures
-        // plus tôt. Ce n'était pas la marche arrière, c'était l'horloge.
-        // Le sens, lui, ne dépend d'aucune cadence : sur la version publiée
-        // l'appareil AVANCE de 12,5 blocs. On laisse donc au recul le temps
-        // d'arriver — borné, et le temps qu'il a pris part dans le verdict.
         const xAvant = g.player.pos.x;
-        let recule = 0, attente = 0;
-        while (attente < 12 && recule <= 1.2) {
+        let xMax = xAvant, recule = 0, attente = 0;
+        while (attente < 14 && recule <= 1.2) {
           await tenir(0.3);
           attente += 0.3;
-          recule = xAvant - g.player.pos.x;
-          if (recule < -2) break;             // il AVANCE : inutile d'attendre
+          if (g.player.pos.x > xMax) xMax = g.player.pos.x;
+          recule = xMax - g.player.pos.x;     // le nez est vers +x
         }
-        recule = xAvant - g.player.pos.x;     // le nez est vers +x : reculer, c'est x qui baisse
+        const freine = +(xMax - xAvant).toFixed(2);
         const gazApres = g.player.gaz;
-        const arretEn = +arret.toFixed(1);
         g.player.touchMove = { f: 0, s: 0 };
         await tenir(0.4);
         document.getElementById('ride-btn').click();
         await tenir(0.8);
-        return { recule: +recule.toFixed(2), gazApres, arretEn, descendu: !auVolant(),
+        return { recule: +recule.toFixed(2), gazApres, freine, descendu: !auVolant(),
           lance: +lance.toFixed(2), attente: +attente.toFixed(1) };
       };
       out.voiture = await essai('voiture');
@@ -4555,15 +4562,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // CE QUI PROUVE QUE LA MESURE A EU LIEU DÉPEND DE LA COMMANDE (v272). Pour
     // l'avion c'est `gazApres === 0` : le geste a repris la main sur le
     // cadran. Une voiture n'en a plus — son cadran reste donc à `null` — et ce
-    // qui prouve la mesure, c'est qu'elle ait été LANCÉE (`lance`) puis
-    // ARRÊTÉE (`arretEn` n'a pas expiré) avant de reculer.
+    // qui prouve la mesure, c'est qu'elle ait été LANCÉE au joystick
+    // (`lance`) avant de reculer ; `freine` dit ce que le freinage a encore
+    // coûté de blocs vers l'avant avant le rebroussement.
     verifier('lancée au joystick, tirer le joystick en arrière fait RECULER la voiture',
       !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres == null
-      && recul.voiture.lance > 1 && recul.voiture.arretEn < 8,
+      && recul.voiture.lance > 1,
       JSON.stringify(recul.voiture));
     verifier('et un avion se repousse au sol au lieu de rester planté',
-      !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0
-      && recul.avion.arretEn < 8,
+      !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0,
       JSON.stringify(recul.avion));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,

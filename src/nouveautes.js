@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 272,
+    titre: "La voiture ne nage pas",
+    puces: [
+      "🌊 La voiture ne roule plus dans l'eau",
+      "🕹️ On conduit au joystick, sans jauge",
+      "⬇️ Le bouton Descendre ne gêne plus",
+      "🧱 Contre un mur, le moteur se calme",
+    ],
+  },
+  {
     v: 271,
     titre: "Des rues à deux voies",
     puces: [
