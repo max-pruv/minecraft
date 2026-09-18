@@ -30,20 +30,21 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **LES FEUX N'EXISTENT QUE DANS LES VILLES ENGENDRÉES (v273).** `RUE.FEUX`
-  n'est posé que par `villesmonde.js` : les six villes bâties à la main (Paris,
-  Londres, Nice, Lille, San Francisco, Washington) et Manhattan n'ont **pas un
-  seul feu**, donc rien ne les y arrête — alors que ce sont justement les villes
-  où l'enfant conduit le plus. La règle (`src/feux.js`) est prête et ne connaît
-  rien des villes : elle lit une position. Ce qui manque, c'est de POSER les
-  feux. Le chemin est écrit : `lampadaireDeVille` (v248) a partagé les
-  réverbères en demandant au SOL — une colonne de trottoir dont un voisin est de
-  la chaussée SUR LES DEUX AXES est un coin de carrefour, et c'est exactement là
-  qu'un feu se pose ; `CHAUSSEE` est déjà exportée de `world.js` pour cela, et
-  `ARCHI.PAVE` y est déjà entré pour Paris. **C'est la cinquième occurrence
-  possible du verre dans les murs** : une règle écrite pour une famille de
-  villes qui ne franchit pas la seconde fabrique. Elle est déclarée ici pour
-  qu'elle ne se découvre pas en capture.
+- [ ] **TROIS FEUX DE PARIS SONT SOUS L'EMPRISE D'UN MONUMENT (v274).** Les
+  repères (`LANDMARKS`, world.js) se posent APRÈS les colonnes et écrivent
+  leurs propres blocs : un feu planté là y survit, DEDANS, et la rue que
+  `solParis` promettait à côté de lui est recouverte de pierre. Mesuré : sur le
+  disque entier de Paris, **88 feux au coin d'un carrefour sur 91 (97 %)** ;
+  les trois autres sont tous dans l'emprise de la Caserne & Commissariat
+  (box 46), avec du `STONEBRICK` sur leurs quatre voisins. Londres est à 116
+  sur 117. **Et le garde évident est un non-résultat MESURÉ** : écarter tout
+  candidat dont la colonne tombe dans une `box` de repère fait tomber Paris ET
+  Londres à ZÉRO feu — la `box` est une zone d'interdiction de BÂTIR, bien plus
+  large que ce que le repère pave, et au centre de ces deux villes leur union
+  couvre tout. Écrit, mesuré, retiré. La vraie question est ailleurs : un
+  carrefour d'avenues que la Caserne recouvre est un conflit de PLAN, de la
+  même famille que « les voitures traversent un monument » (v221) — c'est le
+  monument ou l'avenue qu'il faut déplacer, pas le feu qu'il faut cacher.
 
 - [ ] **Quatre témoins de `manhattan.js` sont rouges EN PRODUCTION (double mesure
   de la v272).** Rejoués SEULS des deux côtés, dans deux arbres séparés :

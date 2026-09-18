@@ -1015,6 +1015,7 @@ function feuxDeVille(cle, ancre, voies, sol) {
         if (sol(x, z) !== CITY_BLOCK.SIDEWALK) continue;
         if (!((estRue(x + 1, z) || estRue(x - 1, z))
           && (estRue(x, z + 1) || estRue(x, z - 1)))) continue;
+
         const i = (dx > 0 ? 1 : 0) + (dz > 0 ? 2 : 0);
         if (!meilleur[i] || d2 < meilleur[i].d2) meilleur[i] = { x, z, d2 };
       }
