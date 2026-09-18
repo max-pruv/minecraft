@@ -1607,7 +1607,7 @@
     #boot-text { color: var(--brume); font-family: var(--corps); font-weight: 600; }
     .boot-bar { background: rgba(17,26,46,0.10); }
     .boot-bar-fill { background: var(--azur); }
-    .boot-cube { font-size: 0; animation: bootspin 3.2s ease-in-out infinite; }
+    .boot-cube { font-size: 0; }
     .boot-cube svg { width: 62px; height: 62px; display: block; }
     @keyframes bootspin {
       0%, 100% { transform: rotate(-14deg); }
@@ -1801,6 +1801,76 @@
     :root.sans-verre #overlay::before, :root.sans-verre #overlay::after {
       display: none !important;
     }
+
+    /* ══════════════════════════════════════════════════════════════════
+       CE QUI BOUGE (v276)
+
+       Max : « rajoute des animations, je veux des choses qui bougent, c'est
+       un jeu, ça va être fun, ça va être rigolo, ça va être animé ».
+
+       DEUX RÈGLES, ET ELLES NE SONT PAS DE GOÛT. Uniquement `transform` et
+       `opacity` — jamais une propriété qui redéclenche la mise en page :
+       c'est ce qui fait la différence entre une animation que le compositeur
+       avale et une qui reprend des images au fil principal, celles que les
+       v245 à v269 ont mis quinze versions à rendre au jeu. Et rien ne bouge
+       PENDANT que le jeu tourne : ces écrans-là ne s'affichent que lorsque
+       l'enfant attend ou choisit, et une animation sur un élément caché ne
+       s'exécute pas — le navigateur s'en charge tout seul.
+       ══════════════════════════════════════════════════════════════════ */
+
+    @keyframes gt-monte {
+      from { opacity: 0; transform: translate3d(0, 14px, 0); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    @keyframes gt-pose {
+      from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.97); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+    @keyframes gt-derive {
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(3%, -2.5%, 0); }
+    }
+    @keyframes gt-boussole {
+      0%, 100% { transform: rotate(-13deg); }
+      50%      { transform: rotate(13deg); }
+    }
+
+    /* L'accueil se pose, il n'apparaît pas d'un bloc : le titre, la baseline,
+       la salutation, puis les panneaux — chacun 70 ms après le précédent. */
+    #overlay h1 { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) both; }
+    #overlay .subtitle { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .07s both; }
+    #player-hello { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .14s both; }
+    #who-screen, #mode-row { animation: gt-pose .55s cubic-bezier(.2,.9,.3,1) .2s both; }
+    #overlay .controls { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .3s both; }
+    #pied-menu { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .36s both; }
+
+    /* L'aurore dérive lentement — quarante secondes pour un aller, et
+       `alternate` pour qu'elle revienne sans saut. C'est une translation de
+       compositeur : elle ne repeint rien. */
+    #overlay::before { animation: gt-derive 40s ease-in-out infinite alternate; }
+
+    /* La boussole du chargement balaie, comme une vraie aiguille qui cherche
+       le nord. */
+    .boot-cube { animation: gt-boussole 3.2s ease-in-out infinite; }
+
+    /* Les boutons répondent au doigt. */
+    #overlay button { transition: transform .12s cubic-bezier(.2,.8,.3,1), box-shadow .12s ease, background .12s ease; }
+    #overlay button:active { transform: scale(.96); }
+    #overlay .who-card { transition: transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .14s ease; }
+    #overlay .who-card:active { transform: scale(.97); }
+
+    /* ET QUI DEMANDE MOINS DE MOUVEMENT EN A MOINS. Un enfant que le
+       mouvement gêne, ou une tablette réglée pour l'économiser, reçoit la
+       même page, immobile. */
+    @media (prefers-reduced-motion: reduce) {
+      #overlay h1, #overlay .subtitle, #player-hello, #who-screen, #mode-row,
+      #overlay .controls, #pied-menu, #overlay::before, .boot-cube {
+        animation: none !important;
+      }
+      #overlay button, #overlay .who-card { transition: none !important; }
+    }
+    /* La parure coupée coupe aussi ce qui bouge : on mesure une page nue. */
+    :root.sans-verre * { animation: none !important; }
 
     @media (max-width: 700px) {
       #overlay h1 { font-size: clamp(32px, 11vw, 42px); }
