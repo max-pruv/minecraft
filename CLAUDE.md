@@ -839,6 +839,19 @@ l'instant au lieu de la durée. Et un rouge qui apparaît sur un code de jeu
 INCHANGÉ accuse le témoin : on cherche ce que la livraison d'avant avait rendu,
 et pourquoi.
 
+**ET UNE MESURE DE DÉPLACEMENT S'ASSURE QU'ELLE A LA PLACE DE SE DÉPLACER.**
+Le rejeu SEUL de `monte.js` a rendu un second rouge, vert au portail :
+« à l'arrêt, le joystick fait rouler l'appareil sur la piste ». La piste des
+témoins fait trois cents blocs de pierre ; l'atterrissage assisté en consomme
+presque tout — 291 blocs rejoué seul, moins au portail — et les deux secondes
+de roulage à six blocs par seconde faisaient alors SORTIR l'appareil par le
+bout (x 303, y −1,5 : il tombe, `sol` faux). Le témoin ne mesurait donc pas le
+roulage, il mesurait **où l'atterrissage s'était arrêté**, ce qui dépend de la
+cadence du banc. Le roulage est une mesure À PART : on ramène l'appareil au
+début de la piste, immobile, puis on mesure. C'est la sœur de « un témoin de
+conduite part d'une rue sans voiture à portée » (v252, v259) — avant de
+mesurer un déplacement, on lui donne de quoi se déplacer.
+
 **ET UNE SONDE QUI INTERROGE LA MAUVAISE LISTE NE PEUT RIEN VOIR.** Ma première
 mesure de « les voitures s'arrêtent-elles ? » lisait `vehicules.enMarche()` et
 rendait **zéro arrêtée sur 128 relevés** — sur un code qui s'arrêtait très

@@ -3303,6 +3303,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const arret = await jusqua((r) => r.etat === 'sol', 25);
       const atterrissage = releves.slice(decollage.length);
       // puis on roule, et l'on tourne
+      // LE ROULAGE EST UNE MESURE À PART, ET IL LUI FAUT DE LA PISTE DEVANT.
+      // L'atterrissage consomme presque toute la dalle : rejoué seul, il
+      // s'arrête à x = 291 pour trois cents blocs de pierre, et deux secondes
+      // de roulage à six blocs par seconde faisaient alors SORTIR l'appareil
+      // par le bout (x 303, y −1,5 : il tombe, `sol` faux). Le témoin était
+      // vert au portail et rouge seul — il mesurait où l'atterrissage s'était
+      // arrêté, pas le roulage. On ramène l'appareil au début de la piste,
+      // immobile, avant de mesurer ce qu'on annonce.
+      g.player.pos.set(x0 + 10, y0 + 1.01, z0 + 0.5);
+      g.player.yaw = -Math.PI / 2; g.player.vel.set(0, 0, 0); g.player.vitesseAvion = 0;
+      await tenirSecondes(0.4);
       const avantRoulage = releve(t);
       g.player.keys.add('KeyW');
       await tenirSecondes(2);
