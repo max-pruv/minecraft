@@ -30,6 +30,88 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LES PASSANTS SE FIGENT ENCORE DEVANT L'ENFANT (Max, après v276).**
+  « Les passants qui s'arrêtent et qui nous regardent de manière figée, ça ne
+  fonctionne pas. Je vois quelque chose de très naturel, comme dans GTA. »
+
+  La v243 a retiré l'arrêt social de `Habitant.think` (vie.js) et
+  `Wanderer.think` (marlon.js) — et le symptôme revient. **Devant un symptôme
+  qui revient après une correction juste, on cesse de régler et l'on va voir ce
+  qui s'exécute** (v226). Une ligne trouvée, qui n'est PAS celle que la v243 a
+  corrigée :
+
+  ```
+  marlon.js:324   if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
+  ```
+
+  Écrite pour une bonne raison (« on ne vient pas se coller à une voiture »),
+  elle rend `speed: 0` ET garde le yaw : le personnage s'arrête net et reste
+  planté. C'est une piste, pas le diagnostic — **la première chose à faire est
+  une sonde qui sépare les cas** (v218) : combien de passants sont à l'arrêt,
+  lesquels ont `speed: 0` par cette ligne, lesquels par autre chose, et
+  combien regardent l'enfant. Compter « des gens figés » d'un seul nombre ne
+  se démontera pas.
+
+  Ce que « naturel comme dans GTA » veut dire, à préciser en mesurant : un
+  passant qui CONTOURNE au lieu de s'arrêter, qui garde sa vitesse, et qui ne
+  tourne pas la tête vers l'enfant.
+
+- [ ] **À PIED, ON TRAVERSE LES VOITURES (Max, après v276).** « Quand on joue
+  avec le jeu, on ne devrait pas être capable de pouvoir marcher à travers une
+  voiture. »
+
+  La cause est nommée, et c'est une garde trop étroite :
+
+  ```
+  player.js:613   if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && …)
+  ```
+
+  `gabarit > 1` veut dire « je conduis ». À pied le gabarit vaut 1, donc le
+  crochet qui empêche d'entrer dans une voiture n'est jamais consulté : la
+  boîte du joueur ne connaît que les blocs solides, et une voiture n'en est
+  pas un. C'est la v259 vue de l'autre bout — elle a appris aux PIÉTONS à ne
+  pas traverser la voiture de l'enfant, jamais à l'enfant de ne pas traverser
+  les leurs.
+
+  Deux choses à ne pas casser en le corrigeant : **« pas si l'on est déjà
+  dedans »** (v252, jugé par FAMILLE), sinon un enfant qu'une voiture vient de
+  recouvrir reste cloué sur place ; et le rayon d'embarquement de neuf blocs
+  (v201), qui suppose qu'on peut s'approcher d'une voiture pour y monter — une
+  collision trop large rendrait certaines voitures impossibles à prendre. Le
+  témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
+  et s'arrêter devant au lieu de ressortir de l'autre côté.
+
+- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
+  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
+  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
+  la voiture sur le côté. »
+
+  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
+  décidée par Max après deux essais de vue intérieure) — elle est seulement
+  trop près et trop rigide :
+
+  ```
+  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
+  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
+  ```
+
+  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
+  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
+  c'est un chiffre, il se mesure sur captures. **La rigidité** est
+  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
+  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
+  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
+  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
+
+  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
+  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
+  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
+  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
+  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
+  virage à gauche et un à droite, AVANT d'écrire le témoin.
+
+
 - [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
   ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
   au vert » (`carteMonde.js`) exige `redemarrages >= 1`. Or il ne compte un
