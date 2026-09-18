@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 271,
+    titre: "Des rues à deux voies",
+    puces: [
+      "🛣️ Les rues sont deux fois plus larges",
+      "➡️ Les voitures roulent à droite",
+      "🚙 On peut les croiser sans se toucher",
+      "🏢 Les immeubles sont plus larges aussi",
+    ],
+  },
+  {
     v: 270,
     titre: "Les voitures restent sur la route",
     puces: [

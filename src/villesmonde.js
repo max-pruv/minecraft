@@ -156,9 +156,44 @@ function fabrique(cle, fiche) {
       t.pu = Math.round(t.pu * 2); t.pv = Math.round(t.pv * 2);
       t.w = 0.9; t.s = 2.0;
     } else {
-      t.pu = Math.round(t.pu * 3); t.pv = Math.round(t.pv * 3);
-      t.w = 1.7; t.s = 4.0;
-      if (t.chanfrein) t.chanfrein = 4.2;                    // l'Eixample garde ses coins coupés
+      // DEUX VOIES, ET LE CHIFFRE EST UN RÉSULTAT (v271). Max : « increase
+      // les routes ». La chaussée faisait 3,4 blocs pour une voiture de
+      // 2,26 : une seule file, ce que la v211 avait mesuré et qui l'avait
+      // fait écarter la conduite à droite. Trois leviers, regardés ensemble —
+      // la chaussée, le trottoir et le PAS de la trame — parce que l'îlot est
+      // ce qui reste (`pas − 2s`) :
+      //
+      //   facteur | chaussée | trottoir | îlot min · médian | îlots < 5 blocs
+      //     3,00  |   3,4    |   2,30   |    4,0 · 7,0      |  196 sur 528
+      //     3,00  |   5,2    |   1,40   |    4,0 · 7,0      |  196
+      //     3,00  |   5,2    |   2,00   |    2,8 · 5,8      |  196 (dont 196 < 3)
+      //    *3,75  |   5,6    |   2,00   |    5,4 · 9,4      |    0
+      //
+      // À emprise constante, la chaussée mange le trottoir — donc le mobilier,
+      // donc l'éclairage de nuit (v248). En élargissant l'emprise sans toucher
+      // au pas, l'îlot tombe sous trois blocs sur les villes à trame serrée :
+      // des cloisons, pas des immeubles. Le pas de trame est donc le troisième
+      // levier, et il rend la ville MEILLEURE qu'avant : plus un seul îlot
+      // sous cinq blocs, quand il y en avait 196 sur 528.
+      //
+      // ET LE COMPTE BRUT DE MOBILIER N'EST PAS LA BONNE GRANDEUR. Il tombe
+      // d'un tiers — et c'est sans intérêt : la ville a moins de rues, plus
+      // larges. Ce que l'enfant voit, c'est l'espacement des réverbères LE
+      // LONG de la rue, et il ne bouge pas (réverbères pour mille blocs de
+      // rue : Zurich 123 → 161, Rome 130 → 135, Tokyo 172 → 141). C'est le
+      // reproche qu'on fait aux témoins — compter un motif n'est pas compter
+      // la chose — appliqué à une mesure de contenu.
+      //
+      // Le prix se déclare : 16 % de rue portant un convoi en moins
+      // (195 060 → 163 036 blocs), parce qu'il y a moins de rues.
+      //
+      // Et c'est du SOL, jamais du relief : `hauteurVillesMonde` ne lit ni
+      // `pu`, ni `pv`, ni `w`, ni `s` — les deux empreintes de `plafond.js`
+      // ne bougent pas, et l'invariant 1 tient sans rien avoir à déclarer.
+      // Même raison que la passe de rues de Londres (v206).
+      t.pu = Math.round(t.pu * 3.75); t.pv = Math.round(t.pv * 3.75);
+      t.w = 2.8; t.s = 4.8;
+      if (t.chanfrein) t.chanfrein = 5.0;                    // l'Eixample garde ses coins coupés
     }
     // LE MARQUAGE NE SE PEINT QUE S'IL RESTE NET. Vu sur la capture de
     // Moscou : sur une trame en diagonale, pointillés et zèbres se
@@ -1913,7 +1948,16 @@ export function mobilierVillesMonde(x, z, poser) {
     // quatre-vingt-quatre pour cent de ses réverbères — des ruelles noires
     // pour dégager une chaussée que personne n'emprunte.
     const debord = (Math.abs(co) + Math.abs(si)) / 2;
-    const degage = t.ruelles ? t.w : Math.max(t.w, DEGAGEMENT_VOITURE + debord);
+    // ET LA VOIE DE DROITE DÉPLACE LE DÉGAGEMENT (v271). Depuis que le convoi
+    // roule dans sa voie, une voiture n'est plus centrée sur l'axe : son
+    // centre est à une demi-chaussée de lui, donc son flanc extérieur à
+    // `t.w / 2 + DEGAGEMENT_VOITURE` — 2,53 blocs pour une chaussée de 5,6,
+    // ce qui reste SUR la chaussée (2,8) mais dépasse ce que l'ancienne
+    // formule exigeait. Le mobilier doit être au-delà de cela, débord de la
+    // case compris : 3,24 blocs, pour un trottoir qui va de 2,8 à 4,8. La
+    // bande garde 1,56 bloc, plus large qu'avant.
+    const degage = t.ruelles ? t.w
+      : Math.max(t.w, t.w / 2 + DEGAGEMENT_VOITURE + debord);
     // Dans une médina, la bande est TOUT le trottoir : il ne fait qu'un bloc
     // et un dixième, rien n'y roule, et le mesurer au centre de la case en
     // écartait un tiers pour rien.
@@ -2113,7 +2157,21 @@ export function tracesCirculation(solDe) {
       return candidat;
     };
     const retenir = (c) => {
-      const pts = [[c.Ru, c.Rv], [-c.Ru, c.Rv], [-c.Ru, -c.Rv], [c.Ru, -c.Rv]].map(([A, B]) => ({
+      // ON ROULE À DROITE (v271). L'anneau retenu est l'AXE de la rue ; le
+      // convoi, lui, roule au milieu de SA voie, donc décalé d'une
+      // demi-chaussée vers sa droite. Le signe se MESURE, il ne se déduit
+      // pas : dans three.js la caméra regarde vers −Z et sa droite est +X,
+      // donc pour une direction (fx, fz) la droite vaut (−fz, fx) — et
+      // relevé sur les quatre côtés d'un anneau réel, elle pointe vers le
+      // CENTRE du rectangle. Rouler à droite, c'est donc rétrécir l'anneau
+      // d'une demi-chaussée, pas l'élargir.
+      //
+      // L'axe reste ce que porte `forme` : c'est LUI que juge la contrainte
+      // de partage (v270), parce que deux convois qui se suivent se suivent
+      // sur une RUE, pas sur une trajectoire.
+      const voie = t.w / 2;
+      const Ru = Math.max(t.pu, c.Ru - voie), Rv = Math.max(t.pv, c.Rv - voie);
+      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
         x: f.ancre.x + (A + c.cU) * co + (B + c.cV) * si,
         y,
         z: f.ancre.z + (-(A + c.cU) * si + (B + c.cV) * co),

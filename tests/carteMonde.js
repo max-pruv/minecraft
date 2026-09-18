@@ -641,7 +641,7 @@ const VRAIES_KM = [
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
         const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0,
-          bancs: 0, verre: 0, batis: 0 };
+          bancs: 0, verre: 0, batis: 0, trottoir: 0 };
         const ids = new Set();
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
@@ -662,6 +662,7 @@ const VRAIES_KM = [
             // dans sa texture, elle est opaque, et elle s'allume la nuit.
             if (s0 === ARCHI.VITRINE) c.vitrines++;
             if (s0 === CITY_BLOCK.SIDEWALK) {
+              c.trottoir++;                      // la longueur de rue de la fenêtre
               if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
               // v180 : le lampadaire est un mesh (RUE.REVERBERE), plus un
               // monolithe à chapeau d'or — et les carrefours ont leurs feux.
@@ -675,16 +676,45 @@ const VRAIES_KM = [
       }
       return villes;
     });
-    // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
-    // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
-    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075. Les auvents ont
-    // rebaissé au réalisme v2 : par segments de trois blocs sur cinq, comme de
-    // vrais stores de devanture — le seuil suit (×0,6 sur la mesure de v180).
-    const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 60));
+    // UNE DEVANTURE SE COMPTE EN DENSITÉ, PAS EN NOMBRE (v271). Ces quatre
+    // seuils étaient ABSOLUS dans une fenêtre de ±40 blocs — donc ils
+    // comptaient des RUES, et ils avaient déjà dû être « recalés au grand
+    // recalibrage » de la v172. La v271 élargit la trame (pas 15 → 19) : la
+    // même fenêtre contient moins de rues, et Rome est tombée de 124 vitrines
+    // à 71 pour une barre à 80, sans qu'une seule ligne de la grammaire des
+    // devantures ait bougé. C'est le piège de `r: 66` à San Francisco et du
+    // rayon 44 de `releveVilles` à Nice : **un témoin qui porte une dimension
+    // de ville ne l'écrit pas, il la demande.**
+    //
+    // La grandeur qui survit est la densité par colonne de TROTTOIR — c'est
+    // ce qui borde la chaussée, donc la longueur de rue de la fenêtre. Mesuré
+    // pour mille colonnes de trottoir, des deux côtés :
+    //
+    //             vitrines  portes  enseignes  auvents
+    //   Rome v270    54,7     12,8     83,8      63,5
+    //   Rome v271    42,4      7,2     60,9      38,2
+    //   Tokyo v270  208,0      5,5    213,5      45,7
+    //   Tokyo v271  231,6      3,4    235,0      34,1
+    //   Marrakech   190,9     81,5    266,0     283,4
+    //
+    // Les barres sont posées sous le plus faible des deux côtés, avec la marge
+    // de la règle : ce qu'elles doivent séparer, c'est « il y a des boutiques »
+    // de « il n'y en a aucune ». Désarmé `commerce` dans une copie de `src`,
+    // les quatre postes tombent à zéro — cette vérification-là se FAIT.
+    const POUR_MILLE = { vitrines: 25, portes: 2, enseignes: 35, auvents: 20 };
+    const densites = {};
+    const sansDevanture = Object.entries(facades).filter(([cle, c]) => {
+      const mille = (n) => (1000 * n) / Math.max(1, c.trottoir || 0);
+      densites[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +mille(c[k]).toFixed(1)]));
+      return !(c.trottoir > 400 && Object.entries(POUR_MILLE)
+        .every(([k, barre]) => mille(c[k]) >= barre));
+    });
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
-      sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
+      `pour mille colonnes de trottoir, barres ${JSON.stringify(POUR_MILLE)} · `
+      + (sansDevanture.length ? `EN FAUTE ${sansDevanture.map(([v]) => v).join(' · ')} · ` : '')
+      + JSON.stringify(densites));
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
     // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
@@ -2241,7 +2271,86 @@ const VRAIES_KM = [
           nommees[tr.cle] = (nommees[tr.cle] || 0) + vus.size;
         }
       }
+      // 3. LA CHAUSSÉE TIENT DEUX VOITURES, ET LE CONVOI ROULE DANS SA VOIE
+      // (v271). Max : « increase les routes ». Trois grandeurs, et chacune se
+      // lit là où elle se décide — la trame pour la chaussée et l'îlot, le
+      // TRACÉ RÉEL pour la voie. On ne suppose rien de la largeur : elle vient
+      // de `vehicules.js`.
+      let chausseeMin = Infinity, ilotMin = Infinity, ilotsEtroits = 0;
+      for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles) continue;
+        const t = f.trame;
+        chausseeMin = Math.min(chausseeMin, t.w * 2);
+        for (const pas of [t.pu, t.pv]) {
+          const ilot = pas - 2 * t.s;
+          ilotMin = Math.min(ilotMin, ilot);
+          if (ilot < 5) ilotsEtroits++;
+        }
+      }
+
+      // LA VOIE SE MESURE SUR LE TRACÉ, PAS SUR UNE CONSTANTE. L'écart du
+      // convoi à l'AXE de la rue doit valoir une demi-chaussée, et du bon
+      // CÔTÉ — la droite, qui dans three.js vaut (−fz, fx) pour une direction
+      // (fx, fz). Un décalage à gauche passerait toute mesure d'amplitude :
+      // c'est la leçon du roulis (v231) et du conducteur assis de dos (v249).
+      // ON ÉCHANTILLONNE LE LONG DU CÔTÉ, PAS EN SON MILIEU — et l'on lit la
+      // PERPENDICULAIRE à la marche. Deux pièges de mesure payés tout de
+      // suite : au milieu d'un côté d'anneau le point tombe exactement sur
+      // l'axe de la rue PERPENDICULAIRE, si bien que `min(|ra|, |rb|)` rend
+      // zéro et que tout autour est de la chaussée — le témoin lisait 0,00
+      // d'écart et 100 % de place sur le code NEUF comme sur l'ancien. Ce
+      // qu'on veut, c'est l'écart à l'axe de la rue qu'on SUIT.
+      let ecarts = [], aDroite = 0, aGauche = 0, place = 0, serre = 0;
+      for (const cle of ['zurich', 'rome', 'tokyo', 'stuttgart', 'munich']) {
+        const f = vm.VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f || !f.trame) continue;
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        for (const tr of (parVille.get(cle) || [])) {
+          const cxR = tr.pts.reduce((q, p) => q + p.x, 0) / tr.pts.length;
+          const czR = tr.pts.reduce((q, p) => q + p.z, 0) / tr.pts.length;
+          for (let i = 0; i < tr.pts.length; i++) {
+            const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+            const L = Math.hypot(b.x - a.x, b.z - a.z);
+            if (L < 16) continue;
+            const fx = (b.x - a.x) / L, fz = (b.z - a.z) / L;
+            const rx = -fz, rz = fx;
+            // la marche, dans le repère de la trame : le long de A, ou de B ?
+            const dA = fx * co - fz * si, dB = fx * si + fz * co;
+            const leLongDeA = Math.abs(dA) > Math.abs(dB);
+            for (let d = 5; d < L - 5; d += 3) {
+              const mx = a.x + fx * d, mz = a.z + fz * d;
+              const u = mx - f.ancre.x, v = mz - f.ancre.z;
+              const A = u * co - v * si, B = u * si + v * co;
+              const ra = A - Math.round(A / t.pu) * t.pu;
+              const rb = B - Math.round(B / t.pv) * t.pv;
+              ecarts.push(Math.abs(leLongDeA ? rb : ra));   // la PERPENDICULAIRE
+              // la droite de la marche pointe-t-elle vers le centre du
+              // rectangle ? C'est ce sens-là qui met la voiture dans sa voie
+              // (mesuré v271) — un décalage à gauche passerait toute mesure
+              // d'amplitude.
+              const versCentre = Math.hypot(mx + rx - cxR, mz + rz - czR)
+                < Math.hypot(mx - cxR, mz - czR);
+              if (versCentre) aDroite++; else aGauche++;
+              // et il reste la place d'une voiture dans l'autre voie, à gauche
+              let libre = true;
+              for (const k of [-DEMI_LARG_VOITURE, 0, DEMI_LARG_VOITURE]) {
+                const gx = mx - rx * (t.w / 2) + rx * k, gz = mz - rz * (t.w / 2) + rz * k;
+                const sol = solVillesMonde(Math.floor(gx), Math.floor(gz));
+                if (sol === CITY_BLOCK.SIDEWALK || sol === 'lot' || sol === null) libre = false;
+              }
+              if (libre) place++; else serre++;
+            }
+          }
+        }
+      }
+      ecarts.sort((a, b) => a - b);
+      const ecartMed = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : -1;
+      const voieVoulue = vm.VILLES_MONDE.find((v) => v.trame && !v.trame.ruelles).trame.w / 2;
+
       return {
+        chausseeMin, ilotMin, ilotsEtroits,
+        ecartMed, voieVoulue, aDroite, aGauche,
+        place, serre, releves: ecarts.length,
         villes: parVille.size, anneaux: traces.length, sansAnneau,
         fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
         meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
@@ -2283,6 +2392,42 @@ const VRAIES_KM = [
     verifier('et il se dégage exactement la largeur d\'une voiture',
       !rues.err && rues.degagement !== null && rues.degagement === rues.demiLarg,
       `villesmonde ${rues.degagement} · vehicules ${rues.demiLarg}`);
+
+    // LES ROUTES S'ÉLARGISSENT, ET LES TROIS CHIFFRES SE GARDENT ENSEMBLE
+    // (v271). Max : « increase les routes ». Élargir la chaussée seule mange
+    // le trottoir — donc le mobilier, donc l'éclairage de nuit ; élargir
+    // l'emprise seule mange l'îlot — des cloisons au lieu d'immeubles. Les
+    // trois témoins qui suivent tiennent les trois bouts, et le quatrième
+    // mesure ce que l'enfant obtient : de la place dans l'autre voie.
+    // LA LARGEUR VIENT DU JEU, PAS DU BANC. `DEMI_LARG_VOITURE` n'existe que
+    // dans la page : lu ici, côté node, il fait s'EFFONDRER la suite au lieu
+    // de la faire échouer — et il a emporté les trois verdicts suivants au
+    // premier portail de la v271 (`ReferenceError`, ligne 2373). Le chiffre
+    // revient donc dans `rues`, comme tout ce que la page mesure.
+    const demiLarg = rues.demiLarg ?? 1.13;
+    verifier('la chaussée d\'une ville engendrée tient deux voitures côte à côte',
+      !rues.err && rues.chausseeMin >= 4 * demiLarg + 0.6,
+      `chaussée la plus étroite ${rues.chausseeMin} blocs · deux voitures en font`
+      + ` ${(4 * demiLarg).toFixed(2)} · marge`
+      + ` ${(rues.chausseeMin - 4 * demiLarg).toFixed(2)}`);
+
+    verifier('et aucun îlot ne tombe sous cinq blocs — un immeuble y tient encore',
+      !rues.err && rues.ilotsEtroits === 0 && rues.ilotMin >= 5,
+      `îlot le plus étroit ${rues.ilotMin.toFixed(1)} blocs · ${rues.ilotsEtroits} sous cinq`);
+
+    // UN DÉCALAGE À GAUCHE PASSERAIT TOUTE MESURE D'AMPLITUDE. Le témoin lit
+    // donc les deux : la distance à l'axe (une demi-chaussée) ET le côté.
+    verifier('le convoi roule dans sa voie de droite, pas au milieu de la rue',
+      !rues.err && rues.releves > 20 && rues.aGauche === 0
+      && Math.abs(rues.ecartMed - rues.voieVoulue) < 0.2,
+      `écart médian à l'axe ${rues.ecartMed.toFixed(2)} pour une demi-chaussée de`
+      + ` ${rues.voieVoulue} · ${rues.aDroite} relevé(s) à droite, ${rues.aGauche} à gauche`
+      + ` · ${rues.releves} relevés`);
+
+    verifier('et il reste la place d\'une voiture dans l\'autre voie',
+      !rues.err && rues.releves > 20 && rues.place / (rues.place + rues.serre) > 0.85,
+      `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
+      + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

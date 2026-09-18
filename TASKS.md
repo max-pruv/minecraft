@@ -236,6 +236,16 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
   quai, et avance-t-elle.
 
+- [ ] **LES SIX VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).** Paris,
+  Londres, Nice, Lille, Washington et San Francisco gardent leurs largeurs de
+  chaussée relevées sur de vrais plans, par quartier (`rue`, `face` dans chaque
+  fiche) : la v271 n'a élargi que la trame des villes ENGENDRÉES. Leurs
+  circuits sont des polylignes, pas des rectangles, donc la conduite à droite y
+  demande un décalage de polyligne et une remesure des huit à dix-neuf circuits
+  par ville (`circuitSurRue`, l'angle des virages, la contrainte de partage).
+  C'est la livraison suivante, et le piège est nommé : **une largeur ne se
+  projette pas, elle se relève** (v187).
+
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
