@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Grand Tour">
+  <!-- L'ICÔNE DE GRAND TOUR — le même dessin que le logo validé, pas une
+       variante. Deux dessins qui décrivent la même marque finissent par
+       diverger : celui-ci reprend les proportions FINES de l'emblème (trait de
+       route à 2,2, pointillé 5/7, graduations à 22,5°), parce qu'à 512 comme à
+       192 c'est cette finesse qui fait lire une boussole plutôt qu'une cible.
+       Ce qui tombe, ce sont les lettres de cardinaux : elles réclament une
+       police qu'un rasteriseur d'icône n'a pas, et sous 192 pixels elles ne se
+       lisent plus.
+       PLEIN BORD : c'est l'appareil qui arrondit (iOS) ou qui masque (Android
+       « maskable »), jamais le dessin. L'emblème tient dans les quatre
+       cinquièmes du carré, la zone sûre d'un masque circulaire. -->
+  <rect width="512" height="512" fill="#12212B"/>
+  <g transform="translate(256 256) scale(2.147) translate(-100 -100)">
+    <circle cx="100" cy="100" r="96" fill="none" stroke="#B98B3C" stroke-width="1.6"/>
+    <circle cx="100" cy="100" r="92" fill="none" stroke="#B98B3C" stroke-width="8"
+            stroke-dasharray="1.6 22.49" stroke-dashoffset="0.8" opacity="0.5" transform="rotate(-90 100 100)"/>
+    <circle cx="100" cy="100" r="92" fill="none" stroke="#B98B3C" stroke-width="12"
+            stroke-dasharray="2.8 141.7" stroke-dashoffset="1.4" opacity="0.95" transform="rotate(-90 100 100)"/>
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#B98B3C" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="100" cy="100" r="75" fill="none" stroke="#B98B3C" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="100" cy="100" r="70" fill="#0B1920"/>
+    <g clip-path="url(#gt-globe)">
+      <clipPath id="gt-globe"><circle cx="100" cy="100" r="70"/></clipPath>
+      <ellipse cx="100" cy="100" rx="70" ry="22" fill="none" stroke="#B98B3C" stroke-width="0.9" opacity="0.34"/>
+      <ellipse cx="100" cy="100" rx="70" ry="52" fill="none" stroke="#B98B3C" stroke-width="0.7" opacity="0.2"/>
+      <ellipse cx="100" cy="100" rx="24" ry="70" fill="none" stroke="#B98B3C" stroke-width="0.7" opacity="0.24"/>
+      <ellipse cx="100" cy="100" rx="50" ry="70" fill="none" stroke="#B98B3C" stroke-width="0.7" opacity="0.18"/>
+      <path d="M100 30 V 170" stroke="#B98B3C" stroke-width="0.7" opacity="0.24"/>
+      <path d="M66 84 C 74 71, 92 67, 104 73 C 114 66, 129 69, 137 79 C 145 89, 138 97, 128 99 C 133 107, 128 117, 118 119 C 112 129, 98 131, 92 123 C 82 123, 73 114, 76 104 C 66 100, 60 92, 66 84 Z" fill="#A8341F"/>
+      <path d="M126 123 c 7 -3 13 2 10 8 c -3 6 -12 5 -13 -1 z" fill="#A8341F" opacity="0.85"/>
+      <path d="M58 120 Q 100 20 142 108" fill="none" stroke="#E8C27A" stroke-width="2.2"
+            stroke-dasharray="5 7" stroke-linecap="round"/>
+      <circle cx="58" cy="120" r="4.2" fill="#F6F1E7"/>
+      <circle cx="58" cy="120" r="7.5" fill="none" stroke="#F6F1E7" stroke-width="1.1" opacity="0.5"/>
+      <path d="M0 -8 L5.5 6.5 L0 3.4 L-5.5 6.5 Z" fill="#F6F1E7" transform="translate(142 108) rotate(155)"/>
+    </g>
+    <circle cx="100" cy="100" r="70" fill="none" stroke="#B98B3C" stroke-width="1.2" opacity="0.7"/>
+    <path d="M100 8 A 92 92 0 0 1 192 100" fill="none" stroke="#F6F1E7" stroke-width="2.4" opacity="0.13" stroke-linecap="round"/>
+  </g>
+</svg>

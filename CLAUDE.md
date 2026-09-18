@@ -464,6 +464,46 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Le jeu s'appelle Grand Tour (v275)
+
+Max a validé le nom et le logo. Quatre règles, et la première vaut bien plus
+que ce rebranding-ci.
+
+- **ON RENOMME CE QUE L'ENFANT VOIT, JAMAIS CE QUI PORTE SES DONNÉES.** Sur les
+  soixante-dix-neuf mentions de l'ancien nom dans le dépôt, la grande majorité
+  ne sont pas du nom affiché : ce sont les CLÉS de stockage —
+  `web-minecraft-worlds-v1`, `web-minecraft-edits-v3` (leurs blocs), `-pos-`,
+  `-photos-`, `-records-`, `-profile-`. Les renommer effacerait les mondes de
+  Marlon et d'Alice, qui sont irrattrapables (invariant 1, par un autre bout).
+  Et `web-minecraft-static-v1` est le cache IMMUABLE : le renommer ferait
+  re-télécharger treize mégaoctets à chaque iPad pour un nom que personne ne
+  voit. Les unes et l'autre gardent leur nom, et un témoin de `maj.js` les
+  compte — vert des deux côtés à dessein, comme le second témoin de la v220 :
+  il ne garde pas une correction, il garde une capacité que la prochaine passe
+  de rebranding frôlera encore.
+- **LE NOM AFFICHÉ SE LIT DANS LA PAGE, IL NE SE RECOPIE PAS.** `main.js`
+  écrivait « WEB MINECRAFT » en dur à deux endroits, pour restaurer le titre en
+  quittant une partie : deux tables qui décrivent la même marque finissent par
+  diverger, et c'est exactement ce qui se serait passé ici. `NOM_DU_JEU` est lu
+  une fois dans `#overlay-title`, qu'`index.html` possède.
+- **UN SEUL DESSIN FAIT FOI.** `icone.svg` porte l'emblème ; les trois PNG que
+  réclament la PWA et iOS en sont RENDUS (Chromium, hors ligne), jamais
+  redessinés. Deux choses s'y mesurent au lieu de s'estimer : **l'échelle** —
+  mon premier jet raisonnait sur le viewBox de l'emblème (200) et non sur celui
+  de l'icône (512), l'emblème occupait 37 % du carré au lieu des 80 % de la
+  zone sûre d'un masque ; et **la finesse du trait** — la variante simplifiée
+  du logo, pensée pour 78 pixels, rendue à 512 donne de grosses capsules au
+  lieu d'une route en pointillé. On reprend les proportions du logo validé.
+- **ET UN TÉMOIN DE RENOMMAGE DOIT TRAVERSER LE CHEMIN QUI RÉÉCRIT.** Lire le
+  titre à l'ouverture ne prouve rien : le mauvais nom vit dans le RETOUR au
+  menu. Le témoin entre en jeu, revient par 🏠, puis relit — et il a trouvé
+  deux défauts qui n'ont rien à voir avec le nom, vieux de bien avant :
+  `leaveToMainMenu` appelait `montrerReprise(false)` AVANT `pauseGame()`, qui
+  la remet — le menu principal offrait « Reprendre » pour un monde qu'on venait
+  de quitter ; et `pointerlockchange`, qui arrive de façon ASYNCHRONE après la
+  fin du script en cours, réécrivait « Pause » par-dessus le titre restauré. Un
+  témoin qui suit le trajet de l'enfant trouve ce qu'aucune relecture ne voit.
+
 ## Le démarrage et la conduite sur un vieil iPad (v245)
 
 Max, sur l'iPad de quatre ans : « il faut attendre quasiment vingt secondes le

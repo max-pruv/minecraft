@@ -1220,7 +1220,13 @@ function getTarget() {
 // --- input ---------------------------------------------------------------------
 
 const overlay = document.getElementById('overlay');
+// LE NOM DU JEU SE DIT UNE FOIS (v275). Deux endroits le réécrivaient en dur —
+// au « Reprendre » d'une pause et au retour au menu principal — si bien que
+// l'onglet et le manifeste pouvaient dire Grand Tour pendant que l'accueil
+// reprenait l'ancien nom au premier retour. `index.html` porte la valeur de
+// départ dans son `<h1>`, et c'est ELLE qu'on relit : rien à tenir d'accord.
 const overlayTitle = document.getElementById('overlay-title');
+const NOM_DU_JEU = (overlayTitle && overlayTitle.textContent.trim()) || 'Grand Tour';
 const touchUI = document.getElementById('touch-ui');
 const pauseBtn = document.getElementById('pause-btn');
 let locked = false;   // pointer lock held (desktop)
@@ -1420,7 +1426,7 @@ function pauseGame() {
 }
 
 resumeBtn.addEventListener('click', () => {
-  overlayTitle.textContent = 'WEB MINECRAFT';
+  overlayTitle.textContent = NOM_DU_JEU;
   startGame();
 });
 
@@ -1451,12 +1457,19 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 let carteOuverte = false;
 
 document.addEventListener('pointerlockchange', () => {
+  // ON NE MET EN PAUSE QUE CE QUI TOURNAIT (v275). `leaveToMainMenu` relâche le
+  // pointeur, puis affiche le menu principal ; l'événement, lui, arrive APRÈS —
+  // et il écrasait le titre par « Pause » avec un bouton « Reprendre », sur un
+  // menu qu'on venait justement de restaurer. On retient donc l'état d'AVANT :
+  // à ce moment-là `pauseGame()` a déjà posé `running` à faux, il n'y a rien à
+  // mettre en pause. Un Échap en pleine partie, lui, arrive avec `running` vrai.
+  const tournait = running;
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
     if (edu.quizActive || invOpen || carteOuverte) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
-    if (!locked) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
+    if (!locked && tournait) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
   }
 });
 document.addEventListener('pointerlockerror', () => enableDragFallback());
@@ -1532,7 +1545,7 @@ function pickBlock() {
   const idx = hotbarBlocks.indexOf(hit.id);
   if (idx >= 0) {
     selectSlot(idx);
-  } else { // not in the hotbar: assign it to the current slot, Minecraft-style
+  } else { // pas dans la barre : on l'affecte à la case courante
     hotbarBlocks[selectedSlot] = hit.id;
     buildHotbar();
     selectSlot(selectedSlot);
@@ -3781,11 +3794,17 @@ function leaveToMainMenu() {
   world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
-  montrerReprise(false);   // il n'y a plus de partie où revenir
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
+  // ET L'ON RANGE LE BOUTON APRÈS, PAS AVANT (v275). `montrerReprise(false)`
+  // était posé ici DEUX LIGNES PLUS HAUT, et `pauseGame()` le défaisait aussitôt
+  // en rappelant `montrerReprise(true)` : le menu principal offrait « Reprendre
+  // la partie » pour un monde qu'on venait de quitter. Le commentaire disait
+  // pourtant « il n'y a plus de partie où revenir » — ce qui est écrit dans un
+  // commentaire n'est pas ce que le code fait.
+  montrerReprise(false);   // il n'y a plus de partie où revenir
   // restore the full main menu, not the pause screen
-  document.getElementById('overlay-title').textContent = 'WEB MINECRAFT';
+  document.getElementById('overlay-title').textContent = NOM_DU_JEU;
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
   document.getElementById('online-actions').style.display = 'flex';
