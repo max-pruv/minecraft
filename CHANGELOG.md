@@ -57,6 +57,23 @@ La règle du feu est PURE (`src/feux.js`, sans import) : c'est elle que lisent
 celui qui allume les lentilles et celle qui s'arrête devant. Deux tables qui
 décrivent le même feu finissent par diverger.
 
+Portail complet, huit suites : six vertes. Les quatre rouges de `manhattan.js`
+et le gel d'arrivée en ville sont des dettes déjà déclarées et mesurées identiques
+en production. Un sixième rouge était neuf et ne venait pas du jeu — le témoin
+de l'atterrissage manuel lisait la vitesse à l'instant exact où l'appareil
+touche le sol, doigt encore posé sur le joystick, donc au moment où la marche
+arrière de la v269 commence : il mesurait la date de son échantillon. Il
+relâche désormais le joystick avant de mesurer.
+
+**Ce qui n'y est pas, et qui est déclaré.** Les feux n'existent que dans les
+villes ENGENDRÉES : Paris, Londres, Nice, Lille, San Francisco, Washington et
+Manhattan n'en ont pas un seul. Mesuré sous node, fenêtre de 81 × 81 blocs au
+centre : 167 coins de carrefour à Paris, 622 à Lille, zéro feu ; Rome, ville
+engendrée, en a 49. Poser un feu sur chaque coin donnerait donc trois à douze
+fois la densité de Rome — le « carrefour hérissé » déjà payé une fois. Max juge
+sur captures : c'est une livraison à part, avec sa mesure de densité et sa vue
+de rue.
+
 ## v272 — Une voiture n'est pas un avion : ni jauge, ni eau sous les roues
 
 **Pourquoi.** Max, capture d'iPhone à Hambourg, quatre défauts sur une seule

@@ -821,6 +821,24 @@ montrait ses **trois lentilles allumées ensemble**. Quatre règles.
   `TASKS.md` ; l'écrire ici est ce qui empêche la cinquième occurrence du verre
   dans les murs.
 
+**ET UN VERDICT LU À L'INSTANT D'UNE TRANSITION EST UN COUP DE DÉ (v273).**
+Le portail a rendu rouge « gaz réduits et manche en avant, on se pose soi-même
+sur la piste », VERT au portail de la v272, sur une physique qui n'a pas bougé
+d'une ligne : `arrêt {v: 0}` la veille, `{v: −1,5}` ici, au même bloc de piste
+(x 56 contre 57). La cause n'est pas un défaut, c'est une FONCTIONNALITÉ : le
+témoin garde le doigt sur le joystick, tiré vers l'arrière, et depuis la v269
+« le geste prime sur la consigne » — une fois l'appareil arrêté, ce même doigt
+le fait RECULER. Le témoin s'arrêtait au premier relevé où l'état passe à
+`sol`, à deux cents millisecondes près : il lisait tantôt l'arrêt, tantôt le
+début de la marche arrière. Il RELÂCHE désormais le joystick, attend que la
+vitesse se pose (borné à huit secondes, la durée entrant dans le message), et
+mesure alors ce qu'il annonce. **Quand un témoin lit une grandeur AU MOMENT
+d'un changement d'état, il ne mesure pas l'état : il mesure la date de son
+échantillon** — c'est la famille des verdicts en durée (v270), du côté de
+l'instant au lieu de la durée. Et un rouge qui apparaît sur un code de jeu
+INCHANGÉ accuse le témoin : on cherche ce que la livraison d'avant avait rendu,
+et pourquoi.
+
 **ET UNE SONDE QUI INTERROGE LA MAUVAISE LISTE NE PEUT RIEN VOIR.** Ma première
 mesure de « les voitures s'arrêtent-elles ? » lisait `vehicules.enMarche()` et
 rendait **zéro arrêtée sur 128 relevés** — sur un code qui s'arrêtait très
