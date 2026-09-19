@@ -130,10 +130,12 @@ pied bornée à trente, et quarante-cinq secondes d'observation de la rue. Aprè
 la v277, qui a ramené le portail de cinquante-neuf à cinquante et une minutes,
 c'est le prix de quatre comportements qui n'avaient aucun gardien.
 
-Portail complet vert. Les deux dettes que cette livraison laisse — les passants
-de Manhattan, qui gardent l'ancien programme parce que leur trottoir vit dans un
-plan et non dans des blocs, et le recul de la caméra, jugé sur le banc et pas
-encore par Max — sont dans `TASKS.md`.
+Portail complet : quinze suites, **treize vertes**. Les deux rouges sont
+`manhattan.js` et `monte.js`, et aucun n'appartient à cette livraison — la double
+mesure de chacun, rejouée SEULE des deux côtés, est jointe dans `TASKS.md`. Les
+dettes que la livraison laisse y sont aussi : les passants de Manhattan, qui
+gardent l'ancien programme parce que leur trottoir vit dans un plan et non dans
+des blocs, et le recul de la caméra, jugé sur le banc et pas encore par Max.
 
 ## v278 — Les avions sortent des murs
 
