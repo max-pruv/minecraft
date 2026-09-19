@@ -13,8 +13,29 @@
 const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Max, v276 : « revamp the testing process way too heavy and long and costly
+// and painful ». Mesuré suite par suite, le portail fait soixante et une
+// minutes et TRENTE-QUATRE sont dans deux fichiers : celui-ci (dix-huit) et
+// `reseau.js` (seize). Mais les deux causes ne sont pas les mêmes, et ce
+// fichier était le seul des deux à ne pas dire où passe son temps :
+// `reseau.js` et `reglages.js` se chronomètrent témoin par témoin depuis la
+// v224, pas lui.
+//
+// Et ce qui est déjà su vaut d'être écrit ici, parce que cela dit quoi
+// chercher : cette suite n'ouvre que SEPT pages de jeu pour dix-huit minutes
+// (contre seize pour les seize minutes de `reseau.js`), et elle porte
+// quarante-six boucles de relevé. Le temps n'est donc PAS dans l'ouverture des
+// pages — il est dans l'attente qu'un jeu à quatre images par seconde parcoure
+// une distance. Ce relevé le dira témoin par témoin, et il ne coûte rien.
+//
+// ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ (v224, quatre fois de suite).
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 
