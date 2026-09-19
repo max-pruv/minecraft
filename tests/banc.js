@@ -150,9 +150,96 @@ async function relaisSourd(portEcoute, portVrai) {
 // trente-sept démarrages l'auraient payé six minutes par portail sans rien
 // mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la demande par
 // `{ prep: 1 }`, comme `ombres: 1` pour le regard.
-const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false) =>
+//
+// ET `dpr=0,5` : LE BANC REND QUATRE FOIS MOINS DE PIXELS, PARCE QUE C'EST LÀ
+// QU'EST LE PLANCHER (v277).
+//
+// Max : « revamp the testing process way too heavy and long and costly and
+// painful ». La MONNAIE du banc est le temps de JEU : `tenirSecondes` et tout
+// minuteur en `dt` accumulent min(dt, 0,05), donc le rapport montre/jeu vaut
+// exactement 1 dès VINGT images par seconde et se dégrade au-dessous. La cible
+// n'est donc pas « plus vite », c'est de franchir vingt.
+//
+// SwiftShader est limité par le REMPLISSAGE (la v237 l'avait mesuré sur le
+// paysage lointain : diviser les pixels par quatre ramenait la perte de 45 %
+// à 27 %). Mesuré ici, cinq secondes de JEU en secondes de montre, à `rr=2`,
+// deux relevés par bras en ordre alterné :
+//
+//   dpr    pixels    point d'apparition        Paris
+//   1      319 200   6,5 · 5,8 s  (×1,3)       39,9 · 39,7 s  (×8,0)
+//   0,5     79 800   5,1 · 5,3 s  (×1,02)      35,7 · 36,1 s  (×7,2)
+//   0,35    39 102   5,1 · 5,1 s  (×1,02)      36,2 · 37,9 s  (×7,2)
+//
+// TROIS choses se lisent là, et la troisième est la plus importante.
+// — **Le plancher est atteint dès 0,5** : 0,35 ne rend plus rien. On prend donc
+//   0,5, parce que c'est ce que la mesure sépare, pas parce que c'est rond — et
+//   0,5 garde deux fois plus de pixels aux témoins qui en LISENT.
+// — Le gain est de 20 % sur une scène légère et de 10 % en ville. Réel, modeste,
+//   et il vaut pour TOUTES les suites d'un coup.
+// — **Paris coûte ×8 quoi qu'on fasse** : 2,6 images par seconde, trois cent
+//   trente appels de dessin. Aucun réglage de pixels ne le rattrapera, et c'est
+//   ce qui dit où est le vrai travail — pas dans la résolution.
+//
+// Le jeu borne par `Math.min(devicePixelRatio, dpr)` (v257) : sur ce banc
+// devicePixelRatio vaut 1, donc 0,5 divise vraiment les pixels. Les deux
+// lecteurs de pixels de `monte.js` calculent leurs coordonnées depuis
+// `gl.drawingBufferWidth/Height` — ils sont indépendants de la résolution.
+// `carte.js`, qui vise au pixel sur la carte, demande `{ dpr: 1 }`.
+// ET IL EST À 1 POUR L'INSTANT — PARCE QU'IL A TROUVÉ UN DÉFAUT DE JEU.
+//
+// `BANC_DPR=0.5 npm test` l'allume ; le défaut par défaut reste la résolution
+// pleine, et ce n'est PAS un renoncement, c'est un ordre de livraison. À 0,5 le
+// banc passe de huit à dix-huit images par seconde, donc le monde cesse
+// d'avancer à quarante pour cent du temps réel — et « les voitures ne se
+// traversent plus » (v244) tombe : TRENTE-SEPT chevauchements de plus pour le
+// même nombre d'observations. Mesuré des deux côtés, même banc :
+//
+//                          dpr 1              dpr 0,5
+//   branche                0 / 345            48 / 665
+//   `origin/main` (v276)   3 / 499  (portail)  41 / 695
+//
+// TROIS choses, et la troisième décide.
+// — La boucle échantillonne trente secondes de MONTRE toutes les 200 ms : le
+//   nombre d'observations ne dépend pas de la cadence. Les chevauchements
+//   passent de 3 à 41-48 pour le même nombre de relevés — les voitures se
+//   traversent VRAIMENT plus quand le jeu tourne vite.
+// — C'est le même chiffre sur les deux arbres : le défaut est en production, et
+//   le banc lent le CACHAIT. Cause nommée, pas encore prouvée : `cederLePassage`
+//   est une cadence de ménage à intervalle réel fixe (v226) ; à pleine vitesse
+//   une voiture parcourt deux fois et demie plus de chemin entre deux collectes.
+//   C'est la panne que Max revoyait après la v244 et la v245, et c'est ce que
+//   son iPad fait.
+// — **La barre de 45 tombe ENTRE 41 et 48**, c'est-à-dire entre deux mesures du
+//   MÊME comportement. Elle ne sépare plus un défaut d'un non-défaut : elle tire
+//   à pile ou face. On ne règle pas une barre pour faire passer une livraison
+//   (v276 : « une barre que les deux côtés franchissent ne mesure plus le jeu »),
+//   et on ne cache pas une découverte pour gagner vingt pour cent de banc. Le
+//   0,5 s'allumera dans la livraison qui corrige les voitures ; la mesure est
+//   déjà faite et écrite dans `TASKS.md`.
+//
+// Une constante de banc qui ne peut pas se rejouer est une constante qu'on ne
+// peut pas démonter — c'est la discipline de `?attente=`, `?fondms=` et
+// `?chauffems=`, appliquée au banc lui-même. Et sans cette bascule j'aurais
+// attribué à la cadence un rouge qui était le mien (voir les lointains, dans
+// monte.js) : l'explication commode est une dette, pas un diagnostic (v220).
+const DPR_BANC = Number(process.env.BANC_DPR) || 1;
+// ET LA PARURE SE COUPE DEPUIS LE BANC : `BANC_VERRE=0 node maj.js`.
+//
+// Parce que la seule chose qui reproduise un rouge de suite, c'est la SUITE.
+// La préparation de l'accueil est rouge en production depuis la v276
+// (`programmes 14/25`, `carte: false`, `depuis 46 554 ms` pour une borne de
+// 45 000), et la piste déclarée était le coût de peinture des deux calques
+// plein écran que `#prep-line` invalide toutes les 250 ms. Une sonde écrite à
+// part — une voisine sur l'accueil, une page qui prépare — rend QUATRE
+// secondes et 25/25 programmes dans les deux bras : elle ne reproduit pas les
+// conditions, donc elle ne mesure rien, et elle ne blanchit rien (piège de la
+// sonde aveugle, v273, troisième fois). L'A/B doit donc se faire DANS la suite,
+// et il lui faut un interrupteur ici.
+const VERRE_BANC = process.env.BANC_VERRE;
+const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`
+  + (VERRE_BANC === undefined ? '' : `&verre=${VERRE_BANC}`);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -391,7 +478,7 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

@@ -30,6 +30,72 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **« LES VOITURES NE SE TRAVERSENT PLUS » TIRE À PILE OU FACE, ET CE QUE LE
+  JEU FAIT RESTE INDÉTERMINÉ (v277).** Le témoin compte les chevauchements sur
+  trente secondes de MONTRE, un relevé toutes les 200 ms, au centre de Paris.
+  Sept mesures, deux arbres, deux résolutions :
+
+  | bras | dpr | chevauchements |
+  | --- | --- | --- |
+  | portail v276 | 1 | 3 / 499 |
+  | branche, rejeu | 1 | **0 / 345** |
+  | portail v277 | 1 | sous la barre |
+  | branche, monte seule | 1 | **53 / 474** |
+  | branche | 0,5 | 48 / 665 |
+  | `origin/main` (v276) | 0,5 | 41 / 695 |
+
+  **L'ÉTENDUE À dpr 1 SEUL — 0 À 53 — RECOUVRE LES VALEURS À dpr 0,5**, et la
+  barre (45) tombe dedans. J'avais d'abord conclu que la cadence révélait un
+  défaut de production, sur UN passage par bras : c'est la règle de la v269
+  invoquée sans être suivie. Corrigé dans `CLAUDE.md` et dans le journal.
+
+  **DOUBLE MESURE FAITE CORRECTEMENT (v277) : SIX PASSAGES, TROIS PAR ARBRE, EN
+  ORDRE ALTERNÉ, MÊME BANC ET MÊME TÉMOIN DES DEUX CÔTÉS. Tous VERTS.**
+
+  | passage | arbre | chevauchements | paires | taux | relevés |
+  | --- | --- | --- | --- | --- | --- |
+  | 1 | branche | 37 | 145 | 25,5 % | 146 |
+  | 1 | `main` | 0 | 109 | 0 % | 146 |
+  | 2 | branche | 1 | 123 | 0,8 % | 146 |
+  | 2 | `main` | 0 | 74 | 0 % | 146 |
+  | 3 | branche | 3 | 117 | 2,6 % | 146 |
+  | 3 | `main` | 2 | 55 | 3,6 % | 146 |
+
+  Le nombre de relevés est STABLE (146 partout) : l'échantillonnage n'est pas en
+  cause. Ce qui varie, c'est un compte de coïncidences rares sur une fenêtre
+  courte — les deux arbres vont de zéro à des dizaines, et la barre (45) est
+  dans la queue de cette loi. Les 48 et 53 vus plus tôt sont des tirages de la
+  même distribution, pas un défaut de livraison. **Le témoin ne bloque donc
+  pas, et il ne prouve rien non plus.**
+
+  Ce qu'il faut faire, dans cet ordre, et l'ordre a changé :
+  1. **Rendre le témoin lisible avant de juger le jeu.** Un compte absolu sur
+     une fenêtre de montre, dans une ville à deux ou quatre images par seconde,
+     ne peut pas être stable : le dénominateur (le nombre d'observations) doit
+     être publié, le verdict devenir un TAUX, et la fenêtre se mesurer en
+     CHEMIN parcouru par les convois plutôt qu'en secondes.
+  2. **Alors seulement mesurer le jeu**, dix passages par bras, et regarder la
+     DISTRIBUTION — pas un passage.
+  3. La piste de cause reste plausible et NON mesurée : `cederLePassage` est une
+     cadence de ménage à intervalle réel fixe (v226), donc sous-échantillonnée
+     quand le monde va vite. La sonde qui distinguerait « sous-échantillonné »
+     de « la priorité ne marche pas » lit `etat().places` — le drapeau d'attente
+     de chaque voiture (v273) — pendant un chevauchement.
+  4. Et `BANC_DPR=0.5` (vingt pour cent de banc) reste éteint tant qu'on ne peut
+     pas lire ce qu'il casse : **on n'allume pas un réglage dont on ne peut pas
+     mesurer l'effet.**
+
+- [ ] **ROUGES DE CHARGE DU PORTAIL DE LA v277, rejoués SEULS et verts.**
+  `sauvegarde.js` 19/19, `carte.js` 95/95, `washington.js` 29/29 — les trois
+  étaient rouges au portail et sont verts seuls. `washington.js` : les trois
+  témoins du métro (« une rame passe », la pastille de ligne, « 0 m en 40 s de
+  jeu »), la famille documentée depuis la v161 — `dt` borné, le monde avance
+  moins vite que l'horloge. `carte.js` : l'appui long, la dette de la v258.
+  Ce qui est NEUF et qui vaut d'être noté : **le verdict du portail dépend du
+  nombre de suites qui ont réellement tourné avant**, et le cache de reprise
+  masque exactement cela — au portail de la v276, treize suites sur quinze
+  étaient reprises.
+
 - [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
   v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la
   v276, suite par suite : **61 minutes, dont 34 dans DEUX fichiers.**

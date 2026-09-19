@@ -1816,6 +1816,29 @@
       display: none !important;
     }
 
+    /* LA PARURE DE FOND ATTEND AUSSI, MAIS SEULEMENT SANS CARTE GRAPHIQUE (v277).
+       C'est la règle des ombres de la v247, appliquée à deux calques : « un
+       navigateur sans carte graphique préfère un monde sans ombres à un monde
+       qui n'arrive pas ». Deux surfaces plein écran — trois dégradés radiaux et
+       un SVG de méridiens à 128vmax — se paient en REMPLISSAGE, que SwiftShader
+       calcule sur le processeur et qu'un vrai GPU avale en dixièmes de
+       milliseconde (v237 l'avait déjà mesuré et déclaré non transposable).
+       Sur l'iPad de Max, rien ne change : la carte graphique est là, la classe
+       n'est pas posée, et la parure est visible du premier instant.
+       Mesuré : la préparation se libérait à sa borne de 45 s avec 6 à 18
+       programmes de shaders sur 25 ; parure coupée, 25 sur 25.
+       ET CE N'EST PAS LA REPEINTURE, C'EST LA SURFACE. Mon premier remède
+       donnait aux deux calques leur propre couche de composition
+       (`translateZ(0)`), en pensant que `#prep-line` — réécrite toutes les
+       250 ms — les invalidait. Mesuré sur quatre passages : 12, 11, 6 puis 25
+       sur 25, c'est-à-dire pire au pire passage. Écrit, mesuré, RETIRÉ : forcer
+       une couche, c'est deux surfaces à composer à CHAQUE image au lieu d'une à
+       repeindre parfois. Un remède qui ne se mesure pas ne se garde pas. */
+    :root.rendu-logiciel body.prepare #overlay::before,
+    :root.rendu-logiciel body.prepare #overlay::after {
+      display: none !important;
+    }
+
     /* ══════════════════════════════════════════════════════════════════
        CE QUI BOUGE (v276)
 

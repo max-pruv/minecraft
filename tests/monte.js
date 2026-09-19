@@ -13,8 +13,29 @@
 const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Max, v276 : « revamp the testing process way too heavy and long and costly
+// and painful ». Mesuré suite par suite, le portail fait soixante et une
+// minutes et TRENTE-QUATRE sont dans deux fichiers : celui-ci (dix-huit) et
+// `reseau.js` (seize). Mais les deux causes ne sont pas les mêmes, et ce
+// fichier était le seul des deux à ne pas dire où passe son temps :
+// `reseau.js` et `reglages.js` se chronomètrent témoin par témoin depuis la
+// v224, pas lui.
+//
+// Et ce qui est déjà su vaut d'être écrit ici, parce que cela dit quoi
+// chercher : cette suite n'ouvre que SEPT pages de jeu pour dix-huit minutes
+// (contre seize pour les seize minutes de `reseau.js`), et elle porte
+// quarante-six boucles de relevé. Le temps n'est donc PAS dans l'ouverture des
+// pages — il est dans l'attente qu'un jeu à quatre images par seconde parcoure
+// une distance. Ce relevé le dira témoin par témoin, et il ne coûte rien.
+//
+// ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ (v224, quatre fois de suite).
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 
@@ -417,9 +438,30 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const e = window.__vehicules.etat()[2];
       return e ? e.distance : null;
     });
+    // ON S'ARRÊTE QUAND LE RÉSULTAT EST ACQUIS, PAS QUAND LA FENÊTRE EST FINIE
+    // (v277). Ce témoin coûtait CENT UNE SECONDES — le plus cher des cent
+    // quarante de cette suite, qui en fait dix-neuf minutes et dont les
+    // vingt-cinq premiers portent 85 % du temps. Il attendait déjà un RÉSULTAT
+    // (deux cent cinquante blocs de tracé) et non une durée, ce qui est la
+    // bonne forme ; mais ce qu'il ANNONCE est un rapport d'allures, et ce
+    // rapport est établi bien avant les deux cent cinquante blocs. Continuer
+    // n'ajoutait aucune preuve.
+    //
+    // CE QUI REND L'ARRÊT ANTICIPÉ SÛR EST UNE ASYMÉTRIE, et elle se dit en une
+    // phrase : on ne sort que si TOUS les verdicts qui lisent ces relevés sont
+    // satisfaits. Un vert le devient plus vite ; un rouge court jusqu'à sa
+    // borne et garde toutes ses preuves. Les DEUX verdicts d'ici lisent
+    // `allures` — le rapport, et « elle ralentit assez pour qu'on la
+    // rejoigne » —, donc les deux entrent dans la condition de sortie. Un
+    // troisième verdict ajouté demain doit y entrer aussi : sinon l'arrêt
+    // anticipé lui vole ses relevés, et c'est le seul moyen de casser ce
+    // témoin.
+    const acquis = () => allures.length >= 8
+      && Math.max(...allures) / Math.max(0.1, Math.min(...allures)) > 1.8
+      && Math.min(...allures) < 9;
     const finMesure = Date.now() + 150000;
     let tourF1 = 0;
-    while (tourF1 < 250 && Date.now() < finMesure) {
+    while (tourF1 < 250 && Date.now() < finMesure && !acquis()) {
       await dormir(300);
       const etats = await tab.evaluate(() => window.__vehicules.etat());
       if (!etats[2]) break;
@@ -1756,11 +1798,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       let chevauchements = 0, sauts = 0, mesures = 0, penchees = 0, bonCote = 0, contraire = 0, maxRoulis = 0, maxVues = 0;
+      // LE DÉNOMINATEUR SE PUBLIE, SINON LE COMPTE NE SE DÉMONTE PAS (v277).
+      // Ce verdict rend un COMPTE absolu, et il varie de 0 à 53 sans qu'une
+      // ligne du jeu ait bougé — sept mesures, deux arbres, deux résolutions,
+      // barre à 45 au milieu de l'étendue. Un chevauchement est compté par
+      // (relevé × paire de voitures à moins de cinq blocs) : sans savoir
+      // combien de paires ont été EXAMINÉES, on ne peut pas dire si un chiffre
+      // qui monte veut dire « ça se chevauche plus » ou « il y avait plus de
+      // monde ». On publie donc `paires` et `releves` ; le verdict ne change
+      // pas encore — on ne pose pas une barre neuve sans avoir vu la
+      // distribution des deux côtés (v269).
+      let paires = 0, releves = 0;
       const derniers = new Map();
       const t0 = performance.now();
       while (performance.now() - t0 < 30000) {
         await new Promise((f) => setTimeout(f, 200));
-        const v = visibles(); maxVues = Math.max(maxVues, v.length);
+        const v = visibles(); maxVues = Math.max(maxVues, v.length); releves++;
         for (let i = 0; i < v.length; i++) {
           // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
           // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
@@ -1787,11 +1840,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           }
           for (let j = i + 1; j < v.length; j++) {
             if (Math.abs(v[i].position.y - v[j].position.y) > 2.5) continue;
-            if (v[i].position.distanceTo(v[j].position) < 5 && !separes(rect(v[i]), rect(v[j]))) chevauchements++;
+            if (v[i].position.distanceTo(v[j].position) >= 5) continue;
+            paires++;                                 // le DÉNOMINATEUR, publié
+            if (!separes(rect(v[i]), rect(v[j]))) chevauchements++;
           }
         }
       }
-      return { maxVues, chevauchements, mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
+      return { maxVues, chevauchements, paires, releves,
+        taux: paires ? +(chevauchements / paires * 100).toFixed(1) : null,
+        ou: [Math.round(g.player.pos.x), Math.round(g.player.pos.z)],
+        mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
     });
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
@@ -1838,6 +1896,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
       const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
       const vus = [];
+      const attentes = [];
+      // COMBIEN DE PASSANTS SONT DANS LE CADRE, ICI, MAINTENANT.
+      const dansLeCadre = (dx, dz) => {
+        let n = 0;
+        for (const q of g.npcs) {
+          if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
+          if (!(q.mesh && q.mesh.visible)) continue;
+          const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
+          const dd = Math.hypot(ex, ez);
+          if (dd >= 62 || dd < 1) continue;
+          const cos = (ex * dx + ez * dz) / dd;
+          if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+        }
+        return n;
+      };
       for (const [, a, b] of trajets) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
@@ -1849,24 +1922,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
           g.player.vel.set(0, 0, 0);
           g.player.yaw = yaw;
-          // La boucle des passants passe toutes les deux secondes ; on lui en
-          // laisse sept, le temps de peupler progressivement la rue suivante.
-          await new Promise((r) => setTimeout(r, 7000));
-          let n = 0;
-          for (const q of g.npcs) {
-            if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
-            if (!(q.mesh && q.mesh.visible)) continue;
-            const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
-            const dd = Math.hypot(ex, ez);
-            if (dd >= 62 || dd < 1) continue;
-            const cos = (ex * dx + ez * dz) / dd;
-            if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+          // ON ATTEND QUE LA RUE SE PEUPLE, ON NE DORT PLUS SEPT SECONDES
+          // (v277). La boucle des passants passe toutes les deux secondes en
+          // temps RÉEL depuis la v226 ; sept secondes par arrêt, à dix arrêts,
+          // faisaient soixante-dix secondes de sommeil pour un témoin qui en
+          // coûte cinquante-six.
+          //
+          // La borne ne change pas — sept secondes —, et c'est elle qui garde
+          // le rouge : une rue qui ne se peuple PAS est constatée exactement
+          // comme avant. Ce qui change est la sortie anticipée, et sa cible est
+          // QUATRE, c'est-à-dire un de plus que la barre du verdict
+          // (`moyenne >= 3`) : sortir à trois rendrait une moyenne sans marge,
+          // et une sortie anticipée ne doit jamais rapprocher un vert de sa
+          // barre. Le temps pris entre dans le message, réussite comme échec.
+          const finArret = Date.now() + 7000;
+          let n = dansLeCadre(dx, dz);
+          while (n < 4 && Date.now() < finArret) {
+            await new Promise((r) => setTimeout(r, 500));
+            n = dansLeCadre(dx, dz);
           }
+          attentes.push(+((7000 - Math.max(0, finArret - Date.now())) / 1000).toFixed(1));
           vus.push(n);
         }
       }
       return { vus, vides: vus.filter((n) => n === 0).length,
-        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2) };
+        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2),
+        attendu: +attentes.reduce((s, t) => s + t, 0).toFixed(1) };
     });
     // Le verdict porte sur les ARRÊTS VIDES, pas sur la moyenne : c'est de
     // marcher dans une rue déserte qu'un enfant se plaint, et un creux ne se
@@ -1889,7 +1970,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Ce que le témoin éprouve, c'est le fait, pas la conséquence : aucun
     // personnage au-delà de la portée ne doit rester dessiné. Le nombre
     // d'appels dépend d'où l'on regarde ; celui-ci, non.
-    const auLoin = await tab.evaluate(async () => {
+    // ET IL ATTEND SON PROPRE FONDU, IL NE L'EMPRUNTE PLUS À SON VOISIN (v277).
+    //
+    // Ce témoin lisait `mesh.visible` dans la foulée, et il était vert — parce
+    // que le témoin d'AU-DESSUS dormait sept secondes à son dernier arrêt.
+    // Rendues au résultat (la rue attend d'être peuplée, plus de sommeil fixe),
+    // il est devenu rouge à QUATRE dessinés sur cent trente-trois, aux deux
+    // résolutions : ce n'était donc pas la cadence, c'était moi. `presence.js`
+    // fond sur huit dixièmes de seconde et la visibilité se recopie à l'image
+    // d'APRÈS (v249) ; un personnage qu'on vient d'éloigner est encore dessiné.
+    //
+    // La leçon est plus large que le correctif : **une dépendance implicite
+    // entre deux témoins voisins est invisible tant que le premier dort.** Ce
+    // qu'un témoin exige de l'état du monde, il l'attend lui-même — et il
+    // l'attend en BORNANT, de sorte qu'un vrai défaut (des lointains qu'on ne
+    // cache jamais) rougit encore au bout de la borne. Le temps pris entre dans
+    // le message, réussite comme échec.
+    const lireLoin = () => tab.evaluate(async () => {
       const { DISTANCE_PRESENCE } = await import('./src/presence.js');
       const g = window.__game;
       const px = g.player.pos.x, pz = g.player.pos.z;
@@ -1901,9 +1998,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return { dessinesLoin, dessinesPres, loin, total: (g.npcs || []).length };
     });
+    const finFondu = Date.now() + 6000;
+    let auLoin = await lireLoin();
+    while (auLoin.dessinesLoin > 0 && Date.now() < finFondu) {
+      await dormir(250);
+      auLoin = await lireLoin();
+    }
+    auLoin.fondu = +((6000 - Math.max(0, finFondu - Date.now())) / 1000).toFixed(1);
     verifier('et les personnages lointains ne sont plus dessinés du tout',
       auLoin.loin >= 20 && auLoin.dessinesLoin === 0,
-      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`);
+      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`
+      + ` (fondu attendu ${auLoin.fondu} s)`);
     // L'autre moitié de la promesse : on n'a pas vidé la rue pour autant.
     verifier('mais ceux d\'à côté sont toujours là',
       auLoin.dessinesPres >= 3,

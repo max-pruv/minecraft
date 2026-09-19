@@ -464,6 +464,123 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Le banc se mesure, et ses réglages se rejouent (v277)
+
+Max : « revamp the testing process way too heavy and long and costly and
+painful ». Six règles, et quatre sont nées d'une mesure qui m'a contredit.
+
+- **LA MONNAIE DU BANC EST LE TEMPS DE JEU, ET ELLE VAUT 1 À VINGT IMAGES PAR
+  SECONDE.** `tenirSecondes` (monte.js) et tout minuteur en `dt` accumulent
+  `min(dt, 0,05)` : le rapport montre/jeu vaut donc exactement 1 dès vingt
+  images par seconde, et se dégrade au-dessous. La cible n'est pas « plus
+  vite », c'est de franchir vingt — et cela se calcule avant toute sonde.
+  Mesuré, cinq secondes de JEU en secondes de montre, à `rr=2` :
+
+  | dpr | pixels | point d'apparition | Paris |
+  | --- | --- | --- | --- |
+  | 1 | 319 200 | 6,5 · 5,8 s (×1,3) | 39,9 · 39,7 s (**×8,0**) |
+  | 0,5 | 79 800 | 5,1 · 5,3 s (×1,02) | 35,7 · 36,1 s (×7,2) |
+  | 0,35 | 39 102 | 5,1 · 5,1 s (×1,02) | 36,2 · 37,9 s (×7,2) |
+
+  Le plancher est atteint dès 0,5 : 0,35 ne rend plus rien. **Et Paris coûte ×8
+  quoi qu'on fasse** — 2,6 images par seconde, ce sont les appels de dessin. Un
+  témoin libellé en temps de jeu et posé dans une ville paie ce facteur-là ;
+  aucun réglage de pixels ne le rattrape.
+- **ET MA PREMIÈRE SONDE MESURAIT UNE CONFIGURATION QUE PERSONNE N'UTILISE.**
+  Lancée à `rr=12`, que DEUX des sept pages de `monte.js` demandent, elle
+  annonçait ×2,75 et ×12 là où le chemin chaud donne ×1,3 et ×8, et quarante
+  pour cent de gain là où il y en a vingt. **Une sonde dit dans quelles
+  conditions elle a mesuré, ou elle ne dit rien** (v273, deuxième fois).
+- **ON S'ARRÊTE QUAND LE RÉSULTAT EST ACQUIS, PAS QUAND LA FENÊTRE EST FINIE.**
+  Chronométré témoin par témoin, `monte.js` fait dix-neuf minutes et demie et
+  ses VINGT-CINQ premiers témoins en portent 85 % ; les cent quinze autres
+  coûtent moins de deux secondes chacun. **Ce qui rend l'arrêt anticipé sûr est
+  une asymétrie** : on ne sort que si TOUS les verdicts qui lisent ces relevés
+  sont satisfaits. Un vert le devient plus vite, un rouge court jusqu'à sa borne
+  et garde toutes ses preuves. Un verdict ajouté demain doit entrer dans la
+  condition de sortie — c'est le seul moyen de casser le témoin, et cela s'écrit
+  à côté. Et une cible de sortie se pose UN CRAN AU-DELÀ de la barre du verdict :
+  sortir sur la barre rendrait un vert sans marge.
+- **SUPPRIMER UN SOMMEIL RÉVÈLE TOUT CE QUI VIVAIT DESSUS.** Le témoin de la rue
+  de Paris dormait sept secondes par arrêt ; rendu au résultat (neuf secondes au
+  lieu de cinquante-six), son VOISIN est devenu rouge — « les personnages
+  lointains ne sont plus dessinés », quatre sur cent trente-trois. Il lisait
+  `mesh.visible` dans la foulée et vivait du sommeil d'à côté sans le dire.
+  **Une dépendance implicite entre deux témoins voisins est invisible tant que
+  le premier dort.** Ce qu'un témoin exige de l'état du monde, il l'attend
+  lui-même, borné, et le temps pris entre dans le message.
+- **UN RÉGLAGE DE BANC SE REJOUE, SINON IL NE SE DÉMONTE PAS.** `BANC_DPR` et
+  `BANC_VERRE` s'ajoutent à `?attente=`, `?fondms=` et `?chauffems=`, appliqués
+  au banc lui-même. Sans la bascule `BANC_DPR=1` j'aurais imputé à la cadence un
+  rouge qui était le mien : l'explication commode est une dette, pas un
+  diagnostic (v220).
+- **ET LA SEULE CHOSE QUI REPRODUISE UN ROUGE DE SUITE, C'EST LA SUITE.** Devant
+  la préparation rouge, j'ai écrit la sonde à part que la v276 avait annoncée —
+  une voisine sur l'accueil, une page qui prépare, quatre bras alternés. Elle
+  rend QUATRE secondes et 25/25 programmes dans les deux bras, là où la suite en
+  rend quarante-six et 11/25 : elle ne reproduit pas les conditions, donc elle
+  ne mesure rien, **et surtout elle ne BLANCHIT rien** (troisième occurrence du
+  piège de la sonde aveugle). D'où l'interrupteur : l'A/B se fait DANS la suite.
+
+**ET LA RÉSOLUTION BASSE RESTE ÉTEINTE — MAIS PAS POUR LA RAISON QUE J'AI
+D'ABORD ÉCRITE, ET LA CORRECTION EST LA LEÇON.** « Les voitures ne se traversent
+plus » (v244) compte les chevauchements sur trente secondes de MONTRE, un relevé
+toutes les 200 ms, au centre de Paris. Sept mesures, deux arbres, deux
+résolutions :
+
+| bras | dpr | chevauchements |
+| --- | --- | --- |
+| portail v276 | 1 | 3 / 499 |
+| branche, rejeu | 1 | **0 / 345** |
+| portail v277 | 1 | sous la barre |
+| branche, monte seule | 1 | **53 / 474** |
+| branche | 0,5 | 48 / 665 |
+| `origin/main` (v276) | 0,5 | 41 / 695 |
+
+**L'ÉTENDUE À dpr 1 SEUL — DE 0 À 53 — RECOUVRE ENTIÈREMENT LES VALEURS À
+dpr 0,5.** La cadence n'est donc PAS établie comme la variable, et j'avais
+conclu le contraire sur UN passage par bras : c'est mot pour mot la règle de la
+v269 que j'invoquais sans la suivre. Une intermittence ne se juge pas sur un
+passage de chaque côté ; on rejoue jusqu'à voir la même DISTRIBUTION, et ici la
+distribution d'un seul côté suffit à tout expliquer.
+
+Ce qui reste vrai, et qui est le fait utile : **ce témoin varie de 0 à 53 sans
+qu'une ligne du jeu ait bougé, et sa barre (45) tombe DANS son étendue
+naturelle.** Ce n'est donc pas un gardien : c'est un tirage. Un compte absolu,
+sur une fenêtre de trente secondes de montre, dans une ville qui rend deux à
+quatre images par seconde, ne peut pas être stable. **Ce que le jeu fait
+vraiment — les voitures se chevauchent-elles ? — reste INDÉTERMINÉ par ce
+témoin**, et c'est pour cela qu'on le refait avant de conclure quoi que ce soit
+sur `cederLePassage`. La piste de cause (une cadence de ménage à intervalle réel
+fixe, v226, donc sous-échantillonnée quand le monde va vite) reste plausible et
+NON mesurée. Les étapes sont dans `TASKS.md`.
+
+Et la résolution basse reste éteinte pour une raison qui tient toujours : tant
+que ce témoin tire à pile ou face, on ne peut pas dire ce que la baisser casse
+ou ne casse pas. On n'allume pas un réglage dont on ne peut pas lire l'effet.
+
+**ET UNE PARURE DE FOND SE SUSPEND QUAND LE RENDU EST LOGICIEL — la règle des
+ombres, une pièce plus loin.** La préparation de l'accueil dépassait sa propre
+borne (« Jouer » libéré à quarante-cinq secondes avec six à dix-huit programmes
+sur vingt-cinq, aucun fond de carte) : c'est le REMPLISSAGE des deux calques
+plein écran, que le processeur paie à la place de la carte graphique, et il le
+prend aux images dont la chauffe et le fond de carte ont besoin. `main.js` pose
+`rendu-logiciel` sur `<html>`, le CSS suspend les deux calques tant que
+`body.prepare` est là. Sur l'iPad rien ne change (v237 : ce coût-là ne se
+transpose pas). Deux choses de plus :
+
+- **MON PREMIER REMÈDE ÉTAIT UN NON-RÉSULTAT, et il est retiré.** Je donnais aux
+  deux calques leur propre couche de composition (`translateZ(0)`), en croyant
+  que `#prep-line` — réécrite toutes les 250 ms — les invalidait. Mesuré sur
+  quatre passages : 12, 11, 6 puis 25 sur 25, c'est-à-dire PIRE au pire passage.
+  Forcer une couche, c'est deux surfaces à COMPOSER à chaque image au lieu d'une
+  à repeindre parfois. **Ce n'était pas la repeinture, c'était la surface.**
+- **ET J'AVAIS ÉCRIT L'INVERSE EN v276** : « les deux calques plein écran ne
+  coûtent RIEN (vérifié trois fois) ». C'était vrai, et mesuré sur une page SANS
+  préparation, où rien ne les invalide. J'avais déclaré la réserve à l'époque ;
+  elle s'est vérifiée contre moi. **Un « innocent » ne vaut que dans les
+  conditions où il a été mesuré, et c'est pour cela qu'on les écrit.**
+
 ## La matière claire (v276)
 
 Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus

@@ -270,6 +270,40 @@ function verifier(nom, ok, detail = '') {
       }
       await dormir(100);
     }
+    // ET LE RETOUR DU VERRE S'ATTEND, IL NE SE LIT PAS À L'INSTANT DE LA
+    // LIBÉRATION (v277). La boucle ci-dessus s'arrête au PREMIER relevé non
+    // grisé ; or `verreQuandPret` (main.js) sonde toutes les 250 ms et la
+    // transition du flou dure une demi-seconde. Lu là, `body.prepare` est
+    // encore posée une fois sur quatre — mesuré, quatre passages de cette suite
+    // seule — et le verdict du verre tombait sur une course de MON fait, pas
+    // sur un défaut du jeu. C'est la famille de la v249 : un témoin qui lit
+    // l'effet d'un minuteur l'attend, et il borne.
+    //
+    // DEUX INSTANTANÉS, ET C'EST LE POINT. `liberation` reste le PREMIER relevé
+    // non grisé — l'état AU MOMENT où l'enfant peut jouer, que le verdict
+    // d'au-dessus lit et qu'il ne faut surtout pas adoucir en échantillonnant
+    // plus tard (les programmes continuent de se compiler). Le retour du verre
+    // a le sien.
+    let verreRevenu = liberation;
+    const finVerre = Date.now() + 4000;
+    while (liberation && (verreRevenu.prepare || verreRevenu.flous.length === 0)
+           && Date.now() < finVerre) {
+      await dormir(150);
+      const e = await prune.evaluate(() => {
+        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
+          '#overlay .controls', '#profile-menu', '#online-menu'];
+        const flous = PORTEURS.filter((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return false;
+          const f = getComputedStyle(el);
+          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
+          return !!v && v !== 'none';
+        });
+        return { flous, prepare: document.body.classList.contains('prepare') };
+      }).catch(() => null);
+      if (e) verreRevenu = { ...verreRevenu, ...e };
+    }
+    const attenduVerre = +((4000 - Math.max(0, finVerre - Date.now())) / 1000).toFixed(1);
     console.log(`   🔎 préparation : ${[...lignes].slice(0, 3).join(' | ')} · libération ${JSON.stringify(liberation)}`);
     verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
       !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
@@ -306,9 +340,10 @@ function verifier(nom, ok, detail = '') {
     // #app-version, #overlay .controls ».
     verifier('et pendant qu\'il prépare, la page ne floute rien — les images vont au jeu',
       tours >= 3 && floutesEnPreparant.size === 0
-      && !!liberation && liberation.prepare === false && liberation.flous.length > 0,
+      && !!verreRevenu && verreRevenu.prepare === false && verreRevenu.flous.length > 0,
       `${tours} relevé(s) grisés · floutés en préparant : ${[...floutesEnPreparant].join(', ') || 'aucun'}`
-      + ` · à la libération : ${liberation ? liberation.flous.join(', ') : '?'}`);
+      + ` · une fois prêt : ${verreRevenu ? verreRevenu.flous.join(', ') : '?'}`
+      + ` (attendu ${verreRevenu ? attenduVerre : '?'} s)`);
     await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
     const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
     verifier('et « Jouer » lance bien la partie une fois libéré', lance);

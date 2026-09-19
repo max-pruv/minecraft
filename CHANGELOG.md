@@ -20,6 +20,68 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v277 — Le banc mesuré, et une panne qu'il cachait
+
+**Pourquoi.** Max : « revamp the testing process way too heavy and long and
+costly and painful ». Le portail d'essai durait une heure, et personne n'avait
+jamais regardé où cette heure passait — ni combien de fois il fallait le rejouer
+pour une seule livraison (cinq, pour la v276). Ce n'est pas la longueur qui
+coûte, c'est la boucle.
+
+**Ce que ça change.** Rien que la famille voie, et c'est dit franchement. Le jeu
+est le même sur l'iPad, au pixel près. Ce qui change est en coulisse, et cela
+décide de la cadence des versions à venir.
+
+- **Le plus gros fichier d'essais dit enfin où passent ses minutes.** Mesuré
+  témoin par témoin : dix-neuf minutes et demie, et les vingt-cinq témoins les
+  plus chers en portent **85 %** — les cent quinze autres coûtent moins de deux
+  secondes chacun.
+- **Deux des plus chers attendent désormais un RÉSULTAT et non une durée.** La
+  rue de Paris passe de cinquante-six secondes à **neuf** ; la monoplace sort du
+  classement. Le fichier tombe de 19 min 30 s à 17 min 24 s.
+- **Et deux interrupteurs de banc**, pour que ses réglages se rejouent au lieu
+  de se croire : la résolution et la parure de l'accueil.
+
+**Ce qu'il a trouvé, et qui vaut plus que le gain.**
+
+- **La préparation de l'accueil dépassait sa propre limite**, sur un navigateur
+  sans carte graphique : « Jouer » se libérait à quarante-cinq secondes avec six
+  à dix-huit couleurs de shaders sur vingt-cinq et aucun fond de carte — c'est-à-
+  dire exactement ce que la v258 avait bâti pour empêcher. La cause est le
+  remplissage des deux calques de fond, que le processeur paie à la place de la
+  carte graphique. Ils attendent maintenant, le temps de la préparation, comme
+  les ombres le font depuis la v247. **Sur l'iPad, rien ne change** : la carte
+  graphique est là.
+- **Et un témoin de voitures qui tire à pile ou face.** « Les voitures ne se
+  traversent plus » compte les chevauchements sur trente secondes au centre de
+  Paris. Sept mesures, deux versions du jeu, deux résolutions : **de zéro à
+  cinquante-trois**, sans qu'une ligne du jeu ait bougé — et sa barre, quarante-
+  cinq, tombe au milieu de cette étendue. Ce n'est pas un gardien, c'est un
+  tirage. **J'ai d'abord annoncé l'inverse** — que le banc accéléré révélait un
+  défaut de production — sur un seul passage par côté ; l'étendue mesurée à une
+  seule résolution suffit à tout expliquer. Ce que le jeu fait vraiment reste
+  donc à mesurer, et c'est déclaré comme tel.
+
+**Ce qui le prouve.** Les mesures sont toutes en ordre alterné, avec les pages
+refermées entre les bras. Et **deux remèdes ont été écrits, mesurés, puis
+RETIRÉS** : donner leur propre couche de composition aux deux calques (12, 11, 6
+puis 25 sur 25 — pire au pire passage), et, en v276 déjà, la moitié d'un
+soupçon. Un remède qui ne se mesure pas ne se garde pas.
+
+**Et trois erreurs à moi, toutes trouvées par une bascule plutôt que par un
+raisonnement.** J'ai mesuré la résolution dans une configuration que deux pages
+sur sept utilisent, et annoncé quarante pour cent de gain là où il y en a vingt.
+J'ai rendu rouge un témoin voisin en supprimant un sommeil dont il vivait sans
+le dire. Et j'avais conclu en v276 que les deux calques de fond ne coûtaient
+**rien** — mesuré sur une page sans préparation, où rien ne les invalide. **Un
+« innocent » ne vaut que dans les conditions où il a été mesuré**, et c'est pour
+cela qu'on les écrit à côté.
+
+**Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records, et
+l'apparence du jeu sur l'iPad.
+
+---
+
 ## v276 — Un jeu tout clair
 
 **Pourquoi.** Max, devant la proposition de design : « je trouve qu'ils
