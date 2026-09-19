@@ -200,6 +200,19 @@ une version qu'on ne saura pas déboguer.
    numéro qui fait foi partout ailleurs.
 3. Tout fichier `src/*.js` **nouveau** doit être ajouté à la liste `ASSETS` de
    `sw.js`, sinon il manque hors ligne.
+
+   **ET UNE FUSION SANS SON BUMP LIVRE UN JEU QUE PERSONNE NE REÇOIT (v278).**
+   La PR de la v278 a été fusionnée avant l'étape 2 : `main` ET la production
+   portaient le code neuf sous la clé de cache `web-minecraft-v277`. Un iPad
+   déjà installé sert alors ses anciens fichiers — la correction est en ligne
+   et invisible — et le jeu se contredit lui-même, le journal des nouveautés
+   annonçant une version que le service worker ne connaît pas. **Le bump n'est
+   pas une formalité de fin, c'est ce qui fait qu'une livraison EXISTE pour la
+   famille.** Le témoin du badge de `maj.js` l'a dit tout seul (« version
+   servie v277 » pour une tête de journal à 278) : devant une PR fusionnée
+   plus tôt que prévu, le premier geste est de lire `CACHE_VERSION` sur
+   `main` ET en production, et de livrer le bump comme une correction à part
+   entière.
 4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
    parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
    constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
