@@ -30,6 +30,26 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LA VRAIE RANGÉE DEVANT L'AÉROGARE 2 DE ROISSY DEMANDE DE DÉPLACER UN
+  DOUBLET DE PISTES (v278).** Les trois appareils de Roissy sont désormais aux
+  deux seules poches à ciel ouvert de son tarmac — le couloir entre le tambour
+  de l'aérogare 1 et les halls (20 × 16 blocs), et la trouée entre les halls 2C
+  et 2E. Partout ailleurs la bande libre fait SEPT blocs, pour une envergure de
+  quinze : mesuré sur toute la plate-forme, il n'existe aucun autre carré de
+  seize. Une rangée alignée devant l'aérogare 2, comme aux dix-huit autres
+  aérodromes, réclame `TARMAC` à 35 au lieu de 25, donc `TAXI_A` et le doublet
+  nord poussés d'une dizaine de blocs — et le disque ne fait que 68 de rayon,
+  si bien que la piste extérieure tomberait de 83 à 55 blocs. C'est une
+  décision de PLAN (agrandir la plate-forme, ou raccourcir une piste), pas un
+  réglage, et elle touche un point de repère que Max a validé en capture.
+
+- [ ] **LES QUATRE AVIONS EN BLOCS DU POSTE SUD DE ROISSY NE SONT PLUS À CÔTÉ
+  DE RIEN (v278).** Ils avaient été gardés « pour que la plate-forme ne soit
+  pas vide vue du ciel » quand les vrais appareils étaient au poste nord. Les
+  vrais ont déménagé ; à vérifier en capture aérienne si le décor tient encore
+  debout à côté, ou s'il vaut mieux le déplacer.
+
+
 - [ ] **« LES VOITURES NE SE TRAVERSENT PLUS » TIRE À PILE OU FACE, ET CE QUE LE
   JEU FAIT RESTE INDÉTERMINÉ (v277).** Le témoin compte les chevauchements sur
   trente secondes de MONTRE, un relevé toutes les 200 ms, au centre de Paris.

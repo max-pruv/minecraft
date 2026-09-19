@@ -616,6 +616,37 @@ export class Player {
         move.x = 0; move.z = 0; this.vel.x = 0; this.vel.z = 0;
       }
     }
+    // ET À PIED NON PLUS, ON NE TRAVERSE PAS UNE VOITURE (v278).
+    //
+    // Max : « quand on joue avec le jeu, on ne devrait pas être capable de
+    // pouvoir marcher à travers une voiture. » La branche ci-dessus est gardée
+    // par `gabarit > 1` depuis la v245 : elle ne parle qu'au VOLANT, donc à
+    // pied le crochet n'était jamais consulté et l'enfant passait au travers.
+    //
+    // ET CE N'EST PAS LE MÊME CROCHET, parce que ce n'est pas la même question.
+    // `obstacleVehicule` juge avec le RECTANGLE d'une voiture (2,26 blocs de
+    // large) : appliqué à pied, il donnerait à l'enfant la carrure d'une
+    // berline et le collerait à un mètre de tout. Ce qu'un piéton demande,
+    // c'est « ce POINT est-il dans une voiture ? » — la question que
+    // `world.obstaclePieton` (v259) pose déjà pour les passants, et qui laisse
+    // de côté la voiture de l'enfant quand il n'est pas dedans.
+    //
+    // ON N'EXAMINE QUE L'ENTRÉE, comme partout ailleurs : si l'on est DÉJÀ
+    // dedans — une voiture est venue se garer sur nous —, on sort librement.
+    // Et l'on juge AXE PAR AXE, sinon on se colle au flanc d'une voiture au
+    // lieu de la longer : c'est ce que `sweepAxis` fait déjà pour les blocs.
+    if (!(this.gabarit > 1) && !this.pilote && this.pietonBloque
+        && (move.x !== 0 || move.z !== 0)) {
+      const y = this.pos.y;
+      if (!this.pietonBloque(this.pos.x, this.pos.z, y)) {
+        if (move.x !== 0 && this.pietonBloque(this.pos.x + move.x, this.pos.z, y)) {
+          move.x = 0; this.vel.x = 0;
+        }
+        if (move.z !== 0 && this.pietonBloque(this.pos.x, this.pos.z + move.z, y)) {
+          move.z = 0; this.vel.z = 0;
+        }
+      }
+    }
     const steps = Math.max(1, Math.ceil(move.length() / MAX_STEP));
     this.onGround = false;
     const avantX = this.pos.x, avantZ = this.pos.z;

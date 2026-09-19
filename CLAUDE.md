@@ -3255,6 +3255,38 @@ Quatre choses à savoir avant d'en ajouter un.
   la place aux montures. Ceux du poste sud restent, et c'est une DÉCISION :
   une monture ne se dessine qu'à soixante-deux blocs, et sans eux la
   plate-forme serait vide vue du ciel.
+- **UNE BOÎTE DE COLLISION ET UNE PLACE DE STATIONNEMENT NE SONT PAS LA MÊME
+  MESURE (v278).** Max, capture d'iPad : « les avions ne devraient pas être par
+  défaut dans les buildings ». Le témoin de la v228 annonçait 0/57 en faute, et
+  une sonde qui relisait le MONDE aux coordonnées des postes disait 0/57 aussi.
+  Tous deux mesuraient `larg` — **la largeur du FUSELAGE**, 1,8 bloc — pour un
+  appareil dont les ailes en font 15,2. Repris avec l'emprise vraie : **vingt-
+  neuf postes sur cinquante-sept dans un bâtiment.** `larg` reste juste pour ce
+  qu'il est (une AABB ne tourne pas, un avion de quinze blocs de large ne
+  roulerait dans aucune voie de circulation) ; ce qui manquait, c'est
+  `envergure`, mesurée sur le modèle rendu et gardée par un témoin — parce
+  qu'une table que personne ne relit est un piège qui attend, et c'est la
+  TROISIÈME fois que celle-ci en tend un.
+- **ET UNE PLACE SE JUGE À CIEL OUVERT, PAS « SANS BÂTI DANS L'EMPRISE ».** Mon
+  balayage de remplacement garait très bien un Concorde DANS le hall et le
+  déclarait bon : un bâtiment est CREUX — c'est ce qui le rend visitable — donc
+  son intérieur est de l'air. C'est le piège du verre dans les murs par l'autre
+  bout. Aucune colonne de l'emprise ne doit rien porter au-dessus d'elle.
+- **ET UN REMÈDE SE MESURE CONTRE LE DISQUE, PAS SEULEMENT CONTRE LA RANGÉE.**
+  Mon premier jet poussait le hangar au-delà de l'aire (`aire.x1 + 9`) : juste
+  sur le papier, et il sortait du DISQUE de la plate-forme, qui ne va que
+  jusqu'à `rayon - 20` — quarante et un blocs à Orly, trente-six sur une base.
+  `set` ignore ce qui déborde : on aurait livré des demi-hangars. Ils sont
+  passés **côté ville** (`z = zt0-14 … zt0-6`), ce qui libère tout le tarmac
+  sans rien pousser dehors.
+- **ET DEUX POCHES, C'EST TOUT CE QU'A ROISSY.** Mesuré : sur tout son tarmac,
+  le plus grand espace libre à ciel ouvert fait **20 × 16 blocs** — le couloir
+  entre le tambour de l'aérogare 1 et les halls — plus la trouée entre les
+  halls 2C et 2E. Partout ailleurs la bande d'asphalte libre fait SEPT blocs,
+  pour une envergure de quinze. Les trois postes sont là, et c'est un résultat.
+  Le jour où l'on voudra une vraie rangée devant l'aérogare 2, il faudra
+  déplacer le premier doublet de pistes — c'est une décision de plan, déclarée
+  dans `TASKS.md`, pas un réglage.
 - **UN LIEU NE SE RENOMME PAS SOUS LES PIEDS D'UN ENFANT.** Roissy s'appelait
   « Aéroport Charles-de-Gaulle » sur la carte ; renommé « Paris–Charles-de-
   Gaulle » par cohérence avec les dix-huit autres, il a disparu du témoin des
