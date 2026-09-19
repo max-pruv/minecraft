@@ -2644,6 +2644,42 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
   pose un obstacle le retire — mais ce n'était pas la cause. **Une explication
   qu'on n'a pas mesurée est une dette, pas un diagnostic** (v220), y compris
   quand elle accuse son propre code.
+- **ET C'EST UNE FAMILLE, PAS UN ACCIDENT : TROIS TÉMOINS DE LA MÊME SUITE
+  MESURAIENT L'ENDROIT OÙ LE PRÉCÉDENT S'ÉTAIT ARRÊTÉ (v279).** Un second
+  passage de `monte.js` SEULE, sur un code de jeu inchangé, a retourné deux
+  verdicts de plus — et les deux avaient la forme de `contreLeMur`.
+  - **Le piéton contre la voiture** marchait depuis la position ET LE CAP où le
+    témoin du flanc avait fini ses quatorze secondes de conduite : arrivée
+    −1,18 au premier passage, −4,19 au second, `fige` atteint après NEUF
+    DIXIÈMES de seconde de jeu à 4,19 blocs de la voiture. Il ne mesurait pas
+    une carrosserie, il mesurait où la conduite d'avant avait buté. C'est la
+    troisième occurrence de « une mesure de déplacement s'assure qu'elle a la
+    place de se déplacer » (v273), et le remède est le même : le couloir vide de
+    la v237, un cap DEMANDÉ (`capDegage`) au lieu de celui qu'on a reçu, et la
+    voiture INVOQUÉE là plutôt que déplacée — déplacée, elle garderait la cote
+    qu'elle avait à Paris.
+  - **La circulation qui cède** est « pas si l'on est déjà dedans » vu du côté
+    du témoin. Vert QUATRE passages de suite avec zéro relevé au travers, il en
+    a rendu 51 sur 214 au cinquième, une voiture étant à portée dès la première
+    seconde. Or le jeu laisse EXPRÈS continuer une voiture déjà dans la nôtre —
+    attendre là, c'est y rester pour toujours — et la v245 avait déjà vu ce
+    témoin se poser sur une file et compter quatre-vingts relevés « au travers »
+    dès la première image. On note donc qui chevauche AU PREMIER RELEVÉ et l'on
+    n'en compte aucun : une voiture déjà dedans ne peut rendre aucun verdict, ni
+    dans un sens ni dans l'autre. Quand la pose est propre l'ensemble est vide et
+    le témoin est mot pour mot celui d'avant ; les deux nombres entrent dans le
+    message, sinon le rouge suivant ne se démonte pas.
+
+  **Et ce que ces trois-là apprennent ensemble vaut plus que chacun : DANS UNE
+  SUITE, LA SITUATION DE DÉPART D'UN TÉMOIN EST CE QUE LE TÉMOIN D'AVANT A
+  LAISSÉ, ET CELA NE SE VOIT PAS EN LE LISANT.** Le fichier se lit comme une
+  liste de mesures indépendantes ; il ne l'est pas. Tant qu'aucune n'est rouge,
+  l'héritage passe pour une économie de gestes. Un témoin qui mesure une
+  DISTANCE, une DURÉE ou une POSITION se place donc lui-même — et « se placer »
+  veut dire les trois choses à la fois : l'endroit, le cap, et ce qui traîne
+  autour (bêtes, voitures, convois). C'est le pendant, à l'échelle d'une suite,
+  de « une dépendance implicite entre deux témoins voisins est invisible tant
+  que le premier dort » (v277).
 - **ET UNE BARRE RELEVÉE DANS UNE VILLE NE VAUT PAS DANS UNE AUTRE (v279).**
   Le témoin du sol des passants exigeait quatre cinquièmes SUR LE TROTTOIR,
   chiffre mesuré à Paris (21 sur 21) : à Rome, la ville que le banc peuple, il

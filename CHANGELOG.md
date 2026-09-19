@@ -108,6 +108,22 @@ nettoyage. Ranger sa voiture reste juste, mais ce n'était pas la cause — une
 explication qu'on n'a pas mesurée est une dette, pas un diagnostic, **y compris
 quand elle accuse son propre code**.
 
+**Et ce n'était pas un accident : TROIS témoins de la même suite mesuraient
+l'endroit où le précédent s'était arrêté.** Un second passage de `monte.js`
+seule, sur un code de jeu inchangé, a retourné deux verdicts de plus, et les deux
+avaient la forme de `contreLeMur`. Le piéton contre la voiture marchait depuis la
+position et le CAP où la conduite d'avant avait fini : arrivée −1,18 au premier
+passage, **−4,19 au second**, l'enfant arrêté après neuf dixièmes de seconde de
+jeu à plus de quatre blocs de la voiture — donc contre tout autre chose. Et la
+circulation qui cède, verte quatre passages de suite avec zéro relevé au travers,
+en a rendu **51 sur 214** au cinquième : une voiture était déjà dans la nôtre à
+la première image, et le jeu la laisse EXPRÈS sortir — attendre là, c'est y
+rester pour toujours. Un témoin qui mesure une distance, une durée ou une
+position se place donc lui-même, et « se placer » veut dire les trois choses à la
+fois : l'endroit, le cap, et ce qui traîne autour. Le fichier se lit comme une
+liste de mesures indépendantes ; il ne l'est pas, et tant qu'aucune n'est rouge
+l'héritage passe pour une économie de gestes.
+
 **Et ce que cela coûte au banc se dit** : les quatre témoins ajoutent environ
 une minute et demie à `monte.js` — douze secondes de virage tenu, la marche à
 pied bornée à trente, et quarante-cinq secondes d'observation de la rue. Après
