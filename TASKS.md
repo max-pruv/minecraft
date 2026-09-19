@@ -30,38 +30,52 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
-- [ ] **LES VOITURES SE TRAVERSENT QUAND LE JEU TOURNE VITE — ET LE BANC LENT LE
-  CACHAIT (v277).** Découvert en accélérant le banc, et c'est la panne que Max
-  revoyait après la v244 ET la v245. À `dpr` 0,5 le banc passe de huit à
-  dix-huit images par seconde, donc le monde cesse d'avancer à quarante pour
-  cent du temps réel (`dt` est borné à un vingtième). Mesuré, MÊME banc, trente
-  secondes à Paris, un relevé toutes les 200 ms — donc le nombre d'observations
-  ne dépend PAS de la cadence :
+- [ ] **« LES VOITURES NE SE TRAVERSENT PLUS » TIRE À PILE OU FACE, ET CE QUE LE
+  JEU FAIT RESTE INDÉTERMINÉ (v277).** Le témoin compte les chevauchements sur
+  trente secondes de MONTRE, un relevé toutes les 200 ms, au centre de Paris.
+  Sept mesures, deux arbres, deux résolutions :
 
-  | | dpr 1 | dpr 0,5 |
+  | bras | dpr | chevauchements |
   | --- | --- | --- |
-  | branche (v277) | 0 / 345 | **48 / 665** |
-  | `origin/main` (v276) | 3 / 499 (portail) | **41 / 695** |
+  | portail v276 | 1 | 3 / 499 |
+  | branche, rejeu | 1 | **0 / 345** |
+  | portail v277 | 1 | sous la barre |
+  | branche, monte seule | 1 | **53 / 474** |
+  | branche | 0,5 | 48 / 665 |
+  | `origin/main` (v276) | 0,5 | 41 / 695 |
 
-  Même chiffre des deux côtés : **le défaut est en production.** Cause nommée,
-  pas encore prouvée : `cederLePassage` est une cadence de MÉNAGE à intervalle
-  réel fixe (v226) ; à pleine vitesse une voiture parcourt deux fois et demie
-  plus de chemin entre deux collectes de priorité, et la logique
-  anti-chevauchement est donc sous-échantillonnée par rapport au mouvement.
-  C'est exactement le régime de l'iPad.
+  **L'ÉTENDUE À dpr 1 SEUL — 0 À 53 — RECOUVRE LES VALEURS À dpr 0,5**, et la
+  barre (45) tombe dedans. J'avais d'abord conclu que la cadence révélait un
+  défaut de production, sur UN passage par bras : c'est la règle de la v269
+  invoquée sans être suivie. Corrigé dans `CLAUDE.md` et dans le journal.
 
-  **Et la barre du témoin tombe ENTRE 41 et 48** — entre deux mesures du même
-  comportement. Elle ne sépare plus un défaut d'un non-défaut ; elle tire à
-  pile ou face. On ne la règle pas pour faire passer une livraison (v276 :
-  « une barre que les deux côtés franchissent ne mesure plus le jeu »).
+  Ce qu'il faut faire, dans cet ordre, et l'ordre a changé :
+  1. **Rendre le témoin lisible avant de juger le jeu.** Un compte absolu sur
+     une fenêtre de montre, dans une ville à deux ou quatre images par seconde,
+     ne peut pas être stable : le dénominateur (le nombre d'observations) doit
+     être publié, le verdict devenir un TAUX, et la fenêtre se mesurer en
+     CHEMIN parcouru par les convois plutôt qu'en secondes.
+  2. **Alors seulement mesurer le jeu**, dix passages par bras, et regarder la
+     DISTRIBUTION — pas un passage.
+  3. La piste de cause reste plausible et NON mesurée : `cederLePassage` est une
+     cadence de ménage à intervalle réel fixe (v226), donc sous-échantillonnée
+     quand le monde va vite. La sonde qui distinguerait « sous-échantillonné »
+     de « la priorité ne marche pas » lit `etat().places` — le drapeau d'attente
+     de chaque voiture (v273) — pendant un chevauchement.
+  4. Et `BANC_DPR=0.5` (vingt pour cent de banc) reste éteint tant qu'on ne peut
+     pas lire ce qu'il casse : **on n'allume pas un réglage dont on ne peut pas
+     mesurer l'effet.**
 
-  Ce qu'il faut faire, dans cet ordre : (1) prouver la cause — la sonde qui
-  distingue « sous-échantillonné » de « la priorité ne marche pas » est de
-  lire `etat().places` (le drapeau d'attente de chaque voiture, v273) pendant
-  un chevauchement ; (2) corriger, probablement en faisant dépendre la collecte
-  du CHEMIN parcouru et non de l'horloge ; (3) reformuler le verdict en TAUX,
-  pas en compte ; (4) allumer `BANC_DPR=0.5` par défaut, qui rend alors vingt
-  pour cent du banc.
+- [ ] **ROUGES DE CHARGE DU PORTAIL DE LA v277, rejoués SEULS et verts.**
+  `sauvegarde.js` 19/19, `carte.js` 95/95, `washington.js` 29/29 — les trois
+  étaient rouges au portail et sont verts seuls. `washington.js` : les trois
+  témoins du métro (« une rame passe », la pastille de ligne, « 0 m en 40 s de
+  jeu »), la famille documentée depuis la v161 — `dt` borné, le monde avance
+  moins vite que l'horloge. `carte.js` : l'appui long, la dette de la v258.
+  Ce qui est NEUF et qui vaut d'être noté : **le verdict du portail dépend du
+  nombre de suites qui ont réellement tourné avant**, et le cache de reprise
+  masque exactement cela — au portail de la v276, treize suites sur quinze
+  étaient reprises.
 
 - [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
   v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la

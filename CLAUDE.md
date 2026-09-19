@@ -522,27 +522,42 @@ painful ». Six règles, et quatre sont nées d'une mesure qui m'a contredit.
   ne mesure rien, **et surtout elle ne BLANCHIT rien** (troisième occurrence du
   piège de la sonde aveugle). D'où l'interrupteur : l'A/B se fait DANS la suite.
 
-**ET LA RÉSOLUTION BASSE RESTE ÉTEINTE, PARCE QU'ELLE A TROUVÉ UN DÉFAUT DE
-JEU.** À `dpr` 0,5 le banc passe de huit à dix-huit images par seconde, donc le
-monde cesse d'avancer à quarante pour cent du temps réel — et « les voitures ne
-se traversent plus » (v244) tombe. La boucle échantillonne trente secondes de
-MONTRE toutes les 200 ms, donc le nombre d'observations ne dépend pas de la
-cadence :
+**ET LA RÉSOLUTION BASSE RESTE ÉTEINTE — MAIS PAS POUR LA RAISON QUE J'AI
+D'ABORD ÉCRITE, ET LA CORRECTION EST LA LEÇON.** « Les voitures ne se traversent
+plus » (v244) compte les chevauchements sur trente secondes de MONTRE, un relevé
+toutes les 200 ms, au centre de Paris. Sept mesures, deux arbres, deux
+résolutions :
 
-| | dpr 1 | dpr 0,5 |
+| bras | dpr | chevauchements |
 | --- | --- | --- |
-| branche | 0 / 345 | **48 / 665** |
-| `origin/main` (v276) | 3 / 499 | **41 / 695** |
+| portail v276 | 1 | 3 / 499 |
+| branche, rejeu | 1 | **0 / 345** |
+| portail v277 | 1 | sous la barre |
+| branche, monte seule | 1 | **53 / 474** |
+| branche | 0,5 | 48 / 665 |
+| `origin/main` (v276) | 0,5 | 41 / 695 |
 
-Même chiffre des deux côtés : **le défaut est en production, et le banc lent le
-cachait.** C'est la panne que Max a signalée après la v244 ET la v245. Cause
-nommée, pas encore prouvée : `cederLePassage` est une cadence de ménage à
-intervalle réel fixe (v226), donc à pleine vitesse une voiture parcourt deux
-fois et demie plus de chemin entre deux collectes. **Et la barre de 45 tombe
-ENTRE 41 et 48** — entre deux mesures du même comportement : elle ne sépare plus
-rien, elle tire à pile ou face. On ne règle pas une barre pour faire passer une
-livraison, et on ne cache pas une découverte pour gagner vingt pour cent de
-banc. Les quatre étapes sont dans `TASKS.md`.
+**L'ÉTENDUE À dpr 1 SEUL — DE 0 À 53 — RECOUVRE ENTIÈREMENT LES VALEURS À
+dpr 0,5.** La cadence n'est donc PAS établie comme la variable, et j'avais
+conclu le contraire sur UN passage par bras : c'est mot pour mot la règle de la
+v269 que j'invoquais sans la suivre. Une intermittence ne se juge pas sur un
+passage de chaque côté ; on rejoue jusqu'à voir la même DISTRIBUTION, et ici la
+distribution d'un seul côté suffit à tout expliquer.
+
+Ce qui reste vrai, et qui est le fait utile : **ce témoin varie de 0 à 53 sans
+qu'une ligne du jeu ait bougé, et sa barre (45) tombe DANS son étendue
+naturelle.** Ce n'est donc pas un gardien : c'est un tirage. Un compte absolu,
+sur une fenêtre de trente secondes de montre, dans une ville qui rend deux à
+quatre images par seconde, ne peut pas être stable. **Ce que le jeu fait
+vraiment — les voitures se chevauchent-elles ? — reste INDÉTERMINÉ par ce
+témoin**, et c'est pour cela qu'on le refait avant de conclure quoi que ce soit
+sur `cederLePassage`. La piste de cause (une cadence de ménage à intervalle réel
+fixe, v226, donc sous-échantillonnée quand le monde va vite) reste plausible et
+NON mesurée. Les étapes sont dans `TASKS.md`.
+
+Et la résolution basse reste éteinte pour une raison qui tient toujours : tant
+que ce témoin tire à pile ou face, on ne peut pas dire ce que la baisser casse
+ou ne casse pas. On n'allume pas un réglage dont on ne peut pas lire l'effet.
 
 **ET UNE PARURE DE FOND SE SUSPEND QUAND LE RENDU EST LOGICIEL — la règle des
 ombres, une pièce plus loin.** La préparation de l'accueil dépassait sa propre

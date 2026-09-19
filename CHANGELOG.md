@@ -52,15 +52,15 @@ décide de la cadence des versions à venir.
   carte graphique. Ils attendent maintenant, le temps de la préparation, comme
   les ombres le font depuis la v247. **Sur l'iPad, rien ne change** : la carte
   graphique est là.
-- **Et les voitures se traversent quand le jeu tourne vite.** En accélérant le
-  banc de huit à dix-huit images par seconde, le monde cesse d'avancer au ralenti
-  — et « les voitures ne se traversent plus » (v244) tombe : **quarante-huit
-  chevauchements pour six cent soixante-cinq observations, et quarante-et-un sur
-  `main`**. Le même chiffre des deux côtés : le défaut est en production, et le
-  banc lent le cachait. C'est la panne que Max a signalée après la v244 ET après
-  la v245. Elle est déclarée avec sa mesure et sa cause probable ; elle se
-  corrige dans la version suivante, et c'est elle qui débloquera les vingt pour
-  cent de banc restants.
+- **Et un témoin de voitures qui tire à pile ou face.** « Les voitures ne se
+  traversent plus » compte les chevauchements sur trente secondes au centre de
+  Paris. Sept mesures, deux versions du jeu, deux résolutions : **de zéro à
+  cinquante-trois**, sans qu'une ligne du jeu ait bougé — et sa barre, quarante-
+  cinq, tombe au milieu de cette étendue. Ce n'est pas un gardien, c'est un
+  tirage. **J'ai d'abord annoncé l'inverse** — que le banc accéléré révélait un
+  défaut de production — sur un seul passage par côté ; l'étendue mesurée à une
+  seule résolution suffit à tout expliquer. Ce que le jeu fait vraiment reste
+  donc à mesurer, et c'est déclaré comme tel.
 
 **Ce qui le prouve.** Les mesures sont toutes en ordre alterné, avec les pages
 refermées entre les bras. Et **deux remèdes ont été écrits, mesurés, puis
