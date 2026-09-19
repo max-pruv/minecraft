@@ -49,13 +49,15 @@ const position = (p) => p.evaluate(() => ({
   await banc.ouvrir();
   try {
     // --- une tablette, comme à la maison -------------------------------------
-    // LES QUATRE PAGES DE CETTE SUITE GARDENT LA RÉSOLUTION PLEINE (`dpr: 1`).
-    // Le banc rend à 0,5 depuis la v277 — quatre fois moins de pixels, vingt
-    // pour cent de montre en moins sur une scène légère — mais cette suite est
-    // la seule qui VISE AU PIXEL : elle clique des vignettes, mesure des
-    // cadrages et lit des fonds de carte. Une résolution qui change déplace ce
-    // qu'elle mesure. Même discipline que `rr`, `ombres` et `prep` : ce qui
-    // s'écarte du défaut du banc se déclare à l'ouverture de la page.
+    // LES QUATRE PAGES DE CETTE SUITE DEMANDENT LA RÉSOLUTION PLEINE, ET ELLES
+    // LE DEMANDENT MÊME QUAND C'EST LE DÉFAUT (v277). Le banc sait rendre à
+    // `dpr` 0,5 — quatre fois moins de pixels, vingt pour cent de montre en
+    // moins sur une scène légère (`BANC_DPR=0.5`) — et cette suite est la seule
+    // qui VISE AU PIXEL : elle clique des vignettes, mesure des cadrages et lit
+    // des fonds de carte. Une résolution qui change déplace ce qu'elle mesure.
+    // On l'écrit donc à l'ouverture de la page, aujourd'hui où cela ne change
+    // rien, pour que cela protège le jour où le défaut du banc bougera — même
+    // discipline que `rr`, `ombres` et `prep`.
     const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(tab);
 

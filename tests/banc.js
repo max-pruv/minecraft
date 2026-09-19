@@ -185,14 +185,44 @@ async function relaisSourd(portEcoute, portVrai) {
 // lecteurs de pixels de `monte.js` calculent leurs coordonnées depuis
 // `gl.drawingBufferWidth/Height` — ils sont indépendants de la résolution.
 // `carte.js`, qui vise au pixel sur la carte, demande `{ dpr: 1 }`.
-// ET IL SE REMESURE : `BANC_DPR=1 node monte.js` remet la résolution pleine.
+// ET IL EST À 1 POUR L'INSTANT — PARCE QU'IL A TROUVÉ UN DÉFAUT DE JEU.
+//
+// `BANC_DPR=0.5 npm test` l'allume ; le défaut par défaut reste la résolution
+// pleine, et ce n'est PAS un renoncement, c'est un ordre de livraison. À 0,5 le
+// banc passe de huit à dix-huit images par seconde, donc le monde cesse
+// d'avancer à quarante pour cent du temps réel — et « les voitures ne se
+// traversent plus » (v244) tombe : TRENTE-SEPT chevauchements de plus pour le
+// même nombre d'observations. Mesuré des deux côtés, même banc :
+//
+//                          dpr 1              dpr 0,5
+//   branche                0 / 345            48 / 665
+//   `origin/main` (v276)   3 / 499  (portail)  41 / 695
+//
+// TROIS choses, et la troisième décide.
+// — La boucle échantillonne trente secondes de MONTRE toutes les 200 ms : le
+//   nombre d'observations ne dépend pas de la cadence. Les chevauchements
+//   passent de 3 à 41-48 pour le même nombre de relevés — les voitures se
+//   traversent VRAIMENT plus quand le jeu tourne vite.
+// — C'est le même chiffre sur les deux arbres : le défaut est en production, et
+//   le banc lent le CACHAIT. Cause nommée, pas encore prouvée : `cederLePassage`
+//   est une cadence de ménage à intervalle réel fixe (v226) ; à pleine vitesse
+//   une voiture parcourt deux fois et demie plus de chemin entre deux collectes.
+//   C'est la panne que Max revoyait après la v244 et la v245, et c'est ce que
+//   son iPad fait.
+// — **La barre de 45 tombe ENTRE 41 et 48**, c'est-à-dire entre deux mesures du
+//   MÊME comportement. Elle ne sépare plus un défaut d'un non-défaut : elle tire
+//   à pile ou face. On ne règle pas une barre pour faire passer une livraison
+//   (v276 : « une barre que les deux côtés franchissent ne mesure plus le jeu »),
+//   et on ne cache pas une découverte pour gagner vingt pour cent de banc. Le
+//   0,5 s'allumera dans la livraison qui corrige les voitures ; la mesure est
+//   déjà faite et écrite dans `TASKS.md`.
+//
 // Une constante de banc qui ne peut pas se rejouer est une constante qu'on ne
 // peut pas démonter — c'est la discipline de `?attente=`, `?fondms=` et
-// `?chauffems=`, appliquée au banc lui-même. Et elle sert tout de suite : la
-// cadence plus haute CHANGE ce que le jeu fait (le monde avançait à 40 % du
-// temps réel à huit images par seconde, il y est presque à dix-huit), donc
-// devant un témoin qui change de verdict, la première mesure est la bascule.
-const DPR_BANC = Number(process.env.BANC_DPR) || 0.5;
+// `?chauffems=`, appliquée au banc lui-même. Et sans cette bascule j'aurais
+// attribué à la cadence un rouge qui était le mien (voir les lointains, dans
+// monte.js) : l'explication commode est une dette, pas un diagnostic (v220).
+const DPR_BANC = Number(process.env.BANC_DPR) || 1;
 const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
   + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`;

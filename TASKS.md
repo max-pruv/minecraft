@@ -30,6 +30,39 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LES VOITURES SE TRAVERSENT QUAND LE JEU TOURNE VITE — ET LE BANC LENT LE
+  CACHAIT (v277).** Découvert en accélérant le banc, et c'est la panne que Max
+  revoyait après la v244 ET la v245. À `dpr` 0,5 le banc passe de huit à
+  dix-huit images par seconde, donc le monde cesse d'avancer à quarante pour
+  cent du temps réel (`dt` est borné à un vingtième). Mesuré, MÊME banc, trente
+  secondes à Paris, un relevé toutes les 200 ms — donc le nombre d'observations
+  ne dépend PAS de la cadence :
+
+  | | dpr 1 | dpr 0,5 |
+  | --- | --- | --- |
+  | branche (v277) | 0 / 345 | **48 / 665** |
+  | `origin/main` (v276) | 3 / 499 (portail) | **41 / 695** |
+
+  Même chiffre des deux côtés : **le défaut est en production.** Cause nommée,
+  pas encore prouvée : `cederLePassage` est une cadence de MÉNAGE à intervalle
+  réel fixe (v226) ; à pleine vitesse une voiture parcourt deux fois et demie
+  plus de chemin entre deux collectes de priorité, et la logique
+  anti-chevauchement est donc sous-échantillonnée par rapport au mouvement.
+  C'est exactement le régime de l'iPad.
+
+  **Et la barre du témoin tombe ENTRE 41 et 48** — entre deux mesures du même
+  comportement. Elle ne sépare plus un défaut d'un non-défaut ; elle tire à
+  pile ou face. On ne la règle pas pour faire passer une livraison (v276 :
+  « une barre que les deux côtés franchissent ne mesure plus le jeu »).
+
+  Ce qu'il faut faire, dans cet ordre : (1) prouver la cause — la sonde qui
+  distingue « sous-échantillonné » de « la priorité ne marche pas » est de
+  lire `etat().places` (le drapeau d'attente de chaque voiture, v273) pendant
+  un chevauchement ; (2) corriger, probablement en faisant dépendre la collecte
+  du CHEMIN parcouru et non de l'horloge ; (3) reformuler le verdict en TAUX,
+  pas en compte ; (4) allumer `BANC_DPR=0.5` par défaut, qui rend alors vingt
+  pour cent du banc.
+
 - [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
   v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la
   v276, suite par suite : **61 minutes, dont 34 dans DEUX fichiers.**
