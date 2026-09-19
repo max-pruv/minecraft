@@ -185,7 +185,15 @@ async function relaisSourd(portEcoute, portVrai) {
 // lecteurs de pixels de `monte.js` calculent leurs coordonnées depuis
 // `gl.drawingBufferWidth/Height` — ils sont indépendants de la résolution.
 // `carte.js`, qui vise au pixel sur la carte, demande `{ dpr: 1 }`.
-const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = 0.5) =>
+// ET IL SE REMESURE : `BANC_DPR=1 node monte.js` remet la résolution pleine.
+// Une constante de banc qui ne peut pas se rejouer est une constante qu'on ne
+// peut pas démonter — c'est la discipline de `?attente=`, `?fondms=` et
+// `?chauffems=`, appliquée au banc lui-même. Et elle sert tout de suite : la
+// cadence plus haute CHANGE ce que le jeu fait (le monde avançait à 40 % du
+// temps réel à huit images par seconde, il y est presque à dix-huit), donc
+// devant un témoin qui change de verdict, la première mesure est la bascule.
+const DPR_BANC = Number(process.env.BANC_DPR) || 0.5;
+const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
   + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`;
 
