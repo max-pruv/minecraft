@@ -2578,9 +2578,22 @@ local, Supabase de poche (`tests/nuage.js`).
 
 Le conteneur de session peut être recyclé à tout moment. Le portail écrit
 chaque verdict sur le disque dès qu'il tombe et saute au redémarrage ce qui est
-déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (empreinte de
-`src/`, `tests/`, `sw.js`, `index.html`). Au moindre changement, tout se rejoue.
-`npm test -- --depuis-zero` force le tour complet.
+déjà vert. `npm test -- --depuis-zero` force le tour complet.
+
+**ET L'EMPREINTE EST PAR SUITE, PAS GLOBALE — ce fichier disait l'inverse, et
+c'est faux depuis la v195.** Il écrivait « seulement si le code n'a pas bougé
+d'un octet (empreinte de `src/`, `tests/`, `sw.js`, `index.html`) ; au moindre
+changement, tout se rejoue ». Le code, lui, garde le verdict d'une suite tant
+qu'aucun fichier qui LA GARDE n'a bougé : ses gardiens, plus son propre fichier,
+le banc, `sw.js`, `index.html`, et tout fichier de `src/` que la table ne connaît
+pas encore. C'était le plus gros levier sur l'itération (v195 : trois passages de
+`carte.js` là où un suffisait), et le laisser mal décrit a un coût réel — devant
+un portail de la v279 qui n'a rejoué que DEUX suites, j'ai d'abord cru à un
+portail invalide, c'est-à-dire exactement le travers que `tout.js` existe pour
+empêcher. **Un portail qui ne rejoue qu'une partie des suites est une porte
+valide si, et seulement si, chaque suite sautée est verte sur l'empreinte de ses
+propres gardiens** — ce qui se lit dans la ligne « ↩️ reprise : N suite(s) déjà
+verte(s) sur ce code exact », et non dans le nombre de suites jouées.
 
 ### Écrire un témoin
 
