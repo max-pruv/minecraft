@@ -30,6 +30,49 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
+  v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la
+  v276, suite par suite : **61 minutes, dont 34 dans DEUX fichiers.**
+
+  | | durée | témoins | pages de jeu | boucles de relevé |
+  | --- | --- | --- | --- | --- |
+  | `monte.js` | 18 min | 141 | **7** | 46 |
+  | `reseau.js` | 16 min | 73 | **16** | — |
+  | les treize autres | 27 min | ~550 | ~14 | — |
+
+  **Les deux causes ne sont pas les mêmes, ce qui interdit un remède unique.**
+  `monte.js` n'ouvre que sept pages pour dix-huit minutes : le temps est dans
+  l'attente qu'un jeu à quatre images par seconde parcoure une distance.
+  `reseau.js` ouvre seize pages pour seize minutes, jusqu'à trois vivantes en
+  même temps (la v220 a mesuré qu'une seconde page fait tomber la cadence de
+  42,9 à 20,8) : le temps est dans l'ouverture.
+
+  Trois leviers, chacun à mesurer AVANT d'y toucher (ce dépôt a déjà payé
+  quatre fois pour avoir expliqué une lenteur sans l'instrumenter, v224) :
+
+  1. **`?tempo=`** — la cadence de banc sur les ~20 minuteries du jeu, dette
+     déjà déclarée plus bas avec la liste de ce qui ne doit JAMAIS passer sous
+     tempo (l'horloge scolaire, `chronoReel`, la borne de `dt`, les débits que
+     `monte.js` mesure). Deuxième poste mesuré : 8 à 12 minutes.
+  2. **Mutualiser les pages de `reseau.js`** : un hôte ouvert une fois pour
+     plusieurs scénarios au lieu d'un couple par témoin.
+  3. **La passe sur les verdicts en fenêtre FIXE** (règle de la v270, jamais
+     appliquée en entier). C'est elle qui supprime la BOUCLE rouge → rejeu seul
+     → rejeu sur `origin/main` → portail complet, qui a coûté **cinq portails**
+     en v276. **La douleur est dans la boucle, pas dans les minutes** — et
+     l'exemple du jour est le témoin du gel à l'arrivée sur une ville, rouge à
+     chaque portail depuis la v259 et franchi par les DEUX arbres : une barre
+     que personne ne peut tenir ne protège rien, elle coûte.
+
+  Ce qu'on ne touche pas : `plafond.js`, `sauvegarde.js` et les suites qui
+  gardent les mondes des enfants — 2 min 40 s à elles toutes, elles ne sont pas
+  le problème.
+
+  Et une méthode qui a marché le jour même, à garder : **devant un verdict en
+  durée, on extrait le témoin dans une sonde** (`scratchpad/sonde-ville.cjs`)
+  plutôt que de rejouer la suite. Huit relevés des deux côtés en six minutes,
+  contre quatre-vingts minutes de rejeux.
+
 - [ ] **LA PRÉPARATION DE L'ACCUEIL TIENT SUR LE BORD DE SA PROPRE BORNE
   (v276).** Le bouton « Jouer » est grisé jusqu'à ce que tout soit prêt, borné à
   quarante-cinq secondes (v258). Sur ce banc, dans les conditions du témoin de
@@ -491,6 +534,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   production. Et le délai de la ligne 282 (la file de construction de
   Manhattan qui ne se vide pas en soixante secondes) tombe DES DEUX CÔTÉS :
   deux fois sur deux sur la branche, une fois sur trois sur `origin/main`.
+  **v276, quatre passages de plus, alternés** (branche, main, main, branche) :
+  délai `:282` sur la branche 2/2 et sur `origin/main` 1/2 ; le passage de
+  `origin/main` qui a FRANCHI la ligne 282 a rendu les mêmes quatre rouges de
+  contenu, aux valeurs exactes de la v269 — `14 460 → 51 734`, les fenêtres de
+  nuit, `[1, -1]`, le taxi tactile — plus le délai de `#ride-btn`. La v276 n'a
+  pas touché une ligne de Manhattan. Sept passages sur deux versions disent
+  donc la même chose : c'est en production.
+
   **C'est ce troisième passage qui a tranché** : sans lui j'aurais conclu que
   la branche l'avait introduit. Une intermittence ne se juge pas sur un
   passage de chaque côté.
@@ -580,6 +631,28 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   chauffés (v246, v258) ; le second est sous les barres des deux côtés.
   Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
   comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
+
+  **v276 — LA BARRE NE SÉPARE PLUS RIEN, ET C'EST CELA QU'IL FAUT RÉGLER.**
+  Portail : 4 050 ms / 45,5 %. Sonde extraite du témoin mot pour mot
+  (`scratchpad/sonde-ville.cjs`), DEUX tours par bras, en ordre alterné
+  (branche, main, main, branche) :
+
+  | bras | pire image (ms) | part > 300 ms | cadence |
+  | --- | --- | --- | --- |
+  | branche (v276) | 1 383 · 1 233 · **517** · 1 233 | 11,9 · 12,6 · **4,7** · 15,3 | 13,2 – 15,1 |
+  | `origin/main` (v275) | 1 250 · 1 150 · 1 300 · 1 117 | 7,0 · 8,3 · 9,5 · 12,0 | 14,0 – 14,3 |
+
+  Les deux nuages se RECOUVRENT, et un tour de la branche est vert : la
+  livraison n'y est pour rien, et la distribution est la même des deux côtés
+  (règle de la v269). Mais le fait neuf est ailleurs : la barre a été réglée en
+  v235 sur 800 ms / 10,3 % (ancien code) contre 233 / 0 (neuf), et aujourd'hui
+  les DEUX arbres rendent 1 117 à 1 383 ms sur une machine calme. **Une barre
+  que les deux côtés franchissent ne mesure plus le jeu, elle mesure le banc en
+  rendu logiciel** — et elle a rougi à chaque portail depuis la v259 sans
+  jamais être démontée, c'est-à-dire qu'elle ne protège plus rien. À reprendre
+  dans la refonte du banc : soit le témoin demande `{ pret: true }` et l'on
+  remesure la barre sur la dispersion réelle, soit il mesure une grandeur que
+  SwiftShader ne gouverne pas.
 - [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
   des deux côtés (v259).** ET LA FIN DE LA SUITE PEND, AU LIEU D'EXPIRER
   (portail de la v262) : après « la reprise cloud place l'enfant… » et un
