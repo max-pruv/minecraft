@@ -2754,13 +2754,27 @@ function refreshAdminBtn() {
 // Le prénom sur l'accueil : en allumant le jeu, la première question est
 // « suis-je bien sur mon compte ? ». Elle se répondait jusqu'ici en ouvrant
 // « Mon personnage ».
+// Les signes dessinés de l'accueil (v276). Écrits ici une fois : deux
+// copies du même dessin finissent par diverger.
+const CROIX_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+const PLUS_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
 function refreshHello() {
   const el = document.getElementById('player-hello');
   if (!el) return;
   const nom = (playerProfile.name || '').trim();
   if (!nom) { el.style.display = 'none'; return; }
   el.innerHTML = '';
-  el.append('👋 Salut ');
+  // Un signe dessiné, jamais un emoji (v276) : à sept ans un pictogramme se
+  // reconnaît, un emoji se devine — et il change de dessin d'un appareil à
+  // l'autre. `innerHTML` vient d'être vidé juste au-dessus, et la main est
+  // écrite ici, pas reçue : rien d'extérieur n'entre dans cette ligne.
+  el.insertAdjacentHTML('beforeend', '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M11 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/>'
+    + '<path d="M14.2 10.4V3.4a1.6 1.6 0 0 1 3.2 0V12"/>'
+    + '<path d="M17.4 11.6V6.4a1.6 1.6 0 0 1 3.2 0v8.2a6.4 6.4 0 0 1-6.4 6.4h-1.6'
+    + 'a6 6 0 0 1-4.5-2L4 14.2a1.7 1.7 0 0 1 2.5-2.2L11 16"/></svg>');
+  el.append(' Salut ');
   const qui = document.createElement('span');
   qui.className = 'qui';
   qui.textContent = nom;
@@ -2938,7 +2952,8 @@ function renderProfiles() {
     { // toujours supprimable, y compris le dernier : plus de profil obligatoire
       const del = document.createElement('button');
       del.className = 'who-del';
-      del.textContent = '✕';
+      del.innerHTML = '';
+      del.insertAdjacentHTML('beforeend', CROIX_SVG);
       del.title = 'Supprimer ce joueur (code parental)';
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -2968,7 +2983,9 @@ function renderProfiles() {
   }
   const add = document.createElement('button');
   add.className = 'who-add';
-  add.textContent = '➕ Nouveau joueur';
+  add.innerHTML = '';
+  add.insertAdjacentHTML('beforeend', PLUS_SVG);
+  add.append('Nouveau joueur');
   add.addEventListener('click', () => {
     // name -> school grade -> face & code, then into the game
     identity.createAccount({
@@ -3114,7 +3131,8 @@ function renderRecentWorlds() {
     open.addEventListener('click', () => openWorld(roomCode));
     const del = document.createElement('button');
     del.className = 'world-del';
-    del.textContent = '✕';
+    del.innerHTML = '';
+    del.insertAdjacentHTML('beforeend', CROIX_SVG);
     del.title = 'Retirer ce monde de la liste';
     del.addEventListener('click', async () => {
       const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
@@ -6840,6 +6858,42 @@ requestAnimationFrame(() => {
     setTimeout(veillerPrep, 250);
   };
   if (PREPARER) { for (const b of boutonsPrep) b.disabled = true; veillerPrep(); }
+
+  // LE VERRE NE SE DÉPOLIT QU'UNE FOIS L'ACCUEIL AU REPOS (v276).
+  //
+  // Un `backdrop-filter` est un CALQUE : le navigateur relit le fond sous
+  // l'élément et le floute, à chaque image où ce fond a pu changer. Mesuré sur
+  // l'accueil, deux séries de deux tours en ordre alterné : 5,7 · 8,3 · 8,3
+  // images par seconde avec le flou contre 15,3 · 15,7 · 15,2 sans — la moitié.
+  // Et l'accueil a précisément besoin de ses images : la chauffe compile UN
+  // programme de shader par image (v246) et le fond de carte avance par
+  // tranches, aussi par image. Le flou prenait donc les images de la
+  // préparation, et le portail l'a dit par trois bornes de durée qui expirent
+  // — `maj.js` libérait « Jouer » à la borne des quarante-cinq secondes avec
+  // huit programmes sur vingt-cinq, là où `origin/main` finissait à 36,9 s
+  // avec les vingt-cinq.
+  //
+  // Les deux autres pièces de la parure ne coûtent RIEN, et c'est mesuré :
+  // couper la dérive de l'aurore rend 12,2 · 12,2 et cacher les deux calques
+  // plein écran 14,2 · 13,0, contre 15,2 · 11,2 pour la parure entière. Seul
+  // le flou se sépare. On ne touche donc qu'à lui — et seulement pendant que
+  // l'accueil travaille : la classe est posée par `index.html` dès la première
+  // image, et elle se retire ici, le verre se dépolissant alors en une
+  // demi-seconde. L'enfant voit le jeu devenir prêt.
+  //
+  // La borne de soixante secondes est là pour la raison de la v220 : un remède
+  // ne doit rien attendre de ce qu'il répare. Si la chauffe ne finissait
+  // jamais, le verre arriverait quand même.
+  const departVerre = performance.now();
+  const verreQuandPret = () => {
+    if ((humainsCharges() && chauffeFinie && prepPrete)
+        || performance.now() - departVerre > 60000) {
+      document.body.classList.remove('prepare');
+      return;
+    }
+    setTimeout(verreQuandPret, 250);
+  };
+  verreQuandPret();
   if (apresMaj) {
     const texte = document.getElementById('boot-text');
     const depart = performance.now();

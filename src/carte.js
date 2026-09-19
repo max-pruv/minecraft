@@ -31,6 +31,23 @@ import { couleurCarteVillesMonde, lieuxDesVillesMonde } from './villesmonde.js';
 import { zDeLatitude } from './mondes.js';
 import { surLaVoie } from './trains.js';
 
+// CE QUE LA PRÉPARATION DU FOND PREND DANS CHAQUE IMAGE (v276).
+//
+// C'est un budget PAR IMAGE, donc un TAUX — et le piège de la v237, un étage
+// plus haut : le fond demande une quarantaine de tranches, et six
+// millisecondes par image en font une par image. Sur une tablette qui rame, ou
+// sur le banc où l'accueil rend une à deux images par seconde, quarante images
+// valent vingt à quarante secondes de vraie vie : la préparation touchait sa
+// borne des quarante-cinq secondes sans avoir fini son fond, et « Jouer » se
+// libérait quand même — mesuré au portail, vingt-neuf tranches sur trente-huit.
+//
+// Or pendant ce temps-là, il n'y a AUCUNE partie à protéger : le bouton est
+// grisé, personne ne joue. Le budget peut donc être généreux — ce n'est pas le
+// même arbitrage que `avancerFond(8)` de la boucle de jeu, qui, lui, dispute
+// ses millisecondes au monde qui tourne. Le chiffre se mesure (`?fondms=`), il
+// ne se devine pas.
+const BUDGET_PREP = Number(new URLSearchParams(location.search).get('fondms')) || 30;
+
 // Les lisières des calottes, calculées une fois : la latitude ne dépend que
 // de z, donc peindre le pôle coûte une comparaison — pas une projection.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
@@ -589,7 +606,7 @@ export class Carte {
       if (this.ouverte || !this.travail) return;
       this.prepPas++;
       let fini = true;
-      try { fini = this.avancerFond(6); } catch (e) { this.prepErreur = String(e && e.message || e); return; }
+      try { fini = this.avancerFond(BUDGET_PREP); } catch (e) { this.prepErreur = String(e && e.message || e); return; }
       if (!fini) requestAnimationFrame(pas);
     };
     requestAnimationFrame(pas);

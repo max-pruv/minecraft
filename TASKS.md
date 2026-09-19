@@ -30,6 +30,160 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
+  v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la
+  v276, suite par suite : **61 minutes, dont 34 dans DEUX fichiers.**
+
+  | | durée | témoins | pages de jeu | boucles de relevé |
+  | --- | --- | --- | --- | --- |
+  | `monte.js` | 18 min | 141 | **7** | 46 |
+  | `reseau.js` | 16 min | 73 | **16** | — |
+  | les treize autres | 27 min | ~550 | ~14 | — |
+
+  **Les deux causes ne sont pas les mêmes, ce qui interdit un remède unique.**
+  `monte.js` n'ouvre que sept pages pour dix-huit minutes : le temps est dans
+  l'attente qu'un jeu à quatre images par seconde parcoure une distance.
+  `reseau.js` ouvre seize pages pour seize minutes, jusqu'à trois vivantes en
+  même temps (la v220 a mesuré qu'une seconde page fait tomber la cadence de
+  42,9 à 20,8) : le temps est dans l'ouverture.
+
+  Trois leviers, chacun à mesurer AVANT d'y toucher (ce dépôt a déjà payé
+  quatre fois pour avoir expliqué une lenteur sans l'instrumenter, v224) :
+
+  1. **`?tempo=`** — la cadence de banc sur les ~20 minuteries du jeu, dette
+     déjà déclarée plus bas avec la liste de ce qui ne doit JAMAIS passer sous
+     tempo (l'horloge scolaire, `chronoReel`, la borne de `dt`, les débits que
+     `monte.js` mesure). Deuxième poste mesuré : 8 à 12 minutes.
+  2. **Mutualiser les pages de `reseau.js`** : un hôte ouvert une fois pour
+     plusieurs scénarios au lieu d'un couple par témoin.
+  3. **La passe sur les verdicts en fenêtre FIXE** (règle de la v270, jamais
+     appliquée en entier). C'est elle qui supprime la BOUCLE rouge → rejeu seul
+     → rejeu sur `origin/main` → portail complet, qui a coûté **cinq portails**
+     en v276. **La douleur est dans la boucle, pas dans les minutes** — et
+     l'exemple du jour est le témoin du gel à l'arrivée sur une ville, rouge à
+     chaque portail depuis la v259 et franchi par les DEUX arbres : une barre
+     que personne ne peut tenir ne protège rien, elle coûte.
+
+  Ce qu'on ne touche pas : `plafond.js`, `sauvegarde.js` et les suites qui
+  gardent les mondes des enfants — 2 min 40 s à elles toutes, elles ne sont pas
+  le problème.
+
+  Et une méthode qui a marché le jour même, à garder : **devant un verdict en
+  durée, on extrait le témoin dans une sonde** (`scratchpad/sonde-ville.cjs`)
+  plutôt que de rejouer la suite. Huit relevés des deux côtés en six minutes,
+  contre quatre-vingts minutes de rejeux.
+
+- [ ] **LA PRÉPARATION DE L'ACCUEIL TIENT SUR LE BORD DE SA PROPRE BORNE
+  (v276).** Le bouton « Jouer » est grisé jusqu'à ce que tout soit prêt, borné à
+  quarante-cinq secondes (v258). Sur ce banc, dans les conditions du témoin de
+  `maj.js` — une page laissée ouverte sur l'accueil qui télécharge les 4,67 Mo du
+  scanner de visages, et une seconde page qui prépare —, la préparation met
+  **42,9 · 43,8 · 45,2 s** (trois passages, tout complet chaque fois : 25/25
+  programmes, corps, fond de carte). `origin/main` (v275) mesurait 36,9 s. La
+  marge est donc de zéro à deux secondes, et le témoin battra sur une machine
+  plus lente.
+
+  Ce qui a déjà été mesuré et corrigé dans la v276 : le flou du verre prenait la
+  MOITIÉ des images de l'accueil (suspendu pendant la préparation, 8/25 → 25/25
+  programmes), et la chauffe compilait une signature par IMAGE au lieu d'un
+  budget de temps (16/25 → 25/25). Ce qui a été mesuré INNOCENT : la dérive de
+  l'aurore et les deux calques plein écran (trois designs, aucun signal), et la
+  parure en jeu (six relevés, 0 à 1,2 % d'images au-delà de 150 ms des deux
+  côtés).
+
+  Ce qui reste ouvert : les six secondes d'écart avec `origin/main` ne sont
+  attribuées à rien. Une piste NON mesurée, et il faut le dire : `#prep-line`
+  est réécrite toutes les 250 ms pendant la préparation, ce qui invalide la
+  peinture de `#overlay` — donc les trois dégradés radiaux de `::before` et le
+  SVG de méridiens de `::after`, à `background-size: 128vmax`. Mes mesures des
+  calques ont toutes été faites sur une page SANS préparation, où rien ne
+  réécrit : **elles ne pouvaient pas voir ce coût-là** (piège de la sonde
+  aveugle, v273). Le test qui trancherait : reproduire les conditions du témoin
+  (une page qui télécharge le scanner + une page qui prépare) et comparer
+  `depuis` avec et sans `?verre=0`.
+
+- [ ] **LES PASSANTS SE FIGENT ENCORE DEVANT L'ENFANT (Max, après v276).**
+  « Les passants qui s'arrêtent et qui nous regardent de manière figée, ça ne
+  fonctionne pas. Je vois quelque chose de très naturel, comme dans GTA. »
+
+  La v243 a retiré l'arrêt social de `Habitant.think` (vie.js) et
+  `Wanderer.think` (marlon.js) — et le symptôme revient. **Devant un symptôme
+  qui revient après une correction juste, on cesse de régler et l'on va voir ce
+  qui s'exécute** (v226). Une ligne trouvée, qui n'est PAS celle que la v243 a
+  corrigée :
+
+  ```
+  marlon.js:324   if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
+  ```
+
+  Écrite pour une bonne raison (« on ne vient pas se coller à une voiture »),
+  elle rend `speed: 0` ET garde le yaw : le personnage s'arrête net et reste
+  planté. C'est une piste, pas le diagnostic — **la première chose à faire est
+  une sonde qui sépare les cas** (v218) : combien de passants sont à l'arrêt,
+  lesquels ont `speed: 0` par cette ligne, lesquels par autre chose, et
+  combien regardent l'enfant. Compter « des gens figés » d'un seul nombre ne
+  se démontera pas.
+
+  Ce que « naturel comme dans GTA » veut dire, à préciser en mesurant : un
+  passant qui CONTOURNE au lieu de s'arrêter, qui garde sa vitesse, et qui ne
+  tourne pas la tête vers l'enfant.
+
+- [ ] **À PIED, ON TRAVERSE LES VOITURES (Max, après v276).** « Quand on joue
+  avec le jeu, on ne devrait pas être capable de pouvoir marcher à travers une
+  voiture. »
+
+  La cause est nommée, et c'est une garde trop étroite :
+
+  ```
+  player.js:613   if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && …)
+  ```
+
+  `gabarit > 1` veut dire « je conduis ». À pied le gabarit vaut 1, donc le
+  crochet qui empêche d'entrer dans une voiture n'est jamais consulté : la
+  boîte du joueur ne connaît que les blocs solides, et une voiture n'en est
+  pas un. C'est la v259 vue de l'autre bout — elle a appris aux PIÉTONS à ne
+  pas traverser la voiture de l'enfant, jamais à l'enfant de ne pas traverser
+  les leurs.
+
+  Deux choses à ne pas casser en le corrigeant : **« pas si l'on est déjà
+  dedans »** (v252, jugé par FAMILLE), sinon un enfant qu'une voiture vient de
+  recouvrir reste cloué sur place ; et le rayon d'embarquement de neuf blocs
+  (v201), qui suppose qu'on peut s'approcher d'une voiture pour y monter — une
+  collision trop large rendrait certaines voitures impossibles à prendre. Le
+  témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
+  et s'arrêter devant au lieu de ressortir de l'autre côté.
+
+- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
+  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
+  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
+  la voiture sur le côté. »
+
+  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
+  décidée par Max après deux essais de vue intérieure) — elle est seulement
+  trop près et trop rigide :
+
+  ```
+  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
+  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
+  ```
+
+  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
+  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
+  c'est un chiffre, il se mesure sur captures. **La rigidité** est
+  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
+  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
+  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
+  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
+
+  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
+  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
+  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
+  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
+  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
+  virage à gauche et un à droite, AVANT d'écrire le témoin.
+
+
 - [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
   ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
   au vert » (`carteMonde.js`) exige `redemarrages >= 1`. Or il ne compte un
@@ -380,6 +534,14 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   production. Et le délai de la ligne 282 (la file de construction de
   Manhattan qui ne se vide pas en soixante secondes) tombe DES DEUX CÔTÉS :
   deux fois sur deux sur la branche, une fois sur trois sur `origin/main`.
+  **v276, quatre passages de plus, alternés** (branche, main, main, branche) :
+  délai `:282` sur la branche 2/2 et sur `origin/main` 1/2 ; le passage de
+  `origin/main` qui a FRANCHI la ligne 282 a rendu les mêmes quatre rouges de
+  contenu, aux valeurs exactes de la v269 — `14 460 → 51 734`, les fenêtres de
+  nuit, `[1, -1]`, le taxi tactile — plus le délai de `#ride-btn`. La v276 n'a
+  pas touché une ligne de Manhattan. Sept passages sur deux versions disent
+  donc la même chose : c'est en production.
+
   **C'est ce troisième passage qui a tranché** : sans lui j'aurais conclu que
   la branche l'avait introduit. Une intermittence ne se juge pas sur un
   passage de chaque côté.
@@ -469,6 +631,28 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   chauffés (v246, v258) ; le second est sous les barres des deux côtés.
   Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
   comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
+
+  **v276 — LA BARRE NE SÉPARE PLUS RIEN, ET C'EST CELA QU'IL FAUT RÉGLER.**
+  Portail : 4 050 ms / 45,5 %. Sonde extraite du témoin mot pour mot
+  (`scratchpad/sonde-ville.cjs`), DEUX tours par bras, en ordre alterné
+  (branche, main, main, branche) :
+
+  | bras | pire image (ms) | part > 300 ms | cadence |
+  | --- | --- | --- | --- |
+  | branche (v276) | 1 383 · 1 233 · **517** · 1 233 | 11,9 · 12,6 · **4,7** · 15,3 | 13,2 – 15,1 |
+  | `origin/main` (v275) | 1 250 · 1 150 · 1 300 · 1 117 | 7,0 · 8,3 · 9,5 · 12,0 | 14,0 – 14,3 |
+
+  Les deux nuages se RECOUVRENT, et un tour de la branche est vert : la
+  livraison n'y est pour rien, et la distribution est la même des deux côtés
+  (règle de la v269). Mais le fait neuf est ailleurs : la barre a été réglée en
+  v235 sur 800 ms / 10,3 % (ancien code) contre 233 / 0 (neuf), et aujourd'hui
+  les DEUX arbres rendent 1 117 à 1 383 ms sur une machine calme. **Une barre
+  que les deux côtés franchissent ne mesure plus le jeu, elle mesure le banc en
+  rendu logiciel** — et elle a rougi à chaque portail depuis la v259 sans
+  jamais être démontée, c'est-à-dire qu'elle ne protège plus rien. À reprendre
+  dans la refonte du banc : soit le témoin demande `{ pret: true }` et l'on
+  remesure la barre sur la dispersion réelle, soit il mesure une grandeur que
+  SwiftShader ne gouverne pas.
 - [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
   des deux côtés (v259).** ET LA FIN DE LA SUITE PEND, AU LIEU D'EXPIRER
   (portail de la v262) : après « la reprise cloud place l'enfant… » et un

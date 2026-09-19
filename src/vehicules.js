@@ -191,14 +191,38 @@ export function chaufferLesProgrammes(renderer, scene, camera) {
   normale.needsUpdate = true;
   const liste = signaturesAChauffer();
   let k = 0;
-  // Une signature par appel ; rend vrai tant qu'il en reste.
+  // UN BUDGET DE TEMPS PAR APPEL, PAS UNE SIGNATURE — le piège de la v237,
+  // pour la troisième fois, et sur le dernier poste qui le portait encore.
+  //
+  // Une signature par IMAGE est un COMPTE, donc un taux qui suit la cadence
+  // d'affichage. Mesuré sur ce banc : une compilation coûte 17 à 25 ms (médiane
+  // 18,5), soit moins d'une demi-seconde pour les vingt-cinq — et la chauffe
+  // mettait quarante et une secondes, parce que l'accueil sous charge ne rend
+  // qu'une image et demie par seconde. Vingt-cinq images valent alors quarante
+  // secondes, et la borne des quarante-cinq secondes de la préparation tirait
+  // avec seize programmes sur vingt-cinq (mesuré au portail de la v276).
+  //
+  // Le budget se pose sur le coût MESURÉ de ce qu'il doit laisser passer
+  // (v225, v229) — et il a deux régimes à servir, ce qui le décide :
+  //   ici    une compilation vaut 18 ms, donc cent millisecondes en passent
+  //          cinq, et la chauffe tient en cinq images au lieu de vingt-cinq ;
+  //   iPad   Safari compile en CENTAINES de millisecondes (v257), donc la
+  //          première remplit le budget à elle seule et rien ne change —
+  //          l'accueil garde son étalement, qui est toute la raison de la v246.
+  // Et pendant ce temps-là il n'y a aucune partie à protéger : le bouton est
+  // grisé. `?chauffems=` le force, pour remesurer.
+  const budget = Number(new URLSearchParams(location.search).get('chauffems')) || 100;
+  // rend vrai tant qu'il en reste
   return () => {
     if (k >= liste.length) return false;
-    const m = materielDeSignature(liste[k++], rt, uni, normale);
-    temoinsProgrammes.push(m.material);
-    m.position.set(camera.position.x, -500, camera.position.z);
-    scene.add(m);
-    try { renderer.compile(scene, camera); } finally { scene.remove(m); }
+    const t0 = performance.now();
+    do {
+      const m = materielDeSignature(liste[k++], rt, uni, normale);
+      temoinsProgrammes.push(m.material);
+      m.position.set(camera.position.x, -500, camera.position.z);
+      scene.add(m);
+      try { renderer.compile(scene, camera); } finally { scene.remove(m); }
+    } while (k < liste.length && performance.now() - t0 < budget);
     return k < liste.length;
   };
 }

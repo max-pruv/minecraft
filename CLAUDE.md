@@ -464,6 +464,153 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## La matière claire (v276)
+
+Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus
+light, avec beaucoup plus de glass design ». Première des quatre livraisons de
+la refonte. Dix règles, et quatre d'entre elles sont nées d'une mesure qui m'a
+contredit.
+
+- **UN `backdrop-filter` EST UN CALQUE, ET L'ACCUEIL N'A PAS D'IMAGES À LUI
+  DONNER.** Le premier jet a fait tomber le portail sur TROIS bornes de durée —
+  `maj.js` libérait « Jouer » à la borne des quarante-cinq secondes avec huit
+  programmes de shaders sur vingt-cinq, `sauvegarde.js` n'attendait pas sa copie
+  de nuage, `carte.js` refusait un appui long — et toutes les suites de
+  navigateur avaient ralenti : **carte.js 4 min 39 s → 11 min 33 s**,
+  sauvegarde.js 39 s → 1 min 11, hote.js 1 min 41 → 2 min 37. Mesuré sur
+  l'accueil, deux séries en ordre alterné : **5,7 · 8,3 · 8,3 images par seconde
+  avec le flou contre 15,3 · 15,7 · 15,2 sans.** La moitié. Et l'accueil a
+  précisément besoin de ses images : la chauffe compile UN programme par image
+  (v246) et le fond de carte avance par tranches, aussi par image. Le flou
+  prenait les images de la préparation. Il est donc suspendu tant que l'accueil
+  travaille (`body.prepare`, posée dans la balise `<body>` pour qu'aucune image
+  ne soit floutée, pas même la première ; retirée par `verreQuandPret` dans
+  main.js, bornée à soixante secondes parce qu'un remède ne doit rien attendre
+  de ce qu'il répare, v220). Le verre se dépolit alors en une demi-seconde :
+  l'enfant VOIT le jeu devenir prêt.
+  - **Et le A/B est sur la même machine, dans le même passage** : suspension en
+    place, 25/25 programmes, fond de carte ✓, libéré à 41,3 s ; suspension
+    désarmée, 7/25, fond ✗, 53,6 s.
+  - **LES DEUX AUTRES PIÈCES DE LA PARURE NE COÛTENT RIEN, ET C'EST MESURÉ
+    TROIS FOIS.** Couper la dérive de l'aurore rend 12,2 · 12,2 · 16,3 · 16,4 et
+    cacher les deux calques plein écran 14,2 · 13,0, contre 15,2 · 11,2 · 16,8 ·
+    17,3 pour la parure entière. Seul le flou se sépare. On ne touche qu'à lui —
+    et le partage plus fin (le flou des BOUTONS contre celui des PANNEAUX) ne
+    sort PAS du bruit à deux relevés par bras : je ne l'ai donc pas changé. On ne
+    retouche pas ce que Max a validé sur la foi d'une mesure qui ne tranche pas.
+  - **ET EN JEU, LA PARURE NE COÛTE RIEN** — `#overlay` est en `display: none`.
+    Mes deux premiers relevés donnaient « pire image 260 et 267 ms avec, 123 et
+    132 sans » : à six relevés, 282 · 242 · 145 contre 161 · 280 · 220, et
+    0 à 1,2 % d'images au-delà de 150 ms des deux côtés. **J'ai failli déclarer
+    une régression de jeu qui n'existe pas** — une mesure isolée n'est pas un
+    fait (v218), et la pire image est par construction la statistique la moins
+    stable.
+
+- **UN BUDGET PAR IMAGE EST UN TAUX — LE PIÈGE DE LA v237, UN ÉTAGE PLUS
+  HAUT.** Le fond de carte demande une quarantaine de tranches et
+  `preparer()` lui accordait six millisecondes par image, soit une tranche par
+  image : sur un accueil qui rend une à deux images par seconde, quarante images
+  valent vingt à quarante secondes de vraie vie. Or **pendant ce temps-là il n'y
+  a aucune partie à protéger** — le bouton est grisé, personne ne joue : ce
+  n'est pas le même arbitrage que l'`avancerFond(8)` de la boucle de jeu, qui
+  dispute ses millisecondes au monde qui tourne. `BUDGET_PREP` vaut trente
+  millisecondes, et le chiffre se mesure (`?fondms=`) : tranches nécessaires
+  37 → 16 → 9 → 5 pour 6 → 15 → 30 → 60 ms. **Le temps de libération, lui, ne
+  bouge pas** (24,6 · 20,5 à 6 ms contre 23,3 · 21,2 à 30) parce que sous cette
+  charge-là c'est la charge des corps qui commande — ce qu'on achète, c'est la
+  MARGE en images, et c'est elle qui manquait au portail.
+
+- **ET LA CHAUFFE DES PROGRAMMES PORTAIT LE MÊME PIÈGE, AU MÊME ENDROIT.**
+  `chaufferLesProgrammes` compilait UNE signature par `requestAnimationFrame` —
+  un compte par image, donc un taux qui suit la cadence. Le flou suspendu, la
+  borne tirait encore avec SEIZE programmes sur vingt-cinq. Mesuré, dix
+  compilations enveloppées : **17 à 25 ms chacune, médiane 18,5** — moins d'une
+  demi-seconde de calcul pour les vingt-cinq, quand la chauffe en mettait
+  quarante et une. Tout le reste était de la famine d'images. Le budget vaut
+  cent millisecondes, et **ce qui le décide, c'est qu'il a DEUX régimes à
+  servir** : ici une compilation vaut 18 ms, donc cinq passent et la chauffe
+  tient en cinq images ; sur l'iPad Safari compile en CENTAINES de
+  millisecondes (v257), donc la première le remplit à elle seule et l'accueil
+  garde son étalement — qui est toute la raison d'être de la v246. Un budget
+  qui servirait un seul des deux régimes serait un réglage de banc.
+  `?chauffems=` le force.
+- **ET UN VERDICT NE COMPARE PAS L'HORLOGE DU BANC À LA BORNE DE LA PAGE.**
+  Celui de la libération exigeait `apres < 45000` : `apres` part avant
+  `banc.joueur()`, donc il compte l'ouverture de la page, tandis que les
+  quarante-cinq secondes sont la borne que la page s'applique depuis
+  `departPrep`. Mesuré 43 761 contre 47 710 — rouge en comparant deux horloges.
+  Et la durée n'a rien à faire dans ce verdict : ce qu'il annonce, c'est qu'AU
+  MOMENT de la libération tout est là. Si la page se libère à sa borne en ayant
+  fini, l'enfant n'y perd rien ; sinon c'est l'ÉTAT qui le dit — et c'est l'état
+  qui a vu les deux vrais défauts (8 puis 16 programmes sur 25). La durée reste
+  dans le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
+- **CE QUI RESTE, ET IL FAUT LE DIRE : SIX SECONDES NON ATTRIBUÉES.** La
+  préparation met 42,9 à 45,2 s dans les conditions du témoin, contre 36,9 s sur
+  `origin/main`. Dette déclarée dans `TASKS.md` avec la seule piste non mesurée —
+  `#prep-line` réécrite toutes les 250 ms invalide la peinture de `#overlay`,
+  donc les deux calques plein écran. **Mes mesures des calques ont toutes été
+  faites sur une page SANS préparation, où rien ne réécrit : elles ne pouvaient
+  pas voir ce coût-là.** C'est la sonde aveugle de la v273, sur mes propres
+  mesures — et c'est pour cela qu'un « innocent » se dit avec les conditions
+  dans lesquelles il a été mesuré.
+
+- **UNE POLICE DE JEU HORS LIGNE VIT DANS LE DÉPÔT, JAMAIS CHEZ GOOGLE.** Un
+  `<link>` vers `fonts.googleapis.com` casserait l'accueil dans l'avion, à
+  l'école ou sur le Wi-Fi d'un hôtel — c'est-à-dire la moitié des endroits où
+  ces deux enfants jouent. Bricolage Grotesque (76 Ko) et Plus Jakarta Sans
+  (27 Ko), variables, sous-ensemble **latin**, dans le cache IMMUABLE
+  (`isStaticAsset`, sw.js) avec le scanner, la flotte et les corps : elles ne
+  changent jamais, donc elles ne doivent pas se re-télécharger à chaque
+  livraison (leçon des 8,2 Mo de la v245). **Et le sous-ensemble se vérifie
+  avant de se choisir** : la plage `latin` contient `U+0152-0153`, donc le
+  « œ » de « cœur » et « nœud », que le jeu emploie dans une vingtaine de
+  fichiers. Sans cette vérification, une lettre sur mille serait tombée dans
+  une police de secours.
+- **UNE REFONTE D'APPARENCE EST UNE COUCHE DE SURCHARGE, PAS UNE RÉÉCRITURE.**
+  Elle se pose en FIN de feuille et ne touche qu'à la peau — couleurs, fonds,
+  bords, rayons, ombres, lettres. Les mille lignes de mise en page au-dessus ne
+  bougent pas d'un pixel. C'est ce qui rend le changement relisible et
+  réversible, et ce qui évite de casser une marge en voulant changer une
+  couleur. Les `!important` d'origine obligent à répondre en `!important` —
+  c'est la seule raison d'en écrire.
+- **UN TÉMOIN D'APPARENCE LIT UNE GRANDEUR, PAS UN NOM DE CLASSE.** « Clair »
+  se mesure en LUMINANCE calculée du fond ; « la classe `.clair` est posée »
+  ne mesure rien. De même, les polices se comptent dans ce que la page a
+  RÉELLEMENT demandé (`performance.getEntriesByType('resource')`) : zéro chez
+  Google, deux depuis le dépôt. C'est la règle de la v247 (« un témoin de
+  rendu lit des pixels, jamais un type de matériau »), appliquée au DOM.
+- **UNE COULEUR QUI REMPLIT ET UNE COULEUR QUI ÉCRIT NE SONT PAS LA MÊME
+  COULEUR.** Les deux accents vifs — corail `#E8562A`, vert `#0E9268` —
+  tiennent très bien en aplat avec du blanc dessus ; posés en TEXTE sur le
+  verre clair ils rendent 3,44 et 3,74 pour une barre de 4,5. D'où
+  `--corail-texte` (#B83B16, 5,42) et `--vert-texte` (#0A6B4C, 6,18). **Je les
+  avais crus bons** : c'est le témoin de contraste qui l'a dit, et à l'œil la
+  pastille de version paraissait parfaitement lisible.
+- **ET UN TÉMOIN DE CONTRASTE COMPOSE LES FONDS TRANSLUCIDES.** Lire le seul
+  `background-color` d'un élément de verre rend « transparent » : le témoin
+  passerait au vert sans rien mesurer. On empile les fonds des ancêtres
+  jusqu'à l'opacité pleine, en partant de l'élément. Il est VERT DES DEUX
+  CÔTÉS et se garde quand même (règle de la v220) : il garde une CAPACITÉ —
+  renverser une palette est exactement ce qui casse un contraste, et il reste
+  trois renversements à faire. Qu'il PUISSE rougir se vérifie et ne se raconte
+  pas : désarmé dans une copie d'`index.html`, il rend 2,41 et nomme le bouton.
+
+**ET J'AI ANNONCÉ UN DÉFAUT DE CONTRASTE QUI N'EXISTAIT PAS.** J'ai écrit, dans
+un commit et à Max, que le bouton « Me connecter à mon compte » portait du
+`#cdd` sur du `#2c3a58`, « 2,9 pour une barre de 4,5 ». Mesuré : **8,07**. Le
+bouton était parfaitement lisible ; ce qui clochait était sa COULEUR — un bleu
+nuit hors palette au milieu du verre clair. **Un défaut de palette et un défaut
+de lisibilité ne sont pas la même chose, et seul le second se mesure en
+ratio.** C'est le témoin que je venais d'écrire qui a démonté ma propre phrase,
+en étant vert là où je l'annonçais rouge — et c'est la meilleure raison de
+l'écrire AVANT de décrire ce qu'on a corrigé.
+
+**Et le thème de l'application suit le loader.** La v275 avait posé la règle
+(« le thème suit le LOADER, pas le ciel ») avec un loader sombre ; le loader
+devenu clair, `theme-color` et le manifeste passent à `#EFF3FA`. Sans cela le
+lancement clignoterait en noir avant de devenir blanc — exactement le défaut
+que la v275 avait corrigé, dans l'autre sens.
+
 ## Le jeu s'appelle Grand Tour (v275)
 
 Max a validé le nom et le logo. Quatre règles, et la première vaut bien plus

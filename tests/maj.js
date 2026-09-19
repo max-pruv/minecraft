@@ -235,18 +235,37 @@ function verifier(nom, ok, detail = '') {
     // (`prep: 1` : le banc demande d'ordinaire `?prep=0`.)
     const prune = await banc.joueur('Prune', { prep: 1 });
     const debutPrep = Date.now();
-    let premier = null, liberation = null;
+    let premier = null, liberation = null, tours = 0;
     const lignes = new Set();
+    const floutesEnPreparant = new Set();
     while (!liberation && Date.now() - debutPrep < 60000) {
       const e = await prune.evaluate(() => {
         const b = document.getElementById('play-btn');
         const l = document.getElementById('prep-line');
+        // LE VERRE DÉPOLI PENDANT LA PRÉPARATION, C'EST DES IMAGES EN MOINS.
+        // Un `backdrop-filter` est un calque que le navigateur relit et
+        // refloute ; mesuré, il coûte la moitié des images de l'accueil, et ce
+        // sont celles dont la chauffe des programmes (une compilation par
+        // image, v246) et le fond de carte ont besoin. On ne compte que les
+        // quelques éléments qui portent le verre : parcourir la page entière à
+        // chaque tour, c'est le témoin qui ralentirait la page qu'il mesure.
+        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
+          '#overlay .controls', '#profile-menu', '#online-menu'];
+        const flous = PORTEURS.filter((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return false;
+          const f = getComputedStyle(el);
+          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
+          return v !== 'none' && v !== '';
+        });
         return { grise: !!(b && b.disabled), ligne: l ? l.textContent : null,
+          flous, prepare: document.body.classList.contains('prepare'),
           prep: window.__preparation ? window.__preparation() : null };
       }).catch(() => null);
       if (e) {
         if (!premier) premier = e;
         if (e.ligne) lignes.add(e.ligne);
+        if (e.grise) { for (const f of e.flous) floutesEnPreparant.add(f); tours++; }
         if (!e.grise) liberation = { ...e, apres: Date.now() - debutPrep };
       }
       await dormir(100);
@@ -255,11 +274,41 @@ function verifier(nom, ok, detail = '') {
     verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
       !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
       JSON.stringify(premier));
+    // DEUX HORLOGES, ET LA BORNE APPARTENAIT À L'AUTRE (v276).
+    //
+    // Ce verdict exigeait `liberation.apres < 45000`. Or `apres` est l'horloge
+    // du BANC — elle part avant `banc.joueur()`, donc elle compte aussi
+    // l'ouverture de la page — tandis que les quarante-cinq secondes sont la
+    // borne que la PAGE s'applique à elle-même, comptée depuis `departPrep`.
+    // Mesuré au portail : `depuis` 43 761 ms (donc en deçà de sa propre borne,
+    // tout était là) pour `apres` 47 710. Le témoin rougissait en comparant une
+    // horloge à la borne de l'autre.
+    //
+    // Et la durée n'a rien à faire dans le verdict, parce que ce n'est pas ce
+    // qu'il annonce : ce qu'il annonce, c'est qu'AU MOMENT où le bouton se
+    // libère, tout est vraiment là. Si la page se libérait à sa borne en ayant
+    // fini, l'enfant n'y perdrait rien ; si elle se libérait sans avoir fini,
+    // c'est l'état qui le dit — c'est ce qui s'est passé, deux fois, et l'état
+    // l'a vu (8 programmes sur 25, fond de carte absent). La durée reste dans
+    // le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
     verifier('et quand il se libère, corps, programmes et fond de carte sont vraiment là',
       !!liberation && !!liberation.prep && liberation.prep.humains === true
-      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true
-      && liberation.apres < 45000,
+      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true,
       JSON.stringify(liberation));
+    // PENDANT QU'IL PRÉPARE, IL NE FLOUTE RIEN — ET UNE FOIS PRÊT, SI.
+    //
+    // Ce témoin est vert sur `origin/main` par une autre raison qu'ici : là-bas
+    // il n'y a pas de verre du tout. Il est gardé quand même, et la règle de la
+    // v220 dit laquelle : il garde une CAPACITÉ qu'on vient de frôler, et que
+    // les passes de rebranding suivantes — qui posent du verre sur les
+    // Réglages, le journal, le HUD — frôleront encore. Vérifié rouge en
+    // désarmant la suspension : « floutés en préparant: #who-screen, #play-btn,
+    // #app-version, #overlay .controls ».
+    verifier('et pendant qu\'il prépare, la page ne floute rien — les images vont au jeu',
+      tours >= 3 && floutesEnPreparant.size === 0
+      && !!liberation && liberation.prepare === false && liberation.flous.length > 0,
+      `${tours} relevé(s) grisés · floutés en préparant : ${[...floutesEnPreparant].join(', ') || 'aucun'}`
+      + ` · à la libération : ${liberation ? liberation.flous.join(', ') : '?'}`);
     await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
     const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
     verifier('et « Jouer » lance bien la partie une fois libéré', lance);
@@ -414,6 +463,143 @@ function verifier(nom, ok, detail = '') {
     verifier('et les clés qui portent les mondes des enfants n\'ont pas bougé',
       !cles.erreur && cles.stockage >= 25 && cles.essentielles.length === 0 && cles.cacheImmuable,
       JSON.stringify(cles));
+
+    // ================= LA MATIÈRE CLAIRE (v276) ==============================
+    //
+    // Max, sur la proposition de design : « beaucoup plus light, beaucoup plus
+    // de glass design ». Trois choses se mesurent, et la troisième est celle
+    // qui a trouvé un vrai défaut avant la livraison.
+
+    // UN TÉMOIN D'APPARENCE LIT DES PIXELS, PAS UN NOM DE CLASSE (v247). Le
+    // fond de l'accueil se lit par sa LUMINANCE calculée : « clair » est une
+    // grandeur, « la classe .clair est posée » n'en est pas une. Et la police
+    // de titre se demande à `document.fonts`, qui ne répond vrai que si le
+    // fichier est arrivé ET analysé.
+    const matiere = await tab.evaluate(async () => {
+      await document.fonts.ready;
+      const lum = (c) => {
+        const m = (c || '').match(/[\d.]+/g) || [];
+        const [r, g, b] = m.slice(0, 3).map((v) => {
+          const x = +v / 255;
+          return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const ov = document.getElementById('overlay');
+      const fond = getComputedStyle(ov).backgroundColor;
+      const h1 = document.getElementById('overlay-title');
+      return {
+        fond, fondLum: +lum(fond).toFixed(3),
+        titrePolice: getComputedStyle(h1).fontFamily,
+        corpsPolice: getComputedStyle(document.body).fontFamily,
+        titreChargee: document.fonts.check('800 40px "Bricolage Grotesque"'),
+        corpsChargee: document.fonts.check('600 16px "Plus Jakarta Sans"'),
+      };
+    });
+    verifier('l\'accueil est clair, et il porte les lettres du jeu',
+      matiere.fondLum > 0.7 && matiere.titreChargee && matiere.corpsChargee
+        && /Bricolage/.test(matiere.titrePolice) && /Jakarta/.test(matiere.corpsPolice),
+      JSON.stringify(matiere));
+
+    // ET LES POLICES VIENNENT DU DÉPÔT, PAS DU RÉSEAU. Le jeu marche hors
+    // ligne : un `<link>` vers fonts.googleapis.com casserait l'accueil dans
+    // l'avion, à l'école ou sur le Wi-Fi d'un hôtel — et ce n'est pas une
+    // hypothèse, c'est la moitié des endroits où ces deux enfants jouent. On
+    // compte donc ce que la page a RÉELLEMENT demandé.
+    const reseauPolices = await tab.evaluate(() => {
+      const r = performance.getEntriesByType('resource').map((e) => e.name);
+      return {
+        chezGoogle: r.filter((n) => /fonts\.(googleapis|gstatic)\.com/.test(n)).length,
+        duDepot: r.filter((n) => /\/vendor\/polices\/.*\.woff2/.test(n)).length,
+      };
+    });
+    verifier('et ses deux polices viennent du dépôt, jamais du réseau',
+      reseauPolices.chezGoogle === 0 && reseauPolices.duDepot === 2,
+      JSON.stringify(reseauPolices));
+
+    // LE CONTRASTE SE CALCULE, IL NE SE REGARDE PAS — ET IL A DÉMONTÉ MA PROPRE
+    // PHRASE. J'avais annoncé que le bouton « Me connecter à mon compte »
+    // portait du #cdd sur du #2c3a58, « 2,9 pour une barre de 4,5 ». Ce témoin
+    // rend 8,07 sur l'ancien code : le bouton était parfaitement lisible, et ce
+    // qui clochait était sa COULEUR, pas son contraste. Un défaut de palette et
+    // un défaut de lisibilité ne sont pas la même chose ; seul le second se
+    // mesure en ratio, et je l'ai affirmé avant de le mesurer.
+    //
+    // CE TÉMOIN EST DONC VERT DES DEUX CÔTÉS, et il se garde quand même — comme
+    // le témoin des clés de la v275, et pour la même raison (v220) : il ne
+    // garde pas une correction, il garde une CAPACITÉ qu'on vient de frôler.
+    // Renverser une palette est exactement ce qui casse un contraste, et il
+    // reste trois renversements à faire (v277, v278, v279). Qu'il PUISSE rougir
+    // se vérifie, cela ne se raconte pas : désarmé dans une copie d'index.html
+    // (`#account-login-btn { color: #9AA6BC }` sur le verre clair), il rend
+    // 2,26 et nomme le bouton.
+    //
+    // Le fond EFFECTIF se compose : les panneaux de verre sont translucides,
+    // donc on empile les fonds des ancêtres jusqu'à l'opacité pleine. Lire le
+    // seul `background-color` de l'élément rendrait « transparent » et le
+    // témoin passerait au vert sans rien mesurer.
+    const contraste = await tab.evaluate(() => {
+      const nb = (c) => {
+        const m = (c || '').match(/[\d.]+/g) || [];
+        if (m.length < 3) return null;
+        return { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 };
+      };
+      const lum = (c) => {
+        const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+      };
+      const fondEffectif = (el) => {
+        let acc = null;
+        for (let n = el; n; n = n.parentElement) {
+          const c = nb(getComputedStyle(n).backgroundColor);
+          if (!c || c.a === 0) continue;
+          acc = acc === null
+            ? { r: c.r, g: c.g, b: c.b, a: c.a }
+            : { r: acc.r + (c.r - acc.r) * (1 - acc.a), g: acc.g + (c.g - acc.g) * (1 - acc.a),
+                b: acc.b + (c.b - acc.b) * (1 - acc.a), a: acc.a + c.a * (1 - acc.a) };
+          if (acc.a >= 0.99) break;
+        }
+        return acc;
+      };
+      const cibles = ['#overlay-title', '#overlay .subtitle', '#play-btn', '#online-btn',
+        '#face-login-btn', '#account-login-btn', '#switch-player-btn', '#app-version',
+        '#overlay .controls div', '.online-title'];
+      const faibles = [];
+      const mesures = {};
+      for (const sel of cibles) {
+        const el = document.querySelector(sel);
+        if (!el || !el.offsetParent) continue;
+        const texte = nb(getComputedStyle(el).color);
+        const fond = fondEffectif(el);
+        if (!texte || !fond) continue;
+        const a = lum(texte), b = lum(fond);
+        const ratio = +(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05))).toFixed(2);
+        mesures[sel] = ratio;
+        if (ratio < 4.5) faibles.push(sel + ' ' + ratio);
+      }
+      return { mesures, faibles, lus: Object.keys(mesures).length };
+    });
+    verifier('et chaque texte de l\'accueil se lit — quatre et demi de contraste au moins',
+      contraste.lus >= 6 && contraste.faibles.length === 0,
+      JSON.stringify(contraste));
+
+    // PLUS UN SEUL EMOJI SUR L'ACCUEIL. Un pictogramme dessiné se reconnaît à
+    // sept ans ; un emoji se devine, et il change de dessin d'un appareil à
+    // l'autre — la fusée de « Mon personnage » n'était pas la même sur l'iPad
+    // et sur le portable. On lit le TEXTE que l'enfant voit, pas le source.
+    const signes = await tab.evaluate(() => {
+      const ov = document.getElementById('overlay');
+      const txt = ov ? ov.innerText || '' : '';
+      const emojis = [...txt].filter((c) => {
+        const p = c.codePointAt(0);
+        return (p >= 0x1F000 && p <= 0x1FAFF) || (p >= 0x2600 && p <= 0x27BF)
+          || p === 0x25D3 || p === 0x2B50;
+      });
+      return { emojis: [...new Set(emojis)], icones: ov ? ov.querySelectorAll('svg.ic').length : 0 };
+    });
+    verifier('et l\'accueil ne porte plus un seul emoji : des signes dessinés',
+      signes.emojis.length === 0 && signes.icones >= 8,
+      JSON.stringify(signes));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
