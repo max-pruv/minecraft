@@ -1954,7 +1954,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Ce que le témoin éprouve, c'est le fait, pas la conséquence : aucun
     // personnage au-delà de la portée ne doit rester dessiné. Le nombre
     // d'appels dépend d'où l'on regarde ; celui-ci, non.
-    const auLoin = await tab.evaluate(async () => {
+    // ET IL ATTEND SON PROPRE FONDU, IL NE L'EMPRUNTE PLUS À SON VOISIN (v277).
+    //
+    // Ce témoin lisait `mesh.visible` dans la foulée, et il était vert — parce
+    // que le témoin d'AU-DESSUS dormait sept secondes à son dernier arrêt.
+    // Rendues au résultat (la rue attend d'être peuplée, plus de sommeil fixe),
+    // il est devenu rouge à QUATRE dessinés sur cent trente-trois, aux deux
+    // résolutions : ce n'était donc pas la cadence, c'était moi. `presence.js`
+    // fond sur huit dixièmes de seconde et la visibilité se recopie à l'image
+    // d'APRÈS (v249) ; un personnage qu'on vient d'éloigner est encore dessiné.
+    //
+    // La leçon est plus large que le correctif : **une dépendance implicite
+    // entre deux témoins voisins est invisible tant que le premier dort.** Ce
+    // qu'un témoin exige de l'état du monde, il l'attend lui-même — et il
+    // l'attend en BORNANT, de sorte qu'un vrai défaut (des lointains qu'on ne
+    // cache jamais) rougit encore au bout de la borne. Le temps pris entre dans
+    // le message, réussite comme échec.
+    const lireLoin = () => tab.evaluate(async () => {
       const { DISTANCE_PRESENCE } = await import('./src/presence.js');
       const g = window.__game;
       const px = g.player.pos.x, pz = g.player.pos.z;
@@ -1966,9 +1982,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       return { dessinesLoin, dessinesPres, loin, total: (g.npcs || []).length };
     });
+    const finFondu = Date.now() + 6000;
+    let auLoin = await lireLoin();
+    while (auLoin.dessinesLoin > 0 && Date.now() < finFondu) {
+      await dormir(250);
+      auLoin = await lireLoin();
+    }
+    auLoin.fondu = +((6000 - Math.max(0, finFondu - Date.now())) / 1000).toFixed(1);
     verifier('et les personnages lointains ne sont plus dessinés du tout',
       auLoin.loin >= 20 && auLoin.dessinesLoin === 0,
-      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`);
+      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`
+      + ` (fondu attendu ${auLoin.fondu} s)`);
     // L'autre moitié de la promesse : on n'a pas vidé la rue pour autant.
     verifier('mais ceux d\'à côté sont toujours là',
       auLoin.dessinesPres >= 3,
