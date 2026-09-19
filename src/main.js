@@ -1112,6 +1112,13 @@ function updateChunks() {
     }
     return false;
   };
+  // ET L'ENFANT À PIED LIT LE MÊME CROCHET QUE LES PASSANTS (v278). Max : « on
+  // ne devrait pas être capable de pouvoir marcher à travers une voiture. » La
+  // question est celle d'un piéton — « ce point est-il dans une voiture ? » —,
+  // pas celle d'un conducteur, qui juge avec un rectangle de 2,26 blocs. Une
+  // seule table, donc, pour les passants et pour lui : deux crochets qui
+  // décrivent la même chose finiraient par diverger.
+  player.pietonBloque = world.obstaclePieton;
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste

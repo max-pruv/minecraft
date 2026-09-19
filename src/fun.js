@@ -27,6 +27,16 @@ import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } fr
 // (`web-minecraft-chantier-v1::…`) ne sont plus ni lus ni écrits depuis la
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
+// LA CAMÉRA DE POURSUITE SUIT LE VÉHICULE AVEC UN RETARD (v278).
+//
+// Combien de fois par seconde de JEU le retard se réduit de moitié, à peu près :
+// plus le chiffre est petit, plus la voiture glisse loin sur le côté du cadre en
+// virage — et c'est ce glissement qui montre son flanc, ce que Max demande.
+// Trop petit, la caméra devient molle et le cadre part en vrille au volant ;
+// trop grand, elle recolle au coffre et l'on n'a rien changé. Le chiffre se
+// mesure (`?camlag=`), et la mesure est l'ANGLE entre le cap de la caméra et
+// celui de la voiture pendant un virage tenu.
+const REACTIVITE_CAM = Number(new URLSearchParams(location.search).get('camlag')) || 3.2;
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 const PET_KEY = 'web-minecraft-pet-v1';
@@ -1291,7 +1301,35 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      const c = a.def.poursuite, cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+      // ET LA CAMÉRA A SON PROPRE CAP, EN RETARD SUR CELUI DE LA VOITURE (v278).
+      //
+      // Max : « la vue de la voiture, je la trouve pas très cool. Je pense
+      // qu'il faudrait la zoom out un petit peu et faire comme dans GTA, quand
+      // la voiture tourne, on voit vraiment la voiture qui tourne, on voit le
+      // flanc de la voiture sur le côté. »
+      //
+      // La cause est d'une ligne : le recul se calculait sur `player.yaw`, LU
+      // DANS LA MÊME IMAGE. La caméra pivotait donc exactement avec le
+      // véhicule, à angle constant derrière lui — on ne voyait jamais que son
+      // coffre, quel que soit le virage. Elle suit désormais avec un retard :
+      // en virage, la voiture glisse sur le côté du cadre et montre son flanc ;
+      // en ligne droite, le retard se résorbe et la vue redevient celle d'avant.
+      //
+      // C'EST UNE ANIMATION, DONC ELLE SUIT LE TEMPS DU JEU (`dt`, v226) : si
+      // elle comptait en temps réel, un ralentissement ferait tourner la caméra
+      // plus vite que le monde et l'image se déchirerait. Ce qui décide du
+      // rendu, c'est la RÉACTIVITÉ — combien de fois par seconde de jeu le
+      // retard se réduit de moitié — et elle se mesure (`?camlag=`).
+      //
+      // Au premier tour de boucle il n'y a pas de retard à avoir : le cap part
+      // sur celui du véhicule, sinon la caméra balaie tout l'horizon en montant
+      // dans la voiture.
+      if (a.camYaw == null) a.camYaw = player.yaw;
+      let ecart = player.yaw - a.camYaw;
+      while (ecart > Math.PI) ecart -= Math.PI * 2;
+      while (ecart < -Math.PI) ecart += Math.PI * 2;
+      a.camYaw += ecart * Math.min(1, dt * REACTIVITE_CAM);
+      const c = a.def.poursuite, cy = Math.cos(a.camYaw), sy = Math.sin(a.camYaw);
       // La ligne de caméra part du TOIT du véhicule et monte vers l'arrière :
       // échantillonnée trop bas, une simple bordure de trottoir la faisait
       // plonger dans l'aileron. Et jamais plus près que la carrosserie
