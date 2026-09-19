@@ -274,10 +274,26 @@ function verifier(nom, ok, detail = '') {
     verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
       !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
       JSON.stringify(premier));
+    // DEUX HORLOGES, ET LA BORNE APPARTENAIT À L'AUTRE (v276).
+    //
+    // Ce verdict exigeait `liberation.apres < 45000`. Or `apres` est l'horloge
+    // du BANC — elle part avant `banc.joueur()`, donc elle compte aussi
+    // l'ouverture de la page — tandis que les quarante-cinq secondes sont la
+    // borne que la PAGE s'applique à elle-même, comptée depuis `departPrep`.
+    // Mesuré au portail : `depuis` 43 761 ms (donc en deçà de sa propre borne,
+    // tout était là) pour `apres` 47 710. Le témoin rougissait en comparant une
+    // horloge à la borne de l'autre.
+    //
+    // Et la durée n'a rien à faire dans le verdict, parce que ce n'est pas ce
+    // qu'il annonce : ce qu'il annonce, c'est qu'AU MOMENT où le bouton se
+    // libère, tout est vraiment là. Si la page se libérait à sa borne en ayant
+    // fini, l'enfant n'y perdrait rien ; si elle se libérait sans avoir fini,
+    // c'est l'état qui le dit — c'est ce qui s'est passé, deux fois, et l'état
+    // l'a vu (8 programmes sur 25, fond de carte absent). La durée reste dans
+    // le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
     verifier('et quand il se libère, corps, programmes et fond de carte sont vraiment là',
       !!liberation && !!liberation.prep && liberation.prep.humains === true
-      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true
-      && liberation.apres < 45000,
+      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true,
       JSON.stringify(liberation));
     // PENDANT QU'IL PRÉPARE, IL NE FLOUTE RIEN — ET UNE FOIS PRÊT, SI.
     //
