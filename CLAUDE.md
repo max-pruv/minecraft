@@ -213,6 +213,22 @@ une version qu'on ne saura pas déboguer.
    plus tôt que prévu, le premier geste est de lire `CACHE_VERSION` sur
    `main` ET en production, et de livrer le bump comme une correction à part
    entière.
+
+   **ET UNE LIVRAISON À DEUX SUJETS EN DOCUMENTE DEUX (v279).** La même v278 a
+   livré les avions garés **et** les trois demandes de Max sur les passants : le
+   passant de rue qui va quelque part, l'enfant à pied qui ne traverse plus une
+   voiture, la caméra qui montre le flanc en virage. Le journal — dans le dépôt
+   comme dans le jeu — n'a parlé que des avions, et les trois autres sont partis
+   en production **sans un seul témoin**. Deux instruments ont pourtant dit que
+   tout allait bien, et il faut savoir pourquoi : le témoin du journal de
+   `maj.js` compare la tête de `nouveautes.js` à `sw.js` et compte les
+   ENTRÉES, jamais les SUJETS ; et un portail est vert par construction sur du
+   code que rien ne garde. **Ce qu'un témoin ne garde pas, personne ne le
+   garde** — écrit pour une dette, et vrai ici d'une correction du jour même.
+   Le geste qui l'évite ne coûte rien : avant de fusionner, on compte les sujets
+   dans le DIFF et non dans l'intention (`git diff --stat origin/main` nomme les
+   fichiers), et chaque groupe de fichiers qui répond à une demande différente
+   veut sa ligne au journal et son témoin.
 4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
    parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
    constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
@@ -2574,6 +2590,45 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
   passe avant et après ne prouve rien.
 - Mesurer ce que l'enfant obtient (des mètres parcourus), pas une variable
   interne.
+- **UN PASSANT QUE PERSONNE NE VOIT N'EST PAS UN PASSANT FIGÉ (v279).** Mon
+  premier relevé du déplacement des passants de Paris rendait **seize immobiles
+  sur vingt et un**, sur du code sain : au-delà de quatre-vingts blocs,
+  `actualiserPresence` rend faux et `npc.update` n'est JAMAIS appelé (v241). Le
+  signe qui le disait était sous les yeux — le chemin parcouru valait
+  **exactement zéro**, pas « peu » —, et c'est ce qui distingue à coup sûr « pas
+  animé » de « en pause ». Un témoin de vie de rue n'observe que la troupe
+  ANIMÉE, et il publie sur combien : `6 sur 21`.
+- **UN MINIMUM ÉCHANTILLONNÉ EST UNE PROPRIÉTÉ DE LA CADENCE, PAS DU MONDE
+  (v279).** Le témoin du piéton devant une voiture a été écrit trois fois, et les
+  deux premières étaient VERTES sur du code qui laisse l'enfant traverser. La
+  première comptait « il n'avance plus » sur des relevés espacés de trois cents
+  millisecondes, quand le banc rend trois images par seconde : deux relevés
+  tombaient dans la MÊME image, la position n'avait pas bougé parce que RIEN
+  n'avait bougé, et le témoin concluait en 1,8 s après huit dixièmes de bloc. La
+  seconde lisait la distance MINIMALE au centre de la voiture : l'enfant la
+  traversait de part en part et les relevés enjambaient le point le plus
+  proche — 0,93 bloc, vert ; au passage suivant, sur le MÊME code, ce même relevé
+  rendait 0,17. **Ce qui ne dépend d'aucun relevé intermédiaire, c'est la
+  position d'ARRIVÉE** : −1,16 ici, +0,2 · +1,53 · +1,6 sur l'ancien code, où il
+  ressort de l'autre côté. Devant une grandeur qu'on
+  échantillonne, on se demande d'abord ce que la cadence en décide.
+- **UNE BORNE SUR LE RÉSULTAT DONNE À L'ANCIEN CODE TOUT LE TEMPS DONT IL A
+  BESOIN (v279).** La règle de la v270 — « on attend le RÉSULTAT, borné, jamais
+  une durée » — se retourne contre un témoin dont la grandeur S'ACCUMULE. Celui
+  de la marche des passants exigeait quatre blocs de déplacement NET : le vieux
+  programme tirait un cap neuf toutes les une à trois secondes dans un rayon de
+  huit blocs, et sur vingt-deux secondes de jeu **cette marche au hasard finit
+  par dériver de quatre blocs**. Vert sur le code qu'il devait accuser. Ce que
+  Max décrivait — « figé » — n'est pas une distance, c'est un DÉBIT : du chemin
+  par seconde de JEU (0,18 à 0,77 avant, 1,13 à 1,43 après, pour un `walkSpeed`
+  de 1,6). Avant de borner sur un résultat, on se demande si l'ancien code peut
+  l'atteindre en attendant assez longtemps ; si oui, la grandeur est un taux.
+- **ET UN TÉMOIN QUI MESURE UN DÉPLACEMENT SE MET LÀ OÙ LE MONDE VIT.** Celui de
+  la marche des passants suit un témoin qui laisse l'enfant dans une scène
+  d'essai, loin de toute ville : aucun passant n'y est animé, et le verdict
+  aurait été rouge des DEUX côtés en ne mesurant rien. Il se pose au barycentre
+  de la troupe, puis rend l'enfant à sa place — le geste du témoin de la v243,
+  à l'échelle d'une ville.
 
 ---
 

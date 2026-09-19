@@ -396,6 +396,25 @@ export const MONTURES = [
   // véhicule. Le cockpit sculpté reste : on le voit à travers les vitres.
   // `assise` reste en secours : un fun.js ancien qui ignore `poursuite`
   // retombe dessus et l'enfant voit encore la route.
+  //
+  // LE RECUL PASSE DE 5,2 À 6,4 (v279), ET C'EST LA MOITIÉ DE LA DEMANDE DE MAX
+  // QUE LA v278 N'AVAIT PAS LIVRÉE : « il faudrait la zoom out un petit peu ET
+  // faire comme dans GTA, quand la voiture tourne, on voit le flanc de la
+  // voiture sur le côté. » La v278 a donné à la caméra son propre cap, en
+  // retard — le flanc —, et n'a pas touché à la distance.
+  //
+  // JUGÉ SUR CAPTURES, TROIS VALEURS DEPUIS LE MÊME POINT, sur le boulevard
+  // Voltaire, en ligne droite et en virage tenu : à 5,2 la carrosserie mange le
+  // bas du cadre et l'on ne voit guère que le coffre ; à 7,6 la voiture devient
+  // un objet lointain et l'on perd la sensation de conduire ; à 6,4 elle tient
+  // entière dans le cadre, la rue s'ouvre devant, et le flanc est net en virage.
+  // La hauteur suit la distance pour garder le même angle de vue
+  // (2,1 / 5,2 = 0,404 → 2,59).
+  //
+  // Et mon premier jeu de captures ne valait rien : il enchaînait les trois
+  // valeurs sans remettre la voiture en place, si bien que la deuxième a été
+  // prise à l'ARRÊT contre une façade. On ne compare pas trois reculs si l'on
+  // compare trois endroits.
   // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
   // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   // `immobile` : garée, elle ne flâne pas et ne pivote pas (le vagabondage
@@ -403,7 +422,7 @@ export const MONTURES = [
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true,
+    assise: 1.0, poursuite: { recul: 6.4, hauteur: 2.59 }, nourrissable: false, immobile: true,
     // LE SIÈGE DU CONDUCTEUR (v249), dans le repère du véhicule (le nez est
     // en −z, le volant du cockpit à x = −0,33) : c'est là que main.js assied
     // l'avatar de l'enfant quand il conduit — Max : « qu'on voie le

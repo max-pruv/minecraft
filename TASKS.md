@@ -30,6 +30,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
+  déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
+  dans un site URBAIN — New York est le seul — le drapeau reste faux, donc
+  `Habitant.promene()` rend faux et les passants y gardent l'ancien programme
+  (pause longue, cap au hasard autour d'un poste). Ce n'est pas un oubli
+  arbitraire : leur trottoir ne se lit pas dans des blocs mais dans le PLAN
+  (`piedPieton`, `ruePietonne`), et l'ancienne branche de `think` sait déjà
+  l'interroger. Ce qui manque, c'est de porter la marche au long cap sur cette
+  lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
+  mesurent la ville que le banc peuple, qui n'est pas Manhattan.
+
+- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
+  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
+  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
+  loin ou trop près, c'est une ligne de `montures.js`
+  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
+  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
+  demande portait sur la voiture.
+
 - [ ] **LES CINQ ROUGES DU PORTAIL DE LA v278, MESURÉS UN PAR UN — AUCUN N'EST
   DE LA LIVRAISON.** La PR ayant été fusionnée avant la fin du portail, la
   question n'était plus « faut-il fusionner » mais « ai-je cassé quelque chose

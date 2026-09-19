@@ -317,11 +317,161 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
         && conduite.regardeLaRoute > 0.9 && conduite.sousLeToit,
       JSON.stringify(conduite));
+
+    // --- ET LA CAMÉRA MONTRE LE FLANC EN VIRAGE (v278, gardé en v279) --------
+    //
+    // Max : « la vue de la voiture, je la trouve pas très cool… comme dans GTA,
+    // quand la voiture tourne, on voit vraiment la voiture qui tourne, on voit
+    // le flanc de la voiture sur le côté. » Le recul se calculait sur
+    // `player.yaw` LU DANS LA MÊME IMAGE : la caméra pivotait exactement avec le
+    // véhicule, donc à angle constant derrière lui — on ne voyait que son
+    // coffre. La v278 lui a donné son propre cap, en retard.
+    //
+    // CE TÉMOIN N'A PAS ÉTÉ ÉCRIT AVEC LA CORRECTION : elle est partie en
+    // production sans lui, et c'est tout l'objet de la v279.
+    //
+    // ON LIT UNE DIRECTION, PAS `camYaw` (règles v247, v250, v249). Ce que
+    // l'enfant voit, c'est OÙ la caméra est par rapport à l'arrière de la
+    // voiture : l'angle signé entre « droit derrière » (sin yaw, cos yaw) et le
+    // vecteur voiture → caméra. En ligne droite il vaut zéro ; en virage tenu,
+    // la voiture glisse sur le côté du cadre et l'angle s'ouvre.
+    //
+    // ET LE VIRAGE EST TENU, jamais échantillonné à l'instant d'une transition
+    // (v273) : on accélère deux secondes et demie, puis on garde le volant du
+    // même côté pendant toute la fenêtre. Le SIGNE doit être unique — une
+    // caméra qui partirait du mauvais côté montrerait le flanc extérieur, ce
+    // qu'aucune mesure d'amplitude ne distingue de la bonne (v231).
+    //
+    // Mesuré, mêmes conditions des deux côtés : `origin/main` d'avant la v278
+    // (d9852ac) rend **0,0° à chacun des douze relevés** ; ici 11,6 à 18,3°,
+    // médiane 17,2, un seul signe. La barre, six degrés, sépare les deux
+    // dispersions — et zéro n'est pas « peu », c'est « rien du tout ».
+    // UN CAP DÉGAGÉ D'ABORD : sans lui on ne mesure pas une caméra, on mesure
+    // un mur — la voiture reste à l'arrêt et l'angle ne veut rien dire
+    // (leçon de `capDegage`, et de « un témoin de conduite part d'une rue
+    // sans voiture à portée », v252, v259).
+    const capVolant = await capDegage(tab, 16);
+    if (capVolant !== null) await tab.evaluate((y) => { window.__game.player.yaw = y; }, capVolant);
+    await tab.keyboard.down('KeyW');
+    await dormir(2500);
+    await tab.keyboard.down('KeyA');
+    const flanc = await tab.evaluate(async () => {
+      const g = window.__game;
+      const releves = [];
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      while (performance.now() - t0 < 12000) {
+        await new Promise((f) => setTimeout(f, 250));
+        const c = g.player.camera.position, pos = g.player.pos;
+        const dx = c.x - pos.x, dz = c.z - pos.z, d = Math.hypot(dx, dz);
+        if (d < 0.5) continue;                       // la caméra n'est pas encore posée
+        const bx = Math.sin(g.player.yaw), bz = Math.cos(g.player.yaw);
+        const beta = Math.atan2(bx * (dz / d) - bz * (dx / d), bx * (dx / d) + bz * (dz / d));
+        releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
+          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1) });
+      }
+      // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
+      // donc il n'y a pas de virage et l'angle ne veut rien dire.
+      const roule = releves.filter((r) => r.v > 1);
+      const abs = roule.map((r) => Math.abs(r.beta)).sort((x, y) => x - y);
+      const images = g.renderer.info.render.frame - f0;
+      return { n: releves.length, enMouvement: roule.length,
+        secondesDeJeu: +(images * 0.05).toFixed(1),
+        betaMax: abs.length ? abs[abs.length - 1] : null,
+        betaMedian: abs.length ? abs[Math.floor(abs.length / 2)] : null,
+        signes: [...new Set(roule.filter((r) => Math.abs(r.beta) > 2).map((r) => Math.sign(r.beta)))],
+        recul: releves.length ? +(releves.reduce((a, r) => a + r.recul, 0) / releves.length).toFixed(2) : null };
+    });
+    await tab.keyboard.up('KeyA'); await tab.keyboard.up('KeyW');
+    verifier('en virage, la caméra laisse la voiture glisser sur le côté du cadre — on voit son flanc',
+      flanc.enMouvement >= 4 && flanc.betaMedian !== null && flanc.betaMedian >= 6
+        && flanc.signes.length === 1,
+      JSON.stringify({ ...flanc, capVolant }));
+
+
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);
     const aLaDescente = await tab.evaluate(() => { const av = window.__game.avatarLocal; return { avatar: !!av, dansLaScene: !!(av && av.parent) }; });
     verifier('et il descend avec l\'enfant : plus d\'avatar dans la scène à pied',
       aLaDescente.avatar && !aLaDescente.dansLaScene, JSON.stringify(aLaDescente));
+
+    // --- ET À PIED, ON NE TRAVERSE PAS UNE VOITURE (v278, gardé en v279) ----
+    //
+    // Max : « quand on joue avec le jeu, on ne devrait pas être capable de
+    // pouvoir marcher à travers une voiture. » La garde de la v245 ne parle
+    // qu'au VOLANT (`gabarit > 1`) : à pied, le crochet n'était jamais
+    // consulté. L'enfant vient de descendre, la voiture est là — on lui marche
+    // dessus et l'on regarde jusqu'où il entre.
+    //
+    // CE QUI SÉPARE LES DEUX CODES EST OÙ L'ENFANT S'ARRÊTE, et le verdict lit
+    // sa position PROJETÉE sur l'axe de marche, la voiture à l'origine :
+    // négative, il est resté de son côté ; positive, il a dépassé le centre du
+    // véhicule, donc il est passé dedans. Mesuré, mêmes conditions : sur le code
+    // d'avant la v278, **+0,2 · +1,53 · +1,6** sur trois passages — il ressort de
+    // l'autre côté ; ici **−1,16**, c'est-à-dire juste au flanc, ce que la
+    // demi-largeur (1,13) annonce au centième près.
+    //
+    // ET CE N'EST PAS LA DISTANCE MINIMALE AU CENTRE, que j'ai essayée d'abord :
+    // un minimum ÉCHANTILLONNÉ est une propriété de la cadence d'échantillonnage,
+    // pas du monde. Un relevé toutes les trois cents millisecondes à trois images
+    // par seconde enjambe le point le plus proche : l'enfant traversait la
+    // voiture de part en part et le témoin lisait 0,93 — vert, en ne mesurant que
+    // l'instant où il avait regardé — au passage suivant, sur le MÊME code, le
+    // même relevé rendait 0,17. Une position d'ARRIVÉE, elle, ne dépend d'aucun
+    // relevé intermédiaire.
+    //
+    // ON ATTEND LE RÉSULTAT, BORNÉ (v270), et « ne plus avancer » se constate
+    // sur TROIS relevés de suite (v223) : un hoquet du banc arrête un seul pas,
+    // une carrosserie les arrête tous. Le temps pris entre dans le message.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      // la voiture EN TRAVERS du chemin : on vient buter contre son flanc, la
+      // situation de la capture, et non par le pare-chocs.
+      const a = g.animalManager.animals[0];
+      if (a) {
+        a.yaw = g.player.yaw + Math.PI / 2;
+        const d = 5;
+        a.pos.x = g.player.pos.x - Math.sin(g.player.yaw) * d;
+        a.pos.z = g.player.pos.z - Math.cos(g.player.yaw) * d;
+      }
+    });
+    await dormir(600);
+    await tab.keyboard.down('KeyW');
+    const aPiedContreLaVoiture = await tab.evaluate(async () => {
+      const g = window.__game, a = g.animalManager.animals[0];
+      if (!a) return { err: 'pas de voiture devant' };
+      const yaw = g.player.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      const le = () => (g.player.pos.x - a.pos.x) * fx + (g.player.pos.z - a.pos.z) * fz;
+      const depart = le();
+      let minDist = Infinity, fige = 0, prec = null, precF = null;
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 300));
+        const fr = g.renderer.info.render.frame, s = le();
+        minDist = Math.min(minDist, Math.hypot(g.player.pos.x - a.pos.x, g.player.pos.z - a.pos.z));
+        // ON NE COMPARE DEUX POSITIONS QUE SI LE MONDE A AVANCÉ ENTRE ELLES.
+        // À deux images par seconde, deux relevés espacés de trois cents
+        // millisecondes tombent dans la MÊME image : la position n'a pas bougé
+        // parce que RIEN n'a bougé, et « il n'avance plus » est alors la cadence
+        // du banc, pas une carrosserie. Mesuré : le témoin concluait en 1,8 s
+        // après huit dixièmes de bloc, donc VERT sur l'ancien code, en ne
+        // mesurant rien. Trois images au moins par comparaison.
+        if (precF === null || fr - precF >= 3) {
+          if (precF !== null) { if (Math.abs(s - prec) < 0.02) fige++; else fige = 0; }
+          prec = s; precF = fr;
+        }
+        if (s > 1.5 || fige >= 3) break;
+      }
+      const images = g.renderer.info.render.frame - f0;
+      return { depart: +depart.toFixed(2), arrivee: +le().toFixed(2),
+        minDist: +minDist.toFixed(2), gabarit: a.def.gabarit ?? null, fige,
+        secondes: +((performance.now() - t0) / 1000).toFixed(1),
+        secondesDeJeu: +(images * 0.05).toFixed(1) };
+    });
+    await tab.keyboard.up('KeyW');
+    verifier('et à pied, il s\'arrête au flanc de la voiture au lieu de marcher au travers',
+      !aPiedContreLaVoiture.err && aPiedContreLaVoiture.secondesDeJeu >= 2
+        && aPiedContreLaVoiture.arrivee <= -0.5,
+      JSON.stringify(aPiedContreLaVoiture));
 
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
@@ -1393,6 +1543,158 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
       !suit.err && suit.d >= 1.2, JSON.stringify(suit));
+
+    // ---- UN PASSANT DE RUE SE TIENT SUR LE TROTTOIR (v278, gardé en v279) ---
+    //
+    // Max : « les passants qui s'arrêtent et qui nous regardent de manière
+    // figée, ça ne fonctionne pas. Je vois quelque chose de très naturel, comme
+    // dans GTA. » La v278 a trouvé deux défauts derrière cette phrase, et le
+    // premier ne se voit qu'en relevant le SOL sous chacun : la moitié des
+    // passants étaient plantés au milieu de la chaussée. `posteAutour` rendait
+    // le premier point « de rue » rencontré — chaussée, pavé ou bordure
+    // comprises — alors que `SOLS_TROTTOIR` existait déjà sans qu'aucun appelant
+    // ne s'en serve.
+    //
+    // CE TÉMOIN EST INDÉPENDANT DE LA CADENCE DU BANC, et c'est pour cela qu'il
+    // porte l'échantillon ENTIER du site : le sol se décide à la NAISSANCE du
+    // passant, pas à son animation. On peut donc compter les vingt et un, et
+    // non les six que le banc anime (v241 : au-delà de quatre-vingts blocs,
+    // `npc.update` n'est jamais appelé).
+    //
+    // Mesuré à Paris, mêmes conditions des deux côtés : avant la v278, 3 sur 6
+    // sur le trottoir ; ici 21 sur 21. La barre, quatre cinquièmes.
+    const solDesPassants = await tab.evaluate(async () => {
+      const { CITY_BLOCK, ARCHI } = await import('./src/blocks.js');
+      const g = window.__game;
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const gens = s2.peuple.filter((h) => h.name === 'passant');
+      const nom = (b) => (b === CITY_BLOCK.SIDEWALK ? 'trottoir'
+        : b === CITY_BLOCK.GRANITE ? 'granite'
+        : b === CITY_BLOCK.ASPHALT ? 'chaussee'
+        : b === CITY_BLOCK.CROSSWALK ? 'passage'
+        : b === ARCHI.PAVE ? 'pave'
+        : b === ARCHI.BORDURE ? 'bordure' : 'autre');
+      const tally = {};
+      gens.forEach((h) => {
+        const bx = Math.floor(h.pos.x), bz = Math.floor(h.pos.z);
+        // LE SOL SE LIT AU SOMMET DE LA COLONNE, pas à `terrainHeight` : sur les
+        // quais et au pied des ponts, une ville écrit sa chaussée un bloc plus
+        // haut (v274).
+        const y = g.world.sommetColonne(bx, bz);
+        const k = nom(g.world.getBlock(bx, y, bz));
+        tally[k] = (tally[k] || 0) + 1;
+      });
+      const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
+      return { ville: s2.nom, total: gens.length, surTrottoir, tally,
+        part: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null };
+    });
+    verifier('et les passants se tiennent sur le trottoir, pas au milieu de la chaussée',
+      !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.part >= 0.8,
+      JSON.stringify(solDesPassants));
+
+    // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
+    //
+    // Le second défaut derrière la phrase de Max, et il était STRUCTUREL : la
+    // marche durait une à trois secondes dans une direction TIRÉE AU HASARD, à
+    // l'intérieur d'un rayon de quatre blocs autour d'un poste fixe. Un passant
+    // ne pouvait aller nulle part, quelle que soit la cadence — il faisait le
+    // pied de grue sur place, ce qui, vu de la rue, EST le figé que Max décrit.
+    // Il garde désormais son cap et marche six à quatorze secondes, tourne quand
+    // le trottoir tourne, et s'arrête quand il n'avance plus.
+    //
+    // CE QUI SE MESURE EST LE DÉPLACEMENT NET, PAS LE CHEMIN PARCOURU : un
+    // passant qui piétine autour d'un poste parcourt des blocs sans jamais
+    // partir. Et l'on n'observe QUE ceux que le jeu anime — au-delà de
+    // quatre-vingts blocs personne ne les voit et personne ne les met à jour
+    // (v241) : mon premier relevé les confondait avec des passants figés et
+    // rendait seize immobiles sur vingt et un, sur du code sain.
+    //
+    // ET LA GRANDEUR EST UN DÉBIT, PAS UNE DISTANCE. Mon premier verdict
+    // exigeait quatre blocs de déplacement NET, borné sur le résultat : il est
+    // VERT sur l'ancien code (médiane 4,08), et pour deux raisons qu'il faut
+    // garder par écrit.
+    //
+    //   · UNE MARCHE AU HASARD FINIT PAR DÉRIVER. Le vieux programme tirait un
+    //     cap neuf toutes les une à trois secondes dans un rayon de huit blocs
+    //     autour d'un poste : sur vingt-deux secondes de JEU, cela suffit à
+    //     mettre la médiane à quatre blocs. Une borne sur le résultat donne à
+    //     l'ancien code tout le temps dont il a besoin — c'est l'inverse du
+    //     service qu'on lui demande.
+    //   · ET LE RAPATRIEMENT EST UN SAUT, PAS UNE MARCHE. `passants.js` déplace
+    //     un passant sorti du champ (v217, v218) : deux des relevés valaient
+    //     23,9 et 37,58 blocs de « déplacement ». On écarte donc tout pas de
+    //     plus de trois blocs entre deux relevés — à 1,6 m/s et `dt` plafonné
+    //     à un vingtième, aucune marche ne peut en faire autant.
+    //
+    // CE QUE MAX DÉCRIT, C'EST « IL NE MARCHE PAS », et cela se mesure en
+    // CHEMIN PARCOURU PAR SECONDE DE JEU — la monnaie du banc (v277), donc une
+    // grandeur que la cadence ne touche pas. `walkSpeed` vaut 1,6 : un passant
+    // qui marche tout le temps rend 1,6, un qui fait le pied de grue rend zéro.
+    // Mesuré des deux côtés : à Paris, six secondes de jeu de part et d'autre,
+    // 0,18 à 0,77 avant la v278 contre 1,13 à 1,43 ici ; et dans les conditions
+    // EXACTES de ce témoin — Rome, la ville que le banc peuple — l'ancien code
+    // rend 0,26 à 0,73, **médiane 0,50**, sur douze secondes de jeu. La barre,
+    // huit dixièmes, passe au-dessus du meilleur passant de l'ancien code et
+    // sous le plus lent du neuf. Le temps de jeu entre dans le message, sinon
+    // le rouge suivant ne se démonte pas.
+    //
+    // (Et le même relevé montre pourquoi le déplacement net ne pouvait pas
+    // servir : il vaut 4,24 en médiane sur l'ancien code, au-dessus de la barre
+    // de quatre que mon premier verdict exigeait.)
+    const vontQuelquePart = await tab.evaluate(async () => {
+      const g = window.__game;
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      // ON SE MET LÀ OÙ ILS SONT, ET L'ON REND L'ENFANT À SA PLACE APRÈS.
+      // Le témoin d'avant a laissé l'enfant dans une scène d'essai loin de toute
+      // ville : aucun passant n'y est animé, et le verdict aurait été rouge des
+      // DEUX côtés en ne mesurant rien. On se pose au barycentre de la troupe,
+      // ce qui met tout le monde à portée sans rien attendre du rapatriement.
+      const tous = s2.peuple.filter((h) => h.name === 'passant');
+      if (tous.length < 3) return { err: `seulement ${tous.length} passant(s)` };
+      const sauve = g.player.pos.clone();
+      const cx = tous.reduce((a, h) => a + h.pos.x, 0) / tous.length;
+      const cz = tous.reduce((a, h) => a + h.pos.z, 0) / tous.length;
+      g.player.pos.set(cx, g.world.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1500));
+      const anime = (h) => Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 80;
+      const gens = tous.filter(anime);
+      if (gens.length < 3) { g.player.pos.copy(sauve); return { err: `seulement ${gens.length} passant(s) animé(s) sur ${tous.length}` }; }
+      const dep = gens.map((h) => [h.pos.x, h.pos.z]);
+      const prec = dep.map((d) => d.slice());
+      const chemin = gens.map(() => 0);
+      let sauts = 0;
+      const f0 = g.renderer.info.render.frame, t0 = performance.now();
+      // ON OBSERVE TOUTE LA FENÊTRE, en cumulant : un instantané sur ce qui
+      // bouge est un pile ou face (v233).
+      while (performance.now() - t0 < 45000) {
+        await new Promise((f) => setTimeout(f, 400));
+        gens.forEach((h, i) => {
+          const d = Math.hypot(h.pos.x - prec[i][0], h.pos.z - prec[i][1]);
+          if (d > 3) sauts++; else chemin[i] += d;      // un rapatriement n'est pas un pas
+          prec[i][0] = h.pos.x; prec[i][1] = h.pos.z;
+        });
+      }
+      const images = g.renderer.info.render.frame - f0;
+      const jeu = images * 0.05;
+      const debits = chemin.map((c) => (jeu > 0 ? c / jeu : 0)).sort((a, b) => a - b);
+      const debit = debits[Math.floor(debits.length / 2)];
+      const net = gens.map((h, i) => +Math.hypot(h.pos.x - dep[i][0], h.pos.z - dep[i][1]).toFixed(2))
+        .sort((a, b) => a - b);
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, n: gens.length, sur: tous.length,
+        debitMedian: +debit.toFixed(2), debits: debits.map((d) => +d.toFixed(2)),
+        cheminMedian: +chemin.slice().sort((a, b) => a - b)[Math.floor(chemin.length / 2)].toFixed(1),
+        netMedian: net[Math.floor(net.length / 2)], sauts,
+        secondes: +((performance.now() - t0) / 1000).toFixed(1),
+        secondesDeJeu: +jeu.toFixed(1),
+        cadence: +(images / ((performance.now() - t0) / 1000)).toFixed(1) };
+    });
+    verifier('et un passant de rue marche vraiment : il ne fait pas le pied de grue',
+      !vontQuelquePart.err && vontQuelquePart.secondesDeJeu >= 3
+        && vontQuelquePart.debitMedian >= 0.8, JSON.stringify(vontQuelquePart));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
