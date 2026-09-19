@@ -1798,11 +1798,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       let chevauchements = 0, sauts = 0, mesures = 0, penchees = 0, bonCote = 0, contraire = 0, maxRoulis = 0, maxVues = 0;
+      // LE DÉNOMINATEUR SE PUBLIE, SINON LE COMPTE NE SE DÉMONTE PAS (v277).
+      // Ce verdict rend un COMPTE absolu, et il varie de 0 à 53 sans qu'une
+      // ligne du jeu ait bougé — sept mesures, deux arbres, deux résolutions,
+      // barre à 45 au milieu de l'étendue. Un chevauchement est compté par
+      // (relevé × paire de voitures à moins de cinq blocs) : sans savoir
+      // combien de paires ont été EXAMINÉES, on ne peut pas dire si un chiffre
+      // qui monte veut dire « ça se chevauche plus » ou « il y avait plus de
+      // monde ». On publie donc `paires` et `releves` ; le verdict ne change
+      // pas encore — on ne pose pas une barre neuve sans avoir vu la
+      // distribution des deux côtés (v269).
+      let paires = 0, releves = 0;
       const derniers = new Map();
       const t0 = performance.now();
       while (performance.now() - t0 < 30000) {
         await new Promise((f) => setTimeout(f, 200));
-        const v = visibles(); maxVues = Math.max(maxVues, v.length);
+        const v = visibles(); maxVues = Math.max(maxVues, v.length); releves++;
         for (let i = 0; i < v.length; i++) {
           // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
           // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
@@ -1829,11 +1840,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           }
           for (let j = i + 1; j < v.length; j++) {
             if (Math.abs(v[i].position.y - v[j].position.y) > 2.5) continue;
-            if (v[i].position.distanceTo(v[j].position) < 5 && !separes(rect(v[i]), rect(v[j]))) chevauchements++;
+            if (v[i].position.distanceTo(v[j].position) >= 5) continue;
+            paires++;                                 // le DÉNOMINATEUR, publié
+            if (!separes(rect(v[i]), rect(v[j]))) chevauchements++;
           }
         }
       }
-      return { maxVues, chevauchements, mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
+      return { maxVues, chevauchements, paires, releves,
+        taux: paires ? +(chevauchements / paires * 100).toFixed(1) : null,
+        ou: [Math.round(g.player.pos.x), Math.round(g.player.pos.z)],
+        mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
     });
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
