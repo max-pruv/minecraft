@@ -1,6 +1,6 @@
 // Les régressions signalées : visage géométrique rudimentaire, corps déformés,
 // disparition au seuil de distance et voisins remplacés au demi-tour.
-const { Banc, dormir } = require("./banc.js");
+const { Banc, dormir, souffler } = require("./banc.js");
 const echecs = [];
 const verifier = (nom, ok, detail) => {
   console.log(
@@ -12,6 +12,14 @@ const verifier = (nom, ok, detail) => {
   const banc = new Banc({ portJeu: 8361, portPairs: 9361 });
   await banc.ouvrir();
   try {
+    // SOUFFLER AVANT LE PASSAGE LOURD, COMME TOUTES LES AUTRES SUITES (v277).
+    // Cette suite ne le faisait PAS une seule fois — le même défaut que
+    // `carte.js` en v187 et `reglages.js` ensuite, et il a fini par coûter un
+    // portail : elle passe après `maj.js`, la machine était à 5,61 cœurs
+    // occupés, et sa première attente a expiré. Un portail dont les rouges se
+    // déplacent d'une exécution à l'autre n'accuse pas le jeu : il dit que le
+    // banc manque d'air.
+    await souffler();
     const p = await banc.joueur("Presence241", {
       carte: "manhattan",
       rr: 2,
@@ -20,8 +28,15 @@ const verifier = (nom, ok, detail) => {
     await p.locator(".who-card.active").click();
     await p.getByRole("button", { name: "Plus tard", exact: true }).click();
     await p.locator("#play-btn").click();
+    // ET CETTE ATTENTE A LE MÊME BUDGET QUE CELLES DU MÊME FICHIER (v277).
+    // Elle n'en déclarait aucun, donc elle prenait les trente secondes par
+    // défaut de Playwright, quand les deux attentes de page d'en bas en
+    // accordent cent vingt. Ce n'est pas une norme, c'est la même attente
+    // coupée en deux — et sur un banc qui rend en logiciel, c'est la première
+    // moitié qui casse (règle écrite pour `reglages.js`).
     await p.waitForFunction(() =>
       __game.passants.sites.some((s) => s.urbain && s.peuple?.length),
+      null, { timeout: 120000 },
     );
     await dormir(3000);
     const anatomie = await p.evaluate(async () => {

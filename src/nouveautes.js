@@ -9,8 +9,8 @@ export const NOUVEAUTES = [
     v: 277,
     titre: "Des essais plus rapides",
     puces: [
-      "Le jeu se prépare mieux avant « Jouer »",
-      "Les essais vont plus vite, donc plus de versions",
+      "Le jeu se prépare mieux",
+      "Les essais vont plus vite",
       "Rien ne change dans ton monde",
     ],
   },
