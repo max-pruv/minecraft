@@ -62,9 +62,17 @@ export class Habitant extends BaseNPC {
   // 3,7 blocs. Les 86 % sont en partie un artefact du banc (ce minuteur compte
   // en `dt`, borné : à quatre images par seconde une pause de cinq secondes en
   // dure vingt-cinq). Le déplacement net, lui, est STRUCTUREL : la marche durait
-  // une à trois secondes dans une direction TIRÉE AU HASARD, à l'intérieur d'un
-  // rayon de quatre blocs autour d'un poste fixe. Un passant ne pouvait aller
-  // nulle part, quelle que soit la cadence.
+  // une à trois secondes dans une direction TIRÉE AU HASARD, à l'intérieur du
+  // rayon d'un poste fixe — HUIT blocs pour un passant de ville, que
+  // `passants.js` passe en option (le `?? 4` ci-dessus est le défaut d'un
+  // villageois, et la note de la v278 citait ce chiffre-là par erreur). Un
+  // passant ne pouvait aller nulle part, quelle que soit la cadence.
+  //
+  // ET CE N'EST PAS LE DÉPLACEMENT NET QUI LE PROUVE (v279) : une marche au
+  // hasard finit par dériver de quatre blocs si on lui laisse vingt secondes de
+  // jeu, et le témoin écrit ainsi était vert sur l'ancien code. Ce que Max
+  // décrit — « figé » — se mesure en CHEMIN PARCOURU PAR SECONDE DE JEU :
+  // 0,18 à 0,77 avant, 1,13 à 1,43 ici, pour un `walkSpeed` de 1,6.
   //
   // CE QU'IL FAIT MAINTENANT : il garde son cap et marche LONGTEMPS (six à
   // quatorze secondes), s'arrête rarement et brièvement, et quand le trottoir

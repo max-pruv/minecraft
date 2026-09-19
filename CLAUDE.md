@@ -213,6 +213,22 @@ une version qu'on ne saura pas déboguer.
    plus tôt que prévu, le premier geste est de lire `CACHE_VERSION` sur
    `main` ET en production, et de livrer le bump comme une correction à part
    entière.
+
+   **ET UNE LIVRAISON À DEUX SUJETS EN DOCUMENTE DEUX (v279).** La même v278 a
+   livré les avions garés **et** les trois demandes de Max sur les passants : le
+   passant de rue qui va quelque part, l'enfant à pied qui ne traverse plus une
+   voiture, la caméra qui montre le flanc en virage. Le journal — dans le dépôt
+   comme dans le jeu — n'a parlé que des avions, et les trois autres sont partis
+   en production **sans un seul témoin**. Deux instruments ont pourtant dit que
+   tout allait bien, et il faut savoir pourquoi : le témoin du journal de
+   `maj.js` compare la tête de `nouveautes.js` à `sw.js` et compte les
+   ENTRÉES, jamais les SUJETS ; et un portail est vert par construction sur du
+   code que rien ne garde. **Ce qu'un témoin ne garde pas, personne ne le
+   garde** — écrit pour une dette, et vrai ici d'une correction du jour même.
+   Le geste qui l'évite ne coûte rien : avant de fusionner, on compte les sujets
+   dans le DIFF et non dans l'intention (`git diff --stat origin/main` nomme les
+   fichiers), et chaque groupe de fichiers qui répond à une demande différente
+   veut sa ligne au journal et son témoin.
 4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
    parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
    constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
@@ -2562,9 +2578,22 @@ local, Supabase de poche (`tests/nuage.js`).
 
 Le conteneur de session peut être recyclé à tout moment. Le portail écrit
 chaque verdict sur le disque dès qu'il tombe et saute au redémarrage ce qui est
-déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (empreinte de
-`src/`, `tests/`, `sw.js`, `index.html`). Au moindre changement, tout se rejoue.
-`npm test -- --depuis-zero` force le tour complet.
+déjà vert. `npm test -- --depuis-zero` force le tour complet.
+
+**ET L'EMPREINTE EST PAR SUITE, PAS GLOBALE — ce fichier disait l'inverse, et
+c'est faux depuis la v195.** Il écrivait « seulement si le code n'a pas bougé
+d'un octet (empreinte de `src/`, `tests/`, `sw.js`, `index.html`) ; au moindre
+changement, tout se rejoue ». Le code, lui, garde le verdict d'une suite tant
+qu'aucun fichier qui LA GARDE n'a bougé : ses gardiens, plus son propre fichier,
+le banc, `sw.js`, `index.html`, et tout fichier de `src/` que la table ne connaît
+pas encore. C'était le plus gros levier sur l'itération (v195 : trois passages de
+`carte.js` là où un suffisait), et le laisser mal décrit a un coût réel — devant
+un portail de la v279 qui n'a rejoué que DEUX suites, j'ai d'abord cru à un
+portail invalide, c'est-à-dire exactement le travers que `tout.js` existe pour
+empêcher. **Un portail qui ne rejoue qu'une partie des suites est une porte
+valide si, et seulement si, chaque suite sautée est verte sur l'empreinte de ses
+propres gardiens** — ce qui se lit dans la ligne « ↩️ reprise : N suite(s) déjà
+verte(s) sur ce code exact », et non dans le nombre de suites jouées.
 
 ### Écrire un témoin
 
@@ -2574,6 +2603,118 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
   passe avant et après ne prouve rien.
 - Mesurer ce que l'enfant obtient (des mètres parcourus), pas une variable
   interne.
+- **UN PASSANT QUE PERSONNE NE VOIT N'EST PAS UN PASSANT FIGÉ (v279).** Mon
+  premier relevé du déplacement des passants de Paris rendait **seize immobiles
+  sur vingt et un**, sur du code sain : au-delà de quatre-vingts blocs,
+  `actualiserPresence` rend faux et `npc.update` n'est JAMAIS appelé (v241). Le
+  signe qui le disait était sous les yeux — le chemin parcouru valait
+  **exactement zéro**, pas « peu » —, et c'est ce qui distingue à coup sûr « pas
+  animé » de « en pause ». Un témoin de vie de rue n'observe que la troupe
+  ANIMÉE, et il publie sur combien : `6 sur 21`.
+- **UN MINIMUM ÉCHANTILLONNÉ EST UNE PROPRIÉTÉ DE LA CADENCE, PAS DU MONDE
+  (v279).** Le témoin du piéton devant une voiture a été écrit trois fois, et les
+  deux premières étaient VERTES sur du code qui laisse l'enfant traverser. La
+  première comptait « il n'avance plus » sur des relevés espacés de trois cents
+  millisecondes, quand le banc rend trois images par seconde : deux relevés
+  tombaient dans la MÊME image, la position n'avait pas bougé parce que RIEN
+  n'avait bougé, et le témoin concluait en 1,8 s après huit dixièmes de bloc. La
+  seconde lisait la distance MINIMALE au centre de la voiture : l'enfant la
+  traversait de part en part et les relevés enjambaient le point le plus
+  proche — 0,93 bloc, vert ; au passage suivant, sur le MÊME code, ce même relevé
+  rendait 0,17. **Ce qui ne dépend d'aucun relevé intermédiaire, c'est la
+  position d'ARRIVÉE** : −1,16 ici, +0,2 · +1,53 · +1,6 sur l'ancien code, où il
+  ressort de l'autre côté. Devant une grandeur qu'on
+  échantillonne, on se demande d'abord ce que la cadence en décide.
+- **UNE BORNE SUR LE RÉSULTAT DONNE À L'ANCIEN CODE TOUT LE TEMPS DONT IL A
+  BESOIN (v279).** La règle de la v270 — « on attend le RÉSULTAT, borné, jamais
+  une durée » — se retourne contre un témoin dont la grandeur S'ACCUMULE. Celui
+  de la marche des passants exigeait quatre blocs de déplacement NET : le vieux
+  programme tirait un cap neuf toutes les une à trois secondes dans un rayon de
+  huit blocs, et sur vingt-deux secondes de jeu **cette marche au hasard finit
+  par dériver de quatre blocs**. Vert sur le code qu'il devait accuser. Ce que
+  Max décrivait — « figé » — n'est pas une distance, c'est un DÉBIT : du chemin
+  par seconde de JEU (0,18 à 0,77 avant, 1,13 à 1,43 après, pour un `walkSpeed`
+  de 1,6). Avant de borner sur un résultat, on se demande si l'ancien code peut
+  l'atteindre en attendant assez longtemps ; si oui, la grandeur est un taux.
+- **UNE CORRECTION DU JEU REND VISIBLE UNE HYPOTHÈSE DE BANC QUE PERSONNE
+  N'AVAIT ÉCRITE (v279).** `contreLeMur` (monte.js) mesure la carrure de
+  l'enfant : il creuse un couloir de blocs À LA POSITION COURANTE et le fait
+  marcher vers un mur. Son hypothèse muette était « le couloir est vide dès
+  qu'on a dégagé les BLOCS » — vraie tant qu'un piéton traversait les voitures,
+  fausse depuis que la v278 l'en empêche. Or le témoin d'avant laisse l'enfant
+  SUR un circuit de circulation de Paris, où il vient de compter cent soixante
+  relevés de voiture à moins de douze blocs : l'enfant butait sur la
+  circulation au lieu du mur — **7,78 blocs du mur au lieu de 0,3**, et le
+  garde-fou d'après avec. Les trois mesures se font désormais dans le couloir
+  vide de la v237 (30 000, 30 000), sans ville ni convoi ni bête, ce qui les
+  rend comparables par construction — la troisième se compare à la première.
+  C'est la sœur de « un témoin de conduite part d'une rue sans voiture à
+  portée » (v252, v259), du côté de la MARCHE.
+- **ET MA PREMIÈRE EXPLICATION ÉTAIT COMMODE ET FAUSSE.** J'avais accusé MON
+  témoin voisin, qui gare une voiture devant l'enfant et ne la rangeait pas :
+  l'histoire se lisait très bien, je l'ai écrite dans un commit, et le rouge a
+  persisté après le nettoyage. Ranger sa voiture reste juste — un témoin qui
+  pose un obstacle le retire — mais ce n'était pas la cause. **Une explication
+  qu'on n'a pas mesurée est une dette, pas un diagnostic** (v220), y compris
+  quand elle accuse son propre code.
+- **ET C'EST UNE FAMILLE, PAS UN ACCIDENT : TROIS TÉMOINS DE LA MÊME SUITE
+  MESURAIENT L'ENDROIT OÙ LE PRÉCÉDENT S'ÉTAIT ARRÊTÉ (v279).** Un second
+  passage de `monte.js` SEULE, sur un code de jeu inchangé, a retourné deux
+  verdicts de plus — et les deux avaient la forme de `contreLeMur`.
+  - **Le piéton contre la voiture** marchait depuis la position ET LE CAP où le
+    témoin du flanc avait fini ses quatorze secondes de conduite : arrivée
+    −1,18 au premier passage, −4,19 au second, `fige` atteint après NEUF
+    DIXIÈMES de seconde de jeu à 4,19 blocs de la voiture. Il ne mesurait pas
+    une carrosserie, il mesurait où la conduite d'avant avait buté. C'est la
+    troisième occurrence de « une mesure de déplacement s'assure qu'elle a la
+    place de se déplacer » (v273), et le remède est le même : le couloir vide de
+    la v237, un cap DEMANDÉ (`capDegage`) au lieu de celui qu'on a reçu, et la
+    voiture INVOQUÉE là plutôt que déplacée — déplacée, elle garderait la cote
+    qu'elle avait à Paris.
+  - **La circulation qui cède** est « pas si l'on est déjà dedans » vu du côté
+    du témoin. Vert QUATRE passages de suite avec zéro relevé au travers, il en
+    a rendu 51 sur 214 au cinquième, une voiture étant à portée dès la première
+    seconde. Or le jeu laisse EXPRÈS continuer une voiture déjà dans la nôtre —
+    attendre là, c'est y rester pour toujours — et la v245 avait déjà vu ce
+    témoin se poser sur une file et compter quatre-vingts relevés « au travers »
+    dès la première image. On note donc qui chevauche AU PREMIER RELEVÉ et l'on
+    n'en compte aucun : une voiture déjà dedans ne peut rendre aucun verdict, ni
+    dans un sens ni dans l'autre. Quand la pose est propre l'ensemble est vide et
+    le témoin est mot pour mot celui d'avant ; les deux nombres entrent dans le
+    message, sinon le rouge suivant ne se démonte pas.
+
+  **Et ce que ces trois-là apprennent ensemble vaut plus que chacun : DANS UNE
+  SUITE, LA SITUATION DE DÉPART D'UN TÉMOIN EST CE QUE LE TÉMOIN D'AVANT A
+  LAISSÉ, ET CELA NE SE VOIT PAS EN LE LISANT.** Le fichier se lit comme une
+  liste de mesures indépendantes ; il ne l'est pas. Tant qu'aucune n'est rouge,
+  l'héritage passe pour une économie de gestes. Un témoin qui mesure une
+  DISTANCE, une DURÉE ou une POSITION se place donc lui-même — et « se placer »
+  veut dire les trois choses à la fois : l'endroit, le cap, et ce qui traîne
+  autour (bêtes, voitures, convois). C'est le pendant, à l'échelle d'une suite,
+  de « une dépendance implicite entre deux témoins voisins est invisible tant
+  que le premier dort » (v277).
+- **ET UNE BARRE RELEVÉE DANS UNE VILLE NE VAUT PAS DANS UNE AUTRE (v279).**
+  Le témoin du sol des passants exigeait quatre cinquièmes SUR LE TROTTOIR,
+  chiffre mesuré à Paris (21 sur 21) : à Rome, la ville que le banc peuple, il
+  rend 14 sur 21 — ROUGE sur la correction qu'il devait garder. Les sept autres
+  n'étaient pas au milieu de la rue : cinq sur une esplanade ou de l'herbe, que
+  `posteAutour` accepte en dernier recours et pour qui le programme de flâneur
+  est le bon. **Ce qui se compte est ce que Max a signalé** — « plantés au
+  milieu de la chaussée » —, donc la part SUR LA CHAUSSÉE : Rome 57 % et 48 %
+  avant, 9,5 % après ; Paris 50 % avant, 0 % après. C'est le cousin de « un
+  témoin qui porte une dimension de ville ne l'écrit pas, il la demande »
+  (v203, v271, v274) : ici ce n'était pas une dimension mais une BARRE, et elle
+  se pose sur la grandeur que la plainte nomme, pas sur son complément.
+- **ET « LA CHAUSSÉE » N'EST PAS LE MÊME BLOC PARTOUT.** Rome roule sur
+  `ASPHALT`, Paris sur `ARCHI.PAVE` — que la v248 avait justement fait entrer
+  dans `CHAUSSEE` pour poser ses réverbères. Un classement qui ne connaîtrait
+  que l'asphalte déclarerait Paris parfait sans rien mesurer.
+- **ET UN TÉMOIN QUI MESURE UN DÉPLACEMENT SE MET LÀ OÙ LE MONDE VIT.** Celui de
+  la marche des passants suit un témoin qui laisse l'enfant dans une scène
+  d'essai, loin de toute ville : aucun passant n'y est animé, et le verdict
+  aurait été rouge des DEUX côtés en ne mesurant rien. Il se pose au barycentre
+  de la troupe, puis rend l'enfant à sa place — le geste du témoin de la v243,
+  à l'échelle d'une ville.
 
 ---
 
