@@ -181,6 +181,17 @@ function sonVoulu() {
 reglerSon(sonVoulu());
 
 const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
+// ET LA PAGE LE SAIT, POUR SA PARURE DE FOND (v277). Deux calques plein écran
+// — trois dégradés radiaux et un SVG de méridiens à 128vmax — se paient en
+// REMPLISSAGE. Sans carte graphique, ce remplissage passe par le processeur, et
+// il le prend AUX IMAGES DE LA PRÉPARATION : la chauffe compile un programme par
+// image et le fond de carte avance par tranches, aussi par image. Mesuré, la
+// préparation se libérait à sa borne de quarante-cinq secondes avec six à
+// dix-huit programmes sur vingt-cinq ; parure de fond coupée, vingt-cinq sur
+// vingt-cinq. C'est la règle des ombres, une pièce plus loin : un navigateur
+// sans carte graphique préfère un accueil sobre à un jeu qui n'est pas prêt.
+// Sur l'iPad, la classe n'est pas posée et rien ne change.
+if (renduLogiciel()) document.documentElement.classList.add('rendu-logiciel');
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
