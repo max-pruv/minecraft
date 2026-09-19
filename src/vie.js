@@ -178,6 +178,56 @@ export class Habitant extends BaseNPC {
       this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
       return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
     }
+    // ET UN FLÂNEUR QUI RETROUVE UN TROTTOIR REDEVIENT UN PASSANT (v279).
+    //
+    // `tourner()` démote pour de BON — `surTrottoir = false`, « plus de trottoir :
+    // on flâne » — et rien ne le repromeut : `passants.js` ne remet le drapeau
+    // qu'à la NAISSANCE et au RAPATRIEMENT, lequel n'arrive que si l'enfant
+    // s'éloigne. Un enfant qui reste planté à regarder la rue voit donc ses
+    // passants retomber un par un dans l'ancien programme, définitivement.
+    //
+    // C'est la forme exacte du défaut des poissons de la v233 : l'entrée est
+    // banale — marcher sur une pelouse ou une esplanade que `TROTTOIR` ne connaît
+    // pas — et la sortie n'existait pas. Un état ABSORBANT se voit beaucoup en
+    // production et très mal au banc, parce qu'il faut du temps pour s'y rendre.
+    //
+    // Mesuré au portail de la v279, à Rome, vingt-trois secondes de jeu : la
+    // distribution des débits est BIMODALE — six passants à 0,32-0,36 bloc/s et
+    // neuf à 1,24-1,41 — et les deux modes sont exactement les deux cadences
+    // écrites ci-dessus et plus bas : marche 6-14 s contre pause 0,6-1,8 s donne
+    // 0,89 × 1,6 = 1,43 ; marche 1-3 s contre pause 2,5-7,5 s donne 0,29 × 1,6 =
+    // 0,46. Onze retombés sur vingt et un. En rejeu SEUL, mesuré plus tôt, la
+    // médiane valait 1,30 : ce n'était pas la charge du banc, c'était le TEMPS
+    // ÉCOULÉ.
+    //
+    // ON NE RAMÈNE PAS LE DÉFAUT QUE LA DÉMOTION CORRIGEAIT. La v278 démote
+    // justement pour qu'un passant face à un mur ne pivote pas sur place trois
+    // fois par seconde. La repromotion exige donc DEUX choses : être réellement
+    // SUR un trottoir, et qu'une direction le PORTE — sans quoi `tourner()`
+    // démoterait à la sonde suivante et l'on aurait un battement, c'est-à-dire
+    // pire que le figé. Et elle se paie sur la cadence de sonde (trois fois par
+    // seconde de jeu), et seulement pour les DÉMOTÉS : un villageois de château
+    // n'a jamais touché ce drapeau (`undefined`), et Manhattan, dont le trottoir
+    // vit dans un plan et non dans des blocs, est écartée par `rueUrbaine` —
+    // c'est la dette déclarée de la v278, elle ne s'ouvre pas ici par surprise.
+    if (this.surTrottoir === false && !this.rueUrbaine && this.world.trottoirA) {
+      this.sonde = (this.sonde ?? 0) - dt;
+      if (this.sonde <= 0) {
+        this.sonde = 0.33;
+        if (this.world.trottoirA(this.pos.x, this.pos.z)) {
+          const depart = this.capYaw ?? this.yaw ?? 0;
+          const quart = Math.PI / 2;
+          const cap = [depart, depart + quart, depart - quart, depart + Math.PI]
+            .find((c) => this.trottoirVers(c));
+          if (cap !== undefined) {
+            this.surTrottoir = true;
+            this.capYaw = Math.atan2(Math.sin(cap), Math.cos(cap));
+            this.etat = 'marche';
+            this.minuteur = 6 + Math.random() * 8;
+          }
+        }
+      }
+    }
     if (this.minuteur <= 0) {
       this.etat = this.etat === 'pause' ? 'marche' : 'pause';
       this.minuteur = this.etat === 'pause' ? 2.5 + Math.random() * 5 : 1 + Math.random() * 2;
