@@ -30,6 +30,36 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LES CINQ ROUGES DU PORTAIL DE LA v278, MESURÉS UN PAR UN — AUCUN N'EST
+  DE LA LIVRAISON.** La PR ayant été fusionnée avant la fin du portail, la
+  question n'était plus « faut-il fusionner » mais « ai-je cassé quelque chose
+  qui tourne MAINTENANT chez les enfants ». Chaque suite a donc été rejouée
+  SEULE, contre `d9852ac` (la v277, avant la fusion) et contre la branche.
+
+  | rouge | seule sur la v277 | seule sur la branche | ce que c'est |
+  | --- | --- | --- | --- |
+  | `manhattan.js` — trou de façade, fenêtres de nuit, ombres | **les 3 mêmes** (`11684 → 51734`, `[1,-1]`) | — | déjà en production |
+  | `maj.js` — fond de carte pas prêt à la libération | **présent** (`carte: false`, `cartePas: 9`, 45,8 s) | — | dette de la v276, toujours ouverte |
+  | `maj.js` — badge et journal des nouveautés | vert | vert | **le seul qui était à moi** : `CACHE_VERSION` resté à v277, corrigé en #282 |
+  | `washington.js` — le métro (3 témoins) | vert (18 m en 6 s de jeu) | **vert deux fois** | rouge de CHARGE de portail |
+  | `carte.js` — un appui long dépose n'importe où | vert | **vert** | rouge de CHARGE, dette de la v258 |
+  | `monte.js` — l'écran se fige en arrivant sur une ville | **40,8 % · cadence 4,9** | portail : 39,1 % · 4,4 | même distribution, pré-existant |
+
+  **Et `monte.js` sur la v277 a rendu un rouge que le portail n'a PAS rendu** —
+  « un passant lancé sur la voiture de l'enfant s'arrête et la contourne »
+  (9 départs, 110 relevés, 0 traversée, 3 qui bougent). Un témoin qui va et
+  vient sans qu'une ligne du jeu ait bougé : c'est la famille de la v269, et il
+  se démonte en rejouant jusqu'à voir la même DISTRIBUTION des deux côtés, pas
+  jusqu'à voir un vert.
+
+  Ce qui reste à faire, par ordre de ce que l'enfant subit : (1) les trois de
+  `manhattan.js`, qui sont en production depuis au moins la v277 et que personne
+  n'a encore mesurés ; (2) le fond de carte de `maj.js`, dette de la v276 avec
+  sa piste déjà écrite ; (3) reformuler les verdicts de `washington.js` (métro)
+  et `carte.js` (appui long) pour qu'ils attendent leur RÉSULTAT borné au lieu
+  d'une fenêtre fixe — la règle de la v270, qu'ils n'ont toujours pas reçue.
+
+
 - [ ] **LA VRAIE RANGÉE DEVANT L'AÉROGARE 2 DE ROISSY DEMANDE DE DÉPLACER UN
   DOUBLET DE PISTES (v278).** Les trois appareils de Roissy sont désormais aux
   deux seules poches à ciel ouvert de son tarmac — le couloir entre le tambour
