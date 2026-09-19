@@ -223,9 +223,23 @@ async function relaisSourd(portEcoute, portVrai) {
 // attribué à la cadence un rouge qui était le mien (voir les lointains, dans
 // monte.js) : l'explication commode est une dette, pas un diagnostic (v220).
 const DPR_BANC = Number(process.env.BANC_DPR) || 1;
+// ET LA PARURE SE COUPE DEPUIS LE BANC : `BANC_VERRE=0 node maj.js`.
+//
+// Parce que la seule chose qui reproduise un rouge de suite, c'est la SUITE.
+// La préparation de l'accueil est rouge en production depuis la v276
+// (`programmes 14/25`, `carte: false`, `depuis 46 554 ms` pour une borne de
+// 45 000), et la piste déclarée était le coût de peinture des deux calques
+// plein écran que `#prep-line` invalide toutes les 250 ms. Une sonde écrite à
+// part — une voisine sur l'accueil, une page qui prépare — rend QUATRE
+// secondes et 25/25 programmes dans les deux bras : elle ne reproduit pas les
+// conditions, donc elle ne mesure rien, et elle ne blanchit rien (piège de la
+// sonde aveugle, v273, troisième fois). L'A/B doit donc se faire DANS la suite,
+// et il lui faut un interrupteur ici.
+const VERRE_BANC = process.env.BANC_VERRE;
 const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`
+  + (VERRE_BANC === undefined ? '' : `&verre=${VERRE_BANC}`);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
