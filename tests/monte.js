@@ -468,6 +468,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         secondesDeJeu: +(images * 0.05).toFixed(1) };
     });
     await tab.keyboard.up('KeyW');
+    // ET L'ON RANGE LA VOITURE QU'ON VIENT DE GARER. Le témoin d'après
+    // (`contreLeMur`) creuse son couloir À LA POSITION COURANTE de l'enfant et
+    // le fait marcher vers le mur : la voiture laissée là tombe dans ce
+    // couloir, et `pietonBloque` — que ce témoin-ci vient d'éprouver — l'arrête
+    // à 1,19 bloc. Le portail a rendu « à pied 9,81 bloc du mur » sur du code
+    // sain, et le témoin suivant avec. **Un témoin qui pose un obstacle dans le
+    // monde le retire**, comme `poserDevant` vide les bêtes avant de poser la
+    // sienne ; sans cela il mesure son propre décor chez le voisin. Et cela ne
+    // mordait pas avant la v278, parce qu'un piéton traversait les voitures.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+    });
+    await dormir(400);
     verifier('et à pied, il s\'arrête au flanc de la voiture au lieu de marcher au travers',
       !aPiedContreLaVoiture.err && aPiedContreLaVoiture.secondesDeJeu >= 2
         && aPiedContreLaVoiture.arrivee <= -0.5,
@@ -1561,8 +1576,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // non les six que le banc anime (v241 : au-delà de quatre-vingts blocs,
     // `npc.update` n'est jamais appelé).
     //
-    // Mesuré à Paris, mêmes conditions des deux côtés : avant la v278, 3 sur 6
-    // sur le trottoir ; ici 21 sur 21. La barre, quatre cinquièmes.
+    // ET CE QU'IL JUGE EST LA CHAUSSÉE, PAS LE TROTTOIR. Mon premier verdict
+    // exigeait quatre cinquièmes des passants SUR LE TROTTOIR, une barre relevée
+    // à Paris (21 sur 21) : à Rome il rend 14 sur 21 et il est ROUGE sur la
+    // correction qu'il devait garder. Les sept autres ne sont pas au milieu de
+    // la rue — cinq sont sur une esplanade ou de l'herbe, que `posteAutour`
+    // accepte en dernier recours et pour qui le programme de flâneur est le bon
+    // (vie.js le dit). Ce que Max a signalé, ce sont les passants « plantés au
+    // milieu de la chaussée », et c'est cela qui se compte.
+    //
+    // ET « LA CHAUSSÉE » N'EST PAS LE MÊME BLOC PARTOUT : Rome roule sur
+    // `ASPHALT`, Paris sur `ARCHI.PAVE` (v248, qui l'a fait entrer dans
+    // `CHAUSSEE` pour les réverbères). Un classement qui ne connaîtrait que
+    // l'asphalte rendrait Paris parfait sans rien mesurer. La bordure, elle,
+    // est le caniveau : on la compte à part, on ne la met pas au milieu de la
+    // rue.
+    //
+    // Mesuré, mêmes conditions des deux côtés — avant la v278 : Rome 12 puis 10
+    // sur 21 (57 % et 48 %), Paris 3 sur 6 (50 %). Ici : Rome 2 sur 21 (9,5 %),
+    // Paris 0 sur 21. La barre, un cinquième, sépare les deux dispersions.
     const solDesPassants = await tab.evaluate(async () => {
       const { CITY_BLOCK, ARCHI } = await import('./src/blocks.js');
       const g = window.__game;
@@ -1586,11 +1618,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         tally[k] = (tally[k] || 0) + 1;
       });
       const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
-      return { ville: s2.nom, total: gens.length, surTrottoir, tally,
-        part: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null };
+      const surChaussee = (tally.chaussee || 0) + (tally.pave || 0) + (tally.passage || 0);
+      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally,
+        partTrottoir: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null,
+        partChaussee: gens.length ? +(surChaussee / gens.length).toFixed(2) : null };
     });
-    verifier('et les passants se tiennent sur le trottoir, pas au milieu de la chaussée',
-      !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.part >= 0.8,
+    verifier('et les passants ne sont plus plantés au milieu de la chaussée',
+      !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.partChaussee <= 0.2,
       JSON.stringify(solDesPassants));
 
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------

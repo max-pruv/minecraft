@@ -2623,6 +2623,33 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
   par seconde de JEU (0,18 à 0,77 avant, 1,13 à 1,43 après, pour un `walkSpeed`
   de 1,6). Avant de borner sur un résultat, on se demande si l'ancien code peut
   l'atteindre en attendant assez longtemps ; si oui, la grandeur est un taux.
+- **UN TÉMOIN QUI POSE UN OBSTACLE DANS LE MONDE LE RETIRE (v279).** Celui du
+  piéton gare une voiture devant l'enfant et la laissait là ; le témoin d'après
+  (`contreLeMur`) creuse son couloir À LA POSITION COURANTE de l'enfant et le
+  fait marcher vers un mur — la voiture tombait dedans, et `pietonBloque`,
+  c'est-à-dire la correction que le témoin venait d'éprouver, l'arrêtait à
+  1,19 bloc : « à pied 9,81 bloc du mur » sur du code parfaitement sain, plus le
+  témoin suivant avec. `poserDevant` vide les bêtes AVANT de poser la sienne ;
+  un témoin qui en pose une la retire APRÈS, sinon il mesure son propre décor
+  chez le voisin. **Et cela ne mordait pas avant la v278**, parce qu'un piéton
+  traversait les voitures : une correction du jeu rend visibles les témoins qui
+  se marchaient dessus sans conséquence.
+- **ET UNE BARRE RELEVÉE DANS UNE VILLE NE VAUT PAS DANS UNE AUTRE (v279).**
+  Le témoin du sol des passants exigeait quatre cinquièmes SUR LE TROTTOIR,
+  chiffre mesuré à Paris (21 sur 21) : à Rome, la ville que le banc peuple, il
+  rend 14 sur 21 — ROUGE sur la correction qu'il devait garder. Les sept autres
+  n'étaient pas au milieu de la rue : cinq sur une esplanade ou de l'herbe, que
+  `posteAutour` accepte en dernier recours et pour qui le programme de flâneur
+  est le bon. **Ce qui se compte est ce que Max a signalé** — « plantés au
+  milieu de la chaussée » —, donc la part SUR LA CHAUSSÉE : Rome 57 % et 48 %
+  avant, 9,5 % après ; Paris 50 % avant, 0 % après. C'est le cousin de « un
+  témoin qui porte une dimension de ville ne l'écrit pas, il la demande »
+  (v203, v271, v274) : ici ce n'était pas une dimension mais une BARRE, et elle
+  se pose sur la grandeur que la plainte nomme, pas sur son complément.
+- **ET « LA CHAUSSÉE » N'EST PAS LE MÊME BLOC PARTOUT.** Rome roule sur
+  `ASPHALT`, Paris sur `ARCHI.PAVE` — que la v248 avait justement fait entrer
+  dans `CHAUSSEE` pour poser ses réverbères. Un classement qui ne connaîtrait
+  que l'asphalte déclarerait Paris parfait sans rien mesurer.
 - **ET UN TÉMOIN QUI MESURE UN DÉPLACEMENT SE MET LÀ OÙ LE MONDE VIT.** Celui de
   la marche des passants suit un témoin qui laisse l'enfant dans une scène
   d'essai, loin de toute ville : aucun passant n'y est animé, et le verdict

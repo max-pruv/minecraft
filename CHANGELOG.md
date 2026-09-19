@@ -57,7 +57,7 @@ banc :
 | ce qu'il mesure | avant la v278 | ici | barre |
 | --- | --- | --- | --- |
 | l'angle caméra/voiture en virage tenu | **0,0° à chacun des treize relevés** | 11,6 à 18,3°, un seul signe | 6° |
-| les passants sur le trottoir | 7 puis 8 sur 21 (33 et 38 %) | 21 sur 21 | 4/5 |
+| les passants au milieu de la chaussée | Rome 12 puis 10 sur 21 (57 et 48 %), Paris 3 sur 6 | Rome 2 sur 21 (9,5 %), Paris 0 sur 21 | 1/5 |
 | leur chemin par seconde de JEU | 0,26 à 0,73, médiane **0,50** | 1,13 à 1,43 bloc/s | 0,8 |
 | où l'enfant à pied s'arrête devant une voiture | **+0,2 · +1,53 · +1,6** — il ressort de l'autre côté | −1,16, juste au flanc | −0,5 |
 
@@ -83,6 +83,21 @@ devaient accuser.** C'est la partie de cette livraison qui vaut d'être lue :
   quatre-vingts blocs, `npc.update` n'est jamais appelé. Le chemin parcouru
   valait **exactement zéro**, ce qui distingue à coup sûr « pas animé » de « en
   pause ».
+- **Et le quatrième a été rouge sur la correction qu'il devait garder** — une
+  barre relevée à Paris (21 passants sur 21 sur le trottoir), appliquée à Rome,
+  qui en rend 14 sur 21. Les sept autres ne sont pas au milieu de la rue : cinq
+  sont sur une esplanade, pour qui le programme de flâneur est le bon. Ce qui se
+  compte est ce que Max a signalé — la part SUR LA CHAUSSÉE — et « la chaussée »
+  n'est pas le même bloc à Rome (`ASPHALT`) et à Paris (`ARCHI.PAVE`).
+
+**Et deux rouges du portail étaient mon propre décor.** Le témoin du piéton
+garait une voiture devant l'enfant et la laissait là ; le témoin suivant creuse
+son couloir à la position courante et fait marcher l'enfant vers un mur — la
+voiture tombait dedans, et `pietonBloque`, la correction que le témoin venait
+d'éprouver, l'arrêtait à 1,19 bloc. « À pied 9,81 bloc du mur », sur du code
+parfaitement sain. **Un témoin qui pose un obstacle dans le monde le retire** —
+et cela ne mordait pas avant la v278, parce qu'un piéton traversait les
+voitures.
 
 **Et ce que cela coûte au banc se dit** : les quatre témoins ajoutent environ
 une minute et demie à `monte.js` — douze secondes de virage tenu, la marche à
