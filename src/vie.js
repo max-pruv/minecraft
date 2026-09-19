@@ -50,8 +50,75 @@ export class Habitant extends BaseNPC {
   // Max : « elles regardent le joueur principal au lieu de continuer à se
   // promener ». Chacun garde donc son propre programme — pause, marche, geste
   // de métier — et ses phrases restent : on parle en passant, sans s'arrêter.
+  // ET UN PASSANT DE RUE VA QUELQUE PART (v278).
+  //
+  // Max : « les passants qui s'arrêtent et qui nous regardent de manière figée,
+  // ça ne fonctionne pas. Je vois quelque chose de très naturel, comme dans
+  // GTA. » La v243 avait retiré le « on se tourne vers l'enfant » ; ce qui
+  // restait était pire, et invisible à la lecture du code.
+  //
+  // MESURÉ AVANT D'Y TOUCHER, vingt-deux passants à Paris, une minute :
+  // immobiles 86 % du temps, 9,2 blocs parcourus, et un déplacement NET de
+  // 3,7 blocs. Les 86 % sont en partie un artefact du banc (ce minuteur compte
+  // en `dt`, borné : à quatre images par seconde une pause de cinq secondes en
+  // dure vingt-cinq). Le déplacement net, lui, est STRUCTUREL : la marche durait
+  // une à trois secondes dans une direction TIRÉE AU HASARD, à l'intérieur d'un
+  // rayon de quatre blocs autour d'un poste fixe. Un passant ne pouvait aller
+  // nulle part, quelle que soit la cadence.
+  //
+  // CE QU'IL FAIT MAINTENANT : il garde son cap et marche LONGTEMPS (six à
+  // quatorze secondes), s'arrête rarement et brièvement, et quand le trottoir
+  // cesse devant lui il TOURNE au lieu de tirer un cap neuf. C'est le geste de
+  // `lampadaireDeVille` (v248) appliqué à la marche : le monde répond tout
+  // seul, on ne connaît pas la trame.
+  //
+  // LE POSTE NE LE RETIENT PLUS. Ce qui le garde près de l'enfant, c'est le
+  // rapatriement de `passants.js` — au-delà de la portée de rendu et derrière la
+  // ligne des épaules (v217, v218) —, pas un rayon de quatre blocs. Un passant
+  // qui rentrerait au poste tous les deux pas serait exactement ce que Max
+  // décrit.
+  promene() { return !!this.surTrottoir; }
+
+  // LE TROTTOIR CONTINUE-T-IL DANS CETTE DIRECTION ? On demande au monde, à
+  // 1,2 bloc devant — assez loin pour tourner avant d'y être, assez près pour ne
+  // pas juger l'autre côté de la rue.
+  trottoirVers(cap) {
+    if (!this.world.trottoirA) return true;
+    const x = this.pos.x - Math.sin(cap) * 1.2, z = this.pos.z - Math.cos(cap) * 1.2;
+    return this.world.trottoirA(x, z);
+  }
+
   think(dt) {
     this.minuteur -= dt;
+    if (this.promene()) {
+      if (this.minuteur <= 0) {
+        this.etat = this.etat === 'pause' ? 'marche' : 'pause';
+        // Une pause brève et rare : on flâne, on ne fait pas le pied de grue.
+        this.minuteur = this.etat === 'pause' ? 0.6 + Math.random() * 1.2 : 6 + Math.random() * 8;
+        if (this.etat === 'marche' && this.capYaw == null) this.capYaw = Math.random() * Math.PI * 2;
+      }
+      // LA SONDE A SA CADENCE (v251, v278). `world.trottoirA` descend une colonne
+      // et lit un bloc : interrogé à chaque image pour dix-huit passants, il
+      // ferait ENGENDRER des morceaux sur le fil principal. Trois fois par
+      // seconde de jeu suffisent — à 3,2 m/s cela fait un bloc entre deux
+      // sondes, et la sonde regarde 1,2 bloc devant.
+      this.sonde = (this.sonde ?? 0) - dt;
+      if (this.etat === 'marche' && this.sonde <= 0) {
+        this.sonde = 0.33;
+        if (!this.trottoirVers(this.capYaw)) {
+        // Le trottoir tourne : on essaie les deux perpendiculaires, puis le
+        // demi-tour. Jamais de cap tiré au hasard — c'est ce qui faisait
+        // piétiner.
+          const quart = Math.PI / 2;
+          const gauche = this.capYaw + quart, droite = this.capYaw - quart;
+          const g = this.trottoirVers(gauche), d = this.trottoirVers(droite);
+          this.capYaw = g && d ? (Math.random() < 0.5 ? gauche : droite)
+            : g ? gauche : d ? droite : this.capYaw + Math.PI;
+        }
+      }
+      this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
+      return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
+    }
     if (this.minuteur <= 0) {
       this.etat = this.etat === 'pause' ? 'marche' : 'pause';
       this.minuteur = this.etat === 'pause' ? 2.5 + Math.random() * 5 : 1 + Math.random() * 2;

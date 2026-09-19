@@ -934,6 +934,16 @@ function arbreDeVille(data, x, z, h, wx, wz, sol, ss) {
 // et le pavé en éventail de Paris (`ARCHI.PAVE`), qui est SA rue.
 export const CHAUSSEE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.CROSSWALK,
   ROUTE_BLOCK.LIGNE_NS, ROUTE_BLOCK.LIGNE_EO, ROUTE_BLOCK.PASSAGE_NS, ARCHI.PAVE]);
+// ET CE QU'ELLE POSE COMME TROTTOIR, PUBLIÉ ICI POUR LA MÊME RAISON (v278).
+//
+// `paris.js` et `villesmonde.js` posent tous deux leur trottoir en
+// `CITY_BLOCK.SIDEWALK` et leurs esplanades en `GRANITE` — vérifié dans les deux
+// fichiers, et mesuré sous les passants de quatre villes. Un piéton a besoin de
+// cette réponse à chaque pas (« le trottoir continue-t-il devant moi ? ») ; elle
+// vit donc là où la ville l'écrit, comme `CHAUSSEE` depuis la v248, et non
+// recopiée dans `passants.js` et dans `vie.js` — deux tables qui décrivent la
+// même chose finissent par diverger.
+export const TROTTOIR = new Set([CITY_BLOCK.SIDEWALK, CITY_BLOCK.GRANITE]);
 const PAS_REVERBERE = 9;
 function lampadaireDeVille(data, x, z, h, wx, wz, sol, ss) {
   if (ss !== CITY_BLOCK.SIDEWALK || h < WATER_LEVEL || h + 1 >= HEIGHT) return false;

@@ -12,7 +12,7 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
@@ -1119,6 +1119,16 @@ function updateChunks() {
   // seule table, donc, pour les passants et pour lui : deux crochets qui
   // décrivent la même chose finiraient par diverger.
   player.pietonBloque = world.obstaclePieton;
+  // LE TROTTOIR CONTINUE-T-IL ICI ? (v278) La table vit dans `world.js`, qui
+  // l'écrit ; la question se pose au runtime, donc elle se branche ici comme
+  // `obstaclePieton`. Manhattan a sa propre réponse depuis toujours
+  // (`piedPieton`), et elle passe devant : son plan n'est pas fait de blocs.
+  world.trottoirA = (x, z) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33; }
+    const y = world.sommetColonne(bx, bz);
+    return TROTTOIR.has(world.getBlock(bx, y, bz));
+  };
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
