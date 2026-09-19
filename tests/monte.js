@@ -468,15 +468,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         secondesDeJeu: +(images * 0.05).toFixed(1) };
     });
     await tab.keyboard.up('KeyW');
-    // ET L'ON RANGE LA VOITURE QU'ON VIENT DE GARER. Le témoin d'après
-    // (`contreLeMur`) creuse son couloir À LA POSITION COURANTE de l'enfant et
-    // le fait marcher vers le mur : la voiture laissée là tombe dans ce
-    // couloir, et `pietonBloque` — que ce témoin-ci vient d'éprouver — l'arrête
-    // à 1,19 bloc. Le portail a rendu « à pied 9,81 bloc du mur » sur du code
-    // sain, et le témoin suivant avec. **Un témoin qui pose un obstacle dans le
-    // monde le retire**, comme `poserDevant` vide les bêtes avant de poser la
-    // sienne ; sans cela il mesure son propre décor chez le voisin. Et cela ne
-    // mordait pas avant la v278, parce qu'un piéton traversait les voitures.
+    // ET L'ON RANGE LA VOITURE QU'ON VIENT DE GARER. **Un témoin qui pose un
+    // obstacle dans le monde le retire**, comme `poserDevant` vide les bêtes
+    // avant de poser la sienne : depuis la v278 une voiture laissée là arrête
+    // un piéton, donc elle fait partie du décor qu'on rend au voisin.
+    //
+    // (Elle n'était PAS la cause du rouge de `contreLeMur` — j'ai d'abord écrit
+    // qu'elle l'était, et la mesure m'a démenti : le rouge a persisté après ce
+    // nettoyage. La cause est que ce témoin-là creusait son couloir sur un
+    // circuit de Paris ; c'est corrigé chez lui, et dit là-bas.)
     await tab.evaluate(() => {
       const g = window.__game;
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
@@ -1323,9 +1323,35 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // UN ROUGE QUI NE DIT PAS DANS QUEL ÉTAT IL A MESURÉ NE SE DÉMONTE PAS :
     // « à pied 1,1 bloc du mur » au portail de la v249, c'est-à-dire à pied
     // avec la carrure d'une voiture — l'état laissé par le témoin d'avant.
+    // ON VA MESURER AU CALME, LOIN DE TOUTE VOITURE (v279). Le témoin d'avant
+    // laisse l'enfant SUR un circuit de circulation de Paris — il vient d'y
+    // compter cent soixante relevés de voiture à moins de douze blocs, et trois
+    // voitures garées traînent dans le bestiaire. `contreLeMur` creuse son
+    // couloir À LA POSITION COURANTE : depuis la v278, un piéton s'arrête devant
+    // une voiture, donc l'enfant butait sur la circulation au lieu du mur —
+    // « à pied 7,78 bloc du mur » au lieu de 0,3, et le garde-fou d'après avec.
+    //
+    // Sur le code d'avant la v278 ce témoin était vert **parce qu'un piéton
+    // traversait les voitures** : une correction du jeu rend visible une
+    // hypothèse de banc que personne n'avait écrite — « le couloir est vide dès
+    // qu'on a dégagé les BLOCS ». C'est la sœur de « un témoin de conduite part
+    // d'une rue sans voiture à portée » (v252, v259), du côté de la marche.
+    //
+    // Le couloir vide de la v237 (30 000, 30 000) n'a ni ville, ni convoi, ni
+    // bête : les TROIS mesures s'y font, ce qui les rend comparables par
+    // construction — la troisième se compare à la première.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(30000.5, g.world.terrainHeight(30000, 30000) + 2, 30000.5);
+      g.player.vel.set(0, 0, 0);
+    });
+    await dormir(2500);
     const etatAPied = await tab.evaluate(() => ({ gabarit: window.__game.player.gabarit,
       auVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️'),
-      monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()) }));
+      monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()),
+      voitures: window.__game.animalManager.animals.length }));
     const ecartAPied = await contreLeMur(false);
     await poserDevant(tab, 'voiture');
     await dormir(600);

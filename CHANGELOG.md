@@ -90,14 +90,23 @@ devaient accuser.** C'est la partie de cette livraison qui vaut d'être lue :
   compte est ce que Max a signalé — la part SUR LA CHAUSSÉE — et « la chaussée »
   n'est pas le même bloc à Rome (`ASPHALT`) et à Paris (`ARCHI.PAVE`).
 
-**Et deux rouges du portail étaient mon propre décor.** Le témoin du piéton
-garait une voiture devant l'enfant et la laissait là ; le témoin suivant creuse
-son couloir à la position courante et fait marcher l'enfant vers un mur — la
-voiture tombait dedans, et `pietonBloque`, la correction que le témoin venait
-d'éprouver, l'arrêtait à 1,19 bloc. « À pied 9,81 bloc du mur », sur du code
-parfaitement sain. **Un témoin qui pose un obstacle dans le monde le retire** —
-et cela ne mordait pas avant la v278, parce qu'un piéton traversait les
-voitures.
+**Et deux rouges du portail étaient une hypothèse de banc que personne n'avait
+écrite.** `contreLeMur` mesure la carrure de l'enfant : il creuse un couloir de
+blocs à la position courante et le fait marcher vers un mur. Son hypothèse
+muette — « le couloir est vide dès qu'on a dégagé les BLOCS » — était vraie tant
+qu'un piéton traversait les voitures, et la v278 l'a rendue fausse. Le témoin
+d'avant laisse l'enfant SUR un circuit de Paris, où il vient de compter cent
+soixante relevés de voiture à moins de douze blocs : l'enfant butait sur la
+circulation au lieu du mur, **7,78 blocs au lieu de 0,3**. Les trois mesures se
+font désormais dans le couloir vide de la v237, ce qui les rend comparables par
+construction.
+
+**Et ma première explication était commode et fausse.** J'avais accusé mon
+propre témoin voisin, qui gare une voiture et ne la rangeait pas ; l'histoire se
+lisait très bien, je l'ai écrite dans un commit, et le rouge a persisté après le
+nettoyage. Ranger sa voiture reste juste, mais ce n'était pas la cause — une
+explication qu'on n'a pas mesurée est une dette, pas un diagnostic, **y compris
+quand elle accuse son propre code**.
 
 **Et ce que cela coûte au banc se dit** : les quatre témoins ajoutent environ
 une minute et demie à `monte.js` — douze secondes de virage tenu, la marche à

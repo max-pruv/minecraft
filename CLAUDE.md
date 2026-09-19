@@ -2623,17 +2623,27 @@ déjà vert — **mais seulement si le code n'a pas bougé d'un octet** (emprein
   par seconde de JEU (0,18 à 0,77 avant, 1,13 à 1,43 après, pour un `walkSpeed`
   de 1,6). Avant de borner sur un résultat, on se demande si l'ancien code peut
   l'atteindre en attendant assez longtemps ; si oui, la grandeur est un taux.
-- **UN TÉMOIN QUI POSE UN OBSTACLE DANS LE MONDE LE RETIRE (v279).** Celui du
-  piéton gare une voiture devant l'enfant et la laissait là ; le témoin d'après
-  (`contreLeMur`) creuse son couloir À LA POSITION COURANTE de l'enfant et le
-  fait marcher vers un mur — la voiture tombait dedans, et `pietonBloque`,
-  c'est-à-dire la correction que le témoin venait d'éprouver, l'arrêtait à
-  1,19 bloc : « à pied 9,81 bloc du mur » sur du code parfaitement sain, plus le
-  témoin suivant avec. `poserDevant` vide les bêtes AVANT de poser la sienne ;
-  un témoin qui en pose une la retire APRÈS, sinon il mesure son propre décor
-  chez le voisin. **Et cela ne mordait pas avant la v278**, parce qu'un piéton
-  traversait les voitures : une correction du jeu rend visibles les témoins qui
-  se marchaient dessus sans conséquence.
+- **UNE CORRECTION DU JEU REND VISIBLE UNE HYPOTHÈSE DE BANC QUE PERSONNE
+  N'AVAIT ÉCRITE (v279).** `contreLeMur` (monte.js) mesure la carrure de
+  l'enfant : il creuse un couloir de blocs À LA POSITION COURANTE et le fait
+  marcher vers un mur. Son hypothèse muette était « le couloir est vide dès
+  qu'on a dégagé les BLOCS » — vraie tant qu'un piéton traversait les voitures,
+  fausse depuis que la v278 l'en empêche. Or le témoin d'avant laisse l'enfant
+  SUR un circuit de circulation de Paris, où il vient de compter cent soixante
+  relevés de voiture à moins de douze blocs : l'enfant butait sur la
+  circulation au lieu du mur — **7,78 blocs du mur au lieu de 0,3**, et le
+  garde-fou d'après avec. Les trois mesures se font désormais dans le couloir
+  vide de la v237 (30 000, 30 000), sans ville ni convoi ni bête, ce qui les
+  rend comparables par construction — la troisième se compare à la première.
+  C'est la sœur de « un témoin de conduite part d'une rue sans voiture à
+  portée » (v252, v259), du côté de la MARCHE.
+- **ET MA PREMIÈRE EXPLICATION ÉTAIT COMMODE ET FAUSSE.** J'avais accusé MON
+  témoin voisin, qui gare une voiture devant l'enfant et ne la rangeait pas :
+  l'histoire se lisait très bien, je l'ai écrite dans un commit, et le rouge a
+  persisté après le nettoyage. Ranger sa voiture reste juste — un témoin qui
+  pose un obstacle le retire — mais ce n'était pas la cause. **Une explication
+  qu'on n'a pas mesurée est une dette, pas un diagnostic** (v220), y compris
+  quand elle accuse son propre code.
 - **ET UNE BARRE RELEVÉE DANS UNE VILLE NE VAUT PAS DANS UNE AUTRE (v279).**
   Le témoin du sol des passants exigeait quatre cinquièmes SUR LE TROTTOIR,
   chiffre mesuré à Paris (21 sur 21) : à Rome, la ville que le banc peuple, il
