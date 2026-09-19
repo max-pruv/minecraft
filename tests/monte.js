@@ -422,17 +422,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // ON ATTEND LE RÉSULTAT, BORNÉ (v270), et « ne plus avancer » se constate
     // sur TROIS relevés de suite (v223) : un hoquet du banc arrête un seul pas,
     // une carrosserie les arrête tous. Le temps pris entre dans le message.
+    //
+    // ET UNE MESURE DE DÉPLACEMENT S'ASSURE QU'ELLE A LA PLACE DE SE DÉPLACER
+    // (v273, une troisième fois). Ce témoin mesurait là où le témoin du flanc
+    // avait fini ses quatorze secondes de conduite, cap compris : au second
+    // passage sur le MÊME code, l'enfant s'est arrêté à 4,19 blocs de la
+    // voiture — donc contre tout autre chose — après neuf dixièmes de seconde
+    // de jeu. Il ne mesurait pas une carrosserie, il mesurait où la conduite
+    // d'avant s'était arrêtée. On se pose dans le couloir vide de la v237, et
+    // l'on DEMANDE un cap libre au lieu de garder celui que le virage a laissé.
     await tab.evaluate(() => {
       const g = window.__game;
-      // la voiture EN TRAVERS du chemin : on vient buter contre son flanc, la
-      // situation de la capture, et non par le pare-chocs.
-      const a = g.animalManager.animals[0];
-      if (a) {
-        a.yaw = g.player.yaw + Math.PI / 2;
-        const d = 5;
-        a.pos.x = g.player.pos.x - Math.sin(g.player.yaw) * d;
-        a.pos.z = g.player.pos.z - Math.cos(g.player.yaw) * d;
-      }
+      g.player.pos.set(30000.5, g.world.terrainHeight(30000, 30000) + 2, 30000.5);
+      g.player.vel.set(0, 0, 0);
+      g.player.pitch = 0;
+    });
+    await dormir(2500);
+    const capPieton = await capDegage(tab, 8);
+    if (capPieton !== null) await tab.evaluate((y) => { window.__game.player.yaw = y; }, capPieton);
+    // la voiture EN TRAVERS du chemin, à cinq blocs : on vient buter contre son
+    // flanc, la situation de la capture, et non par le pare-chocs. Elle est
+    // INVOQUÉE là (`poserDevant`) et non déplacée : c'est la seule façon qu'elle
+    // se pose sur le sol du couloir et non à la cote qu'elle avait à Paris.
+    await poserDevant(tab, 'voiture', 5);
+    await tab.evaluate(() => {
+      const g = window.__game, a = g.animalManager.animals[0];
+      if (a) a.yaw = g.player.yaw + Math.PI / 2;
     });
     await dormir(600);
     await tab.keyboard.down('KeyW');
@@ -467,6 +482,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         secondes: +((performance.now() - t0) / 1000).toFixed(1),
         secondesDeJeu: +(images * 0.05).toFixed(1) };
     });
+    aPiedContreLaVoiture.cap = capPieton;
     await tab.keyboard.up('KeyW');
     // ET L'ON RANGE LA VOITURE QU'ON VIENT DE GARER. **Un témoin qui pose un
     // obstacle dans le monde le retire**, comme `poserDevant` vide les bêtes
@@ -1219,6 +1235,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       let releves = 0, traverses = 0, proches = 0, arretees = 0, attenteSecondes = 0;
+      // « PAS SI L'ON EST DÉJÀ DEDANS » VAUT AUSSI POUR LE TÉMOIN (v245, par
+      // l'autre bout). Le jeu laisse EXPRÈS continuer une voiture déjà dans la
+      // nôtre — attendre là, c'est y rester pour toujours — et la v245 avait
+      // déjà vu le témoin se poser sur une file et compter quatre-vingts relevés
+      // « au travers » dès la première image. Vert quatre passages de suite, ce
+      // témoin a rendu 51 relevés sur 214 au cinquième, sur du code inchangé,
+      // une voiture étant à portée dès la première seconde. On note donc qui
+      // chevauche AU PREMIER RELEVÉ et l'on ne compte pas celle-là : elle ne
+      // peut rendre aucun verdict, ni dans un sens ni dans l'autre. Quand la
+      // pose est propre, cet ensemble est vide et rien ne change.
+      let dejaDedans = null, exclus = 0;
       // douze blocs, pas six : une voiture qui cède s'arrête dès que son
       // balayage de huit blocs touche notre rectangle, donc à six ou huit
       // blocs de notre centre — à six, le témoin ne la voyait jamais arriver
@@ -1233,13 +1260,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((f) => setTimeout(f, 150));
         releves++;
         const moi = rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI);
-        window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => {
+        const chevauchants = new Set();
+        window.__vehicules.etat().forEach((c, ci) => c.routier && (c.places || []).forEach((q, qi) => {
           if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > PORTEE) return;
           proches++; if (q[5]) arretees++;
-          if (!separes(moi, rect(q[0], q[1], q[2]))) traverses++;
+          if (!separes(moi, rect(q[0], q[1], q[2]))) chevauchants.add(ci + ':' + qi);
         }));
+        if (dejaDedans === null) dejaDedans = chevauchants;
+        for (const cle of chevauchants) { if (dejaDedans.has(cle)) exclus++; else traverses++; }
       }
-      return { releves, proches, arretees, traverses, attenteSecondes };
+      return { releves, proches, arretees, traverses, attenteSecondes,
+        dedansAuDepart: dejaDedans ? dejaDedans.size : 0, exclus };
     });
     let poseParis = null, chaussee = null, poses = 0;
     for (let rang = 0; rang < 3; rang++) {
@@ -1254,7 +1285,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     if (chaussee) chaussee.poses = poses;
     verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
       !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
-      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · première voiture après ${chaussee.attenteSecondes} s · ${chaussee.poses} pose(s)`) : 'aucun convoi routier trouvé');
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · ${chaussee.dedansAuDepart} déjà dedans au départ (${chaussee.exclus} relevé(s) écarté(s)) · première voiture après ${chaussee.attenteSecondes} s · ${chaussee.poses} pose(s)`) : 'aucun convoi routier trouvé');
     // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
     // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
     // d'une voiture : l'enfant était encore au volant. On lit l'état avant le
