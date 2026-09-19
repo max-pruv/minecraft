@@ -637,13 +637,26 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   bloc(tx - 2, tx + 2, th + 1, th + 2, tz - 2, tz + 2, VERRE);
   dalle(tx - 3, tx + 3, tz - 3, tz + 3, th + 3, GRIS);
 
-  // LES HANGARS, eux aussi creux et ouverts côté tarmac : deux sur une base
-  // militaire — c'est là que dorment les chasseurs — un ailleurs.
+  // LES HANGARS, eux aussi creux, et ouverts sur leur face extérieure : deux
+  // sur une base militaire — c'est là que dorment les chasseurs — un ailleurs.
+  //
+  // ILS SONT PASSÉS DE L'AUTRE CÔTÉ DU TERMINAL EN v278. Ils tenaient le
+  // tarmac à `z = zt1+4 … zt1+12`, c'est-à-dire EN PLEIN DANS la rangée dès
+  // qu'on compte les ailes : le chasseur de quinze aérodromes sur dix-neuf
+  // avait une aile dans la tôle, et les trois d'une base aussi.
+  //
+  // ET LES DÉPLACER EN X NE MARCHE PAS — mesuré avant de le croire. La
+  // plate-forme d'un aérodrome ne va que jusqu'à `rayon - 20`, soit QUARANTE
+  // ET UN blocs à Orly et trente-six sur une base : un hangar poussé au-delà
+  // de la rangée (x 31…43) tombe hors du disque, et `set` l'ignore — on aurait
+  // livré des demi-bâtiments. Côté ville, il reste à trente-deux blocs du
+  // centre, bien au chaud, et le tarmac est libre d'un bout à l'autre.
   const hangar = (hx) => {
-    bloc(hx - 6, hx + 6, 0, 5, zt1 + 4, zt1 + 12, base ? KAKI : GRIS);
-    vider(hx - 5, hx + 5, 0, 4, zt1 + 5, zt1 + 11);
+    const z0 = zt0 - 14, z1 = zt0 - 6;
+    bloc(hx - 6, hx + 6, 0, 5, z0, z1, base ? KAKI : GRIS);
+    vider(hx - 5, hx + 5, 0, 4, z0 + 1, z1 - 1);
     for (let dx = -3; dx <= 3; dx++) {
-      for (let y = 0; y <= 3; y++) set(hx + dx, y, zt1 + 12, BLOCK.AIR);   // la porte
+      for (let y = 0; y <= 3; y++) set(hx + dx, y, z0, BLOCK.AIR);   // la porte
     }
   };
   if (base) { hangar(-HALL - 9); hangar(HALL + 9); } else hangar(HALL + 14);
@@ -666,10 +679,24 @@ export function buildAerodrome(poser, profil, rayon = 68) {
 // sur le modèle rendu, et un témoin de `carteMonde.js` garde `long`. `larg`
 // est la largeur du FUSELAGE, pas l'envergure — les ailes débordent, c'est la
 // règle du gabarit d'une voiture appliquée à un avion.
+//
+// ET `larg` N'EST PAS L'EMPRISE AU SOL — c'est la TROISIÈME fois que cette
+// table piège quelqu'un, et la pire (v278). Max, capture d'iPad : « les avions
+// ne devraient pas être par défaut dans les buildings ». Deux instruments
+// disaient pourtant 0/57 en faute — le témoin de la v228 ET la sonde qui lit
+// le monde — parce que tous DEUX mesuraient `larg`, c'est-à-dire un fuselage
+// de 1,8 bloc, pour un appareil dont les AILES en font 15,2. Mesuré avec la
+// vraie emprise : VINGT-NEUF postes sur cinquante-sept dans un bâtiment.
+//
+// LA BOÎTE DE COLLISION ET L'EMPRISE DE STATIONNEMENT NE SONT PAS LA MÊME
+// MESURE. `larg` reste le fuselage, et c'est juste : une AABB ne tourne pas,
+// un avion large de quinze blocs ne roulerait dans aucune voie de circulation
+// (règle du gabarit d'une voiture, v229). Mais une PLACE doit contenir les
+// ailes. Les deux vivent donc côte à côte, chacune nommée pour ce qu'elle est.
 export const GABARITS_AVION = {
-  avionligne: { long: 16, larg: 1.8, haut: 5.1 },
-  concorde: { long: 20, larg: 1.1, haut: 4.0 },
-  chasseur: { long: 10, larg: 1.4, haut: 3.4 },
+  avionligne: { long: 16, larg: 1.8, envergure: 15.3, haut: 5.1 },
+  concorde: { long: 20, larg: 1.1, envergure: 8.4, haut: 4.0 },
+  chasseur: { long: 10, larg: 1.4, envergure: 7.2, haut: 3.4 },
 };
 const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 
@@ -708,10 +735,22 @@ const CAP_LE_LONG_DE_X = Math.PI / 2;
 // Les aérodromes engendrés se garent EN RANGÉE : leur aire est dessinée pour
 // cela, et elle s'élargit avec eux (`aireAvions`). Les valeurs sont celles de
 // la recherche — la rangée libre la plus proche de l'axe déclaré par le plan.
+//
+// LES COTES SONT UN RÉSULTAT, ET ELLES ONT CHANGÉ EN v278. Comptée en ailes,
+// une rangée doit tenir entre le mur du terminal (z = 8) et le bord de la
+// piste ; la marge se lit dans les deux, elle ne se choisit pas :
+//
+//   profil | terminal | piste  | bande libre | envergure max | dv possibles
+//   hub    |  z <= 8  | 32..40 |    9 .. 28  |     15,3      |   17 .. 20
+//   ville  |  z <= 8  | 26..34 |    9 .. 25  |     15,3      |   17 tout juste
+//   base   |  z <= 8  | 21..27 |    9 .. 20  |      7,2      |   13 .. 16
+//
+// Le centre revient à ZÉRO partout : le décalage de `ville` ne servait qu'à
+// éviter le hangar, qui se range désormais au-delà de l'aire.
 const RANGEES = {
-  hub: { dv: 22, centre: 0 },
-  ville: { dv: 19, centre: -7 },     // décalé : le hangar occupe x = HALL+8…HALL+20
-  base: { dv: 10, centre: 0 },       // devant les hangars, qui tiennent z = 12…20
+  hub: { dv: 18, centre: 0 },
+  ville: { dv: 17, centre: 0 },
+  base: { dv: 14, centre: 0 },
 };
 
 // ROISSY EST BÂTI À LA MAIN, ET SES POSTES AUSSI. Sa plus longue plage libre
@@ -720,10 +759,23 @@ const RANGEES = {
 // aux vraies portes. Ces trois emplacements sortent de la sonde qui balaie
 // l'axe bloc par bloc — les mâts d'éclairage sont à z = ±24, ce qui interdit
 // le poste 22 à un avion de ligne (2,4 blocs de large).
+//
+// LES TROIS ONT DÉMÉNAGÉ EN v278, et la recherche a été refaite avec les
+// AILES. Le tarmac de Roissy n'a que DEUX poches assez grandes pour un gros
+// porteur, et c'est une mesure, pas une impression : le couloir entre le
+// tambour de l'aérogare 1 et les halls (x -18..1, z 11..26, vingt blocs sur
+// seize) et la trouée entre les halls 2C et 2E, à l'est. Partout ailleurs la
+// bande d'asphalte libre fait sept blocs, pour une envergure de quinze.
+//
+// UNE PLACE SE JUGE À CIEL OUVERT. Mon premier balayage exigeait « rien de
+// bâti dans l'emprise » — vrai à l'INTÉRIEUR d'une aérogare, qui est creuse
+// pour qu'on la visite (leçon du verre dans les murs, par l'autre bout) : il
+// garait très bien un Concorde dans le hall. Aucune colonne de l'emprise ne
+// doit rien porter au-dessus d'elle.
 const POSTES_ROISSY = [
-  { espece: 'concorde', du: -34, dv: 23 },
-  { espece: 'avionligne', du: -13, dv: 21 },
-  { espece: 'chasseur', du: 3, dv: 21 },
+  { espece: 'avionligne', du: -10, dv: 19 },   // le couloir, devant les satellites
+  { espece: 'chasseur', du: 3, dv: 14 },       // à l'entrée du couloir, côté hall 2F
+  { espece: 'concorde', du: 52, dv: 0 },       // la trouée entre les halls 2C et 2E
 ];
 
 export function postesAvion(profil) {
@@ -744,14 +796,34 @@ export function postesAvion(profil) {
   });
 }
 
+// L'EMPRISE AU SOL D'UN APPAREIL GARÉ — publiée ici, lue partout.
+//
+// Une case de bloc va de x à x+1 ; l'appareil centré en (du, dv) occupe
+// [du - long/2, du + long/2] le long de x et [dv - envergure/2, dv +
+// envergure/2] le long de z, puisqu'il se gare le long de x. Arrondir vers le
+// HAUT des deux côtés — ce que faisait mon premier balayage — ajoute une case
+// à chaque bord et fait rater la seule place de Roissy qui convienne.
+export function empriseAuSol(espece, du = 0, dv = 0) {
+  const g = GABARITS_AVION[espece];
+  return {
+    x0: Math.floor(du - g.long / 2), x1: Math.ceil(du + g.long / 2) - 1,
+    z0: Math.floor(dv - g.envergure / 2), z1: Math.ceil(dv + g.envergure / 2) - 1,
+  };
+}
+
 // L'EMPRISE que la rangée réclame sur le tarmac. `buildAerodrome` l'utilise
 // pour dimensionner sa dalle : l'aire se règle sur ce qui s'y gare, et elle
 // suivra toute seule le jour où un appareil changera de taille.
+//
+// ELLE LIT L'ENVERGURE DEPUIS LA v278. Elle prenait `dv ± 3` — un chiffre
+// rond — alors qu'un avion de ligne étend ses ailes à huit blocs de son axe :
+// la dalle s'arrêtait donc cinq blocs avant le bout des ailes, et l'appareil
+// débordait sur l'herbe. Une aire se règle sur ce qui s'y gare, ailes
+// comprises.
 export function aireAvions(profil) {
-  const postes = postesAvion(profil);
-  const x0 = Math.min(...postes.map((p) => p.du - GABARITS_AVION[p.espece].long / 2));
-  const x1 = Math.max(...postes.map((p) => p.du + GABARITS_AVION[p.espece].long / 2));
-  const dv0 = Math.min(...postes.map((p) => p.dv));
-  const dv1 = Math.max(...postes.map((p) => p.dv));
-  return { x0: Math.floor(x0) - 2, x1: Math.ceil(x1) + 2, dv0: dv0 - 3, dv1: dv1 + 3 };
+  const boites = postesAvion(profil).map((p) => empriseAuSol(p.espece, p.du, p.dv));
+  return {
+    x0: Math.min(...boites.map((b) => b.x0)) - 2, x1: Math.max(...boites.map((b) => b.x1)) + 2,
+    dv0: Math.min(...boites.map((b) => b.z0)) - 2, dv1: Math.max(...boites.map((b) => b.z1)) + 2,
+  };
 }

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 278,
+    titre: "Les avions sortent des murs",
+    puces: [
+      "Plus un avion garé dans un bâtiment",
+      "Chaque avion a une place à sa taille",
+      "Les hangars sont passés côté ville",
+      "Les avions de Roissy ont déménagé",
+    ],
+  },
+  {
     v: 277,
     titre: "Des essais plus rapides",
     puces: [

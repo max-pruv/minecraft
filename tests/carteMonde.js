@@ -1006,9 +1006,18 @@ const VRAIES_KM = [
         }
         return meilleur;
       };
+      // UN COMPTE D'ÉVÉNEMENTS RARES AVEC UNE BARRE À UN EST UN PILE OU FACE.
+      // Trente secondes fixes rendaient `redemarrages` 2 · 0 · 1 sur trois
+      // passages, sur un code de jeu qui n'avait pas bougé d'une ligne : un
+      // redémarrage n'est visible que si la MÊME voiture est relevée juste
+      // avant et juste après le vert, et le banc ne rend pas quatre images par
+      // seconde à heure fixe. On attend donc le RÉSULTAT, borné — la règle de
+      // la v270 — et le temps qu'il a pris entre dans le message.
       let auRouge = 0, auVert = 0, redemarrages = 0, voitures = 0;
       const avant = new Map();
-      for (let k = 0; k < 60; k++) {
+      const debut = Date.now(), fin = debut + 90000;
+      let k = 0;
+      for (; k < 300 && Date.now() < fin && !(auRouge >= 10 && redemarrages >= 1); k++) {
         await dodo(500);
         const feux = window.__feux();
         g.vehicules.etat().forEach((c, ci) => {
@@ -1025,7 +1034,7 @@ const VRAIES_KM = [
           }
         });
       }
-      return { voitures, auRouge, auVert, redemarrages };
+      return { voitures, auRouge, auVert, redemarrages, releves: k, secondes: Math.round((Date.now() - debut) / 1000) };
     });
     verifier('et la circulation s\'arrête au feu rouge, puis repart au vert',
       !arrets.err && arrets.auRouge >= 10 && arrets.redemarrages >= 1,
@@ -2171,48 +2180,81 @@ const VRAIES_KM = [
     // l'appareil nez vers -z alors qu'il se gare désormais le long de x : il
     // comptait un motif au lieu de compter la chose, et il accusait dix postes
     // parfaitement corrects.
+    //
+    // ET IL MESURAIT LE FUSELAGE, PAS L'AVION — CE TÉMOIN ÉTAIT VERT PARCE
+    // QU'IL NE POUVAIT PAS VOIR LA CHOSE (v278). Max, capture d'iPad : « les
+    // avions ne devraient pas être par défaut dans les buildings ». Celui-ci
+    // annonçait 0/57 depuis la v228, et une sonde qui lisait le MONDE aux
+    // coordonnées des postes disait 0/57 aussi : tous deux prenaient `larg`,
+    // c'est-à-dire 1,8 bloc de fuselage, pour un appareil dont les AILES en
+    // font 15,2. Repris avec l'emprise vraie : vingt-neuf postes sur
+    // cinquante-sept. Un témoin qui ne peut pas voir un changement n'en prouve
+    // pas l'absence, il en donne l'illusion.
+    //
+    // ET UNE PLACE SE JUGE À CIEL OUVERT. « Rien de bâti dans l'emprise » est
+    // satisfait À L'INTÉRIEUR d'une aérogare, qui est creuse pour qu'on la
+    // visite : mon balayage de remplacement garait très bien un Concorde dans
+    // le hall et le déclarait bon. C'est le piège du verre dans les murs, par
+    // l'autre bout. Aucune colonne de l'emprise ne doit rien porter au-dessus
+    // d'elle.
     const postes = await tab.evaluate(async () => {
       const mod = await import('./src/aeroport.js');
       const { AEROPORTS, postesAvion, buildAeroport, buildAerodrome } = mod;
       // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER.
-      // `GABARITS_AVION` et le `cap` des postes n'existent pas avant la v228 :
-      // sans ce repli, l'import lèverait et les témoins suivants ne seraient
-      // jamais joués — on ne verrait donc jamais l'étendue du défaut.
-      const GABARITS_AVION = mod.GABARITS_AVION || {
-        avionligne: { long: 16, larg: 2.4, haut: 4.2 },
-        concorde: { long: 20, larg: 2.0, haut: 4.4 },
-        chasseur: { long: 10, larg: 1.8, haut: 3.2 },
-      };
+      // `empriseAuSol` et `envergure` n'existent pas avant la v278 : sans ce
+      // repli, l'import lèverait et les témoins suivants ne seraient jamais
+      // joués — on ne verrait donc jamais l'étendue du défaut. Les valeurs de
+      // repli sont celles MESURÉES sur les modèles rendus, de sorte que les
+      // deux côtés soient jugés à la même aune.
+      const ENV = { avionligne: 15.23, concorde: 8.3, chasseur: 7.12 };
+      const LONG = { avionligne: 15.92, concorde: 19.9, chasseur: 10.01 };
+      const emprise = mod.empriseAuSol || ((espece, du, dv) => ({
+        x0: Math.floor(du - LONG[espece] / 2), x1: Math.ceil(du + LONG[espece] / 2) - 1,
+        z0: Math.floor(dv - ENV[espece] / 2), z1: Math.ceil(dv + ENV[espece] / 2) - 1,
+      }));
       const { BLOCK, DECOR_START } = await import('./src/blocks.js');
       const uni = (c) => DECOR_START + c * 10;
       // Ce sur quoi un avion peut se poser : asphalte, goudron, béton, gris,
       // et les marquages blancs et jaunes qui sont peints dessus.
       const ROULANT = new Set([uni(25), uni(26), uni(23), uni(24), uni(27), uni(2)]);
+      const CIEL = 24;   // au-dessus de toute aérogare, hangar ou satellite
       const fautes = [];
+      const cartes = {};
       for (const a of AEROPORTS) {
-        const m = new Map();
-        const poser = (x, y, z, id) => m.set(`${x},${y},${z}`, id);
-        if (a.cle === 'cdg') buildAeroport(poser);
-        else buildAerodrome(poser, a.profil, a.r);
-        for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
-          const g = GABARITS_AVION[espece];
-          // Sans cap publié (avant la v228), l'appareil était posé nez vers
-          // -z : c'est cette emprise-là qu'il faut alors mesurer.
-          const surX = cap !== undefined && Math.abs(Math.sin(cap)) > 0.5;
-          const dX = Math.ceil((surX ? g.long : g.larg) / 2);
-          const dZ = Math.ceil((surX ? g.larg : g.long) / 2);
-          let sansSol = 0, obstacles = 0;
-          for (let dx = -dX; dx <= dX; dx++) {
-            for (let dz = -dZ; dz <= dZ; dz++) {
-              if (!ROULANT.has(m.get(`${du + dx},0,${dv + dz}`))) sansSol++;
-              for (let y = 1; y <= Math.ceil(g.haut); y++) {
-                const b = m.get(`${du + dx},${y},${dv + dz}`);
-                if (b !== undefined && b !== BLOCK.AIR) obstacles++;
+        const cle = a.cle === 'cdg' ? 'cdg' : `${a.profil}:${a.r}`;
+        let m = cartes[cle];
+        if (!m) {
+          m = cartes[cle] = new Map();
+          const poser = (x, y, z, id) => m.set(`${x},${y},${z}`, id);
+          if (a.cle === 'cdg') buildAeroport(poser); else buildAerodrome(poser, a.profil, a.r);
+        }
+        const boites = [];
+        for (const { espece, du, dv } of postesAvion(a.profil)) {
+          const b = emprise(espece, du, dv);
+          boites.push({ espece, du, dv, b });
+          let sousUnToit = 0, sansSol = 0;
+          for (let x = b.x0; x <= b.x1; x++) {
+            for (let z = b.z0; z <= b.z1; z++) {
+              if (!ROULANT.has(m.get(`${x},0,${z}`))) sansSol++;
+              for (let y = 1; y <= CIEL; y++) {
+                const q = m.get(`${x},${y},${z}`);
+                if (q !== undefined && q !== BLOCK.AIR) { sousUnToit++; break; }
               }
             }
           }
-          if (obstacles || sansSol) {
-            fautes.push(`${a.cle}/${espece}(${du},${dv})${obstacles ? ` ${obstacles} blocs de bâti` : ''}${sansSol ? ` ${sansSol} colonnes hors revêtement` : ''}`);
+          if (sousUnToit || sansSol) {
+            fautes.push(`${a.cle}/${espece}(${du},${dv})${sousUnToit ? ` ${sousUnToit} colonnes sous un toit` : ''}${sansSol ? ` ${sansSol} hors revêtement` : ''}`);
+          }
+        }
+        // ET DEUX APPAREILS NE SE GARENT PAS L'UN DANS L'AUTRE. À Roissy les
+        // trois postes sont placés à la main, dans les deux seules poches
+        // assez grandes : rien ne garantit leur écartement, il se vérifie.
+        for (let i = 0; i < boites.length; i++) {
+          for (let j = i + 1; j < boites.length; j++) {
+            const A = boites[i].b, B = boites[j].b;
+            if (!(A.x1 < B.x0 || B.x1 < A.x0 || A.z1 < B.z0 || B.z1 < A.z0)) {
+              fautes.push(`${a.cle} : ${boites[i].espece} et ${boites[j].espece} se chevauchent`);
+            }
           }
         }
       }
@@ -2276,6 +2318,8 @@ const VRAIES_KM = [
         out[nom] = {
           long: +(bb.max.z - bb.min.z).toFixed(2),
           reserve: GAB[nom] ? GAB[nom].long : null,
+          envergure: +(bb.max.x - bb.min.x).toFixed(2),
+          envAnnoncee: GAB[nom] ? (GAB[nom].envergure ?? null) : null,
           sous: +bb.min.y.toFixed(2),
           saumon: bout.length ? +(Math.max(...bout) - Math.min(...bout)).toFixed(2) : null,
         };
@@ -2292,6 +2336,15 @@ const VRAIES_KM = [
       appareils.length === 3
         && appareils.every(([, d]) => d.reserve && d.long <= d.reserve + 0.05),
       `longueurs : ${appareils.map(([n, d]) => `${n} ${d.long}/${d.reserve}`).join(' · ')}`);
+    // 1 bis. L'ENVERGURE ANNONCÉE EST CELLE DU MODÈLE (v278). C'est elle qui
+    //    dimensionne une place de stationnement, et une table que personne ne
+    //    vérifie est un piège qui attend : `larg` avait annoncé n'importe quoi
+    //    pendant des versions parce que rien ne la lisait. Celle-ci est lue
+    //    par `empriseAuSol`, donc par le tarmac ET par le témoin des postes.
+    verifier('l\'envergure annoncée est celle du modèle rendu',
+      appareils.length === 3
+        && appareils.every(([, d]) => d.envAnnoncee !== null && Math.abs(d.envergure - d.envAnnoncee) <= 0.15),
+      `envergures : ${appareils.map(([n, d]) => `${n} ${d.envergure}/${d.envAnnoncee}`).join(' · ')}`);
     // 2. IL EST POSÉ SUR SES ROUES. Le train descendait à −0,68 sous
     //    l'origine : un avion garé avait les roues enterrées jusqu'à l'essieu.
     verifier('un avion garé est posé sur ses roues, pas enfoncé dans le sol',

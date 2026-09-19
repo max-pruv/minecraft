@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v278 — Les avions sortent des murs
+
+**Pourquoi.** Max, capture d'iPad : « les avions ne devraient pas être par
+défaut dans les buildings ». Un chasseur, le nez et le réacteur dans une paroi
+d'aérogare. Deux instruments disaient pourtant que tout allait bien — le témoin
+qui garde les postes de stationnement depuis des dizaines de versions, et une
+sonde qui relit le monde aux mêmes coordonnées : *zéro sur cinquante-sept en
+faute*, tous les deux. Ils étaient verts parce qu'ils **mesuraient le
+fuselage** : la fiche d'un avion de ligne annonce 1,8 bloc de large, et ses
+ailes en font 15,2.
+
+**Ce que ça change.** Les avions garés sont sur le tarmac, en entier, à ciel
+ouvert — aux dix-neuf aérodromes.
+
+- **Chaque appareil a une place à sa taille.** La dalle de stationnement est
+  dessinée sur l'envergure et non plus sur un chiffre rond : à Orly, l'avion de
+  ligne débordait de vingt et une colonnes sur l'herbe.
+- **Les hangars ont changé de côté.** Ils tenaient le tarmac juste là où la
+  rangée se gare ; ils sont passés côté ville, et le tarmac est libre d'un bout
+  à l'autre.
+- **Les trois avions de Roissy ont déménagé.** Le tarmac de Roissy n'a que deux
+  espaces assez grands pour un gros porteur : le couloir entre le tambour de
+  l'aérogare 1 et les halls, et la trouée entre les halls 2C et 2E. C'est là
+  qu'ils sont, et c'est une mesure, pas un choix.
+
+**Ce qui le prouve.** Le témoin des postes a été réécrit et rejoué sur la
+version en production : **26 postes sur 57 en faute**, contre zéro ici. Il ne
+demande plus « y a-t-il du bâti dans l'emprise » — vrai à l'intérieur d'une
+aérogare, qui est creuse pour qu'on la visite — mais **« l'emprise est-elle à
+ciel ouvert »**, colonne par colonne, chez le bâtisseur. Un second témoin
+compare l'envergure annoncée à celle du modèle rendu, pour qu'une table que
+personne ne relit ne redevienne jamais un piège. Portail complet vert.
+
 ## v277 — Le banc mesuré, et une panne qu'il cachait
 
 **Pourquoi.** Max : « revamp the testing process way too heavy and long and
