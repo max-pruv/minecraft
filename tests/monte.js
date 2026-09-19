@@ -438,9 +438,30 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const e = window.__vehicules.etat()[2];
       return e ? e.distance : null;
     });
+    // ON S'ARRÊTE QUAND LE RÉSULTAT EST ACQUIS, PAS QUAND LA FENÊTRE EST FINIE
+    // (v277). Ce témoin coûtait CENT UNE SECONDES — le plus cher des cent
+    // quarante de cette suite, qui en fait dix-neuf minutes et dont les
+    // vingt-cinq premiers portent 85 % du temps. Il attendait déjà un RÉSULTAT
+    // (deux cent cinquante blocs de tracé) et non une durée, ce qui est la
+    // bonne forme ; mais ce qu'il ANNONCE est un rapport d'allures, et ce
+    // rapport est établi bien avant les deux cent cinquante blocs. Continuer
+    // n'ajoutait aucune preuve.
+    //
+    // CE QUI REND L'ARRÊT ANTICIPÉ SÛR EST UNE ASYMÉTRIE, et elle se dit en une
+    // phrase : on ne sort que si TOUS les verdicts qui lisent ces relevés sont
+    // satisfaits. Un vert le devient plus vite ; un rouge court jusqu'à sa
+    // borne et garde toutes ses preuves. Les DEUX verdicts d'ici lisent
+    // `allures` — le rapport, et « elle ralentit assez pour qu'on la
+    // rejoigne » —, donc les deux entrent dans la condition de sortie. Un
+    // troisième verdict ajouté demain doit y entrer aussi : sinon l'arrêt
+    // anticipé lui vole ses relevés, et c'est le seul moyen de casser ce
+    // témoin.
+    const acquis = () => allures.length >= 8
+      && Math.max(...allures) / Math.max(0.1, Math.min(...allures)) > 1.8
+      && Math.min(...allures) < 9;
     const finMesure = Date.now() + 150000;
     let tourF1 = 0;
-    while (tourF1 < 250 && Date.now() < finMesure) {
+    while (tourF1 < 250 && Date.now() < finMesure && !acquis()) {
       await dormir(300);
       const etats = await tab.evaluate(() => window.__vehicules.etat());
       if (!etats[2]) break;
@@ -1859,6 +1880,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
       const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
       const vus = [];
+      const attentes = [];
+      // COMBIEN DE PASSANTS SONT DANS LE CADRE, ICI, MAINTENANT.
+      const dansLeCadre = (dx, dz) => {
+        let n = 0;
+        for (const q of g.npcs) {
+          if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
+          if (!(q.mesh && q.mesh.visible)) continue;
+          const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
+          const dd = Math.hypot(ex, ez);
+          if (dd >= 62 || dd < 1) continue;
+          const cos = (ex * dx + ez * dz) / dd;
+          if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+        }
+        return n;
+      };
       for (const [, a, b] of trajets) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
@@ -1870,24 +1906,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
           g.player.vel.set(0, 0, 0);
           g.player.yaw = yaw;
-          // La boucle des passants passe toutes les deux secondes ; on lui en
-          // laisse sept, le temps de peupler progressivement la rue suivante.
-          await new Promise((r) => setTimeout(r, 7000));
-          let n = 0;
-          for (const q of g.npcs) {
-            if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
-            if (!(q.mesh && q.mesh.visible)) continue;
-            const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
-            const dd = Math.hypot(ex, ez);
-            if (dd >= 62 || dd < 1) continue;
-            const cos = (ex * dx + ez * dz) / dd;
-            if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+          // ON ATTEND QUE LA RUE SE PEUPLE, ON NE DORT PLUS SEPT SECONDES
+          // (v277). La boucle des passants passe toutes les deux secondes en
+          // temps RÉEL depuis la v226 ; sept secondes par arrêt, à dix arrêts,
+          // faisaient soixante-dix secondes de sommeil pour un témoin qui en
+          // coûte cinquante-six.
+          //
+          // La borne ne change pas — sept secondes —, et c'est elle qui garde
+          // le rouge : une rue qui ne se peuple PAS est constatée exactement
+          // comme avant. Ce qui change est la sortie anticipée, et sa cible est
+          // QUATRE, c'est-à-dire un de plus que la barre du verdict
+          // (`moyenne >= 3`) : sortir à trois rendrait une moyenne sans marge,
+          // et une sortie anticipée ne doit jamais rapprocher un vert de sa
+          // barre. Le temps pris entre dans le message, réussite comme échec.
+          const finArret = Date.now() + 7000;
+          let n = dansLeCadre(dx, dz);
+          while (n < 4 && Date.now() < finArret) {
+            await new Promise((r) => setTimeout(r, 500));
+            n = dansLeCadre(dx, dz);
           }
+          attentes.push(+((7000 - Math.max(0, finArret - Date.now())) / 1000).toFixed(1));
           vus.push(n);
         }
       }
       return { vus, vides: vus.filter((n) => n === 0).length,
-        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2) };
+        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2),
+        attendu: +attentes.reduce((s, t) => s + t, 0).toFixed(1) };
     });
     // Le verdict porte sur les ARRÊTS VIDES, pas sur la moyenne : c'est de
     // marcher dans une rue déserte qu'un enfant se plaint, et un creux ne se

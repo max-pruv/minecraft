@@ -49,7 +49,14 @@ const position = (p) => p.evaluate(() => ({
   await banc.ouvrir();
   try {
     // --- une tablette, comme à la maison -------------------------------------
-    const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true });
+    // LES QUATRE PAGES DE CETTE SUITE GARDENT LA RÉSOLUTION PLEINE (`dpr: 1`).
+    // Le banc rend à 0,5 depuis la v277 — quatre fois moins de pixels, vingt
+    // pour cent de montre en moins sur une scène légère — mais cette suite est
+    // la seule qui VISE AU PIXEL : elle clique des vignettes, mesure des
+    // cadrages et lit des fonds de carte. Une résolution qui change déplace ce
+    // qu'elle mesure. Même discipline que `rr`, `ombres` et `prep` : ce qui
+    // s'écarte du défaut du banc se déclare à l'ouverture de la page.
+    const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(tab);
 
     // OÙ SONT LES VILLES : ON LE DEMANDE, ON NE LE SUPPOSE PAS.
@@ -1617,7 +1624,7 @@ const position = (p) => p.evaluate(() => ({
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
     await souffler();
-    const bureau = await banc.jouerSeul('Alice', { pret: true });
+    const bureau = await banc.jouerSeul('Alice', { pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(bureau);
     const boutonRecoit = await bureau.evaluate(() => {
       const b = document.getElementById('map-tout');
@@ -1660,7 +1667,7 @@ const position = (p) => p.evaluate(() => ({
     // principal. Bridé ×4 comme une tablette, et c'est à ce bridage que le
     // gel se voit : à ×1 le banc avale le fond en un quart de seconde.
     await souffler();
-    const nino = await banc.joueur('Nino', { prep: 1 });
+    const nino = await banc.joueur('Nino', { prep: 1, dpr: 1 });
     await nino.waitForFunction(() => !document.getElementById('play-btn').disabled, null, { timeout: 60000 }).catch(() => {});
     await nino.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
     await nino.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
@@ -1759,7 +1766,7 @@ const position = (p) => p.evaluate(() => ({
     // écart par le facteur d'échelle de son axe, celui-là même que la feuille
     // de style applique.
     await souffler();
-    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 }, pret: true });
+    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 }, pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(couche);
     // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
     //

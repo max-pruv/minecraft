@@ -150,9 +150,44 @@ async function relaisSourd(portEcoute, portVrai) {
 // trente-sept démarrages l'auraient payé six minutes par portail sans rien
 // mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la demande par
 // `{ prep: 1 }`, comme `ombres: 1` pour le regard.
-const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false) =>
+//
+// ET `dpr=0,5` : LE BANC REND QUATRE FOIS MOINS DE PIXELS, PARCE QUE C'EST LÀ
+// QU'EST LE PLANCHER (v277).
+//
+// Max : « revamp the testing process way too heavy and long and costly and
+// painful ». La MONNAIE du banc est le temps de JEU : `tenirSecondes` et tout
+// minuteur en `dt` accumulent min(dt, 0,05), donc le rapport montre/jeu vaut
+// exactement 1 dès VINGT images par seconde et se dégrade au-dessous. La cible
+// n'est donc pas « plus vite », c'est de franchir vingt.
+//
+// SwiftShader est limité par le REMPLISSAGE (la v237 l'avait mesuré sur le
+// paysage lointain : diviser les pixels par quatre ramenait la perte de 45 %
+// à 27 %). Mesuré ici, cinq secondes de JEU en secondes de montre, à `rr=2`,
+// deux relevés par bras en ordre alterné :
+//
+//   dpr    pixels    point d'apparition        Paris
+//   1      319 200   6,5 · 5,8 s  (×1,3)       39,9 · 39,7 s  (×8,0)
+//   0,5     79 800   5,1 · 5,3 s  (×1,02)      35,7 · 36,1 s  (×7,2)
+//   0,35    39 102   5,1 · 5,1 s  (×1,02)      36,2 · 37,9 s  (×7,2)
+//
+// TROIS choses se lisent là, et la troisième est la plus importante.
+// — **Le plancher est atteint dès 0,5** : 0,35 ne rend plus rien. On prend donc
+//   0,5, parce que c'est ce que la mesure sépare, pas parce que c'est rond — et
+//   0,5 garde deux fois plus de pixels aux témoins qui en LISENT.
+// — Le gain est de 20 % sur une scène légère et de 10 % en ville. Réel, modeste,
+//   et il vaut pour TOUTES les suites d'un coup.
+// — **Paris coûte ×8 quoi qu'on fasse** : 2,6 images par seconde, trois cent
+//   trente appels de dessin. Aucun réglage de pixels ne le rattrapera, et c'est
+//   ce qui dit où est le vrai travail — pas dans la résolution.
+//
+// Le jeu borne par `Math.min(devicePixelRatio, dpr)` (v257) : sur ce banc
+// devicePixelRatio vaut 1, donc 0,5 divise vraiment les pixels. Les deux
+// lecteurs de pixels de `monte.js` calculent leurs coordonnées depuis
+// `gl.drawingBufferWidth/Height` — ils sont indépendants de la résolution.
+// `carte.js`, qui vise au pixel sur la carte, demande `{ dpr: 1 }`.
+const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = 0.5) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -391,7 +426,7 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
