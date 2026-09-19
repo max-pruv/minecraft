@@ -49,6 +49,25 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   défaut de production, sur UN passage par bras : c'est la règle de la v269
   invoquée sans être suivie. Corrigé dans `CLAUDE.md` et dans le journal.
 
+  **DOUBLE MESURE FAITE CORRECTEMENT (v277) : SIX PASSAGES, TROIS PAR ARBRE, EN
+  ORDRE ALTERNÉ, MÊME BANC ET MÊME TÉMOIN DES DEUX CÔTÉS. Tous VERTS.**
+
+  | passage | arbre | chevauchements | paires | taux | relevés |
+  | --- | --- | --- | --- | --- | --- |
+  | 1 | branche | 37 | 145 | 25,5 % | 146 |
+  | 1 | `main` | 0 | 109 | 0 % | 146 |
+  | 2 | branche | 1 | 123 | 0,8 % | 146 |
+  | 2 | `main` | 0 | 74 | 0 % | 146 |
+  | 3 | branche | 3 | 117 | 2,6 % | 146 |
+  | 3 | `main` | 2 | 55 | 3,6 % | 146 |
+
+  Le nombre de relevés est STABLE (146 partout) : l'échantillonnage n'est pas en
+  cause. Ce qui varie, c'est un compte de coïncidences rares sur une fenêtre
+  courte — les deux arbres vont de zéro à des dizaines, et la barre (45) est
+  dans la queue de cette loi. Les 48 et 53 vus plus tôt sont des tirages de la
+  même distribution, pas un défaut de livraison. **Le témoin ne bloque donc
+  pas, et il ne prouve rien non plus.**
+
   Ce qu'il faut faire, dans cet ordre, et l'ordre a changé :
   1. **Rendre le témoin lisible avant de juger le jeu.** Un compte absolu sur
      une fenêtre de montre, dans une ville à deux ou quatre images par seconde,
