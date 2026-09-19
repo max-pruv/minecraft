@@ -49,6 +49,37 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
   demande portait sur la voiture.
 
+- [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
+  MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
+  deux côtés (`/root/main-ref` détaché sur 710ab76, la branche dans l'arbre
+  principal), la règle de la v195.
+
+  | rouge | branche (portail) | `origin/main`, seul |
+  | --- | --- | --- |
+  | le trou enlève la géométrie visible de la façade | 9 203 → 51 734 | **17 102 → 54 969** |
+  | fenêtres et éclairage public la nuit | rouge | **rouge** |
+  | les ombres suivent le soleil et la lune | `[1,-1]` | **`[1,-1]`, à l'identique** |
+  | le taxi roule avec les contrôles tactiles | rouge | **la suite meurt là** (`#ride-btn` caché, 18 relevés, ligne 416) |
+  | les deux clients sans erreur de jeu (`PeerJS: Lost connection`) | rouge | **pas atteint** |
+
+  Les trois premiers étaient DÉJÀ déclarés en v278 contre `d9852ac` ; ils se
+  reproduisent ici contre `710ab76`, donc ils sont en production depuis au moins
+  la v277 et rien de la v279 ne les cause. Le taxi est NEUF dans la déclaration,
+  et c'est `origin/main` qui l'a rendu : le bouton reste caché, ce qui veut dire
+  que la voiture invoquée n'est pas à portée d'embarquement — pas que le taxi ne
+  roule pas.
+
+  **ET LE PASSAGE SUR LA BRANCHE N'A RIEN PROUVÉ, CE QU'IL FAUT DIRE.** Il est
+  mort au bout de QUATORZE verdicts sur `page.waitForFunction` à la ligne 282 —
+  le délai que la v269 a déjà nommé, mot pour mot, dans ce même fichier. Ses
+  « zéro rouge » ne sont donc pas un vert : la suite n'a jamais atteint les
+  témoins de contenu. C'est exactement ce que la v269 décrivait (« la suite
+  s'arrêtant plus tôt quand le délai tombe, elle ne les atteint pas toujours »),
+  et la conséquence est que **la double mesure de cette suite se fait sur
+  plusieurs passages par côté, jamais sur un**. Reste à faire : deux passages de
+  plus sur la branche pour voir les trois rouges de contenu s'y reproduire, et
+  un passage de `manhattan.js` qui atteigne le témoin PeerJS des deux côtés.
+
 - [ ] **LES CINQ ROUGES DU PORTAIL DE LA v278, MESURÉS UN PAR UN — AUCUN N'EST
   DE LA LIVRAISON.** La PR ayant été fusionnée avant la fin du portail, la
   question n'était plus « faut-il fusionner » mais « ai-je cassé quelque chose
