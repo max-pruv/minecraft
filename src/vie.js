@@ -79,6 +79,17 @@ export class Habitant extends BaseNPC {
   // décrit.
   promene() { return !!this.surTrottoir; }
 
+  // LE TROTTOIR TOURNE, OU QUELQUE CHOSE LE BARRE : on prend la perpendiculaire
+  // qui continue, et le demi-tour si aucune ne le fait. Jamais un cap tiré au
+  // hasard — c'est ce qui faisait piétiner.
+  tourner() {
+    const quart = Math.PI / 2;
+    const gauche = this.capYaw + quart, droite = this.capYaw - quart;
+    const g = this.trottoirVers(gauche), d = this.trottoirVers(droite);
+    this.capYaw = g && d ? (Math.random() < 0.5 ? gauche : droite)
+      : g ? gauche : d ? droite : this.capYaw + Math.PI;
+  }
+
   // LE TROTTOIR CONTINUE-T-IL DANS CETTE DIRECTION ? On demande au monde, à
   // 1,2 bloc devant — assez loin pour tourner avant d'y être, assez près pour ne
   // pas juger l'autre côté de la rue.
@@ -105,15 +116,35 @@ export class Habitant extends BaseNPC {
       this.sonde = (this.sonde ?? 0) - dt;
       if (this.etat === 'marche' && this.sonde <= 0) {
         this.sonde = 0.33;
+        // ON JUGE SUR CE QU'ON A OBTENU, PAS SUR CE QU'ON A DEMANDÉ (v278).
+        //
+        // Première correction mesurée : 89 % des passants sur le trottoir (contre
+        // la moitié), chemin 9,2 → 15,7 blocs, net 3,7 → 6,5. Mais l'immobilité
+        // ne tombait que de 86 à 75 %, et une sonde qui SÉPARE les cas a dit
+        // pourquoi en une exécution : le programme veut marcher 77,9 % du temps,
+        // les passants sont en promenade à 95,5 % — et ils POUSSENT SANS AVANCER
+        // 54 % du temps. Ce n'était donc pas une pause, c'était un obstacle.
+        //
+        // Et cela ne se règle pas en regardant mieux devant : `trottoirVers` dit
+        // que le trottoir CONTINUE, jamais qu'il est LIBRE. Un mur au bout d'une
+        // diagonale, une bordure, un réverbère tous les neuf blocs (v248), un
+        // arbre, un autre passant — la liste est ouverte, et un piéton n'a pas à
+        // la connaître. Ce qu'il sait, c'est qu'il n'avance plus. C'est la leçon
+        // de `vitesseVoiture` (v272) appliquée à la marche : on borne sur le
+        // déplacement RÉELLEMENT obtenu.
+        const ou = this.pos;
+        if (this.vu) {
+          const avance = Math.hypot(ou.x - this.vu.x, ou.z - this.vu.y);
+          // À 1,6 m/s, un tiers de seconde de jeu fait un demi-bloc. Un
+          // dixième, c'est « je n'avance plus », pas « j'avance lentement ».
+          if (avance < 0.1) this.tourner();
+          this.vu.set(ou.x, ou.z);
+        } else this.vu = new THREE.Vector2(ou.x, ou.z);
         if (!this.trottoirVers(this.capYaw)) {
         // Le trottoir tourne : on essaie les deux perpendiculaires, puis le
         // demi-tour. Jamais de cap tiré au hasard — c'est ce qui faisait
         // piétiner.
-          const quart = Math.PI / 2;
-          const gauche = this.capYaw + quart, droite = this.capYaw - quart;
-          const g = this.trottoirVers(gauche), d = this.trottoirVers(droite);
-          this.capYaw = g && d ? (Math.random() < 0.5 ? gauche : droite)
-            : g ? gauche : d ? droite : this.capYaw + Math.PI;
+          this.tourner();
         }
       }
       this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
