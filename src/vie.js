@@ -82,12 +82,32 @@ export class Habitant extends BaseNPC {
   // LE TROTTOIR TOURNE, OU QUELQUE CHOSE LE BARRE : on prend la perpendiculaire
   // qui continue, et le demi-tour si aucune ne le fait. Jamais un cap tiré au
   // hasard — c'est ce qui faisait piétiner.
+  // ET S'IL N'Y A DE TROTTOIR DANS AUCUNE DIRECTION, IL N'EST PLUS SUR UN
+  // TROTTOIR : il redevient un flâneur, il ne pivote pas sur place (v278).
+  //
+  // C'est un défaut que j'ai introduit et qu'une mesure PROVOQUÉE a trouvé : un
+  // passant posé face à un mur sur une dalle de pierre voyait son cap
+  // s'incrémenter de π à chaque tour de sonde — 3,14 · 6,28 · 9,42 … 94,25 — et
+  // faisait volte-face trois fois par seconde, sur place, indéfiniment. Pire que
+  // le figé qu'on corrigeait. Cela arrive dès qu'un passant de trottoir marche
+  // sur l'herbe ou sur une esplanade que `TROTTOIR` ne connaît pas.
+  //
+  // Le demi-tour ne sert donc plus que quand une PERPENDICULAIRE existe mais
+  // qu'aucune ne porte ; sans aucun trottoir autour, on rend la main à l'ancien
+  // programme, qui sait flâner autour d'un poste. Et le cap se normalise : il
+  // grandissait sans borne.
   tourner() {
     const quart = Math.PI / 2;
     const gauche = this.capYaw + quart, droite = this.capYaw - quart;
     const g = this.trottoirVers(gauche), d = this.trottoirVers(droite);
-    this.capYaw = g && d ? (Math.random() < 0.5 ? gauche : droite)
+    if (!g && !d && !this.trottoirVers(this.capYaw + Math.PI)) {
+      this.surTrottoir = false;              // plus de trottoir : on flâne
+      this.etat = 'pause'; this.minuteur = 0.5;
+      return;
+    }
+    const cap = g && d ? (Math.random() < 0.5 ? gauche : droite)
       : g ? gauche : d ? droite : this.capYaw + Math.PI;
+    this.capYaw = Math.atan2(Math.sin(cap), Math.cos(cap));   // borné à ±π
   }
 
   // LE TROTTOIR CONTINUE-T-IL DANS CETTE DIRECTION ? On demande au monde, à
