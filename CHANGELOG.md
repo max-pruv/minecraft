@@ -75,6 +75,16 @@ nappes de lumière ne coûtent **rien** (vérifié trois fois), et en jeu la
 refonte ne coûte rien non plus — j'avais failli déclarer une régression qui
 n'existait pas, sur deux relevés au lieu de six.
 
+Et le même défaut se cachait à côté, depuis bien avant cette livraison : le jeu
+préparait ses couleurs de shader **une par image**, donc vingt-cinq images — ce
+qui dure quarante secondes quand l'accueil n'en rend qu'une et demie par
+seconde, alors que les vingt-cinq ne coûtent ensemble qu'une demi-seconde de
+calcul. Elles se font désormais par tranches de temps : cinq images au lieu de
+vingt-cinq ici, et sur l'iPad rien ne change, parce qu'une seule compilation y
+remplit déjà la tranche. Ce qui reste, et qui est écrit dans la liste des
+dettes : la préparation tient encore sur le bord de sa limite (43 à 45 s pour
+une limite de 45), et six de ces secondes ne sont attribuées à rien.
+
 **Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records. La
 refonte est une couche de peinture posée par-dessus la mise en page : elle ne
 change que les couleurs, les bords et les lettres.

@@ -468,7 +468,7 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus
 light, avec beaucoup plus de glass design ». Première des quatre livraisons de
-la refonte. Sept règles, et trois d'entre elles sont nées d'une mesure qui m'a
+la refonte. Dix règles, et quatre d'entre elles sont nées d'une mesure qui m'a
 contredit.
 
 - **UN `backdrop-filter` EST UN CALQUE, ET L'ACCUEIL N'A PAS D'IMAGES À LUI
@@ -519,6 +519,40 @@ contredit.
   bouge pas** (24,6 · 20,5 à 6 ms contre 23,3 · 21,2 à 30) parce que sous cette
   charge-là c'est la charge des corps qui commande — ce qu'on achète, c'est la
   MARGE en images, et c'est elle qui manquait au portail.
+
+- **ET LA CHAUFFE DES PROGRAMMES PORTAIT LE MÊME PIÈGE, AU MÊME ENDROIT.**
+  `chaufferLesProgrammes` compilait UNE signature par `requestAnimationFrame` —
+  un compte par image, donc un taux qui suit la cadence. Le flou suspendu, la
+  borne tirait encore avec SEIZE programmes sur vingt-cinq. Mesuré, dix
+  compilations enveloppées : **17 à 25 ms chacune, médiane 18,5** — moins d'une
+  demi-seconde de calcul pour les vingt-cinq, quand la chauffe en mettait
+  quarante et une. Tout le reste était de la famine d'images. Le budget vaut
+  cent millisecondes, et **ce qui le décide, c'est qu'il a DEUX régimes à
+  servir** : ici une compilation vaut 18 ms, donc cinq passent et la chauffe
+  tient en cinq images ; sur l'iPad Safari compile en CENTAINES de
+  millisecondes (v257), donc la première le remplit à elle seule et l'accueil
+  garde son étalement — qui est toute la raison d'être de la v246. Un budget
+  qui servirait un seul des deux régimes serait un réglage de banc.
+  `?chauffems=` le force.
+- **ET UN VERDICT NE COMPARE PAS L'HORLOGE DU BANC À LA BORNE DE LA PAGE.**
+  Celui de la libération exigeait `apres < 45000` : `apres` part avant
+  `banc.joueur()`, donc il compte l'ouverture de la page, tandis que les
+  quarante-cinq secondes sont la borne que la page s'applique depuis
+  `departPrep`. Mesuré 43 761 contre 47 710 — rouge en comparant deux horloges.
+  Et la durée n'a rien à faire dans ce verdict : ce qu'il annonce, c'est qu'AU
+  MOMENT de la libération tout est là. Si la page se libère à sa borne en ayant
+  fini, l'enfant n'y perd rien ; sinon c'est l'ÉTAT qui le dit — et c'est l'état
+  qui a vu les deux vrais défauts (8 puis 16 programmes sur 25). La durée reste
+  dans le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
+- **CE QUI RESTE, ET IL FAUT LE DIRE : SIX SECONDES NON ATTRIBUÉES.** La
+  préparation met 42,9 à 45,2 s dans les conditions du témoin, contre 36,9 s sur
+  `origin/main`. Dette déclarée dans `TASKS.md` avec la seule piste non mesurée —
+  `#prep-line` réécrite toutes les 250 ms invalide la peinture de `#overlay`,
+  donc les deux calques plein écran. **Mes mesures des calques ont toutes été
+  faites sur une page SANS préparation, où rien ne réécrit : elles ne pouvaient
+  pas voir ce coût-là.** C'est la sonde aveugle de la v273, sur mes propres
+  mesures — et c'est pour cela qu'un « innocent » se dit avec les conditions
+  dans lesquelles il a été mesuré.
 
 - **UNE POLICE DE JEU HORS LIGNE VIT DANS LE DÉPÔT, JAMAIS CHEZ GOOGLE.** Un
   `<link>` vers `fonts.googleapis.com` casserait l'accueil dans l'avion, à

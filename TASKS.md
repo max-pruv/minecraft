@@ -30,6 +30,35 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ## En cours
 
+- [ ] **LA PRÉPARATION DE L'ACCUEIL TIENT SUR LE BORD DE SA PROPRE BORNE
+  (v276).** Le bouton « Jouer » est grisé jusqu'à ce que tout soit prêt, borné à
+  quarante-cinq secondes (v258). Sur ce banc, dans les conditions du témoin de
+  `maj.js` — une page laissée ouverte sur l'accueil qui télécharge les 4,67 Mo du
+  scanner de visages, et une seconde page qui prépare —, la préparation met
+  **42,9 · 43,8 · 45,2 s** (trois passages, tout complet chaque fois : 25/25
+  programmes, corps, fond de carte). `origin/main` (v275) mesurait 36,9 s. La
+  marge est donc de zéro à deux secondes, et le témoin battra sur une machine
+  plus lente.
+
+  Ce qui a déjà été mesuré et corrigé dans la v276 : le flou du verre prenait la
+  MOITIÉ des images de l'accueil (suspendu pendant la préparation, 8/25 → 25/25
+  programmes), et la chauffe compilait une signature par IMAGE au lieu d'un
+  budget de temps (16/25 → 25/25). Ce qui a été mesuré INNOCENT : la dérive de
+  l'aurore et les deux calques plein écran (trois designs, aucun signal), et la
+  parure en jeu (six relevés, 0 à 1,2 % d'images au-delà de 150 ms des deux
+  côtés).
+
+  Ce qui reste ouvert : les six secondes d'écart avec `origin/main` ne sont
+  attribuées à rien. Une piste NON mesurée, et il faut le dire : `#prep-line`
+  est réécrite toutes les 250 ms pendant la préparation, ce qui invalide la
+  peinture de `#overlay` — donc les trois dégradés radiaux de `::before` et le
+  SVG de méridiens de `::after`, à `background-size: 128vmax`. Mes mesures des
+  calques ont toutes été faites sur une page SANS préparation, où rien ne
+  réécrit : **elles ne pouvaient pas voir ce coût-là** (piège de la sonde
+  aveugle, v273). Le test qui trancherait : reproduire les conditions du témoin
+  (une page qui télécharge le scanner + une page qui prépare) et comparer
+  `depuis` avec et sans `?verre=0`.
+
 - [ ] **LES PASSANTS SE FIGENT ENCORE DEVANT L'ENFANT (Max, après v276).**
   « Les passants qui s'arrêtent et qui nous regardent de manière figée, ça ne
   fonctionne pas. Je vois quelque chose de très naturel, comme dans GTA. »
