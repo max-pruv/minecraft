@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 277,
+    titre: "Des essais plus rapides",
+    puces: [
+      "Le jeu se prépare mieux avant « Jouer »",
+      "Les essais vont plus vite, donc plus de versions",
+      "Rien ne change dans ton monde",
+    ],
+  },
+  {
     v: 276,
     titre: "Un jeu tout clair",
     puces: [
