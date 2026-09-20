@@ -28,7 +28,47 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
-## Les dix rouges de `monte.js` mesurés SUR `origin/main`, donc en production
+## VINGT ROUGES MESURÉS SUR `origin/main`, DONC EN PRODUCTION
+
+Portail COMPLET rejoué sur `origin/main` (710ab76), quinze suites, 78 minutes.
+**Aucun de ces vingt défauts ne vient d'une branche en cours** : ils sont dans le
+jeu que la famille utilise. C'est la double mesure que la v195 exige, et c'est
+aussi la référence contre laquelle diffèrent désormais tous les portails de
+branche — un rouge qui est dans cette liste n'est pas le vôtre.
+
+| suite | rouges | ce qu'ils touchent |
+| --- | --- | --- |
+| `monte.js` | 10 | la conduite, l'arrivée en ville, les flammes de réacteur |
+| `washington.js` | 5 | **on ne peut plus prendre le métro de Washington** |
+| `reseau.js` | 4 | **Alice ne retrouve pas son monde** après une veille ou le départ de l'hôte |
+| `maj.js` | 1 | le fond de carte n'est pas prêt quand « Jouer » se libère |
+| les onze autres | — | vertes |
+
+**ET DEUX DE CES QUATRE FAMILLES TOUCHENT CE QUE LES ENFANTS FONT VRAIMENT.**
+
+- **LE MÉTRO DE WASHINGTON EST INACCESSIBLE.** Les cinq rouges de
+  `washington.js` n'ont qu'UNE cause : « en descendant l'escalier, on arrive sur
+  le quai — descendu de **-0,0 blocs** · bloqué : trois pas sans descendre ».
+  L'enfant ne descend pas. Tout ce qui suit tombe en cascade : pas de plafond
+  au-dessus de la tête (on est resté dehors), la rame existe mais son bouton
+  n'est pas visible, et le métro ne mène nulle part (Smithsonian → Smithsonian,
+  0 m en 40 s). C'est une fonctionnalité que Max avait demandée (v161), et elle
+  ne marche plus. À démonter par une sonde qui dit OÙ l'escalier bloque, pas par
+  une hypothèse — et en se souvenant que « ne plus avancer se constate sur
+  PLUSIEURS pas » (la leçon écrite pour ce fichier même).
+- **ALICE NE RETROUVE PAS SON MONDE.** Quatre rouges de `reseau.js` :
+  « Alice retrouve son monde après une veille sans retour — compteur 0 [] », « la
+  reprise tient dans la durée — hôte 2 · Alice 0 », « seule après le départ de
+  l'hôte, et le compteur le dit — compteur 0, avatars [] », « et le jeu continue
+  d'essayer de la reconnecter — null ». C'est le chemin de reprise du jeu à
+  plusieurs, celui qui compte quand deux enfants jouent ensemble et qu'un iPad
+  s'endort. Le code réseau porte déjà la leçon de la v266 (« le silence ne prouve
+  le départ que d'un pair qu'on ne peut pas sonder ») : c'est là qu'il faut
+  regarder, avec une sonde par question comme cette version-là l'a fait.
+
+**Les onze autres sont ci-dessous, par famille.**
+
+## Les dix rouges de `monte.js`, en détail
 
 Portail de référence rejoué seul sur `origin/main` (710ab76), `monte.js` en
 20 min 40 s. **Ces dix-là ne viennent d'aucune branche en cours** : ils sont dans
