@@ -3002,6 +3002,16 @@ const VRAIES_KM = [
           }
         }
       }
+      // LA LONGUEUR DE RUE QUI PORTE UN CONVOI — la grandeur qui survit à un
+      // changement de pas de trame. Un COMPTE d'anneaux, non : des anneaux plus
+      // grands portent la même rue en étant moins nombreux.
+      let porteUnConvoi = 0;
+      for (const tr of traces) {
+        for (let i = 0; i < tr.pts.length; i++) {
+          const p1 = tr.pts[i], p2 = tr.pts[(i + 1) % tr.pts.length];
+          porteUnConvoi += Math.hypot(p2.x - p1.x, p2.z - p1.z);
+        }
+      }
       ecarts.sort((a, b) => a - b);
       const ecartMed = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : -1;
       const voieVoulue = vm.VILLES_MONDE.find((v) => v.trame && !v.trame.ruelles).trame.w / 2;
@@ -3011,6 +3021,7 @@ const VRAIES_KM = [
         ecartMed, voieVoulue, aDroite, aGauche,
         place, serre, releves: ecarts.length,
         villes: parVille.size, anneaux: traces.length, sansAnneau,
+        porteUnConvoi: Math.round(porteUnConvoi),
         fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
         meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
         aveugles, pireVue: Math.round(pireVue), villeAveugle, vu: VU_VOITURE, vuAnneau: VU_ANNEAU,
@@ -3021,9 +3032,21 @@ const VRAIES_KM = [
       !rues.err && rues.fautives === 0,
       `barre ${rues.barre} blocs · ${rues.fautives} ville(s) au-dessus · pire ${rues.pire} (${rues.villePire}) · ${rues.anneaux} anneaux sur ${rues.villes} villes`);
 
+    // ET LA BORNE NE COMPTE PLUS DES ANNEAUX (v282). Elle disait `anneaux > 600`
+    // — un COMPTE ABSOLU relevé quand le pas de trame valait dix-neuf partout.
+    // Les typologies changent ce pas, donc le nombre de rues, donc le nombre
+    // d'anneaux : mesuré, 628 → 602, pendant que la LONGUEUR DE RUE QUI PORTE UN
+    // CONVOI passe de 159 133 à 158 974 blocs, soit un dixième de pour cent.
+    // C'est cette longueur-là que l'enfant voit, et c'est « une barre qui suit
+    // une grandeur se calcule, elle ne s'écrit pas » (v269) — la troisième fois
+    // que ce fichier paie une dimension de ville écrite au lieu d'être demandée
+    // (v203, v271, v274). La borne est une borne de GARDE : elle sépare « il y a
+    // des convois » de « il n'y en a plus », donc elle se pose à la MOITIÉ et
+    // jamais à quatre-vingt-dix pour cent (v237, trois fois dans `monte.js`).
     verifier('et aucune ville ne perd tous ses convois au passage',
-      !rues.err && rues.sansAnneau === 0 && rues.anneaux > 600,
-      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`);
+      !rues.err && rues.sansAnneau === 0 && rues.porteUnConvoi > 80000,
+      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`
+      + ` · ${rues.porteUnConvoi} blocs de rue portent un convoi (borne 80 000)`);
 
     // UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT. Ce témoin-ci est
     // né d'une régression de la livraison elle-même : la contrainte de partage

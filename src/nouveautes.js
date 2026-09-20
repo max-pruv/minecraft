@@ -7,7 +7,7 @@
 export const NOUVEAUTES = [
   {
     v: 282,
-    titre: 'Des villes qui ne se ressemblent plus',
+    titre: 'Des villes toutes différentes',
     puces: [
       'Chaque ville a son plan de rues',
       'Des cours au cœur des îlots',

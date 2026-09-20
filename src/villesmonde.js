@@ -192,9 +192,16 @@ export const TYPOS = {
   // pavée au milieu de l'îlot, celle où débouchent les ruelles de livraison et
   // où se garent les voitures. Mesuré : 27 × 21 laisse 8,7 × 5,7 de demi-lot,
   // donc une couronne de 3 tient largement.
-  damier:    { pu: 27, pv: 21, couronne: 3, courPavee: true, place: [12, 9, 1] },
+  // UN DAMIER EST CARRÉ — c'est sa définition, et `27×21` ne l'était pas. Le pas
+  // de 27 se paie en circuits : croisé avec les anneaux, 29 des 37 villes en
+  // damier en perdaient un et 29 se retrouvaient à UN SEUL, parce que deux grands
+  // rectangles ne tiennent plus sous les vingt blocs de partage de la v211.
+  damier:    { pu: 21, pv: 21, couronne: 3, courPavee: true, place: [12, 9, 1] },
   // Les vieux tissus denses d'Asie de l'Est : de petites parcelles, pas de cour.
-  organique: { pu: 15, pv: 13, couronne: 0, place: [7, 5, 2] },
+  // `pv: 13` donnait un lot de 13 − 9,6 = **3,4 blocs** : plus un immeuble, une
+  // cloison, et vingt-trois villes sous la barre de cinq de la v271. Le chiffre
+  // se DÉRIVE de cette barre — lot ≥ 5 ⇒ pas ≥ 14,6 ⇒ 15 — il ne se choisit pas.
+  organique: { pu: 15, pv: 15, couronne: 0, place: [7, 5, 2] },
   // Le centre à tours : superîlots, Séoul, Dubaï, Shanghai.
   // Le superîlot : des tours autour d'une ESPLANADE. C'était le tissu le plus
   // dense du jeu — Tokyo et Séoul à 98 % de disque bâti, PIRE qu'avant ma
@@ -2124,9 +2131,25 @@ export function batirColonneVillesMonde(x, z, poser) {
     // presque expliqué ; c'est une COUPE à travers une rue qui l'a montré.
     const rangUn = dRue >= t.s && dRue < t.s + 1.15;
     const sousPortique = t.portiques && rangUn;
+    // ET `bord` N'EST PAS `rangUn` — J'AI PRIS 85 % DES DEVANTURES DU JEU EN
+    // RESSERRANT LA BONNE CHOSE AU MAUVAIS ENDROIT. Le paragraphe ci-dessus est
+    // juste POUR LE PORTIQUE et faux pour tout le reste : `bord` est ce qui
+    // porte la vitrine, la porte de bois et le bandeau d'enseigne, et c'était
+    // un DEMI-ESPACE depuis la v172. Mesuré sur tout le disque, en interrogeant
+    // le bâtisseur des deux côtés — pour mille colonnes de trottoir :
+    //
+    //              portes main → branche   vitrines main → branche
+    //   Rome         158,3 →  15,7           1460,3 → 194,9
+    //   Tokyo         94,0 →  13,3           1644,4 → 286,7
+    //   Marrakech    266,8 →  83,0            980,5 → 186,2
+    //   Bologne       90,8 →   0,0            811,0 →  59,6
+    //
+    // Le demi-espace revient tel quel ; le portique, lui, garde son rang libre
+    // et sa façade recule d'un cran — donc le MÊME demi-espace, moins le rang
+    // du passage. Bologne retrouve ses boutiques ET garde ses arcades.
     const bord = t.portiques
-      ? (dRue >= t.s + 1.15 && dRue < t.s + 2.15) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
-      : rangUn || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+      ? (dRue < t.s + 2.15 && !rangUn) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
+      : dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
 
     // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
     // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
