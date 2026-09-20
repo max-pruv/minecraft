@@ -3088,6 +3088,136 @@ const VRAIES_KM = [
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
+    // --- LES FLEUVES DES VILLES, ET LES PONTS QUI LES FRANCHISSENT (v280) ----
+    //
+    // Onze villes dont le fleuve EST l'identité n'en avaient aucun : Hambourg
+    // sans l'Elbe, Lyon sans la Saône ni le Rhône, Budapest sans le Danube.
+    // Max : « je me prenne à Barcelone, je le sentais l'ambiance de Barcelone
+    // et pas toutes les villes qui sont copiées-collées les unes aux autres. »
+    //
+    // ET RENDRE LE FLEUVE A CASSÉ QUATRE VILLES avant qu'on ne le livre :
+    // Hambourg, Lyon, Belgrade et Bâle ont perdu TOUS leurs anneaux de
+    // circulation, leur rivière traversant le centre. La sonde qui SÉPARE les
+    // cas l'a dit en une exécution — 277 à 312 candidats sur 357 rejetés POUR
+    // L'EAU, et le moins mauvais mouillé sur deux à six points de quarante :
+    // l'anneau ne ratait pas la rive, il ratait un PONT. Ces quatre témoins
+    // gardent les deux moitiés de la chose, parce que l'une sans l'autre
+    // livrerait une ville coupée en deux.
+    //
+    // Ces onze villes sont HORS de la fenêtre d'empreinte de `plafond.js`
+    // ([-700, 700] ; la plus proche, Bâle, est à 1 803 blocs) : les deux
+    // empreintes du relief ne bougent pas d'un octet. Mais « une refonte hors
+    // de la fenêtre d'empreinte doit apporter ses PROPRES témoins : personne ne
+    // le fera à sa place » (v186) — les voici.
+    const fleuves = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const w = window.__game.world;
+      const { VILLES_MONDE, anneauxDeVille, coteDeVille } = m;
+      const AVEC = ['hambourg', 'cologne', 'francfort', 'budapest', 'lyon', 'seville',
+        'porto', 'bordeaux', 'dresde', 'belgrade', 'bale'];
+      // 1 — CHAQUE VILLE DE FLEUVE A SON EAU, ET ELLE SE MESURE DANS LE
+      // DISQUE, pas sur la fiche : une fiche peut déclarer un fleuve que la
+      // géographie ne rend pas (une polyligne hors du disque, une largeur
+      // nulle). On compte les colonnes SOUS le niveau de la mer.
+      const eaux = [];
+      for (const cle of AVEC) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { eaux.push({ cle, err: 'fiche absente' }); continue; }
+        let mouille = 0, total = 0;
+        for (let du = -f.rayon; du <= f.rayon; du += 3) {
+          for (let dv = -f.rayon; dv <= f.rayon; dv += 3) {
+            if (Math.hypot(du, dv) > f.rayon) continue;
+            total++;
+            if (w.terrainHeight(f.ancre.x + du, f.ancre.z + dv) < WATER_LEVEL) mouille++;
+          }
+        }
+        eaux.push({ cle, part: mouille / total, total });
+      }
+      // 2 — AUCUNE VILLE À TRAME NE PERD TOUTES SES VOITURES. Le vrai
+      // dénominateur est l'ensemble des villes qui en ont le droit : une médina
+      // piétonne n'en a jamais eu (v270), et c'est une DÉCISION.
+      const traces = m.tracesCirculation((x, z) => w.terrainHeight(x, z));
+      const par = new Set(traces.map((t) => t.cle));
+      const trame = VILLES_MONDE.filter((f) => f.trame && !f.trame.ruelles);
+      const sans = trame.map((f) => f.cle).filter((c) => !par.has(c));
+      // 3 — LE TABLIER A DE L'EAU DESSOUS, DE L'AIR DESSUS, ET LA COTE DE LA
+      // RIVE. C'est la leçon du Bay Bridge : « ce qui prouve un pont, c'est
+      // l'eau sous son tablier », pas de la pierre grise quelque part.
+      // Et l'on traverse À PIED, parce qu'un pont qu'on ne traverse pas est un
+      // décor : sur l'axe du tablier, un sol plein et deux blocs d'air.
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
+      // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
+      // on ne verrait alors l'étendue d'aucun des quatre verdicts.
+      const ponts = [];
+      for (const cle of (anneauxDeVille && coteDeVille
+        ? ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'] : [])) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        const a = anneauxDeVille(f);
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        const cote = coteDeVille(f);
+        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0;
+        for (const q of a.ponts) {
+          pireSpan = Math.max(pireSpan, q.a1 - q.a0);
+          const n = Math.round(q.a1 - q.a0);
+          for (let k = 0; k <= n; k++) {
+            const le = q.a0 + k;
+            const P = q.axe === 0 ? le : q.b, Q = q.axe === 0 ? q.b : le;
+            const x = Math.round(f.ancre.x + P * co + Q * si);
+            const z = Math.round(f.ancre.z + (-P * si + Q * co));
+            pas++;
+            if (w.getBlock(x, cote, z) === 0) sansSol++;
+            if (w.getBlock(x, cote + 1, z) !== 0 || w.getBlock(x, cote + 2, z) !== 0) surLaTete++;
+            if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
+          }
+        }
+        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan });
+      }
+      return { eaux, sans, trame: trame.length, servies: par.size, ponts,
+        PONT_MAX: m.PONT_MAX || 0 };
+    });
+
+    // Les parts d'eau mesurées à la livraison, et elles disent la vraie ville :
+    // Hambourg 27 % (l'Elbe et l'Alster), Belgrade 21 % (la Save ET le Danube),
+    // Lyon 11 % (deux rivières étroites), Bâle 10 % (un seul Rhin). La barre
+    // basse suffit : ce qu'on garde, c'est qu'un fleuve DÉCLARÉ existe dans le
+    // monde engendré — une fiche qui déclare une polyligne que la géographie ne
+    // rend pas passerait toute lecture de fiche.
+    verifier('les onze villes de fleuve ont vraiment leur rivière dans le monde',
+      fleuves.eaux.every((e) => !e.err && e.part > 0.03),
+      fleuves.eaux.map((e) => `${e.cle} ${e.err || (100 * e.part).toFixed(0) + ' %'}`).join(' · '));
+
+    // ON DÉCLARE CE QU'ON NE SAIT PAS FAIRE, ON NE L'ARRONDIT PAS. San Jose
+    // n'avait déjà aucun anneau avant cette livraison, et pour une raison qui
+    // n'est pas l'eau : 252 candidats sur 357 sortent de son disque, sa trame
+    // de 27×21 étant trop grossière pour un rayon de 47. C'est une dette de
+    // TISSU, déclarée dans TASKS.md — et la nommer ici est ce qui empêche une
+    // seconde ville de la rejoindre en silence.
+    const DETTE_SANS_ANNEAU = ['sanjose'];
+    verifier('aucune ville à trame ne perd toutes ses voitures',
+      fleuves.sans.every((c) => DETTE_SANS_ANNEAU.includes(c)),
+      `${fleuves.servies}/${fleuves.trame} villes servies · sans anneau : `
+      + `${fleuves.sans.length ? fleuves.sans.join(', ') : '(aucune)'}`
+      + ` · dette déclarée : ${DETTE_SANS_ANNEAU.join(', ')}`);
+
+    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. Les culées mordent d'un bloc et
+    // demi sur chaque rive — sinon une marche attend l'enfant au bout du pont —
+    // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
+    // mesuré 73 à 85 % à la livraison.
+    verifier('chaque pont a de l\'eau sous son tablier',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
+      fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
+        + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
+
+    verifier('et on le traverse à pied d\'une rive à l\'autre',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.sansSol === 0 && p.surLaTete === 0
+        && p.pireSpan <= fleuves.PONT_MAX + 3),
+      fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
+        + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
+      + ` · borne ${fleuves.PONT_MAX}`);
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

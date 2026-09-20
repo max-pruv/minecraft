@@ -1635,6 +1635,54 @@ function chercheMer(v) {
   return { nx: sx / l, nz: sz / l, d: 0 };                  // d est posé par ficheGeneree (0.55·rayon)
 }
 
+// LES FLEUVES DES VILLES ENGENDRÉES (v280) — nommés, avec leur raison.
+//
+// Mesuré sur le disque de chaque ville, par la HAUTEUR et non par le sol —
+// l'eau d'une ville n'est pas un identifiant de bloc, c'est une colonne sous le
+// niveau de la mer, qui se remplit seule ; mes deux premiers relevés
+// annonçaient 0,2 % partout et mesuraient la mauvaise chose. Le vrai chiffre :
+// Amsterdam 24 % d'eau, Venise 36, Stockholm 14 — leurs canaux, leur lagune et
+// leur archipel marchent. Mais ONZE villes de fleuve en avaient ZÉRO : Cologne
+// sans le Rhin, Lyon sans Rhône ni Saône, Budapest sans Danube, Hambourg sans
+// l'Elbe ni l'Alster. Une ville de fleuve sans son fleuve est une ville de plus
+// dans le lot, et c'est exactement ce dont Max se plaint.
+//
+// `chercheMer` ne trouve que la MER, et ces villes en sont loin — Hambourg est
+// à cent kilomètres de la mer du Nord. Le fleuve, lui, ne se devine pas : il se
+// nomme, comme les tissus urbains, avec sa raison à côté.
+//
+// LES UNITÉS SE MESURENT AVANT DE S'ÉCRIRE : `local()` rend des blocs, la
+// géographie est interrogée en `u / K` — donc VINGT unités par kilomètre pour
+// une ville engendrée. Et la convention est +u vers l'EST, −v vers le NORD,
+// vérifiée en demandant à `local` où tombe un point un kilomètre plus au nord.
+// `l` est la demi-largeur : l = 5 fait un fleuve d'un demi-kilomètre. ET ELLES
+// SONT CELLES DES VRAIS FLEUVES, pas un chiffre commode : mon premier jet
+// donnait au Danube de Budapest UN KILOMÈTRE de large pour trois cent cinquante
+// mètres réels, et Hambourg se retrouvait à 39 % d'eau. On prend la largeur du
+// fleuve, comme on prend la vitesse des vrais avions (v267).
+const FLEUVES_VILLES = {
+  hambourg: [
+    { nom: 'Elbe', l: 4, pts: [[-60, 30], [-20, 26], [20, 24], [60, 28]] },       // 1,3 km au sud du Rathaus · 400 m de large
+    { nom: 'Alster', l: 6, pts: [[2, -12], [4, -26]] },                           // la Binnenalster puis l'Außenalster, 1,2 km de long
+  ],
+  cologne: [{ nom: 'Rhin', l: 4, pts: [[10, 60], [8, 10], [6, -20], [2, -60]] }], // 0,4 km à l'est du Dom · 350 m de large
+  francfort: [{ nom: 'Main', l: 2, pts: [[-60, 8], [-10, 6], [30, 7], [60, 10]] }], // 0,3 km au sud du Römer · 200 m de large
+  budapest: [{ nom: 'Danube', l: 4, pts: [[-14, -60], [-12, -10], [-10, 20], [-6, 60]] }], // il sépare Buda de Pest · 350 m
+  lyon: [
+    { nom: 'Rhône', l: 2.5, pts: [[16, -60], [14, 0], [10, 40], [4, 60]] },       // à l'est de la Presqu'île · 250 m
+    { nom: 'Saône', l: 1.5, pts: [[-10, -60], [-8, 0], [-4, 40], [2, 60]] },      // à l'ouest ; elles confluent au sud · 130 m
+  ],
+  seville: [{ nom: 'Guadalquivir', l: 2, pts: [[-22, -60], [-20, 0], [-18, 60]] }], // 1 km à l'ouest · 180 m de large
+  porto: [{ nom: 'Douro', l: 2.5, pts: [[-60, 18], [0, 16], [60, 20]] }],         // 0,8 km au sud, en gorge · 250 m
+  bordeaux: [{ nom: 'Garonne', l: 5, pts: [[6, -60], [10, -10], [12, 20], [8, 60]] }], // le fameux croissant · 500 m
+  dresde: [{ nom: 'Elbe', l: 3, pts: [[-60, -14], [-10, -8], [20, -10], [60, -22]] }], // juste au nord de la vieille ville · 300 m
+  belgrade: [
+    { nom: 'Save', l: 2, pts: [[-60, 20], [-20, 10], [-6, 2]] },                  // 200 m
+    { nom: 'Danube', l: 5, pts: [[-6, 2], [10, -6], [60, -14]] },                 // ils confluent sous le Kalemegdan · 500 m
+  ],
+  bale: [{ nom: 'Rhin', l: 2, pts: [[-4, 60], [-2, 10], [2, -2], [30, -10], [60, -8]] }], // le coude de Bâle · 200 m
+};
+
 function ficheGeneree(v) {
   const arch = ARCHETYPES[v.style] || ARCHETYPES.europe;
   // L'angle de trame : déterministe par ville, pour que deux voisines ne
@@ -1655,6 +1703,8 @@ function ficheGeneree(v) {
   }
   const mer = chercheMer(v);
   if (mer) fiche.mer = { ...mer, d: Math.round(v.r * 0.55), ...(arch.plage ? { plage: 3 } : { quais: true }) };
+  const fl = FLEUVES_VILLES[v.cle];
+  if (fl) fiche.fleuves = fl.map((q) => ({ pts: q.pts.map((pt) => pt.slice()), l: q.l }));
   return fiche;
 }
 
@@ -1839,7 +1889,14 @@ export function solVillesMonde(x, z) {
     // `& 3` n'a de sens que sur des entiers de bloc). Voir fabrique().
     const U = u / f.K, V = v / f.K;
 
-    if (eauDeVille(f, U, V)) return null;                          // l'eau se remplit seule
+    if (eauDeVille(f, U, V)) {
+      // LE TABLIER PASSE AU-DESSUS DU FLEUVE (v280). Sans lui, une ville
+      // coupée par sa rivière n'a aucun anneau de circulation — et l'enfant à
+      // pied n'a aucun moyen de passer d'une rive à l'autre. La règle est
+      // celle des anneaux, pas une seconde table : cf. `anneauxDeVille`.
+      const q = pontDeVille(f, U * f.K, V * f.K);
+      return q ? q.id : null;                                      // l'eau se remplit seule
+    }
     if (f.mer && f.mer.plage && U * f.mer.nx + V * f.mer.nz > f.mer.d - f.mer.plage) return SABLE;
     if (f.mer && f.mer.quais && U * f.mer.nx + V * f.mer.nz > f.mer.d - 2) return PAVE;
     if (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2) return PAVE;
@@ -2404,10 +2461,40 @@ function distanceAuCentre(c) {
   return Math.hypot(Math.max(px - c.Ru, 0), Math.max(py - c.Rv, 0));
 }
 
-export function tracesCirculation(solDe) {
-  const traces = [];
-  for (const f of VILLES_MONDE) {
-    if (!f.trame) continue;
+// LE TABLIER FRANCHIT LE FLEUVE, ET C'EST LA MÊME RÈGLE QUI LE DIT (v280).
+// Quatre villes de rivière n'avaient AUCUN anneau une fois leur fleuve rendu —
+// Hambourg, Lyon, Belgrade, Bâle. La sonde qui SÉPARE les cas l'a dit en une
+// exécution, là où mes deux hypothèses de décalage avaient échoué : sur les
+// 357 candidats, 277 à 312 sont rejetés POUR L'EAU, et le moins mauvais n'est
+// mouillé que sur DEUX À SIX points de quarante. L'anneau ne rate pas la rive,
+// il rate un pont — et la vraie ville, elle, en a vingt.
+//
+// ON MESURE LA TRAVERSÉE AVANT DE POSER UNE BORNE. Mesuré au bloc, le tronçon
+// mouillé du meilleur anneau vaut 8 blocs à Bâle, 14 à Lyon, 19 à Belgrade,
+// 23 à Hambourg — soit, à trente-six blocs par kilomètre, 222, 389, 528 et
+// 640 mètres, l'ordre de grandeur du Mittlere Brücke, du pont Wilson, du
+// Brankov most et des Elbbrücken. `PONT_MAX` vaut donc VINGT-QUATRE blocs :
+// c'est ce que la plus large de ces traversées demande, pas un chiffre rond.
+//
+// ET LA RÈGLE EST PURE ET UNE SEULE : `anneauxDeVille` choisit les anneaux ET
+// publie les tabliers qu'ils exigent ; la CIRCULATION les lit pour rouler, le
+// SOL les lit pour poser le béton, `coteRoulable` pour savoir à quelle hauteur
+// on roule. Deux tables qui décrivent le même pont finiraient par diverger —
+// c'est la discipline de `postesAvion`, de `CHAUSSEE` et de `feux.js`.
+export const PONT_MAX = 24;
+// Le parapet, de chaque côté du tablier : un bloc et deux dixièmes, la même
+// largeur qu'un trottoir de pont.
+const PARAPET = 1.2;
+
+// Un pont : une bande le long d'un côté d'anneau, dans le repère de la trame.
+// `axe` 0 = la bande court selon P (le premier axe de trame), 1 = selon Q.
+const ANNEAUX = new Map();
+
+export function anneauxDeVille(f) {
+  if (ANNEAUX.has(f)) return ANNEAUX.get(f);
+  const vide = { formes: [], ponts: [] };
+  {
+    if (!f.trame) { ANNEAUX.set(f, vide); return vide; }
     // ON NE FAIT PAS ROULER UNE BERLINE DANS UNE RUELLE DE MÉDINA (v270).
     // Venise, Jérusalem et Marrakech ont des ruelles de 1,8 bloc, et une
     // voiture en fait 2,26 : elle n'y tient pas — elle roulait donc sur les
@@ -2418,7 +2505,7 @@ export function tracesCirculation(solDe) {
     // ville sans voitures est une DÉCISION quand la vraie ville n'en a pas ;
     // et elle rend à ces trois-là tout leur mobilier de rue, qu'aucun
     // dégagement n'a plus à repousser.
-    if (f.trame.ruelles) continue;
+    if (f.trame.ruelles) { ANNEAUX.set(f, vide); return vide; }
     const t = f.trame;
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     // UNE VILLE COUPÉE PAR UN FLEUVE N'AVAIT AUCUNE VOITURE. On essayait
@@ -2456,7 +2543,7 @@ export function tracesCirculation(solDe) {
     // du monde entier, et les refiltrer à chaque candidat coûtait six cents
     // millisecondes au démarrage pour une réponse qu'on a sous la main.
     const gardes = [];
-    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+    const formes = [], ponts = [];
     // Un candidat validé, ou `null` — sans rien retenir. `exigerProche` est
     // la phase 1 : elle réclame en plus que l'anneau passe à portée de vue du
     // centre. La condition est testée AVANT l'eau, parce qu'elle coûte mille
@@ -2479,8 +2566,13 @@ export function tracesCirculation(solDe) {
       // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
       // toute la liste sans se dédoubler.
       if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
-      // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
-      // de la trame, puis on tourne vers le monde.
+      // L'anneau trempe-t-il, et de combien ? On échantillonne son périmètre
+      // dans le repère de la trame, puis on tourne vers le monde. Quarante
+      // points suffisent à ÉCARTER un anneau au milieu de l'eau ; la longueur
+      // exacte du tronçon mouillé, elle, se remesure AU BLOC (`traverseesDe`),
+      // parce qu'une borne de vingt-quatre blocs ne se juge pas sur un pas
+      // d'échantillon qui en vaut quinze.
+      let mouille = 0;
       for (let k = 0; k < 40; k++) {
         const c2 = k / 40;
         let A, B;
@@ -2489,9 +2581,17 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
         const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
-        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) return null;
+        if (Math.hypot(u, v) > f.rayon - 2) return null;
         if (t.sud && v / f.K > t.sud) return null;
+        if (eauDeVille(f, u / f.K, v / f.K)) mouille++;
       }
+      // Un anneau à moitié dans l'eau n'est pas une ville, c'est un radeau :
+      // au-delà du quart du périmètre on n'essaie même pas de le franchir.
+      if (mouille > 10) return null;
+      if (!mouille) { candidat.ponts = []; return candidat; }
+      const trav = traverseesDe(f, candidat);
+      if (!trav) return null;
+      candidat.ponts = trav;
       return candidat;
     };
     const retenir = (c) => {
@@ -2509,15 +2609,16 @@ export function tracesCirculation(solDe) {
       // sur une RUE, pas sur une trajectoire.
       const voie = t.w / 2;
       const Ru = Math.max(t.pu, c.Ru - voie), Rv = Math.max(t.pv, c.Rv - voie);
-      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
-        x: f.ancre.x + (A + c.cU) * co + (B + c.cV) * si,
-        y,
-        z: f.ancre.z + (-(A + c.cU) * si + (B + c.cV) * co),
-      }));
+      // Les quatre coins, en coordonnées de TRAME : `tracesCirculation` les
+      // tournera vers le monde et y ajoutera la cote. Une forme pure ne
+      // connaît pas le sol.
+      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]]
+        .map(([A, B]) => [A + c.cU, B + c.cV]);
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
-      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, forme: c, rang: gardes.length });
+      formes.push({ pts, forme: c, rang: gardes.length });
+      for (const q of c.ponts || []) ponts.push(q);
       gardes.push(c);
     };
 
@@ -2543,6 +2644,132 @@ export function tracesCirculation(solDe) {
       if (gardes.length >= MAX_ANNEAUX) break;
       const c = valider(spec, false);
       if (c) retenir(c);
+    }
+    const out = { formes, ponts };
+    ANNEAUX.set(f, out);
+    return out;
+  }
+}
+
+// LE TRONÇON MOUILLÉ SE MESURE AU BLOC, CÔTÉ PAR CÔTÉ. Les quarante
+// échantillons du test d'eau ont un pas de quatre à quinze blocs selon la
+// taille de l'anneau : ils disent « il y a de l'eau », jamais « il y en a
+// vingt-trois blocs ». Une borne de vingt-quatre blocs jugée sur un pas de
+// quinze ne borne rien — c'est « un budget sous le coût d'une seule unité ne
+// borne rien » (v229), du côté d'une longueur.
+//
+// Un côté d'anneau est un segment d'un axe de la trame : on le parcourt bloc
+// par bloc et l'on note les suites mouillées. Une suite trop longue rend
+// `null` — cet anneau-là n'est pas franchissable. Chaque côté est parcouru à
+// part, donc une suite ne peut pas tourner un coin : un pont ne tourne pas.
+function traverseesDe(f, c) {
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const { cU, cV, Ru, Rv } = c;
+  // LE TABLIER PORTE LA CHAUSSÉE ENTIÈRE ET SES DEUX PARAPETS, et la largeur
+  // se DEMANDE à la trame. `t.w` est la DEMI-chaussée (2,8 blocs mesurés, donc
+  // 5,6 de chaussée depuis la v271) : mon premier jet écrivait `t.w / 2` et
+  // donnait un tablier de la moitié de sa propre rue — la voiture, décalée
+  // dans sa voie de droite, roulait le flanc sur le parapet. Une largeur
+  // d'ouvrage se dimensionne sur ce qui roule dessus, et cela se mesure.
+  const demi = t.w + PARAPET;
+  const cotes = [
+    { axe: 1, b: cU + Ru, a0: cV - Rv, a1: cV + Rv },
+    { axe: 0, b: cV + Rv, a0: cU - Ru, a1: cU + Ru },
+    { axe: 1, b: cU - Ru, a0: cV - Rv, a1: cV + Rv },
+    { axe: 0, b: cV - Rv, a0: cU - Ru, a1: cU + Ru },
+  ];
+  const ponts = [];
+  for (const cote of cotes) {
+    let debut = null;
+    const n = Math.round(cote.a1 - cote.a0);
+    for (let k = 0; k <= n; k++) {
+      const a = cote.a0 + k;
+      const P = cote.axe === 0 ? a : cote.b, Q = cote.axe === 0 ? cote.b : a;
+      const u = P * co + Q * si, v = -P * si + Q * co;
+      const eau = k <= n && eauDeVille(f, u / f.K, v / f.K);
+      if (eau) { if (debut === null) debut = a; continue; }
+      if (debut !== null) {
+        if (a - debut > PONT_MAX) return null;
+        // Le tablier mord d'un bloc et demi sur chaque rive : une culée qui
+        // s'arrête au bord de l'eau laisse une marche entre le quai et le
+        // pont, et un enfant de sept ans s'y arrête sans comprendre.
+        ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: a + 0.5, demi });
+        debut = null;
+      }
+    }
+    if (debut !== null) {
+      if (cote.a1 - debut > PONT_MAX) return null;
+      ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: cote.a1 + 1.5, demi });
+    }
+  }
+  return ponts;
+}
+
+// La cote du tablier : celle de la RUE de la ville, pas celle du lit. Sur une
+// colonne de fleuve `hauteurVillesMonde` rend 26 et l'eau monte à 30 : écrire
+// le tablier là, c'est paver le fond sous quatre blocs d'eau (leçon de la
+// Tamise, v208). `Math.floor` parce que c'est ce que `terrainHeight` rend.
+export function coteDeVille(f) {
+  return Math.floor(f.sol || 33);
+}
+
+// Ce point est-il sur un tablier de cette ville ? Rend le bloc à poser —
+// bitume au milieu, pierre aux parapets — ou `null`.
+function pontDeVille(f, u, v) {
+  const a = anneauxDeVille(f);
+  if (!a.ponts.length) return null;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const P = u * co - v * si, Q = u * si + v * co;
+  for (const q of a.ponts) {
+    const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
+    if (le < q.a0 || le > q.a1) continue;
+    const d = Math.abs(tr - q.b);
+    if (d > q.demi) continue;
+    // UNE PILE, SINON LE TABLIER FLOTTE. « Si un élément ne se reconnaît pas
+    // au premier regard, refais-le » : une route posée sur l'eau sans rien
+    // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.
+    const pile = d < 1.5 && ((Math.round(le) % 7) + 7) % 7 === 0;
+    return { id: d > q.demi - PARAPET ? PIERRE : BITUME, pile };
+  }
+  return null;
+}
+
+// Ce que `world.js` et `coteRoulable` demandent : le tablier sous ce point du
+// MONDE, avec sa cote. `null` s'il n'y a pas de pont ici.
+export function pontVillesMonde(x, z) {
+  for (const f of villesPres(x, z)) {
+    if (!f.trame) continue;
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (Math.hypot(u, v) > f.rayon) continue;
+    const q = pontDeVille(f, u, v);
+    if (!q) return null;
+    return { id: q.id, pile: q.pile, cote: coteDeVille(f) };
+  }
+  return null;
+}
+
+// LA CIRCULATION LIT LA MÊME RÈGLE. Elle n'ajoute que ce qu'une forme pure ne
+// peut pas savoir : la cote du sol, et le décalage de la voie de droite.
+export function tracesCirculation(solDe) {
+  const traces = [];
+  for (const f of VILLES_MONDE) {
+    const a = anneauxDeVille(f);
+    if (!a.formes.length) continue;
+    const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+    for (const forme of a.formes) {
+      traces.push({
+        cle: f.cle,
+        x: f.ancre.x,
+        z: f.ancre.z,
+        rang: forme.rang,
+        forme: forme.forme,
+        pts: forme.pts.map(([P, Q]) => ({
+          x: f.ancre.x + P * co + Q * si,
+          y,
+          z: f.ancre.z + (-P * si + Q * co),
+        })),
+      });
     }
   }
   return traces;
