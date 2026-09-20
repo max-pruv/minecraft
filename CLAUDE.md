@@ -493,6 +493,89 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Les villes engendrées ont un tissu, et un fleuve qu'on franchit (v282)
+
+Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone, je le
+sentais l'ambiance de Barcelone et pas toutes les villes qui sont copiées-collées
+les unes aux autres. » Neuf règles, et six sont nées d'une mesure qui m'a
+contredit.
+
+- **QUATRE SUJETS SONT ENTRÉS SANS UN SEUL TÉMOIN, ET C'EST LA v278 QUI
+  RECOMMENCE.** Les tissus, le cœur d'îlot, la place, les arcades : 613 lignes de
+  `villesmonde.js`, zéro verdict, dans une branche dont je croyais le travail
+  fait. Ce qui l'a vu n'est pas une relecture, c'est le geste que la v279 avait
+  écrit : **compter les sujets dans le DIFF et non dans l'intention**
+  (`git diff --stat`, puis `git diff | grep "verifier('"`). Les quatre témoins
+  existent désormais, vérifiés rouges sur l'ancien code — et les écrire a trouvé
+  trois défauts que le code n'avait pas déclarés.
+
+- **DEUX GRANDEURS QUI PORTENT LE MÊME MOT « PAREIL » NE DISENT PAS LA MÊME
+  CHOSE.** J'avais écrit dans le code que « Zurich et Bologne ont le MÊME sol,
+  bloc pour bloc ». Mesuré : 52,6 % de colonnes identiques. Ce qui valait 1,000
+  c'était la similarité des DISTRIBUTIONS — les mêmes matières dans les mêmes
+  proportions — et pour une AUTRE paire, Accra et Kiev ; l'identité colonne par
+  colonne culminait à 95,9 %, Varsovie et Budapest. Le témoin mesure les deux,
+  et c'est lui qui a démonté ma phrase (1,000 → 0,988 et 95,9 % → 77,5 %).
+  **Avant d'écrire « identique », on dit identique EN QUOI.**
+
+- **L'ÉCART EST LA GRANDEUR, PAS LA MOYENNE.** « Les îlots ont un cœur » ne se
+  mesure pas par une part bâtie basse — une ville creuse en donnerait autant.
+  Ce qu'on garde, c'est qu'un tissu dense et un tissu aéré ne se ressemblent
+  pas : huit tissus de 7,9 % (organique) à 25,3 % (medina), 17,4 points d'écart,
+  contre ZÉRO quand un seul plan servait les 267.
+
+- **UN TÉMOIN DE PRÉSENCE GARDE AUSSI L'ABSENCE.** « On marche sous les arcades »
+  vérifié à Bologne et à Turin seulement laisserait poser des portiques dans
+  toute l'Europe : Zurich et Copenhague sont dans le même verdict, à zéro.
+
+- **UN PONT SE POSE AU-DESSUS DE L'EAU, ET LA RÈGLE N'AVAIT JAMAIS QUITTÉ
+  LONDRES.** Rendre leur fleuve à onze villes a fait perdre TOUS leurs anneaux de
+  circulation à quatre d'entre elles — Hambourg, Lyon, Belgrade, Bâle. J'ai
+  d'abord affiné les décalages d'anneau, deux fois : mesuré, 539 → 788 anneaux et
+  les MÊMES QUATRE À ZÉRO. **La sonde qui SÉPARE les cas** a répondu en une
+  exécution : 277 à 312 candidats sur 357 rejetés POUR L'EAU, et le moins mauvais
+  mouillé sur deux à six points de quarante — l'anneau ne ratait pas la rive, il
+  ratait un PONT. Les décalages fins sont retirés : non-résultat mesuré, qu'on ne
+  le réécrive pas. Le remède, lui, était écrit depuis la v208 (le tablier de la
+  Tamise à la cote des quais) et la v210 (`coteRoulable` : « le terrain n'est pas
+  la surface roulable ») — et il n'avait jamais servi ailleurs qu'à Londres.
+  Cinquième occurrence du verre dans les murs : **la PORTÉE du remède, jamais la
+  règle.**
+
+- **UNE SEULE RÈGLE, TROIS LECTEURS.** `anneauxDeVille(f)` est pure et mémoïsée :
+  elle choisit les anneaux ET publie les tabliers qu'ils exigent. La CIRCULATION
+  les lit pour rouler, le SOL pour poser le béton, `coteRoulable` pour savoir à
+  quelle hauteur on roule. Deux tables qui décrivent le même pont finiraient par
+  diverger — discipline de `postesAvion` et de `feux.js`.
+
+- **UNE BORNE DE TRAVERSÉE SE MESURE SUR CE QU'ELLE DOIT LAISSER PASSER.** Au
+  bloc — pas au quarantième de périmètre, dont le pas vaut jusqu'à quinze blocs —
+  le tronçon mouillé vaut 8 blocs à Bâle, 14 à Lyon, 19 à Belgrade, 23 à
+  Hambourg, soit 222, 389, 528 et 640 mètres à trente-six blocs par kilomètre :
+  l'ordre de grandeur du Mittlere Brücke, du pont Wilson, du Brankov most et des
+  Elbbrücken. `PONT_MAX` vaut vingt-quatre. Et la borne grossière qui économise
+  le calcul exact (`mouille > 10`) est gardée parce qu'on a MESURÉ ce qu'elle
+  coûte : levée, elle rend 73 ms et n'ouvre AUCUNE ville de plus.
+
+- **LA LARGEUR D'UN OUVRAGE SE DIMENSIONNE SUR CE QUI ROULE DESSUS, ET ELLE SE
+  DEMANDE À LA TRAME.** Mon premier jet écrivait `t.w / 2` en croyant `t.w` la
+  chaussée : c'est la DEMI-chaussée (2,8 blocs mesurés, donc 5,6 depuis la v271).
+  Le tablier faisait la moitié de sa propre rue, et la voiture — décalée dans sa
+  voie de droite — roulait le flanc sur le parapet.
+
+- **UN LAC N'EST PAS UN DÉTROIT, ET L'ANCRE EST OÙ L'ENFANT ATTERRIT.**
+  `prolonge` étire chaque fleuve jusqu'au bord du disque dans l'axe de son dernier
+  segment ; l'Alster FINIT au centre de Hambourg, et prolongée vers le sud elle
+  passait à trois dixièmes de bloc de l'ancre — trois cents mètres d'eau sur le
+  Rathaus, c'est-à-dire **sur le point exact où la téléportation dépose
+  l'enfant**. Un plan d'eau qui a une vraie fin dans la ville se déclare `borne`.
+  Deux autres ancres étaient noyées pour d'autres raisons : mon Rhin passait sur
+  la Marktplatz de Bâle, ma confluence de Belgrade à un bloc de la place de la
+  République. **Un tracé de fleuve se mesure À L'ANCRE**, et la correction se
+  mesure aussi : la translation de Belgrade est la plus PETITE qui laisse trois
+  cents mètres de quai, pas un redessin à l'intuition. Mesuré après : onze ancres
+  au sec, l'eau la plus proche de 175 m (Cologne) à 900 (Séville).
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and

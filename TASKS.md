@@ -72,6 +72,29 @@ appliqué au champ de message d'un témoin.
 - « une voiture arrêtée par un mur n'annonce plus de vitesse » — 12,16 contre le
   mur, **identique au bit près** à la référence.
 
+## v282 — ce que la passe de tissu et de fleuves laisse ouvert
+
+- **San Jose n'a aucun anneau de circulation, et ce n'est pas l'eau.** Mesuré :
+  252 candidats sur 357 sortent de son disque, sa trame de 27×21 étant trop
+  grossière pour un rayon de 47 ; le meilleur candidat restant est mouillé sur
+  onze points de quarante. C'était déjà vrai avant cette livraison. C'est une
+  dette de TISSU — lui donner une trame plus fine, ou un rayon à sa taille — et
+  elle est NOMMÉE dans le témoin (`DETTE_SANS_ANNEAU`) pour qu'aucune autre ville
+  ne la rejoigne en silence.
+- **`tracesCirculation` passe de 199 à 283 ms au démarrage**, derrière le bouton
+  grisé (v258, borné à 45 s). Le poste est le parcours au bloc des côtés mouillés.
+  Non urgent, mesuré, déclaré.
+- **Le mailleur paie une fois par ville le choix de ses anneaux** — 16,4 ms au
+  pire (Seattle), contre 24 ms pour un morceau de ville. À remesurer si le nombre
+  de candidats augmente.
+- **Les six villes bâties à la main n'ont pas reçu les tissus.** Paris, Londres,
+  Nice, Lille, Washington, San Francisco ont leur plan relevé sur de vrais plans :
+  le tissu ne leur apporterait rien. Mais le cœur d'îlot, lui, leur manque —
+  elles sont bâties d'un bord à l'autre de leurs lots. Passe à part.
+- **Les ponts des villes engendrées n'ont ni garde-corps ajouré ni arche.** Le
+  tablier est plein, les parapets sont deux bandes de pierre, les piles des
+  colonnes tous les sept blocs. Ça se reconnaît comme un pont ; ça ne ressemble
+  pas encore au Mittlere Brücke. À juger en capture avec Max.
 ## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
 
 **Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »

@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v282 — Chaque ville a son tissu, et son fleuve
+
+**Pourquoi.** Max, sur les villes engendrées : « que ce soit beaucoup plus
+réaliste… que je me prenne à Barcelone, je le sentais l'ambiance de Barcelone et
+pas toutes les villes qui sont copiées-collées les unes aux autres. » Mesuré
+avant d'écrire une ligne, et c'était exact : sur les 269 villes il n'existait que
+**huit plans de rue**, dont deux couvraient 255 villes, et la seule chose qui
+changeait d'une ville à l'autre était l'angle de rotation. Deux villes pouvaient
+avoir le même sol dans les mêmes proportions, à la virgule près. Et onze villes
+dont la rivière EST l'identité n'en avaient aucune : Hambourg sans l'Elbe, Lyon
+sans la Saône ni le Rhône, Budapest sans le Danube, Bâle sans le Rhin.
+
+**Ce que ça change.** Cinq choses, et l'enfant les voit toutes de la rue.
+
+- **Chaque ville a un tissu urbain nommé**, choisi ville par ville avec sa
+  raison : l'Eixample de Barcelone et ses pans coupés, l'îlot à périmètre
+  viennois, le faubourg, les arcades de Bologne et de Turin, le damier des Lois
+  des Indes, le lacis organique, le superîlot. Le plan au sol change vraiment.
+- **Les îlots ont un cœur** — une cour, un patio, un jardin — au lieu d'être
+  bâtis d'un bord à l'autre. C'est l'illa de l'Eixample, la cour haussmannienne,
+  le patio andalou, et ça se voit du ciel comme par une porte cochère.
+- **Chaque ville a sa place, et elle n'est plus au même endroit.** Avant, 244
+  villes sur 267 avaient exactement la même : quatre blocs sur quatre, au même
+  décalage du centre.
+- **On marche sous les arcades** à Bologne et à Turin, et nulle part ailleurs.
+- **Onze villes retrouvent leur fleuve, et des ponts pour le franchir** — avec
+  leur tablier, leurs parapets et leurs piles. On traverse en voiture comme à
+  pied, d'une rive à l'autre.
+
+**Ce qui le prouve.** Huit témoins de `carteMonde.js`, tous vérifiés ROUGES sur
+l'ancien code. Deux villes ne sont plus la même ville (pire similarité de
+distribution 1,000 → 0,988, pire identité colonne par colonne 95,9 % → 77,5 %,
+sur 253 paires) ; chaque tissu a son espace libre (un seul plan et zéro point
+d'écart deviennent huit tissus et 17,4 points) ; chaque ville a sa place, et la
+forme la plus répandue passe de 91 % des villes à 30 % ; on marche sous les
+arcades à Bologne et à Turin (0 % → 23,7 % et 24,7 %) et **nulle part ailleurs**
+(Zurich et Copenhague à zéro) ; les onze rivières existent dans le monde
+engendré et non dans une fiche ; aucune ville à trame ne perd toutes ses voitures
+(258 → 261 sur 262, la dernière nommée) ; chaque pont a de l'eau sous son tablier
+(73 à 85 % de son axe) ; et l'on le traverse à pied sans un trou, 41 à 116 pas.
+
+**Et le témoin de la place a trouvé trois ancres dans l'eau** — Hambourg, Bâle et
+Belgrade —, c'est-à-dire le point exact où la téléportation dépose l'enfant.
+Corrigé avant le portail : les onze ancres sont au sec, l'eau la plus proche de
+175 mètres (Cologne) à 900 (Séville).
 ## v281 — De vrais rails, et deux voies
 
 **Pourquoi.** Deux captures d'iPad de Max, à quatre secondes d'écart, et trois
