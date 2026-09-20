@@ -1091,6 +1091,17 @@ class Convoi {
     // fois et demie l'allure. Celle qui suit fait la queue derrière elle.
     this.retard = new Float64Array(opts.nb);
     this.attend = new Uint8Array(opts.nb);       // ce tour-ci, quelqu'un est devant
+    // CE QU'ELLE A RÉELLEMENT AVANCÉ, rapporté à ce que le convoi a avancé
+    // (v283). C'est la leçon de `vitesseVoiture` (v272) un étage plus bas :
+    // l'allure se DÉDUISAIT de `attend` et de `retard`, et le plancher de
+    // non-télescopage arrête une voiture SANS poser `attend` — elle aurait
+    // gardé ses roues qui tournent, son moteur à plein régime et, pire, les
+    // piétons se seraient écartés devant une voiture immobile (v259). On publie
+    // donc ce qu'on a OBTENU, jamais ce qu'on demandait ; les trois cas d'avant
+    // en ressortent d'eux-mêmes — 0 si elle attend, 1,5 si elle rattrape, 1
+    // sinon.
+    this.rapport = new Float32Array(opts.nb).fill(1);
+    this.retardAvant = new Float64Array(opts.nb);   // le tampon du tour, jamais alloué par image
     this.attenteDepuis = new Float32Array(opts.nb);
     this.repart = new Float32Array(opts.nb);     // secondes pendant lesquelles on n'attend plus
     // `relooke(mesh, distanceAbsolue, rang)` : appelé à chaque image sur
@@ -1213,10 +1224,55 @@ class Convoi {
     // Ce que le convoi vient d'avancer ; une voiture qui attend le laisse
     // filer, une voiture en retard le rattrape à une fois et demie l'allure.
     const pas = this.distance - avantTout;
+    if (this.routier && pas <= 0) this.rapport.fill(0);
     if (this.routier && pas > 0) {
+      const avant = this.retardAvant;
+      avant.set(this.retard);
       for (let i = 0; i < this.nb; i++) {
         if (this.attend[i]) this.retard[i] += pas;
         else if (this.retard[i] > 0) this.retard[i] = Math.max(0, this.retard[i] - pas * 0.5);
+      }
+      // UN CONVOI NE SE TÉLESCOPE PAS, ET CELA SE GARANTIT PAR CONSTRUCTION.
+      //
+      // Max le signale depuis plusieurs versions : une voiture passe AU TRAVERS
+      // de celle qui la précède dans sa propre file. `cederLePassage` avait bien
+      // de quoi le voir — le balayage d'une suiveuse touche le rectangle de sa
+      // tête — mais il ne le voit que SOUS CONDITIONS : les deux voitures
+      // doivent être à moins de `PORTEE_CEDE` de l'enfant ET à moins de douze
+      // blocs l'une de l'autre, alors qu'un convoi espace ses voitures jusqu'à
+      // vingt-cinq. Une tête qui attend au feu accumule son `retard` pendant
+      // que sa suiveuse, encore hors de la fenêtre, avance à pleine allure : la
+      // suiveuse la rejoint, la dépasse, et le chevauchement s'installe — il ne
+      // se résorbe pas, `retard` ne se rend qu'à la moitié de l'allure.
+      //
+      // Un seuil de fenêtre ne peut donc pas régler cela : ce qui doit être vrai
+      // se garantit par construction, jamais par l'ordre dans lequel on regarde
+      // (v270). Le long du tracé, la voiture i est à
+      // `dElement(i) = distance − i × ecart − retard[i]` : deux voisines gardent
+      // leur longueur d'écart si et seulement si
+      // `retard[i] ≥ retard[i−1] − ecart + LONG_VOITURE`. La borne est une
+      // GÉOMÉTRIE, pas un réglage — 4,4 blocs, la longueur d'une voiture, lue là
+      // où elle se calcule (`DEMI_LONG_VOITURE`). Elle vaut partout, y compris
+      // là où l'enfant n'est pas et où le balayage ne tourne pas du tout.
+      //
+      // On monte donc le retard de la suiveuse, jamais on ne baisse celui de la
+      // tête : reculer est la seule correction sûre. En ordre croissant, pour que
+      // `retard[i − 1]` soit déjà arrêté quand on s'appuie dessus ; le convoi se
+      // comporte alors en accordéon, et quand la tête rend son retard, la
+      // suiveuse voit son plancher descendre et rend le sien.
+      // La borne ne CRÉE jamais d'écart, elle le PRÉSERVE : sur un convoi qui
+      // serait plus serré que la longueur d'une voiture — `ecart` vaut
+      // `longueur / nb`, et `nb` a un plancher de six — exiger 4,4 blocs
+      // repousserait chaque suiveuse un peu plus que la précédente, sans fin.
+      // On ne demande donc jamais plus que l'espacement nominal.
+      const mini = Math.min(2 * DEMI_LONG_VOITURE, this.ecart);
+      for (let i = 1; i < this.nb; i++) {
+        const plancher = this.retard[i - 1] - this.ecart + mini;
+        if (this.retard[i] < plancher) this.retard[i] = plancher;
+      }
+      // et l'allure obtenue : ce que `dElement(i)` a réellement avancé.
+      for (let i = 0; i < this.nb; i++) {
+        this.rapport[i] = Math.max(0, (pas - (this.retard[i] - avant[i])) / pas);
       }
     }
     this.montrer(joueur);
@@ -1264,7 +1320,7 @@ class Convoi {
       const d = this.dElement(i);
       m.rotation.y = this.parcours.capLisse(d) + Math.PI;
       // l'allure de CETTE voiture : arrêtée si elle attend, pressée si elle rattrape
-      const allure = this.routier && this.attend[i] ? 0 : (this.routier && this.retard[i] > 0 ? 1.5 : 1);
+      const allure = this.routier ? this.rapport[i] : 1;
       if (this.routier) {
         // L'INCLINAISON DANS LE VIRAGE, purement visuelle (v244). Comme pour
         // l'avion (v231), elle se compose AVANT le cap — ordre YXZ — sinon la
@@ -1740,7 +1796,9 @@ export function createVehicules({ scene, player }) {
       if (b.enfant) continue;
       const c = b.c;
       if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
-      const allure = c.retard[b.i] > 0 ? 1.5 : 1;
+      // ce qu'elle a OBTENU, pas ce qu'elle demandait (v283) : un piéton ne
+      // s'écarte pas devant une voiture que le plancher tient immobile.
+      const allure = c.rapport ? c.rapport[b.i] : (c.retard[b.i] > 0 ? 1.5 : 1);
       out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
     }
     enMarcheCache = out;
@@ -1879,6 +1937,17 @@ export function createVehicules({ scene, player }) {
           c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0]
         : null)).filter(Boolean),
       retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
+      // L'ÉCART RÉEL ENTRE DEUX VOISINES LE LONG DU TRACÉ (v283), au centième.
+      // C'est LA grandeur qui dit si un convoi se télescope, et elle se publie
+      // ici parce qu'elle se calcule ici : `retards` est arrondi au bloc, ce qui
+      // ne peut pas distinguer 4,4 de 2,1. Un témoin qui compterait des instants
+      // « proches » mesurerait la cadence du banc ; celui-ci lit une borne que la
+      // géométrie garantit (v279).
+      ecart: Math.round(c.ecart * 100) / 100,
+      ecarts: c.routier && c.retard
+        ? Array.from({ length: Math.max(0, c.nb - 1) },
+          (_, i) => Math.round((c.dElement(i) - c.dElement(i + 1)) * 100) / 100)
+        : [],
       attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
       // la diversité (v246) : les modèles que le convoi va montrer, sa graine,
       // et la livrée — modèle + laque — de chaque voiture visible
