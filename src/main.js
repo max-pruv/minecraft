@@ -2111,7 +2111,7 @@ function aeroportiste(dt) {
   // quatre-vingts pour exactement ce motif.
   const a = aeroportPres(player.pos.x, player.pos.z, 90);
   if (!a) return;
-  for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
+  for (const { espece, du, dv, cap } of postesAvion(a.profil, a.r)) {
     const x = a.x + du, z = a.z + dv;
     // HUIT BLOCS, PAS QUATORZE. Sur une base, trois chasseurs se garent à
     // quatorze blocs l'un de l'autre : à ce rayon-là, le voisin comptait pour

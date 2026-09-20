@@ -2117,8 +2117,12 @@ const VRAIES_KM = [
     // vert en ne prouvant rien.
     const terminaux = await tab.evaluate(async () => {
       const g = window.__game;
-      let A = [];
-      try { A = (await import('./src/aeroport.js')).AEROPORTS || []; } catch { A = []; }
+      let A = [], plan = null;
+      try {
+        const m = await import('./src/aeroport.js');
+        A = m.AEROPORTS || [];
+        plan = m.planAerodrome || null;
+      } catch { A = []; }
       const w = g.world;
       const sortes = ['hub', 'ville', 'base'];
       const resultats = [];
@@ -2127,14 +2131,21 @@ const VRAIES_KM = [
           && Math.hypot(q.x, q.z) < 4000);           // un qu'on peut atteindre sans traverser la carte
         if (!a) { resultats.push({ sorte, absent: true }); continue; }
         const sol = w.terrainHeight(a.x, a.z);
-        const HALL = sorte === 'base' ? 10 : sorte === 'hub' ? 16 : 13;
+        // UN TÉMOIN QUI PORTE UNE COTE DE PLAN NE L'ÉCRIT PAS, IL LA DEMANDE
+        // (v280). Celui-ci portait `HALL` en dur et la boîte du terminal à
+        // `nv ∈ [−12, 14]`, justes tant que le terminal était à z = −6..8. La
+        // piste ayant pris le diamètre, il est à −40..−26 : le témoin partait
+        // « dehors » au milieu de l'aire et ne trouvait plus une seule porte.
+        // C'est le piège de `r: 66` à San Francisco, une quatrième fois.
+        const P = plan ? plan(sorte, a.r) : { HALL: sorte === 'base' ? 10 : sorte === 'hub' ? 16 : 13, zt0: -6, zt1: 8, STAND: 19 };
+        const HALL = P.HALL;
         const libre = (du, dv) => {
           const x = a.x + du, z = a.z + dv;
           return w.getBlock(x, sol, z) !== 0
             && w.getBlock(x, sol + 1, z) === 0 && w.getBlock(x, sol + 2, z) === 0;
         };
         // on part DEHORS, côté ville, devant la porte de gauche
-        const depart = [-Math.round(HALL / 2), -10];
+        const depart = [-Math.round(HALL / 2), P.zt0 - 4];
         if (!libre(depart[0], depart[1])) { resultats.push({ sorte, dehors: false }); continue; }
         const vus = new Set([depart.join(',')]);
         const file = [depart];
@@ -2142,7 +2153,7 @@ const VRAIES_KM = [
           const [du, dv] = file.shift();
           for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
             const nu = du + eu, nv = dv + ev;
-            if (Math.abs(nu) > HALL + 4 || nv < -12 || nv > 14) continue;   // la boîte du terminal
+            if (Math.abs(nu) > HALL + 4 || nv < P.zt0 - 6 || nv > P.zt1 + 6) continue;   // la boîte du terminal
             const cle = `${nu},${nv}`;
             if (vus.has(cle) || !libre(nu, nv)) continue;
             vus.add(cle); file.push([nu, nv]);
@@ -2151,9 +2162,9 @@ const VRAIES_KM = [
         const dedans = (du, dv) => vus.has(`${du},${dv}`);
         resultats.push({
           sorte, nom: a.nom,
-          hallGauche: dedans(-HALL + 2, 2),        // le premier hall
-          hallDroit: dedans(HALL - 2, 2),          // le dernier, de l'autre côté des cloisons
-          cotePistes: dedans(0, 12),               // ressorti côté tarmac
+          hallGauche: dedans(-HALL + 2, P.zt0 + 7),  // le premier hall
+          hallDroit: dedans(HALL - 2, P.zt0 + 7),    // le dernier, de l'autre côté des cloisons
+          cotePistes: dedans(0, P.zt1 + 4),          // ressorti côté tarmac
         });
       }
       return resultats;
@@ -2229,7 +2240,7 @@ const VRAIES_KM = [
           if (a.cle === 'cdg') buildAeroport(poser); else buildAerodrome(poser, a.profil, a.r);
         }
         const boites = [];
-        for (const { espece, du, dv } of postesAvion(a.profil)) {
+        for (const { espece, du, dv } of postesAvion(a.profil, a.r)) {
           const b = emprise(espece, du, dv);
           boites.push({ espece, du, dv, b });
           let sousUnToit = 0, sansSol = 0;
@@ -2258,11 +2269,204 @@ const VRAIES_KM = [
           }
         }
       }
-      return { total: AEROPORTS.reduce((n, a) => n + postesAvion(a.profil).length, 0), fautes };
+      return { total: AEROPORTS.reduce((n, a) => n + postesAvion(a.profil, a.r).length, 0), fautes };
     });
     verifier('aucun avion n\'est garé dans un bâtiment ni hors du revêtement',
       postes.fautes.length === 0,
       `${postes.fautes.length}/${postes.total} en faute — ${postes.fautes.slice(0, 4).join(' · ')}`);
+
+    // CHAQUE PISTE EST ASSEZ LONGUE POUR CE QUI S'Y GARE (v280).
+    //
+    // Max : « fais les pistes plus longues ». La barre ne se choisit pas : elle
+    // se CALCULE depuis la fiche `pilote` de chaque appareil (montures.js). Le
+    // roulage avant rotation vaut `rotation² / (2 × poussée)` et le freinage
+    // `approche² / (2 × frein)` ; leur somme est la longueur de piste
+    // équilibrée de l'aviation réelle — 83 blocs pour l'avion de ligne, 99 pour
+    // le Concorde, 34 pour le chasseur. Un aérodrome doit servir CE QU'IL GARE,
+    // ni plus ni moins : une base militaire ne reçoit que des chasseurs.
+    //
+    // ET LA BARRE SE LIT DANS LA FICHE, ELLE NE SE RECOPIE PAS. C'est la leçon
+    // de la v269 (« une barre de témoin qui suit une grandeur se calcule, elle
+    // ne s'écrit pas ») : le jour où `poussee` change, la barre suit.
+    //
+    // Mesuré sur `origin/main` : Orly rendait QUARANTE-NEUF blocs pour
+    // quatre-vingt-dix-neuf réclamés, `ville` soixante-neuf et `base`
+    // cinquante-trois. Seules les deux pistes internes de Roissy passaient.
+    const pistes = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, buildAeroport, buildAerodrome } = mod;
+      const mont = await import('./src/montures.js');
+      const fiches = {};
+      for (const d of (mont.MONTURES || mont.ESPECES || [])) {
+        if (d.pilote) fiches[d.key] = d.pilote;
+      }
+      const besoin = (k) => {
+        const f = fiches[k];
+        if (!f) return 0;
+        return f.rotation ** 2 / (2 * f.poussee) + f.approche ** 2 / (2 * f.frein);
+      };
+      // Quels appareils se garent là ? On le DEMANDE — une liste recopiée ici
+      // divergerait de celle du plan à la première base qu'on ajoute.
+      const especesDe = mod.especesDe
+        || ((p) => (p === 'base' ? ['chasseur'] : ['avionligne', 'concorde', 'chasseur']));
+      // La longueur ROULABLE sur l'axe : les x DISTINCTS qui portent un
+      // revêtement. Compter les POSES rend trois fois trop — le bâtisseur
+      // repasse du blanc sur l'asphalte (« compter un motif n'est pas compter
+      // la chose », v224).
+      const longueurA = (build, zAxe) => {
+        const xs = new Set();
+        build((x, y, z, id) => { if (y === 0 && z === zAxe && id !== 0 && id !== 1) xs.add(x); });
+        return xs.size;
+      };
+      const res = [];
+      for (const a of AEROPORTS) {
+        const roissy = a.profil === 'roissy';
+        const build = roissy ? buildAeroport : (po) => buildAerodrome(po, a.profil, a.r);
+        let axes;
+        // Les axes se DEMANDENT au module : sur l'ancien code ils valent ±32 et ±50.
+        if (roissy) axes = (mod.PISTES_ROISSY || [-50, -32, 32, 50]).filter((z) => z > 0);
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z);
+        } else axes = [a.profil === 'base' ? 24 : a.profil === 'hub' ? 36 : 30];
+        const plus = Math.max(...axes.map((z) => longueurA(build, z)));
+        const b = Math.max(...especesDe(a.profil).map(besoin));
+        res.push({ cle: a.cle, profil: a.profil, longueur: plus, reclame: Math.round(b), ok: plus >= b });
+      }
+      return res;
+    });
+    const courtes = pistes.filter((r) => !r.ok);
+    verifier('chaque piste est assez longue pour l\'appareil le plus exigeant qu\'elle garde',
+      courtes.length === 0 && pistes.length > 0,
+      `${courtes.length} trop courte(s) sur ${pistes.length} — `
+      + (courtes.length ? courtes.map((r) => `${r.cle} ${r.longueur} pour ${r.reclame}`).join(' · ')
+        : `la plus courte : ${pistes.reduce((m, r) => (r.longueur - r.reclame < m.longueur - m.reclame ? r : m)).cle} `
+          + `${Math.min(...pistes.map((r) => r.longueur))} blocs`));
+
+    // ET L'AVION ATTEND AU BORD DE LA PISTE (v280).
+    //
+    // Max : « places les avions normaux près des pistes ». Ce qui se mesure est
+    // la distance de l'EMPRISE — ailes comprises — au bord de l'asphalte de la
+    // piste, et non à son axe : un avion dont l'aile touche presque la piste en
+    // est à quatre blocs d'axe et à zéro de bord.
+    //
+    // Sur `origin/main` les trois appareils de Roissy étaient à dix-sept,
+    // vingt-six et TRENTE-HUIT blocs du bord, coincés dans des interstices du
+    // complexe terminal. La barre est à douze : de quoi laisser passer une voie
+    // de service, pas de quoi traverser un aéroport.
+    const auBord = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, postesAvion } = mod;
+      const emprise = mod.empriseAuSol;
+      if (!emprise) return { fautes: ['empriseAuSol absente (code d\'avant la v278)'], total: 0 };
+      const fautes = []; let total = 0, pire = 0;
+      for (const a of AEROPORTS) {
+        // Les bords d'asphalte des pistes de CET aérodrome, demandés au plan.
+        let bords;
+        if (a.profil === 'roissy') {
+          const d = mod.DEMI_PISTE_ROISSY || 4;
+          bords = (mod.PISTES_ROISSY || [-50, -32, 32, 50]).flatMap((z) => [z - d, z + d]);
+        }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          bords = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z)
+            .flatMap((z) => [z - P.DEMI_PISTE, z + P.DEMI_PISTE]);
+        } else bords = [a.profil === 'base' ? 21 : a.profil === 'hub' ? 32 : 26];
+        for (const q of postesAvion(a.profil, a.r)) {
+          total++;
+          const e = emprise(q.espece, q.du, q.dv);
+          const d = Math.min(...bords.map((b) => Math.min(Math.abs(e.z0 - b), Math.abs(e.z1 - b))));
+          pire = Math.max(pire, d);
+          if (d > 12) fautes.push(`${a.cle} ${q.espece} à ${d} blocs du bord`);
+        }
+      }
+      return { fautes, total, pire };
+    });
+    verifier('chaque appareil garé est à portée du bord de piste',
+      auBord.fautes.length === 0 && auBord.total > 0,
+      `${auBord.fautes.length}/${auBord.total} trop loin, le pire à ${auBord.pire} blocs`
+      + (auBord.fautes.length ? ` — ${auBord.fautes.slice(0, 4).join(' · ')}` : ''));
+
+    // ET L'AIRE DE ROISSY TIENT UN GROS PORTEUR À CIEL OUVERT (v280).
+    //
+    // C'est ce que le retrait des huit avions EN BLOCS a rendu possible, et
+    // c'est la seule façon de le mesurer sur un bâtisseur : ces silhouettes
+    // occupaient le tarmac, et le disque pavé de soixante-huit blocs ne laissait
+    // que sept à neuf blocs d'asphalte libre entre un hall et la première
+    // piste, pour une envergure de quinze. Mesuré sur `origin/main` : QUATRE
+    // places à ciel ouvert sur toute la plate-forme. Ici : plus de quatre cents.
+    //
+    // La barre est à cent : au-dessous, l'aire n'a pas de rangée, elle a une
+    // poche — et c'est exactement ce que la v278 avait dû constater.
+    const aireRoissy = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { buildAeroport } = mod;
+      const emprise = mod.empriseAuSol;
+      if (!emprise) return -1;
+      const col = new Map();
+      buildAeroport((x, y, z, id) => {
+        const k = x + ',' + z;
+        let c = col.get(k);
+        if (!c) col.set(k, (c = { sol: null, h: 0 }));
+        if (y === 0) c.sol = id; else if (y > 0) c.h = id === 0 ? 0 : c.h + 1;
+      });
+      let n = 0;
+      for (let du = -70; du <= 70; du++) {
+        for (let dv = -70; dv <= 70; dv++) {
+          const e = emprise('avionligne', du, dv);
+          let bon = true;
+          for (let x = e.x0; bon && x <= e.x1; x++) {
+            for (let z = e.z0; bon && z <= e.z1; z++) {
+              const c = col.get(x + ',' + z);
+              if (!c || c.sol === null || c.sol === 1 || c.h > 0) bon = false;
+            }
+          }
+          if (bon) n++;
+        }
+      }
+      return n;
+    });
+    verifier('l\'aire de Roissy tient un gros porteur à ciel ouvert, et pas seulement dans une poche',
+      aireRoissy >= 100, `${aireRoissy} place(s) à ciel ouvert pour un avion de ligne`);
+
+    // ET RIEN NE DÉPASSE SUR UNE PISTE NI DANS L'ENVERGURE D'UN POSTE (v280).
+    //
+    // CE TÉMOIN A ATTRAPÉ MON PROPRE DÉFAUT, et c'est pour cela qu'il reste même
+    // vert des deux côtés (règle de la v220 : on garde un témoin vert qui garde
+    // une CAPACITÉ qu'on vient de frôler). En déplaçant les pistes de Roissy,
+    // `TARMAC` est passé de 25 à 40 — et les mâts d'éclairage, posés à
+    // `TARMAC − 1`, se sont retrouvés à z = ±39, c'est-à-dire pile dans
+    // l'envergure d'un gros porteur garé à dv = 33 ; la manche à air, posée de
+    // la même façon, s'est retrouvée au bord de la première piste. Les TROIS
+    // postes étaient bloqués d'un coup. Rien dans le code ne paraissait faux.
+    const degage = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, buildAeroport, buildAerodrome } = mod;
+      const fautes = [];
+      for (const a of AEROPORTS) {
+        const roissy = a.profil === 'roissy';
+        const build = roissy ? buildAeroport : (po) => buildAerodrome(po, a.profil, a.r);
+        let axes, demi;
+        if (roissy) { axes = mod.PISTES_ROISSY || [-50, -32, 32, 50]; demi = mod.DEMI_PISTE_ROISSY || 4; }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z); demi = P.DEMI_PISTE;
+        } else { axes = [a.profil === 'base' ? 24 : a.profil === 'hub' ? 36 : 30]; demi = 4; }
+        const hauts = new Map();
+        build((x, y, z, id) => {
+          const k = x + ',' + z;
+          if (y > 0) hauts.set(k, id === 0 ? 0 : (hauts.get(k) || 0) + 1);
+        });
+        for (const [k, n] of hauts) {
+          if (!n) continue;
+          const [x, z] = k.split(',').map(Number);
+          if (axes.some((z0) => Math.abs(z - z0) <= demi)) fautes.push(`${a.cle} bloc en (${x},${z}) sur une piste`);
+        }
+      }
+      return fautes;
+    });
+    verifier('rien de solide ne dépasse sur une piste',
+      degage.length === 0, `${degage.length} bloc(s) sur une piste — ${degage.slice(0, 4).join(' · ')}`);
 
     // ET LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne un yaw
     // aléatoire à toute bête ; l'espèce étant `immobile`, un avion garé gardait
@@ -2272,7 +2476,7 @@ const VRAIES_KM = [
       await tab.evaluate(async () => {
         const { AEROPORTS, postesAvion } = await import('./src/aeroport.js');
         return AEROPORTS.every((a) => {
-          const caps = postesAvion(a.profil).map((p) => p.cap);
+          const caps = postesAvion(a.profil, a.r).map((p) => p.cap);
           // `undefined` partout, c'est l'ancien code : le cap venait alors du
           // tirage au sort d'`animals.js`, donc il n'était pas le même.
           return caps.every((c) => c !== undefined && c === caps[0]);

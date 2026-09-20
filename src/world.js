@@ -1220,8 +1220,13 @@ const LANDMARKS = [
   // Les dix-neuf aérodromes. Roissy garde son bâtisseur à lui — le tambour de
   // 1974 et ses sept satellites ne ressemblent à aucun autre aéroport au monde ;
   // les dix-huit autres passent par le bâtisseur générique, qui lit leur profil.
+  // LA BOÎTE SUIT LE DISQUE PAVÉ, ET IL A GRANDI EN v280. La plate-forme est
+  // devenue un ouvrage (remblai et tranchée écrits en blocs) et va jusqu'à
+  // `r − 10` au lieu de `r − 20` : une boîte restée à `r − 18` aurait fait
+  // ignorer par `poser` les huit blocs extérieurs — donc les bouts de piste,
+  // c'est-à-dire exactement ce que cette version allonge.
   ...AEROPORTS.map((a) => ({
-    name: a.nom, x: a.x, z: a.z, box: a.r - 18,
+    name: a.nom, x: a.x, z: a.z, box: a.r - 9,
     build: a.cle === 'cdg' ? buildAeroport : (poser) => buildAerodrome(poser, a.profil, a.r),
   })),
   // La Giga-usine d'Austin : le hall et sa chaîne d'un côté, le parc des
