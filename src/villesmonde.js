@@ -119,6 +119,176 @@ const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 // monuments et ses lieux — tous en latitude/longitude réelles, convertis à la
 // volée autour de l'ancre du registre.
 
+// LES TYPOLOGIES (v280) — un mot par ville, et le PLAN AU SOL suit.
+//
+// Max : « je me prends à Barcelone, je veux sentir l'ambiance de Barcelone et pas
+// toutes les villes copiées-collées les unes aux autres ». Mesuré avant d'écrire
+// une ligne, et le chiffre est sans appel : sur les 269 villes il n'existe que
+// HUIT plans de rue une fois l'angle retiré, et DEUX d'entre eux couvrent 255
+// villes — 194 en 19×15, 61 en 23×19. La seule chose qui changeait d'une ville à
+// l'autre était l'angle de rotation. Le reste va de même : 254 villes à 36
+// blocs/km, trois toits pour 265 villes, deux bandes de hauteur pour 179.
+//
+// Et ce qui fait vraiment une ville n'existait que pour une poignée : SIX villes
+// ont des avenues nommées, treize des parcs, vingt un fleuve, dix des collines.
+// Les villes ne se ressemblent donc pas par négligence de réglage — elles se
+// ressemblent PAR CONSTRUCTION.
+//
+// D'où la méthode, qui est la seule qui tienne à l'échelle de 269 villes : peu de
+// grammaires, beaucoup de fiches. Un mot désigne un TISSU URBAIN, et le tissu
+// décide du pas de trame, de la cour d'îlot, du chanfrein — donc du sol, donc de
+// ce que l'enfant voit de la rue ET du ciel. Une palette ne fait pas une ville ;
+// un plan, oui.
+//
+// LES VALEURS SONT UN RÉSULTAT, PAS UN GOÛT. Le trottoir fait 4,8 blocs (v271),
+// donc la profondeur du lot depuis la rue vaut `pas/2 − 4,8`, et une cour n'est
+// lisible que si `pas/2 − 4,8 − cour` dépasse un demi-bloc. Mesuré :
+//
+//   pas     demi-lot     cour=2        cour=3
+//   19×15   4,7 × 2,7    5,4 × 1,4     — trop mince
+//   23×19   6,7 × 4,7    9,4 × 5,4     7,4 × 3,4
+//   23×23   6,7 × 6,7    9,4 × 9,4     7,4 × 7,4   (30 % du lot évidé)
+//   27×23   8,7 × 6,7   13,4 × 9,4    11,4 × 7,4   (36 % évidé)
+//
+// La trame de 194 villes (19×15) n'a donc PAS la place d'une cour : c'est
+// pourquoi les tissus à cour montent le pas. Le prix est le même que celui de la
+// v271 — moins de rues, plus larges — et il s'échange ici contre des cours
+// intérieures, qui se voient du ciel comme par une porte cochère.
+//
+// Et c'est du SOL : `hauteurVillesMonde` ne lit ni `pu`, ni `pv`, ni `cour`, donc
+// les deux empreintes de `plafond.js` ne bougent pas et l'invariant 1 tient sans
+// rien avoir à déclarer — même raison que la v271 et que la passe de rues de
+// Londres (v206).
+export const TYPOS = {
+  // L'Eixample de Cerdà : une grille rigide, des coins coupés, et l'illa creuse.
+  eixample:  { pu: 23, pv: 23, cour: 3, courPavee: true },
+  // L'îlot à périmètre de l'Europe continentale : Vienne, Berlin, Milan. Une
+  // couronne d'immeubles et une cour plantée au milieu.
+  perimetre: { pu: 23, pv: 23, cour: 3 },
+  // Les villes moyennes : le même tissu, en plus petit.
+  faubourg:  { pu: 19, pv: 19, cour: 2 },
+  // Les arcades : Bologne, Turin, Madrid. Cour PAVÉE, on y entre par un porche.
+  arcades:   { pu: 23, pv: 19, cour: 3, courPavee: true },
+  // Le damier nord-américain : de grands îlots PLEINS et de larges rues. Une
+  // cour n'y a rien à faire — c'est justement ce qui le distingue de l'Europe.
+  damier:    { pu: 27, pv: 21, cour: 0 },
+  // Les vieux tissus denses d'Asie de l'Est : de petites parcelles, pas de cour.
+  organique: { pu: 15, pv: 13, cour: 0 },
+  // Le centre à tours : superîlots, Séoul, Dubaï, Shanghai.
+  superilot: { pu: 27, pv: 27, cour: 0 },
+  // La médina garde ses ruelles telles quelles : elles SONT son identité.
+  medina:    {},
+};
+
+// LE TISSU SE NOMME VILLE PAR VILLE, AVEC SA RAISON (v280).
+//
+// Mon premier jet attribuait la typologie par BANDES DE LONGITUDE — Amériques →
+// damier, au-delà de 100° → tissu fin, sinon îlot à périmètre. Ce n'était pas de
+// la recherche, c'était un raccourci, et il se trompait là où ça compte le plus :
+//
+//   Bologne     → faubourg, quand la ville EST ses 38 km d'arcades (UNESCO 2021)
+//   Turin       → faubourg, pour 18 km de portiques
+//   Fès, Tunis, Alger → faubourg, c'est-à-dire l'îlot bourgeois européen posé
+//                 sur une médina
+//   Buenos Aires → superîlot, quand c'est l'une des grilles coloniales les plus
+//                 pures au monde (Lois des Indes, manzana de cent mètres)
+//   Sydney, Boston, Québec → damier ou superîlot, quand leurs centres sont des
+//                 tracés coloniaux IRRÉGULIERS
+//
+// Et la typologie `arcades` que j'avais écrite n'était attribuée à AUCUNE ville :
+// une brique dont rien ne se sert, le péché que ce fichier nomme lui-même.
+//
+// D'où cette table. Elle porte un mot ET la raison, parce qu'une attribution sans
+// raison ne se vérifie pas — c'est la discipline des monuments, qui portent leur
+// vraie latitude et leur vraie longitude, et non « à peu près au centre ».
+// Une ligne se conteste en lisant sa raison ; une bande de longitude, non.
+export const TISSU = {
+  // ARCADES — des kilomètres de portiques, c'est le tissu, pas un ornement.
+  bologne:   ['arcades', '38 km de portiques, inscrits à l\'UNESCO en 2021'],
+  turin:     ['arcades', '18 km d\'arcades, héritage des Savoie'],
+  madrid:    ['arcades', 'la Plaza Mayor et ses rues à portiques'],
+  innsbruck: ['arcades', 'la Herzog-Friedrich-Strasse, vieille ville à arcades'],
+
+  // MÉDINAS — un lacis de ruelles, et non l'îlot européen. La fiche n'en
+  // déclarait que trois (Venise, Jérusalem, Marrakech) ; celles-ci en sont.
+  fes:        ['medina', 'Fès el-Bali, le plus grand lacis piéton au monde'],
+  tunis:      ['medina', 'la médina de Tunis, UNESCO'],
+  alger:      ['medina', 'la Casbah, UNESCO'],
+  ispahan:    ['medina', 'le bazar et les ruelles autour de Naqsh-e Jahan'],
+  tombouctou: ['medina', 'ville de terre, ruelles sans trame'],
+  lamecque:   ['medina', 'vieille ville dense autour du sanctuaire'],
+  varanasi:   ['medina', 'les galis, ruelles étroites vers les ghats'],
+  alexandrie: ['medina', 'le vieux quartier turc, tissu serré'],
+
+  // GRILLES COLONIALES ESPAGNOLES — les Lois des Indes, 1573 : une trame
+  // orthogonale autour d'une plaza mayor. C'est le tissu de presque toute
+  // l'Amérique hispanique, et il est PLEIN — pas de cour d'îlot européenne.
+  buenosaires:   ['damier', 'manzanas de cent mètres, grille des Lois des Indes'],
+  lima:          ['damier', 'damier colonial autour de la Plaza Mayor'],
+  bogota:        ['damier', 'trame coloniale de la Candelaria'],
+  quito:         ['damier', 'centre colonial en damier, UNESCO'],
+  santiago:      ['damier', 'damier de Pedro de Valdivia'],
+  montevideo:    ['damier', 'Ciudad Vieja en damier'],
+  mexico:        ['damier', 'la trame espagnole posée sur Tenochtitlan'],
+  guadalajara:   ['damier', 'damier colonial'],
+  monterrey:     ['damier', 'damier colonial'],
+  havane:        ['damier', 'La Habana Vieja, trame espagnole'],
+  carthagene:    ['damier', 'ville fortifiée en damier, UNESCO'],
+  guatemala:     ['damier', 'Antigua puis Nueva Guatemala, damier'],
+  panama:        ['damier', 'Casco Viejo en damier'],
+  saintdomingue: ['damier', 'la plus vieille grille coloniale des Amériques'],
+  sanjuan:       ['damier', 'Viejo San Juan, trame espagnole'],
+  cordoba:       ['damier', 'damier colonial argentin'],
+  mendoza:       ['damier', 'damier reconstruit après 1861, places à chaque quartier'],
+  jaipur:        ['damier', 'ville planifiée de 1727, trame et avenues larges'],
+
+  // TRACÉS IRRÉGULIERS — des villes que mon heuristique mettait en damier ou en
+  // superîlot alors que leur centre n'a jamais été dessiné à la règle.
+  boston:   ['organique', 'tracé colonial irrégulier, antérieur à la grille'],
+  quebec:   ['organique', 'Vieux-Québec, rues de la Nouvelle-France'],
+  sydney:   ['organique', 'centre colonial irrégulier, pas une grille'],
+  edimbourg: ['organique', 'la vieille ville et ses closes en arête de poisson'],
+  dubrovnik: ['organique', 'ville close, ruelles en escalier'],
+  sarajevo:  ['organique', 'Baščaršija, tissu ottoman'],
+  tirana:    ['organique', 'vieux centre sans trame'],
+
+  // GRILLES FINES D'ASIE ORIENTALE — des trames RÉGULIÈRES à petites parcelles,
+  // ce que `organique` produit en effet (petit pas, îlots pleins) même si son nom
+  // dit le contraire : Kyoto et Xi'an sont des grilles, pas des labyrinthes.
+  kyoto: ['organique', 'grille de Heian-kyo, parcelles de machiya'],
+  xian:  ['organique', 'trame Tang, la plus régulière de son temps'],
+  nankin: ['organique', 'vieux tissu dense intra-muros'],
+};
+
+// QUELLE TYPOLOGIE ? La table nommée d'abord, puis ce que la fiche sait déjà
+// (ruelles, chanfrein, tours), puis un défaut RÉGIONAL — et le défaut se justifie
+// par l'histoire urbaine, pas par une bande de longitude : l'Amérique hispanique
+// est en damier depuis 1573, le Brésil portugais ne l'est pas, l'Europe
+// continentale a l'îlot à périmètre depuis le XIXe siècle.
+export function typoDe(fiche) {
+  if (fiche.typo) return fiche.typo;
+  const t = fiche.trame;
+  if (!t) return null;
+  const nomme = TISSU[fiche.cle];
+  if (nomme) return nomme[0];
+  if (t.ruelles) return 'medina';
+  if (t.chanfrein) return 'eixample';
+  const { lat0: la, lon0: lo } = fiche;
+  // L'Amérique hispanique : damier, sauf les métropoles à tours qui l'ont
+  // recouvert de superîlots. Le Brésil portugais n'a jamais eu ces lois.
+  if (lo < -30 && la < 15) return t.tours ? 'superilot' : 'damier';
+  // L'Amérique du Nord : la grille, héritée de Philadelphie et de 1811.
+  if (lo < -30) return t.tours ? 'superilot' : 'damier';
+  // L'Asie de l'Est : grille fine dans les vieux tissus, superîlots là où la
+  // ville a poussé en hauteur au XXe siècle.
+  if (lo > 100) return t.tours ? 'superilot' : 'organique';
+  // Le Golfe et l'Asie du Sud.
+  if (lo > 40) return t.tours ? 'superilot' : 'faubourg';
+  // L'Europe et le Maghreb : l'îlot à périmètre, plus petit dans les villes
+  // moyennes — le rayon du registre tranche, jamais un littéral.
+  return 'perimetre';
+}
+
 function fabrique(cle, fiche) {
   const ancre = positionDe(cle);
   const kmLon = 111.32 * Math.cos((fiche.lat0 * Math.PI) / 180);
@@ -149,6 +319,10 @@ function fabrique(cle, fiche) {
   // îlots de cinq à dix.
   if (f.trame) {
     const t = { ...f.trame };
+    // LE MOT SE POSE AVANT LA FOURCHE : une médina ne passe pas par la
+    // normalisation des rues, et elle doit quand même porter sa typologie —
+    // sinon un témoin qui lit `f.typo` croit qu'elle n'en a pas.
+    f.typo = typoDe(f);
     if (t.ruelles) {
       // Venise, la médina de Marrakech, la vieille ville de Jérusalem : les
       // ruelles SONT leur identité — on les élargit juste assez pour y
@@ -194,6 +368,19 @@ function fabrique(cle, fiche) {
       t.pu = Math.round(t.pu * 3.75); t.pv = Math.round(t.pv * 3.75);
       t.w = 2.8; t.s = 4.8;
       if (t.chanfrein) t.chanfrein = 5.0;                    // l'Eixample garde ses coins coupés
+      // ET LA TYPOLOGIE PASSE APRÈS LA NORMALISATION (v280) : elle surcharge le
+      // pas et pose la cour, sur un gabarit de rue déjà porté aux deux voies de
+      // la v271. Dans l'autre ordre, le facteur 3,75 effacerait le pas choisi.
+      // Les villes moyennes gardent le tissu plus petit : `faubourg` en dessous
+      // de soixante-dix blocs de rayon, l'îlot à périmètre au-delà — le rayon
+      // vient du REGISTRE, jamais d'un littéral (leçon de `r: 66`, v192).
+      const typo = typoDe(f);
+      if (typo && TYPOS[typo]) {
+        const petite = (ancre.r || f.rayon || 0) < 70;
+        const choix = typo === 'perimetre' && petite ? TYPOS.faubourg : TYPOS[typo];
+        Object.assign(t, choix);
+        if (typo === 'perimetre' && petite) f.typo = 'faubourg';
+      }
     }
     // LE MARQUAGE NE SE PEINT QUE S'IL RESTE NET. Vu sur la capture de
     // Moscou : sur une trame en diagonale, pointillés et zèbres se
@@ -1563,6 +1750,41 @@ export function hauteurVillesMonde(x, z, h) {
   return h;
 }
 
+// LE CŒUR D'ÎLOT (v280) — ce qui manquait pour que deux villes ne se
+// ressemblent pas.
+//
+// Mesuré avant d'écrire une ligne : sur vingt villes contrastées, la similarité
+// des distributions de SOL vaut 0,966 en moyenne sur 190 paires, et plusieurs
+// paires sont à 1,000 — Zurich et Bologne ont le MÊME sol, bloc pour bloc,
+// parce qu'elles ont la même trame et le même rayon. Et sur les 269 villes il
+// n'existe que HUIT plans de rue, dont deux couvrent 255 villes : la seule chose
+// qui change d'une ville à l'autre est l'ANGLE de rotation. Le copié-collé que
+// Max décrit est donc dans le PLAN AU SOL, pas dans les palettes.
+//
+// Deuxième mesure, du même relevé : **92 % du disque est bâti**, dans toutes les
+// villes (90 à 94 %). Une vraie ville n'est jamais bâtie à 92 % — elle a des
+// cours, des places, des jardins. Le « jardin de poche » d'un lot sur dix (v178)
+// n'y suffit pas.
+//
+// D'où l'îlot à PÉRIMÈTRE : on bâtit une couronne de `cour` blocs de profondeur
+// depuis le trottoir, et le cœur du lot devient une cour. C'est l'illa de
+// l'Eixample, la cour d'immeuble haussmannienne, le patio andalou — et cela se
+// voit du ciel autant que par une porte cochère.
+//
+// ET LA RÈGLE EST PURE ET UNE SEULE : le SOL la lit pour peindre la cour, le
+// BÂTISSEUR la lit pour ne rien poser dedans. Deux tables qui décrivent le même
+// îlot finiraient par diverger — c'est la discipline de `postesAvion` et de
+// `CHAUSSEE`.
+//
+// `ra`/`rb` sont les écarts à la ligne de trame la plus proche : la rue est au
+// PETIT |ra|, le cœur du lot au grand. La couronne bâtie va donc de `s` (le bord
+// du trottoir) à `s + cour`.
+export function coeurDIlot(t, ra, rb) {
+  if (!t || !t.cour) return false;
+  const bord = t.s + t.cour;
+  return Math.abs(ra) > bord && Math.abs(rb) > bord;
+}
+
 export function solVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
@@ -1676,6 +1898,13 @@ export function solVillesMonde(x, z) {
     // ailleurs au monde.
     if (t.chanfrein && Math.abs(ra) < t.chanfrein && Math.abs(rb) < t.chanfrein
       && Math.abs(ra) + Math.abs(rb) < t.chanfrein * 1.7) return TROTTOIR;
+    // La cour : plantée ou pavée selon la ville, et un arbre de temps en temps.
+    // Le motif se tire en coordonnées du MONDE, sinon il se répète à l'identique
+    // dans chaque morceau et change au remaillage.
+    if (coeurDIlot(t, ra, rb)) {
+      if (t.courPavee) return ((u + v) & 7) === 0 ? ARBRE : PAVE;
+      return ((u + v) & 3) === 0 ? ARBRE : HERBE;
+    }
     return 'lot';
   }
   return null;
@@ -1715,6 +1944,12 @@ export function batirColonneVillesMonde(x, z, poser) {
     // ville, ce sont les avenues que les boutiques bordent en premier.
     const dAxe = Math.min(Math.abs(A), Math.abs(B));
     const bord = dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+
+    // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
+    // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
+    // n'a pas un immeuble dessus. Le jardin de poche, lui, reste — il retire un
+    // lot ENTIER sur dix, là où la cour évide le cœur de tous les lots.
+    if (coeurDIlot(t, ra, rb)) return;
 
     // LE JARDIN DE POCHE (v178). Max, sur Londres : « too packed ». Une
     // vraie ville respire : un lot sur dix ne se bâtit pas — il devient un
