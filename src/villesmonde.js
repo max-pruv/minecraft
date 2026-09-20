@@ -2131,25 +2131,22 @@ export function batirColonneVillesMonde(x, z, poser) {
     // presque expliqué ; c'est une COUPE à travers une rue qui l'a montré.
     const rangUn = dRue >= t.s && dRue < t.s + 1.15;
     const sousPortique = t.portiques && rangUn;
-    // ET `bord` N'EST PAS `rangUn` — J'AI PRIS 85 % DES DEVANTURES DU JEU EN
-    // RESSERRANT LA BONNE CHOSE AU MAUVAIS ENDROIT. Le paragraphe ci-dessus est
-    // juste POUR LE PORTIQUE et faux pour tout le reste : `bord` est ce qui
-    // porte la vitrine, la porte de bois et le bandeau d'enseigne, et c'était
-    // un DEMI-ESPACE depuis la v172. Mesuré sur tout le disque, en interrogeant
-    // le bâtisseur des deux côtés — pour mille colonnes de trottoir :
-    //
-    //              portes main → branche   vitrines main → branche
-    //   Rome         158,3 →  15,7           1460,3 → 194,9
-    //   Tokyo         94,0 →  13,3           1644,4 → 286,7
-    //   Marrakech    266,8 →  83,0            980,5 → 186,2
-    //   Bologne       90,8 →   0,0            811,0 →  59,6
-    //
-    // Le demi-espace revient tel quel ; le portique, lui, garde son rang libre
-    // et sa façade recule d'un cran — donc le MÊME demi-espace, moins le rang
-    // du passage. Bologne retrouve ses boutiques ET garde ses arcades.
+    // ET LA BORNE BASSE DE `rangUn` EST GRATUITE SUR UNE COLONNE DE LOT —
+    // NON-RÉSULTAT MESURÉ, qu'on ne réessaie pas. J'ai cru que ce resserrement
+    // avait pris 85 % des devantures du jeu, et je l'ai « corrigé » en rendant à
+    // `bord` son demi-espace d'avant. Mesuré sur les seules colonnes que
+    // `world.js` bâtit — celles où `solVillesMonde` rend `'lot'` — les deux
+    // versions rendent le MÊME chiffre au dixième : Rome 36,7 ‰ de vitrines,
+    // Tokyo 226,3, Marrakech 190,9, Bologne 34,7. C'est arithmétique :
+    // `dRue >= t.s` est VRAI PAR CONSTRUCTION sur un lot, donc la bande et le
+    // demi-espace sont le même ensemble, et il en va de même du rang reculé du
+    // portique. Ma sonde appelait le bâtisseur pour TOUTES les colonnes de la
+    // fenêtre, trottoirs et chaussée comprises — « une sonde qui interroge la
+    // mauvaise liste ne peut rien voir » (v273), par l'autre bout : elle voit ce
+    // qui n'existe pas. Toute sonde de façade filtre donc sur `'lot'`.
     const bord = t.portiques
-      ? (dRue < t.s + 2.15 && !rangUn) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
-      : dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+      ? (dRue >= t.s + 1.15 && dRue < t.s + 2.15) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
+      : rangUn || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
 
     // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
     // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
@@ -2185,9 +2182,28 @@ export function batirColonneVillesMonde(x, z, poser) {
     // deux.
     const along = Math.abs(ra) < Math.abs(rb) ? Math.abs(rb) : Math.abs(ra);
     const milieuFront = Math.abs(ra) < Math.abs(rb) ? (t.s + t.pv / 2) / 2 : (t.s + t.pu / 2) / 2;
-    // Une porte, pas une rayure : le premier rang de façade seulement, et une
-    // demi-colonne de tolérance de part et d'autre du milieu du front.
-    const porte = commerce && dRue < t.s + 1.0 && Math.abs(along - milieuFront) < 0.28;
+    // UNE TOLÉRANCE EN BLOCS CONTRE UN FRONT QUI GRANDIT NE TIENT PAS — et c'est
+    // la même panne que les barres de témoin, dans le code du JEU. `0,28` bloc
+    // avait été relevé quand le pas de trame valait quinze : le front d'un
+    // quart d'îlot allait de 2 à 7,5, et une fenêtre de 0,56 en couvrait le
+    // dixième. Les typologies portent le pas à 21, 23 et 27 — le front de Rome
+    // va de 4,8 à 11,5 — et la même fenêtre n'attrape plus rien : mesuré sur
+    // les colonnes de lot, ZÉRO porte à Rome, à Tokyo et à Bologne, contre
+    // 9,3 · 3,4 · 13,9 pour mille colonnes de trottoir sur `main`.
+    //
+    // Ce qui ne dépend pas du pas, c'est l'ÉCARTEMENT DES COLONNES : elles sont
+    // à un bloc l'une de l'autre, donc « la colonne la plus proche du milieu du
+    // front » est celle qui en est à moins d'une DEMI-colonne. La tolérance est
+    // cette demi-colonne, et elle reste juste à tous les pas de trame.
+    //
+    // ET LE RANG NE SE REDIT PAS ICI. `dRue < t.s + 1.0` décrivait le premier
+    // rang une SECONDE fois, à côté de `bord` qui le décrit déjà — et les deux
+    // ont divergé le jour où le portique a fait reculer la façade d'un cran :
+    // à Bologne et à Turin les deux conditions devenaient DISJOINTES et pas une
+    // porte n'était possible. La pose est déjà gardée par `commerce && bord` ;
+    // on ne garde donc que « au milieu du front ». Deux tables qui décrivent la
+    // même chose finissent par diverger.
+    const porte = commerce && Math.abs(along - milieuFront) < 0.5;
 
     // Les toits ne sont plus tous du même gris : deux tiers gardent la
     // couleur de la ville, le reste pioche — c'est ce qui fait un vrai

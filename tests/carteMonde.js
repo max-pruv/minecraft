@@ -781,6 +781,7 @@ const VRAIES_KM = [
     const facades = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
       const { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI } = await import('./src/blocks.js');
+      const vm = await import('./src/villesmonde.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
       // La palette sobre du réalisme v2 : bordeaux, vert, marine, émeraude,
@@ -821,7 +822,41 @@ const VRAIES_KM = [
             } else if (ENS.has(w.getBlock(x, sol + 2, z))) c.enseignes++;
           }
         }
-        villes[cle] = { ...c, diversite: ids.size };
+        // ET LES QUATRE POSTES SE COMPTENT SUR LE DISQUE ENTIER, PAR LES
+        // FONCTIONS PURES. La fenêtre de ±40 blocs ne peut pas voir un
+        // événement PAR FAÇADE : une porte est une colonne par front de lot, et
+        // à Tokyo il n'y en a AUCUNE dans cette fenêtre alors que la ville en
+        // porte 23,8 pour mille colonnes de trottoir. C'est « une fraction se
+        // pose sur la VILLE, pas sur la fenêtre » (v274) — troisième fois pour
+        // ce témoin-ci, après les comptes absolus de la v172 et de la v271 — et
+        // c'est aussi « le témoin interroge le BÂTISSEUR, pas le monde chargé »
+        // (v202), parce que `getBlock` ne répond que sur les morceaux engendrés
+        // et qu'engendrer un disque entier sur le fil principal coûte des
+        // secondes. Les deux appels de `world.js` donnent les cotes : le
+        // bâtisseur écrit `wy = h + dy − 1`, le mobilier `wy = h + dy`, donc la
+        // vitrine et la porte sont à `dy 1`, l'enseigne à `dy 3` du bâti et
+        // l'auvent à `dy 3` du mobilier. Vérifié : à ±40 sur `main`, ce calcul
+        // rend EXACTEMENT ce que la lecture du monde rend pour Tokyo
+        // (231,6 · 3,4 · 235,0 · 34,1) et à un dixième près pour Marrakech.
+        // Le disque coûte sept dixièmes de seconde pour les trois villes.
+        const d = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, trottoir: 0 };
+        const R = p.r;
+        for (let du = -R; du <= R; du++) {
+          for (let dv = -R; dv <= R; dv++) {
+            if (du * du + dv * dv > R * R) continue;
+            const x = p.x + du, z = p.z + dv, sv = vm.solVillesMonde(x, z);
+            if (sv === CITY_BLOCK.SIDEWALK) {
+              d.trottoir++;
+              vm.mobilierVillesMonde(x, z, (dy, id) => { if (dy === 3 && ENS.has(id)) d.auvents++; });
+            } else if (sv === 'lot') {
+              vm.batirColonneVillesMonde(x, z, (dy, id) => {
+                if (dy === 1) { if (id === BLOCK.DARKPLANK) d.portes++; else if (id === ARCHI.VITRINE) d.vitrines++; }
+                else if (dy === 3 && ENS.has(id)) d.enseignes++;
+              });
+            }
+          }
+        }
+        villes[cle] = { ...c, diversite: ids.size, disque: d };
       }
       return villes;
     });
@@ -846,24 +881,47 @@ const VRAIES_KM = [
     //   Tokyo v271  231,6      3,4    235,0      34,1
     //   Marrakech   190,9     81,5    266,0     283,4
     //
+    // ET LA v282 LES A DÉPLACÉES SUR LE DISQUE ENTIER, parce qu'une fenêtre de
+    // ±40 blocs ne peut pas voir un événement PAR FAÇADE. Mesuré par les
+    // fonctions pures, des deux côtés :
+    //
+    //                vitrines  portes  enseignes  auvents
+    //   Rome  main      142,1    25,6     167,7     133,0
+    //   Rome  v282      153,5    30,8     184,3     121,9
+    //   Tokyo main      196,1    14,7     210,8     124,1
+    //   Tokyo v282      226,5    23,8     250,3     132,4
+    //   Marra main      185,0    82,2     267,2     302,8
+    //   Marra v282      114,1   153,1     267,2     302,8
+    //
+    // À Marrakech la somme vitrines + portes est IDENTIQUE des deux côtés,
+    // 267,2 : une porte prend la place d'une vitrine, et c'est ce qui vérifie
+    // que la correction DÉPLACE des colonnes au lieu d'en créer.
+    //
     // Les barres sont posées sous le plus faible des deux côtés, avec la marge
     // de la règle : ce qu'elles doivent séparer, c'est « il y a des boutiques »
     // de « il n'y en a aucune ». Désarmé `commerce` dans une copie de `src`,
     // les quatre postes tombent à zéro — cette vérification-là se FAIT.
     const POUR_MILLE = { vitrines: 25, portes: 2, enseignes: 35, auvents: 20 };
     const densites = {};
+    const fenetres = {};
     const sansDevanture = Object.entries(facades).filter(([cle, c]) => {
-      const mille = (n) => (1000 * n) / Math.max(1, c.trottoir || 0);
+      const d = c.disque || c;
+      const mille = (n) => (1000 * n) / Math.max(1, d.trottoir || 0);
       densites[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
-        .map((k) => [k, +mille(c[k]).toFixed(1)]));
-      return !(c.trottoir > 400 && Object.entries(POUR_MILLE)
-        .every(([k, barre]) => mille(c[k]) >= barre));
+        .map((k) => [k, +mille(d[k]).toFixed(1)]));
+      // La fenêtre de ±40 reste DANS LE MESSAGE : c'est elle qui lit le monde
+      // vraiment chargé, et un écart entre les deux se voit alors tout seul.
+      fenetres[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +((1000 * c[k]) / Math.max(1, c.trottoir || 0)).toFixed(1)]));
+      return !(d.trottoir > 400 && Object.entries(POUR_MILLE)
+        .every(([k, barre]) => mille(d[k]) >= barre));
     });
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       `pour mille colonnes de trottoir, barres ${JSON.stringify(POUR_MILLE)} · `
       + (sansDevanture.length ? `EN FAUTE ${sansDevanture.map(([v]) => v).join(' · ')} · ` : '')
-      + JSON.stringify(densites));
+      + JSON.stringify(densites)
+      + ` · dans la fenêtre de ±40 blocs, lue dans le monde chargé : ${JSON.stringify(fenetres)}`);
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
     // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
