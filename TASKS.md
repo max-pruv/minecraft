@@ -28,6 +28,52 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+## Les dix rouges de `monte.js` mesurés SUR `origin/main`, donc en production
+
+Portail de référence rejoué seul sur `origin/main` (710ab76), `monte.js` en
+20 min 40 s. **Ces dix-là ne viennent d'aucune branche en cours** : ils sont dans
+le jeu que la famille utilise. Trois familles, et la troisième est une vraie
+régression de fonctionnalité.
+
+**1. La carrure de la voiture, et le piéton — ce que la v279 corrige.**
+
+- « au volant, on s'arrête plus loin du mur qu'à pied » — à pied **8,95** blocs
+  du mur contre 1,1 au volant : le témoin butait sur la CIRCULATION, pas sur le
+  mur. C'est `contreLeMur` (v279), déjà corrigé sur la branche.
+- « une fois descendu, on repasse partout où un piéton passe » — 0,3 contre 8,95,
+  même cause.
+- « la voiture de l'enfant freine devant un piéton » — `voituresRue: 0`,
+  `ecartes: 164`, `traverses: 0`, avance 5,3 : la situation n'a pas eu lieu.
+
+**2. Deux défauts de performance et de physique, à démonter.**
+
+- « l'écran ne se fige pas en arrivant sur une ville » — **pire image 4 633 ms**,
+  43,1 % du temps au-delà de 300 ms, cadence 3,8. La branche v279 rend 4 233 ms
+  et 46,5 % : la même chose, aux deux bouts. C'est l'arrivée en ville sur un
+  rendu logiciel, et ça ne se transpose pas à l'iPad — mais **personne ne l'a
+  mesuré sur la tablette** (`?diag=1`), et c'est ce qu'il faut faire.
+- « une voiture arrêtée par un mur n'annonce plus de vitesse » — **12,16 contre
+  le mur**, reculé 0,55. C'est la correction de la v272 (« on ne borne que ce qui
+  est bloqué ») qui ne mord pas dans ce cas-là : le nez contre le mur, la voiture
+  garde sa consigne. À reprendre avec la sonde de la v272, pas à l'intuition.
+
+**3. LES FLAMMES DE RÉACTEUR NE SORTENT PLUS — régression de la v264.**
+
+C'était une demande de Max en propre : « voir les flammes sortir du réacteur
+quand l'avion se déplace ». Mesuré en production, en VOL (`v: 68,4`) :
+`flammes: [{visible: false, long: 0}, {visible: false, long: 0}]` — les deux
+tuyères éteintes, pleins gaz comme réduits. Et `gaz: null`, ce qui est normal
+depuis la v272 (la manette est un instrument d'avion, la flamme doit alors lire
+la vitesse rapportée à la pointe — c'est écrit dans CLAUDE.md). La piste est donc
+ce repli-là, et elle se MESURE avant de se corriger.
+
+**4. Deux témoins d'avion qui ne montent pas dans l'avion.** « pas aux commandes
+{} » pour 🛞 et pour l'atterrissage manuel, et « à pied, le cadran de cap est
+caché » qui rend `affiche: true` à pied. Trois verdicts qui partagent un état :
+c'est la famille de la v279 (« dans une suite, la situation de départ d'un témoin
+est ce que le témoin d'avant a laissé »). À démonter par une sonde qui dit si
+l'embarquement a eu lieu, pas par une hypothèse.
+
 ## En cours
 
 - [ ] **LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
