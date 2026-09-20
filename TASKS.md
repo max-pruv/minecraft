@@ -39,23 +39,39 @@ branche — un rouge qui est dans cette liste n'est pas le vôtre.
 | suite | rouges | ce qu'ils touchent |
 | --- | --- | --- |
 | `monte.js` | 10 | la conduite, l'arrivée en ville, les flammes de réacteur |
-| `washington.js` | 5 | **on ne peut plus prendre le métro de Washington** |
+| `washington.js` | 5 | le témoin de l'escalier, pas le métro — voir plus bas |
 | `reseau.js` | 4 | **Alice ne retrouve pas son monde** après une veille ou le départ de l'hôte |
 | `maj.js` | 1 | le fond de carte n'est pas prêt quand « Jouer » se libère |
 | les onze autres | — | vertes |
 
 **ET DEUX DE CES QUATRE FAMILLES TOUCHENT CE QUE LES ENFANTS FONT VRAIMENT.**
 
-- **LE MÉTRO DE WASHINGTON EST INACCESSIBLE.** Les cinq rouges de
-  `washington.js` n'ont qu'UNE cause : « en descendant l'escalier, on arrive sur
-  le quai — descendu de **-0,0 blocs** · bloqué : trois pas sans descendre ».
-  L'enfant ne descend pas. Tout ce qui suit tombe en cascade : pas de plafond
-  au-dessus de la tête (on est resté dehors), la rame existe mais son bouton
-  n'est pas visible, et le métro ne mène nulle part (Smithsonian → Smithsonian,
-  0 m en 40 s). C'est une fonctionnalité que Max avait demandée (v161), et elle
-  ne marche plus. À démonter par une sonde qui dit OÙ l'escalier bloque, pas par
-  une hypothèse — et en se souvenant que « ne plus avancer se constate sur
-  PLUSIEURS pas » (la leçon écrite pour ce fichier même).
+- **~~LE MÉTRO DE WASHINGTON EST INACCESSIBLE~~ — NON, ET C'EST MOI QUI AVAIS
+  TORT.** J'ai écrit et dit à Max que les cinq rouges de `washington.js`
+  signifiaient qu'on ne peut plus prendre le métro. **C'est faux.** Une sonde
+  pure — sans navigateur, en lisant les blocs le long du couloir — rend vingt et
+  un pas praticables de y=34 à y=20, aucune marche de plus d'un bloc, deux blocs
+  d'air d'un bout à l'autre, le quai à 19. L'escalier est sain, et les quatre
+  rouges suivants sont la cascade d'un enfant qui n'est jamais descendu.
+
+  **Le défaut est dans le TÉMOIN, et la sonde l'a nommé** : les six premiers
+  blocs depuis la bouche sont PLATS, par construction (la bouche est à
+  `longueur` du centre, `DEMI_VOUTE` vaut sept). Or le témoin abandonnait après
+  « trois pas sans DESCENDRE », et un pas vaut le quart d'un bloc sur ce banc
+  (v238) : il se déclenchait avant la première marche, quoi que fasse le jeu.
+  Corrigé — on constate « ne plus AVANCER », comme le témoin des portes quinze
+  lignes plus haut, ce qui était déjà la leçon citée et appliquée à la mauvaise
+  grandeur. **Un mur arrête le déplacement ; un palier n'arrête que la
+  descente.**
+
+  Et la leçon de méthode, qui vaut plus que la correction : **j'ai annoncé une
+  panne de production sur la foi d'un témoin, sans mesurer la chose elle-même.**
+  Le dépôt écrit depuis longtemps « avant d'accuser un message, on vérifie qu'il
+  est atteint » et « une explication qu'on n'a pas mesurée est une dette, pas un
+  diagnostic » ; ici c'était un VERDICT qu'il fallait vérifier, et la sonde qui
+  le fait coûtait dix minutes. Ce qui reste à mesurer, honnêtement : si un enfant
+  réel, avec sa boîte de collision et la physique, descend bien ces vingt et un
+  pas. La sonde juge un marcheur idéal.
 - **ALICE NE RETROUVE PAS SON MONDE.** Quatre rouges de `reseau.js` :
   « Alice retrouve son monde après une veille sans retour — compteur 0 [] », « la
   reprise tient dans la durée — hôte 2 · Alice 0 », « seule après le départ de
