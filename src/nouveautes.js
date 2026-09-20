@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 280,
+    titre: "Des pistes pour vraiment décoller",
+    puces: [
+      "Les pistes sont beaucoup plus longues",
+      "Ton avion attend au bord de la piste",
+      "Fini les faux avions de décor",
+    ],
+  },
+  {
     v: 279,
     titre: "La caméra recule un peu",
     puces: [

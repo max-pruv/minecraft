@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v280 — Les pistes prennent le diamètre
+
+**Pourquoi.** Trois signalements de Max en une phrase : « supprime les avions
+qui ne volent pas, en format Minecraft ; places les avions normaux près des
+pistes ; et fais les pistes plus longues ». C'était la même panne vue par trois
+bouts, et il a fallu la mesurer pour le voir. Ce qu'une piste réclame se lit
+dans la fiche de chaque appareil : le roulage avant que le nez se lève, plus la
+distance de freinage, soit quatre-vingt-trois blocs pour l'avion de ligne,
+quatre-vingt-dix-neuf pour le Concorde, trente-quatre pour le chasseur. Mesuré,
+la piste d'Orly en faisait **quarante-neuf**. Aucun aérodrome du jeu, sauf les
+deux pistes internes de Roissy, ne permettait au Concorde de décoller et de
+s'arrêter : l'enfant arrivait au bout du bitume sans avoir levé le nez. Et ses
+trois appareils, à Roissy, étaient coincés dans des interstices du complexe
+terminal — jusqu'à trente-huit blocs de la piste la plus proche, derrière des
+bâtiments — parce que huit avions de décor occupaient tout le tarmac.
+
+**Ce que ça change.** Les huit avions en blocs ont disparu : ce qui ressemble à
+un avion est désormais un avion dans lequel on monte. La piste de chaque
+aérodrome traverse la plate-forme dans sa plus grande longueur, et tout le reste
+— voie de service, aire de stationnement, terminal, tour de contrôle, hangar —
+passe d'un seul côté, comme dans un vrai aéroport à une piste. Les pistes
+mesurent maintenant de quatre-vingt-treize blocs sur une base militaire à cent
+quarante-sept à JFK, et les dix-neuf servent tout ce qu'ils garent. On sort du
+terminal, on traverse l'aire, et son avion est là, aligné sur la piste, à
+quelques blocs du seuil : le décollage commence tout de suite.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur la version publiée et
+verts ici. Chaque piste sert son appareil le plus exigeant — treize aérodromes
+étaient en faute, aucun ne l'est ; chaque appareil garé est à portée du bord de
+piste ; l'aire de Roissy tient un gros porteur à ciel ouvert, et pas seulement
+dans une poche (neuf places avant, huit cent cinq) ; rien de solide ne dépasse
+sur une piste (cent quatre-vingt-quatre blocs avant — les passerelles et les
+avions de décor mordaient sur la bande). Le sol, lui, n'a pas bougé d'un bloc :
+la piste est un ouvrage, remblai et tranchée écrits en blocs comme la voie
+ferrée, et les deux empreintes du relief sont identiques.
+
+---
+
 ## v279 — Ce que la v278 a livré sans le dire
 
 **Pourquoi.** La v278 portait **deux sujets**, et n'en a documenté qu'un. À côté
