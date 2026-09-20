@@ -3088,6 +3088,187 @@ const VRAIES_KM = [
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
+    // --- CHAQUE VILLE A SON TISSU, ET DEUX VILLES NE SONT PLUS LA MÊME (v280) -
+    //
+    // Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone,
+    // je le sentais l'ambiance de Barcelone et pas toutes les villes qui sont
+    // copiées-collées les unes aux autres. » Mesuré avant d'écrire une ligne :
+    // sur 269 villes il n'existait que HUIT plans de rue, dont deux couvraient
+    // 255 villes, et la seule chose qui changeait d'une ville à l'autre était
+    // l'ANGLE de rotation. Le copié-collé était dans le PLAN AU SOL.
+    //
+    // ET CES QUATRE TÉMOINS SONT ARRIVÉS APRÈS LE CODE, ce qui est une faute :
+    // quatre sujets — les tissus, le cœur d'îlot, la place, les arcades — sont
+    // entrés dans la branche sans un seul témoin, exactement la panne que la
+    // v278 a payée et que la v279 a écrite. « Ce qu'un témoin ne garde pas,
+    // personne ne le garde. »
+    const tissus = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { VILLES_MONDE, solVillesMonde, batirColonneVillesMonde } = m;
+      const trame = VILLES_MONDE.filter((f) => f.trame);
+
+      // 1 — DEUX VILLES SE RESSEMBLENT-ELLES ? Deux grandeurs, parce qu'elles
+      // ne disent pas la même chose : la similarité des DISTRIBUTIONS de sol
+      // (les mêmes matières dans les mêmes proportions) et l'identité COLONNE
+      // PAR COLONNE (le même plan, au bloc près). La pire paire d'avant —
+      // Accra et Kiev — avait des distributions IDENTIQUES (1,000), et
+      // Varsovie/Budapest 95,9 % de colonnes identiques.
+      const ECH = ['zurich', 'bologne', 'barcelone', 'buenosaires', 'munich', 'vienne',
+        'rome', 'naples', 'lisbonne', 'copenhague', 'oslo', 'fes', 'tunis', 'santiago',
+        'lima', 'manille', 'nairobi', 'accra', 'kiev', 'varsovie', 'prague', 'budapest',
+        'dublin', 'anvers'];
+      const R = 36;
+      const rel = new Map();
+      for (const cle of ECH) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) continue;
+        const cols = [], hist = new Map();
+        for (let du = -R; du <= R; du += 2) {
+          for (let dv = -R; dv <= R; dv += 2) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            cols.push(String(sol));
+            hist.set(String(sol), (hist.get(String(sol)) || 0) + 1);
+          }
+        }
+        rel.set(cle, { cols, hist, n: cols.length });
+      }
+      const cles = [...rel.keys()];
+      let pireDist = 0, pireDistP = '', pireCol = 0, pireColP = '', paires = 0;
+      for (let i = 0; i < cles.length; i++) {
+        for (let j = i + 1; j < cles.length; j++) {
+          const A = rel.get(cles[i]), B = rel.get(cles[j]);
+          let l1 = 0;
+          for (const k of new Set([...A.hist.keys(), ...B.hist.keys()])) {
+            l1 += Math.abs((A.hist.get(k) || 0) / A.n - (B.hist.get(k) || 0) / B.n);
+          }
+          const d = 1 - l1 / 2;
+          let eg = 0;
+          for (let k = 0; k < A.n; k++) if (A.cols[k] === B.cols[k]) eg++;
+          const c = eg / A.n;
+          paires++;
+          if (d > pireDist) { pireDist = d; pireDistP = `${cles[i]}/${cles[j]}`; }
+          if (c > pireCol) { pireCol = c; pireColP = `${cles[i]}/${cles[j]}`; }
+        }
+      }
+
+      // 2 — LA PART BÂTIE DU DISQUE VARIE D'UN TISSU À L'AUTRE. C'est le cœur
+      // d'îlot : une vraie ville a des cours, des patios, des jardins — 92 %
+      // de disque bâti n'est pas une ville. `f.typo` n'existe pas sur l'ancien
+      // code : tout tombe dans un seul groupe, l'écart vaut zéro, et c'est
+      // exactement le rouge attendu.
+      const parTypo = new Map();
+      for (const f of trame) {
+        const Rv = Math.min(f.rayon - 4, 40);
+        let lot = 0, tot = 0;
+        for (let du = -Rv; du <= Rv; du += 2) {
+          for (let dv = -Rv; dv <= Rv; dv += 2) {
+            if (Math.hypot(du, dv) > Rv) continue;
+            tot++;
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) === 'lot') lot++;
+          }
+        }
+        const k = f.typo || '(aucun tissu)';
+        if (!parTypo.has(k)) parTypo.set(k, []);
+        parTypo.get(k).push(lot / tot);
+      }
+      const batis = [...parTypo].map(([k, v]) => ({
+        typo: k, part: v.reduce((a, b) => a + b, 0) / v.length, n: v.length,
+      })).sort((a, b) => a.part - b.part);
+
+      // 3 — LA PLACE : chaque ville en a une, elle CONTIENT le centre (c'est là
+      // que la téléportation dépose l'enfant), et sa forme change d'une ville à
+      // l'autre. Avant, 244 villes sur 267 avaient la MÊME : 4×4 en (−2, −2).
+      const formes = new Map();
+      const sansPlace = [], centreDehors = [];
+      for (const f of trame) {
+        const centre = String(solVillesMonde(f.ancre.x, f.ancre.z));
+        let u0 = 99, u1 = -99, v0 = 99, v1 = -99, n = 0;
+        for (let du = -30; du <= 30; du++) {
+          for (let dv = -30; dv <= 30; dv++) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            if (sol === null || sol === 'lot' || String(sol) !== centre) continue;
+            u0 = Math.min(u0, du); u1 = Math.max(u1, du);
+            v0 = Math.min(v0, dv); v1 = Math.max(v1, dv); n++;
+          }
+        }
+        if (!n) { sansPlace.push(f.cle); continue; }
+        const k = `${u1 - u0}x${v1 - v0}@${u0},${v0}`;
+        formes.set(k, (formes.get(k) || 0) + 1);
+        if (u0 > 0 || u1 < 0 || v0 > 0 || v1 < 0) centreDehors.push(f.cle);
+      }
+      const pirePlace = [...formes.entries()].sort((a, b) => b[1] - a[1])[0] || ['(aucune)', 0];
+
+      // 4 — LES ARCADES. Bologne, c'est quarante kilomètres de portiques ; on
+      // marche DESSOUS. La mesure est donc un vide : rien à hauteur d'homme
+      // (y = 1 et 2) et quelque chose au-dessus (y = 3), sur une colonne de lot.
+      const arcades = [];
+      for (const cle of ['bologne', 'turin', 'zurich', 'copenhague']) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { arcades.push({ cle, err: 'absente' }); continue; }
+        let sous = 0, cols = 0;
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) !== 'lot') continue;
+            cols++;
+            const pose = [];
+            batirColonneVillesMonde(f.ancre.x + du, f.ancre.z + dv, (dy, id) => pose.push(dy));
+            if (!pose.length) continue;
+            if (!pose.some((dy) => dy === 1 || dy === 2) && pose.some((dy) => dy === 3)) sous++;
+          }
+        }
+        arcades.push({ cle, typo: String(f.typo), cols, sous, part: sous / Math.max(1, cols) });
+      }
+      return { paires, pireDist, pireDistP, pireCol, pireColP, batis,
+        formes: formes.size, pirePlace, villes: trame.length, sansPlace, centreDehors, arcades };
+    });
+
+    // Mesuré à la livraison sur 253 paires : la pire similarité de distribution
+    // tombe de 1,000 (Accra/Kiev — le même sol dans les mêmes proportions) à
+    // 0,988, et la pire identité colonne par colonne de 95,9 % (Varsovie/
+    // Budapest) à 77,5 %. Les barres sont posées un cran au-delà des mesures,
+    // pas sur elles.
+    verifier('deux villes engendrées ne sont plus la même ville',
+      tissus.paires > 100 && tissus.pireDist < 0.995 && tissus.pireCol < 0.88,
+      `pire similarité de distribution ${tissus.pireDist.toFixed(3)} (${tissus.pireDistP})`
+      + ` · pire identité colonne ${(100 * tissus.pireCol).toFixed(1)} % (${tissus.pireColP})`
+      + ` · ${tissus.paires} paires`);
+
+    // L'ÉCART EST LA GRANDEUR, PAS LA MOYENNE. Une part bâtie basse partout
+    // serait une ville creuse ; ce qu'on garde, c'est qu'un tissu dense et un
+    // tissu aéré ne se ressemblent pas. Mesuré : de 7,9 % (organique) à 25,3 %
+    // (medina), soit 17 points d'écart, contre ZÉRO quand il n'y avait qu'un
+    // seul plan pour les 267.
+    const ecartBati = tissus.batis.length
+      ? tissus.batis[tissus.batis.length - 1].part - tissus.batis[0].part : 0;
+    verifier('chaque tissu a son espace libre — le cœur d\'îlot',
+      tissus.batis.length >= 6 && ecartBati > 0.08,
+      `${tissus.batis.length} tissu(s) · écart de part bâtie ${(100 * ecartBati).toFixed(1)} points · `
+      + tissus.batis.map((b) => `${b.typo} ${(100 * b.part).toFixed(1)} % (${b.n})`).join(' · '));
+
+    // ET LA PLACE CONTIENT TOUJOURS LE CENTRE : c'est là que la téléportation
+    // dépose l'enfant, et une ville sans place le mettrait le nez dans un mur.
+    // C'est ce verdict qui a attrapé Hambourg et Bâle, noyés par leur propre
+    // fleuve — l'Alster prolongée à travers le Rathaus, le Rhin sur la
+    // Marktplatz — avant que le portail n'ait à le dire.
+    verifier('chaque ville a sa place, et elle n\'est plus au même endroit partout',
+      tissus.sansPlace.length === 0 && tissus.centreDehors.length === 0
+      && tissus.pirePlace[1] / tissus.villes < 0.5,
+      `${tissus.formes} formes de place sur ${tissus.villes} villes · la plus répandue`
+      + ` ${tissus.pirePlace[0]} dans ${tissus.pirePlace[1]}`
+      + ` (${(100 * tissus.pirePlace[1] / tissus.villes).toFixed(0)} %)`
+      + ` · sans place : ${tissus.sansPlace.join(', ') || '(aucune)'}`
+      + ` · centre hors de la place : ${tissus.centreDehors.join(', ') || '(aucune)'}`);
+
+    // Bologne et Turin ont des arcades, Zurich et Copenhague n'en ont pas — et
+    // c'est la seconde moitié qui compte : un témoin qui ne vérifie que la
+    // présence laisserait poser des portiques dans toute l'Europe.
+    verifier('on marche sous les arcades à Bologne et à Turin, et nulle part ailleurs',
+      tissus.arcades.length === 4 && !tissus.arcades.some((a) => a.err)
+      && tissus.arcades.filter((a) => a.typo === 'arcades').length === 2
+      && tissus.arcades.every((a) => (a.typo === 'arcades' ? a.part > 0.1 : a.part < 0.01)),
+      tissus.arcades.map((a) => a.err ? `${a.cle} ${a.err}`
+        : `${a.cle} (${a.typo}) ${a.sous}/${a.cols} = ${(100 * a.part).toFixed(1)} %`).join(' · '));
+
     // --- LES FLEUVES DES VILLES, ET LES PONTS QUI LES FRANCHISSENT (v280) ----
     //
     // Onze villes dont le fleuve EST l'identité n'en avaient aucun : Hambourg

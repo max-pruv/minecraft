@@ -443,6 +443,15 @@ function fabrique(cle, fiche) {
   // de la ville n'est plus un détroit. On prolonge chaque bout dans l'axe de
   // son dernier segment.
   const prolonge = (fl) => {
+    // UN LAC N'EST PAS UN DÉTROIT, ET ON NE LE PROLONGE PAS (v280). L'Alster
+    // de Hambourg FINIT au centre-ville — c'est un lac, pas un fleuve
+    // traversant — et `prolonge` l'a étirée dans l'axe de son premier segment,
+    // donc vers le sud, donc À TRAVERS LE RATHAUS : trois cents mètres d'eau
+    // pile sur le point d'ancrage, c'est-à-dire là où la téléportation DÉPOSE
+    // L'ENFANT. Le témoin « le centre de chaque ville au sec » l'aurait dit au
+    // portail ; une sonde des places l'a dit avant. Un plan d'eau qui a une
+    // vraie fin dans la ville se déclare `borne`.
+    if (fl.borne) return { ...fl, pts: fl.pts.map((q) => q.slice()) };
     const pts = fl.pts.map((q) => q.slice());
     const etire = (a, b) => {
       const dx = a[0] - b[0], dz = a[1] - b[1];
@@ -1663,7 +1672,9 @@ function chercheMer(v) {
 const FLEUVES_VILLES = {
   hambourg: [
     { nom: 'Elbe', l: 4, pts: [[-60, 30], [-20, 26], [20, 24], [60, 28]] },       // 1,3 km au sud du Rathaus · 400 m de large
-    { nom: 'Alster', l: 6, pts: [[2, -12], [4, -26]] },                           // la Binnenalster puis l'Außenalster, 1,2 km de long
+    // LA BINNENALSTER PUIS L'AUSSENALSTER : un lac, qui FINIT au sud (le
+    // Rathaus est sur son bord), donc `borne` — prolongé, il noyait l'ancre.
+    { nom: 'Alster', l: 6, pts: [[2, -14], [4, -28]], borne: true },
   ],
   cologne: [{ nom: 'Rhin', l: 4, pts: [[10, 60], [8, 10], [6, -20], [2, -60]] }], // 0,4 km à l'est du Dom · 350 m de large
   francfort: [{ nom: 'Main', l: 2, pts: [[-60, 8], [-10, 6], [30, 7], [60, 10]] }], // 0,3 km au sud du Römer · 200 m de large
@@ -1676,11 +1687,20 @@ const FLEUVES_VILLES = {
   porto: [{ nom: 'Douro', l: 2.5, pts: [[-60, 18], [0, 16], [60, 20]] }],         // 0,8 km au sud, en gorge · 250 m
   bordeaux: [{ nom: 'Garonne', l: 5, pts: [[6, -60], [10, -10], [12, 20], [8, 60]] }], // le fameux croissant · 500 m
   dresde: [{ nom: 'Elbe', l: 3, pts: [[-60, -14], [-10, -8], [20, -10], [60, -22]] }], // juste au nord de la vieille ville · 300 m
+  // LA SAVE (200 m) ET LE DANUBE (500 m) CONFLUENT SOUS LE KALEMEGDAN. Mon
+  // premier tracé mettait la confluence à un bloc de l'ancre — la place de la
+  // République dans le Danube. La translation est MESURÉE et c'est la plus
+  // petite qui laisse trois cents mètres de quai entre le centre et l'eau :
+  // on ne redessine pas une confluence à l'intuition.
   belgrade: [
-    { nom: 'Save', l: 2, pts: [[-60, 20], [-20, 10], [-6, 2]] },                  // 200 m
-    { nom: 'Danube', l: 5, pts: [[-6, 2], [10, -6], [60, -14]] },                 // ils confluent sous le Kalemegdan · 500 m
+    { nom: 'Save', l: 2, pts: [[-65, 11], [-25, 1], [-11, -7]] },
+    { nom: 'Danube', l: 5, pts: [[-11, -7], [5, -15], [55, -23]] },
   ],
-  bale: [{ nom: 'Rhin', l: 2, pts: [[-4, 60], [-2, 10], [2, -2], [30, -10], [60, -8]] }], // le coude de Bâle · 200 m
+  // LE COUDE DE BÂLE · 200 m de large. La Marktplatz est sur la rive GAUCHE, à
+  // deux cent cinquante mètres de l'eau : mon premier tracé passait dessus, et
+  // l'ancre — le point où la téléportation dépose l'enfant — était dans le
+  // Rhin. Un tracé de fleuve se mesure à l'ancre, pas seulement à la carte.
+  bale: [{ nom: 'Rhin', l: 2, pts: [[2, 60], [4, 10], [8, -2], [36, -10], [66, -8]] }],
 };
 
 function ficheGeneree(v) {
@@ -1704,7 +1724,11 @@ function ficheGeneree(v) {
   const mer = chercheMer(v);
   if (mer) fiche.mer = { ...mer, d: Math.round(v.r * 0.55), ...(arch.plage ? { plage: 3 } : { quais: true }) };
   const fl = FLEUVES_VILLES[v.cle];
-  if (fl) fiche.fleuves = fl.map((q) => ({ pts: q.pts.map((pt) => pt.slice()), l: q.l }));
+  if (fl) {
+    fiche.fleuves = fl.map((q) => ({
+      pts: q.pts.map((pt) => pt.slice()), l: q.l, borne: q.borne,
+    }));
+  }
   return fiche;
 }
 
@@ -1845,11 +1869,20 @@ export function hauteurVillesMonde(x, z, h) {
 //
 // Mesuré avant d'écrire une ligne : sur vingt villes contrastées, la similarité
 // des distributions de SOL vaut 0,966 en moyenne sur 190 paires, et plusieurs
-// paires sont à 1,000 — Zurich et Bologne ont le MÊME sol, bloc pour bloc,
-// parce qu'elles ont la même trame et le même rayon. Et sur les 269 villes il
-// n'existe que HUIT plans de rue, dont deux couvrent 255 villes : la seule chose
-// qui change d'une ville à l'autre est l'ANGLE de rotation. Le copié-collé que
-// Max décrit est donc dans le PLAN AU SOL, pas dans les palettes.
+// paires sont à 1,000. Et sur les 269 villes il n'existe que HUIT plans de rue,
+// dont deux couvrent 255 villes : la seule chose qui change d'une ville à
+// l'autre est l'ANGLE de rotation. Le copié-collé que Max décrit est donc dans
+// le PLAN AU SOL, pas dans les palettes.
+//
+// ET J'AI ÉCRIT ICI UNE PHRASE QUE LA MESURE REFUSE : « Zurich et Bologne ont
+// le MÊME sol, bloc pour bloc ». C'est FAUX — 52,6 % de colonnes identiques
+// avant la livraison, pas 100 %. Ce qui valait 1,000, c'était la similarité des
+// DISTRIBUTIONS (les mêmes matières dans les mêmes proportions), et pour une
+// autre paire : Accra et Kiev. L'identité colonne par colonne, elle, culminait
+// à 95,9 % — Varsovie et Budapest. **Deux grandeurs qui portent le même mot
+// « pareil » ne disent pas la même chose**, et la seconde est celle que « bloc
+// pour bloc » nomme. Le témoin de `carteMonde.js` mesure les DEUX, et c'est lui
+// qui a démonté ma propre phrase : 1,000 → 0,988 et 95,9 % → 77,5 %.
 //
 // Deuxième mesure, du même relevé : **92 % du disque est bâti**, dans toutes les
 // villes (90 à 94 %). Une vraie ville n'est jamais bâtie à 92 % — elle a des
