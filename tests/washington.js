@@ -420,19 +420,46 @@ const descendre = async (p, ms) => {
     //
     // « Ne plus descendre » se constate sur TROIS pas, comme « ne plus
     // avancer » : un mur arrête à chaque pas, un hoquet de banc à un seul.
+    //
+    // ET « NE PLUS DESCENDRE » N'EST PAS « NE PLUS AVANCER » : LE COULOIR
+    // COMMENCE À PLAT (v279). Le portail de référence sur `origin/main` a rendu
+    // « descendu de -0,0 blocs · bloqué : trois pas sans descendre », et j'en ai
+    // conclu que le métro était inaccessible. **C'était faux, et c'est une sonde
+    // pure qui l'a dit** — sans navigateur, en lisant les blocs le long du
+    // couloir : vingt et un pas praticables de y=34 à y=20, aucune marche de
+    // plus d'un bloc, deux blocs d'air d'un bout à l'autre, le quai à 19.
+    // L'escalier est sain.
+    //
+    // Ce que la sonde a montré en plus, et qui condamne la règle d'abandon :
+    // **les six premiers blocs depuis la bouche sont PLATS**, et par
+    // construction — la bouche est posée à `longueur` du centre, et le couloir
+    // ne commence à descendre qu'au-delà du palier d'entrée (`DEMI_VOUTE` vaut
+    // sept). Or l'enfant avance de l'ordre du quart de bloc par pas de 1,4 s sur
+    // ce banc (v238 : « à pied, un enfant avance à 15 % du temps réel ») : trois
+    // pas ne font même pas un bloc, donc « trois pas sans descendre » se
+    // déclenche AVANT la première marche, quoi que fasse le jeu. La borne était
+    // condamnée à rougir dès que le banc ralentissait un peu plus.
+    //
+    // On constate donc « ne plus AVANCER », comme le témoin des portes quinze
+    // lignes plus haut — ce qui était déjà la leçon citée ci-dessus, appliquée à
+    // la mauvaise grandeur. Un mur arrête le déplacement ; un palier n'arrête
+    // que la descente.
     let enBas = await pose(tab);
-    let immobileBas = 0;
+    let immobileBas = 0, avance = 0;
     for (let i = 0; i < 24 && enBas.y >= solBouche - 8; i++) {
-      const avantPas = enBas.y;
+      const avantPas = enBas;
       await descendre(tab, 1400);
       enBas = await pose(tab);
-      immobileBas = avantPas - enBas.y >= 0.2 ? 0 : immobileBas + 1;
+      const pas = Math.hypot(enBas.x - avantPas.x, enBas.z - avantPas.z);
+      avance += pas;
+      immobileBas = pas >= 0.2 || avantPas.y - enBas.y >= 0.2 ? 0 : immobileBas + 1;
       if (immobileBas >= 3) break;
     }
     verifier('en descendant l\'escalier, on arrive sur le quai',
       enBas.y < solBouche - 8,
       `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`
-      + (immobileBas >= 3 ? ' · bloqué : trois pas sans descendre' : ''));
+      + ` · avancé de ${avance.toFixed(1)} blocs dans le couloir`
+      + (immobileBas >= 3 ? ' · bloqué : trois pas sans avancer ni descendre' : ''));
     // On laisse l'enfant se poser avant de regarder en l'air : mesuré en pleine
     // chute, le plafond change d'un bloc d'une exécution à l'autre.
     await dormir(900);

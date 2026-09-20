@@ -28,7 +28,227 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
+
+**Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »
+(v244), puis « les voitures passent les unes sur les autres » (v245). Les deux
+livraisons ont corrigé quelque chose de réel et laissé ceci, qui est la cause
+principale, et qu'aucun témoin ne pouvait voir parce que le témoin comptait la
+mauvaise grandeur.
+
+**LA MESURE.** Sonde à part, une seule page, un seul code, quatre fenêtres de
+trente secondes en ordre alterné (200 / 800 / 200 / 800 ms d'échantillonnage) au
+centre de Paris :
+
+| passage | pas | taux | enfoncement médian | pire | > 0,8 bloc | même sens |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 200 ms | 10,2 % | **0,11** | 0,96 | 2 / 32 | 15 |
+| 2 | 800 ms | 43,9 % | **1,90** | 2,26 | 68 / 82 | 71 |
+| 3 | 200 ms | 44,9 % | **1,15** | 2,26 | 295 / 408 | 326 |
+| 4 | 800 ms | 34,9 % | **2,25** | 2,26 | 44 / 58 | 44 |
+
+Deux choses s'y lisent, et la seconde est la panne.
+
+**D'ABORD, LE TÉMOIN NE MESURE RIEN.** « Les voitures ne se traversent plus »
+rend un COMPTE d'instants de chevauchement. Au pas identique (passages 1 et 3),
+il va de 10,2 à 44,9 % ; en tout, sur un seul code, de 0,9 à 50,6 % — et les cinq
+valeurs relevées sur les deux arbres (`main` 0,9 · 21,4 ; branche 32 · 39,5 ·
+48,5) tombent dedans. **Ce n'était jamais l'arbre, c'était la DURÉE de la
+session** : `main` était mesuré tôt, la branche après cent quarante autres
+témoins. Sa barre ne peut rien séparer. Il se reformule (voir plus bas).
+
+**ENSUITE, 2,26 BLOC EST LA LARGEUR EXACTE D'UNE VOITURE.** Un enfoncement de
+2,26 veut dire que les deux rectangles se recouvrent ENTIÈREMENT dans leur petite
+dimension : deux voitures au même point, empilées. Le médian passe de 0,11 (des
+frôlements, le bruit de fond d'un pas discret) à 2,25 : à la fin de la session,
+la moitié des chevauchements sont des superpositions complètes, et 326 sur 408
+sont dans le MÊME SENS.
+
+**LE MÉCANISME, lu dans `vehicules.js`.** `dElement(i) = distance − i × ecart −
+retard[i]`, et `retard[i]` grandit tant que `attend[i]` est vrai. Or `attend[i]`
+est posé par `cederLePassage` — un piéton, un feu, un autre convoi — et **rien ne
+dit à une voiture d'attendre celle qui la précède dans son propre convoi**. Quand
+la voiture de tête attend, sa suiveuse continue d'avancer, la rattrape et lui
+passe au travers ; il suffit que `retard[i−1] − retard[i]` atteigne `ecart`. Et
+cela s'ACCUMULE, parce que le retard ne se rembourse qu'à moitié vitesse
+(`pas × 0,5`) : c'est un état absorbant, la forme exacte des poissons de la v233
+et du flâneur de la v279 — entrée banale, pas de sortie.
+
+**LE REMÈDE, à mesurer avant de l'écrire.** Borner le retard d'une suiveuse par
+celui de celle qu'elle suit : garder `dElement(i−1) − dElement(i) ≥ mini`, donc
+`retard[i] ≥ retard[i−1] − ecart + mini`, avec `mini` la longueur d'une voiture
+plus une marge. Cela se pose là où le retard se met à jour, en une ligne — mais
+`mini` se MESURE, et l'effet sur la fluidité du convoi aussi (une file qui
+attend derrière sa tête ne doit pas s'arrêter tout entière pour toujours).
+
+**ET LE TÉMOIN SE REFORMULE SUR LA PROFONDEUR, PAS SUR UN COMPTE.** Un compte
+d'instants près d'un seuil qui vit à un dixième de bloc bascule au moindre
+souffle ; une PROFONDEUR est bornée par la géométrie, et les deux régimes sont
+séparés par deux ordres de grandeur — 0,1 bloc pour un frôlement, 2,26 pour une
+superposition. Le verdict devient « aucune paire ne s'enfonce de plus de X bloc »,
+et X se relève sur du code CORRIGÉ, pas sur celui-ci. La sonde est dans le
+brouillon (`cadence-chevauchements.cjs`) et calcule déjà l'enfoncement par le
+théorème des axes séparateurs.
+
+**Et la v279 n'y est pour rien** : son diff ne touche pas une ligne de
+`vehicules.js` (`src/montures.js`, `src/nouveautes.js`, `src/vie.js` seulement).
+Le mécanisme date de la v244. C'est ce qui autorise sa fusion, et c'est une preuve
+plus forte que « rouge identique sur `origin/main` » : l'instrument est démontré
+incapable de séparer quoi que ce soit.
+
+## VINGT ROUGES MESURÉS SUR `origin/main`, DONC EN PRODUCTION
+
+Portail COMPLET rejoué sur `origin/main` (710ab76), quinze suites, 78 minutes.
+**Aucun de ces vingt défauts ne vient d'une branche en cours** : ils sont dans le
+jeu que la famille utilise. C'est la double mesure que la v195 exige, et c'est
+aussi la référence contre laquelle diffèrent désormais tous les portails de
+branche — un rouge qui est dans cette liste n'est pas le vôtre.
+
+| suite | rouges | ce qu'ils touchent |
+| --- | --- | --- |
+| `monte.js` | 10 | la conduite, l'arrivée en ville, les flammes de réacteur |
+| `washington.js` | 5 | le témoin de l'escalier, pas le métro — voir plus bas |
+| `reseau.js` | 4 | **Alice ne retrouve pas son monde** après une veille ou le départ de l'hôte |
+| `maj.js` | 1 | le fond de carte n'est pas prêt quand « Jouer » se libère |
+| les onze autres | — | vertes |
+
+**ET DEUX DE CES QUATRE FAMILLES TOUCHENT CE QUE LES ENFANTS FONT VRAIMENT.**
+
+- **~~LE MÉTRO DE WASHINGTON EST INACCESSIBLE~~ — NON, ET C'EST MOI QUI AVAIS
+  TORT.** J'ai écrit et dit à Max que les cinq rouges de `washington.js`
+  signifiaient qu'on ne peut plus prendre le métro. **C'est faux.** Une sonde
+  pure — sans navigateur, en lisant les blocs le long du couloir — rend vingt et
+  un pas praticables de y=34 à y=20, aucune marche de plus d'un bloc, deux blocs
+  d'air d'un bout à l'autre, le quai à 19. L'escalier est sain, et les quatre
+  rouges suivants sont la cascade d'un enfant qui n'est jamais descendu.
+
+  **Le défaut est dans le TÉMOIN, et la sonde l'a nommé** : les six premiers
+  blocs depuis la bouche sont PLATS, par construction (la bouche est à
+  `longueur` du centre, `DEMI_VOUTE` vaut sept). Or le témoin abandonnait après
+  « trois pas sans DESCENDRE », et un pas vaut le quart d'un bloc sur ce banc
+  (v238) : il se déclenchait avant la première marche, quoi que fasse le jeu.
+  Corrigé — on constate « ne plus AVANCER », comme le témoin des portes quinze
+  lignes plus haut, ce qui était déjà la leçon citée et appliquée à la mauvaise
+  grandeur. **Un mur arrête le déplacement ; un palier n'arrête que la
+  descente.**
+
+  Et la leçon de méthode, qui vaut plus que la correction : **j'ai annoncé une
+  panne de production sur la foi d'un témoin, sans mesurer la chose elle-même.**
+  Le dépôt écrit depuis longtemps « avant d'accuser un message, on vérifie qu'il
+  est atteint » et « une explication qu'on n'a pas mesurée est une dette, pas un
+  diagnostic » ; ici c'était un VERDICT qu'il fallait vérifier, et la sonde qui
+  le fait coûtait dix minutes. Ce qui reste à mesurer, honnêtement : si un enfant
+  réel, avec sa boîte de collision et la physique, descend bien ces vingt et un
+  pas. La sonde juge un marcheur idéal.
+- **ALICE NE RETROUVE PAS SON MONDE.** Quatre rouges de `reseau.js` :
+  « Alice retrouve son monde après une veille sans retour — compteur 0 [] », « la
+  reprise tient dans la durée — hôte 2 · Alice 0 », « seule après le départ de
+  l'hôte, et le compteur le dit — compteur 0, avatars [] », « et le jeu continue
+  d'essayer de la reconnecter — null ». C'est le chemin de reprise du jeu à
+  plusieurs, celui qui compte quand deux enfants jouent ensemble et qu'un iPad
+  s'endort. Le code réseau porte déjà la leçon de la v266 (« le silence ne prouve
+  le départ que d'un pair qu'on ne peut pas sonder ») : c'est là qu'il faut
+  regarder, avec une sonde par question comme cette version-là l'a fait.
+
+**Les onze autres sont ci-dessous, par famille.**
+
+## Les dix rouges de `monte.js`, en détail
+
+Portail de référence rejoué seul sur `origin/main` (710ab76), `monte.js` en
+20 min 40 s. **Ces dix-là ne viennent d'aucune branche en cours** : ils sont dans
+le jeu que la famille utilise. Trois familles, et la troisième est une vraie
+régression de fonctionnalité.
+
+**1. La carrure de la voiture, et le piéton — ce que la v279 corrige.**
+
+- « au volant, on s'arrête plus loin du mur qu'à pied » — à pied **8,95** blocs
+  du mur contre 1,1 au volant : le témoin butait sur la CIRCULATION, pas sur le
+  mur. C'est `contreLeMur` (v279), déjà corrigé sur la branche.
+- « une fois descendu, on repasse partout où un piéton passe » — 0,3 contre 8,95,
+  même cause.
+- « la voiture de l'enfant freine devant un piéton » — `voituresRue: 0`,
+  `ecartes: 164`, `traverses: 0`, avance 5,3 : la situation n'a pas eu lieu.
+
+**2. Deux défauts de performance et de physique, à démonter.**
+
+- « l'écran ne se fige pas en arrivant sur une ville » — **pire image 4 633 ms**,
+  43,1 % du temps au-delà de 300 ms, cadence 3,8. La branche v279 rend 4 233 ms
+  et 46,5 % : la même chose, aux deux bouts. C'est l'arrivée en ville sur un
+  rendu logiciel, et ça ne se transpose pas à l'iPad — mais **personne ne l'a
+  mesuré sur la tablette** (`?diag=1`), et c'est ce qu'il faut faire.
+- « une voiture arrêtée par un mur n'annonce plus de vitesse » — **12,16 contre
+  le mur**, reculé 0,55. C'est la correction de la v272 (« on ne borne que ce qui
+  est bloqué ») qui ne mord pas dans ce cas-là : le nez contre le mur, la voiture
+  garde sa consigne. À reprendre avec la sonde de la v272, pas à l'intuition.
+
+**3. LES FLAMMES DE RÉACTEUR NE SORTENT PLUS — régression de la v264.**
+
+C'était une demande de Max en propre : « voir les flammes sortir du réacteur
+quand l'avion se déplace ». Mesuré en production, en VOL (`v: 68,4`) :
+`flammes: [{visible: false, long: 0}, {visible: false, long: 0}]` — les deux
+tuyères éteintes, pleins gaz comme réduits. Et `gaz: null`, ce qui est normal
+depuis la v272 (la manette est un instrument d'avion, la flamme doit alors lire
+la vitesse rapportée à la pointe — c'est écrit dans CLAUDE.md). La piste est donc
+ce repli-là, et elle se MESURE avant de se corriger.
+
+**4. Deux témoins d'avion qui ne montent pas dans l'avion.** « pas aux commandes
+{} » pour 🛞 et pour l'atterrissage manuel, et « à pied, le cadran de cap est
+caché » qui rend `affiche: true` à pied. Trois verdicts qui partagent un état :
+c'est la famille de la v279 (« dans une suite, la situation de départ d'un témoin
+est ce que le témoin d'avant a laissé »). À démonter par une sonde qui dit si
+l'embarquement a eu lieu, pas par une hypothèse.
+
 ## En cours
+
+- [ ] **LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
+  déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
+  dans un site URBAIN — New York est le seul — le drapeau reste faux, donc
+  `Habitant.promene()` rend faux et les passants y gardent l'ancien programme
+  (pause longue, cap au hasard autour d'un poste). Ce n'est pas un oubli
+  arbitraire : leur trottoir ne se lit pas dans des blocs mais dans le PLAN
+  (`piedPieton`, `ruePietonne`), et l'ancienne branche de `think` sait déjà
+  l'interroger. Ce qui manque, c'est de porter la marche au long cap sur cette
+  lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
+  mesurent la ville que le banc peuple, qui n'est pas Manhattan.
+
+- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
+  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
+  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
+  loin ou trop près, c'est une ligne de `montures.js`
+  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
+  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
+  demande portait sur la voiture.
+
+- [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
+  MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
+  deux côtés (`/root/main-ref` détaché sur 710ab76, la branche dans l'arbre
+  principal), la règle de la v195.
+
+  | rouge | branche (portail) | `origin/main`, seul |
+  | --- | --- | --- |
+  | le trou enlève la géométrie visible de la façade | 9 203 → 51 734 | **17 102 → 54 969** |
+  | fenêtres et éclairage public la nuit | rouge | **rouge** |
+  | les ombres suivent le soleil et la lune | `[1,-1]` | **`[1,-1]`, à l'identique** |
+  | le taxi roule avec les contrôles tactiles | rouge | **la suite meurt là** (`#ride-btn` caché, 18 relevés, ligne 416) |
+  | les deux clients sans erreur de jeu (`PeerJS: Lost connection`) | rouge | **pas atteint** |
+
+  Les trois premiers étaient DÉJÀ déclarés en v278 contre `d9852ac` ; ils se
+  reproduisent ici contre `710ab76`, donc ils sont en production depuis au moins
+  la v277 et rien de la v279 ne les cause. Le taxi est NEUF dans la déclaration,
+  et c'est `origin/main` qui l'a rendu : le bouton reste caché, ce qui veut dire
+  que la voiture invoquée n'est pas à portée d'embarquement — pas que le taxi ne
+  roule pas.
+
+  **ET LE PASSAGE SUR LA BRANCHE N'A RIEN PROUVÉ, CE QU'IL FAUT DIRE.** Il est
+  mort au bout de QUATORZE verdicts sur `page.waitForFunction` à la ligne 282 —
+  le délai que la v269 a déjà nommé, mot pour mot, dans ce même fichier. Ses
+  « zéro rouge » ne sont donc pas un vert : la suite n'a jamais atteint les
+  témoins de contenu. C'est exactement ce que la v269 décrivait (« la suite
+  s'arrêtant plus tôt quand le délai tombe, elle ne les atteint pas toujours »),
+  et la conséquence est que **la double mesure de cette suite se fait sur
+  plusieurs passages par côté, jamais sur un**. Reste à faire : deux passages de
+  plus sur la branche pour voir les trois rouges de contenu s'y reproduire, et
+  un passage de `manhattan.js` qui atteigne le témoin PeerJS des deux côtés.
 
 - [ ] **LES CINQ ROUGES DU PORTAIL DE LA v278, MESURÉS UN PAR UN — AUCUN N'EST
   DE LA LIVRAISON.** La PR ayant été fusionnée avant la fin du portail, la

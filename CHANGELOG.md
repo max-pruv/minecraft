@@ -20,6 +20,123 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v279 — Ce que la v278 a livré sans le dire
+
+**Pourquoi.** La v278 portait **deux sujets**, et n'en a documenté qu'un. À côté
+des avions garés, elle livrait les demandes de Max sur la rue et la conduite :
+un passant qui marche vraiment au lieu de faire le pied de grue, un passant qui
+se tient sur le trottoir et non au milieu de la chaussée, l'enfant à pied qui ne
+traverse plus une voiture, et la caméra qui laisse la voiture montrer son flanc
+en virage. Le journal — celui du dépôt comme celui du jeu — n'a parlé que des
+avions : la famille ouvre « Quoi de neuf » et n'y trouve pas quatre choses
+qu'elle a pourtant sous les doigts. Et ces quatre-là sont parties en production
+**sans un seul témoin**. Deux instruments disaient pourtant que tout allait
+bien, et c'est le plus instructif : le témoin du journal de `maj.js` compare la
+tête de `nouveautes.js` à `sw.js` et compte les **entrées**, jamais les sujets ;
+et un portail est vert par construction sur du code que rien ne garde.
+
+**Ce que ça change.**
+
+- **Le journal du jeu dit la vérité sur la v278.** Son entrée porte les sept
+  choses qu'elle a apportées, pas les quatre qu'on avait racontées.
+- **La caméra de voiture recule un peu**, de 5,2 à 6,4 blocs. C'était la moitié
+  non livrée de la demande de Max — « il faudrait la zoom out un petit peu **et**
+  faire comme dans GTA, quand la voiture tourne, on voit le flanc » : la v278
+  avait donné à la caméra son propre cap, jamais sa distance. Jugé sur trois
+  captures du boulevard Voltaire prises **depuis le même point** : à 5,2 la
+  carrosserie mange le bas du cadre, à 7,6 la voiture devient un objet lointain,
+  à 6,4 elle tient entière et la rue s'ouvre devant.
+- **Et quatre comportements que la famille a déjà sous les doigts sont
+  désormais gardés.** Cela ne se voit pas, et c'est ce qui fera qu'ils le
+  resteront.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `monte.js`, chacun rejoué sur le
+code d'avant la v278 (`d9852ac`), avec la même mesure et les mêmes conditions de
+banc :
+
+| ce qu'il mesure | avant la v278 | ici | barre |
+| --- | --- | --- | --- |
+| l'angle caméra/voiture en virage tenu | **0,0° à chacun des treize relevés** | 11,6 à 18,3°, un seul signe | 6° |
+| les passants au milieu de la chaussée | Rome 12 puis 10 sur 21 (57 et 48 %), Paris 3 sur 6 | Rome 2 sur 21 (9,5 %), Paris 0 sur 21 | 1/5 |
+| leur chemin par seconde de JEU | 0,26 à 0,73, médiane **0,50** | 1,13 à 1,43 bloc/s | 0,8 |
+| où l'enfant à pied s'arrête devant une voiture | **+0,2 · +1,53 · +1,6** — il ressort de l'autre côté | −1,16, juste au flanc | −0,5 |
+
+**Et trois de ces quatre témoins ont d'abord été verts sur le code qu'ils
+devaient accuser.** C'est la partie de cette livraison qui vaut d'être lue :
+
+- **Un minimum échantillonné est une propriété de la cadence, pas du monde.** Le
+  témoin du piéton comptait d'abord « il n'avance plus » sur des relevés espacés
+  de trois cents millisecondes, quand le banc rend trois images par seconde :
+  deux relevés tombaient dans la même image, et il concluait en 1,8 s après huit
+  dixièmes de bloc. Réécrit sur la distance MINIMALE au centre, il lisait 0,93 —
+  vert — pendant que l'enfant traversait la voiture de part en part, les relevés
+  enjambant le point le plus proche. Ce qui ne dépend d'aucun relevé
+  intermédiaire, c'est la position d'**arrivée**.
+- **Une marche au hasard finit par dériver.** Le témoin de la marche exigeait
+  quatre blocs de déplacement NET, borné sur le résultat : le vieux programme
+  tirait un cap neuf toutes les une à trois secondes dans un rayon de huit blocs,
+  et sur vingt-deux secondes de jeu cela suffit à les atteindre. Une borne sur le
+  résultat donne à l'ancien code tout le temps dont il a besoin. Ce que Max
+  décrit — « figé » — est un DÉBIT : du chemin par seconde de jeu.
+- **Et un passant que personne ne voit n'est pas un passant figé.** Mon premier
+  relevé rendait seize immobiles sur vingt et un, sur du code sain : au-delà de
+  quatre-vingts blocs, `npc.update` n'est jamais appelé. Le chemin parcouru
+  valait **exactement zéro**, ce qui distingue à coup sûr « pas animé » de « en
+  pause ».
+- **Et le quatrième a été rouge sur la correction qu'il devait garder** — une
+  barre relevée à Paris (21 passants sur 21 sur le trottoir), appliquée à Rome,
+  qui en rend 14 sur 21. Les sept autres ne sont pas au milieu de la rue : cinq
+  sont sur une esplanade, pour qui le programme de flâneur est le bon. Ce qui se
+  compte est ce que Max a signalé — la part SUR LA CHAUSSÉE — et « la chaussée »
+  n'est pas le même bloc à Rome (`ASPHALT`) et à Paris (`ARCHI.PAVE`).
+
+**Et deux rouges du portail étaient une hypothèse de banc que personne n'avait
+écrite.** `contreLeMur` mesure la carrure de l'enfant : il creuse un couloir de
+blocs à la position courante et le fait marcher vers un mur. Son hypothèse
+muette — « le couloir est vide dès qu'on a dégagé les BLOCS » — était vraie tant
+qu'un piéton traversait les voitures, et la v278 l'a rendue fausse. Le témoin
+d'avant laisse l'enfant SUR un circuit de Paris, où il vient de compter cent
+soixante relevés de voiture à moins de douze blocs : l'enfant butait sur la
+circulation au lieu du mur, **7,78 blocs au lieu de 0,3**. Les trois mesures se
+font désormais dans le couloir vide de la v237, ce qui les rend comparables par
+construction.
+
+**Et ma première explication était commode et fausse.** J'avais accusé mon
+propre témoin voisin, qui gare une voiture et ne la rangeait pas ; l'histoire se
+lisait très bien, je l'ai écrite dans un commit, et le rouge a persisté après le
+nettoyage. Ranger sa voiture reste juste, mais ce n'était pas la cause — une
+explication qu'on n'a pas mesurée est une dette, pas un diagnostic, **y compris
+quand elle accuse son propre code**.
+
+**Et ce n'était pas un accident : TROIS témoins de la même suite mesuraient
+l'endroit où le précédent s'était arrêté.** Un second passage de `monte.js`
+seule, sur un code de jeu inchangé, a retourné deux verdicts de plus, et les deux
+avaient la forme de `contreLeMur`. Le piéton contre la voiture marchait depuis la
+position et le CAP où la conduite d'avant avait fini : arrivée −1,18 au premier
+passage, **−4,19 au second**, l'enfant arrêté après neuf dixièmes de seconde de
+jeu à plus de quatre blocs de la voiture — donc contre tout autre chose. Et la
+circulation qui cède, verte quatre passages de suite avec zéro relevé au travers,
+en a rendu **51 sur 214** au cinquième : une voiture était déjà dans la nôtre à
+la première image, et le jeu la laisse EXPRÈS sortir — attendre là, c'est y
+rester pour toujours. Un témoin qui mesure une distance, une durée ou une
+position se place donc lui-même, et « se placer » veut dire les trois choses à la
+fois : l'endroit, le cap, et ce qui traîne autour. Le fichier se lit comme une
+liste de mesures indépendantes ; il ne l'est pas, et tant qu'aucune n'est rouge
+l'héritage passe pour une économie de gestes.
+
+**Et ce que cela coûte au banc se dit** : les quatre témoins ajoutent environ
+une minute et demie à `monte.js` — douze secondes de virage tenu, la marche à
+pied bornée à trente, et quarante-cinq secondes d'observation de la rue. Après
+la v277, qui a ramené le portail de cinquante-neuf à cinquante et une minutes,
+c'est le prix de quatre comportements qui n'avaient aucun gardien.
+
+Portail complet : quinze suites, **treize vertes**. Les deux rouges sont
+`manhattan.js` et `monte.js`, et aucun n'appartient à cette livraison — la double
+mesure de chacun, rejouée SEULE des deux côtés, est jointe dans `TASKS.md`. Les
+dettes que la livraison laisse y sont aussi : les passants de Manhattan, qui
+gardent l'ancien programme parce que leur trottoir vit dans un plan et non dans
+des blocs, et le recul de la caméra, jugé sur le banc et pas encore par Max.
+
 ## v278 — Les avions sortent des murs
 
 **Pourquoi.** Max, capture d'iPad : « les avions ne devraient pas être par

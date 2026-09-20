@@ -6,13 +6,29 @@
 
 export const NOUVEAUTES = [
   {
+    v: 279,
+    titre: "La caméra recule un peu",
+    puces: [
+      "La vue de ta voiture recule un peu",
+      "Le journal dit tout ce qui a changé",
+    ],
+  },
+  {
+    // L'ENTRÉE DE LA v278 A ÉTÉ COMPLÉTÉE EN v279, et c'est ici qu'elle doit
+    // l'être : ces quatre puces décrivent ce que la v278 a VRAIMENT livré. Elle
+    // portait deux sujets — les avions garés et les trois demandes de Max sur
+    // les passants — et n'en avait annoncé qu'un. Voir CLAUDE.md, « une
+    // livraison à deux sujets en documente deux ».
     v: 278,
-    titre: "Les avions sortent des murs",
+    titre: "Les avions, les passants, la vue",
     puces: [
       "Plus un avion garé dans un bâtiment",
       "Chaque avion a une place à sa taille",
-      "Les hangars sont passés côté ville",
-      "Les avions de Roissy ont déménagé",
+      "Les hangars et Roissy ont déménagé",
+      "Les passants marchent vraiment quelque part",
+      "Ils restent sur le trottoir",
+      "À pied, on ne traverse plus une voiture",
+      "En virage, on voit le flanc",
     ],
   },
   {
