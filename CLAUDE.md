@@ -3321,6 +3321,90 @@ arrêt déclaré n'est pas une gare construite, et rien ne le disait.
   Un témoin qui appellerait `gareEn` échouerait par « fonction absente », ce
   qui ne prouve rien du fond.
 
+### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
+
+Max, trois demandes en une phrase : « supprime les avions qui ne volent pas, en
+format Minecraft ; places les avions normaux près des pistes ; et fais les
+pistes plus longues ». **C'était la même panne vue par trois bouts**, et seule
+la mesure l'a montré. Six règles.
+
+- **CE QU'UNE PISTE RÉCLAME SE LIT DANS LA FICHE, IL NE S'ESTIME PAS.** Le
+  roulage avant rotation vaut `rotation² / (2 × poussée)` et le freinage
+  `approche² / (2 × frein)` (v261) : ensemble 83 blocs pour l'avion de ligne, 99
+  pour le Concorde, 34 pour le chasseur — la longueur de piste ÉQUILIBRÉE de
+  l'aviation réelle. Mesuré en appelant les bâtisseurs et en comptant les
+  colonnes roulables sur l'axe : `ville` rendait soixante-neuf blocs, `base`
+  cinquante-trois, **Orly quarante-neuf**. Aucune piste ne tenait les 99 du
+  Concorde sauf les deux internes de Roissy. La barre d'un témoin se CALCULE
+  donc depuis la fiche (règle de la v269), et elle suivra le jour où `poussee`
+  changera.
+- **ET LA CAUSE N'ÉTAIT PAS LA TAILLE DU DISQUE, C'ÉTAIT L'ENDROIT DE LA PISTE
+  DEDANS.** Une corde à |z| = 34 est bien plus courte qu'un diamètre : à Orly,
+  49 blocs contre 103. La piste prend donc le DIAMÈTRE (`PISTE = 0`) et tout le
+  reste passe d'un seul côté — voie de service, aire, terminal, tour, hangar.
+  C'est le plan d'un vrai aéroport à une piste, **et c'est aussi la réponse à la
+  deuxième demande** : l'aire est alors contre la piste, l'aile du plus large à
+  deux blocs de la voie. Les cinquante-sept postes sont à 3 à 9 blocs du bord
+  d'asphalte, contre 17 à 38 pour les trois de Roissy.
+- **UNE PISTE EST UN OUVRAGE, ELLE NE SUIT PAS LE TERRAIN.** `terrainHeight`
+  aplanit le disque de `r` avec un raccord de vingt blocs : le sol ne vaut
+  exactement `sol` que jusqu'à `r − 20`, et c'est ce disque-là qui bornait les
+  pistes. Remblai et tranchée sont des BLOCS écrits dans le morceau de monde —
+  la leçon de la voie ferrée (v213) et du métro de Washington — donc les deux
+  empreintes de `plafond.js` ne bougent pas d'un octet et l'invariant 1 tient
+  **sans rien avoir à déclarer**. Et l'emprise ne sort JAMAIS de `a.r` : les cinq
+  promesses de la v223 valent telles quelles, sans une mesure de plus. C'est ce
+  qui rend cet allongement gratuit, et c'est la première chose à chercher quand
+  on veut plus de place : un ouvrage, pas un relief.
+- **LES BORNES DE L'OUVRAGE SE MESURENT.** Écart entre `terrainHeight` et `sol`
+  sur le disque de `r − 10`, sur les dix-neuf : remblai ONZE blocs au pire
+  (Delhi), décaissé HUIT (Orly), trois à cinq en général ; l'eau ne concerne que
+  0,5 % des colonnes au pire (Istanbul, 71 sur 14 505). `REMBLAI = 12` et
+  `DECAISSE = 9` couvrent tout le monde avec un bloc de marge.
+- **ET C'EST LA PISTE QUI EST UN OUVRAGE, PAS LE DISQUE — le prix l'a dit.** Mon
+  premier jet bétonnait et décaissait TOUT l'anneau : le bâtisseur passait de
+  5,6 à 12,5 ms par rejeu à Roissy, payés pour CHAQUE morceau de la boîte,
+  c'est-à-dire là où l'enfant arrive en vol. Seules les BANDES vont au-delà de
+  `PLAT`, et l'on ne balaie que ce qu'on écrit — 6,6 ms après, pour des pistes
+  30 à 110 % plus longues. Le reste du pourtour garde son relief naturel, ce
+  qu'on voit d'un vrai aéroport bâti sur une croupe.
+- **LE PLAN EST PUBLIÉ UNE FOIS ET LU PAR LES DEUX.** `planAerodrome(profil,
+  rayon)` remplace `RANGEES`, qui recopiait la cote de l'aire à côté du
+  bâtisseur qui la dessinait : elles s'accordaient, mais rien ne l'obligeait.
+  Toute cote du plan — y compris la profondeur du terminal et l'abscisse du
+  hangar, bornées par le disque — se demande là.
+
+**LE RETRAIT DES AVIONS EN BLOCS EST CE QUI LIBÈRE L'AIRE — et cela annule la
+décision de la v228.** Celle-ci avait gardé le poste sud au motif qu'« une
+monture ne se dessine qu'à soixante-deux blocs, et sans eux la plate-forme
+serait vide vue du ciel » ; **Max tranche l'inverse, et il a raison** : un décor
+qu'on ne peut pas prendre est un mensonge de plus, pas un remplissage. Et la
+v278 avait mesuré qu'il n'y a que DEUX poches assez grandes pour un gros
+porteur — mesure faite AVEC les huit silhouettes sur le tarmac et un disque pavé
+de 68. Refaite : **quatre places à ciel ouvert deviennent huit cent cinq**, et
+les trois appareils prennent la rangée canonique (dv = 33). Une mesure ne vaut
+que dans les conditions où elle a été faite, et un obstacle retiré les change.
+
+**TROIS DÉFAUTS DE MA PROPRE PASSE, ET AUCUN NE SE VOYAIT EN RELISANT.** Le
+bâtisseur gardait son `RAYON = rayon − 20` local, et tout l'allongement était
+annulé sans qu'une ligne parût fausse — mesuré 85 blocs là où le calcul disait
+103. Les mâts d'éclairage, posés par rapport à `TARMAC` qui venait de passer de
+25 à 40, se sont retrouvés à z = ±39, **pile dans l'envergure**, et bloquaient
+les TROIS postes de Roissy d'un coup ; la manche à air, posée de même, s'est
+retrouvée au bord de la piste. **Tout ce qui est coté par rapport à une
+constante qu'on déplace se déplace avec elle** : quand on bouge une cote de
+plan, on cherche le jour même tout ce qui s'y réfère — `grep -n "TARMAC\|STAND"`
+prend dix secondes. Et c'est une sonde qui a nommé les trois, pas la relecture.
+
+**ET UN TÉMOIN MESURE LA GÉOMÉTRIE DE L'ARBRE QU'IL ÉPROUVE, PAS CELLE QU'IL
+ESPÈRE.** Mon témoin « rien ne dépasse sur une piste » portait les cotes NEUVES
+en dur : il rendait cent cinquante-deux blocs en faute sur `origin/main`, où ces
+pistes ne sont pas. Un faux rouge ne se démonte pas. Les axes se DEMANDENT au
+module (`PISTES_ROISSY`, `planAerodrome`), avec un repli sur les cotes d'avant.
+De même, le témoin du terminal visitable portait `nv ∈ [−12, 14]` — juste tant
+que le terminal était à z = −6..8 : c'est le piège de `r: 66` à San Francisco,
+une quatrième fois.
+
 ### Les aérodromes (`aeroport.js`) — dix-neuf, et un seul écrit à la main
 
 Roissy garde son bâtisseur à lui — le tambour de béton de 1974 et ses sept
