@@ -2246,6 +2246,71 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('les voitures ne se traversent plus',
       voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
+
+    // ---- UN CONVOI NE SE TÉLESCOPE PAS (v283) --------------------------------
+    //
+    // Max signale depuis plusieurs versions des voitures qui se traversent, et
+    // le témoin d'au-dessus ne peut pas trancher : il rend un COMPTE absolu
+    // d'instants sur une fenêtre de trente secondes de MONTRE, et il varie de
+    // 0 à 53 sans qu'une ligne du jeu ait bougé — sa barre (45) tombe DANS son
+    // étendue naturelle. Ce n'est pas un gardien, c'est un tirage (v277).
+    //
+    // Ce qui NE dépend d'aucun relevé intermédiaire et d'aucune cadence, c'est
+    // une BORNE que la géométrie garantit : deux voisines d'un même convoi ne
+    // peuvent pas être à moins d'une longueur de voiture l'une de l'autre.
+    // On mesure donc le MINIMUM sur toute la fenêtre, et deux fois :
+    //   · `ecarts`, l'écart le long du tracé, publié par `vehicules.etat()` là
+    //     où il se calcule — exact, au centième, et c'est lui que la borne
+    //     garantit ; absent sur l'ancien code, qui ne le publiait pas ;
+    //   · la distance VRAIE entre les deux centres rendus, qui se mesure des
+    //     DEUX côtés. Sur un virage c'est la corde, donc un peu moins que
+    //     l'écart le long du tracé : c'est la marge qu'il faut connaître avant
+    //     de poser une barre, et elle est dans le message.
+    const teles = await tab.evaluate(async () => {
+      const g = window.__game;
+      let minTrace = Infinity, minVrai = Infinity, releves = 0, paires = 0;
+      let ouTrace = null, ouVrai = null, publie = false;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const cs = (window.__vehicules.etat() || []).filter((c) => c.routier);
+        if (!cs.length) continue;
+        releves++;
+        for (const c of cs) {
+          if (Array.isArray(c.ecarts) && c.ecarts.length) {
+            publie = true;
+            for (let i = 0; i < c.ecarts.length; i++) {
+              if (c.ecarts[i] < minTrace) { minTrace = c.ecarts[i]; ouTrace = [c.nom, i, c.ecart]; }
+            }
+          }
+          // les places sont [x, z, cap, i, retard, attend] — on apparie par
+          // indice CONSÉCUTIF dans le même convoi, la seule paire qui se suit
+          const par = new Map(c.places.map((p) => [p[3], p]));
+          for (const [i, a] of par) {
+            const b = par.get(i + 1);
+            if (!b) continue;
+            paires++;
+            const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+            if (d < minVrai) { minVrai = d; ouVrai = [c.nom, i, +d.toFixed(2)]; }
+          }
+        }
+      }
+      return {
+        publie, releves, paires,
+        minTrace: minTrace === Infinity ? null : +minTrace.toFixed(2),
+        minVrai: minVrai === Infinity ? null : +minVrai.toFixed(2),
+        ouTrace, ouVrai, ou: [Math.round(g.player.pos.x), Math.round(g.player.pos.z)],
+      };
+    });
+    // La borne est la LONGUEUR d'une voiture, lue là où elle se calcule
+    // (`DEMI_LONG_VOITURE` × 2 = 4,4) : c'est une géométrie, pas un réglage.
+    // La borne de garde des relevés est à la MOITIÉ du plus petit relevé vu sur
+    // du code sain, jamais à quatre-vingt-dix pour cent (v237) — et le nombre
+    // de paires examinées entre dans le message, sinon le rouge ne se démonte
+    // pas (v277).
+    verifier('deux voisines d\'un convoi gardent leur longueur d\'écart',
+      teles.publie && teles.paires >= 100 && teles.minTrace !== null && teles.minTrace >= 4.4 - 0.01,
+      JSON.stringify(teles));
     // La borne de garde des relevés est à la MOITIÉ du plus petit relevé
     // mesuré sur du code sain (490 à 2 372 selon la cadence du banc), jamais
     // à quatre-vingt-dix pour cent : à 500 elle est tombée au portail de la
