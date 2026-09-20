@@ -1,34 +1,37 @@
 # Ce qui est en cours
 
-- [ ] **DEUX ROUGES DE `monte.js` SONT NEUFS SUR LA BRANCHE DE LA v282, ET
-  L'ATTRIBUTION RESTE À FAIRE.** Les deux portails ont tourné dans la même
-  configuration sur la même machine, ce qui donne la double mesure de la v195
-  sans rejeu :
+- [ ] **`monte.js` : DEUX ROUGES NEUFS, ATTRIBUÉS ET UN CORRIGÉ (v282).** Les
+  portails ayant tourné dans la même configuration sur la même machine, la
+  double mesure de la v195 s'est prise sans rejeu, puis chaque suite a été
+  rejouée SEULE des deux côtés.
 
   | témoin | main (v281) | branche v282 |
   | --- | --- | --- |
-  | l'écran ne se fige pas en arrivant | ❌ 40,0 % · cadence 3,4 | ❌ 34,4 % · 4,1 |
-  | une voiture arrêtée par un mur | ❌ `immobile 1` · vitesse **12,16** | ❌ `immobile 2` · vitesse **0** |
-  | les voitures ne se traversent plus | ❌ 42,4 % | **vert** |
-  | la téléportation ne compile plus de programmes | vert | ❌ `images: 28` (borne 30) |
-  | une voiture n'entre pas dans l'eau | vert | ❌ `d: 0,2` — elle n'a pas bougé |
+  | la téléportation ne compile plus de programmes | vert | **corrigé — vert** |
+  | l'écran ne se fige pas en arrivant | ❌ 40,0 % · 35,0 % | ❌ 34,3 % · 42,9 % |
+  | une voiture arrêtée par un mur | ❌ `immobile 0` et `1` | ❌ `immobile 0` · ✅ `immobile 4` |
+  | une voiture n'entre pas dans l'eau | ✅ | ✅ |
+  | les voitures ne se traversent plus | ❌ 42,4 % | ❌ 60 % |
+  | **total, suite rejouée seule** | **137 verts · 7 défauts** | **141 verts · 3 défauts** |
 
-  Les deux premiers sont rouges des DEUX côtés — et le témoin du mur annonce
-  une vitesse CORRIGÉE chez nous (0 au lieu de 12,16) : il échoue sur
-  `immobile >= 4`, une borne qui compte des ÉCHANTILLONS de 250 ms à quatre
-  images par seconde. C'est « un minimum échantillonné est une propriété de la
-  cadence, pas du monde » (v279), et la grandeur se trompe dans les DEUX sens :
-  le témoin de l'eau atteint ses quatre relevés en cinq secondes alors que la
-  voiture accélérait encore (`d: 0,2` après 5,7 s). Ce qui ne dépend d'aucun
-  relevé intermédiaire, c'est la position d'ARRIVÉE, et ces deux témoins-là ne
-  la mesurent pas.
+  **La téléportation est corrigée** : sa borne de garde disait `images > 30`
+  quand ce témoin rend 22 à 42 images — relevé sur sept passages, deux portails
+  et deux rejeux seuls des deux côtés. Elle tombait donc six fois sur sept sur
+  sa garde pendant que la mesure gardée était parfaite (`neufs: 0`). Dix est
+  sous la moitié du pire relevé et très loin de zéro, et les quatre autres
+  bornes de garde du fichier ont été relues dans la même passe (0,41 à 0,69 de
+  leur mesure, donc à leur place).
 
-  À faire, dans cet ordre : (1) rejouer `monte.js` SEULE sur la branche et sur
-  `origin/main`, jusqu'à voir la même DISTRIBUTION et non un vert (v269) ;
-  (2) reformuler les deux verdicts sur la position d'arrivée, bornés, la durée
-  entrant dans le message ; (3) la borne de garde de la téléportation
-  (`images > 30`) se pose à la MOITIÉ, pas à quatre-vingt-dix pour cent d'une
-  valeur relevée sur une machine qui respirait (v237, quatrième fois).
+  **Les trois qui restent sont pré-existants et intermittents des DEUX côtés.**
+  Le mur et l'eau sortent de leur boucle sur `immobile >= 4`, quatre relevés de
+  250 ms à moins de 0,02 bloc : à quatre images par seconde deux relevés
+  tombent dans la même image. C'est « un minimum échantillonné est une propriété
+  de la cadence, pas du monde » (v279), et la grandeur se trompe dans les deux
+  sens — le mur n'atteint jamais quatre et court jusqu'à sa borne de 25 s,
+  l'eau les atteignait en cinq secondes alors que la voiture accélérait encore.
+  Ce qui ne dépend d'aucun relevé intermédiaire, c'est la position d'ARRIVÉE ;
+  ces deux verdicts ne la mesurent pas encore. Reste à les reformuler dessus,
+  bornés, la durée entrant dans le message (v270).
 
 - [ ] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Croisé
   avec les anneaux, le pas de vingt-sept de `superilot` fait perdre un circuit
