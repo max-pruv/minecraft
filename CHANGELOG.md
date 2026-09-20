@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v281 — De vrais rails, et deux voies
+
+**Pourquoi.** Deux captures d'iPad de Max, à quatre secondes d'écart, et trois
+phrases : « les rails ne sont pas des rails, les trains se rentrent dedans, il
+faut 2 rails pour aller et retour ». Les trois défauts étaient réels et avaient
+chacun une cause différente. La voie était **peinte à plat** — gravier,
+obsidienne et planches tous à la même hauteur — ce qui se lit, depuis une
+tablette, comme un damier au fond d'une tranchée et pas comme une voie ferrée.
+Et les trains se traversaient **par construction, pas par hasard** : le trajet
+d'une ligne faisait l'aller puis le retour sur exactement les mêmes points, si
+bien que deux rames se rencontraient de face deux fois par tour. Simulé sur les
+neuf lignes, la distance minimale entre deux rames était de zéro partout.
+
+**Ce que ça change.** Chaque ligne a maintenant **deux voies** — une pour
+chaque sens, comme une vraie ligne à grande vitesse — et les trains se croisent
+côte à côte au lieu de se traverser. Les rails **dépassent du ballast** : quatre
+files sombres et continues qu'on reconnaît de loin et du ciel, avec leurs
+traverses entre elles. La voie ferrée passe de trois blocs de large à neuf, et
+les quais des dix-huit gares reculent d'autant pour rester à côté des voies et
+non dessus.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur la version publiée. Les
+quatre files de rail n'ont pas un trou : zéro bloc manquant sur 12 240 attendus,
+contre 12 240 sur 12 240 avant. Deux rames ne s'approchent jamais à moins de
+quatre blocs, là où le minimum était zéro. Et aucune des 1 513 colonnes de quai
+n'est posée sur une voie. Le relief, lui, n'a pas bougé d'un bloc — la voie est
+un ouvrage écrit en blocs, pas un terrain déplacé.
 ## v280 — Les pistes prennent le diamètre
 
 **Pourquoi.** Trois signalements de Max en une phrase : « supprime les avions

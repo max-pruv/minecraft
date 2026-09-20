@@ -3235,6 +3235,61 @@ que `montable` et `nourrissable`, dont l'oubli a déjà coûté des mois. C'est
 `player.volInterdit` qui l'applique, parce que c'est là que le vol se décide.
 Monter coupe le vol en cours ; descendre le rend.
 
+### La voie ferrée : deux voies, et des rails en relief (v281)
+
+Max, deux captures d'iPad : « les rails ne sont pas des rails, les trains se
+rentrent dedans, il faut 2 rails pour aller et retour ». Trois défauts, trois
+causes distinctes, et deux des trois leçons valent bien au-delà du rail.
+
+- **UN DÉFAUT DE PLAN NE SE RATTRAPE PAS PAR UNE RÈGLE DE COLLISION.**
+  `traceSegment` faisait l'aller puis le RETOUR SUR LES MÊMES POINTS : le tracé
+  est une polyligne repliée sur elle-même, donc deux rames en `s` et en `L − s`
+  sont au MÊME endroit, deux fois par tour, pour chaque paire. Ce n'est pas une
+  intermittence qu'on attend, c'est une certitude qu'on SIMULE : distance
+  minimale ZÉRO sur les neuf segments, 135 relevés à moins de quatre blocs. Le
+  remède n'est pas de faire freiner un train devant l'autre — c'est de leur
+  donner chacun sa voie. L'aller se décale d'`ENTRAXE` à droite de son sens de
+  marche, le retour d'autant à droite du SIEN : la règle de la conduite à droite
+  (v271) appliquée au rail. Mesuré après : 4,00 à 4,33 blocs, zéro relevé serré.
+- **UN RAIL SE RECONNAÎT À SON RELIEF, ET IL NE PEUT PAS SE DESSINER DANS UNE
+  TUILE.** La section était peinte à plat — gravier, obsidienne, planches, tout
+  à la même cote — et se lisait comme un damier au fond d'une tranchée. La
+  tentation est de régler cela par une TEXTURE, comme « une fenêtre est un
+  DESSIN, pas un trou » (v202) : **c'est impossible ici, et la raison se
+  généralise.** Une tuile n'a pas d'orientation ; les lignes sont des segments
+  OBLIQUES entre deux villes ; des rails dessinés le long d'un axe seraient faux
+  sur toute ligne en biais. Un motif qui doit suivre une direction ARBITRAIRE
+  est de la géométrie, jamais une tuile.
+- **UNE FILE SE RASTÉRISE, ELLE NE SE SEUILLE PAS.** Mon premier jet classait
+  « rail » toute colonne dont l'écart à l'axe tombait dans une bande d'un bloc.
+  Sur une ligne oblique, une bande de largeur fixe rend tantôt deux colonnes,
+  tantôt zéro : cinq colonnes de rail en moyenne là où il en faut quatre. Une
+  droite se trace sur une grille en parcourant son AXE DOMINANT et en
+  arrondissant l'autre coordonnée — une colonne par pas, chaîne continue en
+  diagonale. C'est la règle de tout trait posé sur des blocs.
+- **ET MON RELEVÉ DE CONTINUITÉ ÉTAIT L'INSTRUMENT FAUTIF — il annonçait PIRE
+  là où le code s'améliorait.** Il coupait la voie perpendiculairement à pas
+  fixe : 229 trous sur 2 700 avant la rastérisation, 343 après. Un balayage
+  perpendiculaire RATE des colonnes qu'une diagonale a bien posées. Une file se
+  mesure EN LA PARCOURANT, le long de l'axe dont elle dépend : zéro bloc
+  manquant sur 12 240. **Quand une mesure se dégrade alors que le code
+  s'améliore, on soupçonne la mesure avant le code** — c'est « compter un motif
+  n'est pas compter la chose » (v224), du côté de la sonde.
+- **LA SECTION EST PUBLIÉE UNE FOIS.** `pieceDeVoie` est lue par `world.js`,
+  qui pose les blocs, et par les témoins, qui les mesurent. Et `presDeLaVoie`
+  DÉDUIT son dégagement d'`EMPRISE` au lieu de porter le chiffre qui datait
+  d'une voie de trois blocs.
+- **CE QUI EST COTÉ SUR UNE CONSTANTE QU'ON DÉPLACE SE DÉPLACE AVEC ELLE.** Le
+  quai commençait « où la voie finit », à 1,9 bloc — juste tant que la voie
+  s'arrêtait à 1,6, et faux dès qu'elle va à 4,5 : il aurait été bâti PAR-DESSUS
+  une des deux voies. Les trois cotes de gare se déduisent donc de l'emprise.
+  C'est le même piège que les mâts d'éclairage de Roissy, dans la même journée.
+- **Et le relief ne bouge pas** : la voie est un ouvrage écrit en blocs depuis
+  la v213, donc les deux empreintes de `plafond.js` sont intactes. Mesuré aussi
+  qu'élargir ne touche rien : aucun aérodrome, le quartier des enfants à 365
+  blocs, et la seule ville traversée reste Nagoya — que le Shinkansen traverse
+  pour de bon, et qui l'était déjà.
+
 ### La voie ferrée (`trains.js`) — un ouvrage, pas une bande de gravier
 
 Max, capture à l'appui : « train no rails, holes, no end stations ». Trois
