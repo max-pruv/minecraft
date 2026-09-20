@@ -184,7 +184,7 @@ export const TYPOS = {
   // Les villes moyennes : le même tissu, en plus petit.
   faubourg:  { pu: 19, pv: 19, couronne: 2, place: [8, 7, 1] },
   // Les arcades : Bologne, Turin, Madrid. Cour PAVÉE, on y entre par un porche.
-  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true, place: [15, 6, 1] },
+  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true, place: [15, 6, 1], portiques: true },
   // Le damier nord-américain : de grands îlots PLEINS et de larges rues. Une
   // cour n'y a rien à faire — c'est justement ce qui le distingue de l'Europe.
   // Le damier nord-américain : de grands îlots et de larges rues. Son espace
@@ -2017,7 +2017,26 @@ export function batirColonneVillesMonde(x, z, poser) {
     // La façade donne sur la petite rue — OU sur l'avenue : dans une vraie
     // ville, ce sont les avenues que les boutiques bordent en premier.
     const dAxe = Math.min(Math.abs(A), Math.abs(B));
-    const bord = dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+    // LES PORTIQUES (v280) — Bologne, Turin, Madrid, Innsbruck. J'avais nommé
+    // ces quatre villes « arcades » et il n'y avait AUCUNE arcade : la
+    // typologie ne changeait que le pas de trame et la forme de la place.
+    // C'est la troisième fois dans cette passe qu'une brique ne sert à rien.
+    //
+    // Une arcade, c'est un rang de rez-de-chaussée OUVERT sur la rue, porté
+    // par des piliers, avec les boutiques DERRIÈRE. On marche dessous — c'est
+    // exactement ce qui fait Bologne, et ses trente-huit kilomètres de
+    // portiques sont à l'UNESCO depuis 2021. Le premier rang du lot devient
+    // donc le passage, et la façade commerçante recule d'un rang.
+    // UN RANG EST UNE BANDE, PAS UN DEMI-ESPACE. Écrit `dRue < t.s + 1.15`, le
+    // premier rang du lot englobait TOUT ce qui est plus proche de la rue — et
+    // le portique se posait au milieu de l'îlot, du côté de l'autre rue. Le
+    // pourcentage global (58 % des colonnes bâties) était suspect et je l'ai
+    // presque expliqué ; c'est une COUPE à travers une rue qui l'a montré.
+    const rangUn = dRue >= t.s && dRue < t.s + 1.15;
+    const sousPortique = t.portiques && rangUn;
+    const bord = t.portiques
+      ? (dRue >= t.s + 1.15 && dRue < t.s + 2.15) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
+      : rangUn || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
 
     // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
     // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
@@ -2101,6 +2120,16 @@ export function batirColonneVillesMonde(x, z, poser) {
       const bh2 = 3 + etages * 3;
       for (let y = 0; y < bh2; y++) {
         if (y < 3) {
+          // SOUS LE PORTIQUE : deux rangs d'air qu'on traverse à pied, un
+          // pilier tous les trois blocs, et l'arc qui porte l'immeuble au
+          // troisième. Le bâtiment au-dessus ne change pas : c'est ce qui
+          // distingue une arcade d'un simple retrait de façade.
+          if (sousPortique) {
+            const pilier = (((Math.round(along) % 3) + 3) % 3) === 0;
+            if (y < 2) { if (pilier) poser(y + 1, PIERRE); continue; }
+            poser(3, PIERRE);
+            continue;
+          }
           // le rez-de-chaussée : devanture si commerce, socle sinon
           // la devanture, dessinée elle aussi : deux rangs de VERRE ouvraient
           // le rez-de-chaussée sur le vide du bâtiment, tout le long des rues
