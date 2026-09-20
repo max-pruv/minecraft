@@ -471,15 +471,69 @@ const descendre = async (p, ms) => {
     // On se pose au milieu du quai et on attend, comme sur un vrai quai.
     await poserLe(tab, P.x + quai.u, quai.y + 2, P.z + quai.v);
     await dormir(600);
-    await tab.waitForFunction(() => {
-      const b = document.getElementById('board-btn');
-      return b && getComputedStyle(b).display !== 'none'
-        && getComputedStyle(b.closest('.fun-target')).display !== 'none';
-    }, null, { timeout: 70000 }).catch(() => {});   // le métro marque les
-    // stations : trois rames par ligne, un passage toutes les trente secondes
+    // ON ATTEND EN SECONDES DE JEU, ET LE ROUGE SE DÉMONTE (v283).
+    //
+    // Cette attente était bornée à SOIXANTE-DIX SECONDES DE MONTRE pour un
+    // passage que le jeu promet toutes les trente secondes DE JEU. Le banc
+    // borne `dt` à un vingtième et rend trois à cinq images par seconde à
+    // Washington : trente secondes de jeu valent alors deux à quatre minutes de
+    // montre, et la fenêtre était trop courte d'un facteur deux à trois. C'est
+    // la famille de la v270 — on attend le RÉSULTAT, borné, et en secondes de
+    // JEU — exactement ce que la seconde moitié de ce témoin fait déjà.
+    //
+    // ET LE ROUGE NE DISTINGUAIT RIEN. `aBord.visible` faux recouvre trois
+    // pannes très différentes : la rame n'est jamais venue ; elle est venue mais
+    // hors de la portée d'embarquement ; elle est venue à portée et le bouton
+    // est resté caché. `null` n'est pas un verdict, c'est une absence de mesure
+    // (v272) — on relève donc, tour par tour, la distance et le Δy du convoi
+    // souterrain le plus proche, et le meilleur des deux entre dans le message.
+    await tab.evaluate(() => {
+      window.__simQuai = 0;
+      let prec = performance.now();
+      const tic = (now) => {
+        window.__simQuai += Math.min(Math.max((now - prec) / 1000, 0), 0.05);
+        prec = now;
+        requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+    });
+    // 45 s de JEU : une fois et demie l'intervalle annoncé. Le garde-fou au mur
+    // (250 tours de 800 ms) n'existe que pour ne jamais attendre un jeu mort.
+    let vu = null, simQuai = 0, approche = null;
+    for (let i = 0; i < 250 && !vu && simQuai < 45; i++) {
+      const etat = await tab.evaluate(() => {
+        const b = document.getElementById('board-btn');
+        const cible = b && b.closest('.fun-target');
+        const visible = !!(b && getComputedStyle(b).display !== 'none'
+          && cible && getComputedStyle(cible).display !== 'none');
+        const p = window.__game.player.pos;
+        // Le convoi de MÉTRO le plus proche, avec son Δy : c'est ce qui
+        // sépare « la rame n'est jamais venue » de « elle est venue mais le
+        // garde de hauteur l'a écartée » (|Δy| > 2,5 empêche un quai
+        // souterrain d'attraper une voiture de la rue).
+        let best = null;
+        for (const c of (window.__vehicules.etat() || [])) {
+          if (!/métro/i.test(c.nom || '')) continue;
+          for (const q of c.places) {
+            const d = Math.hypot(q[0] - p.x, q[1] - p.z);
+            if (!best || d < best.d) {
+              best = { nom: c.nom, d: +d.toFixed(1), dy: +(c.y - p.y).toFixed(1), vus: c.visibles };
+            }
+          }
+        }
+        return { visible, best, sim: window.__simQuai };
+      });
+      simQuai = etat.sim;
+      if (!approche || (etat.best && etat.best.d < approche.d)) approche = etat.best || approche;
+      if (etat.visible) { vu = etat; break; }
+      await dormir(800);
+    }
     const aBord = await bouton(tab, 'board-btn');
     verifier('une rame passe, et on propose de monter dedans',
-      aBord.visible, JSON.stringify(aBord));
+      aBord.visible,
+      `${JSON.stringify(aBord)} · ${simQuai.toFixed(0)} s de jeu d'attente`
+      + ` · la rame la plus proche vue à ${approche ? approche.d : '—'} blocs`
+      + ` (${approche ? `${approche.nom}, Δy ${approche.dy}, ${approche.vus} visible(s)` : 'aucune'})`);
     // La pastille de couleur dit QUELLE ligne : un enfant qui ne lit pas
     // encore bien reconnaît un rond bleu avant un mot.
     verifier('et la pastille dit de quelle ligne il s\'agit',
