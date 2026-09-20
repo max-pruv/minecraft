@@ -781,6 +781,7 @@ const VRAIES_KM = [
     const facades = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
       const { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI } = await import('./src/blocks.js');
+      const vm = await import('./src/villesmonde.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
       // La palette sobre du réalisme v2 : bordeaux, vert, marine, émeraude,
@@ -821,7 +822,41 @@ const VRAIES_KM = [
             } else if (ENS.has(w.getBlock(x, sol + 2, z))) c.enseignes++;
           }
         }
-        villes[cle] = { ...c, diversite: ids.size };
+        // ET LES QUATRE POSTES SE COMPTENT SUR LE DISQUE ENTIER, PAR LES
+        // FONCTIONS PURES. La fenêtre de ±40 blocs ne peut pas voir un
+        // événement PAR FAÇADE : une porte est une colonne par front de lot, et
+        // à Tokyo il n'y en a AUCUNE dans cette fenêtre alors que la ville en
+        // porte 23,8 pour mille colonnes de trottoir. C'est « une fraction se
+        // pose sur la VILLE, pas sur la fenêtre » (v274) — troisième fois pour
+        // ce témoin-ci, après les comptes absolus de la v172 et de la v271 — et
+        // c'est aussi « le témoin interroge le BÂTISSEUR, pas le monde chargé »
+        // (v202), parce que `getBlock` ne répond que sur les morceaux engendrés
+        // et qu'engendrer un disque entier sur le fil principal coûte des
+        // secondes. Les deux appels de `world.js` donnent les cotes : le
+        // bâtisseur écrit `wy = h + dy − 1`, le mobilier `wy = h + dy`, donc la
+        // vitrine et la porte sont à `dy 1`, l'enseigne à `dy 3` du bâti et
+        // l'auvent à `dy 3` du mobilier. Vérifié : à ±40 sur `main`, ce calcul
+        // rend EXACTEMENT ce que la lecture du monde rend pour Tokyo
+        // (231,6 · 3,4 · 235,0 · 34,1) et à un dixième près pour Marrakech.
+        // Le disque coûte sept dixièmes de seconde pour les trois villes.
+        const d = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, trottoir: 0 };
+        const R = p.r;
+        for (let du = -R; du <= R; du++) {
+          for (let dv = -R; dv <= R; dv++) {
+            if (du * du + dv * dv > R * R) continue;
+            const x = p.x + du, z = p.z + dv, sv = vm.solVillesMonde(x, z);
+            if (sv === CITY_BLOCK.SIDEWALK) {
+              d.trottoir++;
+              vm.mobilierVillesMonde(x, z, (dy, id) => { if (dy === 3 && ENS.has(id)) d.auvents++; });
+            } else if (sv === 'lot') {
+              vm.batirColonneVillesMonde(x, z, (dy, id) => {
+                if (dy === 1) { if (id === BLOCK.DARKPLANK) d.portes++; else if (id === ARCHI.VITRINE) d.vitrines++; }
+                else if (dy === 3 && ENS.has(id)) d.enseignes++;
+              });
+            }
+          }
+        }
+        villes[cle] = { ...c, diversite: ids.size, disque: d };
       }
       return villes;
     });
@@ -846,24 +881,47 @@ const VRAIES_KM = [
     //   Tokyo v271  231,6      3,4    235,0      34,1
     //   Marrakech   190,9     81,5    266,0     283,4
     //
+    // ET LA v282 LES A DÉPLACÉES SUR LE DISQUE ENTIER, parce qu'une fenêtre de
+    // ±40 blocs ne peut pas voir un événement PAR FAÇADE. Mesuré par les
+    // fonctions pures, des deux côtés :
+    //
+    //                vitrines  portes  enseignes  auvents
+    //   Rome  main      142,1    25,6     167,7     133,0
+    //   Rome  v282      153,5    30,8     184,3     121,9
+    //   Tokyo main      196,1    14,7     210,8     124,1
+    //   Tokyo v282      226,5    23,8     250,3     132,4
+    //   Marra main      185,0    82,2     267,2     302,8
+    //   Marra v282      114,1   153,1     267,2     302,8
+    //
+    // À Marrakech la somme vitrines + portes est IDENTIQUE des deux côtés,
+    // 267,2 : une porte prend la place d'une vitrine, et c'est ce qui vérifie
+    // que la correction DÉPLACE des colonnes au lieu d'en créer.
+    //
     // Les barres sont posées sous le plus faible des deux côtés, avec la marge
     // de la règle : ce qu'elles doivent séparer, c'est « il y a des boutiques »
     // de « il n'y en a aucune ». Désarmé `commerce` dans une copie de `src`,
     // les quatre postes tombent à zéro — cette vérification-là se FAIT.
     const POUR_MILLE = { vitrines: 25, portes: 2, enseignes: 35, auvents: 20 };
     const densites = {};
+    const fenetres = {};
     const sansDevanture = Object.entries(facades).filter(([cle, c]) => {
-      const mille = (n) => (1000 * n) / Math.max(1, c.trottoir || 0);
+      const d = c.disque || c;
+      const mille = (n) => (1000 * n) / Math.max(1, d.trottoir || 0);
       densites[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
-        .map((k) => [k, +mille(c[k]).toFixed(1)]));
-      return !(c.trottoir > 400 && Object.entries(POUR_MILLE)
-        .every(([k, barre]) => mille(c[k]) >= barre));
+        .map((k) => [k, +mille(d[k]).toFixed(1)]));
+      // La fenêtre de ±40 reste DANS LE MESSAGE : c'est elle qui lit le monde
+      // vraiment chargé, et un écart entre les deux se voit alors tout seul.
+      fenetres[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +((1000 * c[k]) / Math.max(1, c.trottoir || 0)).toFixed(1)]));
+      return !(d.trottoir > 400 && Object.entries(POUR_MILLE)
+        .every(([k, barre]) => mille(d[k]) >= barre));
     });
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
       `pour mille colonnes de trottoir, barres ${JSON.stringify(POUR_MILLE)} · `
       + (sansDevanture.length ? `EN FAUTE ${sansDevanture.map(([v]) => v).join(' · ')} · ` : '')
-      + JSON.stringify(densites));
+      + JSON.stringify(densites)
+      + ` · dans la fenêtre de ±40 blocs, lue dans le monde chargé : ${JSON.stringify(fenetres)}`);
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
     // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
@@ -3002,6 +3060,16 @@ const VRAIES_KM = [
           }
         }
       }
+      // LA LONGUEUR DE RUE QUI PORTE UN CONVOI — la grandeur qui survit à un
+      // changement de pas de trame. Un COMPTE d'anneaux, non : des anneaux plus
+      // grands portent la même rue en étant moins nombreux.
+      let porteUnConvoi = 0;
+      for (const tr of traces) {
+        for (let i = 0; i < tr.pts.length; i++) {
+          const p1 = tr.pts[i], p2 = tr.pts[(i + 1) % tr.pts.length];
+          porteUnConvoi += Math.hypot(p2.x - p1.x, p2.z - p1.z);
+        }
+      }
       ecarts.sort((a, b) => a - b);
       const ecartMed = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : -1;
       const voieVoulue = vm.VILLES_MONDE.find((v) => v.trame && !v.trame.ruelles).trame.w / 2;
@@ -3011,6 +3079,7 @@ const VRAIES_KM = [
         ecartMed, voieVoulue, aDroite, aGauche,
         place, serre, releves: ecarts.length,
         villes: parVille.size, anneaux: traces.length, sansAnneau,
+        porteUnConvoi: Math.round(porteUnConvoi),
         fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
         meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
         aveugles, pireVue: Math.round(pireVue), villeAveugle, vu: VU_VOITURE, vuAnneau: VU_ANNEAU,
@@ -3021,9 +3090,21 @@ const VRAIES_KM = [
       !rues.err && rues.fautives === 0,
       `barre ${rues.barre} blocs · ${rues.fautives} ville(s) au-dessus · pire ${rues.pire} (${rues.villePire}) · ${rues.anneaux} anneaux sur ${rues.villes} villes`);
 
+    // ET LA BORNE NE COMPTE PLUS DES ANNEAUX (v282). Elle disait `anneaux > 600`
+    // — un COMPTE ABSOLU relevé quand le pas de trame valait dix-neuf partout.
+    // Les typologies changent ce pas, donc le nombre de rues, donc le nombre
+    // d'anneaux : mesuré, 628 → 602, pendant que la LONGUEUR DE RUE QUI PORTE UN
+    // CONVOI passe de 159 133 à 158 974 blocs, soit un dixième de pour cent.
+    // C'est cette longueur-là que l'enfant voit, et c'est « une barre qui suit
+    // une grandeur se calcule, elle ne s'écrit pas » (v269) — la troisième fois
+    // que ce fichier paie une dimension de ville écrite au lieu d'être demandée
+    // (v203, v271, v274). La borne est une borne de GARDE : elle sépare « il y a
+    // des convois » de « il n'y en a plus », donc elle se pose à la MOITIÉ et
+    // jamais à quatre-vingt-dix pour cent (v237, trois fois dans `monte.js`).
     verifier('et aucune ville ne perd tous ses convois au passage',
-      !rues.err && rues.sansAnneau === 0 && rues.anneaux > 600,
-      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`);
+      !rues.err && rues.sansAnneau === 0 && rues.porteUnConvoi > 80000,
+      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`
+      + ` · ${rues.porteUnConvoi} blocs de rue portent un convoi (borne 80 000)`);
 
     // UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT. Ce témoin-ci est
     // né d'une régression de la livraison elle-même : la contrainte de partage
@@ -3087,6 +3168,317 @@ const VRAIES_KM = [
       !rues.err && rues.releves > 20 && rues.place / (rues.place + rues.serre) > 0.85,
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
+
+    // --- CHAQUE VILLE A SON TISSU, ET DEUX VILLES NE SONT PLUS LA MÊME (v280) -
+    //
+    // Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone,
+    // je le sentais l'ambiance de Barcelone et pas toutes les villes qui sont
+    // copiées-collées les unes aux autres. » Mesuré avant d'écrire une ligne :
+    // sur 269 villes il n'existait que HUIT plans de rue, dont deux couvraient
+    // 255 villes, et la seule chose qui changeait d'une ville à l'autre était
+    // l'ANGLE de rotation. Le copié-collé était dans le PLAN AU SOL.
+    //
+    // ET CES QUATRE TÉMOINS SONT ARRIVÉS APRÈS LE CODE, ce qui est une faute :
+    // quatre sujets — les tissus, le cœur d'îlot, la place, les arcades — sont
+    // entrés dans la branche sans un seul témoin, exactement la panne que la
+    // v278 a payée et que la v279 a écrite. « Ce qu'un témoin ne garde pas,
+    // personne ne le garde. »
+    const tissus = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { VILLES_MONDE, solVillesMonde, batirColonneVillesMonde } = m;
+      const trame = VILLES_MONDE.filter((f) => f.trame);
+
+      // 1 — DEUX VILLES SE RESSEMBLENT-ELLES ? Deux grandeurs, parce qu'elles
+      // ne disent pas la même chose : la similarité des DISTRIBUTIONS de sol
+      // (les mêmes matières dans les mêmes proportions) et l'identité COLONNE
+      // PAR COLONNE (le même plan, au bloc près). La pire paire d'avant —
+      // Accra et Kiev — avait des distributions IDENTIQUES (1,000), et
+      // Varsovie/Budapest 95,9 % de colonnes identiques.
+      const ECH = ['zurich', 'bologne', 'barcelone', 'buenosaires', 'munich', 'vienne',
+        'rome', 'naples', 'lisbonne', 'copenhague', 'oslo', 'fes', 'tunis', 'santiago',
+        'lima', 'manille', 'nairobi', 'accra', 'kiev', 'varsovie', 'prague', 'budapest',
+        'dublin', 'anvers'];
+      const R = 36;
+      const rel = new Map();
+      for (const cle of ECH) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) continue;
+        const cols = [], hist = new Map();
+        for (let du = -R; du <= R; du += 2) {
+          for (let dv = -R; dv <= R; dv += 2) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            cols.push(String(sol));
+            hist.set(String(sol), (hist.get(String(sol)) || 0) + 1);
+          }
+        }
+        rel.set(cle, { cols, hist, n: cols.length });
+      }
+      const cles = [...rel.keys()];
+      let pireDist = 0, pireDistP = '', pireCol = 0, pireColP = '', paires = 0;
+      for (let i = 0; i < cles.length; i++) {
+        for (let j = i + 1; j < cles.length; j++) {
+          const A = rel.get(cles[i]), B = rel.get(cles[j]);
+          let l1 = 0;
+          for (const k of new Set([...A.hist.keys(), ...B.hist.keys()])) {
+            l1 += Math.abs((A.hist.get(k) || 0) / A.n - (B.hist.get(k) || 0) / B.n);
+          }
+          const d = 1 - l1 / 2;
+          let eg = 0;
+          for (let k = 0; k < A.n; k++) if (A.cols[k] === B.cols[k]) eg++;
+          const c = eg / A.n;
+          paires++;
+          if (d > pireDist) { pireDist = d; pireDistP = `${cles[i]}/${cles[j]}`; }
+          if (c > pireCol) { pireCol = c; pireColP = `${cles[i]}/${cles[j]}`; }
+        }
+      }
+
+      // 2 — LA PART BÂTIE DU DISQUE VARIE D'UN TISSU À L'AUTRE. C'est le cœur
+      // d'îlot : une vraie ville a des cours, des patios, des jardins — 92 %
+      // de disque bâti n'est pas une ville. `f.typo` n'existe pas sur l'ancien
+      // code : tout tombe dans un seul groupe, l'écart vaut zéro, et c'est
+      // exactement le rouge attendu.
+      const parTypo = new Map();
+      for (const f of trame) {
+        const Rv = Math.min(f.rayon - 4, 40);
+        let lot = 0, tot = 0;
+        for (let du = -Rv; du <= Rv; du += 2) {
+          for (let dv = -Rv; dv <= Rv; dv += 2) {
+            if (Math.hypot(du, dv) > Rv) continue;
+            tot++;
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) === 'lot') lot++;
+          }
+        }
+        const k = f.typo || '(aucun tissu)';
+        if (!parTypo.has(k)) parTypo.set(k, []);
+        parTypo.get(k).push(lot / tot);
+      }
+      const batis = [...parTypo].map(([k, v]) => ({
+        typo: k, part: v.reduce((a, b) => a + b, 0) / v.length, n: v.length,
+      })).sort((a, b) => a.part - b.part);
+
+      // 3 — LA PLACE : chaque ville en a une, elle CONTIENT le centre (c'est là
+      // que la téléportation dépose l'enfant), et sa forme change d'une ville à
+      // l'autre. Avant, 244 villes sur 267 avaient la MÊME : 4×4 en (−2, −2).
+      const formes = new Map();
+      const sansPlace = [], centreDehors = [];
+      for (const f of trame) {
+        const centre = String(solVillesMonde(f.ancre.x, f.ancre.z));
+        let u0 = 99, u1 = -99, v0 = 99, v1 = -99, n = 0;
+        for (let du = -30; du <= 30; du++) {
+          for (let dv = -30; dv <= 30; dv++) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            if (sol === null || sol === 'lot' || String(sol) !== centre) continue;
+            u0 = Math.min(u0, du); u1 = Math.max(u1, du);
+            v0 = Math.min(v0, dv); v1 = Math.max(v1, dv); n++;
+          }
+        }
+        if (!n) { sansPlace.push(f.cle); continue; }
+        const k = `${u1 - u0}x${v1 - v0}@${u0},${v0}`;
+        formes.set(k, (formes.get(k) || 0) + 1);
+        if (u0 > 0 || u1 < 0 || v0 > 0 || v1 < 0) centreDehors.push(f.cle);
+      }
+      const pirePlace = [...formes.entries()].sort((a, b) => b[1] - a[1])[0] || ['(aucune)', 0];
+
+      // 4 — LES ARCADES. Bologne, c'est quarante kilomètres de portiques ; on
+      // marche DESSOUS. La mesure est donc un vide : rien à hauteur d'homme
+      // (y = 1 et 2) et quelque chose au-dessus (y = 3), sur une colonne de lot.
+      const arcades = [];
+      for (const cle of ['bologne', 'turin', 'zurich', 'copenhague']) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { arcades.push({ cle, err: 'absente' }); continue; }
+        let sous = 0, cols = 0;
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) !== 'lot') continue;
+            cols++;
+            const pose = [];
+            batirColonneVillesMonde(f.ancre.x + du, f.ancre.z + dv, (dy, id) => pose.push(dy));
+            if (!pose.length) continue;
+            if (!pose.some((dy) => dy === 1 || dy === 2) && pose.some((dy) => dy === 3)) sous++;
+          }
+        }
+        arcades.push({ cle, typo: String(f.typo), cols, sous, part: sous / Math.max(1, cols) });
+      }
+      return { paires, pireDist, pireDistP, pireCol, pireColP, batis,
+        formes: formes.size, pirePlace, villes: trame.length, sansPlace, centreDehors, arcades };
+    });
+
+    // Mesuré à la livraison sur 253 paires : la pire similarité de distribution
+    // tombe de 1,000 (Accra/Kiev — le même sol dans les mêmes proportions) à
+    // 0,988, et la pire identité colonne par colonne de 95,9 % (Varsovie/
+    // Budapest) à 77,5 %. Les barres sont posées un cran au-delà des mesures,
+    // pas sur elles.
+    verifier('deux villes engendrées ne sont plus la même ville',
+      tissus.paires > 100 && tissus.pireDist < 0.995 && tissus.pireCol < 0.88,
+      `pire similarité de distribution ${tissus.pireDist.toFixed(3)} (${tissus.pireDistP})`
+      + ` · pire identité colonne ${(100 * tissus.pireCol).toFixed(1)} % (${tissus.pireColP})`
+      + ` · ${tissus.paires} paires`);
+
+    // L'ÉCART EST LA GRANDEUR, PAS LA MOYENNE. Une part bâtie basse partout
+    // serait une ville creuse ; ce qu'on garde, c'est qu'un tissu dense et un
+    // tissu aéré ne se ressemblent pas. Mesuré : de 7,9 % (organique) à 25,3 %
+    // (medina), soit 17 points d'écart, contre ZÉRO quand il n'y avait qu'un
+    // seul plan pour les 267.
+    const ecartBati = tissus.batis.length
+      ? tissus.batis[tissus.batis.length - 1].part - tissus.batis[0].part : 0;
+    verifier('chaque tissu a son espace libre — le cœur d\'îlot',
+      tissus.batis.length >= 6 && ecartBati > 0.08,
+      `${tissus.batis.length} tissu(s) · écart de part bâtie ${(100 * ecartBati).toFixed(1)} points · `
+      + tissus.batis.map((b) => `${b.typo} ${(100 * b.part).toFixed(1)} % (${b.n})`).join(' · '));
+
+    // ET LA PLACE CONTIENT TOUJOURS LE CENTRE : c'est là que la téléportation
+    // dépose l'enfant, et une ville sans place le mettrait le nez dans un mur.
+    // C'est ce verdict qui a attrapé Hambourg et Bâle, noyés par leur propre
+    // fleuve — l'Alster prolongée à travers le Rathaus, le Rhin sur la
+    // Marktplatz — avant que le portail n'ait à le dire.
+    verifier('chaque ville a sa place, et elle n\'est plus au même endroit partout',
+      tissus.sansPlace.length === 0 && tissus.centreDehors.length === 0
+      && tissus.pirePlace[1] / tissus.villes < 0.5,
+      `${tissus.formes} formes de place sur ${tissus.villes} villes · la plus répandue`
+      + ` ${tissus.pirePlace[0]} dans ${tissus.pirePlace[1]}`
+      + ` (${(100 * tissus.pirePlace[1] / tissus.villes).toFixed(0)} %)`
+      + ` · sans place : ${tissus.sansPlace.join(', ') || '(aucune)'}`
+      + ` · centre hors de la place : ${tissus.centreDehors.join(', ') || '(aucune)'}`);
+
+    // Bologne et Turin ont des arcades, Zurich et Copenhague n'en ont pas — et
+    // c'est la seconde moitié qui compte : un témoin qui ne vérifie que la
+    // présence laisserait poser des portiques dans toute l'Europe.
+    verifier('on marche sous les arcades à Bologne et à Turin, et nulle part ailleurs',
+      tissus.arcades.length === 4 && !tissus.arcades.some((a) => a.err)
+      && tissus.arcades.filter((a) => a.typo === 'arcades').length === 2
+      && tissus.arcades.every((a) => (a.typo === 'arcades' ? a.part > 0.1 : a.part < 0.01)),
+      tissus.arcades.map((a) => a.err ? `${a.cle} ${a.err}`
+        : `${a.cle} (${a.typo}) ${a.sous}/${a.cols} = ${(100 * a.part).toFixed(1)} %`).join(' · '));
+
+    // --- LES FLEUVES DES VILLES, ET LES PONTS QUI LES FRANCHISSENT (v280) ----
+    //
+    // Onze villes dont le fleuve EST l'identité n'en avaient aucun : Hambourg
+    // sans l'Elbe, Lyon sans la Saône ni le Rhône, Budapest sans le Danube.
+    // Max : « je me prenne à Barcelone, je le sentais l'ambiance de Barcelone
+    // et pas toutes les villes qui sont copiées-collées les unes aux autres. »
+    //
+    // ET RENDRE LE FLEUVE A CASSÉ QUATRE VILLES avant qu'on ne le livre :
+    // Hambourg, Lyon, Belgrade et Bâle ont perdu TOUS leurs anneaux de
+    // circulation, leur rivière traversant le centre. La sonde qui SÉPARE les
+    // cas l'a dit en une exécution — 277 à 312 candidats sur 357 rejetés POUR
+    // L'EAU, et le moins mauvais mouillé sur deux à six points de quarante :
+    // l'anneau ne ratait pas la rive, il ratait un PONT. Ces quatre témoins
+    // gardent les deux moitiés de la chose, parce que l'une sans l'autre
+    // livrerait une ville coupée en deux.
+    //
+    // Ces onze villes sont HORS de la fenêtre d'empreinte de `plafond.js`
+    // ([-700, 700] ; la plus proche, Bâle, est à 1 803 blocs) : les deux
+    // empreintes du relief ne bougent pas d'un octet. Mais « une refonte hors
+    // de la fenêtre d'empreinte doit apporter ses PROPRES témoins : personne ne
+    // le fera à sa place » (v186) — les voici.
+    const fleuves = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const w = window.__game.world;
+      const { VILLES_MONDE, anneauxDeVille, coteDeVille } = m;
+      const AVEC = ['hambourg', 'cologne', 'francfort', 'budapest', 'lyon', 'seville',
+        'porto', 'bordeaux', 'dresde', 'belgrade', 'bale'];
+      // 1 — CHAQUE VILLE DE FLEUVE A SON EAU, ET ELLE SE MESURE DANS LE
+      // DISQUE, pas sur la fiche : une fiche peut déclarer un fleuve que la
+      // géographie ne rend pas (une polyligne hors du disque, une largeur
+      // nulle). On compte les colonnes SOUS le niveau de la mer.
+      const eaux = [];
+      for (const cle of AVEC) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { eaux.push({ cle, err: 'fiche absente' }); continue; }
+        let mouille = 0, total = 0;
+        for (let du = -f.rayon; du <= f.rayon; du += 3) {
+          for (let dv = -f.rayon; dv <= f.rayon; dv += 3) {
+            if (Math.hypot(du, dv) > f.rayon) continue;
+            total++;
+            if (w.terrainHeight(f.ancre.x + du, f.ancre.z + dv) < WATER_LEVEL) mouille++;
+          }
+        }
+        eaux.push({ cle, part: mouille / total, total });
+      }
+      // 2 — AUCUNE VILLE À TRAME NE PERD TOUTES SES VOITURES. Le vrai
+      // dénominateur est l'ensemble des villes qui en ont le droit : une médina
+      // piétonne n'en a jamais eu (v270), et c'est une DÉCISION.
+      const traces = m.tracesCirculation((x, z) => w.terrainHeight(x, z));
+      const par = new Set(traces.map((t) => t.cle));
+      const trame = VILLES_MONDE.filter((f) => f.trame && !f.trame.ruelles);
+      const sans = trame.map((f) => f.cle).filter((c) => !par.has(c));
+      // 3 — LE TABLIER A DE L'EAU DESSOUS, DE L'AIR DESSUS, ET LA COTE DE LA
+      // RIVE. C'est la leçon du Bay Bridge : « ce qui prouve un pont, c'est
+      // l'eau sous son tablier », pas de la pierre grise quelque part.
+      // Et l'on traverse À PIED, parce qu'un pont qu'on ne traverse pas est un
+      // décor : sur l'axe du tablier, un sol plein et deux blocs d'air.
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
+      // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
+      // on ne verrait alors l'étendue d'aucun des quatre verdicts.
+      const ponts = [];
+      for (const cle of (anneauxDeVille && coteDeVille
+        ? ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'] : [])) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        const a = anneauxDeVille(f);
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        const cote = coteDeVille(f);
+        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0;
+        for (const q of a.ponts) {
+          pireSpan = Math.max(pireSpan, q.a1 - q.a0);
+          const n = Math.round(q.a1 - q.a0);
+          for (let k = 0; k <= n; k++) {
+            const le = q.a0 + k;
+            const P = q.axe === 0 ? le : q.b, Q = q.axe === 0 ? q.b : le;
+            const x = Math.round(f.ancre.x + P * co + Q * si);
+            const z = Math.round(f.ancre.z + (-P * si + Q * co));
+            pas++;
+            if (w.getBlock(x, cote, z) === 0) sansSol++;
+            if (w.getBlock(x, cote + 1, z) !== 0 || w.getBlock(x, cote + 2, z) !== 0) surLaTete++;
+            if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
+          }
+        }
+        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan });
+      }
+      return { eaux, sans, trame: trame.length, servies: par.size, ponts,
+        PONT_MAX: m.PONT_MAX || 0 };
+    });
+
+    // Les parts d'eau mesurées à la livraison, et elles disent la vraie ville :
+    // Hambourg 27 % (l'Elbe et l'Alster), Belgrade 21 % (la Save ET le Danube),
+    // Lyon 11 % (deux rivières étroites), Bâle 10 % (un seul Rhin). La barre
+    // basse suffit : ce qu'on garde, c'est qu'un fleuve DÉCLARÉ existe dans le
+    // monde engendré — une fiche qui déclare une polyligne que la géographie ne
+    // rend pas passerait toute lecture de fiche.
+    verifier('les onze villes de fleuve ont vraiment leur rivière dans le monde',
+      fleuves.eaux.every((e) => !e.err && e.part > 0.03),
+      fleuves.eaux.map((e) => `${e.cle} ${e.err || (100 * e.part).toFixed(0) + ' %'}`).join(' · '));
+
+    // ON DÉCLARE CE QU'ON NE SAIT PAS FAIRE, ON NE L'ARRONDIT PAS. San Jose
+    // n'avait déjà aucun anneau avant cette livraison, et pour une raison qui
+    // n'est pas l'eau : 252 candidats sur 357 sortent de son disque, sa trame
+    // de 27×21 étant trop grossière pour un rayon de 47. C'est une dette de
+    // TISSU, déclarée dans TASKS.md — et la nommer ici est ce qui empêche une
+    // seconde ville de la rejoindre en silence.
+    const DETTE_SANS_ANNEAU = ['sanjose'];
+    verifier('aucune ville à trame ne perd toutes ses voitures',
+      fleuves.sans.every((c) => DETTE_SANS_ANNEAU.includes(c)),
+      `${fleuves.servies}/${fleuves.trame} villes servies · sans anneau : `
+      + `${fleuves.sans.length ? fleuves.sans.join(', ') : '(aucune)'}`
+      + ` · dette déclarée : ${DETTE_SANS_ANNEAU.join(', ')}`);
+
+    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. Les culées mordent d'un bloc et
+    // demi sur chaque rive — sinon une marche attend l'enfant au bout du pont —
+    // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
+    // mesuré 73 à 85 % à la livraison.
+    verifier('chaque pont a de l\'eau sous son tablier',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
+      fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
+        + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
+
+    verifier('et on le traverse à pied d\'une rive à l\'autre',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.sansSol === 0 && p.surLaTete === 0
+        && p.pireSpan <= fleuves.PONT_MAX + 3),
+      fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
+        + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
+      + ` · borne ${fleuves.PONT_MAX}`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

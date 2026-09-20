@@ -40,6 +40,7 @@ import {
 } from './londres.js';
 import {
   hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
+  pontVillesMonde,
   landmarksVillesMonde, placesVillesMonde, dansVilleMonde,
 } from './villesmonde.js';
 import {
@@ -631,6 +632,9 @@ function cratere(d, rayon) {
 const LAVA = DECOR_START + 1 * 10;   // Uni orange
 const LAVA_HOT = DECOR_START + 0 * 10; // Uni rouge
 const CACTUS = DECOR_START + 5 * 10; // Uni vert
+// La pile d'un pont de ville engendrée : la même pierre que son parapet
+// (`PIERRE` de villesmonde.js, Uni gris) — un pont est d'une seule matière.
+const PIERRE_PONT = DECOR_START + 19 * 10;
 
 // Named places shown on the maps with tap-to-travel (besides the cities).
 export const PLACES = [
@@ -1667,6 +1671,12 @@ export class World {
     if (c && c.key === 'londres' && pontLondres(x - c.x, z - c.z) !== null) {
       return h > c.base + 1 ? h : c.base + 1;
     }
+    // ET LA MÊME CHOSE POUR LES PONTS DES VILLES ENGENDRÉES (v280). Le convoi
+    // qui franchit la Saône roule sur le tablier, pas dans le lit — c'est
+    // exactement la leçon de la Tamise (v210 : « le terrain n'est pas la
+    // surface roulable »), et elle ne s'appliquait qu'à Londres.
+    const pvm = pontVillesMonde(x, z);
+    if (pvm) return h > pvm.cote ? h : pvm.cote;
     return h;
   }
 
@@ -2337,6 +2347,23 @@ export class World {
           // manquait plus que la boucle qui dessine le monde entier.
           if (arbreDeVille(data, x, z, h, wx, wz, solVillesMonde, svm)) continue;
           if (svm !== null) {
+            // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT — la
+            // leçon de la Tamise (v208), appliquée aux villes engendrées.
+            // Sur une colonne de fleuve `h` vaut 26 et l'eau monte à 30 : le
+            // tablier va à la cote de la RUE, et sa pile descend jusqu'au lit,
+            // sinon la route flotte.
+            if (h < WATER_LEVEL) {
+              const pvm = pontVillesMonde(wx, wz);
+              if (pvm) {
+                if (pvm.cote >= 0 && pvm.cote < HEIGHT) data[World.index(x, pvm.cote, z)] = svm;
+                if (pvm.pile) {
+                  for (let wy = h; wy < pvm.cote; wy++) {
+                    if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = PIERRE_PONT;
+                  }
+                }
+                continue;
+              }
+            }
             data[World.index(x, h, z)] = svm;
             // Le trottoir porte son mobilier : auvents des boutiques,
             // lampadaires, bancs, bacs à fleurs. Cf. mobilierVillesMonde.

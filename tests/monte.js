@@ -2717,8 +2717,27 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         chunks: g.world.chunks.size, arrive: Math.hypot(g.player.pos.x - P.x, g.player.pos.z - P.z) < 60 };
     });
     await arrivee.close();
+    // ET LA BORNE DE GARDE ÉTAIT AU-DESSUS DE CE QU'ON MESURE — QUATRIÈME FOIS
+    // DANS CE FICHIER (v282). `images > 30` disait « la boucle de rendu vit »,
+    // parce qu'une sonde de fluidité doit d'abord vérifier que le jeu tourne
+    // (v246 : elle avait rendu 60 images par seconde sur une boucle MORTE). Mais
+    // trente est au-dessus de la fenêtre normale : relevé sur sept passages —
+    // deux portails et deux rejeux seuls, des deux côtés — ce témoin rend 22,
+    // 22, 28, 28, 28, 28 et 42 images. Il tombait donc SIX fois sur sept sur sa
+    // garde, pendant que la mesure qu'il garde était parfaite (`neufs: 0`,
+    // c'est-à-dire aucun programme compilé à l'arrivée).
+    //
+    // Ce qu'une borne de garde doit séparer, c'est « ça s'est passé » de « rien
+    // ne s'est passé », et une page morte rend ZÉRO. Dix est sous la moitié du
+    // pire relevé et très loin de zéro. Les quatre autres bornes de garde du
+    // fichier ont été relues dans la même passe, avec les valeurs mesurées en
+    // face — `memoire.parcouru > 500` pour 722 et 744, `fil.parcouru > 40` pour
+    // 66, `poteau.parcouru > 2` pour 3,69, `secousses.images > 30` pour 73 et
+    // 74 : toutes entre 0,41 et 0,69 de la mesure, donc à leur place. C'est la
+    // consigne de la v237, qui avait coûté deux portails pour avoir corrigé une
+    // borne en laissant ses deux voisines intactes.
     verifier('se téléporter à Paris ne compile plus les programmes des voitures sur place',
-      programmes.arrive && programmes.images > 30 && programmes.neufs <= 4,
+      programmes.arrive && programmes.images > 10 && programmes.neufs <= 4,
       JSON.stringify(programmes));
 
     // ET LA TABLE DES SIGNATURES DIT CE QUE LES FICHIERS CONTIENNENT. La

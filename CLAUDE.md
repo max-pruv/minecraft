@@ -493,6 +493,89 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Les villes engendrées ont un tissu, et un fleuve qu'on franchit (v282)
+
+Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone, je le
+sentais l'ambiance de Barcelone et pas toutes les villes qui sont copiées-collées
+les unes aux autres. » Neuf règles, et six sont nées d'une mesure qui m'a
+contredit.
+
+- **QUATRE SUJETS SONT ENTRÉS SANS UN SEUL TÉMOIN, ET C'EST LA v278 QUI
+  RECOMMENCE.** Les tissus, le cœur d'îlot, la place, les arcades : 613 lignes de
+  `villesmonde.js`, zéro verdict, dans une branche dont je croyais le travail
+  fait. Ce qui l'a vu n'est pas une relecture, c'est le geste que la v279 avait
+  écrit : **compter les sujets dans le DIFF et non dans l'intention**
+  (`git diff --stat`, puis `git diff | grep "verifier('"`). Les quatre témoins
+  existent désormais, vérifiés rouges sur l'ancien code — et les écrire a trouvé
+  trois défauts que le code n'avait pas déclarés.
+
+- **DEUX GRANDEURS QUI PORTENT LE MÊME MOT « PAREIL » NE DISENT PAS LA MÊME
+  CHOSE.** J'avais écrit dans le code que « Zurich et Bologne ont le MÊME sol,
+  bloc pour bloc ». Mesuré : 52,6 % de colonnes identiques. Ce qui valait 1,000
+  c'était la similarité des DISTRIBUTIONS — les mêmes matières dans les mêmes
+  proportions — et pour une AUTRE paire, Accra et Kiev ; l'identité colonne par
+  colonne culminait à 95,9 %, Varsovie et Budapest. Le témoin mesure les deux,
+  et c'est lui qui a démonté ma phrase (1,000 → 0,988 et 95,9 % → 77,5 %).
+  **Avant d'écrire « identique », on dit identique EN QUOI.**
+
+- **L'ÉCART EST LA GRANDEUR, PAS LA MOYENNE.** « Les îlots ont un cœur » ne se
+  mesure pas par une part bâtie basse — une ville creuse en donnerait autant.
+  Ce qu'on garde, c'est qu'un tissu dense et un tissu aéré ne se ressemblent
+  pas : huit tissus de 7,9 % (organique) à 25,3 % (medina), 17,4 points d'écart,
+  contre ZÉRO quand un seul plan servait les 267.
+
+- **UN TÉMOIN DE PRÉSENCE GARDE AUSSI L'ABSENCE.** « On marche sous les arcades »
+  vérifié à Bologne et à Turin seulement laisserait poser des portiques dans
+  toute l'Europe : Zurich et Copenhague sont dans le même verdict, à zéro.
+
+- **UN PONT SE POSE AU-DESSUS DE L'EAU, ET LA RÈGLE N'AVAIT JAMAIS QUITTÉ
+  LONDRES.** Rendre leur fleuve à onze villes a fait perdre TOUS leurs anneaux de
+  circulation à quatre d'entre elles — Hambourg, Lyon, Belgrade, Bâle. J'ai
+  d'abord affiné les décalages d'anneau, deux fois : mesuré, 539 → 788 anneaux et
+  les MÊMES QUATRE À ZÉRO. **La sonde qui SÉPARE les cas** a répondu en une
+  exécution : 277 à 312 candidats sur 357 rejetés POUR L'EAU, et le moins mauvais
+  mouillé sur deux à six points de quarante — l'anneau ne ratait pas la rive, il
+  ratait un PONT. Les décalages fins sont retirés : non-résultat mesuré, qu'on ne
+  le réécrive pas. Le remède, lui, était écrit depuis la v208 (le tablier de la
+  Tamise à la cote des quais) et la v210 (`coteRoulable` : « le terrain n'est pas
+  la surface roulable ») — et il n'avait jamais servi ailleurs qu'à Londres.
+  Cinquième occurrence du verre dans les murs : **la PORTÉE du remède, jamais la
+  règle.**
+
+- **UNE SEULE RÈGLE, TROIS LECTEURS.** `anneauxDeVille(f)` est pure et mémoïsée :
+  elle choisit les anneaux ET publie les tabliers qu'ils exigent. La CIRCULATION
+  les lit pour rouler, le SOL pour poser le béton, `coteRoulable` pour savoir à
+  quelle hauteur on roule. Deux tables qui décrivent le même pont finiraient par
+  diverger — discipline de `postesAvion` et de `feux.js`.
+
+- **UNE BORNE DE TRAVERSÉE SE MESURE SUR CE QU'ELLE DOIT LAISSER PASSER.** Au
+  bloc — pas au quarantième de périmètre, dont le pas vaut jusqu'à quinze blocs —
+  le tronçon mouillé vaut 8 blocs à Bâle, 14 à Lyon, 19 à Belgrade, 23 à
+  Hambourg, soit 222, 389, 528 et 640 mètres à trente-six blocs par kilomètre :
+  l'ordre de grandeur du Mittlere Brücke, du pont Wilson, du Brankov most et des
+  Elbbrücken. `PONT_MAX` vaut vingt-quatre. Et la borne grossière qui économise
+  le calcul exact (`mouille > 10`) est gardée parce qu'on a MESURÉ ce qu'elle
+  coûte : levée, elle rend 73 ms et n'ouvre AUCUNE ville de plus.
+
+- **LA LARGEUR D'UN OUVRAGE SE DIMENSIONNE SUR CE QUI ROULE DESSUS, ET ELLE SE
+  DEMANDE À LA TRAME.** Mon premier jet écrivait `t.w / 2` en croyant `t.w` la
+  chaussée : c'est la DEMI-chaussée (2,8 blocs mesurés, donc 5,6 depuis la v271).
+  Le tablier faisait la moitié de sa propre rue, et la voiture — décalée dans sa
+  voie de droite — roulait le flanc sur le parapet.
+
+- **UN LAC N'EST PAS UN DÉTROIT, ET L'ANCRE EST OÙ L'ENFANT ATTERRIT.**
+  `prolonge` étire chaque fleuve jusqu'au bord du disque dans l'axe de son dernier
+  segment ; l'Alster FINIT au centre de Hambourg, et prolongée vers le sud elle
+  passait à trois dixièmes de bloc de l'ancre — trois cents mètres d'eau sur le
+  Rathaus, c'est-à-dire **sur le point exact où la téléportation dépose
+  l'enfant**. Un plan d'eau qui a une vraie fin dans la ville se déclare `borne`.
+  Deux autres ancres étaient noyées pour d'autres raisons : mon Rhin passait sur
+  la Marktplatz de Bâle, ma confluence de Belgrade à un bloc de la place de la
+  République. **Un tracé de fleuve se mesure À L'ANCRE**, et la correction se
+  mesure aussi : la translation de Belgrade est la plus PETITE qui laisse trois
+  cents mètres de quai, pas un redessin à l'intuition. Mesuré après : onze ancres
+  au sec, l'eau la plus proche de 175 m (Cologne) à 900 (Séville).
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and
@@ -609,6 +692,91 @@ transpose pas). Deux choses de plus :
   préparation, où rien ne les invalide. J'avais déclaré la réserve à l'époque ;
   elle s'est vérifiée contre moi. **Un « innocent » ne vaut que dans les
   conditions où il a été mesuré, et c'est pour cela qu'on les écrit.**
+
+## Ce qu'une sonde de contenu doit faire comme le jeu (v282)
+
+Quatre défauts de ma propre passe de tissu, et **trois mesures fausses de ma part
+avant la bonne**. Les trois se reprennent.
+
+- **UNE SONDE QUI APPELLE UN BÂTISSEUR DOIT L'APPELER COMME LE JEU L'APPELLE.**
+  `world.js` n'appelle `batirColonneVillesMonde` que si `solVillesMonde` rend la
+  chaîne `'lot'` ; ma sonde l'appelait pour TOUTE la fenêtre, trottoirs et
+  chaussée comprises, et comptait donc des façades que le jeu n'écrit nulle part
+  — 1 460 vitrines pour mille colonnes de trottoir là où il y en a 142. C'est
+  « une sonde qui interroge la mauvaise liste ne peut rien voir » (v273), par
+  l'autre bout : **elle voit ce qui n'existe pas.** Avant de croire une sonde qui
+  appelle une fonction pure du monde, on relit la ligne de `world.js` qui
+  l'appelle, et on recopie sa GARDE autant que son appel.
+- **ET ELLE M'A FAIT ÉCRIRE UN REMÈDE QUI EST UN NON-RÉSULTAT.** Sur la foi de
+  cette sonde j'ai « rendu » son demi-espace à `bord`, en croyant que le
+  resserrement de la v282 avait pris 85 % des devantures du jeu. Mesuré sur les
+  seules colonnes de lot, les deux versions rendent le MÊME chiffre au dixième,
+  et c'est arithmétique : `dRue >= t.s` est vrai PAR CONSTRUCTION sur un lot,
+  donc la bande et le demi-espace sont le même ensemble. Écrit, mesuré, retiré —
+  et le non-résultat est écrit dans `villesmonde.js` pour que personne ne le
+  réécrive.
+- **UNE TOLÉRANCE EN BLOCS CONTRE UNE GRANDEUR QUI GRANDIT NE TIENT PAS — ET
+  CETTE FOIS C'ÉTAIT DANS LE CODE DU JEU, PAS DANS UN TÉMOIN.** La porte d'une
+  boutique se posait à moins de `0,28` bloc du milieu du front du lot, chiffre
+  relevé quand le pas de trame valait quinze ; les typologies le portent à 21, 23
+  et 27, le front de Rome passe de [2 ; 7,5] à [4,8 ; 11,5], et la même fenêtre
+  n'attrape plus rien : **zéro porte à Rome, à Tokyo et à Bologne.** Ce qui ne
+  dépend pas du pas, c'est l'ÉCARTEMENT DES COLONNES — elles sont à un bloc l'une
+  de l'autre, donc « la colonne la plus proche du milieu du front » est celle qui
+  en est à moins d'une DEMI-colonne. La règle des barres de témoin (v269 : « une
+  barre qui suit une grandeur se calcule, elle ne s'écrit pas ») vaut mot pour mot
+  pour les constantes du jeu.
+- **ET LE RANG NE SE REDIT PAS DANS LA RÈGLE QUI LE LIT.** `dRue < t.s + 1.0`
+  décrivait le premier rang de façade une seconde fois, à côté de `bord` qui le
+  décrit déjà. Les deux ont divergé le jour où le portique a fait reculer la
+  façade d'un cran : à Bologne et à Turin elles devenaient DISJOINTES et pas une
+  porte n'était possible. La pose étant déjà gardée par `commerce && bord`, la
+  règle ne garde que « au milieu du front ». Deux tables qui décrivent la même
+  chose finissent par diverger — la discipline de `postesAvion`, appliquée à un
+  rang de façade.
+- **UN ÉVÉNEMENT PAR FAÇADE NE SE COMPTE PAS DANS UNE FENÊTRE DE ±40 BLOCS.** Une
+  porte est UNE colonne par front de lot : à Tokyo il n'y en a aucune dans cette
+  fenêtre alors que la ville en porte 23,8 pour mille colonnes de trottoir. C'est
+  « une fraction se pose sur la VILLE, pas sur la fenêtre » (v274), troisième fois
+  pour ce témoin-ci après les comptes absolus de la v172 et de la v271 ; et comme
+  engendrer un disque entier sur le fil principal coûte des secondes, les quatre
+  postes se comptent par les FONCTIONS PURES (v202), sept dixièmes de seconde pour
+  les trois villes. **La fenêtre lue dans le monde chargé reste dans le
+  MESSAGE** : un écart entre ce que le bâtisseur écrit et ce que le monde contient
+  s'y voit alors tout seul (mesuré : 17 % au centre de Rome, ce que les monuments
+  réécrivent).
+- **ET LA BARRE DES ANNEAUX NE COMPTE PLUS DES ANNEAUX.** `anneaux > 600` était un
+  compte absolu relevé quand le pas valait dix-neuf partout : les typologies
+  changent le pas, donc le nombre de rues, donc le nombre d'anneaux — 628 → 602 —
+  pendant que la LONGUEUR DE RUE QUI PORTE UN CONVOI passe de 159 133 à 158 974
+  blocs, un dixième de pour cent. C'est cette longueur-là que l'enfant voit, et
+  comme la borne est une borne de GARDE elle se pose à la MOITIÉ (v237).
+- **UN DAMIER EST CARRÉ, ET UN CHIFFRE DE PLAN SE CROISE AVEC CE QU'IL COÛTE.**
+  `27×21` n'était pas un damier, et croisé avec les anneaux ce pas de 27 coûtait à
+  29 des 37 villes en damier un circuit — deux grands rectangles ne tiennent plus
+  sous les vingt blocs de partage de la v211. Le prix qui RESTE se déclare :
+  `superilot` garde son pas de 27, parce qu'un superîlot EST plus grand, et
+  quarante-six de ses soixante-cinq villes gardent un seul circuit au lieu de deux.
+- **ET J'AI MODIFIÉ `src/` PENDANT QU'UNE SUITE TOURNAIT.** La règle de survie du
+  banc est écrite depuis toujours ; je l'ai enfreinte en corrigeant le jeu pendant
+  que le portail jouait `washington.js`, ce qui a rendu la fin de ce portail sans
+  valeur — il a fallu le tuer et le reprendre. Une sonde se lance pendant un
+  portail ; une CORRECTION attend qu'il rende la machine.
+
+- **ET UNE SONDE QUI PLACE UNE CAMÉRA SE TROMPE DE PLACE AUTANT QU'UNE AUTRE.**
+  La planche de captures de cette livraison a été refaite CINQ fois, et chaque
+  fois pour la même raison : je cherchais une chose là où elle n'est pas.
+  `banc.js` chargé depuis le dépôt principal aurait photographié la carte de
+  `main` — il sert `RACINE`, le dossier au-dessus de lui. Le centre exact d'une
+  ville n'est pas une rue. « Tout ce qui n'est ni un lot ni un trottoir » n'est
+  pas la chaussée : `CHAUSSEE` est EXPORTÉE de `world.js` depuis la v248,
+  précisément pour ne pas être devinée. Le sol d'un portique n'est pas
+  `sommetColonne`, qui rend le premier bloc SOLIDE en descendant, donc
+  l'immeuble AU-DESSUS du passage — la caméra s'est retrouvée sur le toit, et
+  c'est le piège de la v267 une famille plus loin. Et une file de colonnes se
+  compte dans l'axe de la TRAME, pas dans celui du monde. **Quand une sonde doit
+  trouver un endroit, on lui donne la règle du TÉMOIN qui le définit déjà, et
+  l'on vérifie qu'elle a trouvé autre chose que le point de départ.**
 
 ## La matière claire (v276)
 

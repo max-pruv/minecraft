@@ -6,6 +6,18 @@
 
 export const NOUVEAUTES = [
   {
+    v: 282,
+    titre: 'Des villes toutes différentes',
+    puces: [
+      'Chaque ville a son plan de rues',
+      'Des cours au cœur des îlots',
+      'Une place différente dans chaque ville',
+      'Des arcades à Bologne et à Turin',
+      'Onze villes retrouvent leur fleuve',
+      'Et des ponts pour le traverser',
+    ],
+  },
+  {
     v: 281,
     titre: "Les trains ont de vrais rails",
     puces: [

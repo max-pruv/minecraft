@@ -1,5 +1,87 @@
 # Ce qui est en cours
 
+- [ ] **`monte.js` : DEUX ROUGES NEUFS, ATTRIBUÉS ET UN CORRIGÉ (v282).** Les
+  portails ayant tourné dans la même configuration sur la même machine, la
+  double mesure de la v195 s'est prise sans rejeu, puis chaque suite a été
+  rejouée SEULE des deux côtés.
+
+  | témoin | main (v281) | branche v282 |
+  | --- | --- | --- |
+  | la téléportation ne compile plus de programmes | vert | **corrigé — vert** |
+  | l'écran ne se fige pas en arrivant | ❌ 40,0 % · 35,0 % | ❌ 34,3 % · 42,9 % |
+  | une voiture arrêtée par un mur | ❌ `immobile 0` et `1` | ❌ `immobile 0` · ✅ `immobile 4` |
+  | une voiture n'entre pas dans l'eau | ✅ | ✅ |
+  | les voitures ne se traversent plus | ❌ 42,4 % | ❌ 60 % |
+  | **total, suite rejouée seule** | **137 verts · 7 défauts** | **141 verts · 3 défauts** |
+
+  **La téléportation est corrigée** : sa borne de garde disait `images > 30`
+  quand ce témoin rend 22 à 42 images — relevé sur sept passages, deux portails
+  et deux rejeux seuls des deux côtés. Elle tombait donc six fois sur sept sur
+  sa garde pendant que la mesure gardée était parfaite (`neufs: 0`). Dix est
+  sous la moitié du pire relevé et très loin de zéro, et les quatre autres
+  bornes de garde du fichier ont été relues dans la même passe (0,41 à 0,69 de
+  leur mesure, donc à leur place).
+
+  **Les trois qui restent sont pré-existants et intermittents des DEUX côtés.**
+  Le mur et l'eau sortent de leur boucle sur `immobile >= 4`, quatre relevés de
+  250 ms à moins de 0,02 bloc : à quatre images par seconde deux relevés
+  tombent dans la même image. C'est « un minimum échantillonné est une propriété
+  de la cadence, pas du monde » (v279), et la grandeur se trompe dans les deux
+  sens — le mur n'atteint jamais quatre et court jusqu'à sa borne de 25 s,
+  l'eau les atteignait en cinq secondes alors que la voiture accélérait encore.
+  Ce qui ne dépend d'aucun relevé intermédiaire, c'est la position d'ARRIVÉE ;
+  ces deux verdicts ne la mesurent pas encore. Reste à les reformuler dessus,
+  bornés, la durée entrant dans le message (v270).
+
+- [ ] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Croisé
+  avec les anneaux, le pas de vingt-sept de `superilot` fait perdre un circuit
+  à 43 de ses 65 villes, et 46 n'en gardent qu'UN : deux grands rectangles ne
+  tiennent plus sous les vingt blocs de partage de la v211. Le pas est juste
+  sur le fond — un superîlot EST plus grand — et la contrainte aussi : ce
+  qu'elle mesure est la largeur d'un CARREFOUR (la chaussée, 5,6 blocs), pas la
+  taille de l'îlot, donc elle n'a pas à suivre le pas. La longueur de rue qui
+  porte un convoi ne bouge pourtant que d'un dixième de pour cent (159 133 →
+  158 974) : ce qui se perd, c'est la VARIÉTÉ des trajets dans ces
+  quarante-six villes. Piste non mesurée : une contrainte de partage exprimée
+  en FRACTION du périmètre de l'anneau plutôt qu'en blocs absolus.
+
+- [ ] **J'AI MODIFIÉ `src/` PENDANT QU'UN PORTAIL TOURNAIT (v282).** La règle de
+  survie du banc est écrite depuis toujours et je l'ai enfreinte en corrigeant
+  le jeu pendant que le portail jouait `washington.js` : la fin de ce portail a
+  mesuré un arbre à moitié changé, et il a fallu le tuer et le reprendre. Une
+  SONDE se lance pendant un portail ; une CORRECTION attend qu'il rende la
+  machine. (Et `node tout.js --suites <fichier>` n'existe pas : `tout.js` ne
+  connaît que `--depuis-zero`, `--voie`, `--long` et `--malgre-fumee`, donc le
+  drapeau est ignoré EN SILENCE et le portail entier se lance. Pour jouer une
+  suite seule, c'est `node carteMonde.js` — ou `npm run carte`, `monte`,
+  `reseau`… Un drapeau inventé ne rend pas d'erreur : on le vérifie dans
+  `tout.js` avant de croire qu'on a lancé une suite.)
+
+- [ ] **L'ARCADE EXISTE, MAIS ELLE NE SE PHOTOGRAPHIE PAS (v282).** Le témoin
+  compte les colonnes de lot où le bâtisseur ne pose rien à hauteur d'homme —
+  23,7 % à Bologne, 24,7 % à Turin, zéro à Zurich et à Copenhague — et c'est
+  vrai. Mais un COMPTE de colonnes dégagées ne dit rien de la CONTINUITÉ, et
+  c'est la continuité qui fait une galerie. Mesuré dans l'axe de la trame : la
+  plus longue file fait **cinq colonnes à Bologne, sept à Turin**, sur 1 026 et
+  1 402 colonnes dégagées. C'est la longueur d'un front de lot, ce qui est
+  cohérent — les lots sont séparés par une rue tous les vingt-trois blocs — mais
+  ce n'est pas les quarante kilomètres de portiques de la vraie Bologne, et sur
+  une capture au niveau de la rue on ne reconnaît pas une arcade. Max juge au
+  premier regard : tant que ce n'est pas une galerie, le journal doit dire « des
+  arcades », jamais « on marche sous les arcades de Bologne ».
+
+  Le remède est un choix de PLAN, pas un réglage : il faut que le portique
+  coure sur tout le front du lot ET que les fronts se rejoignent d'un lot à
+  l'autre. Piste non mesurée : poser le portique sur le rang entier du côté
+  rue, et rapprocher les lots des carrefours.
+
+  **Et la sonde s'est trompée d'axe avant de le voir** : mesurée le long des
+  axes du MONDE, la plus longue file valait trois colonnes partout, exactement —
+  le signe qu'on traverse en biais une bande de 1,15 bloc dans une trame TOURNÉE.
+  Une mesure de continuité se fait dans l'axe de la chose, jamais dans celui de
+  la grille de coordonnées.
+
+
 - **Personnages et véhicules v241 :** compléter la variété des anatomies et vêtements, les expressions faciales et la validation Safari/iPad physique. Les costumes historiques et plusieurs voitures du catalogue restent plus simples ; ne pas les présenter comme photoréalistes.
 
 - **Les avions ont repris une partie de leur rapport de vitesse (v229 →
@@ -72,6 +154,29 @@ appliqué au champ de message d'un témoin.
 - « une voiture arrêtée par un mur n'annonce plus de vitesse » — 12,16 contre le
   mur, **identique au bit près** à la référence.
 
+## v282 — ce que la passe de tissu et de fleuves laisse ouvert
+
+- **San Jose n'a aucun anneau de circulation, et ce n'est pas l'eau.** Mesuré :
+  252 candidats sur 357 sortent de son disque, sa trame de 27×21 étant trop
+  grossière pour un rayon de 47 ; le meilleur candidat restant est mouillé sur
+  onze points de quarante. C'était déjà vrai avant cette livraison. C'est une
+  dette de TISSU — lui donner une trame plus fine, ou un rayon à sa taille — et
+  elle est NOMMÉE dans le témoin (`DETTE_SANS_ANNEAU`) pour qu'aucune autre ville
+  ne la rejoigne en silence.
+- **`tracesCirculation` passe de 199 à 283 ms au démarrage**, derrière le bouton
+  grisé (v258, borné à 45 s). Le poste est le parcours au bloc des côtés mouillés.
+  Non urgent, mesuré, déclaré.
+- **Le mailleur paie une fois par ville le choix de ses anneaux** — 16,4 ms au
+  pire (Seattle), contre 24 ms pour un morceau de ville. À remesurer si le nombre
+  de candidats augmente.
+- **Les six villes bâties à la main n'ont pas reçu les tissus.** Paris, Londres,
+  Nice, Lille, Washington, San Francisco ont leur plan relevé sur de vrais plans :
+  le tissu ne leur apporterait rien. Mais le cœur d'îlot, lui, leur manque —
+  elles sont bâties d'un bord à l'autre de leurs lots. Passe à part.
+- **Les ponts des villes engendrées n'ont ni garde-corps ajouré ni arche.** Le
+  tablier est plein, les parapets sont deux bandes de pierre, les piles des
+  colonnes tous les sept blocs. Ça se reconnaît comme un pont ; ça ne ressemble
+  pas encore au Mittlere Brücke. À juger en capture avec Max.
 ## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
 
 **Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »
