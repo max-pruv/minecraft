@@ -195,7 +195,19 @@ export class BaseNPC {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0 && !this.ecart) this.vel.y = 7.5;
+    // LE SAUT CONSOMME L'APPUI AU SOL, SINON LE PERSONNAGE ESCALADE LA FAÇADE.
+    // `onGround` ne se remet à faux que dans `sweep` sur une descente SANS
+    // collision — une montée (`delta > 0`) ne l'efface pas, et l'atterrissage
+    // qui le pose à vrai sort par un `return true` avant la ligne qui
+    // l'effacerait. Un personnage collé à un mur a donc `blockedX` vrai ET
+    // `onGround` vrai à chaque image : il se redonne son impulsion
+    // indéfiniment et remonte l'immeuble. Mesuré en v242 sur quarante-huit
+    // trajectoires aux angles de Midtown : quinze fautives, sommet à 34,11
+    // pour un sol à 33.
+    if ((blockedX || blockedZ) && this.onGround && speed > 0 && !this.ecart) {
+      this.vel.y = 7.5;
+      this.onGround = false;
+    }
 
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;
