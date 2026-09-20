@@ -1,5 +1,84 @@
 # Ce qui est en cours
 
+- [ ] **DEUX ROUGES DE `monte.js` SONT NEUFS SUR LA BRANCHE DE LA v282, ET
+  L'ATTRIBUTION RESTE À FAIRE.** Les deux portails ont tourné dans la même
+  configuration sur la même machine, ce qui donne la double mesure de la v195
+  sans rejeu :
+
+  | témoin | main (v281) | branche v282 |
+  | --- | --- | --- |
+  | l'écran ne se fige pas en arrivant | ❌ 40,0 % · cadence 3,4 | ❌ 34,4 % · 4,1 |
+  | une voiture arrêtée par un mur | ❌ `immobile 1` · vitesse **12,16** | ❌ `immobile 2` · vitesse **0** |
+  | les voitures ne se traversent plus | ❌ 42,4 % | **vert** |
+  | la téléportation ne compile plus de programmes | vert | ❌ `images: 28` (borne 30) |
+  | une voiture n'entre pas dans l'eau | vert | ❌ `d: 0,2` — elle n'a pas bougé |
+
+  Les deux premiers sont rouges des DEUX côtés — et le témoin du mur annonce
+  une vitesse CORRIGÉE chez nous (0 au lieu de 12,16) : il échoue sur
+  `immobile >= 4`, une borne qui compte des ÉCHANTILLONS de 250 ms à quatre
+  images par seconde. C'est « un minimum échantillonné est une propriété de la
+  cadence, pas du monde » (v279), et la grandeur se trompe dans les DEUX sens :
+  le témoin de l'eau atteint ses quatre relevés en cinq secondes alors que la
+  voiture accélérait encore (`d: 0,2` après 5,7 s). Ce qui ne dépend d'aucun
+  relevé intermédiaire, c'est la position d'ARRIVÉE, et ces deux témoins-là ne
+  la mesurent pas.
+
+  À faire, dans cet ordre : (1) rejouer `monte.js` SEULE sur la branche et sur
+  `origin/main`, jusqu'à voir la même DISTRIBUTION et non un vert (v269) ;
+  (2) reformuler les deux verdicts sur la position d'arrivée, bornés, la durée
+  entrant dans le message ; (3) la borne de garde de la téléportation
+  (`images > 30`) se pose à la MOITIÉ, pas à quatre-vingt-dix pour cent d'une
+  valeur relevée sur une machine qui respirait (v237, quatrième fois).
+
+- [ ] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Croisé
+  avec les anneaux, le pas de vingt-sept de `superilot` fait perdre un circuit
+  à 43 de ses 65 villes, et 46 n'en gardent qu'UN : deux grands rectangles ne
+  tiennent plus sous les vingt blocs de partage de la v211. Le pas est juste
+  sur le fond — un superîlot EST plus grand — et la contrainte aussi : ce
+  qu'elle mesure est la largeur d'un CARREFOUR (la chaussée, 5,6 blocs), pas la
+  taille de l'îlot, donc elle n'a pas à suivre le pas. La longueur de rue qui
+  porte un convoi ne bouge pourtant que d'un dixième de pour cent (159 133 →
+  158 974) : ce qui se perd, c'est la VARIÉTÉ des trajets dans ces
+  quarante-six villes. Piste non mesurée : une contrainte de partage exprimée
+  en FRACTION du périmètre de l'anneau plutôt qu'en blocs absolus.
+
+- [ ] **J'AI MODIFIÉ `src/` PENDANT QU'UN PORTAIL TOURNAIT (v282).** La règle de
+  survie du banc est écrite depuis toujours et je l'ai enfreinte en corrigeant
+  le jeu pendant que le portail jouait `washington.js` : la fin de ce portail a
+  mesuré un arbre à moitié changé, et il a fallu le tuer et le reprendre. Une
+  SONDE se lance pendant un portail ; une CORRECTION attend qu'il rende la
+  machine. (Et `node tout.js --suites <fichier>` n'existe pas : `tout.js` ne
+  connaît que `--depuis-zero`, `--voie`, `--long` et `--malgre-fumee`, donc le
+  drapeau est ignoré EN SILENCE et le portail entier se lance. Pour jouer une
+  suite seule, c'est `node carteMonde.js` — ou `npm run carte`, `monte`,
+  `reseau`… Un drapeau inventé ne rend pas d'erreur : on le vérifie dans
+  `tout.js` avant de croire qu'on a lancé une suite.)
+
+- [ ] **L'ARCADE EXISTE, MAIS ELLE NE SE PHOTOGRAPHIE PAS (v282).** Le témoin
+  compte les colonnes de lot où le bâtisseur ne pose rien à hauteur d'homme —
+  23,7 % à Bologne, 24,7 % à Turin, zéro à Zurich et à Copenhague — et c'est
+  vrai. Mais un COMPTE de colonnes dégagées ne dit rien de la CONTINUITÉ, et
+  c'est la continuité qui fait une galerie. Mesuré dans l'axe de la trame : la
+  plus longue file fait **cinq colonnes à Bologne, sept à Turin**, sur 1 026 et
+  1 402 colonnes dégagées. C'est la longueur d'un front de lot, ce qui est
+  cohérent — les lots sont séparés par une rue tous les vingt-trois blocs — mais
+  ce n'est pas les quarante kilomètres de portiques de la vraie Bologne, et sur
+  une capture au niveau de la rue on ne reconnaît pas une arcade. Max juge au
+  premier regard : tant que ce n'est pas une galerie, le journal doit dire « des
+  arcades », jamais « on marche sous les arcades de Bologne ».
+
+  Le remède est un choix de PLAN, pas un réglage : il faut que le portique
+  coure sur tout le front du lot ET que les fronts se rejoignent d'un lot à
+  l'autre. Piste non mesurée : poser le portique sur le rang entier du côté
+  rue, et rapprocher les lots des carrefours.
+
+  **Et la sonde s'est trompée d'axe avant de le voir** : mesurée le long des
+  axes du MONDE, la plus longue file valait trois colonnes partout, exactement —
+  le signe qu'on traverse en biais une bande de 1,15 bloc dans une trame TOURNÉE.
+  Une mesure de continuité se fait dans l'axe de la chose, jamais dans celui de
+  la grille de coordonnées.
+
+
 - **Personnages et véhicules v241 :** compléter la variété des anatomies et vêtements, les expressions faciales et la validation Safari/iPad physique. Les costumes historiques et plusieurs voitures du catalogue restent plus simples ; ne pas les présenter comme photoréalistes.
 
 - **Les avions ont repris une partie de leur rapport de vitesse (v229 →

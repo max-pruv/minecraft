@@ -693,6 +693,91 @@ transpose pas). Deux choses de plus :
   elle s'est vérifiée contre moi. **Un « innocent » ne vaut que dans les
   conditions où il a été mesuré, et c'est pour cela qu'on les écrit.**
 
+## Ce qu'une sonde de contenu doit faire comme le jeu (v282)
+
+Quatre défauts de ma propre passe de tissu, et **trois mesures fausses de ma part
+avant la bonne**. Les trois se reprennent.
+
+- **UNE SONDE QUI APPELLE UN BÂTISSEUR DOIT L'APPELER COMME LE JEU L'APPELLE.**
+  `world.js` n'appelle `batirColonneVillesMonde` que si `solVillesMonde` rend la
+  chaîne `'lot'` ; ma sonde l'appelait pour TOUTE la fenêtre, trottoirs et
+  chaussée comprises, et comptait donc des façades que le jeu n'écrit nulle part
+  — 1 460 vitrines pour mille colonnes de trottoir là où il y en a 142. C'est
+  « une sonde qui interroge la mauvaise liste ne peut rien voir » (v273), par
+  l'autre bout : **elle voit ce qui n'existe pas.** Avant de croire une sonde qui
+  appelle une fonction pure du monde, on relit la ligne de `world.js` qui
+  l'appelle, et on recopie sa GARDE autant que son appel.
+- **ET ELLE M'A FAIT ÉCRIRE UN REMÈDE QUI EST UN NON-RÉSULTAT.** Sur la foi de
+  cette sonde j'ai « rendu » son demi-espace à `bord`, en croyant que le
+  resserrement de la v282 avait pris 85 % des devantures du jeu. Mesuré sur les
+  seules colonnes de lot, les deux versions rendent le MÊME chiffre au dixième,
+  et c'est arithmétique : `dRue >= t.s` est vrai PAR CONSTRUCTION sur un lot,
+  donc la bande et le demi-espace sont le même ensemble. Écrit, mesuré, retiré —
+  et le non-résultat est écrit dans `villesmonde.js` pour que personne ne le
+  réécrive.
+- **UNE TOLÉRANCE EN BLOCS CONTRE UNE GRANDEUR QUI GRANDIT NE TIENT PAS — ET
+  CETTE FOIS C'ÉTAIT DANS LE CODE DU JEU, PAS DANS UN TÉMOIN.** La porte d'une
+  boutique se posait à moins de `0,28` bloc du milieu du front du lot, chiffre
+  relevé quand le pas de trame valait quinze ; les typologies le portent à 21, 23
+  et 27, le front de Rome passe de [2 ; 7,5] à [4,8 ; 11,5], et la même fenêtre
+  n'attrape plus rien : **zéro porte à Rome, à Tokyo et à Bologne.** Ce qui ne
+  dépend pas du pas, c'est l'ÉCARTEMENT DES COLONNES — elles sont à un bloc l'une
+  de l'autre, donc « la colonne la plus proche du milieu du front » est celle qui
+  en est à moins d'une DEMI-colonne. La règle des barres de témoin (v269 : « une
+  barre qui suit une grandeur se calcule, elle ne s'écrit pas ») vaut mot pour mot
+  pour les constantes du jeu.
+- **ET LE RANG NE SE REDIT PAS DANS LA RÈGLE QUI LE LIT.** `dRue < t.s + 1.0`
+  décrivait le premier rang de façade une seconde fois, à côté de `bord` qui le
+  décrit déjà. Les deux ont divergé le jour où le portique a fait reculer la
+  façade d'un cran : à Bologne et à Turin elles devenaient DISJOINTES et pas une
+  porte n'était possible. La pose étant déjà gardée par `commerce && bord`, la
+  règle ne garde que « au milieu du front ». Deux tables qui décrivent la même
+  chose finissent par diverger — la discipline de `postesAvion`, appliquée à un
+  rang de façade.
+- **UN ÉVÉNEMENT PAR FAÇADE NE SE COMPTE PAS DANS UNE FENÊTRE DE ±40 BLOCS.** Une
+  porte est UNE colonne par front de lot : à Tokyo il n'y en a aucune dans cette
+  fenêtre alors que la ville en porte 23,8 pour mille colonnes de trottoir. C'est
+  « une fraction se pose sur la VILLE, pas sur la fenêtre » (v274), troisième fois
+  pour ce témoin-ci après les comptes absolus de la v172 et de la v271 ; et comme
+  engendrer un disque entier sur le fil principal coûte des secondes, les quatre
+  postes se comptent par les FONCTIONS PURES (v202), sept dixièmes de seconde pour
+  les trois villes. **La fenêtre lue dans le monde chargé reste dans le
+  MESSAGE** : un écart entre ce que le bâtisseur écrit et ce que le monde contient
+  s'y voit alors tout seul (mesuré : 17 % au centre de Rome, ce que les monuments
+  réécrivent).
+- **ET LA BARRE DES ANNEAUX NE COMPTE PLUS DES ANNEAUX.** `anneaux > 600` était un
+  compte absolu relevé quand le pas valait dix-neuf partout : les typologies
+  changent le pas, donc le nombre de rues, donc le nombre d'anneaux — 628 → 602 —
+  pendant que la LONGUEUR DE RUE QUI PORTE UN CONVOI passe de 159 133 à 158 974
+  blocs, un dixième de pour cent. C'est cette longueur-là que l'enfant voit, et
+  comme la borne est une borne de GARDE elle se pose à la MOITIÉ (v237).
+- **UN DAMIER EST CARRÉ, ET UN CHIFFRE DE PLAN SE CROISE AVEC CE QU'IL COÛTE.**
+  `27×21` n'était pas un damier, et croisé avec les anneaux ce pas de 27 coûtait à
+  29 des 37 villes en damier un circuit — deux grands rectangles ne tiennent plus
+  sous les vingt blocs de partage de la v211. Le prix qui RESTE se déclare :
+  `superilot` garde son pas de 27, parce qu'un superîlot EST plus grand, et
+  quarante-six de ses soixante-cinq villes gardent un seul circuit au lieu de deux.
+- **ET J'AI MODIFIÉ `src/` PENDANT QU'UNE SUITE TOURNAIT.** La règle de survie du
+  banc est écrite depuis toujours ; je l'ai enfreinte en corrigeant le jeu pendant
+  que le portail jouait `washington.js`, ce qui a rendu la fin de ce portail sans
+  valeur — il a fallu le tuer et le reprendre. Une sonde se lance pendant un
+  portail ; une CORRECTION attend qu'il rende la machine.
+
+- **ET UNE SONDE QUI PLACE UNE CAMÉRA SE TROMPE DE PLACE AUTANT QU'UNE AUTRE.**
+  La planche de captures de cette livraison a été refaite CINQ fois, et chaque
+  fois pour la même raison : je cherchais une chose là où elle n'est pas.
+  `banc.js` chargé depuis le dépôt principal aurait photographié la carte de
+  `main` — il sert `RACINE`, le dossier au-dessus de lui. Le centre exact d'une
+  ville n'est pas une rue. « Tout ce qui n'est ni un lot ni un trottoir » n'est
+  pas la chaussée : `CHAUSSEE` est EXPORTÉE de `world.js` depuis la v248,
+  précisément pour ne pas être devinée. Le sol d'un portique n'est pas
+  `sommetColonne`, qui rend le premier bloc SOLIDE en descendant, donc
+  l'immeuble AU-DESSUS du passage — la caméra s'est retrouvée sur le toit, et
+  c'est le piège de la v267 une famille plus loin. Et une file de colonnes se
+  compte dans l'axe de la TRAME, pas dans celui du monde. **Quand une sonde doit
+  trouver un endroit, on lui donne la règle du TÉMOIN qui le définit déjà, et
+  l'on vérifie qu'elle a trouvé autre chose que le point de départ.**
+
 ## La matière claire (v276)
 
 Max, devant la proposition de design : « beaucoup plus moderne, beaucoup plus

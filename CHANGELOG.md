@@ -65,6 +65,33 @@ engendré et non dans une fiche ; aucune ville à trame ne perd toutes ses voitu
 Belgrade —, c'est-à-dire le point exact où la téléportation dépose l'enfant.
 Corrigé avant le portail : les onze ancres sont au sec, l'eau la plus proche de
 175 mètres (Cologne) à 900 (Séville).
+
+**Et quatre défauts de cette livraison même, trouvés par le portail et corrigés
+avant la fusion.** Ils étaient tous à moi, et la double mesure n'a demandé aucun
+rejeu : les deux portails ont tourné dans la même configuration sur la même
+machine. L'îlot le plus étroit tombait à **3,4 blocs** — plus un immeuble, une
+cloison — parce que le lacis organique avait un pas de treize ; le chiffre se
+dérive de la barre de cinq blocs de la v271 et vaut quinze. Les **portes de
+boutique avaient disparu** de Rome, de Tokyo et de Bologne : leur tolérance était
+écrite en blocs (`0,28`) contre un front de lot qui grandit avec le pas de trame,
+et ce qui ne dépend pas du pas, c'est l'écartement des colonnes — une
+demi-colonne. Le **damier n'était pas carré** (27 × 21), et ce pas de 27 coûtait
+un circuit à 29 des 37 villes en damier. Enfin le titre du journal faisait sept
+mots pour une borne de six.
+
+**Ce que ça change pour la famille** : une rue de Rome ou de Tokyo a de nouveau
+ses portes de boutique — mesuré sur la ville entière, 25,6 → **30,8** pour mille
+colonnes de trottoir à Rome et 14,7 → **23,8** à Tokyo, plus qu'avant la refonte
+— on marche sous les arcades de Bologne ET on entre dans ses boutiques, et aucun
+îlot n'est trop mince pour qu'un immeuble y tienne.
+
+**Le prix se déclare.** Le superîlot garde son pas de vingt-sept, parce qu'un
+superîlot EST plus grand qu'un îlot ordinaire : quarante-six de ses
+soixante-cinq villes gardent un seul circuit de voitures au lieu de deux. Sur le
+monde entier, la longueur de rue qui porte un convoi passe de 159 133 à 158 974
+blocs — un dixième de pour cent — et les villes servies de 261 à **262 sur
+262**, aucune aveugle depuis son centre.
+
 ## v281 — De vrais rails, et deux voies
 
 **Pourquoi.** Deux captures d'iPad de Max, à quatre secondes d'écart, et trois
