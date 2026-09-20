@@ -159,16 +159,32 @@ const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 // les deux empreintes de `plafond.js` ne bougent pas et l'invariant 1 tient sans
 // rien avoir à déclarer — même raison que la v271 et que la passe de rues de
 // Londres (v206).
+// ET CHAQUE TISSU A SA PLACE. `place: [demi-longueur, demi-largeur, décalage]`
+// en blocs, dans le repère de la TRAME — une place est toujours alignée sur les
+// rues qui la bordent. Le décalage est le nombre de pas de trame dont la place
+// s'écarte du centre géométrique ; il se tire de la position de la ville, donc
+// deux villes du même tissu ne l'ont pas au même endroit.
+//
+// Elle était un DISQUE DE 10,5 BLOCS DANS LES 269 VILLES, fontaine comprise.
+// C'est le premier chose qu'un enfant voit en arrivant par la carte, et c'était
+// rigoureusement la même partout — un copié-collé de plus, et le plus visible.
+// Une place mayor coloniale est un rectangle d'un îlot entier ; une piazza
+// d'arcades est longue et étroite ; une place de vieille ville est petite et
+// décalée ; un superîlot n'a pas de place, son cœur d'îlot EN EST une.
 export const TYPOS = {
   // L'Eixample de Cerdà : une grille rigide, des coins coupés, et l'illa creuse.
-  eixample:  { pu: 23, pv: 23, couronne: 3, courPavee: true },
+  // L'ILLA DE CERDÀ AVAIT UN JARDIN AU CŒUR, pas une cour pavée — c'était
+  // même tout son projet, et Barcelone les rouvre un par un depuis vingt ans.
+  // Le pavé les confondait en plus avec la place, qui touche les îlots
+  // voisins : mesuré, tout le centre de Barcelone rendait un seul aplat pavé.
+  eixample:  { pu: 23, pv: 23, couronne: 3, place: [13, 13, 1] },
   // L'îlot à périmètre de l'Europe continentale : Vienne, Berlin, Milan. Une
   // couronne d'immeubles et une cour plantée au milieu.
-  perimetre: { pu: 23, pv: 23, couronne: 3 },
+  perimetre: { pu: 23, pv: 23, couronne: 3, place: [11, 8, 1] },
   // Les villes moyennes : le même tissu, en plus petit.
-  faubourg:  { pu: 19, pv: 19, couronne: 2 },
+  faubourg:  { pu: 19, pv: 19, couronne: 2, place: [8, 7, 1] },
   // Les arcades : Bologne, Turin, Madrid. Cour PAVÉE, on y entre par un porche.
-  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true },
+  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true, place: [15, 6, 1] },
   // Le damier nord-américain : de grands îlots PLEINS et de larges rues. Une
   // cour n'y a rien à faire — c'est justement ce qui le distingue de l'Europe.
   // Le damier nord-américain : de grands îlots et de larges rues. Son espace
@@ -176,16 +192,16 @@ export const TYPOS = {
   // pavée au milieu de l'îlot, celle où débouchent les ruelles de livraison et
   // où se garent les voitures. Mesuré : 27 × 21 laisse 8,7 × 5,7 de demi-lot,
   // donc une couronne de 3 tient largement.
-  damier:    { pu: 27, pv: 21, couronne: 3, courPavee: true },
+  damier:    { pu: 27, pv: 21, couronne: 3, courPavee: true, place: [12, 9, 1] },
   // Les vieux tissus denses d'Asie de l'Est : de petites parcelles, pas de cour.
-  organique: { pu: 15, pv: 13, couronne: 0 },
+  organique: { pu: 15, pv: 13, couronne: 0, place: [7, 5, 2] },
   // Le centre à tours : superîlots, Séoul, Dubaï, Shanghai.
   // Le superîlot : des tours autour d'une ESPLANADE. C'était le tissu le plus
   // dense du jeu — Tokyo et Séoul à 98 % de disque bâti, PIRE qu'avant ma
   // première passe, parce qu'un îlot de 27 × 27 sans cœur évidé est un bloc
   // plein. Une couronne de 4 laisse une esplanade de neuf blocs de côté : c'est
   // le podium d'un vrai superîlot, et c'est ce qui manquait.
-  superilot: { pu: 27, pv: 27, couronne: 4, courPavee: true },
+  superilot: { pu: 27, pv: 27, couronne: 4, courPavee: true, place: [14, 14, 0] },
   // LA MÉDINA N'EST PAS UNE ENTRÉE DE CETTE TABLE, ET C'EST UNE CORRECTION.
   // Elle y figurait, vide — `Object.assign(t, {})` ne change rien — si bien que
   // les huit villes que j'avais nommées « médina » recevaient EXACTEMENT le
@@ -1866,17 +1882,47 @@ export function solVillesMonde(x, z) {
     const t = f.trame;
     if (t.sud && V > t.sud) return null;
 
-    // LA PLACE CENTRALE. On arrive en ville ICI, par la carte : une place
-    // pavée, dégagée, avec sa fontaine — plus jamais le nez dans un mur.
-    const dCentre = Math.hypot(u, v);
-    if (dCentre < 10.5) {
+    const co = Math.cos(t.ang), si = Math.sin(t.ang);
+    const a = u * co - v * si, b = u * si + v * co;
+
+    // LA PLACE. On arrive en ville ICI, par la carte : pavée, dégagée, avec sa
+    // fontaine — plus jamais le nez dans un mur. Sa FORME vient du tissu
+    // (`place`), et son décalage de la position de la ville : elle était un
+    // disque de 10,5 blocs, identique dans les 269, et c'est la première chose
+    // qu'un enfant voit en arrivant.
+    //
+    // ELLE CONTIENT TOUJOURS LE CENTRE GÉOMÉTRIQUE, et ce n'est pas un détail :
+    // c'est là que la téléportation dépose l'enfant. Le décalage est donc borné
+    // pour que le centre reste à l'intérieur avec quatre blocs de marge — une
+    // place déplacée trop loin rendrait le nez dans un mur, la panne même que
+    // la place centrale avait été écrite pour corriger.
+    const pl = t.place;
+    if (pl) {
+      const [lo2, la2, pasDecal] = pl;
+      // LA GRAINE SE CALCULE ICI, SUR LA POSITION DE LA VILLE. `graineDeVille`
+      // vit dans `vehicules.js`, qui tire three : ce module est lu par le
+      // mailleur du worker, et le premier `import 'three'` de son graphe le tue
+      // sans un mot (v251). Un hachage de deux entiers suffit, et il est pur.
+      const g = Math.abs(Math.imul(f.ancre.x | 0, 374761393)
+        ^ Math.imul(f.ancre.z | 0, 668265263)) >>> 0;
+      const dec = (n2, taille) => {
+        if (!pasDecal) return 0;
+        const d2 = ((n2 % (2 * pasDecal + 1)) - pasDecal) * (t.pu + t.pv) / 2;
+        return Math.max(-(taille - 4), Math.min(taille - 4, d2));
+      };
+      const ca = a - dec(g, lo2), cb = b - dec(g >> 3, la2);
+      if (Math.abs(ca) < lo2 && Math.abs(cb) < la2) {
+        const dF = Math.hypot(ca, cb);
+        if (f.fontaine && dF < 2.3) return EAU;
+        if (f.fontaine && dF < 3.3) return PIERRE;
+        return PAVE;
+      }
+    } else if (Math.hypot(u, v) < 10.5) {
+      const dCentre = Math.hypot(u, v);
       if (f.fontaine && dCentre < 2.3) return EAU;
       if (f.fontaine && dCentre < 3.3) return PIERRE;
       return PAVE;
     }
-
-    const co = Math.cos(t.ang), si = Math.sin(t.ang);
-    const a = u * co - v * si, b = u * si + v * co;
     // Les rues « à a constant » s'étendent le long du vecteur monde (si, co) :
     // elles sont nord-sud quand |co| domine. `t.net` accepte aussi les trames
     // tournées d'un quart de tour, où les axes s'échangent — d'où ce calcul,
