@@ -28,6 +28,74 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
+
+**Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »
+(v244), puis « les voitures passent les unes sur les autres » (v245). Les deux
+livraisons ont corrigé quelque chose de réel et laissé ceci, qui est la cause
+principale, et qu'aucun témoin ne pouvait voir parce que le témoin comptait la
+mauvaise grandeur.
+
+**LA MESURE.** Sonde à part, une seule page, un seul code, quatre fenêtres de
+trente secondes en ordre alterné (200 / 800 / 200 / 800 ms d'échantillonnage) au
+centre de Paris :
+
+| passage | pas | taux | enfoncement médian | pire | > 0,8 bloc | même sens |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 200 ms | 10,2 % | **0,11** | 0,96 | 2 / 32 | 15 |
+| 2 | 800 ms | 43,9 % | **1,90** | 2,26 | 68 / 82 | 71 |
+| 3 | 200 ms | 44,9 % | **1,15** | 2,26 | 295 / 408 | 326 |
+| 4 | 800 ms | 34,9 % | **2,25** | 2,26 | 44 / 58 | 44 |
+
+Deux choses s'y lisent, et la seconde est la panne.
+
+**D'ABORD, LE TÉMOIN NE MESURE RIEN.** « Les voitures ne se traversent plus »
+rend un COMPTE d'instants de chevauchement. Au pas identique (passages 1 et 3),
+il va de 10,2 à 44,9 % ; en tout, sur un seul code, de 0,9 à 50,6 % — et les cinq
+valeurs relevées sur les deux arbres (`main` 0,9 · 21,4 ; branche 32 · 39,5 ·
+48,5) tombent dedans. **Ce n'était jamais l'arbre, c'était la DURÉE de la
+session** : `main` était mesuré tôt, la branche après cent quarante autres
+témoins. Sa barre ne peut rien séparer. Il se reformule (voir plus bas).
+
+**ENSUITE, 2,26 BLOC EST LA LARGEUR EXACTE D'UNE VOITURE.** Un enfoncement de
+2,26 veut dire que les deux rectangles se recouvrent ENTIÈREMENT dans leur petite
+dimension : deux voitures au même point, empilées. Le médian passe de 0,11 (des
+frôlements, le bruit de fond d'un pas discret) à 2,25 : à la fin de la session,
+la moitié des chevauchements sont des superpositions complètes, et 326 sur 408
+sont dans le MÊME SENS.
+
+**LE MÉCANISME, lu dans `vehicules.js`.** `dElement(i) = distance − i × ecart −
+retard[i]`, et `retard[i]` grandit tant que `attend[i]` est vrai. Or `attend[i]`
+est posé par `cederLePassage` — un piéton, un feu, un autre convoi — et **rien ne
+dit à une voiture d'attendre celle qui la précède dans son propre convoi**. Quand
+la voiture de tête attend, sa suiveuse continue d'avancer, la rattrape et lui
+passe au travers ; il suffit que `retard[i−1] − retard[i]` atteigne `ecart`. Et
+cela s'ACCUMULE, parce que le retard ne se rembourse qu'à moitié vitesse
+(`pas × 0,5`) : c'est un état absorbant, la forme exacte des poissons de la v233
+et du flâneur de la v279 — entrée banale, pas de sortie.
+
+**LE REMÈDE, à mesurer avant de l'écrire.** Borner le retard d'une suiveuse par
+celui de celle qu'elle suit : garder `dElement(i−1) − dElement(i) ≥ mini`, donc
+`retard[i] ≥ retard[i−1] − ecart + mini`, avec `mini` la longueur d'une voiture
+plus une marge. Cela se pose là où le retard se met à jour, en une ligne — mais
+`mini` se MESURE, et l'effet sur la fluidité du convoi aussi (une file qui
+attend derrière sa tête ne doit pas s'arrêter tout entière pour toujours).
+
+**ET LE TÉMOIN SE REFORMULE SUR LA PROFONDEUR, PAS SUR UN COMPTE.** Un compte
+d'instants près d'un seuil qui vit à un dixième de bloc bascule au moindre
+souffle ; une PROFONDEUR est bornée par la géométrie, et les deux régimes sont
+séparés par deux ordres de grandeur — 0,1 bloc pour un frôlement, 2,26 pour une
+superposition. Le verdict devient « aucune paire ne s'enfonce de plus de X bloc »,
+et X se relève sur du code CORRIGÉ, pas sur celui-ci. La sonde est dans le
+brouillon (`cadence-chevauchements.cjs`) et calcule déjà l'enfoncement par le
+théorème des axes séparateurs.
+
+**Et la v279 n'y est pour rien** : son diff ne touche pas une ligne de
+`vehicules.js` (`src/montures.js`, `src/nouveautes.js`, `src/vie.js` seulement).
+Le mécanisme date de la v244. C'est ce qui autorise sa fusion, et c'est une preuve
+plus forte que « rouge identique sur `origin/main` » : l'instrument est démontré
+incapable de séparer quoi que ce soit.
+
 ## VINGT ROUGES MESURÉS SUR `origin/main`, DONC EN PRODUCTION
 
 Portail COMPLET rejoué sur `origin/main` (710ab76), quinze suites, 78 minutes.
