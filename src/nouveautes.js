@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 281,
+    titre: "Les trains ont de vrais rails",
+    puces: [
+      "Les rails dépassent, comme des vrais",
+      "Deux voies : une pour chaque sens",
+      "Les trains ne se traversent plus",
+    ],
+  },
+  {
     v: 280,
     titre: "Des pistes pour vraiment décoller",
     puces: [

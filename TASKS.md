@@ -28,6 +28,50 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+
+## LE PORTAIL DES RAILS (v281) : SEPT SUITES ROUGES, ET CE QU'ELLES SONT
+
+Huit suites vertes, sept rouges, `reseau.js` VERTE cette fois — elle en avait
+six au portail des pistes. Elle change de rouges d'un passage à l'autre, et
+c'est une raison de plus de rejouer seul des deux côtés plutôt que de comparer
+deux portails.
+
+| suite | rouge | ce que c'est |
+| --- | --- | --- |
+| `carteMonde.js` | 1 — les dix-huit gares | **À MOI**, corrigé : le témoin écrivait ses cotes. 18/18 après, vert seul |
+| `carte.js` | 💥 en ouvrant sa 4e page | **cause mesurée et corrigée** : la page laissée ouverte. ×3 plus vite |
+| `sauvegarde.js` | 2 — la copie d'avant le monde ×2, sur le NUAGE | vert seul des DEUX côtés → charge de portail |
+| `maj.js` | 1 — fond de carte pas prêt à la libération | dette déclarée de la v276 |
+| `washington.js` | 3 — le métro (une seule cause) | rouge de CHARGE déjà déclaré : vert DEUX FOIS rejoué seul, « 18 m en 6 s de jeu » |
+| `manhattan.js` | 💥 délai ligne 282 | intermittence mesurée trois fois sur `origin/main` (v269) |
+| `monte.js` | 3 (contre 10 sur main) | les sept fermés le sont par la v279. Voir plus bas |
+
+**ET `washington.js` PASSE DE CINQ ROUGES À TROIS** : ma correction du témoin de
+l'escalier (il constate l'avance, pas la descente) en a fermé deux. Les trois
+qui restent sont UNE seule cause — aucune rame à portée d'embarquement — et le
+champ `texte` du témoin ne peut PAS la distinguer de « rien à portée » :
+`majBoutonBord` écrit `${v ? v.emoji : '🚇'} Monter à bord`, et l'emoji par
+défaut d'un convoi de métro EST 🚇. Le texte est donc le même dans les deux cas.
+Ce qui tranche est `display`, posé à `none` seulement quand rien n'est là.
+J'ai d'abord lu ce message à l'envers — « le texte nomme le métro, donc la rame
+est venue » — et c'est « compter un motif n'est pas compter la chose » (v224),
+appliqué au champ de message d'un témoin.
+
+**LES TROIS QUI RESTENT DE `monte.js`.**
+
+- « les voitures ne se traversent plus » — 95 sur 224 paires (42,4 %). C'est le
+  TIRAGE déclaré en v277 : il varie de 0 à 53 sans qu'une ligne du jeu ait
+  bougé, et sa barre (45) tombe DANS son étendue. Mais **95 est presque le
+  double du pire jamais relevé**, et cela vaut d'être noté : c'est exactement la
+  panne que la correction du télescopage vise, avec un témoin qui mesure une
+  BORNE garantie par la géométrie au lieu d'un compte d'instants.
+- « l'écran ne se fige pas en arrivant sur une ville » — 40 % du temps au-delà
+  de 300 ms ici contre 43,1 % en référence : la même grandeur stable. La pire
+  image (6 083 contre 4 633) est par construction la statistique la moins
+  fiable (v276).
+- « une voiture arrêtée par un mur n'annonce plus de vitesse » — 12,16 contre le
+  mur, **identique au bit près** à la référence.
+
 ## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
 
 **Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »

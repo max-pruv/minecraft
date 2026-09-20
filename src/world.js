@@ -78,7 +78,7 @@ import {
 } from './manhattan.js';
 import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
-import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, pieceDeVoie } from './trains.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
 // le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
@@ -2064,15 +2064,21 @@ export class World {
           for (let wy = Math.max(0, Math.min(h, WATER_LEVEL) ); wy < y; wy++) {
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
           }
-          for (let wy = y + 1; wy <= y + 5 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+          for (let wy = y + 2; wy <= y + 7 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
           if (y >= 0 && y < HEIGHT) {
-            // Le motif se tire en coordonnées du MONDE : en coordonnées
-            // locales il se répéterait dans chaque morceau et sauterait au
-            // remaillage.
-            const traverse = (((wx + wz) % 2) + 2) % 2 === 0;
-            data[World.index(x, y, z)] = voie.d < 0.55
-              ? (traverse ? BLOCK.DARKPLANK : BLOCK.GRAVEL)
-              : (voie.d < 1.25 ? BLOCK.OBSIDIAN : BLOCK.GRAVEL);
+            // UN RAIL SE RECONNAÎT À SON RELIEF, PAS À SA COULEUR (v281).
+            // Max, capture d'iPad : « les rails ne sont pas des rails ». La
+            // section était PEINTE À PLAT — gravier, obsidienne, planche, tout
+            // à la même cote — et se lisait comme un damier au fond d'une
+            // tranchée. Le ballast et les traverses restent au sol ; les deux
+            // files de chaque voie montent d'un bloc, et ce sont elles qu'on
+            // voit de loin. La section est publiée par `trains.js`, elle ne se
+            // recopie pas ici : le train suit le même plan.
+            const piece = pieceDeVoie(voie.seg, wx, wz);
+            data[World.index(x, y, z)] = piece === 'traverse' ? BLOCK.DARKPLANK : BLOCK.GRAVEL;
+            if (piece === 'rail' && y + 1 < HEIGHT) {
+              data[World.index(x, y + 1, z)] = BLOCK.OBSIDIAN;
+            }
           }
           // LA VOIE A LE DERNIER MOT SUR SA COLONNE. Sans ce `continue`, une
           // ville engendrée traversée par la ligne rebâtissait par-dessus les
