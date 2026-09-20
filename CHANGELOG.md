@@ -41,6 +41,17 @@ traverses entre elles. La voie ferrée passe de trois blocs de large à neuf, et
 les quais des dix-huit gares reculent d'autant pour rester à côté des voies et
 non dessus.
 
+**Et le portail a nommé un témoin que cet élargissement rendait faux.** « Les
+dix-huit gares ont leur quai, leur auvent et leur bâtiment » est tombé à **zéro
+gare complète sur dix-huit** — sur un bâtisseur parfaitement juste, que son
+voisin déclarait bon au même instant (1 513 colonnes de quai, aucune sur une
+voie). Il ÉCRIVAIT ses cotes transversales — quai à 2,5 et 3 blocs de l'axe,
+bâtiment à 4,5 et 6 — relevées quand la voie faisait trois blocs de large. La
+voie doublée porte l'emprise à 4,5 et le quai à 4,7–7,7 : toutes les cotes du
+témoin étaient tombées dans le ballast. Les quatre cotes se publient désormais
+là où elles se calculent, et le témoin les DEMANDE. Deux tables qui décrivent la
+même gare finissent par diverger.
+
 **Ce qui le prouve.** Trois témoins neufs, rouges sur la version publiée. Les
 quatre files de rail n'ont pas un trou : zéro bloc manquant sur 12 240 attendus,
 contre 12 240 sur 12 240 avant. Deux rames ne s'approchent jamais à moins de

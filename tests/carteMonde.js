@@ -627,6 +627,13 @@ const VRAIES_KM = [
         bouts.push({ x: s.x0, z: s.z0, ux, uz, ville: s.de });
         bouts.push({ x: s.x1, z: s.z1, ux, uz, ville: s.vers });
       }
+      // LES COTES SE DEMANDENT, ELLES NE S'ÉCRIVENT PAS (v281). Elles étaient
+      // écrites ici — quai à 2,5 et 3 — et la voie doublée les a mises dans le
+      // ballast : le témoin accusait un bâtisseur juste.
+      const dedans = m2.QUAI_DEDANS, dehors = m2.QUAI_DEHORS, bord = m2.BATI_DEHORS;
+      if (!(dedans > 0 && dehors > dedans && bord > dehors)) return { absent: true };
+      const tQuai = [-(dehors - 0.3), -(dedans + 0.4), dedans + 0.4, dehors - 0.3];
+      const tBati = [dehors + 0.6, (dehors + bord) / 2, bord - 0.4];
       const out = [];
       for (const g of bouts) {
         // la cote des rails au droit de la gare
@@ -634,14 +641,14 @@ const VRAIES_KM = [
         const cote = v ? v.cote : Math.max(w.terrainHeight(Math.round(g.x), Math.round(g.z)), 30) + 1;
         let quai = 0, auvent = 0, bati = 0, praticable = 0;
         for (let dl = -6; dl <= 6; dl++) {
-          for (const dt of [-3, -2.5, 2.5, 3]) {
+          for (const dt of tQuai) {
             const x = Math.round(g.x + g.ux * dl + g.uz * dt);
             const z = Math.round(g.z + g.uz * dl - g.ux * dt);
             if (w.getBlock(x, cote + 1, z) === b.CITY_BLOCK.GRANITE) quai++;
             if (w.getBlock(x, cote + 5, z) === b.BLOCK.DARKPLANK) auvent++;
             if (w.getBlock(x, cote + 2, z) === 0 && w.getBlock(x, cote + 3, z) === 0) praticable++;
           }
-          for (const dt of [4.5, 5.5, 6]) {
+          for (const dt of tBati) {
             const x = Math.round(g.x + g.ux * dl + g.uz * dt);
             const z = Math.round(g.z + g.uz * dl - g.ux * dt);
             if (w.getBlock(x, cote + 2, z) !== 0) bati++;

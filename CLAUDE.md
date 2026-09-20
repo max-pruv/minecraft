@@ -3320,6 +3320,18 @@ leçons, et la première vaut pour tout ce qui se déplace sur un tracé.
   le piège des arbres de ville, qui laissaient la trame générique repasser
   derrière. Et le dégagement des arbres est passé de trois à quatre blocs : une
   couronne plantée à trois blocs de l'axe déborde encore sur le train.
+- **UN TÉMOIN QUI ÉCRIT UNE COTE DE GARE ACCUSE LE BÂTISSEUR À LA PREMIÈRE
+  VOIE QU'ON ÉLARGIT (v281).** « Les dix-huit gares ont leur quai, leur auvent
+  et leur bâtiment » écrivait ses cotes transversales — quai à 2,5 et 3,
+  bâtiment à 4,5 et 6 — relevées quand la voie faisait trois blocs. La voie
+  doublée porte `EMPRISE` à 4,5 et le quai à 4,7–7,7 : les cotes du témoin
+  étaient toutes DANS le ballast, et il a rendu **zéro gare complète sur
+  dix-huit** sur un bâtisseur juste, que son voisin déclarait bon au même
+  instant. `GARE_LONG`, `QUAI_DEDANS`, `QUAI_DEHORS` et `BATI_DEHORS` se
+  publient donc là où elles se calculent, et le témoin les demande. C'est « un
+  témoin qui porte une dimension de ville ne l'écrit pas, il la demande »
+  (v203, v271, v274, v279), appliqué à une GARE — et le signe qui l'a démonté
+  en une lecture est qu'un témoin VOISIN, qui interroge `gareEn`, était vert.
 - **Le convoi et l'ouvrage lisent le MÊME profil.** `traceSegment` ne calcule
   plus sa cote depuis le terrain : il demande le profil, comme `world.js`.
   Lus séparément, le train flotterait au-dessus des remblais et s'enfoncerait

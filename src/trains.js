@@ -264,14 +264,19 @@ export function voieEn(x, z) {
 // sol : c'est là qu'on marche. Le QUAI, un bloc au-dessus des rails comme un
 // vrai quai, de part et d'autre de la voie. L'AUVENT, quatre blocs plus haut,
 // porté par des piliers. Le BÂTIMENT, derrière le quai, avec sa porte.
-const GARE_LONG = 7;        // demi-longueur du quai, le long de la voie
+// CES QUATRE COTES SE PUBLIENT (v281). Le témoin des gares de `carteMonde.js`
+// écrivait les siennes — quai à 2,5 et 3, bâtiment à 4,5 et 6 — relevées quand
+// la voie faisait trois blocs de large. La voie doublée les a toutes mises DANS
+// le ballast : zéro gare complète sur dix-huit, sur un bâtisseur juste. Deux
+// tables qui décrivent la même gare finissent par diverger.
+export const GARE_LONG = 7;        // demi-longueur du quai, le long de la voie
 // LE QUAI RECULE AVEC LA VOIE (v281). Il commençait à 1,9 — « où la voie
 // finit » — quand la voie s'arrêtait à 1,6. La voie double allant jusqu'à
 // `EMPRISE`, un quai resté à 1,9 serait POSÉ SUR LES RAILS. Les trois cotes se
 // déduisent donc de l'emprise, et le jour où l'écartement change elles suivent.
-const QUAI_DEDANS = EMPRISE + 0.2;   // le quai commence où le ballast finit
-const QUAI_DEHORS = EMPRISE + 3.2;
-const BATI_DEHORS = EMPRISE + 6.5;
+export const QUAI_DEDANS = EMPRISE + 0.2;   // le quai commence où le ballast finit
+export const QUAI_DEHORS = EMPRISE + 3.2;
+export const BATI_DEHORS = EMPRISE + 6.5;
 
 // Les points de gare : les deux bouts de chaque segment. Deux segments d'une
 // même ligne qui partagent leur ville-pivot y posent la même gare, et c'est
