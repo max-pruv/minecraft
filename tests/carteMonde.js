@@ -2468,6 +2468,59 @@ const VRAIES_KM = [
     verifier('rien de solide ne dépasse sur une piste',
       degage.length === 0, `${degage.length} bloc(s) sur une piste — ${degage.slice(0, 4).join(' · ')}`);
 
+    // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
+    //
+    // La plate-forme va jusqu'à `r − 10` alors que `terrainHeight` ne vaut
+    // exactement `sol` que jusqu'à `r − 20` : entre les deux, on remblaie de
+    // `REMBLAI` blocs sous la dalle et l'on décaisse de `DECAISSE` au-dessus.
+    // Ces deux bornes sont des MESURES faites sur les dix-neuf aérodromes de
+    // l'époque (remblai 11 au pire à Delhi, décaissé 8 à Orly) — pas des
+    // constantes de confort. Un aérodrome neuf posé sur un relief plus accidenté
+    // livrerait une dalle en porte-à-faux au-dessus du vide, ou une colline en
+    // travers de la piste, et rien dans le code ne paraîtrait faux.
+    //
+    // Le témoin mesure donc la grandeur elle-même, sur la bande de piste — la
+    // seule qui sorte de `PLAT` — et il dit de combien il reste de marge.
+    const ouvrage = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS } = mod;
+      const w = window.__game.world;
+      const REMBLAI = mod.REMBLAI, DECAISSE = mod.DECAISSE;
+      if (REMBLAI === undefined) return { absent: true };
+      const fautes = []; let pireR = 0, pireD = 0;
+      for (const a of AEROPORTS) {
+        const RAYON = a.r - 10, PLAT = a.r - 20;
+        // La ou les bandes de piste de cet aérodrome, demandées au module.
+        let axes, demi;
+        if (a.profil === 'roissy') { axes = mod.PISTES_ROISSY || []; demi = mod.DEMI_PISTE_ROISSY || 4; }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z); demi = P.DEMI_PISTE;
+        } else { axes = []; demi = 4; }
+        for (const z0 of axes) {
+          for (let dz = z0 - demi - 2; dz <= z0 + demi + 2; dz++) {
+            const bord = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - dz * dz)));
+            const dedans = Math.floor(Math.sqrt(Math.max(0, PLAT * PLAT - dz * dz)));
+            for (const sens of [-1, 1]) {
+              for (let dx = dedans; dx <= bord; dx++) {
+                const h = w.terrainHeight(a.x + sens * dx, a.z + dz);
+                pireR = Math.max(pireR, a.sol - h);
+                pireD = Math.max(pireD, h - a.sol);
+                if (a.sol - h > REMBLAI) fautes.push(`${a.cle} remblai ${a.sol - h} > ${REMBLAI}`);
+                if (h - a.sol > DECAISSE) fautes.push(`${a.cle} décaissé ${h - a.sol} > ${DECAISSE}`);
+              }
+            }
+          }
+        }
+      }
+      return { fautes, pireR, pireD, REMBLAI, DECAISSE };
+    });
+    verifier('le remblai et la tranchée des pistes restent dans leurs bornes mesurées',
+      !ouvrage.absent && ouvrage.fautes.length === 0,
+      ouvrage.absent ? 'REMBLAI absent (code d\'avant la v280)'
+        : `pire remblai ${ouvrage.pireR}/${ouvrage.REMBLAI} · pire décaissé ${ouvrage.pireD}/${ouvrage.DECAISSE}`
+          + (ouvrage.fautes.length ? ` — ${ouvrage.fautes.slice(0, 3).join(' · ')}` : ''));
+
     // ET LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne un yaw
     // aléatoire à toute bête ; l'espèce étant `immobile`, un avion garé gardait
     // le sien pour toujours. On éprouve ce que l'enfant VOIT : deux appareils

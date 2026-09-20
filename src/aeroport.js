@@ -137,6 +137,12 @@ export function aeroportPres(x, z, portee = 140) {
 // pistes ne sont pas là. Un faux rouge ne se démonte pas.
 export const PISTES_ROISSY = [-64, -47, 47, 64];
 export const DEMI_PISTE_ROISSY = 4;
+// ET LA COTE DE SON AIRE AUSSI. Mon premier jet en avait DEUX : `STAND = 30`
+// dans le bâtisseur, et `dv: 33` dans les postes — la faute que ce fichier
+// reproche partout ailleurs, commise dans la même passe. Les deux ne se
+// contredisaient pas par chance (les mâts sont hors de la rangée en x) ; rien ne
+// l'obligeait. Une seule cote, lue par le bâtisseur ET par les postes.
+export const STAND_ROISSY = 33;
 
 export function buildAeroport(poser) {
   // Repère de travail : ici, y = -1 désigne le revêtement au sol, y = 0 le
@@ -208,7 +214,7 @@ export function buildAeroport(poser) {
   // du satellite (22) plus la demi-envergure du plus large (8), la voie de
   // service suit, puis la piste et sa bande.
   const HALL_INT = 8, HALL_EXT = 18;   // les halls de l'aérogare 2
-  const STAND = 30;                    // axe des avions au contact, ailes 22..38
+  const STAND = STAND_ROISSY;          // axe des avions au contact, ailes 25..40
   const TARMAC = 40;                   // limite du tarmac
   const TAXI_A = 41;                   // voie de service
   const PISTE_A = 47;                  // première piste du doublet
@@ -428,10 +434,16 @@ export function buildAeroport(poser) {
   // Les passerelles, elles, sont de l'architecture d'aérogare et pas du faux
   // avion : une porte d'embarquement libre en porte une, dans tous les
   // aéroports du monde.
-  passerelle(18, -HALL_EXT, 20, -STAND + 2);
-  passerelle(40, -HALL_EXT, 42, -STAND + 2);
-  passerelle(18, HALL_EXT, 20, STAND - 2);
-  passerelle(40, HALL_EXT, 42, STAND - 2);
+  //
+  // ET LEUR PORTÉE NE SUIT PLUS L'AIRE. Cotées à `STAND − 2`, elles suivaient
+  // les appareils quand ceux-ci ont reculé — et la sonde a montré qu'elles
+  // venaient alors se poser DANS l'emprise du chasseur. Une passerelle sert la
+  // PORTE d'un hall : sa longueur est celle d'une passerelle, six blocs.
+  const ATTEINTE = HALL_EXT + 6;
+  passerelle(18, -HALL_EXT, 20, -ATTEINTE);
+  passerelle(40, -HALL_EXT, 42, -ATTEINTE);
+  passerelle(18, HALL_EXT, 20, ATTEINTE);
+  passerelle(40, HALL_EXT, 42, ATTEINTE);
 
   // --- abords ---------------------------------------------------------------
   // parking étagé, à l'ouest de l'aérogare 1
@@ -453,7 +465,7 @@ export function buildAeroport(poser) {
   for (let y = 0; y <= 5; y++) set(-30, y, -HALL_EXT - 3, GRIS);
   for (let dz = 1; dz <= 4; dz++) set(-30, 5, -HALL_EXT - 3 - dz, dz % 2 ? ROUGE : BLANC);
   for (const x of [-62, -46, 46, 62]) {
-    for (const z of [-STAND - 9, STAND + 9]) {
+    for (const z of [-TARMAC + 1, TARMAC - 1]) {
       for (let y = 0; y <= 7; y++) set(x, y, z, GRIS);
       set(x, 8, z, uni(2));
     }
@@ -496,10 +508,20 @@ export function buildAeroport(poser) {
 // Écart entre `terrainHeight` et le `sol` déclaré, sur le disque de `r − 10`,
 // sur les DIX-NEUF aérodromes : remblai au pire ONZE blocs (Delhi), décaissé au
 // pire HUIT (Orly) ; trois à cinq en général. Douze et neuf couvrent donc tout
-// le monde avec un bloc de marge. Un aérodrome neuf qui sortirait de ces bornes
-// livrerait une dalle en porte-à-faux ou une colline en travers de la piste :
-// c'est un témoin qui le dit, pas une relecture.
-const REMBLAI = 12, DECAISSE = 9;
+// le monde avec un bloc de marge.
+//
+// ET LA BORNE SE PREND SUR LE DISQUE, PAS SUR LES BANDES. Sur les bandes de
+// piste réellement nivelées, le pire des dix-neuf n'est que de CINQ blocs des
+// deux côtés — on pourrait donc descendre à huit et sept, et gagner un tiers des
+// poses. On ne le fait pas : le jour où une piste bouge ou qu'on élargit la zone
+// nivelée, c'est le chiffre du DISQUE qui s'appliquera, et une borne réglée au
+// ras de la mesure du moment est une borne qui casse à la livraison suivante
+// (leçon des bornes de garde de `monte.js`, v237). Le témoin publie la marge
+// réelle, ce qui rend le choix vérifiable au lieu de l'obliger à être cru.
+// Un aérodrome neuf qui sortirait de ces bornes livrerait une dalle en
+// porte-à-faux ou une colline en travers de la piste : c'est un témoin qui le
+// dit, pas une relecture.
+export const REMBLAI = 12, DECAISSE = 9;
 
 // QUELS APPAREILS UN AÉRODROME GARE — déclaré ici, lu par le plan ET par les
 // postes. Sur une base militaire, trois chasseurs : c'est de là qu'ils partent.
@@ -899,9 +921,9 @@ const CAP_LE_LONG_DE_X = Math.PI / 2;
 // pile dans l'envergure, et bloquaient les TROIS postes à la fois ; et la
 // manche à air, posée de la même façon, se retrouvait au bord de la piste.
 const POSTES_ROISSY = [
-  { espece: 'avionligne', du: -19, dv: 33 },   // aile à 1 bloc de la voie, 4 du bord de piste
-  { espece: 'concorde', du: 3, dv: 33 },
-  { espece: 'chasseur', du: 22, dv: 33 },
+  { espece: 'avionligne', du: -19, dv: STAND_ROISSY },   // aile à 1 bloc de la voie, 4 du bord
+  { espece: 'concorde', du: 3, dv: STAND_ROISSY },
+  { espece: 'chasseur', du: 22, dv: STAND_ROISSY },
 ];
 
 export function postesAvion(profil, rayon = 68) {
