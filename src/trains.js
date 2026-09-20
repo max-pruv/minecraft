@@ -114,6 +114,82 @@ function dSegment(s, x, z) {
 // ET L'ORDRE COMPTE : borner l'écart au terrain APRÈS le lissage détruit ce
 // qu'on vient d'obtenir. Le premier essai finissait par ce rabotage et rendait
 // des marches de vingt-et-un blocs.
+// --- LA SECTION D'UNE VOIE DOUBLE (v281) -------------------------------------
+//
+// Max, deux captures d'iPad : « les rails ne sont pas des rails, les trains se
+// rentrent dedans, il faut 2 rails pour aller et retour ». Trois défauts, et
+// les trois se mesurent.
+//
+// LES TRAINS SE TRAVERSENT, ET CE N'EST PAS UNE INTERMITTENCE. `traceSegment`
+// faisait l'aller puis le RETOUR SUR LES MÊMES POINTS : le tracé est une
+// polyligne repliée sur elle-même, donc deux rames placées en `s` et en `L − s`
+// sont au MÊME endroit du monde, et cela arrive deux fois par tour pour chaque
+// paire. Simulé tour par tour sur les neuf segments : distance minimale entre
+// deux rames ZÉRO partout, et 135 relevés de deux rames à moins de quatre
+// blocs. Ce n'est pas un défaut de collision, c'est un défaut de PLAN.
+//
+// LES RAILS N'EN ÉTAIENT PAS PARCE QU'ILS ÉTAIENT PEINTS À PLAT. La section
+// valait gravier | obsidienne | planche-gravier | obsidienne | gravier, tout à
+// la même cote : vu de l'iPad, un damier au fond d'une tranchée. Un rail se
+// reconnaît à son RELIEF — deux files continues qui dépassent du ballast — et
+// pas à sa couleur. Et il ne peut pas se dessiner dans une TUILE : les lignes
+// sont des segments obliques entre deux villes, une tuile n'a pas
+// d'orientation, et des rails dessinés le long d'un axe seraient faux sur toute
+// ligne en biais. C'est donc de la géométrie, à un bloc au-dessus des
+// traverses.
+//
+// LES COTES SONT DES RÉSULTATS. Deux voies écartées de `2 × ENTRAXE`, chacune
+// avec ses deux rails à `DEMI_RAIL` de son axe, plus une banquette de ballast :
+// l'emprise fait `EMPRISE` de demi-largeur. La voie ferrée passe de trois blocs
+// de large à neuf, ce qui est le rapport d'une vraie double voie.
+export const ENTRAXE = 2;        // du milieu de la ligne à l'axe de chaque voie
+export const DEMI_RAIL = 1;      // de l'axe d'une voie à chacun de ses rails
+export const EMPRISE = 4.5;      // demi-largeur de la plate-forme ferroviaire
+
+// LA PIÈCE DE VOIE SOUS UNE COLONNE — publiée ici, lue par `world.js` qui la
+// pose et par les témoins qui la mesurent. Deux tables qui décrivent la même
+// section finiraient par diverger, et le train roulerait à côté de ses rails.
+//
+// `d` est la distance à l'axe de la LIGNE ; `c` celle à l'axe de la voie la
+// plus proche. Le rail se prend sur l'ARRONDI et non sur une bande : sur une
+// ligne oblique, une bande de largeur fixe rend une file tantôt épaisse tantôt
+// trouée, alors que l'arrondi donne une chaîne d'un bloc, continue en
+// diagonale — ce qu'on lit comme un rail.
+export function pieceDeVoie(s, x, z) {
+  const lx = s.x1 - s.x0, lz = s.z1 - s.z0, ll = Math.hypot(lx, lz) || 1;
+  const ux = lx / ll, uz = lz / ll, nx = -uz, nz = ux;
+  const ax = x - s.x0, az = z - s.z0;
+  const d = ax * nx + az * nz;                 // l'écart SIGNÉ à l'axe de la ligne
+  if (Math.abs(d) > EMPRISE) return null;
+  // UNE FILE DE RAIL SE RASTÉRISE, ELLE NE SE SEUILLE PAS. Mon premier jet
+  // classait « rail » toute colonne dont l'écart tombait dans une bande d'un
+  // bloc autour de l'offset. Sur une ligne oblique, une bande de largeur fixe
+  // rend tantôt deux colonnes, tantôt zéro : mesuré, 229 pas sur 2 700 où une
+  // voie n'avait pas ses deux files, et cinq colonnes de rail en moyenne là où
+  // il en faut quatre. Une droite se trace sur une grille en parcourant son
+  // AXE DOMINANT et en arrondissant l'autre coordonnée — une colonne par pas,
+  // chaîne continue en diagonale. C'est la seule façon d'obtenir une file.
+  const surLaFile = (o) => {
+    if (Math.abs(ux) >= Math.abs(uz)) {
+      const t = (x - s.x0 - o * nx) / ux;
+      return Math.round(s.z0 + uz * t + o * nz) === z;
+    }
+    const t = (z - s.z0 - o * nz) / uz;
+    return Math.round(s.x0 + ux * t + o * nx) === x;
+  };
+  for (const o of [-ENTRAXE - DEMI_RAIL, -ENTRAXE + DEMI_RAIL,
+    ENTRAXE - DEMI_RAIL, ENTRAXE + DEMI_RAIL]) {
+    if (surLaFile(o)) return 'rail';
+  }
+  // Entre les deux files d'une voie : les traverses, une case sur deux, tirées
+  // en coordonnées du MONDE — en coordonnées locales le motif se répéterait
+  // dans chaque morceau et sauterait au remaillage.
+  if (Math.abs(Math.abs(d) - ENTRAXE) < DEMI_RAIL) {
+    return (((x + z) % 2) + 2) % 2 === 0 ? 'traverse' : 'ballast';
+  }
+  return 'ballast';
+}
+
 const PENTE = 1 / 3;        // un tiers de bloc par bloc, comme le métro de DC
 
 // Le monde donne sa hauteur de terrain : `trains.js` ne la connaît pas, et le
@@ -167,12 +243,12 @@ export function voieEn(x, z) {
   let best = null;
   for (const s of pres(x, z)) {
     const d = dSegment(s, x, z);
-    if (d >= 1.6 || (best && d >= best.d)) continue;
+    if (d >= EMPRISE || (best && d >= best.d)) continue;
     const p = profilDe(s);
     if (!p) continue;
     const t = tSegment(s, x, z) * (p.length - 1);
     const k = Math.min(p.length - 2, Math.floor(t));
-    best = { d, cote: Math.round(p[k] + (p[k + 1] - p[k]) * (t - k)) };
+    best = { d, seg: s, cote: Math.round(p[k] + (p[k + 1] - p[k]) * (t - k)) };
   }
   return best;
 }
@@ -189,9 +265,13 @@ export function voieEn(x, z) {
 // vrai quai, de part et d'autre de la voie. L'AUVENT, quatre blocs plus haut,
 // porté par des piliers. Le BÂTIMENT, derrière le quai, avec sa porte.
 const GARE_LONG = 7;        // demi-longueur du quai, le long de la voie
-const QUAI_DEDANS = 1.9;    // le quai commence où la voie finit
-const QUAI_DEHORS = 3.4;
-const BATI_DEHORS = 7;
+// LE QUAI RECULE AVEC LA VOIE (v281). Il commençait à 1,9 — « où la voie
+// finit » — quand la voie s'arrêtait à 1,6. La voie double allant jusqu'à
+// `EMPRISE`, un quai resté à 1,9 serait POSÉ SUR LES RAILS. Les trois cotes se
+// déduisent donc de l'emprise, et le jour où l'écartement change elles suivent.
+const QUAI_DEDANS = EMPRISE + 0.2;   // le quai commence où le ballast finit
+const QUAI_DEHORS = EMPRISE + 3.2;
+const BATI_DEHORS = EMPRISE + 6.5;
 
 // Les points de gare : les deux bouts de chaque segment. Deux segments d'une
 // même ligne qui partagent leur ville-pivot y posent la même gare, et c'est
@@ -238,7 +318,7 @@ export function gareEn(x, z) {
 // À moins d'un bloc et demi d'une voie ? C'est le ballast (et la carte le
 // dessine) ; à moins de trois, plus un arbre ne pousse — une voie dégagée.
 export function surLaVoie(x, z) {
-  for (const s of pres(x, z)) if (dSegment(s, x, z) < 1.6) return true;
+  for (const s of pres(x, z)) if (dSegment(s, x, z) < EMPRISE) return true;
   return false;
 }
 
@@ -247,7 +327,10 @@ export function surLaVoie(x, z) {
 // sur six des neuf lignes. On dégage donc la largeur de la voie PLUS celle
 // d'une couronne.
 export function presDeLaVoie(x, z) {
-  for (const s of pres(x, z)) if (dSegment(s, x, z) < 4) return true;
+  // L'emprise PLUS la couronne d'un arbre, qui déborde d'un bloc de son tronc.
+  // Le chiffre se déduit de l'emprise, il ne se réécrit pas : c'est lui qui
+  // était resté à quatre quand la voie faisait trois blocs de large.
+  for (const s of pres(x, z)) if (dSegment(s, x, z) < EMPRISE + 2.5) return true;
   return false;
 }
 
@@ -257,10 +340,19 @@ export function presDeLaVoie(x, z) {
 export function traceSegment(s, solDe, niveauEau) {
   const n = Math.max(2, Math.round(s.longueur / PAS));
   const p = profilDe(s);
+  // CHACUN SA VOIE (v281). L'aller se décale d'`ENTRAXE` à DROITE de son sens
+  // de marche, le retour d'autant à droite du SIEN — qui est l'autre bord de la
+  // ligne. Les deux jambes ne partagent donc plus un seul point, et deux rames
+  // qui se croisent passent côte à côte au lieu de se traverser. C'est la règle
+  // de la conduite à droite des voitures (v271), appliquée au rail : pour une
+  // direction (fx, fz), la droite vaut (−fz, fx).
+  const lx = s.x1 - s.x0, lz = s.z1 - s.z0;
+  const ll = Math.hypot(lx, lz) || 1;
+  const dx = (-lz / ll) * ENTRAXE, dz = (lx / ll) * ENTRAXE;
   const alle = [];
   for (let k = 0; k <= n; k++) {
     const t = k / n;
-    const x = s.x0 + (s.x1 - s.x0) * t, z = s.z0 + (s.z1 - s.z0) * t;
+    const x = s.x0 + (s.x1 - s.x0) * t + dx, z = s.z0 + (s.z1 - s.z0) * t + dz;
     // LE TRAIN ROULE SUR SES RAILS, pas sur le terrain. C'est le même profil
     // que `world.js` pose : lu ailleurs, le convoi flotterait au-dessus des
     // remblais et s'enfoncerait dans les tranchées.
@@ -268,13 +360,17 @@ export function traceSegment(s, solDe, niveauEau) {
     if (p) {
       const q = t * (p.length - 1);
       const j = Math.min(p.length - 2, Math.floor(q));
-      y = Math.round(p[j] + (p[j + 1] - p[j]) * (q - j)) + 1.05;
+      y = Math.round(p[j] + (p[j + 1] - p[j]) * (q - j)) + 2.05;
     } else {
-      y = Math.max(solDe(x, z), niveauEau) + 1.05;
+      y = Math.max(solDe(x, z), niveauEau) + 2.05;
     }
     alle.push({ x, y, z });
   }
-  const retour = alle.slice(1, -1).reverse();
+  // Le retour longe l'AUTRE bord : on reprend les points de l'aller et on les
+  // décale de deux fois l'entraxe dans l'autre sens — même profil, même cote,
+  // voie voisine.
+  const retour = alle.slice(1, -1).reverse()
+    .map((q) => ({ x: q.x - 2 * dx, y: q.y, z: q.z - 2 * dz }));
   const pts = [...alle, ...retour];
   // les deux gares : la tête marque l'arrêt à chaque bout, dans chaque sens
   return { pts, arretsIndex: [0, alle.length - 1] };

@@ -442,10 +442,24 @@ const VRAIES_KM = [
           pas++;
           if (prec !== null && Math.abs(v.cote - prec) > marche) marche = Math.abs(v.cote - prec);
           prec = v.cote;
+          // LE TÉMOIN DEMANDE LA COTE DU RAIL, IL NE L'ÉCRIT PAS (v281). Il
+          // cherchait l'obsidienne À LA COTE DU BALLAST, ce qui était juste
+          // tant que la voie était peinte à plat. Les files dépassent
+          // maintenant d'un bloc : cherchée au seul niveau du sol, elle ne se
+          // trouve plus, et ce témoin accusait la correction qu'il garde. On
+          // regarde donc les DEUX niveaux — c'est ce qui lui permet de
+          // mesurer « il y a des rails » sur les deux arbres, au lieu de
+          // mesurer la version du code.
           for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            if (w.getBlock(x + dx, v.cote, z + dz) === b.BLOCK.OBSIDIAN) { avecRail++; break; }
+            const id = w.getBlock(x + dx, v.cote, z + dz);
+            const dessus = w.getBlock(x + dx, v.cote + 1, z + dz);
+            if (id === b.BLOCK.OBSIDIAN || dessus === b.BLOCK.OBSIDIAN) { avecRail++; break; }
           }
-          if (dur(w.getBlock(x, v.cote + 1, z)) || dur(w.getBlock(x, v.cote + 2, z))) dedans++;
+          // Et le gabarit du train commence AU-DESSUS des files : sur le code
+          // neuf, le rail occupe `cote + 1` et il serait compté comme un
+          // obstacle sur sa propre voie.
+          const plancher = v.cote + (m2.ENTRAXE ? 2 : 1);
+          if (dur(w.getBlock(x, plancher, z)) || dur(w.getBlock(x, plancher + 1, z))) dedans++;
           if (w.terrainHeight(x, z) < 30) viaduc++;
         }
       }
@@ -461,6 +475,134 @@ const VRAIES_KM = [
     verifier('et rien de solide ne barre la route du train',
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
+
+    // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
+    //
+    // Max, deux captures d'iPad : « les rails ne sont pas des rails, les trains
+    // se rentrent dedans, il faut 2 rails pour aller et retour ». Trois défauts,
+    // trois témoins, et les trois se mesurent sur les fonctions PURES du module
+    // et sur les blocs du monde — sans avoir besoin d'aller sur une voie.
+    //
+    // 1. UNE FILE DE RAIL SE PARCOURT, ELLE NE SE COUPE PAS. Mon premier relevé
+    // balayait la perpendiculaire à pas fixe et rendait « 229 trous sur 2 700 »
+    // sur un code sain : sur une ligne oblique, un balayage perpendiculaire
+    // RATE des colonnes que la rastérisation a bien posées. On suit donc chaque
+    // file le long de son axe dominant, une colonne par pas, et l'on demande au
+    // monde si le rail y est. C'est ce que le rastériseur promet, et rien
+    // d'autre. Sur `origin/main` : 12 240 manquants sur 12 240 — il n'y a aucun
+    // bloc au-dessus du ballast, la voie est peinte à plat.
+    const files = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      if (!T.ENTRAXE) return { absent: true };
+      const OFFSETS = [-T.ENTRAXE - T.DEMI_RAIL, -T.ENTRAXE + T.DEMI_RAIL,
+        T.ENTRAXE - T.DEMI_RAIL, T.ENTRAXE + T.DEMI_RAIL];
+      let manque = 0, pas = 0, pireTrou = 0;
+      for (const seg of T.segmentsDeTrain()) {
+        const lx = seg.x1 - seg.x0, lz = seg.z1 - seg.z0, ll = Math.hypot(lx, lz);
+        const ux = lx / ll, uz = lz / ll, nx = -uz, nz = ux;
+        const horiz = Math.abs(ux) >= Math.abs(uz);
+        let trou = 0;
+        for (const o of OFFSETS) {
+          for (let k = 60; k < Math.min(ll - 60, 260); k++) {
+            let x, z;
+            if (horiz) {
+              x = Math.round(seg.x0 + ux * k + o * nx);
+              const t = (x - seg.x0 - o * nx) / ux;
+              z = Math.round(seg.z0 + uz * t + o * nz);
+            } else {
+              z = Math.round(seg.z0 + uz * k + o * nz);
+              const t = (z - seg.z0 - o * nz) / uz;
+              x = Math.round(seg.x0 + ux * t + o * nx);
+            }
+            const v = T.voieEn(x, z);
+            pas++;
+            if (!v || w.getBlock(x, v.cote + 1, z) !== BLOCK.OBSIDIAN) {
+              manque++; trou++; pireTrou = Math.max(pireTrou, trou);
+            } else trou = 0;
+          }
+        }
+      }
+      return { manque, pas, pireTrou };
+    });
+    verifier('les quatre files de rail dépassent du ballast, sans un trou',
+      !files.absent && files.pas > 4000 && files.manque === 0,
+      files.absent ? 'la voie double n\'existe pas (code d\'avant la v281)'
+        : `${files.manque} bloc(s) manquant(s) sur ${files.pas} · plus long trou ${files.pireTrou}`);
+
+    // 2. DEUX RAMES NE SE TRAVERSENT PLUS. `traceSegment` faisait l'aller puis
+    // le RETOUR SUR LES MÊMES POINTS : deux rames placées en `s` et en `L − s`
+    // sont alors au même endroit du monde, deux fois par tour, pour chaque
+    // paire. Ce n'est pas une intermittence, c'est un défaut de PLAN — et c'est
+    // pour cela qu'on le mesure en SIMULANT le tour au lieu d'observer une
+    // partie : la situation est certaine, on n'a pas à l'attendre.
+    //
+    // Sur `origin/main` : distance minimale ZÉRO sur les neuf segments, et 135
+    // relevés de deux rames à moins de quatre blocs.
+    const croisement = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      const w = window.__game.world;
+      const EAU = 30, vitesse = 14, pause = 4, ATTENTE_QUAI = 30;
+      let mini = 1e9, serres = 0, n = 0;
+      for (const seg of T.segmentsDeTrain()) {
+        const t = T.traceSegment(seg, (x, z) => w.terrainHeight(x, z), EAU);
+        const pts = t.pts; let L = 0; const cum = [0];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          L += Math.hypot(b.x - a.x, b.z - a.z); cum.push(L);
+        }
+        const tour = L / vitesse + t.arretsIndex.length * pause;
+        const rames = Math.max(2, Math.ceil(tour / ATTENTE_QUAI));
+        const posEn = (s) => {
+          s = ((s % L) + L) % L;
+          let i = 0; while (i < cum.length - 2 && cum[i + 1] < s) i++;
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          const f = (s - cum[i]) / Math.max(1e-6, cum[i + 1] - cum[i]);
+          return { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f };
+        };
+        const N = Math.round(L / vitesse);
+        for (let k = 0; k < N; k++) {
+          const p = [];
+          for (let r = 0; r < rames; r++) p.push(posEn((k * vitesse) % L + (r * L) / rames));
+          for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) {
+            const d = Math.hypot(p[i].x - p[j].x, p[i].z - p[j].z);
+            mini = Math.min(mini, d); n++;
+            if (d < 4) serres++;
+          }
+        }
+      }
+      return { mini: +mini.toFixed(2), serres, n };
+    });
+    verifier('deux rames se croisent côte à côte au lieu de se traverser',
+      croisement.n > 1000 && croisement.serres === 0 && croisement.mini >= 3.9,
+      `distance minimale ${croisement.mini} bloc(s) · ${croisement.serres} relevés serrés sur ${croisement.n}`);
+
+    // 3. ET LE QUAI N'EST PAS POSÉ SUR LES RAILS. Il commençait « où la voie
+    // finit », à 1,9 bloc de l'axe — juste, tant que la voie s'arrêtait à 1,6.
+    // La voie double allant jusqu'à `EMPRISE`, une cote restée en dur aurait
+    // bâti le quai PAR-DESSUS une des deux voies. Les deux fonctions sont
+    // pures : on leur demande, colonne par colonne, si elles se contredisent.
+    const quais = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      let colonnes = 0, surVoie = 0, sans = 0;
+      for (const g of T.garesDeTrain()) {
+        let n = 0;
+        for (let dx = -18; dx <= 18; dx++) for (let dz = -18; dz <= 18; dz++) {
+          const x = Math.round(g.x) + dx, z = Math.round(g.z) + dz;
+          const ga = T.gareEn(x, z);
+          if (!ga || ga.quoi !== 'quai') continue;
+          n++;
+          if (T.voieEn(x, z)) surVoie++;
+        }
+        colonnes += n;
+        if (!n) sans++;
+      }
+      return { colonnes, surVoie, sans, gares: T.garesDeTrain().length };
+    });
+    verifier('le quai de chaque gare est à côté des voies, jamais dessus',
+      quais.colonnes > 500 && quais.surVoie === 0 && quais.sans === 0,
+      `${quais.gares} gares · ${quais.colonnes} colonnes de quai · ${quais.surVoie} sur la voie · ${quais.sans} sans quai`);
 
     // CHAQUE BOUT DE LIGNE A SA GARE (v214) ----------------------------------
     //
