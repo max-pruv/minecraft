@@ -161,23 +161,38 @@ const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 // Londres (v206).
 export const TYPOS = {
   // L'Eixample de Cerdà : une grille rigide, des coins coupés, et l'illa creuse.
-  eixample:  { pu: 23, pv: 23, cour: 3, courPavee: true },
+  eixample:  { pu: 23, pv: 23, couronne: 3, courPavee: true },
   // L'îlot à périmètre de l'Europe continentale : Vienne, Berlin, Milan. Une
   // couronne d'immeubles et une cour plantée au milieu.
-  perimetre: { pu: 23, pv: 23, cour: 3 },
+  perimetre: { pu: 23, pv: 23, couronne: 3 },
   // Les villes moyennes : le même tissu, en plus petit.
-  faubourg:  { pu: 19, pv: 19, cour: 2 },
+  faubourg:  { pu: 19, pv: 19, couronne: 2 },
   // Les arcades : Bologne, Turin, Madrid. Cour PAVÉE, on y entre par un porche.
-  arcades:   { pu: 23, pv: 19, cour: 3, courPavee: true },
+  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true },
   // Le damier nord-américain : de grands îlots PLEINS et de larges rues. Une
   // cour n'y a rien à faire — c'est justement ce qui le distingue de l'Europe.
-  damier:    { pu: 27, pv: 21, cour: 0 },
+  // Le damier nord-américain : de grands îlots et de larges rues. Son espace
+  // libre n'est pas la cour plantée de l'Europe — c'est la COUR DE SERVICE
+  // pavée au milieu de l'îlot, celle où débouchent les ruelles de livraison et
+  // où se garent les voitures. Mesuré : 27 × 21 laisse 8,7 × 5,7 de demi-lot,
+  // donc une couronne de 3 tient largement.
+  damier:    { pu: 27, pv: 21, couronne: 3, courPavee: true },
   // Les vieux tissus denses d'Asie de l'Est : de petites parcelles, pas de cour.
-  organique: { pu: 15, pv: 13, cour: 0 },
+  organique: { pu: 15, pv: 13, couronne: 0 },
   // Le centre à tours : superîlots, Séoul, Dubaï, Shanghai.
-  superilot: { pu: 27, pv: 27, cour: 0 },
-  // La médina garde ses ruelles telles quelles : elles SONT son identité.
-  medina:    {},
+  // Le superîlot : des tours autour d'une ESPLANADE. C'était le tissu le plus
+  // dense du jeu — Tokyo et Séoul à 98 % de disque bâti, PIRE qu'avant ma
+  // première passe, parce qu'un îlot de 27 × 27 sans cœur évidé est un bloc
+  // plein. Une couronne de 4 laisse une esplanade de neuf blocs de côté : c'est
+  // le podium d'un vrai superîlot, et c'est ce qui manquait.
+  superilot: { pu: 27, pv: 27, couronne: 4, courPavee: true },
+  // LA MÉDINA N'EST PAS UNE ENTRÉE DE CETTE TABLE, ET C'EST UNE CORRECTION.
+  // Elle y figurait, vide — `Object.assign(t, {})` ne change rien — si bien que
+  // les huit villes que j'avais nommées « médina » recevaient EXACTEMENT le
+  // plan de Zurich : Fès et Tombouctou avec des rues de 2,8 blocs et des îlots
+  // européens. C'est le péché que ce fichier reproche à `arcades` deux
+  // paragraphes plus haut, commis dans la même passe : une brique dont rien ne
+  // se sert. Ce qui fait une médina vit dans la fiche (`ruelles`), pas ici.
 };
 
 // LE TISSU SE NOMME VILLE PAR VILLE, AVEC SA RAISON (v280).
@@ -212,13 +227,13 @@ export const TISSU = {
   // MÉDINAS — un lacis de ruelles, et non l'îlot européen. La fiche n'en
   // déclarait que trois (Venise, Jérusalem, Marrakech) ; celles-ci en sont.
   fes:        ['medina', 'Fès el-Bali, le plus grand lacis piéton au monde'],
-  tunis:      ['medina', 'la médina de Tunis, UNESCO'],
-  alger:      ['medina', 'la Casbah, UNESCO'],
-  ispahan:    ['medina', 'le bazar et les ruelles autour de Naqsh-e Jahan'],
+  tunis:      ['organique', 'la médina de Tunis est un cœur, pas toute la ville : elle roule'],
+  alger:      ['organique', 'la Casbah est un cœur ; Alger roule autour'],
+  ispahan:    ['organique', 'le bazar et ses ruelles, mais des avenues autour'],
   tombouctou: ['medina', 'ville de terre, ruelles sans trame'],
-  lamecque:   ['medina', 'vieille ville dense autour du sanctuaire'],
-  varanasi:   ['medina', 'les galis, ruelles étroites vers les ghats'],
-  alexandrie: ['medina', 'le vieux quartier turc, tissu serré'],
+  lamecque:   ['organique', 'vieille ville dense autour du sanctuaire, et des avenues'],
+  varanasi:   ['organique', 'les galis mènent aux ghats ; la ville, elle, roule'],
+  alexandrie: ['organique', 'le vieux quartier turc, serré mais carrossable'],
 
   // GRILLES COLONIALES ESPAGNOLES — les Lois des Indes, 1573 : une trame
   // orthogonale autour d'une plaza mayor. C'est le tissu de presque toute
@@ -323,6 +338,15 @@ function fabrique(cle, fiche) {
     // normalisation des rues, et elle doit quand même porter sa typologie —
     // sinon un témoin qui lit `f.typo` croit qu'elle n'en a pas.
     f.typo = typoDe(f);
+    // UNE MÉDINA PIÉTONNE SE DÉCLARE AVANT LA FOURCHE. `ruelles` est ce qui
+    // fait le lacis ; la typologie doit donc le POSER, sinon elle ne fait rien
+    // du tout. Et elle ne se pose qu'aux villes dont le vieux centre est
+    // vraiment sans voitures — Fès el-Bali est le plus grand espace piéton
+    // urbain du monde, Tombouctou est une ville de terre sans trame. Les
+    // autres vieilles villes denses gardent leurs voitures : une médina est un
+    // CŒUR, et l'appliquer à tout un disque retirerait sa circulation à Tunis
+    // ou à Alexandrie (v270 : une berline ne roule pas dans une ruelle).
+    if (f.typo === 'medina') t.ruelles = true;
     if (t.ruelles) {
       // Venise, la médina de Marrakech, la vieille ville de Jérusalem : les
       // ruelles SONT leur identité — on les élargit juste assez pour y
@@ -1780,8 +1804,12 @@ export function hauteurVillesMonde(x, z, h) {
 // PETIT |ra|, le cœur du lot au grand. La couronne bâtie va donc de `s` (le bord
 // du trottoir) à `s + cour`.
 export function coeurDIlot(t, ra, rb) {
-  if (!t || !t.cour) return false;
-  const bord = t.s + t.cour;
+  if (!t || !t.couronne) return false;
+  // `couronne` EST LA PROFONDEUR DU BÂTI DEPUIS LE TROTTOIR, pas la taille de
+  // la cour — elle s'appelait `cour` et ce nom mentait. Le cœur de l'îlot est
+  // tout ce qui est au-delà, dans les DEUX directions : c'est ce qui fait un
+  // îlot à périmètre et non deux barres parallèles.
+  const bord = t.s + t.couronne;
   return Math.abs(ra) > bord && Math.abs(rb) > bord;
 }
 
