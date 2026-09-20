@@ -1622,6 +1622,24 @@ const position = (p) => p.evaluate(() => ({
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 
+    // UNE SUITE REFERME SES PAGES, COMME UNE SONDE (v281).
+    //
+    // `tab` a servi de la première ligne à ce verdict-ci, et plus jamais après.
+    // Laissée ouverte, elle continue de faire tourner sa boucle de jeu pendant
+    // les trois pages qui suivent — et `souffler` le dit lui-même, quatre fois
+    // de suite et à partir de cette ligne exactement : « charge stable —
+    // quelque chose tourne encore, et ne redescendra pas · 3,82 à 3,92 cœur(s)
+    // sur 4 ». Mesuré des DEUX côtés, suite jouée seule : le même relevé, donc
+    // ce n'est pas une livraison qui l'a introduit, c'est là depuis toujours.
+    //
+    // Seule, la suite survit quand même (95 verdicts verts des deux côtés) ;
+    // au PORTAIL, après six suites, elle bascule — `ouvrirLaCarte` a rendu
+    // « Timeout 30000ms » sur la quatrième page. C'est la v220 (« deux pages
+    // ouvertes EN MÊME TEMPS font tomber la cadence de 42,9 à 20,8 ») et la
+    // v268 (« une mesure de coût referme ses pages »), appliquées à une SUITE
+    // au lieu d'une sonde : ce qu'on n'interroge plus, on le referme.
+    await tab.close();
+
     // --- et sur un ordinateur, à la souris -----------------------------------
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
