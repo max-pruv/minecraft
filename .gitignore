@@ -7,4 +7,9 @@ shot_*.png
 tests/_diag_*.cjs
 
 # Dépendances locales des outils de conversion et du banc.
+# LES DEUX FORMES, ET C'EST UNE PANNE PAYÉE. Un motif qui finit par une barre
+# ne matche qu'un DOSSIER : `tests/node_modules` est parti dans le dépôt en
+# v281 sous forme de LIEN SYMBOLIQUE vers son propre chemin absolu, et tout
+# arbre de travail neuf recevait une boucle où le banc ne démarrait plus.
 **/node_modules/
+**/node_modules
