@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 283,
+    titre: 'Les voitures se suivent mieux',
+    puces: [
+      'Les voitures ne se rentrent plus dedans',
+      'Elles gardent leurs distances partout',
+      'Les passants ne grimpent plus aux murs',
+    ],
+  },
+  {
     v: 282,
     titre: 'Des villes toutes différentes',
     puces: [

@@ -177,6 +177,133 @@ appliqué au champ de message d'un témoin.
   tablier est plein, les parapets sont deux bandes de pierre, les piles des
   colonnes tous les sept blocs. Ça se reconnaît comme un pont ; ça ne ressemble
   pas encore au Mittlere Brücke. À juger en capture avec Max.
+
+---
+
+## LE PORTAIL DE LA v283 : NEUF ROUGES, ET CE QUE LA DOUBLE MESURE EN DIT
+
+Quinze suites, soixante-quinze minutes, **quatre suites qui étaient rouges aux
+portails précédents sont vertes** — `washington.js` (la rame du métro emmène
+enfin l'enfant), `carte.js`, `carteMonde.js` et `realisme.js`, qui prouve la
+correction de la façade (rouge sur le code de production : neuf trajectoires sur
+seize au-dessus de 2,5 blocs, la plus haute à **7,03 blocs**).
+
+### Rejoués SEULS sur `origin/main` (v282), dans un arbre séparé
+
+| témoin | branche (portail v283) | `main` (seule) |
+| --- | --- | --- |
+| `reglages.js` — la langue que l'autre tablette défait | ❌ 20 s, serveur `"fr"` | ❌ **20 s, serveur `"fr"`** |
+| `reglages.js` — « elle s'aligne même dessus » | ✅ | ❌ **45 s, `fr`** |
+| `monte.js` — l'écran ne se fige pas en arrivant sur une ville | ❌ pire image **4 917 ms**, 34,8 % > 300 ms, cadence 4,3 | ❌ pire image **4 616 ms**, 34,3 %, cadence 4,3 |
+
+Le premier est identique au bit près. Le second est rouge sur `main` et VERT sur
+la branche : `main` en a un de PLUS, et les deux sont de la même famille — la
+langue que le parent règle et que la seconde tablette repousse. Le troisième est
+le plus intéressant pour la famille : **une image de quatre secondes et demie, un
+tiers du temps au-delà de trois cents millisecondes**, à l'arrivée dans une
+ville. C'est mot pour mot ce que Max décrit depuis des versions, et ce n'est pas
+une intermittence — quatre portails et une mesure solo, tous entre 4 333 et
+6 083 ms.
+
+### Un TIRAGE, et sa cause est maintenant MESURÉE
+
+`monte.js` — « les voitures ne se traversent plus ». La v277 avait écrit que ce
+témoin varie sans qu'une ligne du jeu bouge et que sa barre tombe dans son
+étendue naturelle, en laissant la cause « plausible et NON mesurée ». Elle l'est :
+
+| passage | code | taux |
+| --- | --- | --- |
+| portail v282b | v282 | **3,6 %** ✅ |
+| **`main`, seule** | **v282** | **41,4 %** ❌ |
+| portail villes | villes | 27,7 % ✅ |
+| portail rails | rails | 42,4 % ❌ |
+| portail v283 | v283 | 13,9 % ✅ |
+
+**Le même code — v282 — rend 3,6 % dans un portail et 41,4 % tout seul.** Onze
+fois, et dans le sens contraire à l'intuition. Le compte est absolu sur une
+fenêtre de MONTRE : plus le jeu tourne vite, plus de temps de JEU passe, plus les
+voitures roulent, plus elles ont d'occasions de se croiser — `maxVues` 21 → 26,
+`paires` 151 → 227, et le taux triple par-dessus. **Le remède est de compter par
+temps de JEU, ou de compter une PROPORTION à distance constante**, pas un total
+sur trente secondes de montre.
+
+Et il ne dit RIEN de la correction du télescopage de la v283 : ce qui la prouve,
+c'est son propre témoin, `minTrace: 4.4` sur **2 778 paires** — un minimum que la
+géométrie garantit, qui ne dépend d'aucune cadence, et dont le champ n'existe pas
+sur l'ancien code.
+
+### Un rouge de CHARGE, et le témoin à reprendre
+
+`monte.js` — « une voiture arrêtée par un mur n'annonce plus de vitesse ». Vert
+sur `main` seule (`vitesse 0`, `x 28.9`), rouge au portail de la v283
+(`vitesse 12.16`, `x 27.1`, `immobile 0`, **`arret 25104`**) — et rouge aussi aux
+portails des villes et des rails, qui ne portent PAS la correction de convoi de
+la v283. Cinq configurations, trois rouges, deux verts, des deux côtés du
+changement : une intermittence de charge, pas une régression (v269, v251).
+
+**Et le témoin confond deux choses.** `arret 25104` dit qu'il a attendu ses
+vingt-cinq secondes ; `immobile 0` ne distingue pas « la voiture ne s'arrête
+jamais » de « elle n'a jamais ATTEINT le mur » — à trois images par seconde,
+c'est le second. Il doit d'abord vérifier qu'elle est arrivée, PUIS mesurer
+qu'elle s'arrête : `null` n'est pas un verdict, c'est une absence de mesure
+(v272).
+
+### Anciens, par inspection et par historique
+
+- `sauvegarde.js` ×2 (la copie d'avant le monde) — rouges au portail des rails
+  aussi ; la v283 ne touche ni `sync.js` ni `cloud.js`.
+- `maj.js` (le fond de carte à la libération) — rouge sur **cinq** portails
+  d'affilée, avec la même forme.
+- `manhattan.js` (le délai de la ligne 282) — déjà démonté 3/3 des deux côtés.
+- `reseau.js` ×2 — la double mesure est faite, voir juste en dessous. Et **deux
+  des quatre rouges de production ont disparu** : « Alice retrouve son monde
+  après une veille sans retour » est VERTE, ainsi que « la reprise tient dans la
+  durée » et « seule après le départ de l'hôte ». Ce qui reste n'est plus
+  « Alice perd son monde » mais **deux compteurs de joueurs qui divergent** au
+  départ de quelqu'un et au réveil.
+
+---
+
+## DEUX ROUGES RÉSEAU DE PLUS, IDENTIQUES AU BIT PRÈS SUR `origin/main`
+
+Trouvés au portail des pistes, et c'est la référence qui les a rendus visibles :
+ils n'étaient PAS dans la liste des vingt, parce que le portail de `main` avait
+rendu ces deux témoins-là verts et quatre AUTRES rouges. **`reseau.js` change de
+rouges d'un passage à l'autre** — raison de plus de rejouer seul des deux côtés
+plutôt que de comparer deux portails.
+
+Rejoués SEULS, dans deux arbres séparés :
+
+```
+branche  ❌ [ 42 s] un départ propre nettoie tout le monde — hôte ["Alice","Nina"] · Alice ["Marlon","Nina"]
+main     ❌ [ 42 s] un départ propre nettoie tout le monde — hôte ["Alice","Nina"] · Alice ["Marlon","Nina"]
+
+branche  ❌ [ 26 s] un joueur endormi n'est pas éjecté — compteur 3, [Alice dodo, Nina éveillée]
+main     ❌ [ 26 s] un joueur endormi n'est pas éjecté — compteur 3, [Alice dodo, Nina éveillée]
+```
+
+Mêmes durées, mêmes listes, même ordre. **Ce que ça coûte à la famille est
+clair : Nina quitte la partie et reste dans la liste des deux autres.** Quand
+trois enfants jouent et que l'un s'en va, les deux qui restent voient un fantôme.
+
+C'est la famille de la v219 (« ce qui s'arrête s'annonce, cela ne s'attend pas
+d'un événement de transport ») et de la v266 (« le silence ne prouve le départ
+que d'un pair qu'on ne peut pas sonder »). Les deux ont corrigé un bout de ce
+chemin ; celui-ci reste, et le SCÉNARIO À TROIS est ce qui les réunit — les deux
+rouges impliquent un troisième joueur. À démonter par une sonde PAR QUESTION,
+comme la v266 : le message de départ part-il ? arrive-t-il ? est-il lu ?
+
+**ET DEUX AUTRES ROUGES HORS RÉFÉRENCE SE SONT DÉMONTÉS, dont une hypothèse de
+moi qui était fausse.** `reglages.js` (« l'autre tablette ne le défait pas »,
+« elle s'aligne même dessus ») est **VERTE des deux côtés rejouée seule**, aux
+mêmes valeurs — la charge du banc, la fragilité que ce témoin documente
+lui-même. Et l'explication que j'avais avancée pour elle — « les pistes
+allongées alourdissent la génération du monde, donc ralentissent les pages » —
+est **fausse, et mesurée** : un morceau de monde coûte **4,36 ms des deux côtés**
+autour de Paris, au centième près. Une explication commode qu'on ne mesure pas
+est une dette, pas un diagnostic (v220), et c'était la troisième fois de la
+journée.
+
 ## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
 
 **Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »
@@ -257,7 +384,7 @@ branche — un rouge qui est dans cette liste n'est pas le vôtre.
 | --- | --- | --- |
 | `monte.js` | 10 | la conduite, l'arrivée en ville, les flammes de réacteur |
 | `washington.js` | 5 | le témoin de l'escalier, pas le métro — voir plus bas |
-| `reseau.js` | 4 | **Alice ne retrouve pas son monde** après une veille ou le départ de l'hôte |
+| `reseau.js` | 4 + 2 | **Alice ne retrouve pas son monde**, **un joueur qui part reste visible**, **un endormi n'est pas éjecté** |
 | `maj.js` | 1 | le fond de carte n'est pas prêt quand « Jouer » se libère |
 | les onze autres | — | vertes |
 

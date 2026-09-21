@@ -200,6 +200,69 @@ const verifier = (nom, ok, detail) => {
       "un déplacement très rapide ne coupe pas le modèle en une image",
       fade.apresVoyage > 0.8,
     );
+    // UN MUR NE RÉARME PAS LE SAUT, ET LE MUR SE BÂTIT (v283).
+    //
+    // `onGround` ne repasse à faux que dans `sweep`, sur une DESCENTE sans
+    // collision : une montée (`delta > 0`) ne l'efface pas, et l'atterrissage
+    // qui le pose à vrai sort par un `return true` avant la ligne qui
+    // l'effacerait. Un personnage collé à une façade a donc `blockedX` vrai ET
+    // `onGround` vrai à chaque image : il se redonne son impulsion
+    // indéfiniment et remonte l'immeuble.
+    //
+    // ET LE TÉMOIN NE PORTE AUCUNE COORDONNÉE DE VILLE. Celui écrit en v242
+    // visait trois angles de Midtown en dur — mesuré aujourd'hui, ils sont à
+    // DIX MILLE DEUX CENTS blocs de l'ancre de New York, la carte ayant doublé
+    // depuis : il aurait marché en pleine campagne, n'aurait rien heurté, et
+    // serait passé au VERT sur du code cassé. C'est « un témoin qui porte une
+    // dimension de ville ne l'écrit pas, il la demande » (v203, v271, v274) —
+    // et ici le plus simple est de ne rien demander du tout : on BÂTIT le mur
+    // dans le couloir vide, comme `contreLeMur` de `monte.js`. La mesure est
+    // alors la même d'une version à l'autre par construction.
+    const murs = await p.evaluate(async () => {
+      const { BaseNPC } = await import('/src/marlon.js');
+      const { construireHumain } = await import('/src/personnages.js');
+      const { liberer } = await import('/src/liberer.js');
+      const T = await import('three');
+      const g = window.__game;
+      // Le couloir vide : loin de toute ville, de tout convoi, de toute bête.
+      const X = 30000, Z = 30000;
+      const sol = g.world.terrainHeight(X, Z);
+      // Une dalle plate de onze blocs de côté, et un mur de six blocs de haut
+      // qui en ferme un côté. Rien d'autre : ce qu'on mesure est le mur.
+      for (let dx = -5; dx <= 5; dx++) {
+        for (let dz = -5; dz <= 5; dz++) g.world.setBlock(X + dx, sol, Z + dz, 3);
+        for (let dy = 1; dy <= 6; dy++) g.world.setBlock(X + dx, sol + dy, Z + 5, 3);
+      }
+      const npc = new BaseNPC(new T.Scene(), g.world, g.player, () => {}, {
+        name: 'MurTest', phrases: [''], hauteur: 1.72,
+        build: () => construireHumain({ tenue: 'passant' }),
+      });
+      const plancher = sol + 1;
+      let fautifs = 0, pic = plancher, cas = 0;
+      // Seize caps : quatre vont droit dans le mur, les autres le frôlent ou
+      // s'en éloignent. On garde les seize pour que le compte soit comparable.
+      for (let cap = 0; cap < 16; cap++) {
+        npc.pos.set(X, plancher + 0.001, Z + 3); npc.vel.set(0, 0, 0);
+        npc.onGround = true;
+        npc.think = () => ({ speed: 1.6, yaw: cap * Math.PI / 8 });
+        let haut = plancher;
+        for (let frame = 0; frame < 1200; frame++) {
+          npc.update(1 / 60); haut = Math.max(haut, npc.pos.y);
+        }
+        // Un saut d'une seule impulsion monte de 7,5²/(2 g) ≈ 1,8 bloc ; au-delà
+        // de deux blocs et demi, l'impulsion s'est réarmée.
+        if (haut > plancher + 2.5) fautifs++;
+        pic = Math.max(pic, haut); cas++;
+      }
+      liberer(npc.mesh);
+      return { cas, fautifs, pic: +pic.toFixed(2), plancher, monte: +(pic - plancher).toFixed(2) };
+    });
+    verifier(
+      "un mur ne réarme pas le saut à chaque image et ne fait pas grimper la façade",
+      murs.cas === 16 && murs.fautifs === 0,
+      `${murs.fautifs}/${murs.cas} trajectoire(s) au-dessus de 2,5 blocs`
+      + ` · plus haut point ${murs.monte} bloc(s) au-dessus du plancher`,
+    );
     const car = await p.evaluate(async () => {
       const { construireTaxi } = await import("/src/taxis.js"),
         T = await import("three");

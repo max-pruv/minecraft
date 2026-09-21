@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v283 — Les voitures se suivent, et personne n'escalade les murs
+
+**Pourquoi.** Deux défauts que la famille voit. Max signale depuis plusieurs
+versions **des voitures qui se traversent dans leur propre file** : une tête qui
+attend au feu accumule son retard pendant que sa suiveuse, encore hors de la
+fenêtre de surveillance, avance à pleine allure — elle la rejoint, la dépasse,
+et le chevauchement ne se résorbe jamais. Et **un passant collé à une façade
+remontait l'immeuble** : `onGround` ne retombait à faux que sur une descente
+sans collision, si bien qu'un personnage contre un mur se redonnait son
+impulsion à chaque image. Mesuré sur le code en production : **neuf
+trajectoires sur seize montent au-dessus de deux blocs et demi, la plus haute à
+7,03 blocs** — deux étages.
+
+**Ce que ça change.** Les voitures d'un convoi gardent leur longueur d'écart,
+partout, y compris là où l'enfant n'est pas et où la surveillance ne tourne pas
+du tout. Et un passant coincé contre un mur reste au sol.
+
+**Ce qui le prouve.** Trois témoins. Celui de la façade bâtit sa dalle et son
+mur dans le couloir vide, seize caps, et rend 9/16 sur l'ancien code contre zéro
+ici. Celui du convoi mesure une BORNE — le minimum de l'écart le long du tracé
+sur toute la fenêtre — et non un compte d'instants comme celui de la v244, dont
+`CLAUDE.md` dit qu'il tire à pile ou face. Et le témoin du métro de Washington
+attend désormais son RÉSULTAT en secondes de jeu, avec la distance de la rame la
+plus proche dans son message : `null` n'est pas un verdict, c'est une absence de
+mesure.
+
+**Un seuil de fenêtre ne pouvait pas régler le convoi.** Ce qui doit être vrai
+se garantit PAR CONSTRUCTION : deux voisines gardent leur longueur d'écart si et
+seulement si `retard[i] >= retard[i-1] − ecart + LONG_VOITURE`. La borne est une
+géométrie — 4,4 blocs, lus là où ils se calculent — pas un réglage. Elle ne CRÉE
+jamais d'écart, elle le préserve.
+
 ## v282 — Chaque ville a son tissu, et son fleuve
 
 **Pourquoi.** Max, sur les villes engendrées : « que ce soit beaucoup plus
