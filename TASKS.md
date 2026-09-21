@@ -1,5 +1,54 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
+  Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
+  quatrième rouge, « la voiture au mur », a été démonté par une sonde qui
+  innocente le jeu. Ce qui reste est déclaré ici, avec ce qui le mesure.
+
+  | suite | témoin | mesuré ailleurs |
+  | --- | --- | --- |
+  | `maj.js` | corps/programmes/fond `null` ; la page ne floute rien | identique au portail v284 (arbre v284, mêmes témoins) |
+  | `manhattan.js` | délai de 60 s ligne 282 | v269 : même délai sur `origin/main` au TROISIÈME passage |
+  | `reglages.js` | l'autre tablette (`"fr"`) puis `TypeError … 'edu'` | identiques au portail v284, aux deux lignes près |
+  | `monte.js` | l'écran ne se fige pas en arrivant sur une ville | 4 433 ms / 37,3 % ici contre 4 933 ms / 36,4 % sur `origin/main` |
+  | `monte.js` | les voitures ne se traversent plus | le TIRAGE écrit dans `CLAUDE.md` (v277) : 89 ici, 53 au portail v284 |
+  | `reseau.js` | départ propre · joueur endormi · réveil | tâche ouverte « le monde d'Alice » |
+
+  **Et le compte de chevauchements n'est toujours PAS un gardien.** La v277
+  l'avait écrit — un compte ABSOLU sur trente secondes de montre, dans une ville
+  qui rend quatre images par seconde, mesure le nombre de RELEVÉS autant que le
+  jeu. Ce portail le confirme par un troisième bout : 1 387 mesures ici contre
+  779 au portail d'avant, sur un code de circulation inchangé, et le compte suit.
+  Ce qu'il faut, c'est un TAUX par relevé et par paire à portée — pas un seuil de
+  plus. Tant qu'il tire à pile ou face, on ne peut rien conclure de
+  `cederLePassage`, et c'est écrit depuis la v277.
+
+- [ ] **LES DEUX BORNES QUE L'ENFANT ATTEND APRÈS UNE MISE À JOUR SE SUIVENT, ET
+  PERSONNE NE LES AVAIT ADDITIONNÉES.** Max, après la v285 : « après la mise à
+  jour, sur la home le jeu lag 1 à 2 min, ça a été le cas depuis longtemps ».
+  C'est le symptôme que la v257 et la v258 devaient corriger — donc on cesse de
+  régler et l'on va voir ce qui s'exécute (règle de la v226).
+
+  L'arithmétique, avant toute mesure : `index.html` borne la mise à jour à
+  **45 s** (v220), puis `main.js` montre le loader `apresMaj` borné à **90 s**
+  (il attend `humainsCharges() && chauffeFinie`) pendant que `veillerPrep` grise
+  « Jouer », borné à 45 s. **45 + 90 = 135 s**, exactement la fourchette de Max.
+  Il est donc possible que le jeu le RETIENNE au lieu de ramer — ce n'est pas la
+  même panne et cela ne se corrige pas au même endroit.
+
+  **NON-RÉSULTAT MESURÉ, qu'on ne réessaiera pas** : le suspect évident était les
+  treize mégaoctets immuables (scanner, flotte, 8,2 Mo de corps, polices)
+  re-téléchargés à chaque livraison. `sw.js` ligne 179 : `activate` supprime tous
+  les caches SAUF `STATIC_CACHE`, et `isStaticAsset` couvre bien
+  `/vendor/humains/`. Ils ne repartent pas sur le réseau.
+
+  Ce qui manque ne peut venir que de l'appareil — le banc met six secondes là où
+  Safari en met une (v257), et cela ne se transpose pas. Le jeu AFFICHE déjà la
+  réponse, et trois lectures donnent trois causes : le loader « ✨ Installation…
+  personnages x/y, programmes n/m » (borne de 90 s), l'accueil avec « ⏳
+  Préparation du jeu… » (borne de 45 s), ou l'accueil nu et saccadé (alors rien
+  ne retient, et c'est du vrai travail de fil principal). Demandé à Max.
+
 - [ ] **LE PORTAIL DE LA v284 : SEPT ROUGES, TROIS TÉMOINS CORRIGÉS, ET LA
   DOUBLE MESURE FAITE.** Le conteneur a été recyclé au milieu de la campagne —
   neuvième fois — et cela a fait apparaître des rouges qu'aucun des quatre
