@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'Les voitures roulent partout',
     puces: [
       'Elles montent les petites marches',
-      'On roule dans la campagne, pas juste en ville',
+      'On roule dans la campagne, pas qu\'en ville',
       'Fini les créatures à attraper',
       'Tes créatures restent gardées, au cas où',
     ],
