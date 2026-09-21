@@ -576,6 +576,121 @@ contredit.
   cents mètres de quai, pas un redessin à l'intuition. Mesuré après : onze ancres
   au sec, l'eau la plus proche de 175 m (Cologne) à 900 (Séville).
 
+## Retirer un mode entier (v285) — et ce qu'il prêtait au reste du jeu
+
+Max : « Remove the Pokémon play entirely ». Les trois règles de la v256 — on
+retire l'écran et les commandes jamais les données, un message réseau retiré se
+reçoit encore, ce qu'un enfant a écrit reste visible — se sont appliquées
+telles quelles. Cinq règles NEUVES en sortent, et la première est la plus
+importante.
+
+- **UNE FONCTIONNALITÉ QU'ON RETIRE PEUT POSSÉDER UNE PIÈCE DU JEU ENTIER.**
+  `toast` — le petit bandeau qui dit « fais demi-tour », « Sauvegarde allégée »,
+  « un parent vient de changer tes réglages » — était une MÉTHODE de
+  `CreatureManager`, appelée de **quarante-neuf endroits** qui n'ont jamais eu
+  affaire à une créature. Supprimer le fichier aurait rendu le jeu muet. Avant de
+  retirer un module, on ne regarde pas seulement ce qu'il fait : on regarde ce que
+  le RESTE du jeu lui demande (`grep -n "monModule\." src/*.js`). La voix du jeu a
+  désormais son fichier, `src/bandeau.js`, sans un seul import — et c'est un
+  assainissement, pas un dommage collatéral.
+- **ET RETIRER UNE PROPRIÉTÉ D'UN OBJET DE CONTEXTE NE SE VOIT NULLE PART — je
+  l'ai cassé moi-même.** `main.js` passait `toast:` à `initFun`, j'ai retiré la
+  ligne, et `fun.js` continuait de le DÉSTRUCTURER : `toast` valait `undefined`, et
+  chacun de ses bandeaux — un bébé qui naît, un parkour réussi, un cache-cache
+  lancé — aurait jeté au premier appel. Rien dans `node --check`, rien dans une
+  relecture : un objet de contexte n'a pas de contrat. Le remède est meilleur que
+  la correction : **le module extrait s'IMPORTE, il ne se fait pas passer de main
+  en main.** `fun.js` importe `bandeau.js`, et c'est tout l'intérêt de l'avoir
+  sorti — n'importe quel module parle à l'enfant sans dépendre de son voisin.
+  Le contrôle qui l'a dit compare les deux listes (ce que `fun.js` déstructure,
+  ce que `main.js` fournit) — **et il commence par prouver qu'il voit
+  `scene`/`world`/`player`**, parce que ma première version annonçait les
+  dix-neuf propriétés manquantes, y compris celles qui étaient là : une sonde qui
+  interroge la mauvaise tranche ne peut rien voir, quel que soit le code (v273).
+- **ET UN RETRAIT NE PREND PAS UN NOM PARTAGÉ.** `#catch-banner` est né avec la
+  fête de l'attrape ; `grandBandeau` s'en sert pour les captures, les arrivées de
+  joueurs et les moments du siège — et il le lisait AVANT sa ligne de
+  déclaration, ce qui aurait cassé au premier coup de ciseaux. Le nom reste : on
+  renomme ce que l'enfant VOIT, jamais ce qui porte le mécanisme (v275, par
+  l'autre bout).
+- **UN TÉMOIN PEUT MESURER UNE RÈGLE SUR UN SUJET QUI S'EN VA — ON LE REPOINTE,
+  ON NE LE SUPPRIME PAS.** Le témoin de la v238 (« ce qu'on retire de la scène se
+  rend à la carte graphique ») éprouvait `liberer.js` sur les créatures ; la règle
+  n'a jamais tenu à elles, et les BÊTES suivent le même cycle — une naissance
+  toutes les secondes et demie, un retrait à soixante-dix blocs. **Et sa borne de
+  garde se REMESURE** : une créature coûtait dix-neuf géométries et demie, une
+  vache en coûte moins, et une barre recopiée de l'ancienne mesure aurait rendu ce
+  témoin rouge sur du code sain. Un témoin qu'on déplace se remesure comme un
+  témoin qu'on écrit.
+- **UN BOUTON RETIRÉ LAISSE UN TROU DANS SA RANGÉE.** La rangée du haut à droite
+  était cotée 8 · 56 · 104 · 152 en pixels ABSOLUS ; retirer celui de 56 y
+  laissait un vide et les deux suivants ne suivaient pas tout seuls. C'est « tout
+  ce qui est coté par rapport à une constante qu'on déplace se déplace avec
+  elle » (v280), vu depuis le retrait : `grep -n "right: " index.html` prend dix
+  secondes.
+- **UN PERSONNAGE PEUT PERDRE SON SUJET SANS QUE PERSONNE NE LE VOIE.** Les
+  phrases qui promettaient un Dex et des « dresseurs » se cherchent facilement ;
+  Lise, « biologiste qui étudie les martiens », ne se cherchait pas — les
+  martiens étaient une ESPÈCE de créature (`TYPES.MARTIEN`), pas un habitant de la
+  base spatiale. Mars reste, elle devient géologue. Un personnage qui annonce une
+  commande disparue est pire que muet, et c'est la règle des messages de la maison
+  appliquée à un dialogue.
+- **ET LE FICHIER NEUF MANQUAIT DANS `sw.js` — c'est un CONTRÔLE qui l'a dit, pas
+  une relecture.** `bandeau.js` aurait été absent hors ligne, c'est-à-dire sur
+  l'iPad dans l'avion. Trois lignes de node suffisent et se rejouent à chaque
+  livraison qui ajoute un fichier : tout `src/*.js` est dans la liste `ASSETS`,
+  tout `src/*.js` a un gardien dans `tests/tout.js`, et tout `import './…'`
+  résout. La règle « ne jamais livrer un fichier que personne n'importe » se
+  double donc de son inverse : ne jamais livrer un fichier que personne ne met en
+  cache.
+- **ET RETIRER UNE CLÉ DE LA TABLE DES GARDIENS ANNULE TOUS LES ACQUIS DE
+  REPRISE.** `gardiensElargis` refuse une clé disparue, et il a raison — il ne
+  peut pas distinguer « un gardien retiré » (qui peut cacher quelque chose) de
+  « le fichier n'existe plus ». Le portail entier se rejoue, ce qui est de toute
+  façon ce que mérite un retrait de mille cent lignes. On ne touche pas au banc
+  pour éviter ce coût.
+
+## UN CODE DE SORTIE LU À TRAVERS UNE ENVELOPPE OU UN TUBE N'EST PAS LE SIEN (v285)
+
+Le banc n'a pas démarré pendant deux lancements de portail, et ce n'est pas le
+banc qui m'a trompé : c'est ma façon de le lire. **Trois fois dans la même
+session j'ai lu le mauvais nombre sur mon propre instrument.**
+
+- `grep -m1 CACHE_VERSION sw.js` attrape le COMMENTAIRE
+  (« Bump CACHE_VERSION on every release ») avant la constante : cinq essais à
+  annoncer « pas encore déployé » sur une production qui l'était. Le motif doit
+  porter ce qui distingue — `CACHE_VERSION = `.
+- **Le code de sortie d'une commande de fond est celui de l'ENVELOPPE.**
+  `npm test > log 2>&1; echo fini` rend 0 parce que l'`echo` a réussi : le
+  portail, lui, sortait sur **216**. J'ai écrit deux fois qu'« un portail qui ne
+  peut pas tourner s'annonçait comme un succès » — faux, il signalait bien son
+  échec. Ce qui était muet, c'est le JOURNAL.
+- **Et `$?` derrière un tube est celui du dernier maillon.**
+  `npm test 2>&1 | head -6; echo $?` rend le code de `head`. Je l'ai refait dans
+  la commande même qui mesurait les deux premiers.
+
+C'est « compter un motif n'est pas compter la chose » (v224), appliqué à
+l'outillage au lieu des témoins — et la règle de la v273 par l'autre bout :
+**avant de conclure d'après un instrument, on vérifie ce que cet instrument
+mesure vraiment.** Devant un résultat surprenant, on redemande le nombre par un
+chemin qui ne passe ni par une enveloppe ni par un tube.
+
+**ET LA VRAIE PANNE ÉTAIT UN LIEN COMMITÉ.** `tests/node_modules` est parti dans
+le dépôt en v281 comme lien symbolique vers son PROPRE chemin absolu : tout arbre
+de travail neuf recevait une boucle, et les six arbres d'appoint pointaient
+dessus. Deux ignorances existaient pourtant — `**/node_modules/` et
+`node_modules/` — mais **un motif qui finit par une barre ne matche qu'un
+DOSSIER**, et un lien est un fichier : `git add -A` l'a avalé sans un mot. Les
+deux formes y sont désormais. Et le crochet de session, qui installait quand le
+dossier MANQUE, juge maintenant sur la dépendance que `banc.js` demande vraiment
+(`playwright-core`), défait un lien inutilisable — jamais un vrai dossier — et
+**dit** quand l'installation échoue au lieu de la cacher derrière un `tail -2`.
+
+Mesuré pour le savoir, boucle recréée puis défaite dans un arbre libre : `node`
+démarre très bien sous la boucle (`charge.js` se charge), c'est **`npm`** qui
+meurt avant de lancer le script — `tout.js` n'est jamais atteint, sa première
+ligne ne s'imprime pas.
+
 ## Le palier de l'appareil (v284) — on mesure un TRAVAIL, pas un taux
 
 Max, capture du chasseur : « est-ce possible de pousser le niveau de réalisme ?

@@ -824,16 +824,16 @@ export class Carte {
       }
     }
 
-    // Les créatures se dessinent à tous les zooms — la légende les promet, et
-    // un enfant qui dézoome les voyait disparaître sans un mot : « je ne vois
-    // plus de Pokémon sur la carte ». Habitants et animaux, plus nombreux et
-    // moins chassés, n'apparaissent qu'en s'approchant. Et elles se dessinent
-    // APRÈS les étiquettes : quatre pixels violets sous une pastille de nom
-    // étaient effacés, et de loin il n'en reste parfois qu'une à l'écran.
-    if (this.mobiles) {
-      const tous = b <= 1.4;
+    // Habitants et animaux n'apparaissent qu'en s'approchant : dessinés de loin,
+    // ils couvraient les villes de confettis. Ils se dessinent APRÈS les
+    // étiquettes, sinon quatre pixels sous une pastille de nom sont effacés.
+    //
+    // LE DRAPEAU `toujours` EST PARTI AVEC LES CRÉATURES (v285). Il existait pour
+    // elles seules — « je ne vois plus de Pokémon sur la carte » — et plus aucun
+    // mobile ne le porte : le garder serait du code qu'aucun témoin ne peut plus
+    // éprouver, c'est-à-dire une brique dont personne ne se sert (v220).
+    if (this.mobiles && b <= 1.4) {
       for (const m of this.mobiles()) {
-        if (!tous && !m.toujours) continue;
         const p = this.versEcran(m.x, m.z);
         if (p.x < -4 || p.x > l + 4 || p.y < -4 || p.y > h + 4) continue;
         ctx.fillStyle = m.couleur;

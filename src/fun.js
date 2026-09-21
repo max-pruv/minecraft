@@ -1,4 +1,8 @@
-// Fun & social systems: breeding, riding, companions, duels, text signs
+// Fun & social systems: breeding, riding, text signs, souvenirs
+//
+// Les COMPAGNONS et les DUELS vivaient ici : les deux tenaient au mode d'attrape
+// de créatures, retiré en v285 sur décision de Max. Le cache-cache, lui, reste —
+// il ne demande rien d'autre que d'être plusieurs.
 // (those already planted), emotes, photos, daily treasure, park mini-games,
 // records, museum statues and little math challenges. Everything persists per
 // profile via the storage shim; world-scoped data (signs) is keyed by the
@@ -15,7 +19,7 @@
 
 import * as THREE from 'three';
 import { liberer } from './liberer.js';
-import { buildCreatureMesh } from './creatures.js';
+import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
@@ -39,7 +43,6 @@ import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } fr
 const REACTIVITE_CAM = Number(new URLSearchParams(location.search).get('camlag')) || 3.2;
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
-const PET_KEY = 'web-minecraft-pet-v1';
 
 function hashStr(s) {
   let h = 5381;
@@ -55,8 +58,8 @@ function saveJson(key, v) {
 }
 
 export function initFun(ctx) {
-  const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
-    renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
+  const { scene, world, player, animalManager, edu, cloud, canvas,
+    renderNow, emojiBurst, myName, getNet, remotePlayers, isRunning,
     isNight, getWeather, getPosCtx, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
 
   // ---- persistent state -----------------------------------------------------
@@ -64,11 +67,12 @@ export function initFun(ctx) {
   // qu'un enfant a déjà gagné — quêtes finies, feux lancés, chapeaux — reste
   // dans le document tel quel : l'étalement de `loadJson` ne jette rien, on
   // ne fait que ne plus y toucher.
+  // `duels` n'est plus jamais incrémenté (les duels partent en v285) mais le champ
+  // RESTE, et les anciennes valeurs avec : on retire l'écran et les commandes,
+  // jamais les données (v256).
   const records = { blocks: 0, quizCorrect: 0, treasures: 0, duels: 0,
     mathWins: 0, parkour: 0, bestRace: 0, ...loadJson(RECORDS_KEY, {}) };
   const saveRecords = () => saveJson(RECORDS_KEY, records);
-
-  creatureManager.legendaryOk = () => isNight() || getWeather() === 'rain';
 
   // ---- styles & panels ------------------------------------------------------
   const style = document.createElement('style');
@@ -114,14 +118,6 @@ export function initFun(ctx) {
     .emote-row { position:static; display:none; flex-direction:column; gap:8px; }
     .emote-row button { width:var(--rail-btn); height:var(--rail-btn); border-radius:12px; font-size:22px;
       background:rgba(20,26,40,.72); border:1px solid rgba(255,255,255,.18); }
-    #duel-overlay { position:fixed; inset:0; background:rgba(8,10,18,.88); z-index:80;
-      display:none; align-items:center; justify-content:center; flex-direction:column;
-      color:#fff; text-align:center; }
-    .duel-arena { display:flex; gap:24px; align-items:center; }
-    .duel-side { width:130px; }
-    .duel-side img { width:110px; height:130px; }
-    .duel-side .nm { font-weight:bold; margin-top:4px; }
-    #duel-status { font-size:26px; margin-top:18px; font-weight:bold; }
     #math-pop { position:fixed; left:50%; transform:translateX(-50%); bottom:120px;
       background:rgba(14,18,30,.95); border:1px solid rgba(255,255,255,.25); border-radius:14px;
       color:#eef; z-index:55; padding:12px 14px; width:min(90vw,360px); display:none; }
@@ -186,16 +182,6 @@ export function initFun(ctx) {
     <div id="fun-tab-body"></div>
   </div>`);
 
-  const duelOverlay = el(`<div id="duel-overlay">
-    <h2>⚔️ Défi amical !</h2>
-    <div class="duel-arena">
-      <div class="duel-side"><img id="duel-img-a"><div class="nm" id="duel-nm-a"></div></div>
-      <div style="font-size:34px">VS</div>
-      <div class="duel-side"><img id="duel-img-b"><div class="nm" id="duel-nm-b"></div></div>
-    </div>
-    <div id="duel-status"></div>
-  </div>`);
-
   const mathPop = el(`<div id="math-pop">
     <div id="math-q"></div><div class="opts" id="math-opts"></div>
   </div>`);
@@ -203,10 +189,9 @@ export function initFun(ctx) {
 
   panel.querySelector('.fun-close').addEventListener('click', () => { panel.style.display = 'none'; });
 
-  // ---- companion ------------------------------------------------------------
-  let pet = loadJson(PET_KEY, null);
-  let petMesh = null, petLabel = null, petBob = 0;
-
+  // ---- étiquettes flottantes ------------------------------------------------
+  // Écrite pour le nom du compagnon, elle sert aussi aux panneaux plantés et aux
+  // émotes : elle reste, le compagnon est parti (v285).
   function makeTextSprite(text, scale = 1) {
     const c = document.createElement('canvas');
     c.width = 512; c.height = 96;
@@ -222,66 +207,6 @@ export function initFun(ctx) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
     sp.scale.set(3.2 * scale, 0.6 * scale, 1);
     return sp;
-  }
-
-  function refreshPet() {
-    // ET L'ANCIENNE SE REND (v238) : `refreshPet` en refabrique une neuve, avec
-    // ses sphères, ses matériaux ET l'étiquette dessinée sur une toile. Sans
-    // cette ligne chaque changement de mascotte en abandonnait un jeu complet.
-    if (petMesh) { scene.remove(petMesh); liberer(petMesh); petMesh = null; }
-    if (!pet) return;
-    const sp = creatureManager.species.find((s) => s.id === pet.id);
-    if (!sp) return;
-    petMesh = buildCreatureMesh(sp);
-    petMesh.scale.setScalar(0.55);
-    petLabel = makeTextSprite(`⭐ ${pet.name}`, 0.9);
-    petLabel.position.y = sp.size * 1.6 + 0.5;
-    petMesh.add(petLabel);
-    petMesh.position.copy(player.pos);
-    scene.add(petMesh);
-  }
-  refreshPet();
-
-  function setPet(spId) {
-    const sp = creatureManager.species.find((s) => s.id === spId);
-    if (!sp) return;
-    const name = (window.prompt(`Comment s'appelle ton compagnon ${sp.name} ?`, sp.name) || sp.name).slice(0, 14);
-    pet = { id: spId, name };
-    saveJson(PET_KEY, pet);
-    refreshPet();
-    toast(`⭐ ${name} est maintenant ton compagnon !`, 0xffe07a);
-    emojiBurst(['⭐', '💛'], 12);
-  }
-
-  function clearPet() {
-    pet = null;
-    saveJson(PET_KEY, pet);
-    refreshPet();
-  }
-
-  // add "companion" buttons inside the dex rows when the dex opens
-  document.getElementById('dex-btn')?.addEventListener('click', () => setTimeout(decorateDex, 60));
-  function decorateDex() {
-    const list = document.getElementById('dex-list');
-    if (!list) return;
-    // dex rows are rendered in species order, one row per species
-    [...list.children].forEach((row, i) => {
-      const sp = creatureManager.species[i];
-      if (!sp || row.querySelector('.pet-btn')) return;
-      const entry = creatureManager.collection.find((e) => e.id === sp.id);
-      if (!entry) return;
-      const b = document.createElement('button');
-      b.className = 'pet-btn dex-release';
-      b.textContent = pet && pet.id === sp.id ? '⭐' : '☆';
-      b.title = 'Choisir comme compagnon';
-      b.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        if (pet && pet.id === sp.id) clearPet(); else setPet(sp.id);
-        for (const btn of list.querySelectorAll('.pet-btn')) btn.remove();
-        decorateDex();
-      });
-      row.appendChild(b);
-    });
   }
 
   // ---- feeding & riding -----------------------------------------------------
@@ -563,76 +488,6 @@ export function initFun(ctx) {
     }
   }
 
-  // ---- duels ----------------------------------------------------------------
-  let portraitRenderer = null;
-  function creaturePortrait(spId) {
-    const sp = creatureManager.species.find((s) => s.id === spId) || creatureManager.species[0];
-    if (!portraitRenderer) {
-      portraitRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-      portraitRenderer.setSize(110, 130);
-    }
-    const sc = new THREE.Scene();
-    sc.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dl = new THREE.DirectionalLight(0xffffff, 1.2);
-    dl.position.set(2, 4, 3);
-    sc.add(dl);
-    const mesh = buildCreatureMesh(sp);
-    mesh.rotation.y = -0.4;
-    sc.add(mesh);
-    const cam = new THREE.PerspectiveCamera(40, 110 / 130, 0.1, 20);
-    cam.position.set(0.4, sp.size * 1.1, -sp.size * 3.2);
-    cam.lookAt(0, sp.size * 0.8, 0);
-    portraitRenderer.render(sc, cam);
-    return portraitRenderer.domElement.toDataURL();
-  }
-
-  function myDuelCreature() {
-    if (pet) return pet.id;
-    return creatureManager.collection[0]?.id ?? creatureManager.species[0].id;
-  }
-
-  function runDuel(a, b, spA, spB) {
-    const me = myName();
-    if (a !== me && b !== me) return; // spectators sit this one out
-    document.getElementById('duel-img-a').src = creaturePortrait(spA);
-    document.getElementById('duel-img-b').src = creaturePortrait(spB);
-    document.getElementById('duel-nm-a').textContent = a;
-    document.getElementById('duel-nm-b').textContent = b;
-    duelOverlay.style.display = 'flex';
-    const status = document.getElementById('duel-status');
-    const winner = [a, b].sort()[hashStr([a, b].sort().join('|') + new Date().toISOString().slice(0, 13)) % 2];
-    let count = 3;
-    status.textContent = '3…';
-    const iv = setInterval(() => {
-      count--;
-      if (count > 0) { status.textContent = `${count}…`; return; }
-      clearInterval(iv);
-      status.textContent = `🏆 ${winner} gagne ce round amical !`;
-      if (winner === me) { records.duels++; saveRecords(); emojiBurst(['🏆', '🎉'], 20); }
-      else emojiBurst(['👏', '💪'], 12);
-      setTimeout(() => { duelOverlay.style.display = 'none'; }, 3200);
-    }, 900);
-  }
-
-  function challenge(name) {
-    const net = getNet();
-    if (!net || !net.active) return;
-    const msg = { t: 'duel', phase: 1, a: myName(), b: name, spA: myDuelCreature() };
-    net.broadcast(msg);
-    toast(`⚔️ Défi envoyé à ${name} !`, 0xffe07a);
-  }
-
-  function onDuelMsg(msg) {
-    if (msg.phase === 1 && msg.b === myName()) {
-      const net = getNet();
-      const reply = { t: 'duel', phase: 2, a: msg.a, b: msg.b, spA: msg.spA, spB: myDuelCreature() };
-      if (net && net.active) net.broadcast(reply);
-      runDuel(msg.a, msg.b, msg.spA, reply.spB);
-    } else if (msg.phase === 2 && (msg.a === myName() || msg.b === myName())) {
-      runDuel(msg.a, msg.b, msg.spA, msg.spB);
-    }
-  }
-
   function decoratePlayersPanel(list) {
     const net = getNet();
     if (!net || !net.active) return;
@@ -641,10 +496,6 @@ export function initFun(ctx) {
       const row = document.createElement('div');
       row.className = 'fun-row';
       row.innerHTML = `<span>${c.name}</span>`;
-      const duelB = document.createElement('button');
-      duelB.textContent = '⚔️ Défi';
-      duelB.addEventListener('click', () => challenge(c.name));
-      row.appendChild(duelB);
       list.appendChild(row);
     }
     const hs = document.createElement('div');
@@ -1028,34 +879,6 @@ export function initFun(ctx) {
     }
   }
 
-  // ---- museum statues -------------------------------------------------------
-  const MUSEUM = PLACES.find((p) => p.name === 'Musée');
-  let statueGroup = null;
-
-  function updateMuseum() {
-    const d = Math.hypot(player.pos.x - MUSEUM.x, player.pos.z - MUSEUM.z);
-    if (d < 34 && !statueGroup) {
-      statueGroup = new THREE.Group();
-      const by = world.terrainHeight(MUSEUM.x, MUSEUM.z);
-      const caught = creatureManager.collection.slice(0, 12);
-      caught.forEach((entry, i) => {
-        const sp = creatureManager.species.find((s) => s.id === entry.id);
-        if (!sp) return;
-        const st = buildCreatureMesh(sp);
-        st.scale.setScalar(0.7);
-        const col = i % 6, rowz = i < 6 ? 4 : -4;
-        st.position.set(MUSEUM.x + (-6 + col * 2.4 | 0) + 0.5, by + 1, MUSEUM.z + rowz + 0.5);
-        st.rotation.y = rowz > 0 ? Math.PI : 0;
-        statueGroup.add(st);
-      });
-      scene.add(statueGroup);
-      if (caught.length) toast(`🏛️ Le musée expose ${caught.length} de tes créatures !`, 0x9fd8e8);
-    } else if (d > 45 && statueGroup) {
-      scene.remove(statueGroup);
-      statueGroup = null;
-    }
-  }
-
   // ---- math pop challenges --------------------------------------------------
   let mathTimer = 150;
   function showMathPop() {
@@ -1163,7 +986,7 @@ export function initFun(ctx) {
     }
   }
 
-  // ---- riding & pet update --------------------------------------------------
+  // ---- riding ----------------------------------------------------------------
   // L'ALLURE D'UNE MONTURE (v260) : une voiture roule à l'allure de la CLASSE
   // de son modèle (`allureDe`, vehicules.js — citadine, berline, SUV, GT,
   // sportive, hypercar) ; toute autre bête garde l'allure de sa fiche.
@@ -1354,15 +1177,6 @@ export function initFun(ctx) {
     else player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
 
-  function updatePet(dt) {
-    if (!petMesh) return;
-    petBob += dt;
-    const behind = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)).multiplyScalar(1.6);
-    const target = new THREE.Vector3(player.pos.x + behind.x + 0.7, player.pos.y + 0.15 + Math.sin(petBob * 3) * 0.12, player.pos.z + behind.z);
-    petMesh.position.lerp(target, Math.min(1, dt * 3));
-    petMesh.rotation.y = player.yaw;
-  }
-
   // ---- targeted-animal buttons ---------------------------------------------
   let targetTimer = 0;
   // `null` et non chaîne vide : le premier passage doit POSER l'état du bouton
@@ -1468,11 +1282,9 @@ export function initFun(ctx) {
     updateRide(dt);
     updateBord();
     updatePassager();
-    updatePet(dt);
     updateTargetButtons(dt);
     updateTreasure(dt);
     updatePark(dt);
-    updateMuseum();
     mathTimer -= dt;
     if (mathTimer <= 0) {
       mathTimer = 200 + Math.random() * 120;
@@ -1500,7 +1312,6 @@ export function initFun(ctx) {
   }
 
   function attachNet(net) {
-    net.onDuel = onDuelMsg;
     net.onEmote = (peerId, k) => showRemoteEmote(peerId, k);
     net.onSign = (s) => addSign(s); // un panneau reçu s'affiche et se garde, jamais ne se renvoie
   }
@@ -1525,11 +1336,6 @@ export function initFun(ctx) {
     onBlockPlaced() {
       records.blocks++;
       saveRecords();
-    },
-    onCatch() {
-      if (petMesh) { // the companion celebrates with you
-        petMesh.rotation.y += Math.PI * 2;
-      }
     },
   };
 }

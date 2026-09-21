@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 285,
+    titre: 'Les voitures roulent partout',
+    puces: [
+      'Elles montent les petites marches',
+      'On roule dans la campagne, pas juste en ville',
+      'Fini les créatures à attraper',
+      'Tes créatures restent gardées, au cas où',
+    ],
+  },
+  {
     v: 284,
     titre: 'Le jeu s\'adapte à ta tablette',
     puces: [

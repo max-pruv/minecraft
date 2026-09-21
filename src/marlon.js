@@ -1,5 +1,10 @@
 // Friendly NPCs: Marlon (a kid in a striped sailor shirt who follows the
-// player) and Professeur Cornichon (the creature expert who hosts the quiz).
+// player) and Professeur Cornichon, the professor who hosts the quiz.
+//
+// LEURS PHRASES NE PARLENT PLUS D'ATTRAPER (v285). Elles promettaient un Dex,
+// des balles et des « dresseurs » : le mode d'attrape est parti sur décision de
+// Max, et un personnage qui annonce une commande qui n'existe plus est pire que
+// muet — c'est la règle des messages de la maison, appliquée à un dialogue.
 
 import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
@@ -300,11 +305,11 @@ export class Marlon extends BaseNPC {
         'Attends-moi !',
         'Trop stylé ce monde !',
         'On construit une maison ?',
-        'Regarde, une créature là-bas !',
-        'Lance une ball, vite !',
+        'Regarde le train là-bas !',
+        'On prend l\'avion ?',
         'On va voir la montagne ?',
         "J'adore les arbres ici.",
-        'Tu as attrapé combien de créatures ?',
+        'Tu connais combien de villes ?',
         'On fait la course ?',
       ],
     });
@@ -381,7 +386,7 @@ export class Cornichon extends Wanderer {
   constructor(scene, world, player, toast, homeX, homeZ) {
     super(scene, world, player, toast, {
       name: 'Prof. Cornichon',
-      label: 'Professeur Cornichon — expert en créatures !',
+      label: 'Professeur Cornichon — il pose les questions !',
       walkSpeed: 1.6,
       firstSpeech: 10,
       look: {
@@ -392,12 +397,12 @@ export class Cornichon extends Wanderer {
         hairstyle: 'short', glasses: true,
       },
       phrases: [
-        'Bonjour, jeune dresseur !',
+        'Bonjour, jeune voyageur !',
         'Je suis le Professeur Cornichon !',
-        'Les créatures rares adorent la neige et le sable !',
-        'As-tu rempli ton Dex ?',
+        'Le Concorde va deux fois plus vite que le son !',
+        'Combien de capitales sais-tu nommer ?',
         'Réponds bien à mon quiz pour jouer plus longtemps !',
-        'Les créatures SPOOKY sont très difficiles à attraper.',
+        'Le métro de Washington passe sous le Potomac.',
         'Un cornichon par jour, en pleine forme toujours !',
         'Reviens me voir quand tu auras tout attrapé !',
       ],
@@ -424,7 +429,7 @@ export function createHeroes(scene, world, player, toast, cx, cz) {
       "Plus rapide que l'éclair ! ⚡",
       'Justice et blocs pour tous !',
       'Un héros protège toujours ses amis !',
-      'J\'ai vu une créature rare près de la montagne !',
+      'J\'ai survolé la montagne ce matin !',
       'Entraîne-toi bien au quiz, petit héros !',
       'Mon costume ? Cousu par ma grand-mère.',
     ],
@@ -556,17 +561,20 @@ export function createAstronautes(scene, world, player, toast, cx, cz) {
 
   const lise = new Wanderer(scene, world, player, toast, {
     name: 'Lise',
-    label: 'Lise — biologiste, elle étudie les martiens !',
+    // Elle étudiait les MARTIENS, qui étaient une espèce de créature (v285) ;
+    // Mars reste, avec sa roche, sa poussière et sa glace. Le personnage tient,
+    // la promesse qu'on ne peut plus tenir s'en va.
+    label: 'Lise — géologue, elle étudie la roche de Mars !',
     walkSpeed: 1.4,
     firstSpeech: 28,
     look: commun(0x58b04c),
     phrases: [
-      'J\'en ai compté trois espèces différentes !',
-      'Lance-leur une balle, ils adorent ça.',
-      'Le Grand Ancien est très rare, ouvre l\'œil.',
-      'Leurs antennes s\'allument quand ils sont contents.',
-      'Ils communiquent par petits sifflements.',
-      'Aucun martien n\'a jamais fait de mal à personne.',
+      'Cette roche est rouge à cause du fer rouillé.',
+      'Je cherche de la glace sous la poussière.',
+      'Une journée ici dure quarante minutes de plus.',
+      'La poussière se colle partout, tu verras.',
+      'Il y a eu de l\'eau ici, il y a très longtemps.',
+      'Mon plus beau caillou pèse trois kilos !',
     ],
   }, cx + 11, cz + 9);
 
@@ -584,8 +592,8 @@ export function createVillagers(scene, world, player, toast, cx, cz) {
     'Belle journée pour construire !',
     'Tu as vu les monuments ?',
     "J'adore ce village.",
-    'Les créatures ne sont pas méchantes, tu sais.',
-    'Un jour je serai dresseur, comme toi !',
+    'Les trains partent de la gare, là-bas.',
+    'Un jour je ferai le tour du monde, comme toi !',
     'Le château fort est par là-bas !',
     'La pyramide de verre brille au soleil.',
     'Prof. Cornichon connaît tout sur tout.',

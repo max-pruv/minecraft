@@ -45,9 +45,11 @@ export const SIGNATURES_GLB = [
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les
 // fichiers chauffés : un seul programme restait, le Lambert uni du chien des
-// passants (`construireChien`, passants.js) — que les bêtes de `creatures.js`
-// partagent. Les autres matériaux du jeu (blocs, personnages sculptés,
-// vitres) sont déjà rendus au point d'apparition.
+// passants (`construireChien`, passants.js). Les bêtes de `creatures.js` le
+// partageaient, et c'est pour cela que leur retrait (v285) ne change rien ici :
+// la signature ne tient pas à elles, elle tient au chien. Les autres matériaux
+// du jeu (blocs, personnages sculptés, vitres) sont déjà rendus au point
+// d'apparition.
 export const SIGNATURES_JEU = ['Lambert'];
 
 // La laque reçoit la sonde des reflets (`refleter`, vehicules.js) : c'est la

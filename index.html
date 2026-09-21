@@ -490,7 +490,7 @@
     #online-play-btn { background: #2d6a2d !important; border-color: #58b04c !important; }
     #online-back { font-size: 14px !important; padding: 6px 16px !important; background: #3a3a4a !important; }
     #players-btn {
-      display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 152px; z-index: 11;
+      display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 104px; z-index: 11;
       height: 40px; padding: 0 12px; border-radius: 8px;
       border: 2px solid rgba(159, 216, 232, 0.7); background: rgba(0,0,0,0.45);
       color: #9fd8e8; font-family: inherit; font-size: 15px; font-weight: bold; cursor: pointer;
@@ -759,8 +759,8 @@
        les deux : une manette des gaz est ce qui distingue un avion d'une
        voiture (v228), et le compteur en Mach a été bâti pour lui (v267). */
     body.en-avion #gaz-base, body.en-avion #cmd-vol, body.en-avion #gaz-val { display: block; }
-    body.en-vehicule #jump-btn, body.en-vehicule #mode-btn, body.en-vehicule #ball-btn,
-    body.en-vehicule #down-btn, body.en-vehicule #dex-btn, body.en-vehicule #hotbar { display: none !important; }
+    body.en-vehicule #jump-btn, body.en-vehicule #mode-btn,
+    body.en-vehicule #down-btn, body.en-vehicule #hotbar { display: none !important; }
     body.en-vehicule:not(.en-avion) #fly-btn { display: none !important; }
     /* En avion la colonne se déplie et porte les deux boutons ; en voiture
        elle n'est qu'un socle pour le compteur. */
@@ -798,7 +798,9 @@
       color: #fff; font-size: 18px;
     }
 
-    /* creature catching */
+    /* L'ÉTIQUETTE DE CE QU'ON REGARDE — une bête, une monture. Elle est née
+       avec l'attrape de créatures (retirée en v285) et son `id` le dit encore ;
+       ce qu'elle nomme aujourd'hui, ce sont les animaux. */
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
@@ -818,36 +820,6 @@
       opacity: 0; transition: opacity 0.5s; z-index: 8; pointer-events: none;
     }
     body.en-avion #toast { top: calc(120px + var(--safe-top)); }
-    #ball-btn { right: 176px; bottom: calc(110px + var(--safe-bottom)); font-size: 26px; }
-    #dex-btn {
-      position: fixed; top: calc(8px + var(--safe-top)); right: 56px; z-index: 11;
-      width: 40px; height: 40px; border-radius: 8px;
-      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
-      color: #fff; font-size: 18px; cursor: pointer;
-    }
-    #dex-panel {
-      display: none; position: fixed; top: calc(56px + var(--safe-top)); right: 8px; z-index: 12;
-      width: min(320px, 90vw); max-height: 70vh; overflow-y: auto;
-      background: rgba(10, 14, 20, 0.92); border: 2px solid #555; border-radius: 8px;
-      color: #eee; padding: 12px; font-size: 13px;
-    }
-    #dex-title { font-weight: bold; margin-bottom: 8px; padding-right: 24px; }
-    #dex-close {
-      position: absolute; top: 6px; right: 8px; background: none; border: none;
-      color: #aaa; font-size: 16px; cursor: pointer;
-    }
-    .dex-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 6px; }
-    .dex-row > span:nth-child(2) { flex: 1; }
-    .dex-release {
-      background: rgba(0,0,0,0.4); border: 1px solid #46587e; border-radius: 6px;
-      color: #fff; font-size: 14px; padding: 2px 8px; cursor: pointer; flex-shrink: 0;
-    }
-    .dex-release:hover { border-color: #9fd8e8; }
-    .dex-row.unknown { color: #777; }
-    .type-chip {
-      display: inline-block; padding: 1px 6px; border-radius: 4px;
-      color: #111; font-size: 10px; font-weight: bold; vertical-align: middle;
-    }
 
     /* educational mode */
     #edu-timer {
@@ -859,7 +831,7 @@
     #edu-timer { padding-right: 30px; pointer-events: auto; }
     @keyframes pulse { 50% { opacity: 0.55; } }
     #inv-btn {
-      position: fixed; top: calc(8px + var(--safe-top)); right: 104px; z-index: 11;
+      position: fixed; top: calc(8px + var(--safe-top)); right: 56px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
       border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
       color: #fff; font-size: 18px; cursor: pointer;
@@ -1937,7 +1909,6 @@
   <div id="creature-label"></div>
   <div id="toast"></div>
   <button id="pause-btn">⏸</button>
-  <button id="dex-btn" title="Creature Dex (B)">◓</button>
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
   <div id="left-rail"><button id="map-btn" title="Mini-carte">🗺️</button></div>
@@ -2072,7 +2043,7 @@
         <button id="map-moi" title="Me retrouver">🔺 moi</button>
         <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
       </div>
-      <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux · 🟪 créatures</div>
+      <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux</div>
       <div id="map-astuce">✊ Appui long <b>n'importe où</b> pour t'y téléporter</div>
     </div>
   </div>
@@ -2151,19 +2122,12 @@
   </div>
   <div id="confetti"></div>
 
-  <div id="dex-panel">
-    <div id="dex-title"></div>
-    <button id="dex-close">✕</button>
-    <div id="dex-list"></div>
-  </div>
-
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
     <button class="tbtn" id="jump-btn">⤒</button>
     <button class="tbtn" id="mode-btn">⛏️</button>
     <button class="tbtn" id="fly-btn"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
     <button class="tbtn" id="down-btn">▼</button>
-    <button class="tbtn" id="ball-btn">◓</button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
     <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
@@ -2271,8 +2235,6 @@
       <div><b>Maj</b> — courir</div>
       <div><b>1 à 9 / molette</b> — choisir un bloc</div>
       <div><b>F</b> — voler (Espace et C pour monter, descendre)</div>
-      <div><b>Q</b> — lancer une balle vers une créature</div>
-      <div><b>B</b> — le carnet des créatures</div>
       <div><b>E</b> — l'inventaire : tous les blocs</div>
       <div><b>Échap</b> — pause</div>
       <div><b>Sur tablette</b> — pouce gauche : marcher · pouce droit : regarder</div>

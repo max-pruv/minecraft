@@ -99,7 +99,7 @@ const GARDIENS = {
   // carte.
   'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js'],
   // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
-  // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
+  // `modeles.js`, `props.js`, `animals.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
   // libération de trop passerait sans réveiller la suite qui la verrait.
   'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
@@ -224,7 +224,12 @@ const GARDIENS = {
   'src/props.js': ['monte.js', 'carte.js'],
   'src/modeles.js': ['monte.js'],
   'src/betes.js': ['monte.js'],
-  'src/creatures.js': ['monte.js'],
+  // LE BANDEAU DU JEU (v285). Il vivait dans `creatures.js` — retiré avec le mode
+  // d'attrape — et c'est la VOIX du jeu : « fais demi-tour », « Sauvegarde
+  // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
+  // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
+  'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
+    'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],

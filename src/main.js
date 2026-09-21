@@ -21,6 +21,7 @@ import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
+import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET } from './palier.js';
 import { liberer } from './liberer.js';
@@ -42,7 +43,6 @@ import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
-import { CreatureManager, TYPES } from './creatures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
@@ -704,8 +704,7 @@ for (let i = 0; i < 4; i++) {
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
-const creatureManager = new CreatureManager(scene, world, player);
-const animalManager = new AnimalManager(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
+const animalManager = new AnimalManager(scene, world, player, toast);
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -1026,7 +1025,7 @@ function updateChunks() {
     for (let dx = -1; dx <= 1; dx++) meshChunk(pcx + dx, pcz + dz);
   }
   rebuildQueue();
-  const say = (msg, color) => creatureManager.toast(msg, color);
+  const say = (msg, color) => toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
   npcs = [
@@ -1170,7 +1169,7 @@ function updateChunks() {
     // souvent parce que la tablette rame (piège de `dt`, v226)
     if (performance.now() - ditEau < 4000) return;
     ditEau = performance.now();
-    creatureManager.toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
+    toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
   };
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
   // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
@@ -1501,7 +1500,7 @@ function positionDuCloud(state) {
   if (connue > 0 && Date.now() - posEntree > 40000) return;
   posAppliquee.set(posCtx, p.t);
   placerA(p);
-  creatureManager.toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
+  toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
 }
 
 // Live rescue: if a player somehow ends far above the world (runaway
@@ -1513,7 +1512,7 @@ setInterval(() => {
     player.pos.y = gy + 0.2;
     player.vel.set(0, 0, 0);
     player.flying = false;
-    creatureManager.toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
+    toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
   }
 }, 4000);
 
@@ -1649,8 +1648,6 @@ document.addEventListener('keydown', (e) => {
   if (!running) return;
   player.keys.add(e.code);
   if (e.code === 'KeyF') refuserOuVoler();
-  if (e.code === 'KeyQ') creatureManager.throwBall();
-  if (e.code === 'KeyB') toggleDex();
   if (e.code === 'KeyE') openInventory();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
@@ -1871,30 +1868,30 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 function refuserOuVoler() {
   const aBord = player.decollerOuSePoser();
   if (aBord === 'decollage') {
-    creatureManager.toast('✈️ Pleins gaz ! Le nez se lève tout seul — le joystick tient le cap.', 0x9fd8ff);
+    toast('✈️ Pleins gaz ! Le nez se lève tout seul — le joystick tient le cap.', 0x9fd8ff);
     return true;
   }
   if (aBord === 'remise') {
-    creatureManager.toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
+    toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
     return true;
   }
   if (aBord === 'atterrissage') {
-    creatureManager.toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
+    toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
     return true;
   }
   if (player.toggleFly()) return true;
-  creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
+  toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
 }
 
 // Ce que l'avion fait tout seul se DIT : les roues qui touchent, l'arrêt.
 player.surAvion = (quoi) => {
-  if (quoi === 'touche') creatureManager.toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
-  else if (quoi === 'ventre') creatureManager.toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
-  else if (quoi === 'arret') creatureManager.toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
+  if (quoi === 'touche') toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
+  else if (quoi === 'ventre') toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
+  else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
   // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
   // jamais seulement ce qui est refusé — la règle de la maison.
-  else if (quoi === 'remiseDesGaz') creatureManager.toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
+  else if (quoi === 'remiseDesGaz') toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
 };
 
 // LA MANETTE DES GAZ (v262). Max : « le joystick à gauche pour la direction
@@ -1939,7 +1936,7 @@ gazBase.addEventListener('touchstart', (e) => e.preventDefault(), { passive: fal
 trainBtn.addEventListener('click', () => {
   if (!player.pilote) return;
   player.trainVoulu = !((player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
-  creatureManager.toast(player.trainVoulu ? '🛞 Train sorti.' : '🛞 Train rentré.', 0x9fd8ff);
+  toast(player.trainVoulu ? '🛞 Train sorti.' : '🛞 Train rentré.', 0x9fd8ff);
 });
 // LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
 // coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
@@ -2040,11 +2037,6 @@ document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   document.getElementById('down-btn').style.display = player.flying ? 'flex' : 'none';
 }, { passive: false });
 
-document.getElementById('ball-btn').addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  creatureManager.throwBall();
-}, { passive: false });
-
 // --- settings & gyroscope look ----------------------------------------------------
 
 const SETTINGS_KEY = 'web-minecraft-settings-v1';
@@ -2125,7 +2117,7 @@ document.getElementById('gyro-row').addEventListener('click', () => {
   if (settings.gyro) requestGyroPermission();
   renderSettings();
   saveSettings();
-  creatureManager.toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
+  toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
 });
 
 // Applies the CHANGE in device angles to the camera, so gyro aiming and
@@ -2240,7 +2232,7 @@ function aeroportiste(dt) {
   // chiffres. Il était hors de cause.
   //
   // Quatre-vingt-dix reste juste pour sa propre raison : un appareil garé ne
-  // se dessine qu'à soixante-deux blocs, comme toute créature. En faire naître
+  // se dessine qu'à soixante-deux blocs, comme tout personnage. En faire naître
   // à cent trente ne montre rien à personne. Le garagiste travaille à
   // quatre-vingts pour exactement ce motif.
   const a = aeroportPres(player.pos.x, player.pos.z, 90);
@@ -2279,7 +2271,7 @@ animalManager.onHarvest = (def) => {
   meatCount++;
   try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
   renderMeat();
-  creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
+  toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
 };
 
@@ -2450,10 +2442,10 @@ async function inviter(nom) {
   if (!net || !net.active) return false;
   try {
     await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, carte: 'terre', at: Date.now() });
-    creatureManager.toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
+    toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
     return true;
   } catch {
-    creatureManager.toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
+    toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
     return false;
   }
 }
@@ -2512,7 +2504,7 @@ async function accepterInvitation(code) {
 window.__inviter = inviter;
 window.__listerLesAmis = listerLesAmis;
 window.__accepterInvitation = accepterInvitation;
-const cloud = new CloudSave(world, (msg, color) => creatureManager.toast(msg, color));
+const cloud = new CloudSave(world, (msg, color) => toast(msg, color));
 
 // player profile: each device types its own character name (Marlon, Alice…)
 const PROFILE_KEY = 'web-minecraft-profile-v1';
@@ -2523,7 +2515,7 @@ catch { /* defaults */ }
 // below can flush state before they reload). See the sync section further on.
 const profileSync = new ProfileSync(cloud, () => playerProfile.name);
 profileSync.onTrim = (dropped) => {
-  creatureManager.toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
+  toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
 };
 // The world in memory is the truth; localStorage only catches up on a
 // debounced save, so a push that read storage alone could ship a copy that
@@ -2538,7 +2530,7 @@ profileSync.onMerged = (state) => {
   const applied = state?.edits ? world.importerProfil(state.edits) : 0;
   if (applied > 0) {
     world.saveEdits();
-    creatureManager.toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
+    toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
   }
   positionDuCloud(state);
 };
@@ -2819,7 +2811,7 @@ async function guetterConsignes() {
     try {
       if (await lireConsignes()) {
         appliquerConsignes();
-        creatureManager.toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
+        toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
       }
     } catch { /* on repassera dans deux secondes */ }
   }
@@ -3004,9 +2996,9 @@ const identity = new Identity(cloud, raw);
 (function parentUnlock() {
   const asked = new URLSearchParams(location.search).get('unlock');
   if (!asked) return;
-  if (asked !== '135246') { creatureManager.toast('Code parental incorrect', 0xff6b6b); return; }
+  if (asked !== '135246') { toast('Code parental incorrect', 0xff6b6b); return; }
   identity.clearLock();
-  creatureManager.toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
+  toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
   // On retire le code de la barre d'adresse — il n'a pas à rester dans
   // l'historique ni à repartir dans un lien partagé — sans toucher au reste
   // des paramètres, qui configurent le jeu.
@@ -3033,7 +3025,7 @@ identity.onLook = (name, look) => {
   playerProfile.look = look;
   saveProfile();
   refreshCharPortraits();
-  creatureManager.toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
+  toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
 };
 
 // A face enrolled just before this profile was entered (typically a
@@ -3354,7 +3346,7 @@ if (partagePanel) {
   document.getElementById('partage-close').addEventListener('click', fermerPartage);
   partagePanel.addEventListener('click', (e) => { if (e.target === partagePanel) fermerPartage(); });
   document.getElementById('partage-envoyer').addEventListener('click', () => {
-    partagerLien(lienDuJeu(), { toast: (m) => creatureManager.toast(m, 0x9fd8e8) });
+    partagerLien(lienDuJeu(), { toast: (m) => toast(m, 0x9fd8e8) });
   });
 }
 
@@ -3642,7 +3634,7 @@ function startNetSession(code, isHost, patience) {
     // Le nuage sert de tuyau de secours quand le pair-à-pair est bloqué :
     // c'est ce qui fait qu'un Wi-Fi d'hôtel n'interdit plus de jouer ensemble.
     cloud,
-    toast: (msg, color) => creatureManager.toast(msg, color),
+    toast: (msg, color) => toast(msg, color),
     onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
     onState: () => updatePlayersBtn(),
   });
@@ -3902,7 +3894,7 @@ function showOnlineUI() {
     addChatMsg(name, msg, false);
     chatDing();
     if (chatPanel.style.display !== 'block') {
-      creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
+      toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
       setUnread(unread + 1);
     }
     // Un message qui arrive pendant qu'on est ailleurs mérite le système : le
@@ -3911,11 +3903,11 @@ function showOnlineUI() {
       notifierSysteme(`💬 ${name}`, msg, 'wm-chat');
     }
   };
-  net.onAnnonce = (txt) => creatureManager.toast(txt, 0x9fd8e8);
+  net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
-  net.onLeave = (nom) => creatureManager.toast(`👋 ${nom} est parti·e`, 0xcccccc);
+  net.onLeave = (nom) => toast(`👋 ${nom} est parti·e`, 0xcccccc);
   // ON NE RENVOIE PLUS L'ENFANT AU MENU AVEC UNE ACCUSATION.
   //
   // Ce message vient d'un hôte qui porte notre prénom. Le jeu ne l'envoie plus
@@ -3944,7 +3936,7 @@ function showOnlineUI() {
   // dit d'un ton neutre, sans la boîte d'alerte qui fait peur.
   net.onRemplace = (name) => {
     leaveToMainMenu();
-    creatureManager.toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
+    toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
   };
   // On hébergeait, et le code nous a été repris pendant une coupure : l'autre
   // enfant tient désormais le monde. On le rejoint au lieu de rester chacun
@@ -4370,7 +4362,7 @@ function viderLaVisio() {
 camBtn.addEventListener('click', async () => {
   if (!net || !net.active) {
     // the button used to do nothing at all here, which just looks broken
-    creatureManager.toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
+    toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
     return;
   }
   await allumerOuEteindreLaCamera();
@@ -4409,7 +4401,7 @@ document.getElementById('visio-invite-btn').addEventListener('click', async () =
 // Le son distant refusé faute de geste : on le dit une fois, gentiment, et le
 // premier contact avec l'écran le débloque.
 surSonEnAttente((nom) => {
-  creatureManager.toast(nom
+  toast(nom
     ? `🔊 Touche l'écran pour entendre ${nom}`
     : "🔊 Touche l'écran pour entendre", 0xffd479);
 });
@@ -4501,22 +4493,22 @@ function majLigneNotif() {
 
 document.getElementById('notif-toggle')?.addEventListener('click', async () => {
   if (!notifsDispo()) {
-    creatureManager.toast('📱 Ajoute d\'abord le jeu à ton écran d\'accueil !', 0x9fd8e8);
+    toast('📱 Ajoute d\'abord le jeu à ton écran d\'accueil !', 0x9fd8e8);
     return;
   }
   if (Notification.permission === 'granted') {
-    creatureManager.toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
+    toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
     return;
   }
   if (Notification.permission === 'denied') {
-    creatureManager.toast('🔕 Ton navigateur a bloqué les alertes. Change-le dans ses réglages.', 0xff9a9a);
+    toast('🔕 Ton navigateur a bloqué les alertes. Change-le dans ses réglages.', 0xff9a9a);
     return;
   }
   // Ici, et seulement ici, on est dans un vrai geste de l'utilisateur.
   try { await Notification.requestPermission(); } catch { /* refusé */ }
   majLigneNotif();
   if (Notification.permission === 'granted') {
-    creatureManager.toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
+    toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
   }
 });
 document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
@@ -4594,7 +4586,7 @@ function proposerNotifs(raison) {
       try { await Notification.requestPermission(); } catch { /* refusé */ }
       majLigneNotif();
       notifMemoEcrire({ n: NOTIF_MAX, t: Date.now() });   // question réglée
-      creatureManager.toast(
+      toast(
         Notification.permission === 'granted'
           ? '🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.'
           : '🔕 Pas de souci — tu pourras l\'activer dans ⚙️ Réglages.',
@@ -4618,6 +4610,13 @@ setTimeout(() => proposerNotifs('spontane'), 75000);
 
 // Le grand bandeau du milieu de l'écran, celui des captures. Il sert aussi
 // aux arrivées de joueurs et aux moments forts du siège.
+//
+// Son `id` dit encore « catch » : il est né avec la fête de l'attrape, retirée
+// en v285, et le RENOMMER coûterait une passe dans le CSS et les témoins pour un
+// nom que personne ne voit. C'est la règle de la v275, par l'autre bout : on
+// renomme ce que l'enfant VOIT, pas ce qui porte le mécanisme.
+const catchBanner = document.getElementById('catch-banner');
+
 function grandBandeau(titre, sous, duree = 3200) {
   const t = document.getElementById('catch-title');
   const s2 = document.getElementById('catch-sub');
@@ -4655,38 +4654,6 @@ function annonceArrivee(nom) {
   }
 }
 
-// --- catch celebration ------------------------------------------------------------
-
-const catchBanner = document.getElementById('catch-banner');
-creatureManager.onCatch = (sp, level) => {
-  document.getElementById('catch-title').textContent = '⭐ ATTRAPÉ ! ⭐';
-  document.getElementById('catch-sub').textContent = `${sp.name} · ${sp.type} · Niveau ${level} rejoint ton Dex !`;
-  catchBanner.classList.remove('show');
-  void catchBanner.offsetWidth; // restart the pop animation
-  catchBanner.classList.add('show');
-  clearTimeout(catchBanner._t);
-  catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 2600);
-  emojiBurst(['⭐', '✨', '🎉', '◓'], 22);
-  fun.onCatch(sp);
-};
-
-// --- creature dex panel -----------------------------------------------------------
-
-const dexPanel = document.getElementById('dex-panel');
-
-function toggleDex() {
-  const open = dexPanel.style.display === 'block';
-  if (open) {
-    dexPanel.style.display = 'none';
-  } else {
-    creatureManager.renderDex();
-    dexPanel.style.display = 'block';
-  }
-}
-
-document.getElementById('dex-btn').addEventListener('click', toggleDex);
-document.getElementById('dex-close').addEventListener('click', toggleDex);
-
 // --- educational mode ---------------------------------------------------------
 
 const edu = new EducationMode({
@@ -4696,8 +4663,7 @@ const edu = new EducationMode({
     overlay.style.display = 'none';
   },
   onResume: () => startGame(),
-  toast: (msg, color) => creatureManager.toast(msg, color),
-  reward: () => creatureManager.awardRandom(),
+  toast: (msg, color) => toast(msg, color),
   // Le hub Éducation filtre par enfant et par période : la liste des enfants
   // vient des documents du cloud (comme dans l'espace parent), les journées
   // d'un autre enfant de ses lignes de temps de jeu.
@@ -4797,7 +4763,7 @@ async function pullPlayTime() {
     const applied = world.importerProfil(state.edits);
     if (applied > 0) {
       world.saveEdits();
-      creatureManager.toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
+      toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
     }
   }
   if (changed && !already) {
@@ -5053,7 +5019,7 @@ gradeSelect.addEventListener('change', () => {
   saveProfile();
   edu.setPrefs(playerProfile.lang, playerProfile.grade);
   pushPrefsToCloud();
-  creatureManager.toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
+  toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
 });
 edu.setPrefs(playerProfile.lang, playerProfile.grade);
 
@@ -5149,7 +5115,7 @@ function adopterProfilDistant(prefs) {
     }
   }
   if (changed || skillsChanged) {
-    creatureManager.toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
+    toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
   }
 })();
 
@@ -5209,12 +5175,9 @@ function updateCreatureLabel() {
       return;
     }
   }
-  const c = running ? creatureManager.targeted() : null;
-  if (!c) { creatureLabel.style.display = 'none'; return; }
-  creatureLabel.style.display = 'block';
-  creatureLabel.textContent =
-    `Wild ${c.sp.name} · ${c.sp.type} · Lv ${c.level} — ${IS_TOUCH ? 'tap ◓' : 'press Q'} to throw!`;
-  creatureLabel.style.color = '#' + new THREE.Color(TYPES[c.sp.type].color).getHexString();
+  // Plus de créature sauvage à nommer depuis la v285 : l'étiquette ne sert plus
+  // qu'aux bêtes et aux montures, juste au-dessus.
+  creatureLabel.style.display = 'none';
 }
 
 // --- hotbar HUD ------------------------------------------------------------------
@@ -5786,17 +5749,11 @@ function drawMap(mapCanvas, radius) {
 
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2 + 1)) * size, ((z - pcz + radius) / (radius * 2 + 1)) * size];
 
-  // NPCs (white) and wild creatures (violet)
+  // NPCs (white)
   for (const npc of npcs) {
     const [mx, my] = toMap(npc.pos.x, npc.pos.z);
     if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillStyle = '#fff';
-    ctx.fillRect(mx - 2, my - 2, 4, 4);
-  }
-  ctx.fillStyle = '#c86ee0';
-  for (const c of creatureManager.creatures) {
-    const [mx, my] = toMap(c.pos.x, c.pos.z);
-    if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
   ctx.fillStyle = '#ffd75e'; // farm animals
@@ -5908,27 +5865,23 @@ const carte = new Carte({
   autres: () => [...remotePlayers.values()].map((rp) => ({
     x: rp.mesh.position.x, z: rp.mesh.position.z, nom: rp.name,
   })),
-  // Habitants, bêtes et créatures : la liste n'est construite que si la carte
-  // est assez rapprochée pour les montrer.
-  // `toujours` : les créatures se voient à TOUS les zooms. Elles vivent à
-  // moins de soixante-dix blocs du joueur — de loin, elles se regroupent
-  // autour de sa flèche, ce qui est la vérité. Les cent quatorze habitants et
-  // les animaux, eux, restent réservés au zoom proche : dessinés de loin, ils
-  // couvraient les villes de confettis.
+  // Habitants et bêtes : la liste n'est construite que si la carte est assez
+  // rapprochée pour les montrer — dessinés de loin, ils couvraient les villes de
+  // confettis. Les créatures, qui s'y voyaient à TOUS les zooms, sont parties en
+  // v285 avec leur drapeau `toujours`.
   mobiles: () => [
     ...npcs.map((n) => ({ x: n.pos.x, z: n.pos.z, couleur: '#ffffff' })),
-    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0', toujours: true })),
     ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
   ],
   surVoyage: (lieu) => {
     deposerA(lieu.x + 1.5, lieu.z + 1.5);   // sur la trame des rues, pas dans une maison
     fermerCarte();
-    creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+    toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
   surTeleport: (wx, wz) => {
     const { dansEau } = deposerA(wx, wz);
     fermerCarte();
-    creatureManager.toast(
+    toast(
       dansEau ? '🌊 Téléporté en pleine mer — nage jusqu\'à la terre !' : '✨ Téléporté ! Bon voyage.',
       dansEau ? 0x6ec8ff : 0xffd75e
     );
@@ -6057,7 +6010,7 @@ function allerAuLieu(lieu) {
   carte.limiter();
   deposerA(lieu.x + 1.5, lieu.z + 1.5);
   fermerCarte();
-  creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+  toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
 }
 
 champLieu.addEventListener('input', montrerResultats);
@@ -6454,7 +6407,7 @@ function adopterCiel({ temps, meteo }) {
   if ((meteo === 'clear' || meteo === 'rain') && meteo !== weather) {
     weather = meteo;
     rainPoints.visible = weather === 'rain';
-    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
   }
 }
 
@@ -6473,7 +6426,7 @@ function updateWeather(dt) {
     weather = weather === 'clear' ? 'rain' : 'clear';
     weatherTimer = weather === 'rain' ? 50 + Math.random() * 70 : 140 + Math.random() * 160;
     rainPoints.visible = weather === 'rain';
-    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
     // le changement part tout de suite : c'est ce qui se voit le plus
     if (net && net.active && net.isHost) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
   }
@@ -6523,7 +6476,7 @@ let seasonTime = 0, seasonToastShown = false;
 function updateSeasons(dt) {
   if (!seasonToastShown && running) {
     seasonToastShown = true;
-    creatureManager.toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
+    toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
   }
   seasonTime += dt;
   const pos = seasonGeo.attributes.position;
@@ -6688,10 +6641,9 @@ function updateHud(dt) {
 // --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
 
 const fun = initFun({
-  scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
+  scene, world, player, animalManager, edu, cloud, canvas,
   renderNow: () => renderer.render(scene, camera),
   emojiBurst,
-  toast: (m, c) => creatureManager.toast(m, c),
   myName,
   getNet: () => net,
   remotePlayers: () => remotePlayers,
@@ -6762,7 +6714,7 @@ window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, c
     return { palier: PALIER ? PALIER.nom : null, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
       seRange: PALIER_SE_RANGE };
-  }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+  }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -6773,12 +6725,12 @@ let elanAnnonce = false;
 let croisiereAnnonce = false;
 function signalerElanDeVol() {
   const lance = player.volLance();
-  if (lance && !elanAnnonce) creatureManager.toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
+  if (lance && !elanAnnonce) toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
   elanAnnonce = lance;
   // Puis la vitesse grandit sans bruit — sauf une fois, au sommet : l'enfant
   // sait qu'il tient sa vitesse de croisière et qu'insister ne donnera plus.
   const croisiere = player.volCroisiere && player.volCroisiere();
-  if (croisiere && !croisiereAnnonce) creatureManager.toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
+  if (croisiere && !croisiereAnnonce) toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
   croisiereAnnonce = croisiere;
 }
 
@@ -6809,7 +6761,6 @@ function frame(now) {
   if (running) {
     player.update(dt);
     signalerElanDeVol();
-    creatureManager.update(dt);
     animalManager.update(dt);
     garagiste(dt);
     aeroportiste(dt);

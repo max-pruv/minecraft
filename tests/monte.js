@@ -3774,41 +3774,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     //   ici           193 géométries prises, 193 rendues, 0 perdue
     await souffler();
     const rendu = await ciel.evaluate(() => {
-      const g = window.__game, cm = g.creatureManager, R = g.renderer;
-      if (!cm || !cm.trySpawn) return { err: 'pas de gestionnaire de créatures' };
-      // `trySpawn` refuse dès que le plafond de bêtes sauvages est atteint —
-      // et sur une page qui a volé, il l'est : deux naissances en quatre-vingts
-      // essais. On fait de la place AVANT de compter, sinon les bêtes qu'on
-      // retire ici passeraient pour des géométries rendues par le témoin.
-      while (cm.creatures.length > 4) cm.removeCreature(cm.creatures[0]);
+      const g = window.__game, am = g.animalManager, R = g.renderer;
+      if (!am || !am.invoquer) return { err: 'pas de gestionnaire de bêtes' };
+      // LE TÉMOIN NE MESURE PLUS LES CRÉATURES : elles sont parties avec le mode
+      // d'attrape (v285). Ce qu'il garde n'a jamais tenu à elles — c'est
+      // `liberer.js`, et les BÊTES suivent le même cycle : une naissance toutes
+      // les secondes et demie, un retrait à soixante-dix blocs, `liberer` sur le
+      // maillage. On éprouve donc le MÉCANISME du jeu, pas une méthode de sonde :
+      // on invoque, puis on éloigne les bêtes et l'on laisse `update` les retirer
+      // comme il le fait en jeu.
+      //
+      // ON ÉLOIGNE LES BÊTES, PAS LE JOUEUR. Déplacer l'enfant ferait bouger le
+      // disque de morceaux, et c'est exactement le piège que la v238 avait
+      // relevé : 92 morceaux contre 99, soit vingt géométries d'écart, et le
+      // verdict mesurait le banc.
+      am.spawnTimer = 999;   // sinon `update` fait naître pendant qu'on compte
       R.render(g.scene, g.camera);
       const avant = R.info.memory.geometries;
-      // `trySpawn` tire une position et peut ne rien poser (eau, pente,
-      // plafond) : dix essais n'en faisaient naître que quatre sur la carte
-      // ×2. On insiste jusqu'à dix bêtes — c'est le mécanisme qu'on éprouve,
-      // pas le hasard du tirage.
       const nees = [];
-      for (let i = 0; i < 80 && nees.length < 10; i++) {
-        const n = cm.creatures.length;
-        cm.trySpawn();
-        if (cm.creatures.length > n) nees.push(cm.creatures[cm.creatures.length - 1]);
+      for (let i = 0; i < 40 && nees.length < 10; i++) {
+        const a = am.invoquer('vache', g.player.pos.x + 3 + i, g.player.pos.z + 3);
+        if (a) nees.push(a);
       }
-      for (const c of nees) c.mesh.traverse((o) => { o.frustumCulled = false; });
+      // ET LE COMPTEUR DU MOTEUR N'ENREGISTRE QUE CE QUI EST DESSINÉ (v238) :
+      // sans cela les bêtes nées derrière la caméra n'y figurent jamais, et le
+      // témoin rend « 96 avant, 96 pendant, 96 après » en ne mesurant rien.
+      for (const a of nees) a.mesh.traverse((o) => { o.frustumCulled = false; });
       R.render(g.scene, g.camera);
       const pleine = R.info.memory.geometries;
-      for (const c of nees) cm.removeCreature(c);
+      for (const a of nees) a.pos.set(g.player.pos.x + 400, a.pos.y, g.player.pos.z + 400);
+      am.spawnTimer = 999;
+      am.update(0.001);
       R.render(g.scene, g.camera);
       const apres = R.info.memory.geometries;
-      return { avant, pleine, apres, nees: nees.length,
+      return { avant, pleine, apres, nees: nees.length, restantes: am.animals.length,
         prises: pleine - avant, rendues: pleine - apres, perdues: apres - avant };
     });
     // La borne de GARDE vérifie que la mesure a EU LIEU — au moins cinq bêtes
-    // nées et cent géométries prises — et se pose à la moitié de ce qui a été
-    // relevé (dix bêtes, 193), jamais à quatre-vingt-dix pour cent. Le verdict,
-    // lui, est exact : ce qu'on a pris, on le rend. Dix de tolérance pour un
-    // remaillage qui tomberait entre deux comptes.
+    // nées et vingt géométries prises — et se pose loin sous ce qui a été relevé,
+    // jamais à quatre-vingt-dix pour cent (v237). Le chiffre change avec la v285 :
+    // une créature coûtait dix-neuf géométries et demie, une vache en coûte
+    // moins, et une barre recopiée de l'ancienne mesure rendrait ce témoin rouge
+    // sur du code sain. Le verdict, lui, ne bouge pas : ce qu'on a pris, on le
+    // rend. Dix de tolérance pour un remaillage tombé entre deux comptes.
     verifier('ce qu\'on retire de la scène se rend à la carte graphique',
-      !rendu.err && rendu.nees >= 5 && rendu.prises >= 100 && rendu.perdues <= 10,
+      !rendu.err && rendu.nees >= 5 && rendu.prises >= 20 && rendu.perdues <= 10,
       `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
@@ -4256,7 +4266,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           canvas: (document.querySelector('canvas') || {}).id || 'game',
           pastille: pastille ? getComputedStyle(pastille).display : 'absente',
           descendre, attenduDescendre,
-          boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), capture: vis('ball-btn'), coffre: vis('dex-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
+          boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
           boost: g.player.boost, max: 3.2 * (g.player.boost || 1),
         };
       });
@@ -4346,8 +4356,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > manette.max * 0.5,
       `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
     const b = manette.boutons || {};
-    verifier('au volant, les boutons de la marche s\'effacent — saut, pioche, capture, coffre, barre — ET LA JAUGE DE VITESSE N\'EXISTE PAS',
-      !manette.err && b.saut === 'none' && b.pioche === 'none' && b.capture === 'none' && b.coffre === 'none'
+    // ET L'ON NE MESURE PLUS DEUX BOUTONS QUI N'EXISTENT PLUS. La capture (◓) et
+    // le Dex partent avec le mode d'attrape (v285) : `vis()` rend alors
+    // `undefined`, jamais `'none'`, et garder la condition ferait ROUGIR ce
+    // témoin sur du code sain — c'est le faux rouge de la v280, par l'autre bout.
+    verifier('au volant, les boutons de la marche s\'effacent — saut, pioche, barre — ET LA JAUGE DE VITESSE N\'EXISTE PAS',
+      !manette.err && b.saut === 'none' && b.pioche === 'none'
         && b.barre === 'none' && b.vol === 'none' && b.train === 'none'
         && b.gaz === 'none' && b.val === 'none' && b.socle === 'none',
       JSON.stringify(b));
@@ -5439,6 +5453,89 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et un avion se repousse au sol au lieu de rester planté',
       !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0,
       JSON.stringify(recul.avion));
+
+    // ---- UNE VOITURE ROULE DANS LA NATURE (v286) ----------------------------
+    //
+    // Max : « je voudrais que les voitures puissent circuler correctement […]
+    // qu'on n'ait pas vraiment des blocs carrés qui empêchent le véhicule de
+    // circuler. » Mesuré AVANT d'écrire une ligne, sur `terrainHeight`, pur,
+    // huit régions : 92 à 97 % de ce qui arrête une voiture est une marche d'UN
+    // bloc, une voiture fait 11 à 22 blocs avant blocage, et lui laisser
+    // franchir un bloc donne 80 à 226 — ×6 à ×17.
+    //
+    // CE TÉMOIN SE PLACE LUI-MÊME, LES TROIS CHOSES À LA FOIS (v279) :
+    // l'endroit (une plaine mesurée drivable, à 460 blocs du disque de Paris,
+    // donc aucun convoi ni mobilier à portée), le cap (celui qu'on DEMANDE), et
+    // ce qui traîne autour (on vide les bêtes, la voiture est invoquée là).
+    //
+    // ET IL MESURE CE QUE L'ENFANT OBTIENT — des blocs parcourus — en attendant
+    // le RÉSULTAT, borné, le temps pris entrant dans le message (v270). La
+    // barre est à soixante blocs : cinq fois la médiane de l'ancien code (12) et
+    // bien sous ce que la mesure promet (137 dans cette région). Sur l'ancien
+    // code la voiture s'arrête et NE REPART JAMAIS : la borne de temps tombe.
+    const nature = await tab.evaluate(async () => {
+      const g = window.__game;
+      const [X, Z] = [40, -400];                 // plaine au nord de Paris
+      for (const a of [...g.animalManager.animals]) {
+        g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1);
+      }
+      g.player.pos.set(X + 0.5, g.world.sommetColonne(X, Z) + 2, Z + 0.5);
+      // Le monde autour doit exister avant de rouler : sinon on mesure le
+      // maillage, pas la conduite.
+      const t0 = performance.now();
+      while (performance.now() - t0 < 15000) {
+        await new Promise((r) => requestAnimationFrame(r));
+        const cx = Math.floor(g.player.pos.x / 16), cz = Math.floor(g.player.pos.z / 16);
+        let pret = true;
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) pret = false;
+        }
+        if (pret) break;
+      }
+      // LE CAP SE POSE AVANT LA VOITURE, ET LA VOITURE SE POSE DEVANT. Le bouton
+      // prend la monture la plus proche DEVANT soi (v155) : posée de côté, elle
+      // ne s'offre pas, et le témoin mesurerait un enfant à pied. C'est le même
+      // geste que les trois autres témoins de monte.js qui invoquent une voiture.
+      g.player.yaw = 0;
+      const voiture = g.animalManager.invoquer('voiture',
+        g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.z - Math.cos(g.player.yaw) * 3);
+      if (!voiture) return { err: 'aucune voiture invoquée' };
+      // ON MONTE PAR LE JEU, ET UN BOUTON-BASCULE NE SE RECLIQUE PAS (v252) :
+      // c'est `fun.js` qui pose le gabarit, la monture et l'allure de la classe
+      // (v260), et l'état se lit dans le JEU, jamais dans le texte du bouton —
+      // un second clic ferait descendre.
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let essai = 0; essai < 6 && !auVolant(); essai++) {
+        const b = document.getElementById('ride-btn');
+        const rangee = b && b.closest('.fun-target');
+        if (b && getComputedStyle(b).display !== 'none'
+            && (!rangee || getComputedStyle(rangee).display !== 'none')) b.click();
+        await new Promise((r) => setTimeout(r, 600));
+      }
+      if (!auVolant()) return { err: 'pas au volant', gabarit: g.player.gabarit };
+      // Plein gaz, et l'on note le départ APRÈS la monte : monter déplace
+      // l'enfant sur le siège de la voiture.
+      g.player.yaw = 0;
+      const dep = { x: g.player.pos.x, z: g.player.pos.z };
+      g.player.keys.add('KeyW');
+      const releves = [];
+      const t1 = performance.now();
+      let d = 0;
+      while (performance.now() - t1 < 40000 && d < 60) {
+        await new Promise((r) => setTimeout(r, 250));
+        d = Math.hypot(g.player.pos.x - dep.x, g.player.pos.z - dep.z);
+        releves.push(Math.round(d * 10) / 10);
+      }
+      g.player.keys.delete('KeyW');
+      const montees = releves.length;
+      return { d: Math.round(d * 10) / 10, secondes: Math.round((performance.now() - t1) / 100) / 10,
+        releves: releves.slice(-6), montees, yFin: Math.round(g.player.pos.y * 10) / 10,
+        auVolant: auVolant() };
+    });
+    verifier('une voiture roule dans la nature au lieu de buter sur une marche',
+      !nature.err && nature.auVolant && nature.d >= 60,
+      `barre 60 blocs (médiane mesurée de l'ancien code : 12) · ${JSON.stringify(nature)}`);
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
