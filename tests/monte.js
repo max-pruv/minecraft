@@ -2875,7 +2875,6 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let h = 1; h <= 12; h++) w.setBlock(x0, sol + h, z0, 3);
       g.player.flying = true; g.player.vel.set(0, 0, 0);
       g.player.pos.set(x0 + 2.5, sol + 12, z0 + 6);
-      await dodo(2500);                                   // le morceau se remaille
       const gl = r.getContext();
       const lire = (X, Y, Z) => {
         const v = new THREE.Vector3(X, Y, Z).project(cam);
@@ -2897,6 +2896,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         r.render(g.scene, cam);
         return points.map((pt) => +lire(pt[0], pt[1], pt[2]).toFixed(1));
       };
+      // ON ATTEND QUE LA DALLE SOIT LÀ, BORNÉ — ET LE TEMPS PRIS ENTRE DANS LE
+      // MESSAGE (v270, v272). Ce témoin dormait 2500 ms et lisait, SANS AUCUNE
+      // borne de garde : il ne distinguait donc pas « la dalle n'a pas d'ombre »
+      // de « la dalle n'est pas encore dessinée ». Au portail de la v284 il a
+      // rendu `ombre 168.4 · soleil 168.4` — la MÊME valeur aux deux points, et
+      // 168,4 n'est la valeur d'aucune dalle : les deux témoins verts d'à côté,
+      // au même passage, ont mesuré le ciel à 155,8 au zénith et 180,8 à
+      // l'horizon. Les deux points lisaient le CIEL à travers un morceau non
+      // maillé. C'est « `null` n'est pas un verdict, c'est une absence de
+      // mesure » (v272) appliqué à un PIXEL.
+      //
+      // ET L'ON N'ATTEND PAS LE VERDICT, ON ATTEND LA SITUATION. Attendre que
+      // le rapport passe sous 0,8 serait relancer jusqu'au vert, et cela
+      // blanchirait pour toujours le code que ce témoin doit accuser. Ce qu'on
+      // attend, c'est un FAIT DU MONDE : les neuf morceaux autour de la dalle
+      // maillés, et trois lectures qui ont cessé de changer. Sur un code sans
+      // ombres la dalle se maille et les lectures se stabilisent tout autant —
+      // l'attente rend donc la main, et le verdict est rouge. VÉRIFIÉ, pas
+      // raconté (règle v276), deux pages dans le même passage :
+      //   ombres=1 → main rendue en 3 685 ms, 9/9 maillés, 58,4 · 103,5 = 0,56
+      //   ombres=0 → main rendue en 3 193 ms, 9/9 maillés, 101,3 · 103,5 = 0,98
+      // ET CE RELEVÉ PORTE LA PREUVE DE CE QUI S'EST PASSÉ AU PORTAIL : une
+      // dalle privée d'ombre lit CENT UN, pas cent soixante-huit. Le 168,4 ne
+      // pouvait donc pas être une dalle non ombrée.
+      const cleDalle = (dc, dz) => `${Math.floor(x0 / 16) + dc},${Math.floor(z0 / 16) + dz}`;
+      const releve = async () => {
+        window.__setDayTime(0.25);
+        cam.position.set(x0 + 2.5, sol + 17, z0 + 5.5);
+        cam.lookAt(x0 + 2.5, sol + 1, z0 + 3);
+        cam.updateMatrixWorld(true);
+        r.render(g.scene, cam);
+        let voisins = 0;
+        for (const dc of [-1, 0, 1]) for (const dz of [-1, 0, 1])
+          if (g.chunkMeshes && g.chunkMeshes.has && g.chunkMeshes.has(cleDalle(dc, dz))) voisins++;
+        return { a: lire(x0 + 0.5, sol + 1, z0 + 3.5), b: lire(x0 + 4.5, sol + 1, z0 + 3.5),
+          p: lire(x0 + 0.5, sol + 8, z0 + 0.5), voisins };
+      };
+      const departDalle = performance.now();
+      let vu = await releve(), stable = 0, tours = 0;
+      while (performance.now() - departDalle < 30000) {
+        await dodo(500);
+        const neuf = await releve();
+        tours++;
+        stable = (neuf.voisins === 9 && neuf.a === vu.a && neuf.b === vu.b && neuf.p === vu.p) ? stable + 1 : 0;
+        vu = neuf;
+        if (stable >= 2) break;                   // deux relevés identiques de suite
+      }
+      const dalle = { ms: Math.round(performance.now() - departDalle), tours,
+        voisins: vu.voisins, stable, pilier: vu.p };
       // midi : le soleil est haut, légèrement vers −z ; l'ombre du pilier
       // tombe vers +z. Sol dans l'ombre à trois blocs, sol au soleil quatre
       // blocs plus à l'est, même dalle, même occlusion (loin du pilier).
@@ -2954,13 +3002,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const nuit = { rue: +lire(x0 + 0.5, sol + 1, z0 + 8 + cote * 2.5).toFixed(1), mur: +lire(x0 + 0.5, sol + 4, z0 + 8 + cote * 0.5).toFixed(1) };
       window.__setDayTime(0.3);
       g.player.flying = false;
-      return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, ombres: r.shadowMap.enabled };
+      return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, dalle, ombres: r.shadowMap.enabled };
     });
     await regardPage.close();
     const ok = (v) => typeof v === 'number' && v > 0;
     verifier('à midi, le sol dans l\'ombre d\'un pilier est plus sombre que le sol au soleil',
       ok(regard.ombre) && ok(regard.soleil) && regard.ombre / regard.soleil < 0.8,
-      `ombre ${regard.ombre} · soleil ${regard.soleil} (dalle à y=${regard.sol})`);
+      `ombre ${regard.ombre} · soleil ${regard.soleil} (dalle à y=${regard.sol}`
+      + `, prête en ${regard.dalle.ms} ms sur ${regard.dalle.tours} relevé(s), `
+      + `${regard.dalle.voisins}/9 morceaux maillés, pilier ${regard.dalle.pilier}, `
+      + `ombres ${regard.ombres})`);
     verifier('le matin la face est d\'un pilier est au soleil, le soir c\'est sa face ouest',
       ok(regard.matin.est) && ok(regard.matin.ouest) && ok(regard.soir.est) && ok(regard.soir.ouest)
         && regard.matin.est / regard.matin.ouest > 1.25 && regard.soir.est / regard.soir.ouest < 0.8,
@@ -3109,9 +3160,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await patienter(2000);
       const s0 = { ms: g.statsMaillage.principalMs, distants: g.statsMaillage.distants, locaux: g.statsMaillage.locaux };
       const t0 = performance.now(), x0 = g.player.pos.x;
-      await patienter(8000);
+      // ON ATTEND LE RÉSULTAT — DES BLOCS PARCOURUS — BORNÉ, JAMAIS UNE DURÉE
+      // (v270, v272, quatrième famille). Huit secondes de MONTRE ne sont pas
+      // huit secondes de JEU : `dt` est borné à un vingtième, donc à une demi-
+      // image par seconde l'avion ne fait que dix-neuf blocs et les DEUX bornes
+      // de garde tombent sur du code sain — c'est ce qui s'est passé au portail
+      // de la v284, où la sonde mesurait 270 blocs dans les mêmes conditions.
+      // Et ce qu'on attend est une DISTANCE, pas le verdict : `msParSeconde`
+      // est un TAUX, donc invariant à la longueur de la fenêtre (le maillage
+      // continue tant que l'avion entre dans du terrain neuf), et l'ancien
+      // chemin — tout dans l'image — garde son taux quelle que soit la durée.
+      // VÉRIFIÉ, pas raconté (règle v276) : sur `?maillage=local`, la fenêtre
+      // allongée rend `worker false · msParSeconde 216 · distants 0 · locaux
+      // 142`, 256 blocs en 6,9 s — ROUGE sur trois des quatre conditions.
+      // Allonger la fenêtre ne blanchit donc pas l'ancien chemin.
+      //
+      // ET LE PARAMÈTRE SE PASSE PAR `params`, PAS PAR UNE CLÉ INVENTÉE : ma
+      // première sonde écrivait `{ maillage: 'local' }`, que `banc.joueur`
+      // ignore — elle rendait `worker true` et annonçait que le témoin ne
+      // prouvait plus rien. Troisième sonde aveugle de la journée : avant de
+      // croire une sonde qui force un réglage, on vérifie que le réglage est
+      // ARRIVÉ (ici `worker` doit être faux).
+      const CIBLE = 250, BORNE_MS = 40000;             // 250 : six fois la borne de garde
+      while (g.player.pos.x - x0 < CIBLE && performance.now() - t0 < BORNE_MS) await patienter(500);
       const dt = (performance.now() - t0) / 1000;
       const out = { worker: g.maillageDistant, parcouru: Math.round(g.player.pos.x - x0),
+        secondes: +dt.toFixed(1), atteint: g.player.pos.x - x0 >= CIBLE,
         msParSeconde: Math.round((g.statsMaillage.principalMs - s0.ms) / dt),
         distants: g.statsMaillage.distants - s0.distants, locaux: g.statsMaillage.locaux - s0.locaux };
       let compares = 0, differents = 0;
