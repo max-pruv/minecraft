@@ -351,6 +351,23 @@ function fichiersModifies() {
   } catch { return null; }
 }
 
+// Une sonde est isolée si rien de ce que le portail lance ne la charge. On le
+// MESURE — la fumée et les quinze suites, plus le banc lui-même — parce qu'une
+// règle qui se contente du nom du fichier se retourne à la première sonde qu'on
+// branche dans un témoin.
+function sondeIsolee(base, f) {
+  const nom = f.replace(/^tests\//, '');
+  if (SUITES.includes(nom) || nom === 'fumee.js') return false;
+  const lecteurs = [...SUITES, 'fumee.js', ...BANC.map((b) => b.replace(/^tests\//, ''))];
+  for (const l of lecteurs) {
+    let src = '';
+    try { src = fs.readFileSync(path.join(base, 'tests', l), 'utf8'); } catch { return false; }
+    // un `require` ou un `import` du fichier, pas une mention en commentaire
+    if (new RegExp(`(require|from)\\s*\\(?\\s*['\"\`][^'\"\`]*${nom.replace('.', '\\.')}`).test(src)) return false;
+  }
+  return true;
+}
+
 // Ce qu'il faut rejouer pour ce changement-ci. Rend la liste des suites, dans
 // l'ordre du portail, et la raison — qui s'affiche : un choix d'essais qu'on ne
 // peut pas relire est un choix qu'on ne peut pas contester.
@@ -380,6 +397,23 @@ function suitesNecessaires() {
     const suite = f.match(/^tests\/([\w-]+\.js)$/);
     if (suite && SUITES.includes(suite[1])) { besoin.add(suite[1]); raisons.push(f); continue; }
     if (suite && suite[1] === 'fumee.js') { raisons.push(f); continue; }
+    // UNE SONDE QUE LE PORTAIL NE LANCE JAMAIS NE PEUT CHANGER AUCUN VERDICT.
+    //
+    // Les sondes qui ont produit un chiffre écrit dans un témoin vivent dans le
+    // dépôt, pour qu'on puisse les REJOUER (règle de la v277). Elles ne
+    // correspondaient à aucun motif, donc elles tombaient dans « inconnu » et
+    // forçaient le portail ENTIER — soixante-dix-huit minutes par livraison, pour
+    // toujours, à cause d'un fichier que rien n'exécute. C'est le raisonnement de
+    // `gardiensElargis` : ce qui ne peut faire tourner QUE PLUS de suites, ou rien
+    // du tout, ne peut rien cacher.
+    //
+    // ET CELA SE PROUVE, à chaque portail, au lieu de se déclarer : le fichier
+    // n'est pas dans `SUITES`, et AUCUNE suite ne le `require`. Le jour où une
+    // suite en importe une, la règle se désarme d'elle-même et le portail entier
+    // se rejoue.
+    if (/^tests\/sonde-[\w-]+\.cjs$/.test(f) && sondeIsolee(base, f)) {
+      raisons.push(`${f} (sonde, jamais lancée par le portail)`); continue;
+    }
     // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
     // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
     if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;

@@ -4480,20 +4480,33 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         lance = Math.abs(g.player.vitesseVoiture || 0);
         if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85) break;
       }
-      // puis jusqu'à ce qu'elle ne bouge plus — le mur l'arrête
+      // PUIS JUSQU'À CE QU'ELLE NE BOUGE PLUS — ET C'EST UN RÉSULTAT, PAS UNE DURÉE
+      // (v270). Vingt-cinq secondes ne suffisaient pas : le portail a rendu
+      // `immobile: 2` sur la v284 et `immobile: 1` sur la v285, donc la fenêtre
+      // EXPIRAIT des deux côtés, la voiture venant tout juste d'arriver au mur. Et
+      // la vitesse lue à cet instant-là est un coup de dé : 0 une fois, 12,16 les
+      // deux fois suivantes, sur une physique que la sonde montre saine
+      // (`tests/sonde-mur.cjs` : huit tentatives de franchissement, ZÉRO aboutie,
+      // vitesse 0 contre le mur). C'est « un verdict lu à l'instant d'une
+      // transition est un coup de dé » (v273) posé sur la fin d'une fenêtre.
+      //
+      // ALLONGER NE PEUT RIEN BLANCHIR, et la question se pose avant (v279) : la
+      // panne de Max — une voiture immobile qui annonce 86 km/h — garde sa vitesse
+      // POUR TOUJOURS, donc aucune attente ne la ramène à zéro. Et le temps pris,
+      // ainsi que le fait d'avoir expiré, entrent dans le message.
       const t1 = performance.now();
-      let immobile = 0, xAvant = g.player.pos.x, arret = performance.now();
-      while (performance.now() - t1 < 25000 && immobile < 4) {
+      let immobile = 0, xAvant = g.player.pos.x;
+      while (performance.now() - t1 < 45000 && immobile < 4) {
         await new Promise((f) => setTimeout(f, 250));
         const bouge = Math.abs(g.player.pos.x - xAvant);
         xAvant = g.player.pos.x;
         immobile = bouge < 0.02 ? immobile + 1 : 0;
       }
-      arret = Math.round(performance.now() - t1);
+      const arret = Math.round(performance.now() - t1);
       const contreLeMur = {
         vitesse: +Math.abs(g.player.vitesseVoiture || 0).toFixed(2),
         x: +(g.player.pos.x - x0).toFixed(1),
-        immobile, arret,
+        immobile, arret, expire: arret >= 45000,
       };
       // on lâche le mur : la voiture doit repartir en arrière
       g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
