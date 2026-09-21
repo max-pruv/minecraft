@@ -630,6 +630,44 @@ sont nées d'une mesure ou d'un raisonnement qui m'a contredit.
   sans qu'on touche à un chiffre de témoin. C'est le bénéfice direct d'une barre
   qui se calcule au lieu de s'écrire.
 
+**ET DEUX TÉMOINS DE `monte.js` MESURAIENT LE BANC — la CINQUIÈME fois pour
+cette famille (v284).** Le portail a rendu deux rouges neufs sur un diff qui ne
+touche ni le chemin des ombres ni le worker. Quatre leçons, et la première est
+contre moi.
+
+- **LA DURÉE DE LA SUITE A TUÉ MON EXPLICATION EN UNE LIGNE.** J'ai avancé « le
+  banc tournait plus lentement » avant de mesurer : `monte.js` fait 22 min 59 s
+  au portail de la v283, où le témoin des ombres est VERT, contre 23 min 02 s
+  ici, où il est ROUGE. Trois secondes. Une explication qu'on n'a pas mesurée
+  est une dette, pas un diagnostic (v220) — et le chiffre qui la démonte était
+  déjà imprimé par le portail.
+- **UN TÉMOIN QUI LIT UN PIXEL LIT D'ABORD QU'IL Y A QUELQUE CHOSE À LIRE.**
+  Celui des ombres dormait 2 500 ms et lisait, **sans aucune borne de garde** :
+  il ne distinguait pas « la dalle n'a pas d'ombre » de « la dalle n'est pas
+  encore dessinée ». C'est « `null` n'est pas un verdict, c'est une absence de
+  mesure » (v272) transposé au PIXEL. Et ce qui l'a prouvé n'est pas la
+  cohérence — 168,4 tombe entre le zénith (155,8) et l'horizon (180,8) mesurés
+  par ses voisins verts au même passage — c'est un relevé à part : **une dalle
+  privée de son ombre lit 101,3, pas 168,4.** Une arithmétique qui concorde
+  oriente ; seule une mesure tranche.
+- **ON ATTEND LA SITUATION, JAMAIS LE VERDICT.** L'attente porte sur un FAIT DU
+  MONDE — neuf morceaux maillés autour de la dalle, trois lectures qui ont cessé
+  de changer. Attendre que le rapport passe sous la barre serait relancer jusqu'au
+  vert, et cela blanchirait pour toujours le code que le témoin doit accuser. La
+  différence se VÉRIFIE : ombres désarmées, l'attente rend la main en 3 193 ms et
+  le rapport vaut 0,98.
+- **ET UNE FENÊTRE ALLONGÉE NE BLANCHIT PAS UN TAUX — mais cela se mesure.** La
+  v279 avertit qu'une borne sur un résultat donne à l'ancien code tout le temps
+  dont il a besoin. `msParSeconde` étant un TAUX, la fenêtre du vol passe de huit
+  secondes de montre à deux cent cinquante blocs parcourus ; sur `?maillage=local`
+  elle rend 216 ms par seconde pour une barre de 120. Le principe ne suffisait
+  pas, la mesure oui.
+- **ET MA SONDE DU VOL A ÉTÉ AVEUGLE AU PREMIER JET, la troisième de la
+  journée.** Elle passait `{ maillage: 'local' }`, une clé que `banc.joueur`
+  ignore — le chemin est `params` — rendait `worker true` et annonçait que le
+  témoin ne prouvait plus rien. Avant de croire une sonde qui force un réglage,
+  on vérifie que le réglage est ARRIVÉ.
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and

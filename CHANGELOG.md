@@ -71,6 +71,24 @@ d'une mesure contre elle-même. Le prix d'une passe d'ombres n'a jamais été
 mesuré sur cet appareil non plus. Les deux sont la prochaine étape, et c'est une
 mesure — `?dpr=2&ombres=1&diag=1` sur son iPhone — pas une intuition.
 
+**Et le second sujet de cette livraison : deux témoins de `monte.js` mesuraient
+le banc.** Le portail a rendu deux rouges que les trois portails précédents
+n'avaient jamais rendus, sur un diff qui ne touche aucune des deux zones — « le
+sol dans l'ombre d'un pilier » à `168,4 · 168,4` là où trois passages donnaient
+`58,4 · 103,5`, et « le monde se maille hors du fil principal » à dix-neuf blocs
+parcourus pour une borne de quarante. Mon premier réflexe a été une explication
+commode, « le banc tournait plus lentement », et c'est **la durée de la suite qui
+l'a tuée** : 22 min 59 s au portail de la v283, où le témoin est VERT, contre
+23 min 02 s ici, où il est ROUGE. Une sonde qui sépare les quatre candidats en
+une exécution a montré la bonne valeur dès le premier relevé, stable huit
+secondes, et deux cent soixante-dix blocs de vol là où le portail en comptait
+dix-neuf. Ce qui tranche vient d'un relevé à part : **une dalle privée de son
+ombre lit cent un, pas cent soixante-huit** — les deux points lisaient donc le
+ciel à travers un morceau pas encore maillé. Les deux témoins attendent désormais
+le RÉSULTAT, borné, et le temps qu'il a pris entre dans leur message ; chaque
+correction est vérifiée ROUGE (ombres désarmées : rapport 0,98 ; maillage dans
+l'image : 216 ms par seconde pour une barre de 120).
+
 ---
 
 ## v283 — Les voitures se suivent, et personne n'escalade les murs
