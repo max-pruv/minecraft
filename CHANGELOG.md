@@ -89,6 +89,18 @@ le RÉSULTAT, borné, et le temps qu'il a pris entre dans leur message ; chaque
 correction est vérifiée ROUGE (ombres désarmées : rapport 0,98 ; maillage dans
 l'image : 216 ms par seconde pour une barre de 120).
 
+**Et le portail suivant en a révélé cinq autres, du même sang.** Les cinq témoins
+d'avion rendaient « pas aux commandes » — sur la branche ET sur `origin/main`
+rejoué seul, donc sur le code déjà en production. La double mesure disait « ce
+n'est pas la livraison » ; elle ne disait pas si Marlon est touché, et c'est la
+seule question qui compte. **Il ne l'est pas** : sur une page neuve, un seul
+appui suffit pour monter aux commandes. Ce qui échouait, c'est le témoin — sa
+boucle d'embarquement s'arrêtait dès que l'enfant était « sur quelque chose », et
+une voiture compte autant qu'un avion. Et descendre ne suffisait pas : une
+monture suit l'enfant, donc l'appui suivant la remonte. Les dix boucles
+d'embarquement de la suite font désormais le vide avant d'embarquer — pas
+seulement les quatre qui rougissaient.
+
 ---
 
 ## v283 — Les voitures se suivent, et personne n'escalade les murs

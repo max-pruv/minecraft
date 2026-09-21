@@ -668,6 +668,42 @@ contre moi.
   témoin ne prouvait plus rien. Avant de croire une sonde qui force un réglage,
   on vérifie que le réglage est ARRIVÉ.
 
+**ET UN TÉMOIN SE PLACE LUI-MÊME — « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+(v284).** Cinq témoins d'avion de `monte.js` ont rendu `pas aux commandes {}`,
+sur la branche ET sur `origin/main` rejoué seul — donc sur le code EN
+PRODUCTION — et seulement depuis que le conteneur a été recyclé : quatre
+passages verts avant, deux rouges après. La double mesure de la v195 disait donc
+« ce n'est pas la livraison ». **Elle ne disait pas si Marlon est touché, et
+c'est la seule question qui compte** : une dette qu'on déclare sans avoir
+demandé ce que l'enfant perd n'est pas une dette, c'est un renoncement.
+
+- **UNE SONDE, UNE QUESTION, ET LA PREMIÈRE EST CELLE DE L'ENFANT.** Sur une
+  page NEUVE, sans rien avant, prend-on un avion ? OUI — bouton « Monter », UN
+  clic, aux commandes. Le jeu va bien. Après être monté dans une voiture, ce que
+  le témoin d'avant laisse : ZÉRO clic, pas aux commandes. Deux bras, une
+  exécution, et la cause est nommée.
+- **LA GARDE LISAIT LE BON MÉCANISME ET LE MAUVAIS ÉTAT.** La boucle
+  d'embarquement est gardée par `auVolant()`, c'est-à-dire `montureConduite()` :
+  vrai pour une VOITURE autant que pour un avion. L'enfant laissé au volant la
+  rend vraie AVANT le premier tour ; la boucle ne clique pas une seule fois et
+  `pilote` reste nul. C'est « un bouton-bascule ne se reclique pas » (v252) par
+  l'autre bout — le témoin lit bien l'état DANS LE JEU, ce que la v252 exige,
+  mais pas l'état qu'il veut. Une garde se formule sur ce que le verdict
+  demande : `!g.player.pilote`, jamais « quelque chose est monté ».
+- **ET DESCENDRE NE SUFFIT PAS — c'est une sonde qui l'a dit, pas le
+  raisonnement.** Mon premier remède ajoutait une descente et corrigeait la
+  condition : mesuré, HUIT clics, `auVolant` qui bascule vrai/faux, bouton resté
+  « Monter », toujours pas aux commandes. **Une monture SUIT le joueur** : elle
+  est encore là après la descente, et le clic suivant la remonte. On descend, on
+  RETIRE les bêtes (l'idiome du dépôt depuis la v257), PUIS on invoque. Les
+  quatre bras, dans le même passage : page neuve 1 clic ✓ · sans remède 0 clic ✗
+  · descente seule 8 clics ✗ · remède complet 1 clic ✓.
+- **ET LES DIX SITES SONT CORRIGÉS, PAS LES QUATRE QUI ROUGISSAIENT.** Six
+  autres boucles montent une voiture ou une bête avec la même garde : elles
+  portent le même piège, latent, et il ne se voit que le jour où le témoin
+  d'avant laisse quelque chose. Quand une panne touche une grammaire partagée,
+  on cherche TOUTES ses occurrences le jour même — sixième fois.
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and
