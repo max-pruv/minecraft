@@ -2059,6 +2059,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         retirerVoitures();
         g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;           // avant = +x
         g.player.pos.set(champ.x0, champ.y0 + 1.5, champ.z0 + 0.5); g.player.vel.set(0, 0, 0);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
         g.animalManager.invoquer('voiture', champ.x0 + 3, champ.z0 + 0.5, false, { flotte });
         await dormir(800);
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(200); }
@@ -3942,10 +3957,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x, le long de la piste
       g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       await tenirSecondes(1);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
       const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
       if (!avion) return { err: 'aucun avion posé' };
       await tenirSecondes(0.5);
-      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
       if (!g.player.pilote) return { err: 'on n\'est pas aux commandes' };
       await tenirSecondes(0.6);
       const nezMoinsQueue = () => {
@@ -4167,6 +4197,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
         g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
         await new Promise((f) => setTimeout(f, 1200));
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
         g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
         await new Promise((f) => setTimeout(f, 800));
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
@@ -4373,6 +4418,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x
       g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       await new Promise((f) => setTimeout(f, 1200));
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
       g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
       await new Promise((f) => setTimeout(f, 800));
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
@@ -4467,6 +4527,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x, vers la mer
       g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       await new Promise((f) => setTimeout(f, 1200));
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
       g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
       await new Promise((f) => setTimeout(f, 800));
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
@@ -4526,9 +4601,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
         g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
         g.player.pos.set(P.x0, P.y0 + 1.01, P.z0 + 0.5); g.player.vel.set(0, 0, 0);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
         g.animalManager.invoquer('avionligne', P.x0 + 3, P.z0);
         await new Promise((f) => setTimeout(f, 800));
-        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
         // en croisière au-dessus du DÉBUT de la piste, quinze blocs de haut,
         // train rentré, manette à MI-COURSE : au-dessus du décrochage (47
@@ -4763,10 +4853,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
       g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       await tenirSecondes(1);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
       const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
       if (!avion) return { err: 'aucun avion posé', comptes };
       await tenirSecondes(0.5);
-      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
       if (!g.player.pilote) return { err: 'on n\'est pas aux commandes', comptes };
       const lire = () => (avion.mesh.userData.tuyeres || []).map((f) => ({ visible: f.visible, long: +f.scale.z.toFixed(2) }));
       await tenirSecondes(0.6);
@@ -4898,9 +5003,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
         g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
         await new Promise((f) => setTimeout(f, 1200));
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
         g.animalManager.invoquer('chasseur', x0 + 3, z0);
         await new Promise((f) => setTimeout(f, 800));
-        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
         await new Promise((f) => setTimeout(f, 700));
         const boite = (id) => {
@@ -5137,6 +5257,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       await tenir(1);
       const aPied = await energie(1.2);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
       const voiture = g.animalManager.invoquer('voiture', x0 + 3, z0);
       if (!voiture) return { err: 'aucune voiture posée', aPied };
       await tenir(0.5);
@@ -5206,6 +5341,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x
         g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
         await tenir(1);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
         if (!g.animalManager.invoquer(espece, x0 + 3, z0)) return { err: `pas de ${espece}` };
         await tenir(0.5);
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
