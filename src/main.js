@@ -208,6 +208,14 @@ const PARAMS_JEU = new URLSearchParams(location.search);
 const DIAG = PARAMS_JEU.get('diag') === '1';
 // La préparation avant « Jouer » (v258) : le banc la coupe par `?prep=0`.
 const PREPARER = PARAMS_JEU.get('prep') !== '0';
+// ET SA BORNE SE REJOUE, COMME `?fondms=` ET `?chauffems=` (v277). Elle vaut
+// quarante-cinq secondes — le temps au bout duquel le jeu renonce à attendre et
+// laisse l'enfant appuyer. Un témoin qui doit PROVOQUER le renoncement ne peut
+// pas attendre quarante-cinq secondes de banc pour chaque passage : il la
+// raccourcit. Et `?apresmaj=1` rejoue le chemin d'APRÈS une mise à jour sans en
+// faire une — utile au banc, et utile sur la tablette pour voir ce que l'enfant
+// voit sans attendre la livraison suivante.
+const BORNE_PREP = Math.max(500, Number(PARAMS_JEU.get('prepms')) || 45000);
 const REFLETS_ACTIFS = PARAMS_JEU.get('reflets') !== '0';
 const LAMPES_ACTIVES = PARAMS_JEU.get('lampes') !== '0';
 // GRAPHISMES NORMAL OU AVANCÉ, DANS LES RÉGLAGES (v257). Max : « dans les
@@ -6918,6 +6926,7 @@ requestAnimationFrame(() => {
   if (world.ctx === 'local') restorePosition();
   let apresMaj = false;
   try { apresMaj = sessionStorage.getItem('wm-maj-installe') === '1'; } catch { /* mode privé */ }
+  if (PARAMS_JEU.get('apresmaj') === '1') apresMaj = true;
   if (!apresMaj) loader.classList.add('hidden');
   // Les corps réalistes (8 Mo) arrivent MAINTENANT, pas avant : l'accueil
   // répond déjà, et les gens nés en attendant se mettent à niveau sur place
@@ -6975,7 +6984,7 @@ requestAnimationFrame(() => {
   const veillerPrep = () => {
     const h = humainsPrets();
     const pret = humainsCharges() && chauffeFinie && carte.prete();
-    if (pret || performance.now() - departPrep > 45000) {
+    if (pret || performance.now() - departPrep > BORNE_PREP) {
       prepPrete = true;
       for (const b of boutonsPrep) b.disabled = false;
       if (lignePrep) lignePrep.style.display = 'none';
@@ -7025,12 +7034,38 @@ requestAnimationFrame(() => {
   };
   verreQuandPret();
   if (apresMaj) {
+    // ET LE LOADER NE RETIENT PLUS UN ENFANT QUI A LE DROIT DE JOUER (v286).
+    //
+    // Max, après la v285 : « après la mise à jour, sur la home le jeu lag 1 à
+    // 2 min, ça a été le cas depuis longtemps ». C'est le symptôme que la v257
+    // (ce loader) et la v258 (la préparation) devaient corriger — donc on cesse
+    // de régler et l'on va voir ce qui s'exécute (v226). Ce qu'on trouve ne se
+    // mesure pas, il s'ADDITIONNE : deux attentes tournent en parallèle, sur des
+    // conditions EMBOÎTÉES, et c'est la plus longue qui garde la plus faible.
+    //
+    //   `veillerPrep`   corps ET chauffe ET carte   →  dégrise « Jouer »   45 s
+    //   ce loader-ci    corps ET chauffe            →  s'efface            90 s
+    //
+    // La condition du loader est un SOUS-ENSEMBLE de celle de la préparation.
+    // Quand la chauffe traîne — le cas de l'iPad, où Safari compile un programme
+    // en centaines de millisecondes (v257) — le jeu dégrise « Jouer » à sa borne
+    // de quarante-cinq secondes et le loader continue de le CACHER jusqu'à
+    // quatre-vingt-dix. L'enfant a le droit de jouer et n'a aucun moyen de le
+    // savoir. 45 + 90 = 135 s, exactement la fourchette de Max.
+    //
+    // `prepPrete` est donc la seule décision qui vaille : elle est vraie quand
+    // tout est là OU quand le jeu a renoncé à attendre, et dans les deux cas
+    // l'enfant peut appuyer. C'est le critère de la v220 — « le seul critère qui
+    // ne se trompe pas est celui de l'enfant ». La borne de quatre-vingt-dix
+    // secondes reste pour le cas où la préparation est désarmée (`?prep=0`, ce
+    // que le banc demande partout sauf dans `maj.js`) : sans elle, le loader
+    // s'effacerait à la première image et l'on retrouverait la panne de la v257.
     const texte = document.getElementById('boot-text');
     const depart = performance.now();
     const attendre = () => {
       const h = humainsPrets();
       const pret = humainsCharges() && chauffeFinie;
-      if (pret || performance.now() - depart > 90000) {
+      if (pret || (PREPARER && prepPrete) || performance.now() - depart > 90000) {
         loader.classList.add('hidden');
         try { sessionStorage.removeItem('wm-maj-installe'); } catch { /* mode privé */ }
         document.dispatchEvent(new Event('maj-installee'));

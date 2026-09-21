@@ -165,21 +165,89 @@ function verifier(nom, ok, detail = '') {
           let humains = null, programmes = null, aChauffer = null;
           try { humains = (await import('./src/humains.js')).humainsCharges(); } catch { /* ancien code */ }
           try { const v = await import('./src/vehicules.js'); programmes = v.programmesChauffes(); aChauffer = v.programmesAChauffer ? v.programmesAChauffer() : null; } catch { /* ancien code */ }
-          return { cache, texte: document.getElementById('boot-text').textContent, humains, programmes, aChauffer };
+          const b = document.getElementById('play-btn');
+          return { cache, texte: document.getElementById('boot-text').textContent, humains, programmes, aChauffer,
+            jouable: b ? !b.disabled : null };
         }).catch(() => null);
         if (e && !e.cache) textesApres.add(e.texte);
         if (e && e.cache) aLEffacement = e;
         await dormir(100);
       }
+      const msEffacement = Date.now() - debutAttente;
       console.log(`   🔎 loader après rechargement : ${JSON.stringify([...textesApres].slice(0, 3))} · à l'effacement ${JSON.stringify(aLEffacement)}`);
-      verifier('après le rechargement, le loader ne s\'efface qu\'une fois les corps et les programmes prêts',
-        !!aLEffacement && aLEffacement.humains === true && aLEffacement.programmes !== null
-        && aLEffacement.aChauffer !== null && aLEffacement.programmes >= aLEffacement.aChauffer,
-        JSON.stringify(aLEffacement));
+      // ET « PRÊT » N'EST PAS LA SEULE FIN ACCEPTABLE — LE RENONCEMENT EN EST UNE
+      // (v286). Ce verdict exigeait que TOUT soit là à l'instant de l'effacement.
+      // C'est trop absolu : il interdit au jeu de rendre la main, et c'est
+      // exactement ce qui retenait l'enfant derrière le loader pendant
+      // quarante-cinq secondes de plus alors que « Jouer » était déjà cliquable.
+      // « Ça s'installe » ne veut pas dire « ça va finir » (v220) : ce qui compte
+      // est le critère de l'enfant. On accepte donc prêt OU la préparation a
+      // rendu la main, et la durée entre dans le message — sans elle, le rouge
+      // suivant ne se démonte pas.
+      const renonce = aLEffacement && aLEffacement.jouable === true;
+      verifier('après le rechargement, le loader ne s\'efface qu\'une fois les corps et les programmes prêts — ou que le jeu a rendu la main',
+        !!aLEffacement && ((aLEffacement.humains === true && aLEffacement.programmes !== null
+        && aLEffacement.aChauffer !== null && aLEffacement.programmes >= aLEffacement.aChauffer)
+        || renonce),
+        `${JSON.stringify(aLEffacement)} · ${msEffacement} ms`);
       const rejouable = await jusqua(async () => tab.evaluate(
         () => !!document.getElementById('play-btn')).catch(() => false), 45000);
       verifier('et le jeu se relance normalement après', rejouable);
     }
+
+    // LE LOADER NE CACHE JAMAIS UN « JOUER » QUI EST DÉJÀ CLIQUABLE (v286).
+    //
+    // Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a été le
+    // cas depuis longtemps » — le symptôme que la v257 et la v258 devaient
+    // corriger. Ce qu'on trouve ne se mesure pas, il s'ADDITIONNE : deux attentes
+    // tournent sur des conditions EMBOÎTÉES et c'est la plus longue qui garde la
+    // plus faible (45 s pour dégriser « Jouer » sur corps ET chauffe ET carte,
+    // 90 s pour effacer le loader sur corps ET chauffe). Entre les deux, l'enfant
+    // a le droit de jouer et le loader le lui cache.
+    //
+    // ON PROVOQUE, ON N'ATTEND PAS (leçon des poissons, v233). Au banc la séquence
+    // entière prend trois secondes : l'inversion ne se reproduit donc JAMAIS toute
+    // seule, et un témoin qui attendrait serait vert des deux côtés sans rien
+    // mesurer. Mesuré à la sonde, dans l'horloge de la page : les corps arrivent à
+    // 2,8-3,2 s et tout est prêt à 3,3 s. Une borne de préparation posée à DEUX
+    // secondes (`?prepms=2000`) tombe donc entre les deux, et `?apresmaj=1` rejoue
+    // le chemin d'après-mise-à-jour sans en faire une.
+    //
+    // A/B sur la même page (`tests/sonde-loader.cjs`), la correction désarmée dans
+    // `src/main.js` :
+    //   armée     « Jouer » dégrisé 2 226 ms · loader effacé 2 226 ms · ZÉRO fautif
+    //   désarmée  « Jouer » dégrisé 2 314 ms · loader effacé 3 213 ms · ONZE fautifs
+    //             sur 848 ms, corps `false`, programmes 21/25
+    // La barre est donc ZÉRO relevé fautif, et les deux dates entrent dans le
+    // message : un rouge qui ne dit pas QUAND ne se démonte pas.
+    const lent = await banc.joueur('Solène', { prep: 1, params: '&apresmaj=1&prepms=2000' });
+    const cache = await lent.evaluate(async () => {
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const depart = performance.now();
+      const pas = [];
+      while (performance.now() - depart < 30000) {
+        const l = document.getElementById('boot-loader');
+        const b = document.getElementById('play-btn');
+        if (!l || !b) { await dodo(50); continue; }
+        const p = window.__preparation ? window.__preparation() : null;
+        pas.push({ depuis: p ? p.depuis : null, humains: p ? p.humains : null,
+          loader: !l.classList.contains('hidden'), jouable: !b.disabled });
+        if (l.classList.contains('hidden') && !b.disabled) break;
+        await dodo(50);
+      }
+      const fautifs = pas.filter((x) => x.loader && x.jouable);
+      const degrise = pas.find((x) => x.jouable);
+      const efface = pas.find((x) => !x.loader);
+      return { releves: pas.length, fautifs: fautifs.length,
+        degriseA: degrise ? degrise.depuis : null, effaceA: efface ? efface.depuis : null,
+        premierFautif: fautifs.length ? fautifs[0] : null };
+    }).catch((e) => ({ err: String(e && e.message || e) }));
+    await lent.close();
+    // La borne de GARDE vérifie que la mesure a EU LIEU : sans relevé, « zéro
+    // fautif » est une absence de mesure et non un verdict (v272).
+    verifier('après une mise à jour, le loader ne cache jamais un « Jouer » déjà cliquable',
+      !cache.err && cache.releves >= 3 && cache.fautifs === 0,
+      `${JSON.stringify(cache)} (désarmé : 11 fautifs sur 848 ms)`);
 
     // LE PREMIER CHARGEMENT NE TÉLÉCHARGE PAS CE QUI NE SERT PAS À JOUER.
     //
