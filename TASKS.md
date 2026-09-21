@@ -12,7 +12,29 @@
   | `reglages.js` | l'autre tablette (`"fr"`) puis `TypeError … 'edu'` | identiques au portail v284, aux deux lignes près |
   | `monte.js` | l'écran ne se fige pas en arrivant sur une ville | 4 433 ms / 37,3 % ici contre 4 933 ms / 36,4 % sur `origin/main` |
   | `monte.js` | les voitures ne se traversent plus | le TIRAGE écrit dans `CLAUDE.md` (v277) : 89 ici, 53 au portail v284 |
-  | `reseau.js` | départ propre · joueur endormi · réveil | tâche ouverte « le monde d'Alice » |
+  | `reseau.js` | départ propre · joueur endormi · réveil | DEUX passages de chaque côté, même distribution (table ci-dessous) |
+
+  **ET `reseau.js` EST INTERMITTENTE DES DEUX CÔTÉS — quatre passages pour le
+  savoir.** Un passage de chaque côté m'avait fait voir une asymétrie qui n'existe
+  pas (règle de la v269) :
+
+  | | passage 1 | passage 2 |
+  | --- | --- | --- |
+  | `origin/main` seule | départ propre · endormi | **entièrement verte** |
+  | branche seule | départ propre · réveil | **entièrement verte** |
+  | branche au portail | départ propre · endormi · réveil | — |
+
+  Les trois témoins appartiennent à la même famille (le départ, le sommeil, le
+  réveil) et le rouge se déplace d'un passage à l'autre. « Un départ propre » sort
+  dans trois passages sur cinq, sur les DEUX arbres : c'est un défaut de
+  production, intermittent — pas « rouge à chaque fois », ce que j'avais écrit
+  avant de l'avoir mesuré.
+
+  **Et l'argument qui vaut plus que l'échantillon : le diff n'a AUCUN chemin vers
+  ce code.** `src/net.js` ne gagne qu'un commentaire — le code réseau est
+  identique au bit près — et sur tout `src/` plus `index.html`, la seule ligne qui
+  effleure cette surface est le RETRAIT de `creatureManager` de `window.__game`.
+  Rien sur `dodo`, `coucou`, la visibilité, la liste des pairs ni la présence.
 
   **Et le compte de chevauchements n'est toujours PAS un gardien.** La v277
   l'avait écrit — un compte ABSOLU sur trente secondes de montre, dans une ville
