@@ -576,6 +576,134 @@ contredit.
   cents mètres de quai, pas un redessin à l'intuition. Mesuré après : onze ancres
   au sec, l'eau la plus proche de 175 m (Cologne) à 900 (Séville).
 
+## Le palier de l'appareil (v284) — on mesure un TRAVAIL, pas un taux
+
+Max, capture du chasseur : « est-ce possible de pousser le niveau de réalisme ?
+Le unveil est late », puis, depuis un iPhone 18 Pro : « tu serais capable
+d'ajuster en fonction de l'appareil et sa capacité ? ». Cinq règles, et trois
+sont nées d'une mesure ou d'un raisonnement qui m'a contredit.
+
+- **UNE CADENCE PLAFONNÉE PAR L'ÉCRAN NE DIT RIEN DE LA RÉSERVE.** Son
+  `?diag=1` rend cinquante-neuf images par seconde : c'est le plafond de
+  l'écran, et un appareil qui pourrait en faire deux cents rend le même
+  chiffre. Ce qui dit la panne, c'est **douze appels de dessin** pour trente
+  mille triangles — un monde presque vide devant lui, non parce que l'appareil
+  ne suit pas mais parce que le jeu ne lui en demande pas. On mesure donc le
+  TEMPS D'UN TRAVAIL CONNU — un morceau maillé dans le worker, une image sur le
+  fil principal — jamais un taux. C'est « on mesure la CAUSE et non l'effet »
+  (v236), appliqué au classement d'un appareil.
+- **ON NE CLASSE PAS UN APPAREIL SUR UNE CONFIGURATION QU'ON LUI A IMPOSÉE — et
+  c'est ce qui met le banc entier hors de portée sans une ligne écrite pour
+  lui.** Une page ouverte à `rr=2` ne dit rien de ce que l'appareil fait à sa
+  vraie distance d'affichage. Comme `banc.js` met TOUJOURS `rr=` et `dpr=` dans
+  son adresse, aucune suite ne range de palier ; sans cette règle, une suite qui
+  joue longtemps en rangerait un et la page SUIVANTE en hériterait — un témoin
+  mesurerait ce que son voisin a laissé (la famille de la v279). `?palierms=`
+  est la déclaration explicite qui permet quand même à un témoin de suivre la
+  chaîne, et les planchers d'échantillons suivent cette fenêtre sous un seul
+  bouton : écrits en dur, ils tiendraient la porte fermée et le témoin ne
+  verrait qu'un des deux verrous.
+- **UNE MESURE NE VAUT QUE DANS LES CONDITIONS OÙ ELLE A ÉTÉ FAITE, ET CELA M'A
+  FAIT RETIRER DEUX CHAMPS DE MON PREMIER JET.** Il faisait passer la résolution
+  du téléphone de 1,25 à 2,0 pixel par point — 2,56 fois la surface — sur la foi
+  d'une mesure d'image prise à 1,25 : c'est se servir d'une mesure contre
+  elle-même. Le prix d'une passe d'ombres n'avait pas été mesuré sur cet appareil
+  non plus. Ce que ses douze appels établissent, c'est que le MONDE est
+  sous-alimenté ; il ne reste donc que `rr` et la profondeur de file, deux
+  leviers dont le dépôt a mesuré l'effet (v265, v269). Les pixels et les ombres
+  sont une MESURE à faire (`?dpr=2&ombres=1&diag=1`), déclarée dans `TASKS.md`,
+  pas une intuition — et un champ qu'on n'aurait pas branché serait du code mort
+  qui ressemble à de l'avancement (v157).
+- **UN PALIER SE RANGE POUR LA PARTIE SUIVANTE, IL NE S'APPLIQUE PAS À CHAUD.**
+  `RENDER_RADIUS` et la profondeur de file sont lues au démarrage ; les faire
+  bouger en cours de route ferait respirer la distance d'affichage sous les yeux
+  de l'enfant. Et **tant qu'il n'y a pas de mesure, rien ne change** : le palier
+  `moyen` porte EXACTEMENT les valeurs de la v283, si bien qu'un appareil mal
+  classé ou non mesuré ne perd rien (règle du remède qui ne va pas plus loin que
+  la panne, v245). La mesure ne se prend qu'EN JEU — pendant la préparation la
+  page compile ses vingt-cinq programmes, et tout appareil serait classé lent.
+- **ET LA VITESSE DES JETS EST DANS LE PALIER, PARCE QUE LA v269 L'A LIÉE À LA
+  FILE.** Elle avait été descendue de 160 à 120 blocs par seconde exactement
+  pour cette raison — « une vitesse mesurée sur une file ne vaut que pour cette
+  file ». Le palier haut rend la file de seize, donc la vitesse. La barre du
+  témoin du trou, elle, vaut `max / 2` depuis la v269 : elle suit toute seule,
+  sans qu'on touche à un chiffre de témoin. C'est le bénéfice direct d'une barre
+  qui se calcule au lieu de s'écrire.
+
+**ET DEUX TÉMOINS DE `monte.js` MESURAIENT LE BANC — la CINQUIÈME fois pour
+cette famille (v284).** Le portail a rendu deux rouges neufs sur un diff qui ne
+touche ni le chemin des ombres ni le worker. Quatre leçons, et la première est
+contre moi.
+
+- **LA DURÉE DE LA SUITE A TUÉ MON EXPLICATION EN UNE LIGNE.** J'ai avancé « le
+  banc tournait plus lentement » avant de mesurer : `monte.js` fait 22 min 59 s
+  au portail de la v283, où le témoin des ombres est VERT, contre 23 min 02 s
+  ici, où il est ROUGE. Trois secondes. Une explication qu'on n'a pas mesurée
+  est une dette, pas un diagnostic (v220) — et le chiffre qui la démonte était
+  déjà imprimé par le portail.
+- **UN TÉMOIN QUI LIT UN PIXEL LIT D'ABORD QU'IL Y A QUELQUE CHOSE À LIRE.**
+  Celui des ombres dormait 2 500 ms et lisait, **sans aucune borne de garde** :
+  il ne distinguait pas « la dalle n'a pas d'ombre » de « la dalle n'est pas
+  encore dessinée ». C'est « `null` n'est pas un verdict, c'est une absence de
+  mesure » (v272) transposé au PIXEL. Et ce qui l'a prouvé n'est pas la
+  cohérence — 168,4 tombe entre le zénith (155,8) et l'horizon (180,8) mesurés
+  par ses voisins verts au même passage — c'est un relevé à part : **une dalle
+  privée de son ombre lit 101,3, pas 168,4.** Une arithmétique qui concorde
+  oriente ; seule une mesure tranche.
+- **ON ATTEND LA SITUATION, JAMAIS LE VERDICT.** L'attente porte sur un FAIT DU
+  MONDE — neuf morceaux maillés autour de la dalle, trois lectures qui ont cessé
+  de changer. Attendre que le rapport passe sous la barre serait relancer jusqu'au
+  vert, et cela blanchirait pour toujours le code que le témoin doit accuser. La
+  différence se VÉRIFIE : ombres désarmées, l'attente rend la main en 3 193 ms et
+  le rapport vaut 0,98.
+- **ET UNE FENÊTRE ALLONGÉE NE BLANCHIT PAS UN TAUX — mais cela se mesure.** La
+  v279 avertit qu'une borne sur un résultat donne à l'ancien code tout le temps
+  dont il a besoin. `msParSeconde` étant un TAUX, la fenêtre du vol passe de huit
+  secondes de montre à deux cent cinquante blocs parcourus ; sur `?maillage=local`
+  elle rend 216 ms par seconde pour une barre de 120. Le principe ne suffisait
+  pas, la mesure oui.
+- **ET MA SONDE DU VOL A ÉTÉ AVEUGLE AU PREMIER JET, la troisième de la
+  journée.** Elle passait `{ maillage: 'local' }`, une clé que `banc.joueur`
+  ignore — le chemin est `params` — rendait `worker true` et annonçait que le
+  témoin ne prouvait plus rien. Avant de croire une sonde qui force un réglage,
+  on vérifie que le réglage est ARRIVÉ.
+
+**ET UN TÉMOIN SE PLACE LUI-MÊME — « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+(v284).** Cinq témoins d'avion de `monte.js` ont rendu `pas aux commandes {}`,
+sur la branche ET sur `origin/main` rejoué seul — donc sur le code EN
+PRODUCTION — et seulement depuis que le conteneur a été recyclé : quatre
+passages verts avant, deux rouges après. La double mesure de la v195 disait donc
+« ce n'est pas la livraison ». **Elle ne disait pas si Marlon est touché, et
+c'est la seule question qui compte** : une dette qu'on déclare sans avoir
+demandé ce que l'enfant perd n'est pas une dette, c'est un renoncement.
+
+- **UNE SONDE, UNE QUESTION, ET LA PREMIÈRE EST CELLE DE L'ENFANT.** Sur une
+  page NEUVE, sans rien avant, prend-on un avion ? OUI — bouton « Monter », UN
+  clic, aux commandes. Le jeu va bien. Après être monté dans une voiture, ce que
+  le témoin d'avant laisse : ZÉRO clic, pas aux commandes. Deux bras, une
+  exécution, et la cause est nommée.
+- **LA GARDE LISAIT LE BON MÉCANISME ET LE MAUVAIS ÉTAT.** La boucle
+  d'embarquement est gardée par `auVolant()`, c'est-à-dire `montureConduite()` :
+  vrai pour une VOITURE autant que pour un avion. L'enfant laissé au volant la
+  rend vraie AVANT le premier tour ; la boucle ne clique pas une seule fois et
+  `pilote` reste nul. C'est « un bouton-bascule ne se reclique pas » (v252) par
+  l'autre bout — le témoin lit bien l'état DANS LE JEU, ce que la v252 exige,
+  mais pas l'état qu'il veut. Une garde se formule sur ce que le verdict
+  demande : `!g.player.pilote`, jamais « quelque chose est monté ».
+- **ET DESCENDRE NE SUFFIT PAS — c'est une sonde qui l'a dit, pas le
+  raisonnement.** Mon premier remède ajoutait une descente et corrigeait la
+  condition : mesuré, HUIT clics, `auVolant` qui bascule vrai/faux, bouton resté
+  « Monter », toujours pas aux commandes. **Une monture SUIT le joueur** : elle
+  est encore là après la descente, et le clic suivant la remonte. On descend, on
+  RETIRE les bêtes (l'idiome du dépôt depuis la v257), PUIS on invoque. Les
+  quatre bras, dans le même passage : page neuve 1 clic ✓ · sans remède 0 clic ✗
+  · descente seule 8 clics ✗ · remède complet 1 clic ✓.
+- **ET LES DIX SITES SONT CORRIGÉS, PAS LES QUATRE QUI ROUGISSAIENT.** Six
+  autres boucles montent une voiture ou une bête avec la même garde : elles
+  portent le même piège, latent, et il ne se voit que le jour où le témoin
+  d'avant laisse quelque chose. Quand une panne touche une grammaire partagée,
+  on cherche TOUTES ses occurrences le jour même — sixième fois.
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and

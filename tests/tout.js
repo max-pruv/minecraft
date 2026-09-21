@@ -91,6 +91,13 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
+  // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
+  // trou devant soi et cette vitesse, `maj.js` la préparation et l'accueil — et
+  // c'est lui qui porte les témoins du palier —, `reglages.js` l'espace où l'on
+  // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
+  // carte.
+  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js'],
   // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
   // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une

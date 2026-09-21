@@ -22,6 +22,7 @@ import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington
 import { buildChunkTampons } from './mesher.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { Horizon, rayonHorizon } from './horizon.js';
+import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET } from './palier.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -63,8 +64,62 @@ const renduUrbain = await import('./manhattan-render.js');
 const contexteCarte = ctx => String(ctx).replace(/^manhattan-v1:/,'');
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+// ── LE PALIER DE L'APPAREIL (v284) ───────────────────────────────────────────
+//
+// Max, sur iPhone 18 Pro : « le unveil est late », puis « tu serais capable
+// d'ajuster en fonction de l'appareil et sa capacité ? ». Ses chiffres, par
+// `?diag=1` en vol : 59 i/s, DOUZE appels de dessin, 502×892 pixels, ombres
+// off. L'appareil est au plafond de son écran et n'a rien à dessiner — et la
+// file du mailleur, la distance d'affichage et la résolution ont toutes été
+// réglées en v257 et v269 sur l'iPad de QUATRE ANS de la famille.
+//
+// Le palier ne déplace que les DEUX premières, et `palier.js` dit pourquoi : les
+// pixels et les ombres sont une mesure à faire sur l'appareil, pas une déduction
+// d'une mesure prise à l'autre résolution.
+//
+// TANT QU'IL N'Y A PAS DE MESURE, RIEN NE CHANGE. C'est la règle du remède qui
+// ne va pas plus loin que la panne (v245) : un appareil qu'on n'a pas mesuré
+// garde EXACTEMENT le comportement de la v283. La première partie mesure, range
+// son verdict sur l'appareil, et la suivante en profite — un palier ne
+// papillote pas, et surtout il ne se décide pas à partir d'une mesure prise
+// pendant que la page compile ses shaders.
+//
+// `?palier=bas|moyen|haut` force, pour le banc et pour mesurer.
+const PALIER_FORCE = new URLSearchParams(location.search).get('palier');
+const PALIER = (() => {
+  if (PALIER_FORCE && PALIERS[PALIER_FORCE]) return { nom: PALIER_FORCE, ...PALIERS[PALIER_FORCE] };
+  try {
+    const brut = localStorage.getItem(PALIER_CLE);
+    if (brut) {
+      const v = JSON.parse(brut);
+      if (v && PALIERS[v.palier]) return { nom: v.palier, mesure: v, ...PALIERS[v.palier] };
+    }
+  } catch { /* mode privé, ou rangement abîmé : on garde le comportement d'avant */ }
+  return null;                       // pas encore mesuré : la v283, au bit près
+})();
+
 // doubled view distance; ?rr= overrides (perf tuning and tests)
-const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
+const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr'))
+  || (PALIER ? PALIER.rr : (IS_TOUCH ? 12 : 16));
+
+// ET LA VITESSE DES JETS SUIT LA FILE, parce que la v269 l'a descendue de 160 à
+// 120 blocs par seconde EXACTEMENT POUR CETTE RAISON : « une vitesse mesurée
+// sur une file ne vaut que pour cette file ». Le palier haut rend la file de
+// seize, donc la vitesse ; le palier bas la resserre. L'avion de ligne ne bouge
+// pas — ses 95 blocs par seconde sont l'ancre au-dessus du vol libre de
+// l'enfant (88), sans quoi prendre l'avion ne servirait à rien — et `kmh` ne
+// bouge jamais : le compteur affiche Mach 1,8 quoi qu'il arrive (v267). Au
+// palier bas les deux rapides rejoignent donc l'avion de ligne, et ce n'est pas
+// une perte de caractère : la v229 avait déjà décidé qu'ils se distinguent par
+// leur AGILITÉ — trois fois la poussée, trois fois le taux de virage.
+// La barre du témoin du trou, elle, se calcule en `max / 2` depuis la v269 :
+// elle suit toute seule, sans qu'on touche à un chiffre de témoin.
+if (PALIER && VITESSE_JET[PALIER.nom]) {
+  for (const m of MONTURES) {
+    if ((m.key === 'concorde' || m.key === 'chasseur') && m.pilote) m.pilote.max = VITESSE_JET[PALIER.nom];
+  }
+}
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
@@ -192,6 +247,10 @@ const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
 // sans carte graphique préfère un accueil sobre à un jeu qui n'est pas prêt.
 // Sur l'iPad, la classe n'est pas posée et rien ne change.
 if (renduLogiciel()) document.documentElement.classList.add('rendu-logiciel');
+// ET LE PALIER NE TOUCHE PAS AUX OMBRES (v284) : leur prix est une PASSE
+// entière, jamais mesurée sur le téléphone de Max. Elles restent décidées par le
+// type d'appareil, comme la v257 l'a écrit, et `?ombres=1` les force pour les
+// mesurer. Voir `palier.js`, juste au-dessus de la table.
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
@@ -405,6 +464,75 @@ world.loadEdits();
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
 const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [] };
+
+// ── CE QU'ON MESURE POUR CLASSER L'APPAREIL (v284) ───────────────────────────
+//
+// UNE CADENCE PLAFONNÉE PAR L'ÉCRAN NE DIT RIEN DE LA RÉSERVE : l'iPhone de Max
+// rend cinquante-neuf images par seconde avec DOUZE appels de dessin, comme le
+// ferait un appareil deux fois plus lent. On mesure donc le TEMPS D'UN TRAVAIL
+// CONNU, jamais un taux — c'est « on mesure la CAUSE et non l'effet » (v236).
+//
+// Deux travaux, deux goulots, deux machines : ce que coûte un MORCEAU dans le
+// worker (il décide combien de monde peut exister devant l'enfant) et ce que
+// coûte une IMAGE sur le fil principal (il décide la résolution et les ombres).
+//
+// ET L'ON NE MESURE QU'EN JEU. Pendant la préparation la page compile ses
+// vingt-cinq programmes et calcule son fond de carte : y prendre une mesure,
+// c'est mesurer la préparation, et tout appareil serait classé lent — c'est le
+// piège que la v276 et la v277 ont payé deux fois sur leurs propres relevés.
+const PALIER_MS_FORCE = new URLSearchParams(location.search).get('palierms');
+const FENETRE_PALIER_MS = Number(PALIER_MS_FORCE) || 30000;
+// ON NE CLASSE PAS UN APPAREIL SUR UNE CONFIGURATION QU'ON LUI A IMPOSÉE, et
+// c'est ce qui met le banc hors de portée sans une ligne écrite pour lui. Une
+// page ouverte à `rr=2` ou à `attente=48` ne dit rien de ce que l'appareil fait
+// à sa vraie distance d'affichage : son verdict serait juste sur une partie que
+// personne ne joue, et il serait RANGÉ — la page suivante de la même suite en
+// hériterait, et un témoin mesurerait le palier laissé par son voisin plutôt
+// que le jeu (la famille de la v279). Le banc force toujours `rr`, donc il ne
+// range jamais rien ; `?palierms=` est la déclaration explicite qui permet à un
+// témoin de suivre la chaîne entière malgré cela.
+const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage']
+  .some((c) => new URLSearchParams(location.search).has(c));
+const PALIER_SE_RANGE = !!PALIER_MS_FORCE || !CONFIG_FORCEE;
+// ET LES PLANCHERS D'ÉCHANTILLONS SUIVENT LA FENÊTRE, SOUS UN SEUL BOUTON. Ils
+// sont là pour qu'une médiane veuille dire quelque chose ; écrits en dur, ils
+// tiendraient la porte fermée quand `?palierms=` la raccourcit, et le témoin
+// mesurerait alors l'un des deux verrous sans jamais voir l'autre. À trente
+// secondes ils valent ce qu'ils valaient : quarante morceaux et six cents
+// images. Ce sont des BORNES DE GARDE — elles séparent « on a mesuré » de « rien
+// ne s'est passé » —, donc elles restent loin de tout seuil de verdict (v237).
+const MIN_MORCEAUX = Math.max(10, Math.round(FENETRE_PALIER_MS / 750));
+const MIN_IMAGES = Math.max(60, Math.round(FENETRE_PALIER_MS / 50));
+const mesurePalier = { morceaux: [], images: [], depuis: 0, range: false };
+function noterMorceau(ms) {
+  if (!running || typeof ms !== 'number') return;
+  if (mesurePalier.morceaux.length < 400) mesurePalier.morceaux.push(ms);
+}
+function noterImage(ms) {
+  if (!running || !(ms > 0)) return;
+  if (!mesurePalier.depuis) mesurePalier.depuis = performance.now();
+  if (mesurePalier.images.length < 2000) mesurePalier.images.push(ms);
+}
+const medianeDe = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
+// ON RANGE UNE FOIS, ET POUR LA PROCHAINE PARTIE. Le palier ne s'applique pas à
+// chaud : `RENDER_RADIUS` et la profondeur de file sont lues au démarrage, et
+// les faire bouger en cours de route ferait respirer la distance d'affichage
+// sous les yeux de l'enfant. On mesure, on range, la partie suivante en
+// profite — et la v283 reste le comportement de tout appareil non mesuré.
+function rangerLePalier() {
+  if (mesurePalier.range || !PALIER_SE_RANGE) return;
+  if (mesurePalier.morceaux.length < MIN_MORCEAUX || mesurePalier.images.length < MIN_IMAGES) return;
+  // UN RÉGLAGE DE BANC SE REJOUE, SINON IL NE SE DÉMONTE PAS (v277) :
+  // `?palierms=` raccourcit la fenêtre, et c'est ce qui permet à un témoin de
+  // suivre la chaîne entière — mesure, verdict, rangement — sans jouer trente
+  // secondes. Le défaut, lui, reste trente secondes de JEU : une fenêtre plus
+  // courte classerait l'appareil sur son démarrage.
+  if (performance.now() - mesurePalier.depuis < FENETRE_PALIER_MS) return;
+  const verdict = choisirPalier({ msMorceau: medianeDe(mesurePalier.morceaux), msImage: medianeDe(mesurePalier.images) });
+  mesurePalier.range = true;
+  mesurePalier.verdict = verdict;
+  try { localStorage.setItem(PALIER_CLE, JSON.stringify({ ...verdict, le: Date.now() })); } catch { /* mode privé */ }
+}
 // COMBIEN DE MORCEAUX LE WORKER A-T-IL D'AVANCE — et c'est un TEMPS, pas un
 // compte (v265). Huit, réapprovisionnés une fois par IMAGE, c'est une file
 // par image : à Paris un morceau coûte 24 ms, donc huit occupent le worker
@@ -495,7 +623,12 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 // trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
 // mailleur : c'est le fil principal, qui doit INSTALLER les géométries.
 // Ajouter des mailleurs ne fait que lui en envoyer plus.
-const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente')) || 8;
+// ET LA PROFONDEUR SUIT LE PALIER (v284) : seize sur un appareil qui a la
+// réserve — le genou du DÉBIT que la v265 avait mesuré et que la v269 a dû
+// rendre parce qu'il écroulait la cadence SUR L'IPAD. Sans palier mesuré, huit,
+// comme en v283.
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente'))
+  || (PALIER ? PALIER.file : 8);
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
@@ -524,6 +657,7 @@ function recevoirMorceau(m) {
   }
   installerMorceau(m.cx, m.cz, m);
   statsMaillage.distants++;
+  noterMorceau(m.ms);
   if (attente && attente.sale) world.dirty.add(key);
 }
 (function creerMaillageDistant() {
@@ -6546,6 +6680,8 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
+    + `palier ${PALIER ? PALIER.nom : 'pas encore mesuré'} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX}`
+    + (mesurePalier.verdict ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}) au prochain lancement` : ` · morceau ${mesurePalier.morceaux.length} relevé(s), image ${mesurePalier.images.length}`) + '\n'
     + `morceaux ${chunkMeshes.size} · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}`;
 }
 
@@ -6616,7 +6752,17 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
+  // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
+  // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
+  // lues au démarrage et ne bougent plus ; la vitesse des jets est relue dans
+  // la fiche, là où elle se calcule.
+  get reglageApplique() {
+    const jet = MONTURES.find((m) => m.key === 'chasseur');
+    return { palier: PALIER ? PALIER.nom : null, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+      ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
+      seRange: PALIER_SE_RANGE };
+  }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -6642,6 +6788,11 @@ function frame(now) {
   // dt ressortait négatif, et repartait à l'envers dans la physique, les
   // animaux et le compteur de temps de jeu. Le plancher à zéro le neutralise.
   const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
+  // La durée RÉELLE de l'image, non bornée — `dt` l'est à un vingtième, et une
+  // mesure faite dessus dirait que tout va bien sur une machine à cinq images
+  // par seconde (piège de la v234).
+  noterImage(now - lastTime);
+  rangerLePalier();
   lastTime = now;
 
   // LE FILET DE L'ÉCRAN. Deux fois par seconde, on vérifie que ce qu'on dessine

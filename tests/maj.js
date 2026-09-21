@@ -636,6 +636,86 @@ function verifier(nom, ok, detail = '') {
       signes.emojis.length === 0 && signes.icones >= 8,
       JSON.stringify(signes));
 
+    // ── LE PALIER DE L'APPAREIL (v284) ─────────────────────────────────────
+    //
+    // Max, sur iPhone 18 Pro : douze appels de dessin, 59 i/s, un septième de
+    // sa définition d'écran. Le jeu se règle désormais sur ce qu'il MESURE.
+    //
+    // CE QUE CE BANC NE PEUT PAS PROUVER, ET IL FAUT LE DIRE : il rend en
+    // LOGICIEL, sans carte graphique. Il ne dira jamais si le palier haut est
+    // le bon palier pour un iPhone — cela se mesure sur l'appareil, par
+    // `?diag=1`, et c'est la leçon que la v245 et la v249 ont payée en
+    // transposant des chiffres de conteneur à une tablette. Ce qu'il prouve,
+    // c'est le MÉCANISME : sans mesure rien ne change, et un palier demandé
+    // s'applique vraiment.
+    const sansMesure = await banc.joueur('Gaspard', { rr: 12 });
+    await sansMesure.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const avant = await sansMesure.evaluate(() => window.__game.reglageApplique);
+    await sansMesure.close();
+    verifier('sans mesure, le jeu est celui d\'avant — un appareil non mesuré ne perd rien',
+      avant.palier === null && avant.file === 8 && avant.jet === 120,
+      JSON.stringify(avant));
+    // ET LE BANC NE RANGE RIEN, SANS UNE LIGNE ÉCRITE POUR LUI. Toute page du
+    // banc reçoit `rr=` et `dpr=` (banc.js) : sa configuration est IMPOSÉE, donc
+    // sa mesure ne dit rien de ce que l'appareil fait en vrai et le jeu ne la
+    // range pas. Sans cette règle, une suite qui joue longtemps rangerait un
+    // palier « bas » et la page SUIVANTE de la même suite en hériterait — un
+    // témoin mesurerait alors ce que son voisin a laissé (la famille de la
+    // v279). Ce verdict-là ne peut pas être vert sur `origin/main` : le champ
+    // n'y existe pas.
+    verifier('et une page dont on a forcé la configuration ne classe pas l\'appareil',
+      avant.seRange === false, JSON.stringify({ seRange: avant.seRange }));
+
+    const haut = await banc.joueur('Isaure', { rr: 12, params: '&palier=haut' });
+    await haut.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const applique = await haut.evaluate(() => window.__game.reglageApplique);
+    // ET LA RÈGLE EST PURE, donc elle se démonte sans navigateur : on lui donne
+    // les chiffres de l'iPhone de Max et ceux de l'iPad de quatre ans.
+    const regle = await haut.evaluate(() => ({
+      iphone: window.__game.choisirPalier({ msMorceau: 6, msImage: 5 }).palier,
+      vieilIpad: window.__game.choisirPalier({ msMorceau: 70, msImage: 20 }).palier,
+      sansRien: window.__game.choisirPalier({}).palier,
+      rrHaut: window.__game.PALIERS.haut.rr,
+    }));
+    await haut.close();
+    // CE QUI PROUVE QUE LE PALIER S'APPLIQUE, C'EST LA FILE — pas `rr`. Le banc
+    // met toujours `rr=` dans l'adresse (banc.js) et l'adresse l'emporte, à
+    // dessein : on doit pouvoir mesurer une distance d'affichage choisie. La
+    // profondeur de file, elle, n'est forcée par personne ici, et c'est le
+    // levier que la v269 a mesuré comme LE levier. On vérifie donc les deux
+    // faits : la file suit le palier, et `rr` suit l'adresse.
+    verifier('un palier mesuré donne plus de monde devant l\'enfant, et rend leur vitesse aux jets',
+      applique.palier === 'haut' && applique.file === 16 && applique.jet === 160
+        && applique.rr === 12 && regle.rrHaut === 16,
+      JSON.stringify({ ...applique, rrDuPalierHaut: regle.rrHaut }));
+    // ET LA CHAÎNE ENTIÈRE SE SUIT : jouer, mesurer, ranger. La fenêtre vaut
+    // trente secondes de JEU par défaut — `?palierms=` la raccourcit ici, et
+    // c'est un réglage de banc qui se REJOUE (v277), pas un chiffre caché.
+    const mesure = await banc.jouerSeul('Fantine', { rr: 12, params: '&palierms=2000' });
+    await mesure.waitForFunction(() => window.__game && window.__game.running, null, { timeout: 90000 });
+    const range = await mesure.evaluate(async () => {
+      const t0 = performance.now();
+      while (performance.now() - t0 < 60000) {
+        await new Promise((f) => setTimeout(f, 500));
+        const m = window.__game.mesurePalier;
+        if (m.range) break;
+      }
+      const m = window.__game.mesurePalier;
+      let garde = null;
+      try { garde = JSON.parse(localStorage.getItem('web-minecraft-palier-v1') || 'null'); } catch { /* mode privé */ }
+      return { range: m.range, morceaux: m.morceaux.length, images: m.images.length,
+        verdict: m.verdict || null, garde };
+    });
+    await mesure.close();
+    verifier('le jeu se mesure en jouant, et range son verdict pour la partie suivante',
+      range.range && !!range.garde && !!range.garde.palier && range.garde.raison
+        && range.garde.msMorceau > 0 && range.garde.msImage > 0,
+      JSON.stringify(range));
+
+    verifier('et la règle classe l\'appareil sur ce qu\'il coûte, pas sur son nom',
+      regle.iphone === 'haut' && regle.vieilIpad === 'bas' && regle.sansRien === 'moyen',
+      JSON.stringify(regle));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

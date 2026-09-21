@@ -1,5 +1,60 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v284 : SEPT ROUGES, TROIS TÉMOINS CORRIGÉS, ET LA
+  DOUBLE MESURE FAITE.** Le conteneur a été recyclé au milieu de la campagne —
+  neuvième fois — et cela a fait apparaître des rouges qu'aucun des quatre
+  passages précédents n'avait rendus. Chacun est attribué, aucun n'est deviné.
+
+  **Deux corrigés : des témoins qui mesuraient le banc.** Leur message porte
+  désormais le temps pris, et c'est lui qui prouve la cause.
+
+  | témoin | ce qu'il rendait | ce qu'il rend |
+  | --- | --- | --- |
+  | l'ombre d'un pilier | `168,4 · 168,4` (le CIEL) | `58,4 · 103,5`, dalle prête en **6 556 à 10 476 ms** — l'ancien dormait 2 500 |
+  | le maillage hors du fil | `parcouru 19 · distants 16` | `parcouru 255 · distants 215` en **17,3 à 23,5 s** — l'ancienne fenêtre en donnait 8 |
+
+  Ce qui tranche n'est pas l'arithmétique (168,4 tombe entre le zénith 155,8 et
+  l'horizon 180,8 mesurés par les voisins verts) mais un relevé à part : **une
+  dalle privée de son ombre lit 101,3.** Chaque correction est vérifiée ROUGE —
+  `ombres=0` rend 0,98, `maillage=local` rend 216 ms/s pour une barre de 120.
+
+  **Cinq corrigés : l'embarquement.** Les cinq témoins d'avion rendaient `pas
+  aux commandes {}`, sur la branche ET sur `origin/main` rejoué seul, donc sur
+  le code en production. **Marlon n'est pas touché** — page neuve, un clic, aux
+  commandes. La garde de la boucle lisait `montureConduite()`, vrai pour une
+  VOITURE ; et descendre ne suffit pas, une monture SUIT le joueur. Quatre bras
+  mesurés : neuve 1 clic ✓ · sans remède 0 clic ✗ · descente seule 8 clics ✗ ·
+  vide complet 1 clic ✓. Les DIX boucles de la suite sont corrigées, pas les
+  quatre qui rougissaient.
+
+  **Les six rouges restants, chacun attribué par une mesure** (suites rejouées
+  SEULES des deux côtés, arbres séparés, toutes après le recyclage) :
+
+  | rouge | branche seule | `origin/main` seul |
+  | --- | --- | --- |
+  | `maj.js` corps/programmes/fond | ❌ `personnages 8/9` | ❌ **`personnages 8/9`** — identique |
+  | `maj.js` la page ne floute rien | ✅ | ✅ — rouge SEULEMENT sous la charge du portail |
+  | `manhattan.js:282` délai | 💥 | v269 : identique sur `origin/main` au 3ᵉ passage |
+  | `monte.js` l'écran se fige | ❌ 4 433 ms · 37,3 % · 4,1 im/s | ❌ 4 933 ms · 36,4 % · 4,0 im/s |
+  | `monte.js` la voiture contre un mur | ❌ | ❌ identique |
+  | `monte.js` le passant marche | ❌ débit 0,57 | ✅ 0,99 |
+
+  **Le passant est UN POINT ABERRANT SUR NEUF, et c'est la mesure qui le dit** :
+  0,57 · 0,99 · 1,26 · 1,27 · 1,29 · 1,32 · 1,37 · 1,40 · 1,48 pour une barre à
+  0,80, sur neuf passages dont aucun ne touche `passants.js` ni `marlon.js`. Huit
+  sur neuf sont à 0,99 ou au-dessus. Ce n'est pas une barre posée dans l'étendue
+  (le piège de la v277) : c'est une queue de distribution, et elle se remesurera.
+
+  **Et `reglages.js` est VERT au portail de la v284**, après avoir été rouge aux
+  deux précédents — son rouge de « l'autre tablette » était donc lui aussi une
+  intermittence, pas un défaut.
+
+  **Ce qui reste à faire, et qui n'est PAS mesuré** : pourquoi le recyclage du
+  conteneur change ce que la suite laisse derrière elle. Le fait est net —
+  quatre passages verts avant, deux rouges après, sur du code identique — la
+  cause ne l'est pas. Le remède posé ne dépend d'aucune hypothèse là-dessus :
+  chaque témoin se place lui-même, donc l'état hérité ne peut plus le tromper.
+
 - [ ] **`monte.js` : DEUX ROUGES NEUFS, ATTRIBUÉS ET UN CORRIGÉ (v282).** Les
   portails ayant tourné dans la même configuration sur la même machine, la
   double mesure de la v195 s'est prise sans rejeu, puis chaque suite a été
@@ -110,6 +165,30 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+
+## LE PALIER « BAS » DE LA v284 EST LE SEUL QUE RIEN N'A MESURÉ
+
+Ses chiffres — `rr: 8`, `file: 6` — sont RAISONNÉS, pas relevés. La v269 a mesuré
+la file à 4, 8, 12 et 16 sur l'iPad de quatre ans (8 est le confort : 66 blocs de
+trou, 0 % d'images au-delà de 300 ms ; 4 en donne 36 et 1,3 %), jamais 6 — et
+aucun appareil de la famille n'est plus lent que celui-là, donc il n'y avait rien
+sur quoi mesurer.
+
+**Le risque nommé** : à `file: 6` et `rr: 8`, le trou devant soi devrait tomber
+vers cinquante blocs par interpolation, pour une barre de témoin à `max / 2` =
+47,5 (jets à 95). Deux blocs et demi de marge — exactement le cas que la v269
+refusait à 130 blocs par seconde (« il ne resterait que trois blocs de marge et
+le témoin battrait »). Le banc ne le verra jamais : il ne range aucun palier
+(`seRange` faux, sa configuration est forcée), donc `monte.js` tourne toujours à
+`file: 8`.
+
+**À faire quand une tablette y tombera** : `?palier=bas&diag=1` sur l'appareil,
+relever le trou devant soi et la part d'images au-delà de 300 ms, et remonter la
+file à 8 si le trou passe sous la barre. Le palier ne s'applique qu'à un appareil
+que la mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon
+pire — c'est ce qui rend l'inconnue acceptable, pas le fait de l'ignorer.
+
+---
 
 ## LE PORTAIL DES RAILS (v281) : SEPT SUITES ROUGES, ET CE QU'ELLES SONT
 

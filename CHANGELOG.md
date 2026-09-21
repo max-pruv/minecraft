@@ -20,6 +20,89 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v284 — Le jeu se règle sur l'appareil qu'il a
+
+**Pourquoi.** Max, capture du chasseur en vol : « est-ce possible de pousser le
+niveau de réalisme ? **Le unveil est late** », puis, depuis son iPhone 18 Pro :
+« tu serais capable d'ajuster en fonction de l'appareil et sa capacité ? ». Ses
+propres chiffres, relevés par `?diag=1` en vol, disent la panne mieux que la
+capture : **douze appels de dessin**, trente mille triangles, cinquante-neuf
+images par seconde. Douze appels, c'est un monde presque vide devant lui — et ce
+n'est pas que l'appareil ne suive pas, c'est que **le jeu ne lui en demande
+pas**. La profondeur de file du mailleur (huit, v269), la distance d'affichage
+(douze morceaux en tactile) et la vitesse des jets (120 au lieu de 160, v269)
+ont toutes été réglées sur l'**iPad de quatre ans** de la famille, qui devenait
+injouable. Un téléphone de 2026 paie ce compromis sans en avoir besoin.
+
+**Ce que ça change.** Le jeu mesure lui-même, en jouant, ce que son appareil
+coûte : le temps d'un morceau maillé dans le worker, le temps d'une image sur le
+fil principal. Au bout de trente secondes de jeu il en déduit un palier, le
+range sur l'appareil, et **la partie suivante en profite**. Sur un appareil
+rapide, le paysage se dévoile plus loin (distance d'affichage de douze à seize
+morceaux), le mailleur travaille avec deux fois plus d'avance (file de huit à
+seize) et les jets retrouvent leurs 160 blocs par seconde. Sur un vieil iPad, le
+jeu se resserre au lieu de se figer. **Et un appareil que la mesure ne sait pas
+classer ne perd rien : il joue exactement la v283.**
+
+**Ce qui le prouve.** Cinq témoins dans `maj.js`. Sans mesure, le jeu est celui
+d'avant au réglage près (file 8, jets 120). Un palier demandé s'applique
+vraiment — et ce qui le prouve est la FILE, pas la distance d'affichage, que
+l'adresse du banc force toujours. La règle elle-même est pure et se démonte sans
+navigateur : les chiffres de l'iPhone rendent « haut », ceux de l'iPad de quatre
+ans « bas », l'absence de mesure « moyen ». La chaîne entière se suit sur une
+vraie partie — jouer, mesurer, ranger — avec la fenêtre raccourcie par un
+réglage de banc qui se rejoue. Et une page dont on a forcé la configuration ne
+classe pas l'appareil : c'est ce qui met le banc entier hors de portée sans une
+ligne écrite pour lui.
+
+**Et le palier « bas » est le seul que rien n'a mesuré.** Ses chiffres — huit
+morceaux de distance, six de file — sont RAISONNÉS, pas relevés : la v269 a
+mesuré huit et quatre sur l'iPad de quatre ans, jamais six, et aucun appareil de
+la famille n'est plus lent que celui-là. Il ne s'applique qu'à un appareil que la
+mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon pire ;
+mais il se remesurera le jour où une tablette y tombera, et c'est écrit dans
+`TASKS.md` plutôt que passé sous silence.
+
+**Ce qui n'est pas dans cette version, et pourquoi.** Mon premier jet faisait
+aussi passer la résolution de son téléphone de 1,25 à 2,0 pixel par point et lui
+rendait les ombres. Retiré : la mesure d'image a été prise à 1,25, et s'en
+servir pour multiplier par 2,56 la surface de cette même image, c'est se servir
+d'une mesure contre elle-même. Le prix d'une passe d'ombres n'a jamais été
+mesuré sur cet appareil non plus. Les deux sont la prochaine étape, et c'est une
+mesure — `?dpr=2&ombres=1&diag=1` sur son iPhone — pas une intuition.
+
+**Et le second sujet de cette livraison : deux témoins de `monte.js` mesuraient
+le banc.** Le portail a rendu deux rouges que les trois portails précédents
+n'avaient jamais rendus, sur un diff qui ne touche aucune des deux zones — « le
+sol dans l'ombre d'un pilier » à `168,4 · 168,4` là où trois passages donnaient
+`58,4 · 103,5`, et « le monde se maille hors du fil principal » à dix-neuf blocs
+parcourus pour une borne de quarante. Mon premier réflexe a été une explication
+commode, « le banc tournait plus lentement », et c'est **la durée de la suite qui
+l'a tuée** : 22 min 59 s au portail de la v283, où le témoin est VERT, contre
+23 min 02 s ici, où il est ROUGE. Une sonde qui sépare les quatre candidats en
+une exécution a montré la bonne valeur dès le premier relevé, stable huit
+secondes, et deux cent soixante-dix blocs de vol là où le portail en comptait
+dix-neuf. Ce qui tranche vient d'un relevé à part : **une dalle privée de son
+ombre lit cent un, pas cent soixante-huit** — les deux points lisaient donc le
+ciel à travers un morceau pas encore maillé. Les deux témoins attendent désormais
+le RÉSULTAT, borné, et le temps qu'il a pris entre dans leur message ; chaque
+correction est vérifiée ROUGE (ombres désarmées : rapport 0,98 ; maillage dans
+l'image : 216 ms par seconde pour une barre de 120).
+
+**Et le portail suivant en a révélé cinq autres, du même sang.** Les cinq témoins
+d'avion rendaient « pas aux commandes » — sur la branche ET sur `origin/main`
+rejoué seul, donc sur le code déjà en production. La double mesure disait « ce
+n'est pas la livraison » ; elle ne disait pas si Marlon est touché, et c'est la
+seule question qui compte. **Il ne l'est pas** : sur une page neuve, un seul
+appui suffit pour monter aux commandes. Ce qui échouait, c'est le témoin — sa
+boucle d'embarquement s'arrêtait dès que l'enfant était « sur quelque chose », et
+une voiture compte autant qu'un avion. Et descendre ne suffisait pas : une
+monture suit l'enfant, donc l'appui suivant la remonte. Les dix boucles
+d'embarquement de la suite font désormais le vide avant d'embarquer — pas
+seulement les quatre qui rougissaient.
+
+---
+
 ## v283 — Les voitures se suivent, et personne n'escalade les murs
 
 **Pourquoi.** Deux défauts que la famille voit. Max signale depuis plusieurs
