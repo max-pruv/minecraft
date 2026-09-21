@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 286,
+    titre: 'L\'accueil ne te retient plus',
+    puces: [
+      'Le bouton Jouer ne se cache plus',
+      'Plus d\'attente inutile après une mise à jour',
+      'Le jeu dit quand il a fini d\'attendre',
+    ],
+  },
+  {
     v: 285,
     titre: 'Les voitures roulent partout',
     puces: [

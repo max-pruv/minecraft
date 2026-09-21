@@ -691,6 +691,50 @@ démarre très bien sous la boucle (`charge.js` se charge), c'est **`npm`** qui
 meurt avant de lancer le script — `tout.js` n'est jamais atteint, sa première
 ligne ne s'imprime pas.
 
+## Deux bornes sur des conditions EMBOÎTÉES (v286)
+
+Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a été le cas
+depuis longtemps ». Le symptôme que la v257 et la v258 devaient corriger, et qui
+revenait après les deux. Quatre règles.
+
+- **QUAND DEUX ATTENTES GARDENT DES CONDITIONS EMBOÎTÉES, LA PLUS LONGUE NE DOIT
+  PAS GARDER LA PLUS FAIBLE.** `veillerPrep` dégrise « Jouer » sur corps ET
+  chauffe ET carte, borné à 45 s ; le loader d'après-mise-à-jour s'efface sur
+  corps ET chauffe, borné à 90 s. La seconde condition est un SOUS-ENSEMBLE de la
+  première, et elle porte la borne la plus longue : dès que la chauffe traîne —
+  l'iPad, où Safari compile un programme en centaines de millisecondes (v257) — le
+  jeu autorise l'enfant à jouer à quarante-cinq secondes et le loader le lui cache
+  jusqu'à quatre-vingt-dix. **La cause ne se mesurait pas, elle s'ADDITIONNAIT** :
+  45 + 90 = 135 s, la fourchette exacte de Max. Devant une plainte de durée, on
+  additionne les bornes du chemin AVANT de sortir une sonde.
+- **IL N'Y A QU'UNE DÉCISION : PRÊT, OU J'AI RENONCÉ.** `prepPrete` est vraie dans
+  les deux cas, et c'est ce que l'enfant vit — c'est le critère de la v220 (« le
+  seul critère qui ne se trompe pas est celui de l'enfant »). Deux bornes
+  indépendantes sur des conditions emboîtées finissent par se contredire, comme
+  deux tables qui décrivent la même chose.
+- **UN TÉMOIN QUI INTERDIT LE RENONCEMENT EST LE MÉCANISME DE LA PANNE.** Celui de
+  la v257 exigeait que TOUT soit là à l'instant où le loader s'efface. Il a tenu
+  des versions parce qu'au banc tout est prêt en trois secondes ; sur la tablette
+  il interdisait la seule sortie qui rende la main à l'enfant. Quand une
+  correction est en tension avec un témoin existant, on regarde si le témoin est
+  trop absolu avant de tordre la correction.
+- **ON PROVOQUE UNE INVERSION DE BORNES, ON NE L'ATTEND PAS** (poissons, v233). Au
+  banc la séquence entière prend trois secondes : le témoin serait vert des deux
+  côtés sans rien mesurer. Les dates se relèvent dans l'horloge de la PAGE
+  (`__preparation().depuis` : corps 2,8-3,2 s, tout prêt 3,3 s), et `?prepms=`
+  pose la borne de préparation entre les deux. A/B, correction désarmée : **zéro
+  relevé fautif armée, onze sur 848 ms désarmée.** `?apresmaj=1` rejoue le chemin
+  d'après-mise-à-jour sans en faire une — au banc, et sur la tablette.
+- **ET MA SONDE REGARDAIT APRÈS LA FIN.** Elle démarrait après `banc.joueur`,
+  c'est-à-dire après que tout soit prêt, et rendait « zéro fautif » sur le code
+  fautif comme sur le code sain. C'est la troisième fois de la session : une sonde
+  dit dans quelles conditions elle a mesuré, et une sonde qui doit voir une
+  fenêtre vérifie d'abord qu'elle regarde pendant.
+- **NON-RÉSULTAT MESURÉ, qu'on ne réessaiera pas** : le suspect évident était les
+  treize mégaoctets immuables re-téléchargés à chaque livraison. `sw.js`
+  `activate` supprime tous les caches SAUF `STATIC_CACHE`, et `isStaticAsset`
+  couvre `/vendor/humains/`. Ils ne repartent pas sur le réseau.
+
 ## Un témoin ÉCRIT son terrain, et il se trompe de terrain (v285)
 
 Trois témoins de cette livraison mesuraient à côté, et aucun ne se voyait en
