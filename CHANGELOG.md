@@ -55,6 +55,14 @@ réglage de banc qui se rejoue. Et une page dont on a forcé la configuration ne
 classe pas l'appareil : c'est ce qui met le banc entier hors de portée sans une
 ligne écrite pour lui.
 
+**Et le palier « bas » est le seul que rien n'a mesuré.** Ses chiffres — huit
+morceaux de distance, six de file — sont RAISONNÉS, pas relevés : la v269 a
+mesuré huit et quatre sur l'iPad de quatre ans, jamais six, et aucun appareil de
+la famille n'est plus lent que celui-là. Il ne s'applique qu'à un appareil que la
+mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon pire ;
+mais il se remesurera le jour où une tablette y tombera, et c'est écrit dans
+`TASKS.md` plutôt que passé sous silence.
+
 **Ce qui n'est pas dans cette version, et pourquoi.** Mon premier jet faisait
 aussi passer la résolution de son téléphone de 1,25 à 2,0 pixel par point et lui
 rendait les ombres. Retiré : la mesure d'image a été prise à 1,25, et s'en

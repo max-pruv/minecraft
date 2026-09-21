@@ -111,6 +111,30 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 
+## LE PALIER « BAS » DE LA v284 EST LE SEUL QUE RIEN N'A MESURÉ
+
+Ses chiffres — `rr: 8`, `file: 6` — sont RAISONNÉS, pas relevés. La v269 a mesuré
+la file à 4, 8, 12 et 16 sur l'iPad de quatre ans (8 est le confort : 66 blocs de
+trou, 0 % d'images au-delà de 300 ms ; 4 en donne 36 et 1,3 %), jamais 6 — et
+aucun appareil de la famille n'est plus lent que celui-là, donc il n'y avait rien
+sur quoi mesurer.
+
+**Le risque nommé** : à `file: 6` et `rr: 8`, le trou devant soi devrait tomber
+vers cinquante blocs par interpolation, pour une barre de témoin à `max / 2` =
+47,5 (jets à 95). Deux blocs et demi de marge — exactement le cas que la v269
+refusait à 130 blocs par seconde (« il ne resterait que trois blocs de marge et
+le témoin battrait »). Le banc ne le verra jamais : il ne range aucun palier
+(`seRange` faux, sa configuration est forcée), donc `monte.js` tourne toujours à
+`file: 8`.
+
+**À faire quand une tablette y tombera** : `?palier=bas&diag=1` sur l'appareil,
+relever le trou devant soi et la part d'images au-delà de 300 ms, et remonter la
+file à 8 si le trou passe sous la barre. Le palier ne s'applique qu'à un appareil
+que la mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon
+pire — c'est ce qui rend l'inconnue acceptable, pas le fait de l'ignorer.
+
+---
+
 ## LE PORTAIL DES RAILS (v281) : SEPT SUITES ROUGES, ET CE QU'ELLES SONT
 
 Huit suites vertes, sept rouges, `reseau.js` VERTE cette fois — elle en avait
