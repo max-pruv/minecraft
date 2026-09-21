@@ -71,14 +71,21 @@ qui roule le fait depuis la v261. Mesuré dans les mêmes huit régions : **quat
 vingts à deux cent vingt-six blocs**, soit six à dix-sept fois plus loin. Un mur
 de deux blocs reste un mur — la règle ne monte que si la carrure entière passe.
 
-**Ce qui le prouve.** Un témoin qui se place lui-même dans une plaine mesurée, à
-quatre cent soixante blocs du disque de Paris, monte par le bouton et mesure des
-BLOCS PARCOURUS, borné, le temps pris dans le message. La barre est à soixante
-blocs : cinq fois la médiane de l'ancien code, où la voiture s'arrête et ne
-repart jamais. Et deux chemins écartés par la mesure, qu'on ne réessaiera pas :
-une tolérance de deux blocs est identique dans sept régions sur huit, et un sol
-lissé conduit MOINS bien qu'une marche franchie (120 contre 142, 164 contre 181).
-Le lissage du paysage est une affaire de rendu, elle viendra à part.
+**Ce qui le prouve.** Un témoin qui **cherche** le terrain qu'il prétend
+éprouver : un couloir de soixante-dix blocs dont aucune marche ne dépasse un
+bloc et qui en porte au moins trois, hors de l'eau. Il monte par le bouton et
+mesure des BLOCS PARCOURUS, borné, le temps pris dans le message. **Et ma
+première version de ce témoin n'avait jamais eu de marche devant elle** : elle
+écrivait son terrain — « plaine au nord de Paris » — où le relief monte de trois
+blocs d'un coup, ce qui est un mur par construction depuis la v261. Elle rendait
+quarante centimètres parcourus en quarante secondes, au volant, et ne mesurait
+rien. La barre vient donc d'un A/B sur la même page, en ordre alterné : **avec
+le franchissement 59 et 116 blocs, sans 0,4 et 17,9** — les deux étendues ne se
+recouvrent pas, et trente blocs est la moitié du pire bras armé. Et deux chemins
+écartés par la mesure, qu'on ne réessaiera pas : une tolérance de deux blocs est
+identique dans sept régions sur huit, et un sol lissé conduit MOINS bien qu'une
+marche franchie (120 contre 142, 164 contre 181). Le lissage du paysage est une
+affaire de rendu, elle viendra à part.
 
 ---
 

@@ -691,6 +691,67 @@ démarre très bien sous la boucle (`charge.js` se charge), c'est **`npm`** qui
 meurt avant de lancer le script — `tout.js` n'est jamais atteint, sa première
 ligne ne s'imprime pas.
 
+## Un témoin ÉCRIT son terrain, et il se trompe de terrain (v285)
+
+Trois témoins de cette livraison mesuraient à côté, et aucun ne se voyait en
+relisant : les trois ont été démontés par une sonde qui imprime ce qu'elle
+trouve. Le premier vaut bien au-delà de lui-même.
+
+- **UN EMPLACEMENT SE MESURE, IL NE S'ÉCRIT PAS — et cette fois c'était le
+  terrain d'un TÉMOIN.** « Une voiture roule dans la nature » se posait à
+  (40, −400) avec « plaine au nord de Paris » en commentaire. Mesuré à la sonde,
+  le relief y monte **39 · 39 · 39 · 42 · 42 · 45 · 45 · 47** : une falaise de
+  trois blocs, qui est un mur PAR CONSTRUCTION depuis la v261 (« deux blocs,
+  c'est un mur »). Le témoin n'avait donc jamais eu de marche devant lui — il
+  rendait `d: 0,4` au premier relevé et cent cinquante-sept relevés identiques,
+  au volant, pendant quarante secondes, et il ne mesurait RIEN de ce qu'il
+  annonce. La règle de la v223 était écrite pour un aérodrome ; elle vaut mot
+  pour mot pour un témoin. **Tout témoin qui éprouve une propriété du terrain
+  CHERCHE le terrain qui la porte** — ici un couloir de soixante-dix blocs dont
+  aucune marche ne dépasse un bloc et qui en porte au moins trois — et le profil
+  retenu entre dans le message, sinon son rouge ne se démonte pas.
+- **ET UNE CONSIGNE ÉCRITE APRÈS LA MESURE ÉCRASE LA MESURE.** Le même témoin
+  posait `g.player.yaw = 0` APRÈS la monte, par habitude : la voiture repartait
+  vers −z quel que soit le couloir trouvé, donc sur le terrain d'à côté. Un cap
+  mesuré se garde jusqu'au bout.
+- **UNE BARRE SE CALCULE, ET ELLE SE POSE À LA MOITIÉ (v269, v237).** Celle-ci
+  valait soixante blocs avec « cinq fois la médiane de l'ancien code » en
+  justification — un chiffre que rien n'avait mesuré. A/B sur la MÊME page, en
+  ordre alterné (v268), `franchirEnRoulant` désarmé sur l'instance :
+
+  | bras | blocs | hauteur gagnée |
+  | --- | --- | --- |
+  | franchissement armé | 59,0 · 116,4 | +10 · +9 |
+  | franchissement désarmé | 0,4 · 17,9 | 0 · 0 |
+
+  Les deux étendues ne se recouvrent pas. Trente blocs est la moitié du pire
+  bras armé et 1,7 fois le pire bras désarmé ; soixante — le chiffre d'avant —
+  tombait PILE sur le pire bras armé, donc rouge sur du code sain. La cible de
+  sortie reste un cran au-delà (v277). **C'est la première mesure du
+  franchissement : le témoin d'avant n'en disait rien, dans un sens comme dans
+  l'autre.**
+- **UNE CLÉ D'ESPÈCE N'EST PAS SON NOM FRANÇAIS.** En repointant « ce qu'on
+  retire de la scène se rend à la carte graphique » des créatures (parties) vers
+  les bêtes, j'ai demandé `invoquer('vache')` : la fonction cherche
+  `SPECIES.find(s => s.key === key)` et rend `null` pour toute clé inconnue. Le
+  témoin rendait « 471, 471, 471 » — sur l'ancien code comme sur le neuf. C'est
+  « une sonde qui interroge la mauvaise liste ne peut rien voir » (v273), du côté
+  du témoin, et un refus se DIT désormais au lieu de rendre zéro.
+- **ET QU'UN TÉMOIN REPOINTÉ PUISSE ENCORE ROUGIR SE VÉRIFIE (v276).** `liberer`
+  désarmé dans `src/liberer.js` : 130 géométries prises, **0 rendues, 130
+  perdues** — rouge ; armé, 130 / 130 / 0. Un repointage est une réécriture de
+  témoin, et il se prouve comme un témoin neuf.
+- **UNE ATTENTE QUI EXPIRE SOUS LA CHARGE SE RALLONGE — MAIS LA QUESTION SE POSE
+  D'ABORD.** Les deux copies d'avant une refonte de carte (`sauvegarde.js`)
+  attendaient trente secondes ; le portail a rendu `[]`, la suite rejouée seule
+  est verte des deux côtés. Allonger ne peut rien blanchir ICI parce que la
+  grandeur n'est pas un taux qui s'accumule (v279) : c'est un document qui existe
+  ou pas, et un code sans `mettreALAbriAvantCarte3` ne l'écrira jamais. La durée
+  entre dans le message, parce que la doubler est un raisonnement et non une
+  mesure — et c'est elle qui dira si soixante secondes suffisent. Le second
+  verdict dit qu'il DÉPEND du premier : deux rouges pour une cause laissaient
+  croire à deux causes.
+
 ## Le palier de l'appareil (v284) — on mesure un TRAVAIL, pas un taux
 
 Max, capture du chasseur : « est-ce possible de pousser le niveau de réalisme ?
