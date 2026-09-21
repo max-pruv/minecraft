@@ -40,14 +40,10 @@ rendering budgets, licensing and limitations.
   are all built with the Web Audio API, and the car radio plays three original
   stations written in scale degrees. One audio context for the whole game; the
   🔊 setting suspends it outright.
-- **Creature catching** — 32 procedurally generated original species with
-  elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn
-  in matching biomes. Throw catch-balls (Q or the ◓ button) at them, watch the
-  ball shake, and fill your Creature Dex (B). Rarer species are harder to catch.
 - **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
-  ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
+  ⛏️/🧱 mode toggle, and jump/fly buttons.
 - **Friendly NPCs** — Marlon, a child with a rigged, textured model who follows you
-  around and chats in French, and Professeur Cornichon, the creature expert.
+  around and chats in French, and Professeur Cornichon, who hosts the quiz.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
   Cornichon's quiz starts every play session, and pops up again after each
   4 minutes of play: US first-grade math, English, and French questions
@@ -158,13 +154,11 @@ the invariants a change must not break.
 | Shift | Sprint |
 | 1–9 or mouse wheel | Select hotbar slot |
 | F | Toggle fly mode (Space up, C down) |
-| Q | Throw a catch-ball at a wild creature |
-| B | Open the Creature Dex |
 | Esc | Pause |
 
 On touch devices: left thumb summons a joystick, right thumb looks around,
 tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
-handle jumping, flying, and throwing catch-balls.
+handle jumping and flying.
 
 In a car the joystick is both accelerator and steering wheel — push forward to
 speed up, pull back to brake and then reverse — and the walking buttons step
@@ -183,6 +177,7 @@ src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
+src/bandeau.js    the game's passing message, the one voice everything speaks with
 
   the shared world
 src/net.js        sessions, peers, presentation, edit log, reconnection
@@ -192,7 +187,6 @@ src/sync.js       whole-profile portability, keyed by first name
 src/visio.js      camera tiles and sound, split so autoplay can't mute both
 
   who lives there
-src/creatures.js  creature species/AI/meshes, catch-balls, collection
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
 src/cap.js        the pilot's heading dial: bearing, the city ahead, its distance

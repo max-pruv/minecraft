@@ -11,10 +11,14 @@
 //     libérées    205    205    205    205
 //
 // Rien ne bouge dans le monde et la carte graphique enfle quand même. La cause
-// n'est pas le nombre de bêtes — les créatures sont plafonnées à seize et
-// disparaissent à soixante-dix blocs — c'est leur RENOUVELLEMENT : une naît
+// n'est pas le nombre de bêtes — elles sont plafonnées et disparaissent à
+// soixante-dix blocs — c'est leur RENOUVELLEMENT : une naît
 // toutes les 1,2 s, celle qui s'éloigne sort de la scène, et `scene.remove()`
-// ne rend RIEN au pilote graphique. Sur un iPad, dont la mémoire graphique est
+// ne rend RIEN au pilote graphique. Le défaut avait été MESURÉ sur les
+// créatures du mode d'attrape ; celui-ci est parti en v285, et le témoin qui
+// garde cette règle (`monte.js`, « ce qu'on retire de la scène se rend à la carte
+// graphique ») éprouve désormais les BÊTES, qui suivent le même cycle. La règle
+// n'a jamais tenu au sujet qu'on mesurait. Sur un iPad, dont la mémoire graphique est
 // partagée avec le système, c'est le figement d'une seconde toutes les
 // secondes que Max décrit, et il empire avec la durée de la partie.
 //

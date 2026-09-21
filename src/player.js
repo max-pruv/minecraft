@@ -213,6 +213,62 @@ export class Player {
     return this.world.getBlock(fx, sol + 1, fz) === BLOCK.WATER;
   }
 
+  // LA BOÎTE EST-ELLE LIBRE ICI ? La même géométrie que `sweepAxis` — largeur
+  // `gabarit`, hauteur du joueur, dalles à mi-hauteur —, posée en question au
+  // lieu d'être posée en déplacement. C'est ce qui permet de demander « et si
+  // je montais d'un bloc ? » sans bouger de là où l'on est.
+  boiteLibre(x, y, z) {
+    const half = this.gabarit / 2, eps = 1e-4;
+    const minX = Math.floor(x - half + eps), maxX = Math.floor(x + half - eps);
+    const minY = Math.floor(y + eps), maxY = Math.floor(y + PLAYER_HEIGHT - eps);
+    const minZ = Math.floor(z - half + eps), maxZ = Math.floor(z + half - eps);
+    for (let by = minY; by <= maxY; by++) {
+      for (let bz = minZ; bz <= maxZ; bz++) {
+        for (let bx = minX; bx <= maxX; bx++) {
+          const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
+          if (!blockIsSolid(id)) continue;
+          if (y >= by + (isSlab(id) ? 0.5 : 1) - eps) continue;   // on est au-dessus
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // UNE VOITURE FRANCHIT UNE MARCHE D'UN BLOC (v286).
+  //
+  // Max : « je voudrais que les voitures puissent circuler correctement […]
+  // qu'on n'ait pas vraiment des blocs carrés qui empêchent le véhicule de
+  // circuler. » Mesuré sur `terrainHeight`, pur, huit régions de la carte :
+  //
+  //   · 92 à 97 % de ce qui arrête une voiture dans la nature est une marche
+  //     d'EXACTEMENT UN BLOC (marches > 1 : 0,2 à 0,7 % des paires voisines) ;
+  //   · une voiture fait aujourd'hui 11 à 22 blocs avant d'être arrêtée ;
+  //   · en lui laissant franchir UN bloc : 80 à 226, soit ×6 à ×17.
+  //
+  // ET DEUX BLOCS EST UN NON-RÉSULTAT MESURÉ : identique dans sept régions sur
+  // huit (142/142, 179/179, 164/164, 135/135, 181/181). On ne le réessaie pas —
+  // cela n'achèterait rien et laisserait une voiture escalader un mur.
+  //
+  // CE QUI REND LA RÈGLE SÛRE, C'EST QU'ELLE SE GARDE ELLE-MÊME : on ne monte
+  // que si la boîte ENTIÈRE passe un bloc plus haut. Contre un mur de deux
+  // blocs, la boîte montée touche le second — refusé. Un escalier d'une marche
+  // par bloc, lui, se gravit, et c'est exactement ce qu'est une colline.
+  //
+  // Elle ne touche NI `terrainHeight` NI un bloc : les deux empreintes de
+  // `plafond.js` ne bougent pas, et l'invariant 1 tient sans rien déclarer.
+  // `DEGAGEMENT` est ce qu'il faut avancer pour passer LE BORD de la marche : en
+  // montant sur place on retomberait dessus. Un peu plus du demi-gabarit d'une
+  // voiture n'est pas une bonne idée — elle tiendrait dans le mur — c'est la
+  // profondeur d'une case qui compte, et 0,7 la couvre. Le chiffre se remesure
+  // le jour où une voiture lurche à basse vitesse : le témoin publie la distance.
+  franchirEnRoulant(dx, dz) {
+    const y = this.pos.y, x = this.pos.x + dx, z = this.pos.z + dz;
+    if (!this.boiteLibre(x, y + 1, z)) return false;
+    this.pos.x = x; this.pos.z = z; this.pos.y = y + 1;
+    return true;
+  }
+
   franchirUneMarche(dx, dz) {
     const w = this.world;
     const x = Math.floor(this.pos.x + dx), z = Math.floor(this.pos.z + dz);
@@ -682,6 +738,27 @@ export class Player {
     // On ne borne donc que le cas de Max — le nez CONTRE quelque chose, où le
     // déplacement obtenu est un quart au plus de celui demandé ; entre les
     // deux, la voiture garde sa consigne et ralentit d'elle-même.
+    // ET LA MARCHE SE FRANCHIT AVANT QU'ON NE BORNE LA VITESSE. La borne de la
+    // v272 ramène la vitesse au déplacement obtenu ; si elle passait d'abord,
+    // elle ramènerait à zéro la voiture qui est en train de monter la marche, et
+    // l'enfant sentirait un à-coup à chaque bosse. L'ordre est le remède.
+    // ET L'ON NE MONTE QU'EN ROULANT VRAIMENT, comme l'avion le fait depuis la
+    // v261 (`v > 0,5`) : une voiture qui rampe contre une bordure ne doit pas
+    // bondir dessus, et à l'arrêt un volant ne fait rien (v262).
+    const DEGAGEMENT = 0.7;
+    if (this.gabarit > 1 && !this.pilote && this.onGround
+        && Math.abs(this.vitesseVoiture || 0) > 0.5
+        && ((move.x !== 0 && this.vel.x === 0) || (move.z !== 0 && this.vel.z === 0))) {
+      // On vise là où le DÉPLACEMENT voulait aller, pas le cap du regard : au
+      // volant le regard est libre (v249), et viser le cap ferait monter une
+      // marche de côté. C'est la leçon du signe qu'on regarde au lieu de le
+      // déduire, appliquée à une direction.
+      const n = Math.hypot(move.x, move.z);
+      if (n > 1e-6) {
+        this.franchirEnRoulant((move.x / n) * DEGAGEMENT, (move.z / n) * DEGAGEMENT);
+      }
+    }
+
     const BLOQUEE = 0.25;
     if (this.gabarit > 1 && !this.pilote && dt > 0 && this.vitesseVoiture) {
       const demande = Math.abs(this.vitesseVoiture) * dt;

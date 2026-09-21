@@ -20,6 +20,75 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v285 — Le mode d'attrape s'en va, et les voitures roulent dans la nature
+
+Deux sujets, deux corps de témoins. Ils partent ensemble parce qu'ils ne se
+touchent pas ; ils sont documentés séparément parce qu'une livraison à deux
+sujets en documente deux (leçon de la v279).
+
+### Le mode d'attrape de créatures s'en va
+
+**Pourquoi.** Décision de Max : « Remove the Pokémon play entirely ». Le jeu
+portait un mode complet — trente-deux espèces engendrées, des balles à lancer,
+un Dex à remplir, un compagnon à choisir, des duels entre joueurs — et ce n'est
+plus ce que Grand Tour raconte.
+
+**Ce que ça change.** Plus de bouton ◓, plus de Dex, plus de compagnon, plus de
+duel. Le musée n'expose plus de créatures, la carte ne les promet plus dans sa
+légende, et les personnages ne parlent plus d'attraper : le Professeur
+Cornichon pose ses questions sans être « expert en créatures », Marlon ne
+réclame plus qu'on lance une balle, et Lise — qui étudiait les martiens, une
+espèce de créature — est devenue géologue de Mars. La série de quiz finie donne
+toujours ses minutes de jeu et ses félicitations, sans objet à gagner. **Et ce
+que Marlon et Alice ont attrapé reste dans leur profil**, intact : on retire
+l'écran et les commandes, jamais les données.
+
+**Ce qui le prouve.** Trois témoins dans la fumée, tous rouges sur le code
+d'aujourd'hui. Le premier lit ce que l'enfant voit — aucun bouton, aucun
+panneau, les touches Q et B sans effet, la légende sans créature — et exige en
+plus que le gestionnaire ne soit plus publié, pour qu'un bouton renommé ne
+puisse pas le rendre vert à tort. Le deuxième écrit puis relit les deux clés de
+stockage, avec leur suffixe de profil. Le troisième mesure le bandeau que
+l'enfant LIT en appuyant sur ✈️ au volant — parce que `toast`, la voix du jeu,
+vivait dans le module des créatures et était appelé de quarante-neuf endroits
+qui n'ont rien à voir : il a désormais son fichier, `src/bandeau.js`. Deux
+témoins de plus ferment un trou que `CLAUDE.md` portait sans preuve depuis la
+v157 : tout module de `src/` est dans le cache hors ligne, et tout `import`
+résout — `bandeau.js` avait failli partir sans sa ligne dans `sw.js`.
+
+Mille cent vingt et une lignes retirées.
+
+### Une voiture roule dans la nature
+
+**Pourquoi.** Max : « je voudrais que les voitures puissent circuler
+correctement […] qu'on n'ait pas vraiment des blocs carrés qui empêchent le
+véhicule de circuler. » Mesuré avant d'écrire une ligne, sur le relief pur, huit
+régions de la carte : **une voiture fait onze à vingt-deux blocs** avant d'être
+arrêtée, et **92 à 97 % de ce qui l'arrête est une marche d'exactement un bloc**.
+
+**Ce que ça change.** Une voiture franchit une marche d'un bloc, comme un avion
+qui roule le fait depuis la v261. Mesuré dans les mêmes huit régions : **quatre-
+vingts à deux cent vingt-six blocs**, soit six à dix-sept fois plus loin. Un mur
+de deux blocs reste un mur — la règle ne monte que si la carrure entière passe.
+
+**Ce qui le prouve.** Un témoin qui **cherche** le terrain qu'il prétend
+éprouver : un couloir de soixante-dix blocs dont aucune marche ne dépasse un
+bloc et qui en porte au moins trois, hors de l'eau. Il monte par le bouton et
+mesure des BLOCS PARCOURUS, borné, le temps pris dans le message. **Et ma
+première version de ce témoin n'avait jamais eu de marche devant elle** : elle
+écrivait son terrain — « plaine au nord de Paris » — où le relief monte de trois
+blocs d'un coup, ce qui est un mur par construction depuis la v261. Elle rendait
+quarante centimètres parcourus en quarante secondes, au volant, et ne mesurait
+rien. La barre vient donc d'un A/B sur la même page, en ordre alterné : **avec
+le franchissement 59 et 116 blocs, sans 0,4 et 17,9** — les deux étendues ne se
+recouvrent pas, et trente blocs est la moitié du pire bras armé. Et deux chemins
+écartés par la mesure, qu'on ne réessaiera pas : une tolérance de deux blocs est
+identique dans sept régions sur huit, et un sol lissé conduit MOINS bien qu'une
+marche franchie (120 contre 142, 164 contre 181). Le lissage du paysage est une
+affaire de rendu, elle viendra à part.
+
+---
+
 ## v284 — Le jeu se règle sur l'appareil qu'il a
 
 **Pourquoi.** Max, capture du chasseur en vol : « est-ce possible de pousser le

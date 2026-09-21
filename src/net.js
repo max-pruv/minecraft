@@ -1548,7 +1548,12 @@ export class NetSession {
         if (this.onChat) this.onChat(String(msg.name || '').slice(0, 16), String(msg.msg || '').slice(0, 120));
         if (this.isHost) this.relay(conn.peer, msg);
         break;
-      case 'duel': // friendly creature show-off between two players
+      // LE DUEL EST PARTI EN v285, ET SON MESSAGE SE REÇOIT ENCORE. Plus personne
+      // ne pose `onDuel` ici : le message tombe donc sans casse. Mais l'hôte le
+      // RELAIE quand même, pour que deux tablettes restées sur l'ancienne version
+      // continuent de se défier sous un hôte à jour. C'est la règle du receveur
+      // qui cède, appliquée au retrait (v256).
+      case 'duel':
         if (this.onDuel) this.onDuel(msg);
         if (this.isHost) this.relay(conn.peer, msg);
         break;

@@ -2011,10 +2011,12 @@ export class EducationMode {
     this.remaining = this.sessionSeconds;
     this.serieReglee = true;
     this.save();
-    const reward = this.hooks.reward ? this.hooks.reward() : null;
-    const rewardLine = reward
-      ? `<br>🎁 Tu gagnes une créature : <b>${reward.name}</b> (${reward.type}) — elle est dans ton Dex !`
-      : '';
+    // LA SÉRIE FINIE NE DONNE PLUS D'OBJET (v285). Elle donnait une créature —
+    // « 🎁 Tu gagnes une créature : Flazor (FEU) » — et le mode d'attrape est
+    // parti sur décision de Max. Ce qui récompense reste : le titre de victoire,
+    // les félicitations de héros, et les minutes de jeu débloquées. Le crochet
+    // `reward` est retiré plutôt que laissé vide : un crochet que personne ne
+    // fournit est du code mort qui ressemble à une possibilité (v157).
 
     this.el.question.textContent = this.victoryTitle();
     this.el.question.className = 'mega-title';
@@ -2022,7 +2024,7 @@ export class EducationMode {
     this.el.count.textContent = '';
     this.el.feedback.innerHTML =
       `${this.marathon ? '+45 minutes débloquées !' : `+${Math.round(this.sessionSeconds / 60)} minutes de jeu !`} 🎮` +
-      `<br>${heroPraise}${rewardLine}`;
+      `<br>${heroPraise}`;
     this.el.feedback.className = 'good';
     if (this.marathon) this.grantExtraBlock();
     // pointer lock needs a real click, so resuming goes through a button

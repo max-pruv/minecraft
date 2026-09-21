@@ -43,6 +43,10 @@ function semer(nuage) {
     // Le journal de blocs a la forme que le jeu écrit : [identifiant, date].
     // Une entrée volontairement biscornue s'y ajoute — un lot venu du nuage ne
     // doit jamais être perdu en entier à cause d'une case douteuse.
+    // ET LE `dex` RESTE DANS LE DOCUMENT, À DESSEIN. Le mode d'attrape est parti
+    // en v285 mais ses données restent (v256) : ce document a la forme de ce
+    // qu'une tablette a vraiment écrit, et l'espace parent doit continuer de le
+    // lire sans broncher. Le retirer d'ici rendrait le témoin plus faible.
     nuage.poserEtat(nom, {
       dex: [{ id: 1 }], worlds: [{ code: '12345' }],
       edits: { local: { '1,40,3': [4, 1786000000000], '2,40,3': 'abîmée' } },

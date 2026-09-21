@@ -122,13 +122,24 @@ const BLOCS = 40000;
     // Ce que le témoin éprouve, c'est ce qui compte pour la famille : la copie
     // existe, elle contient VRAIMENT la construction, et elle ne pèse pas sur
     // le profil vivant.
+    // ON ATTEND LE RÉSULTAT, BORNÉ, ET LE TEMPS PRIS ENTRE DANS LE MESSAGE (v270).
+    // Le portail de la v285 a rendu la copie ×2 à `[]` — le document n'existait
+    // pas — quand la suite rejouée SEULE la rend complète : c'est l'attente qui
+    // expirait sous la charge, pas le jeu qui refusait d'écrire. Allonger la
+    // borne ne peut rien blanchir ici, et la question se POSE avant de le faire
+    // (v279) : la grandeur n'est pas un taux qui s'accumule, c'est un document
+    // qui existe ou pas — un code sans `mettreALAbriAvantCarte3` ne l'écrira
+    // JAMAIS, quelque temps qu'on lui laisse. Soixante secondes, et la durée est
+    // dans le message : sans elle, le rouge suivant ne se démonte pas.
+    const departCopie = Date.now();
     const copieFaite = await jusqua(async () => {
       const a = nuage.etatDe('Marlon~avant-carte');
       return !!(a && (a.editsz || a.edits));
-    }, 30000);
+    }, 60000);
+    const msCopie = Date.now() - departCopie;
     const copie = nuage.etatDe('Marlon~avant-carte') || {};
     verifier('les blocs sont mis à l\'abri avant que la carte ne change',
-      copieFaite, JSON.stringify(Object.keys(copie)));
+      copieFaite, `${JSON.stringify(Object.keys(copie))} · ${msCopie} ms`);
     verifier('et la copie porte bien la construction, pas un document vide',
       !!(copie.editsz && copie.editsz.length > 200) || !!(copie.edits
         && Object.keys(copie.edits).length),
@@ -154,13 +165,15 @@ const BLOCS = 40000;
     // les enfants ont bâti. Celle de v242 déplace New York : elle se prend sur
     // le document du nuage TEL QU'IL EST, avant d'y pousser une clé migrée, et
     // elle porte les positions avec les blocs.
+    const departCopie2 = Date.now();
     const copie2Faite = await jusqua(async () => {
       const a = nuage.etatDe('Marlon~avant-carte-2');
       return !!(a && (a.editsz || a.edits) && a.carte === 2);
-    }, 30000);
+    }, 60000);
+    const msCopie2 = Date.now() - departCopie2;
     const copie2 = nuage.etatDe('Marlon~avant-carte-2') || {};
     verifier('la copie d\'avant le monde ×2 existe, sur son propre document, et dit de quelle carte elle vient',
-      copie2Faite, JSON.stringify(Object.keys(copie2)));
+      copie2Faite, `${JSON.stringify(Object.keys(copie2))} · ${msCopie2} ms`);
     const empreinteDeux = copie2.editsz || JSON.stringify(copie2.edits || {});
     await tab.evaluate(() => window.__game.world.setBlock(72, 40, 72, 1));
     await tab.evaluate(async () => {
@@ -171,9 +184,12 @@ const BLOCS = 40000;
     });
     await dormir(1500);
     const apres2 = nuage.etatDe('Marlon~avant-carte-2') || {};
+    // ET CE VERDICT-CI DÉPEND DU PRÉCÉDENT : sans la copie, il n'a rien à comparer.
+    // Le message le DIT, sinon deux rouges laissent croire à deux causes.
     verifier('et elle ne se réécrit pas non plus',
       copie2Faite && (apres2.editsz || JSON.stringify(apres2.edits || {})) === empreinteDeux,
-      'la copie d\'avant reste la copie d\'avant');
+      copie2Faite ? 'la copie d\'avant reste la copie d\'avant'
+        : 'pas de copie à comparer — voir le verdict précédent');
 
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //

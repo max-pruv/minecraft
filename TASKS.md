@@ -1,5 +1,76 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
+  Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
+  quatrième rouge, « la voiture au mur », a été démonté par une sonde qui
+  innocente le jeu. Ce qui reste est déclaré ici, avec ce qui le mesure.
+
+  | suite | témoin | mesuré ailleurs |
+  | --- | --- | --- |
+  | `maj.js` | corps/programmes/fond `null` ; la page ne floute rien | identique au portail v284 (arbre v284, mêmes témoins) |
+  | `manhattan.js` | délai de 60 s ligne 282 | v269 : même délai sur `origin/main` au TROISIÈME passage |
+  | `reglages.js` | l'autre tablette (`"fr"`) puis `TypeError … 'edu'` | identiques au portail v284, aux deux lignes près |
+  | `monte.js` | l'écran ne se fige pas en arrivant sur une ville | 4 433 ms / 37,3 % ici contre 4 933 ms / 36,4 % sur `origin/main` |
+  | `monte.js` | les voitures ne se traversent plus | le TIRAGE écrit dans `CLAUDE.md` (v277) : 89 ici, 53 au portail v284 |
+  | `reseau.js` | départ propre · joueur endormi · réveil | DEUX passages de chaque côté, même distribution (table ci-dessous) |
+
+  **ET `reseau.js` EST INTERMITTENTE DES DEUX CÔTÉS — quatre passages pour le
+  savoir.** Un passage de chaque côté m'avait fait voir une asymétrie qui n'existe
+  pas (règle de la v269) :
+
+  | | passage 1 | passage 2 |
+  | --- | --- | --- |
+  | `origin/main` seule | départ propre · endormi | **entièrement verte** |
+  | branche seule | départ propre · réveil | **entièrement verte** |
+  | branche au portail | départ propre · endormi · réveil | — |
+
+  Les trois témoins appartiennent à la même famille (le départ, le sommeil, le
+  réveil) et le rouge se déplace d'un passage à l'autre. « Un départ propre » sort
+  dans trois passages sur cinq, sur les DEUX arbres : c'est un défaut de
+  production, intermittent — pas « rouge à chaque fois », ce que j'avais écrit
+  avant de l'avoir mesuré.
+
+  **Et l'argument qui vaut plus que l'échantillon : le diff n'a AUCUN chemin vers
+  ce code.** `src/net.js` ne gagne qu'un commentaire — le code réseau est
+  identique au bit près — et sur tout `src/` plus `index.html`, la seule ligne qui
+  effleure cette surface est le RETRAIT de `creatureManager` de `window.__game`.
+  Rien sur `dodo`, `coucou`, la visibilité, la liste des pairs ni la présence.
+
+  **Et le compte de chevauchements n'est toujours PAS un gardien.** La v277
+  l'avait écrit — un compte ABSOLU sur trente secondes de montre, dans une ville
+  qui rend quatre images par seconde, mesure le nombre de RELEVÉS autant que le
+  jeu. Ce portail le confirme par un troisième bout : 1 387 mesures ici contre
+  779 au portail d'avant, sur un code de circulation inchangé, et le compte suit.
+  Ce qu'il faut, c'est un TAUX par relevé et par paire à portée — pas un seuil de
+  plus. Tant qu'il tire à pile ou face, on ne peut rien conclure de
+  `cederLePassage`, et c'est écrit depuis la v277.
+
+- [ ] **LES DEUX BORNES QUE L'ENFANT ATTEND APRÈS UNE MISE À JOUR SE SUIVENT, ET
+  PERSONNE NE LES AVAIT ADDITIONNÉES.** Max, après la v285 : « après la mise à
+  jour, sur la home le jeu lag 1 à 2 min, ça a été le cas depuis longtemps ».
+  C'est le symptôme que la v257 et la v258 devaient corriger — donc on cesse de
+  régler et l'on va voir ce qui s'exécute (règle de la v226).
+
+  L'arithmétique, avant toute mesure : `index.html` borne la mise à jour à
+  **45 s** (v220), puis `main.js` montre le loader `apresMaj` borné à **90 s**
+  (il attend `humainsCharges() && chauffeFinie`) pendant que `veillerPrep` grise
+  « Jouer », borné à 45 s. **45 + 90 = 135 s**, exactement la fourchette de Max.
+  Il est donc possible que le jeu le RETIENNE au lieu de ramer — ce n'est pas la
+  même panne et cela ne se corrige pas au même endroit.
+
+  **NON-RÉSULTAT MESURÉ, qu'on ne réessaiera pas** : le suspect évident était les
+  treize mégaoctets immuables (scanner, flotte, 8,2 Mo de corps, polices)
+  re-téléchargés à chaque livraison. `sw.js` ligne 179 : `activate` supprime tous
+  les caches SAUF `STATIC_CACHE`, et `isStaticAsset` couvre bien
+  `/vendor/humains/`. Ils ne repartent pas sur le réseau.
+
+  Ce qui manque ne peut venir que de l'appareil — le banc met six secondes là où
+  Safari en met une (v257), et cela ne se transpose pas. Le jeu AFFICHE déjà la
+  réponse, et trois lectures donnent trois causes : le loader « ✨ Installation…
+  personnages x/y, programmes n/m » (borne de 90 s), l'accueil avec « ⏳
+  Préparation du jeu… » (borne de 45 s), ou l'accueil nu et saccadé (alors rien
+  ne retient, et c'est du vrai travail de fil principal). Demandé à Max.
+
 - [ ] **LE PORTAIL DE LA v284 : SEPT ROUGES, TROIS TÉMOINS CORRIGÉS, ET LA
   DOUBLE MESURE FAITE.** Le conteneur a été recyclé au milieu de la campagne —
   neuvième fois — et cela a fait apparaître des rouges qu'aucun des quatre
