@@ -214,13 +214,40 @@ function verifier(nom, ok, detail = '') {
       // vérifierait qu'une fonction existe, pas que le jeu parle.
       window.__game.player.interdireVol(true);
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', bubbles: true }));
-      await new Promise((r) => setTimeout(r, 150));
-      window.__game.player.interdireVol(false);   // on range ce qu'on a posé
+      // ON ATTEND QUE LE BANDEAU SE VOIE, BORNÉ, ET LE TEMPS PRIS ENTRE DANS LE
+      // MESSAGE. Mon premier jet lisait l'opacité 150 ms après l'appui et rendait
+      // `opacite: "0"` alors que le TEXTE était le bon : `#toast` porte
+      // `transition: opacity 0.5s` (index.html), et une transition avance par
+      // IMAGE — or ce banc en rend trois par seconde. Le témoin mesurait donc la
+      // cadence du banc, pas la voix du jeu. MESURÉ : l'opacité atteint 1 en
+      // **194 ms**, donc mes 150 manquaient de quarante-quatre millisecondes —
+      // une image ou deux. C'est « un témoin qui lit l'effet
+      // d'une image attend l'image » (v249) et « on attend le RÉSULTAT, borné,
+      // jamais une durée » (v270).
+      //
+      // ET LA BORNE EST PLUS COURTE QUE L'EFFACEMENT : `bandeau.js` remet
+      // l'opacité à zéro au bout de 2 600 ms, donc attendre au-delà rendrait un
+      // faux rouge. Deux secondes laissent dix fois la mesure.
+      //
+      // ET L'ATTENTE PEUT ENCORE EXPIRER — vérifié, pas raconté (v276). Deux
+      // bras sur la MÊME page : le chemin réel de l'enfant rend l'opacité à 1
+      // en 194 ms ; l'opacité remise à zéro sans qu'on appelle rien fait expirer
+      // l'attente à 2 348 ms. Une attente qui n'aboutirait que dans le bon cas
+      // ne prouverait rien de l'autre.
       const t2 = document.getElementById('toast');
-      return { avant, apres: { texte: t2.textContent, opacite: getComputedStyle(t2).opacity } };
+      const depart = performance.now();
+      let opacite = getComputedStyle(t2).opacity;
+      while (Number(opacite) <= 0.5 && performance.now() - depart < 2000) {
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        opacite = getComputedStyle(t2).opacity;
+      }
+      const ms = Math.round(performance.now() - depart);
+      window.__game.player.interdireVol(false);   // on range ce qu'on a posé
+      return { avant, apres: { texte: t2.textContent, opacite }, ms };
     });
     verifier('le jeu parle encore à l\'enfant — le bandeau a survécu au retrait',
-      voix.apres.texte.length > 0 && Number(voix.apres.opacite) > 0.5,
+      voix.apres.texte.length > 0 && voix.apres.texte !== voix.avant.texte
+      && Number(voix.apres.opacite) > 0.5,
       JSON.stringify(voix));
 
     // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
