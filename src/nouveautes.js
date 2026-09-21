@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 284,
+    titre: 'Le jeu s\'adapte à ta tablette',
+    puces: [
+      'Il mesure ce que ton appareil sait faire',
+      'Sur un appareil rapide, on voit plus loin',
+      'Les jets volent plus vite',
+      'Sur un vieil appareil, ça rame moins',
+    ],
+  },
+  {
     v: 283,
     titre: 'Les voitures se suivent mieux',
     puces: [

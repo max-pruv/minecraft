@@ -576,6 +576,60 @@ contredit.
   cents mètres de quai, pas un redessin à l'intuition. Mesuré après : onze ancres
   au sec, l'eau la plus proche de 175 m (Cologne) à 900 (Séville).
 
+## Le palier de l'appareil (v284) — on mesure un TRAVAIL, pas un taux
+
+Max, capture du chasseur : « est-ce possible de pousser le niveau de réalisme ?
+Le unveil est late », puis, depuis un iPhone 18 Pro : « tu serais capable
+d'ajuster en fonction de l'appareil et sa capacité ? ». Cinq règles, et trois
+sont nées d'une mesure ou d'un raisonnement qui m'a contredit.
+
+- **UNE CADENCE PLAFONNÉE PAR L'ÉCRAN NE DIT RIEN DE LA RÉSERVE.** Son
+  `?diag=1` rend cinquante-neuf images par seconde : c'est le plafond de
+  l'écran, et un appareil qui pourrait en faire deux cents rend le même
+  chiffre. Ce qui dit la panne, c'est **douze appels de dessin** pour trente
+  mille triangles — un monde presque vide devant lui, non parce que l'appareil
+  ne suit pas mais parce que le jeu ne lui en demande pas. On mesure donc le
+  TEMPS D'UN TRAVAIL CONNU — un morceau maillé dans le worker, une image sur le
+  fil principal — jamais un taux. C'est « on mesure la CAUSE et non l'effet »
+  (v236), appliqué au classement d'un appareil.
+- **ON NE CLASSE PAS UN APPAREIL SUR UNE CONFIGURATION QU'ON LUI A IMPOSÉE — et
+  c'est ce qui met le banc entier hors de portée sans une ligne écrite pour
+  lui.** Une page ouverte à `rr=2` ne dit rien de ce que l'appareil fait à sa
+  vraie distance d'affichage. Comme `banc.js` met TOUJOURS `rr=` et `dpr=` dans
+  son adresse, aucune suite ne range de palier ; sans cette règle, une suite qui
+  joue longtemps en rangerait un et la page SUIVANTE en hériterait — un témoin
+  mesurerait ce que son voisin a laissé (la famille de la v279). `?palierms=`
+  est la déclaration explicite qui permet quand même à un témoin de suivre la
+  chaîne, et les planchers d'échantillons suivent cette fenêtre sous un seul
+  bouton : écrits en dur, ils tiendraient la porte fermée et le témoin ne
+  verrait qu'un des deux verrous.
+- **UNE MESURE NE VAUT QUE DANS LES CONDITIONS OÙ ELLE A ÉTÉ FAITE, ET CELA M'A
+  FAIT RETIRER DEUX CHAMPS DE MON PREMIER JET.** Il faisait passer la résolution
+  du téléphone de 1,25 à 2,0 pixel par point — 2,56 fois la surface — sur la foi
+  d'une mesure d'image prise à 1,25 : c'est se servir d'une mesure contre
+  elle-même. Le prix d'une passe d'ombres n'avait pas été mesuré sur cet appareil
+  non plus. Ce que ses douze appels établissent, c'est que le MONDE est
+  sous-alimenté ; il ne reste donc que `rr` et la profondeur de file, deux
+  leviers dont le dépôt a mesuré l'effet (v265, v269). Les pixels et les ombres
+  sont une MESURE à faire (`?dpr=2&ombres=1&diag=1`), déclarée dans `TASKS.md`,
+  pas une intuition — et un champ qu'on n'aurait pas branché serait du code mort
+  qui ressemble à de l'avancement (v157).
+- **UN PALIER SE RANGE POUR LA PARTIE SUIVANTE, IL NE S'APPLIQUE PAS À CHAUD.**
+  `RENDER_RADIUS` et la profondeur de file sont lues au démarrage ; les faire
+  bouger en cours de route ferait respirer la distance d'affichage sous les yeux
+  de l'enfant. Et **tant qu'il n'y a pas de mesure, rien ne change** : le palier
+  `moyen` porte EXACTEMENT les valeurs de la v283, si bien qu'un appareil mal
+  classé ou non mesuré ne perd rien (règle du remède qui ne va pas plus loin que
+  la panne, v245). La mesure ne se prend qu'EN JEU — pendant la préparation la
+  page compile ses vingt-cinq programmes, et tout appareil serait classé lent.
+- **ET LA VITESSE DES JETS EST DANS LE PALIER, PARCE QUE LA v269 L'A LIÉE À LA
+  FILE.** Elle avait été descendue de 160 à 120 blocs par seconde exactement
+  pour cette raison — « une vitesse mesurée sur une file ne vaut que pour cette
+  file ». Le palier haut rend la file de seize, donc la vitesse. La barre du
+  témoin du trou, elle, vaut `max / 2` depuis la v269 : elle suit toute seule,
+  sans qu'on touche à un chiffre de témoin. C'est le bénéfice direct d'une barre
+  qui se calcule au lieu de s'écrire.
+
 ## Le banc se mesure, et ses réglages se rejouent (v277)
 
 Max : « revamp the testing process way too heavy and long and costly and

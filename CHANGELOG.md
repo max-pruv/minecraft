@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v284 — Le jeu se règle sur l'appareil qu'il a
+
+**Pourquoi.** Max, capture du chasseur en vol : « est-ce possible de pousser le
+niveau de réalisme ? **Le unveil est late** », puis, depuis son iPhone 18 Pro :
+« tu serais capable d'ajuster en fonction de l'appareil et sa capacité ? ». Ses
+propres chiffres, relevés par `?diag=1` en vol, disent la panne mieux que la
+capture : **douze appels de dessin**, trente mille triangles, cinquante-neuf
+images par seconde. Douze appels, c'est un monde presque vide devant lui — et ce
+n'est pas que l'appareil ne suive pas, c'est que **le jeu ne lui en demande
+pas**. La profondeur de file du mailleur (huit, v269), la distance d'affichage
+(douze morceaux en tactile) et la vitesse des jets (120 au lieu de 160, v269)
+ont toutes été réglées sur l'**iPad de quatre ans** de la famille, qui devenait
+injouable. Un téléphone de 2026 paie ce compromis sans en avoir besoin.
+
+**Ce que ça change.** Le jeu mesure lui-même, en jouant, ce que son appareil
+coûte : le temps d'un morceau maillé dans le worker, le temps d'une image sur le
+fil principal. Au bout de trente secondes de jeu il en déduit un palier, le
+range sur l'appareil, et **la partie suivante en profite**. Sur un appareil
+rapide, le paysage se dévoile plus loin (distance d'affichage de douze à seize
+morceaux), le mailleur travaille avec deux fois plus d'avance (file de huit à
+seize) et les jets retrouvent leurs 160 blocs par seconde. Sur un vieil iPad, le
+jeu se resserre au lieu de se figer. **Et un appareil que la mesure ne sait pas
+classer ne perd rien : il joue exactement la v283.**
+
+**Ce qui le prouve.** Cinq témoins dans `maj.js`. Sans mesure, le jeu est celui
+d'avant au réglage près (file 8, jets 120). Un palier demandé s'applique
+vraiment — et ce qui le prouve est la FILE, pas la distance d'affichage, que
+l'adresse du banc force toujours. La règle elle-même est pure et se démonte sans
+navigateur : les chiffres de l'iPhone rendent « haut », ceux de l'iPad de quatre
+ans « bas », l'absence de mesure « moyen ». La chaîne entière se suit sur une
+vraie partie — jouer, mesurer, ranger — avec la fenêtre raccourcie par un
+réglage de banc qui se rejoue. Et une page dont on a forcé la configuration ne
+classe pas l'appareil : c'est ce qui met le banc entier hors de portée sans une
+ligne écrite pour lui.
+
+**Ce qui n'est pas dans cette version, et pourquoi.** Mon premier jet faisait
+aussi passer la résolution de son téléphone de 1,25 à 2,0 pixel par point et lui
+rendait les ombres. Retiré : la mesure d'image a été prise à 1,25, et s'en
+servir pour multiplier par 2,56 la surface de cette même image, c'est se servir
+d'une mesure contre elle-même. Le prix d'une passe d'ombres n'a jamais été
+mesuré sur cet appareil non plus. Les deux sont la prochaine étape, et c'est une
+mesure — `?dpr=2&ombres=1&diag=1` sur son iPhone — pas une intuition.
+
+---
+
 ## v283 — Les voitures se suivent, et personne n'escalade les murs
 
 **Pourquoi.** Deux défauts que la famille voit. Max signale depuis plusieurs

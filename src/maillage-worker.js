@@ -45,8 +45,17 @@ self.onmessage = (e) => {
   }
   if (m.type === 'mailler') {
     for (const { cx, cz } of m.liste) {
+      // CE QUE COÛTE UN MORCEAU, MESURÉ LÀ OÙ IL SE PAIE (v284). Le fil
+      // principal ne peut pas le savoir : il reçoit des tampons déjà prêts. Et
+      // c'est ce coût-là qui dit ce que l'APPAREIL peut porter — combien de
+      // monde peut exister devant l'enfant. Ce n'est PAS la file adaptative de
+      // la v265, écrite puis retirée après mesure : on ne suit pas le coût de
+      // chaque morceau au fil du jeu, on mesure une fois la vitesse de la
+      // machine et l'on en déduit un palier qui ne bouge plus.
+      const t0 = performance.now();
       const data = monde.ensureChunk(cx, cz);
       const t = buildChunkTampons(monde, cx, cz);
+      const ms = performance.now() - t0;
       // Le fil principal garde les BLOCS pour les collisions et les sondes de
       // sol : on lui en donne une copie, transférée, pas recopiée.
       const copie = data.slice();
@@ -55,7 +64,7 @@ self.onmessage = (e) => {
         if (!g) continue;
         transfert.push(g.positions.buffer, g.normals.buffer, g.uvs.buffer, g.colors.buffer, g.tiles.buffer, g.indices.buffer);
       }
-      self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie,
+      self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms,
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props }, transfert);
     }
     // et l'on oublie ce qu'on a dépassé, comme le fil principal (v236)
