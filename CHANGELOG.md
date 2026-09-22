@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v286 — Le loader ne cache plus un « Jouer » déjà cliquable
+
+**Pourquoi.** Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a
+été le cas depuis longtemps. Après c'est ok. » C'est le symptôme que la v257 (le
+loader d'installation) et la v258 (la préparation avant « Jouer ») devaient
+corriger, et il revenait après les deux. Devant un symptôme qui revient après deux
+corrections justes, on cesse de régler et l'on va voir ce qui s'exécute.
+
+**Ce que ça change.** Après une mise à jour, l'enfant n'attend plus derrière le
+loader une fois que le jeu l'a autorisé à jouer. La cause ne se mesurait pas, elle
+s'**additionnait** : deux attentes tournaient en parallèle sur des conditions
+emboîtées, et c'était la plus longue qui gardait la plus faible — quarante-cinq
+secondes pour dégriser « Jouer » (corps, programmes ET fond de carte),
+quatre-vingt-dix pour effacer le loader (corps ET programmes seulement). Sur
+l'iPad, où Safari compile un programme de shaders en centaines de millisecondes,
+le jeu dégrisait donc « Jouer » à quarante-cinq secondes et le loader continuait de
+le cacher jusqu'à quatre-vingt-dix. **45 + 90 = 135 secondes, exactement la
+fourchette de Max.** Le loader suit désormais la seule décision qui vaille : le jeu
+est prêt, ou il a renoncé à attendre — dans les deux cas l'enfant peut appuyer.
+
+**Ce qui le prouve.** Un témoin neuf, et l'inversion **provoquée** : au banc la
+séquence entière prend trois secondes, donc elle ne se reproduit jamais toute seule
+et un témoin qui attendrait serait vert des deux côtés sans rien mesurer. Les
+vraies dates ont été relevées dans l'horloge de la page — corps à 2,8-3,2 s, tout
+prêt à 3,3 s — et une borne de préparation posée à deux secondes tombe entre les
+deux. A/B sur la même page, la correction désarmée : **zéro relevé fautif armée,
+onze sur 848 millisecondes désarmée**, corps absents et vingt et un programmes sur
+vingt-cinq. Et un témoin de la v257 a dû être corrigé : il exigeait que TOUT soit
+là à l'instant où le loader s'efface, donc il **interdisait au jeu de rendre la
+main** — c'était le mécanisme même du blocage.
+
+Deux réglages rejouables : `?prepms=` porte la borne de préparation, `?apresmaj=1`
+rejoue le chemin d'après-mise-à-jour sans en faire une — utile au banc, et utile
+sur la tablette pour voir ce que l'enfant voit sans attendre une livraison.
+
+---
+
 ## v285 — Le mode d'attrape s'en va, et les voitures roulent dans la nature
 
 Deux sujets, deux corps de témoins. Ils partent ensemble parce qu'ils ne se
