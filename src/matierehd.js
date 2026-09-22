@@ -352,6 +352,37 @@ const PEINTRES = {
       if ((tx + ty) % 2 === 0) p(x, y, 214 + n, 188 + n, 132 + n); else p(x, y, 64 + n, 104 + n, 78 + n);
     });
   },
+  // Les affiches d'une colonne Morris : deux affiches par hauteur de tuile, chacune
+  // son fond de couleur, un titre en gros, des lignes de texte qu'on devine, et un
+  // liseré de fonte verte entre elles.
+  affiche(p, rempli, N) {
+    const fonds = [[196, 44, 52], [232, 178, 40], [36, 76, 148], [230, 230, 222], [50, 120, 80], [150, 40, 110]];
+    rempli((x, y) => {
+      const haut = y < N / 2;
+      const k = haut ? 0 : 1;
+      const yy = haut ? y : y - N / 2;
+      const col = Math.floor(x / (N / 2));
+      const f = fonds[(k * 2 + col) % fonds.length];
+      let r = f[0], g = f[1], b = f[2];
+      const bord = yy < 4 || yy > N / 2 - 5 || (x % (N / 2)) < 3 || (x % (N / 2)) > N / 2 - 4;
+      if (bord) { r = 40; g = 56; b = 44; }
+      else if (yy > 10 && yy < 24 && (x % (N / 2)) > 8 && (x % (N / 2)) < N / 2 - 8 && bruit(x >> 2, y >> 2, 91) > 0.35) { r = 250; g = 246; b = 236; }   // le titre
+      else if (yy > 34 && yy < 56 && ((yy - 34) % 6) < 3 && (x % (N / 2)) > 10 && (x % (N / 2)) < N / 2 - 10 && bruit(x >> 1, y, 92) > 0.4) { r = r * 0.35; g = g * 0.35; b = b * 0.35; } // le texte
+      const n = (bruit(x, y, 93) - 0.5) * 10;
+      p(x, y, r + n, g + n, b + n);
+    });
+  },
+  // Les lattes de bois d'un banc : des lattes chaudes et vernies, le fil du bois
+  // le long, et l'ombre entre deux lattes.
+  lattes(p, rempli, N) {
+    rempli((x, y) => {
+      const l = y % 16;
+      const grain = bruitLisse(x, y * 3, 9, 95) * 22 + (bruit(x, y, 96) - 0.5) * 10;
+      let r = 152 + grain, g = 104 + grain * 0.8, b = 58 + grain * 0.5;
+      if (l < 2 || l > 13) { r *= 0.45; g *= 0.45; b *= 0.45; }
+      p(x, y, r, g, b);
+    });
+  },
 };
 
 // --- l'atlas ------------------------------------------------------------------------

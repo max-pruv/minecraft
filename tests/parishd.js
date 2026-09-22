@@ -198,6 +198,80 @@ function verifier(nom, ok, detail = '') {
     }
   }
 
+  // --- v289 : le comble à la Mansart, et le mobilier du milieu du trottoir ----------
+  // Le zinc se lit à sa MATIÈRE (rugosité 0,42, métal 0,78 : la seule), parce
+  // qu'un quad à UV absolus porte la tuile neutre. Une pente est un sommet de
+  // zinc dont la normale a une composante verticale ET une composante
+  // horizontale : le brisis (raide, ny < 0,4), le terrasson (le champ de
+  // hauteurs, 0,4 < ny < 0,99 : de 45° à presque plat).
+  {
+    const zinc = (g, pred) => {
+      let n = 0;
+      for (let i = 0; i < nb(g); i++) {
+        if (Math.abs(g.matiere[i * 2] - 0.42) > 1e-3 || Math.abs(g.matiere[i * 2 + 1] - 0.78) > 1e-3) continue;
+        const ny = g.normals[i * 3 + 1], nh = Math.abs(g.normals[i * 3]) + Math.abs(g.normals[i * 3 + 2]);
+        if (pred(ny, nh)) n++;
+      }
+      return n;
+    };
+    // TOUT SE COMPTE SUR UN CARRÉ DE VINGT-CINQ MORCEAUX : le morceau de base est
+    // une place presque sans toit (52 sommets de brisis à lui seul), et un témoin
+    // qui écrit son terrain se trompe de terrain (v285). Mesuré à l'écriture :
+    // 2 512 sommets de brisis, 984 de terrasson en pente, 1 552 de dessus dans
+    // `plat` ; les barres sont à la moitié. Sur l'ancien code, zéro des trois.
+    let brisis = 0, terrasson = 0, platHaut = 0, affiche = 0, lattes = 0, corbeilles = 0;
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+      const t = (dx === 0 && dz === 0) ? avec.t : tampons(1, cx + dx, cz + dz).t;
+      if (t.facades) {
+        brisis += zinc(t.facades, (ny, nh) => ny > 0.1 && ny < 0.4 && nh > 0.1);
+        terrasson += zinc(t.facades, (ny, nh) => ny > 0.4 && ny < 0.99 && nh > 0.05);
+        affiche += compteTuile(t.facades, 'affiche'); lattes += compteTuile(t.facades, 'lattes');
+        corbeilles += compteTuile(t.facades, 'fer');
+      }
+      for (let i = 0; i < nb(t.plat); i++) if (t.plat.normals[i * 3 + 1] > 0.99) platHaut++;
+    }
+    verifier('le comble est à la Mansart : un brisis raide au premier rang, un terrasson en pente douce au-dessus',
+      brisis > 1200 && terrasson > 490,
+      `${brisis} sommets de brisis, ${terrasson} de terrasson en pente, sur 25 morceaux`);
+    // AUCUNE PENTE N'EST VRILLÉE, ET AUCUNE NE SORT DE SA COLONNE. Un quad dont
+    // l'arête haute va à rebours de l'arête basse est un nœud papillon : deux
+    // ailerons de zinc dressés au bout des faîtières (vu en capture, quand les
+    // deux côtés d'un bloc étaient à l'air). On lit les quads par leurs indices
+    // (a, b, c, a, c, d) et l'on compare le sens des deux arêtes. Un brisis
+    // monte jusqu'au bord du champ de hauteurs, donc jusqu'à trois blocs ; en
+    // plan, rien ne dépasse la colonne.
+    let vrilles = 0, debordent = 0, pentes = 0;
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+      const t = (dx === 0 && dz === 0) ? avec.t : tampons(1, cx + dx, cz + dz).t;
+      const g = t.facades; if (!g) continue;
+      const P = g.positions, N = g.normals, Mt = g.matiere, I = g.indices;
+      for (let k = 0; k + 5 < I.length; k += 6) {
+        const a = I[k], b = I[k + 1], c = I[k + 2], d = I[k + 5];
+        if (I[k + 3] !== a || I[k + 4] !== c) continue;
+        if (Math.abs(Mt[a * 2] - 0.42) > 1e-3 || Math.abs(Mt[a * 2 + 1] - 0.78) > 1e-3) continue;
+        const ny = N[a * 3 + 1], nh = Math.abs(N[a * 3]) + Math.abs(N[a * 3 + 2]);
+        if (!(ny > 0.1 && ny < 0.99 && nh > 0.05)) continue;
+        pentes++;
+        const p = (i) => [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]];
+        const [pa, pb, pc, pd] = [a, b, c, d].map(p);
+        const bas = [pb[0] - pa[0], pb[2] - pa[2]], haut = [pc[0] - pd[0], pc[2] - pd[2]];
+        if (bas[0] * haut[0] + bas[1] * haut[1] < -1e-6) vrilles++;
+        for (const ax of [0, 1, 2]) {
+          const v = [pa[ax], pb[ax], pc[ax], pd[ax]];
+          if (Math.max(...v) - Math.min(...v) > (ax === 1 ? 3.001 : 1.001)) { debordent++; break; }
+        }
+      }
+    }
+    verifier('aucune pente de toit n\'est vrillée, aucune ne sort de sa colonne',
+      pentes > 500 && vrilles === 0 && debordent === 0,
+      `${pentes} pentes, ${vrilles} vrillée(s), ${debordent} hors colonne`);
+    verifier('le dessus des blocs de toit exposés est dans le loin, avec leurs faces', platHaut > 700,
+      `${platHaut} sommets de dessus de toit dans plat, sur 25 morceaux`);
+    verifier('des bancs, des colonnes Morris et des corbeilles meublent les trottoirs',
+      affiche > 0 && lattes > 0 && corbeilles > 0,
+      `${affiche} sommets d'affiche, ${lattes} de lattes, ${corbeilles} de fil de corbeille, sur 25 morceaux`);
+  }
+
   const campagne = tampons(1, Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK));
   verifier('hors de Paris, la couche allumée ne change rien',
     !couvreHD(Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK), CHUNK) && !campagne.t.sol && !campagne.t.facades && !campagne.t.plat);

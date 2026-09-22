@@ -9,7 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, tirageHD } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
 
 // LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
 // arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
@@ -327,7 +327,10 @@ export function buildChunkTampons(world, cx, cz) {
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.
           const solHD = hd && face.slot === 0 ? SOL_HD.get(id) : undefined;
-          const facadeHd = hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id));
+          // Le dessus d'un bloc de toit part dans `plat` : de près, la couche
+          // le remplace par son champ de hauteurs (v289, `toitDessusHD`).
+          const toitHd = hd && face.slot === 0 && TOIT_HD.has(id);
+          const facadeHd = hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd);
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
             : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
@@ -395,7 +398,7 @@ export function buildChunkTampons(world, cx, cz) {
             if (!FACADE_HD.has(id)) continue;
             const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
             if (!shouldRenderFace(id, neighbor)) continue;
-            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z));
+            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z), localGet(x, y + 1, z), localGet);
             facadesDetaillees++;
           }
         }
@@ -431,10 +434,28 @@ export function buildChunkTampons(world, cx, cz) {
             if (cote) {
               const leLong = (cote === 'px' || cote === 'mx') ? oz + z : ox + x;
               if ((leLong & 1) === 0) poteletHD(facades, x, y, z, cote);
+              // une corbeille entre deux potelets, tous les huit blocs environ
+              else if ((leLong & 7) === 3 && tirageHD(ox + x, oz + z, 921) > 0.4) corbeilleHD(facades, x, y, z, cote);
             }
             const vitrineA = (dx, dz) => localGet(x + dx, y + 1, z + dz) === ARCHI.VITRINE;
             const vers = vitrineA(1, 0) ? [1, 0] : vitrineA(-1, 0) ? [-1, 0] : vitrineA(0, 1) ? [0, 1] : vitrineA(0, -1) ? [0, -1] : null;
             if (vers && !cote && tirageHD(ox + x, oz + z, 917) > 0.62) terrasseHD(facades, x, y, z, ox + x, oz + z, vers);
+            // LE MOBILIER DU MILIEU DU TROTTOIR (v289) : loin du caniveau et sans
+            // devanture à côté, un banc tourné vers la rue (la rue est à deux
+            // blocs, derrière un autre trottoir) ou, plus rare, une colonne Morris.
+            if (!cote && !vers && localGet(x, y + 1, z) === BLOCK.AIR) {
+              const rueA2 = (dx, dz) => { const v = localGet(x + 2 * dx, y, z + 2 * dz); return (v === ARCHI.BORDURE || v === ARCHI.PAVE) && localGet(x + dx, y, z + dz) === CITY_BLOCK.SIDEWALK; };
+              const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
+              const t = tirageHD(ox + x, oz + z, 919);
+              if (versRue && t > 0.955) bancHD(facades, x, y, z, versRue);
+              // (une colonne seulement là où le tirage est un creux local : deux
+              // colonnes côte à côte, vues à la sonde, n'existent nulle part)
+              else if (t < 0.012 && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirageHD(ox + x + dx, oz + z + dz, 919) >= 0.012)) morrisHD(facades, x, y, z);
+            }
+          } else if (TOIT_HD.has(id)) {
+            // LE TOIT (v289) : une colonne de toit dont le dessus est à l'air
+            // dessine son quad du champ de hauteurs
+            if (localGet(x, y + 1, z) === BLOCK.AIR) toitDessusHD(facades, x, y, z, ox + x, oz + z, localGet);
           } else if (id === BLOCK.TERRACOTTA) {
             if (localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
           } else if (id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {

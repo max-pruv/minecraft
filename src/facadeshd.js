@@ -72,6 +72,9 @@ export const TUILES_HD = [
   'fonte',         // la fonte peinte des potelets et des pieds de table
   'plaque',        // la plaque de rue, bleue à liseré vert et lettres blanches
   'rotin',         // le cannage des chaises de terrasse
+  // la PR2, suite (v289) : le comble et le mobilier
+  'affiche',       // les affiches d'une colonne Morris, deux par hauteur
+  'lattes',        // les lattes de bois d'un banc Davioud
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
@@ -124,6 +127,13 @@ export const FACADE_HD = new Set([
   ARCHI.MANSARDE, ARCHI.ZINC_LISSE, ARCHI.CHAINAGE, ARCHI.PORTE, ARCHI.MUR_NU,
 ]);
 
+// LE TOIT (v289) : les blocs de comble sont dessinés par la couche comme un
+// CHAMP DE HAUTEURS lissé sur les colonnes (`toitDessusHD`), avec un brisis
+// raide au premier rang — le comble à la Mansart — et toutes leurs faces (le
+// dessus comme les côtés) partent dans `plat`, jamais dans `solid` : une face
+// plate dessinée par-dessus la pente la coifferait d'une casquette.
+export const TOIT_HD = new Set([ARCHI.ZINC_LISSE, ARCHI.MANSARDE]);
+
 // Un morceau est couvert par la couche HD s'il touche le disque de Paris. La
 // question se pose PAR MORCEAU, une fois, et non par bloc.
 export function couvreHD(cx, cz, chunk) {
@@ -169,6 +179,8 @@ const M = {
   fonte: [0.5, 0.6],
   plaque: [0.45, 0.15],
   rotin: [0.8, 0.0],
+  affiche: [0.75, 0.0],
+  lattes: [0.7, 0.0],
 };
 
 // --- le tampon HD ------------------------------------------------------------------
@@ -283,6 +295,7 @@ class Face {
     const { o, S, D } = this;
     return [o[0] + S[0] * s + D[0] * d, o[1] + t, o[2] + S[2] * s + D[2] * d];
   }
+
 
   aoA(s, t) {
     const a = this.ao;
@@ -534,17 +547,150 @@ function corniche(f, st) {
   }
 }
 
-function mansarde(f, r, allumee, lucarne) {
-  // le brisis en zinc, et le chien-assis qui s'en détache
-  f.plan(0, 1, 0, 1, 0, 'zinc');
-  if (lucarne) {
-    f.boite(0.3, 0.7, 0.06, 0.74, 0, 0.26, 'zinc', 0.95);
-    f.boite(0.26, 0.74, 0.74, 0.82, 0, 0.3, 'zinc');
-    f.plan(0.34, 0.66, 0.14, 0.66, 0.261, 'verre', 1, allumee ? 1 : 0);
-    f.boite(0.34, 0.36, 0.14, 0.66, 0.26, 0.28, 'menuiserie');
-    f.boite(0.64, 0.66, 0.14, 0.66, 0.26, 0.28, 'menuiserie');
-    f.boite(0.49, 0.51, 0.14, 0.66, 0.26, 0.28, 'menuiserie');
+// LE COMBLE À LA MANSART (v289). Le voxel pose le toit en marches : la colonne
+// de façade porte un rang de zinc, celle d'un pas en arrière deux, et ainsi de
+// suite (`batirColonneParis`). La couche lit ces marches et les dessine en
+// PENTES, sans poser un bloc :
+//
+//   - le premier rang (le bloc sous lui n'est pas du toit) est le BRISIS, la
+//     pente raide du comble : de l'arête de la corniche jusqu'à `RETRAIT` en
+//     arrière, et il monte jusqu'au BORD du champ de hauteurs — un bloc, un
+//     bloc et demi, deux, selon ce que les colonnes voisines portent ; c'est là
+//     que s'ouvre le chien-assis ;
+//   - au-dessus, le TERRASSON n'est plus une pente par face : c'est le champ de
+//     hauteurs de `toitDessusHD`, un quad par colonne, dont les coins sont la
+//     moyenne des sommets des colonnes voisines du même immeuble. Une face de
+//     terrasson n'émet donc RIEN de près — la surface passe au-dessus d'elle.
+//
+// Le repère du brisis : `t` en hauteur, `d` en saillie, négatif en retrait —
+// la pente monte vers les `d` négatifs.
+//
+// ET UN COIN SE COUPE EN CROUPE. Au coin d'un îlot, le bloc de brisis a DEUX
+// côtés exposés ; deux pentes pleines s'y croiseraient en X et feraient un
+// creux — vu en capture : des toits en cristaux, une dent à chaque coin. Le
+// sommet de la pente recule de `RETRAIT` en `s` du côté exposé, sur la
+// diagonale qui va du coin bas extérieur au coin haut intérieur : c'est ce
+// qu'on appelle une croupe, et c'est le même coin que le champ de hauteurs
+// rentre. `coins` dit quel côté (s = 0, s = 1) est exposé.
+//
+// TROIS REMÈDES PAR FACE ONT ÉTÉ ÉCRITS AVANT CELUI-CI, ET DEUX NE CHANGEAIENT
+// RIEN À L'IMAGE : le faîte au milieu du bloc quand la face opposée est à
+// l'air, puis une file verticale de faces qui partage une pente. La sonde
+// `sonde-ailerons` a montré que les ailerons vus en capture étaient le voxel
+// lui-même lu par face : sur une trame tournée, les rangs sont des bandes
+// diagonales en escalier, et aucune règle par face ne les lisse. Voir le
+// champ de hauteurs, plus bas.
+const RETRAIT = 0.35;
+function toit(f, r, allumee, lucarne, brisis, coins, h0, h1) {
+  // au-dessus du brisis, c'est le champ de hauteurs (`toitDessusHD`) qui
+  // dessine : une face de terrasson n'émet rien de près
+  if (!brisis) return;
+  const R = RETRAIT;
+  const H1 = [coins.s1 ? 1 - R : 1, h1, -R], H0 = [coins.s0 ? R : 0, h0, -R];
+  const uv = [[0, 0], [1, 0], [H1[0], h1], [H0[0], h0]];
+  f.quad([[0, 0, 0], [1, 0, 0], H1, H0], [0, RETRAIT, 1], 'zinc', 1, 0, uv);
+  if (lucarne && h0 > 0.9 && h1 > 0.9) chienAssis(f, allumee);
+}
+
+// --- le champ de hauteurs du toit ---------------------------------------------------
+//
+// LE TOIT EST UN CHAMP DE HAUTEURS LISSÉ SUR LES COLONNES, PAS UNE PENTE PAR
+// FACE. La trame du Marais est tournée de 24° par rapport au monde : les rangs
+// de zinc du voxel n'y sont pas des anneaux emboîtés mais des BANDES
+// DIAGONALES en escalier, et une pente par face de bloc rendait ce champ de
+// marches en tentes pointues — vu en capture, un hérisson, et c'est une sonde
+// (`sonde-ailerons`) qui a nommé le cas après deux remèdes par face qui ne
+// changeaient rien à l'image. Le squelette est bon, la lecture par face ne
+// l'est pas. La hauteur d'un COIN de colonne est la moyenne des sommets des
+// colonnes de toit du même immeuble qui le partagent : sur un escalier
+// diagonal, cette moyenne est un plan oblique — le toit suit la trame quelle
+// que soit sa rotation, et il lit les blocs, il n'en écrit aucun.
+//
+// Chaque colonne de toit dessine UN quad (ses quatre coins), en retrait de
+// 0,35 sur les côtés où l'immeuble s'arrête : c'est là que le brisis monte
+// depuis la corniche jusqu'à ces mêmes coins (`toit` ci-dessus lit les mêmes
+// hauteurs), et une face de terrasson n'émet rien — la surface passe au-dessus.
+
+// le dessus (y local + 1) du plus haut bloc de toit d'une colonne, cherché
+// autour de y0, ou null si la colonne n'a pas de toit
+function sommetToit(get, x, z, y0) {
+  for (let y = y0 + 2; y >= y0 - 2; y--) if (TOIT_HD.has(get(x, y, z))) return y + 1;
+  return null;
+}
+
+// l'immeuble d'une colonne (l'îlot et la travée que `formeParis` publie), mémoïsé :
+// un coin partagé entre deux immeubles de hauteurs différentes ne lisse pas l'un
+// sur l'autre
+const cacheImmeuble = new Map();
+function immeuble(wx, wz) {
+  const k = wx * 65536 + wz;
+  let v = cacheImmeuble.get(k);
+  if (v === undefined) {
+    if (cacheImmeuble.size > 8192) cacheImmeuble.clear();
+    const info = infoFacadeParis(wx, wz);
+    v = info ? `${info.ai},${info.bi}` : '';
+    cacheImmeuble.set(k, v);
   }
+  return v;
+}
+
+// une colonne voisine porte-t-elle le MÊME toit (du toit, et du même immeuble) ?
+function memeToit(get, x, z, y0, wx, wz, moi) {
+  return sommetToit(get, x, z, y0) !== null && immeuble(wx, wz) === moi;
+}
+
+// la hauteur d'un coin (cx, cz) : la moyenne des sommets des colonnes du même
+// toit qui le partagent — au moins la colonne courante
+function hauteurCoin(get, cx, cz, y0, wcx, wcz, moi) {
+  let s = 0, n = 0;
+  for (const [dx, dz] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+    if (!memeToit(get, cx + dx, cz + dz, y0, wcx + dx, wcz + dz, moi)) continue;
+    s += sommetToit(get, cx + dx, cz + dz, y0); n++;
+  }
+  return n ? s / n : y0 + 1;
+}
+
+// le quad d'une colonne de toit dont le dessus est à l'air ; (x, y, z) le bloc
+// de toit, local ; (wx, wz) en coordonnées du monde
+export function toitDessusHD(buf, x, y, z, wx, wz, get) {
+  const moi = immeuble(wx, wz);
+  const libre = (dx, dz) => !memeToit(get, x + dx, z + dz, y, wx + dx, wz + dz, moi);
+  const ix0 = libre(-1, 0) ? RETRAIT : 0, ix1 = libre(1, 0) ? 1 - RETRAIT : 1;
+  const iz0 = libre(0, -1) ? RETRAIT : 0, iz1 = libre(0, 1) ? 1 - RETRAIT : 1;
+  const h = (dx, dz) => hauteurCoin(get, x + dx, z + dz, y, wx + dx, wz + dz, moi);
+  const p00 = [x + ix0, h(0, 0), z + iz0], p10 = [x + ix1, h(1, 0), z + iz0];
+  const p11 = [x + ix1, h(1, 1), z + iz1], p01 = [x + ix0, h(0, 1), z + iz1];
+  // la normale : le produit vectoriel des diagonales, vers le haut
+  const d1 = [p11[0] - p00[0], p11[1] - p00[1], p11[2] - p00[2]];
+  const d2 = [p01[0] - p10[0], p01[1] - p10[1], p01[2] - p10[2]];
+  const n = [d2[1] * d1[2] - d2[2] * d1[1], d2[2] * d1[0] - d2[0] * d1[2], d2[0] * d1[1] - d2[1] * d1[0]];
+  const l = Math.hypot(n[0], n[1], n[2]) || 1;
+  n[0] /= l; n[1] /= l; n[2] /= l;
+  const info = infoFacadeParis(wx, wz);
+  const st = styleDuQuartier(info ? info.quartier : '');
+  const teinte = st.teintes[Math.floor((info ? info.graine : 0.5) * st.teintes.length) % st.teintes.length];
+  // une pente unie, un peu plus claire vers le soleil (comme le terrasson d'avant)
+  const ombre = 0.96;
+  const ids = [p01, p11, p10, p00].map((p) => sommetLibre(buf, p, n, [p[0], p[2]], 'zinc', teinte, ombre));
+  buf.quadIndices(ids[0], ids[1], ids[2], ids[3]);
+}
+
+// LE CHIEN-ASSIS : la lucarne qui sort du brisis, un fronton de zinc à face
+// verticale, deux joues qui rejoignent la pente, un petit toit, et sa fenêtre
+// à croisillons qui s'allume la nuit comme les autres.
+function chienAssis(f, allumee) {
+  const dS = (t) => -RETRAIT * t;         // la profondeur du brisis à la hauteur t
+  const s0 = 0.3, s1 = 0.7, t0 = 0.06, t1 = 0.66, dF = -0.08;
+  f.plan(s0, s1, t0, t1, dF, 'zinc', 0.95);                                                          // le fronton
+  f.quad([[s0, t0, dS(t0)], [s0, t0, dF], [s0, t1, dF], [s0, t1, dS(t1)]], [-1, 0, 0], 'zinc', 0.8);   // joue gauche
+  f.quad([[s1, t0, dF], [s1, t0, dS(t0)], [s1, t1, dS(t1)], [s1, t1, dF]], [1, 0, 0], 'zinc', 0.8);    // joue droite
+  const tT = 0.8;
+  f.quad([[s0 - 0.03, tT, dS(tT)], [s0 - 0.03, t1, dF], [s1 + 0.03, t1, dF], [s1 + 0.03, tT, dS(tT)]], [0, 1, 0.6], 'zinc', 1); // le petit toit
+  f.plan(0.36, 0.64, 0.14, 0.58, dF + 0.004, 'verre', 1, allumee ? 1 : 0);
+  f.boite(0.36, 0.38, 0.14, 0.58, dF, dF + 0.02, 'menuiserie');
+  f.boite(0.62, 0.64, 0.14, 0.58, dF, dF + 0.02, 'menuiserie');
+  f.boite(0.49, 0.51, 0.14, 0.58, dF, dF + 0.02, 'menuiserie');
+  f.boite(0.36, 0.64, 0.35, 0.37, dF, dF + 0.02, 'menuiserie');
 }
 
 function murNu(f, st) {
@@ -557,8 +703,11 @@ function murNu(f, st) {
 // coordonnées locales du morceau ; (wx, wy, wz) en coordonnées du monde ;
 // `ao` ses quatre coins d'occlusion, dans l'ordre du mailleur ; `bas` le bloc
 // juste en dessous (la plaque de rue va sur le PREMIER chaînage au-dessus du
-// rez-de-chaussée).
-export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR) {
+// rez-de-chaussée ; un rang de zinc sur autre chose que du zinc est le brisis),
+// `haut` le bloc juste au-dessus (la terrasse d'une marche de toit ne se
+// dessine que si rien ne la couvre) ; `get(x, y, z)` lit un bloc voisin en
+// local (un coin de toit se coupe en croupe quand le côté est à l'air).
+export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR, haut = BLOCK.AIR, get = null) {
   const info = infoFacadeParis(wx, wz);
   const graine = info ? info.graine : 0.5;
   const st = styleDuQuartier(info ? info.quartier : '');
@@ -577,8 +726,27 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR
     case ARCHI.PORTE: porte(f, r, st); break;
     case ARCHI.CHAINAGE: chainage(f, st, bas !== ARCHI.CHAINAGE); break;
     case ARCHI.CORNICHE: corniche(f, st); break;
-    case ARCHI.MANSARDE: mansarde(f, r, allumee, true); break;
-    case ARCHI.ZINC_LISSE: mansarde(f, r, allumee, false); break;
+    case ARCHI.MANSARDE:
+    case ARCHI.ZINC_LISSE: {
+      // les côtés le long de la face : au-delà de s = 1 c'est +S, au-delà de s = 0 c'est −S
+      const brisis = !TOIT_HD.has(bas);
+      // un bloc de toit qui porte autre chose que du toit ou de l'air (une
+      // cheminée) garde un mur de zinc : le champ de hauteurs passe à côté
+      if (!brisis && haut !== BLOCK.AIR) { f.plan(0, 1, 0, 1, 0, 'zinc', 0.9); break; }
+      if (!brisis || !get) break;
+      const S = f.S;
+      const coins = {
+        s1: get(x + S[0], y, z + S[2]) === BLOCK.AIR,
+        s0: get(x - S[0], y, z - S[2]) === BLOCK.AIR,
+      };
+      // le brisis monte jusqu'aux coins du champ de hauteurs : la hauteur de
+      // chacun de ses deux coins hauts est celle que `toitDessusHD` leur donne
+      const moi = immeuble(wx, wz);
+      const c0 = f.p(0, 0, 0), c1 = f.p(1, 0, 0);
+      const hc = (c) => hauteurCoin(get, Math.round(c[0]), Math.round(c[2]), y, wx + Math.round(c[0]) - x, wz + Math.round(c[2]) - z, moi) - y;
+      toit(f, r, allumee, id === ARCHI.MANSARDE, brisis, coins, hc(c0), hc(c1));
+      break;
+    }
     default: murNu(f, st);
   }
 }
@@ -729,6 +897,57 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
     const bx = sx + lx * 0.15 * k, bz = sz + lz * 0.15 * k;
     pave(buf, bx - (lx ? 0.02 : 0.16), bx + (lx ? 0.02 : 0.16), yt + 0.44, yt + 0.86, bz - (lz ? 0.02 : 0.16), bz + (lz ? 0.02 : 0.16), 'rotin', ROTIN, 1);
   }
+}
+
+// LA COLONNE MORRIS (v289) : le fût vert sombre couvert d'affiches, sur un
+// socle de fonte, sous une corniche et un dôme à écailles coiffé d'un fleuron.
+// Elle se plante au milieu d'un trottoir, loin du caniveau, là où aucune
+// devanture ne réclame de terrasse.
+const VERT_MORRIS = [0.18, 0.26, 0.2];
+export function morrisHD(buf, x, y, z) {
+  const yt = y + 1 + RELEVE, cx = x + 0.5, cz = z + 0.5;
+  cylindre(buf, cx, cz, yt, yt + 0.14, 0.5, 0.5, 12, 'fonte', VERT_MORRIS, 1, true);        // le socle
+  cylindre(buf, cx, cz, yt + 0.14, yt + 1.85, 0.4, 0.4, 12, 'affiche', [1, 1, 1], 1);       // le fût d'affiches
+  cylindre(buf, cx, cz, yt + 1.85, yt + 2.0, 0.5, 0.5, 12, 'fonte', VERT_MORRIS, 1, true);  // la corniche
+  cylindre(buf, cx, cz, yt + 2.0, yt + 2.42, 0.48, 0.14, 12, 'zinc', VERT_MORRIS, 1, true); // le dôme
+  cylindre(buf, cx, cz, yt + 2.42, yt + 2.7, 0.05, 0.03, 6, 'fonte', VERT_MORRIS, 1, true); // le fleuron
+}
+
+// LE BANC DAVIOUD (v289) : deux pieds de fonte, une assise et un dossier de
+// lattes de bois, sur le trottoir, tourné vers la rue. `vers` ([dx, dz]) est la
+// direction de la rue.
+const LATTES = [1, 1, 1];
+export function bancHD(buf, x, y, z, vers) {
+  const yt = y + 1 + RELEVE, cx = x + 0.5, cz = z + 0.5;
+  const lx = -vers[1], lz = vers[0];                       // l'axe du banc, le long de la rue
+  const L = 0.42, P = 0.2;                                  // demi-longueur, demi-profondeur
+  const bx = (a, b) => cx + lx * a + vers[0] * b, bz = (a, b) => cz + lz * a + vers[1] * b;
+  const boiteDe = (a0, a1, b0, b1, y0, y1, tuile, teinte) => {
+    const xs = [bx(a0, b0), bx(a1, b0), bx(a0, b1), bx(a1, b1)], zs = [bz(a0, b0), bz(a1, b0), bz(a0, b1), bz(a1, b1)];
+    pave(buf, Math.min(...xs), Math.max(...xs), y0, y1, Math.min(...zs), Math.max(...zs), tuile, teinte, 1);
+  };
+  // l'assise : quatre lattes, du dossier vers la rue
+  for (let k = 0; k < 4; k++) boiteDe(-L, L, -P + k * 0.1, -P + k * 0.1 + 0.08, yt + 0.4, yt + 0.44, 'lattes', LATTES);
+  // le dossier : trois lattes, incliné vers l'arrière
+  for (let k = 0; k < 3; k++) boiteDe(-L, L, -P - 0.04 - k * 0.02, -P - k * 0.02, yt + 0.5 + k * 0.12, yt + 0.6 + k * 0.12, 'lattes', LATTES);
+  // les pieds de fonte, aux deux bouts
+  for (const a of [-L + 0.04, L - 0.04]) {
+    boiteDe(a - 0.02, a + 0.02, -P, P, yt, yt + 0.4, 'fonte', FONTE);
+    boiteDe(a - 0.02, a + 0.02, -P - 0.08, -P, yt + 0.4, yt + 0.9, 'fonte', FONTE);
+  }
+}
+
+// LA CORBEILLE (v289) : le panier de fil vert de Paris, sur son poteau, au
+// bord du caniveau entre deux potelets. `cote` dit de quel côté est la rue.
+const VERT_CORBEILLE = [0.3, 0.46, 0.34];
+export function corbeilleHD(buf, x, y, z, cote) {
+  const d = 0.3;
+  const cx = x + (cote === 'px' ? 1 - d : cote === 'mx' ? d : 0.5);
+  const cz = z + (cote === 'pz' ? 1 - d : cote === 'mz' ? d : 0.5);
+  const yt = y + 1 + RELEVE;
+  cylindre(buf, cx, cz, yt, yt + 0.95, 0.04, 0.04, 6, 'fonte', VERT_CORBEILLE, 1);
+  cylindre(buf, cx, cz, yt + 0.4, yt + 0.9, 0.16, 0.19, 8, 'fer', VERT_CORBEILLE, 1);
+  cylindre(buf, cx, cz, yt + 0.88, yt + 0.92, 0.2, 0.2, 8, 'fonte', VERT_CORBEILLE, 1, true);
 }
 
 // LES MITRES DE CHEMINÉE : sur chaque souche de terre cuite, trois pots.
