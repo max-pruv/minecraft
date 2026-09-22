@@ -88,6 +88,13 @@
   durée sous la charge du portail » : il ne se reproduit pas seul, sur aucun
   des deux arbres.
 
+  **Second portail, après la rue de Paris** (quinze suites, 678 verts) : douze
+  vertes ; `manhattan.js` et `monte.js` sur leurs dettes déclarées, à
+  l'identique ; `maj.js` sur le fond de carte ET sur une puce du journal à neuf
+  mots — le deux-points isolé compte pour un mot. La puce corrigée, `maj.js`
+  rejouée seule est entièrement verte, fond de carte compris (il est
+  intermittent, v276).
+
 - [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
   Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
   quatrième rouge, « la voiture au mur », a été démonté par une sonde qui
