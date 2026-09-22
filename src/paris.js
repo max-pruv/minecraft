@@ -728,6 +728,18 @@ function tirageParis(a, b, sel) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
+// CE QUE LA COUCHE HD DEMANDE D'UNE FAÇADE (v286) : l'îlot (pour tirer une teinte
+// de pierre et une enseigne par immeuble, jamais par colonne), la coordonnée le
+// long de la façade, et le quartier. Une seule règle, deux lecteurs : le voxel et
+// le détail lisent la MÊME trame — `formeParis` — donc un immeuble HD est
+// exactement l'immeuble plat qu'il recouvre.
+export function infoFacadeParis(x, z) {
+  const u = x - PARIS.x, v = z - PARIS.z;
+  if (u * u + v * v > PARIS.r * PARIS.r) return null;
+  const f = formeParis(u, v);
+  return { ai: f.ai, bi: f.bi, quartier: f.t.nom, pas: f.t.pas, graine: tirageParis(f.ai, f.bi, 700) };
+}
+
 // --- le sol ------------------------------------------------------------------------
 
 // Ce qu'il faut poser au sol, ou null si la trame ordinaire de la ville doit

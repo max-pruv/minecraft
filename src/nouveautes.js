@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 287,
+    titre: 'Paris en relief',
+    puces: [
+      'Les fenêtres de Paris sont creusées',
+      'Des balcons en fer forgé devant',
+      'Les corniches font de l\'ombre',
+      'Les pavés et les trottoirs sont plus fins',
+      'Les réverbères s\'éteignent le jour',
+    ],
+  },
+  {
     v: 286,
     titre: 'L\'accueil ne te retient plus',
     puces: [

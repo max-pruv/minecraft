@@ -9,6 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee } from './facadeshd.js';
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
@@ -84,11 +85,8 @@ const VITRES = new Set([
   BLOCK.GLASS, CITY_BLOCK.CURTAIN,
   ARCHI.VITRINE, ARCHI.ENTRESOL, ARCHI.ETAGE, ARCHI.NOBLE, ARCHI.VITRAIL, ARCHI.SHOJI,
 ]);
-function vitreAllumee(x, y, z) {
-  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2246822519);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return (((h ^ (h >>> 16)) >>> 0) % 100) < 30;
-}
+// `vitreAllumee` vit dans `facadeshd.js` depuis la v287 : la couche HD et la
+// tuile plate doivent allumer la MÊME fenêtre.
 
 // Per-vertex ambient occlusion: corners tucked against neighbouring solid
 // blocks get darker, which grounds every edge and crevice visually.
@@ -213,11 +211,22 @@ const masqueReserve = [];
 
 export function buildChunkTampons(world, cx, cz) {
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
-    return { solid: null, water: null, lumineux: null, props: [] };
+    return { solid: null, water: null, lumineux: null, props: [], sol: null, facades: null, plat: null, platLumineux: null };
   }
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
   const lumineux = new GeomBuffer();
+  // LA COUCHE HD (v287, facadeshd.js). Quand le monde la demande (`world.hd`,
+  // le palier de l'appareil) et que le morceau touche Paris : le dessus des
+  // sols de ville part dans `sol` avec la tuile HD ; les faces de façade
+  // partent PLATES dans `plat` (le loin) et DÉTAILLÉES dans `facades` (le
+  // près). Rien d'autre ne change — un palier sans HD rend exactement les
+  // tampons d'avant, et c'est un témoin qui le dit.
+  const hd = !!world.hd && couvreHD(cx, cz, CHUNK);
+  const sol = hd ? new GeomBufferHD() : null;
+  const facades = hd ? new GeomBufferHD() : null;
+  const plat = hd ? new GeomBuffer() : null;
+  const platLumineux = hd ? new GeomBuffer() : null;
   // le tirage des vitres allumées se fait en coordonnées du MONDE : en
   // coordonnées locales, le même motif se répéterait dans chaque morceau
   const ox = cx * CHUNK, oz = cz * CHUNK;
@@ -309,10 +318,15 @@ export function buildChunkTampons(world, cx, cz) {
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
           const allume = VITRES.has(id) && vitreAllumee(ox + x, y, oz + z);
+          // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
+          // une face latérale d'un bloc de façade — elle va dans `plat`, et
+          // son détail est émis plus bas, bloc par bloc.
+          const solHD = hd && face.slot === 0 ? SOL_HD.get(id) : undefined;
+          const facadeHd = hd && face.slot === 1 && FACADE_HD.has(id);
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
             : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
-          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z };
+          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd };
           vide = false;
         }
       }
@@ -345,8 +359,38 @@ export function buildChunkTampons(world, cx, cz) {
             for (let du = 0; du < w; du++) masque[u + du + (v + dv) * nU] = null;
           }
 
-          const buffer = cel.isWater ? water : (cel.allume ? lumineux : solid);
+          if (cel.solHD) {
+            sol.addFace(face, cel.x, cel.y, cel.z, rectHD(cel.solHD.tuile), cel.yTop, cel.ao, w, h, [cel.solHD.rugueux, cel.solHD.metal]);
+            continue;
+          }
+          const buffer = cel.isWater ? water
+            : cel.facadeHd ? (cel.allume ? platLumineux : plat)
+              : (cel.allume ? lumineux : solid);
           buffer.addFace(face, cel.x, cel.y, cel.z, cel.tile, cel.yTop, cel.ao, w, h);
+        }
+      }
+    }
+  }
+
+  // --- le détail des façades, bloc par bloc ----------------------------------
+  //
+  // La même règle d'exposition que la passe plate (`shouldRenderFace` contre
+  // le voisin), la même occlusion : ce qui reçoit un détail est EXACTEMENT ce
+  // qui a reçu une face plate dans `plat`. Un témoin compare les deux comptes.
+  let facadesDetaillees = 0;
+  if (hd) {
+    for (const face of FACES) {
+      if (face.dir[1] !== 0) continue;
+      for (let y = 0; y <= topY; y++) {
+        for (let z = 0; z < CHUNK; z++) {
+          for (let x = 0; x < CHUNK; x++) {
+            const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
+            if (!FACADE_HD.has(id)) continue;
+            const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
+            if (!shouldRenderFace(id, neighbor)) continue;
+            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z));
+            facadesDetaillees++;
+          }
         }
       }
     }
@@ -357,5 +401,10 @@ export function buildChunkTampons(world, cx, cz) {
     water: water.toTampons(),
     lumineux: lumineux.toTampons(),
     props,
+    sol: sol ? sol.toTampons() : null,
+    facades: facades ? facades.toTampons() : null,
+    plat: plat ? plat.toTampons() : null,
+    platLumineux: platLumineux ? platLumineux.toTampons() : null,
+    facadesDetaillees,
   };
 }

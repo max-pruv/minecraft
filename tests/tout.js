@@ -30,6 +30,7 @@ const { attendreLaCharge } = require('./charge.js');
 const SUITES = [
   'metro.js',        //  0 min 14 s
   'parent.js',       //  0 min 30 s
+  'parishd.js',      //  0 min 45 s (v287)
   'carteMonde.js',   //  0 min 34 s
   'sauvegarde.js',   //  0 min 34 s
   'plafond.js',      //  0 min 51 s
@@ -97,7 +98,11 @@ const GARDIENS = {
   // c'est lui qui porte les témoins du palier —, `reglages.js` l'espace où l'on
   // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
   // carte.
-  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js'],
+  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
+  // La couche HD de Paris (v286) : ses tampons et son relais près/loin dans
+  // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
+  'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],
+  'src/matierehd.js': ['parishd.js', 'monte.js'],
   // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
   // `modeles.js`, `props.js`, `animals.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
@@ -178,7 +183,7 @@ const GARDIENS = {
   //
   // Les villes bâties à la main : elles dessinent leur relief et leurs
   // destinations, exactement comme Nice et Londres, déjà listées.
-  'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js'],
+  'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js'],
   'src/manhattan-plan.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js', 'plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'reseau.js', 'hote.js'],
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
@@ -217,7 +222,7 @@ const GARDIENS = {
   'src/blocks.js': SUITES,
   'src/mesher.js': SUITES,
   'src/tuiles.js': SUITES,
-  'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js'],
+  'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js', 'parishd.js'],
   'src/textures.js': SUITES,
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
