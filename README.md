@@ -39,7 +39,11 @@ rendering budgets, licensing and limitations.
   windows, railings, running balconies, cornices, awnings, dormers) and
   128-px procedural materials for its streets, with one draw call per chunk.
   Far away, the flat tile remains as the level of detail. The device tier
-  sets the range (`?hd=` forces it).
+  sets the range (`?hd=` forces it). Each quarter has its own register
+  (plaster and shutters in the Marais, ashlar and running balconies in the
+  west), trees are meshed up close, and sidewalks carry bollards, café
+  terraces and street-name plates — all read from the blocks, never written
+  into them.
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
   plus harmonics that track the throttle), jet spool-up, block and chime sounds

@@ -64,6 +64,14 @@ export const TUILES_HD = [
   'cour',          // les pavés d'une cour
   'brique',        // le rouge d'une souche, d'un mur mitoyen
   'marquage',      // la peinture blanche au sol, usée
+  // la PR2 (v288) : les quartiers, les arbres, le mobilier
+  'enduit',        // l'enduit des vieux quartiers, grain fin, un peu lépreux
+  'volet',         // le volet de bois à persiennes, peint
+  'ecorce',        // le fût d'un arbre
+  'feuillage',     // la couronne (alpha) : des feuilles, du ciel entre elles
+  'fonte',         // la fonte peinte des potelets et des pieds de table
+  'plaque',        // la plaque de rue, bleue à liseré vert et lettres blanches
+  'rotin',         // le cannage des chaises de terrasse
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
@@ -139,6 +147,7 @@ function tirage(a, b, sel) {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
+export const tirageHD = tirage;
 
 // --- les matières, par sommet ----------------------------------------------------
 
@@ -153,6 +162,13 @@ const M = {
   enseigne: [0.55, 0.15],
   marquage: [0.7, 0.0],
   granit: [0.75, 0.0],
+  enduit: [0.9, 0.0],
+  volet: [0.72, 0.0],
+  ecorce: [0.96, 0.0],
+  feuillage: [0.85, 0.0],
+  fonte: [0.5, 0.6],
+  plaque: [0.45, 0.15],
+  rotin: [0.8, 0.0],
 };
 
 // --- le tampon HD ------------------------------------------------------------------
@@ -367,16 +383,60 @@ class Face {
 
 // --- les registres -------------------------------------------------------------------
 
-// Les teintes de pierre d'un immeuble : crème, beige chaud, gris clair, blond.
+// LES QUARTIERS ONT CHACUN LEUR REGISTRE (v288). Une façade du Marais n'est pas
+// une façade de Monceau : la première est un mur d'enduit percé de petites
+// baies à volets de bois, sans balcon filant ni store ; la seconde est de la
+// pierre de taille avec ses balcons continus. Le quartier vient de la MÊME
+// trame que le voxel (`infoFacadeParis`), et c'est le style qui décide du mur,
+// des baies, des volets et des ornements. Quatre styles :
+//
+//   haussmann  — pierre de taille, balcons filants, stores : l'ouest et le
+//                Paris ordinaire (Haussmann, Étoile, Monceau, Passy,
+//                Saint-Germain) ;
+//   ancien     — enduit ocre, crème ou gris, baies étroites, volets à
+//                persiennes, corniche simple : le Marais, le Quartier latin ;
+//   village    — l'enduit pastel et les volets de Montmartre, sur trois
+//                étages ;
+//   faubourg   — enduit crème, garde-corps simples, devantures sans store :
+//                Belleville, le faubourg Saint-Antoine.
+//
+// Les TEINTES se tirent par îlot (la graine d'`infoFacadeParis`), jamais par
+// colonne : un immeuble a une couleur.
 const PIERRES = [[1.0, 0.97, 0.9], [0.98, 0.93, 0.82], [0.93, 0.93, 0.9], [1.0, 0.95, 0.85]];
+const ENDUITS_ANCIEN = [[0.96, 0.86, 0.66], [0.98, 0.94, 0.84], [0.86, 0.85, 0.82], [0.95, 0.82, 0.7], [0.9, 0.88, 0.78]];
+const ENDUITS_VILLAGE = [[0.98, 0.9, 0.78], [0.94, 0.86, 0.88], [0.88, 0.92, 0.86], [0.98, 0.95, 0.86]];
+const ENDUITS_FAUBOURG = [[0.96, 0.93, 0.84], [0.9, 0.88, 0.82], [0.98, 0.9, 0.78]];
 
-function etage(f, r, allumee, noble) {
-  const s0 = 0.31, s1 = 0.69, t0 = 0.14, t1 = 0.86;
-  f.murAutour(s0, s1, t0, t1, 'pierre');
+export const STYLES = {
+  haussmann: { mur: 'pierre', teintes: PIERRES, baie: [0.31, 0.69, 0.14, 0.86], volets: false, filant: true, store: true, corniche: 3 },
+  ancien: { mur: 'enduit', teintes: ENDUITS_ANCIEN, baie: [0.36, 0.64, 0.18, 0.82], volets: true, filant: false, store: false, corniche: 1 },
+  village: { mur: 'enduit', teintes: ENDUITS_VILLAGE, baie: [0.36, 0.64, 0.2, 0.82], volets: true, filant: false, store: false, corniche: 1 },
+  faubourg: { mur: 'enduit', teintes: ENDUITS_FAUBOURG, baie: [0.32, 0.68, 0.16, 0.86], volets: false, filant: false, store: false, corniche: 2 },
+};
+const STYLE_DU_QUARTIER = {
+  'Marais': 'ancien', 'Quartier latin': 'ancien', 'Montmartre': 'village',
+  'Belleville': 'faubourg', 'Faubourg Saint-Antoine': 'faubourg',
+};
+export function styleDuQuartier(nom) {
+  return STYLES[STYLE_DU_QUARTIER[nom] || 'haussmann'];
+}
+
+// Les volets à persiennes, ouverts de part et d'autre de la baie : deux
+// boîtes minces au nu du mur, la persienne dessinée dans la tuile.
+function volets(f, s0, s1, t0, t1) {
+  const l = Math.min(0.14, s0 - 0.02);
+  f.boite(s0 - l, s0 - 0.01, t0, t1, 0, 0.03, 'volet', 0.95);
+  f.boite(s1 + 0.01, s1 + l, t0, t1, 0, 0.03, 'volet', 0.95);
+}
+
+function etage(f, r, allumee, noble, st) {
+  const [s0, s1, t0, t1] = st.baie;
+  f.murAutour(s0, s1, t0, t1, st.mur);
   f.baie(s0, s1, t0, t1, allumee);
   // l'appui de fenêtre, en saillie
   f.boite(s0 - 0.04, s1 + 0.04, t0 - 0.04, t0, 0, 0.05, 'pierre-lisse');
-  if (noble) {
+  if (st.volets) volets(f, s0, s1, t0, t1);
+  if (noble && st.filant) {
     // LE BALCON FILANT : la dalle sur toute la largeur, et sa ferronnerie.
     f.boite(0, 1, 0.08, 0.14, 0, 0.22, 'pierre-lisse');
     f.ferronnerie(0, 1, 0.14, 0.42, 0.22);
@@ -387,22 +447,23 @@ function etage(f, r, allumee, noble) {
     // le garde-corps individuel : une lisse de fer devant la baie
     f.ferronnerie(s0 - 0.02, s1 + 0.02, t0, t0 + 0.24, 0.06);
     // le bandeau d'étage, une fine assise en saillie
-    if (r > 0.5) f.boite(0, 1, 0.0, 0.03, 0, 0.03, 'pierre-lisse');
+    if (r > 0.5 && st.filant) f.boite(0, 1, 0.0, 0.03, 0, 0.03, 'pierre-lisse');
   }
 }
 
-function entresol(f, r, allumee) {
+function entresol(f, r, allumee, st) {
   const s0 = 0.33, s1 = 0.67, t0 = 0.28, t1 = 0.76;
-  f.murAutour(s0, s1, t0, t1, 'pierre');
+  f.murAutour(s0, s1, t0, t1, st.mur);
   f.baie(s0, s1, t0, t1, allumee);
   f.boite(s0 - 0.03, s1 + 0.03, t0 - 0.03, t0, 0, 0.04, 'pierre-lisse');
+  if (st.volets) volets(f, s0, s1, t0, t1);
   // l'assise qui sépare le commerce de l'immeuble
   f.boite(0, 1, 0.0, 0.05, 0, 0.06, 'pierre-lisse');
 }
 
-function vitrine(f, r, allumee) {
+function vitrine(f, r, allumee, st) {
   const s0 = 0.08, s1 = 0.92, t0 = 0.08, t1 = 0.78;
-  f.murAutour(s0, s1, t0, t1, 'pierre');
+  f.murAutour(s0, s1, t0, t1, st.mur);
   // la devanture : un grand vitrage en retrait, son châssis de bois peint
   f.creux(s0, s1, t0, t1, -0.14, 'menuiserie', 'verre', 1, allumee ? 1.2 : 0.35);
   f.boite(s0, s0 + 0.04, t0, t1, -0.12, -0.06, 'menuiserie');
@@ -410,7 +471,7 @@ function vitrine(f, r, allumee) {
   f.boite(0.49, 0.51, t0, t1, -0.12, -0.06, 'menuiserie');
   // le bandeau d'enseigne, et le store au-dessus de la vitrine
   f.boite(0.02, 0.98, t1 + 0.02, 0.96, 0, 0.05, 'enseigne');
-  if (r > 0.35) {
+  if (st.store && r > 0.35) {
     const dt = 0.13;
     f.quad([[0.94, t1 + 0.02, 0], [0.06, t1 + 0.02, 0], [0.06, t1 - dt, 0.42], [0.94, t1 - dt, 0.42]], [0, 0.42, dt], 'store', 1);
     f.quad([[0.06, t1 + 0.02, 0], [0.94, t1 + 0.02, 0], [0.94, t1 - dt, 0.42], [0.06, t1 - dt, 0.42]], [0, -0.42, -dt], 'store', 0.7);
@@ -419,9 +480,9 @@ function vitrine(f, r, allumee) {
   f.boite(0, 1, 0, t0, 0, 0.03, 'granit');
 }
 
-function porte(f, r) {
+function porte(f, r, st) {
   const s0 = 0.28, s1 = 0.72, t0 = 0.0, t1 = 0.84;
-  f.murAutour(s0, s1, t0, t1, 'pierre');
+  f.murAutour(s0, s1, t0, t1, st.mur);
   f.creux(s0, s1, t0, t1, -0.16, 'pierre-lisse', 'bois', 0.9);
   // l'imposte vitrée au-dessus des vantaux
   f.plan(s0, s1, t1 - 0.16, t1, -0.15, 'verre', 1, 0);
@@ -431,27 +492,45 @@ function porte(f, r) {
   f.boite(s0 - 0.05, s1 + 0.05, t1, t1 + 0.06, 0, 0.06, 'pierre-lisse');
 }
 
-function chainage(f) {
-  // les carreaux et boutisses alternés du chaînage d'angle
-  f.plan(0, 1, 0, 1, 0, 'pierre-lisse');
-  for (let i = 0; i < 4; i++) {
-    const t0 = i / 4, t1 = (i + 1) / 4 - 0.02;
-    if (i % 2 === 0) f.boite(0, 0.62, t0, t1, 0, 0.035, 'pierre-lisse');
-    else f.boite(0.38, 1, t0, t1, 0, 0.035, 'pierre-lisse');
-  }
+// La plaque de rue : bleue, à liseré vert, sur le chaînage d'angle du premier
+// étage — au coin de chaque immeuble, comme dans la vraie ville.
+function plaqueDeRue(f) {
+  f.boite(0.2, 0.8, 0.5, 0.86, 0.035, 0.05, 'plaque', 1);
 }
 
-function corniche(f) {
-  // TROIS RESSAUTS ET UN RANG DE MODILLONS : c'est la ligne d'ombre qui
-  // couronne la façade, celle qu'on lit de l'autre bout du boulevard.
+function chainage(f, st, plaque) {
+  // les carreaux et boutisses alternés du chaînage d'angle
+  f.plan(0, 1, 0, 1, 0, st.mur === 'pierre' ? 'pierre-lisse' : st.mur);
+  if (st.mur === 'pierre') {
+    for (let i = 0; i < 4; i++) {
+      const t0 = i / 4, t1 = (i + 1) / 4 - 0.02;
+      if (i % 2 === 0) f.boite(0, 0.62, t0, t1, 0, 0.035, 'pierre-lisse');
+      else f.boite(0.38, 1, t0, t1, 0, 0.035, 'pierre-lisse');
+    }
+  }
+  if (plaque) plaqueDeRue(f);
+}
+
+function corniche(f, st) {
   f.plan(0, 1, 0, 1, 0, 'pierre-lisse');
-  f.boite(0, 1, 0.0, 0.3, 0, 0.08, 'pierre-lisse');
-  f.boite(0, 1, 0.3, 0.6, 0, 0.18, 'pierre-lisse');
-  f.boite(0, 1, 0.6, 0.78, 0, 0.3, 'pierre-lisse');
-  f.boite(0, 1, 0.78, 1.0, 0, 0.36, 'pierre-lisse');
-  for (let i = 0; i < 4; i++) {
-    const s = 0.08 + i * 0.25;
-    f.boite(s, s + 0.09, 0.32, 0.58, 0.18, 0.3, 'pierre-lisse', 0.9);
+  if (st.corniche >= 3) {
+    // TROIS RESSAUTS ET UN RANG DE MODILLONS : c'est la ligne d'ombre qui
+    // couronne la façade, celle qu'on lit de l'autre bout du boulevard.
+    f.boite(0, 1, 0.0, 0.3, 0, 0.08, 'pierre-lisse');
+    f.boite(0, 1, 0.3, 0.6, 0, 0.18, 'pierre-lisse');
+    f.boite(0, 1, 0.6, 0.78, 0, 0.3, 'pierre-lisse');
+    f.boite(0, 1, 0.78, 1.0, 0, 0.36, 'pierre-lisse');
+    for (let i = 0; i < 4; i++) {
+      const s = 0.08 + i * 0.25;
+      f.boite(s, s + 0.09, 0.32, 0.58, 0.18, 0.3, 'pierre-lisse', 0.9);
+    }
+  } else if (st.corniche === 2) {
+    f.boite(0, 1, 0.0, 0.5, 0, 0.1, 'pierre-lisse');
+    f.boite(0, 1, 0.5, 1.0, 0, 0.22, 'pierre-lisse');
+  } else {
+    // la corniche des vieux quartiers : une simple avancée de toit
+    f.plan(0, 1, 0, 0.7, 0, st.mur);
+    f.boite(0, 1, 0.7, 1.0, 0, 0.2, 'pierre-lisse');
   }
 }
 
@@ -468,19 +547,22 @@ function mansarde(f, r, allumee, lucarne) {
   }
 }
 
-function murNu(f) {
-  f.plan(0, 1, 0, 1, 0, 'pierre');
+function murNu(f, st) {
+  f.plan(0, 1, 0, 1, 0, st.mur);
 }
 
 // --- l'entrée : une face de façade exposée --------------------------------------------
 
 // `face` est une entrée de `FACES` (mesher.js) horizontale ; (x, y, z) le bloc en
 // coordonnées locales du morceau ; (wx, wy, wz) en coordonnées du monde ;
-// `ao` ses quatre coins d'occlusion, dans l'ordre du mailleur.
-export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao) {
+// `ao` ses quatre coins d'occlusion, dans l'ordre du mailleur ; `bas` le bloc
+// juste en dessous (la plaque de rue va sur le PREMIER chaînage au-dessus du
+// rez-de-chaussée).
+export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR) {
   const info = infoFacadeParis(wx, wz);
   const graine = info ? info.graine : 0.5;
-  const teinte = PIERRES[Math.floor(graine * PIERRES.length) % PIERRES.length];
+  const st = styleDuQuartier(info ? info.quartier : '');
+  const teinte = st.teintes[Math.floor(graine * st.teintes.length) % st.teintes.length];
   // Le courant : la coordonnée du monde le long de la face, pour que la
   // texture continue d'un bloc à l'autre.
   const courant = face.dir[0] !== 0 ? (face.dir[0] > 0 ? -wz : wz) : (face.dir[2] > 0 ? wx : -wx);
@@ -488,16 +570,172 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao) {
   const r = tirage(wx, wz, 811);
   const allumee = vitreAllumee(wx, wy, wz);
   switch (id) {
-    case ARCHI.ETAGE: etage(f, r, allumee, false); break;
-    case ARCHI.NOBLE: etage(f, r, allumee, true); break;
-    case ARCHI.ENTRESOL: entresol(f, r, allumee); break;
-    case ARCHI.VITRINE: vitrine(f, graine, allumee); break;
-    case ARCHI.PORTE: porte(f, r); break;
-    case ARCHI.CHAINAGE: chainage(f); break;
-    case ARCHI.CORNICHE: corniche(f); break;
+    case ARCHI.ETAGE: etage(f, r, allumee, false, st); break;
+    case ARCHI.NOBLE: etage(f, r, allumee, true, st); break;
+    case ARCHI.ENTRESOL: entresol(f, r, allumee, st); break;
+    case ARCHI.VITRINE: vitrine(f, graine, allumee, st); break;
+    case ARCHI.PORTE: porte(f, r, st); break;
+    case ARCHI.CHAINAGE: chainage(f, st, bas !== ARCHI.CHAINAGE); break;
+    case ARCHI.CORNICHE: corniche(f, st); break;
     case ARCHI.MANSARDE: mansarde(f, r, allumee, true); break;
     case ARCHI.ZINC_LISSE: mansarde(f, r, allumee, false); break;
-    default: murNu(f);
+    default: murNu(f, st);
+  }
+}
+
+// --- les arbres et le mobilier : des maillages dans `facades` ------------------------
+
+// Un sommet libre dans le tampon HD, en coordonnées locales du morceau ; les UV
+// sont donnés en unités du monde et repliés dans la tuile par le shader.
+function sommetLibre(buf, p, n, uv, tuile, teinte, ombre, lueur = 0) {
+  return buf.sommet(p, n, uv, rectHD(tuile), [teinte[0] * ombre, teinte[1] * ombre, teinte[2] * ombre], M[tuile] || M.pierre, lueur);
+}
+
+// Un cylindre debout à `n` pans, de rayon `r0` en bas et `r1` en haut, entre
+// y0 et y1, centré en (cx, cz). Sans fond ni couvercle sauf demande.
+function cylindre(buf, cx, cz, y0, y1, r0, r1, n, tuile, teinte, ombre, couvercle = false) {
+  const anneau = (y, r) => {
+    const ids = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const nx = Math.cos(a), nz = Math.sin(a);
+      ids.push(sommetLibre(buf, [cx + nx * r, y, cz + nz * r], [nx, 0, nz], [(i / n) * 2, y], tuile, teinte, ombre * (0.75 + 0.25 * (nx * 0.6 + 0.8))));
+    }
+    return ids;
+  };
+  const bas = anneau(y0, r0), haut = anneau(y1, r1);
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    buf.quadIndices(bas[i], bas[j], haut[j], haut[i]);
+  }
+  if (couvercle) {
+    const c = sommetLibre(buf, [cx, y1, cz], [0, 1, 0], [cx, cz], tuile, teinte, ombre);
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const a = sommetLibre(buf, [cx + Math.cos((i / n) * Math.PI * 2) * r1, y1, cz + Math.sin((i / n) * Math.PI * 2) * r1], [0, 1, 0], [0, 0], tuile, teinte, ombre);
+      const b = sommetLibre(buf, [cx + Math.cos((j / n) * Math.PI * 2) * r1, y1, cz + Math.sin((j / n) * Math.PI * 2) * r1], [0, 1, 0], [0, 0], tuile, teinte, ombre);
+      buf.indices.push(c, b, a);
+    }
+  }
+}
+
+// Une boîte alignée sur les axes, en coordonnées locales, six faces.
+function pave(buf, x0, x1, y0, y1, z0, z1, tuile, teinte, ombre) {
+  const F = [
+    [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1]],
+    [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1]],
+    [[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0]],
+    [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0]],
+    [[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0]],
+    [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, -1, 0]],
+  ];
+  for (const [a, b, c, d, n] of F) {
+    const o = n[1] > 0 ? ombre : n[1] < 0 ? ombre * 0.5 : ombre * 0.85;
+    const uv = (p) => (n[1] !== 0 ? [p[0], p[2]] : n[0] !== 0 ? [p[2], p[1]] : [p[0], p[1]]);
+    const ids = [a, b, c, d].map((p) => sommetLibre(buf, p, n, uv(p), tuile, teinte, o));
+    buf.quadIndices(ids[0], ids[1], ids[2], ids[3]);
+  }
+}
+
+// L'ARBRE. Le voxel plante un fût de blocs de bois et une couronne de blocs de
+// feuilles ; de loin ils restent ce qu'ils sont (dans `plat`). De près, on
+// dessine un arbre : un fût à huit pans qui s'effile, et une couronne
+// ellipsoïdale de feuillage ajouré (alpha) qui ÉPOUSE la boîte des feuilles —
+// c'est la boîte qui décide, donc un marronnier d'avenue et un arbre de square
+// n'ont pas la même couronne. Les rayons ondulent d'un sommet à l'autre, sans
+// quoi la couronne est un œuf.
+//
+// (x, y, z) : la base du tronc, locale ; `h` la hauteur de bois ; `boite` les
+// feuilles : { x0, x1, y0, y1, z0, z1 } en local, bornes incluses.
+const VERTS = [[0.55, 0.72, 0.3], [0.5, 0.66, 0.28], [0.62, 0.74, 0.34], [0.48, 0.62, 0.3]];
+export function arbreHD(buf, x, y, z, wx, wz, h, boite) {
+  const g = tirage(wx, wz, 909);
+  const cx = x + 0.5, cz = z + 0.5;
+  // LA COURONNE EST CENTRÉE SUR SON TRONC, et ses rayons sont bornés : sur les
+  // Champs-Élysées les marronniers sont plantés tous les trois blocs, et une
+  // boîte qui avale les feuilles du voisin faisait de la rangée une HAIE plate
+  // de sept blocs de large (première capture). Un peu plus haute que large,
+  // comme un arbre d'alignement taillé.
+  const rx = Math.min(2.2, Math.max(1.3, (boite.x1 - boite.x0 + 1) / 2)) + 0.2 + g * 0.2;
+  const rz = Math.min(2.2, Math.max(1.3, (boite.z1 - boite.z0 + 1) / 2)) + 0.2 + (1 - g) * 0.2;
+  const cy = (boite.y0 + boite.y1 + 1) / 2 + 0.2, ry = Math.max(1.6, (boite.y1 - boite.y0 + 1) / 2 + 0.3) * 1.15;
+  const ccx = cx, ccz = cz;
+  // le fût, jusque dans la couronne
+  cylindre(buf, cx, cz, y, cy, 0.2 + g * 0.06, 0.1, 8, 'ecorce', [1, 1, 1], 1);
+  // deux branches maîtresses qui partent dans la couronne
+  cylindre(buf, cx + 0.1, cz - 0.1, cy - ry * 0.5, cy + ry * 0.4, 0.08, 0.03, 5, 'ecorce', [1, 1, 1], 0.9);
+  cylindre(buf, cx - 0.12, cz + 0.08, cy - ry * 0.4, cy + ry * 0.5, 0.08, 0.03, 5, 'ecorce', [1, 1, 1], 0.9);
+  // la couronne : un ellipsoïde à 8 méridiens et 5 parallèles, rayons ondulés
+  const vert = VERTS[Math.floor(g * VERTS.length) % VERTS.length];
+  const NM = 8, NP = 5;
+  const anneaux = [];
+  for (let p = 0; p <= NP; p++) {
+    const phi = -Math.PI / 2 + (p / NP) * Math.PI;
+    const ids = [];
+    for (let m = 0; m < NM; m++) {
+      const th = (m / NM) * Math.PI * 2 + (p % 2) * (Math.PI / NM);
+      const ond = 1 + (tirage(wx * 7 + m, wz * 5 + p, 913) - 0.5) * 0.28;
+      const px = ccx + Math.cos(phi) * Math.cos(th) * rx * ond;
+      const pz = ccz + Math.cos(phi) * Math.sin(th) * rz * ond;
+      const py = cy + Math.sin(phi) * ry * (p === 0 ? 0.85 : ond);
+      const n = [Math.cos(phi) * Math.cos(th), Math.sin(phi), Math.cos(phi) * Math.sin(th)];
+      // le dessous plus sombre, le dessus au soleil
+      const ombre = 0.62 + 0.38 * (Math.sin(phi) * 0.5 + 0.5);
+      ids.push(sommetLibre(buf, [px, py, pz], n, [wx + (m / NM) * 3, (p / NP) * 3], 'feuillage', vert, ombre));
+    }
+    anneaux.push(ids);
+  }
+  for (let p = 0; p < NP; p++) {
+    for (let m = 0; m < NM; m++) {
+      const j = (m + 1) % NM;
+      buf.quadIndices(anneaux[p][m], anneaux[p][j], anneaux[p + 1][j], anneaux[p + 1][m]);
+    }
+  }
+}
+
+// LE POTELET : la borne de fonte à tête ronde qui borde tout trottoir de
+// Paris, au bord du caniveau, une tous les deux blocs. `cote` dit de quel côté
+// est la rue ('px', 'mx', 'pz', 'mz').
+const FONTE = [0.16, 0.2, 0.18];
+export function poteletHD(buf, x, y, z, cote) {
+  const d = 0.3;
+  const cx = x + (cote === 'px' ? 1 - d : cote === 'mx' ? d : 0.5);
+  const cz = z + (cote === 'pz' ? 1 - d : cote === 'mz' ? d : 0.5);
+  const yt = y + 1 + RELEVE;
+  cylindre(buf, cx, cz, yt, yt + 0.82, 0.05, 0.045, 6, 'fonte', FONTE, 1);
+  cylindre(buf, cx, cz, yt + 0.82, yt + 0.9, 0.07, 0.04, 6, 'fonte', FONTE, 1, true);
+}
+
+// LA TERRASSE DE CAFÉ : une table ronde à pied de fonte et deux chaises de
+// cannage, sur le trottoir devant une devanture. `vers` est la direction de la
+// façade ([dx, dz]) : les chaises lui tournent le dos.
+const ROTIN = [1, 1, 1];
+export function terrasseHD(buf, x, y, z, wx, wz, vers) {
+  const yt = y + 1 + RELEVE;
+  const cx = x + 0.5 - vers[0] * 0.05, cz = z + 0.5 - vers[1] * 0.05;
+  // la table : un pied, un plateau rond
+  cylindre(buf, cx, cz, yt, yt + 0.68, 0.03, 0.03, 5, 'fonte', FONTE, 1);
+  cylindre(buf, cx, cz, yt, yt + 0.03, 0.16, 0.16, 8, 'fonte', FONTE, 1, true);
+  cylindre(buf, cx, cz, yt + 0.68, yt + 0.72, 0.28, 0.28, 10, 'fonte', [0.9, 0.9, 0.9], 1, true);
+  // deux chaises, de part et d'autre de la table le long de la façade
+  const lx = -vers[1], lz = vers[0];
+  for (const k of [-1, 1]) {
+    const sx = cx + lx * 0.34 * k, sz = cz + lz * 0.34 * k;
+    pave(buf, sx - 0.16, sx + 0.16, yt + 0.4, yt + 0.44, sz - 0.16, sz + 0.16, 'rotin', ROTIN, 1);
+    for (const [ax, az] of [[-0.13, -0.13], [0.13, -0.13], [-0.13, 0.13], [0.13, 0.13]]) {
+      pave(buf, sx + ax - 0.015, sx + ax + 0.015, yt, yt + 0.4, sz + az - 0.015, sz + az + 0.015, 'fonte', FONTE, 1);
+    }
+    // le dossier, du côté opposé à la table
+    const bx = sx + lx * 0.15 * k, bz = sz + lz * 0.15 * k;
+    pave(buf, bx - (lx ? 0.02 : 0.16), bx + (lx ? 0.02 : 0.16), yt + 0.44, yt + 0.86, bz - (lz ? 0.02 : 0.16), bz + (lz ? 0.02 : 0.16), 'rotin', ROTIN, 1);
+  }
+}
+
+// LES MITRES DE CHEMINÉE : sur chaque souche de terre cuite, trois pots.
+export function mitresHD(buf, x, y, z) {
+  const yt = y + 1;
+  for (const [dx, dz] of [[0.25, 0.5], [0.5, 0.5], [0.75, 0.5]]) {
+    cylindre(buf, x + dx, z + dz, yt, yt + 0.28, 0.08, 0.1, 6, 'brique', [0.98, 0.9, 0.84], 1, true);
   }
 }
 

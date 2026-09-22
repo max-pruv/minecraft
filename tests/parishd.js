@@ -127,6 +127,77 @@ function verifier(nom, ok, detail = '') {
       `${marquage} sommets de marquage, ${bordure} de bordure en relief, trottoir relevé ${trottoir} (à plat ${trottoirBas})`);
   }
 
+  // --- v288 : les quartiers, les arbres, le mobilier -----------------------------
+  // On classe les sommets par leur TUILE (le rectangle d'atlas qu'ils portent),
+  // pas par leur matière : deux tuiles peuvent partager une rugosité.
+  const rectDe = HD.rectHD;
+  const compteTuile = (g, nom) => {
+    if (!g || !rectDe) return 0;
+    const r = rectDe(nom);
+    let n = 0;
+    for (let i = 0; i < nb(g); i++) if (Math.abs(g.tiles[i * 4] - r[0]) < 1e-5 && Math.abs(g.tiles[i * 4 + 1] - r[1]) < 1e-5) n++;
+    return n;
+  };
+  {
+    // Le Marais n'est pas Monceau : un mur d'enduit et des volets d'un côté, de
+    // la pierre de taille et aucun volet de l'autre.
+    // Le morceau témoin du Marais se CHERCHE : le centre du quartier tombe sur
+    // une place, et un morceau sans façade ne prouverait rien (v285 : un témoin
+    // qui écrit son terrain se trompe de terrain).
+    const { infoFacadeParis } = await import('../src/paris.js');
+    const [mx, mz] = adresseParis(0.9, -0.35);
+    let marais = null, ou = null;
+    boucleM: for (let r = 0; r <= 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      const kx = Math.floor(mx / CHUNK) + dx, kz = Math.floor(mz / CHUNK) + dz;
+      const i = infoFacadeParis(kx * CHUNK + CHUNK / 2, kz * CHUNK + CHUNK / 2);
+      if (!i || i.quartier !== 'Marais') continue;
+      const t = tampons(1, kx, kz);
+      if (nb(t.t.facades) > 2000) { marais = t; ou = [kx, kz]; break boucleM; }
+    }
+    if (!marais) marais = tampons(1, Math.floor(mx / CHUNK), Math.floor(mz / CHUNK));
+    console.log(`   🔎 morceau du Marais : ${ou ? ou.join(',') : 'aucun avec façades'}`);
+    const enduitM = compteTuile(marais.t.facades, 'enduit'), voletM = compteTuile(marais.t.facades, 'volet');
+    const pierreM = compteTuile(marais.t.facades, 'pierre');
+    const enduitH = compteTuile(avec.t.facades, 'enduit'), voletH = compteTuile(avec.t.facades, 'volet');
+    const pierreH = compteTuile(avec.t.facades, 'pierre');
+    verifier('chaque quartier a son registre : enduit et volets au Marais, pierre de taille à Haussmann',
+      enduitM > 100 && voletM > 50 && pierreM === 0 && pierreH > 100 && enduitH === 0 && voletH === 0,
+      `Marais enduit ${enduitM} · volets ${voletM} · pierre ${pierreM} — Haussmann pierre ${pierreH} · enduit ${enduitH} · volets ${voletH}`);
+    // La plaque de rue, au coin de l'immeuble, sur le premier chaînage.
+    verifier('les coins portent une plaque de rue', compteTuile(avec.t.facades, 'plaque') > 0,
+      `${compteTuile(avec.t.facades, 'plaque')} sommets de plaque`);
+    // Le mobilier : des potelets au bord du caniveau, et des terrasses.
+    const fonte = compteTuile(avec.t.facades, 'fonte'), rotin = compteTuile(avec.t.facades, 'rotin');
+    verifier('des potelets de fonte bordent le trottoir', fonte > 0, `${fonte} sommets de fonte, ${rotin} de cannage`);
+  }
+  {
+    // UN ARBRE HD PAR TRONC. On cherche un morceau de Paris qui plante des
+    // arbres (autour du morceau témoin), on compte ses bases de tronc dans les
+    // BLOCS, et l'on exige autant de fûts maillés — et plus une seule face de
+    // bois ou de feuilles dans `solid` : elles sont toutes passées dans `plat`.
+    let trouve = null;
+    boucle: for (let r = 0; r <= 4; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      const t = tampons(1, cx + dx, cz + dz);
+      let troncs = 0;
+      for (let y = 1; y < HEIGHT - 1; y++) for (let z = 0; z < CHUNK; z++) for (let x = 0; x < CHUNK; x++) {
+        const i = x + z * CHUNK + y * CHUNK * CHUNK;
+        if (t.data[i] === BLOCK.LOG && t.data[i - CHUNK * CHUNK] !== BLOCK.LOG) troncs++;
+      }
+      if (troncs > 0) { trouve = { t, troncs, cx: cx + dx, cz: cz + dz }; break boucle; }
+    }
+    if (!trouve) {
+      verifier('un morceau de Paris avec des arbres existe près du témoin', false, 'aucun tronc dans 81 morceaux');
+    } else {
+      const ecorce = compteTuile(trouve.t.t.facades, 'ecorce'), feuillage = compteTuile(trouve.t.t.facades, 'feuillage');
+      // un fût = 8 pans × 2 anneaux = 16 sommets ; deux branches de 5 pans = 20 ; 36 par arbre
+      const futs = ecorce / 36;
+      const sans = tampons(0, trouve.cx, trouve.cz);
+      verifier('un arbre maillé par tronc, et les blocs de l\'arbre passent au loin',
+        Math.abs(futs - trouve.troncs) < 0.01 && feuillage > 0 && nb(trouve.t.t.solid) < nb(sans.t.solid),
+        `${trouve.troncs} tronc(s), ${futs} fût(s) maillé(s), ${feuillage} sommets de feuillage ; solid ${nb(sans.t.solid)} → ${nb(trouve.t.t.solid)} (morceau ${trouve.cx},${trouve.cz})`);
+    }
+  }
+
   const campagne = tampons(1, Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK));
   verifier('hors de Paris, la couche allumée ne change rien',
     !couvreHD(Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK), CHUNK) && !campagne.t.sol && !campagne.t.facades && !campagne.t.plat);
@@ -156,29 +227,42 @@ function verifier(nom, ok, detail = '') {
       g.player.pos.set(x + 0.5, y + 2, z + 0.5); g.player.vel.set(0, 0, 0);
       const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
       const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
-      const cle = (dx, dz) => `${cx + dx},${cz + dz}`;
+      // LE LOINTAIN, C'EST N'IMPORTE QUEL MORCEAU AU-DELÀ DU RAYON HD. Le
+      // premier jet guettait trois morceaux nommés « à cinq » et dormait
+      // quarante secondes : à rr=6 la page rend 0,75 image par seconde en
+      // rendu logiciel, le fil principal installe les morceaux au rythme des
+      // images, et ces trois-là arrivaient à 41 et 43 s — celui de l'autre
+      // côté dès 22 s (sonde-hd-lod.cjs). Le témoin mesurait l'ordre d'arrivée
+      // de la file, pas le relais. On attend le RÉSULTAT, borné, et le temps
+      // pris entre dans le message (v270).
+      const loinDe = g.RAYON_HD + 2;
       const t0 = performance.now();
-      while (performance.now() - t0 < 40000) {
+      let ici = null, loin = null, cleLoin = null;
+      while (performance.now() - t0 < 90000) {
         await dodo(500);
-        const ici = g.chunkMeshes.get(cle(0, 0)), loin = g.chunkMeshes.get(cle(5, 0)) || g.chunkMeshes.get(cle(-5, 0)) || g.chunkMeshes.get(cle(0, 5));
-        if (ici && ici.facades && loin && (loin.plat || loin.facades)) {
-          await dodo(300);
-          return {
-            attente: Math.round(performance.now() - t0),
-            iciDetail: ici.facades.visible, iciPlat: ici.plat ? ici.plat.visible : null,
-            loinDetail: loin.facades ? loin.facades.visible : null, loinPlat: loin.plat ? loin.plat.visible : null,
-            atlas: !!g.atlasHD, rayon: g.RAYON_HD, appels: g.renderer.info.render.calls,
-            morceauxHD: [...g.chunkMeshes.values()].filter((e) => e.facades).length,
-          };
+        ici = g.chunkMeshes.get(`${cx},${cz}`);
+        loin = null;
+        for (const [k, e] of g.chunkMeshes) {
+          const [a, b] = k.split(',').map(Number);
+          if (Math.max(Math.abs(a - cx), Math.abs(b - cz)) >= loinDe && (e.plat || e.facades)) { loin = e; cleLoin = k; break; }
         }
+        if (ici && ici.facades && loin) break;
       }
-      return { attente: 40000, ici: !!g.chunkMeshes.get(cle(0, 0)), loin: !!g.chunkMeshes.get(cle(5, 0)) };
+      if (ici && ici.facades && loin) await dodo(300);
+      return {
+        trouve: !!(ici && ici.facades && loin), attente: Math.round(performance.now() - t0),
+        ici: !!ici, iciFacades: !!(ici && ici.facades), cleLoin, loinDe,
+        iciDetail: ici && ici.facades ? ici.facades.visible : null, iciPlat: ici && ici.plat ? ici.plat.visible : null,
+        loinDetail: loin && loin.facades ? loin.facades.visible : null, loinPlat: loin && loin.plat ? loin.plat.visible : null,
+        atlas: !!g.atlasHD, rayon: g.RAYON_HD, appels: g.renderer.info.render.calls,
+        morceaux: g.chunkMeshes.size, morceauxHD: [...g.chunkMeshes.values()].filter((e) => e.facades).length,
+      };
     }, [px, pz]);
     verifier('sous l\'enfant, le détail est visible et la tuile plate cachée',
       res.iciDetail === true && res.iciPlat === false, JSON.stringify(res));
-    verifier('à cinq morceaux, la tuile plate est visible et le détail caché',
-      res.loinPlat === true && res.loinDetail === false, JSON.stringify(res));
-    verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2);
+    verifier('au-delà du rayon HD, la tuile plate est visible et le détail caché',
+      res.loinPlat === true && res.loinDetail === false, `${res.cleLoin} (≥ ${res.loinDe} morceaux) en ${res.attente} ms · ${JSON.stringify(res)}`);
+    verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
 
@@ -196,11 +280,23 @@ function verifier(nom, ok, detail = '') {
       }
       await dodo(1500);
       const entrees = [...g.chunkMeshes.values()];
-      return { morceaux: entrees.length, hd: entrees.filter((e) => e.facades || e.sol || e.plat).length, atlas: !!g.atlasHD, rayon: g.RAYON_HD };
+      // LE RÉVERBÈRE PARISIEN COÛTE DEUX APPELS DE DESSIN (v288) : sa fonte est
+      // fusionnée, la lanterne à part. Le premier jet en douze maillages avait
+      // fait passer une rue de 1 100 à 2 500 appels.
+      let reverbere = null;
+      try {
+        const { buildPropMesh } = await import('./src/props.js');
+        const { RUE } = await import('./src/blocks.js');
+        const r = buildPropMesh(RUE.REVERBERE);
+        reverbere = r ? r.children.length : null;
+      } catch (e) { reverbere = String(e && e.message || e); }
+      return { morceaux: entrees.length, hd: entrees.filter((e) => e.facades || e.sol || e.plat).length, atlas: !!g.atlasHD, rayon: g.RAYON_HD, reverbere };
     }, [px, pz]);
     verifier('avec ?hd=0, rien de HD n\'est installé — ni maillage, ni atlas',
       res0.morceaux > 0 && res0.hd === 0 && res0.atlas === false && res0.rayon === 0, JSON.stringify(res0));
     verifier('aucune erreur JavaScript sans HD', bas.erreurs.length === 0, JSON.stringify(bas.erreurs.slice(0, 3)));
+    verifier('le réverbère parisien coûte deux maillages : la fonte fusionnée, la lanterne',
+      res0.reverbere === 2, `${res0.reverbere} maillage(s)`);
   } finally {
     await banc.fermer();
   }

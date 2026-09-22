@@ -20,6 +20,19 @@ const VUES = [
   { nom: 'ciel', dx: -1.2, dz: -0.5, yaw: Math.PI / 2, pitch: -0.5, h: 45 },
   { nom: 'nuit-rue', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, heure: 0.0 },
   { nom: 'eiffel', dx: -3.6, dz: 0.9, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
+  // v288 : les quartiers, les arbres, le mobilier (adresses ABSOLUES, mesurées
+  // par le témoin de parishd.js — le centre d'un quartier est une place)
+  { nom: 'marais', x: -200, z: 200, yaw: Math.PI / 2, pitch: 0.12, h: 1.6, rue: true },
+  { nom: 'marais-face', x: -200, z: 200, yaw: 0, pitch: 0.25, h: 1.6, rue: true },
+  { nom: 'marais-est', x: -200, z: 200, yaw: -Math.PI / 2, pitch: 0.1, h: 1.6, rue: true },
+  { nom: 'marais-ciel', x: -200, z: 200, yaw: -Math.PI / 2, pitch: -0.7, h: 18, rue: true },
+  { nom: 'arbres', x: -264, z: 168, yaw: -Math.PI / 2, pitch: 0.1, h: 1.6, rue: true },
+  { nom: 'trottoir', dx: -1.7, dz: 0.8, yaw: Math.PI, pitch: 0.3, h: 1.4, rue: true, trottoir: true },
+  // les Champs-Élysées, au milieu de l'avenue, cap sur l'Étoile : les marronniers
+  { nom: 'champs', dx: -4.3, dz: -1.25, yaw: Math.PI / 2, pitch: 0.08, h: 1.6 },
+  { nom: 'champs-trottoir', dx: -4.3, dz: -1.12, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
+  { nom: 'champs-est', x: -330, z: 190, yaw: -Math.PI / 2, pitch: 0.06, h: 1.6 },
+  { nom: 'cour', x: -265, z: 169, yaw: Math.PI, pitch: -0.75, h: 14 },
 ];
 
 (async () => {
@@ -29,16 +42,21 @@ const VUES = [
     await souffler();
     const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' });
     for (const v of VUES.filter((v) => !process.argv[4] || process.argv[4].split(',').includes(v.nom))) {
+      // UNE VUE QUI ÉCHOUE LE DIT, et les suivantes se prennent quand même : le
+      // `finally` d'en bas sort en zéro et avalait l'erreur en silence.
+      try {
       const info = await page.evaluate(async (v) => {
         const g = window.__game;
         const { adresseParis } = await import('./src/paris.js');
-        let [x, z] = adresseParis(v.dx, v.dz);
+        let [x, z] = v.x !== undefined ? [v.x, v.z] : adresseParis(v.dx, v.dz);
         if (v.rue) {
-          // le milieu de la première chaussée trouvée, face à une façade
+          // le milieu de la première chaussée trouvée, face à une façade — ou,
+          // pour `trottoir`, le trottoir lui-même devant la façade
           const { solParis } = await import('./src/paris.js');
-          const { ARCHI } = await import('./src/blocks.js');
+          const { ARCHI, CITY_BLOCK } = await import('./src/blocks.js');
+          const vise = v.trottoir ? CITY_BLOCK.SIDEWALK : ARCHI.PAVE;
           cherche: for (let r = 0; r < 12; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
-            if (solParis(x + dx, z + dz) === ARCHI.PAVE && solParis(x + dx, z + dz - 3) === null) { x += dx; z += dz; break cherche; }
+            if (solParis(x + dx, z + dz) === vise && solParis(x + dx, z + dz - 3) === null) { x += dx; z += dz; break cherche; }
           }
         }
         const y = g.world.terrainHeight(x, z);
@@ -57,8 +75,9 @@ const VUES = [
         return { x, z, y, appels: info.render.calls, tri: info.render.triangles, morceaux: g.chunkMeshes.size };
       }, v);
       const f = path.join(dossier, `${tag}-${v.nom}.png`);
-      await page.screenshot({ path: f });
+      await page.screenshot({ path: f, timeout: 120000 });
       console.log(v.nom, JSON.stringify(info), '→', f);
+      } catch (e) { console.log(v.nom, 'ÉCHEC :', String(e && e.message || e).split('\n')[0]); }
     }
   } finally {
     await banc.fermer();

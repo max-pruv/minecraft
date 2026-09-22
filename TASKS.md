@@ -67,6 +67,60 @@
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
   blocs, elle n'en écrit aucun.
 
+  **État (v288).** PR1 livrée (v287) ; PR2 livrée en deux temps — la v288 porte
+  les registres par quartier, les arbres maillés, les potelets, terrasses,
+  plaques, mitres et le réverbère parisien. Ce qui reste de la PR2, pour la
+  suivante : le comble à la Mansart en géométrie, les colonnes Morris, kiosques,
+  bancs et corbeilles, les monuments héros (`herosparis.js` / `monumentshd.js`
+  : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du Louvre, Sacré-Cœur,
+  Panthéon, Opéra, Invalides, Montparnasse). Dettes déclarées de la v288 :
+  - [ ] une chaise de terrasse HD n'arrête ni un passant ni une voiture (ce
+    n'est pas un `prop`, donc pas un obstacle de `mobilierDevant`) — à régler
+    avec la PR4, où les obstacles de la conduite se refont ;
+  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+    large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
+    entière — une tuile à part pour les petites baies ;
+  - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non
+    l'avenue : `solParis` fait passer un jardin avant l'axe — à mesurer avant
+    les monuments héros (l'Arc et la Concorde sont aux deux bouts).
+
+- [ ] **LE PORTAIL DE LA v288 (PR2 Paris) : SEPT SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN — ET UN TÉMOIN DE LA PR QUI MESURAIT L'ORDRE DE LA FILE.**
+  Seize suites, 83 minutes (le conteneur a redémarré deux fois dans la
+  journée, et la machine rend 0,75 image par seconde à `rr=6` avec la couche
+  HD). Chaque rouge rejoué SEUL, sur la branche puis sur `origin/main`
+  (`/root/main-ref`, ca2e992) quand il restait rouge :
+
+  | suite | au portail | seule, branche | seule, `origin/main` |
+  | --- | --- | --- | --- |
+  | `parishd.js` | près/loin `{attente:40000, loin:false}` ×2, atlas | ❌ identique → **témoin corrigé**, ✅ 23/23, lointain en 15 437 ms | — |
+  | `carte.js` | fond de carte 413 ms (borne 400) | ✅ 283 ms | — |
+  | `reseau.js` | départ propre · endormi | ✅ entièrement verte (1 034 s) | — |
+  | `maj.js` | libération `null` · la page ne floute rien | ❌ identique (4/9 corps, 4/25 programmes) | ❌ identique (1/9, 9/25) |
+  | `reglages.js` | l'autre tablette : serveur `"fr"` | ❌ identique | ❌ identique |
+  | `monte.js` | piéton `avance 5,8` · chevauchements 62 · figé 5 516 ms / 40,4 % | ❌ figé seul : 4 733 ms / 36,2 % | ❌ figé 5 183 ms / 39,9 % **ET** « une voiture n'entre pas dans l'eau » (reculé 1,19) |
+  | `manhattan.js` | délai (aucun témoin rouge imprimé) | non rejouée : dette v269/v285, code inchangé | — |
+
+  Le piéton et les chevauchements de `monte.js`, le fond de carte de `carte.js`
+  et les deux témoins de `reseau.js` sont des durées ou des tirages sous la
+  charge du portail (v270, v277) : verts seuls. `maj.js` et `reglages.js` sont
+  les dettes des v284/v285, au même relevé des deux côtés. `origin/main` rend
+  un rouge de PLUS que la branche sur `monte.js` (le quai) : la livraison ne
+  dégrade rien. Rien du diff — façades HD, matières, réverbère, journal — n'a
+  de chemin vers le réseau, les réglages, le loader ou la carte.
+
+  **Et le rouge de `parishd.js` était celui d'un témoin, pas du jeu.** Il
+  guettait trois morceaux NOMMÉS « à cinq » et dormait quarante secondes ; la
+  sonde `sonde-hd-lod.cjs` a montré le relais juste dès 3 s, le worker vivant,
+  et ces trois morceaux arrivant à 41 et 43 s (celui de l'autre côté dès 22 s)
+  parce que le fil principal installe les morceaux au rythme des images. Il
+  prend désormais tout morceau au-delà du rayon HD, borné à 90 s, durée dans
+  le message. Ce que ce rouge laisse ouvert : la cadence d'installation des
+  morceaux SUIT la cadence d'affichage (un réapprovisionnement de la file par
+  image, v265/v269) — à 0,75 image par seconde, trois morceaux par seconde
+  pour une file de huit. C'est un fait du jeu sur un rendu logiciel, pas une
+  régression ; sur l'iPad la cadence est vingt fois plus haute.
+
 - [ ] **LE PORTAIL DE LA v287 (PR1 Paris HD) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** `manhattan.js` et `monte.js` rendent exactement les rouges
   déclarés ci-dessous (v285 : le trou de façade, la nuit, les ombres `[1,-1]` ;

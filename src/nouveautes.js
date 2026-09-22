@@ -6,6 +6,19 @@
 
 export const NOUVEAUTES = [
   {
+    v: 288,
+    titre: 'Le Marais, les arbres, les terrasses',
+    puces: [
+      'Le Marais a ses volets et son enduit',
+      'Montmartre et Belleville aussi',
+      'De vrais arbres, avec des feuilles',
+      'Des potelets le long des trottoirs',
+      'Des terrasses devant les boutiques',
+      'Des plaques de rue aux coins',
+      'Les réverbères sont parisiens',
+    ],
+  },
+  {
     v: 287,
     titre: 'Paris en relief',
     puces: [

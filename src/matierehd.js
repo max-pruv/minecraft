@@ -275,6 +275,83 @@ const PEINTRES = {
       if (joint) p(x, y, 168, 160, 150); else p(x, y, 158 + n, 82 + n * 0.6, 64 + n * 0.5);
     });
   },
+  // --- v288 : les quartiers, les arbres, le mobilier ---
+  // L'enduit des vieux quartiers : blanc cassé (la teinte vient du sommet), un
+  // grain fin, des taches d'humidité en bas et des cloques par endroits.
+  enduit(p, rempli, N) {
+    rempli((x, y) => {
+      const n = (bruit(x, y, 61) - 0.5) * 10 + bruitLisse(x, y, 21, 62) * 16 - 8;
+      const humide = bruitLisse(x, y, 32, 63) * (0.4 + 0.6 * (y / N));
+      const cloque = bruitLisse(x, y, 6, 64) > 0.82 ? -14 : 0;
+      const v = 226 + n - humide * 26 + cloque;
+      p(x, y, v, v - 2, v - 8);
+    });
+  },
+  // Le volet à persiennes : des lames horizontales, un cadre, peint en gris
+  // vert — la couleur des volets de Paris.
+  volet(p, rempli, N) {
+    rempli((x, y) => {
+      const cadre = x < 8 || x > N - 9 || y < 8 || y > N - 9;
+      const lame = (y % 12) < 4;
+      const n = (bruit(x, y, 65) - 0.5) * 10 + bruitLisse(x, y * 0.1, 9, 66) * 10 - 5;
+      let v = cadre ? 0 : lame ? -34 : 6;
+      p(x, y, 112 + v + n, 128 + v + n, 118 + v + n);
+    });
+  },
+  // L'écorce : des sillons verticaux sombres, une lumière rasante.
+  ecorce(p, rempli, N) {
+    rempli((x, y) => {
+      const sillon = bruitLisse(x, y * 0.25, 10, 67);
+      const n = (bruit(x, y, 68) - 0.5) * 16 + bruitLisse(x, y, 25, 69) * 20 - 10;
+      const v = 74 + n + (sillon > 0.6 ? -26 : sillon < 0.35 ? 14 : 0);
+      p(x, y, v + 8, v, v - 10);
+    });
+  },
+  // Le feuillage, en alpha : des amas de feuilles, du ciel entre eux. La
+  // couleur vient du sommet ; ici seulement la lumière et le trou.
+  feuillage(p, rempli, N) {
+    rempli((x, y) => {
+      const amas = bruitLisse(x, y, 8, 71) * 0.55 + bruitLisse(x, y, 16, 72) * 0.3 + bruit(x, y, 73) * 0.15;
+      const trou = amas < 0.42;
+      const lum = 190 + (amas - 0.5) * 120 + (bruit(x, y, 74) - 0.5) * 30;
+      p(x, y, lum, lum + 6, lum - 30, trou ? 0 : 255);
+    });
+  },
+  // La fonte peinte, vert sombre, presque unie, un peu de rouille au bord.
+  fonte(p, rempli, N) {
+    rempli((x, y) => {
+      const n = (bruit(x, y, 75) - 0.5) * 8 + bruitLisse(x, y, 20, 76) * 10 - 5;
+      const rouille = bruitLisse(x, y, 5, 77) > 0.88 ? 18 : 0;
+      p(x, y, 216 + n + rouille, 220 + n, 214 + n - rouille);
+    });
+  },
+  // La plaque de rue de Paris : fond bleu, liseré vert, deux lignes de
+  // lettres blanches qu'on devine — l'arrondissement en haut, le nom en bas.
+  plaque(p, rempli, N) {
+    const rng = mulberry32(23);
+    const mots = [];
+    for (let x = 16; x < N - 16; x += 7 + Math.floor(rng() * 5)) mots.push([x, 4 + Math.floor(rng() * 3)]);
+    rempli((x, y) => {
+      const bord = x < 5 || x > N - 6 || y < 5 || y > N - 6;
+      const liseré = !bord && (x < 9 || x > N - 10 || y < 9 || y > N - 10);
+      let r = 22, g = 58, b = 132;
+      if (bord) { r = 34; g = 96; b = 70; }
+      else if (liseré) { r = 226; g = 226; b = 220; }
+      for (const [lx, lw] of mots) {
+        if (x >= lx && x < lx + lw && ((y > 58 && y < 86) || (y > 22 && y < 40 && lx > 40 && lx < 84)) && bruit(x >> 1, y >> 2, 78) > 0.3) { r = 236; g = 238; b = 240; }
+      }
+      const n = (bruit(x, y, 79) - 0.5) * 6;
+      p(x, y, r + n, g + n, b + n);
+    });
+  },
+  // Le cannage d'une chaise de bistrot : un tressage beige et vert.
+  rotin(p, rempli) {
+    rempli((x, y) => {
+      const tx = Math.floor(x / 6) % 2, ty = Math.floor(y / 6) % 2;
+      const n = (bruit(x, y, 81) - 0.5) * 14;
+      if ((tx + ty) % 2 === 0) p(x, y, 214 + n, 188 + n, 132 + n); else p(x, y, 64 + n, 104 + n, 78 + n);
+    });
+  },
 };
 
 // --- l'atlas ------------------------------------------------------------------------
