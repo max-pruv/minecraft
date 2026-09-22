@@ -547,15 +547,37 @@ sont nées de la première livraison, et elles valent pour toute couche de rendu
   tirent par immeuble, jamais par colonne. Deux trames qui décrivent le même
   immeuble finiraient par diverger.
 
-- **UNE RUE SE LIT À SON MARQUAGE, PAS À SA MATIÈRE.** Les premières captures
-  HD avaient une chaussée de pavés uniformes entre deux trottoirs à la même
-  cote ; Max : « ils n'ont pas clairement de route ». Une chaussée sombre ne
-  suffit pas : ce qui fait lire une rue, c'est la ligne axiale en pointillés,
-  le passage piéton zébré au débouché du carrefour et la lèvre de la bordure.
-  Ils se DÉDUISENT de la trame (`marquageParis`, dans `paris.js`, à côté de
-  `solParis` qui décide du sol) et se dessinent dans le tampon `sol` : aucun
-  bloc posé, donc rien pour les collisions ni les sauvegardes. Les quartiers
-  hérités (désordre ≥ 2) n'en ont pas — Paris non plus rue des Rosiers.
+- **UNE RUE SE LIT À SON MARQUAGE, PAS À SA MATIÈRE — ET UNE RUE DE PARIS A
+  SON MARQUAGE À ELLE.** Les premières captures HD avaient une chaussée de
+  pavés uniformes entre deux trottoirs à la même cote ; Max : « ils n'ont pas
+  clairement de route ». Mon premier remède y a mis une ligne axiale en
+  pointillés dans chaque rue : Max, sur la planche suivante, « des vraies routes
+  qui ressemblent à des vraies routes parisiennes ». Une rue de Paris est à sens
+  unique et N'A PAS de ligne axiale — c'était une route de campagne. Ce qu'elle
+  a : une chaussée d'asphalte noir, un caniveau de pavés de granit, une bordure
+  de granit clair qui MONTE, un trottoir d'asphalte gris (pas de dalles, c'est
+  Berlin), le passage piéton à larges bandes dans le sens de la marche des
+  voitures, et juste avant lui la ligne d'effet des feux en travers. La ligne
+  axiale ne reste qu'aux boulevards à double sens (chaussée de 2,4 blocs). Tout
+  se DÉDUIT de la trame (`marquageParis`, dans `paris.js`, à côté de `solParis`
+  qui décide du sol) et se dessine dans le tampon `sol` : aucun bloc posé, donc
+  rien pour les collisions ni les sauvegardes. Les quartiers hérités
+  (désordre ≥ 2) n'en ont pas — Paris non plus rue des Rosiers.
+- **LE TROTTOIR EST RELEVÉ PAR LA COUCHE, PAS PAR LE SOL.** La face du trottoir
+  se dessine `RELEVE` (un dixième) au-dessus du bloc, avec une jupe de granit
+  partout où il donne sur plus bas ; l'enfant marche à la cote du BLOC et ses
+  pieds entrent d'un dixième dans l'asphalte, ce qui ne se voit pas. Baisser la
+  chaussée à la place ferait FLOTTER les voitures, qui roulent à la cote du
+  bloc : entre des pieds enfoncés d'un dixième et des roues en l'air, on choisit
+  les pieds. C'est la même règle que le voxel-squelette, à l'échelle d'une
+  marche.
+- **UN REPLI D'UV DANS UNE TUILE CASSE LES DÉRIVÉES, ET LE MIP DESSINE UN
+  QUADRILLAGE.** Vu sur les captures aériennes : un trait clair au pas d'un bloc
+  sur tout le sol. Au bord de chaque bloc `fract()` saute d'une tuile entière, la
+  carte graphique lit une dérivée énorme et prend le mip le plus grossier — la
+  couleur moyenne de l'atlas. `textureGrad` avec les dérivées de l'UV NON replié
+  (`matierehd.js`) règle la chose ; `textures.js` porte le même repli depuis
+  toujours et le même quadrillage, moins visible sur des tuiles de seize pixels.
 
 **Et le mobilier est éclairé.** `props.js` était en `MeshBasicMaterial`, la
 seule chose du monde qui ne recevait ni le soleil ni la nuit depuis la v247. Il

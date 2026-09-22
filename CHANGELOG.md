@@ -41,13 +41,18 @@ comble en zinc laisse sortir ses chiens-assis. La pierre, le zinc, la vitre et
 le fer ont chacun leur matière — la vitre reflète le ciel, le zinc est
 métallique, la pierre est mate et tachée — et les sols de la ville (dalles de
 trottoir, bordure de granit, asphalte, quais, pavés des cours) sont peints à
-cent vingt-huit pixels par bloc au lieu de seize. **Et la rue se lit comme une
-rue** — Max, sur les premières captures : « ils n'ont pas clairement de
-route » : la chaussée est en asphalte sombre entre deux trottoirs clairs, la
-bordure de granit fait une lèvre en relief côté rue, la ligne axiale court en
-pointillés au milieu et un passage piéton zébré barre chaque débouché de
-carrefour — déduits de la trame du quartier, jamais posés en blocs, et absents
-des vieux quartiers tordus comme dans la vraie ville. De loin, rien ne change : la
+cent vingt-huit pixels par bloc au lieu de seize. **Et la rue est une rue de
+Paris** — Max, sur les premières captures : « ils n'ont pas clairement de
+route », puis « des vraies routes qui ressemblent à des vraies routes
+parisiennes » : la chaussée est en asphalte presque noir, le trottoir en
+asphalte gris (pas en dalles de béton) et SURÉLEVÉ d'une marche, la bordure de
+granit clair monte entre les deux avec son caniveau de pavés, un passage piéton
+à larges bandes blanches barre chaque débouché de carrefour, la ligne d'effet
+des feux le précède en travers de la chaussée — et la ligne axiale, qu'une rue
+de Paris à sens unique n'a pas, ne reste qu'aux boulevards à double sens. Tout
+cela est déduit de la trame du quartier, jamais posé en blocs (le sol ne bouge
+pas, l'enfant marche à la cote du bloc), et absent des vieux quartiers tordus
+comme dans la vraie ville. De loin, rien ne change : la
 tuile plate d'avant reste le lointain, et la ligne de corniche vue du ciel est
 la même. Le mobilier de rue — réverbères, feux, bancs — est désormais éclairé
 par le soleil et la nuit comme le reste du monde, ses lanternes et lentilles
@@ -66,12 +71,12 @@ façade exposée reçoit son détail, ni plus ni moins (136 sur 136, comptées
 indépendamment) ; les vitres sont en retrait dans l'épaisseur du mur (128 sommets
 sur 128) ; hors de Paris, la couche allumée ne change rien. À l'écran : sous
 l'enfant le détail est visible et la tuile cachée, à cinq morceaux l'inverse ;
-avec `?hd=0` rien de HD n'est installé ; et la rue porte son marquage et sa
-bordure en relief. Mesuré : un morceau de Paris passe de 29 à 39 millisecondes
-dans le worker, pour 14 000 sommets de façade. Captures : `docs/paris-captures/`
-(v285 et v287, même rue).
+avec `?hd=0` rien de HD n'est installé ; et la rue porte son marquage, sa
+bordure de granit qui monte et son trottoir relevé — sans un seul sommet de
+trottoir resté à plat. Mesuré : un morceau de Paris passe de 30 à 44
+millisecondes dans le worker, pour 14 000 sommets de façade. Captures :
+`docs/paris-captures/` (v285 et v287, même rue).
 
- — Le mode d'attrape s'en va, et les voitures roulent dans la nature
 ## v286 — Le loader ne cache plus un « Jouer » déjà cliquable
 
 **Pourquoi.** Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a

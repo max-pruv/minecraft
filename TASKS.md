@@ -67,6 +67,27 @@
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
   blocs, elle n'en écrit aucun.
 
+- [ ] **LE PORTAIL DE LA v287 (PR1 Paris HD) : TROIS SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN.** `manhattan.js` et `monte.js` rendent exactement les rouges
+  déclarés ci-dessous (v285 : le trou de façade, la nuit, les ombres `[1,-1]` ;
+  le figé à l'arrivée, le tirage des voitures). `maj.js` a rendu au portail
+  « le loader ne s'efface qu'une fois les corps et les programmes prêts »
+  (effacé à 6 300 ms, programmes 22/25) — et REJOUÉE SEULE il est vert des deux
+  côtés :
+
+  | `maj.js` seule | `origin/main` (v286) | branche |
+  | --- | --- | --- |
+  | le loader ne s'efface qu'une fois… | ✅ | ✅ 1 877 ms, 25/25 |
+  | le loader ne cache jamais un « Jouer » cliquable | ✅ | ❌ **garde** : 2 relevés, 0 fautif |
+  | fond de carte à la libération | ❌ `carte: false`, 45,3 s | ❌ `carte: false`, 51,9 s |
+
+  La garde `releves >= 3` comptait le temps entre l'ouverture de la boucle et la
+  page prête, en pas de cinquante millisecondes : une grandeur du banc. Posée à
+  un (la moitié de la plus petite mesure, v237). Le fond de carte est la dette
+  de la v276, inchangée. Le rouge du portail, lui, est de la famille « une
+  durée sous la charge du portail » : il ne se reproduit pas seul, sur aucun
+  des deux arbres.
+
 - [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
   Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
   quatrième rouge, « la voiture au mur », a été démonté par une sonde qui

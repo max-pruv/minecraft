@@ -40,6 +40,7 @@ function verifier(nom, ok, detail = '') {
   verifier('la couche HD existe (src/facadeshd.js)', !!HD);
   if (!HD) { console.log(`\n❌ ${echecs.length} défaut(s) :\n   ${echecs.join('\n   ')}`); process.exit(1); }
   const { FACADE_HD, SOL_HD, couvreHD } = HD;
+  const RELEVE = HD.RELEVE ?? 0;
   const { BLOCK, isTransparent, isSlab } = await import('../src/blocks.js');
 
   const [px, pz] = adresseParis(-0.8, -0.9);
@@ -106,19 +107,24 @@ function verifier(nom, ok, detail = '') {
   verifier('les vitres sont en retrait dans l\'épaisseur du mur', vitres > 100 && enRetrait > vitres * 0.5,
     `${vitres} sommets de vitre, ${enRetrait} en retrait`);
 
-  // La rue se lit : du marquage blanc (la seule matière à 0,7 de rugosité sans
-  // métal) et des lèvres de bordure (le granit, à 0,75) dans le tampon du sol.
+  // La rue se lit comme une rue de Paris : du marquage blanc (la seule matière à
+  // 0,7 de rugosité sans métal), une bordure de granit (0,75) qui MONTE de
+  // `RELEVE`, et un trottoir d'asphalte (0,95) dont la face est à `RELEVE`
+  // au-dessus du bloc — dans le tampon du sol, jamais dans les blocs.
   {
     const g = avec.t.sol;
-    let marquage = 0, bordure = 0;
+    let marquage = 0, bordure = 0, trottoir = 0, trottoirBas = 0;
+    const haut = (i) => Math.abs((g.positions[i * 3 + 1] % 1) - RELEVE) < 0.02;
     for (let i = 0; i < nb(g); i++) {
       const rug = g.matiere[i * 2], met = g.matiere[i * 2 + 1];
       if (met !== 0) continue;
       if (Math.abs(rug - 0.7) < 0.01) marquage++;
-      if (Math.abs(rug - 0.75) < 0.01 && g.positions[i * 3 + 1] % 1 > 0.1) bordure++;
+      if (Math.abs(rug - 0.75) < 0.01 && haut(i)) bordure++;
+      if (Math.abs(rug - 0.95) < 0.01 && g.normals[i * 3 + 1] > 0.5) { if (haut(i)) trottoir++; else trottoirBas++; }
     }
-    verifier('la rue porte son marquage et sa bordure en relief', marquage > 0 && bordure > 0,
-      `${marquage} sommets de marquage, ${bordure} de bordure en relief`);
+    verifier('la rue porte son marquage, sa bordure de granit et son trottoir relevé',
+      marquage > 0 && bordure > 0 && trottoir > 0 && trottoirBas === 0,
+      `${marquage} sommets de marquage, ${bordure} de bordure en relief, trottoir relevé ${trottoir} (à plat ${trottoirBas})`);
   }
 
   const campagne = tampons(1, Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK));

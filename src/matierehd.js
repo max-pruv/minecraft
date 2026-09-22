@@ -188,12 +188,15 @@ const PEINTRES = {
       p(x, y, r, g, b);
     });
   },
+  // L'asphalte de la chaussée : presque noir, gris bleuté, un grain qui accroche
+  // la lumière, des plaques d'usure plus claires.
   bitume(p, rempli) {
     rempli((x, y) => {
-      const n = (bruit(x, y, 25) - 0.5) * 18 + bruitLisse(x, y, 32, 26) * 18 - 9;
-      const grain = bruit(x, y, 27) > 0.965 ? 22 : 0;
-      const v = 58 + n + grain;
-      p(x, y, v, v, v + 2);
+      const n = (bruit(x, y, 25) - 0.5) * 16 + bruitLisse(x, y, 32, 26) * 16 - 8;
+      const grain = bruit(x, y, 27) > 0.965 ? 24 : 0;
+      const usure = bruitLisse(x, y, 4, 28) > 0.7 ? 8 : 0;
+      const v = 52 + n + grain + usure;
+      p(x, y, v, v + 1, v + 4);
     });
   },
   // Les pavés en éventail : des arcs de cercle, chaque pavé sa nuance.
@@ -212,22 +215,29 @@ const PEINTRES = {
       p(x, y, v + 2, v, v - 3);
     });
   },
-  trottoir(p, rempli, N) {
+  // Le trottoir de Paris : de l'asphalte, pas des dalles. Gris moyen, plus clair
+  // et plus chaud que la chaussée, un grain fin, quelques plaques plus sombres
+  // là où il a été refait — et aucun joint, un trottoir parisien n'en a pas.
+  trottoir(p, rempli) {
     rempli((x, y) => {
-      const n = (bruit(x, y, 33) - 0.5) * 12 + bruitLisse(x, y, 32, 34) * 16 - 8;
-      const joint = x % 64 < 2 || y % 64 < 2;
-      const tache = bruitLisse(x, y, 16, 35) > 0.78 ? -12 : 0;
-      const v = (joint ? 158 : 184) + n + tache;
-      p(x, y, v + 2, v + 1, v - 2);
+      const n = (bruit(x, y, 33) - 0.5) * 14 + bruitLisse(x, y, 32, 34) * 14 - 7;
+      const plaque = bruitLisse(x, y, 8, 35) > 0.74 ? -10 : 0;
+      const grain = bruit(x, y, 36) > 0.97 ? 14 : 0;
+      const v = 108 + n + plaque + grain;
+      p(x, y, v + 3, v + 1, v - 3);
     });
   },
-  bordure(p, rempli, N) {
+  // Le caniveau : des pavés de granit de dix centimètres en rangs serrés, joints
+  // sombres, un peu mouillés — c'est la bande claire qui court au pied de toute
+  // bordure parisienne.
+  bordure(p, rempli) {
     rempli((x, y) => {
-      const n = (bruit(x, y, 37) - 0.5) * 16 + (bruit(x >> 1, y >> 1, 38) > 0.8 ? 16 : 0);
-      let v = 156 + n;
-      if (y > N - 30) v = 88 + n * 0.5;          // le caniveau, à l'ombre
-      if (y % 64 < 2) v -= 30;
-      p(x, y, v, v, v - 2);
+      const rang = Math.floor(y / 13);
+      const dx = (x + (rang % 2) * 6) % 13;
+      const joint = y % 13 < 2 || dx < 2;
+      const n = bruit(rang, Math.floor((x + (rang % 2) * 6) / 13), 37) * 30 - 15 + (bruit(x, y, 38) - 0.5) * 8;
+      const v = joint ? 82 : 138 + n;
+      p(x, y, v - 2, v, v + 3);
     });
   },
   granit(p, rempli, N) {
@@ -359,7 +369,18 @@ export function materiauHD(renderer) {
         varying vec2 vMatiere;
         varying float vLueur;`)
       .replace('#include <map_fragment>', `
-        vec4 texelHD = texture2D(map, vTuile.xy + fract(vUvTuile) * vTuile.zw);
+        // LE REPLI DANS LA TUILE CASSE LES DÉRIVÉES : au bord de chaque bloc,
+        // fract() saute d'une tuile entière, la carte graphique y lit une dérivée
+        // énorme et choisit le mip le plus grossier — un trait de la couleur
+        // moyenne de l'atlas à chaque bloc, le quadrillage vu sur les captures
+        // aériennes. On lui donne les dérivées de l'UV NON replié, à l'échelle
+        // de la tuile : le mip est alors celui de la texture continue.
+        vec2 uvHD = vTuile.xy + fract(vUvTuile) * vTuile.zw;
+        #if __VERSION__ >= 300
+          vec4 texelHD = textureGrad(map, uvHD, dFdx(vUvTuile) * vTuile.zw, dFdy(vUvTuile) * vTuile.zw);
+        #else
+          vec4 texelHD = texture2D(map, uvHD);
+        #endif
         diffuseColor *= texelHD;`)
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = vMatiere.x;')
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = vMatiere.y;')

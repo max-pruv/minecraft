@@ -12,7 +12,7 @@ export const NOUVEAUTES = [
       'Les fenêtres de Paris sont creusées',
       'Des balcons en fer forgé devant',
       'Les corniches font de l\'ombre',
-      'Les pavés et les trottoirs sont plus fins',
+      'Des rues de Paris : trottoirs, bordures, passages piétons',
       'Les réverbères s\'éteignent le jour',
     ],
   },

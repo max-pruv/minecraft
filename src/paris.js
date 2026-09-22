@@ -748,11 +748,25 @@ export function infoFacadeParis(x, z) {
 // carrefour. Ils se DÉDUISENT de la trame du quartier (`formeParis`), ils ne se
 // posent pas en blocs : le sol ne change pas, seule la couche HD les dessine.
 //
+// CE QUE PORTE UNE RUE DE PARIS, ET CE QU'ELLE NE PORTE PAS. Max, sur la
+// seconde planche : « des vraies routes qui ressemblent à des vraies routes
+// parisiennes ». Une rue de Paris est à sens unique dans l'immense majorité des
+// cas, et une rue à sens unique n'a PAS de ligne axiale : le pointillé au milieu
+// de chaque rue de la première planche était une route de campagne. Ce qu'elle
+// a, c'est le passage piéton au débouché du carrefour — des bandes de cinquante
+// centimètres espacées de cinquante, dans le sens de la marche des voitures —
+// et, juste avant lui, la ligne d'effet des feux : un pointillé EN TRAVERS de la
+// chaussée. La ligne axiale ne reste qu'aux boulevards à double sens (les
+// quartiers dont la chaussée fait 2,4 blocs : Monceau, l'Étoile, Passy).
+//
 // Rend null hors des rues de la trame (les avenues nommées, l'Étoile et les
-// places n'en ont pas encore), ou { type: 'axe' | 'passage', long: 'u' | 'v' }
-// où `long` est l'axe du monde le long duquel court la rue. Les quartiers
-// hérités (Marais, Quartier latin, Montmartre, Belleville) n'ont ni l'un ni
-// l'autre : leurs rues tordues n'en ont pas dans la vraie ville non plus.
+// places n'en ont pas encore), ou { type: 'axe' | 'passage' | 'ligne', long,
+// sens } où `long` est l'axe du monde le long duquel court la rue et `sens`
+// (±1, pour la ligne d'effet) le côté, sur cet axe, où est le carrefour. Les
+// quartiers hérités (Marais, Quartier latin, Montmartre, Belleville) n'ont rien
+// de tout cela : leurs rues tordues n'en ont pas dans la vraie ville non plus.
+export const PASSAGE_PROFONDEUR = 2;   // blocs de passage piéton depuis le coin
+export const LIGNE_EFFET = 3;          // la ligne d'effet est dans le bloc d'après
 export function marquageParis(x, z) {
   const u = x - PARIS.x, v = z - PARIS.z;
   if (u * u + v * v > PARIS.r * PARIS.r) return null;
@@ -767,8 +781,15 @@ export function marquageParis(x, z) {
   const long = dansRueQ ? (Math.abs(c) >= Math.abs(s) ? 'v' : 'u') : (Math.abs(c) >= Math.abs(s) ? 'u' : 'v');
   const ecartAxe = dansRueQ ? f.ep : f.eq;
   const versCarrefour = (dansRueQ ? f.eq : f.ep) - t.rue;
-  if (versCarrefour < 1.3) return { type: 'passage', long };
-  if (ecartAxe < 0.36 && t.rue >= 0.9) return { type: 'axe', long };
+  if (versCarrefour < PASSAGE_PROFONDEUR) return { type: 'passage', long, sens: 0 };
+  if (versCarrefour < LIGNE_EFFET) {
+    // de quel côté est le coin ? Un pas plus loin sur l'axe de la rue, la
+    // distance au carrefour a grandi ou diminué.
+    const g = long === 'u' ? formeParis(u + 1, v) : formeParis(u, v + 1);
+    const apres = (dansRueQ ? g.eq : g.ep) - t.rue;
+    return { type: 'ligne', long, sens: apres < versCarrefour ? 1 : -1 };
+  }
+  if (ecartAxe < 0.36 && t.rue >= 1.2) return { type: 'axe', long, sens: 0 };
   return null;
 }
 

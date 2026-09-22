@@ -56,11 +56,11 @@ export const TUILES_HD = [
   'bois',          // la porte cochère
   'store',         // la toile rayée
   'enseigne',      // le bandeau de boutique
-  'bitume',        // l'asphalte usé
+  'bitume',        // l'asphalte usé de la chaussée
   'pave',          // les pavés en éventail
-  'trottoir',      // les dalles de béton
-  'bordure',       // le granit de bordure et son caniveau
-  'granit',        // les quais
+  'trottoir',      // l'asphalte des trottoirs de Paris, plus clair, sans joint
+  'bordure',       // le caniveau : des pavés de granit en rangs serrés
+  'granit',        // la bordure de trottoir et les quais
   'cour',          // les pavés d'une cour
   'brique',        // le rouge d'une souche, d'un mur mitoyen
   'marquage',      // la peinture blanche au sol, usée
@@ -87,12 +87,22 @@ export function rectHD(nom) {
 // tuile HD. Ils restent fusionnés (greedy) : une chaussée de seize blocs est
 // toujours un seul quad.
 // La chaussée de Paris est en ASPHALTE dans la couche HD — c'est ce que sont les
-// rues de Paris, et c'est ce qui les fait lire comme des rues à côté d'un
-// trottoir clair (Max, sur les premières captures : « ils n'ont pas clairement
-// de route »). Le pavé reste aux cours et aux quais bas.
+// rues de Paris, et c'est ce qui les fait lire comme des rues (Max, sur les
+// premières captures : « ils n'ont pas clairement de route »). Le pavé reste
+// aux cours et aux quais bas.
+//
+// ET LE TROTTOIR EST SURÉLEVÉ. Une rue de Paris, c'est une chaussée d'asphalte
+// noir, un caniveau de pavés de granit, une bordure de granit clair qui monte
+// d'une quinzaine de centimètres, et un trottoir d'asphalte gris — pas de dalles
+// de béton, c'est Berlin ou New York. La marche ne se pose pas en blocs (le sol
+// ne bouge pas, invariant 1) : c'est le tampon `sol` qui dessine la face du
+// trottoir à `RELEVE` au-dessus du bloc, avec une jupe de granit là où il donne
+// sur plus bas. Le voxel reste le squelette : un enfant marche à la cote du
+// bloc, ses pieds entrent d'un dixième dans l'asphalte, ce qui ne se voit pas.
+export const RELEVE = 0.1;
 export const SOL_HD = new Map([
   [ARCHI.PAVE, { tuile: 'bitume', rugueux: 0.92, metal: 0 }],
-  [CITY_BLOCK.SIDEWALK, { tuile: 'trottoir', rugueux: 0.95, metal: 0 }],
+  [CITY_BLOCK.SIDEWALK, { tuile: 'trottoir', rugueux: 0.95, metal: 0, releve: RELEVE }],
   [ARCHI.BORDURE, { tuile: 'bordure', rugueux: 0.8, metal: 0 }],
   [CITY_BLOCK.GRANITE, { tuile: 'granit', rugueux: 0.75, metal: 0 }],
   [CITY_BLOCK.ASPHALT, { tuile: 'bitume', rugueux: 0.92, metal: 0 }],
@@ -507,9 +517,15 @@ function dalle(buf, x0, x1, y, z0, z1, wx, wz, tuile, ombre, mat) {
   buf.quadIndices(ids[0], ids[1], ids[2], ids[3]);
 }
 
-// Le marquage d'une colonne de chaussée : la ligne axiale en pointillés (un
-// trait par bloc, dans l'axe de la rue) ou le passage piéton (des bandes
-// élancées dans l'axe de la rue, espacées en travers).
+// Le marquage d'une colonne de chaussée, tel qu'il est à Paris (`marquageParis`
+// décide ; ici on ne fait que dessiner) :
+//
+// - le PASSAGE PIÉTON : une bande blanche de cinquante centimètres par bloc,
+//   dans l'axe de la rue, un bloc sur deux en travers — les larges bandes que
+//   tout enfant reconnaît depuis le trottoir ;
+// - la LIGNE D'EFFET des feux : un pointillé EN TRAVERS de la chaussée, au bord
+//   du bloc qui regarde le passage ;
+// - la LIGNE AXIALE, en pointillés, sur les seuls boulevards à double sens.
 export function marquageHD(buf, x, y, z, wx, wz) {
   const m = marquageParis(wx, wz);
   if (!m) return false;
@@ -520,42 +536,75 @@ export function marquageHD(buf, x, y, z, wx, wz) {
     else dalle(buf, x + 0.25, x + 0.75, yt, z + 0.44, z + 0.56, wx, wz, 'marquage', ombre, mat);
     return true;
   }
-  // le passage : trois bandes de 0,2 espacées de 0,2, en phase d'un bloc à l'autre
-  for (let k = 0; k < 3; k++) {
-    const a = 0.05 + k * 0.35, b = a + 0.2;
-    if (m.long === 'v') dalle(buf, x + a, x + b, yt, z, z + 1, wx, wz, 'marquage', ombre, mat);
-    else dalle(buf, x, x + 1, yt, z + a, z + b, wx, wz, 'marquage', ombre, mat);
+  if (m.type === 'ligne') {
+    // 0,15 de large, posée au bord du bloc côté carrefour ; un tiret par bloc
+    const e = 0.15;
+    if (m.long === 'v') {
+      const z0 = m.sens > 0 ? z + 1 - e : z;
+      dalle(buf, x + 0.2, x + 0.8, yt, z0, z0 + e, wx, wz, 'marquage', ombre, mat);
+    } else {
+      const x0 = m.sens > 0 ? x + 1 - e : x;
+      dalle(buf, x0, x0 + e, yt, z + 0.2, z + 0.8, wx, wz, 'marquage', ombre, mat);
+    }
+    return true;
   }
+  // le passage : une bande de 0,5 au milieu du bloc, d'un bord à l'autre du bloc
+  // dans l'axe de la rue — les blocs voisins en travers font l'espacement
+  if (m.long === 'v') dalle(buf, x + 0.25, x + 0.75, yt, z, z + 1, wx, wz, 'marquage', ombre, mat);
+  else dalle(buf, x, x + 1, yt, z + 0.25, z + 0.75, wx, wz, 'marquage', ombre, mat);
   return true;
 }
 
-// La bordure de trottoir en relief : sur le côté du bloc de bordure qui touche la
-// chaussée, une lèvre de granit de 0,14 de haut — c'est ce qui sépare le
-// trottoir de la rue quand les deux sont à la même cote.
-export function bordureHD(buf, x, y, z, wx, wz, cotes) {
+// Une marche de granit : un pavé posé sur le bloc, de `h` de haut, entre
+// (x0, z0) et (x1, z1) en coordonnées locales. `flancs` dit lesquels de ses
+// quatre côtés se dessinent (un flanc collé au trottoir relevé serait invisible).
+function marcheGranit(buf, x, y, z, wx, wz, x0, x1, z0, z1, h, flancs, dessus) {
   const rect = rectHD('granit');
   const mat = M.granit;
-  const h = 0.14, l = 0.24, yt = y + 1;
-  const boite = (x0, x1, z0, z1) => {
-    const c = [0.96, 0.96, 0.96], cf = [0.78, 0.78, 0.78];
-    const uv = (px, pz) => [wx + px - x, wz + pz - z];
-    // le dessus
-    let i = [buf.sommet([x0, yt + h, z1], [0, 1, 0], uv(x0, z1), rect, c, mat, 0), buf.sommet([x1, yt + h, z1], [0, 1, 0], uv(x1, z1), rect, c, mat, 0),
+  const yt = y + 1;
+  const c = [0.96, 0.96, 0.96], cf = [0.78, 0.78, 0.78];
+  const uv = (px, pz) => [wx + px - x, wz + pz - z];
+  if (dessus) {
+    const i = [buf.sommet([x0, yt + h, z1], [0, 1, 0], uv(x0, z1), rect, c, mat, 0), buf.sommet([x1, yt + h, z1], [0, 1, 0], uv(x1, z1), rect, c, mat, 0),
       buf.sommet([x1, yt + h, z0], [0, 1, 0], uv(x1, z0), rect, c, mat, 0), buf.sommet([x0, yt + h, z0], [0, 1, 0], uv(x0, z0), rect, c, mat, 0)];
     buf.quadIndices(i[0], i[1], i[2], i[3]);
-    // les quatre flancs
-    const flanc = (a, b, n) => {
-      const j = [buf.sommet([a[0], yt, a[1]], n, [wx + a[0] - x, yt], rect, cf, mat, 0), buf.sommet([b[0], yt, b[1]], n, [wx + b[0] - x, yt], rect, cf, mat, 0),
-        buf.sommet([b[0], yt + h, b[1]], n, [wx + b[0] - x, yt + h], rect, cf, mat, 0), buf.sommet([a[0], yt + h, a[1]], n, [wx + a[0] - x, yt + h], rect, cf, mat, 0)];
-      buf.quadIndices(j[0], j[1], j[2], j[3]);
-    };
-    flanc([x0, z1], [x1, z1], [0, 0, 1]);
-    flanc([x1, z0], [x0, z0], [0, 0, -1]);
-    flanc([x1, z1], [x1, z0], [1, 0, 0]);
-    flanc([x0, z0], [x0, z1], [-1, 0, 0]);
+  }
+  const flanc = (a, b, n) => {
+    const j = [buf.sommet([a[0], yt, a[1]], n, [wx + a[0] - x + wz + a[1] - z, yt], rect, cf, mat, 0), buf.sommet([b[0], yt, b[1]], n, [wx + b[0] - x + wz + b[1] - z, yt], rect, cf, mat, 0),
+      buf.sommet([b[0], yt + h, b[1]], n, [wx + b[0] - x + wz + b[1] - z, yt + h], rect, cf, mat, 0), buf.sommet([a[0], yt + h, a[1]], n, [wx + a[0] - x + wz + a[1] - z, yt + h], rect, cf, mat, 0)];
+    buf.quadIndices(j[0], j[1], j[2], j[3]);
   };
-  if (cotes.px) boite(x + 1 - l, x + 1, z, z + 1);
-  if (cotes.mx) boite(x, x + l, z, z + 1);
-  if (cotes.pz) boite(x, x + 1, z + 1 - l, z + 1);
-  if (cotes.mz) boite(x, x + 1, z, z + l);
+  if (flancs.pz) flanc([x0, z1], [x1, z1], [0, 0, 1]);
+  if (flancs.mz) flanc([x1, z0], [x0, z0], [0, 0, -1]);
+  if (flancs.px) flanc([x1, z1], [x1, z0], [1, 0, 0]);
+  if (flancs.mx) flanc([x0, z0], [x0, z1], [-1, 0, 0]);
+}
+
+// LA BORDURE DE PARIS. Le bloc de bordure porte, côté trottoir, la bordure de
+// granit clair elle-même — une marche de `RELEVE` de haut et `LARGEUR_BORDURE`
+// de large, à la cote du trottoir relevé — et, côté chaussée, le caniveau de
+// pavés (la tuile plate du bloc, sous le marquage). `voisins` dit ce qu'il y a
+// de chaque côté : `rue` (la chaussée : rien à poser, c'est le caniveau qui y
+// donne), `bordure` (la bordure continue : rien non plus), ou autre chose (le
+// trottoir, une place, un jardin) : la marche va de ce côté-là.
+export const LARGEUR_BORDURE = 0.3;
+export function bordureHD(buf, x, y, z, wx, wz, voisins) {
+  const l = LARGEUR_BORDURE, h = RELEVE;
+  // La marche court le long de chaque côté qui n'est ni rue ni bordure ; ses
+  // flancs vers la rue se dessinent, ceux collés au trottoir non.
+  const cote = (v) => v !== 'rue' && v !== 'bordure';
+  const tous = { px: true, mx: true, pz: true, mz: true };
+  if (cote(voisins.mx)) marcheGranit(buf, x, y, z, wx, wz, x, x + l, z, z + 1, h, { ...tous, mx: false }, true);
+  if (cote(voisins.px)) marcheGranit(buf, x, y, z, wx, wz, x + 1 - l, x + 1, z, z + 1, h, { ...tous, px: false }, true);
+  if (cote(voisins.mz)) marcheGranit(buf, x, y, z, wx, wz, x, x + 1, z, z + l, h, { ...tous, mz: false }, true);
+  if (cote(voisins.pz)) marcheGranit(buf, x, y, z, wx, wz, x, x + 1, z + 1 - l, z + 1, h, { ...tous, pz: false }, true);
+}
+
+// LA JUPE DU TROTTOIR RELEVÉ : la face du trottoir est dessinée `RELEVE` au-dessus
+// du bloc (`SOL_HD`) ; partout où le bloc voisin n'est pas relevé lui aussi — la
+// chaussée sans bordure, l'herbe d'un square, une cour — la marche se ferme par
+// une jupe de granit, sinon le trottoir flotterait d'un dixième. `ouverts` dit
+// de quels côtés.
+export function trottoirHD(buf, x, y, z, wx, wz, ouverts) {
+  marcheGranit(buf, x, y, z, wx, wz, x, x + 1, z, z + 1, RELEVE, ouverts, false);
 }
