@@ -740,6 +740,38 @@ export function infoFacadeParis(x, z) {
   return { ai: f.ai, bi: f.bi, quartier: f.t.nom, pas: f.t.pas, graine: tirageParis(f.ai, f.bi, 700) };
 }
 
+// LE MARQUAGE AU SOL D'UNE CHAUSSÉE (v287) — ce qui fait qu'une rue se LIT comme
+// une rue. Max, sur les premières captures de la couche HD : « ils n'ont pas
+// clairement de route ». Une chaussée de pavés uniformes entre deux trottoirs de
+// la même hauteur est une esplanade, pas une rue ; ce qui la fait lire, c'est la
+// ligne axiale en pointillés et le passage piéton zébré au débouché du
+// carrefour. Ils se DÉDUISENT de la trame du quartier (`formeParis`), ils ne se
+// posent pas en blocs : le sol ne change pas, seule la couche HD les dessine.
+//
+// Rend null hors des rues de la trame (les avenues nommées, l'Étoile et les
+// places n'en ont pas encore), ou { type: 'axe' | 'passage', long: 'u' | 'v' }
+// où `long` est l'axe du monde le long duquel court la rue. Les quartiers
+// hérités (Marais, Quartier latin, Montmartre, Belleville) n'ont ni l'un ni
+// l'autre : leurs rues tordues n'en ont pas dans la vraie ville non plus.
+export function marquageParis(x, z) {
+  const u = x - PARIS.x, v = z - PARIS.z;
+  if (u * u + v * v > PARIS.r * PARIS.r) return null;
+  const f = formeParis(u, v), t = f.t;
+  if (t.desordre >= 2) return null;
+  const c = Math.cos(t.ang), s = Math.sin(t.ang);
+  // la rue le long de q a son écart mesuré par ep ; l'axe q vaut (s, c) en
+  // (u, v), donc il court le long de v quand l'angle est petit
+  const dansRueQ = f.ep < t.rue && f.eq >= t.rue;
+  const dansRueP = f.eq < t.rue && f.ep >= t.rue;
+  if (!dansRueQ && !dansRueP) return null;
+  const long = dansRueQ ? (Math.abs(c) >= Math.abs(s) ? 'v' : 'u') : (Math.abs(c) >= Math.abs(s) ? 'u' : 'v');
+  const ecartAxe = dansRueQ ? f.ep : f.eq;
+  const versCarrefour = (dansRueQ ? f.eq : f.ep) - t.rue;
+  if (versCarrefour < 1.3) return { type: 'passage', long };
+  if (ecartAxe < 0.36 && t.rue >= 0.9) return { type: 'axe', long };
+  return null;
+}
+
 // --- le sol ------------------------------------------------------------------------
 
 // Ce qu'il faut poser au sol, ou null si la trame ordinaire de la ville doit

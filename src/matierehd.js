@@ -44,13 +44,20 @@ function bruit(x, y, graine) {
   const s = Math.sin(x * 12.9898 + y * 78.233 + graine * 37.719) * 43758.5453;
   return s - Math.floor(s);
 }
+// PÉRIODIQUE SUR LA TUILE : la texture se répète à chaque bloc, et un bruit
+// qui ne se referme pas sur lui-même dessine une grille au raccord — vue en
+// capture sur l'asphalte, un quadrillage au pas d'un bloc. Le treillis du bruit
+// est replié sur la période de la tuile, donc le bord droit continue le bord
+// gauche. Une échelle qui ne divise pas 128 est arrondie à la période entière.
 function bruitLisse(x, y, echelle, graine) {
-  const fx = x / echelle, fy = y / echelle;
+  const per = Math.max(1, Math.round(PX_HD / echelle));
+  const fx = x / (PX_HD / per), fy = y / (PX_HD / per);
   const x0 = Math.floor(fx), y0 = Math.floor(fy);
   const tx = fx - x0, ty = fy - y0;
   const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
-  const a = bruit(x0, y0, graine), b = bruit(x0 + 1, y0, graine);
-  const c = bruit(x0, y0 + 1, graine), d = bruit(x0 + 1, y0 + 1, graine);
+  const w = (i) => ((i % per) + per) % per;
+  const a = bruit(w(x0), w(y0), graine), b = bruit(w(x0 + 1), w(y0), graine);
+  const c = bruit(w(x0), w(y0 + 1), graine), d = bruit(w(x0 + 1), w(y0 + 1), graine);
   return (a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy;
 }
 
@@ -183,9 +190,9 @@ const PEINTRES = {
   },
   bitume(p, rempli) {
     rempli((x, y) => {
-      const n = (bruit(x, y, 25) - 0.5) * 22 + bruitLisse(x, y, 31, 26) * 20 - 10;
-      const grain = bruit(x, y, 27) > 0.965 ? 26 : 0;
-      const v = 78 + n + grain;
+      const n = (bruit(x, y, 25) - 0.5) * 18 + bruitLisse(x, y, 32, 26) * 18 - 9;
+      const grain = bruit(x, y, 27) > 0.965 ? 22 : 0;
+      const v = 58 + n + grain;
       p(x, y, v, v, v + 2);
     });
   },
@@ -207,10 +214,10 @@ const PEINTRES = {
   },
   trottoir(p, rempli, N) {
     rempli((x, y) => {
-      const n = (bruit(x, y, 33) - 0.5) * 12 + bruitLisse(x, y, 27, 34) * 16 - 8;
+      const n = (bruit(x, y, 33) - 0.5) * 12 + bruitLisse(x, y, 32, 34) * 16 - 8;
       const joint = x % 64 < 2 || y % 64 < 2;
-      const tache = bruitLisse(x, y, 19, 35) > 0.78 ? -14 : 0;
-      const v = (joint ? 138 : 176) + n + tache;
+      const tache = bruitLisse(x, y, 16, 35) > 0.78 ? -12 : 0;
+      const v = (joint ? 158 : 184) + n + tache;
       p(x, y, v + 2, v + 1, v - 2);
     });
   },
@@ -238,6 +245,15 @@ const PEINTRES = {
       const n = bruit(gx, gy, 45) * 30 - 15 + (bruit(x, y, 46) - 0.5) * 10;
       const v = joint ? 74 : 112 + n;
       p(x, y, v + 3, v, v - 4);
+    });
+  },
+  // La peinture au sol : blanche, usée par les roues, un peu de bitume qui
+  // affleure.
+  marquage(p, rempli) {
+    rempli((x, y) => {
+      const usure = bruitLisse(x, y, 11, 51) * 0.6 + bruit(x, y, 52) * 0.4;
+      const v = usure > 0.78 ? 150 : 228 - usure * 30;
+      p(x, y, v, v, v - 4);
     });
   },
   brique(p, rempli) {

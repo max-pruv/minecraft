@@ -9,7 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD } from './facadeshd.js';
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
@@ -390,6 +390,24 @@ export function buildChunkTampons(world, cx, cz) {
             if (!shouldRenderFace(id, neighbor)) continue;
             facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z));
             facadesDetaillees++;
+          }
+        }
+      }
+    }
+    // LA RUE SE LIT : le marquage sur la chaussée, la lèvre de granit de la
+    // bordure côté rue. Dans `sol`, toujours montré — ce n'est pas un détail
+    // qui se relaie avec la distance, c'est la rue elle-même.
+    for (let y = 0; y <= topY; y++) {
+      for (let z = 0; z < CHUNK; z++) {
+        for (let x = 0; x < CHUNK; x++) {
+          const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
+          if (id === ARCHI.PAVE) {
+            if (localGet(x, y + 1, z) === BLOCK.AIR) marquageHD(sol, x, y, z, ox + x, oz + z);
+          } else if (id === ARCHI.BORDURE) {
+            if (localGet(x, y + 1, z) !== BLOCK.AIR) continue;
+            const rue = (dx, dz) => localGet(x + dx, y, z + dz) === ARCHI.PAVE;
+            const cotes = { px: rue(1, 0), mx: rue(-1, 0), pz: rue(0, 1), mz: rue(0, -1) };
+            if (cotes.px || cotes.mx || cotes.pz || cotes.mz) bordureHD(sol, x, y, z, ox + x, oz + z, cotes);
           }
         }
       }

@@ -39,9 +39,15 @@ d'angle alterne ses pierres, la porte cochère s'enfonce sous son encadrement, l
 devanture a sa vitrine, son bandeau d'enseigne et son store de toile, et le
 comble en zinc laisse sortir ses chiens-assis. La pierre, le zinc, la vitre et
 le fer ont chacun leur matière — la vitre reflète le ciel, le zinc est
-métallique, la pierre est mate et tachée — et les sols de la ville (pavés en
-éventail, dalles de trottoir, bordure de granit, asphalte, quais) sont peints à
-cent vingt-huit pixels par bloc au lieu de seize. De loin, rien ne change : la
+métallique, la pierre est mate et tachée — et les sols de la ville (dalles de
+trottoir, bordure de granit, asphalte, quais, pavés des cours) sont peints à
+cent vingt-huit pixels par bloc au lieu de seize. **Et la rue se lit comme une
+rue** — Max, sur les premières captures : « ils n'ont pas clairement de
+route » : la chaussée est en asphalte sombre entre deux trottoirs clairs, la
+bordure de granit fait une lèvre en relief côté rue, la ligne axiale court en
+pointillés au milieu et un passage piéton zébré barre chaque débouché de
+carrefour — déduits de la trame du quartier, jamais posés en blocs, et absents
+des vieux quartiers tordus comme dans la vraie ville. De loin, rien ne change : la
 tuile plate d'avant reste le lointain, et la ligne de corniche vue du ciel est
 la même. Le mobilier de rue — réverbères, feux, bancs — est désormais éclairé
 par le soleil et la nuit comme le reste du monde, ses lanternes et lentilles
@@ -49,17 +55,21 @@ restant émissives. **Aucun bloc n'a bougé** : la couche HD lit les blocs, elle
 n'en écrit aucun ; sauvegardes, collisions, coordonnées sont intactes. Le
 palier de l'appareil décide de la portée (trois morceaux au palier moyen, six
 au palier haut, rien au palier bas — l'iPad de quatre ans ne perd rien), et
-`?hd=` la force. Captures avant/après dans `docs/paris-captures/`.
+`?hd=` la force ; comme les ombres, la couche se coupe d'elle-même sur un
+navigateur sans carte graphique. Captures avant/après dans
+`docs/paris-captures/`.
 
-**Ce qui le prouve.** Une suite neuve, `parishd.js`, quinze témoins. Sous
+**Ce qui le prouve.** Une suite neuve, `parishd.js`, seize témoins. Sous
 node, sur les tampons du mailleur : sans HD, les tampons sont ceux d'avant ; le
 morceau est identique à l'octet près avec et sans la couche ; chaque face de
 façade exposée reçoit son détail, ni plus ni moins (136 sur 136, comptées
 indépendamment) ; les vitres sont en retrait dans l'épaisseur du mur (128 sommets
 sur 128) ; hors de Paris, la couche allumée ne change rien. À l'écran : sous
 l'enfant le détail est visible et la tuile cachée, à cinq morceaux l'inverse ;
-avec `?hd=0` rien de HD n'est installé. Mesuré : un morceau de Paris passe de
-29 à 39 millisecondes dans le worker, pour 14 000 sommets de façade.
+avec `?hd=0` rien de HD n'est installé ; et la rue porte son marquage et sa
+bordure en relief. Mesuré : un morceau de Paris passe de 29 à 39 millisecondes
+dans le worker, pour 14 000 sommets de façade. Captures : `docs/paris-captures/`
+(v285 et v287, même rue).
 
  — Le mode d'attrape s'en va, et les voitures roulent dans la nature
 ## v286 — Le loader ne cache plus un « Jouer » déjà cliquable

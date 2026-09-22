@@ -10,6 +10,8 @@ const VUES = [
   { nom: 'rue-haussmann', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: 0.05, h: 1.6 },
   { nom: 'commerce', dx: -0.8, dz: -0.9, yaw: 0, pitch: 0.12, h: 1.6, rue: true },
   { nom: 'germain', dx: -1.7, dz: 0.8, yaw: Math.PI / 4, pitch: 0.18, h: 1.6, rue: true },
+  { nom: 'germain-rue', dx: -1.7, dz: 0.8, yaw: Math.PI, pitch: 0.22, h: 1.6, rue: true },
+  { nom: 'germain-carrefour', dx: -1.7, dz: 0.8, yaw: Math.PI, pitch: -0.9, h: 14, rue: true },
   { nom: 'germain-face', dx: -1.7, dz: 0.8, yaw: 0, pitch: 0.1, h: 1.6, rue: true },
   { nom: 'monceau', dx: -3.2, dz: -2.2, yaw: -Math.PI / 4, pitch: 0.15, h: 1.6, rue: true },
   { nom: 'coin', dx: -0.8, dz: -0.9, yaw: Math.PI / 4, pitch: 0.25, h: 1.6, rue: true },
@@ -25,7 +27,7 @@ const VUES = [
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1' });
+    const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' });
     for (const v of VUES.filter((v) => !process.argv[4] || process.argv[4].split(',').includes(v.nom))) {
       const info = await page.evaluate(async (v) => {
         const g = window.__game;

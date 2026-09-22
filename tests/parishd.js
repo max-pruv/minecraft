@@ -106,6 +106,21 @@ function verifier(nom, ok, detail = '') {
   verifier('les vitres sont en retrait dans l\'épaisseur du mur', vitres > 100 && enRetrait > vitres * 0.5,
     `${vitres} sommets de vitre, ${enRetrait} en retrait`);
 
+  // La rue se lit : du marquage blanc (la seule matière à 0,7 de rugosité sans
+  // métal) et des lèvres de bordure (le granit, à 0,75) dans le tampon du sol.
+  {
+    const g = avec.t.sol;
+    let marquage = 0, bordure = 0;
+    for (let i = 0; i < nb(g); i++) {
+      const rug = g.matiere[i * 2], met = g.matiere[i * 2 + 1];
+      if (met !== 0) continue;
+      if (Math.abs(rug - 0.7) < 0.01) marquage++;
+      if (Math.abs(rug - 0.75) < 0.01 && g.positions[i * 3 + 1] % 1 > 0.1) bordure++;
+    }
+    verifier('la rue porte son marquage et sa bordure en relief', marquage > 0 && bordure > 0,
+      `${marquage} sommets de marquage, ${bordure} de bordure en relief`);
+  }
+
   const campagne = tampons(1, Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK));
   verifier('hors de Paris, la couche allumée ne change rien',
     !couvreHD(Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK), CHUNK) && !campagne.t.sol && !campagne.t.facades && !campagne.t.plat);

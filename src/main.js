@@ -104,16 +104,6 @@ const PALIER = (() => {
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr'))
   || (PALIER ? PALIER.rr : (IS_TOUCH ? 12 : 16));
 
-// LA PORTÉE DE LA COUCHE HD DE PARIS (v287), en morceaux : à cette distance et
-// en deçà, une façade montre son relief (facadeshd.js) ; au-delà, sa tuile
-// plate, comme avant. `?hd=` force (0 éteint) ; sinon c'est le palier, et sans
-// palier mesuré la valeur du palier moyen. Le mailleur en reçoit le drapeau
-// (`world.hd`) pour SAVOIR s'il doit produire le détail — il ne produit rien
-// pour un palier à zéro, et c'est ce qui rend le palier bas identique à la
-// v285 au tampon près.
-const HD_FORCE = new URLSearchParams(location.search).get('hd');
-const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
-  : (PALIER ? PALIER.hd : PALIERS.moyen.hd);
 
 // ET LA VITESSE DES JETS SUIT LA FILE, parce que la v269 l'a descendue de 160 à
 // 120 blocs par seconde EXACTEMENT POUR CETTE RAISON : « une vitesse mesurée
@@ -272,6 +262,24 @@ if (renduLogiciel()) document.documentElement.classList.add('rendu-logiciel');
 // type d'appareil, comme la v257 l'a écrit, et `?ombres=1` les force pour les
 // mesurer. Voir `palier.js`, juste au-dessus de la table.
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
+
+// LA PORTÉE DE LA COUCHE HD DE PARIS (v287), en morceaux : à cette distance et
+// en deçà, une façade montre son relief (facadeshd.js) ; au-delà, sa tuile
+// plate, comme avant. `?hd=` force (0 éteint) ; sinon c'est le palier, et sans
+// palier mesuré la valeur du palier moyen. Le mailleur en reçoit le drapeau
+// (`world.hd`) pour SAVOIR s'il doit produire le détail — il ne produit rien
+// pour un palier à zéro, et c'est ce qui rend le palier bas identique à la
+// v285 au tampon près.
+//
+// ET LA COUCHE SE COUPE D'ELLE-MÊME EN RENDU LOGICIEL, comme les ombres (v247)
+// : mesuré au banc, elle divise la cadence de SwiftShader par 2,5 (1,2 image
+// par seconde contre 3 au même endroit de Paris) — c'est du REMPLISSAGE payé
+// par le processeur, qu'une carte graphique paie en matériel. Le banc joue
+// donc sans elle, sauf la suite qui l'éprouve (`?hd=`), exactement comme il
+// joue sans ombres sauf les témoins du regard.
+const HD_FORCE = new URLSearchParams(location.search).get('hd');
+const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
+  : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : PALIERS.moyen.hd);
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;

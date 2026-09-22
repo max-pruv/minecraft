@@ -531,11 +531,31 @@ sont nées de la première livraison, et elles valent pour toute couche de rendu
   la table de `palier.js` (0 · 3 · 6 morceaux) ; `?hd=` force et compte comme
   configuration forcée (le palier ne se range pas). Un monde dont `hd` vaut
   zéro rend EXACTEMENT les tampons de la v285 : ni sol, ni façades, ni plat.
+- **ET LA COUCHE SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES.** La fumée a
+  rougi sur la branche et pas sur `origin/main` (« on prend le volant d'une
+  voiture vue dans la rue ») ; la sonde à deux bras (`sonde-volant-hd.cjs`) a
+  dit en une exécution que les voitures étaient là et roulaient, et que la
+  page rendait 1,2 image par seconde avec la couche contre 3 sans — du
+  REMPLISSAGE que SwiftShader paie au processeur. `RAYON_HD` vaut zéro quand
+  `renduLogiciel()` est vrai ; `parishd.js` force `?hd=2`, comme les témoins du
+  regard forcent `ombres=1`. Un témoin qui mesure la rue de Paris sans le
+  demander joue donc sans HD — et c'est ce qui garde les bornes de `monte.js`
+  telles quelles.
 - **UNE RÈGLE DE FAÇADE VIT DANS `paris.js`, LA COUCHE LA DEMANDE.**
   `infoFacadeParis` publie l'îlot, la travée et le quartier depuis la MÊME
   trame que le voxel (`formeParis`) : la teinte de pierre et l'enseigne se
   tirent par immeuble, jamais par colonne. Deux trames qui décrivent le même
   immeuble finiraient par diverger.
+
+- **UNE RUE SE LIT À SON MARQUAGE, PAS À SA MATIÈRE.** Les premières captures
+  HD avaient une chaussée de pavés uniformes entre deux trottoirs à la même
+  cote ; Max : « ils n'ont pas clairement de route ». Une chaussée sombre ne
+  suffit pas : ce qui fait lire une rue, c'est la ligne axiale en pointillés,
+  le passage piéton zébré au débouché du carrefour et la lèvre de la bordure.
+  Ils se DÉDUISENT de la trame (`marquageParis`, dans `paris.js`, à côté de
+  `solParis` qui décide du sol) et se dessinent dans le tampon `sol` : aucun
+  bloc posé, donc rien pour les collisions ni les sauvegardes. Les quartiers
+  hérités (désordre ≥ 2) n'en ont pas — Paris non plus rue des Rosiers.
 
 **Et le mobilier est éclairé.** `props.js` était en `MeshBasicMaterial`, la
 seule chose du monde qui ne recevait ni le soleil ni la nuit depuis la v247. Il

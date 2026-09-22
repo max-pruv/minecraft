@@ -39,7 +39,7 @@
 // d'à côté.
 
 import { BLOCK, CITY_BLOCK, ARCHI } from './blocks.js';
-import { PARIS, infoFacadeParis } from './paris.js';
+import { PARIS, infoFacadeParis, marquageParis } from './paris.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
 
@@ -63,6 +63,7 @@ export const TUILES_HD = [
   'granit',        // les quais
   'cour',          // les pavés d'une cour
   'brique',        // le rouge d'une souche, d'un mur mitoyen
+  'marquage',      // la peinture blanche au sol, usée
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
@@ -85,8 +86,12 @@ export function rectHD(nom) {
 // Le SOL : la face du dessus de ces blocs part dans le tampon `sol`, avec la
 // tuile HD. Ils restent fusionnés (greedy) : une chaussée de seize blocs est
 // toujours un seul quad.
+// La chaussée de Paris est en ASPHALTE dans la couche HD — c'est ce que sont les
+// rues de Paris, et c'est ce qui les fait lire comme des rues à côté d'un
+// trottoir clair (Max, sur les premières captures : « ils n'ont pas clairement
+// de route »). Le pavé reste aux cours et aux quais bas.
 export const SOL_HD = new Map([
-  [ARCHI.PAVE, { tuile: 'pave', rugueux: 0.9, metal: 0 }],
+  [ARCHI.PAVE, { tuile: 'bitume', rugueux: 0.92, metal: 0 }],
   [CITY_BLOCK.SIDEWALK, { tuile: 'trottoir', rugueux: 0.95, metal: 0 }],
   [ARCHI.BORDURE, { tuile: 'bordure', rugueux: 0.8, metal: 0 }],
   [CITY_BLOCK.GRANITE, { tuile: 'granit', rugueux: 0.75, metal: 0 }],
@@ -136,6 +141,8 @@ const M = {
   bois: [0.68, 0.0],
   store: [0.92, 0.0],
   enseigne: [0.55, 0.15],
+  marquage: [0.7, 0.0],
+  granit: [0.75, 0.0],
 };
 
 // --- le tampon HD ------------------------------------------------------------------
@@ -482,4 +489,73 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao) {
     case ARCHI.ZINC_LISSE: mansarde(f, r, allumee, false); break;
     default: murNu(f);
   }
+}
+
+// --- la rue : marquage et bordure ------------------------------------------------------
+
+// Un quad horizontal, posé un cheveu au-dessus du sol, en coordonnées locales du
+// morceau. `x0..x1`, `z0..z1` sont les bords, `y` la cote du dessus du bloc.
+function dalle(buf, x0, x1, y, z0, z1, wx, wz, tuile, ombre, mat) {
+  const rect = rectHD(tuile);
+  const c = [ombre, ombre, ombre];
+  const ids = [
+    buf.sommet([x0, y, z1], [0, 1, 0], [wx + x0 - Math.floor(x0), wz + z1 - Math.floor(z1)], rect, c, mat, 0),
+    buf.sommet([x1, y, z1], [0, 1, 0], [wx + x1 - Math.floor(x0), wz + z1 - Math.floor(z1)], rect, c, mat, 0),
+    buf.sommet([x1, y, z0], [0, 1, 0], [wx + x1 - Math.floor(x0), wz + z0 - Math.floor(z1)], rect, c, mat, 0),
+    buf.sommet([x0, y, z0], [0, 1, 0], [wx + x0 - Math.floor(x0), wz + z0 - Math.floor(z1)], rect, c, mat, 0),
+  ];
+  buf.quadIndices(ids[0], ids[1], ids[2], ids[3]);
+}
+
+// Le marquage d'une colonne de chaussée : la ligne axiale en pointillés (un
+// trait par bloc, dans l'axe de la rue) ou le passage piéton (des bandes
+// élancées dans l'axe de la rue, espacées en travers).
+export function marquageHD(buf, x, y, z, wx, wz) {
+  const m = marquageParis(wx, wz);
+  if (!m) return false;
+  const yt = y + 1.006, ombre = 0.95;
+  const mat = M.marquage;
+  if (m.type === 'axe') {
+    if (m.long === 'v') dalle(buf, x + 0.44, x + 0.56, yt, z + 0.25, z + 0.75, wx, wz, 'marquage', ombre, mat);
+    else dalle(buf, x + 0.25, x + 0.75, yt, z + 0.44, z + 0.56, wx, wz, 'marquage', ombre, mat);
+    return true;
+  }
+  // le passage : trois bandes de 0,2 espacées de 0,2, en phase d'un bloc à l'autre
+  for (let k = 0; k < 3; k++) {
+    const a = 0.05 + k * 0.35, b = a + 0.2;
+    if (m.long === 'v') dalle(buf, x + a, x + b, yt, z, z + 1, wx, wz, 'marquage', ombre, mat);
+    else dalle(buf, x, x + 1, yt, z + a, z + b, wx, wz, 'marquage', ombre, mat);
+  }
+  return true;
+}
+
+// La bordure de trottoir en relief : sur le côté du bloc de bordure qui touche la
+// chaussée, une lèvre de granit de 0,14 de haut — c'est ce qui sépare le
+// trottoir de la rue quand les deux sont à la même cote.
+export function bordureHD(buf, x, y, z, wx, wz, cotes) {
+  const rect = rectHD('granit');
+  const mat = M.granit;
+  const h = 0.14, l = 0.24, yt = y + 1;
+  const boite = (x0, x1, z0, z1) => {
+    const c = [0.96, 0.96, 0.96], cf = [0.78, 0.78, 0.78];
+    const uv = (px, pz) => [wx + px - x, wz + pz - z];
+    // le dessus
+    let i = [buf.sommet([x0, yt + h, z1], [0, 1, 0], uv(x0, z1), rect, c, mat, 0), buf.sommet([x1, yt + h, z1], [0, 1, 0], uv(x1, z1), rect, c, mat, 0),
+      buf.sommet([x1, yt + h, z0], [0, 1, 0], uv(x1, z0), rect, c, mat, 0), buf.sommet([x0, yt + h, z0], [0, 1, 0], uv(x0, z0), rect, c, mat, 0)];
+    buf.quadIndices(i[0], i[1], i[2], i[3]);
+    // les quatre flancs
+    const flanc = (a, b, n) => {
+      const j = [buf.sommet([a[0], yt, a[1]], n, [wx + a[0] - x, yt], rect, cf, mat, 0), buf.sommet([b[0], yt, b[1]], n, [wx + b[0] - x, yt], rect, cf, mat, 0),
+        buf.sommet([b[0], yt + h, b[1]], n, [wx + b[0] - x, yt + h], rect, cf, mat, 0), buf.sommet([a[0], yt + h, a[1]], n, [wx + a[0] - x, yt + h], rect, cf, mat, 0)];
+      buf.quadIndices(j[0], j[1], j[2], j[3]);
+    };
+    flanc([x0, z1], [x1, z1], [0, 0, 1]);
+    flanc([x1, z0], [x0, z0], [0, 0, -1]);
+    flanc([x1, z1], [x1, z0], [1, 0, 0]);
+    flanc([x0, z0], [x0, z1], [-1, 0, 0]);
+  };
+  if (cotes.px) boite(x + 1 - l, x + 1, z, z + 1);
+  if (cotes.mx) boite(x, x + l, z, z + 1);
+  if (cotes.pz) boite(x, x + 1, z + 1 - l, z + 1);
+  if (cotes.mz) boite(x, x + 1, z, z + l);
 }
