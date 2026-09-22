@@ -227,29 +227,42 @@ function verifier(nom, ok, detail = '') {
       g.player.pos.set(x + 0.5, y + 2, z + 0.5); g.player.vel.set(0, 0, 0);
       const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
       const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
-      const cle = (dx, dz) => `${cx + dx},${cz + dz}`;
+      // LE LOINTAIN, C'EST N'IMPORTE QUEL MORCEAU AU-DELÀ DU RAYON HD. Le
+      // premier jet guettait trois morceaux nommés « à cinq » et dormait
+      // quarante secondes : à rr=6 la page rend 0,75 image par seconde en
+      // rendu logiciel, le fil principal installe les morceaux au rythme des
+      // images, et ces trois-là arrivaient à 41 et 43 s — celui de l'autre
+      // côté dès 22 s (sonde-hd-lod.cjs). Le témoin mesurait l'ordre d'arrivée
+      // de la file, pas le relais. On attend le RÉSULTAT, borné, et le temps
+      // pris entre dans le message (v270).
+      const loinDe = g.RAYON_HD + 2;
       const t0 = performance.now();
-      while (performance.now() - t0 < 40000) {
+      let ici = null, loin = null, cleLoin = null;
+      while (performance.now() - t0 < 90000) {
         await dodo(500);
-        const ici = g.chunkMeshes.get(cle(0, 0)), loin = g.chunkMeshes.get(cle(5, 0)) || g.chunkMeshes.get(cle(-5, 0)) || g.chunkMeshes.get(cle(0, 5));
-        if (ici && ici.facades && loin && (loin.plat || loin.facades)) {
-          await dodo(300);
-          return {
-            attente: Math.round(performance.now() - t0),
-            iciDetail: ici.facades.visible, iciPlat: ici.plat ? ici.plat.visible : null,
-            loinDetail: loin.facades ? loin.facades.visible : null, loinPlat: loin.plat ? loin.plat.visible : null,
-            atlas: !!g.atlasHD, rayon: g.RAYON_HD, appels: g.renderer.info.render.calls,
-            morceauxHD: [...g.chunkMeshes.values()].filter((e) => e.facades).length,
-          };
+        ici = g.chunkMeshes.get(`${cx},${cz}`);
+        loin = null;
+        for (const [k, e] of g.chunkMeshes) {
+          const [a, b] = k.split(',').map(Number);
+          if (Math.max(Math.abs(a - cx), Math.abs(b - cz)) >= loinDe && (e.plat || e.facades)) { loin = e; cleLoin = k; break; }
         }
+        if (ici && ici.facades && loin) break;
       }
-      return { attente: 40000, ici: !!g.chunkMeshes.get(cle(0, 0)), loin: !!g.chunkMeshes.get(cle(5, 0)) };
+      if (ici && ici.facades && loin) await dodo(300);
+      return {
+        trouve: !!(ici && ici.facades && loin), attente: Math.round(performance.now() - t0),
+        ici: !!ici, iciFacades: !!(ici && ici.facades), cleLoin, loinDe,
+        iciDetail: ici && ici.facades ? ici.facades.visible : null, iciPlat: ici && ici.plat ? ici.plat.visible : null,
+        loinDetail: loin && loin.facades ? loin.facades.visible : null, loinPlat: loin && loin.plat ? loin.plat.visible : null,
+        atlas: !!g.atlasHD, rayon: g.RAYON_HD, appels: g.renderer.info.render.calls,
+        morceaux: g.chunkMeshes.size, morceauxHD: [...g.chunkMeshes.values()].filter((e) => e.facades).length,
+      };
     }, [px, pz]);
     verifier('sous l\'enfant, le détail est visible et la tuile plate cachée',
       res.iciDetail === true && res.iciPlat === false, JSON.stringify(res));
-    verifier('à cinq morceaux, la tuile plate est visible et le détail caché',
-      res.loinPlat === true && res.loinDetail === false, JSON.stringify(res));
-    verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2);
+    verifier('au-delà du rayon HD, la tuile plate est visible et le détail caché',
+      res.loinPlat === true && res.loinDetail === false, `${res.cleLoin} (≥ ${res.loinDe} morceaux) en ${res.attente} ms · ${JSON.stringify(res)}`);
+    verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
 
