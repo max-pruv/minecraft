@@ -133,7 +133,10 @@ function verifier(nom, ok, detail = '') {
   const rectDe = HD.rectHD;
   const compteTuile = (g, nom) => {
     if (!g || !rectDe) return 0;
-    const r = rectDe(nom);
+    // une tuile que l'ancien code ne connaît pas compte zéro : le témoin rougit,
+    // il ne fait pas lâcher le banc (et les verdicts suivants sont rendus)
+    let r;
+    try { r = rectDe(nom); } catch (e) { return 0; }
     let n = 0;
     for (let i = 0; i < nb(g); i++) if (Math.abs(g.tiles[i * 4] - r[0]) < 1e-5 && Math.abs(g.tiles[i * 4 + 1] - r[1]) < 1e-5) n++;
     return n;
@@ -217,7 +220,7 @@ function verifier(nom, ok, detail = '') {
     // TOUT SE COMPTE SUR UN CARRÉ DE VINGT-CINQ MORCEAUX : le morceau de base est
     // une place presque sans toit (52 sommets de brisis à lui seul), et un témoin
     // qui écrit son terrain se trompe de terrain (v285). Mesuré à l'écriture :
-    // 2 512 sommets de brisis, 984 de terrasson en pente, 1 552 de dessus dans
+    // 2 512 sommets de brisis, 2 292 de terrasson en pente, 1 552 de dessus dans
     // `plat` ; les barres sont à la moitié. Sur l'ancien code, zéro des trois.
     let brisis = 0, terrasson = 0, platHaut = 0, affiche = 0, lattes = 0, corbeilles = 0;
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
@@ -231,7 +234,7 @@ function verifier(nom, ok, detail = '') {
       for (let i = 0; i < nb(t.plat); i++) if (t.plat.normals[i * 3 + 1] > 0.99) platHaut++;
     }
     verifier('le comble est à la Mansart : un brisis raide au premier rang, un terrasson en pente douce au-dessus',
-      brisis > 1200 && terrasson > 490,
+      brisis > 1200 && terrasson > 1100,
       `${brisis} sommets de brisis, ${terrasson} de terrasson en pente, sur 25 morceaux`);
     // AUCUNE PENTE N'EST VRILLÉE, ET AUCUNE NE SORT DE SA COLONNE. Un quad dont
     // l'arête haute va à rebours de l'arête basse est un nœud papillon : deux

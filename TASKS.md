@@ -67,13 +67,27 @@
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
   blocs, elle n'en écrit aucun.
 
-  **État (v288).** PR1 livrée (v287) ; PR2 livrée en deux temps — la v288 porte
+  **État (v289).** PR1 livrée (v287) ; PR2 livrée en trois temps — la v288 porte
   les registres par quartier, les arbres maillés, les potelets, terrasses,
-  plaques, mitres et le réverbère parisien. Ce qui reste de la PR2, pour la
-  suivante : le comble à la Mansart en géométrie, les colonnes Morris, kiosques,
-  bancs et corbeilles, les monuments héros (`herosparis.js` / `monumentshd.js`
-  : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du Louvre, Sacré-Cœur,
-  Panthéon, Opéra, Invalides, Montparnasse). Dettes déclarées de la v288 :
+  plaques, mitres et le réverbère parisien ; la v289 le comble à la Mansart en
+  champ de hauteurs (brisis, chiens-assis, terrasson continu, croupes), les
+  colonnes Morris, les bancs et les corbeilles. Ce qui reste de la PR2, pour la
+  suivante : les kiosques, et les monuments héros (`herosparis.js` /
+  `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
+  Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
+  déclarées de la v289 :
+  - [ ] le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
+    îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs
+    différentes se lissent l'un sur l'autre, ce qui fait un toit qui monte d'un
+    lot à l'autre au lieu d'un mur pignon — à mesurer sur capture, rue par rue ;
+  - [ ] un brisis qui monte à plus d'un bloc (coin de champ à 1,5 ou 2) est
+    raide mais droit : le vrai brisis d'un immeuble de coin se brise à la ligne
+    de bris ; la constante `RETRAIT` est la seule à régler, sur capture ;
+  - [ ] sur les places sans trottoir large (esplanades), la colonne Morris se
+    pose au tirage sans regarder si une devanture ou un banc est à côté ;
+    mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
+
+  Dettes déclarées de la v288 :
   - [ ] une chaise de terrasse HD n'arrête ni un passant ni une voiture (ce
     n'est pas un `prop`, donc pas un obstacle de `mobilierDevant`) — à régler
     avec la PR4, où les obstacles de la conduite se refont ;
