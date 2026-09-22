@@ -23,7 +23,8 @@
     "carteMonde": "node carteMonde.js",
     "hote": "node hote.js",
     "manhattan": "node manhattan.js",
-    "realisme": "node realisme.js"
+    "realisme": "node realisme.js",
+    "parishd": "node parishd.js"
   },
   "devDependencies": {
     "express": "^4.19.2",

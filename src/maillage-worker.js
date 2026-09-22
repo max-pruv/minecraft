@@ -27,6 +27,7 @@ self.onmessage = (e) => {
     monde.edits = new Map(m.edits);
     monde.editTimes = new Map(m.temps || []);
     monde.ctx = m.ctx || 'local';
+    monde.hd = m.hd || 0;
     monde.chunks.clear();
     monde.tops.clear();
     return;
@@ -60,12 +61,14 @@ self.onmessage = (e) => {
       // sol : on lui en donne une copie, transférée, pas recopiée.
       const copie = data.slice();
       const transfert = [copie.buffer];
-      for (const g of [t.solid, t.water, t.lumineux]) {
+      for (const g of [t.solid, t.water, t.lumineux, t.plat, t.platLumineux, t.sol, t.facades]) {
         if (!g) continue;
         transfert.push(g.positions.buffer, g.normals.buffer, g.uvs.buffer, g.colors.buffer, g.tiles.buffer, g.indices.buffer);
+        if (g.matiere) transfert.push(g.matiere.buffer, g.lueur.buffer);
       }
       self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms,
-        top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props }, transfert);
+        top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
+        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux }, transfert);
     }
     // et l'on oublie ce qu'on a dépassé, comme le fil principal (v236)
     monde.oublierLoinDe(m.pcx, m.pcz, m.rayon);

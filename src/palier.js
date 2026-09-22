@@ -86,15 +86,18 @@ export const PALIERS = {
   // L'iPad de quatre ans, et tout ce qui rame. Moins que ce que le jeu fait
   // aujourd'hui : c'est le seul palier qui n'a jamais été mesuré chez la
   // famille, et il est là pour ne pas laisser un vieil appareil sans issue.
-  bas: { rr: 8, file: 6 },
+  // `hd` (v287) : la portée de la couche HD de Paris, en morceaux — 0 l'éteint.
+  // Elle coûte un appel de dessin et quelques milliers de triangles par
+  // morceau proche ; sur l'iPad de quatre ans, rien.
+  bas: { rr: 8, file: 6, hd: 0 },
   // CE QUE LE JEU FAIT AUJOURD'HUI, au réglage près. Un appareil que la mesure
   // ne sait pas classer atterrit ici et ne perd rien.
-  moyen: { rr: 12, file: 8 },
+  moyen: { rr: 12, file: 8, hd: 3 },
   // L'iPhone de Max, et tout ordinateur. La file passe à seize — le chiffre que
   // la v265 avait mesuré comme le genou du DÉBIT et que la v269 a dû rendre
   // parce qu'il écroulait la cadence SUR L'IPAD. Sur un appareil qui a la
   // réserve, il n'y a pas de raison de le lui refuser.
-  haut: { rr: 16, file: 16 },
+  haut: { rr: 16, file: 16, hd: 6 },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';

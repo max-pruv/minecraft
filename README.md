@@ -34,6 +34,12 @@ rendering budgets, licensing and limitations.
 - **Procedural textures** — the block atlas is painted onto a canvas at
   startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
+- **Paris in relief (HD layer)** — the voxel world is the skeleton; on top of
+  it, a second mesher pass emits real facade geometry for Paris (recessed
+  windows, railings, running balconies, cornices, awnings, dormers) and
+  128-px procedural materials for its streets, with one draw call per chunk.
+  Far away, the flat tile remains as the level of detail. The device tier
+  sets the range (`?hd=` forces it).
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
   plus harmonics that track the throttle), jet spool-up, block and chime sounds
@@ -177,6 +183,8 @@ src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
+src/facadeshd.js  Paris HD layer: facade relief and street surfaces, as buffers
+src/matierehd.js  its single PBR material, 1024-px atlas and environment
 src/bandeau.js    the game's passing message, the one voice everything speaks with
 
   the shared world

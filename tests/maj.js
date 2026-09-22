@@ -244,9 +244,15 @@ function verifier(nom, ok, detail = '') {
     }).catch((e) => ({ err: String(e && e.message || e) }));
     await lent.close();
     // La borne de GARDE vérifie que la mesure a EU LIEU : sans relevé, « zéro
-    // fautif » est une absence de mesure et non un verdict (v272).
+    // fautif » est une absence de mesure et non un verdict (v272). Elle valait
+    // trois, et la suite rejouée SEULE en a rendu DEUX sur une page prête à
+    // 3 130 ms (v287) : le nombre de relevés est le temps entre l'ouverture de
+    // la boucle et la page prête, divisé par cinquante millisecondes — une
+    // grandeur du banc, pas du jeu. Une borne de garde se pose à la moitié de
+    // la plus petite mesure (v237), donc à un : la boucle a vu le loader et le
+    // bouton au moins une fois.
     verifier('après une mise à jour, le loader ne cache jamais un « Jouer » déjà cliquable',
-      !cache.err && cache.releves >= 3 && cache.fautifs === 0,
+      !cache.err && cache.releves >= 1 && cache.fautifs === 0,
       `${JSON.stringify(cache)} (désarmé : 11 fautifs sur 848 ms)`);
 
     // LE PREMIER CHARGEMENT NE TÉLÉCHARGE PAS CE QUI NE SERT PAS À JOUER.

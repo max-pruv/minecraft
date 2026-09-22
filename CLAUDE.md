@@ -493,6 +493,110 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Paris en relief — le voxel est le squelette, plus le dernier mot (v287)
+
+Décision de Max, septembre 2026, et c'est le cap du jeu désormais : Grand Tour
+est un MONDE OUVERT beau et vivant, Paris en premier, puis la conduite, puis
+toutes les villes d'Europe. Le bloc reste le squelette — collisions, sauvegardes,
+coordonnées, édition — mais il n'est plus forcément ce qu'on voit. Six règles
+sont nées de la première livraison, et elles valent pour toute couche de rendu
+à venir.
+
+- **UNE COUCHE DE DÉTAIL LIT LES BLOCS, ELLE N'EN ÉCRIT AUCUN.** `facadeshd.js`
+  est une seconde passe du mailleur sur les MÊMES données de morceau, dans le
+  même worker : elle rend des tampons (positions, normales, UV, tuile, matière,
+  lueur), jamais un bloc. C'est ce qui rend l'invariant 1 vrai PAR CONSTRUCTION
+  — et un témoin le mesure quand même, à l'octet près.
+- **LE VOXEL PLAT RESTE LE LOIN.** Pour chaque face de façade détaillée, le
+  mailleur garde la face plate d'avant dans un tampon à part (`plat`, et
+  `platLumineux` pour les vitres allumées) ; `montrerLeDetail` (main.js) relaie
+  près/loin à chaque changement de morceau, SANS remaillage. Jamais les deux à
+  la fois : la face plate au nu du mur cacherait la baie en retrait. Le loin ne
+  change pas d'un pixel, la ligne de corniche non plus.
+- **UN SEUL MATÉRIAU, LA MATIÈRE PAR SOMMET.** Un atlas de 1 024 pixels, un
+  `MeshStandardMaterial` dont la rugosité, le métal et la lueur sont des
+  ATTRIBUTS (`matiere`, `lueur`) : la pierre, le zinc, la vitre et le fer
+  vivent dans le même maillage, donc UN appel de dessin par morceau quel que
+  soit le nombre de fenêtres. Les quatre lampes du jeu et la clé de programme ne
+  bougent pas (v248, v264). Une vitre est un métal sombre peu rugueux : c'est le
+  métal qui fait le miroir, et l'environnement PMREM (recette de Manhattan,
+  préfiltré une fois) ce qu'il reflète.
+- **LA MÊME RÈGLE D'EXPOSITION QUE LE PLAT, ET LE COMPTE SE VÉRIFIE.** Le
+  détail est émis pour une face si et seulement si `shouldRenderFace` l'aurait
+  émise contre son voisin — c'est ce qui rend le détail cohérent avec un bloc
+  posé ou retiré par un enfant contre une façade. Le témoin compte les faces
+  exposées INDÉPENDAMMENT sur les blocs et exige l'égalité avec ce que le
+  mailleur déclare (`facadesDetaillees`).
+- **LE PALIER DÉCIDE DE LA PORTÉE, ET LE PALIER BAS NE PERD RIEN.** `hd` dans
+  la table de `palier.js` (0 · 3 · 6 morceaux) ; `?hd=` force et compte comme
+  configuration forcée (le palier ne se range pas). Un monde dont `hd` vaut
+  zéro rend EXACTEMENT les tampons de la v285 : ni sol, ni façades, ni plat.
+- **ET LA COUCHE SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES.** La fumée a
+  rougi sur la branche et pas sur `origin/main` (« on prend le volant d'une
+  voiture vue dans la rue ») ; la sonde à deux bras (`sonde-volant-hd.cjs`) a
+  dit en une exécution que les voitures étaient là et roulaient, et que la
+  page rendait 1,2 image par seconde avec la couche contre 3 sans — du
+  REMPLISSAGE que SwiftShader paie au processeur. `RAYON_HD` vaut zéro quand
+  `renduLogiciel()` est vrai ; `parishd.js` force `?hd=2`, comme les témoins du
+  regard forcent `ombres=1`. Un témoin qui mesure la rue de Paris sans le
+  demander joue donc sans HD — et c'est ce qui garde les bornes de `monte.js`
+  telles quelles.
+- **UNE RÈGLE DE FAÇADE VIT DANS `paris.js`, LA COUCHE LA DEMANDE.**
+  `infoFacadeParis` publie l'îlot, la travée et le quartier depuis la MÊME
+  trame que le voxel (`formeParis`) : la teinte de pierre et l'enseigne se
+  tirent par immeuble, jamais par colonne. Deux trames qui décrivent le même
+  immeuble finiraient par diverger.
+
+- **UNE RUE SE LIT À SON MARQUAGE, PAS À SA MATIÈRE — ET UNE RUE DE PARIS A
+  SON MARQUAGE À ELLE.** Les premières captures HD avaient une chaussée de
+  pavés uniformes entre deux trottoirs à la même cote ; Max : « ils n'ont pas
+  clairement de route ». Mon premier remède y a mis une ligne axiale en
+  pointillés dans chaque rue : Max, sur la planche suivante, « des vraies routes
+  qui ressemblent à des vraies routes parisiennes ». Une rue de Paris est à sens
+  unique et N'A PAS de ligne axiale — c'était une route de campagne. Ce qu'elle
+  a : une chaussée d'asphalte noir, un caniveau de pavés de granit, une bordure
+  de granit clair qui MONTE, un trottoir d'asphalte gris (pas de dalles, c'est
+  Berlin), le passage piéton à larges bandes dans le sens de la marche des
+  voitures, et juste avant lui la ligne d'effet des feux en travers. La ligne
+  axiale ne reste qu'aux boulevards à double sens (chaussée de 2,4 blocs). Tout
+  se DÉDUIT de la trame (`marquageParis`, dans `paris.js`, à côté de `solParis`
+  qui décide du sol) et se dessine dans le tampon `sol` : aucun bloc posé, donc
+  rien pour les collisions ni les sauvegardes. Les quartiers hérités
+  (désordre ≥ 2) n'en ont pas — Paris non plus rue des Rosiers.
+- **LE TROTTOIR EST RELEVÉ PAR LA COUCHE, PAS PAR LE SOL.** La face du trottoir
+  se dessine `RELEVE` (un dixième) au-dessus du bloc, avec une jupe de granit
+  partout où il donne sur plus bas ; l'enfant marche à la cote du BLOC et ses
+  pieds entrent d'un dixième dans l'asphalte, ce qui ne se voit pas. Baisser la
+  chaussée à la place ferait FLOTTER les voitures, qui roulent à la cote du
+  bloc : entre des pieds enfoncés d'un dixième et des roues en l'air, on choisit
+  les pieds. C'est la même règle que le voxel-squelette, à l'échelle d'une
+  marche.
+- **UN REPLI D'UV DANS UNE TUILE CASSE LES DÉRIVÉES, ET LE MIP DESSINE UN
+  QUADRILLAGE.** Vu sur les captures aériennes : un trait clair au pas d'un bloc
+  sur tout le sol. Au bord de chaque bloc `fract()` saute d'une tuile entière, la
+  carte graphique lit une dérivée énorme et prend le mip le plus grossier — la
+  couleur moyenne de l'atlas. `textureGrad` avec les dérivées de l'UV NON replié
+  (`matierehd.js`) règle la chose ; `textures.js` porte le même repli depuis
+  toujours et le même quadrillage, moins visible sur des tuiles de seize pixels.
+
+**Et le mobilier est éclairé.** `props.js` était en `MeshBasicMaterial`, la
+seule chose du monde qui ne recevait ni le soleil ni la nuit depuis la v247. Il
+passe en Lambert ; ce qui ÉMET (la lanterne d'un réverbère, la lentille vive
+d'un feu) est émissif, sinon un feu rouge serait noir à minuit.
+
+**Le repère d'une face** (`s` le long, `t` en hauteur, `d` en saillie, négatif
+en retrait) est ce qui rend un registre lisible en dix lignes ; les enroulements
+des quads y sont vérifiés une fois pour toutes (le repère est direct : S × T =
+D pour les quatre directions). Et un garde-corps se lit à ses VERTICALES, pas à
+ses volutes : mon premier jet de ferronnerie rendait un gribouillis à l'écran.
+
+Ce que la livraison ne fait PAS encore, et qui est le programme des suivantes
+(`TASKS.md`) : les quartiers n'ont pas encore chacun leur registre (Marais,
+Montmartre, Cité…), le comble reste en voxel, le mobilier parisien et les
+monuments héros viennent avec la PR2, la nuit avec la PR3, la conduite avec la
+PR4. La couche est faite pour s'étendre : `couvreHD` décide par morceau, et les
+villes engendrées posent déjà les mêmes blocs `ARCHI`.
+
 ## Les villes engendrées ont un tissu, et un fleuve qu'on franchit (v282)
 
 Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone, je le

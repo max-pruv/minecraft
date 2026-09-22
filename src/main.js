@@ -20,6 +20,7 @@ import { cadran } from './cap.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
+import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
@@ -102,6 +103,7 @@ const PALIER = (() => {
 // doubled view distance; ?rr= overrides (perf tuning and tests)
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr'))
   || (PALIER ? PALIER.rr : (IS_TOUCH ? 12 : 16));
+
 
 // ET LA VITESSE DES JETS SUIT LA FILE, parce que la v269 l'a descendue de 160 à
 // 120 blocs par seconde EXACTEMENT POUR CETTE RAISON : « une vitesse mesurée
@@ -260,6 +262,24 @@ if (renduLogiciel()) document.documentElement.classList.add('rendu-logiciel');
 // type d'appareil, comme la v257 l'a écrit, et `?ombres=1` les force pour les
 // mesurer. Voir `palier.js`, juste au-dessus de la table.
 const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
+
+// LA PORTÉE DE LA COUCHE HD DE PARIS (v287), en morceaux : à cette distance et
+// en deçà, une façade montre son relief (facadeshd.js) ; au-delà, sa tuile
+// plate, comme avant. `?hd=` force (0 éteint) ; sinon c'est le palier, et sans
+// palier mesuré la valeur du palier moyen. Le mailleur en reçoit le drapeau
+// (`world.hd`) pour SAVOIR s'il doit produire le détail — il ne produit rien
+// pour un palier à zéro, et c'est ce qui rend le palier bas identique à la
+// v285 au tampon près.
+//
+// ET LA COUCHE SE COUPE D'ELLE-MÊME EN RENDU LOGICIEL, comme les ombres (v247)
+// : mesuré au banc, elle divise la cadence de SwiftShader par 2,5 (1,2 image
+// par seconde contre 3 au même endroit de Paris) — c'est du REMPLISSAGE payé
+// par le processeur, qu'une carte graphique paie en matériel. Le banc joue
+// donc sans elle, sauf la suite qui l'éprouve (`?hd=`), exactement comme il
+// joue sans ombres sauf les témoins du regard.
+const HD_FORCE = new URLSearchParams(location.search).get('hd');
+const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
+  : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : PALIERS.moyen.hd);
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -435,6 +455,14 @@ activerTuilage(litMaterial);
 })();
 
 const world = new urbain.TerreUrbaine();
+world.hd = RAYON_HD > 0 ? 1 : 0;
+// Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
+// une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
+let hd = null;
+function materiauDeParis() {
+  if (!hd) hd = materiauHD(renderer);
+  return hd.materiau;
+}
 
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
 // exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
@@ -499,7 +527,7 @@ const FENETRE_PALIER_MS = Number(PALIER_MS_FORCE) || 30000;
 // que le jeu (la famille de la v279). Le banc force toujours `rr`, donc il ne
 // range jamais rien ; `?palierms=` est la déclaration explicite qui permet à un
 // témoin de suivre la chaîne entière malgré cela.
-const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage']
+const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd']
   .some((c) => new URLSearchParams(location.search).has(c));
 const PALIER_SE_RANGE = !!PALIER_MS_FORCE || !CONFIG_FORCEE;
 // ET LES PLANCHERS D'ÉCHANTILLONS SUIVENT LA FENÊTRE, SOUS UN SEUL BOUTON. Ils
@@ -644,7 +672,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd });
 }
 function recevoirMorceau(m) {
   const key = World.key(m.cx, m.cz);
@@ -793,7 +821,7 @@ function rebuildQueue() {
 }
 
 function disposeChunkMesh(entry) {
-  for (const mesh of [entry.solid, entry.water, entry.lumineux]) {
+  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux]) {
     if (!mesh) continue;
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -836,7 +864,9 @@ function installerMorceau(cx, cz, tampons) {
   const solid = geometrieDepuisTampons(tampons.solid);
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
-  const entry = { solid: null, water: null, lumineux: null, props: null };
+  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null };
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -844,10 +874,42 @@ function installerMorceau(cx, cz, tampons) {
     // morceaux, quatre-vingt-quinze blocs) ; au-delà il en reçoit seulement.
     // La passe d'ombre ne rend ainsi que le monde proche, pas les 900
     // morceaux chargés — `updateChunks` remet le drapeau quand on bouge.
-    entry.solid.castShadow = Math.abs(cx - Math.floor(player.pos.x / CHUNK)) <= RAYON_OMBRE
-      && Math.abs(cz - Math.floor(player.pos.z / CHUNK)) <= RAYON_OMBRE;
+    entry.solid.castShadow = ombre;
     entry.solid.receiveShadow = true;
     scene.add(decor(entry.solid));
+  }
+  // LA COUCHE HD DE PARIS (v287). Le sol HD est toujours montré ; le détail
+  // des façades et leur tuile plate se relaient selon la distance — c'est
+  // `montrerLeDetail` qui tranche, ici et à chaque changement de morceau.
+  if (tampons.sol || tampons.facades) {
+    const materiau = materiauDeParis();
+    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades]]) {
+      const g = geometrieHD(t);
+      if (!g) continue;
+      const m = new THREE.Mesh(g, materiau);
+      m.position.set(cx * CHUNK, 0, cz * CHUNK);
+      m.castShadow = ombre && nom === 'facades';
+      m.receiveShadow = true;
+      entry[nom] = m;
+      scene.add(decor(m));
+    }
+  }
+  for (const [nom, t, mat] of [['plat', tampons.plat, solidMaterial], ['platLumineux', tampons.platLumineux, litMaterial]]) {
+    const g = geometrieDepuisTampons(t);
+    if (!g) continue;
+    const m = new THREE.Mesh(g, mat);
+    m.position.set(cx * CHUNK, 0, cz * CHUNK);
+    m.castShadow = ombre && nom === 'plat';
+    m.receiveShadow = true;
+    entry[nom] = m;
+    scene.add(decor(m));
+  }
+  montrerLeDetail(entry, cx, cz, pcx, pcz);
+  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
+  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
+  // morceau arrivé entre deux images y ajoute — six maillages désormais.
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+    if (m) m.userData.morceau = true;
   }
   if (water) {
     entry.water = new THREE.Mesh(water, waterMaterial);
@@ -900,6 +962,18 @@ function installerMorceau(cx, cz, tampons) {
   chunkMeshes.set(key, entry);
 }
 
+// Le relais entre le détail et la tuile plate d'une façade : à portée
+// (`RAYON_HD` morceaux, la distance de Tchebychev comme pour les ombres) on
+// montre le relief, au-delà la tuile — et jamais les deux, sinon la face
+// plate au nu du mur cacherait la baie en retrait.
+function montrerLeDetail(entry, cx, cz, pcx, pcz) {
+  if (!entry.facades && !entry.plat && !entry.platLumineux) return;
+  const pres = Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
+  if (entry.facades) entry.facades.visible = pres;
+  if (entry.plat) entry.plat.visible = !pres;
+  if (entry.platLumineux) entry.platLumineux.visible = !pres;
+}
+
 // De quel côté d'un réverbère est la rue : le cap (autour de y) qui tourne
 // la crosse du modèle, portée en +x, vers la première chaussée voisine. Sans
 // chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
@@ -947,8 +1021,12 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
-      } else if (entry.solid) {
-        entry.solid.castShadow = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
+      } else {
+        const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
+        if (entry.solid) entry.solid.castShadow = ombre;
+        if (entry.facades) entry.facades.castShadow = ombre;
+        if (entry.plat) entry.plat.castShadow = ombre;
+        montrerLeDetail(entry, cx, cz, pcx, pcz);
       }
     }
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
@@ -6068,6 +6146,7 @@ function updateSky(dt) {
   // daylight: 1 at noon, 0 at midnight, smooth transitions
   const daylight = THREE.MathUtils.clamp(Math.sin(angle) * 1.6 + 0.5, 0.08, 1);
   nuitDehors = 1 - THREE.MathUtils.smoothstep(daylight, 0.1, 0.55);
+  if (hd) hd.uniforms.nuitHD.value = nuitDehors;
 
   skyColor.lerpColors(NIGHT_SKY, DAY_SKY, daylight);
   // Lueur chaude du lever et du coucher. Elle se règle sur la hauteur du
@@ -6713,6 +6792,7 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
+  RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
   // lues au démarrage et ne bougent plus ; la vitesse des jets est relue dans

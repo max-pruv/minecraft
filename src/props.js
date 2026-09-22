@@ -8,8 +8,21 @@ import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS
 const WOOD = 0x6b4a2a, DARKWOOD = 0x4a3218, TRUNK = 0x67513a, LEG = 0x2c2c2c;
 const WHITE = 0xf2f2f0, DARK = 0x222226, GLOW = 0xffe9a0;
 
+// LE MOBILIER EST ÉCLAIRÉ (v287). Il était en `MeshBasicMaterial` — la seule
+// chose du monde qui ne recevait ni le soleil ni la nuit depuis la v247 : un
+// réverbère à minuit avait la couleur d'un réverbère à midi. Lambert, comme
+// les blocs autour de lui.
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+  m.position.set(x, y, z);
+  return m;
+}
+
+// Ce qui ÉMET — la lanterne d'un réverbère, la lentille vive d'un feu — ne
+// s'éteint pas avec le jour : émissif, pour rester lisible à minuit maintenant
+// que le mobilier est éclairé comme le reste.
+function lampe(w, h, d, color, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.9 }));
   m.position.set(x, y, z);
   return m;
 }
@@ -236,7 +249,7 @@ Object.assign(BUILDERS, {
     g.add(box(0.34, 0.06, 0.34, DARK, 0, 0.03, 0));         // le socle
     g.add(box(0.1, 3.0, 0.1, DARK, 0, 1.5, 0));             // le fût
     g.add(box(0.55, 0.08, 0.1, DARK, 0.26, 2.96, 0));       // la crosse
-    g.add(box(0.26, 0.14, 0.2, GLOW, 0.5, 2.86, 0));        // la lanterne
+    g.add(lampe(0.26, 0.14, 0.2, GLOW, 0.5, 2.86, 0));      // la lanterne
     g.add(box(0.3, 0.04, 0.24, DARK, 0.5, 2.95, 0));        // son chapeau
     return g;
   },
@@ -265,7 +278,7 @@ Object.assign(BUILDERS, {
     const nom = ['rouge', 'orange', 'vert'];
     for (let i = 0; i < 3; i++) {
       g.add(box(0.14, 0.14, 0.05, eteint[i], 0, hauteur[i], -0.09));
-      const l = box(0.18, 0.18, 0.06, vif[i], 0, hauteur[i], -0.12);
+      const l = lampe(0.18, 0.18, 0.06, vif[i], 0, hauteur[i], -0.12);
       l.name = 'feu-' + nom[i];
       l.visible = false;
       l.material.toneMapped = false;    // une lampe ne passe pas par la correspondance tonale

@@ -1,5 +1,100 @@
 # Ce qui est en cours
 
+- [ ] **GRAND TOUR — LE PROGRAMME « PARIS, PUIS LA CONDUITE » (décision de Max,
+  septembre 2026).** Le but n'est plus un meilleur clone de Minecraft : c'est un
+  monde ouvert beau et vivant, où Paris se reconnaît depuis un trottoir sans voir
+  la Tour Eiffel, et où l'on conduit comme dans un vrai jeu de conduite —
+  partout, hors des routes aussi. Le voxel devient le SQUELETTE du monde ; il
+  n'est plus le dernier mot de ce qu'on voit. Audit fait avant d'écrire une
+  ligne (quatre lectures croisées : Paris, rendu, véhicules, banc) ; captures
+  « avant » prises au banc (`tests/sonde-captures-paris.cjs`).
+
+  Ce que l'audit a établi, et qui décide de l'architecture :
+  - Paris est ENTIÈREMENT voxel, une façade = une tuile de 16 px par bloc
+    (`batirColonneParis`, `solParis`), une colonne = une décision, et la ligne
+    de corniche est tirée PAR ÎLOT (invariant visuel à garder).
+  - Manhattan a déjà la brique réutilisable : matériaux PBR procéduraux à
+    projection triplanaire, environnement PMREM, instanciation par lot, LOD par
+    secteur (`manhattan-materiaux.js`, `manhattan-render.js`). Son blocage est
+    l'état global du rendu sauvé une seule fois (`earthLook`).
+  - Le mailleur rend des TAMPONS depuis un worker sans three : toute couche de
+    détail neuve doit rendre des tampons de la même façon, ou elle reprend le
+    fil principal que la v251 a libéré.
+  - La voiture EST le joueur : pas de corps rigide, un cap = le regard, aucune
+    adhérence, une AABB qui ne tourne pas, aucun feu sur les GLB, un volant qui
+    ne tourne jamais (`player.js:577-625`, `fun.js:1033`).
+  - Le mobilier (`props.js`) est en `MeshBasicMaterial` : la seule chose du
+    monde qui n'est pas éclairée depuis la v247, et 5 à 11 appels de dessin par
+    réverbère ou feu.
+
+  Le plan, en cinq livraisons — chacune passe le portail, chacune est jugée sur
+  captures avant/après (règle de jugement du programme réalisme) :
+
+  1. **PR1 — la fondation Paris HD.** Une seconde passe du mailleur, dans le
+     worker, qui émet pour chaque face de façade exposée un DÉTAIL (baie en
+     retrait, encadrement, appui, garde-corps, balcon filant, corniche, store)
+     et pour chaque sol de ville une face HD ; un seul matériau Standard
+     (atlas 1024², rugosité/métal et lueur PAR SOMMET, environnement PMREM) ;
+     le voxel plat garde le LOIN (LOD sans remaillage) ; le palier décide de la
+     portée (`hd`). Le mobilier devient éclairé. Preuve : une rue en capture,
+     un témoin `parishd.js` (cohérence plat/HD, blocs intacts, palier bas
+     identique à l'octet près).
+  2. **PR2 — Paris hyperréaliste.** Identités de quartier (Marais, Latin,
+     Montmartre, Étoile, Cité, 7e, Montparnasse), comble à la Mansart en
+     géométrie, mobilier parisien instancié (réverbères, bornes, bancs, kiosques,
+     colonnes Morris, terrasses, entrées de métro, plaques de rue), devantures et
+     enseignes, voitures garées, arbres en maillage, densité de piétons ;
+     monuments héros en géométrie (Tour Eiffel en treillis, Notre-Dame, Arc,
+     Louvre, Sacré-Cœur…).
+  3. **PR3 — lumière et atmosphère.** Soleil et ciel selon l'heure, ombres,
+     nuit qui n'est pas un jour assombri : réverbères, fenêtres, devantures,
+     monuments illuminés, phares et feux stop sur les GLB.
+  4. **PR4 — conduite universelle.** Contrôleur véhicule à part (`conduite.js`) :
+     accélération/freinage/recul, direction selon la vitesse, adhérence latérale
+     et glisse, frein à main, suspension et sol échantillonné sous QUATRE roues
+     (tangage, roulis), surfaces (asphalte, pavé, herbe, terre, sable), collisions
+     avec normale, caméra de poursuite à cap indépendant ; partout dans le monde.
+  5. **PR5 — performance.** Mesures sur l'appareil, appels de dessin, mémoire,
+     paliers BAS/MOYEN/HAUT/ULTRA.
+  6. **Ensuite, TOUTES LES VILLES EUROPÉENNES** (consigne de Max : « when done
+     do all European cities ») : Londres, Nice, Lille bâties à la main, puis les
+     villes engendrées d'Europe (`villesmonde.js`). La couche HD lit des blocs
+     `ARCHI` que ces villes posent déjà : l'étendre est d'abord élargir
+     `couvreHD` à leurs disques, puis donner à chaque tissu (`villesmonde.js`)
+     ses registres — brique de Londres, tuile de Rome, pan de bois.
+
+  Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
+  blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
+  blocs, elle n'en écrit aucun.
+
+- [ ] **LE PORTAIL DE LA v287 (PR1 Paris HD) : TROIS SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN.** `manhattan.js` et `monte.js` rendent exactement les rouges
+  déclarés ci-dessous (v285 : le trou de façade, la nuit, les ombres `[1,-1]` ;
+  le figé à l'arrivée, le tirage des voitures). `maj.js` a rendu au portail
+  « le loader ne s'efface qu'une fois les corps et les programmes prêts »
+  (effacé à 6 300 ms, programmes 22/25) — et REJOUÉE SEULE il est vert des deux
+  côtés :
+
+  | `maj.js` seule | `origin/main` (v286) | branche |
+  | --- | --- | --- |
+  | le loader ne s'efface qu'une fois… | ✅ | ✅ 1 877 ms, 25/25 |
+  | le loader ne cache jamais un « Jouer » cliquable | ✅ | ❌ **garde** : 2 relevés, 0 fautif |
+  | fond de carte à la libération | ❌ `carte: false`, 45,3 s | ❌ `carte: false`, 51,9 s |
+
+  La garde `releves >= 3` comptait le temps entre l'ouverture de la boucle et la
+  page prête, en pas de cinquante millisecondes : une grandeur du banc. Posée à
+  un (la moitié de la plus petite mesure, v237). Le fond de carte est la dette
+  de la v276, inchangée. Le rouge du portail, lui, est de la famille « une
+  durée sous la charge du portail » : il ne se reproduit pas seul, sur aucun
+  des deux arbres.
+
+  **Second portail, après la rue de Paris** (quinze suites, 678 verts) : douze
+  vertes ; `manhattan.js` et `monte.js` sur leurs dettes déclarées, à
+  l'identique ; `maj.js` sur le fond de carte ET sur une puce du journal à neuf
+  mots — le deux-points isolé compte pour un mot. La puce corrigée, `maj.js`
+  rejouée seule est entièrement verte, fond de carte compris (il est
+  intermittent, v276).
+
 - [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
   Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
   quatrième rouge, « la voiture au mur », a été démonté par une sonde qui

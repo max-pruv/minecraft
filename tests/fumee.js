@@ -161,7 +161,9 @@ function verifier(nom, ok, detail = '') {
         legende: (el('map-legend') || {}).textContent || '' };
       // Et les deux touches ne font plus rien. Sur l'ancien code, Q lance une
       // balle — un maillage de plus dans la scène — et B ouvre le panneau.
-      const enfants = () => g.scene.children.length;
+      // Sans les morceaux de monde : un morceau maillé entre deux images
+      // ajoute ses maillages à la scène, et ce n'est pas une balle.
+      const enfants = () => g.scene.children.filter((o) => !o.userData.morceau).length;
       const avant = enfants();
       for (const code of ['KeyQ', 'KeyB']) {
         document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
