@@ -57,7 +57,12 @@ trottoir ; un arbre maillé par tronc (cinq troncs, cinq fûts) et les blocs de
 l'arbre passent au loin (le tampon solide perd 2 500 sommets). Le réverbère se
 compte : deux maillages, mesuré dans la page. Mesuré aussi : une rue du Marais
 rend 942 appels de dessin avec le réverbère fusionné, 2 410 avec le premier jet
-en douze pièces.
+en douze pièces. Portail complet : seize suites, sept rouges, chacun rejoué
+seul des deux côtés (`TASKS.md`) — `carte.js` et `reseau.js` vertes seules,
+`maj.js` et `reglages.js` sur leurs dettes déclarées à l'identique,
+`monte.js` un rouge sur la branche contre deux sur `origin/main`, et le témoin
+près/loin de `parishd.js`, qui mesurait l'ordre d'arrivée de la file, corrigé
+(vert seul, 23 témoins).
 
 ## v287 — Paris prend du relief : la couche HD
 

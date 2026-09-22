@@ -531,6 +531,17 @@ qui m'a contredit.
   terrasse n'arrête ni un passant ni une voiture (ce n'est pas un `prop`, donc
   pas un obstacle de `mobilierDevant`). C'est une dette de la PR4, la conduite,
   déclarée dans `TASKS.md` — pas un oubli.
+- **UN TÉMOIN QUI GUETTE UN MORCEAU NOMMÉ MESURE L'ORDRE DE LA FILE, PAS LE
+  RELAIS.** Celui du près/loin attendait trois morceaux « à cinq » et dormait
+  quarante secondes : rouge au portail ET seul, sur une machine qui rend 0,75
+  image par seconde à `rr=6` avec la couche HD. La sonde (`sonde-hd-lod.cjs`)
+  a dit en une exécution que le relais était juste dès 3 s et que ces trois
+  morceaux arrivaient à 41 et 43 s — celui de l'autre côté dès 22 s — parce
+  que le fil principal installe les morceaux au rythme des IMAGES (une
+  recharge de la file par image, v269). Une borne posée sous le coût mesuré
+  (v225), sur une durée fixe (v270), sur un ordre d'arrivée que rien ne
+  garantit. Le lointain, c'est TOUT morceau au-delà du rayon HD ; on attend le
+  résultat, borné, et la durée entre dans le message.
 - **ET UNE SONDE DE CAPTURES QUI AVALE SES ERREURS PREND TROIS VUES SUR CINQ.**
   `sonde-captures-paris.cjs` sortait par un `finally … process.exit(0)` qui
   masquait l'exception de la quatrième vue ; les deux dernières n'existaient
