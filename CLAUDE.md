@@ -493,6 +493,52 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Les quartiers, les arbres et le mobilier de Paris (v288)
+
+Deuxième livraison du programme. Cinq règles, et trois sont nées d'une capture
+qui m'a contredit.
+
+- **UN QUARTIER EST UN REGISTRE, PAS UNE TEINTE.** `STYLES` (facadeshd.js)
+  décide du mur (pierre ou enduit), de la largeur des baies, des volets, du
+  balcon filant, du store et de la corniche ; `styleDuQuartier` lit le nom que
+  `infoFacadeParis` publie depuis la trame du voxel. Un quartier neuf se déclare
+  là, jamais dans un registre par une condition sur son nom. Et le témoin
+  compare des DISTRIBUTIONS de tuiles (enduit contre pierre, volets contre
+  aucun), pas une couleur.
+- **LE MORCEAU TÉMOIN D'UN QUARTIER SE CHERCHE.** Le centre du Marais est une
+  place : le morceau qui s'y trouve n'a pas une façade, et mon premier témoin
+  rendait « enduit 0, volets 0, pierre 0 » — rouge sans rien mesurer. C'est
+  « un témoin qui écrit son terrain se trompe de terrain » (v285), pour un
+  quartier : on balaie autour jusqu'à un morceau qui porte des façades, et le
+  morceau retenu entre dans le message.
+- **UNE COURONNE SE CENTRE SUR SON TRONC ET SE BORNE.** La boîte des feuilles
+  mesurée à ±3 blocs avalait celles du voisin : sur les Champs-Élysées, plantés
+  tous les trois blocs, la rangée devenait une HAIE plate de sept blocs de large.
+  Vu en capture, pas en témoin — le témoin compte des fûts. La boîte se lit à
+  ±2, la couronne se centre sur le fût, ses rayons sont bornés, et elle est un
+  peu plus haute que large.
+- **LE MOBILIER SE COMPTE EN APPELS DE DESSIN AVANT DE SE JUGER EN CAPTURE.**
+  Mon premier réverbère parisien faisait douze maillages, contre cinq avant :
+  une rue du Marais passait de 1 100 à 2 500 appels — le goulot de l'iPad
+  (« ce sont les appels de dessin », v196), multiplié par les centaines de
+  réverbères d'une ville. Toute la fonte est FUSIONNÉE en une géométrie
+  (`fusionner`, props.js), la lanterne à part : deux appels, et un témoin les
+  compte dans la page. Un prop de rue se dessine en une ou deux pièces, pas en
+  douze.
+- **LE MOBILIER HD VIT DANS `facades` ET NE BLOQUE RIEN.** Potelets, terrasses,
+  mitres et arbres sont des tampons du morceau : ils coûtent zéro appel de
+  dessin de plus et disparaissent avec le loin. Le prix déclaré : une chaise de
+  terrasse n'arrête ni un passant ni une voiture (ce n'est pas un `prop`, donc
+  pas un obstacle de `mobilierDevant`). C'est une dette de la PR4, la conduite,
+  déclarée dans `TASKS.md` — pas un oubli.
+- **ET UNE SONDE DE CAPTURES QUI AVALE SES ERREURS PREND TROIS VUES SUR CINQ.**
+  `sonde-captures-paris.cjs` sortait par un `finally … process.exit(0)` qui
+  masquait l'exception de la quatrième vue ; les deux dernières n'existaient
+  pas et le code de sortie disait zéro. Chaque vue attrape et NOMME son échec
+  (« page.screenshot: Timeout »), et la capture attend deux minutes — une page
+  de Paris à `rr=9` avec la couche HD rend une image toutes les dix secondes en
+  rendu logiciel.
+
 ## Paris en relief — le voxel est le squelette, plus le dernier mot (v287)
 
 Décision de Max, septembre 2026, et c'est le cap du jeu désormais : Grand Tour

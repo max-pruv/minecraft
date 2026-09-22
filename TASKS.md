@@ -67,6 +67,23 @@
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
   blocs, elle n'en écrit aucun.
 
+  **État (v288).** PR1 livrée (v287) ; PR2 livrée en deux temps — la v288 porte
+  les registres par quartier, les arbres maillés, les potelets, terrasses,
+  plaques, mitres et le réverbère parisien. Ce qui reste de la PR2, pour la
+  suivante : le comble à la Mansart en géométrie, les colonnes Morris, kiosques,
+  bancs et corbeilles, les monuments héros (`herosparis.js` / `monumentshd.js`
+  : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du Louvre, Sacré-Cœur,
+  Panthéon, Opéra, Invalides, Montparnasse). Dettes déclarées de la v288 :
+  - [ ] une chaise de terrasse HD n'arrête ni un passant ni une voiture (ce
+    n'est pas un `prop`, donc pas un obstacle de `mobilierDevant`) — à régler
+    avec la PR4, où les obstacles de la conduite se refont ;
+  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+    large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
+    entière — une tuile à part pour les petites baies ;
+  - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non
+    l'avenue : `solParis` fait passer un jardin avant l'axe — à mesurer avant
+    les monuments héros (l'Arc et la Concorde sont aux deux bouts).
+
 - [ ] **LE PORTAIL DE LA v287 (PR1 Paris HD) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** `manhattan.js` et `monte.js` rendent exactement les rouges
   déclarés ci-dessous (v285 : le trou de façade, la nuit, les ombres `[1,-1]` ;

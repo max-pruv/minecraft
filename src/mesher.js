@@ -9,7 +9,12 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, tirageHD } from './facadeshd.js';
+
+// LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
+// arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
+// dans `plat`, jamais dans `solid`.
+const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
@@ -322,7 +327,7 @@ export function buildChunkTampons(world, cx, cz) {
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.
           const solHD = hd && face.slot === 0 ? SOL_HD.get(id) : undefined;
-          const facadeHd = hd && face.slot === 1 && FACADE_HD.has(id);
+          const facadeHd = hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id));
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
             : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
@@ -390,7 +395,7 @@ export function buildChunkTampons(world, cx, cz) {
             if (!FACADE_HD.has(id)) continue;
             const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
             if (!shouldRenderFace(id, neighbor)) continue;
-            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z));
+            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z));
             facadesDetaillees++;
           }
         }
@@ -417,6 +422,38 @@ export function buildChunkTampons(world, cx, cz) {
             const ouvert = (dx, dz) => !RELEVES.has(localGet(x + dx, y, z + dz)) && localGet(x + dx, y + 1, z + dz) === BLOCK.AIR;
             const o = { px: ouvert(1, 0), mx: ouvert(-1, 0), pz: ouvert(0, 1), mz: ouvert(0, -1) };
             if (o.px || o.mx || o.pz || o.mz) trottoirHD(sol, x, y, z, ox + x, oz + z, o);
+            // LE MOBILIER DU TROTTOIR (v288), dans `facades` : un potelet tous
+            // les deux blocs au bord du caniveau, une terrasse devant une
+            // devanture sur trois. Le monde répond tout seul : on lit le sol
+            // d'à côté, on ne connaît pas la trame.
+            const bord = (dx, dz) => { const v = localGet(x + dx, y, z + dz); return v === ARCHI.BORDURE || v === ARCHI.PAVE; };
+            const cote = bord(1, 0) ? 'px' : bord(-1, 0) ? 'mx' : bord(0, 1) ? 'pz' : bord(0, -1) ? 'mz' : null;
+            if (cote) {
+              const leLong = (cote === 'px' || cote === 'mx') ? oz + z : ox + x;
+              if ((leLong & 1) === 0) poteletHD(facades, x, y, z, cote);
+            }
+            const vitrineA = (dx, dz) => localGet(x + dx, y + 1, z + dz) === ARCHI.VITRINE;
+            const vers = vitrineA(1, 0) ? [1, 0] : vitrineA(-1, 0) ? [-1, 0] : vitrineA(0, 1) ? [0, 1] : vitrineA(0, -1) ? [0, -1] : null;
+            if (vers && !cote && tirageHD(ox + x, oz + z, 917) > 0.62) terrasseHD(facades, x, y, z, ox + x, oz + z, vers);
+          } else if (id === BLOCK.TERRACOTTA) {
+            if (localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
+          } else if (id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
+            // UN ARBRE PAR TRONC : la base du fût, et la boîte des feuilles
+            // au-dessus, mesurée sur les blocs (débord compris, dans les
+            // morceaux voisins aussi).
+            let h = 1;
+            while (localGet(x, y + h, z) === BLOCK.LOG) h++;
+            const b = { x0: x, x1: x, y0: y + h, y1: y + h, z0: z, z1: z };
+            let feuilles = 0;
+            // (±2 blocs : au-delà, ce sont les feuilles de l'arbre voisin)
+            for (let dy = 0; dy <= 6; dy++) for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+              if (localGet(x + dx, y + h + dy, z + dz) !== BLOCK.LEAVES) continue;
+              feuilles++;
+              if (x + dx < b.x0) b.x0 = x + dx; if (x + dx > b.x1) b.x1 = x + dx;
+              if (z + dz < b.z0) b.z0 = z + dz; if (z + dz > b.z1) b.z1 = z + dz;
+              if (y + h + dy > b.y1) b.y1 = y + h + dy;
+            }
+            if (feuilles > 0) arbreHD(facades, x, y, z, ox + x, oz + z, h, b);
           }
         }
       }

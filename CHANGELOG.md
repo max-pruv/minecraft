@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v288 — Le Marais a ses volets, les arbres ont des feuilles, les trottoirs leur mobilier
+
+**Pourquoi.** Deuxième livraison du programme « Paris, puis la conduite ». La
+v287 avait donné son relief à Paris, mais UN SEUL Paris : le Marais, Montmartre
+et Belleville recevaient la même pierre de taille et les mêmes balcons filants
+que Monceau, alors que le vieux Paris est un mur d'enduit à petites fenêtres et
+volets de bois. Les arbres restaient des cubes verts empilés, les trottoirs
+étaient nus — ni potelet, ni terrasse, ni plaque de rue — et le réverbère
+était un poteau carré. Ce sont ces quatre choses qu'on reconnaît depuis un
+trottoir de Paris, et elles manquaient.
+
+**Ce que ça change.** Chaque quartier a son registre de façade, tiré de la MÊME
+trame que le voxel : le Marais et le Quartier latin sont en enduit ocre, crème
+ou gris, à baies étroites, volets à persiennes et corniche simple ; Montmartre
+en enduit pastel sur trois étages ; Belleville et le faubourg Saint-Antoine en
+enduit crème à garde-corps simples, sans store ; l'ouest garde sa pierre de
+taille et ses balcons filants. Les arbres de Paris sont de vrais arbres de
+près — un fût à huit pans, deux branches maîtresses, une couronne de feuillage
+ajouré centrée sur son tronc — et redeviennent leurs blocs au loin. Les
+trottoirs portent un potelet de fonte tous les deux blocs au bord du caniveau,
+une terrasse de café (table ronde à pied de fonte, deux chaises cannées) devant
+une devanture sur trois, une plaque de rue bleue au coin de chaque immeuble, et
+trois mitres sur chaque souche de cheminée. Le réverbère est parisien — fût de
+fonte effilé sur socle renflé, lanterne à pans sous un chapeau pointu — et il ne
+coûte que deux appels de dessin, sa fonte étant fusionnée. Aucun bloc n'a
+bougé : tout est dessiné par la couche HD ou par le mobilier, à la cote des
+blocs. Captures : `docs/paris-captures/` (v288-marais, v288-champs).
+
+**Ce qui le prouve.** `parishd.js` gagne quatre témoins, vérifiés rouges sur la
+v287 : chaque quartier a son registre (au Marais 4 516 sommets d'enduit et
+8 320 de volets, zéro de pierre ; à Haussmann 480 de pierre, zéro d'enduit ni de
+volet — le morceau du Marais se CHERCHE, le centre du quartier étant une
+place) ; les coins portent une plaque ; des potelets de fonte bordent le
+trottoir ; un arbre maillé par tronc (cinq troncs, cinq fûts) et les blocs de
+l'arbre passent au loin (le tampon solide perd 2 500 sommets). Le réverbère se
+compte : deux maillages, mesuré dans la page. Mesuré aussi : une rue du Marais
+rend 942 appels de dessin avec le réverbère fusionné, 2 410 avec le premier jet
+en douze pièces.
+
 ## v287 — Paris prend du relief : la couche HD
 
 **Pourquoi.** Décision de Max, et c'est un changement de cap pour le jeu : Grand
