@@ -24,7 +24,8 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
-import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET } from './palier.js';
+import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
+  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, etendueRange, reglageDe } from './palier.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -87,22 +88,40 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart
 // pendant que la page compile ses shaders.
 //
 // `?palier=bas|moyen|haut` force, pour le banc et pour mesurer.
+//
+// ET DEPUIS LA v290, LA MESURE NE DÉCIDE PLUS SEULE : Max a demandé à choisir
+// lui-même l'étendue des graphismes, et son choix passe devant. La règle vit
+// dans `palier.js` (`palierRetenu`), pour que l'espace des réglages et les
+// témoins lisent exactement ce que le démarrage lit.
 const PALIER_FORCE = new URLSearchParams(location.search).get('palier');
+// CE QUE L'ENFANT A CHOISI, rangé sur l'APPAREIL. Une valeur abîmée ou inconnue
+// retombe sur `auto` : un stockage qu'on ne comprend pas ne doit pas bloquer un
+// appareil dans un palier.
+const ETENDUE_CHOISIE = (() => {
+  try {
+    const v = localStorage.getItem(ETENDUE_CLE);
+    if (v === 'auto' || (v && PALIERS[v])) return v;
+  } catch { /* mode privé */ }
+  return ETENDUE_PAR_DEFAUT;
+})();
 const PALIER = (() => {
-  if (PALIER_FORCE && PALIERS[PALIER_FORCE]) return { nom: PALIER_FORCE, ...PALIERS[PALIER_FORCE] };
+  if (PALIER_FORCE && PALIERS[PALIER_FORCE]) return { nom: PALIER_FORCE, source: 'adresse', ...PALIERS[PALIER_FORCE] };
+  let mesure = null;
   try {
     const brut = localStorage.getItem(PALIER_CLE);
-    if (brut) {
-      const v = JSON.parse(brut);
-      if (v && PALIERS[v.palier]) return { nom: v.palier, mesure: v, ...PALIERS[v.palier] };
-    }
+    if (brut) mesure = JSON.parse(brut);
   } catch { /* mode privé, ou rangement abîmé : on garde le comportement d'avant */ }
-  return null;                       // pas encore mesuré : la v283, au bit près
+  // Ni choix ni mesure : rend null, c'est-à-dire la v283 au bit près.
+  return palierRetenu({ choix: ETENDUE_CHOISIE, mesure });
 })();
 
 // doubled view distance; ?rr= overrides (perf tuning and tests)
+// LE REPLI SE DEMANDE À `palier.js` (`reglageDe`), il ne se recopie pas : quatre
+// lecteurs décrivaient ce que vaut « pas de palier », dont l'aide du réglage
+// d'étendue, et c'est exactement ainsi que deux tables divergent.
+const SANS_PALIER = reglageDe(null, IS_TOUCH);
 const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr'))
-  || (PALIER ? PALIER.rr : (IS_TOUCH ? 12 : 16));
+  || (PALIER ? PALIER.rr : SANS_PALIER.rr);
 
 
 // ET LA VITESSE DES JETS SUIT LA FILE, parce que la v269 l'a descendue de 160 à
@@ -279,7 +298,7 @@ const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0'
 // joue sans ombres sauf les témoins du regard.
 const HD_FORCE = new URLSearchParams(location.search).get('hd');
 const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
-  : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : PALIERS.moyen.hd);
+  : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : SANS_PALIER.hd);
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -510,7 +529,10 @@ const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recu
 //
 // Deux travaux, deux goulots, deux machines : ce que coûte un MORCEAU dans le
 // worker (il décide combien de monde peut exister devant l'enfant) et ce que
-// coûte une IMAGE sur le fil principal (il décide la résolution et les ombres).
+// coûte le TRAVAIL d'une image sur le fil principal (il décide combien de monde
+// on peut lui donner à installer). Et « le travail d'une image » n'est PAS
+// l'écart entre deux images : voir `noterTravail` plus bas, c'est le défaut que
+// la v290 a corrigé après l'avoir écrit ici en toutes lettres.
 //
 // ET L'ON NE MESURE QU'EN JEU. Pendant la préparation la page compile ses
 // vingt-cinq programmes et calcule son fond de carte : y prendre une mesure,
@@ -529,7 +551,9 @@ const FENETRE_PALIER_MS = Number(PALIER_MS_FORCE) || 30000;
 // témoin de suivre la chaîne entière malgré cela.
 const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd']
   .some((c) => new URLSearchParams(location.search).has(c));
-const PALIER_SE_RANGE = !!PALIER_MS_FORCE || !CONFIG_FORCEE;
+// ET UNE ÉTENDUE CHOISIE À LA MAIN EST UNE CONFIGURATION FORCÉE (v290) : on
+// mesure, on l'affiche, on ne la range pas — voir `etendueRange` dans palier.js.
+const PALIER_SE_RANGE = (!!PALIER_MS_FORCE || !CONFIG_FORCEE) && etendueRange(ETENDUE_CHOISIE);
 // ET LES PLANCHERS D'ÉCHANTILLONS SUIVENT LA FENÊTRE, SOUS UN SEUL BOUTON. Ils
 // sont là pour qu'une médiane veuille dire quelque chose ; écrits en dur, ils
 // tiendraient la porte fermée quand `?palierms=` la raccourcit, et le témoin
@@ -539,7 +563,28 @@ const PALIER_SE_RANGE = !!PALIER_MS_FORCE || !CONFIG_FORCEE;
 // ne s'est passé » —, donc elles restent loin de tout seuil de verdict (v237).
 const MIN_MORCEAUX = Math.max(10, Math.round(FENETRE_PALIER_MS / 750));
 const MIN_IMAGES = Math.max(60, Math.round(FENETRE_PALIER_MS / 50));
-const mesurePalier = { morceaux: [], images: [], depuis: 0, range: false };
+// ── ET LA PÉRIODE D'UNE IMAGE N'EST PAS LE TRAVAIL D'UNE IMAGE (v290) ────────
+//
+// La v284 notait `now - lastTime`, c'est-à-dire l'écart entre deux images. Sur
+// un appareil SYNCHRONISÉ À SON ÉCRAN, cet écart EST la période de
+// rafraîchissement : l'iPad de Max rend 59 images par seconde et donne 17,0 ms,
+// soit 1000/59 au dixième près. Le chiffre ne dit alors rien de ce que
+// l'appareil a fait — il dit à quelle cadence l'écran l'a réveillé.
+//
+// Les deux barres devenaient donc fausses PAR CONSTRUCTION : `> 16,7` est vrai
+// sur tout appareil en bonne santé à 60 Hz — il partait en `bas` — et `≤ 8` est
+// INATTEIGNABLE sous vsync, si bien que `haut` ne pouvait jamais être atteint.
+// C'est exactement la règle que la v284 avait écrite trois paragraphes plus
+// haut — « une cadence plafonnée par l'écran ne dit rien de la réserve » —
+// enfreinte une mesure plus loin, dans le fichier d'à côté.
+//
+// Ce qu'on mesure désormais, c'est le TRAVAIL : le temps passé DANS le corps de
+// l'image, du premier calcul jusqu'au `render()` compris, sans l'attente du
+// balayage. C'est un travail connu, et c'est la grandeur que les barres ont
+// toujours décrite (« on demande la MOITIÉ des 16,7 ms »). La PÉRIODE reste
+// relevée à côté, parce qu'elle sert au message et qu'un verdict surprenant se
+// démonte en comparant les deux.
+const mesurePalier = { morceaux: [], images: [], travaux: [], depuis: 0, range: false };
 function noterMorceau(ms) {
   if (!running || typeof ms !== 'number') return;
   if (mesurePalier.morceaux.length < 400) mesurePalier.morceaux.push(ms);
@@ -549,24 +594,39 @@ function noterImage(ms) {
   if (!mesurePalier.depuis) mesurePalier.depuis = performance.now();
   if (mesurePalier.images.length < 2000) mesurePalier.images.push(ms);
 }
+function noterTravail(ms) {
+  if (!running || !(ms >= 0)) return;
+  if (mesurePalier.travaux.length < 2000) mesurePalier.travaux.push(ms);
+}
 const medianeDe = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
 // ON RANGE UNE FOIS, ET POUR LA PROCHAINE PARTIE. Le palier ne s'applique pas à
 // chaud : `RENDER_RADIUS` et la profondeur de file sont lues au démarrage, et
 // les faire bouger en cours de route ferait respirer la distance d'affichage
 // sous les yeux de l'enfant. On mesure, on range, la partie suivante en
 // profite — et la v283 reste le comportement de tout appareil non mesuré.
+// ── ET ON MESURE MÊME QUAND ON NE RANGE PAS (v290) ───────────────────────────
+//
+// Sous une étendue choisie à la main — ou sous une configuration forcée par
+// l'adresse — le verdict ne doit PAS être rangé (v284). Il doit quand même être
+// CALCULÉ : c'est le nombre que Max lit dans `?diag=1`, et c'est lui qui permet
+// de démonter un résultat surprenant. Taire la mesure parce qu'on ne la garde
+// pas reviendrait à ne rien pouvoir dire de l'appareil dès qu'on lui a demandé
+// quelque chose — exactement le trou qui a laissé la v284 se tromper un an.
 function rangerLePalier() {
-  if (mesurePalier.range || !PALIER_SE_RANGE) return;
+  if (mesurePalier.range) return;
   if (mesurePalier.morceaux.length < MIN_MORCEAUX || mesurePalier.images.length < MIN_IMAGES) return;
+  if (mesurePalier.travaux.length < MIN_IMAGES) return;
   // UN RÉGLAGE DE BANC SE REJOUE, SINON IL NE SE DÉMONTE PAS (v277) :
   // `?palierms=` raccourcit la fenêtre, et c'est ce qui permet à un témoin de
   // suivre la chaîne entière — mesure, verdict, rangement — sans jouer trente
   // secondes. Le défaut, lui, reste trente secondes de JEU : une fenêtre plus
   // courte classerait l'appareil sur son démarrage.
   if (performance.now() - mesurePalier.depuis < FENETRE_PALIER_MS) return;
-  const verdict = choisirPalier({ msMorceau: medianeDe(mesurePalier.morceaux), msImage: medianeDe(mesurePalier.images) });
+  const verdict = choisirPalier({ msMorceau: medianeDe(mesurePalier.morceaux), msTravail: medianeDe(mesurePalier.travaux) });
+  verdict.msPeriode = medianeDe(mesurePalier.images);
   mesurePalier.range = true;
   mesurePalier.verdict = verdict;
+  if (!PALIER_SE_RANGE) return;    // mesuré pour le dire, pas pour le garder
   try { localStorage.setItem(PALIER_CLE, JSON.stringify({ ...verdict, le: Date.now() })); } catch { /* mode privé */ }
 }
 // COMBIEN DE MORCEAUX LE WORKER A-T-IL D'AVANCE — et c'est un TEMPS, pas un
@@ -664,7 +724,7 @@ function rangerLePalier() {
 // rendre parce qu'il écroulait la cadence SUR L'IPAD. Sans palier mesuré, huit,
 // comme en v283.
 const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente'))
-  || (PALIER ? PALIER.file : 8);
+  || (PALIER ? PALIER.file : SANS_PALIER.file);
 const enAttente = new Map();          // key -> { cx, cz, sale }
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
@@ -2137,10 +2197,104 @@ const settingsPanel = document.getElementById('settings-panel');
 const gyroToggle = document.getElementById('gyro-toggle');
 const graphToggle = document.getElementById('graph-toggle');
 const sonToggle = document.getElementById('son-toggle');
+
+// ── L'ÉTENDUE DES GRAPHISMES, CHOISIE PAR L'ENFANT (v290) ────────────────────
+//
+// Quatre boutons, et le libellé dit ce qu'on OBTIENT. Ce que le réglage change
+// — distance d'affichage, profondeur de la file du mailleur, portée de la
+// couche HD de Paris, vitesse des jets — est lu AU DÉMARRAGE (v284 : un palier
+// ne s'applique pas à chaud, sans quoi la distance d'affichage respirerait sous
+// les yeux de l'enfant). D'où la seule difficulté de cette rangée :
+//
+// UN BOUTON QUI NE FAIT RIEN TOUT DE SUITE DOIT DIRE QUOI FAIRE. C'est « un
+// bouton qui ne fait rien est pire qu'un bouton qui refuse » (v228) vu du côté
+// d'un réglage différé : un enfant qui choisit « Loin » et ne voit rien changer
+// conclut que le jeu est cassé. L'aide de la rangée annonce donc l'effet en
+// attente, ET le bandeau dit le geste — revenir au menu et rejouer — comme tout
+// message de la maison (« fais demi-tour »).
+const etendueChoix = document.getElementById('etendue-choix');
+const etendueHint = document.getElementById('etendue-hint');
+// Ce que l'appareil porte EN CE MOMENT, lu là où le démarrage l'a lu : c'est le
+// seul moyen de dire « au prochain lancement » sans mentir.
+const etendueLue = () => {
+  try {
+    const v = localStorage.getItem(ETENDUE_CLE);
+    if (v === 'auto' || (v && PALIERS[v])) return v;
+  } catch { /* mode privé */ }
+  return ETENDUE_PAR_DEFAUT;
+};
+// L'AIDE DIT CE QUI EST ACTIF, ET CE QUI ATTEND. Trois cas, et le troisième est
+// celui qui a coûté la v290 : en « Auto », tant que rien n'a été mesuré, le jeu
+// tourne au réglage d'avant et il faut le DIRE — annoncer un palier qu'on n'a
+// pas mesuré serait exactement l'erreur que ce fichier vient de corriger.
+// LE VERDICT RANGÉ, RELU : l'aide doit dire ce que le PROCHAIN lancement fera,
+// donc elle refait le même calcul que le démarrage — même fonction, mêmes
+// entrées.
+function mesureRangee() {
+  try {
+    const brut = localStorage.getItem(PALIER_CLE);
+    if (brut) return JSON.parse(brut);
+  } catch { /* mode privé */ }
+  return null;
+}
+// ET « CE QUI ATTEND » SE COMPARE SUR LES VALEURS APPLIQUÉES, JAMAIS SUR LES
+// NOMS. Sur un écran tactile, « Normal » est EXACTEMENT ce que fait un appareil
+// sans palier ; sur un ordinateur il fait tomber la distance d'affichage de 16 à
+// 12. Comparer les noms annoncerait donc une attente qui n'arrive pas sur
+// l'iPad, et la tairait sur le portable — c'est `reglageDe` qui tranche, et ce
+// n'est pas un détail de message : une aide qui promet un changement qui ne
+// vient pas apprend à l'enfant à ne plus la lire.
+function texteEtendue() {
+  const choix = etendueLue();
+  const mot = (c) => (ETENDUES.find((e) => e.cle === c) || {}).mot || c;
+  let base;
+  if (choix === 'auto') {
+    base = PALIER && PALIER.source === 'mesure'
+      ? `Auto : ta tablette a été mesurée, le jeu joue en « ${mot(PALIER.nom)} ».`
+      : 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
+  } else {
+    base = `Tu as choisi « ${mot(choix)} ».`;
+  }
+  const prochain = palierRetenu({ choix, mesure: mesureRangee() });
+  const a = reglageDe(prochain, IS_TOUCH);
+  const b = reglageDe(PALIER, IS_TOUCH);
+  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd)
+    ? ' ⏳ Ça s\'applique au prochain lancement : reviens au menu 🏠 puis rejoue.'
+    : '';
+  return `Jusqu'où tu vois le paysage, et les détails des rues de Paris. ${base}${suite}`;
+}
+function renderEtendue() {
+  if (!etendueChoix) return;
+  const choix = etendueLue();
+  if (!etendueChoix.children.length) {
+    for (const e of ETENDUES) {
+      const b = document.createElement('button');
+      b.className = 'etendue-btn';
+      b.dataset.cle = e.cle;
+      b.textContent = e.mot;
+      b.title = e.aide;
+      b.addEventListener('click', () => {
+        try { localStorage.setItem(ETENDUE_CLE, e.cle); } catch { /* mode privé */ }
+        renderEtendue();
+        // Le bandeau ne parle que si le choix change vraiment quelque chose :
+        // rechoisir ce qui tourne déjà ne doit pas faire croire à une attente.
+        const a = reglageDe(palierRetenu({ choix: e.cle, mesure: mesureRangee() }), IS_TOUCH);
+        const b = reglageDe(PALIER, IS_TOUCH);
+        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd;
+        toast(change ? `${e.mot} — reviens au menu 🏠 et rejoue` : `Graphismes : ${e.mot}`);
+      });
+      etendueChoix.appendChild(b);
+    }
+  }
+  for (const b of etendueChoix.children) b.classList.toggle('on', b.dataset.cle === choix);
+  if (etendueHint) etendueHint.textContent = texteEtendue();
+}
+
 function renderSettings() {
   gyroToggle.classList.toggle('on', !!settings.gyro);
   if (graphToggle) graphToggle.classList.toggle('on', graphismes() === 'avance');
   if (sonToggle) sonToggle.classList.toggle('on', sonActif());
+  renderEtendue();
 }
 renderSettings();
 // Le changement s'applique sur place : les ombres se rallument ou s'éteignent
@@ -2194,6 +2348,10 @@ document.getElementById('play-btn').addEventListener('click', () => {
 
 document.getElementById('settings-btn').addEventListener('click', () => {
   settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
+  // L'AIDE DE L'ÉTENDUE SE RELIT À L'OUVERTURE : elle annonce ce qui attend le
+  // prochain lancement, et ce qui attend a pu changer depuis le chargement de la
+  // page (une mesure rangée, un choix fait sur un autre onglet).
+  if (settingsPanel.style.display === 'flex') renderSettings();
 });
 document.getElementById('settings-close').addEventListener('click', () => {
   settingsPanel.style.display = 'none';
@@ -6720,8 +6878,13 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${PALIER ? PALIER.nom : 'pas encore mesuré'} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX}`
-    + (mesurePalier.verdict ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}) au prochain lancement` : ` · morceau ${mesurePalier.morceaux.length} relevé(s), image ${mesurePalier.images.length}`) + '\n'
+    + `palier ${PALIER ? `${PALIER.nom} (${PALIER.source})` : 'pas encore mesuré'} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
+    // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
+    // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
+    // taire cette différence ferait croire à un classement qui n'arrivera pas.
+    + (mesurePalier.verdict
+        ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}, période ${(mesurePalier.verdict.msPeriode || 0).toFixed(1)} ms)${PALIER_SE_RANGE ? ' au prochain lancement' : ' — mesuré, non rangé (étendue choisie)'}`
+        : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
     + `morceaux ${chunkMeshes.size} · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}`;
 }
 
@@ -6793,13 +6956,15 @@ window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
   RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
+  palierRetenu, etendueRange, reglageDe,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
   // lues au démarrage et ne bougent plus ; la vitesse des jets est relue dans
   // la fiche, là où elle se calcule.
   get reglageApplique() {
     const jet = MONTURES.find((m) => m.key === 'chasseur');
-    return { palier: PALIER ? PALIER.nom : null, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+    return { palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null,
+      etendue: ETENDUE_CHOISIE, hd: RAYON_HD, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
       seRange: PALIER_SE_RANGE };
   }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
@@ -6828,10 +6993,14 @@ function frame(now) {
   // dt ressortait négatif, et repartait à l'envers dans la physique, les
   // animaux et le compteur de temps de jeu. Le plancher à zéro le neutralise.
   const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
-  // La durée RÉELLE de l'image, non bornée — `dt` l'est à un vingtième, et une
-  // mesure faite dessus dirait que tout va bien sur une machine à cinq images
-  // par seconde (piège de la v234).
+  // La PÉRIODE réelle entre deux images, non bornée — `dt` l'est à un
+  // vingtième, et une mesure faite dessus dirait que tout va bien sur une
+  // machine à cinq images par seconde (piège de la v234). Elle sert au message
+  // et aux à-coups ; elle ne classe PAS l'appareil, parce que sous vsync elle
+  // vaut la période de l'écran et rien d'autre (v290).
   noterImage(now - lastTime);
+  // Le TRAVAIL de cette image se referme à la fin du corps, après `render()`.
+  const debutTravail = performance.now();
   rangerLePalier();
   lastTime = now;
 
@@ -6976,6 +7145,8 @@ function frame(now) {
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   renderer.render(scene, camera);
+  // CE QUE L'APPAREIL A RÉELLEMENT FAIT, attente du balayage exclue (v290).
+  noterTravail(performance.now() - debutTravail);
   requestAnimationFrame(frame);
 }
 

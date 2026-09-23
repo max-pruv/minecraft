@@ -400,6 +400,97 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 
+## v290 — Le palier mesurait la période de l'écran (corrigé, à confirmer sur l'appareil)
+
+Capture `?diag=1` de Max, iPad : « → **bas** (morceau 37,0 ms ou image 17,0 ms
+au-delà de 63 / 16,7) au prochain lancement ». La v284 classait l'appareil sur
+`now - lastTime`, qui sous vsync vaut la période de rafraîchissement — 1000/59 =
+16,95 ms. Corrigé en v290 : on mesure le TRAVAIL d'une image, et la clé de
+rangement passe en `web-minecraft-palier-v2` pour que le verdict déjà écrit sur
+son iPad n'y survive pas.
+
+**Ce qui reste à mesurer, sur SON appareil, pas au banc.**
+
+- `?diag=1` après une partie de trente secondes : le palier qu'il obtient
+  désormais, et les deux nombres (travail et période) que la ligne affiche. Son
+  morceau valait **37,0 ms**, ce qui le place entre les deux barres (25 et 63) :
+  le palier dépend donc entièrement du travail, qui n'a jamais été mesuré chez
+  lui.
+- Et le fait le plus parlant de ses deux captures reste non expliqué : **treize
+  appels de dessin en vol, quatre au sol**, 33k triangles, 28 à 56 morceaux
+  chargés. Ce n'est pas un appareil qui peine, c'est un monde qu'on ne lui
+  demande pas. Si le palier le classe `moyen`, il faudra chercher pourquoi si
+  peu de morceaux arrivent devant lui — le maillage, pas le rendu.
+**LA DETTE DES PIXELS ET DES OMBRES EST PAYÉE — la mesure existe.** Max a mis
+« Graphismes avancés » et renvoyé `?diag=1` : `dpr 2.00 (2360×1376) · ombres ON`,
+**59 i/s, pire image 84 ms, 14 appels**, contre 79 et 75 ms à `dpr 1,25` sans
+ombres. 2,56 fois la surface plus une passe d'ombres entière coûtent cinq
+millisecondes sur la pire image. Ce n'est PAS entré dans la table du palier, et
+la raison est écrite dans `palier.js` : ces chiffres sont relevés à rr 12 / file
+8, que le palier `haut` change aussi.
+
+**ET LA MÊME CAPTURE DONNE LE VRAI PLAFOND : `morceau 37,0 ms`.** Un seul
+mailleur rend donc 27 morceaux par seconde, quand voler à 95 blocs/s à rr 12 en
+réclame 142 (`2 × rr × v / 16`, v229/v237). Cinq fois trop peu — c'est
+exactement « le unveil est late » de la v284, chiffré sur l'appareil pour la
+première fois, et ses 14 appels de dessin le disent par l'autre bout.
+
+- **À mesurer sur SON appareil, dans cet ordre.** (1) Le `travail` qu'affiche
+  désormais `?diag=1` après trente secondes de jeu, qui décide son palier. (2)
+  Deux mailleurs : la v265 les a mesurés sans effet **au banc, en rendu
+  logiciel**, où le fil principal saturait à installer les géométries ; chez Max
+  le fil principal est vide (résolution doublée gratuite). Un non-résultat ne
+  vaut que dans les conditions où il a été mesuré. (3) Ce que coûtent les 37 ms —
+  génération du relief (45 % du coût, v229) contre maillage.
+
+**ET L'ÉTENDUE EST DÉSORMAIS UN RÉGLAGE, ce qui change ce qu'on attend de la
+mesure.** Max : « permets-moi de choisir l'étendue des graphismes as a user si tu
+sais pas la calibrer toi. » Quatre choix dans ⚙️ Réglages (Auto · Court · Normal ·
+Loin), `auto` par défaut. Deux conséquences pour la suite :
+
+- Les mesures ci-dessus restent à faire, mais elles ne BLOQUENT plus rien : Max
+  peut déjà mettre « Loin » et juger sur captures ce que son iPhone rend à `rr
+  16`, file 16, HD 6 morceaux. **C'est la mesure la plus utile qu'il puisse
+  faire**, parce qu'elle répond à sa question d'origine — « tu pourrais
+  certainement utiliser des graphismes à haute fidélité » — par une capture au
+  lieu d'un raisonnement.
+- Sous une étendue choisie, le jeu mesure et NE RANGE PAS (règle de la v284).
+  `?diag=1` le dit (« mesuré, non rangé »). Pour obtenir un classement il faut
+  donc repasser en « Auto » — et c'est voulu.
+
+## VOIR LE SOL DE PLUS PRÈS EN VOL — `PAS_HORIZON` N'A JAMAIS ÉTÉ MESURÉ SUR UN VRAI GPU
+
+Max, iPhone 18 Pro, v286 : « les graphismes ne sont pas terribles, là où tu
+pourrais certainement utiliser des graphismes à haute fidélité **pour voir le
+sol** ». Le paysage lointain (`horizon.js`) échantillonne `terrainHeight` tous les
+`PAS_HORIZON = 8` blocs : de haut, le sol est une nappe à mailles de huit blocs.
+L'étendue « Loin » le pousse plus loin (848 blocs au lieu de 634) mais pas plus
+FIN.
+
+Ce qu'on sait, et ce qu'on ne sait pas :
+
+- Passer le pas de 8 à 4 **quadruple** le nombre de colonnes (25 921 → ~103 000)
+  et donc le coût de `terrainHeight`, qui vaut 120 ms pour la nappe entière —
+  soit ~480 ms, sur le FIL PRINCIPAL. Ce chiffre-là se transpose : c'est du
+  calcul, pas du remplissage.
+- Ce qui NE se transpose pas, et qui est la raison pour laquelle la v237 n'a rien
+  conclu : le coût de RENDU. Elle a mesuré « ce n'est pas des triangles, c'est de
+  la surface » **en rendu logiciel** (SwiftShader paie le remplissage au
+  processeur). Sur un vrai GPU une nappe de 100 000 triangles n'est rien.
+- Donc la question ouverte est unique et précise : **peut-on calculer la nappe
+  fine ailleurs que sur le fil principal ?** Le worker de maillage a déjà le
+  monde jumeau et `terrainHeight` est pure — c'est la même recette que la v251.
+  Sans cela, un pas de 4 rendrait un à-coup de un demi-seconde à chaque
+  défilement de nappe, ce qui est précisément la panne que la v286 vient de
+  corriger ailleurs.
+
+Étapes : (1) chronométrer `terrainHeight` sur la nappe, pas par pas, à 8 · 6 · 4 ;
+(2) capture au sol et en vol à chaque pas, pour savoir si Max voit la différence
+— si le pas de 6 suffit, le coût est ×1,8 et non ×4 ; (3) si le coût mord,
+déplacer la nappe dans le worker. Ne PAS mettre `PAS_HORIZON` dans la table du
+palier avant (1) et (2) : un champ dont on ignore le prix est un réglage de
+banc.
+
 ## LE PALIER « BAS » DE LA v284 EST LE SEUL QUE RIEN N'A MESURÉ
 
 Ses chiffres — `rr: 8`, `file: 6` — sont RAISONNÉS, pas relevés. La v269 a mesuré

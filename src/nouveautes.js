@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 290,
+    titre: 'Choisis jusqu\'où tu vois',
+    puces: [
+      'Réglages : étendue des graphismes',
+      'Auto, Court, Normal ou Loin',
+      'Le jeu mesure mieux ta tablette',
+      'Une tablette rapide n\'est plus bridée',
+    ],
+  },
+  {
     v: 289,
     titre: 'Les toits de Paris',
     puces: [

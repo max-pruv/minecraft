@@ -1052,6 +1052,103 @@ sont nées d'une mesure ou d'un raisonnement qui m'a contredit.
   sans qu'on touche à un chiffre de témoin. C'est le bénéfice direct d'une barre
   qui se calcule au lieu de s'écrire.
 
+## Le palier lisait l'écran, pas l'appareil (v290) — et la règle était écrite au-dessus
+
+Max, deux captures d'iPad avec `?diag=1` : « → **bas** (morceau 37,0 ms ou image
+17,0 ms au-delà de 63 / 16,7) au prochain lancement ». Le palier qu'il avait
+réclamé s'apprêtait à DÉGRADER son appareil. Quatre règles.
+
+- **UNE PÉRIODE N'EST PAS UN TRAVAIL, ET C'EST LA RÈGLE DE LA v284 ENFREINTE À
+  LA LIGNE SUIVANTE.** `palier.js` ouvre sur « une cadence plafonnée par l'écran
+  ne dit rien de la réserve — on mesure le TEMPS D'UN TRAVAIL CONNU » ; la mesure
+  qui l'alimentait, dans `main.js`, notait `now - lastTime`. Sur un appareil
+  synchronisé à son écran, cet écart EST la période de rafraîchissement : 59 i/s
+  → 17,0 ms, soit 1000/59. Les deux barres devenaient fausses PAR CONSTRUCTION
+  — `> 16,7` vrai sur tout appareil sain à 60 Hz, `≤ 8` inatteignable sous vsync,
+  donc `haut` hors de portée de quiconque. **Écrire la règle dans le fichier ne
+  garantit pas que la mesure du fichier d'à côté la respecte** : quand une règle
+  nomme une grandeur, on va lire la LIGNE qui la produit.
+- **ET AUCUN CHIFFRE N'A CHANGÉ EN LA CORRIGEANT — c'est le signe.** Les barres
+  décrivaient déjà un travail (« on demande la MOITIÉ des 16,7 ms ») ; il
+  manquait de le leur donner. Quand un remède ne déplace pas une borne, la borne
+  était juste et c'est la GRANDEUR qui mentait — l'inverse du réflexe de réglage.
+- **UN TÉMOIN QUI FABRIQUE SES DEUX NOMBRES NE PEUT PAS VOIR QUE L'UN D'EUX EST
+  IMPOSSIBLE À OBTENIR.** Celui de la v284 appelait `choisirPalier({ msMorceau: 6,
+  msImage: 5 })` et exigeait `haut` : il était VERT pendant que `haut` était hors
+  d'atteinte dans le jeu. Il vérifiait qu'une règle sait trier des chiffres,
+  jamais qu'un appareil puisse les produire. Un témoin de règle pure se double
+  d'un témoin qui lui donne ce que le JEU a mesuré. C'est « une sonde qui
+  interroge la mauvaise liste ne peut rien voir » (v273), du côté des ENTRÉES.
+- **ET UN VERDICT RANGÉ SURVIT À LA CORRECTION DE LA RÈGLE QUI L'A PRODUIT.** La
+  capture dit « au prochain lancement », donc `localStorage` était DÉJÀ écrit :
+  livrer la règle neuve sous la même clé aurait laissé l'iPad en `bas` pour
+  toujours, puisqu'une mesure ne se reprend pas. Une règle de classement qui
+  change change sa CLÉ (`web-minecraft-palier-v2`) — c'est `CACHE_VERSION` à
+  l'échelle d'un réglage, et le témoin qui le garde rejoue la situation exacte de
+  l'appareil : on écrit l'ancien verdict, on recharge, on lit la FILE obtenue.
+- **CE QUE LE BANC PEUT PROUVER ICI, ET POURQUOI.** Il n'est pas synchronisé à un
+  écran, mais il sépare quand même les deux grandeurs — 166,6 ms de période
+  contre 22,8 de travail à rr 12, 66,6 contre 9,7 à rr 2 — parce qu'en rendu
+  logiciel l'image attend le pilote. Le témoin exige donc un facteur TROIS entre
+  les deux, moitié du plus petit rapport mesuré (v237) : sans cette garde il
+  serait vide le jour où les deux se confondraient.
+
+## L'étendue des graphismes est un choix de Max (v290)
+
+« Permets-moi de choisir l'étendue des graphismes as a user si tu sais pas la
+calibrer toi. » Décision de Max, prise le jour où le classement automatique s'est
+révélé faux sur son propre appareil. **La mesure ne décide plus, elle propose** —
+`auto` reste le défaut, donc rien ne change pour qui n'y touche pas. Cinq règles,
+et la première vaut pour tout réglage automatique à venir.
+
+- **UN CLASSEMENT AUTOMATIQUE SE DOUBLE D'UN RECOURS QUE L'UTILISATEUR
+  ATTEINT.** Ce n'est pas un aveu d'échec, c'est de l'architecture : le palier
+  arbitre entre voir loin et aller vite, et rien dans une milliseconde ne dit
+  lequel Marlon préfère aujourd'hui. Une mesure répond très bien à « que peut
+  faire cet appareil » et pas du tout à « qu'est-ce que je veux voir ». Elle
+  arrive en plus une partie trop tard, puisqu'un palier se range pour le
+  lancement suivant (v284). Et surtout elle peut se tromper : c'est la même
+  logique que le bouton de mise à jour forcée du badge de version (v220), qui
+  existe parce qu'un mécanisme automatique peut rester coincé. **Tout réglage
+  que le jeu décide seul doit avoir sa porte de sortie**, sans quoi un défaut de
+  la règle est sans recours pour la famille.
+- **UNE SEULE RÈGLE, TROIS LECTEURS.** `palierRetenu({ choix, mesure })`
+  (`palier.js`, pure) décide : le choix passe devant la mesure, `auto` retombe
+  sur la mesure, et sans l'un ni l'autre elle rend `null` — c'est-à-dire la v283
+  au bit près. Le DÉMARRAGE la lit pour régler `rr`, la file, la portée HD et la
+  vitesse des jets ; l'ESPACE DES RÉGLAGES la lit pour dire ce qui est actif et
+  pourquoi ; un TÉMOIN la lit sous node. Deux tables qui décrivent le même
+  réglage finissent par diverger (discipline de `postesAvion`).
+- **UNE ÉTENDUE CHOISIE À LA MAIN EST UNE CONFIGURATION FORCÉE — et la règle de
+  la v284 n'avait jamais servi qu'au banc.** « On ne classe pas un appareil sur
+  une configuration qu'on lui a imposée » était écrite pour les `?rr=` et `?dpr=`
+  de `banc.js` ; une étendue choisie est exactement le même cas. Une page qui
+  tourne à `rr 16` parce que Max a demandé « Loin » ne dit rien de ce que
+  l'appareil ferait à sa distance naturelle, et ranger ce verdict lui laisserait
+  un faux classement le jour où il repasse en « Auto ». `etendueRange(choix)` le
+  dit, à côté de la règle qu'elle garde. Sixième fois que ce dépôt paie la PORTÉE
+  d'un remède et non la règle.
+- **MAIS ON MESURE QUAND MÊME, ET ON LE DIT.** `rangerLePalier` calcule désormais
+  son verdict et ne le RANGE que si le classement est légitime. Taire la mesure
+  parce qu'on ne la garde pas reviendrait à ne rien pouvoir dire de l'appareil
+  dès qu'on lui a demandé quelque chose — c'est-à-dire exactement le trou qui a
+  laissé la v284 se tromper. `?diag=1` affiche donc le verdict suivi de
+  « mesuré, non rangé (étendue choisie) » : un nombre qu'on n'utilise pas reste
+  celui qui démonte un résultat surprenant.
+- **UN BOUTON QUI NE FAIT RIEN TOUT DE SUITE DOIT DIRE QUOI FAIRE.** C'est « un
+  bouton qui ne fait rien est pire qu'un bouton qui refuse » (v228) vu du côté
+  d'un réglage DIFFÉRÉ : ce que l'étendue change est lu au démarrage, donc
+  l'enfant qui touche « Loin » ne voit rien bouger et conclut que le jeu est
+  cassé. L'aide de la rangée annonce l'effet en attente — et seulement s'il y en
+  a un, rechoisir ce qui tourne déjà ne doit pas faire croire à une attente — et
+  le bandeau dit le geste, revenir au menu 🏠 et rejouer, comme tout message de
+  la maison.
+- **ET LE CHOIX VIT SUR L'APPAREIL, PAS DANS LE PROFIL**
+  (`web-minecraft-etendue-v1`). Même raison que la qualité des graphismes
+  (v257) : c'est une capacité de la machine, pas un goût qui suit l'enfant.
+  L'iPad de la maison et l'iPhone de Max n'ont pas la même réserve, et un enfant
+  qui change de tablette ne doit pas emporter le réglage de l'autre.
+
 **ET DEUX TÉMOINS DE `monte.js` MESURAIENT LE BANC — la CINQUIÈME fois pour
 cette famille (v284).** Le portail a rendu deux rouges neufs sur un diff qui ne
 touche ni le chemin des ombres ni le worker. Quatre leçons, et la première est
