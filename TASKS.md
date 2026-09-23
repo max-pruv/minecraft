@@ -491,6 +491,56 @@ déplacer la nappe dans le worker. Ne PAS mettre `PAS_HORIZON` dans la table du
 palier avant (1) et (2) : un champ dont on ignore le prix est un réglage de
 banc.
 
+## LES CINQ ROUGES DU PORTAIL DE LA v291 — double mesure complète, aucun causé par la livraison
+
+Le diff de la v291 ne touche que `CLAUDE.md`, `TASKS.md`, `tests/manhattan.js` et
+une sonde isolée : **aucun octet de `src/`, du banc, de `sw.js` ni
+d'`index.html`**. `monte.js` ne peut donc pas le lire — son empreinte ne contient
+pas `tests/manhattan.js` — et c'est une preuve par CONSTRUCTION, plus forte qu'un
+rejeu, qui n'échantillonne. La mesure a quand même été faite, parce que la v195
+demande la mesure et non le raisonnement.
+
+**`manhattan.js`, rejouée SEULE sur `origin/main` (2ac9d37) contre la branche :**
+
+| rouge | `origin/main`, seul | branche |
+| --- | --- | --- |
+| le trou enlève la géométrie visible de la façade | ❌ **22 326** → 51 734 | ❌ **11 684** → 51 734 |
+| le taxi roule avec les contrôles tactiles | ❌ (le témoin tourne) | ❌ bouton jamais visible, 15 010 ms |
+| fenêtres et éclairage public la nuit | ❌ | ✅ **5 615 ms** (corrigé ici) |
+| les ombres suivent le soleil et la lune | ❌ **`[1, −1]`** | ✅ `[1, 0,9999…]` (corrigé ici) |
+| les deux clients sans erreur (`PeerJS`) | ❌ | ✅ |
+
+Les deux premiers sont rouges des DEUX côtés. Les deux suivants sont ce que cette
+livraison corrige, et `[1, −1]` est exactement ce que la sonde avait mesuré. Le
+dernier est vert sur la branche — la suite l'atteint enfin, parce qu'elle ne meurt
+plus au taxi (5 min 51 au lieu de 1 min 58).
+
+**`monte.js`, rejouée SEULE sur `origin/main` (147 témoins, 2 défauts) contre deux
+portails de branche :**
+
+| rouge | `origin/main`, seul | branche, portail 1 | branche, portail 2 |
+| --- | --- | --- | --- |
+| les voitures ne se traversent plus | ❌ 50 · taux 23,1 | ❌ 46 | ❌ 78 · taux 40,2 |
+| l'écran ne se fige pas en arrivant sur une ville | ❌ **3 517 ms** · 41,4 % | ❌ 2 950 · 36,9 % | ❌ 2 100 · 35,9 % |
+| les passants ne sont plus plantés au milieu de la chaussée | ✅ | ✅ 6 % | ❌ **28 %** |
+
+Sur les deux premiers, `origin/main` est PIRE que la branche : ce sont les dettes
+déjà déclarées (le tirage de la v277 et la famille de l'arrivée en ville).
+
+- [ ] **ET LE TÉMOIN DES PASSANTS SUR LA CHAUSSÉE EST UN TIRAGE, PAS UN GARDIEN —
+  personne ne l'avait encore déclaré (v291).** Vert sur `origin/main`, vert au
+  portail 1, ROUGE à 28 % au portail 2, sur un code de jeu identique aux trois
+  passages. Il mesure la part de DIX-HUIT passants qui tombent sur la chaussée à
+  Rome, et `posteAutour` les place par un TIRAGE (« une douzaine de points et
+  l'on garde le premier dont le bloc de surface est de la chaussée », v279) :
+  6 %, 28 %, et vert. C'est la même maladie que « les voitures ne se traversent
+  plus » (v277) — une fraction sur un petit échantillon tiré au sort, avec une
+  barre qui tombe DANS son étendue naturelle. Ce qui reste à faire : relever sa
+  distribution sur cinq à dix passages d'un même côté AVANT de toucher à sa
+  barre, et si l'étendue recouvre la barre, le libeller sur une grandeur que le
+  tirage ne décide pas — la part sur la chaussée mesurée sur la VILLE entière
+  (v274), pas sur dix-huit places.
+
 ## LES TROIS ROUGES DU PORTAIL DE LA v290 — mesurés, aucun causé par la livraison
 
 Portail joué deux fois sur la branche, `maj.js` rejouée seule deux fois sur
@@ -529,14 +579,75 @@ couche HD, pas ici.
 **3. `manhattan.js` — trois à quatre rouges, la famille des 0,4 image par
 seconde.** « le trou enlève aussi la géométrie visible de la façade »
 (11 684 → 51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
-ombres suivent le soleil et la lune visibles » (±1,0000000000000002 — une
-comparaison de flottants sans tolérance), « le taxi roule avec les contrôles
-tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par seconde sur
-ce banc, sur l'ancien code comme sur le neuf**, et que les témoins qui lisent un
-effet « 350 ms après » y sont un pile ou face. Le rouge des ombres, lui, n'est
-pas une intermittence : `1.0000000000000002 > 1` est un défaut d'ÉPSILON dans le
-témoin, à corriger d'une ligne — il ne dépend d'aucune cadence et il rougira
-toujours.
+ombres suivent le soleil et la lune visibles », « le taxi roule avec les
+contrôles tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par
+seconde sur ce banc, sur l'ancien code comme sur le neuf**, et que les témoins
+qui lisent un effet « 350 ms après » y sont un pile ou face.
+
+> **CORRECTION (v291) — LA DETTE CI-DESSUS NOMMAIT UN DÉFAUT QUE LE CODE NE
+> POUVAIT PAS AVOIR.** J'avais écrit que le rouge des ombres était
+> « `1.0000000000000002 > 1`, un défaut d'épsilon, à corriger d'une ligne, qui
+> ne dépend d'aucune cadence ». Le témoin compare à **0,9999** : cette valeur-là
+> PASSE. Les trois affirmations étaient fausses, et la dernière — « il ne dépend
+> d'aucune cadence » — est exactement l'inverse de la vérité. Mesuré à la sonde
+> (`sonde-ombres-ny.cjs`), trois fois à l'identique : à `h = 0,73` l'alignement
+> vaut **−1**, la lune est **sous l'horizon** (`visible: false`, opacité 0) et la
+> direction de la lampe est **identique aux deux heures** — `__setDayTime` n'avait
+> pas encore pris effet. En attendant le FAIT (le soleil du bon côté de
+> l'horizon) au lieu de dormir 100 ms : le ciel met **755 à 1 947 ms** à tourner,
+> et l'alignement vaut 1 aux deux heures, six fois sur six. Même cause pour le
+> témoin voisin (« fenêtres et éclairage public la nuit », qui dormait 350 ms) :
+> **un seul défaut, deux rouges.** Les deux témoins attendent désormais la
+> situation, bornés, la durée dans le message. **Une explication qu'on n'a pas
+> mesurée est une dette, pas un diagnostic (v220) — et une dette qu'on DÉCLARE
+> sans l'avoir mesurée est pire, parce qu'elle sera lue comme un fait.**
+>
+> **ET LE ROUGE DU TROU SE DÉMONTE PAR SON PREMIER NOMBRE (v291).** Il est rouge
+> des deux côtés, mais il rend **22 326 → 51 734 sur `origin/main`** et
+> **11 684 → 51 734 sur la branche** : le second nombre est le même, le premier
+> varie du DOUBLE. Il somme la géométrie de TOUS les immeubles de
+> `villeRealiste.buildings`, donc il confond « le trou en a retiré » avec
+> « d'autres immeubles sont arrivés pendant l'attente » — et ce que la file a eu
+> le temps d'installer dépend de la cadence. **Ce qu'il faut mesurer est la
+> géométrie de l'immeuble QUI A PERDU un bloc**, avant et après, et non un total.
+> Reste à faire : trouver la clé de `buildings` qui porte la colonne visée
+> (`hit`), puis comparer `userData.instances` de CELUI-LÀ. Tant que c'est un
+> total, ce témoin n'est pas un gardien.
+>
+> **ET LE PLANTAGE DU TAXI N'EST PAS LE MIEN — j'ai écrit le contraire avant de
+> lire ce fichier.** `manhattan.js` rejouée SEULE sur `origin/main` va jusqu'au
+> bout (30 témoins, 5 rouges) ; sur la branche elle meurt à la ligne 450,
+> `waitFor({ state: 'visible' })` sur `#ride-btn` qui annonce « 🐴 Monter » puis
+> se cache. J'en ai conclu que mes deux attentes de ciel (sept secondes de jeu de
+> plus, donc cinq bêtes de plus) l'avaient causé. **La déclaration de la v279,
+> plus haut dans ce même fichier, dit que ce plantage s'est produit SUR
+> `origin/main`** — « la suite meurt là (`#ride-btn` caché, ligne 416) ». C'est
+> donc une intermittence vue des deux côtés, et un passage de chaque côté ne la
+> juge pas (v269).
+>
+> **ET LA SONDE ÉCARTE LE JEU (`sonde-taxi-ny.cjs`, v291).** Sur une page NEUVE,
+> même placement, mêmes gestes : le sol est plat à 32 sous l'enfant ET sous la
+> voiture (pas un toit — mon hypothèse `sommetColonne`/v282 est fausse), le
+> bouton est **visible dès le premier relevé** (`inline-block`, puis `block`), la
+> bête est bien là (`betes: 1`), le maillage de la voiture reste à (0, 0, 0)
+> pendant **quatre secondes** — le modèle de la flotte se charge de façon
+> asynchrone — puis se pose à y = 33, et le libellé passe de « 🐴 Monter » à
+> « 🚗 Monter » à la **neuvième** seconde. Le portail, lui, rend
+> `{"bouton":"🐴 Monter","affiche":"none","betes":1}` pendant 15 010 ms.
+>
+> **Le jeu offre donc l'embarquement ; c'est la SUITE qui ne l'obtient pas.** Ce
+> qui reste à faire, et dans cet ordre : (1) l'A/B se fait DANS la suite (v277 —
+> une sonde sur page neuve ne reproduit pas les conditions et ne BLANCHIT rien) ;
+> (2) relever, juste avant ce témoin, ce que les vingt témoins d'avant ont laissé
+> — `player.gabarit`, `montureConduite()`, les classes du `body`
+> (`en-vehicule` cache ce bouton depuis la v262), la cadence ; (3) seulement
+> ensuite, rejouer trois fois de chaque côté pour la fréquence du plantage.
+>
+> **Le remède livré tient sans cette cause, et c'est pourquoi il reste** : le
+> témoin fait le vide avant d'invoquer (idiome v284, jamais appliqué à ce
+> bouton-ci) et REND un verdict au lieu de lever son délai. Deux portails, la
+> v279 et la v291, ont perdu les neuf derniers témoins de cette suite sur cette
+> seule ligne.
 
 **Aucun de ces rouges ne touche `src/palier.js`, `src/main.js` (chemin du
 palier), `index.html` ni les dix témoins de la livraison**, qui sont verts sur la
