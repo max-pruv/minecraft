@@ -303,6 +303,34 @@ function verifier(nom, ok, detail = "") {
       j.pitch = -0.8;
       j.syncCamera();
     }, NY);
+    // MANHATTAN REND 0,4 IMAGE PAR SECONDE SUR CE BANC (v259), ET UNE HEURE
+    // POSÉE NE PREND EFFET QU'À L'IMAGE SUIVANTE. Les deux témoins de ciel
+    // ci-dessous dormaient 100 et 350 ms : mesuré à la sonde
+    // (`sonde-ombres-ny.cjs`), le ciel met 755 à 1 947 ms à tourner. Ils
+    // lisaient donc l'heure d'AVANT — la lune sous l'horizon, opacité 0, et un
+    // alignement de −1 pour une barre de +0,9999. On attend le FAIT DU MONDE
+    // (le soleil du bon côté de l'horizon), jamais le verdict, et la durée
+    // entre dans le message (v270, v290).
+    const tournerLeCiel = async (h) => {
+      const t0 = Date.now();
+      await p.evaluate((x) => __setDayTime(x), h);
+      const vu = await p
+        .waitForFunction(
+          (x) => {
+            const larg = (m) => m.geometry?.parameters?.width;
+            const ciel = __game.scene.children.find((g) =>
+              g.children?.some((m) => larg(m) === 62),
+            );
+            const soleil = ciel?.children.find((m) => larg(m) === 62);
+            return soleil ? (x < 0.5 ? soleil.position.y > 0 : soleil.position.y < 0) : false;
+          },
+          h,
+          { timeout: 40000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      return { vu, ms: Date.now() - t0 };
+    };
     const avant = await p.evaluate(() => __game.world.edits.size);
     await p.locator("#mode-btn").tap();
     await p.touchscreen.tap(350, 230);
@@ -311,20 +339,26 @@ function verifier(nom, ok, detail = "") {
       "le geste tactile construit sur la Terre",
       await p.evaluate((n) => __game.world.edits.size > n, avant),
     );
-    await p.evaluate(() => __setDayTime(0.75));
-    await dormir(350);
+    const nuitVenue = await tournerLeCiel(0.75);
     verifier(
       "fenêtres et éclairage public fonctionnent la nuit",
-      await p.evaluate(
-        () =>
-          __game.villeRealiste.mats.glassLit.emissiveIntensity > 0.8 &&
-          __game.villeRealiste.lamps.some((l) => l.intensity > 0),
-      ),
+      nuitVenue.vu &&
+        (await p.evaluate(
+          () =>
+            __game.villeRealiste.mats.glassLit.emissiveIntensity > 0.8 &&
+            __game.villeRealiste.lamps.some((l) => l.intensity > 0),
+        )),
+      `nuit tombée en ${nuitVenue.ms} ms${nuitVenue.vu ? "" : " — jamais tombée"}`,
     );
     const alignements = [];
+    const attentesCiel = [];
     for (const heure of [0.18, 0.73]) {
-      await p.evaluate((h) => __setDayTime(h), heure);
-      await dormir(100);
+      const tourne = await tournerLeCiel(heure);
+      attentesCiel.push(tourne.ms);
+      if (!tourne.vu) {
+        alignements.push(null);
+        continue;
+      }
       alignements.push(
         await p.evaluate((h) => {
           const v = __game.villeRealiste;
@@ -346,8 +380,8 @@ function verifier(nom, ok, detail = "") {
     }
     verifier(
       "les ombres suivent le soleil et la lune visibles",
-      alignements.every((d) => d > 0.9999),
-      JSON.stringify(alignements),
+      alignements.every((d) => d !== null && d > 0.9999),
+      `${JSON.stringify(alignements)} — ciel tourné en ${attentesCiel.join(" et ")} ms`,
     );
     const modeles = await p.evaluate(async () => {
       const v = await import("/src/vehicules.js"),

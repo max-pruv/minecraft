@@ -529,14 +529,28 @@ couche HD, pas ici.
 **3. `manhattan.js` — trois à quatre rouges, la famille des 0,4 image par
 seconde.** « le trou enlève aussi la géométrie visible de la façade »
 (11 684 → 51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
-ombres suivent le soleil et la lune visibles » (±1,0000000000000002 — une
-comparaison de flottants sans tolérance), « le taxi roule avec les contrôles
-tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par seconde sur
-ce banc, sur l'ancien code comme sur le neuf**, et que les témoins qui lisent un
-effet « 350 ms après » y sont un pile ou face. Le rouge des ombres, lui, n'est
-pas une intermittence : `1.0000000000000002 > 1` est un défaut d'ÉPSILON dans le
-témoin, à corriger d'une ligne — il ne dépend d'aucune cadence et il rougira
-toujours.
+ombres suivent le soleil et la lune visibles », « le taxi roule avec les
+contrôles tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par
+seconde sur ce banc, sur l'ancien code comme sur le neuf**, et que les témoins
+qui lisent un effet « 350 ms après » y sont un pile ou face.
+
+> **CORRECTION (v291) — LA DETTE CI-DESSUS NOMMAIT UN DÉFAUT QUE LE CODE NE
+> POUVAIT PAS AVOIR.** J'avais écrit que le rouge des ombres était
+> « `1.0000000000000002 > 1`, un défaut d'épsilon, à corriger d'une ligne, qui
+> ne dépend d'aucune cadence ». Le témoin compare à **0,9999** : cette valeur-là
+> PASSE. Les trois affirmations étaient fausses, et la dernière — « il ne dépend
+> d'aucune cadence » — est exactement l'inverse de la vérité. Mesuré à la sonde
+> (`sonde-ombres-ny.cjs`), trois fois à l'identique : à `h = 0,73` l'alignement
+> vaut **−1**, la lune est **sous l'horizon** (`visible: false`, opacité 0) et la
+> direction de la lampe est **identique aux deux heures** — `__setDayTime` n'avait
+> pas encore pris effet. En attendant le FAIT (le soleil du bon côté de
+> l'horizon) au lieu de dormir 100 ms : le ciel met **755 à 1 947 ms** à tourner,
+> et l'alignement vaut 1 aux deux heures, six fois sur six. Même cause pour le
+> témoin voisin (« fenêtres et éclairage public la nuit », qui dormait 350 ms) :
+> **un seul défaut, deux rouges.** Les deux témoins attendent désormais la
+> situation, bornés, la durée dans le message. **Une explication qu'on n'a pas
+> mesurée est une dette, pas un diagnostic (v220) — et une dette qu'on DÉCLARE
+> sans l'avoir mesurée est pire, parce qu'elle sera lue comme un fait.**
 
 **Aucun de ces rouges ne touche `src/palier.js`, `src/main.js` (chemin du
 palier), `index.html` ni les dix témoins de la livraison**, qui sont verts sur la

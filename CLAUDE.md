@@ -192,7 +192,7 @@ n'est pas une étape de fin, c'est une partie de la livraison** — au même tit
 que le code. Une version qu'on ne sait plus expliquer six mois plus tard est
 une version qu'on ne saura pas déboguer.
 
-1. **Portail complet vert obligatoire** : `cd tests && npm test`. Quinze suites, précédées de la fumée.
+1. **Portail complet vert obligatoire** : `cd tests && npm test`. Seize suites, précédées de la fumée.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
@@ -265,15 +265,50 @@ qu'il ne faut pas casser**.
 
 `npm test` demande au dépôt quelle voie mérite le changement.
 
+**ET CE FICHIER A DÉCRIT CE MÉCANISME DE TRAVERS PENDANT DES DIZAINES DE
+VERSIONS (v291).** Il annonçait une liste de fichiers « délicats » nommée
+`DÉLICAT` dans `tests/tout.js` : **elle n'y est pas, et elle n'y a jamais été.**
+Il n'y a pas de liste de fichiers dangereux — il y a une TABLE DES GARDIENS, lue
+dans les deux sens, et l'aiguillage n'est que sa lecture. Le coût de cette
+description fausse n'est pas théorique : devant le portail de la v279 qui n'avait
+rejoué que DEUX suites, j'ai d'abord cru à un portail invalide, c'est-à-dire
+exactement le travers que `tout.js` existe pour empêcher. **Une description de
+mécanisme se relit dans le code avant de se croire** — c'est « avant de conclure
+d'après un instrument, on vérifie ce que cet instrument mesure » (v285), appliqué
+à la documentation de l'instrument.
+
+`npm test` demande à git ce qui a changé (`fichiersModifies`), puis décide
+fichier par fichier. Voici la table, et elle est le mécanisme entier :
+
+| ce qui a changé | ce qui se rejoue |
+| --- | --- |
+| un fichier de `src/` présent dans `GARDIENS` | ses gardiens, et eux seuls |
+| un fichier de `src/` **absent** de la table | la fumée seule — mais il entre dans l'empreinte de CHAQUE suite, donc tous les acquis de reprise tombent |
+| `index.html` | ses quatre gardiens : `carte`, `reglages`, `maj`, `manhattan` |
+| `sw.js`, version et liste de cache seulement (`swAnodin`) | rien |
+| `sw.js`, logique | tout |
+| le banc — `banc`, `nuage`, `tout`, `charge` — nombres seuls (`bancAnodin`) | rien |
+| le banc, gardiens seulement ÉLARGIS (`gardiensElargis`) | rien |
+| le banc, autre chose | tout |
+| une suite d'essai | elle-même, et rien d'autre |
+| une `sonde-*.cjs` qu'aucun lecteur du portail n'importe (`sondeIsolee`) | rien |
+| git muet, ou quoi que ce soit d'autre | tout — on ne parie pas |
+
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (15 suites) | Dès qu'un fichier **délicat** bouge, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255) |
+| **Complète** (16 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) ; **seize depuis la v287** (`parishd.js`), total non remesuré |
 
-Les fichiers délicats sont listés dans `tests/tout.js` (`DÉLICAT`) : réseau,
-nuage, sauvegarde, terrain, joueur, espace parent, éducation, `main.js`,
-`sw.js`, `index.html`, et le banc lui-même. La liste est volontairement large.
-**Au moindre doute, voie longue** — et `npm run long` la force toujours.
+`SUITES` range les suites par durée MESURÉE, le chiffre en commentaire : c'est
+ce qui fait qu'un rouge de `metro.js` se voit à la quatorzième seconde et non à
+la cinquante-neuvième minute (v255). `npm run long` force le tour complet,
+`npm test -- --depuis-zero` ignore la reprise.
+
+**Au moindre doute, voie longue** — et le doute a un nom : l'aiguillage ne peut
+juger que ce que la table sait. Un fichier qui alourdit la page sans garder une
+suite dont le VERDICT est une durée passe au travers, quoi qu'on écrive dans la
+table — c'est la leçon de `passants.js` attrapé par `maj.js` (v217), et elle est
+écrite plus bas.
 
 **Pourquoi cette séparation existe.** Le portail est passé de cinq suites à
 huit, de 2 588 à 5 297 lignes, et chaque livraison le payait en entier. La
@@ -301,9 +336,11 @@ lançait pas `visio.js`, et `src/garages.js` — qui écrit dans le profil de
 l'enfant, à côté de ses blocs — ne lançait pas `sauvegarde.js`. Pire, aucune
 ville bâtie à la main n'y figurait : `src/sanfrancisco.js` partait en voie
 rapide, et c'est par ce trou que le Bay Bridge planté au milieu de la ville est
-arrivé en production. Le portail vérifie désormais qu'aucun fichier de `src/`
-n'est sans gardien ; un module neuf sans gardien déclaré annule tous les acquis
-du cache de reprise, ce qui le rend visible tout de suite.
+arrivé en production. Un module de `src/` sans gardien déclaré entre dans
+l'empreinte de CHAQUE suite (`gardiensDe`) : il annule tous les acquis du cache
+de reprise, ce qui le rend visible tout de suite. Le portail ne REFUSE pas un
+gardien manquant, il le fait PAYER — ce n'est pas la même chose, et ce fichier
+écrivait l'un pour l'autre.
 
 **La voie longue trouve ce que la voie rapide ne peut pas voir.** En v187 elle
 a rendu QUATRE suites rouges — `reseau.js`, `visio.js`, `reglages.js`,
@@ -492,6 +529,47 @@ voie. Six suites vertes ne valent pas un portail vert — c'est la même leçon
 que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
+
+## Une dette déclarée sans mesure est LUE COMME UN FAIT (v291)
+
+La v290 a déclaré trois rouges de portail dans `TASKS.md` avec leur double
+mesure, comme la v195 l'exige. **L'un des trois était décrit de travers, et
+l'erreur était plus grave qu'un rouge de plus** : j'avais écrit que le témoin des
+ombres de Manhattan rendait « `1.0000000000000002 > 1`, un défaut d'épsilon, à
+corriger d'une ligne, qui ne dépend d'aucune cadence et rougira toujours ». Le
+témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
+étaient fausses, et la dernière était l'inverse de la vérité. Quatre règles.
+
+- **UNE DETTE EST UNE MESURE OU ELLE N'EST RIEN.** « Une explication commode
+  qu'on ne mesure pas est une dette, pas un diagnostic » (v220) dit ce qu'il ne
+  faut pas faire d'une explication ; ceci dit ce qu'il ne faut pas faire d'une
+  DETTE. Une dette est écrite pour être reprise plus tard, par quelqu'un qui ne
+  reverra pas le rouge : elle sera lue comme un fait établi, et un « à corriger
+  d'une ligne » envoie droit sur la mauvaise ligne. Ce qui distingue les deux se
+  vérifie en dix secondes — on relit la BARRE du témoin avant d'expliquer son
+  rouge.
+- **UN TÉMOIN DE CIEL ATTEND QUE LE CIEL AIT TOURNÉ.** Les deux témoins fautifs
+  posaient l'heure puis dormaient 100 et 350 ms. Manhattan rend 0,4 image par
+  seconde sur ce banc (v259) et une heure posée ne prend effet qu'à l'image
+  suivante : mesuré à la sonde, le ciel met **755 à 1 947 ms** à tourner. Ils
+  lisaient donc l'heure d'AVANT — la lune sous l'horizon, opacité 0, alignement
+  −1 pour une barre de +0,9999, et la direction de la lampe IDENTIQUE aux deux
+  heures. On attend le FAIT DU MONDE (le soleil du bon côté de l'horizon),
+  jamais le verdict (v290), borné, la durée dans le message (v270).
+- **UN SEUL DÉFAUT, DEUX ROUGES — et je les avais comptés comme deux causes.**
+  Le témoin voisin (« fenêtres et éclairage public fonctionnent la nuit ») posait
+  `0.75` et dormait 350 ms : même geste, même page, même cause. Deux rouges qui
+  suivent le même `__setDayTime` ne sont pas deux indépendants, et c'est la
+  leçon de la v285 par l'autre bout (« le second verdict DÉPEND du premier »).
+- **ET LA SONDE A TRANCHÉ EN UNE EXÉCUTION, LÀ OÙ TROIS RELECTURES N'AVAIENT
+  RIEN VU.** Un même rouge cachait trois causes possibles — groupe du ciel
+  introuvable, astre introuvable dans le groupe (donc 0), direction vraiment de
+  travers — parce que le témoin ne publiait qu'un tableau de deux nombres.
+  `sonde-ombres-ny.cjs` imprime les trois, trois fois de suite : certitude, pas
+  tirage. C'est « devant un rouge qu'on n'explique pas du premier coup, on écrit
+  la sonde qui distingue les cas » (v223), et cette fois le rouge était sur un
+  code de PRODUCTION qu'aucune livraison n'avait touché.
+
 
 ## Les toits de Paris sont un champ de hauteurs (v289)
 
