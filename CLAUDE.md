@@ -561,6 +561,46 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   `0.75` et dormait 350 ms : même geste, même page, même cause. Deux rouges qui
   suivent le même `__setDayTime` ne sont pas deux indépendants, et c'est la
   leçon de la v285 par l'autre bout (« le second verdict DÉPEND du premier »).
+- **ET J'AI ACCUSÉ MA PROPRE CORRECTION SANS L'AVOIR MESURÉ — dans la livraison
+  qui corrige exactement cette faute.** `manhattan.js` est morte à la ligne 450 :
+  `waitFor({ state: 'visible' })` sur `#ride-btn`, qui annonçait « 🐴 Monter »
+  puis se cachait — **NEUF témoins jamais atteints**, dont les deux du hors
+  ligne. Rejouée SEULE sur `origin/main`, la suite allait jusqu'au bout (trente
+  témoins, cinq rouges), et j'ai conclu : c'est moi, mes deux attentes ajoutent
+  sept secondes de jeu, donc cinq bêtes (cadence en TEMPS RÉEL, v226), et une
+  bête à moins de huit blocs passe avant la voiture (v257). **L'histoire se
+  lisait très bien, et `TASKS.md` portait déjà sa réfutation** : au portail de la
+  v279, ce plantage-là s'est produit SUR `origin/main`, décrit mot pour mot
+  (« la suite meurt là, `#ride-btn` caché »). C'est une INTERMITTENCE vue des
+  deux côtés, et la v269 dit quoi faire — rejouer jusqu'à voir la même
+  DISTRIBUTION — ce qu'UN passage de chaque côté ne donne pas. Trois règles.
+  - **AVANT D'EXPLIQUER UN ROUGE, ON LIT CE QUE LE DÉPÔT A DÉJÀ MESURÉ.**
+    `grep -n "<le nom du témoin>" TASKS.md` prend dix secondes et m'aurait évité
+    d'écrire une cause dans un commit. La double mesure de la v195 est une
+    condition NÉCESSAIRE, pas suffisante : elle ne distingue pas une régression
+    d'une intermittence, et c'est le fichier des dettes qui garde cette
+    mémoire-là.
+  - **MAIS LE REMÈDE TIENT SANS LA CAUSE, et c'est pour cela qu'il reste.** Le
+    témoin invoquait sa voiture sans faire le vide — l'idiome que la v284 avait
+    établi pour exactement ce bouton (« on descend, on RETIRE les bêtes, PUIS on
+    invoque ») n'avait jamais été appliqué ici. Un témoin qui ne se place pas
+    lui-même dépend de ce qui traîne autour (v279), que la cause du jour soit la
+    durée du voisin ou le hasard des naissances.
+  - **ET UNE ATTENTE QUI JETTE EST PIRE QU'UN ROUGE.** « Un témoin doit échouer
+    PROPREMENT sur l'ancien code, pas s'effondrer » était écrit pour l'ANCIEN
+    code ; il vaut pour le neuf, et le prix est ici de neuf verdicts qu'on ne
+    voit plus — deux portails de suite, v279 et v291, ont perdu la fin de cette
+    suite pour cette seule ligne. Toute attente dont l'échec est un verdict se
+    catche et REND un verdict, la durée et ce qu'on a vu dans le message.
+- **ET LE CHIFFRE D'AVANT D'UN TÉMOIN QUI VARIE LE DÉMONTE TOUT SEUL.** « Le
+  trou enlève aussi la géométrie visible de la façade » est rouge des deux côtés,
+  et son premier nombre vaut **22 326 sur `origin/main` contre 11 684 sur la
+  branche** pour un même second nombre (51 734). Il compte la géométrie de TOUS
+  les immeubles : il confond donc « le trou en a retiré » avec « d'autres
+  immeubles sont arrivés », et ce qu'il mesure dépend de ce que la file a eu le
+  temps d'installer. La grandeur juste est la géométrie de l'immeuble QUI A PERDU
+  un bloc — dette déclarée dans `TASKS.md`, avec ces deux chiffres, parce qu'un
+  témoin qui rend un seul nombre pour deux choses ne se démonte pas (v223).
 - **ET LA SONDE A TRANCHÉ EN UNE EXÉCUTION, LÀ OÙ TROIS RELECTURES N'AVAIENT
   RIEN VU.** Un même rouge cachait trois causes possibles — groupe du ciel
   introuvable, astre introuvable dans le groupe (donc 0), direction vraiment de
