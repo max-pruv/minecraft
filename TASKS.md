@@ -491,6 +491,56 @@ déplacer la nappe dans le worker. Ne PAS mettre `PAS_HORIZON` dans la table du
 palier avant (1) et (2) : un champ dont on ignore le prix est un réglage de
 banc.
 
+## LES CINQ ROUGES DU PORTAIL DE LA v291 — double mesure complète, aucun causé par la livraison
+
+Le diff de la v291 ne touche que `CLAUDE.md`, `TASKS.md`, `tests/manhattan.js` et
+une sonde isolée : **aucun octet de `src/`, du banc, de `sw.js` ni
+d'`index.html`**. `monte.js` ne peut donc pas le lire — son empreinte ne contient
+pas `tests/manhattan.js` — et c'est une preuve par CONSTRUCTION, plus forte qu'un
+rejeu, qui n'échantillonne. La mesure a quand même été faite, parce que la v195
+demande la mesure et non le raisonnement.
+
+**`manhattan.js`, rejouée SEULE sur `origin/main` (2ac9d37) contre la branche :**
+
+| rouge | `origin/main`, seul | branche |
+| --- | --- | --- |
+| le trou enlève la géométrie visible de la façade | ❌ **22 326** → 51 734 | ❌ **11 684** → 51 734 |
+| le taxi roule avec les contrôles tactiles | ❌ (le témoin tourne) | ❌ bouton jamais visible, 15 010 ms |
+| fenêtres et éclairage public la nuit | ❌ | ✅ **5 615 ms** (corrigé ici) |
+| les ombres suivent le soleil et la lune | ❌ **`[1, −1]`** | ✅ `[1, 0,9999…]` (corrigé ici) |
+| les deux clients sans erreur (`PeerJS`) | ❌ | ✅ |
+
+Les deux premiers sont rouges des DEUX côtés. Les deux suivants sont ce que cette
+livraison corrige, et `[1, −1]` est exactement ce que la sonde avait mesuré. Le
+dernier est vert sur la branche — la suite l'atteint enfin, parce qu'elle ne meurt
+plus au taxi (5 min 51 au lieu de 1 min 58).
+
+**`monte.js`, rejouée SEULE sur `origin/main` (147 témoins, 2 défauts) contre deux
+portails de branche :**
+
+| rouge | `origin/main`, seul | branche, portail 1 | branche, portail 2 |
+| --- | --- | --- | --- |
+| les voitures ne se traversent plus | ❌ 50 · taux 23,1 | ❌ 46 | ❌ 78 · taux 40,2 |
+| l'écran ne se fige pas en arrivant sur une ville | ❌ **3 517 ms** · 41,4 % | ❌ 2 950 · 36,9 % | ❌ 2 100 · 35,9 % |
+| les passants ne sont plus plantés au milieu de la chaussée | ✅ | ✅ 6 % | ❌ **28 %** |
+
+Sur les deux premiers, `origin/main` est PIRE que la branche : ce sont les dettes
+déjà déclarées (le tirage de la v277 et la famille de l'arrivée en ville).
+
+- [ ] **ET LE TÉMOIN DES PASSANTS SUR LA CHAUSSÉE EST UN TIRAGE, PAS UN GARDIEN —
+  personne ne l'avait encore déclaré (v291).** Vert sur `origin/main`, vert au
+  portail 1, ROUGE à 28 % au portail 2, sur un code de jeu identique aux trois
+  passages. Il mesure la part de DIX-HUIT passants qui tombent sur la chaussée à
+  Rome, et `posteAutour` les place par un TIRAGE (« une douzaine de points et
+  l'on garde le premier dont le bloc de surface est de la chaussée », v279) :
+  6 %, 28 %, et vert. C'est la même maladie que « les voitures ne se traversent
+  plus » (v277) — une fraction sur un petit échantillon tiré au sort, avec une
+  barre qui tombe DANS son étendue naturelle. Ce qui reste à faire : relever sa
+  distribution sur cinq à dix passages d'un même côté AVANT de toucher à sa
+  barre, et si l'étendue recouvre la barre, le libeller sur une grandeur que le
+  tirage ne décide pas — la part sur la chaussée mesurée sur la VILLE entière
+  (v274), pas sur dix-huit places.
+
 ## LES TROIS ROUGES DU PORTAIL DE LA v290 — mesurés, aucun causé par la livraison
 
 Portail joué deux fois sur la branche, `maj.js` rejouée seule deux fois sur
