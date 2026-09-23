@@ -1028,13 +1028,20 @@ function verifier(nom, ok, detail = '') {
     // l'étendue demandée. La FILE est ce qui le prouve — le banc met toujours
     // `rr=` dans l'adresse et l'adresse l'emporte, à dessein (v284) — et la
     // vitesse des jets suit la file depuis la v269.
+    //
+    // ET CE TÉMOIN EST LE JUMEAU DE CELUI DE LA LIGNE 770 : j'ai repointé l'un
+    // sur les chiffres de la v291 (file 8, vitesse 120) et pas l'autre, et le
+    // portail l'a rendu rouge sur une correction juste. C'est exactement « quand
+    // une panne touche une grammaire partagée, on cherche TOUTES ses occurrences
+    // le jour même », appliqué à mes propres barres de témoin — et le geste qui
+    // l'évite prend dix secondes : `grep -n "=== 16\|=== 160" tests/*.js`.
     await choisi.reload({ waitUntil: 'load', timeout: 90000 });
     await choisi.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const apresChoix = await choisi.evaluate(() => window.__game.reglageApplique);
     await choisi.close();
     verifier('au lancement suivant, le jeu joue vraiment à l\'étendue choisie',
       apresChoix.palier === 'haut' && apresChoix.source === 'choix'
-      && apresChoix.etendue === 'haut' && apresChoix.file === 16 && apresChoix.jet === 160,
+      && apresChoix.etendue === 'haut' && apresChoix.file === 8 && apresChoix.jet === 120,
       JSON.stringify(apresChoix));
 
     verifier('aucune erreur JavaScript de bout en bout',

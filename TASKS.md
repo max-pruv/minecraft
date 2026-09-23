@@ -1,5 +1,51 @@
 # Ce qui est en cours
 
+- [ ] **LES CINQ ROUGES DU PORTAIL DE LA v291 — DEUX ÉTAIENT DE MOI, TROIS SONT
+  DES DETTES DÉJÀ MESURÉES.** Et c'est un `grep` de dix secondes dans ce fichier
+  qui a fait le tri, exactement comme la règle de la v291 le demande (« avant
+  d'expliquer un rouge, on lit ce que le dépôt a déjà mesuré »).
+
+  **Les deux miens, corrigés dans la livraison :**
+  - Le titre du journal du jeu faisait **sept mots pour une barre à six**
+    (`titresLongs: ["v291"]`). J'ai relu la barre du témoin avant d'expliquer son
+    rouge — `n.titre.trim().split(/\s+/).length > 6` — ce qui est la règle même
+    que cette livraison écrit. « Le jeu ne s'arrête plus », cinq mots.
+  - **J'AI REPOINTÉ UN TÉMOIN ET PAS SON JUMEAU.** « au lancement suivant, le jeu
+    joue vraiment à l'étendue choisie » (`maj.js:1037`) portait `file === 16 &&
+    jet === 160`, les chiffres que la livraison retire ; j'avais corrigé son
+    voisin de la ligne 770 et pas lui. Le portail a donc rendu rouge une
+    correction juste. C'est « quand une panne touche une grammaire partagée, on
+    cherche TOUTES ses occurrences le jour même », appliqué à MES PROPRES barres
+    de témoin, et le geste qui l'évite prend dix secondes :
+    `grep -n "=== 16\|=== 160" tests/*.js`. Passé après correction : plus une
+    seule occurrence.
+
+  **Les trois autres, et pourquoi la livraison ne peut pas les avoir causés.** La
+  preuve est STRUCTURELLE, et elle est plus forte qu'un rejeu : tout ce que cette
+  livraison change (`PALIERS.haut`, `VITESSE_JET.haut`, `BARRE_MS_MORCEAU_HAUT`,
+  `palierRetenu`) n'est lu QUE si `PALIER` n'est pas nul. Or `PALIER` vaut `null`
+  sur toute page du banc sauf une — `?palier=` n'apparaît que dans
+  `tests/maj.js:743` (`grep -n "palier=" tests/*.js`), et le banc ne range jamais
+  de verdict puisqu'il force toujours `rr` (v284). `monte.js` et `manhattan.js`
+  jouent donc le code d'`origin/main` au bit près sur ces chemins.
+
+  | rouge | ce portail | ce que le dépôt avait déjà mesuré |
+  | --- | --- | --- |
+  | `maj.js` — fond de carte à la libération | `carte: false`, 50,8 s | dette de la v276, **rouge sur CINQ portails d'affilée**, même forme ; 45,3 s et 51,9 s relevés |
+  | `manhattan.js:282` — délai de 60 s | 💥 Timeout | v269 : même délai sur `origin/main` au TROISIÈME passage ; « déjà démonté 3/3 des deux côtés » |
+  | `monte.js` — l'écran ne se fige pas en arrivant sur une ville | 4 233 ms · **43,4 %** | `origin/main` seul 3 517 ms · 41,4 % ; ailleurs 4 933 ms · 36,4 % sur `origin/main` contre 4 433 · 37,3 % ; branches 2 950 · 36,9 % et 2 100 · 35,9 % |
+
+  **Et une chose qui n'est PAS couverte par ces mesures, dite au lieu d'être
+  glissée sous le tapis** : mes 43,4 % de temps au-delà de trois cents
+  millisecondes sont **deux points au-dessus du pire relevé enregistré** (41,4 %
+  sur `origin/main`). La pire image, elle, est meilleure que le pire d'`origin/main`
+  (4 233 contre 4 933). Comme la grandeur varie de 35,9 à 43,4 % sur un code de
+  jeu inchangé, c'est un TIRAGE et non un gardien — même diagnostic que « les
+  voitures ne se traversent plus » (v277) — mais **ce n'est pas mesuré ici**, et
+  le dire est la seule façon de ne pas transformer une dette en fait (règle de la
+  v291). Ce qui trancherait : la distribution sur cinq à dix passages d'un seul
+  côté, avant de toucher à sa barre.
+
 - [ ] **LA PANNE DE PRODUCTION DE LA v290 : LA CAUSE DU PLANTAGE N'EST PAS
   ÉTABLIE, et il faut le dire.** Max, capture d'iPhone : « A problem repeatedly
   occurred », « Game break after 3sec ». La v291 retire ce qu'il fallait retirer

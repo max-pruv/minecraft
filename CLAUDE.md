@@ -588,6 +588,31 @@ qu'elle a écrit : elle est dans ce qu'elle a DÉVERROUILLÉ. Six règles.
   et c'est un témoin de TABLE, plus faible qu'un témoin de trajet, parce que le
   banc met TOUJOURS `rr=` dans son adresse et qu'aucune de ses pages ne peut
   isoler ce paramètre. On le déclare au lieu de le cacher.
+- **ET J'AI REPOINTÉ UN TÉMOIN ET PAS SON JUMEAU — le portail a rendu rouge une
+  correction juste.** Deux témoins de `maj.js` portaient les chiffres du palier
+  `haut` : celui de la ligne 770 (`?palier=haut` forcé par l'adresse) et celui de
+  la ligne 1037 (« Loin » choisi dans les Réglages, page relancée). J'ai corrigé
+  le premier et oublié le second, qui exigeait encore `file === 16 && jet === 160`.
+  C'est « quand une panne touche une grammaire partagée, on cherche TOUTES ses
+  occurrences le jour même » — la leçon du verre dans les murs — **appliquée à mes
+  propres barres de témoin**, et c'est la première fois que ce dépôt la paie de
+  ce côté-là. Le geste prend dix secondes et il est mécanique : quand on change un
+  chiffre d'une table que des témoins lisent, on cherche le CHIFFRE dans
+  `tests/` avant de lancer le portail (`grep -n "=== 16\|=== 160" tests/*.js`),
+  jamais le nom du témoin qu'on a en tête.
+- **ET LE `grep` DANS `TASKS.md` A TRIÉ CINQ ROUGES EN DIX SECONDES.** Le portail
+  en a rendu cinq ; deux étaient de moi (ci-dessus, et un titre de journal à sept
+  mots pour une barre à six), et les TROIS autres étaient des dettes déjà
+  déclarées avec leur double mesure — le fond de carte de `maj.js` (rouge sur cinq
+  portails d'affilée), le délai de `manhattan.js:282` (démonté 3/3 des deux côtés
+  en v269), le gel de `monte.js` à l'arrivée dans une ville (mesuré PIRE sur
+  `origin/main`). La règle écrite en tête de cette section a donc servi le jour de
+  sa livraison. **Et ce qui a tranché n'est même pas le rejeu : c'est une preuve
+  STRUCTURELLE** — tout ce que la v291 change n'est lu que si `PALIER` n'est pas
+  nul, et `PALIER` vaut `null` sur toute page du banc sauf une, parce que
+  `?palier=` n'apparaît que dans `tests/maj.js` et que le banc ne range jamais de
+  verdict. Quand on peut montrer qu'un chemin n'est pas atteint, on n'a pas besoin
+  de mesurer qu'il n'a rien changé.
 - **ET UNE BARRE DÉRIVÉE D'UNE CONFIGURATION QU'ON RETIRE SE REDÉRIVE.**
   `BARRE_MS_MORCEAU_HAUT` valait 25, calculé sur `rr 16 × v 160 ÷ file 16`. La
   file revenue à huit et la vitesse à 120, le même calcul rend 17. La recopier

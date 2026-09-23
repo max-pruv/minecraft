@@ -7,7 +7,7 @@
 export const NOUVEAUTES = [
   {
     v: 291,
-    titre: 'Le jeu ne s\'arrête plus tout seul',
+    titre: 'Le jeu ne s\'arrête plus',
     puces: [
       'Corrige le plantage sur iPhone',
       'Le jeu ne se règle plus trop haut',

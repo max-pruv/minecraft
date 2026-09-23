@@ -75,6 +75,17 @@ relief, elle, a été mesurée au banc au centre de Paris, quatre bras en ordre
 alterné : 4,93 et 4,95 millions de triangles à la portée 6 contre 1,87 et 1,93 à
 la portée 3, soit 2,6 fois, à nombre d'appels de dessin inchangé.
 
+Le portail a rendu cinq rouges, et le tri a pris dix secondes : **deux étaient de
+moi** — un titre de journal à sept mots pour une barre à six, et un témoin jumeau
+que j'avais oublié de repointer sur les chiffres neufs, si bien que le portail
+accusait une correction juste. Les **trois autres sont des dettes déjà déclarées
+avec leur double mesure** (le fond de carte de `maj.js`, rouge sur cinq portails
+d'affilée ; le délai de `manhattan.js:282`, démonté trois fois sur trois des deux
+côtés ; le gel à l'arrivée dans une ville, mesuré PIRE sur `origin/main`). Et ce
+qui les écarte n'est pas un rejeu mais une preuve structurelle : tout ce que cette
+version change n'est lu que sous un palier non nul, et aucune page du banc sauf
+une n'en a.
+
 Et un non-résultat, déclaré parce qu'il compte : **la sonde n'a pas pu mesurer ce
 que la distance d'affichage coûte en octets.** Elle a rendu 348 morceaux chargés
 sur 625 attendus, et 384 sur 1 089 — le banc rend une image par seconde en
