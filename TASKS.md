@@ -491,6 +491,57 @@ déplacer la nappe dans le worker. Ne PAS mettre `PAS_HORIZON` dans la table du
 palier avant (1) et (2) : un champ dont on ignore le prix est un réglage de
 banc.
 
+## LES TROIS ROUGES DU PORTAIL DE LA v290 — mesurés, aucun causé par la livraison
+
+Portail joué deux fois sur la branche, `maj.js` rejouée seule deux fois sur
+`origin/main` dans un arbre détaché. Quatre suites vertes à chaque passage
+(`fumee`+`parishd`, `carte`, `washington`, `reglages`) ; trois rouges, et voici
+ce que chacun vaut.
+
+**1. « pendant l'installation, le loader dit combien de fichiers sont rangés »
+(`maj.js`) — INTERMITTENT, même distribution des deux côtés.** C'est la preuve
+que la v269 exige, et elle est complète :
+
+| passage | côté | verdict |
+| --- | --- | --- |
+| `maj.js` seule, 1 | `origin/main` | ❌ |
+| `maj.js` seule, 2 | `origin/main` | ✅ |
+| portail 1 | branche | ✅ |
+| portail 2 | branche | ❌ |
+
+Un rouge et un vert de CHAQUE côté : la livraison n'y est pour rien. Ce qu'il
+lit est une suite de textes de loader pendant une installation qui prend moins
+d'une seconde au banc — il attrape « Chargement du monde… » au lieu des
+« 📦 Mise à jour du jeu… n / 97 fichiers ». **La piste est un échantillonnage
+trop lent pour la fenêtre qu'il observe**, la famille de la v274 (« une fenêtre
+de mesure se pose sur la grandeur mesurée ») ; à reprendre en attendant le
+RÉSULTAT — un texte de progression vu — borné, au lieu d'échantillonner.
+
+**2. « l'écran ne se fige pas en arrivant sur une ville » (`monte.js`) — dette
+déjà déclarée, et la couche HD de la v287 l'a alourdie.** Relevés : v284
+4 250 ms / 42,4 % · v286 4 917 / 38,6 · portail 1 ici 3 600 / 38,1 · portail 2
+3 967 / 41,7. La même famille, sur un code d'arrivée en ville que cette
+livraison ne touche pas. Ce qui a changé sous elle, c'est que Paris porte
+désormais une seconde passe de mailleur (facadeshd.js, v287-v289) : la mesure à
+refaire est celle de `?hd=0` contre `?hd=3` à l'arrivée, sur la branche de la
+couche HD, pas ici.
+
+**3. `manhattan.js` — trois à quatre rouges, la famille des 0,4 image par
+seconde.** « le trou enlève aussi la géométrie visible de la façade »
+(11 684 → 51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
+ombres suivent le soleil et la lune visibles » (±1,0000000000000002 — une
+comparaison de flottants sans tolérance), « le taxi roule avec les contrôles
+tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par seconde sur
+ce banc, sur l'ancien code comme sur le neuf**, et que les témoins qui lisent un
+effet « 350 ms après » y sont un pile ou face. Le rouge des ombres, lui, n'est
+pas une intermittence : `1.0000000000000002 > 1` est un défaut d'ÉPSILON dans le
+témoin, à corriger d'une ligne — il ne dépend d'aucune cadence et il rougira
+toujours.
+
+**Aucun de ces rouges ne touche `src/palier.js`, `src/main.js` (chemin du
+palier), `index.html` ni les dix témoins de la livraison**, qui sont verts sur la
+branche et rouges sur le code de production, mesurés.
+
 ## LE PALIER « BAS » DE LA v284 EST LE SEUL QUE RIEN N'A MESURÉ
 
 Ses chiffres — `rr: 8`, `file: 6` — sont RAISONNÉS, pas relevés. La v269 a mesuré

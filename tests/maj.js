@@ -807,9 +807,23 @@ function verifier(nom, ok, detail = '') {
     // banc, deux configurations : rr 12 → 166,6 contre 22,8 ms ; rr 2 → 66,6
     // contre 9,7. On demande un facteur TROIS, la moitié du plus petit des deux
     // rapports mesurés (v237).
+    //
+    // ET IL NE COMPARE PLUS LE VERDICT À UNE MÉDIANE RELUE APRÈS COUP (v290).
+    // Mon premier jet exigeait `v.msTravail === range.medTravail` : le verdict
+    // est figé à l'instant où `rangerLePalier` tire, la médiane est RECALCULÉE
+    // quand le témoin la lit, et le jeu continue d'empiler des relevés entre les
+    // deux. Les deux nombres ne sont donc égaux que par chance — 10,4 contre
+    // 10,4 à un portail, 12,9 contre 12,6 au suivant, sur le MÊME code. C'est
+    // « un verdict lu à l'instant d'une transition est un coup de dé » (v273)
+    // du côté d'une égalité, et la comparaison n'apportait rien : ce que le
+    // témoin annonce, c'est que le verdict porte un TRAVAIL et que ce travail
+    // n'est pas la période. On lit donc ce que le verdict DIT — sa raison nomme
+    // le travail, jamais l'image — et l'on garde la médiane dans le MESSAGE,
+    // où elle sert à démonter un rouge sans jamais en faire un.
     const v = range.verdict;
     verifier('le palier se décide sur le TRAVAIL d\'une image, jamais sur la période de l\'écran',
-      !!v && v.msTravail === range.medTravail && v.msPeriode === range.medPeriode
+      !!v && v.msTravail > 0 && v.msPeriode > 0
+        && /travail/.test(v.raison) && !/image/.test(v.raison)
         && v.msPeriode > 3 * v.msTravail,
       JSON.stringify({ verdict: v, medTravail: range.medTravail, medPeriode: range.medPeriode,
         rapport: v && v.msTravail ? +(v.msPeriode / v.msTravail).toFixed(1) : null }));

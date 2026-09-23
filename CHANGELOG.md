@@ -123,7 +123,29 @@ vient pas apprend à l'enfant à ne plus la lire. Enfin le seul verdict qui
 compte : on relance la page, et le jeu porte vraiment l'étendue demandée — file
 de seize, jets à 160. Les six sont rouges sur le code de production.
 
----
+**Et TROIS défauts ont été trouvés par le banc, pas par une relecture.** Le
+témoin de la règle pure appelait `palierRetenu` **sans garde** : il jetait sur
+l'ancien code et tuait la suite au premier des six, si bien qu'on ne voyait plus
+rien des cinq suivants. Une puce du journal faisait **neuf mots** pour une règle
+de huit. Et surtout, **le témoin du travail comparait le verdict à une médiane
+relue APRÈS coup** — le verdict est figé quand le palier se range, la médiane se
+recalcule quand le témoin la lit, et le jeu empile des relevés entre les deux :
+les deux nombres n'étaient égaux que par chance (10,4 contre 10,4 à un portail,
+12,9 contre 12,6 au suivant, sur le MÊME code). C'est « un verdict lu à l'instant
+d'une transition est un coup de dé » (v273) du côté d'une ÉGALITÉ. Le témoin lit
+désormais ce que le verdict DIT — sa raison nomme le travail, jamais l'image — et
+la médiane reste dans le message, où elle démonte un rouge sans jamais en faire
+un.
+
+**Les trois suites rouges du portail sont mesurées et déclarées** dans
+`TASKS.md`, et aucune n'est causée par cette livraison : le loader d'installation
+de `maj.js` est un intermittent qui rend **un rouge et un vert de chaque côté**
+(la preuve que la v269 exige), le gel à l'arrivée en ville de `monte.js` est la
+dette déclarée depuis la v284 (4 250 / 42,4 alors, 3 967 / 41,7 ici) que la
+couche HD de la v287 a alourdie, et les rouges de `manhattan.js` sont la famille
+des 0,4 image par seconde que la v259 a mesurée — sauf celui des ombres, qui est
+un défaut d'épsilon dans le témoin (`1,0000000000000002 > 1`) et ne dépend
+d'aucune cadence.
 
 ---
 
