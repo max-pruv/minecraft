@@ -20,6 +20,135 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v290 — Le palier mesurait l'écran, et l'étendue devient ton choix
+
+**Pourquoi.** Max, deux captures d'iPad avec `?diag=1` : « palier pas encore
+mesuré · rr 12 · file 8 → **bas** (morceau 37,0 ms ou image 17,0 ms au-delà de
+63 / 16,7) au prochain lancement ». Le palier de la v284 — celui qu'il avait
+justement réclamé, « ajuster en fonction de l'appareil et sa capacité » —
+s'apprêtait à **dégrader son iPad** : distance d'affichage de 12 à 8, file de 8
+à 6, jets de 120 à 95 blocs par seconde. L'inverse de la demande.
+
+La cause tient dans un nombre. Le jeu classait l'appareil sur `now - lastTime`,
+l'écart entre deux images. Sur un appareil synchronisé à son écran, cet écart
+**est la période de rafraîchissement** : 59 images par seconde, 17,0 ms, soit
+1000/59 au dixième près. Les deux barres devenaient fausses par construction —
+au-delà de 16,7 ms, c'est-à-dire tout appareil en bonne santé à 60 Hz, on partait
+en `bas` ; et la barre du palier haut, 8 ms, est inatteignable sous vsync, si bien
+que `haut` ne pouvait **jamais** être atteint par personne. La v284 avait pourtant
+écrit la règle en toutes lettres — « une cadence plafonnée par l'écran ne dit rien
+de la réserve » — et l'a enfreinte dans le fichier d'à côté, une mesure plus loin.
+
+Et le verdict était **déjà rangé** : sa capture dit « au prochain lancement »,
+donc `localStorage` était écrit. Corriger la règle sans changer la clé aurait
+laissé son iPad dégradé pour de bon — une mesure ne se reprend pas.
+
+**Ce que ça change.** Le jeu mesure désormais le **travail** d'une image — ce
+qu'il fait vraiment, du premier calcul jusqu'au rendu, sans l'attente du
+balayage. Les barres, elles, ne bougent pas d'un chiffre : elles décrivaient
+déjà un travail (« on demande la moitié des 16,7 ms »), il manquait seulement de
+le leur donner. Le verdict rangé par l'ancienne règle est oublié : tout appareil
+repart de la mesure d'aujourd'hui, et un appareil non mesuré garde exactement le
+comportement de la v283. Le `?diag=1` affiche les deux grandeurs côte à côte,
+travail et période, pour qu'un palier surprenant se démonte sur l'appareil.
+
+**Ce qui le prouve.** Trois témoins de `maj.js`, dont deux neufs. « Le palier se
+décide sur le travail d'une image, jamais sur la période de l'écran » lit ce que
+le JEU a mesuré et compare les deux grandeurs : au banc, 166,6 ms de période
+contre 22,8 de travail à rr 12, 66,6 contre 9,7 à rr 2 — un facteur sept, ce qui
+rend la confusion visible. « Un verdict rangé par l'ancienne règle ne dégrade
+plus l'appareil » rejoue la situation exacte de l'iPad : on écrit `bas` sous
+l'ancienne clé, on recharge, et l'on regarde la file que l'enfant obtient. Les
+deux sont rouges sur le code de production.
+
+Et le témoin de la v284 est corrigé pour ce qu'il ne pouvait pas voir : il
+**fabriquait** ses deux nombres, donc il vérifiait que la règle sait trier des
+chiffres, jamais qu'un appareil puisse les produire.
+
+**Et la même capture paie une dette de la v284 et en ouvre une plus grosse.**
+Max a mis « Graphismes avancés » : `dpr 2,00`, ombres ON, **59 images par
+seconde et 84 ms de pire image**, contre 79 et 75 à `dpr 1,25` sans ombres.
+2,56 fois la surface plus une passe d'ombres entière coûtent cinq
+millisecondes — la v284 avait raison de refuser de le deviner, et le prix
+n'existe pas sur cet appareil. Rien n'entre pour autant dans la table du
+palier : ces chiffres sont relevés à la distance d'affichage d'aujourd'hui, que
+le palier `haut` change aussi. Ce que la capture établit surtout, c'est que
+son iPad maille **un morceau de monde en 37 ms**, soit vingt-sept par seconde
+là où voler en réclame cent quarante-deux : il n'est pas en peine, il attend.
+C'est déclaré dans `TASKS.md`, avec les trois mesures à faire sur l'appareil.
+
+### Et l'étendue des graphismes devient un réglage
+
+**Pourquoi.** Max, depuis son iPhone 18 Pro, sur la v286 : « il n'y a aucun lag,
+et pour autant les graphismes ne sont pas terribles — là où tu pourrais
+certainement utiliser des graphismes à haute fidélité ». Puis, une fois le défaut
+du palier nommé : « **permets-moi de choisir l'étendue des graphismes as a user
+si tu sais pas la calibrer toi** ». C'est une décision, et elle est juste pour
+trois raisons qui ne sont pas un renoncement. Une mesure répond très bien à « que
+peut faire cet appareil » et pas du tout à « qu'est-ce que je veux voir ». Un
+palier se range pour le lancement suivant, donc il arrive toujours une partie
+trop tard, alors qu'un choix est immédiat. Et surtout un classement peut se
+tromper — il vient de le faire, sur l'appareil même de Max : un réglage qu'on
+atteint est le seul recours qui ne dépende pas de la justesse de ce qu'on a
+écrit, exactement comme le bouton de mise à jour forcée du badge de version.
+
+**Ce que ça change.** Dans ⚙️ Réglages, une rangée « 🔭 Étendue des graphismes »
+avec quatre choix : **Auto · Court · Normal · Loin**. `Auto` est le défaut, donc
+rien ne change pour qui n'y touche pas. Le choix décide de tout ce que le palier
+décidait — jusqu'où le monde se dessine, la profondeur d'avance du mailleur, la
+portée de la couche HD de Paris, la vitesse des jets — et il pousse aussi le
+paysage lointain d'autant (634 blocs en `Normal`, 848 en `Loin`). Ce que le
+réglage change est lu **au démarrage**, parce qu'une distance d'affichage qui
+respire sous les yeux de l'enfant est pire que l'attente : l'aide de la rangée
+annonce donc ce qui attend, et le bandeau dit le geste — revenir au menu 🏠 et
+rejouer. Le choix est rangé **sur l'appareil**, pas dans le profil : l'iPad de la
+maison et l'iPhone de Max n'ont pas la même réserve, et un enfant qui change de
+tablette ne doit pas emporter le réglage de l'autre. Et une étendue choisie à la
+main **ne classe plus l'appareil** : le jeu mesure quand même, l'affiche dans
+`?diag=1`, mais ne la range pas — une page qui tourne à `rr 16` parce qu'on a
+demandé « Loin » ne dit rien de ce que l'appareil ferait à sa distance naturelle,
+et ce faux verdict resterait le jour où l'on repasse en « Auto ».
+
+**Ce qui le prouve.** Six témoins de `maj.js`, tous neufs. Sous node, la règle
+pure : le choix passe devant la mesure, `auto` retombe sur la mesure, une valeur
+abîmée retombe aussi, et sans l'un ni l'autre on rend le comportement d'avant au
+bit près ; et une étendue choisie à la main n'est pas rangée comme une mesure.
+À l'écran, le trajet de l'enfant — le témoin JOUE avant d'ouvrir les réglages,
+parce qu'à l'accueil le grand panneau recouvre le bouton ⚙️ et qu'aucun doigt ne
+peut l'atteindre : les quatre mots sont là dans cet ordre, « Auto » est marquée au
+départ, toucher « Loin » se garde et se marque, l'aide annonce alors le prochain
+lancement ET le retour au menu — **et revenir sur un choix qui ne change rien
+n'annonce aucune attente**, parce qu'une aide qui promet un changement qui ne
+vient pas apprend à l'enfant à ne plus la lire. Enfin le seul verdict qui
+compte : on relance la page, et le jeu porte vraiment l'étendue demandée — file
+de seize, jets à 160. Les six sont rouges sur le code de production.
+
+**Et TROIS défauts ont été trouvés par le banc, pas par une relecture.** Le
+témoin de la règle pure appelait `palierRetenu` **sans garde** : il jetait sur
+l'ancien code et tuait la suite au premier des six, si bien qu'on ne voyait plus
+rien des cinq suivants. Une puce du journal faisait **neuf mots** pour une règle
+de huit. Et surtout, **le témoin du travail comparait le verdict à une médiane
+relue APRÈS coup** — le verdict est figé quand le palier se range, la médiane se
+recalcule quand le témoin la lit, et le jeu empile des relevés entre les deux :
+les deux nombres n'étaient égaux que par chance (10,4 contre 10,4 à un portail,
+12,9 contre 12,6 au suivant, sur le MÊME code). C'est « un verdict lu à l'instant
+d'une transition est un coup de dé » (v273) du côté d'une ÉGALITÉ. Le témoin lit
+désormais ce que le verdict DIT — sa raison nomme le travail, jamais l'image — et
+la médiane reste dans le message, où elle démonte un rouge sans jamais en faire
+un.
+
+**Les trois suites rouges du portail sont mesurées et déclarées** dans
+`TASKS.md`, et aucune n'est causée par cette livraison : le loader d'installation
+de `maj.js` est un intermittent qui rend **un rouge et un vert de chaque côté**
+(la preuve que la v269 exige), le gel à l'arrivée en ville de `monte.js` est la
+dette déclarée depuis la v284 (4 250 / 42,4 alors, 3 967 / 41,7 ici) que la
+couche HD de la v287 a alourdie, et les rouges de `manhattan.js` sont la famille
+des 0,4 image par seconde que la v259 a mesurée — sauf celui des ombres, qui est
+un défaut d'épsilon dans le témoin (`1,0000000000000002 > 1`) et ne dépend
+d'aucune cadence.
+
+---
+
 ## v289 — Les toits de Paris ont leur pente, et les trottoirs leurs bancs
 
 **Pourquoi.** Troisième livraison du programme « Paris, puis la conduite ». La

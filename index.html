@@ -445,6 +445,18 @@
       background: #3c5a86; color: #fff; border: 2px solid #5a80b4; border-radius: 8px;
       flex-shrink: 0;
     }
+    /* L'ÉTENDUE DES GRAPHISMES (v289) — quatre choix, en pleine largeur SOUS le
+       libellé : à quatre boutons, la colonne de droite des autres réglages est
+       trop étroite sur un téléphone, et les mots deviendraient des abréviations.
+       Ce qui décide est la place, pas le goût : la rangée se dit en fractions,
+       jamais en pixels (v272). */
+    #etendue-choix { display: flex; gap: 6px; margin-top: 10px; }
+    .etendue-btn {
+      font-family: inherit; font-size: 13px; padding: 8px 4px; cursor: pointer;
+      flex: 1 1 0; min-width: 0;
+      background: #2c3a58; color: #cdd6ea; border: 2px solid #46587e; border-radius: 8px;
+    }
+    .etendue-btn.on { background: #3c5a86; color: #fff; border-color: #78a0d8; font-weight: bold; }
     /* the game is mostly played on touch devices — desktop shortcuts are noise there */
     @media (pointer: coarse) {
       #overlay .controls { display: none; }
@@ -1980,6 +1992,12 @@
           <div class="setting-hint">Le moteur des véhicules, la radio de la voiture et les bruits de blocs.</div>
         </div>
         <div class="toggle" id="son-toggle"></div>
+      </div>
+      <div class="setting-row" id="etendue-row" style="cursor: default; display: block;">
+        <div class="setting-label">🔭 Étendue des graphismes
+          <div class="setting-hint" id="etendue-hint">Jusqu'où tu vois le paysage, et les détails des rues de Paris.</div>
+        </div>
+        <div id="etendue-choix"></div>
       </div>
       <div class="setting-row" id="graph-row">
         <div class="setting-label">✨ Graphismes avancés

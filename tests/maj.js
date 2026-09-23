@@ -246,7 +246,7 @@ function verifier(nom, ok, detail = '') {
     // La borne de GARDE vérifie que la mesure a EU LIEU : sans relevé, « zéro
     // fautif » est une absence de mesure et non un verdict (v272). Elle valait
     // trois, et la suite rejouée SEULE en a rendu DEUX sur une page prête à
-    // 3 130 ms (v287) : le nombre de relevés est le temps entre l'ouverture de
+    // 3 130 ms (v290) : le nombre de relevés est le temps entre l'ouverture de
     // la boucle et la page prête, divisé par cinquante millisecondes — une
     // grandeur du banc, pas du jeu. Une borne de garde se pose à la moitié de
     // la plus petite mesure (v237), donc à un : la boucle a vu le loader et le
@@ -746,8 +746,8 @@ function verifier(nom, ok, detail = '') {
     // ET LA RÈGLE EST PURE, donc elle se démonte sans navigateur : on lui donne
     // les chiffres de l'iPhone de Max et ceux de l'iPad de quatre ans.
     const regle = await haut.evaluate(() => ({
-      iphone: window.__game.choisirPalier({ msMorceau: 6, msImage: 5 }).palier,
-      vieilIpad: window.__game.choisirPalier({ msMorceau: 70, msImage: 20 }).palier,
+      iphone: window.__game.choisirPalier({ msMorceau: 6, msTravail: 5 }).palier,
+      vieilIpad: window.__game.choisirPalier({ msMorceau: 70, msTravail: 20 }).palier,
       sansRien: window.__game.choisirPalier({}).palier,
       rrHaut: window.__game.PALIERS.haut.rr,
     }));
@@ -776,19 +776,208 @@ function verifier(nom, ok, detail = '') {
       }
       const m = window.__game.mesurePalier;
       let garde = null;
-      try { garde = JSON.parse(localStorage.getItem('web-minecraft-palier-v1') || 'null'); } catch { /* mode privé */ }
+      try { garde = JSON.parse(localStorage.getItem('web-minecraft-palier-v2') || 'null'); } catch { /* mode privé */ }
+      const med = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
       return { range: m.range, morceaux: m.morceaux.length, images: m.images.length,
+        travaux: m.travaux ? m.travaux.length : 0,
+        medPeriode: med(m.images), medTravail: m.travaux ? med(m.travaux) : null,
         verdict: m.verdict || null, garde };
     });
     await mesure.close();
     verifier('le jeu se mesure en jouant, et range son verdict pour la partie suivante',
       range.range && !!range.garde && !!range.garde.palier && range.garde.raison
-        && range.garde.msMorceau > 0 && range.garde.msImage > 0,
+        && range.garde.msMorceau > 0 && range.garde.msTravail > 0,
       JSON.stringify(range));
+
+    // ── LE PALIER SE DÉCIDE SUR LE TRAVAIL, JAMAIS SUR LA PÉRIODE (v290) ──────
+    //
+    // La v284 lui donnait `now - lastTime`, l'écart entre deux images. Sur un
+    // appareil synchronisé à son écran cet écart EST la période de
+    // rafraîchissement — l'iPad de Max : 59 i/s, 17,0 ms, soit 1000/59 — si
+    // bien que `> 16,7` renvoyait en `bas` tout appareil en bonne santé à 60 Hz
+    // et que `≤ 8` mettait `haut` hors de portée.
+    //
+    // ET LE TÉMOIN DE LA v284 NE POUVAIT PAS LE VOIR : il FABRIQUAIT ses deux
+    // nombres (`{ msMorceau: 6, msImage: 5 }`) et vérifiait donc que la règle
+    // sait trier des chiffres, pas qu'un appareil puisse les produire. Celui-ci
+    // lit ce que le JEU a mesuré, et il compare les deux grandeurs côte à côte.
+    //
+    // La garde est ce qui le rend non vide : si période et travail se
+    // confondaient sur cette machine, le témoin ne prouverait rien. Mesuré au
+    // banc, deux configurations : rr 12 → 166,6 contre 22,8 ms ; rr 2 → 66,6
+    // contre 9,7. On demande un facteur TROIS, la moitié du plus petit des deux
+    // rapports mesurés (v237).
+    //
+    // ET IL NE COMPARE PLUS LE VERDICT À UNE MÉDIANE RELUE APRÈS COUP (v290).
+    // Mon premier jet exigeait `v.msTravail === range.medTravail` : le verdict
+    // est figé à l'instant où `rangerLePalier` tire, la médiane est RECALCULÉE
+    // quand le témoin la lit, et le jeu continue d'empiler des relevés entre les
+    // deux. Les deux nombres ne sont donc égaux que par chance — 10,4 contre
+    // 10,4 à un portail, 12,9 contre 12,6 au suivant, sur le MÊME code. C'est
+    // « un verdict lu à l'instant d'une transition est un coup de dé » (v273)
+    // du côté d'une égalité, et la comparaison n'apportait rien : ce que le
+    // témoin annonce, c'est que le verdict porte un TRAVAIL et que ce travail
+    // n'est pas la période. On lit donc ce que le verdict DIT — sa raison nomme
+    // le travail, jamais l'image — et l'on garde la médiane dans le MESSAGE,
+    // où elle sert à démonter un rouge sans jamais en faire un.
+    const v = range.verdict;
+    verifier('le palier se décide sur le TRAVAIL d\'une image, jamais sur la période de l\'écran',
+      !!v && v.msTravail > 0 && v.msPeriode > 0
+        && /travail/.test(v.raison) && !/image/.test(v.raison)
+        && v.msPeriode > 3 * v.msTravail,
+      JSON.stringify({ verdict: v, medTravail: range.medTravail, medPeriode: range.medPeriode,
+        rapport: v && v.msTravail ? +(v.msPeriode / v.msTravail).toFixed(1) : null }));
+
+    // ── ET UN VERDICT RANGÉ PAR L'ANCIENNE RÈGLE NE DÉGRADE PLUS L'APPAREIL ────
+    //
+    // C'est la situation EXACTE de l'iPad de Max : sa capture disait « → bas au
+    // prochain lancement », donc `localStorage` était DÉJÀ écrit. Corriger la
+    // règle sans changer la CLÉ aurait laissé son appareil en `bas` — la mesure
+    // ne se reprend pas, elle est rangée une fois pour toutes. On écrit donc le
+    // verdict de l'ancienne clé, on recharge, et l'on regarde ce que l'enfant
+    // obtient : la file, que personne ne force dans l'adresse (v284).
+    const ancien = await banc.joueur('Gwenaëlle', { rr: 12 });
+    await ancien.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    await ancien.evaluate(() => localStorage.setItem('web-minecraft-palier-v1',
+      JSON.stringify({ palier: 'bas', raison: 'période 17,0 ms — la règle de la v284', msMorceau: 37, msImage: 17, le: Date.now() })));
+    await ancien.reload({ waitUntil: 'load', timeout: 90000 });
+    await ancien.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const apresAncien = await ancien.evaluate(() => window.__game.reglageApplique);
+    await ancien.close();
+    verifier('un verdict rangé par l\'ancienne règle ne dégrade plus l\'appareil',
+      apresAncien.palier === null && apresAncien.file === 8,
+      JSON.stringify(apresAncien));
 
     verifier('et la règle classe l\'appareil sur ce qu\'il coûte, pas sur son nom',
       regle.iphone === 'haut' && regle.vieilIpad === 'bas' && regle.sansRien === 'moyen',
       JSON.stringify(regle));
+
+    // ── L'ÉTENDUE DES GRAPHISMES EST UN CHOIX DE MAX (v290) ────────────────────
+    //
+    // « Permets-moi de choisir l'étendue des graphismes as a user si tu sais pas
+    // la calibrer toi » — sa décision, après avoir vu son iPhone 18 Pro tourner
+    // sans à-coup avec des graphismes qu'il trouve pauvres. La mesure ne décide
+    // plus, elle propose.
+    //
+    // CE QUI SE MESURE ICI EST LE TRAJET DE L'ENFANT, pas la table : on ouvre
+    // les réglages, on touche un bouton, on relance, et l'on regarde ce que le
+    // jeu porte ensuite. Un témoin qui lirait `PALIERS.haut.rr` vérifierait la
+    // table (v284).
+    // ET L'ON JOUE POUR L'ATTEINDRE : `#overlay` (z-index 16) recouvre le bouton
+    // ⚙️ (z-index 11), donc à l'accueil aucun doigt ne peut l'ouvrir. Un témoin
+    // qui cliquerait le bouton depuis l'accueil éprouverait un chemin que
+    // l'enfant n'a pas — on entre en jeu, comme lui.
+    const choisi = await banc.jouerSeul('Nolwenn', { rr: 12 });
+    await choisi.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    // LA RÈGLE EST PURE, donc elle se démonte sans navigateur — et les trois cas
+    // qui comptent sont les trois branches : le choix passe devant la mesure,
+    // `auto` retombe sur la mesure, et sans rien du tout on rend `null`, c'est-
+    // à-dire le comportement d'avant au bit près.
+    // ET IL FAUT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER : appelée
+    // sans garde, `palierRetenu` absente jette et la suite meurt au premier
+    // témoin — on ne voit alors plus rien des quatre suivants. Le portail de
+    // `origin/main` l'a rendu exactement comme ça.
+    const regleEtendue = await choisi.evaluate(() => {
+      const r = window.__game.palierRetenu;
+      const er = window.__game.etendueRange;
+      if (typeof r !== 'function' || typeof er !== 'function') return { absente: true };
+      const mes = { palier: 'bas', raison: 'mesuré' };
+      const a = r({ choix: 'haut', mesure: mes });
+      const b = r({ choix: 'auto', mesure: mes });
+      const c = r({ choix: 'auto', mesure: null });
+      const d = r({ choix: 'nimportequoi', mesure: mes });
+      return {
+        choixDevant: a && a.nom + '/' + a.source,
+        autoSuitLaMesure: b && b.nom + '/' + b.source,
+        rienDuTout: c,
+        valeurAbimee: d && d.nom + '/' + d.source,
+        rangeEnAuto: er('auto'),
+        rangeEnChoix: er('haut'),
+      };
+    });
+    verifier('le choix de l\'enfant passe devant la mesure, et « Auto » la suit',
+      regleEtendue.choixDevant === 'haut/choix'
+      && regleEtendue.autoSuitLaMesure === 'bas/mesure'
+      && regleEtendue.rienDuTout === null
+      && regleEtendue.valeurAbimee === 'bas/mesure',
+      JSON.stringify(regleEtendue));
+    // ET UNE ÉTENDUE CHOISIE À LA MAIN NE SE CLASSE PAS (règle de la v284, qui
+    // n'avait jamais servi qu'au banc) : une page qui tourne à `rr 16` parce que
+    // Max a demandé « Loin » ne dit rien de ce que l'appareil ferait à sa
+    // distance naturelle, et ranger ce verdict lui laisserait un faux classement
+    // le jour où il repasse en « Auto ».
+    verifier('et une étendue choisie à la main n\'est pas rangée comme une mesure',
+      regleEtendue.rangeEnAuto === true && regleEtendue.rangeEnChoix === false,
+      JSON.stringify({ auto: regleEtendue.rangeEnAuto, choix: regleEtendue.rangeEnChoix }));
+
+    // ── ET LE RÉGLAGE EXISTE DANS L'ÉCRAN, ET IL DIT QUOI FAIRE ───────────────
+    //
+    // UN BOUTON QUI NE FAIT RIEN TOUT DE SUITE DOIT DIRE QUOI FAIRE (v228, vu du
+    // côté d'un réglage différé) : ce que l'étendue change est lu AU DÉMARRAGE,
+    // donc l'enfant qui touche « Loin » ne voit rien bouger. On vérifie les
+    // quatre boutons, la marque sur celui qui est actif, et surtout que l'aide
+    // ANNONCE l'effet en attente après le clic.
+    const ecran = await choisi.evaluate(() => {
+      document.getElementById('settings-btn')?.click();
+      // `null` n'est pas un verdict, c'est une absence de mesure (v272) : on dit
+      // si le panneau s'est ouvert, sinon un rouge ne distingue pas « les
+      // boutons sont faux » de « l'écran n'était pas là ».
+      const ouvert = document.getElementById('settings-panel')?.style.display === 'flex';
+      const btns = [...document.querySelectorAll('.etendue-btn')];
+      const avantClic = {
+        ouvert,
+        mots: btns.map((b) => b.textContent),
+        actif: btns.filter((b) => b.classList.contains('on')).map((b) => b.dataset.cle),
+        aide: document.getElementById('etendue-hint')?.textContent || '',
+      };
+      btns.find((b) => b.dataset.cle === 'haut')?.click();
+      const apresClic = {
+        actif: [...document.querySelectorAll('.etendue-btn')].filter((b) => b.classList.contains('on')).map((b) => b.dataset.cle),
+        aide: document.getElementById('etendue-hint')?.textContent || '',
+        range: localStorage.getItem('web-minecraft-etendue-v1'),
+      };
+      // ET L'AUTRE MOITIÉ : revenir sur un choix qui ne change RIEN ne doit pas
+      // annoncer d'attente. Sans mesure rangée, « Auto » rend exactement ce que
+      // porte la page — une aide qui promettrait un changement qui ne vient pas
+      // apprendrait à l'enfant à ne plus la lire.
+      btns.find((b) => b.dataset.cle === 'auto')?.click();
+      const retourAuto = { aide: document.getElementById('etendue-hint')?.textContent || '' };
+      // Et l'on remet le choix de Max pour la suite du témoin.
+      btns.find((b) => b.dataset.cle === 'haut')?.click();
+      return { avantClic, apresClic, retourAuto };
+    });
+    verifier('quatre étendues dans les réglages, « Auto » marquée au départ',
+      ecran.avantClic.ouvert === true
+      && ecran.avantClic.mots.join('·') === 'Auto·Court·Normal·Loin'
+      && ecran.avantClic.actif.join() === 'auto',
+      JSON.stringify(ecran.avantClic));
+    verifier('et choisir « Loin » se garde, se marque, et dit de revenir au menu',
+      ecran.apresClic.range === 'haut'
+      && ecran.apresClic.actif.join() === 'haut'
+      && /prochain lancement/.test(ecran.apresClic.aide)
+      && /menu/.test(ecran.apresClic.aide),
+      JSON.stringify(ecran.apresClic));
+    // ET L'ON EXIGE QUE L'AIDE EXISTE AVANT DE SE RÉJOUIR DE CE QU'ELLE NE DIT
+    // PAS : une aide absente ne dit rien non plus, et ce verdict serait vert sur
+    // du code qui n'a pas le réglage (`null` n'est pas un verdict, v272).
+    verifier('et un choix qui ne change rien n\'annonce aucune attente',
+      /Auto/.test(ecran.retourAuto.aide) && !/prochain lancement/.test(ecran.retourAuto.aide),
+      JSON.stringify(ecran.retourAuto));
+
+    // ── ET CE QUE L'ENFANT OBTIENT AU LANCEMENT SUIVANT ───────────────────────
+    //
+    // Le seul verdict qui compte : on relance la page, et le jeu porte VRAIMENT
+    // l'étendue demandée. La FILE est ce qui le prouve — le banc met toujours
+    // `rr=` dans l'adresse et l'adresse l'emporte, à dessein (v284) — et la
+    // vitesse des jets suit la file depuis la v269.
+    await choisi.reload({ waitUntil: 'load', timeout: 90000 });
+    await choisi.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const apresChoix = await choisi.evaluate(() => window.__game.reglageApplique);
+    await choisi.close();
+    verifier('au lancement suivant, le jeu joue vraiment à l\'étendue choisie',
+      apresChoix.palier === 'haut' && apresChoix.source === 'choix'
+      && apresChoix.etendue === 'haut' && apresChoix.file === 16 && apresChoix.jet === 160,
+      JSON.stringify(apresChoix));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
