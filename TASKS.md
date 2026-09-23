@@ -32,8 +32,9 @@
   | rouge | ce portail | ce que le dépôt avait déjà mesuré |
   | --- | --- | --- |
   | `maj.js` — fond de carte à la libération | `carte: false`, 50,8 s | dette de la v276, **rouge sur CINQ portails d'affilée**, même forme ; 45,3 s et 51,9 s relevés |
-  | `manhattan.js:282` — délai de 60 s | 💥 Timeout | v269 : même délai sur `origin/main` au TROISIÈME passage ; « déjà démonté 3/3 des deux côtés » |
-  | `monte.js` — l'écran ne se fige pas en arrivant sur une ville | 4 233 ms · **43,4 %** | `origin/main` seul 3 517 ms · 41,4 % ; ailleurs 4 933 ms · 36,4 % sur `origin/main` contre 4 433 · 37,3 % ; branches 2 950 · 36,9 % et 2 100 · 35,9 % |
+  | `manhattan.js:282` — délai de 60 s | 💥 Timeout | **rejoué SEUL sur `origin/main` (46ad2d6), DEUX passages : 14 témoins verts puis le MÊME délai ligne 282, 2/2** — et 2/2 sur la branche (portails 1 et 2). v269 : déjà démonté 3/3 des deux côtés |
+  | `monte.js` — les voitures ne se traversent plus | 83 · taux **40,3 %** | le TIRAGE écrit dans `CLAUDE.md` (v277, il va de 0 à 53 sans qu'une ligne du jeu bouge) ; relevés 78 · **40,2 %** sur une branche, 89 ailleurs, 50 · 23,1 % sur `origin/main`, 95 · 42,4 % |
+  | `monte.js` — l'écran ne se fige pas en arrivant sur une ville | 4 233 ms · **43,4 %** (portail 1) · 4 350 ms · 44,7 % (portail 2) | `origin/main` seul 3 517 ms · 41,4 % ; ailleurs 4 933 ms · 36,4 % sur `origin/main` contre 4 433 · 37,3 % ; branches 2 950 · 36,9 % et 2 100 · 35,9 % |
 
   **Et une chose qui n'est PAS couverte par ces mesures, dite au lieu d'être
   glissée sous le tapis** : mes 43,4 % de temps au-delà de trois cents
