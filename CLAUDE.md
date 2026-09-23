@@ -530,6 +530,145 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## UN CLASSEMENT AUTOMATIQUE NE PROPOSE QUE CE QU'ON A DÉJÀ FAIT TOURNER (v291)
+
+Max, capture d'iPhone sur la production : « A problem repeatedly occurred », et
+trois mots — « Game break after 3sec ». **Le jeu mort pour Marlon et Alice, sur
+l'adresse de tous les jours.** La cause est ma v290, et elle n'est pas dans ce
+qu'elle a écrit : elle est dans ce qu'elle a DÉVERROUILLÉ. Six règles.
+
+- **UN RÉGLAGE QU'UNE BARRIÈRE REND INATTEIGNABLE N'EST PAS UN RÉGLAGE PRUDENT,
+  C'EST UN RÉGLAGE NON ÉPROUVÉ — ET LA BARRIÈRE LE CACHE.** `haut` valait
+  `rr 16 · file 16 · hd 6` depuis la v284. Sa barre de travail était comparée à
+  la PÉRIODE de l'écran (17,0 ms à 60 Hz pour une barre à 8), donc **personne ne
+  l'avait jamais reçu** : ni un appareil de la maison, ni une suite du banc, qui
+  force toujours `rr` et ne range donc aucun palier. La v290 a rendu la grandeur
+  juste — c'était la bonne correction — et a livré cette ligne pour la première
+  fois. L'iPhone de Max est passé de `bas` à `haut` en une version : 289 morceaux
+  chargés → 1 089, et la couche HD allumée d'un coup. **Avant de corriger une
+  mesure qui débloque un chemin, on se demande si ce chemin a déjà servi**, et
+  `git log -S` sur la valeur le dit en dix secondes.
+- **ET LA GARANTIE DE LA v284 NE COUVRAIT QU'UN PALIER SUR TROIS.** Elle
+  écrivait : « tant qu'il n'y a pas de mesure, rien ne change — le palier `moyen`
+  porte EXACTEMENT les valeurs de la v283, si bien qu'un appareil mal classé ou
+  non mesuré ne perd rien ». C'est vrai, et cela ne dit RIEN de `haut`. Une
+  phrase de sûreté se lit en cherchant ce qu'elle ne couvre pas.
+- **UN CHIFFRE QUE LE DÉPÔT A MESURÉ COMME NUISIBLE NE REVIENT PAS SUR UN
+  RAISONNEMENT.** La file de seize est le chiffre que la v269 a mesuré comme
+  impraticable sur l'iPad — cadence 9,1 contre 18,3, pire image 383 ms contre
+  150, 3,1 % d'images au-delà de trois cents millisecondes, « les gels de Max » —
+  et RETIRÉ. La v284 l'a remise en écrivant « sur un appareil qui a la réserve,
+  il n'y a pas de raison de le lui refuser ». C'est une phrase, rien ne l'a
+  mesurée, et le commentaire DÉCLARAIT qu'il réintroduisait une valeur retirée.
+  `VITESSE_JET.haut = 160` était le même cas. Les deux sont revenues à huit et
+  120, et `palier.js` porte la mesure de la v269 en commentaire pour que personne
+  ne les remonte sur une intuition.
+- **LA RÈGLE QUI EN SORT, ET ELLE VAUT AU-DELÀ DU PALIER : un classement
+  automatique ne propose que ce qu'on a déjà fait tourner.** `surChoixSeulement`
+  vit DANS la fiche du palier, à côté de `rr`, `file` et `hd` — même discipline
+  que `montable`, `nourrissable` et `vole`. `palierRetenu` refuse alors de
+  l'appliquer sur une MESURE et rend `null`, c'est-à-dire la v283 au bit près :
+  **la correction atteint l'appareil de Max sans qu'il touche à rien**, et sans
+  changer de clé de rangement, parce que ce n'est pas la règle qui a changé de
+  sens mais son APPLICATION qui est refusée. Le jour où `haut` sera mesuré sur un
+  vrai appareil, le drapeau tombe, avec la mesure en commentaire.
+- **ET UNE MESURE QU'ON N'APPLIQUE PAS SE DIT.** Taire le verdict dirait à Max
+  « le jeu mesure ta tablette » alors qu'il l'a mesurée et n'en fait rien.
+  `palierPropose` le nomme, `?diag=1` l'affiche (« sans palier — haut mesuré,
+  jamais donné d'office ») et l'aide des Réglages l'offre (« ta tablette pourrait
+  aller jusqu'à Loin, que le jeu ne donne pas tout seul »). C'est la v290 par
+  l'autre bout : **la mesure ne décide plus, elle propose** — décision de Max — et
+  un réglage automatique doit garder sa porte de sortie.
+- **ET LA PORTE DE SECOURS REPOISONNAIT LE LANCEMENT SUIVANT.** `?palier=` ne
+  figurait pas dans `CONFIG_FORCEE` : la seule adresse qui rendait le jeu à
+  Marlon pendant la panne RANGEAIT son verdict, sous une configuration imposée —
+  la règle de la v284, écrite trois paragraphes au-dessus dans le même fichier,
+  enfreinte par le fichier qui la lit. La liste est passée dans `palier.js`, à
+  côté de la règle qu'elle sert (`PARAMS_FORCANTS`), pour qu'un témoin la lise ;
+  et c'est un témoin de TABLE, plus faible qu'un témoin de trajet, parce que le
+  banc met TOUJOURS `rr=` dans son adresse et qu'aucune de ses pages ne peut
+  isoler ce paramètre. On le déclare au lieu de le cacher.
+- **ET J'AI REPOINTÉ UN TÉMOIN ET PAS SON JUMEAU — le portail a rendu rouge une
+  correction juste.** Deux témoins de `maj.js` portaient les chiffres du palier
+  `haut` : celui de la ligne 770 (`?palier=haut` forcé par l'adresse) et celui de
+  la ligne 1037 (« Loin » choisi dans les Réglages, page relancée). J'ai corrigé
+  le premier et oublié le second, qui exigeait encore `file === 16 && jet === 160`.
+  C'est « quand une panne touche une grammaire partagée, on cherche TOUTES ses
+  occurrences le jour même » — la leçon du verre dans les murs — **appliquée à mes
+  propres barres de témoin**, et c'est la première fois que ce dépôt la paie de
+  ce côté-là. Le geste prend dix secondes et il est mécanique : quand on change un
+  chiffre d'une table que des témoins lisent, on cherche le CHIFFRE dans
+  `tests/` avant de lancer le portail (`grep -n "=== 16\|=== 160" tests/*.js`),
+  jamais le nom du témoin qu'on a en tête.
+- **ET LE `grep` DANS `TASKS.md` A TRIÉ CINQ ROUGES EN DIX SECONDES.** Le portail
+  en a rendu cinq ; deux étaient de moi (ci-dessus, et un titre de journal à sept
+  mots pour une barre à six), et les TROIS autres étaient des dettes déjà
+  déclarées avec leur double mesure — le fond de carte de `maj.js` (rouge sur cinq
+  portails d'affilée), le délai de `manhattan.js:282` (démonté 3/3 des deux côtés
+  en v269), le gel de `monte.js` à l'arrivée dans une ville (mesuré PIRE sur
+  `origin/main`). La règle écrite en tête de cette section a donc servi le jour de
+  sa livraison. **Et ce qui a tranché n'est même pas le rejeu : c'est une preuve
+  STRUCTURELLE** — tout ce que la v291 change n'est lu que si `PALIER` n'est pas
+  nul, et `PALIER` vaut `null` sur toute page du banc sauf une, parce que
+  `?palier=` n'apparaît que dans `tests/maj.js` et que le banc ne range jamais de
+  verdict. Quand on peut montrer qu'un chemin n'est pas atteint, on n'a pas besoin
+  de mesurer qu'il n'a rien changé.
+- **ET UNE BARRE DÉRIVÉE D'UNE CONFIGURATION QU'ON RETIRE SE REDÉRIVE.**
+  `BARRE_MS_MORCEAU_HAUT` valait 25, calculé sur `rr 16 × v 160 ÷ file 16`. La
+  file revenue à huit et la vitesse à 120, le même calcul rend 17. La recopier
+  aurait laissé la règle décrire un palier qui n'existe plus. **C'est l'inverse du
+  signe de la v290** — là aucun chiffre n'avait bougé parce que seule la GRANDEUR
+  mentait ; ici c'est la configuration qui a bougé, donc les chiffres doivent
+  suivre.
+- **ET MA SONDE A MESURÉ LE BANC, PAS LA CONFIGURATION — elle l'a dit
+  elle-même.** Je voulais le coût en OCTETS de `rr 16` (règle de la v236 : quand
+  le banc ne peut pas subir la panne, on mesure la CAUSE et non l'effet). Elle a
+  rendu **348 morceaux chargés sur 625 attendus, et 384 sur 1 089** : en rendu
+  logiciel le banc rend une image par seconde et **ne remplit jamais son disque
+  d'affichage**, quelle que soit la borne d'attente. Le signe était dans les
+  nombres — 384 ≈ 348 quand les cibles valent 625 et 1 089 — et c'est la
+  quatrième fois de la session qu'un instrument me trompe. Ce qu'elle a mesuré de
+  vrai, parce que reproductible en ordre alterné : la portée HD 6 rend **2,6 fois
+  les triangles** de la portée 3 (4,93 et 4,95 millions contre 1,87 et 1,93), à
+  nombre d'appels de dessin inchangé. **Une sonde dont la grandeur dépend du
+  remplissage d'un disque de morceaux ne mesure rien au banc** ; cette
+  mesure-là se prend sur la tablette, `?diag=1`, et c'est une dette déclarée.
+- **ET LA MÊME BARRE FAUSSE A PROBABLEMENT PRIVÉ LA FAMILLE DE TROIS
+  LIVRAISONS.** En cherchant à quoi la v291 rend l'iPhone, j'ai calculé ce que la
+  règle de la v284 rendait sur un appareil à 59 images par seconde : période
+  17,0 ms, barre basse 16,7 → **`bas`**, c'est-à-dire `rr 8 · file 6 · hd 0`.
+  L'iPad de Max l'affichait noir sur blanc (« → bas au prochain lancement »), et
+  son iPhone tombait dans le même cas. Or **`hd 0` éteint la couche HD**. Les
+  v287, v288 et v289 — le relief de Paris, les quartiers, les toits à la
+  Mansart — ont donc toutes trois été livrées à des appareils où elles ne
+  pouvaient pas s'afficher, et ce que Max validait était mes captures de banc,
+  jamais son écran. **Une régression de RÉGLAGE ne se voit nulle part** : le
+  portail est vert, le code est juste, la fonctionnalité est là, et elle
+  n'atteint personne. C'est « ce qu'un témoin ne garde pas, personne ne le
+  garde » (v278) appliqué non pas à du code mais à la CONFIGURATION dans
+  laquelle il tourne — et le geste qui l'attrape est celui de la v285 : avant de
+  livrer une fonctionnalité derrière un réglage, on calcule ce que le réglage
+  vaut sur l'appareil de la famille.
+- **ET CE QUE LA v291 REND À SON APPAREIL N'EST PAS CE QU'IL FAISAIT.** `null`
+  vaut `rr 12 · file 8 · hd 3` sur un écran tactile : c'est la v283 et l'intention
+  de la v287, mais son iPhone tournait à `rr 8 · hd 0` depuis la v284. La
+  correction est donc un pas MOYEN (289 → 625 morceaux, HD allumée à la portée 3)
+  là où la v290 en faisait un violent (289 → 1 089, portée 6). Ce pas-là n'a pas
+  été éprouvé sur son appareil non plus, et **on le dit au lieu de le taire** :
+  `?palier=bas` est l'échelon dont on SAIT qu'il tournait chez lui, et c'est celui
+  qu'on propose en second si le premier ne tient pas. Un remède qui ne va pas plus
+  loin que la panne (v245) ne veut pas dire un remède qu'on sait sûr : ici on
+  connaît le point de départ, le point d'arrivée, et on nomme ce qui reste
+  inconnu entre les deux.
+- **ET `RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE.**
+  Trouvé en lisant le code pour préparer la sonde, et confirmé par elle : le
+  nombre de morceaux porteurs de tampons HD est le MÊME aux portées 3 et 6
+  (248/256 contre 236/238), parce que `world.hd` vaut 1 dès que la portée est non
+  nulle et que `couvreHD` couvre tout le disque de Paris — `montrerLeDetail` ne
+  fait que basculer `visible`. Un appareil au palier haut FABRIQUE le relief de
+  cinq cents morceaux et en MONTRE cent soixante-neuf. Ce n'est pas la panne du
+  jour, c'est une dette déclarée dans `TASKS.md`.
+
 ## Une dette déclarée sans mesure est LUE COMME UN FAIT (v291)
 
 La v290 a déclaré trois rouges de portail dans `TASKS.md` avec leur double

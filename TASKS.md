@@ -1,5 +1,131 @@
 # Ce qui est en cours
 
+- [ ] **LES CINQ ROUGES DU PORTAIL DE LA v291 — DEUX ÉTAIENT DE MOI, TROIS SONT
+  DES DETTES DÉJÀ MESURÉES.** Et c'est un `grep` de dix secondes dans ce fichier
+  qui a fait le tri, exactement comme la règle de la v291 le demande (« avant
+  d'expliquer un rouge, on lit ce que le dépôt a déjà mesuré »).
+
+  **Les deux miens, corrigés dans la livraison :**
+  - Le titre du journal du jeu faisait **sept mots pour une barre à six**
+    (`titresLongs: ["v291"]`). J'ai relu la barre du témoin avant d'expliquer son
+    rouge — `n.titre.trim().split(/\s+/).length > 6` — ce qui est la règle même
+    que cette livraison écrit. « Le jeu ne s'arrête plus », cinq mots.
+  - **J'AI REPOINTÉ UN TÉMOIN ET PAS SON JUMEAU.** « au lancement suivant, le jeu
+    joue vraiment à l'étendue choisie » (`maj.js:1037`) portait `file === 16 &&
+    jet === 160`, les chiffres que la livraison retire ; j'avais corrigé son
+    voisin de la ligne 770 et pas lui. Le portail a donc rendu rouge une
+    correction juste. C'est « quand une panne touche une grammaire partagée, on
+    cherche TOUTES ses occurrences le jour même », appliqué à MES PROPRES barres
+    de témoin, et le geste qui l'évite prend dix secondes :
+    `grep -n "=== 16\|=== 160" tests/*.js`. Passé après correction : plus une
+    seule occurrence.
+
+  **Les trois autres, et pourquoi la livraison ne peut pas les avoir causés.** La
+  preuve est STRUCTURELLE, et elle est plus forte qu'un rejeu : tout ce que cette
+  livraison change (`PALIERS.haut`, `VITESSE_JET.haut`, `BARRE_MS_MORCEAU_HAUT`,
+  `palierRetenu`) n'est lu QUE si `PALIER` n'est pas nul. Or `PALIER` vaut `null`
+  sur toute page du banc sauf une — `?palier=` n'apparaît que dans
+  `tests/maj.js:743` (`grep -n "palier=" tests/*.js`), et le banc ne range jamais
+  de verdict puisqu'il force toujours `rr` (v284). `monte.js` et `manhattan.js`
+  jouent donc le code d'`origin/main` au bit près sur ces chemins.
+
+  | rouge | ce portail | ce que le dépôt avait déjà mesuré |
+  | --- | --- | --- |
+  | `maj.js` — fond de carte à la libération | `carte: false`, 50,8 s | dette de la v276, **rouge sur CINQ portails d'affilée**, même forme ; 45,3 s et 51,9 s relevés |
+  | `manhattan.js:282` — délai de 60 s | 💥 Timeout | **rejoué SEUL sur `origin/main` (46ad2d6), DEUX passages : 14 témoins verts puis le MÊME délai ligne 282, 2/2** — et 2/2 sur la branche (portails 1 et 2). v269 : déjà démonté 3/3 des deux côtés |
+  | `monte.js` — les voitures ne se traversent plus | 83 · taux **40,3 %** | le TIRAGE écrit dans `CLAUDE.md` (v277, il va de 0 à 53 sans qu'une ligne du jeu bouge) ; relevés 78 · **40,2 %** sur une branche, 89 ailleurs, 50 · 23,1 % sur `origin/main`, 95 · 42,4 % |
+  | `monte.js` — l'écran ne se fige pas en arrivant sur une ville | 4 233 ms · **43,4 %** (portail 1) · 4 350 ms · 44,7 % (portail 2) | `origin/main` seul 3 517 ms · 41,4 % ; ailleurs 4 933 ms · 36,4 % sur `origin/main` contre 4 433 · 37,3 % ; branches 2 950 · 36,9 % et 2 100 · 35,9 % |
+
+  **Et une chose qui n'est PAS couverte par ces mesures, dite au lieu d'être
+  glissée sous le tapis** : mes 43,4 % de temps au-delà de trois cents
+  millisecondes sont **deux points au-dessus du pire relevé enregistré** (41,4 %
+  sur `origin/main`). La pire image, elle, est meilleure que le pire d'`origin/main`
+  (4 233 contre 4 933). Comme la grandeur varie de 35,9 à 43,4 % sur un code de
+  jeu inchangé, c'est un TIRAGE et non un gardien — même diagnostic que « les
+  voitures ne se traversent plus » (v277) — mais **ce n'est pas mesuré ici**, et
+  le dire est la seule façon de ne pas transformer une dette en fait (règle de la
+  v291). Ce qui trancherait : la distribution sur cinq à dix passages d'un seul
+  côté, avant de toucher à sa barre.
+
+- [ ] **LA PANNE DE PRODUCTION DE LA v290 : LA CAUSE DU PLANTAGE N'EST PAS
+  ÉTABLIE, et il faut le dire.** Max, capture d'iPhone : « A problem repeatedly
+  occurred », « Game break after 3sec ». La v291 retire ce qu'il fallait retirer
+  — le palier `haut`, `rr 16 · file 16 · hd 6`, une configuration que **personne
+  n'avait jamais exécutée** et que la v290 a rendue atteignable pour la première
+  fois — et cela se justifie tout seul. **Mais je n'ai pas mesuré le mécanisme du
+  plantage**, et une explication qu'on n'a pas mesurée est une dette, pas un
+  diagnostic (v220).
+
+  Ce qui est établi : `haut` était inatteignable avant la v290 (vérifié dans le
+  code de `f2ee0db` : `noterImage(now - lastTime)` contre une barre à 8 ms) ;
+  l'iPhone était en `bas` (sa capture de la v284 disait « → bas »), donc il est
+  passé de 289 morceaux chargés à 1 089 et de la couche HD éteinte à la portée 6
+  en une version ; la file de seize est le chiffre que la v269 a mesuré comme
+  impraticable et retiré. Ce qui n'est PAS établi : que l'onglet meure de cela,
+  et par quel mécanisme (mémoire, pilote graphique, autre chose).
+
+  **Ce qui trancherait, en un geste, et c'est chez Max** : `?palier=moyen`
+  survit-il quand l'adresse nue meurt ? Si oui la cause est nommée ; si non elle
+  est ailleurs, et la v291 reste juste pour d'autres raisons. `?diag=1` sur la
+  même page donne les appels de dessin, les triangles et la résolution.
+
+  Les étapes, dans l'ordre :
+  1. Demander à Max le résultat des deux adresses, et `?diag=1` sur celle qui
+     vit. Une seule question, un seul geste.
+  2. Si c'est la mémoire : elle ne se mesure PAS au banc. Ma sonde
+     (`tests/sonde-palier-haut.cjs`) a rendu **348 morceaux chargés sur 625
+     attendus et 384 sur 1 089** — en rendu logiciel le banc rend une image par
+     seconde et ne remplit jamais son disque, donc elle mesurait le banc. Le
+     chiffre ARITHMÉTIQUE, lui, se retient : un morceau pèse `16×16×160×2` =
+     80 Ko, et le worker en tient un jumeau (v251), donc rr 8 → 46 Mo, rr 12 →
+     98 Mo, rr 16 → **170 Mo** de blocs seuls, hors géométrie.
+  3. Si la cause est nommée et bornée, `haut` peut redevenir mesurable — le
+     drapeau `surChoixSeulement` tombe, avec la mesure en commentaire.
+
+- [ ] **LE RELIEF DE PARIS (v287, v288, v289) N'A PROBABLEMENT JAMAIS ÉTÉ VU PAR
+  LA FAMILLE — à confirmer chez Max, en une capture.** La règle de la v284 lisait
+  la PÉRIODE de l'écran : un appareil à 59 images par seconde rendait 17,0 ms
+  contre une barre basse de 16,7, donc **`bas`**, donc `hd 0`, donc la couche HD
+  ÉTEINTE. L'iPad l'affichait (« → bas au prochain lancement ») et l'iPhone
+  tombait dans le même cas. Trois livraisons de relief, de quartiers et de toits
+  livrées derrière un réglage qui les éteignait, et ce que Max validait était mes
+  captures de banc.
+
+  Ce qui le confirmerait, en un geste : sur `?palier=moyen&diag=1` au centre de
+  Paris, la ligne dit `hd 3` et les triangles montent. Si c'est vrai, la v291 rend
+  à la famille trois livraisons d'un coup, et il faut le lui DIRE — il a passé
+  trois versions à juger des captures d'un jeu que son écran ne montrait pas.
+
+  Et la leçon à instrumenter : **rien ne garde la CONFIGURATION dans laquelle une
+  fonctionnalité tourne chez la famille.** Le portail éprouve le code, jamais le
+  réglage servi. La piste : un témoin qui calcule, pour les cadences réelles des
+  appareils de la maison (59 i/s), ce que la règle rend — et qui rougit si une
+  fonctionnalité neuve atterrit dans un palier qui l'éteint.
+
+- [ ] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE —
+  et un appareil fabrique le relief de cinq cents morceaux pour en montrer cent
+  soixante-neuf.** Mesuré en ordre alterné au centre de Paris : le nombre de
+  morceaux porteurs de tampons HD est le MÊME aux portées 3 et 6 (248 et 256
+  contre 236 et 238), parce que `world.hd` vaut 1 dès que `RAYON_HD > 0` et que
+  `couvreHD` couvre tout le disque de Paris ; `montrerLeDetail` ne fait que
+  basculer `visible`. Ce qui change avec la portée, c'est ce qu'on DESSINE :
+  4,93 et 4,95 millions de triangles contre 1,87 et 1,93, soit 2,6 fois, à
+  nombre d'appels de dessin inchangé. Ce n'était pas la panne du jour ; c'est de
+  la mémoire graphique payée pour rien sur la tablette. La piste : passer la
+  portée au worker pour qu'il ne produise les tampons HD que dans le disque
+  utile — mais la portée bouge avec l'enfant, donc cela veut dire remailler, ce
+  que `montrerLeDetail` existe précisément pour éviter (v287). À mesurer avant
+  d'écrire : ce que les tampons HD de cinq cents morceaux pèsent vraiment.
+
+- [ ] **`?palier=` n'a qu'un témoin de TABLE, et c'est déclaré.** Le banc met
+  TOUJOURS `rr=` dans son adresse (v284), donc aucune page d'ici ne peut isoler
+  ce paramètre pour éprouver que `CONFIG_FORCEE` le voit. Le témoin lit la liste
+  (`PARAMS_FORCANTS`, rangée à côté de la règle qu'elle sert) : il garde contre
+  un retrait, pas contre un chemin. Un témoin de trajet demanderait une page que
+  le banc ouvre SANS `rr`, ce qui changerait `adresse()` dans `banc.js` — donc le
+  banc entier se rejouerait, et ce n'est pas le prix d'un paramètre.
+
+
 - [ ] **GRAND TOUR — LE PROGRAMME « PARIS, PUIS LA CONDUITE » (décision de Max,
   septembre 2026).** Le but n'est plus un meilleur clone de Minecraft : c'est un
   monde ouvert beau et vivant, où Paris se reconnaît depuis un trottoir sans voir
