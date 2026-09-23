@@ -141,11 +141,36 @@ export const PALIERS = {
   // CE QUE LE JEU FAIT AUJOURD'HUI, au réglage près. Un appareil que la mesure
   // ne sait pas classer atterrit ici et ne perd rien.
   moyen: { rr: 12, file: 8, hd: 3 },
-  // L'iPhone de Max, et tout ordinateur. La file passe à seize — le chiffre que
-  // la v265 avait mesuré comme le genou du DÉBIT et que la v269 a dû rendre
-  // parce qu'il écroulait la cadence SUR L'IPAD. Sur un appareil qui a la
-  // réserve, il n'y a pas de raison de le lui refuser.
-  haut: { rr: 16, file: 16, hd: 6 },
+  // ── ET CELUI-CI N'A JAMAIS TOURNÉ NULLE PART (v291) ───────────────────────
+  //
+  // Max, capture d'iPhone sur la production de la v290 : « A problem repeatedly
+  // occurred », « Game break after 3sec ». Le jeu mort pour Marlon et Alice.
+  //
+  // Jusqu'à la v290 ce palier était INATTEIGNABLE : sa barre de travail était
+  // comparée à la PÉRIODE de l'écran (17,0 ms à 60 Hz pour une barre à 8), donc
+  // aucun appareil ne pouvait l'obtenir — ni au banc, qui force toujours `rr`
+  // et ne range donc rien. La v290 a rendu la grandeur juste, et par là a livré
+  // cette ligne pour la PREMIÈRE FOIS, à l'appareil de Max. L'iPhone est passé
+  // de `bas` (rr 8, file 6, HD éteinte) à `haut` en une version : 289 morceaux
+  // chargés → 1 089, et la couche HD allumée d'un coup.
+  //
+  // ET SA FILE DE SEIZE ÉTAIT UN RAISONNEMENT, PAS UNE MESURE. La v269 avait
+  // mesuré seize comme impraticable — cadence 9,1 contre 18,3, pire image
+  // 383 ms contre 150, 3,1 % d'images au-delà de trois cents millisecondes,
+  // « les gels de Max » — et l'avait RETIRÉE. La v284 l'a remise en écrivant
+  // « sur un appareil qui a la réserve, il n'y a pas de raison de le lui
+  // refuser » : c'est une phrase, et rien ne l'a mesurée. Un chiffre que le
+  // dépôt a mesuré comme nuisible ne revient pas sur un raisonnement. Il rend
+  // donc sa file à HUIT, et `VITESSE_JET` suit, parce qu'« une vitesse mesurée
+  // sur une file ne vaut que pour cette file » (v269).
+  //
+  // CE QUI RESTE : `rr` 16 et la portée HD 6, mesurée au banc contre la
+  // portée 3, quatre bras en ordre alterné au centre de Paris — 4,93 et 4,95
+  // millions de triangles contre 1,87 et 1,93, soit 2,6 fois, à nombre d'appels
+  // de dessin inchangé (1 541/1 574 contre 1 650/1 709). C'est du relief, et
+  // c'est ce que Max a demandé de pouvoir choisir. Il reste donc offert — mais
+  // SUR CHOIX SEULEMENT, voir `palierRetenu`.
+  haut: { rr: 16, file: 8, hd: 6, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
@@ -160,16 +185,24 @@ export const PALIER_PAR_DEFAUT = 'moyen';
 //   par seconde (la largeur du front de chargement multipliée par les morceaux
 //   franchis) — c'est l'arithmétique de la v229, reprise en v237.
 //
-//   Au palier HAUT : rr 16, v 160 → 320 morceaux par seconde. Avec une file de
-//   seize et un seul mailleur, cela demande `1000 / 320 × 16 = 50 ms` par
-//   morceau au pire. On prend la moitié, 25 ms, parce qu'une barre de garde se
-//   pose à la moitié (v237) et qu'un morceau de ville coûte plus cher qu'un
-//   morceau de campagne — la mesure, elle, se fait là où l'enfant est.
+//   Au palier HAUT : rr 16, v 120 → 240 morceaux par seconde. Avec une file de
+//   huit et un seul mailleur, cela demande `1000 / 240 × 8 = 33 ms` par morceau
+//   au pire. On prend la moitié, 17 ms, parce qu'une barre de garde se pose à
+//   la moitié (v237) et qu'un morceau de ville coûte plus cher qu'un morceau de
+//   campagne — la mesure, elle, se fait là où l'enfant est.
+//
+//   ET CE CHIFFRE A CHANGÉ EN v291 PARCE QUE LE PALIER A CHANGÉ : il valait 25,
+//   dérivé d'une file de seize et d'une vitesse de 160 que la v269 avait
+//   mesurées comme impraticables. Une barre dérivée d'une configuration qu'on
+//   retire se redérive ; la recopier aurait laissé la règle décrire un palier
+//   qui n'existe plus. C'est l'inverse du signe de la v290 — là, aucun chiffre
+//   n'avait bougé parce que seule la GRANDEUR mentait ; ici c'est la
+//   configuration elle-même qui a bougé.
 //
 //   Au palier BAS : rr 8, v 95 → 95 morceaux par seconde, soit 63 ms par
 //   morceau avec une file de six. Au-delà, l'appareil ne suit plus et il vaut
 //   mieux lui rendre des images que du monde.
-export const BARRE_MS_MORCEAU_HAUT = 25;
+export const BARRE_MS_MORCEAU_HAUT = 17;
 export const BARRE_MS_MORCEAU_BAS = 63;
 
 // Et pour le travail d'une image : soixante images par seconde laissent 16,7 ms
@@ -214,7 +247,14 @@ export function choisirPalier({ msMorceau = null, msTravail = null } = {}) {
 // palier haut lui rend sa file de seize, donc sa vitesse. Le témoin du trou de
 // `monte.js` calcule sa barre en `max / 2`, lu dans la fiche : il suivra tout
 // seul, sans qu'on touche à un chiffre de témoin.
-export const VITESSE_JET = { bas: 95, moyen: 120, haut: 160 };
+// ET LA v291 LUI REND SA FILE DE HUIT, DONC SA VITESSE DE 120. Le 160 de ce
+// tableau était le pendant de la file de seize : la v269 l'avait remesuré à
+// 120 au même critère (le trou devant soi, médiane sur six relevés) et avait
+// écrit la règle qui tranche ici — « une vitesse mesurée sur une file ne vaut
+// que pour cette file ». La file revenue à huit, 160 laisse l'enfant voler
+// dans le vide, et le témoin du trou de `monte.js` le dirait — sa barre vaut
+// `max / 2`, lue dans la fiche, donc elle suit toute seule (v269).
+export const VITESSE_JET = { bas: 95, moyen: 120, haut: 120 };
 
 // UN PALIER NE PAPILLOTE PAS. On mesure, on décide une fois, on garde — et ce
 // qui est gardé l'est sur l'APPAREIL, pas dans le profil de l'enfant, pour la
@@ -273,7 +313,7 @@ export const ETENDUES = [
   { cle: 'auto', mot: 'Auto', aide: 'Le jeu mesure ta tablette' },
   { cle: 'bas', mot: 'Court', aide: 'Moins loin, plus fluide' },
   { cle: 'moyen', mot: 'Normal', aide: 'Ce que le jeu faisait avant' },
-  { cle: 'haut', mot: 'Loin', aide: 'Plus loin, pour un appareil rapide' },
+  { cle: 'haut', mot: 'Loin', aide: 'Beaucoup plus loin — peut ralentir' },
 ];
 
 // LA RÈGLE, PURE ET UNE SEULE — et c'est ce qui la rend lisible en dix lignes :
@@ -289,15 +329,46 @@ export const ETENDUES = [
 // Rend `null` quand il n'y a NI choix NI mesure : c'est la v283 au bit près, et
 // c'est ce qui garantit qu'un appareil qu'on n'a ni mesuré ni réglé ne perd
 // rien.
+//
+// ── ET UNE MESURE NE DONNE PAS UN PALIER QUI N'A JAMAIS TOURNÉ (v291) ────────
+//
+// C'est la panne de production que Max a photographiée. La v284 avait fondé
+// toute la sûreté du mécanisme sur UNE phrase : « tant qu'il n'y a pas de
+// mesure, rien ne change — le palier `moyen` porte EXACTEMENT les valeurs de la
+// v283, si bien qu'un appareil mal classé ou non mesuré ne perd rien ». Cette
+// garantie ne couvrait que `moyen`. `haut`, elle, était une ligne écrite au
+// jugé, et la barrière qui la rendait inatteignable la protégeait de toute
+// épreuve : deux versions durant, personne — pas un appareil, pas une suite —
+// ne l'a exécutée. La v290 a levé la barrière, et le jeu est mort chez Marlon.
+//
+// La règle qui en sort vaut au-delà du palier : UN CLASSEMENT AUTOMATIQUE NE
+// PROPOSE QUE CE QU'ON A DÉJÀ FAIT TOURNER. Un réglage qu'on n'a jamais vu
+// s'exécuter n'est pas un réglage prudent parce qu'un calcul le dit ; il est
+// simplement non éprouvé, et le donner d'office à un enfant est un pari fait
+// avec sa partie. `surChoixSeulement` porte cela DANS la fiche du palier — à
+// côté de `rr`, `file` et `hd` —, jamais dans une liste ailleurs : même
+// discipline que `montable`, `nourrissable` et `vole`. Le jour où `haut` sera
+// mesuré sur un vrai appareil, le drapeau tombe, avec la mesure en commentaire.
+//
+// CE QU'ON REND ALORS, C'EST `null`, c'est-à-dire la v283 au bit près : rien
+// n'est dégradé, et sur un écran tactile c'est EXACTEMENT « Normal ». La mesure
+// n'est pas perdue pour autant — `?diag=1` la dit, et l'aide des Réglages
+// propose à Max de choisir « Loin » lui-même. La mesure ne décide plus, elle
+// propose : c'est sa décision de la v290, appliquée au palier qu'elle a livré.
 export function palierRetenu({ choix = null, mesure = null } = {}) {
   if (choix && choix !== 'auto' && PALIERS[choix]) {
     return { nom: choix, source: 'choix', ...PALIERS[choix] };
   }
-  if (mesure && PALIERS[mesure.palier]) {
+  if (mesure && PALIERS[mesure.palier] && !PALIERS[mesure.palier].surChoixSeulement) {
     return { nom: mesure.palier, source: 'mesure', mesure, ...PALIERS[mesure.palier] };
   }
   return null;
 }
+
+// CE QU'UNE MESURE PROPOSE SANS L'APPLIQUER — pour que `?diag=1` et l'aide des
+// Réglages disent la même chose, et qu'aucun des deux ne l'écrive de son côté.
+export const palierPropose = (mesure) => (mesure && PALIERS[mesure.palier]
+  && PALIERS[mesure.palier].surChoixSeulement ? mesure.palier : null);
 
 // ET ON NE CLASSE PAS UN APPAREIL SUR UNE CONFIGURATION QU'ON LUI A IMPOSÉE.
 // La règle est de la v284, écrite pour `?rr=` et `?dpr=` du banc ; un palier
@@ -309,6 +380,19 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
 // — la mesure reste vraie POUR CETTE CONFIGURATION, et elle sert à démonter un
 // résultat surprenant — mais on ne la range pas.
 export const etendueRange = (choix) => !choix || choix === 'auto';
+
+// ── ET LA LISTE DE CE QUI « FORCE » VIT ICI, À CÔTÉ DE LA RÈGLE (v291) ───────
+//
+// Elle vivait dans `main.js`, et `palier` y MANQUAIT — la règle écrite trois
+// paragraphes plus haut, enfreinte par le fichier qui la lit. Le prix n'était
+// pas théorique : pendant la panne de production, la seule porte de secours
+// était d'ouvrir le jeu avec `?palier=moyen`, et cette page RANGEAIT son
+// verdict. La porte de secours repoisonnait le lancement suivant.
+//
+// Une liste qui décide d'une règle se range avec la règle : c'est la discipline
+// de `postesAvion` — deux tables qui décrivent la même chose finissent par
+// diverger — et c'est ce qui permet à un témoin de la lire sous node.
+export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier'];
 
 // ── ET CE QUE VAUT « PAS DE PALIER » SE PUBLIE, IL NE SE RECOPIE PAS ─────────
 //

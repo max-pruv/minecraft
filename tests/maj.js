@@ -758,8 +758,16 @@ function verifier(nom, ok, detail = '') {
     // profondeur de file, elle, n'est forcée par personne ici, et c'est le
     // levier que la v269 a mesuré comme LE levier. On vérifie donc les deux
     // faits : la file suit le palier, et `rr` suit l'adresse.
-    verifier('un palier mesuré donne plus de monde devant l\'enfant, et rend leur vitesse aux jets',
-      applique.palier === 'haut' && applique.file === 16 && applique.jet === 160
+    // ET LES CHIFFRES ONT CHANGÉ EN v291, PARCE QUE LE PALIER A CHANGÉ. La file
+    // de seize et la vitesse de 160 étaient le couple que la v269 avait mesuré
+    // comme impraticable et RETIRÉ ; la v284 les avait remises sur un
+    // raisonnement, derrière une barrière qui les rendait inatteignables, et la
+    // v290 a levé la barrière — c'est la panne de production que Max a
+    // photographiée. `haut` garde `rr` 16 et la portée HD, rend sa file à huit
+    // et sa vitesse à 120. Un témoin qui aurait gardé ses anciens chiffres
+    // aurait accusé la correction (v281, les cotes de gare écrites en dur).
+    verifier('un palier CHOISI donne plus de monde devant l\'enfant, avec la file que la v269 a mesurée',
+      applique.palier === 'haut' && applique.file === 8 && applique.jet === 120
         && applique.rr === 12 && regle.rrHaut === 16,
       JSON.stringify({ ...applique, rrDuPalierHaut: regle.rrHaut }));
     // ET LA CHAÎNE ENTIÈRE SE SUIT : jouer, mesurer, ranger. La fenêtre vaut
@@ -848,6 +856,41 @@ function verifier(nom, ok, detail = '') {
       apresAncien.palier === null && apresAncien.file === 8,
       JSON.stringify(apresAncien));
 
+    // ── ET UNE MESURE NE DONNE PAS UN PALIER QUI N'A JAMAIS TOURNÉ (v291) ─────
+    //
+    // C'est la panne de production que Max a photographiée : « A problem
+    // repeatedly occurred », « Game break after 3sec ». La v290 a rendu la
+    // grandeur juste et, par là, a rendu `haut` ATTEIGNABLE pour la première
+    // fois — rr 16, file 16, portée HD 6, une ligne que personne n'avait jamais
+    // exécutée, ni un appareil ni une suite. L'iPhone de Max est passé de `bas`
+    // à `haut` en une version.
+    //
+    // LE TÉMOIN REJOUE LA SITUATION EXACTE DE SON APPAREIL, comme celui de la
+    // v290 juste au-dessus : on écrit le verdict dans la clé COURANTE, on
+    // recharge, et l'on lit ce que l'enfant obtient. Et ce qu'on lit, c'est la
+    // FILE — le banc force toujours `rr` dans son adresse (v284), donc `rr` ne
+    // peut rien prouver ici ; la file, elle, n'est forcée par personne, et
+    // c'est le levier que la v269 a mesuré comme LE levier.
+    //
+    // Sur l'ancien code il rend `haut` / file 16 ; ici `null` / file 8, c'est-à-
+    // dire la v283 au bit près. Et la mesure n'est pas perdue : `palierPropose`
+    // la nomme, pour que `?diag=1` et l'aide des Réglages puissent l'offrir.
+    const jamais = await banc.joueur('Maëlys', { rr: 12 });
+    await jamais.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    await jamais.evaluate(() => localStorage.setItem('web-minecraft-palier-v2',
+      JSON.stringify({ palier: 'haut', raison: 'morceau 6.0 ms ≤ 17 et travail 5.0 ms ≤ 8', msMorceau: 6, msTravail: 5, le: Date.now() })));
+    await jamais.reload({ waitUntil: 'load', timeout: 90000 });
+    await jamais.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const apresJamais = await jamais.evaluate(() => {
+      const g = window.__game;
+      const pp = typeof g.palierPropose === 'function' ? g.palierPropose : null;
+      return { ...g.reglageApplique, propose: pp ? pp({ palier: 'haut' }) : 'fonction absente' };
+    });
+    await jamais.close();
+    verifier('un palier que le jeu n\'a jamais fait tourner n\'est pas donné d\'office',
+      apresJamais.palier === null && apresJamais.file === 8 && apresJamais.propose === 'haut',
+      JSON.stringify(apresJamais));
+
     verifier('et la règle classe l\'appareil sur ce qu\'il coûte, pas sur son nom',
       regle.iphone === 'haut' && regle.vieilIpad === 'bas' && regle.sansRien === 'moyen',
       JSON.stringify(regle));
@@ -893,6 +936,15 @@ function verifier(nom, ok, detail = '') {
         valeurAbimee: d && d.nom + '/' + d.source,
         rangeEnAuto: er('auto'),
         rangeEnChoix: er('haut'),
+        // ET `?palier=` EST UNE CONFIGURATION FORCÉE (v291). Il manquait dans la
+        // liste : la seule porte de secours de la panne de production rangeait
+        // donc son verdict et repoisonnait le lancement suivant. Le banc ne peut
+        // PAS l'éprouver par une page — il met toujours `rr=` dans son adresse
+        // (v284), donc aucune page d'ici ne peut isoler ce paramètre. On lit
+        // alors la liste, qui vit à côté de la règle qu'elle sert : c'est un
+        // témoin de TABLE, plus faible qu'un témoin de trajet, et il est là pour
+        // qu'on ne la vide pas sans le voir.
+        forcants: window.__game.PARAMS_FORCANTS || null,
       };
     });
     verifier('le choix de l\'enfant passe devant la mesure, et « Auto » la suit',
@@ -909,6 +961,12 @@ function verifier(nom, ok, detail = '') {
     verifier('et une étendue choisie à la main n\'est pas rangée comme une mesure',
       regleEtendue.rangeEnAuto === true && regleEtendue.rangeEnChoix === false,
       JSON.stringify({ auto: regleEtendue.rangeEnAuto, choix: regleEtendue.rangeEnChoix }));
+    // ET `?palier=` EN EST UNE AUSSI (v291) — la porte de secours de la panne de
+    // production rangeait son verdict et repoisonnait le lancement suivant.
+    verifier('et un palier forcé par l\'adresse compte comme une configuration imposée',
+      Array.isArray(regleEtendue.forcants) && regleEtendue.forcants.includes('palier')
+        && regleEtendue.forcants.includes('rr'),
+      JSON.stringify({ forcants: regleEtendue.forcants }));
 
     // ── ET LE RÉGLAGE EXISTE DANS L'ÉCRAN, ET IL DIT QUOI FAIRE ───────────────
     //

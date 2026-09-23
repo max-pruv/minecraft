@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 291,
+    titre: 'Le jeu ne s\'arrête plus tout seul',
+    puces: [
+      'Corrige le plantage sur iPhone',
+      'Le jeu ne se règle plus trop haut',
+      'Réglages : « Loin » reste ton choix',
+    ],
+  },
+  {
     v: 290,
     titre: 'Choisis jusqu\'où tu vois',
     puces: [

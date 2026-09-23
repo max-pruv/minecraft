@@ -20,6 +20,69 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v291 — Le jeu ne se donne plus un réglage que personne n'a jamais essayé
+
+**Pourquoi.** Capture d'iPhone de Max sur la production : « A problem repeatedly
+occurred on https://minecraft-fam.vercel.app/ », et trois mots — « Game break
+after 3sec ». Le jeu mort, pour Marlon et pour Alice, sur l'adresse de tous les
+jours.
+
+La cause est ma v290, et elle ne se lit pas dans ce qu'elle a écrit mais dans ce
+qu'elle a DÉVERROUILLÉ. Le jeu se classe depuis la v284 en trois paliers ; celui
+du haut — voir plus loin, charger plus de monde d'avance — était
+**inatteignable**, parce que sa barre comparait la période de rafraîchissement de
+l'écran à un temps de travail. Personne ne l'avait donc jamais reçu : ni un
+appareil de la maison, ni une suite du banc. La v290 a rendu cette mesure juste,
+et par là a livré cette ligne pour la première fois, à l'iPhone de Max. Son
+appareil est passé du palier BAS au palier HAUT en une version — de 289 morceaux
+de monde chargés à 1 089, et la couche de relief de Paris allumée d'un coup.
+
+Et le contenu de ce palier n'avait jamais été mesuré non plus : sa profondeur de
+file valait seize, le chiffre que la v269 avait mesuré comme impraticable sur
+l'iPad — cadence 9,1 contre 18,3, pire image 383 ms contre 150 — et **retiré**.
+La v284 l'avait remis en écrivant « sur un appareil qui a la réserve, il n'y a
+pas de raison de le lui refuser » : c'est une phrase, et rien ne l'a mesurée.
+
+**Ce que ça change.** Le jeu remarche, sans que personne n'ait à toucher un
+réglage : un appareil que la mesure classe « Loin » retombe sur exactement ce
+qu'il faisait en v289. Un réglage que le jeu n'a jamais fait tourner nulle part
+n'est plus donné d'office — il est PROPOSÉ. Dans ⚙️ Réglages, la ligne 🔭 Étendue
+des graphismes dit désormais « ta tablette pourrait aller jusqu'à Loin, que le
+jeu ne donne pas tout seul — choisis-le si tu le veux » : la mesure propose, Max
+décide, ce qui est sa décision de la v290. « Loin » garde sa distance d'affichage
+et son relief, et reprend la profondeur de file et la vitesse d'avion que la v269
+avait mesurées. Et la porte de secours de la panne — ouvrir le jeu avec
+`?palier=moyen` — ne range plus un classement faux pour le lancement suivant.
+
+**Et une chose qu'il faut dire, parce qu'elle est probablement plus grosse que la
+panne.** En cherchant à quoi la correction rend son iPhone, j'ai calculé ce que
+l'ancienne règle rendait sur un appareil à 59 images par seconde : le palier BAS,
+où la couche de relief de Paris est **éteinte**. L'iPad l'affichait noir sur blanc
+depuis la v284. Les v287, v288 et v289 — le relief, les quartiers, les toits à la
+Mansart — ont donc toutes trois été livrées à des appareils qui ne pouvaient pas
+les afficher, et ce que Max validait était mes captures de banc, jamais son écran.
+La v291 rallume ce relief à la portée moyenne. Cela reste **à confirmer chez lui**,
+en une capture : `?diag=1` au centre de Paris doit dire `hd 3`.
+
+**Ce qui le prouve.** Trois témoins de `maj.js`, les trois vérifiés ROUGES sur
+`origin/main` : un verdict « Loin » écrit dans le stockage de l'appareil, la page
+rechargée, et c'est la PROFONDEUR DE FILE qu'on lit — le banc force toujours la
+distance d'affichage dans son adresse, elle ne peut donc rien prouver ici ; l'un
+rend « Loin / file 16 » sur l'ancien code et « sans palier / file 8 » ici ; le
+deuxième que « Loin » choisi à la main donne bien la file et la vitesse mesurées ;
+le troisième que `?palier=` compte comme une configuration imposée. La portée du
+relief, elle, a été mesurée au banc au centre de Paris, quatre bras en ordre
+alterné : 4,93 et 4,95 millions de triangles à la portée 6 contre 1,87 et 1,93 à
+la portée 3, soit 2,6 fois, à nombre d'appels de dessin inchangé.
+
+Et un non-résultat, déclaré parce qu'il compte : **la sonde n'a pas pu mesurer ce
+que la distance d'affichage coûte en octets.** Elle a rendu 348 morceaux chargés
+sur 625 attendus, et 384 sur 1 089 — le banc rend une image par seconde en
+logiciel et ne remplit jamais son disque. Elle mesurait le banc, pas la
+configuration, et c'est elle qui l'a dit : 384 ≈ 348 quand les cibles valent 625
+et 1 089. Cette mesure-là se fait sur la tablette, avec `?diag=1`, et elle est
+déclarée dans `TASKS.md`.
+
 ## v290 — Le palier mesurait l'écran, et l'étendue devient ton choix
 
 **Pourquoi.** Max, deux captures d'iPad avec `?diag=1` : « palier pas encore

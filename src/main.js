@@ -25,7 +25,8 @@ import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
-  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, etendueRange, reglageDe } from './palier.js';
+  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe,
+  PARAMS_FORCANTS } from './palier.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -549,8 +550,13 @@ const FENETRE_PALIER_MS = Number(PALIER_MS_FORCE) || 30000;
 // que le jeu (la famille de la v279). Le banc force toujours `rr`, donc il ne
 // range jamais rien ; `?palierms=` est la déclaration explicite qui permet à un
 // témoin de suivre la chaîne entière malgré cela.
-const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd']
-  .some((c) => new URLSearchParams(location.search).has(c));
+// ET `palier` MANQUAIT DANS CETTE LISTE (v291) — la règle écrite juste
+// au-dessus, enfreinte deux lignes plus bas. Une page ouverte à `?palier=moyen`
+// — ce que Max a dû taper pour que Marlon puisse rejouer pendant la panne — est
+// une configuration IMPOSÉE au même titre que `?rr=` : elle ne dit rien de ce
+// que l'appareil ferait à sa distance naturelle, et elle rangeait quand même
+// son verdict. La porte de secours repoisonnait donc le lancement suivant.
+const CONFIG_FORCEE = PARAMS_FORCANTS.some((c) => new URLSearchParams(location.search).has(c));
 // ET UNE ÉTENDUE CHOISIE À LA MAIN EST UNE CONFIGURATION FORCÉE (v290) : on
 // mesure, on l'affiche, on ne la range pas — voir `etendueRange` dans palier.js.
 const PALIER_SE_RANGE = (!!PALIER_MS_FORCE || !CONFIG_FORCEE) && etendueRange(ETENDUE_CHOISIE);
@@ -2249,9 +2255,19 @@ function texteEtendue() {
   const mot = (c) => (ETENDUES.find((e) => e.cle === c) || {}).mot || c;
   let base;
   if (choix === 'auto') {
-    base = PALIER && PALIER.source === 'mesure'
-      ? `Auto : ta tablette a été mesurée, le jeu joue en « ${mot(PALIER.nom)} ».`
-      : 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
+    // ET UNE MESURE QU'ON N'APPLIQUE PAS SE DIT (v291). Depuis la panne de
+    // production, un palier que le jeu n'a jamais fait tourner n'est pas donné
+    // d'office — mais le taire dirait à Max « le jeu mesure ta tablette » alors
+    // qu'il l'a mesurée et n'en fait rien. On le nomme, et on l'invite à le
+    // demander : la mesure propose, il décide (v290, sa décision).
+    const propose = palierPropose(mesureRangee());
+    if (PALIER && PALIER.source === 'mesure') {
+      base = `Auto : ta tablette a été mesurée, le jeu joue en « ${mot(PALIER.nom)} ».`;
+    } else if (propose) {
+      base = `Auto : ta tablette pourrait aller jusqu'à « ${mot(propose)} », que le jeu ne donne pas tout seul. Choisis-le si tu le veux.`;
+    } else {
+      base = 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
+    }
   } else {
     base = `Tu as choisi « ${mot(choix)} ».`;
   }
@@ -6852,6 +6868,21 @@ let diagDerniere = 0;
 const diagImages = [];   // durées réelles des deux dernières secondes, en ms
 if (DIAG) debugEl.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;z-index:60;font:12px/1.35 monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;white-space:pre-wrap;pointer-events:none';
 
+// CE QUE LE DIAG DIT DU PALIER — et il ne doit pas annoncer « pas encore
+// mesuré » d'un appareil qu'on VIENT de mesurer. Depuis la v291, une mesure qui
+// nomme un palier jamais éprouvé n'est pas appliquée ; la taire ferait croire à
+// une absence de mesure, et Max ne saurait pas qu'il peut demander « Loin »
+// lui-même. Écrit à plat, HORS du gabarit : un gabarit dans un gabarit se relit
+// mal, et c'est là qu'une parenthèse en trop passe sans un mot — `node --check`
+// n'a rien dit de celle que ce message portait avant d'être sorti d'ici (v272,
+// l'accent grave dans un commentaire de style, par l'autre bout).
+function motDuPalier() {
+  if (PALIER) return `${PALIER.nom} (${PALIER.source})`;
+  const propose = palierPropose(mesureRangee());
+  if (propose) return `sans palier — ${propose} mesuré, jamais donné d'office`;
+  return 'pas encore mesuré';
+}
+
 function updateHud(dt) {
   const eye = player.eyePosition();
   const eyeBlock = world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z));
@@ -6878,7 +6909,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${PALIER ? `${PALIER.nom} (${PALIER.source})` : 'pas encore mesuré'} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -6956,7 +6987,7 @@ window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
   RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
-  palierRetenu, etendueRange, reglageDe,
+  palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
   // lues au démarrage et ne bougent plus ; la vitesse des jets est relue dans
