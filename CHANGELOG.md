@@ -20,7 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v288 — Le Marais a ses volets, les arbres ont des feuilles, les trottoirs leur mobilier
+## v289 — Les toits de Paris ont leur pente, et les trottoirs leurs bancs
+
+**Pourquoi.** Troisième livraison du programme « Paris, puis la conduite ». La
+couche HD de la v287 creusait les fenêtres et posait les balcons, mais le comble
+restait un escalier de blocs de zinc : vu d'une fenêtre ou d'un toit voisin —
+c'est-à-dire dès qu'on monte — Paris était une ville de marches, et le comble à
+la Mansart, la chose la plus reconnaissable d'un toit parisien après ses
+cheminées, n'existait pas. Et le milieu des trottoirs était vide : ni banc, ni
+colonne Morris, ni corbeille, alors que la v288 avait meublé les bords.
+
+**Ce que ça change.** Les toits de Paris sont en pente. Un brisis raide monte de
+la corniche, percé d'un chien-assis à fenêtre sur une travée sur trois ; au-dessus,
+le terrasson est une surface CONTINUE qui suit la trame de chaque quartier, à
+plat au faîte, avec des croupes aux coins et des pyramides sur les chapeaux de
+piliers. Rien n'a bougé dans les blocs : c'est un champ de hauteurs que la couche
+lit sur les colonnes de toit, et de loin le comble redevient ses marches. Les
+trottoirs gagnent des bancs de bois à pieds de fonte tournés vers la rue, des
+colonnes Morris à affiches et dôme vert sur les places, et des corbeilles de fil
+vertes entre deux potelets. Captures : `docs/paris-captures/` (v289-toits,
+v289-mansart, v289-morris).
+
+**Ce qui le prouve.** `parishd.js` gagne quatre témoins, vérifiés rouges sur la
+v288 : le comble est à la Mansart (2 512 sommets de brisis raide, 2 292 de
+terrasson en pente, sur vingt-cinq morceaux) ; aucune pente n'est vrillée ni ne
+sort de sa colonne ; le dessus des blocs de toit part dans le loin (1 552
+sommets) ; et bancs, colonnes Morris et corbeilles sont dans les tampons (120
+sommets d'affiche, 672 de lattes, 832 de fil). Mesuré aussi : un morceau du
+Marais coûte 97 ms à mailler en HD, contre 99 sur la v288. Et ce que la
+livraison a coûté à trouver vaut d'être dit : trois remèdes par face de bloc ont
+été écrits avant le champ de hauteurs, et les deux derniers ne changeaient RIEN
+aux captures — c'est une sonde (`sonde-ailerons`) qui a montré que les
+« ailerons » étaient le voxel lui-même lu par face, sur une trame tournée.
 
 **Pourquoi.** Deuxième livraison du programme « Paris, puis la conduite ». La
 v287 avait donné son relief à Paris, mais UN SEUL Paris : le Marais, Montmartre

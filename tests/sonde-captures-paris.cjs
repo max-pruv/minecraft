@@ -33,6 +33,22 @@ const VUES = [
   { nom: 'champs-trottoir', dx: -4.3, dz: -1.12, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
   { nom: 'champs-est', x: -330, z: 190, yaw: -Math.PI / 2, pitch: 0.06, h: 1.6 },
   { nom: 'cour', x: -265, z: 169, yaw: Math.PI, pitch: -0.75, h: 14 },
+  // v289 : le comble à la Mansart, vu de la rue (le nez levé), de la hauteur de
+  // la corniche (le profil brisis / terrasson), et du ciel ; un banc et une
+  // colonne Morris, aux places que la sonde `ou-mobilier` a relevées.
+  { nom: 'toits', x: -200, z: 200, yaw: Math.PI / 2, pitch: 0.55, h: 1.6, rue: true },
+  { nom: 'toits-corniche', x: -200, z: 200, yaw: Math.PI / 2, pitch: 0.05, h: 8.5, rue: true },
+  { nom: 'toits-ciel', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: -0.45, h: 16 },
+  // (le banc est à (−206, 210), la colonne à (−194, 221) : `ou-mobilier` les a
+  // relevés dans les tampons, et la caméra se pose sur la chaussée d'en face)
+  { nom: 'banc', x: -202, z: 206, yaw: 3 * Math.PI / 4, pitch: 0.15, h: 1.6 },
+  { nom: 'banc-2', x: -209, z: 210, yaw: -Math.PI / 2, pitch: 0.05, h: 1.5 },
+  { nom: 'morris', x: -200, z: 221, yaw: -Math.PI / 2, pitch: 0.1, h: 1.6 },
+  { nom: 'toit-pres', x: -209, z: 210, yaw: 0, pitch: 0.55, h: 5 },
+  { nom: 'toit-pres-2', x: -209, z: 210, yaw: 0, pitch: 0.15, h: 8.5 },
+  { nom: 'toit-pres-3', x: -209, z: 210, yaw: -Math.PI / 2, pitch: 0.12, h: 8.5 },
+  { nom: 'toit-plateau', x: -200, z: 200, yaw: Math.PI / 2, pitch: -0.6, h: 13 },
+  { nom: 'toit-bord', x: -200, z: 206, yaw: 0, pitch: -0.35, h: 10 },
 ];
 
 (async () => {

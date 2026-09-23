@@ -493,6 +493,47 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Les toits de Paris sont un champ de hauteurs (v289)
+
+Troisième livraison du programme. Quatre règles, et la première a coûté trois
+remèdes écrits pour rien.
+
+- **UN TOIT SE LIT PAR COLONNE, PAS PAR FACE — parce qu'une trame tournée
+  transforme des anneaux en escaliers.** Le voxel pose le comble en marches
+  (un rang de zinc en façade, deux un pas en arrière, trois au cœur), et la
+  première lecture HD dessinait une pente par face de bloc exposée. Sur la trame
+  du Marais, tournée de 24° par rapport au monde, ces rangs ne sont pas des
+  anneaux emboîtés mais des BANDES DIAGONALES en escalier : une pente par face y
+  rend un champ de tentes pointues, et Max aurait vu un hérisson. J'ai écrit
+  TROIS remèdes par face — les croupes aux coins, le faîte au milieu du bloc
+  quand la face opposée est à l'air, une file verticale de faces qui partage sa
+  pente — et les deux derniers ne changeaient RIEN à la capture. C'est la sonde
+  `sonde-ailerons`, qui imprime la configuration de blocs derrière chaque quad
+  dégénéré, qui a dit que les ailerons étaient le voxel lui-même lu par face.
+  **Devant un rouge qu'on n'explique pas du premier coup, on écrit la sonde qui
+  distingue les cas** (v223) — et ici la relecture ne pouvait pas le voir, parce
+  que chaque face était juste. Le remède : la hauteur d'un COIN de colonne est
+  la moyenne des sommets des colonnes de toit voisines (`toitDessusHD`), et sur
+  un escalier diagonal cette moyenne est un plan oblique. Une colonne, un quad ;
+  le brisis reste par face et monte jusqu'au bord du champ.
+- **ET LE CHAMP NE LISSE QU'UN IMMEUBLE AVEC LUI-MÊME.** Deux immeubles voisins
+  de hauteurs différentes ont deux toits ; une moyenne qui les mélangerait ferait
+  monter le toit du bas vers celui du haut. `infoFacadeParis` publie l'îlot et la
+  travée (`ai`, `bi`) : c'est la même trame que le voxel (v287), et c'est elle
+  qui dit « même immeuble » — mémoïsée, parce qu'un coin la demande quatre fois.
+- **LE COÛT SE MESURE DES DEUX CÔTÉS AVANT DE CONCLURE.** La première mesure du
+  mailleur rendait 148 ms par morceau, contre 99 sur `origin/main` — à froid.
+  Chauffé, 97 contre 99. Un chiffre de coût pris sur le premier passage n'est pas
+  une mesure (v268, l'ordre alterné) ; ici il aurait fait retirer un cache qui
+  ne coûte rien.
+- **ET LES TÉMOINS D'UNE FORME QUI CHANGE SE RÉÉCRIVENT AVEC ELLE.** La bande
+  « terrasson à 45° » (ny entre 0,6 et 0,8) était juste pour une pente par face ;
+  un champ de hauteurs va de 45° à plat, et un brisis qui monte à un bloc et demi
+  sort de son bloc. Les bandes et l'étendue admise ont suivi la forme, et leurs
+  chiffres ont été remesurés (2 512 · 2 292 · 1 552), pas recopiés — et la
+  barre du terrasson, posée d'abord sur le compte d'une sonde à bande plus
+  étroite (984), a été remontée à la moitié de ce que le TÉMOIN mesure.
+
 ## Les quartiers, les arbres et le mobilier de Paris (v288)
 
 Deuxième livraison du programme. Cinq règles, et trois sont nées d'une capture

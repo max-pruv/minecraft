@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 289,
+    titre: 'Les toits de Paris',
+    puces: [
+      'Les toits en zinc ont leur vraie pente',
+      'Des lucarnes dans les combles',
+      'Des colonnes Morris sur les places',
+      'Des bancs de bois sur les trottoirs',
+      'Des corbeilles au bord des rues',
+    ],
+  },
+  {
     v: 288,
     titre: 'Le Marais, les arbres, les terrasses',
     puces: [
