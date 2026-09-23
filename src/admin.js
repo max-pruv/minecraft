@@ -618,7 +618,7 @@ export class AdminPanel {
     const service = (nom) => !!nom && nom.includes('~');
     const neuve = (nom) => ({
       nom, faces: 0, code: false, majId: null, majEtat: null, majTemps: null,
-      mondes: [], blocs: 0, dex: 0, aujourdhui: 0, periode: 0, total: 0,
+      mondes: [], blocs: 0, aujourdhui: 0, periode: 0, total: 0,
       quiz: 0, justes: 0, faux: 0, appareils: new Set(), live: null, derniere: null, majPrefs: null,
       supprime: false, rythme: SESSION_MIN_USINE,
     });
@@ -640,7 +640,6 @@ export class AdminPanel {
       const e = entree(r.name);
       const s = r.state || {};
       e.majEtat = r.updated_at;
-      e.dex = (s.dex || []).length;
       e.mondes = (s.worlds || []).map((w) => w.code).filter(Boolean);
       const blocs = s.edits || {};
       for (const [ctx, m] of Object.entries(blocs)) {
@@ -808,7 +807,7 @@ export class AdminPanel {
         : '<span class="adm-dim">—</span>';
       return `<tr>
         <td><span class="adm-name">${esc(l.nom)}</span>${l.nom.toLowerCase() === moi ? '<span class="adm-me">moi</span>' : ''}
-            <div class="adm-dim">${l.dex} créature${l.dex > 1 ? 's' : ''} · ${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
+            <div class="adm-dim">${l.blocs} bloc${l.blocs > 1 ? 's' : ''}</div></td>
         <td>${presence(l)}</td>
         <td>${duree(this.jourDepuis() ? l.periode : l.aujourdhui)}<div class="adm-dim">${duree(l.total)} au total</div></td>
         <td><span class="adm-rythme"><select data-langue="${esc(l.nom)}">${
@@ -975,7 +974,7 @@ export class AdminPanel {
   async supprimer(nom) {
     const saisi = await this.ask({
       titre: `Supprimer ${nom} ?`,
-      sous: 'Son visage, son code, ses mondes, ses créatures et son temps de jeu seront '
+      sous: 'Son visage, son code, ses mondes, ses blocs et son temps de jeu seront '
         + "effacés. C'est définitif : il n'y a pas de corbeille. "
         + `Écris « ${nom} » pour confirmer.`,
       ok: 'Supprimer',

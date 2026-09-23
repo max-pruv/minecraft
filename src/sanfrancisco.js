@@ -1002,3 +1002,6 @@ export function buildDragonGate(poser) {
   // les lanternes de Grant Avenue, vers le nord
   for (const dz of [-2, -4]) { set(-2, 2, dz, BLOCK.WOOL_RED); set(2, 2, dz, BLOCK.WOOL_RED); }
 }
+
+// Les avenues nommées, pour les carrefours des feux tricolores (v274).
+export const VOIES_SF = VOIES;

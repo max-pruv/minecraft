@@ -13,8 +13,29 @@
 const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
+// COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
+//
+// Max, v276 : « revamp the testing process way too heavy and long and costly
+// and painful ». Mesuré suite par suite, le portail fait soixante et une
+// minutes et TRENTE-QUATRE sont dans deux fichiers : celui-ci (dix-huit) et
+// `reseau.js` (seize). Mais les deux causes ne sont pas les mêmes, et ce
+// fichier était le seul des deux à ne pas dire où passe son temps :
+// `reseau.js` et `reglages.js` se chronomètrent témoin par témoin depuis la
+// v224, pas lui.
+//
+// Et ce qui est déjà su vaut d'être écrit ici, parce que cela dit quoi
+// chercher : cette suite n'ouvre que SEPT pages de jeu pour dix-huit minutes
+// (contre seize pour les seize minutes de `reseau.js`), et elle porte
+// quarante-six boucles de relevé. Le temps n'est donc PAS dans l'ouverture des
+// pages — il est dans l'attente qu'un jeu à quatre images par seconde parcoure
+// une distance. Ce relevé le dira témoin par témoin, et il ne coûte rien.
+//
+// ON N'ACCÉLÈRE PAS CE QU'ON N'A PAS MESURÉ (v224, quatre fois de suite).
+let _dernier = Date.now();
 function verifier(nom, ok, detail = '') {
-  console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`);
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 
@@ -52,7 +73,9 @@ const poserDevant = (p, espece, distance = 3) => p.evaluate(({ espece, distance 
 // devant, rien à hauteur de tête, aucun trou. Sans cela on ne compare pas
 // deux vitesses mais deux obstacles — à pied on n'atteignait pas l'arbre, en
 // selle on le percutait, et la monture semblait plus lente.
-const capDegage = (p) => p.evaluate(() => {
+// `portee` : sur combien de blocs le cap doit être libre — six pour un pas
+// de marche, davantage pour une voiture lancée (v262 : élan puis mesure).
+const capDegage = (p, portee = 6) => p.evaluate((portee) => {
   const g = window.__game;
   const w = g.world;
   const pos = g.player.pos;
@@ -60,7 +83,7 @@ const capDegage = (p) => p.evaluate(() => {
   for (let i = 0; i < 32; i++) {
     const yaw = (i * Math.PI) / 16;
     let libre = true;
-    for (let d = 1; d <= 6 && libre; d++) {
+    for (let d = 1; d <= portee && libre; d++) {
       const x = Math.floor(pos.x - Math.sin(yaw) * d);
       const z = Math.floor(pos.z - Math.cos(yaw) * d);
       // le terrain ondule : un creux d'un bloc se traverse, une bosse non
@@ -70,7 +93,7 @@ const capDegage = (p) => p.evaluate(() => {
     if (libre) return yaw;
   }
   return null;
-});
+}, portee);
 
 // Combien de mètres on parcourt en tenant la touche « avance » une demi-seconde,
 // toujours depuis le même point et dans la même direction : comparer un
@@ -90,10 +113,24 @@ async function placerA(p, depart) {
   await dormir(250);
 }
 
-async function avancerUnDemiSeconde(p, depart) {
+// `elan` : des secondes de jeu d'ÉLAN avant de mesurer — une voiture a de
+// l'inertie depuis la v262, et l'on mesure ce qu'elle fait une fois lancée,
+// pas la demi-seconde où elle prend sa vitesse.
+async function avancerUnDemiSeconde(p, depart, elan = 0) {
   if (depart) await placerA(p, depart);
-  const avant = await pose(p);
   await p.keyboard.down('KeyW');
+  if (elan > 0) {
+    await p.evaluate((n) => new Promise((fin) => {
+      let cumul = 0, prec = performance.now();
+      const pas = (t) => {
+        cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+        prec = t;
+        if (cumul >= n) fin(); else requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    }), elan);
+  }
+  const avant = await pose(p);
   // La fenêtre se compte en SECONDES DE JEU, pas en temps d'horloge : sous
   // la charge du portail, une demi-seconde murale ne contient parfois que
   // trois images à dt plafonné (1/20 s) — la distance fondait, et le témoin
@@ -239,6 +276,234 @@ async function avancerUnDemiSeconde(p, depart) {
       Math.abs((aTerre.oeil - aTerre.y) - (aPied.oeil - aPied.y)) < 0.2,
       `${(aTerre.oeil - aTerre.y).toFixed(2)} m`);
 
+    // --- ON VOIT LE PERSONNAGE CONDUIRE (v249) ------------------------------
+    // Max : « fais en sorte qu'on voit le personnage conduire quand on
+    // conduit une voiture ». La vue de poursuite montrait une voiture vide.
+    // On monte par le bouton, comme l'enfant, et l'on vérifie ce qu'il
+    // voit : son avatar est enfant du maillage de la voiture, dans
+    // l'habitacle (repère du véhicule), et sa tête tombe dans le cadre de la
+    // caméra ; à la descente, il n'est plus dans la scène. Sur l'ancien code
+    // il n'y a pas d'avatar local du tout — et le témoin le dit.
+    await poserDevant(tab, 'voiture');
+    await dormir(900);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(900);
+    const conduite = await tab.evaluate(async () => {
+      const g = window.__game, av = g.avatarLocal, a = g.fun.montureConduite ? g.fun.montureConduite() : null;
+      if (!av || !a) return { avatar: !!av, monture: !!a };
+      const THREE = await import('three');
+      const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0));
+      const v = tete.clone().project(g.camera);
+      // LE VISAGE REGARDE LA ROUTE : le modèle a le visage en −z ; on compare
+      // cette direction, dans le monde, au cap de la voiture (Max a vu le
+      // premier jet assis de dos).
+      const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+      const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+      const regardeLaRoute = +visage.dot(route).toFixed(2);
+      // ET SOUS LE TOIT : le sommet du crâne (0,706 au-dessus des hanches, à
+      // l'échelle de l'avatar) reste sous le pavillon mesuré de ce modèle
+      // (Max : « le personnage passe à travers la carrosserie »).
+      const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+      // Depuis la v253 le cache du plafond est PAR SIÈGE (une Map) : on lit
+      // celui du siège du conducteur ; sur l'ancien code, `y` est le nombre.
+      const cache = a.plafondSiege ? a.plafondSiege.y : null;
+      const toit = cache instanceof Map ? (cache.get(`${a.def.siege.x}|${a.def.siege.z}`) ?? null) : cache;
+      const sousLeToit = toit === null || crane < toit;
+      return { avatar: true, monture: true, dansVoiture: av.parent === a.mesh,
+        x: +av.position.x.toFixed(2), y: +av.position.y.toFixed(2), z: +av.position.z.toFixed(2),
+        dansLeCadre: Math.abs(v.x) < 1 && Math.abs(v.y) < 1 && v.z < 1, regardeLaRoute, sousLeToit, crane: +crane.toFixed(2), toit };
+    });
+    verifier('au volant, le personnage de l\'enfant est assis dans la voiture, sous le toit, dans le cadre, et regarde la route',
+      !!conduite.dansVoiture && Math.abs(conduite.x) < 1.1 && Math.abs(conduite.z) < 2 && conduite.dansLeCadre
+        && conduite.regardeLaRoute > 0.9 && conduite.sousLeToit,
+      JSON.stringify(conduite));
+
+    // --- ET LA CAMÉRA MONTRE LE FLANC EN VIRAGE (v278, gardé en v279) --------
+    //
+    // Max : « la vue de la voiture, je la trouve pas très cool… comme dans GTA,
+    // quand la voiture tourne, on voit vraiment la voiture qui tourne, on voit
+    // le flanc de la voiture sur le côté. » Le recul se calculait sur
+    // `player.yaw` LU DANS LA MÊME IMAGE : la caméra pivotait exactement avec le
+    // véhicule, donc à angle constant derrière lui — on ne voyait que son
+    // coffre. La v278 lui a donné son propre cap, en retard.
+    //
+    // CE TÉMOIN N'A PAS ÉTÉ ÉCRIT AVEC LA CORRECTION : elle est partie en
+    // production sans lui, et c'est tout l'objet de la v279.
+    //
+    // ON LIT UNE DIRECTION, PAS `camYaw` (règles v247, v250, v249). Ce que
+    // l'enfant voit, c'est OÙ la caméra est par rapport à l'arrière de la
+    // voiture : l'angle signé entre « droit derrière » (sin yaw, cos yaw) et le
+    // vecteur voiture → caméra. En ligne droite il vaut zéro ; en virage tenu,
+    // la voiture glisse sur le côté du cadre et l'angle s'ouvre.
+    //
+    // ET LE VIRAGE EST TENU, jamais échantillonné à l'instant d'une transition
+    // (v273) : on accélère deux secondes et demie, puis on garde le volant du
+    // même côté pendant toute la fenêtre. Le SIGNE doit être unique — une
+    // caméra qui partirait du mauvais côté montrerait le flanc extérieur, ce
+    // qu'aucune mesure d'amplitude ne distingue de la bonne (v231).
+    //
+    // Mesuré, mêmes conditions des deux côtés : `origin/main` d'avant la v278
+    // (d9852ac) rend **0,0° à chacun des douze relevés** ; ici 11,6 à 18,3°,
+    // médiane 17,2, un seul signe. La barre, six degrés, sépare les deux
+    // dispersions — et zéro n'est pas « peu », c'est « rien du tout ».
+    // UN CAP DÉGAGÉ D'ABORD : sans lui on ne mesure pas une caméra, on mesure
+    // un mur — la voiture reste à l'arrêt et l'angle ne veut rien dire
+    // (leçon de `capDegage`, et de « un témoin de conduite part d'une rue
+    // sans voiture à portée », v252, v259).
+    const capVolant = await capDegage(tab, 16);
+    if (capVolant !== null) await tab.evaluate((y) => { window.__game.player.yaw = y; }, capVolant);
+    await tab.keyboard.down('KeyW');
+    await dormir(2500);
+    await tab.keyboard.down('KeyA');
+    const flanc = await tab.evaluate(async () => {
+      const g = window.__game;
+      const releves = [];
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      while (performance.now() - t0 < 12000) {
+        await new Promise((f) => setTimeout(f, 250));
+        const c = g.player.camera.position, pos = g.player.pos;
+        const dx = c.x - pos.x, dz = c.z - pos.z, d = Math.hypot(dx, dz);
+        if (d < 0.5) continue;                       // la caméra n'est pas encore posée
+        const bx = Math.sin(g.player.yaw), bz = Math.cos(g.player.yaw);
+        const beta = Math.atan2(bx * (dz / d) - bz * (dx / d), bx * (dx / d) + bz * (dz / d));
+        releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
+          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1) });
+      }
+      // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
+      // donc il n'y a pas de virage et l'angle ne veut rien dire.
+      const roule = releves.filter((r) => r.v > 1);
+      const abs = roule.map((r) => Math.abs(r.beta)).sort((x, y) => x - y);
+      const images = g.renderer.info.render.frame - f0;
+      return { n: releves.length, enMouvement: roule.length,
+        secondesDeJeu: +(images * 0.05).toFixed(1),
+        betaMax: abs.length ? abs[abs.length - 1] : null,
+        betaMedian: abs.length ? abs[Math.floor(abs.length / 2)] : null,
+        signes: [...new Set(roule.filter((r) => Math.abs(r.beta) > 2).map((r) => Math.sign(r.beta)))],
+        recul: releves.length ? +(releves.reduce((a, r) => a + r.recul, 0) / releves.length).toFixed(2) : null };
+    });
+    await tab.keyboard.up('KeyA'); await tab.keyboard.up('KeyW');
+    verifier('en virage, la caméra laisse la voiture glisser sur le côté du cadre — on voit son flanc',
+      flanc.enMouvement >= 4 && flanc.betaMedian !== null && flanc.betaMedian >= 6
+        && flanc.signes.length === 1,
+      JSON.stringify({ ...flanc, capVolant }));
+
+
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const aLaDescente = await tab.evaluate(() => { const av = window.__game.avatarLocal; return { avatar: !!av, dansLaScene: !!(av && av.parent) }; });
+    verifier('et il descend avec l\'enfant : plus d\'avatar dans la scène à pied',
+      aLaDescente.avatar && !aLaDescente.dansLaScene, JSON.stringify(aLaDescente));
+
+    // --- ET À PIED, ON NE TRAVERSE PAS UNE VOITURE (v278, gardé en v279) ----
+    //
+    // Max : « quand on joue avec le jeu, on ne devrait pas être capable de
+    // pouvoir marcher à travers une voiture. » La garde de la v245 ne parle
+    // qu'au VOLANT (`gabarit > 1`) : à pied, le crochet n'était jamais
+    // consulté. L'enfant vient de descendre, la voiture est là — on lui marche
+    // dessus et l'on regarde jusqu'où il entre.
+    //
+    // CE QUI SÉPARE LES DEUX CODES EST OÙ L'ENFANT S'ARRÊTE, et le verdict lit
+    // sa position PROJETÉE sur l'axe de marche, la voiture à l'origine :
+    // négative, il est resté de son côté ; positive, il a dépassé le centre du
+    // véhicule, donc il est passé dedans. Mesuré, mêmes conditions : sur le code
+    // d'avant la v278, **+0,2 · +1,53 · +1,6** sur trois passages — il ressort de
+    // l'autre côté ; ici **−1,16**, c'est-à-dire juste au flanc, ce que la
+    // demi-largeur (1,13) annonce au centième près.
+    //
+    // ET CE N'EST PAS LA DISTANCE MINIMALE AU CENTRE, que j'ai essayée d'abord :
+    // un minimum ÉCHANTILLONNÉ est une propriété de la cadence d'échantillonnage,
+    // pas du monde. Un relevé toutes les trois cents millisecondes à trois images
+    // par seconde enjambe le point le plus proche : l'enfant traversait la
+    // voiture de part en part et le témoin lisait 0,93 — vert, en ne mesurant que
+    // l'instant où il avait regardé — au passage suivant, sur le MÊME code, le
+    // même relevé rendait 0,17. Une position d'ARRIVÉE, elle, ne dépend d'aucun
+    // relevé intermédiaire.
+    //
+    // ON ATTEND LE RÉSULTAT, BORNÉ (v270), et « ne plus avancer » se constate
+    // sur TROIS relevés de suite (v223) : un hoquet du banc arrête un seul pas,
+    // une carrosserie les arrête tous. Le temps pris entre dans le message.
+    //
+    // ET UNE MESURE DE DÉPLACEMENT S'ASSURE QU'ELLE A LA PLACE DE SE DÉPLACER
+    // (v273, une troisième fois). Ce témoin mesurait là où le témoin du flanc
+    // avait fini ses quatorze secondes de conduite, cap compris : au second
+    // passage sur le MÊME code, l'enfant s'est arrêté à 4,19 blocs de la
+    // voiture — donc contre tout autre chose — après neuf dixièmes de seconde
+    // de jeu. Il ne mesurait pas une carrosserie, il mesurait où la conduite
+    // d'avant s'était arrêtée. On se pose dans le couloir vide de la v237, et
+    // l'on DEMANDE un cap libre au lieu de garder celui que le virage a laissé.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      g.player.pos.set(30000.5, g.world.terrainHeight(30000, 30000) + 2, 30000.5);
+      g.player.vel.set(0, 0, 0);
+      g.player.pitch = 0;
+    });
+    await dormir(2500);
+    const capPieton = await capDegage(tab, 8);
+    if (capPieton !== null) await tab.evaluate((y) => { window.__game.player.yaw = y; }, capPieton);
+    // la voiture EN TRAVERS du chemin, à cinq blocs : on vient buter contre son
+    // flanc, la situation de la capture, et non par le pare-chocs. Elle est
+    // INVOQUÉE là (`poserDevant`) et non déplacée : c'est la seule façon qu'elle
+    // se pose sur le sol du couloir et non à la cote qu'elle avait à Paris.
+    await poserDevant(tab, 'voiture', 5);
+    await tab.evaluate(() => {
+      const g = window.__game, a = g.animalManager.animals[0];
+      if (a) a.yaw = g.player.yaw + Math.PI / 2;
+    });
+    await dormir(600);
+    await tab.keyboard.down('KeyW');
+    const aPiedContreLaVoiture = await tab.evaluate(async () => {
+      const g = window.__game, a = g.animalManager.animals[0];
+      if (!a) return { err: 'pas de voiture devant' };
+      const yaw = g.player.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      const le = () => (g.player.pos.x - a.pos.x) * fx + (g.player.pos.z - a.pos.z) * fz;
+      const depart = le();
+      let minDist = Infinity, fige = 0, prec = null, precF = null;
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 300));
+        const fr = g.renderer.info.render.frame, s = le();
+        minDist = Math.min(minDist, Math.hypot(g.player.pos.x - a.pos.x, g.player.pos.z - a.pos.z));
+        // ON NE COMPARE DEUX POSITIONS QUE SI LE MONDE A AVANCÉ ENTRE ELLES.
+        // À deux images par seconde, deux relevés espacés de trois cents
+        // millisecondes tombent dans la MÊME image : la position n'a pas bougé
+        // parce que RIEN n'a bougé, et « il n'avance plus » est alors la cadence
+        // du banc, pas une carrosserie. Mesuré : le témoin concluait en 1,8 s
+        // après huit dixièmes de bloc, donc VERT sur l'ancien code, en ne
+        // mesurant rien. Trois images au moins par comparaison.
+        if (precF === null || fr - precF >= 3) {
+          if (precF !== null) { if (Math.abs(s - prec) < 0.02) fige++; else fige = 0; }
+          prec = s; precF = fr;
+        }
+        if (s > 1.5 || fige >= 3) break;
+      }
+      const images = g.renderer.info.render.frame - f0;
+      return { depart: +depart.toFixed(2), arrivee: +le().toFixed(2),
+        minDist: +minDist.toFixed(2), gabarit: a.def.gabarit ?? null, fige,
+        secondes: +((performance.now() - t0) / 1000).toFixed(1),
+        secondesDeJeu: +(images * 0.05).toFixed(1) };
+    });
+    aPiedContreLaVoiture.cap = capPieton;
+    await tab.keyboard.up('KeyW');
+    // ET L'ON RANGE LA VOITURE QU'ON VIENT DE GARER. **Un témoin qui pose un
+    // obstacle dans le monde le retire**, comme `poserDevant` vide les bêtes
+    // avant de poser la sienne : depuis la v278 une voiture laissée là arrête
+    // un piéton, donc elle fait partie du décor qu'on rend au voisin.
+    //
+    // (Elle n'était PAS la cause du rouge de `contreLeMur` — j'ai d'abord écrit
+    // qu'elle l'était, et la mesure m'a démenti : le rouge a persisté après ce
+    // nettoyage. La cause est que ce témoin-là creusait son couloir sur un
+    // circuit de Paris ; c'est corrigé chez lui, et dit là-bas.)
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+    });
+    await dormir(400);
+    verifier('et à pied, il s\'arrête au flanc de la voiture au lieu de marcher au travers',
+      !aPiedContreLaVoiture.err && aPiedContreLaVoiture.secondesDeJeu >= 2
+        && aPiedContreLaVoiture.arrivee <= -0.5,
+      JSON.stringify(aPiedContreLaVoiture));
+
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
     await dormir(600);
@@ -354,9 +619,30 @@ async function avancerUnDemiSeconde(p, depart) {
       const e = window.__vehicules.etat()[2];
       return e ? e.distance : null;
     });
+    // ON S'ARRÊTE QUAND LE RÉSULTAT EST ACQUIS, PAS QUAND LA FENÊTRE EST FINIE
+    // (v277). Ce témoin coûtait CENT UNE SECONDES — le plus cher des cent
+    // quarante de cette suite, qui en fait dix-neuf minutes et dont les
+    // vingt-cinq premiers portent 85 % du temps. Il attendait déjà un RÉSULTAT
+    // (deux cent cinquante blocs de tracé) et non une durée, ce qui est la
+    // bonne forme ; mais ce qu'il ANNONCE est un rapport d'allures, et ce
+    // rapport est établi bien avant les deux cent cinquante blocs. Continuer
+    // n'ajoutait aucune preuve.
+    //
+    // CE QUI REND L'ARRÊT ANTICIPÉ SÛR EST UNE ASYMÉTRIE, et elle se dit en une
+    // phrase : on ne sort que si TOUS les verdicts qui lisent ces relevés sont
+    // satisfaits. Un vert le devient plus vite ; un rouge court jusqu'à sa
+    // borne et garde toutes ses preuves. Les DEUX verdicts d'ici lisent
+    // `allures` — le rapport, et « elle ralentit assez pour qu'on la
+    // rejoigne » —, donc les deux entrent dans la condition de sortie. Un
+    // troisième verdict ajouté demain doit y entrer aussi : sinon l'arrêt
+    // anticipé lui vole ses relevés, et c'est le seul moyen de casser ce
+    // témoin.
+    const acquis = () => allures.length >= 8
+      && Math.max(...allures) / Math.max(0.1, Math.min(...allures)) > 1.8
+      && Math.min(...allures) < 9;
     const finMesure = Date.now() + 150000;
     let tourF1 = 0;
-    while (tourF1 < 250 && Date.now() < finMesure) {
+    while (tourF1 < 250 && Date.now() < finMesure && !acquis()) {
       await dormir(300);
       const etats = await tab.evaluate(() => window.__vehicules.etat());
       if (!etats[2]) break;
@@ -474,58 +760,18 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et le bouton « Conduire cette voiture » s\'offre tout seul dans la rue',
       boutonVoiture, JSON.stringify(await bouton(tab, 'board-btn')));
 
-    // --- les pastilles de l'écran sont des boutons, pas des jauges muettes --
+    // --- la pastille du garde-manger ------------------------------------------
     //
-    // Max, capture à l'appui : « je ne comprends pas à quoi servent ces
-    // boutons — quand on clique, il ne se passe rien. » Désormais le
-    // garde-manger ouvre l'atelier, et la jauge du chantier ouvre l'onglet
-    // Chantier, qui dit OÙ est le chantier. On suit le doigt de l'enfant :
-    // la récolte fait naître la pastille, le toucher fait le reste.
+    // La récolte fait naître la pastille 🍖 dans le rail. Elle ouvrait
+    // l'atelier ; l'atelier n'existe plus (v255) et elle ne fait plus que
+    // compter — mais elle doit encore compter, et se voir.
     await tab.evaluate(() => window.__game.animalManager.onHarvest({ meat: '🍖 Côtelette' }));
     const pastille = await tab.evaluate(() => {
       const el = document.getElementById('meat-counter');
-      const st = getComputedStyle(el);
-      return { visible: st.display !== 'none', touchable: st.pointerEvents !== 'none', texte: el.textContent };
+      return { visible: getComputedStyle(el).display !== 'none', texte: el.textContent };
     });
-    verifier('la pastille du garde-manger est visible et touchable',
-      pastille.visible && pastille.touchable, JSON.stringify(pastille));
-    await tab.evaluate(() => document.getElementById('meat-counter').click());
-    const atelier = await tab.evaluate(() => {
-      const panneau = document.getElementById('fun-main-panel');
-      const on = panneau.querySelector('.fun-tab.on');
-      return { ouvert: getComputedStyle(panneau).display === 'block',
-        onglet: on && on.dataset.t,
-        gardeManger: document.getElementById('fun-tab-body').textContent.includes('Garde-manger') };
-    });
-    verifier('la toucher ouvre l\'atelier, garde-manger sous les yeux',
-      atelier.ouvert && atelier.onglet === 'craft' && atelier.gardeManger, JSON.stringify(atelier));
-
-    // Le chantier : on le pose par le vrai chemin (l'onglet), puis on touche
-    // la jauge qui vient d'apparaître.
-    await tab.evaluate(() => {
-      window.__game.fun.ouvrirOnglet('chantier');
-      const b = [...document.querySelectorAll('#fun-tab-body button')]
-        .find((x) => x.textContent.includes('Cabane'));
-      b.click();
-    });
-    const jauge = await tab.evaluate(() => {
-      const el = document.getElementById('chantier-hud');
-      const st = getComputedStyle(el);
-      return { visible: st.display !== 'none', touchable: st.pointerEvents !== 'none', texte: el.textContent };
-    });
-    verifier('poser un chantier fait apparaître sa jauge, touchable',
-      jauge.visible && jauge.touchable && /\/71$/.test(jauge.texte), JSON.stringify(jauge));
-    await tab.evaluate(() => document.getElementById('chantier-hud').click());
-    const ongletChantier = await tab.evaluate(() => {
-      const panneau = document.getElementById('fun-main-panel');
-      const on = panneau.querySelector('.fun-tab.on');
-      const corps = document.getElementById('fun-tab-body').textContent;
-      return { ouvert: getComputedStyle(panneau).display === 'block',
-        onglet: on && on.dataset.t, ditOu: corps.includes('📍'), corps: corps.slice(0, 160) };
-    });
-    verifier('toucher la jauge ouvre le Chantier, qui dit où il est',
-      ongletChantier.ouvert && ongletChantier.onglet === 'chantier' && ongletChantier.ditOu,
-      JSON.stringify({ onglet: ongletChantier.onglet, ditOu: ongletChantier.ditOu }));
+    verifier('la récolte fait naître la pastille du garde-manger',
+      pastille.visible && /🍖 × \d+/.test(pastille.texte), JSON.stringify(pastille));
 
     // LA BIBLIOTHÈQUE VIT DANS LE + (v176). Max : « les bâtiments, je
     // voudrais que tu les déplaces dans le bouton plus, là où tu as les
@@ -643,7 +889,7 @@ async function avancerUnDemiSeconde(p, depart) {
       proposeAuto.visible && proposeAuto.texte.includes('🚗'), JSON.stringify(proposeAuto));
 
     await tab.evaluate(() => { window.__game.player.flying = false; });
-    const capAuto = await capDegage(tab);
+    const capAuto = await capDegage(tab, 14);
     const departAuto = await tab.evaluate((yaw) => {
       const g = window.__game;
       return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: yaw ?? g.player.yaw };
@@ -653,7 +899,7 @@ async function avancerUnDemiSeconde(p, depart) {
     await dormir(600);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(700);
-    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto);
+    const distanceAuVolant = await avancerUnDemiSeconde(tab, departAuto, 0.5);
     verifier('au volant, on file bien plus vite qu\'à pied — c\'est une voiture',
       distanceAuVolant > distanceAPiedTexas * 2.2,
       `${distanceAPiedTexas.toFixed(1)} m à pied · ${distanceAuVolant.toFixed(1)} m au volant`);
@@ -718,25 +964,35 @@ async function avancerUnDemiSeconde(p, depart) {
     // un maillage fusionné de centaines de sommets (galbe, capot plongeant,
     // montants), pas huit boîtes. L'ancien modèle : vitres opaques, zéro
     // maillage fusionné — rouge garanti.
-    const carrosserie = await tab.evaluate(() => {
+    // ET LE MODÈLE DIT S'IL A DES VITRES (v247). Ce témoin est tombé au
+    // portail sur un tirage : les deux modèles déposés en v230 n'ont ni
+    // matériau nommé « glass » ni opacité sous 0,8 — la Lucid appelle son
+    // pare-brise « Lightly tinted panoramic windshield », la Chiron Stealth
+    // est une carrosserie seule sans vitrage. Le nom se lit en plusieurs
+    // langues, et une carrosserie sans habitacle (`habitacle: false` dans
+    // sa fiche) n'a rien à laisser voir — même lecture que le volant.
+    const carrosserie = await tab.evaluate(async () => {
       const g = window.__game;
       const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      const fiche = (await import('./src/vehicules.js')).FLOTTE
+        .find((e) => e.fichier === (a && a.mesh.userData.flotte));
       let vitresTransparentes = false, sommetsFusionnes = 0;
       if (a) a.mesh.traverse((m) => {
         if (!m.isMesh) return;
         // opacité basse (Chiron d'artiste) ou vitrage nommé de la flotte,
         // déjà en alpha BLEND — l'un comme l'autre laisse voir l'habitacle
         if (m.material && m.material.transparent
-          && (m.material.opacity < 0.8 || /glass/i.test(m.material.name || ''))) vitresTransparentes = true;
+          && (m.material.opacity < 0.8 || /glass|windshield|window|vitr|pare-brise/i.test(m.material.name || ''))) vitresTransparentes = true;
         if (m.geometry && m.geometry.attributes && m.geometry.attributes.position
           && m.geometry.attributes.position.count > sommetsFusionnes) {
           sommetsFusionnes = m.geometry.attributes.position.count;
         }
       });
-      return { vitresTransparentes, sommetsFusionnes };
+      return { vitresTransparentes, sommetsFusionnes, modele: a && a.mesh.userData.flotte,
+        attenduVitres: !fiche || fiche.habitacle !== false };
     });
     verifier('la voiture a de vraies vitres — on voit l\'habitacle à travers',
-      carrosserie.vitresTransparentes, JSON.stringify(carrosserie));
+      carrosserie.vitresTransparentes || !carrosserie.attenduVitres, JSON.stringify(carrosserie));
     verifier('et une carrosserie sculptée, fusionnée — pas un empilement de cubes',
       carrosserie.sommetsFusionnes >= 300, `${carrosserie.sommetsFusionnes} sommets`);
     await tab.evaluate(() => document.getElementById('ride-btn').click());
@@ -822,8 +1078,231 @@ async function avancerUnDemiSeconde(p, depart) {
       && tourne > attendu * 0.7 && tourne < attendu * 1.4,
       `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
       + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+
+    // LES REFLETS NE FIGENT PLUS L'IMAGE (v245) -------------------------------
+    //
+    // Max, sur l'iPad de quatre ans : « la voiture avance de manière hyper
+    // saccadée ». La sonde des reflets rendait ses SIX faces dans la même
+    // image, deux fois par seconde : au banc, assis dans une voiture à
+    // l'arrêt, une image sur quatre durait trois fois la médiane, par paires à
+    // une demi-seconde d'écart. On mesure la CAUSE et non l'effet — le banc
+    // rend en logiciel, sa cadence ne dit rien de l'iPad : le compteur
+    // d'images du moteur avance d'un cran par `render()`, donc de 1 + faces
+    // rendues à chaque tour d'affichage. Sept sur l'ancien code ; deux au
+    // plus ici, et au moins un tour à deux, sinon les reflets sont morts.
+    const rendus = await tab.evaluate(async () => {
+      const g = window.__game;
+      const deltas = [];
+      let prec = g.renderer.info.render.frame;
+      await new Promise((fin) => {
+        const t0 = performance.now();
+        const tour = () => {
+          const f = g.renderer.info.render.frame;
+          deltas.push(f - prec); prec = f;
+          if (performance.now() - t0 < 4000) requestAnimationFrame(tour); else fin();
+        };
+        requestAnimationFrame(tour);
+      });
+      const d = deltas.slice(1);
+      return { tours: d.length, max: Math.max(...d), aDeux: d.filter((x) => x === 2).length };
+    });
+    verifier('au volant, aucune image ne rend plus d\'une face de reflet à la fois',
+      rendus.tours > 8 && rendus.max <= 2 && rendus.aDeux >= 1,
+      `${rendus.tours} tours · au plus ${rendus.max} rendus par tour · ${rendus.aDeux} tours à deux`);
+    // LA RUE S'ARRÊTE DEVANT LA VOITURE DE L'ENFANT (v245) --------------------
+    //
+    // Max, après la v244 : « les voitures passent les unes sur les autres ».
+    // Mesuré sur la rue de Rivoli, l'enfant au volant à l'arrêt sur la
+    // chaussée : un convoi entier lui passait AU TRAVERS. Les convois cédaient
+    // entre eux, jamais à l'enfant. On se pose au volant sur le tracé d'un
+    // convoi, douze blocs devant sa tête, on attend qu'une voiture arrive à
+    // moins de douze blocs, puis l'on compte pendant douze secondes les
+    // rectangles de la rue qui touchent le nôtre. À L'ARRÊT, pas en roulant :
+    // rouler droit sur une rue courbe avec une carrure de 2,2 blocs finit
+    // dans le trottoir (0,7 bloc roulé, vitesse x à zéro — mesuré), et le
+    // témoin jugeait alors la géométrie de Rivoli, pas la circulation.
+    // TÉLÉPORTÉ EN VOITURE, ON GARDE SA VOITURE (v245). Le gestionnaire
+    // d'animaux retire tout ce qui est à plus de soixante-dix blocs de
+    // l'enfant, et il passe AVANT que la monture ne le rejoigne : un voyage
+    // par la carte au volant faisait disparaître la voiture et laissait
+    // l'enfant à pied avec la carrure d'une voiture — coincé entre deux murs.
+    // On saute de trois cents blocs avec la voiture, et l'on doit être encore
+    // au volant deux secondes plus tard.
+    const saut = await tab.evaluate(async () => {
+      const g = window.__game;
+      const depart = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+      g.player.pos.set(depart.x + 300, g.world.terrainHeight(Math.floor(depart.x + 300), Math.floor(depart.z)) + 1.5, depart.z);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 2000));
+      const auVolant = document.getElementById('ride-btn').textContent.startsWith('⬇️');
+      const gabarit = g.player.gabarit;
+      g.player.pos.set(depart.x, depart.y, depart.z); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1000));
+      return { auVolant, gabarit, encoreAuVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️') };
+    });
+    verifier('téléporté de trois cents blocs au volant, on est encore au volant, et la voiture a suivi',
+      saut.auVolant && saut.encoreAuVolant && saut.gabarit > 1, JSON.stringify(saut));
+
+    // ON DESCEND AVANT DE PARTIR. Téléporté en voiture, l'enfant arrive à
+    // Paris pendant que sa monture est encore au point d'apparition : le
+    // gestionnaire d'animaux la retire (plus de soixante-dix blocs) avant
+    // qu'elle ne le rejoigne, et l'enfant se retrouve à pied avec la carrure
+    // d'une voiture — c'est ce qu'a rendu le portail (0,9 bloc roulé, puis
+    // 1,1 bloc du mur à pied). On descend ici, on prend une voiture là-bas.
     await tab.evaluate(() => document.getElementById('ride-btn').click());
     await dormir(400);
+    const avantParis = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      const sauve = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw, flying: g.player.flying };
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+      return sauve;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.routier).reduce((n, c) => n + c.visibles, 0) >= 4,
+      null, { timeout: 60000 }).catch(() => {});
+    // UNE MESURE OÙ AUCUNE VOITURE NE VIENT N'EST PAS UNE MESURE. Au portail
+    // de la v252 (troisième passe) : 97 relevés de voitures à moins de douze
+    // blocs, ZÉRO arrêtée, ZÉRO au travers — les voitures passaient À CÔTÉ,
+    // parce que douze blocs « devant » une voiture en droite ligne ne sont pas
+    // sur son tracé quand la rue tourne. On exige donc de la chaussée sous
+    // toute la ligne, on classe les candidats par distance, et si personne ne
+    // vient à nous en douze secondes, on se repose sur le candidat suivant :
+    // le verdict porte sur ce que fait une voiture qui ARRIVE, pas sur la
+    // chance qu'une voiture arrive.
+    const poserAParis = (rang) => tab.evaluate(async (rang) => {
+      const g = window.__game, et = window.__vehicules.etat();
+      const { CHAUSSEE } = await import('./src/world.js');
+      const surChaussee = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); const y = g.world.sommetColonne(bx, bz); return CHAUSSEE.has(g.world.getBlock(bx, y, bz)); };
+      // toutes les places des convois routiers ; on se pose douze blocs devant
+      // l'une d'elles, à un point LIBRE — aucune voiture à moins de sept blocs,
+      // sinon on naît dans une voiture de la file (au portail : quatre-vingts
+      // relevés « au travers », dès la première image)
+      const places = [];
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => places.push({ x: q[0], z: q[1], cap: q[2] })));
+      const candidats = [];
+      for (const q of places) {
+        const x = q.x + Math.sin(q.cap) * 12, z = q.z + Math.cos(q.cap) * 12;
+        if (places.some((o) => Math.hypot(o.x - x, o.z - z) < 7)) continue;
+        let route = true;
+        for (let t = 2; t <= 12; t += 2) if (!surChaussee(q.x + Math.sin(q.cap) * t, q.z + Math.cos(q.cap) * t)) { route = false; break; }
+        if (!route) continue;
+        const d = Math.hypot(x - g.player.pos.x, z - g.player.pos.z);
+        candidats.push({ d, x: q.x, z: q.z, cap: q.cap });
+      }
+      candidats.sort((p, q) => p.d - q.d);
+      const m = candidats[Math.min(rang, candidats.length - 1)] || null;
+      if (!m) return null;
+      const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
+      g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
+      g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);
+      return { ...m, candidats: candidats.length };
+    }, rang);
+    const monterAParis = async () => {
+      // Le bouton garde son `display` d'avant tant que sa ligne est cachée :
+      // on attend la LIGNE, puis le « ⬇️ » qui prouve qu'on est monté — et
+      // l'on réessaie, parce qu'un clic trop tôt ne monte dans rien.
+      await tab.waitForFunction(() => {
+        const b = document.getElementById('ride-btn');
+        return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b.closest('.fun-target')).display !== 'none';
+      }, null, { timeout: 20000 }).catch(() => {});
+      // ET ON NE RECLIQUE PAS SUR UN ENFANT DÉJÀ MONTÉ : le bouton est une
+      // BASCULE, un second clic le fait descendre. Ce jet-ci attendait le
+      // « ⬇️ » du bouton — écrit à l'image suivante, sondé par rAF — pendant
+      // trois secondes puis recliquait : au portail de la v252, à une image
+      // par seconde dans Paris, le premier clic avait monté, le second a fait
+      // descendre, et trois témoins ont mesuré « au volant » à pied. L'état
+      // se lit dans le jeu, jamais dans le texte d'un bouton.
+      const auVolantMaintenant = () => tab.evaluate(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()));
+      for (let essai = 0; essai < 6; essai++) {
+        if (!(await auVolantMaintenant())) await tab.evaluate(() => document.getElementById('ride-btn').click());
+        const monte = await tab.waitForFunction(() => (window.__game.fun.montureConduite && window.__game.fun.montureConduite())
+          && document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000, polling: 200 }).then(() => true).catch(() => false);
+        if (monte) break;
+        await dormir(700);
+      }
+    };
+    const mesurerChaussee = () => tab.evaluate(async () => {
+      const g = window.__game, et = window.__vehicules.etat();
+      let m = null;
+      et.forEach((c) => c.routier && (c.places || []).forEach((q) => {
+        const d = Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z);
+        if (!m || d < m.d) m = { d, x: q[0], z: q[1], cap: q[2] };
+      }));
+      if (!m) return null;
+      if (!document.getElementById('ride-btn').textContent.startsWith('⬇️')) return { auVolant: false };
+      g.player.keys.delete('KeyW');
+      const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let releves = 0, traverses = 0, proches = 0, arretees = 0, attenteSecondes = 0;
+      // « PAS SI L'ON EST DÉJÀ DEDANS » VAUT AUSSI POUR LE TÉMOIN (v245, par
+      // l'autre bout). Le jeu laisse EXPRÈS continuer une voiture déjà dans la
+      // nôtre — attendre là, c'est y rester pour toujours — et la v245 avait
+      // déjà vu le témoin se poser sur une file et compter quatre-vingts relevés
+      // « au travers » dès la première image. Vert quatre passages de suite, ce
+      // témoin a rendu 51 relevés sur 214 au cinquième, sur du code inchangé,
+      // une voiture étant à portée dès la première seconde. On note donc qui
+      // chevauche AU PREMIER RELEVÉ et l'on ne compte pas celle-là : elle ne
+      // peut rendre aucun verdict, ni dans un sens ni dans l'autre. Quand la
+      // pose est propre, cet ensemble est vide et rien ne change.
+      let dejaDedans = null, exclus = 0;
+      // douze blocs, pas six : une voiture qui cède s'arrête dès que son
+      // balayage de huit blocs touche notre rectangle, donc à six ou huit
+      // blocs de notre centre — à six, le témoin ne la voyait jamais arriver
+      const PORTEE = 12;
+      const uneVoiturePres = () => { let n = 0; window.__vehicules.etat().forEach((c) => c.routier && (c.places || []).forEach((q) => { if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) <= PORTEE) n++; })); return n; };
+      // on attend la première voiture : jusqu'à quarante secondes
+      const tAttente = performance.now();
+      while (performance.now() - tAttente < 40000 && !uneVoiturePres()) await new Promise((f) => setTimeout(f, 200));
+      attenteSecondes = +((performance.now() - tAttente) / 1000).toFixed(1);
+      const t0 = performance.now();
+      while (performance.now() - t0 < 12000) {
+        await new Promise((f) => setTimeout(f, 150));
+        releves++;
+        const moi = rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI);
+        const chevauchants = new Set();
+        window.__vehicules.etat().forEach((c, ci) => c.routier && (c.places || []).forEach((q, qi) => {
+          if (Math.hypot(q[0] - g.player.pos.x, q[1] - g.player.pos.z) > PORTEE) return;
+          proches++; if (q[5]) arretees++;
+          if (!separes(moi, rect(q[0], q[1], q[2]))) chevauchants.add(ci + ':' + qi);
+        }));
+        if (dejaDedans === null) dejaDedans = chevauchants;
+        for (const cle of chevauchants) { if (dejaDedans.has(cle)) exclus++; else traverses++; }
+      }
+      return { releves, proches, arretees, traverses, attenteSecondes,
+        dedansAuDepart: dejaDedans ? dejaDedans.size : 0, exclus };
+    });
+    let poseParis = null, chaussee = null, poses = 0;
+    for (let rang = 0; rang < 3; rang++) {
+      poseParis = await poserAParis(rang);
+      if (!poseParis) break;
+      poses++;
+      await monterAParis();
+      chaussee = await mesurerChaussee();
+      // personne n'est venu : on ne conclut pas, on se repose ailleurs
+      if (!chaussee || chaussee.auVolant === false || chaussee.arretees > 0 || chaussee.traverses > 0) break;
+    }
+    if (chaussee) chaussee.poses = poses;
+    verifier('la circulation s\'arrête devant la voiture de l\'enfant au lieu de lui passer au travers',
+      !!chaussee && chaussee.auVolant !== false && chaussee.proches > 0 && chaussee.arretees > 0 && chaussee.traverses === 0,
+      chaussee ? (chaussee.auVolant === false ? 'pas au volant' : `${chaussee.traverses} relevé(s) au travers · ${chaussee.proches} relevé(s) de voiture à moins de douze blocs, ${chaussee.arretees} arrêtée(s) · ${chaussee.dedansAuDepart} déjà dedans au départ (${chaussee.exclus} relevé(s) écarté(s)) · première voiture après ${chaussee.attenteSecondes} s · ${chaussee.poses} pose(s)`) : 'aucun convoi routier trouvé');
+    // ET L'ON DESCEND AVANT DE REPARTIR — en le vérifiant. Au portail de la
+    // v249, le témoin du mur qui suit a mesuré « à pied » avec la carrure
+    // d'une voiture : l'enfant était encore au volant. On lit l'état avant le
+    // clic, après le clic, et après le retour, pour savoir où il remonte.
+    const etatVolant = () => tab.evaluate(() => { const g = window.__game; return { gabarit: g.player.gabarit,
+      monture: !!(g.fun.montureConduite && g.fun.montureConduite()), bouton: document.getElementById('ride-btn').textContent,
+      animaux: g.animalManager.animals.map((a) => a.def.key + (a.montee ? '*' : '')).join(',') }; });
+    const avantClic = await etatVolant();
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(400);
+    const apresClic = await etatVolant();
+    await tab.evaluate((s) => { const g = window.__game; g.player.pos.set(s.x, s.y, s.z); g.player.vel.set(0, 0, 0); g.player.yaw = s.yaw; g.player.flying = s.flying; }, avantParis);
+    await dormir(1500);
+    const apresRetour = await etatVolant();
+    verifier('et l\'on est descendu de la voiture de Paris, à pied au retour',
+      !apresClic.monture && !apresRetour.monture && apresRetour.gabarit < 1,
+      `avant le clic ${JSON.stringify(avantClic)} · après ${JSON.stringify(apresClic)} · au retour ${JSON.stringify(apresRetour)}`);
 
     // AU VOLANT, ON NE TRAVERSE PLUS LES MURS (v212) -------------------------
     //
@@ -872,6 +1351,38 @@ async function avancerUnDemiSeconde(p, depart) {
       const z = await tab.evaluate(() => window.__game.player.pos.z);
       return Math.round((scene.murZ - z) * 100) / 100;
     };
+    // UN ROUGE QUI NE DIT PAS DANS QUEL ÉTAT IL A MESURÉ NE SE DÉMONTE PAS :
+    // « à pied 1,1 bloc du mur » au portail de la v249, c'est-à-dire à pied
+    // avec la carrure d'une voiture — l'état laissé par le témoin d'avant.
+    // ON VA MESURER AU CALME, LOIN DE TOUTE VOITURE (v279). Le témoin d'avant
+    // laisse l'enfant SUR un circuit de circulation de Paris — il vient d'y
+    // compter cent soixante relevés de voiture à moins de douze blocs, et trois
+    // voitures garées traînent dans le bestiaire. `contreLeMur` creuse son
+    // couloir À LA POSITION COURANTE : depuis la v278, un piéton s'arrête devant
+    // une voiture, donc l'enfant butait sur la circulation au lieu du mur —
+    // « à pied 7,78 bloc du mur » au lieu de 0,3, et le garde-fou d'après avec.
+    //
+    // Sur le code d'avant la v278 ce témoin était vert **parce qu'un piéton
+    // traversait les voitures** : une correction du jeu rend visible une
+    // hypothèse de banc que personne n'avait écrite — « le couloir est vide dès
+    // qu'on a dégagé les BLOCS ». C'est la sœur de « un témoin de conduite part
+    // d'une rue sans voiture à portée » (v252, v259), du côté de la marche.
+    //
+    // Le couloir vide de la v237 (30 000, 30 000) n'a ni ville, ni convoi, ni
+    // bête : les TROIS mesures s'y font, ce qui les rend comparables par
+    // construction — la troisième se compare à la première.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(30000.5, g.world.terrainHeight(30000, 30000) + 2, 30000.5);
+      g.player.vel.set(0, 0, 0);
+    });
+    await dormir(2500);
+    const etatAPied = await tab.evaluate(() => ({ gabarit: window.__game.player.gabarit,
+      auVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️'),
+      monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()),
+      voitures: window.__game.animalManager.animals.length }));
     const ecartAPied = await contreLeMur(false);
     await poserDevant(tab, 'voiture');
     await dormir(600);
@@ -884,7 +1395,7 @@ async function avancerUnDemiSeconde(p, depart) {
     const ecartApres = await contreLeMur(false);
     verifier('au volant, on s\'arrête plus loin du mur qu\'à pied — la voiture a sa carrure',
       auVolant && ecartAPied > 0 && ecartAuVolant >= ecartAPied + 0.5,
-      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant}`);
+      `à pied ${ecartAPied} bloc du mur · au volant ${ecartAuVolant} · au volant=${auVolant} · état à pied ${JSON.stringify(etatAPied)}`);
     // Ce second témoin est un GARDE-FOU, pas une preuve : il est vert des deux
     // côtés, et c'est voulu — il garde la régression que le premier rend
     // possible, un enfant qui garderait à pied la carrure d'une voiture et
@@ -930,14 +1441,42 @@ async function avancerUnDemiSeconde(p, depart) {
     // qui suivent l'arrivée, l'anneau de circulation naît et ses voitures se
     // montrent, et six passants peuplent les rues — puis on vérifie qu'ils
     // MARCHENT, pas qu'ils posent.
-    await tab.evaluate(async () => {
+    // ET LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants
+    // naissaient dans la MÊME image à l'arrivée — quarante-quatre à New York
+    // — chacun avec son clone de squelette : une part du gel que Max sent à
+    // la téléportation. On compte, image par image, combien de passants
+    // apparaissent : dix-huit d'un coup sur l'ancien code, jamais plus de
+    // quelques-uns par image ici. On mesure ce que l'enfant subit (une
+    // image qui fait tout) et non le mécanisme (une file), sur `effectif()`
+    // que l'ancien code publie aussi.
+    const naissances = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
       const g = window.__game;
       const p = positionDe('rome');
+      const effectif = () => (g.passants && g.passants.effectif && g.passants.effectif()) || 0;
+      const base = effectif();
+      const parImage = [];
+      let prec = base, actif = true;
+      const tic = () => {
+        const e = effectif();
+        if (e > prec) parImage.push(e - prec);
+        prec = e;
+        if (actif) requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
       g.player.flying = true;
       g.player.pos.set(p.x, g.world.terrainHeight(p.x, p.z) + 6, p.z);
       g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      while (effectif() - base < 18 && performance.now() - t0 < 15000) {
+        await new Promise((f) => setTimeout(f, 100));
+      }
+      actif = false;
+      return { nees: effectif() - base, images: parImage.length, maxParImage: Math.max(0, ...parImage) };
     });
+    verifier('les passants naissent par tranches, jamais tous dans la même image',
+      naissances.nees >= 18 && naissances.images >= 3 && naissances.maxParImage <= 9,
+      JSON.stringify(naissances));
     await dormir(3000);
     const circule = await tab.waitForFunction(() => {
       const conv = (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture');
@@ -1017,6 +1556,794 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et ils marchent — ce sont des passants, pas des statues',
       bouge >= 2, `${bouge} promeneur(s) sur la place ont bougé en huit secondes`);
 
+    // ---- UN PASSANT QU'ON APPROCHE CONTINUE SON CHEMIN (v243) --------------
+    //
+    // Max : « elles regardent le joueur principal au lieu de continuer à se
+    // promener ». `Habitant.think` se figeait à moins de cinq blocs et demi et
+    // se tournait vers l'enfant — dix-huit fois par ville. On met un passant
+    // en marche, on pose l'enfant à trois blocs de lui, et l'on regarde s'il
+    // avance quand même. Sur l'ancien code il ne bouge pas d'un bloc.
+    //
+    // Ce banc avance à quinze pour cent du temps réel (`dt` borné, trois
+    // images par seconde) : on attend le premier bloc et demi jusqu'à douze
+    // secondes, et l'on rend l'enfant à sa place après.
+    // Un passant lancé contre un mur n'avance pas non plus (un bloc en douze
+    // secondes, vu au portail) : on essaie trois passants et quatre caps, et
+    // l'on garde le premier qui avance. Sur l'ancien code aucun ne bouge,
+    // quelle que soit la direction — c'est l'enfant qui le fige.
+    const suit = await tab.evaluate(async () => {
+      const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
+      if (!gens.length) return { err: 'aucun passant' };
+      const sauve = g.player.pos.clone();
+      let meilleur = 0, essais = 0;
+      const dernieres = [];
+      for (const h of gens) {
+        for (const cap of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+          essais++;
+          h.etat = 'marche'; h.minuteur = 8; h.capYaw = cap; h.pas = h.walkSpeed;
+          g.player.pos.set(h.pos.x + 3, h.pos.y, h.pos.z); g.player.vel.set(0, 0, 0);
+          const x0 = h.pos.x, z0 = h.pos.z, t0 = performance.now();
+          let d = 0;
+          // LA FENÊTRE EST CELLE QUE LE COMMENTAIRE ANNONÇAIT — DOUZE SECONDES,
+          // PAS QUATRE. Elle valait 4 000 ms, et le témoin est tombé au portail
+          // de la v274 : douze essais, 0,99 bloc au mieux, pour une barre à 1,2.
+          // La sonde a séparé les cas en une exécution — le passant n'était pas
+          // bloqué du tout : état `marche` et crochet d'obstacle FAUX d'un bout
+          // à l'autre, 0,32 bloc par seconde, 3,93 blocs en vingt secondes. Il
+          // franchit la barre vers 3,5 s, c'est-à-dire AU BORD de la fenêtre —
+          // et le même relevé montre un gel de SEPT secondes au milieu (d figé
+          // à 2,77 de la neuvième à la quinzième), le banc rendant quatre
+          // images par seconde. Le témoin mesurait donc la cadence du banc.
+          // On attend le RÉSULTAT, borné (v270), et un passant sain sort en
+          // trois secondes et demie : les douze ne se paient que sur l'ancien
+          // code, qui est un rouge de toute façon.
+          while (performance.now() - t0 < 12000 && d < 1.2) {
+            await new Promise((f) => setTimeout(f, 250));
+            d = Math.hypot(h.pos.x - x0, h.pos.z - z0);
+          }
+          const mis = +((performance.now() - t0) / 1000).toFixed(1);
+          if (d > meilleur) { meilleur = d; }
+          if (d >= 1.2) { g.player.pos.copy(sauve); return { d: +d.toFixed(2), essais, secondes: mis }; }
+          dernieres.push(mis);
+        }
+      }
+      g.player.pos.copy(sauve);
+      // ET LE TEMPS QU'IL A PRIS ENTRE DANS LE MESSAGE, sinon le rouge suivant
+      // ne se démonte pas.
+      return { d: +meilleur.toFixed(2), essais, secondes: dernieres };
+    });
+    verifier('un passant qu\'on approche continue son chemin au lieu de s\'arrêter pour regarder l\'enfant',
+      !suit.err && suit.d >= 1.2, JSON.stringify(suit));
+
+    // ---- UN PASSANT DE RUE SE TIENT SUR LE TROTTOIR (v278, gardé en v279) ---
+    //
+    // Max : « les passants qui s'arrêtent et qui nous regardent de manière
+    // figée, ça ne fonctionne pas. Je vois quelque chose de très naturel, comme
+    // dans GTA. » La v278 a trouvé deux défauts derrière cette phrase, et le
+    // premier ne se voit qu'en relevant le SOL sous chacun : la moitié des
+    // passants étaient plantés au milieu de la chaussée. `posteAutour` rendait
+    // le premier point « de rue » rencontré — chaussée, pavé ou bordure
+    // comprises — alors que `SOLS_TROTTOIR` existait déjà sans qu'aucun appelant
+    // ne s'en serve.
+    //
+    // CE TÉMOIN EST INDÉPENDANT DE LA CADENCE DU BANC, et c'est pour cela qu'il
+    // porte l'échantillon ENTIER du site : le sol se décide à la NAISSANCE du
+    // passant, pas à son animation. On peut donc compter les vingt et un, et
+    // non les six que le banc anime (v241 : au-delà de quatre-vingts blocs,
+    // `npc.update` n'est jamais appelé).
+    //
+    // ET CE QU'IL JUGE EST LA CHAUSSÉE, PAS LE TROTTOIR. Mon premier verdict
+    // exigeait quatre cinquièmes des passants SUR LE TROTTOIR, une barre relevée
+    // à Paris (21 sur 21) : à Rome il rend 14 sur 21 et il est ROUGE sur la
+    // correction qu'il devait garder. Les sept autres ne sont pas au milieu de
+    // la rue — cinq sont sur une esplanade ou de l'herbe, que `posteAutour`
+    // accepte en dernier recours et pour qui le programme de flâneur est le bon
+    // (vie.js le dit). Ce que Max a signalé, ce sont les passants « plantés au
+    // milieu de la chaussée », et c'est cela qui se compte.
+    //
+    // ET « LA CHAUSSÉE » N'EST PAS LE MÊME BLOC PARTOUT : Rome roule sur
+    // `ASPHALT`, Paris sur `ARCHI.PAVE` (v248, qui l'a fait entrer dans
+    // `CHAUSSEE` pour les réverbères). Un classement qui ne connaîtrait que
+    // l'asphalte rendrait Paris parfait sans rien mesurer. La bordure, elle,
+    // est le caniveau : on la compte à part, on ne la met pas au milieu de la
+    // rue.
+    //
+    // Mesuré, mêmes conditions des deux côtés — avant la v278 : Rome 12 puis 10
+    // sur 21 (57 % et 48 %), Paris 3 sur 6 (50 %). Ici : Rome 2 sur 21 (9,5 %),
+    // Paris 0 sur 21. La barre, un cinquième, sépare les deux dispersions.
+    const solDesPassants = await tab.evaluate(async () => {
+      const { CITY_BLOCK, ARCHI } = await import('./src/blocks.js');
+      const g = window.__game;
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const gens = s2.peuple.filter((h) => h.name === 'passant');
+      const nom = (b) => (b === CITY_BLOCK.SIDEWALK ? 'trottoir'
+        : b === CITY_BLOCK.GRANITE ? 'granite'
+        : b === CITY_BLOCK.ASPHALT ? 'chaussee'
+        : b === CITY_BLOCK.CROSSWALK ? 'passage'
+        : b === ARCHI.PAVE ? 'pave'
+        : b === ARCHI.BORDURE ? 'bordure' : 'autre');
+      const tally = {};
+      gens.forEach((h) => {
+        const bx = Math.floor(h.pos.x), bz = Math.floor(h.pos.z);
+        // LE SOL SE LIT AU SOMMET DE LA COLONNE, pas à `terrainHeight` : sur les
+        // quais et au pied des ponts, une ville écrit sa chaussée un bloc plus
+        // haut (v274).
+        const y = g.world.sommetColonne(bx, bz);
+        const k = nom(g.world.getBlock(bx, y, bz));
+        tally[k] = (tally[k] || 0) + 1;
+      });
+      const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
+      const surChaussee = (tally.chaussee || 0) + (tally.pave || 0) + (tally.passage || 0);
+      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally,
+        partTrottoir: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null,
+        partChaussee: gens.length ? +(surChaussee / gens.length).toFixed(2) : null };
+    });
+    verifier('et les passants ne sont plus plantés au milieu de la chaussée',
+      !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.partChaussee <= 0.2,
+      JSON.stringify(solDesPassants));
+
+    // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
+    //
+    // Le second défaut derrière la phrase de Max, et il était STRUCTUREL : la
+    // marche durait une à trois secondes dans une direction TIRÉE AU HASARD, à
+    // l'intérieur d'un rayon de quatre blocs autour d'un poste fixe. Un passant
+    // ne pouvait aller nulle part, quelle que soit la cadence — il faisait le
+    // pied de grue sur place, ce qui, vu de la rue, EST le figé que Max décrit.
+    // Il garde désormais son cap et marche six à quatorze secondes, tourne quand
+    // le trottoir tourne, et s'arrête quand il n'avance plus.
+    //
+    // CE QUI SE MESURE EST LE DÉPLACEMENT NET, PAS LE CHEMIN PARCOURU : un
+    // passant qui piétine autour d'un poste parcourt des blocs sans jamais
+    // partir. Et l'on n'observe QUE ceux que le jeu anime — au-delà de
+    // quatre-vingts blocs personne ne les voit et personne ne les met à jour
+    // (v241) : mon premier relevé les confondait avec des passants figés et
+    // rendait seize immobiles sur vingt et un, sur du code sain.
+    //
+    // ET LA GRANDEUR EST UN DÉBIT, PAS UNE DISTANCE. Mon premier verdict
+    // exigeait quatre blocs de déplacement NET, borné sur le résultat : il est
+    // VERT sur l'ancien code (médiane 4,08), et pour deux raisons qu'il faut
+    // garder par écrit.
+    //
+    //   · UNE MARCHE AU HASARD FINIT PAR DÉRIVER. Le vieux programme tirait un
+    //     cap neuf toutes les une à trois secondes dans un rayon de huit blocs
+    //     autour d'un poste : sur vingt-deux secondes de JEU, cela suffit à
+    //     mettre la médiane à quatre blocs. Une borne sur le résultat donne à
+    //     l'ancien code tout le temps dont il a besoin — c'est l'inverse du
+    //     service qu'on lui demande.
+    //   · ET LE RAPATRIEMENT EST UN SAUT, PAS UNE MARCHE. `passants.js` déplace
+    //     un passant sorti du champ (v217, v218) : deux des relevés valaient
+    //     23,9 et 37,58 blocs de « déplacement ». On écarte donc tout pas de
+    //     plus de trois blocs entre deux relevés — à 1,6 m/s et `dt` plafonné
+    //     à un vingtième, aucune marche ne peut en faire autant.
+    //
+    // CE QUE MAX DÉCRIT, C'EST « IL NE MARCHE PAS », et cela se mesure en
+    // CHEMIN PARCOURU PAR SECONDE DE JEU — la monnaie du banc (v277), donc une
+    // grandeur que la cadence ne touche pas. `walkSpeed` vaut 1,6 : un passant
+    // qui marche tout le temps rend 1,6, un qui fait le pied de grue rend zéro.
+    // Mesuré des deux côtés : à Paris, six secondes de jeu de part et d'autre,
+    // 0,18 à 0,77 avant la v278 contre 1,13 à 1,43 ici ; et dans les conditions
+    // EXACTES de ce témoin — Rome, la ville que le banc peuple — l'ancien code
+    // rend 0,26 à 0,73, **médiane 0,50**, sur douze secondes de jeu. La barre,
+    // huit dixièmes, passe au-dessus du meilleur passant de l'ancien code et
+    // sous le plus lent du neuf. Le temps de jeu entre dans le message, sinon
+    // le rouge suivant ne se démonte pas.
+    //
+    // (Et le même relevé montre pourquoi le déplacement net ne pouvait pas
+    // servir : il vaut 4,24 en médiane sur l'ancien code, au-dessus de la barre
+    // de quatre que mon premier verdict exigeait.)
+    const vontQuelquePart = await tab.evaluate(async () => {
+      const g = window.__game;
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      // ON SE MET LÀ OÙ ILS SONT, ET L'ON REND L'ENFANT À SA PLACE APRÈS.
+      // Le témoin d'avant a laissé l'enfant dans une scène d'essai loin de toute
+      // ville : aucun passant n'y est animé, et le verdict aurait été rouge des
+      // DEUX côtés en ne mesurant rien. On se pose au barycentre de la troupe,
+      // ce qui met tout le monde à portée sans rien attendre du rapatriement.
+      const tous = s2.peuple.filter((h) => h.name === 'passant');
+      if (tous.length < 3) return { err: `seulement ${tous.length} passant(s)` };
+      const sauve = g.player.pos.clone();
+      const cx = tous.reduce((a, h) => a + h.pos.x, 0) / tous.length;
+      const cz = tous.reduce((a, h) => a + h.pos.z, 0) / tous.length;
+      g.player.pos.set(cx, g.world.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1500));
+      const anime = (h) => Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 80;
+      const gens = tous.filter(anime);
+      if (gens.length < 3) { g.player.pos.copy(sauve); return { err: `seulement ${gens.length} passant(s) animé(s) sur ${tous.length}` }; }
+      const dep = gens.map((h) => [h.pos.x, h.pos.z]);
+      const prec = dep.map((d) => d.slice());
+      const chemin = gens.map(() => 0);
+      let sauts = 0;
+      const f0 = g.renderer.info.render.frame, t0 = performance.now();
+      // ON OBSERVE TOUTE LA FENÊTRE, en cumulant : un instantané sur ce qui
+      // bouge est un pile ou face (v233).
+      while (performance.now() - t0 < 45000) {
+        await new Promise((f) => setTimeout(f, 400));
+        gens.forEach((h, i) => {
+          const d = Math.hypot(h.pos.x - prec[i][0], h.pos.z - prec[i][1]);
+          if (d > 3) sauts++; else chemin[i] += d;      // un rapatriement n'est pas un pas
+          prec[i][0] = h.pos.x; prec[i][1] = h.pos.z;
+        });
+      }
+      const images = g.renderer.info.render.frame - f0;
+      const jeu = images * 0.05;
+      const debits = chemin.map((c) => (jeu > 0 ? c / jeu : 0)).sort((a, b) => a - b);
+      const debit = debits[Math.floor(debits.length / 2)];
+      const net = gens.map((h, i) => +Math.hypot(h.pos.x - dep[i][0], h.pos.z - dep[i][1]).toFixed(2))
+        .sort((a, b) => a - b);
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, n: gens.length, sur: tous.length,
+        debitMedian: +debit.toFixed(2), debits: debits.map((d) => +d.toFixed(2)),
+        cheminMedian: +chemin.slice().sort((a, b) => a - b)[Math.floor(chemin.length / 2)].toFixed(1),
+        netMedian: net[Math.floor(net.length / 2)], sauts,
+        secondes: +((performance.now() - t0) / 1000).toFixed(1),
+        secondesDeJeu: +jeu.toFixed(1),
+        cadence: +(images / ((performance.now() - t0) / 1000)).toFixed(1) };
+    });
+    verifier('et un passant de rue marche vraiment : il ne fait pas le pied de grue',
+      !vontQuelquePart.err && vontQuelquePart.secondesDeJeu >= 3
+        && vontQuelquePart.debitMedian >= 0.8, JSON.stringify(vontQuelquePart));
+
+    // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
+    //
+    // Max, capture à la Bastille : des passants au travers de sa voiture. Un
+    // piéton ne connaît que les blocs solides ; une voiture n'en est pas un.
+    // On monte dans une voiture, à l'arrêt sur la rue, et l'on lance huit
+    // passants droit dessus, depuis trois ou quatre blocs — on PROVOQUE la
+    // situation au lieu d'attendre qu'un passant vienne de lui-même (leçon des
+    // poissons). Dix relevés par seconde pendant douze secondes : combien de
+    // fois un passant a-t-il les pieds DANS le rectangle de la voiture
+    // (4,4 × 2,26, cap de l'enfant) ? Sur l'ancien code, des dizaines ; ici,
+    // zéro — et ils marchent quand même, sinon le vert serait celui de huit
+    // statues. Ceux qui s'éloignent sont relancés vers la voiture toutes les
+    // deux secondes, pour que la pression ne tombe pas. Le rectangle est
+    // recopié ici, pas demandé au jeu : l'ancien code ne le publie pas.
+    const traversee = await tab.evaluate(async () => {
+      const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 8);
+      if (gens.length < 6) return { err: `${gens.length} passant(s)` };
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      // LES DÉPARTS SONT AU NIVEAU DE LA RUE. Seize points sur un cercle de
+      // trois à quatre blocs et demi autour de l'ancre ; on ne garde que ceux
+      // dont le sol est à moins d'un bloc et demi de celui de l'ancre — un
+      // point tombé dans un immeuble poserait le passant SUR SON TOIT, d'où
+      // il retomberait dans la voiture (vu à la sonde : des passants à
+      // seize blocs de haut, comptés « dedans » par un rectangle sans y).
+      // L'ancre est le premier passant qui offre au moins six départs.
+      const departsAutour = (h, x0, z0, y0) => {
+        const pts = [];
+        for (let k = 0; k < 16; k++) {
+          const a = k * Math.PI / 8, r = k % 2 ? 3.4 : 4.4;
+          const x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r, y = h.surfaceY(x, z);
+          if (y !== null && Math.abs(y - y0) <= 1.5) pts.push([x, z]);
+        }
+        return pts;
+      };
+      let h0 = null, departs = [];
+      for (const h of gens) {
+        const pts = departsAutour(h, h.pos.x, h.pos.z, h.pos.y);
+        if (pts.length >= 6) { h0 = h; departs = pts; break; }
+      }
+      if (!h0) return { err: 'aucun passant avec six départs au niveau de la rue' };
+      // la voiture, devant l'enfant, sur la rue où marche ce passant
+      g.player.pos.set(h0.pos.x, h0.pos.y + 0.1, h0.pos.z); g.player.vel.set(0, 0, 0); g.player.flying = false;
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.animalManager.invoquer('voiture', g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.z - Math.cos(g.player.yaw) * 3);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let essai = 0; essai < 8 && !auVolant(); essai++) {
+        await dormir(600);
+        if (!auVolant()) document.getElementById('ride-btn').click();
+        const t = performance.now();
+        while (!auVolant() && performance.now() - t < 2500) await dormir(200);
+      }
+      if (!auVolant()) { g.player.pos.copy(sauve); return { err: 'pas monté' }; }
+      g.player.vel.set(0, 0, 0);
+      await dormir(400);
+      const px = g.player.pos.x, pz = g.player.pos.z, cap = g.player.yaw + Math.PI;
+      const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+      // dans la voiture : dans son rectangle ET à sa hauteur — un passant sur
+      // un balcon au-dessus de la rue n'est pas dedans
+      const dedans = (h) => { const dx = h.pos.x - px, dz = h.pos.z - pz; return Math.abs(dx * ux + dz * uz) <= 2.2 && Math.abs(dx * vx + dz * vz) <= 1.13 && Math.abs(h.pos.y - g.player.pos.y) <= 2.5; };
+      // on écarte les départs que la voiture recouvre désormais
+      departs = departs.filter(([x, z]) => !dedans({ pos: { x, z, y: g.player.pos.y } }));
+      if (departs.length < 4) { g.player.pos.copy(sauve); return { err: `${departs.length} départ(s) hors de la voiture` }; }
+      const lancer = (h, k) => {
+        const [x, z] = departs[k % departs.length];
+        h.placeAt(x, z, g.player.pos.y);
+        h.poste.set(px, pz); h.rayon = 0;
+        h.etat = 'marche'; h.minuteur = 30; h.pas = h.walkSpeed;
+        h.capYaw = Math.atan2(px - h.pos.x, pz - h.pos.z) + Math.PI;
+      };
+      gens.forEach(lancer);
+      const parcouru = gens.map(() => 0), prec = gens.map((h) => [h.pos.x, h.pos.z]);
+      let releves = 0, traverses = 0, relances = 0;
+      const t0 = performance.now();
+      let dernierRelance = t0;
+      while (performance.now() - t0 < 12000) {
+        await dormir(100);
+        releves++;
+        gens.forEach((h, k) => {
+          if (dedans(h)) traverses++;
+          parcouru[k] += Math.hypot(h.pos.x - prec[k][0], h.pos.z - prec[k][1]);
+          prec[k] = [h.pos.x, h.pos.z];
+        });
+        if (performance.now() - dernierRelance > 2000) {
+          dernierRelance = performance.now();
+          gens.forEach((h, k) => {
+            const d = Math.hypot(h.pos.x - px, h.pos.z - pz);
+            if (d > 5.5 || h.etat !== 'marche') { lancer(h, k + relances); relances++; }
+          });
+        }
+      }
+      const bougent = parcouru.filter((d) => d > 0.5).length;
+      // on rend tout : on descend, la voiture s'en va, l'enfant retrouve sa place
+      for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+      if (g.player.prendreGabarit && auVolant()) g.player.prendreGabarit(0);
+      return { departs: departs.length, releves, traverses, bougent, relances, parcouru: parcouru.map((d) => +d.toFixed(1)), encoreAuVolant: auVolant() };
+    });
+    verifier('un passant lancé sur la voiture de l\'enfant s\'arrête et la contourne au lieu de la traverser',
+      !traversee.err && traversee.releves >= 60 && traversee.traverses === 0 && traversee.bougent >= 4,
+      JSON.stringify(traversee));
+
+    // ---- EN ROULANT : LA VOITURE FREINE, LE PIÉTON S'ÉCARTE (v259) --------------
+    //
+    // Max, capture à New York : une passante au travers de son taxi, et « pas
+    // un mode violent comme GTA ». Le cas d'avant est la voiture à l'arrêt ;
+    // ici c'est elle qui va sur les gens. Trois passants plantés SUR l'axe de
+    // la voiture, à cinq, huit et onze blocs, immobiles (ils bavardent) ;
+    // l'enfant appuie sur l'accélérateur douze secondes. Sur l'ancien code la
+    // voiture leur passe au travers (relevés « dedans »). Ici : zéro dedans —
+    // la voiture freine devant eux, ils pressent le pas de côté, et elle
+    // repart : on exige qu'elle ait avancé, sinon le vert serait celui d'une
+    // voiture clouée derrière un piéton pour toujours. Le cap est choisi pour
+    // que la rue soit plate devant sur seize blocs, sinon on mesure une côte.
+    const roulant = await tab.evaluate(async () => {
+      const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
+      if (gens.length < 3) return { err: `${gens.length} passant(s)` };
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      // et sans voiture de la rue à portée du trajet (leçon de la v252) : une
+      // voiture de la circulation qui arrive en face cède devant l'enfant sans
+      // limite, et l'on mesurerait deux voitures nez à nez, pas les piétons
+      const rueLibre = (x, z, y) => !g.vehicules.placeProche({ x, y, z }, 10);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const retirerVoiture = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
+      const descendre = async () => { for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); } };
+      // et un COULOIR libre : le sol exactement à la même cote sur seize
+      // blocs et sur la largeur de la voiture (une marche d'un bloc arrête une
+      // voiture, qui ne saute pas), pas un réverbère ni un banc dessus (le
+      // mobilier arrête la voiture depuis la v252, et `surfaceY` ne le voit
+      // pas : non solide pour la marche), pas une voiture de la rue en
+      // travers. On le mesure ici pièce par pièce, et non par
+      // `player.obstacleVehicule`, qui compte désormais les piétons — les
+      // dix-huit passants de Rome barreraient tout couloir.
+      const { isProp } = await import('./src/blocks.js');
+      const couloirLibre = (h, x0, z0, y0, ux, uz) => {
+        const cap = Math.atan2(ux, uz), vx = uz, vz = -ux;
+        for (let d = 1; d <= 14; d++) {
+          for (const w of [-1.2, 0, 1.2]) {
+            const x = x0 + ux * d + vx * w, z = z0 + uz * d + vz * w;
+            const y = h.surfaceY(x, z);
+            if (y === null || Math.abs(y - y0) > 0.01) return false;
+            const bx = Math.floor(x), bz = Math.floor(z), by = Math.floor(y0 + 0.1);
+            if (isProp(g.world.getBlock(bx, by, bz)) || isProp(g.world.getBlock(bx, by + 1, bz))) return false;
+          }
+          if (g.vehicules.obstacleDevant(x0 + ux * d, z0 + uz * d, cap)) return false;
+        }
+        return true;
+      };
+      // Seize caps, et trois départs par cap (sur le passant, quatre blocs en
+      // arrière, quatre en avant) : au portail de la v259, huit caps depuis
+      // les seuls postes des passants n'ont trouvé aucun couloir (56 essais),
+      // alors que trois tours à la sonde en trouvaient dès le premier passant.
+      let ancre = null, candidats = 0;
+      for (const h of s2.peuple.filter((q) => q.name === 'passant')) {
+        for (let k = 0; k < 16 && !ancre; k++) {
+          const a = k * Math.PI / 8, ux = Math.cos(a), uz = Math.sin(a);
+          for (const recul of [0, -4, 4]) {
+            const x0 = h.pos.x + ux * recul, z0 = h.pos.z + uz * recul, y0 = h.surfaceY(x0, z0);
+            candidats++;
+            if (y0 === null || Math.abs(y0 - h.pos.y) > 0.01) continue;
+            if (!rueLibre(x0, z0, y0) || !rueLibre(x0 + ux * 12, z0 + uz * 12, y0)) continue;
+            if (couloirLibre(h, x0, z0, y0, ux, uz)) { ancre = { h, x0, z0, y0, ux, uz }; break; }
+          }
+        }
+        if (ancre) break;
+      }
+      if (!ancre) return { err: `aucun couloir libre de quatorze blocs (${candidats} essayés)` };
+      {
+        const { y0, ux, uz } = ancre;
+        // l'avant du joueur est (−sin yaw, −cos yaw) : on vise (ux, uz)
+        g.player.yaw = Math.atan2(-ux, -uz); g.player.pitch = 0;
+        g.player.pos.set(ancre.x0, y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0); g.player.flying = false;
+        retirerVoiture();
+        g.animalManager.invoquer('voiture', g.player.pos.x + ux * 3, g.player.pos.z + uz * 3);
+        for (let essai = 0; essai < 8 && !auVolant(); essai++) {
+          await dormir(600);
+          if (!auVolant()) document.getElementById('ride-btn').click();
+          const t = performance.now();
+          while (!auVolant() && performance.now() - t < 2500) await dormir(200);
+        }
+        if (!auVolant()) { g.player.pos.copy(sauve); g.player.yaw = yaw0; return { err: 'pas monté' }; }
+        g.player.vel.set(0, 0, 0);
+        await dormir(400);
+      }
+      const { ux, uz } = ancre;
+      const dedans = (h) => {
+        const cap = g.player.yaw + Math.PI, cx = Math.sin(cap), cz = Math.cos(cap), vx = cz, vz = -cx;
+        const dx = h.pos.x - g.player.pos.x, dz = h.pos.z - g.player.pos.z;
+        return Math.abs(dx * cx + dz * cz) <= 2.2 && Math.abs(dx * vx + dz * vz) <= 1.13 && Math.abs(h.pos.y - g.player.pos.y) <= 2.5;
+      };
+      // ET L'ON NE CONCLUT PAS SUR UNE MESURE OÙ LA CIRCULATION EST VENUE
+      // (v272). Au portail : douze relevés avec une voiture de la rue à moins
+      // de huit blocs, 5,4 blocs d'avance pour une barre à six, ZÉRO traversée
+      // — la voiture de l'enfant s'est arrêtée devant une voiture de la rue
+      // (v245), pas devant un piéton, et le verdict jugeait une situation qui
+      // n'a pas eu lieu. `rueLibre` regarde le départ et l'arrivée AVANT de
+      // partir ; il ne peut rien contre un convoi qui arrive pendant les douze
+      // secondes. On recommence donc, au plus trois fois, et le nombre de
+      // tours part dans le message. Une traversée, elle, arrête tout de suite :
+      // un vrai défaut ne se rejoue pas jusqu'au vert.
+      let releves = 0, traverses = 0, ecartes = 0, voituresRue = 0, avance = 0, ecartMax = 0, tours = 0;
+      for (tours = 1; tours <= 3; tours++) {
+        g.player.pos.set(ancre.x0, ancre.y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0);
+        await dormir(400);
+        const xd = g.player.pos.x, zd = g.player.pos.z;
+        gens.forEach((h, k) => {
+          h.placeAt(xd + ux * (5 + 3 * k), zd + uz * (5 + 3 * k), g.player.pos.y);
+          h.poste.set(h.pos.x, h.pos.z); h.etat = 'pause'; h.minuteur = 30; h.pas = 0;
+        });
+        releves = 0; traverses = 0; ecartes = 0; voituresRue = 0;
+        g.player.keys.add('KeyW');
+        const t0 = performance.now();
+        while (performance.now() - t0 < 12000) {
+          await dormir(100);
+          releves++;
+          for (const h of gens) { if (dedans(h)) traverses++; if (h.ecart) ecartes++; }
+          if (g.vehicules.placeProche(g.player.pos, 8)) voituresRue++;
+        }
+        g.player.keys.delete('KeyW');
+        avance = +Math.hypot(g.player.pos.x - xd, g.player.pos.z - zd).toFixed(1);
+        ecartMax = +Math.max(...gens.map((h) => Math.abs((h.pos.x - xd) * uz - (h.pos.z - zd) * ux))).toFixed(2);
+        if (traverses > 0 || voituresRue === 0 || avance >= 6) break;
+      }
+      await descendre(); retirerVoiture();
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+      if (g.player.prendreGabarit && auVolant()) g.player.prendreGabarit(0);
+      return { candidats, tours, releves, traverses, ecartes, voituresRue, avance, ecartMax, encoreAuVolant: auVolant() };
+    });
+    verifier('la voiture de l\'enfant freine devant un piéton, qui s\'écarte, et elle repart sans lui passer au travers',
+      !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6,
+      JSON.stringify(roulant));
+
+    // ---- UNE HYPERCAR VA PLUS VITE QU'UNE CITADINE (v260) ------------------------
+    //
+    // Max : « les voitures devraient aller plus vite et surtout une vitesse en
+    // fonction du modèle (sportive faster than sedan basic) ». Toute voiture
+    // conduite roulait à ×3,4, quel que soit le modèle. On invoque une
+    // citadine et une Koenigsegg Jesko sur un terrain plat, loin des villes,
+    // on monte, on appuie, et l'on lit la VITESSE que l'enfant obtient
+    // (`player.vel`, avant collision) : la Jesko au moins 1,8 fois plus vite,
+    // et la citadine elle-même plus vite qu'avant (×3,4 = 10,9). Sur l'ancien
+    // code, les deux rendent 10,9. Le terrain plat se cherche à la lecture de
+    // `terrainHeight`, pure, sur trente blocs de ligne droite.
+    const alluresModeles = await tab.evaluate(async () => {
+      const g = window.__game;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const retirerVoitures = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
+      const descendre = async () => { for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(500); } };
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      // UNE DALLE, PAS UN CHAMP. Le relief naturel n'est jamais plat sur
+      // quarante blocs (« pas de champ plat » à la sonde, quatre cents
+      // essais) : on pose une dalle de pierre au-dessus du relief, loin de
+      // tout, comme les témoins du regard, et on la retire après.
+      const { BLOCK } = await import('./src/blocks.js');
+      const x0 = 30000, z0 = 30000;
+      let y0 = 0;
+      for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 3;
+      const dalle = [];
+      for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) { g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]); }
+      const champ = { x0, z0, y0 };
+      await dormir(1500);
+      const out = {};
+      for (const flotte of ['berline-citadine', 'koenigsegg-jesko.glb']) {
+        retirerVoitures();
+        g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;           // avant = +x
+        g.player.pos.set(champ.x0, champ.y0 + 1.5, champ.z0 + 0.5); g.player.vel.set(0, 0, 0);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
+        g.animalManager.invoquer('voiture', champ.x0 + 3, champ.z0 + 0.5, false, { flotte });
+        await dormir(800);
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(200); }
+        if (!auVolant()) { out[flotte] = { err: 'pas monté' }; continue; }
+        const monture = g.fun.montureConduite();
+        g.player.keys.add('KeyW');
+        // UNE VOITURE A DE L'INERTIE (v262), ET ELLE SE JOUE PAR IMAGE (dt
+        // borné) : au banc, deux images par seconde, la citadine met douze
+        // images — cinq secondes murales — à prendre son allure. On compte
+        // donc en SECONDES DE JEU, comme `avancerUnDemiSeconde` : une seconde
+        // et demie d'élan, puis les relevés sur une demi-seconde de jeu.
+        const enJeu = (n) => new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            if (cumul >= n) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        await enJeu(1.5);
+        const vitesses = [];
+        await new Promise((fin) => {
+          let cumul = 0, prec = performance.now();
+          const pas = (t) => {
+            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+            vitesses.push(Math.hypot(g.player.vel.x, g.player.vel.z));
+            if (cumul >= 0.5) fin(); else requestAnimationFrame(pas);
+          };
+          requestAnimationFrame(pas);
+        });
+        g.player.keys.delete('KeyW');
+        vitesses.sort((a, b) => a - b);
+        out[flotte] = { vitesse: +vitesses[Math.floor(vitesses.length / 2)].toFixed(1), max: +vitesses[vitesses.length - 1].toFixed(1), modele: monture.mesh && monture.mesh.userData ? monture.mesh.userData.flotte : null, boost: g.player.boost };
+        await descendre();
+      }
+      retirerVoitures();
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+      return out;
+    });
+    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
+    verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
+      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse >= cit.vitesse * 1.8,
+      JSON.stringify(alluresModeles));
+
+    // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
+    //
+    // Max : « s'assurer de le déployer sur l'ensemble des villes ». Les corps
+    // Rocketbox de la v241 se chargent pour tout le jeu et s'appliquent à toute
+    // tenue « passant » ; on le PROUVE ici, sur Paris, ville bâtie à la main et
+    // pas New York. Vert des deux côtés à dessein : c'est une capacité que
+    // Max a demandé de garantir, et un témoin la garde mieux qu'une phrase.
+    const corps = await tab.evaluate(() => {
+      const s2 = window.__game.passants.sites.find((x) => x.peuple);
+      const gens = s2.peuple.filter((q) => q.name === 'passant');
+      const realistes = gens.filter((q) => q.mesh?.userData?.anatomie === 'rocketbox-v241').length;
+      return { ville: s2.nom, humains: gens.length, realistes };
+    });
+    verifier('les passants ont des corps réalistes ailleurs qu\'à New York',
+      corps.humains >= 10 && corps.realistes === corps.humains, JSON.stringify(corps));
+
+    // ---- NI GUIMPE NI VOILE (v243) ---------------------------------------------
+    //
+    // Max : « enlève la femme avec le voile, ou retire le voile ». La dame du
+    // château (`dame`) portait une guimpe — le linge qui entoure le cou, le
+    // menton et le sommet de la tête — et la dame Renaissance (`robeRen`) un
+    // voile derrière son attifet. Les couleurs vivent dans les SOMMETS (leçon
+    // des visages, v215) : on compte, au-dessus du cou, les sommets de la
+    // couleur du linge, puis ceux de la couleur de la robe. Zéro des deux.
+    const voiles = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const { construireHumain } = await import('./src/personnages.js');
+      const compter = (profil, hex, yMin) => {
+        const g = construireHumain(profil);
+        g.updateMatrixWorld(true);
+        const cible = new THREE.Color(hex);
+        const v = new THREE.Vector3();
+        let n = 0;
+        g.traverse((o) => {
+          if (!o.isMesh || !o.geometry?.attributes?.color) return;
+          const pos = o.geometry.attributes.position, col = o.geometry.attributes.color;
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i); o.localToWorld(v);
+            if (v.y < yMin) continue;
+            if (Math.abs(col.getX(i) - cible.r) < 0.03 && Math.abs(col.getY(i) - cible.g) < 0.03 && Math.abs(col.getZ(i) - cible.b) < 0.03) n++;
+          }
+        });
+        return n;
+      };
+      return {
+        guimpe: compter({ tenue: 'dame', coupe: 'chignon', drap: 0x6a3a7a }, 0xe6dcc4, 1.38),
+        voile: compter({ tenue: 'robeRen', coupe: 'chignon', drap: 0x6a2f5a }, 0x6a2f5a, 1.59),
+      };
+    });
+    verifier('la dame du château n\'a plus de guimpe, et la dame Renaissance plus de voile',
+      voiles.guimpe === 0 && voiles.voile === 0,
+      `sommets de linge au-dessus du cou : ${voiles.guimpe} · sommets de voile au-dessus de la tête : ${voiles.voile}`);
+
+    // ---- LES VOITURES NE SE TRAVERSENT PLUS, ET ELLES TOURNENT (v244) ---------
+    //
+    // Max : « évite que les voitures puissent se chevaucher et fait en sorte
+    // que quand la voiture tourne, ce soit beaucoup plus naturel, avec une
+    // vraie inclinaison ». Trois mesures sur trente secondes à Paris, sur les
+    // voitures VISIBLES du convoi routier :
+    //   · un chevauchement est l'intersection VRAIE des deux rectangles
+    //     (4,4 × 2,26, orientés), par séparation d'axes — « à moins de
+    //     3,5 blocs » comptait deux files en sens inverse qui se frôlent ;
+    //   · un saut de cap est plus de trente-quatre degrés entre deux relevés
+    //     à deux cents millisecondes — un carrefour pris en une image ;
+    //   · le roulis se lit sur la MATRICE de la voiture : le haut du corps
+    //     penche du côté que le roulis annonce, et le roulis est posé vers
+    //     l'extérieur du virage.
+    // Mesuré : 78 chevauchements et 59 sauts sur l'ancien code ; 17 à 25
+    // et 1 à 2 ici, roulis 0,078 au pire coin. Les bornes se posent entre les
+    // deux dispersions, pas au meilleur relevé.
+    // On se place au-dessus de la circulation de Paris, là où la sonde a
+    // mesuré (22 à 24 voitures visibles) : le portail a rendu « maxVues 5 »
+    // depuis l'endroit où le témoin d'avant avait laissé l'enfant.
+    await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+    });
+    await tab.waitForFunction(() => (window.__vehicules.etat() || []).filter((c) => c.nom === 'voiture').reduce((n, c) => n + c.visibles, 0) >= 8,
+      null, { timeout: 30000 }).catch(() => {});
+    const voitures = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      const visibles = () => { const out = []; g.scene.traverse((o) => { if (o.userData && (o.userData.roues || o.userData.flotte) && o.visible && o.parent === g.scene) out.push(o); }); return out; };
+      const rect = (m) => { const cap = m.rotation.y - Math.PI, ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux, x = m.position.x, z = m.position.z;
+        return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
+      const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      let chevauchements = 0, sauts = 0, mesures = 0, penchees = 0, bonCote = 0, contraire = 0, maxRoulis = 0, maxVues = 0;
+      // LE DÉNOMINATEUR SE PUBLIE, SINON LE COMPTE NE SE DÉMONTE PAS (v277).
+      // Ce verdict rend un COMPTE absolu, et il varie de 0 à 53 sans qu'une
+      // ligne du jeu ait bougé — sept mesures, deux arbres, deux résolutions,
+      // barre à 45 au milieu de l'étendue. Un chevauchement est compté par
+      // (relevé × paire de voitures à moins de cinq blocs) : sans savoir
+      // combien de paires ont été EXAMINÉES, on ne peut pas dire si un chiffre
+      // qui monte veut dire « ça se chevauche plus » ou « il y avait plus de
+      // monde ». On publie donc `paires` et `releves` ; le verdict ne change
+      // pas encore — on ne pose pas une barre neuve sans avoir vu la
+      // distribution des deux côtés (v269).
+      let paires = 0, releves = 0;
+      const derniers = new Map();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const v = visibles(); maxVues = Math.max(maxVues, v.length); releves++;
+        for (let i = 0; i < v.length; i++) {
+          // Une rangée cachée puis rendue AILLEURS (la voiture i réapparaît là
+          // où le tracé l'a menée) n'est pas un virage : on ne compare le cap
+          // que si la voiture a roulé moins de deux blocs entre deux relevés.
+          // Et l'on juge en DEGRÉS PAR BLOC PARCOURU, pas par relevé : une
+          // voiture qui rattrape son retard à une fois et demie l'allure
+          // tourne plus vite par seconde, pas par mètre. Sur l'empattement,
+          // un coin de 90° tourne au plus 36° par bloc, et le virage le plus
+          // serré qu'un circuit autorise (150°) environ 70° ; l'ancien code
+          // pivotait de 90° en un cinquième de bloc, soit plus de 400° par
+          // bloc. La barre, 115° par bloc, sépare les deux dispersions.
+          const prev = derniers.get(v[i]); const cap = v[i].rotation.y;
+          if (prev !== undefined) {
+            const roule = v[i].position.distanceTo(prev.pos);
+            if (roule >= 0.3 && roule < 2) { let e = Math.abs(cap - prev.cap); while (e > Math.PI) e = Math.abs(e - 2 * Math.PI); mesures++; if (e / roule > 2.0) sauts++; }
+          }
+          derniers.set(v[i], { cap, pos: v[i].position.clone() });
+          const r = v[i].rotation.z || 0;
+          if (Math.abs(r) >= 0.01 && Math.abs(v[i].position.y - g.player.pos.y) < 40) {
+            penchees++; maxRoulis = Math.max(maxRoulis, Math.abs(r));
+            const c = v[i].rotation.y - Math.PI, gauche = new THREE.Vector3(Math.cos(c), 0, -Math.sin(c));
+            const haut = new THREE.Vector3(0, 1, 0).applyQuaternion(v[i].quaternion);
+            if ((r < 0) === (haut.dot(gauche) < 0)) bonCote++; else contraire++;
+          }
+          for (let j = i + 1; j < v.length; j++) {
+            if (Math.abs(v[i].position.y - v[j].position.y) > 2.5) continue;
+            if (v[i].position.distanceTo(v[j].position) >= 5) continue;
+            paires++;                                 // le DÉNOMINATEUR, publié
+            if (!separes(rect(v[i]), rect(v[j]))) chevauchements++;
+          }
+        }
+      }
+      return { maxVues, chevauchements, paires, releves,
+        taux: paires ? +(chevauchements / paires * 100).toFixed(1) : null,
+        ou: [Math.round(g.player.pos.x), Math.round(g.player.pos.z)],
+        mesures, sauts, penchees, bonCote, contraire, maxRoulis: +maxRoulis.toFixed(3) };
+    });
+    verifier('les voitures ne se traversent plus',
+      voitures.maxVues >= 8 && voitures.chevauchements <= 45, JSON.stringify(voitures));
+
+    // ---- UN CONVOI NE SE TÉLESCOPE PAS (v283) --------------------------------
+    //
+    // Max signale depuis plusieurs versions des voitures qui se traversent, et
+    // le témoin d'au-dessus ne peut pas trancher : il rend un COMPTE absolu
+    // d'instants sur une fenêtre de trente secondes de MONTRE, et il varie de
+    // 0 à 53 sans qu'une ligne du jeu ait bougé — sa barre (45) tombe DANS son
+    // étendue naturelle. Ce n'est pas un gardien, c'est un tirage (v277).
+    //
+    // Ce qui NE dépend d'aucun relevé intermédiaire et d'aucune cadence, c'est
+    // une BORNE que la géométrie garantit : deux voisines d'un même convoi ne
+    // peuvent pas être à moins d'une longueur de voiture l'une de l'autre.
+    // On mesure donc le MINIMUM sur toute la fenêtre, et deux fois :
+    //   · `ecarts`, l'écart le long du tracé, publié par `vehicules.etat()` là
+    //     où il se calcule — exact, au centième, et c'est lui que la borne
+    //     garantit ; absent sur l'ancien code, qui ne le publiait pas ;
+    //   · la distance VRAIE entre les deux centres rendus, qui se mesure des
+    //     DEUX côtés. Sur un virage c'est la corde, donc un peu moins que
+    //     l'écart le long du tracé : c'est la marge qu'il faut connaître avant
+    //     de poser une barre, et elle est dans le message.
+    const teles = await tab.evaluate(async () => {
+      const g = window.__game;
+      let minTrace = Infinity, minVrai = Infinity, releves = 0, paires = 0;
+      let ouTrace = null, ouVrai = null, publie = false;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const cs = (window.__vehicules.etat() || []).filter((c) => c.routier);
+        if (!cs.length) continue;
+        releves++;
+        for (const c of cs) {
+          if (Array.isArray(c.ecarts) && c.ecarts.length) {
+            publie = true;
+            for (let i = 0; i < c.ecarts.length; i++) {
+              if (c.ecarts[i] < minTrace) { minTrace = c.ecarts[i]; ouTrace = [c.nom, i, c.ecart]; }
+            }
+          }
+          // les places sont [x, z, cap, i, retard, attend] — on apparie par
+          // indice CONSÉCUTIF dans le même convoi, la seule paire qui se suit
+          const par = new Map(c.places.map((p) => [p[3], p]));
+          for (const [i, a] of par) {
+            const b = par.get(i + 1);
+            if (!b) continue;
+            paires++;
+            const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+            if (d < minVrai) { minVrai = d; ouVrai = [c.nom, i, +d.toFixed(2)]; }
+          }
+        }
+      }
+      return {
+        publie, releves, paires,
+        minTrace: minTrace === Infinity ? null : +minTrace.toFixed(2),
+        minVrai: minVrai === Infinity ? null : +minVrai.toFixed(2),
+        ouTrace, ouVrai, ou: [Math.round(g.player.pos.x), Math.round(g.player.pos.z)],
+      };
+    });
+    // La borne est la LONGUEUR d'une voiture, lue là où elle se calcule
+    // (`DEMI_LONG_VOITURE` × 2 = 4,4) : c'est une géométrie, pas un réglage.
+    // La borne de garde des relevés est à la MOITIÉ du plus petit relevé vu sur
+    // du code sain, jamais à quatre-vingt-dix pour cent (v237) — et le nombre
+    // de paires examinées entre dans le message, sinon le rouge ne se démonte
+    // pas (v277).
+    verifier('deux voisines d\'un convoi gardent leur longueur d\'écart',
+      teles.publie && teles.paires >= 100 && teles.minTrace !== null && teles.minTrace >= 4.4 - 0.01,
+      JSON.stringify(teles));
+    // La borne de garde des relevés est à la MOITIÉ du plus petit relevé
+    // mesuré sur du code sain (490 à 2 372 selon la cadence du banc), jamais
+    // à quatre-vingt-dix pour cent : à 500 elle est tombée au portail de la
+    // v255 sur 490 relevés et ZÉRO saut — c'est le piège des trois bornes de
+    // ce fichier (v237), une quatrième fois.
+    //
+    // ET LE BANC A ENCORE RALENTI : 250 est tombée aux portails de la v264
+    // (73 relevés) et de la v265 (92, puis 203), toujours avec ZÉRO saut.
+    // C'est la CINQUIÈME fois, et la leçon ne change pas : une borne de
+    // garde ne dit pas « la mesure est bonne », elle dit « la mesure a eu
+    // lieu ». Cent : à deux cents relevés on verrait un saut s'il y en avait
+    // un, et une sonde qui n'a rien mesuré rend zéro.
+    verifier('et elles tournent progressivement, sans pivoter d\'un coup au carrefour',
+      voitures.mesures > 100 && voitures.sauts <= 8, `${voitures.sauts} relevé(s) à plus de 115° par bloc sur ${voitures.mesures}`);
+    verifier('et elles s\'inclinent dans le virage, du bon côté',
+      voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
+      `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
+
     // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
     //
     // Max, après la v217 : la ville reste habitée, mais l'enfant ne VOIT
@@ -1042,6 +2369,21 @@ async function avancerUnDemiSeconde(p, depart) {
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
       const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
       const vus = [];
+      const attentes = [];
+      // COMBIEN DE PASSANTS SONT DANS LE CADRE, ICI, MAINTENANT.
+      const dansLeCadre = (dx, dz) => {
+        let n = 0;
+        for (const q of g.npcs) {
+          if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
+          if (!(q.mesh && q.mesh.visible)) continue;
+          const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
+          const dd = Math.hypot(ex, ez);
+          if (dd >= 62 || dd < 1) continue;
+          const cos = (ex * dx + ez * dz) / dd;
+          if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+        }
+        return n;
+      };
       for (const [, a, b] of trajets) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
@@ -1053,24 +2395,32 @@ async function avancerUnDemiSeconde(p, depart) {
           g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
           g.player.vel.set(0, 0, 0);
           g.player.yaw = yaw;
-          // La boucle des passants passe toutes les deux secondes ; on lui en
-          // laisse sept, le temps de peupler progressivement la rue suivante.
-          await new Promise((r) => setTimeout(r, 7000));
-          let n = 0;
-          for (const q of g.npcs) {
-            if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
-            if (!(q.mesh && q.mesh.visible)) continue;
-            const ex = q.pos.x - g.player.pos.x, ez = q.pos.z - g.player.pos.z;
-            const dd = Math.hypot(ex, ez);
-            if (dd >= 62 || dd < 1) continue;
-            const cos = (ex * dx + ez * dz) / dd;
-            if (Math.acos(Math.max(-1, Math.min(1, cos))) <= demi) n++;
+          // ON ATTEND QUE LA RUE SE PEUPLE, ON NE DORT PLUS SEPT SECONDES
+          // (v277). La boucle des passants passe toutes les deux secondes en
+          // temps RÉEL depuis la v226 ; sept secondes par arrêt, à dix arrêts,
+          // faisaient soixante-dix secondes de sommeil pour un témoin qui en
+          // coûte cinquante-six.
+          //
+          // La borne ne change pas — sept secondes —, et c'est elle qui garde
+          // le rouge : une rue qui ne se peuple PAS est constatée exactement
+          // comme avant. Ce qui change est la sortie anticipée, et sa cible est
+          // QUATRE, c'est-à-dire un de plus que la barre du verdict
+          // (`moyenne >= 3`) : sortir à trois rendrait une moyenne sans marge,
+          // et une sortie anticipée ne doit jamais rapprocher un vert de sa
+          // barre. Le temps pris entre dans le message, réussite comme échec.
+          const finArret = Date.now() + 7000;
+          let n = dansLeCadre(dx, dz);
+          while (n < 4 && Date.now() < finArret) {
+            await new Promise((r) => setTimeout(r, 500));
+            n = dansLeCadre(dx, dz);
           }
+          attentes.push(+((7000 - Math.max(0, finArret - Date.now())) / 1000).toFixed(1));
           vus.push(n);
         }
       }
       return { vus, vides: vus.filter((n) => n === 0).length,
-        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2) };
+        moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2),
+        attendu: +attentes.reduce((s, t) => s + t, 0).toFixed(1) };
     });
     // Le verdict porte sur les ARRÊTS VIDES, pas sur la moyenne : c'est de
     // marcher dans une rue déserte qu'un enfant se plaint, et un creux ne se
@@ -1093,7 +2443,23 @@ async function avancerUnDemiSeconde(p, depart) {
     // Ce que le témoin éprouve, c'est le fait, pas la conséquence : aucun
     // personnage au-delà de la portée ne doit rester dessiné. Le nombre
     // d'appels dépend d'où l'on regarde ; celui-ci, non.
-    const auLoin = await tab.evaluate(async () => {
+    // ET IL ATTEND SON PROPRE FONDU, IL NE L'EMPRUNTE PLUS À SON VOISIN (v277).
+    //
+    // Ce témoin lisait `mesh.visible` dans la foulée, et il était vert — parce
+    // que le témoin d'AU-DESSUS dormait sept secondes à son dernier arrêt.
+    // Rendues au résultat (la rue attend d'être peuplée, plus de sommeil fixe),
+    // il est devenu rouge à QUATRE dessinés sur cent trente-trois, aux deux
+    // résolutions : ce n'était donc pas la cadence, c'était moi. `presence.js`
+    // fond sur huit dixièmes de seconde et la visibilité se recopie à l'image
+    // d'APRÈS (v249) ; un personnage qu'on vient d'éloigner est encore dessiné.
+    //
+    // La leçon est plus large que le correctif : **une dépendance implicite
+    // entre deux témoins voisins est invisible tant que le premier dort.** Ce
+    // qu'un témoin exige de l'état du monde, il l'attend lui-même — et il
+    // l'attend en BORNANT, de sorte qu'un vrai défaut (des lointains qu'on ne
+    // cache jamais) rougit encore au bout de la borne. Le temps pris entre dans
+    // le message, réussite comme échec.
+    const lireLoin = () => tab.evaluate(async () => {
       const { DISTANCE_PRESENCE } = await import('./src/presence.js');
       const g = window.__game;
       const px = g.player.pos.x, pz = g.player.pos.z;
@@ -1105,9 +2471,17 @@ async function avancerUnDemiSeconde(p, depart) {
       }
       return { dessinesLoin, dessinesPres, loin, total: (g.npcs || []).length };
     });
+    const finFondu = Date.now() + 6000;
+    let auLoin = await lireLoin();
+    while (auLoin.dessinesLoin > 0 && Date.now() < finFondu) {
+      await dormir(250);
+      auLoin = await lireLoin();
+    }
+    auLoin.fondu = +((6000 - Math.max(0, finFondu - Date.now())) / 1000).toFixed(1);
     verifier('et les personnages lointains ne sont plus dessinés du tout',
       auLoin.loin >= 20 && auLoin.dessinesLoin === 0,
-      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`);
+      `${auLoin.dessinesLoin} dessiné(s) sur ${auLoin.loin} au-delà du fondu`
+      + ` (fondu attendu ${auLoin.fondu} s)`);
     // L'autre moitié de la promesse : on n'a pas vidé la rue pour autant.
     verifier('mais ceux d\'à côté sont toujours là',
       auLoin.dessinesPres >= 3,
@@ -1173,9 +2547,9 @@ async function avancerUnDemiSeconde(p, depart) {
     // tout ce qui bouge.
     const dansLEau = await tab.evaluate(async () => {
       const { BLOCK } = await import('./src/blocks.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
       const g = window.__game;
       if (!g.poissons) return null;
-      const { WATER_LEVEL } = await import('./src/world.js');
       const compter = async (tours) => {
         let pire = 0, releves = 0, fautifs = 0;
         for (let k = 0; k < tours; k++) {
@@ -1309,16 +2683,670 @@ async function avancerUnDemiSeconde(p, depart) {
     });
     // les convois naissent à l'approche du joueur, par paquets de deux
     // secondes et demie : on les attend, on ne les suppose pas
+    // SIX À LA FOIS, PAS HUIT (v244). Vingt voitures sur une boucle de six
+    // cents blocs, c'est une tous les trente blocs : à quarante-cinq blocs du
+    // centre, deux anneaux en donnent six au plus, et c'est ce que la sonde
+    // mesure des deux côtés, sur `origin/main` comme ici — quatre à six,
+    // jamais huit. Le « huit » ne tenait qu'à la PHASE des convois au moment
+    // où l'enfant arrive : un pile ou face qui a gagné pendant des versions et
+    // qui a perdu le jour où trois témoins de plus l'ont précédé. Rouge
+    // garanti sur l'ancien code tout de même : là, Moscou n'avait AUCUNE
+    // voiture.
     const circulation = await tab.waitForFunction(() => {
       const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
       const autos = etat.filter((c) => c.nom === 'voiture');
       const visibles = autos.reduce((n, c) => n + c.visibles, 0);
-      return visibles >= 8 ? { anneaux: autos.length, visibles } : null;
-    }, null, { timeout: 30000 }).then((h) => h.jsonValue()).catch(() => null);
+      return visibles >= 6 ? { anneaux: autos.length, visibles } : null;
+    }, null, { timeout: 45000 }).then((h) => h.jsonValue()).catch(() => null);
     verifier('à Moscou, traversée par son fleuve, les rues sont pleines de voitures',
       !!circulation,
       circulation ? `${circulation.visibles} voitures visibles sur ${circulation.anneaux} anneaux`
-        : 'moins de huit voitures visibles en trente secondes');
+        : 'moins de six voitures visibles en quarante-cinq secondes');
+
+    // ---- LA DIVERSITÉ DES VOITURES, DANS TOUTES LES VILLES (v246) -----------
+    //
+    // Max : « assure-toi que toutes les villes ont de la diversité dans les
+    // voitures ». Deux défauts : la graine d'un convoi valait « nombre de
+    // points du tracé + rang », si bien que les villes engendrées, aux
+    // anneaux semblables, tiraient les MÊMES vingt modèles dans le même
+    // ordre ; et un modèle de la flotte arrivait toujours dans SA couleur
+    // cuite dans le fichier — vingt Bugatti bleues dans vingt villes.
+    //
+    // ON LIT CE QUE L'ENFANT VOIT À MOSCOU : la livrée (modèle + laque) de
+    // chaque voiture visible. Au moins six voitures, au moins quatre modèles
+    // et trois laques différentes. L'ancien code ne publie pas ses livrées :
+    // rouge, et le message le dit.
+    const livrees = await tab.waitForFunction(() => {
+      const etat = (window.__vehicules.etat && window.__vehicules.etat()) || [];
+      const l = [];
+      etat.forEach((c) => c.routier && (c.livrees || []).forEach((x) => l.push(x)));
+      return l.length >= 6 ? l : null;
+    }, null, { timeout: 30000, polling: 500 }).then((h) => h.jsonValue()).catch(() => null);
+    const diversiteVilles = livrees ? {
+      visibles: livrees.length,
+      modeles: new Set(livrees.map((x) => x.split(':')[0])).size,
+      laques: new Set(livrees.map((x) => x.split(':')[1])).size,
+      exemples: livrees.slice(0, 6),
+    } : null;
+    verifier('à Moscou, les voitures visibles sont de modèles ET de couleurs différents',
+      !!diversiteVilles && diversiteVilles.modeles >= 4 && diversiteVilles.laques >= 3,
+      diversiteVilles ? JSON.stringify(diversiteVilles) : 'le jeu ne publie pas la livrée de ses voitures');
+
+    // ET LA RÈGLE PURE : deux villes engendrées aux anneaux semblables — même
+    // nombre de points, même rang — reçoivent deux graines différentes, donc
+    // deux files de modèles différentes. On la calcule sur les vraies tracés
+    // du monde, sans rien bâtir.
+    const graines = await tab.evaluate(async () => {
+      const v = await import('./src/vehicules.js');
+      const vm = await import('./src/villesmonde.js');
+      if (!v.graineDeVille || !v.choixFlotte) return { err: 'graineDeVille absente : la graine vient encore de la file' };
+      const g = window.__game;
+      const traces = vm.tracesCirculation((x, z) => g.world.terrainHeight(x, z));
+      const parForme = {};
+      for (const t of traces) (parForme[`${t.pts.length}:${t.rang}`] ||= []).push(t);
+      const paire = Object.values(parForme).find((l) => l.length >= 2);
+      if (!paire) return { err: 'aucune paire de villes aux anneaux semblables' };
+      const fiche = (t) => {
+        const graine = v.graineDeVille(t);
+        return { ville: t.cle, graine, modeles: Array.from({ length: 6 }, (_, i) => v.choixFlotte(graine * 7 + i * 17, t.ville).fichier) };
+      };
+      return { a: fiche(paire[0]), b: fiche(paire[1]) };
+    });
+    verifier('deux villes aux anneaux semblables ne tirent pas la même file de voitures',
+      !graines.err && graines.a.graine !== graines.b.graine
+        && graines.a.modeles.join() !== graines.b.modeles.join(),
+      JSON.stringify(graines));
+
+    // ---- LES PROGRAMMES DE LA FLOTTE SE COMPILENT À L'ACCUEIL (v246) --------
+    //
+    // Max : « le lag est bien présent quand on fait une téléportation, à peu
+    // près dix secondes ». Profil de l'arrivée à Paris : seize programmes
+    // avant, trente-six après — chaque modèle de voiture rencontré pour la
+    // première fois apporte ses matériaux, chaque signature son programme,
+    // compilé DANS l'image où la voiture apparaît. Une seconde et demie au
+    // banc ; sur une tablette, l'écran qui se fige.
+    //
+    // ON MESURE LA CAUSE, PAS L'EFFET : le nombre de programmes que la carte
+    // graphique compile APRÈS la téléportation. Le banc rend en logiciel et
+    // ne peut pas subir le gel comme l'iPad ; le compte de programmes, lui,
+    // sépare vingt de zéro. Et sur une PAGE NEUVE : sur celle-ci les voitures
+    // ont déjà été vues à Rome et à Moscou, et le témoin serait vert des
+    // deux côtés. On attend que le compte se stabilise (la chauffe comprise),
+    // on se téléporte à Paris, on compte vingt secondes plus tard — et l'on
+    // vérifie que le RENDU a tourné : une boucle morte rend zéro programme
+    // neuf et ne prouve rien (vu au banc, sur une erreur de ma livraison).
+    await souffler();
+    const arrivee = await banc.jouerSeul('MonteArrivee', { rr: 6 });
+    const programmes = await arrivee.evaluate(async () => {
+      const g = window.__game;
+      const info = g.renderer.info;
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      let n = info.programs.length, stable = 0;
+      const t0 = performance.now();
+      while (stable < 3 && performance.now() - t0 < 40000) {
+        await dodo(1000);
+        if (info.programs.length === n) stable++; else { stable = 0; n = info.programs.length; }
+      }
+      const avant = info.programs.length;
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      const f0 = info.render.frame;
+      window.__carte.surTeleport(P.x + 20, P.z - 30);
+      await dodo(20000);
+      return { avant, neufs: info.programs.length - avant, images: info.render.frame - f0,
+        chunks: g.world.chunks.size, arrive: Math.hypot(g.player.pos.x - P.x, g.player.pos.z - P.z) < 60 };
+    });
+    await arrivee.close();
+    // ET LA BORNE DE GARDE ÉTAIT AU-DESSUS DE CE QU'ON MESURE — QUATRIÈME FOIS
+    // DANS CE FICHIER (v282). `images > 30` disait « la boucle de rendu vit »,
+    // parce qu'une sonde de fluidité doit d'abord vérifier que le jeu tourne
+    // (v246 : elle avait rendu 60 images par seconde sur une boucle MORTE). Mais
+    // trente est au-dessus de la fenêtre normale : relevé sur sept passages —
+    // deux portails et deux rejeux seuls, des deux côtés — ce témoin rend 22,
+    // 22, 28, 28, 28, 28 et 42 images. Il tombait donc SIX fois sur sept sur sa
+    // garde, pendant que la mesure qu'il garde était parfaite (`neufs: 0`,
+    // c'est-à-dire aucun programme compilé à l'arrivée).
+    //
+    // Ce qu'une borne de garde doit séparer, c'est « ça s'est passé » de « rien
+    // ne s'est passé », et une page morte rend ZÉRO. Dix est sous la moitié du
+    // pire relevé et très loin de zéro. Les quatre autres bornes de garde du
+    // fichier ont été relues dans la même passe, avec les valeurs mesurées en
+    // face — `memoire.parcouru > 500` pour 722 et 744, `fil.parcouru > 40` pour
+    // 66, `poteau.parcouru > 2` pour 3,69, `secousses.images > 30` pour 73 et
+    // 74 : toutes entre 0,41 et 0,69 de la mesure, donc à leur place. C'est la
+    // consigne de la v237, qui avait coûté deux portails pour avoir corrigé une
+    // borne en laissant ses deux voisines intactes.
+    verifier('se téléporter à Paris ne compile plus les programmes des voitures sur place',
+      programmes.arrive && programmes.images > 10 && programmes.neufs <= 4,
+      JSON.stringify(programmes));
+
+    // ET LA TABLE DES SIGNATURES DIT CE QUE LES FICHIERS CONTIENNENT. La
+    // chauffe compile les signatures de `src/signatures.js` ; ce témoin LIT
+    // les soixante et un fichiers .glb du dépôt avec la même règle et exige
+    // l'égalité des deux ensembles — ni signature manquante (elle se
+    // compilerait à l'arrivée en ville), ni signature morte (un programme
+    // chauffé pour rien). Le jour où Max dépose un modèle d'une autre
+    // facture, c'est ici que cela se voit, et le message nomme la signature.
+    const signatures = await (async () => {
+      let mod;
+      try { mod = await import('../src/signatures.js'); } catch (e) {
+        return { err: 'src/signatures.js absent : les programmes ne sont pas chauffés à l\'accueil' };
+      }
+      const fs = require('fs');
+      const path = require('path');
+      const lues = new Set();
+      for (const [dossier, env] of [['../vendor/voitures', true], ['../vendor/humains', false]]) {
+        const d = path.join(__dirname, dossier);
+        for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.glb'))) {
+          const sigs = mod.signaturesDuGlb(mod.jsonDuGlb(fs.readFileSync(path.join(d, f))), { env });
+          for (const sg of sigs) lues.add(sg);
+        }
+      }
+      const table = new Set(mod.SIGNATURES_GLB);
+      return { lues: lues.size,
+        manquantes: [...lues].filter((sg) => !table.has(sg)),
+        mortes: [...table].filter((sg) => !lues.has(sg)) };
+    })();
+    verifier('la table des programmes à chauffer est exactement ce que les fichiers des voitures et des humains contiennent',
+      !signatures.err && signatures.lues >= 15
+        && signatures.manquantes.length === 0 && signatures.mortes.length === 0,
+      JSON.stringify(signatures));
+
+    // ---- LE REGARD DE NEW YORK, PARTOUT (v247) --------------------------------
+    //
+    // Max : « regarde les améliorations qu'il y a encore eu dans la ville de
+    // New York et reproduis-les sur l'ensemble de la carte ». Manhattan était
+    // éclairée par le soleil, portait des ombres et passait par une
+    // correspondance tonale ; le reste du monde était un matériau NON
+    // ÉCLAIRÉ, dont la teinte servait de lumière : une façade au soleil et une
+    // façade à l'ombre avaient la même couleur, rien ne portait d'ombre, et le
+    // ciel était une couleur unie.
+    //
+    // ON MESURE CE QUE L'ENFANT VOIT : des PIXELS, lus dans l'image rendue,
+    // jamais un type de matériau. On dresse un pilier de pierre sur une dalle
+    // de pierre, loin de tout, et l'on compare la luminance du sol dans son
+    // ombre à celle du sol au soleil ; puis sa face est à sa face ouest, le
+    // matin et le soir ; puis le zénith à l'horizon. Sur l'ancien code les
+    // trois rapports valent un.
+    //
+    // SUR UNE PAGE À PART, OMBRES FORCÉES. Le jeu coupe ses ombres en rendu
+    // logiciel — le banc — parce que la passe d'ombre y double le temps
+    // d'image et faisait tomber quatre bornes de garde d'autres témoins
+    // (blocs parcourus en vol, relevés de virage). `ombres=1` les rallume
+    // ici, et ici seulement ; l'ancien code ignore le paramètre.
+    await souffler();
+    const regardPage = await banc.jouerSeul('MonteRegard', { rr: 4, ombres: 1 });
+    const regard = await regardPage.evaluate(async () => {
+      const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
+      const THREE = await import('three');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // une dalle au sec, loin des villes et de ce que les enfants ont bâti
+      let x0 = 0, z0 = 20000, sol = 0;
+      for (let k = 0; k < 40; k++) { sol = w.terrainHeight(x0, z0); if (sol >= 36) break; x0 += 60; }
+      for (let c = -7; c <= 7; c++) for (let d = -7; d <= 7; d++) {
+        for (let h = -4; h <= 0; h++) w.setBlock(x0 + c, sol + h, z0 + d, 3);
+        for (let h = 1; h <= 18; h++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
+      }
+      for (let h = 1; h <= 12; h++) w.setBlock(x0, sol + h, z0, 3);
+      g.player.flying = true; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(x0 + 2.5, sol + 12, z0 + 6);
+      const gl = r.getContext();
+      const lire = (X, Y, Z) => {
+        const v = new THREE.Vector3(X, Y, Z).project(cam);
+        const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+        const sx = Math.round((v.x + 1) / 2 * W), sy = Math.round((1 - v.y) / 2 * H);
+        if (sx < 3 || sy < 3 || sx > W - 4 || sy > H - 4) return -1;
+        const buf = new Uint8Array(4 * 25);
+        gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        let l = 0;
+        for (let i = 0; i < 25; i++) l += 0.2126 * buf[i * 4] + 0.7152 * buf[i * 4 + 1] + 0.0722 * buf[i * 4 + 2];
+        return l / 25;
+      };
+      const vue = async (heure, de, vers, points) => {
+        window.__setDayTime(heure);
+        await dodo(400);
+        cam.position.set(de[0], de[1], de[2]);
+        cam.lookAt(vers[0], vers[1], vers[2]);
+        cam.updateMatrixWorld(true);
+        r.render(g.scene, cam);
+        return points.map((pt) => +lire(pt[0], pt[1], pt[2]).toFixed(1));
+      };
+      // ON ATTEND QUE LA DALLE SOIT LÀ, BORNÉ — ET LE TEMPS PRIS ENTRE DANS LE
+      // MESSAGE (v270, v272). Ce témoin dormait 2500 ms et lisait, SANS AUCUNE
+      // borne de garde : il ne distinguait donc pas « la dalle n'a pas d'ombre »
+      // de « la dalle n'est pas encore dessinée ». Au portail de la v284 il a
+      // rendu `ombre 168.4 · soleil 168.4` — la MÊME valeur aux deux points, et
+      // 168,4 n'est la valeur d'aucune dalle : les deux témoins verts d'à côté,
+      // au même passage, ont mesuré le ciel à 155,8 au zénith et 180,8 à
+      // l'horizon. Les deux points lisaient le CIEL à travers un morceau non
+      // maillé. C'est « `null` n'est pas un verdict, c'est une absence de
+      // mesure » (v272) appliqué à un PIXEL.
+      //
+      // ET L'ON N'ATTEND PAS LE VERDICT, ON ATTEND LA SITUATION. Attendre que
+      // le rapport passe sous 0,8 serait relancer jusqu'au vert, et cela
+      // blanchirait pour toujours le code que ce témoin doit accuser. Ce qu'on
+      // attend, c'est un FAIT DU MONDE : les neuf morceaux autour de la dalle
+      // maillés, et trois lectures qui ont cessé de changer. Sur un code sans
+      // ombres la dalle se maille et les lectures se stabilisent tout autant —
+      // l'attente rend donc la main, et le verdict est rouge. VÉRIFIÉ, pas
+      // raconté (règle v276), deux pages dans le même passage :
+      //   ombres=1 → main rendue en 3 685 ms, 9/9 maillés, 58,4 · 103,5 = 0,56
+      //   ombres=0 → main rendue en 3 193 ms, 9/9 maillés, 101,3 · 103,5 = 0,98
+      // ET CE RELEVÉ PORTE LA PREUVE DE CE QUI S'EST PASSÉ AU PORTAIL : une
+      // dalle privée d'ombre lit CENT UN, pas cent soixante-huit. Le 168,4 ne
+      // pouvait donc pas être une dalle non ombrée.
+      const cleDalle = (dc, dz) => `${Math.floor(x0 / 16) + dc},${Math.floor(z0 / 16) + dz}`;
+      const releve = async () => {
+        window.__setDayTime(0.25);
+        cam.position.set(x0 + 2.5, sol + 17, z0 + 5.5);
+        cam.lookAt(x0 + 2.5, sol + 1, z0 + 3);
+        cam.updateMatrixWorld(true);
+        r.render(g.scene, cam);
+        let voisins = 0;
+        for (const dc of [-1, 0, 1]) for (const dz of [-1, 0, 1])
+          if (g.chunkMeshes && g.chunkMeshes.has && g.chunkMeshes.has(cleDalle(dc, dz))) voisins++;
+        return { a: lire(x0 + 0.5, sol + 1, z0 + 3.5), b: lire(x0 + 4.5, sol + 1, z0 + 3.5),
+          p: lire(x0 + 0.5, sol + 8, z0 + 0.5), voisins };
+      };
+      const departDalle = performance.now();
+      let vu = await releve(), stable = 0, tours = 0;
+      while (performance.now() - departDalle < 30000) {
+        await dodo(500);
+        const neuf = await releve();
+        tours++;
+        stable = (neuf.voisins === 9 && neuf.a === vu.a && neuf.b === vu.b && neuf.p === vu.p) ? stable + 1 : 0;
+        vu = neuf;
+        if (stable >= 2) break;                   // deux relevés identiques de suite
+      }
+      const dalle = { ms: Math.round(performance.now() - departDalle), tours,
+        voisins: vu.voisins, stable, pilier: vu.p };
+      // midi : le soleil est haut, légèrement vers −z ; l'ombre du pilier
+      // tombe vers +z. Sol dans l'ombre à trois blocs, sol au soleil quatre
+      // blocs plus à l'est, même dalle, même occlusion (loin du pilier).
+      const [ombre, soleil] = await vue(0.25, [x0 + 2.5, sol + 17, z0 + 5.5], [x0 + 2.5, sol + 1, z0 + 3],
+        [[x0 + 0.5, sol + 1, z0 + 3.5], [x0 + 4.5, sol + 1, z0 + 3.5]]);
+      // matin : le soleil est à l'est, la face +x du pilier est au soleil ;
+      // soir : à l'ouest, c'est la face −x. Une caméra de chaque côté.
+      const est = async (heure) => (await vue(heure, [x0 + 7, sol + 7, z0 + 0.5], [x0 + 1, sol + 7, z0 + 0.5], [[x0 + 1, sol + 7, z0 + 0.5]]))[0];
+      const ouest = async (heure) => (await vue(heure, [x0 - 6, sol + 7, z0 + 0.5], [x0, sol + 7, z0 + 0.5], [[x0, sol + 7, z0 + 0.5]]))[0];
+      const matin = { est: await est(0.08), ouest: await ouest(0.08) };
+      const soir = { est: await est(0.42), ouest: await ouest(0.42) };
+      // midi, regard vers le haut, dos au soleil : le haut de l'écran est
+      // presque au zénith, le bas à une quinzaine de degrés sur l'horizon
+      window.__setDayTime(0.25);
+      await dodo(400);
+      cam.position.set(x0 + 0.5, sol + 30, z0 + 0.5);
+      cam.lookAt(x0 + 0.5, sol + 40, z0 + 8);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const pix = (sx, sy) => { const b = new Uint8Array(4 * 25); gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, b); let l = 0; for (let i = 0; i < 25; i++) l += 0.2126 * b[i * 4] + 0.7152 * b[i * 4 + 1] + 0.0722 * b[i * 4 + 2]; return +(l / 25).toFixed(1); };
+      const ciel = { zenith: pix(Math.round(W / 2), 6), bas: pix(Math.round(W / 2), H - Math.round(H / 6)) };
+      // ---- UN RÉVERBÈRE ÉCLAIRE SON SOL LA NUIT (v248) --------------------
+      // L'enfant pose un réverbère (le prop 🛞 de l'inventaire, le même que
+      // les villes plantent) sur la dalle, et la nuit tombe. On lit le sol à
+      // son pied et le sol huit blocs plus loin, sur la même dalle, depuis la
+      // même caméra. Sur l'ancien code la lanterne est un bloc peint, et les
+      // deux points ont la même luminance : rapport un.
+      const lx = x0 + 6, lz = z0 - 5;
+      w.setBlock(lx, sol + 1, lz, 700);
+      window.__setDayTime(0.76);
+      await dodo(3000);                                   // remaillage, puis la cadence des lampes
+      cam.position.set(lx + 0.5, sol + 14, lz + 4);
+      cam.lookAt(lx + 0.5, sol + 1, lz + 4);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const lampe = { pied: +lire(lx + 1, sol + 1, lz + 0.5).toFixed(1), loin: +lire(lx + 0.5, sol + 1, lz + 8.5).toFixed(1),
+        allumees: (g.lampesRue || []).filter((l) => l.intensity > 0).length };
+      // ---- LA NUIT, UNE RUE DANS L'OMBRE DE LA LUNE RESTE LISIBLE (v249) ---
+      // Max, capture d'iPad : « Paris est dans le noir ». Un mur de pierre de
+      // huit blocs fait une façade ; le sol dans son ombre de lune est la rue
+      // entre deux immeubles, celle que l'enfant voit sur sa tablette — où
+      // les ombres existent, contrairement au banc. On lit ce sol, et le mur
+      // lui-même du côté de l'ombre. Sur l'ancien code : 5,7 et 2,6 sur 255.
+      w.setBlock(lx, sol + 1, lz, 0);                     // le réverbère s'en va, sa lampe aussi
+      for (let c = -4; c <= 4; c++) for (let h = 1; h <= 8; h++) w.setBlock(x0 + c, sol + h, z0 + 8, 3);
+      await dodo(2500);
+      const sun = g.scene.children.find((o) => o.isDirectionalLight);
+      const dLune = sun.position.clone().sub(sun.target.position).normalize();
+      const cote = dLune.z > 0 ? -1 : 1;                  // l'ombre tombe à l'opposé de la lune
+      cam.position.set(x0 + 0.5, sol + 12, z0 + 8 + cote * 3);
+      cam.lookAt(x0 + 0.5, sol + 1, z0 + 8 + cote * 2);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const nuit = { rue: +lire(x0 + 0.5, sol + 1, z0 + 8 + cote * 2.5).toFixed(1), mur: +lire(x0 + 0.5, sol + 4, z0 + 8 + cote * 0.5).toFixed(1) };
+      window.__setDayTime(0.3);
+      g.player.flying = false;
+      return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, dalle, ombres: r.shadowMap.enabled };
+    });
+    await regardPage.close();
+    const ok = (v) => typeof v === 'number' && v > 0;
+    verifier('à midi, le sol dans l\'ombre d\'un pilier est plus sombre que le sol au soleil',
+      ok(regard.ombre) && ok(regard.soleil) && regard.ombre / regard.soleil < 0.8,
+      `ombre ${regard.ombre} · soleil ${regard.soleil} (dalle à y=${regard.sol}`
+      + `, prête en ${regard.dalle.ms} ms sur ${regard.dalle.tours} relevé(s), `
+      + `${regard.dalle.voisins}/9 morceaux maillés, pilier ${regard.dalle.pilier}, `
+      + `ombres ${regard.ombres})`);
+    verifier('le matin la face est d\'un pilier est au soleil, le soir c\'est sa face ouest',
+      ok(regard.matin.est) && ok(regard.matin.ouest) && ok(regard.soir.est) && ok(regard.soir.ouest)
+        && regard.matin.est / regard.matin.ouest > 1.25 && regard.soir.est / regard.soir.ouest < 0.8,
+      `matin ${JSON.stringify(regard.matin)} · soir ${JSON.stringify(regard.soir)}`);
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 0,86 mesuré ici, 1,00 sur
+    // l'ancien code — 0,93, pas 0,9 collé sous la mesure.
+    verifier('le ciel est une voûte : plus profond au zénith qu\'à l\'horizon',
+      ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,
+      JSON.stringify(regard.ciel));
+    // ---- LES RÉVERBÈRES ÉCLAIRENT LA RUE, PARTOUT (v248) ------------------
+    //
+    // Deuxième étape du programme : Manhattan a des lampes de rue la nuit ;
+    // les villes engendrées plantaient des réverbères qui n'éclairaient rien,
+    // et les six villes bâties à la main n'en avaient AUCUN. Deux témoins :
+    // la lanterne éclaire le sol à son pied (mesuré en pixels, ci-dessus), et
+    // Paris, Londres, San Francisco et Washington ont des réverbères au bord
+    // de leurs rues — lus dans les BLOCS que le générateur pose, sur un
+    // carré de soixante-quatre blocs autour du centre de chaque ville, et
+    // chacun avec de la chaussée pour voisin — lue au SOMMET de la colonne
+    // voisine, parce que San Francisco est en pente et que la chaussée d'à
+    // côté est souvent un bloc plus haut ou plus bas que le trottoir. Et pas
+    // cent pour cent : à Paris, trois réverbères sur vingt-neuf ont pour
+    // voisin une chaussée que la culée d'un pont ou le socle d'un monument
+    // recouvre APRÈS le sol — le réverbère est juste, la rue est dessous.
+    // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 41,5 et 28,2 mesurés ici, 5,7 et
+    // 2,6 sur l'ancien code.
+    verifier('la nuit, une rue dans l\'ombre de la lune reste lisible',
+      ok(regard.nuit && regard.nuit.rue) && ok(regard.nuit.mur) && regard.nuit.rue >= 22 && regard.nuit.mur >= 14,
+      JSON.stringify(regard.nuit));
+    verifier('la nuit, un réverbère éclaire le sol à son pied',
+      ok(regard.lampe.pied) && ok(regard.lampe.loin) && regard.lampe.pied / regard.lampe.loin > 1.6,
+      JSON.stringify(regard.lampe));
+    const reverberes = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { CHAUSSEE } = await import('./src/world.js');
+      const w = window.__game.world;
+      const out = {};
+      for (const ville of ['paris', 'londres', 'sf', 'washington']) {
+        const P = positionDe(ville);
+        let total = 0, auBord = 0;
+        for (let x = P.x - 32; x < P.x + 32; x++) {
+          for (let z = P.z - 32; z < P.z + 32; z++) {
+            const sol = w.sommetColonne(x, z);
+            if (w.getBlock(x, sol + 1, z) !== 700) continue;
+            total++;
+            const rue = CHAUSSEE && [[1, 0], [-1, 0], [0, 1], [0, -1]]
+              .some(([dx, dz]) => CHAUSSEE.has(w.getBlock(x + dx, w.sommetColonne(x + dx, z + dz), z + dz)));
+            if (rue) auBord++;
+          }
+        }
+        out[ville] = { total, auBord };
+      }
+      return out;
+    });
+    verifier('Paris, Londres, San Francisco et Washington ont des réverbères au bord de leurs rues',
+      Object.values(reverberes).every((v) => v.total >= 8 && v.auBord >= 0.85 * v.total),
+      JSON.stringify(reverberes));
+
+    // ---- CHAQUE ROUE DE LA FLOTTE TOURNE AUTOUR DE SON ESSIEU (v250) --------
+    //
+    // Max, capture de la Lucid Gravity : « Gravity design ko, wheels ». Les
+    // roues sortaient des passages de roue, de biais. `normaliserVoiture`
+    // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
+    // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
+    // de l'axe avant-arrière. On charge les cinquante-deux modèles et l'on
+    // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
+    // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
+    // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
+    // tombent au premier test.
+    const roues = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const v = await import('./src/vehicules.js');
+      const out = { modeles: 0, roues: 0, essieuxFaux: [], sensFaux: [], sansRoue: [] };
+      for (const entree of v.FLOTTE) {
+        if (entree.fabrique) continue;
+        const porteur = await v.chargerVoitureFlotte(entree);
+        if (!porteur) { out.sansRoue.push(entree.fichier + ' (chargement)'); continue; }
+        out.modeles++;
+        porteur.updateMatrixWorld(true);
+        const invP = new THREE.Matrix4().copy(porteur.matrixWorld).invert();
+        const qP = new THREE.Quaternion().setFromRotationMatrix(porteur.matrixWorld);
+        const qPinv = qP.clone().invert();
+        let n = 0;
+        porteur.traverse((r) => {
+          if (!/^Wheel_(FL|FR|RL|RR)$/i.test(r.name || '')) return;
+          n++; out.roues++;
+          // L'axe de `rotation.x += angle` est le x du PARENT (Euler XYZ) ; on
+          // le lit dans le repère du porteur, et l'on suit un point posé au
+          // sommet du pneu pendant un tiers de tour.
+          const qPar = new THREE.Quaternion(); r.parent.getWorldQuaternion(qPar);
+          const axe = new THREE.Vector3(1, 0, 0).applyQuaternion(qPar).applyQuaternion(qPinv);
+          const rayon = porteur.userData.rayonRoue || 0.34;
+          const centre = r.getWorldPosition(new THREE.Vector3());
+          const haut0 = centre.clone().add(new THREE.Vector3(0, rayon, 0).applyQuaternion(qP));
+          const local = r.worldToLocal(haut0.clone());
+          const sauve = r.rotation.x;
+          r.rotation.x = sauve + 0.3; r.updateMatrixWorld(true);
+          const haut1 = r.localToWorld(local.clone());
+          r.rotation.x = sauve; r.updateMatrixWorld(true);
+          const d0 = haut0.applyMatrix4(invP), d1 = haut1.applyMatrix4(invP);
+          if (Math.abs(axe.x) < 0.99) out.essieuxFaux.push(`${entree.fichier} ${r.name} axe=${axe.toArray().map((k) => k.toFixed(2))}`);
+          // le nez est en −z dans le repère du porteur (cadre.rotation.y = π)
+          if (!(d1.z < d0.z - 0.01 && Math.abs(d1.x - d0.x) < 0.01)) out.sensFaux.push(`${entree.fichier} ${r.name} d=${[d1.x - d0.x, d1.y - d0.y, d1.z - d0.z].map((k) => k.toFixed(3))}`);
+        });
+        if (n < 4) out.sansRoue.push(entree.fichier + ` (${n} roues)`);
+      }
+      return out;
+    });
+    verifier('chaque roue de la flotte tourne autour de son essieu, le haut du pneu vers le nez',
+      roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
+      `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
+
+    // ---- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) ---------------------------
+    //
+    // Max, iPad : « en avion le lag est fort ; en voiture, lag, et la
+    // définition des bâtiments s'affiche trop tard ». Un morceau de Paris
+    // coûte 24 ms à engendrer et mailler, et cela se faisait DANS l'image.
+    // On vole au-dessus de Paris à la distance d'affichage de l'iPad et l'on
+    // mesure la CAUSE, pas l'effet (le banc rend en logiciel, sa cadence
+    // mesure SwiftShader) : les millisecondes que le fil principal passe à
+    // mailler par seconde de vol — six cents et plus sur l'ancien code, qui
+    // n'a d'ailleurs pas le compteur et le dit — et le nombre de morceaux
+    // arrivés du worker. Puis les blocs eux-mêmes : un morceau adopté du
+    // worker doit être le même, bloc pour bloc, que celui que le fil
+    // principal engendrerait — c'est ce qui garde l'invariant 1 quand deux
+    // mondes jumeaux se partagent le travail.
+    await souffler();
+    const filPage = await banc.jouerSeul('MonteFil', { rr: 12 });
+    const fil = await filPage.evaluate(async () => {
+      const g = window.__game;
+      if (!g.statsMaillage) return { absent: true };
+      const m = await import('./src/montures.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      g.player.pos.set(P.x - 160, 96, P.z); g.player.vel.set(0, 0, 0);
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;          // cap vers +x, Paris devant
+      g.player.flying = true; g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true; g.player.avionEtat = 'vol';
+      g.player.altitudeDecollage = -999;
+      const patienter = (ms) => new Promise((fin) => {
+        const t0 = performance.now();
+        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+        requestAnimationFrame(tic);
+      });
+      await patienter(2000);
+      const s0 = { ms: g.statsMaillage.principalMs, distants: g.statsMaillage.distants, locaux: g.statsMaillage.locaux };
+      const t0 = performance.now(), x0 = g.player.pos.x;
+      // ON ATTEND LE RÉSULTAT — DES BLOCS PARCOURUS — BORNÉ, JAMAIS UNE DURÉE
+      // (v270, v272, quatrième famille). Huit secondes de MONTRE ne sont pas
+      // huit secondes de JEU : `dt` est borné à un vingtième, donc à une demi-
+      // image par seconde l'avion ne fait que dix-neuf blocs et les DEUX bornes
+      // de garde tombent sur du code sain — c'est ce qui s'est passé au portail
+      // de la v284, où la sonde mesurait 270 blocs dans les mêmes conditions.
+      // Et ce qu'on attend est une DISTANCE, pas le verdict : `msParSeconde`
+      // est un TAUX, donc invariant à la longueur de la fenêtre (le maillage
+      // continue tant que l'avion entre dans du terrain neuf), et l'ancien
+      // chemin — tout dans l'image — garde son taux quelle que soit la durée.
+      // VÉRIFIÉ, pas raconté (règle v276) : sur `?maillage=local`, la fenêtre
+      // allongée rend `worker false · msParSeconde 216 · distants 0 · locaux
+      // 142`, 256 blocs en 6,9 s — ROUGE sur trois des quatre conditions.
+      // Allonger la fenêtre ne blanchit donc pas l'ancien chemin.
+      //
+      // ET LE PARAMÈTRE SE PASSE PAR `params`, PAS PAR UNE CLÉ INVENTÉE : ma
+      // première sonde écrivait `{ maillage: 'local' }`, que `banc.joueur`
+      // ignore — elle rendait `worker true` et annonçait que le témoin ne
+      // prouvait plus rien. Troisième sonde aveugle de la journée : avant de
+      // croire une sonde qui force un réglage, on vérifie que le réglage est
+      // ARRIVÉ (ici `worker` doit être faux).
+      const CIBLE = 250, BORNE_MS = 40000;             // 250 : six fois la borne de garde
+      while (g.player.pos.x - x0 < CIBLE && performance.now() - t0 < BORNE_MS) await patienter(500);
+      const dt = (performance.now() - t0) / 1000;
+      const out = { worker: g.maillageDistant, parcouru: Math.round(g.player.pos.x - x0),
+        secondes: +dt.toFixed(1), atteint: g.player.pos.x - x0 >= CIBLE,
+        msParSeconde: Math.round((g.statsMaillage.principalMs - s0.ms) / dt),
+        distants: g.statsMaillage.distants - s0.distants, locaux: g.statsMaillage.locaux - s0.locaux };
+      let compares = 0, differents = 0;
+      for (const key of g.statsMaillage.recus.slice(-12)) {
+        const [cx, cz] = key.split(',').map(Number);
+        const a = g.world.chunks.get(key);
+        if (!a) continue;
+        const b = g.world.generateChunk(cx, cz);
+        compares++;
+        for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { differents++; break; }
+      }
+      out.compares = compares; out.differents = differents;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return out;
+    });
+    await filPage.close();
+    // La borne de garde des blocs parcourus passe de 100 à 40 (v265, même
+    // passe que celle des relevés de virage) : elle est tombée au portail de
+    // la v264 sur 66 blocs et à celui de la v265 sur 90, alors que le
+    // VERDICT — zéro milliseconde de maillage sur le fil principal, 118
+    // morceaux venus du worker — était vert des deux côtés. Une borne à
+    // quatre-vingt-dix pour cent du relevé mesure le banc.
+    verifier('en vol au-dessus de Paris, le monde se maille hors du fil principal',
+      !fil.absent && fil.worker && fil.parcouru > 40 && fil.distants >= 20 && fil.msParSeconde < 120,
+      fil.absent ? 'pas de compteur de maillage : tout se maille dans l\'image' : JSON.stringify(fil));
+    verifier('et un morceau maillé là-bas est le même ici, bloc pour bloc',
+      !fil.absent && fil.compares >= 6 && fil.differents === 0,
+      fil.absent ? 'pas de worker' : `${fil.compares} comparés · ${fil.differents} différent(s)`);
+
+    // ---- LA VOITURE DE L'ENFANT NE TRAVERSE PAS LE MOBILIER (v252) ----------
+    //
+    // Max : « les voitures peuvent aussi passer à travers des fois le
+    // mobilier urbain comme les tables de Times Square ». Mesuré : les
+    // soixante-dix-neuf tracés de taxis restent à neuf blocs des tables —
+    // c'est la voiture de l'ENFANT, dont la boîte de collision ne connaît
+    // que les blocs solides, et un réverbère, une table sont des props non
+    // solides. On prend le volant sur une rue de Paris, on pose un réverbère
+    // six blocs devant, on accélère trois secondes : la voiture s'arrête
+    // avant le poteau. Puis la même chose sur Broadway piéton, face à une
+    // table de Times Square. Sur l'ancien code on passe au travers.
+    await souffler();
+    const mobPage = await banc.jouerSeul('MonteMobilier', { rr: 4 });
+    // le scénario part en TEXTE : Playwright ne sérialise pas une fonction
+    const conduireVers = async (page, poser) => page.evaluate(async (source) => {
+      const poser = new Function('return (' + source + ')')();
+      const g = window.__game, w = g.world;
+      const { RUE } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const cible = await poser(g, w, RUE);
+      // la voiture, montée par le bouton
+      for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); }
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+      await dodo(1500);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const depart = { x: g.player.pos.x, z: g.player.pos.z };
+      const d0 = Math.hypot(cible.x - depart.x, cible.z - depart.z);
+      g.player.keys.add('KeyW');                       // la touche, comme le clavier la pose
+      // ON ROULE JUSQU'À L'ARRÊT, PAS TROIS SECONDES : à dt borné le banc
+      // n'atteint pas un poteau à neuf blocs en trois secondes, et le témoin
+      // était vert des deux côtés en ne mesurant rien.
+      let plusPres = d0, immobile = 0, dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      for (let i = 0; i < 400 && immobile < 10; i++) {
+        await dodo(100);
+        plusPres = Math.min(plusPres, Math.hypot(cible.x - g.player.pos.x, cible.z - g.player.pos.z));
+        const bouge = Math.hypot(g.player.pos.x - dernier.x, g.player.pos.z - dernier.z) > 0.02;
+        immobile = bouge ? 0 : immobile + 1; dernier = { x: g.player.pos.x, z: g.player.pos.z };
+      }
+      g.player.keys.delete('KeyW');
+      const parcouru = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
+      return { auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), gabarit: g.player.gabarit, d0: +d0.toFixed(2), plusPres: +plusPres.toFixed(2), parcouru: +parcouru.toFixed(2), cible };
+    }, poser.toString());
+    // 1. un réverbère sur une rue de Paris
+    const poteau = await conduireVers(mobPage, async (g, w, RUE) => {
+      const { positionDe } = await import('./src/mondes.js');
+      const { CHAUSSEE } = await import('./src/world.js');
+      const P = positionDe('paris');
+      window.__carte.surTeleport(P.x + 40, P.z + 60);
+      await new Promise((f) => setTimeout(f, 9000));
+      const px = Math.round(g.player.pos.x), pz = Math.round(g.player.pos.z);
+      const sol = (x, z) => w.sommetColonne(x, z);
+      const route = (x, z) => CHAUSSEE.has(w.getBlock(x, sol(x, z), z));
+      for (let r = 0; r < 40; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = px + dx, z = pz + dz;
+        if (!route(x, z)) continue;
+        for (const [ax, az, yaw] of [[1, 0, -Math.PI / 2], [0, 1, Math.PI], [-1, 0, Math.PI / 2], [0, -1, 0]]) {
+          let ok = true;
+          for (let k = -4; k <= 14 && ok; k++) if (!route(x + ax * k, z + az * k) || Math.abs(sol(x + ax * k, z + az * k) - sol(x, z)) > 1) ok = false;
+          if (!ok) continue;
+          // pas de voiture de la rue à portée : elle serait « déjà dedans »
+          // ou en travers, et l'on mesurerait la circulation
+          if (g.vehicules.placeProche({ x: x + 0.5, y: sol(x, z) + 1, z: z + 0.5 }, 12)) continue;
+          g.player.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); g.player.vel.set(0, 0, 0);
+          g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
+          const cx = x + ax * 6, cz = z + az * 6;
+          w.setBlock(cx, sol(cx, cz) + 1, cz, RUE.REVERBERE);
+          return { x: cx + 0.5, z: cz + 0.5 };
+        }
+      }
+      return null;
+    });
+    verifier('au volant, la voiture de l\'enfant s\'arrête devant un réverbère',
+      poteau && poteau.cible && poteau.auVolant && poteau.parcouru > 2 && poteau.plusPres >= 1.0 && poteau.plusPres < 4,
+      JSON.stringify(poteau));
+    // 2. une table de Times Square. La place ne se CONDUIT pas sur ce banc —
+    // Manhattan en rendu logiciel tombe à une image par seconde, et à dt
+    // borné la voiture n'avance pas (0,3 bloc en deux secondes, à pied) — la
+    // conduite est prouvée à Paris ci-dessus. Ici l'on vérifie ce qui la
+    // rend possible : une fois le lot de Broadway bâti, la table est notée
+    // dans le registre du renderer, et le crochet du joueur (le même que
+    // pour le réverbère) refuse le pas qui l'atteindrait, pas celui qui en
+    // reste à six blocs. Sur l'ancien code, ni registre ni refus.
+    const table = await mobPage.evaluate(async () => {
+      const g = window.__game;
+      const { ORIGINE_MANHATTAN } = await import('./src/manhattan-world.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const tx = ORIGINE_MANHATTAN.x - 91 + 0.5, tz = ORIGINE_MANHATTAN.z - 60 + 0.5;   // la table du plan (−91, −60)
+      window.__carte.surTeleport(tx + 11, tz);
+      const vr = g.villeRealiste;
+      let notee = false, attente = 0, construitIci = false;
+      for (; attente < 20 && !notee; attente++) { await dodo(1000); notee = !!(vr.obstacleA && vr.obstacleA(tx, tz)); }
+      // À une image par seconde, le secteur de sol qui porte la table peut
+      // ne jamais arriver en tête de file : on le bâtit alors comme le
+      // renderer le ferait (`groundSector`, secteurs de 64 blocs du plan),
+      // ce qui note ses tables — et l'on jette le maillage rendu.
+      if (!notee && vr.groundSector) {
+        const grp = vr.groundSector(Math.floor(-91 / 64), Math.floor(-60 / 64));
+        grp.traverse((o) => { if (o.geometry && !o.geometry.userData?.partagee) o.geometry.dispose(); });
+        construitIci = true;
+        notee = !!(vr.obstacleA && vr.obstacleA(tx, tz));
+      }
+      g.player.gabarit = 2.2;                       // la carrure d'une voiture, comme au volant
+      const cap = Math.PI / 2 + Math.PI;            // cap vers −x, la table devant
+      const hook = g.player.obstacleVehicule;
+      const contre = hook ? hook(tx + 1.6, tz, cap, tx + 6, tz) : null;
+      const libre = hook ? hook(tx + 6, tz, cap, tx + 7, tz) : null;
+      return { notee, attente, construitIci, contre, libre, registre: vr.obstacles ? vr.obstacles.size : 'absent' };
+    });
+    verifier('et une table de Times Square est un obstacle pour sa voiture',
+      table.notee && table.contre === true && table.libre === false,
+      JSON.stringify(table));
+    await mobPage.close();
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
@@ -1380,7 +3408,7 @@ async function avancerUnDemiSeconde(p, depart) {
         const d = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
         out[key] = { blocs: Math.round(d), vitesse: Math.round(atteinte), max: def.pilote.max };
         g.player.pilote = null;
-        g.player.avionEnVol = false;
+        g.player.avionEnVol = false; g.player.avionEtat = undefined;
         g.player.vitesseAvion = undefined;
         g.player.flying = false;
       }
@@ -1432,6 +3460,37 @@ async function avancerUnDemiSeconde(p, depart) {
     // plus rapide — et le brouillard est REPORTÉ à côté, pour qu'on sache
     // toujours de combien il reste à gagner. Ce qui manque encore est une
     // dette déclarée, pas un témoin desserré.
+    //
+    // ET LA BARRE SE CALCULE DÉSORMAIS, ELLE NE S'ÉCRIT PLUS (v269). Elle a
+    // valu QUATRE-VINGTS de la v229 à la v268, pendant que la vitesse du plus
+    // rapide passait de 110 à 160 : le chiffre était juste par accident en
+    // v265 (160 ÷ 2 = 80) et il l'aurait cessé à la vitesse suivante sans que
+    // personne ne le voie. La règle, elle, n'a jamais bougé — « le bout du
+    // monde ne doit pas arriver avant une demi-seconde de vol » — et une
+    // demi-seconde se calcule. Chaque appareil est donc jugé sur SA vitesse :
+    // `trou >= max / 2`, la fiche étant la seule source.
+    //
+    // C'EST CE TÉMOIN QUI A RATTRAPÉ LA v269. La file du mailleur est revenue
+    // de seize à huit (le jeu était impraticable sur l'iPad à seize), donc le
+    // monde ne maille plus au même débit, donc les 160 blocs par seconde de
+    // la v265 ne tenaient plus : 51 et 58 de trou pour une barre de 80. Une
+    // vitesse mesurée sur une file donnée ne vaut que pour elle, et sans ce
+    // témoin la livraison aurait fait voler l'enfant dans le vide. Les
+    // vitesses sont remesurées (montures.js, tableau du plateau) : 95 pour
+    // l'avion de ligne, 120 pour les deux rapides.
+    //
+    // Serrer la barre aurait mesuré le banc : la même sonde rend 192 seule
+    // et 163 au plus bas sous charge de portail. Une borne se pose sur la
+    // règle, pas sur le meilleur chiffre qu'on vient de voir — et c'est aussi
+    // pourquoi la vitesse retenue est 120 et non 130 : mesurées SEULES les
+    // deux passent (80 de trou pour 65 de barre à 130), mais le portail
+    // complet coûte quinze pour cent du trou, ce qui ne laisserait à 130 que
+    // trois blocs de marge et ferait battre ce témoin d'une exécution à
+    // l'autre.
+    //
+    // LE CHASSEUR EST DANS LA LISTE DEPUIS LA v265 : c'est l'avion que Max
+    // pilote, et c'est désormais l'un des deux plus rapides. Un témoin de
+    // chargement éprouve la plus grande vitesse du jeu, pas une moyenne.
     // UNE PAGE À LA DISTANCE D'AFFICHAGE DE L'IPAD. Le banc ouvre tout à
     // `rr=2` pour que le monde se charge vite : le brouillard y est alors à
     // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
@@ -1446,16 +3505,16 @@ async function avancerUnDemiSeconde(p, depart) {
       if (!scene || !scene.fog) return { err: 'ni scène ni brouillard' };
       const CHUNK = 16, R = 12;
       const out = { brouillard: Math.round(scene.fog.near) };
-      for (const key of ['avionligne', 'concorde']) {
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
         const def = m.MONTURES.find((d) => d.key === key);
         // Un couloir vierge, loin de tout : on éprouve le STREAMING, pas le
         // coût d'une ville.
-        g.player.pos.set(30000 + (key === 'concorde' ? 4000 : 0), 100, 30000);
+        g.player.pos.set(30000 + ['avionligne', 'concorde', 'chasseur'].indexOf(key) * 4000, 100, 30000);
         g.player.vel.set(0, 0, 0); g.player.yaw = 0; g.player.pitch = 0;
         g.player.flying = true;
         g.player.pilote = def.pilote;
         g.player.vitesseAvion = def.pilote.max;
-        g.player.avionEnVol = true;
+        g.player.avionEnVol = true; g.player.avionEtat = 'vol';
         g.player.altitudeDecollage = -999;
         // ON OBSERVE PENDANT TOUTE LA FENÊTRE, PAS SEULEMENT À LA FIN. Un
         // front de chargement est irrégulier : le même code m'a rendu 68, 91
@@ -1494,16 +3553,18 @@ async function avancerUnDemiSeconde(p, depart) {
         }
         releves.sort((x, y) => x - y);
         out[key] = { vitesse: def.pilote.max, trou: releves[3], releves };
-        g.player.pilote = null; g.player.avionEnVol = false;
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
         g.player.vitesseAvion = undefined; g.player.flying = false;
       }
       return out;
     });
-    const BARRE = 80;
+    // Une demi-seconde de vol, pour CHAQUE appareil et d'après SA fiche.
+    const demiSeconde = (a) => Math.round(a.vitesse / 2);
+    const tenus = ['avionligne', 'concorde', 'chasseur']
+      .map((k) => suivi[k] && { k, ...suivi[k], barre: demiSeconde(suivi[k]) });
     verifier('en vol, on ne rattrape pas le bout du monde qui se charge',
-      !suivi.err && suivi.avionligne && suivi.concorde
-      && suivi.avionligne.trou >= BARRE && suivi.concorde.trou >= BARRE,
-      `barre ${BARRE} · ${JSON.stringify(suivi)}`);
+      !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
+      `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
@@ -1538,7 +3599,7 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       await new Promise((f) => setTimeout(f, 3000));
       const durees = [];
@@ -1547,7 +3608,7 @@ async function avancerUnDemiSeconde(p, depart) {
       requestAnimationFrame(tic);
       await new Promise((f) => setTimeout(f, 18000));
       actif = false;
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const total = durees.reduce((a, c) => a + c, 0);
       const partAuDela = (s) => +(durees.filter((d) => d > s)
@@ -1570,8 +3631,13 @@ async function avancerUnDemiSeconde(p, depart) {
     // Cinq cent cinquante et cinq pour cent laissent donc passer le portail
     // chargé et refusent l'ancien code de loin. Une borne se règle sur la
     // dispersion mesurée, jamais sur le meilleur relevé.
+    // `images > 60` est une borne de GARDE — « la boucle de rendu vit » — et
+    // elle est tombée au portail de la v265 sur 56 images pendant que le
+    // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
+    // `programmes.images` utilise déjà pour dire la même chose (v246) : une
+    // page morte rend zéro.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 60
+      !secousses.err && secousses.images > 30
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
       JSON.stringify(secousses));
 
@@ -1624,19 +3690,24 @@ async function avancerUnDemiSeconde(p, depart) {
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       await new Promise((f) => setTimeout(f, 30000));
       const morceaux = g.world.chunks.size;
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       return { morceaux, moBlocs: Math.round(morceaux * 80 / 1024),
         parcouru: Math.round(g.player.pos.x - depart) };
     });
     // La barre est mesurée, pas ronde : 245 Mo avant, 27 après, sur le même
     // vol de trente secondes. Cent la sépare des deux côtés avec de la marge.
+    // ET LA BORNE DE GARDE SUR LES BLOCS PARCOURUS SE POSE À LA MOITIÉ : le
+    // banc rend en logiciel et chaque lampe de rue (v248) coûte à chacun de
+    // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
+    // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
+    // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 1000 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
@@ -1701,34 +3772,68 @@ async function avancerUnDemiSeconde(p, depart) {
     // Mesuré, dix créatures nées puis retirées :
     //   origin/main   195 géométries prises, 0 rendues, 195 PERDUES
     //   ici           193 géométries prises, 193 rendues, 0 perdue
+    //
+    // ET IL GARDE UNE CAPACITÉ APRÈS LE REPOINTAGE — VÉRIFIÉ, PAS RACONTÉ (v276).
+    // Les créatures sont parties (v285) ; repointé sur les bêtes, il pourrait
+    // être vert sans rien mesurer. `liberer` désarmé dans `src/liberer.js`
+    // (`tests/sonde-liberer.cjs`, même bloc que ci-dessous) :
+    //   armé      130 géométries prises, 130 rendues, 0 perdue   → VERT
+    //   désarmé   130 prises, 0 rendues, 130 PERDUES             → ROUGE
     await souffler();
     const rendu = await ciel.evaluate(() => {
-      const g = window.__game, cm = g.creatureManager, R = g.renderer;
-      if (!cm || !cm.trySpawn) return { err: 'pas de gestionnaire de créatures' };
+      const g = window.__game, am = g.animalManager, R = g.renderer;
+      if (!am || !am.invoquer) return { err: 'pas de gestionnaire de bêtes' };
+      // LE TÉMOIN NE MESURE PLUS LES CRÉATURES : elles sont parties avec le mode
+      // d'attrape (v285). Ce qu'il garde n'a jamais tenu à elles — c'est
+      // `liberer.js`, et les BÊTES suivent le même cycle : une naissance toutes
+      // les secondes et demie, un retrait à soixante-dix blocs, `liberer` sur le
+      // maillage. On éprouve donc le MÉCANISME du jeu, pas une méthode de sonde :
+      // on invoque, puis on éloigne les bêtes et l'on laisse `update` les retirer
+      // comme il le fait en jeu.
+      //
+      // ON ÉLOIGNE LES BÊTES, PAS LE JOUEUR. Déplacer l'enfant ferait bouger le
+      // disque de morceaux, et c'est exactement le piège que la v238 avait
+      // relevé : 92 morceaux contre 99, soit vingt géométries d'écart, et le
+      // verdict mesurait le banc.
+      am.spawnTimer = 999;   // sinon `update` fait naître pendant qu'on compte
       R.render(g.scene, g.camera);
       const avant = R.info.memory.geometries;
+      // LA CLÉ EST CELLE DE L'ESPÈCE, PAS SON NOM FRANÇAIS. Mon premier
+      // repointage demandait `'vache'` : `invoquer` cherche `SPECIES.find(s =>
+      // s.key === key)` et rend `null` pour toute clé inconnue, sur l'ancien code
+      // comme sur le neuf. Le témoin rendait donc « 471, 471, 471 » et ne
+      // mesurait RIEN — c'est « une sonde qui interroge la mauvaise liste ne peut
+      // rien voir » (v273), du côté du témoin. Et un refus se DIT : sans le
+      // garde ci-dessous, la prochaine clé fautive se paierait un portail.
+      const CLE = 'cow';
       const nees = [];
-      for (let i = 0; i < 10; i++) {
-        const n = cm.creatures.length;
-        cm.trySpawn();
-        if (cm.creatures.length > n) nees.push(cm.creatures[cm.creatures.length - 1]);
+      for (let i = 0; i < 40 && nees.length < 10; i++) {
+        const a = am.invoquer(CLE, g.player.pos.x + 3 + i, g.player.pos.z + 3);
+        if (a) nees.push(a);
       }
-      for (const c of nees) c.mesh.traverse((o) => { o.frustumCulled = false; });
+      if (!nees.length) return { err: 'invoquer a refusé la clé ' + CLE };
+      // ET LE COMPTEUR DU MOTEUR N'ENREGISTRE QUE CE QUI EST DESSINÉ (v238) :
+      // sans cela les bêtes nées derrière la caméra n'y figurent jamais, et le
+      // témoin rend « 96 avant, 96 pendant, 96 après » en ne mesurant rien.
+      for (const a of nees) a.mesh.traverse((o) => { o.frustumCulled = false; });
       R.render(g.scene, g.camera);
       const pleine = R.info.memory.geometries;
-      for (const c of nees) cm.removeCreature(c);
+      for (const a of nees) a.pos.set(g.player.pos.x + 400, a.pos.y, g.player.pos.z + 400);
+      am.spawnTimer = 999;
+      am.update(0.001);
       R.render(g.scene, g.camera);
       const apres = R.info.memory.geometries;
-      return { avant, pleine, apres, nees: nees.length,
+      return { avant, pleine, apres, nees: nees.length, restantes: am.animals.length,
         prises: pleine - avant, rendues: pleine - apres, perdues: apres - avant };
     });
     // La borne de GARDE vérifie que la mesure a EU LIEU — au moins cinq bêtes
-    // nées et cent géométries prises — et se pose à la moitié de ce qui a été
-    // relevé (dix bêtes, 193), jamais à quatre-vingt-dix pour cent. Le verdict,
-    // lui, est exact : ce qu'on a pris, on le rend. Dix de tolérance pour un
-    // remaillage qui tomberait entre deux comptes.
+    // nées et vingt géométries prises — et se pose loin sous ce qui a été relevé,
+    // jamais à quatre-vingt-dix pour cent (v237) : dix vaches en prennent CENT
+    // TRENTE, mesurées à la sonde des deux côtés. Le verdict, lui, ne bouge pas :
+    // ce qu'on a pris, on le rend. Dix de tolérance pour un remaillage tombé
+    // entre deux comptes.
     verifier('ce qu\'on retire de la scène se rend à la carte graphique',
-      !rendu.err && rendu.nees >= 5 && rendu.prises >= 100 && rendu.perdues <= 10,
+      !rendu.err && rendu.nees >= 5 && rendu.prises >= 20 && rendu.perdues <= 10,
       `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
@@ -1761,13 +3866,18 @@ async function avancerUnDemiSeconde(p, depart) {
       if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
       const def = m.MONTURES.find((d) => d.key === 'avionligne');
       if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
-      g.player.pos.set(-40000, 96, 40000);      // un couloir vierge, loin de tout
+      // Un couloir vierge, loin de tout — ET SUR TERRE. À (−40 000, 40 000)
+      // le monde ×2 (v242) ne rend plus que du Pacifique : une minicarte
+      // uniformément bleue ne change jamais d'empreinte, et le témoin
+      // comptait zéro changement sans rien mesurer. Le Sahara, au sud de
+      // Tombouctou (2 300 blocs de la ville la plus proche), a du relief.
+      g.player.pos.set(0, 96, 20000);
       g.player.vel.set(0, 0, 0);
       g.player.yaw = 0; g.player.pitch = 0;
       g.player.flying = true;
       g.player.pilote = def.pilote;
       g.player.vitesseAvion = def.pilote.max;
-      g.player.avionEnVol = true;
+      g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
       const ctx = toile.getContext('2d');
       const empreinte = () => {
@@ -1791,7 +3901,7 @@ async function avancerUnDemiSeconde(p, depart) {
           precedent = h;
         }
       }
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const moy = sauts.length
         ? +(sauts.reduce((a, b) => a + b, 0) / sauts.length).toFixed(1) : null;
@@ -1817,52 +3927,184 @@ async function avancerUnDemiSeconde(p, depart) {
       !!controle && controle.ecarts === 0 && controle.points > 1000,
       JSON.stringify(controle));
 
-    // LE BOUTON ✈️ FAIT DÉCOLLER — et il ne faisait RIEN (v228).
+    // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
-    // Max, dans le Concorde : « il ne décolle pas ». Aux commandes, le bouton
-    // appelait `toggleFly()`, qui réussissait et basculait `player.flying` —
-    // un drapeau que la branche de pilotage ignore complètement. Aucun effet,
-    // aucun message. Pour un enfant, c'est pire qu'un refus : il appuie dix
-    // fois et conclut que le jeu est cassé.
+    // Max : « une vraie motion de décollage : accélération sur la piste puis
+    // décollage en levant le nez ; idem à l'atterrissage, baisser l'altitude
+    // et ouvrir le train ; et le roulage sur la piste. » Avant, le bouton ✈️
+    // arrachait l'appareil du sol sur place (v228 : « il ne décolle pas »,
+    // puis la montée automatique) et se poser était une descente à
+    // l'aveugle jusqu'au sol, train jamais rentré.
     //
-    // ON ÉPROUVE LE TRAJET DE L'ENFANT : on se met aux commandes, on appuie
-    // sur la touche que le bouton déclenche (`KeyF`), et l'on regarde si
-    // l'appareil PREND DE L'ALTITUDE. Pas si un drapeau a changé.
-    const decollage = await tab.evaluate(async () => {
+    // ON ÉPROUVE LE TRAJET DE L'ENFANT, sur une piste : une dalle de pierre
+    // au-dessus du relief, loin de tout (le relief naturel n'est jamais plat
+    // sur trois cents blocs). On monte PAR LE BOUTON — l'assiette et le train
+    // sont rendus sur le maillage de la monture, dans `fun.js` ; poser
+    // `player.pilote` à la main ferait voler un joueur sans avion. Puis la
+    // touche du bouton ✈️, et l'on relève dix fois par seconde ce que
+    // l'appareil fait : où il est, à quelle vitesse, nez levé ou non, train
+    // sorti ou non, roues au sol ou non.
+    //
+    // ET LE SIGNE DE L'ASSIETTE SE MESURE SUR CE QUI EST RENDU : la hauteur
+    // du nez contre celle de la queue, lues dans la matrice monde du
+    // maillage. Un nez qui se lève à l'envers passerait toute mesure
+    // d'amplitude — c'est la leçon du roulis (v231) et du conducteur assis
+    // de dos (v249).
+    const trajet = await tab.evaluate(async () => {
       const g = window.__game;
-      const m = await import('./src/montures.js');
-      const out = {};
-      for (const key of ['avionligne', 'concorde', 'chasseur']) {
-        const def = m.MONTURES.find((d) => d.key === key);
-        g.player.pos.set(0, 90, 0);
-        g.player.vel.set(0, 0, 0);
-        g.player.yaw = 0; g.player.pitch = 0;
-        g.player.flying = true;
-        g.player.pilote = def.pilote;
-        g.player.vitesseAvion = 0;
-        g.player.avionEnVol = false;
-        const y0 = g.player.pos.y;
-        // La touche du bouton, pas la méthode : c'est le chemin de l'enfant.
-        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
-        await new Promise((fin) => {
-          let cumul = 0, prec = performance.now();
-          const pas = (t) => {
-            cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
-            if (cumul >= 3) fin(); else requestAnimationFrame(pas);
-          };
-          requestAnimationFrame(pas);
-        });
-        out[key] = Math.round((g.player.pos.y - y0) * 10) / 10;
-        g.player.pilote = null; g.player.avionEnVol = false;
-        g.player.vitesseAvion = undefined; g.player.flying = false;
+      const THREE = await import('three');
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      // LA PISTE : trois cents blocs de pierre, un roulement de cinquante
+      // blocs, une montée, une descente et un freinage tiennent dedans.
+      const x0 = 30000, z0 = 30300, L = 300;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -4; w <= 4; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const dalle = [];
+      for (let d = -6; d <= L; d++) for (let w = -4; w <= 4; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
       }
-      return out;
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x, le long de la piste
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenirSecondes(1);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
+      if (!avion) return { err: 'aucun avion posé' };
+      await tenirSecondes(0.5);
+      for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes' };
+      await tenirSecondes(0.6);
+      const nezMoinsQueue = () => {
+        avion.mesh.updateMatrixWorld(true);
+        const n = new THREE.Vector3(0, 1.5, -8).applyMatrix4(avion.mesh.matrixWorld);
+        const q = new THREE.Vector3(0, 1.5, 8).applyMatrix4(avion.mesh.matrixWorld);
+        return +(n.y - q.y).toFixed(2);
+      };
+      const train = () => (avion.mesh.userData.train || []).map((t) => (t.visible ? +t.rotation.x.toFixed(2) : 'rentré'));
+      const releve = (t) => ({
+        t: +t.toFixed(1), x: +(g.player.pos.x - x0).toFixed(1), y: +(g.player.pos.y - y0 - 1).toFixed(2),
+        v: +(g.player.vitesseAvion || 0).toFixed(1), etat: g.player.avionEtat,
+        assiette: +(g.player.assietteAvion || 0).toFixed(3), train: +(g.player.trainSorti ?? 1).toFixed(2),
+        sol: !!g.player.onGround, nez: nezMoinsQueue(), jambes: train(),
+      });
+      const releves = [];
+      let t = 0;
+      const jusqua = async (fini, limite) => {
+        while (t < limite) { await tenirSecondes(0.1); t += 0.1; const r = releve(t); releves.push(r); if (fini(r)) return r; }
+        return null;
+      };
+      const depart = releve(0);
+      // ✈️ : pleins gaz
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      const enVol = await jusqua((r) => r.etat === 'vol', 20);
+      const decollage = releves.slice();
+      // ✈️ : on se pose
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      const arret = await jusqua((r) => r.etat === 'sol', 25);
+      const atterrissage = releves.slice(decollage.length);
+      // puis on roule, et l'on tourne
+      // LE ROULAGE EST UNE MESURE À PART, ET IL LUI FAUT DE LA PISTE DEVANT.
+      // L'atterrissage consomme presque toute la dalle : rejoué seul, il
+      // s'arrête à x = 291 pour trois cents blocs de pierre, et deux secondes
+      // de roulage à six blocs par seconde faisaient alors SORTIR l'appareil
+      // par le bout (x 303, y −1,5 : il tombe, `sol` faux). Le témoin était
+      // vert au portail et rouge seul — il mesurait où l'atterrissage s'était
+      // arrêté, pas le roulage. On ramène l'appareil au début de la piste,
+      // immobile, avant de mesurer ce qu'on annonce.
+      g.player.pos.set(x0 + 10, y0 + 1.01, z0 + 0.5);
+      g.player.yaw = -Math.PI / 2; g.player.vel.set(0, 0, 0); g.player.vitesseAvion = 0;
+      await tenirSecondes(0.4);
+      const avantRoulage = releve(t);
+      g.player.keys.add('KeyW');
+      await tenirSecondes(2);
+      const roule = releve(t);
+      g.player.keys.add('KeyA');
+      await tenirSecondes(1.5);
+      const tourne = { yaw: +(g.player.yaw - (-Math.PI / 2)).toFixed(3), ...releve(t) };
+      g.player.keys.clear();
+      // et le train en vol, à part : rentré en croisière, sorti dès qu'on se pose
+      g.player.pos.set(x0, y0 + 60, z0 + 0.5); g.player.vitesseAvion = 60;
+      g.player.avionEtat = 'vol'; g.player.avionEnVol = true;
+      await tenirSecondes(2.2);
+      const croisiere = releve(t);
+      g.player.decollerOuSePoser();
+      await tenirSecondes(2.2);
+      const finale = releve(t);
+      // on redescend de l'avion, et l'on range la piste
+      g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0;
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      return { depart, decollage, enVol, atterrissage, arret, avantRoulage, roule, tourne, croisiere, finale };
     });
-    // Vingt blocs de palier en trois secondes : on demande au moins la moitié,
-    // pour ne pas mesurer la cadence du banc.
-    verifier('le bouton ✈️ fait décoller l\'appareil',
-      Object.values(decollage).every((h) => h >= 10),
-      `altitude gagnée en 3 s : ${JSON.stringify(decollage)}`);
+    const dec = trajet.decollage || [];
+    const auSol = dec.filter((r) => r.sol && r.etat === 'decollage');
+    const leve = dec.find((r) => !r.sol && r.etat === 'decollage' && r.v >= 40);
+    const roulement = auSol.length ? auSol[auSol.length - 1].x - (trajet.depart ? trajet.depart.x : 0) : 0;
+    // 42² / (2 × 18) = 49 blocs de roulement : on en demande au moins vingt
+    // (le banc échantillonne à dix images par seconde de jeu) et moins de
+    // quatre-vingt-dix — au-delà, l'appareil ne décolle pas, il roule.
+    verifier('✈️ accélère sur la piste, et le nez ne se lève qu\'à la vitesse de rotation',
+      !trajet.err && !!leve && roulement >= 20 && roulement <= 90
+        && auSol.every((r) => r.assiette < 0.06),
+      `${trajet.err || ''} roulement ${roulement} blocs, levé à ${JSON.stringify(leve)}`);
+    // Douze degrés de rotation : on en demande la moitié à la lecture, ET le
+    // nez rendu plus haut que la queue — c'est le signe.
+    const apresLever = leve ? dec.slice(dec.indexOf(leve)) : [];
+    const cabre = apresLever.find((r) => r.assiette >= 0.11);
+    verifier('à la rotation le nez se lève — celui du maillage, pas un nombre',
+      !!cabre && cabre.nez > 1.0,
+      `nez levé : ${JSON.stringify(cabre || apresLever[apresLever.length - 1] || null)}`);
+    verifier('puis l\'appareil monte au palier, train rentré en croisière',
+      !!trajet.enVol && trajet.enVol.y >= 18
+        && !!trajet.croisiere && trajet.croisiere.train === 0
+        && trajet.croisiere.jambes.length === 3 && trajet.croisiere.jambes.every((j) => j === 'rentré'),
+      `palier ${JSON.stringify(trajet.enVol)} · croisière ${JSON.stringify(trajet.croisiere)}`);
+    const att = trajet.atterrissage || [];
+    const touche = att.find((r) => r.etat === 'freinage');
+    const avantToucher = touche ? att.slice(0, att.indexOf(touche)) : att;
+    verifier('🛬 descend train sorti, touche la piste et freine jusqu\'à l\'arrêt',
+      !!touche && avantToucher.length > 2 && avantToucher.every((r) => r.etat === 'atterrissage')
+        && avantToucher[avantToucher.length - 1].train >= 0.97
+        && !!trajet.finale && trajet.finale.train >= 0.97 && trajet.finale.jambes.every((j) => j !== 'rentré')
+        && !!trajet.arret && trajet.arret.v === 0 && Math.abs(trajet.arret.y) < 0.3
+        && trajet.arret.x <= 300,
+      `toucher ${JSON.stringify(touche)} · arrêt ${JSON.stringify(trajet.arret)} · finale ${JSON.stringify(trajet.finale)}`);
+    // Au sol, le joystick fait rouler — sans quitter la piste — et tourne.
+    verifier('à l\'arrêt, le joystick fait rouler l\'appareil sur la piste et le fait tourner',
+      !!trajet.roule && !!trajet.avantRoulage && trajet.roule.x - trajet.avantRoulage.x >= 4
+        && Math.abs(trajet.roule.y) < 0.3 && trajet.roule.etat === 'sol'
+        && !!trajet.tourne && Math.abs(trajet.tourne.yaw) > 0.15,
+      `roulage ${JSON.stringify(trajet.avantRoulage)} → ${JSON.stringify(trajet.roule)} · virage ${JSON.stringify(trajet.tourne)}`);
 
     // UN AVION S'INCLINE DANS SON VIRAGE — demande de Max : « quand on vole
     // avec un avion et qu'on va à gauche, il tilte un peu. Idem pour la partie
@@ -1890,7 +4132,7 @@ async function avancerUnDemiSeconde(p, depart) {
         };
         requestAnimationFrame(pas);
       });
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       g.player.yaw = 0; g.player.pitch = 0;
       g.player.pos.set(0, 90, 0);
@@ -1916,7 +4158,7 @@ async function avancerUnDemiSeconde(p, depart) {
       const gauche = await pencher('KeyA');
       const droite = await pencher('KeyD');
       g.player.keys.clear();
-      g.player.pilote = null; g.player.avionEnVol = false;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       return { gauche, droite, ordre: avion.mesh.rotation.order };
     });
@@ -1940,6 +4182,776 @@ async function avancerUnDemiSeconde(p, depart) {
         && Math.abs(roulis.gauche.rendu) < PENCHE
         && Math.abs(roulis.droite.rendu) < PENCHE,
       `après avoir lâché : ${JSON.stringify(roulis)}`);
+
+    // AU VOLANT, LE JOYSTICK EST LE VOLANT ET L'ACCÉLÉRATEUR — NI MANETTE NI
+    // COMPTEUR (v272, qui remplace le témoin de cadran de la v262).
+    //
+    // Max, capture de Hambourg : « il est marqué 86 km/h » sur une voiture
+    // immobile dans le port, et « la jauge de vitesse, je ne veux pas qu'elle
+    // soit existante pour une voiture ». Le cadran redevient ce qu'il a
+    // toujours été : une manette des gaz d'AVION. Une voiture se conduit au
+    // joystick — l'avant accélère, l'arrière freine puis recule (v269), le
+    // côté tourne le volant (v262) — ce qui ne demande qu'un doigt.
+    //
+    // ON ÉPROUVE LE GESTE DE L'ENFANT, UN SEUL DOIGT : on pose le joystick
+    // dans sa zone (le quart bas-gauche du canvas), on le pousse vers l'avant,
+    // et l'on lit la vitesse que la voiture PREND, puis le cap qu'elle prend
+    // quand on va à droite.
+    const manette = await (async () => {
+      const cdp = await tab.context().newCDPSession(tab);
+      const dormirIci = (ms) => new Promise((f) => setTimeout(f, ms));
+      const toucher = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      const prep = await tab.evaluate(async () => {
+        const g = window.__game;
+        const { BLOCK } = await import('./src/blocks.js');
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+        g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+        const x0 = 30000, z0 = 30600, L = 300, W = 8;
+        let y0 = 0;
+        for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+        y0 += 2;
+        const dalle = [];
+        for (let d = -6; d <= L; d++) for (let w = -W; w <= W; w++) {
+          g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+          for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+        }
+        window.__piste262 = { x0, y0, z0, dalle, sauve: g.player.pos.clone(), yaw0: g.player.yaw };
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 1200));
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
+        g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+        await new Promise((f) => setTimeout(f, 800));
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        if (!auVolant()) return { err: 'pas monté dans la voiture' };
+        await new Promise((f) => setTimeout(f, 600));
+        // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (v272) : la pastille de
+        // viande n'apparaît qu'à partir d'un morceau ramassé, et c'est elle
+        // qui volait le doigt dans la zone du joystick. On la montre donc
+        // exprès, comme un enfant qui a chassé — sinon le témoin dépend de ce
+        // que les cent trente témoins d'avant ont laissé traîner.
+        const pastille = document.getElementById('meat-counter');
+        if (pastille) { pastille.style.display = 'block'; pastille.textContent = '🍖 × 3'; }
+        const vis = (id) => getComputedStyle(document.getElementById(id)).display;
+        // LA ZONE DU JOYSTICK SE DEMANDE AU JEU, ELLE NE S'ÉCRIT PAS EN
+        // PIXELS : c'est une FRACTION de la vue (main.js : `clientX <
+        // innerWidth * 0,45 && clientY > innerHeight * 0,4`). Écrite en
+        // pixels, la règle serait juste sur l'iPhone de Max et fausse sur le
+        // 420 × 760 du banc — c'est exactement le piège de la v265.
+        const zone = { x: innerWidth * 0.45, y: innerHeight * 0.4 };
+        const boite = (id) => {
+          const e = document.getElementById(id);
+          if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
+        // ET LE PANNEAU « DESCENDRE » SE LIT QUAND IL EST LÀ, PAS À L'INSTANT
+        // OÙ L'ON REGARDE (v272). Au portail il a rendu `null` — display à
+        // `none` — alors que le joystick du MÊME relevé prenait le doigt et
+        // que les boutons de la marche étaient bien effacés : `fun.js`
+        // réévalue la cible à chaque image, et à deux images par seconde on
+        // tombe entre deux. `null` ne distingue pas « mal placé » de « pas
+        // encore affiché » : on attend la boîte, borné, et l'attente entre
+        // dans le message.
+        let descendre = null, attenduDescendre = 0;
+        while (attenduDescendre < 8000 && !descendre) {
+          descendre = boite('fun-target');
+          if (!descendre) { await new Promise((f) => setTimeout(f, 250)); attenduDescendre += 250; }
+        }
+        return {
+          vue: { w: innerWidth, h: innerHeight }, zone,
+          canvas: (document.querySelector('canvas') || {}).id || 'game',
+          pastille: pastille ? getComputedStyle(pastille).display : 'absente',
+          descendre, attenduDescendre,
+          boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
+          boost: g.player.boost, max: 3.2 * (g.player.boost || 1),
+        };
+      });
+      if (prep.err) return prep;
+      // LE DOIGT SE POSE DANS LA ZONE DU JOYSTICK, EN FRACTION DE LA VUE.
+      //
+      // ET UN GESTE QUI NE PREND PAS SE DIT (v272). Le premier jet posait le
+      // doigt une fois et mesurait : au portail, `f` est resté à zéro et le
+      // témoin a accusé une physique JUSTE — sonde faite, même dalle, même
+      // voiture, même protocole : `f = 1`, la voiture monte à son allure.
+      // Le geste ne prend donc pas TOUJOURS sur une page qui a cent trente
+      // témoins derrière elle. On relève donc ce que la sonde relevait — la
+      // branche qui a pris le doigt (`joy` paraît-il ?), et ce que
+      // `elementFromPoint` voit — et l'on repose le doigt tant qu'il n'a pas
+      // pris, trois fois au plus, le NOMBRE D'ESSAIS entrant dans le verdict :
+      // un geste qui demande trois essais est un fait qu'on veut voir.
+      const base = { x: Math.round(prep.vue.w * 0.18), y: Math.round(prep.vue.h * 0.8) };
+      const JOY = 50;   // JOY_RADIUS (main.js)
+      const joy = (dx, dy) => ({ x: base.x + dx, y: base.y + dy, id: 1 });
+      const doigt = () => tab.evaluate((b) => {
+        const e = document.elementFromPoint(b.x, b.y);
+        return {
+          joy: getComputedStyle(document.getElementById('joy-base')).display,
+          knob: document.getElementById('joy-knob').style.transform,
+          cible: e ? (e.id || `${e.tagName}.${e.className}`) : 'rien',
+          f: +window.__game.player.touchMove.f.toFixed(2),
+        };
+      }, base);
+      // ET LE PROTOCOLE DES DOIGTS EST STRICT : `touchEnd` sans doigt posé rend
+      // « Must send a TouchStart first to start a new touch » et TUE la suite
+      // (mesuré). On lève donc le doigt sans exiger qu'il y en ait un.
+      const lever = () => toucher('touchEnd', [joy(0, 0)]).catch(() => {});
+      let essais = 0, pose = null;
+      while (essais < 3) {
+        essais++;
+        if (essais > 1) { await lever(); await dormirIci(120); }
+        await toucher('touchStart', [joy(0, 0)]);
+        await dormirIci(250);
+        // plein avant : le doigt monte d'un rayon de joystick
+        await toucher('touchMove', [joy(0, -JOY)]);
+        await dormirIci(350);
+        pose = await doigt();
+        if (pose.f > 0.8) break;
+      }
+      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1) }; });
+      // LE BANC NE VIT PAS EN TEMPS RÉEL (dt borné, trois images par seconde) :
+      // on attend que la voiture AIT pris sa vitesse, bornée en temps mural,
+      // puis on relève — jamais un délai fixe.
+      const vitesses = [];
+      const t0 = Date.now();
+      while (Date.now() - t0 < 20000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
+      for (let i = 0; i < 8; i++) { await dormirIci(200); vitesses.push(await lire()); }
+      // puis le joystick à droite, toujours plein avant
+      const avantVirage = await lire();
+      for (const dx of [15, 30, 45]) { await toucher('touchMove', [joy(dx, -JOY)]); await dormirIci(60); }
+      let apresVirage = avantVirage;
+      const t1 = Date.now();
+      while (Date.now() - t1 < 8000) { apresVirage = await lire(); if (Math.abs(apresVirage.yaw - avantVirage.yaw) > 0.3) break; await dormirIci(150); }
+      await lever();
+      await dormirIci(300);
+      // ON LÂCHE : SANS MANETTE, UNE VOITURE RALENTIT — c'est la différence
+      // avec l'avion, dont la poussée SE GARDE (v228). On attend le résultat,
+      // borné, jamais un délai fixe.
+      let apresLacher = await lire();
+      const t2 = Date.now();
+      while (Date.now() - t2 < 10000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // on descend : les boutons reviennent
+      const apres = await tab.evaluate(async () => {
+        const g = window.__game;
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        await new Promise((f) => setTimeout(f, 300));
+        const vis = (id) => getComputedStyle(document.getElementById(id)).display;
+        return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), gazJoueur: g.player.gaz, auVolant: auVolant() };
+      });
+      const tri = vitesses.map((r) => r.v).sort((a, b) => a - b);
+      return { ...prep, essais, pose, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
+    })();
+    verifier('au volant, l\'avant du joystick est l\'accélérateur — poussé à fond, la voiture prend son allure, et elle ralentit quand on lâche',
+      !manette.err && manette.mediane >= manette.max * 0.75 && manette.pointe <= manette.max * 1.05
+        && manette.apresLacher && manette.apresLacher.v < manette.max * 0.3
+        && manette.apresLacher.gaz == null,
+      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)}`);
+    verifier('et le côté du joystick tourne le volant pendant qu\'on accélère',
+      !manette.err && manette.avantVirage && manette.apresVirage
+        && Math.abs(manette.apresVirage.yaw - manette.avantVirage.yaw) > 0.25
+        && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > manette.max * 0.5,
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
+    const b = manette.boutons || {};
+    // ET L'ON NE MESURE PLUS DEUX BOUTONS QUI N'EXISTENT PLUS. La capture (◓) et
+    // le Dex partent avec le mode d'attrape (v285) : `vis()` rend alors
+    // `undefined`, jamais `'none'`, et garder la condition ferait ROUGIR ce
+    // témoin sur du code sain — c'est le faux rouge de la v280, par l'autre bout.
+    verifier('au volant, les boutons de la marche s\'effacent — saut, pioche, barre — ET LA JAUGE DE VITESSE N\'EXISTE PAS',
+      !manette.err && b.saut === 'none' && b.pioche === 'none'
+        && b.barre === 'none' && b.vol === 'none' && b.train === 'none'
+        && b.gaz === 'none' && b.val === 'none' && b.socle === 'none',
+      JSON.stringify(b));
+    // LE BOUTON POUR DESCENDRE N'EST PAS DANS LA ZONE DU JOYSTICK. La v265
+    // l'avait poussé vers la GAUCHE pour l'écarter des commandes de bord, et
+    // il est tombé dedans : un doigt posé là ne prend plus le volant, il
+    // DESCEND. La règle se dit en fractions de la vue, jamais en pixels.
+    const d = manette.descendre, zn = manette.zone;
+    verifier('et le bouton pour descendre est hors de la zone du joystick — on ne descend pas en croyant tourner',
+      !manette.err && !!d && !!zn && (d.x >= zn.x || d.y + d.h <= zn.y),
+      `bouton ${JSON.stringify(d)} après ${((manette.attenduDescendre || 0) / 1000).toFixed(1)} s d'attente`
+      + ` · zone du joystick x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
+    // ET RIEN D'AUTRE NE VOLE LE DOIGT (v272). C'est l'instrumentation du
+    // témoin ci-dessus qui l'a trouvé : `elementFromPoint` répondait
+    // « meat-counter ». La pastille de viande (🍖 × N) est posée à gauche, à
+    // 150 px du bas — DANS la zone du joystick — et `#left-rail-bottom > *`
+    // la rendait cliquable alors que `main.js` écrit qu'« elle ne se touche
+    // plus ». Un enfant qui a ramassé de la viande ne pouvait plus prendre le
+    // volant à cet endroit. Le témoin la MONTRE exprès (voir `prep`) et exige
+    // que le doigt atteigne le canvas du PREMIER coup.
+    verifier('et rien d\'autre ne vole le doigt dans la zone du joystick — la pastille de viande ne se touche pas',
+      !manette.err && !!manette.pose && manette.pose.cible === manette.canvas
+        && manette.pose.f > 0.8 && manette.essais === 1 && manette.pastille === 'block',
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · canvas « ${manette.canvas} » · pastille ${manette.pastille}`);
+    verifier('et ils reviennent à pied',
+      !manette.err && manette.apres && !manette.apres.auVolant && manette.apres.saut !== 'none'
+        && manette.apres.pioche !== 'none' && manette.apres.barre !== 'none' && manette.apres.gaz === 'none'
+        && manette.apres.gazJoueur == null,
+      JSON.stringify(manette.apres));
+
+    // « IL EST MARQUÉ 86 KM/H » — UNE VOITURE À L'ARRÊT NE ROULE PAS (v272).
+    //
+    // Max, capture de Hambourg : le compteur annonçait 86 km/h sur une
+    // voiture immobile. `vitesseVoiture` était la vitesse DEMANDÉE : ni la
+    // boîte de collision ni le crochet d'obstacle ne la touchaient, si bien
+    // qu'une voiture plaquée contre un mur gardait son allure pour toujours —
+    // le compteur le disait, le bruit du moteur le disait, et les roues
+    // tournaient dans le vide.
+    //
+    // ON MESURE LA CAUSE, PAS L'AFFICHAGE : le compteur n'existe plus en
+    // voiture (témoin ci-dessus), mais `vitesseVoiture` alimente encore le
+    // régime du moteur (v268) et la rotation des roues. C'est elle qu'on lit.
+    //
+    // ET L'ON ATTEND LE RÉSULTAT, JAMAIS UNE DURÉE : « il ne bouge plus »,
+    // borné en temps mural, parce qu'à `dt` borné trois secondes de banc ne
+    // mènent nulle part (v270, trois fichiers dans le même portail).
+    const mur = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+      const x0 = 30400, z0 = 30900, L = 60, W = 8;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const pose = [];
+      for (let d = -6; d <= L; d++) for (let w = -W; w <= W; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); pose.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); pose.push([x0 + d, y0 + h, z0 + w]); }
+      }
+      // un mur en travers, à trente blocs : de quoi prendre toute son allure
+      for (let w = -W; w <= W; w++) for (let h = 1; h <= 4; h++) {
+        g.world.setBlock(x0 + 30, y0 + h, z0 + w, BLOCK.STONE); pose.push([x0 + 30, y0 + h, z0 + w]);
+      }
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1200));
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+      await new Promise((f) => setTimeout(f, 800));
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+      const rendre = async () => {
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        g.player.keys.clear();
+        for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0);
+      };
+      if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
+      g.player.keys.add('KeyW');
+      // on roule jusqu'à ce que la voiture ait pris son allure
+      const t0 = performance.now();
+      let lance = 0;
+      while (performance.now() - t0 < 20000) {
+        await new Promise((f) => setTimeout(f, 200));
+        lance = Math.abs(g.player.vitesseVoiture || 0);
+        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85) break;
+      }
+      // PUIS JUSQU'À CE QU'ELLE NE BOUGE PLUS — ET C'EST UN RÉSULTAT, PAS UNE DURÉE
+      // (v270). Vingt-cinq secondes ne suffisaient pas : le portail a rendu
+      // `immobile: 2` sur la v284 et `immobile: 1` sur la v285, donc la fenêtre
+      // EXPIRAIT des deux côtés, la voiture venant tout juste d'arriver au mur. Et
+      // la vitesse lue à cet instant-là est un coup de dé : 0 une fois, 12,16 les
+      // deux fois suivantes, sur une physique que la sonde montre saine
+      // (`tests/sonde-mur.cjs` : huit tentatives de franchissement, ZÉRO aboutie,
+      // vitesse 0 contre le mur). C'est « un verdict lu à l'instant d'une
+      // transition est un coup de dé » (v273) posé sur la fin d'une fenêtre.
+      //
+      // ALLONGER NE PEUT RIEN BLANCHIR, et la question se pose avant (v279) : la
+      // panne de Max — une voiture immobile qui annonce 86 km/h — garde sa vitesse
+      // POUR TOUJOURS, donc aucune attente ne la ramène à zéro. Et le temps pris,
+      // ainsi que le fait d'avoir expiré, entrent dans le message.
+      const t1 = performance.now();
+      let immobile = 0, xAvant = g.player.pos.x;
+      while (performance.now() - t1 < 45000 && immobile < 4) {
+        await new Promise((f) => setTimeout(f, 250));
+        const bouge = Math.abs(g.player.pos.x - xAvant);
+        xAvant = g.player.pos.x;
+        immobile = bouge < 0.02 ? immobile + 1 : 0;
+      }
+      const arret = Math.round(performance.now() - t1);
+      const contreLeMur = {
+        vitesse: +Math.abs(g.player.vitesseVoiture || 0).toFixed(2),
+        x: +(g.player.pos.x - x0).toFixed(1),
+        immobile, arret, expire: arret >= 45000,
+      };
+      // on lâche le mur : la voiture doit repartir en arrière
+      g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
+      const t2 = performance.now();
+      let recule = 0;
+      while (performance.now() - t2 < 15000 && recule < 1) {
+        await new Promise((f) => setTimeout(f, 250));
+        recule = (x0 + contreLeMur.x) - g.player.pos.x;
+      }
+      await rendre();
+      return { lance: +lance.toFixed(2), max: +(g.player.vitesseVoitureMax || 3.2).toFixed(2), contreLeMur, recule: +recule.toFixed(2) };
+    });
+    verifier('une voiture arrêtée par un mur n\'annonce plus de vitesse — et elle repart quand on recule',
+      !mur.err && mur.lance > 1 && !!mur.contreLeMur && mur.contreLeMur.immobile >= 4
+        && mur.contreLeMur.vitesse < mur.lance * 0.2 && mur.recule >= 1,
+      `${mur.err || ''} lancée ${mur.lance} (allure ${mur.max}) · contre le mur ${JSON.stringify(mur.contreLeMur)} · reculé ${mur.recule}`);
+
+    // UNE VOITURE N'ENTRE PAS DANS L'EAU (v272).
+    //
+    // Max, capture de Hambourg : sa voiture au milieu du port. C'est le piège
+    // de `sommetColonne` du v267, une famille plus bas — elle rend le premier
+    // bloc SOLIDE en descendant, et l'eau n'en est pas un : au-dessus de la
+    // mer elle rend le FOND, si bien que rien n'arrêtait la voiture et
+    // qu'elle roulait au fond.
+    //
+    // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (leçon des poissons, v233) :
+    // un quai de pierre posé au ras de l'eau, cap droit sur la mer. Et la
+    // sonde DIT OÙ ELLE EST (v267) : sans la position et la hauteur d'eau, un
+    // « tout va bien » ne prouve rien.
+    const eau = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+      // UN PORT FABRIQUÉ : un quai de pierre jusqu'à douze blocs, puis un
+      // bassin en eau. On ne cherche pas un vrai rivage — il faut la MÊME
+      // situation à tous les coups (leçon des poissons, v233). Et il se bâtit
+      // AU-DESSUS du relief, comme la piste des témoins d'avion : le relief
+      // naturel n'est jamais plat sur cinquante blocs.
+      const x0 = 31200, z0 = 31500, W = 8, QUAI = 12;
+      let y0 = 0;
+      for (let d = -8; d <= 44; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;                       // le quai
+      const surface = y0 - 1;        // la surface de l'eau, un bloc plus bas
+      const fond = y0 - 5;
+      const pose = [];
+      const mettre = (x, y, z, id) => { g.world.setBlock(x, y, z, id); pose.push([x, y, z]); };
+      for (let d = -8; d <= 44; d++) for (let w = -W; w <= W; w++) {
+        if (d <= QUAI) for (let y = fond; y <= y0; y++) mettre(x0 + d, y, z0 + w, BLOCK.STONE);
+        else {
+          mettre(x0 + d, fond, z0 + w, BLOCK.STONE);
+          for (let y = fond + 1; y <= surface; y++) mettre(x0 + d, y, z0 + w, BLOCK.WATER);
+          mettre(x0 + d, y0, z0 + w, 0);
+        }
+        for (let h = 1; h <= 8; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) mettre(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;   // cap vers +x, vers la mer
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1200));
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+      await new Promise((f) => setTimeout(f, 800));
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+      const rendre = async () => {
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        g.player.keys.clear();
+        for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0);
+      };
+      // LA SONDE DIT OÙ ELLE EST (v267) : la distance au départ, la hauteur,
+      // et surtout COMBIEN de blocs d'eau la voiture a au-dessus d'elle. Sans
+      // ce dernier chiffre, un « tout va bien » ne prouve rien.
+      const ou = () => {
+        const bx = Math.floor(g.player.pos.x), bz = Math.floor(g.player.pos.z);
+        let eau = 0;
+        for (let y = Math.floor(g.player.pos.y); y <= surface; y++) if (g.world.getBlock(bx, y, bz) === BLOCK.WATER) eau++;
+        return { d: +(g.player.pos.x - x0).toFixed(1), y: +g.player.pos.y.toFixed(1), eau, surface };
+      };
+      if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
+      const depart = ou();
+      g.player.keys.add('KeyW');
+      // on pousse vers la mer jusqu'à ne plus avancer, borné en temps mural
+      const t0 = performance.now();
+      let immobile = 0, xAvant = g.player.pos.x;
+      while (performance.now() - t0 < 30000 && immobile < 4) {
+        await new Promise((f) => setTimeout(f, 250));
+        const bouge = Math.abs(g.player.pos.x - xAvant);
+        xAvant = g.player.pos.x;
+        immobile = bouge < 0.02 ? immobile + 1 : 0;
+      }
+      const arrive = ou();
+      // ET L'ON DOIT POUVOIR RECULER : « pas si l'on est déjà dedans » vaut
+      // aussi pour l'eau, sinon une voiture tombée au port y reste à jamais.
+      g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
+      const t1 = performance.now();
+      let recule = 0;
+      while (performance.now() - t1 < 15000 && recule < 1) {
+        await new Promise((f) => setTimeout(f, 250));
+        recule = arrive.d - (g.player.pos.x - x0);
+      }
+      await rendre();
+      return { depart, arrive, quai: QUAI, recule: +recule.toFixed(2), duree: Math.round(performance.now() - t0) };
+    });
+    verifier('une voiture n\'entre pas dans l\'eau — elle s\'arrête sur le quai, et elle peut reculer',
+      !eau.err && !!eau.arrive && eau.arrive.eau === 0 && eau.arrive.y > eau.arrive.surface
+        && eau.arrive.d > 2 && eau.arrive.d <= eau.quai + 2 && eau.recule >= 1,
+      `${eau.err || ''} départ ${JSON.stringify(eau.depart)} → arrivée ${JSON.stringify(eau.arrive)} (quai jusqu'à ${eau.quai}) · reculé ${eau.recule} · ${eau.duree} ms`);
+
+    // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
+    // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
+    const manuel = await (async () => {
+      const cdp = await tab.context().newCDPSession(tab);
+      const dormirIci = (ms) => new Promise((f) => setTimeout(f, ms));
+      const toucher = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      const prep = await tab.evaluate(async () => {
+        const g = window.__game, P = window.__piste262;
+        if (!P) return { err: 'pas de piste' };
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+        g.player.pos.set(P.x0, P.y0 + 1.01, P.z0 + 0.5); g.player.vel.set(0, 0, 0);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
+        g.animalManager.invoquer('avionligne', P.x0 + 3, P.z0);
+        await new Promise((f) => setTimeout(f, 800));
+        for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        if (!g.player.pilote) return { err: 'pas aux commandes' };
+        // en croisière au-dessus du DÉBUT de la piste, quinze blocs de haut,
+        // train rentré, manette à MI-COURSE : au-dessus du décrochage (47
+        // contre 30), l'appareil tient l'air pendant les deux cycles de
+        // train sans filer à sa pointe — à zéro il se posait tout seul avant
+        // la phase mesurée, à vide il dépassait les trois cents blocs de pierre
+        g.player.pos.set(P.x0, P.y0 + 16, P.z0 + 0.5);
+        g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 47; g.player.trainSorti = 0;
+        g.player.gaz = 0.5;
+        await new Promise((f) => setTimeout(f, 800));
+        const r = document.getElementById('gaz-base').getBoundingClientRect();
+        const vis = (id) => getComputedStyle(document.getElementById(id)).display;
+        return { cadran: { x: r.left + r.width / 2, haut: r.top + 14, bas: r.bottom - 14 }, boutons: { train: vis('train-btn'), vol: vis('fly-btn'), gaz: vis('gaz-base') } };
+      });
+      if (prep.err) return prep;
+      const lire = () => tab.evaluate(() => { const p = window.__game.player, P = window.__piste262; return { etat: p.avionEtat, v: +(p.vitesseAvion || 0).toFixed(1), y: +(p.pos.y - P.y0 - 1).toFixed(1), x: +(p.pos.x - P.x0).toFixed(0), train: +(p.trainSorti ?? 1).toFixed(2), gaz: p.gaz, ventre: !!p.ventre, sol: !!p.onGround }; });
+      // le train, par son bouton : sorti, puis rentré, puis sorti pour se poser
+      const attendreTrain = async (n) => {
+        const t = Date.now(); let r = await lire();
+        while (Date.now() - t < 12000 && Math.abs(r.train - n) > 0.03) { await dormirIci(200); r = await lire(); }
+        return r;
+      };
+      await tab.evaluate(() => document.getElementById('train-btn').click());
+      const trainSorti = await attendreTrain(1);
+      await tab.evaluate(() => document.getElementById('train-btn').click());
+      const trainRentre = await attendreTrain(0);
+      await tab.evaluate(() => document.getElementById('train-btn').click());
+      await attendreTrain(1);
+      // les deux cycles de train ont fait deux cents blocs : on se remet
+      // au-dessus du début de la piste pour la descente
+      await tab.evaluate(() => { const g = window.__game, P = window.__piste262; g.player.pos.set(P.x0, P.y0 + 16, P.z0 + 0.5); g.player.vitesseAvion = 47; });
+      // gaz à zéro et manche en avant (joystick tiré vers soi = descendre)
+      const joy = { x: 70, y: 640, id: 1 };
+      await toucher('touchStart', [joy]);
+      await toucher('touchStart', [joy, { x: prep.cadran.x, y: prep.cadran.bas, id: 2 }]);
+      await dormirIci(150);
+      await toucher('touchMove', [{ ...joy, y: joy.y + 50 }, { x: prep.cadran.x, y: prep.cadran.bas, id: 2 }]);
+      const releves = [];
+      const t0 = Date.now();
+      let toucheLaPiste = null, arret = null;
+      while (Date.now() - t0 < 40000) {
+        await dormirIci(200);
+        const r = await lire(); releves.push(r);
+        if (!toucheLaPiste && r.etat === 'freinage') toucheLaPiste = r;
+        if (r.etat === 'sol') { arret = r; break; }
+      }
+      // LE DOIGT TENU EN ARRIÈRE FAIT RECULER DÈS QUE L'APPAREIL EST ARRÊTÉ
+      // (v269, « le geste prime sur la consigne ») — c'est voulu, et c'est
+      // ce que mesure le témoin de la marche arrière quinze lignes plus bas.
+      // Lire la vitesse à l'instant où l'état passe à `sol`, doigt encore
+      // posé, c'est donc un COUP DE DÉ sur un pas d'échantillonnage de deux
+      // cents millisecondes : v = 0 au portail de la v272, v = −1,5 à celui
+      // de la v273, sur la même physique et au même bloc de piste (x 56
+      // contre 57). On relâche le joystick, on ATTEND que la vitesse se
+      // pose, bornée, et l'on mesure ce qu'on annonce : l'appareil s'arrête
+      // sur la piste.
+      await toucher('touchEnd', []);
+      let arretMs = 0;
+      if (arret) {
+        const t1 = Date.now();
+        let r = await lire();
+        while (Date.now() - t1 < 8000 && Math.abs(r.v) > 0.05) { await dormirIci(200); r = await lire(); }
+        arretMs = Date.now() - t1;
+        arret = r;
+      }
+      const avantToucher = toucheLaPiste ? releves.slice(0, releves.indexOf(toucheLaPiste)) : releves;
+      await tab.evaluate(async () => {
+        const g = window.__game, P = window.__piste262;
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0;
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      });
+      return { ...prep, trainSorti, trainRentre, toucheLaPiste, arret, arretMs, descendu: avantToucher.length, gazMin: Math.min(...avantToucher.map((r) => r.gaz == null ? 9 : r.gaz)) };
+    })();
+    verifier('aux commandes, 🛞 sort et rentre le train — et le bouton n\'existe qu\'en avion',
+      !manuel.err && manuel.boutons && manuel.boutons.train === 'flex' && manuel.boutons.vol !== 'none'
+        && manuel.trainSorti && manuel.trainSorti.train >= 0.97 && manuel.trainRentre && manuel.trainRentre.train <= 0.03,
+      `${manuel.err || ''} ${JSON.stringify({ boutons: manuel.boutons, sorti: manuel.trainSorti, rentre: manuel.trainRentre })}`);
+    verifier('gaz réduits et manche en avant, on se pose soi-même sur la piste — sans ✈️, train sorti, jusqu\'à l\'arrêt',
+      !manuel.err && manuel.gazMin === 0 && manuel.descendu >= 2 && !!manuel.toucheLaPiste
+        && manuel.toucheLaPiste.train >= 0.9 && !manuel.toucheLaPiste.ventre
+        && !!manuel.arret && Math.abs(manuel.arret.v) < 0.1 && Math.abs(manuel.arret.y) < 0.3,
+      `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} en ${manuel.arretMs} ms après le relâcher · gaz min ${manuel.gazMin}`);
+
+    // LE CADRAN DE CAP : LA VILLE VISÉE AU LOIN (v263).
+    //
+    // Max : « un cadran de pilote en avion : la ville visée au loin ». Aux
+    // commandes, l'enfant tient le cap au joystick ; rien ne lui disait vers
+    // quoi. Le cadran, en haut de l'écran et seulement aux commandes, donne
+    // le cap en degrés, la ville la plus proche dans le cône devant
+    // l'appareil avec sa distance, et un repère qui glisse quand on tourne.
+    //
+    // ON LIT CE QUE L'ENFANT VOIT — le texte du cadran — et l'on mesure ce
+    // qu'il obtient : cap sur Lyon, le cadran nomme Lyon et la distance
+    // DIMINUE en trois secondes de jeu (le banc rend deux images par seconde,
+    // on compte en secondes de jeu, jamais au mur). Un quart de tour à
+    // droite, la ville devant change et le cap affiché avance de quatre-vingt-
+    // dix degrés : LE SIGNE SE REGARDE — yaw = −π/2 doit dire l'est, sinon la
+    // règle glisserait à l'envers. À pied, le cadran est caché.
+    //
+    // Le mode pilote est posé à la main (aucun rendu de monture à mesurer
+    // ici) — et comme le veut la v261, `avionEtat` est déclaré puis remis.
+    const capAvion = await tab.evaluate(async () => {
+      const g = window.__game;
+      const lire = () => {
+        const el = document.getElementById('cap-avion');
+        if (!el) return { absent: true };
+        const c = window.__cadranDeCap ? window.__cadranDeCap() : null;
+        return {
+          affiche: getComputedStyle(el).display !== 'none',
+          degres: el.querySelector('#cap-degres').textContent,
+          ville: el.querySelector('#cap-ville').textContent,
+          repere: el.querySelector('#cap-repere').style.left,
+          dehors: el.querySelector('#cap-repere').classList.contains('dehors'),
+          distance: c && c.distance != null ? +c.distance.toFixed(1) : null,
+          cle: c ? c.cle : null,
+        };
+      };
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const deuxImages = () => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(f)));
+      try {
+        const m = await import('./src/montures.js');
+        const { positionDe } = await import('./src/mondes.js');
+        const def = m.MONTURES.find((d) => d.key === 'avionligne');
+        const P = positionDe('paris'), L = positionDe('lyon');
+        const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+        g.player.keys.clear();
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        await deuxImages();
+        const aPied = lire();
+        // Sur la ligne Paris–Lyon, aux six dixièmes du chemin, cap sur Lyon.
+        const f = 0.6, x = P.x + (L.x - P.x) * f, z = P.z + (L.z - P.z) * f;
+        const yawLyon = Math.atan2(-(L.x - x), -(L.z - z));
+        g.player.pos.set(x, 120, z); g.player.vel.set(0, 0, 0);
+        g.player.yaw = yawLyon; g.player.pitch = 0;
+        g.player.flying = true; g.player.pilote = def.pilote;
+        g.player.vitesseAvion = def.pilote.max; g.player.avionEnVol = true; g.player.avionEtat = 'vol';
+        g.player.altitudeDecollage = -999; g.player.gaz = 1;
+        await deuxImages();
+        const depart = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
+        await tenirSecondes(3);
+        const apres = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
+        // un quart de tour à droite : le nez passe de 152° à 62°
+        g.player.yaw = yawLyon + Math.PI / 2;
+        await deuxImages();
+        const tourne = lire();
+        // et l'est, pour le signe : yaw = −π/2 regarde +x
+        g.player.yaw = -Math.PI / 2;
+        await deuxImages();
+        const est = lire();
+        // on rend tout
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        g.player.vitesseAvion = undefined; g.player.gaz = null; g.player.flying = false;
+        g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
+        await deuxImages();
+        const rendu = lire();
+        return { aPied, depart, apres, tourne, est, rendu, parcouru: +Math.hypot(apres.x - depart.x, apres.z - depart.z).toFixed(1) };
+      } catch (e) { return { err: String(e && e.message || e) }; }
+    });
+    const cadranOk = (r) => r && !r.absent && r.affiche;
+    verifier('aux commandes, cap sur Lyon, le cadran nomme Lyon avec sa distance — et la distance diminue en volant',
+      !capAvion.err && cadranOk(capAvion.depart) && capAvion.depart.cle === 'lyon' && /Lyon/.test(capAvion.depart.ville)
+        && /km/.test(capAvion.depart.ville) && !capAvion.depart.dehors
+        && cadranOk(capAvion.apres) && capAvion.apres.cle === 'lyon'
+        && capAvion.parcouru > 100 && capAvion.apres.distance < capAvion.depart.distance - 100,
+      `${capAvion.err || ''} départ ${JSON.stringify(capAvion.depart)} · après ${JSON.stringify(capAvion.apres)} · parcouru ${capAvion.parcouru}`);
+    verifier('un quart de tour à droite : le cap avance de 90° et une autre ville passe devant ; vers +x le cadran dit l\'est',
+      !capAvion.err && cadranOk(capAvion.tourne) && capAvion.tourne.cle !== 'lyon'
+        && /^152°/.test(capAvion.depart.degres) && /^062°/.test(capAvion.tourne.degres)
+        && /^090° E/.test(capAvion.est.degres),
+      `${capAvion.err || ''} départ ${capAvion.depart && capAvion.depart.degres} · tourné ${JSON.stringify(capAvion.tourne)} · est ${JSON.stringify(capAvion.est)}`);
+    verifier('à pied, le cadran de cap est caché',
+      !capAvion.err && capAvion.aPied && !capAvion.aPied.absent && !capAvion.aPied.affiche
+        && capAvion.rendu && !capAvion.rendu.affiche,
+      `${capAvion.err || ''} à pied ${JSON.stringify(capAvion.aPied)} · rendu ${JSON.stringify(capAvion.rendu)}`);
+
+    // LES FLAMMES DES RÉACTEURS (v264).
+    //
+    // Max, capture du chasseur en vol : « voir les flammes sortir du réacteur
+    // quand l'avion se déplace ». Une flamme par tuyère — deux pour l'avion
+    // de ligne, quatre pour le Concorde, une pour le chasseur — dont la
+    // longueur suit la MANETTE : rien à l'arrêt moteurs coupés, longue à
+    // pleins gaz, plus courte quand on réduit.
+    //
+    // On lit CE QUI EST DESSINÉ : les maillages de flamme du modèle
+    // (`userData.tuyeres`, visibles ou non, et leur longueur rendue). Le
+    // compte se lit sur les trois fabriques sans page ; le reste se monte
+    // PAR LE BOUTON sur une piste, comme le trajet de la v261, parce que la
+    // flamme est réglée par `fun.js` sur la monture dessinée.
+    const flammes = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const m = await import('./src/montures.js');
+      const tenirSecondes = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => {
+          cumul += Math.min(Math.max((t - prec) / 1000, 0), 0.05);
+          prec = t;
+          if (cumul >= n) fin(); else requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const comptes = {};
+      for (const k of ['avionligne', 'concorde', 'chasseur']) {
+        const mesh = m.MODELES_MONTURE[k]();
+        comptes[k] = (mesh.userData.tuyeres || []).length;
+      }
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+      const x0 = 30000, z0 = 30900, L = 300;
+      let y0 = 0;
+      for (let d = -6; d <= L; d += 4) for (let w = -4; w <= 4; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      const dalle = [];
+      for (let d = -6; d <= L; d++) for (let w = -4; w <= 4; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+      }
+      const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenirSecondes(1);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
+      if (!avion) return { err: 'aucun avion posé', comptes };
+      await tenirSecondes(0.5);
+      for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      if (!g.player.pilote) return { err: 'on n\'est pas aux commandes', comptes };
+      const lire = () => (avion.mesh.userData.tuyeres || []).map((f) => ({ visible: f.visible, long: +f.scale.z.toFixed(2) }));
+      await tenirSecondes(0.6);
+      const arret = { v: +(g.player.vitesseAvion || 0).toFixed(1), gaz: g.player.gaz, flammes: lire() };
+      // ✈️ : pleins gaz, et l'on monte
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+      let t = 0, vol = null;
+      while (t < 20 && !vol) { await tenirSecondes(0.2); t += 0.2; if (g.player.avionEtat === 'vol') vol = { t: +t.toFixed(1), v: +(g.player.vitesseAvion || 0).toFixed(1), flammes: lire() }; }
+      // la manette : pleins gaz, puis réduits
+      g.player.gaz = 1; await tenirSecondes(0.4);
+      const pleinsGaz = lire();
+      g.player.gaz = 0.2; await tenirSecondes(0.4);
+      const reduits = lire();
+      // on redescend : les flammes s'éteignent avec le mode pilote
+      g.player.pos.set(x0 + 40, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0; g.player.gaz = null;
+      await tenirSecondes(0.3);
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
+      await tenirSecondes(0.3);
+      const descendu = { auVolant: auVolant(), flammes: lire() };
+      for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
+      g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      g.player.avionEtat = undefined; g.player.gaz = null;
+      return { comptes, arret, vol, pleinsGaz, reduits, descendu };
+    });
+    const toutes = (l, f) => Array.isArray(l) && l.length > 0 && l.every(f);
+    verifier('chaque réacteur a sa tuyère : deux sur l\'avion de ligne, quatre sur le Concorde, une sur le chasseur',
+      !flammes.err && flammes.comptes && flammes.comptes.avionligne === 2 && flammes.comptes.concorde === 4 && flammes.comptes.chasseur === 1,
+      `${flammes.err || ''} ${JSON.stringify(flammes.comptes)}`);
+    verifier('à l\'arrêt moteurs coupés, aucune flamme ; en vol, une flamme derrière chaque tuyère',
+      !flammes.err && flammes.arret && flammes.arret.flammes.length === 2 && flammes.arret.flammes.every((f) => !f.visible)
+        && !!flammes.vol && toutes(flammes.vol.flammes, (f) => f.visible && f.long > 0.5),
+      `${flammes.err || ''} arrêt ${JSON.stringify(flammes.arret)} · vol ${JSON.stringify(flammes.vol)}`);
+    verifier('la flamme suit la manette — plus longue à pleins gaz, plus courte réduite — et s\'éteint quand on descend',
+      !flammes.err && toutes(flammes.pleinsGaz, (f) => f.visible) && toutes(flammes.reduits, (f) => f.visible)
+        && flammes.pleinsGaz[0].long > flammes.reduits[0].long * 1.8
+        && flammes.descendu && !flammes.descendu.auVolant && toutes(flammes.descendu.flammes, (f) => !f.visible),
+      `${flammes.err || ''} pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · réduits ${JSON.stringify(flammes.reduits)} · descendu ${JSON.stringify(flammes.descendu)}`);
 
     // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
     // ROUES (v230).
@@ -1993,6 +5005,623 @@ async function avancerUnDemiSeconde(p, depart) {
     verifier('et les modèles du manifeste ne sont pas touchés',
       anciennes.length === 2 && anciennes.every(conforme)
       && anciennes.every((o) => o.forme === 'manifeste'), JSON.stringify(anciennes));
+
+    // LES COMMANDES DE BORD SONT UN SEUL INSTRUMENT (v265).
+    //
+    // Max, capture d'iPhone : « button pour les roues mal placé, pas
+    // élégant ». Mesuré sur la capture, écran de 430 × 932 : ✈️ et 🛞
+    // flottaient en plein ciel à 340 px du bas, VINGT PIXELS AU-DESSUS de la
+    // manette et dans DEUX colonnes différentes (x 346 et x 270) ; et le
+    // compteur « 684 km/h » vivait DANS la manette, replié sur deux lignes
+    // sous le curseur blanc.
+    //
+    // Ce que le témoin dit, et pourquoi c'est formulé ainsi :
+    //   — les deux boutons partagent une colonne (même x) ;
+    //   — aucune commande ne dépasse le HAUT de la manette : c'est la façon
+    //     exacte de dire « rien ne flotte », et elle ne dépend pas de la
+    //     taille de l'écran, contrairement à « dans le tiers du bas » — que
+    //     le code neuf aurait raté sur le 420 × 760 du banc ;
+    //   — le compteur est HORS de la manette, donc jamais sous le curseur ;
+    //   — chaque bouton porte un mot, et le mot dit l'état (un pictogramme
+    //     de roue ne se devine pas à sept ans) ;
+    //   — rien ne recouvre « Descendre ».
+    const bord = await (async () => {
+      const prep = await tab.evaluate(async () => {
+        const g = window.__game;
+        const { BLOCK } = await import('./src/blocks.js');
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+        const x0 = 30000, z0 = 31600;
+        let y0 = 0;
+        for (let d = -6; d <= 40; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+        y0 += 2;
+        const dalle = [];
+        for (let d = -6; d <= 40; d++) for (let w = -6; w <= 6; w++) {
+          g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+          for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+        }
+        window.__dalle265 = { x0, y0, z0, dalle, sauve: g.player.pos.clone(), yaw0: g.player.yaw };
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 1200));
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
+        g.animalManager.invoquer('chasseur', x0 + 3, z0);
+        await new Promise((f) => setTimeout(f, 800));
+        for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+        if (!g.player.pilote) return { err: 'pas aux commandes' };
+        await new Promise((f) => setTimeout(f, 700));
+        const boite = (id) => {
+          const e = document.getElementById(id);
+          if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
+        const mot = (id) => { const e = document.getElementById(id); return e && getComputedStyle(e).display !== 'none' ? e.textContent : null; };
+        const gv = document.getElementById('gaz-val');
+        const nb = gv ? gv.querySelector('b') : null;
+        return {
+          vue: { w: innerWidth, h: innerHeight },
+          gaz: boite('gaz-base'), val: boite('gaz-val'), vol: boite('fly-btn'),
+          train: boite('train-btn'), cible: boite('fun-target'),
+          mots: { vol: mot('fly-lb'), train: mot('train-lb') },
+          nombre: nb ? { texte: nb.textContent, deborde: nb.scrollWidth > nb.clientWidth + 1 } : null,
+        };
+      });
+      await tab.evaluate(async () => {
+        const g = window.__game, P = window.__dalle265;
+        if (!P) return;
+        const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+        for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
+      });
+      return prep;
+    })();
+    const croise = (a, b) => !!a && !!b
+      && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x)
+      && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+    const hautGaz = bord.gaz ? bord.gaz.y : 0;
+    verifier('aux commandes, ✈️ et 🛞 tiennent dans une seule colonne collée à la manette — rien ne flotte',
+      !bord.err && !!bord.gaz && !!bord.vol && !!bord.train
+      && bord.vol.x === bord.train.x
+      && bord.vol.y >= hautGaz && bord.train.y >= hautGaz
+      && bord.vol.y + bord.vol.h <= bord.gaz.y + bord.gaz.h
+      && bord.train.y + bord.train.h <= bord.gaz.y + bord.gaz.h
+      && bord.gaz.x - (bord.vol.x + bord.vol.w) < 30 && bord.gaz.x > bord.vol.x,
+      `${bord.err || ''} ${JSON.stringify({ vue: bord.vue, gaz: bord.gaz, vol: bord.vol, train: bord.train })}`);
+    verifier('la vitesse se lit hors de la manette, sur une ligne, et rien ne recouvre « Descendre »',
+      !bord.err && !!bord.val && !croise(bord.val, bord.gaz)
+      && !!bord.nombre && !bord.nombre.deborde
+      && !croise(bord.cible, bord.gaz) && !croise(bord.cible, bord.vol) && !croise(bord.cible, bord.train)
+      && !croise(bord.cible, bord.val),
+      `${bord.err || ''} ${JSON.stringify({ val: bord.val, gaz: bord.gaz, cible: bord.cible, nombre: bord.nombre })}`);
+    verifier('et chaque bouton dit ce qu\'il fait : au sol on DÉCOLLE, et le train est SORTI',
+      !bord.err && bord.mots && bord.mots.vol === 'DÉCOLLER' && bord.mots.train === 'SORTI',
+      `${bord.err || ''} ${JSON.stringify(bord.mots)}`);
+
+    // UN AVION NE SE POSE PAS DANS L'EAU (v267).
+    //
+    // Max : « un avion ne peut pas atterrir dans l'eau ». `sommetColonne`
+    // cherche le premier bloc SOLIDE en descendant, et l'eau n'en est pas
+    // un : au-dessus de la mer elle rend le FOND. Mesuré au large de Nice
+    // (sonde `v267/sonde-eau`), avion de ligne en finale : posé à y = 25,
+    // SOUS CINQ BLOCS D'EAU, état `sol`, à rouler au fond de la
+    // Méditerranée.
+    //
+    // ET LA SONDE A MENTI AU PREMIER TOUR, ce qui vaut d'être écrit : elle
+    // volait vers -z, c'est-à-dire vers Nice, et l'appareil rejoignait la
+    // côte en descendant — elle concluait « tout va bien » en ne mesurant
+    // pas l'eau, et elle ne relevait même pas sa position. Une sonde qui
+    // juge un terrain dit OÙ elle était quand elle l'a jugé.
+    //
+    // Le témoin part donc au large, cap au SUD, et vérifie ce qu'un enfant
+    // voit : l'appareil ne descend pas sous la surface, il repasse en vol.
+    const surLEau = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const { positionDe } = await import('./src/mondes.js');
+      const def = m.MONTURES.find((d) => d.key === 'avionligne');
+      const patienter = (ms) => new Promise((fin) => {
+        const t0 = performance.now();
+        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+        requestAnimationFrame(tic);
+      });
+      const eauEn = (x, z) => {
+        const sol = g.world.sommetColonne(Math.floor(x), Math.floor(z));
+        return g.world.getBlock(Math.floor(x), sol + 1, Math.floor(z)) === BLOCK.WATER;
+      };
+      const N = positionDe('nice');
+      let mer = null;
+      for (let d = 20; d < 400 && !mer; d += 10) {
+        if (eauEn(N.x, N.z + d)) mer = { x: Math.round(N.x), z: Math.round(N.z + d) };
+      }
+      if (!mer) return { err: 'pas de mer au sud de Nice' };
+      g.player.pos.set(mer.x, 60, mer.z);
+      g.player.vel.set(0, 0, 0); g.player.yaw = Math.PI; g.player.pitch = 0;
+      g.player.flying = true;
+      g.player.pilote = def.pilote;
+      g.player.vitesseAvion = def.pilote.approche;
+      g.player.avionEnVol = true; g.player.avionEtat = 'atterrissage';
+      g.player.trainVoulu = true; g.player.trainSorti = 1;
+      g.player.altitudeDecollage = -999;
+      let plusBas = Infinity, pose = null, remise = false;
+      const surAvion = g.player.surAvion;
+      g.player.surAvion = (quoi) => { if (quoi === 'remiseDesGaz') remise = true; if (surAvion) surAvion(quoi); };
+      for (let n = 0; n < 30 && !pose; n++) {
+        await patienter(500);
+        plusBas = Math.min(plusBas, g.player.pos.y);
+        if (g.player.avionEtat === 'sol' || g.player.avionEtat === 'freinage') {
+          pose = { y: +g.player.pos.y.toFixed(1), x: Math.round(g.player.pos.x), z: Math.round(g.player.pos.z),
+            surEau: eauEn(g.player.pos.x, g.player.pos.z) };
+        }
+      }
+      const out = {
+        mer, WATER_LEVEL, plusBas: +plusBas.toFixed(1), pose, remise,
+        etat: g.player.avionEtat,
+        finSurEau: eauEn(g.player.pos.x, g.player.pos.z),
+        x: Math.round(g.player.pos.x), z: Math.round(g.player.pos.z),
+      };
+      g.player.surAvion = surAvion;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false;
+      return out;
+    });
+    verifier('en finale au-dessus de la mer, l\'avion ne se pose pas dans l\'eau — il remet les gaz',
+      !surLEau.err && surLEau.finSurEau && !surLEau.pose
+      && surLEau.plusBas > surLEau.WATER_LEVEL && surLEau.remise,
+      `${surLEau.err || ''} ${JSON.stringify(surLEau)}`);
+
+    // LE COMPTEUR DIT LA VRAIE VITESSE DE L'APPAREIL (v267).
+    //
+    // Max : « peut-être fake la vraie vitesse, mais quand ton avion de chasse
+    // vole il devrait voler à une vitesse supersonique ; idem, un Concorde ça
+    // ne vole pas à 500 km/h ». Il faisait `blocs par seconde × 3,6`, soit un
+    // bloc pour un mètre — ce qu'un bloc ne vaut nulle part ici : 432 km/h
+    // pour un long courrier, 576 pour un Concorde. La vraie croisière vit
+    // dans la fiche (`kmh`) et l'affichage en prend la fraction atteinte ;
+    // ce qui se DÉPLACE ne change pas d'un bloc.
+    //
+    // On lit le COMPTEUR RENDU, pas la fiche : c'est ce que l'enfant voit,
+    // et c'est ce qui rougit si quelqu'un débranche l'affichage.
+    const compteurs = await tab.evaluate(async () => {
+      const g = window.__game;
+      const m = await import('./src/montures.js');
+      const lire = () => {
+        const e = document.getElementById('gaz-val');
+        const b = e && e.querySelector('b'), s = e && e.querySelector('small');
+        return { n: b ? +b.textContent : null, unite: s ? s.textContent : null };
+      };
+      const out = {};
+      for (const key of ['avionligne', 'concorde', 'chasseur']) {
+        const def = m.MONTURES.find((d) => d.key === key);
+        g.player.flying = true;
+        g.player.pilote = def.pilote;
+        g.player.avionEnVol = true; g.player.avionEtat = 'vol';
+        g.player.vitesseAvion = def.pilote.max;      // pleins gaz
+        g.player.gaz = 1;
+        if (window.__majBoutonsVehicule) window.__majBoutonsVehicule();
+        out[key] = lire();
+      }
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.gaz = null; g.player.flying = false;
+      return out;
+    });
+    const MACH = 1235;
+    verifier('à pleins gaz, le Concorde et le chasseur passent le mur du son, l\'avion de ligne non',
+      compteurs.concorde && compteurs.chasseur && compteurs.avionligne
+      && compteurs.concorde.n > MACH && /^Mach /.test(compteurs.concorde.unite)
+      && compteurs.chasseur.n > MACH && /^Mach /.test(compteurs.chasseur.unite)
+      && compteurs.avionligne.n > 800 && compteurs.avionligne.n < MACH
+      && compteurs.avionligne.unite === 'km/h',
+      JSON.stringify(compteurs));
+
+    // LE BRUIT DU MOTEUR ET LA RADIO (v268).
+    //
+    // Max : « les véhicules, on devrait avoir un bruit ambiant. Quand on
+    // rentre dans une voiture, on devrait avoir un bruit de radio, un petit
+    // peu comme dans GTA. »
+    //
+    // UN TÉMOIN DE SON LIT DES ÉCHANTILLONS, JAMAIS UN DRAPEAU. `etatSon()`
+    // dirait « radio : Nuit Cubique » même si plus un seul oscillateur
+    // n'était branché — c'est exactement la mort de `__lumiere()`, deux fois
+    // (v247, v251), pour avoir publié un mécanisme au lieu de ce qui
+    // s'entend. On accroche donc un analyseur à la SORTIE du jeu et l'on
+    // mesure l'énergie qui y passe : silence à pied, énergie au volant,
+    // silence de nouveau à la descente.
+    //
+    // Mesuré à la sonde AVANT d'écrire ce témoin : sur ce banc, sans
+    // périphérique de son, le contexte est bien `running`, son horloge
+    // avance (1,25 s en 1,2 s de vraie vie) et un analyseur rend 0,212 pour
+    // une sinusoïde d'amplitude 0,3 — soit 0,3/√2 au millième près. Sans
+    // cette mesure, un témoin d'énergie aurait mesuré le banc.
+    const sons = await tab.evaluate(async () => {
+      const g = window.__game;
+      if (!window.__sons) return { err: 'pas de module de son' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const ctx = window.__sons.contexte();
+      const sortie = window.__sons.sortie();
+      if (!ctx || !sortie) return { err: 'pas de contexte audio' };
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      sortie.connect(an);                 // une prise, pas un passage
+      const buf = new Float32Array(an.fftSize);
+      // LE PIRE D'UNE FENÊTRE, PAS UN INSTANTANÉ : la radio a des silences
+      // entre deux notes, et un instantané sur ce qui bouge est un pile ou
+      // face (leçon des poissons, v233).
+      const energie = async (secondes) => {
+        let fort = 0;
+        for (let t = 0; t < secondes; t += 0.1) {
+          an.getFloatTimeDomainData(buf);
+          let somme = 0;
+          for (const v of buf) somme += v * v;
+          fort = Math.max(fort, Math.sqrt(somme / buf.length));
+          await tenir(0.1);
+        }
+        return +fort.toFixed(4);
+      };
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle de pierre bien à l'écart, comme les témoins de vol
+      const x0 = 30000, z0 = 31400;
+      let y0 = 0;
+      for (let d = -6; d <= 10; d += 2) for (let w = -6; w <= 6; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -6; d <= 10; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 4; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+      g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenir(1);
+      const aPied = await energie(1.2);
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+      // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+      // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+      // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+      // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+      // — sur la branche ET sur `origin/main`, donc sur le code en production.
+      // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+      // joueur, donc elle est encore là après la descente, et le clic suivant la
+      // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+      // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+      // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+      // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+      for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      const voiture = g.animalManager.invoquer('voiture', x0 + 3, z0);
+      if (!voiture) return { err: 'aucune voiture posée', aPied };
+      await tenir(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      if (!auVolant()) return { err: 'on n\'est pas au volant', aPied };
+      await tenir(0.8);
+      const auRalenti = await energie(1.5);
+      const station = window.__sons.station();
+      // pleins gaz : le régime monte, donc l'énergie aussi
+      g.player.gaz = 1;
+      await tenir(1.5);
+      const pleinsGaz = await energie(1.5);
+      // on descend : tout doit se taire
+      document.getElementById('ride-btn').click();
+      await tenir(1.2);
+      const apresDescente = await energie(1.2);
+      const descendu = !auVolant();
+      try { sortie.disconnect(an); } catch { /* déjà */ }
+      g.player.gaz = null;
+      return { aPied, auRalenti, pleinsGaz, apresDescente, station, descendu,
+        etat: window.__sons.etat() };
+    });
+    // La barre est posée à la MOITIÉ de ce que le silence et le moteur
+    // séparent, jamais juste au-dessus de l'un des deux : à pied on mesure
+    // zéro, au ralenti quelques centièmes. Ce qui compte est le RAPPORT.
+    verifier('en montant dans une voiture, on entend le moteur — et une station de radio',
+      !sons.err && sons.auRalenti > 0.01 && sons.aPied < sons.auRalenti / 4 && !!sons.station,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+    verifier('et en descendant, le silence revient',
+      !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
+      `${sons.err || ''} ${JSON.stringify(sons)}`);
+
+    // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
+    //
+    // Max : « aussi impossible de faire marche arrière avec un avion ou une
+    // voiture. » L'avion ignorait purement le geste (`Math.max(0, forward)`
+    // écrasait tout négatif) ; la voiture exigeait trois conditions à la
+    // fois, dont ramener le cadran des gaz à zéro d'un second doigt.
+    //
+    // ON MESURE CE QUE L'ENFANT OBTIENT : des blocs parcourus VERS L'ARRIÈRE,
+    // le cadran à sa main gauche poussé à fond d'abord — c'est la situation
+    // qui ne marchait pas. Et l'on monte PAR LE BOUTON : un témoin qui pose
+    // `player.pilote` à la main ne fait voler personne (v231).
+    const recul = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      // une dalle à l'écart, assez longue pour reculer sans rien toucher
+      const x0 = 30000, z0 = 32400, L = 120;
+      let y0 = 0;
+      for (let d = -L; d <= L; d += 4) for (let w = -6; w <= 6; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -L; d <= L; d++) for (let w = -6; w <= 6; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      const out = {};
+      const essai = async (espece) => {
+        g.player.keys.clear();
+        g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
+        g.player.vitesseAvion = undefined; g.player.flying = false; g.player.gaz = null;
+        g.player.yaw = -Math.PI / 2; g.player.pitch = 0;      // le nez vers +x
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+        await tenir(1);
+        // UN TÉMOIN SE PLACE LUI-MÊME, ET « SE PLACER » COMMENCE PAR FAIRE LE VIDE
+        // (v284). La boucle d'embarquement plus bas était gardée par `auVolant()`, vrai
+        // pour une VOITURE autant que pour un avion : l'enfant laissé au volant par le
+        // témoin d'avant la rendait vraie AVANT le premier tour, elle ne cliquait donc
+        // pas une seule fois, et cinq témoins d'avion rendaient `pas aux commandes {}`
+        // — sur la branche ET sur `origin/main`, donc sur le code en production.
+        // ET DESCENDRE NE SUFFIT PAS, c'est une sonde qui l'a dit : une monture SUIT le
+        // joueur, donc elle est encore là après la descente, et le clic suivant la
+        // remonte. Mesuré, trois bras : page neuve, UN clic et l'on est aux commandes ;
+        // après une voiture, ZÉRO clic ; après une voiture, en descendant seulement,
+        // HUIT clics qui font basculer `auVolant` sans jamais donner `pilote`. On
+        // descend, on retire les bêtes (l'idiome du dépôt, v257), PUIS on invoque.
+        for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+        for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+        g.animalManager.animals.length = 0;
+        if (!g.animalManager.invoquer(espece, x0 + 3, z0)) return { err: `pas de ${espece}` };
+        await tenir(0.5);
+        for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+        if (!auVolant()) return { err: `pas monté sur ${espece}` };
+        await tenir(0.6);
+        // ON LANCE L'APPAREIL PAR LA COMMANDE QU'IL A VRAIMENT (v272). Une
+        // voiture n'a plus de cadran — décision de Max — donc on la lance au
+        // JOYSTICK, ce qu'un enfant fait. L'avion, lui, garde la situation de
+        // Max : le cadran a servi, il reste où on l'a laissé, et la marche
+        // arrière devenait impossible.
+        const auCadran = espece !== 'voiture';
+        if (auCadran) g.player.gaz = 1;
+        else g.player.touchMove = { f: 1, s: 0 };
+        await tenir(1.2);
+        const vitesse0 = () => (espece === 'voiture' ? (g.player.vitesseVoiture || 0) : (g.player.vitesseAvion || 0));
+        let lance = 0, monte = 0;
+        while (monte < 8 && lance < 1) { await tenir(0.3); monte += 0.3; lance = Math.abs(vitesse0()); }
+        // LE RECUL SE MESURE DEPUIS LE POINT DE REBROUSSEMENT — FREINER,
+        // C'EST ENCORE AVANCER (v272). Le premier jet séparait les deux phases
+        // en attendant l'arrêt sur `vitesseAvion` : au portail elle est
+        // retombée à zéro alors que l'appareil bougeait encore, l'attente est
+        // sortie tout de suite, et le témoin a relevé « recule −2,2 » sur une
+        // physique juste — verte au portail d'avant, sur le même code. Un SENS
+        // ne se lit pas entre deux instants choisis : il se lit entre le point
+        // le plus AVANCÉ atteint et le point final. Aucune cadence de banc ne
+        // peut le fausser, et sur la version publiée — qui ne recule jamais —
+        // ce point est toujours le point courant, donc le recul reste nul.
+        g.player.touchMove = { f: -1, s: 0 };
+        const xAvant = g.player.pos.x;
+        let xMax = xAvant, recule = 0, attente = 0;
+        while (attente < 14 && recule <= 1.2) {
+          await tenir(0.3);
+          attente += 0.3;
+          if (g.player.pos.x > xMax) xMax = g.player.pos.x;
+          recule = xMax - g.player.pos.x;     // le nez est vers +x
+        }
+        const freine = +(xMax - xAvant).toFixed(2);
+        const gazApres = g.player.gaz;
+        g.player.touchMove = { f: 0, s: 0 };
+        await tenir(0.4);
+        document.getElementById('ride-btn').click();
+        await tenir(0.8);
+        return { recule: +recule.toFixed(2), gazApres, freine, descendu: !auVolant(),
+          lance: +lance.toFixed(2), attente: +attente.toFixed(1) };
+      };
+      out.voiture = await essai('voiture');
+      out.avion = await essai('avionligne');
+      g.player.keys.clear(); g.player.gaz = null;
+      return out;
+    });
+    // LA MOITIÉ D'UNE MESURE FAITE SUR UNE MACHINE QUI RESPIRE NE VAUT PAS LA
+    // MOITIÉ AU PORTAIL — et ces bornes viennent de l'apprendre. Mon premier
+    // jet appliquait bien la règle de la v237 (la moitié du mesuré) sur une
+    // sonde jouée SEULE, machine au repos : 6,91 blocs pour la voiture, donc
+    // barre à 3. La même voiture rend 3,90 au portail complet et 2,51 rejouée
+    // seule après un portail — trois mesures de la MÊME physique, dans un
+    // rapport de un à trois, parce que ce qui varie est la cadence du banc et
+    // que le recul se mesure sur trois secondes de temps réel. Barre à 3 :
+    // rouge sur du code sain.
+    //
+    // CE QUE CE TÉMOIN DOIT SÉPARER, C'EST UN SIGNE, PAS UNE AMPLITUDE. Sur
+    // la version publiée la voiture AVANCE de 18,43 blocs et l'avion de 12,5,
+    // cadran resté à fond, l'attente de l'arrêt expirant à ses huit secondes.
+    // Entre « recule d'un bloc » et « avance de dix-huit », aucune cadence de
+    // banc ne peut se tromper. Ce qui prouve que la MESURE A EU LIEU, ce n'est
+    // pas la distance : c'est `arretEn` (l'attente n'a pas expiré) et
+    // `gazApres === 0` (le geste a bien repris la main sur le cadran). La
+    // borne de distance, elle, ne fait que vérifier le sens — un bloc, soit la
+    // moitié de la PIRE des trois mesures, et non la moitié de la meilleure.
+    //
+    // CE QUI PROUVE QUE LA MESURE A EU LIEU DÉPEND DE LA COMMANDE (v272). Pour
+    // l'avion c'est `gazApres === 0` : le geste a repris la main sur le
+    // cadran. Une voiture n'en a plus — son cadran reste donc à `null` — et ce
+    // qui prouve la mesure, c'est qu'elle ait été LANCÉE au joystick
+    // (`lance`) avant de reculer ; `freine` dit ce que le freinage a encore
+    // coûté de blocs vers l'avant avant le rebroussement.
+    verifier('lancée au joystick, tirer le joystick en arrière fait RECULER la voiture',
+      !recul.voiture.err && recul.voiture.recule > 1 && recul.voiture.gazApres == null
+      && recul.voiture.lance > 1,
+      JSON.stringify(recul.voiture));
+    verifier('et un avion se repousse au sol au lieu de rester planté',
+      !recul.avion.err && recul.avion.recule > 0.5 && recul.avion.gazApres === 0,
+      JSON.stringify(recul.avion));
+
+    // ---- UNE VOITURE ROULE DANS LA NATURE (v286) ----------------------------
+    //
+    // Max : « je voudrais que les voitures puissent circuler correctement […]
+    // qu'on n'ait pas vraiment des blocs carrés qui empêchent le véhicule de
+    // circuler. » Mesuré AVANT d'écrire une ligne, sur `terrainHeight`, pur,
+    // huit régions : 92 à 97 % de ce qui arrête une voiture est une marche d'UN
+    // bloc, une voiture fait 11 à 22 blocs avant blocage, et lui laisser
+    // franchir un bloc donne 80 à 226 — ×6 à ×17.
+    //
+    // CE TÉMOIN SE PLACE LUI-MÊME, LES TROIS CHOSES À LA FOIS (v279) :
+    // l'endroit (une plaine mesurée drivable, à 460 blocs du disque de Paris,
+    // donc aucun convoi ni mobilier à portée), le cap (celui qu'on DEMANDE), et
+    // ce qui traîne autour (on vide les bêtes, la voiture est invoquée là).
+    //
+    // ET IL MESURE CE QUE L'ENFANT OBTIENT — des blocs parcourus — en attendant
+    // le RÉSULTAT, borné, le temps pris entrant dans le message (v270). La
+    // barre est à soixante blocs : cinq fois la médiane de l'ancien code (12) et
+    // bien sous ce que la mesure promet (137 dans cette région). Sur l'ancien
+    // code la voiture s'arrête et NE REPART JAMAIS : la borne de temps tombe.
+    const nature = await tab.evaluate(async () => {
+      const g = window.__game;
+      // UN EMPLACEMENT SE MESURE, IL NE S'ÉCRIT PAS (v223). Mon premier jet
+      // écrivait `[40, -400]` avec « plaine au nord de Paris » en commentaire :
+      // mesuré à la sonde, le relief y monte 39 · 39 · 39 · 42 · 42 · 45 · 45 ·
+      // 47 — une FALAISE de trois blocs à trois blocs de là, et un mur par
+      // construction depuis la v261 (« deux blocs, c'est un mur »). Le témoin
+      // n'avait donc jamais eu de marche devant lui : il rendait `d: 0,4` au
+      // premier relevé et 157 relevés identiques, et il ne mesurait RIEN du
+      // franchissement. Ce qui l'a dit est une sonde qui imprime le relief, pas
+      // une relecture — et c'est « une sonde qui juge un terrain dit où elle
+      // était » (v267), du côté du témoin.
+      //
+      // On CHERCHE donc le terrain qu'on prétend éprouver : un couloir de
+      // soixante-dix blocs dont aucune marche ne dépasse UN bloc, et qui en
+      // porte au moins trois — sinon on mesurerait une ligne droite et plate,
+      // où l'ancien code roulait déjà très bien. Le profil retenu entre dans le
+      // message : sans lui, un rouge de ce témoin ne se démonte pas.
+      const cherche = () => {
+        for (let ax = -600; ax <= 600; ax += 40) for (let az = -600; az <= 600; az += 40) {
+          for (const [dx, dz] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) {
+            const prof = [];
+            for (let k = 0; k <= 70; k++) prof.push(g.world.sommetColonne(ax + dx * k, az + dz * k));
+            let pire = 0, marches = 0, eau = false;
+            for (let k = 1; k < prof.length; k++) {
+              const d = prof[k] - prof[k - 1];
+              if (d > pire) pire = d;
+              if (d === 1) marches++;
+              if (g.world.getBlock(ax + dx * k, prof[k] + 1, az + dz * k) !== 0) eau = true;
+            }
+            if (pire === 1 && marches >= 3 && !eau) return { ax, az, dx, dz, prof, marches };
+          }
+        }
+        return null;
+      };
+      const lieu = cherche();
+      if (!lieu) return { err: 'aucun couloir à marches d\'un bloc trouvé' };
+      const X = lieu.ax, Z = lieu.az;
+      for (const a of [...g.animalManager.animals]) {
+        g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1);
+      }
+      g.player.pos.set(X + 0.5, g.world.sommetColonne(X, Z) + 2, Z + 0.5);
+      // Le monde autour doit exister avant de rouler : sinon on mesure le
+      // maillage, pas la conduite.
+      const t0 = performance.now();
+      while (performance.now() - t0 < 15000) {
+        await new Promise((r) => requestAnimationFrame(r));
+        const cx = Math.floor(g.player.pos.x / 16), cz = Math.floor(g.player.pos.z / 16);
+        let pret = true;
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) pret = false;
+        }
+        if (pret) break;
+      }
+      // LE CAP SE POSE AVANT LA VOITURE, ET LA VOITURE SE POSE DEVANT. Le bouton
+      // prend la monture la plus proche DEVANT soi (v155) : posée de côté, elle
+      // ne s'offre pas, et le témoin mesurerait un enfant à pied. C'est le même
+      // geste que les trois autres témoins de monte.js qui invoquent une voiture.
+      // LE CAP VIENT DE LA DIRECTION MESURÉE, pas d'un zéro écrit à la main :
+      // le joueur avance en (−sin yaw, −cos yaw), donc un couloir vers +x se
+      // prend à yaw = −π/2 et un couloir vers −z à yaw = 0.
+      const capCouloir = lieu.dz !== 0 ? (lieu.dz < 0 ? 0 : Math.PI)
+        : (lieu.dx > 0 ? -Math.PI / 2 : Math.PI / 2);
+      g.player.yaw = capCouloir;
+      const voiture = g.animalManager.invoquer('voiture',
+        g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.z - Math.cos(g.player.yaw) * 3);
+      if (!voiture) return { err: 'aucune voiture invoquée' };
+      // ON MONTE PAR LE JEU, ET UN BOUTON-BASCULE NE SE RECLIQUE PAS (v252) :
+      // c'est `fun.js` qui pose le gabarit, la monture et l'allure de la classe
+      // (v260), et l'état se lit dans le JEU, jamais dans le texte du bouton —
+      // un second clic ferait descendre.
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let essai = 0; essai < 6 && !auVolant(); essai++) {
+        const b = document.getElementById('ride-btn');
+        const rangee = b && b.closest('.fun-target');
+        if (b && getComputedStyle(b).display !== 'none'
+            && (!rangee || getComputedStyle(rangee).display !== 'none')) b.click();
+        await new Promise((r) => setTimeout(r, 600));
+      }
+      if (!auVolant()) return { err: 'pas au volant', gabarit: g.player.gabarit };
+      // Plein gaz, et l'on note le départ APRÈS la monte : monter déplace
+      // l'enfant sur le siège de la voiture. LE CAP RESTE CELUI DU COULOIR — un
+      // `yaw = 0` écrit ici renverrait la voiture vers -z quel que soit le
+      // couloir mesuré, et l'on remesurerait le terrain d'à côté.
+      g.player.yaw = capCouloir;
+      const dep = { x: g.player.pos.x, z: g.player.pos.z, y: g.player.pos.y };
+      g.player.keys.add('KeyW');
+      const releves = [];
+      const t1 = performance.now();
+      let d = 0;
+      // LA CIBLE DE SORTIE EST UN CRAN AU-DELÀ DE LA BARRE (v277) : sortir sur la
+      // barre rendrait un vert sans marge.
+      while (performance.now() - t1 < 40000 && d < 60) {
+        await new Promise((r) => setTimeout(r, 250));
+        d = Math.hypot(g.player.pos.x - dep.x, g.player.pos.z - dep.z);
+        releves.push(Math.round(d * 10) / 10);
+      }
+      g.player.keys.delete('KeyW');
+      const montees = releves.length;
+      return { d: Math.round(d * 10) / 10, secondes: Math.round((performance.now() - t1) / 100) / 10,
+        releves: releves.slice(-6), montees, yFin: Math.round(g.player.pos.y * 10) / 10,
+        // LA MONTÉE EST LE SECOND SIGNAL, et elle est dans le message : sur un
+        // couloir à quatorze marches, trente blocs ne se font pas à plat.
+        dy: Math.round((g.player.pos.y - dep.y) * 10) / 10,
+        auVolant: auVolant(),
+        lieu: { x: X, z: Z, vers: [lieu.dx, lieu.dz], marches: lieu.marches },
+        profil: lieu.prof.slice(0, 20) };
+    });
+    // LA BARRE SE CALCULE, ELLE NE S'ÉCRIT PAS (v269), et elle se pose à la MOITIÉ
+    // de ce qu'elle doit laisser passer (v237). A/B sur la même page, en ordre
+    // alterné (`tests/sonde-marche.cjs`, vingt secondes par bras, couloir
+    // (−600, −520) vers +x, quatorze marches d'un bloc) :
+    //   franchissement armé   : 59,0 et 116,4 blocs, +10 et +9 de hauteur
+    //   franchissement désarmé : 0,4 et 17,9 blocs, hauteur INCHANGÉE
+    // Les deux étendues ne se recouvrent pas. Trente blocs est la moitié du pire
+    // bras armé et 1,7 fois le pire bras désarmé ; le chiffre se remesure le jour
+    // où l'allure d'une voiture ou la cadence du banc change.
+    verifier('une voiture roule dans la nature au lieu de buter sur une marche',
+      !nature.err && nature.auVolant && nature.d >= 30,
+      `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

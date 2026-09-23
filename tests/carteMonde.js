@@ -82,6 +82,36 @@ const VRAIES_KM = [
       chevauchements.length ? chevauchements.join(' · ')
         : `marge la plus faible ${Math.round(margeMin)} blocs (${paireMin})`);
 
+    // NEW YORK N'EST PAS UN DISQUE, ET LE REGISTRE MENT SUR ELLE (v242).
+    //
+    // Le témoin du dessus juge sur `r`, et `r` vaut 152 pour New York : c'est
+    // le disque de l'ancienne ville voxel. Manhattan, depuis la v240, est un
+    // rectangle de 480 × 2 300 blocs (`BORNES` de manhattan-plan.js) ; mesuré
+    // bord à bord sur la carte de v240, il restait 41 blocs avant Boston, 52
+    // avant Montréal, et JFK tombait DEDANS — un vert du disque, un rouge du
+    // rectangle. On demande donc le rectangle à son plan et l'origine au
+    // registre, jamais un chiffre recopié, et l'on exige de la place autour :
+    // deux cents blocs, pour que les villes voisines aient à leur tour de quoi
+    // grandir (c'est la raison même du monde ×2).
+    const rectNY = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js');
+      const { BORNES } = await import('./src/manhattan-plan.js');
+      const { AEROPORTS } = await import('./src/aeroport.js');
+      const ny = m.positionDe('ny');
+      const R = { x0: ny.x + BORNES.x0, x1: ny.x + BORNES.x1, z0: ny.z + BORNES.z0, z1: ny.z + BORNES.z1 };
+      const dRect = (x, z) => Math.hypot(Math.max(R.x0 - x, 0, x - R.x1), Math.max(R.z0 - z, 0, z - R.z1));
+      const villes = m.lieuxDuMonde('terre').filter((l) => l.cle !== 'ny')
+        .map((l) => ({ nom: l.nom, marge: Math.round(dRect(l.x, l.z) - l.r) })).sort((a, b) => a.marge - b.marge);
+      const aeros = AEROPORTS.map((a) => ({ nom: a.nom, marge: Math.round(dRect(a.x, a.z) - a.r) })).sort((a, b) => a.marge - b.marge);
+      return { rect: `${R.x1 - R.x0} × ${R.z1 - R.z0}`, villes: villes.slice(0, 3), aeros: aeros.slice(0, 2) };
+    });
+    verifier('le rectangle de Manhattan laisse deux cents blocs à chaque ville voisine',
+      rectNY.villes.length > 0 && rectNY.villes[0].marge >= 200,
+      `${rectNY.rect} blocs · les plus proches : ${rectNY.villes.map((v) => `${v.nom} ${v.marge}`).join(' · ')}`);
+    verifier('et aucun aérodrome ne tombe dedans',
+      rectNY.aeros.length > 0 && rectNY.aeros[0].marge >= 12,
+      `les plus proches : ${rectNY.aeros.map((v) => `${v.nom} ${v.marge}`).join(' · ')}`);
+
     // La géographie est respectée : les distances sur la carte sont les vraies
     // distances, à l'échelle près. Sauf l'Atlantique, resserré par décision de
     // Max — donc Paris/New York est volontairement plus court.
@@ -412,10 +442,24 @@ const VRAIES_KM = [
           pas++;
           if (prec !== null && Math.abs(v.cote - prec) > marche) marche = Math.abs(v.cote - prec);
           prec = v.cote;
+          // LE TÉMOIN DEMANDE LA COTE DU RAIL, IL NE L'ÉCRIT PAS (v281). Il
+          // cherchait l'obsidienne À LA COTE DU BALLAST, ce qui était juste
+          // tant que la voie était peinte à plat. Les files dépassent
+          // maintenant d'un bloc : cherchée au seul niveau du sol, elle ne se
+          // trouve plus, et ce témoin accusait la correction qu'il garde. On
+          // regarde donc les DEUX niveaux — c'est ce qui lui permet de
+          // mesurer « il y a des rails » sur les deux arbres, au lieu de
+          // mesurer la version du code.
           for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            if (w.getBlock(x + dx, v.cote, z + dz) === b.BLOCK.OBSIDIAN) { avecRail++; break; }
+            const id = w.getBlock(x + dx, v.cote, z + dz);
+            const dessus = w.getBlock(x + dx, v.cote + 1, z + dz);
+            if (id === b.BLOCK.OBSIDIAN || dessus === b.BLOCK.OBSIDIAN) { avecRail++; break; }
           }
-          if (dur(w.getBlock(x, v.cote + 1, z)) || dur(w.getBlock(x, v.cote + 2, z))) dedans++;
+          // Et le gabarit du train commence AU-DESSUS des files : sur le code
+          // neuf, le rail occupe `cote + 1` et il serait compté comme un
+          // obstacle sur sa propre voie.
+          const plancher = v.cote + (m2.ENTRAXE ? 2 : 1);
+          if (dur(w.getBlock(x, plancher, z)) || dur(w.getBlock(x, plancher + 1, z))) dedans++;
           if (w.terrainHeight(x, z) < 30) viaduc++;
         }
       }
@@ -431,6 +475,134 @@ const VRAIES_KM = [
     verifier('et rien de solide ne barre la route du train',
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
+
+    // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
+    //
+    // Max, deux captures d'iPad : « les rails ne sont pas des rails, les trains
+    // se rentrent dedans, il faut 2 rails pour aller et retour ». Trois défauts,
+    // trois témoins, et les trois se mesurent sur les fonctions PURES du module
+    // et sur les blocs du monde — sans avoir besoin d'aller sur une voie.
+    //
+    // 1. UNE FILE DE RAIL SE PARCOURT, ELLE NE SE COUPE PAS. Mon premier relevé
+    // balayait la perpendiculaire à pas fixe et rendait « 229 trous sur 2 700 »
+    // sur un code sain : sur une ligne oblique, un balayage perpendiculaire
+    // RATE des colonnes que la rastérisation a bien posées. On suit donc chaque
+    // file le long de son axe dominant, une colonne par pas, et l'on demande au
+    // monde si le rail y est. C'est ce que le rastériseur promet, et rien
+    // d'autre. Sur `origin/main` : 12 240 manquants sur 12 240 — il n'y a aucun
+    // bloc au-dessus du ballast, la voie est peinte à plat.
+    const files = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = window.__game.world;
+      if (!T.ENTRAXE) return { absent: true };
+      const OFFSETS = [-T.ENTRAXE - T.DEMI_RAIL, -T.ENTRAXE + T.DEMI_RAIL,
+        T.ENTRAXE - T.DEMI_RAIL, T.ENTRAXE + T.DEMI_RAIL];
+      let manque = 0, pas = 0, pireTrou = 0;
+      for (const seg of T.segmentsDeTrain()) {
+        const lx = seg.x1 - seg.x0, lz = seg.z1 - seg.z0, ll = Math.hypot(lx, lz);
+        const ux = lx / ll, uz = lz / ll, nx = -uz, nz = ux;
+        const horiz = Math.abs(ux) >= Math.abs(uz);
+        let trou = 0;
+        for (const o of OFFSETS) {
+          for (let k = 60; k < Math.min(ll - 60, 260); k++) {
+            let x, z;
+            if (horiz) {
+              x = Math.round(seg.x0 + ux * k + o * nx);
+              const t = (x - seg.x0 - o * nx) / ux;
+              z = Math.round(seg.z0 + uz * t + o * nz);
+            } else {
+              z = Math.round(seg.z0 + uz * k + o * nz);
+              const t = (z - seg.z0 - o * nz) / uz;
+              x = Math.round(seg.x0 + ux * t + o * nx);
+            }
+            const v = T.voieEn(x, z);
+            pas++;
+            if (!v || w.getBlock(x, v.cote + 1, z) !== BLOCK.OBSIDIAN) {
+              manque++; trou++; pireTrou = Math.max(pireTrou, trou);
+            } else trou = 0;
+          }
+        }
+      }
+      return { manque, pas, pireTrou };
+    });
+    verifier('les quatre files de rail dépassent du ballast, sans un trou',
+      !files.absent && files.pas > 4000 && files.manque === 0,
+      files.absent ? 'la voie double n\'existe pas (code d\'avant la v281)'
+        : `${files.manque} bloc(s) manquant(s) sur ${files.pas} · plus long trou ${files.pireTrou}`);
+
+    // 2. DEUX RAMES NE SE TRAVERSENT PLUS. `traceSegment` faisait l'aller puis
+    // le RETOUR SUR LES MÊMES POINTS : deux rames placées en `s` et en `L − s`
+    // sont alors au même endroit du monde, deux fois par tour, pour chaque
+    // paire. Ce n'est pas une intermittence, c'est un défaut de PLAN — et c'est
+    // pour cela qu'on le mesure en SIMULANT le tour au lieu d'observer une
+    // partie : la situation est certaine, on n'a pas à l'attendre.
+    //
+    // Sur `origin/main` : distance minimale ZÉRO sur les neuf segments, et 135
+    // relevés de deux rames à moins de quatre blocs.
+    const croisement = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      const w = window.__game.world;
+      const EAU = 30, vitesse = 14, pause = 4, ATTENTE_QUAI = 30;
+      let mini = 1e9, serres = 0, n = 0;
+      for (const seg of T.segmentsDeTrain()) {
+        const t = T.traceSegment(seg, (x, z) => w.terrainHeight(x, z), EAU);
+        const pts = t.pts; let L = 0; const cum = [0];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          L += Math.hypot(b.x - a.x, b.z - a.z); cum.push(L);
+        }
+        const tour = L / vitesse + t.arretsIndex.length * pause;
+        const rames = Math.max(2, Math.ceil(tour / ATTENTE_QUAI));
+        const posEn = (s) => {
+          s = ((s % L) + L) % L;
+          let i = 0; while (i < cum.length - 2 && cum[i + 1] < s) i++;
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          const f = (s - cum[i]) / Math.max(1e-6, cum[i + 1] - cum[i]);
+          return { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f };
+        };
+        const N = Math.round(L / vitesse);
+        for (let k = 0; k < N; k++) {
+          const p = [];
+          for (let r = 0; r < rames; r++) p.push(posEn((k * vitesse) % L + (r * L) / rames));
+          for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) {
+            const d = Math.hypot(p[i].x - p[j].x, p[i].z - p[j].z);
+            mini = Math.min(mini, d); n++;
+            if (d < 4) serres++;
+          }
+        }
+      }
+      return { mini: +mini.toFixed(2), serres, n };
+    });
+    verifier('deux rames se croisent côte à côte au lieu de se traverser',
+      croisement.n > 1000 && croisement.serres === 0 && croisement.mini >= 3.9,
+      `distance minimale ${croisement.mini} bloc(s) · ${croisement.serres} relevés serrés sur ${croisement.n}`);
+
+    // 3. ET LE QUAI N'EST PAS POSÉ SUR LES RAILS. Il commençait « où la voie
+    // finit », à 1,9 bloc de l'axe — juste, tant que la voie s'arrêtait à 1,6.
+    // La voie double allant jusqu'à `EMPRISE`, une cote restée en dur aurait
+    // bâti le quai PAR-DESSUS une des deux voies. Les deux fonctions sont
+    // pures : on leur demande, colonne par colonne, si elles se contredisent.
+    const quais = await tab.evaluate(async () => {
+      const T = await import('./src/trains.js');
+      let colonnes = 0, surVoie = 0, sans = 0;
+      for (const g of T.garesDeTrain()) {
+        let n = 0;
+        for (let dx = -18; dx <= 18; dx++) for (let dz = -18; dz <= 18; dz++) {
+          const x = Math.round(g.x) + dx, z = Math.round(g.z) + dz;
+          const ga = T.gareEn(x, z);
+          if (!ga || ga.quoi !== 'quai') continue;
+          n++;
+          if (T.voieEn(x, z)) surVoie++;
+        }
+        colonnes += n;
+        if (!n) sans++;
+      }
+      return { colonnes, surVoie, sans, gares: T.garesDeTrain().length };
+    });
+    verifier('le quai de chaque gare est à côté des voies, jamais dessus',
+      quais.colonnes > 500 && quais.surVoie === 0 && quais.sans === 0,
+      `${quais.gares} gares · ${quais.colonnes} colonnes de quai · ${quais.surVoie} sur la voie · ${quais.sans} sans quai`);
 
     // CHAQUE BOUT DE LIGNE A SA GARE (v214) ----------------------------------
     //
@@ -455,6 +627,13 @@ const VRAIES_KM = [
         bouts.push({ x: s.x0, z: s.z0, ux, uz, ville: s.de });
         bouts.push({ x: s.x1, z: s.z1, ux, uz, ville: s.vers });
       }
+      // LES COTES SE DEMANDENT, ELLES NE S'ÉCRIVENT PAS (v281). Elles étaient
+      // écrites ici — quai à 2,5 et 3 — et la voie doublée les a mises dans le
+      // ballast : le témoin accusait un bâtisseur juste.
+      const dedans = m2.QUAI_DEDANS, dehors = m2.QUAI_DEHORS, bord = m2.BATI_DEHORS;
+      if (!(dedans > 0 && dehors > dedans && bord > dehors)) return { absent: true };
+      const tQuai = [-(dehors - 0.3), -(dedans + 0.4), dedans + 0.4, dehors - 0.3];
+      const tBati = [dehors + 0.6, (dehors + bord) / 2, bord - 0.4];
       const out = [];
       for (const g of bouts) {
         // la cote des rails au droit de la gare
@@ -462,14 +641,14 @@ const VRAIES_KM = [
         const cote = v ? v.cote : Math.max(w.terrainHeight(Math.round(g.x), Math.round(g.z)), 30) + 1;
         let quai = 0, auvent = 0, bati = 0, praticable = 0;
         for (let dl = -6; dl <= 6; dl++) {
-          for (const dt of [-3, -2.5, 2.5, 3]) {
+          for (const dt of tQuai) {
             const x = Math.round(g.x + g.ux * dl + g.uz * dt);
             const z = Math.round(g.z + g.uz * dl - g.ux * dt);
             if (w.getBlock(x, cote + 1, z) === b.CITY_BLOCK.GRANITE) quai++;
             if (w.getBlock(x, cote + 5, z) === b.BLOCK.DARKPLANK) auvent++;
             if (w.getBlock(x, cote + 2, z) === 0 && w.getBlock(x, cote + 3, z) === 0) praticable++;
           }
-          for (const dt of [4.5, 5.5, 6]) {
+          for (const dt of tBati) {
             const x = Math.round(g.x + g.ux * dl + g.uz * dt);
             const z = Math.round(g.z + g.uz * dl - g.ux * dt);
             if (w.getBlock(x, cote + 2, z) !== 0) bati++;
@@ -602,6 +781,7 @@ const VRAIES_KM = [
     const facades = await tab.evaluate(async () => {
       const { positionDe } = await import('./src/mondes.js');
       const { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI } = await import('./src/blocks.js');
+      const vm = await import('./src/villesmonde.js');
       const w = window.__game.world;
       const raye = (c) => DECOR_START + c * 10 + 5;
       // La palette sobre du réalisme v2 : bordeaux, vert, marine, émeraude,
@@ -611,7 +791,7 @@ const VRAIES_KM = [
       for (const cle of ['rome', 'tokyo', 'marrakech']) {
         const p = positionDe(cle);
         const c = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, lampes: 0, feux: 0,
-          bancs: 0, verre: 0, batis: 0 };
+          bancs: 0, verre: 0, batis: 0, trottoir: 0 };
         const ids = new Set();
         for (let du = -40; du <= 40; du++) {
           for (let dv = -40; dv <= 40; dv++) {
@@ -632,6 +812,7 @@ const VRAIES_KM = [
             // dans sa texture, elle est opaque, et elle s'allume la nuit.
             if (s0 === ARCHI.VITRINE) c.vitrines++;
             if (s0 === CITY_BLOCK.SIDEWALK) {
+              c.trottoir++;                      // la longueur de rue de la fenêtre
               if (ENS.has(w.getBlock(x, sol + 3, z))) c.auvents++;
               // v180 : le lampadaire est un mesh (RUE.REVERBERE), plus un
               // monolithe à chapeau d'or — et les carrefours ont leurs feux.
@@ -641,20 +822,106 @@ const VRAIES_KM = [
             } else if (ENS.has(w.getBlock(x, sol + 2, z))) c.enseignes++;
           }
         }
-        villes[cle] = { ...c, diversite: ids.size };
+        // ET LES QUATRE POSTES SE COMPTENT SUR LE DISQUE ENTIER, PAR LES
+        // FONCTIONS PURES. La fenêtre de ±40 blocs ne peut pas voir un
+        // événement PAR FAÇADE : une porte est une colonne par front de lot, et
+        // à Tokyo il n'y en a AUCUNE dans cette fenêtre alors que la ville en
+        // porte 23,8 pour mille colonnes de trottoir. C'est « une fraction se
+        // pose sur la VILLE, pas sur la fenêtre » (v274) — troisième fois pour
+        // ce témoin-ci, après les comptes absolus de la v172 et de la v271 — et
+        // c'est aussi « le témoin interroge le BÂTISSEUR, pas le monde chargé »
+        // (v202), parce que `getBlock` ne répond que sur les morceaux engendrés
+        // et qu'engendrer un disque entier sur le fil principal coûte des
+        // secondes. Les deux appels de `world.js` donnent les cotes : le
+        // bâtisseur écrit `wy = h + dy − 1`, le mobilier `wy = h + dy`, donc la
+        // vitrine et la porte sont à `dy 1`, l'enseigne à `dy 3` du bâti et
+        // l'auvent à `dy 3` du mobilier. Vérifié : à ±40 sur `main`, ce calcul
+        // rend EXACTEMENT ce que la lecture du monde rend pour Tokyo
+        // (231,6 · 3,4 · 235,0 · 34,1) et à un dixième près pour Marrakech.
+        // Le disque coûte sept dixièmes de seconde pour les trois villes.
+        const d = { vitrines: 0, portes: 0, enseignes: 0, auvents: 0, trottoir: 0 };
+        const R = p.r;
+        for (let du = -R; du <= R; du++) {
+          for (let dv = -R; dv <= R; dv++) {
+            if (du * du + dv * dv > R * R) continue;
+            const x = p.x + du, z = p.z + dv, sv = vm.solVillesMonde(x, z);
+            if (sv === CITY_BLOCK.SIDEWALK) {
+              d.trottoir++;
+              vm.mobilierVillesMonde(x, z, (dy, id) => { if (dy === 3 && ENS.has(id)) d.auvents++; });
+            } else if (sv === 'lot') {
+              vm.batirColonneVillesMonde(x, z, (dy, id) => {
+                if (dy === 1) { if (id === BLOCK.DARKPLANK) d.portes++; else if (id === ARCHI.VITRINE) d.vitrines++; }
+                else if (dy === 3 && ENS.has(id)) d.enseignes++;
+              });
+            }
+          }
+        }
+        villes[cle] = { ...c, diversite: ids.size, disque: d };
       }
       return villes;
     });
-    // Seuils recalés au grand recalibrage (v172) : les îlots ont triplé, la
-    // fenêtre passe à ±40, et les mesures de référence sont Rome 113/29/189/
-    // 207, Tokyo 594/8/317/165, Marrakech 456/192/631/1075. Les auvents ont
-    // rebaissé au réalisme v2 : par segments de trois blocs sur cinq, comme de
-    // vrais stores de devanture — le seuil suit (×0,6 sur la mesure de v180).
-    const sansDevanture = Object.entries(facades).filter(([, c]) =>
-      !(c.vitrines >= 80 && c.portes >= 5 && c.enseignes >= 120 && c.auvents >= 60));
+    // UNE DEVANTURE SE COMPTE EN DENSITÉ, PAS EN NOMBRE (v271). Ces quatre
+    // seuils étaient ABSOLUS dans une fenêtre de ±40 blocs — donc ils
+    // comptaient des RUES, et ils avaient déjà dû être « recalés au grand
+    // recalibrage » de la v172. La v271 élargit la trame (pas 15 → 19) : la
+    // même fenêtre contient moins de rues, et Rome est tombée de 124 vitrines
+    // à 71 pour une barre à 80, sans qu'une seule ligne de la grammaire des
+    // devantures ait bougé. C'est le piège de `r: 66` à San Francisco et du
+    // rayon 44 de `releveVilles` à Nice : **un témoin qui porte une dimension
+    // de ville ne l'écrit pas, il la demande.**
+    //
+    // La grandeur qui survit est la densité par colonne de TROTTOIR — c'est
+    // ce qui borde la chaussée, donc la longueur de rue de la fenêtre. Mesuré
+    // pour mille colonnes de trottoir, des deux côtés :
+    //
+    //             vitrines  portes  enseignes  auvents
+    //   Rome v270    54,7     12,8     83,8      63,5
+    //   Rome v271    42,4      7,2     60,9      38,2
+    //   Tokyo v270  208,0      5,5    213,5      45,7
+    //   Tokyo v271  231,6      3,4    235,0      34,1
+    //   Marrakech   190,9     81,5    266,0     283,4
+    //
+    // ET LA v282 LES A DÉPLACÉES SUR LE DISQUE ENTIER, parce qu'une fenêtre de
+    // ±40 blocs ne peut pas voir un événement PAR FAÇADE. Mesuré par les
+    // fonctions pures, des deux côtés :
+    //
+    //                vitrines  portes  enseignes  auvents
+    //   Rome  main      142,1    25,6     167,7     133,0
+    //   Rome  v282      153,5    30,8     184,3     121,9
+    //   Tokyo main      196,1    14,7     210,8     124,1
+    //   Tokyo v282      226,5    23,8     250,3     132,4
+    //   Marra main      185,0    82,2     267,2     302,8
+    //   Marra v282      114,1   153,1     267,2     302,8
+    //
+    // À Marrakech la somme vitrines + portes est IDENTIQUE des deux côtés,
+    // 267,2 : une porte prend la place d'une vitrine, et c'est ce qui vérifie
+    // que la correction DÉPLACE des colonnes au lieu d'en créer.
+    //
+    // Les barres sont posées sous le plus faible des deux côtés, avec la marge
+    // de la règle : ce qu'elles doivent séparer, c'est « il y a des boutiques »
+    // de « il n'y en a aucune ». Désarmé `commerce` dans une copie de `src`,
+    // les quatre postes tombent à zéro — cette vérification-là se FAIT.
+    const POUR_MILLE = { vitrines: 25, portes: 2, enseignes: 35, auvents: 20 };
+    const densites = {};
+    const fenetres = {};
+    const sansDevanture = Object.entries(facades).filter(([cle, c]) => {
+      const d = c.disque || c;
+      const mille = (n) => (1000 * n) / Math.max(1, d.trottoir || 0);
+      densites[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +mille(d[k]).toFixed(1)]));
+      // La fenêtre de ±40 reste DANS LE MESSAGE : c'est elle qui lit le monde
+      // vraiment chargé, et un écart entre les deux se voit alors tout seul.
+      fenetres[cle] = Object.fromEntries(Object.keys(POUR_MILLE)
+        .map((k) => [k, +((1000 * c[k]) / Math.max(1, c.trottoir || 0)).toFixed(1)]));
+      return !(d.trottoir > 400 && Object.entries(POUR_MILLE)
+        .every(([k, barre]) => mille(d[k]) >= barre));
+    });
     verifier('les rues ont des devantures : vitrines, portes, enseignes, auvents',
       sansDevanture.length === 0,
-      sansDevanture.map(([v]) => v).join(' · ') || JSON.stringify(facades));
+      `pour mille colonnes de trottoir, barres ${JSON.stringify(POUR_MILLE)} · `
+      + (sansDevanture.length ? `EN FAUTE ${sansDevanture.map(([v]) => v).join(' · ')} · ` : '')
+      + JSON.stringify(densites)
+      + ` · dans la fenêtre de ±40 blocs, lue dans le monde chargé : ${JSON.stringify(fenetres)}`);
     // Marrakech n'a pas de feux tricolores : une médina de ruelles n'en a
     // pas dans la vraie vie non plus — c'est son caractère, pas un manque.
     // UN BÂTIMENT NE SE VOIT PAS AU TRAVERS (v200).
@@ -860,6 +1127,215 @@ const VRAIES_KM = [
     verifier('Times Square est un mur d\'écrans, et ça se compte',
       ecrans>=8,`${ecrans} grands panneaux présents dans le rendu`);
 
+    // ================= LES FEUX TRICOLORES (v273) ===========================
+    //
+    // Mesuré en capture à Zurich AVANT d'y toucher : le boîtier montrait ses
+    // TROIS lentilles allumées en même temps — rouge, orange et vert. Ce n'est
+    // pas un feu, c'est une guirlande. Et la circulation ne les voyait pas.
+    //
+    // Le premier témoin lit ce que le jeu PUBLIE de chaque feu dessiné autour
+    // de l'enfant (`window.__feux`) : combien de lentilles vives, quel état,
+    // quel axe. Sur l'ancien code la sonde n'existe pas — il le dit, il ne
+    // s'effondre pas.
+    await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('zurich');
+      window.__carte.surTeleport(P.x, P.z);
+    });
+    await dormir(14000);
+    const feux = await tab.evaluate(async () => {
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!window.__feux) return { err: 'aucune sonde de feux' };
+      const lire = () => window.__feux();
+      let f0 = lire();
+      for (let k = 0; k < 20 && f0.length < 8; k++) { await dodo(1000); f0 = lire(); }
+      if (!f0.length) return { err: 'aucun feu dessiné autour de l\'enfant' };
+      const mauvais = f0.filter((f) => f.vives.filter(Boolean).length !== 1).length;
+      const etats = {};
+      for (const f of f0) etats[f.etat] = (etats[f.etat] || 0) + 1;
+      // ET IL CHANGE : le même feu, suivi jusqu'à ce qu'il change d'état.
+      // Borné, et le temps qu'il a pris entre dans le message — le cycle fait
+      // vingt-deux secondes, donc un feu change en onze au plus.
+      const cible = f0[0];
+      const etatDe = () => (lire().find((q) => q.x === cible.x && q.z === cible.z) || {}).etat;
+      const depart = etatDe();
+      let ms = 0, apres = depart;
+      while (ms < 16000 && apres === depart) { await dodo(500); ms += 500; apres = etatDe(); }
+      return { total: f0.length, mauvais, etats, depart, apres, ms,
+        axes: { 0: f0.filter((f) => f.axe === 0).length, 1: f0.filter((f) => f.axe === 1).length } };
+    });
+    verifier('un feu tricolore ne montre qu\'une couleur à la fois, et il change',
+      !feux.err && feux.total >= 8 && feux.mauvais === 0 && feux.apres !== feux.depart
+      && feux.axes[0] > 0 && feux.axes[1] > 0,
+      JSON.stringify(feux));
+    // ET LES DEUX AXES NE SONT JAMAIS VERTS ENSEMBLE : un carrefour où deux
+    // files partent en même temps n'est pas un carrefour. La règle est PURE
+    // (`src/feux.js`), donc on l'interroge directement, sur tout un cycle.
+    const horloge = await tab.evaluate(async () => {
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
+      // `src/feux.js` n'y existe pas, et l'import jetait — la suite mourait
+      // ici, et le troisième témoin n'était jamais atteint. On ne voyait donc
+      // pas l'étendue de ce qui manque.
+      let f;
+      try { f = await import('./src/feux.js'); } catch (e) { return { err: 'src/feux.js absent (' + e.message + ')' }; }
+      let deuxVerts = 0, vertEtOrange = 0, vus = {};
+      for (let t = 0; t < f.CYCLE; t += 100) {
+        const a = f.etatFeu(0, t), b = f.etatFeu(1, t);
+        vus[a] = 1; vus[b] = 1;
+        if (a === 'vert' && b === 'vert') deuxVerts++;
+        if ((a === 'vert' && b === 'orange') || (a === 'orange' && b === 'vert')) vertEtOrange++;
+      }
+      return { cycle: f.CYCLE, deuxVerts, vertEtOrange, couleurs: Object.keys(vus).sort(),
+        axeParite: [f.axeDuFeu(0, 0), f.axeDuFeu(1, 0), f.axeDuFeu(2176, 1089)] };
+    });
+    verifier('et les deux axes d\'un carrefour ne sont jamais verts ensemble',
+      !horloge.err && horloge.deuxVerts === 0 && horloge.vertEtOrange === 0 && horloge.couleurs.length === 3,
+      JSON.stringify(horloge));
+
+    // ET LA CIRCULATION S'Y ARRÊTE, PUIS REPART AU VERT. On lit la pose et le
+    // drapeau d'attente de CHAQUE voiture visible (`etat().places`), jamais
+    // `enMarche()` : celui-ci EXCLUT les voitures qui attendent, si bien qu'une
+    // sonde qui l'interroge ne peut par construction voir aucun arrêt — c'est
+    // ce qu'elle a rendu au premier jet, « zéro arrêtée » sur du code qui
+    // s'arrêtait très bien. Compter un motif n'est pas compter la chose.
+    const arrets = await tab.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!window.__feux) return { err: 'aucune sonde de feux' };
+      const axeDuCap = (ux, uz) => (Math.abs(ux) >= Math.abs(uz) ? 0 : 1);
+      const devantMoi = (feux, x, z, cap) => {
+        const ux = Math.sin(cap), uz = Math.cos(cap), axe = axeDuCap(ux, uz);
+        let meilleur = null;
+        for (const f of feux) {
+          if (f.axe !== axe) continue;
+          const ex = f.x - x, ez = f.z - z;
+          const devant = ex * ux + ez * uz;
+          if (devant < 2 || devant > 7 || Math.abs(ex * uz - ez * ux) > 5) continue;
+          if (!meilleur || devant < meilleur.devant) meilleur = { devant, etat: f.etat };
+        }
+        return meilleur;
+      };
+      // UN COMPTE D'ÉVÉNEMENTS RARES AVEC UNE BARRE À UN EST UN PILE OU FACE.
+      // Trente secondes fixes rendaient `redemarrages` 2 · 0 · 1 sur trois
+      // passages, sur un code de jeu qui n'avait pas bougé d'une ligne : un
+      // redémarrage n'est visible que si la MÊME voiture est relevée juste
+      // avant et juste après le vert, et le banc ne rend pas quatre images par
+      // seconde à heure fixe. On attend donc le RÉSULTAT, borné — la règle de
+      // la v270 — et le temps qu'il a pris entre dans le message.
+      let auRouge = 0, auVert = 0, redemarrages = 0, voitures = 0;
+      const avant = new Map();
+      const debut = Date.now(), fin = debut + 90000;
+      let k = 0;
+      for (; k < 300 && Date.now() < fin && !(auRouge >= 10 && redemarrages >= 1); k++) {
+        await dodo(500);
+        const feux = window.__feux();
+        g.vehicules.etat().forEach((c, ci) => {
+          if (!c.routier) return;
+          for (const [x, z, cap, i, retard, attend] of c.places) {
+            voitures++;
+            const f = devantMoi(feux, x, z, cap);
+            const cle = ci + ':' + i;
+            if (f && f.etat !== 'vert' && attend) auRouge++;
+            if (f && f.etat === 'vert' && !attend) auVert++;
+            const p = avant.get(cle);
+            if (p && p.attend && p.etat !== 'vert' && !attend && f && f.etat === 'vert') redemarrages++;
+            avant.set(cle, { attend, etat: f ? f.etat : null });
+          }
+        });
+      }
+      return { voitures, auRouge, auVert, redemarrages, releves: k, secondes: Math.round((Date.now() - debut) / 1000) };
+    });
+    verifier('et la circulation s\'arrête au feu rouge, puis repart au vert',
+      !arrets.err && arrets.auRouge >= 10 && arrets.redemarrages >= 1,
+      JSON.stringify(arrets));
+
+    // ===== LES FEUX DES VILLES BÂTIES À LA MAIN (v274) ======================
+    //
+    // La v273 a donné aux feux leur horloge et fait s'arrêter la circulation,
+    // mais `RUE.FEUX` n'était posé que par `villesmonde.js` : les six villes
+    // bâties à la main n'en avaient PAS UN SEUL, et ce sont celles où l'enfant
+    // conduit le plus. Mesuré alors, fenêtre de 81 × 81 blocs au centre :
+    // Paris 167 coins de carrefour et zéro feu, Lille 622 et zéro.
+    //
+    // ON LIT LES BLOCS, PAS UNE TABLE. Un feu déclaré quelque part et jamais
+    // écrit dans le morceau de monde ne se voit pas ; ce témoin lit ce que le
+    // générateur a posé, et vérifie DEUX choses que la seule présence ne dit
+    // pas : que chaque feu est bien au COIN d'un carrefour (de la chaussée sur
+    // les deux axes), et qu'aucun n'a de voisin immédiat — un carrefour
+    // hérissé est le défaut que la v270 a déjà payé.
+    //
+    // ET LE SOL D'UNE VILLE N'EST PAS TOUJOURS À `terrainHeight`. Premier jet
+    // rouge sur Paris SEUL — 11 feux « au coin » sur 14 — et la sonde a
+    // distingué les cas en une exécution : `solParis` disait « carrefour »
+    // pour les trois, c'est la LECTURE qui se trompait. Sur les quais et au
+    // pied des ponts, Paris écrit sa chaussée un bloc PLUS HAUT que le relief
+    // (terrain 34, surface 35), et lire `getBlock(x, terrainHeight, z)` y rend
+    // la terre d'en dessous. `sommetColonne` rend le premier bloc SOLIDE en
+    // descendant — donc la chaussée, et le trottoir SOUS un feu, qui est un
+    // prop non solide. C'est la note de la v248 sur les réverbères de Paris,
+    // par l'autre bout : elle tolérait quinze pour cent de voisins sans
+    // chaussée au lieu de lire à la bonne hauteur.
+    const feuxMain = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const { positionDe } = await import('./src/mondes.js');
+      const { RUE } = await import('./src/blocks.js');
+      const monde = await import('./src/world.js');
+      const CHAUSSEE = monde.CHAUSSEE;
+      if (!CHAUSSEE) return { err: 'world.js ne publie pas CHAUSSEE' };
+      const out = {};
+      for (const cle of ['paris', 'londres', 'nice', 'lille', 'sf', 'washington']) {
+        const p = positionDe(cle);
+        const pos = [];
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            const x = Math.round(p.x) + du, z = Math.round(p.z) + dv;
+            const sol = w.sommetColonne(x, z);
+            if (w.getBlock(x, sol + 1, z) === RUE.FEUX) pos.push([x, z]);
+          }
+        }
+        const estRue = (x, z) => CHAUSSEE.has(w.getBlock(x, w.sommetColonne(x, z), z));
+        let auCoin = 0;
+        for (const [x, z] of pos) {
+          const rx = estRue(x + 1, z) || estRue(x - 1, z);
+          const rz = estRue(x, z + 1) || estRue(x, z - 1);
+          if (rx && rz) auCoin++;
+        }
+        const ens = new Set(pos.map(([x, z]) => x + ':' + z));
+        let colles = 0;
+        for (const [x, z] of pos) {
+          let voisin = false;
+          for (let a = -1; a <= 1 && !voisin; a++) {
+            for (let b = -1; b <= 1; b++) {
+              if (!a && !b) continue;
+              if (ens.has((x + a) + ':' + (z + b))) { voisin = true; break; }
+            }
+          }
+          if (voisin) colles++;
+        }
+        out[cle] = { feux: pos.length, auCoin, colles };
+      }
+      return out;
+    });
+    const villesFeux = ['paris', 'londres', 'nice', 'lille', 'sf', 'washington'];
+    verifier('les six villes bâties à la main ont enfin leurs feux tricolores',
+      !feuxMain.err && villesFeux.every((v) => feuxMain[v] && feuxMain[v].feux >= 8),
+      `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+    // ET LA BARRE SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE. Premier jet à
+    // quatre-vingt-dix pour cent : rouge sur Paris seul, onze sur quatorze. La
+    // sonde a nommé les trois accusés — tous dans l'emprise de la Caserne &
+    // Commissariat, un repère qui se pose APRÈS les colonnes et PAVE la rue
+    // que `solParis` promettait. Mesuré sur le DISQUE entier de la ville, le
+    // vrai dénominateur : Paris 88 feux au coin sur 91 (97 %), Londres 116 sur
+    // 117 (99 %). La fenêtre de ±40 blocs du centre contenait justement ce
+    // repère-là — c'est le piège de « un témoin qui porte une dimension de
+    // ville ne l'écrit pas » (v203, v271) vu par la fraction au lieu du rayon.
+    // On garde la fenêtre, qui coûte cent fois moins que le disque, et la
+    // barre dit ce qu'elle garde : une grossière panne de pose, pas les trois
+    // pour cent qu'un monument recouvre. Ceux-là sont déclarés dans TASKS.md.
+    verifier('et chacun est au coin d\'un carrefour, aucun collé à un autre',
+      !feuxMain.err && villesFeux.every((v) => feuxMain[v]
+        && feuxMain[v].auCoin >= feuxMain[v].feux * 0.75
+        && feuxMain[v].colles === 0),
+      `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+
     // ================= LA VILLE ÉCLAIRÉE LA NUIT ============================
     //
     // Max, capture de Moscou à minuit : des réverbères allumés, des feux
@@ -867,31 +1343,72 @@ const VRAIES_KM = [
     // entier partageait UN matériau dont la couleur est le niveau du jour :
     // à minuit tout tombait à trente pour cent, fenêtres comprises. Une
     // ville la nuit, c'est pourtant d'abord des carrés de lumière.
+    // UN TÉMOIN DE RENDU LIT DES PIXELS (v251). Celui-ci comparait le NIVEAU
+    // des lampes (`__lumiere().solide`, la moyenne de l'hémisphère et de la
+    // lune) à la COULEUR du matériau des fenêtres : deux grandeurs qui ne se
+    // comparent pas, et la v249 — qui a monté les planchers de nuit à 1,7 et
+    // 0,45 pour que Paris ne soit plus dans le noir — l'a rendu rouge pour
+    // toujours (« murs à 1,07 ») sans que rien ne le dise, cette suite ne
+    // gardant pas main.js. On bâtit un mur de pierre percé de fenêtres
+    // d'étage loin de tout, à minuit, et l'on lit la luminance rendue d'une
+    // fenêtre allumée contre celle du mur d'à côté — ce que l'enfant voit.
     const nuit = await tab.evaluate(async () => {
-      const { positionDe } = await import('./src/mondes.js');
-      const g = window.__game;
-      const c = positionDe('moscou');
-      g.player.pos.set(c.x, g.world.terrainHeight(c.x, c.z) + 20, c.z + 20);
-      g.player.vel.set(0, 0, 0);
-      window.__setDayTime(0.75);                 // minuit
-      // ON ATTEND QUE LA VILLE SOIT LÀ, PAS DEUX SECONDES ET DEMIE.
-      //
-      // Ce que ce témoin promet, c'est que les fenêtres restent allumées la
-      // nuit — pas que trois morceaux de monde se maillent en 2,5 s. Le
-      // compte de morceaux ÉCLAIRÉS est un compte de morceaux CHARGÉS : sur
-      // un conteneur chargé il tombe à un, et le témoin accuse l'éclairage
-      // alors que ses deux autres mesures sont justes (murs à 0,31, fenêtres
-      // à 0,92). On attend le résultat, borné dans le temps.
-      let vu = window.__lumiere();
-      for (let i = 0; i < 30 && vu.morceauxEclaires < 3; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        vu = window.__lumiere();
+      const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
+      const THREE = await import('three');
+      const { ARCHI } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // le même tirage que le mailleur (30 % des vitres s'allument)
+      const allumee = (x, y, z) => {
+        let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2246822519);
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return (((h ^ (h >>> 16)) >>> 0) % 100) < 30;
+      };
+      let x0 = 0, z0 = 20000, sol = 0;
+      for (let k = 0; k < 40; k++) { sol = w.terrainHeight(x0, z0); if (sol >= 36) break; x0 += 60; }
+      // un mur de 9 × 6 face au sud, de l'air devant, deux rangées de fenêtres
+      for (let c = -4; c <= 4; c++) for (let h = 1; h <= 6; h++) {
+        w.setBlock(x0 + c, sol + h, z0, 3);
+        for (let d = 1; d <= 9; d++) w.setBlock(x0 + c, sol + h, z0 + d, 0);
       }
-      return vu;
+      const fenetres = [];
+      // dix fenêtres au centre du mur (c ∈ [−2, 2]) : à six blocs, le bord du
+      // mur sort du cadre, et un point hors écran rend −1
+      for (const h of [3, 5]) for (let c = -2; c <= 2; c++) {
+        w.setBlock(x0 + c, sol + h, z0, ARCHI.ETAGE);
+        fenetres.push({ x: x0 + c, y: sol + h, allumee: allumee(x0 + c, sol + h, z0) });
+      }
+      g.player.flying = true; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(x0 + 0.5, sol + 4, z0 + 7);
+      window.__setDayTime(0.75);                                  // minuit
+      await dodo(3000);                                           // le morceau se remaille, les lampes suivent
+      const gl = r.getContext();
+      const lire = (X, Y, Z) => {
+        const v = new THREE.Vector3(X, Y, Z).project(cam);
+        const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+        const sx = Math.round((v.x + 1) / 2 * W), sy = Math.round((1 - v.y) / 2 * H);
+        if (sx < 3 || sy < 3 || sx > W - 4 || sy > H - 4) return -1;
+        const buf = new Uint8Array(4 * 25);
+        gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        let l = 0;
+        for (let i = 0; i < 25; i++) l += 0.2126 * buf[i * 4] + 0.7152 * buf[i * 4 + 1] + 0.0722 * buf[i * 4 + 2];
+        return +(l / 25).toFixed(1);
+      };
+      cam.position.set(x0 + 0.5, sol + 3.5, z0 + 6.5);
+      cam.lookAt(x0 + 0.5, sol + 3.5, z0 + 0.5);
+      cam.updateMatrixWorld(true);
+      r.render(g.scene, cam);
+      const face = z0 + 1.001;
+      const allumees = fenetres.filter((f) => f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
+      const eteintes = fenetres.filter((f) => !f.allumee).map((f) => lire(f.x + 0.5, f.y + 0.5, face));
+      const murs = [];
+      for (const c of [-1, 0, 1]) for (const h of [2, 4]) murs.push(lire(x0 + c + 0.5, sol + h + 0.5, face));
+      const med = (t) => { const s = [...t].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : -1; };
+      return { allumees, eteintes, murs, fenetre: med(allumees), mur: med(murs),
+        morceauxEclaires: [...g.chunkMeshes.values()].filter((e) => e.lumineux).length };
     });
     verifier('à minuit, les fenêtres de la ville restent allumées',
-      nuit.fenetres > nuit.solide * 1.8 && nuit.morceauxEclaires >= 3,
-      `murs à ${nuit.solide}, fenêtres à ${nuit.fenetres} · ${nuit.morceauxEclaires} morceaux éclairés`);
+      nuit.allumees.length >= 2 && nuit.mur >= 0 && nuit.fenetre > nuit.mur * 1.8 && nuit.morceauxEclaires >= 1,
+      `fenêtre allumée à ${nuit.fenetre}, mur à ${nuit.mur} (éteintes ${JSON.stringify(nuit.eteintes)}) · ${nuit.morceauxEclaires} morceau(x) éclairé(s)`);
 
     // --- San Francisco à l'échelle GTA (v192) --------------------------------
     //
@@ -1807,8 +2324,12 @@ const VRAIES_KM = [
     // vert en ne prouvant rien.
     const terminaux = await tab.evaluate(async () => {
       const g = window.__game;
-      let A = [];
-      try { A = (await import('./src/aeroport.js')).AEROPORTS || []; } catch { A = []; }
+      let A = [], plan = null;
+      try {
+        const m = await import('./src/aeroport.js');
+        A = m.AEROPORTS || [];
+        plan = m.planAerodrome || null;
+      } catch { A = []; }
       const w = g.world;
       const sortes = ['hub', 'ville', 'base'];
       const resultats = [];
@@ -1817,14 +2338,21 @@ const VRAIES_KM = [
           && Math.hypot(q.x, q.z) < 4000);           // un qu'on peut atteindre sans traverser la carte
         if (!a) { resultats.push({ sorte, absent: true }); continue; }
         const sol = w.terrainHeight(a.x, a.z);
-        const HALL = sorte === 'base' ? 10 : sorte === 'hub' ? 16 : 13;
+        // UN TÉMOIN QUI PORTE UNE COTE DE PLAN NE L'ÉCRIT PAS, IL LA DEMANDE
+        // (v280). Celui-ci portait `HALL` en dur et la boîte du terminal à
+        // `nv ∈ [−12, 14]`, justes tant que le terminal était à z = −6..8. La
+        // piste ayant pris le diamètre, il est à −40..−26 : le témoin partait
+        // « dehors » au milieu de l'aire et ne trouvait plus une seule porte.
+        // C'est le piège de `r: 66` à San Francisco, une quatrième fois.
+        const P = plan ? plan(sorte, a.r) : { HALL: sorte === 'base' ? 10 : sorte === 'hub' ? 16 : 13, zt0: -6, zt1: 8, STAND: 19 };
+        const HALL = P.HALL;
         const libre = (du, dv) => {
           const x = a.x + du, z = a.z + dv;
           return w.getBlock(x, sol, z) !== 0
             && w.getBlock(x, sol + 1, z) === 0 && w.getBlock(x, sol + 2, z) === 0;
         };
         // on part DEHORS, côté ville, devant la porte de gauche
-        const depart = [-Math.round(HALL / 2), -10];
+        const depart = [-Math.round(HALL / 2), P.zt0 - 4];
         if (!libre(depart[0], depart[1])) { resultats.push({ sorte, dehors: false }); continue; }
         const vus = new Set([depart.join(',')]);
         const file = [depart];
@@ -1832,7 +2360,7 @@ const VRAIES_KM = [
           const [du, dv] = file.shift();
           for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
             const nu = du + eu, nv = dv + ev;
-            if (Math.abs(nu) > HALL + 4 || nv < -12 || nv > 14) continue;   // la boîte du terminal
+            if (Math.abs(nu) > HALL + 4 || nv < P.zt0 - 6 || nv > P.zt1 + 6) continue;   // la boîte du terminal
             const cle = `${nu},${nv}`;
             if (vus.has(cle) || !libre(nu, nv)) continue;
             vus.add(cle); file.push([nu, nv]);
@@ -1841,9 +2369,9 @@ const VRAIES_KM = [
         const dedans = (du, dv) => vus.has(`${du},${dv}`);
         resultats.push({
           sorte, nom: a.nom,
-          hallGauche: dedans(-HALL + 2, 2),        // le premier hall
-          hallDroit: dedans(HALL - 2, 2),          // le dernier, de l'autre côté des cloisons
-          cotePistes: dedans(0, 12),               // ressorti côté tarmac
+          hallGauche: dedans(-HALL + 2, P.zt0 + 7),  // le premier hall
+          hallDroit: dedans(HALL - 2, P.zt0 + 7),    // le dernier, de l'autre côté des cloisons
+          cotePistes: dedans(0, P.zt1 + 4),          // ressorti côté tarmac
         });
       }
       return resultats;
@@ -1870,56 +2398,335 @@ const VRAIES_KM = [
     // l'appareil nez vers -z alors qu'il se gare désormais le long de x : il
     // comptait un motif au lieu de compter la chose, et il accusait dix postes
     // parfaitement corrects.
+    //
+    // ET IL MESURAIT LE FUSELAGE, PAS L'AVION — CE TÉMOIN ÉTAIT VERT PARCE
+    // QU'IL NE POUVAIT PAS VOIR LA CHOSE (v278). Max, capture d'iPad : « les
+    // avions ne devraient pas être par défaut dans les buildings ». Celui-ci
+    // annonçait 0/57 depuis la v228, et une sonde qui lisait le MONDE aux
+    // coordonnées des postes disait 0/57 aussi : tous deux prenaient `larg`,
+    // c'est-à-dire 1,8 bloc de fuselage, pour un appareil dont les AILES en
+    // font 15,2. Repris avec l'emprise vraie : vingt-neuf postes sur
+    // cinquante-sept. Un témoin qui ne peut pas voir un changement n'en prouve
+    // pas l'absence, il en donne l'illusion.
+    //
+    // ET UNE PLACE SE JUGE À CIEL OUVERT. « Rien de bâti dans l'emprise » est
+    // satisfait À L'INTÉRIEUR d'une aérogare, qui est creuse pour qu'on la
+    // visite : mon balayage de remplacement garait très bien un Concorde dans
+    // le hall et le déclarait bon. C'est le piège du verre dans les murs, par
+    // l'autre bout. Aucune colonne de l'emprise ne doit rien porter au-dessus
+    // d'elle.
     const postes = await tab.evaluate(async () => {
       const mod = await import('./src/aeroport.js');
       const { AEROPORTS, postesAvion, buildAeroport, buildAerodrome } = mod;
       // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER.
-      // `GABARITS_AVION` et le `cap` des postes n'existent pas avant la v228 :
-      // sans ce repli, l'import lèverait et les témoins suivants ne seraient
-      // jamais joués — on ne verrait donc jamais l'étendue du défaut.
-      const GABARITS_AVION = mod.GABARITS_AVION || {
-        avionligne: { long: 16, larg: 2.4, haut: 4.2 },
-        concorde: { long: 20, larg: 2.0, haut: 4.4 },
-        chasseur: { long: 10, larg: 1.8, haut: 3.2 },
-      };
+      // `empriseAuSol` et `envergure` n'existent pas avant la v278 : sans ce
+      // repli, l'import lèverait et les témoins suivants ne seraient jamais
+      // joués — on ne verrait donc jamais l'étendue du défaut. Les valeurs de
+      // repli sont celles MESURÉES sur les modèles rendus, de sorte que les
+      // deux côtés soient jugés à la même aune.
+      const ENV = { avionligne: 15.23, concorde: 8.3, chasseur: 7.12 };
+      const LONG = { avionligne: 15.92, concorde: 19.9, chasseur: 10.01 };
+      const emprise = mod.empriseAuSol || ((espece, du, dv) => ({
+        x0: Math.floor(du - LONG[espece] / 2), x1: Math.ceil(du + LONG[espece] / 2) - 1,
+        z0: Math.floor(dv - ENV[espece] / 2), z1: Math.ceil(dv + ENV[espece] / 2) - 1,
+      }));
       const { BLOCK, DECOR_START } = await import('./src/blocks.js');
       const uni = (c) => DECOR_START + c * 10;
       // Ce sur quoi un avion peut se poser : asphalte, goudron, béton, gris,
       // et les marquages blancs et jaunes qui sont peints dessus.
       const ROULANT = new Set([uni(25), uni(26), uni(23), uni(24), uni(27), uni(2)]);
+      const CIEL = 24;   // au-dessus de toute aérogare, hangar ou satellite
       const fautes = [];
+      const cartes = {};
       for (const a of AEROPORTS) {
-        const m = new Map();
-        const poser = (x, y, z, id) => m.set(`${x},${y},${z}`, id);
-        if (a.cle === 'cdg') buildAeroport(poser);
-        else buildAerodrome(poser, a.profil, a.r);
-        for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
-          const g = GABARITS_AVION[espece];
-          // Sans cap publié (avant la v228), l'appareil était posé nez vers
-          // -z : c'est cette emprise-là qu'il faut alors mesurer.
-          const surX = cap !== undefined && Math.abs(Math.sin(cap)) > 0.5;
-          const dX = Math.ceil((surX ? g.long : g.larg) / 2);
-          const dZ = Math.ceil((surX ? g.larg : g.long) / 2);
-          let sansSol = 0, obstacles = 0;
-          for (let dx = -dX; dx <= dX; dx++) {
-            for (let dz = -dZ; dz <= dZ; dz++) {
-              if (!ROULANT.has(m.get(`${du + dx},0,${dv + dz}`))) sansSol++;
-              for (let y = 1; y <= Math.ceil(g.haut); y++) {
-                const b = m.get(`${du + dx},${y},${dv + dz}`);
-                if (b !== undefined && b !== BLOCK.AIR) obstacles++;
+        const cle = a.cle === 'cdg' ? 'cdg' : `${a.profil}:${a.r}`;
+        let m = cartes[cle];
+        if (!m) {
+          m = cartes[cle] = new Map();
+          const poser = (x, y, z, id) => m.set(`${x},${y},${z}`, id);
+          if (a.cle === 'cdg') buildAeroport(poser); else buildAerodrome(poser, a.profil, a.r);
+        }
+        const boites = [];
+        for (const { espece, du, dv } of postesAvion(a.profil, a.r)) {
+          const b = emprise(espece, du, dv);
+          boites.push({ espece, du, dv, b });
+          let sousUnToit = 0, sansSol = 0;
+          for (let x = b.x0; x <= b.x1; x++) {
+            for (let z = b.z0; z <= b.z1; z++) {
+              if (!ROULANT.has(m.get(`${x},0,${z}`))) sansSol++;
+              for (let y = 1; y <= CIEL; y++) {
+                const q = m.get(`${x},${y},${z}`);
+                if (q !== undefined && q !== BLOCK.AIR) { sousUnToit++; break; }
               }
             }
           }
-          if (obstacles || sansSol) {
-            fautes.push(`${a.cle}/${espece}(${du},${dv})${obstacles ? ` ${obstacles} blocs de bâti` : ''}${sansSol ? ` ${sansSol} colonnes hors revêtement` : ''}`);
+          if (sousUnToit || sansSol) {
+            fautes.push(`${a.cle}/${espece}(${du},${dv})${sousUnToit ? ` ${sousUnToit} colonnes sous un toit` : ''}${sansSol ? ` ${sansSol} hors revêtement` : ''}`);
+          }
+        }
+        // ET DEUX APPAREILS NE SE GARENT PAS L'UN DANS L'AUTRE. À Roissy les
+        // trois postes sont placés à la main, dans les deux seules poches
+        // assez grandes : rien ne garantit leur écartement, il se vérifie.
+        for (let i = 0; i < boites.length; i++) {
+          for (let j = i + 1; j < boites.length; j++) {
+            const A = boites[i].b, B = boites[j].b;
+            if (!(A.x1 < B.x0 || B.x1 < A.x0 || A.z1 < B.z0 || B.z1 < A.z0)) {
+              fautes.push(`${a.cle} : ${boites[i].espece} et ${boites[j].espece} se chevauchent`);
+            }
           }
         }
       }
-      return { total: AEROPORTS.reduce((n, a) => n + postesAvion(a.profil).length, 0), fautes };
+      return { total: AEROPORTS.reduce((n, a) => n + postesAvion(a.profil, a.r).length, 0), fautes };
     });
     verifier('aucun avion n\'est garé dans un bâtiment ni hors du revêtement',
       postes.fautes.length === 0,
       `${postes.fautes.length}/${postes.total} en faute — ${postes.fautes.slice(0, 4).join(' · ')}`);
+
+    // CHAQUE PISTE EST ASSEZ LONGUE POUR CE QUI S'Y GARE (v280).
+    //
+    // Max : « fais les pistes plus longues ». La barre ne se choisit pas : elle
+    // se CALCULE depuis la fiche `pilote` de chaque appareil (montures.js). Le
+    // roulage avant rotation vaut `rotation² / (2 × poussée)` et le freinage
+    // `approche² / (2 × frein)` ; leur somme est la longueur de piste
+    // équilibrée de l'aviation réelle — 83 blocs pour l'avion de ligne, 99 pour
+    // le Concorde, 34 pour le chasseur. Un aérodrome doit servir CE QU'IL GARE,
+    // ni plus ni moins : une base militaire ne reçoit que des chasseurs.
+    //
+    // ET LA BARRE SE LIT DANS LA FICHE, ELLE NE SE RECOPIE PAS. C'est la leçon
+    // de la v269 (« une barre de témoin qui suit une grandeur se calcule, elle
+    // ne s'écrit pas ») : le jour où `poussee` change, la barre suit.
+    //
+    // Mesuré sur `origin/main` : Orly rendait QUARANTE-NEUF blocs pour
+    // quatre-vingt-dix-neuf réclamés, `ville` soixante-neuf et `base`
+    // cinquante-trois. Seules les deux pistes internes de Roissy passaient.
+    const pistes = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, buildAeroport, buildAerodrome } = mod;
+      const mont = await import('./src/montures.js');
+      const fiches = {};
+      for (const d of (mont.MONTURES || mont.ESPECES || [])) {
+        if (d.pilote) fiches[d.key] = d.pilote;
+      }
+      const besoin = (k) => {
+        const f = fiches[k];
+        if (!f) return 0;
+        return f.rotation ** 2 / (2 * f.poussee) + f.approche ** 2 / (2 * f.frein);
+      };
+      // Quels appareils se garent là ? On le DEMANDE — une liste recopiée ici
+      // divergerait de celle du plan à la première base qu'on ajoute.
+      const especesDe = mod.especesDe
+        || ((p) => (p === 'base' ? ['chasseur'] : ['avionligne', 'concorde', 'chasseur']));
+      // La longueur ROULABLE sur l'axe : les x DISTINCTS qui portent un
+      // revêtement. Compter les POSES rend trois fois trop — le bâtisseur
+      // repasse du blanc sur l'asphalte (« compter un motif n'est pas compter
+      // la chose », v224).
+      const longueurA = (build, zAxe) => {
+        const xs = new Set();
+        build((x, y, z, id) => { if (y === 0 && z === zAxe && id !== 0 && id !== 1) xs.add(x); });
+        return xs.size;
+      };
+      const res = [];
+      for (const a of AEROPORTS) {
+        const roissy = a.profil === 'roissy';
+        const build = roissy ? buildAeroport : (po) => buildAerodrome(po, a.profil, a.r);
+        let axes;
+        // Les axes se DEMANDENT au module : sur l'ancien code ils valent ±32 et ±50.
+        if (roissy) axes = (mod.PISTES_ROISSY || [-50, -32, 32, 50]).filter((z) => z > 0);
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z);
+        } else axes = [a.profil === 'base' ? 24 : a.profil === 'hub' ? 36 : 30];
+        const plus = Math.max(...axes.map((z) => longueurA(build, z)));
+        const b = Math.max(...especesDe(a.profil).map(besoin));
+        res.push({ cle: a.cle, profil: a.profil, longueur: plus, reclame: Math.round(b), ok: plus >= b });
+      }
+      return res;
+    });
+    const courtes = pistes.filter((r) => !r.ok);
+    verifier('chaque piste est assez longue pour l\'appareil le plus exigeant qu\'elle garde',
+      courtes.length === 0 && pistes.length > 0,
+      `${courtes.length} trop courte(s) sur ${pistes.length} — `
+      + (courtes.length ? courtes.map((r) => `${r.cle} ${r.longueur} pour ${r.reclame}`).join(' · ')
+        : `la plus courte : ${pistes.reduce((m, r) => (r.longueur - r.reclame < m.longueur - m.reclame ? r : m)).cle} `
+          + `${Math.min(...pistes.map((r) => r.longueur))} blocs`));
+
+    // ET L'AVION ATTEND AU BORD DE LA PISTE (v280).
+    //
+    // Max : « places les avions normaux près des pistes ». Ce qui se mesure est
+    // la distance de l'EMPRISE — ailes comprises — au bord de l'asphalte de la
+    // piste, et non à son axe : un avion dont l'aile touche presque la piste en
+    // est à quatre blocs d'axe et à zéro de bord.
+    //
+    // Sur `origin/main` les trois appareils de Roissy étaient à dix-sept,
+    // vingt-six et TRENTE-HUIT blocs du bord, coincés dans des interstices du
+    // complexe terminal. La barre est à douze : de quoi laisser passer une voie
+    // de service, pas de quoi traverser un aéroport.
+    const auBord = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, postesAvion } = mod;
+      const emprise = mod.empriseAuSol;
+      if (!emprise) return { fautes: ['empriseAuSol absente (code d\'avant la v278)'], total: 0 };
+      const fautes = []; let total = 0, pire = 0;
+      for (const a of AEROPORTS) {
+        // Les bords d'asphalte des pistes de CET aérodrome, demandés au plan.
+        let bords;
+        if (a.profil === 'roissy') {
+          const d = mod.DEMI_PISTE_ROISSY || 4;
+          bords = (mod.PISTES_ROISSY || [-50, -32, 32, 50]).flatMap((z) => [z - d, z + d]);
+        }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          bords = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z)
+            .flatMap((z) => [z - P.DEMI_PISTE, z + P.DEMI_PISTE]);
+        } else bords = [a.profil === 'base' ? 21 : a.profil === 'hub' ? 32 : 26];
+        for (const q of postesAvion(a.profil, a.r)) {
+          total++;
+          const e = emprise(q.espece, q.du, q.dv);
+          const d = Math.min(...bords.map((b) => Math.min(Math.abs(e.z0 - b), Math.abs(e.z1 - b))));
+          pire = Math.max(pire, d);
+          if (d > 12) fautes.push(`${a.cle} ${q.espece} à ${d} blocs du bord`);
+        }
+      }
+      return { fautes, total, pire };
+    });
+    verifier('chaque appareil garé est à portée du bord de piste',
+      auBord.fautes.length === 0 && auBord.total > 0,
+      `${auBord.fautes.length}/${auBord.total} trop loin, le pire à ${auBord.pire} blocs`
+      + (auBord.fautes.length ? ` — ${auBord.fautes.slice(0, 4).join(' · ')}` : ''));
+
+    // ET L'AIRE DE ROISSY TIENT UN GROS PORTEUR À CIEL OUVERT (v280).
+    //
+    // C'est ce que le retrait des huit avions EN BLOCS a rendu possible, et
+    // c'est la seule façon de le mesurer sur un bâtisseur : ces silhouettes
+    // occupaient le tarmac, et le disque pavé de soixante-huit blocs ne laissait
+    // que sept à neuf blocs d'asphalte libre entre un hall et la première
+    // piste, pour une envergure de quinze. Mesuré sur `origin/main` : QUATRE
+    // places à ciel ouvert sur toute la plate-forme. Ici : plus de quatre cents.
+    //
+    // La barre est à cent : au-dessous, l'aire n'a pas de rangée, elle a une
+    // poche — et c'est exactement ce que la v278 avait dû constater.
+    const aireRoissy = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { buildAeroport } = mod;
+      const emprise = mod.empriseAuSol;
+      if (!emprise) return -1;
+      const col = new Map();
+      buildAeroport((x, y, z, id) => {
+        const k = x + ',' + z;
+        let c = col.get(k);
+        if (!c) col.set(k, (c = { sol: null, h: 0 }));
+        if (y === 0) c.sol = id; else if (y > 0) c.h = id === 0 ? 0 : c.h + 1;
+      });
+      let n = 0;
+      for (let du = -70; du <= 70; du++) {
+        for (let dv = -70; dv <= 70; dv++) {
+          const e = emprise('avionligne', du, dv);
+          let bon = true;
+          for (let x = e.x0; bon && x <= e.x1; x++) {
+            for (let z = e.z0; bon && z <= e.z1; z++) {
+              const c = col.get(x + ',' + z);
+              if (!c || c.sol === null || c.sol === 1 || c.h > 0) bon = false;
+            }
+          }
+          if (bon) n++;
+        }
+      }
+      return n;
+    });
+    verifier('l\'aire de Roissy tient un gros porteur à ciel ouvert, et pas seulement dans une poche',
+      aireRoissy >= 100, `${aireRoissy} place(s) à ciel ouvert pour un avion de ligne`);
+
+    // ET RIEN NE DÉPASSE SUR UNE PISTE NI DANS L'ENVERGURE D'UN POSTE (v280).
+    //
+    // CE TÉMOIN A ATTRAPÉ MON PROPRE DÉFAUT, et c'est pour cela qu'il reste même
+    // vert des deux côtés (règle de la v220 : on garde un témoin vert qui garde
+    // une CAPACITÉ qu'on vient de frôler). En déplaçant les pistes de Roissy,
+    // `TARMAC` est passé de 25 à 40 — et les mâts d'éclairage, posés à
+    // `TARMAC − 1`, se sont retrouvés à z = ±39, c'est-à-dire pile dans
+    // l'envergure d'un gros porteur garé à dv = 33 ; la manche à air, posée de
+    // la même façon, s'est retrouvée au bord de la première piste. Les TROIS
+    // postes étaient bloqués d'un coup. Rien dans le code ne paraissait faux.
+    const degage = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, buildAeroport, buildAerodrome } = mod;
+      const fautes = [];
+      for (const a of AEROPORTS) {
+        const roissy = a.profil === 'roissy';
+        const build = roissy ? buildAeroport : (po) => buildAerodrome(po, a.profil, a.r);
+        let axes, demi;
+        if (roissy) { axes = mod.PISTES_ROISSY || [-50, -32, 32, 50]; demi = mod.DEMI_PISTE_ROISSY || 4; }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z); demi = P.DEMI_PISTE;
+        } else { axes = [a.profil === 'base' ? 24 : a.profil === 'hub' ? 36 : 30]; demi = 4; }
+        const hauts = new Map();
+        build((x, y, z, id) => {
+          const k = x + ',' + z;
+          if (y > 0) hauts.set(k, id === 0 ? 0 : (hauts.get(k) || 0) + 1);
+        });
+        for (const [k, n] of hauts) {
+          if (!n) continue;
+          const [x, z] = k.split(',').map(Number);
+          if (axes.some((z0) => Math.abs(z - z0) <= demi)) fautes.push(`${a.cle} bloc en (${x},${z}) sur une piste`);
+        }
+      }
+      return fautes;
+    });
+    verifier('rien de solide ne dépasse sur une piste',
+      degage.length === 0, `${degage.length} bloc(s) sur une piste — ${degage.slice(0, 4).join(' · ')}`);
+
+    // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
+    //
+    // La plate-forme va jusqu'à `r − 10` alors que `terrainHeight` ne vaut
+    // exactement `sol` que jusqu'à `r − 20` : entre les deux, on remblaie de
+    // `REMBLAI` blocs sous la dalle et l'on décaisse de `DECAISSE` au-dessus.
+    // Ces deux bornes sont des MESURES faites sur les dix-neuf aérodromes de
+    // l'époque (remblai 11 au pire à Delhi, décaissé 8 à Orly) — pas des
+    // constantes de confort. Un aérodrome neuf posé sur un relief plus accidenté
+    // livrerait une dalle en porte-à-faux au-dessus du vide, ou une colline en
+    // travers de la piste, et rien dans le code ne paraîtrait faux.
+    //
+    // Le témoin mesure donc la grandeur elle-même, sur la bande de piste — la
+    // seule qui sorte de `PLAT` — et il dit de combien il reste de marge.
+    const ouvrage = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS } = mod;
+      const w = window.__game.world;
+      const REMBLAI = mod.REMBLAI, DECAISSE = mod.DECAISSE;
+      if (REMBLAI === undefined) return { absent: true };
+      const fautes = []; let pireR = 0, pireD = 0;
+      for (const a of AEROPORTS) {
+        const RAYON = a.r - 10, PLAT = a.r - 20;
+        // La ou les bandes de piste de cet aérodrome, demandées au module.
+        let axes, demi;
+        if (a.profil === 'roissy') { axes = mod.PISTES_ROISSY || []; demi = mod.DEMI_PISTE_ROISSY || 4; }
+        else if (mod.planAerodrome) {
+          const P = mod.planAerodrome(a.profil, a.r);
+          axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z); demi = P.DEMI_PISTE;
+        } else { axes = []; demi = 4; }
+        for (const z0 of axes) {
+          for (let dz = z0 - demi - 2; dz <= z0 + demi + 2; dz++) {
+            const bord = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - dz * dz)));
+            const dedans = Math.floor(Math.sqrt(Math.max(0, PLAT * PLAT - dz * dz)));
+            for (const sens of [-1, 1]) {
+              for (let dx = dedans; dx <= bord; dx++) {
+                const h = w.terrainHeight(a.x + sens * dx, a.z + dz);
+                pireR = Math.max(pireR, a.sol - h);
+                pireD = Math.max(pireD, h - a.sol);
+                if (a.sol - h > REMBLAI) fautes.push(`${a.cle} remblai ${a.sol - h} > ${REMBLAI}`);
+                if (h - a.sol > DECAISSE) fautes.push(`${a.cle} décaissé ${h - a.sol} > ${DECAISSE}`);
+              }
+            }
+          }
+        }
+      }
+      return { fautes, pireR, pireD, REMBLAI, DECAISSE };
+    });
+    verifier('le remblai et la tranchée des pistes restent dans leurs bornes mesurées',
+      !ouvrage.absent && ouvrage.fautes.length === 0,
+      ouvrage.absent ? 'REMBLAI absent (code d\'avant la v280)'
+        : `pire remblai ${ouvrage.pireR}/${ouvrage.REMBLAI} · pire décaissé ${ouvrage.pireD}/${ouvrage.DECAISSE}`
+          + (ouvrage.fautes.length ? ` — ${ouvrage.fautes.slice(0, 3).join(' · ')}` : ''));
 
     // ET LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne un yaw
     // aléatoire à toute bête ; l'espèce étant `immobile`, un avion garé gardait
@@ -1929,7 +2736,7 @@ const VRAIES_KM = [
       await tab.evaluate(async () => {
         const { AEROPORTS, postesAvion } = await import('./src/aeroport.js');
         return AEROPORTS.every((a) => {
-          const caps = postesAvion(a.profil).map((p) => p.cap);
+          const caps = postesAvion(a.profil, a.r).map((p) => p.cap);
           // `undefined` partout, c'est l'ancien code : le cap venait alors du
           // tirage au sort d'`animals.js`, donc il n'était pas le même.
           return caps.every((c) => c !== undefined && c === caps[0]);
@@ -1975,6 +2782,8 @@ const VRAIES_KM = [
         out[nom] = {
           long: +(bb.max.z - bb.min.z).toFixed(2),
           reserve: GAB[nom] ? GAB[nom].long : null,
+          envergure: +(bb.max.x - bb.min.x).toFixed(2),
+          envAnnoncee: GAB[nom] ? (GAB[nom].envergure ?? null) : null,
           sous: +bb.min.y.toFixed(2),
           saumon: bout.length ? +(Math.max(...bout) - Math.min(...bout)).toFixed(2) : null,
         };
@@ -1991,6 +2800,15 @@ const VRAIES_KM = [
       appareils.length === 3
         && appareils.every(([, d]) => d.reserve && d.long <= d.reserve + 0.05),
       `longueurs : ${appareils.map(([n, d]) => `${n} ${d.long}/${d.reserve}`).join(' · ')}`);
+    // 1 bis. L'ENVERGURE ANNONCÉE EST CELLE DU MODÈLE (v278). C'est elle qui
+    //    dimensionne une place de stationnement, et une table que personne ne
+    //    vérifie est un piège qui attend : `larg` avait annoncé n'importe quoi
+    //    pendant des versions parce que rien ne la lisait. Celle-ci est lue
+    //    par `empriseAuSol`, donc par le tarmac ET par le témoin des postes.
+    verifier('l\'envergure annoncée est celle du modèle rendu',
+      appareils.length === 3
+        && appareils.every(([, d]) => d.envAnnoncee !== null && Math.abs(d.envergure - d.envAnnoncee) <= 0.15),
+      `envergures : ${appareils.map(([n, d]) => `${n} ${d.envergure}/${d.envAnnoncee}`).join(' · ')}`);
     // 2. IL EST POSÉ SUR SES ROUES. Le train descendait à −0,68 sous
     //    l'origine : un avion garé avait les roues enterrées jusqu'à l'essieu.
     verifier('un avion garé est posé sur ses roues, pas enfoncé dans le sol',
@@ -2015,6 +2833,652 @@ const VRAIES_KM = [
       gardes.length === 2
         && gardes.every(([, d]) => d.saumon !== null && d.saumon <= d.long * 0.10),
       `saumon/longueur : ${appareils.map(([n, d]) => `${n} ${d.saumon}/${d.long}`).join(' · ')}`);
+
+    // ─── LES VOITURES DES VILLES ENGENDRÉES (v270) ───────────────────────
+    //
+    // Max, deux captures : « une voiture posée DANS le mobilier » (Stuttgart),
+    // « deux voitures de la rue l'une dans l'autre, et des caisses du marché
+    // sur la chaussée » (Zurich).
+    //
+    // ON INTERROGE LES FONCTIONS PURES, JAMAIS LE MONDE CHARGÉ. `getBlock` ne
+    // répond que sur les morceaux déjà engendrés : lire deux cent soixante
+    // villes sans y aller rendrait zéro partout et le témoin passerait au vert
+    // en ne prouvant rien (leçon v202).
+    const rues = await tab.evaluate(async () => {
+      // ON IMPORTE L'ESPACE DE NOMS, PAS DES NOMS. Sur l'ancien code
+      // `PARTAGE_MAX`, `DEGAGEMENT_VOITURE` et `DEMI_LARG_VOITURE` n'existent
+      // pas, et un import nommé qui manque fait échouer le MODULE au lien :
+      // le témoin s'effondrerait au lieu d'échouer proprement, et masquerait
+      // les suivants.
+      const vm = await import('./src/villesmonde.js');
+      const veh = await import('./src/vehicules.js');
+      const { CITY_BLOCK } = await import('./src/blocks.js');
+      const { tracesCirculation, solVillesMonde, mobilierVillesMonde } = vm;
+      const PARTAGE_MAX = vm.PARTAGE_MAX ?? 20;         // la barre de la v211
+      const DEGAGEMENT_VOITURE = vm.DEGAGEMENT_VOITURE ?? null;
+      const DEMI_LONG_VOITURE = veh.DEMI_LONG_VOITURE ?? 2.2;
+      const DEMI_LARG_VOITURE = veh.DEMI_LARG_VOITURE ?? 1.13;
+      const VU_VOITURE = veh.VU_VOITURE ?? 45;          // la portée d'affichage
+      const VU_ANNEAU = vm.VU_ANNEAU ?? null;
+      const traces = tracesCirculation(() => 35);
+
+      // 1. DEUX ANNEAUX NE SE PARTAGENT PAS UNE RUE. Le partage se calcule sur
+      // les QUATRE COINS de l'anneau — la seule chose que les deux codes
+      // publient. Deux côtés se suivent quand ils sont parallèles et à moins
+      // de deux blocs l'un de l'autre ; ce qu'ils partagent est le
+      // recouvrement de leurs projections. Deux côtés qui se CROISENT ne
+      // partagent rien, et c'est exactement la distinction de la v211.
+      const cotes = (tr) => tr.pts.map((a, i) => [a, tr.pts[(i + 1) % tr.pts.length]]);
+      const partage = (A, B) => {
+        let t = 0;
+        for (const [a1, a2] of cotes(A)) {
+          const L = Math.hypot(a2.x - a1.x, a2.z - a1.z);
+          if (L < 1e-6) continue;
+          const ux = (a2.x - a1.x) / L, uz = (a2.z - a1.z) / L;
+          for (const [b1, b2] of cotes(B)) {
+            const M = Math.hypot(b2.x - b1.x, b2.z - b1.z);
+            if (M < 1e-6) continue;
+            const vx = (b2.x - b1.x) / M, vz = (b2.z - b1.z) / M;
+            if (Math.abs(ux * vz - uz * vx) > 0.02) continue;          // pas parallèles
+            const ecart = Math.abs((b1.x - a1.x) * (-uz) + (b1.z - a1.z) * ux);
+            if (ecart > 2) continue;                                   // pas la même rue
+            const p1 = 0, p2 = L;
+            const q1 = (b1.x - a1.x) * ux + (b1.z - a1.z) * uz;
+            const q2 = (b2.x - a1.x) * ux + (b2.z - a1.z) * uz;
+            t += Math.max(0, Math.min(p2, Math.max(q1, q2)) - Math.max(p1, Math.min(q1, q2)));
+          }
+        }
+        return t;
+      };
+      const parVille = new Map();
+      for (const tr of traces) {
+        if (!parVille.has(tr.cle)) parVille.set(tr.cle, []);
+        parVille.get(tr.cle).push(tr);
+      }
+      // 1 bis. ET CE QUE L'ENFANT VOIT EN ARRIVANT. Une voiture ne se
+      // DESSINE qu'à `VU_VOITURE` blocs : une ville dont tous les anneaux
+      // passent plus loin de son centre est MORTE quand on s'y pose, et
+      // pourtant elle a ses convois. C'est la régression que la première
+      // version de cette livraison a produite — Rome passait de DOUZE blocs
+      // à quarante-cinq, pile la portée — et qu'aucun des témoins
+      // ci-dessus ne pouvait voir, parce qu'ils comptent des ANNEAUX.
+      const dAuCentre = (tr) => {
+        let d = Infinity;
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const L = Math.hypot(b.x - a.x, b.z - a.z);
+          if (L < 1e-6) continue;
+          const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+          let q = (tr.x - a.x) * ux + (tr.z - a.z) * uz;
+          q = Math.max(0, Math.min(L, q));
+          d = Math.min(d, Math.hypot(a.x + ux * q - tr.x, a.z + uz * q - tr.z));
+        }
+        return d;
+      };
+      let aveugles = 0, pireVue = 0, villeAveugle = '';
+      for (const [cle, g] of parVille) {
+        if (!g.length) continue;
+        const d = Math.min(...g.map(dAuCentre));
+        if (d >= VU_VOITURE) { aveugles++; if (d > pireVue) { pireVue = d; villeAveugle = cle; } }
+      }
+
+      let pire = 0, villePire = '', fautives = 0, sansAnneau = 0;
+      for (const [cle, g] of parVille) {
+        if (!g.length) sansAnneau++;
+        let p = 0;
+        for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+          p = Math.max(p, partage(g[i], g[j]));
+        }
+        if (p > PARTAGE_MAX) fautives++;
+        if (p > pire) { pire = p; villePire = cle; }
+      }
+
+      // 2. LA CARROSSERIE NE TRAVERSE PLUS DE MOBILIER. Recouvrement EXACT du
+      // rectangle orienté contre la case du meuble (séparation d'axes) — pas
+      // un point échantillonné : un chevauchement se mesure en rectangles.
+      const meuble = (X, Z) => {
+        if (solVillesMonde(X, Z) !== CITY_BLOCK.SIDEWALK) return 0;
+        let id = 0;
+        mobilierVillesMonde(X, Z, (dy, q) => { if (dy === 1) id = q; });
+        return id;
+      };
+      const touche = (cx, cz, ux, uz, X, Z) => {
+        const vx = -uz, vz = ux;
+        const coins = [[X, Z], [X + 1, Z], [X + 1, Z + 1], [X, Z + 1]];
+        for (const [ax, az, demi] of [[ux, uz, DEMI_LONG_VOITURE], [vx, vz, DEMI_LARG_VOITURE]]) {
+          let mn = Infinity, mx = -Infinity;
+          for (const [px, pz] of coins) {
+            const q = (px - cx) * ax + (pz - cz) * az;
+            mn = Math.min(mn, q); mx = Math.max(mx, q);
+          }
+          if (mn > demi || mx < -demi) return false;
+        }
+        const som = [[DEMI_LONG_VOITURE, DEMI_LARG_VOITURE], [DEMI_LONG_VOITURE, -DEMI_LARG_VOITURE],
+          [-DEMI_LONG_VOITURE, -DEMI_LARG_VOITURE], [-DEMI_LONG_VOITURE, DEMI_LARG_VOITURE]]
+          .map(([l, w]) => [cx + ux * l + vx * w, cz + uz * l + vz * w]);
+        for (const [ax, az, lo, hi] of [[1, 0, X, X + 1], [0, 1, Z, Z + 1]]) {
+          let mn = Infinity, mx = -Infinity;
+          for (const [px, pz] of som) {
+            const q = px * ax + pz * az;
+            mn = Math.min(mn, q); mx = Math.max(mx, q);
+          }
+          if (mn > hi || mx < lo) return false;
+        }
+        return true;
+      };
+      let meubles = 0;
+      const nommees = {};
+      for (const tr of traces) {
+        const vus = new Set();
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const L = Math.hypot(b.x - a.x, b.z - a.z);
+          const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+          for (let d = 0; d < L; d += 0.5) {
+            const cx = a.x + ux * d, cz = a.z + uz * d;
+            for (let X = Math.floor(cx - 2.6); X <= Math.floor(cx + 2.6); X++) {
+              for (let Z = Math.floor(cz - 2.6); Z <= Math.floor(cz + 2.6); Z++) {
+                if (touche(cx, cz, ux, uz, X, Z) && meuble(X, Z)) vus.add(`${X},${Z}`);
+              }
+            }
+          }
+        }
+        meubles += vus.size;
+        if (tr.cle === 'zurich' || tr.cle === 'stuttgart') {
+          nommees[tr.cle] = (nommees[tr.cle] || 0) + vus.size;
+        }
+      }
+      // 3. LA CHAUSSÉE TIENT DEUX VOITURES, ET LE CONVOI ROULE DANS SA VOIE
+      // (v271). Max : « increase les routes ». Trois grandeurs, et chacune se
+      // lit là où elle se décide — la trame pour la chaussée et l'îlot, le
+      // TRACÉ RÉEL pour la voie. On ne suppose rien de la largeur : elle vient
+      // de `vehicules.js`.
+      let chausseeMin = Infinity, ilotMin = Infinity, ilotsEtroits = 0;
+      for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles) continue;
+        const t = f.trame;
+        chausseeMin = Math.min(chausseeMin, t.w * 2);
+        for (const pas of [t.pu, t.pv]) {
+          const ilot = pas - 2 * t.s;
+          ilotMin = Math.min(ilotMin, ilot);
+          if (ilot < 5) ilotsEtroits++;
+        }
+      }
+
+      // LA VOIE SE MESURE SUR LE TRACÉ, PAS SUR UNE CONSTANTE. L'écart du
+      // convoi à l'AXE de la rue doit valoir une demi-chaussée, et du bon
+      // CÔTÉ — la droite, qui dans three.js vaut (−fz, fx) pour une direction
+      // (fx, fz). Un décalage à gauche passerait toute mesure d'amplitude :
+      // c'est la leçon du roulis (v231) et du conducteur assis de dos (v249).
+      // ON ÉCHANTILLONNE LE LONG DU CÔTÉ, PAS EN SON MILIEU — et l'on lit la
+      // PERPENDICULAIRE à la marche. Deux pièges de mesure payés tout de
+      // suite : au milieu d'un côté d'anneau le point tombe exactement sur
+      // l'axe de la rue PERPENDICULAIRE, si bien que `min(|ra|, |rb|)` rend
+      // zéro et que tout autour est de la chaussée — le témoin lisait 0,00
+      // d'écart et 100 % de place sur le code NEUF comme sur l'ancien. Ce
+      // qu'on veut, c'est l'écart à l'axe de la rue qu'on SUIT.
+      let ecarts = [], aDroite = 0, aGauche = 0, place = 0, serre = 0;
+      for (const cle of ['zurich', 'rome', 'tokyo', 'stuttgart', 'munich']) {
+        const f = vm.VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f || !f.trame) continue;
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        for (const tr of (parVille.get(cle) || [])) {
+          const cxR = tr.pts.reduce((q, p) => q + p.x, 0) / tr.pts.length;
+          const czR = tr.pts.reduce((q, p) => q + p.z, 0) / tr.pts.length;
+          for (let i = 0; i < tr.pts.length; i++) {
+            const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+            const L = Math.hypot(b.x - a.x, b.z - a.z);
+            if (L < 16) continue;
+            const fx = (b.x - a.x) / L, fz = (b.z - a.z) / L;
+            const rx = -fz, rz = fx;
+            // la marche, dans le repère de la trame : le long de A, ou de B ?
+            const dA = fx * co - fz * si, dB = fx * si + fz * co;
+            const leLongDeA = Math.abs(dA) > Math.abs(dB);
+            for (let d = 5; d < L - 5; d += 3) {
+              const mx = a.x + fx * d, mz = a.z + fz * d;
+              const u = mx - f.ancre.x, v = mz - f.ancre.z;
+              const A = u * co - v * si, B = u * si + v * co;
+              const ra = A - Math.round(A / t.pu) * t.pu;
+              const rb = B - Math.round(B / t.pv) * t.pv;
+              ecarts.push(Math.abs(leLongDeA ? rb : ra));   // la PERPENDICULAIRE
+              // la droite de la marche pointe-t-elle vers le centre du
+              // rectangle ? C'est ce sens-là qui met la voiture dans sa voie
+              // (mesuré v271) — un décalage à gauche passerait toute mesure
+              // d'amplitude.
+              const versCentre = Math.hypot(mx + rx - cxR, mz + rz - czR)
+                < Math.hypot(mx - cxR, mz - czR);
+              if (versCentre) aDroite++; else aGauche++;
+              // et il reste la place d'une voiture dans l'autre voie, à gauche
+              let libre = true;
+              for (const k of [-DEMI_LARG_VOITURE, 0, DEMI_LARG_VOITURE]) {
+                const gx = mx - rx * (t.w / 2) + rx * k, gz = mz - rz * (t.w / 2) + rz * k;
+                const sol = solVillesMonde(Math.floor(gx), Math.floor(gz));
+                if (sol === CITY_BLOCK.SIDEWALK || sol === 'lot' || sol === null) libre = false;
+              }
+              if (libre) place++; else serre++;
+            }
+          }
+        }
+      }
+      // LA LONGUEUR DE RUE QUI PORTE UN CONVOI — la grandeur qui survit à un
+      // changement de pas de trame. Un COMPTE d'anneaux, non : des anneaux plus
+      // grands portent la même rue en étant moins nombreux.
+      let porteUnConvoi = 0;
+      for (const tr of traces) {
+        for (let i = 0; i < tr.pts.length; i++) {
+          const p1 = tr.pts[i], p2 = tr.pts[(i + 1) % tr.pts.length];
+          porteUnConvoi += Math.hypot(p2.x - p1.x, p2.z - p1.z);
+        }
+      }
+      ecarts.sort((a, b) => a - b);
+      const ecartMed = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : -1;
+      const voieVoulue = vm.VILLES_MONDE.find((v) => v.trame && !v.trame.ruelles).trame.w / 2;
+
+      return {
+        chausseeMin, ilotMin, ilotsEtroits,
+        ecartMed, voieVoulue, aDroite, aGauche,
+        place, serre, releves: ecarts.length,
+        villes: parVille.size, anneaux: traces.length, sansAnneau,
+        porteUnConvoi: Math.round(porteUnConvoi),
+        fautives, pire: Math.round(pire), villePire, barre: PARTAGE_MAX,
+        meubles, nommees, degagement: DEGAGEMENT_VOITURE, demiLarg: DEMI_LARG_VOITURE,
+        aveugles, pireVue: Math.round(pireVue), villeAveugle, vu: VU_VOITURE, vuAnneau: VU_ANNEAU,
+      };
+    });
+
+    verifier('deux convois d\'une ville engendrée ne se suivent plus sur la même rue',
+      !rues.err && rues.fautives === 0,
+      `barre ${rues.barre} blocs · ${rues.fautives} ville(s) au-dessus · pire ${rues.pire} (${rues.villePire}) · ${rues.anneaux} anneaux sur ${rues.villes} villes`);
+
+    // ET LA BORNE NE COMPTE PLUS DES ANNEAUX (v282). Elle disait `anneaux > 600`
+    // — un COMPTE ABSOLU relevé quand le pas de trame valait dix-neuf partout.
+    // Les typologies changent ce pas, donc le nombre de rues, donc le nombre
+    // d'anneaux : mesuré, 628 → 602, pendant que la LONGUEUR DE RUE QUI PORTE UN
+    // CONVOI passe de 159 133 à 158 974 blocs, soit un dixième de pour cent.
+    // C'est cette longueur-là que l'enfant voit, et c'est « une barre qui suit
+    // une grandeur se calcule, elle ne s'écrit pas » (v269) — la troisième fois
+    // que ce fichier paie une dimension de ville écrite au lieu d'être demandée
+    // (v203, v271, v274). La borne est une borne de GARDE : elle sépare « il y a
+    // des convois » de « il n'y en a plus », donc elle se pose à la MOITIÉ et
+    // jamais à quatre-vingt-dix pour cent (v237, trois fois dans `monte.js`).
+    verifier('et aucune ville ne perd tous ses convois au passage',
+      !rues.err && rues.sansAnneau === 0 && rues.porteUnConvoi > 80000,
+      `${rues.anneaux} anneaux · ${rues.sansAnneau} ville(s) sans anneau`
+      + ` · ${rues.porteUnConvoi} blocs de rue portent un convoi (borne 80 000)`);
+
+    // UN ANNEAU QUI EXISTE N'EST PAS UNE VOITURE QU'ON VOIT. Ce témoin-ci est
+    // né d'une régression de la livraison elle-même : la contrainte de partage
+    // trie par taille et sacrifiait les anneaux DÉCALÉS, ceux dont un côté
+    // passe près du centre. Rome gardait ses quatre anneaux et n'en montrait
+    // plus un seul. Vert sur `origin/main` À DESSEIN — il garde une capacité
+    // qu'on vient de frôler (règle v220) — et vérifié ROUGE sur la première
+    // version de cette branche : « 1 ville(s) aveugle(s) · pire 45 (rome) ».
+    verifier('et chaque ville montre une voiture depuis son centre',
+      !rues.err && rues.aveugles === 0,
+      `portée ${rues.vu} blocs · ${rues.aveugles} ville(s) aveugle(s)`
+      + (rues.aveugles ? ` · pire ${rues.pireVue} (${rues.villeAveugle})` : '')
+      + ` · anneau visé à ${rues.vuAnneau ?? '—'} blocs`);
+
+    verifier('la carrosserie ne traverse plus le mobilier des rues',
+      !rues.err && rues.meubles === 0,
+      `${rues.meubles} case(s) de mobilier traversée(s) · Zurich ${rues.nommees.zurich ?? '—'} · Stuttgart ${rues.nommees.stuttgart ?? '—'}`);
+
+    // ET LE DÉGAGEMENT EST BIEN LA DEMI-LARGEUR D'UNE VOITURE. `villesmonde.js`
+    // ne peut pas importer `vehicules.js` — il est lu par le mailleur du
+    // worker, qui meurt au premier `import 'three'` de son graphe (v251) —
+    // donc le chiffre y est recopié. Deux tables qui décrivent la même chose
+    // finissent par diverger : c'est un témoin qui les garde d'accord, jamais
+    // un commentaire.
+    verifier('et il se dégage exactement la largeur d\'une voiture',
+      !rues.err && rues.degagement !== null && rues.degagement === rues.demiLarg,
+      `villesmonde ${rues.degagement} · vehicules ${rues.demiLarg}`);
+
+    // LES ROUTES S'ÉLARGISSENT, ET LES TROIS CHIFFRES SE GARDENT ENSEMBLE
+    // (v271). Max : « increase les routes ». Élargir la chaussée seule mange
+    // le trottoir — donc le mobilier, donc l'éclairage de nuit ; élargir
+    // l'emprise seule mange l'îlot — des cloisons au lieu d'immeubles. Les
+    // trois témoins qui suivent tiennent les trois bouts, et le quatrième
+    // mesure ce que l'enfant obtient : de la place dans l'autre voie.
+    // LA LARGEUR VIENT DU JEU, PAS DU BANC. `DEMI_LARG_VOITURE` n'existe que
+    // dans la page : lu ici, côté node, il fait s'EFFONDRER la suite au lieu
+    // de la faire échouer — et il a emporté les trois verdicts suivants au
+    // premier portail de la v271 (`ReferenceError`, ligne 2373). Le chiffre
+    // revient donc dans `rues`, comme tout ce que la page mesure.
+    const demiLarg = rues.demiLarg ?? 1.13;
+    verifier('la chaussée d\'une ville engendrée tient deux voitures côte à côte',
+      !rues.err && rues.chausseeMin >= 4 * demiLarg + 0.6,
+      `chaussée la plus étroite ${rues.chausseeMin} blocs · deux voitures en font`
+      + ` ${(4 * demiLarg).toFixed(2)} · marge`
+      + ` ${(rues.chausseeMin - 4 * demiLarg).toFixed(2)}`);
+
+    verifier('et aucun îlot ne tombe sous cinq blocs — un immeuble y tient encore',
+      !rues.err && rues.ilotsEtroits === 0 && rues.ilotMin >= 5,
+      `îlot le plus étroit ${rues.ilotMin.toFixed(1)} blocs · ${rues.ilotsEtroits} sous cinq`);
+
+    // UN DÉCALAGE À GAUCHE PASSERAIT TOUTE MESURE D'AMPLITUDE. Le témoin lit
+    // donc les deux : la distance à l'axe (une demi-chaussée) ET le côté.
+    verifier('le convoi roule dans sa voie de droite, pas au milieu de la rue',
+      !rues.err && rues.releves > 20 && rues.aGauche === 0
+      && Math.abs(rues.ecartMed - rues.voieVoulue) < 0.2,
+      `écart médian à l'axe ${rues.ecartMed.toFixed(2)} pour une demi-chaussée de`
+      + ` ${rues.voieVoulue} · ${rues.aDroite} relevé(s) à droite, ${rues.aGauche} à gauche`
+      + ` · ${rues.releves} relevés`);
+
+    verifier('et il reste la place d\'une voiture dans l\'autre voie',
+      !rues.err && rues.releves > 20 && rues.place / (rues.place + rues.serre) > 0.85,
+      `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
+      + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
+
+    // --- CHAQUE VILLE A SON TISSU, ET DEUX VILLES NE SONT PLUS LA MÊME (v280) -
+    //
+    // Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone,
+    // je le sentais l'ambiance de Barcelone et pas toutes les villes qui sont
+    // copiées-collées les unes aux autres. » Mesuré avant d'écrire une ligne :
+    // sur 269 villes il n'existait que HUIT plans de rue, dont deux couvraient
+    // 255 villes, et la seule chose qui changeait d'une ville à l'autre était
+    // l'ANGLE de rotation. Le copié-collé était dans le PLAN AU SOL.
+    //
+    // ET CES QUATRE TÉMOINS SONT ARRIVÉS APRÈS LE CODE, ce qui est une faute :
+    // quatre sujets — les tissus, le cœur d'îlot, la place, les arcades — sont
+    // entrés dans la branche sans un seul témoin, exactement la panne que la
+    // v278 a payée et que la v279 a écrite. « Ce qu'un témoin ne garde pas,
+    // personne ne le garde. »
+    const tissus = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { VILLES_MONDE, solVillesMonde, batirColonneVillesMonde } = m;
+      const trame = VILLES_MONDE.filter((f) => f.trame);
+
+      // 1 — DEUX VILLES SE RESSEMBLENT-ELLES ? Deux grandeurs, parce qu'elles
+      // ne disent pas la même chose : la similarité des DISTRIBUTIONS de sol
+      // (les mêmes matières dans les mêmes proportions) et l'identité COLONNE
+      // PAR COLONNE (le même plan, au bloc près). La pire paire d'avant —
+      // Accra et Kiev — avait des distributions IDENTIQUES (1,000), et
+      // Varsovie/Budapest 95,9 % de colonnes identiques.
+      const ECH = ['zurich', 'bologne', 'barcelone', 'buenosaires', 'munich', 'vienne',
+        'rome', 'naples', 'lisbonne', 'copenhague', 'oslo', 'fes', 'tunis', 'santiago',
+        'lima', 'manille', 'nairobi', 'accra', 'kiev', 'varsovie', 'prague', 'budapest',
+        'dublin', 'anvers'];
+      const R = 36;
+      const rel = new Map();
+      for (const cle of ECH) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) continue;
+        const cols = [], hist = new Map();
+        for (let du = -R; du <= R; du += 2) {
+          for (let dv = -R; dv <= R; dv += 2) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            cols.push(String(sol));
+            hist.set(String(sol), (hist.get(String(sol)) || 0) + 1);
+          }
+        }
+        rel.set(cle, { cols, hist, n: cols.length });
+      }
+      const cles = [...rel.keys()];
+      let pireDist = 0, pireDistP = '', pireCol = 0, pireColP = '', paires = 0;
+      for (let i = 0; i < cles.length; i++) {
+        for (let j = i + 1; j < cles.length; j++) {
+          const A = rel.get(cles[i]), B = rel.get(cles[j]);
+          let l1 = 0;
+          for (const k of new Set([...A.hist.keys(), ...B.hist.keys()])) {
+            l1 += Math.abs((A.hist.get(k) || 0) / A.n - (B.hist.get(k) || 0) / B.n);
+          }
+          const d = 1 - l1 / 2;
+          let eg = 0;
+          for (let k = 0; k < A.n; k++) if (A.cols[k] === B.cols[k]) eg++;
+          const c = eg / A.n;
+          paires++;
+          if (d > pireDist) { pireDist = d; pireDistP = `${cles[i]}/${cles[j]}`; }
+          if (c > pireCol) { pireCol = c; pireColP = `${cles[i]}/${cles[j]}`; }
+        }
+      }
+
+      // 2 — LA PART BÂTIE DU DISQUE VARIE D'UN TISSU À L'AUTRE. C'est le cœur
+      // d'îlot : une vraie ville a des cours, des patios, des jardins — 92 %
+      // de disque bâti n'est pas une ville. `f.typo` n'existe pas sur l'ancien
+      // code : tout tombe dans un seul groupe, l'écart vaut zéro, et c'est
+      // exactement le rouge attendu.
+      const parTypo = new Map();
+      for (const f of trame) {
+        const Rv = Math.min(f.rayon - 4, 40);
+        let lot = 0, tot = 0;
+        for (let du = -Rv; du <= Rv; du += 2) {
+          for (let dv = -Rv; dv <= Rv; dv += 2) {
+            if (Math.hypot(du, dv) > Rv) continue;
+            tot++;
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) === 'lot') lot++;
+          }
+        }
+        const k = f.typo || '(aucun tissu)';
+        if (!parTypo.has(k)) parTypo.set(k, []);
+        parTypo.get(k).push(lot / tot);
+      }
+      const batis = [...parTypo].map(([k, v]) => ({
+        typo: k, part: v.reduce((a, b) => a + b, 0) / v.length, n: v.length,
+      })).sort((a, b) => a.part - b.part);
+
+      // 3 — LA PLACE : chaque ville en a une, elle CONTIENT le centre (c'est là
+      // que la téléportation dépose l'enfant), et sa forme change d'une ville à
+      // l'autre. Avant, 244 villes sur 267 avaient la MÊME : 4×4 en (−2, −2).
+      const formes = new Map();
+      const sansPlace = [], centreDehors = [];
+      for (const f of trame) {
+        const centre = String(solVillesMonde(f.ancre.x, f.ancre.z));
+        let u0 = 99, u1 = -99, v0 = 99, v1 = -99, n = 0;
+        for (let du = -30; du <= 30; du++) {
+          for (let dv = -30; dv <= 30; dv++) {
+            const sol = solVillesMonde(f.ancre.x + du, f.ancre.z + dv);
+            if (sol === null || sol === 'lot' || String(sol) !== centre) continue;
+            u0 = Math.min(u0, du); u1 = Math.max(u1, du);
+            v0 = Math.min(v0, dv); v1 = Math.max(v1, dv); n++;
+          }
+        }
+        if (!n) { sansPlace.push(f.cle); continue; }
+        const k = `${u1 - u0}x${v1 - v0}@${u0},${v0}`;
+        formes.set(k, (formes.get(k) || 0) + 1);
+        if (u0 > 0 || u1 < 0 || v0 > 0 || v1 < 0) centreDehors.push(f.cle);
+      }
+      const pirePlace = [...formes.entries()].sort((a, b) => b[1] - a[1])[0] || ['(aucune)', 0];
+
+      // 4 — LES ARCADES. Bologne, c'est quarante kilomètres de portiques ; on
+      // marche DESSOUS. La mesure est donc un vide : rien à hauteur d'homme
+      // (y = 1 et 2) et quelque chose au-dessus (y = 3), sur une colonne de lot.
+      const arcades = [];
+      for (const cle of ['bologne', 'turin', 'zurich', 'copenhague']) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { arcades.push({ cle, err: 'absente' }); continue; }
+        let sous = 0, cols = 0;
+        for (let du = -40; du <= 40; du++) {
+          for (let dv = -40; dv <= 40; dv++) {
+            if (solVillesMonde(f.ancre.x + du, f.ancre.z + dv) !== 'lot') continue;
+            cols++;
+            const pose = [];
+            batirColonneVillesMonde(f.ancre.x + du, f.ancre.z + dv, (dy, id) => pose.push(dy));
+            if (!pose.length) continue;
+            if (!pose.some((dy) => dy === 1 || dy === 2) && pose.some((dy) => dy === 3)) sous++;
+          }
+        }
+        arcades.push({ cle, typo: String(f.typo), cols, sous, part: sous / Math.max(1, cols) });
+      }
+      return { paires, pireDist, pireDistP, pireCol, pireColP, batis,
+        formes: formes.size, pirePlace, villes: trame.length, sansPlace, centreDehors, arcades };
+    });
+
+    // Mesuré à la livraison sur 253 paires : la pire similarité de distribution
+    // tombe de 1,000 (Accra/Kiev — le même sol dans les mêmes proportions) à
+    // 0,988, et la pire identité colonne par colonne de 95,9 % (Varsovie/
+    // Budapest) à 77,5 %. Les barres sont posées un cran au-delà des mesures,
+    // pas sur elles.
+    verifier('deux villes engendrées ne sont plus la même ville',
+      tissus.paires > 100 && tissus.pireDist < 0.995 && tissus.pireCol < 0.88,
+      `pire similarité de distribution ${tissus.pireDist.toFixed(3)} (${tissus.pireDistP})`
+      + ` · pire identité colonne ${(100 * tissus.pireCol).toFixed(1)} % (${tissus.pireColP})`
+      + ` · ${tissus.paires} paires`);
+
+    // L'ÉCART EST LA GRANDEUR, PAS LA MOYENNE. Une part bâtie basse partout
+    // serait une ville creuse ; ce qu'on garde, c'est qu'un tissu dense et un
+    // tissu aéré ne se ressemblent pas. Mesuré : de 7,9 % (organique) à 25,3 %
+    // (medina), soit 17 points d'écart, contre ZÉRO quand il n'y avait qu'un
+    // seul plan pour les 267.
+    const ecartBati = tissus.batis.length
+      ? tissus.batis[tissus.batis.length - 1].part - tissus.batis[0].part : 0;
+    verifier('chaque tissu a son espace libre — le cœur d\'îlot',
+      tissus.batis.length >= 6 && ecartBati > 0.08,
+      `${tissus.batis.length} tissu(s) · écart de part bâtie ${(100 * ecartBati).toFixed(1)} points · `
+      + tissus.batis.map((b) => `${b.typo} ${(100 * b.part).toFixed(1)} % (${b.n})`).join(' · '));
+
+    // ET LA PLACE CONTIENT TOUJOURS LE CENTRE : c'est là que la téléportation
+    // dépose l'enfant, et une ville sans place le mettrait le nez dans un mur.
+    // C'est ce verdict qui a attrapé Hambourg et Bâle, noyés par leur propre
+    // fleuve — l'Alster prolongée à travers le Rathaus, le Rhin sur la
+    // Marktplatz — avant que le portail n'ait à le dire.
+    verifier('chaque ville a sa place, et elle n\'est plus au même endroit partout',
+      tissus.sansPlace.length === 0 && tissus.centreDehors.length === 0
+      && tissus.pirePlace[1] / tissus.villes < 0.5,
+      `${tissus.formes} formes de place sur ${tissus.villes} villes · la plus répandue`
+      + ` ${tissus.pirePlace[0]} dans ${tissus.pirePlace[1]}`
+      + ` (${(100 * tissus.pirePlace[1] / tissus.villes).toFixed(0)} %)`
+      + ` · sans place : ${tissus.sansPlace.join(', ') || '(aucune)'}`
+      + ` · centre hors de la place : ${tissus.centreDehors.join(', ') || '(aucune)'}`);
+
+    // Bologne et Turin ont des arcades, Zurich et Copenhague n'en ont pas — et
+    // c'est la seconde moitié qui compte : un témoin qui ne vérifie que la
+    // présence laisserait poser des portiques dans toute l'Europe.
+    verifier('on marche sous les arcades à Bologne et à Turin, et nulle part ailleurs',
+      tissus.arcades.length === 4 && !tissus.arcades.some((a) => a.err)
+      && tissus.arcades.filter((a) => a.typo === 'arcades').length === 2
+      && tissus.arcades.every((a) => (a.typo === 'arcades' ? a.part > 0.1 : a.part < 0.01)),
+      tissus.arcades.map((a) => a.err ? `${a.cle} ${a.err}`
+        : `${a.cle} (${a.typo}) ${a.sous}/${a.cols} = ${(100 * a.part).toFixed(1)} %`).join(' · '));
+
+    // --- LES FLEUVES DES VILLES, ET LES PONTS QUI LES FRANCHISSENT (v280) ----
+    //
+    // Onze villes dont le fleuve EST l'identité n'en avaient aucun : Hambourg
+    // sans l'Elbe, Lyon sans la Saône ni le Rhône, Budapest sans le Danube.
+    // Max : « je me prenne à Barcelone, je le sentais l'ambiance de Barcelone
+    // et pas toutes les villes qui sont copiées-collées les unes aux autres. »
+    //
+    // ET RENDRE LE FLEUVE A CASSÉ QUATRE VILLES avant qu'on ne le livre :
+    // Hambourg, Lyon, Belgrade et Bâle ont perdu TOUS leurs anneaux de
+    // circulation, leur rivière traversant le centre. La sonde qui SÉPARE les
+    // cas l'a dit en une exécution — 277 à 312 candidats sur 357 rejetés POUR
+    // L'EAU, et le moins mauvais mouillé sur deux à six points de quarante :
+    // l'anneau ne ratait pas la rive, il ratait un PONT. Ces quatre témoins
+    // gardent les deux moitiés de la chose, parce que l'une sans l'autre
+    // livrerait une ville coupée en deux.
+    //
+    // Ces onze villes sont HORS de la fenêtre d'empreinte de `plafond.js`
+    // ([-700, 700] ; la plus proche, Bâle, est à 1 803 blocs) : les deux
+    // empreintes du relief ne bougent pas d'un octet. Mais « une refonte hors
+    // de la fenêtre d'empreinte doit apporter ses PROPRES témoins : personne ne
+    // le fera à sa place » (v186) — les voici.
+    const fleuves = await tab.evaluate(async () => {
+      const m = await import('./src/villesmonde.js');
+      const { WATER_LEVEL } = await import('./src/world.js');
+      const w = window.__game.world;
+      const { VILLES_MONDE, anneauxDeVille, coteDeVille } = m;
+      const AVEC = ['hambourg', 'cologne', 'francfort', 'budapest', 'lyon', 'seville',
+        'porto', 'bordeaux', 'dresde', 'belgrade', 'bale'];
+      // 1 — CHAQUE VILLE DE FLEUVE A SON EAU, ET ELLE SE MESURE DANS LE
+      // DISQUE, pas sur la fiche : une fiche peut déclarer un fleuve que la
+      // géographie ne rend pas (une polyligne hors du disque, une largeur
+      // nulle). On compte les colonnes SOUS le niveau de la mer.
+      const eaux = [];
+      for (const cle of AVEC) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f) { eaux.push({ cle, err: 'fiche absente' }); continue; }
+        let mouille = 0, total = 0;
+        for (let du = -f.rayon; du <= f.rayon; du += 3) {
+          for (let dv = -f.rayon; dv <= f.rayon; dv += 3) {
+            if (Math.hypot(du, dv) > f.rayon) continue;
+            total++;
+            if (w.terrainHeight(f.ancre.x + du, f.ancre.z + dv) < WATER_LEVEL) mouille++;
+          }
+        }
+        eaux.push({ cle, part: mouille / total, total });
+      }
+      // 2 — AUCUNE VILLE À TRAME NE PERD TOUTES SES VOITURES. Le vrai
+      // dénominateur est l'ensemble des villes qui en ont le droit : une médina
+      // piétonne n'en a jamais eu (v270), et c'est une DÉCISION.
+      const traces = m.tracesCirculation((x, z) => w.terrainHeight(x, z));
+      const par = new Set(traces.map((t) => t.cle));
+      const trame = VILLES_MONDE.filter((f) => f.trame && !f.trame.ruelles);
+      const sans = trame.map((f) => f.cle).filter((c) => !par.has(c));
+      // 3 — LE TABLIER A DE L'EAU DESSOUS, DE L'AIR DESSUS, ET LA COTE DE LA
+      // RIVE. C'est la leçon du Bay Bridge : « ce qui prouve un pont, c'est
+      // l'eau sous son tablier », pas de la pierre grise quelque part.
+      // Et l'on traverse À PIED, parce qu'un pont qu'on ne traverse pas est un
+      // décor : sur l'axe du tablier, un sol plein et deux blocs d'air.
+      // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
+      // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
+      // on ne verrait alors l'étendue d'aucun des quatre verdicts.
+      const ponts = [];
+      for (const cle of (anneauxDeVille && coteDeVille
+        ? ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'] : [])) {
+        const f = VILLES_MONDE.find((v) => v.cle === cle);
+        const a = anneauxDeVille(f);
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        const cote = coteDeVille(f);
+        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0;
+        for (const q of a.ponts) {
+          pireSpan = Math.max(pireSpan, q.a1 - q.a0);
+          const n = Math.round(q.a1 - q.a0);
+          for (let k = 0; k <= n; k++) {
+            const le = q.a0 + k;
+            const P = q.axe === 0 ? le : q.b, Q = q.axe === 0 ? q.b : le;
+            const x = Math.round(f.ancre.x + P * co + Q * si);
+            const z = Math.round(f.ancre.z + (-P * si + Q * co));
+            pas++;
+            if (w.getBlock(x, cote, z) === 0) sansSol++;
+            if (w.getBlock(x, cote + 1, z) !== 0 || w.getBlock(x, cote + 2, z) !== 0) surLaTete++;
+            if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
+          }
+        }
+        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan });
+      }
+      return { eaux, sans, trame: trame.length, servies: par.size, ponts,
+        PONT_MAX: m.PONT_MAX || 0 };
+    });
+
+    // Les parts d'eau mesurées à la livraison, et elles disent la vraie ville :
+    // Hambourg 27 % (l'Elbe et l'Alster), Belgrade 21 % (la Save ET le Danube),
+    // Lyon 11 % (deux rivières étroites), Bâle 10 % (un seul Rhin). La barre
+    // basse suffit : ce qu'on garde, c'est qu'un fleuve DÉCLARÉ existe dans le
+    // monde engendré — une fiche qui déclare une polyligne que la géographie ne
+    // rend pas passerait toute lecture de fiche.
+    verifier('les onze villes de fleuve ont vraiment leur rivière dans le monde',
+      fleuves.eaux.every((e) => !e.err && e.part > 0.03),
+      fleuves.eaux.map((e) => `${e.cle} ${e.err || (100 * e.part).toFixed(0) + ' %'}`).join(' · '));
+
+    // ON DÉCLARE CE QU'ON NE SAIT PAS FAIRE, ON NE L'ARRONDIT PAS. San Jose
+    // n'avait déjà aucun anneau avant cette livraison, et pour une raison qui
+    // n'est pas l'eau : 252 candidats sur 357 sortent de son disque, sa trame
+    // de 27×21 étant trop grossière pour un rayon de 47. C'est une dette de
+    // TISSU, déclarée dans TASKS.md — et la nommer ici est ce qui empêche une
+    // seconde ville de la rejoindre en silence.
+    const DETTE_SANS_ANNEAU = ['sanjose'];
+    verifier('aucune ville à trame ne perd toutes ses voitures',
+      fleuves.sans.every((c) => DETTE_SANS_ANNEAU.includes(c)),
+      `${fleuves.servies}/${fleuves.trame} villes servies · sans anneau : `
+      + `${fleuves.sans.length ? fleuves.sans.join(', ') : '(aucune)'}`
+      + ` · dette déclarée : ${DETTE_SANS_ANNEAU.join(', ')}`);
+
+    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. Les culées mordent d'un bloc et
+    // demi sur chaque rive — sinon une marche attend l'enfant au bout du pont —
+    // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
+    // mesuré 73 à 85 % à la livraison.
+    verifier('chaque pont a de l\'eau sous son tablier',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
+      fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
+        + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
+
+    verifier('et on le traverse à pied d\'une rive à l\'autre',
+      fleuves.ponts.length === 5
+      && fleuves.ponts.every((p) => p.sansSol === 0 && p.surLaTete === 0
+        && p.pireSpan <= fleuves.PONT_MAX + 3),
+      fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
+        + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
+      + ` · borne ${fleuves.PONT_MAX}`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

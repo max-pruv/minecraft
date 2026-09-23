@@ -27,8 +27,8 @@ const CHEVEUX = [0x3a2a1a, 0x6a4a26, 0x1c1814, 0x8a6a3a, 0x9a9a94, 0x4a3524];
 
 // --- les gens ----------------------------------------------------------------
 
-// Un habitant tient un poste : il s'en écarte un peu, y revient, se tourne vers
-// l'enfant qui approche, et fait son geste de métier quand il est à l'arrêt.
+// Un habitant tient un poste : il s'en écarte un peu, y revient, et fait son
+// geste de métier quand il est à l'arrêt. Il ne se tourne PAS vers l'enfant.
 export class Habitant extends BaseNPC {
   constructor(scene, world, player, toast, opts, x, z) {
     super(scene, world, player, toast, opts);
@@ -43,15 +43,191 @@ export class Habitant extends BaseNPC {
     this.placeAt(x, z, 40);
   }
 
-  think(dt) {
-    const vers = this.player.pos.clone().sub(this.pos);
-    vers.y = 0;
-    const d = vers.length();
-    if (d < 5.5) {                       // on salue celui qui vient à soi
-      this.pas = 0;
-      return { speed: 0, yaw: Math.atan2(vers.x, vers.z) + Math.PI };
+  // ON NE S'ARRÊTE PAS POUR L'ENFANT (v243). Jusqu'ici, à moins de cinq blocs
+  // et demi, l'habitant se figeait et se tournait vers celui qui approchait —
+  // « on salue celui qui vient à soi ». Multiplié par dix-huit passants par
+  // ville, cela faisait une rue entière qui s'immobilise et fixe l'enfant.
+  // Max : « elles regardent le joueur principal au lieu de continuer à se
+  // promener ». Chacun garde donc son propre programme — pause, marche, geste
+  // de métier — et ses phrases restent : on parle en passant, sans s'arrêter.
+  // ET UN PASSANT DE RUE VA QUELQUE PART (v278).
+  //
+  // Max : « les passants qui s'arrêtent et qui nous regardent de manière figée,
+  // ça ne fonctionne pas. Je vois quelque chose de très naturel, comme dans
+  // GTA. » La v243 avait retiré le « on se tourne vers l'enfant » ; ce qui
+  // restait était pire, et invisible à la lecture du code.
+  //
+  // MESURÉ AVANT D'Y TOUCHER, vingt-deux passants à Paris, une minute :
+  // immobiles 86 % du temps, 9,2 blocs parcourus, et un déplacement NET de
+  // 3,7 blocs. Les 86 % sont en partie un artefact du banc (ce minuteur compte
+  // en `dt`, borné : à quatre images par seconde une pause de cinq secondes en
+  // dure vingt-cinq). Le déplacement net, lui, est STRUCTUREL : la marche durait
+  // une à trois secondes dans une direction TIRÉE AU HASARD, à l'intérieur du
+  // rayon d'un poste fixe — HUIT blocs pour un passant de ville, que
+  // `passants.js` passe en option (le `?? 4` ci-dessus est le défaut d'un
+  // villageois, et la note de la v278 citait ce chiffre-là par erreur). Un
+  // passant ne pouvait aller nulle part, quelle que soit la cadence.
+  //
+  // ET CE N'EST PAS LE DÉPLACEMENT NET QUI LE PROUVE (v279) : une marche au
+  // hasard finit par dériver de quatre blocs si on lui laisse vingt secondes de
+  // jeu, et le témoin écrit ainsi était vert sur l'ancien code. Ce que Max
+  // décrit — « figé » — se mesure en CHEMIN PARCOURU PAR SECONDE DE JEU :
+  // 0,18 à 0,77 avant, 1,13 à 1,43 ici, pour un `walkSpeed` de 1,6.
+  //
+  // CE QU'IL FAIT MAINTENANT : il garde son cap et marche LONGTEMPS (six à
+  // quatorze secondes), s'arrête rarement et brièvement, et quand le trottoir
+  // cesse devant lui il TOURNE au lieu de tirer un cap neuf. C'est le geste de
+  // `lampadaireDeVille` (v248) appliqué à la marche : le monde répond tout
+  // seul, on ne connaît pas la trame.
+  //
+  // LE POSTE NE LE RETIENT PLUS. Ce qui le garde près de l'enfant, c'est le
+  // rapatriement de `passants.js` — au-delà de la portée de rendu et derrière la
+  // ligne des épaules (v217, v218) —, pas un rayon de quatre blocs. Un passant
+  // qui rentrerait au poste tous les deux pas serait exactement ce que Max
+  // décrit.
+  promene() { return !!this.surTrottoir; }
+
+  // LE TROTTOIR TOURNE, OU QUELQUE CHOSE LE BARRE : on prend la perpendiculaire
+  // qui continue, et le demi-tour si aucune ne le fait. Jamais un cap tiré au
+  // hasard — c'est ce qui faisait piétiner.
+  // ET S'IL N'Y A DE TROTTOIR DANS AUCUNE DIRECTION, IL N'EST PLUS SUR UN
+  // TROTTOIR : il redevient un flâneur, il ne pivote pas sur place (v278).
+  //
+  // C'est un défaut que j'ai introduit et qu'une mesure PROVOQUÉE a trouvé : un
+  // passant posé face à un mur sur une dalle de pierre voyait son cap
+  // s'incrémenter de π à chaque tour de sonde — 3,14 · 6,28 · 9,42 … 94,25 — et
+  // faisait volte-face trois fois par seconde, sur place, indéfiniment. Pire que
+  // le figé qu'on corrigeait. Cela arrive dès qu'un passant de trottoir marche
+  // sur l'herbe ou sur une esplanade que `TROTTOIR` ne connaît pas.
+  //
+  // Le demi-tour ne sert donc plus que quand une PERPENDICULAIRE existe mais
+  // qu'aucune ne porte ; sans aucun trottoir autour, on rend la main à l'ancien
+  // programme, qui sait flâner autour d'un poste. Et le cap se normalise : il
+  // grandissait sans borne.
+  tourner() {
+    const quart = Math.PI / 2;
+    const gauche = this.capYaw + quart, droite = this.capYaw - quart;
+    const g = this.trottoirVers(gauche), d = this.trottoirVers(droite);
+    if (!g && !d && !this.trottoirVers(this.capYaw + Math.PI)) {
+      this.surTrottoir = false;              // plus de trottoir : on flâne
+      this.etat = 'pause'; this.minuteur = 0.5;
+      return;
     }
+    const cap = g && d ? (Math.random() < 0.5 ? gauche : droite)
+      : g ? gauche : d ? droite : this.capYaw + Math.PI;
+    this.capYaw = Math.atan2(Math.sin(cap), Math.cos(cap));   // borné à ±π
+  }
+
+  // LE TROTTOIR CONTINUE-T-IL DANS CETTE DIRECTION ? On demande au monde, à
+  // 1,2 bloc devant — assez loin pour tourner avant d'y être, assez près pour ne
+  // pas juger l'autre côté de la rue.
+  trottoirVers(cap) {
+    if (!this.world.trottoirA) return true;
+    const x = this.pos.x - Math.sin(cap) * 1.2, z = this.pos.z - Math.cos(cap) * 1.2;
+    return this.world.trottoirA(x, z);
+  }
+
+  think(dt) {
     this.minuteur -= dt;
+    if (this.promene()) {
+      if (this.minuteur <= 0) {
+        this.etat = this.etat === 'pause' ? 'marche' : 'pause';
+        // Une pause brève et rare : on flâne, on ne fait pas le pied de grue.
+        this.minuteur = this.etat === 'pause' ? 0.6 + Math.random() * 1.2 : 6 + Math.random() * 8;
+        if (this.etat === 'marche' && this.capYaw == null) this.capYaw = Math.random() * Math.PI * 2;
+      }
+      // LA SONDE A SA CADENCE (v251, v278). `world.trottoirA` descend une colonne
+      // et lit un bloc : interrogé à chaque image pour dix-huit passants, il
+      // ferait ENGENDRER des morceaux sur le fil principal. Trois fois par
+      // seconde de jeu suffisent — à 3,2 m/s cela fait un bloc entre deux
+      // sondes, et la sonde regarde 1,2 bloc devant.
+      this.sonde = (this.sonde ?? 0) - dt;
+      if (this.etat === 'marche' && this.sonde <= 0) {
+        this.sonde = 0.33;
+        // ON JUGE SUR CE QU'ON A OBTENU, PAS SUR CE QU'ON A DEMANDÉ (v278).
+        //
+        // Première correction mesurée : 89 % des passants sur le trottoir (contre
+        // la moitié), chemin 9,2 → 15,7 blocs, net 3,7 → 6,5. Mais l'immobilité
+        // ne tombait que de 86 à 75 %, et une sonde qui SÉPARE les cas a dit
+        // pourquoi en une exécution : le programme veut marcher 77,9 % du temps,
+        // les passants sont en promenade à 95,5 % — et ils POUSSENT SANS AVANCER
+        // 54 % du temps. Ce n'était donc pas une pause, c'était un obstacle.
+        //
+        // Et cela ne se règle pas en regardant mieux devant : `trottoirVers` dit
+        // que le trottoir CONTINUE, jamais qu'il est LIBRE. Un mur au bout d'une
+        // diagonale, une bordure, un réverbère tous les neuf blocs (v248), un
+        // arbre, un autre passant — la liste est ouverte, et un piéton n'a pas à
+        // la connaître. Ce qu'il sait, c'est qu'il n'avance plus. C'est la leçon
+        // de `vitesseVoiture` (v272) appliquée à la marche : on borne sur le
+        // déplacement RÉELLEMENT obtenu.
+        const ou = this.pos;
+        if (this.vu) {
+          const avance = Math.hypot(ou.x - this.vu.x, ou.z - this.vu.y);
+          // À 1,6 m/s, un tiers de seconde de jeu fait un demi-bloc. Un
+          // dixième, c'est « je n'avance plus », pas « j'avance lentement ».
+          if (avance < 0.1) this.tourner();
+          this.vu.set(ou.x, ou.z);
+        } else this.vu = new THREE.Vector2(ou.x, ou.z);
+        if (!this.trottoirVers(this.capYaw)) {
+        // Le trottoir tourne : on essaie les deux perpendiculaires, puis le
+        // demi-tour. Jamais de cap tiré au hasard — c'est ce qui faisait
+        // piétiner.
+          this.tourner();
+        }
+      }
+      this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
+      return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
+    }
+    // ET UN FLÂNEUR QUI RETROUVE UN TROTTOIR REDEVIENT UN PASSANT (v279).
+    //
+    // `tourner()` démote pour de BON — `surTrottoir = false`, « plus de trottoir :
+    // on flâne » — et rien ne le repromeut : `passants.js` ne remet le drapeau
+    // qu'à la NAISSANCE et au RAPATRIEMENT, lequel n'arrive que si l'enfant
+    // s'éloigne. Un enfant qui reste planté à regarder la rue voit donc ses
+    // passants retomber un par un dans l'ancien programme, définitivement.
+    //
+    // C'est la forme exacte du défaut des poissons de la v233 : l'entrée est
+    // banale — marcher sur une pelouse ou une esplanade que `TROTTOIR` ne connaît
+    // pas — et la sortie n'existait pas. Un état ABSORBANT se voit beaucoup en
+    // production et très mal au banc, parce qu'il faut du temps pour s'y rendre.
+    //
+    // Mesuré au portail de la v279, à Rome, vingt-trois secondes de jeu : la
+    // distribution des débits est BIMODALE — six passants à 0,32-0,36 bloc/s et
+    // neuf à 1,24-1,41 — et les deux modes sont exactement les deux cadences
+    // écrites ci-dessus et plus bas : marche 6-14 s contre pause 0,6-1,8 s donne
+    // 0,89 × 1,6 = 1,43 ; marche 1-3 s contre pause 2,5-7,5 s donne 0,29 × 1,6 =
+    // 0,46. Onze retombés sur vingt et un. En rejeu SEUL, mesuré plus tôt, la
+    // médiane valait 1,30 : ce n'était pas la charge du banc, c'était le TEMPS
+    // ÉCOULÉ.
+    //
+    // ON NE RAMÈNE PAS LE DÉFAUT QUE LA DÉMOTION CORRIGEAIT. La v278 démote
+    // justement pour qu'un passant face à un mur ne pivote pas sur place trois
+    // fois par seconde. La repromotion exige donc DEUX choses : être réellement
+    // SUR un trottoir, et qu'une direction le PORTE — sans quoi `tourner()`
+    // démoterait à la sonde suivante et l'on aurait un battement, c'est-à-dire
+    // pire que le figé. Et elle se paie sur la cadence de sonde (trois fois par
+    // seconde de jeu), et seulement pour les DÉMOTÉS : un villageois de château
+    // n'a jamais touché ce drapeau (`undefined`), et Manhattan, dont le trottoir
+    // vit dans un plan et non dans des blocs, est écartée par `rueUrbaine` —
+    // c'est la dette déclarée de la v278, elle ne s'ouvre pas ici par surprise.
+    if (this.surTrottoir === false && !this.rueUrbaine && this.world.trottoirA) {
+      this.sonde = (this.sonde ?? 0) - dt;
+      if (this.sonde <= 0) {
+        this.sonde = 0.33;
+        if (this.world.trottoirA(this.pos.x, this.pos.z)) {
+          const depart = this.capYaw ?? this.yaw ?? 0;
+          const quart = Math.PI / 2;
+          const cap = [depart, depart + quart, depart - quart, depart + Math.PI]
+            .find((c) => this.trottoirVers(c));
+          if (cap !== undefined) {
+            this.surTrottoir = true;
+            this.capYaw = Math.atan2(Math.sin(cap), Math.cos(cap));
+            this.etat = 'marche';
+            this.minuteur = 6 + Math.random() * 8;
+          }
+        }
+      }
+    }
     if (this.minuteur <= 0) {
       this.etat = this.etat === 'pause' ? 'marche' : 'pause';
       this.minuteur = this.etat === 'pause' ? 2.5 + Math.random() * 5 : 1 + Math.random() * 2;
@@ -69,6 +245,13 @@ export class Habitant extends BaseNPC {
     }
     this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
     return { speed: this.pas, yaw: this.etat === 'marche' ? this.capYaw : this.yaw };
+  }
+
+  // Une voiture devant (v259) : on marque le pas et l'on repart de biais —
+  // le même geste qu'au bord d'une rue de Manhattan, un peu plus haut.
+  contourner() {
+    this.capYaw += Math.PI * 0.6;
+    this.etat = 'pause'; this.minuteur = 0.3; this.pas = 0;
   }
 
   // Le geste de métier : il n'a lieu qu'à l'arrêt, sinon il se bat avec le
@@ -448,7 +631,7 @@ const GAULOIS_GENS = [
   },
   {
     nom: 'Bonnemine', role: 'femme du chef', dx: -18, dz: -8, rayon: 4,
-    profil: { tenue: 'dame', drap: 0x6a3a7a, coupe: 'chignon', guimpe: 0xf0ece0, objets: ['panier'] },
+    profil: { tenue: 'dame', drap: 0x6a3a7a, coupe: 'chignon', objets: ['panier'] },
     mots: ['Range un peu cette hutte !', 'Le banquet, c\'est encore moi qui le prépare.',
       'Nos huttes sont les plus belles d\'Armorique.'],
   },

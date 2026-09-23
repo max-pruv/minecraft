@@ -10,6 +10,8 @@
 // hors de vue ne coûte ni animation, ni appel de rendu.
 
 import * as THREE from 'three';
+import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
+import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
@@ -24,33 +26,208 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 // la voiture ; une cible de rendu GPU, elle, est valide par construction.
 let refletsRT = null;
 let refletsCamera = null;
+// LA CARROSSERIE VIT SUR SA PROPRE COUCHE (v245). Un matériau ne peut pas lire
+// la texture cubique pendant qu'on l'écrit — WebGL signale une boucle de
+// rétroaction — et l'ancien code parcourait TOUTE la scène à chaque capture
+// pour cacher les maillages qui la lisent, puis les rendre. Cinq mille objets
+// deux fois par seconde. Une couche règle cela sans un parcours : la caméra
+// de l'enfant (main.js) voit la couche 2, les six caméras de la sonde ne
+// voient que la couche 0, et une carrosserie n'est jamais dans sa propre
+// réflexion. `Object3D.clone()` recopie la couche : une voiture de la flotte
+// clonée cinquante fois la garde.
+export { COUCHE_CARROSSERIE };
+function refleter(o, m, intensite) {
+  m.envMap = refletsRT.texture;
+  m.envMapIntensity = intensite;
+  o.layers.set(COUCHE_CARROSSERIE);
+}
 export function refletsVoiture() {
   if (!refletsRT && typeof document !== 'undefined') {
     refletsRT = new THREE.WebGLCubeRenderTarget(128, {
       generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
     });
     refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);
+    // ses six caméras partagent cet objet de couches : le décor, rien d'autre
+    voirLeDecor(refletsCamera);
   }
   return refletsRT;
 }
+// UNE FACE PAR IMAGE, JAMAIS SIX (v245). Max, sur l'iPad de quatre ans : « la
+// voiture avance de manière hyper saccadée ». Mesuré au banc, assis dans une
+// voiture à l'arrêt : une image sur quatre durait TROIS fois la médiane, par
+// paires à une demi-seconde d'écart — la cadence exacte de cette sonde, qui
+// rendait ses six faces dans la même image. Chaque face soumet au pilote
+// tous les appels de dessin de la scène ; six faces d'un coup, c'est six
+// images de travail processeur dans une seule, et sur une tablette limitée
+// par ses appels de dessin, c'est un à-coup toutes les demi-secondes. La
+// capture s'étale désormais : `lancerReflets` note où regarder, et
+// `avancerReflets`, appelée à chaque image, rend UNE face. La réflexion est
+// complète six images plus tard, ce qu'aucun œil ne voit sur un pare-brise.
+let faceEnCours = -1;
+const positionSonde = new THREE.Vector3();
+export function lancerReflets(pos) {
+  if (!refletsRT || faceEnCours >= 0) return false;
+  positionSonde.set(pos.x, pos.y + 1.1, pos.z);
+  faceEnCours = 0;
+  return true;
+}
+export function refletsEnCours() { return faceEnCours >= 0; }
+export function avancerReflets(renderer, scene) {
+  if (faceEnCours < 0) return false;
+  const cam = refletsCamera;
+  cam.position.copy(positionSonde);
+  cam.updateMatrixWorld();
+  if (cam.coordinateSystem !== renderer.coordinateSystem) {
+    cam.coordinateSystem = renderer.coordinateSystem;
+    cam.updateCoordinateSystem();
+  }
+  const face = cam.children[faceEnCours];
+  const cible = renderer.getRenderTarget();
+  const xr = renderer.xr.enabled;
+  renderer.xr.enabled = false;
+  // les mipmaps se calculent une fois la sixième face écrite, pas six fois
+  const mipmaps = refletsRT.texture.generateMipmaps;
+  refletsRT.texture.generateMipmaps = faceEnCours === 5 && mipmaps;
+  try {
+    renderer.setRenderTarget(refletsRT, faceEnCours);
+    renderer.render(scene, face);
+  } finally {
+    refletsRT.texture.generateMipmaps = mipmaps;
+    renderer.setRenderTarget(cible);
+    renderer.xr.enabled = xr;
+  }
+  faceEnCours = faceEnCours === 5 ? -1 : faceEnCours + 1;
+  return true;
+}
+// L'ancienne entrée, gardée pour ce qui la lit encore : une capture complète
+// dans la même image. Le jeu ne l'appelle plus.
 export function majRefletsVoiture(renderer, scene, pos) {
   if (!refletsRT) return;
-  refletsCamera.position.set(pos.x, pos.y + 1.1, pos.z);
-  // Un matériau ne peut lire la texture cubique pendant qu’on l’écrit :
-  // WebGL signale alors une boucle de rétroaction. Les surfaces qui utilisent
-  // cette sonde sont exclues de sa capture, puis restaurées pour la vue joueur.
-  const masques = [];
-  scene.traverse((o) => {
-    if (!o.isMesh || !o.visible) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    if (mats.some((m) => m.envMap === refletsRT.texture)) {
-      masques.push(o);
-      o.visible = false;
-    }
-  });
-  try { refletsCamera.update(renderer, scene); }
-  finally { for (const o of masques) o.visible = true; }
+  lancerReflets(pos);
+  while (faceEnCours >= 0) avancerReflets(renderer, scene);
 }
+
+// LES PROGRAMMES DE LA FLOTTE ET DES HUMAINS SE COMPILENT À L'ACCUEIL (v246).
+// Max : « le lag est bien présent quand on fait une téléportation, à peu près
+// dix secondes ». Profil de l'arrivée à Paris : 1,5 s dans getProgramInfoLog
+// et getShaderInfoLog, seize programmes avant, trente-six après — chaque
+// modèle de voiture rencontré pour la première fois apporte ses matériaux,
+// chaque signature son programme, compilé DANS l'image où la voiture
+// apparaît ; les corps humains font pareil dès que le premier passant les
+// reçoit. Sur une tablette, un programme se compile en dizaines de
+// millisecondes ; vingt d'un coup, c'est l'écran qui se fige.
+//
+// Les signatures viennent de `signatures.js`, LUES dans les fichiers — pas
+// devinées : mon premier jet en écrivait treize à la main, d'après les
+// matériaux, et il en manquait la moitié, parce qu'une signature est aussi
+// faite de la géométrie (ombrage plat, couleurs de sommets, squelette). Le
+// banc vérifie que la table et les fichiers disent la même chose. On compile
+// UNE signature par image pendant que l'enfant lit l'accueil, avec des
+// matériaux témoins qui restent EN VIE — three.js détruit un programme dont
+// plus aucun matériau ne se sert.
+//
+// ET LES HUMAINS ONT DEUX PROGRAMMES PAR SIGNATURE : `presence.js` les fait
+// apparaître en fondu, donc passe leurs matériaux en `transparent` — un
+// programme à part (`opaque` fait partie de la clé). On chauffe les deux.
+const temoinsProgrammes = [];
+export function signaturesAChauffer() {
+  const out = [];
+  for (const sig of SIGNATURES_GLB) {
+    out.push(sig);
+    if (sig.includes('+skin') && !sig.includes('+alpha')) out.push(sig + '+alpha');
+  }
+  return out.concat(SIGNATURES_JEU);
+}
+function materielDeSignature(sig, rt, uni, normale) {
+  const f = new Set(sig.split('+'));
+  const params = {};
+  if (f.has('map')) params.map = uni;
+  if (f.has('nrm')) params.normalMap = normale;
+  if (f.has('mr')) { params.metalnessMap = uni; params.roughnessMap = uni; }
+  if (f.has('ao')) params.aoMap = uni;
+  if (f.has('emap')) params.emissiveMap = uni;
+  if (f.has('cc')) params.clearcoat = 1;
+  if (f.has('ccmap')) params.clearcoatMap = uni;
+  if (f.has('ccrough')) params.clearcoatRoughnessMap = uni;
+  if (f.has('ccnrm')) params.clearcoatNormalMap = normale;
+  if (f.has('trans')) params.transmission = 0.5;
+  if (f.has('sheen')) params.sheen = 1;
+  if (f.has('specmap')) params.specularColorMap = uni;
+  if (f.has('atest')) params.alphaTest = 0.5;
+  if (f.has('alpha')) { params.transparent = true; params.opacity = 0.5; }
+  if (f.has('DS')) params.side = THREE.DoubleSide;
+  if (f.has('vc') || f.has('vc4')) params.vertexColors = true;
+  if (f.has('flat')) params.flatShading = true;
+  if (f.has('env') && rt) params.envMap = rt.texture;
+  const mat = f.has('Basic') ? new THREE.MeshBasicMaterial(params)
+    : f.has('Lambert') ? new THREE.MeshLambertMaterial(params)
+      : f.has('Physical') ? new THREE.MeshPhysicalMaterial(params)
+        : new THREE.MeshStandardMaterial(params);
+  const geo = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+  const n = geo.attributes.position.count;
+  if (f.has('vc') || f.has('vc4')) {
+    const k = f.has('vc4') ? 4 : 3;
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * k).fill(1), k));
+  }
+  if (f.has('tan')) geo.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array(n * 4), 4));
+  if (f.has('uv1')) geo.setAttribute('uv1', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+  if (!f.has('skin')) return new THREE.Mesh(geo, mat);
+  geo.setAttribute('skinIndex', new THREE.BufferAttribute(new Uint16Array(n * 4), 4));
+  const poids = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) poids[i * 4] = 1;
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(poids, 4));
+  const m = new THREE.SkinnedMesh(geo, mat);
+  const os = new THREE.Bone();
+  m.add(os);
+  m.bind(new THREE.Skeleton([os]));
+  return m;
+}
+export function chaufferLesProgrammes(renderer, scene, camera) {
+  if (temoinsProgrammes.length) return () => false;
+  const rt = refletsVoiture();
+  const uni = new THREE.DataTexture(new Uint8Array([200, 200, 200, 255]), 1, 1);
+  uni.needsUpdate = true;
+  const normale = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+  normale.needsUpdate = true;
+  const liste = signaturesAChauffer();
+  let k = 0;
+  // UN BUDGET DE TEMPS PAR APPEL, PAS UNE SIGNATURE — le piège de la v237,
+  // pour la troisième fois, et sur le dernier poste qui le portait encore.
+  //
+  // Une signature par IMAGE est un COMPTE, donc un taux qui suit la cadence
+  // d'affichage. Mesuré sur ce banc : une compilation coûte 17 à 25 ms (médiane
+  // 18,5), soit moins d'une demi-seconde pour les vingt-cinq — et la chauffe
+  // mettait quarante et une secondes, parce que l'accueil sous charge ne rend
+  // qu'une image et demie par seconde. Vingt-cinq images valent alors quarante
+  // secondes, et la borne des quarante-cinq secondes de la préparation tirait
+  // avec seize programmes sur vingt-cinq (mesuré au portail de la v276).
+  //
+  // Le budget se pose sur le coût MESURÉ de ce qu'il doit laisser passer
+  // (v225, v229) — et il a deux régimes à servir, ce qui le décide :
+  //   ici    une compilation vaut 18 ms, donc cent millisecondes en passent
+  //          cinq, et la chauffe tient en cinq images au lieu de vingt-cinq ;
+  //   iPad   Safari compile en CENTAINES de millisecondes (v257), donc la
+  //          première remplit le budget à elle seule et rien ne change —
+  //          l'accueil garde son étalement, qui est toute la raison de la v246.
+  // Et pendant ce temps-là il n'y a aucune partie à protéger : le bouton est
+  // grisé. `?chauffems=` le force, pour remesurer.
+  const budget = Number(new URLSearchParams(location.search).get('chauffems')) || 100;
+  // rend vrai tant qu'il en reste
+  return () => {
+    if (k >= liste.length) return false;
+    const t0 = performance.now();
+    do {
+      const m = materielDeSignature(liste[k++], rt, uni, normale);
+      temoinsProgrammes.push(m.material);
+      m.position.set(camera.position.x, -500, camera.position.z);
+      scene.add(m);
+      try { renderer.compile(scene, camera); } finally { scene.remove(m); }
+    } while (k < liste.length && performance.now() - t0 < budget);
+    return k < liste.length;
+  };
+}
+export const programmesChauffes = () => temoinsProgrammes.length;
+export const programmesAChauffer = () => signaturesAChauffer().length;
 
 // --- la vraie voiture ---------------------------------------------------------
 //
@@ -134,7 +311,7 @@ export function chargerVraieVoiture() {
         o.material.transparent = true;
         o.material.opacity = 0.35;
       }
-      if (rt) { o.material.envMap = rt.texture; o.material.envMapIntensity = 1.0; }
+      if (rt) refleter(o, o.material, 1.0);
       o.material.needsUpdate = true;
     });
     return porteur;
@@ -169,63 +346,135 @@ export function chargerVraieVoiture() {
 //
 // La règle vit donc dans la FICHE, jamais dans une liste écrite dans le
 // témoin — même discipline que `montable`, `nourrissable` et `vole`.
+// LA LAQUE D'UN MODÈLE, par le nom de son matériau : `Paint_*` chez les
+// cinquante d'origine, « Pearl white body », « clear-coated bodywork » chez
+// ceux déposés ensuite. Pas `Paint_Secondary` ni les accents : on repeint la
+// carrosserie, pas la livrée.
+const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
+
+// LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
+// New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
+// est la berline citadine, les autres viennent de la flotte au pas de 17.
+export function choixFlotte(n, ville) {
+  const choix = FLOTTE.filter((e) => (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
+  if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
+  return choix[((n % choix.length) + choix.length) % choix.length];
+}
+
+// LA GRAINE D'UN CONVOI VIENT DE SA VILLE (v246). Elle valait « nombre de
+// points du tracé + rang dans la file » : les villes engendrées, dont les
+// anneaux se ressemblent, tiraient les MÊMES vingt modèles dans le même
+// ordre — Max : « assure-toi que toutes les villes ont de la diversité ».
+// La position de l'ancre est propre à chaque ville ; le rang distingue ses
+// anneaux. Exportée pour qu'un témoin la calcule sur deux villes.
+export function graineDeVille(tr) {
+  const h = Math.round(Math.abs(tr.x) * 31 + Math.abs(tr.z) * 17 + (tr.rang || 0) * 101 + (tr.x < 0 ? 7 : 0) + (tr.z < 0 ? 13 : 0));
+  return h % 100003;
+}
+
 export const FLOTTE = [
-  {fichier:'berline-citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
-  {fichier:'ny-crown-victoria',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
-  {fichier:'ny-town-sedan',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
-  { fichier: 'acura-nsx-type-s.glb', nom: 'Acura NSX Type S' },
-  { fichier: 'amg-gt-black-series.glb', nom: 'Mercedes-AMG GT Black Series' },
-  { fichier: 'aston-martin-dbs-superleggera.glb', nom: 'Aston Martin DBS Superleggera' },
-  { fichier: 'aston-martin-one-77.glb', nom: 'Aston Martin One-77' },
-  { fichier: 'aston-martin-valkyrie.glb', nom: 'Aston Martin Valkyrie' },
-  { fichier: 'audi-r8-v10-performance.glb', nom: 'Audi R8 V10 Performance' },
-  { fichier: 'bentley-continental-gt-speed.glb', nom: 'Bentley Continental GT Speed' },
-  { fichier: 'bmw-i8.glb', nom: 'BMW i8' },
-  { fichier: 'bmw-m8-competition.glb', nom: 'BMW M8 Competition' },
-  { fichier: 'bugatti-bolide.glb', nom: 'Bugatti Bolide' },
-  { fichier: 'bugatti-chiron.glb', nom: 'Bugatti Chiron' },
-  { fichier: 'bugatti-chiron-stealth.glb', nom: 'Bugatti Chiron Stealth', habitacle: false },
-  { fichier: 'bugatti-veyron.glb', nom: 'Bugatti Veyron 16.4' },
-  { fichier: 'bugatti-w16-mistral.glb', nom: 'Bugatti W16 Mistral' },
-  { fichier: 'ferrari-812-competizione.glb', nom: 'Ferrari 812 Competizione' },
-  { fichier: 'ferrari-daytona-sp3.glb', nom: 'Ferrari Daytona SP3' },
-  { fichier: 'ferrari-f40.glb', nom: 'Ferrari F40' },
-  { fichier: 'ferrari-laferrari.glb', nom: 'Ferrari LaFerrari' },
-  { fichier: 'ferrari-sf90.glb', nom: 'Ferrari SF90 Stradale' },
-  { fichier: 'ford-gt.glb', nom: 'Ford GT' },
-  { fichier: 'koenigsegg-cc850.glb', nom: 'Koenigsegg CC850' },
-  { fichier: 'koenigsegg-gemera.glb', nom: 'Koenigsegg Gemera' },
-  { fichier: 'koenigsegg-jesko.glb', nom: 'Koenigsegg Jesko' },
-  { fichier: 'koenigsegg-regera.glb', nom: 'Koenigsegg Regera' },
-  { fichier: 'lamborghini-aventador-svj.glb', nom: 'Lamborghini Aventador SVJ' },
-  { fichier: 'lamborghini-countach-lpi-800-4.glb', nom: 'Lamborghini Countach LPI 800-4' },
-  { fichier: 'lamborghini-huracan-sto.glb', nom: 'Lamborghini Huracan STO' },
-  { fichier: 'lamborghini-revuelto.glb', nom: 'Lamborghini Revuelto' },
-  { fichier: 'lamborghini-sian-fkp-37.glb', nom: 'Lamborghini Sian FKP 37' },
-  { fichier: 'lexus-lfa.glb', nom: 'Lexus LFA' },
-  { fichier: 'lotus-evija.glb', nom: 'Lotus Evija' },
-  { fichier: 'lucid-gravity.glb', nom: 'Lucid Gravity', habitacle: false },
-  { fichier: 'maserati-mc20.glb', nom: 'Maserati MC20' },
-  { fichier: 'mclaren-765lt.glb', nom: 'McLaren 765LT' },
-  { fichier: 'mclaren-artura.glb', nom: 'McLaren Artura' },
-  { fichier: 'mclaren-p1.glb', nom: 'McLaren P1' },
-  { fichier: 'mclaren-senna.glb', nom: 'McLaren Senna' },
-  { fichier: 'mclaren-speedtail.glb', nom: 'McLaren Speedtail' },
-  { fichier: 'mercedes-amg-one.glb', nom: 'Mercedes-AMG One' },
-  { fichier: 'nissan-gtr-nismo.glb', nom: 'Nissan GT-R Nismo' },
-  { fichier: 'pagani-huayra-bc.glb', nom: 'Pagani Huayra BC' },
-  { fichier: 'pagani-utopia.glb', nom: 'Pagani Utopia' },
-  { fichier: 'pagani-zonda-cinque.glb', nom: 'Pagani Zonda Cinque' },
-  { fichier: 'pininfarina-battista.glb', nom: 'Automobili Pininfarina Battista' },
-  { fichier: 'porsche-718-cayman-gt4-rs.glb', nom: 'Porsche 718 Cayman GT4 RS' },
-  { fichier: 'porsche-911-gt3-rs.glb', nom: 'Porsche 911 GT3 RS (992)' },
-  { fichier: 'porsche-918-spyder.glb', nom: 'Porsche 918 Spyder' },
-  { fichier: 'porsche-carrera-gt.glb', nom: 'Porsche Carrera GT' },
-  { fichier: 'porsche-taycan-turbo-s.glb', nom: 'Porsche Taycan Turbo S' },
-  { fichier: 'rimac-nevera.glb', nom: 'Rimac Nevera' },
-  { fichier: 'rolls-royce-spectre.glb', nom: 'Rolls-Royce Spectre' },
-  { fichier: 'sls-amg-black-series.glb', nom: 'Mercedes-Benz SLS AMG Black Series' },
+  {fichier:'berline-citadine', classe: 'citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
+  {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
+  {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
+  { fichier: 'acura-nsx-type-s.glb', classe: 'gt', nom: 'Acura NSX Type S' },
+  { fichier: 'amg-gt-black-series.glb', classe: 'sportive', nom: 'Mercedes-AMG GT Black Series' },
+  { fichier: 'aston-martin-dbs-superleggera.glb', classe: 'gt', nom: 'Aston Martin DBS Superleggera' },
+  { fichier: 'aston-martin-one-77.glb', classe: 'sportive', nom: 'Aston Martin One-77' },
+  { fichier: 'aston-martin-valkyrie.glb', classe: 'hypercar', nom: 'Aston Martin Valkyrie' },
+  { fichier: 'audi-r8-v10-performance.glb', classe: 'gt', nom: 'Audi R8 V10 Performance' },
+  { fichier: 'bentley-continental-gt-speed.glb', classe: 'gt', nom: 'Bentley Continental GT Speed' },
+  { fichier: 'bmw-i8.glb', classe: 'gt', nom: 'BMW i8' },
+  { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
+  { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
+  { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
+  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false },
+  { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
+  { fichier: 'bugatti-w16-mistral.glb', classe: 'hypercar', nom: 'Bugatti W16 Mistral' },
+  { fichier: 'ferrari-812-competizione.glb', classe: 'sportive', nom: 'Ferrari 812 Competizione' },
+  { fichier: 'ferrari-daytona-sp3.glb', classe: 'sportive', nom: 'Ferrari Daytona SP3' },
+  { fichier: 'ferrari-f40.glb', classe: 'sportive', nom: 'Ferrari F40' },
+  { fichier: 'ferrari-laferrari.glb', classe: 'hypercar', nom: 'Ferrari LaFerrari' },
+  { fichier: 'ferrari-sf90.glb', classe: 'sportive', nom: 'Ferrari SF90 Stradale' },
+  { fichier: 'ford-gt.glb', classe: 'sportive', nom: 'Ford GT' },
+  { fichier: 'koenigsegg-cc850.glb', classe: 'hypercar', nom: 'Koenigsegg CC850' },
+  { fichier: 'koenigsegg-gemera.glb', classe: 'hypercar', nom: 'Koenigsegg Gemera' },
+  { fichier: 'koenigsegg-jesko.glb', classe: 'hypercar', nom: 'Koenigsegg Jesko' },
+  { fichier: 'koenigsegg-regera.glb', classe: 'hypercar', nom: 'Koenigsegg Regera' },
+  { fichier: 'lamborghini-aventador-svj.glb', classe: 'sportive', nom: 'Lamborghini Aventador SVJ' },
+  { fichier: 'lamborghini-countach-lpi-800-4.glb', classe: 'sportive', nom: 'Lamborghini Countach LPI 800-4' },
+  { fichier: 'lamborghini-huracan-sto.glb', classe: 'sportive', nom: 'Lamborghini Huracan STO' },
+  { fichier: 'lamborghini-revuelto.glb', classe: 'sportive', nom: 'Lamborghini Revuelto' },
+  { fichier: 'lamborghini-sian-fkp-37.glb', classe: 'hypercar', nom: 'Lamborghini Sian FKP 37' },
+  { fichier: 'lexus-lfa.glb', classe: 'gt', nom: 'Lexus LFA' },
+  { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },
+  { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
+  { fichier: 'maserati-mc20.glb', classe: 'sportive', nom: 'Maserati MC20' },
+  { fichier: 'mclaren-765lt.glb', classe: 'sportive', nom: 'McLaren 765LT' },
+  { fichier: 'mclaren-artura.glb', classe: 'sportive', nom: 'McLaren Artura' },
+  { fichier: 'mclaren-p1.glb', classe: 'hypercar', nom: 'McLaren P1' },
+  { fichier: 'mclaren-senna.glb', classe: 'sportive', nom: 'McLaren Senna' },
+  { fichier: 'mclaren-speedtail.glb', classe: 'hypercar', nom: 'McLaren Speedtail' },
+  { fichier: 'mercedes-amg-one.glb', classe: 'hypercar', nom: 'Mercedes-AMG One' },
+  { fichier: 'nissan-gtr-nismo.glb', classe: 'gt', nom: 'Nissan GT-R Nismo' },
+  { fichier: 'pagani-huayra-bc.glb', classe: 'sportive', nom: 'Pagani Huayra BC' },
+  { fichier: 'pagani-utopia.glb', classe: 'sportive', nom: 'Pagani Utopia' },
+  { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
+  { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
+  { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
+  { fichier: 'porsche-911-gt3-rs.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
+  { fichier: 'porsche-918-spyder.glb', classe: 'hypercar', nom: 'Porsche 918 Spyder' },
+  { fichier: 'porsche-carrera-gt.glb', classe: 'sportive', nom: 'Porsche Carrera GT' },
+  { fichier: 'porsche-taycan-turbo-s.glb', classe: 'gt', nom: 'Porsche Taycan Turbo S' },
+  { fichier: 'rimac-nevera.glb', classe: 'hypercar', nom: 'Rimac Nevera' },
+  { fichier: 'rolls-royce-spectre.glb', classe: 'berline', nom: 'Rolls-Royce Spectre' },
+  { fichier: 'sls-amg-black-series.glb', classe: 'gt', nom: 'Mercedes-Benz SLS AMG Black Series' },
 ];
+
+// UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :
+// « les voitures devraient aller plus vite et surtout une vitesse en fonction
+// du modèle (sportive faster than sedan basic) ». Multiplicateur de la marche
+// (3,2 blocs/s) ; la fiche `voiture` de montures.js garde 3,4 en secours.
+// LE PLAFOND EST CELUI DU MONDE QUI SE CHARGE : Paris se maille à 42 morceaux
+// par seconde au banc (v237) et une vitesse v en réclame 1,5 × v (v229), soit
+// 28 blocs/s au plus en ville — l'hypercar reste dessous (8 × 3,2 = 25,6).
+// À remesurer sur la tablette (`?diag=1`) : le banc à `rr=12` rend une image
+// par seconde dans Paris et n'y voit qu'une cadence d'image, pas une vitesse.
+export const ALLURES = { citadine: 3.8, berline: 4.4, suv: 4.4, gt: 5.4, sportive: 6.4, hypercar: 8 };
+
+// L'EMPRISE AU SOL D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SERT (v270). 4,4 × 2,26 :
+// c'est le rectangle que `cederLePassage` fait se regarder (v244), celui que
+// `player.obstacleVehicule` refuse de faire entrer dans un autre (v245), et
+// c'est aussi la largeur du COULOIR qu'un convoi balaie dans la rue.
+//
+// Max, deux captures : une voiture posée DANS une caisse du marché à
+// Stuttgart, des caisses sur la chaussée à Zurich. Mesuré : le mobilier des
+// villes engendrées est posé sur la PREMIÈRE colonne de trottoir, et comme
+// la trame est tournée par rapport au monde, une case entière mord jusqu'à
+// 1,13 bloc dans la chaussée — 32 410 cases traversées, 267 villes sur 267.
+// `villesmonde.js` a donc besoin de ce chiffre pour dégager le caniveau, et
+// il ne peut PAS l'importer d'ici : il est lu par le mailleur du worker, qui
+// meurt au premier `import 'three'` de son graphe (v251). Le chiffre y est
+// donc recopié, et c'est un TÉMOIN qui garde les deux d'accord — jamais un
+// commentaire : deux tables qui décrivent la même chose finissent par
+// diverger.
+// LA PORTÉE D'AFFICHAGE D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SE CALCULE (v270).
+// `villesmonde.js` doit savoir à quelle distance une voiture se DESSINE pour
+// garantir qu'une ville engendrée en montre une depuis son centre — et il ne
+// peut pas importer ce fichier, qui amènerait `three` dans le graphe du
+// mailleur du worker (v251). Le chiffre y est donc recopié, celui-ci fait
+// foi, et un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
+export const DEMI_LONG_VOITURE = 2.2;
+export const DEMI_LARG_VOITURE = 1.13;
+export function classeDe(fichier) {
+  const e = FLOTTE.find((f) => f.fichier === fichier);
+  return e ? e.classe || null : null;
+}
+export function allureDe(fichier, secours = 3.4) {
+  const c = classeDe(fichier);
+  return (c && ALLURES[c]) || secours;
+}
 
 const chargementsFlotte = new Map();
 // UN MODÈLE SE MESURE, IL NE SE DÉCLARE PAS.
@@ -244,7 +493,15 @@ const chargementsFlotte = new Map();
 // Convertir chaque fichier à la main marcherait UNE fois. On mesure donc le
 // modèle qu'on reçoit — et l'on ne touche à RIEN quand le manifeste est
 // respecté, pour que les cinquante-et-un ne bougent pas d'un pixel.
-const EST_ROUE = /wheel|tire|tyre|rim|roue|pneu/i;
+// UN MOT ENTIER, PAS UNE SOUS-CHAÎNE (v246). `/rim/` attrapait « t-rim » :
+// les bandes « Gloss black | stealth trim » de la Chiron Stealth — toute la
+// voiture, 5,13 × 4,04 blocs — étaient accrochées au pivot de la roue arrière
+// droite et tournaient avec elle. Max : « des trucs noirs qui bougent autour ».
+// Sur la Lucid, le trim aérodynamique et le trim de cabine faisaient pareil.
+// Un souligné ou un espace ne sont pas des lettres : « Wheel_FL » passe,
+// « trim » ne passe plus. Et la GÉOMÉTRIE tranche ensuite (voir plus bas).
+const EST_ROUE = /(?<![a-z])(wheel|tire|tyre|rim|roue|pneu)(?![a-z])/i;
+const EST_PNEU = /(?<![a-z])(tire|tyre|pneu|rubber)(?![a-z])/i;
 const EST_AVANT = /front|\bFW\b|^FW\||avant/i;
 const EST_ARRIERE = /rear|back|\bRW\b|^RW\||arri/i;
 
@@ -269,8 +526,9 @@ function normaliserVoiture(scene) {
     if (!o.isMesh) return;
     const nom = lignee(o);
     if (!EST_ROUE.test(nom)) return;
-    const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
-    morceaux.push({ o, nom, c });
+    const boite = new THREE.Box3().setFromObject(o);
+    const t = boite.getSize(new THREE.Vector3());
+    morceaux.push({ o, nom, c: boite.getCenter(new THREE.Vector3()), etendue: Math.max(t.x, t.z), pneu: EST_PNEU.test(nom) });
   });
   if (morceaux.length < 4) return 'sans roues';
 
@@ -300,14 +558,39 @@ function normaliserVoiture(scene) {
   }
   for (const [cle, liste] of Object.entries(familles)) {
     if (!liste.length) continue;
+    // LA GÉOMÉTRIE TRANCHE, PAS LE NOM SEUL. Le pneu donne la mesure de la
+    // roue ; ce qui ne tient pas dans une fois et demie le pneu, ou dont le
+    // centre en est à plus de six dixièmes, n'est pas une pièce de roue —
+    // les jantes réunies des quatre roues de la Lucid (1,56 bloc) restent au
+    // corps plutôt que d'orbiter autour d'une seule. Et le pivot se pose au
+    // centre du PNEU, jamais de la boîte de tout ce qui porte le mot.
+    const pneus = liste.filter((m) => m.pneu);
+    const ref = pneus.length ? pneus.reduce((a, b) => (b.etendue > a.etendue ? b : a))
+      : liste.filter((m) => m.etendue < 1.3).reduce((a, b) => (!a || b.etendue > a.etendue ? b : a), null);
+    if (!ref) continue;
+    const pieces = liste.filter((m) => m.etendue <= ref.etendue * 1.5 && m.c.distanceTo(ref.c) <= ref.etendue * 0.6);
+    // L'ESSIEU EST LE x DU PARENT DU PIVOT. `rotation.x += angle` (animals.js,
+    // vehicules.js) est un Euler XYZ : la rotation en x s'applique EN DERNIER,
+    // donc autour du x du parent, quelle que soit l'orientation propre du
+    // nœud — les pivots du manifeste portent d'ailleurs une rotation de −90°
+    // et tournent très bien. Or ce pivot-ci naissait directement sous le
+    // modèle, AVANT le quart de tour du pas 5 : sur un modèle dont la longueur
+    // est x, le x du parent était l'axe avant-arrière, et la roue basculait
+    // comme une pièce qu'on fait tourner sur la tranche — hors de son passage
+    // de roue (Max, capture de la Lucid Gravity : « wheels »). Le pivot naît
+    // donc dans un groupe-essieu dont le x est la voie, orienté pour qu'un
+    // angle positif avance le haut du pneu vers le nez, comme le manifeste.
+    const essieu = new THREE.Group();
+    essieu.name = 'Essieu_' + cle;
+    essieu.position.copy(ref.c);
+    essieu.rotation.y = axeLong === 'z' ? (versAvant > 0 ? 0 : Math.PI)
+      : (versAvant > 0 ? Math.PI / 2 : -Math.PI / 2);
     const pivot = new THREE.Group();
     pivot.name = 'Wheel_' + cle;
-    const boite = new THREE.Box3();
-    for (const m of liste) boite.union(new THREE.Box3().setFromObject(m.o));
-    pivot.position.copy(boite.getCenter(new THREE.Vector3()));
-    scene.add(pivot);
+    essieu.add(pivot);
+    scene.add(essieu);
     scene.updateMatrixWorld(true);
-    for (const m of liste) pivot.attach(m.o);
+    for (const m of pieces) pivot.attach(m.o);
   }
 
   // 5. LE NEZ VERS +Z, comme le manifeste. On tourne par quarts de tour :
@@ -328,7 +611,7 @@ export function chargerVoitureFlotte(entree) {
   if (chargementsFlotte.has(entree.fichier)) return chargementsFlotte.get(entree.fichier);
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
-    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial)){o.material.envMap=rt.texture;o.material.envMapIntensity=.75;}});
+    if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
@@ -350,9 +633,8 @@ export function chargerVoitureFlotte(entree) {
           // appellent leur laque « Pearl white body » ou « clear-coated
           // bodywork ». On reconnaît les deux, sinon la carrosserie neuve
           // reste mate au milieu d'une flotte qui brille.
-          if (/paint|bodywork|\bbody\b/i.test(o.material.name || '')) {
-            o.material.envMap = rt.texture;
-            o.material.envMapIntensity = 1.0;
+          if (EST_PEINTURE.test(o.material.name || '')) {
+            refleter(o, o.material, 1.0);
             o.material.needsUpdate = true;
           }
         });
@@ -429,6 +711,29 @@ export class Parcours {
       z: a.z + (b.z - a.z) * t,
       cap: Math.atan2(b.x - a.x, b.z - a.z),
     };
+  }
+
+  // LE CAP D'UNE VOITURE EST CELUI DE SON EMPATTEMENT, PAS DU SEGMENT (v244).
+  //
+  // `a(d).cap` est la direction du segment sous la voiture : à un carrefour,
+  // elle pivotait de quatre-vingt-dix degrés en une image — mesuré, cinquante-
+  // neuf sauts de plus de trente-quatre degrés en trente secondes à Paris. Max :
+  // « quand la voiture tourne, ce soit beaucoup plus naturel ». Une vraie
+  // voiture tourne sur la longueur de son empattement : on prend la corde
+  // entre le point sous l'essieu arrière et celui sous l'essieu avant, et le
+  // corps pivote progressivement pendant qu'il franchit le coin.
+  capLisse(distance, demi = 1.6) {
+    const ar = this.a(distance - demi), av = this.a(distance + demi);
+    return Math.atan2(av.x - ar.x, av.z - ar.z);
+  }
+
+  // La courbure ici, en radians par bloc : ce que le cap change sur un bloc de
+  // trajet. Positive à gauche (le cap augmente), négative à droite.
+  courbure(distance) {
+    let e = this.capLisse(distance + 0.5) - this.capLisse(distance - 0.5);
+    while (e > Math.PI) e -= Math.PI * 2;
+    while (e < -Math.PI) e += Math.PI * 2;
+    return e;
   }
 
   // De combien le tracé tourne dans les prochains mètres, en radians.
@@ -708,11 +1013,13 @@ export function construireVoitureRoute(couleur = 0x9a9a9a) {
   });
   mc.material = peint;
   g.userData.carrosserie = peint;
-  g.userData.membres.verriere.children[0].material = new THREE.MeshPhongMaterial({
+  const verriere = g.userData.membres.verriere.children[0];
+  verriere.material = new THREE.MeshPhongMaterial({
     color: 0x0e161f, shininess: 130, specular: 0xbbccdd,
     envMap: rt ? rt.texture : null, combine: THREE.MixOperation, reflectivity: 0.4,
     transparent: true, opacity: 0.78,
   });
+  if (rt) { mc.layers.set(COUCHE_CARROSSERIE); verriere.layers.set(COUCHE_CARROSSERIE); }
   return g;
 }
 
@@ -772,6 +1079,31 @@ class Convoi {
     this.decouvert = opts.decouvert || null;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
+    // UN VÉHICULE ROUTIER CÈDE LE PASSAGE ET S'INCLINE DANS LE VIRAGE (v244).
+    // Un métro et un train roulent sur des rails : ils ne font ni l'un ni
+    // l'autre. `routier` déclare la voiture, le bus, la monoplace.
+    this.routier = !!opts.routier;
+    // CHAQUE VOITURE CÈDE POUR ELLE-MÊME, ET LE CONVOI EST ÉLASTIQUE. Un convoi
+    // n'a qu'une distance pour toutes ses voitures ; arrêter le convoi entier
+    // laissait celle qui était déjà dans le carrefour en travers de la voie de
+    // l'autre. `retard[i]` est ce que la voiture i a laissé filer en attendant :
+    // elle reste sur place pendant que le convoi avance, puis rattrape à une
+    // fois et demie l'allure. Celle qui suit fait la queue derrière elle.
+    this.retard = new Float64Array(opts.nb);
+    this.attend = new Uint8Array(opts.nb);       // ce tour-ci, quelqu'un est devant
+    // CE QU'ELLE A RÉELLEMENT AVANCÉ, rapporté à ce que le convoi a avancé
+    // (v283). C'est la leçon de `vitesseVoiture` (v272) un étage plus bas :
+    // l'allure se DÉDUISAIT de `attend` et de `retard`, et le plancher de
+    // non-télescopage arrête une voiture SANS poser `attend` — elle aurait
+    // gardé ses roues qui tournent, son moteur à plein régime et, pire, les
+    // piétons se seraient écartés devant une voiture immobile (v259). On publie
+    // donc ce qu'on a OBTENU, jamais ce qu'on demandait ; les trois cas d'avant
+    // en ressortent d'eux-mêmes — 0 si elle attend, 1,5 si elle rattrape, 1
+    // sinon.
+    this.rapport = new Float32Array(opts.nb).fill(1);
+    this.retardAvant = new Float64Array(opts.nb);   // le tampon du tour, jamais alloué par image
+    this.attenteDepuis = new Float32Array(opts.nb);
+    this.repart = new Float32Array(opts.nb);     // secondes pendant lesquelles on n'attend plus
     // `relooke(mesh, distanceAbsolue, rang)` : appelé à chaque image sur
     // chaque élément visible. C'est lui qui peint les voitures de la chaîne
     // de la Giga-usine — grises avant le tunnel de peinture, colorées après.
@@ -825,8 +1157,20 @@ class Convoi {
   // joueur les modèles sont cachés et leur position est périmée, alors que le
   // convoi, lui, continue de rouler. On peut donc demander « où est la rame ? »
   // même quand elle est à l'autre bout de la ville.
+  // Où en est la voiture i le long du tracé : sa place dans le convoi, moins
+  // ce qu'elle a laissé filer en cédant le passage.
+  dElement(i) { return this.distance - i * this.ecart - (this.retard ? this.retard[i] : 0); }
+
+  // La queue peut traîner plus loin que `ecart × (n − 1)` : de tout ce que ses
+  // voitures ont laissé filer en cédant le passage.
+  retardMax() {
+    let m = 0;
+    if (this.retard) for (let i = 0; i < this.retard.length; i++) if (this.retard[i] > m) m = this.retard[i];
+    return m;
+  }
+
   place(i, avance = 0) {
-    const p = this.parcours.a(this.distance + avance - i * this.ecart);
+    const p = this.parcours.a(this.dElement(i) + avance);
     return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap };
   }
 
@@ -839,6 +1183,7 @@ class Convoi {
       this.montrer(joueur);
       return;
     }
+    const avantTout = this.distance;
     if (this.freine) {
       // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
       // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
@@ -876,6 +1221,60 @@ class Convoi {
         }
       }
     }
+    // Ce que le convoi vient d'avancer ; une voiture qui attend le laisse
+    // filer, une voiture en retard le rattrape à une fois et demie l'allure.
+    const pas = this.distance - avantTout;
+    if (this.routier && pas <= 0) this.rapport.fill(0);
+    if (this.routier && pas > 0) {
+      const avant = this.retardAvant;
+      avant.set(this.retard);
+      for (let i = 0; i < this.nb; i++) {
+        if (this.attend[i]) this.retard[i] += pas;
+        else if (this.retard[i] > 0) this.retard[i] = Math.max(0, this.retard[i] - pas * 0.5);
+      }
+      // UN CONVOI NE SE TÉLESCOPE PAS, ET CELA SE GARANTIT PAR CONSTRUCTION.
+      //
+      // Max le signale depuis plusieurs versions : une voiture passe AU TRAVERS
+      // de celle qui la précède dans sa propre file. `cederLePassage` avait bien
+      // de quoi le voir — le balayage d'une suiveuse touche le rectangle de sa
+      // tête — mais il ne le voit que SOUS CONDITIONS : les deux voitures
+      // doivent être à moins de `PORTEE_CEDE` de l'enfant ET à moins de douze
+      // blocs l'une de l'autre, alors qu'un convoi espace ses voitures jusqu'à
+      // vingt-cinq. Une tête qui attend au feu accumule son `retard` pendant
+      // que sa suiveuse, encore hors de la fenêtre, avance à pleine allure : la
+      // suiveuse la rejoint, la dépasse, et le chevauchement s'installe — il ne
+      // se résorbe pas, `retard` ne se rend qu'à la moitié de l'allure.
+      //
+      // Un seuil de fenêtre ne peut donc pas régler cela : ce qui doit être vrai
+      // se garantit par construction, jamais par l'ordre dans lequel on regarde
+      // (v270). Le long du tracé, la voiture i est à
+      // `dElement(i) = distance − i × ecart − retard[i]` : deux voisines gardent
+      // leur longueur d'écart si et seulement si
+      // `retard[i] ≥ retard[i−1] − ecart + LONG_VOITURE`. La borne est une
+      // GÉOMÉTRIE, pas un réglage — 4,4 blocs, la longueur d'une voiture, lue là
+      // où elle se calcule (`DEMI_LONG_VOITURE`). Elle vaut partout, y compris
+      // là où l'enfant n'est pas et où le balayage ne tourne pas du tout.
+      //
+      // On monte donc le retard de la suiveuse, jamais on ne baisse celui de la
+      // tête : reculer est la seule correction sûre. En ordre croissant, pour que
+      // `retard[i − 1]` soit déjà arrêté quand on s'appuie dessus ; le convoi se
+      // comporte alors en accordéon, et quand la tête rend son retard, la
+      // suiveuse voit son plancher descendre et rend le sien.
+      // La borne ne CRÉE jamais d'écart, elle le PRÉSERVE : sur un convoi qui
+      // serait plus serré que la longueur d'une voiture — `ecart` vaut
+      // `longueur / nb`, et `nb` a un plancher de six — exiger 4,4 blocs
+      // repousserait chaque suiveuse un peu plus que la précédente, sans fin.
+      // On ne demande donc jamais plus que l'espacement nominal.
+      const mini = Math.min(2 * DEMI_LONG_VOITURE, this.ecart);
+      for (let i = 1; i < this.nb; i++) {
+        const plancher = this.retard[i - 1] - this.ecart + mini;
+        if (this.retard[i] < plancher) this.retard[i] = plancher;
+      }
+      // et l'allure obtenue : ce que `dElement(i)` a réellement avancé.
+      for (let i = 0; i < this.nb; i++) {
+        this.rapport[i] = Math.max(0, (pas - (this.retard[i] - avant[i])) / pas);
+      }
+    }
     this.montrer(joueur);
   }
 
@@ -898,14 +1297,14 @@ class Convoi {
   montrer(joueur) {
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
-    const trainee = this.ecart * (this.nb - 1);
+    const trainee = this.ecart * (this.nb - 1) + this.retardMax();
     if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
       for (const m of this.elements) if (m && m.visible) m.visible = false;
       return;
     }
     const portee2 = portee * portee;
     for (let i = 0; i < this.nb; i++) {
-      const p = this.parcours.a(this.distance - i * this.ecart);
+      const p = this.parcours.a(this.dElement(i));
       const dedans = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 < portee2;
       // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà.
       if (!dedans) {
@@ -916,8 +1315,27 @@ class Convoi {
       const m = this.element(i);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
-      // marche, il faut donc le retourner d'un demi-tour.
-      m.rotation.y = p.cap + Math.PI;
+      // marche, il faut donc le retourner d'un demi-tour. Le cap est celui de
+      // l'empattement (v244) : la voiture pivote en franchissant le coin.
+      const d = this.dElement(i);
+      m.rotation.y = this.parcours.capLisse(d) + Math.PI;
+      // l'allure de CETTE voiture : arrêtée si elle attend, pressée si elle rattrape
+      const allure = this.routier ? this.rapport[i] : 1;
+      if (this.routier) {
+        // L'INCLINAISON DANS LE VIRAGE, purement visuelle (v244). Comme pour
+        // l'avion (v231), elle se compose AVANT le cap — ordre YXZ — sinon la
+        // voiture basculerait autour de l'axe du MONDE. Le corps d'une voiture
+        // roule vers l'EXTÉRIEUR du virage, de ce que lui impose la force
+        // centrifuge : vitesse au carré fois courbure, à l'échelle de ce qu'un
+        // enfant voit — quatre degrés au pire coin, rien en ligne droite.
+        // Le signe a été REGARDÉ sur capture, pas déduit.
+        const v = this.vitesseActuelle * allure;
+        const vise = Math.max(-0.08, Math.min(0.08, -this.parcours.courbure(d) * v * v * 0.012));
+        const roulis = m.userData.roulis === undefined ? vise : m.userData.roulis + (vise - m.userData.roulis) * Math.min(1, this.dernierDt * 6);
+        m.userData.roulis = roulis;
+        m.rotation.order = 'YXZ';
+        m.rotation.z = roulis;
+      }
       m.visible = true;
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
@@ -925,12 +1343,12 @@ class Convoi {
       // tournent, un enfant de sept ans le voit au premier mètre.
       const roues = m.userData.roues;
       if (roues && roues.length) {
-        const angle = (this.vitesseActuelle * this.dernierDt) / (m.userData.rayonRoue || 0.34);
+        const angle = (this.vitesseActuelle * allure * this.dernierDt) / (m.userData.rayonRoue || 0.34);
         for (const r of roues) r.rotation.x += angle;
       }
       if (this.relooke) {
         const L = this.parcours.longueur;
-        this.relooke(m, (((this.distance - i * this.ecart) % L) + L) % L, i);
+        this.relooke(m, ((d % L) + L) % L, i);
       }
     }
   }
@@ -992,7 +1410,7 @@ export function createVehicules({ scene, player }) {
       const [c1, c2] = teintes[i % teintes.length];
       ajouter(points, {
         nb: 1, vitesse: 17 + (i % 3) * 1.6, depart: -i * (p.longueur / nb) * 0.55,
-        nom: 'formule 1', emoji: '🏎️', assise: 0.75, freine: true, allureMin: 0.2,
+        nom: 'formule 1', emoji: '🏎️', assise: 0.75, freine: true, allureMin: 0.2, routier: true,
         modele: () => construireF1(c1, c2),
       });
     }
@@ -1028,8 +1446,7 @@ export function createVehicules({ scene, player }) {
   // parce que c'est le convoi qui les fait tourner.
   function voitureDeVille(n, teinte, ville) {
     const g = construireVoitureRoute(teinte);
-    const choix = FLOTTE.filter(e=>ville==='ny'?e.ville==='ny':e.ville!=='ny');
-    const entree = ville !== 'ny' && n % 4 === 0 ? FLOTTE.find(e=>e.fichier==='berline-citadine') : choix[((n % choix.length) + choix.length) % choix.length];
+    const entree = choixFlotte(n, ville);
     // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
     // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
     // flotte — c'est le même soin que pour la voiture garée.
@@ -1049,6 +1466,22 @@ export function createVehicules({ scene, player }) {
             o.material=o.material.clone();o.material.userData.partagee=false;o.material.color.set(teinte);
           }
         });
+        // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
+        // villes ont de la diversité dans les voitures ». Un modèle de la
+        // flotte arrivait toujours dans SA couleur cuite dans le fichier :
+        // vingt Bugatti bleues dans vingt villes. Deux voitures sur trois
+        // prennent la teinte tirée pour elles, la troisième garde sa livrée
+        // d'origine — une voiture dont la couleur fait l'identité (un taxi,
+        // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
+        // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
+        if (entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0) {
+          modele.traverse((o) => {
+            if (!o.isMesh || !o.material || !EST_LAQUE.test(o.material.name || '')) return;
+            o.material = o.material.clone(); o.material.userData.partagee = false;
+            o.material.color.set(teinte);
+          });
+        }
+        g.userData.laque = entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0 ? teinte : null;
         g.add(modele);
         const roues = [];
         modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
@@ -1093,8 +1526,8 @@ export function createVehicules({ scene, player }) {
   function circulation(pts, graine = 0, options = {}) {
     const p = new Parcours(pts);
     const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
-    return ajouter(pts, {
-      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4,
+    const c = ajouter(pts, {
+      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4, routier: true,
       // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
       // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
       // personne ne l'avait jamais compté. À cent dix blocs de portée, les
@@ -1108,7 +1541,7 @@ export function createVehicules({ scene, player }) {
       // depuis longtemps. Les personnages s'effacent à soixante-deux blocs
       // depuis des versions sans que personne ne l'ait jamais signalé ; une
       // voiture, plus petite et plus basse, tient largement à quarante-cinq.
-      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: 45,
+      nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
       // LE PAS DE 13 SUR UNE FLOTTE DE 50 REVIENT SUR SES PAS AU BOUT DE
       // CINQUANTE : `13 × 50 ≡ 0`. Avec vingt voitures par circuit c'était
       // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille
@@ -1116,6 +1549,11 @@ export function createVehicules({ scene, player }) {
       // modèles différents.
       modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
     });
+    // Ce que ce convoi VA montrer, sans rien fabriquer : un témoin de
+    // diversité le lit avant que la moindre voiture ne soit née.
+    c.graine = graine;
+    c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville).fichier);
+    return c;
   }
 
   // Le bus de la ville : un seul par anneau, plus lent que les voitures, et
@@ -1130,14 +1568,258 @@ export function createVehicules({ scene, player }) {
     // constante (c'est le mécanisme du métro), et un bus qui ne s'arrête
     // jamais n'est pas un bus.
     return ajouter(pts, {
-      nb: 1, vitesse: 5,
+      nb: 1, vitesse: 5, routier: true,
       nom: 'bus', emoji: '🚌', assise: 1.7,
       arrets, pause: 2,
       modele: () => construireBus(teintes[graine % teintes.length]),
     });
   }
 
+  // QUI CÈDE LE PASSAGE À QUI (v244). Max : « évite que les voitures puissent
+  // se chevaucher ». Mesuré à Paris, trente secondes : soixante-quinze relevés
+  // de paires de voitures à moins de 3,5 blocs, la pire à 1,38 — l'une dans
+  // l'autre, là où deux circuits se croisent, en équerre ou en biais, et sur
+  // les tronçons qu'ils partagent.
+  //
+  // TROIS JETS AVANT CELUI-CI, et chacun a coûté une mesure. Arrêter le CONVOI
+  // entier laissait celle qui était déjà dans le carrefour en travers de
+  // l'autre voie (75 → 65). Un couloir « devant moi » de six blocs ratait la
+  // voiture qui arrive de trois quarts — les deux circuits de la rue de Rivoli
+  // se coupent à cent soixante degrés, pas cent quatre-vingts (65 → 61). Et
+  // départager une paire mutuelle par le rang de convoi faisait passer la
+  // voiture de derrière AU TRAVERS de celle qui attendait devant elle.
+  //
+  // D'où ceci. Une voiture regarde où SON tracé la mène dans les cinq blocs qui
+  // viennent, et demande si son rectangle (4,4 × 2,26) y toucherait celui d'une
+  // autre voiture, de son convoi ou d'un autre. Si oui, elle attend — elle
+  // seule : le convoi est élastique (`retard`), celles qui suivent font la
+  // queue derrière elle. Dans une paire mutuelle, LA PLUS ENGAGÉE PASSE : celle
+  // que l'autre voit le plus loin devant elle. Et l'on n'attend jamais plus de
+  // quatre secondes d'affilée : à trois, on finit par y aller.
+  //
+  // Seules les voitures à portée de l'enfant se regardent : ce qui se
+  // chevauche hors de vue ne coûte à personne, et mille circuits n'ont pas à
+  // se comparer à chaque image.
+  const PORTEE_CEDE = 90, DEMI_LONG = DEMI_LONG_VOITURE, DEMI_LARG = DEMI_LARG_VOITURE;
+  const PAS_BALAYAGE = [0.5, 2, 3.5, 5, 6.5, 8];
+  const rectangle = (x, z, ux, uz) => {
+    const vx = uz, vz = -ux;
+    return [
+      [x + ux * DEMI_LONG + vx * DEMI_LARG, z + uz * DEMI_LONG + vz * DEMI_LARG],
+      [x + ux * DEMI_LONG - vx * DEMI_LARG, z + uz * DEMI_LONG - vz * DEMI_LARG],
+      [x - ux * DEMI_LONG - vx * DEMI_LARG, z - uz * DEMI_LONG - vz * DEMI_LARG],
+      [x - ux * DEMI_LONG + vx * DEMI_LARG, z - uz * DEMI_LONG + vz * DEMI_LARG],
+    ];
+  };
+  // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
+  // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
+  // pas, ils sont disjoints.
+  const seTouchent = (P, Q) => {
+    for (const R of [P, Q]) {
+      for (let k = 0; k < 4; k++) {
+        const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+        let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+        for (let j = 0; j < 4; j++) {
+          const p = P[j][0] * ax + P[j][1] * az, q = Q[j][0] * ax + Q[j][1] * az;
+          if (p < p0) p0 = p; if (p > p1) p1 = p; if (q < q0) q0 = q; if (q > q1) q1 = q;
+        }
+        if (p1 < q0 || q1 < p0) return false;
+      }
+    }
+    return true;
+  };
+  // Ce que `cederLePassage` a regardé à la dernière image : `obstacleDevant`
+  // s'en sert pour la voiture de l'enfant, sans refaire la collecte.
+  let dernieres = [];
+  // LE FEU ROUGE EST BRANCHÉ PAR `main.js` (v273) : c'est lui qui dessine les
+  // feux et connaît leur état. Comme `obstaclePieton` et `vehiculeApproche`,
+  // la règle vit là où elle se calcule, et la circulation la DEMANDE.
+  let feuRouge = null;
+  const CLE_ENFANT = -1;
+  function cederLePassage(dt) {
+    const px = player.pos.x, pz = player.pos.z;
+    const voitures = [];
+    // L'ENFANT AUSSI, À PIED OU AU VOLANT (v245). Max, après la v244 : « les
+    // voitures passent les unes sur les autres ». Mesuré en roulant sur la rue
+    // de Rivoli : soixante et onze relevés sur quatre-vingt-quatorze où une
+    // voiture de la rue était DANS la voiture de l'enfant, et à l'arrêt sur la
+    // chaussée un convoi entier lui passait au travers. Les convois cédaient
+    // entre eux depuis la v244 — jamais à l'enfant, qui n'était pas dans la
+    // liste. Il y est : sa voiture (4,4 × 2,26, cap du regard) ou lui-même à
+    // pied (un carré à sa carrure). Il ne cède à personne ; la rue s'arrête
+    // devant lui, comme devant tout ce qui est sur son chemin.
+    const enVehicule = player.gabarit > 1;
+    const capJ = player.yaw + Math.PI, uxJ = Math.sin(capJ), uzJ = Math.cos(capJ);
+    const demi = player.gabarit / 2;
+    voitures.push({
+      c: null, i: -1, cle: CLE_ENFANT, x: px, y: player.pos.y, z: pz, ux: uxJ, uz: uzJ, enfant: true,
+      rect: enVehicule ? rectangle(px, pz, uxJ, uzJ)
+        : [[px - demi, pz - demi], [px + demi, pz - demi], [px + demi, pz + demi], [px - demi, pz + demi]],
+      balayage: null, veut: null,
+    });
+    for (let ci = 0; ci < convois.length; ci++) {
+      const c = convois[ci];
+      if (!c.routier) continue;
+      const tete = c.parcours.a(c.distance);
+      const trainee = c.ecart * (c.nb - 1) + c.retardMax();
+      if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + trainee) { c.attend.fill(0); continue; }
+      for (let i = 0; i < c.nb; i++) {
+        const d = c.dElement(i);
+        const q = c.parcours.a(d);
+        if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) { c.attend[i] = 0; continue; }
+        const cap = c.parcours.capLisse(d), ux = Math.sin(cap), uz = Math.cos(cap);
+        voitures.push({ c, ci, i, cle: ci * 1000 + i, d, x: q.x, y: q.y, z: q.z, ux, uz,
+          rect: rectangle(q.x, q.z, ux, uz), balayage: null, veut: null });
+      }
+    }
+    // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
+    for (const a of voitures) {
+      if (a.enfant) continue;
+      a.balayage = PAS_BALAYAGE.map((pas) => {
+        const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
+        return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
+      });
+    }
+    for (const a of voitures) {
+      if (a.enfant) continue;
+      for (const b of voitures) {
+        if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
+        const ex = b.x - a.x, ez = b.z - a.z;
+        if (ex * ex + ez * ez > 12 * 12) continue;
+        if (ex * a.ux + ez * a.uz < -DEMI_LONG) continue;          // derrière moi : pas mon affaire
+        // Déjà DANS la voiture de l'enfant (il s'est posé dessus, ou l'a
+        // rattrapée) : continuer est la seule façon d'en sortir ; y attendre
+        // sans limite, c'est rester dedans pour toujours.
+        if (b.enfant && seTouchent(a.rect, b.rect)) continue;
+        // Là où elle EST, pas là où elle sera : comparer les deux chemins des
+        // huit prochains blocs mettait presque toutes les paires en conflit
+        // mutuel, et la patience de quatre secondes les relâchait ensemble —
+        // 17 → 77, mesuré. Le reliquat (dix-sept relevés sur trente secondes,
+        // un raccord à cent soixante degrés entre deux circuits de Rivoli) est
+        // une affaire de tracé, déclarée dans TASKS.md.
+        let gene = false;
+        for (const R of a.balayage) if (seTouchent(R, b.rect)) { gene = true; break; }
+        if (gene) (a.veut || (a.veut = new Map())).set(b.cle, ex * a.ux + ez * a.uz);
+      }
+    }
+    const parCle = new Map(voitures.map((v) => [v.cle, v]));
+    dernieres = voitures; enMarcheCache = null;
+    for (const a of voitures) {
+      if (a.enfant) continue;
+      let attend = false;
+      if (a.veut) {
+        for (const [cle, devantMoi] of a.veut) {
+          const b = parCle.get(cle);
+          if (b && b.veut && b.veut.has(a.cle)) {
+            // paire mutuelle : la plus engagée passe — celle que l'autre voit le
+            // plus loin devant elle ; à égalité, la plus petite
+            const devantLui = b.veut.get(a.cle);
+            if (devantLui > devantMoi || (devantLui === devantMoi && a.cle < cle)) continue;
+          }
+          attend = true; break;
+        }
+      }
+      const c = a.c, i = a.i;
+      // ET UN FEU ROUGE ARRÊTE AUSSI (v273) — devant la ligne, jamais dans le
+      // carrefour, et sans patience : un feu ne se force pas, il passe au
+      // vert. C'est la même exception que devant l'enfant (v245), pour la même
+      // raison : une voiture qui finit par démarrer au rouge, c'est la panne
+      // qu'on répare. L'orange arrête comme le rouge — c'est le dégagement.
+      if (feuRouge && feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz))) {
+        c.attend[i] = 1; c.attenteDepuis[i] = 0; c.repart[i] = 0;
+        continue;
+      }
+      // Devant l'enfant seul, on attend SANS LIMITE : une voiture qui finit
+      // par lui passer au travers, c'est la panne qu'on répare — mesuré, la
+      // patience de douze secondes la faisait revenir au bout de douze
+      // secondes. La rue attend que l'enfant reparte ; les autres voitures
+      // gardent leurs quatre secondes entre elles.
+      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? Infinity : 4;
+      if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
+      else if (attend) {
+        c.attenteDepuis[i] += dt;
+        if (c.attenteDepuis[i] > patience) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
+      } else c.attenteDepuis[i] = 0;
+      c.attend[i] = attend ? 1 : 0;
+    }
+  }
+
+  // ET L'ENFANT NE TRAVERSE PAS LA RUE NON PLUS (v245). Sa voiture, posée à
+  // (x, z) avec ce cap, toucherait-elle une voiture de la circulation ? C'est
+  // `player.js` qui le demande avant d'avancer — la boîte de collision du
+  // joueur ne connaît que les blocs. On relit la collecte de la dernière
+  // image : les voitures de la rue avancent de quelques centimètres entre
+  // deux images, c'est sans conséquence pour un arrêt.
+  function obstacleDevant(x, z, cap) {
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const moi = rectangle(x, z, ux, uz);
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (seTouchent(moi, b.rect)) return true;
+    }
+    return false;
+  }
+
+  // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la
+  // Bastille : « les passants traversent la voiture de l'enfant ». Un passant
+  // ne connaît que les blocs solides (`sweep`, marlon.js) ; une voiture n'en
+  // est pas un. Ce point (les pieds d'un piéton) est-il DANS une voiture de
+  // la rue, ou dans celle de l'enfant quand il est au volant ? On relit la
+  // collecte de la dernière image, comme `obstacleDevant`. L'enfant à pied
+  // n'est pas une voiture : on passe à côté de lui comme avant.
+  function voitureA(x, z, y) {
+    for (const b of dernieres) {
+      if (b.enfant && !(player.gabarit > 1)) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 6 * 6 || Math.abs(b.y - y) > 2.5) continue;
+      if (dansRectangle(b.rect, x, z)) return true;
+    }
+    return false;
+  }
+  // CE QUI ROULE, ET À QUELLE ALLURE (v259) : les voitures de la rue à portée
+  // de l'enfant, telles que `cederLePassage` les a vues, avec leur vitesse
+  // du moment (zéro si elles attendent). C'est ce qu'un piéton lit pour
+  // s'écarter d'une voiture qui arrive (`world.vehiculeApproche`, main.js).
+  //
+  // UNE FOIS PAR IMAGE, PAS UNE FOIS PAR PIÉTON. Mon premier jet refaisait
+  // cette liste à chaque appel : à Manhattan, des centaines de voitures à
+  // portée, cent quarante piétons, deux appels chacun par image — la page
+  // tombait à 0,4 image par seconde (mesuré à la sonde), et quatre suites du
+  // portail mesuraient une boucle d'affichage moribonde. La liste est figée
+  // tant que `cederLePassage` n'a pas refait sa collecte, et l'on ne rend
+  // JAMAIS ce tableau à quelqu'un qui pourrait le modifier : lecture seule.
+  let enMarcheCache = null;
+  function enMarche() {
+    if (enMarcheCache) return enMarcheCache;
+    const out = [];
+    for (const b of dernieres) {
+      if (b.enfant) continue;
+      const c = b.c;
+      if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
+      // ce qu'elle a OBTENU, pas ce qu'elle demandait (v283) : un piéton ne
+      // s'écarte pas devant une voiture que le plancher tient immobile.
+      const allure = c.rapport ? c.rapport[b.i] : (c.retard[b.i] > 0 ? 1.5 : 1);
+      out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
+    }
+    enMarcheCache = out;
+    return out;
+  }
+  // Un point est-il dans un rectangle orienté (quatre sommets dans l'ordre) ?
+  // Du même côté de chacune des quatre arêtes.
+  function dansRectangle(R, x, z) {
+    let signe = 0;
+    for (let k = 0; k < 4; k++) {
+      const a = R[k], b = R[(k + 1) % 4];
+      const c = (b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (x - a[0]);
+      if (c === 0) continue;
+      if (signe === 0) signe = c > 0 ? 1 : -1;
+      else if ((c > 0 ? 1 : -1) !== signe) return false;
+    }
+    return true;
+  }
+
   function update(dt) {
+    cederLePassage(dt);
     for (const c of convois) c.update(dt, player.pos);
   }
 
@@ -1165,7 +1847,7 @@ export function createVehicules({ scene, player }) {
       // longue que sa corde : si la tête est plus loin que ça plus le rayon,
       // aucun wagon ne peut être à portée.
       const tete = c.place(0);
-      const trainee = c.ecart * (c.elements.length - 1);
+      const trainee = c.ecart * (c.elements.length - 1) + c.retardMax();
       if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
         const p = c.place(i);
@@ -1222,7 +1904,9 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle, enMarche,
+    // le crochet des feux tricolores (v273), branché par main.js
+    brancherFeux: (f) => { feuRouge = f; },
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
@@ -1246,6 +1930,30 @@ export function createVehicules({ scene, player }) {
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,
       total: c.elements.length,
+      // Où sont les voitures visibles, et vers où elles vont (v244) : c'est ce
+      // qui permet à une sonde de dire QUI chevauche QUI — même convoi, ou deux.
+      places: c.elements.map((m, i) => (m && m.visible
+        ? [Math.round(m.position.x * 10) / 10, Math.round(m.position.z * 10) / 10, Math.round((m.rotation.y - Math.PI) * 100) / 100, i,
+          c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0]
+        : null)).filter(Boolean),
+      retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
+      // L'ÉCART RÉEL ENTRE DEUX VOISINES LE LONG DU TRACÉ (v283), au centième.
+      // C'est LA grandeur qui dit si un convoi se télescope, et elle se publie
+      // ici parce qu'elle se calcule ici : `retards` est arrondi au bloc, ce qui
+      // ne peut pas distinguer 4,4 de 2,1. Un témoin qui compterait des instants
+      // « proches » mesurerait la cadence du banc ; celui-ci lit une borne que la
+      // géométrie garantit (v279).
+      ecart: Math.round(c.ecart * 100) / 100,
+      ecarts: c.routier && c.retard
+        ? Array.from({ length: Math.max(0, c.nb - 1) },
+          (_, i) => Math.round((c.dElement(i) - c.dElement(i + 1)) * 100) / 100)
+        : [],
+      attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
+      // la diversité (v246) : les modèles que le convoi va montrer, sa graine,
+      // et la livrée — modèle + laque — de chaque voiture visible
+      graine: c.graine, modeles: c.modeles || [],
+      livrees: c.elements.filter((m) => m && m.visible && m.userData.flotte)
+        .map((m) => `${m.userData.flotte}:${m.userData.laque == null ? 'origine' : m.userData.laque.toString(16)}`),
       // les teintes de carrosserie des éléments visibles — la preuve, pour un
       // témoin, que la peinture de la Giga-usine opère : du gris AVANT le
       // tunnel, des couleurs APRÈS, dans le même convoi au même instant

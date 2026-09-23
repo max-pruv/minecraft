@@ -15,6 +15,7 @@
 // mécanique — c'est là qu'on saura pourquoi elle horodate. Ici on l'applique,
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
+import { migrerBlocsCarte3, migrerPositionsCarte3 } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -51,6 +52,8 @@ const nomPhotos = (nom) => `${nom}~photos`;
 // La copie des blocs d'avant l'agrandissement de la carte. Même principe que
 // les photos : son propre document, pour ne jamais peser sur les blocs vivants.
 const nomAvantCarte = (nom) => `${nom}~avant-carte`;
+// La copie d'avant le SECOND agrandissement (v242), sur son propre document.
+const nomAvantCarte3 = (nom) => `${nom}~avant-carte-2`;
 
 const MAX_PHOTOS = 8;
 
@@ -313,8 +316,17 @@ export class ProfileSync {
     // mais son contenu restait dans le document, et remontait entier au
     // premier code retapé — ou pesait pour rien jusqu'à la fin des temps.
     const vivant = (ctx) => ctx === 'local' || !(num(out.worldsDel[ctx]) > 0);
-    out.pos = filtrerParMonde(mergePos(local.pos, remote.pos), vivant);
-    out.edits = filtrerParMonde(mergeAllEdits(local.edits, remote.edits), vivant);
+    // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION
+    // (v242). La fusion est une union : une tablette restée sur l'ancienne
+    // version republie ses clés d'avant, et sans cette marche elles
+    // reviendraient ici pour toujours — la maison dans New York ET son
+    // fantôme là où New York était. La migration est pure et idempotente
+    // (un bloc déplacé prend la date de la refonte) : la repasser à chaque
+    // lecture ne coûte qu'un parcours, et c'est le receveur qui cède.
+    const editsRecus = migrerBlocsCarte3(normalizeEdits(remote.edits)).tout;
+    const posRecues = migrerPositionsCarte3(remote.pos).pos;
+    out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
+    out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
     // Les garages suivent les blocs : rangés par monde, et emportés quand le
     // monde est retiré. Sans `filtrerParMonde`, la voiture d'un monde effacé
     // pèserait dans le document jusqu'à la fin des temps.
@@ -433,6 +445,32 @@ export class ProfileSync {
     } catch { return 'échec'; }             // on réessaiera au prochain lancement
   }
 
+  // LA COPIE D'AVANT LE SECOND AGRANDISSEMENT (v242) — et elle se prend
+  // AVANT de toucher au nuage, pas douze secondes après le lancement.
+  //
+  // La copie de v199 se faisait depuis le stockage de l'appareil, après la
+  // migration : elle était donc une copie d'APRÈS, et cela ne se voyait pas
+  // parce que la migration de v199 ne bougeait rien là où les enfants ont
+  // bâti. Celle-ci déplace New York. Le seul document qui soit encore
+  // d'avant, c'est celui du nuage tel qu'il est à la première lecture d'une
+  // tablette à jour — avant que quiconque n'y pousse une clé migrée. On le
+  // recopie tel quel, blocs et positions, une seule fois, et l'on ne fait
+  // jamais la première poussée sans être passé par ici.
+  async mettreALAbriAvantCarte3(nom, remote) {
+    if (this.copieCarte3 || !remote || !this.cloud.configured) return this.copieCarte3 || 'rien';
+    const edits = remote.edits;
+    if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';
+    try {
+      const deja = await this.cloud.statePull(nomAvantCarte3(nom));
+      if (deja && (deja.editsz || deja.edits)) return (this.copieCarte3 = 'déjà sauvé');
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const paquet = await this.resserrer({ edits, pos: remote.pos || {}, carte: 2, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantCarte3(nom), paquet, false);
+      return (this.copieCarte3 = 'sauvé');
+    } catch { return 'échec'; }             // réessayé à la lecture suivante
+  }
+
   // Et la relire, si un jour il faut rendre à un enfant ce qu'il avait bâti.
   async lireAvantLaRefonte() {
     const nom = this.getName();
@@ -482,6 +520,7 @@ export class ProfileSync {
     this.hydrated = true;
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
     remote = await this.dilater(remote);
+    await this.mettreALAbriAvantCarte3(name, remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
     // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
@@ -511,6 +550,7 @@ export class ProfileSync {
       try {
         const remote = await this.dilater(await this.cloud.statePull(name));
         if (remote) {
+          await this.mettreALAbriAvantCarte3(name, remote);
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;
           if (changed) {

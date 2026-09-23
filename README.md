@@ -5,8 +5,8 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
-**Manhattan on Earth:** choose **Explorer New York**, or open
-`/?lieu=manhattan`. One map, one shared-world code: detailed landmarks, Times
+**Manhattan on Earth:** teleport to New York from the world map (the old
+`/?lieu=manhattan` link still works). One map, one shared-world code: detailed landmarks, Times
 Square, yellow taxis and rigged human characters with textured faces and clothing.
 Pedestrians keep their positions when you turn around and fade with distance.
 See [characters and vehicles](docs/personnages-v241.md) for assets and rendering budgets. Existing Earth buildings
@@ -34,15 +34,26 @@ rendering budgets, licensing and limitations.
 - **Procedural textures** — the block atlas is painted onto a canvas at
   startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
+- **Paris in relief (HD layer)** — the voxel world is the skeleton; on top of
+  it, a second mesher pass emits real facade geometry for Paris (recessed
+  windows, railings, running balconies, cornices, awnings, dormers) and
+  128-px procedural materials for its streets, with one draw call per chunk.
+  Far away, the flat tile remains as the level of detail. The device tier
+  sets the range (`?hd=` forces it). Each quarter has its own register
+  (plaster and shutters in the Marais, ashlar and running balconies in the
+  west), trees are meshed up close, and sidewalks carry bollards, café
+  terraces and street-name plates — all read from the blocks, never written
+  into them.
 - **Day/night cycle** with sky, fog and light level transitions.
-- **Creature catching** — 32 procedurally generated original species with
-  elemental types (fire, water, grass, electric, rock, ice, bug, spooky) spawn
-  in matching biomes. Throw catch-balls (Q or the ◓ button) at them, watch the
-  ball shake, and fill your Creature Dex (B). Rarer species are harder to catch.
+- **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
+  plus harmonics that track the throttle), jet spool-up, block and chime sounds
+  are all built with the Web Audio API, and the car radio plays three original
+  stations written in scale degrees. One audio context for the whole game; the
+  🔊 setting suspends it outright.
 - **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
-  ⛏️/🧱 mode toggle, and jump/fly/catch buttons.
+  ⛏️/🧱 mode toggle, and jump/fly buttons.
 - **Friendly NPCs** — Marlon, a child with a rigged, textured model who follows you
-  around and chats in French, and Professeur Cornichon, the creature expert.
+  around and chats in French, and Professeur Cornichon, who hosts the quiz.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
   Cornichon's quiz starts every play session, and pops up again after each
   4 minutes of play: US first-grade math, English, and French questions
@@ -153,13 +164,17 @@ the invariants a change must not break.
 | Shift | Sprint |
 | 1–9 or mouse wheel | Select hotbar slot |
 | F | Toggle fly mode (Space up, C down) |
-| Q | Throw a catch-ball at a wild creature |
-| B | Open the Creature Dex |
 | Esc | Pause |
 
 On touch devices: left thumb summons a joystick, right thumb looks around,
 tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
-handle jumping, flying, and throwing catch-balls.
+handle jumping and flying.
+
+In a car the joystick is both accelerator and steering wheel — push forward to
+speed up, pull back to brake and then reverse — and the walking buttons step
+aside. A plane additionally gets a throttle dial and a speed readout on the
+right, because a throttle that holds when you let go is what makes an aircraft
+an aircraft.
 
 ## Code layout
 
@@ -172,6 +187,9 @@ src/mesher.js     chunk geometry builder (visible faces only, water surface)
 src/player.js     movement, collision, swimming, flying, voxel raycast
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
+src/facadeshd.js  Paris HD layer: facade relief and street surfaces, as buffers
+src/matierehd.js  its single PBR material, 1024-px atlas and environment
+src/bandeau.js    the game's passing message, the one voice everything speaks with
 
   the shared world
 src/net.js        sessions, peers, presentation, edit log, reconnection
@@ -181,9 +199,9 @@ src/sync.js       whole-profile portability, keyed by first name
 src/visio.js      camera tiles and sound, split so autoplay can't mute both
 
   who lives there
-src/creatures.js  creature species/AI/meshes, catch-balls, collection
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
+src/cap.js        the pilot's heading dial: bearing, the city ahead, its distance
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
                   stations) and F1 cars

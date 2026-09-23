@@ -8,13 +8,49 @@ import { PROP_ITEMS, PROP_START, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS
 const WOOD = 0x6b4a2a, DARKWOOD = 0x4a3218, TRUNK = 0x67513a, LEG = 0x2c2c2c;
 const WHITE = 0xf2f2f0, DARK = 0x222226, GLOW = 0xffe9a0;
 
+// LE MOBILIER EST ÉCLAIRÉ (v287). Il était en `MeshBasicMaterial` — la seule
+// chose du monde qui ne recevait ni le soleil ni la nuit depuis la v247 : un
+// réverbère à minuit avait la couleur d'un réverbère à midi. Lambert, comme
+// les blocs autour de lui.
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+  m.position.set(x, y, z);
+  return m;
+}
+
+// Ce qui ÉMET — la lanterne d'un réverbère, la lentille vive d'un feu — ne
+// s'éteint pas avec le jour : émissif, pour rester lisible à minuit maintenant
+// que le mobilier est éclairé comme le reste.
+function lampe(w, h, d, color, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.9 }));
   m.position.set(x, y, z);
   return m;
 }
 
 function rgbToHex([r, g, b]) { return (r << 16) | (g << 8) | b; }
+
+// Fusionne des géométries (position, normale, uv, indices) en une seule : un
+// maillage, un appel de dessin. Les pièces sont libérées.
+function fusionner(pieces) {
+  const pos = [], nor = [], uv = [], idx = [];
+  let base = 0;
+  for (const p of pieces) {
+    const g = p.index ? p : p;
+    const P = g.attributes.position.array, N = g.attributes.normal.array, U = g.attributes.uv ? g.attributes.uv.array : null;
+    for (let i = 0; i < P.length; i++) { pos.push(P[i]); nor.push(N[i]); }
+    for (let i = 0; i < P.length / 3; i++) { uv.push(U ? U[i * 2] : 0, U ? U[i * 2 + 1] : 0); }
+    if (g.index) for (let i = 0; i < g.index.count; i++) idx.push(g.index.array[i] + base);
+    else for (let i = 0; i < P.length / 3; i++) idx.push(i + base);
+    base += P.length / 3;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  out.setIndex(idx);
+  return out;
+}
 
 // Each builder receives the variant color and returns a Group with its
 // origin at the center of the block's floor (y=0 is the ground).
@@ -231,23 +267,65 @@ Object.assign(BUILDERS, {
 // monolithe. Le fût est fin comme celui de la lampe d'intérieur — c'est
 // exactement pour cela qu'on passe des blocs aux meshes.
 Object.assign(BUILDERS, {
+  // LE RÉVERBÈRE À LA PARISIENNE (v288) : un fût de fonte qui s'effile depuis
+  // un socle renflé, une lanterne carrée à pans vitrés sous un chapeau pointu.
+  // Vert-noir de fonte, pas un monolithe gris.
+  // ET IL NE COÛTE QUE DEUX APPELS DE DESSIN : toute la fonte est FUSIONNÉE en
+  // une géométrie (un réverbère par neuf blocs, des centaines par ville — le
+  // premier jet en douze maillages faisait passer une rue de 1 100 à 2 500
+  // appels). La lanterne, émissive, est le second.
   reverbere() {
     const g = new THREE.Group();
-    g.add(box(0.34, 0.06, 0.34, DARK, 0, 0.03, 0));         // le socle
-    g.add(box(0.1, 3.0, 0.1, DARK, 0, 1.5, 0));             // le fût
-    g.add(box(0.55, 0.08, 0.1, DARK, 0.26, 2.96, 0));       // la crosse
-    g.add(box(0.26, 0.14, 0.2, GLOW, 0.5, 2.86, 0));        // la lanterne
-    g.add(box(0.3, 0.04, 0.24, DARK, 0.5, 2.95, 0));        // son chapeau
+    const pieces = [];
+    const cyl = (r0, r1, h, y, n = 8) => { const c = new THREE.CylinderGeometry(r1, r0, h, n); c.translate(0, y, 0); pieces.push(c); };
+    const bx = (w, h, d, x, y, z) => { const b = new THREE.BoxGeometry(w, h, d); b.translate(x, y, z); pieces.push(b); };
+    cyl(0.18, 0.14, 0.12, 0.06);                            // le socle
+    cyl(0.12, 0.09, 0.5, 0.37);                             // le renflement
+    cyl(0.06, 0.045, 2.3, 1.77, 10);                        // le fût effilé
+    cyl(0.09, 0.05, 0.1, 2.97);                             // le col
+    bx(0.5, 0.05, 0.05, 0.23, 3.02, 0);                     // la crosse
+    bx(0.05, 0.22, 0.05, 0.46, 2.9, 0);                     // la suspente
+    for (const a of [0, 1, 2, 3]) {                          // les montants de la lanterne
+      const dx = a % 2 === 0 ? 0.11 : -0.11, dz = a < 2 ? 0.11 : -0.11;
+      bx(0.025, 0.28, 0.025, 0.46 + dx, 2.66, dz);
+    }
+    const chapeau = new THREE.ConeGeometry(0.19, 0.16, 4);
+    chapeau.rotateY(Math.PI / 4); chapeau.translate(0.46, 2.87, 0); pieces.push(chapeau);
+    g.add(new THREE.Mesh(fusionner(pieces), new THREE.MeshLambertMaterial({ color: 0x232a26 })));
+    g.add(lampe(0.2, 0.26, 0.2, GLOW, 0.46, 2.66, 0));      // la lanterne
     return g;
   },
+  // LE FEU N'EN MONTRE QU'UNE À LA FOIS (v273). Les trois lentilles étaient
+  // allumées ensemble — vu en capture à Zurich, rouge, orange et vert sur le
+  // même boîtier : ce n'est pas un feu, c'est une guirlande. Chaque lentille
+  // est donc DOUBLE : une pastille sombre, toujours là, et la même en vif un
+  // cheveu devant, NOMMÉE et cachée. `main.js` n'en montre qu'une, sur
+  // l'horloge de `feux.js`.
+  //
+  // C'est le NOM qui porte l'information, pas `userData` : `Object3D.copy`
+  // recopie `userData` par JSON, et un maillage n'y survit pas — or chaque
+  // feu de la ville est un CLONE de ce gabarit.
+  //
+  // ÉMISSIF SEULEMENT, AUCUNE LAMPE (v248, v264) : quatre lumières ponctuelles
+  // pour tout le jeu, et une de plus recompilerait tous les programmes de
+  // shaders à l'entrée d'une ville.
   feux() {
     const g = new THREE.Group();
     g.add(box(0.3, 0.05, 0.3, DARK, 0, 0.02, 0));
     g.add(box(0.09, 2.4, 0.09, DARK, 0, 1.2, 0));
     g.add(box(0.26, 0.72, 0.18, 0x2a2a30, 0, 2.35, 0));     // le boîtier
-    g.add(box(0.14, 0.14, 0.05, 0xd83a2a, 0, 2.58, -0.09)); // rouge
-    g.add(box(0.14, 0.14, 0.05, 0xf0a83a, 0, 2.35, -0.09)); // orange
-    g.add(box(0.14, 0.14, 0.05, 0x3ac862, 0, 2.12, -0.09)); // vert
+    const hauteur = [2.58, 2.35, 2.12];
+    const eteint = [0x4a1a14, 0x4a3410, 0x14401f];          // la lentille, feu éteint
+    const vif = [0xff5038, 0xffc84e, 0x54ff8e];
+    const nom = ['rouge', 'orange', 'vert'];
+    for (let i = 0; i < 3; i++) {
+      g.add(box(0.14, 0.14, 0.05, eteint[i], 0, hauteur[i], -0.09));
+      const l = lampe(0.18, 0.18, 0.06, vif[i], 0, hauteur[i], -0.12);
+      l.name = 'feu-' + nom[i];
+      l.visible = false;
+      l.material.toneMapped = false;    // une lampe ne passe pas par la correspondance tonale
+      g.add(l);
+    }
     return g;
   },
   jardiniere(c) {

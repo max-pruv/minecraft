@@ -27,11 +27,13 @@ import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
 import { dansManhattan, ORIGINE_MANHATTAN } from './manhattan-world.js';
 import { surface as surfaceManhattan, batimentA } from './manhattan-plan.js';
-import { CITIES } from './world.js';
+import { CITIES, TROTTOIR } from './world.js';
 import { CITY_BLOCK, ARCHI } from './blocks.js';
 
 // Ce sur quoi un passant se tient : la chaussée, le trottoir, les pavés.
-const SOLS_TROTTOIR = new Set([CITY_BLOCK.SIDEWALK,CITY_BLOCK.GRANITE]);
+// Le trottoir se DEMANDE à `world.js`, qui l'écrit (v278) : la liste vivait ici
+// en double, et une ville qui changerait de pavage l'aurait fait diverger.
+const SOLS_TROTTOIR = TROTTOIR;
 const SOLS_DE_RUE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.SIDEWALK,
   CITY_BLOCK.GRANITE, CITY_BLOCK.CROSSWALK, ARCHI.PAVE, ARCHI.BORDURE]);
 
@@ -119,7 +121,7 @@ function tirage(a, b, sel) {
 }
 const parmi = (liste, t) => liste[Math.floor(t * liste.length) % liste.length];
 
-export function createPassants({ scene, world, player, toast, npcs, sitesCarte = null, seulementTrottoir = false }) {
+export function createPassants({ scene, world, player, toast, npcs, sitesCarte = null }) {
   // Toutes les villes à rues : les cinquante grandes qui ont une trame, et
   // les villes historiques (Paris, New York, Nice, Lille, Londres…).
   const sites = (sitesCarte || [
@@ -174,7 +176,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   }
 
   function posteAutour(site, g, devant = false, recycle = false) {
-    let repli = null;
+    let repli = null, surRue = null;
     for (let essai = 0; essai < 80; essai++) {
       // Le cap du regard, dans le repère du jeu : dx = −sin(yaw), dz = −cos(yaw),
       // donc l'angle de `Math.cos/sin` employé plus bas vaut −yaw − π/2.
@@ -191,20 +193,65 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         if(world.piedPieton(x,z)===33)return [x,z];
         continue;
       }
-      if (!repli) repli = [x, z];
       const bx = Math.floor(x), bz = Math.floor(z);
       // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
       // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
       // passant ne trouvait jamais de rue, et tous retombaient sur le repli.
       const y = world.sommetColonne(bx, bz);
-      if ((seulementTrottoir ? SOLS_TROTTOIR : SOLS_DE_RUE).has(world.getBlock(bx, y, bz))) return [x, z];
+      // et pas DANS une voiture (v259) : un passant né dans la voiture de
+      // l'enfant y est, quoi que fasse ensuite son regard-devant — ni comme
+      // rue, ni comme repli
+      if (world.obstaclePieton?.(x, z, y + 1)) continue;
+      if (!repli) repli = [x, z];
+      // UN PIÉTON SE MET SUR LE TROTTOIR, ET LA CHAUSSÉE N'EST QU'UN REPLI (v278).
+      //
+      // Max : « les passants, ça ne fonctionne pas. Je vois quelque chose de très
+      // naturel, comme dans GTA. » Mesuré avant d'y toucher, en relevant le bloc
+      // sous chaque passant dans quatre villes : Paris 11 trottoirs pour SIX
+      // `ARCHI.PAVE` et QUATRE bordures, Londres 10 pour 8 `ASPHALT`, Rome 8 pour
+      // 10, Zurich 9 pour 9. **La moitié des passants sont plantés au milieu de
+      // la chaussée**, et cela compte autant que le reste dans l'impression de
+      // « pas naturel ».
+      //
+      // ET LE MÉCANISME EXISTAIT DÉJÀ SANS JAMAIS AVOIR SERVI : `SOLS_TROTTOIR` et
+      // le paramètre `seulementTrottoir` étaient là, et AUCUN appelant ne le
+      // passait. Une brique dont rien ne se sert (règle de `monuments.js`, v157),
+      // à un paramètre près.
+      //
+      // TROIS ÉTAGES, POUR QU'AUCUNE VILLE NE SE VIDE. Le trottoir gagne tout de
+      // suite ; à défaut on garde le premier point DE RUE rencontré, et le repli
+      // d'avant reste en dernier recours. Ce classement ne peut donc PAS réduire
+      // la population — c'est ce que la v217 avait payé cher (un seuil resserré
+      // qui rendait tout déplacement inutile).
+      const sol = world.getBlock(bx, y, bz);
+      if (SOLS_TROTTOIR.has(sol)) return [x, z];
+      if (!surRue && SOLS_DE_RUE.has(sol)) surRue = [x, z];
     }
-    return repli || [site.x+5,site.z+7];
+    return surRue || repli || [site.x+5,site.z+7];
   }
 
+  // LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants — quarante-
+  // quatre à New York — naissaient dans la MÊME image à l'arrivée en ville,
+  // chacun avec un clone de squelette : c'est une part du gel que Max sent à
+  // la téléportation. `peupler` ne fait plus que PRÉVOIR ; `naitre`, appelé à
+  // chaque image, en fait naître pour cinq millisecondes au plus.
+  const naissances = [];
   function peupler(site, debut = 0, nombre = site.urbain ? 44 : PAR_VILLE) {
-    const gens = site.peuple || [];
-    for (let k = debut; k < debut + nombre; k++) {
+    if (!site.peuple) site.peuple = [];
+    site.prevus = site.prevus || 0;
+    for (let k = site.prevus; k < site.prevus + nombre; k++) naissances.push({ site, k, debut });
+    site.prevus += nombre;
+  }
+  function naitre() {
+    const t0 = performance.now();
+    while (naissances.length && performance.now() - t0 < 5) {
+      const { site, k, debut } = naissances.shift();
+      faireNaitre(site, k, debut);
+    }
+  }
+  function faireNaitre(site, k, debut) {
+    const gens = site.peuple;
+    {
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
       if (k % (site.urbain?16:5) === 4) {
@@ -217,7 +264,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         chien.apparitionDouce = true;
         gens.push(chien);
         npcs.push(chien);
-        continue;
+        return;
       }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
@@ -236,11 +283,16 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         build: () => construireHumain(profil),
       }, x, z);
       h.rueUrbaine=site.urbain;
+      // IL SE PROMÈNE S'IL EST SUR UN TROTTOIR (v278). C'est le monde qui le
+      // dit, à l'endroit où l'on vient de le poser : un passant né sur une
+      // esplanade ou dans l'herbe garde le programme d'avant (pause longue, cap
+      // au hasard autour de son poste), qui convient à un badaud de place. Celui
+      // du trottoir, lui, marche et suit sa rue.
+      h.surTrottoir = !site.urbain && !!world.trottoirA?.(x, z);
       h.apparitionDouce = true;
       gens.push(h);
       npcs.push(h);
     }
-    site.peuple = gens;
   }
 
   // Un compteur qui ne se répète pas : sans lui, un passant rapatrié
@@ -249,6 +301,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   let tour = 0;
 
   function update() {
+    naitre();
     if (!cestLHeure()) return;
     tour++;
     for (const site of sites) {
@@ -291,7 +344,8 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // Les corps partagés permettent une réserve pour les rues suivantes,
       // sans déplacer les voisins encore proches quand le cadre se vide.
       const plafond = 88;
-      if (devant < 6 && site.peuple.length < plafond) peupler(site, site.peuple.length, Math.min(4, plafond-site.peuple.length));
+      // `prevus` et non `peuple.length` : des naissances peuvent être en attente
+      if (devant < 6 && (site.prevus || 0) < plafond) peupler(site, site.prevus, Math.min(4, plafond - (site.prevus || 0)));
       for (let i = 0; i < site.peuple.length; i++) {
         const h = site.peuple[i];
         if (!h.pos) continue;
@@ -302,6 +356,12 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         // — c'est le même chemin que sa naissance, donc rien à réinventer.
         h.poste.set(nx, nz);
         h.placeAt(nx, nz, 40);
+        // ET SON PROGRAMME SE REDEMANDE AU MONDE (v278) : rapatrié sur un
+        // trottoir, il se promène ; rapatrié sur une esplanade, il flâne. Sans
+        // cette ligne, un passant né sur l'herbe garderait le mauvais programme
+        // pour toute la partie — c'est la même raison qui fait que
+        // `mettreANiveau` efface ce qui décrivait l'ancien corps (v245).
+        if (!site.urbain) h.surTrottoir = !!world.trottoirA?.(nx, nz);
       }
     }
   }

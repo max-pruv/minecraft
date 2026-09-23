@@ -1,9 +1,11 @@
 # Manhattan appartient à la Terre
 
-Il existe une seule carte. **Explorer New York** ouvre Manhattan dans la Terre,
-avec les mêmes outils, personnages, créatures, véhicules et règles éducatives.
-L'adresse `/?lieu=manhattan` choisit simplement le point d'arrivée. Les anciens
-liens `?carte=manhattan` sont encore compris. Une partie partagée utilise un seul
+Il existe une seule carte. On rejoint Manhattan par la carte du monde, comme
+toute autre ville, avec les mêmes outils, personnages, créatures, véhicules et
+règles éducatives. Le bouton « Explorer New York » de l'accueil a été retiré en
+v242 : il ne faisait que recharger la page vers `/?lieu=manhattan`, qui reste
+compris pour les anciens liens et choisit simplement le point d'arrivée. Les
+anciens liens `?carte=manhattan` sont encore compris. Une partie partagée utilise un seul
 code, que les joueurs soient à New York, Paris ou ailleurs.
 
 ## Architecture et vie urbaine
@@ -11,7 +13,10 @@ code, que les joueurs soient à New York, Paris ou ailleurs.
 L'île comprend environ 2 000 bâtiments, des quartiers de Battery à Washington Heights, Broadway, Central
 Park et ses promenades. Le plan est comprimé horizontalement à 40 % de celui de
 v239 pour tenir à New York sans atteindre les disques de Boston, Montréal ou
-Washington. Les hauteurs gardent leur échelle jouable. L'origine terrestre est
+Washington. Depuis la v242 le monde entier a doublé (0,1875 km par bloc) :
+mesuré bord à bord, le rectangle de Manhattan laisse 386 blocs à Boston, 759 à
+Washington et 1 472 à Montréal, et l'aéroport JFK est ressorti du rectangle.
+Les hauteurs gardent leur échelle jouable. L'origine terrestre est
 calculée par `positionDe('ny')`, jamais recopiée dans les systèmes du jeu.
 
 L'Empire State a une base à retraits, une longue tour centrale, une terrasse
@@ -148,4 +153,4 @@ Deux imports simultanés hors ligne dont les journaux Terre diffèrent peuvent
 choisir des emplacements de secours différents ; les archives conservées
 permettent la récupération, mais ces chantiers nécessitent une réconciliation.
 
-Les modèles humains, les voitures et les transitions de présence ont été repris en v241 : voir [le guide personnages et voitures](personnages-v241.md).
+Les modèles humains, les voitures et les transitions de présence ont été repris en v242 : voir [le guide personnages et voitures](personnages-v242.md).

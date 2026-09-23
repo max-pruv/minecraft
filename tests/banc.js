@@ -11,6 +11,7 @@ const path = require('path');
 const express = require('express');
 const { ExpressPeerServer } = require('peer');
 const { chromium } = require('playwright-core');
+const { attendreLaCharge } = require('./charge.js');
 
 const RACINE = path.resolve(__dirname, '..');
 
@@ -142,9 +143,103 @@ async function relaisSourd(portEcoute, portVrai) {
 // blocs, et le disque à charger fait douze cases. Un témoin de streaming y est
 // vert quoi qu'il arrive — il ne peut pas voir le défaut. Le scénario qui
 // éprouve le chargement du monde demande donc la valeur de l'iPad.
-const adresse = (portJeu, portPairs, portNuage, rr = 2) =>
+//
+// ET `prep=0` : LE BANC N'ATTEND PAS LA PRÉPARATION D'AVANT « JOUER » (v258).
+// Le jeu grise ses boutons jusqu'à ce que corps, programmes et fond de carte
+// soient prêts ; en rendu logiciel les corps s'analysent en dix secondes, et
+// trente-sept démarrages l'auraient payé six minutes par portail sans rien
+// mesurer. Le témoin qui ÉPROUVE la préparation (`maj.js`) la demande par
+// `{ prep: 1 }`, comme `ombres: 1` pour le regard.
+//
+// ET `dpr=0,5` : LE BANC REND QUATRE FOIS MOINS DE PIXELS, PARCE QUE C'EST LÀ
+// QU'EST LE PLANCHER (v277).
+//
+// Max : « revamp the testing process way too heavy and long and costly and
+// painful ». La MONNAIE du banc est le temps de JEU : `tenirSecondes` et tout
+// minuteur en `dt` accumulent min(dt, 0,05), donc le rapport montre/jeu vaut
+// exactement 1 dès VINGT images par seconde et se dégrade au-dessous. La cible
+// n'est donc pas « plus vite », c'est de franchir vingt.
+//
+// SwiftShader est limité par le REMPLISSAGE (la v237 l'avait mesuré sur le
+// paysage lointain : diviser les pixels par quatre ramenait la perte de 45 %
+// à 27 %). Mesuré ici, cinq secondes de JEU en secondes de montre, à `rr=2`,
+// deux relevés par bras en ordre alterné :
+//
+//   dpr    pixels    point d'apparition        Paris
+//   1      319 200   6,5 · 5,8 s  (×1,3)       39,9 · 39,7 s  (×8,0)
+//   0,5     79 800   5,1 · 5,3 s  (×1,02)      35,7 · 36,1 s  (×7,2)
+//   0,35    39 102   5,1 · 5,1 s  (×1,02)      36,2 · 37,9 s  (×7,2)
+//
+// TROIS choses se lisent là, et la troisième est la plus importante.
+// — **Le plancher est atteint dès 0,5** : 0,35 ne rend plus rien. On prend donc
+//   0,5, parce que c'est ce que la mesure sépare, pas parce que c'est rond — et
+//   0,5 garde deux fois plus de pixels aux témoins qui en LISENT.
+// — Le gain est de 20 % sur une scène légère et de 10 % en ville. Réel, modeste,
+//   et il vaut pour TOUTES les suites d'un coup.
+// — **Paris coûte ×8 quoi qu'on fasse** : 2,6 images par seconde, trois cent
+//   trente appels de dessin. Aucun réglage de pixels ne le rattrapera, et c'est
+//   ce qui dit où est le vrai travail — pas dans la résolution.
+//
+// Le jeu borne par `Math.min(devicePixelRatio, dpr)` (v257) : sur ce banc
+// devicePixelRatio vaut 1, donc 0,5 divise vraiment les pixels. Les deux
+// lecteurs de pixels de `monte.js` calculent leurs coordonnées depuis
+// `gl.drawingBufferWidth/Height` — ils sont indépendants de la résolution.
+// `carte.js`, qui vise au pixel sur la carte, demande `{ dpr: 1 }`.
+// ET IL EST À 1 POUR L'INSTANT — PARCE QU'IL A TROUVÉ UN DÉFAUT DE JEU.
+//
+// `BANC_DPR=0.5 npm test` l'allume ; le défaut par défaut reste la résolution
+// pleine, et ce n'est PAS un renoncement, c'est un ordre de livraison. À 0,5 le
+// banc passe de huit à dix-huit images par seconde, donc le monde cesse
+// d'avancer à quarante pour cent du temps réel — et « les voitures ne se
+// traversent plus » (v244) tombe : TRENTE-SEPT chevauchements de plus pour le
+// même nombre d'observations. Mesuré des deux côtés, même banc :
+//
+//                          dpr 1              dpr 0,5
+//   branche                0 / 345            48 / 665
+//   `origin/main` (v276)   3 / 499  (portail)  41 / 695
+//
+// TROIS choses, et la troisième décide.
+// — La boucle échantillonne trente secondes de MONTRE toutes les 200 ms : le
+//   nombre d'observations ne dépend pas de la cadence. Les chevauchements
+//   passent de 3 à 41-48 pour le même nombre de relevés — les voitures se
+//   traversent VRAIMENT plus quand le jeu tourne vite.
+// — C'est le même chiffre sur les deux arbres : le défaut est en production, et
+//   le banc lent le CACHAIT. Cause nommée, pas encore prouvée : `cederLePassage`
+//   est une cadence de ménage à intervalle réel fixe (v226) ; à pleine vitesse
+//   une voiture parcourt deux fois et demie plus de chemin entre deux collectes.
+//   C'est la panne que Max revoyait après la v244 et la v245, et c'est ce que
+//   son iPad fait.
+// — **La barre de 45 tombe ENTRE 41 et 48**, c'est-à-dire entre deux mesures du
+//   MÊME comportement. Elle ne sépare plus un défaut d'un non-défaut : elle tire
+//   à pile ou face. On ne règle pas une barre pour faire passer une livraison
+//   (v276 : « une barre que les deux côtés franchissent ne mesure plus le jeu »),
+//   et on ne cache pas une découverte pour gagner vingt pour cent de banc. Le
+//   0,5 s'allumera dans la livraison qui corrige les voitures ; la mesure est
+//   déjà faite et écrite dans `TASKS.md`.
+//
+// Une constante de banc qui ne peut pas se rejouer est une constante qu'on ne
+// peut pas démonter — c'est la discipline de `?attente=`, `?fondms=` et
+// `?chauffems=`, appliquée au banc lui-même. Et sans cette bascule j'aurais
+// attribué à la cadence un rouge qui était le mien (voir les lointains, dans
+// monte.js) : l'explication commode est une dette, pas un diagnostic (v220).
+const DPR_BANC = Number(process.env.BANC_DPR) || 1;
+// ET LA PARURE SE COUPE DEPUIS LE BANC : `BANC_VERRE=0 node maj.js`.
+//
+// Parce que la seule chose qui reproduise un rouge de suite, c'est la SUITE.
+// La préparation de l'accueil est rouge en production depuis la v276
+// (`programmes 14/25`, `carte: false`, `depuis 46 554 ms` pour une borne de
+// 45 000), et la piste déclarée était le coût de peinture des deux calques
+// plein écran que `#prep-line` invalide toutes les 250 ms. Une sonde écrite à
+// part — une voisine sur l'accueil, une page qui prépare — rend QUATRE
+// secondes et 25/25 programmes dans les deux bras : elle ne reproduit pas les
+// conditions, donc elle ne mesure rien, et elle ne blanchit rien (piège de la
+// sonde aveugle, v273, troisième fois). L'A/B doit donc se faire DANS la suite,
+// et il lui faut un interrupteur ici.
+const VERRE_BANC = process.env.BANC_VERRE;
+const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
-  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}`;
+  + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`
+  + (VERRE_BANC === undefined ? '' : `&verre=${VERRE_BANC}`);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -238,7 +333,7 @@ class Banc {
     // couper. On prend donc le seuil au-dessus duquel une suite est vraiment
     // en surcharge (3,0 sur quatre cœurs) et un budget qui ne peut pas coûter
     // la suite : vingt secondes.
-    await souffler(20000);   // le seuil par défaut : 3,0 était lui aussi sous le coût d'UNE page
+    await souffler(20000);   // v255 : occupation réelle, pas charge d'une minute — voir charge.js
     // `tactile` reproduit une tablette : c'est ce que la famille a réellement
     // entre les mains, et c'est la seule façon d'éprouver le zoom à deux doigts.
     const ctx = await this.navigateur.newContext({
@@ -381,7 +476,9 @@ class Banc {
     // d'enchaîner plusieurs suites, dépasse couramment les trente secondes par
     // défaut de Playwright. Le banc tombait alors sur un chargement lent, pas
     // sur un défaut.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : ''),
+    // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
+    // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);
@@ -401,12 +498,42 @@ class Banc {
   // méthode : un test qui débranche le code qu'il traverse ne prouve rien.
   async jouerSeul(prenom, opts = {}) {
     const p = await this.joueur(prenom, opts);
+    // `pret: true` (v258) : on n'appuie sur « Jouer » qu'une fois les
+    // programmes de la flotte chauffés — ce que le jeu impose à l'enfant par
+    // ses boutons grisés (`?prep=0` les libère ici). Sans cela, la chauffe se
+    // fait EN JEU, une compilation par image, et en rendu logiciel une
+    // compilation dure de 0,5 à 2,4 s dès que deux pages sont ouvertes :
+    // c'est ce qui rendait « #map-tout jamais stable » et l'appui long
+    // refusé (minuteur en retard) dans `carte.js`. Une suite qui mesure la
+    // réactivité d'une page le demande ; les autres n'en paient pas le prix.
+    if (opts.pret) {
+      await p.waitForFunction(() => {
+        try { const e = window.__preparation && window.__preparation(); return !!e && e.programmes >= e.aChauffer; } catch { return false; }
+      }, null, { timeout: 45000, polling: 250 }).catch(() => { /* borné : on joue quand même */ });
+    }
     await p.evaluate(() => {
       window.__game.edu.today().libreJusqua = 86400;
       document.getElementById('play-btn').click();
     });
     await p.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
-    await dormir(3500);   // le temps que les morceaux du monde autour arrivent
+    // « Le temps que les morceaux du monde autour arrivent » était un délai fixe
+    // de 3,5 s, payé à chaque ouverture de partie. C'est un FAIT du jeu : le
+    // morceau sous l'enfant et ses huit voisins sont maillés. On l'attend, et
+    // l'on garde les 3,5 s comme borne — jamais plus long qu'avant, plus court
+    // dès que le monde est là (mesuré : 1 à 2 s sur ce banc).
+    // (`player.pos`, pas `position` : le premier jet a lu un champ absent, et
+    // l'exception dans la page a rougi « aucune erreur JavaScript » — une
+    // condition de banc ne doit JAMAIS pouvoir jeter dans la page.)
+    await p.waitForFunction(() => {
+      try {
+        const g = window.__game; if (!g || !g.player || !g.player.pos || !g.chunkMeshes) return false;
+        const cx = Math.floor(g.player.pos.x / 16), cz = Math.floor(g.player.pos.z / 16);
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (!g.chunkMeshes.has(`${cx + dx},${cz + dz}`)) return false;
+        }
+        return true;
+      } catch { return false; }
+    }, null, { timeout: 3500, polling: 100 }).catch(() => { /* la borne d'avant : on avance */ });
     return p;
   }
 
@@ -658,19 +785,26 @@ async function pincer(p, centre, deDistance, aDistance, pas = 8, attente = 30) {
 // charge d'une minute RETARDE de cent secondes. C'est pourquoi chaque appel
 // dit sa durée : une attente qui expire doit se voir, sinon on remet deux
 // minutes sans que personne ne le remarque.
-async function souffler(limiteMs = 30000, chargeMax = 4.2) {
-  const charge = () => {
-    try { return Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); }
-    catch { return 0; }          // ailleurs que sous Linux, on ne sait pas : on avance
-  };
-  const depart = Date.now();
-  const fin = depart + limiteMs;
-  while (charge() > chargeMax && Date.now() < fin) await dormir(5000);
-  const dt = Date.now() - depart;
-  if (dt >= 5000) {
-    console.log(`   💨 souffler : ${(dt / 1000).toFixed(0)} s`
-      + `${dt >= limiteMs ? ' (limite atteinte — la charge n\'est jamais redescendue)' : ''}`
-      + ` · charge ${charge().toFixed(2)}`);
+//
+// v255 : L'INSTRUMENT ÉTAIT FAUX, PAS LE SEUIL. Même à 4,2 le portail de la
+// v253 a passé six cent quatre-vingt-dix secondes dans cette fonction, dont
+// vingt-deux appels au bout de leur budget — ONZE MINUTES sur cinquante-neuf.
+// La charge d'une minute ne peut pas voir qu'une page vient de mourir. On lit
+// désormais l'occupation RÉELLE des cœurs sur la dernière demi-seconde
+// (`charge.js`) : une page fermée retombe sous 0,3 en moins d'une seconde, et
+// une page qui reste ouverte — l'hôte qu'un invité va rejoindre — donne une
+// occupation STABLE (3,7 sur quatre cœurs) que rien ne fera baisser : on
+// n'attend pas ce qui ne redescendra pas, on le dit et l'on avance.
+//
+// `coeursMax` est en cœurs occupés : 2,5 laisse passer une page à l'accueil et
+// le banc lui-même, jamais une page de jeu en régime établi (3,7).
+async function souffler(limiteMs = 30000, coeursMax = 2.5) {
+  const r = await attendreLaCharge(limiteMs, coeursMax);
+  if (r.ms >= 2000) {
+    const pourquoi = r.motif === 'libre' ? 'libre'
+      : r.motif === 'stable' ? 'charge stable — quelque chose tourne encore, et ne redescendra pas'
+        : 'limite atteinte';
+    console.log(`   💨 souffler : ${(r.ms / 1000).toFixed(1)} s · ${pourquoi} · ${r.occupation.toFixed(2)} cœur(s) sur ${r.coeurs}`);
   }
 }
 

@@ -173,7 +173,6 @@ différence entre les deux qui a mis au jour le défaut le plus grave.
 | toucher un lieu emmène en voyage · un appui long dépose n'importe où | ce qui marchait avant, et qui devait continuer |
 | en s'approchant, Paris révèle ses rues | la vue générale ne montrait que des taches de couleur |
 | ce que l'enfant construit apparaît sur la carte de près | la carte ne lisait que le terrain d'origine |
-| les créatures restent visibles en dézoomant | « je ne vois plus de Pokémon sur la carte » : elles disparaissaient sans un mot au-delà d'un seuil de zoom, pendant que la légende continuait de les promettre — mesuré 0 pixel violet dès l'échelle de 150 blocs |
 | on ne peut ni zoomer à l'infini ni sortir du monde | — |
 | les quartiers du bas de l'île ont la place d'exister | de Battery à la 14e Rue il y avait quinze blocs, moins qu'un pâté de Midtown : TriBeCa, SoHo, Chinatown, le Village et Wall Street s'y superposaient |
 | la grille de 1811 s'arrête bien à la 14e Rue | elle descendait jusqu'à la mer — mesuré : 0,63 des rangées de rue sur un multiple de six au sud, contre 0,28 avec le vrai plan |
@@ -243,11 +242,9 @@ vérifiez qu'il le voit. Un test vert des deux côtés ne prouve rien.
 
 ## Personnages et voitures (`npm run realisme`)
 
-Quatorze contrôles gardent les proportions adulte/enfant, le partage des ressources,
+Treize contrôles gardent les proportions adulte/enfant, le partage des ressources,
 le genou articulé, les volumes de visibilité sur une foulée, les visages des
 costumes, les voisins au demi-tour, le fondu spatial et temporel, les dimensions
 de la berline, son budget et quatre renouvellements des reflets sans erreur WebGL.
-Le contrôle ajouté en v242 suit 48 trajectoires contre les murs de Midtown :
-un saut ne doit jamais se réarmer en plein vol pour grimper une façade.
 Les captures rapprochées complètent ces contrats : les tests ne décident pas à
 eux seuls de la fidélité visuelle.

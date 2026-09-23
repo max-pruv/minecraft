@@ -337,6 +337,17 @@ export class TerreUrbaine extends World {
         : BLOCK.STONEBRICK
       : BLOCK.AIR;
   }
+  // Ce que `generateChunk` fait de spécial ici — le plan de Manhattan, les
+  // colonnes protégées des journaux importés — le worker ne le sait pas :
+  // ces morceaux-là se maillent sur le fil principal, comme avant (v251).
+  maillageLocal(cx, cz) {
+    const ox = cx * CHUNK, oz = cz * CHUNK;
+    if (dansManhattan(ox, oz, CHUNK)) return true;
+    for (let z = oz; z < oz + CHUNK; z++)
+      for (let x = ox; x < ox + CHUNK; x++)
+        if (this.protectedColumns.has(`${x},${z}`)) return true;
+    return false;
+  }
   generateChunk(cx, cz) {
     const ox = cx * CHUNK,
       oz = cz * CHUNK;

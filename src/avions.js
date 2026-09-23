@@ -209,6 +209,10 @@ function fuselage(a, { longueur, rayon, couleur, nez, queue, y = 0, nezPointu = 
 // c'est ce qu'on voyait, et c'est ce qui fait « maquette ».
 function reacteur(a, { x, y, z, longueur, rayon, yAile, couleur = GRIS }) {
   const d = rayon * 2;
+  // LA TUYÈRE SE NOTE (v264) : c'est là que `fini` accroche la flamme. Le
+  // point d'échappement est le bout de la nacelle, au rayon de l'anneau
+  // sombre de sortie (0,62 du diamètre).
+  tuyere(a, { x, y, z: z + longueur / 2 + 0.02, rayon: rayon * 0.62 });
   a.cylindre(couleur, { p: [x, y, z], r: [Math.PI / 2, 0, 0], e: [d, longueur, d], haut: 0.46, bas: 0.5, seg: 12 });
   a.cylindre(SOMBRE, { p: [x, y, z - longueur / 2 - 0.03], r: [Math.PI / 2, 0, 0], e: [d * 0.84, 0.14, d * 0.84], haut: 0.5, bas: 0.5, seg: 12 });
   a.cylindre(SOMBRE, { p: [x, y, z + longueur / 2 - 0.06], r: [Math.PI / 2, 0, 0], e: [d * 0.62, 0.2, d * 0.62], haut: 0.5, bas: 0.5, seg: 10 });
@@ -230,7 +234,13 @@ function hublots(a, { de, a: jusqua, y, rayon, pas = 0.62 }) {
 // Le train : une jambe et une roue, POSÉE SUR LE SOL. `sol` est la cote du
 // terrain sous l'appareil (zéro), et c'est elle qui décide du reste : rien du
 // modèle ne descend en dessous.
-function train(a, { x, z, ventre, rayonRoue = 0.26 }) {
+//
+// CHAQUE JAMBE EST UN MEMBRE À PART (v261), pivot au sommet de la jambe, sur
+// le ventre : c'est autour de ce point qu'elle se replie vers la queue quand
+// le train rentre (`fun.js`, `trainSorti`). Fusionnée dans le tronc, elle ne
+// pourrait pas bouger. Le nom dit quelle jambe c'est.
+function train(a, { x, z, ventre, rayonRoue = 0.26 }, nom) {
+  a.membre(nom, [x, ventre, z]);
   a.cylindre(SOMBRE, {
     p: [x, (ventre + rayonRoue) / 2, z],
     e: [0.13, Math.max(0.05, ventre - rayonRoue), 0.13], haut: 0.5, bas: 0.5, seg: 6,
@@ -239,13 +249,72 @@ function train(a, { x, z, ventre, rayonRoue = 0.26 }) {
     p: [x, rayonRoue, z], r: [0, 0, Math.PI / 2],
     e: [rayonRoue * 2, 0.22, rayonRoue * 2], haut: 0.5, bas: 0.5, seg: 10,
   });
+  a.membre('tronc');
+}
+// Les trois jambes d'un appareil : la roulette de nez, puis les deux du train
+// principal, à `zPrincipal` derrière l'origine — c'est sur elles que
+// l'appareil pivote quand le nez se lève.
+function trains(a, { nez, principal, zPrincipal, ventre }) {
+  train(a, { x: 0, z: nez.z, ventre, rayonRoue: nez.r }, 'train_nez');
+  for (const s of [-1, 1]) {
+    train(a, { x: s * principal.x, z: zPrincipal, ventre, rayonRoue: principal.r },
+      s < 0 ? 'train_gauche' : 'train_droit');
+  }
+  return zPrincipal;
 }
 
-function fini(a) {
+// Les tuyères : un point d'échappement par réacteur, en coordonnées du
+// modèle, avec le rayon de la sortie. C'est le bâtisseur qui les déclare,
+// là où il dessine le réacteur — jamais une liste à part.
+function tuyere(a, t) {
+  (a.tuyeres = a.tuyeres || []).push(t);
+}
+
+// LES FLAMMES (v264). Max, capture du chasseur : « voir les flammes sortir
+// du réacteur quand l'avion se déplace ». Une flamme par tuyère : un cœur
+// clair et court, une gaine orange plus longue, deux cônes dont la base est
+// à la sortie et la pointe vers la queue (+z). Le maillage a une longueur
+// UNITAIRE : `fun.js` règle `scale.z` sur la manette à chaque image, et
+// cache la flamme à l'arrêt. Matériau ADDITIF et non éclairé, `toneMapped`
+// à faux pour qu'elle reste vive sous la correspondance tonale — et AUCUNE
+// lumière ponctuelle : quatre lampes pour tout le jeu (v248), une de plus
+// recompilerait tous les programmes.
+function flamme(t) {
+  const groupe = new THREE.Group();
+  groupe.position.set(t.x, t.y, t.z);
+  const cone = (rayon, couleur, opacite) => {
+    const geo = new THREE.ConeGeometry(rayon, 1, 10, 1, true);
+    geo.translate(0, 0.5, 0);            // base en 0, pointe en +1
+    geo.rotateX(Math.PI / 2);            // la pointe part vers +z, la queue
+    const mat = new THREE.MeshBasicMaterial({
+      color: couleur, transparent: true, opacity: opacite, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.frustumCulled = false;
+    return m;
+  };
+  groupe.add(cone(t.rayon * 1.05, 0xff6a12, 0.55));
+  const coeur = cone(t.rayon * 0.55, 0xfff1b8, 0.9);
+  coeur.scale.z = 0.6;
+  groupe.add(coeur);
+  groupe.scale.z = 0.001;
+  groupe.visible = false;
+  groupe.userData.rayon = t.rayon;
+  return groupe;
+}
+
+function fini(a, zPrincipal = 0) {
   const g = a.finir();
+  // une flamme par tuyère déclarée, enfant de la racine
+  g.userData.tuyeres = (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; });
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
   // balancer les pattes, et un avion n'en a pas. Même contrat que la voiture.
   g.userData.legs = [];
+  // les jambes du train, et l'essieu principal autour duquel le nez se lève
+  g.userData.train = ['train_nez', 'train_gauche', 'train_droit']
+    .map((n) => g.userData.membres[n]).filter(Boolean);
+  g.userData.trainPrincipal = zPrincipal;
   return g;
 }
 
@@ -301,9 +370,8 @@ export function avionDeLigne() {
   }), BLANC);
   // le train, sorti : un avion garé est posé sur ses roues, pas enterré
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 1.8, ventre, rayonRoue: 0.22 });
-  for (const s of [-1, 1]) train(a, { x: s * 1.1, z: 0.9, ventre, rayonRoue: 0.28 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 1.8, r: 0.22 }, principal: { x: 1.1, r: 0.28 }, zPrincipal: 0.9, ventre });
+  return fini(a, zp);
 }
 
 // --- le Concorde -------------------------------------------------------------
@@ -356,9 +424,8 @@ export function concorde() {
     fleche: 2.4, z: L / 2 - 5.0, y: y + rayon * 0.3, ep: 0.20,
   }), BLANC);
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 4.4, ventre, rayonRoue: 0.20 });
-  for (const s of [-1, 1]) train(a, { x: s * 1.05, z: 3.6, ventre, rayonRoue: 0.24 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 4.4, r: 0.20 }, principal: { x: 1.05, r: 0.24 }, zPrincipal: 3.6, ventre });
+  return fini(a, zp);
 }
 
 // --- l'avion de chasse -------------------------------------------------------
@@ -401,11 +468,12 @@ export function avionDeChasse() {
       inclinaison: s * 0.34,
     }), GRIS);
   }
-  // la tuyère
+  // la tuyère — et son point d'échappement, au bout du cône de sortie
   a.cylindre(SOMBRE, {
     p: [0, y, L / 2 - 0.26], r: [Math.PI / 2, 0, 0],
     e: [rayon * 1.5, 0.5, rayon * 1.5], haut: 0.5, bas: 0.42, seg: 12,
   });
+  tuyere(a, { x: 0, y, z: L / 2 + 0.01, rayon: rayon * 0.6 });
   // deux missiles sous l'aile, pas en bout d'aile : ils y dépassaient
   // Le missile est porté SOUS l'aile et DANS sa corde : posé devant elle il
   // pendait dans le vide, ce que la capture a montré tout de suite.
@@ -422,9 +490,8 @@ export function avionDeChasse() {
     });
   }
   const ventre = y - rayon;
-  train(a, { x: 0, z: -L / 2 + 2.2, ventre, rayonRoue: 0.18 });
-  for (const s of [-1, 1]) train(a, { x: s * 0.8, z: 1.1, ventre, rayonRoue: 0.2 });
-  return fini(a);
+  const zp = trains(a, { nez: { z: -L / 2 + 2.2, r: 0.18 }, principal: { x: 0.8, r: 0.2 }, zPrincipal: 1.1, ventre });
+  return fini(a, zp);
 }
 
 export const MODELES_AVION = {

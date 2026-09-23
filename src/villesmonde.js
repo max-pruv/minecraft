@@ -119,6 +119,214 @@ const ENSEIGNES = [raye(0), raye(5), raye(10), raye(6), raye(25), raye(28)];
 // monuments et ses lieux — tous en latitude/longitude réelles, convertis à la
 // volée autour de l'ancre du registre.
 
+// LES TYPOLOGIES (v280) — un mot par ville, et le PLAN AU SOL suit.
+//
+// Max : « je me prends à Barcelone, je veux sentir l'ambiance de Barcelone et pas
+// toutes les villes copiées-collées les unes aux autres ». Mesuré avant d'écrire
+// une ligne, et le chiffre est sans appel : sur les 269 villes il n'existe que
+// HUIT plans de rue une fois l'angle retiré, et DEUX d'entre eux couvrent 255
+// villes — 194 en 19×15, 61 en 23×19. La seule chose qui changeait d'une ville à
+// l'autre était l'angle de rotation. Le reste va de même : 254 villes à 36
+// blocs/km, trois toits pour 265 villes, deux bandes de hauteur pour 179.
+//
+// Et ce qui fait vraiment une ville n'existait que pour une poignée : SIX villes
+// ont des avenues nommées, treize des parcs, vingt un fleuve, dix des collines.
+// Les villes ne se ressemblent donc pas par négligence de réglage — elles se
+// ressemblent PAR CONSTRUCTION.
+//
+// D'où la méthode, qui est la seule qui tienne à l'échelle de 269 villes : peu de
+// grammaires, beaucoup de fiches. Un mot désigne un TISSU URBAIN, et le tissu
+// décide du pas de trame, de la cour d'îlot, du chanfrein — donc du sol, donc de
+// ce que l'enfant voit de la rue ET du ciel. Une palette ne fait pas une ville ;
+// un plan, oui.
+//
+// LES VALEURS SONT UN RÉSULTAT, PAS UN GOÛT. Le trottoir fait 4,8 blocs (v271),
+// donc la profondeur du lot depuis la rue vaut `pas/2 − 4,8`, et une cour n'est
+// lisible que si `pas/2 − 4,8 − cour` dépasse un demi-bloc. Mesuré :
+//
+//   pas     demi-lot     cour=2        cour=3
+//   19×15   4,7 × 2,7    5,4 × 1,4     — trop mince
+//   23×19   6,7 × 4,7    9,4 × 5,4     7,4 × 3,4
+//   23×23   6,7 × 6,7    9,4 × 9,4     7,4 × 7,4   (30 % du lot évidé)
+//   27×23   8,7 × 6,7   13,4 × 9,4    11,4 × 7,4   (36 % évidé)
+//
+// La trame de 194 villes (19×15) n'a donc PAS la place d'une cour : c'est
+// pourquoi les tissus à cour montent le pas. Le prix est le même que celui de la
+// v271 — moins de rues, plus larges — et il s'échange ici contre des cours
+// intérieures, qui se voient du ciel comme par une porte cochère.
+//
+// Et c'est du SOL : `hauteurVillesMonde` ne lit ni `pu`, ni `pv`, ni `cour`, donc
+// les deux empreintes de `plafond.js` ne bougent pas et l'invariant 1 tient sans
+// rien avoir à déclarer — même raison que la v271 et que la passe de rues de
+// Londres (v206).
+// ET CHAQUE TISSU A SA PLACE. `place: [demi-longueur, demi-largeur, décalage]`
+// en blocs, dans le repère de la TRAME — une place est toujours alignée sur les
+// rues qui la bordent. Le décalage est le nombre de pas de trame dont la place
+// s'écarte du centre géométrique ; il se tire de la position de la ville, donc
+// deux villes du même tissu ne l'ont pas au même endroit.
+//
+// Elle était un DISQUE DE 10,5 BLOCS DANS LES 269 VILLES, fontaine comprise.
+// C'est le premier chose qu'un enfant voit en arrivant par la carte, et c'était
+// rigoureusement la même partout — un copié-collé de plus, et le plus visible.
+// Une place mayor coloniale est un rectangle d'un îlot entier ; une piazza
+// d'arcades est longue et étroite ; une place de vieille ville est petite et
+// décalée ; un superîlot n'a pas de place, son cœur d'îlot EN EST une.
+export const TYPOS = {
+  // L'Eixample de Cerdà : une grille rigide, des coins coupés, et l'illa creuse.
+  // L'ILLA DE CERDÀ AVAIT UN JARDIN AU CŒUR, pas une cour pavée — c'était
+  // même tout son projet, et Barcelone les rouvre un par un depuis vingt ans.
+  // Le pavé les confondait en plus avec la place, qui touche les îlots
+  // voisins : mesuré, tout le centre de Barcelone rendait un seul aplat pavé.
+  eixample:  { pu: 23, pv: 23, couronne: 3, place: [13, 13, 1] },
+  // L'îlot à périmètre de l'Europe continentale : Vienne, Berlin, Milan. Une
+  // couronne d'immeubles et une cour plantée au milieu.
+  perimetre: { pu: 23, pv: 23, couronne: 3, place: [11, 8, 1] },
+  // Les villes moyennes : le même tissu, en plus petit.
+  faubourg:  { pu: 19, pv: 19, couronne: 2, place: [8, 7, 1] },
+  // Les arcades : Bologne, Turin, Madrid. Cour PAVÉE, on y entre par un porche.
+  arcades:   { pu: 23, pv: 19, couronne: 3, courPavee: true, place: [15, 6, 1], portiques: true },
+  // Le damier nord-américain : de grands îlots PLEINS et de larges rues. Une
+  // cour n'y a rien à faire — c'est justement ce qui le distingue de l'Europe.
+  // Le damier nord-américain : de grands îlots et de larges rues. Son espace
+  // libre n'est pas la cour plantée de l'Europe — c'est la COUR DE SERVICE
+  // pavée au milieu de l'îlot, celle où débouchent les ruelles de livraison et
+  // où se garent les voitures. Mesuré : 27 × 21 laisse 8,7 × 5,7 de demi-lot,
+  // donc une couronne de 3 tient largement.
+  // UN DAMIER EST CARRÉ — c'est sa définition, et `27×21` ne l'était pas. Le pas
+  // de 27 se paie en circuits : croisé avec les anneaux, 29 des 37 villes en
+  // damier en perdaient un et 29 se retrouvaient à UN SEUL, parce que deux grands
+  // rectangles ne tiennent plus sous les vingt blocs de partage de la v211.
+  damier:    { pu: 21, pv: 21, couronne: 3, courPavee: true, place: [12, 9, 1] },
+  // Les vieux tissus denses d'Asie de l'Est : de petites parcelles, pas de cour.
+  // `pv: 13` donnait un lot de 13 − 9,6 = **3,4 blocs** : plus un immeuble, une
+  // cloison, et vingt-trois villes sous la barre de cinq de la v271. Le chiffre
+  // se DÉRIVE de cette barre — lot ≥ 5 ⇒ pas ≥ 14,6 ⇒ 15 — il ne se choisit pas.
+  organique: { pu: 15, pv: 15, couronne: 0, place: [7, 5, 2] },
+  // Le centre à tours : superîlots, Séoul, Dubaï, Shanghai.
+  // Le superîlot : des tours autour d'une ESPLANADE. C'était le tissu le plus
+  // dense du jeu — Tokyo et Séoul à 98 % de disque bâti, PIRE qu'avant ma
+  // première passe, parce qu'un îlot de 27 × 27 sans cœur évidé est un bloc
+  // plein. Une couronne de 4 laisse une esplanade de neuf blocs de côté : c'est
+  // le podium d'un vrai superîlot, et c'est ce qui manquait.
+  superilot: { pu: 27, pv: 27, couronne: 4, courPavee: true, place: [14, 14, 0] },
+  // LA MÉDINA N'EST PAS UNE ENTRÉE DE CETTE TABLE, ET C'EST UNE CORRECTION.
+  // Elle y figurait, vide — `Object.assign(t, {})` ne change rien — si bien que
+  // les huit villes que j'avais nommées « médina » recevaient EXACTEMENT le
+  // plan de Zurich : Fès et Tombouctou avec des rues de 2,8 blocs et des îlots
+  // européens. C'est le péché que ce fichier reproche à `arcades` deux
+  // paragraphes plus haut, commis dans la même passe : une brique dont rien ne
+  // se sert. Ce qui fait une médina vit dans la fiche (`ruelles`), pas ici.
+};
+
+// LE TISSU SE NOMME VILLE PAR VILLE, AVEC SA RAISON (v280).
+//
+// Mon premier jet attribuait la typologie par BANDES DE LONGITUDE — Amériques →
+// damier, au-delà de 100° → tissu fin, sinon îlot à périmètre. Ce n'était pas de
+// la recherche, c'était un raccourci, et il se trompait là où ça compte le plus :
+//
+//   Bologne     → faubourg, quand la ville EST ses 38 km d'arcades (UNESCO 2021)
+//   Turin       → faubourg, pour 18 km de portiques
+//   Fès, Tunis, Alger → faubourg, c'est-à-dire l'îlot bourgeois européen posé
+//                 sur une médina
+//   Buenos Aires → superîlot, quand c'est l'une des grilles coloniales les plus
+//                 pures au monde (Lois des Indes, manzana de cent mètres)
+//   Sydney, Boston, Québec → damier ou superîlot, quand leurs centres sont des
+//                 tracés coloniaux IRRÉGULIERS
+//
+// Et la typologie `arcades` que j'avais écrite n'était attribuée à AUCUNE ville :
+// une brique dont rien ne se sert, le péché que ce fichier nomme lui-même.
+//
+// D'où cette table. Elle porte un mot ET la raison, parce qu'une attribution sans
+// raison ne se vérifie pas — c'est la discipline des monuments, qui portent leur
+// vraie latitude et leur vraie longitude, et non « à peu près au centre ».
+// Une ligne se conteste en lisant sa raison ; une bande de longitude, non.
+export const TISSU = {
+  // ARCADES — des kilomètres de portiques, c'est le tissu, pas un ornement.
+  bologne:   ['arcades', '38 km de portiques, inscrits à l\'UNESCO en 2021'],
+  turin:     ['arcades', '18 km d\'arcades, héritage des Savoie'],
+  madrid:    ['arcades', 'la Plaza Mayor et ses rues à portiques'],
+  innsbruck: ['arcades', 'la Herzog-Friedrich-Strasse, vieille ville à arcades'],
+
+  // MÉDINAS — un lacis de ruelles, et non l'îlot européen. La fiche n'en
+  // déclarait que trois (Venise, Jérusalem, Marrakech) ; celles-ci en sont.
+  fes:        ['medina', 'Fès el-Bali, le plus grand lacis piéton au monde'],
+  tunis:      ['organique', 'la médina de Tunis est un cœur, pas toute la ville : elle roule'],
+  alger:      ['organique', 'la Casbah est un cœur ; Alger roule autour'],
+  ispahan:    ['organique', 'le bazar et ses ruelles, mais des avenues autour'],
+  tombouctou: ['medina', 'ville de terre, ruelles sans trame'],
+  lamecque:   ['organique', 'vieille ville dense autour du sanctuaire, et des avenues'],
+  varanasi:   ['organique', 'les galis mènent aux ghats ; la ville, elle, roule'],
+  alexandrie: ['organique', 'le vieux quartier turc, serré mais carrossable'],
+
+  // GRILLES COLONIALES ESPAGNOLES — les Lois des Indes, 1573 : une trame
+  // orthogonale autour d'une plaza mayor. C'est le tissu de presque toute
+  // l'Amérique hispanique, et il est PLEIN — pas de cour d'îlot européenne.
+  buenosaires:   ['damier', 'manzanas de cent mètres, grille des Lois des Indes'],
+  lima:          ['damier', 'damier colonial autour de la Plaza Mayor'],
+  bogota:        ['damier', 'trame coloniale de la Candelaria'],
+  quito:         ['damier', 'centre colonial en damier, UNESCO'],
+  santiago:      ['damier', 'damier de Pedro de Valdivia'],
+  montevideo:    ['damier', 'Ciudad Vieja en damier'],
+  mexico:        ['damier', 'la trame espagnole posée sur Tenochtitlan'],
+  guadalajara:   ['damier', 'damier colonial'],
+  monterrey:     ['damier', 'damier colonial'],
+  havane:        ['damier', 'La Habana Vieja, trame espagnole'],
+  carthagene:    ['damier', 'ville fortifiée en damier, UNESCO'],
+  guatemala:     ['damier', 'Antigua puis Nueva Guatemala, damier'],
+  panama:        ['damier', 'Casco Viejo en damier'],
+  saintdomingue: ['damier', 'la plus vieille grille coloniale des Amériques'],
+  sanjuan:       ['damier', 'Viejo San Juan, trame espagnole'],
+  cordoba:       ['damier', 'damier colonial argentin'],
+  mendoza:       ['damier', 'damier reconstruit après 1861, places à chaque quartier'],
+  jaipur:        ['damier', 'ville planifiée de 1727, trame et avenues larges'],
+
+  // TRACÉS IRRÉGULIERS — des villes que mon heuristique mettait en damier ou en
+  // superîlot alors que leur centre n'a jamais été dessiné à la règle.
+  boston:   ['organique', 'tracé colonial irrégulier, antérieur à la grille'],
+  quebec:   ['organique', 'Vieux-Québec, rues de la Nouvelle-France'],
+  sydney:   ['organique', 'centre colonial irrégulier, pas une grille'],
+  edimbourg: ['organique', 'la vieille ville et ses closes en arête de poisson'],
+  dubrovnik: ['organique', 'ville close, ruelles en escalier'],
+  sarajevo:  ['organique', 'Baščaršija, tissu ottoman'],
+  tirana:    ['organique', 'vieux centre sans trame'],
+
+  // GRILLES FINES D'ASIE ORIENTALE — des trames RÉGULIÈRES à petites parcelles,
+  // ce que `organique` produit en effet (petit pas, îlots pleins) même si son nom
+  // dit le contraire : Kyoto et Xi'an sont des grilles, pas des labyrinthes.
+  kyoto: ['organique', 'grille de Heian-kyo, parcelles de machiya'],
+  xian:  ['organique', 'trame Tang, la plus régulière de son temps'],
+  nankin: ['organique', 'vieux tissu dense intra-muros'],
+};
+
+// QUELLE TYPOLOGIE ? La table nommée d'abord, puis ce que la fiche sait déjà
+// (ruelles, chanfrein, tours), puis un défaut RÉGIONAL — et le défaut se justifie
+// par l'histoire urbaine, pas par une bande de longitude : l'Amérique hispanique
+// est en damier depuis 1573, le Brésil portugais ne l'est pas, l'Europe
+// continentale a l'îlot à périmètre depuis le XIXe siècle.
+export function typoDe(fiche) {
+  if (fiche.typo) return fiche.typo;
+  const t = fiche.trame;
+  if (!t) return null;
+  const nomme = TISSU[fiche.cle];
+  if (nomme) return nomme[0];
+  if (t.ruelles) return 'medina';
+  if (t.chanfrein) return 'eixample';
+  const { lat0: la, lon0: lo } = fiche;
+  // L'Amérique hispanique : damier, sauf les métropoles à tours qui l'ont
+  // recouvert de superîlots. Le Brésil portugais n'a jamais eu ces lois.
+  if (lo < -30 && la < 15) return t.tours ? 'superilot' : 'damier';
+  // L'Amérique du Nord : la grille, héritée de Philadelphie et de 1811.
+  if (lo < -30) return t.tours ? 'superilot' : 'damier';
+  // L'Asie de l'Est : grille fine dans les vieux tissus, superîlots là où la
+  // ville a poussé en hauteur au XXe siècle.
+  if (lo > 100) return t.tours ? 'superilot' : 'organique';
+  // Le Golfe et l'Asie du Sud.
+  if (lo > 40) return t.tours ? 'superilot' : 'faubourg';
+  // L'Europe et le Maghreb : l'îlot à périmètre, plus petit dans les villes
+  // moyennes — le rayon du registre tranche, jamais un littéral.
+  return 'perimetre';
+}
+
 function fabrique(cle, fiche) {
   const ancre = positionDe(cle);
   const kmLon = 111.32 * Math.cos((fiche.lat0 * Math.PI) / 180);
@@ -149,6 +357,19 @@ function fabrique(cle, fiche) {
   // îlots de cinq à dix.
   if (f.trame) {
     const t = { ...f.trame };
+    // LE MOT SE POSE AVANT LA FOURCHE : une médina ne passe pas par la
+    // normalisation des rues, et elle doit quand même porter sa typologie —
+    // sinon un témoin qui lit `f.typo` croit qu'elle n'en a pas.
+    f.typo = typoDe(f);
+    // UNE MÉDINA PIÉTONNE SE DÉCLARE AVANT LA FOURCHE. `ruelles` est ce qui
+    // fait le lacis ; la typologie doit donc le POSER, sinon elle ne fait rien
+    // du tout. Et elle ne se pose qu'aux villes dont le vieux centre est
+    // vraiment sans voitures — Fès el-Bali est le plus grand espace piéton
+    // urbain du monde, Tombouctou est une ville de terre sans trame. Les
+    // autres vieilles villes denses gardent leurs voitures : une médina est un
+    // CŒUR, et l'appliquer à tout un disque retirerait sa circulation à Tunis
+    // ou à Alexandrie (v270 : une berline ne roule pas dans une ruelle).
+    if (f.typo === 'medina') t.ruelles = true;
     if (t.ruelles) {
       // Venise, la médina de Marrakech, la vieille ville de Jérusalem : les
       // ruelles SONT leur identité — on les élargit juste assez pour y
@@ -156,9 +377,57 @@ function fabrique(cle, fiche) {
       t.pu = Math.round(t.pu * 2); t.pv = Math.round(t.pv * 2);
       t.w = 0.9; t.s = 2.0;
     } else {
-      t.pu = Math.round(t.pu * 3); t.pv = Math.round(t.pv * 3);
-      t.w = 1.7; t.s = 4.0;
-      if (t.chanfrein) t.chanfrein = 4.2;                    // l'Eixample garde ses coins coupés
+      // DEUX VOIES, ET LE CHIFFRE EST UN RÉSULTAT (v271). Max : « increase
+      // les routes ». La chaussée faisait 3,4 blocs pour une voiture de
+      // 2,26 : une seule file, ce que la v211 avait mesuré et qui l'avait
+      // fait écarter la conduite à droite. Trois leviers, regardés ensemble —
+      // la chaussée, le trottoir et le PAS de la trame — parce que l'îlot est
+      // ce qui reste (`pas − 2s`) :
+      //
+      //   facteur | chaussée | trottoir | îlot min · médian | îlots < 5 blocs
+      //     3,00  |   3,4    |   2,30   |    4,0 · 7,0      |  196 sur 528
+      //     3,00  |   5,2    |   1,40   |    4,0 · 7,0      |  196
+      //     3,00  |   5,2    |   2,00   |    2,8 · 5,8      |  196 (dont 196 < 3)
+      //    *3,75  |   5,6    |   2,00   |    5,4 · 9,4      |    0
+      //
+      // À emprise constante, la chaussée mange le trottoir — donc le mobilier,
+      // donc l'éclairage de nuit (v248). En élargissant l'emprise sans toucher
+      // au pas, l'îlot tombe sous trois blocs sur les villes à trame serrée :
+      // des cloisons, pas des immeubles. Le pas de trame est donc le troisième
+      // levier, et il rend la ville MEILLEURE qu'avant : plus un seul îlot
+      // sous cinq blocs, quand il y en avait 196 sur 528.
+      //
+      // ET LE COMPTE BRUT DE MOBILIER N'EST PAS LA BONNE GRANDEUR. Il tombe
+      // d'un tiers — et c'est sans intérêt : la ville a moins de rues, plus
+      // larges. Ce que l'enfant voit, c'est l'espacement des réverbères LE
+      // LONG de la rue, et il ne bouge pas (réverbères pour mille blocs de
+      // rue : Zurich 123 → 161, Rome 130 → 135, Tokyo 172 → 141). C'est le
+      // reproche qu'on fait aux témoins — compter un motif n'est pas compter
+      // la chose — appliqué à une mesure de contenu.
+      //
+      // Le prix se déclare : 16 % de rue portant un convoi en moins
+      // (195 060 → 163 036 blocs), parce qu'il y a moins de rues.
+      //
+      // Et c'est du SOL, jamais du relief : `hauteurVillesMonde` ne lit ni
+      // `pu`, ni `pv`, ni `w`, ni `s` — les deux empreintes de `plafond.js`
+      // ne bougent pas, et l'invariant 1 tient sans rien avoir à déclarer.
+      // Même raison que la passe de rues de Londres (v206).
+      t.pu = Math.round(t.pu * 3.75); t.pv = Math.round(t.pv * 3.75);
+      t.w = 2.8; t.s = 4.8;
+      if (t.chanfrein) t.chanfrein = 5.0;                    // l'Eixample garde ses coins coupés
+      // ET LA TYPOLOGIE PASSE APRÈS LA NORMALISATION (v280) : elle surcharge le
+      // pas et pose la cour, sur un gabarit de rue déjà porté aux deux voies de
+      // la v271. Dans l'autre ordre, le facteur 3,75 effacerait le pas choisi.
+      // Les villes moyennes gardent le tissu plus petit : `faubourg` en dessous
+      // de soixante-dix blocs de rayon, l'îlot à périmètre au-delà — le rayon
+      // vient du REGISTRE, jamais d'un littéral (leçon de `r: 66`, v192).
+      const typo = typoDe(f);
+      if (typo && TYPOS[typo]) {
+        const petite = (ancre.r || f.rayon || 0) < 70;
+        const choix = typo === 'perimetre' && petite ? TYPOS.faubourg : TYPOS[typo];
+        Object.assign(t, choix);
+        if (typo === 'perimetre' && petite) f.typo = 'faubourg';
+      }
     }
     // LE MARQUAGE NE SE PEINT QUE S'IL RESTE NET. Vu sur la capture de
     // Moscou : sur une trame en diagonale, pointillés et zèbres se
@@ -181,6 +450,15 @@ function fabrique(cle, fiche) {
   // de la ville n'est plus un détroit. On prolonge chaque bout dans l'axe de
   // son dernier segment.
   const prolonge = (fl) => {
+    // UN LAC N'EST PAS UN DÉTROIT, ET ON NE LE PROLONGE PAS (v280). L'Alster
+    // de Hambourg FINIT au centre-ville — c'est un lac, pas un fleuve
+    // traversant — et `prolonge` l'a étirée dans l'axe de son premier segment,
+    // donc vers le sud, donc À TRAVERS LE RATHAUS : trois cents mètres d'eau
+    // pile sur le point d'ancrage, c'est-à-dire là où la téléportation DÉPOSE
+    // L'ENFANT. Le témoin « le centre de chaque ville au sec » l'aurait dit au
+    // portail ; une sonde des places l'a dit avant. Un plan d'eau qui a une
+    // vraie fin dans la ville se déclare `borne`.
+    if (fl.borne) return { ...fl, pts: fl.pts.map((q) => q.slice()) };
     const pts = fl.pts.map((q) => q.slice());
     const etire = (a, b) => {
       const dx = a[0] - b[0], dz = a[1] - b[1];
@@ -1373,6 +1651,65 @@ function chercheMer(v) {
   return { nx: sx / l, nz: sz / l, d: 0 };                  // d est posé par ficheGeneree (0.55·rayon)
 }
 
+// LES FLEUVES DES VILLES ENGENDRÉES (v280) — nommés, avec leur raison.
+//
+// Mesuré sur le disque de chaque ville, par la HAUTEUR et non par le sol —
+// l'eau d'une ville n'est pas un identifiant de bloc, c'est une colonne sous le
+// niveau de la mer, qui se remplit seule ; mes deux premiers relevés
+// annonçaient 0,2 % partout et mesuraient la mauvaise chose. Le vrai chiffre :
+// Amsterdam 24 % d'eau, Venise 36, Stockholm 14 — leurs canaux, leur lagune et
+// leur archipel marchent. Mais ONZE villes de fleuve en avaient ZÉRO : Cologne
+// sans le Rhin, Lyon sans Rhône ni Saône, Budapest sans Danube, Hambourg sans
+// l'Elbe ni l'Alster. Une ville de fleuve sans son fleuve est une ville de plus
+// dans le lot, et c'est exactement ce dont Max se plaint.
+//
+// `chercheMer` ne trouve que la MER, et ces villes en sont loin — Hambourg est
+// à cent kilomètres de la mer du Nord. Le fleuve, lui, ne se devine pas : il se
+// nomme, comme les tissus urbains, avec sa raison à côté.
+//
+// LES UNITÉS SE MESURENT AVANT DE S'ÉCRIRE : `local()` rend des blocs, la
+// géographie est interrogée en `u / K` — donc VINGT unités par kilomètre pour
+// une ville engendrée. Et la convention est +u vers l'EST, −v vers le NORD,
+// vérifiée en demandant à `local` où tombe un point un kilomètre plus au nord.
+// `l` est la demi-largeur : l = 5 fait un fleuve d'un demi-kilomètre. ET ELLES
+// SONT CELLES DES VRAIS FLEUVES, pas un chiffre commode : mon premier jet
+// donnait au Danube de Budapest UN KILOMÈTRE de large pour trois cent cinquante
+// mètres réels, et Hambourg se retrouvait à 39 % d'eau. On prend la largeur du
+// fleuve, comme on prend la vitesse des vrais avions (v267).
+const FLEUVES_VILLES = {
+  hambourg: [
+    { nom: 'Elbe', l: 4, pts: [[-60, 30], [-20, 26], [20, 24], [60, 28]] },       // 1,3 km au sud du Rathaus · 400 m de large
+    // LA BINNENALSTER PUIS L'AUSSENALSTER : un lac, qui FINIT au sud (le
+    // Rathaus est sur son bord), donc `borne` — prolongé, il noyait l'ancre.
+    { nom: 'Alster', l: 6, pts: [[2, -14], [4, -28]], borne: true },
+  ],
+  cologne: [{ nom: 'Rhin', l: 4, pts: [[10, 60], [8, 10], [6, -20], [2, -60]] }], // 0,4 km à l'est du Dom · 350 m de large
+  francfort: [{ nom: 'Main', l: 2, pts: [[-60, 8], [-10, 6], [30, 7], [60, 10]] }], // 0,3 km au sud du Römer · 200 m de large
+  budapest: [{ nom: 'Danube', l: 4, pts: [[-14, -60], [-12, -10], [-10, 20], [-6, 60]] }], // il sépare Buda de Pest · 350 m
+  lyon: [
+    { nom: 'Rhône', l: 2.5, pts: [[16, -60], [14, 0], [10, 40], [4, 60]] },       // à l'est de la Presqu'île · 250 m
+    { nom: 'Saône', l: 1.5, pts: [[-10, -60], [-8, 0], [-4, 40], [2, 60]] },      // à l'ouest ; elles confluent au sud · 130 m
+  ],
+  seville: [{ nom: 'Guadalquivir', l: 2, pts: [[-22, -60], [-20, 0], [-18, 60]] }], // 1 km à l'ouest · 180 m de large
+  porto: [{ nom: 'Douro', l: 2.5, pts: [[-60, 18], [0, 16], [60, 20]] }],         // 0,8 km au sud, en gorge · 250 m
+  bordeaux: [{ nom: 'Garonne', l: 5, pts: [[6, -60], [10, -10], [12, 20], [8, 60]] }], // le fameux croissant · 500 m
+  dresde: [{ nom: 'Elbe', l: 3, pts: [[-60, -14], [-10, -8], [20, -10], [60, -22]] }], // juste au nord de la vieille ville · 300 m
+  // LA SAVE (200 m) ET LE DANUBE (500 m) CONFLUENT SOUS LE KALEMEGDAN. Mon
+  // premier tracé mettait la confluence à un bloc de l'ancre — la place de la
+  // République dans le Danube. La translation est MESURÉE et c'est la plus
+  // petite qui laisse trois cents mètres de quai entre le centre et l'eau :
+  // on ne redessine pas une confluence à l'intuition.
+  belgrade: [
+    { nom: 'Save', l: 2, pts: [[-65, 11], [-25, 1], [-11, -7]] },
+    { nom: 'Danube', l: 5, pts: [[-11, -7], [5, -15], [55, -23]] },
+  ],
+  // LE COUDE DE BÂLE · 200 m de large. La Marktplatz est sur la rive GAUCHE, à
+  // deux cent cinquante mètres de l'eau : mon premier tracé passait dessus, et
+  // l'ancre — le point où la téléportation dépose l'enfant — était dans le
+  // Rhin. Un tracé de fleuve se mesure à l'ancre, pas seulement à la carte.
+  bale: [{ nom: 'Rhin', l: 2, pts: [[2, 60], [4, 10], [8, -2], [36, -10], [66, -8]] }],
+};
+
 function ficheGeneree(v) {
   const arch = ARCHETYPES[v.style] || ARCHETYPES.europe;
   // L'angle de trame : déterministe par ville, pour que deux voisines ne
@@ -1393,6 +1730,12 @@ function ficheGeneree(v) {
   }
   const mer = chercheMer(v);
   if (mer) fiche.mer = { ...mer, d: Math.round(v.r * 0.55), ...(arch.plage ? { plage: 3 } : { quais: true }) };
+  const fl = FLEUVES_VILLES[v.cle];
+  if (fl) {
+    fiche.fleuves = fl.map((q) => ({
+      pts: q.pts.map((pt) => pt.slice()), l: q.l, borne: q.borne,
+    }));
+  }
   return fiche;
 }
 
@@ -1528,6 +1871,54 @@ export function hauteurVillesMonde(x, z, h) {
   return h;
 }
 
+// LE CŒUR D'ÎLOT (v280) — ce qui manquait pour que deux villes ne se
+// ressemblent pas.
+//
+// Mesuré avant d'écrire une ligne : sur vingt villes contrastées, la similarité
+// des distributions de SOL vaut 0,966 en moyenne sur 190 paires, et plusieurs
+// paires sont à 1,000. Et sur les 269 villes il n'existe que HUIT plans de rue,
+// dont deux couvrent 255 villes : la seule chose qui change d'une ville à
+// l'autre est l'ANGLE de rotation. Le copié-collé que Max décrit est donc dans
+// le PLAN AU SOL, pas dans les palettes.
+//
+// ET J'AI ÉCRIT ICI UNE PHRASE QUE LA MESURE REFUSE : « Zurich et Bologne ont
+// le MÊME sol, bloc pour bloc ». C'est FAUX — 52,6 % de colonnes identiques
+// avant la livraison, pas 100 %. Ce qui valait 1,000, c'était la similarité des
+// DISTRIBUTIONS (les mêmes matières dans les mêmes proportions), et pour une
+// autre paire : Accra et Kiev. L'identité colonne par colonne, elle, culminait
+// à 95,9 % — Varsovie et Budapest. **Deux grandeurs qui portent le même mot
+// « pareil » ne disent pas la même chose**, et la seconde est celle que « bloc
+// pour bloc » nomme. Le témoin de `carteMonde.js` mesure les DEUX, et c'est lui
+// qui a démonté ma propre phrase : 1,000 → 0,988 et 95,9 % → 77,5 %.
+//
+// Deuxième mesure, du même relevé : **92 % du disque est bâti**, dans toutes les
+// villes (90 à 94 %). Une vraie ville n'est jamais bâtie à 92 % — elle a des
+// cours, des places, des jardins. Le « jardin de poche » d'un lot sur dix (v178)
+// n'y suffit pas.
+//
+// D'où l'îlot à PÉRIMÈTRE : on bâtit une couronne de `cour` blocs de profondeur
+// depuis le trottoir, et le cœur du lot devient une cour. C'est l'illa de
+// l'Eixample, la cour d'immeuble haussmannienne, le patio andalou — et cela se
+// voit du ciel autant que par une porte cochère.
+//
+// ET LA RÈGLE EST PURE ET UNE SEULE : le SOL la lit pour peindre la cour, le
+// BÂTISSEUR la lit pour ne rien poser dedans. Deux tables qui décrivent le même
+// îlot finiraient par diverger — c'est la discipline de `postesAvion` et de
+// `CHAUSSEE`.
+//
+// `ra`/`rb` sont les écarts à la ligne de trame la plus proche : la rue est au
+// PETIT |ra|, le cœur du lot au grand. La couronne bâtie va donc de `s` (le bord
+// du trottoir) à `s + cour`.
+export function coeurDIlot(t, ra, rb) {
+  if (!t || !t.couronne) return false;
+  // `couronne` EST LA PROFONDEUR DU BÂTI DEPUIS LE TROTTOIR, pas la taille de
+  // la cour — elle s'appelait `cour` et ce nom mentait. Le cœur de l'îlot est
+  // tout ce qui est au-delà, dans les DEUX directions : c'est ce qui fait un
+  // îlot à périmètre et non deux barres parallèles.
+  const bord = t.s + t.couronne;
+  return Math.abs(ra) > bord && Math.abs(rb) > bord;
+}
+
 export function solVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
@@ -1538,7 +1929,14 @@ export function solVillesMonde(x, z) {
     // `& 3` n'a de sens que sur des entiers de bloc). Voir fabrique().
     const U = u / f.K, V = v / f.K;
 
-    if (eauDeVille(f, U, V)) return null;                          // l'eau se remplit seule
+    if (eauDeVille(f, U, V)) {
+      // LE TABLIER PASSE AU-DESSUS DU FLEUVE (v280). Sans lui, une ville
+      // coupée par sa rivière n'a aucun anneau de circulation — et l'enfant à
+      // pied n'a aucun moyen de passer d'une rive à l'autre. La règle est
+      // celle des anneaux, pas une seconde table : cf. `anneauxDeVille`.
+      const q = pontDeVille(f, U * f.K, V * f.K);
+      return q ? q.id : null;                                      // l'eau se remplit seule
+    }
     if (f.mer && f.mer.plage && U * f.mer.nx + V * f.mer.nz > f.mer.d - f.mer.plage) return SABLE;
     if (f.mer && f.mer.quais && U * f.mer.nx + V * f.mer.nz > f.mer.d - 2) return PAVE;
     if (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2) return PAVE;
@@ -1581,17 +1979,47 @@ export function solVillesMonde(x, z) {
     const t = f.trame;
     if (t.sud && V > t.sud) return null;
 
-    // LA PLACE CENTRALE. On arrive en ville ICI, par la carte : une place
-    // pavée, dégagée, avec sa fontaine — plus jamais le nez dans un mur.
-    const dCentre = Math.hypot(u, v);
-    if (dCentre < 10.5) {
+    const co = Math.cos(t.ang), si = Math.sin(t.ang);
+    const a = u * co - v * si, b = u * si + v * co;
+
+    // LA PLACE. On arrive en ville ICI, par la carte : pavée, dégagée, avec sa
+    // fontaine — plus jamais le nez dans un mur. Sa FORME vient du tissu
+    // (`place`), et son décalage de la position de la ville : elle était un
+    // disque de 10,5 blocs, identique dans les 269, et c'est la première chose
+    // qu'un enfant voit en arrivant.
+    //
+    // ELLE CONTIENT TOUJOURS LE CENTRE GÉOMÉTRIQUE, et ce n'est pas un détail :
+    // c'est là que la téléportation dépose l'enfant. Le décalage est donc borné
+    // pour que le centre reste à l'intérieur avec quatre blocs de marge — une
+    // place déplacée trop loin rendrait le nez dans un mur, la panne même que
+    // la place centrale avait été écrite pour corriger.
+    const pl = t.place;
+    if (pl) {
+      const [lo2, la2, pasDecal] = pl;
+      // LA GRAINE SE CALCULE ICI, SUR LA POSITION DE LA VILLE. `graineDeVille`
+      // vit dans `vehicules.js`, qui tire three : ce module est lu par le
+      // mailleur du worker, et le premier `import 'three'` de son graphe le tue
+      // sans un mot (v251). Un hachage de deux entiers suffit, et il est pur.
+      const g = Math.abs(Math.imul(f.ancre.x | 0, 374761393)
+        ^ Math.imul(f.ancre.z | 0, 668265263)) >>> 0;
+      const dec = (n2, taille) => {
+        if (!pasDecal) return 0;
+        const d2 = ((n2 % (2 * pasDecal + 1)) - pasDecal) * (t.pu + t.pv) / 2;
+        return Math.max(-(taille - 4), Math.min(taille - 4, d2));
+      };
+      const ca = a - dec(g, lo2), cb = b - dec(g >> 3, la2);
+      if (Math.abs(ca) < lo2 && Math.abs(cb) < la2) {
+        const dF = Math.hypot(ca, cb);
+        if (f.fontaine && dF < 2.3) return EAU;
+        if (f.fontaine && dF < 3.3) return PIERRE;
+        return PAVE;
+      }
+    } else if (Math.hypot(u, v) < 10.5) {
+      const dCentre = Math.hypot(u, v);
       if (f.fontaine && dCentre < 2.3) return EAU;
       if (f.fontaine && dCentre < 3.3) return PIERRE;
       return PAVE;
     }
-
-    const co = Math.cos(t.ang), si = Math.sin(t.ang);
-    const a = u * co - v * si, b = u * si + v * co;
     // Les rues « à a constant » s'étendent le long du vecteur monde (si, co) :
     // elles sont nord-sud quand |co| domine. `t.net` accepte aussi les trames
     // tournées d'un quart de tour, où les axes s'échangent — d'où ce calcul,
@@ -1641,6 +2069,13 @@ export function solVillesMonde(x, z) {
     // ailleurs au monde.
     if (t.chanfrein && Math.abs(ra) < t.chanfrein && Math.abs(rb) < t.chanfrein
       && Math.abs(ra) + Math.abs(rb) < t.chanfrein * 1.7) return TROTTOIR;
+    // La cour : plantée ou pavée selon la ville, et un arbre de temps en temps.
+    // Le motif se tire en coordonnées du MONDE, sinon il se répète à l'identique
+    // dans chaque morceau et change au remaillage.
+    if (coeurDIlot(t, ra, rb)) {
+      if (t.courPavee) return ((u + v) & 7) === 0 ? ARBRE : PAVE;
+      return ((u + v) & 3) === 0 ? ARBRE : HERBE;
+    }
     return 'lot';
   }
   return null;
@@ -1679,7 +2114,45 @@ export function batirColonneVillesMonde(x, z, poser) {
     // La façade donne sur la petite rue — OU sur l'avenue : dans une vraie
     // ville, ce sont les avenues que les boutiques bordent en premier.
     const dAxe = Math.min(Math.abs(A), Math.abs(B));
-    const bord = dRue < t.s + 1.15 || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+    // LES PORTIQUES (v280) — Bologne, Turin, Madrid, Innsbruck. J'avais nommé
+    // ces quatre villes « arcades » et il n'y avait AUCUNE arcade : la
+    // typologie ne changeait que le pas de trame et la forme de la place.
+    // C'est la troisième fois dans cette passe qu'une brique ne sert à rien.
+    //
+    // Une arcade, c'est un rang de rez-de-chaussée OUVERT sur la rue, porté
+    // par des piliers, avec les boutiques DERRIÈRE. On marche dessous — c'est
+    // exactement ce qui fait Bologne, et ses trente-huit kilomètres de
+    // portiques sont à l'UNESCO depuis 2021. Le premier rang du lot devient
+    // donc le passage, et la façade commerçante recule d'un rang.
+    // UN RANG EST UNE BANDE, PAS UN DEMI-ESPACE. Écrit `dRue < t.s + 1.15`, le
+    // premier rang du lot englobait TOUT ce qui est plus proche de la rue — et
+    // le portique se posait au milieu de l'îlot, du côté de l'autre rue. Le
+    // pourcentage global (58 % des colonnes bâties) était suspect et je l'ai
+    // presque expliqué ; c'est une COUPE à travers une rue qui l'a montré.
+    const rangUn = dRue >= t.s && dRue < t.s + 1.15;
+    const sousPortique = t.portiques && rangUn;
+    // ET LA BORNE BASSE DE `rangUn` EST GRATUITE SUR UNE COLONNE DE LOT —
+    // NON-RÉSULTAT MESURÉ, qu'on ne réessaie pas. J'ai cru que ce resserrement
+    // avait pris 85 % des devantures du jeu, et je l'ai « corrigé » en rendant à
+    // `bord` son demi-espace d'avant. Mesuré sur les seules colonnes que
+    // `world.js` bâtit — celles où `solVillesMonde` rend `'lot'` — les deux
+    // versions rendent le MÊME chiffre au dixième : Rome 36,7 ‰ de vitrines,
+    // Tokyo 226,3, Marrakech 190,9, Bologne 34,7. C'est arithmétique :
+    // `dRue >= t.s` est VRAI PAR CONSTRUCTION sur un lot, donc la bande et le
+    // demi-espace sont le même ensemble, et il en va de même du rang reculé du
+    // portique. Ma sonde appelait le bâtisseur pour TOUTES les colonnes de la
+    // fenêtre, trottoirs et chaussée comprises — « une sonde qui interroge la
+    // mauvaise liste ne peut rien voir » (v273), par l'autre bout : elle voit ce
+    // qui n'existe pas. Toute sonde de façade filtre donc sur `'lot'`.
+    const bord = t.portiques
+      ? (dRue >= t.s + 1.15 && dRue < t.s + 2.15) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
+      : rangUn || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+
+    // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
+    // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
+    // n'a pas un immeuble dessus. Le jardin de poche, lui, reste — il retire un
+    // lot ENTIER sur dix, là où la cour évide le cœur de tous les lots.
+    if (coeurDIlot(t, ra, rb)) return;
 
     // LE JARDIN DE POCHE (v178). Max, sur Londres : « too packed ». Une
     // vraie ville respire : un lot sur dix ne se bâtit pas — il devient un
@@ -1709,9 +2182,28 @@ export function batirColonneVillesMonde(x, z, poser) {
     // deux.
     const along = Math.abs(ra) < Math.abs(rb) ? Math.abs(rb) : Math.abs(ra);
     const milieuFront = Math.abs(ra) < Math.abs(rb) ? (t.s + t.pv / 2) / 2 : (t.s + t.pu / 2) / 2;
-    // Une porte, pas une rayure : le premier rang de façade seulement, et une
-    // demi-colonne de tolérance de part et d'autre du milieu du front.
-    const porte = commerce && dRue < t.s + 1.0 && Math.abs(along - milieuFront) < 0.28;
+    // UNE TOLÉRANCE EN BLOCS CONTRE UN FRONT QUI GRANDIT NE TIENT PAS — et c'est
+    // la même panne que les barres de témoin, dans le code du JEU. `0,28` bloc
+    // avait été relevé quand le pas de trame valait quinze : le front d'un
+    // quart d'îlot allait de 2 à 7,5, et une fenêtre de 0,56 en couvrait le
+    // dixième. Les typologies portent le pas à 21, 23 et 27 — le front de Rome
+    // va de 4,8 à 11,5 — et la même fenêtre n'attrape plus rien : mesuré sur
+    // les colonnes de lot, ZÉRO porte à Rome, à Tokyo et à Bologne, contre
+    // 9,3 · 3,4 · 13,9 pour mille colonnes de trottoir sur `main`.
+    //
+    // Ce qui ne dépend pas du pas, c'est l'ÉCARTEMENT DES COLONNES : elles sont
+    // à un bloc l'une de l'autre, donc « la colonne la plus proche du milieu du
+    // front » est celle qui en est à moins d'une DEMI-colonne. La tolérance est
+    // cette demi-colonne, et elle reste juste à tous les pas de trame.
+    //
+    // ET LE RANG NE SE REDIT PAS ICI. `dRue < t.s + 1.0` décrivait le premier
+    // rang une SECONDE fois, à côté de `bord` qui le décrit déjà — et les deux
+    // ont divergé le jour où le portique a fait reculer la façade d'un cran :
+    // à Bologne et à Turin les deux conditions devenaient DISJOINTES et pas une
+    // porte n'était possible. La pose est déjà gardée par `commerce && bord` ;
+    // on ne garde donc que « au milieu du front ». Deux tables qui décrivent la
+    // même chose finissent par diverger.
+    const porte = commerce && Math.abs(along - milieuFront) < 0.5;
 
     // Les toits ne sont plus tous du même gris : deux tiers gardent la
     // couleur de la ville, le reste pioche — c'est ce qui fait un vrai
@@ -1757,6 +2249,16 @@ export function batirColonneVillesMonde(x, z, poser) {
       const bh2 = 3 + etages * 3;
       for (let y = 0; y < bh2; y++) {
         if (y < 3) {
+          // SOUS LE PORTIQUE : deux rangs d'air qu'on traverse à pied, un
+          // pilier tous les trois blocs, et l'arc qui porte l'immeuble au
+          // troisième. Le bâtiment au-dessus ne change pas : c'est ce qui
+          // distingue une arcade d'un simple retrait de façade.
+          if (sousPortique) {
+            const pilier = (((Math.round(along) % 3) + 3) % 3) === 0;
+            if (y < 2) { if (pilier) poser(y + 1, PIERRE); continue; }
+            poser(3, PIERRE);
+            continue;
+          }
           // le rez-de-chaussée : devanture si commerce, socle sinon
           // la devanture, dessinée elle aussi : deux rangs de VERRE ouvraient
           // le rez-de-chaussée sur le vide du bâtiment, tout le long des rues
@@ -1822,12 +2324,53 @@ export function batirColonneVillesMonde(x, z, poser) {
 // passant, le lampadaire au bord du caniveau, le banc et le bac à fleurs.
 // Appelé par world.js pour chaque colonne de trottoir des villes machine —
 // tout est déterministe : le même trottoir, les mêmes lampadaires, toujours.
+// LE CANIVEAU N'EST PAS UN TROTTOIR (v270). Max, deux captures : une voiture
+// posée DANS une caisse du marché à Stuttgart, des caisses sur la chaussée à
+// Zurich. La « caisse », c'est la jardinière — et le banc.
+//
+// Mesuré au recouvrement exact du rectangle de la voiture contre la case du
+// meuble, sur les fonctions pures : **267 villes sur 267**, 32 410 cases de
+// mobilier traversées. La cause est géométrique et elle ne se devine pas : la
+// chaussée fait 3,4 blocs et la voiture 2,26, donc 0,57 bloc de marge par
+// côté — mais le mobilier est posé sur la PREMIÈRE colonne de trottoir, et
+// comme la trame est tournée par rapport au monde (24° à Zurich), une case
+// ENTIÈRE mord jusqu'à 1,13 bloc dans la chaussée, c'est-à-dire jusqu'à l'axe
+// de la rue. Quarante et un pour cent des cases de mobilier étaient dans le
+// couloir de la voiture.
+//
+// DEUX CHOSES CHANGENT, ET LA SECONDE EST CELLE QUI COMPTE.
+//
+// D'abord on mesure la distance à la rue au CENTRE de la case, pas à son coin
+// entier : une case s'étend d'un bloc vers +x et +z, et la juger par son coin
+// revient à ignorer la moitié de ce qu'elle occupe.
+//
+// Ensuite la bande se DÉCALE, elle ne se rogne pas. Mesuré sur Zurich, 1 780
+// cases de mobilier possibles : un simple plancher à 1,90 dégage tout mais
+// coûte 47 % du mobilier — donc de l'éclairage de nuit (v248). La bande
+// [w + 0,3 ; w + 1,5) en garde CENT POUR CENT et ne mord plus nulle part. Un
+// réverbère se plante sur le trottoir, pas dans le caniveau ; ce qu'on lui
+// retire d'un côté, on le lui rend de l'autre.
+//
+// LE DÉGAGEMENT EST LA DEMI-LARGEUR D'UNE VOITURE, et ce fichier ne peut pas
+// l'importer : il est lu par le mailleur du worker, qui meurt au premier
+// `import 'three'` de son graphe (v251). Le chiffre est donc recopié de
+// `vehicules.js` (`DEMI_LARG_VOITURE`), et c'est un TÉMOIN qui garde les deux
+// d'accord — jamais un commentaire.
+export const DEGAGEMENT_VOITURE = 1.13;
+
 export function mobilierVillesMonde(x, z, poser) {
   for (const f of villesPres(x, z)) {
-    const u = x - f.ancre.x, v = z - f.ancre.z;
-    if (Math.hypot(u, v) > f.rayon) continue;
+    if (Math.hypot(x - f.ancre.x, z - f.ancre.z) > f.rayon) continue;
     if (!f.trame) return;
     const t = f.trame;
+    // LE CENTRE DE LA CASE, PAS SON COIN : c'est la case entière qui occupe le
+    // sol, et c'est elle que la carrosserie rencontre. On ne le fait QUE là où
+    // une voiture roule — dans une médina le trottoir ne fait qu'un bloc et un
+    // dixième, et décaler d'un demi-bloc en écartait un tiers pour rien.
+    // (Et jamais sur `x` lui-même : la boucle passe sur plusieurs villes, un
+    // `x += 0.5` par tour décalerait la seconde d'un bloc entier.)
+    const dec = t.ruelles ? 0 : 0.5;
+    const u = x + dec - f.ancre.x, v = z + dec - f.ancre.z;
     if (t.sud && v / f.K > t.sud) return;                         // `sud` est en unités de fiche
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     const A = u * co - v * si, B = u * si + v * co;
@@ -1854,11 +2397,46 @@ export function mobilierVillesMonde(x, z, poser) {
     // la rue. `long` est la coordonnée LE LONG de la rue la plus proche.
     const long = Math.abs(ra) < Math.abs(rb) ? B : A;
     const cran = ((Math.round(long) % 9) + 9) % 9;
-    if (dRue - t.w < 0.9) {
-      // LE FEU TRICOLORE, un par coin de carrefour : la colonne du caniveau
+    // La bande du mobilier : elle commence au-delà du couloir de la voiture,
+    // et elle fait un bloc et demi de large — décalée, pas rognée.
+    //
+    // LE DÉGAGEMENT SE CALCULE, IL NE SE MESURE PAS SUR UNE VILLE. Mon premier
+    // jet posait 0,3 bloc de marge, réglé sur Zurich : juste là, et faux
+    // ailleurs, parce que ce qui déborde dépend de l'ANGLE de la trame. Une
+    // case unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de part et
+    // d'autre de son centre le long d'un axe de la trame — 0,50 bloc pour une
+    // trame alignée, 0,71 à quarante-cinq degrés. La case ne doit pas mordre
+    // le couloir : son centre est donc au-delà de `DEGAGEMENT_VOITURE + ce
+    // débord`, et jamais en deçà du caniveau.
+    //
+    // ET LÀ OÙ RIEN NE ROULE, RIEN NE SE DÉGAGE : une médina n'a pas de
+    // convoi (voir `tracesCirculation`), donc son mobilier reste au bord de
+    // la ruelle, comme dans la vraie. Sans cette clause Marrakech perdait
+    // quatre-vingt-quatre pour cent de ses réverbères — des ruelles noires
+    // pour dégager une chaussée que personne n'emprunte.
+    const debord = (Math.abs(co) + Math.abs(si)) / 2;
+    // ET LA VOIE DE DROITE DÉPLACE LE DÉGAGEMENT (v271). Depuis que le convoi
+    // roule dans sa voie, une voiture n'est plus centrée sur l'axe : son
+    // centre est à une demi-chaussée de lui, donc son flanc extérieur à
+    // `t.w / 2 + DEGAGEMENT_VOITURE` — 2,53 blocs pour une chaussée de 5,6,
+    // ce qui reste SUR la chaussée (2,8) mais dépasse ce que l'ancienne
+    // formule exigeait. Le mobilier doit être au-delà de cela, débord de la
+    // case compris : 3,24 blocs, pour un trottoir qui va de 2,8 à 4,8. La
+    // bande garde 1,56 bloc, plus large qu'avant.
+    const degage = t.ruelles ? t.w
+      : Math.max(t.w, t.w / 2 + DEGAGEMENT_VOITURE + debord);
+    // Dans une médina, la bande est TOUT le trottoir : il ne fait qu'un bloc
+    // et un dixième, rien n'y roule, et le mesurer au centre de la case en
+    // écartait un tiers pour rien.
+    if (dRue >= degage && dRue < (t.ruelles ? t.s : degage + 1.5)) {
+      // LE FEU TRICOLORE, un par coin de carrefour : la colonne du trottoir
       // qui touche le croisement en diagonale — une seule par coin.
-      if (!t.ruelles && Math.abs(ra) > t.w + 0.4 && Math.abs(ra) < t.w + 1.3
-        && Math.abs(rb) > t.w + 0.4 && Math.abs(rb) < t.w + 1.3) {
+      // UN FEU PAR COIN, ET PAS UN DE PLUS. Mon premier jet donnait à sa
+      // fenêtre la largeur de toute la bande : Zurich passait de 110 feux à
+      // 277, Rome de 235 à 563 — un carrefour hérissé. La fenêtre garde donc
+      // les 0,9 bloc qu'elle avait, décalée avec le reste.
+      if (!t.ruelles && Math.abs(ra) > degage && Math.abs(ra) < degage + 0.9
+        && Math.abs(rb) > degage && Math.abs(rb) < degage + 0.9) {
         poser(1, RUE.FEUX);
         return;
       }
@@ -1882,10 +2460,124 @@ export function mobilierVillesMonde(x, z, poser) {
 // dans les virages (vehicules.js). L'anneau évite l'eau : on le mesure sur
 // la géographie de la fiche, et s'il trempe, on essaie plus petit — Venise,
 // elle, n'aura jamais de voitures, et c'est très bien comme ça.
-export function tracesCirculation(solDe) {
-  const traces = [];
-  for (const f of VILLES_MONDE) {
-    if (!f.trame) continue;
+// DEUX CONVOIS NE SE SUIVENT PAS SUR LA MÊME CHAUSSÉE — ET LA RÈGLE N'AVAIT
+// JAMAIS ATTEINT LES VILLES ENGENDRÉES (v270). Max, capture de Zurich :
+// « deux voitures de la rue l'une dans l'autre ». La v211 avait posé la règle
+// pour les villes bâties à la main — « deux circuits ne peuvent avoir plus
+// d'une vingtaine de blocs de chaussée en commun : c'est la taille d'un
+// carrefour, et cela distingue se CROISER de se SUIVRE » — et les deux cent
+// soixante-sept villes à trame ne l'ont jamais vue passer. Mesuré sur les
+// fonctions pures : **265 villes sur 267** au-dessus de la barre, Shanghai à
+// 576 blocs partagés, Zurich à 106.
+//
+// LE PARTAGE SE CALCULE, IL NE S'ÉCHANTILLONNE PAS. Deux anneaux d'une même
+// ville sont des RECTANGLES du repère de la trame : ils ne peuvent partager
+// une rue que par des côtés COLINÉAIRES. La somme des recouvrements de ces
+// côtés est exacte et immédiate, là où un balayage par points coûterait des
+// secondes au démarrage. Vérifié contre le balayage sur cent cinquante
+// paires : d'accord partout — et il vaut MIEUX que lui sur un point, un
+// croisement de coins (deux anneaux qui se touchent sur vingt blocs sans
+// partager une rue) que le balayage comptait et que la formule ignore.
+function partageDeRue(a, b) {
+  let total = 0;
+  for (const A1 of [a.cU + a.Ru, a.cU - a.Ru]) for (const A2 of [b.cU + b.Ru, b.cU - b.Ru]) {
+    if (Math.abs(A1 - A2) > 2) continue;                       // pas la même rue
+    total += Math.max(0, Math.min(a.cV + a.Rv, b.cV + b.Rv) - Math.max(a.cV - a.Rv, b.cV - b.Rv));
+  }
+  for (const B1 of [a.cV + a.Rv, a.cV - a.Rv]) for (const B2 of [b.cV + b.Rv, b.cV - b.Rv]) {
+    if (Math.abs(B1 - B2) > 2) continue;
+    total += Math.max(0, Math.min(a.cU + a.Ru, b.cU + b.Ru) - Math.max(a.cU - a.Ru, b.cU - b.Ru));
+  }
+  return total;
+}
+
+// La barre de la v211, telle quelle : une vingtaine de blocs, la taille d'un
+// carrefour. Publiée pour que le témoin mesure CE QUE LE JEU APPLIQUE, jamais
+// un chiffre recopié.
+export const PARTAGE_MAX = 20;
+
+// CE QUE L'ENFANT VOIT EN ARRIVANT, ET NON UN COMPTE D'ANNEAUX (v270).
+// Une voiture ne se DESSINE qu'à quarante-cinq blocs (`vu: 45` du convoi,
+// vehicules.js) : un anneau plus loin que cela existe sans se voir. Or la
+// contrainte de partage ci-dessus, qui trie par taille, sacrifiait justement
+// les anneaux DÉCALÉS — ceux dont un côté passe près du centre. Mesuré au
+// premier portail : Rome gardait ses quatre anneaux, mais le plus proche
+// passait de DOUZE blocs du centre à quarante-cinq — PILE la portée — et
+// l'enfant posé sur la place ne voyait plus une seule voiture. C'est le
+// témoin « la circulation naît à l'approche » de `monte.js` qui l'a dit, et
+// lui seul : « aucune ville ne perd tous ses convois » était vert, parce
+// qu'il comptait des ANNEAUX et non ce qui se dessine.
+//
+// D'où la règle : LE PREMIER ANNEAU RETENU EST CELUI QUE L'ENFANT VOIT. Le
+// reste de la sélection ne change pas.
+//
+// Le chiffre est recopié de `vehicules.js`, qui le PUBLIE : villesmonde.js
+// est lu par le mailleur du worker et mourrait au premier `import 'three'`
+// de son graphe (v251). Un témoin exige que les deux disent la même chose.
+export const VU_VOITURE = 45;
+
+// PLUS PRÈS QUE LA PORTÉE, PARCE QU'UNE VOITURE N'EST PAS UN ANNEAU. Les
+// voitures sont espacées le long du tracé (jusqu'à vingt-cinq blocs entre
+// deux) : un anneau qui frôle le centre à quarante-quatre blocs peut n'avoir
+// aucune voiture à portée. À trente blocs, même une voiture décalée de douze
+// blocs le long du tracé reste dans les quarante-cinq (√(30² + 12²) = 32).
+export const VU_ANNEAU = 30;
+
+// La distance de l'ANCRE au périmètre d'un anneau, dans le repère de la
+// trame — une rotation ne change pas une distance à l'origine, donc c'est
+// aussi la distance dans le monde. Exacte et en temps constant : on ne
+// balaie pas un périmètre pour répondre à cela.
+function distanceAuCentre(c) {
+  const px = Math.abs(c.cU), py = Math.abs(c.cV);
+  if (px <= c.Ru && py <= c.Rv) return Math.min(c.Ru - px, c.Rv - py);
+  return Math.hypot(Math.max(px - c.Ru, 0), Math.max(py - c.Rv, 0));
+}
+
+// LE TABLIER FRANCHIT LE FLEUVE, ET C'EST LA MÊME RÈGLE QUI LE DIT (v280).
+// Quatre villes de rivière n'avaient AUCUN anneau une fois leur fleuve rendu —
+// Hambourg, Lyon, Belgrade, Bâle. La sonde qui SÉPARE les cas l'a dit en une
+// exécution, là où mes deux hypothèses de décalage avaient échoué : sur les
+// 357 candidats, 277 à 312 sont rejetés POUR L'EAU, et le moins mauvais n'est
+// mouillé que sur DEUX À SIX points de quarante. L'anneau ne rate pas la rive,
+// il rate un pont — et la vraie ville, elle, en a vingt.
+//
+// ON MESURE LA TRAVERSÉE AVANT DE POSER UNE BORNE. Mesuré au bloc, le tronçon
+// mouillé du meilleur anneau vaut 8 blocs à Bâle, 14 à Lyon, 19 à Belgrade,
+// 23 à Hambourg — soit, à trente-six blocs par kilomètre, 222, 389, 528 et
+// 640 mètres, l'ordre de grandeur du Mittlere Brücke, du pont Wilson, du
+// Brankov most et des Elbbrücken. `PONT_MAX` vaut donc VINGT-QUATRE blocs :
+// c'est ce que la plus large de ces traversées demande, pas un chiffre rond.
+//
+// ET LA RÈGLE EST PURE ET UNE SEULE : `anneauxDeVille` choisit les anneaux ET
+// publie les tabliers qu'ils exigent ; la CIRCULATION les lit pour rouler, le
+// SOL les lit pour poser le béton, `coteRoulable` pour savoir à quelle hauteur
+// on roule. Deux tables qui décrivent le même pont finiraient par diverger —
+// c'est la discipline de `postesAvion`, de `CHAUSSEE` et de `feux.js`.
+export const PONT_MAX = 24;
+// Le parapet, de chaque côté du tablier : un bloc et deux dixièmes, la même
+// largeur qu'un trottoir de pont.
+const PARAPET = 1.2;
+
+// Un pont : une bande le long d'un côté d'anneau, dans le repère de la trame.
+// `axe` 0 = la bande court selon P (le premier axe de trame), 1 = selon Q.
+const ANNEAUX = new Map();
+
+export function anneauxDeVille(f) {
+  if (ANNEAUX.has(f)) return ANNEAUX.get(f);
+  const vide = { formes: [], ponts: [] };
+  {
+    if (!f.trame) { ANNEAUX.set(f, vide); return vide; }
+    // ON NE FAIT PAS ROULER UNE BERLINE DANS UNE RUELLE DE MÉDINA (v270).
+    // Venise, Jérusalem et Marrakech ont des ruelles de 1,8 bloc, et une
+    // voiture en fait 2,26 : elle n'y tient pas — elle roulait donc sur les
+    // deux trottoirs à la fois, et dans tout ce qu'ils portent. Ce fichier
+    // écrivait déjà « Venise n'aura jamais de voitures, et c'est très bien
+    // comme ça » à propos de l'eau ; c'est vrai de ses ruelles aussi, et de
+    // la médina de Marrakech comme de la vieille ville de Jérusalem. Une
+    // ville sans voitures est une DÉCISION quand la vraie ville n'en a pas ;
+    // et elle rend à ces trois-là tout leur mobilier de rue, qu'aucun
+    // dégagement n'a plus à repousser.
+    if (f.trame.ruelles) { ANNEAUX.set(f, vide); return vide; }
     const t = f.trame;
     const co = Math.cos(t.ang), si = Math.sin(t.ang);
     // UNE VILLE COUPÉE PAR UN FLEUVE N'AVAIT AUCUNE VOITURE. On essayait
@@ -1919,16 +2611,41 @@ export function tracesCirculation(solDe) {
       }
     }
     const MAX_ANNEAUX = 4;
-    for (const [part, decU, decV, ku, kv] of candidats) {
-      if (traces.filter((t2) => t2.cle === f.cle).length >= MAX_ANNEAUX) break;
+    // Les anneaux DE CETTE VILLE, tenus à part : `traces` porte les huit cents
+    // du monde entier, et les refiltrer à chaque candidat coûtait six cents
+    // millisecondes au démarrage pour une réponse qu'on a sous la main.
+    const gardes = [];
+    const formes = [], ponts = [];
+    // Un candidat validé, ou `null` — sans rien retenir. `exigerProche` est
+    // la phase 1 : elle réclame en plus que l'anneau passe à portée de vue du
+    // centre. La condition est testée AVANT l'eau, parce qu'elle coûte mille
+    // fois moins — la règle que cette même livraison a payée plus haut.
+    const valider = ([part, decU, decV, ku, kv], exigerProche) => {
       const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
       const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
       const Ru = Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
       const Rv = Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
-      // l'anneau trempe-t-il ? On échantillonne son périmètre dans le repère
-      // de la trame, puis on tourne vers le monde.
-      let sec = true;
-      for (let k = 0; k < 40 && sec; k++) {
+      const candidat = { cU, cV, Ru, Rv };
+      if (exigerProche && distanceAuCentre(candidat) > VU_ANNEAU) return null;
+      // LE PARTAGE SE JUGE AVANT L'EAU, parce qu'il coûte mille fois moins.
+      // Mis APRÈS, il faisait tourner le test d'eau — quarante points et un
+      // appel de géographie chacun — sur tous les candidats qu'il allait
+      // rejeter : `tracesCirculation` passait de 82 à 380 ms au démarrage,
+      // et le jeu attend ce calcul derrière son bouton « Jouer » (v258). Une
+      // condition bon marché passe devant une condition chère, toujours.
+      //
+      // Un anneau DÉJÀ retenu se rejette ici tout seul : son partage avec
+      // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
+      // toute la liste sans se dédoubler.
+      if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
+      // L'anneau trempe-t-il, et de combien ? On échantillonne son périmètre
+      // dans le repère de la trame, puis on tourne vers le monde. Quarante
+      // points suffisent à ÉCARTER un anneau au milieu de l'eau ; la longueur
+      // exacte du tronçon mouillé, elle, se remesure AU BLOC (`traverseesDe`),
+      // parce qu'une borne de vingt-quatre blocs ne se juge pas sur un pas
+      // d'échantillon qui en vaut quinze.
+      let mouille = 0;
+      for (let k = 0; k < 40; k++) {
         const c2 = k / 40;
         let A, B;
         if (c2 < 0.25) { A = Ru; B = Rv * (c2 * 8 - 1); }
@@ -1936,20 +2653,195 @@ export function tracesCirculation(solDe) {
         else if (c2 < 0.75) { A = -Ru; B = Rv * (5 - c2 * 8); }
         else { A = Ru * (c2 * 8 - 7); B = -Rv; }
         const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
-        if (Math.hypot(u, v) > f.rayon - 2 || eauDeVille(f, u / f.K, v / f.K)) sec = false;
-        if (t.sud && v / f.K > t.sud) sec = false;
+        if (Math.hypot(u, v) > f.rayon - 2) return null;
+        if (t.sud && v / f.K > t.sud) return null;
+        if (eauDeVille(f, u / f.K, v / f.K)) mouille++;
       }
-      if (!sec) continue;
-      const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
-      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]].map(([A, B]) => ({
-        x: f.ancre.x + (A + cU) * co + (B + cV) * si,
-        y,
-        z: f.ancre.z + (-(A + cU) * si + (B + cV) * co),
-      }));
+      // Un anneau à moitié dans l'eau n'est pas une ville, c'est un radeau :
+      // au-delà du quart du périmètre on n'essaie même pas de le franchir.
+      if (mouille > 10) return null;
+      if (!mouille) { candidat.ponts = []; return candidat; }
+      const trav = traverseesDe(f, candidat);
+      if (!trav) return null;
+      candidat.ponts = trav;
+      return candidat;
+    };
+    const retenir = (c) => {
+      // ON ROULE À DROITE (v271). L'anneau retenu est l'AXE de la rue ; le
+      // convoi, lui, roule au milieu de SA voie, donc décalé d'une
+      // demi-chaussée vers sa droite. Le signe se MESURE, il ne se déduit
+      // pas : dans three.js la caméra regarde vers −Z et sa droite est +X,
+      // donc pour une direction (fx, fz) la droite vaut (−fz, fx) — et
+      // relevé sur les quatre côtés d'un anneau réel, elle pointe vers le
+      // CENTRE du rectangle. Rouler à droite, c'est donc rétrécir l'anneau
+      // d'une demi-chaussée, pas l'élargir.
+      //
+      // L'axe reste ce que porte `forme` : c'est LUI que juge la contrainte
+      // de partage (v270), parce que deux convois qui se suivent se suivent
+      // sur une RUE, pas sur une trajectoire.
+      const voie = t.w / 2;
+      const Ru = Math.max(t.pu, c.Ru - voie), Rv = Math.max(t.pv, c.Rv - voie);
+      // Les quatre coins, en coordonnées de TRAME : `tracesCirculation` les
+      // tournera vers le monde et y ajoutera la cote. Une forme pure ne
+      // connaît pas le sol.
+      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]]
+        .map(([A, B]) => [A + c.cU, B + c.cV]);
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
-      traces.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, pts, rang: traces.filter((t2) => t2.cle === f.cle).length });
+      formes.push({ pts, forme: c, rang: gardes.length });
+      for (const q of c.ponts || []) ponts.push(q);
+      gardes.push(c);
+    };
+
+    // PHASE 1 — L'ANNEAU QUE L'ENFANT VOIT EN ARRIVANT. Il passe en premier,
+    // donc rien ne peut le lui prendre : c'est le seul moyen de garantir par
+    // CONSTRUCTION qu'une ville est vivante quand on s'y pose, et non par
+    // chance de l'ordre de tri. Voir VU_ANNEAU.
+    for (const spec of candidats) {
+      if (gardes.length) break;
+      const c = valider(spec, true);
+      if (c) retenir(c);
+    }
+
+    // PHASE 2 — le reste, dans l'ordre habituel : du plus grand au plus petit.
+    //
+    // ET LE JEU DE CANDIDATS ÉLARGI EST UN NON-RÉSULTAT MESURÉ : sept fois
+    // plus de candidats (quatorze tailles, vingt-cinq décalages, sept
+    // formes) ne rendent que DIX-SEPT anneaux sur les deux cent
+    // soixante-sept perdus. « Le prix se paie avec des rues » (v216) ne
+    // marche pas ici : un rectangle posé sur une trame n'a pas assez de
+    // places distinctes. Écrit, mesuré, retiré — qu'on ne le réécrive pas.
+    for (const spec of candidats) {
+      if (gardes.length >= MAX_ANNEAUX) break;
+      const c = valider(spec, false);
+      if (c) retenir(c);
+    }
+    const out = { formes, ponts };
+    ANNEAUX.set(f, out);
+    return out;
+  }
+}
+
+// LE TRONÇON MOUILLÉ SE MESURE AU BLOC, CÔTÉ PAR CÔTÉ. Les quarante
+// échantillons du test d'eau ont un pas de quatre à quinze blocs selon la
+// taille de l'anneau : ils disent « il y a de l'eau », jamais « il y en a
+// vingt-trois blocs ». Une borne de vingt-quatre blocs jugée sur un pas de
+// quinze ne borne rien — c'est « un budget sous le coût d'une seule unité ne
+// borne rien » (v229), du côté d'une longueur.
+//
+// Un côté d'anneau est un segment d'un axe de la trame : on le parcourt bloc
+// par bloc et l'on note les suites mouillées. Une suite trop longue rend
+// `null` — cet anneau-là n'est pas franchissable. Chaque côté est parcouru à
+// part, donc une suite ne peut pas tourner un coin : un pont ne tourne pas.
+function traverseesDe(f, c) {
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const { cU, cV, Ru, Rv } = c;
+  // LE TABLIER PORTE LA CHAUSSÉE ENTIÈRE ET SES DEUX PARAPETS, et la largeur
+  // se DEMANDE à la trame. `t.w` est la DEMI-chaussée (2,8 blocs mesurés, donc
+  // 5,6 de chaussée depuis la v271) : mon premier jet écrivait `t.w / 2` et
+  // donnait un tablier de la moitié de sa propre rue — la voiture, décalée
+  // dans sa voie de droite, roulait le flanc sur le parapet. Une largeur
+  // d'ouvrage se dimensionne sur ce qui roule dessus, et cela se mesure.
+  const demi = t.w + PARAPET;
+  const cotes = [
+    { axe: 1, b: cU + Ru, a0: cV - Rv, a1: cV + Rv },
+    { axe: 0, b: cV + Rv, a0: cU - Ru, a1: cU + Ru },
+    { axe: 1, b: cU - Ru, a0: cV - Rv, a1: cV + Rv },
+    { axe: 0, b: cV - Rv, a0: cU - Ru, a1: cU + Ru },
+  ];
+  const ponts = [];
+  for (const cote of cotes) {
+    let debut = null;
+    const n = Math.round(cote.a1 - cote.a0);
+    for (let k = 0; k <= n; k++) {
+      const a = cote.a0 + k;
+      const P = cote.axe === 0 ? a : cote.b, Q = cote.axe === 0 ? cote.b : a;
+      const u = P * co + Q * si, v = -P * si + Q * co;
+      const eau = k <= n && eauDeVille(f, u / f.K, v / f.K);
+      if (eau) { if (debut === null) debut = a; continue; }
+      if (debut !== null) {
+        if (a - debut > PONT_MAX) return null;
+        // Le tablier mord d'un bloc et demi sur chaque rive : une culée qui
+        // s'arrête au bord de l'eau laisse une marche entre le quai et le
+        // pont, et un enfant de sept ans s'y arrête sans comprendre.
+        ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: a + 0.5, demi });
+        debut = null;
+      }
+    }
+    if (debut !== null) {
+      if (cote.a1 - debut > PONT_MAX) return null;
+      ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: cote.a1 + 1.5, demi });
+    }
+  }
+  return ponts;
+}
+
+// La cote du tablier : celle de la RUE de la ville, pas celle du lit. Sur une
+// colonne de fleuve `hauteurVillesMonde` rend 26 et l'eau monte à 30 : écrire
+// le tablier là, c'est paver le fond sous quatre blocs d'eau (leçon de la
+// Tamise, v208). `Math.floor` parce que c'est ce que `terrainHeight` rend.
+export function coteDeVille(f) {
+  return Math.floor(f.sol || 33);
+}
+
+// Ce point est-il sur un tablier de cette ville ? Rend le bloc à poser —
+// bitume au milieu, pierre aux parapets — ou `null`.
+function pontDeVille(f, u, v) {
+  const a = anneauxDeVille(f);
+  if (!a.ponts.length) return null;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const P = u * co - v * si, Q = u * si + v * co;
+  for (const q of a.ponts) {
+    const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
+    if (le < q.a0 || le > q.a1) continue;
+    const d = Math.abs(tr - q.b);
+    if (d > q.demi) continue;
+    // UNE PILE, SINON LE TABLIER FLOTTE. « Si un élément ne se reconnaît pas
+    // au premier regard, refais-le » : une route posée sur l'eau sans rien
+    // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.
+    const pile = d < 1.5 && ((Math.round(le) % 7) + 7) % 7 === 0;
+    return { id: d > q.demi - PARAPET ? PIERRE : BITUME, pile };
+  }
+  return null;
+}
+
+// Ce que `world.js` et `coteRoulable` demandent : le tablier sous ce point du
+// MONDE, avec sa cote. `null` s'il n'y a pas de pont ici.
+export function pontVillesMonde(x, z) {
+  for (const f of villesPres(x, z)) {
+    if (!f.trame) continue;
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (Math.hypot(u, v) > f.rayon) continue;
+    const q = pontDeVille(f, u, v);
+    if (!q) return null;
+    return { id: q.id, pile: q.pile, cote: coteDeVille(f) };
+  }
+  return null;
+}
+
+// LA CIRCULATION LIT LA MÊME RÈGLE. Elle n'ajoute que ce qu'une forme pure ne
+// peut pas savoir : la cote du sol, et le décalage de la voie de droite.
+export function tracesCirculation(solDe) {
+  const traces = [];
+  for (const f of VILLES_MONDE) {
+    const a = anneauxDeVille(f);
+    if (!a.formes.length) continue;
+    const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+    for (const forme of a.formes) {
+      traces.push({
+        cle: f.cle,
+        x: f.ancre.x,
+        z: f.ancre.z,
+        rang: forme.rang,
+        forme: forme.forme,
+        pts: forme.pts.map(([P, Q]) => ({
+          x: f.ancre.x + P * co + Q * si,
+          y,
+          z: f.ancre.z + (-P * si + Q * co),
+        })),
+      });
     }
   }
   return traces;

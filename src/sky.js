@@ -4,6 +4,7 @@
 // suivent la caméra, et le brouillard les épargne.
 
 import * as THREE from 'three';
+import { decor } from './couches.js';
 
 const RAYON = 420;        // distance des astres : loin devant, mais bien avant le plan lointain (900)
 const NB_ETOILES = 420;
@@ -73,10 +74,41 @@ export function createSky({ scene, camera, sunLight }) {
 
   const dirSoleil = new THREE.Vector3();
 
+  // LE DÔME DU CIEL (v247) : un dégradé de l'horizon au zénith, comme à
+  // Manhattan (manhattan-render.js), à la place d'une couleur unie. Il porte
+  // la correspondance tonale du rendu, sinon il serait le seul objet de la
+  // scène à ne pas y passer et jurerait avec tout le reste.
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 24, 12),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { zenith: { value: new THREE.Color(0x4f86b8) }, horizon: { value: new THREE.Color(0x87ceeb) } },
+      vertexShader: 'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader: 'varying vec3 direction;uniform vec3 zenith;uniform vec3 horizon;void main(){float h=max(normalize(direction).y,0.);gl_FragColor=vec4(mix(horizon,zenith,pow(h,.65)),1.);\n #include <tonemapping_fragment>\n #include <colorspace_fragment>\n}',
+    })
+  );
+  dome.scale.setScalar(RAYON * 2);      // au-delà des astres, en deçà du plan lointain
+  dome.renderOrder = -10;
+  dome.frustumCulled = false;
+  groupe.add(dome);
+  const zenith = new THREE.Color();
+
   // angle : 0 → 2π sur une journée, sin(angle) > 0 quand il fait jour
   // daylight : 0 la nuit, 1 à midi (déjà calculé par le cycle existant)
-  function update(angle, daylight, camPos) {
+  // couleurCiel : la couleur du ciel à l'horizon, calculée par main.js
+  function update(angle, daylight, camPos, couleurCiel) {
     groupe.position.copy(camPos); // le ciel accompagne le joueur, il est à l'infini
+    if (couleurCiel) {
+      dome.material.uniforms.horizon.value.copy(couleurCiel);
+      // le zénith est plus profond que l'horizon : bleu franc le jour, presque
+      // noir la nuit — c'est ce qui donne au ciel sa voûte
+      // Mesuré au banc : à 0,75 fois l'horizon le zénith rendait 187 pour 194
+      // après correspondance tonale — une voûte invisible. Il lui faut la
+      // moitié de la luminance de l'horizon et un bleu plus franc.
+      zenith.copy(couleurCiel).multiplyScalar(0.34 + 0.12 * daylight);
+      zenith.b = Math.min(1, zenith.b * 1.45);
+      dome.material.uniforms.zenith.value.copy(zenith);
+    }
 
     // le soleil monte à l'est et se couche à l'ouest, en passant légèrement
     // de côté plutôt que pile au zénith : l'ombre portée est plus jolie
@@ -109,13 +141,16 @@ export function createSky({ scene, camera, sunLight }) {
     etoiles.visible = etoilesMat.opacity > 0.01;
 
     // la lumière directionnelle suit vraiment le soleil : les faces éclairées
-    // changent au fil de la journée au lieu de rester figées
-    if (sunLight) {
-      sunLight.position.copy(hauteur > 0 ? dirSoleil : dirSoleil.clone().negate());
-    }
+    // changent au fil de la journée au lieu de rester figées. La direction
+    // est publiée (`direction`) : main.js pose le soleil par rapport à
+    // l'enfant pour que les ombres se dessinent autour de lui.
+    direction.copy(hauteur > 0 ? dirSoleil : dirSoleil.clone().negate());
+    if (sunLight) sunLight.position.copy(direction);
   }
+  const direction = new THREE.Vector3(0, 1, 0);
 
-  return { update, soleil, lune, etoiles, halo };
+  decor(groupe);   // le ciel se reflète dans les carrosseries (couches.js)
+  return { update, soleil, lune, etoiles, halo, dome, direction };
 }
 
 // L'eau ondule par déplacement des sommets dans le shader : le coût est nul

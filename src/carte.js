@@ -31,6 +31,23 @@ import { couleurCarteVillesMonde, lieuxDesVillesMonde } from './villesmonde.js';
 import { zDeLatitude } from './mondes.js';
 import { surLaVoie } from './trains.js';
 
+// CE QUE LA PRÉPARATION DU FOND PREND DANS CHAQUE IMAGE (v276).
+//
+// C'est un budget PAR IMAGE, donc un TAUX — et le piège de la v237, un étage
+// plus haut : le fond demande une quarantaine de tranches, et six
+// millisecondes par image en font une par image. Sur une tablette qui rame, ou
+// sur le banc où l'accueil rend une à deux images par seconde, quarante images
+// valent vingt à quarante secondes de vraie vie : la préparation touchait sa
+// borne des quarante-cinq secondes sans avoir fini son fond, et « Jouer » se
+// libérait quand même — mesuré au portail, vingt-neuf tranches sur trente-huit.
+//
+// Or pendant ce temps-là, il n'y a AUCUNE partie à protéger : le bouton est
+// grisé, personne ne joue. Le budget peut donc être généreux — ce n'est pas le
+// même arbitrage que `avancerFond(8)` de la boucle de jeu, qui, lui, dispute
+// ses millisecondes au monde qui tourne. Le chiffre se mesure (`?fondms=`), il
+// ne se devine pas.
+const BUDGET_PREP = Number(new URLSearchParams(location.search).get('fondms')) || 30;
+
 // Les lisières des calottes, calculées une fois : la latitude ne dépend que
 // de z, donc peindre le pôle coûte une comparaison — pas une projection.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
@@ -441,72 +458,99 @@ export class Carte {
 
   // --- le fond ---------------------------------------------------------------
 
-  rendreFond(grossier = false) {
-    const { l, h } = this.taille();
-    // Pendant un glisser ou un pincement, un échantillon pour quatre pixels :
-    // quatre fois moins de colonnes à calculer, le geste reste fluide sur
-    // tablette. Au repos, la pleine finesse revient en un rendu.
-    const div = grossier ? 4 : 2;
+  // LE FOND SE CALCULE PAR TRANCHES, SOUS UN BUDGET PAR IMAGE (v258).
+  //
+  // Max : « quand on ouvre la carte, beaucoup de lag au début ». Mesuré au
+  // banc, processeur bridé ×4 : l'ouverture bloquait le fil principal 1,6 s
+  // d'un seul tenant — 74 000 colonnes de `terrainHeight` (les deux tiers) et
+  // de couleur (le tiers restant) dans la même tâche — puis 90 à 240 ms à
+  // chaque glisser. Le calcul est le même ; il se fait désormais ligne par
+  // ligne, `avancerFond(budget)` s'arrêtant dès que son budget est épuisé et
+  // reprenant à l'image suivante. Pendant ce temps le fond PRÉCÉDENT reste
+  // étiré à l'écran (c'est `peindre` qui le fait depuis toujours), et le
+  // nouveau le remplace d'un coup quand il est fini. Le premier fond, lui,
+  // se prépare AVANT « Jouer » (`preparer`), derrière l'accueil.
+  //
+  // `rendreFond` reste : c'est le même travail mené jusqu'au bout, ce dont
+  // le banc se sert pour mesurer une vue d'un seul appel.
+
+  // Prépare le travail d'un fond pour une vue : la géométrie, le champ de
+  // hauteurs vide, l'image vide. Rien n'est encore calculé.
+  // `niveau` : 0 = fin (un échantillon pour deux pixels), 1 = grossier (un
+  // pour quatre, pendant un geste), 2 = esquisse (un pour huit : de quoi
+  // montrer quelque chose tout de suite quand il n'y a rien à étirer).
+  commencerFond(niveau = 0, vue = this.vue, l = null, h = null) {
+    if (l === null) ({ l, h } = this.taille());
+    const div = niveau === 2 ? 8 : niveau ? 4 : 2;
     const NL = Math.max(64, Math.round((l * MARGE) / div));
     const NH = Math.max(64, Math.round((h * MARGE) / div));
-    this.fondGrossier = grossier;
-    if (this.fond.width !== NL || this.fond.height !== NH) {
-      this.fond.width = NL; this.fond.height = NH;
-    }
-    const ctx = this.fond.getContext('2d');
-    const img = ctx.createImageData(NL, NH);
-
-    const largeL = l * this.vue.bpp * MARGE;     // largeur couverte, en blocs
-    const largeH = h * this.vue.bpp * MARGE;     // et hauteur, qui peut différer
+    const largeL = l * vue.bpp * MARGE;     // largeur couverte, en blocs
+    const largeH = h * vue.bpp * MARGE;     // et hauteur, qui peut différer
     // Le PAS est le même sur les deux axes — c'est ce qui empêche le monde de
     // s'étirer, et c'est vrai par construction puisque les deux côtés se
     // déduisent du même `bpp`.
     const pas = largeL / NL;
-    const x0 = this.vue.cx - largeL / 2, z0 = this.vue.cz - largeH / 2;
-    // Les vrais blocs, seulement d'assez près : le monde n'est en mémoire que
-    // sur un carré d'environ 380 blocs autour du joueur, et au-delà de cette
-    // échelle ce carré se verrait comme une pièce rapportée.
-    const fin = this.vue.bpp <= 0.7;
-    // La trame des rues, elle, est calculée : on peut la montrer un peu plus
-    // loin, tant que l'échantillonnage ne la transforme pas en moirage.
-    const rues = this.vue.bpp <= 1.0;
+    this.travail = {
+      niveau, vue: { cx: vue.cx, cz: vue.cz, bpp: vue.bpp, l, h },
+      NL, NH, pas, x0: vue.cx - largeL / 2, z0: vue.cz - largeH / 2,
+      // Les vrais blocs, seulement d'assez près : le monde n'est en mémoire
+      // que sur un carré d'environ 380 blocs autour du joueur, et au-delà de
+      // cette échelle ce carré se verrait comme une pièce rapportée.
+      fin: vue.bpp <= 0.7,
+      // La trame des rues, elle, est calculée : on peut la montrer un peu plus
+      // loin, tant que l'échantillonnage ne la transforme pas en moirage.
+      rues: vue.bpp <= 1.0,
+      // Le champ de hauteurs a une bordure : l'ombrage a besoin des voisins,
+      // et les recalculer pour chaque point coûterait cinq fois plus.
+      L: NL + 2, H: new Float32Array((NL + 2) * (NH + 2)),
+      img: new ImageData(NL, NH),
+      ligne: -1,       // prochaine ligne du champ de hauteurs (−1 … NH)
+      couleur: 0,      // prochaine ligne de couleur (0 … NH − 1)
+    };
+    return this.travail;
+  }
 
-    // Le champ de hauteurs d'abord, avec une bordure : l'ombrage a besoin des
-    // voisins, et les recalculer pour chaque point coûterait cinq fois plus.
-    const L = NL + 2;
-    const H = new Float32Array(L * (NH + 2));
+  // Avance le travail en cours pendant `budgetMs` au plus. Rend vrai quand le
+  // fond est fini — et alors posé : c'est lui que `peindre` étire désormais.
+  avancerFond(budgetMs = 8) {
+    const t = this.travail;
+    if (!t) return true;
+    const fin = performance.now() + budgetMs;
     // Le cache de colonnes : la hauteur d'une colonne est immuable — c'est le
-    // même chiffre à chaque rendu. Pendant un glisser, la carte se redessine
-    // à chaque image, et l'écran suivant recouvre presque le même monde que
-    // le précédent : on garde donc les hauteurs déjà calculées, et un rendu
-    // qui suit un autre ne paie que la tranche neuve. Le cache se vide quand
-    // il déborde : un tour du monde entier tient dedans sans effort.
+    // même chiffre à chaque rendu. L'écran suivant recouvre presque le même
+    // monde que le précédent : un rendu qui suit un autre ne paie que la
+    // tranche neuve. Le cache se vide quand il déborde : un tour du monde
+    // entier tient dedans sans effort.
     if (!this.cacheH) this.cacheH = new Map();
     if (this.cacheH.size > 400000) this.cacheH.clear();
     const cache = this.cacheH;
-    for (let j = -1; j <= NH; j++) {
+    const { NL, NH, L, H, pas, x0, z0 } = t;
+    while (t.ligne <= NH) {
+      const j = t.ligne;
       const wz = Math.floor(z0 + (j + 0.5) * pas);
       for (let i = -1; i <= NL; i++) {
         const wx = Math.floor(x0 + (i + 0.5) * pas);
         const cle = wx * 262144 + wz;
-        let h = cache.get(cle);
-        if (h === undefined) { h = this.world.terrainHeight(wx, wz); cache.set(cle, h); }
-        H[(j + 1) * L + i + 1] = h;
+        let hh = cache.get(cle);
+        if (hh === undefined) { hh = this.world.terrainHeight(wx, wz); cache.set(cle, hh); }
+        H[(j + 1) * L + i + 1] = hh;
       }
+      t.ligne++;
+      if (performance.now() >= fin) return false;
     }
-
-    for (let j = 0; j < NH; j++) {
+    const img = t.img;
+    while (t.couleur < NH) {
+      const j = t.couleur;
       const wz = Math.floor(z0 + (j + 0.5) * pas);
       for (let i = 0; i < NL; i++) {
         const wx = Math.floor(x0 + (i + 0.5) * pas);
         const k = (j + 1) * L + i + 1;
-        const h = H[k];
-        const c = this.couleur(wx, wz, h, fin, rues);
-
+        const hh = H[k];
+        const c = this.couleur(wx, wz, hh, t.fin, t.rues);
         // Relief : lumière rasante venant du nord-ouest. C'est elle qui donne
         // aux montagnes leur volume — une carte plate paraît morte.
         let ombre = 1;
-        if (h > WATER_LEVEL) {
+        if (hh > WATER_LEVEL) {
           const pente = ((H[k + 1] - H[k - 1]) + (H[k + L] - H[k - L])) / (2 * Math.max(1, pas));
           ombre = borne(1 + pente * 0.30, 0.62, 1.34);
         }
@@ -516,11 +560,59 @@ export class Carte {
         img.data[o + 2] = Math.min(255, c[2] * ombre);
         img.data[o + 3] = 255;
       }
+      t.couleur++;
+      if (performance.now() >= fin) return false;
     }
-    ctx.putImageData(img, 0, 0);
-    this.fondVue = { ...this.vue, l, h };
+    if (this.fond.width !== NL || this.fond.height !== NH) {
+      this.fond.width = NL; this.fond.height = NH;
+    }
+    this.fond.getContext('2d').putImageData(img, 0, 0);
+    this.fondGrossier = t.niveau > 0;
+    this.fondVue = t.vue;
     this.dernierRendu = performance.now();
+    this.travail = null;
+    return true;
   }
+
+  // Le même travail, d'un seul tenant : pour le banc, et pour l'esquisse.
+  rendreFond(grossier = false) {
+    this.commencerFond(grossier === 2 ? 2 : grossier ? 1 : 0);
+    this.avancerFond(Infinity);
+  }
+
+  // Un fond vaut tant qu'il COUVRE la fenêtre : il est calculé sur MARGE fois
+  // la vue, donc un glisser d'un dixième de l'écran n'a rien à recalculer —
+  // `peindre` l'étire au bon endroit. C'est la leçon de la minicarte (v233) :
+  // on se rafraîchit sur un déplacement, pas sur une horloge.
+  couvre(f, l, h) {
+    if (!f) return false;
+    const v = this.vue;
+    const dl = (f.l * f.bpp * MARGE - l * v.bpp) / 2, dh = (f.h * f.bpp * MARGE - h * v.bpp) / 2;
+    return dl >= 0 && dh >= 0 && Math.abs(v.cx - f.cx) <= dl && Math.abs(v.cz - f.cz) <= dh;
+  }
+
+  // Le premier fond, AVANT « Jouer » : centré sur l'enfant, à l'échelle où la
+  // carte s'ouvre, à la taille que la fiche aura (`l`, `h`), par tranches
+  // dans ses propres images tant que la carte est fermée. Ouverte, c'est
+  // `peindre` qui reprend le même travail. `prete()` dit s'il y a un fond.
+  preparer(cx, cz, bpp, l, h) {
+    if (this.ouverte || this.fondVue || this.travail) return;
+    this.vue = { cx, cz, bpp };
+    this.commencerFond(0, this.vue, l, h);
+    // `prepPas` et `prepErreur` : ce que la préparation a fait, lisible par
+    // une sonde — une boucle d'images qui meurt en silence ne se démonte pas.
+    this.prepPas = 0; this.prepErreur = null;
+    const pas = () => {
+      if (this.ouverte || !this.travail) return;
+      this.prepPas++;
+      let fini = true;
+      try { fini = this.avancerFond(BUDGET_PREP); } catch (e) { this.prepErreur = String(e && e.message || e); return; }
+      if (!fini) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }
+
+  prete() { return !!this.fondVue; }
 
   // --- le calque : ce qui bouge et ce qui se lit -----------------------------
 
@@ -732,16 +824,16 @@ export class Carte {
       }
     }
 
-    // Les créatures se dessinent à tous les zooms — la légende les promet, et
-    // un enfant qui dézoome les voyait disparaître sans un mot : « je ne vois
-    // plus de Pokémon sur la carte ». Habitants et animaux, plus nombreux et
-    // moins chassés, n'apparaissent qu'en s'approchant. Et elles se dessinent
-    // APRÈS les étiquettes : quatre pixels violets sous une pastille de nom
-    // étaient effacés, et de loin il n'en reste parfois qu'une à l'écran.
-    if (this.mobiles) {
-      const tous = b <= 1.4;
+    // Habitants et animaux n'apparaissent qu'en s'approchant : dessinés de loin,
+    // ils couvraient les villes de confettis. Ils se dessinent APRÈS les
+    // étiquettes, sinon quatre pixels sous une pastille de nom sont effacés.
+    //
+    // LE DRAPEAU `toujours` EST PARTI AVEC LES CRÉATURES (v285). Il existait pour
+    // elles seules — « je ne vois plus de Pokémon sur la carte » — et plus aucun
+    // mobile ne le porte : le garder serait du code qu'aucun témoin ne peut plus
+    // éprouver, c'est-à-dire une brique dont personne ne se sert (v220).
+    if (this.mobiles && b <= 1.4) {
       for (const m of this.mobiles()) {
-        if (!tous && !m.toujours) continue;
         const p = this.versEcran(m.x, m.z);
         if (p.x < -4 || p.x > l + 4 || p.y < -4 || p.y > h + 4) continue;
         ctx.fillStyle = m.couleur;
@@ -808,25 +900,40 @@ export class Carte {
     if (this.canvas.width !== Math.round(l * dpr) || this.canvas.height !== Math.round(h * dpr)) {
       this.canvas.width = Math.round(l * dpr);
       this.canvas.height = Math.round(h * dpr);
-      this.fondVue = null;
     }
     const maintenant = performance.now();
-    const perime = !this.fondVue
-      || this.fondVue.l !== l || this.fondVue.h !== h
-      || this.fondVue.bpp !== this.vue.bpp
-      || this.fondVue.cx !== this.vue.cx
-      || this.fondVue.cz !== this.vue.cz;
+    const v = this.vue;
     // Tant que la vue bouge, on note l'instant : c'est lui qui décide si on
     // rend grossier (geste en cours) ou fin (la carte s'est posée).
-    if (perime) this.vueBougeaitA = maintenant;
-    // Un fond périmé attend son tour ; un fond absent, non — sans quoi la
-    // première image après un changement de taille n'aurait rien à étirer.
-    if (perime && (!this.fondVue || maintenant - this.dernierRendu >= RENDU_MS)) {
-      this.rendreFond(maintenant - (this.vueBougeaitA || 0) < 350 && !!this.fondVue);
-    } else if (!perime && this.fondGrossier && maintenant - this.dernierRendu >= RENDU_MS
-      && maintenant - (this.vueBougeaitA || 0) >= 350) {
-      this.rendreFond(false);        // le geste est fini : la finesse revient
+    const p = this.vuePeinte;
+    if (!p || p.cx !== v.cx || p.cz !== v.cz || p.bpp !== v.bpp) this.vueBougeaitA = maintenant;
+    this.vuePeinte = { cx: v.cx, cz: v.cz, bpp: v.bpp };
+    const enGeste = maintenant - (this.vueBougeaitA || 0) < 350;
+
+    // QUE FAUT-IL RECALCULER ? Rien tant que le fond couvre la fenêtre au
+    // même zoom ; une esquisse d'un seul tenant s'il n'y a rien à étirer ;
+    // un fond grossier pendant un geste qui sort de la couverture ; le fond
+    // fin quand le geste est fini, ou que la carte vient de s'ouvrir sur un
+    // fond préparé avant que le monde autour ne soit là (`rafraichir`).
+    const f = this.fondVue;
+    const proche = (a, b) => a / b < 1.15 && b / a < 1.15;
+    if (!f) {
+      this.rendreFond(2);
+    } else {
+      let besoin = null;
+      if (!this.couvre(f, l, h) || !proche(f.bpp, v.bpp)) besoin = enGeste ? 1 : 0;
+      else if (!enGeste && (this.fondGrossier || f.bpp !== v.bpp || this.rafraichir)) besoin = 0;
+      const t = this.travail;
+      // un travail en cours sert encore s'il couvrira la fenêtre au zoom
+      // d'aujourd'hui ; sinon il se jette, et le besoin le remplace
+      if (t && !(this.couvre(t.vue, l, h) && proche(t.vue.bpp, v.bpp))) this.travail = null;
+      if (besoin !== null && (!this.travail || (besoin === 0 && this.travail.niveau > 0 && !enGeste))) {
+        this.commencerFond(besoin);
+        if (besoin === 0) this.rafraichir = false;
+      }
     }
+    // Le budget de l'image : huit millisecondes, la carte reste fluide.
+    if (this.travail) this.avancerFond(8);
 
     const ctx = this.canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -834,9 +941,9 @@ export class Carte {
 
     // Le fond calculé pour la vue précédente est étiré jusqu'à la vue
     // courante : le déplacement reste fluide même pendant qu'on recalcule.
-    const f = this.fondVue;
-    const largeFL = f.l * f.bpp * MARGE, largeFH = f.h * f.bpp * MARGE;
-    const gx = f.cx - largeFL / 2, gz = f.cz - largeFH / 2;
+    const g = this.fondVue;
+    const largeFL = g.l * g.bpp * MARGE, largeFH = g.h * g.bpp * MARGE;
+    const gx = g.cx - largeFL / 2, gz = g.cz - largeFH / 2;
     const a = this.versEcran(gx, gz);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -847,7 +954,10 @@ export class Carte {
 
   ouvrir() {
     this.ouverte = true;
-    this.fondVue = null;
+    // Un fond préparé avant que le monde autour de l'enfant ne soit chargé
+    // (ou vieux d'une partie) se montre TOUT DE SUITE, puis se refait fin par
+    // tranches : les blocs posés depuis y apparaissent dans la seconde.
+    this.rafraichir = true;
     const tick = () => {
       if (!this.ouverte) return;
       this.peindre();
@@ -970,7 +1080,11 @@ export class Carte {
     const r = cv.getBoundingClientRect();
     const m = this.versMonde(e.clientX - r.left, e.clientY - r.top);
     const prevu = performance.now() + 550;
+    // `dernierAppui` : ce que le minuteur a vu — un appui refusé se démonte
+    // avec, jamais sans (v258 : trois rouges avant de l'écrire).
+    this.dernierAppui = { arme: performance.now() };
     this.appuiLong = setTimeout(() => {
+      this.dernierAppui.retard = Math.round(performance.now() - prevu);
       // UN MINUTEUR EN RETARD N'A PAS LE DROIT DE TÉLÉPORTER. S'il tire très
       // au-delà de son heure, c'est que le fil principal était bloqué — et
       // les gestes du doigt pendant ce blocage sont peut-être ENCORE en
@@ -979,7 +1093,7 @@ export class Carte {
       // pèse plus lourd qu'un appui long à refaire. Vécu au banc de v173 :
       // la carte alourdie de deux cents villes a élargi la fenêtre de la
       // course de v169, et le correctif d'alors ne suffisait plus.
-      if (performance.now() - prevu > 120) { this.annulerAppui(); return; }
+      if (performance.now() - prevu > 120) { this.dernierAppui.decline = 'retard'; this.annulerAppui(); return; }
       // LA COURSE DU MINUTEUR. Sur une machine chargée, le doigt a bougé mais
       // ses évènements attendent encore leur tour dans la file : le minuteur
       // tire AVANT que l'annulation n'ait été traitée, et l'enfant qui
@@ -990,7 +1104,12 @@ export class Carte {
       // doigt n'a VRAIMENT pas bougé, est toujours posé, et que rien n'a
       // annulé l'appui entre-temps.
       requestAnimationFrame(() => {
-        if (this.aBouge || this.pointeurs.size !== 1 || !this.appuiLong) return;
+        this.dernierAppui.image = Math.round(performance.now() - prevu);
+        if (this.aBouge || this.pointeurs.size !== 1 || !this.appuiLong) {
+          this.dernierAppui.decline = this.aBouge ? 'bouge' : this.pointeurs.size !== 1 ? `pointeurs ${this.pointeurs.size}` : 'annule';
+          return;
+        }
+        this.dernierAppui.decline = null;
         this.annulerAppui();
         this.teleporte = true;
         this.surTeleport(m.x, m.z);

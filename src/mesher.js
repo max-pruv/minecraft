@@ -7,9 +7,14 @@
 // ambiante coïncident, sans quoi le dégradé des coins serait détruit. Mesuré
 // sur du terrain, de la forêt et le château : 3,2 fois moins de triangles.
 
-import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
-import { tileUV, tileRect } from './textures.js';
+import { tileUV, tileRect } from './tuiles.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
+
+// LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
+// arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
+// dans `plat`, jamais dans `solid`.
+const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
@@ -18,18 +23,24 @@ import { CHUNK, HEIGHT } from './world.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
+// LE MONDE EST ÉCLAIRÉ PAR LE SOLEIL DEPUIS LA v247 (matériau Lambert, ombres
+// portées, voir main.js) : le `shade` par face n'est plus la lumière, c'est un
+// RÉSIDU qui garde aux arêtes leur lisibilité quand le soleil est dans l'axe.
+// Il valait 0,62 sur les côtés et 0,5 dessous — cuit dans les couleurs de
+// sommets, il s'ajoutait à l'éclairage réel et noircissait deux fois.
+//
 // uAxis / vAxis désignent les deux axes du monde que parcourent les coordonnées
 // de texture de cette face. Ce sont eux que la fusion étire : un rectangle de
 // w × h blocs multiplie les décalages de coin et les UV par w et h.
 const FACES = [
   { // +x
     dir: [1, 0, 0], corners: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.62,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.88,
     uAxis: 2, vAxis: 1,
   },
   { // -x
     dir: [-1, 0, 0], corners: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.62,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.88,
     uAxis: 2, vAxis: 1,
   },
   { // +y (top)
@@ -39,17 +50,17 @@ const FACES = [
   },
   { // -y (bottom)
     dir: [0, -1, 0], corners: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 2, shade: 0.5,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 2, shade: 0.72,
     uAxis: 0, vAxis: 2,
   },
   { // +z
     dir: [0, 0, 1], corners: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.8,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.94,
     uAxis: 0, vAxis: 1,
   },
   { // -z
     dir: [0, 0, -1], corners: [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]],
-    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.8,
+    uvs: [[0, 0], [1, 0], [1, 1], [0, 1]], slot: 1, shade: 0.94,
     uAxis: 0, vAxis: 1,
   },
 ];
@@ -79,11 +90,8 @@ const VITRES = new Set([
   BLOCK.GLASS, CITY_BLOCK.CURTAIN,
   ARCHI.VITRINE, ARCHI.ENTRESOL, ARCHI.ETAGE, ARCHI.NOBLE, ARCHI.VITRAIL, ARCHI.SHOJI,
 ]);
-function vitreAllumee(x, y, z) {
-  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2246822519);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return (((h ^ (h >>> 16)) >>> 0) % 100) < 30;
-}
+// `vitreAllumee` vit dans `facadeshd.js` depuis la v287 : la couche HD et la
+// tuile plate doivent allumer la MÊME fenêtre.
 
 // Per-vertex ambient occlusion: corners tucked against neighbouring solid
 // blocks get darker, which grounds every edge and crevice visually.
@@ -181,17 +189,22 @@ class GeomBuffer {
     }
   }
 
-  toGeometry() {
+  // DES TAMPONS, PAS UNE GÉOMÉTRIE (v251) : le mailleur tourne dans un worker,
+  // qui ne connaît pas three. Il rend des tableaux typés, transférables sans
+  // copie ; c'est `main.js` qui en fait une BufferGeometry, en une
+  // milliseconde. Les indices tiennent sur seize bits tant que le morceau a
+  // moins de 65 536 sommets — une ville dense en a davantage.
+  toTampons() {
     if (this.indices.length === 0) return null;
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3));
-    geom.setAttribute('normal', new THREE.Float32BufferAttribute(this.normals, 3));
-    geom.setAttribute('uv', new THREE.Float32BufferAttribute(this.uvs, 2));
-    geom.setAttribute('color', new THREE.Float32BufferAttribute(this.colors, 3));
-    geom.setAttribute('tuile', new THREE.Float32BufferAttribute(this.tiles, 4));
-    geom.setIndex(this.indices);
-    geom.computeBoundingSphere();
-    return geom;
+    const sommets = this.positions.length / 3;
+    return {
+      positions: new Float32Array(this.positions),
+      normals: new Float32Array(this.normals),
+      uvs: new Float32Array(this.uvs),
+      colors: new Float32Array(this.colors),
+      tiles: new Float32Array(this.tiles),
+      indices: sommets > 65535 ? new Uint32Array(this.indices) : new Uint16Array(this.indices),
+    };
   }
 }
 
@@ -201,13 +214,24 @@ class GeomBuffer {
 // que DANS un appel, et il est effacé au début de chaque tranche.
 const masqueReserve = [];
 
-export function buildChunkGeometry(world, cx, cz) {
+export function buildChunkTampons(world, cx, cz) {
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
-    return { solid: null, water: null, lumineux: null, props: [] };
+    return { solid: null, water: null, lumineux: null, props: [], sol: null, facades: null, plat: null, platLumineux: null };
   }
   const solid = new GeomBuffer();
   const water = new GeomBuffer();
   const lumineux = new GeomBuffer();
+  // LA COUCHE HD (v287, facadeshd.js). Quand le monde la demande (`world.hd`,
+  // le palier de l'appareil) et que le morceau touche Paris : le dessus des
+  // sols de ville part dans `sol` avec la tuile HD ; les faces de façade
+  // partent PLATES dans `plat` (le loin) et DÉTAILLÉES dans `facades` (le
+  // près). Rien d'autre ne change — un palier sans HD rend exactement les
+  // tampons d'avant, et c'est un témoin qui le dit.
+  const hd = !!world.hd && couvreHD(cx, cz, CHUNK);
+  const sol = hd ? new GeomBufferHD() : null;
+  const facades = hd ? new GeomBufferHD() : null;
+  const plat = hd ? new GeomBuffer() : null;
+  const platLumineux = hd ? new GeomBuffer() : null;
   // le tirage des vitres allumées se fait en coordonnées du MONDE : en
   // coordonnées locales, le même motif se répéterait dans chaque morceau
   const ox = cx * CHUNK, oz = cz * CHUNK;
@@ -299,10 +323,18 @@ export function buildChunkGeometry(world, cx, cz) {
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
           const allume = VITRES.has(id) && vitreAllumee(ox + x, y, oz + z);
+          // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
+          // une face latérale d'un bloc de façade — elle va dans `plat`, et
+          // son détail est émis plus bas, bloc par bloc.
+          const solHD = hd && face.slot === 0 ? SOL_HD.get(id) : undefined;
+          // Le dessus d'un bloc de toit part dans `plat` : de près, la couche
+          // le remplace par son champ de hauteurs (v289, `toitDessusHD`).
+          const toitHd = hd && face.slot === 0 && TOIT_HD.has(id);
+          const facadeHd = hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd);
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
             : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
-          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z };
+          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd };
           vide = false;
         }
       }
@@ -335,17 +367,129 @@ export function buildChunkGeometry(world, cx, cz) {
             for (let du = 0; du < w; du++) masque[u + du + (v + dv) * nU] = null;
           }
 
-          const buffer = cel.isWater ? water : (cel.allume ? lumineux : solid);
+          if (cel.solHD) {
+            // le trottoir de Paris est relevé d'un dixième (`RELEVE`) : sa jupe
+            // se dessine plus bas, bloc par bloc, là où il donne sur plus bas
+            sol.addFace(face, cel.x, cel.y, cel.z, rectHD(cel.solHD.tuile), cel.yTop + (cel.solHD.releve || 0), cel.ao, w, h, [cel.solHD.rugueux, cel.solHD.metal]);
+            continue;
+          }
+          const buffer = cel.isWater ? water
+            : cel.facadeHd ? (cel.allume ? platLumineux : plat)
+              : (cel.allume ? lumineux : solid);
           buffer.addFace(face, cel.x, cel.y, cel.z, cel.tile, cel.yTop, cel.ao, w, h);
         }
       }
     }
   }
 
+  // --- le détail des façades, bloc par bloc ----------------------------------
+  //
+  // La même règle d'exposition que la passe plate (`shouldRenderFace` contre
+  // le voisin), la même occlusion : ce qui reçoit un détail est EXACTEMENT ce
+  // qui a reçu une face plate dans `plat`. Un témoin compare les deux comptes.
+  let facadesDetaillees = 0;
+  if (hd) {
+    for (const face of FACES) {
+      if (face.dir[1] !== 0) continue;
+      for (let y = 0; y <= topY; y++) {
+        for (let z = 0; z < CHUNK; z++) {
+          for (let x = 0; x < CHUNK; x++) {
+            const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
+            if (!FACADE_HD.has(id)) continue;
+            const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
+            if (!shouldRenderFace(id, neighbor)) continue;
+            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z), localGet(x, y + 1, z), localGet);
+            facadesDetaillees++;
+          }
+        }
+      }
+    }
+    // LA RUE SE LIT : le marquage sur la chaussée, la bordure de granit et le
+    // caniveau, le trottoir relevé et sa jupe. Dans `sol`, toujours montré — ce
+    // n'est pas un détail qui se relaie avec la distance, c'est la rue elle-même.
+    const RELEVES = new Set([CITY_BLOCK.SIDEWALK, ARCHI.BORDURE]);
+    const nature = (id) => (id === ARCHI.PAVE ? 'rue' : id === ARCHI.BORDURE ? 'bordure' : id === CITY_BLOCK.SIDEWALK ? 'trottoir' : 'autre');
+    for (let y = 0; y <= topY; y++) {
+      for (let z = 0; z < CHUNK; z++) {
+        for (let x = 0; x < CHUNK; x++) {
+          const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
+          if (id === ARCHI.PAVE) {
+            if (localGet(x, y + 1, z) === BLOCK.AIR) marquageHD(sol, x, y, z, ox + x, oz + z);
+          } else if (id === ARCHI.BORDURE) {
+            if (localGet(x, y + 1, z) !== BLOCK.AIR) continue;
+            const v = (dx, dz) => nature(localGet(x + dx, y, z + dz));
+            bordureHD(sol, x, y, z, ox + x, oz + z, { px: v(1, 0), mx: v(-1, 0), pz: v(0, 1), mz: v(0, -1) });
+          } else if (id === CITY_BLOCK.SIDEWALK) {
+            if (localGet(x, y + 1, z) !== BLOCK.AIR) continue;
+            // la jupe : vers un voisin qui n'est pas relevé et que rien ne couvre
+            const ouvert = (dx, dz) => !RELEVES.has(localGet(x + dx, y, z + dz)) && localGet(x + dx, y + 1, z + dz) === BLOCK.AIR;
+            const o = { px: ouvert(1, 0), mx: ouvert(-1, 0), pz: ouvert(0, 1), mz: ouvert(0, -1) };
+            if (o.px || o.mx || o.pz || o.mz) trottoirHD(sol, x, y, z, ox + x, oz + z, o);
+            // LE MOBILIER DU TROTTOIR (v288), dans `facades` : un potelet tous
+            // les deux blocs au bord du caniveau, une terrasse devant une
+            // devanture sur trois. Le monde répond tout seul : on lit le sol
+            // d'à côté, on ne connaît pas la trame.
+            const bord = (dx, dz) => { const v = localGet(x + dx, y, z + dz); return v === ARCHI.BORDURE || v === ARCHI.PAVE; };
+            const cote = bord(1, 0) ? 'px' : bord(-1, 0) ? 'mx' : bord(0, 1) ? 'pz' : bord(0, -1) ? 'mz' : null;
+            if (cote) {
+              const leLong = (cote === 'px' || cote === 'mx') ? oz + z : ox + x;
+              if ((leLong & 1) === 0) poteletHD(facades, x, y, z, cote);
+              // une corbeille entre deux potelets, tous les huit blocs environ
+              else if ((leLong & 7) === 3 && tirageHD(ox + x, oz + z, 921) > 0.4) corbeilleHD(facades, x, y, z, cote);
+            }
+            const vitrineA = (dx, dz) => localGet(x + dx, y + 1, z + dz) === ARCHI.VITRINE;
+            const vers = vitrineA(1, 0) ? [1, 0] : vitrineA(-1, 0) ? [-1, 0] : vitrineA(0, 1) ? [0, 1] : vitrineA(0, -1) ? [0, -1] : null;
+            if (vers && !cote && tirageHD(ox + x, oz + z, 917) > 0.62) terrasseHD(facades, x, y, z, ox + x, oz + z, vers);
+            // LE MOBILIER DU MILIEU DU TROTTOIR (v289) : loin du caniveau et sans
+            // devanture à côté, un banc tourné vers la rue (la rue est à deux
+            // blocs, derrière un autre trottoir) ou, plus rare, une colonne Morris.
+            if (!cote && !vers && localGet(x, y + 1, z) === BLOCK.AIR) {
+              const rueA2 = (dx, dz) => { const v = localGet(x + 2 * dx, y, z + 2 * dz); return (v === ARCHI.BORDURE || v === ARCHI.PAVE) && localGet(x + dx, y, z + dz) === CITY_BLOCK.SIDEWALK; };
+              const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
+              const t = tirageHD(ox + x, oz + z, 919);
+              if (versRue && t > 0.955) bancHD(facades, x, y, z, versRue);
+              // (une colonne seulement là où le tirage est un creux local : deux
+              // colonnes côte à côte, vues à la sonde, n'existent nulle part)
+              else if (t < 0.012 && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirageHD(ox + x + dx, oz + z + dz, 919) >= 0.012)) morrisHD(facades, x, y, z);
+            }
+          } else if (TOIT_HD.has(id)) {
+            // LE TOIT (v289) : une colonne de toit dont le dessus est à l'air
+            // dessine son quad du champ de hauteurs
+            if (localGet(x, y + 1, z) === BLOCK.AIR) toitDessusHD(facades, x, y, z, ox + x, oz + z, localGet);
+          } else if (id === BLOCK.TERRACOTTA) {
+            if (localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
+          } else if (id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
+            // UN ARBRE PAR TRONC : la base du fût, et la boîte des feuilles
+            // au-dessus, mesurée sur les blocs (débord compris, dans les
+            // morceaux voisins aussi).
+            let h = 1;
+            while (localGet(x, y + h, z) === BLOCK.LOG) h++;
+            const b = { x0: x, x1: x, y0: y + h, y1: y + h, z0: z, z1: z };
+            let feuilles = 0;
+            // (±2 blocs : au-delà, ce sont les feuilles de l'arbre voisin)
+            for (let dy = 0; dy <= 6; dy++) for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+              if (localGet(x + dx, y + h + dy, z + dz) !== BLOCK.LEAVES) continue;
+              feuilles++;
+              if (x + dx < b.x0) b.x0 = x + dx; if (x + dx > b.x1) b.x1 = x + dx;
+              if (z + dz < b.z0) b.z0 = z + dz; if (z + dz > b.z1) b.z1 = z + dz;
+              if (y + h + dy > b.y1) b.y1 = y + h + dy;
+            }
+            if (feuilles > 0) arbreHD(facades, x, y, z, ox + x, oz + z, h, b);
+          }
+        }
+      }
+    }
+  }
+
   return {
-    solid: solid.toGeometry(),
-    water: water.toGeometry(),
-    lumineux: lumineux.toGeometry(),
+    solid: solid.toTampons(),
+    water: water.toTampons(),
+    lumineux: lumineux.toTampons(),
     props,
+    sol: sol ? sol.toTampons() : null,
+    facades: facades ? facades.toTampons() : null,
+    plat: plat ? plat.toTampons() : null,
+    platLumineux: platLumineux ? platLumineux.toTampons() : null,
+    facadesDetaillees,
   };
 }

@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v242';
+const CACHE_VERSION = 'web-minecraft-v290';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -13,23 +13,44 @@ const STATIC_CACHE = 'web-minecraft-static-v1';
 // La flotte de voitures suit le même canal que les modèles du scanner :
 // 83 Mo re-téléchargés à chaque livraison auraient tué la cadence — chaque
 // voiture se télécharge à sa PREMIÈRE rencontre, une fois par appareil.
+// Et les corps réalistes des personnages (v245) : 8,2 Mo immuables, qui se
+// re-téléchargeaient à CHAQUE livraison — c'est-à-dire tous les jours — parce
+// qu'ils étaient dans la liste des ASSETS. Ils vivent ici, une fois par
+// appareil ; l'installation les y met s'ils manquent, sans bloquer le reste.
+// Et les deux polices (v276) : 104 Ko qui ne changeront jamais. Elles sont
+// dans le dépôt et non chez Google parce que le jeu marche HORS LIGNE — un
+// `<link>` vers fonts.googleapis.com casserait l'accueil dans l'avion, à
+// l'école ou sur le Wi-Fi d'un hôtel.
 const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
-  || url.includes('/vendor/voitures/');
+  || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/')
+  || url.includes('/vendor/polices/');
+const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
+  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
+const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './icone.svg',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
   './src/main.js',
   './src/world.js',
   './src/mesher.js',
+  './src/facadeshd.js',
+  './src/matierehd.js',
+  './src/tuiles.js',
+  './src/maillage-worker.js',
   './src/carte.js',
   './src/horizon.js',
+  './src/bandeau.js',
+  './src/palier.js',
   './src/liberer.js',
+  './src/couches.js',
+  './src/signatures.js',
   './src/manhattan.js',
   './src/manhattan-plan.js',
   './src/manhattan-world.js',
@@ -51,17 +72,18 @@ const ASSETS = [
   './src/effects.js',
   './src/sky.js',
   './src/siege.js',
+  './src/sons.js',
   './src/villandry.js',
   './src/aeroport.js',
   './src/cadence.js',
+  './src/cap.js',
+  './src/feux.js',
   './src/gaulois.js',
   './src/espace.js',
   './src/ville.js',
   './src/circuit.js',
   './src/vehicules.js',
-  './vendor/humains/homme-denim.glb', './vendor/humains/homme-costume.glb', './vendor/humains/femme-tailleur.glb',
   './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
-  './vendor/humains/homme-chemise.glb', './vendor/humains/homme-veste.glb', './vendor/humains/femme-chemise.glb', './vendor/humains/femme-manteau.glb', './vendor/humains/garcon.glb', './vendor/humains/fille.glb',
   './src/taxis.js',
   './src/modeles.js',
   './src/personnages.js',
@@ -71,7 +93,6 @@ const ASSETS = [
   './src/player.js',
   './src/blocks.js',
   './src/textures.js',
-  './src/creatures.js',
   './src/marlon.js',
   './src/props.js',
   './src/animals.js',
@@ -92,6 +113,7 @@ const ASSETS = [
   './src/garages.js',
   './src/education.js',
   './src/net.js',
+  './src/nouveautes.js',
   './src/cloud.js',
   './src/fun.js',
   './src/identity.js',
@@ -106,10 +128,50 @@ const ASSETS = [
   './vendor/voiture.glb',
 ];
 
+// L'INSTALLATION DIT OÙ ELLE EN EST (v257). Max, sur l'iPad : « le jeu reste
+// quasiment bloqué une ou deux minutes sur l'accueil après chaque mise à
+// jour » — et « s'il y a une installation nécessaire qui prend une minute,
+// mets un loader ». `cache.addAll` prenait les soixante-dix-huit fichiers en
+// silence : la page ne pouvait dire à l'enfant qu'un texte fixe. Chaque
+// fichier rangé est annoncé aux pages ouvertes (`installation`, fait / total),
+// six à la fois pour ne pas être plus lent qu'`addAll`, et une réponse qui
+// n'est pas `ok` fait échouer l'installation exactement comme avant.
+async function installer() {
+  const cache = await caches.open(CACHE_VERSION);
+  const total = ASSETS.length;
+  let fait = 0;
+  const dire = async () => {
+    const pages = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    for (const p of pages) p.postMessage({ type: 'installation', fait, total, version: CACHE_VERSION });
+  };
+  await dire();
+  const file = [...ASSETS];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (file.length) {
+      const u = file.shift();
+      const r = await fetch(u);
+      if (!r || !r.ok) throw new Error(`${u} : HTTP ${r && r.status}`);
+      await cache.put(u, r);
+      fait++;
+      if (fait % 3 === 0 || fait === total) await dire();
+    }
+  }));
+  await self.skipWaiting();
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(installer());
+  // Les corps réalistes : dans le cache immuable, seulement ceux qui manquent,
+  // et EN ARRIÈRE-PLAN — ni un échec ni leur lenteur ne retiennent la version.
+  // Le chemin de lecture ci-dessous les met de toute façon en cache à la
+  // première demande.
+  caches.open(STATIC_CACHE).then(async (cache) => {
+    // Les polices d'abord : l'accueil les attend, les corps non (v245).
+    for (const u of [...POLICES, ...HUMAINS]) {
+      if (await cache.match(u)) continue;
+      await cache.add(u).catch(() => {});
+    }
+  }).catch(() => {});
 });
 
 self.addEventListener('activate', (event) => {
@@ -208,22 +270,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // UNE VERSION NE CHANGE JAMAIS : SON CACHE SE SERT SANS REVALIDATION (v257).
+  //
+  // C'était du « stale-while-revalidate » : chaque fichier servi depuis le
+  // cache repartait AUSSI au réseau, à chaque démarrage — soixante-dix-huit
+  // requêtes pour rien, et surtout pendant la mise à jour, en concurrence
+  // avec le service worker neuf qui télécharge les mêmes soixante-dix-huit.
+  // Or `CACHE_VERSION` monte à chaque livraison : ce qu'un cache versionné
+  // contient est exact pour toujours. Cache d'abord, réseau seulement pour ce
+  // qui manque. `index.html` (réseau d'abord, plus haut) et `sw.js` (réseau)
+  // gardent leur chemin : ce sont eux qui découvrent une version neuve.
   event.respondWith(
     caches.open(CACHE_VERSION).then(async (cache) => {
       const cached = await cache.match(request, { ignoreSearch: true });
-      const network = fetch(request)
-        .then((response) => {
-          if (response && response.ok) cache.put(request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
       if (cached) return cached;
-      const response = await network;
-      // offline navigation to an uncached URL falls back to the app shell
-      if (!response && request.mode === 'navigate') {
-        return cache.match('./index.html');
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) cache.put(request, response.clone());
+        return response;
+      } catch {
+        return Response.error();
       }
-      return response;
     })
   );
 });

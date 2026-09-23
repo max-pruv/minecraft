@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, isRue, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
 import { PARIS as PARIS_ANCRE, circuitsParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -12,20 +12,28 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
+import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
+import { cadran } from './cap.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
-import { buildChunkGeometry } from './mesher.js';
+import { buildChunkTampons } from './mesher.js';
+import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
+import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
+import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
+  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, etendueRange, reglageDe } from './palier.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules, majRefletsVoiture, refletsVoiture } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
+import { decor, voirTout } from './couches.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -35,8 +43,8 @@ import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
-import { animerHumain } from './humains.js';
-import { CreatureManager, TYPES } from './creatures.js';
+import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
+import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
@@ -58,12 +66,91 @@ const renduUrbain = await import('./manhattan-render.js');
 const contexteCarte = ctx => String(ctx).replace(/^manhattan-v1:/,'');
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+// ── LE PALIER DE L'APPAREIL (v284) ───────────────────────────────────────────
+//
+// Max, sur iPhone 18 Pro : « le unveil est late », puis « tu serais capable
+// d'ajuster en fonction de l'appareil et sa capacité ? ». Ses chiffres, par
+// `?diag=1` en vol : 59 i/s, DOUZE appels de dessin, 502×892 pixels, ombres
+// off. L'appareil est au plafond de son écran et n'a rien à dessiner — et la
+// file du mailleur, la distance d'affichage et la résolution ont toutes été
+// réglées en v257 et v269 sur l'iPad de QUATRE ANS de la famille.
+//
+// Le palier ne déplace que les DEUX premières, et `palier.js` dit pourquoi : les
+// pixels et les ombres sont une mesure à faire sur l'appareil, pas une déduction
+// d'une mesure prise à l'autre résolution.
+//
+// TANT QU'IL N'Y A PAS DE MESURE, RIEN NE CHANGE. C'est la règle du remède qui
+// ne va pas plus loin que la panne (v245) : un appareil qu'on n'a pas mesuré
+// garde EXACTEMENT le comportement de la v283. La première partie mesure, range
+// son verdict sur l'appareil, et la suivante en profite — un palier ne
+// papillote pas, et surtout il ne se décide pas à partir d'une mesure prise
+// pendant que la page compile ses shaders.
+//
+// `?palier=bas|moyen|haut` force, pour le banc et pour mesurer.
+//
+// ET DEPUIS LA v290, LA MESURE NE DÉCIDE PLUS SEULE : Max a demandé à choisir
+// lui-même l'étendue des graphismes, et son choix passe devant. La règle vit
+// dans `palier.js` (`palierRetenu`), pour que l'espace des réglages et les
+// témoins lisent exactement ce que le démarrage lit.
+const PALIER_FORCE = new URLSearchParams(location.search).get('palier');
+// CE QUE L'ENFANT A CHOISI, rangé sur l'APPAREIL. Une valeur abîmée ou inconnue
+// retombe sur `auto` : un stockage qu'on ne comprend pas ne doit pas bloquer un
+// appareil dans un palier.
+const ETENDUE_CHOISIE = (() => {
+  try {
+    const v = localStorage.getItem(ETENDUE_CLE);
+    if (v === 'auto' || (v && PALIERS[v])) return v;
+  } catch { /* mode privé */ }
+  return ETENDUE_PAR_DEFAUT;
+})();
+const PALIER = (() => {
+  if (PALIER_FORCE && PALIERS[PALIER_FORCE]) return { nom: PALIER_FORCE, source: 'adresse', ...PALIERS[PALIER_FORCE] };
+  let mesure = null;
+  try {
+    const brut = localStorage.getItem(PALIER_CLE);
+    if (brut) mesure = JSON.parse(brut);
+  } catch { /* mode privé, ou rangement abîmé : on garde le comportement d'avant */ }
+  // Ni choix ni mesure : rend null, c'est-à-dire la v283 au bit près.
+  return palierRetenu({ choix: ETENDUE_CHOISIE, mesure });
+})();
+
 // doubled view distance; ?rr= overrides (perf tuning and tests)
-const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr')) || (IS_TOUCH ? 12 : 16);
+// LE REPLI SE DEMANDE À `palier.js` (`reglageDe`), il ne se recopie pas : quatre
+// lecteurs décrivaient ce que vaut « pas de palier », dont l'aide du réglage
+// d'étendue, et c'est exactement ainsi que deux tables divergent.
+const SANS_PALIER = reglageDe(null, IS_TOUCH);
+const RENDER_RADIUS = Number(new URLSearchParams(location.search).get('rr'))
+  || (PALIER ? PALIER.rr : SANS_PALIER.rr);
+
+
+// ET LA VITESSE DES JETS SUIT LA FILE, parce que la v269 l'a descendue de 160 à
+// 120 blocs par seconde EXACTEMENT POUR CETTE RAISON : « une vitesse mesurée
+// sur une file ne vaut que pour cette file ». Le palier haut rend la file de
+// seize, donc la vitesse ; le palier bas la resserre. L'avion de ligne ne bouge
+// pas — ses 95 blocs par seconde sont l'ancre au-dessus du vol libre de
+// l'enfant (88), sans quoi prendre l'avion ne servirait à rien — et `kmh` ne
+// bouge jamais : le compteur affiche Mach 1,8 quoi qu'il arrive (v267). Au
+// palier bas les deux rapides rejoignent donc l'avion de ligne, et ce n'est pas
+// une perte de caractère : la v229 avait déjà décidé qu'ils se distinguent par
+// leur AGILITÉ — trois fois la poussée, trois fois le taux de virage.
+// La barre du témoin du trou, elle, se calcule en `max / 2` depuis la v269 :
+// elle suit toute seule, sans qu'on touche à un chiffre de témoin.
+if (PALIER && VITESSE_JET[PALIER.nom]) {
+  for (const m of MONTURES) {
+    if ((m.key === 'concorde' || m.key === 'chasseur') && m.pilote) m.pilote.max = VITESSE_JET[PALIER.nom];
+  }
+}
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
+const RAYON_OMBRE = 6;   // en morceaux : l'emprise de la caméra d'ombre (95 blocs), v247
+// Les lampes de rue (v248) : la couleur des lanternes de Manhattan, une
+// portée de dix-huit blocs, et une intensité MESURÉE sur captures de nuit.
+const LAMPE_RUE = 0xffc989;
+const PORTEE_LAMPE_RUE = 18;
+const INTENSITE_LAMPE_RUE = 28;
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // Millisecondes maximum consacrées par frame à construire des chunks.
@@ -110,6 +197,111 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
+// qu'il y a encore eu dans la ville de New York et reproduis-les sur
+// l'ensemble de la carte ». Manhattan rendait avec une correspondance tonale
+// ACES et des ombres portées ; le reste du monde, en matériau non éclairé,
+// avec un niveau de gris global pour tout soleil. Le monde entier prend le
+// même regard : ACES, ombres du soleil (voir `sunLight`), blocs Lambert.
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+// LES OMBRES DEMANDENT UNE CARTE GRAPHIQUE. Sans accélération matérielle
+// (SwiftShader, llvmpipe — le banc, ou un navigateur sans GPU), la passe
+// d'ombre double le temps d'image (217 → 383 ms mesurés à Paris) et le monde
+// se charge deux fois moins vite : mieux vaut un monde sans ombres qu'un
+// monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
+// `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
+function renduLogiciel() {
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const nom = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
+  } catch { return false; }
+}
+// LA TABLETTE DIT ELLE-MÊME OÙ PASSE LE TEMPS (v257). Max : « le jeu lag
+// énormément sur iPad » — et le banc ne peut pas mesurer la carte graphique
+// d'un iPad. `?diag=1` affiche en haut de l'écran la cadence médiane, la pire
+// image, les appels de dessin, la résolution et les réglages actifs ;
+// `?ombres=0`, `?reflets=0`, `?lampes=0`, `?qualite=tablette|haute` et
+// `?dpr=1.5` permettent d'isoler un poste en trente secondes, sur l'appareil.
+const PARAMS_JEU = new URLSearchParams(location.search);
+const DIAG = PARAMS_JEU.get('diag') === '1';
+// La préparation avant « Jouer » (v258) : le banc la coupe par `?prep=0`.
+const PREPARER = PARAMS_JEU.get('prep') !== '0';
+// ET SA BORNE SE REJOUE, COMME `?fondms=` ET `?chauffems=` (v277). Elle vaut
+// quarante-cinq secondes — le temps au bout duquel le jeu renonce à attendre et
+// laisse l'enfant appuyer. Un témoin qui doit PROVOQUER le renoncement ne peut
+// pas attendre quarante-cinq secondes de banc pour chaque passage : il la
+// raccourcit. Et `?apresmaj=1` rejoue le chemin d'APRÈS une mise à jour sans en
+// faire une — utile au banc, et utile sur la tablette pour voir ce que l'enfant
+// voit sans attendre la livraison suivante.
+const BORNE_PREP = Math.max(500, Number(PARAMS_JEU.get('prepms')) || 45000);
+const REFLETS_ACTIFS = PARAMS_JEU.get('reflets') !== '0';
+const LAMPES_ACTIVES = PARAMS_JEU.get('lampes') !== '0';
+// GRAPHISMES NORMAL OU AVANCÉ, DANS LES RÉGLAGES (v257). Max : « dans les
+// settings, un mode normal ou un mode avancé du point de vue qualité de
+// graphisme ». Normal : 1,25 pixel par point et pas d'ombres — c'est le
+// réglage d'une tablette qui rame. Avancé : pleine résolution, ombres. Le
+// choix vit sur l'APPAREIL (pas dans le profil de l'enfant : c'est une
+// capacité de la machine, pas un goût), et par défaut une tablette ou un
+// téléphone est en normal, un ordinateur en avancé. `?ombres=` et
+// `?qualite=` gardent la main, pour mesurer.
+const GRAPHISMES_CLE = 'web-minecraft-graphismes-v1';
+function graphismes() {
+  try { const v = localStorage.getItem(GRAPHISMES_CLE); if (v === 'normal' || v === 'avance') return v; } catch { /* mode privé */ }
+  return IS_TOUCH ? 'normal' : 'avance';
+}
+// LE SON EST UN RÉGLAGE DE L'APPAREIL, PAS DU PROFIL (v268) — même raison
+// que les graphismes : on joue avec le son dans sa chambre et sans dans le
+// train, et cela n'a rien à voir avec l'enfant qui joue. Allumé par défaut ;
+// `?son=0` garde la main, pour le banc et pour mesurer.
+const SON_CLE = 'web-minecraft-son-v1';
+function sonVoulu() {
+  const p = PARAMS_JEU.get('son');
+  if (p != null) return p !== '0';
+  try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
+}
+reglerSon(sonVoulu());
+
+const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
+// ET LA PAGE LE SAIT, POUR SA PARURE DE FOND (v277). Deux calques plein écran
+// — trois dégradés radiaux et un SVG de méridiens à 128vmax — se paient en
+// REMPLISSAGE. Sans carte graphique, ce remplissage passe par le processeur, et
+// il le prend AUX IMAGES DE LA PRÉPARATION : la chauffe compile un programme par
+// image et le fond de carte avance par tranches, aussi par image. Mesuré, la
+// préparation se libérait à sa borne de quarante-cinq secondes avec six à
+// dix-huit programmes sur vingt-cinq ; parure de fond coupée, vingt-cinq sur
+// vingt-cinq. C'est la règle des ombres, une pièce plus loin : un navigateur
+// sans carte graphique préfère un accueil sobre à un jeu qui n'est pas prêt.
+// Sur l'iPad, la classe n'est pas posée et rien ne change.
+if (renduLogiciel()) document.documentElement.classList.add('rendu-logiciel');
+// ET LE PALIER NE TOUCHE PAS AUX OMBRES (v284) : leur prix est une PASSE
+// entière, jamais mesurée sur le téléphone de Max. Elles restent décidées par le
+// type d'appareil, comme la v257 l'a écrit, et `?ombres=1` les force pour les
+// mesurer. Voir `palier.js`, juste au-dessus de la table.
+const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0' : (!renduLogiciel() && graphismes() === 'avance'));
+
+// LA PORTÉE DE LA COUCHE HD DE PARIS (v287), en morceaux : à cette distance et
+// en deçà, une façade montre son relief (facadeshd.js) ; au-delà, sa tuile
+// plate, comme avant. `?hd=` force (0 éteint) ; sinon c'est le palier, et sans
+// palier mesuré la valeur du palier moyen. Le mailleur en reçoit le drapeau
+// (`world.hd`) pour SAVOIR s'il doit produire le détail — il ne produit rien
+// pour un palier à zéro, et c'est ce qui rend le palier bas identique à la
+// v285 au tampon près.
+//
+// ET LA COUCHE SE COUPE D'ELLE-MÊME EN RENDU LOGICIEL, comme les ombres (v247)
+// : mesuré au banc, elle divise la cadence de SwiftShader par 2,5 (1,2 image
+// par seconde contre 3 au même endroit de Paris) — c'est du REMPLISSAGE payé
+// par le processeur, qu'une carte graphique paie en matériel. Le banc joue
+// donc sans elle, sauf la suite qui l'éprouve (`?hd=`), exactement comme il
+// joue sans ombres sauf les témoins du regard.
+const HD_FORCE = new URLSearchParams(location.search).get('hd');
+const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
+  : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : SANS_PALIER.hd);
+const OMBRES = ombresVoulues();
+renderer.shadowMap.enabled = OMBRES;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 // Sans le troisième argument, setSize écrit la taille en dur dans le style du
 // canvas et l'emporte sur la feuille de style — c'est ainsi qu'une mesure
 // fausse devenait une bande noire. La vraie taille est posée par
@@ -132,14 +324,40 @@ scene.background = DAY_SKY.clone();
 scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
+// La caméra de l'enfant voit toutes les couches (couches.js) : le décor que
+// la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
+voirTout(camera);
 
-// Lights only affect Lambert materials (the high-fidelity creatures);
-// blocks keep their baked flat look via MeshBasic + vertex AO.
+// Le ciel et le soleil éclairent TOUT depuis la v247 : les blocs (Lambert,
+// occlusion ambiante cuite dans les sommets), les créatures, les gens et les
+// voitures. Le soleil porte des ombres : sa caméra d'ombre suit l'enfant
+// (`suivreLeSoleil`), cent quatre-vingt-dix blocs de côté, comme à Manhattan.
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x88aa77, 1.0);
 scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfff4e0, 0.8);
 sunLight.position.set(0.6, 1, 0.4);
+sunLight.castShadow = OMBRES;
+// MILLE VINGT-QUATRE PARTOUT, ET LE FILTRE SIMPLE. Mesuré au banc à Paris
+// (rendu logiciel, médiane par image) : sans ombres 217 ms · basique 512
+// 350 · PCF 1024 400 · PCF doux 2048 467. La passe elle-même est le gros du
+// coût, la taille et le filtre le reste ; sur 190 blocs d'emprise, 1024 fait
+// cinq texels par bloc, ce qu'un bloc de trente mètres n'a pas besoin de
+// dépasser. Manhattan garde son propre budget quand l'enfant y est.
+sunLight.shadow.mapSize.set(1024, 1024);
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 380;
+Object.assign(sunLight.shadow.camera, { left: -95, right: 95, top: 95, bottom: -95 });
+sunLight.shadow.bias = -0.00015;
+sunLight.shadow.normalBias = 0.045;
 scene.add(sunLight);
+scene.add(sunLight.target);
+// Le soleil vise l'enfant : c'est autour de lui que les ombres se dessinent.
+// `dir` est la direction du soleil (sky.js), déjà retournée la nuit (lune).
+function suivreLeSoleil(dir) {
+  sunLight.target.position.copy(player.pos);
+  sunLight.target.updateMatrixWorld();
+  sunLight.position.copy(player.pos).addScaledVector(dir, 160);
+}
 
 // LA MOITIÉ DE L'ÉCRAN RESTÉE NOIRE.
 //
@@ -168,7 +386,14 @@ function ajusterLaVue() {
   const l = canvas.clientWidth || window.innerWidth;
   const h = canvas.clientHeight || window.innerHeight;
   if (!l || !h) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, renduDansManhattan ? ((new URLSearchParams(location.search).get('qualite') || (IS_TOUCH ? 'tablette' : 'haute')) === 'tablette' ? 1.25 : 1.75) : 2);
+  // La qualité demandée vaut PARTOUT (v257) ; sans demande, New York garde
+  // son réglage (tablette : 1,25) et le reste du monde deux pixels par point,
+  // comme avant. `?dpr=` l'emporte, pour mesurer.
+  const qualite = PARAMS_JEU.get('qualite');
+  const plafondDpr = qualite === 'tablette' ? 1.25 : qualite === 'haute' ? 1.75
+    : graphismes() === 'normal' ? 1.25
+      : (renduDansManhattan ? (IS_TOUCH ? 1.25 : 1.75) : 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, Number(PARAMS_JEU.get('dpr')) || plafondDpr);
   // On compare à ce que le canvas PORTE, jamais à ce qu'on croit lui avoir
   // donné. La nuance décide de tout : une surface abîmée par autre chose que
   // nous — une suspension d'iOS — laisse notre mémoire intacte et fausse, et
@@ -202,9 +427,12 @@ ajusterLaVue();
 
 const { texture: atlasTexture, canvas: atlasCanvas } = createAtlas();
 
-// Basic materials + baked per-face shading = the classic flat Minecraft look.
-// material.color doubles as the global light level for day/night.
-const solidMaterial = new THREE.MeshBasicMaterial({
+// LES BLOCS SONT ÉCLAIRÉS (v247). Ils étaient en `MeshBasicMaterial`, la
+// couleur du matériau servant de niveau de lumière global : une façade au
+// soleil et une façade à l'ombre avaient exactement la même teinte, et rien
+// ne portait d'ombre. Lambert reçoit le ciel (hémisphère), le soleil et ses
+// ombres ; l'occlusion ambiante reste cuite dans les couleurs de sommets.
+const solidMaterial = new THREE.MeshLambertMaterial({
   map: atlasTexture, vertexColors: true, alphaTest: 0.25,
 });
 
@@ -216,7 +444,7 @@ const litMaterial = new THREE.MeshBasicMaterial({
   map: atlasTexture, vertexColors: true, alphaTest: 0.25,
 });
 const LUMIERE_FENETRE = new THREE.Color(1, 0.9, 0.66);
-const waterMaterial = new THREE.MeshBasicMaterial({
+const waterMaterial = new THREE.MeshLambertMaterial({
   map: atlasTexture, vertexColors: true, transparent: true, opacity: 0.7,
   depthWrite: false, side: THREE.DoubleSide,
 });
@@ -246,20 +474,32 @@ activerTuilage(litMaterial);
 })();
 
 const world = new urbain.TerreUrbaine();
+world.hd = RAYON_HD > 0 ? 1 : 0;
+// Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
+// une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
+let hd = null;
+function materiauDeParis() {
+  if (!hd) hd = materiauHD(renderer);
+  return hd.materiau;
+}
 
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
 // exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
 // `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
-scene.add(horizon.objet());
+scene.add(decor(horizon.objet()));
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
 // Sinon l'enfant voit sa maison enterrée le temps d'une partie, et la
 // sauvegarde suivante grave l'erreur.
 {
-  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t));
+  // Et la position où l'enfant s'était arrêté suit sa ville comme ses blocs
+  // (v242) : sans cela, endormi à Times Square, il se réveillait en mer.
+  const lirePos = () => { try { return JSON.parse(localStorage.getItem('web-minecraft-pos-v1')) || {}; } catch { return {}; } };
+  const ecrirePos = (p) => { try { localStorage.setItem('web-minecraft-pos-v1', JSON.stringify(p)); } catch { /* ignore */ } };
+  const bilan = migrerLesBlocs(() => World.loadAll(), (t) => World.saveAll(t), lirePos, ecrirePos);
   if (bilan && bilan.deplaces) {
     console.log(`carte agrandie : ${bilan.deplaces} blocs suivis, `
       + `${bilan.laisses} laissés, ${bilan.intacts} intacts`);
@@ -267,12 +507,300 @@ scene.add(horizon.objet());
 }
 world.loadEdits();
 
+// --- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) --------------------------------
+//
+// Max, iPad : « en avion le lag est fort ; en voiture, lag, et la définition
+// des bâtiments s'affiche trop tard ». Engendrer et mailler un morceau de
+// Paris coûte 24 ms, et le budget de maillage (720 ms par seconde) prenait
+// aux images tout ce qu'il pouvait sans même suivre une voiture (27 morceaux
+// par seconde pour 30 réclamés). Un worker (maillage-worker.js) porte un
+// monde jumeau — même générateur, mêmes blocs de l'enfant — et rend des
+// tampons prêts pour la carte graphique, plus les blocs pour les collisions.
+// Le fil principal ne fait plus que les installer. `?maillage=local` rend
+// l'ancien chemin, pour mesurer et pour les témoins.
+const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [] };
+
+// ── CE QU'ON MESURE POUR CLASSER L'APPAREIL (v284) ───────────────────────────
+//
+// UNE CADENCE PLAFONNÉE PAR L'ÉCRAN NE DIT RIEN DE LA RÉSERVE : l'iPhone de Max
+// rend cinquante-neuf images par seconde avec DOUZE appels de dessin, comme le
+// ferait un appareil deux fois plus lent. On mesure donc le TEMPS D'UN TRAVAIL
+// CONNU, jamais un taux — c'est « on mesure la CAUSE et non l'effet » (v236).
+//
+// Deux travaux, deux goulots, deux machines : ce que coûte un MORCEAU dans le
+// worker (il décide combien de monde peut exister devant l'enfant) et ce que
+// coûte le TRAVAIL d'une image sur le fil principal (il décide combien de monde
+// on peut lui donner à installer). Et « le travail d'une image » n'est PAS
+// l'écart entre deux images : voir `noterTravail` plus bas, c'est le défaut que
+// la v290 a corrigé après l'avoir écrit ici en toutes lettres.
+//
+// ET L'ON NE MESURE QU'EN JEU. Pendant la préparation la page compile ses
+// vingt-cinq programmes et calcule son fond de carte : y prendre une mesure,
+// c'est mesurer la préparation, et tout appareil serait classé lent — c'est le
+// piège que la v276 et la v277 ont payé deux fois sur leurs propres relevés.
+const PALIER_MS_FORCE = new URLSearchParams(location.search).get('palierms');
+const FENETRE_PALIER_MS = Number(PALIER_MS_FORCE) || 30000;
+// ON NE CLASSE PAS UN APPAREIL SUR UNE CONFIGURATION QU'ON LUI A IMPOSÉE, et
+// c'est ce qui met le banc hors de portée sans une ligne écrite pour lui. Une
+// page ouverte à `rr=2` ou à `attente=48` ne dit rien de ce que l'appareil fait
+// à sa vraie distance d'affichage : son verdict serait juste sur une partie que
+// personne ne joue, et il serait RANGÉ — la page suivante de la même suite en
+// hériterait, et un témoin mesurerait le palier laissé par son voisin plutôt
+// que le jeu (la famille de la v279). Le banc force toujours `rr`, donc il ne
+// range jamais rien ; `?palierms=` est la déclaration explicite qui permet à un
+// témoin de suivre la chaîne entière malgré cela.
+const CONFIG_FORCEE = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd']
+  .some((c) => new URLSearchParams(location.search).has(c));
+// ET UNE ÉTENDUE CHOISIE À LA MAIN EST UNE CONFIGURATION FORCÉE (v290) : on
+// mesure, on l'affiche, on ne la range pas — voir `etendueRange` dans palier.js.
+const PALIER_SE_RANGE = (!!PALIER_MS_FORCE || !CONFIG_FORCEE) && etendueRange(ETENDUE_CHOISIE);
+// ET LES PLANCHERS D'ÉCHANTILLONS SUIVENT LA FENÊTRE, SOUS UN SEUL BOUTON. Ils
+// sont là pour qu'une médiane veuille dire quelque chose ; écrits en dur, ils
+// tiendraient la porte fermée quand `?palierms=` la raccourcit, et le témoin
+// mesurerait alors l'un des deux verrous sans jamais voir l'autre. À trente
+// secondes ils valent ce qu'ils valaient : quarante morceaux et six cents
+// images. Ce sont des BORNES DE GARDE — elles séparent « on a mesuré » de « rien
+// ne s'est passé » —, donc elles restent loin de tout seuil de verdict (v237).
+const MIN_MORCEAUX = Math.max(10, Math.round(FENETRE_PALIER_MS / 750));
+const MIN_IMAGES = Math.max(60, Math.round(FENETRE_PALIER_MS / 50));
+// ── ET LA PÉRIODE D'UNE IMAGE N'EST PAS LE TRAVAIL D'UNE IMAGE (v290) ────────
+//
+// La v284 notait `now - lastTime`, c'est-à-dire l'écart entre deux images. Sur
+// un appareil SYNCHRONISÉ À SON ÉCRAN, cet écart EST la période de
+// rafraîchissement : l'iPad de Max rend 59 images par seconde et donne 17,0 ms,
+// soit 1000/59 au dixième près. Le chiffre ne dit alors rien de ce que
+// l'appareil a fait — il dit à quelle cadence l'écran l'a réveillé.
+//
+// Les deux barres devenaient donc fausses PAR CONSTRUCTION : `> 16,7` est vrai
+// sur tout appareil en bonne santé à 60 Hz — il partait en `bas` — et `≤ 8` est
+// INATTEIGNABLE sous vsync, si bien que `haut` ne pouvait jamais être atteint.
+// C'est exactement la règle que la v284 avait écrite trois paragraphes plus
+// haut — « une cadence plafonnée par l'écran ne dit rien de la réserve » —
+// enfreinte une mesure plus loin, dans le fichier d'à côté.
+//
+// Ce qu'on mesure désormais, c'est le TRAVAIL : le temps passé DANS le corps de
+// l'image, du premier calcul jusqu'au `render()` compris, sans l'attente du
+// balayage. C'est un travail connu, et c'est la grandeur que les barres ont
+// toujours décrite (« on demande la MOITIÉ des 16,7 ms »). La PÉRIODE reste
+// relevée à côté, parce qu'elle sert au message et qu'un verdict surprenant se
+// démonte en comparant les deux.
+const mesurePalier = { morceaux: [], images: [], travaux: [], depuis: 0, range: false };
+function noterMorceau(ms) {
+  if (!running || typeof ms !== 'number') return;
+  if (mesurePalier.morceaux.length < 400) mesurePalier.morceaux.push(ms);
+}
+function noterImage(ms) {
+  if (!running || !(ms > 0)) return;
+  if (!mesurePalier.depuis) mesurePalier.depuis = performance.now();
+  if (mesurePalier.images.length < 2000) mesurePalier.images.push(ms);
+}
+function noterTravail(ms) {
+  if (!running || !(ms >= 0)) return;
+  if (mesurePalier.travaux.length < 2000) mesurePalier.travaux.push(ms);
+}
+const medianeDe = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
+// ON RANGE UNE FOIS, ET POUR LA PROCHAINE PARTIE. Le palier ne s'applique pas à
+// chaud : `RENDER_RADIUS` et la profondeur de file sont lues au démarrage, et
+// les faire bouger en cours de route ferait respirer la distance d'affichage
+// sous les yeux de l'enfant. On mesure, on range, la partie suivante en
+// profite — et la v283 reste le comportement de tout appareil non mesuré.
+// ── ET ON MESURE MÊME QUAND ON NE RANGE PAS (v290) ───────────────────────────
+//
+// Sous une étendue choisie à la main — ou sous une configuration forcée par
+// l'adresse — le verdict ne doit PAS être rangé (v284). Il doit quand même être
+// CALCULÉ : c'est le nombre que Max lit dans `?diag=1`, et c'est lui qui permet
+// de démonter un résultat surprenant. Taire la mesure parce qu'on ne la garde
+// pas reviendrait à ne rien pouvoir dire de l'appareil dès qu'on lui a demandé
+// quelque chose — exactement le trou qui a laissé la v284 se tromper un an.
+function rangerLePalier() {
+  if (mesurePalier.range) return;
+  if (mesurePalier.morceaux.length < MIN_MORCEAUX || mesurePalier.images.length < MIN_IMAGES) return;
+  if (mesurePalier.travaux.length < MIN_IMAGES) return;
+  // UN RÉGLAGE DE BANC SE REJOUE, SINON IL NE SE DÉMONTE PAS (v277) :
+  // `?palierms=` raccourcit la fenêtre, et c'est ce qui permet à un témoin de
+  // suivre la chaîne entière — mesure, verdict, rangement — sans jouer trente
+  // secondes. Le défaut, lui, reste trente secondes de JEU : une fenêtre plus
+  // courte classerait l'appareil sur son démarrage.
+  if (performance.now() - mesurePalier.depuis < FENETRE_PALIER_MS) return;
+  const verdict = choisirPalier({ msMorceau: medianeDe(mesurePalier.morceaux), msTravail: medianeDe(mesurePalier.travaux) });
+  verdict.msPeriode = medianeDe(mesurePalier.images);
+  mesurePalier.range = true;
+  mesurePalier.verdict = verdict;
+  if (!PALIER_SE_RANGE) return;    // mesuré pour le dire, pas pour le garder
+  try { localStorage.setItem(PALIER_CLE, JSON.stringify({ ...verdict, le: Date.now() })); } catch { /* mode privé */ }
+}
+// COMBIEN DE MORCEAUX LE WORKER A-T-IL D'AVANCE — et c'est un TEMPS, pas un
+// compte (v265). Huit, réapprovisionnés une fois par IMAGE, c'est une file
+// par image : à Paris un morceau coûte 24 ms, donc huit occupent le worker
+// 192 ms et la file tient jusqu'à l'image suivante ; en campagne un morceau
+// coûte 6,6 ms, huit ne font que 53 ms, et sur une tablette qui rame à cinq
+// images par seconde le worker passe les quatre cinquièmes de son temps À
+// SEC — au moment précis où l'enfant arrive quelque part. C'est le piège du
+// budget par image de la v237, déplacé d'un cran : une file par image est
+// une cadence de ménage déguisée en horloge d'affichage.
+// ET ELLE SE CHOISIT SUR DEUX MESURES, PAS UNE : LE DÉBIT **ET** LA
+// CADENCE. Mon premier jet la posait à quarante-huit sur le seul débit, et
+// le portail complet a rendu SEPT suites rouges dont quatre étaient vertes
+// la veille — « programmes 8/25 après 48 s », « 0 m en 31 s de jeu »,
+// « 0 relevé sur 92 », « cadence 1,7 ». Que des symptômes de CADENCE : le
+// mailleur rendait deux fois plus de morceaux, et le fil principal devait
+// les INSTALLER. C'est mot pour mot le genou que la v229 avait mesuré sur
+// `MESH_BUDGET_MS` — douze rendaient 154 morceaux/s SANS coûter une image,
+// vingt en rendaient 178 et coûtaient un tiers de la cadence.
+//
+// Mesuré par saturation (une téléportation met tout le disque à mailler
+// d'un coup), à rr=12 — débit de POINTE en morceaux par seconde, et images
+// par seconde sur la même fenêtre :
+//
+//   file     campagne      Paris        Londres
+//      8    60 · 11,4    53 · 6,2      54 · 8,4
+//     16   117 · 12,1    75 · 5,3      83 · 7,9
+//     24   132 · 10,1   104 · 4,0     103 · 6,4
+//     32   154 · 10,1   104 · 3,9     120 · 6,2
+//     48   215 · 10,5   103 · 3,9     131 · 6,3
+//
+// SEIZE ÉTAIT LE GENOU DU DÉBIT DE POINTE, ET C'EST LA MAUVAISE MESURE —
+// ELLE A RENDU LE JEU IMPRATICABLE SUR L'IPAD (v269).
+//
+// Max, sur la version publiée : « le lag est absolument énorme, alors
+// qu'avant il était pas mal réduit ; en avion on voit l'image bouger
+// pendant une seconde, elle s'arrête pendant quasiment cinq secondes ; à
+// pied, ouvrir la carte fige dix secondes. » Remesuré au-dessus de PARIS à
+// la distance d'affichage de l'iPad, vingt secondes de vol, sur les DEUX
+// critères — la cadence que l'enfant subit ET le trou qu'il voit devant
+// lui (v229) :
+//
+//   file   cadence   médiane   pire image   >300 ms   trou devant
+//      4    20,1      50 ms       317        1,3 %        36
+//      8    18,3      50 ms       150        0 %          66
+//     12    15,0      67 ms       183        0 %          93
+//     16     9,1     100 ms       383        3,1 %       132
+//
+// La file de seize est la SEULE à produire des images de plus de trois
+// cents millisecondes : ce sont les gels. Et comme `dt` est borné à un
+// vingtième, elle fait tourner le jeu AU RALENTI — à vitesse demandée
+// identique, l'avion parcourt 1 757 blocs au lieu de 3 303. Elle coûte donc
+// la moitié du temps de jeu, ce que le « débit de pointe » ne dit pas.
+//
+// Le prix de ce retour est réel et se déclare : le trou devant soi tombe de
+// 132 à 66 blocs, c'est-à-dire que les bâtiments se dessinent plus tard —
+// la panne même que la v251 avait corrigée. Entre « les détails arrivent en
+// retard » et « le jeu s'arrête cinq secondes », c'est le second qui rend
+// le jeu injouable, et c'est Max qui tranche.
+//
+// DEUX REMÈDES ONT ÉTÉ ÉCRITS, MESURÉS, PUIS RETIRÉS. On ne les réessaie
+// pas.
+//
+//   1. BORNER LA POSE DES GÉOMÉTRIES PAR IMAGE, comme le maillage l'est
+//      depuis la v237 — la dette que la v265 avait elle-même déclarée.
+//      Empiler les morceaux arrivés et n'en installer que pour le budget du
+//      maillage rend 10,63 images par seconde contre 10,20 sans, et 17,45
+//      contre 17,07 à file de huit : du bruit. La raison est arithmétique —
+//      borner le travail PAR IMAGE ne réduit pas le travail PAR SECONDE,
+//      puisque le worker continue de produire. Ce qui fixe le débit, c'est
+//      la profondeur de la file, et rien d'autre.
+//   2. FAIRE DE LA FILE UN TEMPS PLUTÔT QU'UN COMPTE — la règle que la
+//      v265 avait écrite en titre et codée à l'envers. Le worker rapporte
+//      ce que chaque morceau lui a coûté, la profondeur suit. Mesuré, le
+//      coût NE SÉPARE PAS la ville de la campagne : un morceau de Paris
+//      vaut 4,4 à 12,2 ms en vol sur ce banc, la campagne 3,4 à 8,3. Le
+//      rapport 24 contre 6,6 de la v237 avait été mesuré par SATURATION
+//      après une téléportation, pas en vol. La file partait donc à son
+//      plafond partout : 6,0 images par seconde à Paris et 9,9 % du temps
+//      au-delà de trois cents millisecondes, PIRE que seize.
+//
+// Ce qui reste à faire est donc ailleurs, et c'est déclaré dans `TASKS.md` :
+// mesurer sur la TABLETTE (`?attente=`, `?diag=1`), là où le rapport entre
+// maillage, installation et rendu n'est pas celui d'un rendu logiciel.
+//
+// ET DEUX MAILLEURS N'AJOUTENT RIEN — c'est un non-résultat MESURÉ, on ne
+// le réessaie pas. Avec la file à quarante-huit : un mailleur 200/99, deux
+// 206/125 mais la cadence tombe de 4,9 à 3,8 images par seconde à Paris,
+// trois 198/100 à 3,4 images. Passé la file, le goulot n'est plus le
+// mailleur : c'est le fil principal, qui doit INSTALLER les géométries.
+// Ajouter des mailleurs ne fait que lui en envoyer plus.
+// ET LA PROFONDEUR SUIT LE PALIER (v284) : seize sur un appareil qui a la
+// réserve — le genou du DÉBIT que la v265 avait mesuré et que la v269 a dû
+// rendre parce qu'il écroulait la cadence SUR L'IPAD. Sans palier mesuré, huit,
+// comme en v283.
+const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente'))
+  || (PALIER ? PALIER.file : SANS_PALIER.file);
+const enAttente = new Map();          // key -> { cx, cz, sale }
+let generationDistante = 0;           // monte à chaque resynchronisation des blocs
+let maillageDistant = null;
+function synchroniserLeWorker() {
+  if (!maillageDistant) return;
+  generationDistante++;
+  enAttente.clear();
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd });
+}
+function recevoirMorceau(m) {
+  const key = World.key(m.cx, m.cz);
+  const attente = enAttente.get(key);
+  enAttente.delete(key);
+  if (m.generation !== generationDistante) { statsMaillage.refuses++; return; }
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  if (Math.abs(m.cx - pcx) > UNLOAD_RADIUS || Math.abs(m.cz - pcz) > UNLOAD_RADIUS) { statsMaillage.refuses++; return; }
+  // Les blocs : ceux du worker si le fil principal n'a pas déjà engendré ce
+  // morceau (collisions, passants) — les deux sont identiques, un témoin le
+  // vérifie. Un bloc posé pendant que le worker maillait rend le morceau
+  // sale : il se remaille ici, tout de suite après.
+  if (!world.chunks.has(key)) {
+    world.chunks.set(key, m.data);
+    if (m.top !== undefined) world.tops.set(key, m.top);
+    statsMaillage.recus.push(key);                                  // blocs adoptés du worker
+    if (statsMaillage.recus.length > 64) statsMaillage.recus.shift();  // fenêtre glissante : les derniers sont encore en mémoire
+  }
+  installerMorceau(m.cx, m.cz, m);
+  statsMaillage.distants++;
+  noterMorceau(m.ms);
+  if (attente && attente.sale) world.dirty.add(key);
+}
+(function creerMaillageDistant() {
+  if (new URLSearchParams(location.search).get('maillage') === 'local') return;
+  if (typeof Worker === 'undefined') return;
+  try {
+    const w = new Worker(new URL('./maillage-worker.js', import.meta.url), { type: 'module' });
+    w.onmessage = (e) => { if (e.data && e.data.type === 'morceau') recevoirMorceau(e.data); };
+    // UN WORKER QUI MEURT REND LA MAIN AU FIL PRINCIPAL : un navigateur sans
+    // workers de module doit voir le monde quand même.
+    w.onerror = (err) => {
+      console.warn('maillage hors fil principal indisponible, on maille ici :', err && err.message);
+      maillageDistant = null;
+      for (const a of enAttente.values()) meshQueue.push({ cx: a.cx, cz: a.cz, d: 0 });
+      enAttente.clear();
+    };
+    maillageDistant = w;
+    synchroniserLeWorker();
+  } catch (e) {
+    maillageDistant = null;
+  }
+})();
+// Tout bloc écrit — posé par l'enfant, reçu d'un ami, fusionné du nuage —
+// part au worker ; si le morceau était en cours de maillage là-bas, il se
+// remaillera ici à l'arrivée.
+world.onBloc = (x, y, z, id) => {
+  if (!maillageDistant) return;
+  maillageDistant.postMessage({ type: 'bloc', x, y, z, id });
+  const a = enAttente.get(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
+  if (a) a.sale = true;
+};
+
 const player = new Player(camera, world);
-const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS});
+// LES LAMPES DE RUE (v248) : quatre lumières ponctuelles, posées la nuit
+// sous les réverbères les plus proches de l'enfant (`eclairerLaRue`), et
+// prêtées à Manhattan quand il y est. Quatre et pas plus : le nombre de
+// lampes fait partie de la clé de chaque programme de shader.
+const lampesRue = [];
+for (let i = 0; i < 4; i++) {
+  const l = new THREE.PointLight(LAMPE_RUE, 0, PORTEE_LAMPE_RUE, 2);
+  scene.add(l);
+  lampesRue.push(l);
+}
+const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
-const creatureManager = new CreatureManager(scene, world, player);
-const animalManager = new AnimalManager(scene, world, player, (msg, color) => creatureManager.toast(msg, color));
+const animalManager = new AnimalManager(scene, world, player, toast);
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -353,7 +881,7 @@ function rebuildQueue() {
 }
 
 function disposeChunkMesh(entry) {
-  for (const mesh of [entry.solid, entry.water, entry.lumineux]) {
+  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux]) {
     if (!mesh) continue;
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -362,41 +890,179 @@ function disposeChunkMesh(entry) {
   if (entry.props) scene.remove(entry.props);
 }
 
+// Une BufferGeometry depuis les tampons du mailleur (v251) : une
+// milliseconde, sur le fil principal, quel que soit le fil qui a maillé.
+function geometrieDepuisTampons(t) {
+  if (!t) return null;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(t.positions, 3));
+  geom.setAttribute('normal', new THREE.BufferAttribute(t.normals, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(t.uvs, 2));
+  geom.setAttribute('color', new THREE.BufferAttribute(t.colors, 3));
+  geom.setAttribute('tuile', new THREE.BufferAttribute(t.tiles, 4));
+  geom.setIndex(new THREE.BufferAttribute(t.indices, 1));
+  geom.computeBoundingSphere();
+  return geom;
+}
+
+// Le maillage sur le fil principal — Manhattan, les remaillages d'un bloc
+// posé (qui doivent se voir tout de suite), et le secours si le worker
+// manque. `statsMaillage.principalMs` compte ce que cela coûte à l'image.
 function meshChunk(cx, cz) {
+  const t0 = performance.now();
+  installerMorceau(cx, cz, buildChunkTampons(world, cx, cz));
+  statsMaillage.principalMs += performance.now() - t0;
+  statsMaillage.locaux++;
+}
+
+function installerMorceau(cx, cz, tampons) {
   const key = World.key(cx, cz);
   const old = chunkMeshes.get(key);
   if (old) disposeChunkMesh(old);
 
-  const { solid, water, lumineux, props } = buildChunkGeometry(world, cx, cz);
-  const entry = { solid: null, water: null, lumineux: null, props: null };
+  const { props } = tampons;
+  const solid = geometrieDepuisTampons(tampons.solid);
+  const water = geometrieDepuisTampons(tampons.water);
+  const lumineux = geometrieDepuisTampons(tampons.lumineux);
+  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null };
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
     entry.solid = new THREE.Mesh(solid, solidMaterial);
     entry.solid.position.set(cx * CHUNK, 0, cz * CHUNK);
-    entry.solid.castShadow = true; entry.solid.receiveShadow = true;
-    scene.add(entry.solid);
+    // Un morceau ne PORTE d'ombre qu'à portée de la caméra d'ombre (six
+    // morceaux, quatre-vingt-quinze blocs) ; au-delà il en reçoit seulement.
+    // La passe d'ombre ne rend ainsi que le monde proche, pas les 900
+    // morceaux chargés — `updateChunks` remet le drapeau quand on bouge.
+    entry.solid.castShadow = ombre;
+    entry.solid.receiveShadow = true;
+    scene.add(decor(entry.solid));
+  }
+  // LA COUCHE HD DE PARIS (v287). Le sol HD est toujours montré ; le détail
+  // des façades et leur tuile plate se relaient selon la distance — c'est
+  // `montrerLeDetail` qui tranche, ici et à chaque changement de morceau.
+  if (tampons.sol || tampons.facades) {
+    const materiau = materiauDeParis();
+    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades]]) {
+      const g = geometrieHD(t);
+      if (!g) continue;
+      const m = new THREE.Mesh(g, materiau);
+      m.position.set(cx * CHUNK, 0, cz * CHUNK);
+      m.castShadow = ombre && nom === 'facades';
+      m.receiveShadow = true;
+      entry[nom] = m;
+      scene.add(decor(m));
+    }
+  }
+  for (const [nom, t, mat] of [['plat', tampons.plat, solidMaterial], ['platLumineux', tampons.platLumineux, litMaterial]]) {
+    const g = geometrieDepuisTampons(t);
+    if (!g) continue;
+    const m = new THREE.Mesh(g, mat);
+    m.position.set(cx * CHUNK, 0, cz * CHUNK);
+    m.castShadow = ombre && nom === 'plat';
+    m.receiveShadow = true;
+    entry[nom] = m;
+    scene.add(decor(m));
+  }
+  montrerLeDetail(entry, cx, cz, pcx, pcz);
+  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
+  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
+  // morceau arrivé entre deux images y ajoute — six maillages désormais.
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+    if (m) m.userData.morceau = true;
   }
   if (water) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
-    scene.add(entry.water);
+    scene.add(decor(entry.water));
   }
   if (lumineux) {
     entry.lumineux = new THREE.Mesh(lumineux, litMaterial);
     entry.lumineux.position.set(cx * CHUNK, 0, cz * CHUNK);
-    scene.add(entry.lumineux);
+    scene.add(decor(entry.lumineux));
   }
   if (props.length > 0) {
     const group = new THREE.Group();
+    const lanternes = [];
+    const feux = [];
     for (const p of props) {
       const mesh = buildPropMesh(p.id);
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
+      // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
+      // est celle du bloc de lanterne du modèle (props.js), un demi-bloc en
+      // avant du fût et à trois blocs du sol. `eclairerLaRue` y pose une des
+      // quatre lumières de rue quand l'enfant passe à côté, la nuit. Et la
+      // crosse se tourne VERS LA RUE : le modèle la porte en +x, on regarde
+      // de quel côté du fût est la chaussée.
+      if (p.id === RUE.REVERBERE) {
+        mesh.rotation.y = versLaRue(cx * CHUNK + p.x, p.y - 1, cz * CHUNK + p.z);
+        lanternes.push(new THREE.Vector3(
+          mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
+          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y)));
+      }
+      // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
+      // ses trois lentilles vives pour n'en montrer qu'une. Elles se
+      // retrouvent par leur NOM : `clone()` recopie `userData` par JSON, et un
+      // maillage n'y survit pas (props.js).
+      if (p.id === RUE.FEUX) {
+        const wx = cx * CHUNK + p.x, wz = cz * CHUNK + p.z;
+        const axe = axeDuFeu(wx, wz);
+        mesh.rotation.y = versLaRueAxe(wx, p.y - 1, wz, axe);
+        const lampes = ['feu-rouge', 'feu-orange', 'feu-vert'].map((n) => mesh.getObjectByName(n));
+        if (lampes.every(Boolean)) feux.push({ x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null });
+      }
     }
     entry.props = group;
-    scene.add(group);
+    if (lanternes.length) entry.lanternes = lanternes;
+    if (feux.length) entry.feux = feux;
+    scene.add(decor(group));
   }
   chunkMeshes.set(key, entry);
+}
+
+// Le relais entre le détail et la tuile plate d'une façade : à portée
+// (`RAYON_HD` morceaux, la distance de Tchebychev comme pour les ombres) on
+// montre le relief, au-delà la tuile — et jamais les deux, sinon la face
+// plate au nu du mur cacherait la baie en retrait.
+function montrerLeDetail(entry, cx, cz, pcx, pcz) {
+  if (!entry.facades && !entry.plat && !entry.platLumineux) return;
+  const pres = Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
+  if (entry.facades) entry.facades.visible = pres;
+  if (entry.plat) entry.plat.visible = !pres;
+  if (entry.platLumineux) entry.platLumineux.visible = !pres;
+}
+
+// De quel côté d'un réverbère est la rue : le cap (autour de y) qui tourne
+// la crosse du modèle, portée en +x, vers la première chaussée voisine. Sans
+// chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
+// reste en +x.
+function versLaRue(wx, wy, wz) {
+  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
+  if (rue(wx + 1, wz)) return 0;
+  if (rue(wx - 1, wz)) return Math.PI;
+  if (rue(wx, wz + 1)) return -Math.PI / 2;
+  if (rue(wx, wz - 1)) return Math.PI / 2;
+  return 0;
+}
+
+// ET UN FEU REGARDE LA FILE QU'IL ARRÊTE, PAS LA PREMIÈRE RUE VENUE (v273).
+// Il est posé au coin d'un carrefour, donc DEUX rues le touchent ; celle qui
+// compte est celle de son axe — les voitures qu'il commande arrivent par
+// là. Ses lentilles sont portées en −z par le modèle (props.js), d'où le
+// quart de tour par rapport à la crosse d'un réverbère, qui est en +x.
+function versLaRueAxe(wx, wy, wz, axe) {
+  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
+  const q = Math.PI / 2;
+  if (axe === 0) {
+    if (rue(wx + 1, wz)) return -q;
+    if (rue(wx - 1, wz)) return q;
+  } else {
+    if (rue(wx, wz + 1)) return Math.PI;
+    if (rue(wx, wz - 1)) return 0;
+  }
+  return versLaRue(wx, wy, wz) - q;
 }
 
 let lastPlayerChunk = null;
@@ -415,6 +1081,12 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
+      } else {
+        const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
+        if (entry.solid) entry.solid.castShadow = ombre;
+        if (entry.facades) entry.facades.castShadow = ombre;
+        if (entry.plat) entry.plat.castShadow = ombre;
+        montrerLeDetail(entry, cx, cz, pcx, pcz);
       }
     }
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
@@ -433,18 +1105,38 @@ function updateChunks() {
   const ecart = Math.min(dtMaillage(), 0.1);
   const budget = Math.min(MESH_BUDGET_MAX,
     Math.max(MESH_BUDGET_MS, MESH_MS_PAR_SECONDE * ecart));
-  const debut = performance.now();
-  do {
-    const suivant = meshQueue.pop();
-    if (!suivant) break;
-    meshChunk(suivant.cx, suivant.cz);
-  } while (performance.now() - debut < budget);
+  // LE MAILLAGE PART AU WORKER (v251) : on lui confie les morceaux les plus
+  // proches, quelques-uns d'avance, et l'on ne garde pour cette image que ce
+  // que lui ne sait pas faire (Manhattan). Sans worker, l'ancien budget.
+  if (maillageDistant) {
+    const lot = [];
+    while (enAttente.size + lot.length < EN_ATTENTE_MAX && meshQueue.length) {
+      const suivant = meshQueue.pop();
+      const key = World.key(suivant.cx, suivant.cz);
+      if (enAttente.has(key) || chunkMeshes.has(key)) continue;
+      if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); continue; }
+      enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false });
+      lot.push({ cx: suivant.cx, cz: suivant.cz });
+    }
+    if (lot.length) {
+      maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
+        pcx, pcz, rayon: RENDER_RADIUS + 2 });
+    }
+  } else {
+    const debut = performance.now();
+    do {
+      const suivant = meshQueue.pop();
+      if (!suivant) break;
+      meshChunk(suivant.cx, suivant.cz);
+    } while (performance.now() - debut < budget);
+  }
 
   // Changement de monde : le terrain en mémoire porte encore les blocs de
   // l'ancien, tous les maillages sont à refaire.
   if (world.allDirty) {
     world.allDirty = false;
     for (const key of chunkMeshes.keys()) world.dirty.add(key);
+    synchroniserLeWorker();
   }
 
   // Remesh chunks whose blocks changed. Poser un bloc n'en salit qu'un ou deux,
@@ -479,7 +1171,7 @@ function updateChunks() {
     for (let dx = -1; dx <= 1; dx++) meshChunk(pcx + dx, pcz + dz);
   }
   rebuildQueue();
-  const say = (msg, color) => creatureManager.toast(msg, color);
+  const say = (msg, color) => toast(msg, color);
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
   npcs = [
@@ -518,6 +1210,204 @@ function updateChunks() {
   // les monoplaces sur le circuit. Les deux tracés viennent des bâtisseurs
   // eux-mêmes, si bien qu'un train ne peut pas rouler à côté de sa voie.
   vehicules = createVehicules({ scene, player });
+  // et la circulation s'arrête aux feux (v273)
+  vehicules.brancherFeux(feuRougeDevant);
+  // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
+  // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
+  // une table de Times Square sont des props NON SOLIDES pour la marche —
+  // c'est voulu, un enfant passe entre — mais une voiture ne les traverse
+  // pas. On lit les cases au sol que couvre le rectangle de la voiture : un
+  // bloc de mobilier dans le monde, ou une pièce notée par le renderer de
+  // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
+  // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
+  // banc ne repartirait plus.
+  const mobilierDevant = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const y0 = Math.floor(player.pos.y + 0.1);
+    for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
+      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
+        const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
+        if (villeRealiste.obstacleA(sx, sz)) return true;
+        const bx = Math.floor(sx), bz = Math.floor(sz);
+        if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+      }
+    return false;
+  };
+  // « Pas si l'on est déjà dedans » se juge PAR FAMILLE : une voiture de la
+  // rue collée à la nôtre (obstacleDevant vrai ici ET là) ne désarme pas le
+  // mobilier, et réciproquement. Mesuré avant cette règle : au départ sur
+  // une rue de Paris, une voiture du convoi 89 à 0,67 bloc, et la nôtre
+  // traversait un réverbère six blocs plus loin.
+  // ET UN PIÉTON NON PLUS (v259). Max, capture à New York : une passante au
+  // travers de son taxi. « Pas un mode violent comme GTA » : la voiture de
+  // l'enfant FREINE devant un piéton, elle ne l'écrase pas — et le piéton,
+  // lui, s'écarte (`world.vehiculeApproche`, plus bas), si bien qu'on ne
+  // reste pas bloqué derrière lui. On ne bloque que l'entrée, jamais quand
+  // un piéton est déjà dans la voiture.
+  //
+  // Qui a les pieds dans la voiture posée là ? Le CENTRE du piéton dans sa
+  // largeur — pas de marge de côté : dans une ruelle de trois blocs, un
+  // piéton plaqué contre le mur a le centre à 1,25 bloc de l'axe, et la
+  // voiture (1,13 de demi-largeur) doit pouvoir passer le long de lui, sinon
+  // les deux s'attendent pour toujours (mesuré : douze secondes sur place).
+  const pietonsDans = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2 + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const dedans = [];
+    for (const n of npcs) {
+      const dx = n.pos.x - x, dz = n.pos.z - z;
+      if (dx * dx + dz * dz > 8 * 8 || Math.abs(n.pos.y - player.pos.y) > 2.5) continue;
+      if (Math.abs(dx * ux + dz * uz) <= demiLong && Math.abs(dx * vx + dz * vz) <= demiLarg) dedans.push(n);
+    }
+    return dedans;
+  };
+  // « Pas si l'on est déjà dedans » se juge PAR PERSONNE, pas par famille :
+  // jugé sur la famille, un piéton déjà contre la portière laissait la
+  // voiture traverser celui qui est devant (neuf relevés à la sonde).
+  const pietonDevant = (x, z, cap, x0, z0) => {
+    const apres = pietonsDans(x, z, cap);
+    if (!apres.length) return false;
+    const avant = pietonsDans(x0, z0, cap);
+    return apres.some((n) => !avant.includes(n));
+  };
+  // ET UNE VOITURE N'ENTRE PAS DANS L'EAU (v272). Max, capture de Hambourg :
+  // sa voiture au milieu du port. C'est le piège de `sommetColonne` du v267,
+  // une famille plus bas — elle rend le premier bloc SOLIDE en descendant, et
+  // l'eau n'en est pas un : au-dessus de la mer elle rend le FOND, et la
+  // voiture y roulait tranquillement. On demande donc ce qu'il y a JUSTE
+  // AU-DESSUS du sol.
+  //
+  // MAIS « DE L'EAU DANS CETTE COLONNE » N'EST PAS « LA VOITURE EST DANS
+  // L'EAU » : un pont passe AU-DESSUS du fleuve, et les trois tabliers de la
+  // Tamise (v208) seraient devenus infranchissables. Ce qu'une voiture
+  // demande, c'est un PLANCHER sous ses roues — s'il y en a un, on roule,
+  // quoi qu'il y ait plus bas. Sinon, et si la colonne est en eau, on refuse.
+  //
+  // Et l'on regarde le RECTANGLE, pas le centre : à vingt blocs par seconde
+  // le capot est dans l'eau deux blocs avant le milieu de la voiture.
+  //
+  // ET CE N'EST PAS CHER, PARCE QUE LE PLANCHER EST LA PREMIÈRE QUESTION :
+  // sur une rue, la chaussée est sous les roues, on sort par `continue` et
+  // l'on ne descend AUCUNE colonne. La recherche de fond ne coûte que là où
+  // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
+  // d'altitude serait une constante de plus à régler pour un coût qui
+  // n'existe pas.
+  const eauDevant = (x, z, cap) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const y0 = Math.floor(player.pos.y + 0.1);
+    for (let a = -demiLong; a <= demiLong + 1e-6; a += 1.1)
+      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
+        const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
+        if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
+        const sol = world.sommetColonne(bx, bz);
+        if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
+      }
+    return false;
+  };
+  // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
+  // crochet est appelé soixante fois par seconde tant que l'enfant pousse
+  // vers la mer : un bandeau par image serait illisible.
+  let ditEau = 0;
+  const direLEau = () => {
+    // en temps RÉEL, jamais en `dt` : un bandeau ne doit pas se répéter plus
+    // souvent parce que la tablette rame (piège de `dt`, v226)
+    if (performance.now() - ditEau < 4000) return;
+    ditEau = performance.now();
+    toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
+  };
+  // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
+  // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
+  // colonne, les autres lisent des listes déjà figées.
+  player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
+    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return true;
+    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return true;
+    if (pietonDevant(x, z, cap, x0, z0)) return true;
+    // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
+    // pouvoir en ressortir, sinon elle y reste pour toujours.
+    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { direLEau(); return true; }
+    return false;
+  };
+  // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
+  // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
+  // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
+  // route devant elle plus quatre blocs, trente au plus — couvre le point.
+  // Rend la direction de la voiture et le côté où s'écarter (celui où le
+  // piéton est déjà), ou null. `marge` : la marge latérale, plus large quand
+  // on est déjà en train de s'écarter, pour ne pas s'arrêter au bord même.
+  // Ce crochet est appelé par CHAQUE piéton en marche à CHAQUE image : il ne
+  // fabrique rien — la liste des voitures en marche est celle que
+  // `vehicules.enMarche()` a figée pour l'image (lecture seule, jamais
+  // copiée ni complétée), et la voiture de l'enfant se regarde à part.
+  const dansLeCouloir = (r, x, z, y, marge) => {
+    if (r.v <= 0.5 || Math.abs(r.y - y) > 2.5) return null;
+    const dx = x - r.x, dz = z - r.z;
+    if (dx * dx + dz * dz > 34 * 34) return null;
+    const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
+    if (devant < -2.2 || devant > Math.min(30, r.v * 2 + 4)) return null;
+    if (Math.abs(cote) > r.demiLarg + marge) return null;
+    return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote };
+  };
+  const voitureEnfant = { x: 0, y: 0, z: 0, ux: 0, uz: 1, v: 0, demiLarg: 1.1 };
+  world.vehiculeApproche = (x, z, y, marge = 1.0) => {
+    // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il
+    // obtient — arrêtée devant un piéton, elle veut encore passer, et c'est
+    // ce qui fait que le piéton s'écarte au lieu de la bloquer pour toujours
+    if (player.gabarit > 1 && !player.pilote && player.pousse) {
+      const v = Math.hypot(player.pousse.x, player.pousse.z);
+      if (v > 0.5) {
+        const e = voitureEnfant;
+        e.x = player.pos.x; e.y = player.pos.y; e.z = player.pos.z;
+        e.ux = player.pousse.x / v; e.uz = player.pousse.z / v; e.v = v; e.demiLarg = player.gabarit / 2;
+        const r = dansLeCouloir(e, x, z, y, marge);
+        if (r) return r;
+      }
+    }
+    const roulent = vehicules.enMarche();
+    for (let i = 0; i < roulent.length; i++) {
+      const r = dansLeCouloir(roulent[i], x, z, y, marge);
+      if (r) return r;
+    }
+    return null;
+  };
+  // ET LES PIÉTONS NE TRAVERSENT PAS LES VOITURES (v259). Max, capture à la
+  // Bastille : des passants au travers de sa voiture. Un piéton (marlon.js)
+  // regarde un pas devant lui avant d'avancer : une voiture de la rue, celle
+  // de l'enfant au volant (`vehicules.voitureA`), ou un véhicule posé là —
+  // voiture garée, avion au poste — dont la fiche porte un `gabarit`. Le
+  // rectangle d'un véhicule posé se prend sur son cap, comme celui d'une
+  // voiture de la rue ; sa longueur est celle d'une voiture.
+  world.obstaclePieton = (x, z, y) => {
+    if (vehicules.voitureA(x, z, y)) return true;
+    for (const a of animalManager.animals) {
+      const g = a.def.gabarit;
+      if (!(g > 1) || Math.abs(a.pos.y - y) > 2.5) continue;
+      const dx = x - a.pos.x, dz = z - a.pos.z;
+      if (dx * dx + dz * dz > 6 * 6) continue;
+      const ux = Math.sin(a.yaw), uz = Math.cos(a.yaw);
+      // le long de l'axe, puis en travers
+      if (Math.abs(dx * ux + dz * uz) <= 2.2 && Math.abs(dx * uz - dz * ux) <= g / 2) return true;
+    }
+    return false;
+  };
+  // ET L'ENFANT À PIED LIT LE MÊME CROCHET QUE LES PASSANTS (v278). Max : « on
+  // ne devrait pas être capable de pouvoir marcher à travers une voiture. » La
+  // question est celle d'un piéton — « ce point est-il dans une voiture ? » —,
+  // pas celle d'un conducteur, qui juge avec un rectangle de 2,26 blocs. Une
+  // seule table, donc, pour les passants et pour lui : deux crochets qui
+  // décrivent la même chose finiraient par diverger.
+  player.pietonBloque = world.obstaclePieton;
+  // LE TROTTOIR CONTINUE-T-IL ICI ? (v278) La table vit dans `world.js`, qui
+  // l'écrit ; la question se pose au runtime, donc elle se branche ici comme
+  // `obstaclePieton`. Manhattan a sa propre réponse depuis toujours
+  // (`piedPieton`), et elle passe devant : son plan n'est pas fait de blocs.
+  world.trottoirA = (x, z) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33; }
+    const y = world.sommetColonne(bx, bz);
+    return TROTTOIR.has(world.getBlock(bx, y, bz));
+  };
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
@@ -637,7 +1527,13 @@ function getTarget() {
 // --- input ---------------------------------------------------------------------
 
 const overlay = document.getElementById('overlay');
+// LE NOM DU JEU SE DIT UNE FOIS (v275). Deux endroits le réécrivaient en dur —
+// au « Reprendre » d'une pause et au retour au menu principal — si bien que
+// l'onglet et le manifeste pouvaient dire Grand Tour pendant que l'accueil
+// reprenait l'ancien nom au premier retour. `index.html` porte la valeur de
+// départ dans son `<h1>`, et c'est ELLE qu'on relit : rien à tenir d'accord.
 const overlayTitle = document.getElementById('overlay-title');
+const NOM_DU_JEU = (overlayTitle && overlayTitle.textContent.trim()) || 'Grand Tour';
 const touchUI = document.getElementById('touch-ui');
 const pauseBtn = document.getElementById('pause-btn');
 let locked = false;   // pointer lock held (desktop)
@@ -750,7 +1646,7 @@ function positionDuCloud(state) {
   if (connue > 0 && Date.now() - posEntree > 40000) return;
   posAppliquee.set(posCtx, p.t);
   placerA(p);
-  creatureManager.toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
+  toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
 }
 
 // Live rescue: if a player somehow ends far above the world (runaway
@@ -762,7 +1658,7 @@ setInterval(() => {
     player.pos.y = gy + 0.2;
     player.vel.set(0, 0, 0);
     player.flying = false;
-    creatureManager.toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
+    toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
   }
 }, 4000);
 
@@ -837,7 +1733,7 @@ function pauseGame() {
 }
 
 resumeBtn.addEventListener('click', () => {
-  overlayTitle.textContent = 'WEB MINECRAFT';
+  overlayTitle.textContent = NOM_DU_JEU;
   startGame();
 });
 
@@ -845,6 +1741,11 @@ document.getElementById('play-btn').addEventListener('click', () => {
   world.switchContext('local');
   posCtx = contexteCarte('local');
   restorePosition();
+  // La position locale est restaurée dès l'accueil (v258, pour préparer le
+  // monde autour de l'enfant avant « Jouer ») : la fenêtre de quarante
+  // secondes pendant laquelle le nuage peut le remettre où il s'était arrêté
+  // se compte donc à partir d'ICI, pas du chargement de la page.
+  posEntree = Date.now();
   startGame();
 });
 pauseBtn.addEventListener('click', pauseGame);
@@ -863,12 +1764,19 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 let carteOuverte = false;
 
 document.addEventListener('pointerlockchange', () => {
+  // ON NE MET EN PAUSE QUE CE QUI TOURNAIT (v275). `leaveToMainMenu` relâche le
+  // pointeur, puis affiche le menu principal ; l'événement, lui, arrive APRÈS —
+  // et il écrasait le titre par « Pause » avec un bouton « Reprendre », sur un
+  // menu qu'on venait justement de restaurer. On retient donc l'état d'AVANT :
+  // à ce moment-là `pauseGame()` a déjà posé `running` à faux, il n'y a rien à
+  // mettre en pause. Un Échap en pleine partie, lui, arrive avec `running` vrai.
+  const tournait = running;
   locked = document.pointerLockElement === canvas;
   if (!IS_TOUCH && !dragLook) {
     running = locked;
     if (edu.quizActive || invOpen || carteOuverte) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
-    if (!locked) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
+    if (!locked && tournait) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
   }
 });
 document.addEventListener('pointerlockerror', () => enableDragFallback());
@@ -886,8 +1794,6 @@ document.addEventListener('keydown', (e) => {
   if (!running) return;
   player.keys.add(e.code);
   if (e.code === 'KeyF') refuserOuVoler();
-  if (e.code === 'KeyQ') creatureManager.throwBall();
-  if (e.code === 'KeyB') toggleDex();
   if (e.code === 'KeyE') openInventory();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
@@ -944,7 +1850,7 @@ function pickBlock() {
   const idx = hotbarBlocks.indexOf(hit.id);
   if (idx >= 0) {
     selectSlot(idx);
-  } else { // not in the hotbar: assign it to the current slot, Minecraft-style
+  } else { // pas dans la barre : on l'affecte à la case courante
     hotbarBlocks[selectedSlot] = hit.id;
     buildHotbar();
     selectSlot(selectedSlot);
@@ -1108,27 +2014,173 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 function refuserOuVoler() {
   const aBord = player.decollerOuSePoser();
   if (aBord === 'decollage') {
-    creatureManager.toast('✈️ Décollage ! Le joystick monte, descend et tourne.', 0x9fd8ff);
+    toast('✈️ Pleins gaz ! Le nez se lève tout seul — le joystick tient le cap.', 0x9fd8ff);
+    return true;
+  }
+  if (aBord === 'remise') {
+    toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
     return true;
   }
   if (aBord === 'atterrissage') {
-    creatureManager.toast('🛬 On se pose — garde le cap jusqu\'au sol.', 0x9fd8ff);
+    toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
     return true;
   }
   if (player.toggleFly()) return true;
-  creatureManager.toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
+  toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
 }
+
+// Ce que l'avion fait tout seul se DIT : les roues qui touchent, l'arrêt.
+player.surAvion = (quoi) => {
+  if (quoi === 'touche') toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
+  else if (quoi === 'ventre') toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
+  else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
+  // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
+  // jamais seulement ce qui est refusé — la règle de la maison.
+  else if (quoi === 'remiseDesGaz') toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
+};
+
+// LA MANETTE DES GAZ (v262). Max : « le joystick à gauche pour la direction
+// et, en multitouch, à droite un cadran qu'on monte/baisse pour la vitesse ».
+// Un curseur vertical à droite, en événements de pointeur — un doigt sur le
+// joystick (le canvas, à gauche) et un doigt ici ne se gênent pas, chacun a
+// son pointeur. Il fixe `player.gaz` (0 à 1) ; `player.js` en fait la
+// vitesse de l'avion. Tant qu'on ne l'a pas touché, l'avant du joystick reste
+// l'accélérateur : rien de ce qu'un enfant sait ne cesse de marcher. Et il
+// AFFICHE la vitesse, en km/h, que la manette serve ou non.
+//
+// EN VOITURE, PLUS DE MANETTE NI DE COMPTEUR (v272) — décision de Max sur
+// capture de Hambourg. Le cadran reste ce qu'il a toujours voulu être : une
+// manette des gaz d'AVION, celle qui se garde quand on lâche.
+const gazBase = document.getElementById('gaz-base');
+const gazFill = document.getElementById('gaz-fill');
+const gazKnob = document.getElementById('gaz-knob');
+const gazVal = document.getElementById('gaz-val');
+const trainBtn = document.getElementById('train-btn');
+const flyLb = document.getElementById('fly-lb');
+const trainLb = document.getElementById('train-lb');
+let dernierKmh = null, dernierMotVol = '', dernierMotTrain = '';
+// Le mur du son, à l'altitude où volent les avions de ligne.
+const MACH_KMH = 1235;
+function reglerGaz(e) {
+  const r = gazBase.getBoundingClientRect();
+  const marge = 14;
+  const n = 1 - (e.clientY - r.top - marge) / (r.height - marge * 2);
+  player.gaz = Math.max(0, Math.min(1, n));
+}
+gazBase.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  try { gazBase.setPointerCapture(e.pointerId); } catch { /* un pointeur déjà parti */ }
+  reglerGaz(e);
+});
+gazBase.addEventListener('pointermove', (e) => {
+  if (e.buttons === 0 && e.pointerType === 'mouse') return;
+  if (player.gaz == null) return;
+  reglerGaz(e);
+});
+gazBase.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+trainBtn.addEventListener('click', () => {
+  if (!player.pilote) return;
+  player.trainVoulu = !((player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+  toast(player.trainVoulu ? '🛞 Train sorti.' : '🛞 Train rentré.', 0x9fd8ff);
+});
+// LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
+// coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
+let etatVehicule = '';
+function majBoutonsVehicule() {
+  const enAvion = running && !!player.pilote;
+  const enVehicule = running && (enAvion || player.gabarit > 1);
+  const cle = `${enVehicule}|${enAvion}`;
+  if (cle !== etatVehicule) {
+    etatVehicule = cle;
+    document.body.classList.toggle('en-vehicule', enVehicule);
+    document.body.classList.toggle('en-avion', enAvion);
+  }
+  if (!enVehicule) return;
+  // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
+  // plus affichés en voiture — décision de Max — et l'on n'écrit pas dans un
+  // DOM caché : c'est autant de travail par image pour rien, et un compteur
+  // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
+  // remarque.
+  if (!enAvion) {
+    if (dernierMotVol !== 'VOLER') { dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER'; }
+    dernierKmh = null;
+    return;
+  }
+  const v = Math.abs(player.vitesseAvion || 0);
+  let niveau = player.gaz;
+  if (niveau == null) niveau = player.pilote.max ? v / player.pilote.max : 0;
+  niveau = Math.max(0, Math.min(1, niveau));
+  gazFill.style.height = `${Math.round(niveau * 100)}%`;
+  gazKnob.style.bottom = `calc(${(niveau * 100).toFixed(1)}% - ${Math.round(niveau * 22)}px)`;
+  // LE COMPTEUR A DEUX LIGNES VOULUES, PLUS UN REPLI SUBI (v265). Écrit
+  // « 684 km/h » d'un seul tenant dans une manette de soixante pixels, il se
+  // repliait sur deux lignes de onze, sous le curseur blanc : mesuré
+  // illisible sur capture d'iPhone. Le nombre est gros, l'unité petite, et
+  // le tout vit à côté de la manette, plus dedans.
+  //
+  // ET LA VITESSE D'UN AVION EST CELLE DE SA FICHE (v267). `v * 3,6` traite
+  // un bloc comme un mètre : un bloc n'en vaut un nulle part ici — trente à
+  // quarante au sol dans une ville, cent quatre-vingt-sept sur la carte du
+  // monde. Le compteur rendait donc 576 km/h pour un Concorde. `kmh` porte la
+  // vraie croisière de l'appareil, et l'on affiche la fraction de `max`
+  // réellement atteinte.
+  const fiche = player.pilote;
+  const kmh = fiche && fiche.kmh && fiche.max
+    ? Math.round(v / fiche.max * fiche.kmh) : Math.round(v * 3.6);
+  if (kmh !== dernierKmh) {
+    dernierKmh = kmh;
+    // PASSÉ LE MUR DU SON, ON LE DIT. Mach 1 vaut 1 235 km/h en altitude de
+    // croisière ; la petite ligne troque son unité contre le nombre de Mach,
+    // ce qu'un enfant retient bien mieux qu'un grand nombre de plus.
+    const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
+    gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
+  }
+  trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
+  // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
+  // pas à sept ans, et ✈️ ne dit pas s'il décolle ou s'il pose. Le DOM ne
+  // s'écrit que quand le mot change — une réécriture par image coûte un
+  // reflow (leçon du cadran de cap, v263).
+  const etat = player.avionEtat || (player.avionEnVol ? 'vol' : 'sol');
+  const motVol = etat === 'sol' || etat === 'freinage' ? 'DÉCOLLER' : 'SE POSER';
+  const motTrain = (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5 ? 'SORTI' : 'RENTRÉ';
+  if (motVol !== dernierMotVol) { dernierMotVol = motVol; flyLb.textContent = motVol; }
+  if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
+  majCadranDeCap();
+}
+window.__majBoutonsVehicule = majBoutonsVehicule;
+
+// LE CADRAN DE CAP (v263). Le calcul est pur (`cap.js`), le DOM ne s'écrit
+// que quand ce qu'il dit change : deux cent soixante distances par image
+// ne coûtent rien, une réécriture de texte par image coûte un reflow.
+const capDegresEl = document.getElementById('cap-degres');
+const capVilleEl = document.getElementById('cap-ville');
+const capRepereEl = document.getElementById('cap-repere');
+let capTexte = '';
+let dernierCadran = null;
+function majCadranDeCap() {
+  const c = cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
+  dernierCadran = c;
+  const fleche = c.ville == null ? '' : c.dansLeCone ? '' : (c.ecart > 0 ? ' ◀' : ' ▶');
+  const texte = `${c.degres}|${c.ville || ''}|${c.lisible || ''}|${fleche}`;
+  if (texte !== capTexte) {
+    capTexte = texte;
+    capDegresEl.textContent = `${String(c.degres).padStart(3, '0')}° ${c.point}`;
+    capVilleEl.innerHTML = c.ville
+      ? `${c.ville}${fleche} <small>${c.lisible}</small>`
+      : '<small>aucune ville en vue</small>';
+  }
+  if (c.ville) {
+    capRepereEl.style.left = `${(50 + c.repere * 50).toFixed(1)}%`;
+    capRepereEl.classList.toggle('dehors', !c.dansLeCone);
+  }
+}
+window.__cadranDeCap = () => dernierCadran;
 
 document.getElementById('fly-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   refuserOuVoler();
   document.getElementById('down-btn').style.display = player.flying ? 'flex' : 'none';
-}, { passive: false });
-
-document.getElementById('ball-btn').addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  creatureManager.throwBall();
 }, { passive: false });
 
 // --- settings & gyroscope look ----------------------------------------------------
@@ -1143,8 +2195,142 @@ function saveSettings() {
 
 const settingsPanel = document.getElementById('settings-panel');
 const gyroToggle = document.getElementById('gyro-toggle');
-function renderSettings() { gyroToggle.classList.toggle('on', !!settings.gyro); }
+const graphToggle = document.getElementById('graph-toggle');
+const sonToggle = document.getElementById('son-toggle');
+
+// ── L'ÉTENDUE DES GRAPHISMES, CHOISIE PAR L'ENFANT (v290) ────────────────────
+//
+// Quatre boutons, et le libellé dit ce qu'on OBTIENT. Ce que le réglage change
+// — distance d'affichage, profondeur de la file du mailleur, portée de la
+// couche HD de Paris, vitesse des jets — est lu AU DÉMARRAGE (v284 : un palier
+// ne s'applique pas à chaud, sans quoi la distance d'affichage respirerait sous
+// les yeux de l'enfant). D'où la seule difficulté de cette rangée :
+//
+// UN BOUTON QUI NE FAIT RIEN TOUT DE SUITE DOIT DIRE QUOI FAIRE. C'est « un
+// bouton qui ne fait rien est pire qu'un bouton qui refuse » (v228) vu du côté
+// d'un réglage différé : un enfant qui choisit « Loin » et ne voit rien changer
+// conclut que le jeu est cassé. L'aide de la rangée annonce donc l'effet en
+// attente, ET le bandeau dit le geste — revenir au menu et rejouer — comme tout
+// message de la maison (« fais demi-tour »).
+const etendueChoix = document.getElementById('etendue-choix');
+const etendueHint = document.getElementById('etendue-hint');
+// Ce que l'appareil porte EN CE MOMENT, lu là où le démarrage l'a lu : c'est le
+// seul moyen de dire « au prochain lancement » sans mentir.
+const etendueLue = () => {
+  try {
+    const v = localStorage.getItem(ETENDUE_CLE);
+    if (v === 'auto' || (v && PALIERS[v])) return v;
+  } catch { /* mode privé */ }
+  return ETENDUE_PAR_DEFAUT;
+};
+// L'AIDE DIT CE QUI EST ACTIF, ET CE QUI ATTEND. Trois cas, et le troisième est
+// celui qui a coûté la v290 : en « Auto », tant que rien n'a été mesuré, le jeu
+// tourne au réglage d'avant et il faut le DIRE — annoncer un palier qu'on n'a
+// pas mesuré serait exactement l'erreur que ce fichier vient de corriger.
+// LE VERDICT RANGÉ, RELU : l'aide doit dire ce que le PROCHAIN lancement fera,
+// donc elle refait le même calcul que le démarrage — même fonction, mêmes
+// entrées.
+function mesureRangee() {
+  try {
+    const brut = localStorage.getItem(PALIER_CLE);
+    if (brut) return JSON.parse(brut);
+  } catch { /* mode privé */ }
+  return null;
+}
+// ET « CE QUI ATTEND » SE COMPARE SUR LES VALEURS APPLIQUÉES, JAMAIS SUR LES
+// NOMS. Sur un écran tactile, « Normal » est EXACTEMENT ce que fait un appareil
+// sans palier ; sur un ordinateur il fait tomber la distance d'affichage de 16 à
+// 12. Comparer les noms annoncerait donc une attente qui n'arrive pas sur
+// l'iPad, et la tairait sur le portable — c'est `reglageDe` qui tranche, et ce
+// n'est pas un détail de message : une aide qui promet un changement qui ne
+// vient pas apprend à l'enfant à ne plus la lire.
+function texteEtendue() {
+  const choix = etendueLue();
+  const mot = (c) => (ETENDUES.find((e) => e.cle === c) || {}).mot || c;
+  let base;
+  if (choix === 'auto') {
+    base = PALIER && PALIER.source === 'mesure'
+      ? `Auto : ta tablette a été mesurée, le jeu joue en « ${mot(PALIER.nom)} ».`
+      : 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
+  } else {
+    base = `Tu as choisi « ${mot(choix)} ».`;
+  }
+  const prochain = palierRetenu({ choix, mesure: mesureRangee() });
+  const a = reglageDe(prochain, IS_TOUCH);
+  const b = reglageDe(PALIER, IS_TOUCH);
+  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd)
+    ? ' ⏳ Ça s\'applique au prochain lancement : reviens au menu 🏠 puis rejoue.'
+    : '';
+  return `Jusqu'où tu vois le paysage, et les détails des rues de Paris. ${base}${suite}`;
+}
+function renderEtendue() {
+  if (!etendueChoix) return;
+  const choix = etendueLue();
+  if (!etendueChoix.children.length) {
+    for (const e of ETENDUES) {
+      const b = document.createElement('button');
+      b.className = 'etendue-btn';
+      b.dataset.cle = e.cle;
+      b.textContent = e.mot;
+      b.title = e.aide;
+      b.addEventListener('click', () => {
+        try { localStorage.setItem(ETENDUE_CLE, e.cle); } catch { /* mode privé */ }
+        renderEtendue();
+        // Le bandeau ne parle que si le choix change vraiment quelque chose :
+        // rechoisir ce qui tourne déjà ne doit pas faire croire à une attente.
+        const a = reglageDe(palierRetenu({ choix: e.cle, mesure: mesureRangee() }), IS_TOUCH);
+        const b = reglageDe(PALIER, IS_TOUCH);
+        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd;
+        toast(change ? `${e.mot} — reviens au menu 🏠 et rejoue` : `Graphismes : ${e.mot}`);
+      });
+      etendueChoix.appendChild(b);
+    }
+  }
+  for (const b of etendueChoix.children) b.classList.toggle('on', b.dataset.cle === choix);
+  if (etendueHint) etendueHint.textContent = texteEtendue();
+}
+
+function renderSettings() {
+  gyroToggle.classList.toggle('on', !!settings.gyro);
+  if (graphToggle) graphToggle.classList.toggle('on', graphismes() === 'avance');
+  if (sonToggle) sonToggle.classList.toggle('on', sonActif());
+  renderEtendue();
+}
 renderSettings();
+// Le changement s'applique sur place : les ombres se rallument ou s'éteignent
+// (les matériaux se recompilent une fois), et la résolution suit au prochain
+// passage d'`ajusterLaVue`, qui compare le canvas à ce qu'il devrait porter.
+function appliquerGraphismes() {
+  const voulues = ombresVoulues();
+  if (renderer.shadowMap.enabled !== voulues) {
+    renderer.shadowMap.enabled = voulues;
+    scene.traverse((o) => {
+      if (!o.material) return;
+      for (const m of (Array.isArray(o.material) ? o.material : [o.material])) m.needsUpdate = true;
+    });
+  }
+}
+window.__graphismes = { lire: graphismes, choisir: (v) => { try { localStorage.setItem(GRAPHISMES_CLE, v); } catch { /* mode privé */ } appliquerGraphismes(); renderSettings(); } };
+if (graphToggle) {
+  graphToggle.addEventListener('click', () => {
+    window.__graphismes.choisir(graphismes() === 'avance' ? 'normal' : 'avance');
+  });
+}
+if (sonToggle) {
+  sonToggle.addEventListener('click', () => {
+    const veut = !sonActif();
+    try { localStorage.setItem(SON_CLE, veut ? 'on' : 'off'); } catch { /* mode privé */ }
+    reglerSon(veut);
+    renderSettings();
+  });
+}
+// La sonde du son. ELLE PUBLIE LA SORTIE, pas un drapeau : un témoin de son
+// lit des ÉCHANTILLONS (il accroche son propre analyseur ici), jamais
+// `etatSon()`, qui dirait « radio : Nuit Cubique » même si plus un seul
+// oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
+// fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
+window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
+  station: radioEnCours, regler: reglerSon, actif: sonActif };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -1162,6 +2348,10 @@ document.getElementById('play-btn').addEventListener('click', () => {
 
 document.getElementById('settings-btn').addEventListener('click', () => {
   settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
+  // L'AIDE DE L'ÉTENDUE SE RELIT À L'OUVERTURE : elle annonce ce qui attend le
+  // prochain lancement, et ce qui attend a pu changer depuis le chargement de la
+  // page (une mesure rangée, un choix fait sur un autre onglet).
+  if (settingsPanel.style.display === 'flex') renderSettings();
 });
 document.getElementById('settings-close').addEventListener('click', () => {
   settingsPanel.style.display = 'none';
@@ -1171,7 +2361,7 @@ document.getElementById('gyro-row').addEventListener('click', () => {
   if (settings.gyro) requestGyroPermission();
   renderSettings();
   saveSettings();
-  creatureManager.toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
+  toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
 });
 
 // Applies the CHANGE in device angles to the camera, so gyro aiming and
@@ -1213,12 +2403,10 @@ function renderMeat() {
   meatCounter.textContent = `🍖 × ${meatCount}`;
 }
 renderMeat();
-// Toucher le garde-manger ouvre l'atelier : c'est là qu'on dépense la viande
-// (recettes, nourrir les bêtes). `fun` n'existe pas encore à cette ligne — on
-// le lit au moment du clic, pas au chargement.
-meatCounter.addEventListener('click', () => {
-  try { fun.ouvrirOnglet('craft'); } catch { /* l'atelier n'est pas encore né */ }
-});
+// Le garde-manger ouvrait l'atelier, où la viande se dépensait en recettes ;
+// l'atelier n'existe plus (v255), la pastille ne fait plus que compter ce
+// que l'enfant a récolté. Elle ne se touche plus — un bouton qui ne ferait
+// rien serait pire qu'une pastille qui compte.
 
 function emojiBurst(emojis, n = 18) {
   const container = document.getElementById('confetti');
@@ -1256,7 +2444,8 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
-  vehicules.circulation(tr.pts, tr.pts.length + choisi, {ville:tr.ville});
+  // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
+  vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
   // le bus dessert le grand anneau — un par ville, à sa couleur
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
   circulationsEnAttente.splice(choisi, 1);
@@ -1287,12 +2476,12 @@ function aeroportiste(dt) {
   // chiffres. Il était hors de cause.
   //
   // Quatre-vingt-dix reste juste pour sa propre raison : un appareil garé ne
-  // se dessine qu'à soixante-deux blocs, comme toute créature. En faire naître
+  // se dessine qu'à soixante-deux blocs, comme tout personnage. En faire naître
   // à cent trente ne montre rien à personne. Le garagiste travaille à
   // quatre-vingts pour exactement ce motif.
   const a = aeroportPres(player.pos.x, player.pos.z, 90);
   if (!a) return;
-  for (const { espece, du, dv, cap } of postesAvion(a.profil)) {
+  for (const { espece, du, dv, cap } of postesAvion(a.profil, a.r)) {
     const x = a.x + du, z = a.z + dv;
     // HUIT BLOCS, PAS QUATORZE. Sur une base, trois chasseurs se garent à
     // quatorze blocs l'un de l'autre : à ce rayon-là, le voisin comptait pour
@@ -1326,9 +2515,8 @@ animalManager.onHarvest = (def) => {
   meatCount++;
   try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
   renderMeat();
-  creatureManager.toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
+  toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
-  fun.onHarvest(def); // the item also goes into the bag (crafting, quests, chest)
 };
 
 // --- catch celebration ------------------------------------------------------------
@@ -1498,10 +2686,10 @@ async function inviter(nom) {
   if (!net || !net.active) return false;
   try {
     await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, carte: 'terre', at: Date.now() });
-    creatureManager.toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
+    toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
     return true;
   } catch {
-    creatureManager.toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
+    toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
     return false;
   }
 }
@@ -1560,7 +2748,7 @@ async function accepterInvitation(code) {
 window.__inviter = inviter;
 window.__listerLesAmis = listerLesAmis;
 window.__accepterInvitation = accepterInvitation;
-const cloud = new CloudSave(world, (msg, color) => creatureManager.toast(msg, color));
+const cloud = new CloudSave(world, (msg, color) => toast(msg, color));
 
 // player profile: each device types its own character name (Marlon, Alice…)
 const PROFILE_KEY = 'web-minecraft-profile-v1';
@@ -1571,7 +2759,7 @@ catch { /* defaults */ }
 // below can flush state before they reload). See the sync section further on.
 const profileSync = new ProfileSync(cloud, () => playerProfile.name);
 profileSync.onTrim = (dropped) => {
-  creatureManager.toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
+  toast(`☁️ Sauvegarde allégée (${dropped.join(', ')}) — trop de contenu`, 0xff9d5e);
 };
 // The world in memory is the truth; localStorage only catches up on a
 // debounced save, so a push that read storage alone could ship a copy that
@@ -1586,7 +2774,7 @@ profileSync.onMerged = (state) => {
   const applied = state?.edits ? world.importerProfil(state.edits) : 0;
   if (applied > 0) {
     world.saveEdits();
-    creatureManager.toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
+    toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
   }
   positionDuCloud(state);
 };
@@ -1867,7 +3055,7 @@ async function guetterConsignes() {
     try {
       if (await lireConsignes()) {
         appliquerConsignes();
-        creatureManager.toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
+        toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
       }
     } catch { /* on repassera dans deux secondes */ }
   }
@@ -1964,13 +3152,27 @@ function refreshAdminBtn() {
 // Le prénom sur l'accueil : en allumant le jeu, la première question est
 // « suis-je bien sur mon compte ? ». Elle se répondait jusqu'ici en ouvrant
 // « Mon personnage ».
+// Les signes dessinés de l'accueil (v276). Écrits ici une fois : deux
+// copies du même dessin finissent par diverger.
+const CROIX_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+const PLUS_SVG = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
 function refreshHello() {
   const el = document.getElementById('player-hello');
   if (!el) return;
   const nom = (playerProfile.name || '').trim();
   if (!nom) { el.style.display = 'none'; return; }
   el.innerHTML = '';
-  el.append('👋 Salut ');
+  // Un signe dessiné, jamais un emoji (v276) : à sept ans un pictogramme se
+  // reconnaît, un emoji se devine — et il change de dessin d'un appareil à
+  // l'autre. `innerHTML` vient d'être vidé juste au-dessus, et la main est
+  // écrite ici, pas reçue : rien d'extérieur n'entre dans cette ligne.
+  el.insertAdjacentHTML('beforeend', '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M11 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/>'
+    + '<path d="M14.2 10.4V3.4a1.6 1.6 0 0 1 3.2 0V12"/>'
+    + '<path d="M17.4 11.6V6.4a1.6 1.6 0 0 1 3.2 0v8.2a6.4 6.4 0 0 1-6.4 6.4h-1.6'
+    + 'a6 6 0 0 1-4.5-2L4 14.2a1.7 1.7 0 0 1 2.5-2.2L11 16"/></svg>');
+  el.append(' Salut ');
   const qui = document.createElement('span');
   qui.className = 'qui';
   qui.textContent = nom;
@@ -2038,9 +3240,9 @@ const identity = new Identity(cloud, raw);
 (function parentUnlock() {
   const asked = new URLSearchParams(location.search).get('unlock');
   if (!asked) return;
-  if (asked !== '135246') { creatureManager.toast('Code parental incorrect', 0xff6b6b); return; }
+  if (asked !== '135246') { toast('Code parental incorrect', 0xff6b6b); return; }
   identity.clearLock();
-  creatureManager.toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
+  toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
   // On retire le code de la barre d'adresse — il n'a pas à rester dans
   // l'historique ni à repartir dans un lien partagé — sans toucher au reste
   // des paramètres, qui configurent le jeu.
@@ -2067,7 +3269,7 @@ identity.onLook = (name, look) => {
   playerProfile.look = look;
   saveProfile();
   refreshCharPortraits();
-  creatureManager.toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
+  toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
 };
 
 // A face enrolled just before this profile was entered (typically a
@@ -2148,7 +3350,8 @@ function renderProfiles() {
     { // toujours supprimable, y compris le dernier : plus de profil obligatoire
       const del = document.createElement('button');
       del.className = 'who-del';
-      del.textContent = '✕';
+      del.innerHTML = '';
+      del.insertAdjacentHTML('beforeend', CROIX_SVG);
       del.title = 'Supprimer ce joueur (code parental)';
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -2178,7 +3381,9 @@ function renderProfiles() {
   }
   const add = document.createElement('button');
   add.className = 'who-add';
-  add.textContent = '➕ Nouveau joueur';
+  add.innerHTML = '';
+  add.insertAdjacentHTML('beforeend', PLUS_SVG);
+  add.append('Nouveau joueur');
   add.addEventListener('click', () => {
     // name -> school grade -> face & code, then into the game
     identity.createAccount({
@@ -2324,7 +3529,8 @@ function renderRecentWorlds() {
     open.addEventListener('click', () => openWorld(roomCode));
     const del = document.createElement('button');
     del.className = 'world-del';
-    del.textContent = '✕';
+    del.innerHTML = '';
+    del.insertAdjacentHTML('beforeend', CROIX_SVG);
     del.title = 'Retirer ce monde de la liste';
     del.addEventListener('click', async () => {
       const ask = window.gameConfirm || ((m) => Promise.resolve(window.confirm(m)));
@@ -2384,7 +3590,7 @@ if (partagePanel) {
   document.getElementById('partage-close').addEventListener('click', fermerPartage);
   partagePanel.addEventListener('click', (e) => { if (e.target === partagePanel) fermerPartage(); });
   document.getElementById('partage-envoyer').addEventListener('click', () => {
-    partagerLien(lienDuJeu(), { toast: (m) => creatureManager.toast(m, 0x9fd8e8) });
+    partagerLien(lienDuJeu(), { toast: (m) => toast(m, 0x9fd8e8) });
   });
 }
 
@@ -2511,23 +3717,74 @@ function syncRemotePlayers(list) {
       const mesh = buildKidMesh(withOwnLook(base, p.look || {}));
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
-      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5 };
+      rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5,
+        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null };
       remotePlayers.set(p.id, rp);
-      if (p.pos) mesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+      if (p.pos) { mesh.position.set(p.pos.x, p.pos.y, p.pos.z); rp.pos.set(p.pos.x, p.pos.y, p.pos.z); }
       mesh.scale.setScalar(0.01); // grandit depuis rien, cf. updateRemotePlayers
       joinEffect(mesh.position, p.name || 'Un ami');
     }
     if (p.pos) rp.target = p.pos;
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
+    synchroniserVehiculeDistant(rp, p.v || null);
+    rp.passager = p.p || null;
   }
   for (const [id, rp] of remotePlayers) {
     if (!seen.has(id)) {
       // on ne retire pas tout de suite : leaveEffect fait disparaître le corps
+      poserDebout(rp);
+      synchroniserVehiculeDistant(rp, null);
       leaveEffect(rp.mesh, rp.name || 'Un ami');
       remotePlayers.delete(id);
     }
   }
+}
+
+// L'AMI AU VOLANT EST VU DANS SA VOITURE (v253). La position d'un joueur
+// emporte désormais son véhicule (`v` : espèce, modèle de flotte) ; on le
+// dessine avec la MÊME fabrique que la monture locale (`MODELES_MONTURE`),
+// on l'assied dedans comme l'avatar de l'enfant (`asseoir`, siège de la
+// fiche), et quand il descend on le remet debout à côté.
+function synchroniserVehiculeDistant(rp, v) {
+  const cle = v ? `${v.k}|${v.f || ''}` : '';
+  if ((rp.vehicule ? rp.vehicule.cle : '') === cle) return;
+  if (rp.vehicule) {
+    poserDebout(rp);
+    scene.remove(rp.vehicule.mesh);
+    liberer(rp.vehicule.mesh);
+    rp.vehicule = null;
+  }
+  if (!v) return;
+  const fabrique = MODELES_MONTURE[v.k];
+  const def = MONTURES.find((d) => d.key === v.k);
+  if (!fabrique || !def || !def.siege) return;
+  const mesh = fabrique(v.f ? { flotte: v.f } : undefined);
+  mesh.position.copy(rp.pos);
+  scene.add(mesh);
+  rp.vehicule = { cle, mesh, def };
+}
+// L'avatar d'un ami revient dans la scène, debout, à sa taille : c'est ce
+// qu'on fait quand il descend, quand son véhicule disparaît, quand il part.
+function poserDebout(rp) {
+  if (rp.mesh.parent && rp.mesh.parent !== scene) {
+    scene.add(rp.mesh);
+    rp.mesh.position.copy(rp.pos);
+    rp.mesh.scale.setScalar(1);
+    rp.mesh.rotation.set(0, rp.yaw + Math.PI, 0);
+  }
+}
+// Le véhicule dans lequel un joueur (distant) est passager : celui d'un
+// autre ami, ou le nôtre si c'est chez nous qu'il est monté.
+function vehiculeDuConducteur(de) {
+  const monId = net && net.peer ? net.peer.id : null;
+  if (monId && de === monId) {
+    const a = fun.montureConduite ? fun.montureConduite() : null;
+    // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
+    return a && a.def && a.def.sieges ? a : null;
+  }
+  const rp = remotePlayers.get(de);
+  return rp && rp.vehicule ? rp.vehicule : null;
 }
 
 function updateRemotePlayers(dt) {
@@ -2541,17 +3798,37 @@ function updateRemotePlayers(dt) {
       rp.mesh.scale.setScalar(Math.max(0.01, k < 1 ? k * (1.25 - 0.25 * k) : 1));
       if (rp.pop === 0) rp.mesh.scale.setScalar(1);
     }
+    // La position VRAIE vit dans `rp.pos` (v253) : le maillage, lui, peut
+    // être assis dans un véhicule, en coordonnées du siège.
     if (rp.target) {
       const t = Math.min(1, dt * 10);
-      rp.mesh.position.x += (rp.target.x - rp.mesh.position.x) * t;
-      rp.mesh.position.y += (rp.target.y - rp.mesh.position.y) * t;
-      rp.mesh.position.z += (rp.target.z - rp.mesh.position.z) * t;
+      rp.pos.x += (rp.target.x - rp.pos.x) * t;
+      rp.pos.y += (rp.target.y - rp.pos.y) * t;
+      rp.pos.z += (rp.target.z - rp.pos.z) * t;
     }
-    let dy = rp.yaw + Math.PI - rp.mesh.rotation.y;
+    let dy = rp.yaw - rp.cap;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
-    rp.mesh.rotation.y += dy * Math.min(1, dt * 10);
+    rp.cap += dy * Math.min(1, dt * 10);
     rp.animTime += dt;
+    if (rp.vehicule) {
+      // au volant : la voiture suit la position, le cap suit le regard
+      // (comme `updateRide`, fun.js : rotation.y = yaw), l'ami est assis
+      const vm = rp.vehicule.mesh;
+      vm.position.copy(rp.pos);
+      vm.rotation.y = rp.cap;
+      asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
+      continue;
+    }
+    const chez = rp.passager ? vehiculeDuConducteur(rp.passager.de) : null;
+    if (chez) {
+      const sieges = chez.def.sieges || [];
+      asseoir(rp.mesh, chez, sieges[Math.min(rp.passager.s || 0, sieges.length - 1)] || chez.def.siege, rp.animTime);
+      continue;
+    }
+    poserDebout(rp);
+    rp.mesh.position.copy(rp.pos);
+    rp.mesh.rotation.y = rp.cap + Math.PI;
     const swing = rp.moving ? Math.sin(rp.animTime * 9) * 0.6 : 0;
     rp.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
     rp.mesh.userData.arms.forEach((arm, i) => { arm.rotation.x = i % 2 ? swing * 0.7 : -swing * 0.7; });
@@ -2601,7 +3878,7 @@ function startNetSession(code, isHost, patience) {
     // Le nuage sert de tuyau de secours quand le pair-à-pair est bloqué :
     // c'est ce qui fait qu'un Wi-Fi d'hôtel n'interdit plus de jouer ensemble.
     cloud,
-    toast: (msg, color) => creatureManager.toast(msg, color),
+    toast: (msg, color) => toast(msg, color),
     onPlayers: (list) => { syncRemotePlayers(list); updatePlayersBtn(); },
     onState: () => updatePlayersBtn(),
   });
@@ -2611,10 +3888,20 @@ function startNetSession(code, isHost, patience) {
   // Notre reflet nous rend la main : on rouvre le monde sans un mot. Pour
   // l'enfant, il a simplement rejoint sa partie.
   net.onCeder = () => { leaveToMainMenu(); };
-  net.getPos = () => ({
-    x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
-    moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
-  });
+  net.getPos = () => {
+    const p = {
+      x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
+      moving: Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5,
+    };
+    // AU VOLANT, LA POSITION EMPORTE LE VÉHICULE (v253) : sans cela l'ami
+    // était vu à pied, glissant à toute vitesse (Max). Le modèle de flotte
+    // voyage aussi, pour que ce soit SA voiture qu'on voit.
+    const a = fun.montureConduite ? fun.montureConduite() : null;
+    if (a && a.def && a.def.siege) p.v = { k: a.def.key, f: (a.mesh && a.mesh.userData && a.mesh.userData.flotte) || null };
+    const pa = fun.passagerDe ? fun.passagerDe() : null;
+    if (pa) p.p = { de: pa.de, s: pa.s };
+    return p;
+  };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
   // Le réseau raconte ce qui lui arrive ; le bandeau le montre.
   net.onLink = (etat, detail) => {
@@ -2851,7 +4138,7 @@ function showOnlineUI() {
     addChatMsg(name, msg, false);
     chatDing();
     if (chatPanel.style.display !== 'block') {
-      creatureManager.toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
+      toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
       setUnread(unread + 1);
     }
     // Un message qui arrive pendant qu'on est ailleurs mérite le système : le
@@ -2860,11 +4147,11 @@ function showOnlineUI() {
       notifierSysteme(`💬 ${name}`, msg, 'wm-chat');
     }
   };
-  net.onAnnonce = (txt) => creatureManager.toast(txt, 0x9fd8e8);
+  net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
-  net.onLeave = (nom) => creatureManager.toast(`👋 ${nom} est parti·e`, 0xcccccc);
+  net.onLeave = (nom) => toast(`👋 ${nom} est parti·e`, 0xcccccc);
   // ON NE RENVOIE PLUS L'ENFANT AU MENU AVEC UNE ACCUSATION.
   //
   // Ce message vient d'un hôte qui porte notre prénom. Le jeu ne l'envoie plus
@@ -2893,13 +4180,13 @@ function showOnlineUI() {
   // dit d'un ton neutre, sans la boîte d'alerte qui fait peur.
   net.onRemplace = (name) => {
     leaveToMainMenu();
-    creatureManager.toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
+    toast(`🔄 ${name} a repris la partie depuis un autre appareil.`, 0x9fd8e8);
   };
   // On hébergeait, et le code nous a été repris pendant une coupure : l'autre
   // enfant tient désormais le monde. On le rejoint au lieu de rester chacun
   // dans sa bulle — sans quoi les deux jouent seuls sous le même code.
   net.onCodePris = (c) => { reprendreLeMonde(c); };
-  fun.attachNet(net); // duels, emotes, signs and the shared chest
+  fun.attachNet(net); // duels, émotes, panneaux reçus
 }
 
 // Leaves any session (local or online) and restores the full main menu.
@@ -2923,11 +4210,17 @@ function leaveToMainMenu() {
   world.switchContext('local');
   profileSync.push().catch(() => {});
   fun.onLeave();
-  montrerReprise(false);   // il n'y a plus de partie où revenir
   if (document.exitPointerLock) document.exitPointerLock();
   pauseGame();
+  // ET L'ON RANGE LE BOUTON APRÈS, PAS AVANT (v275). `montrerReprise(false)`
+  // était posé ici DEUX LIGNES PLUS HAUT, et `pauseGame()` le défaisait aussitôt
+  // en rappelant `montrerReprise(true)` : le menu principal offrait « Reprendre
+  // la partie » pour un monde qu'on venait de quitter. Le commentaire disait
+  // pourtant « il n'y a plus de partie où revenir » — ce qui est écrit dans un
+  // commentaire n'est pas ce que le code fait.
+  montrerReprise(false);   // il n'y a plus de partie où revenir
   // restore the full main menu, not the pause screen
-  document.getElementById('overlay-title').textContent = 'WEB MINECRAFT';
+  document.getElementById('overlay-title').textContent = NOM_DU_JEU;
   onlineMenu.style.display = 'none';
   roomCodeBox.style.display = 'none';
   document.getElementById('online-actions').style.display = 'flex';
@@ -3023,13 +4316,17 @@ const chatBadge = document.getElementById('chat-badge');
 // volée plutôt qu'un fichier à télécharger. Le contexte audio se crée au
 // premier besoin — les navigateurs mobiles refusent le son tant que l'enfant
 // n'a rien touché, et il a forcément touché l'écran pour jouer.
-let audioCtx = null;
+// UN SEUL CONTEXTE AUDIO POUR TOUT LE JEU (v268). Il vivait ici ; il vit
+// maintenant dans `sons.js`, qui porte aussi le gain général. Deux contextes
+// auraient deux prix : un réglage « couper le son » n'aurait éteint que la
+// moitié du jeu — le moteur se tait, le marteau continue —, et iOS compte les
+// contextes audio et les fait payer. C'est la leçon des deux contextes WebGL
+// de la v245, à un fichier près.
 function carillon(notes = [880, 1320]) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     for (const [i, freq] of notes.entries()) {
       const osc = audioCtx.createOscillator();
@@ -3040,7 +4337,7 @@ function carillon(notes = [880, 1320]) {
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(0.14, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(sortie);
       osc.start(start);
       osc.stop(start + 0.24);
     }
@@ -3053,10 +4350,9 @@ const chatDing = () => carillon([880, 1320]);
 // casse, un petit clic qui monte pour la pose.
 function bruitBloc(f0, f1, duree, type, volume) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = audioCtx || new AC();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audioCtx = contexteAudio();
+    if (!audioCtx) return;
+    const sortie = sortieAudio();
     const t0 = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -3066,7 +4362,7 @@ function bruitBloc(f0, f1, duree, type, volume) {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
-    osc.connect(gain).connect(audioCtx.destination);
+    osc.connect(gain).connect(sortie);
     osc.start(t0);
     osc.stop(t0 + duree + 0.02);
   } catch { /* pas de son : les éclats suffisent au retour */ }
@@ -3310,7 +4606,7 @@ function viderLaVisio() {
 camBtn.addEventListener('click', async () => {
   if (!net || !net.active) {
     // the button used to do nothing at all here, which just looks broken
-    creatureManager.toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
+    toast('📷 La caméra sert à se voir entre joueurs — rejoins un monde en ligne !', 0xff9d5e);
     return;
   }
   await allumerOuEteindreLaCamera();
@@ -3349,7 +4645,7 @@ document.getElementById('visio-invite-btn').addEventListener('click', async () =
 // Le son distant refusé faute de geste : on le dit une fois, gentiment, et le
 // premier contact avec l'écran le débloque.
 surSonEnAttente((nom) => {
-  creatureManager.toast(nom
+  toast(nom
     ? `🔊 Touche l'écran pour entendre ${nom}`
     : "🔊 Touche l'écran pour entendre", 0xffd479);
 });
@@ -3441,22 +4737,22 @@ function majLigneNotif() {
 
 document.getElementById('notif-toggle')?.addEventListener('click', async () => {
   if (!notifsDispo()) {
-    creatureManager.toast('📱 Ajoute d\'abord le jeu à ton écran d\'accueil !', 0x9fd8e8);
+    toast('📱 Ajoute d\'abord le jeu à ton écran d\'accueil !', 0x9fd8e8);
     return;
   }
   if (Notification.permission === 'granted') {
-    creatureManager.toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
+    toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
     return;
   }
   if (Notification.permission === 'denied') {
-    creatureManager.toast('🔕 Ton navigateur a bloqué les alertes. Change-le dans ses réglages.', 0xff9a9a);
+    toast('🔕 Ton navigateur a bloqué les alertes. Change-le dans ses réglages.', 0xff9a9a);
     return;
   }
   // Ici, et seulement ici, on est dans un vrai geste de l'utilisateur.
   try { await Notification.requestPermission(); } catch { /* refusé */ }
   majLigneNotif();
   if (Notification.permission === 'granted') {
-    creatureManager.toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
+    toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
   }
 });
 document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
@@ -3534,7 +4830,7 @@ function proposerNotifs(raison) {
       try { await Notification.requestPermission(); } catch { /* refusé */ }
       majLigneNotif();
       notifMemoEcrire({ n: NOTIF_MAX, t: Date.now() });   // question réglée
-      creatureManager.toast(
+      toast(
         Notification.permission === 'granted'
           ? '🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.'
           : '🔕 Pas de souci — tu pourras l\'activer dans ⚙️ Réglages.',
@@ -3558,6 +4854,13 @@ setTimeout(() => proposerNotifs('spontane'), 75000);
 
 // Le grand bandeau du milieu de l'écran, celui des captures. Il sert aussi
 // aux arrivées de joueurs et aux moments forts du siège.
+//
+// Son `id` dit encore « catch » : il est né avec la fête de l'attrape, retirée
+// en v285, et le RENOMMER coûterait une passe dans le CSS et les témoins pour un
+// nom que personne ne voit. C'est la règle de la v275, par l'autre bout : on
+// renomme ce que l'enfant VOIT, pas ce qui porte le mécanisme.
+const catchBanner = document.getElementById('catch-banner');
+
 function grandBandeau(titre, sous, duree = 3200) {
   const t = document.getElementById('catch-title');
   const s2 = document.getElementById('catch-sub');
@@ -3595,38 +4898,6 @@ function annonceArrivee(nom) {
   }
 }
 
-// --- catch celebration ------------------------------------------------------------
-
-const catchBanner = document.getElementById('catch-banner');
-creatureManager.onCatch = (sp, level) => {
-  document.getElementById('catch-title').textContent = '⭐ ATTRAPÉ ! ⭐';
-  document.getElementById('catch-sub').textContent = `${sp.name} · ${sp.type} · Niveau ${level} rejoint ton Dex !`;
-  catchBanner.classList.remove('show');
-  void catchBanner.offsetWidth; // restart the pop animation
-  catchBanner.classList.add('show');
-  clearTimeout(catchBanner._t);
-  catchBanner._t = setTimeout(() => catchBanner.classList.remove('show'), 2600);
-  emojiBurst(['⭐', '✨', '🎉', '◓'], 22);
-  fun.onCatch(sp);
-};
-
-// --- creature dex panel -----------------------------------------------------------
-
-const dexPanel = document.getElementById('dex-panel');
-
-function toggleDex() {
-  const open = dexPanel.style.display === 'block';
-  if (open) {
-    dexPanel.style.display = 'none';
-  } else {
-    creatureManager.renderDex();
-    dexPanel.style.display = 'block';
-  }
-}
-
-document.getElementById('dex-btn').addEventListener('click', toggleDex);
-document.getElementById('dex-close').addEventListener('click', toggleDex);
-
 // --- educational mode ---------------------------------------------------------
 
 const edu = new EducationMode({
@@ -3636,8 +4907,7 @@ const edu = new EducationMode({
     overlay.style.display = 'none';
   },
   onResume: () => startGame(),
-  toast: (msg, color) => creatureManager.toast(msg, color),
-  reward: () => creatureManager.awardRandom(),
+  toast: (msg, color) => toast(msg, color),
   // Le hub Éducation filtre par enfant et par période : la liste des enfants
   // vient des documents du cloud (comme dans l'espace parent), les journées
   // d'un autre enfant de ses lignes de temps de jeu.
@@ -3737,7 +5007,7 @@ async function pullPlayTime() {
     const applied = world.importerProfil(state.edits);
     if (applied > 0) {
       world.saveEdits();
-      creatureManager.toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
+      toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
     }
   }
   if (changed && !already) {
@@ -3993,7 +5263,7 @@ gradeSelect.addEventListener('change', () => {
   saveProfile();
   edu.setPrefs(playerProfile.lang, playerProfile.grade);
   pushPrefsToCloud();
-  creatureManager.toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
+  toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
 });
 edu.setPrefs(playerProfile.lang, playerProfile.grade);
 
@@ -4089,7 +5359,7 @@ function adopterProfilDistant(prefs) {
     }
   }
   if (changed || skillsChanged) {
-    creatureManager.toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
+    toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
   }
 })();
 
@@ -4149,12 +5419,9 @@ function updateCreatureLabel() {
       return;
     }
   }
-  const c = running ? creatureManager.targeted() : null;
-  if (!c) { creatureLabel.style.display = 'none'; return; }
-  creatureLabel.style.display = 'block';
-  creatureLabel.textContent =
-    `Wild ${c.sp.name} · ${c.sp.type} · Lv ${c.level} — ${IS_TOUCH ? 'tap ◓' : 'press Q'} to throw!`;
-  creatureLabel.style.color = '#' + new THREE.Color(TYPES[c.sp.type].color).getHexString();
+  // Plus de créature sauvage à nommer depuis la v285 : l'étiquette ne sert plus
+  // qu'aux bêtes et aux montures, juste au-dessus.
+  creatureLabel.style.display = 'none';
 }
 
 // --- hotbar HUD ------------------------------------------------------------------
@@ -4494,9 +5761,6 @@ const CARTE_PAS = 8;
 const horizonDecoupe = cadence(250);
 let horizonCap = 0;
 const carteSuivre = cadence(120);
-// Et le fond entier de temps en temps : un bloc que l'enfant vient de poser
-// tombe dans la partie RECOPIÉE, que le défilement ne recalcule jamais.
-const carteFond = cadence(2000);
 let carteVue = null;
 let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 // L'horloge du TEMPS D'ÉCRAN : des secondes réelles, bornées à deux. La borne
@@ -4546,44 +5810,144 @@ const RELIEF_CARTE = 96;
 // ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
 // tombe dans la partie recopiée, que rien ne recalculerait jamais.
 let carteRaster = null;         // le fond, un point par bloc
+let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent)
 let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
 let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
+let carteBande = 0;             // la prochaine ligne du raster à repeindre
+
+// ET LE FOND ENTIER SE REFAIT PAR BANDES, JAMAIS D'UN COUP (v258).
+//
+// La v233 refaisait le fond ENTIER toutes les deux secondes, pour qu'un bloc
+// posé par l'enfant finisse par apparaître dans la partie recopiée. Mesuré au
+// banc, processeur bridé ×4 : 690 ms pour le premier fond (37 249 colonnes,
+// et les morceaux qu'elles font engendrer), puis 90 à 240 ms toutes les deux
+// secondes tant que la minicarte est affichée — un à-coup régulier que Max
+// sentait « dès qu'on ouvre la carte ». Le fond se repeint désormais ligne
+// par ligne, quelques millisecondes par image, en tournant sans fin : le
+// même bloc posé apparaît dans la seconde, et aucune image ne le paie en
+// entier. Un raster neuf, ou un grand saut (téléportation), se REMPLIT de
+// la même façon au lieu d'être calculé d'un seul tenant — et il se prépare
+// pendant l'accueil, avant « Jouer », pour que la minicarte soit là quand
+// l'enfant l'allume.
+function assurerRasterCarte(radius) {
+  const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
+  const N = radius * 2 + 1;
+  let neuf = false;
+  if (!carteRaster || carteRasterR !== radius) {
+    carteRaster = new Uint8ClampedArray(N * N * 4);
+    carteReel = new Uint8Array(N * N);
+    carteRasterR = radius;
+    carteHorsSol = document.createElement('canvas');
+    carteHorsSol.width = N; carteHorsSol.height = N;
+    neuf = true;
+  }
+  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
+  if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
+    // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
+    for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
+    carteReel.fill(0);
+    carteBande = 0; carteBandeI = 0; carteTours = 0;
+  } else if (dx !== 0 || dz !== 0) {
+    decalerCarte(carteRaster, N, dx, dz);
+    decalerCarte(carteReel, N, dx, dz, 1);
+    // la bande neuve, et elle seule : c'est tout le gain
+    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
+    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
+    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+  }
+  carteRasterCx = pcx; carteRasterCz = pcz;
+}
+// LA BANDE SE COMPTE EN LIGNES, ET LE BUDGET N'EST QU'UN PLAFOND. Mon
+// premier jet repeignait « pendant quatre millisecondes » à chaque image :
+// deux millions de lectures de blocs par seconde, dix fois la cadence de la
+// v233, et à l'accueil une boucle sans fin qui a retardé de CINQUANTE
+// secondes la mise à jour du service worker (mesuré : `reg.update()` résolu
+// en 50 s avec, 1 s sans). Deux lignes par image font le tour du raster en
+// deux secondes à soixante images — la cadence d'avant, sans son à-coup ;
+// quatre quand le raster se remplit. Le budget en temps ne sert qu'à borner
+// une colonne qui fait engendrer un morceau (`getBlock`) : il se vérifie
+// tous les huit points, et une ligne entamée se reprend où elle en était.
+let carteBandeI = 0;
+let carteTours = 0;             // tours complets du raster depuis son remplissage
+function repeindreBandeCarte(lignes, budgetMs) {
+  if (!carteRaster) return;
+  const N = carteRasterR * 2 + 1;
+  const fin = performance.now() + budgetMs;
+  let faites = 0;
+  for (;;) {
+    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
+    if (++carteBandeI >= N) {
+      carteBandeI = 0; carteBande = (carteBande + 1) % N;
+      if (carteBande === 0) carteTours++;
+      if (++faites >= lignes) return;
+    }
+    if ((carteBandeI & 7) === 0 && performance.now() >= fin) return;
+  }
+}
 
 // UNE SONDE, PAS UN TÉMOIN. Elle compare le fond DÉFILÉ à un fond entièrement
 // recalculé au même endroit : c'est ce qui prouve qu'une recopie ne montre pas
 // un paysage périmé. Posée une seule fois, hors du chemin de chaque image.
+// Depuis la v258 un point peint d'après le relief (morceau pas encore livré)
+// n'est pas comparable à ce que le même point rend une fois le morceau là :
+// on compare les points dont la nature n'a pas changé entre les deux, et
+// `points` compte ceux-là — c'est encore la recopie qu'on éprouve.
 window.__carteControle = () => {
   if (!carteRaster) return null;
   const N = carteRasterR * 2 + 1;
   const t = new Uint8ClampedArray(N * N * 4);
+  const reel = new Uint8Array(N * N);
   for (let j = 0; j < N; j++) {
-    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR);
+    for (let i = 0; i < N; i++) peindreCarte(t, N, i, j, carteRasterCx, carteRasterCz, carteRasterR, reel);
   }
-  let ecarts = 0;
-  for (let k = 0; k < t.length; k += 4) {
+  let ecarts = 0, points = 0;
+  for (let p = 0; p < N * N; p++) {
+    if (reel[p] !== carteReel[p]) continue;
+    points++;
+    const k = p * 4;
     if (t[k] !== carteRaster[k] || t[k + 1] !== carteRaster[k + 1] || t[k + 2] !== carteRaster[k + 2]) ecarts++;
   }
-  return { points: N * N, ecarts };
+  return { points, ecarts, total: N * N };
 };
 
 // Un point du fond : la couleur du premier bloc NON VIDE de sa colonne.
-function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
+// LA MINICARTE N'ENGENDRE JAMAIS UN MORCEAU (v258). `getBlock` engendre le
+// morceau qu'on lui demande, sur le fil principal : après une téléportation,
+// les cent soixante-neuf morceaux du raster n'y étaient pas encore, et la
+// minicarte les faisait naître un à un dans l'image — vingt-quatre
+// millisecondes chacun dans une ville, pendant que le worker les engendrait
+// de son côté. C'est ce qui a rendu « un appui long dépose n'importe où »
+// rouge deux fois sur quatre : le minuteur de l'appui tirait plus de cent
+// vingt millisecondes en retard, et la carte déclinait, à bon droit. Un
+// morceau absent se peint d'après le RELIEF (`terrainHeight`, pure) et se
+// marque comme tel (`carteReel` à 0) ; la bande suivante le repeint avec
+// ses vrais blocs dès que le worker les a livrés.
+function peindreCarte(buf, N, i, j, pcx, pcz, radius, reel = null) {
   const wx = pcx + i - radius, wz = pcz + j - radius;
   let color = [20, 26, 40], h = 0;
   const couleurUrbaine=world.urbanColor?.(wx,wz);
-  if (couleurUrbaine) { const c=couleurUrbaine; const o=(j*N+i)*4; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2];buf[o+3]=255;return; }
-  // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
-  // chaque point de la carte traverserait d'abord tout le ciel vide, et la
-  // carte coûterait de plus en plus cher à chaque fois qu'on relève le
-  // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
-  // vitres comprises — pas le premier bloc plein.
+  if (couleurUrbaine) { const c=couleurUrbaine; const o=(j*N+i)*4; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2];buf[o+3]=255; if (reel) reel[j * N + i] = 1; return; }
   const cxm = Math.floor(wx / CHUNK), czm = Math.floor(wz / CHUNK);
-  for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
-    const id = world.getBlock(wx, y, wz);
-    if (id !== BLOCK.AIR) {
-      color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
-      h = y;
-      break;
+  const morceau = world.chunks.get(cxm + ',' + czm);
+  if (!morceau) {
+    h = world.terrainHeight(wx, wz);
+    color = carte.couleur(wx, wz, h, false, false);
+    if (reel) reel[j * N + i] = 0;
+  } else {
+    if (reel) reel[j * N + i] = 1;
+    // On part du sommet réel de ce morceau de monde, pas du plafond : sinon
+    // chaque point de la carte traverserait d'abord tout le ciel vide, et la
+    // carte coûterait de plus en plus cher à chaque fois qu'on relève le
+    // plafond. Ici c'est le premier bloc NON VIDE qu'on cherche, eau et
+    // vitres comprises — pas le premier bloc plein.
+    for (let y = Math.min(HEIGHT - 1, world.chunkTop(cxm, czm)); y >= 0; y--) {
+      const id = world.getBlock(wx, y, wz);
+      if (id !== BLOCK.AIR) {
+        color = MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
+        h = y;
+        break;
+      }
     }
   }
   // Le relief lit plus clair en altitude. La référence est figée à la
@@ -4600,8 +5964,8 @@ function peindreCarte(buf, N, i, j, pcx, pcz, radius) {
 // Le contenu se déplace de (−dx, −dz) points. Les lignes se parcourent dans le
 // sens qui évite d'écraser ce qu'on n'a pas encore lu ; `copyWithin` fait le
 // reste, y compris quand la source et la cible se chevauchent dans la ligne.
-function decalerCarte(buf, N, dx, dz) {
-  const ligne = N * 4;
+function decalerCarte(buf, N, dx, dz, canaux = 4) {
+  const ligne = N * canaux;
   const montant = dz > 0;
   for (let k = 0; k < N; k++) {
     const j = montant ? k : N - 1 - k;
@@ -4609,35 +5973,17 @@ function decalerCarte(buf, N, dx, dz) {
     if (src < 0 || src >= N) continue;
     const de = src * ligne, vers = j * ligne;
     if (dx === 0) buf.copyWithin(vers, de, de + ligne);
-    else if (dx > 0) buf.copyWithin(vers, de + dx * 4, de + ligne);
-    else buf.copyWithin(vers - dx * 4, de, de + ligne + dx * 4);
+    else if (dx > 0) buf.copyWithin(vers, de + dx * canaux, de + ligne);
+    else buf.copyWithin(vers - dx * canaux, de, de + ligne + dx * canaux);
   }
 }
 
-function drawMap(mapCanvas, radius, fondEntier = false) {
+function drawMap(mapCanvas, radius) {
   const ctx = mapCanvas.getContext('2d');
   const size = mapCanvas.width;
   const pcx = Math.floor(player.pos.x), pcz = Math.floor(player.pos.z);
   const N = radius * 2 + 1;
-  if (!carteRaster || carteRasterR !== radius) {
-    carteRaster = new Uint8ClampedArray(N * N * 4);
-    carteRasterR = radius;
-    carteHorsSol = document.createElement('canvas');
-    carteHorsSol.width = N; carteHorsSol.height = N;
-    fondEntier = true;
-  }
-  const dx = pcx - carteRasterCx, dz = pcz - carteRasterCz;
-  if (fondEntier || Math.abs(dx) >= N || Math.abs(dz) >= N) {
-    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-  } else if (dx !== 0 || dz !== 0) {
-    decalerCarte(carteRaster, N, dx, dz);
-    // la bande neuve, et elle seule : c'est tout le gain
-    const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
-    const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
-    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius);
-  }
-  carteRasterCx = pcx; carteRasterCz = pcz;
+  assurerRasterCarte(radius);
   const hctx = carteHorsSol.getContext('2d');
   const img = hctx.createImageData(N, N);
   img.data.set(carteRaster);
@@ -4647,17 +5993,11 @@ function drawMap(mapCanvas, radius, fondEntier = false) {
 
   const toMap = (x, z) => [((x - pcx + radius) / (radius * 2 + 1)) * size, ((z - pcz + radius) / (radius * 2 + 1)) * size];
 
-  // NPCs (white) and wild creatures (violet)
+  // NPCs (white)
   for (const npc of npcs) {
     const [mx, my] = toMap(npc.pos.x, npc.pos.z);
     if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillStyle = '#fff';
-    ctx.fillRect(mx - 2, my - 2, 4, 4);
-  }
-  ctx.fillStyle = '#c86ee0';
-  for (const c of creatureManager.creatures) {
-    const [mx, my] = toMap(c.pos.x, c.pos.z);
-    if (mx < 0 || mx > size || my < 0 || my > size) continue;
     ctx.fillRect(mx - 2, my - 2, 4, 4);
   }
   ctx.fillStyle = '#ffd75e'; // farm animals
@@ -4769,27 +6109,23 @@ const carte = new Carte({
   autres: () => [...remotePlayers.values()].map((rp) => ({
     x: rp.mesh.position.x, z: rp.mesh.position.z, nom: rp.name,
   })),
-  // Habitants, bêtes et créatures : la liste n'est construite que si la carte
-  // est assez rapprochée pour les montrer.
-  // `toujours` : les créatures se voient à TOUS les zooms. Elles vivent à
-  // moins de soixante-dix blocs du joueur — de loin, elles se regroupent
-  // autour de sa flèche, ce qui est la vérité. Les cent quatorze habitants et
-  // les animaux, eux, restent réservés au zoom proche : dessinés de loin, ils
-  // couvraient les villes de confettis.
+  // Habitants et bêtes : la liste n'est construite que si la carte est assez
+  // rapprochée pour les montrer — dessinés de loin, ils couvraient les villes de
+  // confettis. Les créatures, qui s'y voyaient à TOUS les zooms, sont parties en
+  // v285 avec leur drapeau `toujours`.
   mobiles: () => [
     ...npcs.map((n) => ({ x: n.pos.x, z: n.pos.z, couleur: '#ffffff' })),
-    ...creatureManager.creatures.map((c) => ({ x: c.pos.x, z: c.pos.z, couleur: '#c86ee0', toujours: true })),
     ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
   ],
   surVoyage: (lieu) => {
     deposerA(lieu.x + 1.5, lieu.z + 1.5);   // sur la trame des rues, pas dans une maison
     fermerCarte();
-    creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+    toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
   surTeleport: (wx, wz) => {
     const { dansEau } = deposerA(wx, wz);
     fermerCarte();
-    creatureManager.toast(
+    toast(
       dansEau ? '🌊 Téléporté en pleine mer — nage jusqu\'à la terre !' : '✨ Téléporté ! Bon voyage.',
       dansEau ? 0x6ec8ff : 0xffd75e
     );
@@ -4918,7 +6254,7 @@ function allerAuLieu(lieu) {
   carte.limiter();
   deposerA(lieu.x + 1.5, lieu.z + 1.5);
   fermerCarte();
-  creatureManager.toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+  toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
 }
 
 champLieu.addEventListener('input', montrerResultats);
@@ -4943,7 +6279,7 @@ document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
   if (minimapVisible) {
-    drawMap(minimapCanvas, 96, true);
+    drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
   }
 });
@@ -4958,12 +6294,17 @@ mapModal.addEventListener('click', (e) => {
 const skyColor = new THREE.Color();
 const lightColor = new THREE.Color();
 let dayTime = DAY_LENGTH * 0.3; // start mid-morning
+// La part de nuit, 0 le jour et 1 en pleine nuit : c'est elle qui allume les
+// lampes de rue (v248), pas `daylight` brut, qui ne tombe jamais sous 0,08.
+let nuitDehors = 0;
 
 function updateSky(dt) {
   dayTime = (dayTime + dt) % DAY_LENGTH;
   const angle = (dayTime / DAY_LENGTH) * Math.PI * 2;
   // daylight: 1 at noon, 0 at midnight, smooth transitions
   const daylight = THREE.MathUtils.clamp(Math.sin(angle) * 1.6 + 0.5, 0.08, 1);
+  nuitDehors = 1 - THREE.MathUtils.smoothstep(daylight, 0.1, 0.55);
+  if (hd) hd.uniforms.nuitHD.value = nuitDehors;
 
   skyColor.lerpColors(NIGHT_SKY, DAY_SKY, daylight);
   // Lueur chaude du lever et du coucher. Elle se règle sur la hauteur du
@@ -4988,9 +6329,10 @@ function updateSky(dt) {
   const wDim = weather === 'rain' ? 0.8 : 1;
   const level = (0.25 + 0.75 * daylight) * wDim;
   lightColor.setRGB(level, level, level * (0.92 + 0.08 * daylight));
-  solidMaterial.color.copy(lightColor);
-  waterMaterial.color.copy(lightColor);
-  horizon.majLumiere(lightColor);
+  // Les blocs, l'eau et le paysage lointain sont ÉCLAIRÉS (v247) : ce sont
+  // les lampes ci-dessous qui font le jour et la nuit, plus une teinte de
+  // matériau. `lightColor` ne sert plus qu'aux vitres allumées, qui gardent
+  // le plus lumineux du jour et de leur propre lumière.
   // Les vitres allumées prennent le plus lumineux des deux : la lumière du
   // jour quand il fait jour, la leur quand la nuit tombe. Elles ne
   // s'allument donc pas au crépuscule — elles cessent simplement de
@@ -5000,11 +6342,35 @@ function updateSky(dt) {
     Math.max(lightColor.g, LUMIERE_FENETRE.g * 0.92),
     Math.max(lightColor.b, LUMIERE_FENETRE.b * 0.92),
   );
-  hemiLight.intensity = (0.3 + 0.8 * daylight) * wDim;
-  sunLight.intensity = 0.15 + 0.75 * daylight * wDim;
+  // LE JOUR ET LA NUIT SONT DES LAMPES, PAS UNE TEINTE (v247). Le ciel
+  // (hémisphère) porte la lumière diffuse, le soleil la lumière directe et
+  // les ombres ; la nuit, la lune prend sa place, bleutée et faible, et la
+  // ville garde ses vitres allumées. Manhattan règle les siennes quand
+  // l'enfant y est (manhattan-render.js) ; on ne se marche pas dessus.
+  if (!renduDansManhattan) {
+    // Les intensités sont MESURÉES sur captures : à 1,27 + 1,66 (mon premier
+    // jet, calqué sur Manhattan) les textures des blocs, plus claires que
+    // les matériaux physiques de New York, sortaient délavées par la
+    // correspondance tonale — ciel blanc, toits blancs.
+    // ET LA NUIT SE RÈGLE AVEC LES OMBRES (v249). Max, capture d'iPad :
+    // « Paris est dans le noir ». Le banc coupe ses ombres, donc mes captures
+    // de nuit étaient éclairées par la lune partout ; sur l'iPad la rue est
+    // dans l'ombre des immeubles et il ne reste que la lueur du ciel —
+    // mesurée à 5,7/255 au sol, 2,6 sur un mur. Le plancher de nuit se lit
+    // sur une page à ombres forcées ; le jour (daylight = 1) ne bouge pas.
+    hemiLight.intensity = (HEMI_NUIT + (0.88 - HEMI_NUIT) * daylight) * wDim;
+    hemiLight.color.setRGB(1, 1, 1).lerp(NUIT_CIEL_LAMPE, 1 - daylight);
+    hemiLight.groundColor.copy(SOL_LAMPE);
+    sunLight.intensity = (LUNE_NUIT + (1.14 - LUNE_NUIT) * daylight) * wDim;
+    sunLight.color.copy(daylight > 0.5 ? SOLEIL_LAMPE : LUNE_LAMPE);
+    sunLight.color.lerp(SUNSET_SKY, rasant * 0.45);
+  }
 
-  // le soleil, la lune et les étoiles suivent le même cycle
-  sky.update(angle, daylight, camera.position);
+  // le soleil, la lune et les étoiles suivent le même cycle — et le dôme du
+  // ciel : l'horizon prend la couleur du ciel, le zénith plus profond
+  sky.update(angle, daylight, camera.position, skyColor);
+  sky.dome.visible = !renduDansManhattan;
+  if (!renduDansManhattan) suivreLeSoleil(sky.direction);
 
   // L'eau avance sur son propre compteur : dayTime revient à zéro toutes les
   // dix minutes, ce qui ferait sauter les vagues d'un coup.
@@ -5013,6 +6379,13 @@ function updateSky(dt) {
 }
 let tempsEau = 0;
 const SUNSET_SKY = new THREE.Color(0xff8a4a);
+const SOLEIL_LAMPE = new THREE.Color(0xffefd6);
+const LUNE_LAMPE = new THREE.Color(0x8fa8d8);
+// Les planchers de nuit (v249), mesurés ombres forcées : voir `updateSky`.
+const HEMI_NUIT = 1.7;
+const LUNE_NUIT = 0.45;
+const NUIT_CIEL_LAMPE = new THREE.Color(0x7d93b8);
+const SOL_LAMPE = new THREE.Color(0x6e6a5e);
 const MARS_SKY = new THREE.Color(0xd9a184);
 // Mis à jour par updateSky : sert aussi à faire taire la faune terrestre.
 let dansMars = false;
@@ -5053,6 +6426,215 @@ scene.add(rainPoints);
 const invite = () => !!(net && net.active && !net.isHost);
 const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
 
+// ON VOIT LE PERSONNAGE CONDUIRE (v249). Max : « fais en sorte qu'on voie le
+// personnage conduire quand on conduit une voiture ». La vue de poursuite
+// montrait une voiture vide. L'avatar de l'enfant — le même personnage que
+// les autres joueurs voient de lui — est assis sur le `siege` que la fiche
+// de la monture déclare, dans le repère du véhicule, cuisses en avant et
+// bras vers le volant ; il descend avec lui. Une monture sans siège (un
+// cheval, un avion sculpté) ne le montre pas : la règle vit dans la fiche.
+let avatarLocal = null, avatarLocalChar = -1, avatarTemps = 0;
+// LE VISAGE EST TOURNÉ VERS −z, COMME LE NEZ DE LA VOITURE (personnages.js :
+// « visage tourné vers −z »). Mon premier jet le tournait de 180° en
+// « déduisant » que le modèle regardait en +z ; Max l'a vu sur la capture,
+// de dos au volant. Un signe se regarde, il ne se déduit pas — et le témoin
+// lit désormais la direction du visage contre le cap de la voiture. Les
+// cuisses et les bras vont en avant, donc vers −z : angles négatifs.
+const POSE_AU_VOLANT = { cuisses: -1.35, genoux: 1.25, bras: -0.95, coudes: -0.55 };
+function obtenirAvatarLocal() {
+  if (!avatarLocal || avatarLocalChar !== selectedChar) {
+    if (avatarLocal) { avatarLocal.removeFromParent(); liberer(avatarLocal); }
+    avatarLocal = buildKidMesh(withOwnLook((NET_CHARACTERS[selectedChar] || NET_CHARACTERS[0]).look));
+    avatarLocalChar = selectedChar;
+  }
+  return avatarLocal;
+}
+// Le plafond au-dessus du siège : parmi les maillages de la voiture (jamais
+// l'avatar), ceux qui ont des sommets dans la colonne du siège au-dessus de
+// l'assise ; le plus bas de leurs sommets les plus hauts est le pavillon —
+// celui du modèle d'artiste ou le ciel de toit du cockpit sculpté. Mesuré
+// une fois par voiture, et refait quand son modèle arrive (le nombre de
+// pièces change). `null` : une voiture sans toit.
+const _plafondInv = new THREE.Matrix4(), _plafondM = new THREE.Matrix4(), _plafondV = new THREE.Vector3();
+function plafondAuSiege(a, siege) {
+  // UN CACHE PAR SIÈGE (v253) : le conducteur et ses passagers n'ont pas le
+  // même toit au-dessus d'eux (un pavillon descend vers l'arrière), et deux
+  // sièges qui se partageraient une seule case se remesureraient à chaque
+  // image — cent mille sommets. Toute pièce ajoutée au véhicule (un avatar
+  // qui s'assied) invalide tout.
+  const pieces = a.mesh.children.length;
+  const cleSiege = `${siege.x}|${siege.z}`;
+  if (!a.plafondSiege || a.plafondSiege.pieces !== pieces) a.plafondSiege = { pieces, y: new Map() };
+  if (a.plafondSiege.y.has(cleSiege)) return a.plafondSiege.y.get(cleSiege);
+  a.mesh.updateMatrixWorld(true);
+  _plafondInv.copy(a.mesh.matrixWorld).invert();
+  let plafond = Infinity;
+  a.mesh.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
+    // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
+    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && p.userData.arms)) return;
+    const pos = o.geometry.attributes.position;
+    _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
+    let haut = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      _plafondV.fromBufferAttribute(pos, i).applyMatrix4(_plafondM);
+      if (Math.abs(_plafondV.x - siege.x) < 0.3 && Math.abs(_plafondV.z - siege.z) < 0.3
+        && _plafondV.y > siege.y + 0.3 && _plafondV.y > haut) haut = _plafondV.y;
+    }
+    if (haut > -Infinity && haut < plafond) plafond = haut;
+  });
+  const y = plafond === Infinity ? null : plafond;
+  a.plafondSiege.y.set(cleSiege, y);
+  return y;
+}
+function asseoirLeConducteur(dt) {
+  const a = fun.montureConduite ? fun.montureConduite() : null;
+  const siege = a && a.def && a.def.siege;
+  avatarTemps += dt;
+  if (!siege || !a.mesh) {
+    // PASSAGER CHEZ UN AMI (v253) : assis sur le siège de SA voiture
+    const pa = fun.passagerDe ? fun.passagerDe() : null;
+    const chez = pa ? vehiculeDuConducteur(pa.de) : null;
+    if (chez) {
+      const sieges = chez.def.sieges || [];
+      asseoir(obtenirAvatarLocal(), chez, sieges[Math.min(pa.s || 0, sieges.length - 1)] || chez.def.siege, avatarTemps);
+      return;
+    }
+    if (avatarLocal && avatarLocal.parent) avatarLocal.removeFromParent();
+    return;
+  }
+  asseoir(obtenirAvatarLocal(), a, siege, avatarTemps);
+}
+// ASSEOIR UN PERSONNAGE SUR UN SIÈGE, dans le repère du véhicule — le même
+// geste pour l'enfant au volant (v249), l'ami vu dans sa voiture et les
+// passagers (v253). `a` : { mesh, def } ; le plafond se mesure une fois par
+// véhicule (`plafondAuSiege`).
+function asseoir(av, a, siege, temps) {
+  if (av.parent !== a.mesh) a.mesh.add(av);
+  // LA TÊTE RESTE SOUS LE TOIT (Max : « le personnage passe à travers la
+  // carrosserie »). Le siège de la fiche vaut pour une berline ; une voiture
+  // basse a son toit plus bas, et le sommet du crâne — 0,71 au-dessus des
+  // hanches — sortait par le pavillon. On MESURE le plafond au-dessus du
+  // siège, dans la carrosserie de chaque modèle, et l'on descend les
+  // hanches ; si cela ne suffit pas, l'avatar rapetisse un peu.
+  const plafond = plafondAuSiege(a, siege);
+  let hanches = siege.y, echelle = 1;
+  if (plafond !== null) {
+    if (hanches + 0.706 > plafond - 0.06) hanches = Math.max(0.3, plafond - 0.06 - 0.706);
+    if (hanches + 0.706 > plafond - 0.06) echelle = Math.max(0.7, Math.min(1, (plafond - 0.06 - hanches) / 0.706));
+  }
+  av.scale.setScalar(echelle);
+  // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
+  av.position.set(siege.x, hanches - 0.77 * echelle, siege.z);
+  av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
+  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
+  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
+  animerHumain(av, temps, 0, POSE_AU_VOLANT);
+}
+
+// LES RÉVERBÈRES ÉCLAIRENT VRAIMENT LA RUE, LA NUIT (v248). Manhattan pose
+// ses quatre lampes sur la grille de ses avenues ; partout ailleurs, on les
+// pose sous les quatre lanternes les plus proches de l'enfant — celles que
+// `meshChunk` a notées en dessinant les réverbères — à moins de quarante
+// blocs. Une cadence de MÉNAGE, en temps réel : deux fois par seconde, ce
+// qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
+// faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
+const lampesPretes = cadence(500);
+function eclairerLaRue() {
+  if (renduDansManhattan || !lampesPretes()) return;
+  if (!LAMPES_ACTIVES) { for (const l of lampesRue) l.intensity = 0; return; }
+  const px = player.pos.x, pz = player.pos.z;
+  const proches = [];
+  if (nuitDehors > 0.02) {
+    const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dz = -3; dz <= 3; dz++) {
+        const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+        if (!e || !e.lanternes) continue;
+        for (const l of e.lanternes) {
+          const d = (l.x - px) * (l.x - px) + (l.z - pz) * (l.z - pz);
+          if (d < 40 * 40) proches.push({ l, d });
+        }
+      }
+    }
+    proches.sort((a, b) => a.d - b.d);
+  }
+  lampesRue.forEach((lampe, i) => {
+    const c = proches[i];
+    if (!c) { lampe.intensity = 0; return; }
+    lampe.position.copy(c.l);
+    lampe.color.set(LAMPE_RUE);
+    lampe.distance = PORTEE_LAMPE_RUE;
+    lampe.intensity = nuitDehors * INTENSITE_LAMPE_RUE;
+  });
+}
+
+// LES FEUX CHANGENT, ET EN TEMPS RÉEL (v273). Deux fois par seconde — la même
+// cadence de ménage que les lampes de rue — chaque feu dessiné autour de
+// l'enfant prend l'état que `feux.js` donne à son axe, et l'on n'écrit les
+// trois `visible` QUE s'il a changé : sinon ce serait trois écritures par feu
+// et par tour pour rien.
+//
+// Et la liste des feux proches est FIGÉE ici, pour la circulation : ce qu'un
+// convoi demande à chaque image ne se refabrique pas à chaque appel (leçon de
+// `enMarche`, v259).
+const feuxPrets = cadence(500);
+let feuxProches = [];
+function reglerLesFeux() {
+  if (renduDansManhattan || !feuxPrets()) return;
+  const t = performance.now();
+  const px = player.pos.x, pz = player.pos.z;
+  const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
+  const proches = [];
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dz = -4; dz <= 4; dz++) {
+      const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+      if (!e || !e.feux) continue;
+      for (const f of e.feux) {
+        const etat = etatFeu(f.axe, t);
+        if (etat !== f.etat) {
+          f.etat = etat;
+          f.lampes[0].visible = etat === 'rouge';
+          f.lampes[1].visible = etat === 'orange';
+          f.lampes[2].visible = etat === 'vert';
+        }
+        if ((f.x - px) * (f.x - px) + (f.z - pz) * (f.z - pz) < PORTEE_FEU * PORTEE_FEU) proches.push(f);
+      }
+    }
+  }
+  feuxProches = proches;
+}
+// Un feu ne commande rien au-delà de la portée d'affichage d'une voiture
+// (`VU_VOITURE`, 45) : plus loin, il n'y a personne à arrêter.
+const PORTEE_FEU = 60;
+// On s'arrête AVANT le carrefour, jamais dedans : au-delà de deux blocs
+// derrière soi le feu est passé, et au-delà de sept il est trop loin pour
+// qu'un enfant comprenne pourquoi la voiture freine.
+const ARRET_FEU_MIN = 2, ARRET_FEU_MAX = 7, ARRET_FEU_COTE = 5;
+
+// UNE VOITURE S'ARRÊTE AU ROUGE (v273). `vehicules.js` demande, pour une
+// voiture à (x, z) de cap `cap` : un feu de SON axe est-il au rouge (ou à
+// l'orange, qui est le dégagement) juste devant ? L'orange arrête comme le
+// rouge — c'est ce que fait un conducteur, et cela vide le carrefour avant
+// que l'autre file ne démarre.
+function feuRougeDevant(x, z, cap) {
+  if (!feuxProches.length) return false;
+  const ux = Math.sin(cap), uz = Math.cos(cap);
+  const axe = axeDuCap(ux, uz);
+  for (const f of feuxProches) {
+    if (f.axe !== axe || f.etat === 'vert' || f.etat === null) continue;
+    const ex = f.x - x, ez = f.z - z;
+    const devant = ex * ux + ez * uz;
+    if (devant < ARRET_FEU_MIN || devant > ARRET_FEU_MAX) continue;
+    if (Math.abs(ex * uz - ez * ux) > ARRET_FEU_COTE) continue;
+    return true;
+  }
+  return false;
+}
+window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
+  vives: f.lampes.map((l) => l.visible) }));
+
 // Trois secondes entre deux annonces : le message est minuscule, et c'est le
 // délai maximum pendant lequel une tablette peut afficher autre chose que ce
 // que voit l'enfant d'à côté.
@@ -5070,7 +6652,7 @@ function adopterCiel({ temps, meteo }) {
   if ((meteo === 'clear' || meteo === 'rain') && meteo !== weather) {
     weather = meteo;
     rainPoints.visible = weather === 'rain';
-    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
   }
 }
 
@@ -5089,7 +6671,7 @@ function updateWeather(dt) {
     weather = weather === 'clear' ? 'rain' : 'clear';
     weatherTimer = weather === 'rain' ? 50 + Math.random() * 70 : 140 + Math.random() * 160;
     rainPoints.visible = weather === 'rain';
-    if (running) creatureManager.toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
+    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
     // le changement part tout de suite : c'est ce qui se voit le plus
     if (net && net.active && net.isHost) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
   }
@@ -5139,7 +6721,7 @@ let seasonTime = 0, seasonToastShown = false;
 function updateSeasons(dt) {
   if (!seasonToastShown && running) {
     seasonToastShown = true;
-    creatureManager.toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
+    toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
   }
   seasonTime += dt;
   const pos = seasonGeo.attributes.position;
@@ -5264,6 +6846,11 @@ function updatePlane(dt) {
 const waterTint = document.getElementById('water-tint');
 const debugEl = document.getElementById('debug');
 let fpsSamples = [];
+// Le diagnostic lit le temps RÉEL entre deux images, pas `dt` : `dt` est borné
+// à un vingtième de seconde, et une image de 300 ms y compterait pour 20 i/s.
+let diagDerniere = 0;
+const diagImages = [];   // durées réelles des deux dernières secondes, en ms
+if (DIAG) debugEl.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;z-index:60;font:12px/1.35 monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;white-space:pre-wrap;pointer-events:none';
 
 function updateHud(dt) {
   const eye = player.eyePosition();
@@ -5273,18 +6860,40 @@ function updateHud(dt) {
   fpsSamples.push(1 / dt);
   if (fpsSamples.length > 30) fpsSamples.shift();
   const fps = Math.round(fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length);
+  if (!DIAG) {
+    debugEl.textContent =
+      `${fps} fps | xyz: ${player.pos.x.toFixed(1)} ${player.pos.y.toFixed(1)} ${player.pos.z.toFixed(1)}` +
+      ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
+    return;
+  }
+  const now = performance.now();
+  if (diagDerniere) diagImages.push([now, now - diagDerniere]);
+  diagDerniere = now;
+  while (diagImages.length && diagImages[0][0] < now - 2000) diagImages.shift();
+  const durees = diagImages.map((d) => d[1]).sort((a, b) => a - b);
+  const mediane = durees.length ? durees[Math.floor(durees.length / 2)] : 0;
+  const pire = durees.length ? durees[durees.length - 1] : 0;
+  const info = renderer.info;
+  const h = humainsPrets();
   debugEl.textContent =
-    `${fps} fps | xyz: ${player.pos.x.toFixed(1)} ${player.pos.y.toFixed(1)} ${player.pos.z.toFixed(1)}` +
-    ` | chunks: ${chunkMeshes.size}${player.flying ? ' | flying' : ''}`;
+    `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
+    + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
+    + `palier ${PALIER ? `${PALIER.nom} (${PALIER.source})` : 'pas encore mesuré'} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
+    // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
+    // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
+    // taire cette différence ferait croire à un classement qui n'arrivera pas.
+    + (mesurePalier.verdict
+        ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}, période ${(mesurePalier.verdict.msPeriode || 0).toFixed(1)} ms)${PALIER_SE_RANGE ? ' au prochain lancement' : ' — mesuré, non rangé (étendue choisie)'}`
+        : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
+    + `morceaux ${chunkMeshes.size} · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}`;
 }
 
-// --- fun & social systems (breeding, riding, duels, quests, records…) -------------
+// --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
 
 const fun = initFun({
-  scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
+  scene, world, player, animalManager, edu, cloud, canvas,
   renderNow: () => renderer.render(scene, camera),
   emojiBurst,
-  toast: (m, c) => creatureManager.toast(m, c),
   myName,
   getNet: () => net,
   remotePlayers: () => remotePlayers,
@@ -5295,20 +6904,12 @@ const fun = initFun({
   // Les convois n'existent qu'une fois le monde bâti : on les demande au
   // moment de s'en servir, pas au moment de brancher les boutons.
   getVehicules: () => vehicules,
+  vehiculeDistant: (id) => { const rp = remotePlayers.get(id); return rp && rp.vehicule ? rp.vehicule : null; },
   // Les photos voyagent sur leur propre document depuis qu'elles pesaient un
   // tiers du profil et faisaient jeter les blocs de l'enfant.
   photos: {
     pousser: () => profileSync.photosPousser().catch(() => {}),
     tirer: () => profileSync.photosTirer().catch(() => []),
-  },
-  getProfiles: () => loadRegistry().list.map((p) => ({ id: p.id, name: p.name })),
-  getMeat: () => meatCount,
-  takeMeat: (n) => {
-    if (meatCount < n) return false;
-    meatCount -= n;
-    try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
-    renderMeat();
-    return true;
   },
 });
 
@@ -5340,15 +6941,33 @@ window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, etein
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
 // de lumière du monde, `fenetres` celui des vitres allumées — la nuit, le
 // second doit dominer, sinon la ville est éteinte.
+// Depuis la v247 les murs sont ÉCLAIRÉS et non teintés : leur niveau de
+// lumière est celui que reçoit un mur VERTICAL — la moitié de l'hémisphère
+// (un mur voit moitié ciel, moitié sol) et la moitié du soleil ou de la lune
+// (en moyenne sur les orientations) — pas la couleur du matériau, qui reste
+// blanche. À minuit : 0,27 ; à midi : 1,0.
 window.__lumiere = () => ({
-  solide: Math.round(solidMaterial.color.r * 100) / 100,
+  solide: Math.round((hemiLight.intensity * 0.5 + sunLight.intensity * 0.5) * 100) / 100,
   fenetres: Math.round(litMaterial.color.r * 100) / 100,
   morceauxEclaires: [...chunkMeshes.values()].filter((e) => e.lumineux).length,
 });
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, creatureManager, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
+  RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
+  palierRetenu, etendueRange, reglageDe,
+  // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
+  // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
+  // lues au démarrage et ne bougent plus ; la vitesse des jets est relue dans
+  // la fiche, là où elle se calcule.
+  get reglageApplique() {
+    const jet = MONTURES.find((m) => m.key === 'chasseur');
+    return { palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null,
+      etendue: ETENDUE_CHOISIE, hd: RAYON_HD, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+      ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
+      seRange: PALIER_SE_RANGE };
+  }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
 let derniereMesureVue = 0;
@@ -5359,12 +6978,12 @@ let elanAnnonce = false;
 let croisiereAnnonce = false;
 function signalerElanDeVol() {
   const lance = player.volLance();
-  if (lance && !elanAnnonce) creatureManager.toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
+  if (lance && !elanAnnonce) toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
   elanAnnonce = lance;
   // Puis la vitesse grandit sans bruit — sauf une fois, au sommet : l'enfant
   // sait qu'il tient sa vitesse de croisière et qu'insister ne donnera plus.
   const croisiere = player.volCroisiere && player.volCroisiere();
-  if (croisiere && !croisiereAnnonce) creatureManager.toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
+  if (croisiere && !croisiereAnnonce) toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
   croisiereAnnonce = croisiere;
 }
 
@@ -5374,6 +6993,15 @@ function frame(now) {
   // dt ressortait négatif, et repartait à l'envers dans la physique, les
   // animaux et le compteur de temps de jeu. Le plancher à zéro le neutralise.
   const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
+  // La PÉRIODE réelle entre deux images, non bornée — `dt` l'est à un
+  // vingtième, et une mesure faite dessus dirait que tout va bien sur une
+  // machine à cinq images par seconde (piège de la v234). Elle sert au message
+  // et aux à-coups ; elle ne classe PAS l'appareil, parce que sous vsync elle
+  // vaut la période de l'écran et rien d'autre (v290).
+  noterImage(now - lastTime);
+  // Le TRAVAIL de cette image se referme à la fin du corps, après `render()`.
+  const debutTravail = performance.now();
+  rangerLePalier();
   lastTime = now;
 
   // LE FILET DE L'ÉCRAN. Deux fois par seconde, on vérifie que ce qu'on dessine
@@ -5390,7 +7018,6 @@ function frame(now) {
   if (running) {
     player.update(dt);
     signalerElanDeVol();
-    creatureManager.update(dt);
     animalManager.update(dt);
     garagiste(dt);
     aeroportiste(dt);
@@ -5466,6 +7093,8 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
+  majBoutonsVehicule();
+  asseoirLeConducteur(dt);
   effects.update(dt);
 
   // LA CARTE SE RAFRAÎCHIT QUAND ON A BOUGÉ, PAS QUAND UNE HORLOGE SONNE.
@@ -5476,11 +7105,21 @@ function frame(now) {
   if (minimapVisible) {
     const bouge = !carteVue
       || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
-    const fond = carteFond();
-    if (fond || (bouge && carteSuivre())) {
-      drawMap(minimapCanvas, 96, fond);
+    // le fond se repeint par bandes à chaque image (v258), et l'affichage se
+    // refait toutes les 120 ms — le raster défile de lui-même quand l'enfant
+    // a changé de bloc, et les bandes repeintes se montrent
+    repeindreBandeCarte(carteTours ? 2 : 4, 4);
+    if (bouge || carteSuivre()) {
+      drawMap(minimapCanvas, 96);
       carteVue = { x: player.pos.x, z: player.pos.z };
     }
+  } else if (!running && PREPARER && PARAMS_JEU.get('prepmini') !== '0') {
+    // à l'accueil, la minicarte se prépare autour de l'enfant (v258) : son
+    // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume.
+    // UN tour, puis on s'arrête : une boucle sans fin à l'accueil retenait
+    // la mise à jour du service worker (voir `repeindreBandeCarte`).
+    assurerRasterCarte(96);
+    if (!carteTours) repeindreBandeCarte(4, 8);
   }
 
   const hit = running ? getTarget() : null;
@@ -5489,20 +7128,25 @@ function frame(now) {
 
   // Les reflets de la carrosserie : la caméra cubique ne tourne que quand une
   // voiture est à portée de regard, et deux fois par seconde — six rendus de
-  // 128 px, rien quand on est à pied loin de tout.
+  // 128 px, rien quand on est à pied loin de tout. Et depuis la v245, UNE
+  // face par image : les six faces dans la même image faisaient l'à-coup
+  // que Max sentait au volant (voir `avancerReflets`).
   refletsHorloge -= dt;
   if (refletsHorloge <= 0) {
     refletsHorloge = 0.5;
     const voitureProche = animalManager.animals.find((a) => a.def.key === 'voiture'
       && Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 45);
-    if (voitureProche && refletsVoiture()) {
-      majRefletsVoiture(renderer, scene, voitureProche.pos);
-    }
+    if (REFLETS_ACTIFS && voitureProche && refletsVoiture()) lancerReflets(voitureProche.pos);
   }
+  avancerReflets(renderer, scene);
 
+  eclairerLaRue();
+  reglerLesFeux();
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   renderer.render(scene, camera);
+  // CE QUE L'APPAREIL A RÉELLEMENT FAIT, attente du balayage exclue (v290).
+  noterTravail(performance.now() - debutTravail);
   requestAnimationFrame(frame);
 }
 
@@ -5511,15 +7155,186 @@ requestAnimationFrame(frame);
 // the game is ready: fade out the boot loader (the SW update script may
 // bring it back if a new version starts downloading)
 requestAnimationFrame(() => {
-  document.getElementById('boot-loader').classList.add('hidden');
+  // APRÈS UNE MISE À JOUR, LE LOADER RESTE JUSQU'À CE QUE LE JEU RÉPONDE (v257).
+  //
+  // Max : « le jeu reste quasiment bloqué une ou deux minutes sur l'accueil
+  // après chaque mise à jour » ; « s'il y a une installation nécessaire qui
+  // prend une minute, mets un loader ». À la première image le loader
+  // disparaissait, et l'accueil se montrait pendant que le fil principal
+  // analysait huit mégaoctets de corps et compilait quarante programmes : un
+  // accueil qu'on voit et qui ne répond pas. Sur une page qui vient d'être
+  // rechargée pour une version neuve (`wm-maj-installe`, posé par index.html
+  // avant le rechargement), le loader dit « installation… » avec l'avancement
+  // et ne s'efface que quand corps et programmes sont là — borné à quatre-vingt-
+  // dix secondes, pour ne jamais retenir un enfant. Un démarrage ordinaire ne
+  // change pas.
+  const loader = document.getElementById('boot-loader');
+  // LA POSITION LOCALE SE RESTAURE À L'ACCUEIL, PAS AU CLIC (v258). Le monde
+  // se chargeait autour du point d'apparition pendant que l'enfant lisait
+  // l'accueil, puis « Jouer » le téléportait là où il s'était arrêté — et
+  // tout se rechargeait sous ses yeux. Restauré ici, le monde autour de lui
+  // (et le fond de la carte) se préparent pendant l'accueil.
+  if (world.ctx === 'local') restorePosition();
+  let apresMaj = false;
+  try { apresMaj = sessionStorage.getItem('wm-maj-installe') === '1'; } catch { /* mode privé */ }
+  if (PARAMS_JEU.get('apresmaj') === '1') apresMaj = true;
+  if (!apresMaj) loader.classList.add('hidden');
+  // Les corps réalistes (8 Mo) arrivent MAINTENANT, pas avant : l'accueil
+  // répond déjà, et les gens nés en attendant se mettent à niveau sur place
+  // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
+  // de Max sur l'iPad de quatre ans.
+  chargerHumains();
+  // Et l'on chauffe la sonde des reflets ici, au point d'apparition : ses six
+  // faces compilent les programmes du décor vu depuis une cible cubique —
+  // mesuré au banc, vingt-six programmes de plus à l'arrivée de la première
+  // voiture, une seconde d'image figée. Compilés pendant l'accueil, ils ne
+  // coûtent rien à l'enfant qui monte en voiture.
+  if (REFLETS_ACTIFS && refletsVoiture()) lancerReflets(player.pos);
+  // Et les programmes de la flotte, une signature par image, pendant l'accueil
+  // (v246) : vingt compilations à l'arrivée en ville, c'était le gel de la
+  // téléportation.
+  const chauffe = chaufferLesProgrammes(renderer, scene, camera);
+  let chauffeFinie = false;
+  const pas = () => { if (chauffe()) requestAnimationFrame(pas); else chauffeFinie = true; };
+  requestAnimationFrame(pas);
+
+  // LE JEU SE PRÉPARE AVANT « JOUER », ET LE BOUTON ATTEND (v258).
+  //
+  // Max : « ne devrait-il pas y avoir le temps de télécharger tous les
+  // fichiers nécessaires avant de permettre à l'utilisateur de démarrer le
+  // jeu, pour éviter une expérience de lag ? » Ce qui lague dans les
+  // premières minutes n'est pas un fichier qui manque — le service worker
+  // les a tous — mais ce qui se CALCULE au premier usage : les corps
+  // réalistes (8 Mo à analyser, à la première visite à télécharger), les
+  // programmes de la flotte, les morceaux du monde autour de l'enfant et le
+  // premier fond de la carte. Tout cela se fait maintenant, pendant
+  // l'accueil : la position locale est déjà restaurée (le monde se charge
+  // là où il jouera, pas au point d'apparition), la carte prépare son fond
+  // par tranches, et une ligne sous les boutons dit où l'on en est. « Jouer »
+  // et « Jouer en ligne » sont grisés jusqu'à ce que tout soit prêt — borné
+  // à quarante-cinq secondes, pour ne jamais retenir un enfant. Le banc
+  // demande `?prep=0` (les suites ne mesurent pas la préparation, et leur
+  // rendu logiciel analyse les corps en dix secondes) ; le témoin de `maj.js`
+  // la demande, elle.
+  const lignePrep = document.getElementById('prep-line');
+  const boutonsPrep = ['play-btn', 'online-btn'].map((id) => document.getElementById(id)).filter(Boolean);
+  // la taille que la fiche de la carte aura (sa feuille de style) : préparer
+  // à cette taille, c'est ne rien avoir à recalculer à l'ouverture
+  if (PREPARER && PARAMS_JEU.get('prepcarte') !== '0') {
+    carte.preparer(player.pos.x, player.pos.z, 0.7,
+      Math.min(560, 0.88 * window.innerWidth), Math.min(560, 0.62 * window.innerHeight));
+  }
+  const departPrep = performance.now();
+  let prepPrete = !PREPARER;
+  window.__preparation = () => ({
+    gate: PREPARER, prete: prepPrete, humains: humainsCharges(), programmes: programmesChauffes(),
+    aChauffer: programmesAChauffer(), carte: carte.prete(), depuis: Math.round(performance.now() - departPrep),
+    // ce que la préparation de la carte a fait — un rouge « carte … » se démonte avec
+    cartePas: carte.prepPas, carteErreur: carte.prepErreur, carteTravail: !!carte.travail,
+  });
+  const veillerPrep = () => {
+    const h = humainsPrets();
+    const pret = humainsCharges() && chauffeFinie && carte.prete();
+    if (pret || performance.now() - departPrep > BORNE_PREP) {
+      prepPrete = true;
+      for (const b of boutonsPrep) b.disabled = false;
+      if (lignePrep) lignePrep.style.display = 'none';
+      return;
+    }
+    if (lignePrep) {
+      lignePrep.style.display = 'block';
+      lignePrep.textContent = `⏳ Préparation du jeu… personnages ${h.prets}/${h.total} · programmes ${programmesChauffes()}/${programmesAChauffer()} · carte ${carte.prete() ? '✓' : '…'}`;
+    }
+    setTimeout(veillerPrep, 250);
+  };
+  if (PREPARER) { for (const b of boutonsPrep) b.disabled = true; veillerPrep(); }
+
+  // LE VERRE NE SE DÉPOLIT QU'UNE FOIS L'ACCUEIL AU REPOS (v276).
+  //
+  // Un `backdrop-filter` est un CALQUE : le navigateur relit le fond sous
+  // l'élément et le floute, à chaque image où ce fond a pu changer. Mesuré sur
+  // l'accueil, deux séries de deux tours en ordre alterné : 5,7 · 8,3 · 8,3
+  // images par seconde avec le flou contre 15,3 · 15,7 · 15,2 sans — la moitié.
+  // Et l'accueil a précisément besoin de ses images : la chauffe compile UN
+  // programme de shader par image (v246) et le fond de carte avance par
+  // tranches, aussi par image. Le flou prenait donc les images de la
+  // préparation, et le portail l'a dit par trois bornes de durée qui expirent
+  // — `maj.js` libérait « Jouer » à la borne des quarante-cinq secondes avec
+  // huit programmes sur vingt-cinq, là où `origin/main` finissait à 36,9 s
+  // avec les vingt-cinq.
+  //
+  // Les deux autres pièces de la parure ne coûtent RIEN, et c'est mesuré :
+  // couper la dérive de l'aurore rend 12,2 · 12,2 et cacher les deux calques
+  // plein écran 14,2 · 13,0, contre 15,2 · 11,2 pour la parure entière. Seul
+  // le flou se sépare. On ne touche donc qu'à lui — et seulement pendant que
+  // l'accueil travaille : la classe est posée par `index.html` dès la première
+  // image, et elle se retire ici, le verre se dépolissant alors en une
+  // demi-seconde. L'enfant voit le jeu devenir prêt.
+  //
+  // La borne de soixante secondes est là pour la raison de la v220 : un remède
+  // ne doit rien attendre de ce qu'il répare. Si la chauffe ne finissait
+  // jamais, le verre arriverait quand même.
+  const departVerre = performance.now();
+  const verreQuandPret = () => {
+    if ((humainsCharges() && chauffeFinie && prepPrete)
+        || performance.now() - departVerre > 60000) {
+      document.body.classList.remove('prepare');
+      return;
+    }
+    setTimeout(verreQuandPret, 250);
+  };
+  verreQuandPret();
+  if (apresMaj) {
+    // ET LE LOADER NE RETIENT PLUS UN ENFANT QUI A LE DROIT DE JOUER (v286).
+    //
+    // Max, après la v285 : « après la mise à jour, sur la home le jeu lag 1 à
+    // 2 min, ça a été le cas depuis longtemps ». C'est le symptôme que la v257
+    // (ce loader) et la v258 (la préparation) devaient corriger — donc on cesse
+    // de régler et l'on va voir ce qui s'exécute (v226). Ce qu'on trouve ne se
+    // mesure pas, il s'ADDITIONNE : deux attentes tournent en parallèle, sur des
+    // conditions EMBOÎTÉES, et c'est la plus longue qui garde la plus faible.
+    //
+    //   `veillerPrep`   corps ET chauffe ET carte   →  dégrise « Jouer »   45 s
+    //   ce loader-ci    corps ET chauffe            →  s'efface            90 s
+    //
+    // La condition du loader est un SOUS-ENSEMBLE de celle de la préparation.
+    // Quand la chauffe traîne — le cas de l'iPad, où Safari compile un programme
+    // en centaines de millisecondes (v257) — le jeu dégrise « Jouer » à sa borne
+    // de quarante-cinq secondes et le loader continue de le CACHER jusqu'à
+    // quatre-vingt-dix. L'enfant a le droit de jouer et n'a aucun moyen de le
+    // savoir. 45 + 90 = 135 s, exactement la fourchette de Max.
+    //
+    // `prepPrete` est donc la seule décision qui vaille : elle est vraie quand
+    // tout est là OU quand le jeu a renoncé à attendre, et dans les deux cas
+    // l'enfant peut appuyer. C'est le critère de la v220 — « le seul critère qui
+    // ne se trompe pas est celui de l'enfant ». La borne de quatre-vingt-dix
+    // secondes reste pour le cas où la préparation est désarmée (`?prep=0`, ce
+    // que le banc demande partout sauf dans `maj.js`) : sans elle, le loader
+    // s'effacerait à la première image et l'on retrouverait la panne de la v257.
+    const texte = document.getElementById('boot-text');
+    const depart = performance.now();
+    const attendre = () => {
+      const h = humainsPrets();
+      const pret = humainsCharges() && chauffeFinie;
+      if (pret || (PREPARER && prepPrete) || performance.now() - depart > 90000) {
+        loader.classList.add('hidden');
+        try { sessionStorage.removeItem('wm-maj-installe'); } catch { /* mode privé */ }
+        document.dispatchEvent(new Event('maj-installee'));
+        return;
+      }
+      texte.textContent = `✨ Installation de la nouvelle version… personnages ${h.prets} / ${h.total}, programmes ${programmesChauffes()} / ${programmesAChauffer()}`;
+      setTimeout(attendre, 250);
+    };
+    attendre();
+  }
 });
 
-// Un seul monde, un raccourci vers une destination de la carte.
-const visiteNY=document.createElement('button');
-visiteNY.id='visiter-manhattan';visiteNY.textContent='🗽 Explorer New York';
-visiteNY.style.cssText='margin:12px auto;padding:12px 20px;border:1px solid #819aab;border-radius:9px;color:#eaf0f2;background:#243743;cursor:pointer';
-visiteNY.onclick=()=>{world.saveEdits();savePosition();const u=new URL(location.href);u.searchParams.delete('carte');u.searchParams.set('lieu','manhattan');location.href=u.href;};
-document.getElementById('overlay').appendChild(visiteNY);
+// UN SEUL MONDE, ET PAS DE BOUTON « EXPLORER NEW YORK » SUR L'ACCUEIL (v242).
+// Il rechargeait la page avec `?lieu=manhattan` pour poser l'enfant à New
+// York — un point d'arrivée que la carte offre déjà par téléportation, comme
+// pour toute autre ville. Max : « il n'y a qu'une seule carte et ça doit
+// rester le cas ». L'adresse `?lieu=manhattan` reste comprise pour les
+// anciens liens ; elle ne s'affiche plus nulle part.
 const badge=document.createElement('div');badge.id='manhattan-adresse';document.body.appendChild(badge);
 villeRealiste.onAdresse=texte=>{badge.textContent=texte;badge.style.display=texte?'':'none';};
 const invitationCarte=new URLSearchParams(location.search).get('rejoindre');

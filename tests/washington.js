@@ -276,15 +276,28 @@ const descendre = async (p, ms) => {
     // Rotonde et ressortir sous le porche est (plafond 4, x = +7). On avance
     // donc par petits pas, et on s'arrête quand on est dans la salle : sous un
     // vrai plafond, à moins de cinq blocs du centre.
+    // ET LE NOMBRE DE PAS N'EST PAS UNE BORNE (v256). Quatorze pas de 700 ms
+    // font onze blocs à un bloc par seconde — la cadence d'un portail chargé,
+    // mesurée deux fois de suite après `hote.js` (arrêté à x = −5,7 puis
+    // −6,2, sous le porche) ; rejoué seul, le même code fait x = −4,9. On
+    // marche donc jusqu'à être entré, ou ressorti, ou jusqu'à ne plus avancer
+    // sur trois pas — exactement comme les musées plus bas — avec une borne
+    // large qui ne peut pas mesurer le banc.
     let dedans = await autour(tab);
     let ou = await pose(tab);
-    for (let pas = 0; pas < 14; pas++) {
+    let avantOu = null;
+    let figeRotonde = 0;
+    for (let pas = 0; pas < 60; pas++) {
       const centre = ou.x - (P.x + capitole.u);
       if (dedans.plafond > 4 && Math.abs(centre) < 5) break;
       if (centre > 5) break;                      // ressorti côté est : constat
       await avancer(tab, 700);
       dedans = await autour(tab);
       ou = await pose(tab);
+      const bouge = !avantOu || Math.hypot(ou.x - avantOu.x, ou.z - avantOu.z) >= 0.05;
+      figeRotonde = bouge ? 0 : figeRotonde + 1;
+      if (figeRotonde >= 3) break;                // un mur, pas un hoquet
+      avantOu = ou;
     }
     // Dans la salle ET sous un vrai plafond : l'un sans l'autre ne prouve
     // rien — sous les deux porches aussi, on a quelque chose au-dessus de la
@@ -390,10 +403,63 @@ const descendre = async (p, ms) => {
     verifier('la bouche de métro débouche bien dans la rue',
       Math.abs(enRue.y - (solBouche + 1)) < 2.5, `y=${enRue.y.toFixed(1)} pour un sol à ${solBouche}`);
 
-    for (let i = 0; i < 12; i++) await descendre(tab, 1400);
-    const enBas = await pose(tab);
+    // ON DESCEND JUSQU'À ÊTRE EN BAS, PAS PENDANT DOUZE PAS (v270). Le
+    // verdict était une DURÉE déguisée : douze pas de 1,4 s, et comme
+    // `main.js` borne `dt` à un vingtième, l'enfant descend d'autant moins
+    // que la cadence du banc est basse. Mesuré sur le MÊME code de jeu —
+    // 13,0 blocs la suite rejouée seule, 9,0 aux portails des v268 et v269,
+    // et 7,0 à celui de la v270, pour une barre à 8. Douze pour cent de
+    // marge : la borne était condamnée, et c'est le banc qu'elle mesurait.
+    //
+    // Le remède était écrit QUINZE LIGNES PLUS HAUT, dans ce fichier : le
+    // témoin des portes marche « jusqu'à être entré OU jusqu'à ne plus
+    // avancer », depuis qu'il est tombé pour la même raison. Il n'avait
+    // jamais été appliqué à l'escalier. C'est le piège des bornes de
+    // `monte.js` (v237) à l'échelle d'un autre fichier : quand une borne se
+    // révèle mal posée, on relit TOUTES celles du fichier dans la même passe.
+    //
+    // « Ne plus descendre » se constate sur TROIS pas, comme « ne plus
+    // avancer » : un mur arrête à chaque pas, un hoquet de banc à un seul.
+    //
+    // ET « NE PLUS DESCENDRE » N'EST PAS « NE PLUS AVANCER » : LE COULOIR
+    // COMMENCE À PLAT (v279). Le portail de référence sur `origin/main` a rendu
+    // « descendu de -0,0 blocs · bloqué : trois pas sans descendre », et j'en ai
+    // conclu que le métro était inaccessible. **C'était faux, et c'est une sonde
+    // pure qui l'a dit** — sans navigateur, en lisant les blocs le long du
+    // couloir : vingt et un pas praticables de y=34 à y=20, aucune marche de
+    // plus d'un bloc, deux blocs d'air d'un bout à l'autre, le quai à 19.
+    // L'escalier est sain.
+    //
+    // Ce que la sonde a montré en plus, et qui condamne la règle d'abandon :
+    // **les six premiers blocs depuis la bouche sont PLATS**, et par
+    // construction — la bouche est posée à `longueur` du centre, et le couloir
+    // ne commence à descendre qu'au-delà du palier d'entrée (`DEMI_VOUTE` vaut
+    // sept). Or l'enfant avance de l'ordre du quart de bloc par pas de 1,4 s sur
+    // ce banc (v238 : « à pied, un enfant avance à 15 % du temps réel ») : trois
+    // pas ne font même pas un bloc, donc « trois pas sans descendre » se
+    // déclenche AVANT la première marche, quoi que fasse le jeu. La borne était
+    // condamnée à rougir dès que le banc ralentissait un peu plus.
+    //
+    // On constate donc « ne plus AVANCER », comme le témoin des portes quinze
+    // lignes plus haut — ce qui était déjà la leçon citée ci-dessus, appliquée à
+    // la mauvaise grandeur. Un mur arrête le déplacement ; un palier n'arrête
+    // que la descente.
+    let enBas = await pose(tab);
+    let immobileBas = 0, avance = 0;
+    for (let i = 0; i < 24 && enBas.y >= solBouche - 8; i++) {
+      const avantPas = enBas;
+      await descendre(tab, 1400);
+      enBas = await pose(tab);
+      const pas = Math.hypot(enBas.x - avantPas.x, enBas.z - avantPas.z);
+      avance += pas;
+      immobileBas = pas >= 0.2 || avantPas.y - enBas.y >= 0.2 ? 0 : immobileBas + 1;
+      if (immobileBas >= 3) break;
+    }
     verifier('en descendant l\'escalier, on arrive sur le quai',
-      enBas.y < solBouche - 8, `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`);
+      enBas.y < solBouche - 8,
+      `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`
+      + ` · avancé de ${avance.toFixed(1)} blocs dans le couloir`
+      + (immobileBas >= 3 ? ' · bloqué : trois pas sans avancer ni descendre' : ''));
     // On laisse l'enfant se poser avant de regarder en l'air : mesuré en pleine
     // chute, le plafond change d'un bloc d'une exécution à l'autre.
     await dormir(900);
@@ -405,15 +471,69 @@ const descendre = async (p, ms) => {
     // On se pose au milieu du quai et on attend, comme sur un vrai quai.
     await poserLe(tab, P.x + quai.u, quai.y + 2, P.z + quai.v);
     await dormir(600);
-    await tab.waitForFunction(() => {
-      const b = document.getElementById('board-btn');
-      return b && getComputedStyle(b).display !== 'none'
-        && getComputedStyle(b.closest('.fun-target')).display !== 'none';
-    }, null, { timeout: 70000 }).catch(() => {});   // le métro marque les
-    // stations : trois rames par ligne, un passage toutes les trente secondes
+    // ON ATTEND EN SECONDES DE JEU, ET LE ROUGE SE DÉMONTE (v283).
+    //
+    // Cette attente était bornée à SOIXANTE-DIX SECONDES DE MONTRE pour un
+    // passage que le jeu promet toutes les trente secondes DE JEU. Le banc
+    // borne `dt` à un vingtième et rend trois à cinq images par seconde à
+    // Washington : trente secondes de jeu valent alors deux à quatre minutes de
+    // montre, et la fenêtre était trop courte d'un facteur deux à trois. C'est
+    // la famille de la v270 — on attend le RÉSULTAT, borné, et en secondes de
+    // JEU — exactement ce que la seconde moitié de ce témoin fait déjà.
+    //
+    // ET LE ROUGE NE DISTINGUAIT RIEN. `aBord.visible` faux recouvre trois
+    // pannes très différentes : la rame n'est jamais venue ; elle est venue mais
+    // hors de la portée d'embarquement ; elle est venue à portée et le bouton
+    // est resté caché. `null` n'est pas un verdict, c'est une absence de mesure
+    // (v272) — on relève donc, tour par tour, la distance et le Δy du convoi
+    // souterrain le plus proche, et le meilleur des deux entre dans le message.
+    await tab.evaluate(() => {
+      window.__simQuai = 0;
+      let prec = performance.now();
+      const tic = (now) => {
+        window.__simQuai += Math.min(Math.max((now - prec) / 1000, 0), 0.05);
+        prec = now;
+        requestAnimationFrame(tic);
+      };
+      requestAnimationFrame(tic);
+    });
+    // 45 s de JEU : une fois et demie l'intervalle annoncé. Le garde-fou au mur
+    // (250 tours de 800 ms) n'existe que pour ne jamais attendre un jeu mort.
+    let vu = null, simQuai = 0, approche = null;
+    for (let i = 0; i < 250 && !vu && simQuai < 45; i++) {
+      const etat = await tab.evaluate(() => {
+        const b = document.getElementById('board-btn');
+        const cible = b && b.closest('.fun-target');
+        const visible = !!(b && getComputedStyle(b).display !== 'none'
+          && cible && getComputedStyle(cible).display !== 'none');
+        const p = window.__game.player.pos;
+        // Le convoi de MÉTRO le plus proche, avec son Δy : c'est ce qui
+        // sépare « la rame n'est jamais venue » de « elle est venue mais le
+        // garde de hauteur l'a écartée » (|Δy| > 2,5 empêche un quai
+        // souterrain d'attraper une voiture de la rue).
+        let best = null;
+        for (const c of (window.__vehicules.etat() || [])) {
+          if (!/métro/i.test(c.nom || '')) continue;
+          for (const q of c.places) {
+            const d = Math.hypot(q[0] - p.x, q[1] - p.z);
+            if (!best || d < best.d) {
+              best = { nom: c.nom, d: +d.toFixed(1), dy: +(c.y - p.y).toFixed(1), vus: c.visibles };
+            }
+          }
+        }
+        return { visible, best, sim: window.__simQuai };
+      });
+      simQuai = etat.sim;
+      if (!approche || (etat.best && etat.best.d < approche.d)) approche = etat.best || approche;
+      if (etat.visible) { vu = etat; break; }
+      await dormir(800);
+    }
     const aBord = await bouton(tab, 'board-btn');
     verifier('une rame passe, et on propose de monter dedans',
-      aBord.visible, JSON.stringify(aBord));
+      aBord.visible,
+      `${JSON.stringify(aBord)} · ${simQuai.toFixed(0)} s de jeu d'attente`
+      + ` · la rame la plus proche vue à ${approche ? approche.d : '—'} blocs`
+      + ` (${approche ? `${approche.nom}, Δy ${approche.dy}, ${approche.vus} visible(s)` : 'aucune'})`);
     // La pastille de couleur dit QUELLE ligne : un enfant qui ne lit pas
     // encore bien reconnaît un rond bleu avant un mot.
     verifier('et la pastille dit de quelle ligne il s\'agit',

@@ -18,8 +18,33 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { attendreLaCharge } = require('./charge.js');
 
-const SUITES = ['reseau.js', 'visio.js', 'parent.js', 'reglages.js', 'carte.js', 'monte.js', 'washington.js', 'plafond.js', 'sauvegarde.js', 'maj.js', 'metro.js', 'carteMonde.js', 'hote.js', 'manhattan.js', 'realisme.js'];
+// LES COURTES D'ABORD (v255). L'ordre ne change rien au total — chaque suite
+// monte son propre banc, ses propres ports, et aucune ne dépend d'une autre —
+// mais il change TOUT au temps qu'on attend un premier rouge : `reseau.js` en
+// tête, un rouge de `metro.js` se découvrait à la cinquante-neuvième minute.
+// Rangées par durée mesurée sur le portail complet de la v251 (de 14 s à
+// 19 min 46 s), le rouge d'une petite suite arrive dans les cinq minutes qui
+// suivent la fumée. On remesure l'ordre quand une suite change de poids.
+const SUITES = [
+  'metro.js',        //  0 min 14 s
+  'parent.js',       //  0 min 30 s
+  'parishd.js',      //  0 min 45 s (v287)
+  'carteMonde.js',   //  0 min 34 s
+  'sauvegarde.js',   //  0 min 34 s
+  'plafond.js',      //  0 min 51 s
+  'visio.js',        //  1 min 03 s
+  'maj.js',          //  1 min 34 s
+  'realisme.js',     //  1 min 37 s
+  'carte.js',        //  1 min 56 s
+  'hote.js',         //  2 min 20 s
+  'washington.js',   //  2 min 41 s
+  'reglages.js',     //  7 min 02 s
+  'manhattan.js',    //  8 min 35 s
+  'monte.js',        // 15 min 21 s
+  'reseau.js',       // 19 min 46 s
+];
 
 // QUELLE SUITE PROTÈGE QUOI.
 //
@@ -57,6 +82,7 @@ const GARDIENS = {
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
+  'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
@@ -66,11 +92,24 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
+  // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
+  // trou devant soi et cette vitesse, `maj.js` la préparation et l'accueil — et
+  // c'est lui qui porte les témoins du palier —, `reglages.js` l'espace où l'on
+  // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
+  // carte.
+  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
+  // La couche HD de Paris (v287) : ses tampons et son relais près/loin dans
+  // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
+  'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],
+  'src/matierehd.js': ['parishd.js', 'monte.js'],
   // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
-  // `modeles.js`, `props.js`, `animals.js`, `creatures.js`, `fun.js` et
+  // `modeles.js`, `props.js`, `animals.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
   // libération de trop passerait sans réveiller la suite qui la verrait.
   'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
+  'src/couches.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'src/signatures.js': ['monte.js'],
   'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
@@ -109,6 +148,10 @@ const GARDIENS = {
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js'],
+  // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
+  // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
+  // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
+  'src/feux.js': ['carteMonde.js', 'monte.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
@@ -124,7 +167,9 @@ const GARDIENS = {
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
-  'src/fun.js': ['monte.js', 'carte.js'],
+  // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
+  'src/cap.js': ['monte.js'],
+  'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js'],
@@ -138,7 +183,7 @@ const GARDIENS = {
   //
   // Les villes bâties à la main : elles dessinent leur relief et leurs
   // destinations, exactement comme Nice et Londres, déjà listées.
-  'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js'],
+  'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js'],
   'src/manhattan-plan.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js', 'plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'reseau.js', 'hote.js'],
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
@@ -167,17 +212,29 @@ const GARDIENS = {
   'src/visio.js': ['visio.js', 'reseau.js'],
   'src/partage.js': ['reseau.js', 'parent.js', 'manhattan.js'],
   'src/siege.js': ['monte.js', 'washington.js'],
+  // `sons.js` possède le contexte audio de TOUT le jeu depuis la v268 : le
+  // moteur et la radio se prennent dans `monte.js` (c'est là qu'on monte),
+  // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
+  // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
+  'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,
   'src/mesher.js': SUITES,
+  'src/tuiles.js': SUITES,
+  'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js', 'parishd.js'],
   'src/textures.js': SUITES,
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],
   'src/modeles.js': ['monte.js'],
   'src/betes.js': ['monte.js'],
-  'src/creatures.js': ['monte.js'],
+  // LE BANDEAU DU JEU (v285). Il vivait dans `creatures.js` — retiré avec le mode
+  // d'attrape — et c'est la VOIX du jeu : « fais demi-tour », « Sauvegarde
+  // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
+  // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
+  'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
+    'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
@@ -185,7 +242,7 @@ const GARDIENS = {
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
-const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js'];
+const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js', 'tests/charge.js'];
 
 // SAUF QUAND CE QUI BOUGE EST UN DÉLAI OU UN COMMENTAIRE.
 //
@@ -299,6 +356,23 @@ function fichiersModifies() {
   } catch { return null; }
 }
 
+// Une sonde est isolée si rien de ce que le portail lance ne la charge. On le
+// MESURE — la fumée et les quinze suites, plus le banc lui-même — parce qu'une
+// règle qui se contente du nom du fichier se retourne à la première sonde qu'on
+// branche dans un témoin.
+function sondeIsolee(base, f) {
+  const nom = f.replace(/^tests\//, '');
+  if (SUITES.includes(nom) || nom === 'fumee.js') return false;
+  const lecteurs = [...SUITES, 'fumee.js', ...BANC.map((b) => b.replace(/^tests\//, ''))];
+  for (const l of lecteurs) {
+    let src = '';
+    try { src = fs.readFileSync(path.join(base, 'tests', l), 'utf8'); } catch { return false; }
+    // un `require` ou un `import` du fichier, pas une mention en commentaire
+    if (new RegExp(`(require|from)\\s*\\(?\\s*['\"\`][^'\"\`]*${nom.replace('.', '\\.')}`).test(src)) return false;
+  }
+  return true;
+}
+
 // Ce qu'il faut rejouer pour ce changement-ci. Rend la liste des suites, dans
 // l'ordre du portail, et la raison — qui s'affiche : un choix d'essais qu'on ne
 // peut pas relire est un choix qu'on ne peut pas contester.
@@ -328,6 +402,23 @@ function suitesNecessaires() {
     const suite = f.match(/^tests\/([\w-]+\.js)$/);
     if (suite && SUITES.includes(suite[1])) { besoin.add(suite[1]); raisons.push(f); continue; }
     if (suite && suite[1] === 'fumee.js') { raisons.push(f); continue; }
+    // UNE SONDE QUE LE PORTAIL NE LANCE JAMAIS NE PEUT CHANGER AUCUN VERDICT.
+    //
+    // Les sondes qui ont produit un chiffre écrit dans un témoin vivent dans le
+    // dépôt, pour qu'on puisse les REJOUER (règle de la v277). Elles ne
+    // correspondaient à aucun motif, donc elles tombaient dans « inconnu » et
+    // forçaient le portail ENTIER — soixante-dix-huit minutes par livraison, pour
+    // toujours, à cause d'un fichier que rien n'exécute. C'est le raisonnement de
+    // `gardiensElargis` : ce qui ne peut faire tourner QUE PLUS de suites, ou rien
+    // du tout, ne peut rien cacher.
+    //
+    // ET CELA SE PROUVE, à chaque portail, au lieu de se déclarer : le fichier
+    // n'est pas dans `SUITES`, et AUCUNE suite ne le `require`. Le jour où une
+    // suite en importe une, la règle se désarme d'elle-même et le portail entier
+    // se rejoue.
+    if (/^tests\/sonde-[\w-]+\.cjs$/.test(f) && sondeIsolee(base, f)) {
+      raisons.push(`${f} (sonde, jamais lancée par le portail)`); continue;
+    }
     // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
     // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
     if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;
@@ -341,8 +432,8 @@ function suitesNecessaires() {
     pourquoi: raisons.length ? raisons.join(', ') : `${changes.length} fichier(s) de contenu`,
   };
 }
-const REPOS_MS = 20000;        // le temps que la charge retombe entre deux suites
-const CHARGE_MAX = 2.0;        // au-delà, on attend : les faux échecs viennent de là
+const REPOS_MS = 20000;        // BORNE du repos entre deux suites — voir `reposer`
+const CHARGE_MAX = 2.0;        // cœurs occupés au-delà desquels on attend encore
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -391,11 +482,23 @@ function gardiensDe(suite) {
   return [...fichiers].sort();
 }
 
+// LE BANC ENTRE DANS L'EMPREINTE PAR SA FORME, PAS PAR SES NOMBRES (v255).
+//
+// `bancAnodin` juge depuis la v195 qu'un banc dont seuls des nombres ont bougé
+// — des délais, des bornes — ne change rien à ce qu'il éprouve, et l'aiguillage
+// ne rejoue rien pour cela. L'empreinte de reprise, elle, prenait `banc.js`
+// BRUT : régler une borne annulait les quinze acquis, trois quarts d'heure
+// pour un chiffre. La même règle vaut aux deux endroits : les fichiers du banc
+// s'empreignent chiffres effacés — la forme de chaque ligne, comme
+// `bancAnodin` la lit. Le code du jeu, lui, entre brut : un nombre y est une
+// règle.
 function empreinteDe(fichiers) {
   const h = crypto.createHash('sha1');
   for (const f of fichiers) {
-    try { h.update(f).update(fs.readFileSync(path.join(RACINE, f))); }
-    catch { h.update(f).update('absent'); }
+    try {
+      const brut = fs.readFileSync(path.join(RACINE, f));
+      h.update(f).update(BANC.includes(f) ? brut.toString('utf8').replace(/\d+/g, '#') : brut);
+    } catch { h.update(f).update('absent'); }
   }
   return h.digest('hex');
 }
@@ -442,9 +545,22 @@ const charge = () => {
 // besoin d'un instant pour mourir — et l'on cesse d'attendre un nombre qui
 // retarde. Trente secondes au lieu de cent quatre-vingts : c'est neuf minutes
 // rendues sur un portail de quatorze suites.
+//
+// v255 : LA PAUSE COURTE ÉTAIT ENCORE UN DÉLAI FIXE. `REPOS_MS` dormait vingt
+// secondes entre chaque paire de suites, quoi qu'il arrive — cinq minutes par
+// portail —, et `attendreLeCalme` lisait le même nombre qui retarde. Les deux
+// lisent désormais l'occupation RÉELLE des cœurs (`charge.js`) : quand la
+// suite d'avant a rendu la main, ses navigateurs sont morts et la machine est
+// à 0,2 en moins d'une seconde. Le repos attend que la machine soit presque
+// vide (un cœur), l'attente de calme qu'elle soit sous CHARGE_MAX ; chacun
+// garde son ancienne durée comme BORNE et dit ce qu'il a vu.
 async function attendreLeCalme(limiteMs = 30000) {
-  const fin = Date.now() + limiteMs;
-  while (charge() > CHARGE_MAX && Date.now() < fin) await dormir(5000);
+  const r = await attendreLaCharge(limiteMs, CHARGE_MAX);
+  if (r.ms >= 2000) console.log(`   🧘 calme : ${(r.ms / 1000).toFixed(1)} s · ${r.motif} · ${r.occupation.toFixed(2)} cœur(s)`);
+}
+async function reposer() {
+  const r = await attendreLaCharge(REPOS_MS, 1.0);
+  if (r.motif !== 'libre') console.log(`   🧘 repos : ${(r.ms / 1000).toFixed(1)} s · ${r.motif} · ${r.occupation.toFixed(2)} cœur(s) encore occupé(s)`);
 }
 
 function lancer(fichier) {
@@ -495,7 +611,7 @@ function lancer(fichier) {
       console.log('\n✅ voie rapide verte — on peut publier');
       process.exit(0);
     }
-    await dormir(REPOS_MS);
+    await reposer();
   }
 
   const empreinte = null;      // l'empreinte est désormais tenue par suite
@@ -541,7 +657,7 @@ function lancer(fichier) {
     // Écrit MAINTENANT, pas à la fin : c'est tout l'objet de la manœuvre.
     verts[suite] = vert;
     acquisEcrits(empreinte, verts);
-    if (suite !== aJouer[aJouer.length - 1]) await dormir(REPOS_MS);
+    if (suite !== aJouer[aJouer.length - 1]) await reposer();
   }
   console.log('\n════════ verdict ════════');
   for (const [suite, vert] of verdicts) console.log(`${vert ? '✅' : '❌'} ${suite}`);

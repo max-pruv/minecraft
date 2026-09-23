@@ -1,15 +1,392 @@
 # Ce qui est en cours
 
+- [ ] **GRAND TOUR — LE PROGRAMME « PARIS, PUIS LA CONDUITE » (décision de Max,
+  septembre 2026).** Le but n'est plus un meilleur clone de Minecraft : c'est un
+  monde ouvert beau et vivant, où Paris se reconnaît depuis un trottoir sans voir
+  la Tour Eiffel, et où l'on conduit comme dans un vrai jeu de conduite —
+  partout, hors des routes aussi. Le voxel devient le SQUELETTE du monde ; il
+  n'est plus le dernier mot de ce qu'on voit. Audit fait avant d'écrire une
+  ligne (quatre lectures croisées : Paris, rendu, véhicules, banc) ; captures
+  « avant » prises au banc (`tests/sonde-captures-paris.cjs`).
+
+  Ce que l'audit a établi, et qui décide de l'architecture :
+  - Paris est ENTIÈREMENT voxel, une façade = une tuile de 16 px par bloc
+    (`batirColonneParis`, `solParis`), une colonne = une décision, et la ligne
+    de corniche est tirée PAR ÎLOT (invariant visuel à garder).
+  - Manhattan a déjà la brique réutilisable : matériaux PBR procéduraux à
+    projection triplanaire, environnement PMREM, instanciation par lot, LOD par
+    secteur (`manhattan-materiaux.js`, `manhattan-render.js`). Son blocage est
+    l'état global du rendu sauvé une seule fois (`earthLook`).
+  - Le mailleur rend des TAMPONS depuis un worker sans three : toute couche de
+    détail neuve doit rendre des tampons de la même façon, ou elle reprend le
+    fil principal que la v251 a libéré.
+  - La voiture EST le joueur : pas de corps rigide, un cap = le regard, aucune
+    adhérence, une AABB qui ne tourne pas, aucun feu sur les GLB, un volant qui
+    ne tourne jamais (`player.js:577-625`, `fun.js:1033`).
+  - Le mobilier (`props.js`) est en `MeshBasicMaterial` : la seule chose du
+    monde qui n'est pas éclairée depuis la v247, et 5 à 11 appels de dessin par
+    réverbère ou feu.
+
+  Le plan, en cinq livraisons — chacune passe le portail, chacune est jugée sur
+  captures avant/après (règle de jugement du programme réalisme) :
+
+  1. **PR1 — la fondation Paris HD.** Une seconde passe du mailleur, dans le
+     worker, qui émet pour chaque face de façade exposée un DÉTAIL (baie en
+     retrait, encadrement, appui, garde-corps, balcon filant, corniche, store)
+     et pour chaque sol de ville une face HD ; un seul matériau Standard
+     (atlas 1024², rugosité/métal et lueur PAR SOMMET, environnement PMREM) ;
+     le voxel plat garde le LOIN (LOD sans remaillage) ; le palier décide de la
+     portée (`hd`). Le mobilier devient éclairé. Preuve : une rue en capture,
+     un témoin `parishd.js` (cohérence plat/HD, blocs intacts, palier bas
+     identique à l'octet près).
+  2. **PR2 — Paris hyperréaliste.** Identités de quartier (Marais, Latin,
+     Montmartre, Étoile, Cité, 7e, Montparnasse), comble à la Mansart en
+     géométrie, mobilier parisien instancié (réverbères, bornes, bancs, kiosques,
+     colonnes Morris, terrasses, entrées de métro, plaques de rue), devantures et
+     enseignes, voitures garées, arbres en maillage, densité de piétons ;
+     monuments héros en géométrie (Tour Eiffel en treillis, Notre-Dame, Arc,
+     Louvre, Sacré-Cœur…).
+  3. **PR3 — lumière et atmosphère.** Soleil et ciel selon l'heure, ombres,
+     nuit qui n'est pas un jour assombri : réverbères, fenêtres, devantures,
+     monuments illuminés, phares et feux stop sur les GLB.
+  4. **PR4 — conduite universelle.** Contrôleur véhicule à part (`conduite.js`) :
+     accélération/freinage/recul, direction selon la vitesse, adhérence latérale
+     et glisse, frein à main, suspension et sol échantillonné sous QUATRE roues
+     (tangage, roulis), surfaces (asphalte, pavé, herbe, terre, sable), collisions
+     avec normale, caméra de poursuite à cap indépendant ; partout dans le monde.
+  5. **PR5 — performance.** Mesures sur l'appareil, appels de dessin, mémoire,
+     paliers BAS/MOYEN/HAUT/ULTRA.
+  6. **Ensuite, TOUTES LES VILLES EUROPÉENNES** (consigne de Max : « when done
+     do all European cities ») : Londres, Nice, Lille bâties à la main, puis les
+     villes engendrées d'Europe (`villesmonde.js`). La couche HD lit des blocs
+     `ARCHI` que ces villes posent déjà : l'étendre est d'abord élargir
+     `couvreHD` à leurs disques, puis donner à chaque tissu (`villesmonde.js`)
+     ses registres — brique de Londres, tuile de Rome, pan de bois.
+
+  Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
+  blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
+  blocs, elle n'en écrit aucun.
+
+  **État (v289).** PR1 livrée (v287) ; PR2 livrée en trois temps — la v288 porte
+  les registres par quartier, les arbres maillés, les potelets, terrasses,
+  plaques, mitres et le réverbère parisien ; la v289 le comble à la Mansart en
+  champ de hauteurs (brisis, chiens-assis, terrasson continu, croupes), les
+  colonnes Morris, les bancs et les corbeilles. Ce qui reste de la PR2, pour la
+  suivante : les kiosques, et les monuments héros (`herosparis.js` /
+  `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
+  Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
+  déclarées de la v289 :
+  - [ ] le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
+    îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs
+    différentes se lissent l'un sur l'autre, ce qui fait un toit qui monte d'un
+    lot à l'autre au lieu d'un mur pignon — à mesurer sur capture, rue par rue ;
+  - [ ] un brisis qui monte à plus d'un bloc (coin de champ à 1,5 ou 2) est
+    raide mais droit : le vrai brisis d'un immeuble de coin se brise à la ligne
+    de bris ; la constante `RETRAIT` est la seule à régler, sur capture ;
+  - [ ] sur les places sans trottoir large (esplanades), la colonne Morris se
+    pose au tirage sans regarder si une devanture ou un banc est à côté ;
+    mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
+
+  Dettes déclarées de la v288 :
+  - [ ] une chaise de terrasse HD n'arrête ni un passant ni une voiture (ce
+    n'est pas un `prop`, donc pas un obstacle de `mobilierDevant`) — à régler
+    avec la PR4, où les obstacles de la conduite se refont ;
+  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+    large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
+    entière — une tuile à part pour les petites baies ;
+  - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non
+    l'avenue : `solParis` fait passer un jardin avant l'axe — à mesurer avant
+    les monuments héros (l'Arc et la Concorde sont aux deux bouts).
+
+- [ ] **LE PORTAIL DE LA v288 (PR2 Paris) : SEPT SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN — ET UN TÉMOIN DE LA PR QUI MESURAIT L'ORDRE DE LA FILE.**
+  Seize suites, 83 minutes (le conteneur a redémarré deux fois dans la
+  journée, et la machine rend 0,75 image par seconde à `rr=6` avec la couche
+  HD). Chaque rouge rejoué SEUL, sur la branche puis sur `origin/main`
+  (`/root/main-ref`, ca2e992) quand il restait rouge :
+
+  | suite | au portail | seule, branche | seule, `origin/main` |
+  | --- | --- | --- | --- |
+  | `parishd.js` | près/loin `{attente:40000, loin:false}` ×2, atlas | ❌ identique → **témoin corrigé**, ✅ 23/23, lointain en 15 437 ms | — |
+  | `carte.js` | fond de carte 413 ms (borne 400) | ✅ 283 ms | — |
+  | `reseau.js` | départ propre · endormi | ✅ entièrement verte (1 034 s) | — |
+  | `maj.js` | libération `null` · la page ne floute rien | ❌ identique (4/9 corps, 4/25 programmes) | ❌ identique (1/9, 9/25) |
+  | `reglages.js` | l'autre tablette : serveur `"fr"` | ❌ identique | ❌ identique |
+  | `monte.js` | piéton `avance 5,8` · chevauchements 62 · figé 5 516 ms / 40,4 % | ❌ figé seul : 4 733 ms / 36,2 % | ❌ figé 5 183 ms / 39,9 % **ET** « une voiture n'entre pas dans l'eau » (reculé 1,19) |
+  | `manhattan.js` | délai (aucun témoin rouge imprimé) | non rejouée : dette v269/v285, code inchangé | — |
+
+  Le piéton et les chevauchements de `monte.js`, le fond de carte de `carte.js`
+  et les deux témoins de `reseau.js` sont des durées ou des tirages sous la
+  charge du portail (v270, v277) : verts seuls. `maj.js` et `reglages.js` sont
+  les dettes des v284/v285, au même relevé des deux côtés. `origin/main` rend
+  un rouge de PLUS que la branche sur `monte.js` (le quai) : la livraison ne
+  dégrade rien. Rien du diff — façades HD, matières, réverbère, journal — n'a
+  de chemin vers le réseau, les réglages, le loader ou la carte.
+
+  **Et le rouge de `parishd.js` était celui d'un témoin, pas du jeu.** Il
+  guettait trois morceaux NOMMÉS « à cinq » et dormait quarante secondes ; la
+  sonde `sonde-hd-lod.cjs` a montré le relais juste dès 3 s, le worker vivant,
+  et ces trois morceaux arrivant à 41 et 43 s (celui de l'autre côté dès 22 s)
+  parce que le fil principal installe les morceaux au rythme des images. Il
+  prend désormais tout morceau au-delà du rayon HD, borné à 90 s, durée dans
+  le message. Ce que ce rouge laisse ouvert : la cadence d'installation des
+  morceaux SUIT la cadence d'affichage (un réapprovisionnement de la file par
+  image, v265/v269) — à 0,75 image par seconde, trois morceaux par seconde
+  pour une file de huit. C'est un fait du jeu sur un rendu logiciel, pas une
+  régression ; sur l'iPad la cadence est vingt fois plus haute.
+
+- [ ] **LE PORTAIL DE LA v287 (PR1 Paris HD) : TROIS SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN.** `manhattan.js` et `monte.js` rendent exactement les rouges
+  déclarés ci-dessous (v285 : le trou de façade, la nuit, les ombres `[1,-1]` ;
+  le figé à l'arrivée, le tirage des voitures). `maj.js` a rendu au portail
+  « le loader ne s'efface qu'une fois les corps et les programmes prêts »
+  (effacé à 6 300 ms, programmes 22/25) — et REJOUÉE SEULE il est vert des deux
+  côtés :
+
+  | `maj.js` seule | `origin/main` (v286) | branche |
+  | --- | --- | --- |
+  | le loader ne s'efface qu'une fois… | ✅ | ✅ 1 877 ms, 25/25 |
+  | le loader ne cache jamais un « Jouer » cliquable | ✅ | ❌ **garde** : 2 relevés, 0 fautif |
+  | fond de carte à la libération | ❌ `carte: false`, 45,3 s | ❌ `carte: false`, 51,9 s |
+
+  La garde `releves >= 3` comptait le temps entre l'ouverture de la boucle et la
+  page prête, en pas de cinquante millisecondes : une grandeur du banc. Posée à
+  un (la moitié de la plus petite mesure, v237). Le fond de carte est la dette
+  de la v276, inchangée. Le rouge du portail, lui, est de la famille « une
+  durée sous la charge du portail » : il ne se reproduit pas seul, sur aucun
+  des deux arbres.
+
+  **Second portail, après la rue de Paris** (quinze suites, 678 verts) : douze
+  vertes ; `manhattan.js` et `monte.js` sur leurs dettes déclarées, à
+  l'identique ; `maj.js` sur le fond de carte ET sur une puce du journal à neuf
+  mots — le deux-points isolé compte pour un mot. La puce corrigée, `maj.js`
+  rejouée seule est entièrement verte, fond de carte compris (il est
+  intermittent, v276).
+
+- [ ] **LE PORTAIL DE LA v285 : CINQ SUITES ROUGES, AUCUNE DE LA LIVRAISON.**
+  Trois témoins que j'avais cassés ou mal repointés sont corrigés et verts ; le
+  quatrième rouge, « la voiture au mur », a été démonté par une sonde qui
+  innocente le jeu. Ce qui reste est déclaré ici, avec ce qui le mesure.
+
+  | suite | témoin | mesuré ailleurs |
+  | --- | --- | --- |
+  | `maj.js` | corps/programmes/fond `null` ; la page ne floute rien | identique au portail v284 (arbre v284, mêmes témoins) |
+  | `manhattan.js` | délai de 60 s ligne 282 | v269 : même délai sur `origin/main` au TROISIÈME passage |
+  | `reglages.js` | l'autre tablette (`"fr"`) puis `TypeError … 'edu'` | identiques au portail v284, aux deux lignes près |
+  | `monte.js` | l'écran ne se fige pas en arrivant sur une ville | 4 433 ms / 37,3 % ici contre 4 933 ms / 36,4 % sur `origin/main` |
+  | `monte.js` | les voitures ne se traversent plus | le TIRAGE écrit dans `CLAUDE.md` (v277) : 89 ici, 53 au portail v284 |
+  | `reseau.js` | départ propre · joueur endormi · réveil | DEUX passages de chaque côté, même distribution (table ci-dessous) |
+
+  **ET `reseau.js` EST INTERMITTENTE DES DEUX CÔTÉS — quatre passages pour le
+  savoir.** Un passage de chaque côté m'avait fait voir une asymétrie qui n'existe
+  pas (règle de la v269) :
+
+  | | passage 1 | passage 2 |
+  | --- | --- | --- |
+  | `origin/main` seule | départ propre · endormi | **entièrement verte** |
+  | branche seule | départ propre · réveil | **entièrement verte** |
+  | branche au portail | départ propre · endormi · réveil | — |
+
+  Les trois témoins appartiennent à la même famille (le départ, le sommeil, le
+  réveil) et le rouge se déplace d'un passage à l'autre. « Un départ propre » sort
+  dans trois passages sur cinq, sur les DEUX arbres : c'est un défaut de
+  production, intermittent — pas « rouge à chaque fois », ce que j'avais écrit
+  avant de l'avoir mesuré.
+
+  **Et l'argument qui vaut plus que l'échantillon : le diff n'a AUCUN chemin vers
+  ce code.** `src/net.js` ne gagne qu'un commentaire — le code réseau est
+  identique au bit près — et sur tout `src/` plus `index.html`, la seule ligne qui
+  effleure cette surface est le RETRAIT de `creatureManager` de `window.__game`.
+  Rien sur `dodo`, `coucou`, la visibilité, la liste des pairs ni la présence.
+
+  **Et le compte de chevauchements n'est toujours PAS un gardien.** La v277
+  l'avait écrit — un compte ABSOLU sur trente secondes de montre, dans une ville
+  qui rend quatre images par seconde, mesure le nombre de RELEVÉS autant que le
+  jeu. Ce portail le confirme par un troisième bout : 1 387 mesures ici contre
+  779 au portail d'avant, sur un code de circulation inchangé, et le compte suit.
+  Ce qu'il faut, c'est un TAUX par relevé et par paire à portée — pas un seuil de
+  plus. Tant qu'il tire à pile ou face, on ne peut rien conclure de
+  `cederLePassage`, et c'est écrit depuis la v277.
+
+- [ ] **LES DEUX BORNES QUE L'ENFANT ATTEND APRÈS UNE MISE À JOUR SE SUIVENT, ET
+  PERSONNE NE LES AVAIT ADDITIONNÉES.** Max, après la v285 : « après la mise à
+  jour, sur la home le jeu lag 1 à 2 min, ça a été le cas depuis longtemps ».
+  C'est le symptôme que la v257 et la v258 devaient corriger — donc on cesse de
+  régler et l'on va voir ce qui s'exécute (règle de la v226).
+
+  L'arithmétique, avant toute mesure : `index.html` borne la mise à jour à
+  **45 s** (v220), puis `main.js` montre le loader `apresMaj` borné à **90 s**
+  (il attend `humainsCharges() && chauffeFinie`) pendant que `veillerPrep` grise
+  « Jouer », borné à 45 s. **45 + 90 = 135 s**, exactement la fourchette de Max.
+  Il est donc possible que le jeu le RETIENNE au lieu de ramer — ce n'est pas la
+  même panne et cela ne se corrige pas au même endroit.
+
+  **NON-RÉSULTAT MESURÉ, qu'on ne réessaiera pas** : le suspect évident était les
+  treize mégaoctets immuables (scanner, flotte, 8,2 Mo de corps, polices)
+  re-téléchargés à chaque livraison. `sw.js` ligne 179 : `activate` supprime tous
+  les caches SAUF `STATIC_CACHE`, et `isStaticAsset` couvre bien
+  `/vendor/humains/`. Ils ne repartent pas sur le réseau.
+
+  Ce qui manque ne peut venir que de l'appareil — le banc met six secondes là où
+  Safari en met une (v257), et cela ne se transpose pas. Le jeu AFFICHE déjà la
+  réponse, et trois lectures donnent trois causes : le loader « ✨ Installation…
+  personnages x/y, programmes n/m » (borne de 90 s), l'accueil avec « ⏳
+  Préparation du jeu… » (borne de 45 s), ou l'accueil nu et saccadé (alors rien
+  ne retient, et c'est du vrai travail de fil principal). Demandé à Max.
+
+- [ ] **LE PORTAIL DE LA v284 : SEPT ROUGES, TROIS TÉMOINS CORRIGÉS, ET LA
+  DOUBLE MESURE FAITE.** Le conteneur a été recyclé au milieu de la campagne —
+  neuvième fois — et cela a fait apparaître des rouges qu'aucun des quatre
+  passages précédents n'avait rendus. Chacun est attribué, aucun n'est deviné.
+
+  **Deux corrigés : des témoins qui mesuraient le banc.** Leur message porte
+  désormais le temps pris, et c'est lui qui prouve la cause.
+
+  | témoin | ce qu'il rendait | ce qu'il rend |
+  | --- | --- | --- |
+  | l'ombre d'un pilier | `168,4 · 168,4` (le CIEL) | `58,4 · 103,5`, dalle prête en **6 556 à 10 476 ms** — l'ancien dormait 2 500 |
+  | le maillage hors du fil | `parcouru 19 · distants 16` | `parcouru 255 · distants 215` en **17,3 à 23,5 s** — l'ancienne fenêtre en donnait 8 |
+
+  Ce qui tranche n'est pas l'arithmétique (168,4 tombe entre le zénith 155,8 et
+  l'horizon 180,8 mesurés par les voisins verts) mais un relevé à part : **une
+  dalle privée de son ombre lit 101,3.** Chaque correction est vérifiée ROUGE —
+  `ombres=0` rend 0,98, `maillage=local` rend 216 ms/s pour une barre de 120.
+
+  **Cinq corrigés : l'embarquement.** Les cinq témoins d'avion rendaient `pas
+  aux commandes {}`, sur la branche ET sur `origin/main` rejoué seul, donc sur
+  le code en production. **Marlon n'est pas touché** — page neuve, un clic, aux
+  commandes. La garde de la boucle lisait `montureConduite()`, vrai pour une
+  VOITURE ; et descendre ne suffit pas, une monture SUIT le joueur. Quatre bras
+  mesurés : neuve 1 clic ✓ · sans remède 0 clic ✗ · descente seule 8 clics ✗ ·
+  vide complet 1 clic ✓. Les DIX boucles de la suite sont corrigées, pas les
+  quatre qui rougissaient.
+
+  **Les six rouges restants, chacun attribué par une mesure** (suites rejouées
+  SEULES des deux côtés, arbres séparés, toutes après le recyclage) :
+
+  | rouge | branche seule | `origin/main` seul |
+  | --- | --- | --- |
+  | `maj.js` corps/programmes/fond | ❌ `personnages 8/9` | ❌ **`personnages 8/9`** — identique |
+  | `maj.js` la page ne floute rien | ✅ | ✅ — rouge SEULEMENT sous la charge du portail |
+  | `manhattan.js:282` délai | 💥 | v269 : identique sur `origin/main` au 3ᵉ passage |
+  | `monte.js` l'écran se fige | ❌ 4 433 ms · 37,3 % · 4,1 im/s | ❌ 4 933 ms · 36,4 % · 4,0 im/s |
+  | `monte.js` la voiture contre un mur | ❌ | ❌ identique |
+  | `monte.js` le passant marche | ❌ débit 0,57 | ✅ 0,99 |
+
+  **Le passant est UN POINT ABERRANT SUR NEUF, et c'est la mesure qui le dit** :
+  0,57 · 0,99 · 1,26 · 1,27 · 1,29 · 1,32 · 1,37 · 1,40 · 1,48 pour une barre à
+  0,80, sur neuf passages dont aucun ne touche `passants.js` ni `marlon.js`. Huit
+  sur neuf sont à 0,99 ou au-dessus. Ce n'est pas une barre posée dans l'étendue
+  (le piège de la v277) : c'est une queue de distribution, et elle se remesurera.
+
+  **Et `reglages.js` est VERT au portail de la v284**, après avoir été rouge aux
+  deux précédents — son rouge de « l'autre tablette » était donc lui aussi une
+  intermittence, pas un défaut.
+
+  **Ce qui reste à faire, et qui n'est PAS mesuré** : pourquoi le recyclage du
+  conteneur change ce que la suite laisse derrière elle. Le fait est net —
+  quatre passages verts avant, deux rouges après, sur du code identique — la
+  cause ne l'est pas. Le remède posé ne dépend d'aucune hypothèse là-dessus :
+  chaque témoin se place lui-même, donc l'état hérité ne peut plus le tromper.
+
+- [ ] **`monte.js` : DEUX ROUGES NEUFS, ATTRIBUÉS ET UN CORRIGÉ (v282).** Les
+  portails ayant tourné dans la même configuration sur la même machine, la
+  double mesure de la v195 s'est prise sans rejeu, puis chaque suite a été
+  rejouée SEULE des deux côtés.
+
+  | témoin | main (v281) | branche v282 |
+  | --- | --- | --- |
+  | la téléportation ne compile plus de programmes | vert | **corrigé — vert** |
+  | l'écran ne se fige pas en arrivant | ❌ 40,0 % · 35,0 % | ❌ 34,3 % · 42,9 % |
+  | une voiture arrêtée par un mur | ❌ `immobile 0` et `1` | ❌ `immobile 0` · ✅ `immobile 4` |
+  | une voiture n'entre pas dans l'eau | ✅ | ✅ |
+  | les voitures ne se traversent plus | ❌ 42,4 % | ❌ 60 % |
+  | **total, suite rejouée seule** | **137 verts · 7 défauts** | **141 verts · 3 défauts** |
+
+  **La téléportation est corrigée** : sa borne de garde disait `images > 30`
+  quand ce témoin rend 22 à 42 images — relevé sur sept passages, deux portails
+  et deux rejeux seuls des deux côtés. Elle tombait donc six fois sur sept sur
+  sa garde pendant que la mesure gardée était parfaite (`neufs: 0`). Dix est
+  sous la moitié du pire relevé et très loin de zéro, et les quatre autres
+  bornes de garde du fichier ont été relues dans la même passe (0,41 à 0,69 de
+  leur mesure, donc à leur place).
+
+  **Les trois qui restent sont pré-existants et intermittents des DEUX côtés.**
+  Le mur et l'eau sortent de leur boucle sur `immobile >= 4`, quatre relevés de
+  250 ms à moins de 0,02 bloc : à quatre images par seconde deux relevés
+  tombent dans la même image. C'est « un minimum échantillonné est une propriété
+  de la cadence, pas du monde » (v279), et la grandeur se trompe dans les deux
+  sens — le mur n'atteint jamais quatre et court jusqu'à sa borne de 25 s,
+  l'eau les atteignait en cinq secondes alors que la voiture accélérait encore.
+  Ce qui ne dépend d'aucun relevé intermédiaire, c'est la position d'ARRIVÉE ;
+  ces deux verdicts ne la mesurent pas encore. Reste à les reformuler dessus,
+  bornés, la durée entrant dans le message (v270).
+
+- [ ] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Croisé
+  avec les anneaux, le pas de vingt-sept de `superilot` fait perdre un circuit
+  à 43 de ses 65 villes, et 46 n'en gardent qu'UN : deux grands rectangles ne
+  tiennent plus sous les vingt blocs de partage de la v211. Le pas est juste
+  sur le fond — un superîlot EST plus grand — et la contrainte aussi : ce
+  qu'elle mesure est la largeur d'un CARREFOUR (la chaussée, 5,6 blocs), pas la
+  taille de l'îlot, donc elle n'a pas à suivre le pas. La longueur de rue qui
+  porte un convoi ne bouge pourtant que d'un dixième de pour cent (159 133 →
+  158 974) : ce qui se perd, c'est la VARIÉTÉ des trajets dans ces
+  quarante-six villes. Piste non mesurée : une contrainte de partage exprimée
+  en FRACTION du périmètre de l'anneau plutôt qu'en blocs absolus.
+
+- [ ] **J'AI MODIFIÉ `src/` PENDANT QU'UN PORTAIL TOURNAIT (v282).** La règle de
+  survie du banc est écrite depuis toujours et je l'ai enfreinte en corrigeant
+  le jeu pendant que le portail jouait `washington.js` : la fin de ce portail a
+  mesuré un arbre à moitié changé, et il a fallu le tuer et le reprendre. Une
+  SONDE se lance pendant un portail ; une CORRECTION attend qu'il rende la
+  machine. (Et `node tout.js --suites <fichier>` n'existe pas : `tout.js` ne
+  connaît que `--depuis-zero`, `--voie`, `--long` et `--malgre-fumee`, donc le
+  drapeau est ignoré EN SILENCE et le portail entier se lance. Pour jouer une
+  suite seule, c'est `node carteMonde.js` — ou `npm run carte`, `monte`,
+  `reseau`… Un drapeau inventé ne rend pas d'erreur : on le vérifie dans
+  `tout.js` avant de croire qu'on a lancé une suite.)
+
+- [ ] **L'ARCADE EXISTE, MAIS ELLE NE SE PHOTOGRAPHIE PAS (v282).** Le témoin
+  compte les colonnes de lot où le bâtisseur ne pose rien à hauteur d'homme —
+  23,7 % à Bologne, 24,7 % à Turin, zéro à Zurich et à Copenhague — et c'est
+  vrai. Mais un COMPTE de colonnes dégagées ne dit rien de la CONTINUITÉ, et
+  c'est la continuité qui fait une galerie. Mesuré dans l'axe de la trame : la
+  plus longue file fait **cinq colonnes à Bologne, sept à Turin**, sur 1 026 et
+  1 402 colonnes dégagées. C'est la longueur d'un front de lot, ce qui est
+  cohérent — les lots sont séparés par une rue tous les vingt-trois blocs — mais
+  ce n'est pas les quarante kilomètres de portiques de la vraie Bologne, et sur
+  une capture au niveau de la rue on ne reconnaît pas une arcade. Max juge au
+  premier regard : tant que ce n'est pas une galerie, le journal doit dire « des
+  arcades », jamais « on marche sous les arcades de Bologne ».
+
+  Le remède est un choix de PLAN, pas un réglage : il faut que le portique
+  coure sur tout le front du lot ET que les fronts se rejoignent d'un lot à
+  l'autre. Piste non mesurée : poser le portique sur le rang entier du côté
+  rue, et rapprocher les lots des carrefours.
+
+  **Et la sonde s'est trompée d'axe avant de le voir** : mesurée le long des
+  axes du MONDE, la plus longue file valait trois colonnes partout, exactement —
+  le signe qu'on traverse en biais une bande de 1,15 bloc dans une trame TOURNÉE.
+  Une mesure de continuité se fait dans l'axe de la chose, jamais dans celui de
+  la grille de coordonnées.
+
+
 - **Personnages et véhicules v241 :** compléter la variété des anatomies et vêtements, les expressions faciales et la validation Safari/iPad physique. Les costumes historiques et plusieurs voitures du catalogue restent plus simples ; ne pas les présenter comme photoréalistes.
 
-- **Les avions ont perdu leur rapport de vitesse réel (v229).** Le plafond du
-  chargement du monde est 110 blocs/s ; les vitesses sont donc 95 (avion de
-  ligne) et 110 (Concorde, chasseur), soit un rapport de 1,16 au lieu du 1 à
-  2,4 du réel. Décision de Max, « tout le monde autour de cent ». Pour le
-  reprendre il faut mailler plus vite : 45 % du coût est la génération du
-  relief (`fbm`, `terrainHeight`, `treeAt`, `cityAt`), qui est le chemin le
-  plus chaud du jeu et voisin de l'invariant 1 — donc un chantier à part, avec
-  sa double empreinte.
+- **Les avions ont repris une partie de leur rapport de vitesse (v229 →
+  v265).** La v229 écrivait que le seul moyen de reprendre le rapport était
+  de mailler plus vite ; c'est fait à moitié. La file du mailleur est passée
+  de huit morceaux d'avance à seize (`EN_ATTENTE_MAX`, main.js — le genou
+  mesuré : le débit de pointe double, la cadence ne bouge pas), le plateau
+  remesuré est à 160 blocs/s au lieu de 110, et les vitesses sont désormais
+  120 (avion de ligne) et 160 (Concorde, chasseur) : rapport 1,33 au lieu de
+  1,16. **Le réel est à 2,4 et reste hors de portée**, et la piste n'a pas
+  changé : 45 % du coût d'un morceau est la génération du relief (`fbm`,
+  `terrainHeight`, `treeAt`, `cityAt`), le chemin le plus chaud du jeu et
+  voisin de l'invariant 1 — donc un chantier à part, avec sa double
+  empreinte. Au-delà du genou, le goulot n'est plus le mailleur mais le fil
+  principal, qui INSTALLE les géométries : un pool de mailleurs a été écrit,
+  mesuré et retiré (non-résultat, voir `CLAUDE.md`).
 
 **Pourquoi ce fichier est dans le dépôt.** La liste de tâches de la session vit
 dans le conteneur, et le conteneur a été recyclé sept fois en deux jours. Deux
@@ -22,7 +399,1680 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 
 ---
 
+
+## v290 — Le palier mesurait la période de l'écran (corrigé, à confirmer sur l'appareil)
+
+Capture `?diag=1` de Max, iPad : « → **bas** (morceau 37,0 ms ou image 17,0 ms
+au-delà de 63 / 16,7) au prochain lancement ». La v284 classait l'appareil sur
+`now - lastTime`, qui sous vsync vaut la période de rafraîchissement — 1000/59 =
+16,95 ms. Corrigé en v290 : on mesure le TRAVAIL d'une image, et la clé de
+rangement passe en `web-minecraft-palier-v2` pour que le verdict déjà écrit sur
+son iPad n'y survive pas.
+
+**Ce qui reste à mesurer, sur SON appareil, pas au banc.**
+
+- `?diag=1` après une partie de trente secondes : le palier qu'il obtient
+  désormais, et les deux nombres (travail et période) que la ligne affiche. Son
+  morceau valait **37,0 ms**, ce qui le place entre les deux barres (25 et 63) :
+  le palier dépend donc entièrement du travail, qui n'a jamais été mesuré chez
+  lui.
+- Et le fait le plus parlant de ses deux captures reste non expliqué : **treize
+  appels de dessin en vol, quatre au sol**, 33k triangles, 28 à 56 morceaux
+  chargés. Ce n'est pas un appareil qui peine, c'est un monde qu'on ne lui
+  demande pas. Si le palier le classe `moyen`, il faudra chercher pourquoi si
+  peu de morceaux arrivent devant lui — le maillage, pas le rendu.
+**LA DETTE DES PIXELS ET DES OMBRES EST PAYÉE — la mesure existe.** Max a mis
+« Graphismes avancés » et renvoyé `?diag=1` : `dpr 2.00 (2360×1376) · ombres ON`,
+**59 i/s, pire image 84 ms, 14 appels**, contre 79 et 75 ms à `dpr 1,25` sans
+ombres. 2,56 fois la surface plus une passe d'ombres entière coûtent cinq
+millisecondes sur la pire image. Ce n'est PAS entré dans la table du palier, et
+la raison est écrite dans `palier.js` : ces chiffres sont relevés à rr 12 / file
+8, que le palier `haut` change aussi.
+
+**ET LA MÊME CAPTURE DONNE LE VRAI PLAFOND : `morceau 37,0 ms`.** Un seul
+mailleur rend donc 27 morceaux par seconde, quand voler à 95 blocs/s à rr 12 en
+réclame 142 (`2 × rr × v / 16`, v229/v237). Cinq fois trop peu — c'est
+exactement « le unveil est late » de la v284, chiffré sur l'appareil pour la
+première fois, et ses 14 appels de dessin le disent par l'autre bout.
+
+- **À mesurer sur SON appareil, dans cet ordre.** (1) Le `travail` qu'affiche
+  désormais `?diag=1` après trente secondes de jeu, qui décide son palier. (2)
+  Deux mailleurs : la v265 les a mesurés sans effet **au banc, en rendu
+  logiciel**, où le fil principal saturait à installer les géométries ; chez Max
+  le fil principal est vide (résolution doublée gratuite). Un non-résultat ne
+  vaut que dans les conditions où il a été mesuré. (3) Ce que coûtent les 37 ms —
+  génération du relief (45 % du coût, v229) contre maillage.
+
+**ET L'ÉTENDUE EST DÉSORMAIS UN RÉGLAGE, ce qui change ce qu'on attend de la
+mesure.** Max : « permets-moi de choisir l'étendue des graphismes as a user si tu
+sais pas la calibrer toi. » Quatre choix dans ⚙️ Réglages (Auto · Court · Normal ·
+Loin), `auto` par défaut. Deux conséquences pour la suite :
+
+- Les mesures ci-dessus restent à faire, mais elles ne BLOQUENT plus rien : Max
+  peut déjà mettre « Loin » et juger sur captures ce que son iPhone rend à `rr
+  16`, file 16, HD 6 morceaux. **C'est la mesure la plus utile qu'il puisse
+  faire**, parce qu'elle répond à sa question d'origine — « tu pourrais
+  certainement utiliser des graphismes à haute fidélité » — par une capture au
+  lieu d'un raisonnement.
+- Sous une étendue choisie, le jeu mesure et NE RANGE PAS (règle de la v284).
+  `?diag=1` le dit (« mesuré, non rangé »). Pour obtenir un classement il faut
+  donc repasser en « Auto » — et c'est voulu.
+
+## VOIR LE SOL DE PLUS PRÈS EN VOL — `PAS_HORIZON` N'A JAMAIS ÉTÉ MESURÉ SUR UN VRAI GPU
+
+Max, iPhone 18 Pro, v286 : « les graphismes ne sont pas terribles, là où tu
+pourrais certainement utiliser des graphismes à haute fidélité **pour voir le
+sol** ». Le paysage lointain (`horizon.js`) échantillonne `terrainHeight` tous les
+`PAS_HORIZON = 8` blocs : de haut, le sol est une nappe à mailles de huit blocs.
+L'étendue « Loin » le pousse plus loin (848 blocs au lieu de 634) mais pas plus
+FIN.
+
+Ce qu'on sait, et ce qu'on ne sait pas :
+
+- Passer le pas de 8 à 4 **quadruple** le nombre de colonnes (25 921 → ~103 000)
+  et donc le coût de `terrainHeight`, qui vaut 120 ms pour la nappe entière —
+  soit ~480 ms, sur le FIL PRINCIPAL. Ce chiffre-là se transpose : c'est du
+  calcul, pas du remplissage.
+- Ce qui NE se transpose pas, et qui est la raison pour laquelle la v237 n'a rien
+  conclu : le coût de RENDU. Elle a mesuré « ce n'est pas des triangles, c'est de
+  la surface » **en rendu logiciel** (SwiftShader paie le remplissage au
+  processeur). Sur un vrai GPU une nappe de 100 000 triangles n'est rien.
+- Donc la question ouverte est unique et précise : **peut-on calculer la nappe
+  fine ailleurs que sur le fil principal ?** Le worker de maillage a déjà le
+  monde jumeau et `terrainHeight` est pure — c'est la même recette que la v251.
+  Sans cela, un pas de 4 rendrait un à-coup de un demi-seconde à chaque
+  défilement de nappe, ce qui est précisément la panne que la v286 vient de
+  corriger ailleurs.
+
+Étapes : (1) chronométrer `terrainHeight` sur la nappe, pas par pas, à 8 · 6 · 4 ;
+(2) capture au sol et en vol à chaque pas, pour savoir si Max voit la différence
+— si le pas de 6 suffit, le coût est ×1,8 et non ×4 ; (3) si le coût mord,
+déplacer la nappe dans le worker. Ne PAS mettre `PAS_HORIZON` dans la table du
+palier avant (1) et (2) : un champ dont on ignore le prix est un réglage de
+banc.
+
+## LES TROIS ROUGES DU PORTAIL DE LA v290 — mesurés, aucun causé par la livraison
+
+Portail joué deux fois sur la branche, `maj.js` rejouée seule deux fois sur
+`origin/main` dans un arbre détaché. Quatre suites vertes à chaque passage
+(`fumee`+`parishd`, `carte`, `washington`, `reglages`) ; trois rouges, et voici
+ce que chacun vaut.
+
+**1. « pendant l'installation, le loader dit combien de fichiers sont rangés »
+(`maj.js`) — INTERMITTENT, même distribution des deux côtés.** C'est la preuve
+que la v269 exige, et elle est complète :
+
+| passage | côté | verdict |
+| --- | --- | --- |
+| `maj.js` seule, 1 | `origin/main` | ❌ |
+| `maj.js` seule, 2 | `origin/main` | ✅ |
+| portail 1 | branche | ✅ |
+| portail 2 | branche | ❌ |
+
+Un rouge et un vert de CHAQUE côté : la livraison n'y est pour rien. Ce qu'il
+lit est une suite de textes de loader pendant une installation qui prend moins
+d'une seconde au banc — il attrape « Chargement du monde… » au lieu des
+« 📦 Mise à jour du jeu… n / 97 fichiers ». **La piste est un échantillonnage
+trop lent pour la fenêtre qu'il observe**, la famille de la v274 (« une fenêtre
+de mesure se pose sur la grandeur mesurée ») ; à reprendre en attendant le
+RÉSULTAT — un texte de progression vu — borné, au lieu d'échantillonner.
+
+**2. « l'écran ne se fige pas en arrivant sur une ville » (`monte.js`) — dette
+déjà déclarée, et la couche HD de la v287 l'a alourdie.** Relevés : v284
+4 250 ms / 42,4 % · v286 4 917 / 38,6 · portail 1 ici 3 600 / 38,1 · portail 2
+3 967 / 41,7. La même famille, sur un code d'arrivée en ville que cette
+livraison ne touche pas. Ce qui a changé sous elle, c'est que Paris porte
+désormais une seconde passe de mailleur (facadeshd.js, v287-v289) : la mesure à
+refaire est celle de `?hd=0` contre `?hd=3` à l'arrivée, sur la branche de la
+couche HD, pas ici.
+
+**3. `manhattan.js` — trois à quatre rouges, la famille des 0,4 image par
+seconde.** « le trou enlève aussi la géométrie visible de la façade »
+(11 684 → 51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
+ombres suivent le soleil et la lune visibles » (±1,0000000000000002 — une
+comparaison de flottants sans tolérance), « le taxi roule avec les contrôles
+tactiles ». La v259 a mesuré que **Manhattan tourne à 0,4 image par seconde sur
+ce banc, sur l'ancien code comme sur le neuf**, et que les témoins qui lisent un
+effet « 350 ms après » y sont un pile ou face. Le rouge des ombres, lui, n'est
+pas une intermittence : `1.0000000000000002 > 1` est un défaut d'ÉPSILON dans le
+témoin, à corriger d'une ligne — il ne dépend d'aucune cadence et il rougira
+toujours.
+
+**Aucun de ces rouges ne touche `src/palier.js`, `src/main.js` (chemin du
+palier), `index.html` ni les dix témoins de la livraison**, qui sont verts sur la
+branche et rouges sur le code de production, mesurés.
+
+## LE PALIER « BAS » DE LA v284 EST LE SEUL QUE RIEN N'A MESURÉ
+
+Ses chiffres — `rr: 8`, `file: 6` — sont RAISONNÉS, pas relevés. La v269 a mesuré
+la file à 4, 8, 12 et 16 sur l'iPad de quatre ans (8 est le confort : 66 blocs de
+trou, 0 % d'images au-delà de 300 ms ; 4 en donne 36 et 1,3 %), jamais 6 — et
+aucun appareil de la famille n'est plus lent que celui-là, donc il n'y avait rien
+sur quoi mesurer.
+
+**Le risque nommé** : à `file: 6` et `rr: 8`, le trou devant soi devrait tomber
+vers cinquante blocs par interpolation, pour une barre de témoin à `max / 2` =
+47,5 (jets à 95). Deux blocs et demi de marge — exactement le cas que la v269
+refusait à 130 blocs par seconde (« il ne resterait que trois blocs de marge et
+le témoin battrait »). Le banc ne le verra jamais : il ne range aucun palier
+(`seRange` faux, sa configuration est forcée), donc `monte.js` tourne toujours à
+`file: 8`.
+
+**À faire quand une tablette y tombera** : `?palier=bas&diag=1` sur l'appareil,
+relever le trou devant soi et la part d'images au-delà de 300 ms, et remonter la
+file à 8 si le trou passe sous la barre. Le palier ne s'applique qu'à un appareil
+que la mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon
+pire — c'est ce qui rend l'inconnue acceptable, pas le fait de l'ignorer.
+
+---
+
+## LE PORTAIL DES RAILS (v281) : SEPT SUITES ROUGES, ET CE QU'ELLES SONT
+
+Huit suites vertes, sept rouges, `reseau.js` VERTE cette fois — elle en avait
+six au portail des pistes. Elle change de rouges d'un passage à l'autre, et
+c'est une raison de plus de rejouer seul des deux côtés plutôt que de comparer
+deux portails.
+
+| suite | rouge | ce que c'est |
+| --- | --- | --- |
+| `carteMonde.js` | 1 — les dix-huit gares | **À MOI**, corrigé : le témoin écrivait ses cotes. 18/18 après, vert seul |
+| `carte.js` | 💥 en ouvrant sa 4e page | **cause mesurée et corrigée** : la page laissée ouverte. ×3 plus vite |
+| `sauvegarde.js` | 2 — la copie d'avant le monde ×2, sur le NUAGE | vert seul des DEUX côtés → charge de portail |
+| `maj.js` | 1 — fond de carte pas prêt à la libération | dette déclarée de la v276 |
+| `washington.js` | 3 — le métro (une seule cause) | rouge de CHARGE déjà déclaré : vert DEUX FOIS rejoué seul, « 18 m en 6 s de jeu » |
+| `manhattan.js` | 💥 délai ligne 282 | intermittence mesurée trois fois sur `origin/main` (v269) |
+| `monte.js` | 3 (contre 10 sur main) | les sept fermés le sont par la v279. Voir plus bas |
+
+**ET `washington.js` PASSE DE CINQ ROUGES À TROIS** : ma correction du témoin de
+l'escalier (il constate l'avance, pas la descente) en a fermé deux. Les trois
+qui restent sont UNE seule cause — aucune rame à portée d'embarquement — et le
+champ `texte` du témoin ne peut PAS la distinguer de « rien à portée » :
+`majBoutonBord` écrit `${v ? v.emoji : '🚇'} Monter à bord`, et l'emoji par
+défaut d'un convoi de métro EST 🚇. Le texte est donc le même dans les deux cas.
+Ce qui tranche est `display`, posé à `none` seulement quand rien n'est là.
+J'ai d'abord lu ce message à l'envers — « le texte nomme le métro, donc la rame
+est venue » — et c'est « compter un motif n'est pas compter la chose » (v224),
+appliqué au champ de message d'un témoin.
+
+**LES TROIS QUI RESTENT DE `monte.js`.**
+
+- « les voitures ne se traversent plus » — 95 sur 224 paires (42,4 %). C'est le
+  TIRAGE déclaré en v277 : il varie de 0 à 53 sans qu'une ligne du jeu ait
+  bougé, et sa barre (45) tombe DANS son étendue. Mais **95 est presque le
+  double du pire jamais relevé**, et cela vaut d'être noté : c'est exactement la
+  panne que la correction du télescopage vise, avec un témoin qui mesure une
+  BORNE garantie par la géométrie au lieu d'un compte d'instants.
+- « l'écran ne se fige pas en arrivant sur une ville » — 40 % du temps au-delà
+  de 300 ms ici contre 43,1 % en référence : la même grandeur stable. La pire
+  image (6 083 contre 4 633) est par construction la statistique la moins
+  fiable (v276).
+- « une voiture arrêtée par un mur n'annonce plus de vitesse » — 12,16 contre le
+  mur, **identique au bit près** à la référence.
+
+## v282 — ce que la passe de tissu et de fleuves laisse ouvert
+
+- **San Jose n'a aucun anneau de circulation, et ce n'est pas l'eau.** Mesuré :
+  252 candidats sur 357 sortent de son disque, sa trame de 27×21 étant trop
+  grossière pour un rayon de 47 ; le meilleur candidat restant est mouillé sur
+  onze points de quarante. C'était déjà vrai avant cette livraison. C'est une
+  dette de TISSU — lui donner une trame plus fine, ou un rayon à sa taille — et
+  elle est NOMMÉE dans le témoin (`DETTE_SANS_ANNEAU`) pour qu'aucune autre ville
+  ne la rejoigne en silence.
+- **`tracesCirculation` passe de 199 à 283 ms au démarrage**, derrière le bouton
+  grisé (v258, borné à 45 s). Le poste est le parcours au bloc des côtés mouillés.
+  Non urgent, mesuré, déclaré.
+- **Le mailleur paie une fois par ville le choix de ses anneaux** — 16,4 ms au
+  pire (Seattle), contre 24 ms pour un morceau de ville. À remesurer si le nombre
+  de candidats augmente.
+- **Les six villes bâties à la main n'ont pas reçu les tissus.** Paris, Londres,
+  Nice, Lille, Washington, San Francisco ont leur plan relevé sur de vrais plans :
+  le tissu ne leur apporterait rien. Mais le cœur d'îlot, lui, leur manque —
+  elles sont bâties d'un bord à l'autre de leurs lots. Passe à part.
+- **Les ponts des villes engendrées n'ont ni garde-corps ajouré ni arche.** Le
+  tablier est plein, les parapets sont deux bandes de pierre, les piles des
+  colonnes tous les sept blocs. Ça se reconnaît comme un pont ; ça ne ressemble
+  pas encore au Mittlere Brücke. À juger en capture avec Max.
+
+---
+
+## LE PORTAIL DE LA v283 : NEUF ROUGES, ET CE QUE LA DOUBLE MESURE EN DIT
+
+Quinze suites, soixante-quinze minutes, **quatre suites qui étaient rouges aux
+portails précédents sont vertes** — `washington.js` (la rame du métro emmène
+enfin l'enfant), `carte.js`, `carteMonde.js` et `realisme.js`, qui prouve la
+correction de la façade (rouge sur le code de production : neuf trajectoires sur
+seize au-dessus de 2,5 blocs, la plus haute à **7,03 blocs**).
+
+### Rejoués SEULS sur `origin/main` (v282), dans un arbre séparé
+
+| témoin | branche (portail v283) | `main` (seule) |
+| --- | --- | --- |
+| `reglages.js` — la langue que l'autre tablette défait | ❌ 20 s, serveur `"fr"` | ❌ **20 s, serveur `"fr"`** |
+| `reglages.js` — « elle s'aligne même dessus » | ✅ | ❌ **45 s, `fr`** |
+| `monte.js` — l'écran ne se fige pas en arrivant sur une ville | ❌ pire image **4 917 ms**, 34,8 % > 300 ms, cadence 4,3 | ❌ pire image **4 616 ms**, 34,3 %, cadence 4,3 |
+
+Le premier est identique au bit près. Le second est rouge sur `main` et VERT sur
+la branche : `main` en a un de PLUS, et les deux sont de la même famille — la
+langue que le parent règle et que la seconde tablette repousse. Le troisième est
+le plus intéressant pour la famille : **une image de quatre secondes et demie, un
+tiers du temps au-delà de trois cents millisecondes**, à l'arrivée dans une
+ville. C'est mot pour mot ce que Max décrit depuis des versions, et ce n'est pas
+une intermittence — quatre portails et une mesure solo, tous entre 4 333 et
+6 083 ms.
+
+### Un TIRAGE, et sa cause est maintenant MESURÉE
+
+`monte.js` — « les voitures ne se traversent plus ». La v277 avait écrit que ce
+témoin varie sans qu'une ligne du jeu bouge et que sa barre tombe dans son
+étendue naturelle, en laissant la cause « plausible et NON mesurée ». Elle l'est :
+
+| passage | code | taux |
+| --- | --- | --- |
+| portail v282b | v282 | **3,6 %** ✅ |
+| **`main`, seule** | **v282** | **41,4 %** ❌ |
+| portail villes | villes | 27,7 % ✅ |
+| portail rails | rails | 42,4 % ❌ |
+| portail v283 | v283 | 13,9 % ✅ |
+
+**Le même code — v282 — rend 3,6 % dans un portail et 41,4 % tout seul.** Onze
+fois, et dans le sens contraire à l'intuition. Le compte est absolu sur une
+fenêtre de MONTRE : plus le jeu tourne vite, plus de temps de JEU passe, plus les
+voitures roulent, plus elles ont d'occasions de se croiser — `maxVues` 21 → 26,
+`paires` 151 → 227, et le taux triple par-dessus. **Le remède est de compter par
+temps de JEU, ou de compter une PROPORTION à distance constante**, pas un total
+sur trente secondes de montre.
+
+Et il ne dit RIEN de la correction du télescopage de la v283 : ce qui la prouve,
+c'est son propre témoin, `minTrace: 4.4` sur **2 778 paires** — un minimum que la
+géométrie garantit, qui ne dépend d'aucune cadence, et dont le champ n'existe pas
+sur l'ancien code.
+
+### Un rouge de CHARGE, et le témoin à reprendre
+
+`monte.js` — « une voiture arrêtée par un mur n'annonce plus de vitesse ». Vert
+sur `main` seule (`vitesse 0`, `x 28.9`), rouge au portail de la v283
+(`vitesse 12.16`, `x 27.1`, `immobile 0`, **`arret 25104`**) — et rouge aussi aux
+portails des villes et des rails, qui ne portent PAS la correction de convoi de
+la v283. Cinq configurations, trois rouges, deux verts, des deux côtés du
+changement : une intermittence de charge, pas une régression (v269, v251).
+
+**Et le témoin confond deux choses.** `arret 25104` dit qu'il a attendu ses
+vingt-cinq secondes ; `immobile 0` ne distingue pas « la voiture ne s'arrête
+jamais » de « elle n'a jamais ATTEINT le mur » — à trois images par seconde,
+c'est le second. Il doit d'abord vérifier qu'elle est arrivée, PUIS mesurer
+qu'elle s'arrête : `null` n'est pas un verdict, c'est une absence de mesure
+(v272).
+
+### Anciens, par inspection et par historique
+
+- `sauvegarde.js` ×2 (la copie d'avant le monde) — rouges au portail des rails
+  aussi ; la v283 ne touche ni `sync.js` ni `cloud.js`.
+- `maj.js` (le fond de carte à la libération) — rouge sur **cinq** portails
+  d'affilée, avec la même forme.
+- `manhattan.js` (le délai de la ligne 282) — déjà démonté 3/3 des deux côtés.
+- `reseau.js` ×2 — la double mesure est faite, voir juste en dessous. Et **deux
+  des quatre rouges de production ont disparu** : « Alice retrouve son monde
+  après une veille sans retour » est VERTE, ainsi que « la reprise tient dans la
+  durée » et « seule après le départ de l'hôte ». Ce qui reste n'est plus
+  « Alice perd son monde » mais **deux compteurs de joueurs qui divergent** au
+  départ de quelqu'un et au réveil.
+
+---
+
+## DEUX ROUGES RÉSEAU DE PLUS, IDENTIQUES AU BIT PRÈS SUR `origin/main`
+
+Trouvés au portail des pistes, et c'est la référence qui les a rendus visibles :
+ils n'étaient PAS dans la liste des vingt, parce que le portail de `main` avait
+rendu ces deux témoins-là verts et quatre AUTRES rouges. **`reseau.js` change de
+rouges d'un passage à l'autre** — raison de plus de rejouer seul des deux côtés
+plutôt que de comparer deux portails.
+
+Rejoués SEULS, dans deux arbres séparés :
+
+```
+branche  ❌ [ 42 s] un départ propre nettoie tout le monde — hôte ["Alice","Nina"] · Alice ["Marlon","Nina"]
+main     ❌ [ 42 s] un départ propre nettoie tout le monde — hôte ["Alice","Nina"] · Alice ["Marlon","Nina"]
+
+branche  ❌ [ 26 s] un joueur endormi n'est pas éjecté — compteur 3, [Alice dodo, Nina éveillée]
+main     ❌ [ 26 s] un joueur endormi n'est pas éjecté — compteur 3, [Alice dodo, Nina éveillée]
+```
+
+Mêmes durées, mêmes listes, même ordre. **Ce que ça coûte à la famille est
+clair : Nina quitte la partie et reste dans la liste des deux autres.** Quand
+trois enfants jouent et que l'un s'en va, les deux qui restent voient un fantôme.
+
+C'est la famille de la v219 (« ce qui s'arrête s'annonce, cela ne s'attend pas
+d'un événement de transport ») et de la v266 (« le silence ne prouve le départ
+que d'un pair qu'on ne peut pas sonder »). Les deux ont corrigé un bout de ce
+chemin ; celui-ci reste, et le SCÉNARIO À TROIS est ce qui les réunit — les deux
+rouges impliquent un troisième joueur. À démonter par une sonde PAR QUESTION,
+comme la v266 : le message de départ part-il ? arrive-t-il ? est-il lu ?
+
+**ET DEUX AUTRES ROUGES HORS RÉFÉRENCE SE SONT DÉMONTÉS, dont une hypothèse de
+moi qui était fausse.** `reglages.js` (« l'autre tablette ne le défait pas »,
+« elle s'aligne même dessus ») est **VERTE des deux côtés rejouée seule**, aux
+mêmes valeurs — la charge du banc, la fragilité que ce témoin documente
+lui-même. Et l'explication que j'avais avancée pour elle — « les pistes
+allongées alourdissent la génération du monde, donc ralentissent les pages » —
+est **fausse, et mesurée** : un morceau de monde coûte **4,36 ms des deux côtés**
+autour de Paris, au centième près. Une explication commode qu'on ne mesure pas
+est une dette, pas un diagnostic (v220), et c'était la troisième fois de la
+journée.
+
+## UN CONVOI SE TÉLESCOPE : la panne que Max signale depuis la v244, mesurée
+
+**Max l'a dite deux fois** — « évite que les voitures puissent se chevaucher »
+(v244), puis « les voitures passent les unes sur les autres » (v245). Les deux
+livraisons ont corrigé quelque chose de réel et laissé ceci, qui est la cause
+principale, et qu'aucun témoin ne pouvait voir parce que le témoin comptait la
+mauvaise grandeur.
+
+**LA MESURE.** Sonde à part, une seule page, un seul code, quatre fenêtres de
+trente secondes en ordre alterné (200 / 800 / 200 / 800 ms d'échantillonnage) au
+centre de Paris :
+
+| passage | pas | taux | enfoncement médian | pire | > 0,8 bloc | même sens |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 200 ms | 10,2 % | **0,11** | 0,96 | 2 / 32 | 15 |
+| 2 | 800 ms | 43,9 % | **1,90** | 2,26 | 68 / 82 | 71 |
+| 3 | 200 ms | 44,9 % | **1,15** | 2,26 | 295 / 408 | 326 |
+| 4 | 800 ms | 34,9 % | **2,25** | 2,26 | 44 / 58 | 44 |
+
+Deux choses s'y lisent, et la seconde est la panne.
+
+**D'ABORD, LE TÉMOIN NE MESURE RIEN.** « Les voitures ne se traversent plus »
+rend un COMPTE d'instants de chevauchement. Au pas identique (passages 1 et 3),
+il va de 10,2 à 44,9 % ; en tout, sur un seul code, de 0,9 à 50,6 % — et les cinq
+valeurs relevées sur les deux arbres (`main` 0,9 · 21,4 ; branche 32 · 39,5 ·
+48,5) tombent dedans. **Ce n'était jamais l'arbre, c'était la DURÉE de la
+session** : `main` était mesuré tôt, la branche après cent quarante autres
+témoins. Sa barre ne peut rien séparer. Il se reformule (voir plus bas).
+
+**ENSUITE, 2,26 BLOC EST LA LARGEUR EXACTE D'UNE VOITURE.** Un enfoncement de
+2,26 veut dire que les deux rectangles se recouvrent ENTIÈREMENT dans leur petite
+dimension : deux voitures au même point, empilées. Le médian passe de 0,11 (des
+frôlements, le bruit de fond d'un pas discret) à 2,25 : à la fin de la session,
+la moitié des chevauchements sont des superpositions complètes, et 326 sur 408
+sont dans le MÊME SENS.
+
+**LE MÉCANISME, lu dans `vehicules.js`.** `dElement(i) = distance − i × ecart −
+retard[i]`, et `retard[i]` grandit tant que `attend[i]` est vrai. Or `attend[i]`
+est posé par `cederLePassage` — un piéton, un feu, un autre convoi — et **rien ne
+dit à une voiture d'attendre celle qui la précède dans son propre convoi**. Quand
+la voiture de tête attend, sa suiveuse continue d'avancer, la rattrape et lui
+passe au travers ; il suffit que `retard[i−1] − retard[i]` atteigne `ecart`. Et
+cela s'ACCUMULE, parce que le retard ne se rembourse qu'à moitié vitesse
+(`pas × 0,5`) : c'est un état absorbant, la forme exacte des poissons de la v233
+et du flâneur de la v279 — entrée banale, pas de sortie.
+
+**LE REMÈDE, à mesurer avant de l'écrire.** Borner le retard d'une suiveuse par
+celui de celle qu'elle suit : garder `dElement(i−1) − dElement(i) ≥ mini`, donc
+`retard[i] ≥ retard[i−1] − ecart + mini`, avec `mini` la longueur d'une voiture
+plus une marge. Cela se pose là où le retard se met à jour, en une ligne — mais
+`mini` se MESURE, et l'effet sur la fluidité du convoi aussi (une file qui
+attend derrière sa tête ne doit pas s'arrêter tout entière pour toujours).
+
+**ET LE TÉMOIN SE REFORMULE SUR LA PROFONDEUR, PAS SUR UN COMPTE.** Un compte
+d'instants près d'un seuil qui vit à un dixième de bloc bascule au moindre
+souffle ; une PROFONDEUR est bornée par la géométrie, et les deux régimes sont
+séparés par deux ordres de grandeur — 0,1 bloc pour un frôlement, 2,26 pour une
+superposition. Le verdict devient « aucune paire ne s'enfonce de plus de X bloc »,
+et X se relève sur du code CORRIGÉ, pas sur celui-ci. La sonde est dans le
+brouillon (`cadence-chevauchements.cjs`) et calcule déjà l'enfoncement par le
+théorème des axes séparateurs.
+
+**Et la v279 n'y est pour rien** : son diff ne touche pas une ligne de
+`vehicules.js` (`src/montures.js`, `src/nouveautes.js`, `src/vie.js` seulement).
+Le mécanisme date de la v244. C'est ce qui autorise sa fusion, et c'est une preuve
+plus forte que « rouge identique sur `origin/main` » : l'instrument est démontré
+incapable de séparer quoi que ce soit.
+
+## VINGT ROUGES MESURÉS SUR `origin/main`, DONC EN PRODUCTION
+
+Portail COMPLET rejoué sur `origin/main` (710ab76), quinze suites, 78 minutes.
+**Aucun de ces vingt défauts ne vient d'une branche en cours** : ils sont dans le
+jeu que la famille utilise. C'est la double mesure que la v195 exige, et c'est
+aussi la référence contre laquelle diffèrent désormais tous les portails de
+branche — un rouge qui est dans cette liste n'est pas le vôtre.
+
+| suite | rouges | ce qu'ils touchent |
+| --- | --- | --- |
+| `monte.js` | 10 | la conduite, l'arrivée en ville, les flammes de réacteur |
+| `washington.js` | 5 | le témoin de l'escalier, pas le métro — voir plus bas |
+| `reseau.js` | 4 + 2 | **Alice ne retrouve pas son monde**, **un joueur qui part reste visible**, **un endormi n'est pas éjecté** |
+| `maj.js` | 1 | le fond de carte n'est pas prêt quand « Jouer » se libère |
+| les onze autres | — | vertes |
+
+**ET DEUX DE CES QUATRE FAMILLES TOUCHENT CE QUE LES ENFANTS FONT VRAIMENT.**
+
+- **~~LE MÉTRO DE WASHINGTON EST INACCESSIBLE~~ — NON, ET C'EST MOI QUI AVAIS
+  TORT.** J'ai écrit et dit à Max que les cinq rouges de `washington.js`
+  signifiaient qu'on ne peut plus prendre le métro. **C'est faux.** Une sonde
+  pure — sans navigateur, en lisant les blocs le long du couloir — rend vingt et
+  un pas praticables de y=34 à y=20, aucune marche de plus d'un bloc, deux blocs
+  d'air d'un bout à l'autre, le quai à 19. L'escalier est sain, et les quatre
+  rouges suivants sont la cascade d'un enfant qui n'est jamais descendu.
+
+  **Le défaut est dans le TÉMOIN, et la sonde l'a nommé** : les six premiers
+  blocs depuis la bouche sont PLATS, par construction (la bouche est à
+  `longueur` du centre, `DEMI_VOUTE` vaut sept). Or le témoin abandonnait après
+  « trois pas sans DESCENDRE », et un pas vaut le quart d'un bloc sur ce banc
+  (v238) : il se déclenchait avant la première marche, quoi que fasse le jeu.
+  Corrigé — on constate « ne plus AVANCER », comme le témoin des portes quinze
+  lignes plus haut, ce qui était déjà la leçon citée et appliquée à la mauvaise
+  grandeur. **Un mur arrête le déplacement ; un palier n'arrête que la
+  descente.**
+
+  Et la leçon de méthode, qui vaut plus que la correction : **j'ai annoncé une
+  panne de production sur la foi d'un témoin, sans mesurer la chose elle-même.**
+  Le dépôt écrit depuis longtemps « avant d'accuser un message, on vérifie qu'il
+  est atteint » et « une explication qu'on n'a pas mesurée est une dette, pas un
+  diagnostic » ; ici c'était un VERDICT qu'il fallait vérifier, et la sonde qui
+  le fait coûtait dix minutes. Ce qui reste à mesurer, honnêtement : si un enfant
+  réel, avec sa boîte de collision et la physique, descend bien ces vingt et un
+  pas. La sonde juge un marcheur idéal.
+- **ALICE NE RETROUVE PAS SON MONDE.** Quatre rouges de `reseau.js` :
+  « Alice retrouve son monde après une veille sans retour — compteur 0 [] », « la
+  reprise tient dans la durée — hôte 2 · Alice 0 », « seule après le départ de
+  l'hôte, et le compteur le dit — compteur 0, avatars [] », « et le jeu continue
+  d'essayer de la reconnecter — null ». C'est le chemin de reprise du jeu à
+  plusieurs, celui qui compte quand deux enfants jouent ensemble et qu'un iPad
+  s'endort. Le code réseau porte déjà la leçon de la v266 (« le silence ne prouve
+  le départ que d'un pair qu'on ne peut pas sonder ») : c'est là qu'il faut
+  regarder, avec une sonde par question comme cette version-là l'a fait.
+
+**Les onze autres sont ci-dessous, par famille.**
+
+## Les dix rouges de `monte.js`, en détail
+
+Portail de référence rejoué seul sur `origin/main` (710ab76), `monte.js` en
+20 min 40 s. **Ces dix-là ne viennent d'aucune branche en cours** : ils sont dans
+le jeu que la famille utilise. Trois familles, et la troisième est une vraie
+régression de fonctionnalité.
+
+**1. La carrure de la voiture, et le piéton — ce que la v279 corrige.**
+
+- « au volant, on s'arrête plus loin du mur qu'à pied » — à pied **8,95** blocs
+  du mur contre 1,1 au volant : le témoin butait sur la CIRCULATION, pas sur le
+  mur. C'est `contreLeMur` (v279), déjà corrigé sur la branche.
+- « une fois descendu, on repasse partout où un piéton passe » — 0,3 contre 8,95,
+  même cause.
+- « la voiture de l'enfant freine devant un piéton » — `voituresRue: 0`,
+  `ecartes: 164`, `traverses: 0`, avance 5,3 : la situation n'a pas eu lieu.
+
+**2. Deux défauts de performance et de physique, à démonter.**
+
+- « l'écran ne se fige pas en arrivant sur une ville » — **pire image 4 633 ms**,
+  43,1 % du temps au-delà de 300 ms, cadence 3,8. La branche v279 rend 4 233 ms
+  et 46,5 % : la même chose, aux deux bouts. C'est l'arrivée en ville sur un
+  rendu logiciel, et ça ne se transpose pas à l'iPad — mais **personne ne l'a
+  mesuré sur la tablette** (`?diag=1`), et c'est ce qu'il faut faire.
+- « une voiture arrêtée par un mur n'annonce plus de vitesse » — **12,16 contre
+  le mur**, reculé 0,55. C'est la correction de la v272 (« on ne borne que ce qui
+  est bloqué ») qui ne mord pas dans ce cas-là : le nez contre le mur, la voiture
+  garde sa consigne. À reprendre avec la sonde de la v272, pas à l'intuition.
+
+**3. LES FLAMMES DE RÉACTEUR NE SORTENT PLUS — régression de la v264.**
+
+C'était une demande de Max en propre : « voir les flammes sortir du réacteur
+quand l'avion se déplace ». Mesuré en production, en VOL (`v: 68,4`) :
+`flammes: [{visible: false, long: 0}, {visible: false, long: 0}]` — les deux
+tuyères éteintes, pleins gaz comme réduits. Et `gaz: null`, ce qui est normal
+depuis la v272 (la manette est un instrument d'avion, la flamme doit alors lire
+la vitesse rapportée à la pointe — c'est écrit dans CLAUDE.md). La piste est donc
+ce repli-là, et elle se MESURE avant de se corriger.
+
+**4. Deux témoins d'avion qui ne montent pas dans l'avion.** « pas aux commandes
+{} » pour 🛞 et pour l'atterrissage manuel, et « à pied, le cadran de cap est
+caché » qui rend `affiche: true` à pied. Trois verdicts qui partagent un état :
+c'est la famille de la v279 (« dans une suite, la situation de départ d'un témoin
+est ce que le témoin d'avant a laissé »). À démonter par une sonde qui dit si
+l'embarquement a eu lieu, pas par une hypothèse.
+
 ## En cours
+
+- [ ] **LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
+  déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
+  dans un site URBAIN — New York est le seul — le drapeau reste faux, donc
+  `Habitant.promene()` rend faux et les passants y gardent l'ancien programme
+  (pause longue, cap au hasard autour d'un poste). Ce n'est pas un oubli
+  arbitraire : leur trottoir ne se lit pas dans des blocs mais dans le PLAN
+  (`piedPieton`, `ruePietonne`), et l'ancienne branche de `think` sait déjà
+  l'interroger. Ce qui manque, c'est de porter la marche au long cap sur cette
+  lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
+  mesurent la ville que le banc peuple, qui n'est pas Manhattan.
+
+- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
+  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
+  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
+  loin ou trop près, c'est une ligne de `montures.js`
+  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
+  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
+  demande portait sur la voiture.
+
+- [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
+  MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
+  deux côtés (`/root/main-ref` détaché sur 710ab76, la branche dans l'arbre
+  principal), la règle de la v195.
+
+  | rouge | branche (portail) | `origin/main`, seul |
+  | --- | --- | --- |
+  | le trou enlève la géométrie visible de la façade | 9 203 → 51 734 | **17 102 → 54 969** |
+  | fenêtres et éclairage public la nuit | rouge | **rouge** |
+  | les ombres suivent le soleil et la lune | `[1,-1]` | **`[1,-1]`, à l'identique** |
+  | le taxi roule avec les contrôles tactiles | rouge | **la suite meurt là** (`#ride-btn` caché, 18 relevés, ligne 416) |
+  | les deux clients sans erreur de jeu (`PeerJS: Lost connection`) | rouge | **pas atteint** |
+
+  Les trois premiers étaient DÉJÀ déclarés en v278 contre `d9852ac` ; ils se
+  reproduisent ici contre `710ab76`, donc ils sont en production depuis au moins
+  la v277 et rien de la v279 ne les cause. Le taxi est NEUF dans la déclaration,
+  et c'est `origin/main` qui l'a rendu : le bouton reste caché, ce qui veut dire
+  que la voiture invoquée n'est pas à portée d'embarquement — pas que le taxi ne
+  roule pas.
+
+  **ET LE PASSAGE SUR LA BRANCHE N'A RIEN PROUVÉ, CE QU'IL FAUT DIRE.** Il est
+  mort au bout de QUATORZE verdicts sur `page.waitForFunction` à la ligne 282 —
+  le délai que la v269 a déjà nommé, mot pour mot, dans ce même fichier. Ses
+  « zéro rouge » ne sont donc pas un vert : la suite n'a jamais atteint les
+  témoins de contenu. C'est exactement ce que la v269 décrivait (« la suite
+  s'arrêtant plus tôt quand le délai tombe, elle ne les atteint pas toujours »),
+  et la conséquence est que **la double mesure de cette suite se fait sur
+  plusieurs passages par côté, jamais sur un**. Reste à faire : deux passages de
+  plus sur la branche pour voir les trois rouges de contenu s'y reproduire, et
+  un passage de `manhattan.js` qui atteigne le témoin PeerJS des deux côtés.
+
+- [ ] **LES CINQ ROUGES DU PORTAIL DE LA v278, MESURÉS UN PAR UN — AUCUN N'EST
+  DE LA LIVRAISON.** La PR ayant été fusionnée avant la fin du portail, la
+  question n'était plus « faut-il fusionner » mais « ai-je cassé quelque chose
+  qui tourne MAINTENANT chez les enfants ». Chaque suite a donc été rejouée
+  SEULE, contre `d9852ac` (la v277, avant la fusion) et contre la branche.
+
+  | rouge | seule sur la v277 | seule sur la branche | ce que c'est |
+  | --- | --- | --- | --- |
+  | `manhattan.js` — trou de façade, fenêtres de nuit, ombres | **les 3 mêmes** (`11684 → 51734`, `[1,-1]`) | — | déjà en production |
+  | `maj.js` — fond de carte pas prêt à la libération | **présent** (`carte: false`, `cartePas: 9`, 45,8 s) | — | dette de la v276, toujours ouverte |
+  | `maj.js` — badge et journal des nouveautés | vert | vert | **le seul qui était à moi** : `CACHE_VERSION` resté à v277, corrigé en #282 |
+  | `washington.js` — le métro (3 témoins) | vert (18 m en 6 s de jeu) | **vert deux fois** | rouge de CHARGE de portail |
+  | `carte.js` — un appui long dépose n'importe où | vert | **vert** | rouge de CHARGE, dette de la v258 |
+  | `monte.js` — l'écran se fige en arrivant sur une ville | **40,8 % · cadence 4,9** | portail : 39,1 % · 4,4 | même distribution, pré-existant |
+
+  **Et `monte.js` sur la v277 a rendu un rouge que le portail n'a PAS rendu** —
+  « un passant lancé sur la voiture de l'enfant s'arrête et la contourne »
+  (9 départs, 110 relevés, 0 traversée, 3 qui bougent). Un témoin qui va et
+  vient sans qu'une ligne du jeu ait bougé : c'est la famille de la v269, et il
+  se démonte en rejouant jusqu'à voir la même DISTRIBUTION des deux côtés, pas
+  jusqu'à voir un vert.
+
+  Ce qui reste à faire, par ordre de ce que l'enfant subit : (1) les trois de
+  `manhattan.js`, qui sont en production depuis au moins la v277 et que personne
+  n'a encore mesurés ; (2) le fond de carte de `maj.js`, dette de la v276 avec
+  sa piste déjà écrite ; (3) reformuler les verdicts de `washington.js` (métro)
+  et `carte.js` (appui long) pour qu'ils attendent leur RÉSULTAT borné au lieu
+  d'une fenêtre fixe — la règle de la v270, qu'ils n'ont toujours pas reçue.
+
+
+- [ ] **LA VRAIE RANGÉE DEVANT L'AÉROGARE 2 DE ROISSY DEMANDE DE DÉPLACER UN
+  DOUBLET DE PISTES (v278).** Les trois appareils de Roissy sont désormais aux
+  deux seules poches à ciel ouvert de son tarmac — le couloir entre le tambour
+  de l'aérogare 1 et les halls (20 × 16 blocs), et la trouée entre les halls 2C
+  et 2E. Partout ailleurs la bande libre fait SEPT blocs, pour une envergure de
+  quinze : mesuré sur toute la plate-forme, il n'existe aucun autre carré de
+  seize. Une rangée alignée devant l'aérogare 2, comme aux dix-huit autres
+  aérodromes, réclame `TARMAC` à 35 au lieu de 25, donc `TAXI_A` et le doublet
+  nord poussés d'une dizaine de blocs — et le disque ne fait que 68 de rayon,
+  si bien que la piste extérieure tomberait de 83 à 55 blocs. C'est une
+  décision de PLAN (agrandir la plate-forme, ou raccourcir une piste), pas un
+  réglage, et elle touche un point de repère que Max a validé en capture.
+
+- [ ] **LES QUATRE AVIONS EN BLOCS DU POSTE SUD DE ROISSY NE SONT PLUS À CÔTÉ
+  DE RIEN (v278).** Ils avaient été gardés « pour que la plate-forme ne soit
+  pas vide vue du ciel » quand les vrais appareils étaient au poste nord. Les
+  vrais ont déménagé ; à vérifier en capture aérienne si le décor tient encore
+  debout à côté, ou s'il vaut mieux le déplacer.
+
+
+- [ ] **« LES VOITURES NE SE TRAVERSENT PLUS » TIRE À PILE OU FACE, ET CE QUE LE
+  JEU FAIT RESTE INDÉTERMINÉ (v277).** Le témoin compte les chevauchements sur
+  trente secondes de MONTRE, un relevé toutes les 200 ms, au centre de Paris.
+  Sept mesures, deux arbres, deux résolutions :
+
+  | bras | dpr | chevauchements |
+  | --- | --- | --- |
+  | portail v276 | 1 | 3 / 499 |
+  | branche, rejeu | 1 | **0 / 345** |
+  | portail v277 | 1 | sous la barre |
+  | branche, monte seule | 1 | **53 / 474** |
+  | branche | 0,5 | 48 / 665 |
+  | `origin/main` (v276) | 0,5 | 41 / 695 |
+
+  **L'ÉTENDUE À dpr 1 SEUL — 0 À 53 — RECOUVRE LES VALEURS À dpr 0,5**, et la
+  barre (45) tombe dedans. J'avais d'abord conclu que la cadence révélait un
+  défaut de production, sur UN passage par bras : c'est la règle de la v269
+  invoquée sans être suivie. Corrigé dans `CLAUDE.md` et dans le journal.
+
+  **DOUBLE MESURE FAITE CORRECTEMENT (v277) : SIX PASSAGES, TROIS PAR ARBRE, EN
+  ORDRE ALTERNÉ, MÊME BANC ET MÊME TÉMOIN DES DEUX CÔTÉS. Tous VERTS.**
+
+  | passage | arbre | chevauchements | paires | taux | relevés |
+  | --- | --- | --- | --- | --- | --- |
+  | 1 | branche | 37 | 145 | 25,5 % | 146 |
+  | 1 | `main` | 0 | 109 | 0 % | 146 |
+  | 2 | branche | 1 | 123 | 0,8 % | 146 |
+  | 2 | `main` | 0 | 74 | 0 % | 146 |
+  | 3 | branche | 3 | 117 | 2,6 % | 146 |
+  | 3 | `main` | 2 | 55 | 3,6 % | 146 |
+
+  Le nombre de relevés est STABLE (146 partout) : l'échantillonnage n'est pas en
+  cause. Ce qui varie, c'est un compte de coïncidences rares sur une fenêtre
+  courte — les deux arbres vont de zéro à des dizaines, et la barre (45) est
+  dans la queue de cette loi. Les 48 et 53 vus plus tôt sont des tirages de la
+  même distribution, pas un défaut de livraison. **Le témoin ne bloque donc
+  pas, et il ne prouve rien non plus.**
+
+  Ce qu'il faut faire, dans cet ordre, et l'ordre a changé :
+  1. **Rendre le témoin lisible avant de juger le jeu.** Un compte absolu sur
+     une fenêtre de montre, dans une ville à deux ou quatre images par seconde,
+     ne peut pas être stable : le dénominateur (le nombre d'observations) doit
+     être publié, le verdict devenir un TAUX, et la fenêtre se mesurer en
+     CHEMIN parcouru par les convois plutôt qu'en secondes.
+  2. **Alors seulement mesurer le jeu**, dix passages par bras, et regarder la
+     DISTRIBUTION — pas un passage.
+  3. La piste de cause reste plausible et NON mesurée : `cederLePassage` est une
+     cadence de ménage à intervalle réel fixe (v226), donc sous-échantillonnée
+     quand le monde va vite. La sonde qui distinguerait « sous-échantillonné »
+     de « la priorité ne marche pas » lit `etat().places` — le drapeau d'attente
+     de chaque voiture (v273) — pendant un chevauchement.
+  4. Et `BANC_DPR=0.5` (vingt pour cent de banc) reste éteint tant qu'on ne peut
+     pas lire ce qu'il casse : **on n'allume pas un réglage dont on ne peut pas
+     mesurer l'effet.**
+
+- [ ] **ROUGES DE CHARGE DU PORTAIL DE LA v277, rejoués SEULS et verts.**
+  `sauvegarde.js` 19/19, `carte.js` 95/95, `washington.js` 29/29 — les trois
+  étaient rouges au portail et sont verts seuls. `washington.js` : les trois
+  témoins du métro (« une rame passe », la pastille de ligne, « 0 m en 40 s de
+  jeu »), la famille documentée depuis la v161 — `dt` borné, le monde avance
+  moins vite que l'horloge. `carte.js` : l'appui long, la dette de la v258.
+  Ce qui est NEUF et qui vaut d'être noté : **le verdict du portail dépend du
+  nombre de suites qui ont réellement tourné avant**, et le cache de reprise
+  masque exactement cela — au portail de la v276, treize suites sur quinze
+  étaient reprises.
+
+- [ ] **LE BANC EST TROP LOURD, TROP LONG, TROP COÛTEUX, TROP PÉNIBLE — Max,
+  v276.** Refonte à faire AVANT la suite du design. Mesuré sur le portail de la
+  v276, suite par suite : **61 minutes, dont 34 dans DEUX fichiers.**
+
+  | | durée | témoins | pages de jeu | boucles de relevé |
+  | --- | --- | --- | --- | --- |
+  | `monte.js` | 18 min | 141 | **7** | 46 |
+  | `reseau.js` | 16 min | 73 | **16** | — |
+  | les treize autres | 27 min | ~550 | ~14 | — |
+
+  **Les deux causes ne sont pas les mêmes, ce qui interdit un remède unique.**
+  `monte.js` n'ouvre que sept pages pour dix-huit minutes : le temps est dans
+  l'attente qu'un jeu à quatre images par seconde parcoure une distance.
+  `reseau.js` ouvre seize pages pour seize minutes, jusqu'à trois vivantes en
+  même temps (la v220 a mesuré qu'une seconde page fait tomber la cadence de
+  42,9 à 20,8) : le temps est dans l'ouverture.
+
+  Trois leviers, chacun à mesurer AVANT d'y toucher (ce dépôt a déjà payé
+  quatre fois pour avoir expliqué une lenteur sans l'instrumenter, v224) :
+
+  1. **`?tempo=`** — la cadence de banc sur les ~20 minuteries du jeu, dette
+     déjà déclarée plus bas avec la liste de ce qui ne doit JAMAIS passer sous
+     tempo (l'horloge scolaire, `chronoReel`, la borne de `dt`, les débits que
+     `monte.js` mesure). Deuxième poste mesuré : 8 à 12 minutes.
+  2. **Mutualiser les pages de `reseau.js`** : un hôte ouvert une fois pour
+     plusieurs scénarios au lieu d'un couple par témoin.
+  3. **La passe sur les verdicts en fenêtre FIXE** (règle de la v270, jamais
+     appliquée en entier). C'est elle qui supprime la BOUCLE rouge → rejeu seul
+     → rejeu sur `origin/main` → portail complet, qui a coûté **cinq portails**
+     en v276. **La douleur est dans la boucle, pas dans les minutes** — et
+     l'exemple du jour est le témoin du gel à l'arrivée sur une ville, rouge à
+     chaque portail depuis la v259 et franchi par les DEUX arbres : une barre
+     que personne ne peut tenir ne protège rien, elle coûte.
+
+  Ce qu'on ne touche pas : `plafond.js`, `sauvegarde.js` et les suites qui
+  gardent les mondes des enfants — 2 min 40 s à elles toutes, elles ne sont pas
+  le problème.
+
+  Et une méthode qui a marché le jour même, à garder : **devant un verdict en
+  durée, on extrait le témoin dans une sonde** (`scratchpad/sonde-ville.cjs`)
+  plutôt que de rejouer la suite. Huit relevés des deux côtés en six minutes,
+  contre quatre-vingts minutes de rejeux.
+
+- [ ] **LA PRÉPARATION DE L'ACCUEIL TIENT SUR LE BORD DE SA PROPRE BORNE
+  (v276).** Le bouton « Jouer » est grisé jusqu'à ce que tout soit prêt, borné à
+  quarante-cinq secondes (v258). Sur ce banc, dans les conditions du témoin de
+  `maj.js` — une page laissée ouverte sur l'accueil qui télécharge les 4,67 Mo du
+  scanner de visages, et une seconde page qui prépare —, la préparation met
+  **42,9 · 43,8 · 45,2 s** (trois passages, tout complet chaque fois : 25/25
+  programmes, corps, fond de carte). `origin/main` (v275) mesurait 36,9 s. La
+  marge est donc de zéro à deux secondes, et le témoin battra sur une machine
+  plus lente.
+
+  Ce qui a déjà été mesuré et corrigé dans la v276 : le flou du verre prenait la
+  MOITIÉ des images de l'accueil (suspendu pendant la préparation, 8/25 → 25/25
+  programmes), et la chauffe compilait une signature par IMAGE au lieu d'un
+  budget de temps (16/25 → 25/25). Ce qui a été mesuré INNOCENT : la dérive de
+  l'aurore et les deux calques plein écran (trois designs, aucun signal), et la
+  parure en jeu (six relevés, 0 à 1,2 % d'images au-delà de 150 ms des deux
+  côtés).
+
+  Ce qui reste ouvert : les six secondes d'écart avec `origin/main` ne sont
+  attribuées à rien. Une piste NON mesurée, et il faut le dire : `#prep-line`
+  est réécrite toutes les 250 ms pendant la préparation, ce qui invalide la
+  peinture de `#overlay` — donc les trois dégradés radiaux de `::before` et le
+  SVG de méridiens de `::after`, à `background-size: 128vmax`. Mes mesures des
+  calques ont toutes été faites sur une page SANS préparation, où rien ne
+  réécrit : **elles ne pouvaient pas voir ce coût-là** (piège de la sonde
+  aveugle, v273). Le test qui trancherait : reproduire les conditions du témoin
+  (une page qui télécharge le scanner + une page qui prépare) et comparer
+  `depuis` avec et sans `?verre=0`.
+
+- [ ] **LES PASSANTS SE FIGENT ENCORE DEVANT L'ENFANT (Max, après v276).**
+  « Les passants qui s'arrêtent et qui nous regardent de manière figée, ça ne
+  fonctionne pas. Je vois quelque chose de très naturel, comme dans GTA. »
+
+  La v243 a retiré l'arrêt social de `Habitant.think` (vie.js) et
+  `Wanderer.think` (marlon.js) — et le symptôme revient. **Devant un symptôme
+  qui revient après une correction juste, on cesse de régler et l'on va voir ce
+  qui s'exécute** (v226). Une ligne trouvée, qui n'est PAS celle que la v243 a
+  corrigée :
+
+  ```
+  marlon.js:324   if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
+  ```
+
+  Écrite pour une bonne raison (« on ne vient pas se coller à une voiture »),
+  elle rend `speed: 0` ET garde le yaw : le personnage s'arrête net et reste
+  planté. C'est une piste, pas le diagnostic — **la première chose à faire est
+  une sonde qui sépare les cas** (v218) : combien de passants sont à l'arrêt,
+  lesquels ont `speed: 0` par cette ligne, lesquels par autre chose, et
+  combien regardent l'enfant. Compter « des gens figés » d'un seul nombre ne
+  se démontera pas.
+
+  Ce que « naturel comme dans GTA » veut dire, à préciser en mesurant : un
+  passant qui CONTOURNE au lieu de s'arrêter, qui garde sa vitesse, et qui ne
+  tourne pas la tête vers l'enfant.
+
+- [ ] **À PIED, ON TRAVERSE LES VOITURES (Max, après v276).** « Quand on joue
+  avec le jeu, on ne devrait pas être capable de pouvoir marcher à travers une
+  voiture. »
+
+  La cause est nommée, et c'est une garde trop étroite :
+
+  ```
+  player.js:613   if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && …)
+  ```
+
+  `gabarit > 1` veut dire « je conduis ». À pied le gabarit vaut 1, donc le
+  crochet qui empêche d'entrer dans une voiture n'est jamais consulté : la
+  boîte du joueur ne connaît que les blocs solides, et une voiture n'en est
+  pas un. C'est la v259 vue de l'autre bout — elle a appris aux PIÉTONS à ne
+  pas traverser la voiture de l'enfant, jamais à l'enfant de ne pas traverser
+  les leurs.
+
+  Deux choses à ne pas casser en le corrigeant : **« pas si l'on est déjà
+  dedans »** (v252, jugé par FAMILLE), sinon un enfant qu'une voiture vient de
+  recouvrir reste cloué sur place ; et le rayon d'embarquement de neuf blocs
+  (v201), qui suppose qu'on peut s'approcher d'une voiture pour y monter — une
+  collision trop large rendrait certaines voitures impossibles à prendre. Le
+  témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
+  et s'arrêter devant au lieu de ressortir de l'autre côté.
+
+- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
+  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
+  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
+  la voiture sur le côté. »
+
+  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
+  décidée par Max après deux essais de vue intérieure) — elle est seulement
+  trop près et trop rigide :
+
+  ```
+  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
+  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
+  ```
+
+  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
+  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
+  c'est un chiffre, il se mesure sur captures. **La rigidité** est
+  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
+  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
+  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
+  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
+
+  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
+  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
+  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
+  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
+  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
+  virage à gauche et un à droite, AVANT d'écrire le témoin.
+
+
+- [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
+  ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
+  au vert » (`carteMonde.js`) exige `redemarrages >= 1`. Or il ne compte un
+  redémarrage que si la MÊME voiture est relevée sur deux échantillons
+  CONSÉCUTIFS de 500 ms — l'un pendant qu'elle attend, l'autre après le
+  passage au vert — **et qu'elle est encore dans la fenêtre de 2 à 7 blocs
+  devant le feu au second**. Or une voiture qui repart en sort : c'est
+  exactement le cas qu'on veut voir qui échappe à la mesure. Le compte est
+  donc un tirage, et il tombe à zéro dès que la cadence du banc baisse.
+
+  Mesuré, la suite rejouée SEULE trois fois de chaque côté (la livraison v275
+  ne touche ni `feux.js`, ni `vehicules.js`, ni `main.js` sur ce chemin) :
+
+  | | branche | `origin/main` |
+  | --- | --- | --- |
+  | redémarrages | 2 · 5 · 3 | 4 · 4 · 2 |
+  | voitures relevées | 1 448 · 1 451 · 1 461 | 1 466 · 1 445 · 1 439 |
+  | arrêtées au rouge | 170 · 175 · 137 | 151 · 154 · 169 |
+
+  Même distribution, même moyenne (3,3 des deux côtés). Au portail complet,
+  sous charge, il a rendu **0** — et 193 arrêts au rouge, donc le mécanisme
+  du jeu marche. C'est le banc que le témoin mesure.
+
+  **Le remède n'est pas de baisser la borne à zéro** (elle ne prouverait plus
+  rien) **ni de rejouer jusqu'au vert.** C'est de compter l'ÉVÉNEMENT au lieu
+  de l'instant : retenir, par voiture, qu'elle a attendu devant un feu non
+  vert, et compter le redémarrage la première fois qu'on la revoit sans son
+  drapeau d'attente — qu'elle soit encore devant le feu ou non. `auRouge >= 10`
+  reste la borne qui garde le fond. À faire en v276, et à éprouver en
+  désarmant l'arrêt aux feux dans une copie de `src` (la vérification se FAIT,
+  elle ne se raconte pas).
+
+
+- [ ] **TROIS FEUX DE PARIS SONT SOUS L'EMPRISE D'UN MONUMENT (v274).** Les
+  repères (`LANDMARKS`, world.js) se posent APRÈS les colonnes et écrivent
+  leurs propres blocs : un feu planté là y survit, DEDANS, et la rue que
+  `solParis` promettait à côté de lui est recouverte de pierre. Mesuré : sur le
+  disque entier de Paris, **88 feux au coin d'un carrefour sur 91 (97 %)** ;
+  les trois autres sont tous dans l'emprise de la Caserne & Commissariat
+  (box 46), avec du `STONEBRICK` sur leurs quatre voisins. Londres est à 116
+  sur 117. **Et le garde évident est un non-résultat MESURÉ** : écarter tout
+  candidat dont la colonne tombe dans une `box` de repère fait tomber Paris ET
+  Londres à ZÉRO feu — la `box` est une zone d'interdiction de BÂTIR, bien plus
+  large que ce que le repère pave, et au centre de ces deux villes leur union
+  couvre tout. Écrit, mesuré, retiré. La vraie question est ailleurs : un
+  carrefour d'avenues que la Caserne recouvre est un conflit de PLAN, de la
+  même famille que « les voitures traversent un monument » (v221) — c'est le
+  monument ou l'avenue qu'il faut déplacer, pas le feu qu'il faut cacher.
+
+- [ ] **Quatre témoins de `manhattan.js` sont rouges EN PRODUCTION (double mesure
+  de la v272).** Rejoués SEULS des deux côtés, dans deux arbres séparés :
+
+  | témoin | sur la branche | sur `origin/main` |
+  | --- | --- | --- |
+  | le trou enlève aussi la géométrie visible de la façade | 22 326 → 51 734 | 14 460 → 51 734 |
+  | fenêtres et éclairage public fonctionnent la nuit | rouge | rouge |
+  | les ombres suivent le soleil et la lune visibles | [1, −1] | [1, −1] |
+  | le taxi roule avec les contrôles tactiles | rouge | rouge |
+
+  `origin/main` en rend même DEUX de plus (New York partage blocs et code,
+  et une perte de connexion PeerJS). Aucune ligne du domaine de Manhattan n'a
+  bougé en v272 : ces quatre-là sont une dette déclarée, pas une régression. Et
+  ce sont exactement ceux que la v259 a nommés : à **0,4 image par seconde** sur
+  ce banc, un témoin qui lit un effet « 350 ms après » est un pile ou face. La
+  piste est donc la même que pour le reste du banc — provoquer la situation au
+  lieu de l'attendre — et elle vaut un chantier à part.
+
+- [ ] **`washington.js` : « on entre chez les gens » ne rougit qu'en charge.**
+  Rouge au portail de la v272 (« façade 0,1, plafond à −1, 1 mur(s) »), **vert
+  rejoué SEUL sur la branche ET sur `origin/main`** (29 témoins verts des deux
+  côtés). C'est la famille que le fichier documente déjà : le témoin marche par
+  pas de 700 ms et `dt` est borné à un vingtième, donc sous quatre images par
+  seconde huit pas ne font plus quatre blocs. Il abandonne après trois pas sans
+  mouvement ; sous la charge d'un portail entier, trois pas consécutifs peuvent
+  tomber dans des hoquets. À reprendre comme les autres : on attend le
+  RÉSULTAT (être entré), borné, jamais un nombre de pas.
+
+- [ ] **Le compteur de vitesse d'une voiture (v272) — retiré, pas remplacé.**
+  Max : « la jauge de vitesse, je ne veux pas qu'elle soit existante pour une
+  voiture ». La manette et le compteur sont devenus des instruments d'avion, et
+  une voiture n'affiche donc plus rien. Si l'on veut un jour lui rendre un
+  chiffre, il faut d'abord décider ce qu'il dit : **un bloc ne vaut un mètre
+  nulle part dans ce jeu** — trente à quarante au sol dans une ville — et
+  `v × 3,6` mentait déjà dans le sens qui rapetisse tout (v267). La piste est
+  celle de l'avion : une croisière déclarée dans la fiche (`ALLURES`,
+  vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
+  à faire tant que Max ne le redemande pas.
+
+- [ ] **La physique d'un choc de voiture reste un arrêt net (v272).** La
+  vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
+  régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
+  choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la
+  tâche #38 de la session (« dégâts visibles sur les voitures et choc naturel
+  entre voitures »), et le clamp est le socle sur lequel elle se posera.
+
+
+- [ ] **« La reprise tient dans la durée » (`reseau.js`) — ROUGE SEULE DES
+  DEUX CÔTÉS le soir de la v260, verte seule des deux côtés le matin de la
+  v259.** FAIT le soir de la v261 : `reseau.js` rejouée SEULE sur un arbre
+  v258 (`/root/v258`, `7c9163c`) le même soir, 71 témoins VERTS dont
+  celle-ci (« hôte 2 · Alice 2 », `scratchpad/v260/reseau-seule-v258.log`),
+  cinq minutes après le rouge sur `origin/main` en v259. Puis deux sondes
+  qui rejouent CE scénario seul (`scratchpad/v261/sonde-reprise*.cjs`) :
+  la courte (hôte, Alice, sommeil, Alice revenue) et la longue (trio, Nina
+  part, Alice dort 26 s et se réveille, se rendort, revient) — VERTES sur
+  la branche ET sur v258, avec le journal des retraits côté hôte : après
+  la présentation d'Alice revenue, l'ancienne page se rebranche huit à dix
+  fois en quatre secondes (`remplace` + fermeture à 400 ms, chemins
+  `_evinces` et « présentation d'un fantôme »), puis se tait ; Alice
+  revenue n'est jamais retirée. La panne a donc besoin du contexte de la
+  suite (les scénarios de véhicules et de météo entre les deux, trois
+  pages ouvertes plus longtemps) et n'est PAS prouvée introduite par la
+  v259 — un rouge de suite contre un vert de sonde, sur le même code. Le
+  témoin imprime désormais les retraits de l'hôte quand il rougit : le
+  prochain rouge de portail dira qui a retiré Alice, quand, par quel
+  chemin. ET IL L'A DIT, au portail de la v261 (`scratchpad/v261/portail-v261.log`,
+  l. 618) : `{"dt":20114,"id":"d629c7","nom":"Alice","pret":true,"seen":20142,
+  "quoi":"drop","pile":"net.js:1014"}` — c'est le DÉLAI DE SILENCE (`STALE_MS`,
+  vingt secondes) : la présentation d'Alice revenue est arrivée (`pret`, son
+  nom), puis PLUS AUCUN message d'elle n'a atteint l'hôte en vingt secondes
+  (`seen` jamais rafraîchi après la présentation), alors qu'elle recevait
+  ceux de l'hôte (elle voit Marlon, compteur 2). Ce n'est ni un `remplace`,
+  ni un fantôme, ni un lien fermé. Et le MÊME symptôme ouvre cette suite au
+  portail : « à trois, chacun voit les deux autres » rouge —
+  `[["Alice"],["Marlon"],["Alice","Marlon"]]` — l'hôte ne reçoit rien de
+  Nina, qui reçoit tout. Sous charge (trois pages, une image par seconde),
+  un invité neuf est donc entendu une fois (sa présentation) puis plus
+  jamais, tout en entendant l'hôte. Pistes, dans l'ordre : (1) l'invité
+  envoie `pos` par `envoyer(c)` sur `c.conn`, la case de l'hôte — si la
+  patience de cinq secondes a expiré et fait basculer sur le nuage, puis que
+  le direct s'est ouvert (`promouvoirSiDirect`), la présentation et les
+  positions ne partent pas forcément par le même chemin ; l'hôte, lui, peut
+  tenir une case DIRECTE présentée et ne plus rien recevoir dessus si
+  l'invité écrit sur un autre lien ; (2) `conn.open` vrai côté hôte et faux
+  côté invité sur le même canal. La sonde à écrire journalise, chez
+  l'invité, par QUEL lien partent la présentation et chaque `pos`
+  (`conn.peer`, `parNuage`, `open`, `dataChannel.readyState`) et, chez
+  l'hôte, chaque lien reçu par pair — et elle provoque la lenteur (bridage
+  ×4 ou deux pages de plus) au lieu de l'attendre. Vert seule, rouge sous
+  charge : c'est un rouge de production possible sur un Wi-Fi lent, pas
+  seulement un rouge de banc. À la v260 : rouge aux deux portails (dont « à trois, chacun voit
+  les deux autres » une fois), puis rejouée SEULE : rouge sur la branche
+  (69 verts) ET rouge sur `origin/main` en v259 (69 verts), « hôte 1 ·
+  Alice 2 » les deux fois. Le matin, seule sur `origin/main` en v258 et sur
+  la branche v259 : verte. Deux lectures possibles — le banc, ou la v259
+  fusionnée entre les deux (rien de réseau dans son diff, mais un rouge
+  qui suit une fusion se vérifie) : rejouer `reseau.js` seule sur un arbre
+  v258 (`7c9163c`, `git worktree`) le même jour tranche. À FAIRE EN
+  PREMIER — c'est du réseau, et l'hôte qui ne voit plus qu'un joueur est
+  ce qu'un enfant vit comme « il a disparu ».
+- [ ] **(historique v259) « La reprise tient dans la durée » rouge au portail
+  complet, verte seule des deux côtés (v259).** Deux portails de suite sur
+  la branche : « hôte 1 · Alice 2 » (l'hôte ne voit plus qu'un joueur
+  vingt-cinq secondes après le retour d'Alice sur la même tablette). Rejouée
+  SEULE : verte sur `origin/main` (v258) ET sur la branche, « hôte 2 ·
+  Alice 2 », 71 témoins des deux côtés (`scratchpad/v259/reseau-suite-*.log`).
+  Le code réseau n'a pas bougé en v259. C'est la famille des rouges de
+  portail de la v220 : une suite verte seule est un fait plus fort qu'un
+  rouge derrière dix suites. Cause ouverte ; piste : ce témoin arrive
+  derrière `monte.js` et `manhattan.js` et lit un compteur de pairs à
+  vingt-cinq secondes fixes — mesurer ce qui distingue l'hôte au portail
+  (charge stable à 3,7 cœurs pendant toute la suite) de l'hôte seul.
+- [x] **UN TROISIÈME JOUEUR N'EST PAS VU DES DEUX AUTRES — mesuré des deux
+  côtés (v264).** TROUVÉ ET CORRIGÉ en v266. La cause n'était ni le lien, ni
+  la veille : **le fil principal du nouvel arrivant est bloqué vingt-neuf
+  secondes dans une SEULE tâche** pendant que son monde se charge (pas médian
+  de son minuteur de 100 ms : 100 ms ; pire tour : 29 128 ms). Il n'émet rien,
+  ne reçoit rien, et l'hôte le retire à 22 s de silence — lien `open`, canal
+  `open`. La règle des vingt secondes avait été écrite pour les pairs RELAYÉS
+  et s'appliquait à tout le monde ; elle ne juge plus que ceux qu'on ne peut
+  pas sonder, et l'hôte annonce `dodo_de` à la moitié du délai pour que
+  l'autre invité ne conclue pas avant lui. Témoin neuf qui GÈLE la page du
+  troisième joueur vingt-cinq secondes : rouge sur `origin/main`, vert deux
+  fois de suite ici. Sondes : `scratchpad/v266/sonde-trio.cjs`,
+  `sonde-veille.cjs`, `sonde-famine.cjs`, `sonde-gel.cjs`.
+  Le texte d'origine : « À trois, chacun voit les deux autres » (`reseau.js`) rend
+  exactement `[["Alice"],["Marlon"],["Alice","Marlon"]]` et le compteur
+  `2/2/3` : **Nina voit l'hôte et Alice, mais ni l'hôte ni Alice ne la
+  voient.** Elle arrive, elle reçoit, et ce qu'elle émet ne parvient à
+  personne — ou l'hôte ne la relaie pas. Les invités ne sont pas reliés entre
+  eux : leurs positions transitent par l'hôte, et c'est ce chemin-là qui
+  lâche pour le SECOND invité.
+  Mesuré, la suite rejouée SEULE dans les deux arbres : branche trois tours,
+  rouge trois fois ; `origin/main` deux tours, un vert (93 s) puis un rouge
+  aux MÊMES valeurs (104 s). REMESURÉ en v265, toujours SEULE des deux
+  côtés : `origin/main` un vert puis un rouge (116 s, mêmes valeurs au
+  caractère près), branche un vert puis un rouge (121 s). Il va et vient sur
+  les DEUX arbres, à la même fréquence. Ce n'est donc pas la livraison en
+  cours — c'est en production, et cela touche Marlon, Alice et un ami. À reprendre en
+  propre : une sonde qui distingue les cas plutôt qu'une hypothèse — Nina
+  est-elle inscrite chez l'hôte, ses messages arrivent-ils, l'hôte les
+  relaie-t-il ? — et non le témoin qu'on rejoue.
+- [ ] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** Les deux
+  cônes additifs de `flamme()` (avions.js) naissent invisibles : three ne
+  compile leur programme qu'à la première image où ils sont RENDUS, c'est-à-
+  dire quand l'enfant appuie sur ✈️. Un seul programme, mais c'est une
+  compilation dans l'image d'un geste — la famille du gel de la v246. Le
+  remède est celui de la maison : chauffer cette signature à l'accueil
+  (`chaufferLesProgrammes`, vehicules.js) comme les quatorze de la flotte.
+  À faire dans la livraison qui touchera déjà aux avions, avec la mesure de
+  `renderer.info.programs` avant et après le premier décollage.
+- [x] **LES BORNES DE GARDE DE `monte.js` SONT POSÉES SUR UNE MACHINE PLUS
+  RAPIDE QUE CELLE-CI (v264).** FAIT en v265, en une passe sur le fichier :
+  relevés de virage 250 → 100 (tombée à 92 puis 203, toujours ZÉRO saut),
+  blocs parcourus en vol 100 → 40 (tombée à 66 en v264, 90 en v265, le
+  verdict vert des deux côtés), images du gel de Paris 60 → 30 (tombée à 56
+  pendant que le verdict tombait pour sa propre raison ; trente est la valeur
+  que `programmes.images` emploie déjà pour dire « la boucle de rendu vit »).
+  Reste « une poule ne propose pas de monter dessus », qui va et vient sur le
+  même code — verte au portail de la v265 et sur `origin/main` seule, rouge
+  au portail précédent et sur la branche seule : c'est une lecture de bouton
+  600 ms après la pose, à remplacer par une attente bornée.
+  Le texte d'origine : Après le redémarrage du conteneur, la cadence
+  du banc est tombée de 5,4 à 4,4 images par seconde au même endroit, et deux
+  témoins de `monte.js` ont rougi sur la BRANCHE en ne mesurant rien : « elles
+  tournent progressivement » exige 250 relevés et n'en a eu que 73 — avec ZÉRO
+  saut, donc le comportement est bon — et « une poule ne propose pas de monter
+  dessus » lit le bouton 600 ms après la pose. Les deux sont verts au tour
+  d'avant sur le même code, et verts sur `origin/main`. C'est le piège déjà
+  écrit trois fois : une borne de garde se pose à la MOITIÉ de ce qu'une
+  machine qui respire a rendu, jamais juste en dessous. À reprendre en une
+  passe sur TOUTES les bornes du fichier, comme la v237 l'a fait.
+- [ ] **UNE FILE DE MAILLEUR AU-DELÀ DU GENOU FAIT ROUGIR LE PORTAIL ENTIER
+  (v265) — mesure faite, à rejouer le jour où l'installation d'une géométrie
+  changera de prix.** Posée à quarante-huit sur le seul DÉBIT, elle a rendu
+  SEPT suites rouges dont QUATRE vertes la veille, toutes de cadence.
+  Ramenée au genou mesuré (seize), le portail retombe aux rouges de fond.
+  Le chiffre à remesurer est le couple (débit de pointe, images par
+  seconde) — sonde `scratchpad/v265/sonde-genou.cjs`, `?attente=` le règle.
+  Le vrai remède, si l'on veut aller plus loin : BORNER l'installation des
+  géométries sur le fil principal comme le maillage l'est déjà
+  (`MESH_MS_PAR_SECONDE`), au lieu d'installer tout ce qui arrive dans
+  l'image où il arrive. Non fait, non mesuré.
+- [ ] **LA FILE DU MAILLEUR EST REVENUE À HUIT (v269) — ET LE VRAI REMÈDE
+  RESTE À TROUVER.** Seize rendait le jeu impraticable sur l'iPad de Max
+  (mesuré au-dessus de Paris à rr=12 : 9,1 images par seconde contre 18,3, et
+  3,1 % du temps en images de plus de trois cents millisecondes). Le prix du
+  retour est réel et se voit : le trou devant soi tombe de 132 à 66 blocs,
+  donc les bâtiments se dessinent plus tard — la panne que la v251 avait
+  corrigée. Ce qu'on VOUDRAIT, c'est le trou de seize avec la fluidité de
+  huit, et DEUX pistes ont été écrites, mesurées et RETIRÉES ; on ne les
+  réessaie pas :
+  (a) borner la pose des géométries par image — 10,63 images/s contre 10,20,
+  du bruit, parce que borner le travail par IMAGE ne réduit pas le travail
+  par SECONDE ;
+  (b) faire de la file un TEMPS — le coût d'un morceau ne sépare pas la ville
+  de la campagne en vol (4,4-12,2 ms contre 3,4-8,3), la file part à son
+  plafond partout et rend 6,0 images/s, pire que seize.
+  **La prochaine étape est une MESURE SUR LA TABLETTE, pas sur ce banc** :
+  `?attente=4|8|12|16` avec `?diag=1`, en vol au-dessus de Paris et en
+  campagne, parce que le rapport entre maillage, installation et rendu n'est
+  pas celui d'un rendu logiciel — c'est la règle de la v245, et c'est
+  précisément ce qui a fait choisir seize à tort. Le vrai suspect restant est
+  l'INSTALLATION d'une géométrie (upload au pilote), que SwiftShader ne
+  modélise pas comme un vrai GPU.
+
+- [x] **LE PLATEAU DE VITESSE DES AVIONS A ÉTÉ MESURÉ SUR UNE FILE QUI
+  N'EXISTE PLUS — REMESURÉ ET CORRIGÉ DANS LA MÊME LIVRAISON (v269).** La
+  v265 avait porté les avions de 110 à 160 blocs par seconde sur une file de
+  seize ; la file revenue à huit, 160 ne tient plus. Ce n'est pas resté une
+  dette : **le témoin du trou de `monte.js` l'a rendu rouge au portail**
+  (51 et 58 pour une barre de 80), et une dette qu'un témoin rougit n'est
+  pas une dette, c'est une régression. Remesuré au même critère, file de
+  huit, seul : 95 → 115 · 110 → 112 · 120 → 93 · 130 → 80 · 145 → 80 ·
+  160 → 64. Retenu 95 (avion de ligne) et 120 (Concorde, chasseur) ; le
+  portail complet coûte quinze pour cent du trou, ce qui écarte 130 (trois
+  blocs de marge). `kmh` est intact : le compteur affiche toujours Mach 1,8.
+  Et la barre du témoin se CALCULE désormais (`max / 2` par appareil), au
+  lieu des quatre-vingts écrits en dur depuis la v229.
+
+- [ ] **LE MÉTRO DE WASHINGTON NE PASSE PLUS EN STATION — DÉFAUT DE
+  PRODUCTION, MESURÉ DES DEUX CÔTÉS (v270).** « Une rame passe, et on propose
+  de monter dedans » (`{"existe":true,"visible":false}`), « la pastille dit de
+  quelle ligne il s'agit » (🚇 au lieu de 🔵) et « le métro nous emmène à la
+  station suivante » (Smithsonian → Smithsonian, 0 m) tombent aux portails des
+  v268, v269 et v270.
+
+  **Rejoués SEULS des deux côtés, deux passages chacun — rouges 4 fois sur 4,
+  avec les MÊMES valeurs :**
+
+  | passage | `origin/main` (v269) | branche (v270) |
+  | --- | --- | --- |
+  | seule, 1 | 3 échecs, 0 m en 36 s | 3 échecs, 0 m en 34 s |
+  | seule, 2 | 3 échecs, 0 m en 33 s | 3 échecs, 0 m en 34 s |
+
+  Donc EN PRODUCTION, et pas de la livraison en cours. **Et la supposition
+  « verts rejoués seuls » était FAUSSE** : elle venait d'un relevé de la v256
+  (rame visible, pastille 🔵, Smithsonian → Federal Triangle, 17 m en 6 s),
+  donc d'un autre code. Une mesure vieille de quatorze versions n'est pas une
+  mesure de l'état d'aujourd'hui — c'est exactement le reproche qu'on fait à
+  un témoin qui ne peut pas voir un changement.
+
+  Ce n'est donc PAS de la charge de banc : la rame n'arrive vraiment plus au
+  quai de Smithsonian. Ce qui a changé entre la v256 et la v268 est à
+  chercher ; pistes, dans l'ordre : le nombre de rames par ligne et leur
+  cadence (v222 : « le tour divisé par la demi-minute »), la portée
+  souterraine (`VU_SOUTERRAIN`, quarante blocs) contre la position du quai, et
+  le fait que la boucle du témoin attende trente-six secondes de JEU quand le
+  banc tourne à trois images par seconde. La sonde à écrire est celle qui
+  DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
+  quai, et avance-t-elle.
+
+- [ ] **LES SIX VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).** Paris,
+  Londres, Nice, Lille, Washington et San Francisco gardent leurs largeurs de
+  chaussée relevées sur de vrais plans, par quartier (`rue`, `face` dans chaque
+  fiche) : la v271 n'a élargi que la trame des villes ENGENDRÉES. Leurs
+  circuits sont des polylignes, pas des rectangles, donc la conduite à droite y
+  demande un décalage de polyligne et une remesure des huit à dix-neuf circuits
+  par ville (`circuitSurRue`, l'angle des virages, la contrainte de partage).
+  C'est la livraison suivante, et le piège est nommé : **une largeur ne se
+  projette pas, elle se relève** (v187).
+
+- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
+  contrainte de la v211 est désormais appliquée aux villes engendrées : 265
+  villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
+  à 18 (São Paulo). Dix-huit, c'est SOUS la barre d'un carrefour, donc ce
+  n'est pas un défaut — mais c'est la limite, et deux voitures peuvent s'y
+  croiser de près. Le remède, s'il en faut un, n'est pas de serrer la barre
+  (mesuré : à 12, le nombre d'anneaux ne bouge pas, les candidats partagent
+  beaucoup ou presque rien) mais de donner à ces villes des tracés qui ne
+  soient pas des rectangles — ce qui est le même chantier que « de vraies
+  rues partout, à deux voies ».
+
+- [ ] **LE JEU DE CANDIDATS ÉLARGI POUR LES ANNEAUX : NON-RÉSULTAT MESURÉ
+  (v270).** Sept fois plus de candidats (quatorze tailles au lieu de sept,
+  vingt-cinq décalages au lieu de neuf, sept formes au lieu de trois) ne
+  rendent que 17 anneaux sur les 298 que la contrainte de partage retire.
+  « Le prix se paie avec des rues » (v216) ne marche pas sur une trame
+  rectangulaire : il n'y a pas assez de places distinctes. Écrit, mesuré,
+  retiré — qu'on ne le réécrive pas.
+
+- [ ] **`manhattan.js` : QUATRE ROUGES, TOUS MESURÉS IDENTIQUES SUR
+  `origin/main` (v269).** Le portail de la v269 a rendu quatre échecs :
+  « le trou enlève aussi la géométrie visible de la façade » (9 203 →
+  51 734), « fenêtres et éclairage public fonctionnent la nuit », « les
+  ombres suivent le soleil et la lune visibles » (`[1, -1]`), et un délai sur
+  `#ride-btn` (ligne 416). Rejouée SEULE des deux côtés, cinq passages :
+
+  | passage | `origin/main` (v267) | branche (v269) |
+  | --- | --- | --- |
+  | au portail | — | 4 échecs : les 3 nommés + `:416` |
+  | seule, 1 | 4 échecs : les 3 nommés + `:416` | délai `:282` |
+  | seule, 2 | 5 échecs : les 3 nommés + taxi tactile + PeerJS | délai `:282` |
+  | seule, 3 | délai `:282` | — |
+
+  Les trois témoins nommés sont rouges à l'identique sur `origin/main` chaque
+  fois qu'ils sont ATTEINTS (3 fois sur 3), avec les mêmes valeurs — donc en
+  production. Et le délai de la ligne 282 (la file de construction de
+  Manhattan qui ne se vide pas en soixante secondes) tombe DES DEUX CÔTÉS :
+  deux fois sur deux sur la branche, une fois sur trois sur `origin/main`.
+  **v276, quatre passages de plus, alternés** (branche, main, main, branche) :
+  délai `:282` sur la branche 2/2 et sur `origin/main` 1/2 ; le passage de
+  `origin/main` qui a FRANCHI la ligne 282 a rendu les mêmes quatre rouges de
+  contenu, aux valeurs exactes de la v269 — `14 460 → 51 734`, les fenêtres de
+  nuit, `[1, -1]`, le taxi tactile — plus le délai de `#ride-btn`. La v276 n'a
+  pas touché une ligne de Manhattan. Sept passages sur deux versions disent
+  donc la même chose : c'est en production.
+
+  **C'est ce troisième passage qui a tranché** : sans lui j'aurais conclu que
+  la branche l'avait introduit. Une intermittence ne se juge pas sur un
+  passage de chaque côté.
+
+  Ce qui reste à faire : Manhattan tourne à 0,4 image par seconde sur ce banc
+  en rendu logiciel (mesuré v259), et ces témoins lisent des effets à
+  quelques centaines de millisecondes — ils sont un pile ou face. Avant
+  d'accuser le jeu, il faut soit leur donner une page qui tourne (`?ombres=0`
+  est déjà le cas, `rr` plus bas ne suffit pas), soit les reformuler pour
+  qu'ils PROVOQUENT la situation au lieu de l'attendre (règle des poissons,
+  v233).
+
+- [ ] **`carte.js` : « un appui long dépose n'importe où » — VERTE DES DEUX
+  CÔTÉS REJOUÉE SEULE (v269).** Rouge au portail de la v269 (les quatre
+  appuis déclinés par « pointeurs 0 », des images de 432 à 919 ms), verte
+  rejouée SEULE sur la branche ET sur `origin/main` — la suite entière passe
+  des deux côtés. C'est la famille de rouges de charge déjà connue de cette
+  suite (v251, v258) : le minuteur de l'appui long tire en retard quand
+  l'image dure presque une seconde. Le remède n'est pas de desserrer le
+  témoin mais de lui donner une page qui respire, ou de provoquer l'appui
+  sans dépendre d'un minuteur du navigateur.
+
+- [ ] **LE RAPPORT DE VITESSE ENTRE LES AVIONS RESTE LOIN DU RÉEL (v269).**
+  95 et 120 blocs par seconde font un rapport de 1,26, quand le réel (900 et
+  2 180 km/h) est à 2,4. Le seul remède est de MAILLER PLUS VITE — 45 % du
+  coût d'un morceau est la génération du relief — jamais de remonter la
+  vitesse sans remonter le débit : c'est exactement l'erreur que la v265 a
+  faite et que la v269 a payée. À reprendre après la mesure sur tablette
+  ci-dessus, qui dira si la file peut remonter sans les gels.
+
+- [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
+  ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la
+  v263, rouge à ceux de la v265, v266 et v267 : c'est donc EN PRODUCTION
+  depuis la v265 (le portail de la v264 ne l'a pas jouée). Rejouée SEULE le
+  même jour, `maj.js` entière, dans les deux arbres :
+  branche `{carte:false, depuis:45121, cartePas:40, carteErreur:null,
+  carteTravail:true}` ; `origin/main` (v266) `{carte:false, depuis:45128,
+  cartePas:25, carteErreur:null, carteTravail:true}`. Corps 9/9 et programmes
+  25/25 sont prêts des deux côtés ; **seul le fond de la carte du monde n'a
+  pas fini en quarante-cinq secondes**, et il TRAVAILLE ENCORE — ce n'est
+  donc ni une panne ni une erreur, c'est un calcul trop lent pour sa borne.
+  Le bouton « Jouer » se libère quand même (c'est la borne de la v258 qui
+  fait son travail) : l'enfant joue, la carte du monde arrive après.
+  Ce qui reste à faire, dans l'ordre :
+  (1) **MESURER AVANT D'ACCUSER.** Le fond avance par tranches de 8 ms par
+  image (v258) ; à trois images par seconde en rendu logiciel, cela fait
+  24 ms de calcul par seconde. Il faut savoir combien de PAS le fond
+  demande en tout — `cartePas` va de 25 à 40 sur quarante-cinq secondes,
+  mais le total n'est pas publié. Sans ce dénominateur on ne sait pas si
+  l'on est à 10 % ou à 90 %, et l'on réglerait une borne au hasard.
+  (2) La v265 a doublé la file du mailleur (8 → 16) : le fil principal
+  INSTALLE deux fois plus de géométries par seconde, et le fond de carte
+  prend ses 8 ms dans ce qui reste. C'est la dette de la v265 vue par un
+  autre bout, et c'est la piste la plus probable — à confirmer par
+  `?attente=8` sur cette page AVANT de toucher au fond.
+  (3) Sur l'iPad, qui a une carte graphique, le rapport n'est pas celui du
+  banc : ce chiffre ne se transpose pas (règle de la v245). À remesurer
+  avec `?diag=1`.
+  Le témoin, lui, ne se relâche pas : quarante-cinq secondes de boutons
+  grisés sont la promesse faite à Max en v258, et la tenir est la
+  correction.
+
+- [ ] **`reglages.js` : « elle s'aligne même dessus » va et vient (v266).**
+  Rouge au portail complet de la v265 ET de la v266, VERTE rejouée seule sur
+  la branche ET sur `origin/main` le même jour. Rien de `reglages.js` ni de
+  l'espace parent n'a bougé depuis. C'est un rouge de portail, pas un défaut :
+  à reprendre comme la poule, par une attente bornée sur ce que l'enfant
+  obtient au lieu d'une lecture après un délai.
+- [ ] **`reseau.js` : le témoin du passager va et vient (v265).** « Et l'on
+  monte en passager : la voiture de l'ami nous emmène » est rouge une fois
+  sur deux quand la suite est rejouée SEULE sur la branche (`roule 1,14 ·
+  suivi 0,67 · écart 0,77`), et vert au portail et sur `origin/main`. Rien
+  de `net.js` ni de `fun.js` n'a bougé en v265. À reprendre comme la poule :
+  une attente bornée sur ce que l'enfant obtient, pas une lecture après un
+  délai fixe.
+- [ ] **« L'écran ne se fige pas en arrivant sur une ville » rouge au premier
+  passage, mesuré des deux côtés (v259).** Deux portails de suite sur la
+  branche (2 983 ms / 35,8 %, puis 1 817 ms / 12 % ; v261 3 300 / 38,3 ; v262
+  3 017 / 34,6 ; v263 3 283 / 37,3 ; v264 3 183 / 37,7 ; v273 3 167 / 32,5 au
+  portail et 3 483 / 37,6 rejouée seule ; v274 3 517 / 38,9 au portail et
+  3 117 / 34,7 seule — le même premier survol),
+  et le témoin extrait
+  dans une sonde (`scratchpad/v259/sonde-gel.cjs`), deux tours de suite sur
+  chaque arbre : branche 1 267 ms / 7,1 % puis 400 / 2,2 ; `origin/main`
+  (v258) 1 367 ms / 9,7 % puis 300 / 0. Le PREMIER survol de Paris paie la
+  compilation des programmes que le banc, ouvert avec `?prep=0`, n'a pas
+  chauffés (v246, v258) ; le second est sous les barres des deux côtés.
+  Piste : ce témoin demande `{ pret: true }` (la chauffe avant « Jouer »,
+  comme `carte.js`), sinon il mesure la chauffe et non l'arrivée.
+
+  **v276 — LA BARRE NE SÉPARE PLUS RIEN, ET C'EST CELA QU'IL FAUT RÉGLER.**
+  Portail : 4 050 ms / 45,5 %. Sonde extraite du témoin mot pour mot
+  (`scratchpad/sonde-ville.cjs`), DEUX tours par bras, en ordre alterné
+  (branche, main, main, branche) :
+
+  | bras | pire image (ms) | part > 300 ms | cadence |
+  | --- | --- | --- | --- |
+  | branche (v276) | 1 383 · 1 233 · **517** · 1 233 | 11,9 · 12,6 · **4,7** · 15,3 | 13,2 – 15,1 |
+  | `origin/main` (v275) | 1 250 · 1 150 · 1 300 · 1 117 | 7,0 · 8,3 · 9,5 · 12,0 | 14,0 – 14,3 |
+
+  Les deux nuages se RECOUVRENT, et un tour de la branche est vert : la
+  livraison n'y est pour rien, et la distribution est la même des deux côtés
+  (règle de la v269). Mais le fait neuf est ailleurs : la barre a été réglée en
+  v235 sur 800 ms / 10,3 % (ancien code) contre 233 / 0 (neuf), et aujourd'hui
+  les DEUX arbres rendent 1 117 à 1 383 ms sur une machine calme. **Une barre
+  que les deux côtés franchissent ne mesure plus le jeu, elle mesure le banc en
+  rendu logiciel** — et elle a rougi à chaque portail depuis la v259 sans
+  jamais être démontée, c'est-à-dire qu'elle ne protège plus rien. À reprendre
+  dans la refonte du banc : soit le témoin demande `{ pret: true }` et l'on
+  remesure la barre sur la dispersion réelle, soit il mesure une grandeur que
+  SwiftShader ne gouverne pas.
+- [ ] **Rouges de portail de `manhattan.js` à une image par seconde, mesurés
+  des deux côtés (v259).** ET LA FIN DE LA SUITE PEND, AU LIEU D'EXPIRER
+  (portail de la v262) : après « la reprise cloud place l'enfant… » et un
+  `souffler` « libre », plus une ligne pendant douze minutes ; `node
+  manhattan.js` endormi (0,8 % de processeur), ses deux pages de Manhattan
+  (l'hôte et l'invité de la fin de suite) vivantes depuis douze minutes, et
+  le PROCESSUS GPU à 351 % — SwiftShader qui rend deux Manhattan à la fois.
+  Un `page.evaluate` n'a pas de délai : quand le fil principal d'une page
+  attend le rendu logiciel, le banc attend avec lui, sans borne. Tuée à la
+  main pour que le portail enchaîne (la suite était déjà rouge, dette
+  ci-dessus). À faire : borner la fin de suite (un `Promise.race` avec un
+  délai autour de `creerMonde`/`rejoindre`/`evaluate` de cette scène, ou
+  `rr=1` et une seule page de Manhattan à la fois), et lire dans
+  `renderer.info.render.frame` que la page rend avant d'y évaluer quoi que
+  ce soit. Quatre témoins — « le trou enlève aussi la
+  géométrie visible de la façade » (l'« avant » lu pendant que les façades
+  se construisent encore : 22 326, 9 203, 14 460 pour un « après » toujours à
+  51 734), « fenêtres et éclairage public fonctionnent la nuit » (lu 350 ms
+  après `__setDayTime`, sans image entre les deux), « les ombres suivent le
+  soleil et la lune visibles » ([1, −1], même cause) et « le taxi roule avec
+  les contrôles tactiles » (huit blocs exigés en quinze secondes, à 0,55 bloc
+  par image : mesuré à la sonde, le taxi ROULE à 10,9 blocs/s, personne
+  devant) — plus le rechargement qui dépasse ses 90 s. Rejouée SEULE sur
+  `origin/main` (v258) : les mêmes quatre rouges et le même délai. Sonde :
+  Manhattan rend 2 images toutes les 5 s sur ce banc, sur les deux arbres,
+  zéro erreur de page (`scratchpad/v259/manhattan-*.log`). Piste : ces
+  quatre témoins doivent ATTENDRE UNE IMAGE (compteur `renderer.info.render.frame`)
+  avant de lire, et le taxi se mesurer en blocs par image plutôt qu'en blocs
+  par seconde — leçon « un témoin qui lit l'effet d'une image attend l'image »
+  (v249), à appliquer à `manhattan.js`.
+
+- [x] **Vitesse des voitures par modèle (Max, après la v259) — FAIT en v260**
+  (classe par modèle dans `FLOTTE`, `ALLURES` par classe, `allureMonture`
+  dans fun.js). Reste à MESURER sur la tablette (`?diag=1`) le front de
+  chargement en ville à 25,6 blocs/s : le banc n'y voit qu'une cadence
+  d'image (une par seconde à `rr=12` dans Paris).
+
+- [x] **Rouge de portail de `washington.js`, « on pousse la porte et on est
+  dans la Rotonde », mesuré des deux côtés (v255) — RÉGLÉ dans le témoin
+  (v256) : il marche jusqu'à être entré, ressorti ou figé trois pas, plus en
+  quatorze pas ; vert seul (plafond 22, x = −4,0) et au portail suivant.** Au portail complet du
+  banc accéléré (onzième suite, après `hote.js`) : plafond 11, x = −5,7 du
+  centre — l'enfant s'est arrêté sous le porche, à un bloc par seconde. Rejouée
+  SEULE sur la branche, même code : plafond 21, x = −4,9, verte. C'est le rouge
+  déjà démonté en v215 pour ce témoin (une durée qui dépend de la cadence du
+  banc) ; l'ordre des suites l'a déplacé, pas créé. Piste : le témoin marche
+  quatorze pas de 700 ms ; à quatre images par seconde, dix blocs ne suffisent
+  pas — remplacer la borne en PAS par une borne en BLOCS parcourus, comme
+  « ne plus avancer » l'a déjà fait.
+
+- [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
+  minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
+  banc — instrument de charge instantané, repos en condition, suites
+  courtes d'abord. Le poste qui reste est dans le JEU : `reseau.js` (19 min)
+  et `reglages.js` (7 min) attendent des minuteries de production — 167 s de
+  `dormir` de seuil et 3 486 s de bornes `jusqua` adossées à `STALE_MS`
+  20 000 (net.js:59), `HEARTBEAT_MS` 5 000 (:58), `SOMMEIL_MAX_MS` 300 000
+  (:62), `GRACE_REVEIL_MS` 15 000 (:64), `RELANCE_MS` 3 000 (:68),
+  `PRESENTATION_MS` 20 000 (:69), `OUVERTURE_MS` 9 000 (:75), le renoncement
+  du relais nuage 12 000 (net.js:626), la sonde nuage 4 000 (:494), le phare
+  15 000 (:456), `onCodePris` 1 500 (:1482), `_veilleVideo` 2 000 (:1843), la
+  republication 15 000 (main.js:4106), **`pullPlayTime` 60 000** (:4108),
+  `prefsPush` 20 000 (:2199), `refreshEduMenuBtn` 10 000 (:2622),
+  `savePosition` 3 000 (:1032), le retour au sol 4 000 (:1021), le garagiste
+  et l'aéroportiste `cadence(3000)` (:1508/:1541), `REPIT_MS` 8 000 et
+  `REESSAI_MS` 5 000 (identity.js:201-202). Forme : `src/tempo.js`, qui lit
+  `tempo` dans l'adresse, REFUSE toute valeur ≠ 1 hors `127.0.0.1`/
+  `localhost`, et expose `t(ms) = ms / TEMPO` ; le banc passe `&tempo=4`.
+  **Ne passent JAMAIS sous tempo** : l'horloge scolaire (`SESSION_MIN_USINE`,
+  `DAILY_LIMIT_SECONDS`, `MIN_ANSWER_DELAY`, `FAST_WRONG_DELAY`,
+  `FREEZE_SECONDS` — `reglages.js` affirme « dix minutes » mot pour mot),
+  `chronoReel` et tout `cadence.js` (c'est un défaut de comptage du temps qui
+  a motivé le module), la borne de `dt` (physique), `passants.js:143
+  cadence(2000)` et `vehicules.js:1596 patience = 4` tant que `monte.js`
+  affirme des débits en temps réel, et `CALMES_DAFFILEE` (un compte, pas un
+  délai). Garde-fou obligatoire : un témoin sous node par constante,
+  `STALE_MS === 20000`, `REPIT_MS === 8000`…, sinon un tempo mal câblé
+  publie un jeu qui coupe les liens en cinq secondes. Gain estimé sur les
+  comptes : huit à douze minutes ; à mesurer, jamais à annoncer avant.
+  Et l'on garde un `npm run long -- --tempo=1` pour la nuit : une course
+  révélée à tempo 4 peut ne pas exister dans le vrai jeu.
+
+- [ ] **Accélérer le portail, étape 3 : deux machines.** Partition écrite en
+  dur à côté de `SUITES` (part A ≈ reseau + carte + hote + visio + metro +
+  parent, part B ≈ monte + manhattan + washington + plafond + sauvegarde +
+  carteMonde + realisme ; reglages en A, maj en B), `--part=A|B`,
+  `--fusionner a.json b.json` (union des acquis, chaque empreinte revalidée
+  à la lecture), et un contrôle de couverture OBLIGATOIRE : le verdict
+  fusionné n'est vert que si A ∪ B === SUITES, aucune suite deux fois avec
+  des verdicts contraires, même commit et même état sale des deux côtés.
+  Plancher : la plus longue suite seule (`reseau.js`, 19 min). Une seule
+  machine dans cette session : à faire le jour où une seconde existe.
+
+- [ ] **Trois rouges du portail complet de la v251, verts rejoués seuls,
+  cause ouverte.** (1) `reseau.js`, « à trois, chacun voit les deux autres »
+  (hôte ["Alice"], Alice ["Marlon"], Nina les deux, en 79 s) — trois pages
+  de jeu en même temps, donc trois workers de maillage de plus sur quatre
+  cœurs ; à remesurer avec le worker et sans (`&maillage=local`) si le rouge
+  revient. (2) `carte.js`, `page.click('#map-tout')` jamais « stable » en
+  trente secondes — mesuré ensuite sur la page bureau, carte ouverte :
+  médiane 60 ms par image avec le worker, 55 sans, 53 sur `origin/main`,
+  clic en 155 / 120 / 135 ms ; le symptôme de la v247 (banc lent), pas le
+  worker. (3) `plafond.js`, « THREE.GLTFLoader: Couldn't load texture
+  blob: » × 4 au rechargement — revenu à l'identique au portail de la v252,
+  toujours vert seul : le témoin rechargeait la page tout de suite après
+  l'ouverture, et sous la charge de trois suites les neuf corps réalistes
+  étaient encore en cours d'analyse ; la navigation coupe leurs textures et
+  le chargeur l'écrit en erreur de console. Réglé dans le BANC (v252) :
+  `plafond.js` attend `humainsCharges()` avant chaque rechargement — et
+  c'est PROUVÉ sous charge : rejouée en cinquième position au portail de la
+  v252 (relance), 28 témoins verts, zéro erreur de console — et la même
+  panne dans `reseau.js` (le revenant Milo, rechargé tout de suite après
+  l'ouverture : cinq erreurs, seul, à la v257), même remède. (4) `monte.js`,
+  au même portail : « descendu de la voiture de Paris » et les deux témoins
+  de mur qui suivent, l'enfant à PIED avant le clic de descente — la boucle
+  de montée recliquait sur un bouton-BASCULE quand le « ⬇️ » (écrit à l'image
+  suivante, sondé par rAF) n'arrivait pas en trois secondes, à une image par
+  seconde dans Paris : premier clic monté, second descendu. Réglé dans le
+  banc (v252) : l'état se lit dans `montureConduite()`, on ne reclique
+  jamais sur un enfant déjà monté. (5) `monte.js`, troisième passe : « la
+  circulation s'arrête devant la voiture de l'enfant » — 97 relevés à moins
+  de douze blocs, ZÉRO arrêtée, ZÉRO au travers : les voitures passaient à
+  côté, le point « douze blocs devant » en droite ligne n'étant pas sur le
+  tracé quand la rue tourne (vert aux deux passes d'avant, 76 arrêtées ;
+  `vehicules.js` n'a pas bougé depuis la v246). Réglé dans le banc : de la
+  chaussée sous toute la ligne, candidats classés, et l'on se repose ailleurs
+  si personne ne vient — une mesure où aucune voiture n'arrive n'est pas une
+  mesure. (6) Portail de la v253 : « la reprise tient dans la durée »
+  (`reseau.js`, hôte 1 · Alice 2 après vingt-cinq secondes) — vert seul sur
+  la branche une heure avant (74 témoins), tombé juste après un `souffler`
+  à sa limite (charge 4,49) et un retour d'Alice à 58 s au lieu de 25 ; le
+  code réseau de v253 n'ajoute que deux champs au message de position. Vert
+  à la passe suivante du portail (hôte 2 · Alice 2, 25 s) : rouge de
+  charge, déclaré ici. Et
+  « sous le toit » (`monte.js`) : le témoin lisait `plafondSiege.y` comme un
+  nombre, devenu une case par siège en v253 — corrigé dans le banc (il lit
+  la case du siège conducteur), le jeu asseyait bien l'enfant (crâne 1,19).
+
+- [ ] **À trancher par Max : le corps réaliste « femme-manteau » porte un
+  foulard blanc sur la tête.** Revue proactive des trente-cinq personnages
+  (neuf corps Rocketbox, vingt-quatre tenues sculptées) et des trois
+  appareils, planche-contact de face et de côté avec mesures (pieds au sol,
+  hauteur, symétrie) : rien de cassé. Mais Max a demandé en v243 « enlève la
+  femme avec le voile, ou retire le voile » pour la dame du château ; ce
+  modèle-ci, un des neuf corps de passants, couvre la tête d'un dupatta. Le
+  retirer de la liste `noms` de `humains.js` (les femmes tirent alors parmi
+  trois corps au lieu de quatre) ou le garder : décision de contenu, pas de
+  géométrie. Sonde : `revue/planche-humains.cjs` dans le brouillon.
+
+- [ ] **« On entre chez les gens : chaque îlot a sa porte » (washington.js)
+  est tombé UNE fois au portail de la v250** — « façade 0,1, plafond à −1,
+  1 mur, à (−21197, 6100) pour une maison en (−21197, 6095) » : sur les
+  quatre façades, la marche s'est arrêtée à un bloc du point de départ, trois
+  pas immobiles de suite — et pas sur la façade nord, celle qui a la porte et
+  par laquelle il entre partout ailleurs. VERT rejoué seul sur la branche dans
+  la foulée, même code ; vert dans dix-neuf portails auparavant (v248, v249d
+  compris). La livraison v250 ne touche que les pivots de roue des deux
+  modèles hors manifeste. Cause ouverte : ce que le témoin ne dit pas, c'est
+  ce qui l'a arrêté (une voiture d'Independence à l'arrêt devant lui ? un
+  hoquet de banc à trois pas ?). Piste : faire dire au message la cadence et
+  ce qui occupe le bloc devant le joueur à chaque pas immobile.
+
+- [ ] **« La circulation s'arrête devant la voiture de l'enfant » est un
+  témoin qui dépend de l'état du banc.** Rouge à deux portails de la v247
+  (« première voiture après 0 s, 206 relevés à moins de douze blocs, zéro
+  arrêtée, zéro au travers »), VERT rejoué seul sur la branche ET sur
+  `origin/main`, et rouge une fois sur l'ancien code rejoué seul pendant la
+  v246. Il se pose douze blocs devant une voiture visible et attend qu'elle
+  vienne s'arrêter ; rien ne garantit que cette voiture vienne à lui — celle
+  qui est déjà à douze blocs peut tourner avant, ou faire la queue derrière
+  une autre. Un rouge sans traversée n'est pas la panne que le témoin garde.
+  Piste : choisir une voiture dont le tracé PASSE par le point posé (lire le
+  parcours du convoi, pas seulement son cap), et dire dans le message si la
+  voiture la plus proche s'est éloignée ou rapprochée.
+
+- [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
+  des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
+  se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt
+  avant) et les passants naissent par tranches ; sur le banc en rendu
+  logiciel la pire image de la téléportation passe de 550 à 450 ms et le
+  temps figé de 3,9 à 2,6 s (`teleport.cjs`, une mesure chacun) — ce qui
+  reste est le maillage de deux cent quatre-vingt-quatorze morceaux de ville
+  à 23 ms pièce, que le budget de `MESH_MS_PAR_SECONDE` étale déjà. La
+  mesure qui compte est sur l'iPad de Max ; si le lag y persiste, la piste
+  est de mailler moins à l'arrivée (rayon réduit les deux premières
+  secondes) ou plus vite (45 % du coût est la génération du relief).
+
+- [ ] **Le témoin du mur a mesuré « à pied » au volant, deux fois, au
+  portail de la v249** (à pied 1,1 bloc du mur, gabarit 2,2, monture
+  présente) — et pas une troisième, `monte.js` rejouée seule avec le clic de
+  descente vérifié (descendu : carrure 0,6, aucune monture). Le témoin de
+  circulation qui précède dit désormais l'état avant le clic, après le clic
+  et au retour : si cela revient, le message dira si l'enfant est remonté
+  par ce clic (un clic sur « Descendre » quand on n'est plus au volant fait
+  MONTER dans la voiture d'en face) ou s'il a été éjecté pendant la mesure.
+  Cause ouverte, pas expliquée.
+
+- [x] **v254 — Le badge de version ouvre le journal des nouveautés.** Max.
+  `src/nouveautes.js` (102 entrées, 294 puces, rédigées depuis
+  `CHANGELOG.md`), modale « Quoi de neuf ? », mise à jour forcée en bas.
+  Deux témoins dans `maj.js`, rouges sur l'ancien code. Règle : chaque
+  livraison ajoute son entrée au journal du jeu dans le même commit.
+
+- [x] **v253 — À plusieurs, l'ami est vu dans sa voiture et l'on monte avec
+  lui.** Max, après la v249. `v`/`p` dans le message de position, l'ami
+  dessiné avec la fabrique de la monture et assis, passagers collés au siège
+  (`sieges` de la fiche). Trois témoins dans `reseau.js`, rouges sur
+  l'ancien code. Reste : sans courtier (partie par le nuage seul) le
+  conducteur n'a pas d'identifiant de pair et voit ses passagers debout ;
+  et les montures sans `siege` (cheval, avion) se voient encore à pied chez
+  les autres — le champ `v` part, il manque leur `siege` et leur pose.
+
+- [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,
+  après la v249. Mesuré : les taxis de Manhattan restent à neuf blocs des
+  tables ; c'était la voiture de l'enfant. `mobilierDevant` (props du monde
+  + registre du renderer de Manhattan), exception « déjà dedans » par
+  famille. Deux témoins dans `monte.js`, rouges sur l'ancien code.
+
+- [x] **v251 — Le maillage hors du fil principal.** Fait : un worker
+  engendre et maille, le fil principal installe (324 → 0 ms
+  de maillage par seconde en vol au-dessus de Paris). Reste à mesurer sur
+  l'iPad de Max ; si le lag persiste, les pistes suivantes sont le coût des
+  ombres (v247, jamais mesuré sur tablette) et un second worker.
+
+- [x] **v250 — Les roues de la Lucid Gravity tournent autour de leur essieu,
+  et la flotte entière est passée en revue.** Max, capture d'iPhone :
+  « Gravity design ko, wheels », puis « sois proactif sur ce genre de bug ».
+  `rotation.x += angle` tourne autour du x du PARENT (Euler XYZ) ; les pivots
+  fabriqués naissent désormais dans un groupe-essieu. Témoin de flotte dans
+  `monte.js` (208 roues, 8 fausses sur `origin/main`, 0 ici), planche-contact
+  des 52 modèles regardée. Reste à faire la même revue pour les humains et
+  les appareils (planche par modèle, mesures de géométrie), promise à Max.
+
+- [x] **v249 — Paris n'est plus dans le noir, on voit le personnage
+  conduire.** Faits : planchers de nuit réglés ombres forcées, avatar
+  assis sur le `siege` de la fiche.
+
+- [ ] **v248 et suivantes — « regarde les améliorations qu'il y a encore eu
+  dans la ville de New York et reproduis-les sur l'ensemble de la carte ».**
+  La v247 a livré la première étape, le regard (soleil, ombres, ACES, voûte
+  du ciel, nuit) sur tout le monde. Ce que New York a encore de plus
+  (docs/manhattan.md) : façades en maillages à matériaux physiques
+  (embrasures, corniches, escaliers de secours, réservoirs), lampadaires qui
+  éclairent la rue la nuit, marquages au sol, reflets préfiltrés, pluie sur
+  la chaussée (rugosité). Sa chaîne est une liste de bâtiments (rectangle,
+  matériau, style, hauteur, graine) et une fonction de surface, avec le
+  monde voxel qui garde les collisions (`TerreUrbaine`). **La v248 a livré
+  la deuxième étape : les réverbères dans les six villes bâties à la main,
+  et les quatre lampes de Manhattan prêtées au monde entier, posées sous les
+  lanternes les plus proches de l'enfant la nuit.** Les marquages au sol
+  existent déjà partout (`ROUTE_BLOCK`, `ROADLINE`, `CROSSWALK`). Étapes
+  suivantes, chacune sur captures rue + ciel : Paris sur la chaîne de
+  façades ; les autres villes bâties à la main ; les villes engendrées par
+  leurs îlots.
+
+- [ ] **Le coût des ombres sur l'iPad n'est pas mesuré.** La v247 ajoute une
+  passe d'ombre par image : les morceaux à moins de six morceaux de l'enfant
+  rendus une seconde fois depuis le soleil, carte de 1 024, filtre PCF
+  simple. Au banc en rendu logiciel, à Paris : 217 ms sans ombres, 400 avec
+  (350 en ombre basique 512, 467 en PCF doux 2 048) — des millisecondes de
+  SwiftShader, non transposables — et suffisantes pour que le jeu coupe ses
+  ombres de lui-même en rendu logiciel. Si Max signale un ralentissement, les
+  leviers dans l'ordre : `RAYON_OMBRE` (6 → 4), la carte (1 024 → 512),
+  `BasicShadowMap`, et en dernier `?ombres=0` / `renderer.shadowMap.enabled`.
+
+- [ ] **Assis dans une voiture, le banc rend chaque image deux fois plus
+  lentement qu'à pied (256 contre 145 ms), fil principal INACTIF.** Ce n'est
+  ni la sonde des reflets (une face coûte 2 à 5 ms depuis la v245) ni du
+  JavaScript : c'est la rastérisation logicielle de la carrosserie
+  réfléchissante en gros plan. Non transposable à l'iPad ; à vérifier UNE
+  fois en rendu matériel avant de chercher plus loin.
+
+- [ ] **Deux circuits de Paris se raccordent à cent soixante degrés sur la rue
+  de Rivoli, et les voitures s'y frôlent encore.** Après la v244, il reste
+  dix-sept à vingt-cinq relevés de chevauchement sur trente secondes (contre
+  soixante-dix-huit), tous au même endroit — autour de (−190, 188) et
+  (−175, 215) : une voiture qui attend est frôlée par celle qui passe en biais,
+  parce que les deux tracés s'y rejoignent presque parallèles. Céder le passage
+  ne peut rien contre un tracé qui met deux files dans le même couloir : c'est
+  dans `voies.js` / `paris.js` que cela se règle (un carrefour franc, ou une
+  seule file sur le tronçon partagé), et cela se remesure avec la sonde des
+  rectangles, jamais avec « à moins de 3,5 blocs ».
+
+- [ ] **L'arrivée en ville fige l'écran depuis la v241 (#244), et le témoin le
+  dit des deux côtés.** « L'écran ne se fige pas en arrivant sur une ville »
+  (monte.js, barre 550 ms et 5 % du temps au-delà de 300 ms), rejoué SEUL sur
+  `origin/main` (v241) : pire image **1 233 ms, 6,9 %** ; sur la branche v242 :
+  2 117 ms, 20,8 % — une mesure chacun, sur un banc en rendu logiciel, et le
+  trajet de la branche survole MOINS de villes (Paris seule ; Strasbourg et
+  Stuttgart en sortent avec le monde ×2). La v246 a découpé l'arrivée image
+  par image et retiré deux des causes — les programmes de la flotte et des
+  humains compilés sur place, et les dix-huit passants nés dans la même
+  image ; ce qui reste est le maillage (voir « ce qui reste du gel de
+  téléportation » ci-dessus). Remesuré à la v246, `monte.js` rejoué SEUL des
+  deux côtés, même fichier de témoins : `origin/main` (v245) **1 267 ms,
+  9,3 %** ; branche **2 033 ms, 18,9 %** — même écart entre les deux arbres
+  qu'à la v242 (1 233 contre 2 117) sur du code qui a depuis été fusionné,
+  donc un écart de BANC, pas de code ; rouge des deux côtés, dette maintenue.
+  La validation de #244 en rendu matériel était verte ; à remesurer sur
+  l'iPad.
+
+- [ ] **Quatre témoins de `manhattan.js` sont rouges sur ce banc, des deux
+  côtés.** Rejoués SEULS sur la branche v242 et sur `origin/main` (v240),
+  dans un arbre séparé, même conteneur en rendu logiciel : « le trou enlève
+  aussi la géométrie visible » (9 203 → 54 969 sur main, 17 102 → 54 969 sur
+  la branche — le compte MONTE parce que la ville se construit encore),
+  « fenêtres et éclairage public la nuit », « les ombres suivent le soleil et
+  la lune » (`[1, -1]`), « le taxi roule avec les contrôles tactiles », et un
+  délai de quatre-vingt-dix secondes au rechargement qui fait lâcher la fin de
+  la suite une fois sur deux — en v245, sur six portails, la fin réseau de
+  la suite a lâché trois fois (« partagent blocs, avatars et code » rouge sans
+  détail, le bloc de l'hôte jamais reçu par l'invité, « Lost connection to
+  server » du courtier local), verte les autres fois sur le MÊME code ; au
+  portail de la v246, `page.waitForFunction` a expiré après « la reprise
+  cloud place l'enfant près du chantier déplacé », les quatre rouges
+  ci-dessus identiques ; au portail de la v256, une SIXIÈME forme de la même
+  fin instable : `#ride-btn` jamais visible en quinze secondes après
+  l'invocation du taxi (la suite s'arrête là, vingt-quatre témoins de moins),
+  et rejouée seule le bouton apparaît, le taxi rend son rouge déclaré et la
+  fin réseau lâche (« Lost connection to server »). Le journal de la v240 annonce ce portail vert :
+  il a été mesuré avec `CHROMIUM_ANGLE=metal`, pas en logiciel. À démonter
+  sur une machine qui rend en matériel avant d'accuser le jeu — et à
+  remesurer ici témoin par témoin (la géométrie qui monte dit que le témoin
+  attend la fin d'une construction qui n'est pas finie).
+
+- [ ] **Paris au niveau de New York, sur captures.** Décision de Max après la
+  v242 : s'inspirer de ce qui a été fait sur Manhattan (façades en maillage
+  PBR, volumes réels, éclairage, foule) pour remonter les autres villes, Paris
+  d'abord. Règle de jugement inchangée : vue de rue et vue aérienne à côté
+  d'une vraie photo, AVANT de fusionner. Le rectangle de Paris se borne comme
+  celui de Manhattan (`BORNES`), et la double empreinte de `plafond.js`
+  s'applique — Paris est DANS la fenêtre.
+
+- [ ] **Le registre ment encore sur New York.** `r: 152` est le disque de
+  l'ancienne ville voxel ; Manhattan est un rectangle de 480 × 2 300. Trois
+  lecteurs s'en accommodent chacun à leur manière — `passants.js` écrit 1 200
+  en dur, `dansUneZoneATerre` prend le disque plus vingt-quatre, et le témoin
+  « aucune ville n'en chevauche une autre » juge sur le disque (c'est le
+  témoin du rectangle, v242, qui garde la vraie marge). Une emprise dans le
+  registre, lue par tous, remplacerait ces trois arrangements.
+
+- [ ] **La fenêtre déclarée de la migration ×2.** Un bloc est jugé « posé sur
+  l'ancienne carte » par sa DATE (`DATE_CARTE_3`, world.js). Une tablette qui
+  jouerait encore sur la v241 après cette heure poserait des blocs que la
+  migration laisse où ils sont — à l'ancienne adresse de leur ville. Si cela
+  se voit (une construction de Marlon ou d'Alice à l'ancienne place de New
+  York, autour de (−10 143, 2 615)), la copie `prénom~avant-carte-2` et la
+  fonction pure `migrerCarte3` permettent de la ramener à la main.
+
+- [ ] **JFK est au nord-est de Manhattan.** Son vrai cap est le sud-est ; là
+  c'est la baie de Jamaica, de l'eau, et le rectangle de la ville. Le cap
+  cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
+  gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
 
 - [ ] **Manhattan sur la Terre : suite du réalisme.** Priorités : circulation
   commandée par les feux, berges et ponts raccordés au relief, intérieurs,
@@ -492,8 +2542,11 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
   Fait : 1) mobilier (v180), 2) routes (v181), 3) façades partout, matériaux
   par ville, médinas préservées (v181) — et LA voiture : le modèle 3D
   d'artiste fourni par Max, reflets par caméra cubique, vue cockpit (v181).
-  À venir : 4) vie dense — voitures arrêtées aux feux, enseignes lumineuses
-  la nuit.
+  4) vie dense : **les feux tricolores s'allument une couleur à la fois et la
+  circulation s'y arrête (v273)** — la règle est pure (`src/feux.js`), lue par
+  celui qui allume les lentilles comme par celle qui freine ; deux rues d'un
+  carrefour ne sont jamais vertes ensemble. **À venir : les enseignes
+  lumineuses la nuit.**
 
 - [ ] **Moderniser les villes bâties à la main** — New York est faite (v186,
   validée par Max : « Manhattan est mieux, je valide fort ») et **Paris aussi
@@ -649,6 +2702,86 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 ## Fait récemment
+
+- [x] **v264** — Les flammes des réacteurs : une par tuyère déclarée par le
+  bâtisseur (`tuyere()` dans `reacteur()` et à la tuyère du chasseur), deux
+  cônes additifs non éclairés dont `fun.js` règle la longueur sur la manette
+  à chaque image, éteintes à l'arrêt et à la descente. Trois témoins de
+  `monte.js`.
+- [x] **v263** — Le cadran de cap aux commandes (`src/cap.js`, pur) : cap en
+  degrés, ville la plus proche dans le cône de ±45° devant l'appareil (tout
+  le registre, villes engendrées comprises) et sa distance en km, repère qui
+  glisse sur une règle, flèche et plus proche ville quand rien n'est devant.
+  Trois témoins de `monte.js` lisent le texte du cadran.
+- [x] **v262** — La manette des gaz (cadran à droite, pointeur à part) pour
+  voitures et avions ; inertie et volant au joystick pour la voiture ;
+  décrochage et atterrissage manuel, bouton 🛞 du train, atterrissage sur
+  le ventre dit ; boutons de la marche effacés en véhicule (classes
+  `en-vehicule`/`en-avion`). Six témoins tactiles à deux doigts dans
+  `monte.js`. Reste de #36 : rien ; #37 (flammes du réacteur) à suivre.
+- [x] **v261** — L'avion décolle de sa piste et s'y pose : cinq états du mode
+  `pilote` (`sol`, `decollage`, `vol`, `atterrissage`, `freinage`), fiches
+  `rotation`/`approche`/`roulage`/`frein`, assiette rendue avec pivot sur le
+  train principal, jambes du train en membres qui rentrent et sortent,
+  arrondi, marche d'un bloc franchie au roulage. Cinq témoins de `monte.js`
+  sur une piste de pierre, captures de côté.
+- [x] **v260** — Chaque voiture roule à l'allure de sa classe (citadine ×3,8,
+  berline/SUV ×4,4, GT ×5,4, sportive ×6,4, hypercar ×8 ; plafond 28 blocs/s
+  en ville par l'arithmétique de la v237). Témoin de `monte.js`.
+- [x] **v259** — Les passants ne traversent plus la voiture de l'enfant
+  (ni celles de la rue, ni les véhicules posés) : regard-devant d'un pas
+  dans `BaseNPC.update`, `contourner()` chez `Habitant` et `Wanderer`,
+  `world.obstaclePieton` branché par `main.js` sur `vehicules.voitureA` et
+  les bêtes à `gabarit` ; `posteAutour` ne tire plus une place dans une
+  voiture ; devant une voiture qui arrive (`world.vehiculeApproche`, sur
+  `player.pousse` et `vehicules.enMarche`) le piéton s'écarte (`ecart`), et
+  la voiture de l'enfant freine devant un piéton (`pietonDevant`, troisième
+  famille d'`obstacleVehicule`). Deux témoins de `monte.js`, rouges sur
+  l'ancien code (287 à 449 relevés dedans à l'arrêt ; traversée en roulant).
+- [x] **v258** — Le jeu se prépare avant « Jouer » (ligne d'avancement,
+  boutons grisés jusqu'à corps + programmes + fond de carte, borné à 45 s,
+  position restaurée dès l'accueil) ; la carte du monde calcule son fond par
+  tranches de 8 ms et ne le recalcule que quand la vue en sort ; la minicarte
+  se repeint deux lignes par image, se remplit après un saut et n'engendre
+  plus jamais un morceau. Banc : `?prep=0`, `{ prep: 1 }`, `{ pret: true }`.
+- [x] **v257** — L'installation se voit : le loader compte les fichiers
+  rangés pendant la mise à jour, puis reste après le rechargement jusqu'à ce
+  que corps et programmes soient prêts ; une version ne se revalide plus ;
+  « Graphismes avancés » dans les Réglages (normal par défaut sur tablette) ;
+  `?diag=1` et les paramètres d'isolement pour mesurer sur l'appareil. Et
+  deux témoins de `reseau.js` rendus robustes (bêtes d'Alice, corps de Milo).
+- [x] **v256** — Le panneau 🛠️ s'en va (atelier, coffre, quête, panneaux,
+  chantier, records, chapeaux, feux d'artifice), le bouton devient 🖼️
+  Souvenirs ; aucune donnée effacée, les messages d'une ancienne tablette
+  ignorés sans casse et relayés. Et la Rotonde de `washington.js` se rejoint
+  jusqu'à être entré, plus en quatorze pas.
+
+- [x] **v255** — Le portail d'essai attend ce qui compte, plus le temps :
+  instrument de charge instantané (`tests/charge.js`, `/proc/stat` sur une
+  demi-seconde) pour `souffler` et le repos entre suites, une charge stable
+  se dit au lieu de s'attendre, `jouerSeul` en condition bornée, suites
+  courtes d'abord, empreinte de reprise sur la forme du banc. Quinze suites
+  depuis zéro : 74 → 51 minutes, 9 → 0 minutes d'attente entre suites,
+  respiration 615 → 119 s, mêmes témoins. Étapes 2 (tempo) et 3 (deux
+  machines) déclarées ci-dessus.
+
+- [x] **v254** — Le badge de version ouvre « Quoi de neuf ? » : cent deux
+  entrées écrites pour un enfant (`src/nouveautes.js`), la version installée
+  marquée, la mise à jour forcée en bouton ; et fermée, la modale ne couvre
+  rien (`hidden` perdait contre `display: flex` — attrapé par `carte.js`).
+
+- [x] **v253** — À plusieurs, le véhicule voyage avec la position : on voit
+  l'ami dans sa voiture, on monte avec lui comme passager, le premier
+  conduit.
+
+- [x] **v246** — La téléportation ne fige plus l'écran (les dix-neuf
+  signatures de programme de la flotte et des humains, lues dans les fichiers,
+  se compilent à l'accueil ; zéro programme neuf à l'arrivée à Paris, vingt
+  avant ; les passants naissent par tranches), la Bugatti roule sans traînées
+  et la Lucid retrouve sa forme (une pièce de roue est un mot entier et une
+  géométrie : `/rim/` attrapait « trim »), et chaque ville a ses voitures
+  (graine par ville, laque par voiture : Moscou, sept modèles et huit couleurs
+  sur douze voitures visibles).
 
 - [x] **v226** — Les villes ne sont plus vides quand on y arrive. Les cadences
   de ménage (passants, circulation, garagiste, aéroportiste) comptaient en

@@ -49,7 +49,16 @@ const position = (p) => p.evaluate(() => ({
   await banc.ouvrir();
   try {
     // --- une tablette, comme à la maison -------------------------------------
-    const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    // LES QUATRE PAGES DE CETTE SUITE DEMANDENT LA RÉSOLUTION PLEINE, ET ELLES
+    // LE DEMANDENT MÊME QUAND C'EST LE DÉFAUT (v277). Le banc sait rendre à
+    // `dpr` 0,5 — quatre fois moins de pixels, vingt pour cent de montre en
+    // moins sur une scène légère (`BANC_DPR=0.5`) — et cette suite est la seule
+    // qui VISE AU PIXEL : elle clique des vignettes, mesure des cadrages et lit
+    // des fonds de carte. Une résolution qui change déplace ce qu'elle mesure.
+    // On l'écrit donc à l'ouverture de la page, aujourd'hui où cela ne change
+    // rien, pour que cela protège le jour où le défaut du banc bougera — même
+    // discipline que `rr`, `ombres` et `prep`.
+    const tab = await banc.jouerSeul('Marlon', { tactile: true, pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(tab);
 
     // OÙ SONT LES VILLES : ON LE DEMANDE, ON NE LE SUPPOSE PAS.
@@ -324,6 +333,7 @@ const position = (p) => p.evaluate(() => ({
     // et l'on laisse la machine respirer entre deux essais.
     let pose = await position(tab);
     let arrive = false;
+    const appuis = [];
     for (let essai = 0; essai < 4 && !arrive; essai++) {
       if (essai) {
         await souffler();
@@ -338,9 +348,12 @@ const position = (p) => p.evaluate(() => ({
       pose = await position(tab);
       arrive = Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
         && !(await carteOuverte(tab));
+      // ce que le minuteur a vu (v258) : un appui décliné se démonte, il ne
+      // se rejoue pas — sans ce relevé, quatre essais rouges ne disent rien
+      appuis.push(await tab.evaluate(() => (window.__carte && window.__carte.dernierAppui) || null).catch(() => null));
     }
     verifier('un appui long dépose n\'importe où', arrive,
-      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z] }));
+      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z], appuis }));
 
     // --- plus on s'approche, plus la carte montre ----------------------------
     await banc.ouvrirLaCarte(tab);
@@ -437,37 +450,12 @@ const position = (p) => p.evaluate(() => ({
     verifier('ce que l\'enfant construit apparaît sur la carte de près',
       construit.pres > 20 && construit.loin <= 0, JSON.stringify(construit));
 
-    // Les créatures restent visibles en dézoomant. Elles disparaissaient sans
-    // un mot au-delà d'un seuil de zoom — « je ne vois plus de Pokémon sur la
-    // carte » — pendant que la légende continuait de les promettre. Elles
-    // vivent près du joueur : de loin, elles se regroupent autour de sa
-    // flèche, et c'est la vérité. Mesuré avant correction : 0 pixel violet
-    // dès bpp 1,6.
-    const violets = await tab.evaluate(() => {
-      const c2 = window.__carte, g = window.__game;
-      // La ponte est opportuniste : près du spawn il peut n'y avoir qu'une
-      // seule créature, et une seule se cache facilement. On en garantit une
-      // poignée par le vrai chemin de ponte avant de mesurer.
-      for (let i = 0; i < 60 && g.creatureManager.creatures.length < 6; i++) {
-        g.creatureManager.trySpawn();
-      }
-      if (!g.creatureManager.creatures.length) return { erreur: 'aucune créature à dessiner' };
-      c2.vue.cx = Math.round(g.player.pos.x); c2.vue.cz = Math.round(g.player.pos.z);
-      const compter = () => {
-        const cv = document.getElementById('map-modal-canvas');
-        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
-        let n = 0;
-        for (let i = 0; i < d.length; i += 4) {
-          if (Math.abs(d[i] - 200) < 30 && Math.abs(d[i + 1] - 110) < 30 && Math.abs(d[i + 2] - 224) < 30) n++;
-        }
-        return n;
-      };
-      const par = {};
-      for (const bpp of [0.7, 2.5]) { c2.vue.bpp = bpp; c2.limiter(); c2.peindre(); par[bpp] = compter(); }
-      return par;
-    });
-    verifier('les créatures restent visibles en dézoomant',
-      !violets.erreur && violets['0.7'] > 0 && violets['2.5'] > 0, JSON.stringify(violets));
+    // LE TÉMOIN DES CRÉATURES VIOLETTES EST PARTI AVEC ELLES (v285). Il gardait
+    // « elles se voient à tous les zooms », c'est-à-dire le drapeau `toujours`
+    // de `carte.js` — retiré du même coup, puisque plus aucun mobile ne le
+    // porte. Ce qu'il mesurait n'existe plus ; le garder sur une liste vide
+    // serait un vert qui ne prouve rien (v220). Les habitants et les animaux
+    // gardent leur propre témoin, juste au-dessus.
 
     // --- les bornes ----------------------------------------------------------
     const bornes = await tab.evaluate(() => {
@@ -1609,11 +1597,29 @@ const position = (p) => p.evaluate(() => ({
     verifier('aucune erreur JavaScript sur la tablette', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 
+    // UNE SUITE REFERME SES PAGES, COMME UNE SONDE (v281).
+    //
+    // `tab` a servi de la première ligne à ce verdict-ci, et plus jamais après.
+    // Laissée ouverte, elle continue de faire tourner sa boucle de jeu pendant
+    // les trois pages qui suivent — et `souffler` le dit lui-même, quatre fois
+    // de suite et à partir de cette ligne exactement : « charge stable —
+    // quelque chose tourne encore, et ne redescendra pas · 3,82 à 3,92 cœur(s)
+    // sur 4 ». Mesuré des DEUX côtés, suite jouée seule : le même relevé, donc
+    // ce n'est pas une livraison qui l'a introduit, c'est là depuis toujours.
+    //
+    // Seule, la suite survit quand même (95 verdicts verts des deux côtés) ;
+    // au PORTAIL, après six suites, elle bascule — `ouvrirLaCarte` a rendu
+    // « Timeout 30000ms » sur la quatrième page. C'est la v220 (« deux pages
+    // ouvertes EN MÊME TEMPS font tomber la cadence de 42,9 à 20,8 ») et la
+    // v268 (« une mesure de coût referme ses pages »), appliquées à une SUITE
+    // au lieu d'une sonde : ce qu'on n'interroge plus, on le referme.
+    await tab.close();
+
     // --- et sur un ordinateur, à la souris -----------------------------------
     // C'est là que la carte était complètement inerte : la souris capturée par
     // le jeu envoyait tous les clics dans la fenêtre 3D.
     await souffler();
-    const bureau = await banc.jouerSeul('Alice');
+    const bureau = await banc.jouerSeul('Alice', { pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(bureau);
     const boutonRecoit = await bureau.evaluate(() => {
       const b = document.getElementById('map-tout');
@@ -1641,6 +1647,99 @@ const position = (p) => p.evaluate(() => ({
 
     verifier('aucune erreur JavaScript sur l\'ordinateur', bureau.erreurs.length === 0,
       JSON.stringify(bureau.erreurs));
+    await bureau.close();
+
+    // --- LA CARTE NE FIGE PLUS L'IMAGE (v258) ---------------------------------
+    //
+    // Max : « quand on ouvre la carte, beaucoup de lag au début ». Mesuré au
+    // banc, processeur bridé ×4 : le premier fond de la MINICARTE bloquait le
+    // fil principal 690 ms (37 000 colonnes d'un coup, refaites entières
+    // toutes les deux secondes), et celui de la carte du monde 1 637 ms.
+    // Les deux se font désormais par tranches sous un budget par image, et
+    // le premier fond se prépare avant « Jouer ». On éprouve le TRAJET : le
+    // jeu préparé, on allume la minicarte, on ouvre la carte, on la fait
+    // glisser trois secondes — et l'on relève la plus longue tâche du fil
+    // principal. Bridé ×4 comme une tablette, et c'est à ce bridage que le
+    // gel se voit : à ×1 le banc avale le fond en un quart de seconde.
+    await souffler();
+    const nino = await banc.joueur('Nino', { prep: 1, dpr: 1 });
+    await nino.waitForFunction(() => !document.getElementById('play-btn').disabled, null, { timeout: 60000 }).catch(() => {});
+    await nino.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+    await nino.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    const cdpNino = await nino.context().newCDPSession(nino);
+    await cdpNino.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await dormir(1500);
+    await nino.evaluate(() => {
+      window.__longues = [];
+      try {
+        new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__longues.push([Math.round(e.startTime), Math.round(e.duration)]); })
+          .observe({ entryTypes: ['longtask'] });
+      } catch { /* pas d'observateur : le témoin le dira */ }
+    });
+    // LE COÛT D'UN CLIC SE MESURE DANS LE CLIC. Le premier jet relevait la
+    // plus longue tâche des deux secondes qui suivent : au portail, une tâche
+    // de 2 038 ms tombée dans la fenêtre — un ramasse-miettes, une adoption de
+    // morceaux, rien qui soit à la minicarte — a rougi « allumer la minicarte »
+    // alors que seul, rien ne dépassait 76 ms. Le clic est dispatché de façon
+    // synchrone : ce que coûte « allumer » et « ouvrir », c'est la durée de
+    // `click()`, premier dessin compris. Le glisser, lui, se mesure sur sa
+    // fenêtre, parce qu'il n'y a pas d'autre façon.
+    const allumer = await nino.evaluate(() => {
+      const t0 = performance.now();
+      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
+      return Math.round(performance.now() - t0);
+    });
+    await dormir(2500);
+    const minicarte = await nino.evaluate(() => window.__longues.splice(0));
+    const ouvrir = await nino.evaluate(() => { const t0 = performance.now(); document.getElementById('minimap').click(); return Math.round(performance.now() - t0); });
+    await nino.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
+    await dormir(2500);
+    const ouverture = await nino.evaluate(() => window.__longues.splice(0));
+    // le glisser : la vue avance de deux blocs par image pendant trois secondes
+    await nino.evaluate(() => new Promise((fin) => {
+      const c = window.__carte; const t0 = performance.now();
+      const pas = () => { c.vue.cx += 2; c.vue.cz += 1; if (performance.now() - t0 < 3000) requestAnimationFrame(pas); else fin(); };
+      requestAnimationFrame(pas);
+    }));
+    await dormir(1500);
+    const glisser = await nino.evaluate(() => window.__longues.splice(0));
+    await cdpNino.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const pire = (l) => Math.max(0, ...l.map(([, d]) => d));
+    console.log(`   🔎 clics (ms) : allumer ${allumer} · ouvrir ${ouvrir} · tâches longues (ms) · après la minicarte ${JSON.stringify(minicarte)} · après l'ouverture ${JSON.stringify(ouverture)} · glisser ${JSON.stringify(glisser)}`);
+    // Quatre cents millisecondes. Mesuré seul, sur l'ancien code : 695 pour
+    // la minicarte, 764 à l'ouverture, 1 136 au glisser ; sur celui-ci, le
+    // clic coûte quelques dizaines de millisecondes et la plus longue tâche
+    // du glisser est une image de jeu bridée ×4 (50 à 160). Mon premier jet
+    // mettait la barre à 700 : la minicarte de l'ancien code passait dessous
+    // de cinq millisecondes, vert des deux côtés.
+    const BARRE = 400;
+    verifier('allumer la minicarte ne fige pas l\'image (bridé ×4)', allumer < BARRE, `le clic a coûté ${allumer} ms (barre ${BARRE})`);
+    verifier('ouvrir la carte du monde ne fige pas l\'image (bridé ×4)', ouvrir < BARRE, `le clic a coûté ${ouvrir} ms (barre ${BARRE})`);
+    verifier('et la faire glisser non plus (bridé ×4)', pire(glisser) < BARRE, `pire tâche ${pire(glisser)} ms (barre ${BARRE})`);
+
+    // ET UNE OPTIMISATION QUI DÉCOUPE DOIT PROUVER QU'ELLE NE MENT PAS : le
+    // fond calculé par tranches est identique, octet pour octet, au fond
+    // calculé d'un seul tenant pour la même vue.
+    const identite = await nino.evaluate(() => {
+      const c = window.__carte;
+      if (!c.commencerFond || !c.avancerFond) return { absent: true };
+      c.travail = null;
+      c.rendreFond(false);
+      const a = c.fond.getContext('2d').getImageData(0, 0, c.fond.width, c.fond.height).data.slice();
+      c.commencerFond(0);
+      let tranches = 0;
+      while (!c.avancerFond(0.3)) tranches++;
+      const b = c.fond.getContext('2d').getImageData(0, 0, c.fond.width, c.fond.height).data;
+      let ecarts = 0;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) ecarts++;
+      return { points: a.length / 4, ecarts, tranches };
+    });
+    verifier('le fond par tranches est identique au fond d\'un seul tenant',
+      !identite.absent && identite.ecarts === 0 && identite.points > 1000 && identite.tranches > 5,
+      JSON.stringify(identite));
+    verifier('aucune erreur JavaScript pendant la carte bridée', nino.erreurs.length === 0,
+      JSON.stringify(nino.erreurs));
+    await nino.close();
 
     // --- LE TÉLÉPHONE COUCHÉ, ET LA CARTE QUI S'ÉTIRAIT --------------------
     //
@@ -1662,7 +1761,7 @@ const position = (p) => p.evaluate(() => ({
     // écart par le facteur d'échelle de son axe, celui-là même que la feuille
     // de style applique.
     await souffler();
-    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 } });
+    const couche = await banc.jouerSeul('Yanis', { viewport: { width: 844, height: 390 }, pret: true, dpr: 1 });
     await banc.ouvrirLaCarte(couche);
     // L'ENCOCHE FAIT PARTIE DE L'ÉCRAN, ET ELLE N'EST PAS DE LA PLACE.
     //

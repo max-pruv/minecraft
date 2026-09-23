@@ -20,19 +20,2512 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v242 — Les personnages ne grimpent plus aux façades
+## v290 — Le palier mesurait l'écran, et l'étendue devient ton choix
 
-**Pourquoi.** En sautant contre un mur, un personnage conservait son appui
-au sol et relançait le saut à chaque image. Il pouvait remonter un immeuble.
+**Pourquoi.** Max, deux captures d'iPad avec `?diag=1` : « palier pas encore
+mesuré · rr 12 · file 8 → **bas** (morceau 37,0 ms ou image 17,0 ms au-delà de
+63 / 16,7) au prochain lancement ». Le palier de la v284 — celui qu'il avait
+justement réclamé, « ajuster en fonction de l'appareil et sa capacité » —
+s'apprêtait à **dégrader son iPad** : distance d'affichage de 12 à 8, file de 8
+à 6, jets de 120 à 95 blocs par seconde. L'inverse de la demande.
 
-**Ce que ça change.** Le saut consomme immédiatement l’appui au sol. Il faut
-atterrir avant de pouvoir sauter à nouveau ; les modèles v241, la marche et
-la présence progressive restent identiques. Le cache PWA passe en v242.
+La cause tient dans un nombre. Le jeu classait l'appareil sur `now - lastTime`,
+l'écart entre deux images. Sur un appareil synchronisé à son écran, cet écart
+**est la période de rafraîchissement** : 59 images par seconde, 17,0 ms, soit
+1000/59 au dixième près. Les deux barres devenaient fausses par construction —
+au-delà de 16,7 ms, c'est-à-dire tout appareil en bonne santé à 60 Hz, on partait
+en `bas` ; et la barre du palier haut, 8 ms, est inatteignable sous vsync, si bien
+que `haut` ne pouvait **jamais** être atteint par personne. La v284 avait pourtant
+écrit la règle en toutes lettres — « une cadence plafonnée par l'écran ne dit rien
+de la réserve » — et l'a enfreinte dans le fichier d'à côté, une mesure plus loin.
 
-**Ce qui le prouve.** Un contrôle traverse 48 trajectoires autour de trois
-angles de Midtown : 15 trajectoires grimpaient avant correction, aucune
-après, avec un sommet de saut à 34,11 pour un sol à 33. Il rejoint les
-13 contrôles des anatomies, des véhicules et de la présence.
+Et le verdict était **déjà rangé** : sa capture dit « au prochain lancement »,
+donc `localStorage` était écrit. Corriger la règle sans changer la clé aurait
+laissé son iPad dégradé pour de bon — une mesure ne se reprend pas.
+
+**Ce que ça change.** Le jeu mesure désormais le **travail** d'une image — ce
+qu'il fait vraiment, du premier calcul jusqu'au rendu, sans l'attente du
+balayage. Les barres, elles, ne bougent pas d'un chiffre : elles décrivaient
+déjà un travail (« on demande la moitié des 16,7 ms »), il manquait seulement de
+le leur donner. Le verdict rangé par l'ancienne règle est oublié : tout appareil
+repart de la mesure d'aujourd'hui, et un appareil non mesuré garde exactement le
+comportement de la v283. Le `?diag=1` affiche les deux grandeurs côte à côte,
+travail et période, pour qu'un palier surprenant se démonte sur l'appareil.
+
+**Ce qui le prouve.** Trois témoins de `maj.js`, dont deux neufs. « Le palier se
+décide sur le travail d'une image, jamais sur la période de l'écran » lit ce que
+le JEU a mesuré et compare les deux grandeurs : au banc, 166,6 ms de période
+contre 22,8 de travail à rr 12, 66,6 contre 9,7 à rr 2 — un facteur sept, ce qui
+rend la confusion visible. « Un verdict rangé par l'ancienne règle ne dégrade
+plus l'appareil » rejoue la situation exacte de l'iPad : on écrit `bas` sous
+l'ancienne clé, on recharge, et l'on regarde la file que l'enfant obtient. Les
+deux sont rouges sur le code de production.
+
+Et le témoin de la v284 est corrigé pour ce qu'il ne pouvait pas voir : il
+**fabriquait** ses deux nombres, donc il vérifiait que la règle sait trier des
+chiffres, jamais qu'un appareil puisse les produire.
+
+**Et la même capture paie une dette de la v284 et en ouvre une plus grosse.**
+Max a mis « Graphismes avancés » : `dpr 2,00`, ombres ON, **59 images par
+seconde et 84 ms de pire image**, contre 79 et 75 à `dpr 1,25` sans ombres.
+2,56 fois la surface plus une passe d'ombres entière coûtent cinq
+millisecondes — la v284 avait raison de refuser de le deviner, et le prix
+n'existe pas sur cet appareil. Rien n'entre pour autant dans la table du
+palier : ces chiffres sont relevés à la distance d'affichage d'aujourd'hui, que
+le palier `haut` change aussi. Ce que la capture établit surtout, c'est que
+son iPad maille **un morceau de monde en 37 ms**, soit vingt-sept par seconde
+là où voler en réclame cent quarante-deux : il n'est pas en peine, il attend.
+C'est déclaré dans `TASKS.md`, avec les trois mesures à faire sur l'appareil.
+
+### Et l'étendue des graphismes devient un réglage
+
+**Pourquoi.** Max, depuis son iPhone 18 Pro, sur la v286 : « il n'y a aucun lag,
+et pour autant les graphismes ne sont pas terribles — là où tu pourrais
+certainement utiliser des graphismes à haute fidélité ». Puis, une fois le défaut
+du palier nommé : « **permets-moi de choisir l'étendue des graphismes as a user
+si tu sais pas la calibrer toi** ». C'est une décision, et elle est juste pour
+trois raisons qui ne sont pas un renoncement. Une mesure répond très bien à « que
+peut faire cet appareil » et pas du tout à « qu'est-ce que je veux voir ». Un
+palier se range pour le lancement suivant, donc il arrive toujours une partie
+trop tard, alors qu'un choix est immédiat. Et surtout un classement peut se
+tromper — il vient de le faire, sur l'appareil même de Max : un réglage qu'on
+atteint est le seul recours qui ne dépende pas de la justesse de ce qu'on a
+écrit, exactement comme le bouton de mise à jour forcée du badge de version.
+
+**Ce que ça change.** Dans ⚙️ Réglages, une rangée « 🔭 Étendue des graphismes »
+avec quatre choix : **Auto · Court · Normal · Loin**. `Auto` est le défaut, donc
+rien ne change pour qui n'y touche pas. Le choix décide de tout ce que le palier
+décidait — jusqu'où le monde se dessine, la profondeur d'avance du mailleur, la
+portée de la couche HD de Paris, la vitesse des jets — et il pousse aussi le
+paysage lointain d'autant (634 blocs en `Normal`, 848 en `Loin`). Ce que le
+réglage change est lu **au démarrage**, parce qu'une distance d'affichage qui
+respire sous les yeux de l'enfant est pire que l'attente : l'aide de la rangée
+annonce donc ce qui attend, et le bandeau dit le geste — revenir au menu 🏠 et
+rejouer. Le choix est rangé **sur l'appareil**, pas dans le profil : l'iPad de la
+maison et l'iPhone de Max n'ont pas la même réserve, et un enfant qui change de
+tablette ne doit pas emporter le réglage de l'autre. Et une étendue choisie à la
+main **ne classe plus l'appareil** : le jeu mesure quand même, l'affiche dans
+`?diag=1`, mais ne la range pas — une page qui tourne à `rr 16` parce qu'on a
+demandé « Loin » ne dit rien de ce que l'appareil ferait à sa distance naturelle,
+et ce faux verdict resterait le jour où l'on repasse en « Auto ».
+
+**Ce qui le prouve.** Six témoins de `maj.js`, tous neufs. Sous node, la règle
+pure : le choix passe devant la mesure, `auto` retombe sur la mesure, une valeur
+abîmée retombe aussi, et sans l'un ni l'autre on rend le comportement d'avant au
+bit près ; et une étendue choisie à la main n'est pas rangée comme une mesure.
+À l'écran, le trajet de l'enfant — le témoin JOUE avant d'ouvrir les réglages,
+parce qu'à l'accueil le grand panneau recouvre le bouton ⚙️ et qu'aucun doigt ne
+peut l'atteindre : les quatre mots sont là dans cet ordre, « Auto » est marquée au
+départ, toucher « Loin » se garde et se marque, l'aide annonce alors le prochain
+lancement ET le retour au menu — **et revenir sur un choix qui ne change rien
+n'annonce aucune attente**, parce qu'une aide qui promet un changement qui ne
+vient pas apprend à l'enfant à ne plus la lire. Enfin le seul verdict qui
+compte : on relance la page, et le jeu porte vraiment l'étendue demandée — file
+de seize, jets à 160. Les six sont rouges sur le code de production.
+
+**Et TROIS défauts ont été trouvés par le banc, pas par une relecture.** Le
+témoin de la règle pure appelait `palierRetenu` **sans garde** : il jetait sur
+l'ancien code et tuait la suite au premier des six, si bien qu'on ne voyait plus
+rien des cinq suivants. Une puce du journal faisait **neuf mots** pour une règle
+de huit. Et surtout, **le témoin du travail comparait le verdict à une médiane
+relue APRÈS coup** — le verdict est figé quand le palier se range, la médiane se
+recalcule quand le témoin la lit, et le jeu empile des relevés entre les deux :
+les deux nombres n'étaient égaux que par chance (10,4 contre 10,4 à un portail,
+12,9 contre 12,6 au suivant, sur le MÊME code). C'est « un verdict lu à l'instant
+d'une transition est un coup de dé » (v273) du côté d'une ÉGALITÉ. Le témoin lit
+désormais ce que le verdict DIT — sa raison nomme le travail, jamais l'image — et
+la médiane reste dans le message, où elle démonte un rouge sans jamais en faire
+un.
+
+**Les trois suites rouges du portail sont mesurées et déclarées** dans
+`TASKS.md`, et aucune n'est causée par cette livraison : le loader d'installation
+de `maj.js` est un intermittent qui rend **un rouge et un vert de chaque côté**
+(la preuve que la v269 exige), le gel à l'arrivée en ville de `monte.js` est la
+dette déclarée depuis la v284 (4 250 / 42,4 alors, 3 967 / 41,7 ici) que la
+couche HD de la v287 a alourdie, et les rouges de `manhattan.js` sont la famille
+des 0,4 image par seconde que la v259 a mesurée — sauf celui des ombres, qui est
+un défaut d'épsilon dans le témoin (`1,0000000000000002 > 1`) et ne dépend
+d'aucune cadence.
+
+---
+
+## v289 — Les toits de Paris ont leur pente, et les trottoirs leurs bancs
+
+**Pourquoi.** Troisième livraison du programme « Paris, puis la conduite ». La
+couche HD de la v287 creusait les fenêtres et posait les balcons, mais le comble
+restait un escalier de blocs de zinc : vu d'une fenêtre ou d'un toit voisin —
+c'est-à-dire dès qu'on monte — Paris était une ville de marches, et le comble à
+la Mansart, la chose la plus reconnaissable d'un toit parisien après ses
+cheminées, n'existait pas. Et le milieu des trottoirs était vide : ni banc, ni
+colonne Morris, ni corbeille, alors que la v288 avait meublé les bords.
+
+**Ce que ça change.** Les toits de Paris sont en pente. Un brisis raide monte de
+la corniche, percé d'un chien-assis à fenêtre sur une travée sur trois ; au-dessus,
+le terrasson est une surface CONTINUE qui suit la trame de chaque quartier, à
+plat au faîte, avec des croupes aux coins et des pyramides sur les chapeaux de
+piliers. Rien n'a bougé dans les blocs : c'est un champ de hauteurs que la couche
+lit sur les colonnes de toit, et de loin le comble redevient ses marches. Les
+trottoirs gagnent des bancs de bois à pieds de fonte tournés vers la rue, des
+colonnes Morris à affiches et dôme vert sur les places, et des corbeilles de fil
+vertes entre deux potelets. Captures : `docs/paris-captures/` (v289-toits,
+v289-mansart, v289-morris).
+
+**Ce qui le prouve.** `parishd.js` gagne quatre témoins, vérifiés rouges sur la
+v288 : le comble est à la Mansart (2 512 sommets de brisis raide, 2 292 de
+terrasson en pente, sur vingt-cinq morceaux) ; aucune pente n'est vrillée ni ne
+sort de sa colonne ; le dessus des blocs de toit part dans le loin (1 552
+sommets) ; et bancs, colonnes Morris et corbeilles sont dans les tampons (120
+sommets d'affiche, 672 de lattes, 832 de fil). Mesuré aussi : un morceau du
+Marais coûte 97 ms à mailler en HD, contre 99 sur la v288. Et ce que la
+livraison a coûté à trouver vaut d'être dit : trois remèdes par face de bloc ont
+été écrits avant le champ de hauteurs, et les deux derniers ne changeaient RIEN
+aux captures — c'est une sonde (`sonde-ailerons`) qui a montré que les
+« ailerons » étaient le voxel lui-même lu par face, sur une trame tournée.
+
+**Pourquoi.** Deuxième livraison du programme « Paris, puis la conduite ». La
+v287 avait donné son relief à Paris, mais UN SEUL Paris : le Marais, Montmartre
+et Belleville recevaient la même pierre de taille et les mêmes balcons filants
+que Monceau, alors que le vieux Paris est un mur d'enduit à petites fenêtres et
+volets de bois. Les arbres restaient des cubes verts empilés, les trottoirs
+étaient nus — ni potelet, ni terrasse, ni plaque de rue — et le réverbère
+était un poteau carré. Ce sont ces quatre choses qu'on reconnaît depuis un
+trottoir de Paris, et elles manquaient.
+
+**Ce que ça change.** Chaque quartier a son registre de façade, tiré de la MÊME
+trame que le voxel : le Marais et le Quartier latin sont en enduit ocre, crème
+ou gris, à baies étroites, volets à persiennes et corniche simple ; Montmartre
+en enduit pastel sur trois étages ; Belleville et le faubourg Saint-Antoine en
+enduit crème à garde-corps simples, sans store ; l'ouest garde sa pierre de
+taille et ses balcons filants. Les arbres de Paris sont de vrais arbres de
+près — un fût à huit pans, deux branches maîtresses, une couronne de feuillage
+ajouré centrée sur son tronc — et redeviennent leurs blocs au loin. Les
+trottoirs portent un potelet de fonte tous les deux blocs au bord du caniveau,
+une terrasse de café (table ronde à pied de fonte, deux chaises cannées) devant
+une devanture sur trois, une plaque de rue bleue au coin de chaque immeuble, et
+trois mitres sur chaque souche de cheminée. Le réverbère est parisien — fût de
+fonte effilé sur socle renflé, lanterne à pans sous un chapeau pointu — et il ne
+coûte que deux appels de dessin, sa fonte étant fusionnée. Aucun bloc n'a
+bougé : tout est dessiné par la couche HD ou par le mobilier, à la cote des
+blocs. Captures : `docs/paris-captures/` (v288-marais, v288-champs).
+
+**Ce qui le prouve.** `parishd.js` gagne quatre témoins, vérifiés rouges sur la
+v287 : chaque quartier a son registre (au Marais 4 516 sommets d'enduit et
+8 320 de volets, zéro de pierre ; à Haussmann 480 de pierre, zéro d'enduit ni de
+volet — le morceau du Marais se CHERCHE, le centre du quartier étant une
+place) ; les coins portent une plaque ; des potelets de fonte bordent le
+trottoir ; un arbre maillé par tronc (cinq troncs, cinq fûts) et les blocs de
+l'arbre passent au loin (le tampon solide perd 2 500 sommets). Le réverbère se
+compte : deux maillages, mesuré dans la page. Mesuré aussi : une rue du Marais
+rend 942 appels de dessin avec le réverbère fusionné, 2 410 avec le premier jet
+en douze pièces. Portail complet : seize suites, sept rouges, chacun rejoué
+seul des deux côtés (`TASKS.md`) — `carte.js` et `reseau.js` vertes seules,
+`maj.js` et `reglages.js` sur leurs dettes déclarées à l'identique,
+`monte.js` un rouge sur la branche contre deux sur `origin/main`, et le témoin
+près/loin de `parishd.js`, qui mesurait l'ordre d'arrivée de la file, corrigé
+(vert seul, 23 témoins).
+
+## v287 — Paris prend du relief : la couche HD
+
+**Pourquoi.** Décision de Max, et c'est un changement de cap pour le jeu : Grand
+Tour n'est plus « Minecraft avec des immeubles de Paris », c'est un monde ouvert
+où Paris doit se reconnaître depuis un trottoir, sans voir la Tour Eiffel. Or
+une façade de Paris était UNE TUILE DE SEIZE PIXELS par bloc : la fenêtre, le
+balcon, la corniche y étaient dessinés, et depuis la rue tout était plat — une
+boîte décorée, pas un immeuble. Le voxel doit devenir le squelette du monde, et
+cesser d'être le dernier mot de ce qu'on voit.
+
+**Ce que ça change.** Dans Paris, de près, chaque façade a du relief : les baies
+sont EN RETRAIT dans le mur avec leur châssis et leurs petits bois, l'appui
+saille, un garde-corps de fer forgé se dresse devant chaque fenêtre, le balcon
+filant de l'étage noble et du dernier étage court sur toute la façade sur ses
+consoles, la corniche porte trois ressauts et ses modillons, le chaînage
+d'angle alterne ses pierres, la porte cochère s'enfonce sous son encadrement, la
+devanture a sa vitrine, son bandeau d'enseigne et son store de toile, et le
+comble en zinc laisse sortir ses chiens-assis. La pierre, le zinc, la vitre et
+le fer ont chacun leur matière — la vitre reflète le ciel, le zinc est
+métallique, la pierre est mate et tachée — et les sols de la ville (dalles de
+trottoir, bordure de granit, asphalte, quais, pavés des cours) sont peints à
+cent vingt-huit pixels par bloc au lieu de seize. **Et la rue est une rue de
+Paris** — Max, sur les premières captures : « ils n'ont pas clairement de
+route », puis « des vraies routes qui ressemblent à des vraies routes
+parisiennes » : la chaussée est en asphalte presque noir, le trottoir en
+asphalte gris (pas en dalles de béton) et SURÉLEVÉ d'une marche, la bordure de
+granit clair monte entre les deux avec son caniveau de pavés, un passage piéton
+à larges bandes blanches barre chaque débouché de carrefour, la ligne d'effet
+des feux le précède en travers de la chaussée — et la ligne axiale, qu'une rue
+de Paris à sens unique n'a pas, ne reste qu'aux boulevards à double sens. Tout
+cela est déduit de la trame du quartier, jamais posé en blocs (le sol ne bouge
+pas, l'enfant marche à la cote du bloc), et absent des vieux quartiers tordus
+comme dans la vraie ville. De loin, rien ne change : la
+tuile plate d'avant reste le lointain, et la ligne de corniche vue du ciel est
+la même. Le mobilier de rue — réverbères, feux, bancs — est désormais éclairé
+par le soleil et la nuit comme le reste du monde, ses lanternes et lentilles
+restant émissives. **Aucun bloc n'a bougé** : la couche HD lit les blocs, elle
+n'en écrit aucun ; sauvegardes, collisions, coordonnées sont intactes. Le
+palier de l'appareil décide de la portée (trois morceaux au palier moyen, six
+au palier haut, rien au palier bas — l'iPad de quatre ans ne perd rien), et
+`?hd=` la force ; comme les ombres, la couche se coupe d'elle-même sur un
+navigateur sans carte graphique. Captures avant/après dans
+`docs/paris-captures/`.
+
+**Ce qui le prouve.** Une suite neuve, `parishd.js`, seize témoins. Sous
+node, sur les tampons du mailleur : sans HD, les tampons sont ceux d'avant ; le
+morceau est identique à l'octet près avec et sans la couche ; chaque face de
+façade exposée reçoit son détail, ni plus ni moins (136 sur 136, comptées
+indépendamment) ; les vitres sont en retrait dans l'épaisseur du mur (128 sommets
+sur 128) ; hors de Paris, la couche allumée ne change rien. À l'écran : sous
+l'enfant le détail est visible et la tuile cachée, à cinq morceaux l'inverse ;
+avec `?hd=0` rien de HD n'est installé ; et la rue porte son marquage, sa
+bordure de granit qui monte et son trottoir relevé — sans un seul sommet de
+trottoir resté à plat. Mesuré : un morceau de Paris passe de 30 à 44
+millisecondes dans le worker, pour 14 000 sommets de façade. Captures :
+`docs/paris-captures/` (v285 et v287, même rue).
+
+## v286 — Le loader ne cache plus un « Jouer » déjà cliquable
+
+**Pourquoi.** Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a
+été le cas depuis longtemps. Après c'est ok. » C'est le symptôme que la v257 (le
+loader d'installation) et la v258 (la préparation avant « Jouer ») devaient
+corriger, et il revenait après les deux. Devant un symptôme qui revient après deux
+corrections justes, on cesse de régler et l'on va voir ce qui s'exécute.
+
+**Ce que ça change.** Après une mise à jour, l'enfant n'attend plus derrière le
+loader une fois que le jeu l'a autorisé à jouer. La cause ne se mesurait pas, elle
+s'**additionnait** : deux attentes tournaient en parallèle sur des conditions
+emboîtées, et c'était la plus longue qui gardait la plus faible — quarante-cinq
+secondes pour dégriser « Jouer » (corps, programmes ET fond de carte),
+quatre-vingt-dix pour effacer le loader (corps ET programmes seulement). Sur
+l'iPad, où Safari compile un programme de shaders en centaines de millisecondes,
+le jeu dégrisait donc « Jouer » à quarante-cinq secondes et le loader continuait de
+le cacher jusqu'à quatre-vingt-dix. **45 + 90 = 135 secondes, exactement la
+fourchette de Max.** Le loader suit désormais la seule décision qui vaille : le jeu
+est prêt, ou il a renoncé à attendre — dans les deux cas l'enfant peut appuyer.
+
+**Ce qui le prouve.** Un témoin neuf, et l'inversion **provoquée** : au banc la
+séquence entière prend trois secondes, donc elle ne se reproduit jamais toute seule
+et un témoin qui attendrait serait vert des deux côtés sans rien mesurer. Les
+vraies dates ont été relevées dans l'horloge de la page — corps à 2,8-3,2 s, tout
+prêt à 3,3 s — et une borne de préparation posée à deux secondes tombe entre les
+deux. A/B sur la même page, la correction désarmée : **zéro relevé fautif armée,
+onze sur 848 millisecondes désarmée**, corps absents et vingt et un programmes sur
+vingt-cinq. Et un témoin de la v257 a dû être corrigé : il exigeait que TOUT soit
+là à l'instant où le loader s'efface, donc il **interdisait au jeu de rendre la
+main** — c'était le mécanisme même du blocage.
+
+Deux réglages rejouables : `?prepms=` porte la borne de préparation, `?apresmaj=1`
+rejoue le chemin d'après-mise-à-jour sans en faire une — utile au banc, et utile
+sur la tablette pour voir ce que l'enfant voit sans attendre une livraison.
+
+---
+
+## v285 — Le mode d'attrape s'en va, et les voitures roulent dans la nature
+
+Deux sujets, deux corps de témoins. Ils partent ensemble parce qu'ils ne se
+touchent pas ; ils sont documentés séparément parce qu'une livraison à deux
+sujets en documente deux (leçon de la v279).
+
+### Le mode d'attrape de créatures s'en va
+
+**Pourquoi.** Décision de Max : « Remove the Pokémon play entirely ». Le jeu
+portait un mode complet — trente-deux espèces engendrées, des balles à lancer,
+un Dex à remplir, un compagnon à choisir, des duels entre joueurs — et ce n'est
+plus ce que Grand Tour raconte.
+
+**Ce que ça change.** Plus de bouton ◓, plus de Dex, plus de compagnon, plus de
+duel. Le musée n'expose plus de créatures, la carte ne les promet plus dans sa
+légende, et les personnages ne parlent plus d'attraper : le Professeur
+Cornichon pose ses questions sans être « expert en créatures », Marlon ne
+réclame plus qu'on lance une balle, et Lise — qui étudiait les martiens, une
+espèce de créature — est devenue géologue de Mars. La série de quiz finie donne
+toujours ses minutes de jeu et ses félicitations, sans objet à gagner. **Et ce
+que Marlon et Alice ont attrapé reste dans leur profil**, intact : on retire
+l'écran et les commandes, jamais les données.
+
+**Ce qui le prouve.** Trois témoins dans la fumée, tous rouges sur le code
+d'aujourd'hui. Le premier lit ce que l'enfant voit — aucun bouton, aucun
+panneau, les touches Q et B sans effet, la légende sans créature — et exige en
+plus que le gestionnaire ne soit plus publié, pour qu'un bouton renommé ne
+puisse pas le rendre vert à tort. Le deuxième écrit puis relit les deux clés de
+stockage, avec leur suffixe de profil. Le troisième mesure le bandeau que
+l'enfant LIT en appuyant sur ✈️ au volant — parce que `toast`, la voix du jeu,
+vivait dans le module des créatures et était appelé de quarante-neuf endroits
+qui n'ont rien à voir : il a désormais son fichier, `src/bandeau.js`. Deux
+témoins de plus ferment un trou que `CLAUDE.md` portait sans preuve depuis la
+v157 : tout module de `src/` est dans le cache hors ligne, et tout `import`
+résout — `bandeau.js` avait failli partir sans sa ligne dans `sw.js`.
+
+Mille cent vingt et une lignes retirées.
+
+### Une voiture roule dans la nature
+
+**Pourquoi.** Max : « je voudrais que les voitures puissent circuler
+correctement […] qu'on n'ait pas vraiment des blocs carrés qui empêchent le
+véhicule de circuler. » Mesuré avant d'écrire une ligne, sur le relief pur, huit
+régions de la carte : **une voiture fait onze à vingt-deux blocs** avant d'être
+arrêtée, et **92 à 97 % de ce qui l'arrête est une marche d'exactement un bloc**.
+
+**Ce que ça change.** Une voiture franchit une marche d'un bloc, comme un avion
+qui roule le fait depuis la v261. Mesuré dans les mêmes huit régions : **quatre-
+vingts à deux cent vingt-six blocs**, soit six à dix-sept fois plus loin. Un mur
+de deux blocs reste un mur — la règle ne monte que si la carrure entière passe.
+
+**Ce qui le prouve.** Un témoin qui **cherche** le terrain qu'il prétend
+éprouver : un couloir de soixante-dix blocs dont aucune marche ne dépasse un
+bloc et qui en porte au moins trois, hors de l'eau. Il monte par le bouton et
+mesure des BLOCS PARCOURUS, borné, le temps pris dans le message. **Et ma
+première version de ce témoin n'avait jamais eu de marche devant elle** : elle
+écrivait son terrain — « plaine au nord de Paris » — où le relief monte de trois
+blocs d'un coup, ce qui est un mur par construction depuis la v261. Elle rendait
+quarante centimètres parcourus en quarante secondes, au volant, et ne mesurait
+rien. La barre vient donc d'un A/B sur la même page, en ordre alterné : **avec
+le franchissement 59 et 116 blocs, sans 0,4 et 17,9** — les deux étendues ne se
+recouvrent pas, et trente blocs est la moitié du pire bras armé. Et deux chemins
+écartés par la mesure, qu'on ne réessaiera pas : une tolérance de deux blocs est
+identique dans sept régions sur huit, et un sol lissé conduit MOINS bien qu'une
+marche franchie (120 contre 142, 164 contre 181). Le lissage du paysage est une
+affaire de rendu, elle viendra à part.
+
+---
+
+## v284 — Le jeu se règle sur l'appareil qu'il a
+
+**Pourquoi.** Max, capture du chasseur en vol : « est-ce possible de pousser le
+niveau de réalisme ? **Le unveil est late** », puis, depuis son iPhone 18 Pro :
+« tu serais capable d'ajuster en fonction de l'appareil et sa capacité ? ». Ses
+propres chiffres, relevés par `?diag=1` en vol, disent la panne mieux que la
+capture : **douze appels de dessin**, trente mille triangles, cinquante-neuf
+images par seconde. Douze appels, c'est un monde presque vide devant lui — et ce
+n'est pas que l'appareil ne suive pas, c'est que **le jeu ne lui en demande
+pas**. La profondeur de file du mailleur (huit, v269), la distance d'affichage
+(douze morceaux en tactile) et la vitesse des jets (120 au lieu de 160, v269)
+ont toutes été réglées sur l'**iPad de quatre ans** de la famille, qui devenait
+injouable. Un téléphone de 2026 paie ce compromis sans en avoir besoin.
+
+**Ce que ça change.** Le jeu mesure lui-même, en jouant, ce que son appareil
+coûte : le temps d'un morceau maillé dans le worker, le temps d'une image sur le
+fil principal. Au bout de trente secondes de jeu il en déduit un palier, le
+range sur l'appareil, et **la partie suivante en profite**. Sur un appareil
+rapide, le paysage se dévoile plus loin (distance d'affichage de douze à seize
+morceaux), le mailleur travaille avec deux fois plus d'avance (file de huit à
+seize) et les jets retrouvent leurs 160 blocs par seconde. Sur un vieil iPad, le
+jeu se resserre au lieu de se figer. **Et un appareil que la mesure ne sait pas
+classer ne perd rien : il joue exactement la v283.**
+
+**Ce qui le prouve.** Cinq témoins dans `maj.js`. Sans mesure, le jeu est celui
+d'avant au réglage près (file 8, jets 120). Un palier demandé s'applique
+vraiment — et ce qui le prouve est la FILE, pas la distance d'affichage, que
+l'adresse du banc force toujours. La règle elle-même est pure et se démonte sans
+navigateur : les chiffres de l'iPhone rendent « haut », ceux de l'iPad de quatre
+ans « bas », l'absence de mesure « moyen ». La chaîne entière se suit sur une
+vraie partie — jouer, mesurer, ranger — avec la fenêtre raccourcie par un
+réglage de banc qui se rejoue. Et une page dont on a forcé la configuration ne
+classe pas l'appareil : c'est ce qui met le banc entier hors de portée sans une
+ligne écrite pour lui.
+
+**Et le palier « bas » est le seul que rien n'a mesuré.** Ses chiffres — huit
+morceaux de distance, six de file — sont RAISONNÉS, pas relevés : la v269 a
+mesuré huit et quatre sur l'iPad de quatre ans, jamais six, et aucun appareil de
+la famille n'est plus lent que celui-là. Il ne s'applique qu'à un appareil que la
+mesure a trouvé en peine, où le réglage d'aujourd'hui est de toute façon pire ;
+mais il se remesurera le jour où une tablette y tombera, et c'est écrit dans
+`TASKS.md` plutôt que passé sous silence.
+
+**Ce qui n'est pas dans cette version, et pourquoi.** Mon premier jet faisait
+aussi passer la résolution de son téléphone de 1,25 à 2,0 pixel par point et lui
+rendait les ombres. Retiré : la mesure d'image a été prise à 1,25, et s'en
+servir pour multiplier par 2,56 la surface de cette même image, c'est se servir
+d'une mesure contre elle-même. Le prix d'une passe d'ombres n'a jamais été
+mesuré sur cet appareil non plus. Les deux sont la prochaine étape, et c'est une
+mesure — `?dpr=2&ombres=1&diag=1` sur son iPhone — pas une intuition.
+
+**Et le second sujet de cette livraison : deux témoins de `monte.js` mesuraient
+le banc.** Le portail a rendu deux rouges que les trois portails précédents
+n'avaient jamais rendus, sur un diff qui ne touche aucune des deux zones — « le
+sol dans l'ombre d'un pilier » à `168,4 · 168,4` là où trois passages donnaient
+`58,4 · 103,5`, et « le monde se maille hors du fil principal » à dix-neuf blocs
+parcourus pour une borne de quarante. Mon premier réflexe a été une explication
+commode, « le banc tournait plus lentement », et c'est **la durée de la suite qui
+l'a tuée** : 22 min 59 s au portail de la v283, où le témoin est VERT, contre
+23 min 02 s ici, où il est ROUGE. Une sonde qui sépare les quatre candidats en
+une exécution a montré la bonne valeur dès le premier relevé, stable huit
+secondes, et deux cent soixante-dix blocs de vol là où le portail en comptait
+dix-neuf. Ce qui tranche vient d'un relevé à part : **une dalle privée de son
+ombre lit cent un, pas cent soixante-huit** — les deux points lisaient donc le
+ciel à travers un morceau pas encore maillé. Les deux témoins attendent désormais
+le RÉSULTAT, borné, et le temps qu'il a pris entre dans leur message ; chaque
+correction est vérifiée ROUGE (ombres désarmées : rapport 0,98 ; maillage dans
+l'image : 216 ms par seconde pour une barre de 120).
+
+**Et le portail suivant en a révélé cinq autres, du même sang.** Les cinq témoins
+d'avion rendaient « pas aux commandes » — sur la branche ET sur `origin/main`
+rejoué seul, donc sur le code déjà en production. La double mesure disait « ce
+n'est pas la livraison » ; elle ne disait pas si Marlon est touché, et c'est la
+seule question qui compte. **Il ne l'est pas** : sur une page neuve, un seul
+appui suffit pour monter aux commandes. Ce qui échouait, c'est le témoin — sa
+boucle d'embarquement s'arrêtait dès que l'enfant était « sur quelque chose », et
+une voiture compte autant qu'un avion. Et descendre ne suffisait pas : une
+monture suit l'enfant, donc l'appui suivant la remonte. Les dix boucles
+d'embarquement de la suite font désormais le vide avant d'embarquer — pas
+seulement les quatre qui rougissaient.
+
+---
+
+## v283 — Les voitures se suivent, et personne n'escalade les murs
+
+**Pourquoi.** Deux défauts que la famille voit. Max signale depuis plusieurs
+versions **des voitures qui se traversent dans leur propre file** : une tête qui
+attend au feu accumule son retard pendant que sa suiveuse, encore hors de la
+fenêtre de surveillance, avance à pleine allure — elle la rejoint, la dépasse,
+et le chevauchement ne se résorbe jamais. Et **un passant collé à une façade
+remontait l'immeuble** : `onGround` ne retombait à faux que sur une descente
+sans collision, si bien qu'un personnage contre un mur se redonnait son
+impulsion à chaque image. Mesuré sur le code en production : **neuf
+trajectoires sur seize montent au-dessus de deux blocs et demi, la plus haute à
+7,03 blocs** — deux étages.
+
+**Ce que ça change.** Les voitures d'un convoi gardent leur longueur d'écart,
+partout, y compris là où l'enfant n'est pas et où la surveillance ne tourne pas
+du tout. Et un passant coincé contre un mur reste au sol.
+
+**Ce qui le prouve.** Trois témoins. Celui de la façade bâtit sa dalle et son
+mur dans le couloir vide, seize caps, et rend 9/16 sur l'ancien code contre zéro
+ici. Celui du convoi mesure une BORNE — le minimum de l'écart le long du tracé
+sur toute la fenêtre — et non un compte d'instants comme celui de la v244, dont
+`CLAUDE.md` dit qu'il tire à pile ou face. Et le témoin du métro de Washington
+attend désormais son RÉSULTAT en secondes de jeu, avec la distance de la rame la
+plus proche dans son message : `null` n'est pas un verdict, c'est une absence de
+mesure.
+
+**Un seuil de fenêtre ne pouvait pas régler le convoi.** Ce qui doit être vrai
+se garantit PAR CONSTRUCTION : deux voisines gardent leur longueur d'écart si et
+seulement si `retard[i] >= retard[i-1] − ecart + LONG_VOITURE`. La borne est une
+géométrie — 4,4 blocs, lus là où ils se calculent — pas un réglage. Elle ne CRÉE
+jamais d'écart, elle le préserve.
+
+## v282 — Chaque ville a son tissu, et son fleuve
+
+**Pourquoi.** Max, sur les villes engendrées : « que ce soit beaucoup plus
+réaliste… que je me prenne à Barcelone, je le sentais l'ambiance de Barcelone et
+pas toutes les villes qui sont copiées-collées les unes aux autres. » Mesuré
+avant d'écrire une ligne, et c'était exact : sur les 269 villes il n'existait que
+**huit plans de rue**, dont deux couvraient 255 villes, et la seule chose qui
+changeait d'une ville à l'autre était l'angle de rotation. Deux villes pouvaient
+avoir le même sol dans les mêmes proportions, à la virgule près. Et onze villes
+dont la rivière EST l'identité n'en avaient aucune : Hambourg sans l'Elbe, Lyon
+sans la Saône ni le Rhône, Budapest sans le Danube, Bâle sans le Rhin.
+
+**Ce que ça change.** Cinq choses, et l'enfant les voit toutes de la rue.
+
+- **Chaque ville a un tissu urbain nommé**, choisi ville par ville avec sa
+  raison : l'Eixample de Barcelone et ses pans coupés, l'îlot à périmètre
+  viennois, le faubourg, les arcades de Bologne et de Turin, le damier des Lois
+  des Indes, le lacis organique, le superîlot. Le plan au sol change vraiment.
+- **Les îlots ont un cœur** — une cour, un patio, un jardin — au lieu d'être
+  bâtis d'un bord à l'autre. C'est l'illa de l'Eixample, la cour haussmannienne,
+  le patio andalou, et ça se voit du ciel comme par une porte cochère.
+- **Chaque ville a sa place, et elle n'est plus au même endroit.** Avant, 244
+  villes sur 267 avaient exactement la même : quatre blocs sur quatre, au même
+  décalage du centre.
+- **On marche sous les arcades** à Bologne et à Turin, et nulle part ailleurs.
+- **Onze villes retrouvent leur fleuve, et des ponts pour le franchir** — avec
+  leur tablier, leurs parapets et leurs piles. On traverse en voiture comme à
+  pied, d'une rive à l'autre.
+
+**Ce qui le prouve.** Huit témoins de `carteMonde.js`, tous vérifiés ROUGES sur
+l'ancien code. Deux villes ne sont plus la même ville (pire similarité de
+distribution 1,000 → 0,988, pire identité colonne par colonne 95,9 % → 77,5 %,
+sur 253 paires) ; chaque tissu a son espace libre (un seul plan et zéro point
+d'écart deviennent huit tissus et 17,4 points) ; chaque ville a sa place, et la
+forme la plus répandue passe de 91 % des villes à 30 % ; on marche sous les
+arcades à Bologne et à Turin (0 % → 23,7 % et 24,7 %) et **nulle part ailleurs**
+(Zurich et Copenhague à zéro) ; les onze rivières existent dans le monde
+engendré et non dans une fiche ; aucune ville à trame ne perd toutes ses voitures
+(258 → 261 sur 262, la dernière nommée) ; chaque pont a de l'eau sous son tablier
+(73 à 85 % de son axe) ; et l'on le traverse à pied sans un trou, 41 à 116 pas.
+
+**Et le témoin de la place a trouvé trois ancres dans l'eau** — Hambourg, Bâle et
+Belgrade —, c'est-à-dire le point exact où la téléportation dépose l'enfant.
+Corrigé avant le portail : les onze ancres sont au sec, l'eau la plus proche de
+175 mètres (Cologne) à 900 (Séville).
+
+**Et quatre défauts de cette livraison même, trouvés par le portail et corrigés
+avant la fusion.** Ils étaient tous à moi, et la double mesure n'a demandé aucun
+rejeu : les deux portails ont tourné dans la même configuration sur la même
+machine. L'îlot le plus étroit tombait à **3,4 blocs** — plus un immeuble, une
+cloison — parce que le lacis organique avait un pas de treize ; le chiffre se
+dérive de la barre de cinq blocs de la v271 et vaut quinze. Les **portes de
+boutique avaient disparu** de Rome, de Tokyo et de Bologne : leur tolérance était
+écrite en blocs (`0,28`) contre un front de lot qui grandit avec le pas de trame,
+et ce qui ne dépend pas du pas, c'est l'écartement des colonnes — une
+demi-colonne. Le **damier n'était pas carré** (27 × 21), et ce pas de 27 coûtait
+un circuit à 29 des 37 villes en damier. Enfin le titre du journal faisait sept
+mots pour une borne de six.
+
+**Ce que ça change pour la famille** : une rue de Rome ou de Tokyo a de nouveau
+ses portes de boutique — mesuré sur la ville entière, 25,6 → **30,8** pour mille
+colonnes de trottoir à Rome et 14,7 → **23,8** à Tokyo, plus qu'avant la refonte
+— on marche sous les arcades de Bologne ET on entre dans ses boutiques, et aucun
+îlot n'est trop mince pour qu'un immeuble y tienne.
+
+**Le prix se déclare.** Le superîlot garde son pas de vingt-sept, parce qu'un
+superîlot EST plus grand qu'un îlot ordinaire : quarante-six de ses
+soixante-cinq villes gardent un seul circuit de voitures au lieu de deux. Sur le
+monde entier, la longueur de rue qui porte un convoi passe de 159 133 à 158 974
+blocs — un dixième de pour cent — et les villes servies de 261 à **262 sur
+262**, aucune aveugle depuis son centre.
+
+## v281 — De vrais rails, et deux voies
+
+**Pourquoi.** Deux captures d'iPad de Max, à quatre secondes d'écart, et trois
+phrases : « les rails ne sont pas des rails, les trains se rentrent dedans, il
+faut 2 rails pour aller et retour ». Les trois défauts étaient réels et avaient
+chacun une cause différente. La voie était **peinte à plat** — gravier,
+obsidienne et planches tous à la même hauteur — ce qui se lit, depuis une
+tablette, comme un damier au fond d'une tranchée et pas comme une voie ferrée.
+Et les trains se traversaient **par construction, pas par hasard** : le trajet
+d'une ligne faisait l'aller puis le retour sur exactement les mêmes points, si
+bien que deux rames se rencontraient de face deux fois par tour. Simulé sur les
+neuf lignes, la distance minimale entre deux rames était de zéro partout.
+
+**Ce que ça change.** Chaque ligne a maintenant **deux voies** — une pour
+chaque sens, comme une vraie ligne à grande vitesse — et les trains se croisent
+côte à côte au lieu de se traverser. Les rails **dépassent du ballast** : quatre
+files sombres et continues qu'on reconnaît de loin et du ciel, avec leurs
+traverses entre elles. La voie ferrée passe de trois blocs de large à neuf, et
+les quais des dix-huit gares reculent d'autant pour rester à côté des voies et
+non dessus.
+
+**Et le portail a nommé un témoin que cet élargissement rendait faux.** « Les
+dix-huit gares ont leur quai, leur auvent et leur bâtiment » est tombé à **zéro
+gare complète sur dix-huit** — sur un bâtisseur parfaitement juste, que son
+voisin déclarait bon au même instant (1 513 colonnes de quai, aucune sur une
+voie). Il ÉCRIVAIT ses cotes transversales — quai à 2,5 et 3 blocs de l'axe,
+bâtiment à 4,5 et 6 — relevées quand la voie faisait trois blocs de large. La
+voie doublée porte l'emprise à 4,5 et le quai à 4,7–7,7 : toutes les cotes du
+témoin étaient tombées dans le ballast. Les quatre cotes se publient désormais
+là où elles se calculent, et le témoin les DEMANDE. Deux tables qui décrivent la
+même gare finissent par diverger.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur la version publiée. Les
+quatre files de rail n'ont pas un trou : zéro bloc manquant sur 12 240 attendus,
+contre 12 240 sur 12 240 avant. Deux rames ne s'approchent jamais à moins de
+quatre blocs, là où le minimum était zéro. Et aucune des 1 513 colonnes de quai
+n'est posée sur une voie. Le relief, lui, n'a pas bougé d'un bloc — la voie est
+un ouvrage écrit en blocs, pas un terrain déplacé.
+## v280 — Les pistes prennent le diamètre
+
+**Pourquoi.** Trois signalements de Max en une phrase : « supprime les avions
+qui ne volent pas, en format Minecraft ; places les avions normaux près des
+pistes ; et fais les pistes plus longues ». C'était la même panne vue par trois
+bouts, et il a fallu la mesurer pour le voir. Ce qu'une piste réclame se lit
+dans la fiche de chaque appareil : le roulage avant que le nez se lève, plus la
+distance de freinage, soit quatre-vingt-trois blocs pour l'avion de ligne,
+quatre-vingt-dix-neuf pour le Concorde, trente-quatre pour le chasseur. Mesuré,
+la piste d'Orly en faisait **quarante-neuf**. Aucun aérodrome du jeu, sauf les
+deux pistes internes de Roissy, ne permettait au Concorde de décoller et de
+s'arrêter : l'enfant arrivait au bout du bitume sans avoir levé le nez. Et ses
+trois appareils, à Roissy, étaient coincés dans des interstices du complexe
+terminal — jusqu'à trente-huit blocs de la piste la plus proche, derrière des
+bâtiments — parce que huit avions de décor occupaient tout le tarmac.
+
+**Ce que ça change.** Les huit avions en blocs ont disparu : ce qui ressemble à
+un avion est désormais un avion dans lequel on monte. La piste de chaque
+aérodrome traverse la plate-forme dans sa plus grande longueur, et tout le reste
+— voie de service, aire de stationnement, terminal, tour de contrôle, hangar —
+passe d'un seul côté, comme dans un vrai aéroport à une piste. Les pistes
+mesurent maintenant de quatre-vingt-treize blocs sur une base militaire à cent
+quarante-sept à JFK, et les dix-neuf servent tout ce qu'ils garent. On sort du
+terminal, on traverse l'aire, et son avion est là, aligné sur la piste, à
+quelques blocs du seuil : le décollage commence tout de suite.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur la version publiée et
+verts ici. Chaque piste sert son appareil le plus exigeant — treize aérodromes
+étaient en faute, aucun ne l'est ; chaque appareil garé est à portée du bord de
+piste ; l'aire de Roissy tient un gros porteur à ciel ouvert, et pas seulement
+dans une poche (neuf places avant, huit cent cinq) ; rien de solide ne dépasse
+sur une piste (cent quatre-vingt-quatre blocs avant — les passerelles et les
+avions de décor mordaient sur la bande). Le sol, lui, n'a pas bougé d'un bloc :
+la piste est un ouvrage, remblai et tranchée écrits en blocs comme la voie
+ferrée, et les deux empreintes du relief sont identiques.
+
+---
+
+## v279 — Ce que la v278 a livré sans le dire
+
+**Pourquoi.** La v278 portait **deux sujets**, et n'en a documenté qu'un. À côté
+des avions garés, elle livrait les demandes de Max sur la rue et la conduite :
+un passant qui marche vraiment au lieu de faire le pied de grue, un passant qui
+se tient sur le trottoir et non au milieu de la chaussée, l'enfant à pied qui ne
+traverse plus une voiture, et la caméra qui laisse la voiture montrer son flanc
+en virage. Le journal — celui du dépôt comme celui du jeu — n'a parlé que des
+avions : la famille ouvre « Quoi de neuf » et n'y trouve pas quatre choses
+qu'elle a pourtant sous les doigts. Et ces quatre-là sont parties en production
+**sans un seul témoin**. Deux instruments disaient pourtant que tout allait
+bien, et c'est le plus instructif : le témoin du journal de `maj.js` compare la
+tête de `nouveautes.js` à `sw.js` et compte les **entrées**, jamais les sujets ;
+et un portail est vert par construction sur du code que rien ne garde.
+
+**Ce que ça change.**
+
+- **Le journal du jeu dit la vérité sur la v278.** Son entrée porte les sept
+  choses qu'elle a apportées, pas les quatre qu'on avait racontées.
+- **La caméra de voiture recule un peu**, de 5,2 à 6,4 blocs. C'était la moitié
+  non livrée de la demande de Max — « il faudrait la zoom out un petit peu **et**
+  faire comme dans GTA, quand la voiture tourne, on voit le flanc » : la v278
+  avait donné à la caméra son propre cap, jamais sa distance. Jugé sur trois
+  captures du boulevard Voltaire prises **depuis le même point** : à 5,2 la
+  carrosserie mange le bas du cadre, à 7,6 la voiture devient un objet lointain,
+  à 6,4 elle tient entière et la rue s'ouvre devant.
+- **Et quatre comportements que la famille a déjà sous les doigts sont
+  désormais gardés.** Cela ne se voit pas, et c'est ce qui fera qu'ils le
+  resteront.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `monte.js`, chacun rejoué sur le
+code d'avant la v278 (`d9852ac`), avec la même mesure et les mêmes conditions de
+banc :
+
+| ce qu'il mesure | avant la v278 | ici | barre |
+| --- | --- | --- | --- |
+| l'angle caméra/voiture en virage tenu | **0,0° à chacun des treize relevés** | 11,6 à 18,3°, un seul signe | 6° |
+| les passants au milieu de la chaussée | Rome 12 puis 10 sur 21 (57 et 48 %), Paris 3 sur 6 | Rome 2 sur 21 (9,5 %), Paris 0 sur 21 | 1/5 |
+| leur chemin par seconde de JEU | 0,26 à 0,73, médiane **0,50** | 1,13 à 1,43 bloc/s | 0,8 |
+| où l'enfant à pied s'arrête devant une voiture | **+0,2 · +1,53 · +1,6** — il ressort de l'autre côté | −1,16, juste au flanc | −0,5 |
+
+**Et trois de ces quatre témoins ont d'abord été verts sur le code qu'ils
+devaient accuser.** C'est la partie de cette livraison qui vaut d'être lue :
+
+- **Un minimum échantillonné est une propriété de la cadence, pas du monde.** Le
+  témoin du piéton comptait d'abord « il n'avance plus » sur des relevés espacés
+  de trois cents millisecondes, quand le banc rend trois images par seconde :
+  deux relevés tombaient dans la même image, et il concluait en 1,8 s après huit
+  dixièmes de bloc. Réécrit sur la distance MINIMALE au centre, il lisait 0,93 —
+  vert — pendant que l'enfant traversait la voiture de part en part, les relevés
+  enjambant le point le plus proche. Ce qui ne dépend d'aucun relevé
+  intermédiaire, c'est la position d'**arrivée**.
+- **Une marche au hasard finit par dériver.** Le témoin de la marche exigeait
+  quatre blocs de déplacement NET, borné sur le résultat : le vieux programme
+  tirait un cap neuf toutes les une à trois secondes dans un rayon de huit blocs,
+  et sur vingt-deux secondes de jeu cela suffit à les atteindre. Une borne sur le
+  résultat donne à l'ancien code tout le temps dont il a besoin. Ce que Max
+  décrit — « figé » — est un DÉBIT : du chemin par seconde de jeu.
+- **Et un passant que personne ne voit n'est pas un passant figé.** Mon premier
+  relevé rendait seize immobiles sur vingt et un, sur du code sain : au-delà de
+  quatre-vingts blocs, `npc.update` n'est jamais appelé. Le chemin parcouru
+  valait **exactement zéro**, ce qui distingue à coup sûr « pas animé » de « en
+  pause ».
+- **Et le quatrième a été rouge sur la correction qu'il devait garder** — une
+  barre relevée à Paris (21 passants sur 21 sur le trottoir), appliquée à Rome,
+  qui en rend 14 sur 21. Les sept autres ne sont pas au milieu de la rue : cinq
+  sont sur une esplanade, pour qui le programme de flâneur est le bon. Ce qui se
+  compte est ce que Max a signalé — la part SUR LA CHAUSSÉE — et « la chaussée »
+  n'est pas le même bloc à Rome (`ASPHALT`) et à Paris (`ARCHI.PAVE`).
+
+**Et deux rouges du portail étaient une hypothèse de banc que personne n'avait
+écrite.** `contreLeMur` mesure la carrure de l'enfant : il creuse un couloir de
+blocs à la position courante et le fait marcher vers un mur. Son hypothèse
+muette — « le couloir est vide dès qu'on a dégagé les BLOCS » — était vraie tant
+qu'un piéton traversait les voitures, et la v278 l'a rendue fausse. Le témoin
+d'avant laisse l'enfant SUR un circuit de Paris, où il vient de compter cent
+soixante relevés de voiture à moins de douze blocs : l'enfant butait sur la
+circulation au lieu du mur, **7,78 blocs au lieu de 0,3**. Les trois mesures se
+font désormais dans le couloir vide de la v237, ce qui les rend comparables par
+construction.
+
+**Et ma première explication était commode et fausse.** J'avais accusé mon
+propre témoin voisin, qui gare une voiture et ne la rangeait pas ; l'histoire se
+lisait très bien, je l'ai écrite dans un commit, et le rouge a persisté après le
+nettoyage. Ranger sa voiture reste juste, mais ce n'était pas la cause — une
+explication qu'on n'a pas mesurée est une dette, pas un diagnostic, **y compris
+quand elle accuse son propre code**.
+
+**Et ce n'était pas un accident : TROIS témoins de la même suite mesuraient
+l'endroit où le précédent s'était arrêté.** Un second passage de `monte.js`
+seule, sur un code de jeu inchangé, a retourné deux verdicts de plus, et les deux
+avaient la forme de `contreLeMur`. Le piéton contre la voiture marchait depuis la
+position et le CAP où la conduite d'avant avait fini : arrivée −1,18 au premier
+passage, **−4,19 au second**, l'enfant arrêté après neuf dixièmes de seconde de
+jeu à plus de quatre blocs de la voiture — donc contre tout autre chose. Et la
+circulation qui cède, verte quatre passages de suite avec zéro relevé au travers,
+en a rendu **51 sur 214** au cinquième : une voiture était déjà dans la nôtre à
+la première image, et le jeu la laisse EXPRÈS sortir — attendre là, c'est y
+rester pour toujours. Un témoin qui mesure une distance, une durée ou une
+position se place donc lui-même, et « se placer » veut dire les trois choses à la
+fois : l'endroit, le cap, et ce qui traîne autour. Le fichier se lit comme une
+liste de mesures indépendantes ; il ne l'est pas, et tant qu'aucune n'est rouge
+l'héritage passe pour une économie de gestes.
+
+**Et ce que cela coûte au banc se dit** : les quatre témoins ajoutent environ
+une minute et demie à `monte.js` — douze secondes de virage tenu, la marche à
+pied bornée à trente, et quarante-cinq secondes d'observation de la rue. Après
+la v277, qui a ramené le portail de cinquante-neuf à cinquante et une minutes,
+c'est le prix de quatre comportements qui n'avaient aucun gardien.
+
+Portail complet : quinze suites, **treize vertes**. Les deux rouges sont
+`manhattan.js` et `monte.js`, et aucun n'appartient à cette livraison — la double
+mesure de chacun, rejouée SEULE des deux côtés, est jointe dans `TASKS.md`. Les
+dettes que la livraison laisse y sont aussi : les passants de Manhattan, qui
+gardent l'ancien programme parce que leur trottoir vit dans un plan et non dans
+des blocs, et le recul de la caméra, jugé sur le banc et pas encore par Max.
+
+## v278 — Les avions sortent des murs
+
+**Pourquoi.** Max, capture d'iPad : « les avions ne devraient pas être par
+défaut dans les buildings ». Un chasseur, le nez et le réacteur dans une paroi
+d'aérogare. Deux instruments disaient pourtant que tout allait bien — le témoin
+qui garde les postes de stationnement depuis des dizaines de versions, et une
+sonde qui relit le monde aux mêmes coordonnées : *zéro sur cinquante-sept en
+faute*, tous les deux. Ils étaient verts parce qu'ils **mesuraient le
+fuselage** : la fiche d'un avion de ligne annonce 1,8 bloc de large, et ses
+ailes en font 15,2.
+
+**Ce que ça change.** Les avions garés sont sur le tarmac, en entier, à ciel
+ouvert — aux dix-neuf aérodromes.
+
+- **Chaque appareil a une place à sa taille.** La dalle de stationnement est
+  dessinée sur l'envergure et non plus sur un chiffre rond : à Orly, l'avion de
+  ligne débordait de vingt et une colonnes sur l'herbe.
+- **Les hangars ont changé de côté.** Ils tenaient le tarmac juste là où la
+  rangée se gare ; ils sont passés côté ville, et le tarmac est libre d'un bout
+  à l'autre.
+- **Les trois avions de Roissy ont déménagé.** Le tarmac de Roissy n'a que deux
+  espaces assez grands pour un gros porteur : le couloir entre le tambour de
+  l'aérogare 1 et les halls, et la trouée entre les halls 2C et 2E. C'est là
+  qu'ils sont, et c'est une mesure, pas un choix.
+
+**Ce qui le prouve.** Le témoin des postes a été réécrit et rejoué sur la
+version en production : **26 postes sur 57 en faute**, contre zéro ici. Il ne
+demande plus « y a-t-il du bâti dans l'emprise » — vrai à l'intérieur d'une
+aérogare, qui est creuse pour qu'on la visite — mais **« l'emprise est-elle à
+ciel ouvert »**, colonne par colonne, chez le bâtisseur. Un second témoin
+compare l'envergure annoncée à celle du modèle rendu, pour qu'une table que
+personne ne relit ne redevienne jamais un piège. Portail complet vert.
+
+## v277 — Le banc mesuré, et une panne qu'il cachait
+
+**Pourquoi.** Max : « revamp the testing process way too heavy and long and
+costly and painful ». Le portail d'essai durait une heure, et personne n'avait
+jamais regardé où cette heure passait — ni combien de fois il fallait le rejouer
+pour une seule livraison (cinq, pour la v276). Ce n'est pas la longueur qui
+coûte, c'est la boucle.
+
+**Ce que ça change.** Rien que la famille voie, et c'est dit franchement. Le jeu
+est le même sur l'iPad, au pixel près. Ce qui change est en coulisse, et cela
+décide de la cadence des versions à venir.
+
+- **Le plus gros fichier d'essais dit enfin où passent ses minutes.** Mesuré
+  témoin par témoin : dix-neuf minutes et demie, et les vingt-cinq témoins les
+  plus chers en portent **85 %** — les cent quinze autres coûtent moins de deux
+  secondes chacun.
+- **Deux des plus chers attendent désormais un RÉSULTAT et non une durée.** La
+  rue de Paris passe de cinquante-six secondes à **neuf** ; la monoplace sort du
+  classement. Le fichier tombe de 19 min 30 s à 17 min 24 s.
+- **Et deux interrupteurs de banc**, pour que ses réglages se rejouent au lieu
+  de se croire : la résolution et la parure de l'accueil.
+
+**Ce qu'il a trouvé, et qui vaut plus que le gain.**
+
+- **La préparation de l'accueil dépassait sa propre limite**, sur un navigateur
+  sans carte graphique : « Jouer » se libérait à quarante-cinq secondes avec six
+  à dix-huit couleurs de shaders sur vingt-cinq et aucun fond de carte — c'est-à-
+  dire exactement ce que la v258 avait bâti pour empêcher. La cause est le
+  remplissage des deux calques de fond, que le processeur paie à la place de la
+  carte graphique. Ils attendent maintenant, le temps de la préparation, comme
+  les ombres le font depuis la v247. **Sur l'iPad, rien ne change** : la carte
+  graphique est là.
+- **Et un témoin de voitures qui tire à pile ou face.** « Les voitures ne se
+  traversent plus » compte les chevauchements sur trente secondes au centre de
+  Paris. Sept mesures, deux versions du jeu, deux résolutions : **de zéro à
+  cinquante-trois**, sans qu'une ligne du jeu ait bougé — et sa barre, quarante-
+  cinq, tombe au milieu de cette étendue. Ce n'est pas un gardien, c'est un
+  tirage. **J'ai d'abord annoncé l'inverse** — que le banc accéléré révélait un
+  défaut de production — sur un seul passage par côté ; l'étendue mesurée à une
+  seule résolution suffit à tout expliquer. Ce que le jeu fait vraiment reste
+  donc à mesurer, et c'est déclaré comme tel.
+
+**Ce qui le prouve.** Les mesures sont toutes en ordre alterné, avec les pages
+refermées entre les bras. Et **deux remèdes ont été écrits, mesurés, puis
+RETIRÉS** : donner leur propre couche de composition aux deux calques (12, 11, 6
+puis 25 sur 25 — pire au pire passage), et, en v276 déjà, la moitié d'un
+soupçon. Un remède qui ne se mesure pas ne se garde pas.
+
+**Et trois erreurs à moi, toutes trouvées par une bascule plutôt que par un
+raisonnement.** J'ai mesuré la résolution dans une configuration que deux pages
+sur sept utilisent, et annoncé quarante pour cent de gain là où il y en a vingt.
+J'ai rendu rouge un témoin voisin en supprimant un sommeil dont il vivait sans
+le dire. Et j'avais conclu en v276 que les deux calques de fond ne coûtaient
+**rien** — mesuré sur une page sans préparation, où rien ne les invalide. **Un
+« innocent » ne vaut que dans les conditions où il a été mesuré**, et c'est pour
+cela qu'on les écrit à côté.
+
+**Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records, et
+l'apparence du jeu sur l'iPad.
+
+---
+
+## v276 — Un jeu tout clair
+
+**Pourquoi.** Max, devant la proposition de design : « je trouve qu'ils
+ressemblent trop aux précédents ; j'aurais une interface beaucoup plus
+moderne, beaucoup plus light, avec beaucoup plus de glass design ». Le jeu
+était bleu nuit depuis le premier jour, écrit dans la police d'une machine à
+écrire, et parsemé d'emojis qui ne sont pas les mêmes d'un appareil à l'autre.
+
+**Ce que ça change.**
+
+- **L'accueil est clair.** Un fond gris-bleu très doux, deux nappes de lumière,
+  et les méridiens d'un globe au trait fin — on y fait le tour du monde.
+- **Les panneaux sont en verre dépoli**, comme sur un téléphone récent : on
+  voit la couleur à travers.
+- **Deux vraies polices** : un titre large et serré, un texte rond et lisible.
+- **Plus un seul emoji sur l'accueil.** Chaque signe est dessiné au trait, à la
+  même épaisseur, et il est le même partout.
+- **Les commandes du clavier parlent enfin français.** Elles étaient en anglais
+  depuis les tout premiers jours.
+- **Ça bouge.** Les blocs de l'accueil se posent l'un après l'autre, la lumière
+  du fond dérive lentement, et le cube du chargement balaie comme une boussole.
+  Rien ne s'anime pendant la partie : le jeu garde ses images pour le monde.
+- **Le jeu dit ce qu'on y fait.** « Explore le monde entier. Construis le
+  tien. » — parce qu'on y bâtit autant qu'on y voyage. L'ancienne phrase se
+  vantait que tout était sauvegardé, ce qui va de soi.
+- **Et le verre se dépolit quand le jeu est prêt.** Pendant que l'accueil
+  charge ses personnages et ses couleurs, les panneaux sont clairs et nets ;
+  au moment où « Jouer » s'allume, ils se dépolissent en une demi-seconde. On
+  voit le jeu devenir prêt.
+
+**Ce qui le prouve.** Cinq témoins dans `maj.js`. Le fond se lit par sa
+**luminance calculée** — « clair » est une grandeur mesurable, « la classe est
+posée » n'en est pas une. Les polices se comptent dans ce que la page a
+**réellement demandé** : zéro requête chez Google, deux fichiers depuis le
+dépôt. L'accueil ne doit plus porter un seul point de code d'emoji dans le
+texte que l'enfant voit. Et le quatrième calcule le **contraste** de dix textes
+en composant les fonds translucides — c'est lui qui a trouvé, dans ma propre
+livraison, que la pastille de version tombait à 3,77 pour une barre de 4,5.
+Les animations, elles, ne portent que sur `transform` et `opacity` — ce qui se
+calcule sur la carte graphique, jamais sur la mise en page — et
+`prefers-reduced-motion` les coupe toutes.
+
+**Et ce que le portail a trouvé, parce que c'est le plus utile de la
+livraison.** Le premier jet a rendu trois suites rouges et ralenti toutes les
+autres — `carte.js` passait de 4 min 39 s à 11 min 33 s. La cause : le verre
+dépoli coûte **la moitié des images de l'accueil** (5,7 · 8,3 · 8,3 contre
+15,3 · 15,7 · 15,2 par seconde, mesuré en ordre alterné), et ce sont justement
+celles dont la préparation a besoin — le jeu compile une couleur de shader par
+image. Le verre attend donc que l'accueil ait fini : mêmes machine et même
+passage, la préparation passe de 7 couleurs sur 25 à 25 sur 25. Deux fausses
+pistes écartées par la mesure, et il faut le dire : les animations et les deux
+nappes de lumière ne coûtent **rien** (vérifié trois fois), et en jeu la
+refonte ne coûte rien non plus — j'avais failli déclarer une régression qui
+n'existait pas, sur deux relevés au lieu de six.
+
+Et le même défaut se cachait à côté, depuis bien avant cette livraison : le jeu
+préparait ses couleurs de shader **une par image**, donc vingt-cinq images — ce
+qui dure quarante secondes quand l'accueil n'en rend qu'une et demie par
+seconde, alors que les vingt-cinq ne coûtent ensemble qu'une demi-seconde de
+calcul. Elles se font désormais par tranches de temps : cinq images au lieu de
+vingt-cinq ici, et sur l'iPad rien ne change, parce qu'une seule compilation y
+remplit déjà la tranche. Ce qui reste, et qui est écrit dans la liste des
+dettes : la préparation tient encore sur le bord de sa limite (43 à 45 s pour
+une limite de 45), et six de ces secondes ne sont attribuées à rien.
+
+**Ce qui ne bouge pas.** Les mondes, les blocs, les photos, les records. La
+refonte est une couche de peinture posée par-dessus la mise en page : elle ne
+change que les couleurs, les bords et les lettres.
+
+## v275 — Grand Tour
+
+**Pourquoi.** Le jeu s'appelait « Web Minecraft » — un nom d'atelier, emprunté,
+qui ne dit pas ce qu'on y fait. Max a validé le nom et le logo : on y fait le
+tour du monde.
+
+**Ce que ça change.**
+
+- **Le jeu s'appelle Grand Tour** : l'onglet, le grand titre de l'accueil, et
+  surtout le nom sous l'icône sur l'écran d'accueil de l'iPad.
+- **Une icône neuve** — une boussole graduée dont le globe porte une route en
+  pointillé — aux trois tailles que réclament la tablette.
+- **La page parle enfin français** (`lang="fr"`), et l'écran de lancement ne
+  clignote plus en bleu avant de devenir noir.
+- **Rien d'autre ne bouge.** Les mondes, les blocs, les photos, les records :
+  tout est exactement là où il était.
+
+**Ce qui le prouve.**
+
+Trois témoins dans `maj.js`. Le premier n'est pas satisfait par le titre au
+chargement — il entre en jeu, revient au menu par 🏠 et RELIT, parce que c'est
+là que `main.js` réécrivait l'ancien nom par-dessus. Le deuxième vérifie que le
+manifeste et les **quatre** fichiers d'icône arrivent et pèsent quelque chose.
+Le troisième garde les clés qui portent les mondes des enfants : trente clés de
+stockage intactes, dont les cinq qui comptent, et le cache immuable inchangé.
+
+**Ce qu'on n'a pas renommé, et pourquoi.** Sur les soixante-dix-neuf mentions
+de l'ancien nom dans le code, la grande majorité sont des **clés de données**.
+Les renommer effacerait les mondes de Marlon et d'Alice ; renommer le cache
+immuable ferait re-télécharger treize mégaoctets à chaque iPad pour un nom que
+personne ne voit. On renomme ce que l'enfant voit, jamais ce qui porte ses
+données.
+
+## v274 — Les feux arrivent à Paris, Londres et les quatre autres
+
+**Pourquoi.** La v273 a donné aux feux leur horloge et fait s'arrêter la
+circulation — mais seulement dans les villes ENGENDRÉES. Paris, Londres, Nice,
+Lille, San Francisco et Washington n'avaient pas **un seul feu**, et ce sont
+justement celles où les enfants conduisent le plus. Mesuré à la livraison
+précédente : 167 coins de carrefour à Paris, 622 à Lille, zéro feu.
+
+**Ce que ça change.**
+
+- **Les six villes bâties à la main ont leurs feux tricolores**, aux vrais
+  carrefours : Paris 118, Londres 130, Washington 158, San Francisco 74, Nice
+  55, Lille 36. Ils s'allument et la circulation s'y arrête, exactement comme
+  ailleurs.
+- **Quatre feux par carrefour, un par coin** — et c'est le carrefour qui les
+  choisit, pas la colonne qui se déclare.
+
+**Ce qui le prouve.**
+
+Deux témoins neufs dans `carteMonde.js`, qui LISENT LES BLOCS posés et non une
+table : les six villes ont leurs feux, chacun au coin d'un carrefour, et aucun
+collé à un autre (zéro dans les six villes). Rouges sur l'ancien code, où le
+compte est zéro partout.
+
+Et trois mesures ont décidé du dessin, chacune contre une intuition :
+
+| ce qu'on croyait | ce que la mesure a dit |
+| --- | --- |
+| un coin de trottoir = un carrefour | c'est un caniveau en DIAGONALE : une grappe de 28 colonnes à Lille |
+| deux croisements distincts = deux carrefours | les doublons sont à 1,0–2,0 bloc, les vrais voisins à 3,0 et plus |
+| écarter l'emprise des monuments | Paris ET Londres tombent à zéro feu — écrit, mesuré, retiré |
+
+Sur le disque entier, 97 % des feux de Paris et 99 % de ceux de Londres sont
+au coin d'un carrefour ; les trois pour cent restants sont sous un monument qui
+pave la rue par-dessus, et c'est déclaré.
+
+## v273 — Les feux tricolores s'allument, et la circulation s'y arrête
+
+**Pourquoi.** Le programme de réalisme écrit dans `CLAUDE.md` avait un point 4
+resté ouvert depuis des mois : « la vie dense — voitures qui s'arrêtent aux
+feux ». Mesuré en capture à Zurich avant d'y toucher : les feux existaient bien,
+un par coin de carrefour, mais leur boîtier montrait ses **trois lentilles
+allumées en même temps** — rouge, orange et vert. Ce n'est pas un feu, c'est une
+guirlande. Et les voitures leur passaient devant sans les voir.
+
+**Ce que ça change.**
+
+- **Un feu montre une couleur à la fois, et il change.** Vert neuf secondes,
+  orange deux, puis rouge pendant que l'autre rue passe : un tour complet de
+  vingt-deux secondes, compté en temps réel — un feu ne ralentit pas parce que
+  la tablette rame.
+- **Les deux rues d'un carrefour ne sont jamais vertes ensemble.** Les feux se
+  répondent en diagonale, comme dans une vraie ville.
+- **Le feu regarde la file qu'il arrête**, et plus la première rue venue.
+- **Les voitures s'arrêtent au rouge et repartent au vert** — sans patience :
+  un feu ne se force pas, on attend qu'il passe. Une voiture déjà engagée dans
+  le carrefour le traverse, elle ne s'y arrête pas.
+
+**Ce qui le prouve.**
+
+Trois témoins neufs dans `carteMonde.js`, rouges sur l'ancien code parce que
+rien n'y publie l'état d'un feu :
+
+| témoin | ce qu'il rend |
+| --- | --- |
+| un feu ne montre qu'une couleur, et il change | **53 feux** autour de l'enfant, **zéro** dont le compte de lentilles vives soit différent de un, et le feu suivi change d'état en 1,5 s |
+| les deux axes ne sont jamais verts ensemble | sur tout le cycle (22 s, lu par pas de 100 ms) : zéro instant à deux verts, zéro vert pendant l'orange de l'autre |
+| la circulation s'arrête au rouge, puis repart | 1 455 relevés de voitures : **140** à l'arrêt devant un feu non vert, **112** qui roulent au vert, et **4 redémarrages** au passage au vert |
+
+La règle du feu est PURE (`src/feux.js`, sans import) : c'est elle que lisent
+celui qui allume les lentilles et celle qui s'arrête devant. Deux tables qui
+décrivent le même feu finissent par diverger.
+
+Portail complet, huit suites : six vertes. Les quatre rouges de `manhattan.js`
+et le gel d'arrivée en ville sont des dettes déjà déclarées et mesurées identiques
+en production. Un sixième rouge était neuf et ne venait pas du jeu — le témoin
+de l'atterrissage manuel lisait la vitesse à l'instant exact où l'appareil
+touche le sol, doigt encore posé sur le joystick, donc au moment où la marche
+arrière de la v269 commence : il mesurait la date de son échantillon. Il
+relâche désormais le joystick avant de mesurer.
+
+**Ce qui n'y est pas, et qui est déclaré.** Les feux n'existent que dans les
+villes ENGENDRÉES : Paris, Londres, Nice, Lille, San Francisco, Washington et
+Manhattan n'en ont pas un seul. Mesuré sous node, fenêtre de 81 × 81 blocs au
+centre : 167 coins de carrefour à Paris, 622 à Lille, zéro feu ; Rome, ville
+engendrée, en a 49. Poser un feu sur chaque coin donnerait donc trois à douze
+fois la densité de Rome — le « carrefour hérissé » déjà payé une fois. Max juge
+sur captures : c'est une livraison à part, avec sa mesure de densité et sa vue
+de rue.
+
+## v272 — Une voiture n'est pas un avion : ni jauge, ni eau sous les roues
+
+**Pourquoi.** Max, capture d'iPhone à Hambourg, quatre défauts sur une seule
+image : sa voiture au milieu du port, « il est marqué 86 km/h » alors qu'elle ne
+bougeait pas, le bouton « Descendre » posé en plein milieu du bas de l'écran, et
+« la jauge de vitesse, je ne veux pas qu'elle soit existante pour une voiture ».
+Les quatre avaient des causes différentes, et aucune n'était là où l'image la
+mettait. Un cinquième, de la même famille que le bouton mal placé, a été trouvé
+en instrumentant le témoin : la pastille de viande volait le doigt.
+
+**Ce que ça change.**
+
+- **Une voiture s'arrête au bord de l'eau** au lieu d'aller rouler au fond du
+  port, et le jeu dit quoi faire : « fais demi-tour ». Une voiture déjà tombée à
+  l'eau peut en ressortir — on ne bloque que l'entrée.
+- **Plus de cadran ni de compteur en voiture.** Elle se conduit au joystick,
+  d'un seul doigt : l'avant accélère, l'arrière freine puis recule, le côté
+  tourne le volant. La manette des gaz et le compteur redeviennent ce qu'ils
+  étaient — des instruments d'avion. Le chiffre en km/h disparaît donc aussi de
+  la voiture : un bloc ne vaut un mètre nulle part dans ce jeu, et ce compteur
+  mentait depuis toujours.
+- **Le bouton « Descendre » rejoint le bord droit.** Il était dans la zone du
+  joystick, qui n'est pas le cercle qu'on voit mais tout le quart bas-gauche de
+  l'écran : un doigt posé là ne prenait plus le volant, il faisait descendre. La
+  pastille de viande, au même endroit, faisait la même chose.
+- **Et une voiture arrêtée par un mur perd sa vitesse** : le moteur se calme et
+  les roues s'arrêtent, au lieu de tourner dans le vide à pleine allure.
+
+**Ce qui le prouve.**
+
+Cent trente-sept témoins de `monte.js`, dont **sept neufs pour cette
+livraison**, chacun mesuré :
+
+| ce qu'il mesure | ce qu'il rend |
+| --- | --- |
+| une voiture n'entre pas dans l'eau | s'arrête à 10,8 blocs, bord du quai à 12, zéro colonne d'eau — et elle recule de 1,04 pour en sortir |
+| un mur arrête le compteur | lancée à 10,94 blocs/s, contre le mur **vitesse 0**, quatre relevés immobiles d'affilée |
+| la jauge n'existe pas en voiture | cadran, compteur et socle tous à `none`, `player.gaz` resté nul |
+| « Descendre » hors de la zone du joystick | bouton en (300, 626), zone du joystick x < 189 et y > 304 |
+| rien d'autre ne vole le doigt | `elementFromPoint` rend le canvas du jeu au **premier** essai, pastille de viande affichée exprès |
+| le joystick accélère, et relâché ralentit | médiane **12,16** blocs/s pour 12,2 d'allure de la classe |
+| le joystick tourne le volant | le cap passe de −1,571 à −1,901 en accélérant |
+
+Et deux témoins anciens ont été corrigés parce qu'ils mesuraient le banc et non
+le jeu : celui du piéton recommence quand une voiture de la rue est venue
+pendant la mesure, et celui de la marche arrière mesure le recul **depuis le
+point de rebroussement** — freiner, c'est encore avancer.
+
+## v271 — Les rues sont deux fois plus larges, et on roule à droite
+
+**Pourquoi.** Max, après la v270 : « increase les routes ». La chaussée des
+deux cent soixante-quatre villes du tour du monde faisait **3,4 blocs** pour une
+voiture de 2,26 : une seule file. C'est ce que la v211 avait mesuré, et c'est ce
+qui l'avait fait écarter la conduite à droite — « il n'y a la place que pour UNE
+file ». Une voiture roulait donc au milieu de la rue, et deux ne pouvaient pas
+se croiser.
+
+**Ce que ça change.** Les rues font **5,6 blocs**, deux voitures s'y croisent
+avec un demi-bloc entre elles, et **la circulation roule à droite** au lieu du
+milieu — il reste donc toujours une voie libre pour la voiture de l'enfant. Et
+les immeubles y ont gagné : plus un seul îlot sous cinq blocs de large, quand il
+y en avait 196 sur 528.
+
+**Ce qui le prouve — le chiffre est un résultat, pas un goût.** Élargir touche
+trois choses à la fois, et il fallait les regarder ensemble, parce que l'îlot est
+ce qui reste (`pas de trame − 2 × emprise`) :
+
+| facteur de trame | chaussée | trottoir | îlot min · médian | îlots sous 5 blocs |
+| --- | --- | --- | --- | --- |
+| 3,00 (v270) | 3,4 | 2,30 | 4,0 · 7,0 | **196 sur 528** |
+| 3,00 | 5,2 | 1,40 | 4,0 · 7,0 | 196 |
+| 3,00 | 5,2 | 2,00 | **2,8** · 5,8 | 196 (dont 196 sous 3) |
+| **3,75** | **5,6** | **2,00** | **5,4 · 9,4** | **0** |
+
+À emprise constante, la chaussée mange le trottoir — donc le mobilier, donc
+l'éclairage de nuit de la v248. En élargissant l'emprise sans toucher au pas de
+la trame, l'îlot tombe à 2,8 blocs sur les villes à trame serrée : des cloisons,
+pas des immeubles. Le pas est donc le troisième levier, et il rend la ville
+**meilleure** qu'avant.
+
+**ET LE COMPTE BRUT DE MOBILIER N'ÉTAIT PAS LA BONNE GRANDEUR.** Il tombe d'un
+tiers, et c'est sans intérêt : la ville a moins de rues, plus larges. Ce qu'un
+enfant voit, c'est l'espacement des réverbères **le long** de la rue, et il ne
+bouge pas — 123 → 138 pour mille blocs de rue à Zurich, 130 → 116 à Rome,
+172 → 130 à Tokyo, pour un voisin le plus proche à 3 à 5 blocs. C'est le
+reproche qu'on fait aux témoins — compter un motif n'est pas compter la chose —
+appliqué à une mesure de contenu.
+
+**Ce qui le prouve — la conduite à droite.** Le signe se **mesure**, il ne se
+déduit pas : dans three.js la caméra regarde vers −Z et sa droite est +X, donc
+pour une direction (fx, fz) la droite vaut (−fz, fx) — et relevée sur les quatre
+côtés d'un anneau réel, elle pointe vers le **centre** du rectangle. Rouler à
+droite, c'est donc rétrécir l'anneau d'une demi-chaussée.
+
+| mesuré sur cinq villes | v270 | v271 |
+| --- | --- | --- |
+| écart du convoi à l'axe de la rue | 0,00 — au milieu | **1,40 = une demi-chaussée** |
+| la voiture du convoi est sur la chaussée | 66,3 % | **76,9 %** |
+| **il reste la place d'une voiture dans l'autre voie** | **52,7 %** | **94,5 %** |
+
+**Ce qui le prouve — le banc.** Quatre témoins neufs dans `carteMonde.js`,
+**rouges tous les quatre sur la version publiée**. Et les cinq de la v270 —
+partage, convois, voiture en vue du centre, mobilier traversé, dégagement —
+restent verts : zéro case de mobilier traversée, zéro ville aveugle, pire partage
+19 pour une barre de 20. Le dégagement du mobilier a dû suivre la voie décalée
+(la voiture n'est plus centrée sur l'axe, son flanc est à 2,53 blocs) ; la bande
+garde 1,56 bloc, plus large qu'avant.
+
+**Et c'est du sol, pas du relief.** `hauteurVillesMonde` ne lit ni le pas de la
+trame ni la largeur de chaussée : les deux empreintes de `plafond.js` ne bougent
+pas, et l'invariant du terrain tient sans rien avoir à déclarer — même raison que
+la passe de rues de Londres en v206.
+
+**Le prix, déclaré.** 16 % de rue portant un convoi en moins (195 060 → 163 036
+blocs) et 788 → 628 anneaux, parce que la ville a moins de rues mais plus
+larges. Les six villes bâties à la main gardent leurs largeurs relevées sur de
+vrais plans — leur élargissement est la livraison suivante.
+
+---
+
+## v270 — Les voitures des villes ne se traversent plus, ni elles ni les trottoirs
+
+**Pourquoi.** Max, deux captures. À Stuttgart, une voiture posée DANS le
+mobilier de la rue. À Zurich, « deux voitures de la rue l'une dans l'autre,
+et des caisses du marché sur la chaussée ». La « caisse », c'est la
+jardinière — et le banc.
+
+**Ce que ça change.** Dans les deux cent soixante-quatre villes du tour du
+monde, deux files de voitures ne roulent plus l'une dans l'autre, et aucune
+carrosserie ne traverse plus un réverbère, un banc, une jardinière ou un feu.
+Les rues ont même PLUS de mobilier qu'avant. Et les trois médinas — Venise,
+Jérusalem, Marrakech — n'ont plus de voitures du tout : leurs ruelles font
+1,8 bloc et une voiture en fait 2,26, elle n'y tenait pas.
+
+**Ce qui le prouve — deux files dans la même rue.** La règle existait depuis
+la v211 : « deux circuits ne peuvent avoir plus d'une vingtaine de blocs de
+chaussée en commun — c'est la taille d'un carrefour, et cela distingue se
+CROISER de se SUIVRE. » Elle avait été écrite pour les six villes bâties à
+la main et **n'a jamais atteint les villes engendrées**. Mesuré sur les
+fonctions pures, avant d'accuser quoi que ce soit :
+
+| | avant | après |
+| --- | --- | --- |
+| villes au-dessus de la barre | **265 sur 267** | 0 sur 264 |
+| pire partage | 576 blocs (Shanghai) | 18 blocs |
+| Zurich | 106 blocs | 0 |
+
+Le prix se déclare : 1 062 anneaux de circulation deviennent 764, et la
+longueur de rue portant un convoi tombe d'un quart. Mais ces blocs-là
+portaient DEUX convois superposés — ce qu'on retire, ce sont des doublons qui
+se traversaient, pas de la variété. Aucune ville ne perd tous ses convois, et
+un témoin le garde.
+
+**Ce qui le prouve — le mobilier sous la carrosserie.** Mesuré au recouvrement
+exact du rectangle de la voiture contre la case du meuble : **32 410 cases,
+267 villes sur 267**. La cause est géométrique et ne se devinait pas. La
+chaussée fait 3,4 blocs et la voiture 2,26 — 0,57 de marge par côté — mais le
+mobilier était posé sur la PREMIÈRE colonne de trottoir, et comme la trame
+d'une ville est tournée par rapport au monde (24° à Zurich), une case entière
+mord jusqu'à 1,13 bloc dans la chaussée, c'est-à-dire jusqu'à l'axe de la rue.
+
+La bande du mobilier se DÉCALE désormais, elle ne se rogne pas : un simple
+plancher dégageait tout mais coûtait 47 % des réverbères, donc des rues
+noires. Résultat mesuré : **0 case traversée**, et plus de mobilier qu'avant
+— Zurich 490 → 541, Rome 917 → 934, Marrakech 669 → 783.
+
+**Et deux régressions de ma propre correction, trouvées par la mesure.** Mon
+premier jet élargissait la fenêtre du feu tricolore à toute la bande : Zurich
+passait de 110 feux à 277, Rome de 235 à 563 — un carrefour hérissé. Et il
+décalait l'échantillon d'un demi-bloc À CHAQUE TOUR de la boucle sur les
+villes voisines, donc d'un bloc entier pour la seconde. Aucune capture ne les
+aurait montrés ; c'est le comptage avant/après, ville par ville, qui les a
+dits.
+
+**Et le dégagement se CALCULE, il ne se mesure pas sur une ville.** Mon
+premier chiffre — 0,3 bloc de marge — était réglé sur Zurich : juste là, faux
+ailleurs, parce que ce qui déborde dépend de l'ANGLE de la trame. Une case
+unitaire tournée de θ s'étend de (|cos θ| + |sin θ|) / 2 de son centre. Écrite
+ainsi, la règle a réglé d'un coup les trois médinas que le chiffre rond
+laissait en faute.
+
+**ET LE PORTAIL A TROUVÉ UNE RÉGRESSION QUE MES QUATRE TÉMOINS NE POUVAIENT
+PAS VOIR.** La contrainte de partage trie les anneaux par taille, et elle
+sacrifiait les anneaux DÉCALÉS — ceux dont un côté passe près du centre. Rome
+gardait bien ses quatre anneaux, mais le plus proche passait de **douze blocs
+du centre à quarante-cinq**, pile la portée à laquelle une voiture cesse
+d'être dessinée : un enfant qui se pose sur la place ne voyait plus une seule
+voiture. C'est exactement la panne que la v201 avait corrigée sur signalement
+de Max (« les villes n'ont pas de vie »).
+
+Un seul témoin l'a dit — « la circulation naît à l'approche » (`monte.js`),
+qui se téléporte à Rome et exige une voiture EN VUE. Les miens comptaient des
+ANNEAUX, et ils étaient tous verts. **Le premier anneau retenu est désormais
+celui que l'enfant voit** : 788 anneaux au lieu de 764, zéro ville aveugle sur
+les 264 qui ont des convois, partage inchangé (pire 18), et le calcul est même
+plus rapide qu'avant la livraison (104 ms contre 117). Un témoin neuf le garde,
+vérifié rouge sur la version fautive.
+
+**ET TROIS TÉMOINS SONT TOMBÉS POUR LA MÊME RAISON, DANS TROIS FICHIERS.** Un
+verdict qui compte des PAS ou qui dort un temps FIXE mesure la cadence du banc,
+pas le jeu — parce que `main.js` borne `dt` à un vingtième de seconde. Les
+trois sont réécrits pour attendre le RÉSULTAT, borné, au lieu d'un temps :
+l'escalier du métro de Washington descend jusqu'au quai ou jusqu'à ne plus
+descendre (7,0 blocs mesurés pour une barre à 8, quand la même suite rejouée
+seule en rend 13,0) ; la seconde tablette de `reglages.js` est observée pendant
+toute la fenêtre au lieu d'être lue une fois à la fin ; et la marche arrière de
+`monte.js` recule jusqu'à avoir reculé (0,26 bloc en trois secondes de banc,
+pour une physique qui en rendait le double la veille).
+
+**Ce qui reste rouge, et qui ne vient pas d'ici.** Trois défauts du métro de
+Washington et un délai de `manhattan.js` : rejoués SEULS des deux côtés, ils
+sont rouges à l'identique sur la version publiée — quatre passages sur quatre
+pour le métro, avec les mêmes valeurs. Ils partent en dette déclarée dans
+`TASKS.md` avec leurs mesures. Et une supposition de ma part y est corrigée :
+je les croyais verts rejoués seuls, sur la foi d'un relevé vieux de quatorze
+versions. Une mesure d'hier n'est pas une mesure d'aujourd'hui.
+
+**Ce qui le prouve — le banc.** Cinq témoins neufs dans `carteMonde.js`,
+rouges sur la version publiée (265 villes au-dessus de la barre, 32 410 cases
+traversées, dégagement absent), verts ici — et le cinquième, celui de la vue,
+rouge sur la première version de cette branche. Ils interrogent les fonctions PURES et jamais le monde chargé :
+`getBlock` ne répond que sur les morceaux déjà engendrés, et lire deux cent
+soixante villes sans y aller rendrait zéro partout — un vert qui ne prouve
+rien.
+
+---
+
+## v269 — Le jeu remarche sur l'iPad, on recule, et les véhicules font du bruit
+
+**Pourquoi.** Max, sur la version publiée : « le lag est absolument énorme,
+alors qu'avant il était pas mal réduit. C'est quasiment impraticable. En
+avion, on voit l'image bouger pendant une seconde, elle s'arrête pendant
+quasiment cinq secondes. À pied, quand on ouvre la carte, le personnage est
+figé dix secondes avant de pouvoir faire un pas. » Et, séparément : « aussi
+impossible de faire marche arrière avec un avion ou une voiture. »
+
+**Ce que ça change.** Le jeu redevient jouable. La file d'avance du mailleur
+revient de seize morceaux à huit : c'est la v265 qui l'avait doublée, et
+c'est elle qui produisait les gels. Tirer le joystick en arrière freine puis
+fait reculer — la voiture comme l'avion, quoi que dise le cadran des gaz. Et
+les véhicules font enfin du bruit : le moteur tourne au ralenti dès qu'on
+monte et monte en régime avec l'allure, une radio s'allume dans la voiture
+(trois stations écrites pour ce jeu), les réacteurs soufflent en vol, et une
+ligne 🔊 dans les Réglages coupe absolument tout.
+
+**Ce qui le prouve — le lag.** Mesuré au-dessus de PARIS, à la distance
+d'affichage de l'iPad, vingt secondes de vol, sur les deux critères qui
+comptent : la cadence que l'enfant subit et le trou qu'il voit devant lui.
+
+| file | cadence | image médiane | pire image | > 300 ms | trou devant |
+| --- | --- | --- | --- | --- | --- |
+| 4 | 20,1 | 50 ms | 317 | 1,3 % | 36 |
+| **8** | **18,3** | **50 ms** | **150** | **0 %** | 66 |
+| 12 | 15,0 | 67 ms | 183 | 0 % | 93 |
+| 16 | 9,1 | 100 ms | 383 | 3,1 % | 132 |
+
+La file de seize est la seule à produire des images de plus de trois cents
+millisecondes : ce sont les gels. Et comme le pas de temps du jeu est borné,
+elle faisait tourner le jeu **au ralenti** — à vitesse demandée identique,
+l'avion parcourait 1 757 blocs au lieu de 3 303. Le prix du retour se
+déclare : les bâtiments se dessinent plus tard (trou 132 → 66 blocs). Entre
+« les détails arrivent en retard » et « le jeu s'arrête cinq secondes »,
+c'est Max qui a tranché.
+
+**Et deux remèdes ont été écrits, mesurés, puis retirés.** Borner la pose des
+géométries image par image — la dette que la v265 avait elle-même déclarée —
+ne change rien : 10,63 images par seconde contre 10,20, du bruit. La raison
+est arithmétique : borner le travail par IMAGE ne réduit pas le travail par
+SECONDE, puisque le mailleur continue de produire. Et faire de la file un
+TEMPS plutôt qu'un compte, la règle que la v265 avait écrite en titre et
+codée à l'envers, ne marche pas non plus : mesuré, le coût d'un morceau ne
+sépare pas la ville de la campagne en vol (4,4 à 12,2 ms à Paris, 3,4 à 8,3
+en campagne), la file partait à son plafond partout et rendait 6,0 images par
+seconde — pire que seize.
+
+**Et les avions reviennent à la vitesse que le monde sait charger.** C'est
+le témoin du chargement qui l'a dit, et c'est la vraie leçon de cette
+livraison : la v265 avait monté les jets de 110 à 160 blocs par seconde
+**parce que** la file de seize le permettait. La file revenue à huit, 160
+ne tient plus — l'enfant volait littéralement dans le vide. Remesuré au
+même critère (le trou devant soi, médiane de six relevés) :
+
+| vitesse | trou devant soi | il en faut (une demi-seconde de vol) |
+| --- | --- | --- |
+| 95 | 115 | 48 |
+| **120** | **93** | **60** |
+| 130 | 80 | 65 |
+| 160 | 64 | 80 |
+
+L'avion de ligne repasse à 95, le Concorde et le chasseur à 120 — toujours
+au-dessus des 110 d'avant la demande de Max. **Le compteur, lui, ne bouge
+pas d'un kilomètre-heure** : il affiche toujours Mach 1,8, parce que la v267
+a séparé ce qu'on affiche de ce qu'on parcourt. Et la barre du témoin ne
+s'écrit plus, elle se CALCULE d'après la fiche : elle valait quatre-vingts
+depuis la v229 et n'était juste que par accident.
+
+**Ce qui le prouve — la marche arrière.** Deux témoins neufs qui montent par
+le bouton, poussent le cadran à fond, puis tirent le joystick en arrière —
+la situation exacte qui ne marchait pas. Sur la version publiée la voiture
+**avance** de 18,4 blocs et l'avion de 12,5, le cadran reste à fond, et
+l'attente de l'arrêt expire à ses huit secondes. Ici la voiture s'arrête en
+0,8 s puis recule de 6,9 blocs, l'avion en 0,4 s puis de 2,1, et le cadran
+est retombé à zéro.
+
+**Ce qui le prouve — les sons.** Rien n'est téléchargé : tout est fabriqué
+dans la page, parce que le jeu entier pèse 1,12 Mo compressé et qu'une seule
+boucle de moteur en MP3 pèserait davantage. Deux témoins neufs qui lisent des
+ÉCHANTILLONS, jamais un drapeau — un analyseur accroché à la sortie du jeu :
+zéro à pied, 0,028 au ralenti au volant, 0,048 à pleins gaz, zéro à la
+descente. L'horloge audio du banc a été mesurée avant d'écrire le témoin
+(0,212 pour une sinusoïde d'amplitude 0,3, soit 0,3/√2), sans quoi il aurait
+mesuré le banc. Et le son ne coûte rien de mesurable : 7,78 · 7,71 · 8,00 ·
+7,24 images par seconde, ordre alterné, pages refermées entre chaque.
+
+---
+
+## v267 — Les jets passent le mur du son, et on ne se pose plus dans la mer
+
+**Pourquoi.** Max : « un avion ne peut pas atterrir dans l'eau. Et peut-être
+fake la vraie vitesse, mais quand ton avion de chasse vole, il devrait voler à
+une vitesse supersonique. Idem, un Concorde, ça ne vole pas à 500 km/h. » Les
+deux étaient vrais. En finale au-dessus de la mer, l'appareil traversait la
+surface et se posait sur le fond, puis roulait sous l'eau. Et le compteur
+annonçait 576 km/h pour un Concorde, qui volait à 2 180.
+
+**Ce que ça change.** Devant de l'eau, l'avion ne descend plus : il remet les
+gaz, remonte, et le jeu dit à l'enfant d'aller vers la terre — c'est le geste
+qu'un vrai pilote fait devant une piste impraticable. Et le compteur dit
+enfin la vitesse de l'appareil qu'on pilote : 900 km/h pour l'avion de ligne,
+2 180 pour le Concorde, 2 200 pour le chasseur. Passé le mur du son, la petite
+ligne troque ses km/h contre le nombre de Mach — « Mach 1,8 ». Ce que l'avion
+PARCOURT ne change pas d'un bloc : c'est ce que le monde sait charger, mesuré
+en v265, et ça reste.
+
+**Ce qui le prouve.** La sonde a d'abord menti, et c'est noté : elle volait
+vers la côte, l'appareil rejoignait la terre en descendant, et elle concluait
+que tout allait bien sans avoir jamais mesuré d'eau. Cap au large, elle a rendu
+le vrai chiffre — posé à y = 25, sous cinq blocs d'eau, à rouler au fond de la
+Méditerranée. Deux témoins neufs dans `monte.js`, tous deux rouges sur la
+version publiée et verts ici : en finale au large de Nice l'appareil ne descend
+pas sous la surface (46,2 contre 26) et la remise des gaz a bien eu lieu ; et
+le compteur RENDU — celui que l'enfant lit, pas la fiche — affiche 900 km/h,
+Mach 1,8 et Mach 1,8, là où la version publiée affichait 432, 576 et 576.
+
+Portail complet, quinze suites, soixante-huit minutes : les deux témoins neufs
+verts, et quatre suites rouges dont AUCUNE ne vient d'ici. Trois sont des
+dettes déjà écrites (le métro de Washington, le délai de `manhattan.js`, la
+poule et le gel du premier survol de Paris). La quatrième est neuve au
+registre et vieille en production : le fond de la carte du monde ne finit pas
+son calcul dans les quarante-cinq secondes de la préparation. Rejouée SEULE
+dans les deux arbres le même jour, elle rend le même verdict — 45 121 ms ici,
+45 128 sur la version publiée, la carte encore au travail des deux côtés. Elle
+part dans `TASKS.md` avec ce qu'il faut mesurer avant d'y toucher.
+
+---
+
+## v266 — Un enfant qui charge son monde n'est pas un enfant parti
+
+**Pourquoi.** À trois joueurs, le dernier arrivé disparaissait pour les deux
+autres une vingtaine de secondes après être entré, puis revenait. Le défaut
+allait et venait depuis la v259 et résistait à six livraisons : rouge une fois
+sur deux, à l'identique sur la version publiée comme sur la branche, donc
+impossible à mettre sur le dos de ce qu'on venait d'écrire. C'est Marlon,
+Alice et un ami qui le vivaient.
+
+**Ce que ça change.** Le troisième enfant reste là. Sa tablette peut mettre une
+demi-minute à charger le monde : les deux autres continuent de le voir, à sa
+place, et quand elle a fini il n'a rien à refaire — il n'est jamais parti.
+Avant la correction, dans la même situation, il disparaissait pour tout le
+monde et se retrouvait lui-même seul dans un monde vide.
+
+**Ce qui le prouve.** Trois sondes successives, chacune répondant à une seule
+question, parce qu'une hypothèse de plus aurait coûté une livraison de plus.
+La première : son lien est direct, ouvert, sain, et l'hôte reçoit bien ce
+qu'il envoie — ce n'est pas un problème de tuyau. La deuxième : les trois
+pages sont éveillées d'un bout à l'autre, aucune ne dort — ce n'est pas la
+mise en veille. La troisième a nommé la cause : **le fil principal du nouvel
+arrivant est bloqué vingt-neuf secondes dans une seule tâche** pendant que son
+monde se charge. Il n'émet rien, ne reçoit rien, et l'hôte le retire à
+vingt-deux secondes de silence alors que son canal est grand ouvert. Le témoin
+neuf ne l'attend plus : il GÈLE la page du troisième joueur vingt-cinq
+secondes et vérifie que les deux autres le voient toujours. Rouge sur la
+version publiée (le joueur disparaît pour les deux autres, et lui-même perd
+tout le monde), vert deux fois de suite sur la correction.
+
+---
+
+## v265 — Les jets volent bien plus vite, et les commandes de vol tiennent ensemble
+
+**Pourquoi.** Max, capture d'iPhone du chasseur en vol de nuit : « Jet should
+fly faster, button pour les roues mal placé, pas élégant ». Les trois avions
+volaient à 95 et 110 blocs par seconde depuis la v229, et ce n'était pas un
+goût : le monde ne se maillait pas assez vite pour suivre plus rapide. La
+v229 l'avait écrit noir sur blanc — « le seul moyen de reprendre est de
+mailler plus vite ». Et sur la capture, les deux boutons du vol flottaient en
+plein ciel, dans deux colonnes différentes, au-dessus d'une manette qu'ils ne
+touchaient pas, pendant que le compteur « 684 km/h » se repliait sur deux
+lignes sous le curseur blanc.
+
+**Ce que ça change.** Le chasseur et le Concorde passent de 110 à 160 blocs
+par seconde — 576 km/h au compteur, presque la moitié en plus — et l'avion de
+ligne de 95 à 120. Le paysage arrive quand même : il est même plus complet
+qu'avant, parce que le mailleur ne travaille plus à sec. Décollage, approche
+et atterrissage ne bougent pas d'un chiffre : ce qu'un enfant a appris
+continue de marcher. Et les commandes de vol deviennent un seul instrument
+dans le coin bas-droit : deux colonnes jumelles, la manette des gaz à
+l'extrême droite, à sa gauche ✈️ et 🛞 l'un sous l'autre avec la vitesse
+dessous. Chaque bouton porte son mot, et le mot dit l'état — DÉCOLLER ou SE
+POSER, train SORTI ou RENTRÉ. Le bandeau de message ne déborde plus de
+l'écran et passe sous le cadran de cap.
+
+**Ce qui le prouve.** La vitesse a été remesurée au même critère que la v229 —
+le trou devant soi, médiane sur six relevés, à la distance d'affichage de
+l'iPad, en campagne et sur un couloir de villes. Avec l'ancienne file de huit
+morceaux, voler à 110 laissait un trou à 91 et 82 blocs, et 160 l'aurait
+laissé à 51 ; avec la file de seize, 160 blocs par seconde rend 125 et 122 —
+exactement la qualité que la v229 avait retenue pour fixer son plafond, et
+bien mieux que ce que la famille a aujourd'hui. Et le premier jet de cette
+livraison, qui poussait la file à quarante-huit et les avions à 190, a été
+REFUSÉ par le portail : sept suites rouges, toutes de cadence, parce que le
+fil principal passait son temps à installer les géométries. La file se choisit
+sur deux chiffres, le débit et la cadence ; seize est le genou mesuré. Le
+témoin du chargement en vol prend le chasseur, qui n'y était pas. Trois témoins neufs
+mesurent les commandes sur l'écran rendu : une seule colonne collée à la
+manette, la vitesse hors de la manette et sur une ligne, rien qui recouvre
+« Descendre », et le mot de chaque bouton. Captures au sol et en vol, à la
+taille d'un iPhone.
+
+---
+
+## v264 — Les flammes des réacteurs
+
+**Pourquoi.** Max, capture du chasseur en vol : « j'aimerais qu'on puisse
+voir les flammes sortir du réacteur quand l'avion se déplace ». Un avion à
+pleins gaz sur la piste et un avion garé se ressemblaient trait pour trait :
+rien ne disait que les moteurs tournaient, ni combien la manette demandait.
+
+**Ce que ça change.** Chaque réacteur a sa flamme — deux sur l'avion de
+ligne, quatre sur le Concorde, une à la tuyère du chasseur — un cœur clair
+et une gaine orange qui sortent de la sortie du réacteur, vers la queue. La
+longueur suit la manette des gaz (v262) — et, manette non touchée, le
+trajet assisté de ✈️ : à fond au décollage, l'approche en finale, ralenti
+au freinage — rien à l'arrêt moteurs coupés, longue à pleins gaz, plus
+courte dès qu'on réduit ; elle vacille un peu. Les flammes s'éteignent quand on descend. Aucune lampe en
+plus (quatre pour tout le jeu), l'éclairage du monde ne change pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js`, qui lisent les
+maillages de flamme du modèle (`userData.tuyeres`) : les trois fabriques
+comptent 2, 4 et 1 tuyère ; monté par le bouton sur une piste, à l'arrêt
+aucune flamme n'est dessinée, et en vol après ✈️ chacune est visible et
+longue ; manette à fond puis réduite à 20 %, la flamme raccourcit de plus de
+moitié, et elle est éteinte une fois descendu. Rouges sur l'ancien code
+(pas de tuyère). Captures de derrière, avion de ligne et chasseur, dans
+`scratchpad/v264/captures`.
+
+Portail complet, sept suites : `carteMonde`, `maj`, `carte` et `reglages`
+vertes. Les rouges de `monte.js` et de `reseau.js` ont été rejoués SEULS
+dans les deux arbres et sont déclarés dans `TASKS.md` — le gel du premier
+survol de Paris (branche 4 133 ms, `origin/main` 4 117), le maillage en vol
+dont la borne de garde n'est pas atteinte (66 blocs parcourus contre 76), et
+surtout un défaut de PRODUCTION que cette livraison n'a pas causé : à trois
+joueurs, le second invité voit les deux autres et n'est vu de personne —
+même relevé au caractère près sur `origin/main`. Le conteneur du banc a
+redémarré en cours de route et rend 4,4 images par seconde là où il en
+rendait 5,4 : deux bornes de garde de `monte.js` tombent sous ce régime en
+ne mesurant rien, ce qui est noté comme une passe à faire.
+
+## v263 — Le cadran de cap : la ville visée au loin
+
+**Pourquoi.** Max : « un cadran de pilote en avion : la ville visée au
+loin ». Aux commandes, l'enfant tient l'altitude et le cap au joystick
+(v228) ; rien ne lui disait vers QUOI il volait. Le monde fait des milliers
+de blocs de large, à cent blocs par seconde on ne reconnaît rien avant d'y
+être, et un enfant qui a décollé de Roissy pour aller à Lyon partait au
+jugé, souvent vers la mer.
+
+**Ce que ça change.** Aux commandes, et seulement là, un cadran en haut de
+l'écran : le cap en degrés et sa lettre (152° SE), la ville la plus proche
+dans le cône devant l'appareil — les villes bâties comme les deux cents
+engendrées, toutes celles du registre — avec sa distance en kilomètres, et
+un repère jaune qui glisse sur une règle quand on tourne : au centre, la
+ville est pile devant. Si aucune ville n'est devant, la plus proche est
+nommée quand même, avec une flèche du côté où tourner, le repère orange au
+bord. Deux villes à distance presque égale ne se relaient pas à chaque
+image : celle qu'on nomme reste tant qu'elle est devant et à moins de
+quinze pour cent de plus. À pied et en voiture, rien : le cadran s'efface
+avec le mode pilote.
+
+**Ce qui le prouve.** Le calcul est pur (`src/cap.js`, lu sous node par la
+sonde) et demande son échelle à la projection : depuis Paris cap sur Lyon,
+il nomme Lyon à 389 km — 392 dans la vraie vie. Trois témoins neufs dans
+`monte.js`, qui lisent le TEXTE du cadran : aux commandes cap sur Lyon,
+il nomme Lyon avec sa distance, et la distance diminue de plus de cent
+blocs en trois secondes de jeu ; un quart de tour à droite, le cap affiché
+passe de 152° à 062° et une autre ville passe devant, et vers +x il dit
+090° E — le signe se regarde ; à pied le cadran est `display: none`, et il
+l'est de nouveau une fois descendu. Rouges sur l'ancien code (le cadran
+n'existe pas, et le témoin le dit). Captures en vol dans
+`scratchpad/v263/captures`. Portail rejoué depuis zéro sur les sept suites
+que l'aiguillage retient (fumée, `maj`, `carte`, `washington`, `reglages`,
+`manhattan`, `monte`) : 387 témoins verts ; cinq rouges, tous dettes
+déclarées dans `TASKS.md` aux mêmes valeurs qu'aux v261 et v262 — les
+quatre de `manhattan.js` (11684 → 51734, [1,−1]) et le gel du premier
+survol de Paris (`monte.js`, 3 283 ms / 37,3 %).
+
+## v262 — Une manette des gaz à droite, le joystick pour le volant
+
+**Pourquoi.** Max, capture en vol : « une vraie option pour faire un vrai
+atterrissage, un bouton pour gérer la vitesse : le joystick à gauche pour
+la direction et, en multitouch, à droite un cadran qu'on monte/baisse pour
+la vitesse. Accélérer et ralentir les voitures, idem pour les avions » ; et
+« au volant ou aux commandes, nettoyer les boutons inutiles ». Sur la
+tablette une voiture partait à son allure maximale dès que le joystick
+touchait l'avant, sans inertie, et tournait de côté comme un piéton ; en
+avion la vitesse était automatique (v228) ; et l'écran gardait le saut, la
+pioche, la capture et la barre de blocs pendant qu'on conduisait.
+
+**Ce que ça change.** Un cadran vertical à droite de l'écran, en véhicule
+seulement : on le monte et on le baisse, en même temps que le joystick à
+gauche, et il affiche la vitesse en km/h. En voiture il fixe la vitesse
+visée — 60 % du cadran, c'est 60 % de l'allure du modèle —, la voiture
+prend sa vitesse en une demi-seconde et freine plus fort qu'elle n'accélère, et
+le joystick ↔ tourne le volant, d'autant plus qu'elle roule. Tant qu'on
+n'a pas touché le cadran, l'avant du joystick reste l'accélérateur : rien
+de ce qu'un enfant sait ne cesse de marcher ; tiré vers soi à l'arrêt, il
+fait reculer lentement. En avion le cadran est la manette des gaz : en
+croisière il fixe la vitesse, et sous la vitesse de décrochage l'appareil
+descend — gaz en bas et manche en avant, on se pose soi-même sur la piste,
+train sorti par son bouton 🛞 (rentré par défaut en vol) ; sans le train,
+c'est sur le ventre, ça freine deux fois plus fort et le jeu le dit. ✈️
+garde ses deux trajets assistés (v261), et le cadran les suit. Au volant,
+le saut, la pioche, la capture, le coffre et la barre de blocs s'effacent
+et reviennent à pied ; en voiture ✈️ s'efface aussi.
+
+**Ce qui le prouve.** Six témoins neufs dans `monte.js`, sur la page
+tactile, à deux doigts par le protocole du navigateur : le cadran à 60 %
+fait rouler la citadine à 60 % de son allure (médiane lue sur quatre
+secondes, la consigne tenue après avoir lâché) ; le joystick à droite
+tourne le volant pendant que le cadran tient la vitesse, sans quitter la
+piste ; au volant les cinq boutons de la marche sont `display: none` et le
+cadran `block`, et ils reviennent à pied ; aux commandes 🛞 sort et rentre
+le train (les trois jambes) et n'existe qu'en avion ; gaz à zéro et manche
+en avant, l'appareil touche la piste train sorti, sans ✈️, freine jusqu'à
+zéro. Deux témoins de vitesse anciens comptent désormais en secondes de jeu :
+le banc rend deux images par seconde et l'inertie se joue par image (une
+sonde l'a tracé, `scratchpad/v262/sonde-vitesse.cjs`). Captures du cadran
+au volant et en vol (`scratchpad/v262/captures`). Portail complet rejoué :
+482 témoins verts ; six rouges, tous dettes déclarées dans `TASKS.md` — les
+quatre de `manhattan.js` (mêmes valeurs), le gel du premier survol de Paris
+(`monte.js`) et « la reprise tient dans la durée » (`reseau.js`, le même
+délai de silence qu'à la v261, `seen` à 20 295 ms) — et la fin de
+`manhattan.js` qui a PENDU seize minutes sur un `evaluate` sans délai, deux
+Manhattan rendues en logiciel, terminée à la main et déclarée.
+
+## v261 — L'avion décolle de sa piste, et s'y pose
+
+**Pourquoi.** Max : « les avions devraient avoir une vraie motion de
+décollage-atterrissage, avec accélération sur la piste puis décollage en
+levant le nez ; idem à l'atterrissage, baisser l'altitude et ouvrir le
+train ; et aussi le roulage sur la piste. » Depuis la v228 le bouton ✈️
+arrachait l'appareil du sol sur place, à plat, et « se poser » était une
+descente à l'aveugle jusqu'au sol, train jamais rentré ; au sol, un avion
+ne roulait pas — on montait dedans et l'on partait à la verticale.
+
+**Ce que ça change.** Un vol se fait comme un vrai. Au sol, le joystick
+fait rouler l'appareil (six blocs par seconde) et la roue avant le fait
+tourner — seulement s'il roule. ✈️ met les gaz : l'appareil accélère sur la
+piste, nez au sol, et à sa vitesse de rotation le nez se lève et il monte
+au palier ; le train rentre huit blocs plus haut. En vol, rien ne change
+(joystick pour la hauteur et le cap, regard libre). ✈️ à nouveau : la
+vitesse tombe à l'approche, le train sort, l'appareil descend nez un peu
+bas, s'arrondit sous six blocs, touche, freine jusqu'à l'arrêt — et l'on
+roule à nouveau au joystick. Un second ✈️ en finale remet les gaz. Chaque
+appareil garde son caractère, dans sa fiche : l'avion de ligne roule 49
+blocs avant de lever le nez, le Concorde 57, le chasseur 13 ; ils freinent
+sur 34, 43 et 21. Les messages disent chaque étape (« Pleins gaz ! Le nez
+se lève tout seul », « Posé·e ! On freine… », « À l'arrêt. Le joystick
+fait rouler, ✈️ redécolle »), et le bouton de la monture dit « Descendre »
+au lieu de « Se poser », qui est désormais le travail de ✈️.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `monte.js`, sur une piste de
+pierre de trois cents blocs posée au-dessus du relief, aux commandes PAR LE
+BOUTON, un relevé tous les dixièmes de seconde : ✈️ accélère sur la piste
+et le nez ne se lève qu'à la vitesse de rotation (roulement mesuré 49
+blocs, entre 20 et 90 exigés, assiette nulle au sol) ; à la rotation le nez
+du MAILLAGE est plus haut que sa queue (2,7 blocs, lus dans la matrice
+monde — le signe est mesuré, pas déduit) ; l'appareil monte au palier et le
+train est rentré en croisière (les trois jambes invisibles) ; 🛬 descend
+train sorti, touche, freine jusqu'à zéro sur la piste (arrêt à 271 blocs) ;
+à l'arrêt le joystick fait rouler sans quitter la piste et tourne (0,87
+radian en une seconde et demie). L'ancien témoin « le bouton ✈️ fait
+décoller » est remplacé : il mesurait un appareil qui monte sur place, ce
+qui est devenu le défaut. Captures de côté et vue de l'enfant à chaque
+étape (`scratchpad/v261/captures`). Portail complet rejoué : 542 témoins
+verts ; neuf rouges, tous dettes déclarées dans `TASKS.md` — les quatre de
+`manhattan.js` (mêmes valeurs que les deux portails précédents), le gel du
+premier survol de Paris (`monte.js`), et `reseau.js` sous charge, dont « la
+reprise tient dans la durée » qui dit enfin POURQUOI grâce au journal des
+retraits posé dans cette livraison : un délai de silence (`STALE`), l'hôte
+n'entendant plus un invité neuf qui, lui, l'entend.
+
+## v260 — Chaque voiture roule à l'allure de son modèle
+
+**Pourquoi.** Max : « les voitures devraient aller plus vite et surtout une
+vitesse en fonction du modèle (sportive faster than sedan basic) ». Toute
+voiture conduite roulait à la même allure, ×3,4 de la marche (10,9 blocs par
+seconde), qu'on soit dans la citadine ou dans une Koenigsegg Jesko, et sur
+la tablette — où le joystick ne court pas — c'était le maximum absolu.
+
+**Ce que ça change.** Chaque modèle de la flotte a une classe, et chaque
+classe son allure : citadine ×3,8 (12 blocs/s), berline et SUV ×4,4 (14),
+GT ×5,4 (17), sportive ×6,4 (20), hypercar ×8 (26). La citadine elle-même
+va un peu plus vite qu'avant ; une Bugatti, une Koenigsegg, une Rimac vont
+plus de deux fois plus vite qu'une berline. Le message « En selle ! Vitesse
+×N » dit l'allure du modèle. Le plafond n'est pas un goût : Paris se maille
+à 42 morceaux par seconde et une vitesse v en réclame 1,5 × v (v229, v237),
+soit 28 blocs par seconde en ville ; l'hypercar reste dessous. À remesurer
+sur la tablette.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien
+code : « une hypercar va plus vite qu'une citadine, et la citadine plus vite
+qu'avant » — une citadine et une Jesko invoquées sur un champ plat, montées,
+accélérateur enfoncé trois secondes, et l'on lit la vitesse que l'enfant
+obtient : la Jesko au moins 1,8 fois la citadine, la citadine au-dessus de
+11 — mesuré à la sonde : 11,4 et 24,0 ici, 10,2 et 10,2 sur l'ancien code,
+deux tours chacun. Portail complet rejoué.
+
+## v259 — Les passants ne traversent plus la voiture de l'enfant
+
+**Pourquoi.** Max, deux captures : à la Bastille, des passants qui marchent
+AU TRAVERS de sa voiture à l'arrêt ; à New York, une passante au travers de
+son taxi — « trouve une solution élégante, je ne veux pas un mode violent
+comme GTA où ils sont écrasés ». Un piéton ne connaît que les blocs solides
+— c'est ainsi qu'il évite les murs et monte les marches — et une voiture n'en
+est pas un : ni celle de la rue, ni celle de l'enfant au volant, ni une
+voiture garée. Mesuré au banc, huit passants lancés sur la voiture de
+l'enfant à l'arrêt pendant douze secondes : entre 287 et 449 relevés sur 120
+avec un passant les pieds dans la carrosserie — ils y entraient et y
+restaient. Et en roulant sur trois passants plantés dans la rue, la voiture
+leur passait au travers.
+
+**Ce que ça change.** Trois gestes de piéton, aucun de GTA. Un passant regarde
+un pas devant lui avant d'avancer : si c'est une voiture — de la rue, celle
+de l'enfant au volant, une voiture garée ou un avion au poste —, il ne fait
+pas ce pas, marque une courte pause et repart de biais, comme il le fait déjà
+au bord d'une rue de Manhattan. Devant une voiture qui ARRIVE — de la rue,
+ou celle de l'enfant quand il appuie sur l'accélérateur —, il presse le pas
+de côté, du côté où il est déjà, sort de son chemin avec de la marge, souffle
+un instant et reprend sa promenade. Et la voiture de l'enfant FREINE devant
+un piéton au lieu de le traverser, puis repart dès qu'il s'est écarté : on
+ne reste pas coincé derrière lui, on ne l'écrase jamais. Une voiture qui a
+roulé sur un passant le laisse sortir, même règle que pour la voiture de
+l'enfant. Un passant ne NAÎT plus dans une voiture : la place qu'on lui tire
+n'est retenue que si elle est libre. L'enfant à pied n'est pas une voiture :
+on passe toujours à côté de lui.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, rouge sur l'ancien
+code : « un passant lancé sur la voiture de l'enfant s'arrête et la
+contourne au lieu de la traverser » — l'enfant monte dans une voiture à
+Rome, huit passants partent droit dessus depuis des points AU NIVEAU DE LA
+RUE (un départ tombé dans un immeuble posait le passant sur son toit, d'où il
+retombait dans la voiture : vu à la sonde, corrigé dans le témoin), relancés
+toutes les deux secondes ; zéro relevé dedans sur trois tours ici, 287 à 449
+sur l'ancien code, et les huit marchent des deux côtés. Un second, rouge
+aussi sur l'ancien code : « la voiture de l'enfant freine devant un piéton,
+qui s'écarte, et elle repart sans lui passer au travers » — trois passants
+plantés sur l'axe de la voiture, douze secondes d'accélérateur, zéro relevé
+dedans et la voiture a avancé (seize blocs mesurés à la sonde, freinage de
+deux secondes pendant que le piéton sort du couloir) ; sur l'ancien code
+elle les traverse. Il part d'une rue sans voiture de la rue à portée, sans
+mobilier ni marche sur le couloir, sinon il mesure deux voitures nez à nez
+ou un réverbère. Et Marlon ne se replace plus dans le nez de la voiture
+quand l'enfant conduit. Le portail complet rejoué.
+
+## v258 — Le jeu se prépare avant « Jouer », et la carte ne fige plus l'image
+
+**Pourquoi.** Max, après la v255 : « quand on ouvre la carte, beaucoup de
+lag au début, sur les premières minutes » et « ne devrait-il pas y avoir le
+temps de télécharger tous les fichiers nécessaires avant de permettre à
+l'utilisateur de démarrer le jeu, pour éviter une expérience de lag ? ».
+Mesuré au banc, processeur bridé ×4 comme une tablette : le premier fond de
+la minicarte bloquait le fil principal 690 ms — 37 000 colonnes d'un coup,
+et le fond entier refait toutes les deux secondes, 90 à 240 ms chaque fois
+tant qu'elle est affichée ; le fond de la carte du monde, 1 637 ms à
+l'ouverture (les deux tiers en hauteurs de terrain, le tiers en couleurs).
+Et ce qui lague dans les premières minutes n'est pas un fichier qui manque
+— le service worker les a tous — mais ce qui se calcule au premier usage :
+les corps réalistes, les programmes de la flotte, le monde autour de
+l'enfant (qui se chargeait au point d'apparition pendant l'accueil, puis se
+rechargeait là où « Jouer » le téléportait) et les deux fonds de carte.
+
+**Ce que ça change.** Sur l'accueil, une ligne sous les boutons dit ce que
+le jeu prépare — « ⏳ Préparation du jeu… personnages 3/9 · programmes
+12/25 · carte … » — et « Jouer » comme « Jouer en ligne » restent grisés
+jusqu'à ce que tout soit là, borné à quarante-cinq secondes. La position
+locale est restaurée dès l'accueil : le monde se charge là où l'enfant va
+jouer. La minicarte et la carte du monde préparent leur premier fond
+pendant ce temps. Ouverte, la carte du monde calcule son fond par tranches
+de huit millisecondes par image, en étirant l'ancien en attendant, et ne le
+recalcule que quand la vue en sort ou que le zoom a changé — un glisser
+d'un dixième de l'écran n'a plus rien à recalculer. La minicarte repeint
+son fond deux lignes par image, en tournant sans fin — le tour en deux
+secondes, la cadence d'avant sans son à-coup : un bloc posé apparaît dans
+les deux secondes et aucune image ne le paie en entier ; après une téléportation, elle se remplit au lieu de se calculer
+d'un bloc, et elle n'engendre plus jamais un morceau sur le fil principal :
+un morceau que le worker n'a pas encore livré se peint d'après le relief,
+puis se repeint avec ses blocs. Le banc, lui, demande `?prep=0`.
+
+**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
+`maj.js` : « avant « Jouer », le bouton attend que le jeu soit prêt, et une
+ligne dit ce qu'il prépare », « et quand il se libère, corps, programmes et
+fond de carte sont vraiment là » (sur l'ancien code, le bouton n'attend
+jamais et la ligne n'existe pas). Dans `carte.js`, bridés ×4 : « allumer la
+minicarte ne fige pas l'image », « ouvrir la carte du monde ne fige pas
+l'image », « et la faire glisser non plus » (barre 700 ms ; mesuré 67, 158
+et moins de 160 ms ici, 690 et 1 637 sur l'ancien code) ; et « le fond par
+tranches est identique au fond d'un seul tenant », octet pour octet — une
+optimisation qui découpe doit prouver qu'elle ne ment pas. Et le premier
+portail a rendu `maj.js` rouge : la préparation de la minicarte, en boucle
+sans fin sur l'accueil, retenait la mise à jour du service worker cinquante
+secondes (mesuré, bissection par `?prepmini=0`) — un tour puis l'arrêt, et
+le scénario de mise à jour se joue désormais pendant la préparation. Le
+deuxième a rendu `carte.js` rouge par intermittence (l'appui long refusé,
+« #map-tout jamais stable ») : profil à l'appui, c'était la chauffe des
+programmes que le banc faisait EN JEU en appuyant sur « Jouer » tout de
+suite — une compilation par image, 1,5 à 2,4 s chacune en rendu logiciel ;
+les pages de `carte.js` attendent désormais la chauffe (`pret: true`),
+comme l'enfant derrière ses boutons grisés. Portail complet : 639 témoins
+verts sur les quinze suites (dix rejouées vertes sur ce code exact, cinq
+rejouées après les corrections du banc), 76 minutes en tout ; seuls rouges,
+ceux déjà déclarés de `manhattan.js` (quatre, plus sa fin instable) et de
+`monte.js` (un). Au portail, allumer la minicarte coûte 10 ms et ouvrir la
+carte 37, contre 964 et 872 sur l'ancien code rejoué seul.
+
+## v257 — L'installation se voit, et la tablette dit où passe le temps
+
+**Pourquoi.** Max, après la v255 : « comme dernièrement après chaque mise à
+jour, le jeu reste quasiment bloqué pendant une ou deux minutes sur la
+home », « s'il y a une installation nécessaire et qu'elle prend une minute,
+mets un loader », « le jeu lag énormément sur iPad », et « dans les
+réglages, un mode normal ou un mode avancé de qualité de graphisme ».
+Mesuré au banc : la mise à jour elle-même se fait en 6 s (installation
+0,4 s), mais la page redemandait au réseau ses 78 fichiers à chaque
+démarrage pendant que le service worker téléchargeait les mêmes 78 ; le
+loader s'effaçait à la première image alors que le fil principal analysait
+huit mégaoctets de corps et compilait une cinquantaine de programmes (4,8 s
+bloquées au banc, 10,5 s bridé ×4 — et sur Safari une compilation coûte
+des centaines de millisecondes, pas dix) ; et le monde était rendu à deux
+pixels par point, ombres et quatre lampes comprises, sur une tablette dont
+personne ne pouvait lire la cadence.
+
+**Ce que ça change.** Pendant une mise à jour, le loader compte les
+fichiers rangés (« 📦 Mise à jour du jeu… 24 / 90 fichiers »). Après le
+rechargement sur la version neuve, il reste — « ✨ Installation de la
+nouvelle version… personnages 3 / 9, programmes 12 / 38 » — jusqu'à ce que
+corps et programmes soient prêts, borné à quatre-vingt-dix secondes ; puis
+la fête de mise à jour. Une version ne se revalide plus : son cache se sert
+tel quel, et le réseau ne sert qu'à découvrir la suivante. Dans ⚙️
+Réglages, « ✨ Graphismes avancés » : éteint, 1,25 pixel par point et pas
+d'ombres — le réglage par défaut d'une tablette ou d'un téléphone ; allumé,
+pleine résolution et ombres — le réglage d'un ordinateur. Mémorisé sur
+l'appareil, appliqué sur place. Et `?diag=1` affiche en haut de l'écran la
+cadence médiane réelle, la pire image, les appels de dessin, la résolution
+et les réglages actifs ; `?ombres=0`, `?reflets=0`, `?lampes=0`,
+`?qualite=tablette` et `?dpr=` isolent un poste en trente secondes, sur
+l'appareil.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur l'ancien code : dans
+`maj.js`, « pendant l'installation, le loader dit combien de fichiers sont
+rangés » et « après le rechargement, le loader ne s'efface qu'une fois les
+corps et les programmes prêts » ; dans `fumee.js`, « les Réglages ont une
+ligne Graphismes qui bascule entre normal et avancé, mémorisée sur
+l'appareil ». Trois sondes mesurées avant d'écrire une ligne (mise à jour,
+accueil bridé ×1 et ×4, carte bridée ×4), consignées dans `TASKS.md`.
+Portail complet : 621 témoins verts en 52 minutes, quinze suites ; les
+rouges déclarés de `manhattan.js` (quatre) et de `monte.js` (un), rien
+d'autre — et un rouge de HASARD sur le témoin passager de `reseau.js` : un
+cerf né près du point d'apparition sur la page d'Alice passait avant la
+voiture de l'ami (« 🦌 Monter »). Le témoin vide désormais les bêtes des
+deux pages ; rejoué seul sur la branche, il est vert (« 🚗 Monter avec
+Marlon », suivi 3,54 blocs, écart 0,59) — et ce rejeu seul a rendu à son
+tour la panne de `plafond.js` en v251, cinq « Couldn't load texture blob: »
+chez Milo, dont la page se recharge pendant que les corps s'analysent ; même
+remède dans le banc, les corps d'abord, et la suite rejouée seule est verte
+de bout en bout. Les trois témoins neufs, rejoués
+sur `origin/main` (v256) : rouges tous les trois — le loader n'y dit que
+« il faut la dernière version pour jouer », s'efface avec 3 programmes sur
+25 et les corps absents, et les Réglages n'ont pas de ligne Graphismes.
+
+## v256 — Le panneau 🛠️ s'en va, les Souvenirs restent
+
+**Pourquoi.** Max : « je veux que tu supprimes la fonctionnalité de pouvoir
+faire les feux d'artifice, et tout ça — Atelier, Coffre, Quête, Panneau,
+Chantier, Records, Chapeaux — à part les souvenirs photos. » Sept onglets
+que personne n'ouvrait, une pastille de garde-manger et une jauge de
+chantier « qui ne font rien quand on clique » (déjà reproché en v190), une
+touche G qui lançait une fusée. Du bruit à l'écran, pour un enfant de sept
+ans qui cherche la carte.
+
+**Ce que ça change.** Le bouton 🛠️ devient 🖼️ « Souvenirs » et ouvre
+directement l'album photo, sans onglet. Le bouton 🎆 et la touche G ne
+lancent plus rien ; le coffre commun, le chantier partagé, la quête, les
+records, les chapeaux et l'atelier n'ont plus d'écran ; on ne plante plus
+de panneau, mais ceux qu'un enfant a déjà écrits restent dans le monde. Le
+garde-manger 🍖 compte encore ce qu'on récolte, sans s'ouvrir. **Aucune
+donnée n'est effacée** : records, sac, quête, coffre, chantier, panneaux et
+photos restent dans le stockage et dans le nuage, sous leurs clés, tels
+quels. Et une tablette restée sur l'ancienne version peut encore envoyer un
+coffre ou un chantier : le receveur l'ignore sans casse, et l'hôte relaie
+pour que deux anciennes tablettes continuent de se comprendre.
+
+**Ce qui le prouve.** Huit cent cinquante-deux lignes retirées, deux cent
+vingt-trois ajoutées, onze fichiers. Huit témoins retirés avec ce qu'ils
+gardaient (la pastille touchable, le 🍖 qui ouvre l'atelier, la jauge du
+chantier, le chantier commun de bout en bout), trois reformulés, quatre
+ajoutés : « le feu d'artifice n'a plus de bouton », « le bouton 🖼️ ouvre
+les Souvenirs, sans autre onglet », « la touche G ne lance plus de fusée »
+(ni nuage de points dans la scène, ni compteur dans les records) dans
+`fumee.js`, et « un chantier ou un coffre envoyé par une ancienne version
+est ignoré sans casse » dans `reseau.js`.
+Les trois témoins de la fumée sont ROUGES sur l'ancien code, mesurés (le
+bouton 🎆 présent, pas de bouton Souvenirs, la touche G ajoute un nuage de
+points et compte un feu). Portail : fumée verte, puis onze suites rejouées
+en 45 minutes ; sept vertes (parent, visio, maj, carte, hote, reglages,
+`reseau.js` au portail suivant seule : 71 témoins verts, la reprise dans la
+durée comprise — son rouge de portail est celui de charge déclaré en v253) ;
+`manhattan.js` et `monte.js` sur leurs seuls témoins déclarés en dette ;
+et la Rotonde de `washington.js`, rouge deux portails de suite au même
+endroit et verte seule, corrigée dans le témoin (il marche jusqu'à être
+entré, ressorti ou figé trois pas, plus en quatorze pas : plafond 22,
+x = −4,0, verte).
+
+## v255 — Le portail d'essai attend ce qui compte, plus le temps
+
+**Pourquoi.** Max : « je veux que tu trouves des solutions pour accélérer la
+partie testing, en garantissant le même niveau de qualité, mais beaucoup
+plus vite. » Mesuré sur le portail complet de la v251 : 64 minutes de suites
+et NEUF minutes d'attente entre elles, 74 en tout. Un inventaire de chaque
+attente du banc a nommé les postes : `souffler`, appelé avant chaque page,
+lisait la charge MOYENNE d'une minute — un instrument qui retarde de cent
+secondes et ne peut pas voir qu'une page vient de mourir : dix minutes par
+portail à regarder un nombre qui ne descendait pas, vingt-deux appels sur
+trente-huit au bout de leur budget. Entre deux suites, vingt secondes de
+sommeil inconditionnel, quinze fois. Et `reseau.js`, la plus longue, passait
+en premier : un rouge de `metro.js` se découvrait à la cinquante-neuvième
+minute.
+
+**Ce que ça change.** Rien dans le jeu. Le banc lit l'occupation RÉELLE des
+cœurs sur la dernière demi-seconde (`tests/charge.js`) : une page fermée
+rend la main en moins d'une seconde, une page qu'on garde ouverte exprès
+(l'hôte d'une partie) donne une charge stable que rien ne fera baisser, et
+l'on cesse de l'attendre en le disant. Le repos entre suites est une
+condition bornée, plus un sommeil. `jouerSeul` attend que les neuf morceaux
+autour de l'enfant soient maillés, jamais plus que les 3,5 s d'avant. Les
+suites courtes passent d'abord : un rouge de géométrie arrive dans les cinq
+minutes qui suivent la fumée. Et régler une borne du banc n'annule plus les
+quinze acquis de reprise — l'empreinte prend la forme des fichiers du banc,
+chiffres effacés, la règle que `bancAnodin` appliquait déjà à l'aiguillage.
+
+**Ce qui le prouve.** Les mêmes quinze suites, les mêmes témoins, et le
+portail se chronomètre lui-même : voir « Portail » ci-dessous.
+Portail complet, les quinze suites depuis zéro, même machine, même
+rendu logiciel, avant et après :
+
+| | v251 (ancien banc) | v255 |
+| --- | --- | --- |
+| suites | 64 min | 50 min |
+| attente entre suites | 9 min | 0 min |
+| respiration (`souffler`) | ≈ 615 s | 119 s |
+| total | **74 min** | **51 min** |
+| premier rouge possible | 20e minute | 4e minute |
+
+Treize suites vertes dont `reseau.js` (15 min 03 s contre 19 min 46 s) ;
+`manhattan.js` rouge sur ses quatre témoins déclarés en dette, `monte.js`
+sur le seul témoin déclaré des deux côtés (« l'écran ne se fige pas »), rien
+d'autre. Deux rouges de portail attrapés et démontés en route : une borne
+de garde de `monte.js` posée à 98 % d'une mesure de banc (500 pour 490
+relevés, zéro saut — ramenée à la moitié, 568 relevés au rejeu) et la
+Rotonde de `washington.js`, verte rejouée seule (plafond 21, x = −4,9),
+déclarée dans `TASKS.md` avec ses deux mesures. Et un rouge de fumée qui
+était à moi : la première condition de `jouerSeul` lisait un champ absent
+et jetait dans la page — une condition de banc ne doit jamais pouvoir
+jeter dans la page.
+
+## v254 — Le badge de version raconte les nouveautés
+
+**Pourquoi.** Max : « quand l'utilisateur clique sur le logo de mise à jour,
+ça lui affiche une modale, il peut la fermer, pour voir tout ce qui est
+nouveau sur chaque version. Du contenu extrêmement court, des bullet points,
+des phrases de quelques mots. Et un backfill complet des anciennes mises à
+jour. » Jusqu'ici, toucher le badge forçait une mise à jour — un geste de
+parent, pas de curiosité — et rien dans le jeu ne disait ce qu'une version
+apportait ; le journal complet vit dans le dépôt, pas sur l'iPad.
+
+**Ce que ça change.** Toucher le badge de version, sur l'accueil, ouvre
+« ✨ Quoi de neuf ? » : chaque version, de la plus récente à la première,
+avec un titre de quelques mots et deux à cinq puces d'au plus huit mots,
+écrites pour un enfant ; la version installée est marquée « ← ta version ».
+La croix, un toucher à côté ou Échap la ferment. La mise à jour forcée
+reste possible : c'est le bouton « 🔄 Mettre à jour » en bas de la modale.
+Cent deux entrées reprennent tout le journal depuis les débuts.
+
+**Ce qui le prouve.** Deux témoins de plus dans `maj.js`, rouges sur
+l'ancien code (pas de modale ; pas de fichier) : sur l'accueil, le badge
+ouvre le journal, la version servie par `sw.js` est en tête avec au moins
+une puce, la version installée est marquée, la croix le ferme ; et, sous
+node sans navigateur, chaque « ## vNNN » de `CHANGELOG.md` a son entrée dans
+`src/nouveautes.js`, aucune puce ne dépasse huit mots, aucun titre six.
+Et un troisième rouge attrapé AVANT la fusion par le portail lui-même :
+fermée, la modale couvrait tout l'écran (`display: flex` l'emportait sur
+`hidden`) et avalait les gestes de la carte — `carte.js` l'a dit, le témoin
+vérifie désormais par `elementFromPoint` qu'aucun voile ne reste.
+Portail : fumée verte, puis `reglages.js`, `carte.js`, `maj.js` vertes (220
+témoins) ; `manhattan.js` rouge sur exactement les quatre témoins déclarés en
+dette dans `TASKS.md` depuis la v242 (rendu logiciel), rien d'autre.
+
+## v253 — À plusieurs, on voit l'ami dans sa voiture, et l'on monte avec lui
+
+**Pourquoi.** Max, après la v249 : « En multijoueur, on ne voit pas si un
+user est dans une voiture, il est piéton alors qu'il est dans une voiture.
+Aussi permets que plusieurs joueurs rentrent dans un moyen de transport : le
+premier conduit, les autres restent passagers. » Le réseau ne diffusait que
+la position des joueurs : Marlon au volant, Alice voyait un enfant à pied
+qui glisse à toute vitesse. C'est la dette de la v155 (« un véhicule conduit
+doit se voir en ligne »).
+
+**Ce que ça change.** La position d'un joueur emporte désormais son
+véhicule (l'espèce et, pour une voiture, son modèle de flotte) : chez les
+autres, l'ami est assis dans SA voiture — dessinée avec la même fabrique
+que la monture, l'avatar assis au volant comme le sien depuis la v249 — et
+redescend à pied quand il descend. Et l'on monte avec lui : à moins de neuf
+blocs de la voiture d'un ami, le bouton dit « Monter avec Marlon » ; on est
+assis sur un siège passager (trois sièges par voiture, dans la fiche), la
+voiture nous emmène, les commandes ne servent à rien, un appui descend.
+Chez le conducteur comme chez les autres, le passager est vu assis dans la
+voiture. Une tablette restée sur l'ancienne version ignore les deux
+nouveaux champs et voit l'ami à pied, comme avant.
+
+**Ce qui le prouve.** Trois témoins de plus dans `reseau.js`, rouges sur
+l'ancien code, sur la partie à trois qui ouvre la suite : Marlon prend le
+volant d'une voiture posée devant lui, et chez Alice son avatar est assis
+dans une voiture dessinée (enfant de son maillage) ; Alice se place à trois
+blocs, appuie sur « Monter avec Marlon », Marlon roule trois secondes sans
+qu'elle touche à rien — elle a suivi de 3.54 blocs (lui : 3.81), à
+0.59 bloc de lui ; et chez Marlon, Alice est assise dans sa voiture.
+Portail : voie longue, sept suites ; `reseau.js` (74 témoins), `visio.js`,
+`carte.js`, `washington.js` et `hote.js` vertes, `monte.js` sur le seul gel
+de téléportation déclaré, `manhattan.js` sur ses quatre rouges déclarés de
+ce banc. Deux rouges de charge démontés en route : « la reprise tient dans
+la durée » (rouge après un `souffler` à sa limite, vert à la passe
+suivante et seul), et un témoin du banc qui lisait le cache du plafond
+comme un nombre — corrigé dans le banc, pas dans le jeu.
+
+## v252 — La voiture de l'enfant ne traverse plus le mobilier des rues
+
+**Pourquoi.** Max, après la v249 : « les voitures peuvent aussi passer à
+travers des fois le mobilier urbain comme les tables de Times Square ».
+Mesuré d'abord : les soixante-dix-neuf tracés de taxis de Manhattan restent
+à neuf blocs des trente-deux tables — la circulation ne les touche jamais.
+C'est la voiture de l'ENFANT : sa boîte de collision ne connaît que les
+blocs solides, et un réverbère, une jardinière, un banc, une table sont des
+props non solides (c'est voulu pour la marche, un enfant passe entre), et à
+Manhattan le mobilier est un maillage sans bloc du tout. Sur une rue de
+Paris, un réverbère posé six blocs devant la voiture : elle passait dessus à
+0,2 bloc du poteau.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant le mobilier —
+réverbères, feux, jardinières, meubles et objets posés par les enfants dans
+toutes les villes, et à Manhattan les tables et chaises de Broadway piéton,
+les bancs, les réverbères, les arbres et les bornes. À pied, rien ne change.
+Une voiture garée contre un banc repart quand même : on ne bloque que le pas
+qui ENTRE dans le mobilier, pas celui qui en sort. Et une voiture de la rue
+collée à la nôtre ne nous laisse plus traverser un réverbère pour autant :
+l'exception « déjà dedans » se juge famille par famille (circulation d'un
+côté, mobilier de l'autre).
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier prend le volant sur une rue de Paris sans voiture
+de rue à portée, pose un réverbère six blocs devant et roule jusqu'à
+l'arrêt : la voiture s'immobilise à 2,5 blocs du poteau (0,2 sur l'ancien
+code, 15 blocs parcourus au travers). Le second vérifie ce qui rend la même
+chose possible à Times Square, où ce banc ne conduit pas (une image par
+seconde à Manhattan en rendu logiciel) : le secteur de Broadway bâti, la
+table du plan (−91, −60) est notée au registre du renderer et le crochet du
+joueur refuse le pas qui l'atteindrait, pas celui qui en reste à six blocs
+(pas de registre sur l'ancien code). Portail : voie longue, cinq suites ;
+`carte.js`, `washington.js` et `plafond.js` vertes, `monte.js` sur le seul
+gel de téléportation déclaré, `manhattan.js` sur ses quatre rouges déclarés
+de ce banc. Trois rouges de banc démontés en route et corrigés dans le banc,
+pas dans le jeu : `plafond.js` rechargeait pendant l'analyse des corps
+réalistes ; la boucle de montée de `monte.js` recliquait sur un bouton-bascule ;
+et le témoin de circulation posait l'enfant hors du tracé sur une rue qui
+tourne.
+
+## v251 — Le monde se maille hors du fil principal : moins de lag en avion et en voiture
+
+**Pourquoi.** Max, sur l'iPad, après la v248 : « Lag mieux mais pas
+suffisant. En avion le lag est fort. En voiture lag et aussi la définition
+des bâtiments s'affiche trop tard. » Mesuré : engendrer et mailler un
+morceau de Paris coûte 24 ms, et cela se faisait DANS l'image, sur le fil
+qui anime et dessine. Le budget de maillage (720 ms par seconde, v237)
+prenait aux images tout ce qu'il pouvait — c'est le lag — et ne suffisait
+même pas à suivre une voiture : 27 morceaux par seconde pour 30 réclamés,
+d'où les bâtiments qui arrivent tard. En vol au-dessus de Paris, le fil
+principal passait 324 ms de chaque seconde à mailler.
+
+**Ce que ça change.** Un monde jumeau — le même générateur, les mêmes blocs
+de l'enfant — engendre et maille les morceaux sur son propre fil (un Web
+Worker) et rend au jeu des tampons prêts pour la carte graphique, plus les
+blocs pour les collisions ; le fil principal ne fait plus que les installer.
+Les images ne paient plus le maillage, et le monde se charge à la vitesse
+du worker, quelle que soit la cadence d'affichage. Manhattan (ses façades,
+ses journaux importés) reste maillée comme avant ; poser un bloc se voit
+toujours dans l'image. Un navigateur sans worker de module retombe sur
+l'ancien chemin. Ce qui n'a pas bougé : les blocs eux-mêmes, bloc pour
+bloc — un témoin le garde.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code (qui n'a pas le compteur et le dit). En vol au-dessus de
+Paris à la distance d'affichage de l'iPad, le fil principal passe
+0 ms par seconde à mailler (324 avant) et 428 morceaux
+arrivent du worker en huit secondes ; et 12 morceaux adoptés du
+worker, comparés à ce que le fil principal engendrerait, sont identiques
+bloc pour bloc. Sur le même vol, le fil principal n'engendre plus que
+vingt-neuf morceaux en huit secondes (41 ms, pour les bras des réverbères
+et un passant) contre quatre cent soixante-neuf. La pire image de ce banc,
+elle, ne tranche pas (202 ms sur l'ancien code, 252 avec le worker, 457 sur
+le repli local de la branche : une seule fenêtre de huit secondes, en rendu
+logiciel) — on mesure la cause, pas l'effet. Et ce que ce banc ne peut pas
+montrer : ses quatre cœurs font tourner le worker À CÔTÉ du rendu logiciel,
+et le front de chargement y recule un peu (144 → 120 blocs devant l'avion)
+— sur l'iPad, le rendu est sur la carte graphique et le worker a un cœur à
+lui. Les témoins de
+chargement en vol (« on ne rattrape pas le bout du monde qui se charge »)
+restent verts. Les gardiens du mailleur sont toutes les suites : portail
+complet — et ce portail complet a trouvé une dette de la v249 : « à minuit,
+les fenêtres de la ville restent allumées » (`carteMonde.js`) comparait le
+NIVEAU des lampes à la COULEUR du matériau des fenêtres, et les planchers
+de nuit de la v249 l'avaient rendu rouge pour toujours sans que personne ne
+le voie (cette suite ne garde pas `main.js`). Il lit désormais des pixels :
+un mur de pierre percé de fenêtres d'étage, à minuit, fenêtre allumée à
+178 contre 33 pour le mur (fenêtre éteinte à 73).
+
+## v250 — Les roues de la Lucid tournent autour de leur essieu, et toute la flotte est passée en revue
+
+**Pourquoi.** Max, capture d'iPhone : « Gravity design ko, wheels ». Les
+roues de la Lucid Gravity sortaient de leurs passages de roue, de biais,
+comme des assiettes qu'on fait tourner sur la tranche. La cause n'était pas
+dans le modèle : `rotation.x += angle`, qui fait tourner toute roue du jeu,
+est un Euler XYZ dont la rotation en x s'applique EN DERNIER, donc autour du
+x du PARENT du pivot. Les pivots que le jeu fabrique pour un modèle hors
+manifeste naissaient directement sous le modèle, avant qu'il ne soit tourné
+d'un quart de tour ; sur un modèle dont la longueur est x — la Lucid, la
+Chiron Stealth — ce x était l'axe avant-arrière. Les cinquante modèles du
+manifeste, dont les pivots sont ceux de l'auteur, n'ont jamais eu ce défaut.
+
+**Ce que ça change.** Chaque pivot fabriqué naît dans un groupe-essieu dont
+le x est la voie, orienté pour qu'un angle positif avance le haut du pneu
+vers le nez comme sur le manifeste : la Lucid Gravity et la Chiron Stealth
+roulent roues dans leurs arches. Et, comme Max l'a demandé (« sois proactif
+sur ce genre de bug »), la flotte entière a été passée en revue : une sonde
+rend les cinquante-deux modèles de trois quarts et de côté, roues tournées
+d'un tiers de tour, et mesure pour chacune des deux cent huit roues l'axe
+autour duquel elle tourne et où part le haut du pneu.
+
+**Ce qui le prouve.** Un témoin de plus dans `monte.js` : il charge les
+cinquante-deux modèles et exige, pour chaque roue, que l'axe de
+`rotation.x` soit la voie et qu'un tiers de tour avance le haut du pneu vers
+le nez sans le déplacer de côté. Le même bloc de mesure, rejoué sur
+`origin/main` et sur la branche : huit roues fausses sur deux cent huit
+(les deux modèles hors manifeste, axe (0, 0, 1) et pneu qui part de côté)
+contre zéro. Planche-contact des cinquante-deux modèles, avant et après,
+regardée à la main.
+
+## v249 — Paris n'est plus dans le noir, et l'on voit le personnage conduire
+
+**Pourquoi.** Deux signalements de Max, capture d'iPad à l'appui. « Paris est
+dans le noir » : une rue de nuit noire, des façades noires, seules les
+fenêtres allumées se devinaient. La cause est une erreur de mesure : le banc
+coupe ses ombres (rendu logiciel), donc les captures de nuit de la v247
+étaient éclairées par la lune partout ; sur l'iPad les ombres existent, la
+rue est dans l'ombre des immeubles, et il n'y restait que la lueur du ciel,
+réglée à 5,7 sur 255 au sol et 2,6 sur un mur. Et « fais en sorte qu'on voit
+le personnage conduire » : la vue de poursuite montrait une voiture vide.
+
+**Ce que ça change.** La nuit, une rue dans l'ombre de la lune reste lisible
+— la lueur du ciel et la lune sont réglées sur une page à ombres forcées,
+comme sur la tablette ; le jour ne change pas d'un cran. Et quand l'enfant
+conduit, son personnage — le même que les autres joueurs voient de lui,
+avec sa tenue choisie et sa propre peau — est assis au volant, cuisses en
+avant, bras tendus vers le volant, visible à travers le pare-brise et la
+lunette arrière, la tête sous le pavillon — mesuré dans la carrosserie de
+chaque modèle, une voiture basse assied l'enfant plus bas (Max : « le
+personnage passe à travers la carrosserie ») ; il descend avec lui. Le siège est déclaré dans la fiche
+de la voiture (`siege`), à côté de `montable` et `gabarit` : un cheval ou un
+avion sculpté n'en a pas et ne le montre pas.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier lit des pixels sur la page à ombres forcées : un
+mur de pierre de huit blocs fait une façade, et le sol dans son ombre de
+lune passe de 5,7 à 41,5, le mur de 2,6 à 28,2 (bornes à la moitié : 22 et
+14). Le second monte dans une voiture par le bouton et vérifie que
+l'avatar de l'enfant est enfant du maillage de la voiture, dans son
+habitacle, dans le cadre de la caméra, le visage tourné vers la route
+(Max a attrapé le premier jet, assis de dos), et qu'il en sort quand on
+descend — absent sur l'ancien code. Captures rue et ciel, jour et nuit, à Paris.
+
+## v248 — Les réverbères éclairent la rue la nuit, dans toutes les villes
+
+**Pourquoi.** Deuxième étape du programme « New York partout » (Max : « sois
+autonome, améliore la carte, le réalisme partout »). Manhattan a quatre
+lampes de rue qui font des flaques de lumière chaude sur ses avenues la
+nuit. Ailleurs, mesuré à Paris, Londres et Rome sur captures de nuit : les
+deux cent soixante-neuf villes engendrées plantent bien un réverbère tous
+les neuf blocs, mais sa lanterne est un bloc peint qui n'éclaire rien — la
+rue sous lui est aussi noire qu'à côté ; et les six villes bâties à la main
+(Paris, Londres, Nice, Lille, San Francisco, Washington) n'avaient AUCUN
+réverbère, pas un seul. Une ville la nuit, c'était des vitres allumées et
+des rues noires.
+
+**Ce que ça change.** Chaque ville bâtie à la main a désormais ses
+réverbères au bord du caniveau, un tous les neuf blocs, la crosse tournée
+vers la rue — sans rien connaître de la trame de la ville : le monde regarde
+de quel côté du trottoir est la chaussée. Et la nuit, les quatre réverbères
+les plus proches de l'enfant éclairent vraiment : une flaque de lumière
+chaude sur le trottoir et la chaussée, qui suit l'enfant de lanterne en
+lanterne quand il marche. Cela vaut pour les villes engendrées aussi, dont
+les réverbères existaient déjà, et pour un réverbère que l'enfant pose
+lui-même (l'objet 🛞 de l'inventaire) devant sa maison. Le jour, rien ne
+change. Et New York garde ses lampes : ce sont les MÊMES quatre lumières,
+prêtées à Manhattan quand l'enfant y est — parce qu'en ajouter d'autres
+aurait recompilé tous les programmes de shaders à chaque entrée et sortie de
+la ville, c'est-à-dire rendu le gel de téléportation que la v246 vient
+d'enlever.
+
+**Ce qui le prouve.** Deux témoins de plus dans `monte.js`, rouges sur
+l'ancien code. Le premier lit des PIXELS : l'enfant pose un réverbère sur
+une dalle de pierre, la nuit tombe, et le sol à son pied est mesuré contre
+le sol huit blocs plus loin — 132 contre 19 ici, 12,9 contre 12,4 sur
+l'ancien code (rapport un : la lanterne ne faisait rien). Le second lit les
+BLOCS que le générateur pose autour du centre de Paris, Londres, San
+Francisco et Washington : 29, 48, 141 et 12 réverbères, chacun (à trois
+près, sous les culées des ponts de Paris) avec de la chaussée pour voisin ;
+zéro partout sur l'ancien code. Le témoin des villes engendrées de
+`carteMonde.js`, qui compte déjà leurs réverbères, ne bouge pas.
+L'intensité (28, portée dix-huit blocs) est réglée sur captures de nuit à
+Paris et à Rome, rue et ciel.
+
+## v247 — Le regard de New York partout : le soleil éclaire le monde, les ombres se portent, le ciel est une voûte
+
+**Pourquoi.** Max : « regarde les améliorations qu'il y a encore eu dans la
+ville de New York et reproduis-les sur l'ensemble de la carte. Sois
+autonome, améliore la carte, le réalisme partout. » Mesuré sur captures, rue
+et ciel, jour et nuit, à Paris et à New York : Manhattan était éclairée par
+le soleil, portait des ombres et passait par une correspondance tonale ; le
+reste du monde était un matériau NON éclairé dont la couleur servait de
+lumière. Une façade au soleil et une façade à l'ombre avaient la même
+teinte, rien ne portait d'ombre, le ciel était une couleur unie, et la nuit
+n'était qu'un jour assombri — Paris à minuit ressemblait à Paris à midi en
+gris. C'est la première étape du programme « New York partout » : le
+regard.
+
+**Ce que ça change.** Sur toute la carte, les blocs, l'eau et le paysage
+lointain sont éclairés par le ciel et par le soleil, qui porte des ombres
+autour de l'enfant (une caméra d'ombre de cent quatre-vingt-dix blocs qui le
+suit, comme à Manhattan) ; le rendu passe par la même correspondance tonale
+que New York ; le ciel est une voûte dégradée, plus profonde au zénith ; la
+nuit, la lune éclaire bleu et faible, le ciel est noir d'étoiles et les
+villes gardent leurs vitres allumées. Le matin, la face est d'un immeuble
+est au soleil ; le soir, sa face ouest. En quittant New York, le monde garde
+ses ombres. Ce qui n'a pas bougé : les blocs, les textures, l'occlusion
+ambiante cuite dans les sommets, les villes elles-mêmes.
+
+**Ce qui le prouve.** Trois témoins de plus dans `monte.js`, lus dans les
+PIXELS rendus et rouges sur l'ancien code (les trois rapports y valent un) :
+à midi, le sol dans l'ombre d'un pilier est plus sombre que le sol au soleil
+(58 contre 104) ; le matin la face est du pilier est au soleil (72 contre
+31), le soir sa face ouest ; le ciel est plus profond au zénith qu'à
+l'horizon (156 contre 181). Les intensités ont été réglées sur captures — le
+premier jet, calqué sur Manhattan, rendait un ciel blanc et des toits
+blancs. Et le coût est mesuré : au banc en rendu logiciel, à Paris, une image
+passe de 217 ms sans ombres à 383 avec (carte de 1 024, filtre simple, seuls
+les morceaux proches portent une ombre) — assez pour faire tomber quatre
+bornes de garde d'autres témoins au premier portail, sur du code sain. Le jeu
+coupe donc ses ombres de lui-même quand il rend en logiciel, sans carte
+graphique ; les trois témoins du regard les forcent sur leur propre page. Le
+coût sur l'iPad, qui a sa carte graphique, est déclaré dans `TASKS.md` avec
+ses leviers.
+
+## v246 — La téléportation ne fige plus l'écran, la Bugatti roule sans traînées, et chaque ville a ses propres voitures
+
+**Pourquoi.** Max, capture d'iPad à l'appui, le 12 septembre : « Le lag est
+bien présent quand on fait une téléportation, à peu près dix secondes », « la
+Bugatti quand elle avance, il y a des trucs noirs qui bougent autour, pas très
+propres », « assure-toi que toutes les villes ont de la diversité dans les
+voitures », « améliore le design de la Lucid Gravity ». Mesuré : à l'arrivée à
+Paris, la carte graphique compilait VINGT programmes de shaders dans les
+images où les premières voitures apparaissaient — seize avant, trente-six
+après, une seconde et demie au banc, et sur une tablette c'est l'écran qui se
+fige — et les dix-huit passants naissaient dans la MÊME image, chacun avec son
+clone de squelette. Les « trucs noirs » de la Chiron Stealth étaient ses
+bandes de carrosserie accrochées au pivot de la roue arrière droite : le
+chargeur reconnaissait une pièce de roue à la sous-chaîne « rim », et
+« trim » — la garniture — en contient une ; la garniture tournait donc avec
+la roue, jusqu'au toit. Le MÊME défaut déformait la Lucid Gravity, dont des
+panneaux entiers tournaient sur eux-mêmes. Et la graine d'un convoi valait
+« nombre de points du tracé + rang dans la file » : les villes engendrées,
+aux anneaux semblables, tiraient les mêmes vingt modèles dans le même
+ordre, et chaque modèle arrivait toujours dans sa couleur cuite dans le
+fichier — vingt Bugatti bleues dans vingt villes.
+
+**Ce que ça change.** Les programmes de la flotte, des corps humains et du
+chien se compilent pendant que l'enfant lit l'accueil, une signature par
+image, à partir d'une table LUE dans les fichiers (dix-neuf signatures, pas
+les onze que mon premier relevé des matériaux annonçait : la plupart des
+carrosseries arrivent sans normales et se rendent en ombrage plat, un
+programme à part) ; à l'arrivée en ville, plus rien ne se compile. Les
+passants naissent par tranches de cinq millisecondes par image. Une pièce
+de roue est un mot entier (`wheel`, `tire`, `rim`…) ET une géométrie qui
+tient dans le pneu : la Bugatti roule propre, la Lucid retrouve sa forme —
+quatre pivots de trois pièces chacun. Chaque convoi tire sa graine de la
+position de sa ville, et deux voitures sur trois reçoivent une laque à elles
+(la troisième garde sa livrée d'origine, pour qu'une Ferrari rouge reste
+rouge) : à Moscou, douze voitures visibles, sept modèles, huit couleurs.
+
+**Ce qui le prouve.** Six témoins de plus dans `monte.js`, tous rouges sur
+l'ancien code : rien de la carrosserie ne tourne avec une roue sur les deux
+modèles déposés ; les passants naissent par tranches, jamais tous dans la
+même image ; à Moscou, les voitures visibles sont de modèles et de couleurs
+différents ; deux villes aux anneaux semblables ne tirent pas la même file ;
+se téléporter à Paris, sur une page neuve, ne compile plus les programmes des
+voitures sur place (zéro programme neuf, vingt avant — et le témoin vérifie
+que le RENDU a tourné : une boucle morte rend zéro programme et ne prouve
+rien, vu au banc sur une erreur de ma propre livraison) ; et la table des
+programmes à chauffer est exactement ce que les soixante et un fichiers de
+voitures et d'humains contiennent, ni signature manquante ni signature morte
+— le jour où Max dépose un modèle d'une autre facture, c'est ce témoin qui
+le dit.
+
+## v245 — L'accueil répond tout de suite, la voiture ne saccade plus, et la rue s'arrête devant l'enfant
+
+**Pourquoi.** Max, sur l'iPad de quatre ans : « quand on allume le jeu, il
+faut attendre quasiment vingt secondes le temps de pouvoir cliquer sur le
+bouton », et « quand on essaie de conduire une voiture, la voiture avance de
+manière hyper saccadée. La marche, c'est ok. » Mesuré : les neuf corps
+réalistes des personnages (8,2 Mo, quatre-vingts pour cent de tout ce que le
+jeu télécharge) étaient attendus par `humains.js` AVANT que `main.js` ne
+s'exécute — aucun bouton n'était attaché tant qu'ils n'étaient pas arrivés
+et analysés — et ils se re-téléchargeaient à CHAQUE livraison, c'est-à-dire
+tous les jours. Au volant, assis dans une voiture à l'arrêt, une image sur
+quatre durait trois fois la médiane, par paires à une demi-seconde d'écart :
+la sonde des reflets de carrosserie rendait ses six faces dans la même
+image, et chaque face soumettait au pilote autant d'appels de dessin que la
+vue de l'enfant (jusqu'à 455). À pied elle ne tourne pas — c'est exactement
+« la marche, c'est ok ». Et Max, dans la foulée : « les voitures passent les
+unes sur les autres ». Mesuré sur la rue de Rivoli, l'enfant au volant : à
+l'arrêt sur la chaussée, un convoi entier lui passait AU TRAVERS (79 relevés
+sur 100 avec une voiture de la rue dans la sienne ; 71 sur 94 en roulant). Les
+convois cédaient entre eux depuis la v244 — jamais à l'enfant, qui n'était pas
+dans la liste.
+
+**Ce que ça change.** L'accueil s'attache dès que le code est là ; les corps
+réalistes arrivent pendant qu'on lit l'accueil, un par un, sans bloquer, et
+les gens nés en attendant — le château, l'avatar, les passants — reçoivent
+leur corps réaliste sur place, sans changer d'objet, épée et torche
+comprises. Rien n'est perdu : les mêmes personnages, les mêmes corps. Les
+neuf modèles vivent dans le cache immuable avec le scanner et la flotte : une
+mise à jour ne les reprend plus. Au volant, la sonde des reflets rend UNE
+face par image et ne dessine que le décor (ciel, façades, rue, eau) : un
+reflet complet six images plus tard, ce qu'aucun œil ne voit sur un
+pare-brise, pour un coût par face passé de 15-455 appels de dessin à 8-39.
+Et ses programmes se compilent pendant l'accueil, au point d'apparition,
+plutôt qu'à l'arrivée de la première voiture (vingt-six programmes, une
+seconde d'image figée, mesurés). Enfin la rue s'arrête devant l'enfant, à pied
+comme au volant : sa voiture — ou lui-même, à sa carrure — est un obstacle que
+la circulation respecte comme toute voiture — et devant lui seul, elle
+attend sans limite ; sa propre voiture s'arrête contre une voiture de la rue
+au lieu d'entrer dedans. Et un voyage par la carte au volant garde la
+voiture : le gestionnaire d'animaux la retirait avant qu'elle ne rejoigne
+l'enfant, qui restait à pied avec la carrure d'une voiture — coincé entre
+deux murs sans comprendre pourquoi.
+
+**Ce qui le prouve.** Six témoins neufs, rouges sur l'ancien code. Dans
+`realisme.js`, on ralentit chaque modèle de cinq secondes et l'on compte
+combien sont arrivés quand le jeu s'attache : zéro ici, neuf avant ; puis on
+joue, et les 123 personnes nées avant les modèles doivent être mises à niveau
+sur place — même objet, même scène, présence cohérente, aucune erreur. Dans
+`monte.js`, au volant, le compteur d'images du moteur ne doit pas avancer de
+plus de deux par tour d'affichage (sept avant), et d'au moins deux une fois
+(les reflets vivent). Dans `maj.js`, un corps demandé se range dans le cache
+immuable. Dans `monte.js` encore, au volant sur le tracé d'un convoi de
+Rivoli, à l'arrêt, douze secondes après l'arrivée de la première voiture :
+zéro voiture de la rue dans la sienne et au moins une qui attend derrière
+(avant, elles passaient au travers) — et à la sonde, en fonçant sur une
+voiture arrêtée, il s'arrête contre elle (3,6 blocs) au lieu de la traverser
+(10,7).
+Et un saut de trois cents blocs au volant doit laisser l'enfant au volant :
+c'est ce témoin-là qui a trouvé la voiture retirée sous lui.
+Le banc ne peut pas mesurer le gain de l'iPad — ses fichiers
+arrivent en trente millisecondes depuis le disque et la première image y
+coûte 2,9 s de contexte WebGL en logiciel — donc chaque témoin mesure la
+CAUSE : le nombre de fichiers attendus, le nombre de rendus par image, le
+cache où va un fichier.
+
+## v244 — Les voitures ne se traversent plus, et elles prennent leurs virages en s'inclinant
+
+**Pourquoi.** Max : « évite que les voitures puissent se chevaucher et fait
+en sorte que quand la voiture tourne, ce soit beaucoup plus naturel, avec un
+vrai virage, une vraie inclinaison ». Mesuré à Paris sur trente secondes :
+soixante-dix-huit relevés de deux voitures l'une dans l'autre — là où deux
+circuits se croisent, en équerre ou en biais, et sur les tronçons qu'ils
+partagent — et cinquante-neuf sauts de cap de plus de trente-quatre degrés :
+une voiture prenait le carrefour en UNE image, pivotant sur place comme une
+maquette qu'on tourne sur une table.
+
+**Ce que ça change.** Le cap d'une voiture est celui de son empattement, pas
+du segment sous ses roues : elle pivote en franchissant le coin, sur la
+longueur de son châssis. Son corps roule vers l'extérieur du virage, de ce que
+lui impose la force centrifuge — quatre degrés au pire coin, rien en ligne
+droite — et cette inclinaison est purement visuelle, composée avant le cap
+comme celle de l'avion. Et chaque voiture cède le passage pour elle-même :
+elle regarde où son tracé la mène dans les huit blocs qui viennent, et si son
+rectangle y toucherait une autre voiture, elle attend — le convoi est
+élastique, celles qui suivent font la queue derrière elle, et dans une paire
+mutuelle la plus engagée passe. Métro et trains, sur rails, ne font ni l'un ni
+l'autre.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, sur les voitures visibles
+du convoi routier à Paris pendant trente secondes. « Les voitures ne se
+traversent plus » compte les intersections VRAIES des rectangles (4,4 × 2,26,
+orientés, par séparation d'axes) : 78 sur l'ancien code, 17 à 25 ici. « Elles
+tournent progressivement » : 59 sauts de cap → 1 ou 2. « Elles s'inclinent du
+bon côté » lit la MATRICE de la voiture — le haut du corps penche du côté que
+le roulis annonce, 239 relevés sur 239, roulis maximal 0,078 — et rien ne
+penche sur l'ancien code. Quatre jets ont précédé celui-ci, chacun mesuré :
+arrêter le convoi entier (78 → 65), un couloir devant soi (→ 61), un balayage
+chemin contre chemin (17 → 77). Le reliquat est un raccord à cent soixante
+degrés entre deux circuits de Rivoli : une affaire de tracé, déclarée dans
+`TASKS.md`.
+
+Et le portail a démasqué un pile ou face : « à Moscou, les rues sont pleines
+de voitures » exigeait huit voitures visibles à la fois, quand la densité des
+anneaux — une voiture tous les trente blocs — n'en garantit que six à
+quarante-cinq blocs du centre. Mesuré des deux côtés avec la même séquence :
+quatre à six, jamais huit ; le huit tenait à l'heure d'arrivée, et trois
+témoins de plus avant lui ont déplacé la phase. Il exige six, en quarante-cinq
+secondes — rouge tout de même sur l'ancien code, où Moscou n'avait aucune
+voiture.
+
+---
+
+## v243 — Les passants se promènent pour eux-mêmes, et la dame n'a plus de voile
+
+**Pourquoi.** Max : « elles regardent le joueur principal au lieu de continuer
+à se promener ». À moins de cinq blocs et demi, tout habitant se figeait et se
+tournait vers l'enfant — « on salue celui qui vient à soi », écrit pour trois
+gardes de château et hérité par les dix-huit passants de chaque ville. Une rue
+entière s'immobilisait et fixait l'enfant. Et Max a demandé de retirer « la
+femme avec le voile » : la dame du château portait une guimpe, le linge qui
+entoure le cou, le menton et le sommet de la tête, et la dame Renaissance un
+voile derrière son attifet.
+
+Il a aussi demandé de s'assurer que les corps réalistes de la v241 sont
+déployés dans toutes les villes du monde. Lecture faite, ils le sont par
+construction — ils se chargent pour tout le jeu et s'appliquent à toute tenue
+de passant — mais une phrase ne garde rien : un témoin le prouve désormais.
+
+**Ce que ça change.** Chacun garde son propre programme — pause, marche, geste
+de métier — que l'enfant soit là ou non ; les phrases partent toujours quand
+on passe près. La dame du château montre ses cheveux sous son touret, la dame
+Renaissance son attifet sans voile. La lavandière garde son fichu noué, qui
+est un foulard de travail.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`. « Un passant qu'on approche
+continue son chemin » : rouge sur l'ancien code (zéro bloc en douze secondes,
+l'enfant posé à trois blocs), 1,6 bloc en 1,6 s ici. « La dame n'a plus de
+guimpe, la Renaissance plus de voile », mesuré sur les SOMMETS colorés
+au-dessus du cou : 129 et 30 sur l'ancien code, zéro et zéro ici. « Les
+passants ont des corps réalistes ailleurs qu'à New York » : 18 sur 18 à Paris,
+vert des deux côtés à dessein — c'est une capacité que Max a demandé de
+garantir.
+
+---
+
+## v242 — Le monde ×2 : New York respire, et les blocs suivent leur ville
+
+**Pourquoi.** Max : « la ville de New York touche quasiment Montréal ». Depuis
+la v240, Manhattan n'est plus un disque de 152 blocs mais un rectangle de
+480 × 2 300 blocs, et à 0,375 km par bloc il ne lui restait, bord à bord, que
+41 blocs avant Boston, 52 avant Montréal, 82 avant Ottawa, 164 avant
+Washington — et l'aéroport JFK tombait DEDANS. Le registre disait pourtant
+tout va bien : son `r: 152` est celui de l'ancienne ville voxel, et le témoin
+« aucune ville n'en chevauche une autre » jugeait sur lui. Un vert du disque,
+un rouge du rectangle.
+
+Et la carte suivante ne pouvait pas se faire comme la précédente. La migration
+de v199 ne déplaçait les blocs qu'en HAUTEUR : quand une ville s'éloignait de
+Paris, ce qu'un enfant y avait bâti restait à l'ancienne adresse, en pleine
+campagne. Personne n'y avait bâti — c'est ce qui l'avait rendu acceptable.
+New York vient d'être refaite, on y bâtit ; ses blocs DOIVENT partir avec elle.
+
+**Ce que ça change.** Le monde double une seconde fois — 0,1875 km par bloc,
+86 000 blocs de large — Paris restant l'ancre qui ne bouge pas. Manhattan
+laisse désormais 386 blocs à Boston, 759 à Washington, 1 472 à Montréal, et
+JFK est ressorti du rectangle. Les dix-neuf aérodromes ont suivi leur ville :
+onze gardent exactement leur écart d'avant, huit sont recherchés depuis leur
+cap réel parce qu'à l'échelle neuve le même écart tombait dans l'eau (Dubaï à
+89 % dans le golfe) ou sur une voisine ; le sol de chacun est remesuré.
+
+Et la migration des blocs est une CHAÎNE : un bloc posé dans une ville — le
+rectangle de Manhattan, le disque de Lille ou de Rome — se déplace de ce que
+sa ville se déplace, en entier, sans changer de hauteur ; un bloc de campagne
+ne bouge qu'en hauteur, comme en v199. La position où l'enfant s'était arrêté
+suit de même : endormi à Times Square, il ne se réveille pas en mer. Une
+copie des blocs et des positions d'avant est prise sur le nuage, sur son
+propre document (`prénom~avant-carte-2`), avant qu'une tablette à jour n'y
+pousse quoi que ce soit.
+
+Ce que cela n'attrape pas, et c'est déclaré : une tablette qui continuerait de
+jouer sur la v241 après l'heure de la refonte poserait des blocs que la
+migration laissera où ils sont.
+
+Et le bouton « Explorer New York » de l'accueil disparaît, sur demande de Max
+— « il n'y a qu'une seule carte et ça doit rester le cas ». Il ne faisait que
+recharger la page pour poser l'enfant à New York, ce que la carte du monde
+fait déjà pour toute ville.
+
+**Ce qui le prouve.** Le témoin qui porte l'invariant numéro un est vert :
+sous le point d'apparition et sous Paris, la carte d'AVANT (figée) et celle
+d'APRÈS rendent le même sol — **4 040 colonnes, zéro déplacée** —, les
+dix-huit colonnes de référence et le Mall gardent leur cote, et la maison
+sauvegardée avant le changement repose toujours sur le sol. Les deux
+empreintes de `plafond.js` changent, comme en v199 : la casse ne se borne pas,
+et c'est ce témoin-là, pas un hash, qui la garde.
+
+Sept témoins neufs, tous rouges sur `origin/main` : les blocs suivent leur
+ville (Manhattan par son rectangle, Lille par son disque, une marque d'import
+comme un bloc) sans toucher à Paris, au point d'apparition ni à ce qui est
+posé sur la carte neuve, et repasser la migration ne change rien ; le
+rectangle de Manhattan laisse deux cents blocs à chaque voisine et aucun
+aérodrome ne tombe dedans ; un bloc d'avant reçu du nuage arrive à la nouvelle
+adresse de sa ville SANS fantôme à l'ancienne — la fusion est une union, et
+c'est le receveur qui cède ; la copie d'avant existe, dit de quelle carte elle
+vient, et ne se réécrit pas. Les cinq promesses des aérodromes sont
+remesurées à la sonde : voie ferrée la plus proche à 12 blocs (Haneda), ville
+la plus serrée à 14 (Los Angeles), sanctuaire le plus proche à 55 (Roissy).
+
+Et le portail a trouvé ce que la carte neuve révélait : l'index des rails
+rangeait chaque ligne par un point tous les 256 blocs, si bien qu'une
+diagonale qui coupe le coin d'une case y passait sans être vue — sur l'ICE
+Amsterdam–Cologne, soixante blocs de voie sans rails, une marche de cinq et un
+arbre planté dessus. Le segment se range désormais bloc par bloc. Et le témoin
+de la minicarte volait au-dessus d'un couloir devenu Pacifique, où une carte
+uniformément bleue ne change jamais : il vole au-dessus du Sahara.
+
+Quatre témoins de `manhattan.js` restent rouges sur ce banc — géométrie
+retirée, nuit, ombres, taxi tactile — et ils le sont À L'IDENTIQUE sur
+`origin/main`, rejoués seuls des deux côtés dans un arbre séparé : c'est la
+règle de la v195, la dette est déclarée dans `TASKS.md` (le portail de la v240
+avait été mesuré en rendu matériel). La marche devant la façade, elle, était
+un pile ou face à une image par seconde ; elle marche désormais jusqu'à
+l'arrêt.
+Et depuis la fusion de la v241 (#244), « l'écran ne se fige pas en arrivant
+sur une ville » est rouge des deux côtés, rejoué seul : 1 233 ms sur
+`origin/main`, 2 117 sur la branche, pour une barre à 550 — dette déclarée,
+cause probable la naissance des corps Rocketbox à l'arrivée.
+**Portail : voie longue, dix suites, huit vertes ; `manhattan.js` et le gel
+d'arrivée de `monte.js` rouges à l'identique sur `origin/main`.**
+
+---
+
+---
 
 ## v241 — Des visages, des berlines et des voisins qui restent
 

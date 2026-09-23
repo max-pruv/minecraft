@@ -49,6 +49,7 @@
 import * as THREE from 'three';
 import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK } from './world.js';
 import { BLOCK } from './blocks.js';
+import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
 
 export const PAS_HORIZON = 8;   // un sommet tous les huit blocs
@@ -128,8 +129,17 @@ export class Horizon {
     geo.setDrawRange(0, 0);
     this.geo = geo;
 
-    this.materiau = new THREE.MeshBasicMaterial({ vertexColors: true, fog: true });
+    // ÉCLAIRÉ COMME LE MONDE PROCHE (v247) : Lambert, avec des normales vers
+    // le haut posées une fois — un paysage à des centaines de blocs se lit
+    // comme du sol, et recalculer des normales à chaque défilement coûterait
+    // pour rien. Sans cela, le lointain resterait au niveau de gris d'avant
+    // pendant que le monde proche prend le soleil, et la couture se verrait.
+    const normales = new Float32Array(N * N * 3);
+    for (let i = 0; i < N * N; i++) normales[i * 3 + 1] = 1;
+    geo.setAttribute('normal', new THREE.BufferAttribute(normales, 3));
+    this.materiau = new THREE.MeshLambertMaterial({ vertexColors: true, fog: true });
     this.mesh = new THREE.Mesh(geo, this.materiau);
+    decor(this.mesh);   // le paysage lointain se reflète dans les carrosseries
     this.mesh.frustumCulled = false;         // il entoure toujours le joueur
     // IL SE DESSINE EN DERNIER, ET CE N'EST PAS UN DÉTAIL. three.js trie les
     // opaques du plus PRÈS au plus loin pour que le tampon de profondeur

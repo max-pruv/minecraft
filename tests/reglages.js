@@ -62,7 +62,11 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
   });
 
   const adresse = `http://127.0.0.1:${PORT_JEU}/index.html`
-    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2`
+    // `prep=0` (v258) : cette suite ouvre ses pages elle-même, et le jeu
+    // grise « Jouer » jusqu'à ce que corps et programmes soient prêts — sans
+    // ce paramètre, le clic sur un bouton grisé ne fait rien, et l'attente de
+    // `running` a tué le portail (30 s). Même règle que `banc.joueur`.
+    + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2&prep=0`
     + `&peerhost=127.0.0.1:${PORT_PAIRS}`;
 
   async function joueur(prenom) {
@@ -213,8 +217,21 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('et l\'autre tablette ne le défait pas',
       (nuage.reglages('Marlon') || {}).lang === 'en',
       `serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).lang)}`);
-    verifier('elle s\'aligne même dessus',
-      (await autreIpad.evaluate(() => window.__game.edu.__prefs().lang)) === 'en',
+    // ON OBSERVE TOUTE LA FENÊTRE, ON NE REGARDE PAS À LA FIN (v270). Ce
+    // témoin lisait la seconde tablette UNE SEULE FOIS, juste après les vingt
+    // secondes d'attente ci-dessus — alors que sa relève de réglages tourne
+    // toutes les quinze secondes : il suffit qu'un tour tombe une seconde
+    // trop tard, sur un banc chargé, pour qu'il rende « fr ». Vert aux
+    // portails des v268 et v269, rouge à celui de la v270, sans qu'une ligne
+    // de réglages ait bougé. C'est la règle déjà écrite pour le lien muet —
+    // « un témoin qui mesure une durée observe pendant TOUTE la fenêtre » —
+    // et elle n'avait pas été appliquée ici. Ce qu'on prouve ne change pas :
+    // la seconde tablette finit par adopter le choix de la première, et le
+    // verdict d'au-dessus (« elle ne le défait pas ») garde, lui, son
+    // instantané à vingt secondes.
+    const alignee = await jusqua(async () => (await autreIpad.evaluate(
+      () => window.__game.edu.__prefs().lang)) === 'en', 45000);
+    verifier('elle s\'aligne même dessus', alignee,
       await autreIpad.evaluate(() => window.__game.edu.__prefs().lang));
     await autreIpad.close();
 
@@ -700,7 +717,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // Deux retours d'écran de téléphone. « 🎨 Temps libre » s'affichait en
     // permanence quand les quiz sont arrêtés — une pastille qui n'apprend
     // jamais rien. Et le toast de la photo montrait « (menu 🏆) », un bouton
-    // qui n'existe plus depuis que les records ont déménagé dans l'atelier.
+    // qui n'existait plus. Depuis la v255 l'atelier non plus : le toast doit
+    // montrer le seul chemin qui reste, le bouton 🖼️ Souvenirs.
     nuage.poserReglages('Alice~parent', { sessionMin: 10, quizStopMin: 0 });
     await jusqua(async () => (await alice.evaluate(
       () => window.__game.edu.arretApresSecondes)) === 0, 30000);
@@ -717,10 +735,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       return document.getElementById('toast').textContent;
     });
     verifier('le toast de la photo montre le vrai chemin',
-      /Atelier/.test(photo) && !/🏆/.test(photo), photo);
+      /Souvenirs/.test(photo) && !/🏆|Atelier/.test(photo), photo);
     const galerie = await alice.evaluate(async () => {
-      document.querySelector('.fun-btn[title="Atelier"]').click();
-      document.querySelector('.fun-tab[data-t="photos"]').click();
+      // Plus d'onglet à choisir : le bouton 🖼️ ouvre l'album directement (v255).
+      document.querySelector('.fun-btn[title="Souvenirs"]').click();
       await new Promise((r) => setTimeout(r, 300));
       return {
         photos: document.querySelectorAll('.photo-grid .ph').length,

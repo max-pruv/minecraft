@@ -1,29 +1,48 @@
-// Fun & social systems: item bag, breeding, riding, companions, duels,
-// crafting, shared chest, text signs, fireworks, emotes, photos, daily
-// treasure, park mini-games, quests, records & hats, museum statues and
-// little math challenges. Everything persists per profile via the storage
-// shim; world-scoped data (signs, chest) is keyed by the world code.
+// Fun & social systems: breeding, riding, text signs, souvenirs
+//
+// Les COMPAGNONS et les DUELS vivaient ici : les deux tenaient au mode d'attrape
+// de créatures, retiré en v285 sur décision de Max. Le cache-cache, lui, reste —
+// il ne demande rien d'autre que d'être plusieurs.
+// (those already planted), emotes, photos, daily treasure, park mini-games,
+// records, museum statues and little math challenges. Everything persists per
+// profile via the storage shim; world-scoped data (signs) is keyed by the
+// world code.
+//
+// L'ATELIER, LE COFFRE, LA QUÊTE, LE PANNEAU, LE CHANTIER, LES RECORDS ET LES
+// CHAPEAUX N'ONT PLUS D'ÉCRAN, ET LE FEU D'ARTIFICE PLUS DE BOUTON (v255).
+// Décision de Max : « supprime la fonctionnalité de pouvoir faire les feux
+// d'artifice, et tout ça à part les souvenirs photos. » On retire l'écran et
+// les commandes, jamais ce qu'un enfant a gagné : les records, le sac, la
+// quête, le coffre, les chapeaux et les panneaux plantés restent dans le
+// stockage et dans le nuage, sous leurs clés, tels quels. Le panneau 🖼️
+// n'ouvre plus que les Souvenirs.
 
 import * as THREE from 'three';
 import { liberer } from './liberer.js';
-import { buildCreatureMesh, TYPES } from './creatures.js';
+import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
+import { allureDe } from './vehicules.js';
+import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
 
-const BAG_KEY = 'web-minecraft-bag-v1';
+// Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
+// coffre (`web-minecraft-chest-v1::…`) et le chantier
+// (`web-minecraft-chantier-v1::…`) ne sont plus ni lus ni écrits depuis la
+// v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
+// sac et la quête tels quels. On n'efface rien.
+// LA CAMÉRA DE POURSUITE SUIT LE VÉHICULE AVEC UN RETARD (v278).
+//
+// Combien de fois par seconde de JEU le retard se réduit de moitié, à peu près :
+// plus le chiffre est petit, plus la voiture glisse loin sur le côté du cadre en
+// virage — et c'est ce glissement qui montre son flanc, ce que Max demande.
+// Trop petit, la caméra devient molle et le cadre part en vrille au volant ;
+// trop grand, elle recolle au coffre et l'on n'a rien changé. Le chiffre se
+// mesure (`?camlag=`), et la mesure est l'ANGLE entre le cap de la caméra et
+// celui de la voiture pendant un virage tenu.
+const REACTIVITE_CAM = Number(new URLSearchParams(location.search).get('camlag')) || 3.2;
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
-const PET_KEY = 'web-minecraft-pet-v1';
-const QUEST_KEY = 'web-minecraft-quest-v1';
-
-const HATS = [
-  { emoji: '🧢', name: 'Casquette', need: 10 },
-  { emoji: '👑', name: 'Couronne', need: 25 },
-  { emoji: '🎩', name: 'Chapeau magique', need: 50 },
-];
-
-const QUEST_ITEMS = ['🍓 Baies', '🌰 Noisette', '🥚 Œuf', '🍗 Poulet', '🦀 Pince de crabe'];
 
 function hashStr(s) {
   let h = 5381;
@@ -39,25 +58,21 @@ function saveJson(key, v) {
 }
 
 export function initFun(ctx) {
-  const { scene, world, player, creatureManager, animalManager, edu, cloud, canvas,
-    renderNow, emojiBurst, toast, myName, getNet, remotePlayers, isRunning,
-    isNight, getWeather, getPosCtx, getProfiles, getVehicules, photos: photosNuage } = ctx;
+  const { scene, world, player, animalManager, edu, cloud, canvas,
+    renderNow, emojiBurst, myName, getNet, remotePlayers, isRunning,
+    isNight, getWeather, getPosCtx, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
 
   // ---- persistent state -----------------------------------------------------
-  const bag = loadJson(BAG_KEY, {});
-  const records = { blocks: 0, quizCorrect: 0, treasures: 0, quests: 0, duels: 0,
-    fireworks: 0, mathWins: 0, parkour: 0, bestRace: 0, feasts: 0, hats: [], hat: '', ...loadJson(RECORDS_KEY, {}) };
+  // Les records ne s'affichent plus (v255) mais se COMPTENT toujours. Ce
+  // qu'un enfant a déjà gagné — quêtes finies, feux lancés, chapeaux — reste
+  // dans le document tel quel : l'étalement de `loadJson` ne jette rien, on
+  // ne fait que ne plus y toucher.
+  // `duels` n'est plus jamais incrémenté (les duels partent en v285) mais le champ
+  // RESTE, et les anciennes valeurs avec : on retire l'écran et les commandes,
+  // jamais les données (v256).
+  const records = { blocks: 0, quizCorrect: 0, treasures: 0, duels: 0,
+    mathWins: 0, parkour: 0, bestRace: 0, ...loadJson(RECORDS_KEY, {}) };
   const saveRecords = () => saveJson(RECORDS_KEY, records);
-  const bagAdd = (label, n = 1) => { bag[label] = (bag[label] || 0) + n; saveJson(BAG_KEY, bag); };
-  const bagTake = (label, n = 1) => {
-    if ((bag[label] || 0) < n) return false;
-    bag[label] -= n;
-    if (bag[label] <= 0) delete bag[label];
-    saveJson(BAG_KEY, bag);
-    return true;
-  };
-
-  creatureManager.legendaryOk = () => isNight() || getWeather() === 'rain';
 
   // ---- styles & panels ------------------------------------------------------
   const style = document.createElement('style');
@@ -75,10 +90,6 @@ export function initFun(ctx) {
     .fun-panel h3 { margin:4px 0 10px; font-size:17px; }
     .fun-close { position:absolute; top:8px; right:10px; background:none; border:none;
       color:#889; font-size:22px; }
-    .fun-tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-    .fun-tab { flex:1; padding:7px 4px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
-      background:rgba(255,255,255,.06); color:#cdf; font-size:14px; white-space:nowrap; }
-    .fun-tab.on { background:#3a6ad0; color:#fff; }
     .fun-row { display:flex; align-items:center; gap:8px; padding:7px 6px;
       border-bottom:1px solid rgba(255,255,255,.08); }
     .fun-row button { margin-left:auto; padding:6px 12px; border-radius:9px; border:none;
@@ -87,19 +98,26 @@ export function initFun(ctx) {
     .fun-note { color:#8894b0; font-size:13px; margin:6px 2px; }
     .fun-target { position:fixed; left:50%; transform:translateX(-50%); bottom:96px;
       display:none; gap:8px; z-index:30; }
+    /* EN VÉHICULE, « DESCENDRE » REJOINT LA COLONNE DE DROITE (v272). La v265
+       l'avait écarté des commandes de bord en le poussant vers la GAUCHE
+       (left:40 %) — et il est tombé en plein dans la zone du joystick, qui
+       n'est pas un cercle dessiné mais TOUT le quart bas-gauche de l'écran :
+       le canvas ne prend le doigt que si clientX est sous 45 % et clientY
+       au-delà de 40 % de la vue (main.js). Un bouton posé là intercepte le
+       doigt avant le canvas : on ne peut plus prendre le volant à cet
+       endroit, et l'on DESCEND en croyant tourner. C'est ce que Max a vu sur
+       sa capture de Hambourg.
+       La règle se dit donc sans dimension d'écran, comme le veut la v265 :
+       aucune commande de véhicule dans la zone du joystick. Le bouton va à
+       l'extrême droite, au-dessus des instruments de bord quand il y en a. */
+    body.en-vehicule .fun-target { left:auto; right:20px; transform:none;
+      bottom:calc(96px + var(--safe-bottom)); }
+    body.en-avion .fun-target { bottom:calc(314px + var(--safe-bottom)); }
     .fun-target button { padding:9px 14px; border-radius:12px; border:none; font-size:15px;
       background:rgba(20,26,40,.85); color:#fff; border:1px solid rgba(255,255,255,.25); }
     .emote-row { position:static; display:none; flex-direction:column; gap:8px; }
     .emote-row button { width:var(--rail-btn); height:var(--rail-btn); border-radius:12px; font-size:22px;
       background:rgba(20,26,40,.72); border:1px solid rgba(255,255,255,.18); }
-    #duel-overlay { position:fixed; inset:0; background:rgba(8,10,18,.88); z-index:80;
-      display:none; align-items:center; justify-content:center; flex-direction:column;
-      color:#fff; text-align:center; }
-    .duel-arena { display:flex; gap:24px; align-items:center; }
-    .duel-side { width:130px; }
-    .duel-side img { width:110px; height:130px; }
-    .duel-side .nm { font-weight:bold; margin-top:4px; }
-    #duel-status { font-size:26px; margin-top:18px; font-weight:bold; }
     #math-pop { position:fixed; left:50%; transform:translateX(-50%); bottom:120px;
       background:rgba(14,18,30,.95); border:1px solid rgba(255,255,255,.25); border-radius:14px;
       color:#eef; z-index:55; padding:12px 14px; width:min(90vw,360px); display:none; }
@@ -132,8 +150,11 @@ export function initFun(ctx) {
   const rail = document.getElementById('left-rail') || document.body;
   const railBottom = document.getElementById('left-rail-bottom') || document.body;
   const mkBtn = (emoji, title) => el(`<button class="fun-btn" title="${title}">${emoji}</button>`, rail);
-  const atelierBtn = mkBtn('🛠️', 'Atelier');
-  const fwBtn = mkBtn('🎆', "Feu d'artifice");
+  // Un seul bouton pour l'album. L'atelier, le coffre, la quête, le panneau,
+  // le chantier, les records et les chapeaux sont partis (v255, décision de
+  // Max), et le feu d'artifice avec eux. Ce qui reste, c'est l'album des
+  // photos — et un bouton qui dit ce qu'il ouvre, pas une clé à molette.
+  const souvenirsBtn = mkBtn('🖼️', 'Souvenirs');
   const photoBtn = mkBtn('📸', 'Photo');
 
   // Un seul bouton, qui se déplie. Trois émotes en permanence à l'écran d'un
@@ -155,34 +176,10 @@ export function initFun(ctx) {
     <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button><button id="board-btn">🚇 Monter à bord</button>
   </div>`);
 
+  // Un seul corps, plus d'onglets : le panneau n'a plus que les Souvenirs.
   const panel = el(`<div class="fun-panel" id="fun-main-panel">
     <button class="fun-close">✕</button>
-    <div class="fun-tabs">
-      <button class="fun-tab on" data-t="craft">🛠️ Atelier</button>
-      <button class="fun-tab" data-t="chest">📦 Coffre</button>
-      <button class="fun-tab" data-t="quest">📜 Quête</button>
-      <button class="fun-tab" data-t="sign">🪧 Panneau</button>
-      <button class="fun-tab" data-t="chantier">🏗️ Chantier</button>
-      <button class="fun-tab" data-t="records">🏆 Records</button>
-      <button class="fun-tab" data-t="hats">🎩 Chapeaux</button>
-      <button class="fun-tab" data-t="photos">📸 Souvenirs</button>
-    </div>
     <div id="fun-tab-body"></div>
-  </div>`);
-
-  // Le tableau des scores avait son propre bouton flottant : minuscule et
-  // inexploitable en jeu. Records, chapeaux et souvenirs sont désormais des
-  // onglets de l'atelier — un bouton de moins à l'écran, rien de perdu.
-  const recordsPanel = panel;
-
-  const duelOverlay = el(`<div id="duel-overlay">
-    <h2>⚔️ Défi amical !</h2>
-    <div class="duel-arena">
-      <div class="duel-side"><img id="duel-img-a"><div class="nm" id="duel-nm-a"></div></div>
-      <div style="font-size:34px">VS</div>
-      <div class="duel-side"><img id="duel-img-b"><div class="nm" id="duel-nm-b"></div></div>
-    </div>
-    <div id="duel-status"></div>
   </div>`);
 
   const mathPop = el(`<div id="math-pop">
@@ -192,10 +189,9 @@ export function initFun(ctx) {
 
   panel.querySelector('.fun-close').addEventListener('click', () => { panel.style.display = 'none'; });
 
-  // ---- companion ------------------------------------------------------------
-  let pet = loadJson(PET_KEY, null);
-  let petMesh = null, petLabel = null, petBob = 0;
-
+  // ---- étiquettes flottantes ------------------------------------------------
+  // Écrite pour le nom du compagnon, elle sert aussi aux panneaux plantés et aux
+  // émotes : elle reste, le compagnon est parti (v285).
   function makeTextSprite(text, scale = 1) {
     const c = document.createElement('canvas');
     c.width = 512; c.height = 96;
@@ -211,66 +207,6 @@ export function initFun(ctx) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
     sp.scale.set(3.2 * scale, 0.6 * scale, 1);
     return sp;
-  }
-
-  function refreshPet() {
-    // ET L'ANCIENNE SE REND (v238) : `refreshPet` en refabrique une neuve, avec
-    // ses sphères, ses matériaux ET l'étiquette dessinée sur une toile. Sans
-    // cette ligne chaque changement de mascotte en abandonnait un jeu complet.
-    if (petMesh) { scene.remove(petMesh); liberer(petMesh); petMesh = null; }
-    if (!pet) return;
-    const sp = creatureManager.species.find((s) => s.id === pet.id);
-    if (!sp) return;
-    petMesh = buildCreatureMesh(sp);
-    petMesh.scale.setScalar(0.55);
-    petLabel = makeTextSprite(`⭐ ${pet.name}`, 0.9);
-    petLabel.position.y = sp.size * 1.6 + 0.5;
-    petMesh.add(petLabel);
-    petMesh.position.copy(player.pos);
-    scene.add(petMesh);
-  }
-  refreshPet();
-
-  function setPet(spId) {
-    const sp = creatureManager.species.find((s) => s.id === spId);
-    if (!sp) return;
-    const name = (window.prompt(`Comment s'appelle ton compagnon ${sp.name} ?`, sp.name) || sp.name).slice(0, 14);
-    pet = { id: spId, name };
-    saveJson(PET_KEY, pet);
-    refreshPet();
-    toast(`⭐ ${name} est maintenant ton compagnon !`, 0xffe07a);
-    emojiBurst(['⭐', '💛'], 12);
-  }
-
-  function clearPet() {
-    pet = null;
-    saveJson(PET_KEY, pet);
-    refreshPet();
-  }
-
-  // add "companion" buttons inside the dex rows when the dex opens
-  document.getElementById('dex-btn')?.addEventListener('click', () => setTimeout(decorateDex, 60));
-  function decorateDex() {
-    const list = document.getElementById('dex-list');
-    if (!list) return;
-    // dex rows are rendered in species order, one row per species
-    [...list.children].forEach((row, i) => {
-      const sp = creatureManager.species[i];
-      if (!sp || row.querySelector('.pet-btn')) return;
-      const entry = creatureManager.collection.find((e) => e.id === sp.id);
-      if (!entry) return;
-      const b = document.createElement('button');
-      b.className = 'pet-btn dex-release';
-      b.textContent = pet && pet.id === sp.id ? '⭐' : '☆';
-      b.title = 'Choisir comme compagnon';
-      b.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        if (pet && pet.id === sp.id) clearPet(); else setPet(sp.id);
-        for (const btn of list.querySelectorAll('.pet-btn')) btn.remove();
-        decorateDex();
-      });
-      row.appendChild(b);
-    });
   }
 
   // ---- feeding & riding -----------------------------------------------------
@@ -306,6 +242,9 @@ export function initFun(ctx) {
     if (riding) {
       const quitte = riding;
       riding = null;
+      // Les flammes s'éteignent avec le mode pilote : la monture quittée
+      // n'est plus mise à jour, elle garderait sa dernière flamme (v264).
+      for (const f of (quitte && quitte.mesh && quitte.mesh.userData.tuyeres) || []) f.visible = false;
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
       // se rend aussi en descendant (v212).
@@ -313,31 +252,45 @@ export function initFun(ctx) {
       player.vitesseAvion = undefined;
       player.avionEnVol = false;
       player.roulisAvion = 0;
-      player.boost = juiceTimer > 0 ? 1.45 : undefined;
+      player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
+      player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;
+      player.boost = undefined;
       // Le vol redevient permis dès qu'on a les pieds par terre, et la boîte
       // de collision reprend celle d'un piéton — sinon on garderait à pied le
       // gabarit d'une voiture et l'on resterait coincé entre deux murs.
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
+      // LE SILENCE SE REND EN DESCENDANT, comme la marche et le gabarit : la
+      // monture quittée n'est plus mise à jour, elle garderait son dernier
+      // régime pour toujours (v264, le même piège que les flammes).
+      moteurCoupe(); radioCoupe();
+      quitte.montee = false;
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
     if (!montable(a)) return;
     debarquer();
     riding = a;
+    a.montee = true;   // le gestionnaire d'animaux ne la retire jamais (animals.js)
+    player.gaz = null; player.vitesseVoiture = 0;   // la manette des gaz part de zéro, le joystick reste l'accélérateur tant qu'elle n'a pas servi
     // La fiche décide : une voiture ne décolle pas, un cheval non plus une
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
     player.interdireVol(a.def.vole === false);
     // Et sa CARRURE : une voiture ne passe pas là où un piéton passe.
     if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
     a.state = 'idle';
-    const allure = a.def.allure || 2;
+    // LE BRUIT DE FOND ET LA RADIO (v268). La FICHE décide : `moteur` nomme
+    // la recette, `radio` allume une station. Rien n'est écrit ici sur ce
+    // qui a un moteur — un cheval n'en a pas, et il suffit que sa fiche se
+    // taise. Même discipline que `montable` et `vole`.
+    if (a.def.moteur) moteurDemarre(a.def.moteur);
+    if (a.def.radio) radioDemarre();
+    const allure = allureMonture(a);
     if (a.def.pilote) {
       // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
       // calcule. Trois gestes, dans l'ordre où on s'en sert.
       toast(`${a.def.emoji} Aux commandes du ${a.def.name.toLowerCase()} !`
-        + ' Pousse en avant pour accélérer, regarde en haut pour monter'
-        + ' — refais pareil pour te poser.', 0xa8d8ff);
+        + ' Le joystick fait rouler, ✈️ met les gaz — le nez se lève tout seul.', 0xa8d8ff);
     } else {
       toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
         + ' — refais pareil pour descendre.', 0xffe07a);
@@ -351,6 +304,56 @@ export function initFun(ctx) {
   // laisser porter par la place qu'on occupe — le convoi suit son tracé, on
   // suit le convoi.
   let bord = null;
+  // PASSAGER CHEZ UN AMI (v253). Max : « permets que plusieurs joueurs
+  // rentrent dans un moyen de transport : le premier conduit, les autres
+  // restent passagers ». Comme `bord` : on est collé au siège, les commandes
+  // ne servent à rien, un appui descend. Le véhicule, lui, est celui que
+  // main.js dessine pour l'ami (`vehiculeDistant`).
+  let passager = null;   // { de: identifiant de l'ami, s: numéro de siège, nom }
+  function vehiculeAmiProche() {
+    const rps = remotePlayers ? remotePlayers() : null;
+    if (!rps || !isRunning()) return null;
+    let meilleur = null;
+    for (const [id, rp] of rps) {
+      if (!rp.vehicule || !rp.vehicule.def || !rp.vehicule.def.sieges) continue;
+      const d = rp.vehicule.mesh.position.distanceTo(player.pos);
+      if (d < RAYON_BORD && (!meilleur || d < meilleur.d)) meilleur = { id, d, nom: rp.name || 'un ami', def: rp.vehicule.def };
+    }
+    return meilleur;
+  }
+  function monterAvec(ami) {
+    if (riding) toggleRide(null);
+    debarquer(true);
+    // le premier siège libre : les autres passagers de cette voiture sont
+    // connus par leur position réseau (`passager.de`)
+    const rps = remotePlayers ? remotePlayers() : null;
+    let occupes = 0;
+    if (rps) for (const rp of rps.values()) if (rp.passager && rp.passager.de === ami.id) occupes++;
+    const s = Math.min(occupes, ami.def.sieges.length - 1);
+    passager = { de: ami.id, s, nom: ami.nom };
+    player.vel.set(0, 0, 0);
+    toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
+    emojiBurst(['🚗', '💨'], 8);
+  }
+  function descendreDePassager(silencieux = false) {
+    if (!passager) return;
+    const nom = passager.nom;
+    passager = null;
+    player.vel.set(0, 0, 0);
+    if (!silencieux) toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+  }
+  function updatePassager() {
+    if (!passager) return;
+    const veh = vehiculeDistant ? vehiculeDistant(passager.de) : null;
+    if (!veh) { descendreDePassager(true); return; }
+    const sieges = veh.def.sieges || [];
+    const siege = sieges[Math.min(passager.s, sieges.length - 1)] || veh.def.siege;
+    veh.mesh.updateMatrixWorld(true);
+    const monde = veh.mesh.localToWorld(new THREE.Vector3(siege.x, 0, siege.z));
+    player.pos.set(monde.x, veh.mesh.position.y, monde.z);
+    player.vel.set(0, 0, 0);
+    player.camera.position.copy(player.eyePosition());
+  }
 
   // NEUF BLOCS, PAS CINQ — et c'est la réponse à « on ne peut pas monter dans
   // les véhicules en déplacement ». Le code pour conduire une voiture de ville
@@ -428,266 +431,29 @@ export function initFun(ctx) {
     player.camera.position.copy(player.eyePosition());
   }
 
-  let juiceTimer = 0;
-
   document.addEventListener('keydown', (e) => {
     if (!isRunning()) return;
     if (e.code === 'KeyN') feed(animalManager.targeted());
     // Une seule touche pour « monter » : sur ce qui vit s'il y a une bête
     // devant soi, à bord sinon. L'enfant n'a pas à savoir laquelle des deux.
     if (e.code === 'KeyM') {
-      if (riding) toggleRide(null);
+      if (passager) descendreDePassager();
+      else if (riding) toggleRide(null);
       else if (bord) debarquer();
       else if (animalManager.monture()) toggleRide(animalManager.monture());
       else embarquer();
     }
-    if (e.code === 'KeyG') launchFirework();
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
-  document.getElementById('ride-btn').addEventListener('click', () => toggleRide(riding ? null : animalManager.monture()));
+  document.getElementById('ride-btn').addEventListener('click', () => {
+    if (passager) { descendreDePassager(); return; }
+    if (riding) { toggleRide(null); return; }
+    const m = animalManager.monture();
+    if (m) { toggleRide(m); return; }
+    const ami = vehiculeAmiProche();
+    if (ami) monterAvec(ami);
+  });
   document.getElementById('board-btn').addEventListener('click', () => embarquer());
-
-  // ---- fireworks ------------------------------------------------------------
-  const fireworks = [];
-  function launchFirework(mega = false) {
-    if (fireworks.length > 5) return;
-    records.fireworks++; saveRecords();
-    const bursts = mega ? 3 : 1;
-    for (let b = 0; b < bursts; b++) {
-      const N = 90;
-      const geo = new THREE.BufferGeometry();
-      const pts = new Float32Array(N * 3);
-      const vels = [];
-      for (let i = 0; i < N; i++) {
-        const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
-        const sp2 = 4 + Math.random() * 5;
-        vels.push(new THREE.Vector3(Math.sin(ph) * Math.cos(th) * sp2, Math.cos(ph) * sp2, Math.sin(ph) * Math.sin(th) * sp2));
-      }
-      geo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-      const colors = [0xff5a5a, 0x5ad0ff, 0xffe05a, 0x8aff5a, 0xd05aff];
-      const mesh = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: colors[(Math.random() * colors.length) | 0], size: 0.3, transparent: true, opacity: 1,
-      }));
-      mesh.position.set(player.pos.x + (b - 1) * 5, player.pos.y + 14 + b * 3, player.pos.z + 4);
-      scene.add(mesh);
-      fireworks.push({ mesh, vels, life: 1.6 });
-    }
-    emojiBurst(['🎆', '✨'], 8);
-  }
-  fwBtn.addEventListener('click', () => launchFirework());
-
-  // ---- le chantier commun ----------------------------------------------------
-  //
-  // Le multijoueur était « côte à côte » : chacun construit dans son coin du
-  // même monde. Le chantier donne un but COMMUN : un plan fantôme posé dans le
-  // monde, une jauge partagée, et une célébration quand la dernière brique est
-  // à sa place — peu importe qui l'a posée.
-  //
-  // L'avancement n'est jamais synchronisé : il se DÉRIVE du monde. Une cellule
-  // est accomplie quand le bloc attendu est à sa place, et le journal de blocs
-  // voyage déjà entre les joueurs. Seule la pose du plan (nom + origine)
-  // s'échange, par le même chemin que les panneaux et le coffre.
-  const B_PLANCHE = 8, B_BUCHE = 5, B_VERRE = 10, B_BRIQUE = 11, B_NEIGE = 12, B_LAINE_ROUGE = 23;
-
-  function planCabane() {
-    const c = [];
-    for (let x = 0; x <= 4; x++) {
-      for (let z = 0; z <= 4; z++) {
-        const mur = x === 0 || x === 4 || z === 0 || z === 4;
-        for (let y = 0; y <= 2; y++) {
-          if (!mur) continue;
-          if (z === 4 && (x === 2) && y <= 1) continue;          // la porte
-          if (y === 1 && ((x === 0 && z === 2) || (x === 4 && z === 2))) { c.push([x, y, z, B_VERRE]); continue; }
-          c.push([x, y, z, B_PLANCHE]);
-        }
-        c.push([x, 3, z, B_BUCHE]);                              // le toit
-      }
-    }
-    return c;
-  }
-  function planPhare() {
-    const c = [];
-    for (let y = 0; y <= 6; y++) {
-      for (let x = 0; x <= 2; x++) {
-        for (let z = 0; z <= 2; z++) {
-          if (x === 1 && z === 1) continue;                      // creux
-          c.push([x, y, z, y % 2 === 0 ? B_BRIQUE : B_NEIGE]);   // rayures
-        }
-      }
-    }
-    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) {
-      if (!(x === 1 && z === 1)) c.push([x, 7, z, B_VERRE]);     // la lanterne
-      c.push([x, 8, z, B_BUCHE]);                                // le chapeau
-    }
-    return c;
-  }
-  function planFusee() {
-    const c = [];
-    for (let y = 0; y <= 5; y++) {
-      for (let x = 0; x <= 2; x++) {
-        for (let z = 0; z <= 2; z++) {
-          if (x === 1 && z === 1) continue;
-          c.push([x, y, z, B_NEIGE]);                            // le fuselage
-        }
-      }
-    }
-    for (let x = 0; x <= 2; x++) for (let z = 0; z <= 2; z++) c.push([x, 6, z, B_LAINE_ROUGE]);
-    c.push([1, 7, 1, B_LAINE_ROUGE]);                            // la pointe
-    for (const [fx, fz] of [[-1, 1], [3, 1], [1, -1], [1, 3]]) {
-      c.push([fx, 0, fz, B_BUCHE]);                              // les ailerons
-    }
-    return c;
-  }
-  const PLANS_CHANTIER = {
-    cabane: { nom: 'Cabane', emoji: '🏡', cellules: planCabane },
-    phare: { nom: 'Phare rayé', emoji: '🗼', cellules: planPhare },
-    fusee: { nom: 'Fusée', emoji: '🚀', cellules: planFusee },
-  };
-
-  let chantier = null;       // { plan, x, y, z, t }
-  let chantierFantome = null;   // le groupe de blocs translucides
-  let chantierTimer = 0;
-  let chantierDernier = -1;  // dernier « faits » annoncé, pour ne parler qu'aux changements
-  const chantierKey = () => `web-minecraft-chantier-v1::${getPosCtx() || 'local'}`;
-  const chantierHud = document.getElementById('chantier-hud');
-
-  function cellulesDe(ch) {
-    const p = PLANS_CHANTIER[ch.plan];
-    return p ? p.cellules() : [];
-  }
-  function avancementChantier() {
-    if (!chantier) return null;
-    const cellules = cellulesDe(chantier);
-    let faits = 0;
-    for (const [dx, dy, dz, id] of cellules) {
-      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) faits++;
-    }
-    return { faits, total: cellules.length };
-  }
-
-  const fantomeGeo = new THREE.BoxGeometry(0.86, 0.86, 0.86);
-  const fantomeMat = new THREE.MeshBasicMaterial({ color: 0x6ec8ff, transparent: true, opacity: 0.3 });
-  function redessinerFantome() {
-    if (chantierFantome) { scene.remove(chantierFantome); chantierFantome = null; }
-    if (!chantier) return;
-    const g = new THREE.Group();
-    for (const [dx, dy, dz, id] of cellulesDe(chantier)) {
-      if (world.getBlock(chantier.x + dx, chantier.y + dy, chantier.z + dz) === id) continue;
-      const m = new THREE.Mesh(fantomeGeo, fantomeMat);
-      m.position.set(chantier.x + dx + 0.5, chantier.y + dy + 0.5, chantier.z + dz + 0.5);
-      g.add(m);
-    }
-    scene.add(g);
-    chantierFantome = g;
-  }
-
-  function adopterChantier(c, { save = true, annonce = false } = {}) {
-    if (c && chantier && c.t <= chantier.t) return;   // le plus récent fait foi
-    chantier = c || null;
-    chantierDernier = -1;
-    if (save) saveJson(chantierKey(), chantier);
-    redessinerFantome();
-    majChantierHud();
-    if (annonce && chantier) {
-      const p = PLANS_CHANTIER[chantier.plan];
-      toast(`🏗️ Chantier ouvert : ${p.emoji} ${p.nom} — construisez-le ensemble !`, 0x6ec8ff);
-    }
-  }
-
-  function majChantierHud() {
-    if (!chantierHud) return;
-    const a = avancementChantier();
-    if (!a) { chantierHud.style.display = 'none'; return; }
-    const p = PLANS_CHANTIER[chantier.plan];
-    chantierHud.style.display = 'block';
-    chantierHud.textContent = `${p.emoji} ${a.faits}/${a.total}`;
-  }
-
-  function poserChantier(nomPlan) {
-    if (!PLANS_CHANTIER[nomPlan]) return null;
-    // Quatre blocs devant le joueur, au niveau du sol : on voit ce qu'on pose.
-    const dx = -Math.sin(player.yaw), dz = -Math.cos(player.yaw);
-    const x = Math.round(player.pos.x + dx * 5) - 2;
-    const z = Math.round(player.pos.z + dz * 5) - 2;
-    const y = world.terrainHeight(x + 1, z + 1) + 1;
-    const c = { plan: nomPlan, x, y, z, t: Date.now() };
-    adopterChantier(c, { annonce: true });
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chantier', c });
-    return c;
-  }
-  function retirerChantier() {
-    adopterChantier(null);
-    saveJson(chantierKey(), null);
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chantier', c: null });
-  }
-
-  function suivreChantier(dt) {
-    if (!chantier) return;
-    chantierTimer -= dt;
-    if (chantierTimer > 0) return;
-    chantierTimer = 1;
-    const a = avancementChantier();
-    if (a.faits !== chantierDernier) {
-      chantierDernier = a.faits;
-      redessinerFantome();
-      majChantierHud();
-      if (a.faits >= a.total && a.total > 0) {
-        // Fini ! La célébration part chez tout le monde : chacun constate la
-        // même chose dans son propre monde, personne n'a de message à croire.
-        records.chantiers = (records.chantiers || 0) + 1;
-        saveRecords();
-        launchFirework(true);
-        toast('🏗️✨ CHANTIER TERMINÉ ! Bravo les bâtisseurs !', 0xffe05a);
-        emojiBurst(['🏗️', '🎉', '⭐'], 18);
-        chantier = null;
-        saveJson(chantierKey(), null);
-        redessinerFantome();
-        majChantierHud();
-      }
-    }
-  }
-  // au chargement : le chantier du monde où l'on est
-  adopterChantier(loadJson(chantierKey(), null), { save: false });
-
-  // Les tests suivent le parcours entier : poser, voir, compter, célébrer.
-  if (typeof window !== 'undefined') {
-    window.__chantier = {
-      poser: poserChantier,
-      retirer: retirerChantier,
-      etat: () => (chantier ? { ...chantier, ...avancementChantier() } : null),
-      chantiers: () => records.chantiers || 0,
-      hud: () => (chantierHud && chantierHud.style.display !== 'none' ? chantierHud.textContent : ''),
-      // Le bloc attendu à une cellule relative, ou null : le banc s'en sert
-      // pour bâtir par le vrai chemin de pose, sans copie du plan dans le test.
-      attendu: (dx, dy, dz) => {
-        if (!chantier) return null;
-        for (const [x, y, z, id] of cellulesDe(chantier)) {
-          if (x === dx && y === dy && z === dz) return id;
-        }
-        return null;
-      },
-    };
-  }
-
-  function updateFireworks(dt) {
-    for (const f of [...fireworks]) {
-      f.life -= dt;
-      if (f.life <= 0) {
-        scene.remove(f.mesh);
-        fireworks.splice(fireworks.indexOf(f), 1);
-        continue;
-      }
-      const pos = f.mesh.geometry.attributes.position;
-      for (let i = 0; i < f.vels.length; i++) {
-        f.vels[i].y -= 3.5 * dt;
-        pos.setXYZ(i, pos.getX(i) + f.vels[i].x * dt, pos.getY(i) + f.vels[i].y * dt, pos.getZ(i) + f.vels[i].z * dt);
-      }
-      pos.needsUpdate = true;
-      f.mesh.material.opacity = Math.min(1, f.life / 0.8);
-    }
-  }
 
   // ---- emotes ---------------------------------------------------------------
   const emoteSprites = new Map(); // peerId -> { sprite, t }
@@ -722,76 +488,6 @@ export function initFun(ctx) {
     }
   }
 
-  // ---- duels ----------------------------------------------------------------
-  let portraitRenderer = null;
-  function creaturePortrait(spId) {
-    const sp = creatureManager.species.find((s) => s.id === spId) || creatureManager.species[0];
-    if (!portraitRenderer) {
-      portraitRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-      portraitRenderer.setSize(110, 130);
-    }
-    const sc = new THREE.Scene();
-    sc.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dl = new THREE.DirectionalLight(0xffffff, 1.2);
-    dl.position.set(2, 4, 3);
-    sc.add(dl);
-    const mesh = buildCreatureMesh(sp);
-    mesh.rotation.y = -0.4;
-    sc.add(mesh);
-    const cam = new THREE.PerspectiveCamera(40, 110 / 130, 0.1, 20);
-    cam.position.set(0.4, sp.size * 1.1, -sp.size * 3.2);
-    cam.lookAt(0, sp.size * 0.8, 0);
-    portraitRenderer.render(sc, cam);
-    return portraitRenderer.domElement.toDataURL();
-  }
-
-  function myDuelCreature() {
-    if (pet) return pet.id;
-    return creatureManager.collection[0]?.id ?? creatureManager.species[0].id;
-  }
-
-  function runDuel(a, b, spA, spB) {
-    const me = myName();
-    if (a !== me && b !== me) return; // spectators sit this one out
-    document.getElementById('duel-img-a').src = creaturePortrait(spA);
-    document.getElementById('duel-img-b').src = creaturePortrait(spB);
-    document.getElementById('duel-nm-a').textContent = a;
-    document.getElementById('duel-nm-b').textContent = b;
-    duelOverlay.style.display = 'flex';
-    const status = document.getElementById('duel-status');
-    const winner = [a, b].sort()[hashStr([a, b].sort().join('|') + new Date().toISOString().slice(0, 13)) % 2];
-    let count = 3;
-    status.textContent = '3…';
-    const iv = setInterval(() => {
-      count--;
-      if (count > 0) { status.textContent = `${count}…`; return; }
-      clearInterval(iv);
-      status.textContent = `🏆 ${winner} gagne ce round amical !`;
-      if (winner === me) { records.duels++; saveRecords(); emojiBurst(['🏆', '🎉'], 20); }
-      else emojiBurst(['👏', '💪'], 12);
-      setTimeout(() => { duelOverlay.style.display = 'none'; }, 3200);
-    }, 900);
-  }
-
-  function challenge(name) {
-    const net = getNet();
-    if (!net || !net.active) return;
-    const msg = { t: 'duel', phase: 1, a: myName(), b: name, spA: myDuelCreature() };
-    net.broadcast(msg);
-    toast(`⚔️ Défi envoyé à ${name} !`, 0xffe07a);
-  }
-
-  function onDuelMsg(msg) {
-    if (msg.phase === 1 && msg.b === myName()) {
-      const net = getNet();
-      const reply = { t: 'duel', phase: 2, a: msg.a, b: msg.b, spA: msg.spA, spB: myDuelCreature() };
-      if (net && net.active) net.broadcast(reply);
-      runDuel(msg.a, msg.b, msg.spA, reply.spB);
-    } else if (msg.phase === 2 && (msg.a === myName() || msg.b === myName())) {
-      runDuel(msg.a, msg.b, msg.spA, msg.spB);
-    }
-  }
-
   function decoratePlayersPanel(list) {
     const net = getNet();
     if (!net || !net.active) return;
@@ -800,10 +496,6 @@ export function initFun(ctx) {
       const row = document.createElement('div');
       row.className = 'fun-row';
       row.innerHTML = `<span>${c.name}</span>`;
-      const duelB = document.createElement('button');
-      duelB.textContent = '⚔️ Défi';
-      duelB.addEventListener('click', () => challenge(c.name));
-      row.appendChild(duelB);
       list.appendChild(row);
     }
     const hs = document.createElement('div');
@@ -854,16 +546,16 @@ export function initFun(ctx) {
     signMeshes.clear();
   }
 
-  function addSign(s, { save = true, send = false, broadcast = false } = {}) {
+  // ON NE PLANTE PLUS DE PANNEAU (v255) : l'onglet est parti. Ceux qui sont
+  // déjà plantés restent dans le monde — c'est ce qu'un enfant a écrit — et
+  // un panneau posé depuis une tablette restée sur l'ancienne version arrive
+  // encore par le réseau ou par le nuage : le receveur cède, il l'affiche et
+  // le garde. Il ne renvoie rien.
+  function addSign(s, { save = true } = {}) {
     if (!s || signs.some((o) => o.x === s.x && o.y === s.y && o.z === s.z)) return;
     signs.push(s);
     renderSign(s);
     if (save) saveJson(signsKey(), signs);
-    if (send) cloud.signSend(s).catch?.(() => {}); // only the author uploads
-    if (broadcast) {
-      const net = getNet();
-      if (net && net.active) net.broadcast({ t: 'sign', sign: s });
-    }
   }
 
   async function loadSigns(ctxKey) {
@@ -877,121 +569,6 @@ export function initFun(ctx) {
         saveJson(signsKey(), signs);
       } catch { /* offline */ }
     }
-  }
-
-  function plantSign() {
-    const text = (window.prompt('Ton message sur le panneau :') || '').trim().slice(0, 40);
-    if (!text) return;
-    const dirX = -Math.sin(player.yaw), dirZ = -Math.cos(player.yaw);
-    const x = Math.floor(player.pos.x + dirX * 2), z = Math.floor(player.pos.z + dirZ * 2);
-    let y = Math.floor(player.pos.y);
-    while (y > 1 && !world.isSolid(x, y - 1, z)) y--;
-    addSign({ x, y, z, text, author: myName(), yaw: player.yaw + Math.PI }, { save: true, send: true, broadcast: true });
-    toast('🪧 Panneau planté !', 0xd8c9a4);
-    panel.style.display = 'none';
-  }
-
-  // ---- shared chest ---------------------------------------------------------
-  // the chest is shared by every profile on the device: raw (unsuffixed) storage
-  const raw = window.__rawStorage || { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v) };
-  const chestKey = () => `web-minecraft-chest-v1::${signsCtx || 'local'}`;
-  const loadChest = () => { try { return JSON.parse(raw.get(chestKey())) || {}; } catch { return {}; } };
-  const saveChest = (c) => { try { raw.set(chestKey(), JSON.stringify(c)); } catch { /* ignore */ } };
-
-  function chestChanged(items) { // remote update
-    saveChest(items);
-    if (panel.style.display === 'block' && currentTab === 'chest') renderTab();
-  }
-
-  function broadcastChest(c) {
-    const net = getNet();
-    if (net && net.active) net.broadcast({ t: 'chest', items: c });
-  }
-
-  // ---- crafting -------------------------------------------------------------
-  const RECIPES = [
-    { name: '🎂 Festin de fête', needMeat: 3, gives: null,
-      effect: () => { records.feasts++; saveRecords(); emojiBurst(['🎂', '🎉', '🥳'], 26); toast('🎂 Festin ! Tout le monde fait la fête !', 0xffd75e); } },
-    { name: '🧃 Jus de baies (vitesse ×1,5 pendant 40 s)', need: { '🍓 Baies': 2 }, gives: null,
-      effect: () => { juiceTimer = 40; if (!riding) player.boost = 1.45; toast('🧃 Slurp ! Tu cours plus vite !', 0xff9dbb); } },
-    { name: '🍪 Cookie géant', need: { '🌰 Noisette': 1, '🥚 Œuf': 1 }, gives: '🍪 Cookie géant',
-      effect: () => emojiBurst(['🍪'], 10) },
-    { name: '🎆 Fusée de feu d\'artifice (triple !)', need: { '🦀 Pince de crabe': 2 }, gives: '🎆 Fusée',
-      effect: () => toast('🎆 Fusée prête ! Elle partira toute seule… BOOM !', 0xffe07a) },
-  ];
-
-  // ---- quests ---------------------------------------------------------------
-  const today = () => new Date().toISOString().slice(0, 10);
-  let quest = loadJson(QUEST_KEY, null);
-
-  function ensureQuest() {
-    if (quest && quest.date === today()) return quest;
-    const h = hashStr(today() + myName());
-    const kind = ['collect', 'catch', 'visit', 'build'][h % 4];
-    quest = { date: today(), kind, done: false, progress: 0 };
-    if (kind === 'collect') {
-      quest.item = QUEST_ITEMS[h % QUEST_ITEMS.length];
-      quest.n = 2 + (h % 3);
-      quest.text = `Rapporte ${quest.n} × ${quest.item} (chasse les animaux !)`;
-    } else if (kind === 'catch') {
-      const types = Object.keys(TYPES).filter((t) => t !== 'FELIN');
-      quest.type = types[h % types.length];
-      quest.text = `Attrape 1 créature de type ${quest.type} avec une balle !`;
-    } else if (kind === 'visit') {
-      const p = PLACES[h % PLACES.length];
-      quest.place = p.name;
-      quest.text = `Va visiter : ${p.name} (regarde la carte !)`;
-    } else {
-      quest.n = 15;
-      quest.text = `Pose ${quest.n} blocs pour construire quelque chose !`;
-    }
-    saveJson(QUEST_KEY, quest);
-    return quest;
-  }
-
-  function questReward() {
-    quest.done = true;
-    saveJson(QUEST_KEY, quest);
-    records.quests++; saveRecords();
-    bagAdd('🎆 Fusée', 2);
-    toast('📜 Quête accomplie ! +2 🎆 Fusées dans ton sac !', 0x6ee06e);
-    emojiBurst(['📜', '🎉', '⭐'], 22);
-  }
-
-  function questCheck() {
-    ensureQuest();
-    if (quest.done) return false;
-    if (quest.kind === 'collect') {
-      if ((bag[quest.item] || 0) >= quest.n) { bagTake(quest.item, quest.n); questReward(); return true; }
-    } else if (quest.kind === 'build') {
-      if (quest.progress >= quest.n) { questReward(); return true; }
-    } else if (quest.kind === 'visit') {
-      const p = PLACES.find((o) => o.name === quest.place);
-      if (p && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < (p.r || 25)) { questReward(); return true; }
-    } else if (quest.kind === 'catch' && quest.progress > 0) { questReward(); return true; }
-    return false;
-  }
-
-  // ---- atelier panel rendering ----------------------------------------------
-  // Sept onglets, un seul corps : les trois derniers (records, chapeaux,
-  // souvenirs) viennent du panneau séparé qu'on a supprimé.
-  const REC_TABS = ['records', 'hats', 'photos'];
-  let currentTab = 'craft';
-  const tabBody = panel.querySelector('#fun-tab-body');
-  panel.querySelectorAll('.fun-tab').forEach((t) => {
-    t.addEventListener('click', () => {
-      currentTab = t.dataset.t;
-      panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o === t));
-      if (REC_TABS.includes(currentTab)) { recTab = currentTab; renderRecords(); }
-      else renderTab();
-    });
-  });
-
-  function bagSummary(target) {
-    const entries = Object.entries(bag);
-    return entries.length
-      ? entries.map(([k, v]) => `${k} ×${v}`).join(' · ')
-      : 'Ton sac est vide — chasse des animaux pour trouver des trésors !';
   }
 
   // ---- la bibliothèque de monuments ------------------------------------------
@@ -1092,260 +669,77 @@ export function initFun(ctx) {
     panel.style.display = 'none';
   }
 
-  function renderTab() {
-    if (currentTab === 'craft') {
-      let html = `<h3>🛠️ Atelier</h3><div class="fun-note">Sac : ${bagSummary()}</div>
-        <div class="fun-note">🍖 Garde-manger : ${ctx.getMeat()} viandes</div>`;
-      tabBody.innerHTML = html;
-      RECIPES.forEach((r, i) => {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        const needTxt = r.needMeat ? `${r.needMeat} viandes` :
-          Object.entries(r.need).map(([k, v]) => `${v} × ${k}`).join(' + ');
-        row.innerHTML = `<span>${r.name}<br><small style="color:#8894b0">${needTxt}</small></span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Fabriquer';
-        const can = r.needMeat ? ctx.getMeat() >= r.needMeat :
-          Object.entries(r.need).every(([k, v]) => (bag[k] || 0) >= v);
-        b.disabled = !can;
-        b.addEventListener('click', () => {
-          if (r.needMeat) { if (!ctx.takeMeat(r.needMeat)) return; }
-          else for (const [k, v] of Object.entries(r.need)) bagTake(k, v);
-          if (r.gives) bagAdd(r.gives);
-          if (r.gives === '🎆 Fusée') { bagTake('🎆 Fusée'); launchFirework(true); }
-          r.effect?.();
-          renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
+  // ---- les souvenirs ---------------------------------------------------------
+  //
+  // Le seul écran qui reste du panneau (v255) : l'album des photos. Le bouton
+  // 🖼️ l'ouvre directement — plus d'onglet à choisir.
+  const tabBody = panel.querySelector('#fun-tab-body');
+
+  function renderSouvenirs(tirerDuNuage = true) {
+    const photos = loadJson(PHOTOS_KEY, []);
+    // On va chercher celles prises sur les autres appareils : c'est le seul
+    // moment où l'album coûte quelque chose, et c'est celui où l'enfant le
+    // regarde. Une seule redessinée, s'il y a du neuf — et sans redemander
+    // le nuage, sinon on tournerait en rond.
+    if (tirerDuNuage) {
+      photosNuage?.tirer().then((tout) => {
+        if (tout && tout.length !== photos.length && panel.style.display === 'block') renderSouvenirs(false);
       });
-    } else if (currentTab === 'chest') {
-      const chest = loadChest();
-      tabBody.innerHTML = `<h3>📦 Coffre commun du monde</h3>
-        <div class="fun-note">Dépose des objets pour les partager — tout le monde peut les reprendre.</div>
-        <div class="fun-note">Ton sac : ${bagSummary()}</div><h3 style="margin-top:10px">Dans le coffre :</h3>`;
-      const entries = Object.entries(chest);
-      if (!entries.length) tabBody.insertAdjacentHTML('beforeend', '<div class="fun-note">Le coffre est vide.</div>');
-      for (const [k, v] of entries) {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${k} ×${v}</span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Prendre';
-        b.addEventListener('click', () => {
-          const c2 = loadChest();
-          if ((c2[k] || 0) <= 0) return;
-          c2[k]--; if (c2[k] <= 0) delete c2[k];
-          saveChest(c2); bagAdd(k); broadcastChest(c2); renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
-      }
-      tabBody.insertAdjacentHTML('beforeend', '<h3 style="margin-top:10px">Déposer :</h3>');
-      for (const [k, v] of Object.entries(bag)) {
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${k} ×${v}</span>`;
-        const b = document.createElement('button');
-        b.textContent = 'Déposer';
-        b.addEventListener('click', () => {
-          if (!bagTake(k)) return;
-          const c2 = loadChest();
-          c2[k] = (c2[k] || 0) + 1;
-          saveChest(c2); broadcastChest(c2); renderTab();
-        });
-        row.appendChild(b);
-        tabBody.appendChild(row);
-      }
-    } else if (currentTab === 'quest') {
-      ensureQuest();
-      tabBody.innerHTML = `<h3>📜 Quête du jour</h3>
-        <div class="fun-row"><span>${quest.done ? '✅ ' : ''}${quest.text}</span></div>
-        <div class="fun-note">${quest.done ? 'Bravo, reviens demain pour une nouvelle quête !' : 'Récompense : 2 🎆 Fusées'}</div>`;
-      if (!quest.done) {
-        const b = document.createElement('button');
-        b.className = 'fun-tab';
-        b.textContent = 'Vérifier ma quête';
-        b.addEventListener('click', () => { if (!questCheck()) toast('Pas encore… continue !', 0xcccccc); renderTab(); });
-        tabBody.appendChild(b);
-      }
-    } else if (currentTab === 'sign') {
-      tabBody.innerHTML = `<h3>🪧 Panneaux</h3>
-        <div class="fun-note">Écris un message sur un panneau planté devant toi — les autres joueurs le verront aussi !</div>`;
-      const b = document.createElement('button');
-      b.className = 'fun-tab';
-      b.textContent = '🪧 Planter un panneau ici';
-      b.addEventListener('click', plantSign);
-      tabBody.appendChild(b);
-    } else if (currentTab === 'chantier') {
-      const a = avancementChantier();
-      tabBody.innerHTML = `<h3>🏗️ Chantier commun</h3>
-        <div class="fun-note">Pose un plan fantôme devant toi, et construisez-le ensemble :
-        chaque bloc posé au bon endroit — par n'importe qui — fait avancer la jauge !</div>`;
-      if (chantier) {
-        const p2 = PLANS_CHANTIER[chantier.plan];
-        const enCours = document.createElement('div');
-        enCours.className = 'fun-note';
-        enCours.textContent = `${p2.emoji} ${p2.nom} en cours : ${a.faits}/${a.total} blocs posés.`;
-        tabBody.appendChild(enCours);
-        // Où est-il ? Une jauge à 0/71 ne sert à rien si on ne trouve pas le
-        // fantôme bleu. Distance et direction, comme pour un ami.
-        const du2 = chantier.x + 2 - player.pos.x, dv2 = chantier.z + 2 - player.pos.z;
-        const dist = Math.round(Math.hypot(du2, dv2));
-        const FLECHES = ['↑ nord', '↗ nord-est', '→ est', '↘ sud-est', '↓ sud', '↙ sud-ouest', '← ouest', '↖ nord-ouest'];
-        const oct = ((Math.round(Math.atan2(du2, -dv2) / (Math.PI / 4)) % 8) + 8) % 8;
-        const où = document.createElement('div');
-        où.className = 'fun-note';
-        où.textContent = dist <= 6
-          ? '📍 Tu es dessus : les blocs bleus translucides montrent ce qui manque.'
-          : `📍 À ${dist} blocs, direction ${FLECHES[oct]}. Cherche les blocs bleus translucides.`;
-        tabBody.appendChild(où);
-        const arreter = document.createElement('button');
-        arreter.className = 'fun-tab';
-        arreter.textContent = '🗑️ Abandonner ce chantier';
-        arreter.addEventListener('click', () => { retirerChantier(); renderTab(); });
-        tabBody.appendChild(arreter);
-      } else {
-        for (const [cle, p2] of Object.entries(PLANS_CHANTIER)) {
-          const b2 = document.createElement('button');
-          b2.className = 'fun-tab';
-          b2.textContent = `${p2.emoji} Poser : ${p2.nom} (${p2.cellules().length} blocs)`;
-          b2.addEventListener('click', () => { poserChantier(cle); panel.style.display = 'none'; });
-          tabBody.appendChild(b2);
-        }
-      }
     }
+    tabBody.innerHTML = `<h3>📸 Souvenirs</h3>
+      <div class="fun-note">${photos.length ? 'Tes plus belles photos du monde !' : 'Appuie sur 📸 en jeu pour prendre une photo !'}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid';
+    photos.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'ph';
+      d.innerHTML = `<img src="${p}">`;
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '🗑';
+      del.addEventListener('click', () => {
+        photos.splice(i, 1);
+        saveJson(PHOTOS_KEY, photos);
+        renderSouvenirs(false);
+      });
+      d.appendChild(del);
+      // « Récupérer » la photo : le partage natif — vers Photos, Messages —
+      // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
+      const garder = document.createElement('button');
+      garder.className = 'garder';
+      garder.textContent = '📤';
+      garder.title = 'Garder la photo';
+      garder.addEventListener('click', async () => {
+        try {
+          const blob = await (await fetch(p)).blob();
+          const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
+          if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+            await navigator.share({ files: [fichier] });
+            return;
+          }
+        } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
+        const a = document.createElement('a');
+        a.href = p;
+        a.download = `minecraft-${i + 1}.jpg`;
+        a.click();
+      });
+      d.appendChild(garder);
+      grid.appendChild(d);
+    });
+    tabBody.appendChild(grid);
   }
 
-  atelierBtn.addEventListener('click', () => {
+  souvenirsBtn.addEventListener('click', () => {
     if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
-    renderTab();
+    renderSouvenirs();
   });
 
-  // Ouvrir l'atelier directement sur un onglet : c'est ce que font les
-  // pastilles de l'écran (le garde-manger, la jauge du chantier). Max :
-  // « quand on clique, il ne se passe rien » — maintenant, il se passe ça.
-  function ouvrirOnglet(t) {
-    currentTab = t;
-    panel.querySelectorAll('.fun-tab').forEach((o) => o.classList.toggle('on', o.dataset.t === t));
-    panel.style.display = 'block';
-    if (REC_TABS.includes(t)) { recTab = t; renderRecords(); } else renderTab();
-  }
-  if (chantierHud) chantierHud.addEventListener('click', () => ouvrirOnglet('chantier'));
-
-  // ---- records, hats & photos ----------------------------------------------
-  let recTab = 'records';
-  const recBody = tabBody;
-
-  const REC_LABELS = [
-    ['blocks', '🧱 Blocs posés'], ['quizCorrect', '✅ Bonnes réponses'], ['treasures', '💰 Trésors trouvés'],
-    ['quests', '📜 Quêtes finies'], ['duels', '⚔️ Duels gagnés'], ['fireworks', '🎆 Feux lancés'],
-    ['mathWins', '🧮 Défis maths'], ['parkour', '🤸 Parkours réussis'], ['bestRace', '🏁 Meilleure course (s)'],
-  ];
-
-  function profileRecords(id) {
-    const suffix = id === 1 ? '' : `::p${id}`;
-    try { return JSON.parse(raw.get(RECORDS_KEY + suffix)) || {}; } catch { return {}; }
-  }
-
-  function renderRecords() {
-    if (recTab === 'records') {
-      const profiles = getProfiles();
-      let html = `<h3>🏆 Tableau des records</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr><td></td>${profiles.map((p) => `<th style="padding:4px">${p.name}</th>`).join('')}</tr>`;
-      for (const [key, label] of REC_LABELS) {
-        html += `<tr><td style="padding:4px;color:#aab">${label}</td>` + profiles.map((p) => {
-          const r = profileRecords(p.id);
-          let v = r[key] || 0;
-          if (key === 'bestRace') v = v ? v.toFixed(1) : '—';
-          return `<td style="text-align:center">${v}</td>`;
-        }).join('') + '</tr>';
-      }
-      recBody.innerHTML = html + '</table></div>';
-    } else if (recTab === 'hats') {
-      recBody.innerHTML = `<h3>🎩 Chapeaux</h3>
-        <div class="fun-note">Gagne des chapeaux en répondant juste aux quiz ! (${records.quizCorrect} bonnes réponses)</div>`;
-      for (const h of HATS) {
-        const unlocked = records.hats.includes(h.emoji);
-        const row = document.createElement('div');
-        row.className = 'fun-row';
-        row.innerHTML = `<span>${unlocked ? h.emoji : '🔒'} ${h.name}<br><small style="color:#8894b0">${h.need} bonnes réponses</small></span>`;
-        const b = document.createElement('button');
-        if (unlocked) {
-          b.textContent = records.hat === h.emoji ? 'Porté !' : 'Porter';
-          b.addEventListener('click', () => {
-            records.hat = records.hat === h.emoji ? '' : h.emoji;
-            saveRecords();
-            toast(records.hat ? `${records.hat} Tu portes ta ${h.name.toLowerCase()} !` : 'Chapeau rangé.', 0xffe07a);
-            renderRecords();
-          });
-        } else { b.textContent = '🔒'; b.disabled = true; }
-        row.appendChild(b);
-        recBody.appendChild(row);
-      }
-    } else {
-      const photos = loadJson(PHOTOS_KEY, []);
-      // On va chercher celles prises sur les autres appareils : c'est le seul
-      // moment où l'album coûte quelque chose, et c'est celui où l'enfant le
-      // regarde. Une seule redessinée, s'il y a du neuf.
-      photosNuage?.tirer().then((tout) => {
-        if (tout && tout.length !== photos.length) renderTab();
-      });
-      recBody.innerHTML = `<h3>📸 Souvenirs</h3>
-        <div class="fun-note">${photos.length ? 'Tes plus belles photos du monde !' : 'Appuie sur 📸 en jeu pour prendre une photo !'}</div>`;
-      const grid = document.createElement('div');
-      grid.className = 'photo-grid';
-      photos.forEach((p, i) => {
-        const d = document.createElement('div');
-        d.className = 'ph';
-        d.innerHTML = `<img src="${p}">`;
-        const del = document.createElement('button');
-        del.className = 'del';
-        del.textContent = '🗑';
-        del.addEventListener('click', () => {
-          photos.splice(i, 1);
-          saveJson(PHOTOS_KEY, photos);
-          renderRecords();
-        });
-        d.appendChild(del);
-        // « Récupérer » la photo : le partage natif — vers Photos, Messages —
-        // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
-        const garder = document.createElement('button');
-        garder.className = 'garder';
-        garder.textContent = '📤';
-        garder.title = 'Garder la photo';
-        garder.addEventListener('click', async () => {
-          try {
-            const blob = await (await fetch(p)).blob();
-            const fichier = new File([blob], `minecraft-${i + 1}.jpg`, { type: 'image/jpeg' });
-            if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
-              await navigator.share({ files: [fichier] });
-              return;
-            }
-          } catch { /* partage refusé ou fermé : on retombe sur le lien */ }
-          const a = document.createElement('a');
-          a.href = p;
-          a.download = `minecraft-${i + 1}.jpg`;
-          a.click();
-        });
-        d.appendChild(garder);
-        grid.appendChild(d);
-      });
-      recBody.appendChild(grid);
-    }
-  }
-
-
+  // Les bonnes réponses se comptent toujours : c'est un record de l'enfant.
+  // Les chapeaux, eux, ne se débloquent plus (v255) — ceux déjà gagnés
+  // restent dans `records.hats`, intouchés.
   edu.onCorrect = () => {
     records.quizCorrect++;
-    for (const h of HATS) {
-      if (records.quizCorrect >= h.need && !records.hats.includes(h.emoji)) {
-        records.hats.push(h.emoji);
-        toast(`${h.emoji} BRAVO ! Tu as débloqué : ${h.name} ! (menu 🏆)`, 0xffe07a);
-        emojiBurst([h.emoji, '🎉'], 20);
-      }
-    }
     saveRecords();
   };
 
@@ -1368,12 +762,12 @@ export function initFun(ctx) {
     photosNuage?.pousser();
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
-    // Le « menu 🏆 » n'existe plus depuis que les records ont déménagé dans
-    // l'atelier : le toast montrait un chemin qui ne menait nulle part.
-    toast('📸 Photo rangée dans 🛠️ Atelier → 📸 Souvenirs !', 0x9fd8e8);
+    // Le chemin dit dans le toast est le vrai : un bouton, l'album.
+    toast('📸 Photo rangée dans 🖼️ Souvenirs !', 0x9fd8e8);
   });
 
   // ---- daily treasure -------------------------------------------------------
+  const today = () => new Date().toISOString().slice(0, 10);
   let treasure = null, treasureMesh = null;
   function ensureTreasure() {
     if (records.treasureDate === today()) { treasure = null; return; }
@@ -1412,12 +806,10 @@ export function initFun(ctx) {
       records.treasureDate = today();
       scene.remove(treasureMesh); treasureMesh = null; treasure = null;
       records.treasures++; saveRecords();
-      const h = hashStr(today() + myName());
-      for (let i = 0; i < 3; i++) bagAdd(QUEST_ITEMS[(h + i) % QUEST_ITEMS.length]);
-      bagAdd('🎆 Fusée');
-      toast('💰 TRÉSOR DU JOUR trouvé ! +4 objets dans ton sac !', 0xffd75e);
+      // Le sac et le feu d'artifice sont partis avec l'atelier (v255) : la
+      // récompense, c'est la fête — et un trésor de plus au compteur.
+      toast('💰 TRÉSOR DU JOUR trouvé ! Bravo !', 0xffd75e);
       emojiBurst(['💰', '🪙', '🎉', '⭐'], 30);
-      launchFirework();
     }
   }
 
@@ -1484,35 +876,6 @@ export function initFun(ctx) {
       records.parkour++; saveRecords();
       toast('🤸 PARKOUR RÉUSSI ! Champion·ne !', 0xffd75e);
       emojiBurst(['🤸', '🏆', '🎉'], 20);
-      launchFirework();
-    }
-  }
-
-  // ---- museum statues -------------------------------------------------------
-  const MUSEUM = PLACES.find((p) => p.name === 'Musée');
-  let statueGroup = null;
-
-  function updateMuseum() {
-    const d = Math.hypot(player.pos.x - MUSEUM.x, player.pos.z - MUSEUM.z);
-    if (d < 34 && !statueGroup) {
-      statueGroup = new THREE.Group();
-      const by = world.terrainHeight(MUSEUM.x, MUSEUM.z);
-      const caught = creatureManager.collection.slice(0, 12);
-      caught.forEach((entry, i) => {
-        const sp = creatureManager.species.find((s) => s.id === entry.id);
-        if (!sp) return;
-        const st = buildCreatureMesh(sp);
-        st.scale.setScalar(0.7);
-        const col = i % 6, rowz = i < 6 ? 4 : -4;
-        st.position.set(MUSEUM.x + (-6 + col * 2.4 | 0) + 0.5, by + 1, MUSEUM.z + rowz + 0.5);
-        st.rotation.y = rowz > 0 ? Math.PI : 0;
-        statueGroup.add(st);
-      });
-      scene.add(statueGroup);
-      if (caught.length) toast(`🏛️ Le musée expose ${caught.length} de tes créatures !`, 0x9fd8e8);
-    } else if (d > 45 && statueGroup) {
-      scene.remove(statueGroup);
-      statueGroup = null;
     }
   }
 
@@ -1539,8 +902,7 @@ export function initFun(ctx) {
         mathPop.style.display = 'none';
         if (v === f.ans) {
           records.mathWins++; saveRecords();
-          bagAdd(QUEST_ITEMS[Math.floor(Math.random() * QUEST_ITEMS.length)]);
-          toast('🧮 Exact ! +1 objet surprise dans ton sac !', 0x6ee06e);
+          toast('🧮 Exact ! Bravo !', 0x6ee06e);
           emojiBurst(['🧮', '✅'], 10);
         } else {
           toast(`🥒 Presque ! C'était ${f.ans}.`, 0xcccccc);
@@ -1624,18 +986,33 @@ export function initFun(ctx) {
     }
   }
 
-  // ---- riding & pet update --------------------------------------------------
+  // ---- riding ----------------------------------------------------------------
+  // L'ALLURE D'UNE MONTURE (v260) : une voiture roule à l'allure de la CLASSE
+  // de son modèle (`allureDe`, vehicules.js — citadine, berline, SUV, GT,
+  // sportive, hypercar) ; toute autre bête garde l'allure de sa fiche.
+  function allureMonture(a) {
+    const flotte = a.mesh && a.mesh.userData ? a.mesh.userData.flotte : null;
+    if (a.def.key === 'voiture' && flotte) return allureDe(flotte, a.def.allure || 3.4);
+    return a.def.allure || 2;
+  }
   function updateRide(dt) {
-    if (juiceTimer > 0) {
-      juiceTimer -= dt;
-      if (juiceTimer <= 0 && !riding) { player.boost = undefined; toast('🧃 Le jus de baies ne fait plus effet.', 0xcccccc); }
-    }
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
-      riding = null; player.boost = undefined; player.pilote = null;
-      player.avionEnVol = false; return;
+      // La monture a disparu sous l'enfant : on descend POUR DE BON, avec tout
+      // ce que descendre rend — la marche, le vol, et la carrure de piéton.
+      // Sans cela il gardait à pied la boîte d'une voiture (v245).
+      const quitte = riding;
+      riding = null; quitte.montee = false;
+      player.boost = undefined; player.pilote = null;
+      player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
+      player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
+      player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;
+      player.interdireVol(false);
+      if (player.prendreGabarit) player.prendreGabarit(0);
+      moteurCoupe(); radioCoupe();
+      return;
     }
-    player.boost = riding.def.allure || 2.0;
+    player.boost = allureMonture(riding);
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
     // remplace alors la marche par la physique de vol — poussée, roulis,
     // assiette — et l'avion reste collé au joueur comme toute monture. C'est
@@ -1666,8 +1043,72 @@ export function initFun(ctx) {
     if (player.pilote) {
       a.mesh.rotation.order = 'YXZ';
       a.mesh.rotation.z = player.roulisAvion || 0;
-    } else if (a.mesh.rotation.z) {
+      // L'ASSIETTE (v261) : le nez qui se lève à la rotation, qui pique un
+      // peu en finale, qui suit le manche en vol. Rotation autour de l'axe x
+      // du modèle, APRÈS le roulis et AVANT le cap (l'ordre YXZ) — un angle
+      // positif lève le nez, qui regarde en −z ; le signe est mesuré par un
+      // témoin sur la position rendue du nez, pas déduit.
+      const assiette = player.assietteAvion || 0;
+      a.mesh.rotation.x = assiette;
+      // ET L'APPAREIL PIVOTE SUR SON TRAIN PRINCIPAL, pas sur son origine :
+      // l'origine est au sol sous le milieu du fuselage, et un nez qui se
+      // lèverait autour d'elle enfoncerait la queue dans la piste. On
+      // déplace le maillage pour que les roues arrière restent où elles sont.
+      const zg = a.mesh.userData.trainPrincipal || 0;
+      if (assiette && zg) {
+        const dy = zg * Math.sin(assiette), dz = zg * (1 - Math.cos(assiette));
+        const ry = a.mesh.rotation.y;
+        a.mesh.position.x += Math.sin(ry) * dz;
+        a.mesh.position.z += Math.cos(ry) * dz;
+        a.mesh.position.y += dy;
+      }
+      // LE TRAIN rentre et sort : chaque jambe se replie vers la queue
+      // autour de son pivot sur le ventre, et disparaît une fois rentrée.
+      const train = a.mesh.userData.train;
+      if (train) {
+        const sorti = player.trainSorti === undefined ? 1 : player.trainSorti;
+        for (const t of train) {
+          t.rotation.x = -(Math.PI / 2) * (1 - sorti);
+          t.visible = sorti > 0.03;
+        }
+      }
+      // LES FLAMMES DES RÉACTEURS (v264) suivent la MANETTE : ce que
+      // l'enfant demande, pas ce que l'appareil fait. Manette non touchée,
+      // c'est le trajet assisté qui la tient (✈️ : pleins gaz au décollage,
+      // l'approche en finale, ralenti au freinage), sinon la vitesse
+      // rapportée à la pointe. À l'arrêt, moteurs coupés, rien ne sort. La
+      // longueur va d'un rayon et demi à dix rayons de tuyère, et vacille.
+      // LA POUSSÉE SE CALCULE UNE FOIS, et les flammes comme le bruit la
+      // lisent (v268). Deux formules qui décrivent la même manette finiraient
+      // par diverger — c'est la discipline de `postesAvion` et du plan du
+      // tarmac, appliquée au régime des réacteurs.
+      const v = player.vitesseAvion || 0, p = player.pilote, max = p.max || 1, etat = player.avionEtat;
+      const assistee = etat === 'decollage' ? 1
+        : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
+        : etat === 'freinage' ? 0 : Math.min(1, v / max);
+      const poussee = player.gaz != null ? player.gaz : assistee;
+      moteurRegime(poussee);
+      const tuyeres = a.mesh.userData.tuyeres;
+      if (tuyeres && tuyeres.length) {
+        const allumee = poussee > 0.02 || v > 0.5;
+        const vacille = 0.92 + 0.08 * Math.sin(a.animTime * 41);
+        for (const f of tuyeres) {
+          f.visible = allumee;
+          f.scale.z = allumee ? Math.max(0.05, (1.5 + 8.5 * poussee) * f.userData.rayon * vacille) : 0.001;
+        }
+      }
+    } else if (a.mesh.rotation.z || a.mesh.rotation.x) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
+      a.mesh.rotation.x = 0;
+      for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
+    }
+    // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
+    // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient
+    // de `player.js`, là où il se calcule — la classe du modèle le fixe
+    // (v260) et le recopier ici le rendrait faux à la première qu'on ajoute.
+    if (!player.pilote && a.def.moteur) {
+      const plafond = player.vitesseVoitureMax || 1;
+      moteurRegime(Math.abs(player.vitesseVoiture || 0) / plafond);
     }
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
@@ -1683,7 +1124,35 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      const c = a.def.poursuite, cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+      // ET LA CAMÉRA A SON PROPRE CAP, EN RETARD SUR CELUI DE LA VOITURE (v278).
+      //
+      // Max : « la vue de la voiture, je la trouve pas très cool. Je pense
+      // qu'il faudrait la zoom out un petit peu et faire comme dans GTA, quand
+      // la voiture tourne, on voit vraiment la voiture qui tourne, on voit le
+      // flanc de la voiture sur le côté. »
+      //
+      // La cause est d'une ligne : le recul se calculait sur `player.yaw`, LU
+      // DANS LA MÊME IMAGE. La caméra pivotait donc exactement avec le
+      // véhicule, à angle constant derrière lui — on ne voyait jamais que son
+      // coffre, quel que soit le virage. Elle suit désormais avec un retard :
+      // en virage, la voiture glisse sur le côté du cadre et montre son flanc ;
+      // en ligne droite, le retard se résorbe et la vue redevient celle d'avant.
+      //
+      // C'EST UNE ANIMATION, DONC ELLE SUIT LE TEMPS DU JEU (`dt`, v226) : si
+      // elle comptait en temps réel, un ralentissement ferait tourner la caméra
+      // plus vite que le monde et l'image se déchirerait. Ce qui décide du
+      // rendu, c'est la RÉACTIVITÉ — combien de fois par seconde de jeu le
+      // retard se réduit de moitié — et elle se mesure (`?camlag=`).
+      //
+      // Au premier tour de boucle il n'y a pas de retard à avoir : le cap part
+      // sur celui du véhicule, sinon la caméra balaie tout l'horizon en montant
+      // dans la voiture.
+      if (a.camYaw == null) a.camYaw = player.yaw;
+      let ecart = player.yaw - a.camYaw;
+      while (ecart > Math.PI) ecart -= Math.PI * 2;
+      while (ecart < -Math.PI) ecart += Math.PI * 2;
+      a.camYaw += ecart * Math.min(1, dt * REACTIVITE_CAM);
+      const c = a.def.poursuite, cy = Math.cos(a.camYaw), sy = Math.sin(a.camYaw);
       // La ligne de caméra part du TOIT du véhicule et monte vers l'arrière :
       // échantillonnée trop bas, une simple bordure de trottoir la faisait
       // plonger dans l'aileron. Et jamais plus près que la carrosserie
@@ -1706,15 +1175,6 @@ export function initFun(ctx) {
       );
     } else if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
     else player.camera.position.y += a.def.assise || a.def.height * 0.6;
-  }
-
-  function updatePet(dt) {
-    if (!petMesh) return;
-    petBob += dt;
-    const behind = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)).multiplyScalar(1.6);
-    const target = new THREE.Vector3(player.pos.x + behind.x + 0.7, player.pos.y + 0.15 + Math.sin(petBob * 3) * 0.12, player.pos.z + behind.z);
-    petMesh.position.lerp(target, Math.min(1, dt * 3));
-    petMesh.rotation.y = player.yaw;
   }
 
   // ---- targeted-animal buttons ---------------------------------------------
@@ -1774,11 +1234,12 @@ export function initFun(ctx) {
     // montable la plus proche devant soi, même de biais. C'est tout l'écart
     // entre un bouton qu'on découvre et un bouton qu'on ne voit jamais.
     const m = isRunning() && !bord ? animalManager.monture() : null;
+    const ami = !riding && !bord && !passager && !m ? vehiculeAmiProche() : null;
 
     const feedB = document.getElementById('feed-btn');
     const rideB = document.getElementById('ride-btn');
 
-    const montrer = nourrissable || m || v || riding || bord;
+    const montrer = nourrissable || m || v || riding || bord || ami || passager;
     targetRow.style.display = montrer ? 'flex' : 'none';
     if (!montrer) return;
 
@@ -1787,10 +1248,11 @@ export function initFun(ctx) {
     // le bouton qui dit à l'enfant ce qui va se passer, et piloter n'est pas
     // se faire porter. La règle vit dans la fiche (`pilote`), comme le reste.
     const verbe = (d) => (d && d.pilote ? 'Piloter' : 'Monter');
-    rideB.textContent = riding
-      ? (riding.def.pilote ? '⬇️ Se poser' : '⬇️ Descendre')
-      : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
-    rideB.style.display = riding || m ? 'block' : 'none';
+    rideB.textContent = passager ? '⬇️ Descendre'
+      : riding ? '⬇️ Descendre'
+        : ami ? `🚗 Monter avec ${ami.nom}`
+          : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
+    rideB.style.display = riding || m || ami || passager ? 'block' : 'none';
     // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
     // deux se contrediraient quatre fois par seconde.
     dernierBord = '';
@@ -1801,14 +1263,12 @@ export function initFun(ctx) {
   let lastCtxKey = null;
 
   function update(dt) {
-    updateFireworks(dt);
     updateEmotes(dt);
-    suivreChantier(dt);
     if (isRunning()) veillerLesGarages(dt);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
-      for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+      for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'none';
       emoteToggle.style.display = 'none';
       emoteRow.style.display = 'none';
       targetRow.style.display = 'none';
@@ -1821,18 +1281,17 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     updateBord();
-    updatePet(dt);
+    updatePassager();
     updateTargetButtons(dt);
     updateTreasure(dt);
     updatePark(dt);
-    updateMuseum();
     mathTimer -= dt;
     if (mathTimer <= 0) {
       mathTimer = 200 + Math.random() * 120;
       if (Math.random() < 0.55) showMathPop();
     }
     // buttons only make sense in-game
-    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'flex';
+    for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'flex';
     const net = getNet();
     const amisLa = net && net.active && net.playerCount() > 1;
     emoteToggle.style.display = amisLa ? 'flex' : 'none';
@@ -1841,33 +1300,33 @@ export function initFun(ctx) {
   }
 
   function onLeave() {
-    for (const b of [atelierBtn, fwBtn, photoBtn]) b.style.display = 'none';
+    for (const b of [souvenirsBtn, photoBtn]) b.style.display = 'none';
     emoteToggle.style.display = 'none';
     emotesDepliees = false;
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';
-    recordsPanel.style.display = 'none';
     if (riding) { riding = null; player.boost = undefined; }
+    moteurCoupe(); radioCoupe();
     debarquer(true);
   }
 
   function attachNet(net) {
-    net.onDuel = onDuelMsg;
     net.onEmote = (peerId, k) => showRemoteEmote(peerId, k);
-    net.onSign = (s) => addSign(s); // save locally, never re-upload
-    // Le chantier voyage comme les panneaux : la pose s'échange, l'avancement
-    // se dérive du monde. À l'arrivée dans un monde, celui de l'hôte fait foi.
-    net.onChantier = (c) => adopterChantier(c, { annonce: !!c });
-    net.chantierActuel = () => chantier;
-    net.onChest = (items) => chestChanged(items || {});
+    net.onSign = (s) => addSign(s); // un panneau reçu s'affiche et se garde, jamais ne se renvoie
   }
 
   return {
     update,
     onLeave,
     attachNet,
-    ouvrirOnglet,
+    // La monture que l'enfant est en train de conduire (ou null) : main.js
+    // y assied son avatar quand la fiche déclare un `siege` (v249).
+    montureConduite: () => riding,
+    // Chez qui l'enfant est passager (ou null) : la position réseau
+    // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
+    passagerDe: () => passager,
+    monterAvec, vehiculeAmiProche,
     // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
     // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
     // lot réseau — reste ici : c'est fun qui connaît le monde et le réseau.
@@ -1876,21 +1335,7 @@ export function initFun(ctx) {
     decoratePlayersPanel,
     onBlockPlaced() {
       records.blocks++;
-      if (quest && quest.kind === 'build' && !quest.done) { quest.progress++; saveJson(QUEST_KEY, quest); }
       saveRecords();
-    },
-    onCatch(sp) {
-      if (quest && quest.kind === 'catch' && !quest.done && sp.type === quest.type) {
-        quest.progress++;
-        saveJson(QUEST_KEY, quest);
-        toast('📜 Créature de la quête attrapée ! Va valider dans 🛠️ → Quête !', 0x6ee06e);
-      }
-      if (petMesh) { // the companion celebrates with you
-        petMesh.rotation.y += Math.PI * 2;
-      }
-    },
-    onHarvest(def) {
-      bagAdd(def.meat);
     },
   };
 }

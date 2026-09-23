@@ -396,6 +396,25 @@ export const MONTURES = [
   // véhicule. Le cockpit sculpté reste : on le voit à travers les vitres.
   // `assise` reste en secours : un fun.js ancien qui ignore `poursuite`
   // retombe dessus et l'enfant voit encore la route.
+  //
+  // LE RECUL PASSE DE 5,2 À 6,4 (v279), ET C'EST LA MOITIÉ DE LA DEMANDE DE MAX
+  // QUE LA v278 N'AVAIT PAS LIVRÉE : « il faudrait la zoom out un petit peu ET
+  // faire comme dans GTA, quand la voiture tourne, on voit le flanc de la
+  // voiture sur le côté. » La v278 a donné à la caméra son propre cap, en
+  // retard — le flanc —, et n'a pas touché à la distance.
+  //
+  // JUGÉ SUR CAPTURES, TROIS VALEURS DEPUIS LE MÊME POINT, sur le boulevard
+  // Voltaire, en ligne droite et en virage tenu : à 5,2 la carrosserie mange le
+  // bas du cadre et l'on ne voit guère que le coffre ; à 7,6 la voiture devient
+  // un objet lointain et l'on perd la sensation de conduire ; à 6,4 elle tient
+  // entière dans le cadre, la rue s'ouvre devant, et le flanc est net en virage.
+  // La hauteur suit la distance pour garder le même angle de vue
+  // (2,1 / 5,2 = 0,404 → 2,59).
+  //
+  // Et mon premier jeu de captures ne valait rien : il enchaînait les trois
+  // valeurs sans remettre la voiture en place, si bien que la deuxième a été
+  // prise à l'ARRÊT contre une façade. On ne compare pas trois reculs si l'on
+  // compare trois endroits.
   // `nourrissable: false` : une voiture ne se nourrit pas (Max l'a vu sur le
   // bouton). Comme `montable`, la règle vit dans la fiche, jamais dans fun.js.
   // `immobile` : garée, elle ne flâne pas et ne pivote pas (le vagabondage
@@ -403,7 +422,17 @@ export const MONTURES = [
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
-    assise: 1.0, poursuite: { recul: 5.2, hauteur: 2.1 }, nourrissable: false, immobile: true,
+    assise: 1.0, poursuite: { recul: 6.4, hauteur: 2.59 }, nourrissable: false, immobile: true,
+    // LE SIÈGE DU CONDUCTEUR (v249), dans le repère du véhicule (le nez est
+    // en −z, le volant du cockpit à x = −0,33) : c'est là que main.js assied
+    // l'avatar de l'enfant quand il conduit — Max : « qu'on voie le
+    // personnage conduire ». `y` est le dessus de l'assise, plus bas que le
+    // baquet sculpté pour que la tête reste sous le toit des modèles.
+    siege: { x: -0.33, y: 0.52, z: 0.22 },
+    // LES SIÈGES DES PASSAGERS (v253) : le premier conduit, les autres
+    // montent ici — à droite devant, puis la banquette. Max : « permets que
+    // plusieurs joueurs rentrent dans un moyen de transport ».
+    sieges: [{ x: 0.33, y: 0.52, z: 0.22 }, { x: -0.33, y: 0.52, z: -0.75 }, { x: 0.33, y: 0.52, z: -0.75 }],
     // `vole: false` : la fiche interdit le vol, player.js l'applique. Voir la
     // note de `volInterdit` — la règle vit ici, jamais dans fun.js.
     vole: false, garable: true,
@@ -412,7 +441,13 @@ export const MONTURES = [
     // et une voiture qui l'empruntait traversait les murs (Max, capture :
     // « cars crashing into walls »). Même discipline que `vole` et
     // `montable` : la règle vit dans la fiche, jamais dans fun.js.
-    gabarit: 2.2 },
+    gabarit: 2.2,
+    // LE SON (v268) : `moteur` nomme la recette de bruit de fond, `radio`
+    // dit qu'une station s'allume à la montée — Max : « quand on rentre
+    // dans une voiture, on devrait avoir un bruit de radio ». Un cheval n'a
+    // ni l'un ni l'autre, et cela s'écrit en ne l'écrivant pas. Même
+    // discipline que `montable`, `vole`, `gabarit` et `habitacle`.
+    moteur: 'voiture', radio: true },
 
   // --- LES AVIONS : le mode `pilote`, le troisième --------------------------
   //
@@ -436,6 +471,15 @@ export const MONTURES = [
   //   poussee     ce que la manette des gaz ajoute par seconde
   //   decrochage  en dessous, l'avion ne tient plus l'air et descend
   //   virage      le taux de virage à plein roulis, en radians par seconde
+  //   rotation    la vitesse à laquelle le nez se lève sur la piste (v261)
+  //   approche    la vitesse tenue en finale, jusqu'au toucher des roues
+  //   roulage     l'allure au sol, au joystick
+  //   frein       ce que les freins retirent par seconde, roues au sol
+  //
+  // Le roulement avant la rotation vaut rotation² / (2 × poussée) : 49 blocs
+  // pour l'avion de ligne, 57 pour le Concorde, 13 pour le chasseur — sur
+  // des pistes de 140 blocs à Roissy. Le freinage, approche² / (2 × frein) :
+  // 34, 43 et 21 blocs. C'est ce qu'un témoin de `monte.js` mesure.
   //
   // ET LA CARTE DOIT POUVOIR SUIVRE — LE RAPPORT RÉEL A CÉDÉ (v229).
   //
@@ -451,16 +495,120 @@ export const MONTURES = [
   //
   //     95 b/s → 132-137 blocs      110 → 125-138      170 → 51-86      264 → 32-51
   //
-  // Le plafond est donc à cent dix. Garder les 1 à 2,4 du réel (900 km/h
+  // Le plafond était donc à cent dix. Garder les 1 à 2,4 du réel (900 km/h
   // contre 2 180) voulait dire un Concorde qui vole devant le monde ; Max a
   // tranché pour l'autre branche : TOUT LE MONDE AUTOUR DE CENT. 95 pour
   // l'avion de ligne — juste au-dessus des 88 du vol libre, sinon prendre
   // l'avion ne sert à rien — et 110 pour les deux rapides.
   //
-  // Ce qu'on perd est réel et se déclare : le Concorde n'est plus que 1,16
-  // fois plus rapide. Le seul moyen de reprendre le rapport est de MAILLER
-  // PLUS VITE — 45 % du coût est la génération du relief — pas de réécrire ce
-  // commentaire. C'est une dette, elle est dans `TASKS.md`.
+  // ET LA DETTE SE REMBOURSE COMME ELLE L'AVAIT ANNONCÉ : EN MAILLANT PLUS
+  // VITE (v265). Max : « Jet should fly faster ». La v229 écrivait « le seul
+  // moyen de reprendre le rapport est de MAILLER PLUS VITE, pas de réécrire
+  // ce commentaire » — c'est exactement ce qui vient d'arriver. Le mailleur
+  // est sorti du fil principal en v251, et la v265 a trouvé qu'on ne lui
+  // confiait que HUIT morceaux d'avance, réapprovisionnés une fois par
+  // image : il passait l'essentiel de son temps à sec. La file à SEIZE
+  // (`EN_ATTENTE_MAX`, main.js) doublait le débit de pointe sans coûter une
+  // image — c'est ce qu'on croyait alors.
+  //
+  // ET C'ÉTAIT FAUX : LA FILE EST REVENUE À HUIT EN v269, parce que seize
+  // rendait le jeu impraticable sur l'iPad (9,1 images par seconde à Paris
+  // contre 18,3, et 3,1 % du temps en images de plus de trois cents
+  // millisecondes). Le plateau de vitesse ci-dessous a donc été mesuré sur
+  // une file qui n'existe plus, et il a été REMESURÉ le jour même — le
+  // tableau qui fait foi est celui du bas, « ET LE PLATEAU SE REMESURE QUAND
+  // LA FILE CHANGE ». Ce qui suit reste écrit parce qu'il dit COMMENT on
+  // mesure, et parce qu'un plateau mesuré sur une file donnée ne vaut que
+  // pour elle : **une vitesse qu'on ne remesure pas quand le mailleur change
+  // est une vitesse fausse qui ne rougit nulle part** — celle-ci a rougi,
+  // par le témoin du trou de `monte.js`, et c'est ce qui l'a rattrapée.
+  //
+  // ON REMESURE DONC LE PLATEAU AVEC LE MÊME CRITÈRE, jamais on ne le
+  // déduit du débit : le TROU devant soi, médiane sur six relevés, à rr=12,
+  // en campagne et sur un couloir de villes.
+  //
+  //     file de huit (l'ancien code)       110 →  91 ·  82
+  //                                        160 →  51 ·  58
+  //     file de seize                      110 → 165 · 165
+  //                                        160 → 125 · 122
+  //                                        190 → 107 · 107
+  //                                        240 →  72 ·  72
+  //
+  // Le plateau est à CENT SOIXANTE, et c'est la barre de la v229 elle-même
+  // qui le dit : elle acceptait 125-138 blocs de trou et rejetait 51-86. À
+  // 160 on rend 122-125 — la qualité qu'elle avait retenue — quand 240 rend
+  // 72, dans sa bande de refus. Et l'on est plus au large qu'avant : à 160
+  // le trou vaut 122, quand l'ancien code en rendait 82 à 110, et 51 à 160.
+  //
+  // CE QUE MON PREMIER JET AVAIT MANQUÉ, et qui vaut pour la prochaine fois :
+  // une file de quarante-huit rend bien 192 de trou à 190 blocs par seconde,
+  // et le portail complet l'a REFUSÉ — sept suites rouges de cadence. On ne
+  // règle pas une vitesse sur un seul chiffre quand un second chiffre paie
+  // la note.
+  //
+  // MA PREMIÈRE SONDE NE MESURAIT RIEN, et c'est à savoir avant de
+  // remesurer : elle posait `vitesseAvion = v` et l'avion redescendait à
+  // `p.max` en une seconde (player.js, état `vol` : `cible = p.max`).
+  // Parcouru 495 blocs à 110 et 506 à 300 — le même vol quatre fois. La
+  // vitesse d'essai se met dans la FICHE, jamais dans la variable du moment.
+  //
+  // ET LE PLATEAU SE REMESURE QUAND LA FILE CHANGE (v269). La file du
+  // mailleur est revenue de seize à huit — seize rendait le jeu impraticable
+  // sur l'iPad — donc le monde ne maille plus au même débit, donc les
+  // 160 blocs par seconde de la v265 ne tiennent plus. Remesuré au MÊME
+  // critère (trou devant soi, médiane de six relevés, rr=12, couloir
+  // vierge), file de huit :
+  //
+  //     v   | trou | barre v/2 |
+  //     95  | 115  |    48     |
+  //     110 | 112  |    55     |
+  //     120 |  93  |    60     |   ← retenu pour les deux rapides
+  //     130 |  80  |    65     |
+  //     145 |  80  |    73     |
+  //     160 |  64  |    80     |   ← la règle tombe
+  //
+  // LE GENOU EST ENTRE 120 ET 130, ET C'EST LA CHARGE QUI TRANCHE. Ces
+  // chiffres sont mesurés SEULS ; le portail complet, lui, a rendu 80 à 120
+  // et 51-58 à 160 — quinze pour cent de moins. À 130 la marge tomberait à
+  // trois blocs et le témoin battrait d'une exécution à l'autre ; à 120 elle
+  // reste de vingt. Une vitesse se choisit sur la mesure SOUS CHARGE, pas
+  // sur la meilleure qu'on vient de voir — c'est la règle des bornes de
+  // garde, appliquée à une constante de jeu.
+  //
+  // Ce qu'on garde donc : l'avion de ligne à 95 (le chiffre que la v229
+  // avait mesuré pour lui, et qui reste au-dessus du vol libre de l'enfant,
+  // 88 — sinon prendre l'avion ne sert à rien), les deux rapides à 120,
+  // c'est-à-dire AU-DESSUS des 110 d'avant la demande de Max. Le rapport est
+  // de 1,26, meilleur que les 1,16 de la v229. Le réel est à 2,4 : il reste
+  // hors de portée, et c'est une dette déclarée dont le seul remède est de
+  // mailler plus vite. Le chasseur et le Concorde gardent la MÊME pointe :
+  // ce qui les sépare est l'agilité, comme depuis la v229.
+  //
+  // ET LE COMPTEUR NE BOUGE PAS D'UN KILOMÈTRE-HEURE : `kmh` est intact, et
+  // l'affichage en prend la fraction de `max` atteinte (main.js). Pleins gaz,
+  // le chasseur affiche toujours Mach 1,8. C'est exactement ce que la v267 a
+  // construit pour ce cas : ce qu'on affiche n'est pas ce qu'on parcourt.
+  //
+  // ET CE QU'ON AFFICHE N'EST PAS CE QU'ON PARCOURT (v267). Max : « peut-être
+  // fake la vraie vitesse, mais quand ton avion de chasse vole il devrait
+  // voler à une vitesse supersonique ; idem, un Concorde ça ne vole pas à
+  // 500 km/h ». Il a raison sur les deux bouts, et il a lui-même donné la
+  // sortie : le compteur faisait `blocs par seconde × 3,6`, c'est-à-dire un
+  // bloc pour un mètre, et rendait 576 km/h pour un Concorde.
+  //
+  // Un bloc ne vaut UN MÈTRE nulle part dans ce jeu. Au sol il en vaut trente
+  // à quarante dans une ville ; sur la carte du monde, 187 (`kmParBloc`). Le
+  // compteur mentait donc DÉJÀ, et dans le sens qui rapetisse tout. `kmh` est
+  // la vraie vitesse de croisière de l'appareil, et l'affichage la rapporte à
+  // la fraction de `max` réellement atteinte : la manette à mi-course montre
+  // la moitié. Ce qui se DÉPLACE reste borné par ce que le monde sait mailler
+  // — c'est `max`, mesuré, et ce paragraphe-là ne bouge pas.
+  //
+  // Les chiffres sont ceux des vrais appareils, pas des goûts : un long
+  // courrier croise à Mach 0,85 (900 km/h), le Concorde volait à Mach 2,04
+  // (2 180), un chasseur moderne tient Mach 1,8 (2 200). Le Concorde et le
+  // chasseur se retrouvent donc à égalité DANS LE RÉEL AUSSI — ce que la
+  // v229 avait décidé pour de tout autres raisons.
   //
   // `gabarit` n'est PAS l'envergure. Une boîte de collision ne tourne pas :
   // à quinze blocs de large, un avion resterait coincé entre deux hangars et
@@ -472,7 +620,9 @@ export const MONTURES = [
     height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
-    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55 } },
+    pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
+      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 },
+    moteur: 'avion' },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
     height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
@@ -481,7 +631,9 @@ export const MONTURES = [
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
-    pilote: { max: 110, poussee: 34, decrochage: 55, virage: 0.40 } },
+    pilote: { max: 120, poussee: 34, decrochage: 55, virage: 0.40,
+      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 },
+    moteur: 'avion' },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
     height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
@@ -489,5 +641,7 @@ export const MONTURES = [
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
-    pilote: { max: 110, poussee: 90, decrochage: 40, virage: 1.30 } },
+    pilote: { max: 120, poussee: 90, decrochage: 40, virage: 1.30,
+      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 },
+    moteur: 'avion' },
 ];

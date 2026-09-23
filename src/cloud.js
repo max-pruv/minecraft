@@ -97,7 +97,9 @@ export class CloudSave {
     return (await res.json()).filter((m) => !String(m.name).startsWith('__')).slice(0, limit).reverse();
   }
 
-  // signs planted in the world persist as special rows of the chat table
+  // signs planted in the world persist as special rows of the chat table.
+  // On ne plante plus de panneau depuis la v255 : on ne fait que relire ceux
+  // qui existent, pour qu'ils restent là où un enfant les a écrits.
   async signHistory() {
     if (!this.configured || !this.code) return [];
     const res = await fetch(
@@ -111,8 +113,6 @@ export class CloudSave {
     }
     return signs;
   }
-
-  signSend(sign) { return this.chatSend('__sign', JSON.stringify(sign)); }
 
   // ---- player preferences: language, grade & character follow the name -----
   // Keyed by the child's first name, so their settings travel between

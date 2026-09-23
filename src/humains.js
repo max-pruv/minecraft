@@ -6,49 +6,95 @@ import { GLTFLoader } from "../vendor/GLTFLoader.js";
 import { clone } from "../vendor/SkeletonUtils.js";
 import { partager, partagerTout } from "./liberer.js";
 
+// LES MODÈLES ARRIVENT APRÈS L'ACCUEIL, JAMAIS AVANT (v245). Ce module se
+// chargeait par un `await` de premier niveau sur les neuf fichiers — 8,2 Mo,
+// quatre-vingts pour cent de tout ce que le jeu télécharge — et comme
+// `main.js` l'importe, RIEN de l'accueil ne s'attachait avant qu'ils ne soient
+// là : le bouton « Jouer » ne répondait pas. Max, sur l'iPad de quatre ans :
+// « il faut attendre quasiment vingt secondes le temps de pouvoir cliquer ».
+// Le chargement se lance désormais depuis `main.js` à la première image,
+// les neuf fichiers se demandent au réseau ENSEMBLE mais s'analysent UN PAR
+// UN, en rendant la main entre deux — l'analyse d'un corps articulé est une
+// tâche longue, et l'accueil doit répondre pendant qu'elle avance. Ce qui
+// est bâti avant leur arrivée reçoit son corps sur place, sans changer
+// d'objet (voir `quandLesHumainsArrivent` et personnages.js).
+//
+// L'ordre est celui du besoin : les deux chemises portent la tête de tous les
+// costumes du château et le corps par défaut des passants ; les enfants sont
+// l'avatar du joueur.
 const noms = [
+  "homme-chemise",
+  "femme-chemise",
+  "garcon",
+  "fille",
   "homme-denim",
   "homme-costume",
   "femme-tailleur",
-  "homme-chemise",
   "homme-veste",
-  "femme-chemise",
   "femme-manteau",
-  "garcon",
-  "fille",
 ];
 const prototypes = new Map();
-if (typeof document !== "undefined") {
+let chargement = null;
+let charges = false;
+const abonnes = [];
+const souffler = () => new Promise((r) => setTimeout(r, 0));
+
+function preparer(scene) {
+  scene.traverse((o) => {
+    if (!o.isMesh) return;
+    // La boîte statique du FBX ne borne pas une jambe animée. La sélection
+    // en distance est assurée par presence.js, sans coupure de membre.
+    o.frustumCulled = false;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      for (const k of ["map", "normalMap", "alphaMap"]) if (m[k]) partager(m[k]);
+    }
+  });
+  return partagerTout(scene);
+}
+
+export function chargerHumains() {
+  if (chargement) return chargement;
+  if (typeof document === "undefined") {
+    charges = true;
+    return (chargement = Promise.resolve());
+  }
   const loader = new GLTFLoader();
-  await Promise.all(
-    noms.map(async (nom) => {
+  const base = new URL("../vendor/humains/", import.meta.url).href;
+  // le réseau travaille en parallèle, l'analyse se fait dans l'ordre
+  const tampons = noms.map((nom) =>
+    fetch(`${base}${nom}.glb`).then((r) =>
+      r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`)),
+    ),
+  );
+  chargement = (async () => {
+    for (let i = 0; i < noms.length; i++) {
       try {
-        const { scene } = await loader.loadAsync(
-          new URL(`../vendor/humains/${nom}.glb`, import.meta.url).href,
-        );
-        scene.traverse((o) => {
-          if (!o.isMesh) return;
-          // La boîte statique du FBX ne borne pas une jambe animée. La sélection
-          // en distance est assurée par presence.js, sans coupure de membre.
-          o.frustumCulled = false;
-          o.castShadow = true;
-          o.receiveShadow = true;
-          for (const m of Array.isArray(o.material)
-            ? o.material
-            : [o.material]) {
-            for (const k of ["map", "normalMap", "alphaMap"])
-              if (m[k]) partager(m[k]);
-          }
-        });
-        prototypes.set(nom, partagerTout(scene));
+        const { scene } = await loader.parseAsync(await tampons[i], base);
+        prototypes.set(noms[i], preparer(scene));
       } catch (err) {
         console.warn(
-          `Personnage ${nom} indisponible : modèle de secours.`,
+          `Personnage ${noms[i]} indisponible : modèle de secours.`,
           err.message,
         );
       }
-    }),
-  );
+      await souffler();
+    }
+    charges = true;
+    for (const cb of abonnes.splice(0)) {
+      try { cb(); } catch (err) { console.warn("mise à niveau des corps :", err.message); }
+    }
+  })();
+  return chargement;
+}
+export const humainsCharges = () => charges;
+// Combien de corps sont déjà prêts, pour le loader d'installation (v257).
+export const humainsPrets = () => ({ prets: prototypes.size, total: noms.length });
+// Ce qui doit se faire quand les modèles sont là — tout de suite s'ils le sont.
+export function quandLesHumainsArrivent(cb) {
+  if (charges) cb();
+  else abonnes.push(cb);
 }
 
 const q = new THREE.Quaternion(),
@@ -177,9 +223,26 @@ export function construireCorpsRealiste(p) {
   return g;
 }
 
-export function animerHumain(g, temps, vitesse = 0) {
+// `pose` (v249) : une posture tenue à la place de la marche — l'enfant assis
+// au volant : cuisses en avant, genoux pliés, bras tendus vers le volant. Les
+// angles sont ceux des pivots de l'atelier (le même signe que `swing`).
+export function animerHumain(g, temps, vitesse = 0, pose = null) {
   const { rig, arms, legs, corps } = g.userData;
   if (!rig) return;
+  if (pose) {
+    for (const cote of ["L", "R"]) {
+      rotation(rig, cote + "_Thigh", pose.cuisses);
+      rotation(rig, cote + "_Calf", pose.genoux);
+      rotation(rig, cote + "_Foot", 0);
+      rotation(rig, cote + "_UpperArm", pose.bras);
+      rotation(rig, cote + "_Forearm", pose.coudes);
+    }
+    legs[0].rotation.x = legs[1].rotation.x = pose.cuisses;
+    rotation(rig, "Spine1", 0);
+    rotation(rig, "Head", Math.sin(temps * 0.55) * 0.018);
+    corps.position.y = 0;
+    return;
+  }
   // Une marche à genoux et coudes fléchis, pas quatre barres qui cisaillent.
   const marche = Math.min(1, vitesse / 1.6),
     phase = temps * 6.2;

@@ -92,10 +92,157 @@ function verifier(nom, ok, detail = '') {
       && ['Alice', 'Nina'].every((n) => surLaCarte.includes(n)),
       JSON.stringify(surLaCarte));
 
+    // UN ENFANT QUI CHARGE SON MONDE N'EST PAS UN ENFANT PARTI (v266).
+    //
+    // C'est la cause, enfin mesurée, du rouge qui allait et venait sur les
+    // DEUX arbres depuis la v259 : « à trois, chacun voit les deux autres »
+    // rendait [["Alice"],["Marlon"],["Alice","Marlon"]] une fois sur deux.
+    // Relevé à la sonde (`scratchpad/v266/sonde-famine.cjs`) : le fil
+    // principal du troisième invité est bloqué VINGT-NEUF SECONDES dans une
+    // SEULE tâche pendant que son monde se charge — pas médian de son
+    // minuteur de 100 ms : 100 ms, pire tour : 29 128 ms. Il n'émet rien,
+    // il ne reçoit rien, et l'hôte le retire à 22 s de silence alors que son
+    // lien est `open` et son canal `open`.
+    //
+    // ON PROVOQUE LE BLOCAGE AU LIEU DE L'ATTENDRE. Attendre qu'une page
+    // rame, c'est le pile ou face qui a coûté six versions ; une boucle
+    // synchrone de vingt-cinq secondes rend la MÊME situation à tous les
+    // coups, et elle est plus courte que ce que la sonde a mesuré. Le
+    // minuteur la lance et rend la main tout de suite : `evaluate` ne peut
+    // pas attendre une page qu'il vient de geler.
+    //
+    // Ce que le témoin exige est ce qu'un enfant voit : Nina reste là,
+    // pour l'hôte ET pour Alice, pendant tout le gel — et elle n'a jamais
+    // eu besoin de revenir.
+    const geler = (p, ms) => p.evaluate((ms) => {
+      setTimeout(() => { const t = Date.now(); while (Date.now() - t < ms) { /* le fil est pris */ } }, 0);
+    }, ms);
+    await geler(nina, 25000);
+    // On relève PENDANT le gel, après la fenêtre de vingt secondes qui
+    // décidait du retrait : c'est le seul instant où le défaut existe.
+    await dormir(24000);
+    const pendantLeGel = [await nomsVus(hote), await nomsVus(alice)];
+    verifier('un enfant dont la tablette charge son monde n\'est pas retiré de la partie',
+      JSON.stringify(pendantLeGel) === JSON.stringify([['Alice', 'Nina'], ['Marlon', 'Nina']]),
+      JSON.stringify(pendantLeGel));
+    // Et quand il rend la main, rien n'a à se reconstruire : il était là.
+    await jusqua(async () => JSON.stringify(
+      [await nomsVus(hote), await nomsVus(alice), await nomsVus(nina)]) === attendu, 30000);
+    const apresLeGel = [await nomsVus(hote), await nomsVus(alice), await nomsVus(nina)];
+    verifier('et il retrouve les deux autres sans avoir eu à revenir',
+      JSON.stringify(apresLeGel) === attendu, JSON.stringify(apresLeGel));
+
     // Un lien en cours d'ouverture n'est pas un joueur : il ne doit jamais
     // apparaître sous la forme d'un bonhomme nommé « … » à l'origine du monde.
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
+
+    // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
+    //
+    // Max : « en multijoueur, on ne voit pas si un user est dans une voiture,
+    // il est piéton alors qu'il est dans une voiture. Aussi permets que
+    // plusieurs joueurs rentrent dans un moyen de transport : le premier
+    // conduit, les autres restent passagers. » Marlon prend le volant d'une
+    // voiture posée devant lui ; chez Alice, l'avatar de Marlon doit être
+    // ASSIS dans une voiture dessinée (enfant de son maillage), pas debout.
+    // Puis Alice se place à côté, appuie sur « Monter avec Marlon », et quand
+    // Marlon roule trois secondes sans qu'elle touche à rien, elle suit.
+    // Sur l'ancien code, pas de voiture chez Alice, pas de bouton.
+    const idDe = (page, nom) => page.evaluate((nom) => {
+      for (const [id, rp] of window.__game.remotePlayers) if (rp.name === nom) return id;
+      return null;
+    }, nom);
+    const volant = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+      await dodo(1500);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const a = g.fun.montureConduite && g.fun.montureConduite();
+      return { auVolant: !!a, flotte: a && a.mesh && a.mesh.userData ? a.mesh.userData.flotte : null };
+    });
+    const marlonChezAlice = await idDe(alice, 'Marlon');
+    const dansSaVoiture = (id) => alice.evaluate((id) => {
+      const rp = window.__game.remotePlayers.get(id);
+      if (!rp) return { absent: true };
+      return { vehicule: !!rp.vehicule, cle: rp.vehicule ? rp.vehicule.cle : null,
+        assis: !!(rp.vehicule && rp.mesh.parent === rp.vehicule.mesh) };
+    }, id);
+    await jusqua(async () => (await dansSaVoiture(marlonChezAlice)).assis === true, 20000);
+    const vuParAlice = await dansSaVoiture(marlonChezAlice);
+    verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
+      volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
+
+    const chezHote = await hote.evaluate(() => ({ x: window.__game.player.pos.x, y: window.__game.player.pos.y, z: window.__game.player.pos.z }));
+    // Les bêtes ne voyagent pas par le réseau : chaque page a les siennes, et
+    // une bête montable à moins de huit blocs devant Alice PASSE AVANT la
+    // voiture de l'ami (c'est le choix de `fun.js`, et il est juste). Au
+    // portail de la v257, un cerf né près du point d'apparition a rendu
+    // « 🦌 Monter » à la place de « Monter avec Marlon » — un rouge de hasard,
+    // pas de code. On vide donc AUSSI les bêtes de la page d'Alice, comme on
+    // l'a fait chez l'hôte, avant de la poser à côté de la voiture.
+    await alice.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0);
+    }, chezHote);
+    const boutonPassager = () => alice.evaluate(() => {
+      const b = document.getElementById('ride-btn');
+      return { texte: b.textContent, visible: b.style.display !== 'none' };
+    });
+    await jusqua(async () => { const b = await boutonPassager(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
+    const bouton = await boutonPassager();
+    await alice.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(1000);
+    const passagere = await alice.evaluate(() => {
+      const g = window.__game; const p = g.fun.passagerDe ? g.fun.passagerDe() : null;
+      return p ? { de: p.de, s: p.s } : null;
+    });
+    const aliceAvant = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    // ON CONDUIT JUSQU'À AVOIR ROULÉ, PAS PENDANT TROIS SECONDES (v272).
+    // `main.js` borne `dt` à un vingtième : avec DEUX pages ouvertes le banc
+    // rend deux images par seconde, donc trois secondes de temps réel font un
+    // tiers de seconde de jeu — la voiture n'a pas fini d'accélérer. Mesuré au
+    // portail de la v272 : 0,58 bloc pour une barre à un, là où la sonde en
+    // mesure 4,4 sur une page seule, même code. C'est le piège de la v270, une
+    // troisième fois : un verdict qui compte des blocs pendant une durée FIXE
+    // mesure la cadence du banc. On attend le RÉSULTAT, borné, et le temps
+    // qu'il a pris entre dans le message.
+    const conduite = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const x0 = g.player.pos.x, z0 = g.player.pos.z;
+      g.player.keys.add('KeyW');
+      let ms = 0, parcouru = 0;
+      while (ms < 20000 && parcouru < 2.5) {
+        await dodo(250); ms += 250;
+        parcouru = Math.hypot(g.player.pos.x - x0, g.player.pos.z - z0);
+      }
+      g.player.keys.delete('KeyW');
+      return { ms, parcouru: +parcouru.toFixed(2) };
+    });
+    await dormir(800);
+    const aliceApres = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    const hoteApres = await hote.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    const suivi = +Math.hypot(aliceApres.x - aliceAvant.x, aliceApres.z - aliceAvant.z).toFixed(2);
+    const ecart = +Math.hypot(aliceApres.x - hoteApres.x, aliceApres.z - hoteApres.z).toFixed(2);
+    const roule = +Math.hypot(hoteApres.x - chezHote.x, hoteApres.z - chezHote.z).toFixed(2);
+    verifier('et l\'on monte en passager : la voiture de l\'ami nous emmène',
+      /Monter avec/.test(bouton.texte) && !!passagere && roule > 1 && suivi > 1 && ecart < 4,
+      JSON.stringify({ bouton: bouton.texte, passagere, roule, suivi, ecart, conduite }));
+    const aliceChezHote = await idDe(hote, 'Alice');
+    const assise = await hote.evaluate((id) => {
+      const g = window.__game; const rp = g.remotePlayers.get(id); const a = g.fun.montureConduite && g.fun.montureConduite();
+      return { passager: rp ? rp.passager : null, assise: !!(rp && a && rp.mesh.parent === a.mesh) };
+    }, aliceChezHote);
+    verifier('et le conducteur voit son passager assis dans sa voiture', assise.assise === true, JSON.stringify(assise));
+    // on redescend, on range : la suite continue à pied
+    await alice.evaluate(() => { const g = window.__game; if (g.fun.passagerDe && g.fun.passagerDe()) document.getElementById('ride-btn').click(); });
+    await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    await dormir(500);
 
     // --- un seul ciel pour tout le monde --------------------------------------
     //
@@ -182,10 +329,36 @@ function verifier(nom, ok, detail = '') {
 
     // L'ancien appareil relance sa propre reconnexion : il ne doit pas
     // reprendre la place de l'enfant qui vient de rentrer.
+    // UN ROUGE DE CE TÉMOIN NE SE DÉMONTE QU'AVEC LES RETRAITS DE L'HÔTE
+    // (v261) : qui a été retiré, quand, par quel chemin (battement, lien
+    // fermé, présentation d'un fantôme). Rouge seule sur v259 et v260 un
+    // soir, verte seule sur v258 le même soir, et deux sondes qui rejouent
+    // ce scénario seul — jusqu'au trio, au sommeil et au réveil d'Alice —
+    // vertes des deux côtés : la panne a besoin du contexte de la suite, et
+    // « hôte 1 · Alice 2 » tout seul ne dit pas lequel.
+    await hote.evaluate(() => {
+      const n = window.__game.net;
+      window.__drops = [];
+      const t0 = Date.now();
+      const trace = (id, quoi) => {
+        const c = n.conns.get(id);
+        window.__drops.push({ dt: Date.now() - t0, id: String(id).slice(-6), nom: c && c.name,
+          pret: !!(c && c.pret), seen: c && c.seen ? Date.now() - c.seen : null, quoi,
+          pile: new Error().stack.split('\n').slice(3, 6)
+            .map((l) => l.trim().replace(/^at /, '').replace(/https?:\/\/\S+\//, '')).join(' | ') });
+      };
+      const o = n.dropPeer.bind(n);
+      n.dropPeer = (id, conn) => { trace(id, conn ? 'drop(lien)' : 'drop'); return o(id, conn); };
+      const d = n.conns.delete.bind(n.conns);
+      n.conns.delete = (id) => { trace(id, 'delete'); return d(id); };
+    });
     await dormir(25000);
+    const reprise = { hote: (await vu(hote)).compteur, alice: (await vu(alice2)).compteur };
+    const retraits = reprise.hote === 2 ? '' : ` · retraits côté hôte : ${JSON.stringify(
+      await hote.evaluate(() => window.__drops.filter((r) => r.pret || r.quoi !== 'delete')))}`;
     verifier('la reprise tient dans la durée',
-      (await vu(hote)).compteur === 2 && (await vu(alice2)).compteur === 2,
-      `hôte ${(await vu(hote)).compteur} · Alice ${(await vu(alice2)).compteur}`);
+      reprise.hote === 2 && reprise.alice === 2,
+      `hôte ${reprise.hote} · Alice ${reprise.alice}${retraits}`);
 
     // ENDORMIE N'EST PAS ÉTEINTE, et c'est ce qui faussait la fin de la suite.
     //
@@ -463,6 +636,15 @@ function verifier(nom, ok, detail = '') {
     const revenant = await banc.joueur('Milo', AVEC_NUAGE);
     await revenant.evaluate((d) => localStorage.setItem('web-minecraft-device-id-v1', d),
       'fantomedemax');
+    // Recharger pendant que les neuf corps réalistes s'analysent coupe leurs
+    // textures, et le chargeur l'écrit en erreur de console (« Couldn't load
+    // texture blob: ») — la panne de `plafond.js` en v251, rejouée ici SEUL
+    // à la v257 (cinq erreurs chez Milo). Même remède : les corps d'abord.
+    for (let fin = Date.now() + 45000; Date.now() < fin;) {
+      const ok = await revenant.evaluate(async () => { const H = await import('./src/humains.js'); return H.humainsCharges(); }).catch(() => false);
+      if (ok) break;
+      await dormir(500);
+    }
     await revenant.reload({ waitUntil: 'load' });
     await revenant.waitForFunction(() => window.__game, null, { timeout: 90000 });
     await revenant.evaluate(() => document.getElementById('online-btn').click());
@@ -1082,61 +1264,29 @@ function verifier(nom, ok, detail = '') {
     await arrivant.close();
     await riche.close();
 
-    // --- le chantier commun -------------------------------------------------
+    // --- un message d'une ancienne version ne casse rien ----------------------
     //
-    // Le multijoueur était « côte à côte » : rien à faire ENSEMBLE. Le chantier
-    // pose un plan fantôme dans le monde partagé ; chaque bloc posé au bon
-    // endroit — par n'importe qui — avance la même jauge, et la célébration
-    // part chez tout le monde. Tout est éprouvé par le vrai chemin : la pose
-    // s'échange comme un panneau, l'avancement se dérive du journal de blocs.
+    // Le chantier commun et le coffre partagé n'existent plus (v255), mais une
+    // tablette restée sur l'ancienne version peut encore les envoyer. Le
+    // receveur cède : pas de jauge, pas de fantôme, et surtout pas d'erreur.
+    // (Le chantier s'éprouvait ici jusqu'à la v254 ; Jade et Rui restent,
+    // pour les émotes.)
     const { p: lea, code: codeLea } = await banc.creerMonde('Jade');
     const rui = await banc.rejoindre('Rui', codeLea);
-    const pose = await lea.evaluate(() => window.__chantier.poser('cabane'));
-    verifier('l\'hôte pose un chantier', !!pose && pose.plan === 'cabane',
-      JSON.stringify(pose));
-    const vuParRui = await jusqua(async () => {
-      const e = await rui.evaluate(() => window.__chantier.etat());
-      return !!(e && e.plan === 'cabane' && e.x === pose.x && e.z === pose.z);
-    }, 20000);
-    verifier('et l\'invité voit le même plan au même endroit', vuParRui,
-      JSON.stringify(await rui.evaluate(() => window.__chantier.etat())));
-
-    // Rui pose la moitié des blocs, Léa l'autre moitié — par le vrai chemin de
-    // pose, celui qui journalise et synchronise.
-    const total = (await lea.evaluate(() => window.__chantier.etat())).total;
-    // Bâtir n blocs manquants, par le vrai chemin de pose — celui qui
-    // journalise et synchronise. Le plan n'est pas recopié dans le test : on
-    // demande au jeu ce qu'il attend à chaque cellule.
-    const construire = (page, combien) => page.evaluate((cible) => {
-      const g = window.__game, c = window.__chantier.etat();
-      let n = 0;
-      for (let dx = -1; dx <= 5 && n < cible; dx++) {
-        for (let dy = 0; dy <= 8 && n < cible; dy++) {
-          for (let dz = -1; dz <= 5 && n < cible; dz++) {
-            const attendu = window.__chantier.attendu(dx, dy, dz);
-            if (attendu === null) continue;
-            if (g.world.getBlock(c.x + dx, c.y + dy, c.z + dz) === attendu) continue;
-            g.world.setBlock(c.x + dx, c.y + dy, c.z + dz, attendu);
-            n++;
-          }
-        }
-      }
-      return n;
-    }, combien);
-    const parRui = await construire(rui, Math.floor(total / 2));
-    const jaugeChezLea = await jusqua(async () => {
-      const e = await lea.evaluate(() => window.__chantier.etat());
-      return e && e.faits >= Math.floor(total / 2);
-    }, 30000);
-    verifier('les blocs de l\'invité avancent la jauge de l\'hôte', jaugeChezLea,
-      `Rui a posé ${parRui} · hôte voit ${JSON.stringify(await lea.evaluate(() => window.__chantier.etat()))}`);
-
-    await construire(lea, total);   // Léa finit tout ce qui manque
-    const finiPartout = await jusqua(async () =>
-      (await lea.evaluate(() => window.__chantier.chantiers())) >= 1
-      && (await rui.evaluate(() => window.__chantier.chantiers())) >= 1, 30000);
-    verifier('la célébration part chez les deux bâtisseurs', finiPartout,
-      `hôte ${await lea.evaluate(() => window.__chantier.chantiers())} · invité ${await rui.evaluate(() => window.__chantier.chantiers())}`);
+    const erreursAvant = lea.erreurs.length;
+    await rui.evaluate(() => {
+      const net = window.__game.net;
+      net.broadcast({ t: 'chantier', c: { plan: 'cabane', x: 0, y: 40, z: 0, t: Date.now() } });
+      net.broadcast({ t: 'chest', items: { '🍓 Baies': 1 } });
+    });
+    await dormir(2500);
+    const ancien = await lea.evaluate(() => ({
+      tourne: !!window.__game.running,
+      jauge: !!document.getElementById('chantier-hud'),
+    }));
+    verifier('un chantier ou un coffre envoyé par une ancienne version est ignoré sans casse',
+      ancien.tourne && !ancien.jauge && lea.erreurs.length === erreursAvant,
+      JSON.stringify({ ...ancien, erreurs: lea.erreurs.slice(erreursAvant, erreursAvant + 2) }));
 
     // --- les émotes, repliées et à bon escient --------------------------------
     //
@@ -1149,6 +1299,7 @@ function verifier(nom, ok, detail = '') {
       bouton: getComputedStyle(document.getElementById('emote-toggle')).display !== 'none',
       rangee: getComputedStyle(document.getElementById('emote-row')).display !== 'none',
     }));
+    await jusqua(async () => (await emotesChez(lea)).bouton, 20000);
     const eAvant = await emotesChez(lea);
     verifier('avec un ami là, un seul bouton d\'émotes, replié',
       eAvant.bouton && !eAvant.rangee, JSON.stringify(eAvant));

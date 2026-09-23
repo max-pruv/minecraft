@@ -60,6 +60,11 @@ const STALE_MS = 20000;
 // Un pair qui s'est annoncé endormi est épargné par le silence — mais pas
 // indéfiniment : au-delà, l'application a été fermée pour de bon.
 const SOMMEIL_MAX_MS = 300000;
+// Combien de temps on garde un pair VIVANT MAIS MUET — canal ouvert, rien
+// qui arrive (v266). Le double des quarante-cinq secondes que le jeu
+// s'accorde pour préparer une partie, et trois fois le blocage mesuré du fil
+// principal d'un invité qui charge son monde (29 s).
+const MUET_MAX_MS = 90000;
 // Après un réveil, on laisse au lien le temps de se rétablir avant de juger.
 const GRACE_REVEIL_MS = 15000;
 // La présentation entre deux pairs : on la relance à ce rythme, et on renonce
@@ -130,6 +135,7 @@ export class NetSession {
     if (this.hooks.onPlayers) {
       this.hooks.onPlayers(this.presents().map(([id, c]) => ({
         id, name: c.name, lookIdx: c.lookIdx, look: c.look, pos: c.pos, yaw: c.yaw, moving: c.moving,
+        v: c.v || null, p: c.p || null,
       })));
     }
   }
@@ -1006,11 +1012,68 @@ export class NetSession {
           if (now - c.dodo > SOMMEIL_MAX_MS) this.dropPeer(id);
           continue;
         }
+        // LE SILENCE NE PROUVE LE DÉPART QUE D'UN PAIR QU'ON NE PEUT PAS
+        // SONDER (v266).
+        //
         // Un pair relayé n'a pas de lien direct à sonder, mais l'hôte nous
         // renvoie sa position dix fois par seconde : son silence prolongé
         // prouve son départ aussi sûrement qu'un lien coupé. Sans cela, un
         // « au revoir » perdu laissait son avatar planté là pour toujours.
-        if (c.seen && now - c.seen > STALE_MS) { this.dropPeer(id); continue; }
+        // La règle a été écrite POUR CE CAS-LÀ, puis appliquée à tout le
+        // monde — y compris à un pair dont le canal est grand ouvert sous
+        // les yeux de celui qui le juge.
+        //
+        // Ce que ça coûtait, mesuré : un troisième enfant qui rejoint une
+        // partie voit sa page bloquée VINGT-NEUF SECONDES dans une seule
+        // tâche pendant que son monde se charge (sonde `v266/sonde-famine`,
+        // pas médian d'un minuteur de 100 ms : 100 ms, pire tour :
+        // 29 128 ms). Elle n'émet rien, elle ne reçoit rien, et l'hôte la
+        // retire à 22 s de silence — lien `open`, canal `open`. Elle
+        // disparaît alors pour l'hôte ET pour l'autre invité, puis revient
+        // vingt secondes plus tard. C'est ce que le témoin « à trois,
+        // chacun voit les deux autres » attrapait une fois sur deux.
+        //
+        // Un canal direct ouvert EST une sonde : le ping ci-dessous en est
+        // la preuve, et son échec retire le pair. Le silence seul ne
+        // retire donc plus qu'un pair qu'on ne peut pas sonder — un relayé,
+        // ou un lien de nuage, qui n'a pas de canal.
+        const sondable = !!(c.conn && !c.conn.parNuage && this.lienVivant(c.conn));
+        const silence = c.seen ? now - c.seen : 0;
+        // VIVANT MAIS MUET — ET ON LE DIT AUX AUTRES, avec le mot qu'ils
+        // connaissent déjà. `dodo_de` veut dire « il est là, ne comptez plus
+        // son silence » : c'est exactement ce qu'il faut ici, et une tablette
+        // restée sur l'ancienne version le comprend (le receveur cède).
+        //
+        // ET L'HÔTE ANNONCE AVANT QUE LES AUTRES NE CONCLUENT — à la MOITIÉ
+        // du délai. Mon premier jet annonçait au même seuil que celui du
+        // retrait : les deux horloges se déclenchaient ensemble, et l'invité
+        // perdait la course une fois sur deux. Mesuré : l'hôte gardait Nina,
+        // Alice la retirait quand même (`[["Alice","Nina"],["Marlon"]]`).
+        // Celui qui tient le lien direct s'en aperçoit le premier ; c'est à
+        // lui de parler avant que les autres ne jugent sur un silence dont il
+        // connaît, lui, la vraie raison.
+        if (sondable && silence > STALE_MS / 2) {
+          if (!c.muet) {
+            c.muet = now;
+            if (this.isHost) this.relay(id, { t: 'dodo_de', from: id });
+          }
+        } else if (c.muet) {
+          c.muet = 0;
+          if (this.isHost) this.relay(id, { t: 'coucou_de', from: id });
+        }
+        if (silence > STALE_MS) {
+          if (!sondable) { this.dropPeer(id); continue; }
+          // LE FILET RESTE, ET IL EST COURT. Cinq minutes — le délai d'un
+          // enfant endormi — serait trop long dans l'autre sens : un invité
+          // dont l'hôte est mort sans que son canal se referme doit repartir
+          // en chercher un autre (`rejoinHost`, plus haut), pas attendre.
+          // Quatre-vingt-dix secondes, c'est le DOUBLE de la borne que le jeu
+          // s'impose déjà pour préparer une partie (quarante-cinq secondes,
+          // v258) et trois fois le blocage mesuré. Le vrai filet, lui, reste
+          // le ping ci-dessous : un canal qui se referme le fait échouer, et
+          // le pair part tout de suite.
+          if (c.muet && now - c.muet > MUET_MAX_MS) { this.dropPeer(id); continue; }
+        }
         if (!c.conn) continue;
         if (!this.envoyer(c, { t: 'ping' }) && c.pret) this.dropPeer(id);
       }
@@ -1448,12 +1511,7 @@ export class NetSession {
           // Le lien vient de lâcher ? Le battement de cœur le verra, et
           // `envoyerLeMonde` réessaiera : ce message-ci porte tout le monde
           // bâti, c'est le dernier qu'on veut perdre en silence.
-          this.envoyerBrut(conn, {
-            t: 'sync', blocks: this.hooks.world.exportEdits(),
-            // le chantier en cours part avec le monde : un arrivant voit le
-            // fantôme et la jauge sans que personne n'ait rien à refaire
-            chantier: this.chantierActuel ? this.chantierActuel() : undefined,
-          });
+          this.envoyerBrut(conn, { t: 'sync', blocks: this.hooks.world.exportEdits() });
         }
         if (this.onJoin) this.onJoin(entry.name);
         else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
@@ -1490,7 +1548,12 @@ export class NetSession {
         if (this.onChat) this.onChat(String(msg.name || '').slice(0, 16), String(msg.msg || '').slice(0, 120));
         if (this.isHost) this.relay(conn.peer, msg);
         break;
-      case 'duel': // friendly creature show-off between two players
+      // LE DUEL EST PARTI EN v285, ET SON MESSAGE SE REÇOIT ENCORE. Plus personne
+      // ne pose `onDuel` ici : le message tombe donc sans casse. Mais l'hôte le
+      // RELAIE quand même, pour que deux tablettes restées sur l'ancienne version
+      // continuent de se défier sous un hôte à jour. C'est la règle du receveur
+      // qui cède, appliquée au retrait (v256).
+      case 'duel':
         if (this.onDuel) this.onDuel(msg);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
@@ -1506,12 +1569,12 @@ export class NetSession {
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
-      case 'chest': // the shared world chest changed
-        if (this.onChest) this.onChest(msg.items);
-        if (this.isHost) this.relay(conn.peer, msg);
-        break;
-      case 'chantier': // le plan commun posé ou retiré
-        if (this.onChantier) this.onChantier(msg.c);
+      // Le coffre commun et le chantier n'existent plus (v255), mais une
+      // tablette restée sur l'ancienne version peut encore les envoyer. Le
+      // receveur cède : on ne fait rien — et l'hôte relaie quand même, pour
+      // que deux anciennes tablettes continuent de se comprendre entre elles.
+      case 'chest':
+      case 'chantier':
         if (this.isHost) this.relay(conn.peer, msg);
         break;
       // La caméra lente. Sur un Wi-Fi public, le flux vidéo ne passe pas :
@@ -1547,9 +1610,7 @@ export class NetSession {
         if (!this.isHost && this.onCiel) this.onCiel(msg);
         break;
       case 'sync': {
-        if (msg.chantier !== undefined && msg.chantier !== null && this.onChantier) {
-          this.onChantier(msg.chantier);
-        }
+        // `msg.chantier`, qu'un ancien hôte envoie encore, est ignoré.
         const applied = this.hooks.world.mergeEdits(msg.blocks);
         if (applied > 0) {
           this.hooks.world.saveEdits(); // remote history must survive a reload
@@ -1580,6 +1641,12 @@ export class NetSession {
         entry.pos = { x: msg.x, y: msg.y, z: msg.z };
         entry.yaw = msg.yaw;
         entry.moving = !!msg.m;
+        // LE VÉHICULE VOYAGE AVEC LA POSITION (v253) : `v` dit dans quoi
+        // l'ami est assis (espèce, modèle de flotte), `p` chez qui il est
+        // passager. Une tablette restée sur l'ancienne version ignore les
+        // deux champs et voit l'ami à pied, comme avant — le receveur cède.
+        entry.v = msg.v || null;
+        entry.p = msg.p || null;
         this.playersChanged();
         if (this.isHost) {
           this.relay(conn.peer, { ...msg, from: conn.peer, name: entry.name, lookIdx: entry.lookIdx, look: entry.look });
@@ -1600,6 +1667,7 @@ export class NetSession {
         const e2 = this.conns.get(msg.from);
         if (e2) {
           e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
+          e2.v = msg.v || null; e2.p = msg.p || null;
           e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
         }
         this.playersChanged();
@@ -1657,6 +1725,8 @@ export class NetSession {
       if (!this.getPos || this.conns.size === 0) return;
       const p = this.getPos();
       const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
+      if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
+      if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }

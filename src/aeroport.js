@@ -91,26 +91,33 @@ const CHIFFRES = {
 // et ses satellites ; 'hub' est un grand aéroport à deux pistes ; 'ville' un
 // aéroport à une piste ; 'base' une base militaire — hangars, tour, abris.
 export const AEROPORTS = [
-  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris, vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
+  // v242, LE MONDE ×2 : chaque aérodrome a d'abord GARDÉ son écart à sa ville
+  // (la ville a bougé, il l'a suivie), puis la sonde a revérifié les cinq
+  // promesses sur la carte neuve. Onze tiennent tels quels ; huit sont
+  // recherchés depuis leur cap réel, parce qu'à l'échelle neuve le même écart
+  // tombait dans l'eau (Dubaï à 89 % dans le golfe, Francfort 14 %, Yokota
+  // 12 %) ou sur une voisine. Le chiffre `sol` est REMESURÉ partout : c'est
+  // la médiane du relief, et le relief a changé.
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
   { cle: 'orly', nom: 'Paris–Orly', x: -322, z: 504, r: 62, sol: 41, profil: 'ville' },               // Paris, cap 195° S — exact, 315 blocs
-  { cle: 'lhr', nom: 'Londres–Heathrow', x: -926, z: -558, r: 78, sol: 41, profil: 'hub' },           // Londres, cap 262° O — exact, 204 blocs
-  { cle: 'jfk', nom: 'New York–JFK', x: -9934, z: 2253, r: 84, sol: 34, profil: 'hub' },              // New York, vrai cap 115° SE → 30° NE (la baie de Jamaica est de l'eau), 418 blocs
-  { cle: 'mad', nom: 'Madrid–Barajas', x: -1269, z: 2522, r: 78, sol: 41, profil: 'hub' },            // Madrid, cap 40° NE — exact, 236 blocs
-  { cle: 'bcn', nom: 'Barcelone–El Prat', x: -641, z: 2670, r: 66, sol: 34, profil: 'ville' },        // Barcelone, cap 215° SO → 235°, 445 blocs
-  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 4, z: -478, r: 74, sol: 39, profil: 'hub' },            // Amsterdam, cap 215° SO — exact, 443 blocs
-  { cle: 'fra', nom: 'Francfort', x: 659, z: -572, r: 74, sol: 35, profil: 'hub' },                   // Francfort, cap 315° NO → 320°, 522 blocs (l'ICE Cologne–Francfort passait dans le disque)
-  { cle: 'fco', nom: 'Rome–Fiumicino', x: 1676, z: 1905, r: 72, sol: 35, profil: 'ville' },           // Rome, vrai cap 245° SO → 350° N (la mer Tyrrhénienne, puis la Frecciarossa), 362 blocs
-  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 26210, z: 4107, r: 76, sol: 36, profil: 'hub' },              // Tokyo, vrai cap 160° S → 270° O (la baie de Tokyo, puis le Shinkansen), 359 blocs
-  { cle: 'dxb', nom: 'Dubaï', x: 9882, z: 7646, r: 80, sol: 33, profil: 'hub' },                      // Dubaï, cap 230° SO → 205°, 478 blocs
-  { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 13988, z: 6339, r: 70, sol: 41, profil: 'ville' },     // Delhi, cap 250° O — exact, 400 blocs
-  { cle: 'sfo', nom: 'San Francisco', x: -19426, z: 3834, r: 72, sol: 43, profil: 'ville' },          // San Francisco, cap 175° S → 155°, 384 blocs
-  { cle: 'lax', nom: 'Los Angeles', x: -19035, z: 4406, r: 78, sol: 37, profil: 'hub' },              // Los Angeles, vrai cap 245° SO → 305° NO (le Pacifique), 320 blocs
-  { cle: 'ist', nom: 'Istanbul', x: 4832, z: 2313, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 247 blocs
+  { cle: 'lhr', nom: 'Londres–Heathrow', x: -1410, z: -1344, r: 78, sol: 40, profil: 'hub' },         // Londres, cap 262° O — même écart qu'en v223, 204 blocs
+  { cle: 'jfk', nom: 'New York–JFK', x: -19708, z: 4747, r: 84, sol: 38, profil: 'hub' },             // New York, vrai cap 115° SE → 50° NE (la baie de Jamaica est de l'eau, et le SE est le rectangle de Manhattan), 440 blocs · 13 blocs du rectangle
+  { cle: 'mad', nom: 'Madrid–Barajas', x: -2409, z: 4974, r: 78, sol: 36, profil: 'hub' },            // Madrid, cap 40° NE — exact, 302 blocs · eau 5 %
+  { cle: 'bcn', nom: 'Barcelone–El Prat', x: -677, z: 4885, r: 66, sol: 51, profil: 'ville' },        // Barcelone, cap 235° — même écart qu'en v223, 445 blocs
+  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 502, z: -1519, r: 74, sol: 36, profil: 'hub' },         // Amsterdam, cap 215° SO — même écart qu'en v223, 443 blocs
+  { cle: 'fra', nom: 'Francfort', x: 1734, z: -1040, r: 74, sol: 41, profil: 'hub' },                 // Francfort, cap 315° NO — exact, 702 blocs (le même écart qu'avant tombait à 14 % dans le Rhin)
+  { cle: 'fco', nom: 'Rome–Fiumicino', x: 3655, z: 3967, r: 72, sol: 33, profil: 'ville' },           // Rome, cap 350° N — même écart qu'en v223, 362 blocs
+  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 53019, z: 8014, r: 76, sol: 39, profil: 'hub' },              // Tokyo, cap 270° O — même écart qu'en v223, 359 blocs · 12 blocs du Shinkansen
+  { cle: 'dxb', nom: 'Dubaï', x: 19742, z: 15020, r: 80, sol: 33, profil: 'hub' },                    // Dubaï, vrai cap 230° SO → 220°, 1 036 blocs (le même écart qu'avant tombait à 89 % dans le golfe)
+  { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 28564, z: 12352, r: 70, sol: 47, profil: 'ville' },    // Delhi, cap 250° O — exact, 430 blocs · eau 4 %
+  { cle: 'sfo', nom: 'San Francisco', x: -38774, z: 7120, r: 72, sol: 44, profil: 'ville' },          // San Francisco, cap 155° — même écart qu'en v223, 384 blocs
+  { cle: 'lax', nom: 'Los Angeles', x: -37536, z: 9087, r: 78, sol: 38, profil: 'hub' },              // Los Angeles, cap 245° SO — exact, 254 blocs · 14 blocs du disque de la ville
+  { cle: 'ist', nom: 'Istanbul', x: 9945, z: 4500, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 409 blocs · eau 5 %
   // Les bases militaires : c'est de là que partent les chasseurs.
   { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 33, z: 300, r: 56, sol: 33, profil: 'base' },      // à l'est de Paris, cap 110° — exact
-  { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -10632, z: 3431, r: 56, sol: 35, profil: 'base' },      // au sud de Washington, cap 160° — exact
-  { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -18484, z: 4423, r: 56, sol: 36, profil: 'base' },      // au nord-est de Los Angeles, cap 60° — exact
-  { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 26335, z: 4022, r: 56, sol: 32, profil: 'base' },       // à l'ouest de Tokyo, cap 285° → 290°
+  { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -21126, z: 6381, r: 56, sol: 36, profil: 'base' },      // au sud de Washington, cap 160° — même écart qu'en v223
+  { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -37017, z: 8813, r: 56, sol: 42, profil: 'base' },      // au nord-est de Los Angeles, cap 60° — même écart qu'en v223
+  { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 52871, z: 7878, r: 56, sol: 51, profil: 'base' },       // à l'ouest de Tokyo, cap 285° — exact, 525 blocs (le même écart qu'avant tombait à 12 % dans la baie)
 ];
 
 // L'aéroport le plus proche d'un point, s'il est à portée.
@@ -123,18 +130,35 @@ export function aeroportPres(x, z, portee = 140) {
   return best;
 }
 
+// LES AXES DES QUATRE PISTES DE ROISSY, publiés pour que les témoins mesurent
+// la géométrie de l'arbre qu'ils éprouvent et non celle qu'ils espèrent : mon
+// premier témoin « rien ne dépasse sur une piste » portait les cotes NEUVES en
+// dur et rendait cent cinquante-deux blocs en faute sur `origin/main`, où les
+// pistes ne sont pas là. Un faux rouge ne se démonte pas.
+export const PISTES_ROISSY = [-64, -47, 47, 64];
+export const DEMI_PISTE_ROISSY = 4;
+// ET LA COTE DE SON AIRE AUSSI. Mon premier jet en avait DEUX : `STAND = 30`
+// dans le bâtisseur, et `dv: 33` dans les postes — la faute que ce fichier
+// reproche partout ailleurs, commise dans la même passe. Les deux ne se
+// contredisaient pas par chance (les mâts sont hors de la rangée en x) ; rien ne
+// l'obligeait. Une seule cote, lue par le bâtisseur ET par les postes.
+export const STAND_ROISSY = 33;
+
 export function buildAeroport(poser) {
   // Repère de travail : ici, y = -1 désigne le revêtement au sol, y = 0 le
   // premier bloc en l'air. Le bâtisseur du monde, lui, place son origine SUR
   // le bloc de surface — écrit tel quel, tout le tarmac se retrouvait enterré
   // sous l'herbe. Ce décalage d'un bloc recale les deux repères une bonne fois.
   //
-  // Second garde-fou : tout ce qui sort du disque est ignoré. Le terrain n'est
-  // parfaitement plat que jusqu'au rayon 72 ; une dalle rectangulaire poussée
-  // jusqu'aux coins retombait dans la pente et laissait le tarmac en porte-à-
-  // faux au-dessus du vide. Les pistes se trouvent donc raccourcies aux
-  // extrémités, exactement comme sur un vrai aérodrome.
-  const RAYON = 68;
+  // Second garde-fou : tout ce qui sort du disque est ignoré.
+  //
+  // IL VALAIT 68 JUSQU'EN v280, PARCE QUE LE RELIEF NE VAUT `sol` QUE JUSQU'À
+  // 72 (r − 20, le raccord de `terrainHeight`). La plate-forme est devenue un
+  // OUVRAGE — remblai et tranchée écrits en blocs, comme la voie ferrée — donc
+  // elle va jusqu'à `r − 10`, soit 82. Le relief ne bouge pas d'un bloc et les
+  // deux empreintes de `plafond.js` non plus : c'est ce qui rend cet
+  // allongement gratuit du point de vue de l'invariant 1.
+  const RAYON = 82, PLAT = 72;
   const set = (x, y, z, id) => {
     if (x * x + z * z > RAYON * RAYON) return;
     poser(x, y + 1, z, id);
@@ -175,38 +199,79 @@ export function buildAeroport(poser) {
   // Le plan en coupe, du centre vers l'extérieur. Les avoir tous ici évite ce
   // qui s'était produit au premier jet : un satellite de l'aérogare 1 planté au
   // milieu d'une piste, et des avions stationnés en travers d'une autre.
+  //
+  // LES COTES ONT RECULÉ EN v280, ET C'EST L'AIRE QUI LES A POUSSÉES. Max :
+  // « places les avions normaux près des pistes ». Mesuré à la sonde, les huit
+  // avions en blocs retirés : un gros porteur n'avait QUE QUATRE places à ciel
+  // ouvert sur tout le tarmac, toutes dans la trouée entre les halls 2C et 2E,
+  // à vingt-quatre blocs de l'axe de piste et derrière un bâtiment. La raison
+  // est géométrique et ne se voit sur aucune capture : entre le bord d'un hall
+  // (z = 18) et la bande de sécurité de la première piste, il n'y avait que
+  // SEPT à NEUF blocs d'asphalte libre, pour une envergure de QUINZE.
+  //
+  // Le disque pavé étant passé de 68 à 82, les deux doublets reculent et l'aire
+  // s'ouvre à vingt blocs. Les cotes sont des résultats : `STAND` vaut le bord
+  // du satellite (22) plus la demi-envergure du plus large (8), la voie de
+  // service suit, puis la piste et sa bande.
   const HALL_INT = 8, HALL_EXT = 18;   // les halls de l'aérogare 2
-  const STAND = 22;                    // axe des avions au contact
-  const TARMAC = 25;                   // limite du tarmac
-  const TAXI_A = 26;                   // voie de service
-  const PISTE_A = 32;                  // première piste du doublet
-  const TAXI_B = 41;                   // voie entre les deux pistes
-  const PISTE_B = 50;                  // seconde piste
+  const STAND = STAND_ROISSY;          // axe des avions au contact, ailes 25..40
+  const TARMAC = 40;                   // limite du tarmac
+  const TAXI_A = 41;                   // voie de service
+  const PISTE_A = 47;                  // première piste du doublet
+  const TAXI_B = 57;                   // voie entre les deux pistes
+  const PISTE_B = 64;                  // seconde piste
 
   // --- la plate-forme -------------------------------------------------------
   // Tout l'aéroport repose sur une dalle de béton : c'est elle qui donne la
   // planéité absolue qu'on attend d'un aérodrome, herbe rase autour.
-  disque(0, 0, 67, -1, BLOCK.GRASS);
-  disque(0, 0, 64, -1, BETON);
+  disque(0, 0, 71, -1, BLOCK.GRASS);
+  disque(0, 0, 68, -1, BETON);
+  // L'OUVRAGE : au-delà de `PLAT`, seules les BANDES DE PISTE sont nivelées —
+  // on remblaie sous la dalle et l'on décaisse au-dessus. Les deux bornes sont
+  // mesurées sur les dix-neuf aérodromes (remblai 11 au pire, décaissé 8) ; à
+  // Roissy même, 4 et 5. Tout bétonner coûtait sept millisecondes par morceau.
+  const niveler = (z0) => {
+    for (let dz = z0 - 6; dz <= z0 + 6; dz++) {
+      const bord = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - dz * dz)));
+      const dedans = Math.floor(Math.sqrt(Math.max(0, PLAT * PLAT - dz * dz)));
+      for (const sens of [-1, 1]) {
+        for (let dx = dedans; dx <= bord; dx++) {
+          const x = sens * dx;
+          set(x, -1, dz, BETON);
+          for (let k = 2; k <= REMBLAI; k++) set(x, -k, dz, BETON);
+          for (let k = 0; k < DECAISSE; k++) set(x, k, dz, BLOCK.AIR);
+        }
+      }
+    }
+  };
+  for (const z0 of [-PISTE_B, -PISTE_A, PISTE_A, PISTE_B]) niveler(z0);
 
   // --- les deux doublets de pistes -----------------------------------------
   // Deux pistes parallèles au nord, deux au sud, orientées est-ouest comme à
   // Roissy. Chacune porte son axe discontinu et son seuil en « échelle ».
+  //
+  // LE BOUT SE CALCULE, IL NE S'ÉCRIT PLUS (v280). Les marques étaient posées à
+  // des abscisses en dur — seuils à −70 et 63, numéros à ±62 et ±56, feux de
+  // −60 à 60 — justes tant que les quatre pistes étaient à ±32 et ±50 dans un
+  // disque de 68. Les pistes ayant reculé et le disque grandi, elles tombaient
+  // à côté : un seuil hors du disque, avalé par `set`, et des numéros au milieu
+  // de la piste. Chaque marque se place par rapport au bout MESURÉ de SA piste.
   function piste(zc, numGauche, numDroite) {
-    dalle(-70, 70, zc - 4, zc + 4, -1, ASPHALTE);
+    const bout = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - (Math.abs(zc) + 4) ** 2)));
+    dalle(-bout, bout, zc - 4, zc + 4, -1, ASPHALTE);
     // axe central discontinu
-    for (let x = -66; x <= 66; x += 6) dalle(x, x + 2, zc, zc, -1, BLANC);
+    for (let x = -bout + 4; x <= bout - 6; x += 6) dalle(x, x + 2, zc, zc, -1, BLANC);
     // seuils : les bandes parallèles de chaque extrémité
-    for (const bout of [-70, 63]) {
-      for (let dz = -3; dz <= 3; dz += 2) dalle(bout, bout + 7, zc + dz, zc + dz, -1, BLANC);
+    for (const b of [-bout, bout - 7]) {
+      for (let dz = -3; dz <= 3; dz += 2) dalle(b, b + 7, zc + dz, zc + dz, -1, BLANC);
     }
     // bords de piste
-    for (const dz of [-4, 4]) dalle(-70, 70, zc + dz, zc + dz, -1, BLANC);
+    for (const dz of [-4, 4]) dalle(-bout, bout, zc + dz, zc + dz, -1, BLANC);
     // numéros, lus depuis chaque extrémité
-    chiffre(-62, zc - 2, numGauche[0], BLANC); chiffre(-58, zc - 2, numGauche[1], BLANC);
-    chiffre(56, zc - 2, numDroite[0], BLANC); chiffre(60, zc - 2, numDroite[1], BLANC);
+    chiffre(-bout + 8, zc - 2, numGauche[0], BLANC); chiffre(-bout + 12, zc - 2, numGauche[1], BLANC);
+    chiffre(bout - 12, zc - 2, numDroite[0], BLANC); chiffre(bout - 8, zc - 2, numDroite[1], BLANC);
     // feux de bord, un sur six
-    for (let x = -60; x <= 60; x += 14) {
+    for (let x = -bout + 6; x <= bout - 6; x += 14) {
       set(x, 0, zc - 5, uni(2)); set(x, 0, zc + 5, uni(0));
     }
   }
@@ -225,19 +290,23 @@ export function buildAeroport(poser) {
     if (horizontal) dalle(x0, x1, zc, zc, -1, JAUNE);
     else dalle(xc, xc, z0, z1, -1, JAUNE);
   }
-  taxiway(-54, 54, -TAXI_A - 1, -TAXI_A);
-  taxiway(-54, 54, TAXI_A, TAXI_A + 1);
-  taxiway(-40, 40, -TAXI_B - 1, -TAXI_B + 1);   // entre les deux pistes, au nord
-  taxiway(-40, 40, TAXI_B - 1, TAXI_B + 1);     // idem au sud
-  for (const x of [-38, -12, 12, 38]) {
+  // Les longueurs suivent le disque, comme les pistes : écrites en dur, elles
+  // s'arrêtaient bien avant les seuils qu'elles sont censées desservir.
+  const boutA = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - (TAXI_A + 2) ** 2)));
+  const boutB = Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - (TAXI_B + 2) ** 2)));
+  taxiway(-boutA, boutA, -TAXI_A - 1, -TAXI_A);
+  taxiway(-boutA, boutA, TAXI_A, TAXI_A + 1);
+  taxiway(-boutB, boutB, -TAXI_B - 1, -TAXI_B + 1);   // entre les deux pistes, au nord
+  taxiway(-boutB, boutB, TAXI_B - 1, TAXI_B + 1);     // idem au sud
+  for (const x of [-46, -16, 16, 46]) {
     taxiway(x - 1, x + 1, -PISTE_B + 2, -TAXI_A);   // vers le doublet nord
     taxiway(x - 1, x + 1, TAXI_A, PISTE_B - 2);     // vers le doublet sud
   }
 
   // --- le tarmac ------------------------------------------------------------
-  dalle(-56, 56, -TARMAC, TARMAC, -1, ASPHALTE);
+  dalle(-64, 64, -TARMAC, TARMAC, -1, ASPHALTE);
   // traces d'usure devant les postes de stationnement
-  for (let x = -54; x <= 54; x += 3) {
+  for (let x = -62; x <= 62; x += 3) {
     for (let z = -TARMAC + 2; z <= TARMAC - 2; z += 7) if ((x + z) % 4 === 0) set(x, -1, z, GOUDRON);
   }
 
@@ -330,102 +399,6 @@ export function buildAeroport(poser) {
   for (let y = 0; y <= 9; y++) set(-14, y, -22, GRIS);
   for (let dx = -3; dx <= 3; dx++) for (let dz = -1; dz <= 1; dz++) set(-14 + dx, 10, -22 + dz, BLANC);
 
-  // --- les avions -----------------------------------------------------------
-  // Fuselage, ailes en flèche, dérive et réacteurs. Aux couleurs de la
-  // compagnie nationale : fuselage blanc, dérive bleue barrée de rouge.
-  function avion(cx, cz, sens, taille) {
-    const L = taille, demi = Math.round(L / 2);
-    const y0 = 1;              // le fuselage repose sur son train
-    // fuselage : trois hauteurs de blocs, arrondi aux extrémités
-    for (let i = -demi; i <= demi; i++) {
-      const t = Math.abs(i) / demi;
-      const larg = t > 0.86 ? 0 : t > 0.7 ? 1 : 2;
-      for (let dz = -larg; dz <= larg; dz++) {
-        for (let dy = 0; dy <= (t > 0.7 ? 1 : 2); dy++) {
-          set(cx + i * sens, y0 + dy, cz + dz, BLANC);
-        }
-      }
-    }
-    // cockpit et hublots
-    set(cx + (demi - 1) * sens, y0 + 2, cz, VERRE);
-    set(cx + demi * sens, y0 + 1, cz, VERRE);
-    for (let i = -demi + 3; i <= demi - 4; i += 2) {
-      set(cx + i * sens, y0 + 2, cz - 2, VERRE);
-      set(cx + i * sens, y0 + 2, cz + 2, VERRE);
-    }
-    // ailes en flèche, plus une bande bleue le long du fuselage
-    for (let dz = 3; dz <= Math.round(L * 0.46); dz++) {
-      const recul = Math.round(dz * 0.55);
-      for (const s of [-1, 1]) {
-        set(cx - recul * sens, y0, cz + s * dz, BLANC);
-        set(cx - (recul + 1) * sens, y0, cz + s * dz, BLANC);
-      }
-    }
-    for (let i = -demi + 2; i <= demi - 3; i++) set(cx + i * sens, y0, cz, BLEU);
-    // réacteurs sous les ailes
-    for (const s of [-1, 1]) {
-      const dz = Math.round(L * 0.26), recul = Math.round(dz * 0.55);
-      for (let k = 0; k <= 2; k++) set(cx + (-recul + 1 - k) * sens, y0 - 1, cz + s * dz, GRIS);
-      set(cx + (-recul + 1) * sens, y0 - 1, cz + s * dz, GOUDRON);
-    }
-    // dérive et empennage
-    for (let y = y0 + 3; y <= y0 + 7; y++) {
-      const av = Math.round((y - y0 - 3) * 0.6);
-      set(cx + (-demi + 2 + av) * sens, y, cz, y >= y0 + 5 ? BLEU : BLANC);
-    }
-    set(cx + (-demi + 4) * sens, y0 + 6, cz, ROUGE);
-    for (const s of [-1, 1]) {
-      for (let dz = 1; dz <= 4; dz++) set(cx + (-demi + 2) * sens, y0 + 3, cz + s * dz, BLANC);
-    }
-    // train d'atterrissage
-    set(cx + (demi - 3) * sens, y0 - 1, cz, GOUDRON);
-    for (const s of [-1, 1]) set(cx - 2 * sens, y0 - 1, cz + s * 2, GOUDRON);
-  }
-
-  // Le Concorde : nez pointu et fin, aile delta gothique qui court presque tout
-  // le long du fuselage, dérive haute, quatre réacteurs accolés deux à deux
-  // sous l'aile. Sa silhouette n'a rien de commun avec celle d'un avion de
-  // ligne ordinaire, et c'est précisément ce qui le rend reconnaissable.
-  function concorde(cx, cz, sens) {
-    const L = 34, demi = Math.round(L / 2), y0 = 1;
-    // fuselage : long, mince, et qui s'affine en pointe vers l'avant
-    for (let i = -demi; i <= demi; i++) {
-      const t = (i * sens) / demi;             // -1 arrière, +1 avant
-      const larg = t > 0.82 ? 0 : t > 0.62 ? 1 : 1;
-      const haut = t > 0.72 ? 0 : 1;
-      for (let dz = -larg; dz <= larg; dz++) {
-        for (let dy = 0; dy <= haut; dy++) set(cx + i, y0 + dy, cz + dz, BLANC);
-      }
-    }
-    // le nez basculé, qui plonge vers la piste
-    for (let k = 1; k <= 3; k++) set(cx + (demi + k) * sens, y0 - Math.floor(k / 2), cz, BLANC);
-    set(cx + (demi - 2) * sens, y0 + 1, cz, VERRE);
-    // aile delta : elle s'élargit régulièrement de l'avant vers l'arrière
-    for (let i = -demi + 1; i <= demi - 8; i++) {
-      const t = (i * sens + demi) / L;         // 0 à l'arrière, 1 à l'avant
-      const envergure = Math.round((1 - t) * 11);
-      for (let dz = 1; dz <= envergure; dz++) {
-        set(cx + i, y0, cz + dz, BLANC); set(cx + i, y0, cz - dz, BLANC);
-      }
-    }
-    // quatre réacteurs, accolés deux par deux
-    for (const s of [-1, 1]) {
-      for (const dz of [4, 6]) {
-        for (let k = 0; k <= 4; k++) set(cx + (-demi + 4 + k) * sens, y0 - 1, cz + s * dz, GRIS);
-        set(cx + (-demi + 4) * sens, y0 - 1, cz + s * dz, GOUDRON);
-      }
-    }
-    // dérive haute et effilée
-    for (let y = y0 + 2; y <= y0 + 8; y++) {
-      const av = Math.round((y - y0 - 2) * 0.7);
-      set(cx + (-demi + 1 + av) * sens, y, cz, y >= y0 + 6 ? BLEU : BLANC);
-    }
-    set(cx + (-demi + 5) * sens, y0 + 7, cz, ROUGE);
-    // train : le Concorde se cambre haut sur ses jambes
-    set(cx + (demi - 6) * sens, y0 - 1, cz, GOUDRON);
-    for (const s of [-1, 1]) set(cx - 3 * sens, y0 - 1, cz + s * 3, GOUDRON);
-  }
-
   // Une passerelle télescopique : le couloir qui relie la porte à l'avion.
   function passerelle(x0, z0, x1, z1) {
     const n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
@@ -437,30 +410,40 @@ export function buildAeroport(poser) {
     for (let y = 0; y <= 1; y++) { set(x1, y, z1, GRIS); }
   }
 
-  // au contact de l'aérogare 2, alignés sur la ligne des postes
-  avion(22, -STAND, 1, 26); passerelle(18, -HALL_EXT, 20, -STAND + 2);
-  avion(44, -STAND, 1, 22); passerelle(40, -HALL_EXT, 42, -STAND + 2);
-  avion(22, STAND, -1, 26); passerelle(18, HALL_EXT, 20, STAND - 2);
-  avion(44, STAND, -1, 22); passerelle(40, HALL_EXT, 42, STAND - 2);
-  // autour des satellites de l'aérogare 1
-  avion(-40, -STAND, 1, 24);
-  avion(-14, -STAND, 1, 20);
-  // et un gros porteur qui roule vers la piste nord
-  avion(0, -TAXI_B, 1, 30);
-  // LE POSTE NORD EST LAISSÉ LIBRE, ET C'EST VOULU (v228). Il portait deux
-  // avions en BLOCS — du décor, qu'un enfant ne peut pas prendre. Max :
-  // « les avions sont […] inutilisables ». Ce sont désormais les trois
-  // appareils qu'on pilote qui s'y garent (`postesAvion('roissy')`), et
-  // l'avion qu'on voit au poste est celui dans lequel on monte.
+  // LES PASSERELLES restent, les AVIONS EN BLOCS s'en vont (v280).
   //
-  // Ceux du poste SUD restent, eux : une monture ne se dessine qu'à
-  // soixante-deux blocs, et sans eux la plate-forme serait vide vue du ciel.
-  // Mesuré : le retrait libère soixante-deux blocs de tarmac pour une rangée
-  // qui en réclame cinquante-quatre.
-  // Le Concorde, seul sur la voie de circulation sud, bien dégagé : c'est la
-  // silhouette la plus reconnaissable de la plate-forme, autant la laisser
-  // respirer plutôt que de la coincer contre le parking.
-  concorde(-6, TAXI_B, -1);
+  // Max : « supprime les avions qui ne volent pas, en format Minecraft ». La
+  // plate-forme en portait HUIT — six avions de ligne et un Concorde sculptés
+  // dans le décor, plus un gros porteur sur la voie de circulation — et un
+  // enfant ne peut monter dans aucun. C'est la seconde moitié du
+  // « inutilisables » de la v228, que cette version-là n'avait pas osé
+  // trancher : elle avait gardé le poste SUD au motif qu'« une monture ne se
+  // dessine qu'à soixante-deux blocs, et sans eux la plate-forme serait vide
+  // vue du ciel ». **Max tranche l'inverse, et il a raison** : un décor qu'on
+  // ne peut pas prendre est un mensonge de plus, pas un remplissage.
+  //
+  // ET LEUR RETRAIT EST CE QUI LIBÈRE L'AIRE. La v278 avait mesuré que Roissy
+  // n'a que DEUX poches assez grandes pour un gros porteur — mesure faite
+  // AVEC ces huit silhouettes sur le tarmac. Les trois appareils qu'on pilote
+  // étaient donc coincés dans des interstices du complexe terminal, à trente
+  // à cinquante blocs de la piste la plus proche et derrière des bâtiments.
+  // La mesure se refait, et les postes déménagent au bord de la piste
+  // (`POSTES_ROISSY`) : l'avion qu'on voit est celui dans lequel on monte, et
+  // il est là où l'on décolle.
+  //
+  // Les passerelles, elles, sont de l'architecture d'aérogare et pas du faux
+  // avion : une porte d'embarquement libre en porte une, dans tous les
+  // aéroports du monde.
+  //
+  // ET LEUR PORTÉE NE SUIT PLUS L'AIRE. Cotées à `STAND − 2`, elles suivaient
+  // les appareils quand ceux-ci ont reculé — et la sonde a montré qu'elles
+  // venaient alors se poser DANS l'emprise du chasseur. Une passerelle sert la
+  // PORTE d'un hall : sa longueur est celle d'une passerelle, six blocs.
+  const ATTEINTE = HALL_EXT + 6;
+  passerelle(18, -HALL_EXT, 20, -ATTEINTE);
+  passerelle(40, -HALL_EXT, 42, -ATTEINTE);
+  passerelle(18, HALL_EXT, 20, ATTEINTE);
+  passerelle(40, HALL_EXT, 42, ATTEINTE);
 
   // --- abords ---------------------------------------------------------------
   // parking étagé, à l'ouest de l'aérogare 1
@@ -469,11 +452,19 @@ export function buildAeroport(poser) {
     if (y % 2 === 0) dalle(-64, -52, -12, 12, y, GRIS);
   }
   for (let z = -10; z <= 10; z += 3) for (let x = -62; x <= -54; x += 4) set(x, 6, z, uni(0));
-  // manche à air, sur le gazon entre tarmac et première piste
-  for (let y = 0; y <= 5; y++) set(-30, y, -TARMAC - 3, GRIS);
-  for (let dz = 1; dz <= 4; dz++) set(-30, 5, -TARMAC - 3 + dz, dz % 2 ? ROUGE : BLANC);
-  // mâts d'éclairage, en bordure de tarmac et hors des pistes
-  for (let x = -46; x <= 50; x += 24) {
+  // LA MANCHE À AIR ET LES MÂTS ONT DÛ DÉMÉNAGER AVEC LES PISTES (v280), et la
+  // sonde l'a dit, pas la relecture. Ils étaient posés par rapport à `TARMAC`,
+  // qui est passé de 25 à 40 : les mâts se sont donc retrouvés à z = ±39, c'est
+  // à dire EXACTEMENT dans l'envergure d'un gros porteur garé à dv = 32 (ailes
+  // 22..40), et la manche à air au bord même de la première piste. Les trois
+  // postes de la rangée étaient bloqués par les trois mâts de x = −22, 2 et 26.
+  //
+  // Un mât éclaire l'aire depuis son BORD, pas depuis son milieu : ils passent
+  // au-delà de la rangée en x, qui va de −27 à 27. La manche à air revient
+  // côté ville, sur le gazon entre les halls et l'aire.
+  for (let y = 0; y <= 5; y++) set(-30, y, -HALL_EXT - 3, GRIS);
+  for (let dz = 1; dz <= 4; dz++) set(-30, 5, -HALL_EXT - 3 - dz, dz % 2 ? ROUGE : BLANC);
+  for (const x of [-62, -46, 46, 62]) {
     for (const z of [-TARMAC + 1, TARMAC - 1]) {
       for (let y = 0; y <= 7; y++) set(x, y, z, GRIS);
       set(x, 8, z, uni(2));
@@ -512,8 +503,101 @@ export function buildAeroport(poser) {
 // ce qui sort du disque est ignoré : le terrain n'est parfaitement plat que
 // jusqu'au rayon `r − 20`, une dalle poussée jusqu'aux coins retomberait dans
 // la pente.
+// LES DEUX BORNES DE L'OUVRAGE — mesurées, pas choisies (v280).
+//
+// Écart entre `terrainHeight` et le `sol` déclaré, sur le disque de `r − 10`,
+// sur les DIX-NEUF aérodromes : remblai au pire ONZE blocs (Delhi), décaissé au
+// pire HUIT (Orly) ; trois à cinq en général. Douze et neuf couvrent donc tout
+// le monde avec un bloc de marge.
+//
+// ET LA BORNE SE PREND SUR LE DISQUE, PAS SUR LES BANDES. Sur les bandes de
+// piste réellement nivelées, le pire des dix-neuf n'est que de CINQ blocs des
+// deux côtés — on pourrait donc descendre à huit et sept, et gagner un tiers des
+// poses. On ne le fait pas : le jour où une piste bouge ou qu'on élargit la zone
+// nivelée, c'est le chiffre du DISQUE qui s'appliquera, et une borne réglée au
+// ras de la mesure du moment est une borne qui casse à la livraison suivante
+// (leçon des bornes de garde de `monte.js`, v237). Le témoin publie la marge
+// réelle, ce qui rend le choix vérifiable au lieu de l'obliger à être cru.
+// Un aérodrome neuf qui sortirait de ces bornes livrerait une dalle en
+// porte-à-faux ou une colline en travers de la piste : c'est un témoin qui le
+// dit, pas une relecture.
+export const REMBLAI = 12, DECAISSE = 9;
+
+// QUELS APPAREILS UN AÉRODROME GARE — déclaré ici, lu par le plan ET par les
+// postes. Sur une base militaire, trois chasseurs : c'est de là qu'ils partent.
+const ESPECES_PAR_PROFIL = {
+  hub: ['avionligne', 'concorde', 'chasseur'],
+  ville: ['avionligne', 'concorde', 'chasseur'],
+  base: ['chasseur', 'chasseur', 'chasseur'],
+};
+export function especesDe(profil) {
+  return ESPECES_PAR_PROFIL[profil] || ESPECES_PAR_PROFIL.ville;
+}
+
+// LE PLAN D'UN AÉRODROME — publié ici, lu par le bâtisseur ET par les postes.
+//
+// LA PISTE PREND LE DIAMÈTRE, ET C'EST UNE MESURE QUI L'A DÉCIDÉ (v280).
+//
+// Max : « fais les pistes plus longues ». Mesuré avant d'écrire une ligne, en
+// appelant le bâtisseur et en comptant les blocs roulables sur l'axe de chaque
+// piste : `ville` rendait SOIXANTE-NEUF blocs, `base` cinquante-trois, Orly
+// QUARANTE-NEUF. Et ce qu'un appareil réclame se lit dans sa fiche (`pilote`,
+// montures.js), il ne s'estime pas : le roulage avant rotation vaut
+// `rotation² / (2 × poussée)` et le freinage `approche² / (2 × frein)`, soit
+// ensemble 83 blocs pour l'avion de ligne, 99 pour le Concorde, 34 pour le
+// chasseur — la « longueur de piste équilibrée » de l'aviation réelle. AUCUNE
+// piste du jeu ne tenait les 99 du Concorde, sauf les deux pistes internes de
+// Roissy : l'enfant arrivait au bout sans avoir levé le nez.
+//
+// ET LA CAUSE N'ÉTAIT PAS LA TAILLE DU DISQUE, C'ÉTAIT L'ENDROIT DE LA PISTE
+// DEDANS. Une corde à |z| = 34 est bien plus courte qu'un diamètre : à Orly, 49
+// blocs contre 103. La piste prend donc le diamètre, et tout le reste — voie de
+// circulation, aire de stationnement, terminal, tour, hangar — passe d'un seul
+// côté. C'est exactement le plan d'un vrai aéroport à une piste, et c'est aussi
+// la réponse à la seconde demande de Max : l'aire est alors CONTRE la piste.
+//
+// LES COTES SONT DES RÉSULTATS, PAS DES CHIFFRES RONDS. La bande de
+// stationnement fait l'envergure du plus large de CE QUI SE GARE LÀ — quinze
+// blocs pour un avion de ligne, sept pour un chasseur — plus un dégagement de
+// part et d'autre ; le terminal se pose derrière elle. Et ce qui ne tiendrait
+// pas dans le disque se RAPPROCHE jusqu'à y tenir, au lieu d'être avalé par
+// `set` : c'est la leçon des demi-hangars de la v278, prise par l'autre bout.
+export function planAerodrome(profil, rayon = 68) {
+  const base = profil === 'base', grand = profil === 'hub';
+  // Le disque pavé va jusqu'à `r − 10` grâce à l'ouvrage ; le relief, lui, ne
+  // vaut exactement `sol` que jusqu'à `r − 20`, et c'est entre les deux qu'on
+  // remblaie et qu'on décaisse.
+  const RAYON = rayon - 10, PLAT = rayon - 20;
+  const demiLargeurA = (z) => Math.floor(Math.sqrt(Math.max(0, RAYON * RAYON - z * z)));
+  const HALL = base ? 10 : grand ? 16 : 13;   // demi-longueur du terminal
+  const DEMI_PISTE = base ? 3 : 4;            // demi-largeur d'une piste
+  const PISTE = 0;                            // le diamètre
+  // Le doublet des grands : la seconde piste de l'AUTRE côté, là où il n'y a
+  // rien — sept blocs entre les deux bandes, de quoi rouler entre elles.
+  const PISTE2 = grand ? DEMI_PISTE * 2 + 7 : 0;
+  const TAXI = -(DEMI_PISTE + 2);             // la voie de circulation, côté ville
+  // L'aire de stationnement : l'envergure de ce qui se gare ICI.
+  const AILE = Math.ceil(Math.max(...especesDe(profil).map((e) => GABARITS_AVION[e].envergure)) / 2);
+  const STAND = TAXI - 2 - AILE;
+  const PROF_HALL = base ? 10 : 14;
+  const zt1 = STAND - AILE - 2, zt0 = zt1 - PROF_HALL;
+  // La tour de contrôle et le hangar se posent aussi loin que le disque le
+  // permet, jamais plus : `set` ignore ce qui dépasse, et l'on aurait livré des
+  // demi-bâtiments (v278). Le hangar longe l'aire, hors de la rangée.
+  const tx = Math.min(HALL + 8, demiLargeurA(zt0 - 3) - 4);
+  const tz = zt0 - 3;
+  const hz1 = STAND + AILE, hz0 = hz1 - 8;
+  const hx = Math.min(HALL + 26, demiLargeurA(hz0) - 8);
+  return { base, grand, RAYON, PLAT, HALL, DEMI_PISTE, PISTE, PISTE2, TAXI, AILE,
+    STAND, PROF_HALL, zt0, zt1, tx, tz, hx, hz0, hz1, demiLargeurA };
+}
+
 export function buildAerodrome(poser, profil, rayon = 68) {
-  const RAYON = rayon - 20;
+  // Le disque pavé vient du PLAN, il ne se recalcule pas ici : il valait
+  // `rayon − 20` — la limite du relief plat — et vaut `rayon − 10` depuis que
+  // la plate-forme est un ouvrage. Laissé en double, il annulait tout
+  // l'allongement sans qu'une ligne ne paraisse fausse.
+  const { RAYON } = planAerodrome(profil, rayon);
   const set = (x, y, z, id) => {
     if (x * x + z * z > RAYON * RAYON) return;
     poser(x, y + 1, z, id);
@@ -528,28 +612,82 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   };
   const vider = (x0, x1, y0, y1, z0, z1) => bloc(x0, x1, y0, y1, z0, z1, BLOCK.AIR);
 
-  const base = profil === 'base';
-  const grand = profil === 'hub';
-  // Les cotes du plan, du centre vers l'extérieur, en blocs.
-  const HALL = base ? 10 : grand ? 16 : 13;   // demi-longueur du terminal
-  const STAND = base ? 16 : grand ? 22 : 19;  // l'axe des avions au contact
-  const PISTE = base ? 24 : grand ? 36 : 30;  // la piste principale
-  const PISTE2 = grand ? -36 : 0;             // le doublet des grands, de l'autre bord
+  // Le plan est publié par `planAerodrome`, pas recalculé ici : le bâtisseur et
+  // l'aéroportiste doivent viser les mêmes blocs (leçon du mobilier de Londres).
+  const { base, HALL, DEMI_PISTE, PISTE, PISTE2, TAXI, STAND, zt0, zt1,
+    tx, tz, hx, hz0, hz1, demiLargeurA, PLAT } = planAerodrome(profil, rayon);
 
-  // La plate-forme : béton au centre, herbe rase sur le pourtour.
-  for (let dx = -RAYON; dx <= RAYON; dx++) {
-    for (let dz = -RAYON; dz <= RAYON; dz++) {
+  // LA PLATE-FORME EST UN OUVRAGE, ELLE NE SUIT PAS LE TERRAIN (v280).
+  //
+  // `terrainHeight` aplanit le disque de rayon `r` avec un raccord de vingt
+  // blocs : le sol vaut EXACTEMENT `sol` jusqu'à `r − 20`, et se mélange au
+  // relief naturel au-delà. Le bâtisseur s'arrêtait donc à `r − 20`, et c'est
+  // ce disque-là qui bornait la longueur des pistes.
+  //
+  // Une piste est un OUVRAGE — c'est la leçon de la voie ferrée (v213) et du
+  // métro de Washington : le remblai et la tranchée sont des BLOCS écrits dans
+  // le morceau de monde, pas un relief déplacé. Les deux empreintes de
+  // `plafond.js` ne bougent donc pas d'un octet et l'invariant 1 tient sans
+  // qu'on ait rien à déclarer. Et l'emprise ne sort JAMAIS de `a.r` : les cinq
+  // promesses de la v223 — au sec, à douze blocs d'une ville et d'un autre
+  // aérodrome, à quarante de ce que les enfants ont bâti, à douze d'une voie
+  // ferrée — valent telles quelles, sans une mesure de plus.
+  //
+  // LES DEUX BORNES SONT MESURÉES, PAS CHOISIES. Écart entre `terrainHeight`
+  // et `sol` sur le disque de `r − 10`, sur les DIX-NEUF aérodromes : remblai
+  // au pire ONZE blocs (Delhi), décaissé au pire HUIT (Orly) — trois à cinq en
+  // général. Douze et neuf couvrent donc tout le monde avec un bloc de marge,
+  // et le jour où un aérodrome neuf sort de ces bornes, un témoin le dira.
+  // L'eau ne concerne que 0,5 % des colonnes au pire (Istanbul, 71 sur 14 505),
+  // ce qui fait une chaussée sur quelques mètres — comme au vrai Atatürk.
+  //
+  // ET C'EST LA PISTE QUI EST UN OUVRAGE, PAS LE DISQUE — le prix l'a dit. Mon
+  // premier jet bétonnait et décaissait TOUT l'anneau entre `PLAT` et `RAYON` :
+  // quatre mille huit cents colonnes à vingt et une poses chacune, et le
+  // bâtisseur passait de 5,6 à 12,5 ms par rejeu à Roissy — payés pour CHAQUE
+  // morceau de la boîte, c'est-à-dire précisément là où l'enfant arrive en vol.
+  // Seules les BANDES de piste vont au-delà de `PLAT` ; le reste du pourtour
+  // reste le relief naturel, ce qui est aussi ce qu'on voit d'un vrai aéroport
+  // bâti sur une croupe — la piste sur son remblai, la campagne autour.
+  //
+  // ET L'ON NE BALAIE QUE CE QU'ON ÉCRIT. Le disque va jusqu'à `PLAT`, les
+  // bandes de piste se parcourent à part : balayer le carré de `RAYON` pour
+  // n'écrire que quatre bandes coûtait vingt-sept mille racines carrées par
+  // rejeu, et un bâtisseur est rejoué pour CHAQUE morceau de sa boîte.
+  for (let dx = -PLAT; dx <= PLAT; dx++) {
+    for (let dz = -PLAT; dz <= PLAT; dz++) {
       const d = Math.hypot(dx, dz);
-      if (d > RAYON) continue;
-      set(dx, -1, dz, d > RAYON - 5 ? BLOCK.GRASS : BETON);
+      if (d > PLAT) continue;
+      set(dx, -1, dz, d > PLAT - 5 ? BLOCK.GRASS : BETON);
     }
   }
+  const niveler = (za, zb) => {
+    for (let dz = za; dz <= zb; dz++) {
+      const bord = demiLargeurA(dz), dedans = Math.floor(Math.sqrt(Math.max(0, PLAT * PLAT - dz * dz)));
+      for (const sens of [-1, 1]) {
+        for (let dx = dedans; dx <= bord; dx++) {
+          const x = sens * dx;
+          set(x, -1, dz, BETON);
+          for (let k = 2; k <= REMBLAI; k++) set(x, -k, dz, BETON);      // le remblai
+          for (let k = 0; k < DECAISSE; k++) set(x, k, dz, BLOCK.AIR);   // la tranchée
+        }
+      }
+    }
+  };
+  niveler(PISTE - DEMI_PISTE - 2, PISTE + DEMI_PISTE + 2);
+  if (PISTE2) niveler(PISTE2 - DEMI_PISTE - 2, PISTE2 + DEMI_PISTE + 2);
+  // ET LA BANDE DU TERMINAL AUSSI, parce que sur le plus petit disque elle en
+  // sort. À Orly (rayon 62, donc béton jusqu'à 42), le terminal va jusqu'à
+  // z = −40 et la tour de contrôle jusqu'à −43 : sans cela elles se posaient
+  // sur le relief de l'anneau de raccord, à un ou deux blocs de la dalle. Ce
+  // qui porte un bâtiment se nivelle, et cela se mesure — pas se relit.
+  niveler(zt0 - 8, zt1);
 
   // LES PISTES. Une bande d'asphalte, son axe discontinu en blanc, et les
   // seuils en « échelle » — ce sont eux qu'on reconnaît depuis un avion.
   const piste = (z0) => {
-    const demi = base ? 3 : 4;
-    const bout = Math.round(Math.sqrt(Math.max(0, RAYON * RAYON - (Math.abs(z0) + demi) ** 2)));
+    const demi = DEMI_PISTE;
+    const bout = demiLargeurA(Math.abs(z0) + demi);
     for (let x = -bout; x <= bout; x++) {
       for (let dz = -demi; dz <= demi; dz++) set(x, -1, z0 + dz, ASPHALTE);
       if (((x % 6) + 6) % 6 < 3) set(x, -1, z0, BLANC);              // l'axe
@@ -557,15 +695,25 @@ export function buildAerodrome(poser, profil, rayon = 68) {
         for (const dz of [-3, -1, 1, 3]) set(x, -1, z0 + dz, BLANC);
       }
     }
-    // la voie de circulation qui longe la piste, côté terminal
-    const cote = z0 > 0 ? -1 : 1;
-    for (let x = -bout + 6; x <= bout - 6; x++) {
-      set(x, -1, z0 + cote * (demi + 3), ASPHALTE);
-      set(x, -1, z0 + cote * (demi + 2), JAUNE);
-    }
+    return bout;
   };
-  piste(PISTE);
+  const boutPiste = piste(PISTE);
   if (PISTE2) piste(PISTE2);
+  // LA VOIE DE CIRCULATION est TOUJOURS côté ville — elle relie l'aire à la
+  // piste, et l'aire est d'un seul côté depuis que la piste prend le diamètre.
+  // Elle ne se déduit plus du signe de `z0` : ce signe valait quand il y avait
+  // une piste de chaque bord, et il aurait mis la voie du mauvais côté.
+  for (let x = -boutPiste + 6; x <= boutPiste - 6; x++) {
+    set(x, -1, TAXI, ASPHALTE);
+    set(x, -1, TAXI + 1, JAUNE);
+  }
+  // Et deux bretelles, aux DEUX bouts de la piste : un appareil garé au milieu
+  // de l'aire doit pouvoir rejoindre l'un ou l'autre seuil. Sans elles, la
+  // piste est longue et l'on n'y accède que par le travers.
+  for (const sx of [-1, 1]) {
+    const bx = sx * (boutPiste - 10);
+    for (let z = TAXI; z <= -DEMI_PISTE; z++) { set(bx, -1, z, ASPHALTE); set(bx + sx, -1, z, ASPHALTE); }
+  }
 
   // LE TARMAC et ses postes de stationnement, marqués au jaune.
   //
@@ -574,12 +722,12 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   // le Concorde débordait sur le hangar. On demande donc son emprise à
   // `aireAvions`, qui la tient de la longueur des appareils : le jour où l'un
   // d'eux grandit, la dalle suit sans qu'on y pense.
-  const aire = aireAvions(profil);
+  const aire = aireAvions(profil, rayon);
   dalle(Math.min(-HALL - 12, aire.x0), Math.max(HALL + 12, aire.x1),
-    Math.min(STAND - 7, aire.dv0), Math.max(STAND + 4, aire.dv1), -1, ASPHALTE);
+    Math.min(aire.dv0, zt1), Math.max(aire.dv1, TAXI), -1, ASPHALTE);
   // Le marquage tombe SOUS chaque appareil, pas tous les dix blocs : c'est ce
   // qui fait qu'un poste se lit comme un poste.
-  for (const p of postesAvion(profil)) {
+  for (const p of postesAvion(profil, rayon)) {
     const g = GABARITS_AVION[p.espece];
     for (let dx = -Math.round(g.long / 2); dx <= Math.round(g.long / 2); dx += 2) {
       set(p.du + dx, -1, p.dv - 3, JAUNE);
@@ -588,7 +736,7 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   }
 
   // LE TERMINAL — creux, de plain-pied, avec ses portes des deux côtés.
-  const zt0 = -6, zt1 = 8, h = base ? 5 : 7;
+  const h = base ? 5 : 7;
   bloc(-HALL, HALL, 0, h, zt0, zt1, base ? KAKI : BETON);
   vider(-HALL + 1, HALL - 1, 0, h - 1, zt0 + 1, zt1 - 1);
   // LE PLANCHER EST AU NIVEAU DU TARMAC, pas un bloc au-dessus. C'est la
@@ -625,21 +773,40 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   for (let x = -3; x <= 3; x++) set(x, h + 1, zt0, base ? ROUGE : BLEU);
 
   // LA TOUR DE CONTRÔLE : le fût, la vigie vitrée, la casquette.
-  const tx = HALL + 8, tz = zt0 - 3, th = base ? 9 : 13;
+  const th = base ? 9 : 13;
   bloc(tx - 1, tx + 1, 0, th, tz - 1, tz + 1, BETON);
   bloc(tx - 2, tx + 2, th + 1, th + 2, tz - 2, tz + 2, VERRE);
   dalle(tx - 3, tx + 3, tz - 3, tz + 3, th + 3, GRIS);
 
-  // LES HANGARS, eux aussi creux et ouverts côté tarmac : deux sur une base
-  // militaire — c'est là que dorment les chasseurs — un ailleurs.
-  const hangar = (hx) => {
-    bloc(hx - 6, hx + 6, 0, 5, zt1 + 4, zt1 + 12, base ? KAKI : GRIS);
-    vider(hx - 5, hx + 5, 0, 4, zt1 + 5, zt1 + 11);
+  // LES HANGARS, eux aussi creux, et ouverts sur leur face extérieure : deux
+  // sur une base militaire — c'est là que dorment les chasseurs — un ailleurs.
+  //
+  // ILS SONT PASSÉS DE L'AUTRE CÔTÉ DU TERMINAL EN v278. Ils tenaient le
+  // tarmac à `z = zt1+4 … zt1+12`, c'est-à-dire EN PLEIN DANS la rangée dès
+  // qu'on compte les ailes : le chasseur de quinze aérodromes sur dix-neuf
+  // avait une aile dans la tôle, et les trois d'une base aussi.
+  //
+  // ET LES DÉPLACER EN X NE MARCHE PAS — mesuré avant de le croire. La
+  // plate-forme d'un aérodrome ne va que jusqu'à `rayon - 20`, soit QUARANTE
+  // ET UN blocs à Orly et trente-six sur une base : un hangar poussé au-delà
+  // de la rangée (x 31…43) tombe hors du disque, et `set` l'ignore — on aurait
+  // livré des demi-bâtiments. Côté ville, il reste à trente-deux blocs du
+  // centre, bien au chaud, et le tarmac est libre d'un bout à l'autre.
+  //
+  // ET ILS ONT CHANGÉ DE CÔTÉ UNE SECONDE FOIS EN v280, pour la raison INVERSE
+  // de la v278 : la piste ayant pris le diamètre, ce qui était « côté ville »
+  // est maintenant derrière le terminal, à une cote que le disque n'atteint
+  // plus (z = −54 à Orly, pour un rayon pavé de 52). Ils longent donc l'AIRE,
+  // au-delà de la rangée en x — là où un vrai aéroport met sa maintenance — et
+  // leur abscisse est BORNÉE par le disque, jamais écrite en dur.
+  const hangar = (cx) => {
+    bloc(cx - 6, cx + 6, 0, 5, hz0, hz1, base ? KAKI : GRIS);
+    vider(cx - 5, cx + 5, 0, 4, hz0 + 1, hz1 - 1);
     for (let dx = -3; dx <= 3; dx++) {
-      for (let y = 0; y <= 3; y++) set(hx + dx, y, zt1 + 12, BLOCK.AIR);   // la porte
+      for (let y = 0; y <= 3; y++) set(cx + dx, y, hz1, BLOCK.AIR);   // la porte, côté aire
     }
   };
-  if (base) { hangar(-HALL - 9); hangar(HALL + 9); } else hangar(HALL + 14);
+  if (base) { hangar(-hx); hangar(hx); } else hangar(hx);
 }
 
 // L'ENCOMBREMENT DES APPAREILS — et pourquoi il vit ICI.
@@ -659,10 +826,24 @@ export function buildAerodrome(poser, profil, rayon = 68) {
 // sur le modèle rendu, et un témoin de `carteMonde.js` garde `long`. `larg`
 // est la largeur du FUSELAGE, pas l'envergure — les ailes débordent, c'est la
 // règle du gabarit d'une voiture appliquée à un avion.
+//
+// ET `larg` N'EST PAS L'EMPRISE AU SOL — c'est la TROISIÈME fois que cette
+// table piège quelqu'un, et la pire (v278). Max, capture d'iPad : « les avions
+// ne devraient pas être par défaut dans les buildings ». Deux instruments
+// disaient pourtant 0/57 en faute — le témoin de la v228 ET la sonde qui lit
+// le monde — parce que tous DEUX mesuraient `larg`, c'est-à-dire un fuselage
+// de 1,8 bloc, pour un appareil dont les AILES en font 15,2. Mesuré avec la
+// vraie emprise : VINGT-NEUF postes sur cinquante-sept dans un bâtiment.
+//
+// LA BOÎTE DE COLLISION ET L'EMPRISE DE STATIONNEMENT NE SONT PAS LA MÊME
+// MESURE. `larg` reste le fuselage, et c'est juste : une AABB ne tourne pas,
+// un avion large de quinze blocs ne roulerait dans aucune voie de circulation
+// (règle du gabarit d'une voiture, v229). Mais une PLACE doit contenir les
+// ailes. Les deux vivent donc côte à côte, chacune nommée pour ce qu'elle est.
 export const GABARITS_AVION = {
-  avionligne: { long: 16, larg: 1.8, haut: 5.1 },
-  concorde: { long: 20, larg: 1.1, haut: 4.0 },
-  chasseur: { long: 10, larg: 1.4, haut: 3.4 },
+  avionligne: { long: 16, larg: 1.8, envergure: 15.3, haut: 5.1 },
+  concorde: { long: 20, larg: 1.1, envergure: 8.4, haut: 4.0 },
+  chasseur: { long: 10, larg: 1.4, envergure: 7.2, haut: 3.4 },
 };
 const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 
@@ -698,53 +879,98 @@ const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 // vers +x, le long de l'aérogare.
 const CAP_LE_LONG_DE_X = Math.PI / 2;
 
-// Les aérodromes engendrés se garent EN RANGÉE : leur aire est dessinée pour
-// cela, et elle s'élargit avec eux (`aireAvions`). Les valeurs sont celles de
-// la recherche — la rangée libre la plus proche de l'axe déclaré par le plan.
-const RANGEES = {
-  hub: { dv: 22, centre: 0 },
-  ville: { dv: 19, centre: -7 },     // décalé : le hangar occupe x = HALL+8…HALL+20
-  base: { dv: 10, centre: 0 },       // devant les hangars, qui tiennent z = 12…20
-};
+// LES AÉRODROMES ENGENDRÉS SE GARENT EN RANGÉE, CONTRE LA PISTE (v280).
+//
+// `RANGEES` a disparu, et c'est le fond de l'affaire : elle recopiait la cote de
+// l'aire (`dv` 18, 17, 14) à côté du bâtisseur qui la dessinait, et les deux
+// devaient s'accorder à la main. Elles s'accordaient — la v278 avait dû refaire
+// les deux ensemble — mais rien ne l'obligeait. La cote se DEMANDE désormais à
+// `planAerodrome`, qui la tient de l'envergure de ce qui se gare là : deux
+// tables qui décrivent le même plan finissent toujours par diverger, et c'est
+// la leçon du mobilier de Londres.
+//
+// ET C'EST LÀ QUE MAX VOULAIT LES AVIONS. « Places les avions normaux près des
+// pistes » : la piste prenant le diamètre, l'aire est contre elle — le bord
+// d'aile est à deux blocs de la voie de circulation et à six de l'asphalte de
+// la piste. On sort du terminal, on traverse l'aire, on est au seuil.
 
-// ROISSY EST BÂTI À LA MAIN, ET SES POSTES AUSSI. Sa plus longue plage libre
-// sur l'axe nord fait TRENTE ET UN blocs pour une rangée qui en réclame
-// cinquante-quatre : les trois appareils y prennent chacun leur poste, comme
-// aux vraies portes. Ces trois emplacements sortent de la sonde qui balaie
-// l'axe bloc par bloc — les mâts d'éclairage sont à z = ±24, ce qui interdit
-// le poste 22 à un avion de ligne (2,4 blocs de large).
+// ROISSY EST BÂTI À LA MAIN, ET SES POSTES AUSSI — MESURÉS, PAS ÉCRITS.
+//
+// Max : « places les avions normaux près des pistes ». Ses trois appareils
+// étaient coincés dans des interstices du complexe terminal : le couloir entre
+// le tambour de l'aérogare 1 et les halls, et la trouée entre les halls 2C et
+// 2E — à dix-sept, vingt-six et TRENTE-HUIT blocs du bord de piste, derrière
+// des bâtiments. La v278 avait mesuré qu'il n'y avait que DEUX poches assez
+// grandes pour un gros porteur, et c'était vrai : cette mesure-là avait été
+// faite AVEC les huit avions en blocs sur le tarmac, et avec un disque pavé de
+// soixante-huit blocs qui laissait sept à neuf blocs d'asphalte libre entre un
+// hall et la première piste, pour une envergure de quinze.
+//
+// Les avions en blocs partis et le disque passé à quatre-vingt-deux, la sonde
+// refaite rend QUATRE CENT SOIXANTE-TROIS places à ciel ouvert pour un gros
+// porteur là où il y en avait quatre, et CENT CINQUANTE-TROIS rangées complètes
+// possibles. On prend la plus proche de la piste puis la plus centrée : dv = 33,
+// et les abscisses sont EXACTEMENT la rangée générique (longueur de chaque
+// appareil plus un passage de quatre, centrée) — ce qui est le signe que le plan
+// tient tout seul, et non qu'on l'a forcé.
+//
+// TROIS OBSTACLES, TROIS MESURES, ET AUCUN NE SE VOYAIT EN RELISANT. La sonde
+// qui distingue les cas les a nommés en une exécution : à dv ≥ 34 l'aile d'un
+// gros porteur monte SUR la voie de service ; les mâts d'éclairage, posés par
+// rapport à `TARMAC` qui venait de passer de 25 à 40, se retrouvaient à z = ±39,
+// pile dans l'envergure, et bloquaient les TROIS postes à la fois ; et la
+// manche à air, posée de la même façon, se retrouvait au bord de la piste.
 const POSTES_ROISSY = [
-  { espece: 'concorde', du: -34, dv: 23 },
-  { espece: 'avionligne', du: -13, dv: 21 },
-  { espece: 'chasseur', du: 3, dv: 21 },
+  { espece: 'avionligne', du: -19, dv: STAND_ROISSY },   // aile à 1 bloc de la voie, 4 du bord
+  { espece: 'concorde', du: 3, dv: STAND_ROISSY },
+  { espece: 'chasseur', du: 22, dv: STAND_ROISSY },
 ];
 
-export function postesAvion(profil) {
+export function postesAvion(profil, rayon = 68) {
   if (profil === 'roissy') {
     return POSTES_ROISSY.map((p) => ({ ...p, cap: CAP_LE_LONG_DE_X }));
   }
-  const base = profil === 'base';
-  const especes = base ? ['chasseur', 'chasseur', 'chasseur'] : ['avionligne', 'concorde', 'chasseur'];
-  const plan = RANGEES[profil] || RANGEES.ville;
+  const especes = especesDe(profil);
+  const { STAND } = planAerodrome(profil, rayon);
   const total = especes.reduce((s, e) => s + GABARITS_AVION[e].long, 0)
     + PASSAGE * (especes.length - 1);
-  let x = plan.centre - total / 2;
+  let x = -total / 2;
   return especes.map((espece) => {
     const g = GABARITS_AVION[espece];
     const du = Math.round(x + g.long / 2);
     x += g.long + PASSAGE;
-    return { espece, du, dv: plan.dv, cap: CAP_LE_LONG_DE_X };
+    return { espece, du, dv: STAND, cap: CAP_LE_LONG_DE_X };
   });
+}
+
+// L'EMPRISE AU SOL D'UN APPAREIL GARÉ — publiée ici, lue partout.
+//
+// Une case de bloc va de x à x+1 ; l'appareil centré en (du, dv) occupe
+// [du - long/2, du + long/2] le long de x et [dv - envergure/2, dv +
+// envergure/2] le long de z, puisqu'il se gare le long de x. Arrondir vers le
+// HAUT des deux côtés — ce que faisait mon premier balayage — ajoute une case
+// à chaque bord et fait rater la seule place de Roissy qui convienne.
+export function empriseAuSol(espece, du = 0, dv = 0) {
+  const g = GABARITS_AVION[espece];
+  return {
+    x0: Math.floor(du - g.long / 2), x1: Math.ceil(du + g.long / 2) - 1,
+    z0: Math.floor(dv - g.envergure / 2), z1: Math.ceil(dv + g.envergure / 2) - 1,
+  };
 }
 
 // L'EMPRISE que la rangée réclame sur le tarmac. `buildAerodrome` l'utilise
 // pour dimensionner sa dalle : l'aire se règle sur ce qui s'y gare, et elle
 // suivra toute seule le jour où un appareil changera de taille.
-export function aireAvions(profil) {
-  const postes = postesAvion(profil);
-  const x0 = Math.min(...postes.map((p) => p.du - GABARITS_AVION[p.espece].long / 2));
-  const x1 = Math.max(...postes.map((p) => p.du + GABARITS_AVION[p.espece].long / 2));
-  const dv0 = Math.min(...postes.map((p) => p.dv));
-  const dv1 = Math.max(...postes.map((p) => p.dv));
-  return { x0: Math.floor(x0) - 2, x1: Math.ceil(x1) + 2, dv0: dv0 - 3, dv1: dv1 + 3 };
+//
+// ELLE LIT L'ENVERGURE DEPUIS LA v278. Elle prenait `dv ± 3` — un chiffre
+// rond — alors qu'un avion de ligne étend ses ailes à huit blocs de son axe :
+// la dalle s'arrêtait donc cinq blocs avant le bout des ailes, et l'appareil
+// débordait sur l'herbe. Une aire se règle sur ce qui s'y gare, ailes
+// comprises.
+export function aireAvions(profil, rayon = 68) {
+  const boites = postesAvion(profil, rayon).map((p) => empriseAuSol(p.espece, p.du, p.dv));
+  return {
+    x0: Math.min(...boites.map((b) => b.x0)) - 2, x1: Math.max(...boites.map((b) => b.x1)) + 2,
+    dv0: Math.min(...boites.map((b) => b.z0)) - 2, dv1: Math.max(...boites.map((b) => b.z1)) + 2,
+  };
 }

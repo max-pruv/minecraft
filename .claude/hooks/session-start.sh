@@ -62,9 +62,31 @@ fi
 #
 # Sans elles, `npm test` échoue sur un message d'import et non sur un défaut du
 # jeu — le genre d'échec qu'on met dix minutes à ne pas comprendre.
-if [ -d tests ] && [ ! -d tests/node_modules ]; then
+#
+# ET ON REGARDE SI LE BANC PEUT VRAIMENT DÉMARRER, PAS SI UN CHEMIN EXISTE.
+# `tests/node_modules` est parti dans le dépôt en v281 comme LIEN SYMBOLIQUE
+# vers son propre chemin absolu. Trois choses en découlent, et les trois ont
+# coûté deux lancements de portail :
+#   · `-d` rend faux sur une boucle, donc l'ancien test voulait bien installer —
+#     mais `npm install` meurt de la MÊME boucle ;
+#   · son message partait dans un `tail -2` qui n'en montrait rien ;
+#   · et `npm test` sortait ensuite sur un code non nul SANS écrire une ligne
+#     dans le journal, si bien qu'un portail qui n'a jamais démarré ressemble à
+#     un passage vide.
+# On juge donc sur la DÉPENDANCE que `banc.js` demande vraiment, on défait un
+# lien inutilisable (jamais un vrai dossier), et un échec d'installation se DIT.
+if [ -d tests ] && [ ! -d tests/node_modules/playwright-core ]; then
+  if [ -L tests/node_modules ]; then
+    echo "→ tests/node_modules est un lien inutilisable — on le défait"
+    rm -f tests/node_modules
+  fi
   echo "→ installation des dépendances du banc d'essai…"
-  (cd tests && npm install --no-audit --no-fund 2>&1 | tail -2)
+  if (cd tests && npm install --no-audit --no-fund >/tmp/banc-install.log 2>&1); then
+    echo "→ banc prêt : $(ls tests/node_modules 2>/dev/null | wc -l) paquets"
+  else
+    echo "❌ LE BANC NE PEUT PAS DÉMARRER — l'installation a échoué :"
+    tail -5 /tmp/banc-install.log
+  fi
 fi
 
 # ---- 3. ce qui était en cours ------------------------------------------------

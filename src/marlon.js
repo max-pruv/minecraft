@@ -1,5 +1,10 @@
 // Friendly NPCs: Marlon (a kid in a striped sailor shirt who follows the
-// player) and Professeur Cornichon (the creature expert who hosts the quiz).
+// player) and Professeur Cornichon, the professor who hosts the quiz.
+//
+// LEURS PHRASES NE PARLENT PLUS D'ATTRAPER (v285). Elles promettaient un Dex,
+// des balles et des « dresseurs » : le mode d'attrape est parti sur décision de
+// Max, et un personnage qui annonce une commande qui n'existe plus est pire que
+// muet — c'est la règle des messages de la maison, appliquée à un dialogue.
 
 import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
@@ -146,8 +151,46 @@ export class BaseNPC {
   think() { return { speed: 0, yaw: this.yaw }; }
 
   update(dt) {
-    const { speed, yaw } = this.think(dt);
+    let { speed, yaw } = this.think(dt);
     this.yaw = yaw;
+    // UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). `sweep` ne connaît que
+    // les blocs ; une voiture — de la rue, celle de l'enfant au volant, une
+    // voiture garée — n'en est pas un. On regarde un pas devant soi
+    // (`world.obstaclePieton`, branché par main.js) : si c'est une voiture,
+    // on ne fait pas ce pas et l'on se retourne (`contourner`). Sauf si l'on
+    // est DÉJÀ dedans — une voiture qui a roulé sur nous — : sortir est la
+    // seule façon d'en sortir, même règle que la voiture de l'enfant (v245).
+    // ET ON S'ÉCARTE D'UNE VOITURE QUI ARRIVE (v259). Max : « pas un mode
+    // violent comme GTA ». Un piéton dans le couloir d'une voiture en marche
+    // (`world.vehiculeApproche`) fait ce que fait un vrai piéton : il presse
+    // le pas de côté, du côté où il est déjà, jusqu'à être hors du couloir
+    // avec de la marge, puis il souffle un instant et reprend son programme.
+    // Deux secondes au plus : contre un mur, on ne piétine pas sans fin.
+    if (this.world.vehiculeApproche) {
+      if (!this.ecart && !(this.repos > 0)) {
+        const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
+        if (v) this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false };
+      }
+      if (this.ecart) {
+        const e = this.ecart; e.t += dt;
+        const ex = e.uz * e.cote, ez = -e.ux * e.cote;   // perpendiculaire, vers l'extérieur
+        yaw = Math.atan2(-ex, -ez); this.yaw = yaw;
+        speed = this.walkSpeed * 1.6;
+        const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
+        // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
+        // seconde) : on essaie l'autre côté, une fois
+        if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
+        if (!encore || e.t > 2) { this.ecart = null; this.repos = 0.8; speed = 0; }
+      } else if (this.repos > 0) { this.repos -= dt; speed = 0; }
+    }
+    if (speed > 0 && this.world.obstaclePieton) {
+      const pas = 0.9 + this.largeur / 2;
+      const ax = this.pos.x - Math.sin(this.yaw) * pas, az = this.pos.z - Math.cos(this.yaw) * pas;
+      if (this.world.obstaclePieton(ax, az, this.pos.y) && !this.world.obstaclePieton(this.pos.x, this.pos.z, this.pos.y)) {
+        speed = 0;
+        if (this.contourner) this.contourner();
+      }
+    }
 
     this.vel.x = -Math.sin(this.yaw) * speed;
     this.vel.z = -Math.cos(this.yaw) * speed;
@@ -157,10 +200,17 @@ export class BaseNPC {
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
-    if ((blockedX || blockedZ) && this.onGround && speed > 0) {
+    // LE SAUT CONSOMME L'APPUI AU SOL, SINON LE PERSONNAGE ESCALADE LA FAÇADE.
+    // `onGround` ne se remet à faux que dans `sweep` sur une descente SANS
+    // collision — une montée (`delta > 0`) ne l'efface pas, et l'atterrissage
+    // qui le pose à vrai sort par un `return true` avant la ligne qui
+    // l'effacerait. Un personnage collé à un mur a donc `blockedX` vrai ET
+    // `onGround` vrai à chaque image : il se redonne son impulsion
+    // indéfiniment et remonte l'immeuble. Mesuré en v242 sur quarante-huit
+    // trajectoires aux angles de Midtown : quinze fautives, sommet à 34,11
+    // pour un sol à 33.
+    if ((blockedX || blockedZ) && this.onGround && speed > 0 && !this.ecart) {
       this.vel.y = 7.5;
-      // Le saut consomme l’appui au sol. Sans cela, le contact avec un mur
-      // réarmait l’impulsion à chaque image et faisait voler le personnage.
       this.onGround = false;
     }
 
@@ -255,11 +305,11 @@ export class Marlon extends BaseNPC {
         'Attends-moi !',
         'Trop stylé ce monde !',
         'On construit une maison ?',
-        'Regarde, une créature là-bas !',
-        'Lance une ball, vite !',
+        'Regarde le train là-bas !',
+        'On prend l\'avion ?',
         'On va voir la montagne ?',
         "J'adore les arbres ici.",
-        'Tu as attrapé combien de créatures ?',
+        'Tu connais combien de villes ?',
         'On fait la course ?',
       ],
     });
@@ -268,8 +318,18 @@ export class Marlon extends BaseNPC {
 
   placeNearPlayer() {
     const p = this.player.pos;
-    const angle = Math.random() * Math.PI * 2;
-    this.placeAt(p.x + Math.sin(angle) * 2.5, p.z + Math.cos(angle) * 2.5, p.y);
+    let angle = Math.random() * Math.PI * 2, d = 2.5;
+    // L'ENFANT CONDUIT : on ne se replace pas dans le nez de sa voiture
+    // (v259). Rappelé à 2,5 blocs sous un angle au hasard, Marlon tombait une
+    // fois sur huit devant le capot, et la voiture — qui freine désormais
+    // devant un piéton — s'arrêtait net. Derrière ou à côté, et un peu plus
+    // loin : hors du rectangle de la voiture (2,2 de demi-longueur).
+    if (this.player.gabarit > 1) {
+      const cap = this.player.yaw + Math.PI;                 // le nez de la voiture
+      angle = cap + Math.PI + (Math.random() - 0.5) * Math.PI; // ±90° autour de l'arrière
+      d = 4;
+    }
+    this.placeAt(p.x + Math.sin(angle) * d, p.z + Math.cos(angle) * d, p.y);
   }
 
   think() {
@@ -277,12 +337,14 @@ export class Marlon extends BaseNPC {
     toPlayer.y = 0;
     const dist = toPlayer.length();
     if (dist > 26) this.placeNearPlayer();
+    // et l'on ne vient pas se coller à une voiture : à cinq blocs, on attend
+    if (this.player.gabarit > 1 && dist < 5) return { speed: 0, yaw: this.yaw };
     const yaw = Math.atan2(toPlayer.x, toPlayer.z) + Math.PI;
     return { speed: dist > 3.2 ? this.walkSpeed : 0, yaw };
   }
 }
 
-// Wanders around a home point; faces the player when approached.
+// Wanders around a home point; keeps wandering when the player approaches.
 export class Wanderer extends BaseNPC {
   constructor(scene, world, player, toast, opts, homeX, homeZ) {
     super(scene, world, player, toast, opts);
@@ -293,15 +355,9 @@ export class Wanderer extends BaseNPC {
   }
 
   think(dt) {
-    const toPlayer = this.player.pos.clone().sub(this.pos);
-    toPlayer.y = 0;
-    const playerDist = toPlayer.length();
-
-    // face the player when they come close
-    if (playerDist < 5) {
-      return { speed: 0, yaw: Math.atan2(toPlayer.x, toPlayer.z) + Math.PI };
-    }
-
+    // Plus de « face the player when they come close » (v243) : le promeneur
+    // se figeait à moins de cinq blocs et fixait l'enfant. Il continue sa
+    // promenade ; ses phrases, elles, partent toujours quand on est près.
     this.stateTime -= dt;
     if (this.stateTime <= 0) {
       this.state = this.state === 'idle' ? 'walk' : 'idle';
@@ -318,13 +374,19 @@ export class Wanderer extends BaseNPC {
       yaw: this.state === 'walk' ? this.wanderYaw : this.yaw,
     };
   }
+
+  // Une voiture devant : on marque le pas et l'on repart de biais (v259).
+  contourner() {
+    this.wanderYaw = (this.wanderYaw ?? this.yaw) + Math.PI * 0.6;
+    this.state = 'idle'; this.stateTime = 0.3;
+  }
 }
 
 export class Cornichon extends Wanderer {
   constructor(scene, world, player, toast, homeX, homeZ) {
     super(scene, world, player, toast, {
       name: 'Prof. Cornichon',
-      label: 'Professeur Cornichon — expert en créatures !',
+      label: 'Professeur Cornichon — il pose les questions !',
       walkSpeed: 1.6,
       firstSpeech: 10,
       look: {
@@ -335,12 +397,12 @@ export class Cornichon extends Wanderer {
         hairstyle: 'short', glasses: true,
       },
       phrases: [
-        'Bonjour, jeune dresseur !',
+        'Bonjour, jeune voyageur !',
         'Je suis le Professeur Cornichon !',
-        'Les créatures rares adorent la neige et le sable !',
-        'As-tu rempli ton Dex ?',
+        'Le Concorde va deux fois plus vite que le son !',
+        'Combien de capitales sais-tu nommer ?',
         'Réponds bien à mon quiz pour jouer plus longtemps !',
-        'Les créatures SPOOKY sont très difficiles à attraper.',
+        'Le métro de Washington passe sous le Potomac.',
         'Un cornichon par jour, en pleine forme toujours !',
         'Reviens me voir quand tu auras tout attrapé !',
       ],
@@ -367,7 +429,7 @@ export function createHeroes(scene, world, player, toast, cx, cz) {
       "Plus rapide que l'éclair ! ⚡",
       'Justice et blocs pour tous !',
       'Un héros protège toujours ses amis !',
-      'J\'ai vu une créature rare près de la montagne !',
+      'J\'ai survolé la montagne ce matin !',
       'Entraîne-toi bien au quiz, petit héros !',
       'Mon costume ? Cousu par ma grand-mère.',
     ],
@@ -499,17 +561,20 @@ export function createAstronautes(scene, world, player, toast, cx, cz) {
 
   const lise = new Wanderer(scene, world, player, toast, {
     name: 'Lise',
-    label: 'Lise — biologiste, elle étudie les martiens !',
+    // Elle étudiait les MARTIENS, qui étaient une espèce de créature (v285) ;
+    // Mars reste, avec sa roche, sa poussière et sa glace. Le personnage tient,
+    // la promesse qu'on ne peut plus tenir s'en va.
+    label: 'Lise — géologue, elle étudie la roche de Mars !',
     walkSpeed: 1.4,
     firstSpeech: 28,
     look: commun(0x58b04c),
     phrases: [
-      'J\'en ai compté trois espèces différentes !',
-      'Lance-leur une balle, ils adorent ça.',
-      'Le Grand Ancien est très rare, ouvre l\'œil.',
-      'Leurs antennes s\'allument quand ils sont contents.',
-      'Ils communiquent par petits sifflements.',
-      'Aucun martien n\'a jamais fait de mal à personne.',
+      'Cette roche est rouge à cause du fer rouillé.',
+      'Je cherche de la glace sous la poussière.',
+      'Une journée ici dure quarante minutes de plus.',
+      'La poussière se colle partout, tu verras.',
+      'Il y a eu de l\'eau ici, il y a très longtemps.',
+      'Mon plus beau caillou pèse trois kilos !',
     ],
   }, cx + 11, cz + 9);
 
@@ -527,8 +592,8 @@ export function createVillagers(scene, world, player, toast, cx, cz) {
     'Belle journée pour construire !',
     'Tu as vu les monuments ?',
     "J'adore ce village.",
-    'Les créatures ne sont pas méchantes, tu sais.',
-    'Un jour je serai dresseur, comme toi !',
+    'Les trains partent de la gare, là-bas.',
+    'Un jour je ferai le tour du monde, comme toi !',
     'Le château fort est par là-bas !',
     'La pyramide de verre brille au soleil.',
     'Prof. Cornichon connaît tout sur tout.',

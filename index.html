@@ -1,16 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Web Minecraft</title>
+  <title>Grand Tour</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <meta name="theme-color" content="#87ceeb" />
+  <meta name="theme-color" content="#EFF3FA" />
+  <script>
+    /* DU VERRE NE SERT QUE S'IL Y A QUELQUE CHOSE DERRIÈRE (v276).
+       `?verre=0` coupe tous les flous, pour MESURER ce qu'ils coûtent — même
+       discipline que `?ombres=0`, `?reflets=0` et `?lampes=0`. Posé ici, avant
+       la feuille de style, pour que la première image soit déjà sans flou. */
+    try {
+      if (new URLSearchParams(location.search).get('verre') === '0') {
+        document.documentElement.classList.add('sans-verre');
+      }
+    } catch (e) {}
+  </script>
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Minecraft" />
+  <meta name="apple-mobile-web-app-title" content="Grand Tour" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="icon" type="image/svg+xml" href="./icone.svg" />
   <link rel="icon" type="image/png" href="./icon-192.png" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -164,6 +176,47 @@
     }
     #app-version.ok { color: #7fae91; border-color: rgba(90,200,140,.3); }
     #app-version.old { color: #d8ae74; border-color: rgba(255,190,90,.4); opacity: 1; }
+    /* LE JOURNAL DES NOUVEAUTÉS (v254). Max : « quand l'utilisateur clique
+       sur le logo de mise à jour, une modale, qu'il peut fermer, pour voir
+       tout ce qui est nouveau sur chaque version — extrêmement court, des
+       puces de quelques mots ». Le badge l'ouvre ; la mise à jour forcée,
+       dernier recours d'un parent, reste dedans, en bas. */
+    #nouveautes-modale {
+      position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+      background: rgba(6, 10, 18, .72); padding: 16px;
+    }
+    /* `hidden` perd contre un `display: flex` d'auteur : sans cette ligne le
+       voile couvrait tout l'écran en permanence et avalait les gestes — le
+       portail l'a dit (« glisser promène la carte » : zéro déplacement). */
+    #nouveautes-modale[hidden] { display: none; }
+    #nouveautes-modale .carte {
+      position: relative; width: min(520px, 100%); max-height: min(80vh, 720px);
+      display: flex; flex-direction: column;
+      background: #141a26; color: #e8ecf3; border: 1px solid rgba(255,255,255,.14);
+      border-radius: 16px; box-shadow: 0 18px 60px rgba(0,0,0,.55); font-family: inherit;
+    }
+    #nouveautes-modale h2 { margin: 0; padding: 16px 52px 10px 20px; font-size: 18px; }
+    #nouveautes-modale .fermer {
+      position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: #fff;
+      font-size: 18px; cursor: pointer;
+    }
+    #nouveautes-liste { overflow-y: auto; padding: 0 20px 12px; -webkit-overflow-scrolling: touch; }
+    #nouveautes-liste section { padding: 10px 0; border-top: 1px solid rgba(255,255,255,.08); }
+    #nouveautes-liste section.courante { background: rgba(127,174,145,.08); margin: 0 -12px; padding: 10px 12px; border-radius: 10px; border-top: 0; }
+    #nouveautes-liste h3 { margin: 0 0 4px; font-size: 14px; display: flex; gap: 8px; align-items: baseline; }
+    #nouveautes-liste h3 .v { color: #9fb2cc; font-size: 12px; font-weight: normal; letter-spacing: .3px; }
+    #nouveautes-liste h3 .tag { font-size: 11px; color: #7fae91; font-weight: normal; }
+    #nouveautes-liste ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.45; }
+    #nouveautes-liste li { margin: 1px 0; }
+    #nouveautes-modale .pied {
+      display: flex; gap: 10px; justify-content: space-between; align-items: center;
+      padding: 10px 20px 14px; border-top: 1px solid rgba(255,255,255,.1); font-size: 12px; color: #9fb2cc;
+    }
+    #nouveautes-maj {
+      font-family: inherit; font-size: 13px; padding: 8px 14px; cursor: pointer;
+      background: #3c5a86; color: #fff; border: 2px solid #5a80b4; border-radius: 8px;
+    }
 
     /* Le pied du menu : le partage et la version, discrets, côte à côte. */
     /* Le pied du menu respire.
@@ -346,6 +399,9 @@
     }
     /* la durée du jour reste lisible sans peser sur la taille du bouton */
     #edu-today { font-size: 13px; opacity: .82; font-weight: normal; }
+    /* le jeu se prépare (v258) : les boutons attendent, et la ligne dit quoi */
+    #mode-row button:disabled { opacity: .45; cursor: wait; }
+    #prep-line { display: none; font-size: 14px; color: #9fd8e8; margin-top: 8px; text-align: center; }
     #online-menu {
       display: none; flex-direction: column; align-items: center; gap: 10px;
       background: rgba(255,255,255,0.05); border: 2px solid #3a4a6b; border-radius: 16px;
@@ -389,6 +445,18 @@
       background: #3c5a86; color: #fff; border: 2px solid #5a80b4; border-radius: 8px;
       flex-shrink: 0;
     }
+    /* L'ÉTENDUE DES GRAPHISMES (v289) — quatre choix, en pleine largeur SOUS le
+       libellé : à quatre boutons, la colonne de droite des autres réglages est
+       trop étroite sur un téléphone, et les mots deviendraient des abréviations.
+       Ce qui décide est la place, pas le goût : la rangée se dit en fractions,
+       jamais en pixels (v272). */
+    #etendue-choix { display: flex; gap: 6px; margin-top: 10px; }
+    .etendue-btn {
+      font-family: inherit; font-size: 13px; padding: 8px 4px; cursor: pointer;
+      flex: 1 1 0; min-width: 0;
+      background: #2c3a58; color: #cdd6ea; border: 2px solid #46587e; border-radius: 8px;
+    }
+    .etendue-btn.on { background: #3c5a86; color: #fff; border-color: #78a0d8; font-weight: bold; }
     /* the game is mostly played on touch devices — desktop shortcuts are noise there */
     @media (pointer: coarse) {
       #overlay .controls { display: none; }
@@ -434,7 +502,7 @@
     #online-play-btn { background: #2d6a2d !important; border-color: #58b04c !important; }
     #online-back { font-size: 14px !important; padding: 6px 16px !important; background: #3a3a4a !important; }
     #players-btn {
-      display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 152px; z-index: 11;
+      display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 104px; z-index: 11;
       height: 40px; padding: 0 12px; border-radius: 8px;
       border: 2px solid rgba(159, 216, 232, 0.7); background: rgba(0,0,0,0.45);
       color: #9fd8e8; font-family: inherit; font-size: 15px; font-weight: bold; cursor: pointer;
@@ -646,6 +714,95 @@
     #mode-btn { right: 100px; bottom: calc(130px + var(--safe-bottom)); }
     #fly-btn  { right: 24px; bottom: calc(190px + var(--safe-bottom)); font-size: 20px; }
     #down-btn { right: 100px; bottom: calc(210px + var(--safe-bottom)); display: none; }
+    /* LES COMMANDES DE BORD (v262, redessinées en v265). Max, capture
+       d'iPhone : « button pour les roues mal placé, pas élégant ». Mesuré
+       sur la capture : ✈️ et 🛞 flottaient à 340 blocs du bas, en plein
+       ciel, vingt pixels au-dessus d'une manette qui ne les touchait pas,
+       et le compteur « 684 km/h » se repliait sur DEUX lignes de onze
+       pixels sous le curseur blanc — illisible.
+       Deux colonnes JUMELLES dans le coin bas-droit, même hauteur, même
+       base : la manette des gaz à l'extrême droite, et à sa gauche les
+       commandes du vol — ✈️ en haut, 🛞 dessous, la vitesse en bas. Tout
+       est sous le pouce, rien ne flotte, et chaque bouton porte son mot :
+       un enfant de sept ans ne devine pas ce que dit un pictogramme de
+       roue. */
+    #gaz-base {
+      display: none; position: fixed; right: 20px; bottom: calc(96px + var(--safe-bottom));
+      width: 64px; height: 210px; border-radius: 32px; z-index: 7; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35); touch-action: none;
+    }
+    #gaz-fill {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+      background: linear-gradient(to top, rgba(88,176,76,0.85), rgba(255,215,94,0.85));
+    }
+    #gaz-knob {
+      position: absolute; left: 6px; right: 6px; bottom: 0; height: 22px; border-radius: 11px;
+      background: rgba(255,255,255,0.9); box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+    /* La colonne de gauche : un simple fond arrondi, JAMAIS un parent des
+       boutons — la manette lit `getBoundingClientRect` et capture son
+       pointeur, on ne met rien entre elle et le doigt. */
+    #cmd-vol {
+      display: none; position: fixed; right: 90px; bottom: calc(96px + var(--safe-bottom));
+      width: 68px; height: 48px; border-radius: 24px; z-index: 6;
+      border: 2px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.3);
+      pointer-events: none; transition: height 0.18s ease;
+    }
+    #gaz-val {
+      display: none; position: fixed; right: 90px; bottom: calc(102px + var(--safe-bottom));
+      width: 68px; text-align: center; color: #fff; z-index: 7;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000; pointer-events: none;
+    }
+    #gaz-val b { display: block; font-size: 17px; line-height: 1.1; }
+    #gaz-val small { display: block; font-size: 10px; opacity: 0.85; letter-spacing: 1px; }
+    /* Un bouton de bord : l'icône et son mot, dans la colonne. */
+    .tbtn .ic { font-size: 22px; line-height: 1; }
+    .tbtn .lb { display: none; font-size: 8px; letter-spacing: 0.5px; margin-top: 2px; }
+    body.en-avion #fly-btn .lb, body.en-avion #train-btn .lb { display: block; }
+    body.en-avion #fly-btn, body.en-avion #train-btn { flex-direction: column; }
+    #train-btn { display: none; }
+    #train-btn.sorti { background: rgba(45, 106, 45, 0.8); border-color: #58b04c; }
+    /* LA MANETTE ET LE COMPTEUR SONT DES INSTRUMENTS D'AVION (v272). Max,
+       capture de Hambourg : « la jauge de vitesse, je ne veux pas qu'elle
+       soit existante pour une voiture ». Une voiture se conduit au joystick
+       — l'avant accélère, l'arrière freine puis recule — et c'est ce qui
+       marchait avant la v262 ; un enfant de sept ans n'a pas deux doigts à
+       consacrer à un cadran pour rouler dans une rue. L'avion, lui, garde
+       les deux : une manette des gaz est ce qui distingue un avion d'une
+       voiture (v228), et le compteur en Mach a été bâti pour lui (v267). */
+    body.en-avion #gaz-base, body.en-avion #cmd-vol, body.en-avion #gaz-val { display: block; }
+    body.en-vehicule #jump-btn, body.en-vehicule #mode-btn,
+    body.en-vehicule #down-btn, body.en-vehicule #hotbar { display: none !important; }
+    body.en-vehicule:not(.en-avion) #fly-btn { display: none !important; }
+    /* En avion la colonne se déplie et porte les deux boutons ; en voiture
+       elle n'est qu'un socle pour le compteur. */
+    body.en-avion #cmd-vol { height: 210px; }
+    body.en-avion #fly-btn { right: 94px; bottom: calc(240px + var(--safe-bottom)); }
+    body.en-avion #train-btn { display: flex; right: 94px; bottom: calc(174px + var(--safe-bottom)); }
+    /* LE CADRAN DE CAP (v263) : aux commandes seulement, en haut au milieu —
+       le cap en degrés, la ville devant et sa distance, et un repère qui
+       glisse sur la règle quand on tourne. Sous le compteur du temps de
+       jeu, pour que les deux se lisent. */
+    #cap-avion {
+      display: none; position: fixed; top: calc(52px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      min-width: 200px; text-align: center; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.42); border-radius: 10px; padding: 5px 14px 7px; z-index: 6;
+      pointer-events: none; font-weight: bold;
+    }
+    body.en-avion #cap-avion { display: block; }
+    #cap-degres { font-size: 13px; letter-spacing: 1px; opacity: 0.85; }
+    #cap-ville { font-size: 17px; line-height: 1.25; }
+    #cap-ville small { font-size: 13px; font-weight: normal; opacity: 0.9; }
+    #cap-regle {
+      position: relative; height: 6px; margin: 5px 6px 0; border-radius: 3px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.55), rgba(255,255,255,0.15));
+    }
+    #cap-regle::before { content: ''; position: absolute; left: 50%; top: -3px; width: 2px; height: 12px; margin-left: -1px; background: #fff; }
+    #cap-repere {
+      position: absolute; top: -5px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+      background: #ffd54a; border: 2px solid #000; box-sizing: border-box; transition: left 0.15s linear;
+    }
+    #cap-repere.dehors { background: #ff8a5e; }
     #pause-btn {
       display: none; position: fixed; top: calc(8px + var(--safe-top)); right: 8px; z-index: 7;
       width: 40px; height: 40px; border-radius: 8px;
@@ -653,48 +810,28 @@
       color: #fff; font-size: 18px;
     }
 
-    /* creature catching */
+    /* L'ÉTIQUETTE DE CE QU'ON REGARDE — une bête, une monture. Elle est née
+       avec l'attrape de créatures (retirée en v285) et son `id` le dit encore ;
+       ce qu'elle nomme aujourd'hui, ce sont les animaux. */
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
       z-index: 5; pointer-events: none; white-space: nowrap;
     }
     #toast { pointer-events: auto; cursor: pointer; }
+    /* LE BANDEAU NE DÉBORDE PLUS DE L'ÉCRAN (v265). `white-space: nowrap`
+       sur un message d'une ligne et demie — « Aux commandes du chasseur ! Le
+       joystick fait rouler, ✈️ met les gaz » — le coupait des DEUX côtés sur
+       un iPhone de 430 points, mesuré sur capture. Il s'enroule, centré, et
+       en avion il descend sous le cadran de cap (qui finit à 107 px du haut,
+       hors encoche). */
     #toast {
       position: fixed; left: 50%; top: 10%; transform: translateX(-50%);
+      max-width: min(88vw, 520px); text-align: center; white-space: normal;
       font-size: 17px; font-weight: bold; text-shadow: 1px 1px 0 #000;
-      opacity: 0; transition: opacity 0.5s; z-index: 8; pointer-events: none; white-space: nowrap;
+      opacity: 0; transition: opacity 0.5s; z-index: 8; pointer-events: none;
     }
-    #ball-btn { right: 176px; bottom: calc(110px + var(--safe-bottom)); font-size: 26px; }
-    #dex-btn {
-      position: fixed; top: calc(8px + var(--safe-top)); right: 56px; z-index: 11;
-      width: 40px; height: 40px; border-radius: 8px;
-      border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
-      color: #fff; font-size: 18px; cursor: pointer;
-    }
-    #dex-panel {
-      display: none; position: fixed; top: calc(56px + var(--safe-top)); right: 8px; z-index: 12;
-      width: min(320px, 90vw); max-height: 70vh; overflow-y: auto;
-      background: rgba(10, 14, 20, 0.92); border: 2px solid #555; border-radius: 8px;
-      color: #eee; padding: 12px; font-size: 13px;
-    }
-    #dex-title { font-weight: bold; margin-bottom: 8px; padding-right: 24px; }
-    #dex-close {
-      position: absolute; top: 6px; right: 8px; background: none; border: none;
-      color: #aaa; font-size: 16px; cursor: pointer;
-    }
-    .dex-row { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 6px; }
-    .dex-row > span:nth-child(2) { flex: 1; }
-    .dex-release {
-      background: rgba(0,0,0,0.4); border: 1px solid #46587e; border-radius: 6px;
-      color: #fff; font-size: 14px; padding: 2px 8px; cursor: pointer; flex-shrink: 0;
-    }
-    .dex-release:hover { border-color: #9fd8e8; }
-    .dex-row.unknown { color: #777; }
-    .type-chip {
-      display: inline-block; padding: 1px 6px; border-radius: 4px;
-      color: #111; font-size: 10px; font-weight: bold; vertical-align: middle;
-    }
+    body.en-avion #toast { top: calc(120px + var(--safe-top)); }
 
     /* educational mode */
     #edu-timer {
@@ -706,7 +843,7 @@
     #edu-timer { padding-right: 30px; pointer-events: auto; }
     @keyframes pulse { 50% { opacity: 0.55; } }
     #inv-btn {
-      position: fixed; top: calc(8px + var(--safe-top)); right: 104px; z-index: 11;
+      position: fixed; top: calc(8px + var(--safe-top)); right: 56px; z-index: 11;
       width: 40px; height: 40px; border-radius: 8px;
       border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.35);
       color: #fff; font-size: 18px; cursor: pointer;
@@ -1219,21 +1356,29 @@
     .toggle.on { background: #2d6a2d; border-color: #58b04c; }
     .toggle.on::after { transform: translateX(24px); background: #fff; }
 
-    /* Le garde-manger et la jauge du chantier : deux pastilles qui OUVRENT
-       l'atelier quand on les touche. Max, devant les deux jauges muettes qui
-       flottaient en plein champ de vision : « je ne comprends pas à quoi
-       servent ces boutons, quand on clique il ne se passe rien — et replace-
-       les, c'est pas bien fait ». Si ça ressemble à un bouton, ça doit en
-       être un ; et un bouton vit dans un rail, pas au milieu de l'écran.
-       Elles habitent donc le rail bas-gauche : en flux, comme tout le bord
-       gauche — plus aucune coordonnée à la main. */
-    #meat-counter, #chantier-hud {
-      display: none; white-space: nowrap;
+    /* Le garde-manger : une pastille qui COMPTE ce que l'enfant a récolté.
+       Elle ouvrait l'atelier, où la viande se dépensait ; l'atelier et la
+       jauge du chantier n'existent plus (v255). Elle habite le rail
+       bas-gauche : en flux, comme tout le bord gauche — plus aucune
+       coordonnée à la main. Et comme elle ne s'ouvre plus, elle ne se
+       présente pas comme un bouton : pas de curseur de main. */
+    /* LA PASTILLE DE VIANDE NE SE TOUCHE PAS — ET ELLE VOLAIT LE DOIGT (v272).
+       `#left-rail-bottom > *` rend TOUS ses enfants cliquables, boutons
+       compris ; mais celle-ci ne fait que compter (main.js le dit : « elle ne
+       se touche plus »), et elle est posée à gauche, à 150 px du bas — DANS la
+       zone du joystick. Un enfant qui a ramassé de la viande ne pouvait donc
+       plus prendre le volant à cet endroit : la pastille mangeait le doigt
+       avant le canvas. Même défaut que le bouton « Descendre » de la capture
+       de Max, à un élément près. Trouvé par l'instrumentation du témoin, qui
+       relève `elementFromPoint` : elle a répondu « meat-counter ».
+       RÈGLE : tout ce qui n'est QUE de l'affichage porte
+       `pointer-events: none`, et ce qui se touche le déclare. */
+    #meat-counter {
+      display: none; white-space: nowrap; pointer-events: none;
       font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
       background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px;
-      cursor: pointer; border: 1px solid rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.25);
     }
-    #chantier-hud { color: #9fd8ff; border-color: rgba(159,216,255,0.35); }
 
     /* catch celebration */
     #catch-banner {
@@ -1326,6 +1471,8 @@
       #left-rail { top: calc(8px + var(--safe-top)); }
       #minimap { width: 120px; height: 120px; }
       #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 10px; }
+      #cap-avion { top: calc(92px + var(--safe-top)); min-width: 170px; padding: 4px 10px 6px; }
+      #cap-ville { font-size: 15px; }
       #quiz-card { padding: 16px 14px; max-height: 88vh; overflow-y: auto; }
       #quiz-prof { font-size: 12px; }
       #quiz-question { font-size: 17px; margin: 12px 2px 14px; min-height: 44px; }
@@ -1365,11 +1512,403 @@
 #manhattan-adresse{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:9px 16px;border:1px solid #ffffff22;border-radius:4px;background:#17242acc;color:#eee8dc;font:11px system-ui;letter-spacing:2px;text-transform:uppercase;pointer-events:none;max-width:45vw;text-align:center}
 .carte-ouverte #manhattan-adresse{display:none}
 @media(max-width:700px){#manhattan-adresse{top:8px;font-size:9px;padding:6px 8px}}
+    /* ══════════════════════════════════════════════════════════════════
+       GRAND TOUR — LA MATIÈRE CLAIRE (v276)
+
+       Max, sur la proposition précédente : « je trouve qu'ils ressemblent
+       trop aux précédents ; j'aurais une interface beaucoup plus moderne,
+       beaucoup plus light, avec beaucoup plus de glass design ». Le fond
+       passe du bleu nuit au gris-bleu clair, les cartes pleines deviennent
+       du verre dépoli, et le monospace laisse la place à deux vraies
+       lettres.
+
+       CETTE COUCHE EST UNE SURCHARGE, POSÉE EN FIN DE FEUILLE. Elle ne
+       change que la peau — couleurs, fonds, bords, rayons, ombres,
+       lettres. Les mille lignes de mise en page au-dessus ne bougent pas
+       d'un pixel : c'est ce qui rend le changement reversible et
+       relisible, et ce qui évite de casser une marge en voulant changer
+       une couleur.
+       ══════════════════════════════════════════════════════════════════ */
+
+    /* LES POLICES VIVENT DANS LE DÉPÔT, PAS CHEZ GOOGLE. Le jeu marche
+       hors ligne : un <link> vers fonts.googleapis.com casserait l'accueil
+       dans l'avion, à l'école ou sur le Wi-Fi d'un hôtel. 104 Ko pour les
+       deux, dans le cache IMMUABLE du service worker (v245). */
+    @font-face {
+      font-family: 'Bricolage Grotesque';
+      src: url('./vendor/polices/bricolage-latin.woff2') format('woff2');
+      font-weight: 500 800; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Plus Jakarta Sans';
+      src: url('./vendor/polices/jakarta-latin.woff2') format('woff2');
+      font-weight: 400 700; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --jour: #EFF3FA;
+      --papier: #FFFFFF;
+      --azur: #2B59FF;
+      --azur-fonce: #1D3FC4;
+      --corail: #FF7A4D;
+      --corail-fonce: #E8562A;
+      --vert: #0E9268;
+      /* UNE COULEUR QUI REMPLIT ET UNE COULEUR QUI ÉCRIT NE SONT PAS LA MÊME
+         COULEUR. Les deux accents vifs tiennent très bien en aplat, avec du
+         blanc dessus ; posés en TEXTE sur le verre clair ils tombent à 3,44
+         (corail) et 3,74 (vert) pour une barre de 4,5. Mesuré par le témoin
+         de contraste, pas deviné — je les avais crus bons. */
+      --corail-texte: #B83B16;
+      --vert-texte: #0A6B4C;
+      --brume: #5A6782;
+      --encre: #111A2E;
+      --titre: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+      --corps: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      /* Les deux recettes de verre. Le PANNEAU pour les menus, la
+         COMMANDE — plus fine — pour ce qui flotte par-dessus le jeu. */
+      --verre: rgba(255,255,255,0.58);
+      --verre-bord: rgba(255,255,255,0.86);
+      --verre-flou: blur(24px) saturate(1.5);
+      --verre-ombre: 0 14px 38px rgba(17,26,46,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+      --cmd-ombre: 0 10px 28px rgba(17,26,46,0.14);
+      --trait: rgba(17,26,46,0.10);
+    }
+
+    /* Une icône dessinée au trait, jamais un emoji : à sept ans un
+       pictogramme se reconnaît, un emoji se devine. Une seule classe pour
+       tout le jeu, et la couleur suit celle du texte. */
+    .ic {
+      width: 20px; height: 20px; flex: 0 0 auto;
+      fill: none; stroke: currentColor; stroke-width: 1.8;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ── L'attente de départ ─────────────────────────────────────────── */
+    #boot-loader { background: var(--jour); color: var(--encre); }
+    #boot-text { color: var(--brume); font-family: var(--corps); font-weight: 600; }
+    .boot-bar { background: rgba(17,26,46,0.10); }
+    .boot-bar-fill { background: var(--azur); }
+    .boot-cube { font-size: 0; }
+    .boot-cube svg { width: 62px; height: 62px; display: block; }
+    @keyframes bootspin {
+      0%, 100% { transform: rotate(-14deg); }
+      50% { transform: rotate(14deg); }
+    }
+
+    /* ── L'accueil ───────────────────────────────────────────────────── */
+    body { font-family: var(--corps); }
+    #overlay {
+      background: var(--jour); color: var(--encre);
+      font-family: var(--corps);
+    }
+    /* L'aurore et les méridiens. Le verre a besoin d'avoir quelque chose
+       derrière lui pour se voir ; les méridiens donnent en plus au fond
+       l'identité du jeu — on y fait le tour du monde. Les deux sont des
+       pseudo-éléments : aucun nœud de plus dans le DOM. */
+    #overlay::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(42vmax 42vmax at 8% 4%, rgba(43,89,255,0.30), rgba(43,89,255,0) 68%),
+        radial-gradient(40vmax 40vmax at 96% 34%, rgba(255,122,77,0.28), rgba(255,122,77,0) 68%),
+        radial-gradient(44vmax 44vmax at 4% 104%, rgba(18,185,129,0.16), rgba(18,185,129,0) 68%);
+    }
+    #overlay::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background-repeat: no-repeat; background-position: center 30%;
+      background-size: 128vmax 128vmax;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23111A2E' stroke-opacity='0.07' stroke-width='1'%3E%3Cellipse cx='200' cy='200' rx='150' ry='150'/%3E%3Cellipse cx='200' cy='200' rx='54' ry='150'/%3E%3Cellipse cx='200' cy='200' rx='108' ry='150'/%3E%3Cellipse cx='200' cy='200' rx='150' ry='70'/%3E%3Cellipse cx='200' cy='200' rx='150' ry='120'/%3E%3Cline x1='40' y1='200' x2='360' y2='200'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    /* Tout le contenu passe devant les deux calques. */
+    #overlay > * { position: relative; z-index: 1; }
+
+    #overlay h1 {
+      font-family: var(--titre);
+      font-weight: 800; letter-spacing: -0.045em; line-height: 0.96;
+      color: var(--encre); text-shadow: none;
+      font-size: clamp(38px, 12vw, 52px);
+    }
+    #overlay .subtitle { color: var(--brume); font-size: 14px; line-height: 1.5; }
+    #player-hello { color: var(--encre); text-shadow: none; font-size: 19px; font-weight: 700; }
+    #player-hello .qui { color: var(--azur); }
+    #prep-line { color: var(--brume); font-weight: 600; }
+
+    /* ── Les boutons ─────────────────────────────────────────────────── */
+    /* Trois habits seulement : l'azur pour ce qu'on vient faire, le verre
+       pour le reste, le trait discret pour ce qui se cherche. Le biseau
+       gris des années quatre-vingt-dix disparaît. */
+    #overlay button {
+      font-family: var(--corps); font-weight: 600; font-size: 16px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      padding: 13px 22px; border-radius: 16px; border: 1px solid var(--verre-bord);
+      background: var(--verre); color: var(--encre);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+      box-shadow: 0 6px 18px rgba(17,26,46,0.07);
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    #overlay button:hover { background: rgba(255,255,255,0.78); }
+    #overlay button:active { transform: translateY(1px); }
+    #overlay button.danger {
+      background: rgba(255,122,77,0.14); border-color: rgba(255,122,77,0.42); color: var(--corail-texte);
+    }
+    /* Le bouton principal : celui qu'un enfant cherche en allumant le jeu. */
+    #overlay #play-btn, #overlay #resume-btn {
+      background: var(--azur); border-color: transparent; color: #fff; font-weight: 700;
+      box-shadow: 0 12px 28px rgba(43,89,255,0.32);
+    }
+    #overlay #play-btn:hover, #overlay #resume-btn:hover { background: var(--azur-fonce); }
+    #overlay #online-play-btn {
+      background: var(--azur) !important; border-color: transparent !important; color: #fff !important;
+    }
+    #overlay #online-back {
+      background: transparent !important; border: 1px solid var(--trait) !important; color: var(--brume) !important;
+    }
+
+    /* ── « Qui joue ? » ──────────────────────────────────────────────── */
+    #who-screen {
+      background: var(--verre); border: 1px solid var(--verre-bord);
+      border-radius: 26px; box-shadow: var(--verre-ombre);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+    }
+    #who-screen > button { border-radius: 16px; height: 50px; }
+    #overlay #face-login-btn {
+      background: var(--encre); border-color: transparent; color: #fff; font-weight: 700;
+    }
+    #overlay #face-login-btn:hover { background: #050B1A; }
+    .online-title {
+      font-family: var(--titre); font-weight: 800; letter-spacing: -0.02em;
+      color: var(--encre);
+      display: inline-flex; align-items: center; gap: 9px;
+    }
+    .online-section { color: var(--brume); font-weight: 600; }
+
+    /* ── Les panneaux du menu ────────────────────────────────────────── */
+    #profile-menu, #online-menu, #players-panel {
+      background: var(--verre); border: 1px solid var(--verre-bord);
+      border-radius: 26px; box-shadow: var(--verre-ombre); color: var(--encre);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+    }
+    .pb-label { color: var(--brume); font-weight: 600; }
+    #overlay .pb-toggle {
+      background: rgba(255,255,255,0.62); border: 1px solid var(--trait);
+      color: var(--encre); font-size: 14px; padding: 9px 14px; border-radius: 12px;
+    }
+    #overlay .pb-toggle[aria-pressed="true"], #overlay .pb-toggle.on {
+      background: var(--azur); border-color: transparent; color: #fff;
+    }
+    #overlay input, #overlay select, #home-name, #join-code, #player-name {
+      font-family: var(--corps); background: var(--papier); color: var(--encre);
+      border: 1px solid var(--trait); border-radius: 12px;
+    }
+    #overlay input::placeholder { color: #9AA6BC; }
+    #online-status { color: var(--corail-texte); font-weight: 600; }
+    #overlay .controls { color: var(--brume); line-height: 1.8; }
+    #overlay .controls b { color: var(--encre); font-weight: 700; }
+
+    /* ── Le pied : version et partage ────────────────────────────────── */
+    #app-version, #overlay #partage-btn {
+      font-family: var(--corps); font-weight: 700; font-size: 12px; letter-spacing: 0;
+      padding: 8px 13px; border-radius: 999px; opacity: 1;
+      background: var(--verre); border: 1px solid var(--verre-bord); color: var(--brume);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+      box-shadow: 0 6px 18px rgba(17,26,46,0.07);
+    }
+    #overlay #partage-btn:hover { color: var(--encre); }
+    #app-version.ok { color: var(--vert-texte); border-color: rgba(14,146,104,0.32); }
+    #app-version.old { color: var(--corail-texte); border-color: rgba(232,86,42,0.38); }
+
+    /* ── Les cartes de « Qui joue ? » ────────────────────────────────── */
+    /* Elles portaient un vert et un bleu nuit qui ne sont dans aucune des
+       deux palettes : sur fond clair, elles faisaient tache. Les `!important`
+       d'origine obligent à répondre en `!important` — c'est la seule raison. */
+    #overlay .who-card {
+      background: rgba(255,255,255,0.62) !important;
+      border: 1px solid var(--verre-bord) !important;
+      border-radius: 20px; color: var(--encre);
+      box-shadow: 0 8px 22px rgba(17,26,46,0.07);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+    }
+    #overlay .who-card.active {
+      background: rgba(255,255,255,0.80) !important;
+      border: 1.5px solid var(--azur) !important;
+      box-shadow: 0 12px 30px rgba(43,89,255,0.18);
+    }
+    #overlay .who-card .who-name { font-weight: 700; }
+    #overlay .who-add {
+      background: rgba(255,255,255,0.34) !important;
+      border: 1.5px dashed rgba(43,89,255,0.40) !important;
+      border-radius: 20px; color: var(--azur); font-weight: 700;
+    }
+    #overlay .who-del {
+      background: var(--papier) !important;
+      border: 1px solid var(--trait) !important;
+      color: var(--brume); box-shadow: 0 3px 10px rgba(17,26,46,0.14);
+    }
+    #overlay .who-del:hover { color: var(--corail-texte); border-color: rgba(232,86,42,0.5) !important; }
+
+    /* Le bouton de compte gardait son bleu nuit (#2c3a58) au milieu du verre :
+       parfaitement LISIBLE — 8,07 de contraste, mesuré — mais d'une couleur
+       qui n'est dans aucune des deux palettes. J'ai d'abord annoncé un défaut
+       de contraste ; c'est le témoin qui a démonté ma phrase. Un défaut de
+       PALETTE et un défaut de LISIBILITÉ ne sont pas la même chose, et seul
+       le second se mesure en ratio. */
+    #overlay #face-login-btn {
+      background: var(--encre) !important; border: none !important; color: #fff;
+    }
+    #overlay #account-login-btn {
+      background: rgba(255,255,255,0.62) !important;
+      border: 1px solid var(--verre-bord) !important;
+      color: var(--encre);
+    }
+    #overlay #switch-player-btn { background: var(--verre) !important; color: var(--encre); }
+
+    /* La liste des commandes, sur son propre verre : posée à même le fond,
+       elle flottait sans support une fois le fond éclairci. */
+    #overlay .controls {
+      background: var(--verre); border: 1px solid var(--verre-bord);
+      border-radius: 22px; box-shadow: var(--verre-ombre);
+      -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+      padding: 18px 22px; max-width: min(560px, 92vw); font-size: 13px;
+    }
+
+    /* LE FLOU ATTEND QUE L'ACCUEIL AIT FINI DE TRAVAILLER.
+       Un `backdrop-filter` est un calque que le navigateur relit et refloute ;
+       mesuré, il coûte LA MOITIÉ des images de l'accueil, et ce sont celles
+       dont la chauffe des programmes et le fond de carte ont besoin (une
+       compilation par image, v246). `body.prepare` est posée dans la balise
+       `<body>`, donc active dès la première image ; `main.js` la retire quand
+       les corps sont là, la chauffe finie et « Jouer » libéré. Le verre se
+       dépolit alors en une demi-seconde — l'enfant voit le jeu devenir prêt.
+       La transition ne vit que sur les panneaux : animer un flou coûte cher, et
+       une fois seulement, quand plus rien ne calcule. */
+    body.prepare *, body.prepare *::before, body.prepare *::after {
+      -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    }
+    #who-screen, #profile-menu, #online-menu, #players-panel, #overlay .controls {
+      transition: -webkit-backdrop-filter .5s ease, backdrop-filter .5s ease;
+    }
+
+    /* LA PARURE COUPÉE, POUR LA MESURE. `?verre=0` retire TOUT ce que la
+       refonte ajoute à peindre : le flou des panneaux ET les deux calques
+       plein écran (l'aurore et les méridiens). Ma première version ne coupait
+       que le flou — et la mesure a montré qu'il ne coûte rien ; couper une
+       moitié de ce qu'on soupçonne ne permet pas de conclure sur l'autre.
+       `!important` parce qu'il doit gagner sur chacune des règles ci-dessus. */
+    :root.sans-verre *, :root.sans-verre *::before, :root.sans-verre *::after {
+      -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    }
+    :root.sans-verre #overlay::before, :root.sans-verre #overlay::after {
+      display: none !important;
+    }
+
+    /* LA PARURE DE FOND ATTEND AUSSI, MAIS SEULEMENT SANS CARTE GRAPHIQUE (v277).
+       C'est la règle des ombres de la v247, appliquée à deux calques : « un
+       navigateur sans carte graphique préfère un monde sans ombres à un monde
+       qui n'arrive pas ». Deux surfaces plein écran — trois dégradés radiaux et
+       un SVG de méridiens à 128vmax — se paient en REMPLISSAGE, que SwiftShader
+       calcule sur le processeur et qu'un vrai GPU avale en dixièmes de
+       milliseconde (v237 l'avait déjà mesuré et déclaré non transposable).
+       Sur l'iPad de Max, rien ne change : la carte graphique est là, la classe
+       n'est pas posée, et la parure est visible du premier instant.
+       Mesuré : la préparation se libérait à sa borne de 45 s avec 6 à 18
+       programmes de shaders sur 25 ; parure coupée, 25 sur 25.
+       ET CE N'EST PAS LA REPEINTURE, C'EST LA SURFACE. Mon premier remède
+       donnait aux deux calques leur propre couche de composition
+       (`translateZ(0)`), en pensant que `#prep-line` — réécrite toutes les
+       250 ms — les invalidait. Mesuré sur quatre passages : 12, 11, 6 puis 25
+       sur 25, c'est-à-dire pire au pire passage. Écrit, mesuré, RETIRÉ : forcer
+       une couche, c'est deux surfaces à composer à CHAQUE image au lieu d'une à
+       repeindre parfois. Un remède qui ne se mesure pas ne se garde pas. */
+    :root.rendu-logiciel body.prepare #overlay::before,
+    :root.rendu-logiciel body.prepare #overlay::after {
+      display: none !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       CE QUI BOUGE (v276)
+
+       Max : « rajoute des animations, je veux des choses qui bougent, c'est
+       un jeu, ça va être fun, ça va être rigolo, ça va être animé ».
+
+       DEUX RÈGLES, ET ELLES NE SONT PAS DE GOÛT. Uniquement `transform` et
+       `opacity` — jamais une propriété qui redéclenche la mise en page :
+       c'est ce qui fait la différence entre une animation que le compositeur
+       avale et une qui reprend des images au fil principal, celles que les
+       v245 à v269 ont mis quinze versions à rendre au jeu. Et rien ne bouge
+       PENDANT que le jeu tourne : ces écrans-là ne s'affichent que lorsque
+       l'enfant attend ou choisit, et une animation sur un élément caché ne
+       s'exécute pas — le navigateur s'en charge tout seul.
+       ══════════════════════════════════════════════════════════════════ */
+
+    @keyframes gt-monte {
+      from { opacity: 0; transform: translate3d(0, 14px, 0); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    @keyframes gt-pose {
+      from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.97); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+    @keyframes gt-derive {
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(3%, -2.5%, 0); }
+    }
+    @keyframes gt-boussole {
+      0%, 100% { transform: rotate(-13deg); }
+      50%      { transform: rotate(13deg); }
+    }
+
+    /* L'accueil se pose, il n'apparaît pas d'un bloc : le titre, la baseline,
+       la salutation, puis les panneaux — chacun 70 ms après le précédent. */
+    #overlay h1 { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) both; }
+    #overlay .subtitle { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .07s both; }
+    #player-hello { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .14s both; }
+    #who-screen, #mode-row { animation: gt-pose .55s cubic-bezier(.2,.9,.3,1) .2s both; }
+    #overlay .controls { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .3s both; }
+    #pied-menu { animation: gt-monte .5s cubic-bezier(.2,.8,.3,1) .36s both; }
+
+    /* L'aurore dérive lentement — quarante secondes pour un aller, et
+       `alternate` pour qu'elle revienne sans saut. C'est une translation de
+       compositeur : elle ne repeint rien. */
+    #overlay::before { animation: gt-derive 40s ease-in-out infinite alternate; }
+
+    /* La boussole du chargement balaie, comme une vraie aiguille qui cherche
+       le nord. */
+    .boot-cube { animation: gt-boussole 3.2s ease-in-out infinite; }
+
+    /* Les boutons répondent au doigt. */
+    #overlay button { transition: transform .12s cubic-bezier(.2,.8,.3,1), box-shadow .12s ease, background .12s ease; }
+    #overlay button:active { transform: scale(.96); }
+    #overlay .who-card { transition: transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .14s ease; }
+    #overlay .who-card:active { transform: scale(.97); }
+
+    /* ET QUI DEMANDE MOINS DE MOUVEMENT EN A MOINS. Un enfant que le
+       mouvement gêne, ou une tablette réglée pour l'économiser, reçoit la
+       même page, immobile. */
+    @media (prefers-reduced-motion: reduce) {
+      #overlay h1, #overlay .subtitle, #player-hello, #who-screen, #mode-row,
+      #overlay .controls, #pied-menu, #overlay::before, .boot-cube {
+        animation: none !important;
+      }
+      #overlay button, #overlay .who-card { transition: none !important; }
+      /* le verre se dépolit d'un coup au lieu de fondre */
+      #who-screen, #profile-menu, #online-menu, #players-panel, #overlay .controls {
+        transition: none !important;
+      }
+    }
+    /* La parure coupée coupe aussi ce qui bouge : on mesure une page nue. */
+    :root.sans-verre * { animation: none !important; }
+
+    @media (max-width: 700px) {
+      #overlay h1 { font-size: clamp(32px, 11vw, 42px); }
+    }
+
 </style>
 </head>
-<body>
+<!-- `prepare` : pas de flou tant que l'accueil travaille — voir `verreQuandPret`
+     dans main.js, qui la retire. Posée ICI, et pas depuis le script, pour
+     qu'aucune image ne soit floutée, pas même la première. -->
+<body class="prepare">
   <div id="boot-loader">
-    <div class="boot-cube">🧱</div>
+    <div class="boot-cube"><svg viewBox="0 0 24 24" fill="none" stroke="#2B59FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.8 8.2 9.9 9.9 8.2 15.8l5.9-1.7z" fill="#FF7A4D" stroke="#FF7A4D"/></svg></div>
     <div id="boot-text">Chargement du monde…</div>
     <div class="boot-bar"><div class="boot-bar-fill"></div></div>
   </div>
@@ -1382,13 +1921,11 @@
   <div id="creature-label"></div>
   <div id="toast"></div>
   <button id="pause-btn">⏸</button>
-  <button id="dex-btn" title="Creature Dex (B)">◓</button>
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
   <div id="left-rail"><button id="map-btn" title="Mini-carte">🗺️</button></div>
   <div id="left-rail-bottom">
     <div id="meat-counter"></div>
-    <div id="chantier-hud"></div>
   </div>
   <button id="settings-btn" title="Réglages">⚙️</button>
   <button id="cam-btn" title="Caméra (mini visio)">📷</button>
@@ -1425,7 +1962,7 @@
       <div id="pp-code"></div>
       <div id="pp-hint">Partage ce code : avec lui, on peut rejoindre ce monde à tout moment.</div>
       <div id="pp-list"></div>
-      <button id="pp-amis-btn">👋 Qui d'autre est connecté ?</button>
+      <button id="pp-amis-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M14.2 10.4V3.4a1.6 1.6 0 0 1 3.2 0V12"/><path d="M17.4 11.6V6.4a1.6 1.6 0 0 1 3.2 0v8.2a6.4 6.4 0 0 1-6.4 6.4h-1.6a6 6 0 0 1-4.5-2L4 14.2a1.7 1.7 0 0 1 2.5-2.2L11 16"/></svg> Qui d'autre est connecté ?</button>
       <div id="pp-amis"></div>
     </div>
   </div>
@@ -1449,6 +1986,24 @@
           <div class="setting-hint">Tourne ton iPad ou iPhone pour regarder autour de toi (gyroscope).</div>
         </div>
         <div class="toggle" id="gyro-toggle"></div>
+      </div>
+      <div class="setting-row" id="son-row">
+        <div class="setting-label">🔊 Sons du jeu
+          <div class="setting-hint">Le moteur des véhicules, la radio de la voiture et les bruits de blocs.</div>
+        </div>
+        <div class="toggle" id="son-toggle"></div>
+      </div>
+      <div class="setting-row" id="etendue-row" style="cursor: default; display: block;">
+        <div class="setting-label">🔭 Étendue des graphismes
+          <div class="setting-hint" id="etendue-hint">Jusqu'où tu vois le paysage, et les détails des rues de Paris.</div>
+        </div>
+        <div id="etendue-choix"></div>
+      </div>
+      <div class="setting-row" id="graph-row">
+        <div class="setting-label">✨ Graphismes avancés
+          <div class="setting-hint">Ombres et pleine résolution. Si le jeu rame sur ta tablette, laisse-le éteint.</div>
+        </div>
+        <div class="toggle" id="graph-toggle"></div>
       </div>
       <div class="setting-row" id="notif-row">
         <div class="setting-label">🔔 Me prévenir quand un ami arrive
@@ -1506,7 +2061,7 @@
         <button id="map-moi" title="Me retrouver">🔺 moi</button>
         <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
       </div>
-      <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux · 🟪 créatures</div>
+      <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux</div>
       <div id="map-astuce">✊ Appui long <b>n'importe où</b> pour t'y téléporter</div>
     </div>
   </div>
@@ -1527,6 +2082,8 @@
   </div>
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
+  <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
+  <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
   <div id="notif-carte">
     <button class="fermer-msg" id="notif-carte-close" aria-label="Fermer">✕</button>
     <b id="notif-carte-titre">🔔 Être prévenu quand un ami arrive ?</b>
@@ -1583,43 +2140,51 @@
   </div>
   <div id="confetti"></div>
 
-  <div id="dex-panel">
-    <div id="dex-title"></div>
-    <button id="dex-close">✕</button>
-    <div id="dex-list"></div>
-  </div>
-
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
     <button class="tbtn" id="jump-btn">⤒</button>
     <button class="tbtn" id="mode-btn">⛏️</button>
-    <button class="tbtn" id="fly-btn">✈️</button>
+    <button class="tbtn" id="fly-btn"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
     <button class="tbtn" id="down-btn">▼</button>
-    <button class="tbtn" id="ball-btn">◓</button>
+    <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
+         la monte et on la baisse — en même temps que le joystick à gauche. -->
+    <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
+    <div id="cmd-vol"></div>
+    <div id="gaz-val"></div>
+    <button class="tbtn" id="train-btn" title="Train d'atterrissage"><span class="ic">🛞</span><span class="lb" id="train-lb">TRAIN</span></button>
   </div>
 
   <div id="overlay">
-    <h1 id="overlay-title">WEB MINECRAFT</h1>
-    <div class="subtitle">Construis, explore et apprends — tout est sauvegardé !</div>
+    <h1 id="overlay-title">GRAND TOUR</h1>
+    <!-- LA BASELINE DIT LES DEUX MOITIÉS DU JEU (v276). Max : « on parle du
+         tour du monde en vrai, mais c'est aussi construis ton monde, la
+         fonction build existe » et « c'est nul de dire et tout est
+         sauvegardé, ça n'a aucune valeur ». Une promesse d'ingénieur n'est
+         pas une raison de jouer : deux verbes, et rien qui se contente de
+         rassurer. -->
+    <div class="subtitle">Explore le monde entier. Construis le tien.</div>
     <div id="player-hello"></div>
     <div id="who-screen">
-      <div class="online-title">👥 Qui joue ?</div>
+      <div class="online-title"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16.5 6.2a3.2 3.2 0 0 1 0 6M18 14.4c2 .7 3 2.3 3 4.6"/></svg>Qui joue ?</div>
       <div id="who-row"></div>
-      <button id="face-login-btn">📸 Reconnais-moi !</button>
-      <button id="account-login-btn">🔑 Me connecter à mon compte</button>
+      <button id="face-login-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.6A2.5 2.5 0 0 1 6.5 6.1h1.2L8.8 4.3h6.4l1.1 1.8h1.2A2.5 2.5 0 0 1 20 8.6v7.9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.4" r="3.4"/></svg>Reconnais-moi !</button>
+      <button id="account-login-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><path d="M12.5 12H21l-1.6 2.4M17 12v2.6"/></svg>Me connecter à mon compte</button>
     </div>
     <div id="mode-row">
       <!-- Reprendre la partie en cours. Sans ce bouton, mettre en pause depuis
            un monde en ligne était sans retour : « Jouer en local » basculait
            vers l'autre monde, et rien ne ramenait à celui qu'on quittait. -->
-      <button id="resume-btn" style="display: none;">▶ Reprendre la partie</button>
-      <button id="profile-btn">🧑‍🚀 Mon personnage</button>
-      <button id="play-btn">🏠 Jouer en local</button>
-      <button id="online-btn">🌐 Jouer en ligne</button>
-      <button id="edu-menu-btn">📚 Éducation<span id="edu-today"></span></button>
-      <button id="admin-btn" style="display: none;">🛠️ Espace parent</button>
-      <button id="switch-player-btn">🔄 Changer de joueur</button>
+      <button id="resume-btn" style="display: none;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Reprendre la partie</button>
+      <button id="profile-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4"/><path d="M4.6 20c0-3.6 3.3-6 7.4-6s7.4 2.4 7.4 6"/></svg>Mon personnage</button>
+      <button id="play-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9.5L12 4l8 5.5V20"/><path d="M9.5 20v-6h5v6"/></svg>Jouer en local</button>
+      <button id="online-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/><path d="M12 3.4c2.3 2.4 3.5 5.4 3.5 8.6S14.3 18.2 12 20.6c-2.3-2.4-3.5-5.4-3.5-8.6S9.7 5.8 12 3.4z"/></svg>Jouer en ligne</button>
+      <button id="edu-menu-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>Éducation<span id="edu-today"></span></button>
+      <button id="admin-btn" style="display: none;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="9.5" rx="2.6"/><path d="M8.2 10V7.6a3.8 3.8 0 0 1 7.6 0V10"/></svg>Espace parent</button>
+      <button id="switch-player-btn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m8.5 5.5 3 3-3 3"/><path d="M11.5 8.5H5"/><path d="m15.5 18.5-3-3 3-3"/><path d="M12.5 15.5H19"/></svg>Changer de joueur</button>
     </div>
+    <!-- Ce que le jeu prépare avant « Jouer » (v258) : corps, programmes,
+         carte. Les boutons restent grisés tant que ce n'est pas prêt. -->
+    <div id="prep-line"></div>
     <div id="profile-menu">
       <div class="menu-head">
         <button id="profile-back-top" title="Retour au menu">←</button>
@@ -1673,28 +2238,31 @@
       <button id="online-back">← Retour</button>
     </div>
     <div id="offline-note">🌐 Le mode en ligne a besoin d'une connexion internet.</div>
+    <!-- LA LISTE DES COMMANDES PARLE ENFIN FRANÇAIS (v276). Elle était en
+         anglais depuis les tout premiers jours, sur l'écran d'accueil d'un
+         jeu fait pour deux enfants francophones — et personne ne l'avait
+         signalée parce qu'elle était grise sur noir, au bas de la page. Le
+         fond clair l'a rendue visible. Aucun témoin ne la lit (vérifié). -->
     <div class="controls">
-      <div><b>W A S D</b> — move</div>
-      <div><b>Mouse</b> — look around</div>
-      <div><b>Left click</b> — break block</div>
-      <div><b>Right click</b> — place block</div>
-      <div><b>Middle click</b> — pick block</div>
-      <div><b>Space</b> — jump / swim up</div>
-      <div><b>Shift</b> — sprint</div>
-      <div><b>1–9 / wheel</b> — select block</div>
-      <div><b>F</b> — toggle fly (Space/C up/down)</div>
-      <div><b>Q / ◓</b> — throw catch-ball at creatures</div>
-      <div><b>B / ◓ top button</b> — creature dex</div>
-      <div><b>E / 🎒</b> — inventaire : tous les blocs !</div>
-      <div><b>Esc</b> — pause</div>
-      <div><b>Mobile</b> — left thumb: move · right thumb: look</div>
-      <div><b>Tap</b> — mine or build (⛏️/🧱 toggles)</div>
+      <div><b>Z Q S D</b> — se déplacer</div>
+      <div><b>Souris</b> — regarder autour</div>
+      <div><b>Clic gauche</b> — casser un bloc</div>
+      <div><b>Clic droit</b> — poser un bloc</div>
+      <div><b>Clic molette</b> — prendre le bloc visé</div>
+      <div><b>Espace</b> — sauter / remonter dans l'eau</div>
+      <div><b>Maj</b> — courir</div>
+      <div><b>1 à 9 / molette</b> — choisir un bloc</div>
+      <div><b>F</b> — voler (Espace et C pour monter, descendre)</div>
+      <div><b>E</b> — l'inventaire : tous les blocs</div>
+      <div><b>Échap</b> — pause</div>
+      <div><b>Sur tablette</b> — pouce gauche : marcher · pouce droit : regarder</div>
+      <div><b>Toucher</b> — creuser ou bâtir</div>
     </div>
     <!-- Partager le jeu : discret, tout en bas, à côté du numéro de version.
          Un enfant qui veut inviter un cousin n'avait aucun moyen de lui
          donner l'adresse. -->
     <div id="pied-menu">
-      <button id="partage-btn" title="Partager le jeu">🔗 Partager le jeu</button>
+      <button id="partage-btn" title="Partager le jeu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M10 13.6a3.6 3.6 0 0 0 5.4.4l2.4-2.4a3.6 3.6 0 0 0-5.1-5.1l-1.4 1.4"/><path d="M14 10.4a3.6 3.6 0 0 0-5.4-.4l-2.4 2.4a3.6 3.6 0 0 0 5.1 5.1l1.4-1.4"/></svg> Partager le jeu</button>
       <div id="app-version" title="Version installée sur cet appareil"></div>
     </div>
   </div>
@@ -1702,7 +2270,7 @@
   <div id="partage-panel">
     <div id="partage-carte">
       <button id="partage-close" aria-label="Fermer">✕</button>
-      <div class="partage-titre">🔗 Partager le jeu</div>
+      <div class="partage-titre"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M10 13.6a3.6 3.6 0 0 0 5.4.4l2.4-2.4a3.6 3.6 0 0 0-5.1-5.1l-1.4 1.4"/><path d="M14 10.4a3.6 3.6 0 0 0-5.4-.4l-2.4 2.4a3.6 3.6 0 0 0 5.1 5.1l1.4-1.4"/></svg> Partager le jeu</div>
       <div class="partage-sous">Ton ami·e vise ce carré avec son appareil photo — et il est dans le jeu.</div>
       <canvas id="partage-qr" width="440" height="440"></canvas>
       <div id="partage-lien"></div>
@@ -1813,6 +2381,17 @@
       document.body.appendChild(s);
     })();
   </script>
+  <div id="nouveautes-modale" hidden role="dialog" aria-modal="true" aria-labelledby="nouveautes-titre">
+    <div class="carte">
+      <button class="fermer" id="nouveautes-fermer" aria-label="Fermer">✕</button>
+      <h2 id="nouveautes-titre">✨ Quoi de neuf ?</h2>
+      <div id="nouveautes-liste"></div>
+      <div class="pied">
+        <span id="nouveautes-etat"></span>
+        <button id="nouveautes-maj">🔄 Mettre à jour</button>
+      </div>
+    </div>
+  </div>
   <script src="./vendor/peerjs.min.js"></script>
   <script type="importmap">
     { "imports": { "three": "./vendor/three.module.min.js" } }
@@ -1888,11 +2467,41 @@
       document.getElementById('update-btn')?.addEventListener('click', forcerMaj);
       // Le badge de version est le premier endroit où l'on regarde quand on
       // doute d'être à jour : autant qu'il soit aussi le bouton.
+      // LE BADGE OUVRE LE JOURNAL DES NOUVEAUTÉS (v254) ; la mise à jour
+      // forcée, qui était sur le badge, est le bouton en bas de la modale.
       const badge = document.getElementById('app-version');
+      const modale = document.getElementById('nouveautes-modale');
+      const liste = document.getElementById('nouveautes-liste');
+      const echapper = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const ouvrirNouveautes = async () => {
+        modale.hidden = false;
+        if (liste.childElementCount) return;
+        liste.innerHTML = '<p style="opacity:.7">Chargement…</p>';
+        try {
+          const { NOUVEAUTES } = await import('./src/nouveautes.js');
+          // la version installée est celle du badge (« v253 … ») ; sans
+          // elle, on met la plus récente en tête sans la marquer
+          const courante = +((badge && badge.textContent.match(/v(\d+)/)) || [])[1] || 0;
+          liste.innerHTML = NOUVEAUTES.map((n) => {
+            const num = n.v === 0 ? 'Les débuts' : (n.pr ? `PR #${n.pr}` : `v${n.v}`);
+            const ici = n.v === courante;
+            return `<section class="${ici ? 'courante' : ''}" data-v="${n.v}"><h3><span class="v">${num}</span>${echapper(n.titre)}${ici ? '<span class="tag">← ta version</span>' : ''}</h3><ul>${n.puces.map((p) => `<li>${echapper(p)}</li>`).join('')}</ul></section>`;
+          }).join('');
+          document.getElementById('nouveautes-etat').textContent = `${NOUVEAUTES.length} mises à jour`;
+        } catch (e) {
+          liste.innerHTML = '<p>Le journal n\'a pas pu se charger. Réessaie quand tu auras du réseau.</p>';
+        }
+      };
+      const fermerNouveautes = () => { modale.hidden = true; };
       if (badge) {
-        badge.title = 'Toucher pour forcer la mise à jour';
-        badge.addEventListener('click', forcerMaj);
+        badge.title = 'Quoi de neuf ? Toucher pour voir les nouveautés';
+        badge.addEventListener('click', ouvrirNouveautes);
       }
+      document.getElementById('nouveautes-fermer').addEventListener('click', fermerNouveautes);
+      modale.addEventListener('click', (e) => { if (e.target === modale) fermerNouveautes(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modale.hidden) fermerNouveautes(); });
+      document.getElementById('nouveautes-maj').addEventListener('click', forcerMaj);
+      window.__nouveautes = { ouvrir: ouvrirNouveautes, fermer: fermerNouveautes };
       // L'adresse anti-cache a fait son travail au chargement : on l'efface
       // pour ne pas la voir traîner ni la partager par erreur.
       if (new URL(location.href).searchParams.has('maj')) {
@@ -1906,7 +2515,9 @@
         refreshing = true;
         // La fête se joue APRÈS le rechargement : c'est là que la nouvelle
         // version est réellement à l'écran, et donc là que l'annonce est vraie.
-        try { sessionStorage.setItem('wm-maj-fete', '1'); } catch { /* mode privé */ }
+        // Et la page rechargée garde son loader jusqu'à être prête (v257,
+        // `wm-maj-installe`, lu par main.js).
+        try { sessionStorage.setItem('wm-maj-fete', '1'); sessionStorage.setItem('wm-maj-installe', '1'); } catch { /* mode privé */ }
         showLoader(raison);
         location.reload();
       };
@@ -1950,6 +2561,17 @@
           sessionStorage.removeItem('wm-updating');
           reloadOnce('✨ Mise à jour installée — on démarre !');
         }
+      });
+      // L'AVANCEMENT DE L'INSTALLATION, FICHIER PAR FICHIER (v257). Le service
+      // worker neuf annonce chaque fichier rangé ; tant que l'on attend une
+      // mise à jour, le loader le montre au lieu d'un texte fixe. Le compte se
+      // lit aussi depuis un témoin (`window.__majInstallation`).
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        const d = e.data;
+        if (!d || d.type !== 'installation') return;
+        window.__majInstallation = d;
+        if (refreshing || sessionStorage.getItem('wm-updating') !== '1') return;
+        showLoader(`📦 Mise à jour du jeu… ${d.fait} / ${d.total} fichiers`);
       });
 
       // version annoncée par le serveur / version réellement en train de tourner
@@ -2043,7 +2665,16 @@
       // bon numéro.
       if (sessionStorage.getItem('wm-maj-fete') === '1') {
         sessionStorage.removeItem('wm-maj-fete');
-        versionActive().then(feteMiseAJour).catch(() => feteMiseAJour(null));
+        // La fête attend que le loader d'installation se soit effacé (v257) :
+        // annoncer « mis à jour ! » derrière un loader n'annonce rien.
+        const feter = () => versionActive().then(feteMiseAJour).catch(() => feteMiseAJour(null));
+        let fait = false;
+        const uneFois = () => { if (fait) return; fait = true; feter(); };
+        document.addEventListener('maj-installee', uneFois, { once: true });
+        setTimeout(() => {
+          if (sessionStorage.getItem('wm-maj-installe') !== '1') uneFois();
+        }, 1500);
+        setTimeout(uneFois, 100000);
       }
 
       window.addEventListener('load', async () => {

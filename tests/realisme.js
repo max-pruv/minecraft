@@ -1,6 +1,6 @@
 // Les régressions signalées : visage géométrique rudimentaire, corps déformés,
 // disparition au seuil de distance et voisins remplacés au demi-tour.
-const { Banc, dormir } = require("./banc.js");
+const { Banc, dormir, souffler } = require("./banc.js");
 const echecs = [];
 const verifier = (nom, ok, detail) => {
   console.log(
@@ -12,6 +12,14 @@ const verifier = (nom, ok, detail) => {
   const banc = new Banc({ portJeu: 8361, portPairs: 9361 });
   await banc.ouvrir();
   try {
+    // SOUFFLER AVANT LE PASSAGE LOURD, COMME TOUTES LES AUTRES SUITES (v277).
+    // Cette suite ne le faisait PAS une seule fois — le même défaut que
+    // `carte.js` en v187 et `reglages.js` ensuite, et il a fini par coûter un
+    // portail : elle passe après `maj.js`, la machine était à 5,61 cœurs
+    // occupés, et sa première attente a expiré. Un portail dont les rouges se
+    // déplacent d'une exécution à l'autre n'accuse pas le jeu : il dit que le
+    // banc manque d'air.
+    await souffler();
     const p = await banc.joueur("Presence241", {
       carte: "manhattan",
       rr: 2,
@@ -20,15 +28,24 @@ const verifier = (nom, ok, detail) => {
     await p.locator(".who-card.active").click();
     await p.getByRole("button", { name: "Plus tard", exact: true }).click();
     await p.locator("#play-btn").click();
+    // ET CETTE ATTENTE A LE MÊME BUDGET QUE CELLES DU MÊME FICHIER (v277).
+    // Elle n'en déclarait aucun, donc elle prenait les trente secondes par
+    // défaut de Playwright, quand les deux attentes de page d'en bas en
+    // accordent cent vingt. Ce n'est pas une norme, c'est la même attente
+    // coupée en deux — et sur un banc qui rend en logiciel, c'est la première
+    // moitié qui casse (règle écrite pour `reglages.js`).
     await p.waitForFunction(() =>
       __game.passants.sites.some((s) => s.urbain && s.peuple?.length),
+      null, { timeout: 120000 },
     );
     await dormir(3000);
     const anatomie = await p.evaluate(async () => {
       const { construireHumain } = await import("/src/personnages.js"),
         { buildKidMesh } = await import("/src/marlon.js"),
-        { animerHumain } = await import("/src/humains.js"),
+        { animerHumain, chargerHumains } = await import("/src/humains.js"),
         T = await import("three");
+      // les modèles arrivent après l'accueil (v245) : on bâtit quand ils sont là
+      if (chargerHumains) await chargerHumains();
       const adulte = construireHumain({ tenue: "passant" });
       adulte.updateMatrixWorld(true);
       const avant = new T.Box3().setFromObject(adulte);
@@ -183,35 +200,68 @@ const verifier = (nom, ok, detail) => {
       "un déplacement très rapide ne coupe pas le modèle en une image",
       fade.apresVoyage > 0.8,
     );
+    // UN MUR NE RÉARME PAS LE SAUT, ET LE MUR SE BÂTIT (v283).
+    //
+    // `onGround` ne repasse à faux que dans `sweep`, sur une DESCENTE sans
+    // collision : une montée (`delta > 0`) ne l'efface pas, et l'atterrissage
+    // qui le pose à vrai sort par un `return true` avant la ligne qui
+    // l'effacerait. Un personnage collé à une façade a donc `blockedX` vrai ET
+    // `onGround` vrai à chaque image : il se redonne son impulsion
+    // indéfiniment et remonte l'immeuble.
+    //
+    // ET LE TÉMOIN NE PORTE AUCUNE COORDONNÉE DE VILLE. Celui écrit en v242
+    // visait trois angles de Midtown en dur — mesuré aujourd'hui, ils sont à
+    // DIX MILLE DEUX CENTS blocs de l'ancre de New York, la carte ayant doublé
+    // depuis : il aurait marché en pleine campagne, n'aurait rien heurté, et
+    // serait passé au VERT sur du code cassé. C'est « un témoin qui porte une
+    // dimension de ville ne l'écrit pas, il la demande » (v203, v271, v274) —
+    // et ici le plus simple est de ne rien demander du tout : on BÂTIT le mur
+    // dans le couloir vide, comme `contreLeMur` de `monte.js`. La mesure est
+    // alors la même d'une version à l'autre par construction.
     const murs = await p.evaluate(async () => {
       const { BaseNPC } = await import('/src/marlon.js');
       const { construireHumain } = await import('/src/personnages.js');
       const { liberer } = await import('/src/liberer.js');
       const T = await import('three');
-      const npc = new BaseNPC(new T.Scene(), __game.world, __game.player, () => {}, {
-        name: 'CollisionTest', phrases: [''], hauteur: 1.72,
+      const g = window.__game;
+      // Le couloir vide : loin de toute ville, de tout convoi, de toute bête.
+      const X = 30000, Z = 30000;
+      const sol = g.world.terrainHeight(X, Z);
+      // Une dalle plate de onze blocs de côté, et un mur de six blocs de haut
+      // qui en ferme un côté. Rien d'autre : ce qu'on mesure est le mur.
+      for (let dx = -5; dx <= 5; dx++) {
+        for (let dz = -5; dz <= 5; dz++) g.world.setBlock(X + dx, sol, Z + dz, 3);
+        for (let dy = 1; dy <= 6; dy++) g.world.setBlock(X + dx, sol + dy, Z + 5, 3);
+      }
+      const npc = new BaseNPC(new T.Scene(), g.world, g.player, () => {}, {
+        name: 'MurTest', phrases: [''], hauteur: 1.72,
         build: () => construireHumain({ tenue: 'passant' }),
       });
-      let fautifs = 0, pic = 33, cas = 0;
-      for (const [x, z] of [[-10148.844, 2604.094], [-10130.729, 2604], [-10159.179, 2627]]) {
-        for (let cap = 0; cap < 16; cap++) {
-          npc.pos.set(x, 33.001, z); npc.vel.set(0, 0, 0); npc.onGround = true;
-          npc.think = () => ({ speed: 1.6, yaw: cap * Math.PI / 8 });
-          let haut = 33;
-          for (let frame = 0; frame < 1200; frame++) {
-            npc.update(1 / 60); haut = Math.max(haut, npc.pos.y);
-          }
-          if (haut > 35.1) fautifs++;
-          pic = Math.max(pic, haut); cas++;
+      const plancher = sol + 1;
+      let fautifs = 0, pic = plancher, cas = 0;
+      // Seize caps : quatre vont droit dans le mur, les autres le frôlent ou
+      // s'en éloignent. On garde les seize pour que le compte soit comparable.
+      for (let cap = 0; cap < 16; cap++) {
+        npc.pos.set(X, plancher + 0.001, Z + 3); npc.vel.set(0, 0, 0);
+        npc.onGround = true;
+        npc.think = () => ({ speed: 1.6, yaw: cap * Math.PI / 8 });
+        let haut = plancher;
+        for (let frame = 0; frame < 1200; frame++) {
+          npc.update(1 / 60); haut = Math.max(haut, npc.pos.y);
         }
+        // Un saut d'une seule impulsion monte de 7,5²/(2 g) ≈ 1,8 bloc ; au-delà
+        // de deux blocs et demi, l'impulsion s'est réarmée.
+        if (haut > plancher + 2.5) fautifs++;
+        pic = Math.max(pic, haut); cas++;
       }
       liberer(npc.mesh);
-      return { cas, fautifs, pic };
+      return { cas, fautifs, pic: +pic.toFixed(2), plancher, monte: +(pic - plancher).toFixed(2) };
     });
     verifier(
       "un mur ne réarme pas le saut à chaque image et ne fait pas grimper la façade",
-      murs.cas === 48 && murs.fautifs === 0,
-      murs,
+      murs.cas === 16 && murs.fautifs === 0,
+      `${murs.fautifs}/${murs.cas} trajectoire(s) au-dessus de 2,5 blocs`
+      + ` · plus haut point ${murs.monte} bloc(s) au-dessus du plancher`,
     );
     const car = await p.evaluate(async () => {
       const { construireTaxi } = await import("/src/taxis.js"),
@@ -251,6 +301,50 @@ const verifier = (nom, ok, detail) => {
       "le détail automobile reste dans un budget de géométrie borné",
       car.tris < 70000,
     );
+
+    // ---- RIEN DE LA CARROSSERIE NE TOURNE AVEC UNE ROUE (v246) ----------------
+    //
+    // Max, capture à l'appui : « la Bugatti quand elle avance, il y a des
+    // trucs noirs qui bougent autour ». Mesuré : les bandes « Gloss black |
+    // stealth trim » de la Chiron Stealth — 5,13 × 4,04 blocs, toute la
+    // voiture — étaient accrochées au pivot de la roue arrière droite et
+    // tournaient avec elle, parce que la lignée de roue attrapait « t-rim ».
+    // Sur la Lucid, le trim aérodynamique, le trim de cabine et les jantes
+    // réunies des quatre roues tournaient avec la même roue. On charge les
+    // deux modèles déposés en v230 et l'on mesure chaque pièce de chaque
+    // pivot : elle tient dans une fois et demie le pneu, et son centre est à
+    // moins de 0,6 bloc du pivot.
+    const pivots = await p.evaluate(async () => {
+      const { chargerVoitureFlotte, FLOTTE } = await import("/src/vehicules.js");
+      const THREE = await import("three");
+      const fautes = [];
+      for (const fichier of ["bugatti-chiron-stealth.glb", "lucid-gravity.glb"]) {
+        const proto = await chargerVoitureFlotte(FLOTTE.find((e) => e.fichier === fichier));
+        if (!proto) { fautes.push(`${fichier} : modèle absent`); continue; }
+        proto.updateMatrixWorld(true);
+        const roues = [];
+        proto.traverse((o) => { if (/^Wheel_/i.test(o.name || "")) roues.push(o); });
+        if (roues.length !== 4) { fautes.push(`${fichier} : ${roues.length} pivot(s) de roue`); continue; }
+        for (const r of roues) {
+          const centre = r.getWorldPosition(new THREE.Vector3());
+          let pneu = 0;
+          for (const ch of r.children) { const t = new THREE.Box3().setFromObject(ch).getSize(new THREE.Vector3()); if (/tire|tyre|pneu|rubber/i.test(ch.name || "")) pneu = Math.max(pneu, t.x, t.z); }
+          if (!pneu) pneu = 0.9;
+          for (const ch of r.children) {
+            const b = new THREE.Box3().setFromObject(ch);
+            const t = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+            if (Math.max(t.x, t.z) > pneu * 1.5 || c.distanceTo(centre) > 0.6)
+              fautes.push(`${fichier} ${r.name} : ${(ch.name || "?").slice(0, 36)} ${t.x.toFixed(2)}×${t.z.toFixed(2)} à ${c.distanceTo(centre).toFixed(2)}`);
+          }
+        }
+      }
+      return fautes;
+    });
+    verifier(
+      "rien de la carrosserie ne tourne avec une roue sur les modèles déposés",
+      pivots.length === 0,
+      pivots.slice(0, 6),
+    );
     const reflets = await p.evaluate(async () => {
       const { chargerVoitureFlotte, FLOTTE, majRefletsVoiture } = await import('/src/vehicules.js');
       const { scene, renderer, player } = __game;
@@ -280,6 +374,137 @@ const verifier = (nom, ok, detail) => {
       "aucune erreur de jeu pendant les contrôles",
       p.erreurs.length === 0,
       p.erreurs,
+    );
+
+    // ---- L'ACCUEIL RÉPOND AVANT LES CORPS RÉALISTES (v245) -------------------
+    //
+    // Max, sur l'iPad de quatre ans : « il faut attendre quasiment vingt
+    // secondes le temps de pouvoir cliquer sur le bouton ». Les neuf modèles
+    // (8,2 Mo) étaient attendus par `humains.js` AVANT que `main.js` ne
+    // s'exécute : aucun bouton n'était attaché tant qu'ils n'étaient pas là.
+    // On ralentit chaque modèle de cinq secondes, comme un Wi-Fi d'hôtel, et
+    // l'on regarde combien sont arrivés quand le jeu s'attache : zéro ici,
+    // neuf sur l'ancien code. Puis on joue, et les gens nés en attendant —
+    // le château, l'avatar — doivent recevoir leur corps réaliste SUR PLACE,
+    // sans changer d'objet ni sortir de la scène.
+    // LA PAGE DE MANHATTAN SE FERME D'ABORD. Ouverte à côté, elle fait durer
+    // le démarrage de celle-ci cinq à onze MINUTES sur ce banc — un seul
+    // processus graphique en rendu logiciel, que la ville accapare — contre
+    // quatre secondes et sept dixièmes une fois fermée ; mesuré en trois
+    // variantes, avec et sans route. Ce n'est pas le jeu, c'est le banc, et
+    // c'est de toute façon la fin de la suite.
+    await p.close();
+    const lent = await banc.navigateur.newContext();
+    const q = await lent.newPage();
+    const fautes = [];
+    q.on("pageerror", (e) => fautes.push(e.message));
+    // Le service worker est coupé, comme partout au banc sauf dans maj.js.
+    await q.addInitScript(() => {
+      if (navigator.serviceWorker)
+        navigator.serviceWorker.register = () =>
+          Promise.reject(new Error("désactivé pour les tests"));
+    });
+    let servis = 0;
+    await q.route("**/vendor/humains/*.glb", async (r) => {
+      await dormir(5000);
+      servis++;
+      r.continue();
+    });
+    const depart = Date.now();
+    await q.goto(
+      "http://127.0.0.1:8361/index.html?peerhost=127.0.0.1:9361&cloud=&stay=1&rr=2&prep=0",
+      { waitUntil: "load", timeout: 120000 },
+    );
+    await q.waitForFunction(() => window.__game, null, { timeout: 120000 });
+    const attache = { secondes: +((Date.now() - depart) / 1000).toFixed(1), servis };
+    verifier(
+      "le jeu attache ses boutons sans attendre les modèles de personnages",
+      attache.servis === 0,
+      attache,
+    );
+    const avant = await q.evaluate(async () => {
+      const g = window.__game,
+        m = await import("/src/personnages.js");
+      const npcs = g.npcs || [];
+      window.__corpsAvant = new Map(npcs.map((n) => [n, n.mesh]));
+      return {
+        npcs: npcs.length,
+        enAttente: m.corpsEnAttente ? m.corpsEnAttente() : -1,
+      };
+    });
+    await q.evaluate(() => {
+      window.__game.edu.today().libreJusqua = 86400;
+      document.getElementById("play-btn").click();
+    });
+    await q.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    // `waitForFunction` ne suit pas une promesse : on interroge à la main
+    let arrives = false;
+    for (const fin = Date.now() + 90000; !arrives && Date.now() < fin; ) {
+      await dormir(500);
+      arrives = await q.evaluate(async () => {
+        const m = await import("/src/humains.js");
+        return m.humainsCharges ? m.humainsCharges() : true;
+      });
+    }
+    await dormir(4000);
+    // ON MESURE APRÈS LA DERNIÈRE TRANCHE, ET APRÈS L'IMAGE QUI LA SUIT. La
+    // mise à niveau se fait par tranches dans un `requestAnimationFrame` à
+    // part ; la présence se recopie dans la boucle du jeu, à l'image
+    // d'après. Lue entre les deux, elle est « fausse » pour les derniers
+    // corps montés — deux sur cent quarante et un au portail de la v249,
+    // zéro sur la même page rejouée seule. On attend que la file soit vide,
+    // puis deux images.
+    for (const fin = Date.now() + 30000; Date.now() < fin; ) {
+      const reste = await q.evaluate(async () => {
+        const m = await import("/src/personnages.js");
+        return m.corpsEnAttente ? m.corpsEnAttente() : 0;
+      });
+      if (reste === 0) break;
+      await dormir(300);
+    }
+    await q.evaluate(() => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(() => f()))));
+    const apres = await q.evaluate(async () => {
+      const g = window.__game,
+        m = await import("/src/personnages.js");
+      const npcs = g.npcs || [];
+      const compte = {};
+      let memeObjet = 0,
+        dansScene = 0,
+        presenceFausse = 0;
+      for (const n of npcs) {
+        const a = n.mesh?.userData?.anatomie || "?";
+        compte[a] = (compte[a] || 0) + 1;
+        if (window.__corpsAvant.get(n) === n.mesh) memeObjet++;
+        if (n.mesh.parent) dansScene++;
+        if (n.presence && n.presence.version !== (n.mesh.userData.miseANiveau || 0))
+          presenceFausse++;
+      }
+      return {
+        npcs: npcs.length,
+        compte,
+        memeObjet,
+        dansScene,
+        presenceFausse,
+        enAttente: m.corpsEnAttente ? m.corpsEnAttente() : -1,
+        avatar: g.marlon?.mesh?.userData?.anatomie,
+      };
+    });
+    await lent.close();
+    verifier(
+      "les gens nés avant les modèles reçoivent leur corps réaliste sur place",
+      arrives &&
+        avant.enAttente > 0 &&
+        apres.enAttente === 0 &&
+        apres.npcs > 0 &&
+        // ceux qui existaient avant sont les mêmes objets ; les passants nés
+        // entre-temps ne comptent pas (141 à la fin pour 123 au départ, au portail)
+        apres.memeObjet === avant.npcs &&
+        apres.dansScene === apres.npcs &&
+        apres.presenceFausse === 0 &&
+        !apres.compte["humaine-v2"] &&
+        apres.avatar === "rocketbox-v241" &&
+        fautes.length === 0,
+      { avant, apres, fautes },
     );
   } finally {
     await banc.fermer();

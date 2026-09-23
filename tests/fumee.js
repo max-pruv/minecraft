@@ -62,6 +62,218 @@ function verifier(nom, ok, detail = '') {
     });
     verifier('poser un bloc marche encore', pose.pose, JSON.stringify(pose));
 
+    // TOUT MODULE DU JEU ARRIVE SUR LA TABLETTE, ET TOUT IMPORT RÉSOUT (v285).
+    //
+    // `src/bandeau.js`, écrit pour sortir la voix du jeu du module des créatures,
+    // a failli partir SANS être dans la liste `ASSETS` de `sw.js` : absent hors
+    // ligne, c'est-à-dire sur l'iPad dans l'avion, à l'école, au Wi-Fi d'un
+    // hôtel — la moitié des endroits où ces deux enfants jouent. C'est une
+    // relecture qui ne l'a pas vu et un CONTRÔLE de trois lignes qui l'a dit.
+    //
+    // `CLAUDE.md` portait déjà la règle inverse — « ne jamais livrer un fichier
+    // que personne n'importe », payée par `src/monuments.js` en v157 — et elle
+    // n'avait pas de témoin. Celui-ci ferme les deux bouts : un module oublié
+    // dans `sw.js` manque à l'enfant hors ligne, un import cassé tue la page.
+    //
+    // VERT DES DEUX CÔTÉS À DESSEIN : il ne garde pas une correction, il garde une
+    // CAPACITÉ qu'on vient de frôler (règle de la v220), et il rougira à la
+    // prochaine livraison qui ajoute un fichier en oubliant sa ligne.
+    const fs = require('fs'), chemin = require('path');
+    const racine = chemin.join(__dirname, '..');
+    const fichiersSrc = fs.readdirSync(chemin.join(racine, 'src')).filter((f) => f.endsWith('.js'));
+    const sw = fs.readFileSync(chemin.join(racine, 'sw.js'), 'utf8');
+    // Le cache IMMUABLE (`isStaticAsset`) porte les fichiers qui ne changent
+    // jamais — scanner, flotte, corps, polices ; les MODULES, eux, vivent dans la
+    // liste versionnée, et c'est celle-là qu'on lit.
+    const enCache = new Set([...sw.matchAll(/['"]\.\/(src\/[^'"]+\.js)['"]/g)].map((m) => m[1]));
+    const absents = fichiersSrc.filter((f) => !enCache.has(`src/${f}`));
+    verifier('tout module du jeu arrive sur la tablette, même hors ligne',
+      absents.length === 0, `${fichiersSrc.length} module(s) · absent(s) de sw.js : ${absents.join(', ') || 'aucun'}`);
+
+    const casses = [];
+    for (const f of fichiersSrc) {
+      const texte = fs.readFileSync(chemin.join(racine, 'src', f), 'utf8');
+      for (const m of texte.matchAll(/from\s+['"](\.\/[^'"]+)['"]/g)) {
+        if (!fs.existsSync(chemin.join(racine, 'src', m[1]))) casses.push(`${f} → ${m[1]}`);
+      }
+    }
+    verifier('aucun module n\'en importe un qui n\'existe pas',
+      casses.length === 0, casses.join(' · ') || 'tous les imports résolvent');
+
+    // L'ATELIER ET LES FEUX D'ARTIFICE SONT PARTIS (v255). Max : « supprime la
+    // fonctionnalité de pouvoir faire les feux d'artifice, et tout ça
+    // (Atelier, Coffre, Quête, Panneau, Chantier, Records, Chapeaux) à part
+    // les souvenirs photos. » Trois témoins, rouges sur l'ancien code : le
+    // bouton 🎆 y est, le panneau y a huit onglets, et la touche G y lance
+    // une fusée.
+    const rail = await tab.evaluate(() => ({
+      feu: !!document.querySelector('.fun-btn[title="Feu d\'artifice"]'),
+      boutons: [...document.querySelectorAll('.fun-btn')].map((b) => b.title),
+    }));
+    verifier('le feu d\'artifice n\'a plus de bouton', !rail.feu, JSON.stringify(rail.boutons));
+
+    const album = await tab.evaluate(async () => {
+      const b = document.querySelector('.fun-btn[title="Souvenirs"]');
+      if (!b) return { bouton: false };
+      b.click();
+      await new Promise((r) => setTimeout(r, 200));
+      const panneau = document.getElementById('fun-main-panel');
+      const titre = panneau.querySelector('#fun-tab-body h3');
+      const out = { bouton: true,
+        ouvert: getComputedStyle(panneau).display === 'block',
+        onglets: panneau.querySelectorAll('.fun-tab').length,
+        titre: titre ? titre.textContent : '' };
+      panneau.querySelector('.fun-close').click();
+      return out;
+    });
+    verifier('le bouton 🖼️ ouvre les Souvenirs, sans autre onglet',
+      album.bouton && album.ouvert && album.onglets === 0 && /Souvenirs/.test(album.titre),
+      JSON.stringify(album));
+
+    // La touche G : sur l'ancien code elle ajoute un nuage de points à la
+    // scène ET compte un feu dans les records. On lit les deux — ce que
+    // l'enfant voit, et ce qui s'écrit — et ni l'un ni l'autre ne doit bouger.
+    const toucheG = await tab.evaluate(async () => {
+      const g = window.__game;
+      const points = () => g.scene.children.filter((o) => o.isPoints).length;
+      const feux = () => {
+        try { return JSON.parse(localStorage.getItem('web-minecraft-records-v1') || '{}').fireworks || 0; }
+        catch { return 0; }
+      };
+      const avant = { points: points(), feux: feux() };
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true }));
+      await new Promise((r) => requestAnimationFrame(r));
+      return { avant, apres: { points: points(), feux: feux() } };
+    });
+    verifier('la touche G ne lance plus de fusée',
+      toucheG.apres.points <= toucheG.avant.points && toucheG.apres.feux === toucheG.avant.feux,
+      JSON.stringify(toucheG));
+
+    // LE MODE D'ATTRAPE EST PARTI (v285). Max : « Remove the Pokémon play
+    // entirely ». Trois témoins, et ils suivent la discipline de la v256 : on
+    // lit CE QUE L'ENFANT VOIT, CE QUI S'ÉCRIT, et l'on vérifie qu'on n'a pas
+    // emporté ce qui n'était pas visé.
+    const attrape = await tab.evaluate(async () => {
+      const g = window.__game;
+      const el = (id) => document.getElementById(id);
+      // Ce que l'enfant voit : plus un bouton, plus un panneau.
+      const vu = { ball: !!el('ball-btn'), dexBtn: !!el('dex-btn'), dexPanel: !!el('dex-panel'),
+        legende: (el('map-legend') || {}).textContent || '' };
+      // Et les deux touches ne font plus rien. Sur l'ancien code, Q lance une
+      // balle — un maillage de plus dans la scène — et B ouvre le panneau.
+      // Sans les morceaux de monde : un morceau maillé entre deux images
+      // ajoute ses maillages à la scène, et ce n'est pas une balle.
+      const enfants = () => g.scene.children.filter((o) => !o.userData.morceau).length;
+      const avant = enfants();
+      for (const code of ['KeyQ', 'KeyB']) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+      }
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
+      return { vu, avant, apres: enfants(),
+        // ET LE GESTIONNAIRE N'EST PLUS PUBLIÉ : c'est ce qui rend le témoin
+        // rouge sur l'ancien code même si un bouton venait à changer de nom.
+        gestionnaire: !!g.creatureManager };
+    });
+    verifier('plus de balle, plus de Dex — ni bouton, ni panneau, ni touche',
+      !attrape.vu.ball && !attrape.vu.dexBtn && !attrape.vu.dexPanel
+        && !attrape.gestionnaire && attrape.apres <= attrape.avant
+        && !/créature/i.test(attrape.vu.legende),
+      JSON.stringify(attrape));
+
+    // ON RETIRE L'ÉCRAN ET LES COMMANDES, JAMAIS LES DONNÉES (v256). Ce que
+    // Marlon et Alice ont attrapé reste dans leur profil : les deux clés sont
+    // toujours rangées par profil dans le shim d'`index.html`, et `sync.js` les
+    // porte toujours. On l'éprouve en ÉCRIVANT puis en relisant, comme le jeu le
+    // ferait, plutôt qu'en jurant sur une liste.
+    const donnees = await tab.evaluate(() => {
+      const ecrire = (k, v) => { localStorage.setItem(k, JSON.stringify(v)); };
+      ecrire('web-minecraft-dex-v1', [{ id: 7, count: 2, bestLevel: 9 }]);
+      ecrire('web-minecraft-pet-v1', { id: 7, name: 'Flazor' });
+      const relire = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+      const dex = relire('web-minecraft-dex-v1'), pet = relire('web-minecraft-pet-v1');
+      return { dex: dex && dex[0] && dex[0].id === 7 && dex[0].count === 2,
+        pet: pet && pet.name === 'Flazor',
+        // Et les clés portent bien le suffixe de profil : c'est le shim
+        // d'`index.html`, et le retirer mélangerait les deux enfants.
+        cles: Object.keys(localStorage).filter((k) => /dex-v1|pet-v1/.test(k)) };
+    });
+    verifier('ce que les enfants ont attrapé reste dans leur profil',
+      donnees.dex && donnees.pet && donnees.cles.length >= 2, JSON.stringify(donnees));
+
+    // ET LA VOIX DU JEU N'A PAS ÉTÉ EMPORTÉE AVEC. `toast` vivait DANS le
+    // gestionnaire de créatures et il est appelé de quarante-neuf endroits qui
+    // n'ont rien à voir — l'atterrissage, la sauvegarde allégée, le parent qui
+    // change un réglage. C'est le vrai risque de cette livraison : on le mesure
+    // sur ce que l'enfant LIT, pas sur l'existence d'une fonction.
+    const voix = await tab.evaluate(async () => {
+      const t = document.getElementById('toast');
+      const avant = { texte: t.textContent, opacite: getComputedStyle(t).opacity };
+      // LE CHEMIN RÉEL, PAS UN APPEL FABRIQUÉ. « Une voiture ne vole pas » est le
+      // bandeau qu'un enfant obtient en appuyant sur ✈️ au volant ; `interdireVol`
+      // est exactement l'état que `fun.js` pose en montant, et l'on passe ensuite
+      // par la MÊME porte que le doigt de l'enfant. Un `toast()` appelé à la main
+      // vérifierait qu'une fonction existe, pas que le jeu parle.
+      window.__game.player.interdireVol(true);
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', bubbles: true }));
+      // ON ATTEND QUE LE BANDEAU SE VOIE, BORNÉ, ET LE TEMPS PRIS ENTRE DANS LE
+      // MESSAGE. Mon premier jet lisait l'opacité 150 ms après l'appui et rendait
+      // `opacite: "0"` alors que le TEXTE était le bon : `#toast` porte
+      // `transition: opacity 0.5s` (index.html), et une transition avance par
+      // IMAGE — or ce banc en rend trois par seconde. Le témoin mesurait donc la
+      // cadence du banc, pas la voix du jeu. MESURÉ : l'opacité atteint 1 en
+      // **194 ms**, donc mes 150 manquaient de quarante-quatre millisecondes —
+      // une image ou deux. C'est « un témoin qui lit l'effet
+      // d'une image attend l'image » (v249) et « on attend le RÉSULTAT, borné,
+      // jamais une durée » (v270).
+      //
+      // ET LA BORNE EST PLUS COURTE QUE L'EFFACEMENT : `bandeau.js` remet
+      // l'opacité à zéro au bout de 2 600 ms, donc attendre au-delà rendrait un
+      // faux rouge. Deux secondes laissent dix fois la mesure.
+      //
+      // ET L'ATTENTE PEUT ENCORE EXPIRER — vérifié, pas raconté (v276). Deux
+      // bras sur la MÊME page : le chemin réel de l'enfant rend l'opacité à 1
+      // en 194 ms ; l'opacité remise à zéro sans qu'on appelle rien fait expirer
+      // l'attente à 2 348 ms. Une attente qui n'aboutirait que dans le bon cas
+      // ne prouverait rien de l'autre.
+      const t2 = document.getElementById('toast');
+      const depart = performance.now();
+      let opacite = getComputedStyle(t2).opacity;
+      while (Number(opacite) <= 0.5 && performance.now() - depart < 2000) {
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        opacite = getComputedStyle(t2).opacity;
+      }
+      const ms = Math.round(performance.now() - depart);
+      window.__game.player.interdireVol(false);   // on range ce qu'on a posé
+      return { avant, apres: { texte: t2.textContent, opacite }, ms };
+    });
+    verifier('le jeu parle encore à l\'enfant — le bandeau a survécu au retrait',
+      voix.apres.texte.length > 0 && voix.apres.texte !== voix.avant.texte
+      && Number(voix.apres.opacite) > 0.5,
+      JSON.stringify(voix));
+
+    // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
+    // normal ou un mode avancé ». Le réglage est une ligne des Réglages, il
+    // bascule au toucher, il vit sur l'appareil, et le jeu le lit (ombres,
+    // résolution). Le banc rend en logiciel : les ombres y restent coupées quoi
+    // qu'on choisisse, et sa résolution est de un pixel par point — on éprouve
+    // donc ce qu'il peut voir : la ligne, la bascule, la persistance, et ce
+    // que le jeu annonce lire. Rouge sur l'ancien code : pas de ligne.
+    const graph = await tab.evaluate(() => {
+      const t = document.getElementById('graph-toggle');
+      const g = window.__graphismes;
+      if (!t || !g) return { ligne: !!t, api: !!g };
+      const avant = g.lire();
+      t.click();
+      const apres = g.lire();
+      let stocke = null;
+      try { stocke = localStorage.getItem('web-minecraft-graphismes-v1'); } catch {}
+      return { ligne: true, api: true, avant, apres, stocke, allume: t.classList.contains('on') };
+    });
+    verifier('les Réglages ont une ligne Graphismes qui bascule entre normal et avancé, mémorisée sur l\'appareil',
+      graph.ligne && graph.api && graph.avant !== graph.apres && graph.stocke === graph.apres
+      && graph.allume === (graph.apres === 'avance'), JSON.stringify(graph));
+
     // La bibliothèque de monuments : elle se feuillette et elle pose.
     //
     // DEPUIS v176 elle vit dans l'inventaire (bouton +), onglet Bâtiments,

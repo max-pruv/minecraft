@@ -114,10 +114,31 @@ const PROJECTION_AVANT = {
   compressions: [{ de: -74, a: -10, k: 0.6 }],
 };
 
+// LA DEUXIÈME CARTE, FIGÉE À SON TOUR (v242).
+//
+// La v199 avait doublé la carte (0,75 → 0,375 km par bloc) ; la v242 la
+// double encore. Chaque carte qui a existé reste demandable, parce que la
+// migration des blocs est une CHAÎNE : un appareil resté sur la carte d'avant
+// v199 passe d'abord par celle-ci, puis par la courante. Même règle que
+// `PROJECTION_AVANT` : elle ne se met jamais à jour.
+const PROJECTION_V2 = {
+  type: 'equirectangulaire',
+  rayonKm: 6371,
+  lat0: 48.8566, lon0: 2.3522,
+  kmParBloc: 0.375,
+  ancre: { x: -240, z: 200 },
+  compressions: [{ de: -74, a: -10, k: 0.6 }],
+};
+
 export const MONDES = {
   // La carte d'avant l'agrandissement : elle ne sert qu'à la migration.
   terreAvant: { id: 'terreAvant', nom: 'La Terre (avant)', emoji: '🌍',
     projection: PROJECTION_AVANT, lieux: [] },
+  // La carte de v199 à v240 : la migration de v242 part d'elle. Ses lieux
+  // sont ceux d'aujourd'hui (même registre, autre échelle) : c'est ce qui
+  // permet de demander « où était New York avant » à `positionDe`.
+  terreV2: { id: 'terreV2', nom: 'La Terre (v199–v240)', emoji: '🌍',
+    projection: PROJECTION_V2, lieux: null },
   terre: {
     id: 'terre', nom: 'La Terre', emoji: '🌍',
     projection: {
@@ -155,7 +176,17 @@ export const MONDES = {
       // Le prix est la distance : le monde passe de 21 000 à 43 000 blocs. On
       // voyage par la carte, déjà tranché, et le terrain est engendré à la
       // demande.
-      kmParBloc: 0.375,
+      //
+      // DOUBLÉE UNE SECONDE FOIS EN v242, POUR NEW YORK. Manhattan n'est plus
+      // un disque de 152 blocs : c'est un rectangle de 480 × 2 300 blocs
+      // (`BORNES` de manhattan-plan.js), et à 0,375 km par bloc il touchait
+      // presque ses voisines — mesuré bord à bord : Boston 41 blocs, Montréal
+      // 52, Ottawa 82, Washington 164, et l'aéroport JFK DANS le rectangle.
+      // Balayage sur les marges du rectangle : ×1,5 → Boston 214, ×2 →
+      // Boston 387, Washington 755, Montréal 1 472. Décision de Max : « le
+      // monde ×2 », et Paris d'abord pour ce qui suit. L'ancre ne bouge
+      // toujours pas ; le monde passe de 43 000 à 86 000 blocs.
+      kmParBloc: 0.1875,
       // Paris ne bouge PAS. C'est là que les enfants ont le plus construit, et
       // ancrer la projection sur sa position actuelle épargne leurs blocs.
       ancre: { x: -240, z: 200 },
@@ -332,6 +363,9 @@ const BATIES_A_LA_MAIN = new Set(['paris', 'lille', 'nice', 'londres', 'ny', 'sf
 for (const l of MONDES.terre.lieux) {
   if (!BATIES_A_LA_MAIN.has(l.cle)) l.r = Math.round(l.r * K_VILLES);
 }
+
+// Le même registre sur la carte d'avant : un seul tableau, jamais recopié.
+MONDES.terreV2.lieux = MONDES.terre.lieux;
 
 // --- ce que le reste du jeu appelle ------------------------------------------
 
