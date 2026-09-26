@@ -985,6 +985,28 @@ purs de `plafond.js` — une pente à deux marches, un vide sous une colonne
 naturelle — et les deux rouges du portail se rejouent SEULS avant de
 fusionner.
 
+**ET LA BANDE NE SUFFISAIT PAS : « UN BLOC » SE COMPTE DEPUIS LE NIVEAU
+VOXEL SOUS LA BOÎTE, PAS DEPUIS LA SURFACE QUI LA PORTE.** Rejouée à la
+sonde (`tests/sonde-marche.cjs`), la voiture restait à 13,4 blocs, bande ou
+pas, franchissement armé ou désarmé — quatre bras identiques, ce qui dit
+déjà que le franchissement n'y était pour rien. Mesuré sous node au point
+d'arrêt : la colonne devant (T40) n'est PAS couverte, parce qu'en diagonale
+sa voisine fait deux blocs de plus — une falaise en travers du couloir, que
+le témoin ne voit pas puisqu'il ne lit le profil que le long de son axe.
+Ses cubes sont solides, à bon droit. Mais la surface porte la voiture à
+39,4 là où le voxel la poserait à 41 (le plus haut cube sous son emprise,
+au coin), et le saut d'un bloc depuis 39,4 restait sous le cube à franchir.
+`World.niveauVoxel` rend le sol voxel sous une boîte — la cote d'une colonne
+couverte, ou le dessus du plus haut cube solide non tu sous les pieds — et
+`franchirEnRoulant` vise UN bloc au-dessus de ce niveau ; c'est depuis ce
+niveau que « deux blocs, c'est un mur » se juge (sur du plat, niveau 26 pour
+des pieds à 26,05, cible 27, un mur à 28 reste un mur). Mesuré à la sonde
+après : **90,1 et 101,4 blocs armé, 13,4 et 13,4 désarmé.** Trois règles
+pour une seule livraison de sol, et la leçon commune : **une surface qui
+remplace des cubes doit dire, à chaque mécanisme qui lisait ces cubes, ce
+qu'il lit à la place** — la boîte (la bande), le contact (la bande), le
+franchissement (le niveau voxel). Le premier jet n'en avait servi qu'un.
+
 **Et deux leçons de sonde, payées dans la même livraison.** Une capture
 « après » de la campagne montrait QUATRE morceaux et le paysage lointain à la
 place du proche : la sonde d'état initial tenait le monde pour chargé dès que

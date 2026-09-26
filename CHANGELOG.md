@@ -69,9 +69,14 @@ le sommet restait solide sous la surface. Et « quand la rame arrive, on
 propose de monter à bord » : l'enfant posé sur un tracé de train à neuf
 blocs sous une colline — un tunnel — était REMONTÉ sur l'herbe par le
 contact. Ce que la surface tait, et où elle accroche, est désormais une
-BANDE de deux cubes sous elle, ni plus ni moins : la voiture regrimpe, et un
-tunnel garde son plancher et son enfant. Deux témoins purs de `plafond.js`
-le gardent (une pente à deux marches, un vide sous une colonne naturelle).
+BANDE de deux cubes sous elle, ni plus ni moins, et le franchissement d'une
+marche compte « un bloc » depuis le niveau VOXEL sous la voiture, pas depuis
+la cote de la surface qui la porte : un tunnel garde son plancher et son
+enfant (« Monter à bord » à 7,3 s, jamais en vingt secondes avant), et la
+voiture regrimpe — 90 et 101 blocs sur le couloir de (−600, −520) contre
+13,4, franchissement désarmé 13,4 des deux côtés. Deux témoins purs de
+`plafond.js` le gardent (une pente à deux marches, un vide sous une colonne
+naturelle).
 
 ---
 
