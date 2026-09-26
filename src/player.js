@@ -227,6 +227,7 @@ export class Player {
         for (let bx = minX; bx <= maxX; bx++) {
           const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
           if (!blockIsSolid(id)) continue;
+          if (this.world.blocSousLaSurface && this.world.blocSousLaSurface(bx, by, bz)) continue;   // sol continu (v297)
           if (y >= by + (isSlab(id) ? 0.5 : 1) - eps) continue;   // on est au-dessus
           return false;
         }
@@ -519,12 +520,15 @@ export class Player {
       const vol = this.vel.clone().multiplyScalar(dt);
       const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
       const vx0 = this.vel.x, vz0 = this.vel.z;
+      const etaitAuSolAvion = this.onGround;
+      const avantXa = this.pos.x, avantZa = this.pos.z;
       this.onGround = false;
       for (let i = 0; i < pas; i++) {
         this.sweepAxis(0, vol.x / pas);
         this.sweepAxis(1, vol.y / pas);
         this.sweepAxis(2, vol.z / pas);
       }
+      this.contactSolContinu(etaitAuSolAvion, Math.hypot(this.pos.x - avantXa, this.pos.z - avantZa), etat === 'vol' || etat === 'decollage');
       // Bloqué par une marche en roulant : on la franchit si elle ne fait
       // qu'un bloc.
       if (auSol && v > 0.5 && ((vx0 !== 0 && this.vel.x === 0) || (vz0 !== 0 && this.vel.z === 0))) {
@@ -704,6 +708,7 @@ export class Player {
       }
     }
     const steps = Math.max(1, Math.ceil(move.length() / MAX_STEP));
+    const etaitAuSol = this.onGround;
     this.onGround = false;
     const avantX = this.pos.x, avantZ = this.pos.z;
     for (let i = 0; i < steps; i++) {
@@ -711,6 +716,7 @@ export class Player {
       this.sweepAxis(1, move.y / steps);
       this.sweepAxis(2, move.z / steps);
     }
+    this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), this.flying);
     // UNE VOITURE QUI TOUCHE QUELQUE CHOSE PERD SA VITESSE (v272). Max,
     // capture de Hambourg : « il est marqué 86 km/h », voiture immobile dans
     // le port. `vitesseVoiture` était la vitesse DEMANDÉE : ni la boîte de
@@ -776,6 +782,18 @@ export class Player {
     this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
   }
 
+  // LE SOL CONTINU EST L'AUTORITÉ DU CONTACT hors des villes (v297) : après
+  // les balayages voxel, on demande à `world.accrocherAuSol` où est la
+  // surface — la MÊME triangulation que le mailleur dessine — et l'on s'y pose.
+  // Le voxel garde tout le reste : murs, dalles, blocs posés, villes.
+  contactSolContinu(etaitAuSol, pasH, vole) {
+    if (!this.world.accrocherAuSol) return;
+    const r = this.world.accrocherAuSol(this.pos, this.vel, {
+      etaitAuSol, pasH, half: this.gabarit / 2, hauteur: PLAYER_HEIGHT, vole,
+    });
+    if (r && r.auSol) this.onGround = true;
+  }
+
   sweepAxis(axis, delta) {
     if (delta === 0) return;
     const p = this.pos;
@@ -794,6 +812,9 @@ export class Player {
         for (let bx = minX; bx <= maxX; bx++) {
           const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
           if (!blockIsSolid(id)) continue;
+          // LE SOMMET D'UNE COLONNE COUVERTE N'ARRÊTE RIEN (v297) : la surface
+          // continue le remplace, et c'est `accrocherAuSol` qui pose les pieds.
+          if (this.world.blocSousLaSurface && this.world.blocSousLaSurface(bx, by, bz)) continue;
           const topY = by + (isSlab(id) ? 0.5 : 1); // slabs only fill their lower half
           // above the block's top: no side collision, and no landing yet while falling
           if (p.y >= topY - eps && (axis !== 1 || delta < 0)) continue;

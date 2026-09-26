@@ -333,9 +333,19 @@ class Animal {
     this.vel.y = Math.max(this.vel.y, -30);
     if (this.def.hopper && speed > 0 && this.onGround) this.vel.y = 4.5;
 
+    const etaitAuSol = this.onGround;
+    const avantX = this.pos.x, avantZ = this.pos.z;
     const blockedX = this.sweep(world, 0, this.vel.x * dt);
     this.sweep(world, 1, this.vel.y * dt);
     const blockedZ = this.sweep(world, 2, this.vel.z * dt);
+    // Une bête marche sur la même surface que l'enfant (sol continu, v297).
+    if (world.accrocherAuSol) {
+      const r = world.accrocherAuSol(this.pos, this.vel, {
+        etaitAuSol, pasH: Math.hypot(this.pos.x - avantX, this.pos.z - avantZ),
+        half: (this.def.width * this.scale) / 2, hauteur: this.def.height * this.scale,
+      });
+      if (r && r.auSol) this.onGround = true;
+    }
     if ((blockedX || blockedZ) && this.onGround) {
       if (!this.def.hopper && speed > 0) this.vel.y = 5;
       if (this.state === 'walk') this.yaw += Math.PI / 2;
@@ -405,6 +415,7 @@ class Animal {
         for (let bx = minX; bx <= maxX; bx++) {
           const id = by < 0 ? BLOCK.STONE : world.getBlock(bx, by, bz);
           if (!blockIsSolid(id)) continue;
+          if (world.blocSousLaSurface && world.blocSousLaSurface(bx, by, bz)) continue;   // sol continu (v297)
           const topY = by + (isSlab(id) ? 0.5 : 1);
           if (this.pos.y >= topY - eps && (axis !== 1 || delta < 0)) continue;
           if (axis === 0) this.pos.x = delta > 0 ? bx - half - eps : bx + 1 + half + eps;

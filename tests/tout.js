@@ -100,6 +100,8 @@ const GARDIENS = {
   // carte.
   'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
   'src/journal.js': ['parent.js', 'reglages.js'],
+  // le sol continu (v297) : lu par le mailleur et par toute physique au sol
+  'src/solcontinu.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carte.js', 'carteMonde.js', 'parishd.js', 'washington.js'],
   // La couche HD de Paris (v287) : ses tampons et son relais près/loin dans
   // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
   'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],

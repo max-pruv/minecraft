@@ -110,11 +110,18 @@ Les vues fixes et les deux parcours (à pied, au volant) sont pris par
 
 ## 5. Ordre des livraisons
 
-1. **État initial** (cette livraison) : la sonde, les captures, les mesures.
-2. **Le sol continu** : rendu + contact + navigation hors villes, couture
-   entre morceaux, eau, qualité basse identique. Preuve : zéro marche sur le
-   parcours du pilote, empreintes de `plafond.js` intactes, maison sauvegardée
-   posée au bloc près.
+1. **État initial** — FAIT : la sonde (`tests/sonde-etat-initial.cjs`), les
+   captures, les mesures (`etat-initial.md`).
+2. **Le sol continu** — FAIT (v297, `src/solcontinu.js`) : rendu + contact +
+   navigation hors villes, couture entre morceaux, palier bas identique.
+   Mesuré sur une pente de huit marches de l'axe Paris–Lille, trente secondes
+   joystick en avant : à pied 10,2 → 73,7 blocs (452 images bloquées → 0) ;
+   au volant 5 marches et 4 chutes → 0 et 1. Empreintes de `plafond.js`
+   intactes, maison sauvegardée posée au bloc près, +1,2 ms par morceau de
+   campagne. **Ce qui reste voxel, et se déclare** : les falaises (au-delà
+   d'un bloc d'écart dans une cellule), un liseré d'un bloc au bord de toute
+   zone voxel (ville, bloc posé, falaise), l'eau (la surface passe sous le
+   lac, l'eau garde ses cubes), les arbres.
 3. **Le couloir Paris–Lille** : registre des routes, profil, section,
    ouvrages, circulation interurbaine, entrées de ville, carte.
 4. **Le rail continu et la gare accessible** : cote continue, quai à niveau.

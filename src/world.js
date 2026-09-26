@@ -1,6 +1,6 @@
 // Infinite procedurally generated voxel world, stored as 16xHx16 chunks.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { carrefoursDeVoies } from './voies.js';
@@ -92,6 +92,11 @@ const Z_ARCTIQUE = Math.round(zDeLatitude(78));
 const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
 export const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
 import { surTerreReelle, reliefReel } from './terre.js';
+import { ficheColonne, colonneCouverte, solContinu as solContinuDe } from './solcontinu.js';
+
+// L'accroche au sol continu : jusqu'où l'on redescend sur la surface sans
+// avoir « décollé » (v297). Un demi-bloc plus le pas horizontal de l'image.
+const ACCROCHE_SOL = 0.5;
 
 export const CHUNK = 16;
 
@@ -1726,6 +1731,8 @@ export class World {
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
+    this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
+    this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
     this.onBloc = null;           // hook(x, y, z, id) — TOUT bloc écrit, local ou reçu (v251)
@@ -2006,8 +2013,18 @@ export class World {
     return Math.max(2, Math.min(SOMMET_TERRAIN, Math.floor(h)));
   }
 
-  cityAt(x, z) {
-    for (const c of CITIES) {
+  cityAt(x, z) { return this.cityAtParmi(x, z, CITIES); }
+
+  // Les villes dont le disque approche ce point à moins de `d` blocs : la
+  // liste qu'un morceau garde pour ne poser la question qu'à elles (v297).
+  villesProches(x, z, d) {
+    const out = [];
+    for (const c of CITIES) if (Math.hypot(x - c.x, z - c.z) < c.r + d) out.push(c);
+    return out;
+  }
+
+  cityAtParmi(x, z, liste) {
+    for (const c of liste) {
       if (Math.hypot(x - c.x, z - c.z) >= c.r) continue;
       // Manhattan tient dans ce cercle mais n'en occupe qu'une bande : hors de
       // l'île et de ses fleuves, on est en pleine campagne, avec ses arbres.
@@ -2806,6 +2823,8 @@ export class World {
       this.dirty.delete(cle);
       oublies++;
     }
+    // Le cache du sol continu suit les morceaux : il ne sert que sous les pieds.
+    if (oublies) this.cacheSol.clear();
     return oublies;
   }
 
@@ -2876,12 +2895,111 @@ export class World {
     // son emprise ENTIÈRE est invalidée : un demi-monument en relief à côté
     // d'un demi-monument en cubes serait pire que pas de relief du tout.
     this.noterMonumentTouche(x, z);
+    this.solTouche(x, z);
 
-    this.dirty.add(World.key(cx, cz));
-    if (lx === 0) this.dirty.add(World.key(cx - 1, cz));
-    if (lx === CHUNK - 1) this.dirty.add(World.key(cx + 1, cz));
-    if (lz === 0) this.dirty.add(World.key(cx, cz - 1));
-    if (lz === CHUNK - 1) this.dirty.add(World.key(cx, cz + 1));
+    // Un bloc posé change le sol continu jusqu'à DEUX colonnes autour de lui
+    // (v297 : une colonne couverte dépend de ses voisines converties, qui
+    // dépendent de leurs voisines naturelles) : les morceaux voisins — en
+    // diagonale compris — se remaillent dès que le bloc est à moins de deux
+    // colonnes de leur bord, pas seulement sur la dernière colonne.
+    const dxs = lx <= 1 ? [-1, 0] : lx >= CHUNK - 2 ? [0, 1] : [0];
+    const dzs = lz <= 1 ? [-1, 0] : lz >= CHUNK - 2 ? [0, 1] : [0];
+    for (const dx of dxs) for (const dz of dzs) this.dirty.add(World.key(cx + dx, cz + dz));
+  }
+
+  // --- le sol continu : ce que le monde sait des colonnes (v297) -----------
+  //
+  // `solcontinu.js` ne lit le monde que par `terrainHeight`, `getBlock` et
+  // `cityAt`. Le monde tient un cache par colonne de sa FICHE (naturelle ou
+  // non, cote du sommet), invalidé autour de chaque bloc écrit — la règle lit
+  // ce que la colonne EST, jamais son histoire, donc un bloc retiré rend la
+  // colonne à la surface.
+
+  solTouche(x, z) {
+    // une cellule lit ses quatre colonnes, une colonne couverte ses quatre
+    // cellules : un bloc de marge suffit, on efface un peu plus large que juste
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) this.cacheSol.delete((x + dx) + ',' + (z + dz));
+  }
+
+  ficheMemo(x, z) {
+    const k = x + ',' + z;
+    let f = this.cacheSol.get(k);
+    if (f === undefined) {
+      f = ficheColonne(this, x, z);
+      this.cacheSol.set(k, f);
+    }
+    return f;
+  }
+
+  // L'AUTORITÉ DU CONTACT AU SOL hors des villes : la hauteur de la surface
+  // continue en (x, z) — sur la MÊME triangulation que le maillage —, ou
+  // `null` là où le voxel décide (ville, bloc posé, falaise, liseré de bord).
+  solContinu(x, z) {
+    if (this.sansSolContinu) return null;
+    return solContinuDe(this, x, z, (a, b) => this.ficheMemo(a, b));
+  }
+
+  // Ce bloc est-il le sommet d'une colonne COUVERTE — dessiné par la surface,
+  // et donc traversable pour une boîte de collision ? Le sol sous lui reste
+  // solide ; la surface, elle, est un plancher que `solContinu` donne.
+  blocSousLaSurface(bx, by, bz) {
+    if (this.sansSolContinu) return false;
+    const f = this.ficheMemo(bx, bz);
+    if (!f.nat || by !== f.cote - 1) return false;
+    return colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b));
+  }
+
+  // UNE BOÎTE EST-ELLE LIBRE ICI ? La géométrie de `sweepAxis` (player.js),
+  // de `BaseNPC.sweep` (marlon.js) et de `Animal.sweep` (animals.js), posée en
+  // question : largeur `half × 2`, hauteur `hauteur`, dalles à mi-hauteur, et
+  // le sommet d'une colonne couverte ne compte pas. C'est ce que demande un
+  // accrochage au sol continu avant de descendre : sur le liseré voxel d'un
+  // bord, la surface passe SOUS le sommet des blocs, et s'y poser mettrait les
+  // pieds dans la pierre.
+  boiteLibre(x, y, z, half, hauteur) {
+    const eps = 1e-4;
+    const minX = Math.floor(x - half + eps), maxX = Math.floor(x + half - eps);
+    const minY = Math.floor(y + eps), maxY = Math.floor(y + hauteur - eps);
+    const minZ = Math.floor(z - half + eps), maxZ = Math.floor(z + half - eps);
+    for (let by = minY; by <= maxY; by++) {
+      for (let bz = minZ; bz <= maxZ; bz++) {
+        for (let bx = minX; bx <= maxX; bx++) {
+          const id = by < 0 ? BLOCK.STONE : this.getBlock(bx, by, bz);
+          if (!blockIsSolid(id)) continue;
+          if (this.blocSousLaSurface(bx, by, bz)) continue;
+          if (y >= by + (isSlab(id) ? 0.5 : 1) - eps) continue;
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // L'ACCROCHAGE AU SOL CONTINU, le même geste pour l'enfant, un passant et
+  // une bête, après leurs balayages de collision. `pos` est modifié en place.
+  //   · sous la surface (les pieds dans le sommet d'une colonne couverte, que
+  //     la boîte ignore désormais) : on remonte dessus ;
+  //   · juste au-dessus, en descendant, et l'on ÉTAIT au sol : on s'y accroche,
+  //     pour qu'une pente qui descend ne fasse pas sautiller — l'accroche
+  //     vaut ce qu'on a avancé cette image, plus une marge, parce qu'une
+  //     pente d'un bloc par bloc ne peut pas descendre plus vite que cela.
+  // Rend la hauteur de surface (ou null), pour que l'appelant sache.
+  accrocherAuSol(pos, vel, { etaitAuSol, pasH = 0, half, hauteur, vole = false }) {
+    if (this.sansSolContinu) return null;
+    const s = this.solContinu(pos.x, pos.z);
+    if (s === null) return null;
+    const eps = 1e-4;
+    if (pos.y < s + eps) {
+      pos.y = s + eps;
+      if (vel.y < 0) vel.y = 0;
+      return { s, auSol: vel.y <= 0 };
+    }
+    if (!vole && etaitAuSol && vel.y <= 0 && pos.y - s < ACCROCHE_SOL + pasH
+        && this.boiteLibre(pos.x, s + eps, pos.z, half, hauteur)) {
+      pos.y = s + eps; vel.y = 0;
+      return { s, auSol: true };
+    }
+    return { s, auSol: false };
   }
 
   // --- les monuments en relief : l'index de ce qu'un enfant a touché (v292) ---
@@ -2914,6 +3032,7 @@ export class World {
     this.chunks.clear();
     this.tops.clear();
     this.indexerMonumentsTouches();
+    this.cacheSol.clear();
   }
 
   indexerMonumentsTouches() {
@@ -3023,6 +3142,7 @@ export class World {
       this.editTimes.set(k, entry[1] || 0);
     }
     this.indexerMonumentsTouches();
+    this.cacheSol.clear();
   }
 
   saveEdits() {

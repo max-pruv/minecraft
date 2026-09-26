@@ -28,6 +28,7 @@ self.onmessage = (e) => {
     // refait l'index des monuments touchés (v292). Un journal installé à la
     // main laisserait le worker dessiner un monument qu'un enfant a creusé.
     monde.hd = m.hd || 0;
+    monde.sansSolContinu = !!m.sansSolContinu;
     monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
     return;
   }
@@ -35,6 +36,7 @@ self.onmessage = (e) => {
     // Un bloc posé ou retiré : dans le journal, et dans le morceau s'il est là.
     monde.edits.set(`${m.x},${m.y},${m.z}`, m.id);
     monde.noterMonumentTouche(m.x, m.z);
+    monde.solTouche(m.x, m.z);
     const cx = Math.floor(m.x / CHUNK), cz = Math.floor(m.z / CHUNK);
     const cle = World.key(cx, cz);
     const data = monde.chunks.get(cle);

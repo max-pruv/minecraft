@@ -163,6 +163,7 @@ export class TerreUrbaine extends World {
       this.editTimes.set(k, e[1]);
       this.provenance.set(k, e[2] === 0 ? 0 : e[2] === 2 ? 2 : 1);
     }
+    this.cacheSol.clear();
     this.refreshProtection();
   }
   exportEdits() {

@@ -1,0 +1,44 @@
+{
+ "tag": "v297",
+ "date": "2026-09-26T16:00:27.928Z",
+ "banc": "rendu logiciel, rr 9, hd 6, ombres, 1280×720, dpr 1",
+ "vues": {
+  "paris-sortie-nord": {
+   "x": -240,
+   "z": 24,
+   "y": 35,
+   "appels": 111,
+   "ktri": 221,
+   "morceaux": 96,
+   "attente": 40219
+  },
+  "campagne-a1": {
+   "x": -110,
+   "z": -330,
+   "y": 35,
+   "appels": 220,
+   "ktri": 197,
+   "morceaux": 361,
+   "attente": 38063
+  },
+  "campagne-a1-ciel": {
+   "x": -110,
+   "z": -330,
+   "y": 35,
+   "appels": 242,
+   "ktri": 219,
+   "morceaux": 361,
+   "attente": 8007
+  },
+  "lille-entree-sud": {
+   "x": 35,
+   "z": -752,
+   "y": 44,
+   "appels": 1128,
+   "ktri": 407,
+   "morceaux": 219,
+   "attente": 40424
+  }
+ },
+ "parcours": {}
+}

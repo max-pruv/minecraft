@@ -18,6 +18,9 @@ const path = require('path');
 const dossier = process.argv[2] || 'docs/monde-fidele/captures';
 const tag = process.argv[3] || 'avant';
 const seules = process.argv[4] ? process.argv[4].split(',') : null;
+// Un cinquième argument s'ajoute à l'adresse du jeu : `&solcontinu=0` rejoue
+// le voxel d'avant la v297 sur le même code, à l'octet près dans le mailleur.
+const extra = process.argv[5] || '';
 
 // Les vues : en kilomètres de Notre-Dame (`dx`, `dz`, via adresseParis) ou en
 // blocs absolus (`x`, `z`) ; `rue` cherche la chaussée la plus proche ; `h` est
@@ -66,7 +69,7 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
   const rapport = { tag, date: new Date().toISOString(), banc: 'rendu logiciel, rr 9, hd 6, ombres, 1280×720, dpr 1', vues: {}, parcours: {} };
   try {
     await souffler();
-    const page = await banc.jouerSeul('Etat', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' });
+    const page = await banc.jouerSeul('Etat', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' + extra });
     for (const v of VUES.filter((v) => !seules || seules.includes(v.nom))) {
       try {
         const info = await page.evaluate(async (v) => {
@@ -107,11 +110,19 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
           g.player.yaw = v.yaw; g.player.pitch = v.pitch;
           window.__setDayTime(v.heure !== undefined ? v.heure : 0.42);
           const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+          // ON ATTEND QUE LE MONDE SOIT LÀ, PAS QUE DEUX RELEVÉS SE RESSEMBLENT.
+          // Deux relevés égaux à une demi-seconde d'écart, c'est le worker
+          // qui n'a pas encore rendu son premier lot : la première planche de
+          // la campagne montrait QUATRE morceaux et le paysage lointain à la
+          // place du proche. Huit secondes au moins, puis quatre relevés
+          // consécutifs sans changement (deux secondes), borné à quarante.
           const t0 = performance.now();
-          let n0 = -1;
-          while (performance.now() - t0 < 25000) {
+          let n0 = -1, stables = 0;
+          while (performance.now() - t0 < 40000) {
             await dodo(500);
-            const n = g.chunkMeshes.size; if (n === n0) { await dodo(2000); break; } n0 = n;
+            const n = g.chunkMeshes.size;
+            stables = n === n0 ? stables + 1 : 0; n0 = n;
+            if (performance.now() - t0 > 8000 && stables >= 4) break;
           }
           const info = g.renderer.info;
           return { x, z, y, appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000), morceaux: g.chunkMeshes.size, attente: Math.round(performance.now() - t0) };

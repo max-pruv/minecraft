@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 297,
+    titre: 'La campagne devient douce',
+    puces: [
+      'Les collines sont des pentes, plus des marches',
+      'On marche et on roule sans sauter',
+      'Les villes et tes blocs restent en cubes',
+      'Le sol n\'a pas bougé sous tes maisons',
+    ],
+  },
+  {
     v: 296,
     titre: 'Paris plus léger, journal de bord',
     puces: [

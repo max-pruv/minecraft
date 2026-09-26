@@ -34,37 +34,37 @@
    "x": -240,
    "z": 24,
    "y": 35,
-   "appels": 744,
-   "ktri": 850,
-   "morceaux": 109,
-   "attente": 3001
+   "appels": 125,
+   "ktri": 217,
+   "morceaux": 100,
+   "attente": 40906
   },
   "campagne-a1": {
    "x": -110,
    "z": -330,
    "y": 35,
-   "appels": 23,
-   "ktri": 28,
-   "morceaux": 12,
-   "attente": 3001
+   "appels": 250,
+   "ktri": 161,
+   "morceaux": 361,
+   "attente": 34857
   },
   "campagne-a1-ciel": {
    "x": -110,
    "z": -330,
    "y": 35,
-   "appels": 250,
-   "ktri": 179,
-   "morceaux": 294,
-   "attente": 26048
+   "appels": 252,
+   "ktri": 178,
+   "morceaux": 361,
+   "attente": 8006
   },
   "lille-entree-sud": {
    "x": 35,
    "z": -752,
    "y": 44,
-   "appels": 294,
-   "ktri": 168,
-   "morceaux": 54,
-   "attente": 6986
+   "appels": 1126,
+   "ktri": 404,
+   "morceaux": 221,
+   "attente": 40382
   },
   "lille-centre": {
    "x": 35,
