@@ -65,6 +65,13 @@ personne n'était devant avec un câble. Deux causes, mesurées.
 - **L'espace parent montre le journal de bord** : les trente dernières
   sessions, plantage présumé en rouge, avec le dernier relevé et le document
   complet replié, prêt à être copié.
+- **Et le journal compte les blocs suspendus.** Max a dit que la structure de
+  rondins vue dans le ciel de Paris (v295) n'est pas une construction des
+  enfants ; le relief d'avant ne l'explique pas non plus (huit blocs au plus).
+  Au démarrage d'une partie, le journal compte les blocs posés qui flottent à
+  plus de six blocs au-dessus du sol d'une ville — combien, lesquels, où — et
+  l'espace parent l'affiche. C'est l'instrument qui dira si ce sont des blocs
+  écrits ou un rendu de travers, avant toute hypothèse de plus.
 
 **Ce qui le prouve.** Cinq témoins neufs dans `parent.js` (la règle pure du
 bilan et de la sûreté, le trajet d'une tablette morte sans au revoir qui

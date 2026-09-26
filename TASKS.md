@@ -30,8 +30,24 @@
   trente jours qui ne sont pas des plantages (SQL, ou au lancement par une
   tablette).
 
-- [ ] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS (v295) — PROBABLEMENT
-  UNE CONSTRUCTION DES ENFANTS, ET CELA RESTE À CONFIRMER PAR MAX.** Sa
+- [ ] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS (v295) — MAX DIT QUE CE
+  N'EST PAS UNE CONSTRUCTION DES ENFANTS ; DONC UN DÉFAUT, ET IL RESTE À VOIR
+  D'OÙ IL VIENT.** Ce qui est écarté depuis : la migration de la carte ne peut
+  pas l'expliquer par la hauteur — le relief naturel sous l'anneau de Paris
+  (55 à 185 blocs du centre) vaut 23 à 42 sur les trois cartes, pour un sol de
+  ville à 34 : une maison posée là avant que Paris ne s'élargisse (v187)
+  flotterait de huit blocs au plus, pas au-dessus des toits. La v296 pose un
+  INSTRUMENT à la place d'une hypothèse de plus : au démarrage d'une partie, le
+  journal de bord compte les blocs posés qui flottent à plus de six blocs
+  au-dessus du sol d'une ville — combien, quels identifiants, où — et l'espace
+  parent l'affiche (« N bloc(s) suspendu(s) à paris »). Si le compte est nul
+  sur les deux profils, ce ne sont pas des blocs posés (donc pas une
+  construction, ni d'enfant ni d'ami), et la piste est un maillage : un tampon
+  de morceau installé au mauvais endroit, ou un modèle rendu avec l'atlas des
+  blocs. S'il n'est pas nul, les identifiants disent qui les a écrits
+  (bibliothèque de bâtiments — `DARKPLANK`, `PLANK` —, ou palette de l'enfant).
+  La lecture directe des profils dans le nuage a été refusée à cette session ;
+  Max peut l'autoriser, ou lire le compte dans l'espace parent. Sa
   capture d'iPad montre, au-dessus des toits au centre de Paris, une grande
   structure de rondins et de planches sombres avec des blocs de laine bleue,
   en forme de grue ou de bateau. Ce qui est MESURÉ : le générateur ne la

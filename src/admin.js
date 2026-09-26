@@ -629,12 +629,14 @@ export class AdminPanel {
       const doc = l.doc || {};
       const dernier = (doc.releves || []).slice(-1)[0] || {};
       const erreurs = doc.erreurs || 0;
+      const suspendus = (doc.evenements || []).find((e) => e.type === 'blocs-suspendus');
       const resume = [
         dernier.ville ? `à ${esc(dernier.ville)}` : (dernier.x !== undefined ? `en (${dernier.x}, ${dernier.z})` : ''),
         dernier.ips != null ? `${dernier.ips} i/s` : '', dernier.pire ? `pire image ${dernier.pire} ms` : '',
         dernier.morceaux != null ? `${dernier.morceaux} morceaux (${dernier.hd || 0} HD)` : '',
         dernier.tasMo ? `${dernier.tasMo} Mo de tas` : '', doc.duree != null ? `${Math.round(doc.duree)} s de session` : '',
         erreurs ? `${erreurs} erreur(s)` : '',
+        suspendus && suspendus.d ? `${suspendus.d.n} bloc(s) suspendu(s) à ${(suspendus.d.villes || []).join(', ')}` : '',
       ].filter(Boolean).join(' · ');
       return `<details class="adm-jr"><summary><b class="fin-${esc(l.fin || 'inconnue')}">${esc(mots[l.fin] || l.fin || '?')}</b>
         · ${esc(quand(l.created_at))} · ${esc(l.name || 'sans prénom')} · ${esc(appareilCourt(doc))} · ${esc(l.version || 'version ?')}

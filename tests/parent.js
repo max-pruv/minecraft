@@ -259,11 +259,19 @@ async function panneau(p) {
     const cles = { SESSION_CLE: J.SESSION_CLE, PLANTAGES_CLE: J.PLANTAGES_CLE, JOURNAL_CLE: J.JOURNAL_CLE };
     const tab = await banc.joueur('Ipad', { portNuage: 9741 });
     await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    // UN RECHARGEMENT EST UN AU REVOIR : `pagehide` ferme la session proprement
+    // et efface le drapeau. Mon premier jet semait les clés AVANT de recharger
+    // et mesurait donc une session propre (« plantages 0 »). On sème au
+    // `pagehide`, APRÈS le geste du jeu — les écouteurs se suivent dans l'ordre
+    // d'inscription — c'est la seule façon de laisser derrière soi ce qu'un
+    // plantage laisse : un drapeau, un journal, un compteur.
     await tab.evaluate((c) => {
-      localStorage.setItem(c.SESSION_CLE, String(Date.now()));
-      localStorage.setItem(c.PLANTAGES_CLE, '1');
-      localStorage.setItem(c.JOURNAL_CLE, JSON.stringify({ debut: Date.now() - 20000, fiche: { ua: navigator.userAgent, prenom: 'Ipad' },
-        evenements: [{ t: 0, type: 'jouer' }], releves: [{ t: 19.5, ville: 'paris', ips: 12, pire: 900, morceaux: 240, hd: 200 }], erreurs: 0 }));
+      window.addEventListener('pagehide', () => {
+        localStorage.setItem(c.SESSION_CLE, String(Date.now()));
+        localStorage.setItem(c.PLANTAGES_CLE, '1');
+        localStorage.setItem(c.JOURNAL_CLE, JSON.stringify({ debut: Date.now() - 20000, fiche: { ua: navigator.userAgent, prenom: 'Ipad' },
+          evenements: [{ t: 0, type: 'jouer' }], releves: [{ t: 19.5, ville: 'paris', ips: 12, pire: 900, morceaux: 240, hd: 200 }], erreurs: 0 }));
+      });
     }, cles);
     await tab.reload({ waitUntil: 'load', timeout: 90000 });
     await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
@@ -300,10 +308,12 @@ async function panneau(p) {
     await p.evaluate(async () => { await window.__game.admin.chargerJournal(); });
     const vuJournal = await p.evaluate(() => {
       const z = window.__game.admin.el.querySelector('#adm-journal');
-      return { lignes: z.querySelectorAll('.adm-jr').length, texte: z.textContent.replace(/\s+/g, ' ').slice(0, 300) };
+      const texte = z.textContent.replace(/\s+/g, ' ');
+      return { lignes: z.querySelectorAll('.adm-jr').length, plantage: /PLANTAGE présumé/.test(texte), paris: /paris/.test(texte),
+        fermeture: /au revoir/.test(texte), debut: texte.slice(0, 200) };
     });
     verifier('l’espace parent montre le journal de bord, plantage présumé et fermeture, avec la ville',
-      vuJournal.lignes >= 2 && /PLANTAGE présumé/.test(vuJournal.texte) && /paris/.test(vuJournal.texte),
+      vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture,
       JSON.stringify(vuJournal));
 
     verifier('aucune faute de page dans l’espace parent', p.erreurs.length === 0,

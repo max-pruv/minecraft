@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 296,
+    titre: 'Paris plus léger, et un journal de bord',
+    puces: [
+      'Paris ne plante plus les vieilles tablettes',
+      'Le jeu note ce qui se passe, pour les parents',
+      'Après deux arrêts, il passe en mode léger tout seul',
+      'Les parents voient le journal dans leur espace',
+    ],
+  },
+  {
     v: 295,
     titre: 'La tour Eiffel sans cubes',
     puces: [

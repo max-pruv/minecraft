@@ -1811,6 +1811,26 @@ function startGame() {
   setTimeout(updatePlayersBtn, 0);
   journal.doc.fiche.prenom = myName();
   journal.noter('jouer', { monde: world.ctx, x: Math.round(player.pos.x), z: Math.round(player.pos.z) });
+  // LES BLOCS SUSPENDUS (v296) : Max, capture au centre de Paris, « des trucs
+  // bizarres » — des rondins et de la laine bleue dans le ciel, que ni le
+  // générateur ne pose ni les enfants ne reconnaissent. Le journal compte donc
+  // une fois par partie, dans le monde de l'enfant, les blocs posés qui
+  // flottent au-dessus du sol d'une ville — combien, lesquels, où — pour que
+  // l'espace parent le dise. Quelques milliers de blocs : une fois, c'est rien.
+  try {
+    const parId = new Map(); let n = 0, ex = null, villes = new Set();
+    for (const k of world.edits.keys()) {
+      const [x, y, z] = k.split(',').map(Number);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+      const v = world.cityAt(x, z);
+      if (!v) continue;
+      const id = world.edits.get(k);
+      if (id === BLOCK.AIR || y <= world.terrainHeight(x, z) + 6) continue;
+      n++; villes.add(v.key); parId.set(id, (parId.get(id) || 0) + 1);
+      if (!ex) ex = [x, y, z];
+    }
+    if (n) journal.noter('blocs-suspendus', { n, villes: [...villes], ids: [...parId].sort((a, b) => b[1] - a[1]).slice(0, 5), ex });
+  } catch { /* un journal ne fait jamais tomber une partie */ }
   // ET LA SÛRETÉ SE DIT (v296) : un réglage qui change sans un mot ferait
   // croire à un jeu cassé — et le message dit quoi faire.
   if (PALIER && PALIER.source === 'sûreté' && !sureteAnnoncee) {
